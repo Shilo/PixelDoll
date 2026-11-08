@@ -1,270 +1,516 @@
-import { beforeEach, expect, test, vi } from 'vitest'
-import type { JobRec } from '../../src/lib/pixellab/queue.ts'
-import type { Req } from '../../src/lib/pixellab/routes.ts'
-import { makeImg, type Img } from '../../src/lib/image/png.ts'
-import { encodePngBytes } from '../../src/lib/image/pngraw.ts'
-import { sha256 } from '../../src/lib/image/hash.ts'
-import { toChroma } from '../../src/lib/image/chroma.ts'
-import { LABELS } from '../../src/lib/rig/poses.ts'
-import { cellHash, type DirectionName } from '../../src/lib/rig/rig.ts'
-import * as db from '../../src/lib/store/db.ts'
-import { itemQa, padImg, slotOf, type CellOut } from '../../src/lib/items/items.ts'
-import { rerollCall, runItem, type Draft, type ItemResult, type RigCtx } from '../../src/lib/items/run.ts'
-import { crop, plainReason, thumbCell } from '../../src/studio/model.ts'
-import type { Manifest } from '../../src/lib/store/manifest.ts'
+import { beforeEach, expect, test, vi } from 'vitest';
+import type { JobRec } from '../../src/lib/pixellab/queue.ts';
+import type { Req } from '../../src/lib/pixellab/routes.ts';
+import { makeImg, type Img } from '../../src/lib/image/png.ts';
+import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
+import { sha256 } from '../../src/lib/image/hash.ts';
+import { toChroma } from '../../src/lib/image/chroma.ts';
+import { LABELS } from '../../src/lib/rig/poses.ts';
+import { cellHash, type DirectionName } from '../../src/lib/rig/rig.ts';
+import * as db from '../../src/lib/store/db.ts';
+import { itemQa, padImg, slotOf, type CellOut } from '../../src/lib/items/items.ts';
+import {
+	rerollCall,
+	runItem,
+	type Draft,
+	type ItemResult,
+	type RigCtx
+} from '../../src/lib/items/run.ts';
+import { crop, plainReason, thumbCell } from '../../src/studio/model.ts';
+import type { Manifest } from '../../src/lib/store/manifest.ts';
 
 // A fake ledger: enqueue records requests in order, the test lands them one at a time.
 // Record ids stay unique across tests, so a run a test leaves waiting never wakes on a later test's record.
-const q = vi.hoisted(() => ({ recs: new Map<string, JobRec>(), order: [] as { id: string; path: string; label: string }[], listeners: new Set<(s: { jobs: JobRec[] }) => void>(), blocked: null as string | null, n: 0 }))
+const q = vi.hoisted(() => ({
+	recs: new Map<string, JobRec>(),
+	order: [] as { id: string; path: string; label: string }[],
+	listeners: new Set<(s: { jobs: JobRec[] }) => void>(),
+	blocked: null as string | null,
+	n: 0
+}));
 vi.mock('../../src/lib/pixellab/queue.ts', () => {
-  const emit = () => { for (const l of [...q.listeners]) l({ jobs: [...q.recs.values()] }) }
-  return {
-    queue: {
-      subscribe: (cb: (s: { jobs: JobRec[] }) => void) => { q.listeners.add(cb); cb({ jobs: [...q.recs.values()] }); return () => q.listeners.delete(cb) },
-      enqueue: vi.fn(async (req: Req, meta: { label: string }) => {
-        const id = `r${q.n++}`, rec = { id, label: meta.label, method: 'POST', endpoint: req.path, params: req.body, inputs: [], requestHash: id, state: 'queued', attempts: 0, nextAt: 0, createdAt: q.order.length, jobs: [], gens: 0, usd: 0 } as unknown as JobRec
-        q.recs.set(id, rec); q.order.push({ id, path: req.path, label: meta.label }); emit()
-        return rec
-      }),
-      planBlocks: vi.fn(() => q.blocked),
-      emit,
-    },
-  }
-})
-const { queue } = await import('../../src/lib/pixellab/queue.ts')
-const blobs = new Map<string, Blob>()
+	const emit = () => {
+		for (const l of [...q.listeners]) l({ jobs: [...q.recs.values()] });
+	};
+	return {
+		queue: {
+			subscribe: (cb: (s: { jobs: JobRec[] }) => void) => {
+				q.listeners.add(cb);
+				cb({ jobs: [...q.recs.values()] });
+				return () => q.listeners.delete(cb);
+			},
+			enqueue: vi.fn(async (req: Req, meta: { label: string }) => {
+				const id = `r${q.n++}`,
+					rec = {
+						id,
+						label: meta.label,
+						method: 'POST',
+						endpoint: req.path,
+						params: req.body,
+						inputs: [],
+						requestHash: id,
+						state: 'queued',
+						attempts: 0,
+						nextAt: 0,
+						createdAt: q.order.length,
+						jobs: [],
+						gens: 0,
+						usd: 0
+					} as unknown as JobRec;
+				q.recs.set(id, rec);
+				q.order.push({ id, path: req.path, label: meta.label });
+				emit();
+				return rec;
+			}),
+			planBlocks: vi.fn(() => q.blocked),
+			emit
+		}
+	};
+});
+const { queue } = await import('../../src/lib/pixellab/queue.ts');
+const blobs = new Map<string, Blob>();
 beforeEach(() => {
-  q.recs.clear(); q.order.splice(0); q.blocked = null; blobs.clear() // listeners stay: run.ts reads the ledger through one
-  vi.mocked(queue.enqueue).mockClear(); vi.mocked(queue.planBlocks).mockClear()
-  vi.spyOn(db, 'getBlob').mockImplementation(async (sha) => blobs.get(sha))
-})
+	q.recs.clear();
+	q.order.splice(0);
+	q.blocked = null;
+	blobs.clear(); // listeners stay: run.ts reads the ledger through one
+	vi.mocked(queue.enqueue).mockClear();
+	vi.mocked(queue.planBlocks).mockClear();
+	vi.spyOn(db, 'getBlob').mockImplementation(async (sha) => blobs.get(sha));
+});
 async function land(id: string, outs: Img[]) {
-  const results = await Promise.all(outs.map(async (im, i) => { const bytes = await encodePngBytes(im), sha = await sha256(bytes); blobs.set(sha, new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/png' })); return { label: String(i), sha } }))
-  Object.assign(q.recs.get(id)!, { state: 'done', jobs: [{ id: `${id}-job`, status: 'completed', done: true, results }] })
-  ;(queue as unknown as { emit: () => void }).emit()
+	const results = await Promise.all(
+		outs.map(async (im, i) => {
+			const bytes = await encodePngBytes(im),
+				sha = await sha256(bytes);
+			blobs.set(sha, new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+			return { label: String(i), sha };
+		})
+	);
+	Object.assign(q.recs.get(id)!, {
+		state: 'done',
+		jobs: [{ id: `${id}-job`, status: 'completed', done: true, results }]
+	});
+	(queue as unknown as { emit: () => void }).emit();
 }
-const call = (path: string, dir?: string) => q.order.find((o) => o.path === path && (!dir || o.label.includes(`/${dir}`)))
+const call = (path: string, dir?: string) =>
+	q.order.find((o) => o.path === path && (!dir || o.label.includes(`/${dir}`)));
 
 // 16 px body in two drawn views; a 4-frame walk with stored keypoints; the item is a gray band across the chest.
 async function fixture() {
-  const body = makeImg(16, 16)
-  for (let y = 3; y < 16; y++) for (let x = 5; x < 11; x++) body.data.set([200, 150, 120, 255], (y * 16 + x) * 4)
-  const h = await cellHash(body), dirs: DirectionName[] = ['south', 'east'], points = LABELS.map((label) => ({ label, x: 0.5, y: label === 'NECK' ? 0.3 : 0.6 }))
-  const manifest: Manifest = {
-    format: 'pixeldoll/1', name: 'Test', app: '', slots: [], materials: [], presets: [],
-    rig: { cell: { w: 16, h: 16 }, pivot: { x: 8, y: 15 }, baseHash: h, baseItem: 'base', directions: dirs.map((id) => ({ id })), rest: Object.fromEntries(dirs.map((d) => [d, { image: h, keypoints: points }])),
-      animations: [{ id: 'walk', cells: 4, loop: true, frames: [0, 1, 2, 3].map((cell) => ({ cell, ms: 100 })), sources: Object.fromEntries(dirs.map((d) => [d, { route: 'skeleton-v3', reference: h, keypoints: Array(4).fill(points), provenance: [] }])) }] },
-    items: [{ id: 'base', name: 'Body', slot: 'body', status: 'accepted', mirror: 'generate', materials: [], prompt: '', baseHash: h, provenance: [], layers: [{ id: 'main', role: 'fg', z: 10, cells: { walk: Object.fromEntries(dirs.map((d) => [d, Array(4).fill(h)])) } }] }],
-  } as unknown as Manifest
-  const ctx = { rec: { id: 'rig', savedAt: '', manifest }, project: { manifest, images: new Map([[h, body]]) } } as unknown as RigCtx
-  const dressed = toChroma(body, 'green')
-  for (let y = 7; y < 10; y++) for (let x = 5; x < 11; x++) dressed.data.set([120, 120, 130, 255], (y * 16 + x) * 4)
-  const d: Draft = {
-    spec: { id: 'armor', name: 'Armor', slot: 'torso_outer', prompt: 'iron armor', key: 'green', anims: ['walk'], dirs, method: 'skel' }, rigId: 'rig', log: [],
-    calls: [{ kind: 'dress' as const, cells: ['rest/south/0'] }, { kind: 'dress' as const, cells: ['rest/east/0'] }, ...dirs.map((dir) => ({ kind: 'pose' as const, cells: [0, 1, 2, 3].map((i) => `walk/${dir}/${i}`) }))].map((c, i) => ({ ...c, seed: i + 1, rerolls: 0, old: [] })),
-  }
-  return { ctx, d, dressed }
+	const body = makeImg(16, 16);
+	for (let y = 3; y < 16; y++)
+		for (let x = 5; x < 11; x++) body.data.set([200, 150, 120, 255], (y * 16 + x) * 4);
+	const h = await cellHash(body),
+		dirs: DirectionName[] = ['south', 'east'],
+		points = LABELS.map((label) => ({ label, x: 0.5, y: label === 'NECK' ? 0.3 : 0.6 }));
+	const manifest: Manifest = {
+		format: 'pixeldoll/1',
+		name: 'Test',
+		app: '',
+		slots: [],
+		materials: [],
+		presets: [],
+		rig: {
+			cell: { w: 16, h: 16 },
+			pivot: { x: 8, y: 15 },
+			baseHash: h,
+			baseItem: 'base',
+			directions: dirs.map((id) => ({ id })),
+			rest: Object.fromEntries(dirs.map((d) => [d, { image: h, keypoints: points }])),
+			animations: [
+				{
+					id: 'walk',
+					cells: 4,
+					loop: true,
+					frames: [0, 1, 2, 3].map((cell) => ({ cell, ms: 100 })),
+					sources: Object.fromEntries(
+						dirs.map((d) => [
+							d,
+							{
+								route: 'skeleton-v3',
+								reference: h,
+								keypoints: Array(4).fill(points),
+								provenance: []
+							}
+						])
+					)
+				}
+			]
+		},
+		items: [
+			{
+				id: 'base',
+				name: 'Body',
+				slot: 'body',
+				status: 'accepted',
+				mirror: 'generate',
+				materials: [],
+				prompt: '',
+				baseHash: h,
+				provenance: [],
+				layers: [
+					{
+						id: 'main',
+						role: 'fg',
+						z: 10,
+						cells: { walk: Object.fromEntries(dirs.map((d) => [d, Array(4).fill(h)])) }
+					}
+				]
+			}
+		]
+	} as unknown as Manifest;
+	const ctx = {
+		rec: { id: 'rig', savedAt: '', manifest },
+		project: { manifest, images: new Map([[h, body]]) }
+	} as unknown as RigCtx;
+	const dressed = toChroma(body, 'green');
+	for (let y = 7; y < 10; y++)
+		for (let x = 5; x < 11; x++) dressed.data.set([120, 120, 130, 255], (y * 16 + x) * 4);
+	const d: Draft = {
+		spec: {
+			id: 'armor',
+			name: 'Armor',
+			slot: 'torso_outer',
+			prompt: 'iron armor',
+			key: 'green',
+			anims: ['walk'],
+			dirs,
+			method: 'skel'
+		},
+		rigId: 'rig',
+		log: [],
+		calls: [
+			{ kind: 'dress' as const, cells: ['rest/south/0'] },
+			{ kind: 'dress' as const, cells: ['rest/east/0'] },
+			...dirs.map((dir) => ({
+				kind: 'pose' as const,
+				cells: [0, 1, 2, 3].map((i) => `walk/${dir}/${i}`)
+			}))
+		].map((c, i) => ({ ...c, seed: i + 1, rerolls: 0, old: [] }))
+	};
+	return { ctx, d, dressed };
 }
 
 test('extracted standing artwork supplies a thumbnail before any target animation preview exists', async () => {
-  const { ctx, d, dressed } = await fixture(), results: ItemResult[] = []
-  const run = runItem(d, ctx, { result: r => results.push(r) })
-  await vi.waitFor(() => expect(q.order).toHaveLength(1))
-  await land(q.order[0].id, [dressed, dressed])
-  await vi.waitFor(() => expect(results.some(r => r.thumbnail)).toBe(true))
-  const result = results.find(r => r.thumbnail)!
-  expect(result.preview).toBeNull()
-  expect(result.cells).toEqual([])
-  const thumbnail = crop(result.thumbnail!)!
-  expect([thumbnail.w, thumbnail.h]).toEqual([6, 3])
-  expect(thumbnail.data.filter((_, i) => i % 4 === 3).every(alpha => alpha === 255)).toBe(true)
-  await vi.waitFor(() => expect(q.order).toHaveLength(2))
-  expect(q.order.every(o => o.path === '/edit-animation-v2')).toBe(true)
-  await land(q.order[1].id, [dressed, dressed])
-  await vi.waitFor(() => expect(q.order.filter(o => o.path === '/animate-with-skeleton-v3')).toHaveLength(2))
-  for (const pose of q.order.filter(o => o.path === '/animate-with-skeleton-v3')) await land(pose.id, Array(4).fill(dressed))
-  await run
-})
+	const { ctx, d, dressed } = await fixture(),
+		results: ItemResult[] = [];
+	const run = runItem(d, ctx, { result: (r) => results.push(r) });
+	await vi.waitFor(() => expect(q.order).toHaveLength(1));
+	await land(q.order[0].id, [dressed, dressed]);
+	await vi.waitFor(() => expect(results.some((r) => r.thumbnail)).toBe(true));
+	const result = results.find((r) => r.thumbnail)!;
+	expect(result.preview).toBeNull();
+	expect(result.cells).toEqual([]);
+	const thumbnail = crop(result.thumbnail!)!;
+	expect([thumbnail.w, thumbnail.h]).toEqual([6, 3]);
+	expect(thumbnail.data.filter((_, i) => i % 4 === 3).every((alpha) => alpha === 255)).toBe(true);
+	await vi.waitFor(() => expect(q.order).toHaveLength(2));
+	expect(q.order.every((o) => o.path === '/edit-animation-v2')).toBe(true);
+	await land(q.order[1].id, [dressed, dressed]);
+	await vi.waitFor(() =>
+		expect(q.order.filter((o) => o.path === '/animate-with-skeleton-v3')).toHaveLength(2)
+	);
+	for (const pose of q.order.filter((o) => o.path === '/animate-with-skeleton-v3'))
+		await land(pose.id, Array(4).fill(dressed));
+	await run;
+});
 
 test('a completed standing view supplies an item-only thumbnail while other directions are still generating', async () => {
-  const { ctx, d, dressed } = await fixture(), results: ItemResult[] = []
-  const rig = ctx.rec.manifest.rig, base = ctx.rec.manifest.items[0].layers[0]
-  rig.animations.unshift({ id: 'standing', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }], sources: Object.fromEntries(rig.directions.map(({ id }) => [id, { route: 'import', reference: rig.rest![id]!.image, motion: 'imported-rest', provenance: [] }])) })
-  base.cells!.standing = Object.fromEntries(rig.directions.map(({ id }) => [id, [rig.rest![id]!.image]]))
-  d.spec.anims.unshift('standing')
-  const run = runItem(d, ctx, { result: r => results.push(r) })
-  await vi.waitFor(() => expect(q.order).toHaveLength(1))
-  await land(q.order[0].id, [dressed, dressed])
-  await vi.waitFor(() => expect(results.some(r => r.preview)).toBe(true))
-  const preview = results.find(r => r.preview)!.preview!, item = preview.manifest.items.find(i => i.id === 'armor')!
-  expect(item.coverage).toContain('standing/south/0')
-  expect(item.pending).toContain('standing/east/0')
-  const thumbnail = crop(thumbCell(preview, item)!)!
-  expect([thumbnail.w, thumbnail.h]).toEqual([6, 3])
-  expect(thumbnail.data.filter((_, i) => i % 4 === 3).every(alpha => alpha === 255)).toBe(true)
-  await vi.waitFor(() => expect(q.order).toHaveLength(2))
-  expect(q.order.every(o => o.path === '/edit-animation-v2')).toBe(true)
-  await land(q.order[1].id, [dressed, dressed])
-  await vi.waitFor(() => expect(q.order.filter(o => o.path === '/animate-with-skeleton-v3')).toHaveLength(2))
-  for (const pose of q.order.filter(o => o.path === '/animate-with-skeleton-v3')) await land(pose.id, Array(4).fill(dressed))
-  await run
-})
+	const { ctx, d, dressed } = await fixture(),
+		results: ItemResult[] = [];
+	const rig = ctx.rec.manifest.rig,
+		base = ctx.rec.manifest.items[0].layers[0];
+	rig.animations.unshift({
+		id: 'standing',
+		cells: 1,
+		loop: true,
+		frames: [{ cell: 0, ms: 100 }],
+		sources: Object.fromEntries(
+			rig.directions.map(({ id }) => [
+				id,
+				{
+					route: 'import',
+					reference: rig.rest![id]!.image,
+					motion: 'imported-rest',
+					provenance: []
+				}
+			])
+		)
+	});
+	base.cells!.standing = Object.fromEntries(
+		rig.directions.map(({ id }) => [id, [rig.rest![id]!.image]])
+	);
+	d.spec.anims.unshift('standing');
+	const run = runItem(d, ctx, { result: (r) => results.push(r) });
+	await vi.waitFor(() => expect(q.order).toHaveLength(1));
+	await land(q.order[0].id, [dressed, dressed]);
+	await vi.waitFor(() => expect(results.some((r) => r.preview)).toBe(true));
+	const preview = results.find((r) => r.preview)!.preview!,
+		item = preview.manifest.items.find((i) => i.id === 'armor')!;
+	expect(item.coverage).toContain('standing/south/0');
+	expect(item.pending).toContain('standing/east/0');
+	const thumbnail = crop(thumbCell(preview, item)!)!;
+	expect([thumbnail.w, thumbnail.h]).toEqual([6, 3]);
+	expect(thumbnail.data.filter((_, i) => i % 4 === 3).every((alpha) => alpha === 255)).toBe(true);
+	await vi.waitFor(() => expect(q.order).toHaveLength(2));
+	expect(q.order.every((o) => o.path === '/edit-animation-v2')).toBe(true);
+	await land(q.order[1].id, [dressed, dressed]);
+	await vi.waitFor(() =>
+		expect(q.order.filter((o) => o.path === '/animate-with-skeleton-v3')).toHaveLength(2)
+	);
+	for (const pose of q.order.filter((o) => o.path === '/animate-with-skeleton-v3'))
+		await land(pose.id, Array(4).fill(dressed));
+	await run;
+});
 
 test('planned direction poses stream landed cells while the remaining original coverage stays pending', async () => {
-  const { ctx, d, dressed } = await fixture(), results: ItemResult[] = []
-  const run = runItem(d, ctx, { result: (r) => results.push(r) })
-  await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
-  await land(q.order[0].id, [dressed, dressed]) // Single-view edits use the API's two-frame minimum.
-  await vi.waitFor(() => expect(q.order.filter(o => o.path === '/edit-animation-v2')).toHaveLength(2))
-  expect(call('/animate-with-skeleton-v3', 'south')).toBeUndefined()
-  const east = q.order.filter((o) => o.path === '/edit-animation-v2')[1]
-  expect(east).toBeDefined()
-  expect(q.recs.get(east.id)!.state).toBe('queued')
-  expect(call('/animate-with-skeleton-v3', 'east')).toBeUndefined()
-  await land(east.id, [dressed, dressed]) // anchored chunk: its first output is the anchor's
-  await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'south')).toBeDefined())
-  await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'east')).toBeDefined())
-  // the south walk lands: the preview shows it while east is still pending (loading, not transparent)
-  await land(call('/animate-with-skeleton-v3', 'south')!.id, Array(4).fill(dressed))
-  await vi.waitFor(() => expect(results.some((r) => r.cells.some((c) => c.key.startsWith('walk/south')))).toBe(true))
-  const streamed = results.find((r) => r.preview)!.preview!.manifest.items.find((i) => i.id === 'armor')!
-  expect(streamed.coverage).toEqual(['walk/south/0', 'walk/south/1', 'walk/south/2', 'walk/south/3'])
-  expect(streamed.pending).toEqual(['walk/east/0', 'walk/east/1', 'walk/east/2', 'walk/east/3'])
-  expect(streamed.layers[0].cells!.walk.east).toEqual([null, null, null, null])
-  const partial = results.find(r => r.preview)!.preview!
-  const thumbnail = crop(thumbCell(partial, streamed)!)!
-  expect(thumbnail.w).toBeGreaterThan(0)
-  expect(thumbnail.h).toBeGreaterThan(0)
-  expect(thumbnail.data.some((v, i) => i % 4 === 3 && v > 0)).toBe(true)
-  await land(call('/animate-with-skeleton-v3', 'east')!.id, Array(4).fill(dressed))
-  const res = await run
-  expect(d.log.at(-1)).toMatch(/passed the checks/)
-  expect(q.order.map((o) => o.path).sort()).toEqual(['/animate-with-skeleton-v3', '/animate-with-skeleton-v3', '/edit-animation-v2', '/edit-animation-v2']) // no call twice
-  const done = res!.preview!.manifest.items.find((i) => i.id === 'armor')!
-  expect(done.pending).toBeUndefined()
-  expect(done.coverage).toHaveLength(8)
-})
+	const { ctx, d, dressed } = await fixture(),
+		results: ItemResult[] = [];
+	const run = runItem(d, ctx, { result: (r) => results.push(r) });
+	await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined());
+	await land(q.order[0].id, [dressed, dressed]); // Single-view edits use the API's two-frame minimum.
+	await vi.waitFor(() =>
+		expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2)
+	);
+	expect(call('/animate-with-skeleton-v3', 'south')).toBeUndefined();
+	const east = q.order.filter((o) => o.path === '/edit-animation-v2')[1];
+	expect(east).toBeDefined();
+	expect(q.recs.get(east.id)!.state).toBe('queued');
+	expect(call('/animate-with-skeleton-v3', 'east')).toBeUndefined();
+	await land(east.id, [dressed, dressed]); // anchored chunk: its first output is the anchor's
+	await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'south')).toBeDefined());
+	await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'east')).toBeDefined());
+	// the south walk lands: the preview shows it while east is still pending (loading, not transparent)
+	await land(call('/animate-with-skeleton-v3', 'south')!.id, Array(4).fill(dressed));
+	await vi.waitFor(() =>
+		expect(results.some((r) => r.cells.some((c) => c.key.startsWith('walk/south')))).toBe(true)
+	);
+	const streamed = results
+		.find((r) => r.preview)!
+		.preview!.manifest.items.find((i) => i.id === 'armor')!;
+	expect(streamed.coverage).toEqual([
+		'walk/south/0',
+		'walk/south/1',
+		'walk/south/2',
+		'walk/south/3'
+	]);
+	expect(streamed.pending).toEqual(['walk/east/0', 'walk/east/1', 'walk/east/2', 'walk/east/3']);
+	expect(streamed.layers[0].cells!.walk.east).toEqual([null, null, null, null]);
+	const partial = results.find((r) => r.preview)!.preview!;
+	const thumbnail = crop(thumbCell(partial, streamed)!)!;
+	expect(thumbnail.w).toBeGreaterThan(0);
+	expect(thumbnail.h).toBeGreaterThan(0);
+	expect(thumbnail.data.some((v, i) => i % 4 === 3 && v > 0)).toBe(true);
+	await land(call('/animate-with-skeleton-v3', 'east')!.id, Array(4).fill(dressed));
+	const res = await run;
+	expect(d.log.at(-1)).toMatch(/passed the checks/);
+	expect(q.order.map((o) => o.path).sort()).toEqual([
+		'/animate-with-skeleton-v3',
+		'/animate-with-skeleton-v3',
+		'/edit-animation-v2',
+		'/edit-animation-v2'
+	]); // no call twice
+	const done = res!.preview!.manifest.items.find((i) => i.id === 'armor')!;
+	expect(done.pending).toBeUndefined();
+	expect(done.coverage).toHaveLength(8);
+});
 
 test('ordinary standing failures finish only planned coverage and remain flagged without a reroll', async () => {
-  const { ctx, d, dressed } = await fixture()
-  const empty = toChroma(makeImg(16, 16), 'green') // the item is missing: G4 on the keyframe
-  const run = runItem(d, ctx, {})
-  await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
-  await land(q.order[0].id, [empty, empty])
-  await vi.waitFor(() => expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2))
-  await land(q.order[1].id, [empty, empty])
-  await vi.waitFor(() => expect(q.order.filter(o => o.path === '/animate-with-skeleton-v3')).toHaveLength(2))
-  for (const c of q.order.filter(o => o.path === '/animate-with-skeleton-v3')) await land(c.id, Array(4).fill(dressed))
-  const result = await run
-  expect([...result!.g1.values()].join(';')).toContain('G4')
-  expect(d.calls.every(c => !c.rerolls && !c.old.length)).toBe(true)
-  expect(d.spec.key).toBe('green'); expect(q.order).toHaveLength(4)
-})
+	const { ctx, d, dressed } = await fixture();
+	const empty = toChroma(makeImg(16, 16), 'green'); // the item is missing: G4 on the keyframe
+	const run = runItem(d, ctx, {});
+	await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined());
+	await land(q.order[0].id, [empty, empty]);
+	await vi.waitFor(() =>
+		expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2)
+	);
+	await land(q.order[1].id, [empty, empty]);
+	await vi.waitFor(() =>
+		expect(q.order.filter((o) => o.path === '/animate-with-skeleton-v3')).toHaveLength(2)
+	);
+	for (const c of q.order.filter((o) => o.path === '/animate-with-skeleton-v3'))
+		await land(c.id, Array(4).fill(dressed));
+	const result = await run;
+	expect([...result!.g1.values()].join(';')).toContain('G4');
+	expect(d.calls.every((c) => !c.rerolls && !c.old.length)).toBe(true);
+	expect(d.spec.key).toBe('green');
+	expect(q.order).toHaveLength(4);
+});
 
-test.each([null, 'Needs PixelLab Tier 2 or higher. No request sent.'])('cached failing poses never create an automatic grid regardless of plan restriction %s', async blocked => {
-  const { ctx, d, dressed } = await fixture(), damaged = structuredClone(dressed)
-  for (let y = 3; y < 16; y++) if (y < 7 || y >= 10) for (let x = 5; x < 11; x++) damaged.data.fill(0, (y * 16 + x) * 4, (y * 16 + x) * 4 + 4)
-  for (const [k, c] of d.calls.entries()) {
-    const id = 'cached' + k, outs = c.kind === 'pose' ? Array(4).fill(damaged) : [dressed, dressed]
-    q.recs.set(id, { id, state: 'queued', jobs: [] } as unknown as JobRec)
-    c.recId = id; await land(id, outs)
-  }
-  q.blocked = blocked
-  const result = await runItem(d, ctx)
-  expect([...result!.qa!.failCalls.values()].flat().some(w => w.startsWith('G2 '))).toBe(true)
-  expect(d.calls.map(c => c.recId)).toEqual(['cached0', 'cached1', 'cached2', 'cached3'])
-  expect(d.calls.every(c => !c.rerolls && !c.old.length)).toBe(true)
-  expect(queue.planBlocks).not.toHaveBeenCalled(); expect(queue.enqueue).not.toHaveBeenCalled()
-})
+test.each([null, 'Needs PixelLab Tier 2 or higher. No request sent.'])(
+	'cached failing poses never create an automatic grid regardless of plan restriction %s',
+	async (blocked) => {
+		const { ctx, d, dressed } = await fixture(),
+			damaged = structuredClone(dressed);
+		for (let y = 3; y < 16; y++)
+			if (y < 7 || y >= 10)
+				for (let x = 5; x < 11; x++) damaged.data.fill(0, (y * 16 + x) * 4, (y * 16 + x) * 4 + 4);
+		for (const [k, c] of d.calls.entries()) {
+			const id = 'cached' + k,
+				outs = c.kind === 'pose' ? Array(4).fill(damaged) : [dressed, dressed];
+			q.recs.set(id, { id, state: 'queued', jobs: [] } as unknown as JobRec);
+			c.recId = id;
+			await land(id, outs);
+		}
+		q.blocked = blocked;
+		const result = await runItem(d, ctx);
+		expect([...result!.qa!.failCalls.values()].flat().some((w) => w.startsWith('G2 '))).toBe(true);
+		expect(d.calls.map((c) => c.recId)).toEqual(['cached0', 'cached1', 'cached2', 'cached3']);
+		expect(d.calls.every((c) => !c.rerolls && !c.old.length)).toBe(true);
+		expect(queue.planBlocks).not.toHaveBeenCalled();
+		expect(queue.enqueue).not.toHaveBeenCalled();
+	}
+);
 
 test('raw held-body additions in existing receipts remain informational without submitting another request', async () => {
-  const { ctx, d, dressed } = await fixture(), added = structuredClone(dressed)
-  d.spec.slot = 'main_hand'
-  added.data.set([0, 180, 0, 255], (5 * 16 + 11) * 4)
-  for (const [k, c] of d.calls.entries()) {
-    const id = 'held-cached' + k, out = padImg(c.kind === 'pose' ? added : dressed, 16)
-    q.recs.set(id, { id, state: 'queued', jobs: [] } as unknown as JobRec)
-    c.recId = id; await land(id, c.kind === 'pose' ? Array(4).fill(out) : [out, out])
-  }
-  const result = await runItem(d, ctx)
-  expect(result!.qa!.qa.rawKeyReviewFrames).toBe(8)
-  expect(result!.qa!.warnings.some(w => w.startsWith('Grip review'))).toBe(false)
-  expect([...result!.qa!.failCalls.values()].flat().some(w => w.startsWith('Grip review'))).toBe(false)
-  expect(result!.qa!.softCalls.size).toBe(0)
-  expect(d.calls.every(c => !c.rerolls && !c.old.length)).toBe(true)
-  expect(queue.enqueue).not.toHaveBeenCalled(); expect(queue.planBlocks).not.toHaveBeenCalled()
-})
+	const { ctx, d, dressed } = await fixture(),
+		added = structuredClone(dressed);
+	d.spec.slot = 'main_hand';
+	added.data.set([0, 180, 0, 255], (5 * 16 + 11) * 4);
+	for (const [k, c] of d.calls.entries()) {
+		const id = 'held-cached' + k,
+			out = padImg(c.kind === 'pose' ? added : dressed, 16);
+		q.recs.set(id, { id, state: 'queued', jobs: [] } as unknown as JobRec);
+		c.recId = id;
+		await land(id, c.kind === 'pose' ? Array(4).fill(out) : [out, out]);
+	}
+	const result = await runItem(d, ctx);
+	expect(result!.qa!.qa.rawKeyReviewFrames).toBe(8);
+	expect(result!.qa!.warnings.some((w) => w.startsWith('Grip review'))).toBe(false);
+	expect([...result!.qa!.failCalls.values()].flat().some((w) => w.startsWith('Grip review'))).toBe(
+		false
+	);
+	expect(result!.qa!.softCalls.size).toBe(0);
+	expect(d.calls.every((c) => !c.rerolls && !c.old.length)).toBe(true);
+	expect(queue.enqueue).not.toHaveBeenCalled();
+	expect(queue.planBlocks).not.toHaveBeenCalled();
+});
 
 test('a held item pasted on near-rest frames says so in review, without changing its pixels', () => {
-  const rig = { cell: { w: 8, h: 8 }, animations: [{ id: 'idle', cells: 2 }], directions: [{ id: 'east' }] } as unknown as Manifest['rig']
-  const layer = makeImg(8, 8)
-  for (const p of [27, 28, 35, 36, 43, 44]) layer.data.set([150, 150, 160, 255], p * 4)
-  const mask = Uint8Array.from({ length: 64 }, (_, p) => +(layer.data[p * 4 + 3] > 0))
-  const cell = (i: number, repaired: boolean): CellOut => ({ key: `idle/east/${i}`, call: 1, base: makeImg(8, 8), input: makeImg(8, 8), out: layer, layer, mask, area: 6, outBand: 0, baseBand: 0, specks: 0, pinholes: 0, shifted: false, offset: [0, 0], stray: 0, posed: true, ...(repaired ? { repaired } : {}) })
-  const q2 = itemQa(rig, slotOf('main_hand'), 'green', [cell(0, true), cell(1, true)], 0)
-  const r1 = q2.warnings.find((w) => w.startsWith('R1'))
-  expect(r1).toBe('R1 idle/east: dressed item pasted on 2 near-rest frames; check that it moves')
-  expect(plainReason(r1!)).toBe('Held item pasted on 2 idle frames (east); check that it moves')
-  expect(q2.qa.status).not.toBe('pass')
-  expect(q2.qa.cells['idle/east/0']?.repaired).toBe(true)
-  expect(itemQa(rig, slotOf('main_hand'), 'green', [cell(0, false), cell(1, false)], 0).warnings.some((w) => w.startsWith('R1'))).toBe(false)
-})
+	const rig = {
+		cell: { w: 8, h: 8 },
+		animations: [{ id: 'idle', cells: 2 }],
+		directions: [{ id: 'east' }]
+	} as unknown as Manifest['rig'];
+	const layer = makeImg(8, 8);
+	for (const p of [27, 28, 35, 36, 43, 44]) layer.data.set([150, 150, 160, 255], p * 4);
+	const mask = Uint8Array.from({ length: 64 }, (_, p) => +(layer.data[p * 4 + 3] > 0));
+	const cell = (i: number, repaired: boolean): CellOut => ({
+		key: `idle/east/${i}`,
+		call: 1,
+		base: makeImg(8, 8),
+		input: makeImg(8, 8),
+		out: layer,
+		layer,
+		mask,
+		area: 6,
+		outBand: 0,
+		baseBand: 0,
+		specks: 0,
+		pinholes: 0,
+		shifted: false,
+		offset: [0, 0],
+		stray: 0,
+		posed: true,
+		...(repaired ? { repaired } : {})
+	});
+	const q2 = itemQa(rig, slotOf('main_hand'), 'green', [cell(0, true), cell(1, true)], 0);
+	const r1 = q2.warnings.find((w) => w.startsWith('R1'));
+	expect(r1).toBe('R1 idle/east: dressed item pasted on 2 near-rest frames; check that it moves');
+	expect(plainReason(r1!)).toBe('Held item pasted on 2 idle frames (east); check that it moves');
+	expect(q2.qa.status).not.toBe('pass');
+	expect(q2.qa.cells['idle/east/0']?.repaired).toBe(true);
+	expect(
+		itemQa(rig, slotOf('main_hand'), 'green', [cell(0, false), cell(1, false)], 0).warnings.some(
+			(w) => w.startsWith('R1')
+		)
+	).toBe(false);
+});
 
 /** The dressed keyframe with key-colored px outside the body: a key/item color collision (G3). */
 function collision(dressed: Img) {
-  const im = makeImg(16, 16)
-  im.data.set(dressed.data)
-  const key = dressed.data.slice((4 * 16 + 6) * 4, (4 * 16 + 6) * 4 + 4) // a body px above the item band: key-colored
-  for (let y = 0; y < 16; y++) for (let x = 0; x < 4; x++) im.data.set(key, (y * 16 + x) * 4)
-  return im
+	const im = makeImg(16, 16);
+	im.data.set(dressed.data);
+	const key = dressed.data.slice((4 * 16 + 6) * 4, (4 * 16 + 6) * 4 + 4); // a body px above the item band: key-colored
+	for (let y = 0; y < 16; y++) for (let x = 0; x < 4; x++) im.data.set(key, (y * 16 + x) * 4);
+	return im;
 }
 
 test('a later standing collision remains flagged without switching keys or restarting planned calls', async () => {
-  const { ctx, d, dressed } = await fixture()
-  const run = runItem(d, ctx, {})
-  await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
-  await land(q.order[0].id, [dressed, dressed]) // south passes its gates
-  await vi.waitFor(() => expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2))
-  const east = q.order.filter((o) => o.path === '/edit-animation-v2')[1]
-  await land(east.id, [dressed, collision(dressed)])
-  await vi.waitFor(() => expect(q.order.filter(o => o.path === '/animate-with-skeleton-v3')).toHaveLength(2))
-  for (const c of q.order.filter(o => o.path === '/animate-with-skeleton-v3')) await land(c.id, Array(4).fill(dressed))
-  const result = await run
-  expect([...result!.g1.values()].join(';')).toContain('G3')
-  expect(d.spec.key).toBe('green'); expect(d.calls.every(c => !c.rerolls && !c.old.length)).toBe(true)
-  expect(q.order).toHaveLength(4)
-})
+	const { ctx, d, dressed } = await fixture();
+	const run = runItem(d, ctx, {});
+	await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined());
+	await land(q.order[0].id, [dressed, dressed]); // south passes its gates
+	await vi.waitFor(() =>
+		expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2)
+	);
+	const east = q.order.filter((o) => o.path === '/edit-animation-v2')[1];
+	await land(east.id, [dressed, collision(dressed)]);
+	await vi.waitFor(() =>
+		expect(q.order.filter((o) => o.path === '/animate-with-skeleton-v3')).toHaveLength(2)
+	);
+	for (const c of q.order.filter((o) => o.path === '/animate-with-skeleton-v3'))
+		await land(c.id, Array(4).fill(dressed));
+	const result = await run;
+	expect([...result!.g1.values()].join(';')).toContain('G3');
+	expect(d.spec.key).toBe('green');
+	expect(d.calls.every((c) => !c.rerolls && !c.old.length)).toBe(true);
+	expect(q.order).toHaveLength(4);
+});
 
 test('a call re-rolled while its request is built keeps the paid record counted but never uses it', async () => {
-  const { ctx, d, dressed } = await fixture()
-  d.calls = [{ ...d.calls[0], cells: ['rest/south/0', 'rest/east/0'] }, ...d.calls.slice(2)]
-  let release!: () => void
-  const hold = new Promise<void>((r) => { release = r })
-  let holding = false, held = false
-  vi.mocked(db.getBlob).mockImplementation(async (sha) => { if (holding) { held = true; await hold } return blobs.get(sha) })
-  void runItem(d, ctx, { result: () => { holding = true } }) // the next blob read after the gate evaluation is the pose's keyframe
-  await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
-  await land(q.order[0].id, [dressed, dressed])
-  await vi.waitFor(() => expect(held).toBe(true))
-  rerollCall(d, 0, 'a new design') // drops the south pose while its request is being built
-  holding = false; release()
-  await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'south')).toBeDefined())
-  const pose = call('/animate-with-skeleton-v3', 'south')!.id
-  await vi.waitFor(() => expect(d.calls[1].old).toContain(pose))
-  expect(d.calls[1].recId).toBeUndefined()
-})
+	const { ctx, d, dressed } = await fixture();
+	d.calls = [{ ...d.calls[0], cells: ['rest/south/0', 'rest/east/0'] }, ...d.calls.slice(2)];
+	let release!: () => void;
+	const hold = new Promise<void>((r) => {
+		release = r;
+	});
+	let holding = false,
+		held = false;
+	vi.mocked(db.getBlob).mockImplementation(async (sha) => {
+		if (holding) {
+			held = true;
+			await hold;
+		}
+		return blobs.get(sha);
+	});
+	void runItem(d, ctx, {
+		result: () => {
+			holding = true;
+		}
+	}); // the next blob read after the gate evaluation is the pose's keyframe
+	await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined());
+	await land(q.order[0].id, [dressed, dressed]);
+	await vi.waitFor(() => expect(held).toBe(true));
+	rerollCall(d, 0, 'a new design'); // drops the south pose while its request is being built
+	holding = false;
+	release();
+	await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'south')).toBeDefined());
+	const pose = call('/animate-with-skeleton-v3', 'south')!.id;
+	await vi.waitFor(() => expect(d.calls[1].old).toContain(pose));
+	expect(d.calls[1].recId).toBeUndefined();
+});
 
 test('a planned pose that fails surfaces its error without a retry or unhandled rejection', async () => {
-  const { ctx, d, dressed } = await fixture(), enqueue = vi.mocked(queue.enqueue).getMockImplementation()!
-  vi.mocked(queue.enqueue).mockImplementation(async (req, meta) => { if (req.path === '/animate-with-skeleton-v3') throw new Error('offline'); return enqueue(req, meta) })
-  try {
-    const run = runItem(d, ctx, {})
-    await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
-    await land(q.order[0].id, [dressed, dressed]) // the south pose fails at once, long before the coverage step
-    await vi.waitFor(() => expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2))
-    await new Promise((r) => setTimeout(r, 50))
-    await land(q.order.filter((o) => o.path === '/edit-animation-v2')[1].id, [dressed, dressed])
-    await run
-    expect(d.log.at(-1)).toBe('error: offline')
-  } finally { vi.mocked(queue.enqueue).mockImplementation(enqueue) }
-})
+	const { ctx, d, dressed } = await fixture(),
+		enqueue = vi.mocked(queue.enqueue).getMockImplementation()!;
+	vi.mocked(queue.enqueue).mockImplementation(async (req, meta) => {
+		if (req.path === '/animate-with-skeleton-v3') throw new Error('offline');
+		return enqueue(req, meta);
+	});
+	try {
+		const run = runItem(d, ctx, {});
+		await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined());
+		await land(q.order[0].id, [dressed, dressed]); // the south pose fails at once, long before the coverage step
+		await vi.waitFor(() =>
+			expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2)
+		);
+		await new Promise((r) => setTimeout(r, 50));
+		await land(q.order.filter((o) => o.path === '/edit-animation-v2')[1].id, [dressed, dressed]);
+		await run;
+		expect(d.log.at(-1)).toBe('error: offline');
+	} finally {
+		vi.mocked(queue.enqueue).mockImplementation(enqueue);
+	}
+});

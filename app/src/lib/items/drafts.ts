@@ -4,5 +4,6 @@ import * as db from '../store/db.ts';
 import type { Draft } from './run.ts';
 
 const DRAFTS = 'm3-drafts';
-export const loadDrafts = async () => (await db.get<{ drafts: Draft[] }>('projects', DRAFTS))?.drafts ?? [];
+export const loadDrafts = async () =>
+	(await db.get<{ drafts: Draft[] }>('projects', DRAFTS))?.drafts ?? [];
 export const saveDrafts = (drafts: Draft[]) => db.put('projects', DRAFTS, { id: DRAFTS, drafts });

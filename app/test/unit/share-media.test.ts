@@ -1,182 +1,331 @@
-import { describe, expect, test } from 'vitest'
-import { makeImg } from '../../src/lib/image/png.ts'
-import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
-import type { DirectionName, Item, Layer, Manifest, Project, Sha256 } from '../../src/lib/store/manifest.ts'
-import { buildPresentation } from '../../src/studio/experience/presentation.ts'
-import { ALL_DIRECTIONS, ALL_MOVES, SHARE_SCALES, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, encodeSharePng, shareDimensions, sharePreviewFrames } from '../../src/studio/shareMedia.ts'
+import { describe, expect, test } from 'vitest';
+import { makeImg } from '../../src/lib/image/png.ts';
+import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
+import type {
+	DirectionName,
+	Item,
+	Layer,
+	Manifest,
+	Project,
+	Sha256
+} from '../../src/lib/store/manifest.ts';
+import { buildPresentation } from '../../src/studio/experience/presentation.ts';
+import {
+	ALL_DIRECTIONS,
+	ALL_MOVES,
+	SHARE_SCALES,
+	buildShareMedia,
+	canAnimateShare,
+	canShareDirection,
+	encodeShareMedia,
+	encodeSharePng,
+	shareDimensions,
+	sharePreviewFrames
+} from '../../src/studio/shareMedia.ts';
 
-const hash = (name: string) => `sha256:${name}` as Sha256
+const hash = (name: string) => `sha256:${name}` as Sha256;
 function fixture(directions: DirectionName[] = ['south', 'east']): Project {
-  const body0 = hash('body0'), body1 = hash('body1'), rest = hash('rest'), hat = hash('hat')
-  const image = (r: number, x: number) => { const out = makeImg(2, 1); out.data.set([r, 0, 0, 255], x * 4); return out }
-  const cells = (a: Sha256, b: Sha256) => Object.fromEntries(directions.map(direction => [direction, [a, b]]))
-  const item = (id: string, slot: string, layer: Layer): Item => ({ id, slot, layers: [layer], name: id, prompt: '', baseHash: body0, status: 'accepted', mirror: 'flip', materials: [], provenance: [] })
-  const manifest: Manifest = {
-    format: 'pixeldoll/2', name: 'Test character', app: '', materials: [], presets: [],
-    rig: { cell: { w: 2, h: 1 }, pivot: { x: 1, y: 1 }, baseItem: 'base', baseHash: body0,
-      directions: directions.map(id => ({ id })), rest: Object.fromEntries(directions.map(id => [id, { image: rest, keypoints: [] }])),
-      animations: [{ id: 'default', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }, { id: 'walk', cells: 2, loop: true, frames: [{ cell: 0, ms: 70 }, { cell: 1, ms: 120 }] }],
-    },
-    slots: [{ id: 'body', z: 1, class: 'base' }, { id: 'head', z: 2, class: 'rigid' }],
-    items: [
-      item('base', 'body', { id: 'main', role: 'fg', z: 1, cells: { default: Object.fromEntries(directions.map(id => [id, [rest]])), walk: cells(body0, body1) } }),
-      item('hat', 'head', { id: 'main', role: 'fg', z: 2, cells: { default: Object.fromEntries(directions.map(id => [id, [hat]])), walk: cells(hat, hat) } }),
-    ],
-  }
-  return { manifest, images: new Map([[body0, image(40, 0)], [body1, image(50, 0)], [rest, image(60, 0)], [hat, image(90, 1)]]) }
+	const body0 = hash('body0'),
+		body1 = hash('body1'),
+		rest = hash('rest'),
+		hat = hash('hat');
+	const image = (r: number, x: number) => {
+		const out = makeImg(2, 1);
+		out.data.set([r, 0, 0, 255], x * 4);
+		return out;
+	};
+	const cells = (a: Sha256, b: Sha256) =>
+		Object.fromEntries(directions.map((direction) => [direction, [a, b]]));
+	const item = (id: string, slot: string, layer: Layer): Item => ({
+		id,
+		slot,
+		layers: [layer],
+		name: id,
+		prompt: '',
+		baseHash: body0,
+		status: 'accepted',
+		mirror: 'flip',
+		materials: [],
+		provenance: []
+	});
+	const manifest: Manifest = {
+		format: 'pixeldoll/2',
+		name: 'Test character',
+		app: '',
+		materials: [],
+		presets: [],
+		rig: {
+			cell: { w: 2, h: 1 },
+			pivot: { x: 1, y: 1 },
+			baseItem: 'base',
+			baseHash: body0,
+			directions: directions.map((id) => ({ id })),
+			rest: Object.fromEntries(directions.map((id) => [id, { image: rest, keypoints: [] }])),
+			animations: [
+				{ id: 'default', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] },
+				{
+					id: 'walk',
+					cells: 2,
+					loop: true,
+					frames: [
+						{ cell: 0, ms: 70 },
+						{ cell: 1, ms: 120 }
+					]
+				}
+			]
+		},
+		slots: [
+			{ id: 'body', z: 1, class: 'base' },
+			{ id: 'head', z: 2, class: 'rigid' }
+		],
+		items: [
+			item('base', 'body', {
+				id: 'main',
+				role: 'fg',
+				z: 1,
+				cells: {
+					default: Object.fromEntries(directions.map((id) => [id, [rest]])),
+					walk: cells(body0, body1)
+				}
+			}),
+			item('hat', 'head', {
+				id: 'main',
+				role: 'fg',
+				z: 2,
+				cells: {
+					default: Object.fromEntries(directions.map((id) => [id, [hat]])),
+					walk: cells(hat, hat)
+				}
+			})
+		]
+	};
+	return {
+		manifest,
+		images: new Map([
+			[body0, image(40, 0)],
+			[body1, image(50, 0)],
+			[rest, image(60, 0)],
+			[hat, image(90, 1)]
+		])
+	};
 }
 
 describe('share media', () => {
-  test('every size preserves exact RGBA blocks and clipboard uses the first animated frame, not the contact sheet', async () => {
-    const project = fixture(), a = buildPresentation(project)
-    const media = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, true)
-    expect(media.still.h).toBeGreaterThan(media.frames[0].image.h)
-    const source = media.frames[0].image
-    for (const scale of SHARE_SCALES) {
-      const png = await decodePngBytes(await encodeSharePng(media, scale))
-      expect([png.w, png.h]).toEqual([source.w * scale, source.h * scale])
-      expect(shareDimensions(media, scale)).toEqual({ w: png.w, h: png.h })
-      let mismatch = -1
-      for (let y = 0; y < png.h; y++) for (let x = 0; x < png.w; x++) for (let c = 0; c < 4; c++) {
-        if (png.data[(y * png.w + x) * 4 + c] !== source.data[(Math.floor(y / scale) * source.w + Math.floor(x / scale)) * 4 + c]) mismatch = (y * png.w + x) * 4 + c
-      }
-      expect(mismatch).toBe(-1)
-    }
-    const still = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, false)
-    expect(await encodeSharePng(still, 2)).toEqual(await encodeShareMedia(still, 2))
-  })
+	test('every size preserves exact RGBA blocks and clipboard uses the first animated frame, not the contact sheet', async () => {
+		const project = fixture(),
+			a = buildPresentation(project);
+		const media = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, true);
+		expect(media.still.h).toBeGreaterThan(media.frames[0].image.h);
+		const source = media.frames[0].image;
+		for (const scale of SHARE_SCALES) {
+			const png = await decodePngBytes(await encodeSharePng(media, scale));
+			expect([png.w, png.h]).toEqual([source.w * scale, source.h * scale]);
+			expect(shareDimensions(media, scale)).toEqual({ w: png.w, h: png.h });
+			let mismatch = -1;
+			for (let y = 0; y < png.h; y++)
+				for (let x = 0; x < png.w; x++)
+					for (let c = 0; c < 4; c++) {
+						if (
+							png.data[(y * png.w + x) * 4 + c] !==
+							source.data[(Math.floor(y / scale) * source.w + Math.floor(x / scale)) * 4 + c]
+						)
+							mismatch = (y * png.w + x) * 4 + c;
+					}
+			expect(mismatch).toBe(-1);
+		}
+		const still = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, false);
+		expect(await encodeSharePng(still, 2)).toEqual(await encodeShareMedia(still, 2));
+	});
 
-  test('scaled GIF preserves dimensions, delays and transparency, and loops even for one-shot moves; stale encoding can abort', async () => {
-    const project = fixture()
-    project.manifest.rig.animations[1].loop = false
-    const media = buildShareMedia(buildPresentation(project), {}, 'walk', 'south', true)
-    const bytes = await encodeShareMedia(media, 3)
-    expect([bytes[6] | bytes[7] << 8, bytes[8] | bytes[9] << 8]).toEqual([6, 3])
-    const controls: number[][] = []
-    for (let i = 0; i < bytes.length - 7; i++) if (bytes[i] === 0x21 && bytes[i + 1] === 0xf9 && bytes[i + 2] === 4) controls.push([bytes[i + 3] & 1, bytes[i + 4] | bytes[i + 5] << 8])
-    expect(controls).toEqual([[1, 7], [1, 12]])
-    const loopExtension = Buffer.from(bytes).indexOf('NETSCAPE2.0')
-    expect(loopExtension).toBeGreaterThan(0)
-    expect([...bytes.slice(loopExtension + 11, loopExtension + 16)]).toEqual([3, 1, 0, 0, 0])
-    expect(project.manifest.rig.animations[1].loop).toBe(false)
-    const controller = new AbortController()
-    const pending = encodeShareMedia(media, 10, controller.signal)
-    controller.abort()
-    await expect(pending).rejects.toThrow(/abort/i)
-    await expect(encodeShareMedia(media, 5)).rejects.toThrow(/available image size/)
-    const huge = { ...media, frames: [{ image: { w: 5000, h: 5000, data: new Uint8ClampedArray() }, ms: 100 }] }
-    await expect(encodeShareMedia(huge, 1)).rejects.toThrow(/smaller size/)
-    const wide = { ...media, frames: [{ image: makeImg(7000, 1), ms: 100 }] }
-    await expect(encodeShareMedia(wide, 10)).rejects.toThrow(/GIF dimensions/)
-  })
+	test('scaled GIF preserves dimensions, delays and transparency, and loops even for one-shot moves; stale encoding can abort', async () => {
+		const project = fixture();
+		project.manifest.rig.animations[1].loop = false;
+		const media = buildShareMedia(buildPresentation(project), {}, 'walk', 'south', true);
+		const bytes = await encodeShareMedia(media, 3);
+		expect([bytes[6] | (bytes[7] << 8), bytes[8] | (bytes[9] << 8)]).toEqual([6, 3]);
+		const controls: number[][] = [];
+		for (let i = 0; i < bytes.length - 7; i++)
+			if (bytes[i] === 0x21 && bytes[i + 1] === 0xf9 && bytes[i + 2] === 4)
+				controls.push([bytes[i + 3] & 1, bytes[i + 4] | (bytes[i + 5] << 8)]);
+		expect(controls).toEqual([
+			[1, 7],
+			[1, 12]
+		]);
+		const loopExtension = Buffer.from(bytes).indexOf('NETSCAPE2.0');
+		expect(loopExtension).toBeGreaterThan(0);
+		expect([...bytes.slice(loopExtension + 11, loopExtension + 16)]).toEqual([3, 1, 0, 0, 0]);
+		expect(project.manifest.rig.animations[1].loop).toBe(false);
+		const controller = new AbortController();
+		const pending = encodeShareMedia(media, 10, controller.signal);
+		controller.abort();
+		await expect(pending).rejects.toThrow(/abort/i);
+		await expect(encodeShareMedia(media, 5)).rejects.toThrow(/available image size/);
+		const huge = {
+			...media,
+			frames: [{ image: { w: 5000, h: 5000, data: new Uint8ClampedArray() }, ms: 100 }]
+		};
+		await expect(encodeShareMedia(huge, 1)).rejects.toThrow(/smaller size/);
+		const wide = { ...media, frames: [{ image: makeImg(7000, 1), ms: 100 }] };
+		await expect(encodeShareMedia(wide, 10)).rejects.toThrow(/GIF dimensions/);
+	});
 
-  test('Default is a dressed one-frame PNG and all selections make a deterministic contact sheet', async () => {
-    const project = fixture(), a = buildPresentation(project)
-    expect(canAnimateShare(a, { head: 'hat' }, 'default', 'south')).toBe(false)
-    expect(canAnimateShare(a, { head: 'hat' }, 'walk', 'south')).toBe(true)
-    const standing = buildShareMedia(a, { head: 'hat' }, 'default', 'south', true)
-    expect(standing.extension).toBe('png')
-    expect([...standing.still.data]).toEqual([60, 0, 0, 255, 90, 0, 0, 255])
-    const decoded = await decodePngBytes(await encodeShareMedia(standing))
-    expect([...decoded.data]).toEqual([...standing.still.data])
-    const all = buildShareMedia(a, { head: 'hat' }, ALL_MOVES, ALL_DIRECTIONS, false)
-    expect([all.still.w, all.still.h, all.extension]).toEqual([8, 6, 'png'])
-    expect([...all.still.data.slice(0, 8)]).toEqual([...standing.still.data])
-    // All moves lists Default once: one standing moment, then the two walk frames
-    expect(buildShareMedia(a, { head: 'hat' }, ALL_MOVES, 'south', true).frames.map(frame => frame.ms)).toEqual([100, 70, 120])
-  })
+	test('Default is a dressed one-frame PNG and all selections make a deterministic contact sheet', async () => {
+		const project = fixture(),
+			a = buildPresentation(project);
+		expect(canAnimateShare(a, { head: 'hat' }, 'default', 'south')).toBe(false);
+		expect(canAnimateShare(a, { head: 'hat' }, 'walk', 'south')).toBe(true);
+		const standing = buildShareMedia(a, { head: 'hat' }, 'default', 'south', true);
+		expect(standing.extension).toBe('png');
+		expect([...standing.still.data]).toEqual([60, 0, 0, 255, 90, 0, 0, 255]);
+		const decoded = await decodePngBytes(await encodeShareMedia(standing));
+		expect([...decoded.data]).toEqual([...standing.still.data]);
+		const all = buildShareMedia(a, { head: 'hat' }, ALL_MOVES, ALL_DIRECTIONS, false);
+		expect([all.still.w, all.still.h, all.extension]).toEqual([8, 6, 'png']);
+		expect([...all.still.data.slice(0, 8)]).toEqual([...standing.still.data]);
+		// All moves lists Default once: one standing moment, then the two walk frames
+		expect(
+			buildShareMedia(a, { head: 'hat' }, ALL_MOVES, 'south', true).frames.map((frame) => frame.ms)
+		).toEqual([100, 70, 120]);
+	});
 
-  test('GIF uses authored frame delays, transparency and the same composed frames as preview', async () => {
-    const project = fixture(), a = buildPresentation(project)
-    const media = buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true)
-    expect(media.frames.map(frame => frame.ms)).toEqual([70, 120])
-    expect(media.frames.map(frame => frame.image.data[0])).toEqual([40, 50])
-    expect(sharePreviewFrames(media).map(frame => [frame.w, frame.h])).toEqual([[2, 1], [2, 1]])
-    const bytes = await encodeShareMedia(media)
-    expect(new TextDecoder().decode(bytes.slice(0, 6))).toBe('GIF89a')
-    const delays: number[] = []
-    for (let i = 0; i < bytes.length - 7; i++) if (bytes[i] === 0x21 && bytes[i + 1] === 0xf9 && bytes[i + 2] === 4) delays.push(bytes[i + 4] | bytes[i + 5] << 8)
-    expect(delays).toEqual([7, 12])
-  })
+	test('GIF uses authored frame delays, transparency and the same composed frames as preview', async () => {
+		const project = fixture(),
+			a = buildPresentation(project);
+		const media = buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true);
+		expect(media.frames.map((frame) => frame.ms)).toEqual([70, 120]);
+		expect(media.frames.map((frame) => frame.image.data[0])).toEqual([40, 50]);
+		expect(sharePreviewFrames(media).map((frame) => [frame.w, frame.h])).toEqual([
+			[2, 1],
+			[2, 1]
+		]);
+		const bytes = await encodeShareMedia(media);
+		expect(new TextDecoder().decode(bytes.slice(0, 6))).toBe('GIF89a');
+		const delays: number[] = [];
+		for (let i = 0; i < bytes.length - 7; i++)
+			if (bytes[i] === 0x21 && bytes[i + 1] === 0xf9 && bytes[i + 2] === 4)
+				delays.push(bytes[i + 4] | (bytes[i + 5] << 8));
+		expect(delays).toEqual([7, 12]);
+	});
 
-  test('aggregate choices omit unavailable pairs, while an explicit pair never substitutes artwork', () => {
-    const project = fixture()
-    delete project.manifest.items[0].layers[0].cells!.walk.east
-    const a = buildPresentation(project)
-    expect(canShareDirection(a, {}, 'walk', 'east')).toBe(false)
-    expect(canShareDirection(a, {}, ALL_MOVES, 'east')).toBe(true)
-    expect(() => buildShareMedia(a, {}, 'walk', 'east', true)).toThrow(/East has no complete artwork/)
-    const oneMove = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true)
-    expect(oneMove.omitted.map(pair => [pair.move, pair.direction])).toEqual([['walk', 'east']])
-    expect(oneMove.frames.map(frame => [frame.image.w, frame.image.h])).toEqual([[2, 1], [2, 1]])
-    const oneFacing = buildShareMedia(a, {}, ALL_MOVES, 'east', true)
-    expect(oneFacing.omitted.map(pair => [pair.move, pair.direction])).toEqual([['walk', 'east']])
-    expect(oneFacing.extension).toBe('png')
-    const all = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, true)
-    expect(all.omitted.map(pair => [pair.move, pair.direction])).toEqual([['walk', 'east']])
-    expect(all.frames.map(frame => [frame.image.w, frame.image.h])).toEqual([[8, 1], [8, 1], [8, 1]])
-    expect(sharePreviewFrames(all).map(frame => [frame.w, frame.h])).toEqual([[8, 1], [8, 1], [8, 1]])
-    expect([all.still.w, all.still.h]).toEqual([8, 6])
-    delete project.manifest.items[0].layers[0].cells!.walk.south
-    expect(() => buildShareMedia(buildPresentation(project), {}, 'walk', ALL_DIRECTIONS, true)).toThrow(/No complete move and direction pairs/)
-  })
+	test('aggregate choices omit unavailable pairs, while an explicit pair never substitutes artwork', () => {
+		const project = fixture();
+		delete project.manifest.items[0].layers[0].cells!.walk.east;
+		const a = buildPresentation(project);
+		expect(canShareDirection(a, {}, 'walk', 'east')).toBe(false);
+		expect(canShareDirection(a, {}, ALL_MOVES, 'east')).toBe(true);
+		expect(() => buildShareMedia(a, {}, 'walk', 'east', true)).toThrow(
+			/East has no complete artwork/
+		);
+		const oneMove = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true);
+		expect(oneMove.omitted.map((pair) => [pair.move, pair.direction])).toEqual([['walk', 'east']]);
+		expect(oneMove.frames.map((frame) => [frame.image.w, frame.image.h])).toEqual([
+			[2, 1],
+			[2, 1]
+		]);
+		const oneFacing = buildShareMedia(a, {}, ALL_MOVES, 'east', true);
+		expect(oneFacing.omitted.map((pair) => [pair.move, pair.direction])).toEqual([
+			['walk', 'east']
+		]);
+		expect(oneFacing.extension).toBe('png');
+		const all = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, true);
+		expect(all.omitted.map((pair) => [pair.move, pair.direction])).toEqual([['walk', 'east']]);
+		expect(all.frames.map((frame) => [frame.image.w, frame.image.h])).toEqual([
+			[8, 1],
+			[8, 1],
+			[8, 1]
+		]);
+		expect(sharePreviewFrames(all).map((frame) => [frame.w, frame.h])).toEqual([
+			[8, 1],
+			[8, 1],
+			[8, 1]
+		]);
+		expect([all.still.w, all.still.h]).toEqual([8, 6]);
+		delete project.manifest.items[0].layers[0].cells!.walk.south;
+		expect(() =>
+			buildShareMedia(buildPresentation(project), {}, 'walk', ALL_DIRECTIONS, true)
+		).toThrow(/No complete move and direction pairs/);
+	});
 
-  test('picker availability rejects equipment missing a later animation frame', () => {
-    const project = fixture()
-    project.manifest.items[1].layers[0].cells!.walk.south = [hash('hat')]
-    const a = buildPresentation(project)
-    expect(canShareDirection(a, { head: 'hat' }, 'walk', 'south')).toBe(false)
-    expect(() => buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true)).toThrow(/hat missing walk \/ South artwork/)
-  })
+	test('picker availability rejects equipment missing a later animation frame', () => {
+		const project = fixture();
+		project.manifest.items[1].layers[0].cells!.walk.south = [hash('hat')];
+		const a = buildPresentation(project);
+		expect(canShareDirection(a, { head: 'hat' }, 'walk', 'south')).toBe(false);
+		expect(() => buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true)).toThrow(
+			/hat missing walk \/ South artwork/
+		);
+	});
 
-  test('loading worn artwork cannot silently produce a bare character, but completed draft views can be shared', () => {
-    const project = fixture(), hat = project.manifest.items[1]
-    hat.status = 'draft'
-    hat.pending = ['walk/east/0', 'walk/east/1']
-    delete hat.layers[0].cells!.walk.east
-    const a = buildPresentation(project), worn = { head: hat.id }
-    expect(canShareDirection(a, worn, 'walk', 'east')).toBe(false)
-    expect(canAnimateShare(a, worn, 'walk', 'east')).toBe(false)
-    for (const animate of [false, true]) {
-      expect(() => buildShareMedia(a, worn, 'walk', 'east', animate)).toThrow(/hat loading/)
-      const media = buildShareMedia(a, worn, 'walk', 'south', animate)
-      expect([...media.frames[0].image.data]).toEqual([40, 0, 0, 255, 90, 0, 0, 255])
-      const all = buildShareMedia(a, worn, 'walk', ALL_DIRECTIONS, animate)
-      expect(all.omitted).toEqual([{ move: 'walk', direction: 'east', reason: 'hat loading — East' }])
-    }
-  })
+	test('loading worn artwork cannot silently produce a bare character, but completed draft views can be shared', () => {
+		const project = fixture(),
+			hat = project.manifest.items[1];
+		hat.status = 'draft';
+		hat.pending = ['walk/east/0', 'walk/east/1'];
+		delete hat.layers[0].cells!.walk.east;
+		const a = buildPresentation(project),
+			worn = { head: hat.id };
+		expect(canShareDirection(a, worn, 'walk', 'east')).toBe(false);
+		expect(canAnimateShare(a, worn, 'walk', 'east')).toBe(false);
+		for (const animate of [false, true]) {
+			expect(() => buildShareMedia(a, worn, 'walk', 'east', animate)).toThrow(/hat loading/);
+			const media = buildShareMedia(a, worn, 'walk', 'south', animate);
+			expect([...media.frames[0].image.data]).toEqual([40, 0, 0, 255, 90, 0, 0, 255]);
+			const all = buildShareMedia(a, worn, 'walk', ALL_DIRECTIONS, animate);
+			expect(all.omitted).toEqual([
+				{ move: 'walk', direction: 'east', reason: 'hat loading — East' }
+			]);
+		}
+	});
 
-  test('one-frame moves cannot advertise GIF animation even with many directions', () => {
-    const project = fixture()
-    project.manifest.rig.animations[1].frames = [{ cell: 0, ms: 100 }]
-    const a = buildPresentation(project)
-    expect(canAnimateShare(a, {}, 'walk', ALL_DIRECTIONS)).toBe(false)
-    expect(buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true).extension).toBe('png')
-  })
+	test('one-frame moves cannot advertise GIF animation even with many directions', () => {
+		const project = fixture();
+		project.manifest.rig.animations[1].frames = [{ cell: 0, ms: 100 }];
+		const a = buildPresentation(project);
+		expect(canAnimateShare(a, {}, 'walk', ALL_DIRECTIONS)).toBe(false);
+		expect(buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true).extension).toBe('png');
+	});
 
-  test('one through eight available facings use legible rows without changing rig order', () => {
-    const compass: DirectionName[] = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west']
-    for (let count = 1; count <= 8; count++) {
-      const project = fixture(compass.slice(0, count))
-      compass.slice(0, count).forEach((id, index) => {
-        const directionHash = hash(`direction-${index}`), image = makeImg(2, 1)
-        image.data.set([20 + index, 0, 0, 255])
-        project.images.set(directionHash, image)
-        project.manifest.items[0].layers[0].cells!.walk[id] = [directionHash, directionHash]
-      })
-      const a = buildPresentation(project)
-      const still = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, false)
-      const columns = count <= 4 ? count : count <= 6 ? 3 : 4
-      const rows = Math.ceil(count / columns)
-      expect([still.still.w, still.still.h, still.previewRows]).toEqual([columns * 2 + (columns - 1) * 4, rows + (rows - 1) * 4, rows])
-      compass.slice(0, count).forEach((_, index) => {
-        const x = index % columns * 6, y = Math.floor(index / columns) * 5
-        expect(still.still.data[(y * still.still.w + x) * 4]).toBe(20 + index)
-      })
-      const gif = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true)
-      expect(gif.frames.map(frame => [frame.image.w, frame.image.h])).toEqual([[still.still.w, still.still.h], [still.still.w, still.still.h]])
-      const one = buildShareMedia(a, {}, 'walk', compass[0], false)
-      expect([one.still.w, one.still.h]).toEqual([2, 1])
-    }
-  })
-})
+	test('one through eight available facings use legible rows without changing rig order', () => {
+		const compass: DirectionName[] = [
+			'south',
+			'south-east',
+			'east',
+			'north-east',
+			'north',
+			'north-west',
+			'west',
+			'south-west'
+		];
+		for (let count = 1; count <= 8; count++) {
+			const project = fixture(compass.slice(0, count));
+			compass.slice(0, count).forEach((id, index) => {
+				const directionHash = hash(`direction-${index}`),
+					image = makeImg(2, 1);
+				image.data.set([20 + index, 0, 0, 255]);
+				project.images.set(directionHash, image);
+				project.manifest.items[0].layers[0].cells!.walk[id] = [directionHash, directionHash];
+			});
+			const a = buildPresentation(project);
+			const still = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, false);
+			const columns = count <= 4 ? count : count <= 6 ? 3 : 4;
+			const rows = Math.ceil(count / columns);
+			expect([still.still.w, still.still.h, still.previewRows]).toEqual([
+				columns * 2 + (columns - 1) * 4,
+				rows + (rows - 1) * 4,
+				rows
+			]);
+			compass.slice(0, count).forEach((_, index) => {
+				const x = (index % columns) * 6,
+					y = Math.floor(index / columns) * 5;
+				expect(still.still.data[(y * still.still.w + x) * 4]).toBe(20 + index);
+			});
+			const gif = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true);
+			expect(gif.frames.map((frame) => [frame.image.w, frame.image.h])).toEqual([
+				[still.still.w, still.still.h],
+				[still.still.w, still.still.h]
+			]);
+			const one = buildShareMedia(a, {}, 'walk', compass[0], false);
+			expect([one.still.w, one.still.h]).toEqual([2, 1]);
+		}
+	});
+});

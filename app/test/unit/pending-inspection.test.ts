@@ -1,40 +1,296 @@
-import { expect,test,vi } from 'vitest';
-import { inspectPendingMove,pendingRawRecords,type PendingMoveEvidence } from '../../dev-fixtures/audit-pose-inspection/pending-inspection.ts';
+import { expect, test, vi } from 'vitest';
+import {
+	inspectPendingMove,
+	pendingRawRecords,
+	type PendingMoveEvidence
+} from '../../dev-fixtures/audit-pose-inspection/pending-inspection.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
-import { sha256,stableStringify } from '../../src/lib/image/hash.ts';
+import { sha256, stableStringify } from '../../src/lib/image/hash.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
-import { LABELS,authoredPoses,fromApi,toApi } from '../../src/lib/rig/poses.ts';
-import { rawClip,largestComponent } from '../../src/lib/rig/clips.ts';
+import { LABELS, authoredPoses, fromApi, toApi } from '../../src/lib/rig/poses.ts';
+import { rawClip, largestComponent } from '../../src/lib/rig/clips.ts';
 import type { RecoveryJob } from '../../dev-fixtures/audit-recovery/recovery.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import type { Project } from '../../src/lib/store/manifest.ts';
-async function fixture(){const blobs=new Map<string,Blob>(),jobs:RecoveryJob[]=[],im=makeImg(64,64);for(let y=12;y<59;y++)for(let x=25;x<39;x++)im.data.set([170,120,90,255],(y*64+x)*4);const hash=await cellHash(im),kps=LABELS.map((label,i)=>({label,x:.3+i%2*.2,y:.2+Math.floor(i/2)*.06}));async function image(img:typeof im){const b=await encodePngBytes(img),h=await sha256(b);blobs.set(h,new Blob([b as Uint8Array<ArrayBuffer>]));return h;}const first=await image(im),pending:PendingMoveEvidence={projectId:'rig-pending',status:'failed',spec:{id:'slash',action:'slash',frames:8,items:['sword'],seed:123,replace:true,dirs:['west'],poseStyle:'visible-side-v1',itemMethod:'grid'}},project:Project={manifest:{format:'pixeldoll/1',name:'Test',app:'test',slots:[],materials:[],presets:[],items:[],rig:{cell:{w:64,h:64},pivot:{x:32,y:59},baseItem:'base',baseHash:hash,directions:[{id:'west'}],animations:[],rest:{west:{image:hash,keypoints:kps}}}},images:new Map([[hash,im]])},record:StoredProject={id:'rig-pending',savedAt:'test',manifest:project.manifest,character:{id:'managed',looks:'plain human'}};
- async function job(endpoint:string,params:unknown,state:string,results:{label:string;sha:string}[]=[],response?:unknown){const j:RecoveryJob={id:`j${jobs.length}`,endpoint,method:'POST',params,state,response,requestHash:await sha256(stableStringify({method:'POST',endpoint,params})),createdAt:jobs.length,gens:0,usd:0,jobs:results.length?[{id:'rawjob',done:true,status:'completed',results}]:[]};jobs.push(j);return j;}
- const outputs=[];for(let c=0;c<8;c++){const raw=structuredClone(im);raw.data[(25*64+30)*4]+=c;const h=await image(raw);outputs.push({label:`west/${c}`,sha:h});if(c<2)await job('/estimate-skeleton',{image:{type:'base64',format:'png',$blob:await image(largestComponent(raw).img)}},c===0?'lost':'done',[],c===1?{keypoints:structuredClone(kps)}:undefined);}
- const requested=authoredPoses('slash',fromApi(kps,{w:64,h:64}),'west',64,'visible-side-v1').map(p=>toApi(p,{w:64,h:64})),params=rawClip({first:'',rest:kps,keypoints:requested,description:'plain human',action:'slash, empty hands, no weapon, no props, no effects',dir:'west',seed:224}).body as Record<string,unknown>;params.first_frame={type:'base64',format:'png',$blob:first};const raw=await job('/animate-with-skeleton-v3',params,'done',outputs);return{record,project,pending,jobs,raw,blobs,readBlob:vi.fn(async(h:string)=>blobs.get(h))};}
-test('pending evidence preserves complete raw frames and lost/real/missing measurements without API or publication',async()=>{const f=await fixture(),before=structuredClone({project:f.project,pending:f.pending,jobs:f.jobs}),network=vi.spyOn(globalThis,'fetch').mockRejectedValue(Error('Forbidden'));try{const r=await inspectPendingMove(f),roll=r.report.rolls[0];expect(roll.frames).toHaveLength(8);expect(roll.measurementsComplete).toBe(false);expect(roll.qa).toBeNull();expect(roll.frames[0].measured).toBeNull();expect(roll.frames[0].estimateRecords[0].state).toBe('lost');expect(roll.frames[1].measured).toHaveLength(18);expect(roll.frames[2].measured).toBeNull();expect(roll.frames[0].opaquePixels).toBeGreaterThan(0);expect(roll.frames[0].bounds).not.toBeNull();expect(r.zip.length).toBeGreaterThan(1000);expect(network).not.toHaveBeenCalled();expect({project:f.project,pending:f.pending,jobs:f.jobs}).toEqual(before);}finally{network.mockRestore();}});
-test.each(['project','seed','style','hash','raw-count','input-bytes']as const)('pending evidence rejects mismatched intent/input identity: %s',async(kind)=>{const f=await fixture();if(kind==='project')f.pending.projectId='another';if(kind==='seed')f.pending.spec.seed++;if(kind==='style')delete f.pending.spec.poseStyle;if(kind==='hash')f.raw.requestHash='f'.repeat(64);if(kind==='raw-count')f.raw.jobs[0].results.pop();if(kind==='input-bytes')f.blobs.set((f.raw.params as {first_frame:{$blob:string}}).first_frame.$blob,new Blob([new Uint8Array([1])]));await expect(inspectPendingMove(f)).rejects.toThrow();});
-test('invalid completed estimator points remain missing rather than being replaced by requested targets',async()=>{const f=await fixture();(f.jobs.find(j=>j.endpoint==='/estimate-skeleton'&&j.state==='done')!.response as {keypoints:{x:number}[]}).keypoints[0].x=NaN;const r=await inspectPendingMove(f);expect(r.report.rolls[0].frames[1].measured).toBeNull();expect(r.report.rolls[0].qa).toBeNull();});
-
-async function paletteFixture(){
- const f=await fixture(); f.jobs.splice(0,f.jobs.length,f.raw); const poses=(f.raw.params as {keypoints:{label:string;x:number;y:number}[][]}).keypoints;
- for(const[c,result]of f.raw.jobs[0].results.entries()){
-  const {decodePngBytes}=await import('../../src/lib/image/pngraw.ts'); const raw=await decodePngBytes(new Uint8Array(await f.blobs.get(result.sha)!.arrayBuffer()));
-  if(c>=1&&c<=4)for(let y=15;y<20;y++)for(let x=25;x<35;x++)raw.data.set([183,125,92,255],(y*64+x)*4);
-  const bytes=await encodePngBytes(raw),hash=await sha256(bytes);f.blobs.set(hash,new Blob([bytes as Uint8Array<ArrayBuffer>]));result.sha=hash;
-  const params={image:{type:'base64',format:'png',$blob:hash}};f.jobs.push({id:`real-raw-${c}`,method:'POST',endpoint:'/estimate-skeleton',params,requestHash:await sha256(stableStringify({method:'POST',endpoint:'/estimate-skeleton',params})),state:'done',createdAt:10+c,gens:0,usd:0,response:{keypoints:poses[c]},jobs:[]});
- }
- return f;
+async function fixture() {
+	const blobs = new Map<string, Blob>(),
+		jobs: RecoveryJob[] = [],
+		im = makeImg(64, 64);
+	for (let y = 12; y < 59; y++)
+		for (let x = 25; x < 39; x++) im.data.set([170, 120, 90, 255], (y * 64 + x) * 4);
+	const hash = await cellHash(im),
+		kps = LABELS.map((label, i) => ({
+			label,
+			x: 0.3 + (i % 2) * 0.2,
+			y: 0.2 + Math.floor(i / 2) * 0.06
+		}));
+	async function image(img: typeof im) {
+		const b = await encodePngBytes(img),
+			h = await sha256(b);
+		blobs.set(h, new Blob([b as Uint8Array<ArrayBuffer>]));
+		return h;
+	}
+	const first = await image(im),
+		pending: PendingMoveEvidence = {
+			projectId: 'rig-pending',
+			status: 'failed',
+			spec: {
+				id: 'slash',
+				action: 'slash',
+				frames: 8,
+				items: ['sword'],
+				seed: 123,
+				replace: true,
+				dirs: ['west'],
+				poseStyle: 'visible-side-v1',
+				itemMethod: 'grid'
+			}
+		},
+		project: Project = {
+			manifest: {
+				format: 'pixeldoll/1',
+				name: 'Test',
+				app: 'test',
+				slots: [],
+				materials: [],
+				presets: [],
+				items: [],
+				rig: {
+					cell: { w: 64, h: 64 },
+					pivot: { x: 32, y: 59 },
+					baseItem: 'base',
+					baseHash: hash,
+					directions: [{ id: 'west' }],
+					animations: [],
+					rest: { west: { image: hash, keypoints: kps } }
+				}
+			},
+			images: new Map([[hash, im]])
+		},
+		record: StoredProject = {
+			id: 'rig-pending',
+			savedAt: 'test',
+			manifest: project.manifest,
+			character: { id: 'managed', looks: 'plain human' }
+		};
+	async function job(
+		endpoint: string,
+		params: unknown,
+		state: string,
+		results: { label: string; sha: string }[] = [],
+		response?: unknown
+	) {
+		const j: RecoveryJob = {
+			id: `j${jobs.length}`,
+			endpoint,
+			method: 'POST',
+			params,
+			state,
+			response,
+			requestHash: await sha256(stableStringify({ method: 'POST', endpoint, params })),
+			createdAt: jobs.length,
+			gens: 0,
+			usd: 0,
+			jobs: results.length ? [{ id: 'rawjob', done: true, status: 'completed', results }] : []
+		};
+		jobs.push(j);
+		return j;
+	}
+	const outputs = [];
+	for (let c = 0; c < 8; c++) {
+		const raw = structuredClone(im);
+		raw.data[(25 * 64 + 30) * 4] += c;
+		const h = await image(raw);
+		outputs.push({ label: `west/${c}`, sha: h });
+		if (c < 2)
+			await job(
+				'/estimate-skeleton',
+				{ image: { type: 'base64', format: 'png', $blob: await image(largestComponent(raw).img) } },
+				c === 0 ? 'lost' : 'done',
+				[],
+				c === 1 ? { keypoints: structuredClone(kps) } : undefined
+			);
+	}
+	const requested = authoredPoses(
+			'slash',
+			fromApi(kps, { w: 64, h: 64 }),
+			'west',
+			64,
+			'visible-side-v1'
+		).map((p) => toApi(p, { w: 64, h: 64 })),
+		params = rawClip({
+			first: '',
+			rest: kps,
+			keypoints: requested,
+			description: 'plain human',
+			action: 'slash, empty hands, no weapon, no props, no effects',
+			dir: 'west',
+			seed: 224
+		}).body as Record<string, unknown>;
+	params.first_frame = { type: 'base64', format: 'png', $blob: first };
+	const raw = await job('/animate-with-skeleton-v3', params, 'done', outputs);
+	return {
+		record,
+		project,
+		pending,
+		jobs,
+		raw,
+		blobs,
+		readBlob: vi.fn(async (h: string) => blobs.get(h))
+	};
 }
-test('color preview retains raw failed QA and cannot reuse original measurements for changed PNGs',async()=>{
- const f=await paletteFixture(),r=await inspectPendingMove(f),preview=r.report.rolls[0].palettePreview as {rawQa:{fails:string[];warnings:string[]};changedPixels:number;changedFrames:number[];measurementsComplete:boolean;qa:unknown;frames:{changed:boolean;measured:unknown;inputPngHash:string;rawInputPngHash:string}[]};
- expect(preview.rawQa.fails).toEqual([]);expect(preview.rawQa.warnings).toEqual([expect.stringMatching(/^palette similarity /)]);expect(preview.changedPixels).toBe(200);expect(preview.changedFrames).toEqual([1,2,3,4]);expect(preview.measurementsComplete).toBe(false);expect(preview.qa).toBeNull();
- for(const frame of preview.frames)if(frame.changed){expect(frame.measured).toBeNull();expect(frame.inputPngHash).not.toBe(frame.rawInputPngHash);}else expect(frame.measured).toBeTruthy();
+test('pending evidence preserves complete raw frames and lost/real/missing measurements without API or publication', async () => {
+	const f = await fixture(),
+		before = structuredClone({ project: f.project, pending: f.pending, jobs: f.jobs }),
+		network = vi.spyOn(globalThis, 'fetch').mockRejectedValue(Error('Forbidden'));
+	try {
+		const r = await inspectPendingMove(f),
+			roll = r.report.rolls[0];
+		expect(roll.frames).toHaveLength(8);
+		expect(roll.measurementsComplete).toBe(false);
+		expect(roll.qa).toBeNull();
+		expect(roll.frames[0].measured).toBeNull();
+		expect(roll.frames[0].estimateRecords[0].state).toBe('lost');
+		expect(roll.frames[1].measured).toHaveLength(18);
+		expect(roll.frames[2].measured).toBeNull();
+		expect(roll.frames[0].opaquePixels).toBeGreaterThan(0);
+		expect(roll.frames[0].bounds).not.toBeNull();
+		expect(r.zip.length).toBeGreaterThan(1000);
+		expect(network).not.toHaveBeenCalled();
+		expect({ project: f.project, pending: f.pending, jobs: f.jobs }).toEqual(before);
+	} finally {
+		network.mockRestore();
+	}
 });
-test('only genuine matching corrected-PNG checks complete the color preview while raw failure remains auditable',async()=>{
- const f=await paletteFixture(),first=await inspectPendingMove(f),preview=first.report.rolls[0].palettePreview as {frames:{cell:number;changed:boolean;inputPngHash:string}[]},poses=(f.raw.params as {keypoints:{label:string;x:number;y:number}[][]}).keypoints;
- const {unzip}=await import('../../src/lib/store/zip.ts'),files=await unzip(first.zip);
- for(const frame of preview.frames.filter(f=>f.changed)){const bytes=files.get(`pending/west/roll-1/palette-preview-input-${frame.cell}.png`)!;f.blobs.set(frame.inputPngHash,new Blob([bytes as Uint8Array<ArrayBuffer>]));const params={image:{type:'base64',format:'png',$blob:frame.inputPngHash}};f.jobs.push({id:`corrected-${frame.cell}`,method:'POST',endpoint:'/estimate-skeleton',params,requestHash:await sha256(stableStringify({method:'POST',endpoint:'/estimate-skeleton',params})),state:'done',createdAt:50+frame.cell,gens:0,usd:0,response:{keypoints:poses[frame.cell]},jobs:[]});}
- const result=await inspectPendingMove(f),after=result.report.rolls[0].palettePreview as {measurementsComplete:boolean;qa:{fails:string[]};rawQa:{fails:string[];warnings:string[]}};expect(after.measurementsComplete).toBe(true);expect(after.qa.fails).toEqual([]);expect(after.rawQa.fails).toHaveLength(0);expect(after.rawQa.warnings).toHaveLength(1);
+test.each(['project', 'seed', 'style', 'hash', 'raw-count', 'input-bytes'] as const)(
+	'pending evidence rejects mismatched intent/input identity: %s',
+	async (kind) => {
+		const f = await fixture();
+		if (kind === 'project') f.pending.projectId = 'another';
+		if (kind === 'seed') f.pending.spec.seed++;
+		if (kind === 'style') delete f.pending.spec.poseStyle;
+		if (kind === 'hash') f.raw.requestHash = 'f'.repeat(64);
+		if (kind === 'raw-count') f.raw.jobs[0].results.pop();
+		if (kind === 'input-bytes')
+			f.blobs.set(
+				(f.raw.params as { first_frame: { $blob: string } }).first_frame.$blob,
+				new Blob([new Uint8Array([1])])
+			);
+		await expect(inspectPendingMove(f)).rejects.toThrow();
+	}
+);
+test('invalid completed estimator points remain missing rather than being replaced by requested targets', async () => {
+	const f = await fixture();
+	(
+		f.jobs.find((j) => j.endpoint === '/estimate-skeleton' && j.state === 'done')!.response as {
+			keypoints: { x: number }[];
+		}
+	).keypoints[0].x = NaN;
+	const r = await inspectPendingMove(f);
+	expect(r.report.rolls[0].frames[1].measured).toBeNull();
+	expect(r.report.rolls[0].qa).toBeNull();
+});
+
+async function paletteFixture() {
+	const f = await fixture();
+	f.jobs.splice(0, f.jobs.length, f.raw);
+	const poses = (f.raw.params as { keypoints: { label: string; x: number; y: number }[][] })
+		.keypoints;
+	for (const [c, result] of f.raw.jobs[0].results.entries()) {
+		const { decodePngBytes } = await import('../../src/lib/image/pngraw.ts');
+		const raw = await decodePngBytes(new Uint8Array(await f.blobs.get(result.sha)!.arrayBuffer()));
+		if (c >= 1 && c <= 4)
+			for (let y = 15; y < 20; y++)
+				for (let x = 25; x < 35; x++) raw.data.set([183, 125, 92, 255], (y * 64 + x) * 4);
+		const bytes = await encodePngBytes(raw),
+			hash = await sha256(bytes);
+		f.blobs.set(hash, new Blob([bytes as Uint8Array<ArrayBuffer>]));
+		result.sha = hash;
+		const params = { image: { type: 'base64', format: 'png', $blob: hash } };
+		f.jobs.push({
+			id: `real-raw-${c}`,
+			method: 'POST',
+			endpoint: '/estimate-skeleton',
+			params,
+			requestHash: await sha256(
+				stableStringify({ method: 'POST', endpoint: '/estimate-skeleton', params })
+			),
+			state: 'done',
+			createdAt: 10 + c,
+			gens: 0,
+			usd: 0,
+			response: { keypoints: poses[c] },
+			jobs: []
+		});
+	}
+	return f;
+}
+test('color preview retains raw failed QA and cannot reuse original measurements for changed PNGs', async () => {
+	const f = await paletteFixture(),
+		r = await inspectPendingMove(f),
+		preview = r.report.rolls[0].palettePreview as {
+			rawQa: { fails: string[]; warnings: string[] };
+			changedPixels: number;
+			changedFrames: number[];
+			measurementsComplete: boolean;
+			qa: unknown;
+			frames: {
+				changed: boolean;
+				measured: unknown;
+				inputPngHash: string;
+				rawInputPngHash: string;
+			}[];
+		};
+	expect(preview.rawQa.fails).toEqual([]);
+	expect(preview.rawQa.warnings).toEqual([expect.stringMatching(/^palette similarity /)]);
+	expect(preview.changedPixels).toBe(200);
+	expect(preview.changedFrames).toEqual([1, 2, 3, 4]);
+	expect(preview.measurementsComplete).toBe(false);
+	expect(preview.qa).toBeNull();
+	for (const frame of preview.frames)
+		if (frame.changed) {
+			expect(frame.measured).toBeNull();
+			expect(frame.inputPngHash).not.toBe(frame.rawInputPngHash);
+		} else expect(frame.measured).toBeTruthy();
+});
+test('only genuine matching corrected-PNG checks complete the color preview while raw failure remains auditable', async () => {
+	const f = await paletteFixture(),
+		first = await inspectPendingMove(f),
+		preview = first.report.rolls[0].palettePreview as {
+			frames: { cell: number; changed: boolean; inputPngHash: string }[];
+		},
+		poses = (f.raw.params as { keypoints: { label: string; x: number; y: number }[][] }).keypoints;
+	const { unzip } = await import('../../src/lib/store/zip.ts'),
+		files = await unzip(first.zip);
+	for (const frame of preview.frames.filter((f) => f.changed)) {
+		const bytes = files.get(`pending/west/roll-1/palette-preview-input-${frame.cell}.png`)!;
+		f.blobs.set(frame.inputPngHash, new Blob([bytes as Uint8Array<ArrayBuffer>]));
+		const params = { image: { type: 'base64', format: 'png', $blob: frame.inputPngHash } };
+		f.jobs.push({
+			id: `corrected-${frame.cell}`,
+			method: 'POST',
+			endpoint: '/estimate-skeleton',
+			params,
+			requestHash: await sha256(
+				stableStringify({ method: 'POST', endpoint: '/estimate-skeleton', params })
+			),
+			state: 'done',
+			createdAt: 50 + frame.cell,
+			gens: 0,
+			usd: 0,
+			response: { keypoints: poses[frame.cell] },
+			jobs: []
+		});
+	}
+	const result = await inspectPendingMove(f),
+		after = result.report.rolls[0].palettePreview as {
+			measurementsComplete: boolean;
+			qa: { fails: string[] };
+			rawQa: { fails: string[]; warnings: string[] };
+		};
+	expect(after.measurementsComplete).toBe(true);
+	expect(after.qa.fails).toEqual([]);
+	expect(after.rawQa.fails).toHaveLength(0);
+	expect(after.rawQa.warnings).toHaveLength(1);
 });

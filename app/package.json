@@ -1,44 +1,44 @@
 {
-  "name": "app",
-  "private": true,
-  "description": "Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.",
-  "license": "MIT",
-  "homepage": "https://pixeldoll.app/",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "dev:agent": "vite --mode agent --port 5199 --strictPort",
-    "build": "vite build && node scripts/dist-guard.mjs",
-    "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json && tsc -p tsconfig.test.json && prettier --check .",
-    "format": "prettier --write .",
-    "selftest": "npm test",
-    "test": "vitest run",
-    "e2e": "npm run build && playwright test",
-    "bench": "node scripts/bench.ts"
-  },
-  "devDependencies": {
-    "@playwright/test": "1.64.1",
-    "@sveltejs/vite-plugin-svelte": "7.3.1",
-    "@tsconfig/svelte": "5.0.8",
-    "@types/node": "24.19.2",
-    "prettier": "3.9.10",
-    "prettier-plugin-svelte": "4.1.1",
-    "svelte": "5.57.2",
-    "svelte-check": "4.7.7",
-    "typescript": "6.0.3",
-    "vite": "8.3.4",
-    "vitest": "4.1.12"
-  },
-  "dependencies": {
-    "@floating-ui/dom": "1.8.0",
-    "@lucide/svelte": "1.61.0",
-    "@shilo/bronze-ui": "https://github.com/Shilo/bronze-ui/releases/download/v0.2.8/shilo-bronze-ui-0.2.8.tgz",
-    "gifenc": "1.0.3"
-  },
-  "packageManager": "npm@11.19.1",
-  "engines": {
-    "node": ">=24.22.1 <25",
-    "npm": ">=11.19.1 <12"
-  }
+	"name": "app",
+	"private": true,
+	"description": "Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.",
+	"license": "MIT",
+	"homepage": "https://pixeldoll.app/",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"dev:agent": "vite --mode agent --port 5199 --strictPort",
+		"build": "vite build && node scripts/dist-guard.mjs",
+		"preview": "vite preview",
+		"check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json && tsc -p tsconfig.test.json && prettier --check .",
+		"format": "prettier --write .",
+		"selftest": "npm test",
+		"test": "vitest run",
+		"e2e": "npm run build && playwright test",
+		"bench": "node scripts/bench.ts"
+	},
+	"devDependencies": {
+		"@playwright/test": "1.64.1",
+		"@sveltejs/vite-plugin-svelte": "7.3.1",
+		"@tsconfig/svelte": "5.0.8",
+		"@types/node": "24.19.2",
+		"prettier": "3.9.10",
+		"prettier-plugin-svelte": "4.1.1",
+		"svelte": "5.57.2",
+		"svelte-check": "4.7.7",
+		"typescript": "6.0.3",
+		"vite": "8.3.4",
+		"vitest": "4.1.12"
+	},
+	"dependencies": {
+		"@floating-ui/dom": "1.8.0",
+		"@lucide/svelte": "1.61.0",
+		"@shilo/bronze-ui": "https://github.com/Shilo/bronze-ui/releases/download/v0.2.8/shilo-bronze-ui-0.2.8.tgz",
+		"gifenc": "1.0.3"
+	},
+	"packageManager": "npm@11.19.1",
+	"engines": {
+		"node": ">=24.22.1 <25",
+		"npm": ">=11.19.1 <12"
+	}
 }

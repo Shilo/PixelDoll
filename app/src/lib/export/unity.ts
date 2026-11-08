@@ -5,37 +5,82 @@ import type { OutFile } from './generic.ts';
 import { layerFrame, variantCovers } from '../compose/compose.ts';
 
 function exportId(m: Manifest): string {
-  // Namespace + assembly identity: importing different characters must not define duplicate C# types.
-  let h = 0xcbf29ce484222325n;
-  for (const c of `${m.name}\0${m.rig.baseHash}`) h = BigInt.asUintN(64, (h ^ BigInt(c.codePointAt(0)!)) * 0x100000001b3n);
-  return `Character_${h.toString(16).padStart(16, '0')}`;
+	// Namespace + assembly identity: importing different characters must not define duplicate C# types.
+	let h = 0xcbf29ce484222325n;
+	for (const c of `${m.name}\0${m.rig.baseHash}`)
+		h = BigInt.asUintN(64, (h ^ BigInt(c.codePointAt(0)!)) * 0x100000001b3n);
+	return `Character_${h.toString(16).padStart(16, '0')}`;
 }
 
 export function unityJson(m: Manifest) {
-  const { rig } = m;
-  return {
-    name: m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'Paperdoll',
-    exportId: exportId(m),
-    cellW: rig.cell.w, cellH: rig.cell.h, pivotX: rig.pivot.x, pivotY: rig.pivot.y,
-    ppu: m.export?.pixelsPerUnit ?? rig.cell.w,
-    baseItem: rig.baseItem,
-    directions: rig.directions.map((d) => d.id),
-    animations: rig.animations.map((a) => ({ id: a.id, loop: a.loop, cells: a.cells, frames: a.frames, directions: (a as typeof a & { directions?: string[] }).directions ?? rig.directions.map((d) => d.id) })),
-    materials: (m.materials ?? []).map((mat) => ({ ...mat, variants: Object.entries(mat.variants).map(([id, ramp]) => ({ id, ramp })) })),
-    presets: m.presets.map((p) => ({ id: p.id, items: Object.entries(p.items).map(([slot, item]) => ({ slot, item: item ?? '' })), variants: Object.entries(p.variants ?? {}).map(([id, variant]) => ({ id, variant })) })),
-    slots: m.slots.map((s) => ({
-      id: s.id, z: s.z, hides: s.hides ?? [],
-      zOverrides: (s.zOverrides ?? []).map((o) => ({ layer: o.layer, z: o.z, dir: o.dir ?? '', anim: o.anim ?? '', cell: o.cell ?? -1 })),
-    })),
-    items: m.items.map((it) => ({
-      id: it.id, slot: it.slot, variantOf: it.variantOf ?? '', underAll: variantCovers(it), materials: it.materials ?? [], hasHides: !!it.hides, hides: it.hides ?? [],
-      layers: it.layers.map((l) => {
-        const f = layerFrame(rig, l); // oversize layers: own cell + pivot; PPU stays the base's, so world scale matches
-        return { id: l.id, role: l.role, z: l.z, cellW: f.w, cellH: f.h, pivotX: f.x, pivotY: f.y, sheets: rig.animations.map((a) => l.sheets![a.id]), sourceSheets: rig.animations.map((a) => l.sourceSheets?.[a.id] ?? l.sheets![a.id]) };
-      }),
-    })),
-    preset: Object.entries(m.presets[0]?.items ?? {}).map(([slot, item]) => ({ slot, item: item ?? '' })),
-  };
+	const { rig } = m;
+	return {
+		name: m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'Paperdoll',
+		exportId: exportId(m),
+		cellW: rig.cell.w,
+		cellH: rig.cell.h,
+		pivotX: rig.pivot.x,
+		pivotY: rig.pivot.y,
+		ppu: m.export?.pixelsPerUnit ?? rig.cell.w,
+		baseItem: rig.baseItem,
+		directions: rig.directions.map((d) => d.id),
+		animations: rig.animations.map((a) => ({
+			id: a.id,
+			loop: a.loop,
+			cells: a.cells,
+			frames: a.frames,
+			directions:
+				(a as typeof a & { directions?: string[] }).directions ?? rig.directions.map((d) => d.id)
+		})),
+		materials: (m.materials ?? []).map((mat) => ({
+			...mat,
+			variants: Object.entries(mat.variants).map(([id, ramp]) => ({ id, ramp }))
+		})),
+		presets: m.presets.map((p) => ({
+			id: p.id,
+			items: Object.entries(p.items).map(([slot, item]) => ({ slot, item: item ?? '' })),
+			variants: Object.entries(p.variants ?? {}).map(([id, variant]) => ({ id, variant }))
+		})),
+		slots: m.slots.map((s) => ({
+			id: s.id,
+			z: s.z,
+			hides: s.hides ?? [],
+			zOverrides: (s.zOverrides ?? []).map((o) => ({
+				layer: o.layer,
+				z: o.z,
+				dir: o.dir ?? '',
+				anim: o.anim ?? '',
+				cell: o.cell ?? -1
+			}))
+		})),
+		items: m.items.map((it) => ({
+			id: it.id,
+			slot: it.slot,
+			variantOf: it.variantOf ?? '',
+			underAll: variantCovers(it),
+			materials: it.materials ?? [],
+			hasHides: !!it.hides,
+			hides: it.hides ?? [],
+			layers: it.layers.map((l) => {
+				const f = layerFrame(rig, l); // oversize layers: own cell + pivot; PPU stays the base's, so world scale matches
+				return {
+					id: l.id,
+					role: l.role,
+					z: l.z,
+					cellW: f.w,
+					cellH: f.h,
+					pivotX: f.x,
+					pivotY: f.y,
+					sheets: rig.animations.map((a) => l.sheets![a.id]),
+					sourceSheets: rig.animations.map((a) => l.sourceSheets?.[a.id] ?? l.sheets![a.id])
+				};
+			})
+		})),
+		preset: Object.entries(m.presets[0]?.items ?? {}).map(([slot, item]) => ({
+			slot,
+			item: item ?? ''
+		}))
+	};
 }
 
 export const PAPERDOLL_CS = `using System;
@@ -460,25 +505,29 @@ namespace PixelDoll.Editor
 const asmdef = (o: object) => JSON.stringify(o, null, 2) + '\n';
 
 export function unityFiles(m: Manifest): OutFile[] {
-  const identity = exportId(m), ns = `PixelDoll.${identity}`;
-  const runtime = PAPERDOLL_CS.replace('namespace PixelDoll', `namespace ${ns}`);
-  const importer = IMPORTER_CS.replace('namespace PixelDoll.Editor', `namespace ${ns}.Editor`).replaceAll('__EXPORT_ID__', identity);
-  return [
-    { name: 'unity/pixeldoll_unity.json', data: JSON.stringify(unityJson(m), null, 1) + '\n' },
-    { name: 'unity/Runtime/Paperdoll.cs', data: runtime },
-    { name: 'unity/Runtime/PixelDoll.Runtime.asmdef', data: asmdef({ name: `${ns}.Runtime` }) },
-    { name: 'unity/Editor/PixelDollImporter.cs', data: importer },
-    {
-      name: 'unity/Editor/PixelDoll.Editor.asmdef',
-      data: asmdef({
-        name: `${ns}.Editor`,
-        references: [`${ns}.Runtime`, 'Unity.2D.Sprite.Editor'],
-        includePlatforms: ['Editor'],
-      }),
-    },
-    {
-      name: 'unity/README.txt',
-      data: `Unity 2022.3 / Unity 6. Install com.unity.2d.sprite (2D Sprite) with Package Manager, then copy the whole export folder
+	const identity = exportId(m),
+		ns = `PixelDoll.${identity}`;
+	const runtime = PAPERDOLL_CS.replace('namespace PixelDoll', `namespace ${ns}`);
+	const importer = IMPORTER_CS.replace(
+		'namespace PixelDoll.Editor',
+		`namespace ${ns}.Editor`
+	).replaceAll('__EXPORT_ID__', identity);
+	return [
+		{ name: 'unity/pixeldoll_unity.json', data: JSON.stringify(unityJson(m), null, 1) + '\n' },
+		{ name: 'unity/Runtime/Paperdoll.cs', data: runtime },
+		{ name: 'unity/Runtime/PixelDoll.Runtime.asmdef', data: asmdef({ name: `${ns}.Runtime` }) },
+		{ name: 'unity/Editor/PixelDollImporter.cs', data: importer },
+		{
+			name: 'unity/Editor/PixelDoll.Editor.asmdef',
+			data: asmdef({
+				name: `${ns}.Editor`,
+				references: [`${ns}.Runtime`, 'Unity.2D.Sprite.Editor'],
+				includePlatforms: ['Editor']
+			})
+		},
+		{
+			name: 'unity/README.txt',
+			data: `Unity 2022.3 / Unity 6. Install com.unity.2d.sprite (2D Sprite) with Package Manager, then copy the whole export folder
 under Assets/. No 2D Animation package is required. Keep this character in one folder: re-export into that same folder.
 Different characters use independent namespaces and assemblies; do not import two copies of the same character.
 If replacing an older PixelDoll exporter, remove its unity/Runtime and unity/Editor scripts first to avoid stale assembly definitions.
@@ -495,24 +544,58 @@ Source textures are readable for these swaps. Do not put them in a Sprite Atlas 
 Default preview colors are persistent sprite assets; changing presets/colors is applied during Play Mode.
 Use a Pixel Perfect Camera and a sprite-compatible material for your render pipeline (including URP 2D).
 Verify target platform texture overrides preserve full sheet dimensions, RGBA color and uncompressed pixels.
-`,
-    },
-  ];
+`
+		}
+	];
 }
 
 export function selfTest() {
-  const m = {
-    name: 'my hero', rig: { cell: { w: 64, h: 64 }, pivot: { x: 32, y: 60 }, baseItem: 'base', directions: [{ id: 'south' }], animations: [{ id: 'walk', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }] },
-    slots: [{ id: 'head', z: 130, zOverrides: [{ layer: 'fg', z: 5, dir: 'north' }] }],
-    items: [{ id: 'helm', slot: 'head', hides: ['hair'], layers: [{ id: 'main', role: 'fg', z: 130, sheets: { walk: 'w.png' } }] }],
-    presets: [{ items: { head: 'helm', hair: null } }],
-  } as unknown as Manifest;
-  const u = unityJson(m);
-  console.assert(u.name === 'my_hero' && u.ppu === 64 && u.items[0].layers[0].sheets[0] === 'w.png' && u.items[0].hasHides, 'unity json flattening');
-  console.assert(u.slots[0].zOverrides[0].cell === -1 && u.slots[0].zOverrides[0].anim === '' && u.preset[1].item === '', 'unity json: absent = -1 / ""');
-  console.assert(u.items[0].layers[0].cellW === 64 && u.items[0].layers[0].pivotY === 60, 'unity json: per-layer cell/pivot default = rig');
-  Object.assign(m.items[0].layers[0], { cell: { w: 96, h: 96 }, pivot: { x: 48, y: 76 } });
-  const u2 = unityJson(m).items[0].layers[0];
-  console.assert(u2.cellW === 96 && u2.pivotY === 76 && unityJson(m).ppu === 64, 'unity json: oversize layer keeps the base PPU');
-  console.assert(IMPORTER_CS.includes(".Replace('\\\\', '/')"), 'C# backslash literal survives the template string');
+	const m = {
+		name: 'my hero',
+		rig: {
+			cell: { w: 64, h: 64 },
+			pivot: { x: 32, y: 60 },
+			baseItem: 'base',
+			directions: [{ id: 'south' }],
+			animations: [{ id: 'walk', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }]
+		},
+		slots: [{ id: 'head', z: 130, zOverrides: [{ layer: 'fg', z: 5, dir: 'north' }] }],
+		items: [
+			{
+				id: 'helm',
+				slot: 'head',
+				hides: ['hair'],
+				layers: [{ id: 'main', role: 'fg', z: 130, sheets: { walk: 'w.png' } }]
+			}
+		],
+		presets: [{ items: { head: 'helm', hair: null } }]
+	} as unknown as Manifest;
+	const u = unityJson(m);
+	console.assert(
+		u.name === 'my_hero' &&
+			u.ppu === 64 &&
+			u.items[0].layers[0].sheets[0] === 'w.png' &&
+			u.items[0].hasHides,
+		'unity json flattening'
+	);
+	console.assert(
+		u.slots[0].zOverrides[0].cell === -1 &&
+			u.slots[0].zOverrides[0].anim === '' &&
+			u.preset[1].item === '',
+		'unity json: absent = -1 / ""'
+	);
+	console.assert(
+		u.items[0].layers[0].cellW === 64 && u.items[0].layers[0].pivotY === 60,
+		'unity json: per-layer cell/pivot default = rig'
+	);
+	Object.assign(m.items[0].layers[0], { cell: { w: 96, h: 96 }, pivot: { x: 48, y: 76 } });
+	const u2 = unityJson(m).items[0].layers[0];
+	console.assert(
+		u2.cellW === 96 && u2.pivotY === 76 && unityJson(m).ppu === 64,
+		'unity json: oversize layer keeps the base PPU'
+	);
+	console.assert(
+		IMPORTER_CS.includes(".Replace('\\\\', '/')"),
+		'C# backslash literal survives the template string'
+	);
 }

@@ -1,46 +1,59 @@
 <script lang="ts">
-  import ItemPane from './ItemPane.svelte'
-  import GenCard from './GenCard.svelte'
-  import Colors from './Colors.svelte'
-  import Moves from './Moves.svelte'
-  import { ui, doc, store, genOf, openNewItem } from './state.svelte.ts'
-  import { Plus } from './icons.ts'
-  const bare = $derived(!!store.project && store.project.manifest.items.length <= 1)
-  const g = $derived(genOf(ui.selected))
-  const it = $derived(store.project?.manifest.items.find((i) => i.id === ui.selected && i.slot !== 'body'))
-  const contentKey = $derived(`${doc.id}:${ui.inspTab}${ui.inspTab === 'item' ? `:${ui.selected}` : ''}`)
+	import ItemPane from './ItemPane.svelte';
+	import GenCard from './GenCard.svelte';
+	import Colors from './Colors.svelte';
+	import Moves from './Moves.svelte';
+	import { ui, doc, store, genOf, openNewItem } from './state.svelte.ts';
+	import { Plus } from './icons.ts';
+	const bare = $derived(!!store.project && store.project.manifest.items.length <= 1);
+	const g = $derived(genOf(ui.selected));
+	const it = $derived(
+		store.project?.manifest.items.find((i) => i.id === ui.selected && i.slot !== 'body')
+	);
+	const contentKey = $derived(
+		`${doc.id}:${ui.inspTab}${ui.inspTab === 'item' ? `:${ui.selected}` : ''}`
+	);
 </script>
 
 <div class="inspector">
-  <div class="inspector-tabs">
-    <div class="seg full" role="tablist" aria-label="Inspector">
-      {#each [['item', 'Item'], ['colors', 'Colors'], ['moves', 'Moves']] as [id, label] (id)}
-        <button role="tab" aria-selected={ui.inspTab === id} tabindex={ui.inspTab === id ? 0 : -1} onclick={() => (ui.inspTab = id as typeof ui.inspTab)}>{label}</button>
-      {/each}
-    </div>
-  </div>
-  {#key contentKey}
-    <div class="inspector-content">
-      {#if ui.inspTab === 'colors'}
-        <Colors />
-      {:else if ui.inspTab === 'moves'}
-        <Moves />
-      {:else if g}
-        <GenCard {g} />
-      {:else if it}
-        <ItemPane id={it.id} />
-      {:else}
-        <div class="empty">
-          {#if bare}
-            <p class="empty-title">Your character is ready</p>
-            <p class="small">Add a hat, a top or a weapon. Each item becomes its own layer.</p>
-            <button class="bu-action btn primary" data-variant="primary" onclick={() => openNewItem('Head')}><Plus size={16} />Add your first item</button>
-          {:else}
-            <p class="empty-title">Nothing selected</p>
-            <p class="small">Pick an item in the wardrobe to wear it and change its colors.</p>
-          {/if}
-        </div>
-      {/if}
-    </div>
-  {/key}
+	<div class="inspector-tabs">
+		<div class="seg full" role="tablist" aria-label="Inspector">
+			{#each [['item', 'Item'], ['colors', 'Colors'], ['moves', 'Moves']] as [id, label] (id)}
+				<button
+					role="tab"
+					aria-selected={ui.inspTab === id}
+					tabindex={ui.inspTab === id ? 0 : -1}
+					onclick={() => (ui.inspTab = id as typeof ui.inspTab)}>{label}</button
+				>
+			{/each}
+		</div>
+	</div>
+	{#key contentKey}
+		<div class="inspector-content">
+			{#if ui.inspTab === 'colors'}
+				<Colors />
+			{:else if ui.inspTab === 'moves'}
+				<Moves />
+			{:else if g}
+				<GenCard {g} />
+			{:else if it}
+				<ItemPane id={it.id} />
+			{:else}
+				<div class="empty">
+					{#if bare}
+						<p class="empty-title">Your character is ready</p>
+						<p class="small">Add a hat, a top or a weapon. Each item becomes its own layer.</p>
+						<button
+							class="bu-action btn primary"
+							data-variant="primary"
+							onclick={() => openNewItem('Head')}><Plus size={16} />Add your first item</button
+						>
+					{:else}
+						<p class="empty-title">Nothing selected</p>
+						<p class="small">Pick an item in the wardrobe to wear it and change its colors.</p>
+					{/if}
+				</div>
+			{/if}
+		</div>
+	{/key}
 </div>

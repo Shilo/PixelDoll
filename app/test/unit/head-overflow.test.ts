@@ -1,107 +1,164 @@
-import { expect, test } from 'vitest'
-import { makeImg, type Img } from '../../src/lib/image/png.ts'
-import { toChroma } from '../../src/lib/image/chroma.ts'
-import { extractCell, postProcess, slotOf, trimToKeyframe, type CellOut } from '../../src/lib/items/items.ts'
-import type { Rig } from '../../src/lib/rig/rig.ts'
+import { expect, test } from 'vitest';
+import { makeImg, type Img } from '../../src/lib/image/png.ts';
+import { toChroma } from '../../src/lib/image/chroma.ts';
+import {
+	extractCell,
+	postProcess,
+	slotOf,
+	trimToKeyframe,
+	type CellOut
+} from '../../src/lib/items/items.ts';
+import type { Rig } from '../../src/lib/rig/rig.ts';
 
 // Posed head items used to lose every px below the head band, so a coif, aventail or hood mantle was cut at the neck.
 // Now detached px below the band are still trimmed at extraction, joined px go to postProcess, and only the dressed keyframe
 // (extracted untrimmed) can keep them: exact keyframe px, no dilation, no consensus. Without a usable keyframe the band trim stays.
-const W = 32, band = { x: 0, y: 0, w: W, h: 12 }, BROWN = [140, 90, 50]
-const put = (im: Img, x: number, y: number, c: number[]) => im.data.set([...c, 255], (y * W + x) * 4)
-const rig: Rig = { cell: { w: W, h: W }, pivot: { x: 16, y: 31 }, baseItem: 'base', baseHash: 'sha256:test', directions: [{ id: 'south' }], animations: [{ id: 'walk', cells: 4, loop: true, frames: [0, 1, 2, 3].map(cell => ({ cell, ms: 100 })) }] }
-const base = makeImg(W, W)
-for (let y = 4; y < W; y++) for (let x = 10; x < 22; x++) put(base, x, y, x === 10 || x === 21 ? [30, 30, 30] : [170, 170, 170])
-const hood = (im: Img, rows: number) => { for (let y = 2; y < 12 + rows; y++) for (let x = 9; x < 23; x++) put(im, x, y, BROWN) }
+const W = 32,
+	band = { x: 0, y: 0, w: W, h: 12 },
+	BROWN = [140, 90, 50];
+const put = (im: Img, x: number, y: number, c: number[]) =>
+	im.data.set([...c, 255], (y * W + x) * 4);
+const rig: Rig = {
+	cell: { w: W, h: W },
+	pivot: { x: 16, y: 31 },
+	baseItem: 'base',
+	baseHash: 'sha256:test',
+	directions: [{ id: 'south' }],
+	animations: [
+		{ id: 'walk', cells: 4, loop: true, frames: [0, 1, 2, 3].map((cell) => ({ cell, ms: 100 })) }
+	]
+};
+const base = makeImg(W, W);
+for (let y = 4; y < W; y++)
+	for (let x = 10; x < 22; x++)
+		put(base, x, y, x === 10 || x === 21 ? [30, 30, 30] : [170, 170, 170]);
+const hood = (im: Img, rows: number) => {
+	for (let y = 2; y < 12 + rows; y++) for (let x = 9; x < 23; x++) put(im, x, y, BROWN);
+};
 function frame(i: number, draw: (out: Img) => void): CellOut {
-  const out = toChroma(base, 'green'); draw(out)
-  return extractCell({ key: `walk/south/${i}`, call: 0, base, out, route: 'green', band, posed: true, clip: true })
+	const out = toChroma(base, 'green');
+	draw(out);
+	return extractCell({
+		key: `walk/south/${i}`,
+		call: 0,
+		base,
+		out,
+		route: 'green',
+		band,
+		posed: true,
+		clip: true
+	});
 }
-const keyframe = (rows: number) => { const k = makeImg(W, W); hood(k, rows); return { south: k } }
-const below = (c: CellOut) => c.mask.slice(12 * W).reduce((a, b) => a + b, 0)
+const keyframe = (rows: number) => {
+	const k = makeImg(W, W);
+	hood(k, rows);
+	return { south: k };
+};
+const below = (c: CellOut) => c.mask.slice(12 * W).reduce((a, b) => a + b, 0);
 
 test('detached px below the band are trimmed at extraction', () => {
-  const c = frame(0, out => { hood(out, 0); for (let y = 20; y < 22; y++) for (let x = 12; x < 16; x++) put(out, x, y, BROWN) })
-  expect(below(c)).toBe(0)
-  expect(c.stray).toBeGreaterThan(0)
-  expect(c.clipY).toBeUndefined()
-})
+	const c = frame(0, (out) => {
+		hood(out, 0);
+		for (let y = 20; y < 22; y++) for (let x = 12; x < 16; x++) put(out, x, y, BROWN);
+	});
+	expect(below(c)).toBe(0);
+	expect(c.stray).toBeGreaterThan(0);
+	expect(c.clipY).toBeUndefined();
+});
 
 test('a mantle the dressed keyframe has survives the head band', () => {
-  const c = frame(0, out => hood(out, 4))
-  expect(c.clipY).toBe(12)
-  postProcess(rig, slotOf('head'), [c], keyframe(4))
-  expect(below(c)).toBe(4 * 14)
-  expect(c.clipY).toBeUndefined()
-})
+	const c = frame(0, (out) => hood(out, 4));
+	expect(c.clipY).toBe(12);
+	postProcess(rig, slotOf('head'), [c], keyframe(4));
+	expect(below(c)).toBe(4 * 14);
+	expect(c.clipY).toBeUndefined();
+});
 
 test('below the band, px just outside the keyframe are trimmed (no 2 px dilation)', () => {
-  const c = frame(0, out => hood(out, 6))
-  postProcess(rig, slotOf('head'), [c], keyframe(4))
-  expect(below(c)).toBe(4 * 14)
-})
+	const c = frame(0, (out) => hood(out, 6));
+	postProcess(rig, slotOf('head'), [c], keyframe(4));
+	expect(below(c)).toBe(4 * 14);
+});
 
 test('a joined streak repeated in every frame is not kept by consensus', () => {
-  const cs = [0, 1, 2, 3].map(i => frame(i, out => { hood(out, 0); for (let y = 12; y < 18; y++) put(out, 15, y, BROWN) }))
-  postProcess(rig, slotOf('head'), cs, keyframe(0))
-  for (const c of cs) expect(below(c)).toBe(0)
-})
+	const cs = [0, 1, 2, 3].map((i) =>
+		frame(i, (out) => {
+			hood(out, 0);
+			for (let y = 12; y < 18; y++) put(out, 15, y, BROWN);
+		})
+	);
+	postProcess(rig, slotOf('head'), cs, keyframe(0));
+	for (const c of cs) expect(below(c)).toBe(0);
+});
 
 test('without a keyframe the band trim is the floor, also for slots without the keyframe trim', () => {
-  const c = frame(0, out => hood(out, 4))
-  postProcess(rig, slotOf('head'), [c], {})
-  expect(below(c)).toBe(0)
-  const t = frame(1, out => hood(out, 4))
-  postProcess(rig, slotOf('torso_outer'), [t], keyframe(4))
-  expect(below(t)).toBe(0)
-})
+	const c = frame(0, (out) => hood(out, 4));
+	postProcess(rig, slotOf('head'), [c], {});
+	expect(below(c)).toBe(0);
+	const t = frame(1, (out) => hood(out, 4));
+	postProcess(rig, slotOf('torso_outer'), [t], keyframe(4));
+	expect(below(t)).toBe(0);
+});
 
 function consensusFrame(anim: string, i: number, extra: boolean, dir = 'south'): CellOut {
-  const layer = makeImg(W, W), mask = new Uint8Array(W * W)
-  for (let y = 2; y < 9; y++) for (let x = 10; x < 19; x++) put(layer, x, y, BROWN)
-  if (extra) for (let y = 2; y < 5; y++) for (let x = 22; x < 29; x++) put(layer, x, y, [220, 180, 80])
-  for (let p = 0; p < mask.length; p++) mask[p] = Number(layer.data[p * 4 + 3] > 0)
-  return { ...frame(i, out => hood(out, 0)), key: `${anim}/${dir}/${i}`, layer, mask, area: extra ? 84 : 63 }
+	const layer = makeImg(W, W),
+		mask = new Uint8Array(W * W);
+	for (let y = 2; y < 9; y++) for (let x = 10; x < 19; x++) put(layer, x, y, BROWN);
+	if (extra)
+		for (let y = 2; y < 5; y++) for (let x = 22; x < 29; x++) put(layer, x, y, [220, 180, 80]);
+	for (let p = 0; p < mask.length; p++) mask[p] = Number(layer.data[p * 4 + 3] > 0);
+	return {
+		...frame(i, (out) => hood(out, 0)),
+		key: `${anim}/${dir}/${i}`,
+		layer,
+		mask,
+		area: extra ? 84 : 63
+	};
 }
-const consensusKey = () => ({ south: consensusFrame('rest', 0, false).layer })
+const consensusKey = () => ({ south: consensusFrame('rest', 0, false).layer });
 
 test('another move cannot vote to preserve a transient head-item component', () => {
-  const alone = [0, 1, 2, 3].map(i => consensusFrame('walk', i, i === 1))
-  const pooled = [0, 1, 2, 3].map(i => consensusFrame('walk', i, i === 1))
-  pooled.push(...['idle', 'run'].flatMap(anim => [0, 1, 2, 3].map(i => consensusFrame(anim, i, true))))
-  trimToKeyframe(rig, alone, consensusKey())
-  trimToKeyframe(rig, pooled, consensusKey())
-  for (const [i, expected] of alone.entries()) {
-    expect(expected.area).toBe(63)
-    expect(pooled[i].mask).toEqual(expected.mask)
-    expect(pooled[i].layer.data).toEqual(expected.layer.data)
-  }
-  for (const c of pooled.slice(4)) expect(c.area).toBe(84)
-})
+	const alone = [0, 1, 2, 3].map((i) => consensusFrame('walk', i, i === 1));
+	const pooled = [0, 1, 2, 3].map((i) => consensusFrame('walk', i, i === 1));
+	pooled.push(
+		...['idle', 'run'].flatMap((anim) => [0, 1, 2, 3].map((i) => consensusFrame(anim, i, true)))
+	);
+	trimToKeyframe(rig, alone, consensusKey());
+	trimToKeyframe(rig, pooled, consensusKey());
+	for (const [i, expected] of alone.entries()) {
+		expect(expected.area).toBe(63);
+		expect(pooled[i].mask).toEqual(expected.mask);
+		expect(pooled[i].layer.data).toEqual(expected.layer.data);
+	}
+	for (const c of pooled.slice(4)) expect(c.area).toBe(84);
+});
 
 test('a real extension supported within its own move survives unrelated clips and input order', () => {
-  const alone = [0, 1, 2, 3].map(i => consensusFrame('walk', i, true))
-  const pooled = [
-    ...[0, 1, 2, 3].map(i => consensusFrame('walk', i, true)),
-    ...['idle', 'run'].flatMap(anim => [0, 1, 2, 3].map(i => consensusFrame(anim, i, false))),
-    ...[0, 1, 2, 3].map(i => consensusFrame('walk', i, false, 'east')),
-  ].reverse()
-  trimToKeyframe(rig, alone, consensusKey())
-  trimToKeyframe(rig, pooled, consensusKey())
-  for (const expected of alone) {
-    const actual = pooled.find(c => c.key === expected.key)!
-    expect(expected.area).toBe(84)
-    expect(actual.mask).toEqual(expected.mask)
-    expect(actual.layer.data).toEqual(expected.layer.data)
-  }
-})
+	const alone = [0, 1, 2, 3].map((i) => consensusFrame('walk', i, true));
+	const pooled = [
+		...[0, 1, 2, 3].map((i) => consensusFrame('walk', i, true)),
+		...['idle', 'run'].flatMap((anim) => [0, 1, 2, 3].map((i) => consensusFrame(anim, i, false))),
+		...[0, 1, 2, 3].map((i) => consensusFrame('walk', i, false, 'east'))
+	].reverse();
+	trimToKeyframe(rig, alone, consensusKey());
+	trimToKeyframe(rig, pooled, consensusKey());
+	for (const expected of alone) {
+		const actual = pooled.find((c) => c.key === expected.key)!;
+		expect(expected.area).toBe(84);
+		expect(actual.mask).toEqual(expected.mask);
+		expect(actual.layer.data).toEqual(expected.layer.data);
+	}
+});
 
 test('a partial move does not borrow temporal votes from a complete unrelated move', () => {
-  const alone = [consensusFrame('walk', 1, true)]
-  const pooled = [consensusFrame('walk', 1, true), ...[0, 1, 2, 3].map(i => consensusFrame('idle', i, true))]
-  trimToKeyframe(rig, alone, consensusKey())
-  trimToKeyframe(rig, pooled, consensusKey())
-  expect(alone[0].area).toBe(63)
-  expect(pooled[0].layer.data).toEqual(alone[0].layer.data)
-  expect(pooled[0].mask).toEqual(alone[0].mask)
-})
+	const alone = [consensusFrame('walk', 1, true)];
+	const pooled = [
+		consensusFrame('walk', 1, true),
+		...[0, 1, 2, 3].map((i) => consensusFrame('idle', i, true))
+	];
+	trimToKeyframe(rig, alone, consensusKey());
+	trimToKeyframe(rig, pooled, consensusKey());
+	expect(alone[0].area).toBe(63);
+	expect(pooled[0].layer.data).toEqual(alone[0].layer.data);
+	expect(pooled[0].mask).toEqual(alone[0].mask);
+});

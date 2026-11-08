@@ -1,93 +1,181 @@
-import { expect, test } from 'vitest'
-import { gridEstimate, packGrid, planGens, repairGridLayout } from '../../src/lib/items/items.ts'
-import { requestTier } from '../../src/lib/pixellab/plans.ts'
-import { makeImg } from '../../src/lib/image/png.ts'
-import { moveEstimate } from '../../src/studio/create.ts'
-import type { Manifest } from '../../src/lib/store/manifest.ts'
+import { expect, test } from 'vitest';
+import { gridEstimate, packGrid, planGens, repairGridLayout } from '../../src/lib/items/items.ts';
+import { requestTier } from '../../src/lib/pixellab/plans.ts';
+import { makeImg } from '../../src/lib/image/png.ts';
+import { moveEstimate } from '../../src/studio/create.ts';
+import type { Manifest } from '../../src/lib/store/manifest.ts';
 
 test.each([
- [{w:64,h:64},8,4,4,{w:256,h:192,gens:10}],
- [{w:96,h:96},8,4,4,{w:384,h:288,gens:15}],
- [{w:96,h:96},16,3,5,{w:480,h:384,gens:25}],
-] as const)('estimate uses the actual packed frame and protected-reference canvas', (cell,frames,refs,cols,expected)=>{
- const grid=packGrid(Array(frames+refs).fill(makeImg(cell.w,cell.h)),Array(frames+refs).fill(null),cols)
- const estimate=gridEstimate(cell,frames,refs,cols);expect(estimate).toEqual(expected);expect([estimate.w,estimate.h]).toEqual([grid.image.w,grid.image.h])
-})
+	[{ w: 64, h: 64 }, 8, 4, 4, { w: 256, h: 192, gens: 10 }],
+	[{ w: 96, h: 96 }, 8, 4, 4, { w: 384, h: 288, gens: 15 }],
+	[{ w: 96, h: 96 }, 16, 3, 5, { w: 480, h: 384, gens: 25 }]
+] as const)(
+	'estimate uses the actual packed frame and protected-reference canvas',
+	(cell, frames, refs, cols, expected) => {
+		const grid = packGrid(
+			Array(frames + refs).fill(makeImg(cell.w, cell.h)),
+			Array(frames + refs).fill(null),
+			cols
+		);
+		const estimate = gridEstimate(cell, frames, refs, cols);
+		expect(estimate).toEqual(expected);
+		expect([estimate.w, estimate.h]).toEqual([grid.image.w, grid.image.h]);
+	}
+);
 
-test('grids price by their mean side, as billed',()=>{
- // job f9d4ef6a (2026-10-28 frozen-frame probe): 448×112 billed 15; its area is under 256², so area quoted 10
- expect(gridEstimate({w:112,h:112},4,0,4)).toEqual({w:448,h:112,gens:15})
- // spikes/api/out/x28: 480×240 billed 25 seven times; area (under 341²) would quote 15
- expect(gridEstimate({w:120,h:120},7,1)).toEqual({w:480,h:240,gens:25})
- // jobs 43f75ed0 and b3ae338e (2026-11-02 weapon-aware grip): 432×288 billed 25; with 448×112 = 15 no longest-side rule fits
- expect(gridEstimate({w:144,h:144},4,2,3)).toEqual({w:432,h:288,gens:25})
- // not a receipt: the default 128 px frame's single-row grid, quoted by the same rule
- expect(gridEstimate({w:128,h:128},2,1,4)).toEqual({w:512,h:128,gens:15})
-})
+test('grids price by their mean side, as billed', () => {
+	// job f9d4ef6a (2026-10-28 frozen-frame probe): 448×112 billed 15; its area is under 256², so area quoted 10
+	expect(gridEstimate({ w: 112, h: 112 }, 4, 0, 4)).toEqual({ w: 448, h: 112, gens: 15 });
+	// spikes/api/out/x28: 480×240 billed 25 seven times; area (under 341²) would quote 15
+	expect(gridEstimate({ w: 120, h: 120 }, 7, 1)).toEqual({ w: 480, h: 240, gens: 25 });
+	// jobs 43f75ed0 and b3ae338e (2026-11-02 weapon-aware grip): 432×288 billed 25; with 448×112 = 15 no longest-side rule fits
+	expect(gridEstimate({ w: 144, h: 144 }, 4, 2, 3)).toEqual({ w: 432, h: 288, gens: 25 });
+	// not a receipt: the default 128 px frame's single-row grid, quoted by the same rule
+	expect(gridEstimate({ w: 128, h: 128 }, 2, 1, 4)).toEqual({ w: 512, h: 128, gens: 15 });
+});
 
-test('catalog square boundaries hold, with per-side submission limits retained',()=>{
- expect(gridEstimate({w:256,h:256},1,0,1).gens).toBe(10);expect(gridEstimate({w:257,h:256},1,0,1).gens).toBe(15)
- // the catalog says 341 px; receipts only pin the edge to [336, 360), so means above 336 quote 25 (never low)
- expect(gridEstimate({w:336,h:336},1,0,1).gens).toBe(15);expect(gridEstimate({w:337,h:336},1,0,1).gens).toBe(25)
- expect(gridEstimate({w:512,h:512},1,0,1).gens).toBe(25);expect(()=>gridEstimate({w:513,h:32},1,0,1)).toThrow('512')
-})
+test('catalog square boundaries hold, with per-side submission limits retained', () => {
+	expect(gridEstimate({ w: 256, h: 256 }, 1, 0, 1).gens).toBe(10);
+	expect(gridEstimate({ w: 257, h: 256 }, 1, 0, 1).gens).toBe(15);
+	// the catalog says 341 px; receipts only pin the edge to [336, 360), so means above 336 quote 25 (never low)
+	expect(gridEstimate({ w: 336, h: 336 }, 1, 0, 1).gens).toBe(15);
+	expect(gridEstimate({ w: 337, h: 336 }, 1, 0, 1).gens).toBe(25);
+	expect(gridEstimate({ w: 512, h: 512 }, 1, 0, 1).gens).toBe(25);
+	expect(() => gridEstimate({ w: 513, h: 32 }, 1, 0, 1)).toThrow('512');
+});
 
-test('protected references and padded unused cells can increase the quoted tier',()=>{
- expect(gridEstimate({w:96,h:96},4,0).gens).toBe(10);expect(gridEstimate({w:96,h:96},4,1).gens).toBe(15)
- expect(gridEstimate({w:96,h:96},8,4).gens).toBe(15);expect(gridEstimate({w:96,h:96},8,5).gens).toBe(25)
- expect(gridEstimate({w:64,h:64},32,0)).toMatchObject({w:256,h:512});expect(()=>gridEstimate({w:64,h:64},32,1)).toThrow('512')
-})
+test('protected references and padded unused cells can increase the quoted tier', () => {
+	expect(gridEstimate({ w: 96, h: 96 }, 4, 0).gens).toBe(10);
+	expect(gridEstimate({ w: 96, h: 96 }, 4, 1).gens).toBe(15);
+	expect(gridEstimate({ w: 96, h: 96 }, 8, 4).gens).toBe(15);
+	expect(gridEstimate({ w: 96, h: 96 }, 8, 5).gens).toBe(25);
+	expect(gridEstimate({ w: 64, h: 64 }, 32, 0)).toMatchObject({ w: 256, h: 512 });
+	expect(() => gridEstimate({ w: 64, h: 64 }, 32, 1)).toThrow('512');
+});
 
-test('invalid frame/reference/dimension counts cannot produce a misleading finite estimate',()=>{
- for(const [cell,frames,refs,cols] of [[{w:64,h:64},0,1,4],[{w:64,h:64},8,-1,4],[{w:64,h:64},8,1.5,4],[{w:NaN,h:64},8,1,4],[{w:64,h:64},8,1,0]] as const)expect(()=>gridEstimate(cell,frames,refs,cols)).toThrow()
-})
+test('invalid frame/reference/dimension counts cannot produce a misleading finite estimate', () => {
+	for (const [cell, frames, refs, cols] of [
+		[{ w: 64, h: 64 }, 0, 1, 4],
+		[{ w: 64, h: 64 }, 8, -1, 4],
+		[{ w: 64, h: 64 }, 8, 1.5, 4],
+		[{ w: NaN, h: 64 }, 8, 1, 4],
+		[{ w: 64, h: 64 }, 8, 1, 0]
+	] as const)
+		expect(() => gridEstimate(cell, frames, refs, cols)).toThrow();
+});
 
 test('repair packing moves to Tier 1 when it can, and fits wider when 4 columns are too wide', () => {
- const regular = { w: 80, h: 80 };
- const compact = repairGridLayout(regular, 8, 1);
- expect(compact).toEqual({ w: 240, h: 240, gens: 10, cols: 3 });
- const tier = ({ w, h }: { w: number; h: number }) => requestTier({ method: 'POST', endpoint: '/inpaint-v3', params: { inpainting_image: { size: { width: w, height: h } } } });
- expect(tier(gridEstimate(regular, 8, 1))).toBe(2);
- expect(tier(compact)).toBe(1);
- expect(repairGridLayout(regular, 9, 1)).toEqual({ w: 320, h: 240, gens: 15, cols: 4 });
- expect(repairGridLayout({ w: 64, h: 64 }, 8, 1)).toEqual({ w: 256, h: 192, gens: 10, cols: 4 });
- expect(repairGridLayout({ w: 128, h: 128 }, 3, 1)).toEqual({ w: 256, h: 256, gens: 10, cols: 2 });
- // 4 columns of 160 px exceed 512 px; 3 columns fit, so the repair runs instead of failing (2026-11-07 cheapest layout)
- expect(repairGridLayout({ w: 160, h: 160 }, 8, 1)).toEqual({ w: 480, h: 480, gens: 25, cols: 3 });
- expect(() => repairGridLayout({ w: 300, h: 300 }, 1, 1)).toThrow('512');
+	const regular = { w: 80, h: 80 };
+	const compact = repairGridLayout(regular, 8, 1);
+	expect(compact).toEqual({ w: 240, h: 240, gens: 10, cols: 3 });
+	const tier = ({ w, h }: { w: number; h: number }) =>
+		requestTier({
+			method: 'POST',
+			endpoint: '/inpaint-v3',
+			params: { inpainting_image: { size: { width: w, height: h } } }
+		});
+	expect(tier(gridEstimate(regular, 8, 1))).toBe(2);
+	expect(tier(compact)).toBe(1);
+	expect(repairGridLayout(regular, 9, 1)).toEqual({ w: 320, h: 240, gens: 15, cols: 4 });
+	expect(repairGridLayout({ w: 64, h: 64 }, 8, 1)).toEqual({ w: 256, h: 192, gens: 10, cols: 4 });
+	expect(repairGridLayout({ w: 128, h: 128 }, 3, 1)).toEqual({ w: 256, h: 256, gens: 10, cols: 2 });
+	// 4 columns of 160 px exceed 512 px; 3 columns fit, so the repair runs instead of failing (2026-11-07 cheapest layout)
+	expect(repairGridLayout({ w: 160, h: 160 }, 8, 1)).toEqual({ w: 480, h: 480, gens: 25, cols: 3 });
+	expect(() => repairGridLayout({ w: 300, h: 300 }, 1, 1)).toThrow('512');
 });
 
 test('a narrower packing replaces the qualified layout only when it is strictly cheaper', () => {
- // 86 px cells, 4 frames + 1 reference: 344x172 quotes 15; 258x172 quotes 10 (both Tier 2; ties go to more columns)
- expect(repairGridLayout({ w: 86, h: 86 }, 4, 1)).toEqual({ w: 258, h: 172, gens: 10, cols: 3 });
- // 120 px cells, 5 frames + 1 reference: 480x240 quotes 25; 360x240 quotes 15
- expect(repairGridLayout({ w: 120, h: 120 }, 5, 1)).toEqual({ w: 360, h: 240, gens: 15, cols: 3 });
- // the same price on the same tier keeps the qualified 4 columns
- expect(repairGridLayout({ w: 96, h: 96 }, 8, 1)).toMatchObject({ w: 384, h: 288, gens: 15, cols: 4 });
- // the automatic draft fallback keeps the qualified 4 columns (no matched quality test of other layouts)
- const plan = [{ kind: 'grid' as const, cells: Array.from({ length: 4 }, (_, i) => `slash/north/${i}`) }]
- expect(planGens(plan, { w: 86, h: 86 })).toBe(15);
- // ties go to more columns: 1 frame + 1 reference is a row, not a stack
- expect(repairGridLayout({ w: 300, h: 200 }, 1, 0)).toMatchObject({ cols: 1 });
- expect(repairGridLayout({ w: 80, h: 80 }, 1, 1)).toMatchObject({ w: 160, h: 80, cols: 2 });
+	// 86 px cells, 4 frames + 1 reference: 344x172 quotes 15; 258x172 quotes 10 (both Tier 2; ties go to more columns)
+	expect(repairGridLayout({ w: 86, h: 86 }, 4, 1)).toEqual({ w: 258, h: 172, gens: 10, cols: 3 });
+	// 120 px cells, 5 frames + 1 reference: 480x240 quotes 25; 360x240 quotes 15
+	expect(repairGridLayout({ w: 120, h: 120 }, 5, 1)).toEqual({ w: 360, h: 240, gens: 15, cols: 3 });
+	// the same price on the same tier keeps the qualified 4 columns
+	expect(repairGridLayout({ w: 96, h: 96 }, 8, 1)).toMatchObject({
+		w: 384,
+		h: 288,
+		gens: 15,
+		cols: 4
+	});
+	// the automatic draft fallback keeps the qualified 4 columns (no matched quality test of other layouts)
+	const plan = [
+		{ kind: 'grid' as const, cells: Array.from({ length: 4 }, (_, i) => `slash/north/${i}`) }
+	];
+	expect(planGens(plan, { w: 86, h: 86 })).toBe(15);
+	// ties go to more columns: 1 frame + 1 reference is a row, not a stack
+	expect(repairGridLayout({ w: 300, h: 200 }, 1, 0)).toMatchObject({ cols: 1 });
+	expect(repairGridLayout({ w: 80, h: 80 }, 1, 1)).toMatchObject({ w: 160, h: 80, cols: 2 });
 });
 
-test('move estimate prices each actual item canvas with only its matching direction reference',()=>{
- const dirs=['south','east','north','west'],dressed=Object.fromEntries(dirs.map(d=>[d,'sha256:reference']))
- const m={rig:{cell:{w:64,h:64},directions:dirs.map(id=>({id}))},items:[{id:'small',layers:[{}],dressed},{id:'sword',layers:[{cell:{w:96,h:96}}],dressed}]} as unknown as Manifest
- expect(moveEstimate(m,{id:'walk',frames:8,items:['sword'],dirs:['north'],itemMethod:'grid'})).toMatchObject({body:0,items:15,gens:15})
- expect(moveEstimate(m,{id:'walk',frames:8,items:['small','sword'],dirs:['north','south'],itemMethod:'grid'}).items).toBe(50)
- m.items[1].dressed!['north-east']='sha256:extra';expect(moveEstimate(m,{id:'walk',frames:8,items:['sword'],dirs:['north'],itemMethod:'grid'}).items).toBe(15)
-})
+test('move estimate prices each actual item canvas with only its matching direction reference', () => {
+	const dirs = ['south', 'east', 'north', 'west'],
+		dressed = Object.fromEntries(dirs.map((d) => [d, 'sha256:reference']));
+	const m = {
+		rig: { cell: { w: 64, h: 64 }, directions: dirs.map((id) => ({ id })) },
+		items: [
+			{ id: 'small', layers: [{}], dressed },
+			{ id: 'sword', layers: [{ cell: { w: 96, h: 96 } }], dressed }
+		]
+	} as unknown as Manifest;
+	expect(
+		moveEstimate(m, {
+			id: 'walk',
+			frames: 8,
+			items: ['sword'],
+			dirs: ['north'],
+			itemMethod: 'grid'
+		})
+	).toMatchObject({ body: 0, items: 15, gens: 15 });
+	expect(
+		moveEstimate(m, {
+			id: 'walk',
+			frames: 8,
+			items: ['small', 'sword'],
+			dirs: ['north', 'south'],
+			itemMethod: 'grid'
+		}).items
+	).toBe(50);
+	m.items[1].dressed!['north-east'] = 'sha256:extra';
+	expect(
+		moveEstimate(m, {
+			id: 'walk',
+			frames: 8,
+			items: ['sword'],
+			dirs: ['north'],
+			itemMethod: 'grid'
+		}).items
+	).toBe(15);
+});
 
-test('fallback plan costs include one matching reference and keep normal pose/edit estimates unchanged',()=>{
- const plan=[{kind:'dress' as const,cells:['rest/south/0','rest/east/0','rest/north/0','rest/west/0']},{kind:'grid' as const,cells:Array.from({length:8},(_,i)=>`slash/north/${i}`)}]
- expect(planGens(plan)).toBe(20);expect(planGens(plan,{w:96,h:96})).toBe(25)
- expect(planGens([{kind:'pose',cells:Array(8).fill('slash/north/0')},{kind:'edit',cells:['idle/south/0']}])).toBe(13)
-})
+test('fallback plan costs include one matching reference and keep normal pose/edit estimates unchanged', () => {
+	const plan = [
+		{
+			kind: 'dress' as const,
+			cells: ['rest/south/0', 'rest/east/0', 'rest/north/0', 'rest/west/0']
+		},
+		{ kind: 'grid' as const, cells: Array.from({ length: 8 }, (_, i) => `slash/north/${i}`) }
+	];
+	expect(planGens(plan)).toBe(20);
+	expect(planGens(plan, { w: 96, h: 96 })).toBe(25);
+	expect(
+		planGens([
+			{ kind: 'pose', cells: Array(8).fill('slash/north/0') },
+			{ kind: 'edit', cells: ['idle/south/0'] }
+		])
+	).toBe(13);
+});
 
 test('invalid repair input is rejected at once instead of searching forever', () => {
- for (const [cell, frames, refs] of [[{ w: 0, h: 64 }, 8, 1], [{ w: 64, h: 0 }, 8, 1], [{ w: NaN, h: 64 }, 8, 1], [{ w: 1.5, h: 64 }, 8, 1], [{ w: 64, h: 64 }, 0, 1], [{ w: 64, h: 64 }, 8, -1]] as const)
-  expect(() => repairGridLayout(cell, frames, refs), JSON.stringify([cell, frames, refs])).toThrow('valid integers')
- expect(repairGridLayout({ w: 160, h: 160 }, 8, 1)).toMatchObject({ cols: 3 }) // a valid layout 4 columns cannot hold still works
-})
+	for (const [cell, frames, refs] of [
+		[{ w: 0, h: 64 }, 8, 1],
+		[{ w: 64, h: 0 }, 8, 1],
+		[{ w: NaN, h: 64 }, 8, 1],
+		[{ w: 1.5, h: 64 }, 8, 1],
+		[{ w: 64, h: 64 }, 0, 1],
+		[{ w: 64, h: 64 }, 8, -1]
+	] as const)
+		expect(
+			() => repairGridLayout(cell, frames, refs),
+			JSON.stringify([cell, frames, refs])
+		).toThrow('valid integers');
+	expect(repairGridLayout({ w: 160, h: 160 }, 8, 1)).toMatchObject({ cols: 3 }); // a valid layout 4 columns cannot hold still works
+});

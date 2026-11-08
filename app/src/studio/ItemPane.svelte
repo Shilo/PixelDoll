@@ -1,246 +1,614 @@
 <script lang="ts">
-  import { coverageGaps, moveDirs } from '../lib/dress/dress.ts'
-  import { hiddenSlots, equipped } from '../lib/compose/compose.ts'
-  import { SLOTS } from '../lib/items/items.ts'
-  import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts'
-  import { missingItemMoves, itemMoveOffer } from './create.ts'
-  import { movePlan } from './apiPlans.ts'
-  import ApiPeek from './ApiPeek.svelte'
-  import Sprite from './Sprite.svelte'
-  import Colors from './Colors.svelte'
-  import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason, moveLabel, qaReasons } from './model.ts'
-  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, queueMoves, pendingMoves, moving, settingUp, matchItemPalette, acceptItemIssues, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
-  import { ArrowUp, ArrowDown, Bookmark, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
+	import { coverageGaps, moveDirs } from '../lib/dress/dress.ts';
+	import { hiddenSlots, equipped } from '../lib/compose/compose.ts';
+	import { SLOTS } from '../lib/items/items.ts';
+	import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts';
+	import { missingItemMoves, itemMoveOffer } from './create.ts';
+	import { movePlan } from './apiPlans.ts';
+	import ApiPeek from './ApiPeek.svelte';
+	import Sprite from './Sprite.svelte';
+	import Colors from './Colors.svelte';
+	import {
+		HEALTH_LABEL,
+		groupOf,
+		healthOf,
+		itemPreviewFrames,
+		slotLabel,
+		plainReason,
+		moveLabel,
+		qaReasons
+	} from './model.ts';
+	import {
+		ui,
+		doc,
+		store,
+		view,
+		wear,
+		toggleHide,
+		moveLayer,
+		resetLayer,
+		removeItem,
+		isDemo,
+		openNewItem,
+		withKey,
+		startMove,
+		queueMoves,
+		pendingMoves,
+		moving,
+		settingUp,
+		matchItemPalette,
+		acceptItemIssues,
+		openSaveDesign,
+		openPinnedDesign,
+		openItemExtension,
+		extensionPreparing
+	} from './state.svelte.ts';
+	import {
+		ArrowUp,
+		ArrowDown,
+		Bookmark,
+		Check,
+		ChevronRight,
+		CircleCheck,
+		RefreshCw,
+		Trash,
+		TriangleAlert
+	} from './icons.ts';
 
-  let { id }: { id: string } = $props()
-  const m = $derived(store.project?.manifest)
-  const moveIds = $derived(m?.rig.animations.map(a => a.id) ?? [])
-  const it = $derived(m?.items.find((i) => i.id === id))
-  const ladder = $derived(SLOTS.find((s) => s.id === it?.slot)?.zOverrides ?? [])
-  const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot])
-  const hiddenNow = $derived(m && it ? hiddenSlots(m, equipped(m, doc.items)).has(it.slot) : false)
-  const health = $derived(m && it ? healthOf(m, it) : 'demo')
-  const routeNames = { 'skeleton-pose': 'Skeleton posing', 'inpaint-grid': 'Inpainted grid', 'ea2-anchor': 'Anchored frame edits', diff: 'Difference extraction' }
-  const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim))
-  const made = $derived(m ? moveDirs(m, ui.anim) : [])
-  // Cache a shared crop across every frame and direction, rather than resizing the strip on each playback tick.
-  const previews = $derived(view.project && it ? itemPreviewFrames(view.project, it, ui.anim) : [])
-  const strip = $derived(previews[ui.frame % previews.length] ?? [])
-  const k = $derived(strip.length ? Math.max(1, Math.floor(Math.min(60 / strip[0].w, 72 / strip[0].h, 6) * ui.dpr)) : 1)
-  const others = $derived(m && it ? m.slots.filter((s) => s.id !== 'body' && s.id !== it.slot && m.items.some((x) => x.slot === s.id)) : [])
-  const hides = $derived(it ? it.hides ?? m?.slots.find((s) => s.id === it.slot)?.hides ?? [] : [])
-  const tucks = $derived(it ? (m?.slots.find((s) => s.id === it.slot)?.clips ?? []).filter((s) => others.some((o) => o.id === s) && !hides.includes(s)) : [])
-  const gaps = $derived(m && it ? coverageGaps(m, it) : [])
-  // B10: views of the shown move this item has no frames for (it would vanish there)
-  const moveGaps = $derived(gaps.filter((g) => g.startsWith(`${ui.anim}/`)).map((g) => g.split('/')[1]))
-  const moveName = $derived(moveLabel(ui.anim, moveIds))
-  const sourceDir = $derived(m?.rig.directions.find((d) => d.id === ui.dir)?.mirrorOf ?? ui.dir)
-  const repairSpec = $derived(it && !it.design && anim && it.route === 'skeleton-pose' && it.key && it.dressed?.[sourceDir] && anim.sources?.[sourceDir]?.keypoints?.length === anim.cells
-    ? { id: anim.id, frames: anim.cells, items: [it.id], dirs: [sourceDir], itemMethod: 'grid' as const, itemsOnly: true as const, seed: 0 } : null)
-  const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec]) : null)
-  const repairBusy = $derived(!!moving.spec && !moving.done || !!settingUp.spec && !settingUp.done)
-  function repairFrames() {
-    if (!repairOffer?.specs[0]) return
-    const projectId = doc.id, spec = { ...$state.snapshot(repairOffer.specs[0]), seed: 1 + Math.floor(Math.random() * 1_000_000) }
-    withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' })
-  }
-  // The character's actual missing moves, regardless of their names or when they were imported.
-  const missingMoves = $derived.by(() => {
-    if (!m || !it || isDemo()) return []
-    const pending = pendingMoves(doc.id, it.id).map((s) => s.id)
-    return missingItemMoves(m, it.id, 0).filter((s) => !pending.includes(s.id))
-  })
-  let chosenMove = $state('')
-  const missingMove = $derived(missingMoves.find(s => s.id === chosenMove) ?? missingMoves.find(s => s.id === ui.anim) ?? missingMoves[0])
-  const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove]) : null)
-  const missingName = $derived(missingMove ? moveLabel(missingMove.id, moveIds) : '')
-  function makeMissing() {
-    if (!missingOffer?.specs.length) return
-    const projectId = doc.id, seed = 1 + Math.floor(Math.random() * 1_000_000), specs = missingOffer.specs.map((s) => ({ ...$state.snapshot(s), seed }))
-    withKey(() => { void queueMoves(projectId, specs); ui.sheet = 'move' }, specs.some(s => s.itemMethod !== 'anchor'))
-  }
-  let colorPlan = $state<ItemPaletteRepairPlan | null>(null)
-  let colorBusy = $state(false)
-  let colorError = $state('')
-  let colorDone = $state('')
-  const colorScope = $derived(`${doc.id}|${it?.id ?? ''}|${anim?.id ?? ''}|${sourceDir}`)
-  $effect(() => { void colorScope; colorError = ''; colorDone = '' })
-  $effect(() => {
-    const projectId = doc.id, itemId = it?.id, animId = anim?.id, dir = sourceDir
-    void doc.rev
-    let current = true
-    colorPlan = null
-    if (!isDemo() && itemId && animId) void itemPaletteRepairPlan(projectId, itemId, animId, dir).then((plan) => { if (current) colorPlan = plan }).catch(() => {})
-    return () => { current = false }
-  })
-  async function matchColors() {
-    if (!colorPlan || !it || !anim || colorBusy) return
-    const projectId = doc.id, itemId = it.id, animId = anim.id, dir = sourceDir, reviewed = $state.snapshot(colorPlan)
-    const sameView = () => doc.id === projectId && it?.id === itemId && anim?.id === animId && sourceDir === dir
-    colorBusy = true; colorError = ''; colorDone = ''
-    try {
-      await matchItemPalette(projectId, itemId, animId, dir, reviewed)
-      if (sameView()) colorDone = `Matched ${reviewed.changedPixels} ${reviewed.changedPixels === 1 ? 'pixel' : 'pixels'} in ${reviewed.changedFrames.length} ${reviewed.changedFrames.length === 1 ? 'frame' : 'frames'}.`
-    } catch (e) { if (sameView()) colorError = e instanceof Error ? e.message : String(e) }
-    finally { colorBusy = false }
-  }
-  const gensSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0)
-  const usdSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.usd ?? 0), 0) : 0)
-  const designReasons = $derived([...new Set((it?.designWarnings ?? []).flatMap((s) => s.split('; ')).map(plainReason))])
-  const reasons = $derived(it?.qa ? qaReasons(it.qa, SLOTS.find((s) => s.id === it.slot)?.class === 'held', it.route === 'skeleton-pose', m?.rig) : [])
-  let confirmRemove = $state(false)
-  let onlyDir = $state(false)
-  let acceptingIssues = $state(false)
-  let acceptanceError = $state('')
-  async function acceptIssues() {
-    if (!it || acceptingIssues) return
-    const projectId = doc.id, itemId = it.id, reviewed = $state.snapshot(it)
-    acceptingIssues = true; acceptanceError = ''
-    try { await acceptItemIssues(projectId, itemId, reviewed) }
-    catch (error) { if (doc.id === projectId && it?.id === itemId) acceptanceError = error instanceof Error ? error.message : String(error) }
-    finally { acceptingIssues = false }
-  }
+	let { id }: { id: string } = $props();
+	const m = $derived(store.project?.manifest);
+	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
+	const it = $derived(m?.items.find((i) => i.id === id));
+	const ladder = $derived(SLOTS.find((s) => s.id === it?.slot)?.zOverrides ?? []);
+	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
+	const hiddenNow = $derived(m && it ? hiddenSlots(m, equipped(m, doc.items)).has(it.slot) : false);
+	const health = $derived(m && it ? healthOf(m, it) : 'demo');
+	const routeNames = {
+		'skeleton-pose': 'Skeleton posing',
+		'inpaint-grid': 'Inpainted grid',
+		'ea2-anchor': 'Anchored frame edits',
+		diff: 'Difference extraction'
+	};
+	const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim));
+	const made = $derived(m ? moveDirs(m, ui.anim) : []);
+	// Cache a shared crop across every frame and direction, rather than resizing the strip on each playback tick.
+	const previews = $derived(view.project && it ? itemPreviewFrames(view.project, it, ui.anim) : []);
+	const strip = $derived(previews[ui.frame % previews.length] ?? []);
+	const k = $derived(
+		strip.length
+			? Math.max(1, Math.floor(Math.min(60 / strip[0].w, 72 / strip[0].h, 6) * ui.dpr))
+			: 1
+	);
+	const others = $derived(
+		m && it
+			? m.slots.filter(
+					(s) => s.id !== 'body' && s.id !== it.slot && m.items.some((x) => x.slot === s.id)
+				)
+			: []
+	);
+	const hides = $derived(
+		it ? (it.hides ?? m?.slots.find((s) => s.id === it.slot)?.hides ?? []) : []
+	);
+	const tucks = $derived(
+		it
+			? (m?.slots.find((s) => s.id === it.slot)?.clips ?? []).filter(
+					(s) => others.some((o) => o.id === s) && !hides.includes(s)
+				)
+			: []
+	);
+	const gaps = $derived(m && it ? coverageGaps(m, it) : []);
+	// B10: views of the shown move this item has no frames for (it would vanish there)
+	const moveGaps = $derived(
+		gaps.filter((g) => g.startsWith(`${ui.anim}/`)).map((g) => g.split('/')[1])
+	);
+	const moveName = $derived(moveLabel(ui.anim, moveIds));
+	const sourceDir = $derived(m?.rig.directions.find((d) => d.id === ui.dir)?.mirrorOf ?? ui.dir);
+	const repairSpec = $derived(
+		it &&
+			!it.design &&
+			anim &&
+			it.route === 'skeleton-pose' &&
+			it.key &&
+			it.dressed?.[sourceDir] &&
+			anim.sources?.[sourceDir]?.keypoints?.length === anim.cells
+			? {
+					id: anim.id,
+					frames: anim.cells,
+					items: [it.id],
+					dirs: [sourceDir],
+					itemMethod: 'grid' as const,
+					itemsOnly: true as const,
+					seed: 0
+				}
+			: null
+	);
+	const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec]) : null);
+	const repairBusy = $derived(
+		(!!moving.spec && !moving.done) || (!!settingUp.spec && !settingUp.done)
+	);
+	function repairFrames() {
+		if (!repairOffer?.specs[0]) return;
+		const projectId = doc.id,
+			spec = {
+				...$state.snapshot(repairOffer.specs[0]),
+				seed: 1 + Math.floor(Math.random() * 1_000_000)
+			};
+		withKey(() => {
+			void startMove(projectId, spec);
+			ui.sheet = 'move';
+		});
+	}
+	// The character's actual missing moves, regardless of their names or when they were imported.
+	const missingMoves = $derived.by(() => {
+		if (!m || !it || isDemo()) return [];
+		const pending = pendingMoves(doc.id, it.id).map((s) => s.id);
+		return missingItemMoves(m, it.id, 0).filter((s) => !pending.includes(s.id));
+	});
+	let chosenMove = $state('');
+	const missingMove = $derived(
+		missingMoves.find((s) => s.id === chosenMove) ??
+			missingMoves.find((s) => s.id === ui.anim) ??
+			missingMoves[0]
+	);
+	const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove]) : null);
+	const missingName = $derived(missingMove ? moveLabel(missingMove.id, moveIds) : '');
+	function makeMissing() {
+		if (!missingOffer?.specs.length) return;
+		const projectId = doc.id,
+			seed = 1 + Math.floor(Math.random() * 1_000_000),
+			specs = missingOffer.specs.map((s) => ({ ...$state.snapshot(s), seed }));
+		withKey(
+			() => {
+				void queueMoves(projectId, specs);
+				ui.sheet = 'move';
+			},
+			specs.some((s) => s.itemMethod !== 'anchor')
+		);
+	}
+	let colorPlan = $state<ItemPaletteRepairPlan | null>(null);
+	let colorBusy = $state(false);
+	let colorError = $state('');
+	let colorDone = $state('');
+	const colorScope = $derived(`${doc.id}|${it?.id ?? ''}|${anim?.id ?? ''}|${sourceDir}`);
+	$effect(() => {
+		void colorScope;
+		colorError = '';
+		colorDone = '';
+	});
+	$effect(() => {
+		const projectId = doc.id,
+			itemId = it?.id,
+			animId = anim?.id,
+			dir = sourceDir;
+		void doc.rev;
+		let current = true;
+		colorPlan = null;
+		if (!isDemo() && itemId && animId)
+			void itemPaletteRepairPlan(projectId, itemId, animId, dir)
+				.then((plan) => {
+					if (current) colorPlan = plan;
+				})
+				.catch(() => {});
+		return () => {
+			current = false;
+		};
+	});
+	async function matchColors() {
+		if (!colorPlan || !it || !anim || colorBusy) return;
+		const projectId = doc.id,
+			itemId = it.id,
+			animId = anim.id,
+			dir = sourceDir,
+			reviewed = $state.snapshot(colorPlan);
+		const sameView = () =>
+			doc.id === projectId && it?.id === itemId && anim?.id === animId && sourceDir === dir;
+		colorBusy = true;
+		colorError = '';
+		colorDone = '';
+		try {
+			await matchItemPalette(projectId, itemId, animId, dir, reviewed);
+			if (sameView())
+				colorDone = `Matched ${reviewed.changedPixels} ${reviewed.changedPixels === 1 ? 'pixel' : 'pixels'} in ${reviewed.changedFrames.length} ${reviewed.changedFrames.length === 1 ? 'frame' : 'frames'}.`;
+		} catch (e) {
+			if (sameView()) colorError = e instanceof Error ? e.message : String(e);
+		} finally {
+			colorBusy = false;
+		}
+	}
+	const gensSpent = $derived(
+		it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0
+	);
+	const usdSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.usd ?? 0), 0) : 0);
+	const designReasons = $derived([
+		...new Set((it?.designWarnings ?? []).flatMap((s) => s.split('; ')).map(plainReason))
+	]);
+	const reasons = $derived(
+		it?.qa
+			? qaReasons(
+					it.qa,
+					SLOTS.find((s) => s.id === it.slot)?.class === 'held',
+					it.route === 'skeleton-pose',
+					m?.rig
+				)
+			: []
+	);
+	let confirmRemove = $state(false);
+	let onlyDir = $state(false);
+	let acceptingIssues = $state(false);
+	let acceptanceError = $state('');
+	async function acceptIssues() {
+		if (!it || acceptingIssues) return;
+		const projectId = doc.id,
+			itemId = it.id,
+			reviewed = $state.snapshot(it);
+		acceptingIssues = true;
+		acceptanceError = '';
+		try {
+			await acceptItemIssues(projectId, itemId, reviewed);
+		} catch (error) {
+			if (doc.id === projectId && it?.id === itemId)
+				acceptanceError = error instanceof Error ? error.message : String(error);
+		} finally {
+			acceptingIssues = false;
+		}
+	}
 </script>
 
 {#if m && it && view.project}
-  <div class="insp-body">
-    <header class="insp-head">
-      <h2 class="insp-title">{it.name}</h2>
-      <p class="insp-sub">
-        <span>{groupOf(it.slot).id}{groupOf(it.slot).slots.length > 1 ? ` · ${slotLabel(it.slot)}` : ''}</span>
-        {#if health !== 'demo' || isDemo()}<span class="badge {health}">{#if health === 'clean'}<CircleCheck size={12} />{:else if health !== 'demo'}<TriangleAlert size={12} />{/if}{HEALTH_LABEL[health]}</span>{/if}
-        {#if hiddenNow}<span class="badge">Hidden by another item</span>{/if}
-      </p>
-    </header>
-    {#if it.design}<p class="muted small">Independent copy of “{it.design.snapshot.name}”. Its colors and outfits belong to this character.</p>{/if}
+	<div class="insp-body">
+		<header class="insp-head">
+			<h2 class="insp-title">{it.name}</h2>
+			<p class="insp-sub">
+				<span
+					>{groupOf(it.slot).id}{groupOf(it.slot).slots.length > 1
+						? ` · ${slotLabel(it.slot)}`
+						: ''}</span
+				>
+				{#if health !== 'demo' || isDemo()}<span class="badge {health}"
+						>{#if health === 'clean'}<CircleCheck
+								size={12}
+							/>{:else if health !== 'demo'}<TriangleAlert size={12} />{/if}{HEALTH_LABEL[
+							health
+						]}</span
+					>{/if}
+				{#if hiddenNow}<span class="badge">Hidden by another item</span>{/if}
+			</p>
+		</header>
+		{#if it.design}<p class="muted small">
+				Independent copy of “{it.design.snapshot.name}”. Its colors and outfits belong to this
+				character.
+			</p>{/if}
 
-    {#if anim}
-      <div class="dir-strip" style:--preview-width="{Math.max(60, (strip[0]?.w ?? 0) * k / ui.dpr)}px" aria-label="{it.name} in every direction">
-        {#each m.rig.directions as d, i (d.id)}
-          {#if strip[i] && made.includes(d.id)}<figure><Sprite img={strip[i]} {k} w={strip[i].w} h={strip[i].h} limit={72} label="{it.name} facing {d.id}" />{d.id.split('-').map((s) => s[0].toUpperCase()).join('')}</figure>{/if}
-        {/each}
-      </div>
-    {/if}
+		{#if anim}
+			<div
+				class="dir-strip"
+				style:--preview-width="{Math.max(60, ((strip[0]?.w ?? 0) * k) / ui.dpr)}px"
+				aria-label="{it.name} in every direction"
+			>
+				{#each m.rig.directions as d, i (d.id)}
+					{#if strip[i] && made.includes(d.id)}<figure>
+							<Sprite
+								img={strip[i]}
+								{k}
+								w={strip[i].w}
+								h={strip[i].h}
+								limit={72}
+								label="{it.name} facing {d.id}"
+							/>{d.id
+								.split('-')
+								.map((s) => s[0].toUpperCase())
+								.join('')}
+						</figure>{/if}
+				{/each}
+			</div>
+		{/if}
 
-    <div class="actions">
-      <button class="bu-action btn {on ? '' : 'primary'}" data-variant="outline" onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button>
-      {#if it.status === 'accepted' && it.slot !== 'body'}<button class="bu-action btn" data-variant="outline" onclick={() => openSaveDesign(it.id)}><Bookmark size={14} />Save as shared design</button>{/if}
-      {#if it.design && !isDemo()}<button class="bu-action btn" data-variant="outline" onclick={() => openPinnedDesign(it.id)}>View saved design</button>{/if}
-      {#if it.design && gaps.length && !isDemo()}<button class="bu-action btn" data-variant="outline" disabled={extensionPreparing(it.id)} onclick={() => openItemExtension(it.id)}>{extensionPreparing(it.id) ? 'Checking fit…' : 'Fit missing frames'}</button>{/if}
-      {#if !isDemo() && it.prompt && !it.design}
-        <button class="bu-action btn" data-variant="outline" onclick={() => withKey(() => openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt }))}><RefreshCw size={14} />Try again</button>
-      {/if}
-      {#if !isDemo()}
-        {#if confirmRemove}
-          <button class="bu-action btn danger" data-variant="outline" onclick={() => removeItem(it.id)}><Trash size={14} />Remove for good</button>
-          <button class="bu-action btn plain" data-variant="quiet" onclick={() => (confirmRemove = false)}>Keep</button>
-        {:else}
-          <button class="bu-action btn plain danger" data-variant="quiet" onclick={() => (confirmRemove = true)}><Trash size={14} />Remove</button>
-        {/if}
-      {/if}
-    </div>
+		<div class="actions">
+			<button
+				class="bu-action btn {on ? '' : 'primary'}"
+				data-variant="outline"
+				onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button
+			>
+			{#if it.status === 'accepted' && it.slot !== 'body'}<button
+					class="bu-action btn"
+					data-variant="outline"
+					onclick={() => openSaveDesign(it.id)}><Bookmark size={14} />Save as shared design</button
+				>{/if}
+			{#if it.design && !isDemo()}<button
+					class="bu-action btn"
+					data-variant="outline"
+					onclick={() => openPinnedDesign(it.id)}>View saved design</button
+				>{/if}
+			{#if it.design && gaps.length && !isDemo()}<button
+					class="bu-action btn"
+					data-variant="outline"
+					disabled={extensionPreparing(it.id)}
+					onclick={() => openItemExtension(it.id)}
+					>{extensionPreparing(it.id) ? 'Checking fit…' : 'Fit missing frames'}</button
+				>{/if}
+			{#if !isDemo() && it.prompt && !it.design}
+				<button
+					class="bu-action btn"
+					data-variant="outline"
+					onclick={() =>
+						withKey(() => openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt }))}
+					><RefreshCw size={14} />Try again</button
+				>
+			{/if}
+			{#if !isDemo()}
+				{#if confirmRemove}
+					<button
+						class="bu-action btn danger"
+						data-variant="outline"
+						onclick={() => removeItem(it.id)}><Trash size={14} />Remove for good</button
+					>
+					<button
+						class="bu-action btn plain"
+						data-variant="quiet"
+						onclick={() => (confirmRemove = false)}>Keep</button
+					>
+				{:else}
+					<button
+						class="bu-action btn plain danger"
+						data-variant="quiet"
+						onclick={() => (confirmRemove = true)}><Trash size={14} />Remove</button
+					>
+				{/if}
+			{/if}
+		</div>
 
-    {#if designReasons.length}
-      <div class="field">
-        <span class="sec-title">Accepted appearance warnings</span>
-        <ul class="reasons small">{#each designReasons as reason (reason)}<li><TriangleAlert size={12} />{reason}</li>{/each}</ul>
-      </div>
-    {/if}
-    {#if (health === 'look' || health === 'accepted') && reasons.length}
-      <ul class="reasons small">{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}</ul>
-    {/if}
-    {#if !isDemo() && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}
-      <div class="field">
-        <p class="notice warn small">Checks found issues. No paid retry was started. You can request another attempt or accept this item as it is.</p>
-        <button class="bu-action btn" data-variant="outline" disabled={acceptingIssues || repairBusy} onclick={acceptIssues}>Accept as is</button>
-        <p class="faint small">Accepts the current artwork without spending credits. The detected issues remain in its details.</p>
-        {#if acceptanceError}<p class="notice bad small" role="alert">{acceptanceError}</p>{/if}
-      </div>
-    {:else if health === 'accepted'}
-      <p class="muted small">You accepted this artwork with its recorded quality notes.</p>
-    {/if}
-    {#if moveGaps.length}<p class="notice warn small"><TriangleAlert size={14} />Not made for {moveName} facing {moveGaps.join(', ')} yet: it is left out there.</p>{/if}
-    {#if missingMoves.length}
-      <div class="field">
-        {#if missingMoves.length > 1}<label class="field"><span class="label small">Generate item for move</span><select class="bu-input input" value={missingMove?.id} onchange={e => (chosenMove = e.currentTarget.value)}>{#each missingMoves as move (move.id)}<option value={move.id}>{moveLabel(move.id, moveIds)}</option>{/each}</select></label>{/if}
-        <span class="api-action"><ApiPeek scope="item-missing-move" label="Make {it.name} for {missingName}" plan={m && missingOffer?.specs[0] ? movePlan({ manifest: m }, missingOffer.specs[0]) : []} /><button class="bu-action btn" data-variant="outline" disabled={missingOffer?.gens == null} onclick={makeMissing}>Make for {missingName} <span class="cost">{missingOffer?.gens == null ? 'Unavailable' : `Est. ${Math.ceil(missingOffer.gens)} gens`}</span></button></span>
-        {#if missingOffer?.error}<p class="notice warn small" role="status">{missingOffer.error}</p>{/if}
-        <p class="faint small">Generates only this item’s missing views for the chosen move, reusing its standing design. The body stays as it is. PixelLab may bill dollars; queue time varies.</p>
-      </div>
-    {/if}
-    {#if health === 'stale'}<p class="notice warn small"><TriangleAlert size={14} />Made for another body. It may not line up.</p>{/if}
+		{#if designReasons.length}
+			<div class="field">
+				<span class="sec-title">Accepted appearance warnings</span>
+				<ul class="reasons small">
+					{#each designReasons as reason (reason)}<li>
+							<TriangleAlert size={12} />{reason}
+						</li>{/each}
+				</ul>
+			</div>
+		{/if}
+		{#if (health === 'look' || health === 'accepted') && reasons.length}
+			<ul class="reasons small">
+				{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}
+			</ul>
+		{/if}
+		{#if !isDemo() && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}
+			<div class="field">
+				<p class="notice warn small">
+					Checks found issues. No paid retry was started. You can request another attempt or accept
+					this item as it is.
+				</p>
+				<button
+					class="bu-action btn"
+					data-variant="outline"
+					disabled={acceptingIssues || repairBusy}
+					onclick={acceptIssues}>Accept as is</button
+				>
+				<p class="faint small">
+					Accepts the current artwork without spending credits. The detected issues remain in its
+					details.
+				</p>
+				{#if acceptanceError}<p class="notice bad small" role="alert">{acceptanceError}</p>{/if}
+			</div>
+		{:else if health === 'accepted'}
+			<p class="muted small">You accepted this artwork with its recorded quality notes.</p>
+		{/if}
+		{#if moveGaps.length}<p class="notice warn small">
+				<TriangleAlert size={14} />Not made for {moveName} facing {moveGaps.join(', ')} yet: it is left
+				out there.
+			</p>{/if}
+		{#if missingMoves.length}
+			<div class="field">
+				{#if missingMoves.length > 1}<label class="field"
+						><span class="label small">Generate item for move</span><select
+							class="bu-input input"
+							value={missingMove?.id}
+							onchange={(e) => (chosenMove = e.currentTarget.value)}
+							>{#each missingMoves as move (move.id)}<option value={move.id}
+									>{moveLabel(move.id, moveIds)}</option
+								>{/each}</select
+						></label
+					>{/if}
+				<span class="api-action"
+					><ApiPeek
+						scope="item-missing-move"
+						label="Make {it.name} for {missingName}"
+						plan={m && missingOffer?.specs[0]
+							? movePlan({ manifest: m }, missingOffer.specs[0])
+							: []}
+					/><button
+						class="bu-action btn"
+						data-variant="outline"
+						disabled={missingOffer?.gens == null}
+						onclick={makeMissing}
+						>Make for {missingName}
+						<span class="cost"
+							>{missingOffer?.gens == null
+								? 'Unavailable'
+								: `Est. ${Math.ceil(missingOffer.gens)} gens`}</span
+						></button
+					></span
+				>
+				{#if missingOffer?.error}<p class="notice warn small" role="status">
+						{missingOffer.error}
+					</p>{/if}
+				<p class="faint small">
+					Generates only this item’s missing views for the chosen move, reusing its standing design.
+					The body stays as it is. PixelLab may bill dollars; queue time varies.
+				</p>
+			</div>
+		{/if}
+		{#if health === 'stale'}<p class="notice warn small">
+				<TriangleAlert size={14} />Made for another body. It may not line up.
+			</p>{/if}
 
-    {#if !isDemo() && repairSpec}
-      <div class="field">
-        <button class="bu-action btn" data-variant="outline" disabled={repairBusy || repairOffer?.gens == null} onclick={repairFrames}>Try new item frames <span class="cost">{repairOffer?.gens == null ? 'Unavailable' : `Est. ${Math.ceil(repairOffer.gens)} gens`}</span></button>
-        {#if repairOffer?.error}<p class="notice warn small" role="status">{repairOffer.error}</p>{/if}
-        <p class="faint small">Only {moveName} facing {sourceDir.replaceAll('-', ' ')} is redrawn on the frozen body.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. Hard failures keep the previous frames. PixelLab may bill dollars; queue time varies.</p>
-      </div>
-    {/if}
+		{#if !isDemo() && repairSpec}
+			<div class="field">
+				<button
+					class="bu-action btn"
+					data-variant="outline"
+					disabled={repairBusy || repairOffer?.gens == null}
+					onclick={repairFrames}
+					>Try new item frames <span class="cost"
+						>{repairOffer?.gens == null
+							? 'Unavailable'
+							: `Est. ${Math.ceil(repairOffer.gens)} gens`}</span
+					></button
+				>
+				{#if repairOffer?.error}<p class="notice warn small" role="status">
+						{repairOffer.error}
+					</p>{/if}
+				<p class="faint small">
+					Only {moveName} facing {sourceDir.replaceAll('-', ' ')} is redrawn on the frozen body.{#if sourceDir !== ui.dir}
+						Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. Hard
+					failures keep the previous frames. PixelLab may bill dollars; queue time varies.
+				</p>
+			</div>
+		{/if}
 
-    {#if !isDemo() && colorPlan}
-      <div class="field">
-        <button class="bu-action btn" data-variant="outline" disabled={colorBusy || repairBusy} onclick={matchColors}>{colorBusy ? 'Matching colors…' : 'Match item colors'} <span class="cost">Free</span></button>
-        <p class="faint small">Match {colorPlan.changedPixels} {colorPlan.changedPixels === 1 ? 'pixel' : 'pixels'} in {colorPlan.changedFrames.length} saved {moveName} {colorPlan.changedFrames.length === 1 ? 'frame' : 'frames'} facing {sourceDir.replaceAll('-', ' ')} to the item’s existing color palette.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves, materials and saved recolors stay fixed. {#if colorPlan.unmatchedPixels}{colorPlan.unmatchedPixels} unmatched eligible {colorPlan.unmatchedPixels === 1 ? 'pixel stays' : 'pixels stay'} unchanged.{' '}{/if}Existing quality warnings are kept. No PixelLab call is made.</p>
-      </div>
-    {/if}
-    {#if colorError}<p class="notice bad small"><TriangleAlert size={14} />{colorError}</p>{/if}
-    {#if colorDone}<p class="notice small">{colorDone}</p>{/if}
+		{#if !isDemo() && colorPlan}
+			<div class="field">
+				<button
+					class="bu-action btn"
+					data-variant="outline"
+					disabled={colorBusy || repairBusy}
+					onclick={matchColors}
+					>{colorBusy ? 'Matching colors…' : 'Match item colors'}
+					<span class="cost">Free</span></button
+				>
+				<p class="faint small">
+					Match {colorPlan.changedPixels}
+					{colorPlan.changedPixels === 1 ? 'pixel' : 'pixels'} in {colorPlan.changedFrames.length} saved
+					{moveName}
+					{colorPlan.changedFrames.length === 1 ? 'frame' : 'frames'} facing {sourceDir.replaceAll(
+						'-',
+						' '
+					)} to the item’s existing color palette.{#if sourceDir !== ui.dir}
+						Its mirrored views update too.{/if} Other views, moves, materials and saved recolors stay
+					fixed. {#if colorPlan.unmatchedPixels}{colorPlan.unmatchedPixels} unmatched eligible {colorPlan.unmatchedPixels ===
+						1
+							? 'pixel stays'
+							: 'pixels stay'} unchanged.{' '}{/if}Existing quality warnings are kept. No PixelLab
+					call is made.
+				</p>
+			</div>
+		{/if}
+		{#if colorError}<p class="notice bad small"><TriangleAlert size={14} />{colorError}</p>{/if}
+		{#if colorDone}<p class="notice small">{colorDone}</p>{/if}
 
-    <Colors only={it.id} />
+		<Colors only={it.id} />
 
-    <div class="field">
-      <span class="sec-title">Layer order</span>
-      <div class="actions">
-        <button class="bu-action btn sm" data-variant="outline" onclick={() => moveLayer(it.id, 1, onlyDir)} title="Draw in front of the next layer"><ArrowUp size={14} />Forward</button>
-        <button class="bu-action btn sm" data-variant="outline" onclick={() => moveLayer(it.id, -1, onlyDir)} title="Draw behind the previous layer"><ArrowDown size={14} />Backward</button>
-        {#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(ladder)}<button class="bu-action btn sm plain" data-variant="quiet" onclick={() => resetLayer(it.id, ladder)}>Reset</button>{/if}
-      </div>
-      <label class="check small"><input type="checkbox" bind:checked={onlyDir} />Only when facing {ui.dir.replaceAll('-', ' ')}</label>
-    </div>
+		<div class="field">
+			<span class="sec-title">Layer order</span>
+			<div class="actions">
+				<button
+					class="bu-action btn sm"
+					data-variant="outline"
+					onclick={() => moveLayer(it.id, 1, onlyDir)}
+					title="Draw in front of the next layer"><ArrowUp size={14} />Forward</button
+				>
+				<button
+					class="bu-action btn sm"
+					data-variant="outline"
+					onclick={() => moveLayer(it.id, -1, onlyDir)}
+					title="Draw behind the previous layer"><ArrowDown size={14} />Backward</button
+				>
+				{#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(ladder)}<button
+						class="bu-action btn sm plain"
+						data-variant="quiet"
+						onclick={() => resetLayer(it.id, ladder)}>Reset</button
+					>{/if}
+			</div>
+			<label class="check small"
+				><input type="checkbox" bind:checked={onlyDir} />Only when facing {ui.dir.replaceAll(
+					'-',
+					' '
+				)}</label
+			>
+		</div>
 
-    {#if others.length}
-      <div class="field">
-        <span class="sec-title" id="hide-{it.id}">When worn, hide</span>
-        <div class="chips" role="group" aria-labelledby="hide-{it.id}">
-          {#each others as s (s.id)}
-            {@const on = hides.includes(s.id)}
-            <button class="chip" aria-pressed={on} onclick={() => toggleHide(it.id, s.id)}>{#if on}<Check size={12} strokeWidth={2.5} />{/if}{slotLabel(s.id)}</button>
-          {/each}
-        </div>
-        <p class="faint small">Checked items are hidden while {it.name} is worn.{#if tucks.length}{" "}Unchecked {tucks.map(slotLabel).join(', ').toLowerCase()} is tucked under it: only what hangs below the brim shows. Check it for hoods and full masks.{/if}</p>
-      </div>
-    {/if}
+		{#if others.length}
+			<div class="field">
+				<span class="sec-title" id="hide-{it.id}">When worn, hide</span>
+				<div class="chips" role="group" aria-labelledby="hide-{it.id}">
+					{#each others as s (s.id)}
+						{@const on = hides.includes(s.id)}
+						<button class="chip" aria-pressed={on} onclick={() => toggleHide(it.id, s.id)}
+							>{#if on}<Check size={12} strokeWidth={2.5} />{/if}{slotLabel(s.id)}</button
+						>
+					{/each}
+				</div>
+				<p class="faint small">
+					Checked items are hidden while {it.name} is worn.{#if tucks.length}{' '}Unchecked {tucks
+							.map(slotLabel)
+							.join(', ')
+							.toLowerCase()} is tucked under it: only what hangs below the brim shows. Check it for hoods
+						and full masks.{/if}
+				</p>
+			</div>
+		{/if}
 
-    <details class="disclosure">
-      <summary><ChevronRight size={14} />Details</summary>
-      <div>
-        <dl class="kv">
-          <dt>ID</dt><dd class="mono">{it.id}</dd>
-          <dt>Slot</dt><dd>{it.slot} · {it.layers.map((l) => `${l.id} z${l.z}`).join(', ')}</dd>
-          {#if it.prompt}<dt>Prompt</dt><dd>{it.prompt}</dd>{/if}
-          {#if it.extractor}<dt>Extractor</dt><dd>{it.extractor}{it.key ? ` · ${it.key} key` : ''}</dd>{/if}
-          {#if it.qa}
-            <dt>QA</dt><dd>{it.qa.status}</dd>
-            {#if it.qa.rawKeyReviewFrames}<dt>Raw body differences</dt><dd>{it.qa.rawKeyReviewFrames} frames have new body-colored pixels before alignment. Ordinary redraw shifts can cause this; quality status is unchanged.</dd>{/if}
-            {#if it.qa.legacy}<dt>Older checks</dt><dd>{it.qa.legacy.summary ? 'Older move checks are incomplete; totals may include replaced frames.' : 'Checks are incomplete for older moves.'}</dd>{/if}
-            {#if it.qa.unmeasured}
-              <dt>Measurements</dt><dd>Reused cells were not measured by PixelLab. Aggregate checks are unavailable for this item.</dd>
-            {:else}
-              <dt>Key kept</dt><dd>{it.qa.minKeyKept} (≥ 0.97)</dd>
-              <dt>Key outside</dt><dd>{it.qa.maxKeyOutside} (≤ 0.02)</dd>
-              <dt>Area</dt><dd>min {it.qa.minAreaRatio} of median · CV {it.qa.maxAreaCV}</dd>
-              <dt>Palette drift</dt><dd>{it.qa.maxPaletteDist} (≤ 15)</dd>
-              <dt>Edge px</dt><dd>{it.qa.clipPx}</dd>
-              {#if it.qa.handedness}<dt>Hands</dt><dd>{it.qa.handedness}</dd>{/if}
-            {/if}
-            <dt>Re-rolls</dt><dd>{it.qa.rerolls}</dd>
-          {/if}
-          <dt>Source calls</dt><dd>{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{usdSpent ? `$${usdSpent.toFixed(3)} · ` : ''}{it.provenance.length} PixelLab {it.provenance.length === 1 ? 'call' : 'calls'}</dd>
-          {#if gaps.length}<dt>No frames for</dt><dd>{gaps.join(', ')}</dd>{/if}
-          <dt>Method</dt><dd>{it.route ? routeNames[it.route] : 'Not recorded'}</dd>
-        </dl>
-      </div>
-    </details>
-  </div>
+		<details class="disclosure">
+			<summary><ChevronRight size={14} />Details</summary>
+			<div>
+				<dl class="kv">
+					<dt>ID</dt>
+					<dd class="mono">{it.id}</dd>
+					<dt>Slot</dt>
+					<dd>{it.slot} · {it.layers.map((l) => `${l.id} z${l.z}`).join(', ')}</dd>
+					{#if it.prompt}<dt>Prompt</dt>
+						<dd>{it.prompt}</dd>{/if}
+					{#if it.extractor}<dt>Extractor</dt>
+						<dd>{it.extractor}{it.key ? ` · ${it.key} key` : ''}</dd>{/if}
+					{#if it.qa}
+						<dt>QA</dt>
+						<dd>{it.qa.status}</dd>
+						{#if it.qa.rawKeyReviewFrames}<dt>Raw body differences</dt>
+							<dd>
+								{it.qa.rawKeyReviewFrames} frames have new body-colored pixels before alignment. Ordinary
+								redraw shifts can cause this; quality status is unchanged.
+							</dd>{/if}
+						{#if it.qa.legacy}<dt>Older checks</dt>
+							<dd>
+								{it.qa.legacy.summary
+									? 'Older move checks are incomplete; totals may include replaced frames.'
+									: 'Checks are incomplete for older moves.'}
+							</dd>{/if}
+						{#if it.qa.unmeasured}
+							<dt>Measurements</dt>
+							<dd>
+								Reused cells were not measured by PixelLab. Aggregate checks are unavailable for
+								this item.
+							</dd>
+						{:else}
+							<dt>Key kept</dt>
+							<dd>{it.qa.minKeyKept} (≥ 0.97)</dd>
+							<dt>Key outside</dt>
+							<dd>{it.qa.maxKeyOutside} (≤ 0.02)</dd>
+							<dt>Area</dt>
+							<dd>min {it.qa.minAreaRatio} of median · CV {it.qa.maxAreaCV}</dd>
+							<dt>Palette drift</dt>
+							<dd>{it.qa.maxPaletteDist} (≤ 15)</dd>
+							<dt>Edge px</dt>
+							<dd>{it.qa.clipPx}</dd>
+							{#if it.qa.handedness}<dt>Hands</dt>
+								<dd>{it.qa.handedness}</dd>{/if}
+						{/if}
+						<dt>Re-rolls</dt>
+						<dd>{it.qa.rerolls}</dd>
+					{/if}
+					<dt>Source calls</dt>
+					<dd>
+						{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{usdSpent
+							? `$${usdSpent.toFixed(3)} · `
+							: ''}{it.provenance.length} PixelLab {it.provenance.length === 1 ? 'call' : 'calls'}
+					</dd>
+					{#if gaps.length}<dt>No frames for</dt>
+						<dd>{gaps.join(', ')}</dd>{/if}
+					<dt>Method</dt>
+					<dd>{it.route ? routeNames[it.route] : 'Not recorded'}</dd>
+				</dl>
+			</div>
+		</details>
+	</div>
 {/if}

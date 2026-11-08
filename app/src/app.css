@@ -1,9 +1,23 @@
 :root {
-  font: 15px/1.4 system-ui, 'Segoe UI', Roboto, sans-serif;
-  color-scheme: light dark;
+	font:
+		15px/1.4 system-ui,
+		'Segoe UI',
+		Roboto,
+		sans-serif;
+	color-scheme: light dark;
 }
-body { margin: 0; }
-main { padding: 0 1rem 2rem; }
-h1 { font-size: 1.4rem; }
-h2 { font-size: 1.1rem; }
-code { font-family: ui-monospace, Consolas, monospace; }
+body {
+	margin: 0;
+}
+main {
+	padding: 0 1rem 2rem;
+}
+h1 {
+	font-size: 1.4rem;
+}
+h2 {
+	font-size: 1.1rem;
+}
+code {
+	font-family: ui-monospace, Consolas, monospace;
+}

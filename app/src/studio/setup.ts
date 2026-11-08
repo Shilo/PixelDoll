@@ -10,76 +10,154 @@ import type { Provenance } from '../lib/store/manifest.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 
-export interface SetupSpec { projectId: string; baseHash: string; restAnim: string; looks: string; seed: number; activityScope?: string }
+export interface SetupSpec {
+	projectId: string;
+	baseHash: string;
+	restAnim: string;
+	looks: string;
+	seed: number;
+	activityScope?: string;
+}
 export const SETUP_STEPS = [
-  { id: 'joints', label: 'Finding joints on every frame' },
-  { id: 'register', label: 'Connecting the standing views' },
-  { id: 'check', label: 'Checking alignment and saving' },
+	{ id: 'joints', label: 'Finding joints on every frame' },
+	{ id: 'register', label: 'Connecting the standing views' },
+	{ id: 'check', label: 'Checking alignment and saving' }
 ];
 
-export async function setupCharacter(spec: SetupSpec, progress: (p: Progress) => void): Promise<void> {
-  const { rec, project } = await loadProject(spec.projectId);
-  if (rec.manifest.rig.baseHash !== spec.baseHash) throw new Error('The body changed since setup started. Start setup again for the current frames.');
-  if (!spec.looks.trim()) throw new Error('Describe the character’s existing appearance first.');
-  const plan = await setupPlan(project, spec.restAnim), measured = new Map<string, Keypoint[]>(), provenance: Provenance[] = [];
-  if (!plan.frames.size) throw new Error('No body frames are available for rig setup. Existing artwork is unchanged.');
-  let done = 0;
-  progress({ step: 'joints', done, total: plan.frames.size, recIds: [] });
-  const frames = [...plan.frames], observations: Provenance[] = new Array(frames.length);
-  let next = 0, failure: { error: unknown } | undefined;
-  // Bound prepared work by the largest supported plan; the shared queue applies the actual account and busy-account limits.
-  // On failure, admitted checks can still finish and be cached. Drain them without creating canceled records that block resume.
-  await Promise.allSettled(Array.from({ length: Math.min(frames.length, Math.max(...Object.values(PLAN_JOB_LIMITS))) }, async () => {
-    while (!failure && next < frames.length) {
-      const index = next++, [hash, im] = frames[index];
-      try {
-        const k = await joints(im, true, undefined, spec.activityScope);
-        if (!k) throw new Error('PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.');
-        if (failure) return;
-        const request = routes.estimateSkeleton(png(await b64(skeletonInput(im).image)));
-        if (failure) return;
-        observations[index] = provOf(await run(request, 'Finding joints', 'm2-skel', true, true, undefined, spec.activityScope));
-        if (failure) return;
-        measured.set(hash, k);
-        progress({ step: 'joints', done: ++done, total: plan.frames.size, recIds: [] });
-      } catch (error) { failure ??= { error }; throw error; }
-    }
-  }));
-  if (failure) throw failure.error;
-  provenance.push(...observations);
-  progress({ step: 'register', done: 0, total: 1, recIds: [] });
-  const directions = plan.registrationDirections === 8 ? DIRECTIONS : ['south', 'east', 'north', 'west'] as const;
-  const direction_images = Object.fromEntries(await Promise.all(directions.filter(d => d !== 'south').map(async d => [d, png(await b64(plan.rest[d]!))])));
-  const managed = await run(routes.createCharacterV3({ description: spec.looks.trim(), reference_image: png(await b64(plan.rest.south!)), direction_images, n_directions: plan.registrationDirections, view: project.manifest.rig.view ?? 'low top-down', template_id: 'mannequin', no_background: true, seed: spec.seed }), `${rec.manifest.name} · rig setup`, 'studio-setup', false, true, undefined, spec.activityScope);
-  const id = (managed.response as { character_id?: string })?.character_id;
-  if (!id) throw new Error('PixelLab did not return a managed character ID. Existing artwork is unchanged.');
-  provenance.push(provOf(managed));
-  progress({ step: 'check', done: 0, total: 1, recIds: [] });
-  const result = await attachImportedRig(project, plan, measured, provenance);
-  // Persist the actual registration profile used above. Legacy ZIPs lack these fields; future fitting must distinguish
-  // a successfully set-up low top-down mannequin from artwork whose camera/template are still unknown.
-  result.manifest.rig.view = project.manifest.rig.view ?? 'low top-down';
-  result.manifest.rig.template = 'mannequin';
-  // A single transaction publishes new rest blobs and metadata together; current outfits/items are retained.
-  const blobs = new Map<string, Blob>();
-  for (const rest of Object.values(result.manifest.rig.rest ?? {})) if (rest) {
-    const im = result.images.get(rest.image)!;
-    if (await cellHash(im) !== rest.image) throw new Error('A standing reference changed during setup.');
-    blobs.set(rest.image.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
-  }
-  await db.updateCharacter(spec.projectId, blobs, (current: StoredProject | undefined) => {
-    if (!current || current.manifest.rig.baseHash !== spec.baseHash) throw new Error('The character changed during setup. Its current work has been kept.');
-    retainPlaybackChoices(result.manifest.rig, current.manifest.rig);
-    current.manifest.rig = result.manifest.rig;
-    current.manifest.items.find((i) => i.id === current.manifest.rig.baseItem)!.provenance = result.manifest.items.find((i) => i.id === result.manifest.rig.baseItem)!.provenance;
-    for (const item of current.manifest.items) {
-      const prepared = result.manifest.items.find(i => i.id === item.id);
-      if (prepared?.route === 'skeleton-pose' && item.route === 'ea2-anchor' && item.standing === prepared.standing && JSON.stringify(item.dressed) === JSON.stringify(prepared.dressed)) item.route = prepared.route;
-    }
-    current.character = { id, looks: spec.looks.trim() };
-    current.skeletons = result.skeletons;
-    current.rigQa = result.rigQa;
-    current.savedAt = new Date().toISOString();
-    return current;
-  });
+export async function setupCharacter(
+	spec: SetupSpec,
+	progress: (p: Progress) => void
+): Promise<void> {
+	const { rec, project } = await loadProject(spec.projectId);
+	if (rec.manifest.rig.baseHash !== spec.baseHash)
+		throw new Error(
+			'The body changed since setup started. Start setup again for the current frames.'
+		);
+	if (!spec.looks.trim()) throw new Error('Describe the character’s existing appearance first.');
+	const plan = await setupPlan(project, spec.restAnim),
+		measured = new Map<string, Keypoint[]>(),
+		provenance: Provenance[] = [];
+	if (!plan.frames.size)
+		throw new Error('No body frames are available for rig setup. Existing artwork is unchanged.');
+	let done = 0;
+	progress({ step: 'joints', done, total: plan.frames.size, recIds: [] });
+	const frames = [...plan.frames],
+		observations: Provenance[] = new Array(frames.length);
+	let next = 0,
+		failure: { error: unknown } | undefined;
+	// Bound prepared work by the largest supported plan; the shared queue applies the actual account and busy-account limits.
+	// On failure, admitted checks can still finish and be cached. Drain them without creating canceled records that block resume.
+	await Promise.allSettled(
+		Array.from(
+			{ length: Math.min(frames.length, Math.max(...Object.values(PLAN_JOB_LIMITS))) },
+			async () => {
+				while (!failure && next < frames.length) {
+					const index = next++,
+						[hash, im] = frames[index];
+					try {
+						const k = await joints(im, true, undefined, spec.activityScope);
+						if (!k)
+							throw new Error(
+								'PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.'
+							);
+						if (failure) return;
+						const request = routes.estimateSkeleton(png(await b64(skeletonInput(im).image)));
+						if (failure) return;
+						observations[index] = provOf(
+							await run(
+								request,
+								'Finding joints',
+								'm2-skel',
+								true,
+								true,
+								undefined,
+								spec.activityScope
+							)
+						);
+						if (failure) return;
+						measured.set(hash, k);
+						progress({ step: 'joints', done: ++done, total: plan.frames.size, recIds: [] });
+					} catch (error) {
+						failure ??= { error };
+						throw error;
+					}
+				}
+			}
+		)
+	);
+	if (failure) throw failure.error;
+	provenance.push(...observations);
+	progress({ step: 'register', done: 0, total: 1, recIds: [] });
+	const directions =
+		plan.registrationDirections === 8 ? DIRECTIONS : (['south', 'east', 'north', 'west'] as const);
+	const direction_images = Object.fromEntries(
+		await Promise.all(
+			directions.filter((d) => d !== 'south').map(async (d) => [d, png(await b64(plan.rest[d]!))])
+		)
+	);
+	const managed = await run(
+		routes.createCharacterV3({
+			description: spec.looks.trim(),
+			reference_image: png(await b64(plan.rest.south!)),
+			direction_images,
+			n_directions: plan.registrationDirections,
+			view: project.manifest.rig.view ?? 'low top-down',
+			template_id: 'mannequin',
+			no_background: true,
+			seed: spec.seed
+		}),
+		`${rec.manifest.name} · rig setup`,
+		'studio-setup',
+		false,
+		true,
+		undefined,
+		spec.activityScope
+	);
+	const id = (managed.response as { character_id?: string })?.character_id;
+	if (!id)
+		throw new Error(
+			'PixelLab did not return a managed character ID. Existing artwork is unchanged.'
+		);
+	provenance.push(provOf(managed));
+	progress({ step: 'check', done: 0, total: 1, recIds: [] });
+	const result = await attachImportedRig(project, plan, measured, provenance);
+	// Persist the actual registration profile used above. Legacy ZIPs lack these fields; future fitting must distinguish
+	// a successfully set-up low top-down mannequin from artwork whose camera/template are still unknown.
+	result.manifest.rig.view = project.manifest.rig.view ?? 'low top-down';
+	result.manifest.rig.template = 'mannequin';
+	// A single transaction publishes new rest blobs and metadata together; current outfits/items are retained.
+	const blobs = new Map<string, Blob>();
+	for (const rest of Object.values(result.manifest.rig.rest ?? {}))
+		if (rest) {
+			const im = result.images.get(rest.image)!;
+			if ((await cellHash(im)) !== rest.image)
+				throw new Error('A standing reference changed during setup.');
+			blobs.set(
+				rest.image.slice(7),
+				new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
+			);
+		}
+	await db.updateCharacter(spec.projectId, blobs, (current: StoredProject | undefined) => {
+		if (!current || current.manifest.rig.baseHash !== spec.baseHash)
+			throw new Error('The character changed during setup. Its current work has been kept.');
+		retainPlaybackChoices(result.manifest.rig, current.manifest.rig);
+		current.manifest.rig = result.manifest.rig;
+		current.manifest.items.find((i) => i.id === current.manifest.rig.baseItem)!.provenance =
+			result.manifest.items.find((i) => i.id === result.manifest.rig.baseItem)!.provenance;
+		for (const item of current.manifest.items) {
+			const prepared = result.manifest.items.find((i) => i.id === item.id);
+			if (
+				prepared?.route === 'skeleton-pose' &&
+				item.route === 'ea2-anchor' &&
+				item.standing === prepared.standing &&
+				JSON.stringify(item.dressed) === JSON.stringify(prepared.dressed)
+			)
+				item.route = prepared.route;
+		}
+		current.character = { id, looks: spec.looks.trim() };
+		current.skeletons = result.skeletons;
+		current.rigQa = result.rigQa;
+		current.savedAt = new Date().toISOString();
+		return current;
+	});
 }

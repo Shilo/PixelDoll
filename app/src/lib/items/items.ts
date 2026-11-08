@@ -2,15 +2,46 @@ import { centroid, maskOf, simAligned } from '../image/similarity.ts';
 export { simAligned } from '../image/similarity.ts';
 // Item lab core (architecture §3.1–3.4, §4): slot ladder, call packing, prompts, per-cell extraction, gates G1–G8, fg/bg split,
 // manifest Item. Pure over Img; the UI (ui/M3.svelte) only runs calls through the queue and persists.
-import { chromaLayer, chromaMask, chromaPrompt, components, fillHoles, KEY_NAME, keyKept, keyOutside, newKeyPixels, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
+import {
+	chromaLayer,
+	chromaMask,
+	chromaPrompt,
+	components,
+	fillHoles,
+	KEY_NAME,
+	keyKept,
+	keyOutside,
+	newKeyPixels,
+	keyScore,
+	KT,
+	toChroma,
+	type Key
+} from '../image/chroma.ts';
 import { diffLayer, type Rect } from '../image/diff.ts';
 import { makeImg, type Img } from '../image/png.ts';
 import { cutBase, over } from '../compose/compose.ts';
 import { splitFgBg } from '../compose/split.ts';
-import { cellHash, cellKey, DEFAULT_MOVE, type DirectionName, type Keypoint, type Rig, type Sha256 } from '../rig/rig.ts';
+import {
+	cellHash,
+	cellKey,
+	DEFAULT_MOVE,
+	type DirectionName,
+	type Keypoint,
+	type Rig,
+	type Sha256
+} from '../rig/rig.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import { backView, fromApi, hasAll } from '../rig/poses.ts';
-import { actionOf, moveWords, RUN_WORDS, WALK_WORDS, paddedPoses, poseBatches, poseCallGens, rawClip } from '../rig/clips.ts';
+import {
+	actionOf,
+	moveWords,
+	RUN_WORDS,
+	WALK_WORDS,
+	paddedPoses,
+	poseBatches,
+	poseCallGens,
+	rawClip
+} from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 import { INPAINT_TIER_ONE_SIDE } from '../pixellab/plans.ts';
@@ -32,35 +63,78 @@ import { assertImportedPoses, importedPoseIssues } from '../rig/pose-review.ts';
 export type Method = 'skel' | 'anchor';
 export type CallKind = 'edit' | 'dress' | 'pose' | 'grid'; // grid: B14 per clip-direction fallback (inpaint-v3)
 export const itemRoute = {
-  name: 'skeleton-posed keyframe / edit-animation-v2',
-  edit: (framesPngB64: string[], description: string, seed: number, cell: { w: number; h: number }): Req => {
-    const size = { width: cell.w, height: cell.h };
-    if (!framesPngB64.length) throw new Error('Equipment editing needs at least one source frame.');
-    const frames = Array.from({ length: Math.max(EDIT_MIN_FRAMES, framesPngB64.length) }, (_, i) => framesPngB64[Math.min(i, framesPngB64.length - 1)]);
-    return routes.editAnimationV2({ description, frames: frames.map((b) => ({ image: png(b), size })), image_size: size, no_background: true, seed });
-  },
-  /**
-   * Pose a dressed chroma keyframe (in pose `rest`) through a stored keypoint sequence (rig-cell API coords; `pad` moves them
-   * onto the oversize canvas). Held items send frame 0 LAST when it is the rest pose (S5); undo with `unrotate`.
-   */
-  pose: (o: { keyframePngB64: string; rest: Keypoint[]; poses: Keypoint[][]; item: string; slot: string; key: Key; anim: string; dir: DirectionName; seed: number; cell: { w: number; h: number }; pad?: number; view?: Rig['view'] }): Req => {
-    const held = slotOf(o.slot).class === 'held', p = o.pad ?? 0, k = (s: Keypoint[]) => padKeypoints(s, o.cell, p);
-    const sent = paddedPoses(o.poses);
-    const poses = f0Last(o.slot, o.rest, sent, o.cell) ? [...sent.slice(1), sent[0]] : sent;
-    return rawClip({
-      // B7 live: "slash" drew a blade into a helmet layer although the action said "no weapon" -> say it in the looks too
-      description: `solid ${KEY_NAME[o.key]} mannequin (chroma key color) ${held ? `holding ${o.item} in the ${handOf(o.slot)} hand; ${ONE_HELD}` : `wearing ${o.item}, empty hands, no weapon`}`,
-      // M3: a "slash" pose made the model draw a sword into a helmet layer -> unarmed unless the item is the held object
-      action: actionOf(o.anim) + (held ? '' : ', empty hands, no weapon, no effects'),
-      dir: o.dir, first: o.keyframePngB64, rest: k(o.rest), keypoints: poses.map(k), seed: o.seed, view: o.view,
-    });
-  },
+	name: 'skeleton-posed keyframe / edit-animation-v2',
+	edit: (
+		framesPngB64: string[],
+		description: string,
+		seed: number,
+		cell: { w: number; h: number }
+	): Req => {
+		const size = { width: cell.w, height: cell.h };
+		if (!framesPngB64.length) throw new Error('Equipment editing needs at least one source frame.');
+		const frames = Array.from(
+			{ length: Math.max(EDIT_MIN_FRAMES, framesPngB64.length) },
+			(_, i) => framesPngB64[Math.min(i, framesPngB64.length - 1)]
+		);
+		return routes.editAnimationV2({
+			description,
+			frames: frames.map((b) => ({ image: png(b), size })),
+			image_size: size,
+			no_background: true,
+			seed
+		});
+	},
+	/**
+	 * Pose a dressed chroma keyframe (in pose `rest`) through a stored keypoint sequence (rig-cell API coords; `pad` moves them
+	 * onto the oversize canvas). Held items send frame 0 LAST when it is the rest pose (S5); undo with `unrotate`.
+	 */
+	pose: (o: {
+		keyframePngB64: string;
+		rest: Keypoint[];
+		poses: Keypoint[][];
+		item: string;
+		slot: string;
+		key: Key;
+		anim: string;
+		dir: DirectionName;
+		seed: number;
+		cell: { w: number; h: number };
+		pad?: number;
+		view?: Rig['view'];
+	}): Req => {
+		const held = slotOf(o.slot).class === 'held',
+			p = o.pad ?? 0,
+			k = (s: Keypoint[]) => padKeypoints(s, o.cell, p);
+		const sent = paddedPoses(o.poses);
+		const poses = f0Last(o.slot, o.rest, sent, o.cell) ? [...sent.slice(1), sent[0]] : sent;
+		return rawClip({
+			// B7 live: "slash" drew a blade into a helmet layer although the action said "no weapon" -> say it in the looks too
+			description: `solid ${KEY_NAME[o.key]} mannequin (chroma key color) ${held ? `holding ${o.item} in the ${handOf(o.slot)} hand; ${ONE_HELD}` : `wearing ${o.item}, empty hands, no weapon`}`,
+			// M3: a "slash" pose made the model draw a sword into a helmet layer -> unarmed unless the item is the held object
+			action: actionOf(o.anim) + (held ? '' : ', empty hands, no weapon, no effects'),
+			dir: o.dir,
+			first: o.keyframePngB64,
+			rest: k(o.rest),
+			keypoints: poses.map(k),
+			seed: o.seed,
+			view: o.view
+		});
+	}
 };
 
 // ---------- B14 fallback: one clip-direction as a Pro inpaint-v3 packed masked grid (S4 inv3, S5 H3) ----------
 export const GRID_COLS = 4;
 /** Does a packed repair grid fit PixelLab's 32–512 px canvas? */
-export const gridFits = (cell: { w: number; h: number }, cells: number, refs: number, cols = GRID_COLS) => { const w = cols * cell.w, h = Math.ceil((cells + refs) / cols) * cell.h; return w >= 32 && h >= 32 && w <= 512 && h <= 512; };
+export const gridFits = (
+	cell: { w: number; h: number },
+	cells: number,
+	refs: number,
+	cols = GRID_COLS
+) => {
+	const w = cols * cell.w,
+		h = Math.ceil((cells + refs) / cols) * cell.h;
+	return w >= 32 && h >= 32 && w <= 512 && h <= 512;
+};
 /** Estimated Pro inpaint tiers from the official 256²/341²/512² catalog bands (2026-10-22), applied to the mean of the two
  * sides. Inferred, not a provider quote, from 11 billed canvas shapes (2026-11-07 receipt audit): area misses 448×112 = 15 and
  * 480×240 = 25, and the longest side (with any thresholds) cannot give both 448×112 = 15 and 432×288 = 25. Receipts pin the
@@ -68,15 +142,32 @@ export const gridFits = (cell: { w: number; h: number }, cells: number, refs: nu
  * below the square root of the area, so it never quotes less than area did.
  * References and unused packed cells remain part of the submitted canvas. */
 const validGrid = (cell: { w: number; h: number }, cells: number, refs: number, cols = 1) => {
-  if (![cell.w, cell.h, cells, refs, cols].every(Number.isInteger) || cell.w <= 0 || cell.h <= 0 || cells <= 0 || refs < 0 || cols <= 0) throw new Error('Repair grid dimensions and frame/reference counts must be valid integers.');
+	if (
+		![cell.w, cell.h, cells, refs, cols].every(Number.isInteger) ||
+		cell.w <= 0 ||
+		cell.h <= 0 ||
+		cells <= 0 ||
+		refs < 0 ||
+		cols <= 0
+	)
+		throw new Error('Repair grid dimensions and frame/reference counts must be valid integers.');
 };
-export function gridEstimate(cell: { w: number; h: number }, cells: number, refs: number, cols = GRID_COLS): { w: number; h: number; gens: number } {
-  validGrid(cell, cells, refs, cols);
-  const w = cols * cell.w, h = Math.ceil((cells + refs) / cols) * cell.h;
-  if (!gridFits(cell, cells, refs, cols)) throw new Error('This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.');
-  const side = (w + h) / 2;
-  // Receipts pin the 15/25 edge only to [336, 360) (384x288 = 336 billed 15), so a mean above 336 quotes 25: never low.
-  return { w, h, gens: side <= 256 ? 10 : side <= 336 ? 15 : 25 };
+export function gridEstimate(
+	cell: { w: number; h: number },
+	cells: number,
+	refs: number,
+	cols = GRID_COLS
+): { w: number; h: number; gens: number } {
+	validGrid(cell, cells, refs, cols);
+	const w = cols * cell.w,
+		h = Math.ceil((cells + refs) / cols) * cell.h;
+	if (!gridFits(cell, cells, refs, cols))
+		throw new Error(
+			'This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.'
+		);
+	const side = (w + h) / 2;
+	// Receipts pin the 15/25 edge only to [336, 360) (384x288 = 336 billed 15), so a mean above 336 quotes 25: never low.
+	return { w, h, gens: side <= 256 ? 10 : side <= 336 ? 15 : 25 };
 }
 
 /** The grid layout explicit equipment repairs (regridClip) and the frozen-grid fallback inside moves are sent and priced with.
@@ -86,284 +177,543 @@ export function gridEstimate(cell: { w: number; h: number }, cells: number, refs
  * repacked to reach Tier 1 since 218f448e and their results are checked for review; no matched test has qualified other
  * layouts for the new-item draft fallback, which stays on GRID_COLS (2026-11-07). */
 export function repairGridLayout(cell: { w: number; h: number }, cells: number, refs: number) {
-  validGrid(cell, cells, refs); // bound the column search: a zero or non-integer width would never end it (malformed records)
-  const tier = (l: { w: number; h: number }) => (Math.max(l.w, l.h) <= INPAINT_TIER_ONE_SIDE ? 1 : 2);
-  const fits = (cols: number) => gridFits(cell, cells, refs, cols);
-  const better = (a: { w: number; h: number; gens: number }, b: { w: number; h: number; gens: number }) =>
-    a.gens !== b.gens ? a.gens < b.gens : tier(a) !== tier(b) ? tier(a) < tier(b) : a.w * a.h !== b.w * b.h ? a.w * a.h < b.w * b.h : Math.abs(a.w - a.h) < Math.abs(b.w - b.h);
-  let layout = fits(GRID_COLS) ? { ...gridEstimate(cell, cells, refs), cols: GRID_COLS } : undefined;
-  const qualified = layout;
-  for (let cols = Math.floor(512 / cell.w); cols >= 1; cols--) {
-    if (cols === GRID_COLS || !fits(cols)) continue;
-    const next = { ...gridEstimate(cell, cells, refs, cols), cols };
-    // Against the qualified layout only a strictly lower price or tier counts; among alternatives, the full order.
-    const cheaper = (l: typeof next) => l.gens < qualified!.gens || (l.gens === qualified!.gens && tier(l) < tier(qualified!));
-    if (!layout || (layout === qualified ? cheaper(next) : better(next, layout))) layout = next;
-  }
-  if (!layout) return { ...gridEstimate(cell, cells, refs), cols: GRID_COLS }; // throws the canvas-bounds error
-  return layout;
+	validGrid(cell, cells, refs); // bound the column search: a zero or non-integer width would never end it (malformed records)
+	const tier = (l: { w: number; h: number }) =>
+		Math.max(l.w, l.h) <= INPAINT_TIER_ONE_SIDE ? 1 : 2;
+	const fits = (cols: number) => gridFits(cell, cells, refs, cols);
+	const better = (
+		a: { w: number; h: number; gens: number },
+		b: { w: number; h: number; gens: number }
+	) =>
+		a.gens !== b.gens
+			? a.gens < b.gens
+			: tier(a) !== tier(b)
+				? tier(a) < tier(b)
+				: a.w * a.h !== b.w * b.h
+					? a.w * a.h < b.w * b.h
+					: Math.abs(a.w - a.h) < Math.abs(b.w - b.h);
+	let layout = fits(GRID_COLS)
+		? { ...gridEstimate(cell, cells, refs), cols: GRID_COLS }
+		: undefined;
+	const qualified = layout;
+	for (let cols = Math.floor(512 / cell.w); cols >= 1; cols--) {
+		if (cols === GRID_COLS || !fits(cols)) continue;
+		const next = { ...gridEstimate(cell, cells, refs, cols), cols };
+		// Against the qualified layout only a strictly lower price or tier counts; among alternatives, the full order.
+		const cheaper = (l: typeof next) =>
+			l.gens < qualified!.gens || (l.gens === qualified!.gens && tier(l) < tier(qualified!));
+		if (!layout || (layout === qualified ? cheaper(next) : better(next, layout))) layout = next;
+	}
+	if (!layout) return { ...gridEstimate(cell, cells, refs), cols: GRID_COLS }; // throws the canvas-bounds error
+	return layout;
 }
 /** Pack matching cells and occupancy masks row-major; nonzero mask px generate, null masks and unused cells stay protected. */
-export function packGrid(cells: Img[], masks: (Uint8Array | null)[], cols = GRID_COLS): { image: Img; mask: Img } {
-  if (!cells.length) throw new Error('A repair grid needs at least one frame.');
-  if (!Number.isInteger(cols) || cols < 1) throw new Error('A repair grid needs a positive integer column count.');
-  if (masks.length !== cells.length) throw new Error('A repair grid needs one mask entry per frame.');
-  const first = cells[0];
-  if (!first || !Number.isInteger(first.w) || !Number.isInteger(first.h) || first.w < 1 || first.h < 1) throw new Error('Repair frames need the same positive integer canvas.');
-  for (const c of cells) {
-    if (!c || c.w !== first.w || c.h !== first.h) throw new Error('Repair frames need the same positive integer canvas.');
-    if (!(c.data instanceof Uint8ClampedArray) || c.data.length !== first.w * first.h * 4) throw new Error('Each repair frame needs a complete RGBA buffer.');
-  }
-  for (const m of masks) if (m !== null && (!(m instanceof Uint8Array) || m.length !== first.w * first.h)) throw new Error('Each repair mask needs a Uint8Array matching the cell canvas.');
-  const { w, h } = cells[0], rows = Math.ceil(cells.length / cols), image = makeImg(cols * w, rows * h), mask = makeImg(cols * w, rows * h);
-  for (let i = 0; i < mask.data.length; i += 4) mask.data.set([0, 0, 0, 255], i);
-  cells.forEach((c, k) => {
-    const ox = (k % cols) * w, oy = ((k / cols) | 0) * h, m = masks[k];
-    over(image, c, ox, oy);
-    if (m) for (let p = 0; p < m.length; p++) if (m[p]) mask.data.set([255, 255, 255, 255], ((oy + ((p / w) | 0)) * mask.w + ox + (p % w)) * 4);
-  });
-  return { image, mask };
+export function packGrid(
+	cells: Img[],
+	masks: (Uint8Array | null)[],
+	cols = GRID_COLS
+): { image: Img; mask: Img } {
+	if (!cells.length) throw new Error('A repair grid needs at least one frame.');
+	if (!Number.isInteger(cols) || cols < 1)
+		throw new Error('A repair grid needs a positive integer column count.');
+	if (masks.length !== cells.length)
+		throw new Error('A repair grid needs one mask entry per frame.');
+	const first = cells[0];
+	if (
+		!first ||
+		!Number.isInteger(first.w) ||
+		!Number.isInteger(first.h) ||
+		first.w < 1 ||
+		first.h < 1
+	)
+		throw new Error('Repair frames need the same positive integer canvas.');
+	for (const c of cells) {
+		if (!c || c.w !== first.w || c.h !== first.h)
+			throw new Error('Repair frames need the same positive integer canvas.');
+		if (!(c.data instanceof Uint8ClampedArray) || c.data.length !== first.w * first.h * 4)
+			throw new Error('Each repair frame needs a complete RGBA buffer.');
+	}
+	for (const m of masks)
+		if (m !== null && (!(m instanceof Uint8Array) || m.length !== first.w * first.h))
+			throw new Error('Each repair mask needs a Uint8Array matching the cell canvas.');
+	const { w, h } = cells[0],
+		rows = Math.ceil(cells.length / cols),
+		image = makeImg(cols * w, rows * h),
+		mask = makeImg(cols * w, rows * h);
+	for (let i = 0; i < mask.data.length; i += 4) mask.data.set([0, 0, 0, 255], i);
+	cells.forEach((c, k) => {
+		const ox = (k % cols) * w,
+			oy = ((k / cols) | 0) * h,
+			m = masks[k];
+		over(image, c, ox, oy);
+		if (m)
+			for (let p = 0; p < m.length; p++)
+				if (m[p])
+					mask.data.set([255, 255, 255, 255], ((oy + ((p / w) | 0)) * mask.w + ox + (p % w)) * 4);
+	});
+	return { image, mask };
 }
 /** The first `n` cells of a grid made by packGrid. */
 export function cutGrid(g: Img, n: number, w: number, h: number, cols = GRID_COLS): Img[] {
-  if (g.w !== cols * w || g.h < Math.ceil(n / cols) * h || g.h % h) throw new Error(`Grid ${g.w}x${g.h} does not match ${cols} columns of ${w}x${h} cells`);
-  return Array.from({ length: n }, (_, k) => {
-    const o = makeImg(w, h), ox = (k % cols) * w, oy = ((k / cols) | 0) * h;
-    for (let y = 0; y < h; y++) o.data.set(g.data.subarray(((oy + y) * g.w + ox) * 4, ((oy + y) * g.w + ox + w) * 4), y * w * 4);
-    return o;
-  });
+	if (g.w !== cols * w || g.h < Math.ceil(n / cols) * h || g.h % h)
+		throw new Error(`Grid ${g.w}x${g.h} does not match ${cols} columns of ${w}x${h} cells`);
+	return Array.from({ length: n }, (_, k) => {
+		const o = makeImg(w, h),
+			ox = (k % cols) * w,
+			oy = ((k / cols) | 0) * h;
+		for (let y = 0; y < h; y++)
+			o.data.set(
+				g.data.subarray(((oy + y) * g.w + ox) * 4, ((oy + y) * g.w + ox + w) * 4),
+				y * w * 4
+			);
+		return o;
+	});
 }
 /** Mask of a slot band (full width) for one cell. */
-export const bandMask = (r: Rect, w: number, h: number) => { const m = new Uint8Array(w * h); for (let y = Math.max(0, r.y); y < Math.min(h, r.y + r.h); y++) m.fill(1, y * w, y * w + w); return m; };
+export const bandMask = (r: Rect, w: number, h: number) => {
+	const m = new Uint8Array(w * h);
+	for (let y = Math.max(0, r.y); y < Math.min(h, r.y + r.h); y++) m.fill(1, y * w, y * w + w);
+	return m;
+};
 /** S5 H3 wording: what the grid is, which cells are the reference design, one design everywhere; back items hang behind the arms. */
-export function gridPrompt(o: { item: string; slot: string; key: Key; anim: string; dir: DirectionName; n: number; refs: DirectionName[]; cell: { w: number; h: number }; cols?: number; parts?: { anim: string; n: number }[] }): string {
-  const cols = o.cols ?? GRID_COLS, rows = Math.ceil((o.n + o.refs.length) / cols), color = KEY_NAME[o.key];
-  const held = slotOf(o.slot).class === 'held';
-  const instruction = held ? `Add the identical ${o.item} to the character's ${handOf(o.slot)} hand in every animation frame, gripped in the fist and following its arm pose; ${ONE_HELD}; no effects. ` : `Draw the identical ${o.item} on every animation frame, following each frame's pose${o.slot === 'back' ? '; it hangs from the shoulders down the back and never wraps around or follows the arms' : ''}; empty hands, no weapon, no effects. `;
-  return `This image is a sprite sheet: a ${cols}x${rows} grid of ${o.cell.w}x${o.cell.h} px frames of the same pixel art character, a solid ${color} mannequin. ` +
-    `The first ${o.n} frames (left to right, top to bottom) are ${(o.parts && o.parts.length > 1 ? o.parts : [{ anim: o.anim, n: o.n }]).map((p, i) => `${i ? 'then ' : ''}a ${p.n}-frame ${actionOf(p.anim)} animation`).join(', ')} ${facing(o.dir)}. ` +
-    `The next ${o.refs.length} frames show the reference design (${o.refs.map((d) => facing(d)).join(', ')}): ${o.item}. ` +
-    `The ${color} color is intentional (a chroma key) and must stay exactly the same ${color}. ` +
-    `Every target keeps ${facing(o.dir)} throughout the animation. Match that reference's front or back features; never turn around or swap front and back details between frames. ` +
-    instruction +
-    `Keep every other pixel, the poses, the outlines, the grid layout and the transparent background unchanged.`;
+export function gridPrompt(o: {
+	item: string;
+	slot: string;
+	key: Key;
+	anim: string;
+	dir: DirectionName;
+	n: number;
+	refs: DirectionName[];
+	cell: { w: number; h: number };
+	cols?: number;
+	parts?: { anim: string; n: number }[];
+}): string {
+	const cols = o.cols ?? GRID_COLS,
+		rows = Math.ceil((o.n + o.refs.length) / cols),
+		color = KEY_NAME[o.key];
+	const held = slotOf(o.slot).class === 'held';
+	const instruction = held
+		? `Add the identical ${o.item} to the character's ${handOf(o.slot)} hand in every animation frame, gripped in the fist and following its arm pose; ${ONE_HELD}; no effects. `
+		: `Draw the identical ${o.item} on every animation frame, following each frame's pose${o.slot === 'back' ? '; it hangs from the shoulders down the back and never wraps around or follows the arms' : ''}; empty hands, no weapon, no effects. `;
+	return (
+		`This image is a sprite sheet: a ${cols}x${rows} grid of ${o.cell.w}x${o.cell.h} px frames of the same pixel art character, a solid ${color} mannequin. ` +
+		`The first ${o.n} frames (left to right, top to bottom) are ${(o.parts && o.parts.length > 1 ? o.parts : [{ anim: o.anim, n: o.n }]).map((p, i) => `${i ? 'then ' : ''}a ${p.n}-frame ${actionOf(p.anim)} animation`).join(', ')} ${facing(o.dir)}. ` +
+		`The next ${o.refs.length} frames show the reference design (${o.refs.map((d) => facing(d)).join(', ')}): ${o.item}. ` +
+		`The ${color} color is intentional (a chroma key) and must stay exactly the same ${color}. ` +
+		`Every target keeps ${facing(o.dir)} throughout the animation. Match that reference's front or back features; never turn around or swap front and back details between frames. ` +
+		instruction +
+		`Keep every other pixel, the poses, the outlines, the grid layout and the transparent background unchanged.`
+	);
 }
 
 // ---------- S5 held route: oversize canvas, held wording, frame 0 last ----------
 /** S5: held items are generated on a 96 px canvas around the same pivot (64 + 2 × 16): no blade px on the border, no flips. */
 export const HELD_PAD = 16;
 /** The S5 held route: a held item posed with the skeleton (the anchor route stays on the rig cell, without held wording). */
-export const heldSkel = (slot: string, method?: Method) => method === 'skel' && slotOf(slot).class === 'held';
+export const heldSkel = (slot: string, method?: Method) =>
+	method === 'skel' && slotOf(slot).class === 'held';
 /** Oversize padding of an item's layers (S5 held route only), up to the 256 px canvas cap. */
-export const padOf = (slot: string, method?: Method, cell?: { w: number; h: number }) => (heldSkel(slot, method) ? Math.max(0, Math.min(HELD_PAD, Math.floor((256 - Math.max(cell?.w ?? 64, cell?.h ?? 64)) / 2))) : 0);
+export const padOf = (slot: string, method?: Method, cell?: { w: number; h: number }) =>
+	heldSkel(slot, method)
+		? Math.max(
+				0,
+				Math.min(HELD_PAD, Math.floor((256 - Math.max(cell?.w ?? 64, cell?.h ?? 64)) / 2))
+			)
+		: 0;
 /** Grow a cell by `p` transparent px on every side (same pivot, never resampled). */
 export function padImg(im: Img, p: number): Img {
-  if (!p) return im;
-  const o = makeImg(im.w + 2 * p, im.h + 2 * p);
-  over(o, im, p, p);
-  return o;
+	if (!p) return im;
+	const o = makeImg(im.w + 2 * p, im.h + 2 * p);
+	over(o, im, p, p);
+	return o;
 }
 /** API keypoints (0–1 of the rig cell) -> the same body points on the padded canvas. */
-export const padKeypoints = (k: Keypoint[], cell: { w: number; h: number }, p: number): Keypoint[] =>
-  p ? k.map((q) => ({ ...q, x: +((q.x * cell.w + p) / (cell.w + 2 * p)).toFixed(4), y: +((q.y * cell.h + p) / (cell.h + 2 * p)).toFixed(4) })) : k;
+export const padKeypoints = (
+	k: Keypoint[],
+	cell: { w: number; h: number },
+	p: number
+): Keypoint[] =>
+	p
+		? k.map((q) => ({
+				...q,
+				x: +((q.x * cell.w + p) / (cell.w + 2 * p)).toFixed(4),
+				y: +((q.y * cell.h + p) / (cell.h + 2 * p)).toFixed(4)
+			}))
+		: k;
 const handOf = (slot: string) => (slot === 'off_hand' ? 'left' : 'right');
 /** One clause for any held object in either hand: weapon words assume the object. With "nothing in the left hand" a book and
  * a mug moved to that hand in one seed; this clause showed no regression on three dress calls (2026-11-08, hand-wording-ab.md). */
 const ONE_HELD = 'exactly one held item';
 /** The dress description of an item: held wording on the S5 route at every size, including an unpadded 256 px cell (2026-11-07
  * session counter-review F3), and the plain description otherwise. */
-export const dressItem = (spec: { prompt: string; slot: string; method?: Method }) => (heldSkel(spec.slot, spec.method) ? heldPhrase(spec.prompt, spec.slot) : spec.prompt);
+export const dressItem = (spec: { prompt: string; slot: string; method?: Method }) =>
+	heldSkel(spec.slot, spec.method) ? heldPhrase(spec.prompt, spec.slot) : spec.prompt;
 /** S5 dress wording: continue the forearm ("upright" bent the arm and broke posing), one object only. */
-export const heldPhrase = (item: string, slot: string) => `${item}, held naturally, the way it is normally carried, in the character's ${handOf(slot)} hand, the hand marked with a small red dot (the red dot is only a marker: paint it over with the item or the hand); ${ONE_HELD}; the arms stay exactly as they are`;
+export const heldPhrase = (item: string, slot: string) =>
+	`${item}, held naturally, the way it is normally carried, in the character's ${handOf(slot)} hand, the hand marked with a small red dot (the red dot is only a marker: paint it over with the item or the hand); ${ONE_HELD}; the arms stay exactly as they are`;
 /** The dot `heldPhrase` names. Words alone ("right hand", image sides) moved items between hands across views and a forced
  * direction drew candles upside down; a dot on the intended wrist kept 8 of 8 items in that hand with the arms unchanged
  * (2026-11-08, hand-wording-ab.md). */
 export const HAND_MARK = [230, 20, 20, 255] as const;
 /** A rest view (padded by `pad`) with the dot on the opaque px within 2.2 px of the held slot's wrist, moved to the nearest
  * opaque px when the estimated wrist sits just off the hand. */
-export function markHand(im: Img, rest: Keypoint[], slot: string, cell: { w: number; h: number }, pad = 0): Img {
-  const label = handOf(slot) === 'left' ? 'LEFT ARM' : 'RIGHT ARM', k = rest.find((q) => q.label === label);
-  if (!k) throw new Error(`The rest pose has no ${label.toLowerCase()} to mark the held hand.`);
-  const wx = k.x * cell.w + pad, wy = k.y * cell.h + pad, opaque = (x: number, y: number) => x >= 0 && y >= 0 && x < im.w && y < im.h && !!im.data[(y * im.w + x) * 4 + 3];
-  let bx = wx, by = wy, best = Infinity;
-  for (let y = Math.floor(wy - 8); y <= Math.ceil(wy + 8); y++) for (let x = Math.floor(wx - 8); x <= Math.ceil(wx + 8); x++) {
-    const d = Math.hypot(x - wx, y - wy);
-    if (d <= 8 && d < best && opaque(x, y)) { best = d; bx = x; by = y; }
-  }
-  const [cx, cy] = best <= 2.2 ? [wx, wy] : [bx, by];
-  if (best === Infinity) throw new Error(`The ${label.toLowerCase().replace(' arm', '')} hand is not on the rest view, so the held hand cannot be marked.`);
-  const o = { ...im, data: new Uint8ClampedArray(im.data) };
-  for (let y = Math.max(0, Math.floor(cy - 2)); y <= Math.min(im.h - 1, Math.ceil(cy + 2)); y++)
-    for (let x = Math.max(0, Math.floor(cx - 2)); x <= Math.min(im.w - 1, Math.ceil(cx + 2)); x++)
-      if (Math.hypot(x - cx, y - cy) <= 2.2 && o.data[(y * im.w + x) * 4 + 3]) o.data.set(HAND_MARK, (y * im.w + x) * 4);
-  return o;
+export function markHand(
+	im: Img,
+	rest: Keypoint[],
+	slot: string,
+	cell: { w: number; h: number },
+	pad = 0
+): Img {
+	const label = handOf(slot) === 'left' ? 'LEFT ARM' : 'RIGHT ARM',
+		k = rest.find((q) => q.label === label);
+	if (!k) throw new Error(`The rest pose has no ${label.toLowerCase()} to mark the held hand.`);
+	const wx = k.x * cell.w + pad,
+		wy = k.y * cell.h + pad,
+		opaque = (x: number, y: number) =>
+			x >= 0 && y >= 0 && x < im.w && y < im.h && !!im.data[(y * im.w + x) * 4 + 3];
+	let bx = wx,
+		by = wy,
+		best = Infinity;
+	for (let y = Math.floor(wy - 8); y <= Math.ceil(wy + 8); y++)
+		for (let x = Math.floor(wx - 8); x <= Math.ceil(wx + 8); x++) {
+			const d = Math.hypot(x - wx, y - wy);
+			if (d <= 8 && d < best && opaque(x, y)) {
+				best = d;
+				bx = x;
+				by = y;
+			}
+		}
+	const [cx, cy] = best <= 2.2 ? [wx, wy] : [bx, by];
+	if (best === Infinity)
+		throw new Error(
+			`The ${label.toLowerCase().replace(' arm', '')} hand is not on the rest view, so the held hand cannot be marked.`
+		);
+	const o = { ...im, data: new Uint8ClampedArray(im.data) };
+	for (let y = Math.max(0, Math.floor(cy - 2)); y <= Math.min(im.h - 1, Math.ceil(cy + 2)); y++)
+		for (let x = Math.max(0, Math.floor(cx - 2)); x <= Math.min(im.w - 1, Math.ceil(cx + 2)); x++)
+			if (Math.hypot(x - cx, y - cy) <= 2.2 && o.data[(y * im.w + x) * 4 + 3])
+				o.data.set(HAND_MARK, (y * im.w + x) * 4);
+	return o;
 }
 /** Mean joint distance (px) between two keypoint sets. */
 export const poseDist = (a: Keypoint[], b: Keypoint[], cell: { w: number; h: number }) => {
-  const d = a.map((p) => b.find((q) => q.label === p.label)).map((q, i) => (q ? Math.hypot((q.x - a[i].x) * cell.w, (q.y - a[i].y) * cell.h) : 0));
-  return d.reduce((s, v) => s + v, 0) / (d.length || 1);
+	const d = a
+		.map((p) => b.find((q) => q.label === p.label))
+		.map((q, i) => (q ? Math.hypot((q.x - a[i].x) * cell.w, (q.y - a[i].y) * cell.h) : 0));
+	return d.reduce((s, v) => s + v, 0) / (d.length || 1);
 };
 /** S5: skeleton-v3 drops a held item on the FIRST output frame when that pose is ~the rest pose -> send frame 0 last. */
-export const f0Last = (slot: string, rest: Keypoint[], poses: Keypoint[][], cell: { w: number; h: number }) => slotOf(slot).class === 'held' && poses.length > 1 && poseDist(rest, poses[0], cell) <= 1;
+export const f0Last = (
+	slot: string,
+	rest: Keypoint[],
+	poses: Keypoint[][],
+	cell: { w: number; h: number }
+) => slotOf(slot).class === 'held' && poses.length > 1 && poseDist(rest, poses[0], cell) <= 1;
 /** Outputs of a pose call back in keypoint order. */
-export const unrotate = <T>(outs: T[], rotated: boolean) => (rotated ? [outs.at(-1)!, ...outs.slice(0, -1)] : outs);
+export const unrotate = <T>(outs: T[], rotated: boolean) =>
+	rotated ? [outs.at(-1)!, ...outs.slice(0, -1)] : outs;
 /** Pseudo cell key of a direction's rest view (the dress call's input and its keyframe output). */
 export const restKey = (dir: DirectionName) => cellKey('rest', dir, 0);
 /** The stored keypoint sequence of a clip-direction (v1.3), or undefined. */
 export const clipKeypoints = (rig: Rig, anim: string, dir: DirectionName) => {
-  const a = rig.animations.find((x) => x.id === anim), k = a?.sources?.[dir]?.keypoints;
-  return k && k.length === a!.cells && k.every(hasAll) ? k : undefined;
+	const a = rig.animations.find((x) => x.id === anim),
+		k = a?.sources?.[dir]?.keypoints;
+	return k && k.length === a!.cells && k.every(hasAll) ? k : undefined;
 };
 /** Stored keypoints of one cell ("walk/south/3"): a packed call holds cells of more than one move. */
-export const cellKeypoints = (rig: Rig, key: string) => { const [a, d, i] = key.split('/') as [string, DirectionName, string]; return clipKeypoints(rig, a, d)?.[+i]; };
+export const cellKeypoints = (rig: Rig, key: string) => {
+	const [a, d, i] = key.split('/') as [string, DirectionName, string];
+	return clipKeypoints(rig, a, d)?.[+i];
+};
 /** NECK y of a cell on its (padded) canvas, pixel-edge: posed cells use their stored keypoints, standing cells the rest view's. */
 export const neckY = (rig: Rig, key: string, pad = 0): number | undefined => {
-  const [a, d] = key.split('/') as [string, DirectionName], k = cellKeypoints(rig, key) ?? (a === DEFAULT_MOVE ? rig.rest?.[d]?.keypoints : undefined);
-  const neck = k?.find((q) => q.label === 'NECK');
-  return neck ? neck.y * rig.cell.h + pad : undefined;
+	const [a, d] = key.split('/') as [string, DirectionName],
+		k = cellKeypoints(rig, key) ?? (a === DEFAULT_MOVE ? rig.rest?.[d]?.keypoints : undefined);
+	const neck = k?.find((q) => q.label === 'NECK');
+	return neck ? neck.y * rig.cell.h + pad : undefined;
 };
 /** The move whose action words a pose call sends: the one with the most frames (walk in a packed idle + walk call). */
-export const callAnim = (cells: string[]) => { const n = new Map<string, number>(); for (const k of cells) { const a = k.split('/')[0]; n.set(a, (n.get(a) ?? 0) + 1); } return [...n].sort((x, y) => y[1] - x[1])[0][0]; };
+export const callAnim = (cells: string[]) => {
+	const n = new Map<string, number>();
+	for (const k of cells) {
+		const a = k.split('/')[0];
+		n.set(a, (n.get(a) ?? 0) + 1);
+	}
+	return [...n].sort((x, y) => y[1] - x[1])[0][0];
+};
 /** Moves of one cell list in order, with frame counts. */
-export const callParts = (cells: string[]) => cells.reduce<{ anim: string; n: number }[]>((p, k) => { const a = k.split('/')[0]; if (p.at(-1)?.anim === a) p.at(-1)!.n++; else p.push({ anim: a, n: 1 }); return p; }, []);
+export const callParts = (cells: string[]) =>
+	cells.reduce<{ anim: string; n: number }[]>((p, k) => {
+		const a = k.split('/')[0];
+		if (p.at(-1)?.anim === a) p.at(-1)!.n++;
+		else p.push({ anim: a, n: 1 });
+		return p;
+	}, []);
 /** Can the skel route run? Needs the v1.3 rest views and the stored keypoint sequence of every chosen clip-direction. */
-export const canPose = (rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'standing'>) =>
-  spec.dirs.every((d) => hasAll(rig.rest?.[d]?.keypoints)) && spec.anims.every((a) => (spec.clipDirs?.[a] ?? spec.dirs).every((d) => reusesStanding(rig, spec, a, d) || !!clipKeypoints(rig, a, d)));
+export const canPose = (
+	rig: Rig,
+	spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'standing'>
+) =>
+	spec.dirs.every((d) => hasAll(rig.rest?.[d]?.keypoints)) &&
+	spec.anims.every((a) =>
+		(spec.clipDirs?.[a] ?? spec.dirs).every(
+			(d) => reusesStanding(rig, spec, a, d) || !!clipKeypoints(rig, a, d)
+		)
+	);
 
 /** A verified standing scope can reuse its dressed output even when imported source metadata is absent. */
-export const reusesStanding = (rig: Rig, spec: Pick<ItemSpec, 'standing'>, anim: string, dir: DirectionName) => {
-  const clip = rig.animations.find(a => a.id === anim);
-  return clip?.cells === 1 && (!!spec.standing || clip.sources?.[dir]?.motion === 'imported-rest');
+export const reusesStanding = (
+	rig: Rig,
+	spec: Pick<ItemSpec, 'standing'>,
+	anim: string,
+	dir: DirectionName
+) => {
+	const clip = rig.animations.find((a) => a.id === anim);
+	return clip?.cells === 1 && (!!spec.standing || clip.sources?.[dir]?.motion === 'imported-rest');
 };
 
 /** M4/T3: a held item's bg (blade outside the body) sits above the cape's bg (z 4) in S/E/W, else the cape hides the hilt and
  * blade (T3 Ranger: 220 sword px hidden over walk S); from behind (north) the cape stays over it (bg z as built). */
-const heldBgOverCape = (): Slot['zOverrides'] => (['south', 'south-east', 'east', 'west', 'south-west'] as const).map((dir) => ({ layer: 'bg', z: 5, dir })); // B15: + the front 3/4 views of 8-dir rigs
+const heldBgOverCape = (): Slot['zOverrides'] =>
+	(['south', 'south-east', 'east', 'west', 'south-west'] as const).map((dir) => ({
+		layer: 'bg',
+		z: 5,
+		dir
+	})); // B15: + the front 3/4 views of 8-dir rigs
 /** Default slot ladder (architecture §4). Array order = tie-break for equal z. */
 export const SLOTS: Slot[] = [
-  { id: 'body', z: 10, class: 'base', required: true },
-  { id: 'feet', z: 20, class: 'worn', anchor: 'foot_r' },
-  { id: 'legs', z: 30, class: 'worn', anchor: 'hip' },
-  { id: 'torso_inner', z: 40, class: 'worn', anchor: 'neck' },
-  { id: 'waist', z: 50, class: 'worn', anchor: 'hip' },
-  { id: 'torso_outer', z: 60, class: 'worn', anchor: 'neck' },
-  { id: 'shoulders', z: 65, class: 'worn', anchor: 'neck' },
-  { id: 'arms', z: 70, class: 'worn', anchor: 'hand_r' },
-  { id: 'neck', z: 80, class: 'rigid', anchor: 'neck' },
-  { id: 'back', z: 90, bgZ: 4, class: 'worn', anchor: 'neck' },
-  { id: 'facial_hair', z: 100, class: 'rigid', anchor: 'head' },
-  { id: 'hair', z: 110, bgZ: 3, class: 'rigid', anchor: 'head', zOverrides: [{ layer: 'bg', z: 5 }] }, // T3: long hair lies over the cape (bg 4) in every view: 359 hair px hidden over walk E
-  { id: 'face_acc', z: 120, class: 'rigid', anchor: 'head', band: true },
-  // B14: hair is tucked under a helmet (only what hangs below the brim shows) instead of hidden (T3: hides erased long hair);
-  // a hood or full mask checks "hide hair" (item.hides)
-  { id: 'head', z: 130, class: 'rigid', anchor: 'head', clips: ['hair'], band: true },
-  { id: 'off_hand', z: 140, bgZ: 2, class: 'held', anchor: 'hand_l', zOverrides: heldBgOverCape() },
-  { id: 'main_hand', z: 150, bgZ: 1, class: 'held', anchor: 'hand_r', zOverrides: heldBgOverCape() },
+	{ id: 'body', z: 10, class: 'base', required: true },
+	{ id: 'feet', z: 20, class: 'worn', anchor: 'foot_r' },
+	{ id: 'legs', z: 30, class: 'worn', anchor: 'hip' },
+	{ id: 'torso_inner', z: 40, class: 'worn', anchor: 'neck' },
+	{ id: 'waist', z: 50, class: 'worn', anchor: 'hip' },
+	{ id: 'torso_outer', z: 60, class: 'worn', anchor: 'neck' },
+	{ id: 'shoulders', z: 65, class: 'worn', anchor: 'neck' },
+	{ id: 'arms', z: 70, class: 'worn', anchor: 'hand_r' },
+	{ id: 'neck', z: 80, class: 'rigid', anchor: 'neck' },
+	{ id: 'back', z: 90, bgZ: 4, class: 'worn', anchor: 'neck' },
+	{ id: 'facial_hair', z: 100, class: 'rigid', anchor: 'head' },
+	{
+		id: 'hair',
+		z: 110,
+		bgZ: 3,
+		class: 'rigid',
+		anchor: 'head',
+		zOverrides: [{ layer: 'bg', z: 5 }]
+	}, // T3: long hair lies over the cape (bg 4) in every view: 359 hair px hidden over walk E
+	{ id: 'face_acc', z: 120, class: 'rigid', anchor: 'head', band: true },
+	// B14: hair is tucked under a helmet (only what hangs below the brim shows) instead of hidden (T3: hides erased long hair);
+	// a hood or full mask checks "hide hair" (item.hides)
+	{ id: 'head', z: 130, class: 'rigid', anchor: 'head', clips: ['hair'], band: true },
+	{ id: 'off_hand', z: 140, bgZ: 2, class: 'held', anchor: 'hand_l', zOverrides: heldBgOverCape() },
+	{ id: 'main_hand', z: 150, bgZ: 1, class: 'held', anchor: 'hand_r', zOverrides: heldBgOverCape() }
 ];
 export const slotOf = (id: string) => SLOTS.find((s) => s.id === id)!;
 
 export type Route = Key | 'none'; // 'none' = diff fallback on the real base
-export interface ItemSpec { id: string; name: string; slot: string; prompt: string; key: Route; anims: string[]; dirs: DirectionName[]; clipDirs?: Record<string, DirectionName[]>; method?: Method; standing?: string }
+export interface ItemSpec {
+	id: string;
+	name: string;
+	slot: string;
+	prompt: string;
+	key: Route;
+	anims: string[];
+	dirs: DirectionName[];
+	clipDirs?: Record<string, DirectionName[]>;
+	method?: Method;
+	standing?: string;
+}
 
 /** Calls of an item. skel: [dress the rest cells (chunked to the frame cap), pose clip × dir ...]; anchor: packed edit calls (planCalls). */
-export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'method' | 'key' | 'standing'> & { slot?: string }): { kind: CallKind; cells: string[] }[] {
-  if (spec.method !== 'skel' || spec.key === 'none') return planCalls(rig, spec.standing ? { ...spec, anims: [spec.standing] } : spec).map((cells) => ({ kind: 'edit', cells }));
-  // B16: a 96 px held dress takes ≤ 4 frames, an 8-direction rig has 5 rest views -> later chunks carry chunk 1's dressed cell 0
-  const cap = editFrameCap(Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method, rig.cell) : 0));
-  return [
-    ...anchorChunks(spec.dirs.map(restKey), cap).map((cells) => ({ kind: 'dress' as const, cells })),
-    ...posePlan(rig, spec).map(c => ({ ...c, kind: frozenGrid(rig, spec, c.cells) ? 'grid' as const : c.kind })),
-  ];
+export function planItem(
+	rig: Rig,
+	spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'method' | 'key' | 'standing'> & {
+		slot?: string;
+	}
+): { kind: CallKind; cells: string[] }[] {
+	if (spec.method !== 'skel' || spec.key === 'none')
+		return planCalls(rig, spec.standing ? { ...spec, anims: [spec.standing] } : spec).map(
+			(cells) => ({ kind: 'edit', cells })
+		);
+	// B16: a 96 px held dress takes ≤ 4 frames, an 8-direction rig has 5 rest views -> later chunks carry chunk 1's dressed cell 0
+	const cap = editFrameCap(
+		Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method, rig.cell) : 0)
+	);
+	return [
+		...anchorChunks(spec.dirs.map(restKey), cap).map((cells) => ({
+			kind: 'dress' as const,
+			cells
+		})),
+		...posePlan(rig, spec).map((c) => ({
+			...c,
+			kind: frozenGrid(rig, spec, c.cells) ? ('grid' as const) : c.kind
+		}))
+	];
 }
 /** Keep imported artwork and avoid posing through corroborated bad estimates. Never guess replacement joints. */
-export function frozenGrid(rig: Rig, spec: { slot?: string; key?: Route }, cells: string[]): boolean {
-  if (!importedPoseIssues(rig, { cells }).length) return false;
-  if (spec.key && spec.key !== 'none' && spec.slot && slotOf(spec.slot).class !== 'held' && gridFits(rig.cell, cells.length, 1)) return true;
-  assertImportedPoses(rig, { cells });
-  return false;
+export function frozenGrid(
+	rig: Rig,
+	spec: { slot?: string; key?: Route },
+	cells: string[]
+): boolean {
+	if (!importedPoseIssues(rig, { cells }).length) return false;
+	if (
+		spec.key &&
+		spec.key !== 'none' &&
+		spec.slot &&
+		slotOf(spec.slot).class !== 'held' &&
+		gridFits(rig.cell, cells.length, 1)
+	)
+		return true;
+	assertImportedPoses(rig, { cells });
+	return false;
 }
 /**
  * Pose calls: one per clip-direction (split above 15 frames), except that idle and walk of one direction share a call when they
  * fit 15 frames: 12 frames cost 3 gens like 8, and both parts passed QA in all 6 chibi clip-directions (round 4 arm I). Held
  * items and other moves keep one move per call (not measured).
  */
-function posePlan(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'standing'> & { slot?: string }): { kind: 'pose'; cells: string[] }[] {
-  const calls: { kind: 'pose'; cells: string[] }[] = [], packable = !spec.slot || slotOf(spec.slot)?.class !== 'held';
-  const anims = rig.animations.filter((x) => spec.anims.includes(x.id)).map((x) => x.id);
-  for (const d of [...new Set(anims.flatMap((a) => spec.clipDirs?.[a] ?? spec.dirs))]) {
-    let shared: string[] | undefined;
-    for (const a of anims) {
-      if (!(spec.clipDirs?.[a] ?? spec.dirs).includes(d)) continue;
-      const clip = rig.animations.find((x) => x.id === a)!;
-      if (reusesStanding(rig, spec, a, d)) continue;
-      const cells = Array.from({ length: clip.cells }, (_, i) => cellKey(a, d, i));
-      if (packable && /^(idle|walk)$/.test(a) && clip.cells <= 15) {
-        if (shared && shared.length + cells.length <= 15) { shared.push(...cells); continue; }
-        calls.push({ kind: 'pose', cells: (shared = cells) });
-        continue;
-      }
-      for (const { start, count } of poseBatches(clip.cells)) calls.push({ kind: 'pose', cells: cells.slice(start, start + count) });
-    }
-  }
-  return calls;
+function posePlan(
+	rig: Rig,
+	spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'standing'> & { slot?: string }
+): { kind: 'pose'; cells: string[] }[] {
+	const calls: { kind: 'pose'; cells: string[] }[] = [],
+		packable = !spec.slot || slotOf(spec.slot)?.class !== 'held';
+	const anims = rig.animations.filter((x) => spec.anims.includes(x.id)).map((x) => x.id);
+	for (const d of [...new Set(anims.flatMap((a) => spec.clipDirs?.[a] ?? spec.dirs))]) {
+		let shared: string[] | undefined;
+		for (const a of anims) {
+			if (!(spec.clipDirs?.[a] ?? spec.dirs).includes(d)) continue;
+			const clip = rig.animations.find((x) => x.id === a)!;
+			if (reusesStanding(rig, spec, a, d)) continue;
+			const cells = Array.from({ length: clip.cells }, (_, i) => cellKey(a, d, i));
+			if (packable && /^(idle|walk)$/.test(a) && clip.cells <= 15) {
+				if (shared && shared.length + cells.length <= 15) {
+					shared.push(...cells);
+					continue;
+				}
+				calls.push({ kind: 'pose', cells: (shared = cells) });
+				continue;
+			}
+			for (const { start, count } of poseBatches(clip.cells))
+				calls.push({ kind: 'pose', cells: cells.slice(start, start + count) });
+		}
+	}
+	return calls;
 }
 /** Split cells for a capped multi-frame call: the first call takes `cap`, later ones `cap − 1` plus the anchor cell (S2). */
-export const anchorChunks = <T>(cells: T[], cap: number): T[][] => [cells.slice(0, cap), ...Array.from({ length: Math.ceil(Math.max(0, cells.length - cap) / (cap - 1)) }, (_, i) => cells.slice(cap + i * (cap - 1), cap + (i + 1) * (cap - 1)))];
+export const anchorChunks = <T>(cells: T[], cap: number): T[][] => [
+	cells.slice(0, cap),
+	...Array.from({ length: Math.ceil(Math.max(0, cells.length - cap) / (cap - 1)) }, (_, i) =>
+		cells.slice(cap + i * (cap - 1), cap + (i + 1) * (cap - 1))
+	)
+];
 /** Does call k lead with the anchor cell (edit-animation-v2 after the first call)? Its first output is then dropped. */
-export const anchored = (k: number, kind: CallKind = 'edit') => k > 0 && (kind === 'edit' || kind === 'dress');
+export const anchored = (k: number, kind: CallKind = 'edit') =>
+	k > 0 && (kind === 'edit' || kind === 'dress');
 /** edit-animation-v2 price by canvas: 10 / 15 / 25 gens up to 128 / 170 / 256 px (pixellab_current_capabilities; ledgers: 15 at
  *  160 px, 25 for a 192 px held canvas). */
-export const editGens = (canvas: { w: number; h: number }) => { const s = Math.max(canvas.w, canvas.h); return s <= 128 ? 10 : s <= 170 ? 15 : 25; };
-export function planGens(p: { kind: CallKind; cells: string[] }[], gridCell = { w: 64, h: 64 }): number {
-  return p.reduce((s, c) => s + (c.kind === 'pose' ? poseCallGens(c.cells.length) : c.kind === 'grid' ? gridEstimate(gridCell, c.cells.length, 1).gens : editGens(gridCell)), 0);
+export const editGens = (canvas: { w: number; h: number }) => {
+	const s = Math.max(canvas.w, canvas.h);
+	return s <= 128 ? 10 : s <= 170 ? 15 : 25;
+};
+export function planGens(
+	p: { kind: CallKind; cells: string[] }[],
+	gridCell = { w: 64, h: 64 }
+): number {
+	return p.reduce(
+		(s, c) =>
+			s +
+			(c.kind === 'pose'
+				? poseCallGens(c.cells.length)
+				: c.kind === 'grid'
+					? gridEstimate(gridCell, c.cells.length, 1).gens
+					: editGens(gridCell)),
+		0
+	);
 }
 
 /** Clips (anim × generated dir) packed whole into calls: design call ≤ cap cells, later calls ≤ cap − 1 + 1 anchor cell. */
-export function planCalls(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>, reserveAnchor = false): string[][] {
-  const max = editFrameCap(Math.max(rig.cell.w, rig.cell.h));
-  const clips = spec.anims.flatMap((a) => (spec.clipDirs?.[a] ?? spec.dirs).flatMap((d) => {
-    const n = rig.animations.find((x) => x.id === a)?.cells ?? 0;
-    return Array.from({ length: Math.ceil(n / (max - 1)) }, (_, i) => ({ a, d, start: i * (max - 1), n: Math.min(max - 1, n - i * (max - 1)) }));
-  }));
-  clips.sort((x, y) => y.n - x.n); // stable: walk S, E, N before idle
-  const bins: { cap: number; clips: typeof clips }[] = [];
-  for (const c of clips) {
-    const bin = bins.find((b) => b.cap - b.clips.reduce((s, x) => s + x.n, 0) >= c.n) ?? (bins.push({ cap: reserveAnchor || bins.length ? max - 1 : max, clips: [] }), bins.at(-1)!);
-    bin.clips.push(c);
-  }
-  return bins.map((b) => b.clips.flatMap((c) => Array.from({ length: c.n }, (_, i) => cellKey(c.a, c.d, c.start + i))));
+export function planCalls(
+	rig: Rig,
+	spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>,
+	reserveAnchor = false
+): string[][] {
+	const max = editFrameCap(Math.max(rig.cell.w, rig.cell.h));
+	const clips = spec.anims.flatMap((a) =>
+		(spec.clipDirs?.[a] ?? spec.dirs).flatMap((d) => {
+			const n = rig.animations.find((x) => x.id === a)?.cells ?? 0;
+			return Array.from({ length: Math.ceil(n / (max - 1)) }, (_, i) => ({
+				a,
+				d,
+				start: i * (max - 1),
+				n: Math.min(max - 1, n - i * (max - 1))
+			}));
+		})
+	);
+	clips.sort((x, y) => y.n - x.n); // stable: walk S, E, N before idle
+	const bins: { cap: number; clips: typeof clips }[] = [];
+	for (const c of clips) {
+		const bin =
+			bins.find((b) => b.cap - b.clips.reduce((s, x) => s + x.n, 0) >= c.n) ??
+			(bins.push({ cap: reserveAnchor || bins.length ? max - 1 : max, clips: [] }), bins.at(-1)!);
+		bin.clips.push(c);
+	}
+	return bins.map((b) =>
+		b.clips.flatMap((c) => Array.from({ length: c.n }, (_, i) => cellKey(c.a, c.d, c.start + i)))
+	);
 }
 
 /** Frozen-frame extension also works without joints, including two-view and sparse imported characters. */
-export function planAnchoredMove(rig: Rig, item: Pick<Item, 'standing' | 'dressed'>, anim: string, dirs: DirectionName[]) {
-  if (!item.standing || !rig.animations.some(a => a.id === item.standing && a.cells === 1) || !rig.animations.some(a => a.id === anim)) throw new Error('This item needs a saved standing design and an existing move.');
-  return dirs.flatMap(dir => {
-    const image = item.dressed?.[dir];
-    if (!image) throw new Error(`No saved standing design for ${dir}.`);
-    return planCalls(rig, { anims: [anim], dirs: [dir] }, true).map(cells => ({ kind: 'edit' as const, cells, reference: { image, cell: cellKey(item.standing!, dir, 0) as CellKey } }));
-  });
+export function planAnchoredMove(
+	rig: Rig,
+	item: Pick<Item, 'standing' | 'dressed'>,
+	anim: string,
+	dirs: DirectionName[]
+) {
+	if (
+		!item.standing ||
+		!rig.animations.some((a) => a.id === item.standing && a.cells === 1) ||
+		!rig.animations.some((a) => a.id === anim)
+	)
+		throw new Error('This item needs a saved standing design and an existing move.');
+	return dirs.flatMap((dir) => {
+		const image = item.dressed?.[dir];
+		if (!image) throw new Error(`No saved standing design for ${dir}.`);
+		return planCalls(rig, { anims: [anim], dirs: [dir] }, true).map((cells) => ({
+			kind: 'edit' as const,
+			cells,
+			reference: { image, cell: cellKey(item.standing!, dir, 0) as CellKey }
+		}));
+	});
 }
 
-const facing = (d: string) => `facing ${d}${d === 'south' ? ' (front view)' : d === 'north' ? ' (back view)' : d.includes('-') ? ` (${d.startsWith('south') ? 'front' : 'back'} three-quarter view)` : ' (side view)'}`;
+const facing = (d: string) =>
+	`facing ${d}${d === 'south' ? ' (front view)' : d === 'north' ? ' (back view)' : d.includes('-') ? ` (${d.startsWith('south') ? 'front' : 'back'} three-quarter view)` : ' (side view)'}`;
 /** "Cells in order: 8 cells walk facing south (front view), …" */
 export function cellsNote(cells: string[], anchor?: string): string {
-  const groups: [string, number][] = [];
-  for (const k of cells) {
-    const [a, d] = k.split('/'), g = `${a} ${facing(d)}`;
-    if (groups.at(-1)?.[0] === g) groups.at(-1)![1]++;
-    else groups.push([g, 1]);
-  }
-  const ref = anchor ? `frame 1 = reference (${anchor.split('/')[0]} ${facing(anchor.split('/')[1])}), then ` : '';
-  return `Cells in order: ${ref}${groups.map(([g, n]) => `${n} cells ${g}`).join(', ')}. `;
+	const groups: [string, number][] = [];
+	for (const k of cells) {
+		const [a, d] = k.split('/'),
+			g = `${a} ${facing(d)}`;
+		if (groups.at(-1)?.[0] === g) groups.at(-1)![1]++;
+		else groups.push([g, 1]);
+	}
+	const ref = anchor
+		? `frame 1 = reference (${anchor.split('/')[0]} ${facing(anchor.split('/')[1])}), then `
+		: '';
+	return `Cells in order: ${ref}${groups.map(([g, n]) => `${n} cells ${g}`).join(', ')}. `;
 }
 
 export function itemPrompt(item: string, route: Route, cells: string[], anchor?: string): string {
-  if (route !== 'none') return chromaPrompt(item, route, cellsNote(cells, anchor), !!anchor);
-  return (
-    `Add only ${item} to this pixel art character, drawn in its own colors, identical design in all frames. ` +
-    (anchor ? `Frame 1 already wears ${item}: copy exactly that design, colors and size onto the other frames. ` : '') +
-    `${cellsNote(cells, anchor)}Keep every other pixel, the pose, the outline and the transparent background exactly unchanged.`
-  );
+	if (route !== 'none') return chromaPrompt(item, route, cellsNote(cells, anchor), !!anchor);
+	return (
+		`Add only ${item} to this pixel art character, drawn in its own colors, identical design in all frames. ` +
+		(anchor
+			? `Frame 1 already wears ${item}: copy exactly that design, colors and size onto the other frames. `
+			: '') +
+		`${cellsNote(cells, anchor)}Keep every other pixel, the pose, the outline and the transparent background exactly unchanged.`
+	);
 }
 
 /** Model input for one base cell. */
@@ -371,155 +721,258 @@ export const inputCell = (B: Img, route: Route) => (route === 'none' ? B : toChr
 
 /** Keypoint y-band of a slot (S2 algorithm spec §4.2); used to clip the diff fallback and to report out-of-band px. */
 export function bandOf(slot: string, s: Skeleton | undefined, h: number): Rect {
-  const all = { x: 0, y: 0, w: 1e3, h };
-  const y = (l: string) => s?.[l]?.y;
-  const ys = (...l: string[]) => l.map(y).filter((v): v is number => v != null);
-  const neck = y('NECK'), hips = ys('LEFT HIP', 'RIGHT HIP'), knees = ys('LEFT KNEE', 'RIGHT KNEE'), sh = ys('LEFT SHOULDER', 'RIGHT SHOULDER');
-  const from = (y0: number) => ({ ...all, y: Math.max(0, Math.floor(y0)), h: h - Math.max(0, Math.floor(y0)) });
-  const to = (y1: number) => ({ ...all, h: Math.ceil(y1) });
-  if (!s) return all;
-  if (['head', 'face_acc', 'facial_hair'].includes(slot) && neck != null) return to(neck + 3);
-  if (slot === 'hair' && sh.length) return to(Math.max(...sh) + 8);
-  if (['torso_inner', 'torso_outer', 'shoulders', 'waist'].includes(slot) && neck != null && hips.length) return { ...all, y: Math.floor(neck - 3), h: Math.ceil(Math.max(...hips) + 6 - (neck - 3)) };
-  if (slot === 'legs' && hips.length) return from(Math.min(...hips) - 4);
-  if (slot === 'feet' && knees.length) return from(Math.min(...knees) - 3);
-  if (slot === 'back' && neck != null) return from(neck - 4);
-  return all;
+	const all = { x: 0, y: 0, w: 1e3, h };
+	const y = (l: string) => s?.[l]?.y;
+	const ys = (...l: string[]) => l.map(y).filter((v): v is number => v != null);
+	const neck = y('NECK'),
+		hips = ys('LEFT HIP', 'RIGHT HIP'),
+		knees = ys('LEFT KNEE', 'RIGHT KNEE'),
+		sh = ys('LEFT SHOULDER', 'RIGHT SHOULDER');
+	const from = (y0: number) => ({
+		...all,
+		y: Math.max(0, Math.floor(y0)),
+		h: h - Math.max(0, Math.floor(y0))
+	});
+	const to = (y1: number) => ({ ...all, h: Math.ceil(y1) });
+	if (!s) return all;
+	if (['head', 'face_acc', 'facial_hair'].includes(slot) && neck != null) return to(neck + 3);
+	if (slot === 'hair' && sh.length) return to(Math.max(...sh) + 8);
+	if (
+		['torso_inner', 'torso_outer', 'shoulders', 'waist'].includes(slot) &&
+		neck != null &&
+		hips.length
+	)
+		return { ...all, y: Math.floor(neck - 3), h: Math.ceil(Math.max(...hips) + 6 - (neck - 3)) };
+	if (slot === 'legs' && hips.length) return from(Math.min(...hips) - 4);
+	if (slot === 'feet' && knees.length) return from(Math.min(...knees) - 3);
+	if (slot === 'back' && neck != null) return from(neck - 4);
+	return all;
 }
 
 // ---------- per cell ----------
 export interface CellOut {
-  key: string;
-  call: number;
-  base: Img; // real frozen base cell
-  input: Img; // what PixelLab got (key mannequin, or the base for 'none')
-  out: Img; // PixelLab composite
-  layer: Img;
-  mask: Uint8Array;
-  area: number;
-  keyKept?: number;
-  keyLost?: number; // body px no longer key (G2 counts them too: a nearly covered body has few px left)
-  erased?: number;
-  keyOutside?: number;
-  rawKeyOutside?: ReturnType<typeof newKeyPixels>; // held-item observation before registration; mask stays in memory only
-  stencil?: Uint8Array; // optional hard item/cut boundary in raw cell coordinates; never persisted
-  outBand: number; // layer px outside the slot band (info)
-  baseBand: number; // base opaque px inside the slot band (how much the covered body region itself changes per frame)
-  specks: number; // components <= 2 px
-  pinholes: number; // enclosed empty regions <= 2 px
-  shifted: boolean; // still misregistered after re-registration (S4: shifted frames must be 0)
-  offset: [number, number]; // posed cells: 1-px re-registration applied to the PixelLab output (skeleton-v3 is not exact)
-  stray: number; // pixels removed by extraction, heuristic cleanup and permission clipping, not a semantic artifact count
-  chroma?: Key; // the key the cell was extracted with (absent for the diff route)
-  clipY?: number; // posed clip: item px at rows >= clipY are joined to the item above the band; postProcess keeps them only where the dressed keyframe has them
-  posed: boolean;
-  repaired?: boolean; // held: dressed keyframe pasted (S5 frame-0 repair)
-  cut?: Uint8Array; // base px this item hides (round 3 baseCut): PixelLab erased them under the item (ear tips under a hood)
+	key: string;
+	call: number;
+	base: Img; // real frozen base cell
+	input: Img; // what PixelLab got (key mannequin, or the base for 'none')
+	out: Img; // PixelLab composite
+	layer: Img;
+	mask: Uint8Array;
+	area: number;
+	keyKept?: number;
+	keyLost?: number; // body px no longer key (G2 counts them too: a nearly covered body has few px left)
+	erased?: number;
+	keyOutside?: number;
+	rawKeyOutside?: ReturnType<typeof newKeyPixels>; // held-item observation before registration; mask stays in memory only
+	stencil?: Uint8Array; // optional hard item/cut boundary in raw cell coordinates; never persisted
+	outBand: number; // layer px outside the slot band (info)
+	baseBand: number; // base opaque px inside the slot band (how much the covered body region itself changes per frame)
+	specks: number; // components <= 2 px
+	pinholes: number; // enclosed empty regions <= 2 px
+	shifted: boolean; // still misregistered after re-registration (S4: shifted frames must be 0)
+	offset: [number, number]; // posed cells: 1-px re-registration applied to the PixelLab output (skeleton-v3 is not exact)
+	stray: number; // pixels removed by extraction, heuristic cleanup and permission clipping, not a semantic artifact count
+	chroma?: Key; // the key the cell was extracted with (absent for the diff route)
+	clipY?: number; // posed clip: item px at rows >= clipY are joined to the item above the band; postProcess keeps them only where the dressed keyframe has them
+	posed: boolean;
+	repaired?: boolean; // held: dressed keyframe pasted (S5 frame-0 repair)
+	cut?: Uint8Array; // base px this item hides (round 3 baseCut): PixelLab erased them under the item (ear tips under a hood)
 }
 
 const sum = (m: Uint8Array) => m.reduce((a, b) => a + b, 0);
 /** Base px outside the body's largest component (as body QA's detached pixels, rig/clips.ts bodyComponents). */
 function detachedOf(base: Img): Uint8Array {
-  const m = new Uint8Array(base.w * base.h);
-  for (let p = 0; p < m.length; p++) m[p] = base.data[p * 4 + 3] ? 1 : 0;
-  const comps = components(m, base.w, base.h).sort((a, b) => b.length - a.length), o = new Uint8Array(m.length);
-  for (const c of comps.slice(1)) for (const p of c) o[p] = 1;
-  return o;
+	const m = new Uint8Array(base.w * base.h);
+	for (let p = 0; p < m.length; p++) m[p] = base.data[p * 4 + 3] ? 1 : 0;
+	const comps = components(m, base.w, base.h).sort((a, b) => b.length - a.length),
+		o = new Uint8Array(m.length);
+	for (const c of comps.slice(1)) for (const p of c) o[p] = 1;
+	return o;
 }
 function cleanliness(mask: Uint8Array, w: number, h: number) {
-  const specks = components(mask, w, h).filter((c) => c.length <= 2).length;
-  const filled = fillHoles(mask, { w, h, data: new Uint8ClampedArray(w * h * 4).fill(255) }, 2);
-  return { specks, pinholes: sum(filled) - sum(mask) };
+	const specks = components(mask, w, h).filter((c) => c.length <= 2).length;
+	const filled = fillHoles(mask, { w, h, data: new Uint8ClampedArray(w * h * 4).fill(255) }, 2);
+	return { specks, pinholes: sum(filled) - sum(mask) };
 }
 
 /** Keep components >= max(4 px, 15 % of the largest): skeleton-v3 adds detached motion-smear specks (S3). */
 function majorComponents(r: { layer: Img; mask: Uint8Array }, w: number, h: number) {
-  const comps = components(r.mask, w, h), big = Math.max(0, ...comps.map((c) => c.length));
-  let stray = 0;
-  for (const c of comps) if (c.length < Math.max(4, 0.15 * big)) for (const p of c) { r.mask[p] = 0; r.layer.data.fill(0, p * 4, p * 4 + 4); stray++; }
-  return { ...r, stray };
+	const comps = components(r.mask, w, h),
+		big = Math.max(0, ...comps.map((c) => c.length));
+	let stray = 0;
+	for (const c of comps)
+		if (c.length < Math.max(4, 0.15 * big))
+			for (const p of c) {
+				r.mask[p] = 0;
+				r.layer.data.fill(0, p * 4, p * 4 + 4);
+				stray++;
+			}
+	return { ...r, stray };
 }
 // ---------- clip post-processing (B9): streak trim, held attachment, frame-0 repair ----------
 const setMask = (c: CellOut, keep: Uint8Array) => {
-  let removed = 0;
-  for (let p = 0; p < c.mask.length; p++) if (c.mask[p] && !keep[p]) { c.mask[p] = 0; c.layer.data.fill(0, p * 4, p * 4 + 4); removed++; }
-  c.area -= removed;
-  c.stray += removed;
-  return removed;
+	let removed = 0;
+	for (let p = 0; p < c.mask.length; p++)
+		if (c.mask[p] && !keep[p]) {
+			c.mask[p] = 0;
+			c.layer.data.fill(0, p * 4, p * 4 + 4);
+			removed++;
+		}
+	c.area -= removed;
+	c.stray += removed;
+	return removed;
 };
 function clipToStencil(c: CellOut): number {
-  const stencil=c.stencil;if(stencil===undefined)return 0;
-  if(!(stencil instanceof Uint8Array)||stencil.length!==c.layer.w*c.layer.h||stencil.length!==c.mask.length||stencil.some(v=>v!==0&&v!==1))throw new Error('An item stencil must be a binary Uint8Array matching the cell canvas.');
-  const removed=setMask(c,stencil);
-  for(let p=0;p<stencil.length;p++)if(!stencil[p]){c.layer.data.fill(0,p*4,p*4+4);if(c.cut)c.cut[p]=0;}
-  return removed;
+	const stencil = c.stencil;
+	if (stencil === undefined) return 0;
+	if (
+		!(stencil instanceof Uint8Array) ||
+		stencil.length !== c.layer.w * c.layer.h ||
+		stencil.length !== c.mask.length ||
+		stencil.some((v) => v !== 0 && v !== 1)
+	)
+		throw new Error('An item stencil must be a binary Uint8Array matching the cell canvas.');
+	const removed = setMask(c, stencil);
+	for (let p = 0; p < stencil.length; p++)
+		if (!stencil[p]) {
+			c.layer.data.fill(0, p * 4, p * 4 + 4);
+			if (c.cut) c.cut[p] = 0;
+		}
+	return removed;
 }
 const dilate = (m: Uint8Array, w: number, r: number) => {
-  const h = m.length / w, o = new Uint8Array(m.length);
-  for (let p = 0; p < m.length; p++) {
-    if (!m[p]) continue;
-    const x = p % w, y = (p / w) | 0;
-    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < w && Y < h) o[Y * w + X] = 1; }
-  }
-  return o;
+	const h = m.length / w,
+		o = new Uint8Array(m.length);
+	for (let p = 0; p < m.length; p++) {
+		if (!m[p]) continue;
+		const x = p % w,
+			y = (p / w) | 0;
+		for (let dy = -r; dy <= r; dy++)
+			for (let dx = -r; dx <= r; dx++) {
+				const X = x + dx,
+					Y = y + dy;
+				if (X >= 0 && Y >= 0 && X < w && Y < h) o[Y * w + X] = 1;
+			}
+	}
+	return o;
 };
 const shiftMask = (m: Uint8Array, w: number, dx: number, dy: number) => {
-  const h = m.length / w, o = new Uint8Array(m.length);
-  for (let p = 0; p < m.length; p++) if (m[p]) { const X = (p % w) + dx, Y = ((p / w) | 0) + dy; if (X >= 0 && Y >= 0 && X < w && Y < h) o[Y * w + X] = 1; }
-  return o;
+	const h = m.length / w,
+		o = new Uint8Array(m.length);
+	for (let p = 0; p < m.length; p++)
+		if (m[p]) {
+			const X = (p % w) + dx,
+				Y = ((p / w) | 0) + dy;
+			if (X >= 0 && Y >= 0 && X < w && Y < h) o[Y * w + X] = 1;
+		}
+	return o;
 };
 /** Mean px position of keypoint labels on a (padded) canvas. */
-const kpAt = (k: Keypoint[] | undefined, labels: string[], cell: { w: number; h: number }, pad: number): [number, number] | undefined => {
-  const ps = labels.map((l) => k?.find((q) => q.label === l)).filter((q): q is Keypoint => !!q);
-  return ps.length ? [ps.reduce((s, q) => s + q.x * cell.w, 0) / ps.length + pad, ps.reduce((s, q) => s + q.y * cell.h, 0) / ps.length + pad] : undefined;
+const kpAt = (
+	k: Keypoint[] | undefined,
+	labels: string[],
+	cell: { w: number; h: number },
+	pad: number
+): [number, number] | undefined => {
+	const ps = labels.map((l) => k?.find((q) => q.label === l)).filter((q): q is Keypoint => !!q);
+	return ps.length
+		? [
+				ps.reduce((s, q) => s + q.x * cell.w, 0) / ps.length + pad,
+				ps.reduce((s, q) => s + q.y * cell.h, 0) / ps.length + pad
+			]
+		: undefined;
 };
 const HEAD = ['NOSE', 'LEFT EYE', 'RIGHT EYE', 'LEFT EAR', 'RIGHT EAR'];
 /** Requested keypoints of a posed cell (the clip's stored sequence) and of its direction's rest view. */
 const posedKps = (rig: Rig, key: string) => {
-  const [a, d, i] = key.split('/') as [string, DirectionName, string];
-  return { pose: clipKeypoints(rig, a, d)?.[+i], rest: rig.rest?.[d]?.keypoints, poses: clipKeypoints(rig, a, d) };
+	const [a, d, i] = key.split('/') as [string, DirectionName, string];
+	return {
+		pose: clipKeypoints(rig, a, d)?.[+i],
+		rest: rig.rest?.[d]?.keypoints,
+		poses: clipKeypoints(rig, a, d)
+	};
 };
 // ---------- round 3: items that hide body px (a hood or great helm wider than the head erases the ear tips) ----------
 /** Cut limits for a keyframe: components of >= minPx, at most maxShare of the base's opaque px (else no cut, G2 as before). */
 export const CUT = { minPx: 3, maxShare: 0.04 };
 /** Posed tolerance (px): follows the body cell without the held pad; 1 px up to a 149 px cell, 2 px at 160 (round 2 arm N). */
-export const posedTol = (w: number, h: number, pad = 0) => Math.max(1, Math.round((Math.min(w, h) - 2 * pad) / 100));
+export const posedTol = (w: number, h: number, pad = 0) =>
+	Math.max(1, Math.round((Math.min(w, h) - 2 * pad) / 100));
 /** Rows (exclusive) where a worn item may hide body px: the head band (neck + 3). Held items and cells without a skeleton never cut. */
 export const cutRows = (slot: string, s: Skeleton | undefined, h: number) => {
-  const c = slotOf(slot)?.class;
-  return c && c !== 'held' && c !== 'base' && s?.NECK != null ? bandOf('head', s, h).h : undefined;
+	const c = slotOf(slot)?.class;
+	return c && c !== 'held' && c !== 'base' && s?.NECK != null ? bandOf('head', s, h).h : undefined;
 };
 /**
  * Where a posed frame may hide body px: the dressed keyframe's cut, moved with the requested head move and widened by 2 ×
  * the posed tolerance. Posed frames never cut on their own: skeleton-v3 draws the stand-in's legs and hands 1–3 px from the
  * body's (n-cloak128 walk/east/3 erased 68 px of leg next to the cape), so only what the keyframe hides may be hidden.
  */
-export function cutAllow(rig: Rig, key: string, K: Uint8Array | undefined, w: number, tol: number): Uint8Array | undefined {
-  if (!K) return undefined;
-  const { pose, rest } = posedKps(rig, key), h0 = kpAt(rest, HEAD, rig.cell, 0), h1 = kpAt(pose, HEAD, rig.cell, 0);
-  return h0 && h1 ? dilate(shiftMask(K, w, Math.round(h1[0] - h0[0]), Math.round(h1[1] - h0[1])), w, 2 * tol) : undefined;
+export function cutAllow(
+	rig: Rig,
+	key: string,
+	K: Uint8Array | undefined,
+	w: number,
+	tol: number
+): Uint8Array | undefined {
+	if (!K) return undefined;
+	const { pose, rest } = posedKps(rig, key),
+		h0 = kpAt(rest, HEAD, rig.cell, 0),
+		h1 = kpAt(pose, HEAD, rig.cell, 0);
+	return h0 && h1
+		? dilate(shiftMask(K, w, Math.round(h1[0] - h0[0]), Math.round(h1[1] - h0[1])), w, 2 * tol)
+		: undefined;
 }
 /**
  * Body px the item hides: erased by PixelLab (base opaque, output alpha < 128, not item; exact, no tolerance, or a 1 px ear
  * root stays), above `maxY`, inside `allow` when given, in components that touch the item and the body's outer edge (an ear,
  * not a hole inside a visor). Keyframes also need >= CUT.minPx per component and <= CUT.maxShare in total.
  */
-function cutOf(base: Img, out: Img, qm: Uint8Array, cut: { maxY: number; allow?: Uint8Array }): Uint8Array | undefined {
-  const { w, h } = base, cand = new Uint8Array(qm.length), op = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && base.data[(y * w + x) * 4 + 3] > 0;
-  for (let p = 0; p < qm.length; p++) {
-    const x = p % w, y = (p / w) | 0;
-    if (x && y && x < w - 1 && y < h - 1 && y < cut.maxY && base.data[p * 4 + 3] && !qm[p] && out.data[p * 4 + 3] < 128 && (!cut.allow || cut.allow[p])) cand[p] = 1;
-  }
-  const near = dilate(qm, w, 1), keep = new Uint8Array(qm.length);
-  let n = 0, opaque = 0;
-  for (const comp of components(cand, w, h)) {
-    if ((!cut.allow && comp.length < CUT.minPx) || !comp.some((p) => near[p])) continue;
-    if (!comp.some((p) => { const x = p % w, y = (p / w) | 0; return !op(x - 1, y) || !op(x + 1, y) || !op(x, y - 1) || !op(x, y + 1); })) continue;
-    for (const p of comp) keep[p] = 1;
-    n += comp.length;
-  }
-  for (let p = 0; p < qm.length; p++) if (base.data[p * 4 + 3]) opaque++;
-  return n && (cut.allow || n <= CUT.maxShare * opaque) ? keep : undefined;
+function cutOf(
+	base: Img,
+	out: Img,
+	qm: Uint8Array,
+	cut: { maxY: number; allow?: Uint8Array }
+): Uint8Array | undefined {
+	const { w, h } = base,
+		cand = new Uint8Array(qm.length),
+		op = (x: number, y: number) =>
+			x >= 0 && y >= 0 && x < w && y < h && base.data[(y * w + x) * 4 + 3] > 0;
+	for (let p = 0; p < qm.length; p++) {
+		const x = p % w,
+			y = (p / w) | 0;
+		if (
+			x &&
+			y &&
+			x < w - 1 &&
+			y < h - 1 &&
+			y < cut.maxY &&
+			base.data[p * 4 + 3] &&
+			!qm[p] &&
+			out.data[p * 4 + 3] < 128 &&
+			(!cut.allow || cut.allow[p])
+		)
+			cand[p] = 1;
+	}
+	const near = dilate(qm, w, 1),
+		keep = new Uint8Array(qm.length);
+	let n = 0,
+		opaque = 0;
+	for (const comp of components(cand, w, h)) {
+		if ((!cut.allow && comp.length < CUT.minPx) || !comp.some((p) => near[p])) continue;
+		if (
+			!comp.some((p) => {
+				const x = p % w,
+					y = (p / w) | 0;
+				return !op(x - 1, y) || !op(x + 1, y) || !op(x, y - 1) || !op(x, y + 1);
+			})
+		)
+			continue;
+		for (const p of comp) keep[p] = 1;
+		n += comp.length;
+	}
+	for (let p = 0; p < qm.length; p++) if (base.data[p * 4 + 3]) opaque++;
+	return n && (cut.allow || n <= CUT.maxShare * opaque) ? keep : undefined;
 }
 
 export const TRIM = { support: 2, minOverlap: 0.5 };
@@ -534,58 +987,96 @@ export const TRIM = { support: 2, minOverlap: 0.5 };
 /** Alignment of a posed frame to its dressed keyframe mask: keyframe px (x, y) sits at (x + s[0], y + s[1]) in the frame. The
  * head joints' move is the first guess, refined within ±2 px by overlap with the frame's own item px. */
 function alignToKeyframe(rig: Rig, c: CellOut, km: Uint8Array, w: number, pad: number) {
-  const { pose, rest } = posedKps(rig, c.key), h0 = kpAt(rest, HEAD, rig.cell, pad), h1 = kpAt(pose, HEAD, rig.cell, pad);
-  const g = h0 && h1 ? [Math.round(h1[0] - h0[0]), Math.round(h1[1] - h0[1])] : [0, 0];
-  let best = { s: [0, 0] as [number, number], ov: -1 };
-  for (let dy = -2; dy <= 2; dy++)
-    for (let dx = -2; dx <= 2; dx++) {
-      const s: [number, number] = [g[0] + dx, g[1] + dy], m = shiftMask(km, w, s[0], s[1]);
-      let ov = 0;
-      for (let p = 0; p < m.length; p++) if (m[p] && c.mask[p]) ov++;
-      if (ov > best.ov || (ov === best.ov && Math.abs(dx) + Math.abs(dy) < Math.abs(best.s[0] - g[0]) + Math.abs(best.s[1] - g[1]))) best = { s, ov };
-    }
-  return best;
+	const { pose, rest } = posedKps(rig, c.key),
+		h0 = kpAt(rest, HEAD, rig.cell, pad),
+		h1 = kpAt(pose, HEAD, rig.cell, pad);
+	const g = h0 && h1 ? [Math.round(h1[0] - h0[0]), Math.round(h1[1] - h0[1])] : [0, 0];
+	let best = { s: [0, 0] as [number, number], ov: -1 };
+	for (let dy = -2; dy <= 2; dy++)
+		for (let dx = -2; dx <= 2; dx++) {
+			const s: [number, number] = [g[0] + dx, g[1] + dy],
+				m = shiftMask(km, w, s[0], s[1]);
+			let ov = 0;
+			for (let p = 0; p < m.length; p++) if (m[p] && c.mask[p]) ov++;
+			if (
+				ov > best.ov ||
+				(ov === best.ov &&
+					Math.abs(dx) + Math.abs(dy) < Math.abs(best.s[0] - g[0]) + Math.abs(best.s[1] - g[1]))
+			)
+				best = { s, ov };
+		}
+	return best;
 }
-export function trimToKeyframe(rig: Rig, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, pad = 0): number {
-  let removed = 0;
-  const byClip = new Map<string, CellOut[]>();
-  for (const c of cells) if (c.posed && c.area) { const clip = c.key.split('/').slice(0, 2).join('/'); (byClip.get(clip) ?? (byClip.set(clip, []), byClip.get(clip)!)).push(c); }
-  for (const [clip, cs] of byClip) {
-    const dir = clip.split('/')[1] as DirectionName;
-    const K = keys[dir] && despeck(keys[dir]!);
-    if (!K) continue;
-    const w = K.w, km = maskOf(K), kn = sum(km);
-    if (!kn) continue;
-    const al = cs.map((c) => alignToKeyframe(rig, c, km, w, pad));
-    // consensus in keyframe coords: frames (3x3 tolerant) that have item px there
-    const back = cs.map((c, i) => dilate(shiftMask(c.mask, w, -al[i].s[0], -al[i].s[1]), w, 1));
-    for (const [i, c] of cs.entries()) {
-      if (al[i].ov < TRIM.minOverlap * kn) continue;
-      const exact = shiftMask(km, w, al[i].s[0], al[i].s[1]), support = dilate(exact, w, TRIM.support), keep = new Uint8Array(c.mask.length), need = Math.ceil((cs.length - 1) / 2);
-      for (let p = 0; p < keep.length; p++) {
-        if (!c.mask[p]) continue;
-        // below the head band only the keyframe itself counts: no dilation, no consensus (repeated slash streaks would win it)
-        if (c.clipY != null && ((p / w) | 0) >= c.clipY) { if (exact[p]) keep[p] = 1; continue; }
-        if (support[p]) { keep[p] = 1; continue; }
-        const X = (p % w) - al[i].s[0], Y = ((p / w) | 0) - al[i].s[1], q = Y * w + X;
-        let n = 0;
-        if (X >= 0 && Y >= 0 && X < w && q < keep.length) for (const [j, b] of back.entries()) if (j !== i && b[q]) n++;
-        if (need && n >= need) keep[p] = 1;
-      }
-      removed += setMask(c, keep);
-      c.clipY = undefined; // judged
-    }
-  }
-  return removed;
+export function trimToKeyframe(
+	rig: Rig,
+	cells: CellOut[],
+	keys: Partial<Record<DirectionName, Img>>,
+	pad = 0
+): number {
+	let removed = 0;
+	const byClip = new Map<string, CellOut[]>();
+	for (const c of cells)
+		if (c.posed && c.area) {
+			const clip = c.key.split('/').slice(0, 2).join('/');
+			(byClip.get(clip) ?? (byClip.set(clip, []), byClip.get(clip)!)).push(c);
+		}
+	for (const [clip, cs] of byClip) {
+		const dir = clip.split('/')[1] as DirectionName;
+		const K = keys[dir] && despeck(keys[dir]!);
+		if (!K) continue;
+		const w = K.w,
+			km = maskOf(K),
+			kn = sum(km);
+		if (!kn) continue;
+		const al = cs.map((c) => alignToKeyframe(rig, c, km, w, pad));
+		// consensus in keyframe coords: frames (3x3 tolerant) that have item px there
+		const back = cs.map((c, i) => dilate(shiftMask(c.mask, w, -al[i].s[0], -al[i].s[1]), w, 1));
+		for (const [i, c] of cs.entries()) {
+			if (al[i].ov < TRIM.minOverlap * kn) continue;
+			const exact = shiftMask(km, w, al[i].s[0], al[i].s[1]),
+				support = dilate(exact, w, TRIM.support),
+				keep = new Uint8Array(c.mask.length),
+				need = Math.ceil((cs.length - 1) / 2);
+			for (let p = 0; p < keep.length; p++) {
+				if (!c.mask[p]) continue;
+				// below the head band only the keyframe itself counts: no dilation, no consensus (repeated slash streaks would win it)
+				if (c.clipY != null && ((p / w) | 0) >= c.clipY) {
+					if (exact[p]) keep[p] = 1;
+					continue;
+				}
+				if (support[p]) {
+					keep[p] = 1;
+					continue;
+				}
+				const X = (p % w) - al[i].s[0],
+					Y = ((p / w) | 0) - al[i].s[1],
+					q = Y * w + X;
+				let n = 0;
+				if (X >= 0 && Y >= 0 && X < w && q < keep.length)
+					for (const [j, b] of back.entries()) if (j !== i && b[q]) n++;
+				if (need && n >= need) keep[p] = 1;
+			}
+			removed += setMask(c, keep);
+			c.clipY = undefined; // judged
+		}
+	}
+	return removed;
 }
 
 /** Cells the keyframe could not judge (no keyframe, aligned overlap < 50 %, a slot without the trim) get the band trim (B7). */
-const clipFloor = (cells: CellOut[]) => cells.reduce((n, c) => {
-  if (c.clipY == null) return n;
-  const y = c.clipY;
-  c.clipY = undefined;
-  return n + setMask(c, c.mask.map((v, p) => (v && ((p / c.layer.w) | 0) < y ? 1 : 0)));
-}, 0);
+const clipFloor = (cells: CellOut[]) =>
+	cells.reduce((n, c) => {
+		if (c.clipY == null) return n;
+		const y = c.clipY;
+		c.clipY = undefined;
+		return (
+			n +
+			setMask(
+				c,
+				c.mask.map((v, p) => (v && ((p / c.layer.w) | 0) < y ? 1 : 0))
+			)
+		);
+	}, 0);
 
 /**
  * A straight gap between two parts that runs only over body pixels may be the body hiding the middle of one object (a spear
@@ -593,11 +1084,29 @@ const clipFloor = (cells: CellOut[]) => cells.reduce((n, c) => {
  * the part floats in open air. 2026-11-07 audit: requiring contact silently deleted 38 % of a spear and 22 % of a staff.
  */
 const bodyBridged = (base: Img, w: number, a: number[], b: number[]) => {
-  let best = Infinity, pa = 0, pb = 0;
-  for (const p of a) for (const q of b) { const d = ((p % w) - (q % w)) ** 2 + (((p / w) | 0) - ((q / w) | 0)) ** 2; if (d < best) { best = d; pa = p; pb = q; } }
-  const x0 = pa % w, y0 = (pa / w) | 0, x1 = pb % w, y1 = (pb / w) | 0, n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
-  for (let i = 1; i < n; i++) { const x = Math.round(x0 + ((x1 - x0) * i) / n), y = Math.round(y0 + ((y1 - y0) * i) / n); if (!base.data[(y * w + x) * 4 + 3]) return false; }
-  return true;
+	let best = Infinity,
+		pa = 0,
+		pb = 0;
+	for (const p of a)
+		for (const q of b) {
+			const d = ((p % w) - (q % w)) ** 2 + (((p / w) | 0) - ((q / w) | 0)) ** 2;
+			if (d < best) {
+				best = d;
+				pa = p;
+				pb = q;
+			}
+		}
+	const x0 = pa % w,
+		y0 = (pa / w) | 0,
+		x1 = pb % w,
+		y1 = (pb / w) | 0,
+		n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+	for (let i = 1; i < n; i++) {
+		const x = Math.round(x0 + ((x1 - x0) * i) / n),
+			y = Math.round(y0 + ((y1 - y0) * i) / n);
+		if (!base.data[(y * w + x) * 4 + 3]) return false;
+	}
+	return true;
 };
 /** Parts of a held layer that belong to the object: the largest component, components within `near` px of a kept part, and
  * components joined to a kept part only across the body (bodyBridged). `extra` may admit more (the gripping wrist). Every
@@ -605,29 +1114,54 @@ const bodyBridged = (base: Img, w: number, a: number[], b: number[]) => {
  * wrist): a fleck the floor drops must not pull a buckle redrawn on the hip into the item through itself (2026-11-07 review).
  * A small part may still connect to a full-size part that hangs mostly off the body (a flail's chain link to its head): that
  * part is the item's, while a part on the body could be a repaint (2026-11-07 counter-review R1). */
-export function heldParts(mask: Uint8Array, base: Img, near = 3, extra?: (comp: number[]) => boolean, small?: (comp: number[]) => boolean) {
-  const w = base.w, comps = components(mask, w, mask.length / w).sort((a, b) => b.length - a.length);
-  const floor = Math.max(4, 0.15 * (comps[0]?.length ?? 0)), sized = (comp: number[]) => comp.length >= floor || !!small?.(comp);
-  const offBody = (comp: number[]) => 2 * comp.filter((p) => !base.data[p * 4 + 3]).length >= comp.length;
-  const keep = new Array<boolean>(comps.length).fill(false);
-  if (comps.length) keep[0] = true;
-  for (let changed = true; changed;) {
-    changed = false;
-    const kept = new Uint8Array(mask.length);
-    comps.forEach((comp, i) => { if (keep[i]) for (const p of comp) kept[p] = 1; });
-    const close = dilate(kept, w, near);
-    comps.forEach((comp, i) => {
-      if (keep[i]) return;
-      // A hidden part reappears past the body; a detached blob painted over the body itself (a redrawn far hand) does not.
-      if (sized(comp) && (comp.some((p) => close[p]) || extra?.(comp) || (offBody(comp) && comps.some((k, j) => keep[j] && bodyBridged(base, w, comp, k))))) { keep[i] = changed = true; return; }
-      if (!sized(comp) && comp.some((p) => close[p])) {
-        const own = new Uint8Array(mask.length); for (const p of comp) own[p] = 1;
-        const reach = dilate(own, w, near);
-        if (comps.some((c, j) => !keep[j] && j !== i && sized(c) && offBody(c) && c.some((p) => reach[p]))) keep[i] = changed = true;
-      }
-    });
-  }
-  return { comps, keep };
+export function heldParts(
+	mask: Uint8Array,
+	base: Img,
+	near = 3,
+	extra?: (comp: number[]) => boolean,
+	small?: (comp: number[]) => boolean
+) {
+	const w = base.w,
+		comps = components(mask, w, mask.length / w).sort((a, b) => b.length - a.length);
+	const floor = Math.max(4, 0.15 * (comps[0]?.length ?? 0)),
+		sized = (comp: number[]) => comp.length >= floor || !!small?.(comp);
+	const offBody = (comp: number[]) =>
+		2 * comp.filter((p) => !base.data[p * 4 + 3]).length >= comp.length;
+	const keep = new Array<boolean>(comps.length).fill(false);
+	if (comps.length) keep[0] = true;
+	for (let changed = true; changed;) {
+		changed = false;
+		const kept = new Uint8Array(mask.length);
+		comps.forEach((comp, i) => {
+			if (keep[i]) for (const p of comp) kept[p] = 1;
+		});
+		const close = dilate(kept, w, near);
+		comps.forEach((comp, i) => {
+			if (keep[i]) return;
+			// A hidden part reappears past the body; a detached blob painted over the body itself (a redrawn far hand) does not.
+			if (
+				sized(comp) &&
+				(comp.some((p) => close[p]) ||
+					extra?.(comp) ||
+					(offBody(comp) && comps.some((k, j) => keep[j] && bodyBridged(base, w, comp, k))))
+			) {
+				keep[i] = changed = true;
+				return;
+			}
+			if (!sized(comp) && comp.some((p) => close[p])) {
+				const own = new Uint8Array(mask.length);
+				for (const p of comp) own[p] = 1;
+				const reach = dilate(own, w, near);
+				if (
+					comps.some(
+						(c, j) => !keep[j] && j !== i && sized(c) && offBody(c) && c.some((p) => reach[p])
+					)
+				)
+					keep[i] = changed = true;
+			}
+		});
+	}
+	return { comps, keep };
 }
 
 /**
@@ -638,21 +1172,29 @@ export function heldParts(mask: Uint8Array, base: Img, near = 3, extra?: (comp: 
  * (10 to 63 px) was a motion smear or redrawn body px, so it would block clean items (2026-11-07). Returns px removed.
  */
 export function attachHeld(rig: Rig, slot: Slot, cells: CellOut[], pad = 0): number {
-  let removed = 0;
-  const wristL = slot.id === 'off_hand' ? ['LEFT ARM'] : ['RIGHT ARM'];
-  for (const c of cells) {
-    if (!c.posed || !c.area) continue;
-    const w = c.layer.w, comps = components(c.mask, w, c.mask.length / w).sort((a, b) => b.length - a.length);
-    if (comps.length < 2) continue;
-    const wr = kpAt(posedKps(rig, c.key).pose, wristL, rig.cell, pad);
-    const grip = (comp: number[], r: number) => !!wr && comp.some((p) => Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]) <= r);
-    // the majorComponents size floor; a pommel or haft end the fist splits off (within 6 px of the wrist) survives below it
-    const { comps: parts, keep: linked } = heldParts(c.mask, c.base, 3, (comp) => grip(comp, 3), (comp) => grip(comp, 6));
-    const keep = new Uint8Array(c.mask.length);
-    for (const [i, comp] of parts.entries()) if (linked[i]) for (const p of comp) keep[p] = 1;
-    removed += setMask(c, keep);
-  }
-  return removed;
+	let removed = 0;
+	const wristL = slot.id === 'off_hand' ? ['LEFT ARM'] : ['RIGHT ARM'];
+	for (const c of cells) {
+		if (!c.posed || !c.area) continue;
+		const w = c.layer.w,
+			comps = components(c.mask, w, c.mask.length / w).sort((a, b) => b.length - a.length);
+		if (comps.length < 2) continue;
+		const wr = kpAt(posedKps(rig, c.key).pose, wristL, rig.cell, pad);
+		const grip = (comp: number[], r: number) =>
+			!!wr && comp.some((p) => Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]) <= r);
+		// the majorComponents size floor; a pommel or haft end the fist splits off (within 6 px of the wrist) survives below it
+		const { comps: parts, keep: linked } = heldParts(
+			c.mask,
+			c.base,
+			3,
+			(comp) => grip(comp, 3),
+			(comp) => grip(comp, 6)
+		);
+		const keep = new Uint8Array(c.mask.length);
+		for (const [i, comp] of parts.entries()) if (linked[i]) for (const p of comp) keep[p] = 1;
+		removed += setMask(c, keep);
+	}
+	return removed;
 }
 
 /**
@@ -662,58 +1204,94 @@ export function attachHeld(rig: Rig, slot: Slot, cells: CellOut[], pad = 0): num
  * item to the hand made it worse). Returns px added.
  */
 export function closeGrip(cells: CellOut[]): number {
-  let added = 0;
-  for (const c of cells) {
-    if (!c.posed || !c.area || !c.chroma) continue;
-    const w = c.layer.w, h = c.mask.length / w, R = 2, inv = (m: Uint8Array) => m.map((v) => 1 - v) as Uint8Array;
-    const closed = inv(dilate(inv(dilate(c.mask, w, R)), w, R)), src = new Uint8Array(c.mask);
-    let k = 0;
-    for (let p = 0; p < src.length; p++) {
-      const q = p * 4, o = c.out.data;
-      if (!closed[p] || src[p] || c.base.data[q + 3] || o[q + 3] < 128 || keyScore(c.chroma, o[q], o[q + 1], o[q + 2]) < KT) continue;
-      const x = p % w, y = (p / w) | 0;
-      let best = -1, bd = Infinity;
-      for (let dy = -R - 1; dy <= R + 1; dy++) for (let dx = -R - 1; dx <= R + 1; dx++) {
-        const X = x + dx, Y = y + dy, d = dx * dx + dy * dy;
-        if (X >= 0 && Y >= 0 && X < w && Y < h && src[Y * w + X] && d < bd) { bd = d; best = Y * w + X; }
-      }
-      if (best < 0) continue;
-      c.layer.data.set(c.layer.data.subarray(best * 4, best * 4 + 4), q);
-      c.mask[p] = 1;
-      k++;
-    }
-    c.area += k;
-    added += k;
-  }
-  return added;
+	let added = 0;
+	for (const c of cells) {
+		if (!c.posed || !c.area || !c.chroma) continue;
+		const w = c.layer.w,
+			h = c.mask.length / w,
+			R = 2,
+			inv = (m: Uint8Array) => m.map((v) => 1 - v) as Uint8Array;
+		const closed = inv(dilate(inv(dilate(c.mask, w, R)), w, R)),
+			src = new Uint8Array(c.mask);
+		let k = 0;
+		for (let p = 0; p < src.length; p++) {
+			const q = p * 4,
+				o = c.out.data;
+			if (
+				!closed[p] ||
+				src[p] ||
+				c.base.data[q + 3] ||
+				o[q + 3] < 128 ||
+				keyScore(c.chroma, o[q], o[q + 1], o[q + 2]) < KT
+			)
+				continue;
+			const x = p % w,
+				y = (p / w) | 0;
+			let best = -1,
+				bd = Infinity;
+			for (let dy = -R - 1; dy <= R + 1; dy++)
+				for (let dx = -R - 1; dx <= R + 1; dx++) {
+					const X = x + dx,
+						Y = y + dy,
+						d = dx * dx + dy * dy;
+					if (X >= 0 && Y >= 0 && X < w && Y < h && src[Y * w + X] && d < bd) {
+						bd = d;
+						best = Y * w + X;
+					}
+				}
+			if (best < 0) continue;
+			c.layer.data.set(c.layer.data.subarray(best * 4, best * 4 + 4), q);
+			c.mask[p] = 1;
+			k++;
+		}
+		c.area += k;
+		added += k;
+	}
+	return added;
 }
 
 /**
  * S5 free fallback: a held item lost on a near-rest frame (area < 50 % of the clip median, pose ≤ 1 px from the rest pose) gets
  * the dressed keyframe layer pasted, shifted by the requested wrist move. Returns the repaired cell keys.
  */
-export function repairDropped(rig: Rig, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, pad = 0): string[] {
-  const fixed: string[] = [], wristL = slot.id === 'off_hand' ? ['LEFT ARM'] : ['RIGHT ARM'], byClip = new Map<string, CellOut[]>();
-  for (const c of cells) if (c.posed) { const k = c.key.split('/').slice(0, 2).join('/'); (byClip.get(k) ?? (byClip.set(k, []), byClip.get(k)!)).push(c); }
-  for (const cs of byClip.values()) {
-    const med = median(cs.map((c) => c.area));
-    for (const c of cs) {
-      const { pose, rest } = posedKps(rig, c.key), K = keys[c.key.split('/')[1] as DirectionName];
-      if (!K || !pose || !rest || c.area >= 0.5 * med || poseDist(rest, pose, rig.cell) > 1) continue;
-      const a = kpAt(rest, wristL, rig.cell, pad)!, b = kpAt(pose, wristL, rig.cell, pad)!;
-      c.layer = translate(K, Math.round(b[0] - a[0]), Math.round(b[1] - a[1]));
-      c.mask = maskOf(c.layer);
-      c.area = sum(c.mask);
-      c.repaired = true;
-      fixed.push(c.key);
-    }
-  }
-  return fixed;
+export function repairDropped(
+	rig: Rig,
+	slot: Slot,
+	cells: CellOut[],
+	keys: Partial<Record<DirectionName, Img>>,
+	pad = 0
+): string[] {
+	const fixed: string[] = [],
+		wristL = slot.id === 'off_hand' ? ['LEFT ARM'] : ['RIGHT ARM'],
+		byClip = new Map<string, CellOut[]>();
+	for (const c of cells)
+		if (c.posed) {
+			const k = c.key.split('/').slice(0, 2).join('/');
+			(byClip.get(k) ?? (byClip.set(k, []), byClip.get(k)!)).push(c);
+		}
+	for (const cs of byClip.values()) {
+		const med = median(cs.map((c) => c.area));
+		for (const c of cs) {
+			const { pose, rest } = posedKps(rig, c.key),
+				K = keys[c.key.split('/')[1] as DirectionName];
+			if (!K || !pose || !rest || c.area >= 0.5 * med || poseDist(rest, pose, rig.cell) > 1)
+				continue;
+			const a = kpAt(rest, wristL, rig.cell, pad)!,
+				b = kpAt(pose, wristL, rig.cell, pad)!;
+			c.layer = translate(K, Math.round(b[0] - a[0]), Math.round(b[1] - a[1]));
+			c.mask = maskOf(c.layer);
+			c.area = sum(c.mask);
+			c.repaired = true;
+			fixed.push(c.key);
+		}
+	}
+	return fixed;
 }
 
 /** Smallest part size a posed layer keeps: 4 px (motion specks, S3), or less when the direction's dressed keyframe has no
  * bigger part (earrings: two 3 px hoops; glasses from the side: one 2 px lens). No or an empty keyframe: 4 px. */
-const partFloor = (K?: Img) => Math.min(4, (K && Math.max(0, ...components(maskOf(K), K.w, K.h).map((x) => x.length))) || 4);
+const partFloor = (K?: Img) =>
+	Math.min(4, (K && Math.max(0, ...components(maskOf(K), K.w, K.h).map((x) => x.length))) || 4);
 /** Small accessories cover ~1 % of the body (round 5: glasses, earrings); every benchmark item covers >= 14 % in every view. */
 export const SMALL_SHARE = 0.05;
 /** Back views (north, north-east, north-west) whose dressed keyframe is empty while the item is a small accessory shown in at
@@ -726,60 +1304,145 @@ export const SMALL_SHARE = 0.05;
  * is wider than it is deep; a strip left by a failed back view measured 0.28-0.55 of its side view on the bench capes). A
  * capelet, scarf tail or quiver showing above the shoulder, a cape covering the back, and a thin strip left by a double
  * failure keep failing (2026-11-07 synthetic audit and review); earrings and glasses keep the rule above. */
-export function hiddenViews(cells: Pick<CellOut, 'key' | 'area' | 'base'>[], keys: Partial<Record<DirectionName, Img>>, slot?: string): Set<string> {
-  const share = Math.max(0, ...cells.map((c) => { let b = 0; for (let p = 3; p < c.base.data.length; p += 4) if (c.base.data[p]) b++; return b ? c.area / b : 0; }));
-  const views = Object.entries(keys).filter(([, K]) => K), empty = views.filter(([, K]) => !K!.data.some((v, i) => i % 4 === 3 && v)).map(([d]) => d);
-  const shown = 2 * (views.length - empty.length) >= views.length, hidden = new Set(share > 0 && share < SMALL_SHARE && shown ? empty.filter(backView) : []);
-  if (slot === 'back' && shown) for (const d of empty.filter((x) => x.startsWith('south'))) {
-    const o = d.replace('south', 'north').replace(/-(east|west)$/, (_, s: string) => (s === 'east' ? '-west' : '-east')) as DirectionName;
-    const K = keys[o], body = cells.find((c) => c.key.split('/')[1] === o)?.base;
-    if (!K || !body) continue;
-    let item = 0, on = 0, area = 0;
-    for (let i = 3; i < K.data.length; i += 4) { if (body.data[i]) area++; if (K.data[i]) { item++; if (body.data[i]) on++; } }
-    if (item < 12 || on < 0.95 * item || item > 0.25 * area) continue;
-    // A side view must show the item behind the body: east faces +x, so behind is left of the body's center in each row.
-    const side = (['east', 'west'] as const).find((s) => keys[s] && cells.some((c) => c.key.split('/')[1] === s));
-    const S = side && keys[side], sb = side && cells.find((c) => c.key.split('/')[1] === side)!.base;
-    if (!S || !sb) continue;
-    let shown = 0, behind = 0;
-    for (let y = 0; y < S.h; y++) {
-      let lo = -1, hi = -1;
-      for (let x = 0; x < S.w; x++) if (sb.data[(y * S.w + x) * 4 + 3]) { if (lo < 0) lo = x; hi = x; }
-      for (let x = 0; x < S.w; x++) if (S.data[(y * S.w + x) * 4 + 3]) { shown++; if (lo >= 0 && (side === 'east' ? x < (lo + hi + 1) / 2 : x >= (lo + hi + 1) / 2)) behind++; }
-    }
-    if (shown && behind >= 0.9 * shown && item >= shown) hidden.add(d);
-  }
-  return hidden;
+export function hiddenViews(
+	cells: Pick<CellOut, 'key' | 'area' | 'base'>[],
+	keys: Partial<Record<DirectionName, Img>>,
+	slot?: string
+): Set<string> {
+	const share = Math.max(
+		0,
+		...cells.map((c) => {
+			let b = 0;
+			for (let p = 3; p < c.base.data.length; p += 4) if (c.base.data[p]) b++;
+			return b ? c.area / b : 0;
+		})
+	);
+	const views = Object.entries(keys).filter(([, K]) => K),
+		empty = views.filter(([, K]) => !K!.data.some((v, i) => i % 4 === 3 && v)).map(([d]) => d);
+	const shown = 2 * (views.length - empty.length) >= views.length,
+		hidden = new Set(share > 0 && share < SMALL_SHARE && shown ? empty.filter(backView) : []);
+	if (slot === 'back' && shown)
+		for (const d of empty.filter((x) => x.startsWith('south'))) {
+			const o = d
+				.replace('south', 'north')
+				.replace(/-(east|west)$/, (_, s: string) =>
+					s === 'east' ? '-west' : '-east'
+				) as DirectionName;
+			const K = keys[o],
+				body = cells.find((c) => c.key.split('/')[1] === o)?.base;
+			if (!K || !body) continue;
+			let item = 0,
+				on = 0,
+				area = 0;
+			for (let i = 3; i < K.data.length; i += 4) {
+				if (body.data[i]) area++;
+				if (K.data[i]) {
+					item++;
+					if (body.data[i]) on++;
+				}
+			}
+			if (item < 12 || on < 0.95 * item || item > 0.25 * area) continue;
+			// A side view must show the item behind the body: east faces +x, so behind is left of the body's center in each row.
+			const side = (['east', 'west'] as const).find(
+				(s) => keys[s] && cells.some((c) => c.key.split('/')[1] === s)
+			);
+			const S = side && keys[side],
+				sb = side && cells.find((c) => c.key.split('/')[1] === side)!.base;
+			if (!S || !sb) continue;
+			let shown = 0,
+				behind = 0;
+			for (let y = 0; y < S.h; y++) {
+				let lo = -1,
+					hi = -1;
+				for (let x = 0; x < S.w; x++)
+					if (sb.data[(y * S.w + x) * 4 + 3]) {
+						if (lo < 0) lo = x;
+						hi = x;
+					}
+				for (let x = 0; x < S.w; x++)
+					if (S.data[(y * S.w + x) * 4 + 3]) {
+						shown++;
+						if (lo >= 0 && (side === 'east' ? x < (lo + hi + 1) / 2 : x >= (lo + hi + 1) / 2))
+							behind++;
+					}
+			}
+			if (shown && behind >= 0.9 * shown && item >= shown) hidden.add(d);
+		}
+	return hidden;
 }
 /**
  * Posed non-held items: drop components under max(4 px, 15 % of the largest) (motion-smear specks, S3). The 4 px floor drops to
  * the largest part of the direction's dressed keyframe, so an item made only of tiny parts (earrings: two 3 px hoops) keeps
  * them; a direction without a keyframe or with an empty one keeps 4 px. Returns px removed.
  */
-export function sizeFloor(cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig, pad = 0): number {
-  let removed = 0;
-  for (const c of cells) {
-    if (!c.posed || !c.area) continue;
-    const w = c.layer.w, h = c.mask.length / w, comps = components(c.mask, w, h), big = Math.max(...comps.map((x) => x.length));
-    const K = keys[c.key.split('/')[1] as DirectionName], small = partFloor(K), floor = Math.max(small, 0.15 * big);
-    // A part the dressed design has at this place (a cape's clasps or a split hem seen from the front) is the design, not a
-    // smear: requiring 15 % of the largest part deleted 412-584 px of real capes (2026-11-07 audit). Keep a part at least the
-    // small-part floor when most of it lies on the aligned keyframe, as trimToKeyframe judges head items.
-    const km = K && rig && comps.some((comp) => comp.length < floor && comp.length >= small) ? maskOf(K) : undefined;
-    const support = km && sum(km) ? (() => { const a = alignToKeyframe(rig!, c, km, w, pad); return dilate(shiftMask(km, w, a.s[0], a.s[1]), w, TRIM.support); })() : undefined;
-    const keep = new Uint8Array(c.mask.length);
-    for (const comp of comps) if (comp.length >= floor || (support && comp.length >= small && 2 * comp.filter((p) => support[p]).length >= comp.length)) for (const p of comp) keep[p] = 1;
-    removed += setMask(c, keep);
-  }
-  return removed;
+export function sizeFloor(
+	cells: CellOut[],
+	keys: Partial<Record<DirectionName, Img>>,
+	rig?: Rig,
+	pad = 0
+): number {
+	let removed = 0;
+	for (const c of cells) {
+		if (!c.posed || !c.area) continue;
+		const w = c.layer.w,
+			h = c.mask.length / w,
+			comps = components(c.mask, w, h),
+			big = Math.max(...comps.map((x) => x.length));
+		const K = keys[c.key.split('/')[1] as DirectionName],
+			small = partFloor(K),
+			floor = Math.max(small, 0.15 * big);
+		// A part the dressed design has at this place (a cape's clasps or a split hem seen from the front) is the design, not a
+		// smear: requiring 15 % of the largest part deleted 412-584 px of real capes (2026-11-07 audit). Keep a part at least the
+		// small-part floor when most of it lies on the aligned keyframe, as trimToKeyframe judges head items.
+		const km =
+			K && rig && comps.some((comp) => comp.length < floor && comp.length >= small)
+				? maskOf(K)
+				: undefined;
+		const support =
+			km && sum(km)
+				? (() => {
+						const a = alignToKeyframe(rig!, c, km, w, pad);
+						return dilate(shiftMask(km, w, a.s[0], a.s[1]), w, TRIM.support);
+					})()
+				: undefined;
+		const keep = new Uint8Array(c.mask.length);
+		for (const comp of comps)
+			if (
+				comp.length >= floor ||
+				(support &&
+					comp.length >= small &&
+					2 * comp.filter((p) => support[p]).length >= comp.length)
+			)
+				for (const p of comp) keep[p] = 1;
+		removed += setMask(c, keep);
+	}
+	return removed;
 }
 
 /** Clip-level cleanup after extraction (posed cells): size floor and streak trim for head items, attachment + repair for held items. */
-export function postProcess(rig: Rig, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, pad = 0): { removed: number; repaired: string[] } {
-  let removed=cells.reduce((n,c)=>n+clipToStencil(c),0),repaired:string[]=[];
-  if (slot.class === 'held') { removed += attachHeld(rig, slot, cells, pad) + clipFloor(cells); closeGrip(cells); repaired=repairDropped(rig, slot, cells, keys, pad); }
-  else removed += sizeFloor(cells, keys, rig, pad) + (slot.band ? trimToKeyframe(rig, cells, keys, pad) : slot.class === 'worn' && slot.bgZ == null ? dropOffBody(cells) : 0) + clipFloor(cells);
-  return {removed:removed+cells.reduce((n,c)=>n+clipToStencil(c),0),repaired};
+export function postProcess(
+	rig: Rig,
+	slot: Slot,
+	cells: CellOut[],
+	keys: Partial<Record<DirectionName, Img>>,
+	pad = 0
+): { removed: number; repaired: string[] } {
+	let removed = cells.reduce((n, c) => n + clipToStencil(c), 0),
+		repaired: string[] = [];
+	if (slot.class === 'held') {
+		removed += attachHeld(rig, slot, cells, pad) + clipFloor(cells);
+		closeGrip(cells);
+		repaired = repairDropped(rig, slot, cells, keys, pad);
+	} else
+		removed +=
+			sizeFloor(cells, keys, rig, pad) +
+			(slot.band
+				? trimToKeyframe(rig, cells, keys, pad)
+				: slot.class === 'worn' && slot.bgZ == null
+					? dropOffBody(cells)
+					: 0) +
+			clipFloor(cells);
+	return { removed: removed + cells.reduce((n, c) => n + clipToStencil(c), 0), repaired };
 }
 
 /**
@@ -788,596 +1451,1204 @@ export function postProcess(rig: Rig, slot: Slot, cells: CellOut[], keys: Partia
  * and brown hand streaks, 13–30 px, 0 px on the body; real parts split off by a forearm lie 90–100 % on the body). Returns px removed.
  */
 export function dropOffBody(cells: CellOut[]): number {
-  let removed = 0;
-  for (const c of cells) {
-    if (!c.posed || !c.area) continue;
-    const comps = components(c.mask, c.layer.w, c.mask.length / c.layer.w).sort((a, b) => b.length - a.length), keep = new Uint8Array(c.mask.length);
-    for (const [i, comp] of comps.entries()) if (!i || comp.filter((p) => c.base.data[p * 4 + 3]).length * 2 >= comp.length) for (const p of comp) keep[p] = 1;
-    removed += setMask(c, keep);
-  }
-  return removed;
+	let removed = 0;
+	for (const c of cells) {
+		if (!c.posed || !c.area) continue;
+		const comps = components(c.mask, c.layer.w, c.mask.length / c.layer.w).sort(
+				(a, b) => b.length - a.length
+			),
+			keep = new Uint8Array(c.mask.length);
+		for (const [i, comp] of comps.entries())
+			if (!i || comp.filter((p) => c.base.data[p * 4 + 3]).length * 2 >= comp.length)
+				for (const p of comp) keep[p] = 1;
+		removed += setMask(c, keep);
+	}
+	return removed;
 }
 
 /** Best 1-px shift (dx, dy) by visible body IoU. Equipment can hide the body or extend its silhouette. */
 function bestShift(B: Img, C: Img, route: Route): [number, number] {
-  const { w, h } = B;
-  const unknown = route === 'none' ? undefined : chromaMask(C, route);
-  if (unknown) {
-    let witness = 0, body = 0;
-    for (let p = 0; p < unknown.length; p++) {
-      if (B.data[p * 4 + 3]) body++;
-      if (!unknown[p] && C.data[p * 4 + 3] >= 128) witness++;
-    }
-    // An almost entirely covered mannequin offers too little evidence to move every equipment pixel.
-    if (witness < Math.max(8, Math.ceil(body * 0.1))) return [0, 0];
-  }
-  const iou = (dx: number, dy: number) => {
-    let i = 0, u = 0;
-    for (let y = 0; y < h; y++)
-      for (let x = 0; x < w; x++) {
-        const p = y * w + x;
-        if (unknown?.[p]) continue;
-        const c = C.data[p * 4 + 3] >= 128, X = x - dx, Y = y - dy, b = X >= 0 && Y >= 0 && X < w && Y < h && B.data[(Y * w + X) * 4 + 3] > 0;
-        if (c && b) i++;
-        if (c || b) u++;
-      }
-    return u ? i / u : 1;
-  };
-  let best: [number, number] = [0, 0], bi = iou(0, 0) + 0.02;
-  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]] as [number, number][]) { const v = iou(dx, dy); if (v > bi) { bi = v; best = [dx, dy]; } }
-  return best;
+	const { w, h } = B;
+	const unknown = route === 'none' ? undefined : chromaMask(C, route);
+	if (unknown) {
+		let witness = 0,
+			body = 0;
+		for (let p = 0; p < unknown.length; p++) {
+			if (B.data[p * 4 + 3]) body++;
+			if (!unknown[p] && C.data[p * 4 + 3] >= 128) witness++;
+		}
+		// An almost entirely covered mannequin offers too little evidence to move every equipment pixel.
+		if (witness < Math.max(8, Math.ceil(body * 0.1))) return [0, 0];
+	}
+	const iou = (dx: number, dy: number) => {
+		let i = 0,
+			u = 0;
+		for (let y = 0; y < h; y++)
+			for (let x = 0; x < w; x++) {
+				const p = y * w + x;
+				if (unknown?.[p]) continue;
+				const c = C.data[p * 4 + 3] >= 128,
+					X = x - dx,
+					Y = y - dy,
+					b = X >= 0 && Y >= 0 && X < w && Y < h && B.data[(Y * w + X) * 4 + 3] > 0;
+				if (c && b) i++;
+				if (c || b) u++;
+			}
+		return u ? i / u : 1;
+	};
+	let best: [number, number] = [0, 0],
+		bi = iou(0, 0) + 0.02;
+	for (const [dx, dy] of [
+		[1, 0],
+		[-1, 0],
+		[0, 1],
+		[0, -1],
+		[1, 1],
+		[1, -1],
+		[-1, 1],
+		[-1, -1]
+	] as [number, number][]) {
+		const v = iou(dx, dy);
+		if (v > bi) {
+			bi = v;
+			best = [dx, dy];
+		}
+	}
+	return best;
 }
 /** Translate an image by (dx, dy) px (never resampled; px moved off the canvas are dropped). */
 function translate(im: Img, dx: number, dy: number): Img {
-  const o = makeImg(im.w, im.h);
-  for (let y = 0; y < im.h; y++)
-    for (let x = 0; x < im.w; x++) {
-      const X = x + dx, Y = y + dy;
-      if (X >= 0 && Y >= 0 && X < im.w && Y < im.h) o.data.set(im.data.subarray((y * im.w + x) * 4, (y * im.w + x) * 4 + 4), (Y * im.w + X) * 4);
-    }
-  return o;
+	const o = makeImg(im.w, im.h);
+	for (let y = 0; y < im.h; y++)
+		for (let x = 0; x < im.w; x++) {
+			const X = x + dx,
+				Y = y + dy;
+			if (X >= 0 && Y >= 0 && X < im.w && Y < im.h)
+				o.data.set(
+					im.data.subarray((y * im.w + x) * 4, (y * im.w + x) * 4 + 4),
+					(Y * im.w + X) * 4
+				);
+		}
+	return o;
 }
 
-export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean; clip?: boolean; held?: boolean; pad?: number; cut?: { maxY: number; allow?: Uint8Array }; stencil?: Uint8Array }): CellOut {
-  const { base, route, band } = o, { w, h } = base;
-  const rawKeyOutside = o.held && route !== 'none' ? newKeyPixels(base, o.out, route) : undefined;
-  // posed frames are another skeleton-v3 sample of the same keypoints: re-register a systematic 1 px offset (M3: walk/south/7)
-  // A submitted stencil fixes raw coordinates: shifting could cross protected pixels. A shifted redraw still fails G10 below.
-  const rawShift = bestShift(base, o.out, route);
-  const reg = o.posed && o.stencil === undefined ? rawShift : ([0, 0] as [number, number]);
-  const out = reg[0] || reg[1] ? translate(o.out, -reg[0], -reg[1]) : o.out;
-  const shifted = (out === o.out ? rawShift : bestShift(base, out, route)).some(Boolean);
-  let r: { layer: Img; mask: Uint8Array; stray?: number } = route === 'none' ? diffLayer(base, out, band, o.useCc) : chromaLayer(out, route, base);
-  let clipY: number | undefined;
-  if (o.posed && o.clip) { // head items live above the neck: detached px below the band are smears/props the pose invented (B7 live)
-    const y0 = band.y + band.h, below = (p: number) => ((p / w) | 0) >= y0;
-    for (const c of components(r.mask, w, h)) {
-      // px joined to the item above the band (coif, aventail, hood mantle) wait for postProcess: the dressed keyframe decides (2026-10-24)
-      if (c.some((p) => !below(p))) { if (c.some(below)) clipY = y0; continue; }
-      for (const p of c) { r.mask[p] = 0; r.layer.data.fill(0, p * 4, p * 4 + 4); r.stray = (r.stray ?? 0) + 1; }
-    }
-  }
-  // posed layers get the size floor in postProcess: held items after the wrist rule (attachHeld, 2026-10-25: S5 pommels and
-  // haft ends), others against the dressed keyframe's parts (sizeFloor). The gate metrics keep the 4 px floor, as before.
-  const qm = o.posed ? majorComponents({ layer: { ...r.layer, data: new Uint8ClampedArray(r.layer.data) }, mask: new Uint8Array(r.mask) }, w, h).mask : r.mask;
-  let outBand = 0, baseBand = 0;
-  for (let p = 0; p < r.mask.length; p++) {
-    const inBand = (p / w | 0) >= band.y && (p / w | 0) < band.y + band.h;
-    if (qm[p] && !inBand) outBand++;
-    if (base.data[p * 4 + 3] && inBand) baseBand++;
-  }
-  // body px the item hides (round 3) count as covered for G2; posed frames only inside the keyframe's cut (cutAllow)
-  const cut = o.cut && route !== 'none' && !(o.posed && !o.cut.allow) ? cutOf(base, out, qm, o.cut) : undefined;
-  // G2 counts the body only: detached base px (skeleton-v3 smoke or smear FX the body render kept, reported by body QA) are never
-  // on the stand-in, so they read as erased (round 5: 10–13 px beside the head failed G2 on every item, idle east 1–3)
-  const fx = detachedOf(base), skip = qm.map((v, p) => v | (cut?.[p] ?? 0) | fx[p]);
-  const tol = o.posed ? posedTol(w, h, o.pad) : 0, kk = route === 'none' ? null : keyKept(base, out, route, skip, undefined, tol);
-  const cell:CellOut = {
-    key: o.key, call: o.call, base, input: inputCell(base, route), out, layer: r.layer, mask: r.mask, area: sum(r.mask), outBand, baseBand,
-    ...(o.stencil!==undefined?{stencil:o.stencil}:{}),
-    ...(rawKeyOutside ? { rawKeyOutside } : {}),
-    ...(kk && route !== 'none' ? { keyKept: kk.kept, keyLost: kk.lost, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, qm, tol) } : {}),
-    ...cleanliness(qm, w, h), ...(route !== 'none' ? { chroma: route } : {}), shifted, offset: [-reg[0], -reg[1]], stray: r.stray ?? 0, posed: !!o.posed,
-    ...(clipY != null ? { clipY } : {}), ...(cut ? { cut } : {}),
-  };
-  clipToStencil(cell);if(cell.stencil)cell.stencil=new Uint8Array(cell.stencil);
-  return cell;
+export function extractCell(o: {
+	key: string;
+	call: number;
+	base: Img;
+	out: Img;
+	route: Route;
+	band: Rect;
+	useCc?: boolean;
+	posed?: boolean;
+	clip?: boolean;
+	held?: boolean;
+	pad?: number;
+	cut?: { maxY: number; allow?: Uint8Array };
+	stencil?: Uint8Array;
+}): CellOut {
+	const { base, route, band } = o,
+		{ w, h } = base;
+	const rawKeyOutside = o.held && route !== 'none' ? newKeyPixels(base, o.out, route) : undefined;
+	// posed frames are another skeleton-v3 sample of the same keypoints: re-register a systematic 1 px offset (M3: walk/south/7)
+	// A submitted stencil fixes raw coordinates: shifting could cross protected pixels. A shifted redraw still fails G10 below.
+	const rawShift = bestShift(base, o.out, route);
+	const reg = o.posed && o.stencil === undefined ? rawShift : ([0, 0] as [number, number]);
+	const out = reg[0] || reg[1] ? translate(o.out, -reg[0], -reg[1]) : o.out;
+	const shifted = (out === o.out ? rawShift : bestShift(base, out, route)).some(Boolean);
+	let r: { layer: Img; mask: Uint8Array; stray?: number } =
+		route === 'none' ? diffLayer(base, out, band, o.useCc) : chromaLayer(out, route, base);
+	let clipY: number | undefined;
+	if (o.posed && o.clip) {
+		// head items live above the neck: detached px below the band are smears/props the pose invented (B7 live)
+		const y0 = band.y + band.h,
+			below = (p: number) => ((p / w) | 0) >= y0;
+		for (const c of components(r.mask, w, h)) {
+			// px joined to the item above the band (coif, aventail, hood mantle) wait for postProcess: the dressed keyframe decides (2026-10-24)
+			if (c.some((p) => !below(p))) {
+				if (c.some(below)) clipY = y0;
+				continue;
+			}
+			for (const p of c) {
+				r.mask[p] = 0;
+				r.layer.data.fill(0, p * 4, p * 4 + 4);
+				r.stray = (r.stray ?? 0) + 1;
+			}
+		}
+	}
+	// posed layers get the size floor in postProcess: held items after the wrist rule (attachHeld, 2026-10-25: S5 pommels and
+	// haft ends), others against the dressed keyframe's parts (sizeFloor). The gate metrics keep the 4 px floor, as before.
+	const qm = o.posed
+		? majorComponents(
+				{
+					layer: { ...r.layer, data: new Uint8ClampedArray(r.layer.data) },
+					mask: new Uint8Array(r.mask)
+				},
+				w,
+				h
+			).mask
+		: r.mask;
+	let outBand = 0,
+		baseBand = 0;
+	for (let p = 0; p < r.mask.length; p++) {
+		const inBand = ((p / w) | 0) >= band.y && ((p / w) | 0) < band.y + band.h;
+		if (qm[p] && !inBand) outBand++;
+		if (base.data[p * 4 + 3] && inBand) baseBand++;
+	}
+	// body px the item hides (round 3) count as covered for G2; posed frames only inside the keyframe's cut (cutAllow)
+	const cut =
+		o.cut && route !== 'none' && !(o.posed && !o.cut.allow)
+			? cutOf(base, out, qm, o.cut)
+			: undefined;
+	// G2 counts the body only: detached base px (skeleton-v3 smoke or smear FX the body render kept, reported by body QA) are never
+	// on the stand-in, so they read as erased (round 5: 10–13 px beside the head failed G2 on every item, idle east 1–3)
+	const fx = detachedOf(base),
+		skip = qm.map((v, p) => v | (cut?.[p] ?? 0) | fx[p]);
+	const tol = o.posed ? posedTol(w, h, o.pad) : 0,
+		kk = route === 'none' ? null : keyKept(base, out, route, skip, undefined, tol);
+	const cell: CellOut = {
+		key: o.key,
+		call: o.call,
+		base,
+		input: inputCell(base, route),
+		out,
+		layer: r.layer,
+		mask: r.mask,
+		area: sum(r.mask),
+		outBand,
+		baseBand,
+		...(o.stencil !== undefined ? { stencil: o.stencil } : {}),
+		...(rawKeyOutside ? { rawKeyOutside } : {}),
+		...(kk && route !== 'none'
+			? {
+					keyKept: kk.kept,
+					keyLost: kk.lost,
+					erased: kk.erased,
+					keyOutside: keyOutside(base, out, route, undefined, qm, tol)
+				}
+			: {}),
+		...cleanliness(qm, w, h),
+		...(route !== 'none' ? { chroma: route } : {}),
+		shifted,
+		offset: [-reg[0], -reg[1]],
+		stray: r.stray ?? 0,
+		posed: !!o.posed,
+		...(clipY != null ? { clipY } : {}),
+		...(cut ? { cut } : {})
+	};
+	clipToStencil(cell);
+	if (cell.stencil) cell.stencil = new Uint8Array(cell.stencil);
+	return cell;
 }
 
 const cutIndices = (cut: Uint8Array) => [...cut.keys()].filter((p) => cut[p]);
-const visibleBase = (c: Pick<CellOut, 'base' | 'cut'>) => c.cut ? cutBase(c.base, [cutIndices(c.cut)]) : c.base;
+const visibleBase = (c: Pick<CellOut, 'base' | 'cut'>) =>
+	c.cut ? cutBase(c.base, [cutIndices(c.cut)]) : c.base;
 
 /** Draw a single equipment layer over the same cut body used by Studio. */
 export function recompose(c: Pick<CellOut, 'base' | 'layer' | 'cut'>): Img {
-  const o = makeImg(c.base.w, c.base.h);
-  over(o, visibleBase(c));
-  over(o, c.layer);
-  return o;
+	const o = makeImg(c.base.w, c.base.h);
+	over(o, visibleBase(c));
+	over(o, c.layer);
+	return o;
 }
 
 // ---------- QA (gates G1–G8, architecture §3.3) ----------
 /** Minimum wrist-to-tip reach (px) for a signed held-item direction; shorter items keep the unsigned axis comparison. */
 export const HELD_SIGNED_REACH = 10;
 /** Gait and rest words a move id may contain (whole words, see moveWords). */
-const LOCOMOTION = new Set(['idle', 'breathe', 'breathing', ...WALK_WORDS, ...RUN_WORDS, 'jog', 'jogs', 'jogging', 'sprint', 'sprints', 'sprinting', 'stroll', 'strolling', 'march', 'marching', 'trot', 'trotting']);
+const LOCOMOTION = new Set([
+	'idle',
+	'breathe',
+	'breathing',
+	...WALK_WORDS,
+	...RUN_WORDS,
+	'jog',
+	'jogs',
+	'jogging',
+	'sprint',
+	'sprints',
+	'sprinting',
+	'stroll',
+	'strolling',
+	'march',
+	'marching',
+	'trot',
+	'trotting'
+]);
 /** Each limb and face joint's parent toward the trunk, for the bone-length plausibility check in decisiveAction. */
-const BONE: Record<string, string> = { 'RIGHT EYE': 'NOSE', 'LEFT EYE': 'NOSE', 'RIGHT EAR': 'NOSE', 'LEFT EAR': 'NOSE', NOSE: 'NECK', 'RIGHT SHOULDER': 'NECK', 'LEFT SHOULDER': 'NECK', 'RIGHT ELBOW': 'RIGHT SHOULDER', 'LEFT ELBOW': 'LEFT SHOULDER', 'RIGHT ARM': 'RIGHT ELBOW', 'LEFT ARM': 'LEFT ELBOW', 'RIGHT KNEE': 'RIGHT HIP', 'LEFT KNEE': 'LEFT HIP', 'RIGHT LEG': 'RIGHT KNEE', 'LEFT LEG': 'LEFT KNEE' };
+const BONE: Record<string, string> = {
+	'RIGHT EYE': 'NOSE',
+	'LEFT EYE': 'NOSE',
+	'RIGHT EAR': 'NOSE',
+	'LEFT EAR': 'NOSE',
+	NOSE: 'NECK',
+	'RIGHT SHOULDER': 'NECK',
+	'LEFT SHOULDER': 'NECK',
+	'RIGHT ELBOW': 'RIGHT SHOULDER',
+	'LEFT ELBOW': 'LEFT SHOULDER',
+	'RIGHT ARM': 'RIGHT ELBOW',
+	'LEFT ARM': 'LEFT ELBOW',
+	'RIGHT KNEE': 'RIGHT HIP',
+	'LEFT KNEE': 'LEFT HIP',
+	'RIGHT LEG': 'RIGHT KNEE',
+	'LEFT LEG': 'LEFT KNEE'
+};
 /** The joints whose bone runs to each joint (BONE inverted). */
-const KIDS = Object.entries(BONE).reduce<Record<string, string[]>>((m, [c, p]) => ((m[p] ??= []).push(c), m), {});
+const KIDS = Object.entries(BONE).reduce<Record<string, string[]>>(
+	(m, [c, p]) => ((m[p] ??= []).push(c), m),
+	{}
+);
 /** Motion no idle, walk or run reaches, from the stored joints (measured, else requested) against the standing pose: on the frozen bench and
  * the KayKit clips, locomotion moved joints at most 0.39 body heights, raised wrists at most 0.21 and leaned at most 20°, while
  * slashes and casts reach 0.7, raise wrists over the head, and deaths lean 70° or more. Smaller motion cannot tell a run from an
  * attack (a KayKit attack moves 0.31-0.33), so it decides nothing (2026-11-07). */
 export function decisiveAction(rig: Rig, anim: string, dir: DirectionName): boolean {
-  // Joints measured on the frozen frames describe the motion actually drawn; the requested sequence is the fallback.
-  const measured = rig.animations.find((x) => x.id === anim)?.sources?.[dir]?.measured;
-  const seq = measured?.length && measured.every(hasAll) ? measured as Keypoint[][] : clipKeypoints(rig, anim, dir), r = rig.rest?.[dir]?.keypoints;
-  if (!seq || !r || !hasAll(r)) return false;
-  const rest = fromApi(r, rig.cell), frames = seq.map((k) => fromApi(k, rig.cell));
-  const mid = (p: typeof rest, a: string, b: string) => [(p[a].x + p[b].x) / 2, (p[a].y + p[b].y) / 2];
-  const feet = mid(rest, 'RIGHT LEG', 'LEFT LEG'), H = Math.hypot(feet[0] - rest.NOSE.x, feet[1] - rest.NOSE.y);
-  if (!H) return false;
-  const angle = (top: number[], h: number[]) => Math.atan2(top[0] - h[0], h[1] - top[1]) * 180 / Math.PI;
-  const restHips = mid(rest, 'RIGHT HIP', 'LEFT HIP'), mirror = (l: string) => l.replace(/^(RIGHT|LEFT)/, (s) => (s === 'RIGHT' ? 'LEFT' : 'RIGHT'));
-  // 2026-11-07 review: hip-relative positions so a jump is not a pose change; the nearer of a joint's own and its mirror
-  // joint's standing position, so one estimate with swapped hands cannot flip a front-view walk; lean relative to standing.
-  // A joint counts only while every bone on its chain to the trunk keeps a plausible length (within 0.2 body heights of
-  // standing; stored PixelLab clips stretch at most 0.06, retargeted chibi clips 0.23): one bad estimate, such as an eye placed at the frame corner, must not turn a
-  // walk into an action and silently skip its held-item checks (2026-11-07 counter-review R2). The trunk is checked the same
-  // way: a frame whose hip width or thigh grew is skipped (the hip center places every joint), the neck's bone runs to the hip
-  // center, and a lean counts only when the shoulders lean with the neck, about the hips and about the knees (one detached hip
-  // moves the hip center alone). A joint also needs the bones to its own children
-  // plausible: a lone detached neck, nose, elbow or knee stretches them (2026-11-07 session counter-review F1). Real slashes
-  // are decided by one joint, the wrist, often in only two or three frames, so one plausible decisive frame still decides.
-  const len = (q: typeof rest, a: string, b: string) => Math.hypot(q[a].x - q[b].x, q[a].y - q[b].y) / H;
-  const torso = (q: typeof rest, h: number[]) => Math.hypot(q.NECK.x - h[0], q.NECK.y - h[1]) / H;
-  const shoulders = (q: typeof rest) => mid(q, 'RIGHT SHOULDER', 'LEFT SHOULDER'), knees = (q: typeof rest) => mid(q, 'RIGHT KNEE', 'LEFT KNEE');
-  // The knees sit further from the shoulders than the hips, so one lean turns the shoulders less about them (45 degrees about
-  // the hips read 25 to 34 about the knees, and a coherent run-dodge became a walk: 2026-11-07 50eeea36 counter-review C1).
-  // The knee lean is therefore measured against what a 40 degree lean about the hips shows from the knees of this standing pose.
-  // So is the lean about each hip on its own: one wrong hip estimate moves the hip center, and a leg swing moves the knee
-  // midpoint, so together they made a 30 degree run lean decisive, while the other hip still shows the true lean (2026-11-07
-  // 3eed2a9c counter-review N1).
-  const at = (q: typeof rest, l: string) => [q[l].x, q[l].y];
-  const scaleAbout = (pivot: number[]) => {
-    const seen = (deg: number) => {
-      const t = deg * Math.PI / 180, [x, y] = shoulders(rest), dx = x - restHips[0], dy = y - restHips[1];
-      return Math.abs(angle([restHips[0] + dx * Math.cos(t) - dy * Math.sin(t), restHips[1] + dx * Math.sin(t) + dy * Math.cos(t)], pivot) - angle(shoulders(rest), pivot));
-    };
-    return { [-1]: 40 / seen(-40), 1: 40 / seen(40) } as Record<number, number>;
-  };
-  const pivots: [(q: typeof rest) => number[], Record<number, number>][] = [knees, (q: typeof rest) => at(q, 'RIGHT HIP'), (q: typeof rest) => at(q, 'LEFT HIP')].map((f) => [f, scaleAbout(f(rest))]);
-  return frames.some((p) => {
-    const grew = (a: string, b: string) => len(p, a, b) - len(rest, a, b) > 0.2;
-    if (grew('RIGHT HIP', 'LEFT HIP') || grew('RIGHT KNEE', 'RIGHT HIP') || grew('LEFT KNEE', 'LEFT HIP')) return false;
-    const hips = mid(p, 'RIGHT HIP', 'LEFT HIP'), dx = hips[0] - restHips[0], dy = hips[1] - restHips[1];
-    const torsoOk = torso(p, hips) - torso(rest, restHips) <= 0.2;
-    const chain = (l: string): boolean => (l === 'NECK' ? torsoOk : !BONE[l] || (!grew(l, BONE[l]) && chain(BONE[l])));
-    const plausible = (l: string) => chain(l) && !(KIDS[l] ?? []).some((c) => grew(c, l));
-    const from = (l: string, q: string) => Math.hypot(p[l].x - dx - rest[q].x, p[l].y - dy - rest[q].y);
-    const moved = Math.max(0, ...Object.keys(rest).filter(plausible).map((l) => Math.min(from(l, l), rest[mirror(l)] ? from(l, mirror(l)) : Infinity))) / H;
-    const rise = Math.max(-1, ...['RIGHT ARM', 'LEFT ARM'].filter(plausible).map((l) => (rest[l].y - (p[l].y - dy)) / H));
-    const bend = angle(shoulders(p), hips) - angle(shoulders(rest), restHips);
-    const pivotLean = pivots.map(([f, scale]) => Math.abs(angle(shoulders(p), f(p)) - angle(shoulders(rest), f(rest))) * scale[Math.sign(bend) || 1]);
-    const hipLean = Math.min(pivotLean[1], pivotLean[2]);
-    // A coherent pelvis can counter-tilt under the torso. Two disjoint upper-body axes can corroborate that lean when
-    // the individual hips cannot; a lone bad hip, head or shoulder estimate cannot turn both axes. Keep the knee check.
-    const upperLean = hipLean >= 40 || Math.abs(bend) < 40 ? 0 : Math.min(...[['NOSE', 'NECK'], ['RIGHT SHOULDER', 'LEFT SHOULDER']].map(([a, b]) =>
-      plausible(a) && plausible(b) && len(rest, a, b) > 0 && len(p, a, b) > 0 ? angleDiff(Math.atan2(p[a].y - p[b].y, p[a].x - p[b].x), Math.atan2(rest[a].y - rest[b].y, rest[a].x - rest[b].x)) : 0));
-    const lean = !torsoOk ? 0 : Math.min(pivotLean[0], Math.max(hipLean, upperLean), Math.abs(angle([p.NECK.x, p.NECK.y], hips) - angle([rest.NECK.x, rest.NECK.y], restHips)), Math.abs(bend));
-    return moved >= 0.6 || rise >= 0.45 || lean >= 40;
-  });
+	// Joints measured on the frozen frames describe the motion actually drawn; the requested sequence is the fallback.
+	const measured = rig.animations.find((x) => x.id === anim)?.sources?.[dir]?.measured;
+	const seq =
+			measured?.length && measured.every(hasAll)
+				? (measured as Keypoint[][])
+				: clipKeypoints(rig, anim, dir),
+		r = rig.rest?.[dir]?.keypoints;
+	if (!seq || !r || !hasAll(r)) return false;
+	const rest = fromApi(r, rig.cell),
+		frames = seq.map((k) => fromApi(k, rig.cell));
+	const mid = (p: typeof rest, a: string, b: string) => [
+		(p[a].x + p[b].x) / 2,
+		(p[a].y + p[b].y) / 2
+	];
+	const feet = mid(rest, 'RIGHT LEG', 'LEFT LEG'),
+		H = Math.hypot(feet[0] - rest.NOSE.x, feet[1] - rest.NOSE.y);
+	if (!H) return false;
+	const angle = (top: number[], h: number[]) =>
+		(Math.atan2(top[0] - h[0], h[1] - top[1]) * 180) / Math.PI;
+	const restHips = mid(rest, 'RIGHT HIP', 'LEFT HIP'),
+		mirror = (l: string) => l.replace(/^(RIGHT|LEFT)/, (s) => (s === 'RIGHT' ? 'LEFT' : 'RIGHT'));
+	// 2026-11-07 review: hip-relative positions so a jump is not a pose change; the nearer of a joint's own and its mirror
+	// joint's standing position, so one estimate with swapped hands cannot flip a front-view walk; lean relative to standing.
+	// A joint counts only while every bone on its chain to the trunk keeps a plausible length (within 0.2 body heights of
+	// standing; stored PixelLab clips stretch at most 0.06, retargeted chibi clips 0.23): one bad estimate, such as an eye placed at the frame corner, must not turn a
+	// walk into an action and silently skip its held-item checks (2026-11-07 counter-review R2). The trunk is checked the same
+	// way: a frame whose hip width or thigh grew is skipped (the hip center places every joint), the neck's bone runs to the hip
+	// center, and a lean counts only when the shoulders lean with the neck, about the hips and about the knees (one detached hip
+	// moves the hip center alone). A joint also needs the bones to its own children
+	// plausible: a lone detached neck, nose, elbow or knee stretches them (2026-11-07 session counter-review F1). Real slashes
+	// are decided by one joint, the wrist, often in only two or three frames, so one plausible decisive frame still decides.
+	const len = (q: typeof rest, a: string, b: string) =>
+		Math.hypot(q[a].x - q[b].x, q[a].y - q[b].y) / H;
+	const torso = (q: typeof rest, h: number[]) => Math.hypot(q.NECK.x - h[0], q.NECK.y - h[1]) / H;
+	const shoulders = (q: typeof rest) => mid(q, 'RIGHT SHOULDER', 'LEFT SHOULDER'),
+		knees = (q: typeof rest) => mid(q, 'RIGHT KNEE', 'LEFT KNEE');
+	// The knees sit further from the shoulders than the hips, so one lean turns the shoulders less about them (45 degrees about
+	// the hips read 25 to 34 about the knees, and a coherent run-dodge became a walk: 2026-11-07 50eeea36 counter-review C1).
+	// The knee lean is therefore measured against what a 40 degree lean about the hips shows from the knees of this standing pose.
+	// So is the lean about each hip on its own: one wrong hip estimate moves the hip center, and a leg swing moves the knee
+	// midpoint, so together they made a 30 degree run lean decisive, while the other hip still shows the true lean (2026-11-07
+	// 3eed2a9c counter-review N1).
+	const at = (q: typeof rest, l: string) => [q[l].x, q[l].y];
+	const scaleAbout = (pivot: number[]) => {
+		const seen = (deg: number) => {
+			const t = (deg * Math.PI) / 180,
+				[x, y] = shoulders(rest),
+				dx = x - restHips[0],
+				dy = y - restHips[1];
+			return Math.abs(
+				angle(
+					[
+						restHips[0] + dx * Math.cos(t) - dy * Math.sin(t),
+						restHips[1] + dx * Math.sin(t) + dy * Math.cos(t)
+					],
+					pivot
+				) - angle(shoulders(rest), pivot)
+			);
+		};
+		return { [-1]: 40 / seen(-40), 1: 40 / seen(40) } as Record<number, number>;
+	};
+	const pivots: [(q: typeof rest) => number[], Record<number, number>][] = [
+		knees,
+		(q: typeof rest) => at(q, 'RIGHT HIP'),
+		(q: typeof rest) => at(q, 'LEFT HIP')
+	].map((f) => [f, scaleAbout(f(rest))]);
+	return frames.some((p) => {
+		const grew = (a: string, b: string) => len(p, a, b) - len(rest, a, b) > 0.2;
+		if (
+			grew('RIGHT HIP', 'LEFT HIP') ||
+			grew('RIGHT KNEE', 'RIGHT HIP') ||
+			grew('LEFT KNEE', 'LEFT HIP')
+		)
+			return false;
+		const hips = mid(p, 'RIGHT HIP', 'LEFT HIP'),
+			dx = hips[0] - restHips[0],
+			dy = hips[1] - restHips[1];
+		const torsoOk = torso(p, hips) - torso(rest, restHips) <= 0.2;
+		const chain = (l: string): boolean =>
+			l === 'NECK' ? torsoOk : !BONE[l] || (!grew(l, BONE[l]) && chain(BONE[l]));
+		const plausible = (l: string) => chain(l) && !(KIDS[l] ?? []).some((c) => grew(c, l));
+		const from = (l: string, q: string) =>
+			Math.hypot(p[l].x - dx - rest[q].x, p[l].y - dy - rest[q].y);
+		const moved =
+			Math.max(
+				0,
+				...Object.keys(rest)
+					.filter(plausible)
+					.map((l) => Math.min(from(l, l), rest[mirror(l)] ? from(l, mirror(l)) : Infinity))
+			) / H;
+		const rise = Math.max(
+			-1,
+			...['RIGHT ARM', 'LEFT ARM'].filter(plausible).map((l) => (rest[l].y - (p[l].y - dy)) / H)
+		);
+		const bend = angle(shoulders(p), hips) - angle(shoulders(rest), restHips);
+		const pivotLean = pivots.map(
+			([f, scale]) =>
+				Math.abs(angle(shoulders(p), f(p)) - angle(shoulders(rest), f(rest))) *
+				scale[Math.sign(bend) || 1]
+		);
+		const hipLean = Math.min(pivotLean[1], pivotLean[2]);
+		// A coherent pelvis can counter-tilt under the torso. Two disjoint upper-body axes can corroborate that lean when
+		// the individual hips cannot; a lone bad hip, head or shoulder estimate cannot turn both axes. Keep the knee check.
+		const upperLean =
+			hipLean >= 40 || Math.abs(bend) < 40
+				? 0
+				: Math.min(
+						...[
+							['NOSE', 'NECK'],
+							['RIGHT SHOULDER', 'LEFT SHOULDER']
+						].map(([a, b]) =>
+							plausible(a) && plausible(b) && len(rest, a, b) > 0 && len(p, a, b) > 0
+								? angleDiff(
+										Math.atan2(p[a].y - p[b].y, p[a].x - p[b].x),
+										Math.atan2(rest[a].y - rest[b].y, rest[a].x - rest[b].x)
+									)
+								: 0
+						)
+					);
+		const lean = !torsoOk
+			? 0
+			: Math.min(
+					pivotLean[0],
+					Math.max(hipLean, upperLean),
+					Math.abs(angle([p.NECK.x, p.NECK.y], hips) - angle([rest.NECK.x, rest.NECK.y], restHips)),
+					Math.abs(bend)
+				);
+		return moved >= 0.6 || rise >= 0.45 || lean >= 40;
+	});
 }
 /** Action clips (slash, cast, punch...) legitimately change an item's area and shape; G5/G9 apply to locomotion only. Clearly
  * large stored motion makes an action whatever the name ("run-slash"); otherwise the move id's words decide, and an unknown
  * name stays an action, as before. `key` is "move/direction" or a cell key. */
 export const isAction = (key: string, rig?: Rig) => {
-  const [anim, dir] = key.split('/');
-  if (rig && dir && decisiveAction(rig, anim, dir as DirectionName)) return true;
-  return !moveWords(anim).some((w) => LOCOMOTION.has(w));
+	const [anim, dir] = key.split('/');
+	if (rig && dir && decisiveAction(rig, anim, dir as DirectionName)) return true;
+	return !moveWords(anim).some((w) => LOCOMOTION.has(w));
 };
-export const GATES = { keyKept: 0.97, keyLostPx: 8, keyOutside: 0.02, keyOutsidePosed: 0.05, areaRatio: 0.5, areaCV: 0.15, paletteDist: 15, heldIoU: 0.3, heldTurn: 30 }; // heldIoU: S5 (0.4 false-fails a 96 px axe walk E at 0.38); heldTurn: deg, B9
+export const GATES = {
+	keyKept: 0.97,
+	keyLostPx: 8,
+	keyOutside: 0.02,
+	keyOutsidePosed: 0.05,
+	areaRatio: 0.5,
+	areaCV: 0.15,
+	paletteDist: 15,
+	heldIoU: 0.3,
+	heldTurn: 30
+}; // heldIoU: S5 (0.4 false-fails a 96 px axe walk E at 0.38); heldTurn: deg, B9
 /** G2: the body was redrawn. T3: a cape covering the back leaves ~126 body px in north, so 6 olive outline px (27,40,4: key
  * score 32 < 35) read as 0.952 kept and re-rolled a clean keyframe (10 gens) -> also require more than 8 lost px. */
-export const g2Fails = (c: Pick<CellOut, 'keyKept' | 'keyLost'>) => c.keyKept != null && c.keyKept < GATES.keyKept && (c.keyLost ?? Infinity) > GATES.keyLostPx;
-export interface ClipQa { clip: string; call: number; median: number; cv: number; baseCv: number; minRatio: number; hand?: 'r' | 'l' | '?'; spread: number; minIoU: number }
-export interface QaResult { qa: ItemQa; clips: ClipQa[]; failCalls: Map<number, string[]>; softCalls: Map<number, string[]>; warnings: string[]; paletteDist: number[]; splitExact: boolean }
+export const g2Fails = (c: Pick<CellOut, 'keyKept' | 'keyLost'>) =>
+	c.keyKept != null && c.keyKept < GATES.keyKept && (c.keyLost ?? Infinity) > GATES.keyLostPx;
+export interface ClipQa {
+	clip: string;
+	call: number;
+	median: number;
+	cv: number;
+	baseCv: number;
+	minRatio: number;
+	hand?: 'r' | 'l' | '?';
+	spread: number;
+	minIoU: number;
+}
+export interface QaResult {
+	qa: ItemQa;
+	clips: ClipQa[];
+	failCalls: Map<number, string[]>;
+	softCalls: Map<number, string[]>;
+	warnings: string[];
+	paletteDist: number[];
+	splitExact: boolean;
+}
 
 const colors = (im: Img) => {
-  const s = new Set<number>();
-  for (let i = 0; i < im.data.length; i += 4) if (im.data[i + 3]) s.add((im.data[i] << 16) | (im.data[i + 1] << 8) | im.data[i + 2]);
-  return [...s];
+	const s = new Set<number>();
+	for (let i = 0; i < im.data.length; i += 4)
+		if (im.data[i + 3]) s.add((im.data[i] << 16) | (im.data[i + 1] << 8) | im.data[i + 2]);
+	return [...s];
 };
-const cdist = (a: number, b: number) => Math.max(Math.abs((a >> 16) - (b >> 16)), Math.abs(((a >> 8) & 255) - ((b >> 8) & 255)), Math.abs((a & 255) - (b & 255)));
+const cdist = (a: number, b: number) =>
+	Math.max(
+		Math.abs((a >> 16) - (b >> 16)),
+		Math.abs(((a >> 8) & 255) - ((b >> 8) & 255)),
+		Math.abs((a & 255) - (b & 255))
+	);
 /** Pixel-weighted mean distance (max-channel RGB) from each layer px to the nearest color of `ref` (design lock; 0 = same
  * palette). S2 averaged over the color SET, where one 2-px highlight outlier reads as drift (51 on a visibly identical vest). */
 export function paletteDistance(ref: number[], cells: Img[]): number {
-  if (!ref.length) return 0;
-  const memo = new Map<number, number>();
-  let n = 0, sum = 0;
-  for (const im of cells)
-    for (let i = 0; i < im.data.length; i += 4) {
-      if (!im.data[i + 3]) continue;
-      const c = (im.data[i] << 16) | (im.data[i + 1] << 8) | im.data[i + 2];
-      let d = memo.get(c);
-      if (d == null) memo.set(c, (d = Math.min(...ref.map((r) => cdist(c, r)))));
-      n++;
-      sum += d;
-    }
-  return n ? sum / n : 0;
+	if (!ref.length) return 0;
+	const memo = new Map<number, number>();
+	let n = 0,
+		sum = 0;
+	for (const im of cells)
+		for (let i = 0; i < im.data.length; i += 4) {
+			if (!im.data[i + 3]) continue;
+			const c = (im.data[i] << 16) | (im.data[i + 1] << 8) | im.data[i + 2];
+			let d = memo.get(c);
+			if (d == null) memo.set(c, (d = Math.min(...ref.map((r) => cdist(c, r)))));
+			n++;
+			sum += d;
+		}
+	return n ? sum / n : 0;
 }
-const median = (v: number[]) => { const s = [...v].sort((a, b) => a - b); return s.length ? (s[(s.length - 1) >> 1] + s[s.length >> 1]) / 2 : 0; };
+const median = (v: number[]) => {
+	const s = [...v].sort((a, b) => a - b);
+	return s.length ? (s[(s.length - 1) >> 1] + s[s.length >> 1]) / 2 : 0;
+};
 /** Distance from a point in pixel-edge coordinates (keypoints: 0..w across the cell) to the nearest mask pixel's center. */
 const nearest = (m: Uint8Array, w: number, [x, y]: [number, number]) => {
-  let d = 1e9;
-  for (let p = 0; p < m.length; p++) if (m[p]) d = Math.min(d, Math.hypot((p % w) + 0.5 - x, ((p / w) | 0) + 0.5 - y));
-  return d;
+	let d = 1e9;
+	for (let p = 0; p < m.length; p++)
+		if (m[p]) d = Math.min(d, Math.hypot((p % w) + 0.5 - x, ((p / w) | 0) + 0.5 - y));
+	return d;
 };
 /** Principal-axis angle (rad), or null for < 6 px or a near-round mask whose axis is unstable. */
 export function axisOf(m: Uint8Array, w: number): number | null {
-  const c = centroid(m, w);
-  if (!c || sum(m) < 6) return null;
-  let a = 0, b = 0, d = 0;
-  for (let p = 0; p < m.length; p++) if (m[p]) { const x = (p % w) - c[0], y = ((p / w) | 0) - c[1]; a += x * x; b += x * y; d += y * y; }
-  // Eigenvalue gap / sum: below 0.2 the aspect ratio is < sqrt(1.5). A round shield gaining a single
-  // row can swap its principal axis by 90 degrees without turning; compare its silhouette instead.
-  if (Math.hypot(a - d, 2 * b) < 0.2 * (a + d)) return null;
-  return 0.5 * Math.atan2(2 * b, a - d);
+	const c = centroid(m, w);
+	if (!c || sum(m) < 6) return null;
+	let a = 0,
+		b = 0,
+		d = 0;
+	for (let p = 0; p < m.length; p++)
+		if (m[p]) {
+			const x = (p % w) - c[0],
+				y = ((p / w) | 0) - c[1];
+			a += x * x;
+			b += x * y;
+			d += y * y;
+		}
+	// Eigenvalue gap / sum: below 0.2 the aspect ratio is < sqrt(1.5). A round shield gaining a single
+	// row can swap its principal axis by 90 degrees without turning; compare its silhouette instead.
+	if (Math.hypot(a - d, 2 * b) < 0.2 * (a + d)) return null;
+	return 0.5 * Math.atan2(2 * b, a - d);
 }
 /** Difference of two axis angles in degrees, 0..90 (axes have no direction). */
-export const angleDiff = (x: number, y: number) => { const d = Math.abs((((x - y) * 180) / Math.PI) % 180); return Math.min(d, 180 - d); };
+export const angleDiff = (x: number, y: number) => {
+	const d = Math.abs((((x - y) * 180) / Math.PI) % 180);
+	return Math.min(d, 180 - d);
+};
 /** IoU of two masks after aligning their centroids (rounded): shape similarity independent of position. */
 export function alignedIoU(a: Uint8Array, b: Uint8Array, w: number): number {
-  const ca = centroid(a, w), cb = centroid(b, w);
-  if (!ca || !cb) return ca === cb ? 1 : 0;
-  const dx = Math.round(cb[0] - ca[0]), dy = Math.round(cb[1] - ca[1]), h = a.length / w;
-  let i = 0;
-  for (let p = 0; p < a.length; p++) {
-    const x = (p % w) + dx, y = ((p / w) | 0) + dy;
-    if (a[p] && x >= 0 && y >= 0 && x < w && y < h && b[y * w + x]) i++;
-  }
-  return i / (sum(a) + sum(b) - i);
+	const ca = centroid(a, w),
+		cb = centroid(b, w);
+	if (!ca || !cb) return ca === cb ? 1 : 0;
+	const dx = Math.round(cb[0] - ca[0]),
+		dy = Math.round(cb[1] - ca[1]),
+		h = a.length / w;
+	let i = 0;
+	for (let p = 0; p < a.length; p++) {
+		const x = (p % w) + dx,
+			y = ((p / w) | 0) + dy;
+		if (a[p] && x >= 0 && y >= 0 && x < w && y < h && b[y * w + x]) i++;
+	}
+	return i / (sum(a) + sum(b) - i);
 }
 
 /** Compare held silhouettes in wrist coordinates. Only a missing pixel behind the other frame's body can be hidden.
  * One pixel of body tolerance matches posed extraction. This cannot prove the hidden shape: callers must warn, not pass.
  */
 function heldVisibility(a: CellOut, b: CellOut, wa: [number, number], wb: [number, number]) {
-  const { w, h } = a.layer, dx = Math.round(wb[0] - wa[0]), dy = Math.round(wb[1] - wa[1]);
-  const bodyA = dilate(maskOf(a.base), w, 1), bodyB = dilate(maskOf(b.base), w, 1);
-  const at = (m: Uint8Array, x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && !!m[y * w + x];
-  let shared = 0, different = 0, hiddenA = 0, hiddenB = 0;
-  // Include both canvases: a wrist shift must not silently discard an unexplained pixel off the other frame's edge.
-  for (let y = Math.min(0, -dy); y < Math.max(h, h - dy); y++) for (let x = Math.min(0, -dx); x < Math.max(w, w - dx); x++) {
-    const av = at(a.mask, x, y), bv = at(b.mask, x + dx, y + dy);
-    if (av && bv) shared++;
-    else if (av) { if (at(bodyB, x + dx, y + dy)) hiddenB++; else different++; }
-    else if (bv) { if (at(bodyA, x, y)) hiddenA++; else different++; }
-  }
-  // Occlusion must explain the dominant disagreement; incidental body contact cannot excuse a visible bad turn.
-  return { hiddenA, hiddenB, compatible: shared >= 6 && hiddenA + hiddenB >= different && shared / (shared + different) >= GATES.heldIoU };
+	const { w, h } = a.layer,
+		dx = Math.round(wb[0] - wa[0]),
+		dy = Math.round(wb[1] - wa[1]);
+	const bodyA = dilate(maskOf(a.base), w, 1),
+		bodyB = dilate(maskOf(b.base), w, 1);
+	const at = (m: Uint8Array, x: number, y: number) =>
+		x >= 0 && y >= 0 && x < w && y < h && !!m[y * w + x];
+	let shared = 0,
+		different = 0,
+		hiddenA = 0,
+		hiddenB = 0;
+	// Include both canvases: a wrist shift must not silently discard an unexplained pixel off the other frame's edge.
+	for (let y = Math.min(0, -dy); y < Math.max(h, h - dy); y++)
+		for (let x = Math.min(0, -dx); x < Math.max(w, w - dx); x++) {
+			const av = at(a.mask, x, y),
+				bv = at(b.mask, x + dx, y + dy);
+			if (av && bv) shared++;
+			else if (av) {
+				if (at(bodyB, x + dx, y + dy)) hiddenB++;
+				else different++;
+			} else if (bv) {
+				if (at(bodyA, x, y)) hiddenA++;
+				else different++;
+			}
+		}
+	// Occlusion must explain the dominant disagreement; incidental body contact cannot excuse a visible bad turn.
+	return {
+		hiddenA,
+		hiddenB,
+		compatible:
+			shared >= 6 &&
+			hiddenA + hiddenB >= different &&
+			shared / (shared + different) >= GATES.heldIoU
+	};
 }
 
 /** Retain replaceable summaries against the same design palette as the complete evaluation.
  * `pad`: oversize layers are gated on their own canvas; hand positions move by the pad. */
-export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax = GATES.keyOutside, pad = 0, hidden = new Set<string>(), standingPalettes?: ReadonlyMap<DirectionName, number[]>): QaResult {
-  const ref = standingPalettes ? [] : designColors(cells);
-  const q = evaluateQa(rig, slot, route, cells, rerolls, keyOutsideMax, pad, ref, hidden, standingPalettes);
-  q.qa.clips = Object.fromEntries(q.clips.map(({ clip, hand }) => {
-    const part = evaluateQa(rig, slot, route, cells.filter((c) => clipOf(c.key) === clip), 0, keyOutsideMax, pad, ref, hidden, standingPalettes);
-    const summary = summaryOf(part.qa);
-    for (const warning of part.warnings) if (!q.warnings.includes(warning)) {
-      const message = warning.startsWith('G6 call ') ? `G6 ${clip}: palette distance ${summary.maxPaletteDist} to the design call` : `${clip}: ${warning}`;
-      if (!q.warnings.includes(message)) q.warnings.push(message);
-    }
-    return [clip, { ...summary, ...(hand ? { hand } : {}) }];
-  }));
-  // Reporting is per clip; these observations never authorize another paid attempt.
-  q.qa.maxPaletteDist = Math.max(0, ...Object.values(q.qa.clips).map((s) => s.maxPaletteDist));
-  if (q.qa.status === 'pass' && Object.values(q.qa.clips).some((s) => s.status === 'warn')) q.qa.status = 'warn';
-  return q;
+export function itemQa(
+	rig: Rig,
+	slot: Slot,
+	route: Route,
+	cells: CellOut[],
+	rerolls: number,
+	keyOutsideMax = GATES.keyOutside,
+	pad = 0,
+	hidden = new Set<string>(),
+	standingPalettes?: ReadonlyMap<DirectionName, number[]>
+): QaResult {
+	const ref = standingPalettes ? [] : designColors(cells);
+	const q = evaluateQa(
+		rig,
+		slot,
+		route,
+		cells,
+		rerolls,
+		keyOutsideMax,
+		pad,
+		ref,
+		hidden,
+		standingPalettes
+	);
+	q.qa.clips = Object.fromEntries(
+		q.clips.map(({ clip, hand }) => {
+			const part = evaluateQa(
+				rig,
+				slot,
+				route,
+				cells.filter((c) => clipOf(c.key) === clip),
+				0,
+				keyOutsideMax,
+				pad,
+				ref,
+				hidden,
+				standingPalettes
+			);
+			const summary = summaryOf(part.qa);
+			for (const warning of part.warnings)
+				if (!q.warnings.includes(warning)) {
+					const message = warning.startsWith('G6 call ')
+						? `G6 ${clip}: palette distance ${summary.maxPaletteDist} to the design call`
+						: `${clip}: ${warning}`;
+					if (!q.warnings.includes(message)) q.warnings.push(message);
+				}
+			return [clip, { ...summary, ...(hand ? { hand } : {}) }];
+		})
+	);
+	// Reporting is per clip; these observations never authorize another paid attempt.
+	q.qa.maxPaletteDist = Math.max(0, ...Object.values(q.qa.clips).map((s) => s.maxPaletteDist));
+	if (q.qa.status === 'pass' && Object.values(q.qa.clips).some((s) => s.status === 'warn'))
+		q.qa.status = 'warn';
+	return q;
 }
 const designColors = (cells: CellOut[]) => {
-  const first = Math.min(...cells.map((c) => c.call));
-  return [...new Set(cells.filter((c) => c.call === first).flatMap((c) => colors(c.layer)))];
+	const first = Math.min(...cells.map((c) => c.call));
+	return [...new Set(cells.filter((c) => c.call === first).flatMap((c) => colors(c.layer)))];
 };
-function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax: number, pad: number, ref: number[], hidden: Set<string>, standingPalettes?: ReadonlyMap<DirectionName, number[]>): QaResult {
-  const w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, fail = new Map<number, string[]>(), warnings: string[] = [];
-  const flag = (call: number, why: string) => (fail.get(call) ?? (fail.set(call, []), fail.get(call)!)).push(why);
-  const cellsQa: Record<CellKey, CellQa> = {};
-  let clipPx = 0, minKept = 1, maxOut = 0, splitExact = true;
-  for (const c of cells) {
-    if (c.shifted) flag(c.call, `G10 ${c.key}: misregistered (fits the base better 1 px off)`);
-    // a repaired frame (S5 frame-0 repair) is recorded in cells[].repaired; its clip also warns (R1 below)
-    cellsQa[c.key as CellKey] = { route: route === 'none' ? 'diff' : c.posed ? 'posed' : 'ea2', provenance: c.call, area: c.area, ...(c.repaired ? { repaired: true } : {}), ...(c.offset[0] || c.offset[1] ? { offset: c.offset } : {}), ...(c.keyKept != null ? { keyKept: +c.keyKept.toFixed(3) } : {}) };
-    if (g2Fails(c)) flag(c.call, `G2 ${c.key} key kept ${c.keyKept!.toFixed(3)} (${c.keyLost} px)`);
-    if (c.keyOutside != null && c.keyOutside > keyOutsideMax) flag(c.call, `G3 ${c.key} key outside ${c.keyOutside.toFixed(3)}`);
-    minKept = Math.min(minKept, c.keyKept ?? 1);
-    maxOut = Math.max(maxOut, c.keyOutside ?? 0);
-    // top row + sides; the bottom row only where the base has no foot within ±2 px (feet/boots sit on row h−1 of the 48→64 rig)
-    const foot = (x: number) => [-2, -1, 0, 1, 2].some((d) => x + d >= 0 && x + d < w && c.base.data[((h - 1) * w + x + d) * 4 + 3]);
-    let border = 0;
-    for (let p = 0; p < c.mask.length; p++) if (c.mask[p] && (p < w || p % w === 0 || p % w === w - 1 || (p >= (h - 1) * w && !foot(p % w)))) border++;
-    // Contact with a finite frame cannot establish that unseen pixels were cropped, for any move name.
-    if (border) warnings.push(`G7 ${c.key}: ${border} pixels touch the cell border; review framing`);
-    clipPx += border;
-    if (slot.bgZ != null) {
-      const base = visibleBase(c);
-      const { fg, bg } = splitFgBg(c.layer, c.base, slot.id === 'hair' ? neckY(rig, c.key, pad) : undefined), a = makeImg(w, h), b = recompose({ base, layer: c.layer });
-      over(a, bg); over(a, base); over(a, fg);
-      if (a.data.some((v, i) => v !== b.data[i])) splitExact = false;
-    }
-  }
-  if (!splitExact) warnings.push('fg/bg split does not recompose exactly');
+function evaluateQa(
+	rig: Rig,
+	slot: Slot,
+	route: Route,
+	cells: CellOut[],
+	rerolls: number,
+	keyOutsideMax: number,
+	pad: number,
+	ref: number[],
+	hidden: Set<string>,
+	standingPalettes?: ReadonlyMap<DirectionName, number[]>
+): QaResult {
+	const w = rig.cell.w + 2 * pad,
+		h = rig.cell.h + 2 * pad,
+		fail = new Map<number, string[]>(),
+		warnings: string[] = [];
+	const flag = (call: number, why: string) =>
+		(fail.get(call) ?? (fail.set(call, []), fail.get(call)!)).push(why);
+	const cellsQa: Record<CellKey, CellQa> = {};
+	let clipPx = 0,
+		minKept = 1,
+		maxOut = 0,
+		splitExact = true;
+	for (const c of cells) {
+		if (c.shifted) flag(c.call, `G10 ${c.key}: misregistered (fits the base better 1 px off)`);
+		// a repaired frame (S5 frame-0 repair) is recorded in cells[].repaired; its clip also warns (R1 below)
+		cellsQa[c.key as CellKey] = {
+			route: route === 'none' ? 'diff' : c.posed ? 'posed' : 'ea2',
+			provenance: c.call,
+			area: c.area,
+			...(c.repaired ? { repaired: true } : {}),
+			...(c.offset[0] || c.offset[1] ? { offset: c.offset } : {}),
+			...(c.keyKept != null ? { keyKept: +c.keyKept.toFixed(3) } : {})
+		};
+		if (g2Fails(c)) flag(c.call, `G2 ${c.key} key kept ${c.keyKept!.toFixed(3)} (${c.keyLost} px)`);
+		if (c.keyOutside != null && c.keyOutside > keyOutsideMax)
+			flag(c.call, `G3 ${c.key} key outside ${c.keyOutside.toFixed(3)}`);
+		minKept = Math.min(minKept, c.keyKept ?? 1);
+		maxOut = Math.max(maxOut, c.keyOutside ?? 0);
+		// top row + sides; the bottom row only where the base has no foot within ±2 px (feet/boots sit on row h−1 of the 48→64 rig)
+		const foot = (x: number) =>
+			[-2, -1, 0, 1, 2].some(
+				(d) => x + d >= 0 && x + d < w && c.base.data[((h - 1) * w + x + d) * 4 + 3]
+			);
+		let border = 0;
+		for (let p = 0; p < c.mask.length; p++)
+			if (
+				c.mask[p] &&
+				(p < w || p % w === 0 || p % w === w - 1 || (p >= (h - 1) * w && !foot(p % w)))
+			)
+				border++;
+		// Contact with a finite frame cannot establish that unseen pixels were cropped, for any move name.
+		if (border)
+			warnings.push(`G7 ${c.key}: ${border} pixels touch the cell border; review framing`);
+		clipPx += border;
+		if (slot.bgZ != null) {
+			const base = visibleBase(c);
+			const { fg, bg } = splitFgBg(
+					c.layer,
+					c.base,
+					slot.id === 'hair' ? neckY(rig, c.key, pad) : undefined
+				),
+				a = makeImg(w, h),
+				b = recompose({ base, layer: c.layer });
+			over(a, bg);
+			over(a, base);
+			over(a, fg);
+			if (a.data.some((v, i) => v !== b.data[i])) splitExact = false;
+		}
+	}
+	if (!splitExact) warnings.push('fg/bg split does not recompose exactly');
 
-  // per clip: presence, stability, placement, handedness
-  const clips: ClipQa[] = [];
-  let heldLoopReviewClips = 0, heldHangReviewClips = 0, motionReviewClips = 0;
-  const byClip = new Map<string, CellOut[]>(), grip = { R: 0, L: 0, amb: 0, none: 0 };
-  for (const c of cells) { const k = c.key.split('/').slice(0, 2).join('/'); (byClip.get(k) ?? (byClip.set(k, []), byClip.get(k)!)).push(c); }
-  // wrists: the clip's requested keypoints (what the item was posed with, S5 gripSide), else the tracked hand anchors.
-  // Keypoints are pixel-edge coordinates; anchors are pixel indices, so they move to their pixel centers (+0.5). Mixing the
-  // two put a half-pixel bias against the 2 px side margin (2026-11-07 cycle, motion.md).
-  const handTrack = (id: 'hand_r' | 'hand_l', a: string, d: string) => {
-    const k = clipKeypoints(rig, a, d as DirectionName), lab = id === 'hand_r' ? ['RIGHT ARM'] : ['LEFT ARM'];
-    const track = k ? k.map((f) => kpAt(f, lab, rig.cell, 0)) : rig.anchors?.[id]?.[a]?.[d as DirectionName]?.map((p) => p && [p[0] + 0.5, p[1] + 0.5] as [number, number]);
-    return track?.map((p) => p && Number.isFinite(p[0]) && Number.isFinite(p[1]) ? [p[0] + pad, p[1] + pad] as [number, number] : undefined);
-  };
-  for (const [clip, cs] of byClip) {
-    const [a, d] = clip.split('/'), areas = cs.map((c) => c.area), med = median(areas);
-    const action = isAction(clip, rig), motionOverride = action && !isAction(clip);
-    let motionReviewed = false;
-    // Motion can override a gait label, but a bad joint can supply that evidence too. Review observable item changes
-    // instead of guessing which animation was intended or declaring valid action art broken. Never authorize a retry.
-    const reviewMotion = () => {
-      if (motionReviewed) return;
-      motionReviewed = true;
-      motionReviewClips++;
-      warnings.push(`G16 ${clip}: item size or angle changes while motion overrides a gait label; check that the change is intended`);
-    };
-    const rawR = handTrack('hand_r', a, d), rawL = handTrack('hand_l', a, d);
-    if (slot.class === 'held') {
-      const observed = cs.filter(c => c.rawKeyOutside);
-      for (const c of observed) {
-        const raw = c.rawKeyOutside!, point = (slot.anchor === 'hand_l' ? rawL : slot.anchor === 'hand_r' ? rawR : undefined)?.[+c.key.split('/')[2]];
-        cellsQa[c.key as CellKey].rawKeyOutside = { pixels: raw.pixels, bounds: { ...raw.bounds }, space: 'raw-output-cell',
-          ...(point ? { nearestWristPx: nearest(raw.mask, c.base.w, point) } : {}) };
-      }
-    }
-    const usable = (track: ReturnType<typeof handTrack>) => cs.every((c) => !!track?.[+c.key.split('/')[2]]) ? track as [number, number][] : undefined;
-    const hr = usable(rawR), hl = usable(rawL);
-    const cvOf = (v: number[]) => { const m = v.reduce((s, x) => s + x, 0) / v.length; return m ? Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / v.length) / m : 0; };
-    // G5 allows the item area to vary with the body region it covers (legs crossing in a side walk: boots/pants). T3: the
-    // far trouser leg hides behind the near one, so the visible item varies ~2x the body band (walk E: CV 0.20-0.22 vs band
-    // 0.11 on 3 seeds, frames visually consistent); a lost item is G4's job
-    const cv = cvOf(areas), baseCv = cvOf(cs.map((c) => c.baseBand)), cvMax = Math.max(GATES.areaCV, 2 * baseCv);
-    const wrist = slot.class === 'held' && cs.every((c) => c.posed) ? slot.anchor === 'hand_l' ? hl : hr : undefined;
-    const minRatio = med ? Math.min(...areas) / med : 0;
-    // G4 for a held item the body partly hides (a buckler sliding behind the torso). An empty frame is never excused.
-    // The item's px within half its largest reach of the wrist (rotation-invariant count) stay within 25 % in every frame.
-    const steadyGrip = () => {
-      if (!wrist) return false;
-      const at = (c: CellOut) => wrist[+c.key.split('/')[2]], dist = (c: CellOut, p: number) => Math.hypot((p % w) + 0.5 - at(c)[0], ((p / w) | 0) + 0.5 - at(c)[1]);
-      let reach = 0;
-      for (const c of cs) for (let p = 0; p < c.mask.length; p++) if (c.mask[p]) reach = Math.max(reach, dist(c, p));
-      const core = cs.map((c) => { let n = 0; for (let p = 0; p < c.mask.length; p++) if (c.mask[p] && dist(c, p) <= reach / 2) n++; return n; });
-      const top = Math.max(...core);
-      // and every frame keeps 70 % of the largest reach: a blade that loses its tip is not waving (2026-11-07 review)
-      const ext = cs.map((c) => { let r = 0; for (let p = 0; p < c.mask.length; p++) if (c.mask[p]) r = Math.max(r, dist(c, p)); return r; });
-      return top >= 6 && core.every((n) => n >= 0.75 * top) && ext.every((r) => r >= 0.7 * reach);
-    };
-    const hiddenExplainsLoss = () => {
-      if (!wrist) return false;
-      // The same clip-wide test as G5's occlusion excuse: every frame compatible with the largest, hidden px restoring a
-      // steady area, and each frame reaching the floor with its own hidden px (2026-11-07 review: checking only the smallest
-      // frame excused a frame half missing in the open).
-      const ref = cs.reduce((big, c) => c.area > big.area ? c : big), ri = +ref.key.split('/')[2];
-      if (cs.some((c) => !c.area)) return false;
-      const vis = cs.map((c) => heldVisibility(ref, c, wrist[ri], wrist[+c.key.split('/')[2]])), fixed = cs.map((c, i) => c.area + vis[i].hiddenB);
-      return vis.every((v) => v.compatible) && vis.some((v) => v.hiddenB) && cvOf(fixed) <= cvMax && fixed.every((a) => a >= GATES.areaRatio * med);
-    };
-    // R1: the S5 repair pastes the dressed keyframe on near-rest frames. Free and allowed, but the pasted item stands still
-    // there (round 10: a static weapon over idle), so review says so; the pixels are unchanged.
-    const pasted = cs.filter((c) => c.repaired).length;
-    if (pasted) warnings.push(`R1 ${clip}: dressed item pasted on ${pasted} near-rest ${pasted === 1 ? 'frame' : 'frames'}; check that it moves`);
-    // a hidden view (hiddenViews) must stay empty: px in some of its frames are an item popping in, not a hidden one
-    if (hidden.has(d) && areas.some(Boolean)) flag(cs[0].call, `G4 ${clip}: the item appears in a view its dressed view hides`); // a hidden view stays empty in every frame
-    else if (!med) (hidden.has(d) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(hidden.has(d) ? `G4 ${clip}: no item in this view, as in its dressed view; check that the view hides it` : `G4 ${clip}: item missing`);
-    // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
-    else if (minRatio < GATES.areaRatio && slot.class === 'held' && hiddenExplainsLoss()) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
-    else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d.startsWith('north') && action ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
-    // a standard deviation under 2 px is drawing noise, not a lost part (round 5: earrings 5–10 px per frame read as CV 0.19)
-    if (cv > cvMax && cv * (areas.reduce((s, x) => s + x, 0) / areas.length) >= 2 && (!action || motionOverride)) {
-      const ref = cs.reduce((big, c) => c.area > big.area ? c : big), ri = +ref.key.split('/')[2];
-      const visibility = wrist && cs.map((c) => heldVisibility(ref, c, wrist[ri], wrist[+c.key.split('/')[2]]));
-      // The largest observed silhouette is only a reference, not an invented full shield. If hidden pixels explain
-      // the area variation, stop paid G5 retries but retain an explicit review warning and the original QA metrics.
-      if (visibility?.every((v) => v.compatible) && visibility.some((v) => v.hiddenB) && cvOf(cs.map((c, i) => c.area + visibility[i].hiddenB)) <= cvMax)
-        { if (!action && !warnings.some((m) => m.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`); }
-      // A held flag waves and a flame flickers while the part in the hand stays the same: review, not a failure (2026-11-07
-      // audit: a waving banner failed 6 of 6 clips, a flickering torch 4 of 6). A shield that shrinks changes at the grip too.
-      else if (motionOverride) reviewMotion();
-      else (slot.class === 'held' && steadyGrip() ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G5 ${clip}: area CV ${cv.toFixed(2)} > ${cvMax.toFixed(2)}`);
-    }
-    // placement: centroid spread relative to the slot anchor (info)
-    const anc = slot.anchor ? rig.anchors?.[slot.anchor as 'head']?.[a]?.[d as DirectionName] : undefined;
-    const rel = cs.map((c) => { const ct = centroid(c.mask, w), i = +c.key.split('/')[2]; return ct && anc?.[i] ? [ct[0] - anc[i][0] - pad, ct[1] - anc[i][1] - pad] : null; }).filter(Boolean) as number[][];
-    const spread = rel.length ? Math.max(...[0, 1].map((k) => Math.max(...rel.map((r) => r[k])) - Math.min(...rel.map((r) => r[k])))) : 0;
-    let hand: ClipQa['hand'];
-    if (slot.class === 'held' && (!hr || !hl)) {
-      const missing = cs.filter((c) => { const i = +c.key.split('/')[2]; return !rawR?.[i] || !rawL?.[i]; }).length;
-      warnings.push(`G8 ${clip}: hand positions are missing for ${missing} of ${cs.length} frames; set up the character’s pose rig and check this view`);
-    } else if (slot.class === 'held' && hr && hl) {
-      let r = 0, l = 0, none = 0;
-      for (const c of cs) {
-        const i = +c.key.split('/')[2], dr = nearest(c.mask, w, hr[i]), dl = nearest(c.mask, w, hl[i]);
-        // A nearer wrist is not a grip if the object is detached from both hands. Keep the existing 6 px contact limit.
-        if (Math.min(dr, dl) > 6) { grip.none++; none++; continue; }
-        if (dr + 2 < dl) r++;
-        else if (dl + 2 < dr) l++;
-        grip[dr + 2 < dl ? 'R' : dl + 2 < dr ? 'L' : 'amb']++; // S3 gripSide
-      }
-      // B14: one decided frame of six (sword hurt E: 0 R / 1 L) is not a hand switch; a clip decides with half its frames
-      hand = (r + l) * 2 < cs.length ? '?' : r > l ? 'r' : l > r ? 'l' : '?';
-      const want = slot.anchor === 'hand_l' ? 'l' : 'r';
-      if (hand !== '?' && hand !== want) flag(cs[0].call, `G8 ${clip}: held in the ${hand === 'r' ? 'right' : 'left'} hand (${r} R / ${l} L frames)`);
-      if (none) warnings.push(`G8 ${clip}: item is more than 6 px from both hands in ${none} of ${cs.length} frames; check its grip`);
-      if (hand === '?' && none !== cs.length) warnings.push(`G8 ${clip}: grip side is unclear (${r} right / ${l} left frames); check that the item stays in the intended hand`);
-    }
-    // G9 (held): a rigid object keeps its shape frame to frame (S2/M3: a sword flipped from vertical to horizontal mid-walk)
-    const animation = rig.animations.find((move) => move.id === a);
-    const byCell = new Map(cs.map((c) => [+c.key.split('/')[2], c]));
-    const frames = animation?.frames?.length ? animation.frames.map((frame) => frame.cell) : Array.from({ length: animation?.cells ?? 0 }, (_, i) => i);
-    let minIoU = 1;
-    const observe = (c: CellOut, next: CellOut) => {
-      const iou = alignedIoU(c.mask, next.mask, w);
-      minIoU = Math.min(minIoU, iou);
-      return iou;
-    };
-    // B9: a held blade legitimately turns with the swinging arm (walk E: blade 29° -> 74° while the forearm goes 68° -> 92°),
-    // which drops the IoU to 0.2 on every seed. With posed keypoints, G9 checks the blade angle RELATIVE to the forearm
-    // instead (a flip changes it, a swing does not). Near-round shields have no reliable axis: compare those
-    // pairs by IoU, as on the anchor route, so a large silhouette change cannot slip through either.
-    const fore = clipKeypoints(rig, a, d as DirectionName)?.map((f) => { const lab = slot.anchor === 'hand_l' ? 'LEFT' : 'RIGHT', e = kpAt(f, [`${lab} ELBOW`], rig.cell, 0)!, wr = kpAt(f, [`${lab} ARM`], rig.cell, 0)!; return Math.atan2(wr[1] - e[1], wr[0] - e[0]); });
-    const checkShape = slot.class === 'held' && (!action || motionOverride);
-    // Hanging, physically: the item lies below the hand (centroid at least half its reach lower than the wrist) along a
-    // near-vertical axis (within 25 degrees). A strapped shield or a bow held at its middle does not hang, so a shield
-    // that fails to turn with the arm still fails G9 (2026-11-07: the saved east-walk shield control).
-    const hangsDown = (c: CellOut, j: number, ax: number) => {
-      const wr = wrist?.[j], ct = centroid(c.mask, w);
-      if (!wr || !ct || Math.abs(Math.sin(ax)) < Math.cos(Math.PI * 25 / 180)) return false;
-      let reach = 0;
-      for (let p = 0; p < c.mask.length; p++) if (c.mask[p]) reach = Math.max(reach, Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]));
-      return ct[1] + 0.5 - wr[1] >= 0.5 * reach;
-    };
-    // The principal axis has no direction, so a blade reversed about the hand (tip where the pommel was) keeps its axis and
-    // passed G9 (2026-11-07 cycle: 28 of 30 reversed clips silent). Point the axis from the gripping wrist toward the item's
-    // centroid when that is decisive: the centroid is at least a quarter of the reach away from the wrist (not a bow gripped
-    // at its middle), lies along the axis within 45 degrees (a shield strapped to the forearm sits beside its axis, so its sign
-    // is arbitrary), and the item reaches at least HELD_SIGNED_REACH px (small blades near the fist stay unsigned).
-    const signedRel = (c: CellOut, j: number) => {
-      const wr = wrist?.[j], f = fore?.[j], ct = centroid(c.mask, w), ax = axisOf(c.mask, w);
-      if (!wr || f == null || !ct || ax == null) return null;
-      const cx = ct[0] + 0.5 - wr[0], cy = ct[1] + 0.5 - wr[1];
-      let reach = 0;
-      for (let p = 0; p < c.mask.length; p++) if (c.mask[p]) reach = Math.max(reach, Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]));
-      const off = Math.hypot(cx, cy), along = Math.cos(ax) * cx + Math.sin(ax) * cy;
-      if (reach < HELD_SIGNED_REACH || off < 0.25 * reach || Math.abs(along) < Math.SQRT1_2 * off) return null;
-      return ((along < 0 ? ax + Math.PI : ax) - f) * 180 / Math.PI;
-    };
-    let turn = 0, shapeIoU = 1, occluded = false, hangs = false;
-    const checkTransition = (j: number, k: number, seam = false) => {
-      const c = byCell.get(j), n = byCell.get(k);
-      // Missing candidates cannot establish a transition, and a repeated cell holds the same image.
-      if (!c || !n || c === n) return;
-      const overlap = observe(c, n);
-      if (!checkShape) return;
-      // Preserve the posed route's minimum sample size: tiny masks have too few pixels
-      // for a reliable axis, but can still rotate correctly with the hand.
-      if (fore && (sum(c.mask) < 6 || sum(n.mask) < 6)) return;
-      const x = axisOf(c.mask, w), y = axisOf(n.mask, w);
-      const sx = signedRel(c, j), sy = signedRel(n, k);
-      const angle = fore && x != null && y != null ? sx != null && sy != null ? Math.abs((((sx - sy) % 360) + 540) % 360 - 180) : angleDiff(x - fore[j], y - fore[k]) : null;
-      const iou = angle == null ? overlap : 1;
-      // An item hanging below the hand that keeps its own angle while the forearm swings (a lantern, a censer, a flail's chain)
-      // is a review note, not a failure. A real flip or reversal changes this world angle too (2026-11-07 audit).
-      if (angle != null && angle > GATES.heldTurn && fore) {
-        const deg = 180 / Math.PI, world = sx != null && sy != null ? Math.abs((((sx + fore[j] * deg - sy - fore[k] * deg) % 360) + 540) % 360 - 180) : angleDiff(x!, y!);
-        // It lags the arm: at most half the forearm's own turn in the frame, so counter-rotation still fails (2026-11-07 review).
-        const foreTurn = Math.abs((((fore[j] - fore[k]) * deg % 360) + 540) % 360 - 180);
-        if (world <= Math.min(GATES.heldTurn, foreTurn / 2) && hangsDown(c, j, x!) && hangsDown(n, k, y!)) { if (!seam) hangs = true; return; }
-      }
-      if ((angle != null && angle > GATES.heldTurn) || iou < GATES.heldIoU) {
-        const visibility = wrist && heldVisibility(c, n, wrist[j], wrist[k]);
-        if (visibility?.compatible && visibility.hiddenA + visibility.hiddenB > 0) { occluded = true; return; }
-        if (seam && turn <= GATES.heldTurn && shapeIoU >= GATES.heldIoU) {
-          if (motionOverride) reviewMotion();
-          else {
-            heldLoopReviewClips++;
-            warnings.push(`G9 ${clip}: the held item changes shape or angle when the move loops`);
-          }
-        }
-      }
-      if (seam) return;
-      if (angle != null) turn = Math.max(turn, angle);
-      else shapeIoU = Math.min(shapeIoU, iou);
-    };
-    for (let i = 1; i < frames.length; i++) checkTransition(frames[i - 1], frames[i]);
-    // The playback seam is useful to inspect but never a hard failure of the interior animation.
-    if (animation?.loop && frames.length > 1) checkTransition(frames.at(-1)!, frames[0], true);
-    if (occluded && !action && !warnings.some((s) => s.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
-    if (turn > GATES.heldTurn) {
-      if (motionOverride) reviewMotion();
-      else flag(cs[0].call, `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames`);
-    } else if (hangs && !action && ++heldHangReviewClips) warnings.push(`G9 ${clip}: the held item keeps its own angle while the hand swings; check that it should hang or sway`);
-    if (shapeIoU < GATES.heldIoU) {
-      if (motionOverride) reviewMotion();
-      else flag(cs[0].call, `G9 ${clip}: shape jump (aligned IoU ${shapeIoU.toFixed(2)})`);
-    }
-    clips.push({ clip, call: cs[0].call, median: med, cv: +cv.toFixed(3), baseCv: +baseCv.toFixed(3), minIoU: +minIoU.toFixed(2), minRatio: +minRatio.toFixed(2), hand, spread: +spread.toFixed(1) });
-  }
-  // G8: every clip holds the item in the same hand (majority over clips; the slot anchor names the expected one)
-  let handedness: ItemQa['handedness'];
-  const decided = clips.filter((c) => c.hand === 'r' || c.hand === 'l');
-  if (decided.length) {
-    const r = decided.filter((c) => c.hand === 'r').length, major = r * 2 >= decided.length ? 'r' : 'l';
-    handedness = 'ok';
-    for (const c of decided.filter((c) => c.hand !== major)) { handedness = 'switched'; flag(c.call, `G8 ${c.clip}: held in the ${c.hand === 'r' ? 'right' : 'left'} hand, other clips ${major === 'r' ? 'right' : 'left'}`); }
-    if (slot.anchor && slot.anchor.endsWith(major === 'r' ? 'l' : 'r')) warnings.push(`G8 ${slot.id}: held in the ${major === 'r' ? 'right' : 'left'} hand; slot ${slot.id} expects ${slot.anchor}`); // G8 tag: review shows it in plain words
-  }
+	// per clip: presence, stability, placement, handedness
+	const clips: ClipQa[] = [];
+	let heldLoopReviewClips = 0,
+		heldHangReviewClips = 0,
+		motionReviewClips = 0;
+	const byClip = new Map<string, CellOut[]>(),
+		grip = { R: 0, L: 0, amb: 0, none: 0 };
+	for (const c of cells) {
+		const k = c.key.split('/').slice(0, 2).join('/');
+		(byClip.get(k) ?? (byClip.set(k, []), byClip.get(k)!)).push(c);
+	}
+	// wrists: the clip's requested keypoints (what the item was posed with, S5 gripSide), else the tracked hand anchors.
+	// Keypoints are pixel-edge coordinates; anchors are pixel indices, so they move to their pixel centers (+0.5). Mixing the
+	// two put a half-pixel bias against the 2 px side margin (2026-11-07 cycle, motion.md).
+	const handTrack = (id: 'hand_r' | 'hand_l', a: string, d: string) => {
+		const k = clipKeypoints(rig, a, d as DirectionName),
+			lab = id === 'hand_r' ? ['RIGHT ARM'] : ['LEFT ARM'];
+		const track = k
+			? k.map((f) => kpAt(f, lab, rig.cell, 0))
+			: rig.anchors?.[id]?.[a]?.[d as DirectionName]?.map(
+					(p) => p && ([p[0] + 0.5, p[1] + 0.5] as [number, number])
+				);
+		return track?.map((p) =>
+			p && Number.isFinite(p[0]) && Number.isFinite(p[1])
+				? ([p[0] + pad, p[1] + pad] as [number, number])
+				: undefined
+		);
+	};
+	for (const [clip, cs] of byClip) {
+		const [a, d] = clip.split('/'),
+			areas = cs.map((c) => c.area),
+			med = median(areas);
+		const action = isAction(clip, rig),
+			motionOverride = action && !isAction(clip);
+		let motionReviewed = false;
+		// Motion can override a gait label, but a bad joint can supply that evidence too. Review observable item changes
+		// instead of guessing which animation was intended or declaring valid action art broken. Never authorize a retry.
+		const reviewMotion = () => {
+			if (motionReviewed) return;
+			motionReviewed = true;
+			motionReviewClips++;
+			warnings.push(
+				`G16 ${clip}: item size or angle changes while motion overrides a gait label; check that the change is intended`
+			);
+		};
+		const rawR = handTrack('hand_r', a, d),
+			rawL = handTrack('hand_l', a, d);
+		if (slot.class === 'held') {
+			const observed = cs.filter((c) => c.rawKeyOutside);
+			for (const c of observed) {
+				const raw = c.rawKeyOutside!,
+					point = (slot.anchor === 'hand_l' ? rawL : slot.anchor === 'hand_r' ? rawR : undefined)?.[
+						+c.key.split('/')[2]
+					];
+				cellsQa[c.key as CellKey].rawKeyOutside = {
+					pixels: raw.pixels,
+					bounds: { ...raw.bounds },
+					space: 'raw-output-cell',
+					...(point ? { nearestWristPx: nearest(raw.mask, c.base.w, point) } : {})
+				};
+			}
+		}
+		const usable = (track: ReturnType<typeof handTrack>) =>
+			cs.every((c) => !!track?.[+c.key.split('/')[2]]) ? (track as [number, number][]) : undefined;
+		const hr = usable(rawR),
+			hl = usable(rawL);
+		const cvOf = (v: number[]) => {
+			const m = v.reduce((s, x) => s + x, 0) / v.length;
+			return m ? Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / v.length) / m : 0;
+		};
+		// G5 allows the item area to vary with the body region it covers (legs crossing in a side walk: boots/pants). T3: the
+		// far trouser leg hides behind the near one, so the visible item varies ~2x the body band (walk E: CV 0.20-0.22 vs band
+		// 0.11 on 3 seeds, frames visually consistent); a lost item is G4's job
+		const cv = cvOf(areas),
+			baseCv = cvOf(cs.map((c) => c.baseBand)),
+			cvMax = Math.max(GATES.areaCV, 2 * baseCv);
+		const wrist =
+			slot.class === 'held' && cs.every((c) => c.posed)
+				? slot.anchor === 'hand_l'
+					? hl
+					: hr
+				: undefined;
+		const minRatio = med ? Math.min(...areas) / med : 0;
+		// G4 for a held item the body partly hides (a buckler sliding behind the torso). An empty frame is never excused.
+		// The item's px within half its largest reach of the wrist (rotation-invariant count) stay within 25 % in every frame.
+		const steadyGrip = () => {
+			if (!wrist) return false;
+			const at = (c: CellOut) => wrist[+c.key.split('/')[2]],
+				dist = (c: CellOut, p: number) =>
+					Math.hypot((p % w) + 0.5 - at(c)[0], ((p / w) | 0) + 0.5 - at(c)[1]);
+			let reach = 0;
+			for (const c of cs)
+				for (let p = 0; p < c.mask.length; p++) if (c.mask[p]) reach = Math.max(reach, dist(c, p));
+			const core = cs.map((c) => {
+				let n = 0;
+				for (let p = 0; p < c.mask.length; p++) if (c.mask[p] && dist(c, p) <= reach / 2) n++;
+				return n;
+			});
+			const top = Math.max(...core);
+			// and every frame keeps 70 % of the largest reach: a blade that loses its tip is not waving (2026-11-07 review)
+			const ext = cs.map((c) => {
+				let r = 0;
+				for (let p = 0; p < c.mask.length; p++) if (c.mask[p]) r = Math.max(r, dist(c, p));
+				return r;
+			});
+			return top >= 6 && core.every((n) => n >= 0.75 * top) && ext.every((r) => r >= 0.7 * reach);
+		};
+		const hiddenExplainsLoss = () => {
+			if (!wrist) return false;
+			// The same clip-wide test as G5's occlusion excuse: every frame compatible with the largest, hidden px restoring a
+			// steady area, and each frame reaching the floor with its own hidden px (2026-11-07 review: checking only the smallest
+			// frame excused a frame half missing in the open).
+			const ref = cs.reduce((big, c) => (c.area > big.area ? c : big)),
+				ri = +ref.key.split('/')[2];
+			if (cs.some((c) => !c.area)) return false;
+			const vis = cs.map((c) => heldVisibility(ref, c, wrist[ri], wrist[+c.key.split('/')[2]])),
+				fixed = cs.map((c, i) => c.area + vis[i].hiddenB);
+			return (
+				vis.every((v) => v.compatible) &&
+				vis.some((v) => v.hiddenB) &&
+				cvOf(fixed) <= cvMax &&
+				fixed.every((a) => a >= GATES.areaRatio * med)
+			);
+		};
+		// R1: the S5 repair pastes the dressed keyframe on near-rest frames. Free and allowed, but the pasted item stands still
+		// there (round 10: a static weapon over idle), so review says so; the pixels are unchanged.
+		const pasted = cs.filter((c) => c.repaired).length;
+		if (pasted)
+			warnings.push(
+				`R1 ${clip}: dressed item pasted on ${pasted} near-rest ${pasted === 1 ? 'frame' : 'frames'}; check that it moves`
+			);
+		// a hidden view (hiddenViews) must stay empty: px in some of its frames are an item popping in, not a hidden one
+		if (hidden.has(d) && areas.some(Boolean))
+			flag(cs[0].call, `G4 ${clip}: the item appears in a view its dressed view hides`); // a hidden view stays empty in every frame
+		else if (!med)
+			(hidden.has(d) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(
+				hidden.has(d)
+					? `G4 ${clip}: no item in this view, as in its dressed view; check that the view hides it`
+					: `G4 ${clip}: item missing`
+			);
+		// S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
+		else if (minRatio < GATES.areaRatio && slot.class === 'held' && hiddenExplainsLoss())
+			warnings.push(
+				`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`
+			);
+		else if (minRatio < GATES.areaRatio)
+			(slot.class === 'held' && d.startsWith('north') && action
+				? (m: string) => warnings.push(m)
+				: (m: string) => flag(cs[0].call, m))(
+				`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`
+			);
+		// a standard deviation under 2 px is drawing noise, not a lost part (round 5: earrings 5–10 px per frame read as CV 0.19)
+		if (
+			cv > cvMax &&
+			cv * (areas.reduce((s, x) => s + x, 0) / areas.length) >= 2 &&
+			(!action || motionOverride)
+		) {
+			const ref = cs.reduce((big, c) => (c.area > big.area ? c : big)),
+				ri = +ref.key.split('/')[2];
+			const visibility =
+				wrist && cs.map((c) => heldVisibility(ref, c, wrist[ri], wrist[+c.key.split('/')[2]]));
+			// The largest observed silhouette is only a reference, not an invented full shield. If hidden pixels explain
+			// the area variation, stop paid G5 retries but retain an explicit review warning and the original QA metrics.
+			if (
+				visibility?.every((v) => v.compatible) &&
+				visibility.some((v) => v.hiddenB) &&
+				cvOf(cs.map((c, i) => c.area + visibility[i].hiddenB)) <= cvMax
+			) {
+				if (!action && !warnings.some((m) => m.startsWith(`Occlusion ${clip}:`)))
+					warnings.push(
+						`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`
+					);
+			}
+			// A held flag waves and a flame flickers while the part in the hand stays the same: review, not a failure (2026-11-07
+			// audit: a waving banner failed 6 of 6 clips, a flickering torch 4 of 6). A shield that shrinks changes at the grip too.
+			else if (motionOverride) reviewMotion();
+			else
+				(slot.class === 'held' && steadyGrip()
+					? (m: string) => warnings.push(m)
+					: (m: string) => flag(cs[0].call, m))(
+					`G5 ${clip}: area CV ${cv.toFixed(2)} > ${cvMax.toFixed(2)}`
+				);
+		}
+		// placement: centroid spread relative to the slot anchor (info)
+		const anc = slot.anchor
+			? rig.anchors?.[slot.anchor as 'head']?.[a]?.[d as DirectionName]
+			: undefined;
+		const rel = cs
+			.map((c) => {
+				const ct = centroid(c.mask, w),
+					i = +c.key.split('/')[2];
+				return ct && anc?.[i] ? [ct[0] - anc[i][0] - pad, ct[1] - anc[i][1] - pad] : null;
+			})
+			.filter(Boolean) as number[][];
+		const spread = rel.length
+			? Math.max(
+					...[0, 1].map(
+						(k) => Math.max(...rel.map((r) => r[k])) - Math.min(...rel.map((r) => r[k]))
+					)
+				)
+			: 0;
+		let hand: ClipQa['hand'];
+		if (slot.class === 'held' && (!hr || !hl)) {
+			const missing = cs.filter((c) => {
+				const i = +c.key.split('/')[2];
+				return !rawR?.[i] || !rawL?.[i];
+			}).length;
+			warnings.push(
+				`G8 ${clip}: hand positions are missing for ${missing} of ${cs.length} frames; set up the character’s pose rig and check this view`
+			);
+		} else if (slot.class === 'held' && hr && hl) {
+			let r = 0,
+				l = 0,
+				none = 0;
+			for (const c of cs) {
+				const i = +c.key.split('/')[2],
+					dr = nearest(c.mask, w, hr[i]),
+					dl = nearest(c.mask, w, hl[i]);
+				// A nearer wrist is not a grip if the object is detached from both hands. Keep the existing 6 px contact limit.
+				if (Math.min(dr, dl) > 6) {
+					grip.none++;
+					none++;
+					continue;
+				}
+				if (dr + 2 < dl) r++;
+				else if (dl + 2 < dr) l++;
+				grip[dr + 2 < dl ? 'R' : dl + 2 < dr ? 'L' : 'amb']++; // S3 gripSide
+			}
+			// B14: one decided frame of six (sword hurt E: 0 R / 1 L) is not a hand switch; a clip decides with half its frames
+			hand = (r + l) * 2 < cs.length ? '?' : r > l ? 'r' : l > r ? 'l' : '?';
+			const want = slot.anchor === 'hand_l' ? 'l' : 'r';
+			if (hand !== '?' && hand !== want)
+				flag(
+					cs[0].call,
+					`G8 ${clip}: held in the ${hand === 'r' ? 'right' : 'left'} hand (${r} R / ${l} L frames)`
+				);
+			if (none)
+				warnings.push(
+					`G8 ${clip}: item is more than 6 px from both hands in ${none} of ${cs.length} frames; check its grip`
+				);
+			if (hand === '?' && none !== cs.length)
+				warnings.push(
+					`G8 ${clip}: grip side is unclear (${r} right / ${l} left frames); check that the item stays in the intended hand`
+				);
+		}
+		// G9 (held): a rigid object keeps its shape frame to frame (S2/M3: a sword flipped from vertical to horizontal mid-walk)
+		const animation = rig.animations.find((move) => move.id === a);
+		const byCell = new Map(cs.map((c) => [+c.key.split('/')[2], c]));
+		const frames = animation?.frames?.length
+			? animation.frames.map((frame) => frame.cell)
+			: Array.from({ length: animation?.cells ?? 0 }, (_, i) => i);
+		let minIoU = 1;
+		const observe = (c: CellOut, next: CellOut) => {
+			const iou = alignedIoU(c.mask, next.mask, w);
+			minIoU = Math.min(minIoU, iou);
+			return iou;
+		};
+		// B9: a held blade legitimately turns with the swinging arm (walk E: blade 29° -> 74° while the forearm goes 68° -> 92°),
+		// which drops the IoU to 0.2 on every seed. With posed keypoints, G9 checks the blade angle RELATIVE to the forearm
+		// instead (a flip changes it, a swing does not). Near-round shields have no reliable axis: compare those
+		// pairs by IoU, as on the anchor route, so a large silhouette change cannot slip through either.
+		const fore = clipKeypoints(rig, a, d as DirectionName)?.map((f) => {
+			const lab = slot.anchor === 'hand_l' ? 'LEFT' : 'RIGHT',
+				e = kpAt(f, [`${lab} ELBOW`], rig.cell, 0)!,
+				wr = kpAt(f, [`${lab} ARM`], rig.cell, 0)!;
+			return Math.atan2(wr[1] - e[1], wr[0] - e[0]);
+		});
+		const checkShape = slot.class === 'held' && (!action || motionOverride);
+		// Hanging, physically: the item lies below the hand (centroid at least half its reach lower than the wrist) along a
+		// near-vertical axis (within 25 degrees). A strapped shield or a bow held at its middle does not hang, so a shield
+		// that fails to turn with the arm still fails G9 (2026-11-07: the saved east-walk shield control).
+		const hangsDown = (c: CellOut, j: number, ax: number) => {
+			const wr = wrist?.[j],
+				ct = centroid(c.mask, w);
+			if (!wr || !ct || Math.abs(Math.sin(ax)) < Math.cos((Math.PI * 25) / 180)) return false;
+			let reach = 0;
+			for (let p = 0; p < c.mask.length; p++)
+				if (c.mask[p])
+					reach = Math.max(reach, Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]));
+			return ct[1] + 0.5 - wr[1] >= 0.5 * reach;
+		};
+		// The principal axis has no direction, so a blade reversed about the hand (tip where the pommel was) keeps its axis and
+		// passed G9 (2026-11-07 cycle: 28 of 30 reversed clips silent). Point the axis from the gripping wrist toward the item's
+		// centroid when that is decisive: the centroid is at least a quarter of the reach away from the wrist (not a bow gripped
+		// at its middle), lies along the axis within 45 degrees (a shield strapped to the forearm sits beside its axis, so its sign
+		// is arbitrary), and the item reaches at least HELD_SIGNED_REACH px (small blades near the fist stay unsigned).
+		const signedRel = (c: CellOut, j: number) => {
+			const wr = wrist?.[j],
+				f = fore?.[j],
+				ct = centroid(c.mask, w),
+				ax = axisOf(c.mask, w);
+			if (!wr || f == null || !ct || ax == null) return null;
+			const cx = ct[0] + 0.5 - wr[0],
+				cy = ct[1] + 0.5 - wr[1];
+			let reach = 0;
+			for (let p = 0; p < c.mask.length; p++)
+				if (c.mask[p])
+					reach = Math.max(reach, Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]));
+			const off = Math.hypot(cx, cy),
+				along = Math.cos(ax) * cx + Math.sin(ax) * cy;
+			if (reach < HELD_SIGNED_REACH || off < 0.25 * reach || Math.abs(along) < Math.SQRT1_2 * off)
+				return null;
+			return (((along < 0 ? ax + Math.PI : ax) - f) * 180) / Math.PI;
+		};
+		let turn = 0,
+			shapeIoU = 1,
+			occluded = false,
+			hangs = false;
+		const checkTransition = (j: number, k: number, seam = false) => {
+			const c = byCell.get(j),
+				n = byCell.get(k);
+			// Missing candidates cannot establish a transition, and a repeated cell holds the same image.
+			if (!c || !n || c === n) return;
+			const overlap = observe(c, n);
+			if (!checkShape) return;
+			// Preserve the posed route's minimum sample size: tiny masks have too few pixels
+			// for a reliable axis, but can still rotate correctly with the hand.
+			if (fore && (sum(c.mask) < 6 || sum(n.mask) < 6)) return;
+			const x = axisOf(c.mask, w),
+				y = axisOf(n.mask, w);
+			const sx = signedRel(c, j),
+				sy = signedRel(n, k);
+			const angle =
+				fore && x != null && y != null
+					? sx != null && sy != null
+						? Math.abs(((((sx - sy) % 360) + 540) % 360) - 180)
+						: angleDiff(x - fore[j], y - fore[k])
+					: null;
+			const iou = angle == null ? overlap : 1;
+			// An item hanging below the hand that keeps its own angle while the forearm swings (a lantern, a censer, a flail's chain)
+			// is a review note, not a failure. A real flip or reversal changes this world angle too (2026-11-07 audit).
+			if (angle != null && angle > GATES.heldTurn && fore) {
+				const deg = 180 / Math.PI,
+					world =
+						sx != null && sy != null
+							? Math.abs(((((sx + fore[j] * deg - sy - fore[k] * deg) % 360) + 540) % 360) - 180)
+							: angleDiff(x!, y!);
+				// It lags the arm: at most half the forearm's own turn in the frame, so counter-rotation still fails (2026-11-07 review).
+				const foreTurn = Math.abs((((((fore[j] - fore[k]) * deg) % 360) + 540) % 360) - 180);
+				if (
+					world <= Math.min(GATES.heldTurn, foreTurn / 2) &&
+					hangsDown(c, j, x!) &&
+					hangsDown(n, k, y!)
+				) {
+					if (!seam) hangs = true;
+					return;
+				}
+			}
+			if ((angle != null && angle > GATES.heldTurn) || iou < GATES.heldIoU) {
+				const visibility = wrist && heldVisibility(c, n, wrist[j], wrist[k]);
+				if (visibility?.compatible && visibility.hiddenA + visibility.hiddenB > 0) {
+					occluded = true;
+					return;
+				}
+				if (seam && turn <= GATES.heldTurn && shapeIoU >= GATES.heldIoU) {
+					if (motionOverride) reviewMotion();
+					else {
+						heldLoopReviewClips++;
+						warnings.push(`G9 ${clip}: the held item changes shape or angle when the move loops`);
+					}
+				}
+			}
+			if (seam) return;
+			if (angle != null) turn = Math.max(turn, angle);
+			else shapeIoU = Math.min(shapeIoU, iou);
+		};
+		for (let i = 1; i < frames.length; i++) checkTransition(frames[i - 1], frames[i]);
+		// The playback seam is useful to inspect but never a hard failure of the interior animation.
+		if (animation?.loop && frames.length > 1) checkTransition(frames.at(-1)!, frames[0], true);
+		if (occluded && !action && !warnings.some((s) => s.startsWith(`Occlusion ${clip}:`)))
+			warnings.push(
+				`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`
+			);
+		if (turn > GATES.heldTurn) {
+			if (motionOverride) reviewMotion();
+			else
+				flag(
+					cs[0].call,
+					`G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames`
+				);
+		} else if (hangs && !action && ++heldHangReviewClips)
+			warnings.push(
+				`G9 ${clip}: the held item keeps its own angle while the hand swings; check that it should hang or sway`
+			);
+		if (shapeIoU < GATES.heldIoU) {
+			if (motionOverride) reviewMotion();
+			else flag(cs[0].call, `G9 ${clip}: shape jump (aligned IoU ${shapeIoU.toFixed(2)})`);
+		}
+		clips.push({
+			clip,
+			call: cs[0].call,
+			median: med,
+			cv: +cv.toFixed(3),
+			baseCv: +baseCv.toFixed(3),
+			minIoU: +minIoU.toFixed(2),
+			minRatio: +minRatio.toFixed(2),
+			hand,
+			spread: +spread.toFixed(1)
+		});
+	}
+	// G8: every clip holds the item in the same hand (majority over clips; the slot anchor names the expected one)
+	let handedness: ItemQa['handedness'];
+	const decided = clips.filter((c) => c.hand === 'r' || c.hand === 'l');
+	if (decided.length) {
+		const r = decided.filter((c) => c.hand === 'r').length,
+			major = r * 2 >= decided.length ? 'r' : 'l';
+		handedness = 'ok';
+		for (const c of decided.filter((c) => c.hand !== major)) {
+			handedness = 'switched';
+			flag(
+				c.call,
+				`G8 ${c.clip}: held in the ${c.hand === 'r' ? 'right' : 'left'} hand, other clips ${major === 'r' ? 'right' : 'left'}`
+			);
+		}
+		if (slot.anchor && slot.anchor.endsWith(major === 'r' ? 'l' : 'r'))
+			warnings.push(
+				`G8 ${slot.id}: held in the ${major === 'r' ? 'right' : 'left'} hand; slot ${slot.id} expects ${slot.anchor}`
+			); // G8 tag: review shows it in plain words
+	}
 
-  // Anchored edits have a known palette for each direction. One off-color frame should not be diluted by a clean batch.
-  const calls = [...new Set(cells.map((c) => c.call))].sort((a, b) => a - b);
-  const softCalls = new Map<number, string[]>();
-  const paletteDist = Array.from({ length: Math.max(...calls) + 1 }, (_, k) => {
-    const batch = cells.filter(c => c.call === k);
-    if (!standingPalettes) {
-      const distance = +paletteDistance(ref, batch.map(c => c.layer)).toFixed(1);
-      if (distance > GATES.paletteDist) {
-        warnings.push(`G6 call ${k + 1}: palette distance ${distance} to the design call`);
-        softCalls.set(k, [`G6 palette distance ${distance}`]);
-      }
-      return distance;
-    }
-    return Math.max(0, ...batch.map(c => {
-      const design = standingPalettes.get(c.key.split('/')[1] as DirectionName);
-      const distance = +(design?.length ? paletteDistance(design, [c.layer]) : 0).toFixed(1);
-      if (distance > GATES.paletteDist) warnings.push(`G6 ${c.key}: palette distance ${distance} to its standing design`);
-      return distance;
-    }));
-  });
+	// Anchored edits have a known palette for each direction. One off-color frame should not be diluted by a clean batch.
+	const calls = [...new Set(cells.map((c) => c.call))].sort((a, b) => a - b);
+	const softCalls = new Map<number, string[]>();
+	const paletteDist = Array.from({ length: Math.max(...calls) + 1 }, (_, k) => {
+		const batch = cells.filter((c) => c.call === k);
+		if (!standingPalettes) {
+			const distance = +paletteDistance(
+				ref,
+				batch.map((c) => c.layer)
+			).toFixed(1);
+			if (distance > GATES.paletteDist) {
+				warnings.push(`G6 call ${k + 1}: palette distance ${distance} to the design call`);
+				softCalls.set(k, [`G6 palette distance ${distance}`]);
+			}
+			return distance;
+		}
+		return Math.max(
+			0,
+			...batch.map((c) => {
+				const design = standingPalettes.get(c.key.split('/')[1] as DirectionName);
+				const distance = +(design?.length ? paletteDistance(design, [c.layer]) : 0).toFixed(1);
+				if (distance > GATES.paletteDist)
+					warnings.push(`G6 ${c.key}: palette distance ${distance} to its standing design`);
+				return distance;
+			})
+		);
+	});
 
-  const minAreaRatio = Math.min(1, ...clips.map((c) => c.minRatio)), maxAreaCV = Math.max(0, ...clips.map((c) => c.cv));
-  const status: ItemQa['status'] = fail.size ? 'fail' : warnings.length || route === 'none' ? 'warn' : 'pass';
-  return {
-    qa: {
-      minKeyKept: +minKept.toFixed(3), maxKeyOutside: +maxOut.toFixed(4), minAreaRatio, maxAreaCV, maxPaletteDist: Math.max(0, ...paletteDist), clipPx, handedness,
-      shiftedFrames: cells.filter((c) => c.shifted).length, strayPx: cells.reduce((s, c) => s + c.stray, 0), ...(slot.class === 'held' ? { grip } : {}), rerolls, status, cells: cellsQa,
-      ...(slot.class === 'held' && cells.some(c => c.rawKeyOutside) ? { rawKeyReviewFrames: cells.filter(c => c.rawKeyOutside).length } : {}),
-      ...(heldLoopReviewClips ? { heldLoopReviewClips } : {}),
-      ...(heldHangReviewClips ? { heldHangReviewClips } : {}),
-      ...(motionReviewClips ? { motionReviewClips } : {}),
-    },
-    clips, failCalls: fail, softCalls, warnings, paletteDist, splitExact,
-  };
+	const minAreaRatio = Math.min(1, ...clips.map((c) => c.minRatio)),
+		maxAreaCV = Math.max(0, ...clips.map((c) => c.cv));
+	const status: ItemQa['status'] = fail.size
+		? 'fail'
+		: warnings.length || route === 'none'
+			? 'warn'
+			: 'pass';
+	return {
+		qa: {
+			minKeyKept: +minKept.toFixed(3),
+			maxKeyOutside: +maxOut.toFixed(4),
+			minAreaRatio,
+			maxAreaCV,
+			maxPaletteDist: Math.max(0, ...paletteDist),
+			clipPx,
+			handedness,
+			shiftedFrames: cells.filter((c) => c.shifted).length,
+			strayPx: cells.reduce((s, c) => s + c.stray, 0),
+			...(slot.class === 'held' ? { grip } : {}),
+			rerolls,
+			status,
+			cells: cellsQa,
+			...(slot.class === 'held' && cells.some((c) => c.rawKeyOutside)
+				? { rawKeyReviewFrames: cells.filter((c) => c.rawKeyOutside).length }
+				: {}),
+			...(heldLoopReviewClips ? { heldLoopReviewClips } : {}),
+			...(heldHangReviewClips ? { heldHangReviewClips } : {}),
+			...(motionReviewClips ? { motionReviewClips } : {})
+		},
+		clips,
+		failCalls: fail,
+		softCalls,
+		warnings,
+		paletteDist,
+		splitExact
+	};
 }
 
 // ---------- B14 dress design check (0 gens): gray smudges in a colorful keyframe ----------
 /** Share of near-gray px (HSV saturation < 0.25) in a colorful layer (median saturation ≥ 0.4), else 0. T3 Ranger keyframes:
  *  the red cape's smudged north hem 0.113; every clean view of hair, chest, trousers and cape ≤ 0.022 (gray items: median < 0.4). */
 export function grayShare(L: Img, darkPatches = true): number {
-  const sat: number[] = [];
-  // Near-black px (max channel < 48) are line art, not smudges: a black outline is gray by saturation, so every outlined
-  // colorful design failed D1 on every retry (2026-11-07 audit: a passing jester hat scored 0.23-0.31 against 0.05).
-  // A near-black px inside a solid near-black 3x3 patch is a blotch, not a line, and still counts (2026-11-07 review: a dark
-  // blotch scored 0 when all near-black px were skipped).
-  const dark = (x: number, y: number) => { if (x < 0 || y < 0 || x >= L.w || y >= L.h) return false; const q = (y * L.w + x) * 4; return !!L.data[q + 3] && Math.max(L.data[q], L.data[q + 1], L.data[q + 2]) < 48; };
-  for (let i = 0; i < L.data.length; i += 4) if (L.data[i + 3]) {
-    const mx = Math.max(L.data[i], L.data[i + 1], L.data[i + 2]), mn = Math.min(L.data[i], L.data[i + 1], L.data[i + 2]), p = i / 4, x = p % L.w, y = (p / L.w) | 0;
-    if (mx >= 48) sat.push((mx - mn) / mx);
-    else if (darkPatches && [-1, 0, 1].every((dy) => [-1, 0, 1].every((dx) => dark(x + dx, y + dy)))) sat.push(mx ? (mx - mn) / mx : 0);
-  }
-  return sat.length && median(sat) >= 0.4 ? sat.filter((v) => v < 0.25).length / sat.length : 0;
+	const sat: number[] = [];
+	// Near-black px (max channel < 48) are line art, not smudges: a black outline is gray by saturation, so every outlined
+	// colorful design failed D1 on every retry (2026-11-07 audit: a passing jester hat scored 0.23-0.31 against 0.05).
+	// A near-black px inside a solid near-black 3x3 patch is a blotch, not a line, and still counts (2026-11-07 review: a dark
+	// blotch scored 0 when all near-black px were skipped).
+	const dark = (x: number, y: number) => {
+		if (x < 0 || y < 0 || x >= L.w || y >= L.h) return false;
+		const q = (y * L.w + x) * 4;
+		return !!L.data[q + 3] && Math.max(L.data[q], L.data[q + 1], L.data[q + 2]) < 48;
+	};
+	for (let i = 0; i < L.data.length; i += 4)
+		if (L.data[i + 3]) {
+			const mx = Math.max(L.data[i], L.data[i + 1], L.data[i + 2]),
+				mn = Math.min(L.data[i], L.data[i + 1], L.data[i + 2]),
+				p = i / 4,
+				x = p % L.w,
+				y = (p / L.w) | 0;
+			if (mx >= 48) sat.push((mx - mn) / mx);
+			else if (
+				darkPatches &&
+				[-1, 0, 1].every((dy) => [-1, 0, 1].every((dx) => dark(x + dx, y + dy)))
+			)
+				sat.push(mx ? (mx - mn) / mx : 0);
+		}
+	return sat.length && median(sat) >= 0.4 ? sat.filter((v) => v < 0.25).length / sat.length : 0;
 }
 export const DESIGN = { gray: 0.05 };
 /** Prompts that ask for gray/black/white parts: the gray check does not apply. */
@@ -1389,33 +2660,45 @@ export const GRAYISH = /gr[ae]y|silver|steel|iron|metal|chain|white|black|\bfur(
  * the neutral words the list misses (armor, skull, bone, pearl, other languages; 2026-11-07 audit). An item needs two other
  * drawn views to compare against; with fewer (one drawn view, or a two-view item where one smudged view would excuse the
  * other) the single-view rule stays. A smudge in every drawn view is not caught (known issue). */
-export function smudgedViews(slot: string, prompt: string, layers: Img[]): ('smudge' | 'dark' | false)[] {
-  const drawn = layers.map((l) => l.data.some((v, i) => i % 4 === 3 && v));
-  const flagged = (darkPatches: boolean) => {
-    const share = layers.map((l, i) => (drawn[i] ? grayShare(l, darkPatches) : 0));
-    return layers.map((l, i) => {
-      if (!drawn[i] || !designGraySmudges(slot, prompt, l, darkPatches)) return false;
-      const others = share.filter((_, j) => j !== i && drawn[j]);
-      return others.length < 2 || share[i] - Math.min(...others) > DESIGN.gray;
-    });
-  };
-  // A view flagged only by solid near-black patches may hold an intended dark detail drawn on one side (a charcoal emblem on
-  // the front), so it is reported as uncertain, not as a smudge (2026-11-07 counter-review R3).
-  const all = flagged(true), gray = flagged(false);
-  return all.map((f, i) => (!f ? false : gray[i] ? 'smudge' : 'dark'));
+export function smudgedViews(
+	slot: string,
+	prompt: string,
+	layers: Img[]
+): ('smudge' | 'dark' | false)[] {
+	const drawn = layers.map((l) => l.data.some((v, i) => i % 4 === 3 && v));
+	const flagged = (darkPatches: boolean) => {
+		const share = layers.map((l, i) => (drawn[i] ? grayShare(l, darkPatches) : 0));
+		return layers.map((l, i) => {
+			if (!drawn[i] || !designGraySmudges(slot, prompt, l, darkPatches)) return false;
+			const others = share.filter((_, j) => j !== i && drawn[j]);
+			return others.length < 2 || share[i] - Math.min(...others) > DESIGN.gray;
+		});
+	};
+	// A view flagged only by solid near-black patches may hold an intended dark detail drawn on one side (a charcoal emblem on
+	// the front), so it is reported as uncertain, not as a smudge (2026-11-07 counter-review R3).
+	const all = flagged(true),
+		gray = flagged(false);
+	return all.map((f, i) => (!f ? false : gray[i] ? 'smudge' : 'dark'));
 }
 /** Neutral pupils, eyebrows and eye whites are expected in tiny facial glyphs; their palette ratios cannot establish smudges. */
-export function designGraySmudges(slot: string, prompt: string, layer: Img, darkPatches = true): boolean {
-  if (GRAYISH.test(prompt)) return false;
-  if (slot === 'face_acc' && sum(maskOf(layer)) <= 32 * layer.w * layer.h / (64 * 64)) return false;
-  return grayShare(layer, darkPatches) > DESIGN.gray;
+export function designGraySmudges(
+	slot: string,
+	prompt: string,
+	layer: Img,
+	darkPatches = true
+): boolean {
+	if (GRAYISH.test(prompt)) return false;
+	if (slot === 'face_acc' && sum(maskOf(layer)) <= (32 * layer.w * layer.h) / (64 * 64))
+		return false;
+	return grayShare(layer, darkPatches) > DESIGN.gray;
 }
 
 // ---------- H4 keyframe-consistency gate (port of S5 s5_dircheck.mjs, 0 gens) ----------
 const despeck = (im: Img, min = 4) => {
-  const o = makeImg(im.w, im.h);
-  for (const c of components(maskOf(im), im.w, im.h)) if (c.length >= min) for (const p of c) o.data.set(im.data.subarray(p * 4, p * 4 + 4), p * 4);
-  return o;
+	const o = makeImg(im.w, im.h);
+	for (const c of components(maskOf(im), im.w, im.h))
+		if (c.length >= min) for (const p of c) o.data.set(im.data.subarray(p * 4, p * 4 + 4), p * 4);
+	return o;
 };
 
 const OPP: Partial<Record<DirectionName, DirectionName>> = { south: 'north', north: 'south' };
@@ -1423,23 +2706,35 @@ const OPP: Partial<Record<DirectionName, DirectionName>> = { south: 'north', nor
  * elbow-to-wrist segment, not the whole head/mannequin. At a 64 px cell, a 4 px forearm gets 1 px of pose tolerance.
  */
 function headOcclusion(c: CellOut, rig: Rig): { mask: Uint8Array; shift: [number, number] } | null {
-  const { pose, rest } = posedKps(rig, c.key), h0 = kpAt(rest, HEAD, rig.cell, 0), h1 = kpAt(pose, HEAD, rig.cell, 0);
-  if (!pose || !h0 || !h1) return null;
-  const mask = new Uint8Array(c.mask.length), radius = 3 * rig.cell.w / 64;
-  for (const side of ['LEFT', 'RIGHT']) {
-    const e = kpAt(pose, [`${side} ELBOW`], rig.cell, 0)!, wr = kpAt(pose, [`${side} ARM`], rig.cell, 0)!;
-    const dx = wr[0] - e[0], dy = wr[1] - e[1], length2 = dx * dx + dy * dy;
-    if (!length2) continue;
-    for (let p = 0; p < mask.length; p++) {
-      if (c.mask[p] || !c.base.data[p * 4 + 3] || !c.out.data[p * 4 + 3]) continue;
-      const [r, g, b] = c.out.data.subarray(p * 4, p * 4 + 3);
-      if (c.chroma ? keyScore(c.chroma, r, g, b) < KT : keyScore('green', r, g, b) < KT && keyScore('magenta', r, g, b) < KT) continue;
-      const x = p % c.layer.w + 0.5 - e[0], y = (p / c.layer.w | 0) + 0.5 - e[1];
-      const t = Math.max(0, Math.min(1, (x * dx + y * dy) / length2));
-      if (Math.hypot(x - t * dx, y - t * dy) <= radius) mask[p] = 1;
-    }
-  }
-  return sum(mask) ? { mask, shift: [Math.round(h0[0] - h1[0]), Math.round(h0[1] - h1[1])] } : null;
+	const { pose, rest } = posedKps(rig, c.key),
+		h0 = kpAt(rest, HEAD, rig.cell, 0),
+		h1 = kpAt(pose, HEAD, rig.cell, 0);
+	if (!pose || !h0 || !h1) return null;
+	const mask = new Uint8Array(c.mask.length),
+		radius = (3 * rig.cell.w) / 64;
+	for (const side of ['LEFT', 'RIGHT']) {
+		const e = kpAt(pose, [`${side} ELBOW`], rig.cell, 0)!,
+			wr = kpAt(pose, [`${side} ARM`], rig.cell, 0)!;
+		const dx = wr[0] - e[0],
+			dy = wr[1] - e[1],
+			length2 = dx * dx + dy * dy;
+		if (!length2) continue;
+		for (let p = 0; p < mask.length; p++) {
+			if (c.mask[p] || !c.base.data[p * 4 + 3] || !c.out.data[p * 4 + 3]) continue;
+			const [r, g, b] = c.out.data.subarray(p * 4, p * 4 + 3);
+			if (
+				c.chroma
+					? keyScore(c.chroma, r, g, b) < KT
+					: keyScore('green', r, g, b) < KT && keyScore('magenta', r, g, b) < KT
+			)
+				continue;
+			const x = (p % c.layer.w) + 0.5 - e[0],
+				y = ((p / c.layer.w) | 0) + 0.5 - e[1];
+			const t = Math.max(0, Math.min(1, (x * dx + y * dy) / length2));
+			if (Math.hypot(x - t * dx, y - t * dy) <= radius) mask[p] = 1;
+		}
+	}
+	return sum(mask) ? { mask, shift: [Math.round(h0[0] - h1[0]), Math.round(h0[1] - h1[1])] } : null;
 }
 /** cover: B14, soft items (cloth, hair) are only judged in a view where the item covers at least half of the body (a cape from
  *  behind, not the cape edges from the front); soft: their own-similarity floor there. */
@@ -1458,27 +2753,66 @@ export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5, minPx: 12 
  */
 export const DETAIL = { minPx: 4, tol: 32, bodyTol: 13 };
 /** Patch size that counts as a detail: `DETAIL.minPx` at a 64 px cell, scaled with the cell area. */
-export const detailMinPx = (im: Img) => Math.max(DETAIL.minPx, Math.round(DETAIL.minPx * (im.w * im.h) / (64 * 64)));
+export const detailMinPx = (im: Img) =>
+	Math.max(DETAIL.minPx, Math.round((DETAIL.minPx * (im.w * im.h)) / (64 * 64)));
 /** Colors of the layer's same-color 4-connected patches of at least `minPx` px, with the largest patch size. */
 export function detailColors(im: Img, minPx = detailMinPx(im)): Map<number, number> {
-  const rgb = (p: number) => (im.data[p * 4] << 16) | (im.data[p * 4 + 1] << 8) | im.data[p * 4 + 2];
-  const seen = new Uint8Array(im.w * im.h), out = new Map<number, number>();
-  for (let p = 0; p < seen.length; p++) {
-    if (seen[p] || !im.data[p * 4 + 3]) continue;
-    const c = rgb(p), stack = [p]; let n = 0; seen[p] = 1;
-    while (stack.length) {
-      const q = stack.pop()!, x = q % im.w, y = (q / im.w) | 0; n++;
-      for (const [X, Y] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) { const r = Y * im.w + X; if (X >= 0 && Y >= 0 && X < im.w && Y < im.h && !seen[r] && im.data[r * 4 + 3] && rgb(r) === c) { seen[r] = 1; stack.push(r); } }
-    }
-    if (n >= minPx) out.set(c, Math.max(out.get(c) ?? 0, n));
-  }
-  return out;
+	const rgb = (p: number) =>
+		(im.data[p * 4] << 16) | (im.data[p * 4 + 1] << 8) | im.data[p * 4 + 2];
+	const seen = new Uint8Array(im.w * im.h),
+		out = new Map<number, number>();
+	for (let p = 0; p < seen.length; p++) {
+		if (seen[p] || !im.data[p * 4 + 3]) continue;
+		const c = rgb(p),
+			stack = [p];
+		let n = 0;
+		seen[p] = 1;
+		while (stack.length) {
+			const q = stack.pop()!,
+				x = q % im.w,
+				y = (q / im.w) | 0;
+			n++;
+			for (const [X, Y] of [
+				[x - 1, y],
+				[x + 1, y],
+				[x, y - 1],
+				[x, y + 1]
+			]) {
+				const r = Y * im.w + X;
+				if (
+					X >= 0 &&
+					Y >= 0 &&
+					X < im.w &&
+					Y < im.h &&
+					!seen[r] &&
+					im.data[r * 4 + 3] &&
+					rgb(r) === c
+				) {
+					seen[r] = 1;
+					stack.push(r);
+				}
+			}
+		}
+		if (n >= minPx) out.set(c, Math.max(out.get(c) ?? 0, n));
+	}
+	return out;
 }
 /** Design detail colors (from detailColors) with no color within `tol` in the frame layer, skipping colors within `bodyTol`
  * of the frame's body. */
-export function lostDetails(design: Map<number, number>, layer: Img, body?: Img, tol = DETAIL.tol, bodyTol = DETAIL.bodyTol): { color: number; px: number }[] {
-  const frame = colors(layer), skin = body ? colors(body) : [];
-  return [...design].filter(([c]) => !frame.some((f) => cdist(c, f) <= tol) && !skin.some((b) => cdist(c, b) <= bodyTol)).map(([color, px]) => ({ color, px }));
+export function lostDetails(
+	design: Map<number, number>,
+	layer: Img,
+	body?: Img,
+	tol = DETAIL.tol,
+	bodyTol = DETAIL.bodyTol
+): { color: number; px: number }[] {
+	const frame = colors(layer),
+		skin = body ? colors(body) : [];
+	return [...design]
+		.filter(
+			([c]) => !frame.some((f) => cdist(c, f) <= tol) && !skin.some((b) => cdist(c, b) <= bodyTol)
+		)
+		.map(([color, px]) => ({ color, px }));
 }
 /**
  * H4: a posed layer must look like its own direction's dressed keyframe layer. Band items (helmet, face): own < 0.75 fails in every
@@ -1487,295 +2821,851 @@ export function lostDetails(design: Map<number, number>, layer: Img, body?: Img,
  * frames: hair, chest and the cape's front view scored 0.20–0.74 on 31 frames that look right; the cape wrapping the raised arm
  * from behind scored 0.31–0.46). Off for legs, feet (S and N look alike: trousers own ≈ opposite on 13 good frames) and held items.
  */
-export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig, referenceBodies?: Partial<Record<DirectionName, Img>>, prompt = ''): { fails: Map<number, string[]>; warnings: string[]; maxPaletteDist: number; missingLowerFrames: number; footwearReviewFrames: number; waistReviewFrames: number; facingReviewFrames: number; detailReviewFrames: number } {
-  const fails = new Map<number, string[]>(), warnings: string[] = [];
-  const missingLower = new Set<string>(), footwearReview = new Set<string>(), waistReview = new Set<string>(), facingReview = new Set<string>(), detailReview = new Set<string>();
-  let maxPaletteDist = 0;
-  const result = () => ({ fails, warnings, maxPaletteDist, missingLowerFrames: missingLower.size, footwearReviewFrames: footwearReview.size, waistReviewFrames: waistReview.size, facingReviewFrames: facingReview.size, detailReviewFrames: detailReview.size });
-  // A cape can swing above the knees or behind the body. This check is for body-covering garments.
-  const actions = new Map<string, boolean>(), action = (anim: string, dir: string) => { const k = `${anim}/${dir}`; if (!actions.has(k)) actions.set(k, isAction(k, rig)); return actions.get(k)!; };
-  if (rig && slot.class === 'worn' && slot.bgZ == null) for (const c of cells) {
-    const [anim, dir, frame] = c.key.split('/') as [string, DirectionName, string], design = keys[dir];
-    if (!c.posed || !design || action(anim, dir)) continue;
-    const rest = rig.rest?.[dir]?.keypoints, pose = cellKeypoints(rig, c.key);
-    const measured = rig.animations.find(a => a.id === anim)?.sources?.[dir]?.measured?.[+frame];
-    const observed = hasAll(measured) ? measured : pose;
-    if (missingLowerGarment(design, c.layer, rest && fromApi(rest, rig.cell), observed && fromApi(observed, rig.cell))) {
-      missingLower.add(c.key);
-      (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(`G11 ${c.key}: lower garment is missing compared with the dressed standing design`);
-    }
-    // Historical numeric-only callers lack standing body alpha. Runtime review supplies it explicitly.
-    const referenceBody = referenceBodies?.[dir];
-    if (referenceBody && rest && observed) for (const side of footwearWarnings(referenceBody, design, c.base, c.layer, fromApi(rest, rig.cell), fromApi(observed, rig.cell))) {
-      footwearReview.add(c.key);
-      warnings.push(`G12 ${c.key}: clothing coverage near the ${side} foot differs from the standing design; inspect the footwear`);
-    }
-    if (expectsWaistBand(prompt) && referenceBody && rest && observed
-      && waistBandEvidence({ body: referenceBody, layer: design, pose: fromApi(rest, rig.cell) }) === 'present'
-      && waistBandEvidence({ body: c.base, layer: c.layer, pose: fromApi(observed, rig.cell) }) === 'missing') {
-      waistReview.add(c.key);
-      warnings.push(`G13 ${c.key}: the requested waist band is missing compared with its standing design`);
-    }
-    const opposite = OPP[dir], oppositeBody = opposite && referenceBodies?.[opposite], oppositeLayer = opposite && keys[opposite], oppositeRest = opposite && rig.rest?.[opposite]?.keypoints;
-    if (referenceBody && rest && observed && oppositeBody && oppositeLayer && oppositeRest
-      && torsoConsistency(anim, dir, { body: referenceBody, layer: design, pose: fromApi(rest, rig.cell) },
-        { body: oppositeBody, layer: oppositeLayer, pose: fromApi(oppositeRest, rig.cell) },
-        { body: c.base, layer: c.layer, pose: fromApi(observed, rig.cell) })) {
-      facingReview.add(c.key);
-      warnings.push(`G14 ${c.key}: upper torso resembles the opposite standing view; inspect front and back details`);
-    }
-  }
-  // Compare every posed frame with its own standing design: a clean clip average can conceal one recolored frame.
-  // This remains a review warning and never authorizes another paid attempt.
-  const palettes = new Map<DirectionName, number[]>(), details = new Map<DirectionName, Map<number, number>>();
-  for (const c of cells) if (c.posed && c.area) {
-    const dir = c.key.split('/')[1] as DirectionName, K = keys[dir];
-    if (!K) continue;
-    if (!palettes.has(dir)) palettes.set(dir, colors(K));
-    const d = +paletteDistance(palettes.get(dir)!, [c.layer]).toFixed(1);
-    maxPaletteDist = Math.max(maxPaletteDist, d);
-    if (d > GATES.paletteDist) warnings.push(`G6 ${c.key}: palette distance ${d.toFixed(1)} to the dressed design`);
-    // Held items were not qualified for this check (they turn, and the bench measured worn items only).
-    const anim = c.key.split('/')[0];
-    if (slot.class === 'held' || (action(anim, dir) && (anim !== 'slash' || slot.bgZ != null))) continue;
-    if (!details.has(dir)) details.set(dir, detailColors(K));
-    const lost = lostDetails(details.get(dir)!, c.layer, c.base);
-    if (lost.length) {
-      detailReview.add(c.key);
-      warnings.push(`G15 ${c.key}: a detail of the dressed design (${Math.max(...lost.map(l => l.px))} px) is missing or recolored`);
-    }
-  }
-  if (slot.class === 'held' || slot.id === 'feet' || slot.id === 'legs') return result();
-  // soft items: the clip's best body coverage (item px on the base silhouette / base px)
-  const cover = new Map<string, number>();
-  if (!slot.band)
-    for (const c of cells) {
-      let on = 0, body = 0;
-      for (let p = 0; p < c.mask.length; p++) if (c.base.data[p * 4 + 3]) { body++; if (c.mask[p]) on++; }
-      const k = c.key.split('/').slice(0, 2).join('/');
-      cover.set(k, Math.max(cover.get(k) ?? 0, body ? on / body : 0));
-    }
-  for (const c of cells) {
-    const dir = c.key.split('/')[1] as DirectionName, opp = OPP[dir];
-    if (!c.posed || !keys[dir] || !c.area || (slot.class !== 'rigid' && !opp) || (sum(maskOf(keys[dir]!)) < H4.minPx && c.area < Math.max(H4.minPx, 1.5 * sum(maskOf(keys[dir]!))))) continue;
-    if (!slot.band && (cover.get(c.key.split('/').slice(0, 2).join('/')) ?? 0) < H4.cover) continue;
-    const min = partFloor(keys[dir]), L = despeck(c.layer, min), occ = new Uint8Array(c.mask.length);
-    for (let p = 0; p < occ.length; p++) occ[p] = c.out.data[p * 4 + 3] && !c.mask[p] ? 1 : 0;
-    const own = simAligned(L, despeck(keys[dir]!, min), occ);
-    if (own >= (slot.band ? H4.own : H4.soft)) continue;
-    if (slot.band && rig && sum(maskOf(L)) >= 6) {
-      const arm = headOcclusion(c, rig);
-      if (arm && simAligned(L, despeck(keys[dir]!, min), undefined, arm.shift) < H4.own && simAligned(L, despeck(keys[dir]!, min), arm.mask, arm.shift) >= H4.own) {
-        warnings.push(`Occlusion ${c.key}: the forearm may cover the head item; inspect it before keeping it`);
-        continue; // Hidden details cannot be verified: review, never a clean pass or an automatic H4 retry.
-      }
-    }
-    const other = opp && keys[opp] ? simAligned(L, despeck(keys[opp]!, min), occ) : 0;
-    const why = `H4 ${c.key}: ${other >= own - H4.oppMargin ? 'looks like the opposite view' : 'does not match its keyframe (extra or missing parts)'} (own ${own.toFixed(2)}${opp ? `, opposite ${other.toFixed(2)}` : ''})`;
-    if (slot.band) (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(why);
-    else warnings.push(why);
-  }
-  return result();
+export function dirGate(
+	slot: Slot,
+	cells: CellOut[],
+	keys: Partial<Record<DirectionName, Img>>,
+	rig?: Rig,
+	referenceBodies?: Partial<Record<DirectionName, Img>>,
+	prompt = ''
+): {
+	fails: Map<number, string[]>;
+	warnings: string[];
+	maxPaletteDist: number;
+	missingLowerFrames: number;
+	footwearReviewFrames: number;
+	waistReviewFrames: number;
+	facingReviewFrames: number;
+	detailReviewFrames: number;
+} {
+	const fails = new Map<number, string[]>(),
+		warnings: string[] = [];
+	const missingLower = new Set<string>(),
+		footwearReview = new Set<string>(),
+		waistReview = new Set<string>(),
+		facingReview = new Set<string>(),
+		detailReview = new Set<string>();
+	let maxPaletteDist = 0;
+	const result = () => ({
+		fails,
+		warnings,
+		maxPaletteDist,
+		missingLowerFrames: missingLower.size,
+		footwearReviewFrames: footwearReview.size,
+		waistReviewFrames: waistReview.size,
+		facingReviewFrames: facingReview.size,
+		detailReviewFrames: detailReview.size
+	});
+	// A cape can swing above the knees or behind the body. This check is for body-covering garments.
+	const actions = new Map<string, boolean>(),
+		action = (anim: string, dir: string) => {
+			const k = `${anim}/${dir}`;
+			if (!actions.has(k)) actions.set(k, isAction(k, rig));
+			return actions.get(k)!;
+		};
+	if (rig && slot.class === 'worn' && slot.bgZ == null)
+		for (const c of cells) {
+			const [anim, dir, frame] = c.key.split('/') as [string, DirectionName, string],
+				design = keys[dir];
+			if (!c.posed || !design || action(anim, dir)) continue;
+			const rest = rig.rest?.[dir]?.keypoints,
+				pose = cellKeypoints(rig, c.key);
+			const measured = rig.animations.find((a) => a.id === anim)?.sources?.[dir]?.measured?.[
+				+frame
+			];
+			const observed = hasAll(measured) ? measured : pose;
+			if (
+				missingLowerGarment(
+					design,
+					c.layer,
+					rest && fromApi(rest, rig.cell),
+					observed && fromApi(observed, rig.cell)
+				)
+			) {
+				missingLower.add(c.key);
+				(fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(
+					`G11 ${c.key}: lower garment is missing compared with the dressed standing design`
+				);
+			}
+			// Historical numeric-only callers lack standing body alpha. Runtime review supplies it explicitly.
+			const referenceBody = referenceBodies?.[dir];
+			if (referenceBody && rest && observed)
+				for (const side of footwearWarnings(
+					referenceBody,
+					design,
+					c.base,
+					c.layer,
+					fromApi(rest, rig.cell),
+					fromApi(observed, rig.cell)
+				)) {
+					footwearReview.add(c.key);
+					warnings.push(
+						`G12 ${c.key}: clothing coverage near the ${side} foot differs from the standing design; inspect the footwear`
+					);
+				}
+			if (
+				expectsWaistBand(prompt) &&
+				referenceBody &&
+				rest &&
+				observed &&
+				waistBandEvidence({ body: referenceBody, layer: design, pose: fromApi(rest, rig.cell) }) ===
+					'present' &&
+				waistBandEvidence({ body: c.base, layer: c.layer, pose: fromApi(observed, rig.cell) }) ===
+					'missing'
+			) {
+				waistReview.add(c.key);
+				warnings.push(
+					`G13 ${c.key}: the requested waist band is missing compared with its standing design`
+				);
+			}
+			const opposite = OPP[dir],
+				oppositeBody = opposite && referenceBodies?.[opposite],
+				oppositeLayer = opposite && keys[opposite],
+				oppositeRest = opposite && rig.rest?.[opposite]?.keypoints;
+			if (
+				referenceBody &&
+				rest &&
+				observed &&
+				oppositeBody &&
+				oppositeLayer &&
+				oppositeRest &&
+				torsoConsistency(
+					anim,
+					dir,
+					{ body: referenceBody, layer: design, pose: fromApi(rest, rig.cell) },
+					{ body: oppositeBody, layer: oppositeLayer, pose: fromApi(oppositeRest, rig.cell) },
+					{ body: c.base, layer: c.layer, pose: fromApi(observed, rig.cell) }
+				)
+			) {
+				facingReview.add(c.key);
+				warnings.push(
+					`G14 ${c.key}: upper torso resembles the opposite standing view; inspect front and back details`
+				);
+			}
+		}
+	// Compare every posed frame with its own standing design: a clean clip average can conceal one recolored frame.
+	// This remains a review warning and never authorizes another paid attempt.
+	const palettes = new Map<DirectionName, number[]>(),
+		details = new Map<DirectionName, Map<number, number>>();
+	for (const c of cells)
+		if (c.posed && c.area) {
+			const dir = c.key.split('/')[1] as DirectionName,
+				K = keys[dir];
+			if (!K) continue;
+			if (!palettes.has(dir)) palettes.set(dir, colors(K));
+			const d = +paletteDistance(palettes.get(dir)!, [c.layer]).toFixed(1);
+			maxPaletteDist = Math.max(maxPaletteDist, d);
+			if (d > GATES.paletteDist)
+				warnings.push(`G6 ${c.key}: palette distance ${d.toFixed(1)} to the dressed design`);
+			// Held items were not qualified for this check (they turn, and the bench measured worn items only).
+			const anim = c.key.split('/')[0];
+			if (slot.class === 'held' || (action(anim, dir) && (anim !== 'slash' || slot.bgZ != null)))
+				continue;
+			if (!details.has(dir)) details.set(dir, detailColors(K));
+			const lost = lostDetails(details.get(dir)!, c.layer, c.base);
+			if (lost.length) {
+				detailReview.add(c.key);
+				warnings.push(
+					`G15 ${c.key}: a detail of the dressed design (${Math.max(...lost.map((l) => l.px))} px) is missing or recolored`
+				);
+			}
+		}
+	if (slot.class === 'held' || slot.id === 'feet' || slot.id === 'legs') return result();
+	// soft items: the clip's best body coverage (item px on the base silhouette / base px)
+	const cover = new Map<string, number>();
+	if (!slot.band)
+		for (const c of cells) {
+			let on = 0,
+				body = 0;
+			for (let p = 0; p < c.mask.length; p++)
+				if (c.base.data[p * 4 + 3]) {
+					body++;
+					if (c.mask[p]) on++;
+				}
+			const k = c.key.split('/').slice(0, 2).join('/');
+			cover.set(k, Math.max(cover.get(k) ?? 0, body ? on / body : 0));
+		}
+	for (const c of cells) {
+		const dir = c.key.split('/')[1] as DirectionName,
+			opp = OPP[dir];
+		if (
+			!c.posed ||
+			!keys[dir] ||
+			!c.area ||
+			(slot.class !== 'rigid' && !opp) ||
+			(sum(maskOf(keys[dir]!)) < H4.minPx &&
+				c.area < Math.max(H4.minPx, 1.5 * sum(maskOf(keys[dir]!))))
+		)
+			continue;
+		if (!slot.band && (cover.get(c.key.split('/').slice(0, 2).join('/')) ?? 0) < H4.cover) continue;
+		const min = partFloor(keys[dir]),
+			L = despeck(c.layer, min),
+			occ = new Uint8Array(c.mask.length);
+		for (let p = 0; p < occ.length; p++) occ[p] = c.out.data[p * 4 + 3] && !c.mask[p] ? 1 : 0;
+		const own = simAligned(L, despeck(keys[dir]!, min), occ);
+		if (own >= (slot.band ? H4.own : H4.soft)) continue;
+		if (slot.band && rig && sum(maskOf(L)) >= 6) {
+			const arm = headOcclusion(c, rig);
+			if (
+				arm &&
+				simAligned(L, despeck(keys[dir]!, min), undefined, arm.shift) < H4.own &&
+				simAligned(L, despeck(keys[dir]!, min), arm.mask, arm.shift) >= H4.own
+			) {
+				warnings.push(
+					`Occlusion ${c.key}: the forearm may cover the head item; inspect it before keeping it`
+				);
+				continue; // Hidden details cannot be verified: review, never a clean pass or an automatic H4 retry.
+			}
+		}
+		const other = opp && keys[opp] ? simAligned(L, despeck(keys[opp]!, min), occ) : 0;
+		const why = `H4 ${c.key}: ${other >= own - H4.oppMargin ? 'looks like the opposite view' : 'does not match its keyframe (extra or missing parts)'} (own ${own.toFixed(2)}${opp ? `, opposite ${other.toFixed(2)}` : ''})`;
+		if (slot.band) (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(why);
+		else warnings.push(why);
+	}
+	return result();
 }
 
 // ---------- manifest Item ----------
 /** Accepted item: layers (main, or fg + bg for slots with bgZ) with cell hashes for every selected anim × generated dir. */
 export async function buildItem(o: {
-  spec: ItemSpec; rig: Rig; cells: CellOut[]; route: Route; provenance: Provenance[]; qa: ItemQa; anchorCell?: string; dressed?: Partial<Record<DirectionName, Img>>; pad?: number;
-  /** Previews only: target cells still generating. The preview then lists its landed cells as coverage, so a pending or missing
-   *  cell is never read as authored transparency (its layer entry stays null). Saved items never pass it. */
-  pending?: CellKey[];
+	spec: ItemSpec;
+	rig: Rig;
+	cells: CellOut[];
+	route: Route;
+	provenance: Provenance[];
+	qa: ItemQa;
+	anchorCell?: string;
+	dressed?: Partial<Record<DirectionName, Img>>;
+	pad?: number;
+	/** Previews only: target cells still generating. The preview then lists its landed cells as coverage, so a pending or missing
+	 *  cell is never read as authored transparency (its layer entry stays null). Saved items never pass it. */
+	pending?: CellKey[];
 }): Promise<{ item: Item; images: Map<Sha256, Img> }> {
-  const { spec, rig, cells } = o, slot = slotOf(spec.slot), images = new Map<Sha256, Img>(), p = o.pad ?? 0;
-  // v1.3.1 oversize layer (S5 held): own cell + pivot, aligned to the base by pivot
-  const size = p ? { cell: { w: rig.cell.w + 2 * p, h: rig.cell.h + 2 * p }, pivot: { x: rig.pivot.x + p, y: rig.pivot.y + p } } : {};
-  const put = async (im: Img): Promise<Sha256 | null> => {
-    if (!im.data.some((v, i) => i % 4 === 3 && v)) return null;
-    const k = await cellHash(im);
-    images.set(k, im);
-    return k;
-  };
-  const layers: Layer[] = slot.bgZ != null
-    ? [{ id: 'fg', role: 'fg', z: slot.z, cells: {}, ...size }, { id: 'bg', role: 'bg', z: slot.bgZ, cells: {}, ...size }]
-    : [{ id: 'main', role: 'fg', z: slot.z, cells: {}, ...size }];
-  const byKey = new Map(cells.map((c) => [c.key, c])), baseCut: NonNullable<Item['baseCut']> = {}, covered: CellKey[] = [];
-  for (const a of spec.anims) {
-    const n = rig.animations.find((x) => x.id === a)!.cells;
-    for (const l of layers) l.cells![a] = {};
-    for (const d of spec.clipDirs?.[a] ?? spec.dirs)
-      for (let i = 0; i < n; i++) {
-        const c = byKey.get(cellKey(a, d, i));
-        if (c) covered.push(cellKey(a, d, i) as CellKey);
-        const parts = !c ? [null, null] : slot.bgZ != null ? (({ fg, bg }) => [fg, bg])(splitFgBg(c.layer, c.base, slot.id === 'hair' ? neckY(rig, c.key, p) : undefined)) : [c.layer];
-        for (const [j, l] of layers.entries()) ((l.cells![a]![d] ??= Array(n).fill(null)) as (Sha256 | null)[])[i] = parts[j] ? await put(parts[j]!) : null;
-        if (c?.cut) ((baseCut[a] ??= {})[d] ??= Array(n).fill(null))[i] = cutIndices(c.cut);
-      }
-  }
-  const item: Item = {
-    id: spec.id, name: spec.name, slot: spec.slot, status: 'accepted', mirror: rig.directions.some((d) => d.mirrorOf) ? 'flip' : 'generate', materials: [], prompt: spec.prompt, layers,
-    baseHash: rig.baseHash, route: o.route === 'none' ? 'diff' : spec.method === 'skel' ? 'skeleton-pose' : 'ea2-anchor',
-    extractor: o.route === 'none' ? 'diff' : 'chroma', ...(o.route !== 'none' ? { key: o.route } : {}),
-    ...(spec.standing ? { standing: spec.standing } : {}),
-    ...(o.anchorCell && spec.method !== 'skel' ? { anchorCell: o.anchorCell as CellKey } : {}), provenance: o.provenance, qa: o.qa,
-    ...(Object.keys(baseCut).length ? { baseCut } : {}),
-    coverage: covered, ...(o.pending?.length ? { pending: o.pending } : {}),
-  };
-  if (o.dressed) {
-    item.dressed = {};
-    for (const [d, im] of Object.entries(o.dressed) as [DirectionName, Img][]) { const k = await cellHash(im); images.set(k, im); item.dressed[d] = k; }
-  }
-  return { item, images };
+	const { spec, rig, cells } = o,
+		slot = slotOf(spec.slot),
+		images = new Map<Sha256, Img>(),
+		p = o.pad ?? 0;
+	// v1.3.1 oversize layer (S5 held): own cell + pivot, aligned to the base by pivot
+	const size = p
+		? {
+				cell: { w: rig.cell.w + 2 * p, h: rig.cell.h + 2 * p },
+				pivot: { x: rig.pivot.x + p, y: rig.pivot.y + p }
+			}
+		: {};
+	const put = async (im: Img): Promise<Sha256 | null> => {
+		if (!im.data.some((v, i) => i % 4 === 3 && v)) return null;
+		const k = await cellHash(im);
+		images.set(k, im);
+		return k;
+	};
+	const layers: Layer[] =
+		slot.bgZ != null
+			? [
+					{ id: 'fg', role: 'fg', z: slot.z, cells: {}, ...size },
+					{ id: 'bg', role: 'bg', z: slot.bgZ, cells: {}, ...size }
+				]
+			: [{ id: 'main', role: 'fg', z: slot.z, cells: {}, ...size }];
+	const byKey = new Map(cells.map((c) => [c.key, c])),
+		baseCut: NonNullable<Item['baseCut']> = {},
+		covered: CellKey[] = [];
+	for (const a of spec.anims) {
+		const n = rig.animations.find((x) => x.id === a)!.cells;
+		for (const l of layers) l.cells![a] = {};
+		for (const d of spec.clipDirs?.[a] ?? spec.dirs)
+			for (let i = 0; i < n; i++) {
+				const c = byKey.get(cellKey(a, d, i));
+				if (c) covered.push(cellKey(a, d, i) as CellKey);
+				const parts = !c
+					? [null, null]
+					: slot.bgZ != null
+						? (({ fg, bg }) => [fg, bg])(
+								splitFgBg(c.layer, c.base, slot.id === 'hair' ? neckY(rig, c.key, p) : undefined)
+							)
+						: [c.layer];
+				for (const [j, l] of layers.entries())
+					((l.cells![a]![d] ??= Array(n).fill(null)) as (Sha256 | null)[])[i] = parts[j]
+						? await put(parts[j]!)
+						: null;
+				if (c?.cut) ((baseCut[a] ??= {})[d] ??= Array(n).fill(null))[i] = cutIndices(c.cut);
+			}
+	}
+	const item: Item = {
+		id: spec.id,
+		name: spec.name,
+		slot: spec.slot,
+		status: 'accepted',
+		mirror: rig.directions.some((d) => d.mirrorOf) ? 'flip' : 'generate',
+		materials: [],
+		prompt: spec.prompt,
+		layers,
+		baseHash: rig.baseHash,
+		route: o.route === 'none' ? 'diff' : spec.method === 'skel' ? 'skeleton-pose' : 'ea2-anchor',
+		extractor: o.route === 'none' ? 'diff' : 'chroma',
+		...(o.route !== 'none' ? { key: o.route } : {}),
+		...(spec.standing ? { standing: spec.standing } : {}),
+		...(o.anchorCell && spec.method !== 'skel' ? { anchorCell: o.anchorCell as CellKey } : {}),
+		provenance: o.provenance,
+		qa: o.qa,
+		...(Object.keys(baseCut).length ? { baseCut } : {}),
+		coverage: covered,
+		...(o.pending?.length ? { pending: o.pending } : {})
+	};
+	if (o.dressed) {
+		item.dressed = {};
+		for (const [d, im] of Object.entries(o.dressed) as [DirectionName, Img][]) {
+			const k = await cellHash(im);
+			images.set(k, im);
+			item.dressed[d] = k;
+		}
+	}
+	return { item, images };
 }
 
 /** Contact sheet: rows of cells, nearest-neighbor scaled, 2 px gray gutters (transparent cells stay checker-free). */
 export function contactSheet(rows: (Img | null)[][], s = 2, gap = 2): Img {
-  const w = Math.max(1, ...rows.flat().map((im) => im?.w ?? 0)), h = Math.max(1, ...rows.flat().map((im) => im?.h ?? 0));
-  const cols = Math.max(1, ...rows.map((r) => r.length));
-  const o = makeImg(cols * (w * s + gap) + gap, rows.length * (h * s + gap) + gap);
-  o.data.fill(0);
-  for (let i = 0; i < o.data.length; i += 4) o.data.set([40, 40, 48, 255], i);
-  rows.forEach((r, ry) => r.forEach((im, cx) => {
-    const ox = gap + cx * (w * s + gap), oy = gap + ry * (h * s + gap);
-    for (let y = 0; y < h * s; y++)
-      for (let x = 0; x < w * s; x++) {
-        const d = ((oy + y) * o.w + ox + x) * 4, chk = ((x >> 3) + (y >> 3)) & 1 ? 200 : 230;
-        const si = im ? (((y / s) | 0) * im.w + ((x / s) | 0)) * 4 : -1;
-        o.data.set(si >= 0 && im!.data[si + 3] ? im!.data.subarray(si, si + 4) : [chk, chk, chk, 255], d);
-      }
-  }));
-  return o;
+	const w = Math.max(1, ...rows.flat().map((im) => im?.w ?? 0)),
+		h = Math.max(1, ...rows.flat().map((im) => im?.h ?? 0));
+	const cols = Math.max(1, ...rows.map((r) => r.length));
+	const o = makeImg(cols * (w * s + gap) + gap, rows.length * (h * s + gap) + gap);
+	o.data.fill(0);
+	for (let i = 0; i < o.data.length; i += 4) o.data.set([40, 40, 48, 255], i);
+	rows.forEach((r, ry) =>
+		r.forEach((im, cx) => {
+			const ox = gap + cx * (w * s + gap),
+				oy = gap + ry * (h * s + gap);
+			for (let y = 0; y < h * s; y++)
+				for (let x = 0; x < w * s; x++) {
+					const d = ((oy + y) * o.w + ox + x) * 4,
+						chk = ((x >> 3) + (y >> 3)) & 1 ? 200 : 230;
+					const si = im ? (((y / s) | 0) * im.w + ((x / s) | 0)) * 4 : -1;
+					o.data.set(
+						si >= 0 && im!.data[si + 3] ? im!.data.subarray(si, si + 4) : [chk, chk, chk, 255],
+						d
+					);
+				}
+		})
+	);
+	return o;
 }
 
 export async function selfTest() {
-  const rig = {
-    cell: { w: 8, h: 8 }, pivot: { x: 4, y: 8 }, baseItem: 'base', baseHash: 'sha256:x',
-    directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west', mirrorOf: 'east' }],
-    animations: [{ id: 'idle', cells: 4, loop: true, frames: [] }, { id: 'walk', cells: 8, loop: true, frames: [] }],
-  } as unknown as Rig;
-  const calls = planCalls(rig, { anims: ['idle', 'walk'], dirs: ['south', 'east', 'north'] });
-  console.assert(calls.map((c) => c.length).join() === '16,12,8' && calls[0][0] === 'walk/south/0' && calls[1][8] === 'idle/south/0', `packing ${calls.map((c) => c.length)}`);
-  const sk = planItem(rig, { anims: ['idle', 'walk'], dirs: ['south', 'east', 'north'], method: 'skel', key: 'green' });
-  // round 4: idle (4) + walk (8) of a direction share one 12-frame pose call (3 gens): 10 + 3 × 3 instead of 10 + 6 × 3
-  console.assert(sk.length === 4 && sk[0].kind === 'dress' && sk[0].cells.join() === 'rest/south/0,rest/east/0,rest/north/0' && sk[1].cells.join() === [...Array.from({ length: 4 }, (_, i) => `idle/south/${i}`), ...Array.from({ length: 8 }, (_, i) => `walk/south/${i}`)].join() && planGens(sk) === 10 + 3 * 3 && callAnim(sk[1].cells) === 'walk', `planItem skel ${planGens(sk)}`);
-  const heldPlan = planItem(rig, { anims: ['idle', 'walk'], dirs: ['south'], method: 'skel', key: 'green', slot: 'main_hand' });
-  console.assert(heldPlan.length === 3 && heldPlan[1].cells.length === 4 && callParts([...heldPlan[1].cells, ...heldPlan[2].cells]).map((p) => p.n).join() === '4,8', 'held items keep one move per pose call');
-  console.assert(planGens(sk, { w: 160, h: 160 }) === 15 + 3 * 3 && editGens({ w: 192, h: 192 }) === 25 && editGens({ w: 112, h: 112 }) === 10, 'edit price by canvas (round 3 review)');
-  const two: Img = { w: 2, h: 1, data: new Uint8ClampedArray([10, 0, 0, 255, 250, 0, 0, 255]) };
-  console.assert(paletteDistance([10 << 16], [two]) === 120, 'paletteDistance is pixel-weighted');
-  console.assert(cellsNote(calls[1], 'walk/south/0') === 'Cells in order: frame 1 = reference (walk facing south (front view)), then 8 cells walk facing north (back view), 4 cells idle facing south (front view). ', 'cellsNote');
-  const m1 = new Uint8Array(16), m2 = new Uint8Array(16);
-  m1.set([1, 1], 0); m2.set([1, 1], 10); // same 2-px bar, moved
-  console.assert(axisOf(new Uint8Array(64).fill(1, 8, 16), 8) === 0 && Math.abs(Math.abs(axisOf(new Uint8Array(64).map((_, p) => +(p % 8 === 3)), 8)!) - Math.PI / 2) < 1e-9 && angleDiff(0.1, 0.1 + Math.PI) < 1e-6 && Math.round(angleDiff(0, Math.PI / 4)) === 45, 'axisOf / angleDiff');
-  console.assert(alignedIoU(m1, m2, 4) === 1 && alignedIoU(m1, new Uint8Array(16).fill(1), 4) === 2 / 16, 'alignedIoU');
-  console.assert(bandOf('head', { NECK: { x: 4, y: 3, z: 0 } }, 8).h === 6 && bandOf('main_hand', undefined, 8).h === 8, 'bands');
+	const rig = {
+		cell: { w: 8, h: 8 },
+		pivot: { x: 4, y: 8 },
+		baseItem: 'base',
+		baseHash: 'sha256:x',
+		directions: [
+			{ id: 'south' },
+			{ id: 'east' },
+			{ id: 'north' },
+			{ id: 'west', mirrorOf: 'east' }
+		],
+		animations: [
+			{ id: 'idle', cells: 4, loop: true, frames: [] },
+			{ id: 'walk', cells: 8, loop: true, frames: [] }
+		]
+	} as unknown as Rig;
+	const calls = planCalls(rig, { anims: ['idle', 'walk'], dirs: ['south', 'east', 'north'] });
+	console.assert(
+		calls.map((c) => c.length).join() === '16,12,8' &&
+			calls[0][0] === 'walk/south/0' &&
+			calls[1][8] === 'idle/south/0',
+		`packing ${calls.map((c) => c.length)}`
+	);
+	const sk = planItem(rig, {
+		anims: ['idle', 'walk'],
+		dirs: ['south', 'east', 'north'],
+		method: 'skel',
+		key: 'green'
+	});
+	// round 4: idle (4) + walk (8) of a direction share one 12-frame pose call (3 gens): 10 + 3 × 3 instead of 10 + 6 × 3
+	console.assert(
+		sk.length === 4 &&
+			sk[0].kind === 'dress' &&
+			sk[0].cells.join() === 'rest/south/0,rest/east/0,rest/north/0' &&
+			sk[1].cells.join() ===
+				[
+					...Array.from({ length: 4 }, (_, i) => `idle/south/${i}`),
+					...Array.from({ length: 8 }, (_, i) => `walk/south/${i}`)
+				].join() &&
+			planGens(sk) === 10 + 3 * 3 &&
+			callAnim(sk[1].cells) === 'walk',
+		`planItem skel ${planGens(sk)}`
+	);
+	const heldPlan = planItem(rig, {
+		anims: ['idle', 'walk'],
+		dirs: ['south'],
+		method: 'skel',
+		key: 'green',
+		slot: 'main_hand'
+	});
+	console.assert(
+		heldPlan.length === 3 &&
+			heldPlan[1].cells.length === 4 &&
+			callParts([...heldPlan[1].cells, ...heldPlan[2].cells])
+				.map((p) => p.n)
+				.join() === '4,8',
+		'held items keep one move per pose call'
+	);
+	console.assert(
+		planGens(sk, { w: 160, h: 160 }) === 15 + 3 * 3 &&
+			editGens({ w: 192, h: 192 }) === 25 &&
+			editGens({ w: 112, h: 112 }) === 10,
+		'edit price by canvas (round 3 review)'
+	);
+	const two: Img = { w: 2, h: 1, data: new Uint8ClampedArray([10, 0, 0, 255, 250, 0, 0, 255]) };
+	console.assert(paletteDistance([10 << 16], [two]) === 120, 'paletteDistance is pixel-weighted');
+	console.assert(
+		cellsNote(calls[1], 'walk/south/0') ===
+			'Cells in order: frame 1 = reference (walk facing south (front view)), then 8 cells walk facing north (back view), 4 cells idle facing south (front view). ',
+		'cellsNote'
+	);
+	const m1 = new Uint8Array(16),
+		m2 = new Uint8Array(16);
+	m1.set([1, 1], 0);
+	m2.set([1, 1], 10); // same 2-px bar, moved
+	console.assert(
+		axisOf(new Uint8Array(64).fill(1, 8, 16), 8) === 0 &&
+			Math.abs(
+				Math.abs(
+					axisOf(
+						new Uint8Array(64).map((_, p) => +(p % 8 === 3)),
+						8
+					)!
+				) -
+					Math.PI / 2
+			) < 1e-9 &&
+			angleDiff(0.1, 0.1 + Math.PI) < 1e-6 &&
+			Math.round(angleDiff(0, Math.PI / 4)) === 45,
+		'axisOf / angleDiff'
+	);
+	console.assert(
+		alignedIoU(m1, m2, 4) === 1 && alignedIoU(m1, new Uint8Array(16).fill(1), 4) === 2 / 16,
+		'alignedIoU'
+	);
+	console.assert(
+		bandOf('head', { NECK: { x: 4, y: 3, z: 0 } }, 8).h === 6 &&
+			bandOf('main_hand', undefined, 8).h === 8,
+		'bands'
+	);
 
-  // synthetic: base = 4x6 block, the item = a 3 px bar inside it, green key route
-  const base = makeImg(8, 8);
-  for (let y = 2; y < 8; y++) for (let x = 2; x < 6; x++) base.data.set([180, 140, 120, 255], (y * 8 + x) * 4);
-  const mk = (k: string, call: number, dx = 0) => {
-    const out = toChroma(base, 'green');
-    out.data.set([90, 90, 100, 255], (4 * 8 + 3 + dx) * 4);
-    out.data.set([90, 90, 100, 255], (5 * 8 + 3 + dx) * 4);
-    out.data.set([90, 90, 100, 255], (6 * 8 + 3 + dx) * 4);
-    return extractCell({ key: k, call, base, out, route: 'green', band: bandOf('head', undefined, 8) });
-  };
-  const cs = [0, 1, 2, 3].map((i) => mk(`idle/south/${i}`, 0));
-  console.assert(cs[0].area === 3 && cs[0].keyKept === 1 && cs[0].specks === 0, `extractCell area ${cs[0].area}`);
-  const q = itemQa(rig, slotOf('head'), 'green', cs, 0);
-  console.assert(q.qa.status === 'pass' && q.qa.maxAreaCV === 0 && q.failCalls.size === 0, `qa pass ${JSON.stringify(q.failCalls)}`);
-  const missing = itemQa(rig, slotOf('head'), 'green', [...cs.slice(0, 3), { ...cs[3], area: 0, mask: new Uint8Array(64) }], 0);
-  console.assert(missing.failCalls.get(0)?.some((s) => s.startsWith('G4')) === true, 'G4 catches a missing cell');
-  const cape = itemQa(rig, slotOf('back'), 'green', cs, 0);
-  console.assert(cape.splitExact, 'split recomposes exactly');
-  const { item, images } = await buildItem({ spec: { id: 'h', name: 'H', slot: 'back', prompt: 'p', key: 'green', anims: ['idle'], dirs: ['south'] }, rig, cells: cs, route: 'green', provenance: [], qa: q.qa });
-  console.assert(item.layers.map((l) => l.id).join() === 'fg,bg' && item.layers[0].cells!.idle!.south!.length === 4 && images.size === 1, 'buildItem split layers');
-  console.assert(item.layers[1].cells!.idle!.south![0] === null, 'bg empty -> transparent cell');
-  const block = makeImg(8, 8); // 16 px: H4 judges keyframe views of at least H4.minPx
-  for (let y = 2; y < 6; y++) for (let x = 2; x < 6; x++) block.data.set([90, 90, 100, 255], (y * 8 + x) * 4);
-  const cell = { ...cs[0], posed: true, layer: block, mask: new Uint8Array(64), area: 16 };
-  console.assert(simAligned(block, block) === 1 && !dirGate(slotOf('head'), [cell], { south: block }).fails.size, 'H4: same layer passes');
-  const blade = { ...cell, layer: makeImg(8, 8) };
-  blade.layer.data.set(block.data);
-  for (const p of [0, 1, 2, 8, 9, 10, 16]) blade.layer.data.set([200, 200, 210, 255], p * 4); // a foreign object attached to the item
-  console.assert(dirGate(slotOf('head'), [blade], { south: block }).fails.get(0)?.[0].startsWith('H4') === true && !dirGate(slotOf('main_hand'), [blade], { south: block }).fails.size, 'H4: extra parts fail rigid items, held items are skipped');
-  // B14: soft items (hair, cloth) warn only where they cover >= half the body and own < 0.5; never fail
-  const red = makeImg(8, 8);
-  for (let y = 2; y < 8; y++) for (let x = 2; x < 6; x++) red.data.set([250, 10, 10, 255], (y * 8 + x) * 4);
-  const cloak = { ...cell, layer: red, mask: maskOf(red), area: 24, out: red }, edge = { ...blade, mask: maskOf(blade.layer), area: 16 };
-  const hairH4 = dirGate(slotOf('hair'), [cloak], { south: block }), backH4 = dirGate(slotOf('back'), [edge], { south: block });
-  const h4 = (w: string[]) => w.filter((m) => m.startsWith('H4')).length; // these fixtures also differ in color (G6 warns too)
-  console.assert(!hairH4.fails.size && h4(hairH4.warnings) === 1 && !h4(backH4.warnings) && !h4(dirGate(slotOf('legs'), [cloak], { south: block }).warnings), 'H4: soft items warn only when covering the body (T3/B14), legs off');
-  const smudged = makeImg(10, 10);
-  for (let p = 0; p < 100; p++) smudged.data.set(p < 8 ? [90, 85, 80, 255] : [200, 30, 40, 255], p * 4);
-  console.assert(grayShare(smudged) === 0.08 && grayShare(block) === 0 && GRAYISH.test('an iron helmet'), 'D1: gray share of a colorful design');
-  console.assert(!g2Fails({ keyKept: 0.952, keyLost: 6 }) && g2Fails({ keyKept: 0.952, keyLost: 30 }) && !g2Fails({ keyKept: 0.99, keyLost: 30 }), 'G2: a nearly covered body needs > 8 lost px (T3 cape north)');
+	// synthetic: base = 4x6 block, the item = a 3 px bar inside it, green key route
+	const base = makeImg(8, 8);
+	for (let y = 2; y < 8; y++)
+		for (let x = 2; x < 6; x++) base.data.set([180, 140, 120, 255], (y * 8 + x) * 4);
+	const mk = (k: string, call: number, dx = 0) => {
+		const out = toChroma(base, 'green');
+		out.data.set([90, 90, 100, 255], (4 * 8 + 3 + dx) * 4);
+		out.data.set([90, 90, 100, 255], (5 * 8 + 3 + dx) * 4);
+		out.data.set([90, 90, 100, 255], (6 * 8 + 3 + dx) * 4);
+		return extractCell({
+			key: k,
+			call,
+			base,
+			out,
+			route: 'green',
+			band: bandOf('head', undefined, 8)
+		});
+	};
+	const cs = [0, 1, 2, 3].map((i) => mk(`idle/south/${i}`, 0));
+	console.assert(
+		cs[0].area === 3 && cs[0].keyKept === 1 && cs[0].specks === 0,
+		`extractCell area ${cs[0].area}`
+	);
+	const q = itemQa(rig, slotOf('head'), 'green', cs, 0);
+	console.assert(
+		q.qa.status === 'pass' && q.qa.maxAreaCV === 0 && q.failCalls.size === 0,
+		`qa pass ${JSON.stringify(q.failCalls)}`
+	);
+	const missing = itemQa(
+		rig,
+		slotOf('head'),
+		'green',
+		[...cs.slice(0, 3), { ...cs[3], area: 0, mask: new Uint8Array(64) }],
+		0
+	);
+	console.assert(
+		missing.failCalls.get(0)?.some((s) => s.startsWith('G4')) === true,
+		'G4 catches a missing cell'
+	);
+	const cape = itemQa(rig, slotOf('back'), 'green', cs, 0);
+	console.assert(cape.splitExact, 'split recomposes exactly');
+	const { item, images } = await buildItem({
+		spec: {
+			id: 'h',
+			name: 'H',
+			slot: 'back',
+			prompt: 'p',
+			key: 'green',
+			anims: ['idle'],
+			dirs: ['south']
+		},
+		rig,
+		cells: cs,
+		route: 'green',
+		provenance: [],
+		qa: q.qa
+	});
+	console.assert(
+		item.layers.map((l) => l.id).join() === 'fg,bg' &&
+			item.layers[0].cells!.idle!.south!.length === 4 &&
+			images.size === 1,
+		'buildItem split layers'
+	);
+	console.assert(item.layers[1].cells!.idle!.south![0] === null, 'bg empty -> transparent cell');
+	const block = makeImg(8, 8); // 16 px: H4 judges keyframe views of at least H4.minPx
+	for (let y = 2; y < 6; y++)
+		for (let x = 2; x < 6; x++) block.data.set([90, 90, 100, 255], (y * 8 + x) * 4);
+	const cell = { ...cs[0], posed: true, layer: block, mask: new Uint8Array(64), area: 16 };
+	console.assert(
+		simAligned(block, block) === 1 && !dirGate(slotOf('head'), [cell], { south: block }).fails.size,
+		'H4: same layer passes'
+	);
+	const blade = { ...cell, layer: makeImg(8, 8) };
+	blade.layer.data.set(block.data);
+	for (const p of [0, 1, 2, 8, 9, 10, 16]) blade.layer.data.set([200, 200, 210, 255], p * 4); // a foreign object attached to the item
+	console.assert(
+		dirGate(slotOf('head'), [blade], { south: block }).fails.get(0)?.[0].startsWith('H4') ===
+			true && !dirGate(slotOf('main_hand'), [blade], { south: block }).fails.size,
+		'H4: extra parts fail rigid items, held items are skipped'
+	);
+	// B14: soft items (hair, cloth) warn only where they cover >= half the body and own < 0.5; never fail
+	const red = makeImg(8, 8);
+	for (let y = 2; y < 8; y++)
+		for (let x = 2; x < 6; x++) red.data.set([250, 10, 10, 255], (y * 8 + x) * 4);
+	const cloak = { ...cell, layer: red, mask: maskOf(red), area: 24, out: red },
+		edge = { ...blade, mask: maskOf(blade.layer), area: 16 };
+	const hairH4 = dirGate(slotOf('hair'), [cloak], { south: block }),
+		backH4 = dirGate(slotOf('back'), [edge], { south: block });
+	const h4 = (w: string[]) => w.filter((m) => m.startsWith('H4')).length; // these fixtures also differ in color (G6 warns too)
+	console.assert(
+		!hairH4.fails.size &&
+			h4(hairH4.warnings) === 1 &&
+			!h4(backH4.warnings) &&
+			!h4(dirGate(slotOf('legs'), [cloak], { south: block }).warnings),
+		'H4: soft items warn only when covering the body (T3/B14), legs off'
+	);
+	const smudged = makeImg(10, 10);
+	for (let p = 0; p < 100; p++)
+		smudged.data.set(p < 8 ? [90, 85, 80, 255] : [200, 30, 40, 255], p * 4);
+	console.assert(
+		grayShare(smudged) === 0.08 && grayShare(block) === 0 && GRAYISH.test('an iron helmet'),
+		'D1: gray share of a colorful design'
+	);
+	console.assert(
+		!g2Fails({ keyKept: 0.952, keyLost: 6 }) &&
+			g2Fails({ keyKept: 0.952, keyLost: 30 }) &&
+			!g2Fails({ keyKept: 0.99, keyLost: 30 }),
+		'G2: a nearly covered body needs > 8 lost px (T3 cape north)'
+	);
 
-  // B14 grid fallback: pack + cut round-trips, mask white only on the cells' band rows, references kept
-  const gm = bandMask({ x: 0, y: 4, w: 1e3, h: 4 }, 8, 8), pg = packGrid([base, block, base], [gm, null, gm]);
-  console.assert(pg.image.w === 32 && pg.image.h === 8 && cutGrid(pg.image, 2, 8, 8)[1].data.join() === block.data.join(), 'packGrid/cutGrid');
-  console.assert(pg.mask.data[(5 * 32 + 1) * 4] === 255 && pg.mask.data[(1 * 32 + 1) * 4] === 0 && pg.mask.data[(5 * 32 + 9) * 4] === 0 && pg.mask.data[(5 * 32 + 17) * 4] === 255, 'grid mask: band rows of posed cells only');
-  console.assert(gridPrompt({ item: 'a red cape', slot: 'back', key: 'green', anim: 'slash', dir: 'north', n: 8, refs: ['south', 'east', 'north'], cell: { w: 64, h: 64 } }).includes('4x3 grid') , 'gridPrompt');
+	// B14 grid fallback: pack + cut round-trips, mask white only on the cells' band rows, references kept
+	const gm = bandMask({ x: 0, y: 4, w: 1e3, h: 4 }, 8, 8),
+		pg = packGrid([base, block, base], [gm, null, gm]);
+	console.assert(
+		pg.image.w === 32 &&
+			pg.image.h === 8 &&
+			cutGrid(pg.image, 2, 8, 8)[1].data.join() === block.data.join(),
+		'packGrid/cutGrid'
+	);
+	console.assert(
+		pg.mask.data[(5 * 32 + 1) * 4] === 255 &&
+			pg.mask.data[(1 * 32 + 1) * 4] === 0 &&
+			pg.mask.data[(5 * 32 + 9) * 4] === 0 &&
+			pg.mask.data[(5 * 32 + 17) * 4] === 255,
+		'grid mask: band rows of posed cells only'
+	);
+	console.assert(
+		gridPrompt({
+			item: 'a red cape',
+			slot: 'back',
+			key: 'green',
+			anim: 'slash',
+			dir: 'north',
+			n: 8,
+			refs: ['south', 'east', 'north'],
+			cell: { w: 64, h: 64 }
+		}).includes('4x3 grid'),
+		'gridPrompt'
+	);
 
-  // B9 held route: pad, keypoints, frame 0 last, oversize layer
-  const c64 = { w: 64, h: 64 }, kp = (x: number, y: number) => [{ label: 'RIGHT ARM', x, y }, { label: 'NOSE', x: 0.5, y: 0.3 }];
-  console.assert(padOf('main_hand', 'skel') === 16 && padOf('main_hand', 'anchor') === 0 && padOf('head', 'skel') === 0, 'padOf: held + skel only');
-  console.assert(padKeypoints(kp(0.5, 0.5), c64, 16)[0].x === 0.5 && padKeypoints(kp(0, 1), c64, 16)[0].y === +(80 / 96).toFixed(4), 'padKeypoints keeps the body point');
-  const pb = padImg(base, 2);
-  console.assert(pb.w === 12 && pb.data[((2 + 2) * 12 + 2 + 2) * 4 + 3] === 255 && pb.data[(2 * 12 + 2) * 4 + 3] === 0, 'padImg');
-  const rest0 = kp(0.6, 0.6), seq = [kp(0.6, 0.605), kp(0.7, 0.4), kp(0.8, 0.3)];
-  console.assert(f0Last('main_hand', rest0, seq, c64) && !f0Last('head', rest0, seq, c64) && !f0Last('main_hand', rest0, seq.slice(1), c64), 'f0Last: held + near-rest first frame');
-  const req = itemRoute.pose({ keyframePngB64: 'x', rest: rest0, poses: seq, item: 'a sword', slot: 'main_hand', key: 'green', anim: 'slash', dir: 'south', seed: 1, cell: c64, pad: 16 }).body as { keypoints: Keypoint[][]; description: string };
-  console.assert(req.keypoints[2][0].x === padKeypoints(seq[0], c64, 16)[0].x && unrotate([1, 2, 0], true).join() === '0,1,2' && req.description.includes('exactly one held item'), 'pose: frame 0 sent last, padded, one held item');
-  const helm = itemRoute.pose({ keyframePngB64: 'x', rest: rest0, poses: seq, item: 'a helmet', slot: 'head', key: 'green', anim: 'slash', dir: 'south', seed: 1, cell: c64 }).body as { keypoints: Keypoint[][]; description: string };
-  console.assert(helm.keypoints[0] === seq[0] && helm.description === 'solid bright green mannequin (chroma key color) wearing a helmet, empty hands, no weapon', 'non-held pose request unchanged (ledger cache hits)');
-  const held = await buildItem({ spec: { id: 's', name: 'S', slot: 'main_hand', prompt: 'p', key: 'green', anims: ['idle'], dirs: ['south'], method: 'skel' }, rig, cells: cs.map((c) => ({ ...c, base: padImg(c.base, 16), layer: padImg(c.layer, 16) })), route: 'green', provenance: [], qa: q.qa, pad: 16 });
-  console.assert(held.item.layers.every((l) => l.cell?.w === 40 && l.pivot?.x === 4 + 16 && l.pivot?.y === 8 + 16), 'held layers carry cell + pivot');
+	// B9 held route: pad, keypoints, frame 0 last, oversize layer
+	const c64 = { w: 64, h: 64 },
+		kp = (x: number, y: number) => [
+			{ label: 'RIGHT ARM', x, y },
+			{ label: 'NOSE', x: 0.5, y: 0.3 }
+		];
+	console.assert(
+		padOf('main_hand', 'skel') === 16 &&
+			padOf('main_hand', 'anchor') === 0 &&
+			padOf('head', 'skel') === 0,
+		'padOf: held + skel only'
+	);
+	console.assert(
+		padKeypoints(kp(0.5, 0.5), c64, 16)[0].x === 0.5 &&
+			padKeypoints(kp(0, 1), c64, 16)[0].y === +(80 / 96).toFixed(4),
+		'padKeypoints keeps the body point'
+	);
+	const pb = padImg(base, 2);
+	console.assert(
+		pb.w === 12 &&
+			pb.data[((2 + 2) * 12 + 2 + 2) * 4 + 3] === 255 &&
+			pb.data[(2 * 12 + 2) * 4 + 3] === 0,
+		'padImg'
+	);
+	const rest0 = kp(0.6, 0.6),
+		seq = [kp(0.6, 0.605), kp(0.7, 0.4), kp(0.8, 0.3)];
+	console.assert(
+		f0Last('main_hand', rest0, seq, c64) &&
+			!f0Last('head', rest0, seq, c64) &&
+			!f0Last('main_hand', rest0, seq.slice(1), c64),
+		'f0Last: held + near-rest first frame'
+	);
+	const req = itemRoute.pose({
+		keyframePngB64: 'x',
+		rest: rest0,
+		poses: seq,
+		item: 'a sword',
+		slot: 'main_hand',
+		key: 'green',
+		anim: 'slash',
+		dir: 'south',
+		seed: 1,
+		cell: c64,
+		pad: 16
+	}).body as { keypoints: Keypoint[][]; description: string };
+	console.assert(
+		req.keypoints[2][0].x === padKeypoints(seq[0], c64, 16)[0].x &&
+			unrotate([1, 2, 0], true).join() === '0,1,2' &&
+			req.description.includes('exactly one held item'),
+		'pose: frame 0 sent last, padded, one held item'
+	);
+	const helm = itemRoute.pose({
+		keyframePngB64: 'x',
+		rest: rest0,
+		poses: seq,
+		item: 'a helmet',
+		slot: 'head',
+		key: 'green',
+		anim: 'slash',
+		dir: 'south',
+		seed: 1,
+		cell: c64
+	}).body as { keypoints: Keypoint[][]; description: string };
+	console.assert(
+		helm.keypoints[0] === seq[0] &&
+			helm.description ===
+				'solid bright green mannequin (chroma key color) wearing a helmet, empty hands, no weapon',
+		'non-held pose request unchanged (ledger cache hits)'
+	);
+	const held = await buildItem({
+		spec: {
+			id: 's',
+			name: 'S',
+			slot: 'main_hand',
+			prompt: 'p',
+			key: 'green',
+			anims: ['idle'],
+			dirs: ['south'],
+			method: 'skel'
+		},
+		rig,
+		cells: cs.map((c) => ({ ...c, base: padImg(c.base, 16), layer: padImg(c.layer, 16) })),
+		route: 'green',
+		provenance: [],
+		qa: q.qa,
+		pad: 16
+	});
+	console.assert(
+		held.item.layers.every(
+			(l) => l.cell?.w === 40 && l.pivot?.x === 4 + 16 && l.pivot?.y === 8 + 16
+		),
+		'held layers carry cell + pivot'
+	);
 
-  // B9 cleanup: a streak outside the keyframe support is trimmed, a split item inside it is kept, consensus keeps real parts
-  const kr = { ...rig, cell: { w: 16, h: 16 }, rest: { south: { image: 'sha256:x', keypoints: [] } }, animations: [{ id: 'walk', cells: 3, loop: true, frames: [] }] } as unknown as Rig;
-  const K = makeImg(16, 16);
-  for (let y = 4; y < 8; y++) for (let x = 5; x < 9; x++) K.data.set([90, 90, 100, 255], (y * 16 + x) * 4);
-  const cell16 = (extra: number[], hole = false) => {
-    const L = makeImg(16, 16); L.data.set(K.data);
-    if (hole) for (let y = 4; y < 8; y++) L.data.fill(0, (y * 16 + 6) * 4, (y * 16 + 7) * 4 + 4); // split in two by a forearm
-    for (const p of extra) L.data.set([200, 200, 210, 255], p * 4);
-    const mask = maskOf(L);
-    return { ...cs[0], key: '', posed: true, layer: L, mask, area: sum(mask), out: L, base: L, stray: 0 } as CellOut;
-  };
-  const streak = [13 * 16 + 1, 14 * 16 + 1, 15 * 16 + 1], plume = [3 * 16 + 11, 2 * 16 + 11];
-  const t = [cell16([...streak, ...plume]), cell16(plume, true), cell16(plume)].map((c, i) => ({ ...c, key: `walk/south/${i}` }));
-  const gone = trimToKeyframe(kr, t, { south: K });
-  // T3: worn items drop detached off-body smears, keep a part split off on the body
-  const wb = makeImg(16, 16);
-  for (let y = 4; y < 12; y++) for (let x = 4; x < 10; x++) wb.data.set([150, 150, 150, 255], (y * 16 + x) * 4);
-  const wl = makeImg(16, 16);
-  for (const p of [4 * 16 + 4, 4 * 16 + 5, 5 * 16 + 4, 5 * 16 + 5, 5 * 16 + 6, 9 * 16 + 8, 9 * 16 + 9, 10 * 16 + 8, 1 * 16 + 13, 2 * 16 + 13, 2 * 16 + 14]) wl.data.set([120, 70, 30, 255], p * 4);
-  const wc = { ...cs[0], key: 'slash/east/0', posed: true, base: wb, layer: wl, mask: maskOf(wl), area: 11, stray: 0 } as CellOut;
-  console.assert(dropOffBody([wc]) === 3 && wc.area === 8 && wc.mask[9 * 16 + 8] === 1 && !wc.mask[1 * 16 + 13], 'dropOffBody: off-body smear removed, on-body split part kept');
-  // closeGrip: a bow limb on row 8 split by the stand-in's hand (x 6-8, key px) is bridged where the body has no px; the same
-  // gap over the body (x 6-8 of row 12) stays open, and a 5 px gap (row 4) is too wide to close
-  const go = makeImg(16, 16), gb = makeImg(16, 16), gl = makeImg(16, 16);
-  for (const [y, x0, x1] of [[8, 6, 8], [12, 6, 8], [4, 5, 9]]) for (let x = 0; x < 16; x++) (x >= x0 && x <= x1 ? go : gl).data.set(x >= x0 && x <= x1 ? [40, 220, 40, 255] : [120, 70, 30, 255], (y * 16 + x) * 4);
-  for (let x = 6; x <= 8; x++) gb.data.set([200, 160, 130, 255], (12 * 16 + x) * 4);
-  const gc = { ...cs[0], key: 'walk/south/0', posed: true, base: gb, out: go, layer: gl, mask: maskOf(gl), area: sum(maskOf(gl)), chroma: 'green' as const, stray: 0 } as CellOut;
-  console.assert(closeGrip([gc]) === 3 && gc.mask[8 * 16 + 7] === 1 && !gc.mask[12 * 16 + 7] && !gc.mask[4 * 16 + 7] && gc.layer.data[(8 * 16 + 7) * 4] === 120, 'closeGrip bridges an off-body hand gap only');
-  // round 3 baseCut: a head (x 4-11, y 4-15) with an ear at x 2-3, y 6-7; the helm covers rows 4-9; PixelLab erased the ear and
-  // one px inside the body (7, 12). The ear is cut (it touches the helm and the body edge), the inner hole is not
-  const eb = makeImg(16, 16), eo = makeImg(16, 16), ear = [6 * 16 + 3, 7 * 16 + 3, 6 * 16 + 2];
-  for (let y = 4; y < 16; y++) for (let x = 4; x < 12; x++) eb.data.set([200, 150, 120, 255], (y * 16 + x) * 4);
-  for (const p of ear) eb.data.set([200, 150, 120, 255], p * 4);
-  for (let p = 0; p < 256; p++) if (eb.data[p * 4 + 3] && !ear.includes(p) && p !== 12 * 16 + 7) eo.data.set(((p / 16) | 0) <= 9 && p % 16 >= 4 ? [120, 70, 30, 255] : [40, 220, 40, 255], p * 4);
-  const ec = (cut?: { maxY: number; allow?: Uint8Array }, posed = false) => extractCell({ key: 'rest/south/0', call: 0, base: eb, out: eo, route: 'green', band: { x: 0, y: 0, w: 16, h: 16 }, posed, cut });
-  const ek = ec({ maxY: 12 });
-  console.assert(sum(ek.cut!) === 3 && ek.cut![6 * 16 + 3] === 1 && !ek.cut![12 * 16 + 7] && ek.keyLost === 1, 'baseCut: the erased ear is hidden, a hole inside the body still counts for G2');
-  // 3 erased px inside the body under the helm (x 6-8, y 10) are not cut (they do not reach the body's edge); two ears (6 px) exceed
-  // CUT.maxShare of this 99 px body, so nothing is cut and G2 decides as before
-  const inner = { ...eo, data: new Uint8ClampedArray(eo.data) }; inner.data.fill(0, (10 * 16 + 6) * 4, (10 * 16 + 9) * 4);
-  const ic = extractCell({ key: 'rest/south/0', call: 0, base: eb, out: inner, route: 'green', band: { x: 0, y: 0, w: 16, h: 16 }, cut: { maxY: 12 } });
-  const eb2 = { ...eb, data: new Uint8ClampedArray(eb.data) }; for (const p of [6 * 16 + 12, 7 * 16 + 12, 6 * 16 + 13]) eb2.data.set([200, 150, 120, 255], p * 4);
-  console.assert(sum(ic.cut!) === 3 && !ic.cut![10 * 16 + 7] && !extractCell({ key: 'rest/south/0', call: 0, base: eb2, out: eo, route: 'green', band: { x: 0, y: 0, w: 16, h: 16 }, cut: { maxY: 12 } }).cut, 'baseCut: only the body edge, and never more than CUT.maxShare');
-  console.assert(!ec({ maxY: 5 }).cut && !ec({ maxY: 12 }, true).cut && ec({ maxY: 12, allow: ek.cut }, true).cut?.[6 * 16 + 2] === 1, 'baseCut: rows limit; posed frames only inside the keyframe cut');
-  const neck = { NECK: { x: 8, y: 9 } } as unknown as Skeleton;
-  console.assert(cutRows('main_hand', neck, 16) === undefined && cutRows('head', neck, 16) === 12 && cutRows('head', undefined, 16) === undefined, 'baseCut: head band rows, never held items');
-  console.assert(gone === 3 && t[0].area === 16 + 2 && t[1].area === 8 + 2 && !t[0].mask[13 * 16 + 1] && t[0].mask[3 * 16 + 11] === 1, `trimToKeyframe ${gone} ${t.map((c) => c.area)}`);
+	// B9 cleanup: a streak outside the keyframe support is trimmed, a split item inside it is kept, consensus keeps real parts
+	const kr = {
+		...rig,
+		cell: { w: 16, h: 16 },
+		rest: { south: { image: 'sha256:x', keypoints: [] } },
+		animations: [{ id: 'walk', cells: 3, loop: true, frames: [] }]
+	} as unknown as Rig;
+	const K = makeImg(16, 16);
+	for (let y = 4; y < 8; y++)
+		for (let x = 5; x < 9; x++) K.data.set([90, 90, 100, 255], (y * 16 + x) * 4);
+	const cell16 = (extra: number[], hole = false) => {
+		const L = makeImg(16, 16);
+		L.data.set(K.data);
+		if (hole) for (let y = 4; y < 8; y++) L.data.fill(0, (y * 16 + 6) * 4, (y * 16 + 7) * 4 + 4); // split in two by a forearm
+		for (const p of extra) L.data.set([200, 200, 210, 255], p * 4);
+		const mask = maskOf(L);
+		return {
+			...cs[0],
+			key: '',
+			posed: true,
+			layer: L,
+			mask,
+			area: sum(mask),
+			out: L,
+			base: L,
+			stray: 0
+		} as CellOut;
+	};
+	const streak = [13 * 16 + 1, 14 * 16 + 1, 15 * 16 + 1],
+		plume = [3 * 16 + 11, 2 * 16 + 11];
+	const t = [cell16([...streak, ...plume]), cell16(plume, true), cell16(plume)].map((c, i) => ({
+		...c,
+		key: `walk/south/${i}`
+	}));
+	const gone = trimToKeyframe(kr, t, { south: K });
+	// T3: worn items drop detached off-body smears, keep a part split off on the body
+	const wb = makeImg(16, 16);
+	for (let y = 4; y < 12; y++)
+		for (let x = 4; x < 10; x++) wb.data.set([150, 150, 150, 255], (y * 16 + x) * 4);
+	const wl = makeImg(16, 16);
+	for (const p of [
+		4 * 16 + 4,
+		4 * 16 + 5,
+		5 * 16 + 4,
+		5 * 16 + 5,
+		5 * 16 + 6,
+		9 * 16 + 8,
+		9 * 16 + 9,
+		10 * 16 + 8,
+		1 * 16 + 13,
+		2 * 16 + 13,
+		2 * 16 + 14
+	])
+		wl.data.set([120, 70, 30, 255], p * 4);
+	const wc = {
+		...cs[0],
+		key: 'slash/east/0',
+		posed: true,
+		base: wb,
+		layer: wl,
+		mask: maskOf(wl),
+		area: 11,
+		stray: 0
+	} as CellOut;
+	console.assert(
+		dropOffBody([wc]) === 3 && wc.area === 8 && wc.mask[9 * 16 + 8] === 1 && !wc.mask[1 * 16 + 13],
+		'dropOffBody: off-body smear removed, on-body split part kept'
+	);
+	// closeGrip: a bow limb on row 8 split by the stand-in's hand (x 6-8, key px) is bridged where the body has no px; the same
+	// gap over the body (x 6-8 of row 12) stays open, and a 5 px gap (row 4) is too wide to close
+	const go = makeImg(16, 16),
+		gb = makeImg(16, 16),
+		gl = makeImg(16, 16);
+	for (const [y, x0, x1] of [
+		[8, 6, 8],
+		[12, 6, 8],
+		[4, 5, 9]
+	])
+		for (let x = 0; x < 16; x++)
+			(x >= x0 && x <= x1 ? go : gl).data.set(
+				x >= x0 && x <= x1 ? [40, 220, 40, 255] : [120, 70, 30, 255],
+				(y * 16 + x) * 4
+			);
+	for (let x = 6; x <= 8; x++) gb.data.set([200, 160, 130, 255], (12 * 16 + x) * 4);
+	const gc = {
+		...cs[0],
+		key: 'walk/south/0',
+		posed: true,
+		base: gb,
+		out: go,
+		layer: gl,
+		mask: maskOf(gl),
+		area: sum(maskOf(gl)),
+		chroma: 'green' as const,
+		stray: 0
+	} as CellOut;
+	console.assert(
+		closeGrip([gc]) === 3 &&
+			gc.mask[8 * 16 + 7] === 1 &&
+			!gc.mask[12 * 16 + 7] &&
+			!gc.mask[4 * 16 + 7] &&
+			gc.layer.data[(8 * 16 + 7) * 4] === 120,
+		'closeGrip bridges an off-body hand gap only'
+	);
+	// round 3 baseCut: a head (x 4-11, y 4-15) with an ear at x 2-3, y 6-7; the helm covers rows 4-9; PixelLab erased the ear and
+	// one px inside the body (7, 12). The ear is cut (it touches the helm and the body edge), the inner hole is not
+	const eb = makeImg(16, 16),
+		eo = makeImg(16, 16),
+		ear = [6 * 16 + 3, 7 * 16 + 3, 6 * 16 + 2];
+	for (let y = 4; y < 16; y++)
+		for (let x = 4; x < 12; x++) eb.data.set([200, 150, 120, 255], (y * 16 + x) * 4);
+	for (const p of ear) eb.data.set([200, 150, 120, 255], p * 4);
+	for (let p = 0; p < 256; p++)
+		if (eb.data[p * 4 + 3] && !ear.includes(p) && p !== 12 * 16 + 7)
+			eo.data.set(
+				((p / 16) | 0) <= 9 && p % 16 >= 4 ? [120, 70, 30, 255] : [40, 220, 40, 255],
+				p * 4
+			);
+	const ec = (cut?: { maxY: number; allow?: Uint8Array }, posed = false) =>
+		extractCell({
+			key: 'rest/south/0',
+			call: 0,
+			base: eb,
+			out: eo,
+			route: 'green',
+			band: { x: 0, y: 0, w: 16, h: 16 },
+			posed,
+			cut
+		});
+	const ek = ec({ maxY: 12 });
+	console.assert(
+		sum(ek.cut!) === 3 && ek.cut![6 * 16 + 3] === 1 && !ek.cut![12 * 16 + 7] && ek.keyLost === 1,
+		'baseCut: the erased ear is hidden, a hole inside the body still counts for G2'
+	);
+	// 3 erased px inside the body under the helm (x 6-8, y 10) are not cut (they do not reach the body's edge); two ears (6 px) exceed
+	// CUT.maxShare of this 99 px body, so nothing is cut and G2 decides as before
+	const inner = { ...eo, data: new Uint8ClampedArray(eo.data) };
+	inner.data.fill(0, (10 * 16 + 6) * 4, (10 * 16 + 9) * 4);
+	const ic = extractCell({
+		key: 'rest/south/0',
+		call: 0,
+		base: eb,
+		out: inner,
+		route: 'green',
+		band: { x: 0, y: 0, w: 16, h: 16 },
+		cut: { maxY: 12 }
+	});
+	const eb2 = { ...eb, data: new Uint8ClampedArray(eb.data) };
+	for (const p of [6 * 16 + 12, 7 * 16 + 12, 6 * 16 + 13])
+		eb2.data.set([200, 150, 120, 255], p * 4);
+	console.assert(
+		sum(ic.cut!) === 3 &&
+			!ic.cut![10 * 16 + 7] &&
+			!extractCell({
+				key: 'rest/south/0',
+				call: 0,
+				base: eb2,
+				out: eo,
+				route: 'green',
+				band: { x: 0, y: 0, w: 16, h: 16 },
+				cut: { maxY: 12 }
+			}).cut,
+		'baseCut: only the body edge, and never more than CUT.maxShare'
+	);
+	console.assert(
+		!ec({ maxY: 5 }).cut &&
+			!ec({ maxY: 12 }, true).cut &&
+			ec({ maxY: 12, allow: ek.cut }, true).cut?.[6 * 16 + 2] === 1,
+		'baseCut: rows limit; posed frames only inside the keyframe cut'
+	);
+	const neck = { NECK: { x: 8, y: 9 } } as unknown as Skeleton;
+	console.assert(
+		cutRows('main_hand', neck, 16) === undefined &&
+			cutRows('head', neck, 16) === 12 &&
+			cutRows('head', undefined, 16) === undefined,
+		'baseCut: head band rows, never held items'
+	);
+	console.assert(
+		gone === 3 &&
+			t[0].area === 16 + 2 &&
+			t[1].area === 8 + 2 &&
+			!t[0].mask[13 * 16 + 1] &&
+			t[0].mask[3 * 16 + 11] === 1,
+		`trimToKeyframe ${gone} ${t.map((c) => c.area)}`
+	);
 }

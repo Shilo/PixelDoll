@@ -1,108 +1,334 @@
 <script lang="ts">
-  import Sheet from './Sheet.svelte'
-  import { default as ApiPeek } from './ApiPeek.svelte'
-  import { balancePlan, cancelPlan, queuedPlan } from './apiPlans.ts'
-  import { queue, type JobRec } from '../lib/pixellab/queue.ts'
-  import { app, refreshBalance } from '../lib/app.svelte.ts'
-  import { fmtNum } from './model.ts'
-  import { ui, store, cleanUp, toast, equipment, refreshFits, openFit } from './state.svelte.ts'
-  async function clear() {
-    let n: Awaited<ReturnType<typeof cleanUp>>
-    try { n = await cleanUp() } catch (e) { console.error('clear finished', e); toast(`Could not clear finished jobs: ${(e as Error).message}`, { tone: 'danger' }); return }
-    toast(`Cleared ${n.jobs} finished job${n.jobs === 1 ? '' : 's'}${n.blobs ? ` and ${n.blobs} unused image${n.blobs === 1 ? '' : 's'}` : ''}. Jobs your drafts or a running create or move still use are kept.`)
-  }
-  import { ChevronRight, CircleAlert, CircleCheck, Coins, RefreshCw } from './icons.ts'
+	import Sheet from './Sheet.svelte';
+	import { default as ApiPeek } from './ApiPeek.svelte';
+	import { balancePlan, cancelPlan, queuedPlan } from './apiPlans.ts';
+	import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+	import { app, refreshBalance } from '../lib/app.svelte.ts';
+	import { fmtNum } from './model.ts';
+	import { ui, store, cleanUp, toast, equipment, refreshFits, openFit } from './state.svelte.ts';
+	async function clear() {
+		let n: Awaited<ReturnType<typeof cleanUp>>;
+		try {
+			n = await cleanUp();
+		} catch (e) {
+			console.error('clear finished', e);
+			toast(`Could not clear finished jobs: ${(e as Error).message}`, { tone: 'danger' });
+			return;
+		}
+		toast(
+			`Cleared ${n.jobs} finished job${n.jobs === 1 ? '' : 's'}${n.blobs ? ` and ${n.blobs} unused image${n.blobs === 1 ? '' : 's'}` : ''}. Jobs your drafts or a running create or move still use are kept.`
+		);
+	}
+	import { ChevronRight, CircleAlert, CircleCheck, Coins, RefreshCw } from './icons.ts';
 
-  let now = $state(Date.now())
-  const balanceScope = crypto.randomUUID()
-  $effect(() => { const t = setInterval(() => (now = Date.now()), 1000); return () => clearInterval(t) })
-  const refreshEquipment = () => { void refreshFits().catch(() => toast('Could not load saved equipment fits.', { tone: 'danger' })) }
-  $effect(() => { refreshEquipment() })
-  const fits = $derived(equipment.fits.filter((f) => f.stage !== 'accepted' && f.stage !== 'discarded'))
-  const fitLabel = (stage: string) => ({ ready: 'Ready to preview', 'rest-running': 'Fitting at rest', 'rest-review': 'Review rest fit', 'pose-running': 'Animating fit', 'fit-review': 'Review fitted copy', 'needs-attention': 'Needs attention' })[stage] ?? stage
-  const jobs = $derived([...$queue.jobs].reverse())
-  const running = $derived(jobs.filter((r) => r.state === 'running' || r.state === 'submitting'))
-  const queued = $derived(jobs.filter((r) => r.state === 'queued'))
-  $effect(() => {
-    if (!equipment.running.length && !fits.some((f) => f.stage.endsWith('running')) && !running.length && !queued.length) return
-    const t = setInterval(refreshEquipment, 2000)
-    return () => clearInterval(t)
-  })
-  const done = $derived(jobs.filter((r) => !['running', 'submitting', 'queued'].includes(r.state)).slice(0, 12))
-  const nice = (r: JobRec) => r.label.replace(/^M3 /, '').replace(/^skeleton sha256:.{8}.*/, 'Finding joints')
-  const pct = (r: JobRec) => { const ps = r.jobs.map((s) => (s.done ? 1 : Math.min(1, s.progress ?? 0))); return ps.length ? Math.round((ps.reduce((a, b) => a + b, 0) / ps.length) * 100) : 0 }
-  const mins = (ms: number) => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` }
-  const cost = (r: JobRec) => [r.gens ? `${+r.gens.toFixed(2)} gens` : '', r.usd ? `$${r.usd.toFixed(3)}` : ''].filter(Boolean).join(' + ')
+	let now = $state(Date.now());
+	const balanceScope = crypto.randomUUID();
+	$effect(() => {
+		const t = setInterval(() => (now = Date.now()), 1000);
+		return () => clearInterval(t);
+	});
+	const refreshEquipment = () => {
+		void refreshFits().catch(() =>
+			toast('Could not load saved equipment fits.', { tone: 'danger' })
+		);
+	};
+	$effect(() => {
+		refreshEquipment();
+	});
+	const fits = $derived(
+		equipment.fits.filter((f) => f.stage !== 'accepted' && f.stage !== 'discarded')
+	);
+	const fitLabel = (stage: string) =>
+		({
+			ready: 'Ready to preview',
+			'rest-running': 'Fitting at rest',
+			'rest-review': 'Review rest fit',
+			'pose-running': 'Animating fit',
+			'fit-review': 'Review fitted copy',
+			'needs-attention': 'Needs attention'
+		})[stage] ?? stage;
+	const jobs = $derived([...$queue.jobs].reverse());
+	const running = $derived(jobs.filter((r) => r.state === 'running' || r.state === 'submitting'));
+	const queued = $derived(jobs.filter((r) => r.state === 'queued'));
+	$effect(() => {
+		if (
+			!equipment.running.length &&
+			!fits.some((f) => f.stage.endsWith('running')) &&
+			!running.length &&
+			!queued.length
+		)
+			return;
+		const t = setInterval(refreshEquipment, 2000);
+		return () => clearInterval(t);
+	});
+	const done = $derived(
+		jobs.filter((r) => !['running', 'submitting', 'queued'].includes(r.state)).slice(0, 12)
+	);
+	const nice = (r: JobRec) =>
+		r.label.replace(/^M3 /, '').replace(/^skeleton sha256:.{8}.*/, 'Finding joints');
+	const pct = (r: JobRec) => {
+		const ps = r.jobs.map((s) => (s.done ? 1 : Math.min(1, s.progress ?? 0)));
+		return ps.length ? Math.round((ps.reduce((a, b) => a + b, 0) / ps.length) * 100) : 0;
+	};
+	const mins = (ms: number) => {
+		const s = Math.round(ms / 1000);
+		return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+	};
+	const cost = (r: JobRec) =>
+		[r.gens ? `${+r.gens.toFixed(2)} gens` : '', r.usd ? `$${r.usd.toFixed(3)}` : '']
+			.filter(Boolean)
+			.join(' + ');
 </script>
 
 <Sheet title="Activity" cancel="Done" onclose={() => (ui.sheet = null)}>
-  <div class="act-list">
-    <div class="field-row">
-      <span class="balance" style="display:flex;gap:6px;align-items:center"><Coins size={16} />
-        {#if app.balance}<b class="num">{fmtNum(app.balance.subscription.generations)}</b> of {fmtNum(app.balance.subscription.total)} gens left{app.balance.credits.usd ? ` · $${app.balance.credits.usd.toFixed(2)}` : ''}
-        {:else if app.key}Balance unavailable{:else}Not connected{/if}</span>
-      {#if app.key}<span class="api-action"><ApiPeek scope="balance-refresh" label="Refresh balance" plan={balancePlan()} activityScope={balanceScope} /><button class="bu-action btn icon plain" data-variant="quiet" aria-label="Refresh balance" onclick={() => refreshBalance({ activityScope: balanceScope, label: 'Refresh balance', background: false })}><RefreshCw size={14} /></button></span>{:else}<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'connect')}>Connect</button>{/if}
-    </div>
-    <p class="faint small" data-testid="queue-capacity">Up to {$queue.concurrency} {$queue.concurrency === 1 ? 'job' : 'jobs'} at once.</p>
-    {#if $queue.capacityRetryAt > now}
-      <p class="notice small" role="status">PixelLab is busy, possibly in another app. Waiting {Math.ceil(($queue.capacityRetryAt - now) / 1000)} s before trying again. Your jobs stay queued.</p>
-    {/if}
-    {#if $queue.role === 'follower' && ui.waitingForTab}
-      <p class="notice small"><CircleAlert size={14} />PixelDoll is running jobs in another tab, so this tab can’t start yours yet. Close that tab and it starts here, or press Done to cancel.</p>
-    {:else if $queue.role === 'follower'}
-      <p class="notice small"><CircleAlert size={14} />Running in another tab. Keys stay in the tab where you connect. Connect PixelLab in the active queue tab, or close it to run jobs here.</p>
-    {/if}
-    {#if $queue.paused}
-      <p class="notice warn small"><CircleAlert size={14} />{$queue.paused === 'auth' ? "PixelLab didn’t accept the key. Jobs wait until you connect again." : $queue.paused === 'offline' ? "You’re offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs." : 'PixelLab credits are insufficient. Jobs wait until credits are available.'}
-        {#if $queue.paused !== 'offline'}<span class="api-action">{#if $queue.paused !== 'auth'}<ApiPeek scope="queue-resume" label="Resume waiting requests" plan={queuedPlan(jobs)} />{/if}<button class="bu-action btn sm" data-variant="outline" onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}>{$queue.paused === 'auth' ? 'Connect' : 'Resume'}</button></span>{/if}</p>
-    {/if}
-    {#if fits.length}
-      <section class="act-group"><span class="sec-title">Equipment fits</span><ul>{#each fits as fit (fit.id)}
-        <li><CircleAlert size={16} /><span class="act-main"><b>{fit.name}</b><span class="muted small">{store.projects.find((p) => p.id === fit.targetId)?.name ?? 'Character'} · {fitLabel(fit.stage)} · {+fit.spentGens.toFixed(2)} gens{fit.spentUsd && fit.spentUsd > 0 ? ` + $${fit.spentUsd.toFixed(3)}` : ''} spent</span></span><button class="bu-action btn sm" data-variant="outline" onclick={() => openFit(fit.id)}>{fit.stage.endsWith('running') ? 'View' : 'Continue'}</button></li>
-      {/each}</ul></section>
-    {/if}
-    {#if !running.length && !queued.length}<p class="muted">Nothing generating.</p>{/if}
-    {#if running.length}
-      <section class="act-group"><span class="sec-title">Generating</span>
-        {#if running.some((r) => r.state === 'submitting')}<p class="faint small" id="activity-submitting-stop">Stop is unavailable until PixelLab responds.</p>{/if}
-        <ul>{#each running as r (r.id)}
-          {@const waiting = !r.jobs.some((s) => !!s.id)}
-          <li><span class="ring" class:spin={waiting} style:--p={pct(r)} aria-hidden="true"></span><span class="act-main"><span class="api-action"><b>{nice(r)}</b><ApiPeek scope={`job-running-${r.id}`} label={nice(r)} plan={[]} queueIds={[r.id]} /></span><span class="muted small">{waiting ? 'Waiting for PixelLab' : `${pct(r)}%`}{r.jobs[0]?.queuePosition ? ` · #${r.jobs[0].queuePosition} in line` : ''}</span></span>
-            <span class="act-meta num">{r.submittedAt ? mins(now - r.submittedAt) : ''}<br /><span class="api-action"><ApiPeek scope={`job-stop-${r.id}`} label={`Stop ${nice(r)}`} plan={cancelPlan(r)} /><button class="bu-action btn link small" data-variant="quiet" disabled={r.state === 'submitting'} aria-describedby={r.state === 'submitting' ? 'activity-submitting-stop' : undefined} onclick={() => queue.cancel(r.id)}>Stop</button></span></span></li>
-        {/each}</ul>
-      </section>
-    {/if}
-    {#if queued.length}
-      <section class="act-group"><span class="sec-title">Waiting</span>
-        <ul>{#each queued as r (r.id)}
-          <li><span class="ring"></span><span class="act-main"><b>{nice(r)}</b><span class="muted small">{r.waitingForPlan ?? (Math.max(r.nextAt, $queue.capacityRetryAt) > now ? `retry in ${Math.ceil((Math.max(r.nextAt, $queue.capacityRetryAt) - now) / 1000)} s` : !app.key ? 'needs your key' : 'queued')}</span></span>
-            <span class="act-meta"><button class="bu-action btn link small" data-variant="quiet" onclick={() => queue.cancel(r.id)}>Cancel</button></span></li>
-        {/each}</ul>
-      </section>
-    {/if}
-    {#if done.length}
-      <section class="act-group"><span class="sec-title">Recent</span>
-        <ul>{#each done as r (r.id)}
-          <li>{#if r.state === 'done'}<CircleCheck size={16} style="color:var(--ok)" />{:else}<CircleAlert size={16} style="color:var(--bad)" />{/if}
-            <span class="act-main"><b>{nice(r)}</b><span class="muted small">{r.state === 'done' ? (r.finishedAt && r.submittedAt ? mins(r.finishedAt - r.submittedAt) : 'done') : r.state === 'lost' ? 'unknown: may have run, check pixellab.ai' : r.state}</span></span>
-            <span class="act-meta num muted">{cost(r)}<ApiPeek scope={`job-result-${r.id}`} label={nice(r)} plan={[]} queueIds={[r.id]} /></span></li>
-        {/each}</ul>
-      </section>
-    {/if}
-    <p class="faint small">This session: {+$queue.sessionGens.toFixed(2)} gens{$queue.sessionUsd ? ` + $${$queue.sessionUsd.toFixed(3)}` : ''}. Some moves are billed in dollars instead of gens; your balance above is the real total.</p>
-    <details class="disclosure">
-      <summary><ChevronRight size={14} />Details</summary>
-      <div>
-        <div class="field-row small">
-          <button class="bu-action btn sm" data-variant="outline" onclick={clear} disabled={$queue.role === 'follower'} title={$queue.role === 'follower' ? 'Clear it in the PixelDoll tab that runs the jobs' : undefined}>Clear finished</button>
-        </div>
-        <div style="overflow:auto;max-height:240px">
-          <table class="ledger">
-            <thead><tr><th>Job</th><th>Endpoint</th><th>State</th><th>Cost</th></tr></thead>
-            <tbody>{#each jobs.slice(0, 50) as r (r.id)}<tr><td>{r.label}</td><td class="mono">{r.endpoint}</td><td title={r.error}>{r.state}{r.attempts > 1 ? ` (try ${r.attempts})` : ''}{r.error ? ` · ${r.error.slice(0, 80)}` : ''}</td><td class="num">{cost(r)}</td></tr>{/each}</tbody>
-          </table>
-        </div>
-      </div>
-    </details>
-  </div>
+	<div class="act-list">
+		<div class="field-row">
+			<span class="balance" style="display:flex;gap:6px;align-items:center"
+				><Coins size={16} />
+				{#if app.balance}<b class="num">{fmtNum(app.balance.subscription.generations)}</b> of {fmtNum(
+						app.balance.subscription.total
+					)} gens left{app.balance.credits.usd ? ` · $${app.balance.credits.usd.toFixed(2)}` : ''}
+				{:else if app.key}Balance unavailable{:else}Not connected{/if}</span
+			>
+			{#if app.key}<span class="api-action"
+					><ApiPeek
+						scope="balance-refresh"
+						label="Refresh balance"
+						plan={balancePlan()}
+						activityScope={balanceScope}
+					/><button
+						class="bu-action btn icon plain"
+						data-variant="quiet"
+						aria-label="Refresh balance"
+						onclick={() =>
+							refreshBalance({
+								activityScope: balanceScope,
+								label: 'Refresh balance',
+								background: false
+							})}><RefreshCw size={14} /></button
+					></span
+				>{:else}<button
+					class="bu-action btn sm"
+					data-variant="outline"
+					onclick={() => (ui.sheet = 'connect')}>Connect</button
+				>{/if}
+		</div>
+		<p class="faint small" data-testid="queue-capacity">
+			Up to {$queue.concurrency}
+			{$queue.concurrency === 1 ? 'job' : 'jobs'} at once.
+		</p>
+		{#if $queue.capacityRetryAt > now}
+			<p class="notice small" role="status">
+				PixelLab is busy, possibly in another app. Waiting {Math.ceil(
+					($queue.capacityRetryAt - now) / 1000
+				)} s before trying again. Your jobs stay queued.
+			</p>
+		{/if}
+		{#if $queue.role === 'follower' && ui.waitingForTab}
+			<p class="notice small">
+				<CircleAlert size={14} />PixelDoll is running jobs in another tab, so this tab can’t start
+				yours yet. Close that tab and it starts here, or press Done to cancel.
+			</p>
+		{:else if $queue.role === 'follower'}
+			<p class="notice small">
+				<CircleAlert size={14} />Running in another tab. Keys stay in the tab where you connect.
+				Connect PixelLab in the active queue tab, or close it to run jobs here.
+			</p>
+		{/if}
+		{#if $queue.paused}
+			<p class="notice warn small">
+				<CircleAlert size={14} />{$queue.paused === 'auth'
+					? 'PixelLab didn’t accept the key. Jobs wait until you connect again.'
+					: $queue.paused === 'offline'
+						? 'You’re offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs.'
+						: 'PixelLab credits are insufficient. Jobs wait until credits are available.'}
+				{#if $queue.paused !== 'offline'}<span class="api-action"
+						>{#if $queue.paused !== 'auth'}<ApiPeek
+								scope="queue-resume"
+								label="Resume waiting requests"
+								plan={queuedPlan(jobs)}
+							/>{/if}<button
+							class="bu-action btn sm"
+							data-variant="outline"
+							onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}
+							>{$queue.paused === 'auth' ? 'Connect' : 'Resume'}</button
+						></span
+					>{/if}
+			</p>
+		{/if}
+		{#if fits.length}
+			<section class="act-group">
+				<span class="sec-title">Equipment fits</span>
+				<ul>
+					{#each fits as fit (fit.id)}
+						<li>
+							<CircleAlert size={16} /><span class="act-main"
+								><b>{fit.name}</b><span class="muted small"
+									>{store.projects.find((p) => p.id === fit.targetId)?.name ?? 'Character'} · {fitLabel(
+										fit.stage
+									)} · {+fit.spentGens.toFixed(2)} gens{fit.spentUsd && fit.spentUsd > 0
+										? ` + $${fit.spentUsd.toFixed(3)}`
+										: ''} spent</span
+								></span
+							><button
+								class="bu-action btn sm"
+								data-variant="outline"
+								onclick={() => openFit(fit.id)}
+								>{fit.stage.endsWith('running') ? 'View' : 'Continue'}</button
+							>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
+		{#if !running.length && !queued.length}<p class="muted">Nothing generating.</p>{/if}
+		{#if running.length}
+			<section class="act-group">
+				<span class="sec-title">Generating</span>
+				{#if running.some((r) => r.state === 'submitting')}<p
+						class="faint small"
+						id="activity-submitting-stop"
+					>
+						Stop is unavailable until PixelLab responds.
+					</p>{/if}
+				<ul>
+					{#each running as r (r.id)}
+						{@const waiting = !r.jobs.some((s) => !!s.id)}
+						<li>
+							<span class="ring" class:spin={waiting} style:--p={pct(r)} aria-hidden="true"
+							></span><span class="act-main"
+								><span class="api-action"
+									><b>{nice(r)}</b><ApiPeek
+										scope={`job-running-${r.id}`}
+										label={nice(r)}
+										plan={[]}
+										queueIds={[r.id]}
+									/></span
+								><span class="muted small"
+									>{waiting ? 'Waiting for PixelLab' : `${pct(r)}%`}{r.jobs[0]?.queuePosition
+										? ` · #${r.jobs[0].queuePosition} in line`
+										: ''}</span
+								></span
+							>
+							<span class="act-meta num"
+								>{r.submittedAt ? mins(now - r.submittedAt) : ''}<br /><span class="api-action"
+									><ApiPeek
+										scope={`job-stop-${r.id}`}
+										label={`Stop ${nice(r)}`}
+										plan={cancelPlan(r)}
+									/><button
+										class="bu-action btn link small"
+										data-variant="quiet"
+										disabled={r.state === 'submitting'}
+										aria-describedby={r.state === 'submitting'
+											? 'activity-submitting-stop'
+											: undefined}
+										onclick={() => queue.cancel(r.id)}>Stop</button
+									></span
+								></span
+							>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
+		{#if queued.length}
+			<section class="act-group">
+				<span class="sec-title">Waiting</span>
+				<ul>
+					{#each queued as r (r.id)}
+						<li>
+							<span class="ring"></span><span class="act-main"
+								><b>{nice(r)}</b><span class="muted small"
+									>{r.waitingForPlan ??
+										(Math.max(r.nextAt, $queue.capacityRetryAt) > now
+											? `retry in ${Math.ceil((Math.max(r.nextAt, $queue.capacityRetryAt) - now) / 1000)} s`
+											: !app.key
+												? 'needs your key'
+												: 'queued')}</span
+								></span
+							>
+							<span class="act-meta"
+								><button
+									class="bu-action btn link small"
+									data-variant="quiet"
+									onclick={() => queue.cancel(r.id)}>Cancel</button
+								></span
+							>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
+		{#if done.length}
+			<section class="act-group">
+				<span class="sec-title">Recent</span>
+				<ul>
+					{#each done as r (r.id)}
+						<li>
+							{#if r.state === 'done'}<CircleCheck
+									size={16}
+									style="color:var(--ok)"
+								/>{:else}<CircleAlert size={16} style="color:var(--bad)" />{/if}
+							<span class="act-main"
+								><b>{nice(r)}</b><span class="muted small"
+									>{r.state === 'done'
+										? r.finishedAt && r.submittedAt
+											? mins(r.finishedAt - r.submittedAt)
+											: 'done'
+										: r.state === 'lost'
+											? 'unknown: may have run, check pixellab.ai'
+											: r.state}</span
+								></span
+							>
+							<span class="act-meta num muted"
+								>{cost(r)}<ApiPeek
+									scope={`job-result-${r.id}`}
+									label={nice(r)}
+									plan={[]}
+									queueIds={[r.id]}
+								/></span
+							>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
+		<p class="faint small">
+			This session: {+$queue.sessionGens.toFixed(2)} gens{$queue.sessionUsd
+				? ` + $${$queue.sessionUsd.toFixed(3)}`
+				: ''}. Some moves are billed in dollars instead of gens; your balance above is the real
+			total.
+		</p>
+		<details class="disclosure">
+			<summary><ChevronRight size={14} />Details</summary>
+			<div>
+				<div class="field-row small">
+					<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						onclick={clear}
+						disabled={$queue.role === 'follower'}
+						title={$queue.role === 'follower'
+							? 'Clear it in the PixelDoll tab that runs the jobs'
+							: undefined}>Clear finished</button
+					>
+				</div>
+				<div style="overflow:auto;max-height:240px">
+					<table class="ledger">
+						<thead><tr><th>Job</th><th>Endpoint</th><th>State</th><th>Cost</th></tr></thead>
+						<tbody
+							>{#each jobs.slice(0, 50) as r (r.id)}<tr
+									><td>{r.label}</td><td class="mono">{r.endpoint}</td><td title={r.error}
+										>{r.state}{r.attempts > 1 ? ` (try ${r.attempts})` : ''}{r.error
+											? ` · ${r.error.slice(0, 80)}`
+											: ''}</td
+									><td class="num">{cost(r)}</td></tr
+								>{/each}</tbody
+						>
+					</table>
+				</div>
+			</div>
+		</details>
+	</div>
 </Sheet>

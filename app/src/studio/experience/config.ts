@@ -1,32 +1,65 @@
 // Approved round-six scene art controls. UI appearance remains owned by Bronze.
-import { assetUrl } from '../../lib/assets.ts'
-export type WorldTheme = 'dark' | 'light'
-export type WorldMode = 'preview' | 'topdown' | 'side'
-type RGB = readonly [number, number, number]
-type Sample = readonly [number, number, number, number]
+import { assetUrl } from '../../lib/assets.ts';
+export type WorldTheme = 'dark' | 'light';
+export type WorldMode = 'preview' | 'topdown' | 'side';
+type RGB = readonly [number, number, number];
+type Sample = readonly [number, number, number, number];
 
 // Custom-property URLs otherwise resolve relative to the bundled CSS in /assets/.
 // Resolve once against the page, retaining Vite's relative GitHub Pages base.
-const asset = (name: string) => assetUrl(`worlds/${name}-stage.png`)
-export const BACKGROUNDS = { dark: asset('obsidian'), light: asset('porcelain') } as const
-const backgrounds = (url: string) => ({ selection: url, creation: url, preview: url, topdown: url, side: url })
+const asset = (name: string) => assetUrl(`worlds/${name}-stage.png`);
+export const BACKGROUNDS = { dark: asset('obsidian'), light: asset('porcelain') } as const;
+const backgrounds = (url: string) => ({
+	selection: url,
+	creation: url,
+	preview: url,
+	topdown: url,
+	side: url
+});
 
-export const WORLDS: Record<WorldTheme, {
-  backgrounds: ReturnType<typeof backgrounds>
-  floor: RGB; seam: RGB; fog: RGB; horizon: number; sample: Sample
-}> = {
-  dark: {
-    backgrounds: backgrounds(BACKGROUNDS.dark),
-    floor: [.085, .095, .105], seam: [.49, .40, .27], fog: [.145, .155, .165],
-    horizon: .53, sample: [.58, .82, .055, .055],
-  },
-  light: {
-    backgrounds: backgrounds(BACKGROUNDS.light),
-    floor: [.92, .90, .85], seam: [.48, .36, .22], fog: [.94, .92, .88],
-    horizon: .475, sample: [.57, .82, .055, .055],
-  },
-}
+export const WORLDS: Record<
+	WorldTheme,
+	{
+		backgrounds: ReturnType<typeof backgrounds>;
+		floor: RGB;
+		seam: RGB;
+		fog: RGB;
+		horizon: number;
+		sample: Sample;
+	}
+> = {
+	dark: {
+		backgrounds: backgrounds(BACKGROUNDS.dark),
+		floor: [0.085, 0.095, 0.105],
+		seam: [0.49, 0.4, 0.27],
+		fog: [0.145, 0.155, 0.165],
+		horizon: 0.53,
+		sample: [0.58, 0.82, 0.055, 0.055]
+	},
+	light: {
+		backgrounds: backgrounds(BACKGROUNDS.light),
+		floor: [0.92, 0.9, 0.85],
+		seam: [0.48, 0.36, 0.22],
+		fog: [0.94, 0.92, 0.88],
+		horizon: 0.475,
+		sample: [0.57, 0.82, 0.055, 0.055]
+	}
+};
 
 // Code-only controls, intentionally absent from the user preferences.
-export const REFLECTION = { enabled: true, selection: true, preview: true, topdown: true, side: true, opacity: .12, compression: .35 }
-export const MOTION = { speed: 95, cameraResponse: 9, joystickRadius: 46, deadZone: 8, tileSize: 100 }
+export const REFLECTION = {
+	enabled: true,
+	selection: true,
+	preview: true,
+	topdown: true,
+	side: true,
+	opacity: 0.12,
+	compression: 0.35
+};
+export const MOTION = {
+	speed: 95,
+	cameraResponse: 9,
+	joystickRadius: 46,
+	deadZone: 8,
+	tileSize: 100
+};

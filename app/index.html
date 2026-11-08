@@ -1,36 +1,52 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; worker-src 'self'; manifest-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.pixellab.ai; connect-src 'self' https://api.pixellab.ai https://backblaze.pixellab.ai https://supabase.pixellab.ai https://cdn.pixellab.ai; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'"
-    />
-    <meta name="referrer" content="no-referrer" />
-    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="./icons/pwa/favicon-32.png" />
-    <link rel="icon" type="image/x-icon" href="./icons/pwa/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="./icons/pwa/apple-touch-icon.png" />
-    <link rel="manifest" href="./manifest.webmanifest" />
-    <meta name="theme-color" content="#121214" />
-    <meta name="apple-mobile-web-app-title" content="PixelDoll" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PixelDoll</title>
-    <meta name="description" content="Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine." />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="PixelDoll" />
-    <meta property="og:description" content="Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine." />
-    <meta property="og:url" content="https://pixeldoll.app/" />
-    <script src="%BASE_URL%appearance.js"></script>
-  </head>
-  <body>
-    <div id="app">
-      <main id="startup-message" style="max-width:32rem;margin:15vh auto;padding:0 1rem;font:1rem/1.5 system-ui,sans-serif">
-        <h1 style="font-size:1.4em">PixelDoll</h1>
-        <p role="status">Opening your workspace…</p>
-      </main>
-    </div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			http-equiv="Content-Security-Policy"
+			content="default-src 'self'; script-src 'self'; worker-src 'self'; manifest-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.pixellab.ai; connect-src 'self' https://api.pixellab.ai https://backblaze.pixellab.ai https://supabase.pixellab.ai https://cdn.pixellab.ai; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'"
+		/>
+		<meta name="referrer" content="no-referrer" />
+		<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+		<link rel="icon" type="image/png" sizes="32x32" href="./icons/pwa/favicon-32.png" />
+		<link rel="icon" type="image/x-icon" href="./icons/pwa/favicon.ico" />
+		<link rel="apple-touch-icon" sizes="180x180" href="./icons/pwa/apple-touch-icon.png" />
+		<link rel="manifest" href="./manifest.webmanifest" />
+		<meta name="theme-color" content="#121214" />
+		<meta name="apple-mobile-web-app-title" content="PixelDoll" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>PixelDoll</title>
+		<meta
+			name="description"
+			content="Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine."
+		/>
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="PixelDoll" />
+		<meta
+			property="og:description"
+			content="Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine."
+		/>
+		<meta property="og:url" content="https://pixeldoll.app/" />
+		<script src="%BASE_URL%appearance.js"></script>
+	</head>
+	<body>
+		<div id="app">
+			<main
+				id="startup-message"
+				style="
+					max-width: 32rem;
+					margin: 15vh auto;
+					padding: 0 1rem;
+					font:
+						1rem/1.5 system-ui,
+						sans-serif;
+				"
+			>
+				<h1 style="font-size: 1.4em">PixelDoll</h1>
+				<p role="status">Opening your workspace…</p>
+			</main>
+		</div>
+		<script type="module" src="/src/main.ts"></script>
+	</body>
 </html>

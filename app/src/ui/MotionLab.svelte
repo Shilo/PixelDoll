@@ -1,158 +1,1184 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { LABELS } from '../lib/rig/poses.ts';
-  import { poseCallGens } from '../lib/rig/clips.ts';
-  import { base64ToBytes, type Img } from '../lib/image/png.ts';
-  import { decodePngBytes } from '../lib/image/pngraw.ts';
-  import { completePose } from '../lib/rig/motion.ts';
-  import { buildDocument, editPose, newDocument, paddedReference, validateDocument, type MotionDocument, type MotionLibrary } from './motion-lab/model.ts';
-  import { connectLab, exportEvidence, generateCandidate, labQueue, readLedger,phaseReserved, LAB_CAP,LAB_PHASE } from './motion-lab/run.ts';
-  import { drawOverlay, drawPuppet, drawRig3 } from './motion-lab/preview.ts';
-  import Candidate from './motion-lab/Candidate.svelte';
-  import McpProbe from './motion-lab/McpProbe.svelte';
-  import ResearchPilot from './motion-lab/ResearchPilot.svelte';
-  import StarterPack from './motion-lab/StarterPack.svelte';
-  import { EQUIPMENT,dressEquipment,poseEquipment,repairEquipmentProbe,type EquipmentName } from './motion-lab/equipment.ts';
-  import type { DirectionName } from '../lib/rig/rig.ts';
-  import { CALIBRATION_KEY,calibrationOf,calibratedDocument,readCalibrations,type CalibrationProfile } from './motion-lab/calibration.ts';
-  import { templateContactMotion,loopJointStep,proposePlanting,contactSampling } from './motion-lab/diagnostics.ts';
-  const motionControls=['gain','travel','contact','facing'] as const,partControls=['torso','legs','leftArm','rightArm'] as const;
-  let library=$state<MotionLibrary>(),doc=$state<MotionDocument>(),image=$state<Img>(),error=$state(''),status=$state('Loading offline examples…');
-  let frame=$state(0),playing=$state(false),joint=$state('RIGHT ARM'),referenceMode=$state(false),orbit=$state(25),seed=$state(7),busy=$state(false),reserved=$state(0),candidateId=$state('');
-  let x=$state(0),y=$state(0),depth=$state(128),theme=$state('dark');
-  let equipmentBody=$state(''),equipmentPartner=$state(''),equipmentThird=$state(''),equipmentDress=$state(''),equipmentName=$state<EquipmentName>('helmet');
-  let overlay=$state<HTMLCanvasElement>(),sourceCanvas=$state<HTMLCanvasElement>(),targetCanvas=$state<HTMLCanvasElement>(),puppetCanvas=$state<HTMLCanvasElement>();
-  let history:MotionDocument[]=[],future:MotionDocument[]=[],undoCount=$state(0),redoCount=$state(0),dragging=false;
-  let profiles=$state<CalibrationProfile[]>([]),selectionToken=0;
-  let plantWindow=$state(0);
-  const result=$derived.by(()=>{if(!doc)return null;try{return buildDocument(doc);}catch(e){return {failure:(e as Error).message};}});
-  const fit=$derived(result&&'frames'in result?result:null),selected=$derived(fit?.frames[frame]);
-  const issues=$derived(fit?[...new Set(fit.frames.flatMap(f=>f.issues))]:[]);
-  const contacts=$derived.by(()=>{if(!fit||!doc)return null;try{return{value:templateContactMotion(doc)};}catch(e){return{error:(e as Error).message};}});
-  const connected=$derived.by(()=>{const snapshot=$labQueue;return snapshot.paused!=='auth'&&!!labQueue.key;});
-  const inspected=$derived($labQueue.jobs.find(j=>j.id===candidateId)??$labQueue.jobs.at(-1));
-  const mirroredFrom=$derived(doc?.fixture.directions.find(d=>d.id===doc!.direction)?.mirrorOf);
-  const campaign=$derived.by(()=>{const rows=readLedger().reservations,jobs=$labQueue.jobs,phaseRows=rows.filter(r=>r.phase===LAB_PHASE),phaseIds=new Set(phaseRows.map(r=>r.jobId));return{reserved:Math.max(reserved,phaseReserved({version:1,reservations:rows},new Map(jobs.map(j=>[j.id,j.gens])))),phaseReported:jobs.filter(j=>phaseIds.has(j.id)).reduce((n,j)=>n+j.gens,0),withoutJob:rows.filter(r=>!r.jobId).length,phaseWithoutJob:phaseRows.filter(r=>!r.jobId).length,byJob:new Map(rows.flatMap(r=>r.jobId?[[r.jobId,r] as const]:[]))};});
-  const bodyCandidates=$derived($labQueue.jobs.filter(j=>j.state==='done'&&!campaign.byJob.get(j.id)?.context));
-  const dressedCandidates=$derived($labQueue.jobs.filter(j=>j.state==='done'&&campaign.byJob.get(j.id)?.context?.kind==='equipment-dress'));
-  async function equipmentAction(pose:boolean){if(busy)return;busy=true;error='';try{candidateId=pose?await poseEquipment(equipmentBody,equipmentDress,seed):await dressEquipment(equipmentBody,equipmentPartner,equipmentName,seed,equipmentThird);if(!pose)equipmentDress=candidateId;status='Equipment qualification queued. The original frozen body and pose parameters are retained.';}catch(e){error=(e as Error).message;}finally{reserved=phaseReserved(readLedger());busy=false;}}
-  async function gridProbe(){if(busy)return;busy=true;error='';try{candidateId=await repairEquipmentProbe(equipmentBody,equipmentDress,seed);status='Two frozen attack frames queued for a masked grid probe. This does not qualify the full clip.';}catch(e){error=(e as Error).message;}finally{reserved=phaseReserved(readLedger());busy=false;}}
-  function snapshot(){if(!doc)return;history.push(JSON.parse(JSON.stringify(doc)));history=history.slice(-30);future=[];undoCount=history.length;redoCount=0;}
-  function change(fn:(d:MotionDocument)=>void,keepPlanting=false){if(!doc)return;try{snapshot();const next:MotionDocument=JSON.parse(JSON.stringify(doc));if(!keepPlanting)delete next.planting;fn(next);doc=next;error='';}catch(e){error=(e as Error).message;}}
-  function authorContacts(){change(d=>{d.planting=proposePlanting(d);d.edits={};plantWindow=0;},true);}
-  function addContact(){change(d=>{d.planting??={version:1,velocity:[0,0],windows:[]};const p=buildDocument({...d,planting:undefined}).frames[frame].points['RIGHT LEG'];d.planting.windows.push({foot:'RIGHT LEG',start:0,end:d.clip.duration/4,fade:Math.min(0.04,d.clip.duration/16),anchor:[...p]});plantWindow=d.planting.windows.length-1;d.edits={};},true);}
-  function undo(){if(!doc||!history.length)return;future.push(JSON.parse(JSON.stringify(doc)));doc=history.pop()!;undoCount=history.length;redoCount=future.length;}
-  function redo(){if(!doc||!future.length)return;history.push(JSON.parse(JSON.stringify(doc)));doc=future.pop()!;undoCount=history.length;redoCount=future.length;}
-  async function choose(fixtureId:string,clipId:string,direction:DirectionName){if(!library)return;const token=++selectionToken;try{const fixture=doc?.fixture.id===fixtureId?doc.fixture:library.fixtures.find(f=>f.id===fixtureId),clip=doc?.clip.id===clipId?doc.clip:library.clips.find(c=>c.id===clipId);if(!fixture||!clip)throw new Error('The selected body or source motion is unavailable.');let next=newDocument(library,fixture,clip,direction);if(doc?.fixture.id===fixtureId&&doc.direction===direction){next.elevation=doc.elevation;next.azimuth=doc.azimuth;}else next=await calibratedDocument(JSON.parse(JSON.stringify(next)),profiles);if(token!==selectionToken)return;snapshot();doc=next;frame=0;playing=false;error='';}catch(e){if(token===selectionToken)error=(e as Error).message;}}
-  async function saveCalibration(){if(!doc)return;try{const profile=await calibrationOf(JSON.parse(JSON.stringify(doc))),next=[...profiles.filter(p=>p.fixtureId!==profile.fixtureId||p.direction!==profile.direction),profile];localStorage.setItem(CALIBRATION_KEY,JSON.stringify(next));profiles=next;status='Calibration saved for this body artwork and view. Other presets reuse it after reload.';error='';}catch(e){error=(e as Error).message;}}
-  function clearCalibrations(){try{localStorage.removeItem(CALIBRATION_KEY);profiles=[];status='Saved calibrations cleared. Current edits remain available to save as a motion document.';error='';}catch(e){error=(e as Error).message;}}
-  const download=(name:string,value:unknown)=>{const url=URL.createObjectURL(new Blob([JSON.stringify(value)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-  function loadDocument(value:unknown,message:string){const next=validateDocument(value);selectionToken++;snapshot();doc=next;frame=0;playing=false;status=message;error='';}
-  async function imported(event:Event){try{const file=(event.target as HTMLInputElement).files?.[0];if(!file)return;if(file.size>5_000_000)throw new Error('Motion document exceeds 5 MB.');loadDocument(JSON.parse(await file.text()),'Imported motion document. No generation was requested.');}catch(e){error=(e as Error).message;}}
-  async function sourceControl(action:string){if(!['idle','walk','run','attack','hurt','death'].includes(action))return;try{const response=await fetch(`/fixtures/motion-lab/kaykit-${action}.json`);if(!response.ok)throw new Error(`KayKit control could not load (${response.status}). Run compare-kaykit.mts.`);loadDocument(await response.json(),'Loaded an independent CC0 KayKit control. Geometry only; rendered quality is unqualified.');}catch(e){error=(e as Error).message;}}
-  async function generate(){if(!doc||busy)return;busy=true;error='';try{candidateId=await generateCandidate(JSON.parse(JSON.stringify(doc)),seed);status='Candidate queued. Existing job IDs resume after reload.';}catch(e){error=(e as Error).message;}finally{reserved=phaseReserved(readLedger());busy=false;}}
-  function applyJoint(nx=x,ny=y,nd=depth,remember=true){if(!doc)return;try{if(remember)snapshot();if(referenceMode){const next:MotionDocument=JSON.parse(JSON.stringify(doc)),k=next.reference.find(k=>k.label===joint)!;k.x=(nx*(next.fixture.cell.w+2*next.padding)-next.padding)/next.fixture.cell.w;k.y=(ny*(next.fixture.cell.h+2*next.padding)-next.padding)/next.fixture.cell.h;if(k.x<0||k.x>1||k.y<0||k.y>1)throw new Error('Reference joints must remain inside the original image.');next.fixture.references[next.direction]!.keypoints=next.reference.map(k=>({...k}));next.edits={};delete next.planting;doc=next;}else doc=editPose(JSON.parse(JSON.stringify(doc)),frame,joint,nx,ny,nd);error='';}catch(e){error=(e as Error).message;}}
-  function drag(event:PointerEvent){if(!dragging||!overlay)return;const rect=overlay.getBoundingClientRect();applyJoint((event.clientX-rect.left)/rect.width,(event.clientY-rect.top)/rect.height,depth,false);}
-  function startDrag(event:PointerEvent){if(!fit||!overlay)return;const rect=overlay.getBoundingClientRect(),nx=(event.clientX-rect.left)/rect.width,ny=(event.clientY-rect.top)/rect.height,points=referenceMode?fit.rest:selected?.keypoints;if(!points)return;const nearest=points.reduce((a,b)=>Math.hypot(a.x-nx,a.y-ny)<Math.hypot(b.x-nx,b.y-ny)?a:b);if(Math.hypot(nearest.x-nx,nearest.y-ny)>0.07)return;joint=nearest.label;x=nearest.x;y=nearest.y;depth='depth'in nearest?nearest.depth:128;playing=false;snapshot();dragging=true;overlay.setPointerCapture(event.pointerId);}
-  $effect(()=>{if(!doc)return;let disposed=false;const png=doc.fixture.references[doc.direction]!.png,pad=doc.padding;void decodePngBytes(base64ToBytes(png)).then(im=>{if(!disposed)image=paddedReference(im,pad);}).catch(e=>error=(e as Error).message);return()=>{disposed=true;};});
-  $effect(()=>{if(!fit||!selected)return;const k=(referenceMode?fit.rest:selected.keypoints).find(k=>k.label===joint);if(k){x=k.x;y=k.y;depth='depth'in k?k.depth:128;}});
-  $effect(()=>{if(!fit||!selected||!image||!overlay||!sourceCanvas||!targetCanvas||!puppetCanvas)return;drawOverlay(overlay,image,referenceMode?fit.rest:selected.keypoints,joint,!referenceMode&&frame>0?fit.frames[frame-1].keypoints:undefined);drawRig3(sourceCanvas,completePose(fit.clip.samples[frame].points),completePose(doc!.clip.reference),orbit);drawRig3(targetCanvas,selected.points,fit.reference,orbit);drawPuppet(puppetCanvas,image,fit.rest,selected.keypoints);});
-  $effect(()=>{if(!playing||!doc)return;const timer=setTimeout(()=>{if(frame===doc!.times.length-1&&!doc!.clip.loop)playing=false;else frame=(frame+1)%doc!.times.length;},doc.durations[frame]);return()=>clearTimeout(timer);});
-  $effect(()=>{document.documentElement.dataset.theme=theme;});
-  onMount(()=>{let active=true;void(async()=>{const response=await fetch('/fixtures/motion-lab/library.json',{cache:'no-store'});if(!response.ok)throw new Error(`Offline library could not load (${response.status}). Run the source bake.`);const value=await response.json() as MotionLibrary;if(value.version!==1)throw new Error('Unsupported offline library.');if(!active)return;library=value;doc=newDocument(value);try{profiles=readCalibrations(localStorage.getItem(CALIBRATION_KEY));const restored=await calibratedDocument(newDocument(value),profiles);if(!active)return;doc=restored;}catch(e){error=(e as Error).message;}status='Offline lab ready. Editing and preview spend no generations.';reserved=phaseReserved(readLedger());try{const balance=await connectLab();if(balance)status='Agent mode connected. Generation happens only when you request a candidate.';}catch(e){error=(e as Error).message;}})().catch(e=>error=(e as Error).message);const leave=()=>labQueue.disconnect();addEventListener('pagehide',leave);return()=>{active=false;labQueue.disconnect();removeEventListener('pagehide',leave);};});
+	import { onMount } from 'svelte';
+	import { LABELS } from '../lib/rig/poses.ts';
+	import { poseCallGens } from '../lib/rig/clips.ts';
+	import { base64ToBytes, type Img } from '../lib/image/png.ts';
+	import { decodePngBytes } from '../lib/image/pngraw.ts';
+	import { completePose } from '../lib/rig/motion.ts';
+	import {
+		buildDocument,
+		editPose,
+		newDocument,
+		paddedReference,
+		validateDocument,
+		type MotionDocument,
+		type MotionLibrary
+	} from './motion-lab/model.ts';
+	import {
+		connectLab,
+		exportEvidence,
+		generateCandidate,
+		labQueue,
+		readLedger,
+		phaseReserved,
+		LAB_CAP,
+		LAB_PHASE
+	} from './motion-lab/run.ts';
+	import { drawOverlay, drawPuppet, drawRig3 } from './motion-lab/preview.ts';
+	import Candidate from './motion-lab/Candidate.svelte';
+	import McpProbe from './motion-lab/McpProbe.svelte';
+	import ResearchPilot from './motion-lab/ResearchPilot.svelte';
+	import StarterPack from './motion-lab/StarterPack.svelte';
+	import {
+		EQUIPMENT,
+		dressEquipment,
+		poseEquipment,
+		repairEquipmentProbe,
+		type EquipmentName
+	} from './motion-lab/equipment.ts';
+	import type { DirectionName } from '../lib/rig/rig.ts';
+	import {
+		CALIBRATION_KEY,
+		calibrationOf,
+		calibratedDocument,
+		readCalibrations,
+		type CalibrationProfile
+	} from './motion-lab/calibration.ts';
+	import {
+		templateContactMotion,
+		loopJointStep,
+		proposePlanting,
+		contactSampling
+	} from './motion-lab/diagnostics.ts';
+	const motionControls = ['gain', 'travel', 'contact', 'facing'] as const,
+		partControls = ['torso', 'legs', 'leftArm', 'rightArm'] as const;
+	let library = $state<MotionLibrary>(),
+		doc = $state<MotionDocument>(),
+		image = $state<Img>(),
+		error = $state(''),
+		status = $state('Loading offline examples…');
+	let frame = $state(0),
+		playing = $state(false),
+		joint = $state('RIGHT ARM'),
+		referenceMode = $state(false),
+		orbit = $state(25),
+		seed = $state(7),
+		busy = $state(false),
+		reserved = $state(0),
+		candidateId = $state('');
+	let x = $state(0),
+		y = $state(0),
+		depth = $state(128),
+		theme = $state('dark');
+	let equipmentBody = $state(''),
+		equipmentPartner = $state(''),
+		equipmentThird = $state(''),
+		equipmentDress = $state(''),
+		equipmentName = $state<EquipmentName>('helmet');
+	let overlay = $state<HTMLCanvasElement>(),
+		sourceCanvas = $state<HTMLCanvasElement>(),
+		targetCanvas = $state<HTMLCanvasElement>(),
+		puppetCanvas = $state<HTMLCanvasElement>();
+	let history: MotionDocument[] = [],
+		future: MotionDocument[] = [],
+		undoCount = $state(0),
+		redoCount = $state(0),
+		dragging = false;
+	let profiles = $state<CalibrationProfile[]>([]),
+		selectionToken = 0;
+	let plantWindow = $state(0);
+	const result = $derived.by(() => {
+		if (!doc) return null;
+		try {
+			return buildDocument(doc);
+		} catch (e) {
+			return { failure: (e as Error).message };
+		}
+	});
+	const fit = $derived(result && 'frames' in result ? result : null),
+		selected = $derived(fit?.frames[frame]);
+	const issues = $derived(fit ? [...new Set(fit.frames.flatMap((f) => f.issues))] : []);
+	const contacts = $derived.by(() => {
+		if (!fit || !doc) return null;
+		try {
+			return { value: templateContactMotion(doc) };
+		} catch (e) {
+			return { error: (e as Error).message };
+		}
+	});
+	const connected = $derived.by(() => {
+		const snapshot = $labQueue;
+		return snapshot.paused !== 'auth' && !!labQueue.key;
+	});
+	const inspected = $derived(
+		$labQueue.jobs.find((j) => j.id === candidateId) ?? $labQueue.jobs.at(-1)
+	);
+	const mirroredFrom = $derived(
+		doc?.fixture.directions.find((d) => d.id === doc!.direction)?.mirrorOf
+	);
+	const campaign = $derived.by(() => {
+		const rows = readLedger().reservations,
+			jobs = $labQueue.jobs,
+			phaseRows = rows.filter((r) => r.phase === LAB_PHASE),
+			phaseIds = new Set(phaseRows.map((r) => r.jobId));
+		return {
+			reserved: Math.max(
+				reserved,
+				phaseReserved({ version: 1, reservations: rows }, new Map(jobs.map((j) => [j.id, j.gens])))
+			),
+			phaseReported: jobs.filter((j) => phaseIds.has(j.id)).reduce((n, j) => n + j.gens, 0),
+			withoutJob: rows.filter((r) => !r.jobId).length,
+			phaseWithoutJob: phaseRows.filter((r) => !r.jobId).length,
+			byJob: new Map(rows.flatMap((r) => (r.jobId ? [[r.jobId, r] as const] : [])))
+		};
+	});
+	const bodyCandidates = $derived(
+		$labQueue.jobs.filter((j) => j.state === 'done' && !campaign.byJob.get(j.id)?.context)
+	);
+	const dressedCandidates = $derived(
+		$labQueue.jobs.filter(
+			(j) => j.state === 'done' && campaign.byJob.get(j.id)?.context?.kind === 'equipment-dress'
+		)
+	);
+	async function equipmentAction(pose: boolean) {
+		if (busy) return;
+		busy = true;
+		error = '';
+		try {
+			candidateId = pose
+				? await poseEquipment(equipmentBody, equipmentDress, seed)
+				: await dressEquipment(
+						equipmentBody,
+						equipmentPartner,
+						equipmentName,
+						seed,
+						equipmentThird
+					);
+			if (!pose) equipmentDress = candidateId;
+			status =
+				'Equipment qualification queued. The original frozen body and pose parameters are retained.';
+		} catch (e) {
+			error = (e as Error).message;
+		} finally {
+			reserved = phaseReserved(readLedger());
+			busy = false;
+		}
+	}
+	async function gridProbe() {
+		if (busy) return;
+		busy = true;
+		error = '';
+		try {
+			candidateId = await repairEquipmentProbe(equipmentBody, equipmentDress, seed);
+			status =
+				'Two frozen attack frames queued for a masked grid probe. This does not qualify the full clip.';
+		} catch (e) {
+			error = (e as Error).message;
+		} finally {
+			reserved = phaseReserved(readLedger());
+			busy = false;
+		}
+	}
+	function snapshot() {
+		if (!doc) return;
+		history.push(JSON.parse(JSON.stringify(doc)));
+		history = history.slice(-30);
+		future = [];
+		undoCount = history.length;
+		redoCount = 0;
+	}
+	function change(fn: (d: MotionDocument) => void, keepPlanting = false) {
+		if (!doc) return;
+		try {
+			snapshot();
+			const next: MotionDocument = JSON.parse(JSON.stringify(doc));
+			if (!keepPlanting) delete next.planting;
+			fn(next);
+			doc = next;
+			error = '';
+		} catch (e) {
+			error = (e as Error).message;
+		}
+	}
+	function authorContacts() {
+		change((d) => {
+			d.planting = proposePlanting(d);
+			d.edits = {};
+			plantWindow = 0;
+		}, true);
+	}
+	function addContact() {
+		change((d) => {
+			d.planting ??= { version: 1, velocity: [0, 0], windows: [] };
+			const p = buildDocument({ ...d, planting: undefined }).frames[frame].points['RIGHT LEG'];
+			d.planting.windows.push({
+				foot: 'RIGHT LEG',
+				start: 0,
+				end: d.clip.duration / 4,
+				fade: Math.min(0.04, d.clip.duration / 16),
+				anchor: [...p]
+			});
+			plantWindow = d.planting.windows.length - 1;
+			d.edits = {};
+		}, true);
+	}
+	function undo() {
+		if (!doc || !history.length) return;
+		future.push(JSON.parse(JSON.stringify(doc)));
+		doc = history.pop()!;
+		undoCount = history.length;
+		redoCount = future.length;
+	}
+	function redo() {
+		if (!doc || !future.length) return;
+		history.push(JSON.parse(JSON.stringify(doc)));
+		doc = future.pop()!;
+		undoCount = history.length;
+		redoCount = future.length;
+	}
+	async function choose(fixtureId: string, clipId: string, direction: DirectionName) {
+		if (!library) return;
+		const token = ++selectionToken;
+		try {
+			const fixture =
+					doc?.fixture.id === fixtureId
+						? doc.fixture
+						: library.fixtures.find((f) => f.id === fixtureId),
+				clip = doc?.clip.id === clipId ? doc.clip : library.clips.find((c) => c.id === clipId);
+			if (!fixture || !clip) throw new Error('The selected body or source motion is unavailable.');
+			let next = newDocument(library, fixture, clip, direction);
+			if (doc?.fixture.id === fixtureId && doc.direction === direction) {
+				next.elevation = doc.elevation;
+				next.azimuth = doc.azimuth;
+			} else next = await calibratedDocument(JSON.parse(JSON.stringify(next)), profiles);
+			if (token !== selectionToken) return;
+			snapshot();
+			doc = next;
+			frame = 0;
+			playing = false;
+			error = '';
+		} catch (e) {
+			if (token === selectionToken) error = (e as Error).message;
+		}
+	}
+	async function saveCalibration() {
+		if (!doc) return;
+		try {
+			const profile = await calibrationOf(JSON.parse(JSON.stringify(doc))),
+				next = [
+					...profiles.filter(
+						(p) => p.fixtureId !== profile.fixtureId || p.direction !== profile.direction
+					),
+					profile
+				];
+			localStorage.setItem(CALIBRATION_KEY, JSON.stringify(next));
+			profiles = next;
+			status =
+				'Calibration saved for this body artwork and view. Other presets reuse it after reload.';
+			error = '';
+		} catch (e) {
+			error = (e as Error).message;
+		}
+	}
+	function clearCalibrations() {
+		try {
+			localStorage.removeItem(CALIBRATION_KEY);
+			profiles = [];
+			status =
+				'Saved calibrations cleared. Current edits remain available to save as a motion document.';
+			error = '';
+		} catch (e) {
+			error = (e as Error).message;
+		}
+	}
+	const download = (name: string, value: unknown) => {
+		const url = URL.createObjectURL(
+			new Blob([JSON.stringify(value)], { type: 'application/json' })
+		);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = name;
+		a.click();
+		setTimeout(() => URL.revokeObjectURL(url), 1000);
+	};
+	function loadDocument(value: unknown, message: string) {
+		const next = validateDocument(value);
+		selectionToken++;
+		snapshot();
+		doc = next;
+		frame = 0;
+		playing = false;
+		status = message;
+		error = '';
+	}
+	async function imported(event: Event) {
+		try {
+			const file = (event.target as HTMLInputElement).files?.[0];
+			if (!file) return;
+			if (file.size > 5_000_000) throw new Error('Motion document exceeds 5 MB.');
+			loadDocument(
+				JSON.parse(await file.text()),
+				'Imported motion document. No generation was requested.'
+			);
+		} catch (e) {
+			error = (e as Error).message;
+		}
+	}
+	async function sourceControl(action: string) {
+		if (!['idle', 'walk', 'run', 'attack', 'hurt', 'death'].includes(action)) return;
+		try {
+			const response = await fetch(`/fixtures/motion-lab/kaykit-${action}.json`);
+			if (!response.ok)
+				throw new Error(
+					`KayKit control could not load (${response.status}). Run compare-kaykit.mts.`
+				);
+			loadDocument(
+				await response.json(),
+				'Loaded an independent CC0 KayKit control. Geometry only; rendered quality is unqualified.'
+			);
+		} catch (e) {
+			error = (e as Error).message;
+		}
+	}
+	async function generate() {
+		if (!doc || busy) return;
+		busy = true;
+		error = '';
+		try {
+			candidateId = await generateCandidate(JSON.parse(JSON.stringify(doc)), seed);
+			status = 'Candidate queued. Existing job IDs resume after reload.';
+		} catch (e) {
+			error = (e as Error).message;
+		} finally {
+			reserved = phaseReserved(readLedger());
+			busy = false;
+		}
+	}
+	function applyJoint(nx = x, ny = y, nd = depth, remember = true) {
+		if (!doc) return;
+		try {
+			if (remember) snapshot();
+			if (referenceMode) {
+				const next: MotionDocument = JSON.parse(JSON.stringify(doc)),
+					k = next.reference.find((k) => k.label === joint)!;
+				k.x = (nx * (next.fixture.cell.w + 2 * next.padding) - next.padding) / next.fixture.cell.w;
+				k.y = (ny * (next.fixture.cell.h + 2 * next.padding) - next.padding) / next.fixture.cell.h;
+				if (k.x < 0 || k.x > 1 || k.y < 0 || k.y > 1)
+					throw new Error('Reference joints must remain inside the original image.');
+				next.fixture.references[next.direction]!.keypoints = next.reference.map((k) => ({ ...k }));
+				next.edits = {};
+				delete next.planting;
+				doc = next;
+			} else doc = editPose(JSON.parse(JSON.stringify(doc)), frame, joint, nx, ny, nd);
+			error = '';
+		} catch (e) {
+			error = (e as Error).message;
+		}
+	}
+	function drag(event: PointerEvent) {
+		if (!dragging || !overlay) return;
+		const rect = overlay.getBoundingClientRect();
+		applyJoint(
+			(event.clientX - rect.left) / rect.width,
+			(event.clientY - rect.top) / rect.height,
+			depth,
+			false
+		);
+	}
+	function startDrag(event: PointerEvent) {
+		if (!fit || !overlay) return;
+		const rect = overlay.getBoundingClientRect(),
+			nx = (event.clientX - rect.left) / rect.width,
+			ny = (event.clientY - rect.top) / rect.height,
+			points = referenceMode ? fit.rest : selected?.keypoints;
+		if (!points) return;
+		const nearest = points.reduce((a, b) =>
+			Math.hypot(a.x - nx, a.y - ny) < Math.hypot(b.x - nx, b.y - ny) ? a : b
+		);
+		if (Math.hypot(nearest.x - nx, nearest.y - ny) > 0.07) return;
+		joint = nearest.label;
+		x = nearest.x;
+		y = nearest.y;
+		depth = 'depth' in nearest ? nearest.depth : 128;
+		playing = false;
+		snapshot();
+		dragging = true;
+		overlay.setPointerCapture(event.pointerId);
+	}
+	$effect(() => {
+		if (!doc) return;
+		let disposed = false;
+		const png = doc.fixture.references[doc.direction]!.png,
+			pad = doc.padding;
+		void decodePngBytes(base64ToBytes(png))
+			.then((im) => {
+				if (!disposed) image = paddedReference(im, pad);
+			})
+			.catch((e) => (error = (e as Error).message));
+		return () => {
+			disposed = true;
+		};
+	});
+	$effect(() => {
+		if (!fit || !selected) return;
+		const k = (referenceMode ? fit.rest : selected.keypoints).find((k) => k.label === joint);
+		if (k) {
+			x = k.x;
+			y = k.y;
+			depth = 'depth' in k ? k.depth : 128;
+		}
+	});
+	$effect(() => {
+		if (!fit || !selected || !image || !overlay || !sourceCanvas || !targetCanvas || !puppetCanvas)
+			return;
+		drawOverlay(
+			overlay,
+			image,
+			referenceMode ? fit.rest : selected.keypoints,
+			joint,
+			!referenceMode && frame > 0 ? fit.frames[frame - 1].keypoints : undefined
+		);
+		drawRig3(
+			sourceCanvas,
+			completePose(fit.clip.samples[frame].points),
+			completePose(doc!.clip.reference),
+			orbit
+		);
+		drawRig3(targetCanvas, selected.points, fit.reference, orbit);
+		drawPuppet(puppetCanvas, image, fit.rest, selected.keypoints);
+	});
+	$effect(() => {
+		if (!playing || !doc) return;
+		const timer = setTimeout(() => {
+			if (frame === doc!.times.length - 1 && !doc!.clip.loop) playing = false;
+			else frame = (frame + 1) % doc!.times.length;
+		}, doc.durations[frame]);
+		return () => clearTimeout(timer);
+	});
+	$effect(() => {
+		document.documentElement.dataset.theme = theme;
+	});
+	onMount(() => {
+		let active = true;
+		void (async () => {
+			const response = await fetch('/fixtures/motion-lab/library.json', { cache: 'no-store' });
+			if (!response.ok)
+				throw new Error(
+					`Offline library could not load (${response.status}). Run the source bake.`
+				);
+			const value = (await response.json()) as MotionLibrary;
+			if (value.version !== 1) throw new Error('Unsupported offline library.');
+			if (!active) return;
+			library = value;
+			doc = newDocument(value);
+			try {
+				profiles = readCalibrations(localStorage.getItem(CALIBRATION_KEY));
+				const restored = await calibratedDocument(newDocument(value), profiles);
+				if (!active) return;
+				doc = restored;
+			} catch (e) {
+				error = (e as Error).message;
+			}
+			status = 'Offline lab ready. Editing and preview spend no generations.';
+			reserved = phaseReserved(readLedger());
+			try {
+				const balance = await connectLab();
+				if (balance)
+					status = 'Agent mode connected. Generation happens only when you request a candidate.';
+			} catch (e) {
+				error = (e as Error).message;
+			}
+		})().catch((e) => (error = (e as Error).message));
+		const leave = () => labQueue.disconnect();
+		addEventListener('pagehide', leave);
+		return () => {
+			active = false;
+			labQueue.disconnect();
+			removeEventListener('pagehide', leave);
+		};
+	});
 </script>
 
 <main class="lab bu-stack">
-  <header><div><h1>Motion Lab</h1><p class="bu-muted">Offline calibration and motion preview. Red is anatomical right; blue is anatomical left.</p></div><div class="bu-actions"><label>Theme <select class="bu-select" bind:value={theme}><option value="dark">Dark</option><option value="light">Light</option></select></label><a class="bu-btn" href="/">Studio</a></div></header>
-  {#if import.meta.env.MODE==='agent'}<p class="bu-badge">Agent mode</p>{/if}
-  <p role="status">{status}</p>{#if error}<p class="bu-error" role="alert">{error}</p>{/if}
-  {#if doc&&library}
-    <section class="bu-dialog-surface controls" aria-label="Motion source and calibration">
-      <label class="bu-field">KayKit control<select class="bu-input" value="" onchange={e=>sourceControl(e.currentTarget.value)}><option value="">Load independent source</option>{#each ['idle','walk','run','attack','hurt','death'] as action}<option value={action}>{action}</option>{/each}</select></label>
-      <p>Current source: {doc.clip.source}</p>
-      <p>Target depth: {doc.fixture.depthSource??'Source-reference proxy; hidden depth is an estimate.'}</p>
-      <label class="bu-field">Body<select class="bu-input" value={doc.fixture.id} onchange={e=>choose(e.currentTarget.value,doc!.clip.id,'south')}>{#if !library.fixtures.some(f=>f.id===doc!.fixture.id)}<option value={doc.fixture.id}>{doc.fixture.name}</option>{/if}{#each library.fixtures as f}<option value={f.id}>{f.name}</option>{/each}</select></label>
-      <label class="bu-field">Preset<select class="bu-input" value={doc.clip.id} onchange={e=>choose(doc!.fixture.id,e.currentTarget.value,doc!.direction)}>{#if !library.clips.some(c=>c.id===doc!.clip.id)}<option value={doc.clip.id}>{doc.clip.name}</option>{/if}{#each library.clips as c}<option value={c.id}>{c.name}</option>{/each}</select></label>
-      <label class="bu-field">Direction<select class="bu-input" value={doc.direction} onchange={e=>choose(doc!.fixture.id,doc!.clip.id,e.currentTarget.value as DirectionName)}>{#each Object.keys(doc.fixture.references) as d}<option value={d}>{d}</option>{/each}</select></label>
-      <label class="bu-field">Padding, px<input class="bu-input" type="number" min="0" max="48" step="4" value={doc.padding} onchange={e=>change(d=>{d.padding=+e.currentTarget.value;d.edits={};})}></label>
-      <label class="bu-field">Camera elevation<input class="bu-input" type="number" min="0" max="80" step="1" value={doc.elevation} onchange={e=>change(d=>{d.elevation=+e.currentTarget.value;d.edits={};})}></label>
-      <label class="bu-field">Camera bearing<input class="bu-input" type="number" value={doc.azimuth} onchange={e=>change(d=>{d.azimuth=+e.currentTarget.value;d.edits={};})}></label>
-      <label class="bu-field">Motion plane, degrees<input class="bu-input" type="number" step="15" value={doc.options.plane??0} onchange={e=>change(d=>{d.options.plane=+e.currentTarget.value;d.edits={};})}></label>
-      {#each motionControls as option}<label class="bu-field">{option}<input class="bu-input" type="number" min="0" max={option==='gain'?3:option==='travel'?2:1} step="0.1" value={doc.options[option]} onchange={e=>change(d=>{d.options[option]=+e.currentTarget.value;d.edits={};})}></label>{/each}
-      {#each partControls as part}<label class="bu-field">{part} weight<input class="bu-input" type="number" min="0" max="1" step="0.05" value={doc.options.weights?.[part]??1} onchange={e=>change(d=>{d.options.weights??={torso:1,legs:1,leftArm:1,rightArm:1};d.options.weights[part]=+e.currentTarget.value;d.edits={};})}></label>{/each}
-      <button class="bu-btn" onclick={saveCalibration}>Save body/view calibration</button><button class="bu-btn" onclick={clearCalibrations}>Clear saved calibrations</button>
-      <p>Save reference joints and camera once per body artwork and view. Preset timing and pose edits remain in the motion document. {profiles.length} saved calibration(s).</p>
-    </section>
-    {#if fit&&selected&&image}
-      <section class="previews" aria-label="Motion previews">
-        <figure class="bu-dialog-surface"><figcaption>{referenceMode?'Reference calibration':'Requested pose over reference'}</figcaption><canvas bind:this={overlay} tabindex="0" aria-label="Joint editor, drag a marker or use coordinate fields" onpointerdown={startDrag} onpointermove={drag} onpointerup={()=>dragging=false} onpointercancel={()=>dragging=false} onkeydown={e=>{if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();applyJoint(x+(e.key==='ArrowLeft'?-1:e.key==='ArrowRight'?1:0)/fit.calibration.width,y+(e.key==='ArrowUp'?-1:e.key==='ArrowDown'?1:0)/fit.calibration.height);}}}></canvas></figure>
-        <figure class="bu-dialog-surface"><figcaption>Source 3D rig, relative to pelvis</figcaption><canvas bind:this={sourceCanvas} aria-label="Original source rig"></canvas></figure>
-        <figure class="bu-dialog-surface"><figcaption>Target 3D rig, relative to pelvis</figcaption><canvas bind:this={targetCanvas} aria-label="Retargeted rig"></canvas></figure>
-        <figure class="bu-dialog-surface"><figcaption>Rough paper puppet</figcaption><canvas bind:this={puppetCanvas} aria-label="Approximate paper puppet"></canvas></figure>
-      </section>
-      <p class="bu-muted">The puppet cannot invent hidden surfaces or predict PixelLab art. Latent reference depth is a proxy assumption. Inspect the pose and actual output separately.</p>
-      <section class="bu-dialog-surface timeline" aria-label="Pose timeline">
-        <div class="bu-actions"><button class="bu-btn" onclick={()=>{if(!playing&&!doc!.clip.loop&&frame===doc!.times.length-1)frame=0;playing=!playing;}}>{playing?'Pause':'Play'}</button><button class="bu-btn" disabled={!undoCount} onclick={undo}>Undo</button><button class="bu-btn" disabled={!redoCount} onclick={redo}>Redo</button><label>3D orbit <input type="range" min="0" max="360" bind:value={orbit}></label><label><input type="checkbox" bind:checked={referenceMode}> Correct reference joints</label></div>
-        <div class="frame-buttons">{#each doc.times as time,i}<button class="bu-btn" aria-label={`Select pose ${i+1}`} aria-pressed={frame===i} onclick={()=>{frame=i;playing=false;}}>{i+1}{doc.edits[i]?' *':''}</button>{/each}</div>
-        <div class="joint-fields"><label class="bu-field">Joint<select class="bu-input" bind:value={joint}>{#each LABELS as l}<option>{l}</option>{/each}</select></label><label class="bu-field">X, fraction<input class="bu-input" type="number" step="0.005" bind:value={x}></label><label class="bu-field">Y, fraction<input class="bu-input" type="number" step="0.005" bind:value={y}></label><label class="bu-field">Depth<input class="bu-input" type="number" step="1" bind:value={depth} disabled={referenceMode}></label><button class="bu-btn" onclick={()=>applyJoint()}>Apply joint edit</button></div>
-        <p class="bu-muted">Wrists and ankles use two-bone IK. Other joints rotate their subtree. Head landmarks move together. Reference changes clear pose edits; Undo restores them.</p>
-        <div class="joint-fields"><label class="bu-field">Source time, seconds<input class="bu-input" type="number" min="0" max={doc.clip.duration} step="0.01" value={doc.times[frame]} onchange={e=>change(d=>{d.times[frame]=+e.currentTarget.value;d.edits={};},true)}></label><label class="bu-field">Frame duration, ms<input class="bu-input" type="number" min="10" max="10000" value={doc.durations[frame]} onchange={e=>change(d=>d.durations[frame]=+e.currentTarget.value,true)}></label><label><input type="checkbox" checked={doc.buffer} onchange={e=>change(d=>d.buffer=e.currentTarget.checked,true)}> Append terminal buffer</label></div>
-      </section>
-      <section class="bu-dialog-surface diagnostics" aria-label="Pose diagnostics"><h2>Diagnostics</h2><p>{doc.revision} · {fit.frames.length} poses · {fit.calibration.width} × {fit.calibration.height} px · {Object.keys(doc.edits).length} edited frames</p>{#if issues.length}<ul>{#each issues as issue}<li>{issue}</li>{/each}</ul>{:else}<p>No reach or joint-boundary warnings. This does not certify natural motion, silhouette clearance, or output quality.</p>{/if}
-        {#if contacts?.error}<p class="bu-error">{contacts.error}</p>{:else if contacts?.value}<p>Requested ankle-path fit: target-world speed {contacts.value.speed.toFixed(2)} px/s; residual sliding RMS {contacts.value.rms.toFixed(2)} px/s across {contacts.value.samples} support intervals.</p>{:else}<p>No overlapping support intervals for an ankle-path speed fit.</p>{/if}
-        {#if doc.clip.loop}<p>Last-to-first requested joint step: {loopJointStep(fit.frames).toFixed(2)} px. This is one playback interval, not an exact cycle closure test.</p>{/if}
-        <p class="bu-muted">The contact fit uses dense template samples and source confidence. Manual pose edits are excluded. It does not measure rendered soles or prescribe engine speed. Review actual frames and movement together.</p>
-        {#if doc.planting}<p>Authored full-support target error: {Math.max(0,...fit.frames.flatMap(f=>f.planting?.filter(c=>c.weight>0.999).map(c=>c.error)??[])).toFixed(4)} px. Rendered soles require a separate check.</p>{/if}
-      </section>
-      <section class="bu-dialog-surface controls" aria-label="Foot planting authoring">
-        <h2>Foot planting</h2><button class="bu-btn" onclick={authorContacts}>Draft stance contacts</button><button class="bu-btn" disabled={!doc.planting||!doc.clip.loop} onclick={()=>change(d=>{Object.assign(d,contactSampling(d));d.edits={};frame=0;},true)}>Sample contact events</button><button class="bu-btn" onclick={addContact}>Add stance interval</button><button class="bu-btn" disabled={!doc.planting} onclick={()=>change(d=>{delete d.planting;d.edits={};},true)}>Remove authored contacts</button>
-        <p>Drafts use source confidence but anchor the target body. Edit and approve stance timing, world speed and anchors before generating. Calibration and motion controls clear the plan; Undo restores it.</p>
-        {#if doc.planting}
-          {#each ['X','Z'] as axis,i}<label class="bu-field">World {axis} speed, px/s<input class="bu-input" type="number" step="1" value={doc.planting.velocity[i]} onchange={e=>change(d=>{d.planting!.velocity[i]=+e.currentTarget.value;d.edits={};},true)}></label>{/each}
-          <label class="bu-field">Stance interval<select class="bu-input" bind:value={plantWindow}>{#each doc.planting.windows as w,i}<option value={i}>{i+1}: {w.foot}</option>{/each}</select></label>
-          {#if doc.planting.windows[plantWindow]}
-            <label class="bu-field">Supporting foot<select class="bu-input" value={doc.planting.windows[plantWindow].foot} onchange={e=>change(d=>{d.planting!.windows[plantWindow].foot=e.currentTarget.value as 'RIGHT LEG'|'LEFT LEG';d.edits={};},true)}><option>RIGHT LEG</option><option>LEFT LEG</option></select></label>
-            {#each ['start','end','fade'] as field}<label class="bu-field">Contact {field}, seconds<input class="bu-input" type="number" step="0.01" value={doc.planting.windows[plantWindow][field as 'start'|'end'|'fade']} onchange={e=>change(d=>{d.planting!.windows[plantWindow][field as 'start'|'end'|'fade']=+e.currentTarget.value;d.edits={};},true)}></label>{/each}
-            {#each ['X','Y','Z'] as axis,i}<label class="bu-field">Anchor {axis}, target px<input class="bu-input" type="number" step="0.5" value={doc.planting.windows[plantWindow].anchor[i]} onchange={e=>change(d=>{d.planting!.windows[plantWindow].anchor[i]=+e.currentTarget.value;d.edits={};},true)}></label>{/each}
-            <button class="bu-btn" onclick={()=>change(d=>{d.planting!.windows.splice(plantWindow,1);plantWindow=0;d.edits={};},true)}>Delete stance interval</button>
-          {/if}
-        {/if}
-      </section>
-    {:else if result&&'failure'in result}<p class="bu-error" role="alert">{result.failure}</p>{/if}
-    <section class="bu-dialog-surface controls" aria-label="Save and render">
-      <button class="bu-btn" onclick={()=>download('pixeldoll-motion.json',doc)}>Save motion document</button><label class="bu-btn">Import motion document<input type="file" accept="application/json" onchange={imported}></label>
-      <label class="bu-field">Candidate seed<input class="bu-input" type="number" min="1" step="1" bind:value={seed}></label>
-      <label><input type="checkbox" checked={doc.hands==='closed-fists'} onchange={e=>change(d=>{if(e.currentTarget.checked)d.hands='closed-fists';else delete d.hands;},true)}> Request closed grip hands</label>
-      <button class="bu-btn" data-variant="primary" disabled={!fit||busy||!connected||!!mirroredFrom||campaign.reserved+poseCallGens(doc.times.length+(doc.buffer?1:0))>LAB_CAP} onclick={generate}>Generate candidate ({poseCallGens(doc.times.length+(doc.buffer?1:0))} gens)</button>
-      {#if mirroredFrom}<p>This view is a pixel mirror of {mirroredFrom}. Derive it from frozen {mirroredFrom} outputs without another generation. Mirroring also flips visible handedness.</p>{/if}
-      <button class="bu-btn" onclick={async()=>{try{download('pixeldoll-motion-evidence.json',await exportEvidence());}catch(e){error=(e as Error).message;}}}>Export all evidence</button>
-      <p>First research campaign settled at 998/1000 generations. New phase raw-motion jobs have used {campaign.phaseReported} reported generations. The controlled pilot below separately tracks all new calls against the additional allowance and its current staged limit.</p>
-      <p>{campaign.reserved}/{LAB_CAP} generations conservatively reserved in this phase. Reservations retain historical estimates and increase for higher reported charges; they can exceed actual spending. Further paid requests are blocked at this limit. Unknown outcomes are never automatically resent.</p>
-      <p>{campaign.phaseWithoutJob} current-phase reservations have no queued job; {campaign.withoutJob} across the full history remain in the evidence for inspection.</p>
-    </section>
-    <section class="bu-dialog-surface controls" aria-label="Equipment qualification">
-      <h2>Equipment qualification</h2>
-      <label class="bu-field">Frozen body candidate<select class="bu-input" bind:value={equipmentBody}><option value="">Choose a completed body</option>{#each bodyCandidates as job}<option value={job.id}>{job.label}</option>{/each}</select></label>
-      <label class="bu-field">Partner body view<select class="bu-input" bind:value={equipmentPartner}><option value="">Choose another view of the same body</option>{#each bodyCandidates as job}<option value={job.id}>{job.label}</option>{/each}</select></label>
-      <label class="bu-field">Additional standing view<select class="bu-input" bind:value={equipmentThird}><option value="">No third view</option>{#each bodyCandidates as job}<option value={job.id}>{job.label}</option>{/each}</select></label>
-      <label class="bu-field">Equipment design<select class="bu-input" bind:value={equipmentName}>{#each Object.entries(EQUIPMENT) as [id,item]}<option value={id}>{item.name}</option>{/each}</select></label>
-      <button class="bu-btn" disabled={!connected||busy||!equipmentBody||!equipmentPartner} onclick={()=>equipmentAction(false)}>Dress paired standing references</button>
-      <label class="bu-field">Dressed equipment reference<select class="bu-input" bind:value={equipmentDress}><option value="">Choose a completed design</option>{#each dressedCandidates as job}<option value={job.id}>{job.label}</option>{/each}</select></label>
-      <button class="bu-btn" disabled={!connected||busy||!equipmentBody||!equipmentDress} onclick={()=>equipmentAction(true)}>Pose equipment on frozen body</button>
-      <button class="bu-btn" disabled={!connected||busy||!equipmentBody||!equipmentDress||campaign.reserved+25>LAB_CAP} onclick={gridProbe}>Probe frozen attack frames 7 and 8 (reserve 25 gens)</button>
-      <p class="bu-muted">Uses production chroma dressing and posing builders. Dressing reserves 10-25 gens by canvas; posing reserves 2-4 by frame count. Reuse a design only with the identical standing image and view. Raw results require extraction and alignment review before use.</p>
-    </section>
-    <McpProbe {connected} {download}/>
-    {#if library.fixtures.find(f=>f.id==='c27man')}<ResearchPilot {connected} {download} fixture={library.fixtures.find(f=>f.id==='c27man')!}/>{/if}
-    <section aria-label="Generated candidates" class="bu-stack">
-      <label class="bu-field">Inspect candidate<select class="bu-input" bind:value={candidateId}><option value="">Most recent candidate</option>{#each $labQueue.jobs as job}<option value={job.id}>{job.label} · {job.state} · {job.gens} gens</option>{/each}</select></label>
-      <p>{$labQueue.counts.done} completed · {$labQueue.counts.running} running · {$labQueue.counts.pending} queued · {$labQueue.counts.failed} failed</p>
-      <p class="bu-muted">Queue {$labQueue.role} · {$labQueue.paused??'ready'} · {$labQueue.current}/{$labQueue.concurrency} remote slots</p>
-      {#if inspected}{#key inspected.id}<Candidate job={inspected} buffer={campaign.byJob.get(inspected.id)?.document.buffer}/>{/key}{/if}
-    </section>
-  {/if}
-  <StarterPack {connected}/>
+	<header>
+		<div>
+			<h1>Motion Lab</h1>
+			<p class="bu-muted">
+				Offline calibration and motion preview. Red is anatomical right; blue is anatomical left.
+			</p>
+		</div>
+		<div class="bu-actions">
+			<label
+				>Theme <select class="bu-select" bind:value={theme}
+					><option value="dark">Dark</option><option value="light">Light</option></select
+				></label
+			><a class="bu-btn" href="/">Studio</a>
+		</div>
+	</header>
+	{#if import.meta.env.MODE === 'agent'}<p class="bu-badge">Agent mode</p>{/if}
+	<p role="status">{status}</p>
+	{#if error}<p class="bu-error" role="alert">{error}</p>{/if}
+	{#if doc && library}
+		<section class="bu-dialog-surface controls" aria-label="Motion source and calibration">
+			<label class="bu-field"
+				>KayKit control<select
+					class="bu-input"
+					value=""
+					onchange={(e) => sourceControl(e.currentTarget.value)}
+					><option value="">Load independent source</option
+					>{#each ['idle', 'walk', 'run', 'attack', 'hurt', 'death'] as action}<option
+							value={action}>{action}</option
+						>{/each}</select
+				></label
+			>
+			<p>Current source: {doc.clip.source}</p>
+			<p>
+				Target depth: {doc.fixture.depthSource ??
+					'Source-reference proxy; hidden depth is an estimate.'}
+			</p>
+			<label class="bu-field"
+				>Body<select
+					class="bu-input"
+					value={doc.fixture.id}
+					onchange={(e) => choose(e.currentTarget.value, doc!.clip.id, 'south')}
+					>{#if !library.fixtures.some((f) => f.id === doc!.fixture.id)}<option
+							value={doc.fixture.id}>{doc.fixture.name}</option
+						>{/if}{#each library.fixtures as f}<option value={f.id}>{f.name}</option>{/each}</select
+				></label
+			>
+			<label class="bu-field"
+				>Preset<select
+					class="bu-input"
+					value={doc.clip.id}
+					onchange={(e) => choose(doc!.fixture.id, e.currentTarget.value, doc!.direction)}
+					>{#if !library.clips.some((c) => c.id === doc!.clip.id)}<option value={doc.clip.id}
+							>{doc.clip.name}</option
+						>{/if}{#each library.clips as c}<option value={c.id}>{c.name}</option>{/each}</select
+				></label
+			>
+			<label class="bu-field"
+				>Direction<select
+					class="bu-input"
+					value={doc.direction}
+					onchange={(e) =>
+						choose(doc!.fixture.id, doc!.clip.id, e.currentTarget.value as DirectionName)}
+					>{#each Object.keys(doc.fixture.references) as d}<option value={d}>{d}</option
+						>{/each}</select
+				></label
+			>
+			<label class="bu-field"
+				>Padding, px<input
+					class="bu-input"
+					type="number"
+					min="0"
+					max="48"
+					step="4"
+					value={doc.padding}
+					onchange={(e) =>
+						change((d) => {
+							d.padding = +e.currentTarget.value;
+							d.edits = {};
+						})}
+				/></label
+			>
+			<label class="bu-field"
+				>Camera elevation<input
+					class="bu-input"
+					type="number"
+					min="0"
+					max="80"
+					step="1"
+					value={doc.elevation}
+					onchange={(e) =>
+						change((d) => {
+							d.elevation = +e.currentTarget.value;
+							d.edits = {};
+						})}
+				/></label
+			>
+			<label class="bu-field"
+				>Camera bearing<input
+					class="bu-input"
+					type="number"
+					value={doc.azimuth}
+					onchange={(e) =>
+						change((d) => {
+							d.azimuth = +e.currentTarget.value;
+							d.edits = {};
+						})}
+				/></label
+			>
+			<label class="bu-field"
+				>Motion plane, degrees<input
+					class="bu-input"
+					type="number"
+					step="15"
+					value={doc.options.plane ?? 0}
+					onchange={(e) =>
+						change((d) => {
+							d.options.plane = +e.currentTarget.value;
+							d.edits = {};
+						})}
+				/></label
+			>
+			{#each motionControls as option}<label class="bu-field"
+					>{option}<input
+						class="bu-input"
+						type="number"
+						min="0"
+						max={option === 'gain' ? 3 : option === 'travel' ? 2 : 1}
+						step="0.1"
+						value={doc.options[option]}
+						onchange={(e) =>
+							change((d) => {
+								d.options[option] = +e.currentTarget.value;
+								d.edits = {};
+							})}
+					/></label
+				>{/each}
+			{#each partControls as part}<label class="bu-field"
+					>{part} weight<input
+						class="bu-input"
+						type="number"
+						min="0"
+						max="1"
+						step="0.05"
+						value={doc.options.weights?.[part] ?? 1}
+						onchange={(e) =>
+							change((d) => {
+								d.options.weights ??= { torso: 1, legs: 1, leftArm: 1, rightArm: 1 };
+								d.options.weights[part] = +e.currentTarget.value;
+								d.edits = {};
+							})}
+					/></label
+				>{/each}
+			<button class="bu-btn" onclick={saveCalibration}>Save body/view calibration</button><button
+				class="bu-btn"
+				onclick={clearCalibrations}>Clear saved calibrations</button
+			>
+			<p>
+				Save reference joints and camera once per body artwork and view. Preset timing and pose
+				edits remain in the motion document. {profiles.length} saved calibration(s).
+			</p>
+		</section>
+		{#if fit && selected && image}
+			<section class="previews" aria-label="Motion previews">
+				<figure class="bu-dialog-surface">
+					<figcaption>
+						{referenceMode ? 'Reference calibration' : 'Requested pose over reference'}
+					</figcaption>
+					<canvas
+						bind:this={overlay}
+						tabindex="0"
+						aria-label="Joint editor, drag a marker or use coordinate fields"
+						onpointerdown={startDrag}
+						onpointermove={drag}
+						onpointerup={() => (dragging = false)}
+						onpointercancel={() => (dragging = false)}
+						onkeydown={(e) => {
+							if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+								e.preventDefault();
+								applyJoint(
+									x +
+										(e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0) /
+											fit.calibration.width,
+									y +
+										(e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0) /
+											fit.calibration.height
+								);
+							}
+						}}
+					></canvas>
+				</figure>
+				<figure class="bu-dialog-surface">
+					<figcaption>Source 3D rig, relative to pelvis</figcaption>
+					<canvas bind:this={sourceCanvas} aria-label="Original source rig"></canvas>
+				</figure>
+				<figure class="bu-dialog-surface">
+					<figcaption>Target 3D rig, relative to pelvis</figcaption>
+					<canvas bind:this={targetCanvas} aria-label="Retargeted rig"></canvas>
+				</figure>
+				<figure class="bu-dialog-surface">
+					<figcaption>Rough paper puppet</figcaption>
+					<canvas bind:this={puppetCanvas} aria-label="Approximate paper puppet"></canvas>
+				</figure>
+			</section>
+			<p class="bu-muted">
+				The puppet cannot invent hidden surfaces or predict PixelLab art. Latent reference depth is
+				a proxy assumption. Inspect the pose and actual output separately.
+			</p>
+			<section class="bu-dialog-surface timeline" aria-label="Pose timeline">
+				<div class="bu-actions">
+					<button
+						class="bu-btn"
+						onclick={() => {
+							if (!playing && !doc!.clip.loop && frame === doc!.times.length - 1) frame = 0;
+							playing = !playing;
+						}}>{playing ? 'Pause' : 'Play'}</button
+					><button class="bu-btn" disabled={!undoCount} onclick={undo}>Undo</button><button
+						class="bu-btn"
+						disabled={!redoCount}
+						onclick={redo}>Redo</button
+					><label>3D orbit <input type="range" min="0" max="360" bind:value={orbit} /></label><label
+						><input type="checkbox" bind:checked={referenceMode} /> Correct reference joints</label
+					>
+				</div>
+				<div class="frame-buttons">
+					{#each doc.times as time, i}<button
+							class="bu-btn"
+							aria-label={`Select pose ${i + 1}`}
+							aria-pressed={frame === i}
+							onclick={() => {
+								frame = i;
+								playing = false;
+							}}>{i + 1}{doc.edits[i] ? ' *' : ''}</button
+						>{/each}
+				</div>
+				<div class="joint-fields">
+					<label class="bu-field"
+						>Joint<select class="bu-input" bind:value={joint}
+							>{#each LABELS as l}<option>{l}</option>{/each}</select
+						></label
+					><label class="bu-field"
+						>X, fraction<input class="bu-input" type="number" step="0.005" bind:value={x} /></label
+					><label class="bu-field"
+						>Y, fraction<input class="bu-input" type="number" step="0.005" bind:value={y} /></label
+					><label class="bu-field"
+						>Depth<input
+							class="bu-input"
+							type="number"
+							step="1"
+							bind:value={depth}
+							disabled={referenceMode}
+						/></label
+					><button class="bu-btn" onclick={() => applyJoint()}>Apply joint edit</button>
+				</div>
+				<p class="bu-muted">
+					Wrists and ankles use two-bone IK. Other joints rotate their subtree. Head landmarks move
+					together. Reference changes clear pose edits; Undo restores them.
+				</p>
+				<div class="joint-fields">
+					<label class="bu-field"
+						>Source time, seconds<input
+							class="bu-input"
+							type="number"
+							min="0"
+							max={doc.clip.duration}
+							step="0.01"
+							value={doc.times[frame]}
+							onchange={(e) =>
+								change((d) => {
+									d.times[frame] = +e.currentTarget.value;
+									d.edits = {};
+								}, true)}
+						/></label
+					><label class="bu-field"
+						>Frame duration, ms<input
+							class="bu-input"
+							type="number"
+							min="10"
+							max="10000"
+							value={doc.durations[frame]}
+							onchange={(e) => change((d) => (d.durations[frame] = +e.currentTarget.value), true)}
+						/></label
+					><label
+						><input
+							type="checkbox"
+							checked={doc.buffer}
+							onchange={(e) => change((d) => (d.buffer = e.currentTarget.checked), true)}
+						/> Append terminal buffer</label
+					>
+				</div>
+			</section>
+			<section class="bu-dialog-surface diagnostics" aria-label="Pose diagnostics">
+				<h2>Diagnostics</h2>
+				<p>
+					{doc.revision} · {fit.frames.length} poses · {fit.calibration.width} × {fit.calibration
+						.height} px · {Object.keys(doc.edits).length} edited frames
+				</p>
+				{#if issues.length}<ul>
+						{#each issues as issue}<li>{issue}</li>{/each}
+					</ul>{:else}<p>
+						No reach or joint-boundary warnings. This does not certify natural motion, silhouette
+						clearance, or output quality.
+					</p>{/if}
+				{#if contacts?.error}<p class="bu-error">{contacts.error}</p>{:else if contacts?.value}<p>
+						Requested ankle-path fit: target-world speed {contacts.value.speed.toFixed(2)} px/s; residual
+						sliding RMS {contacts.value.rms.toFixed(2)} px/s across {contacts.value.samples} support intervals.
+					</p>{:else}<p>No overlapping support intervals for an ankle-path speed fit.</p>{/if}
+				{#if doc.clip.loop}<p>
+						Last-to-first requested joint step: {loopJointStep(fit.frames).toFixed(2)} px. This is one
+						playback interval, not an exact cycle closure test.
+					</p>{/if}
+				<p class="bu-muted">
+					The contact fit uses dense template samples and source confidence. Manual pose edits are
+					excluded. It does not measure rendered soles or prescribe engine speed. Review actual
+					frames and movement together.
+				</p>
+				{#if doc.planting}<p>
+						Authored full-support target error: {Math.max(
+							0,
+							...fit.frames.flatMap(
+								(f) => f.planting?.filter((c) => c.weight > 0.999).map((c) => c.error) ?? []
+							)
+						).toFixed(4)} px. Rendered soles require a separate check.
+					</p>{/if}
+			</section>
+			<section class="bu-dialog-surface controls" aria-label="Foot planting authoring">
+				<h2>Foot planting</h2>
+				<button class="bu-btn" onclick={authorContacts}>Draft stance contacts</button><button
+					class="bu-btn"
+					disabled={!doc.planting || !doc.clip.loop}
+					onclick={() =>
+						change((d) => {
+							Object.assign(d, contactSampling(d));
+							d.edits = {};
+							frame = 0;
+						}, true)}>Sample contact events</button
+				><button class="bu-btn" onclick={addContact}>Add stance interval</button><button
+					class="bu-btn"
+					disabled={!doc.planting}
+					onclick={() =>
+						change((d) => {
+							delete d.planting;
+							d.edits = {};
+						}, true)}>Remove authored contacts</button
+				>
+				<p>
+					Drafts use source confidence but anchor the target body. Edit and approve stance timing,
+					world speed and anchors before generating. Calibration and motion controls clear the plan;
+					Undo restores it.
+				</p>
+				{#if doc.planting}
+					{#each ['X', 'Z'] as axis, i}<label class="bu-field"
+							>World {axis} speed, px/s<input
+								class="bu-input"
+								type="number"
+								step="1"
+								value={doc.planting.velocity[i]}
+								onchange={(e) =>
+									change((d) => {
+										d.planting!.velocity[i] = +e.currentTarget.value;
+										d.edits = {};
+									}, true)}
+							/></label
+						>{/each}
+					<label class="bu-field"
+						>Stance interval<select class="bu-input" bind:value={plantWindow}
+							>{#each doc.planting.windows as w, i}<option value={i}>{i + 1}: {w.foot}</option
+								>{/each}</select
+						></label
+					>
+					{#if doc.planting.windows[plantWindow]}
+						<label class="bu-field"
+							>Supporting foot<select
+								class="bu-input"
+								value={doc.planting.windows[plantWindow].foot}
+								onchange={(e) =>
+									change((d) => {
+										d.planting!.windows[plantWindow].foot = e.currentTarget.value as
+											'RIGHT LEG' | 'LEFT LEG';
+										d.edits = {};
+									}, true)}><option>RIGHT LEG</option><option>LEFT LEG</option></select
+							></label
+						>
+						{#each ['start', 'end', 'fade'] as field}<label class="bu-field"
+								>Contact {field}, seconds<input
+									class="bu-input"
+									type="number"
+									step="0.01"
+									value={doc.planting.windows[plantWindow][field as 'start' | 'end' | 'fade']}
+									onchange={(e) =>
+										change((d) => {
+											d.planting!.windows[plantWindow][field as 'start' | 'end' | 'fade'] =
+												+e.currentTarget.value;
+											d.edits = {};
+										}, true)}
+								/></label
+							>{/each}
+						{#each ['X', 'Y', 'Z'] as axis, i}<label class="bu-field"
+								>Anchor {axis}, target px<input
+									class="bu-input"
+									type="number"
+									step="0.5"
+									value={doc.planting.windows[plantWindow].anchor[i]}
+									onchange={(e) =>
+										change((d) => {
+											d.planting!.windows[plantWindow].anchor[i] = +e.currentTarget.value;
+											d.edits = {};
+										}, true)}
+								/></label
+							>{/each}
+						<button
+							class="bu-btn"
+							onclick={() =>
+								change((d) => {
+									d.planting!.windows.splice(plantWindow, 1);
+									plantWindow = 0;
+									d.edits = {};
+								}, true)}>Delete stance interval</button
+						>
+					{/if}
+				{/if}
+			</section>
+		{:else if result && 'failure' in result}<p class="bu-error" role="alert">
+				{result.failure}
+			</p>{/if}
+		<section class="bu-dialog-surface controls" aria-label="Save and render">
+			<button class="bu-btn" onclick={() => download('pixeldoll-motion.json', doc)}
+				>Save motion document</button
+			><label class="bu-btn"
+				>Import motion document<input
+					type="file"
+					accept="application/json"
+					onchange={imported}
+				/></label
+			>
+			<label class="bu-field"
+				>Candidate seed<input
+					class="bu-input"
+					type="number"
+					min="1"
+					step="1"
+					bind:value={seed}
+				/></label
+			>
+			<label
+				><input
+					type="checkbox"
+					checked={doc.hands === 'closed-fists'}
+					onchange={(e) =>
+						change((d) => {
+							if (e.currentTarget.checked) d.hands = 'closed-fists';
+							else delete d.hands;
+						}, true)}
+				/> Request closed grip hands</label
+			>
+			<button
+				class="bu-btn"
+				data-variant="primary"
+				disabled={!fit ||
+					busy ||
+					!connected ||
+					!!mirroredFrom ||
+					campaign.reserved + poseCallGens(doc.times.length + (doc.buffer ? 1 : 0)) > LAB_CAP}
+				onclick={generate}
+				>Generate candidate ({poseCallGens(doc.times.length + (doc.buffer ? 1 : 0))} gens)</button
+			>
+			{#if mirroredFrom}<p>
+					This view is a pixel mirror of {mirroredFrom}. Derive it from frozen {mirroredFrom} outputs
+					without another generation. Mirroring also flips visible handedness.
+				</p>{/if}
+			<button
+				class="bu-btn"
+				onclick={async () => {
+					try {
+						download('pixeldoll-motion-evidence.json', await exportEvidence());
+					} catch (e) {
+						error = (e as Error).message;
+					}
+				}}>Export all evidence</button
+			>
+			<p>
+				First research campaign settled at 998/1000 generations. New phase raw-motion jobs have used {campaign.phaseReported}
+				reported generations. The controlled pilot below separately tracks all new calls against the additional
+				allowance and its current staged limit.
+			</p>
+			<p>
+				{campaign.reserved}/{LAB_CAP} generations conservatively reserved in this phase. Reservations
+				retain historical estimates and increase for higher reported charges; they can exceed actual spending.
+				Further paid requests are blocked at this limit. Unknown outcomes are never automatically resent.
+			</p>
+			<p>
+				{campaign.phaseWithoutJob} current-phase reservations have no queued job; {campaign.withoutJob}
+				across the full history remain in the evidence for inspection.
+			</p>
+		</section>
+		<section class="bu-dialog-surface controls" aria-label="Equipment qualification">
+			<h2>Equipment qualification</h2>
+			<label class="bu-field"
+				>Frozen body candidate<select class="bu-input" bind:value={equipmentBody}
+					><option value="">Choose a completed body</option>{#each bodyCandidates as job}<option
+							value={job.id}>{job.label}</option
+						>{/each}</select
+				></label
+			>
+			<label class="bu-field"
+				>Partner body view<select class="bu-input" bind:value={equipmentPartner}
+					><option value="">Choose another view of the same body</option
+					>{#each bodyCandidates as job}<option value={job.id}>{job.label}</option>{/each}</select
+				></label
+			>
+			<label class="bu-field"
+				>Additional standing view<select class="bu-input" bind:value={equipmentThird}
+					><option value="">No third view</option>{#each bodyCandidates as job}<option
+							value={job.id}>{job.label}</option
+						>{/each}</select
+				></label
+			>
+			<label class="bu-field"
+				>Equipment design<select class="bu-input" bind:value={equipmentName}
+					>{#each Object.entries(EQUIPMENT) as [id, item]}<option value={id}>{item.name}</option
+						>{/each}</select
+				></label
+			>
+			<button
+				class="bu-btn"
+				disabled={!connected || busy || !equipmentBody || !equipmentPartner}
+				onclick={() => equipmentAction(false)}>Dress paired standing references</button
+			>
+			<label class="bu-field"
+				>Dressed equipment reference<select class="bu-input" bind:value={equipmentDress}
+					><option value="">Choose a completed design</option
+					>{#each dressedCandidates as job}<option value={job.id}>{job.label}</option
+						>{/each}</select
+				></label
+			>
+			<button
+				class="bu-btn"
+				disabled={!connected || busy || !equipmentBody || !equipmentDress}
+				onclick={() => equipmentAction(true)}>Pose equipment on frozen body</button
+			>
+			<button
+				class="bu-btn"
+				disabled={!connected ||
+					busy ||
+					!equipmentBody ||
+					!equipmentDress ||
+					campaign.reserved + 25 > LAB_CAP}
+				onclick={gridProbe}>Probe frozen attack frames 7 and 8 (reserve 25 gens)</button
+			>
+			<p class="bu-muted">
+				Uses production chroma dressing and posing builders. Dressing reserves 10-25 gens by canvas;
+				posing reserves 2-4 by frame count. Reuse a design only with the identical standing image
+				and view. Raw results require extraction and alignment review before use.
+			</p>
+		</section>
+		<McpProbe {connected} {download} />
+		{#if library.fixtures.find((f) => f.id === 'c27man')}<ResearchPilot
+				{connected}
+				{download}
+				fixture={library.fixtures.find((f) => f.id === 'c27man')!}
+			/>{/if}
+		<section aria-label="Generated candidates" class="bu-stack">
+			<label class="bu-field"
+				>Inspect candidate<select class="bu-input" bind:value={candidateId}
+					><option value="">Most recent candidate</option>{#each $labQueue.jobs as job}<option
+							value={job.id}>{job.label} · {job.state} · {job.gens} gens</option
+						>{/each}</select
+				></label
+			>
+			<p>
+				{$labQueue.counts.done} completed · {$labQueue.counts.running} running · {$labQueue.counts
+					.pending} queued · {$labQueue.counts.failed} failed
+			</p>
+			<p class="bu-muted">
+				Queue {$labQueue.role} · {$labQueue.paused ?? 'ready'} · {$labQueue.current}/{$labQueue.concurrency}
+				remote slots
+			</p>
+			{#if inspected}{#key inspected.id}<Candidate
+						job={inspected}
+						buffer={campaign.byJob.get(inspected.id)?.document.buffer}
+					/>{/key}{/if}
+		</section>
+	{/if}
+	<StarterPack {connected} />
 </main>
+
 <style>
-  .lab{max-width:1600px;margin:auto;padding:24px}.lab header{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}h1,h2,p{margin:0}h1{font-size:28px}.controls,.joint-fields{display:flex;gap:16px;flex-wrap:wrap;align-items:end}.controls,.timeline,.diagnostics{padding:16px}.controls .bu-field{width:160px}.previews{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.previews figure{margin:0;padding:12px;min-width:0}.previews canvas{width:100%;max-height:360px;object-fit:contain;image-rendering:pixelated;touch-action:none}.previews figcaption{min-height:48px}.timeline{display:grid;gap:16px}.frame-buttons{display:flex;gap:6px;overflow:auto}.frame-buttons button{min-width:44px}.joint-fields .bu-field{width:150px}.diagnostics{display:grid;gap:8px}.controls input[type=file]{max-width:200px}.bu-field input[type=number]{font-variant-numeric:tabular-nums}@media(max-width:1050px){.previews{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.lab{padding:12px}.previews{grid-template-columns:1fr}.controls .bu-field{width:100%}}
+	.lab {
+		max-width: 1600px;
+		margin: auto;
+		padding: 24px;
+	}
+	.lab header {
+		display: flex;
+		justify-content: space-between;
+		gap: 16px;
+		flex-wrap: wrap;
+	}
+	h1,
+	h2,
+	p {
+		margin: 0;
+	}
+	h1 {
+		font-size: 28px;
+	}
+	.controls,
+	.joint-fields {
+		display: flex;
+		gap: 16px;
+		flex-wrap: wrap;
+		align-items: end;
+	}
+	.controls,
+	.timeline,
+	.diagnostics {
+		padding: 16px;
+	}
+	.controls .bu-field {
+		width: 160px;
+	}
+	.previews {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 16px;
+	}
+	.previews figure {
+		margin: 0;
+		padding: 12px;
+		min-width: 0;
+	}
+	.previews canvas {
+		width: 100%;
+		max-height: 360px;
+		object-fit: contain;
+		image-rendering: pixelated;
+		touch-action: none;
+	}
+	.previews figcaption {
+		min-height: 48px;
+	}
+	.timeline {
+		display: grid;
+		gap: 16px;
+	}
+	.frame-buttons {
+		display: flex;
+		gap: 6px;
+		overflow: auto;
+	}
+	.frame-buttons button {
+		min-width: 44px;
+	}
+	.joint-fields .bu-field {
+		width: 150px;
+	}
+	.diagnostics {
+		display: grid;
+		gap: 8px;
+	}
+	.controls input[type='file'] {
+		max-width: 200px;
+	}
+	.bu-field input[type='number'] {
+		font-variant-numeric: tabular-nums;
+	}
+	@media (max-width: 1050px) {
+		.previews {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 560px) {
+		.lab {
+			padding: 12px;
+		}
+		.previews {
+			grid-template-columns: 1fr;
+		}
+		.controls .bu-field {
+			width: 100%;
+		}
+	}
 </style>
