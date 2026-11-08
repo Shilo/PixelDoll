@@ -41,7 +41,7 @@ async function fixture(mode='pass',pad=16,bladeEnd=52){
 test('96px request uses frozen padded frames, measured wrist masks, protected references and a bounded grid',async()=>{
  const f=await fixture();f.ctx.rec.manifest.rig.animations[0].sources!.west!.keypoints![0][4].x=.95
  const req=await gridRepairRequest(f.ctx,f.item,'slash','west',123),b=req.body as {description:string;inpainting_image:{image:{base64:string};size:{width:number;height:number}};mask_image:{image:{base64:string}}}
- expect(b.inpainting_image.size).toEqual({width:384,height:288});expect(b.description).toContain('96x96');expect(b.description).toContain('right hand');expect(b.description).toContain('exactly one weapon');expect(b.description).not.toContain('empty hands')
+ expect(b.inpainting_image.size).toEqual({width:384,height:288});expect(b.description).toContain('96x96');expect(b.description).toContain('right hand');expect(b.description).toContain('exactly one held item; no effects. Keep every other pixel');expect(b.description).not.toContain('empty hands')
  const im=await decodePngBytes(base64ToBytes(b.inpainting_image.image.base64)),mask=await decodePngBytes(base64ToBytes(b.mask_image.image.base64))
  expect(mask.data[(46*384+41)*4]).toBe(255);expect(mask.data[(90*384+90)*4]).toBe(0)
  for(let y=192;y<288;y++)for(let x=0;x<384;x++)expect(mask.data[(y*384+x)*4]).toBe(0)

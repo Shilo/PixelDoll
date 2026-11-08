@@ -230,7 +230,7 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
       frames.push(await blobB64(outputsOf(a)[0].sha));
     }
     for (const key of c.cells) frames.push(bytesToBase64(await encodePngBytes(padImg(inputCell(baseCell(ctx, key, c.kind === 'dress'), route), pad))));
-    // held (S5): dress the rest views on the 96 canvas, "pointing down and slightly outward", one weapon
+    // held (S5): dress the rest views on the 96 canvas, "pointing down and slightly outward", one held item
     req = itemRoute.edit(frames, itemPrompt(dressItem(d.spec), route, c.cells, c.reference?.cell ?? (anchored(k, c.kind) ? d.calls[0].cells[0] : undefined)), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
   }
   return req;

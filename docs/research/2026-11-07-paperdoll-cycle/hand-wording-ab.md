@@ -141,3 +141,46 @@ checks G2 and G3 in every idle frame, swords and axes failed G5 or G9, and the r
 
 Decision: keep the current wording. Its direction and one-item clauses are what keep the item in the requested hand and the
 frozen arm in place; dropping them makes PixelLab's own default (a raised, larger item, often in the left hand) the result.
+
+## Object-neutral one-item clause: adopted on policy (2026-11-08)
+
+The owner asked that held prompts never assume a weapon and that the direction clause be retested. Same 80 px Live Test body,
+production `runItem` in Agent mode (dress plus idle and walk poses in three views), dress seed 8101 and pose seeds 8102 to 8107
+for every arm. The A runs of sword, torch and axe replayed from the ledger for free; everything else was new. 80 new calls, $2.62
+(the agent account's remaining credit; one more request was refused with 402 and canceled): N 42 calls (6 items), F 21 (3
+items), A mug and book 14, N2 3 dress calls only. Only the held clause differed (dress and pose descriptions):
+
+- A (then current): "..., pointing down and slightly outward; exactly one weapon, no other weapons, no scabbard, no shield; the
+  arms stay exactly as they are"
+- N: A with "exactly one held item, nothing in the left hand"
+- N2: A with "exactly one held item" (dress call only, so its standing views; never posed)
+- F: no direction: "held in the character's right hand; exactly one held item, nothing in the left hand; the arms stay exactly
+  as they are"
+
+| Item (main hand) | A | N | N2 (standing views only) | F |
+| --- | --- | --- | --- | --- |
+| Steel longsword | fail: left hand in every east clip | warn: east grip unclear | warn: east grip unclear | fail: left hand east, arm moved and blade spun in north (G2, G9 133 to 144 degrees) |
+| Burning wooden torch | pass | pass | not run | fail: arm moved in every south and north frame (G2), grip lost, left hand east |
+| Steel battle axe | pass on 5 of 6 clips (one pose call failed in the original run) | warn: east grip unclear | not run | not run |
+| Wooden beer mug | warn: east grip unclear | fail: left hand east and north | right hand front and back; east flagged left | fail: left hand front and back |
+| Leather-bound spellbook | fail: walk north G5, G9 | fail: left hand north | right hand front and back; east flagged left | not run |
+| Iron lantern | not run | pass | not run | not run |
+
+N2 is scored on dress keyframes, the other arms on posed clips, and this file already shows that a dress-only result can fail
+in posing. Side-view G8 calls are noisy in both directions: zoomed east views of A and N2 put the mug and the book at the near
+(right) hand in the same place, while G8 called A "unclear" and N2 "left"; A's sword "left hand" fails are the same kind of
+side-view call. The back-view flips under N are clear in the images. One reading, from one seed and two items, is that naming
+the other hand ("nothing in the left hand") pulled the object into it; earlier arms are mixed on this (M2 "the left hand is
+empty" did better than M, and the old off-hand clause named the right hand without trouble), so it is a hypothesis, not a
+finding.
+
+Decision: one object-neutral clause for both hands, "exactly one held item", in the dress, pose and repair-grid prompts
+(`ONE_HELD` in items.ts). This is the owner's policy (never assume a weapon) with no regression detected, not a measured
+quality win: no arm showed the weapon wording clearly better for weapons (sword A fail vs N warn, torch tie, axe A marginally
+cleaner), and S5 already found that "no extra weapons" wording "fixes nothing on its own" (docs/spikes/S5_held_items.md). The
+"no shield" clause was there to stop a second, added shield; no run here drew one without it. The direction clause stays:
+removing it failed again on every item (F), as in the 203-call test above.
+
+Not verified, needs paid runs: N2 through full posing (sword, axe, torch, mug, book) and N2 in the off hand (shield, bow,
+lantern), where "nothing in the right hand" was dropped on the strength of the M arm only. If the off hand regresses, restore
+that clause there first.

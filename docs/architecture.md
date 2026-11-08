@@ -145,7 +145,7 @@ drawn rest views ─▶ toChroma (§4.4 key) ─▶ edit-animation-v2 with one k
   can use USD. The anchor route's `planCalls` uses the same cap.
 - **Held items (`main_hand`, `off_hand`) [S5, B9]:** rest views and base frames are padded by 16 px on every side around the
   same pivot (`HELD_PAD`, less when the canvas would pass 256 px; 80 → 112, legacy 64 → 96; keypoints `(x·cell + 16)/(cell + 32)`); the dress prompt says "in the right hand, pointing down and slightly outward; exactly
-  one weapon …; the arms stay exactly as they are"; poses run on the padded canvas with **frame 0 sent last** when it is
+  one held item; the arms stay exactly as they are" (the same object-neutral clause in either hand); poses run on the padded canvas with **frame 0 sent last** when it is
   within 1 px of the rest pose (outputs reordered); a frame that still lost the item (area < 50 % of the clip median on a
   near-rest pose) gets the dressed keyframe layer pasted at the wrist move (free `repair`, `CellQa.repaired`; review warning
   R1, "Held item pasted on N … frames", since the pasted item stands still); layers are stored with the padded `cell` and
@@ -185,7 +185,7 @@ Accepted-item repair also supports oversize held layers. `gridRepairRequest` pad
 existing cell without scaling, adds protected dressed reference cells, and refuses a canvas above 512 px on either side.
 Eight 96 px frames plus four references form a 384×288 grid. Held masks are a disc around the actual measured
 wrist whose radius is the weapon's farthest pixel from the rest wrist over every dressed view (largest component) plus
-max(4 px, 10 %), never below the former 34 px (a 64 px body's sword already reaches about 39 px); missing or out-of-cell measurements fail before enqueue. The held prompt requests exactly one weapon in the
+max(4 px, 10 %), never below the former 34 px (a 64 px body's sword already reaches about 39 px); missing or out-of-cell measurements fail before enqueue. The held prompt requests exactly one held item in the
 intended hand. `regridClip` publishes only complete, correctly sized output with no failed quality checks, and verifies
 the current rig and original item inside the same atomic save transaction. Other directions and moves remain intact.
 
