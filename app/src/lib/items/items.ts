@@ -153,7 +153,7 @@ export function gridPrompt(o: { item: string; slot: string; key: Key; anim: stri
 /** S5: held items are generated on a 96 px canvas around the same pivot (64 + 2 × 16): no blade px on the border, no flips. */
 export const HELD_PAD = 16;
 /** The S5 held route: a held item posed with the skeleton (the anchor route stays on the rig cell, without held wording). */
-const heldSkel = (slot: string, method?: Method) => method === 'skel' && slotOf(slot).class === 'held';
+export const heldSkel = (slot: string, method?: Method) => method === 'skel' && slotOf(slot).class === 'held';
 /** Oversize padding of an item's layers (S5 held route only), up to the 256 px canvas cap. */
 export const padOf = (slot: string, method?: Method, cell?: { w: number; h: number }) => (heldSkel(slot, method) ? Math.max(0, Math.min(HELD_PAD, Math.floor((256 - Math.max(cell?.w ?? 64, cell?.h ?? 64)) / 2))) : 0);
 /** Grow a cell by `p` transparent px on every side (same pivot, never resampled). */
@@ -174,7 +174,30 @@ const ONE_HELD = 'exactly one held item';
  * session counter-review F3), and the plain description otherwise. */
 export const dressItem = (spec: { prompt: string; slot: string; method?: Method }) => (heldSkel(spec.slot, spec.method) ? heldPhrase(spec.prompt, spec.slot) : spec.prompt);
 /** S5 dress wording: continue the forearm ("upright" bent the arm and broke posing), one object only. */
-export const heldPhrase = (item: string, slot: string) => `${item}, held in the character's ${handOf(slot)} hand, pointing down and slightly outward; ${ONE_HELD}; the arms stay exactly as they are`;
+export const heldPhrase = (item: string, slot: string) => `${item}, held naturally, the way it is normally carried, in the character's ${handOf(slot)} hand, the hand marked with a small red dot (the red dot is only a marker: paint it over with the item or the hand); ${ONE_HELD}; the arms stay exactly as they are`;
+/** The dot `heldPhrase` names. Words alone ("right hand", image sides) moved items between hands across views and a forced
+ * direction drew candles upside down; a dot on the intended wrist kept 8 of 8 items in that hand with the arms unchanged
+ * (2026-11-08, hand-wording-ab.md). */
+export const HAND_MARK = [230, 20, 20, 255] as const;
+/** A rest view (padded by `pad`) with the dot on the opaque px within 2.2 px of the held slot's wrist, moved to the nearest
+ * opaque px when the estimated wrist sits just off the hand. */
+export function markHand(im: Img, rest: Keypoint[], slot: string, cell: { w: number; h: number }, pad = 0): Img {
+  const label = handOf(slot) === 'left' ? 'LEFT ARM' : 'RIGHT ARM', k = rest.find((q) => q.label === label);
+  if (!k) throw new Error(`The rest pose has no ${label.toLowerCase()} to mark the held hand.`);
+  const wx = k.x * cell.w + pad, wy = k.y * cell.h + pad, opaque = (x: number, y: number) => x >= 0 && y >= 0 && x < im.w && y < im.h && !!im.data[(y * im.w + x) * 4 + 3];
+  let bx = wx, by = wy, best = Infinity;
+  for (let y = Math.floor(wy - 8); y <= Math.ceil(wy + 8); y++) for (let x = Math.floor(wx - 8); x <= Math.ceil(wx + 8); x++) {
+    const d = Math.hypot(x - wx, y - wy);
+    if (d <= 8 && d < best && opaque(x, y)) { best = d; bx = x; by = y; }
+  }
+  const [cx, cy] = best <= 2.2 ? [wx, wy] : [bx, by];
+  if (best === Infinity) throw new Error(`The ${label.toLowerCase().replace(' arm', '')} hand is not on the rest view, so the held hand cannot be marked.`);
+  const o = { ...im, data: new Uint8ClampedArray(im.data) };
+  for (let y = Math.max(0, Math.floor(cy - 2)); y <= Math.min(im.h - 1, Math.ceil(cy + 2)); y++)
+    for (let x = Math.max(0, Math.floor(cx - 2)); x <= Math.min(im.w - 1, Math.ceil(cx + 2)); x++)
+      if (Math.hypot(x - cx, y - cy) <= 2.2 && o.data[(y * im.w + x) * 4 + 3]) o.data.set(HAND_MARK, (y * im.w + x) * 4);
+  return o;
+}
 /** Mean joint distance (px) between two keypoint sets. */
 export const poseDist = (a: Keypoint[], b: Keypoint[], cell: { w: number; h: number }) => {
   const d = a.map((p) => b.find((q) => q.label === p.label)).map((q, i) => (q ? Math.hypot((q.x - a[i].x) * cell.w, (q.y - a[i].y) * cell.h) : 0));

@@ -144,8 +144,10 @@ drawn rest views ─▶ toChroma (§4.4 key) ─▶ edit-animation-v2 with one k
   estimated gens). A dress call costs 10 gens up to a 128 px canvas, 15 up to 170 and 25 above (`editGens`). Actual billing
   can use USD. The anchor route's `planCalls` uses the same cap.
 - **Held items (`main_hand`, `off_hand`) [S5, B9]:** rest views and base frames are padded by 16 px on every side around the
-  same pivot (`HELD_PAD`, less when the canvas would pass 256 px; 80 → 112, legacy 64 → 96; keypoints `(x·cell + 16)/(cell + 32)`); the dress prompt says "in the right hand, pointing down and slightly outward; exactly
-  one held item; the arms stay exactly as they are" (the same object-neutral clause in either hand); poses run on the padded canvas with **frame 0 sent last** when it is
+  same pivot (`HELD_PAD`, less when the canvas would pass 256 px; 80 → 112, legacy 64 → 96; keypoints `(x·cell + 16)/(cell + 32)`); each chroma rest view gets a 2.2 px red dot on the
+  held wrist (`markHand`) and the dress prompt says "held naturally, the way it is normally carried, in the character's right
+  hand, the hand marked with a small red dot ...; exactly one held item; the arms stay exactly as they are" (no forced
+  direction; the item text decides its orientation); poses run on the padded canvas with **frame 0 sent last** when it is
   within 1 px of the rest pose (outputs reordered); a frame that still lost the item (area < 50 % of the clip median on a
   near-rest pose) gets the dressed keyframe layer pasted at the wrist move (free `repair`, `CellQa.repaired`; review warning
   R1, "Held item pasted on N … frames", since the pasted item stands still); layers are stored with the padded `cell` and

@@ -10,7 +10,7 @@ import { cellHash, DIRECTIONS, type Keypoint } from '../../src/lib/rig/rig.ts';
 import { fromApi, LABELS } from '../../src/lib/rig/poses.ts';
 import { toChroma } from '../../src/lib/image/chroma.ts';
 import { over } from '../../src/lib/compose/compose.ts';
-import { itemRoute, packGrid, padImg } from '../../src/lib/items/items.ts';
+import { HAND_MARK, itemRoute, packGrid, padImg } from '../../src/lib/items/items.ts';
 import { acceptItem, evaluateItem, gensOf, isClean, newDraft, poseItemClip, rerollCall, runItem, SAVED_FRAMES_UNAVAILABLE, type Draft, type RigCtx } from '../../src/lib/items/run.ts';
 import { draftQueueIds } from '../../src/studio/apiPlans.ts';
 
@@ -648,21 +648,24 @@ test('a kept item saves its dark-patch review note, beside the gray smudge note 
   expect(saved.none).toBeUndefined()
 })
 
-test('a held dress keeps its hand wording on an unpadded 256 px cell (2026-11-07 session counter-review F3)', async () => {
+const marked = async (req: Req) => { const f = (req.body as { frames: { image: { base64: string } }[] }).frames[0], im = await decodePngBytes(base64ToBytes(f.image.base64)); let n = 0; for (let p = 0; p < im.w * im.h; p++) if (HAND_MARK.every((v, i) => im.data[p * 4 + i] === v)) n++; return n; };
+test('a held dress keeps its hand wording and wrist dot on an unpadded 256 px cell (2026-11-07 session counter-review F3)', async () => {
   for (const size of [64, 256]) for (const slot of ['main_hand', 'off_hand']) {
     const f = await fixture();
     f.ctx.rec.manifest.rig.cell = { w: size, h: size }; f.ctx.rec.manifest.items[0].layers[0].cell = { w: size, h: size };
-    for (const [hash] of f.ctx.project.images) { const b = makeImg(size, size); paint(b, size / 2 - 3, 8, 6, 20, [180, 130, 100]); f.ctx.project.images.set(hash, b); ledger.blobs.set(hash.slice(7), new Blob([await encodePngBytes(b) as Uint8Array<ArrayBuffer>])); }
+    for (const [hash] of f.ctx.project.images) { const b = makeImg(size, size); paint(b, size / 2 - 3, 8, 6, 20, [180, 130, 100]); for (const x of [10, 22]) paint(b, x * size / 32 - 2, 21 * size / 32 - 2, 4, 4, [180, 130, 100]); /* hands at the fixture wrists */ f.ctx.project.images.set(hash, b); ledger.blobs.set(hash.slice(7), new Blob([await encodePngBytes(b) as Uint8Array<ArrayBuffer>])); }
     let req: Req | undefined; ledger.output = async (q) => { req = q; throw new Error('stop before transport'); };
     const d = newDraft(f.ctx, { name: 'P', slot, prompt: slot === 'off_hand' ? 'a wooden shield' : 'a steel sword', key: 'green', anims: ['walking'], dirs: ['south'] });
     await runItem(d, f.ctx).catch(() => undefined); // the capture stops the run before any output
     const body = req!.body as { description: string; image_size: { width: number } }, hand = slot === 'off_hand' ? 'left' : 'right';
     expect(body.image_size.width, `${size} ${slot}`).toBe(Math.min(size + 32, 256)); // the canvas cap is unchanged
-    expect(body.description, `${size} ${slot}`).toContain(`held in the character's ${hand} hand`);
+    expect(body.description, `${size} ${slot}`).toContain(`in the character's ${hand} hand, the hand marked with a small red dot`);
     expect(body.description, `${size} ${slot}`).toContain('exactly one')
+    expect(await marked(req!), `${size} ${slot}`).toBeGreaterThan(0)
   }
   // a worn item gets no hand wording
   const f = await fixture(); let req: Req | undefined; ledger.output = async (q) => { req = q; throw new Error('stop before transport'); };
   await runItem(newDraft(f.ctx, { name: 'C', slot: 'back', prompt: 'a red cloak', key: 'green', anims: ['walking'], dirs: ['south'] }), f.ctx).catch(() => undefined);
-  expect((req!.body as { description: string }).description).not.toMatch(/held in the character/)
+  expect((req!.body as { description: string }).description).not.toMatch(/in the character's (?:right|left) hand/)
+  expect(await marked(req!)).toBe(0)
 })

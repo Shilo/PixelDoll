@@ -2,6 +2,34 @@
 
 Date: 2026-11-07. Paid, Agent mode, 22 `edit-animation-v2` dress calls at $0.08 each.
 
+## Summary of every approach tried (2026-11-07 to 2026-11-08)
+
+Current production: the wrist dot (last row). Each row links to its section below. "Bad" means wrong hand, a duplicate item
+or a moved arm.
+
+| Approach | Held phrase or method | Result | Verdict |
+| --- | --- | --- | --- |
+| A, original | "held in the character's right hand, pointing down and slightly outward; exactly one weapon, no other weapons, no scabbard, no shield; the arms stay exactly as they are" | 0 of 12 bad standing views; full pipeline passed or warned on 2 of 6; candles and torches drawn upside down | Replaced |
+| B, neutral carry | "..., carried naturally at the side, continuing the forearm; exactly one held object, nothing in the left hand; ..." | Arm bends (G3), left hand in 3 of 6 views | Rejected |
+| C, no orientation | "gripped in the character's right fist at the side; ..." | Left hand in 4 of 6 views | Rejected |
+| D/E, upright | "held upright in the character's left (or right) hand, gripped in the fist; ..." | Dress looked right, full pipeline failed all 3 items (wrong hand, moved body) | Rejected |
+| Flip about the grip | Mirror the item vertically at the wrist | Breaks the seeds that were already upright | Rejected |
+| More padding | 48 px instead of 16 px | Direction unchanged; it comes from the wording | No effect |
+| Straight down | "pointing straight down beside the leg" | Short blades, G5 fail, owner judged it awkward | Rejected |
+| M to M5, minimal and negative | "held in the character's right hand" alone, plus "the left hand is empty", "the arms stay exactly as they are", or "not the left hand" | 3 to 6 of 24 bad views each; raised items, wrong hand, duplicates | Rejected |
+| N, neutral one-item | A with "exactly one held item, nothing in the left hand" | Weapons fine, mug and book switched to the left hand from behind | Rejected |
+| N2, neutral one-item | A with "exactly one held item" | No regression on 3 dress calls | Shipped 2026-11-08 (8f78fbab), then replaced |
+| F, no direction | "held in the character's right hand; exactly one held item, nothing in the left hand; the arms stay exactly as they are" | 0 of 3 in full pipeline (arm moved, wrong hand, sword spun) | Rejected |
+| O0, no direction (new body) | "held in the character's right hand; exactly one held item; the arms stay exactly as they are" | 3 of 8 good, arm moved 3 times | Rejected |
+| ON, held naturally | "held naturally in the character's right hand, the way it is normally carried; ..." | 4 of 8 good; upright candle but wrong hand from behind | Rejected |
+| PN, image sides | "... right hand (the hand on the left side of the image in the front view, the near hand in the side view, and the hand on the right side of the image in the back view); ..." | 4 of 8 good | Rejected |
+| MN, wrist dot | "held naturally, the way it is normally carried, in the character's right hand, the hand marked with a small red dot (the red dot is only a marker: paint it over with the item or the hand); exactly one held item; the arms stay exactly as they are" plus a red dot on the wrist of each chroma input view of the dress call | 8 of 8 good standing; full pipeline: mug pass, sword and shield warn only, candle fails from behind (hidden then reinvented) | Current |
+
+To go back to the direction wording: set `heldPhrase` in app/src/lib/items/items.ts to "${item}, held in the character's
+${hand} hand, pointing down and slightly outward; exactly one held item; the arms stay exactly as they are" (N2), and drop
+the `markHand` call in `callRequest` (app/src/lib/items/run.ts) together with `markHand` and `HAND_MARK`. The dot only
+touches the chroma input frames of the held dress call; base frames, pose calls, repairs and exports never contain it.
+
 ## Question
 
 The held-item dress prompt (`heldPhrase` and `oneHeld` in `app/src/lib/items/items.ts`) describes every held object as a weapon
@@ -184,3 +212,39 @@ removing it failed again on every item (F), as in the 203-call test above.
 Not verified, needs paid runs: N2 through full posing (sword, axe, torch, mug, book) and N2 in the off hand (shield, bow,
 lantern), where "nothing in the right hand" was dropped on the strength of the M arm only. If the off hand regresses, restore
 that clause there first.
+
+## Hand marker instead of a forced direction: adopted (2026-11-08, second round)
+
+The owner rejected a forced direction for arbitrary objects (a candle "pointing down" is upside down) and questioned whether
+the model understands "right hand". New 80 px "Hand Test" body (64 px, four views, west mirrored) on a fresh account, so no
+ledger replays. Main hand, dress calls only (standing views), seeds 8101 and 9101, items "a steel longsword", "a lit wax
+candle", "a wooden beer mug" and "a leather-bound spellbook". Good = intended hand in all three views with no body check
+failure (G2, G3); a view with the arm moved counts against it.
+
+| Hand phrase (after "{item}, ") | Good | Arm moved | Notes |
+| --- | --- | --- | --- |
+| "held in the character's right hand, pointing down and slightly outward; exactly one held item; the arms stay exactly as they are" (then current) | 7 of 8 | 0 | The candle is drawn tipped down like a stick, flame at the low end; one book in the left hand |
+| "held in the character's right hand; exactly one held item; the arms stay exactly as they are" | 3 of 8 | 3 | Both swords, both candles fail |
+| "held naturally in the character's right hand, the way it is normally carried; ..." | 4 of 8 | 1 | Upright candle, but it switches to the left hand in the back view |
+| "held naturally, the way it is normally carried, in the character's right hand (the hand on the left side of the image in the front view, the near hand in the side view, and the hand on the right side of the image in the back view); ..." | 4 of 8 | 2 | Image-side wording does not help |
+| "held naturally, the way it is normally carried, in the character's right hand, the hand marked with a small red dot (the red dot is only a marker: paint it over with the item or the hand); ..." plus a 2.2 px red dot on the right wrist of each input view | 8 of 8 | 0 | Upright candle and mug, sword low or raised; the dot was painted over in 7 of 8 (one candle kept 2 px) |
+
+Text alone does not fix the hand: without a direction PixelLab keeps the object on the same image side as the front view, so
+it lands in the other hand from behind. A visible mark on the intended wrist does, and the arm stays put without "pointing
+down", so the item's own description decides its orientation.
+
+Full pipeline (production `runItem`: dress plus idle and walk in three views, seed 8101; the dress calls replayed from the
+round above):
+
+| Item | Marker wording | "pointing down" |
+| --- | --- | --- |
+| Steel longsword | warn: side-view grip unclear only; right hand in every move | not run |
+| Lit wax candle | fail: upright and in the right hand front and side, but the standing back view hides it in front of the body and idle north invents a tipped candle in the left hand (G4, G8, G9 catch it) | warn (G6 palette only); consistent from behind, but an upside-down stick in every frame |
+| Wooden beer mug | pass, no warnings | not run |
+| Round wooden shield (off hand) | warn: side-view occlusion only; left hand in every move | not run |
+
+Decision: replace the forced direction with the wrist dot (`markHand`, `heldPhrase` in items.ts). It keeps the hand and the
+arms as well as "pointing down" did and lets the item's description decide its orientation. Open: small objects carried in
+front of the body can be hidden in the back view and reinvented by the back-view moves (docs/known-issues.md); the dot was
+left unpainted in 1 of 9 dress results (2 px). 533 subscription generations for the round, including the test body and its
+moves; no credit spent.

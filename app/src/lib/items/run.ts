@@ -22,7 +22,7 @@ import { chromaLayer, keyAllowed, keyFor, KEY_NAME, KEYS, keyScore, KT, nearKeyS
 import { garmentBand, referenceBodies } from './garment-coverage.ts';
 import { designConsistency, expectsWaistBand, type StandingDesignView } from './design-consistency.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { GATES, heldParts, planAnchoredMove, reusesStanding, anchored, planGens, SLOTS, gridEstimate, repairGridLayout, bandMask, cutGrid, g2Fails, grayShare, smudgedViews, gridPrompt, packGrid, bandOf, buildItem, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, dressItem, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { GATES, heldParts, heldSkel, markHand, planAnchoredMove, reusesStanding, anchored, planGens, SLOTS, gridEstimate, repairGridLayout, bandMask, cutGrid, g2Fails, grayShare, smudgedViews, gridPrompt, packGrid, bandOf, buildItem, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, dressItem, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind; frozen?: true; reference?: { image: Sha256; cell: CellKey } }
@@ -229,8 +229,13 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
       if (a?.state !== 'done') throw new Error('design call not done');
       frames.push(await blobB64(outputsOf(a)[0].sha));
     }
-    for (const key of c.cells) frames.push(bytesToBase64(await encodePngBytes(padImg(inputCell(baseCell(ctx, key, c.kind === 'dress'), route), pad))));
-    // held (S5): dress the rest views on the 96 canvas, "pointing down and slightly outward", one held item
+    const mark = c.kind === 'dress' && heldSkel(d.spec.slot, d.spec.method);
+    for (const key of c.cells) {
+      const im = padImg(inputCell(baseCell(ctx, key, c.kind === 'dress'), route), pad), rest = rig.rest?.[key.split('/')[1] as DirectionName]?.keypoints;
+      if (mark && !rest) throw new Error(`${key}: no rest pose to mark the held hand`);
+      frames.push(bytesToBase64(await encodePngBytes(mark ? markHand(im, rest!, d.spec.slot, rig.cell, pad) : im)));
+    }
+    // held (S5): dress the marked rest views on the padded canvas, held naturally, one held item
     req = itemRoute.edit(frames, itemPrompt(dressItem(d.spec), route, c.cells, c.reference?.cell ?? (anchored(k, c.kind) ? d.calls[0].cells[0] : undefined)), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
   }
   return req;
