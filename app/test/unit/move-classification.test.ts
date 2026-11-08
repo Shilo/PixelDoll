@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
-import { decisiveAction, isAction } from '../../src/lib/items/items.ts'
+import { makeImg } from '../../src/lib/image/png.ts'
+import { decisiveAction, isAction, itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts'
 import { actionOf, moveWords } from '../../src/lib/rig/clips.ts'
+import { LABELS } from '../../src/lib/rig/poses.ts'
 import type { DirectionName, Rig } from '../../src/lib/rig/rig.ts'
 
 const bench = (b: string) => JSON.parse(readFileSync(new URL(`../fixtures/bench/body${b}.json`, import.meta.url), 'utf8')).rig as Rig
@@ -111,4 +113,78 @@ test('a short slash named like a gait is still an action (4 of its 8 frames)', (
     expect(isAction('run-slash/south', rig), pick.join()).toBe(true)
     rig.animations.pop()
   }
+})
+
+type Point = { label: string; x: number; y: number }
+const UPPER = /NOSE|NECK|SHOULDER|ELBOW|ARM|EYE|EAR/
+const hipsOf = (pose: Point[]) => { const r = pose.find(p => p.label === 'RIGHT HIP')!, l = pose.find(p => p.label === 'LEFT HIP')!; return [(r.x + l.x) / 2, (r.y + l.y) / 2] }
+/** The whole upper body tipped `deg` about the hip center, every bone kept: a coherent lean (dodge, duck, bow). */
+const tip = (pose: Point[], deg: number) => {
+  const [hx, hy] = hipsOf(pose), t = deg * Math.PI / 180, c = Math.cos(t), s = Math.sin(t)
+  return pose.map(p => (UPPER.test(p.label) ? { ...p, x: hx + (p.x - hx) * c - (p.y - hy) * s, y: hy + (p.x - hx) * s + (p.y - hy) * c } : p))
+}
+const leanRig = (id: string, dir: DirectionName, rest: Point[], frames: Point[][]) => ({ cell: { w: 64, h: 64 }, rest: { [dir]: { keypoints: rest } }, animations: [{ id, sources: { [dir]: { keypoints: frames, measured: frames } } }] }) as unknown as Rig
+
+test('a coherent moderate lean is an action at the hip threshold on every bench body (2026-11-07 50eeea36 counter-review C1)', () => {
+  // The knees sit further from the shoulders than the hips do, so the same lean turns the shoulders less about the knees: a
+  // 45 degree lean read about 30 degrees there, and bench bodies needed 42 to 68 degrees before they counted as an action.
+  for (const b of ['A', 'B', 'C', 'N']) {
+    const rig = bench(b)
+    for (const dir of Object.keys(rig.rest ?? {}) as DirectionName[]) {
+      const rest = rig.rest![dir]!.keypoints as Point[]
+      for (const sign of [1, -1]) {
+        const at = (deg: number) => leanRig('run-dodge', dir, rest, [rest, tip(rest, sign * deg), rest])
+        expect(decisiveAction(at(45), 'run-dodge', dir), `${b} ${dir} ${sign * 45}`).toBe(true)
+        // the threshold itself is unchanged: a 30 degree lean is still within reach of a run
+        expect(decisiveAction(at(30), 'run-dodge', dir), `${b} ${dir} ${sign * 30}`).toBe(false)
+      }
+    }
+  }
+})
+
+test('a gait word in an action name does not hide its moderate lean; an ordinary action name needs none', () => {
+  const rig = bench('A'), rest = rig.rest!.south!.keypoints as Point[]
+  const leaning = [rest, tip(rest, 45), rest], still = [rest, rest, rest]
+  for (const id of ['run-dodge', 'walk-bow', 'dodge']) expect(isAction(`${id}/south`, leanRig(id, 'south', rest, leaning)), id).toBe(true)
+  expect(isAction('run-dodge/south', leanRig('run-dodge', 'south', rest, still))).toBe(false)
+  expect(isAction('dodge/south', leanRig('dodge', 'south', rest, still))).toBe(true)
+})
+
+test('hips sliding under still shoulders, or one hip or the neck thrown, is no lean', () => {
+  for (const b of ['A', 'B', 'C', 'N']) {
+    const rig = bench(b)
+    for (const dir of Object.keys(rig.rest ?? {}) as DirectionName[]) {
+      const rest = rig.rest![dir]!.keypoints as Point[], walk = (f: Point[]) => leanRig('walk', dir, rest, [rest, f, rest])
+      // only the hip center moves, sideways by up to the torso length: the shoulders lean about the hips, not about the knees
+      for (const dx of [-0.2, -0.12, 0.12, 0.2]) expect(decisiveAction(walk(rest.map(p => (/HIP/.test(p.label) ? { ...p, x: p.x + dx } : p))), 'walk', dir), `${b} ${dir} hips ${dx}`).toBe(false)
+      for (const [label, x, y] of [['LEFT HIP', 0.05, 0.5], ['RIGHT HIP', 0.95, 0.5], ['NECK', 0.05, 0.5], ['NECK', 0.95, 0.95]] as const)
+        expect(decisiveAction(walk(rest.map(p => (p.label === label ? { ...p, x, y } : p))), 'walk', dir), `${b} ${dir} ${label}`).toBe(false)
+    }
+  }
+})
+
+test('G9 lets a torch stay upright through a coherent lean, under a gait name too, and still checks it on a walk with a thrown neck', () => {
+  const px: Record<string, [number, number]> = { NOSE: [32, 10], NECK: [32, 20], 'RIGHT SHOULDER': [24, 22], 'LEFT SHOULDER': [40, 22], 'RIGHT ELBOW': [20, 27], 'LEFT ELBOW': [44, 27], 'RIGHT ARM': [20, 35], 'LEFT ARM': [44, 35], 'RIGHT HIP': [28, 40], 'LEFT HIP': [36, 40], 'RIGHT KNEE': [28, 50], 'LEFT KNEE': [36, 50], 'RIGHT LEG': [28, 60], 'LEFT LEG': [36, 60], 'RIGHT EYE': [30, 9], 'LEFT EYE': [34, 9], 'RIGHT EAR': [28, 10], 'LEFT EAR': [36, 10] }
+  const rest = LABELS.map(label => ({ label, x: px[label][0] / 64, y: px[label][1] / 64 }))
+  /** A 2 px torch, 16 px long, rising from the right wrist `deg` from upright. */
+  const torch = (pose: Point[], deg: number, i: number, id: string): CellOut => {
+    const base = makeImg(64, 64), layer = makeImg(64, 64), mask = new Uint8Array(64 * 64), wr = pose.find(p => p.label === 'RIGHT ARM')!, t = deg * Math.PI / 180
+    for (let s = 0; s < 16; s += 0.25) for (const o of [-0.5, 0.5]) {
+      const x = Math.floor(wr.x * 64 + s * Math.sin(t) + o * Math.cos(t)), y = Math.floor(wr.y * 64 - s * Math.cos(t) + o * Math.sin(t)), q = y * 64 + x
+      if (!mask[q]) { mask[q] = 1; layer.data.set(s > 12 ? [235, 170, 35, 255] : [130, 80, 40, 255], q * 4) }
+    }
+    return { key: `${id}/south/${i}`, call: 0, base, input: base, out: layer, layer, mask, area: mask.reduce((a, v) => a + v, 0), outBand: 0, baseBand: 0, specks: 0, pinholes: 0, shifted: false, offset: [0, 0], stray: 0, posed: true }
+  }
+  const g9 = (id: string, requested: Point[][], measured: Point[][], degs: number[]) => {
+    const rig = { cell: { w: 64, h: 64 }, pivot: { x: 32, y: 60 }, baseItem: 'base', baseHash: 'sha256:test', directions: [{ id: 'south' }], rest: { south: { image: 'sha256:test', keypoints: rest } },
+      animations: [{ id, cells: requested.length, loop: false, frames: requested.map((_, cell) => ({ cell, ms: 100 })), sources: { south: { route: 'skeleton-v3', reference: 'sha256:test', keypoints: requested, measured, provenance: [] } } }] } as unknown as Rig
+    const cells = requested.map((pose, i) => torch(pose, degs[i], i, id))
+    return [...itemQa(rig, slotOf('main_hand'), 'green', cells, 0).failCalls.values()].flat().filter(why => why.startsWith('G9'))
+  }
+  const lean = [rest, tip(rest, 45), rest]
+  for (const id of ['run-dodge', 'dodge']) expect(g9(id, lean, lean, [0, 0, 0]), id).toEqual([])
+  // a walk whose neck estimate is thrown in one frame is still a walk: a torch that twists in the still hand fails
+  const thrown = [rest, rest.map(p => (p.label === 'NECK' ? { ...p, x: 0.05, y: 0.5 } : p)), rest], still = [rest, rest, rest]
+  expect(g9('walk', still, thrown, [0, 45, 0])).toEqual([expect.stringMatching(/^G9 walk\/south: the item turns 4\d° against the hand/)])
+  expect(g9('walk', still, thrown, [0, 0, 0])).toEqual([])
 })

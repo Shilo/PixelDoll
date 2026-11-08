@@ -900,7 +900,15 @@ export function decisiveAction(rig: Rig, anim: string, dir: DirectionName): bool
   // are decided by one joint, the wrist, often in only two or three frames, so one plausible decisive frame still decides.
   const len = (q: typeof rest, a: string, b: string) => Math.hypot(q[a].x - q[b].x, q[a].y - q[b].y) / H;
   const torso = (q: typeof rest, h: number[]) => Math.hypot(q.NECK.x - h[0], q.NECK.y - h[1]) / H;
-  const shoulders = (q: typeof rest) => mid(q, 'RIGHT SHOULDER', 'LEFT SHOULDER');
+  const shoulders = (q: typeof rest) => mid(q, 'RIGHT SHOULDER', 'LEFT SHOULDER'), knees = (q: typeof rest) => mid(q, 'RIGHT KNEE', 'LEFT KNEE');
+  // The knees sit further from the shoulders than the hips, so one lean turns the shoulders less about them (45 degrees about
+  // the hips read 25 to 34 about the knees, and a coherent run-dodge became a walk: 2026-11-07 50eeea36 counter-review C1).
+  // The knee lean is therefore measured against what a 40 degree lean about the hips shows from the knees of this standing pose.
+  const kneeLean = (deg: number) => {
+    const t = deg * Math.PI / 180, [x, y] = shoulders(rest), dx = x - restHips[0], dy = y - restHips[1];
+    return Math.abs(angle([restHips[0] + dx * Math.cos(t) - dy * Math.sin(t), restHips[1] + dx * Math.sin(t) + dy * Math.cos(t)], knees(rest)) - angle(shoulders(rest), knees(rest)));
+  };
+  const kneeScale = { [-1]: 40 / kneeLean(-40), 1: 40 / kneeLean(40) } as Record<number, number>;
   return frames.some((p) => {
     const grew = (a: string, b: string) => len(p, a, b) - len(rest, a, b) > 0.2;
     if (grew('RIGHT HIP', 'LEFT HIP') || grew('RIGHT KNEE', 'RIGHT HIP') || grew('LEFT KNEE', 'LEFT HIP')) return false;
@@ -911,8 +919,8 @@ export function decisiveAction(rig: Rig, anim: string, dir: DirectionName): bool
     const from = (l: string, q: string) => Math.hypot(p[l].x - dx - rest[q].x, p[l].y - dy - rest[q].y);
     const moved = Math.max(0, ...Object.keys(rest).filter(plausible).map((l) => Math.min(from(l, l), rest[mirror(l)] ? from(l, mirror(l)) : Infinity))) / H;
     const rise = Math.max(-1, ...['RIGHT ARM', 'LEFT ARM'].filter(plausible).map((l) => (rest[l].y - (p[l].y - dy)) / H));
-    const knees = (q: typeof rest) => mid(q, 'RIGHT KNEE', 'LEFT KNEE');
-    const lean = !torsoOk ? 0 : Math.min(Math.abs(angle(shoulders(p), knees(p)) - angle(shoulders(rest), knees(rest))), Math.abs(angle([p.NECK.x, p.NECK.y], hips) - angle([rest.NECK.x, rest.NECK.y], restHips)), Math.abs(angle(shoulders(p), hips) - angle(shoulders(rest), restHips)));
+    const bend = angle(shoulders(p), hips) - angle(shoulders(rest), restHips);
+    const lean = !torsoOk ? 0 : Math.min(Math.abs(angle(shoulders(p), knees(p)) - angle(shoulders(rest), knees(rest))) * kneeScale[Math.sign(bend) || 1], Math.abs(angle([p.NECK.x, p.NECK.y], hips) - angle([rest.NECK.x, rest.NECK.y], restHips)), Math.abs(bend));
     return moved >= 0.6 || rise >= 0.45 || lean >= 40;
   });
 }
