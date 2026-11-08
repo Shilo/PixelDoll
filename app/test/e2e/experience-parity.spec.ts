@@ -399,6 +399,17 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	const prompt = page.locator('.prompt-disclosure');
 	await prompt.locator('summary').click();
 	await expect(prompt).toHaveAttribute('open', '');
+	// The prompt keeps its line breaks, but whitespace between the popup's elements must not indent Copy prompt.
+	const copyIndent = await prompt.locator('div').evaluate((popup) => {
+		const box = getComputedStyle(popup);
+		return (
+			popup.querySelector('button')!.getBoundingClientRect().left -
+			popup.getBoundingClientRect().left -
+			parseFloat(box.borderLeftWidth) -
+			parseFloat(box.paddingLeft)
+		);
+	});
+	expect(copyIndent).toBeCloseTo(0, 0);
 	await world(page).focus();
 	await page.keyboard.press('Escape');
 	await expect(prompt).not.toHaveAttribute('open');

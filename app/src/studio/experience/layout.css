@@ -138,8 +138,11 @@
 	border: 1px solid var(--bu-rim);
 	border-radius: var(--bu-radius-panel);
 	box-shadow: var(--bu-shadow);
-	white-space: pre-wrap;
 	z-index: 20;
+}
+/* On the prompt only: on the popup it would also render the space before Copy prompt as an indent. */
+.prompt-disclosure[open] p {
+	white-space: pre-wrap;
 }
 .view-modes {
 	display: flex;

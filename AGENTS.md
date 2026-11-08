@@ -60,6 +60,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 ## Commands
 
 - Run all from app/. Install with npm ci; add dependencies with npm install -E and commit the lockfile.
+- Format only files you changed (npx prettier --write <files>); npm run check fails on unformatted files.
 - Unit tests: npm test [-- <file filter>]
 - End-to-end tests: npm run e2e, or npm run e2e -- <spec names> [-g "<title>"] [--last-failed]; it builds and starts its own servers.
 - Concurrent agents: give each run its own E2E_PREVIEW_PORT, E2E_DEV_PORT and TEST_OUTPUT_DIR; --last-failed reads the same TEST_OUTPUT_DIR.
@@ -81,7 +82,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 
 - Remembered PixelLab credentials remain plaintext in optional `localStorage['pixellabApiKey']`, intentionally shared with every app on this origin. Never broadcast credentials. Follow `docs/shared-token-security.md` for credential-free Forget/replacement notifications; do not introduce encryption or an extra unlock step. A deferred board card tracks encryption.
 - Think before coding: state non-obvious assumptions. If a request is ambiguous, contradicts the code or docs, or has a clearly simpler or better alternative, say so; ask only when a wrong guess is costly to undo, otherwise proceed. Push back with evidence; never agree just to please.
-- KISS and YAGNI: no feature, dependency, option or abstraction without a real need; before finishing, remove anything the task does not need. Simple means less logic, not compressed code.
+- KISS and YAGNI: no feature, dependency, option or abstraction without a real need; before finishing, remove anything your change adds that the task does not need. Simple means less logic, not compressed code.
 - Goal-driven: before changing behavior, decide how you will prove it works (for a bug, a failing test or offline reproduction on stored frames first, never a paid generation), then iterate until that check passes.
 - Follow **simplicity-first design**: strong defaults, minimal necessary features/settings and no unnecessary setup for ordinary use. Keep frequent actions easy to reach; reveal necessary infrequent options through clear contextual access. Preserve accessibility, timely feedback/recovery and consequential disclosures, especially paid costs. Use concise, familiar labels. Read [Usability principles](docs/usability-principles.md) when changing features, settings, navigation or user-facing copy; its linked research is optional.
 - No backward compatibility for data saved by earlier versions (no new migrations, upgrades or legacy shims): the app is in preview, so breaking changes are fine as long as old data cannot brick it (ignore it or fail with a clear message). Ask first if compatibility seems needed.
