@@ -76,15 +76,28 @@ test('one bad trunk estimate cannot make a walk an action either', () => {
 test('one detached trunk, face or limb joint cannot make a walk an action (2026-11-07 session counter-review F1)', () => {
   // A lone joint whose own chain to the trunk looks plausible still stretches the bones to its children: the neck below the
   // hips, the nose, an elbow or a knee thrown away from its wrist or ankle, or one hip moving the hip center.
+  // decisiveAction judges each frame on its own (one decisive frame decides), so once the stored walk decides nothing, a clip of
+  // only the changed frame gives the walk's answer. Re-judging the 7 unchanged frames for each of the 44,800 cases took 6 s
+  // locally and over 10 s on CI. Two checks keep the shortcut honest if frames are ever compared: one tipped frame must still
+  // decide alone, and the real walk is judged at the points where the classifier before this fix (19646f09) failed most.
   for (const b of ['A', 'B', 'C', 'N']) {
     const rig = bench(b), walk = rig.animations.find(a => a.id === 'walk')!
     for (const dir of Object.keys(walk.sources ?? {}) as DirectionName[]) {
       const src = walk.sources![dir]!, base = src.measured ?? src.keypoints!
-      for (const label of ['NECK', 'NOSE', 'RIGHT ELBOW', 'LEFT ELBOW', 'RIGHT KNEE', 'LEFT KNEE', 'RIGHT HIP', 'LEFT HIP'])
-        for (let x = 0.025; x < 1; x += 0.05) for (let y = 0.025; y < 1; y += 0.05) {
+      src.measured = base
+      expect(decisiveAction(rig, 'walk', dir), `${b} ${dir} stored walk`).toBe(false)
+      src.measured = [tip(base[1], 60)]
+      expect(decisiveAction(rig, 'walk', dir), `${b} ${dir} one tipped frame`).toBe(true)
+      for (const label of ['NECK', 'NOSE', 'RIGHT ELBOW', 'LEFT ELBOW', 'RIGHT KNEE', 'LEFT KNEE', 'RIGHT HIP', 'LEFT HIP']) {
+        for (const [x, y] of [[0.325, 0.825], [0.475, 0.375], [0.275, 0.525], [0.625, 0.475], [0.525, 0.425]]) {
           src.measured = base.map((f, i) => (i === 1 ? f.map(p => (p.label === label ? { ...p, x, y } : p)) : f))
+          expect(decisiveAction(rig, 'walk', dir), `${b} ${dir} ${label} (${x}, ${y}) in the walk`).toBe(false)
+        }
+        for (let x = 0.025; x < 1; x += 0.05) for (let y = 0.025; y < 1; y += 0.05) {
+          src.measured = [base[1].map(p => (p.label === label ? { ...p, x, y } : p))]
           expect(decisiveAction(rig, 'walk', dir), `${b} ${dir} ${label} (${x.toFixed(3)}, ${y.toFixed(3)})`).toBe(false)
         }
+      }
       src.measured = base === src.keypoints ? undefined : base
     }
   }
