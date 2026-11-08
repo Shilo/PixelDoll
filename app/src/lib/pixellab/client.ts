@@ -2,7 +2,9 @@
 import { beginActivityCall, finishActivityCall, type ActivityContext } from './activity.ts';
 
 // Agent dev server only: a local API server for a PIXELLAB_SECRET_DEV token (vite.config.ts). Builds keep only the public URL.
-export const API_BASE = (import.meta.env.DEV && import.meta.env.MODE === 'agent' && __AGENT_API_BASE__) || 'https://api.pixellab.ai/v2';
+// Node imports this module without Vite (Playwright specs, scripts/): no import.meta.env, so the chain stops before the
+// Vite-defined __AGENT_API_BASE__ and they get the public URL.
+export const API_BASE = (import.meta.env?.DEV && import.meta.env.MODE === 'agent' && __AGENT_API_BASE__) || 'https://api.pixellab.ai/v2';
 const TIMEOUT_MS = 120_000, SKELETON_TIMEOUT_MS = 600_000;
 // The estimator returns synchronously; provider queue time is part of this HTTP request. This is a bounded client policy,
 // not a provider SLA. Async submissions and free reads keep their shorter timeout; unknown paid outcomes are never resent.
