@@ -9,7 +9,7 @@ import type { Manifest, Project } from '../../src/lib/store/manifest.ts'
 // Square cells, pivot (3, 7). Each frame is one pixel whose red channel names it (standing 200, walk cell n = 10 + n), at x 3
 // (south, north) or x 5 (east; west mirrors it to x 2), on row 6. `head` adds a marker (red 1) at x 3, row 2 to every frame.
 type Source = { keypoints?: Keypoint[][]; measured?: Keypoint[][]; motion?: string }
-type Options = { walk?: boolean; walkId?: string; dirs?: string[]; below?: number; size?: number; head?: boolean; names?: string[]; character?: string; standing?: boolean; feet?: number[]; aligned?: boolean
+type Options = { walk?: boolean; walkId?: string; dirs?: string[]; size?: number; head?: boolean; names?: string[]; character?: string; standing?: boolean; feet?: number[]; aligned?: boolean
   frames?: { cell: number; ms: number }[]; keys?: Record<string, Source> }
 /** Ankle keypoints per cell for a view, where `lead` is how far the left ankle is ahead of the right along the facing. A wide
  *  side-to-side stance is added in front and back views: it must not read as a stride. */
@@ -29,10 +29,18 @@ async function project(o: Options = {}): Promise<Project> {
   const dirs = o.dirs ?? ['south', 'east', 'north'], xOf = (d: string) => (d === 'east' ? 5 : 3), walkId = o.walkId ?? 'walk'
   const standing: Record<string, string[]> = {}, walk: Record<string, string[]> = {}
   for (const d of dirs) {
-    standing[d] = [await frame(200, xOf(d), o.below && d === 'south' ? 6 + o.below : 6)]
+    standing[d] = [await frame(200, xOf(d))]
     walk[d] = await Promise.all([0, 1, 2, 3].map((n) => frame(10 + n, xOf(d), 6, d === 'east' ? o.feet?.[n] ?? 1 : 1)))
   }
-  const base = [...images.keys()][0]
+  const base = [...images.keys()][0], names = o.names ?? ['Current look', 'Night', 'night'], marks = []
+  // each saved outfit wears its own marker (red 1, ignored by frameAt, at x 3, row 5), so outfits draw different sheets
+  for (let i = 1; i < names.length; i++) {
+    const im = makeImg(W, H); im.data.set([1, i, 0, 255], (5 * W + 3) * 4)
+    const h = await cellHash(im); images.set(h, im)
+    const moves = { ...(o.standing === false ? {} : { default: standing }), ...(o.walk === false ? {} : { [walkId]: walk }) }
+    const cells = Object.fromEntries(Object.entries(moves).map(([a, v]) => [a, Object.fromEntries(Object.entries(v).map(([d, l]) => [d, l.map(() => h)]))]))
+    marks.push({ id: `mark${i}`, name: `Mark ${i}`, slot: 'head', status: 'accepted', baseHash: base, mirror: 'flip', materials: [], prompt: '', provenance: [], layers: [{ id: 'main', role: 'fg', z: 100, cells }] })
+  }
   // by default a template walk (one gait phase in every view) with front and side keypoints, as Studio walks have
   const keys = o.keys ?? { south: { keypoints: gait('south', [0, 0.3, 0, -0.3]) }, east: { keypoints: gait('east', [0, 0.3, 0, -0.3]) } }
   const sources = Object.fromEntries(Object.entries(keys).map(([d, k]) => [d, { route: 'skeleton-v3', reference: base, provenance: [], ...k }]))
@@ -46,10 +54,10 @@ async function project(o: Options = {}): Promise<Project> {
         ...(o.walk === false ? [] : [{ id: walkId, cells: 4, loop: true, frames: o.frames ?? playlist(4, 100), sources, ...(o.aligned === false ? {} : { source: { endpoint: '/characters/animations', mode: 'template', template_animation_id: 'walking-4-frames' } }) }]),
       ],
     },
-    slots: [{ id: 'body', z: 10, class: 'base' }], materials: [],
+    slots: [{ id: 'body', z: 10, class: 'base' }, { id: 'head', z: 100, class: 'worn' }], materials: [],
     items: [{ id: 'body', name: 'Body', slot: 'body', status: 'accepted', baseHash: base, mirror: 'flip', materials: [], prompt: '', provenance: [],
-      layers: [{ id: 'main', role: 'fg', z: 10, cells: { ...(o.standing === false ? {} : { default: standing }), ...(o.walk === false ? {} : { [walkId]: walk }) } }] }],
-    presets: (o.names ?? ['Current look', 'Night', 'night']).map((name, i) => ({ id: i ? `p${i}` : 'current', name, items: { body: 'body' }, variants: {} })),
+      layers: [{ id: 'main', role: 'fg', z: 10, cells: { ...(o.standing === false ? {} : { default: standing }), ...(o.walk === false ? {} : { [walkId]: walk }) } }] }, ...marks],
+    presets: names.map((name, i) => ({ id: i ? `p${i}` : 'current', name, items: { body: 'body', ...(i ? { head: `mark${i}` } : {}) }, variants: {} })),
   } as unknown as Manifest
   return { manifest, images } as unknown as Project
 }
@@ -74,8 +82,8 @@ test('each card writes only its own layout: $ sheets for MZ, MV, VX Ace and VX, 
   expect(vx.warnings).toEqual([])
   expect(vx.files.map((f) => f.name)).toEqual(['$Hero_Knight.png', '$Hero_Knight_Night.png', '$Hero_Knight_night_2.png', 'README.txt'])
   expect(xp.files.map((f) => f.name)).toEqual(['Hero_Knight.png', 'Hero_Knight_Night.png', 'Hero_Knight_night_2.png', 'README.txt'])
-  expect(sheet(vx.files, 'README.txt') as unknown as string).toMatch(/^Copy the PNG files into img\/characters \(RPG Maker MZ, MV\) or Graphics\/Characters \(VX Ace, VX\)/)
-  expect(sheet(xp.files, 'README.txt') as unknown as string).toMatch(/^Copy the PNG files into Graphics\/Characters \(RPG Maker XP or Pokemon Essentials\)/)
+  expect(sheet(vx.files, 'README.txt') as unknown as string).toMatch(/^Copy the PNG files at the top of this zip into img\/characters \(RPG Maker MZ, MV\) or Graphics\/Characters\n\(VX Ace, VX\)/)
+  expect(sheet(xp.files, 'README.txt') as unknown as string).toMatch(/^Copy the PNG files at the top of this zip into Graphics\/Characters \(RPG Maker XP or Pokemon Essentials\)/)
 })
 
 test('cells are trimmed to the art: pivot centered on an even width, top at the highest pixel, feet on the bottom row', async () => {
@@ -155,13 +163,22 @@ test('without a walk move every column stands, with a warning; a walk missing a 
 })
 
 test('art below the feet is kept; more than 2 px is reported per file, so repeated outfit names stay distinct', async () => {
-  const small = await project({ below: 1 })
-  expect(xpOf(small).h).toBe(8)
+  // the saved outfits' markers (row 5) get a blade hanging `rows` px below the feet line (row 7); it is not the body, so
+  // grounding leaves it where it is. Cells then span rows 5 to the blade: the current look (body only) is 1 row tall.
+  const blade = async (rows: number) => {
+    const p = await project({ size: 16, names: ['Current look', 'Knight', 'Knight'] })
+    for (const it of p.manifest.items.slice(1)) {
+      const cells = it.layers[0].cells as Record<string, Record<string, string[]>>
+      for (const h of new Set(Object.values(cells).flatMap((v) => Object.values(v).flat()))) p.images.get(h)!.data.set([1, 1, 1, 255], ((6 + rows) * 16 + 3) * 4)
+    }
+    return p
+  }
+  const small = await blade(1)
+  expect([xpOf(small).h, xpOf(small, 'Hero_Knight_Knight').h]).toEqual([4, 12])
   expect(run(small).warnings).toEqual([])
-  const big = await project({ below: 4, size: 16, names: ['Current look', 'Knight', 'Knight'] })
-  expect(xpOf(big).h).toBe(20)
+  const big = await blade(4)
+  expect(xpOf(big, 'Hero_Knight_Knight').h).toBe(24)
   expect(run(big).warnings).toEqual([
-    'RPG Maker: Hero_Knight has 4 px below the feet, so it stands 4 px higher on the map.',
     'RPG Maker: Hero_Knight_Knight has 4 px below the feet, so it stands 4 px higher on the map.',
     'RPG Maker: Hero_Knight_Knight_2 has 4 px below the feet, so it stands 4 px higher on the map.',
   ])
@@ -233,4 +250,52 @@ test('without a standing view, the walk feet-together frames fill the standing c
   const p = await project({ keys: {}, feet: [2, 5, 2, 5], standing: false })
   expect(reds(vxOf(p), 3, 0)).toEqual([11, 10, 13]) // step, feet together (cell 0, three quarters after the step), step
   expect(reds(xpOf(p), 4, 0)).toEqual([10, 11, 12, 13]) // feet together, step, passing (cell 2), step
+})
+
+test('an outfit that draws the same sheet as an earlier one adds no file; a name with no Latin letters stays unique', async () => {
+  const p = await project({ character: '勇者' })
+  p.manifest.presets[1].items = { ...p.manifest.presets[0].items } // "Night" is the current look
+  const hash = p.manifest.rig.baseHash.slice(7, 13)
+  expect(run(p).files.map((f) => f.name)).toEqual([`$character_${hash}.png`, `$character_${hash}_night.png`, 'README.txt'])
+})
+
+test('a walk too short for a frame between its steps passes through the standing pose in XP', async () => {
+  const p = await project({ frames: [{ cell: 0, ms: 100 }, { cell: 1, ms: 100 }], keys: { south: { keypoints: gait('south', [0.3, -0.3, 0, 0]) } } })
+  const walk = p.manifest.rig.animations.find((a) => a.id === 'walk')!; walk.cells = 2
+  expect(reds(xpOf(p), 4, 0)).toEqual([200, 10, 200, 11])
+})
+
+test('a standing move without a view leaves that row to the walk feet-together pose, not empty', async () => {
+  const p = await project({ keys: {}, feet: [2, 5, 2, 5] })
+  const layer = p.manifest.items[0].layers[0] as unknown as { cells: Record<string, Record<string, unknown>> }
+  delete layer.cells.default.north
+  expect(reds(vxOf(p), 3, 3)).toEqual([11, 10, 13])
+  expect(reds(vxOf(p), 3, 0)).toEqual([11, 200, 13])
+})
+
+test('uneven frame times on a walk without any rhythm still report the steps as not detected', async () => {
+  const p = await project({ keys: {}, frames: [{ cell: 0, ms: 100 }, { cell: 1, ms: 500 }, { cell: 2, ms: 100 }, { cell: 3, ms: 100 }] })
+  expect(run(p).warnings).toEqual(['RPG Maker: the walk steps could not be detected, so the first walk frame is used as a step. Check the sheet.'])
+})
+
+test('only the frames a layout shows size its cells: the XP passing frame does not grow the Standard sheet', async () => {
+  const p = await project() // passing is walk cell 2
+  const layer = p.manifest.items[0].layers[0] as unknown as { cells: Record<string, Record<string, string[]>> }
+  p.images.get(layer.cells.walk.south[2])!.data.set([1, 1, 1, 255], (7 * 8 + 3) * 4) // 1 px below the feet
+  expect([vxOf(p).h, xpOf(p).h]).toEqual([4, 8])
+})
+
+test('walk frames that drift off the ground are moved back to the standing feet line, keeping 1 px of natural variation', async () => {
+  const p = await project({ size: 16 }) // standing and walk pixels on row 6; steps are walk cells 1 and 3
+  const layer = p.manifest.items[0].layers[0] as unknown as { cells: Record<string, Record<string, string[]>> }
+  const lift = (cell: number, rows: number) => { const im = p.images.get(layer.cells.walk.south[cell])!; im.data.fill(0); im.data.set([10 + cell, 0, 0, 255], ((6 - rows) * 16 + 3) * 4) }
+  lift(1, 4) // floats 4 px: moved down 3, ending 1 px above the standing feet
+  lift(3, 1) // 1 px: left alone
+  const row = (col: number) => frameAt(vxOf(p), 3, col, 0)!.y
+  expect([row(0) - row(1), row(2) - row(1)]).toEqual([-1, -1])
+  // a view standing 3 px higher than the front one is lowered onto it, so turning does not hop either; its walk frames, on
+  // the ground already, stay there
+  const east = p.images.get(layer.cells.default.east[0])!; east.data.fill(0); east.data.set([200, 0, 0, 255], (3 * 16 + 5) * 4)
+  const vx = vxOf(p), front = frameAt(vx, 3, 1, 0)!.y
+  expect([frameAt(vx, 3, 1, 2)!.y, frameAt(vx, 3, 1, 1)!.y, frameAt(vx, 3, 0, 2)!.y, frameAt(vx, 3, 2, 2)!.y]).toEqual([front, front, front, front])
 })

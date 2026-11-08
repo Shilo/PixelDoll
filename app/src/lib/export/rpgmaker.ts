@@ -11,14 +11,14 @@ import { moveDirs } from '../dress/dress.ts';
 import type { Manifest, Project } from '../store/manifest.ts';
 import { outfitProject, type OutFile } from './generic.ts';
 
-const ROWS: DirectionName[] = ['south', 'west', 'east', 'north'];
+/** Sheet rows: down, left, right, up. */
+export const ROWS: DirectionName[] = ['south', 'west', 'east', 'north'];
 type Pick = { anim: string; cell: number };
 
 /** Playback order: (cell, start ms) per playlist entry, and the loop length. */
 function timeline(a: RigAnimation): { at: { cell: number; t: number }[]; total: number } {
-  const frames = a.frames.length ? a.frames : Array.from({ length: a.cells }, (_, cell) => ({ cell, ms: 100 }));
   let t = 0;
-  const at = frames.map((f) => { const e = { cell: f.cell, t }; t += f.ms; return e; });
+  const at = a.frames.map((f) => { const e = { cell: f.cell, t }; t += f.ms; return e; });
   return { at, total: t };
 }
 /** The cell on screen at time t (wrapping), so a held frame wins over a short one starting near t. */
@@ -45,15 +45,20 @@ function leads(m: Manifest, walk: RigAnimation, dir: DirectionName): number[] | 
   return of(src?.measured) ?? of(src?.keypoints);
 }
 
-/** The bare body's feet per walk cell in one view, measured on the body layer alone so capes and weapons cannot change it:
- *  `span` is their width near the ground (a side view's step: feet apart), `lift` the height difference between the lowest
- *  pixels left and right of the pivot (a front or back view's step, where the width stays square). Undefined on an empty cell. */
-function feet(p: Project, walk: RigAnimation, dir: DirectionName): { span: number[]; lift: number[] } | undefined {
+/** One frame of the bare body (the body layer alone, so capes and weapons cannot change a measure); undefined without one. */
+function bare(p: Project, anim: string, dir: DirectionName, cell: number): Img | undefined {
   const m = p.manifest, base = m.items.find((i) => i.id === m.rig.baseItem);
-  if (!base) return;
-  const rows = Math.max(3, Math.round((m.rig.cell.h * 6) / 64)), pivot = Math.round(m.rig.pivot.x), span: number[] = [], lift: number[] = [];
+  return base && composeCell(p, { [base.slot]: base.id }, anim, dir, cell);
+}
+
+/** The bare body's feet per walk cell in one view: `span` is their width near the ground (a side view's step: feet apart),
+ *  `lift` the height difference between the lowest pixels left and right of the pivot (a front or back view's step, where the
+ *  width stays square). Undefined on an empty cell or without a body. */
+function feet(p: Project, walk: RigAnimation, dir: DirectionName): { span: number[]; lift: number[] } | undefined {
+  const m = p.manifest, rows = Math.max(3, Math.round((m.rig.cell.h * 6) / 64)), pivot = Math.round(m.rig.pivot.x), span: number[] = [], lift: number[] = [];
   for (let cell = 0; cell < walk.cells; cell++) {
-    const im = composeCell(p, { [base.slot]: base.id }, walk.id, dir, cell);
+    const im = bare(p, walk.id, dir, cell);
+    if (!im) return;
     let bottom = -1, left = im.w, right = -1, lowL = -1, lowR = -1;
     for (let y = 0; y < im.h; y++) for (let x = 0; x < im.w; x++) if (im.data[(y * im.w + x) * 4 + 3]) { bottom = y; if (x < pivot) lowL = y; else lowR = y; }
     if (bottom < 0) return;
@@ -68,10 +73,13 @@ function feet(p: Project, walk: RigAnimation, dir: DirectionName): { span: numbe
  *  every frame weighted by its time on screen, so one odd frame (a hem near the ground, a held pose) cannot win on its own as
  *  the widest frame would. Undefined when the rhythm is under half a pixel (no usable signal). */
 function stepTime(tl: ReturnType<typeof timeline>, v: number[]): number | undefined {
+  const ms = (i: number) => (tl.at[i + 1]?.t ?? tl.total) - tl.at[i].t;
+  // the signal's mean is no rhythm: with uneven frame times it would otherwise leak into the fit
+  const mean = tl.at.reduce((sum, e, i) => sum + v[e.cell] * ms(i), 0) / tl.total;
   let c = 0, s = 0;
   tl.at.forEach((e, i) => {
-    const ms = (tl.at[i + 1]?.t ?? tl.total) - e.t, a = (4 * Math.PI * (e.t + ms / 2)) / tl.total;
-    c += v[e.cell] * ms * Math.cos(a); s += v[e.cell] * ms * Math.sin(a);
+    const a = (4 * Math.PI * (e.t + ms(i) / 2)) / tl.total, w = (v[e.cell] - mean) * ms(i);
+    c += w * Math.cos(a); s += w * Math.sin(a);
   });
   if ((2 * Math.hypot(c, s)) / tl.total < 0.5) return;
   const t = (Math.atan2(s, c) / (4 * Math.PI)) * tl.total;
@@ -134,10 +142,10 @@ export function rpgMakerFiles(p: Project, m: Manifest, layout: RpgLayout): { fil
   const srcOf = (dir: DirectionName) => rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir;
   const walkDirs = walk ? new Set(moveDirs(src, walk.id)) : new Set<DirectionName>();
   const gaits = new Map(walk ? ROWS.filter((d) => walkDirs.has(d)).map((d) => [d, walkPicks(p, walk, srcOf(d))] as const) : []);
-  // standing: the standing view; without it the walk's other feet-together pose (XP's passing column takes the first one);
-  // a view the walk lacks takes any move that has it, so no row is left empty
+  // standing: the standing move; where it lacks the view, the walk's other feet-together pose (XP's passing column takes the
+  // first one); a view the walk lacks too takes any move that has it, so no row is left empty
   const stand = (dir: DirectionName): Pick => {
-    if (standing) return { anim: standing.id, cell: 0 };
+    if (standing && moveDirs(src, standing.id).includes(dir)) return { anim: standing.id, cell: 0 };
     const g = gaits.get(dir);
     if (g) return { anim: walk!.id, cell: g.rest };
     return { anim: (rig.animations.find((a) => moveDirs(src, a.id).includes(dir)) ?? rig.animations[0]).id, cell: 0 };
@@ -146,58 +154,90 @@ export function rpgMakerFiles(p: Project, m: Manifest, layout: RpgLayout): { fil
     const s = stand(dir), g = gaits.get(dir);
     if (!g) return [dir, { stand: s, strideA: s, passing: s, strideB: s }] as const;
     const at = (cell: number): Pick => ({ anim: walk!.id, cell });
-    return [dir, { stand: s, strideA: at(g.strideA), passing: at(g.passing), strideB: at(g.strideB) }] as const;
+    // a walk of under 4 frames has no frame between its steps (a quarter cycle on still shows step A): XP then passes through
+    // the standing pose
+    const passing = g.passing === g.strideA ? s : at(g.passing);
+    return [dir, { stand: s, strideA: at(g.strideA), passing, strideB: at(g.strideB) }] as const;
   }));
   if (walk && ROWS.some((d) => !walkDirs.has(d))) warnings.push(`RPG Maker: the walk has no ${ROWS.filter((d) => !walkDirs.has(d)).join(', ')} view, so those rows stand still.`);
   if ([...gaits.values()].some((g) => g.guessed)) warnings.push('RPG Maker: the walk steps could not be detected, so the first walk frame is used as a step. Check the sheet.');
+  // Generated walks can drift up or down between frames (up to 8 px on a 128 px body), and views can stand at different
+  // heights (5 px apart), while RPG Maker stands every cell on the tile, so both read as hopping when walking or turning. Every
+  // frame here has a foot down, so each moves its bare body's lowest row onto the front standing frame's: standing frames
+  // exactly, walk frames within 1 px (pixel-art feet vary that much on their own).
+  const lowest = new Map<string, number>();
+  const low = (k: Pick, dir: DirectionName) => {
+    const key = `${k.anim}/${dir}/${k.cell}`;
+    if (!lowest.has(key)) {
+      const im = bare(p, k.anim, dir, k.cell);
+      let y = -1;
+      if (im) for (let q = 0; q < im.w * im.h; q++) if (im.data[q * 4 + 3]) y = (q / im.w) | 0;
+      lowest.set(key, y);
+    }
+    return lowest.get(key)!;
+  };
+  const drop = (k: Pick, dir: DirectionName) => {
+    const front = low(picks.get('south')!.stand, 'south'), y = low(k, dir), d = front - y;
+    return front < 0 || y < 0 ? 0 : k === picks.get(dir)!.stand ? d : d > 1 ? d - 1 : d < -1 ? d + 1 : 0;
+  };
 
-  const f = bakedFrame(m), files: OutFile[] = [], used = new Set<string>();
-  const name = safeName(m.name) || 'character';
+  const f = bakedFrame(m), files: OutFile[] = [], used = new Set<string>(), drawn: Img[] = [];
+  // ASCII names (XP reads file names in the Windows code page); a name with no Latin letters still keeps two characters apart
+  const name = safeName(m.name) || `character_${src.rig.baseHash.slice(7, 13)}`;
   for (const [i, pr] of m.presets.entries()) {
+    const op = outfitProject(p, m, pr);
+    const cell = (k: Pick, dir: DirectionName) => ({ im: composeCell(op, pr.items, k.anim, dir, k.cell, f), dy: drop(k, dir) });
+    const rows = ROWS.map((dir) => {
+      const k = picks.get(dir)!;
+      return layout === 'vx'
+        ? [cell(k.strideA, dir), cell(k.stand, dir), cell(k.strideB, dir)] // shown 1, 2, 1, 0: standing, step, standing, other step
+        : [cell(k.stand, dir), cell(k.strideA, dir), cell(k.passing, dir), cell(k.strideB, dir)]; // shown 0, 1, 2, 3
+    });
+    const { out, below } = place(f, rows.flat()), data = makeImg(rows[0].length * out.w, rows.length * out.h);
+    rows.forEach((r, y) => r.forEach((c, x) => over(data, out.cut(c), x * out.w, y * out.h)));
+    // a saved outfit worn as the current look draws the same sheet: one file is enough
+    if (drawn.some((d) => d.w === data.w && d.h === data.h && d.data.every((v, k) => v === data.data[k]))) continue;
+    drawn.push(data);
     // the first preset is the current look (Export sheet) or the default outfit: the plain character name
-    const op = outfitProject(p, m, pr), want = i ? `${name}_${safeName(pr.name) || safeName(pr.id) || 'outfit'}` : name;
+    const want = i ? `${name}_${safeName(pr.name) || safeName(pr.id) || 'outfit'}` : name;
     let base = notDevice(want);
     for (let n = 2; used.has(base.toLowerCase()); n++) base = notDevice(`${want}_${n}`);
     used.add(base.toLowerCase());
-    const cell = (k: Pick, dir: DirectionName) => composeCell(op, pr.items, k.anim, dir, k.cell, f);
-    const grid = ROWS.map((dir) => { const k = picks.get(dir)!; return { a: cell(k.strideA, dir), s: cell(k.stand, dir), m: cell(k.passing, dir), b: cell(k.strideB, dir) }; });
-    const { out, below } = place(f, grid.flatMap((g) => [g.a, g.s, g.m, g.b]));
-    // walk frames often dip a pixel or two below the standing feet line: kept, and only a larger drop is worth a note
+    // grounded walk frames may still dip a pixel below the standing frame, and art can hang below the feet line: kept, and
+    // only a larger drop is worth a note
     if (below > 2) warnings.push(`RPG Maker: ${base} has ${below} px below the feet, so it stands ${below} px higher on the map.`);
-    const sheet = (cols: (g: (typeof grid)[number]) => Img[]) => {
-      const rows = grid.map(cols), w = out.w, h = out.h, o = makeImg(rows[0].length * w, rows.length * h);
-      rows.forEach((r, y) => r.forEach((im, x) => over(o, out.cut(im), x * w, y * h)));
-      return o;
-    };
-    files.push(layout === 'vx'
-      ? { name: `$${base}.png`, data: sheet((g) => [g.a, g.s, g.b]) } // shown 1, 2, 1, 0: standing, step, standing, other step
-      : { name: `${base}.png`, data: sheet((g) => [g.s, g.a, g.m, g.b]) }); // shown 0, 1, 2, 3
+    files.push({ name: layout === 'vx' ? `$${base}.png` : `${base}.png`, data });
   }
-  files.push({ name: 'README.txt', data: (layout === 'vx' ? `Copy the PNG files into img/characters (RPG Maker MZ, MV) or Graphics/Characters (VX Ace, VX), then pick one as an
-actor or event image. One sheet per outfit; the "$" prefix tells the engine the image holds one character.
+  files.push({ name: 'README.txt', data: (layout === 'vx' ? `Copy the PNG files at the top of this zip into img/characters (RPG Maker MZ, MV) or Graphics/Characters
+(VX Ace, VX), then pick one as an actor or event image. One sheet per outfit (outfits that look the same share one); the
+"$" prefix tells the engine the image holds one character.
 Rows: down, left, right, up. The middle column is the standing frame, the outer ones are walk steps.
 MZ and MV use 48 px tiles, VX Ace and VX 32 px tiles; their built-in characters are about one tile tall.
-` : `Copy the PNG files into Graphics/Characters (RPG Maker XP or Pokemon Essentials), then pick one as an actor or event image.
-One sheet per outfit. Rows: down, left, right, up. The first column is the standing frame, then step, passing, other step.
+` : `Copy the PNG files at the top of this zip into Graphics/Characters (RPG Maker XP or Pokemon Essentials), then pick one
+as an actor or event image. One sheet per outfit (outfits that look the same share one).
+Rows: down, left, right, up. The first column is the standing frame, then step, passing, other step.
 XP uses 32 px tiles; its built-in characters are 32 x 48.
 `) + `Sheets keep your character's own size (PixelDoll never scales pixel art): a larger Body stands taller than built-in characters.
-The steps are picked from your walk move automatically, where the feet are furthest apart, with the feet-together frames between them. Feet sit on the bottom row, centered; empty space around the art is
-trimmed, so speech balloons sit just above the head. Diagonal views, idle and action moves have no place in this format.
+The steps are picked from your walk move automatically, where the feet are furthest apart, with the feet-together frames
+between them. Feet sit on the bottom row, centered; empty space around the art is trimmed, so speech balloons sit just
+above the head. Diagonal views, idle and action moves have no place in this format.
 project.json and cells/ are PixelDoll's editable copy (Import it to keep working); the game does not need them.
 ` });
   return { files, warnings };
 }
 
-/** One cell for every frame, trimmed to the art: the pivot centered on an even width, the top at the highest opaque row
- *  (MV and MZ place balloons from the sprite's height), and the feet line (or anything lower) on the bottom row. */
-function place(f: Frame, cells: Img[]): { out: { w: number; h: number; cut: (im: Img) => Img }; below: number } {
+type Placed = { im: Img; dy: number };
+/** One cell for every frame, each moved down by its `dy` (grounding), trimmed to the art: the pivot centered on an even width,
+ *  the top at the highest opaque row (MV and MZ place balloons from the sprite's height), and the feet line (or anything
+ *  lower) on the bottom row. */
+function place(f: Frame, cells: Placed[]): { out: { w: number; h: number; cut: (c: Placed) => Img }; below: number } {
   const px = Math.round(f.x), feet = Math.ceil(f.y);
   let lowest = 0, top = feet, reach = 1;
-  for (const im of cells) for (let p = 0; p < im.w * im.h; p++) if (im.data[p * 4 + 3]) {
-    const x = p % im.w, y = (p / im.w) | 0;
+  for (const { im, dy } of cells) for (let p = 0; p < im.w * im.h; p++) if (im.data[p * 4 + 3]) {
+    const x = p % im.w, y = ((p / im.w) | 0) + dy;
     lowest = Math.max(lowest, y + 1); top = Math.min(top, y); reach = Math.max(reach, px - x, x + 1 - px);
   }
   const bottom = Math.max(feet, lowest), w = 2 * reach, h = bottom - top;
-  const cut = (im: Img) => { const o = makeImg(w, h); over(o, im, reach - px, -top); return o; };
+  const cut = ({ im, dy }: Placed) => { const o = makeImg(w, h); over(o, im, reach - px, dy - top); return o; };
   return { out: { w, h, cut }, below: bottom - feet };
 }

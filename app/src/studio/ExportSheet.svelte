@@ -4,7 +4,7 @@
   import Sheet from './Sheet.svelte'
   import { tick, untrack } from 'svelte'
   import { exportZip } from '../lib/export/export.ts'
-  import { walkMove } from '../lib/export/rpgmaker.ts'
+  import { ROWS as RPG_ROWS, walkMove } from '../lib/export/rpgmaker.ts'
   import { DEFAULT_MOVE } from '../lib/rig/rig.ts'
   import { stableStringify } from '../lib/image/hash.ts'
   import { coverageGaps, moveDirs, storeVariants } from '../lib/dress/dress.ts'
@@ -167,9 +167,14 @@
   const gaps = $derived.by(() => {
     if (!m) return []
     const out: string[] = [], walk = rpg ? walkMove(m.rig)?.id : undefined
-    const used = (key: string) => !rpg || key.startsWith(`${DEFAULT_MOVE}/`) || (!!walk && key.startsWith(`${walk}/`))
+    const used = (key: string) => {
+      const [move, dir] = key.split('/')
+      return !rpg || ((move === DEFAULT_MOVE || move === walk) && (RPG_ROWS as string[]).includes(dir))
+    }
     if (!rpg) for (const a of m.rig.animations) { const d = moveDirs(m, a.id); if (d.length < m.rig.directions.length) out.push(`${nice(a.id)} has ${d.join(' and ')} only`) }
-    for (const it of items) { const g = coverageGaps(m, it).filter(used); if (g.length) out.push(`${it.name} has no ${g.map((x) => x.replace('-', ' ').replace('/', ' ')).join(', ')} frames`) }
+    // RPG Maker draws only the outfits it exports (current look and saved outfits), so an item none of them wears is not in a sheet
+    const worn = new Set([doc.items, ...outfits.map((x) => x.items)].flatMap((o) => Object.values(o)))
+    for (const it of rpg ? items.filter((i) => worn.has(i.id)) : items) { const g = coverageGaps(m, it).filter(used); if (g.length) out.push(`${it.name} has no ${g.map((x) => x.replace('-', ' ').replace('/', ' ')).join(', ')} frames`) }
     return out
   })
 

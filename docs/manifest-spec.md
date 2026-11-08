@@ -592,7 +592,9 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 ### 6.8 RPG Maker: baked walking sheets
 
 - One composite per preset, whatever "Include dressed character sheets" says: `<character>` for the first preset (the current
-  look) and `<character>_<outfit>` otherwise. Names are ASCII: accents are dropped (é → e), other characters become `_`, an
+  look) and `<character>_<outfit>` otherwise; an outfit that draws the same sheet as an earlier one (a saved outfit worn as
+  the current look) adds no file. Names are ASCII (XP reads file names in the Windows code page): accents are dropped (é → e),
+  other characters become `_`, a character name with nothing left becomes `character_<first 6 hex digits of baseHash>`, an
   empty outfit name falls back to its id, collisions get `_2`…, and Windows device names (CON, NUL…) get a trailing `_`. Research and sources:
   `docs/research/rpg-maker-export-2026-11-07.md`.
 - One split **RPG Maker** card, so a zip only holds what its engine reads. The card body (its radio) only selects; the
@@ -601,22 +603,26 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   cards stay plain radio behavior; clicking outside closes the menu and keeps the choice. **Standard** (engine id `rpgmaker`,
   the default; MZ, MV, VX Ace and VX share one file) writes `$<name>.png`, 3 × 4 cells; **XP** (`rpgmakerxp`, also Pokémon
   Essentials) writes `<name>.png`, 4 × 4 cells. The button keeps the longest value's width so it never shifts, and the stored
-  engine id remembers the version. RPG Maker exports cannot be combined with other engines in one call. Rows: south, west, east, north (west is the
+  engine id remembers the version while RPG Maker stays selected (choosing another format and coming back selects Standard). RPG Maker exports cannot be combined with other engines in one call. Rows: south, west, east, north (west is the
   rig's mirrored or generated view; diagonals are dropped). The engines derive the cell from the image size, so the cell is
   native, never scaled: the art's bounds around the pivot, padded to an even width with the pivot at its center, from the
   highest opaque row (MV and MZ place balloons from the sprite height) down to the feet line (`bakedPivot.y`), or lower when art hangs below the feet (kept; more than 2 px adds a warning, since the character then
-  stands that much higher; walk frames often dip a pixel or two).
+  stands that much higher). Only the frames a layout shows size its cell. Every cell is grounded first, since RPG Maker
+  stands each one on the tile and generated walks drift (up to 8 px between frames and 5 px between views on bench N): it
+  moves down or up so the bare body's lowest row (base layer only, so items never move it) meets the front standing
+  frame's, exactly for standing frames and within 1 px for walk frames (pixel-art feet vary that much). Other exports keep
+  frames as generated.
 - Columns: MZ/MV/VX play 1, 2, 1, 0, so they are [stride A, standing, stride B]; XP plays 0, 1, 2, 3, so [standing, stride A,
-  passing, stride B]. Standing is the `default` move's frame; without one, the walk's other feet-together frame (three
+  passing, stride B]. Standing is the `default` move's frame; without one (or where it lacks the view), the walk's other feet-together frame (three
   quarters of a cycle after stride A); for a view the walk lacks, frame 0 of a move that has the view. Stride A, best evidence
   first: (1) the view's own keypoints (`measured`, else requested): the playlist entry whose left-ankle lead along the facing
   (east +x, west −x, south +y, north −y) most exceeds the lead half a cycle later; views sharing a `managed-` motion with the
   side view take its lead, about four times clearer; (2) the side view's keypoint lead, when the walk's views share one gait
   phase (a `template` source or one `managed-` motion); (3) without keypoints, the bare body's feet (base layer only), the
-  phase of their twice-per-cycle rhythm fitted over all frames by time on screen: the side view's foot span on a phase-shared
+  phase of their twice-per-cycle rhythm (mean removed) fitted over all frames by time on screen: the side view's foot span on a phase-shared
   walk, otherwise each view's own signal (span for side views, the left/right foot height difference for front and back);
   (4) the first playlist entry, with a warning. Passing and stride B are the frames on screen a quarter and half a cycle
-  later. An unsigned ankle gap picked a square stance in front and back views (7 of 12 bench views); the signed lead picked
+  later; on a walk too short for a frame between the steps, passing is the standing frame. An unsigned ankle gap picked a square stance in front and back views (7 of 12 bench views); the signed lead picked
   all 12, and the foot-span fit picked frames 2 and 6 on the demo, all 4 bench walks and a long-cape walk where the widest
   single frame was one early (2026-11-08). West uses east's choice when it mirrors east. A view the walk lacks, or a character
   with no move named walk, repeats the standing frame (with a warning). Characters without south, east, west and north views
