@@ -49,9 +49,9 @@ The offline fixture (`app/scripts/unity-review/render-fixture.mjs`) is exported 
 - **Oversize layer and mirroring:** a 48 px hat with a plume outside the 32 px rig cell, and a mirrored west view.
 - **Exact palettes:** a non-default skin, a hair colorway recoloring the tucked hair variant, a linked cape material that follows it, and a default colorway that differs from the source ramp.
 
-Four outfits by two moves, four views and every cell give 64 frames per export. The fixture refuses to run unless each feature changes at least one expected frame. It also writes **negative control** composites with one feature ignored (no depth overrides, no tucking, no body cuts, source palette), and Unity's render must differ from each of them wherever they differ from the truth. Each export rejected 15, 32, 48 and 32 control frames respectively, so the comparison cannot pass vacuously.
+Four outfits by two moves, four views and every cell give 64 frames per export. The fixture writes **negative control** composites with one feature ignored (no depth overrides, no tucking, no body cuts, no colorway selection; each material's `defaultVariant` still applies in the last one), and refuses to run unless each control changes at least one frame. The controls therefore prove the fixture is sensitive to those four features. Unity's render must also differ from each control frame wherever it differs from the truth; each export rejected 15, 32, 48 and 32 control frames respectively. That per-frame comparison only guards the comparator against passing vacuously; the exact match with the truth is the actual check. The oversize hat, the mirrored west view, the default colorway that differs from the source ramp and the fractional pixels per unit have no sensitivity assertion: nothing proves the fixture would fail if one of them were ignored.
 
-Results on Unity 6000.4.0f1, Windows, Direct3D 11:
+Results on Unity 6000.4.0f1, Windows, with Direct3D 11 forced by `-force-d3d11` (the verifier does not assert the active graphics API):
 
 | Run                                                                      | Color space | Checks | Result |
 | ------------------------------------------------------------------------ | ----------- | ------ | ------ |
@@ -74,10 +74,10 @@ Remaining boundaries:
 From `app/`, with an activated Editor installed:
 
 ```powershell
-node --experimental-transform-types scripts/verify-unity-export.mjs --editor 'C:/Program Files/Unity/Hub/Editor/6000.4.0f1/Editor/Unity.exe' --zip '<fresh Unity export.zip>' --build-player
+node --experimental-transform-types scripts/verify-unity-export.mjs --editor 'C:/Program Files/Unity/Hub/Editor/6000.4.0f1/Editor/Unity.exe' --zip '<fresh Unity export.zip>'
 ```
 
-Graphics steps pass `-force-d3d11`, because OpenGL froze the owner's display. The rendered pixel steps (`Render`, then `RenderLinear` last, because it switches the project's color space) run without `-nographics`; with `--build-player` the player also renders, which triggers a Windows Firewall prompt for each new development player path. Rendered results are `render-results.json`, `render-linear-results.json` and `player-render-results.json`, and mismatching frames are saved under `render-failures/`.
+Graphics steps pass `-force-d3d11`, because OpenGL froze the owner's display. The rendered pixel steps (`Render`, then `RenderLinear` last, because it switches the project's color space) run without `-nographics`. Adding `--build-player` is optional: it also builds and renders in a development player, which triggers a Windows Firewall prompt for each new player path, so use it only while someone is present to accept that prompt. Rendered results are `render-results.json`, `render-linear-results.json` and `player-render-results.json`, and mismatching frames are saved under `render-failures/`.
 
 The CLI creates a fresh ignored project under `app/node_modules/.cache/unity-export-review/`, generates six synthetic timelines through the actual exporter, imports optional actual UI ZIPs, runs native Editor playback checks and duration negative controls, and optionally builds and runs a Windows Mono development player with the shared playback assertions. Repeated `--zip` inputs must represent different characters to avoid duplicate exported assembly identities. `--prepare-only` creates the project without launching Unity. `--output` selects a new project directory and refuses to reuse an existing directory. No PixelLab requests occur.
 

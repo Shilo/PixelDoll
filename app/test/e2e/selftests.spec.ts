@@ -899,7 +899,7 @@ test('browser PNG and IndexedDB self-tests preserve every registered check', asy
 	const text = await result.innerText(),
 		lines = text.split('\n');
 	expect(await result.getAttribute('data-failures'), text).toBe('0');
-	// Pinned by hand (mirrors browserSelfTests in src/lib/selftests.ts) so a deleted or renamed group fails here.
+	// Pinned by hand (mirrors the browser list in src/lib/selftests.ts) so a deleted or renamed group fails here.
 	const groups = [
 		'hash',
 		'zip',

@@ -1,7 +1,9 @@
 extends SceneTree
 # Windowed (GPU) render + runtime checks of a PixelDoll shared-copy export.
-# godot --path <project> --resolution 192x96 --script verify.gd
+# godot --path <project> --rendering-driver d3d12 --resolution 192x96 --script verify.gd
 # Two dolls side by side; every playlist frame of every move is compared with PixelDoll's own composite (expected/).
+# Transparent pixels must show CLEAR, a color absent from the oracle, so opaque black and transparent stay distinct.
+const CLEAR := Color(1, 0, 1)
 var fails := 0
 var diff_px := 0
 var total_px := 0
@@ -45,7 +47,7 @@ func compare(dolls: Array, presets: Array, label: String) -> void:
 				for y in bh:
 					for x in bw:
 						var b := want_img.get_pixel(x, y)
-						var want := Color(b.r, b.g, b.b, 1) if b.a > 0.5 else Color.BLACK
+						var want := Color(b.r, b.g, b.b, 1) if b.a > 0.5 else CLEAR
 						total_px += 1
 						if not shot.get_pixel(i * bw + x, y).is_equal_approx(want):
 							diff_px += 1
@@ -54,7 +56,7 @@ func compare(dolls: Array, presets: Array, label: String) -> void:
 		check(d == 0, "%s %s render differs from the PixelDoll compositor" % [label, a.id])
 
 func run() -> void:
-	RenderingServer.set_default_clear_color(Color.BLACK)
+	RenderingServer.set_default_clear_color(CLEAR)
 	m = JSON.parse_string(FileAccess.get_file_as_string("res://manifest.json"))
 	scenario = JSON.parse_string(FileAccess.get_file_as_string("res://scenario.json"))
 	bw = int(m.export.bakedCell.w)

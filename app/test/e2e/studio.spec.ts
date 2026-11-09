@@ -673,7 +673,8 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	await expect(projectMenu).toBeVisible();
 	// Developer rigs stay out of the main list; only the dev build offers their disclosure.
 	await expect(projectMenu.getByText('Developer rigs', { exact: true })).toHaveCount(dev ? 1 : 0);
-	await expect(projectMenu.getByText('E2E dev rig', { exact: true })).toBeHidden();
+	const devRig = projectMenu.getByText('E2E dev rig', { exact: true });
+	await (dev ? expect(devRig).toBeHidden() : expect(devRig).toHaveCount(0));
 	await page.keyboard.press('Escape');
 	await idb(null);
 	step(
@@ -747,8 +748,9 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 		);
 	});
 
-	// ---- B17: with the agent key switched off, no server auto-connects: Connect shows and no badge ----
-	// Agent auto-connect itself needs npm run dev:agent and its key, which this offline suite never uses.
+	// ---- B17: non-agent servers never auto-connect: no badge, Connect sheet, no dev-key option ----
+	// bootstrap.ts fetches the agent key only in Vite mode "agent" (npm run dev:agent), which this offline suite never
+	// uses, so the agentKey off switch is not exercised here; it is set anyway so nothing could ever spend.
 	{
 		const c = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 		await blockApi(c);
@@ -773,7 +775,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 				.count(),
 			0
 		);
-		step('agent key off: no agent badge, Connect sheet has no dev-key option');
+		step('non-agent server: no agent badge, Connect sheet has no dev-key option');
 		await c.close();
 	}
 

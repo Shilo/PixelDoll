@@ -266,7 +266,8 @@ export async function renderFixture() {
 		['no-depth-overrides', without((m) => m.slots.forEach((s) => delete s.zOverrides))],
 		['no-tucking', without((m) => m.slots.forEach((s) => delete s.clips))],
 		['no-body-cuts', without((m) => m.items.forEach((it) => delete it.baseCut))],
-		['source-palette', project, (c) => ({ ...c, variants: {} })]
+		// Drops the case's colorway selection; each material's defaultVariant still applies.
+		['no-colorway-selection', project, (c) => ({ ...c, variants: {} })]
 	]) {
 		let count = 0;
 		for (const c of cases)

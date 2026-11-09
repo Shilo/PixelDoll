@@ -27,6 +27,8 @@ const zipBytes = readFileSync(join(out, 'phaser.pixeldoll.zip')),
 	files = await unzip(new Uint8Array(zipBytes)),
 	scenario = JSON.parse(readFileSync(join(out, 'scenario.json'), 'utf8')),
 	m = JSON.parse(new TextDecoder().decode(files.get('manifest.json')));
+// Transparent pixels must show CLEAR (the backgroundColor), a color absent from the oracle, so opaque black and transparent stay distinct.
+const CLEAR = [255, 0, 255];
 const bw = m.export.bakedCell.w,
 	bh = m.export.bakedCell.h;
 const expected = new Map();
@@ -91,7 +93,7 @@ try {
 							type: Phaser[renderer],
 							width: bw * 2,
 							height: bh,
-							backgroundColor: '#000000',
+							backgroundColor: '#ff00ff',
 							pixelArt: true,
 							roundPixels: true,
 							audio: { noAudio: true },
@@ -172,7 +174,7 @@ try {
 								for (let x = 0; x < bw; x++) {
 									const q = (y * bw + x) * 4,
 										s = (y * shot.w + i * bw + x) * 4;
-									const exp = e.data[q + 3] ? [e.data[q], e.data[q + 1], e.data[q + 2]] : [0, 0, 0];
+									const exp = e.data[q + 3] ? [e.data[q], e.data[q + 1], e.data[q + 2]] : CLEAR;
 									total++;
 									if (exp.some((v, k) => v !== shot.data[s + k])) diff++;
 								}

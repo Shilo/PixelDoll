@@ -282,7 +282,7 @@ Canvas ${bakedFrame(m).w}x${bakedFrame(m).h} (fits every layer); slice "pivot" m
 Per-frame draw-order exceptions (slots[].zOverrides) are cel z-indexes. Other importers must support these to match the composite.
 Use the dedicated Unity or Godot export for a ready-made game-engine character; this file is an editable Aseprite document.
 Godot Aseprite Wizard (SpriteFrames importer): turn on "Only visible layers" (otherwise every hidden item is drawn) and turn off
-"Round fps" (otherwise a 150 ms frame plays for 143 ms). It ignores the pivot slice: on the AnimatedSprite2D turn off Centered and
+"Round fps" (otherwise frame durations are rounded to a whole fps and play slightly off). It ignores the pivot slice: on the AnimatedSprite2D turn off Centered and
 set Offset to (${-bakedFrame(m).x}, ${-bakedFrame(m).y}). "Split by layer" loses the per-frame draw-order exceptions.
 Limits: at most 65535 frames, layers and tags; each frame duration is 1-65535 ms. Unsupported values produce an export error.
 `

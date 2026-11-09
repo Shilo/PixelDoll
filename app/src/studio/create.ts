@@ -131,9 +131,6 @@ const CELL = 64,
 	EST = 0.1;
 // Read-only receipt lookup includes previously completed render attempts. New renders submit once.
 export const CLIP_ATTEMPTS = 2;
-/** Base sizes in the 64 cell (D4): the 4 px floor stays, so 56 px leaves 4 px of canvas above the character's own canvas
- * and the rest views are checked for HEADROOM_MIN free px above the head. */
-export const SIZES = [48, 56] as const;
 
 export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPrompt'>) => {
 	if (!spec.exactPrompt) return looksOf(spec.description);

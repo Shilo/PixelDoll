@@ -66,7 +66,7 @@ const shared: Test[] = [
 const node: Test[] = [...shared, ['png (pure)', png.selfTestNode]];
 const browser: Test[] = [...shared, ['png', png.selfTest], ['db', db.selfTest]];
 
-export { node as nodeSelfTests, browser as browserSelfTests };
+export { node as nodeSelfTests };
 
 export async function runSelfTests(
 	env: 'node' | 'browser',

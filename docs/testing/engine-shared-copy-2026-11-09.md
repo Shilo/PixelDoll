@@ -27,13 +27,16 @@ The old shield has no Cast cells, and neither does copy B. `coverageGaps`, the d
 warning, reports `cast/south` for both and nothing for copy A. `missingAt` reports the shield for `current` and
 the shield plus copy B for `copy_b`. PixelDoll's compositor rendered 80 oracle frames (4 outfits, 20 cells),
 which every engine check below compares against.
+The Godot and Phaser checks clear the canvas to magenta (#FF00FF) and expect it wherever the oracle is transparent.
+The oracle has no magenta pixel but 7,064 opaque black ones, so a black clear color could not tell opaque black from
+transparent. An earlier pass with a black clear color (Godot on Vulkan and Direct3D 12, and Phaser) gave the same counts.
 
 ## Results
 
 | Runtime | What ran | Result |
 | --- | --- | --- |
-| Godot 4.7.1, windowed Forward+ (Vulkan run, then repeated on Direct3D 12, RTX 3070 Ti) | Headless import with 0 errors, then [`godot_shared.gd`](engine-shared-copy-2026-11-09/godot_shared.gd). Two `Paperdoll.tscn` instances render side by side, with every playlist frame of every move in four configurations: copy A azure next to copy B crimson, copy B default next to copy A source, cross-copy recolor, and swapping copy B into a doll that wore copy A. Copy B's Cast textures are checked for transparency. Cast plays once and holds its last frame. Layers stay in sync for 240 real ticks. | **0 of 1,474,560 px** differ on both drivers; all runtime checks pass. Negative control ([`godot_control.gd`](engine-shared-copy-2026-11-09/godot_control.gd), copy B default rendered against the crimson oracle) reports 3,510 differing px. |
-| Phaser 3.80.1, 3.90.0 and 4.1.0, each in Canvas and WebGL (headless Chromium, Playwright 1.65) | [`phaser_shared.mjs`](engine-shared-copy-2026-11-09/phaser_shared.mjs) serves the ZIP by route interception, with no server or port. It runs the same four configurations plus the control, and checks Cast `repeat` 0, idle `repeat` -1 and an empty copy B Cast texture. | All **24 positive runs: 0 of 368,640 px** each. All **6 controls** detect 3,510 px. No page errors. |
+| Godot 4.7.1, windowed Forward+ on Direct3D 12 (RTX 3070 Ti, OpenGL fallback disabled) | Headless import with 0 errors, then [`godot_shared.gd`](engine-shared-copy-2026-11-09/godot_shared.gd). Two `Paperdoll.tscn` instances render side by side, with every playlist frame of every move in four configurations: copy A azure next to copy B crimson, copy B default next to copy A source, cross-copy recolor, and swapping copy B into a doll that wore copy A. Copy B's Cast textures are checked for transparency. Cast plays once and holds its last frame. Layers stay in sync for 240 real ticks. | **0 of 1,474,560 px** differ; all runtime checks pass. Negative control ([`godot_control.gd`](engine-shared-copy-2026-11-09/godot_control.gd): copy B in its default colors without the shield, compared with the copy B crimson-plus-shield oracle) reports 3,510 differing px. |
+| Phaser 3.80.1, 3.90.0 and 4.1.0, each in Canvas and WebGL (headless Chromium, Playwright 1.65) | [`phaser_shared.mjs`](engine-shared-copy-2026-11-09/phaser_shared.mjs) serves the ZIP by route interception, with no server or port. It runs the same four configurations plus the same negative control, and checks Cast `repeat` 0, idle `repeat` -1 and an empty copy B Cast texture. | All **24 positive runs: 0 of 368,640 px** each. All **6 controls** detect 3,510 px. No page errors. |
 | Aseprite 1.3.18.6 CLI | [`ase_render.lua`](engine-shared-copy-2026-11-09/ase_render.lua) renders the exported file with its saved visibility, then with layers toggled to body + copy B, body + shield + copy B, and body + copy A. [`ase_compare.mjs`](engine-shared-copy-2026-11-09/ase_compare.mjs) compares the renders with the compositor in the first outfit's colors. | **0 of 184,320 px** in each of the 4 configurations. Tags `idle_south`, `walk_south` and `cast_south` (`repeat` 1); durations 150/100 ms. Copy B's layer alone has 106 opaque px in each idle and walk frame and **0 in all 8 Cast frames**. |
 
 What this establishes:
@@ -99,6 +102,9 @@ outfits and synchronized layers, the dedicated Godot export remains the recommen
 
 - `npm run check`: 0 errors and warnings; formatting clean.
 - `npm test`: **2,056 passed in 172 files**, with native Godot 4.7.1 (`GODOT_BIN`) and installed Aseprite enabled.
+- Magenta clear color rerun: Godot 4.7.1 on Direct3D 12 (`fallback_to_opengl3=false`) passed with 0 of 1,474,560 px
+  and its control reported 3,510 px; all 36 Phaser runs (24 positive, 6 controls, 6 runtime-fact checks) passed with the
+  same counts as above. Aseprite and the Wizard compare alpha directly, so they were not rerun.
 - End-to-end specs: none run. The only app change is README text inside the Aseprite export, which no spec asserts.
 - Toolchain: Node 25.0.0 was installed rather than the pinned 24.22.1 (CI is the exact-toolchain check). Phaser bundles were
   downloaded from the release tags, with the same URLs as the [Phaser playback](phaser-playback-2026-10-28.md) verifier. SHA-256:
@@ -122,25 +128,96 @@ outfits and synchronized layers, the dedicated Godot export remains the recommen
 
 ## Reproduction
 
-From a scratch folder, with `<app>` the repo's `app/` and `<evidence>` the folder holding the two archives:
+From a scratch folder `<scratch>`, with `<app>` the repo's `app/` and `<evidence>` the folder holding the two archives.
+Every `.mjs` script runs with `node --experimental-transform-types`, because it imports the app's TypeScript sources:
 
 ```sh
-node --experimental-transform-types gen.mjs <app> <evidence> out
+node --experimental-transform-types gen.mjs <app> <evidence> <scratch>/out
 ```
 
-Godot:
+Godot (never use the OpenGL or Compatibility renderer on this machine):
 
-1. Copy `out/godot/` with `out/expected/` and `out/scenario.json` into a project folder.
-2. Add `godot_shared.gd` as `verify.gd` and a minimal `project.godot`.
+1. Copy the contents of `out/godot/`, plus `out/expected/` and `out/scenario.json`, into a project folder.
+2. Add `godot_shared.gd` as `verify.gd`, `godot_control.gd` as `control.gd`, and a minimal `project.godot`:
+
+   ```ini
+   config_version=5
+   [application]
+   config/name="Shared copy engine test"
+
+   [rendering]
+   rendering_device/fallback_to_opengl3=false
+   ```
+
 3. Run `godot --headless --path <project> --editor --import --quit`.
-4. Run `godot --path <project> --rendering-driver d3d12 --resolution 192x96 --script verify.gd`.
+4. Run `godot --path <project> --rendering-driver d3d12 --resolution 192x96 --script verify.gd` (expects `GODOT_SHARED_PASS`).
+5. Run `godot --path <project> --rendering-driver d3d12 --resolution 192x96 --script control.gd` (expects a nonzero
+   `CONTROL_DIFF` and exit code 0).
 
-Phaser:
+Phaser (downloads the bundles into `<vendor>` on first use; no server or port):
 
 ```sh
-node --experimental-transform-types phaser_shared.mjs <app> out <vendor>
+node --experimental-transform-types phaser_shared.mjs <app> <scratch>/out <vendor>
 ```
 
-Aseprite: run `aseprite -b <file> --script-param out=<dir> --script-param show=<layers|*> --script ase_render.lua` for
-each configuration, then `ase_compare.mjs <app> <scratch>`. Do not use Godot's OpenGL or compatibility renderer on this
-machine.
+Aseprite: `ase_render.lua` renders one configuration of the exported file
+`out/aseprite/aseprite/<name>.aseprite` into a folder:
+
+```sh
+aseprite -b <file> --script-param out=<dir> --script-param show=<layers|*> --script ase_render.lua
+```
+
+`ase_compare.mjs` reads these five output folders, with `<B>`, `<A>` and the shield ID from `out/scenario.json` and
+the manifest (layer names are `<slot>.<item>`, plus `.fg`/`.bg` for the shield):
+
+| Output folder | `show` |
+| --- | --- |
+| `<scratch>/ase/default` | `*` |
+| `<scratch>/ase/copyB` | `body.base,head.<B>` |
+| `<scratch>/ase/copyB_shield` | `body.base,head.<B>,off_hand.<shield>.bg,off_hand.<shield>.fg` |
+| `<scratch>/ase/copyA` | `body.base,head.<A>` |
+| `<scratch>/ase/copyBonly` | `head.<B>` |
+
+Then run `node --experimental-transform-types ase_compare.mjs <app> <scratch>` (expects `ASEPRITE_SHARED_PASS`).
+
+Godot Aseprite Wizard:
+
+1. Run `node --experimental-transform-types ase_reorder.mjs <app> <scratch>`. It writes `out/copy_b_first.aseprite`
+   with `copy_b_default` as the first outfit.
+2. Download the `v9.8.0-4` release zipball, check its SHA-256 above, extract it into its own empty folder and copy only
+   `addons/AsepriteWizard/` into a new Godot project's `addons/`.
+3. Give that project a `project.godot` that enables the plugin and its automatic importer, with the OpenGL fallback off:
+
+   ```ini
+   config_version=5
+   [application]
+   config/name="Aseprite Wizard PixelDoll test"
+
+   [aseprite]
+   import/import_plugin/enable_automatic_importer=true
+
+   [editor_plugins]
+   enabled=PackedStringArray("res://addons/AsepriteWizard/plugin.cfg")
+
+   [rendering]
+   rendering_device/fallback_to_opengl3=false
+   ```
+
+4. Isolate the editor: set `APPDATA` to an empty folder inside the project (for example `home/`) for every Godot
+   command below, and set `aseprite/general/command_path` to the Aseprite executable in that folder's
+   `Godot/editor_settings-4.7.tres` (run the import once to create the file, then edit it).
+5. Copy the exported Aseprite file to `char/shared.aseprite`, and `out/copy_b_first.aseprite` to `char/b_all.aseprite`,
+   `char/b_visible.aseprite` and `char/split.aseprite`. Copy `out/godot/manifest.json`, `out/scenario.json` and
+   `out/expected/` to the project root, and `wizard_inspect.gd` as `inspect.gd`.
+6. Set each file's importer in its `.import` file (all other parameters stay at the addon defaults):
+
+   | File | `importer` | Settings |
+   | --- | --- | --- |
+   | `shared.aseprite`, `b_all.aseprite` | `aseprite_wizard.plugin.spriteframes` | defaults (`only_visible_layers=false`, `round_fps=true`) |
+   | `b_visible.aseprite` | `aseprite_wizard.plugin.spriteframes` | `only_visible_layers=true`, `round_fps=false` |
+   | `split.aseprite` | `aseprite_wizard.plugin.spriteframes-split` | `round_fps=false` |
+
+7. Run `godot --headless --path <project> --editor --import --quit` twice (the second pass finishes the Split By Layer
+   `.ase_layer` resources).
+8. Run `godot --headless --path <project> --script inspect.gd` (prints per-import pixel differences and timings, then
+   `WIZARD_INSPECT_DONE`).

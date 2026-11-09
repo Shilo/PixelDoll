@@ -1,8 +1,9 @@
 extends "res://verify.gd" # godot_shared.gd, copied into the project as verify.gd
+# godot --path <project> --rendering-driver d3d12 --resolution 192x96 --script control.gd
 # Negative control: copy B is shown in its default colors while the oracle expects crimson; recolor bleed of the
 # other copy's material (matA) must not make it crimson either. Must report differing pixels.
 func run() -> void:
-	RenderingServer.set_default_clear_color(Color.BLACK)
+	RenderingServer.set_default_clear_color(CLEAR)
 	m = JSON.parse_string(FileAccess.get_file_as_string("res://manifest.json"))
 	scenario = JSON.parse_string(FileAccess.get_file_as_string("res://scenario.json"))
 	bw = int(m.export.bakedCell.w)
