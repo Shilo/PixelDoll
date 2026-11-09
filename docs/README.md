@@ -175,6 +175,7 @@ Screenshots for all reports: [`testing/img/` at 1f95029](https://github.com/Shil
 | [Share review and acceptance](testing/share-review-2026-11-03.md) | Shared draft/accepted rendering, concurrent acceptance publication, real-browser persistence boundaries and local stress limits. |
 | [Phaser playback](testing/phaser-playback-2026-10-28.md) | Native runtime verification of exported frame timing, looping, play once and layer synchronization. |
 | [Unity playback](testing/unity-playback-2026-10-28.md) | Installed Editor activation prerequisite, offline C# compilation and remaining native checks. |
+| [Startup profile (2026-11-09)](testing/startup-profile-2026-11-09.md) | Startup chunk composition (452 KB, under Vite's warning), throttled timings and waterfall, and the startup `modulepreload` hints that cut throttled mount time 11 to 16 percent. |
 | [Test performance](testing/test-performance.md) | Why unit and e2e runs are fast (parallel files, 16 one-worker CI shards), budgets and warning signs, anti-patterns that made them slow, rules for new tests. |
 | [Toolchain standardization](testing/toolchain-standardization-2026-10-22.md) | Exact runtime/dependencies, Vitest and Playwright migration, production byte parity and validation. |
 | [Replaceable item QA summaries](testing/qa-summaries-2026-10-22.md) | Move/direction aggregation, historical-check limits, offline browser/ZIP tests, adversarial review and CI runner pin. |

@@ -131,6 +131,37 @@ function startupChunk() {
 	};
 }
 
+// main.ts reaches the startup code through awaited dynamic imports, so without hints the browser finds each chunk one round
+// trip after the last. modulepreload only fetches and compiles: nothing runs until main.ts imports it, so the frame guard and
+// the startup-update order hold. The hints go in the body so they do not compete with the parser-blocking head scripts, which
+// on slow networks delayed the static startup message's first paint.
+function startupPreload(): Plugin {
+	return {
+		name: 'pixeldoll-startup-preload',
+		apply: 'build',
+		transformIndexHtml: {
+			order: 'post',
+			handler(_html, { chunk, bundle }) {
+				if (!chunk || !bundle) throw new Error('startup preload: no entry chunk');
+				const files = new Set<string>();
+				const add = (file: string) => {
+					const next = bundle[file];
+					if (files.has(file) || next?.type !== 'chunk') return;
+					files.add(file);
+					next.imports.forEach(add);
+				};
+				chunk.dynamicImports.forEach(add);
+				chunk.imports.forEach((file) => files.delete(file)); // Vite already preloads the entry's static imports
+				return [...files].map((file) => ({
+					tag: 'link',
+					attrs: { rel: 'modulepreload', crossorigin: true, href: `./${file}` },
+					injectTo: 'body' as const
+				}));
+			}
+		}
+	};
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
 	if (command === 'build' && mode === 'agent')
@@ -152,6 +183,7 @@ export default defineConfig(({ command, mode }) => {
 		plugins: [
 			svelte(),
 			devTools(),
+			startupPreload(),
 			agent && agentKey(apiBase),
 			command === 'build' && pwaBuild({ build, version, commit })
 		],
