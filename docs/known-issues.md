@@ -17,7 +17,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   128 px body (the Default standing views only); **Add idle + walk** then costs about 11 gens per drawn view before items and retries (55 on
   the default Top-down 8, 33 on Top-down 4, 88 on Unique 8). Item and move estimates depend on route and coverage. Some calls bill dollars; estimates are not caps. Lost responses may have run or charged and are never
   auto-resent.
-- **Unknown paid outcomes.** Three Cast body joint-measurement outcomes remain unknown; do not infer their charges from
+- **Unknown paid outcomes.** Three Cast body joint-measurement outcomes remain unknown and cannot be reconciled (the
+  synchronous endpoint returned no job IDs to query); do not infer their charges from
   the shared balance or resend them. Fitting records both generations and USD, including rejected attempts and explicit
   retries. See the [shared-equipment ledger](testing/shared-equipment-2026-10-22.md).
 - **API drift.** Template list, prices and Pro/Pro Flash behavior change; the OpenAPI snapshot in `research/pixellab/`

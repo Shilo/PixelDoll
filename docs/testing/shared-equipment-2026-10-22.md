@@ -48,6 +48,8 @@ A browser export while that retry was running independently verified the publica
 
 A separate one-direction clone tested a new eight-frame Cast move without changing the blocked Hurt evidence. The ordinary body pipeline made its one allowed reroll after pose checks. Body calls reported $0.020 and $0.018; completed joint measurements reported dollar usage. Three measurement submissions ended with unknown outcomes and were retained without resending. Their final billing is not inferred from the shared account balance.
 
+Reconciliation check (2026-11-09, no API calls, zero spend): these three costs cannot be confirmed from existing evidence, so they stay unknown and are not counted. `POST /estimate-skeleton` is synchronous; its response carries `usage` directly and returns no background job ID (OpenAPI `EstimateSkeletonResponse`; `queue.ts` finishes it without jobs). A lost response therefore left no job ID to look up with the free `GET /background-jobs/{job_id}`, and the 2026-10-20 OpenAPI snapshot has no usage-history endpoint (`GET /balance` is only the shared aggregate). The retained Cast export (`spikes/api/out/shared-fit/cast-complete.pixeldoll.zip`) records provenance only for completed work: 48 rig-setup measurements at 0.1 generations each and the two Cast body calls, with no Cast measurement entries or lost-request records. The per-request queue ledger lived in browser storage on the temporary agent origin and was not exported. Future reconciliation is only possible for asynchronous requests whose job IDs were retained; the app already tracks those through job polling, but cannot recover a lost synchronous response.
+
 The original automatically prepared equipment draft survived Studio normalization and a reload. Its standing review correctly displayed the existing blue colorway. One explicitly approved pose call generated the eight missing Cast equipment cells for an actual $0.040, with zero rest-fitting charge and no equipment retry. All hard checks passed. A forearm-occlusion warning on stored cell 3 remained visible; root inspected all eight frames, and the independent reviewer confirmed that the flagged frame retained the rounded helmet design while the arms rose beside it. The warning was retained when keeping the extension.
 
 The actual browser Godot export was 427,279 bytes. Independent artifact verification confirmed:
@@ -74,8 +76,10 @@ This report records a completed implementation/verification checkpoint, not comp
   body/style/motion matrix still need qualification. Compatible free copying is already available.
 - **Legacy references:** old equipment without dressed standing references keeps its existing frames but cannot
   automatically follow new moves. A reviewed remake/reference recovery flow has not been implemented.
-- **Billing uncertainty:** three Cast body joint-measurement outcomes remain unknown. Known generations and USD
-  are retained; generation allowances are not dollar caps, and uncertain paid requests must not be resent.
+- **Billing uncertainty:** three Cast body joint-measurement outcomes remain unknown and cannot be reconciled:
+  the synchronous measurement endpoint returned no job IDs and no per-request evidence was retained (see the
+  reconciliation check above). Known generations and USD are retained; generation allowances are not dollar caps,
+  and uncertain paid requests must not be resent.
 - **Evidence and export limits:** live media remain ignored machine-local evidence; representative regression
   fixtures need preserving for repeatable wider qualification. Artifact generation and browser reimport do not establish
   execution of shared-copy palettes/moves in every engine. Existing offline-queue coverage gaps in TODO also remain open.
