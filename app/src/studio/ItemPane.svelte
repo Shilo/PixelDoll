@@ -16,7 +16,8 @@
 		slotLabel,
 		plainReason,
 		moveLabel,
-		qaReasons
+		qaReasons,
+		unknownCostText
 	} from './model.ts';
 	import {
 		ui,
@@ -219,6 +220,7 @@
 		it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0
 	);
 	const usdSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.usd ?? 0), 0) : 0);
+	const unknownSpent = $derived(it ? it.provenance.filter((p) => !p.usage).length : 0);
 	const designReasons = $derived([
 		...new Set((it?.designWarnings ?? []).flatMap((s) => s.split('; ')).map(plainReason))
 	]);
@@ -602,7 +604,8 @@
 					<dd>
 						{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{usdSpent
 							? `$${usdSpent.toFixed(3)} · `
-							: ''}{it.provenance.length} PixelLab {it.provenance.length === 1 ? 'call' : 'calls'}
+							: ''}{unknownSpent ? `${unknownSpent} unknown cost · ` : ''}{it.provenance.length} PixelLab
+						{it.provenance.length === 1 ? 'call' : 'calls'}
 					</dd>
 					{#if gaps.length}<dt>Missing frames</dt>
 						<dd>{gaps.join(', ')}</dd>{/if}

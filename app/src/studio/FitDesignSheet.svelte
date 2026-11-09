@@ -23,6 +23,7 @@
 		type FitPlan
 	} from '../lib/equipment/index.ts';
 	import type { Project } from '../lib/store/manifest.ts';
+	import { unknownCostText } from './model.ts';
 	import { recolor } from '../lib/dress/dress.ts';
 	import {
 		ui,
@@ -353,8 +354,8 @@
 		{#if draft}<p class="faint small">
 				Spent: {+draft.spentGens.toFixed(2)} gens{draft.spentUsd && draft.spentUsd > 0
 					? ` + $${draft.spentUsd.toFixed(3)}`
-					: ''}. Approved generation estimate: {draft.budget.previewGens} gens for rest fitting + {draft
-					.budget.poseGens} gens for animation.<ApiPeek
+					: ''}{unknownCostText(draft.spentUnknown)}. Approved generation estimate: {draft.budget
+					.previewGens} gens for rest fitting + {draft.budget.poseGens} gens for animation.<ApiPeek
 					scope="equipment-fit-current"
 					label="Current equipment fit"
 					plan={[]}

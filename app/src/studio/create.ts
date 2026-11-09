@@ -13,6 +13,7 @@ import {
 	type EstimateRetryIntent,
 	type JobRec
 } from '../lib/pixellab/queue.ts';
+import { reportedUsage } from '../lib/pixellab/activity.ts';
 import {
 	BASE_ANIMS,
 	baseAnimation,
@@ -592,7 +593,7 @@ export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
 		seed: (params.seed as number) ?? 0,
 		requestHash: `sha256:${r.requestHash}`,
 		jobId: r.jobs[0]?.id,
-		usage: { generations: r.gens, usd: r.usd },
+		usage: reportedUsage(r),
 		createdAt: new Date(r.submittedAt ?? r.createdAt).toISOString(),
 		produced
 	};

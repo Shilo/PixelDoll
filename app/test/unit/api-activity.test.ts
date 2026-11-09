@@ -309,6 +309,95 @@ function memoryQueue(records: Map<string, JobRec>) {
 		now: () => 1000
 	});
 }
+test('a job whose final result omits usage has the same unknown cost live, in the ledger and after a reload', async () => {
+	const png =
+		'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+	let polls = 0;
+	const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+		if (url.endsWith('/balance')) return Response.json({});
+		if (init?.method === 'POST') return Response.json({ background_job_id: 'rest-views' });
+		// Live run: only an interim poll reported usage; the completed result had none.
+		return Response.json(
+			++polls === 1
+				? { id: 'rest-views', status: 'processing', usage: { type: 'usd', usd: 0 } }
+				: {
+						id: 'rest-views',
+						status: 'completed',
+						last_response: { images: [{ type: 'base64', base64: png }] }
+					}
+		);
+	});
+	vi.stubGlobal('fetch', fetchMock);
+	const records = new Map<string, JobRec>();
+	let t = 1000;
+	const ledgerQueue = () =>
+		new Queue({
+			all: async () => [...records.values()].map((record) => structuredClone(record)),
+			put: async (id, record) => void records.set(id, structuredClone(record)),
+			putBlob: async () => 'result',
+			getBlob: async () => undefined,
+			locks: null,
+			online: () => true,
+			now: () => t
+		});
+	const queue = ledgerQueue();
+	const record = await queue.enqueue(
+		{ method: 'POST', path: '/create-character-v3', body: { description: 'rest views', seed: 1 } },
+		{ label: 'Rest views' }
+	);
+	queue.setKey('test-key');
+	for (let i = 0; i < 30 && records.get(record.id)?.state !== 'done'; i++) {
+		t += 6000;
+		await queue.tick();
+	}
+	expect(polls).toBe(2);
+	const live = snapshot().find((call) => call.queueId === record.id)!;
+	expect(live).toMatchObject({ cost: { generations: null, usd: null }, costSource: 'unknown' });
+	expect(records.get(record.id)).toMatchObject({ state: 'done', costUnknown: true });
+	expect(queue.snapshot()).toMatchObject({ sessionGens: 0, sessionUsd: 0, sessionUnknown: 1 });
+
+	clearActivity();
+	await ledgerQueue().load();
+	const restored = snapshot().find((call) => call.queueId === record.id)!;
+	expect(restored).toMatchObject({
+		restored: true,
+		cost: live.cost,
+		costSource: live.costSource
+	});
+	expect(activityTotals(snapshot())).toMatchObject({ generations: 0, usd: 0, unknown: 1 });
+});
+
+test('the ledger keeps reported zero usage and free reads known, and a synchronous POST without usage unknown', async () => {
+	const records = new Map<string, JobRec>();
+	const queue = new Queue({
+		all: async () => [...records.values()].map((record) => structuredClone(record)),
+		put: async (id, record) => void records.set(id, structuredClone(record)),
+		locks: null,
+		online: () => true,
+		now: () => 1000,
+		api: async <T>(_key: string, method: string, path: string) =>
+			(path === '/balance' || method === 'GET'
+				? {}
+				: path === '/free-estimate'
+					? { usage: { type: 'generations', generations: 0 } }
+					: { keypoints: [] }) as T
+	});
+	queue.setKey('test-key');
+	const zero = await queue.enqueue({ method: 'POST', path: '/free-estimate', body: { seed: 1 } });
+	const silent = await queue.enqueue({
+		method: 'POST',
+		path: '/silent-estimate',
+		body: { seed: 2 }
+	});
+	const read = await queue.enqueue({ method: 'GET', path: '/characters/read' });
+	for (let i = 0; i < 5; i++) await queue.tick();
+	expect(records.get(zero.id)).toMatchObject({ state: 'done', gens: 0, usd: 0 });
+	expect(records.get(zero.id)?.costUnknown).toBeUndefined();
+	expect(records.get(read.id)?.costUnknown).toBeUndefined();
+	expect(records.get(silent.id)).toMatchObject({ state: 'done', gens: 0, costUnknown: true });
+	expect(queue.snapshot().sessionUnknown).toBe(1);
+});
+
 test('input preparation failure never records a paid request, including after reloading its failed queue record', async () => {
 	const fetchMock = vi.fn();
 	vi.stubGlobal('fetch', fetchMock);

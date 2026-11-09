@@ -124,6 +124,7 @@ export interface FitDraft {
 	poseGens: number;
 	spentGens: number;
 	spentUsd?: number;
+	spentUnknown?: number; // calls whose cost PixelLab did not report
 	budget: { previewGens: number; poseGens: number };
 	resumeStage?: 'rest' | 'pose';
 	calls: FitCall[];

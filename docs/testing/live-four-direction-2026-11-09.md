@@ -111,7 +111,7 @@ per-cell measurements (bounding box, lowest opaque row, alpha, 8-connected compo
   "0 gens + $0.000"; after a reload the same call shows "Unknown" and the API calls total reads "46 gens, 1 unknown",
   while the queue ledger stores it as `gens: 0, usd: 0`. `finish()` in `app/src/lib/pixellab/queue.ts` sums absent usage
   as 0, while `restoreActivityRequest` in `app/src/lib/pixellab/activity.ts` marks the same record unknown. The two views
-  disagree about one call. Not fixed in this task.
+  disagree about one call. Fixed afterward: a completed call with no final usage is now unknown in every view (see the card "Show one consistent cost for calls without reported usage").
 - **D4 (doc mismatch):** the audit says new characters default to independent directions; Top-down 4 and Top-down 8 still
   mirror West (and NW/SW) by default.
 - **Harness interruption (not an app defect):** the test browser process was killed by the harness at 16:37:31 during

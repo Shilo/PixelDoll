@@ -162,7 +162,8 @@ export function beginActivityCall(
 }
 const amount = (value: unknown) =>
 	typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
-function usageOf(value: unknown): ApiCost | undefined {
+/** A provider usage report, or undefined when it is absent or malformed (never read as free). */
+export function usageOf(value: unknown): ApiCost | undefined {
 	if (!value || typeof value !== 'object') return undefined;
 	const usage = value as { type?: unknown; generations?: unknown; usd?: unknown };
 	if (usage.type === 'generations' && amount(usage.generations) !== null)
@@ -171,24 +172,43 @@ function usageOf(value: unknown): ApiCost | undefined {
 		return { generations: 0, usd: amount(usage.usd) };
 	return undefined;
 }
+/**
+ * The one cost rule for a paid request, shared by the live Activity view, the queue ledger and restored records: the sum of
+ * every job's final usage, else the submit response's usage, else unknown. A missing report is unknown, never $0; known job
+ * charges stay visible as a partial amount.
+ */
+export function requestCost(
+	submitted: ApiCost | undefined,
+	jobUsages: readonly (ApiCost | undefined)[]
+): { cost: ApiCost; reported: boolean; partial: boolean } {
+	const known = jobUsages.filter((usage): usage is ApiCost => usage !== undefined);
+	const complete = jobUsages.length > 0 && known.length === jobUsages.length;
+	if (!complete && submitted) return { cost: submitted, reported: true, partial: false };
+	return {
+		cost: known.length
+			? {
+					generations: known.reduce((sum, usage) => sum + (usage.generations ?? 0), 0),
+					usd: known.reduce((sum, usage) => sum + (usage.usd ?? 0), 0)
+				}
+			: { generations: null, usd: null },
+		reported: complete,
+		partial: known.length > 0 && !complete
+	};
+}
+/** Provenance usage of a settled ledger record: only a fully reported cost, so an unknown charge is never recorded as free. */
+export const reportedUsage = (r: { gens: number; usd: number; costUnknown?: true }) =>
+	r.costUnknown ? undefined : { generations: r.gens, usd: r.usd };
 function reconcile(callId: string) {
 	const owned = [...jobs.values()].filter((job) => job.callId === callId);
 	if (!owned.length) return;
-	const known = owned.filter((job) => job.usage !== undefined);
-	const complete = known.length === owned.length;
-	const submitted = submissionUsage.get(callId);
+	const { cost, reported, partial } = requestCost(
+		submissionUsage.get(callId),
+		owned.map((job) => job.usage)
+	);
 	update(callId, {
-		cost:
-			!complete && submitted
-				? submitted
-				: {
-						generations: known.length
-							? known.reduce((sum, job) => sum + (job.usage?.generations ?? 0), 0)
-							: null,
-						usd: known.length ? known.reduce((sum, job) => sum + (job.usage?.usd ?? 0), 0) : null
-					},
-		costPartial: known.length > 0 && !complete && !submitted,
-		costSource: complete || submitted ? 'reported' : 'unknown',
+		cost,
+		costPartial: partial,
+		costSource: reported ? 'reported' : 'unknown',
 		usagePending: owned.some((job) => !job.terminal)
 	});
 }
@@ -250,8 +270,10 @@ export function finishActivityCall(
 			});
 		const owner = jobs.get(jobId);
 		if (owner) {
-			if (usage) owner.usage = usage;
-			owner.terminal = owner.terminal || terminal || (call.method === 'DELETE' && ok);
+			const settled = terminal || (call.method === 'DELETE' && ok);
+			// Only the settling response prices a job, as in the queue ledger: an interim poll's usage is not its final cost.
+			if (settled) owner.usage = usage;
+			owner.terminal = owner.terminal || settled;
 			reconcile(owner.callId);
 		}
 	}

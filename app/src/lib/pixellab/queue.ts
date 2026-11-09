@@ -36,7 +36,9 @@ import {
 	activityRequest,
 	beginActivityCall,
 	finishActivityCall,
+	requestCost,
 	restoreActivityRequest,
+	usageOf,
 	type ActivityContext
 } from './activity.ts';
 
@@ -90,8 +92,9 @@ export interface JobRec {
 	error?: string;
 	estimateRecovery?: { id: string; retryOf?: string }; // explicit, persisted measurement-only retry; original unknown record is retained
 	autoCanceledAttempts?: number[]; // known automatic pre-submit cancellation; only a distinct explicit attempt may reopen
-	gens: number;
+	gens: number; // reported charges only; with costUnknown they are a known part, never the whole cost
 	usd: number;
+	costUnknown?: true; // settled without a usage report for every job: the cost is unknown, never $0
 }
 export type Role = 'solo' | 'leader' | 'follower';
 export interface QueueSnapshot {
@@ -104,6 +107,7 @@ export interface QueueSnapshot {
 	capacityRetryAt: number;
 	sessionGens: number;
 	sessionUsd: number;
+	sessionUnknown: number; // calls settled this session whose cost PixelLab did not report
 	counts: Record<'pending' | 'running' | 'failed' | 'done', number>;
 }
 
@@ -301,6 +305,7 @@ export class Queue {
 	capacityRetryAt = 0;
 	sessionGens = 0;
 	sessionUsd = 0;
+	sessionUnknown = 0;
 
 	constructor(deps: Partial<Deps> = {}) {
 		this.deps = {
@@ -375,6 +380,7 @@ export class Queue {
 			capacityRetryAt: this.capacityRetryAt,
 			sessionGens: this.sessionGens,
 			sessionUsd: this.sessionUsd,
+			sessionUnknown: this.sessionUnknown,
 			counts
 		};
 	}
@@ -1351,7 +1357,7 @@ export class Queue {
 			r.waitingForCapacity = false;
 			r.jobs = ids.map((id) => ({ id, status: 'submitted', done: false, results: [] }));
 			if (ids.length) r.state = 'running';
-			else this.finish(r, res.usage); // synchronous route (estimate-skeleton, balance)
+			else this.finish(r); // synchronous route (estimate-skeleton, balance)
 			if (
 				credentialRevision === this.keyRevision &&
 				key === this.key &&
@@ -1593,16 +1599,23 @@ export class Queue {
 		const lost = r.jobs.every((s) => s.status === 'lost');
 		this.finish(
 			r,
-			null,
 			canceled ? 'canceled' : lost ? 'lost' : failed.length === r.jobs.length ? 'failed' : 'done'
 		);
 	}
-	private finish(r: JobRec, usage?: Usage | null, state: RecState = 'done') {
-		const usages = usage ? [usage] : r.jobs.map((s) => s.usage).filter((u): u is Usage => !!u);
-		r.gens = usages.reduce((n, u) => n + (u.generations ?? 0), 0);
-		r.usd = usages.reduce((n, u) => n + (u.usd ?? 0), 0);
+	private finish(r: JobRec, state: RecState = 'done') {
+		const priced = requestCost(
+			usageOf((r.response as { usage?: unknown } | undefined)?.usage),
+			r.jobs.map((s) => usageOf(s.usage))
+		);
+		const { cost } = priced,
+			reported = priced.reported || r.method !== 'POST'; // reads are free, as in Activity
+		r.gens = cost.generations ?? 0;
+		r.usd = cost.usd ?? 0;
+		if (reported) delete r.costUnknown;
+		else r.costUnknown = true;
 		this.sessionGens += r.gens;
 		this.sessionUsd += r.usd;
+		this.sessionUnknown += Number(!reported);
 		r.state = state;
 		r.finishedAt = this.deps.now();
 	}
@@ -1640,7 +1653,7 @@ export class Queue {
 		} else if (r.state === 'running') {
 			for (const s of r.jobs.filter((s) => !s.done && !s.remoteDone)) {
 				try {
-					await this.deps.api(
+					const stopped = await this.deps.api<{ usage?: Usage | null } | undefined>(
 						this.key,
 						'DELETE',
 						`/background-jobs/${encodeURIComponent(s.id)}`,
@@ -1656,6 +1669,7 @@ export class Queue {
 					);
 					s.done = true;
 					s.status = 'cancelled';
+					s.usage = stopped?.usage; // the cancel response is the job's final usage report
 				} catch (e) {
 					s.error = (e as Error).message; // 400/409: already finished -> polling picks up the result
 				}

@@ -47,9 +47,10 @@ const fitUsage = (fit: FitDraft, ledger: JobRec[]) =>
 		.reduce(
 			(sum, r) => ({
 				spentGens: sum.spentGens + (r.gens ?? 0),
-				spentUsd: sum.spentUsd + (r.usd ?? 0)
+				spentUsd: sum.spentUsd + (r.usd ?? 0),
+				spentUnknown: sum.spentUnknown + Number(!!r.costUnknown)
 			}),
-			{ spentGens: 0, spentUsd: 0 }
+			{ spentGens: 0, spentUsd: 0, spentUnknown: 0 }
 		);
 async function sourceOf(design: EquipmentDesign): Promise<Project> {
 	assertDesign(design);

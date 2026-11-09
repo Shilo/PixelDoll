@@ -2,6 +2,7 @@
 // UI-free; ui/M3.svelte and the Studio use this. A Draft is mutated in place (pass a Svelte $state proxy to get reactivity)
 // and persisted through the `persist` hook. Everything is re-derived from the job ledger, so reloads resume.
 import { queue, requestIdentity, type JobRec } from '../pixellab/queue.ts';
+import { reportedUsage } from '../pixellab/activity.ts';
 import { base64ToBytes, binaryAlpha, bytesToBase64, decodePng, type Img } from '../image/png.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { cellHash, rigArtworkVersion, type Sha256 } from '../rig/rig.ts';
@@ -270,6 +271,9 @@ export const gensOf = (d: Draft, list = jobs) =>
 	draftRecords(d).reduce((s, id) => s + (recIn(list, id)?.gens ?? 0), 0);
 export const usdOf = (d: Draft, list = jobs) =>
 	draftRecords(d).reduce((s, id) => s + (recIn(list, id)?.usd ?? 0), 0);
+/** Calls of a draft whose cost PixelLab did not report: shown as unknown beside the reported spend. */
+export const unknownCostsOf = (d: Draft, list = jobs) =>
+	draftRecords(d).filter((id) => recIn(list, id)?.costUnknown).length;
 export const callState = (c: CallState, list = jobs) =>
 	recIn(list, c.recId)?.state ?? 'not submitted';
 
@@ -1296,7 +1300,7 @@ const toProv = (r: JobRec, c: CallState): Provenance => ({
 	seed: c.seed,
 	requestHash: `sha256:${r.requestHash}`,
 	jobId: r.jobs[0]?.id,
-	usage: { generations: r.gens, usd: r.usd },
+	usage: reportedUsage(r),
 	createdAt: new Date(r.submittedAt ?? r.createdAt).toISOString(),
 	produced: [...c.cells] as Provenance['produced']
 });

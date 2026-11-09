@@ -7,6 +7,7 @@
 		failsOf,
 		gensOf,
 		usdOf,
+		unknownCostsOf,
 		hasStructuralFailure,
 		incompleteCoverage,
 		isClean
@@ -15,7 +16,7 @@
 	import { KEY_NAME } from '../lib/image/chroma.ts';
 	import { itemRoute } from './itemRoute.ts';
 	import Sprite from './Sprite.svelte';
-	import { groupOf, plainReason, moveLabel } from './model.ts';
+	import { groupOf, plainReason, moveLabel, unknownCostText } from './model.ts';
 	import {
 		ui,
 		doc,
@@ -36,6 +37,7 @@
 	const p = $derived(genProgress(g, $queue.jobs));
 	const spent = $derived(gensOf(g.draft, $queue.jobs));
 	const spentUsd = $derived(usdOf(g.draft, $queue.jobs));
+	const spentUnknown = $derived(unknownCostsOf(g.draft, $queue.jobs));
 	const res = $derived(store.results[g.draft.spec.id]);
 	const prev = $derived(res?.preview);
 	const anims = $derived(
@@ -324,7 +326,11 @@
 						.join(' · ')}
 				</dd>
 				<dt>Spent</dt>
-				<dd>{+spent.toFixed(2)} gens{spentUsd ? ` + $${spentUsd.toFixed(3)}` : ''}</dd>
+				<dd>
+					{+spent.toFixed(2)} gens{spentUsd ? ` + $${spentUsd.toFixed(3)}` : ''}{unknownCostText(
+						spentUnknown
+					)}
+				</dd>
 				{#if res?.qa?.qa.rawKeyReviewFrames}<dt>Raw body differences</dt>
 					<dd>
 						{res.qa.qa.rawKeyReviewFrames} frames have new body-colored pixels before alignment. Ordinary

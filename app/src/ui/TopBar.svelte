@@ -41,7 +41,7 @@
 			<button onclick={() => queue.resume()}>resume</button>{/if}
 		· session: {fmt($queue.sessionGens)} gens{$queue.sessionUsd
 			? ` + $${$queue.sessionUsd.toFixed(3)}`
-			: ''}
+			: ''}{$queue.sessionUnknown ? ` + ${$queue.sessionUnknown} unknown` : ''}
 	</span>
 </header>
 

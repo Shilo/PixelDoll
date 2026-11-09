@@ -423,6 +423,8 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
 }
 
 export const fmtGens = (n: number) => `${Math.round(n * 10) / 10} gens`;
+/** Appended to a reported spend: calls PixelLab did not price are unknown, never $0. */
+export const unknownCostText = (calls = 0) => (calls ? ` + ${calls} unknown` : '');
 export const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US');
 export const fmtTime = (s: number) =>
 	s >= 90 ? `${Math.round(s / 60)} min` : `${Math.max(5, Math.round(s / 5) * 5)} s`;

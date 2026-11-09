@@ -28,6 +28,7 @@ import { withH4 } from '../items/run.ts';
 import { referenceBodies } from '../items/garment-coverage.ts';
 import { frameOrder, png, type Req } from '../pixellab/routes.ts';
 import type { JobRec } from '../pixellab/queue.ts';
+import { reportedUsage } from '../pixellab/activity.ts';
 import { borderPx, paddedPoses, poseBatches, poseCallGens } from '../rig/clips.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { assertImportedPoses } from '../rig/pose-review.ts';
@@ -356,7 +357,7 @@ const provenance = (records: FitRecord[]): Provenance[] =>
 		seed: call.seed,
 		requestHash: `sha256:${rec.requestHash}`,
 		jobId: rec.jobs[0]?.id,
-		usage: { generations: rec.gens, usd: rec.usd },
+		usage: reportedUsage(rec),
 		createdAt: new Date(rec.submittedAt ?? rec.createdAt).toISOString(),
 		produced: [...call.cells] as Provenance['produced']
 	}));

@@ -4,7 +4,7 @@
 	import { balancePlan, cancelPlan, queuedPlan } from './apiPlans.ts';
 	import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
-	import { fmtNum } from './model.ts';
+	import { fmtNum, unknownCostText } from './model.ts';
 	import { ui, store, cleanUp, toast, equipment, refreshFits, openFit } from './state.svelte.ts';
 	async function clear() {
 		let n: Awaited<ReturnType<typeof cleanUp>>;
@@ -74,10 +74,12 @@
 		const s = Math.round(ms / 1000);
 		return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 	};
-	const cost = (r: JobRec) =>
-		[r.gens ? `${+r.gens.toFixed(2)} gens` : '', r.usd ? `$${r.usd.toFixed(3)}` : '']
+	const cost = (r: JobRec) => {
+		const known = [r.gens ? `${+r.gens.toFixed(2)} gens` : '', r.usd ? `$${r.usd.toFixed(3)}` : '']
 			.filter(Boolean)
 			.join(' + ');
+		return r.costUnknown ? (known ? `${known} + unknown` : 'Unknown cost') : known;
+	};
 </script>
 
 <Sheet title="Activity" cancel="Done" onclose={() => (ui.sheet = null)}>
@@ -168,7 +170,7 @@
 										fit.stage
 									)} · {+fit.spentGens.toFixed(2)} gens{fit.spentUsd && fit.spentUsd > 0
 										? ` + $${fit.spentUsd.toFixed(3)}`
-										: ''} spent</span
+										: ''}{unknownCostText(fit.spentUnknown)} spent</span
 								></span
 							><button
 								class="bu-action btn sm"
@@ -297,8 +299,8 @@
 		<p class="faint small">
 			This session: {+$queue.sessionGens.toFixed(2)} gens{$queue.sessionUsd
 				? ` + $${$queue.sessionUsd.toFixed(3)}`
-				: ''}. Some moves are billed in dollars instead of gens; your balance above is the real
-			total.
+				: ''}{unknownCostText($queue.sessionUnknown)}. Some moves are billed in dollars instead of
+			gens; your balance above is the real total.
 		</p>
 		<details class="disclosure">
 			<summary><ChevronRight size={14} />Details</summary>
