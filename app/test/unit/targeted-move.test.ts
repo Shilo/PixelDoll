@@ -344,6 +344,56 @@ test('a valid custom description includes motion costs and wrong provider cardin
 	expect(f.put).not.toHaveBeenCalled();
 });
 
+test('an extra motion frame is accepted only when it is the unstripped standing view', async () => {
+	const motionWith = async (first: 'standing' | 'other') => {
+		const f = await fixture(),
+			standing = (await projects.loadProject('rig-target')).project.images.values().next().value!,
+			frame = (shade: number) => {
+				const im = structuredClone(standing);
+				im.data[(30 * 64 + 30) * 4] = shade; // inside the body: a distinct motion frame
+				return im;
+			},
+			images = [
+				first === 'standing' ? standing : frame(7),
+				frame(11),
+				frame(12),
+				frame(13),
+				frame(14)
+			],
+			blobs = new Map<string, Blob>();
+		for (const [i, im] of images.entries())
+			blobs.set(`m${i}`, new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>]));
+		vi.spyOn(db, 'getBlob').mockImplementation(async (h) => blobs.get(h));
+		const results = images.map((_, i) => ({ label: `east/${i}`, sha: `m${i}` }));
+		const joints = LABELS.map((label, i) => ({ label, x: 0.3 + i * 0.01, y: 0.3 + i * 0.015 }));
+		f.enqueue.mockResolvedValueOnce({ state: 'done', jobs: [{ results }] } as unknown as JobRec);
+		// one joint answer per expected motion frame; a fifth check would fall through to the fixture and fail
+		for (let i = 0; i < 4; i++)
+			f.enqueue.mockResolvedValueOnce({
+				state: 'done',
+				response: { keypoints: joints },
+				jobs: []
+			} as unknown as JobRec);
+		const before = f.enqueue.mock.calls.length;
+		const error = await f
+			.run({ text: 'step softly', action: 'quiet-step', frames: 4 })
+			.catch((e: Error) => e);
+		return {
+			error,
+			measured: f.enqueue.mock.calls.slice(before).filter(([r]) => r.path === '/estimate-skeleton')
+				.length
+		};
+	};
+	// 5 for 4 with the standing view first: that frame is dropped and exactly the 4 motion frames are measured
+	const kept = await motionWith('standing');
+	expect(String(kept.error)).not.toContain('motion frames for');
+	expect(kept.measured).toBe(4);
+	// any other extra frame still fails before joint checks
+	const odd = await motionWith('other');
+	expect(String(odd.error)).toContain('PixelLab returned 5 motion frames for 4 requested');
+	expect(odd.measured).toBe(0);
+});
+
 test('item review binds artwork and cost while unrelated queued clips and playback choices can change', async () => {
 	const f = await fixture(),
 		m = f.original.manifest;

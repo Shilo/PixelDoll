@@ -224,7 +224,8 @@ export function clipQa(o: {
 			`estimated arm-joint difference ${adh.toFixed(1)} px from requested pose; review`,
 		feet > RIG_GATES.silhouetteBottomDelta &&
 			`silhouette bottom differs up to ${feet} px from standing reference`,
-		fit < RIG_GATES.paletteFit && `palette similarity ${fit.toFixed(3)}; review shading`,
+		fit < RIG_GATES.paletteFit &&
+			`palette similarity ${fit.toFixed(3)}; colors not on the standing body: check for shading drift or a weapon, prop or effect drawn in`,
 		border > RIG_GATES.border && `${border} opaque pixels touch the frame border; check framing`,
 		(o.disconnectedPixels ?? 0) > 0 &&
 			`${o.disconnectedPixels} disconnected pixels retained; review details`,

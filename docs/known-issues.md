@@ -104,12 +104,14 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   from the saved layers, but streaks across the face can still fail the helmet's consistency check. Changing the action
   wording had no reliable effect (round 2 arm A). The body move itself is
   not immune: a slash body rendered on 2026-11-08 kept a sword in two side-view frames and a sliver in one front frame
-  despite "empty hands, no weapon, no props, no effects", and the body has no prop cleanup
+  despite "empty hands, no weapon, no props, no effects", and the body has no prop cleanup. Its review note now names
+  a weapon, prop or effect as a possible cause of colors missing from the standing body; a small prop, or one in body
+  colors, is not caught because the color check measures the whole move
   ([prompt trim A/B](research/2026-11-07-paperdoll-cycle/prompt-trim-ab.md)).
-- **Described moves fail on an extra motion frame.** On 2026-11-08 PixelLab returned 9 motion frames for 8 requested on
-  every described (typed) move, and the app stops before drawing the body rather than guess which frame is extra. Built-in
-  moves (idle, walk, slash and the other presets) are not affected. See the
-  [prompt trim A/B](research/2026-11-07-paperdoll-cycle/prompt-trim-ab.md).
+- **PixelLab sends the start frame back on described moves.** Despite `keep_first_frame: false`, pixminimax returned 9
+  motion frames for 8 on every described move on 2026-11-08, frame 0 being the standing view. The app drops that frame
+  only when it is pixel-identical to the standing view; any other extra frame still stops the move before the body is
+  drawn ([prompt trim A/B](research/2026-11-07-paperdoll-cycle/prompt-trim-ab.md)).
 - **Default-only characters (round 10, D26).** All standing views arrive together, because PixelLab draws every rotation
   in one job; the creator cannot show them one by one. The pivot comes from the standing south view (`default/south/0`),
   not from the first idle frame as on older characters, and moves added later keep it. **Add idle + walk** picks a new

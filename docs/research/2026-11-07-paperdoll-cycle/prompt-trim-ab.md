@@ -50,12 +50,15 @@ gates fail those items. Removing the action suffix made it slightly worse, so bo
 
 ## Described moves: PixelLab returns one extra motion frame
 
-Every pixminimax motion call for a described move returned frame_count + 1 frames (9 for 8, `keep_first_frame: false`): 7 of
-7 calls over three descriptions ("casts a spell with both hands" seeds 7171 and 7272, "swinging a sword overhead" seed 8383)
-and all three views. `motion()` in app/src/studio/create.ts rejects a count mismatch, so described moves currently fail before
-the body render. Frame 0 is not identical to frame 1 (180 to 490 px differ), and it was not yet compared with the standing view or with
-frame 8, so which frame is extra is not known; dropping one blindly could keep a standing frame or shift the loop. Needs its
-own investigation.
+Every pixminimax motion call for a described move returned frame_count + 1 frames (9 for 8, `keep_first_frame: false`): all 9
+calls over three descriptions ("casts a spell with both hands" seeds 7171 and 7272, "swinging a sword overhead" seed 8383),
+three views each. `motion()` in app/src/studio/create.ts rejected the count mismatch, so described moves failed before the
+body render until the fix below. Offline follow-up on the stored jobs: after the same normalization `motion()` applies, frame 0 is byte-identical to the
+character's standing view in all 9 jobs (three descriptions, three views), so it is the reference start frame the schema
+says `keep_first_frame: false` strips. `motion()` now drops one extra frame only when it is pixel-identical to the standing
+view and still fails on any other count (unit test in targeted-move.test.ts). Rerunning "casts a spell with both hands"
+(seed 7272, motion replayed from the ledger) then measured 8 frames per view and saved a clean, prop-free body move with no
+warnings.
 
 ## Body render action for described moves (`bodyAction` in app/src/studio/create.ts)
 
@@ -81,10 +84,13 @@ description in another script (empty label) gets the first free "move-N" id.
 
 ## Decisions
 
-- Kept: the body bare-suffix on moves, "the outline" in the dress prompt, the item pose action suffix, the English color
-  words plus the measured key-collision check, and the strict motion frame count (until the extra frame is understood).
+- Kept: the body bare-suffix on moves, "the outline" in the dress prompt, the item pose action suffix, and the English color
+  words plus the measured key-collision check.
 - Changed: "natural" removed from the dress prompt; the repair grid's back-slot line is now "it never wraps around or
   follows the arms" (no cape-only "hangs from the shoulders down the back"); described moves in any script get an id; one
   `bodyAction` builds the body render action for rendering, recovery and the API preview; one `frameOrder` sorts job
   results everywhere.
-- Open: the extra pixminimax frame (described moves fail), and props drawn into body slash frames.
+- Fixed: the extra pixminimax start frame (described moves failed).
+- Fixed: the motion frame count stays strict except for that one pixel-identical start frame.
+- Open: props drawn into body slash frames. The body palette note now names that possible cause; a small prop, or one in
+  body colors, is not caught because the color check measures the whole move.

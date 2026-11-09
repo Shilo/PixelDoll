@@ -619,18 +619,22 @@ async function motion(
 	expected: number,
 	signal?: AbortSignal,
 	activityScope?: string,
-	size = CELL
+	size = CELL,
+	standing?: Img
 ): Promise<Keypoint[][]> {
 	const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
 	tick();
 	const got = (r.response as SubmitResponse | undefined)?.directions;
 	if (got && !got.includes(dir))
 		throw new Error(`${label}: PixelLab dropped the direction (busy). Try again.`); // S4 truncation
-	const returned = r.jobs.reduce((count, job) => count + job.results.length, 0);
-	if (returned !== expected)
-		throw new Error(
+	const returned = r.jobs.reduce((count, job) => count + job.results.length, 0),
+		mismatch = new Error(
 			`${label}: PixelLab returned ${returned} motion frames for ${expected} requested. No joint checks or body render were requested for this view.`
 		);
+	// keep_first_frame: false should strip the start frame, but on 2026-11-08 pixminimax returned it as frame 0 of every
+	// described move (9 for 8): drop it only when it is pixel-identical to the standing view, else the count fails.
+	const startKept = returned === expected + 1 && !!standing;
+	if (returned !== expected && !startKept) throw mismatch;
 	const frames = (await imagesOf(r)).map((o) => {
 		const normalized = normalize(o.img, size, size, 128, size);
 		if (normalized.cutPx)
@@ -639,6 +643,15 @@ async function motion(
 			);
 		return normalized.img;
 	});
+	if (startKept) {
+		const first = frames.shift()!;
+		if (
+			first.w !== standing!.w ||
+			first.h !== standing!.h ||
+			first.data.some((v, i) => v !== standing!.data[i])
+		)
+			throw mismatch;
+	}
 	if (frames.some((f) => !opaqueBox(f)))
 		throw new Error(`${label}: PixelLab returned an empty motion frame`);
 	const kps = await Promise.all(
@@ -1899,7 +1912,8 @@ async function addBodyClip(
 						n,
 						signal,
 						spec.activityScope,
-						rig.cell.w
+						rig.cell.w,
+						restImg
 					),
 					motionOffsets[d] ?? 0,
 					rig.cell.h
