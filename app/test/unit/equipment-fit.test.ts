@@ -535,6 +535,9 @@ test('extension preparation is free/deduplicated, reuses target refs and preserv
 	expect(item.qa!.unmeasured).toBe(true);
 	expect(item.qa!.cells['walk/south/1'].route).toBe('posed');
 	expect(item.provenance.at(-1)!.produced).toEqual(['walk/south/1']);
+	// Publishing the union-covered candidate keeps the existing cells and their copied checks, and adds only the new cells.
+	expect([...item.coverage!].sort()).toEqual(['rest/south/0', 'walk/south/0', 'walk/south/1']);
+	expect(item.qa!.legacy).toBeDefined();
 	for (const variant of ['blue', 'red'])
 		for (const anim of ['rest', 'walk']) {
 			const view = recolor(final.project, { [material]: variant }),
