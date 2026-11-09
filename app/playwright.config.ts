@@ -59,6 +59,13 @@ export default defineConfig({
 			use: { baseURL, viewport: { width: 1440, height: 900 }, acceptDownloads: true }
 		},
 		{
+			// The production build strips the dev-only __queue/__studio hooks, so the demo reruns here to observe real queue pause/resume.
+			name: 'studio-dev',
+			testMatch: ['studio.spec.ts'],
+			grep: /studio demo:/,
+			use: { baseURL: devURL, viewport: { width: 1440, height: 900 }, acceptDownloads: true }
+		},
+		{
 			name: 'browser-selftests',
 			testMatch: ['selftests.spec.ts', 'concurrency.spec.ts'],
 			use: { baseURL: devURL }

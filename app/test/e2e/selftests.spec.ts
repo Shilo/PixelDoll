@@ -1,6 +1,5 @@
 import { openStudio } from './immersive-helpers.ts';
 import { expect, test, type Locator } from '@playwright/test';
-import { browserSelfTests } from '../../src/lib/selftests.ts';
 import { readFile } from 'node:fs/promises';
 import { unzip } from '../../src/lib/store/zip.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
@@ -900,9 +899,41 @@ test('browser PNG and IndexedDB self-tests preserve every registered check', asy
 	const text = await result.innerText(),
 		lines = text.split('\n');
 	expect(await result.getAttribute('data-failures'), text).toBe('0');
-	expect(lines).toHaveLength(browserSelfTests.length + 1);
-	for (const [name] of browserSelfTests) expect(lines).toContain('ok   ' + name);
-	expect(lines.at(-1)).toBe('all self-tests passed');
+	// Pinned by hand (mirrors browserSelfTests in src/lib/selftests.ts) so a deleted or renamed group fails here.
+	const groups = [
+		'hash',
+		'zip',
+		'client',
+		'routes',
+		'queue',
+		'rig',
+		'rig/normalize',
+		'rig/mirror',
+		'rig/skeleton',
+		'rig/freeze',
+		'rig/poses',
+		'rig/clips',
+		'pngraw',
+		'compose',
+		'compose/split',
+		'export/sheets',
+		'export/generic',
+		'export/godot',
+		'export/phaser',
+		'export/unity',
+		'export/aseprite',
+		'image/chroma',
+		'image/diff',
+		'items',
+		'items/run',
+		'dress/palette',
+		'dress/regions',
+		'dress',
+		'studio/model',
+		'png',
+		'db'
+	];
+	expect(lines).toEqual([...groups.map((name) => 'ok   ' + name), 'all self-tests passed']);
 	expect(errors).toEqual([]);
 });
 

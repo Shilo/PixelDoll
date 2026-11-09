@@ -317,7 +317,6 @@ async function expectDirectionGrid(page: Page, directions: (string | null)[], co
 	for (const [i, direction] of directions.entries()) {
 		const cell = cells.nth(i);
 		await cell.scrollIntoViewIfNeeded();
-		const stage = (await page.locator('.stage-art').boundingBox())!;
 		if (direction) {
 			await expect(
 				cell.getByRole('button', { name: `Show ${direction} only`, exact: true })
@@ -327,16 +326,26 @@ async function expectDirectionGrid(page: Page, directions: (string | null)[], co
 			await expect(cell).toHaveAttribute('aria-hidden', 'true');
 			await expect(cell).toBeEmpty();
 		}
-		const box = (await cell.boundingBox())!;
+		// One snapshot: separate round trips let a still-settling sheet move the grid between reads (seen on the dev server).
+		const { box, stage, toolbar, origin } = await cell.evaluate((el) => {
+			const rect = (e: Element | null) => {
+				const { x, y, width, height } = e!.getBoundingClientRect();
+				return { x, y, width, height };
+			};
+			return {
+				box: rect(el),
+				stage: rect(document.querySelector('.stage-art')),
+				toolbar: rect(document.querySelector('.canvas-bar')),
+				origin: rect(el.parentElement)
+			};
+		});
 		expect(box.x).toBeGreaterThanOrEqual(stage.x);
 		expect(box.x + box.width).toBeLessThanOrEqual(stage.x + stage.width);
 		expect(box.y).toBeGreaterThanOrEqual(stage.y);
-		const toolbar = (await page.locator('.canvas-bar').boundingBox())!;
 		expect(box.y + box.height).toBeLessThanOrEqual(Math.min(stage.y + stage.height, toolbar.y) + 1);
 		// The compact Inspect sheet deliberately scrolls. Compare compass geometry
 		// in grid coordinates while verifying that every view remains reachable.
-		const origin = (await grid.boundingBox())!,
-			layout = { ...box, x: box.x - origin.x, y: box.y - origin.y };
+		const layout = { ...box, x: box.x - origin.x, y: box.y - origin.y };
 		boxes.push(layout);
 		if (i % columns) {
 			expect(layout.y).toBeCloseTo(boxes[i - 1].y);
@@ -355,6 +364,8 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	page
 }, testInfo) => {
 	const BASE = testInfo.project.use.baseURL!;
+	// studio-dev reruns this demo on the dev server, the only build that exposes the __queue/__studio hooks.
+	const dev = testInfo.project.name === 'studio-dev';
 	const unexpectedRequests: string[] = [];
 	const blockApi = async (context: import('@playwright/test').BrowserContext) => {
 		await context.route('https://api.pixellab.ai/**', async (route) => {
@@ -531,18 +542,24 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	await page.keyboard.press('Escape');
 	await page.waitForFunction(() => !document.querySelector('dialog[open]'));
 	step('Create: visible size and direction controls update frame and full generation cost');
+	assert.equal(
+		await page.evaluate(() => !!window.__queue && !!window.__studio),
+		dev,
+		'only the dev server exposes the queue and Studio hooks'
+	);
 	await ctx.setOffline(true);
 	await page.locator('.offline-banner', { hasText: 'You’re offline' }).waitFor();
-	await page.waitForFunction(() => !window.__queue || window.__queue.paused === 'offline'); // __queue/__studio are dev-server only
+	if (dev) await page.waitForFunction(() => window.__queue!.paused === 'offline');
 	await pickItem(page, 'Wizard hat'); // everything else still works (selects the worn hat)
-	assert.equal(
-		await page.evaluate(() => window.__studio?.ui.selected ?? 'hat_wizard'),
-		'hat_wizard'
-	);
+	if (dev) assert.equal(await page.evaluate(() => window.__studio!.ui.selected), 'hat_wizard');
 	await ctx.setOffline(false);
 	await page.locator('.offline-banner').waitFor({ state: 'detached' });
-	await page.waitForFunction(() => !window.__queue || window.__queue.paused === null);
-	step('offline: banner + queue paused, back online: banner gone, queue resumed');
+	if (dev) await page.waitForFunction(() => window.__queue!.paused === null);
+	step(
+		dev
+			? 'offline: banner + queue paused, back online: banner gone, queue resumed'
+			: 'offline: banner shown, back online: banner gone (queue checked in studio-dev)'
+	);
 
 	// ---- B10: sheets ----
 	// T1 P0: Create without a key -> the Connect sheet replaces it (8afef4f)
@@ -654,11 +671,16 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	await page.locator('.project-btn').click();
 	const projectMenu = page.locator('#project-menu');
 	await expect(projectMenu).toBeVisible();
-	await expect(projectMenu.getByText('Developer rigs', { exact: true })).toHaveCount(0);
-	await expect(projectMenu.getByText('E2E dev rig', { exact: true })).toHaveCount(0);
+	// Developer rigs stay out of the main list; only the dev build offers their disclosure.
+	await expect(projectMenu.getByText('Developer rigs', { exact: true })).toHaveCount(dev ? 1 : 0);
+	await expect(projectMenu.getByText('E2E dev rig', { exact: true })).toBeHidden();
 	await page.keyboard.press('Escape');
 	await idb(null);
-	step('production hides developer rigs and their disclosure');
+	step(
+		dev
+			? 'dev keeps developer rigs inside their collapsed disclosure'
+			: 'production hides developer rigs and their disclosure'
+	);
 
 	// ---- B10: other sizes (fresh contexts: own storage) ----
 	async function at(
@@ -725,9 +747,11 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 		);
 	});
 
-	// ---- B17: agent mode (npm run dev:agent) auto-connects; keyless servers show Connect and no badge ----
+	// ---- B17: with the agent key switched off, no server auto-connects: Connect shows and no badge ----
+	// Agent auto-connect itself needs npm run dev:agent and its key, which this offline suite never uses.
 	{
 		const c = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+		await blockApi(c);
 		await c.addInitScript(() => {
 			localStorage.setItem('pixeldoll.welcomed', '1');
 			localStorage.setItem('pixeldoll.agentKey', 'off');
@@ -736,23 +760,20 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 		p.on('pageerror', (e) => errors.push(e.message));
 		await openStudio(p, `${BASE}/#/`, { waitUntil: 'networkidle' });
 		await p.waitForSelector('.world-actors');
-		if (await p.locator('.agent-badge').count()) {
-			step('agent server badge is visible');
-		} else {
-			await openAccount(p);
-			await p.waitForFunction(
-				() => document.querySelector('dialog[open] h2')?.textContent === 'Connect PixelLab'
-			);
-			assert.equal(
-				await p
-					.locator('dialog[open] [data-testid=dev-key], dialog[open] button', {
-						hasText: /dev key/i
-					})
-					.count(),
-				0
-			);
-			step('keyless server: no agent badge, Connect sheet has no dev-key option');
-		}
+		await expect(p.locator('.agent-badge')).toHaveCount(0);
+		await openAccount(p);
+		await p.waitForFunction(
+			() => document.querySelector('dialog[open] h2')?.textContent === 'Connect PixelLab'
+		);
+		assert.equal(
+			await p
+				.locator('dialog[open] [data-testid=dev-key], dialog[open] button', {
+					hasText: /dev key/i
+				})
+				.count(),
+			0
+		);
+		step('agent key off: no agent badge, Connect sheet has no dev-key option');
 		await c.close();
 	}
 
