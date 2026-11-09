@@ -11,7 +11,8 @@ namespace PixelDollNativeReview
     [Serializable] public class Move { public string id; public bool loop; public int cells; public Frame[] frames; public string[] directions; }
     [Serializable] public class Layer { public string id, role; public int cellW, cellH, pivotX, pivotY; public string[] sheets; }
     [Serializable] public class Item { public string id, slot; public Layer[] layers; }
-    [Serializable] public class Data { public string name, exportId, baseItem; public float ppu; public Move[] animations; public Item[] items; }
+    [Serializable] public class MaterialRef { public string id; }
+    [Serializable] public class Data { public string name, exportId, baseItem; public float ppu; public Move[] animations; public Item[] items; public MaterialRef[] materials; }
     [Serializable] public class Observation { public string name, detail; public bool passed; }
     [Serializable] public class Report { public string editor; public bool passed; public List<Observation> checks = new List<Observation>(); }
     [Serializable] public class DurationResult { public string sample, variant; public float length, stopTime, expected; public float[] keyTimes; }
@@ -21,8 +22,8 @@ namespace PixelDollNativeReview
     {
         public static Report report = new Report();
         public static void Check(bool ok, string name, string detail = "") { report.checks.Add(new Observation { name = name, passed = ok, detail = detail }); }
-        static object Field(object instance, string name) => instance.GetType().GetField(name).GetValue(instance);
-        static void Invoke(object instance, string name, params object[] args) => instance.GetType().GetMethod(name).Invoke(instance, args);
+        public static object Field(object instance, string name) => instance.GetType().GetField(name).GetValue(instance);
+        public static void Invoke(object instance, string name, params object[] args) => instance.GetType().GetMethod(name).Invoke(instance, args);
         public static void VerifyPlayback(string label, GameObject prefab, Data data)
         {
             var instance = UnityEngine.Object.Instantiate(prefab);

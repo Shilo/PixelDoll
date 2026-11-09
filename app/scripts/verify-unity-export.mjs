@@ -12,6 +12,7 @@ import { cellHash, baseHashOf } from '../src/lib/rig/rig.ts';
 import { applyExportSettings } from '../src/lib/store/export-settings.ts';
 import { exportZip } from '../src/lib/export/export.ts';
 import { unzip } from '../src/lib/store/zip.ts';
+import { renderFixture } from './unity-review/render-fixture.mjs';
 const app = fileURLToPath(new URL('..', import.meta.url));
 const { values } = parseArgs({
 	options: {
@@ -184,6 +185,20 @@ async function save(label, bytes) {
 	sources.push({ label, sha256: sha(bytes) });
 }
 await save('LayeredTiming', await fixtureArchive());
+const render = await renderFixture();
+for (const { label, zip } of render.archives) await save(label, zip);
+for (const [name, png] of [
+	...[...render.expected].map(([name, png]) => ['render-expected/' + name, png]),
+	...[...render.controls].map(([name, png]) => ['render-controls/' + name, png])
+]) {
+	const out = join(project, name);
+	await mkdir(dirname(out), { recursive: true });
+	await writeFile(out, png);
+}
+await writeFile(
+	join(project, 'render-plan.json'),
+	JSON.stringify({ labels: render.archives.map((a) => a.label), ...render.plan }, null, 2)
+);
 for (const [index, file] of (values.zip ?? []).entries())
 	await save('ActualUi' + index, new Uint8Array(await readFile(resolve(file))));
 await mkdir(join(project, 'ProjectSettings'), { recursive: true });
@@ -206,7 +221,7 @@ await writeFile(
 	)
 );
 await mkdir(join(project, 'Assets/Editor'), { recursive: true });
-for (const file of ['NativePlayback.cs', 'NativePlayer.cs'])
+for (const file of ['NativePlayback.cs', 'NativePlayer.cs', 'NativeRender.cs'])
 	await copyFile(new URL('unity-review/' + file, import.meta.url), join(project, 'Assets', file));
 await copyFile(
 	new URL('unity-review/EditorReview.cs', import.meta.url),
@@ -277,10 +292,11 @@ if (!values['prepare-only']) {
 			});
 		});
 	}
-	async function editorStep(method, log) {
+	async function editorStep(method, log, graphics = false) {
 		await run(editor, [
 			'-batchmode',
-			'-nographics',
+			// Direct3D explicitly: OpenGL rendering froze the owner's display.
+			...(graphics ? ['-force-d3d11'] : ['-nographics']),
 			'-projectPath',
 			project,
 			'-executeMethod',
@@ -316,6 +332,28 @@ if (!values['prepare-only']) {
 				'Old end-key construction must expose the extra native sample.'
 			);
 	}
+	// Rendering needs a real graphics device, so this step and the player render run omit -nographics.
+	async function rendered(mode, file, launch) {
+		try {
+			await launch();
+		} finally {
+			const result = JSON.parse(await readFile(join(project, file), 'utf8').catch(() => '{}'));
+			console.log(
+				JSON.stringify({
+					mode,
+					checks: result.checks?.length ?? 0,
+					passed: !!result.passed,
+					failures: (result.checks ?? []).filter((check) => !check.passed).slice(0, 10)
+				})
+			);
+		}
+		const result = JSON.parse(await readFile(join(project, file), 'utf8'));
+		assert(result.passed);
+		assert(result.checks.some((check) => check.name.includes(': rendered ')));
+	}
+	await rendered('Editor GPU render', 'render-results.json', () =>
+		editorStep('Render', 'editor-render.log', true)
+	);
 	if (values['build-player']) {
 		await editorStep('BuildPlayer', 'editor-player-build.log');
 		const output = join(project, 'player-results.json');
@@ -336,5 +374,21 @@ if (!values['prepare-only']) {
 				passed: player.passed
 			})
 		);
+		await rendered('Windows Mono standalone GPU render', 'player-render-results.json', () =>
+			run(join(project, 'Player/NativeReview.exe'), [
+				'-batchmode',
+				'-force-d3d11',
+				'-renderPlan',
+				join(project, 'render-plan.json'),
+				'-reviewResults',
+				join(project, 'player-render-results.json'),
+				'-logFile',
+				join(project, 'player-render.log')
+			])
+		);
 	}
+	// Last: switching the color space reimports textures, so earlier steps and the player keep the project default.
+	await rendered('Editor GPU render, Linear color space', 'render-linear-results.json', () =>
+		editorStep('RenderLinear', 'editor-render-linear.log', true)
+	);
 }

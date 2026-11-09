@@ -13,7 +13,7 @@ namespace PixelDollNativeReview
     public static class Runner
     {
         static Inputs inputs;
-        static string project;
+        static string project, results = "native-results.json";
         static Type TypeOf(string name) => AppDomain.CurrentDomain.GetAssemblies().Select(assembly => assembly.GetType(name)).First(type => type != null);
         static Data Read(Input input) => JsonUtility.FromJson<Data>(File.ReadAllText(input.json));
         static string Generated(Input input) => input.root + "/unity/Generated/";
@@ -110,6 +110,43 @@ namespace PixelDollNativeReview
             foreach (var pair in guids) Check(AssetDatabase.AssetPathToGUID(pair.Key) == pair.Value, input.label + ": stable reimport " + pair.Key);
         }
 
+        /// Needs a graphics device: launched without -nographics, after Run imported the exports.
+        public static void Render() => Render(ColorSpace.Gamma, "render-results.json");
+        /// Unity 6 project templates use Linear: sRGB sprite sampling and render-target writes must still round-trip exactly.
+        public static void RenderLinear() => Render(ColorSpace.Linear, "render-linear-results.json");
+
+        static void Render(ColorSpace space, string output)
+        {
+            project = Path.GetDirectoryName(Application.dataPath);
+            report.editor = Application.unityVersion;
+            results = output;
+            PlayerSettings.colorSpace = space;
+            try
+            {
+                inputs = JsonUtility.FromJson<Inputs>(File.ReadAllText(Path.Combine(project, "review-inputs.json")));
+                EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                EditorSettings.enterPlayModeOptionsEnabled = true;
+                EditorSettings.enterPlayModeOptions = EnterPlayModeOptions.DisableDomainReload | EnterPlayModeOptions.DisableSceneReload;
+                EditorApplication.update += WaitForRender;
+                EditorApplication.isPlaying = true;
+            }
+            catch (Exception exception) { Check(false, "Editor render execution", exception.ToString()); Finish(); }
+        }
+
+        static void WaitForRender()
+        {
+            if (!EditorApplication.isPlaying || !Application.isPlaying) return;
+            EditorApplication.update -= WaitForRender;
+            try
+            {
+                var plan = JsonUtility.FromJson<RenderPlan>(File.ReadAllText(Path.Combine(project, "render-plan.json")));
+                foreach (var input in inputs.exports.Where(input => plan.labels.Contains(input.label)))
+                    NativeRender.Verify(input.label, AssetDatabase.LoadAssetAtPath<GameObject>(Generated(input) + Read(input).name + ".prefab"), Read(input), plan, Path.Combine(project, "render-expected"), Path.Combine(project, "render-failures/editor"));
+            }
+            catch (Exception exception) { Check(false, "Play Mode render execution", exception.ToString()); }
+            Finish();
+        }
+
         static void WaitForPlay()
         {
             if (!EditorApplication.isPlaying || !Application.isPlaying) return;
@@ -142,7 +179,7 @@ namespace PixelDollNativeReview
         static void Finish()
         {
             report.passed = report.checks.All(check => check.passed);
-            File.WriteAllText(Path.Combine(project, "native-results.json"), JsonUtility.ToJson(report, true));
+            File.WriteAllText(Path.Combine(project, results), JsonUtility.ToJson(report, true));
             Debug.Log("PIXELDOLL_NATIVE_RESULT " + report.passed + " checks=" + report.checks.Count + " failures=" + report.checks.Count(check => !check.passed));
             EditorApplication.Exit(report.passed ? 0 : 1);
         }
