@@ -398,6 +398,43 @@ test('the ledger keeps reported zero usage and free reads known, and a synchrono
 	expect(queue.snapshot().sessionUnknown).toBe(1);
 });
 
+test('a paid POST lost without a clear answer, or by closing the page mid-submit, has an unknown cost', async () => {
+	const records = new Map<string, JobRec>();
+	const deps = {
+		all: async () => [...records.values()].map((record) => structuredClone(record)),
+		put: async (id: string, record: JobRec) => void records.set(id, structuredClone(record)),
+		locks: null,
+		online: () => true,
+		now: () => 1000,
+		api: async () => {
+			throw new TypeError('Failed to fetch');
+		}
+	};
+	const queue = new Queue(deps);
+	queue.setKey('test-key');
+	const sent = await queue.enqueue({
+		method: 'POST',
+		path: '/animate-character',
+		body: { seed: 1 }
+	});
+	for (let i = 0; i < 3; i++) await queue.tick();
+	expect(records.get(sent.id)).toMatchObject({ state: 'lost', gens: 0, costUnknown: true });
+	expect(queue.snapshot().sessionUnknown).toBe(1);
+
+	const crashed = {
+		...structuredClone(records.get(sent.id)!),
+		id: 'crashed-submit',
+		state: 'submitting',
+		requestStarted: true
+	} as JobRec;
+	delete crashed.costUnknown;
+	records.set(crashed.id, crashed);
+	const reloaded = new Queue(deps);
+	await reloaded.load();
+	expect(records.get(crashed.id)).toMatchObject({ state: 'lost', costUnknown: true });
+	expect(reloaded.snapshot().sessionUnknown).toBe(0);
+});
+
 test('input preparation failure never records a paid request, including after reloading its failed queue record', async () => {
 	const fetchMock = vi.fn();
 	vi.stubGlobal('fetch', fetchMock);

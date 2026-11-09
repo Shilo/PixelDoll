@@ -651,6 +651,8 @@ export class Queue {
 					r.requestStarted === false
 						? 'page closed before request preparation finished; nothing was sent.'
 						: 'page closed during submit; the job may have run (check pixellab.ai). Not resubmitted.';
+				// Its cost is unknown; an earlier session spent it, so this session's totals stay unchanged.
+				if (r.state === 'lost') r.costUnknown = true;
 				await this.deps.put(r.id, r);
 			}
 			this.recs.set(r.id, r);
@@ -1383,10 +1385,9 @@ export class Queue {
 				// Accepted-job evidence outranks every error classification, including auth/credits that normally wait for reconnection.
 				if (currentCredential && (err.kind === 'auth' || err.kind === 'credits'))
 					this.paused = err.kind;
-				r.state = 'lost';
 				r.response = strip(err.body); // retain the known identifiers for manual review without resubmitting
 				r.error = `PixelLab returned job evidence with an error (${err.message}). The request may have run and been charged; not resent.`;
-				r.finishedAt = this.deps.now();
+				this.finish(r, 'lost'); // unknown cost unless the error body reported usage
 			} else if (
 				err.kind === 'retry' &&
 				(r.method !== 'POST' || paidRequestRejected(r.endpoint, err.status, err.body))
@@ -1417,9 +1418,8 @@ export class Queue {
 					r.submittedAt !== undefined)
 			) {
 				// post-send bookkeeping can also hide an accepted paid request
-				r.state = 'lost';
 				r.error = `no clear answer from PixelLab (${err.message}). The job may have run and been charged (check pixellab.ai); not resent.`;
-				r.finishedAt = this.deps.now();
+				this.finish(r, 'lost'); // no job yet, so its cost is unknown
 				if (currentCredential && isNetwork(err)) this.goOffline(); // B15: stop here instead of losing the next queued job too
 			} else if (err.kind === 'auth' || err.kind === 'credits') {
 				if (currentCredential) this.paused = err.kind;
