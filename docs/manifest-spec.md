@@ -558,8 +558,10 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 - **zOverrides** become cel z-indexes (Aseprite ≥ 1.3 draws by layer index + z-index): each cel's z-index is its position in
   that frame's resolved draw order minus its layer index, so the flattened frame equals `composeCell` on the baked frame.
   Per-layer importers (Godot Aseprite Wizard) ignore z-index; Unity's importer applies it (Order in Layer).
-- Unity: Aseprite Importer → Individual Layers, Generate Model Prefab, Pivot Space Canvas. Godot: Aseprite Wizard, one
-  `SpriteFrames` per layer. Not verified in those importers yet (Unity is license-blocked; the Wizard needs a plugin install).
+- Unity: Aseprite Importer → Individual Layers, Generate Model Prefab, Pivot Space Canvas (not verified; Unity is
+  license-blocked). Godot: Aseprite Wizard 9.8.0 on Godot 4.7.1 verified 2026-11-09 with 0 differing px, merged or split by
+  layer, when "Only visible layers" is on and "Round fps" off; it ignores the pivot slice (set Offset to `-bakedPivot`, Centered
+  off) and cannot recolor ([report](testing/engine-shared-copy-2026-11-09.md)).
 - Native WORD/SHORT limits are checked before writing; unsupported durations/counts/coordinates and an empty timeline
   fail clearly. 2026-10-23: Aseprite 1.3.18.6 CLI matched the compositor across nine adversarial frames, including palettes.
 

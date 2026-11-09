@@ -1,0 +1,15 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+const [app, ev] = process.argv.slice(2);
+const lib = (p) => import(pathToFileURL(join(app, 'src/lib', p)).href);
+const { readCharacterZip } = await lib('store/import.ts');
+const { coverageGaps, missingAt, hasCompleteCells } = await lib('dress/dress.ts');
+const { exportFiles } = await lib('export/export.ts');
+const p = (await readCharacterZip(new Uint8Array(readFileSync(join(ev, 'cast-complete.pixeldoll.zip'))))).project, m = p.manifest;
+const A = m.items.find((i) => i.design);
+for (const l of A.layers) for (let i = 4; i < 8; i++) l.cells.cast.south[i] = null;
+A.coverage = A.coverage.filter((k) => !/^cast\/south\/[4-7]$/.test(k));
+console.log('coverageGaps', coverageGaps(m, A), 'missingAt', missingAt(m, m.presets[0].items, 'cast', 'south').map((i) => i.id), 'complete', hasCompleteCells(m, A, 'cast', 'south'));
+const r = await exportFiles(p, { engines: ['godot'], baked: true });
+console.log('errors', r.errors, 'warnings', r.warnings);

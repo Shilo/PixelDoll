@@ -33,6 +33,10 @@ Scope: challenge the already-fixed Godot, Unity, Phaser, GDevelop, Aseprite and 
 
 Unity Editor execution remains unavailable because the installed editor has no activated license; C# structure/JSON checks are not a substitute for an actual Unity import. GDevelop verification uses the actual released editor WASM core, official exporter and shipped GDJS/PIXI runtime; the desktop Electron shell has a crashpad startup failure. All probe artifacts stay in ignored cache/test-output directories.
 
+## Follow-up 2026-11-09
+
+Shared-copy exports now run in Godot 4.7.1, Phaser 3.80.1/3.90.0/4.1.0 and Aseprite 1.3.18.6 with 0 differing pixels, and the Godot Aseprite Wizard 9.8.0 import path is verified with its required settings ([engine shared copies](engine-shared-copy-2026-11-09.md)). Unity Editor execution remains unavailable.
+
 ## Primary references
 
 - [Godot CanvasItem depth constraints and tree order](https://docs.godotengine.org/en/stable/classes/class_canvasitem.html#class-canvasitem-property-z-index)
