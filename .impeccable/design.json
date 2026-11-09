@@ -1,0 +1,574 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-09T10:04:19.547Z",
+  "title": "Design System: PixelDoll",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas (dark)",
+        "canonical": "#111317",
+        "cssVariable": "--bu-canvas",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242528",
+          "#404246",
+          "#5f6166",
+          "#808287",
+          "#a3a5a9",
+          "#c7c9cd",
+          "#edeef1"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface (dark)",
+        "canonical": "#202329",
+        "cssVariable": "--bu-surface",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#232529",
+          "#3f4247",
+          "#5e6168",
+          "#7f8289",
+          "#a2a5ab",
+          "#c7c9ce",
+          "#eceef2"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Text (dark)",
+        "canonical": "#f2eee6",
+        "cssVariable": "--bu-text",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#0c0b09",
+          "#272521",
+          "#44423d",
+          "#64615b",
+          "#85827b",
+          "#a7a59f",
+          "#cbc9c4",
+          "#f0eeeb"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted (dark)",
+        "canonical": "#b8b5ad",
+        "cssVariable": "--bu-muted",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262521",
+          "#44423d",
+          "#64615a",
+          "#85827b",
+          "#a7a59f",
+          "#cbc9c4",
+          "#f0eeea"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Bronze (dark)",
+        "canonical": "#c9a66b",
+        "cssVariable": "--bu-accent",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#130900",
+          "#322201",
+          "#553e12",
+          "#795c26",
+          "#9c7d48",
+          "#bba175",
+          "#dcc6a3",
+          "#fdecd1"
+        ]
+      },
+      "on-accent": {
+        "role": "neutral",
+        "displayName": "On Bronze (dark)",
+        "canonical": "#111317",
+        "cssVariable": "--bu-on-accent",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242528",
+          "#404246",
+          "#5f6166",
+          "#808287",
+          "#a3a5a9",
+          "#c7c9cd",
+          "#edeef1"
+        ]
+      },
+      "success": {
+        "role": "status",
+        "displayName": "Success (dark)",
+        "canonical": "#84c79a",
+        "cssVariable": "--bu-success",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#001004",
+          "#082d18",
+          "#1d4d30",
+          "#34704a",
+          "#56926b",
+          "#81b391",
+          "#add5b9",
+          "#d9f8e2"
+        ]
+      },
+      "warning": {
+        "role": "status",
+        "displayName": "Warning (dark)",
+        "canonical": "#e7bc75",
+        "cssVariable": "--bu-warning",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#140900",
+          "#332100",
+          "#583c01",
+          "#7e5a14",
+          "#a07b3b",
+          "#c0a06c",
+          "#dfc59c",
+          "#ffecce"
+        ]
+      },
+      "danger": {
+        "role": "status",
+        "displayName": "Danger (dark)",
+        "canonical": "#f2a099",
+        "cssVariable": "--bu-danger",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#1a0303",
+          "#3e1816",
+          "#64302d",
+          "#8e4b46",
+          "#b36c66",
+          "#d1938d",
+          "#eebbb6",
+          "#fee9e7"
+        ]
+      },
+      "info": {
+        "role": "status",
+        "displayName": "Info (dark)",
+        "canonical": "#9bbce5",
+        "cssVariable": "--bu-info",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#030b18",
+          "#162639",
+          "#2e435e",
+          "#486385",
+          "#6885a8",
+          "#8fa7c6",
+          "#b7cbe5",
+          "#e4f0fe"
+        ]
+      },
+      "canvas-light": {
+        "role": "neutral",
+        "displayName": "Canvas (light)",
+        "canonical": "#eeeae2",
+        "cssVariable": "--bu-canvas",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#0c0b09",
+          "#272521",
+          "#44423d",
+          "#64615b",
+          "#85827b",
+          "#a8a59f",
+          "#cbc9c4",
+          "#f0eeeb"
+        ]
+      },
+      "surface-light": {
+        "role": "neutral",
+        "displayName": "Surface (light)",
+        "canonical": "#faf7f0",
+        "cssVariable": "--bu-surface",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#0c0b09",
+          "#262522",
+          "#44423e",
+          "#63615c",
+          "#85827c",
+          "#a7a5a0",
+          "#cbc9c5",
+          "#f0eeeb"
+        ]
+      },
+      "text-light": {
+        "role": "neutral",
+        "displayName": "Text (light)",
+        "canonical": "#25282d",
+        "cssVariable": "--bu-text",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#404246",
+          "#5e6167",
+          "#7f8288",
+          "#a2a5aa",
+          "#c7c9cd",
+          "#edeef2"
+        ]
+      },
+      "muted-light": {
+        "role": "neutral",
+        "displayName": "Muted (light)",
+        "canonical": "#5e625f",
+        "cssVariable": "--bu-muted",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#0a0c0b",
+          "#242624",
+          "#404341",
+          "#5f625f",
+          "#808380",
+          "#a3a6a3",
+          "#c7cac8",
+          "#edefed"
+        ]
+      },
+      "accent-light": {
+        "role": "primary",
+        "displayName": "Bronze (light)",
+        "canonical": "#76562f",
+        "cssVariable": "--bu-accent",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#130800",
+          "#32210c",
+          "#543d21",
+          "#795b37",
+          "#9b7c58",
+          "#bba081",
+          "#dbc5ac",
+          "#fdebd8"
+        ]
+      },
+      "on-accent-light": {
+        "role": "neutral",
+        "displayName": "On Bronze (light)",
+        "canonical": "#ffffff",
+        "cssVariable": "--bu-on-accent",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "success-light": {
+        "role": "status",
+        "displayName": "Success (light)",
+        "canonical": "#226c43",
+        "cssVariable": "--bu-success",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#001004",
+          "#042d18",
+          "#194e30",
+          "#2f704a",
+          "#52936a",
+          "#7fb491",
+          "#abd5b8",
+          "#d8f8e2"
+        ]
+      },
+      "warning-light": {
+        "role": "status",
+        "displayName": "Warning (light)",
+        "canonical": "#775319",
+        "cssVariable": "--bu-warning",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#140800",
+          "#342102",
+          "#563c14",
+          "#7c5a28",
+          "#9e7b4a",
+          "#bea076",
+          "#dec5a4",
+          "#ffebd2"
+        ]
+      },
+      "danger-light": {
+        "role": "status",
+        "displayName": "Danger (light)",
+        "canonical": "#a3312f",
+        "cssVariable": "--bu-danger",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#210000",
+          "#480a0b",
+          "#732120",
+          "#a13936",
+          "#c85c56",
+          "#e4877f",
+          "#ffb3ab",
+          "#ffe9e6"
+        ]
+      },
+      "info-light": {
+        "role": "status",
+        "displayName": "Info (light)",
+        "canonical": "#345f8e",
+        "cssVariable": "--bu-info",
+        "source": "@shilo/bronze-ui 0.2.8 styles/tokens.css",
+        "tonalRamp": [
+          "#010b1c",
+          "#0f263f",
+          "#254466",
+          "#3c648f",
+          "#5d85b3",
+          "#86a8d0",
+          "#b0cced",
+          "#e4f0fe"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Screen titles and the current character name at the upper left."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Selected character name under the stage on Characters (38px on wide desktop)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel and dialog headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Tabs, item names and form text; inputs stay at 16px or larger."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Header actions, small descriptions, counts and eyebrows."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Help hints, field sub-labels, costs and keyboard hints."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "API call previews and code."
+      }
+    },
+    "shadows": [
+      {
+        "name": "floating",
+        "value": "0 8px 28px rgb(0 0 0 / .18)",
+        "light": "0 8px 28px rgb(0 0 0 / .1)",
+        "purpose": "Menus, popovers, tooltips, toasts and the playback bar, with a 12px backdrop blur."
+      },
+      {
+        "name": "dialog",
+        "value": "0 20px 64px rgb(0 0 0 / .32)",
+        "light": "0 20px 64px rgb(0 0 0 / .2)",
+        "purpose": "Modal dialogs over a black scrim at 50% (34% in light)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "duration",
+        "value": "140ms",
+        "purpose": "Bronze state transitions; 0ms under prefers-reduced-motion."
+      },
+      {
+        "name": "blur",
+        "value": "12px",
+        "purpose": "Backdrop blur on floating surfaces; removed for reduced transparency or more contrast."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "tiny",
+        "value": "360px"
+      },
+      {
+        "name": "dialog-sheet",
+        "value": "600px"
+      },
+      {
+        "name": "phone",
+        "value": "760px"
+      },
+      {
+        "name": "tablet",
+        "value": "1100px"
+      },
+      {
+        "name": "tabs-in-flow",
+        "value": "1279px"
+      },
+      {
+        "name": "short-landscape",
+        "value": "max-height: 540px"
+      },
+      {
+        "name": "short-dialog",
+        "value": "max-height: 500px"
+      }
+    ],
+    "layout": {
+      "rail": "clamp(300px, 21.56vw, 414px)",
+      "edge": "clamp(28px, 2.92vw, 56px); 20px on phones",
+      "header": "44px row, 20px from the top"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single main action on a screen, such as Customize or Create character.",
+      "html": "<button class=\"ds-btn-primary\">Customize Adventurer <svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m9 18 6-6-6-6\"/></svg></button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 24px; border: 0; border-radius: 8px; background: var(--bu-accent, #c9a66b); color: var(--bu-on-accent, #111317); font: 600 16px/1.25 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-btn-primary:hover { box-shadow: inset 0 0 0 2px var(--bu-on-accent, #111317); } .ds-btn-primary:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Header actions such as Share, Export, Import and New character.",
+      "html": "<button class=\"ds-btn-outline\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 15V3\"/><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m7 10 5 5 5-5\"/></svg>Export</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--bu-line, #3d3f43); border-radius: 8px; background: color-mix(in srgb, var(--bu-surface, #202329) 40%, transparent); color: var(--bu-text, #f2eee6); font: 400 14px/1.25 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; transition: background-color 140ms; } .ds-btn-outline:hover { background: var(--bu-hover, #2d3035); border-color: var(--bu-border, #9a9892); } .ds-btn-outline:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Borderless text or icon actions on the scene, such as the Characters back link.",
+      "html": "<button class=\"ds-btn-quiet\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m15 18-6-6 6-6\"/></svg>Characters</button>",
+      "css": ".ds-btn-quiet { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 8px; background: none; color: var(--bu-text, #f2eee6); font: 400 14px/1.25 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-btn-quiet:hover { background: color-mix(in srgb, var(--bu-surface, #202329) 80%, transparent); } .ds-btn-quiet:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+    },
+    {
+      "name": "View Tabs",
+      "kind": "nav",
+      "refersTo": "tab-selected",
+      "description": "Underlined text tabs for views and panel modes.",
+      "html": "<nav class=\"ds-tabs\"><button aria-selected=\"true\">Preview</button><button>Top-down</button><button>Side-scroller</button></nav>",
+      "css": ".ds-tabs { display: flex; gap: 28px; font: 400 16px/1.5 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-tabs button { min-height: 44px; padding: 8px 0; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--bu-text, #f2eee6); font: inherit; cursor: pointer; } .ds-tabs button[aria-selected=true] { color: var(--bu-accent, #c9a66b); border-bottom-color: var(--bu-accent, #c9a66b); font-weight: 600; } .ds-tabs button:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Item Tile",
+      "kind": "card",
+      "refersTo": "item-tile-selected",
+      "description": "Equipment card in the Wardrobe grid; selected shows a bronze border, name and check.",
+      "html": "<div class=\"ds-tiles\"><button class=\"ds-tile\" aria-pressed=\"true\"><span class=\"ds-tile-art\"></span><span>Steel helmet</span></button><button class=\"ds-tile\"><span class=\"ds-tile-art\"></span><span>Wizard hat</span></button></div>",
+      "css": ".ds-tiles { display: grid; grid-template-columns: repeat(2, 148px); gap: 16px; } .ds-tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 148px; padding: 12px 6px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-radius: 8px; background: color-mix(in srgb, var(--bu-surface, #202329) 65%, transparent); color: var(--bu-text, #f2eee6); font: 400 16px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-tile-art { width: 64px; height: 64px; background: repeating-conic-gradient(var(--bu-muted, #b8b5ad) 0 25%, transparent 0 50%) 0 0 / 16px 16px; opacity: .35; } .ds-tile:hover { border-color: var(--bu-border, #9a9892); background: var(--bu-hover, #2d3035); } .ds-tile[aria-pressed=true] { color: var(--bu-accent, #c9a66b); border-color: var(--bu-accent, #c9a66b); background: var(--bu-selected, #353330); } .ds-tile[aria-pressed=true]::after { content: '\\2713'; position: absolute; top: 8px; right: 10px; color: var(--bu-accent, #c9a66b); } .ds-tile:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Search, name and number fields.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search characters\">",
+      "css": ".ds-input { width: 260px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--bu-border, #9a9892); border-radius: 8px; background: var(--bu-surface, #202329); color: var(--bu-text, #f2eee6); font: 400 16px/1.5 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-input::placeholder { color: var(--bu-muted, #b8b5ad); } .ds-input:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; } .ds-input[aria-invalid=true] { border-color: var(--bu-danger, #f2a099); box-shadow: inset 3px 0 var(--bu-danger, #f2a099); }"
+    },
+    {
+      "name": "Palette Ramp",
+      "kind": "chip",
+      "refersTo": "palette-ramp",
+      "description": "Recolor choice showing the whole ramp; the selected one gets a text-colored outline.",
+      "html": "<div class=\"ds-ramps\"><button class=\"ds-ramp\" aria-checked=\"true\"><i style=\"background:#3a3d44\"></i><i style=\"background:#6f737b\"></i><i style=\"background:#b9bcc2\"></i></button><button class=\"ds-ramp\"><i style=\"background:#5a1218\"></i><i style=\"background:#b02a33\"></i><i style=\"background:#f07a7a\"></i></button><button class=\"ds-ramp\"><i style=\"background:#1d3f8f\"></i><i style=\"background:#3f73e0\"></i><i style=\"background:#8fb4ff\"></i></button></div>",
+      "css": ".ds-ramps { display: flex; gap: 6px; } .ds-ramp { position: relative; display: flex; width: 44px; height: 24px; padding: 0; border: 0; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px var(--bu-border, #9a9892); background: none; cursor: pointer; } .ds-ramp i { flex: 1; } .ds-ramp::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22); } .ds-ramp[aria-checked=true] { outline: 2px solid var(--bu-text, #f2eee6); outline-offset: 2px; } .ds-ramp:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+    },
+    {
+      "name": "Notice",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "Toasts and notices with a tone stripe and icon.",
+      "html": "<div class=\"ds-notice\" role=\"status\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg><div><strong>Preview</strong><br>Features and saved work may change. Export your work to keep a backup.</div></div>",
+      "css": ".ds-notice { display: flex; gap: 12px; align-items: flex-start; max-width: 340px; padding: 12px 16px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-inline-start: 3px solid var(--bu-warning, #e7bc75); border-radius: 12px; background: color-mix(in srgb, var(--bu-warning, #e7bc75) 8%, var(--bu-surface, #202329)); color: var(--bu-text, #f2eee6); font: 400 14px/1.5 var(--bu-font, 'Segoe UI', system-ui, sans-serif); box-shadow: var(--bu-shadow, 0 8px 28px rgb(0 0 0 / .18)); } .ds-notice svg { flex: none; color: var(--bu-warning, #e7bc75); }"
+    },
+    {
+      "name": "Playback Bar",
+      "kind": "custom",
+      "refersTo": "button-quiet",
+      "description": "Floating bar under the character in Preview: play, move, facing and Inspect.",
+      "html": "<div class=\"ds-playback\"><button aria-label=\"Pause\">II</button><button>Walk</button><button aria-pressed=\"true\">S</button><button>E</button><button>N</button><button>W</button><button>Inspect</button></div>",
+      "css": ".ds-playback { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; min-height: 54px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-radius: 8px; background: var(--bu-floating, color-mix(in srgb, var(--bu-surface, #202329) 92%, transparent)); backdrop-filter: blur(12px); color: var(--bu-text, #f2eee6); font: 400 18px/1 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-playback button { min-width: 40px; height: 44px; padding: 6px 10px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; cursor: pointer; } .ds-playback button:hover { background: color-mix(in srgb, var(--bu-surface, #202329) 80%, transparent); } .ds-playback button[aria-pressed=true] { color: var(--bu-accent, #c9a66b); background: color-mix(in srgb, var(--bu-accent, #c9a66b) 14%, transparent); } .ds-playback button:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The character stands center stage; the tools sit at the edges",
+    "overview": "That line is a plain summary of the layout, not a theme. Every main screen is a full-window scene: a photographic floor that fades into mist (dark stone in dark mode, pale polished stone in light mode) with the pixel-art character large in the middle. The interface is placed around it: navigation along the top, the character's name and description at the upper left, equipment and colors in a column on the right, and playback controls in a small floating bar under the character. On phones the same pieces stack: header, name, view tabs, a shorter stage, and an expandable bottom panel for equipment.\n\nThe look is calm and modern: system sans-serif text, Lucide line icons, thin borders, and a single warm bronze accent. The only serif is Georgia for screen titles and character names. The character's pixels are never lit, tinted, filtered or resized with smoothing. Internally the two world themes are called Obsidian (dark) and Porcelain (light), together \"Obsidian / Porcelain Bronze\" ([approved direction](docs/design/2026-10-22-redesign/round-4-discussion/current-design.md)).\n\nDensity is low around the stage and moderate in the right column, where people do most of their work: picking items, recoloring and adding new items.",
+    "keyCharacteristics": [
+      "Full-window world scene with the character as the largest element on screen.",
+      "Dark by default, with a complete light theme (not an inverted filter).",
+      "One accent color, bronze, used for the selected state, focus and the single main action.",
+      "Georgia only for titles and names; Segoe UI / system sans-serif for everything else.",
+      "Controls mostly sit straight on the scene as text and icons; borders appear where you choose something.",
+      "Native dialogs and menus with Bronze styling; bottom sheets on phones."
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "Bronze marks what is selected, focused or the main action. It is not used for decoration, headings or large fills, and each screen has at most one bronze-filled button.",
+        "section": "colors"
+      },
+      {
+        "name": "The Untouched Sprite Rule",
+        "body": "UI colors never reach the character. No lighting, tint, glow, shadow or color grading is applied to actor pixels; palette changes happen only through the user's own recoloring.",
+        "section": "colors"
+      },
+      {
+        "name": "The User Color Rule",
+        "body": "Palette swatches show the user's data, not the theme. A selected palette ramp gets a text-colored outline (2px, offset 2px), not a bronze one, so it stays visible against any ramp.",
+        "section": "colors"
+      },
+      {
+        "name": "The Names Are Serif Rule",
+        "body": "Georgia is only for screen titles and character names. Buttons, tabs, labels and data are always sans-serif.",
+        "section": "typography"
+      },
+      {
+        "name": "The No Pixel Type Rule",
+        "body": "The UI never uses pixel fonts or pixel icons; the character sprite is the only pixel art on screen (PLAN.md D9).",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Scene Rule",
+        "body": "Nothing on the scene gets a shadow except floating layers. Translucent materials fall back to solid surface when the user asks for reduced transparency or more contrast, and all colors switch to system colors in forced-colors mode.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** take every color, border, radius, shadow and state from Bronze tokens; fix shared appearance in `@shilo/bronze-ui`, release it, then update the dependency.",
+      "**Do** keep the character the largest, most central element, and keep text readable over the world with the existing reading gradients.",
+      "**Do** use bronze only for selection, focus and the single main action on a screen.",
+      "**Do** use Georgia only for screen titles and character names, and Lucide icons at 20px with a 1.6 stroke for functional icons.",
+      "**Do** keep primary touch targets about 44px and inputs at 16px or larger on phones.",
+      "**Do** check every visual change in dark and light at desktop and phone sizes (including 320×568 and 844×390)."
+    ],
+    "donts": [
+      "**Don't** light, tint, filter, shadow or smoothly scale the character's pixels.",
+      "**Don't** use pixel fonts, pixel icons or pixel-style borders in the UI.",
+      "**Don't** add a second palette, local color overrides or new theme dependencies in PixelDoll.",
+      "**Don't** add new glows, gradients or glass effects beyond Bronze's floating material and the scene's reading gradients.",
+      "**Don't** put boxes and shadows around panels that sit on the scene, or add unrelated scenery or props to the world.",
+      "**Don't** use bronze for headings, body text or decoration."
+    ]
+  }
+}
