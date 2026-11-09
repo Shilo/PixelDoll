@@ -53,7 +53,15 @@ import {
 	type Sha256
 } from '../lib/rig/rig.ts';
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
-import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
+import {
+	ACTIONS,
+	LABELS,
+	armDepth,
+	authoredPoses,
+	fromApi,
+	hasAll,
+	toApi
+} from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
 import { PaletteRepairUnavailable, repairBodyPalette } from '../lib/rig/palette.ts';
 import {
@@ -1314,7 +1322,7 @@ async function inspectMeasurementRecovery(
 			d,
 			rig.cell.w,
 			spec.poseStyle
-		).map((p) => toApi(p, rig.cell));
+		).map((p) => armDepth(toApi(p, rig.cell), d));
 		for (let attempt = 0; attempt < (spec.bodyPaletteRepair ? 1 : CLIP_ATTEMPTS); attempt++) {
 			const req = rawClip({
 				first: await context.encode(restImg),
@@ -1881,7 +1889,7 @@ async function addBodyClip(
 					d,
 					rig.cell.w,
 					spec.poseStyle
-				).map((p) => toApi(p, rig.cell));
+				).map((p) => armDepth(toApi(p, rig.cell), d));
 			else {
 				const req = routes.animateCharacter(
 					spec.action === 'walk'

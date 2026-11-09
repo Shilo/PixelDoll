@@ -51,7 +51,7 @@ export const ARMS = [
 	'LEFT ARM'
 ];
 
-/** px skeleton -> API keypoints (0-1, all 18 labels, z omitted so depth comes from the mannequin template: S3). */
+/** px skeleton -> API keypoints (0-1, all 18 labels; no depth, so the mannequin template decides it, S3, except armDepth). */
 export const toApi = (s: Skeleton, cell: { w: number; h: number }): Keypoint[] =>
 	LABELS.map((l) => ({
 		label: l,
@@ -75,6 +75,37 @@ export const hasAll = (k?: Keypoint[]) =>
 			p.y >= 0 &&
 			p.y <= 1
 	);
+
+/** Depth hints for an authored pose in a front or back view: with the torso upright, a wrist past the body's center line can
+ * only be there in front of the body, so that wrist and its elbow are nearer the camera from the front and farther from
+ * behind. Without them skeleton-v3 painted a slash arm across the back in 2 of 2 seeds; with them it hid it (2026-11-08,
+ * prompt-trim-ab.md). Leaning torsos (a fall), side and diagonal views, and motion-derived poses (hands may cross behind
+ * the back) are untested and get no hints. */
+export function armDepth(k: Keypoint[], dir: DirectionName): Keypoint[] {
+	if (dir !== 'south' && dir !== 'north') return k;
+	const at = (label: string) => k.find((q) => q.label === label),
+		neck = at('NECK'),
+		hips = [at('LEFT HIP'), at('RIGHT HIP')],
+		front = new Set<string>();
+	if (!neck || !hips[0] || !hips[1]) return k;
+	const pelvisX = (hips[0].x + hips[1].x) / 2,
+		pelvisY = (hips[0].y + hips[1].y) / 2;
+	// upright: the neck within 20 degrees of straight above the pelvis
+	if (pelvisY <= neck.y || Math.abs(neck.x - pelvisX) > (pelvisY - neck.y) * Math.tan(Math.PI / 9))
+		return k;
+	for (const side of ['RIGHT', 'LEFT']) {
+		const shoulder = at(`${side} SHOULDER`),
+			wrist = at(`${side} ARM`);
+		if (neck && shoulder && wrist && (wrist.x - neck.x) * Math.sign(shoulder.x - neck.x) < 0)
+			front.add(`${side} ARM`).add(`${side} ELBOW`);
+	}
+	const near = dir === 'south';
+	return front.size
+		? k.map((q) =>
+				front.has(q.label) ? { ...q, depth: near ? 176 : 80, z_index: near ? 1 : -1 } : q
+			)
+		: k;
+}
 
 const clone = (p: Skeleton): Skeleton =>
 	Object.fromEntries(Object.entries(p).map(([l, k]) => [l, { ...k }]));

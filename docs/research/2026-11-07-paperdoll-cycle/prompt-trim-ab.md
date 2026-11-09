@@ -94,3 +94,29 @@ description in another script (empty label) gets the first free "move-N" id.
 - Fixed: the motion frame count stays strict except for that one pixel-identical start frame.
 - Open: props drawn into body slash frames. The body palette note now names that possible cause; a small prop, or one in
   body colors, is not caught because the color check measures the whole move.
+
+## Arm depth on front and back views (`armDepth` in app/src/lib/rig/poses.ts)
+
+The owner noticed that in the slash back view the swinging arm is painted across the character's back. The authored slash
+sends flat 2D joints, so skeleton-v3 cannot tell whether the arm passes in front of or behind the torso. The API accepts
+per-joint `depth` (0 to 255, about 128 at the body, higher is nearer the camera) and `z_index` (draw order). Same rest view,
+poses, description and action as the saved slash; only the hints differ (6 slash render calls, the saved slash being the
+seed 6262 control, plus 4 cast render calls with and without hints). Frames where the right wrist is past the body's center line (3 and 4 from behind) marked the right elbow and wrist
+as farther than the torso from behind (depth 80, z_index -1) and nearer from the front (176, +1).
+
+| View and seed | Without hints | With hints |
+| --- | --- | --- |
+| Back, 6262 | arm painted across the back in frames 3 and 4 | arm hidden in front of the body, as seen from behind |
+| Back, 6363 | arm painted across the back in frames 3 and 4 | arm hidden in front of the body |
+| Front, 6363 | (control 6262: arm in front, a sword sliver in frame 3) | arm in front of the chest, no sliver |
+| Cast back, 9191 | both arms painted crossed over the back in frames 4 to 6 | arms hidden in front of the body |
+| Cast front, 9191 | arms crossed in front of the chest | the same |
+
+Adopted for authored poses (slash, cast and the other built-in actions) in front and back views, while the torso is upright
+(neck within 20 degrees above the pelvis): a wrist past the center line can then only be in front of the body. A wrist
+merely inside the torso width may be swinging behind it, a leaning torso (the death fall) breaks the center-line test, and
+motion-derived poses may cross hands behind the back, so none of those get hints. On the test character that marks slash
+frames 3 and 4 (right arm) and cast frames 4 and 5 (both arms). The hints are stored with the move's poses, so items posed
+on the move send the same ones. Replacing the test character's slash back
+view through the app built a request identical to the tested seed 6363 one (ledger reattach, no new render) and saved the
+hidden-arm frames. Side and diagonal views are untested and get no hints.

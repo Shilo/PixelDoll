@@ -27,6 +27,9 @@ export interface Keypoint {
 	label: string;
 	x: number;
 	y: number;
+	/** skeleton-v3 hints, 0-255 nearness (about 128 at the body) and draw order; see armDepth in poses.ts. */
+	depth?: number;
+	z_index?: number;
 }
 /** Padded rest rotation: first frame of every clip and the source of every item keyframe. */
 export interface RestView {
