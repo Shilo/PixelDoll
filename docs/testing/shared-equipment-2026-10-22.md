@@ -83,8 +83,8 @@ This report records a completed implementation/verification checkpoint, not comp
 - **Evidence and export limits:** live media remain ignored machine-local evidence; representative regression
   fixtures need preserving for repeatable wider qualification. Engine execution of two copies from this Cast evidence
   (independent palettes, source sheets, the later Cast move, sparse coverage) passed in Godot, Phaser and Aseprite on
-  2026-11-09 ([engine shared copies](engine-shared-copy-2026-11-09.md)); Unity, GDevelop and wider rigs remain unexecuted,
-  and a partially covered move is not yet reported in Export. Existing offline-queue coverage gaps in TODO also remain open.
+  2026-11-09 ([engine shared copies](engine-shared-copy-2026-11-09.md)); Unity, GDevelop and wider rigs remain unexecuted;
+  partially covered moves are now reported as missing frames. Existing offline-queue coverage gaps in TODO also remain open.
 
 ## Automated verification
 

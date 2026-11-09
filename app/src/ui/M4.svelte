@@ -354,7 +354,7 @@
 						{#if coverageGaps(m, it).length}<span
 								class="badge"
 								title={coverageGaps(m, it).join(', ')}
-								>no cells: {coverageGaps(m, it).join(', ')}</span
+								>missing cells: {coverageGaps(m, it).join(', ')}</span
 							>{/if}
 						<div class="sub">
 							hides:

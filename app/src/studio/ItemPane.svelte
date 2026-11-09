@@ -394,8 +394,8 @@
 			<p class="muted small">You accepted this artwork with its recorded quality notes.</p>
 		{/if}
 		{#if moveGaps.length}<p class="notice warn small">
-				<TriangleAlert size={14} />Not made for {moveName} facing {moveGaps.join(', ')} yet: it is left
-				out there.
+				<TriangleAlert size={14} />Missing frames for {moveName} facing {moveGaps.join(', ')}: it is
+				left out of them.
 			</p>{/if}
 		{#if missingMoves.length}
 			<div class="field">
@@ -603,7 +603,7 @@
 							? `$${usdSpent.toFixed(3)} · `
 							: ''}{it.provenance.length} PixelLab {it.provenance.length === 1 ? 'call' : 'calls'}
 					</dd>
-					{#if gaps.length}<dt>No frames for</dt>
+					{#if gaps.length}<dt>Missing frames</dt>
 						<dd>{gaps.join(', ')}</dd>{/if}
 					<dt>Method</dt>
 					<dd>{it.route ? routeNames[it.route] : 'Not recorded'}</dd>

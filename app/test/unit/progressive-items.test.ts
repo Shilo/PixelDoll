@@ -3,7 +3,13 @@ import { equipmentFixture } from './equipment-fixture.ts';
 import { coverage, itemRoute, standingCoverage } from '../../src/studio/itemRoute.ts';
 import { baseMoveSpecs, itemMoveOffer, missingItemMoves } from '../../src/studio/create.ts';
 import { itemPlan, movePlan } from '../../src/studio/apiPlans.ts';
-import { hasCells, hasCompleteCells, coverageGaps, missingAt } from '../../src/lib/dress/dress.ts';
+import {
+	hasCells,
+	hasCompleteCells,
+	coverageGaps,
+	missingAt,
+	missingFrames
+} from '../../src/lib/dress/dress.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { DIRECTIONS, type DirectionName, type RigAnimation } from '../../src/lib/rig/rig.ts';
 import type { RigCtx } from '../../src/lib/items/run.ts';
@@ -286,4 +292,35 @@ test('local garment-region color processing preserves verified standing identity
 	expect(standingCoverage(ctx).anims).toEqual(['still-custom']);
 	m.rig.animations[0].sources!.south!.motion = 'estimated:frozen-import';
 	expect(() => standingCoverage(ctx)).toThrow('No complete standing move');
+});
+
+test('a shared copy missing some frames of a move reports them, while recorded transparent frames and legacy items do not', async () => {
+	const ctx = await fixture([['cast', 8]], ['south', 'east']),
+		m = ctx.rec.manifest,
+		hat = m.items[1],
+		hash = m.items[0].layers[0].cells!['still-custom']!.south![0]!;
+	m.rig.directions.push({ id: 'west', mirrorOf: 'east' });
+	const cast = (dir: 'south' | 'east', keys: number[]) => {
+		hat.layers[0].cells!.cast = {
+			...hat.layers[0].cells!.cast,
+			[dir]: Array.from({ length: 8 }, (_, i) => (i < 4 ? hash : null))
+		};
+		hat.coverage!.push(...keys.map((i) => `cast/${dir}/${i}` as const));
+	};
+	// South: frames 4 to 7 were never recorded (a partial free copy). East: all 8 recorded, 4 to 7 intentionally empty.
+	cast('south', [0, 1, 2, 3]);
+	cast('east', [0, 1, 2, 3, 4, 5, 6, 7]);
+	expect(coverageGaps(m, hat)).toEqual(['cast/south']);
+	expect(missingFrames(m, hat, 'cast', 'south')).toEqual([4, 5, 6, 7]);
+	expect(missingFrames(m, hat, 'cast', 'east')).toEqual([]);
+	expect(missingFrames(m, hat, 'cast', 'west')).toEqual([]); // mirrored view follows its complete source
+	expect(missingAt(m, { head: 'hat' }, 'cast', 'south').map((i) => i.id)).toEqual(['hat']);
+	expect(missingAt(m, { head: 'hat' }, 'cast', 'east')).toEqual([]);
+	expect(missingAt(m, { head: 'hat' }, 'cast', 'west')).toEqual([]);
+	// Without a coverage list (legacy items), a clip with any pixels still counts as present.
+	delete hat.coverage;
+	expect(coverageGaps(m, hat)).toEqual(['still-custom/south', 'still-custom/east']);
+	expect(missingFrames(m, hat, 'cast', 'south')).toEqual([]);
+	expect(missingFrames(m, hat, 'still-custom', 'south')).toEqual([0]); // whole clip missing: every frame
+	expect(missingAt(m, { head: 'hat' }, 'cast', 'south')).toEqual([]);
 });

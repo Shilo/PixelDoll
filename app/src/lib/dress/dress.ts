@@ -372,12 +372,32 @@ export function hasCompleteCells(m: Manifest, it: Item, anim: string, dir: Direc
 	);
 }
 
-/** "anim/dir" pairs where the base has cells but the item has none (mirrored directions follow their source). */
+/** Cell indices of a clip the item would vanish in: all of them when it has no frames there; with a coverage list, also
+ * the cells never recorded (a partial copy or extension). Recorded transparent cells are intentional, never missing.
+ * Items without a coverage list (legacy) keep all-or-nothing clips. Mirrored directions follow their source. */
+export function missingFrames(m: Manifest, it: Item, anim: string, dir: DirectionName): number[] {
+	const cells = Array.from(
+		{ length: m.rig.animations.find((a) => a.id === anim)?.cells ?? 0 },
+		(_, i) => i
+	);
+	if (!hasCells(m, it, anim, dir)) return cells;
+	if (!it.coverage || it.id === m.rig.baseItem) return [];
+	const covered = new Set<string>(it.coverage),
+		src = m.rig.directions.find((d) => d.id === dir)?.mirrorOf;
+	return cells.filter(
+		(i) => !covered.has(`${anim}/${dir}/${i}`) && !(src && covered.has(`${anim}/${src}/${i}`))
+	);
+}
+
+const incomplete = (m: Manifest, it: Item, anim: string, dir: DirectionName) =>
+	!hasCells(m, it, anim, dir) || missingFrames(m, it, anim, dir).length > 0;
+
+/** "anim/dir" pairs where the base has cells but the item misses some or all of them (see missingFrames). */
 export function coverageGaps(m: Manifest, it: Item): string[] {
 	const base = m.items.find((i) => i.id === m.rig.baseItem);
 	return m.rig.animations.flatMap((a) =>
 		m.rig.directions
-			.filter((d) => !d.mirrorOf && hasCells(m, base, a.id, d.id) && !hasCells(m, it, a.id, d.id))
+			.filter((d) => !d.mirrorOf && hasCells(m, base, a.id, d.id) && incomplete(m, it, a.id, d.id))
 			.map((d) => `${a.id}/${d.id}`)
 	);
 }
@@ -395,7 +415,7 @@ export const moveDirs = (m: Manifest, anim: string): DirectionName[] =>
 		)
 		.map((d) => d.id);
 
-/** Worn, visible items with no frames in a view the move has: they would silently vanish there. */
+/** Worn, visible items missing frames in a view the move has: they would silently vanish there. */
 export function missingAt(
 	m: Manifest,
 	worn: Preset['items'],
@@ -407,7 +427,7 @@ export function missingAt(
 		on.flatMap((it) => it.hides ?? m.slots.find((s) => s.id === it.slot)?.hides ?? [])
 	);
 	return moveDirs(m, anim).includes(dir)
-		? on.filter((it) => !hidden.has(it.slot) && !hasCells(m, it, anim, dir))
+		? on.filter((it) => !hidden.has(it.slot) && incomplete(m, it, anim, dir))
 		: [];
 }
 

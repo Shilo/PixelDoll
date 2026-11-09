@@ -62,7 +62,7 @@
 			Every frame is shown below. Choose each move to check its directions and alignment.
 		</p>
 		{#if gaps.length}<p class="notice warn small">
-				No item frames for {gaps.join(', ')}. The item stays empty in those views.
+				Missing item frames for {gaps.join(', ')}. The item stays empty in those frames.
 			</p>{/if}
 		<div class="frames" aria-label="{item.name}, all frames of {clip.id}">
 			{#each rows as row (row.dir)}

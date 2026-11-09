@@ -1,5 +1,5 @@
 <script lang="ts">
-	// B10 (T1 P1-1): a worn item without frames for the shown view would silently vanish. Say so, with one action to fix it.
+	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import type { DirectionName, Item } from '../lib/store/manifest.ts';
 	import { itemMoveOffer, missingItemMoves } from './create.ts';
@@ -84,7 +84,9 @@
 		<TriangleAlert size={14} />
 		<span
 			>{missing.map((i) => i.name).join(', ')}
-			{missing.length > 1 ? "aren't" : "isn't"} made for {move}{ui.all ? '' : ` facing ${ui.dir}`} yet</span
+			{missing.length > 1 ? 'are' : 'is'} missing frames for {move}{ui.all
+				? ''
+				: ` facing ${ui.dir}`}</span
 		>
 		{#if busy}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'move')}

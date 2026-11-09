@@ -7,7 +7,7 @@
 	import { ROWS as RPG_ROWS, walkMove } from '../lib/export/rpgmaker.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { stableStringify } from '../lib/image/hash.ts';
-	import { coverageGaps, moveDirs, storeVariants } from '../lib/dress/dress.ts';
+	import { coverageGaps, missingFrames, moveDirs, storeVariants } from '../lib/dress/dress.ts';
 	import * as db from '../lib/store/db.ts';
 	import { listProjects, type StoredProject } from '../lib/store/project.ts';
 	import {
@@ -21,7 +21,7 @@
 		type ExportSettingChange,
 		type ExportSettings
 	} from '../lib/store/export-settings.ts';
-	import type { Engine, Manifest, Preset } from '../lib/store/manifest.ts';
+	import type { DirectionName, Engine, Manifest, Preset } from '../lib/store/manifest.ts';
 	import { ui, doc, store, toast, isDemo } from './state.svelte.ts';
 	import { moveLabel } from './model.ts';
 	import {
@@ -359,11 +359,16 @@
 			[doc.items, ...outfits.map((x) => x.items)].flatMap((o) => Object.values(o))
 		);
 		for (const it of rpg ? items.filter((i) => worn.has(i.id)) : items) {
-			const g = coverageGaps(m, it).filter(used);
-			if (g.length)
-				out.push(
-					`${it.name} has no ${g.map((x) => x.replace('-', ' ').replace('/', ' ')).join(', ')} frames`
-				);
+			const view = (x: string) => x.replace('-', ' ').replace('/', ' '),
+				whole: string[] = [];
+			for (const g of coverageGaps(m, it).filter(used)) {
+				const [move, dir] = g.split('/') as [string, DirectionName],
+					count = m.rig.animations.find((a) => a.id === move)!.cells,
+					missed = missingFrames(m, it, move, dir).length;
+				if (missed === count) whole.push(g);
+				else out.push(`${it.name} is missing ${missed} of ${count} ${view(g)} frames`);
+			}
+			if (whole.length) out.push(`${it.name} has no ${whole.map(view).join(', ')} frames`);
 		}
 		return out;
 	});

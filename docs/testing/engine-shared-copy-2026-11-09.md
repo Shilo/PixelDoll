@@ -48,19 +48,22 @@ What this establishes:
 - **Sparse coverage:** Studio reports missing whole clips (copy B and the shield in Cast) through `coverageGaps`. Engines
   leave those frames transparent; nothing is filled from other moves or frames.
 
-## Finding: a partially covered move is not reported (not fixed here)
+## Finding: a partially covered move was not reported (fixed)
 
 [`partial_probe.mjs`](engine-shared-copy-2026-11-09/partial_probe.mjs) removes Cast cells 4 to 7 from copy A and
-drops them from its `coverage`. `coverageGaps` then returns `[]`, `missingAt` still lists only the shield, and the export
-returns no warnings. `hasCompleteCells` correctly returns `false`. The cause is in `app/src/lib/dress/dress.ts`:
-`coverageGaps` and `missingAt` use `hasCells`, which counts a clip as present when any cell has pixels. A free copy with
+drops them from its `coverage`. Before the fix, `coverageGaps` returned `[]`, `missingAt` listed only the shield, and the
+Export sheet showed no warning. The cause was in `app/src/lib/dress/dress.ts`: `coverageGaps` and `missingAt` used `hasCells`, which counts a clip as present when any cell has pixels. A free copy with
 partial coverage, which [shared equipment](shared-equipment-2026-10-22.md) explicitly allows, can therefore blink out
 on some frames in every engine without the Export sheet, item pane or stage warning about it.
 
-This was not changed because other agents are editing `app/src/lib/dress/` concurrently. Suggested fix with a unit test:
-
-- For non-base items that carry `coverage`, base `coverageGaps` and `missingAt` on `hasCompleteCells`. Without coverage, it already falls back to `hasCells`.
-- In the Export sheet, word a partial clip as missing frames rather than "has no ... frames".
+Fix: a new `missingFrames` returns the cells of a clip an item would vanish in. For items with a coverage list these are the
+cells never recorded; recorded transparent cells (an item hidden or off-canvas on some frames) are intentional and never
+flagged. Items without a coverage list keep the old all-or-nothing rule. `coverageGaps` and `missingAt` use it, so the
+Export sheet ("is missing 4 of 8 cast south frames"), item pane, design preview, stage note and "Fit missing frames" now
+see partial moves; whole missing moves keep "has no ... frames". A unit test in `progressive-items.test.ts` covers the
+partial, transparent, mirrored, whole-missing and legacy cases. The probe now reports `cast/south` for the helmet, and the
+four retained real archives show no new gaps. A keyless browser import of the probe character showed the new Export
+warning with zero PixelLab requests.
 
 ## Godot Aseprite Wizard: compatible, with three settings
 
@@ -110,7 +113,6 @@ outfits and synchronized layers, the dedicated Godot export remains the recommen
 
 ## Remaining gaps
 
-- The partial-coverage warning above (code fix pending, owner area under concurrent edit).
 - One shared-copy scenario on one direction and a 64 px rig, from one real character. Eight-direction, mirrored and
   oversize shared copies were not executed in engines (oversize and mirroring are covered by earlier non-shared runs).
 - Unity, GDevelop and RPG Maker shared-copy runtimes were not run. Unity still needs an activated Editor license.
