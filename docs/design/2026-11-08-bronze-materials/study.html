@@ -1,0 +1,996 @@
+<div
+  id="bronze-proposals"
+  data-scheme="dark"
+  data-candidate="tactile"
+  data-surface="export"
+  data-state="normal"
+>
+  <style data-baseline>
+    /* BASELINE_CSS */
+  </style>
+  <style>
+    #bronze-proposals {
+      width: 100%;
+    }
+    #bronze-proposals .study-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+    #bronze-proposals .study-controls[hidden] {
+      display: none !important;
+    }
+    #bronze-proposals .comparison {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+    }
+    #bronze-proposals .comparison-column {
+      min-width: 0;
+    }
+    #bronze-proposals .comparison-label {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    #bronze-proposals .specimen {
+      color: var(--bu-text);
+      font: 16px/1.5 var(--bu-font);
+      background: var(--bu-canvas);
+      padding: 20px;
+      min-width: 0;
+    }
+    #bronze-proposals .specimen *,
+    #bronze-proposals .specimen *::before,
+    #bronze-proposals .specimen *::after {
+      box-sizing: border-box;
+    }
+    #bronze-proposals .specimen :is(h2, h3, p) {
+      margin: 0;
+    }
+    #bronze-proposals .specimen :is(button, input, select, textarea) {
+      font: inherit;
+    }
+    #bronze-proposals .specimen [hidden] {
+      display: none !important;
+    }
+    #bronze-proposals .work-surface {
+      width: 100%;
+      min-width: 0;
+    }
+    #bronze-proposals .work-head {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--bu-line);
+    }
+    #bronze-proposals .work-head h2 {
+      font: 600 18px/1.3 var(--bu-font);
+    }
+    #bronze-proposals .work-head .bu-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 40px;
+      padding: 6px;
+      color: var(--bu-accent);
+    }
+    #bronze-proposals .work-body {
+      padding: 20px;
+      display: grid;
+      gap: 20px;
+    }
+    #bronze-proposals .work-body h3 {
+      font: 600 14px/1.4 var(--bu-font);
+      color: var(--bu-muted);
+      margin-bottom: 10px;
+    }
+    #bronze-proposals .engine-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    #bronze-proposals .engine {
+      min-width: 0;
+      min-height: 80px;
+      text-align: left;
+      justify-content: start;
+      gap: 12px;
+      padding: 12px;
+    }
+    #bronze-proposals .engine img {
+      width: 28px;
+      height: 28px;
+      flex: none;
+    }
+    #bronze-proposals .engine span {
+      min-width: 0;
+      flex: 1;
+    }
+    #bronze-proposals .engine strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    #bronze-proposals .engine small {
+      display: block;
+      color: var(--bu-muted);
+      font-size: 12px;
+      font-weight: 400;
+    }
+    #bronze-proposals .selection-dot {
+      width: 14px;
+      height: 14px;
+      flex: none;
+      border: 1px solid var(--bu-border);
+      border-radius: 50%;
+      position: relative;
+    }
+    #bronze-proposals [aria-pressed="true"] > .selection-dot::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border-radius: 50%;
+      background: var(--bu-accent);
+    }
+    #bronze-proposals .note {
+      font-size: 13px;
+      color: var(--bu-muted);
+    }
+    #bronze-proposals .coverage {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--bu-hover);
+      font-size: 12px;
+    }
+    #bronze-proposals .coverage i {
+      flex: none;
+      width: 14px;
+      height: 14px;
+      margin-top: 2px;
+    }
+    #bronze-proposals .work-foot {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--bu-line);
+    }
+    #bronze-proposals .work-foot small {
+      color: var(--bu-muted);
+      font-size: 12px;
+    }
+    #bronze-proposals .bu-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+    #bronze-proposals .specimen :is(.bu-check, .bu-field) > label {
+      font-weight: 400;
+    }
+    #bronze-proposals .bu-check {
+      font-size: 14px;
+    }
+    #bronze-proposals .creator-title {
+      font: 400 26px/1.2 var(--bu-display);
+      margin-bottom: 20px !important;
+    }
+    #bronze-proposals .form-grid {
+      display: grid;
+      gap: 18px;
+    }
+    #bronze-proposals .joined-sizes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    #bronze-proposals textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    #bronze-proposals .creator-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    #bronze-proposals .creator-tabs {
+      display: flex;
+      gap: 20px;
+      border-bottom: 1px solid var(--bu-line);
+      padding-bottom: 10px;
+    }
+    #bronze-proposals .creator-tabs button {
+      min-height: 44px;
+      padding: 4px 0;
+    }
+    #bronze-proposals .wardrobe-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+    #bronze-proposals .wardrobe-top h2 {
+      font: 400 28px/1.2 var(--bu-display);
+    }
+    #bronze-proposals .item-card {
+      flex-direction: column;
+      min-height: 168px;
+      width: 100%;
+      gap: 12px;
+      position: relative;
+    }
+    #bronze-proposals .item-art {
+      display: block;
+      width: 88px;
+      height: 88px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+    #bronze-proposals .item-card .selected-check {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      color: var(--bu-accent);
+    }
+    #bronze-proposals .palette {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    #bronze-proposals .playback {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+    #bronze-proposals .playback button {
+      padding: 8px;
+      min-width: 40px;
+      min-height: 44px;
+    }
+    #bronze-proposals .preview-message {
+      min-height: 20px;
+      margin-top: 12px;
+    }
+    /* Candidate A changes shared materials only. Geometry and font recipes stay equal. */
+    #bronze-proposals .proposed {
+      --study-crease: color-mix(
+        in srgb,
+        var(--bu-canvas) 72%,
+        var(--bu-surface)
+      );
+      --study-edge: color-mix(in srgb, var(--bu-text) 12%, transparent);
+    }
+    #bronze-proposals[data-scheme="light"] .proposed {
+      --study-crease: color-mix(
+        in srgb,
+        var(--bu-canvas) 70%,
+        var(--bu-surface)
+      );
+      --study-edge: color-mix(in srgb, var(--bu-text) 8%, transparent);
+    }
+    #bronze-proposals .proposed .work-surface {
+      box-shadow:
+        inset 0 1px var(--study-edge),
+        var(--bu-dialog-shadow);
+    }
+    #bronze-proposals .proposed :is(.bu-input, .bu-unit) {
+      background: var(--study-crease);
+      box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.14);
+    }
+    #bronze-proposals .proposed .bu-input[aria-invalid="true"] {
+      box-shadow:
+        inset 3px 0 var(--bu-danger),
+        inset 0 1px 3px rgb(0 0 0 / 0.14);
+    }
+    #bronze-proposals
+      .proposed
+      .bu-btn:not([data-variant]):not([aria-pressed="true"]):not(:disabled) {
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bu-text) 5%, var(--bu-surface)),
+        var(--bu-surface)
+      );
+      box-shadow:
+        inset 0 1px var(--study-edge),
+        0 1px 1px rgb(0 0 0 / 0.12);
+    }
+    #bronze-proposals .proposed .bu-btn[data-variant="primary"] {
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bu-text) 9%, var(--bu-accent)),
+        var(--bu-accent)
+      );
+      box-shadow:
+        inset 0 1px color-mix(in srgb, var(--bu-on-accent) 20%, transparent),
+        inset 0 -2px color-mix(in srgb, var(--bu-on-accent) 23%, transparent),
+        0 2px 3px rgb(0 0 0 / 0.16);
+    }
+    #bronze-proposals
+      .proposed
+      .bu-btn[data-variant="primary"]:active:not(:disabled) {
+      box-shadow: inset 0 2px 3px
+        color-mix(in srgb, var(--bu-on-accent) 20%, transparent);
+    }
+    #bronze-proposals
+      .proposed
+      .bu-btn[data-variant="primary"]:hover:not(:disabled) {
+      background: var(--bu-accent);
+      box-shadow: inset 0 0 0 2px var(--bu-on-accent);
+    }
+    #bronze-proposals .proposed .bu-btn[aria-pressed="true"] {
+      box-shadow:
+        inset 0 1px var(--study-edge),
+        inset 0 -2px var(--bu-accent);
+    }
+    #bronze-proposals .proposed .bu-btn[aria-pressed="true"]:hover,
+    #bronze-proposals .proposed .bu-btn[aria-pressed="true"].demo-hover {
+      background: var(--bu-selected);
+      border-color: var(--bu-accent);
+      box-shadow:
+        inset 0 1px var(--study-edge),
+        inset 0 -2px var(--bu-accent);
+    }
+    /* Candidate B adds a fitted selection inlay to A. It does not alter hit areas. */
+    #bronze-proposals[data-candidate="inlay"]
+      .proposed
+      :is(.engine, .item-card)[aria-pressed="true"] {
+      background: color-mix(in srgb, var(--bu-accent) 6%, var(--bu-surface));
+      border-color: var(--bu-border);
+      box-shadow:
+        inset 3px 0 var(--bu-accent),
+        inset 0 1px var(--study-edge);
+    }
+    #bronze-proposals[data-candidate="inlay"]
+      .proposed
+      :is(.engine, .item-card)[aria-pressed="true"]:is(:hover, .demo-hover) {
+      background: var(--bu-selected);
+      border-color: var(--bu-border);
+      box-shadow:
+        inset 3px 0 var(--bu-accent),
+        inset 0 1px var(--study-edge);
+    }
+    /* Forced-hover specimen reproduces the current shared bu-btn rule. */
+    #bronze-proposals .current .bu-btn.demo-hover {
+      background: var(--bu-hover);
+    }
+    @media (max-width: 760px) {
+      #bronze-proposals .comparison {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
+    @media (max-width: 420px) {
+      #bronze-proposals .specimen {
+        padding: 12px;
+      }
+      #bronze-proposals .work-body {
+        padding: 16px;
+      }
+      #bronze-proposals .work-head,
+      #bronze-proposals .work-foot {
+        padding: 12px 16px;
+      }
+      #bronze-proposals .engine {
+        padding: 10px;
+        gap: 8px;
+      }
+      #bronze-proposals .engine img {
+        width: 22px;
+        height: 22px;
+      }
+      #bronze-proposals .engine strong {
+        font-size: 13px;
+      }
+      #bronze-proposals .engine-grid {
+        gap: 8px;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #bronze-proposals .specimen * {
+        transition: none;
+      }
+    }
+    @media (prefers-contrast: more), (forced-colors: active) {
+      #bronze-proposals
+        .proposed
+        :is(.work-surface, .bu-btn, .bu-input, .bu-unit) {
+        background: var(--bu-surface) !important;
+        box-shadow: none !important;
+      }
+      #bronze-proposals .proposed .bu-btn[data-variant="primary"] {
+        background: var(--bu-accent) !important;
+      }
+      #bronze-proposals .proposed .bu-btn[aria-pressed="true"] {
+        outline: 2px solid var(--bu-focus);
+        outline-offset: -3px;
+      }
+    }
+  </style>
+  <div class="study-controls" aria-label="Comparison controls">
+    <label class="form-label"
+      >Proposal<select class="form-select" data-control="candidate">
+        <option value="tactile">Tactile Bronze</option>
+        <option value="inlay">Bronze inlay</option>
+      </select></label
+    >
+    <label class="form-label"
+      >Appearance<select class="form-select" data-control="scheme">
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+      </select></label
+    >
+    <label class="form-label"
+      >Context<select class="form-select" data-control="surface">
+        <option value="export">Export</option>
+        <option value="creator">New character</option>
+        <option value="wardrobe">Equipment</option>
+      </select></label
+    >
+    <label class="form-label"
+      >State<select class="form-select" data-control="state">
+        <option value="normal">Normal</option>
+        <option value="hover">Selected + hover</option>
+        <option value="invalid">Field error</option>
+        <option value="disabled">Busy / disabled</option>
+      </select></label
+    >
+  </div>
+  <div class="comparison">
+    <section class="comparison-column" aria-label="Current Bronze UI">
+      <div class="comparison-label">
+        <strong>Current Bronze recipes</strong
+        ><span class="text-small">0.2.8</span>
+      </div>
+      <div
+        class="specimen current"
+        data-theme="dark"
+        data-prefix="current"
+      ></div>
+    </section>
+    <section class="comparison-column" aria-label="Proposed Bronze UI">
+      <div class="comparison-label">
+        <strong data-proposal-name>Tactile Bronze</strong
+        ><span class="text-small">Proposal</span>
+      </div>
+      <div
+        class="specimen proposed"
+        data-theme="dark"
+        data-prefix="proposed"
+      ></div>
+    </section>
+  </div>
+  <p class="text-small preview-message" aria-live="polite" data-message></p>
+  <template data-scene="export">
+    <section
+      class="bu-dialog-surface work-surface"
+      aria-label="Export appearance mockup"
+    >
+      <header class="work-head">
+        <button class="bu-action" type="button" data-preview-action>
+          <i data-lucide="sliders-horizontal" aria-hidden="true"></i> Settings
+        </button>
+        <h2>Export</h2>
+        <button
+          class="bu-action"
+          type="button"
+          aria-label="Close export preview"
+          data-preview-action
+        >
+          <i data-lucide="x" aria-hidden="true"></i>
+        </button>
+      </header>
+      <div class="work-body">
+        <div>
+          <h3>Engines and frameworks</h3>
+          <div class="engine-grid" role="group" aria-label="Export choices">
+            <button
+              type="button"
+              class="bu-btn engine"
+              aria-pressed="true"
+              data-choice="Godot"
+            >
+              <img data-asset="godot" alt="" /><span
+                ><strong>Godot</strong><small>Scene + runtime</small></span
+              ><b class="selection-dot" aria-hidden="true"></b>
+            </button>
+            <button
+              type="button"
+              class="bu-btn engine"
+              aria-pressed="false"
+              data-choice="Unity"
+            >
+              <img data-asset="unity" alt="" /><span
+                ><strong>Unity</strong><small>Prefab importer</small></span
+              ><b class="selection-dot" aria-hidden="true"></b>
+            </button>
+            <button
+              type="button"
+              class="bu-btn engine"
+              aria-pressed="false"
+              data-choice="Phaser"
+            >
+              <img data-asset="phaser" alt="" /><span
+                ><strong>Phaser</strong><small>Atlas + runtime</small></span
+              ><b class="selection-dot" aria-hidden="true"></b>
+            </button>
+            <button
+              type="button"
+              class="bu-btn engine"
+              aria-pressed="false"
+              data-choice="GDevelop"
+            >
+              <img data-asset="gdevelop" alt="" /><span
+                ><strong>GDevelop</strong><small>Editable project</small></span
+              ><b class="selection-dot" aria-hidden="true"></b>
+            </button>
+          </div>
+        </div>
+        <div>
+          <h3>Assets</h3>
+          <div class="engine-grid">
+            <button
+              type="button"
+              class="bu-btn engine"
+              aria-pressed="false"
+              data-choice="Aseprite"
+            >
+              <img data-asset="aseprite" alt="" /><span
+                ><strong>Aseprite</strong><small>Editable layers</small></span
+              ><b class="selection-dot" aria-hidden="true"></b></button
+            ><button
+              type="button"
+              class="bu-btn engine"
+              aria-pressed="false"
+              data-choice="PNG + JSON"
+            >
+              <img data-asset="generic" alt="" /><span
+                ><strong>PNG + JSON</strong
+                ><small>Custom integration</small></span
+              ><b class="selection-dot" aria-hidden="true"></b>
+            </button>
+          </div>
+        </div>
+        <p class="note">
+          <strong data-choice-name>Godot</strong>: separate layers and
+          synchronized equipment.
+        </p>
+        <div class="coverage">
+          <i data-lucide="triangle-alert" aria-hidden="true"></i
+          ><span
+            >Some equipment has missing frames. Those frames stay empty in the
+            sheets.</span
+          >
+        </div>
+        <label class="bu-check"
+          ><input type="checkbox" checked /><span
+            >Include dressed character sheets</span
+          ></label
+        >
+      </div>
+      <footer class="work-foot">
+        <small>Free · editable copy included</small
+        ><button
+          class="bu-btn"
+          data-variant="primary"
+          type="button"
+          data-primary
+        >
+          <i data-lucide="download" aria-hidden="true"></i
+          ><span>Download ZIP</span>
+        </button>
+      </footer>
+    </section>
+  </template>
+  <template data-scene="creator">
+    <section
+      class="bu-dialog-surface work-surface"
+      aria-label="New character appearance mockup"
+    >
+      <div class="work-body">
+        <h2 class="creator-title">New character</h2>
+        <div class="form-grid">
+          <label class="bu-field"
+            ><span>Name</span
+            ><input class="bu-input" value="Forest scout" data-name
+          /></label>
+          <div class="creator-tabs">
+            <button
+              type="button"
+              class="bu-action"
+              data-variant="tab"
+              aria-pressed="true"
+              data-local-tab="Appearance"
+            >
+              Appearance</button
+            ><button
+              type="button"
+              class="bu-action"
+              data-variant="tab"
+              aria-pressed="false"
+              data-local-tab="Prompt"
+            >
+              Prompt
+            </button>
+          </div>
+          <label class="bu-field"
+            ><span>Details</span
+            ><textarea class="bu-input">
+A freckled elf with a kind face</textarea>
+          </label>
+          <div class="joined-sizes">
+            <label class="bu-field"
+              ><span>Body size</span
+              ><input
+                class="bu-input"
+                type="number"
+                value="64"
+                min="48"
+                data-size
+              /><span class="bu-error" hidden
+                >Choose a supported size.</span
+              ></label
+            ><label class="bu-field"
+              ><span>Frame</span
+              ><input class="bu-input" type="number" value="80" readonly
+            /></label>
+          </div>
+          <label class="bu-field"
+            ><span>Camera</span
+            ><select class="bu-input">
+              <option>Low top-down</option>
+              <option>Side view</option>
+            </select></label
+          >
+          <label class="bu-check"
+            ><input
+              class="bu-switch"
+              type="checkbox"
+              role="switch"
+              checked
+            /><span>Automatic frame</span></label
+          >
+          <div class="creator-actions">
+            <button class="bu-btn" type="button" data-preview-action>
+              <i data-lucide="copy" aria-hidden="true"></i> Copy prompt</button
+            ><button class="bu-btn" type="button" disabled>Enhance</button>
+          </div>
+        </div>
+      </div>
+      <footer class="work-foot">
+        <small>~2–5 gens</small
+        ><button
+          class="bu-btn"
+          data-variant="primary"
+          type="button"
+          data-primary
+        >
+          Create character
+        </button>
+      </footer>
+    </section>
+  </template>
+  <template data-scene="wardrobe">
+    <section class="work-body" aria-label="Equipment appearance mockup">
+      <header class="wardrobe-top">
+        <h2>Headwear</h2>
+        <small class="bu-muted">2 items</small>
+      </header>
+      <div class="engine-grid" role="group" aria-label="Headwear choices">
+        <button
+          class="bu-btn item-card"
+          type="button"
+          data-choice="Steel helmet"
+          aria-pressed="true"
+        >
+          <img
+            class="item-art"
+            data-asset="helmet"
+            alt="Steel helmet equipment artwork"
+          /><span>Steel helmet</span
+          ><span class="selected-check" aria-hidden="true">✓</span>
+        </button>
+        <button
+          class="bu-btn item-card"
+          type="button"
+          data-choice="Wizard hat"
+          aria-pressed="false"
+        >
+          <img
+            class="item-art"
+            data-asset="hat"
+            alt="Wizard hat equipment artwork"
+          /><span>Wizard hat</span
+          ><span class="selected-check" aria-hidden="true" hidden>✓</span>
+        </button>
+      </div>
+      <button
+        class="bu-btn"
+        type="button"
+        aria-pressed="false"
+        data-choice="None"
+      >
+        None
+      </button>
+      <p class="note"><strong data-choice-name>Steel helmet</strong> · Demo</p>
+      <div>
+        <h3>Steel</h3>
+        <div class="palette" role="group" aria-label="Steel colors">
+          <button
+            class="bu-swatch"
+            aria-pressed="true"
+            aria-label="Original steel"
+            type="button"
+            style="--swatch: #858581"
+          >
+            <span></span></button
+          ><button
+            class="bu-swatch"
+            aria-pressed="false"
+            aria-label="Crimson steel"
+            type="button"
+            style="--swatch: #a73933"
+          >
+            <span></span></button
+          ><button
+            class="bu-swatch"
+            aria-pressed="false"
+            aria-label="Teal steel"
+            type="button"
+            style="--swatch: #428d7a"
+          >
+            <span></span></button
+          ><button
+            class="bu-swatch"
+            aria-pressed="false"
+            aria-label="Bronze steel"
+            type="button"
+            style="--swatch: #d7af65"
+          >
+            <span></span>
+          </button>
+        </div>
+      </div>
+      <div class="bu-floating playback" aria-label="Playback controls">
+        <button
+          class="bu-action"
+          type="button"
+          aria-label="Pause preview"
+          data-playback
+        >
+          <i data-lucide="pause" aria-hidden="true"></i></button
+        ><select class="bu-select" data-variant="quiet" aria-label="Move">
+          <option>Walk</option>
+          <option>Cross punch</option></select
+        ><button
+          class="bu-btn"
+          type="button"
+          data-facing="S"
+          aria-pressed="true"
+        >
+          S</button
+        ><button
+          class="bu-btn"
+          type="button"
+          data-facing="E"
+          aria-pressed="false"
+        >
+          E</button
+        ><button
+          class="bu-btn"
+          type="button"
+          data-facing="N"
+          aria-pressed="false"
+        >
+          N</button
+        ><button
+          class="bu-btn"
+          type="button"
+          data-facing="W"
+          aria-pressed="false"
+        >
+          W
+        </button>
+      </div>
+      <button class="bu-btn" data-variant="primary" type="button" data-primary>
+        <i data-lucide="plus" aria-hidden="true"></i> New head item
+      </button>
+      <button class="bu-btn" type="button" data-preview-action>
+        Use a saved design
+      </button>
+    </section>
+  </template>
+  <script type="application/json" data-assets>
+    ASSET_JSON
+  </script>
+  <script>
+    (() => {
+      const root = document.getElementById("bronze-proposals");
+      const assets = JSON.parse(
+        root.querySelector("[data-assets]").textContent,
+      );
+      const state = {
+        candidate: "tactile",
+        scheme: "dark",
+        surface: "creator",
+        state: "normal",
+      };
+      const query = new URLSearchParams(location.search);
+      for (const key of Object.keys(state)) {
+        const control = root.querySelector(`[data-control="${key}"]`);
+        if (
+          [...control.options].some((option) => option.value === query.get(key))
+        )
+          state[key] = query.get(key);
+      }
+      let previousSurface = "";
+      function icons() {
+        if (globalThis.lucide)
+          lucide.createIcons({ attrs: { width: 18, height: 18 } });
+      }
+      function render() {
+        for (const [key, value] of Object.entries(state)) {
+          root.dataset[key] = value;
+          root.querySelector(`[data-control="${key}"]`).value = value;
+        }
+        root.querySelector("[data-proposal-name]").textContent =
+          state.candidate === "tactile" ? "Tactile Bronze" : "Bronze inlay";
+        const specimens = [...root.querySelectorAll(".specimen")];
+        if (previousSurface !== state.surface) {
+          const template = root.querySelector(
+            `[data-scene="${state.surface}"]`,
+          );
+          for (const specimen of specimens) {
+            specimen.replaceChildren(template.content.cloneNode(true));
+            for (const img of specimen.querySelectorAll("[data-asset]"))
+              img.src = assets[img.dataset.asset];
+            const size = specimen.querySelector("[data-size]");
+            if (size) {
+              const error = specimen.querySelector(".bu-error");
+              error.id = `${specimen.dataset.prefix}-size-error`;
+              size.setAttribute("aria-describedby", error.id);
+            }
+          }
+          previousSurface = state.surface;
+          icons();
+        }
+        for (const specimen of specimens) {
+          specimen.dataset.theme = state.scheme;
+          for (const img of specimen.querySelectorAll(".engine img"))
+            img.style.filter = state.scheme === "dark" ? "invert(1)" : "none";
+          for (const button of specimen.querySelectorAll(
+            ".bu-btn[aria-pressed]",
+          ))
+            button.classList.toggle(
+              "demo-hover",
+              state.state === "hover" &&
+                button.getAttribute("aria-pressed") === "true",
+            );
+          const size = specimen.querySelector("[data-size]");
+          if (size) {
+            size.value = state.state === "invalid" ? "0" : "64";
+            size.setAttribute(
+              "aria-invalid",
+              String(state.state === "invalid"),
+            );
+            size.nextElementSibling.hidden = state.state !== "invalid";
+          }
+          for (const button of specimen.querySelectorAll("[data-primary]")) {
+            button.disabled = state.state === "disabled";
+            const label = button.querySelector("span");
+            if (label)
+              label.textContent =
+                state.state === "disabled" ? "Preparing…" : "Download ZIP";
+          }
+          for (const button of specimen.querySelectorAll("[data-facing]"))
+            button.disabled = state.state === "disabled";
+        }
+      }
+      for (const control of root.querySelectorAll("[data-control]"))
+        control.addEventListener("change", () => {
+          state[control.dataset.control] = control.value;
+          render();
+        });
+      root.addEventListener("change", (event) => {
+        const input = event.target;
+        const specimen = input.closest(".specimen");
+        if (!specimen || input.type !== "checkbox") return;
+        const checks = [...specimen.querySelectorAll('input[type="checkbox"]')];
+        const index = checks.indexOf(input);
+        for (const other of root.querySelectorAll(".specimen")) {
+          const counterpart = other.querySelectorAll('input[type="checkbox"]')[
+            index
+          ];
+          if (counterpart) counterpart.checked = input.checked;
+        }
+      });
+      root.addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+        if (!button) return;
+        const specimen = button.closest(".specimen");
+        if (!specimen) return;
+        const sync = (selector, key) => {
+          for (const view of root.querySelectorAll(".specimen"))
+            for (const item of view.querySelectorAll(selector)) {
+              const selected = item.dataset[key] === button.dataset[key];
+              item.setAttribute("aria-pressed", String(selected));
+              const mark = item.querySelector(".selected-check");
+              if (mark) mark.hidden = !selected;
+            }
+        };
+        if (button.hasAttribute("data-choice")) {
+          sync("[data-choice]", "choice");
+          for (const name of root.querySelectorAll("[data-choice-name]"))
+            name.textContent = button.dataset.choice;
+        }
+        if (button.hasAttribute("data-facing")) sync("[data-facing]", "facing");
+        if (button.hasAttribute("data-local-tab")) {
+          sync("[data-local-tab]", "localTab");
+          root.querySelector("[data-message]").textContent =
+            "Appearance only. The editor panels are not connected in this mockup.";
+        }
+        if (button.matches(".bu-swatch")) {
+          const label = button.getAttribute("aria-label");
+          for (const swatch of root.querySelectorAll(".bu-swatch"))
+            swatch.setAttribute(
+              "aria-pressed",
+              String(swatch.getAttribute("aria-label") === label),
+            );
+        }
+        if (
+          button.hasAttribute("data-preview-action") ||
+          button.hasAttribute("data-primary") ||
+          button.hasAttribute("data-playback")
+        )
+          root.querySelector("[data-message]").textContent =
+            "Appearance preview only. No files, generation requests or project changes.";
+        render();
+      });
+      render();
+      if (globalThis.Tweak) {
+        root.querySelector(".study-controls").hidden = true;
+        const tweak = new Tweak({ container: root, onChange: render });
+        tweak.addSelect(state, "candidate", {
+          label: "Proposal",
+          options: [
+            { label: "Tactile Bronze", value: "tactile" },
+            { label: "Bronze inlay", value: "inlay" },
+          ],
+        });
+        tweak.addSelect(state, "scheme", {
+          label: "Appearance",
+          options: ["dark", "light"],
+        });
+        tweak.addSelect(state, "surface", {
+          label: "Context",
+          options: [
+            { label: "Export", value: "export" },
+            { label: "New character", value: "creator" },
+            { label: "Equipment", value: "wardrobe" },
+          ],
+        });
+        tweak.addSelect(state, "state", {
+          label: "Control state",
+          options: [
+            { label: "Normal", value: "normal" },
+            { label: "Selected + hover", value: "hover" },
+            { label: "Field error", value: "invalid" },
+            { label: "Busy / disabled", value: "disabled" },
+          ],
+        });
+      }
+    })();
+  </script>
+</div>
