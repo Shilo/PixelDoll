@@ -215,6 +215,9 @@ export type JobImage = {
 	rgba?: { b64: string; w: number; h: number };
 	url?: string;
 };
+/** Result order of one job: labels are "<index>" or "<direction>/<index>". */
+export const frameOrder = (a: { label: string }, b: { label: string }) =>
+	Number(a.label.split('/').at(-1)) - Number(b.label.split('/').at(-1));
 // Result images of a finished job. Prefers inline `images` (animations, edits, inpaint) over `storage_urls` (create-character).
 export function jobImages(lr: JobLastResponse | null | undefined): JobImage[] {
 	if (!lr) return [];

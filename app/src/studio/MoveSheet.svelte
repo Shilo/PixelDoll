@@ -71,9 +71,15 @@
 	const describingReplacement = $derived(
 		have.has(action) && action !== 'walk' && !isAuthoredAction(action)
 	);
+	// Ids allow only a-z, 0-9, - and _ (rig.ts): a description in another script gets the first free "move-N".
+	const freeMoveId = () => {
+		let n = 1;
+		while (have.has(`move-${n}`) || pendingIds.includes(`move-${n}`)) n++;
+		return `move-${n}`;
+	};
 	const id = $derived(
 		!describingReplacement && text.trim()
-			? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' '))
+			? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) || freeMoveId()
 			: action
 	);
 	const items = $derived(m ? posable(m).filter((item) => !item.design) : []);
@@ -521,6 +527,9 @@
 					maxlength="120"
 				/>
 			</label>
+			{#if text.trim()}<p class="faint small">
+					The body is drawn with empty hands and no effects. Add weapons and props as items.
+				</p>{/if}
 			{#if reservedMove(id)}<p class="notice warn small">
 					<CircleAlert size={14} />{reservedMove(id)}
 				</p>{:else if motionIssue}<p class="notice warn small">

@@ -573,7 +573,7 @@ export function chromaPrompt(item: string, key: Key, cellsNote: string, anchor =
 		(anchor
 			? `Frame 1 already wears ${item}: copy exactly that design, colors and size onto the other frames. `
 			: '') +
-		`Add only ${item}, drawn in its own natural colors (no ${n} on the item), identical design in all frames. ${cellsNote}` +
+		`Add only ${item}, drawn in its own colors (no ${n} on the item), identical design in all frames. ${cellsNote}` +
 		'Keep every other pixel, the pose, the outline and the transparent background unchanged.'
 	);
 }

@@ -294,7 +294,7 @@ export function gridPrompt(o: {
 	const held = slotOf(o.slot).class === 'held';
 	const instruction = held
 		? `Add the identical ${o.item} to the character's ${handOf(o.slot)} hand in every animation frame, gripped in the fist and following its arm pose; ${ONE_HELD}; no effects. `
-		: `Draw the identical ${o.item} on every animation frame, following each frame's pose${o.slot === 'back' ? '; it hangs from the shoulders down the back and never wraps around or follows the arms' : ''}; empty hands, no weapon, no effects. `;
+		: `Draw the identical ${o.item} on every animation frame, following each frame's pose${o.slot === 'back' ? '; it never wraps around or follows the arms' : ''}; empty hands, no weapon, no effects. `;
 	return (
 		`This image is a sprite sheet: a ${cols}x${rows} grid of ${o.cell.w}x${o.cell.h} px frames of the same pixel art character, a solid ${color} mannequin. ` +
 		`The first ${o.n} frames (left to right, top to bottom) are ${(o.parts && o.parts.length > 1 ? o.parts : [{ anim: o.anim, n: o.n }]).map((p, i) => `${i ? 'then ' : ''}a ${p.n}-frame ${actionOf(p.anim)} animation`).join(', ')} ${facing(o.dir)}. ` +

@@ -26,7 +26,7 @@ import {
 } from '../items/items.ts';
 import { withH4 } from '../items/run.ts';
 import { referenceBodies } from '../items/garment-coverage.ts';
-import { png, type Req } from '../pixellab/routes.ts';
+import { frameOrder, png, type Req } from '../pixellab/routes.ts';
 import type { JobRec } from '../pixellab/queue.ts';
 import { borderPx, paddedPoses, poseBatches, poseCallGens } from '../rig/clips.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
@@ -336,9 +336,7 @@ export async function poseFitRequests(
 }
 async function decoded(record: FitRecord): Promise<Img[]> {
 	if (record.rec.state !== 'done') throw new Error('A fitting call has not completed.');
-	const results = record.rec.jobs
-		.flatMap((j) => j.results)
-		.sort((a, b) => Number(a.label.split('/').at(-1)) - Number(b.label.split('/').at(-1)));
+	const results = record.rec.jobs.flatMap((j) => j.results).sort(frameOrder);
 	return Promise.all(
 		results.map(async (o) => {
 			const blob = await db.getBlob(o.sha);

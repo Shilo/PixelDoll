@@ -49,7 +49,14 @@ import {
 	expectsWaistBand,
 	type StandingDesignView
 } from './design-consistency.ts';
-import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
+import {
+	EDIT_MIN_FRAMES,
+	editFrameCap,
+	frameOrder,
+	png,
+	routes,
+	type Req
+} from '../pixellab/routes.ts';
 import {
 	GATES,
 	heldParts,
@@ -219,8 +226,7 @@ const settled = (id: string) =>
 			}
 		});
 	});
-const outputsOf = (r: JobRec) =>
-	[...(r.jobs[0]?.results ?? [])].sort((a, b) => +a.label - +b.label);
+const outputsOf = (r: JobRec) => [...(r.jobs[0]?.results ?? [])].sort(frameOrder);
 /** Outputs of call k in cell order (an anchored call's first output is the anchor's: dropped). */
 const cellOuts = (k: number, c: CallState, r: JobRec) =>
 	outputsOf(r).slice(c.reference || anchored(k, c.kind) ? 1 : 0);

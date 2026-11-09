@@ -16,6 +16,7 @@ import {
 import {
 	BASE_ANIMS,
 	baseAnimation,
+	frameOrder,
 	png,
 	routes,
 	type Direction,
@@ -316,9 +317,7 @@ async function imagesOf(
 	r: JobRec,
 	read?: (sha: string) => Promise<Img>
 ): Promise<{ label: string; img: Img }[]> {
-	const res = r.jobs
-		.flatMap((s) => s.results)
-		.sort((a, b) => +a.label.split('/').pop()! - +b.label.split('/').pop()!);
+	const res = r.jobs.flatMap((s) => s.results).sort(frameOrder);
 	return Promise.all(
 		res.map(async (x) => {
 			if (read) return { label: x.label, img: await read(x.sha) };
@@ -442,7 +441,7 @@ interface ClipJob {
 	view?: Manifest['rig']['view'];
 	activityScope?: string;
 	signal?: AbortSignal;
-	unarmed?: boolean;
+	action: string;
 	paletteRepair?: boolean;
 	authored?: boolean;
 }
@@ -453,6 +452,12 @@ interface ClipOut {
 	recs: JobRec[];
 	processing?: ClipSource['processing'];
 }
+/** The raw skeleton-v3 body render action: the move's label, never the user's description, whose prop words were drawn
+ * into the frozen body (a sword from behind; prompt-trim-ab.md); the description drives the motion request only. The
+ * visible-side pose style keeps the body bare: props and effects drawn here would be baked into every frame. */
+export const bodyAction = (spec: Pick<MoveSpec, 'id' | 'poseStyle'>) =>
+	actionOf(spec.id) +
+	(spec.poseStyle === 'visible-side-v1' ? ', empty hands, no weapon, no props, no effects' : '');
 async function renderClip(j: ClipJob): Promise<ClipOut> {
 	const restB64 = await b64(j.rest),
 		recs: JobRec[] = [];
@@ -462,8 +467,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 			rest: j.restKps,
 			keypoints: j.keypoints,
 			description: j.looks,
-			action:
-				actionOf(j.anim) + (j.unarmed ? ', empty hands, no weapon, no props, no effects' : ''),
+			action: j.action,
 			dir: j.dir,
 			seed: j.seed,
 			view: j.view
@@ -1304,11 +1308,7 @@ async function inspectMeasurementRecovery(
 				rest: rest.keypoints,
 				keypoints,
 				description: rec.character!.looks,
-				action:
-					actionOf(spec.id) +
-					(spec.poseStyle === 'visible-side-v1'
-						? ', empty hands, no weapon, no props, no effects'
-						: ''),
+				action: bodyAction(spec),
 				dir: d,
 				seed: spec.seed + 101 + attempt * 7919,
 				view: rig.view
@@ -1923,7 +1923,7 @@ async function addBodyClip(
 					view: rig.view,
 					signal,
 					activityScope: spec.activityScope,
-					unarmed: spec.poseStyle === 'visible-side-v1',
+					action: bodyAction(spec),
 					paletteRepair: !!spec.bodyPaletteRepair
 				})
 			};

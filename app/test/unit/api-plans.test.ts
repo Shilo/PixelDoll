@@ -12,7 +12,7 @@ import {
 	movePlan,
 	setupPeekPlan
 } from '../../src/studio/apiPlans.ts';
-import { estimate, moveEstimate, moveFrames } from '../../src/studio/create.ts';
+import { bodyAction, estimate, moveEstimate, moveFrames } from '../../src/studio/create.ts';
 import { basePrompt } from '../../src/studio/model.ts';
 import { itemRoute } from '../../src/studio/itemRoute.ts';
 import type { Draft, RigCtx } from '../../src/lib/items/run.ts';
@@ -131,6 +131,13 @@ test('described move lists each generated direction and measurement at the displ
 		keep_first_frame: false
 	});
 	expect(plan.filter((c) => c.path === '/estimate-skeleton')).toHaveLength(16);
+	// the frozen body render sends the move label, never the description (its prop words reach the body)
+	const render = plan.find((c) => c.path === '/animate-with-skeleton-v3');
+	expect((render!.body as { action: string }).action).toBe('jump');
+	expect(bodyAction({ ...spec, poseStyle: 'visible-side-v1' })).toBe(
+		'jump, empty hands, no weapon, no props, no effects'
+	);
+	expect(bodyAction({ id: 'idle' })).toBe('breathing idle');
 });
 
 test('setup preflight prices each unique measurement and registration without inventing image data', () => {

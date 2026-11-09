@@ -3,6 +3,7 @@ import { routes, BASE_ANIMS, baseAnimation, type Req } from '../lib/pixellab/rou
 import {
 	type CreateSpec,
 	type MoveSpec,
+	bodyAction,
 	bodyMoveIssue,
 	creationLooks,
 	isAuthoredAction,
@@ -10,7 +11,7 @@ import {
 	moveFrames
 } from './create.ts';
 import { basePrompt } from './model.ts';
-import { actionOf, poseBatches, poseCallGens } from '../lib/rig/clips.ts';
+import { poseBatches, poseCallGens } from '../lib/rig/clips.ts';
 import { pickKey } from '../lib/image/chroma.ts';
 import {
 	gridEstimate,
@@ -282,11 +283,7 @@ export function movePlan(
 				generations: poseCallGens(frames),
 				body: {
 					description: rec.character?.looks,
-					action:
-						actionOf(spec.id) +
-						(spec.poseStyle === 'visible-side-v1'
-							? ', empty hands, no weapon, no props, no effects'
-							: ''),
+					action: bodyAction(spec),
 					direction,
 					view: m.rig.view ?? 'low top-down',
 					...(spec.seed === undefined ? {} : { seed: spec.seed + 101 }),
