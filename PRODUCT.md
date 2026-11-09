@@ -8,19 +8,21 @@ web
 
 ## Users
 
-Indie game developers, preferably ones who already use PixelLab (https://pixellab.ai), the AI pixel-art generator for game assets. They are solo developers or small teams making 2D games who need animated characters whose equipment can be swapped in-engine: hair, headgear, clothing, boots, capes and held weapons on one base body. They work in their own engine (Godot, Phaser, Unity, Aseprite, RPG Maker, GDevelop or raw PNG and JSON) and pay for PixelLab generations with their own account.
+Indie game developers, preferably ones who already use PixelLab (https://pixellab.ai), the AI pixel-art generator for game assets. They are solo developers or small teams making 2D games who need animated characters whose equipment can be swapped in-engine: hair, headgear, clothing, boots, capes and held weapons on one base body. They use game engines and asset tools such as Godot, Phaser, Unity, GDevelop, RPG Maker, Aseprite or raw PNG and JSON, and pay for PixelLab generations with their own account.
 
 PixelLab is the preferred entry point, not a requirement for local use: the bundled demo, dressing, previewing, recoloring and exporting work without a key. PixelDoll is a tool for game developers, not a dress-up toy for casual players.
 
 ## Product Purpose
 
-PixelDoll makes traditional frame-based paper dolling practical for AI-generated 2D characters. A user creates or imports one frozen base body (4 or 8 directions, several moves), adds each item as its own transparent layer that lines up on every frame, recolors items by exact palette ramps, previews the result in a live world, and exports per-layer spritesheets with a manifest their engine can load.
+PixelDoll makes traditional frame-based paper dolling practical for AI-generated 2D characters. A user creates or imports one frozen base body (two-direction side-scroller, four- or eight-direction presets, several moves), adds each item as its own transparent layer that lines up on every frame, recolors items by exact palette ramps, previews the result in a live world, and exports it.
+
+Layer-aware exports (Godot, Phaser, Unity, GDevelop, Aseprite, PNG + JSON) keep each equipment layer separate with a manifest. RPG Maker exports are baked walking sheets rather than runtime-swappable layers.
 
 Success means a developer gets accurate, consistent, engine-ready layers without understanding skeletons, chroma extraction or API payloads, and without wasting paid generations.
 
 ## Positioning
 
-PixelLab returns one composited image per call and has no layers. PixelDoll turns that output into true paper-doll layers: a frozen base plus one transparent layer per item on the same grid and pivot, checked by quality gates (alignment, frame and direction consistency, grip side, stray pixels) and exported per layer to game engines. It is free, open source (MIT), fully client-side and uses the developer's own PixelLab token.
+PixelLab returns one composited image per call and has no layers. PixelDoll turns that output into true paper-doll layers: a frozen base plus one transparent layer per item on the same grid and pivot, checked by quality gates (alignment, frame and direction consistency, grip side, stray pixels) and exported per layer to game engines and asset tools. It is free, open source (MIT), fully client-side and uses the developer's own PixelLab token.
 
 ## Operating Context
 
@@ -57,7 +59,7 @@ PixelLab returns one composited image per call and has no layers. PixelDoll turn
 - Screenshots: docs/media/studio-dark.png, docs/media/outfit-slash-sheet.png, docs/media/godot-render-slash.png (a Godot 4 render pixel-identical to the compositor).
 - Verification reports under docs/testing/ (engine exports, shields, shared equipment, professional audit).
 - User guide: docs/user-guide.md.
-- No testimonials, customer logos, user counts or usage metrics exist; do not fabricate them. Unity import compiles but is not yet verified live.
+- No verified testimonials, customer logos, user counts or usage metrics are on hand; do not fabricate them. Unity import compiles but is not yet verified live.
 
 ## Product Principles
 
@@ -72,5 +74,5 @@ PixelLab returns one composited image per call and has no layers. PixelDoll turn
 - Design target: WCAG 2.2 Level AA, already the reference in earlier design research (docs/design/2026-10-22-redesign/). It is a target, not an audited or certified conformance claim.
 - Keyboard, touch and mouse access; visible focus; accessible names that match visible labels; reduced motion; no hover-only actions.
 - Touch targets aim for about 44 CSS px on primary controls (WCAG's 24 px minimum is the floor).
-- Every screen size and orientation, verified down to 320×568 and 844×390.
+- Support desktop, tablet and phone in portrait and landscape. Historical checks include 320×568 and 844×390; the 2026-11-09 visual captures cover 1440×900 and 390×844 in both themes. These checks are not exhaustive device or accessibility-conformance verification.
 - Inclusive generation: quality checks must be fair across skin tones (open board cards cover the rim guard and absorbOutline).

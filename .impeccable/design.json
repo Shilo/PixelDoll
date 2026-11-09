@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-09T10:04:19.547Z",
+  "generatedAt": "2026-11-09T10:47:28.754Z",
   "title": "Design System: PixelDoll",
   "extensions": {
     "colorMeta": {
@@ -348,19 +348,23 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Screen titles and the current character name at the upper left."
+        "purpose": "Characters title and current character name; New character uses clamp(28px, 2.3vw, 40px) and 28px on phones."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Selected character name under the stage on Characters (38px on wide desktop)."
+        "purpose": "Selected character name below the Characters stage: 30px default, 38px above 1100px wide and 541px tall, 28px in the phone layout, 24px in short landscape."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Panel and dialog headings."
+        "purpose": "Equipment panel headings (19px). Standard dialog headings are 18px; Your characters is 24px."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Tabs, item names and form text; inputs stay at 16px or larger."
+        "purpose": "Tabs, item names and form text in panels; the app default text is 14px/1.4 (Bronze base.css is not loaded)."
+      },
+      "action": {
+        "displayName": "Action",
+        "purpose": "Labels of bronze-filled scene primary actions (14px in the phone layout)."
       },
       "label": {
         "displayName": "Label",
@@ -380,7 +384,7 @@
         "name": "floating",
         "value": "0 8px 28px rgb(0 0 0 / .18)",
         "light": "0 8px 28px rgb(0 0 0 / .1)",
-        "purpose": "Menus, popovers, tooltips, toasts and the playback bar, with a 12px backdrop blur."
+        "purpose": "Menus, popovers, tooltips, toasts and the playback bar, with a --bu-blur (12px) backdrop blur on floating surfaces."
       },
       {
         "name": "dialog",
@@ -392,12 +396,12 @@
     "motion": [
       {
         "name": "duration",
-        "value": "140ms",
-        "purpose": "Bronze state transitions; 0ms under prefers-reduced-motion."
+        "value": "var(--bu-duration) = 140ms",
+        "purpose": "Bronze state transitions; 0ms under prefers-reduced-motion, where PixelDoll also removes CSS transitions and animations (sprite playback is unaffected)."
       },
       {
         "name": "blur",
-        "value": "12px",
+        "value": "var(--bu-blur) = 12px",
         "purpose": "Backdrop blur on floating surfaces; removed for reduced transparency or more contrast."
       }
     ],
@@ -412,19 +416,31 @@
       },
       {
         "name": "phone",
-        "value": "760px"
+        "value": "max-width 760px and min-height 541px"
       },
       {
-        "name": "tablet",
-        "value": "1100px"
+        "name": "intermediate-desktop",
+        "value": "max-width 1100px (24px margin, 300px rail)"
       },
       {
-        "name": "tabs-in-flow",
-        "value": "1279px"
+        "name": "header-wide",
+        "value": "1101px (and min-height 541px)"
+      },
+      {
+        "name": "tabs-top-center",
+        "value": "1280px"
+      },
+      {
+        "name": "creator-three-columns",
+        "value": "1250px"
+      },
+      {
+        "name": "creator-two-columns",
+        "value": "1000px"
       },
       {
         "name": "short-landscape",
-        "value": "max-height: 540px"
+        "value": "max-height 540px and min-width 600px"
       },
       {
         "name": "short-dialog",
@@ -433,8 +449,13 @@
     ],
     "layout": {
       "rail": "clamp(300px, 21.56vw, 414px)",
-      "edge": "clamp(28px, 2.92vw, 56px); 20px on phones",
-      "header": "44px row, 20px from the top"
+      "edge": "clamp(28px, 2.92vw, 56px) on wide desktop; 24px with a fixed 300px rail up to 1100px wide; 20px in the phone layout",
+      "header": "from 761px wide and 541px tall: 44px row 20px from the top; above 1100px wide and 541px tall: 50px row 28px from the top",
+      "viewTabs": "top center from 1280px wide; in the character details from 761px to 1279px wide; both only when at least 541px tall",
+      "phone": "max-width 760px and min-height 541px",
+      "shortLandscape": "max-height 540px and min-width 600px",
+      "equipmentGrid": "desktop two columns, 16px gaps, full-width None; phones three columns, 8px gaps, None as a cell",
+      "creator": "four columns, three at 1250px, two at 1000px, stacked on phones"
     }
   },
   "components": [
@@ -442,82 +463,90 @@
       "name": "Primary Button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The single main action on a screen, such as Customize or Create character.",
-      "html": "<button class=\"ds-btn-primary\">Customize Adventurer <svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m9 18 6-6-6-6\"/></svg></button>",
-      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 24px; border: 0; border-radius: 8px; background: var(--bu-accent, #c9a66b); color: var(--bu-on-accent, #111317); font: 600 16px/1.25 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-btn-primary:hover { box-shadow: inset 0 0 0 2px var(--bu-on-accent, #111317); } .ds-btn-primary:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+      "description": "Scene primary action (New item): bronze fill, 46px desktop, 44px and 14px text on phones. Hover keeps the fill and adds an inset on-accent ring; sheet actions share this hover.",
+      "html": "<button class=\"ds-btn-primary\">+ New head item</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--bu-accent, #c9a66b); color: var(--bu-on-accent, #111317); font: 600 16px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-btn-primary:hover { box-shadow: inset 0 0 0 2px var(--bu-on-accent, #111317); } .ds-btn-primary:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
+    },
+    {
+      "name": "Customize Button",
+      "kind": "button",
+      "refersTo": "button-customize",
+      "description": "The 56px primary action on Characters.",
+      "html": "<button class=\"ds-btn-customize\">Customize Adventurer <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m9 18 6-6-6-6\"/></svg></button>",
+      "css": ".ds-btn-customize { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 56px; padding: 12px; border: 0; border-radius: 8px; background: var(--bu-accent, #c9a66b); color: var(--bu-on-accent, #111317); font: 600 16px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-btn-customize:hover { box-shadow: inset 0 0 0 2px var(--bu-on-accent, #111317); } .ds-btn-customize:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
     {
       "name": "Outline Button",
       "kind": "button",
       "refersTo": "button-outline",
-      "description": "Header actions such as Share, Export, Import and New character.",
-      "html": "<button class=\"ds-btn-outline\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 15V3\"/><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m7 10 5 5 5-5\"/></svg>Export</button>",
-      "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--bu-line, #3d3f43); border-radius: 8px; background: color-mix(in srgb, var(--bu-surface, #202329) 40%, transparent); color: var(--bu-text, #f2eee6); font: 400 14px/1.25 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; transition: background-color 140ms; } .ds-btn-outline:hover { background: var(--bu-hover, #2d3035); border-color: var(--bu-border, #9a9892); } .ds-btn-outline:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+      "description": "Desktop header actions such as Share, Export, Import and New character (icon-only on phones).",
+      "html": "<button class=\"ds-btn-outline\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 15V3\"/><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><path d=\"m7 10 5 5 5-5\"/></svg>Export</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 1px solid var(--bu-line, #3d3f43); border-radius: 8px; background: var(--bu-outline, rgba(32,35,41,.4)); color: var(--bu-text, #f2eee6); font: 400 14px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; transition: background-color var(--bu-duration, 140ms); } .ds-btn-outline:hover { background: var(--bu-hover, #2d3035); border-color: var(--bu-border, #9a9892); } .ds-btn-outline:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
     {
       "name": "Quiet Button",
       "kind": "button",
       "refersTo": "button-quiet",
       "description": "Borderless text or icon actions on the scene, such as the Characters back link.",
-      "html": "<button class=\"ds-btn-quiet\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m15 18-6-6 6-6\"/></svg>Characters</button>",
-      "css": ".ds-btn-quiet { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 8px; background: none; color: var(--bu-text, #f2eee6); font: 400 14px/1.25 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-btn-quiet:hover { background: color-mix(in srgb, var(--bu-surface, #202329) 80%, transparent); } .ds-btn-quiet:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+      "html": "<button class=\"ds-btn-quiet\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m15 18-6-6 6-6\"/></svg>Characters</button>",
+      "css": ".ds-btn-quiet { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 8px; background: none; color: var(--bu-text, #f2eee6); font: 400 14px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-btn-quiet:hover { background: var(--bu-action-hover, rgba(32,35,41,.8)); } .ds-btn-quiet:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
     {
       "name": "View Tabs",
       "kind": "nav",
       "refersTo": "tab-selected",
-      "description": "Underlined text tabs for views and panel modes.",
-      "html": "<nav class=\"ds-tabs\"><button aria-selected=\"true\">Preview</button><button>Top-down</button><button>Side-scroller</button></nav>",
-      "css": ".ds-tabs { display: flex; gap: 28px; font: 400 16px/1.5 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-tabs button { min-height: 44px; padding: 8px 0; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--bu-text, #f2eee6); font: inherit; cursor: pointer; } .ds-tabs button[aria-selected=true] { color: var(--bu-accent, #c9a66b); border-bottom-color: var(--bu-accent, #c9a66b); font-weight: 600; } .ds-tabs button:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+      "description": "View and panel-mode buttons with aria-pressed and a 1px underline. (Appearance/Prompt is a tablist with aria-selected and a 2px underline.)",
+      "html": "<nav class=\"ds-tabs\" aria-label=\"Character view\"><button aria-pressed=\"true\">Preview</button><button aria-pressed=\"false\">Top-down</button><button aria-pressed=\"false\">Side-scroller</button></nav>",
+      "css": ".ds-tabs { display: flex; gap: 28px; font: 400 16px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-tabs button { min-height: 44px; padding: 8px 0; border: 0; border-radius: 0; border-bottom: 1px solid transparent; background: none; color: var(--bu-text, #f2eee6); font: inherit; cursor: pointer; } .ds-tabs button:hover { background: var(--bu-action-hover, rgba(32,35,41,.8)); } .ds-tabs button[aria-pressed=true] { color: var(--bu-accent, #c9a66b); border-bottom-color: var(--bu-accent, #c9a66b); font-weight: 600; } .ds-tabs button:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
     {
       "name": "Item Tile",
       "kind": "card",
       "refersTo": "item-tile-selected",
-      "description": "Equipment card in the Wardrobe grid; selected shows a bronze border, name and check.",
-      "html": "<div class=\"ds-tiles\"><button class=\"ds-tile\" aria-pressed=\"true\"><span class=\"ds-tile-art\"></span><span>Steel helmet</span></button><button class=\"ds-tile\"><span class=\"ds-tile-art\"></span><span>Wizard hat</span></button></div>",
-      "css": ".ds-tiles { display: grid; grid-template-columns: repeat(2, 148px); gap: 16px; } .ds-tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 148px; padding: 12px 6px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-radius: 8px; background: color-mix(in srgb, var(--bu-surface, #202329) 65%, transparent); color: var(--bu-text, #f2eee6); font: 400 16px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-tile-art { width: 64px; height: 64px; background: repeating-conic-gradient(var(--bu-muted, #b8b5ad) 0 25%, transparent 0 50%) 0 0 / 16px 16px; opacity: .35; } .ds-tile:hover { border-color: var(--bu-border, #9a9892); background: var(--bu-hover, #2d3035); } .ds-tile[aria-pressed=true] { color: var(--bu-accent, #c9a66b); border-color: var(--bu-accent, #c9a66b); background: var(--bu-selected, #353330); } .ds-tile[aria-pressed=true]::after { content: '\\2713'; position: absolute; top: 8px; right: 10px; color: var(--bu-accent, #c9a66b); } .ds-tile:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+      "description": "Desktop Wardrobe card (two columns); selected shows a bronze border, name and check. Phones use three compact columns.",
+      "html": "<div class=\"ds-tiles\"><button class=\"ds-tile\" aria-pressed=\"true\"><span class=\"ds-tile-art\"></span><span>Steel helmet</span></button><button class=\"ds-tile\" aria-pressed=\"false\"><span class=\"ds-tile-art\"></span><span>Wizard hat</span></button></div>",
+      "css": ".ds-tiles { display: grid; grid-template-columns: repeat(2, 148px); gap: 16px; } .ds-tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 148px; padding: 12px 6px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-radius: 8px; background: var(--bu-tile, rgba(32,35,41,.65)); color: var(--bu-text, #f2eee6); font: 400 16px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); cursor: pointer; } .ds-tile-art { width: 64px; height: 64px; background: repeating-conic-gradient(var(--bu-muted, #b8b5ad) 0 25%, transparent 0 50%) 0 0 / 16px 16px; opacity: .35; } .ds-tile:hover { border-color: var(--bu-border, #9a9892); background: var(--bu-hover, #2d3035); } .ds-tile[aria-pressed=true] { color: var(--bu-accent, #c9a66b); border-color: var(--bu-accent, #c9a66b); background: var(--bu-selected, #353330); } .ds-tile[aria-pressed=true]:hover { background: var(--bu-hover, #2d3035); border-color: var(--bu-border, #9a9892); } .ds-tile[aria-pressed=true]::after { content: '\\2713'; position: absolute; top: 8px; right: 10px; color: var(--bu-accent, #c9a66b); } .ds-tile:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
     {
       "name": "Text Input",
       "kind": "input",
       "refersTo": "input",
       "description": "Search, name and number fields.",
-      "html": "<input class=\"ds-input\" placeholder=\"Search characters\">",
-      "css": ".ds-input { width: 260px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--bu-border, #9a9892); border-radius: 8px; background: var(--bu-surface, #202329); color: var(--bu-text, #f2eee6); font: 400 16px/1.5 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-input::placeholder { color: var(--bu-muted, #b8b5ad); } .ds-input:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; } .ds-input[aria-invalid=true] { border-color: var(--bu-danger, #f2a099); box-shadow: inset 3px 0 var(--bu-danger, #f2a099); }"
+      "html": "<input class=\"ds-input\" aria-label=\"Search characters\" placeholder=\"Search characters\">",
+      "css": ".ds-input { width: 260px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--bu-border, #9a9892); border-radius: 8px; background: var(--bu-surface, #202329); color: var(--bu-text, #f2eee6); font: 400 16px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-input::placeholder { color: var(--bu-muted, #b8b5ad); } .ds-input:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; } .ds-input[aria-invalid=true] { border-color: var(--bu-danger, #f2a099); box-shadow: inset 3px 0 var(--bu-danger, #f2a099); }"
     },
     {
       "name": "Palette Ramp",
       "kind": "chip",
       "refersTo": "palette-ramp",
-      "description": "Recolor choice showing the whole ramp; the selected one gets a text-colored outline.",
-      "html": "<div class=\"ds-ramps\"><button class=\"ds-ramp\" aria-checked=\"true\"><i style=\"background:#3a3d44\"></i><i style=\"background:#6f737b\"></i><i style=\"background:#b9bcc2\"></i></button><button class=\"ds-ramp\"><i style=\"background:#5a1218\"></i><i style=\"background:#b02a33\"></i><i style=\"background:#f07a7a\"></i></button><button class=\"ds-ramp\"><i style=\"background:#1d3f8f\"></i><i style=\"background:#3f73e0\"></i><i style=\"background:#8fb4ff\"></i></button></div>",
-      "css": ".ds-ramps { display: flex; gap: 6px; } .ds-ramp { position: relative; display: flex; width: 44px; height: 24px; padding: 0; border: 0; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px var(--bu-border, #9a9892); background: none; cursor: pointer; } .ds-ramp i { flex: 1; } .ds-ramp::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22); } .ds-ramp[aria-checked=true] { outline: 2px solid var(--bu-text, #f2eee6); outline-offset: 2px; } .ds-ramp:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+      "description": "Recolor choice showing the whole ramp; the selected one gets a text-colored outline. The colors are sample user data.",
+      "html": "<div class=\"ds-ramps\" role=\"radiogroup\" aria-label=\"Metal\"><button class=\"ds-ramp\" role=\"radio\" aria-checked=\"true\" aria-label=\"Gray\"><i style=\"background:#3a3d44\"></i><i style=\"background:#6f737b\"></i><i style=\"background:#b9bcc2\"></i></button><button class=\"ds-ramp\" role=\"radio\" aria-checked=\"false\" aria-label=\"Red\"><i style=\"background:#5a1218\"></i><i style=\"background:#b02a33\"></i><i style=\"background:#f07a7a\"></i></button><button class=\"ds-ramp\" role=\"radio\" aria-checked=\"false\" aria-label=\"Blue\"><i style=\"background:#1d3f8f\"></i><i style=\"background:#3f73e0\"></i><i style=\"background:#8fb4ff\"></i></button></div>",
+      "css": ".ds-ramps { display: flex; gap: 6px; } .ds-ramp { position: relative; display: flex; width: 44px; height: 24px; padding: 0; border: 0; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px var(--bu-border, #9a9892); background: none; cursor: pointer; } .ds-ramp i { flex: 1; } .ds-ramp::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22); } .ds-ramp[aria-checked=true] { outline: 2px solid var(--bu-text, #f2eee6); outline-offset: 2px; } .ds-ramp:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
     {
       "name": "Notice",
       "kind": "custom",
       "refersTo": "toast",
-      "description": "Toasts and notices with a tone stripe and icon.",
-      "html": "<div class=\"ds-notice\" role=\"status\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg><div><strong>Preview</strong><br>Features and saved work may change. Export your work to keep a backup.</div></div>",
-      "css": ".ds-notice { display: flex; gap: 12px; align-items: flex-start; max-width: 340px; padding: 12px 16px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-inline-start: 3px solid var(--bu-warning, #e7bc75); border-radius: 12px; background: color-mix(in srgb, var(--bu-warning, #e7bc75) 8%, var(--bu-surface, #202329)); color: var(--bu-text, #f2eee6); font: 400 14px/1.5 var(--bu-font, 'Segoe UI', system-ui, sans-serif); box-shadow: var(--bu-shadow, 0 8px 28px rgb(0 0 0 / .18)); } .ds-notice svg { flex: none; color: var(--bu-warning, #e7bc75); }"
+      "description": "Toasts and notices with a tone stripe, icon and dismiss button.",
+      "html": "<div class=\"ds-notice\" role=\"status\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"/><path d=\"M12 9v4\"/><path d=\"M12 17h.01\"/></svg><div><strong>Preview</strong><br>Features and saved work may change. Export your work to keep a backup.</div><button class=\"ds-notice-x\" aria-label=\"Dismiss\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/></svg></button></div>",
+      "css": ".ds-notice { display: flex; gap: 12px; align-items: flex-start; max-width: 380px; padding: 12px 16px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-inline-start: 3px solid var(--bu-warning, #e7bc75); border-radius: 12px; background: color-mix(in srgb, var(--bu-warning, #e7bc75) 8%, var(--bu-surface, #202329)); color: var(--bu-text, #f2eee6); font: 400 14px/1.5 var(--bu-font, 'Segoe UI', system-ui, sans-serif); box-shadow: var(--bu-shadow, 0 8px 28px rgb(0 0 0 / .18)); } .ds-notice > svg { flex: none; color: var(--bu-warning, #e7bc75); } .ds-notice-x { flex: none; display: grid; place-items: center; min-width: 44px; min-height: 44px; margin: -10px -12px -10px 0; border: 0; border-radius: 8px; background: none; color: inherit; cursor: pointer; } .ds-notice-x:hover { background: var(--bu-action-hover, rgba(32,35,41,.8)); } .ds-notice-x:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     },
     {
       "name": "Playback Bar",
       "kind": "custom",
       "refersTo": "button-quiet",
-      "description": "Floating bar under the character in Preview: play, move, facing and Inspect.",
-      "html": "<div class=\"ds-playback\"><button aria-label=\"Pause\">II</button><button>Walk</button><button aria-pressed=\"true\">S</button><button>E</button><button>N</button><button>W</button><button>Inspect</button></div>",
-      "css": ".ds-playback { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; min-height: 54px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-radius: 8px; background: var(--bu-floating, color-mix(in srgb, var(--bu-surface, #202329) 92%, transparent)); backdrop-filter: blur(12px); color: var(--bu-text, #f2eee6); font: 400 18px/1 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-playback button { min-width: 40px; height: 44px; padding: 6px 10px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; cursor: pointer; } .ds-playback button:hover { background: color-mix(in srgb, var(--bu-surface, #202329) 80%, transparent); } .ds-playback button[aria-pressed=true] { color: var(--bu-accent, #c9a66b); background: color-mix(in srgb, var(--bu-accent, #c9a66b) 14%, transparent); } .ds-playback button:focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 3px; }"
+      "description": "Floating bar under the character in Preview: pause, native move select, facing and Inspect.",
+      "html": "<div class=\"ds-playback\"><button aria-label=\"Pause\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"14\" y=\"3\" width=\"5\" height=\"18\" rx=\"1\"/><rect x=\"5\" y=\"3\" width=\"5\" height=\"18\" rx=\"1\"/></svg></button><select aria-label=\"Move\"><option>Walk</option><option>Idle</option></select><button aria-pressed=\"true\" aria-label=\"Face south\">S</button><button aria-pressed=\"false\" aria-label=\"Face east\">E</button><button aria-pressed=\"false\" aria-label=\"Face north\">N</button><button aria-pressed=\"false\" aria-label=\"Face west\">W</button><button><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/><path d=\"M3 12h18\"/><path d=\"M12 3v18\"/></svg>Inspect</button></div>",
+      "css": ".ds-playback { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; min-height: 54px; border: 1px solid var(--bu-rim, rgba(184,181,173,.38)); border-radius: 8px; background: var(--bu-floating, rgba(32,35,41,.92)); -webkit-backdrop-filter: blur(var(--bu-blur, 12px)); backdrop-filter: blur(var(--bu-blur, 12px)); box-shadow: var(--bu-shadow, 0 8px 28px rgb(0 0 0 / .18)); color: var(--bu-text, #f2eee6); font: 400 18px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-playback button { display: flex; align-items: center; gap: 6px; min-width: 40px; height: 44px; padding: 6px; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; cursor: pointer; } .ds-playback select { height: 44px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: inherit; font: 400 20px/1.4 var(--bu-font, 'Segoe UI', system-ui, sans-serif); } .ds-playback :is(button, select):hover { background: var(--bu-action-hover, rgba(32,35,41,.8)); } .ds-playback button[aria-pressed=true] { color: var(--bu-accent, #c9a66b); background: var(--bu-direction-selected, rgba(201,166,107,.14)); } .ds-playback :is(button, select):focus-visible { outline: 2px solid var(--bu-focus, #c9a66b); outline-offset: 2px; }"
     }
   ],
   "narrative": {
-    "northStar": "The character stands center stage; the tools sit at the edges",
-    "overview": "That line is a plain summary of the layout, not a theme. Every main screen is a full-window scene: a photographic floor that fades into mist (dark stone in dark mode, pale polished stone in light mode) with the pixel-art character large in the middle. The interface is placed around it: navigation along the top, the character's name and description at the upper left, equipment and colors in a column on the right, and playback controls in a small floating bar under the character. On phones the same pieces stack: header, name, view tabs, a shorter stage, and an expandable bottom panel for equipment.\n\nThe look is calm and modern: system sans-serif text, Lucide line icons, thin borders, and a single warm bronze accent. The only serif is Georgia for screen titles and character names. The character's pixels are never lit, tinted, filtered or resized with smoothing. Internally the two world themes are called Obsidian (dark) and Porcelain (light), together \"Obsidian / Porcelain Bronze\" ([approved direction](docs/design/2026-10-22-redesign/round-4-discussion/current-design.md)).\n\nDensity is low around the stage and moderate in the right column, where people do most of their work: picking items, recoloring and adding new items.",
+    "northStar": "In character views, the character is prominent and controls are grouped around it.",
+    "overview": "Characters and Customize share a full-window world background: a photographic floor that fades into mist (dark stone in dark mode, pale polished stone in light mode). Characters centers the selected character beside the library. Customize places the character's name and description at the upper left, equipment and colors in a column on the right, and the playback controls in a small floating bar under the character. New character instead uses a full-screen form over the same world background. On phones the pieces stack: header, name, view tabs, a shorter stage, and an expandable bottom panel for equipment.\n\nThe look is calm and modern: system sans-serif text, Lucide line icons, thin borders, and a single warm bronze accent. The only serif is Georgia for screen titles and character names. The character's pixels are never lit, tinted, filtered or resized with smoothing. Internally the two world themes are called Obsidian (dark) and Porcelain (light), together \"Obsidian / Porcelain Bronze\" ([approved direction](docs/design/2026-10-22-redesign/round-4-discussion/current-design.md)).\n\nDensity is low around the stage and moderate in the right column, where people do most of their work: picking items, recoloring and adding new items.",
     "keyCharacteristics": [
-      "Full-window world scene with the character as the largest element on screen.",
+      "Full-window world background with the character as the visual focus of character views.",
       "Dark by default, with a complete light theme (not an inverted filter).",
-      "One accent color, bronze, used for the selected state, focus and the single main action.",
+      "One accent color, bronze, used for selection, focus, links and primary actions.",
       "Georgia only for titles and names; Segoe UI / system sans-serif for everything else.",
       "Controls mostly sit straight on the scene as text and icons; borders appear where you choose something.",
       "Native dialogs and menus with Bronze styling; bottom sheets on phones."
@@ -525,7 +554,7 @@
     "rules": [
       {
         "name": "The One Accent Rule",
-        "body": "Bronze marks what is selected, focused or the main action. It is not used for decoration, headings or large fills, and each screen has at most one bronze-filled button.",
+        "body": "Bronze marks selection, focus, links and primary actions. Ordinary headings and body copy stay neutral. Some recovery and item-review states show more than one bronze-filled action.",
         "section": "colors"
       },
       {
@@ -545,30 +574,30 @@
       },
       {
         "name": "The No Pixel Type Rule",
-        "body": "The UI never uses pixel fonts or pixel icons; the character sprite is the only pixel art on screen (PLAN.md D9).",
+        "body": "Interface typography and functional icons are never pixel fonts or pixel icons; character and equipment artwork remain pixel art (PLAN.md D9).",
         "section": "typography"
       },
       {
         "name": "The Flat Scene Rule",
-        "body": "Nothing on the scene gets a shadow except floating layers. Translucent materials fall back to solid surface when the user asks for reduced transparency or more contrast, and all colors switch to system colors in forced-colors mode.",
+        "body": "Nothing on the scene gets a shadow except floating layers. With reduced transparency or more contrast, translucent materials become solid surface and blur is removed. In forced-colors mode, semantic UI roles switch to system colors; artwork and user color data are separate from those roles.",
         "section": "elevation"
       }
     ],
     "dos": [
       "**Do** take every color, border, radius, shadow and state from Bronze tokens; fix shared appearance in `@shilo/bronze-ui`, release it, then update the dependency.",
-      "**Do** keep the character the largest, most central element, and keep text readable over the world with the existing reading gradients.",
-      "**Do** use bronze only for selection, focus and the single main action on a screen.",
-      "**Do** use Georgia only for screen titles and character names, and Lucide icons at 20px with a 1.6 stroke for functional icons.",
+      "**Do** keep the character's visual prominence and the existing reading gradients on character views.",
+      "**Do** use bronze for selection, focus, links and primary actions.",
+      "**Do** use Georgia only for screen titles and character names, and Lucide for functional icons at the size their component sets.",
       "**Do** keep primary touch targets about 44px and inputs at 16px or larger on phones.",
       "**Do** check every visual change in dark and light at desktop and phone sizes (including 320×568 and 844×390)."
     ],
     "donts": [
-      "**Don't** light, tint, filter, shadow or smoothly scale the character's pixels.",
-      "**Don't** use pixel fonts, pixel icons or pixel-style borders in the UI.",
+      "**Don't** light, tint, filter, shadow or smoothly scale character or equipment pixels.",
+      "**Don't** use pixel fonts, pixel icons or pixel-style borders for interface text and controls.",
       "**Don't** add a second palette, local color overrides or new theme dependencies in PixelDoll.",
-      "**Don't** add new glows, gradients or glass effects beyond Bronze's floating material and the scene's reading gradients.",
+      "**Don't** add decorative glows, gradients or glass effects in routine work; keep the existing Bronze materials, reading gradients and phone sheet treatment.",
       "**Don't** put boxes and shadows around panels that sit on the scene, or add unrelated scenery or props to the world.",
-      "**Don't** use bronze for headings, body text or decoration."
+      "**Don't** use bronze for ordinary headings, body copy or decoration."
     ]
   }
 }
