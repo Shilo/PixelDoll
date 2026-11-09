@@ -2,6 +2,8 @@
 
 November 8, 2026. Reviewable appearance mockups, not an implemented theme update. Production Bronze UI, PixelDoll source, dependencies and workflow behavior are unchanged by this study.
 
+For a new agent, start with the [consolidated UI/UX review-and-fix handoff](../../handoff/bronze-ui-ux-review-and-fix.md), which connects all findings, evidence limits and the deferred implementation task.
+
 ## Recommendation and purpose
 
 Start with **Tactile Bronze**. Keep **Bronze inlay** as an optional, stronger selection treatment to judge against it. Retain the current design if the additional material detail distracts more than it helps.

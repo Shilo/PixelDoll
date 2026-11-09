@@ -14,6 +14,8 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Character creator redesign and production integration
 
+[UI/UX review-and-fix handoff](handoff/bronze-ui-ux-review-and-fix.md): start here for a new agent. Consolidates all theme findings, evidence classifications, proposed fixes, preserved strengths, task links, ownership, verification gaps and implementation acceptance criteria.
+
 [Bronze UI material proposals](design/2026-11-08-bronze-materials/README.md): matched current/proposed control mockups for recessed fields, tactile actions and an optional selection inlay. Includes purpose, tradeoffs, reproducible source and browser-check limits; no production theme changes.
 
 [Bronze UI identity audit](research/bronze-ui-identity-audit-2026-11-07.md): Codex-browser comparison with all public Pixel Studio landing-page images, source-level material findings, retained design strengths and controlled proposals for a more purposeful game-like interface. Includes [independent research and challenge](research/bronze-ui-ai-design-research-2026-11-07.md); no theme redesign is implemented by the spike.
