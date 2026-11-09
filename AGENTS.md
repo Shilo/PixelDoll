@@ -46,7 +46,6 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - Studio UI: app/src/studio/
 - Dev-only pages: app/src/ui/
 - Demo fixture: app/public/fixtures/s2/
-- Svelte: the repo enables the official sveltejs/ai-tools plugin for Claude (.claude/settings.json) and Codex (.agents/plugins/marketplace.json). Run svelte-autofixer on Svelte code you write and fix its issues; its suggestions are hints, so leave code outside your task alone.
 
 ## Theme
 
