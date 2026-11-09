@@ -2,7 +2,7 @@
 
 Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.
 
-Tech stack: Node.js 24.22.1; npm 11.19.1; strict TypeScript 6.0.3; Svelte 5.57.2 (not SvelteKit); Vite 8.3.4; @sveltejs/vite-plugin-svelte 7.3.1; @shilo/bronze-ui 0.2.2 theme with custom CSS; Vitest 4.1.12; Playwright Test 1.64.1.
+Tech stack: Node.js 24.22.1; npm 11.19.1; strict TypeScript 6.0.3; Svelte 5.57.3 (not SvelteKit); Vite 8.3.6; @sveltejs/vite-plugin-svelte 7.3.1; @shilo/bronze-ui 0.2.8 theme with custom CSS; Vitest 4.1.12; Playwright Test 1.65.0.
 
 PixelDoll is a free, open-source (MIT), fully client-side web app (Svelte 5, not SvelteKit, with Vite and TypeScript), hosted on GitHub Pages at https://pixeldoll.app/. It is powered by PixelLab (https://pixellab.ai) through its REST v2 API, called directly from the browser with the user's own token.
 PixelLab returns one composited image per call and has no layers. PixelDoll turns that into traditional frame-based paper dolling: one frozen base body (4 or 8 directions, several moves) plus a separate transparent layer per item (hair, headgear, clothing, boots, capes, weapons) that lines up on every frame.
