@@ -21,6 +21,8 @@ const flag = (args, name) => {
 };
 const mark = (i) => i.content?.body?.match(/^(Blocked|Paid|Needs decision):/)?.[1];
 const line = (i) => `${i.id}\t${i.status}\t${i.title}${mark(i) ? `\t(${mark(i)})` : ''}`;
+// Draft issues have no url, so their card link is the project pane keyed by the item's database ID.
+const cardUrl = (i) => i.content?.url ?? `${URL}/views/1?pane=issue&itemId=${i.databaseId}`;
 
 function gql(query, vars = {}) {
 	const args = ['api', 'graphql', '-f', `query=${query}`];
@@ -58,7 +60,7 @@ function board() {
       field(name: "Status") { ... on ProjectV2SingleSelectField { id options { id name } } }
       origin: field(name: "Origin") { ... on ProjectV2SingleSelectField { id options { id name } } }
       items(first: 100, after: $after, archivedStates: [ARCHIVED, NOT_ARCHIVED]) { pageInfo { hasNextPage endCursor } nodes {
-        id isArchived
+        id isArchived databaseId
         status: fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
         content { __typename ... on DraftIssue { id title body } ... on Issue { title body url } ... on PullRequest { title body url } }
       } } } } }`,
@@ -68,6 +70,7 @@ function board() {
 		for (const n of project.items.nodes)
 			items.push({
 				id: n.id,
+				databaseId: n.databaseId,
 				status: n.status?.name ?? 'No status',
 				archived: n.isArchived,
 				title: n.content?.title ?? '',
@@ -127,7 +130,7 @@ switch (cmd) {
 	case 'show': {
 		const i = find(board(), args.join(' '));
 		console.log(
-			`${i.title}\nStatus: ${i.status}\nID: ${i.id}\n${i.content?.url ?? `Board: ${URL}`}\n\n${i.content?.body ?? ''}`
+			`${i.title}\nStatus: ${i.status}\nID: ${i.id}\n${cardUrl(i)}\n\n${i.content?.body ?? ''}`
 		);
 		break;
 	}
@@ -145,14 +148,14 @@ switch (cmd) {
 			fail(
 				`A card with this title exists${dup.archived ? " (archived; restore it from the board's Archived items)" : ''}: ${line(dup)}`
 			);
-		const id = gql(
-			`mutation($p: ID!, $t: String!, $b: String) { addProjectV2DraftIssue(input: { projectId: $p, title: $t, body: $b }) { projectItem { id } } }`,
+		const created = gql(
+			`mutation($p: ID!, $t: String!, $b: String) { addProjectV2DraftIssue(input: { projectId: $p, title: $t, body: $b }) { projectItem { id databaseId } } }`,
 			{ p: b.id, t: title, b: text(body) }
-		).addProjectV2DraftIssue.projectItem.id;
-		console.log(`${id}\t${setStatus(b, id, o)}\t${title}`);
+		).addProjectV2DraftIssue.projectItem;
+		console.log(`${created.id}\t${setStatus(b, created.id, o)}\t${title}\n${cardUrl(created)}`);
 		// Cards added here come from agents; the board's "Origin: AI" chip tells them apart from the maintainer's own cards.
 		const ai = b.origin?.options.find((x) => x.name === 'AI');
-		if (ai) setStatus(b, id, ai, b.origin);
+		if (ai) setStatus(b, created.id, ai, b.origin);
 		break;
 	}
 	case 'move': {
