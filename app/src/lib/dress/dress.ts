@@ -372,16 +372,15 @@ export function hasCompleteCells(m: Manifest, it: Item, anim: string, dir: Direc
 	);
 }
 
-/** Cell indices of a clip the item would vanish in: all of them when it has no frames there; with a coverage list, also
- * the cells never recorded (a partial copy or extension). Recorded transparent cells are intentional, never missing.
- * Items without a coverage list (legacy) keep all-or-nothing clips. Mirrored directions follow their source. */
+/** Cell indices of a clip the item would vanish in. With a coverage list, the cells never recorded (a partial copy or
+ * extension); recorded transparent cells are intentional, never missing. The base and items without a coverage list
+ * (legacy) keep all-or-nothing clips. Mirrored directions follow their source. */
 export function missingFrames(m: Manifest, it: Item, anim: string, dir: DirectionName): number[] {
 	const cells = Array.from(
 		{ length: m.rig.animations.find((a) => a.id === anim)?.cells ?? 0 },
 		(_, i) => i
 	);
-	if (!hasCells(m, it, anim, dir)) return cells;
-	if (!it.coverage || it.id === m.rig.baseItem) return [];
+	if (!it.coverage || it.id === m.rig.baseItem) return hasCells(m, it, anim, dir) ? [] : cells;
 	const covered = new Set<string>(it.coverage),
 		src = m.rig.directions.find((d) => d.id === dir)?.mirrorOf;
 	return cells.filter(
@@ -390,7 +389,7 @@ export function missingFrames(m: Manifest, it: Item, anim: string, dir: Directio
 }
 
 const incomplete = (m: Manifest, it: Item, anim: string, dir: DirectionName) =>
-	!hasCells(m, it, anim, dir) || missingFrames(m, it, anim, dir).length > 0;
+	missingFrames(m, it, anim, dir).length > 0;
 
 /** "anim/dir" pairs where the base has cells but the item misses some or all of them (see missingFrames). */
 export function coverageGaps(m: Manifest, it: Item): string[] {
@@ -465,7 +464,7 @@ export function selfTest() {
 		rig: {
 			baseItem: 'base',
 			directions: [{ id: 'south' }, { id: 'east' }, { id: 'west', mirrorOf: 'east' }],
-			animations: [{ id: 'walk' }]
+			animations: [{ id: 'walk', cells: 1 }]
 		},
 		slots: [{ id: 'body' }, { id: 'back' }],
 		materials: [],

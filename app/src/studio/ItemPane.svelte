@@ -394,8 +394,9 @@
 			<p class="muted small">You accepted this artwork with its recorded quality notes.</p>
 		{/if}
 		{#if moveGaps.length}<p class="notice warn small">
-				<TriangleAlert size={14} />Missing frames for {moveName} facing {moveGaps.join(', ')}: it is
-				left out of them.
+				<TriangleAlert size={14} />Missing some or all {moveName} frames facing {moveGaps.join(
+					', '
+				)}. It won’t show in those frames.
 			</p>{/if}
 		{#if missingMoves.length}
 			<div class="field">

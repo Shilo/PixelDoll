@@ -7,7 +7,7 @@ import { cellHash, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import { validate } from '../export/generic.ts';
 import { imageHashes, designRevision, createDesign } from './design.ts';
 import { assessDesign, targetAudit } from './compatibility.ts';
-import { publishCandidate, targetStamp, extensionStamp, restStamp } from './copy.ts';
+import { publishCandidate, targetStamp, extensionStamp, restStamp, coveredCells } from './copy.ts';
 import { assertDesign, encodedImages, loadImages, snapshotDesign } from './store.ts';
 import {
 	qualifiedFit,
@@ -170,7 +170,8 @@ async function freeExtensionReview(fit: FitDraft, target: Project): Promise<FitD
 		item = structuredClone(existing),
 		id = `gear-${crypto.randomUUID()}`;
 	item.id = id;
-	item.coverage = [];
+	// Like the paid route, the candidate is the eventual merged item: existing cells plus the free additions below.
+	item.coverage = [...coveredCells(existing)] as CellKey[];
 	item.qa = unknownQa();
 	if (!fit.plan.extension!.reuseRest) {
 		delete item.dressed;
@@ -618,6 +619,8 @@ async function finishStage(id: string, stage: 'rest' | 'pose'): Promise<FitDraft
 							((l.cells[a] ??= {})[d as DirectionName] ??= Array(count).fill(null))[n] = h;
 						}
 		}
+		// The candidate is the eventual merged item, so its coverage holds the existing cells too (publish adds only the rest).
+		item.coverage = [...new Set([...coveredCells(existing), ...additions])] as CellKey[];
 		const oldMaterials = fullTarget.manifest.materials.filter((m) => m.owner === existing.id);
 		r.project.manifest.materials = r.project.manifest.materials.filter((m) => m.owner !== newId);
 		r.materials = oldMaterials.map((m, i) => ({
@@ -866,14 +869,7 @@ export async function prepareExtensionFit(
 		.map((a) => a.id);
 	if (!anims.length) throw new Error('This copy already covers the requested moves.');
 	const stamp = extensionStamp(project.manifest, itemId);
-	const covered = new Set<string>(
-		item.coverage ??
-			item.layers.flatMap((l) =>
-				Object.entries(l.cells ?? {}).flatMap(([a, ds]) =>
-					Object.entries(ds).flatMap(([d, cs]) => (cs ?? []).map((_, i) => `${a}/${d}/${i}`))
-				)
-			)
-	);
+	const covered = coveredCells(item);
 	const missing = project.manifest.rig.animations
 		.filter((a) => anims.includes(a.id))
 		.flatMap((a) =>

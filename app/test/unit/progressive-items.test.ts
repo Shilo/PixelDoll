@@ -317,6 +317,12 @@ test('a shared copy missing some frames of a move reports them, while recorded t
 	expect(missingAt(m, { head: 'hat' }, 'cast', 'south').map((i) => i.id)).toEqual(['hat']);
 	expect(missingAt(m, { head: 'hat' }, 'cast', 'east')).toEqual([]);
 	expect(missingAt(m, { head: 'hat' }, 'cast', 'west')).toEqual([]);
+	// South again with no pixels at all: frames 0 to 3 recorded empty, 4 to 7 never recorded. Only 4 to 7 are missing.
+	const drawn = hat.layers[0].cells!.cast.south;
+	hat.layers[0].cells!.cast.south = Array(8).fill(null);
+	expect(missingFrames(m, hat, 'cast', 'south')).toEqual([4, 5, 6, 7]);
+	expect(coverageGaps(m, hat)).toEqual(['cast/south']);
+	hat.layers[0].cells!.cast.south = drawn;
 	// Without a coverage list (legacy items), a clip with any pixels still counts as present.
 	delete hat.coverage;
 	expect(coverageGaps(m, hat)).toEqual(['still-custom/south', 'still-custom/east']);

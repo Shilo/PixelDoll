@@ -61,6 +61,16 @@ export const extensionStamp = (m: Manifest, id: string): string => {
 		}
 	);
 };
+/** Cells an item already has: its coverage list, or every stored cell slot when it has none. */
+export const coveredCells = (it: Item): Set<string> =>
+	new Set<string>(
+		it.coverage ??
+			it.layers.flatMap((l) =>
+				Object.entries(l.cells ?? {}).flatMap(([anim, ds]) =>
+					Object.entries(ds).flatMap(([dir, cs]) => (cs ?? []).map((_, i) => `${anim}/${dir}/${i}`))
+				)
+			)
+	);
 const combinePartialQa = (old: QaSummary | undefined, next: QaSummary): QaSummary => {
 	if (!old) return { ...next, status: next.status === 'fail' ? 'fail' : 'warn' };
 	const worst = (['fail', 'warn', 'accepted', 'pass'] as const).find(
@@ -221,16 +231,8 @@ export function publishCandidate(
 		const existing = rec.manifest.items.find((it) => it.id === candidate.extensionItemId);
 		if (!existing || extensionStamp(rec.manifest, existing.id) !== candidate.extensionStamp)
 			throw new Error('This equipment changed. Review its missing-frame fit again.');
-		const covered = new Set<string>(
-			existing.coverage ??
-				existing.layers.flatMap((l) =>
-					Object.entries(l.cells ?? {}).flatMap(([anim, ds]) =>
-						Object.entries(ds).flatMap(([dir, cs]) =>
-							(cs ?? []).map((_, i) => `${anim}/${dir}/${i}`)
-						)
-					)
-				)
-		);
+		const covered = coveredCells(existing);
+		// The candidate's coverage is the eventual merged item's; only cells beyond the existing ones are new.
 		const additions = new Set<string>((item.coverage ?? []).filter((k) => !covered.has(k)));
 		for (const [i, layer] of item.layers.entries()) {
 			const original = existing.layers[i];

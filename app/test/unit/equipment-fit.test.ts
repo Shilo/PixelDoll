@@ -251,7 +251,7 @@ import { readCharacterZip, projectEntries } from '../../src/lib/store/import.ts'
 import { zip } from '../../src/lib/store/zip.ts';
 import { saveDress } from '../../src/lib/dress/project.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
-import { recolor } from '../../src/lib/dress/dress.ts';
+import { recolor, coverageGaps } from '../../src/lib/dress/dress.ts';
 import { cellImg } from '../../src/lib/compose/compose.ts';
 import { planFit } from '../../src/lib/equipment/fit.ts';
 
@@ -508,6 +508,11 @@ test('extension preparation is free/deduplicated, reuses target refs and preserv
 	expect(review.qualityFails).toEqual([]);
 	const preview = await reviewFit(draft.id),
 		previewItem = preview.project!.manifest.items.find((it) => it.id === preview.itemId)!;
+	// The candidate is the eventual merged item: its existing cells are covered, not reported missing.
+	expect(previewItem.coverage).toEqual(
+		expect.arrayContaining(['rest/south/0', 'walk/south/0', 'walk/south/1'])
+	);
+	expect(coverageGaps(preview.project!.manifest, previewItem)).toEqual([]);
 	for (const anim of ['rest', 'walk'])
 		expect([
 			...cellImg(
@@ -576,6 +581,9 @@ test('all exactly reusable missing poses review for free without rig setup, rout
 	expect(fit.previewGens).toBe(0);
 	expect(fit.calls).toEqual([]);
 	expect(state.posts).toBe(0);
+	const review = await reviewFit(fit.id),
+		candidate = review.project!.manifest.items.find((it) => it.id === review.itemId)!;
+	expect(coverageGaps(review.project!.manifest, candidate)).toEqual([]);
 	expect(await acceptFit(fit.id, false)).toBe(id);
 	const final = (await loadProject('rig-target')).project.manifest.items.find(
 		(it) => it.id === id
