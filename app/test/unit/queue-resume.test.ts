@@ -1,6 +1,6 @@
 import { accountBalance } from './account-fixture.ts';
 import { expect, test } from 'vitest';
-import { Queue, upgraded, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts';
+import { Queue, live, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts';
 import { ApiError } from '../../src/lib/pixellab/client.ts';
 
 function fixture(status: number) {
@@ -53,31 +53,20 @@ for (const status of [0, 500, 422])
 		expect(f.posts()).toBe(2);
 	});
 
-test('records saved with the previous canceled state and field names load and still block a resend', async () => {
+test('a saved record with an unrecognized state stays terminal and never resends', async () => {
 	const f = fixture(500),
 		q = f.make();
 	const old = await q.enqueue(request);
 	await q.tick();
-	f.records.set(old.id, {
-		...f.records.get(old.id)!,
-		state: 'cancelled',
-		autoCancelledAttempts: [1]
-	} as unknown as JobRec);
+	// Earlier versions spelled the state 'cancelled'; no upgrade runs, so the row must stay inert, not crash or resend.
+	f.records.set(old.id, { ...f.records.get(old.id)!, state: 'cancelled' } as unknown as JobRec);
 	const resumed = f.make();
 	await resumed.load();
-	const saved = f.records.get(old.id) as JobRec & { autoCancelledAttempts?: number[] };
-	expect(saved.state).toBe('canceled');
-	expect(saved.autoCanceledAttempts).toEqual([1]);
-	expect(saved.autoCancelledAttempts).toBeUndefined();
+	expect(f.records.get(old.id)?.state).toBe('cancelled');
+	expect(live(f.records.get(old.id))).toBe(false);
 	expect((await resumed.enqueue(request)).id).toBe(old.id);
 	await resumed.tick();
 	expect(f.posts()).toBe(1);
-});
-test('a cancel written by an older tab is read with the current state name', () => {
-	const r = { state: 'cancelled' } as unknown as JobRec;
-	expect(upgraded(r)).toBe(true);
-	expect(r.state).toBe('canceled');
-	expect(upgraded(r)).toBe(false);
 });
 test('historical old lost records cannot hide a newer queued or successful request during resume', async () => {
 	const f = fixture(500),

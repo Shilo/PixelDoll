@@ -46,13 +46,6 @@ export async function listSources(): Promise<{ id: string; label: string }[]> {
 	];
 }
 
-/** Material labels derived by earlier versions. */
-const currentLabels = (project: Project) => {
-	for (const m of project.manifest.materials)
-		if (typeof m.label === 'string') m.label = m.label.replace(/^Grey\b/, 'Gray');
-	return project;
-};
-
 export async function openSource(
 	id: string,
 	signal?: AbortSignal
@@ -75,11 +68,11 @@ export async function openSource(
 		const saved = await db.get<DressState>('projects', `dress-${id}`).catch(() => undefined);
 		signal?.throwIfAborted();
 		if (saved) applyDress(project.manifest, saved);
-		return { project: currentLabels(project), current: saved?.current };
+		return { project, current: saved?.current };
 	}
 	const { rec, project } = await loadProject(id, signal); // B4's loader (store/project.ts)
 	signal?.throwIfAborted();
-	return { project: currentLabels(project), current: (rec as ProjectRecord).dress?.current };
+	return { project, current: (rec as ProjectRecord).dress?.current };
 }
 
 export const dressOf = (m: Manifest, current?: Outfit): DressState => ({

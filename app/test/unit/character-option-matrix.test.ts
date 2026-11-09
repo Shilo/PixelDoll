@@ -17,12 +17,7 @@ import {
 	type Mirrors,
 	type Trait
 } from '../../src/studio/characterConfig.ts';
-import {
-	baseMoveSpecs,
-	creationDirections,
-	createCharacter,
-	type CreateSpec
-} from '../../src/studio/create.ts';
+import { baseMoveSpecs, createCharacter, type CreateSpec } from '../../src/studio/create.ts';
 import { createPlan, movePlan } from '../../src/studio/apiPlans.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { BASE_BODY } from '../../src/studio/model.ts';
@@ -77,7 +72,7 @@ function basePlan(spec: CreateSpec) {
 		rig: {
 			cell: { w: spec.frame!, h: spec.frame! },
 			view: spec.view,
-			directions: creationDirections(spec),
+			directions: spec.directions,
 			animations: [{ id: 'default', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }]
 		},
 		items: []
@@ -94,7 +89,6 @@ test('all 863 nonempty facing plans create without animation and map only their 
 		const spec = specOf(plan),
 			directions = facingOf(plan);
 		expect(facingErrors(directions)).toEqual([]);
-		expect(creationDirections(spec)).toEqual(directions);
 		const expectedSources = DIRECTIONS.filter(
 			(dir) => plan.selected.includes(dir) && !plan.mirrors[dir]
 		);

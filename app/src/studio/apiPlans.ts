@@ -109,7 +109,6 @@ export function createPlan(spec: CreateSpec, freshSeed = false): PeekCall[] {
 	const seed = freshSeed ? undefined : spec.seed;
 	const view = spec.view ?? 'low top-down',
 		looks = creationLooks(spec);
-	const modern = !!spec.exactPrompt || spec.frame !== undefined || spec.directions !== undefined;
 	const calls: PeekCall[] = [
 		{
 			...routes.createCharacterV3({
@@ -131,13 +130,13 @@ export function createPlan(spec: CreateSpec, freshSeed = false): PeekCall[] {
 			generations: 0.25,
 			body: {
 				description: looks,
-				n_directions: modern ? 8 : (spec.dirs ?? 4),
+				n_directions: 8,
 				view,
 				template_id: 'mannequin',
 				...(seed === undefined ? {} : { seed }),
 				no_background: true
 			},
-			note: `Known fields only. ${dependent} Adds ${modern ? 'all eight original' : 'saved-plan'} standing views as reference_image and direction_images, padded to ${spec.frame ?? 64} px without rescaling.`
+			note: `Known fields only. ${dependent} Adds all eight original standing views as reference_image and direction_images, padded to ${spec.frame ?? 64} px without rescaling.`
 		},
 		{
 			method: 'GET',

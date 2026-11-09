@@ -20,16 +20,20 @@ import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import type { SetupPlan } from '../../src/lib/rig/setup.ts';
 import { equipmentFixture } from './equipment-fixture.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
+import { DIRECTIONS } from '../../src/lib/rig/rig.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import type { FitPlan, FitDraft } from '../../src/lib/equipment/types.ts';
 
 test.each([4, 8] as const)(
 	'create preflight baseline matches the %i-direction estimate and makes no animation calls',
-	(dirs) => {
-		const spec = { description: 'friendly dwarf', name: 'Dwarf', size: 48, seed: 123, dirs };
+	(n) => {
+		const directions = (n === 8 ? DIRECTIONS : (['south', 'east', 'north', 'west'] as const)).map(
+			(id) => ({ id })
+		);
+		const spec = { description: 'friendly dwarf', name: 'Dwarf', size: 48, seed: 123, directions };
 		const plan = createPlan(spec),
 			total = plan.reduce((sum, call) => sum + (call.generations ?? 0), 0);
-		expect(total).toBeCloseTo(estimate(dirs).gens);
+		expect(total).toBeCloseTo(estimate(spec).gens);
 		// Default-first: idle and walk (with their measurements) are priced by movePlan when added from Moves.
 		expect(plan.filter((c) => !c.background).map((c) => c.path)).toEqual([
 			'/create-character-v3',
@@ -48,7 +52,8 @@ test.each([4, 8] as const)(
 		expect(plan[2].note).toContain('conditionally');
 		expect(plan.filter((c) => c.background).every((c) => c.method === 'GET')).toBe(true);
 		expect(createPlan(spec, true)[0].body).not.toHaveProperty('seed');
-		expect(plan[1].body).toMatchObject({ n_directions: dirs });
+		// The re-import always registers all eight original views, whatever the selected plan.
+		expect(plan[1].body).toMatchObject({ n_directions: 8 });
 	}
 );
 

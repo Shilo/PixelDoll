@@ -17,8 +17,7 @@ const spec: CreateSpec = {
 	name: 'Original',
 	seed: 741257,
 	size: 48,
-	dirs: 4,
-	directionPolicy: 'independent',
+	directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west' }],
 	projectId: 'rig-attempt-unique'
 };
 const fingerprint = (value: CreateSpec) =>
@@ -53,7 +52,14 @@ test('interrupted completion resumes its published project before any paid work,
 test.each([
 	{ seed: 741258 },
 	{ name: 'Different' },
-	{ directionPolicy: 'mirrored' as const },
+	{
+		directions: [
+			{ id: 'south' as const },
+			{ id: 'east' as const },
+			{ id: 'north' as const },
+			{ id: 'west' as const, mirrorOf: 'east' as const }
+		]
+	},
 	{ description: 'a different body' }
 ])(
 	'a reused published identity with different intent rejects before enqueue: %o',

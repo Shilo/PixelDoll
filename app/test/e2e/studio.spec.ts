@@ -1951,10 +1951,9 @@ async function busyFirstTab(
 								name: 'Failed',
 								description: 'body',
 								size: 48,
-								dirs: 4,
+								directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west' }],
 								seed: 1,
-								projectId: 'rig-failed-x',
-								directionPolicy: 'independent'
+								projectId: 'rig-failed-x'
 							}
 						},
 						'studio-create'
@@ -2351,12 +2350,13 @@ test('interrupted character specifications retain their own estimates', async ({
 				__studio: { ui: { sheet: string }; creating: { spec: any; error: string } };
 			}
 		).__studio;
-		// A stored interrupted run predates directionPolicy; the new form's default must not alter its pricing or retries.
+		// A stored interrupted run keeps its own direction plan and size; the new form's defaults must not alter its pricing.
 		s.creating.spec = {
-			description: 'Historical interrupted run',
-			name: 'Historical run',
+			description: 'Interrupted run',
+			name: 'Interrupted run',
 			seed: 123,
-			size: 48
+			size: 48,
+			directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west' }]
 		};
 		s.creating.error = 'Stored interruption';
 		s.ui.sheet = 'create';
@@ -2365,16 +2365,19 @@ test('interrupted character specifications retain their own estimates', async ({
 	// Creation is priced by the draw (body size) plus a standing-joint fallback per direction; it makes no animation.
 	await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('2–5 gens');
 	await page.evaluate(() => {
-		const s = (window as unknown as { __studio: { creating: { spec: { dirs: number } } } })
-			.__studio;
-		s.creating.spec.dirs = 8;
-	});
-	await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('2–5 gens');
-	await page.evaluate(() => {
 		const s = (
-			window as unknown as { __studio: { creating: { spec: { directionPolicy: string } } } }
+			window as unknown as { __studio: { creating: { spec: { directions: { id: string }[] } } } }
 		).__studio;
-		s.creating.spec.directionPolicy = 'independent';
+		s.creating.spec.directions = [
+			'south',
+			'south-east',
+			'east',
+			'north-east',
+			'north',
+			'north-west',
+			'west',
+			'south-west'
+		].map((id) => ({ id }));
 	});
 	await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('2–5 gens');
 	await page.evaluate(() => {
@@ -2386,7 +2389,7 @@ test('interrupted character specifications retain their own estimates', async ({
 	expect(calls).toEqual([]);
 });
 
-test('character Try again preserves direction policy and allocates a fresh publication identity', async ({
+test('character Try again preserves the direction plan and allocates a fresh publication identity', async ({
 	page,
 	context
 }, info) => {
@@ -2440,8 +2443,7 @@ test('character Try again preserves direction policy and allocates a fresh publi
 			description: 'Retry body',
 			name: 'Retry fixture',
 			size: 48,
-			dirs: 8,
-			directionPolicy: 'independent',
+			directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west' }],
 			seed: 0
 		};
 		s.creating.error = 'Prior interrupted attempt';
@@ -2464,7 +2466,7 @@ test('character Try again preserves direction policy and allocates a fresh publi
 				window as unknown as {
 					__studio: {
 						creating: {
-							spec: { projectId?: string; seed: number; directionPolicy: string; dirs: number };
+							spec: { projectId?: string; seed: number; directions: { id: string }[] };
 						};
 					};
 				}
@@ -2472,15 +2474,18 @@ test('character Try again preserves direction policy and allocates a fresh publi
 			return {
 				projectId: s.creating.spec.projectId,
 				seed: s.creating.spec.seed,
-				directionPolicy: s.creating.spec.directionPolicy,
-				dirs: s.creating.spec.dirs
+				directions: s.creating.spec.directions
 			};
 		});
 		expect(retry.projectId).toBeTruthy();
 		expect(retry.projectId).not.toBe('prior-attempt-identity');
 		expect(retry.seed).not.toBe(0);
-		expect(retry.directionPolicy).toBe('independent');
-		expect(retry.dirs).toBe(8);
+		expect(retry.directions).toEqual([
+			{ id: 'south' },
+			{ id: 'east' },
+			{ id: 'north' },
+			{ id: 'west' }
+		]);
 		expect(unexpected).toEqual([]);
 	} finally {
 		await page.evaluate(() => {
@@ -2855,10 +2860,9 @@ test('reload restores failed create, move and setup for review without paid subm
 				name: 'Failed character',
 				description: 'body',
 				size: 48,
-				dirs: 4,
+				directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west' }],
 				seed: 1,
-				projectId: 'rig-failed-browser-fixture',
-				directionPolicy: 'independent'
+				projectId: 'rig-failed-browser-fixture'
 			}
 		});
 		await db.put('projects', 'studio-move', {

@@ -24,7 +24,7 @@ export function acceptQa(q: ItemQa): ItemQa {
 	};
 }
 
-/** Replace complete clip-directions. Historical checks without parts remain an explicitly conservative baseline. */
+/** Replace complete clip-directions. Indivisible checks (`legacy`) remain an explicitly conservative baseline. */
 export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>): ItemQa {
 	const old = item.qa,
 		clips = { ...old?.clips, ...next.clips },
@@ -38,9 +38,8 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
 			)
 		)
 	];
-	const baseline =
-		old?.legacy ??
-		(!old?.clips ? { clips: original, ...(old ? { summary: summaryOf(old) } : {}) } : undefined);
+	// An item without any checks (the demo's items): every original clip stays explicitly unmeasured.
+	const baseline = old ? old.legacy : { clips: original };
 	const remaining = baseline?.clips.filter((k) => !replaced.has(k)) ?? [];
 	const legacy = remaining.length ? { ...baseline!, clips: remaining } : undefined;
 	const parts: (QaSummary & { hand?: 'r' | 'l' | '?' })[] = [

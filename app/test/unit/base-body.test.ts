@@ -11,9 +11,4 @@ test('the body description follows the base body line of the prompt', () => {
 	expect(creationLooks({ description: 'a knight in plate armor', exactPrompt: true })).toBe(
 		'a knight in plate armor, empty hands, no weapon'
 	);
-	const old =
-		'plain bald paperdoll base body, wearing a plain light gray t-shirt and plain dark gray shorts, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso';
-	expect(creationLooks({ description: `x\n${old}`, exactPrompt: true })).toBe(
-		'x, bald, wearing a plain light gray t-shirt and plain dark gray shorts, barefoot, empty hands, no weapon'
-	);
 });

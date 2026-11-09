@@ -1,19 +1,8 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import {
-	assertCreatedDirections,
-	createCharacter,
-	creationDirections,
-	estimate,
-	genDirsOf,
-	prepareRestViews
-} from '../../src/studio/create.ts';
+import { createCharacter, estimate } from '../../src/studio/create.ts';
 import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts';
 import * as db from '../../src/lib/store/db.ts';
 import { DIRECTIONS, type DirectionName, type Rig } from '../../src/lib/rig/rig.ts';
-import { makeImg } from '../../src/lib/image/png.ts';
-import { buildRig } from '../../src/lib/rig/freeze.ts';
-import { flipH } from '../../src/lib/rig/mirror.ts';
-import { normalize } from '../../src/lib/rig/normalize.ts';
 import { authoredPoses, fromApi, hasAll, LABELS, toApi } from '../../src/lib/rig/poses.ts';
 import { buildItem, planGens, planItem } from '../../src/lib/items/items.ts';
 import type { Skeleton } from '../../src/lib/rig/skeleton.ts';
@@ -21,21 +10,8 @@ import fixture from '../fixtures/helmet-occlusion.json';
 
 afterEach(() => vi.restoreAllMocks());
 const options = { name: 'Fixture', description: 'fixture body', size: 48, seed: 741257 };
-function rotations() {
-	return DIRECTIONS.map((label, i) => {
-		const img = makeImg(48, 48);
-		for (let y = 8; y < 44; y++)
-			for (let x = 20; x < 27; x++) img.data.set([50 + i * 20, 80, 110, 255], (y * 48 + x) * 4);
-		img.data.set([220, i * 20, 20, 255], (12 * 48 + 18 + (i % 3)) * 4);
-		return { label, img };
-	});
-}
-
-test('omitted policy preserves legacy four/eight direction planning and prices', () => {
-	expect(genDirsOf()).toEqual(['south', 'east', 'north']);
-	expect(genDirsOf(8)).toEqual(['south', 'south-east', 'east', 'north-east', 'north']);
-	for (const n of [4, 8] as const) expect(estimate(n)).toEqual(estimate(n, 'mirrored'));
-});
+const plain = (n: 4 | 8) =>
+	(n === 8 ? DIRECTIONS : (['south', 'east', 'north', 'west'] as const)).map((id) => ({ id }));
 
 test.each([
 	[4, 2.25, 2.65, 5],
@@ -43,104 +19,32 @@ test.each([
 ] as const)(
 	'independent %i view costs include the draw, re-import and rest fallback of every original direction',
 	(n, gens, maxGens, minutes) => {
-		expect(genDirsOf(n, 'independent')).toEqual(
-			n === 8 ? DIRECTIONS : ['south', 'east', 'north', 'west']
-		);
-		expect(estimate(n, 'independent')).toEqual({ gens, maxGens, minutes });
-		const spec = { ...options, dirs: n, directionPolicy: 'independent' as const };
-		expect(creationDirections(spec)).toEqual(genDirsOf(n, 'independent').map((id) => ({ id })));
-		expect(estimate(spec)).toEqual(estimate(n, 'independent'));
+		expect(estimate({ size: options.size, directions: plain(n) })).toEqual({
+			gens,
+			maxGens,
+			minutes
+		});
 	}
 );
 
-test('independent rest preparation keeps provider western pixels while legacy specs preserve old flips', () => {
-	const rots = rotations(),
-		original = structuredClone(rots);
-	for (const dirs of [4, 8] as const) {
-		const independent = prepareRestViews(rots, {
-			...options,
-			dirs,
-			directionPolicy: 'independent'
-		}).rest;
-		const legacy = prepareRestViews(rots, { ...options, dirs }).rest;
-		for (const dir of genDirsOf(dirs, 'independent'))
-			expect(independent[dir]).toEqual(
-				normalize(rots.find((r) => r.label === dir)!.img, 64, 64).img
-			);
-		expect(independent.west).not.toEqual(flipH(independent.east));
-		expect(legacy.west).toEqual(flipH(legacy.east));
-		if (dirs === 8) {
-			expect(legacy['south-west']).toEqual(flipH(legacy['south-east']));
-			expect(independent['south-west']).not.toEqual(legacy['south-west']);
-		}
-	}
-	expect(rots).toEqual(original);
-	expect(() =>
-		prepareRestViews(
-			rots.filter((r) => r.label !== 'west'),
-			{ ...options, dirs: 4, directionPolicy: 'independent' }
-		)
-	).toThrow('no west view');
-});
-
-test.each([4, 8] as const)(
-	'freeze requires the exact %i requested independent rows instead of silently dropping directions',
-	async (dirs) => {
-		const rest = prepareRestViews(rotations(), {
-			...options,
-			dirs,
-			directionPolicy: 'independent'
-		}).rest;
-		const rows = Object.fromEntries(genDirsOf(dirs, 'independent').map((d) => [d, [rest[d]]]));
-		const built = await buildRig(
-			[
-				{ id: 'idle', dirs: rows },
-				{ id: 'walk', dirs: rows }
-			],
-			{ mode: 'all' }
-		);
-		expect(() => assertCreatedDirections(built.rig, dirs, 'independent')).not.toThrow();
-		expect(built.rig.directions.every((d) => !d.mirrorOf)).toBe(true);
-		const dropped = structuredClone(built.rig);
-		dropped.directions.pop();
-		expect(() => assertCreatedDirections(dropped, dirs, 'independent')).toThrow(
-			'requested direction'
-		);
-		const wrong = structuredClone(built.rig);
-		wrong.directions.find((d) => d.id === 'west')!.mirrorOf = 'east';
-		expect(() => assertCreatedDirections(wrong, dirs, 'independent')).toThrow('direction policy');
-		const duplicate = structuredClone(built.rig);
-		duplicate.directions[0] = duplicate.directions[1];
-		expect(() => assertCreatedDirections(duplicate, dirs, 'independent')).toThrow(
-			'requested direction'
-		);
-	}
-);
-
-test.each([4, 8] as const)(
-	'legacy %i direction freeze still keeps the original mirror links',
-	async (dirs) => {
-		const rest = prepareRestViews(rotations(), { ...options, dirs }).rest;
-		const rows = Object.fromEntries(genDirsOf(dirs).map((d) => [d, [rest[d]]]));
-		const built = await buildRig([{ id: 'idle', dirs: rows }], { mode: dirs === 8 ? '8' : '4' });
-		expect(() => assertCreatedDirections(built.rig, dirs)).not.toThrow();
-		expect(built.rig.directions.find((d) => d.id === 'west')?.mirrorOf).toBe('east');
-	}
-);
-
-test('direction policy never puts n_directions=4 on the initial text-only v3 request, and can reuse the same base request', async () => {
+test('the direction plan never puts n_directions on the initial text-only v3 request, and can reuse the same base request', async () => {
 	vi.spyOn(db, 'get').mockResolvedValue(undefined);
 	const enqueue = vi
 		.spyOn(queue, 'enqueue')
 		.mockResolvedValue({ state: 'lost', error: 'synthetic stop before any API' } as JobRec);
-	for (const directionPolicy of [undefined, 'mirrored', 'independent'] as const)
-		for (const dirs of [4, 8] as const) {
-			await expect(createCharacter({ ...options, dirs, directionPolicy })).rejects.toThrow(
-				'synthetic stop'
-			);
-		}
+	const plans = [
+		plain(4),
+		plain(8),
+		[
+			{ id: 'south' as const },
+			{ id: 'east' as const },
+			{ id: 'west' as const, mirrorOf: 'east' as const }
+		]
+	];
+	for (const directions of plans)
+		await expect(createCharacter({ ...options, directions })).rejects.toThrow('synthetic stop');
 	const requests = enqueue.mock.calls.map(([req]) => req);
-	expect(requests).toHaveLength(6);
+	expect(requests).toHaveLength(plans.length);
 	for (const req of requests) {
 		expect(req.path).toBe('/create-character-v3');
 		expect(req.body).not.toHaveProperty('n_directions');

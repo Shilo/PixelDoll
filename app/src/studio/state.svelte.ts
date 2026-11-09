@@ -1730,7 +1730,7 @@ export async function startCreate(spec: CreateSpec) {
 	spec = withActivityScope(
 		{ ...spec, projectId: spec.projectId ?? `rig-${crypto.randomUUID()}` },
 		'create'
-	); // persisted before paid work; legacy pending specs migrate once
+	); // persisted before paid work
 	creating.spec = spec;
 	creating.error = '';
 	creating.projectId = '';
@@ -1782,6 +1782,15 @@ export async function resumeCreate() {
 	createResumed = true;
 	const r = await db.get<FlowDraft<CreateSpec>>('projects', CREATE_KEY).catch(() => undefined);
 	if (!r?.spec || (creating.spec && !creating.projectId)) return; // a finished create here never hides another tab's
+	if (!Array.isArray(r.spec.directions)) {
+		// Saved before explicit direction plans: never resumed, so its paid pipeline is not re-keyed.
+		await db.del('projects', CREATE_KEY);
+		toast(
+			'A character creation saved by an earlier version cannot resume. Start a new character.',
+			{ tone: 'danger' }
+		);
+		return;
+	}
 	if (halted(r))
 		Object.assign(creating, {
 			spec: r.spec,

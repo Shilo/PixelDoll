@@ -1,10 +1,10 @@
-// IndexedDB project records: projects/rig-<unique id> = { id, savedAt, manifest, skeletons, rigQa }. Older records use a body-hash prefix.
+// IndexedDB project records: projects/rig-<unique id> = { id, savedAt, manifest, skeletons, rigQa }.
 // Cell PNGs live in `blobs` keyed by the RGBA sha256 hex (without "sha256:"). M3 adds accepted items to the same record.
 import { decodePng, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import * as db from './db.ts';
-import type { DirectionName, Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.ts';
+import type { Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.ts';
 import { supportedFormat } from './manifest.ts';
 
 export interface StoredProject {
@@ -20,7 +20,7 @@ export interface StoredProject {
 	manifest: Manifest;
 	skeletons?: Record<string, Skeleton>; // cell key -> keypoints (mirrored cells flipped)
 	rigQa?: unknown;
-	character?: { id: string; looks: string; motionOffsets?: Partial<Record<DirectionName, number>> }; // retained for previously saved aligned copies
+	character?: { id: string; looks: string };
 	origin?: 'studio' | 'dev'; // T2: who made it; the Studio's character menu lists only 'studio' rigs (dev rigs: M2 pages)
 }
 
@@ -45,13 +45,6 @@ export async function loadProject(
 	const rec = await db.get<StoredProject>('projects', id);
 	signal?.throwIfAborted();
 	if (!rec) throw new Error(`project ${id} not found`);
-	// B14: the head slot's old default hid hair (long hair vanished under a helmet); it now tucks it under (slot.clips). Slot-level
-	// hides are always the ladder default (the UI edits item.hides), so old records take the new one.
-	for (const s of rec.manifest.slots)
-		if (s.id === 'head' && !s.clips && s.hides?.join() === 'hair') {
-			delete s.hides;
-			s.clips = ['hair'];
-		}
 	const images = new Map<string, Img>();
 	const add = async (h: Sha256 | null | undefined, owner: string) => {
 		signal?.throwIfAborted();

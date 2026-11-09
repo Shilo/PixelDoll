@@ -1,5 +1,5 @@
 import type { StoredProject } from '../lib/store/project.ts';
-import { mergeQa, summaryOf } from '../lib/items/qa-summary.ts';
+import { mergeQa } from '../lib/items/qa-summary.ts';
 import { dropCut } from '../lib/compose/compose.ts';
 import { rigArtworkVersion, type DirectionName, type Rig, type Sha256 } from '../lib/rig/rig.ts';
 import type { Skeleton } from '../lib/rig/skeleton.ts';
@@ -55,14 +55,12 @@ export function invalidateMoveItems(
 			delete item.qa;
 			continue;
 		}
-		const baseline =
-			old.legacy ?? (!old.clips ? { clips: original, summary: summaryOf(old) } : undefined);
-		const legacyClips = baseline?.clips.filter((key) => !belongs(key));
+		const legacyClips = old.legacy?.clips.filter((key) => !belongs(key));
 		const filtered: ItemQa = {
 			...old,
 			clips: Object.fromEntries(Object.entries(old.clips ?? {}).filter(([key]) => !belongs(key))),
 			cells: Object.fromEntries(Object.entries(old.cells).filter(([key]) => !belongs(key))),
-			...(legacyClips?.length ? { legacy: { ...baseline!, clips: legacyClips } } : {})
+			...(legacyClips?.length ? { legacy: { ...old.legacy!, clips: legacyClips } } : {})
 		};
 		if (!legacyClips?.length) delete filtered.legacy;
 		// mergeQa aggregates the retained parts, including explicitly incomplete historical summaries.

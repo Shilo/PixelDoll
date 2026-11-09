@@ -14,28 +14,13 @@ import { GATES, isAction } from '../lib/items/items.ts';
 import type { Rig } from '../lib/rig/rig.ts';
 import { originOf, type StoredProject } from '../lib/store/project.ts';
 
-/** Explain historical body-QA records without presenting estimated joints or silhouette bounds as proven defects. */
+/** A body-QA note with a readable clip and direction prefix ("walk/west: ..." -> "Walk west: ..."). */
 export const bodyQualityNote = (w: string) =>
-	w
-		.replace(
-			/^([^/]+)\/([^:]+): /,
-			(_, clip: string, direction: string) =>
-				`${clip[0].toUpperCase() + clip.slice(1)} ${direction}: `
-		)
-		.replace(
-			/arms ([\d.]+) px off (?:the )?requested pose/,
-			'estimated arm-joint difference $1 px from requested pose; review'
-		)
-		.replace(
-			/feet drift (\d+) px from pivot y \d+/,
-			'legacy silhouette-bottom difference $1 px from frame pivot'
-		)
-		.replace(/feet drift (\d+) px.*/, 'silhouette bottom differs up to $1 px from reference')
-		.replace(
-			/ground line is (\d+) px (above|below) the shared pivot/,
-			'legacy silhouette bottom is $1 px $2 the frame pivot (view dependent)'
-		)
-		.replace(/headroom (\d+) px.*/, 'headroom $1 px; tall hair or hats may need a larger frame');
+	w.replace(
+		/^([^/]+)\/([^:]+): /,
+		(_, clip: string, direction: string) =>
+			`${clip[0].toUpperCase() + clip.slice(1)} ${direction}: `
+	);
 
 export interface Group {
 	id: string;
@@ -259,18 +244,12 @@ export function itemPreviewFrames(p: Project, it: Item, anim: string): Img[][] {
  * four seeds; without "everywhere" or "nothing worn" men get briefs or a loincloth. "nude" and "underwear" are avoided. See
  * docs/research/bare-skin-base-wording-2026-10-25.md. */
 export const BASE_CLOTHES = 'with plain bare skin everywhere, nothing worn';
-export const bodyWith = (clothes: string) =>
-	`plain bald paperdoll base body, ${clothes}, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso`;
-export const BASE_BODY = bodyWith(BASE_CLOTHES);
-/** The clothes each base body text names, current first. Prompts saved by earlier versions wear the B15 shirt and shorts
- * (lib/dress/regions.ts splits those into Shirt and Shorts), some spelled "grey". */
-const OLD_CLOTHES = 'wearing a plain light gray t-shirt and plain dark gray shorts';
-const CLOTHES = [BASE_CLOTHES, OLD_CLOTHES, OLD_CLOTHES.replaceAll('gray', 'grey')];
-export const isBaseBody = (line: string) => CLOTHES.some((c) => line.trim() === bodyWith(c));
-export const withoutBaseBody = (text: string) =>
-	CLOTHES.reduce((t, c) => t.replace(bodyWith(c), ''), text);
+export const BASE_BODY = `plain bald paperdoll base body, ${BASE_CLOTHES}, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso`;
+export const isBaseBody = (line: string) => line.trim() === BASE_BODY;
+export const withoutBaseBody = (text: string) => text.replace(BASE_BODY, '');
 /** The clothes of the base body line in a prompt, or undefined when the prompt has none. */
-export const baseClothesIn = (text: string) => CLOTHES.find((c) => text.includes(bodyWith(c)));
+export const baseClothesIn = (text: string) =>
+	text.includes(BASE_BODY) ? BASE_CLOTHES : undefined;
 export const basePrompt = (desc: string) => `${desc.trim().replace(/[.\s]+$/, '')}, ${BASE_BODY}`;
 /** What the base LOOKS like (raw skeleton-v3 `description`, S3): no pose words, empty hands. `clothes` null: the description
  * says what the body wears (an exact prompt without a base body line), so no base clothes are added on top of it. */

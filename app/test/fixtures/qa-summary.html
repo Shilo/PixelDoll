@@ -52,6 +52,7 @@
 		import { cellImg } from '/src/lib/compose/compose.ts';
 		import { buildItem, itemQa, SLOTS, slotOf } from '/src/lib/items/items.ts';
 		import { mergeClip } from '/src/lib/items/run.ts';
+		import { summaryOf } from '/src/lib/items/qa-summary.ts';
 		import { makeImg } from '/src/lib/image/png.ts';
 		import { encodePngBytes } from '/src/lib/image/pngraw.ts';
 		import { loadProject, saveItem } from '/src/lib/store/project.ts';
@@ -210,7 +211,10 @@
 			legacy: async () => {
 				await reload();
 				await db.update('projects', id, (rec) => {
-					delete rec.manifest.items.find((i) => i.id === itemId).qa.clips;
+					// Indivisible checks, as a copied fit stores them (equipment/copy.ts).
+					const qa = rec.manifest.items.find((i) => i.id === itemId).qa;
+					qa.legacy = { clips: Object.keys(qa.clips), summary: summaryOf(qa) };
+					delete qa.clips;
 					return rec;
 				});
 				return replace(['south']);

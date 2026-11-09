@@ -1,6 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { estimate, parallelGeneration, run } from '../../src/studio/create.ts';
 import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts';
+import { DIRECTIONS } from '../../src/lib/rig/rig.ts';
 
 function deferred<T>() {
 	let resolve!: (value: T) => void;
@@ -73,11 +74,22 @@ test('aborting one direction consumer leaves shared cancellation to the queue an
 });
 
 test('creation estimate covers the draw, the re-import and the rest-joint fallback, and no animation', () => {
+	const east = { id: 'east' as const },
+		west = { id: 'west' as const };
 	for (const [directions, generated] of [
-		[4, 3],
-		[8, 5]
+		[[{ id: 'south' as const }, east, { id: 'north' as const }, west], 4],
+		[
+			[
+				{ id: 'south' as const },
+				east,
+				{ id: 'north' as const },
+				{ ...west, mirrorOf: 'east' as const }
+			],
+			3
+		],
+		[DIRECTIONS.map((id) => ({ id })), 8]
 	] as const) {
-		const cost = estimate(directions);
+		const cost = estimate({ size: 48, directions: [...directions] });
 		expect(cost.gens).toBe(2.25); // draw 1 + ceil(48² × 8 / 65536), re-import 0.25
 		expect(cost.maxGens).toBeCloseTo(cost.gens + generated * 0.1); // one standing-joint estimate per generated direction
 	}

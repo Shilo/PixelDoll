@@ -118,11 +118,7 @@ beforeEach(async () => {
 		id: 'rig-aligned',
 		savedAt: '',
 		manifest: m,
-		character: {
-			id: 'original-server-registration',
-			looks: 'A humanoid',
-			motionOffsets: { south: 4 }
-		}
+		character: { id: 'original-server-registration', looks: 'A humanoid' }
 	});
 });
 
@@ -138,35 +134,7 @@ type RawBody = { first_frame_keypoints: Keypoint[]; keypoints: Keypoint[][] };
 const raw = () =>
 	state.requests.find((request) => request.path === '/animate-with-skeleton-v3')!.body as RawBody;
 
-test.each(['walk', undefined])(
-	'actual Add move shifts %s managed motion once into local coordinates',
-	async (action) => {
-		// PixMiniMax accepts groups of four, while the managed walk uses its fixed eight-frame sequence.
-		state.motionFrames = action === 'walk' ? 8 : 4;
-		await expect(
-			addMove('rig-aligned', {
-				id: 'new',
-				action,
-				text: 'a small dance',
-				frames: state.motionFrames,
-				items: [],
-				seed: 1
-			})
-		).rejects.toThrow('Captured aligned raw request');
-		const managed = state.requests.find((request) => request.path === '/characters/animations')!
-			.body as { character_id: string; mode: string };
-		expect(managed.character_id).toBe('original-server-registration');
-		expect(managed.mode).toBe(action === 'walk' ? 'skeleton-v3' : 'pixminimax');
-		expect(raw().keypoints).toEqual(
-			Array.from({ length: state.motionFrames }, () => points(0.5625))
-		);
-		expect(raw().first_frame_keypoints).toEqual(points(0.5625));
-		// The estimator's historical server observation must stay untouched.
-		expect(state.estimate).toEqual(points(0.5));
-	}
-);
-
-test('actual authored Add move uses already aligned rest without adding managed offset again', async () => {
+test('actual authored Add move poses the stored rest without a managed motion request', async () => {
 	const record = state.projects.get('rig-aligned')!,
 		rig = record.manifest.rig;
 	const expected = authoredPoses(
@@ -189,7 +157,7 @@ test('actual authored Add move uses already aligned rest without adding managed 
 	expect(raw().first_frame_keypoints).toEqual(points(0.5625));
 });
 
-test('actual setup re-registration discards old server-motion offsets before future moves', async () => {
+test('actual setup re-registration replaces the server character used by future moves', async () => {
 	state.estimate = points(0.5625);
 	const record = state.projects.get('rig-aligned')!;
 	await setupCharacter(

@@ -6,6 +6,7 @@ import {
 } from '../../src/studio/replaceMove.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts';
+import { summaryOf } from '../../src/lib/items/qa-summary.ts';
 import type { Item, Manifest } from '../../src/lib/store/manifest.ts';
 import { composeCell } from '../../src/lib/compose/compose.ts';
 
@@ -47,7 +48,11 @@ function fixture(legacy = false): Manifest {
 		keyOutside: 0
 	}));
 	const qa = itemQa(rig, slotOf('head'), 'green', cells, 2).qa;
-	if (legacy) delete qa.clips;
+	if (legacy) {
+		// Indivisible checks, as a copied fit stores them (equipment/copy.ts).
+		qa.legacy = { clips: Object.keys(qa.clips ?? {}), summary: summaryOf(qa) };
+		delete qa.clips;
+	}
 	const item: Item = {
 		id: 'hat',
 		name: 'Hat',

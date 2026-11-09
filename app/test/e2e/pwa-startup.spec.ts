@@ -388,7 +388,13 @@ test('saved failed generation does not block either startup or manual updates wh
 		await cachedApp(page, server.url, a);
 		const failed = {
 			id: 'studio-create',
-			spec: { name: 'Saved failed character', description: 'Body', seed: 9, size: 48, dirs: 4 },
+			spec: {
+				name: 'Saved failed character',
+				description: 'Body',
+				seed: 9,
+				size: 48,
+				directions: [{ id: 'south' }]
+			},
 			status: 'failed',
 			error: 'Fixture failure'
 		};

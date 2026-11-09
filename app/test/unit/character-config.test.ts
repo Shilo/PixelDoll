@@ -75,17 +75,6 @@ test('raw prompts are lossless and prose is never guessed as a trait', () => {
 	expect(d.prompt).not.toContain('Kind: Elf');
 	expect(d.prompt).toContain('Not an elf. No pale skin.');
 });
-// The saved strings themselves, not derived from BASE_BODY: a project keeps the text of the version that wrote it.
-const OLD_BASE_BODY =
-	'plain bald paperdoll base body, wearing a plain light gray t-shirt and plain dark gray shorts, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso';
-test('prompts saved with the old t-shirt base body, "gray" or "grey", still parse', () => {
-	for (const legacy of [OLD_BASE_BODY, OLD_BASE_BODY.replaceAll('gray', 'grey')]) {
-		const d = newCharacterDraft();
-		readPrompt(d, `A friendly elf\nKind: Elf\n${legacy}`);
-		expect(d.kind).toBe('Elf');
-		expect(d.details).toBe('A friendly elf');
-	}
-});
 test('conflicting trait lines remain editable prose until explicitly replaced', () => {
 	const d = newCharacterDraft();
 	readPrompt(d, 'Kind: Elf\nKind: Orc\nSkin: Pale');

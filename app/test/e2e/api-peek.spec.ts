@@ -500,7 +500,7 @@ test('an action peek includes its shared balance check without another operation
 			name: 'Scope fixture',
 			seed: 1,
 			size: 48,
-			dirs: 4,
+			directions: [{ id: 'south' }],
 			activityScope: 'scope-one'
 		};
 		studio.creating.error = 'Fixture stopped';

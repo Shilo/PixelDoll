@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts';
-import { acceptQa, mergeQa } from '../../src/lib/items/qa-summary.ts';
+import { acceptQa, mergeQa, summaryOf } from '../../src/lib/items/qa-summary.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import type { CellKey, Item, ItemQa } from '../../src/lib/store/manifest.ts';
 import type { Rig } from '../../src/lib/rig/rig.ts';
@@ -159,17 +159,21 @@ test('accepting an exception does not leave clean clips permanently marked for r
 	expect(raw).toEqual(before);
 });
 
+/** Checks kept only as one summary, as a copied fit stores them (equipment/copy.ts). */
+const indivisible = (q: ItemQa): ItemQa => {
+	const { clips: _clips, ...rest } = q;
+	return { ...rest, legacy: { clips: Object.keys(q.clips ?? {}), summary: summaryOf(q) } };
+};
+
 test('legacy totals are conservative and non-clean until all older coverage is replaced', () => {
-	const old = check([cell('idle/south/0', true)]).qa;
-	delete old.clips;
+	const old = indivisible(check([cell('idle/south/0', true)]).qa);
 	const added = merge(item(old), [cell('slash/south/0')]);
 	expect(added.qa.legacy?.clips).toEqual(['idle/south']);
 	expect(added.qa).toMatchObject({ minKeyKept: 0.8, clipPx: 1, status: 'fail' });
 	const fixed = merge(JSON.parse(JSON.stringify(added)) as Item, [cell('idle/south/0')]);
 	expect(fixed.qa.legacy).toBeUndefined();
 	expect(fixed.qa).toMatchObject({ minKeyKept: 1, clipPx: 0, status: 'pass' });
-	const cleanOld = check([cell('idle/south/0')]).qa;
-	delete cleanOld.clips;
+	const cleanOld = indivisible(check([cell('idle/south/0')]).qa);
 	expect(merge(item(cleanOld), [cell('slash/south/0')]).qa.status).toBe('warn');
 	const unknown = merge(item(), [cell('slash/south/0')]);
 	expect(unknown.qa.legacy).toEqual({ clips: ['idle/south'] });

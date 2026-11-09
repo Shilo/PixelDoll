@@ -65,10 +65,11 @@ test.describe('creation safety', () => {
 			const id = await state.copyDemo();
 			const warnings = Array.from(
 				{ length: 6 },
-				(_, i) => `idle/north-east: feet drift ${i + 1} px`
+				(_, i) =>
+					`idle/north-east: silhouette bottom differs up to ${i + 1} px from standing reference`
 			);
-			warnings.push('walk/west: arms 2.7 px off the requested pose');
-			warnings.push('walk/east: feet drift 2 px from pivot y 123');
+			warnings.push('walk/west: estimated arm-joint difference 2.7 px from requested pose; review');
+			warnings.push('walk/east: silhouette bottom differs up to 2 px from standing reference');
 			await db.update<import('../../src/lib/store/project.ts').StoredProject>(
 				'projects',
 				id,
@@ -76,7 +77,9 @@ test.describe('creation safety', () => {
 					rec!.rigQa = {
 						warnings,
 						clips: {
-							'walk/west': { fails: ['arms 2.7 px off the requested pose'] },
+							'walk/west': {
+								fails: ['estimated arm-joint difference 2.7 px from requested pose; review']
+							},
 							'idle/east': {
 								fails: [],
 								warnings: ['12 disconnected pixels retained; review details']
@@ -98,7 +101,7 @@ test.describe('creation safety', () => {
 			'Walk west: estimated arm-joint difference 2.7 px'
 		);
 		await expect(
-			notes.getByText('Walk east: legacy silhouette-bottom difference 2 px from frame pivot', {
+			notes.getByText('Walk east: silhouette bottom differs up to 2 px from standing reference', {
 				exact: true
 			})
 		).toBeVisible();
@@ -132,8 +135,8 @@ test.describe('creation safety', () => {
 				projectId: id,
 				done: true,
 				warnings: [
-					'walk/west: arms 2.7 px off the requested pose',
-					'walk/east: feet drift 2 px from pivot y 123'
+					'walk/west: estimated arm-joint difference 2.7 px from requested pose; review',
+					'walk/east: silhouette bottom differs up to 2 px from standing reference'
 				],
 				fitIds: [],
 				error: ''
@@ -148,7 +151,7 @@ test.describe('creation safety', () => {
 			)
 		).toBeVisible();
 		await expect(
-			sheet.getByText('Walk east: legacy silhouette-bottom difference 2 px from frame pivot', {
+			sheet.getByText('Walk east: silhouette bottom differs up to 2 px from standing reference', {
 				exact: true
 			})
 		).toBeVisible();

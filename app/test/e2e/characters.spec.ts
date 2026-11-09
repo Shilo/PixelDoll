@@ -1827,14 +1827,14 @@ test('storage failures before paid work surface errors and release the move runn
 				name: 'Storage fixture',
 				seed: 1,
 				size: 48,
-				dirs: 4
+				directions: [{ id: 'south' }]
 			});
 			await s.startCreate({
 				description: 'duplicate body',
 				name: 'Duplicate request',
 				seed: 2,
 				size: 48,
-				dirs: 4
+				directions: [{ id: 'south' }]
 			});
 			await firstCreate;
 			await s.startMove(s.doc.id, { id: 'first', action: 'cast', frames: 8, items: [], seed: 1 });

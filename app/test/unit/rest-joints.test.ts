@@ -136,8 +136,7 @@ test.each(['bad-east', 'missing-south', 'null-skeletons', 'null-references'] as 
 				description: 'body',
 				seed: 1,
 				size: 48,
-				dirs: 4,
-				directionPolicy: 'independent',
+				directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west' }],
 				projectId: 'rig-rest-validation'
 			})
 		).rejects.toThrow(invalidEast ? 'east' : 'south');

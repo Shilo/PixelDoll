@@ -71,8 +71,6 @@ import {
 	clipQa,
 	poseCallGens,
 	rawClip,
-	managedMotionOffsets,
-	shiftMotionPoses,
 	type ClipQa
 } from '../lib/rig/clips.ts';
 import { canPose, repairGridLayout, planAnchoredMove, planGens } from '../lib/items/items.ts';
@@ -104,27 +102,22 @@ import {
 } from './replaceMove.ts';
 import { facingErrors, sizeErrors, validBodySize } from './characterConfig.ts';
 import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
-import { planDirections } from '../lib/rig/mirror.ts';
 import { prepareExtensionFit } from '../lib/equipment/index.ts';
 import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, hasCompleteCells } from '../lib/dress/dress.ts';
 import { saveSplit } from '../lib/dress/project.ts';
 import { cellImg } from '../lib/compose/compose.ts';
 
-export type DirectionPolicy = 'independent' | 'mirrored';
-/** New forms send an exact prompt, frame, camera and explicit direction plan. Old saved in-flight specs retain their
- * original 64 px / 4-or-8-direction registration payload so resuming does not create a differently keyed paid pipeline. */
+/** The form sends an exact prompt, frame, camera and explicit direction plan. */
 export interface CreateSpec {
 	description: string;
 	name: string;
 	seed: number;
 	size: number;
 	frame?: number;
-	directions?: RigDirection[];
+	directions: RigDirection[];
 	view?: Rig['view'];
 	exactPrompt?: boolean;
-	dirs?: 4 | 8;
-	directionPolicy?: DirectionPolicy;
 	activityScope?: string;
 	projectId?: string;
 }
@@ -134,20 +127,6 @@ export const STEPS: { id: CreateStep; label: string }[] = [
 	{ id: 'rest', label: 'Setting up the skeleton' },
 	{ id: 'save', label: 'Checking and saving' }
 ];
-/** Independently rendered directions. Legacy mirrored policy derives western views from their eastern counterpart. */
-export const genDirsOf = (n: 4 | 8 = 4, policy: DirectionPolicy = 'mirrored'): Direction[] =>
-	policy === 'independent'
-		? n === 8
-			? ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west']
-			: ['south', 'east', 'north', 'west']
-		: n === 8
-			? ['south', 'south-east', 'east', 'north-east', 'north']
-			: ['south', 'east', 'north'];
-const MIRRORS: [Direction, Direction][] = [
-	['west', 'east'],
-	['south-west', 'south-east'],
-	['north-west', 'north-east']
-];
 const CELL = 64,
 	EST = 0.1;
 // Read-only receipt lookup includes previously completed render attempts. New renders submit once.
@@ -156,16 +135,6 @@ export const CLIP_ATTEMPTS = 2;
  * and the rest views are checked for HEADROOM_MIN free px above the head. */
 export const SIZES = [48, 56] as const;
 
-/** Cost from measured prices: base 2 + import 0.25. Creation makes only the Default move (the standing views); idle, walk
- * and other moves are added later and priced by moveEstimate. */
-export const creationDirections = (
-	spec: Pick<CreateSpec, 'directions' | 'dirs' | 'directionPolicy'>
-): RigDirection[] =>
-	spec.directions ??
-	planDirections(
-		spec.directionPolicy === 'independent' ? 'all' : spec.dirs === 8 ? '8' : '4',
-		genDirsOf(spec.dirs, spec.directionPolicy)
-	).dirs;
 export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPrompt'>) => {
 	if (!spec.exactPrompt) return looksOf(spec.description);
 	return looksOf(
@@ -173,68 +142,13 @@ export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPromp
 		baseClothesIn(spec.description) ?? null
 	);
 };
-export function estimate(
-	choice: 4 | 8 | Pick<CreateSpec, 'directions' | 'dirs' | 'directionPolicy' | 'size'> = 4,
-	policy: DirectionPolicy = 'mirrored'
-) {
-	const n =
-		typeof choice === 'number'
-			? genDirsOf(choice, policy).length
-			: creationDirections(choice).filter((d) => !d.mirrorOf).length;
-	const size = typeof choice === 'number' ? 48 : choice.size;
-	const gens = +(1.25 + Math.ceil((size * size * 8) / 65536)).toFixed(2);
+/** Cost from measured prices: base 2 + import 0.25. Creation makes only the Default move (the standing views); idle, walk
+ * and other moves are added later and priced by moveEstimate. */
+export function estimate(spec: Pick<CreateSpec, 'directions' | 'size'>) {
+	const n = spec.directions.filter((d) => !d.mirrorOf).length;
+	const gens = +(1.25 + Math.ceil((spec.size * spec.size * 8) / 65536)).toFixed(2);
 	// Missing managed rest joints may require one estimate per direction.
 	return { gens, maxGens: +(gens + n * EST).toFixed(2), minutes: 5 };
-}
-
-/** Retain provider artwork for every independently requested view; legacy specs keep their original flips. */
-export function prepareRestViews(
-	rots: { label: string; img: Img }[],
-	spec: Pick<CreateSpec, 'dirs' | 'directionPolicy' | 'size' | 'name'>
-) {
-	const DIRS = genDirsOf(spec.dirs, spec.directionPolicy),
-		rest = {} as Record<DirectionName, Img>;
-	let pad: [number, number] = [0, 0];
-	for (const d of DIRS) {
-		const r = rots.find((x) => x.label === d);
-		if (!r) throw new Error(`PixelLab returned no ${d} view`);
-		const n = normalize(r.img, CELL, CELL);
-		if (n.cutPx) throw new Error(`the ${d} view does not fit the 64 px cell`);
-		const top = opaqueBox(n.img)?.y0 ?? CELL;
-		if (top < HEADROOM_MIN)
-			throw new Error(
-				`${spec.name} is too tall for the 64 px cell at ${spec.size} px (${top} px above the head, hats need ${HEADROOM_MIN}). Try again with 48 px or another seed.`
-			);
-		rest[d] = n.img;
-		pad = n.offset;
-	}
-	for (const [m, src] of MIRRORS)
-		if (!DIRS.includes(m) && DIRS.includes(src)) rest[m] = flipH(rest[src]);
-	return { rest, pad };
-}
-
-/** buildRig intersects source rows; creation must never publish a silently reduced direction set. */
-export function assertCreatedDirections(
-	rig: Pick<Rig, 'directions'>,
-	dirs: 4 | 8 = 4,
-	policy: DirectionPolicy = 'mirrored'
-) {
-	const expected = genDirsOf(dirs, 'independent'),
-		mirrors = new Map(MIRRORS);
-	if (
-		rig.directions.length !== expected.length ||
-		new Set(rig.directions.map((d) => d.id)).size !== expected.length ||
-		expected.some(
-			(id) =>
-				!rig.directions.some(
-					(d) => d.id === id && d.mirrorOf === (policy === 'mirrored' ? mirrors.get(id) : undefined)
-				)
-		)
-	) {
-		throw new Error(
-			'The generated character is missing a requested direction or uses the wrong direction policy. No character was saved.'
-		);
-	}
 }
 
 // ---------- queue helpers ----------
@@ -750,7 +664,7 @@ export async function createCharacter(
 			'This creation attempt has an invalid project identity. Start a new character.'
 		);
 	const cell = spec.frame ?? CELL,
-		directions = creationDirections(spec),
+		directions = spec.directions,
 		DIRS = directions.filter((d) => !d.mirrorOf).map((d) => d.id);
 	const errors = [
 		...facingErrors(directions),
@@ -777,7 +691,6 @@ export async function createCharacter(
 	if (await completedCreation(projectId, creationSpec)) return projectId; // completion may have committed before its UI acknowledgment
 	const looks = creationLooks(spec),
 		view = spec.view ?? 'low top-down';
-	const modern = !!spec.exactPrompt || spec.frame !== undefined || spec.directions !== undefined;
 	// 1. base character, text only (8 rotations)
 	onProgress({ step: 'draw', done: 0, total: 1, recIds: [] });
 	const base = await run(
@@ -797,7 +710,7 @@ export async function createCharacter(
 		spec.activityScope
 	);
 
-	// 2. selected original rotations on the 64 cell; legacy western views are flips. Re-import for rest keypoints.
+	// 2. all eight original rotations on the frame. Re-import for rest keypoints.
 	onProgress({ step: 'rest', done: 0, total: 1, recIds: [] });
 	const rots = await imagesOf(base),
 		rest = {} as Record<DirectionName, Img>,
@@ -813,7 +726,7 @@ export async function createCharacter(
 			);
 		const top = opaqueBox(n.img)?.y0 ?? cell;
 		if (!opaqueBox(n.img)) throw new Error(`PixelLab returned an empty ${d} view.`);
-		if ((modern || DIRS.includes(d)) && top < HEADROOM_MIN)
+		if (top < HEADROOM_MIN)
 			restWarnings.push(
 				`${d}: standing headroom ${top} px; tall hair or hats may need a larger frame`
 			);
@@ -824,24 +737,19 @@ export async function createCharacter(
 		directions.map((d) => ({ id: d.id, img: d.mirrorOf ? flipH(rest[d.mirrorOf]) : rest[d.id] }))
 	);
 	// Register all eight ORIGINAL views, including south when it isn't selected. Never overwrite these with mirrors.
-	const registered = modern
-		? rest
-		: (Object.fromEntries(
-				directions.map((d) => [d.id, d.mirrorOf ? flipH(rest[d.mirrorOf]) : rest[d.id]])
-			) as Record<DirectionName, Img>);
 	const others = Object.fromEntries(
 		await Promise.all(
-			(Object.keys(registered) as Direction[])
+			(Object.keys(rest) as Direction[])
 				.filter((d) => d !== 'south')
-				.map(async (d) => [d, png(await b64(registered[d]))])
+				.map(async (d) => [d, png(await b64(rest[d]))])
 		)
 	);
 	const imp = await run(
 		routes.createCharacterV3({
 			description: looks,
-			reference_image: png(await b64(registered.south)),
+			reference_image: png(await b64(rest.south)),
 			direction_images: others,
-			n_directions: modern ? 8 : (spec.dirs ?? 4),
+			n_directions: 8,
 			view,
 			template_id: 'mannequin',
 			no_background: true,
@@ -887,7 +795,6 @@ export async function createCharacter(
 		[{ id: DEFAULT_MOVE, dirs: Object.fromEntries(DIRS.map((d) => [d, [rest[d]]])) }],
 		{ size: cell, directions }
 	);
-	if (!modern) assertCreatedDirections(built.rig, spec.dirs, spec.directionPolicy);
 	if (built.errors.length)
 		throw new Error(
 			`The standing views do not fit together: ${built.errors.slice(0, 3).join('; ')}`
@@ -900,13 +807,12 @@ export async function createCharacter(
 	rig.rest = {};
 	for (const d of DIRS) rig.rest[d] = { image: await cellHash(rest[d]), keypoints: restKps[d] };
 	// Retain unselected originals for a future account reconnection, without estimating unused joints or animating them.
-	if (modern)
-		for (const d of DIRECTIONS.filter((d) => !DIRS.includes(d))) {
-			rig.rest[d] = {
-				image: await cellHash(rest[d]),
-				keypoints: managedPose(refs?.[d]?.keypoints) ?? []
-			};
-		}
+	for (const d of DIRECTIONS.filter((d) => !DIRS.includes(d))) {
+		rig.rest[d] = {
+			image: await cellHash(rest[d]),
+			keypoints: managedPose(refs?.[d]?.keypoints) ?? []
+		};
+	}
 	const anim = rig.animations[0];
 	anim.sources = Object.fromEntries(
 		DIRS.map((d) => [
@@ -1865,7 +1771,6 @@ async function addBodyClip(
 		affected = affectedMoveDirections(rig, dirs),
 		n = moveFrames(m, spec),
 		name = m.name;
-	const motionOffsets = managedMotionOffsets(rec.character, rig.cell.h);
 	const authored = isAuthoredAction(spec.action) ? spec.action : undefined;
 	const total = dirs.length * (1 + n + (authored ? 0 : 1 + n));
 	let done = 0;
@@ -1911,20 +1816,16 @@ async function addBodyClip(
 								seed: spec.seed
 							}
 				);
-				keypoints = shiftMotionPoses(
-					await motion(
-						req,
-						d,
-						`${name} · ${spec.id} ${d} (motion)`,
-						checkedTick,
-						n,
-						signal,
-						spec.activityScope,
-						rig.cell.w,
-						restImg
-					),
-					motionOffsets[d] ?? 0,
-					rig.cell.h
+				keypoints = await motion(
+					req,
+					d,
+					`${name} · ${spec.id} ${d} (motion)`,
+					checkedTick,
+					n,
+					signal,
+					spec.activityScope,
+					rig.cell.w,
+					restImg
 				);
 				extra[k] = [(await queue.enqueue(req, { signal })) as JobRec];
 			}

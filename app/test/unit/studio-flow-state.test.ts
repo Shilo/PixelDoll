@@ -132,7 +132,13 @@ test.each(['create', 'move', 'setup'] as const)(
 		const state = kind === 'create' ? s.creating : kind === 'move' ? s.moving : s.settingUp;
 		const start = (seed: number) =>
 			kind === 'create'
-				? s.startCreate({ description: 'body', name: 'Fixture', seed, size: 48, dirs: 4 })
+				? s.startCreate({
+						description: 'body',
+						name: 'Fixture',
+						seed,
+						size: 48,
+						directions: [{ id: 'south' as const }]
+					})
 				: kind === 'move'
 					? s.startMove('project', { id: 'cast', action: 'cast', frames: 8, items: [], seed })
 					: s.startSetup({
@@ -170,36 +176,42 @@ test('creation identity is persisted before paid work, survives failed resume, a
 	mocks.put.mockImplementationOnce(() => persisted.promise);
 	mocks.create.mockRejectedValue(new Error('fixture stops before paid work'));
 	const s = await import('../../src/studio/state.svelte.ts');
-	const legacy = {
+	const form = {
 		description: 'body',
-		name: 'Legacy pending',
+		name: 'Pending',
 		seed: 1,
 		size: 48,
-		dirs: 4 as const
+		directions: [{ id: 'south' as const }]
 	};
-	const run = s.startCreate(legacy);
+	const run = s.startCreate(form);
 	expect(mocks.create).not.toHaveBeenCalled();
-	const migrated = mocks.put.mock.calls[0][2].spec;
-	expect(migrated.projectId).toMatch(/^rig-[a-f0-9-]+$/);
-	expect(migrated).toEqual({
-		...legacy,
-		projectId: migrated.projectId,
+	const saved = mocks.put.mock.calls[0][2].spec;
+	expect(saved.projectId).toMatch(/^rig-[a-f0-9-]+$/);
+	expect(saved).toEqual({
+		...form,
+		projectId: saved.projectId,
 		activityScope: expect.any(String)
 	});
 	persisted.resolve();
 	await run;
-	expect(mocks.create.mock.calls[0][0].projectId).toBe(migrated.projectId);
-	await s.startCreate(structuredClone(migrated));
-	expect(mocks.create.mock.calls[1][0].projectId).toBe(migrated.projectId);
-	await s.startCreate({ ...migrated, seed: 2, projectId: undefined });
-	expect(mocks.create.mock.calls[2][0].projectId).not.toBe(migrated.projectId);
+	expect(mocks.create.mock.calls[0][0].projectId).toBe(saved.projectId);
+	await s.startCreate(structuredClone(saved));
+	expect(mocks.create.mock.calls[1][0].projectId).toBe(saved.projectId);
+	await s.startCreate({ ...saved, seed: 2, projectId: undefined });
+	expect(mocks.create.mock.calls[2][0].projectId).not.toBe(saved.projectId);
 });
 
 for (const kind of ['create', 'move', 'setup'] as const) {
 	const key = 'studio-' + kind;
 	const spec =
 		kind === 'create'
-			? { description: 'body', name: 'Fixture', seed: 1, size: 48, dirs: 4 as const }
+			? {
+					description: 'body',
+					name: 'Fixture',
+					seed: 1,
+					size: 48,
+					directions: [{ id: 'south' as const }]
+				}
 			: kind === 'move'
 				? { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 }
 				: {
@@ -1562,10 +1574,43 @@ describe('move queue', () => {
 		name: 'A',
 		seed: 1,
 		size: 48,
-		dirs: 4 as const,
+		directions: [{ id: 'south' as const }],
 		projectId: 'rig-a'
 	};
-	const specB = { description: 'B body', name: 'B', seed: 2, size: 48, dirs: 4 as const };
+	const specB = {
+		description: 'B body',
+		name: 'B',
+		seed: 2,
+		size: 48,
+		directions: [{ id: 'south' as const }]
+	};
+
+	test('a create saved before explicit direction plans is not resumed and says why', async () => {
+		const records = storage();
+		const { REQUEST_TEXT } = await import('../../src/studio/state.svelte.ts');
+		records.set('studio-create', {
+			id: 'studio-create',
+			spec: {
+				description: 'Old body',
+				name: 'Old',
+				seed: 1,
+				size: 48,
+				dirs: 4,
+				projectId: 'rig-old'
+			},
+			status: 'running',
+			requestText: REQUEST_TEXT
+		});
+		vi.resetModules();
+		const s = await import('../../src/studio/state.svelte.ts');
+		await s.resumeCreate();
+		expect(mocks.create).not.toHaveBeenCalled();
+		expect(records.has('studio-create')).toBe(false);
+		expect(s.creating.spec).toBeNull();
+		expect(s.ui.toast).toBe(
+			'A character creation saved by an earlier version cannot resume. Start a new character.'
+		);
+	});
 
 	test('a waiting Create after this tab resumed the closed tab create keeps that create and says why it did not start', async () => {
 		const records = storage();

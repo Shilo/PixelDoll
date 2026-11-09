@@ -35,6 +35,13 @@ import {
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import type { Project } from '../../src/lib/store/manifest.ts';
 
+/** Top-down 4: three generated views with west mirrored from east. */
+const TOP_DOWN_4: CreateSpec['directions'] = [
+	{ id: 'south' },
+	{ id: 'east' },
+	{ id: 'north' },
+	{ id: 'west', mirrorOf: 'east' }
+];
 afterEach(() => vi.restoreAllMocks());
 const points = (i: number): Keypoint[] =>
 	LABELS.map((label, k) => ({ label, x: 0.3 + k * 0.01 + i * 0.001, y: 0.3 + k * 0.02 }));
@@ -125,7 +132,7 @@ test('creation publishes a Default-only rig that items, moves, exports and live 
 		description: 'body',
 		size: 48,
 		seed: 7,
-		dirs: 4,
+		directions: TOP_DOWN_4,
 		projectId: 'rig-default-first'
 	});
 	// two v3 creates and one free skeleton read: no animation, motion or estimate calls
@@ -205,7 +212,7 @@ test('"Add idle + walk" restores what creation used to make, at the old price', 
 		description: 'body',
 		size: 48,
 		seed: 7,
-		dirs: 4,
+		directions: TOP_DOWN_4,
 		projectId: 'rig-default-moves'
 	});
 	const specs = baseMoveSpecs(rec.manifest, 7);
@@ -215,7 +222,8 @@ test('"Add idle + walk" restores what creation used to make, at the old price', 
 	]); // the items it is priced for
 	// Creation + idle + walk = the pre-Default-first creation estimate (35.25 gens for Top-down 4).
 	expect(
-		estimate(4).gens + specs.reduce((n, s) => n + moveEstimate(rec.manifest, s).gens, 0)
+		estimate({ size: 48, directions: TOP_DOWN_4 }).gens +
+			specs.reduce((n, s) => n + moveEstimate(rec.manifest, s).gens, 0)
 	).toBeCloseTo(35.25);
 	const calls = specs.flatMap((s) => movePlan(rec, s));
 	expect(calls.filter((c) => c.path === '/animate-with-skeleton-v3')).toHaveLength(3 * 2);
@@ -242,7 +250,7 @@ test('an item saved before idle and walk existed gets items-only poses for exact
 		description: 'body',
 		size: 48,
 		seed: 7,
-		dirs: 4,
+		directions: TOP_DOWN_4,
 		projectId: 'rig-default-extend'
 	});
 	const m = rec.manifest,
