@@ -1,0 +1,22 @@
+{
+	"name": "pixeldoll",
+	"interface": {
+		"displayName": "PixelDoll"
+	},
+	"plugins": [
+		{
+			"name": "svelte",
+			"source": {
+				"source": "git-subdir",
+				"url": "https://github.com/sveltejs/ai-tools.git",
+				"path": "./plugins/claude/svelte",
+				"ref": "main"
+			},
+			"policy": {
+				"installation": "INSTALLED_BY_DEFAULT",
+				"authentication": "ON_INSTALL"
+			},
+			"category": "Coding"
+		}
+	]
+}
