@@ -54,7 +54,7 @@ p { margin: 0; max-width: 68ch; }
 .sprite { width: 120px; height: 120px; image-rendering: pixelated; border-radius: 6px; display: block;
   background: repeating-conic-gradient(var(--check-a) 0 25%, var(--check-b) 0 50%) 0 0 / 12px 12px; }
 .sprite.small { width: 80px; height: 80px; }
-@media (max-width: 480px) { .sprite { width: 96px; height: 96px; } .sprite.small { width: 64px; height: 64px; } .step { grid-template-columns: 18px 1fr; } .step .text { grid-column: 1 / -1; } }
+@media (max-width: 480px) { .sprite { width: 96px; height: 96px; } .sprite.small { width: 64px; height: 64px; } .step { grid-template-columns: 18px 1fr; } .step .text { grid-column: 1 / -1; } .bar .call { white-space: normal; padding-inline: 2px; } }
 .text { display: grid; gap: 6px; min-width: 0; }
 .text h3 { margin: 0; font: 600 15px var(--body); }
 .chip { justify-self: start; font: 500 12.5px var(--mono); padding: 2px 8px; border-radius: 6px; overflow-wrap: anywhere; }
@@ -97,8 +97,8 @@ code { font: 500 12.5px var(--mono); }
     <p role="note"><strong>November 2 correction:</strong> this is a historical visual comparison. The zero-body-difference metric below was invalid because it skipped non-green output pixels; it does not establish exact preservation. Real-frame edits can change anatomy and shading. The old face-painting conclusion also used a faulty registration score. Images and source data remain as historical evidence. See the <a href="../../reviews/2026-11-02-joint-counter-review-and-fixes.md">joint counter-review and corrections</a>.</p>
     <p>The same bare character and the same red cloak, made two ways. Every picture below is a real stored frame from our PixelLab tests, run through the app's own code. Drag the slider or press Play to step through the animation; every step updates together.</p>
     <div class="answers">
-      <div class="answer"><b>Does PixelLab redraw the item every frame?</b><p><strong>Yes, in both ways.</strong> Watch step 4 in each column: the cloak is a new PixelLab drawing in every frame. Our code never moves or rotates the cloak.</p></div>
-      <div class="answer"><b>So what is the difference?</b><p><strong>Which body PixelLab draws on.</strong> Today it draws a brand-new body plus cloak and we keep only the cloak. The other way, it paints the cloak onto the exact frames you see.</p></div>
+      <div class="answer"><b>Does PixelLab redraw the item every frame?</b><p><strong>Yes, in both ways.</strong> Watch step 4 in each column: the cloak is a new PixelLab drawing in every frame. Our code never rotates the cloak and moves it at most 1 px (step 6).</p></div>
+      <div class="answer"><b>So what is the difference?</b><p><strong>Which body PixelLab draws on.</strong> Today it draws a brand-new body plus cloak and we keep only the cloak. The other way, it paints the cloak onto green copies of the exact frames you see.</p></div>
       <div class="answer"><b>What is the "1 px shift"?</b><p>Step 6 on the left. If sliding PixelLab's whole new drawing by one pixel lines it up better with the real body, the app slides it. That is all. It never rotates and never moves more than 1 px.</p></div>
     </div>
   </section>
@@ -130,7 +130,7 @@ code { font: 500 12.5px var(--mono); }
 
       <div class="step"><span class="num">4</span><div class="pics"><img class="sprite" data-k="today.out" alt="PixelLab redraw of the dressed green body"></div>
         <div class="text"><h3>Redraw the dressed body in every pose</h3><span class="chip pl">PixelLab · animate-with-skeleton-v3 · 1 call per direction · 3 gens</span>
-          <p>One call per direction returns every frame of idle and walk together (up to 12 frames). PixelLab gets the dressed standing pose from step 3 plus the <strong>same joint positions</strong> as step 1, and draws the green body and the cloak again in each pose. <strong>This is where the cloak moves.</strong> It is a new drawing of the whole body, separate from step 1.</p></div></div>
+          <p>One call per direction returns every frame of idle and walk together (4 + 8 = 12 frames). PixelLab gets the dressed standing pose from step 3 plus the <strong>same joint positions</strong> as step 1, and draws the green body and the cloak again in each pose. <strong>This is where the cloak moves.</strong> It is a new drawing of the whole body, separate from step 1.</p></div></div>
 
       <div class="step"><span class="num">5</span><div class="pics"><img class="sprite" data-k="today.diff" alt="Body difference map"></div>
         <div class="text"><h3>Does the new body match the real one?</h3><span class="chip il">Illustration only, not an app step</span>
@@ -178,7 +178,7 @@ code { font: 500 12.5px var(--mono); }
           <p>The final composition uses the frozen body, but the editor can redraw anatomy underneath the cloak. Edge alignment and body preservation still need independent checks.</p></div></div>
 
       <div class="step"><span class="num">6</span><div class="pics"></div>
-        <div class="text"><h3>No line-up step</h3><span class="chip il">Not needed</span>
+        <div class="text"><h3>No line-up step</h3><span class="chip il">Not used in this test</span>
           <p>This historical control used no separate alignment. Receiving the real input frames does not prove the generated output stayed aligned.</p></div></div>
 
       <div class="step"><span class="num">7</span><div class="pics"><img class="sprite" data-k="real.layer" alt="Cloak layer after removing green"></div>
