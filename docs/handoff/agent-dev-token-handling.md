@@ -26,7 +26,8 @@ development**, generating images without a human pasting the token into the runn
 1. **One variable name in both projects:** `PIXELLAB_API_KEY_AGENT_DEV` (service → credential → surface → environment).
    Rename older app configuration entries (`PIXELLAB_API_KEY`, `VITE_*`, etc.), including `.env.example` if any.
    The referenced server variable can have any valid environment-variable name; it is not another app configuration entry.
-2. **The agent entry lives only in the repo-root `.env`**, which is git-ignored. Its value is either the literal key or the
+2. **The agent entry lives only in the repo-root `.env`**, which is git-ignored. A git worktree without its own `.env` uses
+   the main checkout's (PixelDoll: found through `git rev-parse --git-common-dir`), so one file serves every worktree. Its value is either the literal key or the
    exact reference below. Credentials are never committed, stored in CI secrets, or placed in a `.env.*` file that a bundler loads automatically.
    Use `PIXELLAB_API_KEY_AGENT_DEV=${PIXELLAB_SECRET}` to reference the Windows variable inherited by the agent server, or substitute another valid name inside `${...}`. Only a whole-value reference is expanded. A malformed reference or missing/blank target returns a setup error (HTTP 503), never its name as a token. Any non-reference value remains a literal token; no old/new token-format guessing is used. Node's parser handles whitespace, comments and optional quotes. This is a limited server-side reference convention, not general interpolation, recursive expansion, default expressions or shell evaluation. Restart the terminal/editor and server after changing Windows environment variables.
 3. **A separate agent-only dev command** (`npm run dev:agent`) is the *only* path that reads it. The normal `npm run dev` must

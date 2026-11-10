@@ -1,4 +1,5 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -64,14 +65,24 @@ function devTools(): Plugin {
 	};
 }
 
-// AI-agent automation only (`npm run dev:agent` = `vite --mode agent`): serves PIXELLAB_API_KEY_AGENT_DEV from ../.env at
+// AI-agent automation only (`npm run dev:agent` = `vite --mode agent`): serves PIXELLAB_API_KEY_AGENT_DEV from the .env (below) at
 // /__dev/pixellab-key. Not registered at all for `npm run dev` (humans paste their key like in production) or any build.
 // The key is read server-side per request, never through Vite's env (no VITE_ prefix, nothing inlined). A key referencing
 // PIXELLAB_SECRET_DEV (read at startup) switches the app and the CSP to a local API server (agentApiBase).
-const ENV_FILE = new URL('../.env', import.meta.url);
-const localApi = () =>
-	existsSync(ENV_FILE) ? agentApiBase(readFileSync(ENV_FILE, 'utf8')) : undefined;
-function agentKey(apiBase: string | undefined): Plugin {
+// The repo-root .env. Git never copies an ignored file into a new worktree, so a worktree without one uses the main
+// checkout's (the parent of git's shared directory): one .env serves every worktree.
+function agentEnvFile(): string {
+	const own = fileURLToPath(new URL('../.env', import.meta.url));
+	if (existsSync(own)) return own;
+	const shared = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], {
+		cwd: fileURLToPath(new URL('.', import.meta.url)),
+		encoding: 'utf8'
+	}).trim();
+	return resolve(shared, '..', '.env');
+}
+const localApi = (envFile: string) =>
+	existsSync(envFile) ? agentApiBase(readFileSync(envFile, 'utf8')) : undefined;
+function agentKey(envFile: string, apiBase: string | undefined): Plugin {
 	return {
 		name: 'pixeldoll-agent-key',
 		transformIndexHtml: (html) =>
@@ -86,7 +97,7 @@ function agentKey(apiBase: string | undefined): Plugin {
 					return res.end();
 				}
 				try {
-					const source = readFileSync(ENV_FILE, 'utf8');
+					const source = readFileSync(envFile, 'utf8');
 					// The API base is fixed at startup: never serve a key edited for the other server until a restart.
 					if (agentApiBase(source) !== apiBase) {
 						server.config.logger.warn('The agent token changed servers: restart dev:agent.');
@@ -169,7 +180,8 @@ export default defineConfig(({ command, mode }) => {
 	const { version, commit } = appVersion(fileURLToPath(new URL('.', import.meta.url)));
 	const build = randomUUID();
 	const agent = command === 'serve' && mode === 'agent',
-		apiBase = agent ? localApi() : undefined;
+		envFile = agent ? agentEnvFile() : '',
+		apiBase = agent ? localApi(envFile) : undefined;
 	return {
 		// The dev server may run uncommitted changes, so it never claims a released version.
 		define: {
@@ -184,7 +196,7 @@ export default defineConfig(({ command, mode }) => {
 			svelte(),
 			devTools(),
 			startupPreload(),
-			agent && agentKey(apiBase),
+			agent && agentKey(envFile, apiBase),
 			command === 'build' && pwaBuild({ build, version, commit })
 		],
 		// Vite ignores only test-results/. Each agent's own TEST_OUTPUT_DIR (test-results-*, as in .gitignore) streams trace
