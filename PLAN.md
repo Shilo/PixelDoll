@@ -151,7 +151,9 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   dropped a turquoise gem and emptied navy gear with no gate firing. Green's one defect (dark item outlines over the body are
   keyed out) is fixed in extraction (`absorbOutline` rule (c), 2026-11-10), not by a key change. A second test (425 gens) of
   skin-only cyan and flat bright cyan and green mannequins found dark mannequin shades, not the hue, cause the outline loss;
-  none passed its rule, and a flat bright green mannequin is a tracked follow-up. See the
+  none passed its rule. A third campaign (420 gens) rejected a flat bright green mannequin (the model draws olive folds into red
+  cloth on it) and rechallenged every fallback: magenta, blue and azure and their order stay; it also fixed a despill bug that
+  grayed steel on azure and blue. See the
   [chroma key reference](docs/research/2026-11-09-paperdoll-video-review/chroma-key.md).
 
 ## Progressive equipment generation (2026-11-03)

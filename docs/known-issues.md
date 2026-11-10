@@ -136,7 +136,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   px per frame on one magenta tunic walk view), and one stray far pixel of the item's outline shade costs that view its
   recovery (1 hair view in 356). Item outline px that stay within 40 of the key ramp are still keyed out, so long braids keep
   short dashed gaps (about 13 px per walk frame); a flat bright mannequin with no dark shades avoided this in a live test but
-  needs a new detector. See the [chroma key reference](research/2026-11-09-paperdoll-video-review/chroma-key.md).
+  made the model draw olive folds into red cloth, so it was rejected. See the [chroma key reference](research/2026-11-09-paperdoll-video-review/chroma-key.md).
 - **The body outline can show 1 px beside posed garment edges.** On posed frames the base's dark outline (sometimes a
   sliver of shirt or skin) can sit just outside a torso garment, boot or cape edge, so the edge reads 2 px thick and flickers
   in motion (torso garments 1.77 px per frame; 30 % of posed torso frames have 3 or more). Hiding those body pixels fixed

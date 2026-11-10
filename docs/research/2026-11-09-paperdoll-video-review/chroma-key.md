@@ -202,14 +202,34 @@ magenta, blue and azure variants. Tracked as a board card. [Chroma strategies](e
 
 Practitioner takeaway: cyan works for them on a few skin-keyed, clothed bodies with manual cleanup accepted (Theik's words);
 "as long as it has no overlap" is the real rule, and PixelDoll's measured key switch enforces it. The part of their method that
-does transfer is the bright mannequin without dark shades, and it transfers on green.
+does transfer is the bright mannequin without dark shades, and it transfers on green. (Test 4 then rejected it; see below.)
+
+## Test 4: every key and the flat mannequin (2026-11-10, 420 generations)
+
+The owner asked for every key color and fallback to be challenged, since changing the mannequin style changes which colors
+collide, under a 2,000-generation cap. A plan was written, challenged before spending (it cut about 80 gens of redundant arms,
+added a dark-skin body, a held sword and pure-green items, fixed a numeric tie band and a body-relative outline cut for dark skin,
+and found a production despill bug), and run in stages with a stop rule. Evidence: [plan](evidence/key-campaign-3/plan.md),
+[plan challenge](evidence/key-campaign-3/plan-challenge.md), [stage 1](evidence/key-campaign-3/stage1-flat-green.md),
+[fallback keys](evidence/key-campaign-3/fallback-keys.md), [despill sweep](evidence/key-campaign-3/despill-review.md).
+
+| Question | Answer | Evidence |
+| --- | --- | --- |
+| Free, before spending | Rescored with direct counts, flat green looked better on stored data (body leak 77 vs 175, dark px dropped 0 vs 272); the earlier "fail" came from a band-leak proxy. The flat detector cannot drop dark px by construction, so a new metric (dark key px kept next to the item) was added; plate 196 vs 326 turned out to be the plate's own outline ring. | Offline census of 200 sets, 153,651 item px |
+| Production bug found on the way | Despill treated any key-tinted px as spill; steel is drawn blue-gray on every mannequin (the azure hue), so azure grayed 1,356 of 1,577 helm px. Fixed (commit 0bded5ab): only saturated, very dark, or bright-removed-neighbor px are despilled. Azure helm 1,356 to 24 rewritten px, plate 472 to 53, steel saturation back within 0.03 of green; bench unchanged. A first version missed its targets because dark removed outline px counted as spill evidence; a review found it and the fix was narrowed. | Two review rounds; despill sweep |
+| Stage 1: flat bright green vs ramp green (22 calls, 260 gens; body B, 128 px body, dark-skin body B, held sword) | **Flat green rejected.** On a bright green body the model draws a red cloak with olive-brown folds in the raw output: north view olive px 114, 358, 145 and 1,842 on four bodies and seeds, against 0-36 on the ramp and 0 on every other key. Hard fails 0 both; key-tinted px 0 both; dark skin clean on both; sword gripped on both. Stop rule ended the flat track, so no flat fallbacks. | [stage 1](evidence/key-campaign-3/stage1-flat-green.md) |
+| Fallbacks on the ramp, with the despill fix (63 stored sets rerun free; 16 paid calls, 160 gens) | **All stay, order stays.** Magenta for green items: steel stays neutral blue-gray (0-4 % leaning magenta), no green lost; other candidates lose navy, denim and sky. Blue for green plus pink or red: azure lost nothing but drew reds and pinks 0.09-0.18 less saturated and made holly tunics mostly green, so it cannot replace blue. Azure for green plus purple: keeps 100 % of purple on 9 sets; magenta and blue cut it. The despill fix changed colors only, never a mask or gate. The later prompt change (commit 14a31bc1, dropping "natural") tested as no difference, so older outputs stay valid. | [fallback keys](evidence/key-campaign-3/fallback-keys.md) |
+
+Spend: 260 + 160 = 420 of the 2,000 cap (balance 17,448.1 to 17,028.1 on the local API); nothing resent.
 
 ## Open questions (not tested)
 
-- A five-flat-tone cyan or blue mannequin against the same in green (the practitioners' exact setup): answered by test 3 for
-  flat bright cyan and green.
+- A five-flat-tone cyan or blue mannequin against the same in green (the practitioners' exact setup): answered by tests 3 and 4
+  (flat bright cyan damages color and steel; flat bright green draws olive into red cloth).
 - A skin-only key on a body with clothes: answered by test 3 on PixelDoll's bare bases (fails); not tested on clothed bases.
-- Whether azure should come before magenta as the fallback for green-only items.
+- Whether azure should come before magenta for green-only items: answered by test 4 (magenta stays; azure gives grayer steel
+  and loses navy).
+- Fallback keys in posed frames, on body B and 128 px bodies, and with a held weapon on magenta: not tested.
 - What colors real users ask for: there is no telemetry, and every sample here is skewed by its prompt set.
 
 ## How to rerun
