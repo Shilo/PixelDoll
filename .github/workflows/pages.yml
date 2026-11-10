@@ -52,6 +52,7 @@ jobs:
 
   # Sixteen one-worker shards on separate 4-vCPU runners, in parallel with build (Playwright's CI advice: shard, don't overload).
   # Benchmarked 2026-10-25: 16x1 = 147-151 s, 8x1 = 175-182 s, 8x2 = 128-200 s with a load flake (docs/testing/test-performance.md).
+  # Shards are balanced by recorded test durations (scripts/e2e-shard.mjs), not by Playwright's equal-count --shard slices.
   e2e:
     name: e2e ${{ matrix.shard }}/16
     runs-on: ubuntu-24.04
@@ -75,10 +76,14 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
+      # Fails before any test runs unless every test has exactly one shard and Playwright selects exactly this one's tests.
+      # The total comes from the matrix, so removing a shard entry reassigns its tests instead of dropping them.
+      - name: e2e-shard
+        run: node scripts/e2e-shard.mjs ${{ matrix.shard }}/${{ strategy.job-total }} "$RUNNER_TEMP/e2e-shard.txt"
       # No --with-deps: the runner already has Chromium's libraries, and the apt mirror it used stalled shards for up to
       # 10 min. Fonts the app's stacks resolve to are identical either way (docs/testing/test-performance.md).
       - run: npx playwright install chromium # native crash profiles use full Chromium; ordinary tests use the headless shell
-      - run: npm run e2e -- --shard=${{ matrix.shard }}/16 # list + GitHub annotations for failures and flakes (playwright.config.ts)
+      - run: npm run e2e -- --test-list "$RUNNER_TEMP/e2e-shard.txt" # list + GitHub annotations for failures and flakes (playwright.config.ts)
         timeout-minutes: 10 # a step timeout fails the step (job timeouts cancel it), so traces still upload
       - if: ${{ !cancelled() && hashFiles('app/test-results/**/trace.zip') != '' }} # failures and retried flakes
         uses: actions/upload-artifact@v7

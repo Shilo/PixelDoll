@@ -44,13 +44,15 @@ Commits: `1b6230a7`, `16b787ef`, `84f718e3`, `1c59e22e`, `3a246fff`, `8b098785`,
 
 ## How sharding actually splits the work
 
-Playwright 1.64 (`filterForShard` in `node_modules/playwright/lib/runner/index.js`) orders tests by project, file and position, then cuts that list into **contiguous slices of equal test count**. It does not weigh by duration.
+CI does not use Playwright's `--shard`. Playwright 1.64–1.65 (`filterForShard` in `node_modules/playwright/lib/runner/index.js`) orders tests by project, file and position, then cuts that list into **contiguous slices of equal test count**, without weighing duration. With one worker a shard's time is the **sum of its tests**, so adjacent heavy tests shared a slice: on 2026-11-10 the slowest shard ran 119–133 s of tests while the lightest ran 50 s, and the slowest job set every deploy's time.
 
-- With one worker, a shard's time is the **sum of its tests**, not its longest test.
-- Heavy tests that sit next to each other land in the same shard. Two clusters did: the two offline creation cases (Unique 8 and Side-scroller 2, about 42 s and 22 s, registered from one loop) with the device import roundtrip, and the 28 s color-matching test next to its two 13 s stale-review variants. Both are now **registered apart on purpose** (2026-10-25): Unique 8 before the creation-safety group in `character-creator.spec.ts`, color matching after "canceling Connect…" in `studio.spec.ts`, among light tests and away from the studio demo and Inspector tests.
-- Splitting a long test does not rebalance anything: its parts stay adjacent, usually in the same shard. Replaying `filterForShard` on real durations, splitting the three longest tests changed the slowest shard from 150 s to 136 s in one run, and made it worse (110 s to 121 s) in another.
-- What helps: more shards (smaller slices); less actual work in heavy tests; spreading heavy tests across the order by registering them among light tests. Replaying the split on five CI timing sets, the reorder took the slowest shard from 99–112 s to 72–87 s (at most 93 s with up to two tests added or removed before it). Real CI noise between runs of the same commit is about ±20 s, so expect roughly 10–20 s per deploy, not more.
-- `PWTEST_SHARD_WEIGHTS` can weight the slices (best contiguous cut ≈ 95 s against 150 s in one run), but it is an undocumented internal variable. Don't rely on it.
+Since 2026-11-10 each e2e job runs `node scripts/e2e-shard.mjs <n>/16 <file>` and then `playwright test --test-list <file>`:
+
+- **Plan:** every job lists all tests and assigns them, heaviest first, to the shard with the least recorded time so far, using `app/test/e2e/durations.json` (averaged CI durations). A test without a recorded duration, new or renamed, weighs as a median test. Every job computes the same plan from the same commit. On the recorded durations each shard holds about 80 s.
+- **Guards:** the step fails before any test runs if the shards do not cover every test exactly once, if a title is empty, padded or contains `›` or a newline, if two tests share a title path, if `durations.json` holds a non-number, or if Playwright's own `--list` with that file does not select exactly the planned tests.
+- **Helper files:** a test list loads only the files it names. `dialog-dismissal.ts`, `studio-thumbnails.ts` and `setup-concurrency.ts` register tests from inside other specs, so a list naming only their tests selected nothing (verified). The script adds a `(load file)` line for every spec file; that title matches no test, and the selection guard would catch it if one ever did.
+- **Refreshing durations:** the plan stays valid without it, but balance drifts as tests change. After a large test change, refresh from recent green runs: `gh run view <id> --log > ci-<id>.log` for two or three runs, then `node scripts/e2e-shard.mjs update ci-*.log` from `app/` (in Git Bash; it refuses to write when fewer than half the tests have a duration), and commit the JSON.
+- Earlier attempts inside `--shard` gave little: registering heavy tests apart (2026-10-25) took the slowest shard from 99–112 s to 72–87 s for a while, splitting long tests did nothing (the parts stay adjacent), and `PWTEST_SHARD_WEIGHTS` is an undocumented internal variable.
 
 ### Benchmark, 2026-10-25
 
@@ -102,6 +104,10 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
    - Never assume which concurrent async call reaches a hook first: crypto.subtle, IndexedDB and timers reorder under load. Select the held call by identity, or await whichever settles (`Promise.race`). `measurement-retry.test.ts` held "the second claim" but awaited one fixed caller, and hung to the 5 s timeout on CI whenever the other caller claimed second.
    - A concurrent call may also never reach the hook at all. After that fix, the same test hung again on CI ([run 42804968716](https://github.com/Shilo/PixelDoll/actions/runs/42804968716)): one enqueue finished before the other's hashing did, so the second reused the in-memory job and never claimed. When a test needs every caller inside a dependency, hold them at a barrier until all have arrived.
    - Don't collect results in completion order. `requestIdentity` pushed each input hash as it finished, so `item-trial.test.ts` failed about 1 run in 6 under load until each image reserved its slot in request order (2026-11-10).
+   - Timers the page scheduled before `page.clock.install` stay real, and the fake `clearTimeout` cannot cancel them. Studio's first frame timer fired in real time and made the first Preview check in `export-picker.spec.ts` see too few frames on fast runs (3 of 20). Stop app timers before installing the clock, then restart them.
+   - `context.setOffline` waits for every service worker Playwright tracks, and a worker still stopping never answers. Stopping the worker over CDP and then going offline hung `pwa.spec.ts` to the test timeout on some CI runners (15 of 240 stress runs, all on one runner, so the retry failed too); going offline first passed 240 of 240 (2026-11-10).
+   - Budget a wait for the app's own intervals. The queue polls a running job every 5 s (`POLL_MS`), so a completion check took 4.9–5.0 s and failed CI's 5 s expect timeout in 3 of 40 runs; that one poll now allows 15 s. Measure the wait from a trace before choosing a budget.
+   - In CI mode on a 4-worker workstation, the 5 s waits also fail from load alone (5 of 496 in a 2026-11-10 sweep, none of them seen in 40 CI runs). Use CI history, not a local CI-mode sweep, to decide what is flaky.
 7. **Real-time windows asserted across separate `page.evaluate` round trips.** A round trip can take more than 180 ms under load.
    - For logic driven by time, hold page time still. `experience-parity.spec.ts` overrides `performance.now`, the only clock the wheel handler reads.
    - Have each action report its effect directly, e.g. "did this start a load?". Asynchronous follow-ups (`openProject`) can make a wrong step and a right step end on the same final state.
@@ -118,7 +124,7 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
   - browser APIs (IndexedDB, Web Locks, CompressionStream) in the browser self-tests;
   - UI wiring and user flows in e2e.
 - **Keep every e2e test independent.** No ordering or shared state between tests or files. `fullyParallel` and sharding depend on it.
-- **Keep tests lean, and keep heavy tests apart.** Shard time is the sum of its tests, and adjacent heavy tests share a shard, so cut real work and round trips rather than splitting a test into parts. After adding a test over about 20 s, check its neighbors in `npx playwright test --list`; if it joins a heavy cluster, register it among light tests and replay the split on recent CI durations (see Measuring).
+- **Keep tests lean.** Shard time is the sum of its tests and no shard can finish before its heaviest test, so cut real work and round trips. After adding a test over about 20 s, refresh `app/test/e2e/durations.json` once it has passed in CI (see How sharding actually splits the work).
 - **Register a new spec in `app/playwright.config.ts` `testMatch`**, or it never runs (it is silently skipped). Then, if its name does not reveal its area, add it to AGENTS.md "End-to-end scope".
 - **Stay offline.** Route `https://*.pixellab.ai/**` to fixtures or `abort()`, and keep the existing "no paid request" assertions.
 - **Before merging anything that changes timing or waits,** run it under load: `npm run e2e -- <spec> --repeat-each=10 --workers=8` with your own `E2E_PREVIEW_PORT` / `E2E_DEV_PORT` / `TEST_OUTPUT_DIR`, and once in CI mode: `CI=1 npm run e2e -- <spec> --workers=1`.
@@ -142,7 +148,7 @@ From `app/`:
 npx vitest run --reporter=verbose                  # per-test unit durations
 npm run e2e                                        # full suite, local workers
 npm run e2e -- <spec>                              # targeted
-CI=1 npm run e2e -- --shard=3/16                   # one CI-shaped shard (1 worker, 5 s expect, 1 retry)
+node scripts/e2e-shard.mjs 3/16 $TEMP/shard.txt && CI=1 npm run e2e -- --test-list $TEMP/shard.txt   # one CI shard (1 worker, 5 s expect, 1 retry)
 gh run view <run-id> --json createdAt,updatedAt,jobs
 gh run view <run-id> --log                         # per-test durations from the list reporter
 ```
@@ -167,24 +173,7 @@ One line dominating while waiting on app output (the 256 px creator waits about 
 
 ### Which shard is slow
 
-`gh run view <run-id> --log | grep -E "passed \("` prints each shard's test time, and `gh run view <run-id> --json jobs` gives each job's wall time. To see which tests share the slow slice, read that shard's `✓` lines in the log. Shards are contiguous, so neighbors in file order share a slice.
-
-To try an ordering before pushing, replay the split. Save this outside the repo; it prints each shard's test seconds and its tests over 15 s:
-
-```js
-// replay.mjs: replay Playwright's contiguous shard split on CI durations.
-// Usage (from app/): npx playwright test --list > order.txt; gh run view <id> --log > ci.log; node replay.mjs order.txt ci.log 16
-import { readFileSync } from 'node:fs'
-const [orderFile, logFile, total = '16'] = process.argv.slice(2), N = +total
-const order = readFileSync(orderFile, 'utf8').split('\n').map((l) => l.match(/›\s+\S+?\.spec\.ts:\d+:\d+\s+›\s+(.*)$/)?.[1].trim()).filter(Boolean)
-const secs = new Map()
-for (const l of readFileSync(logFile, 'utf8').split('\n')) { const m = l.match(/✓.*?\.spec\.ts:\d+:\d+\s+›\s+(.*?)\s+\(([\d.]+)(m?s)\)\s*$/); if (m) secs.set(m[1].trim(), m[3] === 'ms' ? m[2] / 1000 : +m[2]) }
-const sizes = Array(N).fill(Math.floor(order.length / N)).map((s, i) => s + (i < order.length % N ? 1 : 0))
-let k = 0
-sizes.forEach((s, i) => { const slice = order.slice(k, (k += s)); const sum = slice.reduce((a, t) => a + (secs.get(t) ?? 0), 0)
-  console.log(`shard ${String(i + 1).padStart(2)}: ${sum.toFixed(0).padStart(4)} s  ${slice.filter((t) => (secs.get(t) ?? 0) > 15).map((t) => t.slice(0, 40)).join(' | ')}`) })
-console.log('missing durations:', order.filter((t) => !secs.has(t)).length)
-```
+`gh run view <run-id> --log | grep -F "passed ("` prints each shard's test time, and `gh run view <run-id> --json jobs` gives each job's wall time. Each job's "e2e-shard" step prints its planned seconds and every shard's plan. A shard far above its plan points at a test that got slower than its recorded duration: read that shard's `✓` lines, then fix the test or refresh the durations.
 
 ### Benchmarking a shard layout
 
