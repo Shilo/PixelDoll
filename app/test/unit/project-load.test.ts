@@ -221,3 +221,32 @@ test('records in an earlier format are deleted, current records and other state 
 		'dress-fixture:s2'
 	]);
 });
+
+test('removing an outdated character also removes its drafts, as deleting it would', async () => {
+	const drafts = {
+		id: 'studio-drafts',
+		gens: [{ draft: { rigId: 'rig-old' } }, { draft: { rigId: 'rig-current' } }]
+	};
+	const records = [
+		{ id: 'rig-old', manifest: { format: 'pixeldoll/2' } },
+		{ id: 'rig-current', manifest: { format: CURRENT_FORMAT } },
+		drafts,
+		{ id: 'm3-drafts', drafts: [{ rigId: 'rig-old' }] },
+		{
+			id: 'fit-done',
+			kind: 'equipment-fit-draft',
+			targetId: 'rig-old',
+			stage: 'accepted',
+			plan: { design: { source: { format: CURRENT_FORMAT } } }
+		}
+	];
+	vi.spyOn(db, 'all').mockResolvedValue(records);
+	const del = vi.spyOn(db, 'del').mockResolvedValue(undefined);
+	const put = vi.spyOn(db, 'put').mockResolvedValue(undefined);
+	expect(await deleteOutdated()).toBe(1);
+	expect(del.mock.calls.map(([, id]) => id)).toEqual(['rig-old', 'fit-done']);
+	expect(put.mock.calls).toEqual([
+		['projects', 'studio-drafts', { ...drafts, gens: [drafts.gens[1]] }],
+		['projects', 'm3-drafts', { id: 'm3-drafts', drafts: [] }]
+	]);
+});

@@ -119,6 +119,26 @@ export async function updateCharacterAndDraft<T, D>(
 	});
 }
 
+/** A record's change when characters `ids` are deleted: their drafts leave the shared draft lists and their finished fit drafts
+ * go ('delete'); undefined when the record does not depend on them. */
+export function withoutCharacters(
+	r: any,
+	ids: Set<string>
+): 'delete' | Record<string, unknown> | undefined {
+	if (
+		r?.kind === 'equipment-fit-draft' &&
+		ids.has(r.targetId) &&
+		['accepted', 'discarded'].includes(r.stage)
+	)
+		return 'delete';
+	const list = r?.id === 'studio-drafts' ? 'gens' : r?.id === 'm3-drafts' ? 'drafts' : undefined;
+	if (!list) return;
+	const kept = r[list].filter(
+		(d: { rigId?: string; draft?: { rigId: string } }) => !ids.has(d.draft?.rigId ?? d.rigId!)
+	);
+	return kept.length === r[list].length ? undefined : { ...r, [list]: kept };
+}
+
 /** Delete a local character and its drafts atomically, refusing work that could later write it back. Shared blobs stay. */
 export async function deleteCharacter(id: string): Promise<void> {
 	if (!id.startsWith('rig-')) throw new Error('Only a saved local character can be deleted.');
@@ -152,25 +172,9 @@ export async function deleteCharacter(id: string): Promise<void> {
 			}
 			projects.delete(id);
 			for (const r of records.result) {
-				if (
-					r.kind === 'equipment-fit-draft' &&
-					r.targetId === id &&
-					['accepted', 'discarded'].includes(r.stage)
-				)
-					projects.delete(r.id);
-				if (r.id === 'studio-drafts')
-					projects.put(
-						{
-							...r,
-							gens: r.gens.filter((g: { draft: { rigId: string } }) => g.draft.rigId !== id)
-						},
-						r.id
-					);
-				if (r.id === 'm3-drafts')
-					projects.put(
-						{ ...r, drafts: r.drafts.filter((d: { rigId: string }) => d.rigId !== id) },
-						r.id
-					);
+				const change = withoutCharacters(r, new Set([id]));
+				if (change === 'delete') projects.delete(r.id);
+				else if (change) projects.put(change, r.id);
 			}
 		};
 		t.oncomplete = () => res();

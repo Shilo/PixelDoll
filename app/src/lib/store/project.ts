@@ -41,6 +41,14 @@ export async function deleteOutdated(): Promise<number> {
 		(r) => typeof r?.id === 'string' && formatOf(r) !== CURRENT_FORMAT
 	);
 	for (const r of outdated) await db.del('projects', r.id);
+	// Drafts of a removed character would only fail to reopen it: they go with it, as when a character is deleted.
+	const gone = new Set(outdated.map((r) => r.id));
+	if (gone.size)
+		for (const r of await db.all<{ id: string }>('projects')) {
+			const change = db.withoutCharacters(r, gone);
+			if (change === 'delete') await db.del('projects', r.id);
+			else if (change) await db.put('projects', r.id, change);
+		}
 	return outdated.length;
 }
 interface OutdatedCandidate {
