@@ -46,6 +46,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - Studio UI: app/src/studio/
 - Dev-only pages: app/src/ui/
 - Demo fixture: app/public/fixtures/s2/
+- Chroma keys (colors, order, mannequin style, despill) were chosen by paid A/B tests; read docs/research/2026-11-09-paperdoll-video-review/chroma-key.md before changing them, and change them only after a paired live test beats them
 
 ## Theme
 

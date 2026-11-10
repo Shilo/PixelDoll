@@ -5,6 +5,9 @@ import { makeImg, type Img } from './png.ts';
 // Blue (2026-10-25 campaign, arm K) is the third key, for prompts whose colors collide with both green and magenta (green + pink
 // or red). Azure (round 2, arm Z) is the fourth, for green + purple, violet or indigo: the green ramp rotated +90° in hue (210°);
 // its score, luminance and despill work in that rotated frame, exactly as measured.
+// Green stays the default on a continuous ramp after live tests against cyan, azure and blue defaults, skin-only cyan and flat
+// bright mannequins (2026-11-09/10, about 1,650 gens): read docs/research/2026-11-09-paperdoll-video-review/chroma-key.md before
+// changing a key, the order or the mannequin style.
 export type Key = 'green' | 'magenta' | 'blue' | 'azure';
 export const KEYS: Key[] = ['green', 'magenta', 'blue', 'azure'];
 export const KEY_NAME: Record<Key, string> = {
