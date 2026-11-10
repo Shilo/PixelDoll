@@ -10,7 +10,7 @@ import { readAseprite } from '../../src/lib/export/aseprite.ts';
 import { readCharacterZip } from '../../src/lib/store/import.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import type { Manifest, Project } from '../../src/lib/store/manifest.ts';
-import { expectBytes, expectPixels } from './pixels.ts';
+import { expectBytes } from './pixels.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 async function source(): Promise<Project> {
@@ -99,12 +99,7 @@ test('all engine exports preserve body and equipment palettes, tuck masks, mirro
 	const files = new Map(exported.entries.map((e) => [e.name, e.data])),
 		text = new TextDecoder();
 	const m = JSON.parse(text.decode(files.get('manifest.json'))) as Manifest;
-	const engineOnly = await readCharacterZip(
-		await zip(
-			exported.entries.filter((e) => e.name !== 'project.json' && !e.name.startsWith('cells/'))
-		)
-	);
-	for (const [i, preset] of p.manifest.presets.entries())
+	for (const preset of p.manifest.presets)
 		for (const dir of ['south', 'east', 'west'] as const) {
 			const expected = composeCell(
 				recolor(p, preset.variants),
@@ -113,19 +108,6 @@ test('all engine exports preserve body and equipment palettes, tuck masks, mirro
 				dir,
 				0,
 				bakedFrame(p.manifest)
-			);
-			const restored = engineOnly.project.manifest.presets[i];
-			expectPixels(
-				composeCell(
-					recolor(engineOnly.project, restored.variants),
-					restored.items,
-					'idle',
-					dir,
-					0,
-					bakedFrame(engineOnly.project.manifest)
-				),
-				expected,
-				dir
 			);
 			const baked = await decodePngBytes(files.get(`baked/${preset.id}/idle.png`)!);
 			const row = p.manifest.rig.directions.findIndex((d) => d.id === dir);

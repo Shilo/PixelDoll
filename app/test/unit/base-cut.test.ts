@@ -239,35 +239,28 @@ test('combined body clips and cuts use one deterministic variant and can be prep
 	expect((await exportFiles(built, { engines: ['generic'], baked: true })).errors).toEqual([]);
 });
 
-test('editable and engine-sheet imports re-export combined cuts without accumulating variants', async () => {
+test('editable imports re-export combined cuts without accumulating variants', async () => {
 	const p = await combinedProject(),
-		output = await exportFiles(p, { engines: ['generic'], baked: false });
-	for (const entries of [
-		output.entries,
-		output.entries.filter(
-			(entry) => entry.name !== 'project.json' && !entry.name.startsWith('cells/')
-		)
-	]) {
-		const imported = await readCharacterZip(await zip(entries)),
-			again = await exportFiles(imported.project, { engines: ['generic'], baked: false });
-		expect(imported.project.manifest.items.some((item) => item.variantOf)).toBe(false);
-		expect(again.errors).toEqual([]);
-		const manifest = JSON.parse(
-			new TextDecoder().decode(again.entries.find((entry) => entry.name === 'manifest.json')!.data)
-		);
-		expect(manifest.items.filter((item: Item) => item.underAll)).toHaveLength(1);
-		const outfits: Record<string, string | null>[] = [
-			{ head: 'hood', back: 'cape' },
-			{ head: 'hood' },
-			{ back: 'cape' },
-			{}
-		];
-		for (const worn of outfits)
-			for (const dir of ['south', 'north'] as const)
-				expect(composeCell(imported.project, worn, 'idle', dir, 0)).toEqual(
-					composeCell(p, worn, 'idle', dir, 0)
-				);
-	}
+		output = await exportFiles(p, { engines: ['generic'], baked: false }),
+		imported = await readCharacterZip(await zip(output.entries)),
+		again = await exportFiles(imported.project, { engines: ['generic'], baked: false });
+	expect(imported.project.manifest.items.some((item) => item.variantOf)).toBe(false);
+	expect(again.errors).toEqual([]);
+	const manifest = JSON.parse(
+		new TextDecoder().decode(again.entries.find((entry) => entry.name === 'manifest.json')!.data)
+	);
+	expect(manifest.items.filter((item: Item) => item.underAll)).toHaveLength(1);
+	const outfits: Record<string, string | null>[] = [
+		{ head: 'hood', back: 'cape' },
+		{ head: 'hood' },
+		{ back: 'cape' },
+		{}
+	];
+	for (const worn of outfits)
+		for (const dir of ['south', 'north'] as const)
+			expect(composeCell(imported.project, worn, 'idle', dir, 0)).toEqual(
+				composeCell(p, worn, 'idle', dir, 0)
+			);
 });
 
 test.each([

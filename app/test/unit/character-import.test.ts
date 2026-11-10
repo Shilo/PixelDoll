@@ -1081,36 +1081,6 @@ test('PixelDoll export restores editable original cells, outfits, rest rig and d
 		if (result.project.images.has(h)) expectPixels(result.project.images.get(h), im, h);
 });
 
-test('older PixelDoll sheets import with correct rows and preserve source pixels', async () => {
-	const p = await loadFixture(
-		async (path) =>
-			new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url)))
-	);
-	p.manifest.items[1].dressed = { south: await cellHash(sprite(222)) };
-	p.manifest.items[1].route = 'skeleton-pose';
-	p.manifest.slots.find((s) => s.id === 'head')!.clips = ['hair'];
-	const out = await exportFiles(p, { engines: ['generic'], baked: false });
-	const old = out.entries.filter((f) => f.name !== 'project.json' && !f.name.startsWith('cells/'));
-	const result = await readCharacterZip(await zip(old));
-	const base = p.manifest.items.find((it) => it.id === p.manifest.rig.baseItem)!.layers[0];
-	const restored = result.project.manifest.items.find((it) => it.id === p.manifest.rig.baseItem)!
-		.layers[0];
-	for (const a of p.manifest.rig.animations)
-		for (const d of p.manifest.rig.directions)
-			for (let c = 0; c < a.cells; c++)
-				expectPixels(
-					cellImg(result.project, restored, a.id, d.id, c),
-					cellImg(p, base, a.id, d.id, c),
-					`${a.id}/${d.id}/${c}`
-				);
-	expect(result.project.manifest.rig.directions.every((d) => !d.mirrorOf)).toBe(true);
-	expect(result.project.manifest.items[1].dressed).toBeUndefined();
-	expect(result.project.manifest.items[1].route).toBeUndefined();
-	expect(result.project.manifest.items.some((it) => it.variantOf)).toBe(false);
-	const reexported = await exportFiles(result.project, { engines: ['generic'], baked: false });
-	await expect(unzip(await zip(reexported.entries))).resolves.toBeInstanceOf(Map);
-});
-
 test('current PixelDoll ZIPs support one enclosing folder containing both manifests', async () => {
 	const { project } = await readCharacterZip(await zip(await pixelLabFiles()));
 	const exported = await exportFiles(project, { engines: ['generic'], baked: false });
@@ -1172,7 +1142,7 @@ test('closing import aborts both library and ZIP reads without removing their ti
 	}
 });
 
-test('import bounds repeated logical sheet references before decoding their images', async () => {
+test('import bounds repeated logical frame references before decoding their images', async () => {
 	const { project } = await readCharacterZip(await zip(await pixelLabFiles()));
 	const m = structuredClone(project.manifest);
 	m.rig.animations = [{ id: 'idle', cells: 120, loop: true, frames: [{ cell: 0, ms: 100 }] }];
@@ -1186,84 +1156,20 @@ test('import bounds repeated logical sheet references before decoding their imag
 				role: 'fg' as const,
 				z: 10,
 				cell: { w: 256, h: 256 },
-				sheets: { idle: 'same.png' }
+				cells: { idle: { south: Array.from({ length: 120 }, () => m.rig.baseHash) } }
 			}
 		]
 	}));
-	await expect(
-		readCharacterZip(await zip([{ name: 'manifest.json', data: enc.encode(JSON.stringify(m)) }]))
-	).rejects.toThrow('including repeated frame references');
-	m.items[0].layers[0].cell!.w = -256;
-	await expect(
-		readCharacterZip(await zip([{ name: 'manifest.json', data: enc.encode(JSON.stringify(m)) }]))
-	).rejects.toThrow('invalid layer size');
-});
-
-test.each(['source-only', 'source-exceeds-canonical'] as const)(
-	'v2 bounds the actual source sheet references before PNG materialization: %s',
-	async (layout) => {
-		const { project } = await readCharacterZip(await zip(await pixelLabFiles()));
-		const m = structuredClone(project.manifest);
-		m.rig.animations = [
-			{ id: 'idle', cells: 120, loop: true, frames: [{ cell: 0, ms: 100 }] },
-			{ id: 'rest', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }
-		];
-		m.items = Array.from({ length: 200 }, (_, i) => ({
-			...structuredClone(m.items[0]),
-			id: i ? `item-${i}` : 'base',
-			slot: i ? 'head' : 'body',
-			layers: [
-				{
-					id: 'main' as const,
-					role: 'fg' as const,
-					z: 10,
-					cell: { w: 256, h: 256 },
-					sourceSheets: { idle: 'same.png' },
-					...(layout === 'source-exceeds-canonical' ? { sheets: { rest: 'canonical.png' } } : {})
-				}
-			]
-		}));
-		// No PNG exists: this specific error proves the allocation guard runs before any sheet is decoded/sliced.
-		await expect(
-			readCharacterZip(await zip([{ name: 'manifest.json', data: enc.encode(JSON.stringify(m)) }]))
-		).rejects.toThrow('including repeated frame references');
-	}
-);
-
-test('v2 sourceSheets-only imports preserve legitimate oversize96px source pixels and shared geometry', async () => {
-	const { project } = await readCharacterZip(await zip(await pixelLabFiles()));
-	const m = structuredClone(project.manifest);
-	m.rig.animations = [{ id: 'idle', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }];
-	m.items = [m.items[0]];
-	m.items[0].layers = [
-		{
-			id: 'main',
-			role: 'fg',
-			z: 10,
-			cell: { w: 96, h: 96 },
-			pivot: { x: 48, y: 75 },
-			sourceSheets: { idle: 'source.png' }
-		}
-	];
-	const sheet = makeImg(96, 96 * m.rig.directions.length);
-	for (let row = 0; row < m.rig.directions.length; row++)
-		sheet.data.set([110 + row, 80, 50, 255], ((row * 96 + 60) * 96 + 47) * 4);
-	const imported = await readCharacterZip(
-		await zip([
-			{ name: 'manifest.json', data: enc.encode(JSON.stringify(m)) },
-			{ name: 'source.png', data: await encodePngBytes(sheet) }
-		])
-	);
-	const layer = imported.project.manifest.items[0].layers[0];
-	expect(layer.cell).toEqual({ w: 96, h: 96 });
-	expect(layer.pivot).toEqual({ x: 48, y: 75 });
-	for (const [row, dir] of m.rig.directions.entries()) {
-		const image = cellImg(imported.project, layer, 'idle', dir.id, 0)!;
-		expect([...image.data.slice((60 * 96 + 47) * 4, (60 * 96 + 47) * 4 + 4)]).toEqual([
-			110 + row,
-			80,
-			50,
-			255
+	const archive = () =>
+		zip([
+			{
+				name: 'project.json',
+				data: enc.encode(JSON.stringify({ format: 'pixeldoll-project/1', manifest: m }))
+			}
 		]);
-	}
+	await expect(readCharacterZip(await archive())).rejects.toThrow(
+		'including repeated frame references'
+	);
+	m.items[0].layers[0].cell!.w = -256;
+	await expect(readCharacterZip(await archive())).rejects.toThrow('invalid layer size');
 });

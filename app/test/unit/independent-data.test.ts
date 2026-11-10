@@ -11,14 +11,12 @@ import {
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { flipH } from '../../src/lib/rig/mirror.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
-import { cellImg, composeCell } from '../../src/lib/compose/compose.ts';
-import { recolor } from '../../src/lib/dress/dress.ts';
+import { cellImg } from '../../src/lib/compose/compose.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { readAseprite } from '../../src/lib/export/aseprite.ts';
 import { readCharacterZip } from '../../src/lib/store/import.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import type { Item, Layer, Manifest, Project } from '../../src/lib/store/manifest.ts';
-import { expectPixels } from './pixels.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const MIRRORS: Partial<Record<DirectionName, DirectionName>> = {
@@ -244,25 +242,6 @@ test.each(cases)(
 		expect(
 			cellImg(restored.project, restored.project.manifest.items[0].layers[0], 'idle', 'west', 0)
 		).toEqual(west);
-		const engineOnly = await readCharacterZip(
-			await zip(
-				out.entries.filter((e) => e.name !== 'project.json' && !e.name.startsWith('cells/'))
-			)
-		);
-		// Engine rows are already materialized; legacy sheet import clears mirror metadata without altering any exported pixels.
-		expect(engineOnly.project.manifest.rig.directions.every((d) => !d.mirrorOf)).toBe(true);
-		for (const [i, preset] of p.manifest.presets.entries()) {
-			const expected = recolor(p, preset.variants),
-				pr = engineOnly.project.manifest.presets[i];
-			for (const anim of rig.animations)
-				for (const dir of requested)
-					for (let frame = 0; frame < anim.cells; frame++)
-						expectPixels(
-							composeCell(recolor(engineOnly.project, pr.variants), pr.items, anim.id, dir, frame),
-							composeCell(expected, preset.items, anim.id, dir, frame),
-							`${anim.id}/${dir}/${frame}`
-						);
-		}
 		const files = new Map(out.entries.map((e) => [e.name, e.data])),
 			text = new TextDecoder();
 		const m = JSON.parse(text.decode(files.get('manifest.json'))) as Manifest;

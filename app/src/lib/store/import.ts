@@ -1,7 +1,7 @@
 // Local-only import: decode and validate everything before writing a new project. Never runs a generation.
 import { decodePng, makeImg, pngSize, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
-import { cellImg, cutAt, layerFrame } from '../compose/compose.ts';
+import { cellImg, layerFrame } from '../compose/compose.ts';
 import { validate } from '../export/generic.ts';
 import {
 	baseHashOf,
@@ -68,15 +68,6 @@ async function image(bytes: Uint8Array): Promise<Img> {
 	return decodePng(bytes);
 }
 const hasPixels = (im: Img) => !!opaqueBox(im);
-const slice = (im: Img, x: number, y: number, w: number, h: number): Img => {
-	const out = makeImg(w, h);
-	for (let r = 0; r < h; r++)
-		out.data.set(
-			im.data.subarray(((y + r) * im.w + x) * 4, ((y + r) * im.w + x + w) * 4),
-			r * w * 4
-		);
-	return out;
-};
 function manifestShape(m: Manifest) {
 	if (
 		!supportedFormat(m?.format) ||
@@ -107,7 +98,7 @@ function manifestShape(m: Manifest) {
 			throw new Error('The character has an invalid frame count.');
 	if (new Set(m.items.map((i) => i.id)).size !== m.items.length)
 		throw new Error('The character has duplicate item IDs.');
-	// Count logical cells, including repeated sheet/hash references: a tiny archive can otherwise request gigabytes of copies.
+	// Count logical cells, including repeated hash references: a tiny archive can otherwise request gigabytes of copies.
 	let pixels = 0;
 	for (const item of m.items)
 		for (const layer of item.layers) {
@@ -124,12 +115,7 @@ function manifestShape(m: Manifest) {
 					}, 0),
 				0
 			);
-			const sheets = Object.keys(layer.sourceSheets ?? layer.sheets ?? {}).reduce(
-				(n, id) =>
-					n + (m.rig.animations.find((a) => a.id === id)?.cells ?? 0) * m.rig.directions.length,
-				0
-			);
-			pixels += (cells + sheets) * f.w * f.h;
+			pixels += cells * f.w * f.h;
 			if (!Number.isSafeInteger(pixels) || pixels > 64 * 1024 * 1024)
 				throw new Error(
 					'This character contains too many image pixels, including repeated frame references. Export fewer items or moves.'
@@ -162,8 +148,8 @@ export async function readCharacterZip(
 ): Promise<ImportedCharacter> {
 	let files = await unzip(bytes);
 	// Downloads often wrap the character in one enclosing folder.
-	if (!['project.json', 'manifest.json', 'metadata.json'].some((p) => files.has(p))) {
-		const roots = [...files.keys()].filter((p) => /\/(project|manifest|metadata)\.json$/.test(p));
+	if (!['project.json', 'metadata.json'].some((p) => files.has(p))) {
+		const roots = [...files.keys()].filter((p) => /\/(project|metadata)\.json$/.test(p));
 		const prefixes = new Set(roots.map((p) => p.slice(0, p.lastIndexOf('/') + 1)));
 		if (prefixes.size > 1)
 			throw new Error(
@@ -189,11 +175,10 @@ export async function readCharacterZip(
 			);
 	}
 	if (files.has('project.json')) result = await editable(files);
-	else if (files.has('manifest.json')) result = await sheets(files);
 	else if (files.has('metadata.json')) result = await pixelLab(files, stateId, animationStateIds);
 	else
 		throw new Error(
-			'This ZIP needs PixelLab metadata.json or a PixelDoll project.json/manifest.json. Arbitrary PNG folders and spritesheet ZIPs need a direction and frame layout; they are not supported yet.'
+			'This ZIP needs PixelLab metadata.json or a PixelDoll project.json. Arbitrary PNG folders and spritesheet ZIPs need a direction and frame layout; they are not supported yet.'
 		);
 	const errors = validate(result.project);
 	if (errors.length)
@@ -243,110 +228,6 @@ async function editable(files: Map<string, Uint8Array>): Promise<ImportedCharact
 		project: { manifest: m, images },
 		extra: { character: data.character, skeletons: data.skeletons, rigQa: data.rigQa },
 		warnings: []
-	};
-}
-
-async function sheets(files: Map<string, Uint8Array>): Promise<ImportedCharacter> {
-	const m = json(files, 'manifest.json') as Manifest;
-	manifestShape(m);
-	const images = new Map<string, Img>();
-	// Baked tuck variants are engine artifacts. Restore the editable originals so a later export creates them exactly once.
-	const originals = new Map(
-		m.items
-			.filter((it) => it.variantOf && m.items.some((x) => x.id === it.variantOf))
-			.map((it) => [it.id, it.variantOf!])
-	);
-	for (const preset of m.presets)
-		for (const [slot, id] of Object.entries(preset.items))
-			if (id && originals.has(id)) preset.items[slot] = originals.get(id)!;
-	m.items = m.items.filter((it) => !originals.has(it.id));
-	for (const it of m.items) {
-		// Engine-only archives do not include the dressed reference images needed for future posing.
-		delete it.dressed;
-		if (it.route === 'skeleton-pose') delete it.route;
-	}
-	for (const it of m.items)
-		for (const l of it.layers) {
-			const f = layerFrame(m.rig, l);
-			if (![f.w, f.h].every((n) => Number.isInteger(n) && n > 0 && n <= 256))
-				throw new Error('The export has an invalid layer size.');
-			l.cells = {};
-			for (const [anim, path] of Object.entries(l.sourceSheets ?? l.sheets ?? {})) {
-				const a = m.rig.animations.find((a) => a.id === anim);
-				if (!a) throw new Error(`Unknown move: ${anim}`);
-				const sheet = await image(required(files, path));
-				if (sheet.w !== a.cells * f.w || sheet.h !== m.rig.directions.length * f.h)
-					throw new Error(`${path} does not match its frame layout.`);
-				l.cells[anim] = {};
-				for (const [r, d] of m.rig.directions.entries()) {
-					// Export rows are already mirrored; make them independent to preserve exactly what was shipped.
-					l.cells[anim][d.id] = await Promise.all(
-						Array.from({ length: a.cells }, async (_, c) => {
-							const im = slice(sheet, c * f.w, r * f.h, f.w, f.h);
-							if (!hasPixels(im)) return null;
-							const h = await cellHash(im);
-							images.set(h, im);
-							return h;
-						})
-					);
-				}
-			}
-			delete l.sheets;
-			delete l.sourceSheets;
-		}
-	let removedDesignLinks = false;
-	for (const item of m.items)
-		if (item.design) {
-			const refs: unknown = item.design.snapshot?.imageHashes;
-			if (
-				!Array.isArray(refs) ||
-				refs.length > 5000 ||
-				refs.some(
-					(h) =>
-						typeof h !== 'string' ||
-						!hashPattern.test(h) ||
-						(!images.has(h) && !files.has(`cells/${h.slice(7)}.png`))
-				)
-			) {
-				delete item.design;
-				removedDesignLinks = true;
-				continue;
-			}
-			// Engine sheets can restore the visible raster without the original design's standing/source images.
-			// Keep reusable lineage only when every referenced image is available and verified for a later save/load.
-			for (const h of refs as string[])
-				if (!images.has(h)) {
-					const im = await image(required(files, `cells/${h.slice(7)}.png`));
-					if ((await cellHash(im)) !== h)
-						throw new Error('A saved-design source image does not match its stored hash.');
-					images.set(h, im);
-				}
-		}
-	for (const item of m.items)
-		for (const [anim, cuts] of Object.entries(item.baseCut ?? {})) {
-			const count = m.rig.animations.find((move) => move.id === anim)?.cells ?? 0;
-			for (const dir of m.rig.directions.filter((dir) => dir.mirrorOf && !cuts[dir.id]))
-				cuts[dir.id] = Array.from(
-					{ length: count },
-					(_, cell) => cutAt(m, item, anim, dir.id, cell)?.sort((a, b) => a - b) ?? null
-				);
-		}
-	for (const d of m.rig.directions) delete d.mirrorOf;
-	// Old engine ZIPs do not carry the referenced rest PNGs or a managed character record.
-	delete m.rig.rest;
-	for (const a of m.rig.animations) delete a.sources;
-	delete m.export;
-	return {
-		project: { manifest: m, images },
-		extra: {},
-		warnings: [
-			'This older export restores layers, moves, colors and outfits. Set up its pose rig to add new moves. Existing equipment keeps its original frames.',
-			...(removedDesignLinks
-				? [
-						'Original saved-design reference images were not included, so unavailable reusable-design links were removed. Existing equipment frames and colors are preserved.'
-					]
-				: [])
-		]
 	};
 }
 

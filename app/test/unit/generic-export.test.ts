@@ -222,38 +222,26 @@ test('encoded strips and oversized baked sheets match the compositor, including 
 	);
 });
 
-test('raw export round-trips through editable and source-sheet-only archives with exact outfit pixels', async () => {
+test('raw export round-trips through editable archives with exact outfit pixels', async () => {
 	const p = await fixture(),
-		result = await exportFiles(p, opts());
-	for (const entries of [
-		result.entries,
-		result.entries.filter((e) => e.name !== 'project.json' && !e.name.startsWith('cells/'))
-	]) {
-		const restored = (await readCharacterZip(await zip(entries))).project;
-		for (const pr of p.manifest.presets)
-			for (const dir of p.manifest.rig.directions)
-				for (let c = 0; c < 2; c++) {
-					expectPixels(
-						composeCell(
-							recolor(restored, pr.variants),
-							pr.items,
-							'walk',
-							dir.id,
-							c,
-							bakedFrame(p.manifest)
-						),
-						composeCell(
-							recolor(p, pr.variants),
-							pr.items,
-							'walk',
-							dir.id,
-							c,
-							bakedFrame(p.manifest)
-						),
-						`${pr.id}/${dir.id}/${c}`
-					);
-				}
-	}
+		result = await exportFiles(p, opts()),
+		restored = (await readCharacterZip(await zip(result.entries))).project;
+	for (const pr of p.manifest.presets)
+		for (const dir of p.manifest.rig.directions)
+			for (let c = 0; c < 2; c++) {
+				expectPixels(
+					composeCell(
+						recolor(restored, pr.variants),
+						pr.items,
+						'walk',
+						dir.id,
+						c,
+						bakedFrame(p.manifest)
+					),
+					composeCell(recolor(p, pr.variants), pr.items, 'walk', dir.id, c, bakedFrame(p.manifest)),
+					`${pr.id}/${dir.id}/${c}`
+				);
+			}
 });
 
 test('stale exclusion preserves linked outfit palettes while removing dangling owners and worn stale items', async () => {
@@ -285,13 +273,6 @@ test('stale exclusion preserves linked outfit palettes while removing dangling o
 	expect(m.materials[1].defaultVariant).toBe('azure');
 	expect(m.presets[1].variants.metal).toBe('tint:#ff0000');
 	expect(m.presets[0].items.main_hand).toBeNull();
-	const restored = (
-		await readCharacterZip(
-			await zip(
-				result.entries.filter((e) => e.name !== 'project.json' && !e.name.startsWith('cells/'))
-			)
-		)
-	).project;
 	for (const [i, pr] of m.presets.entries()) {
 		const expected = composeCell(
 			recolor(
@@ -306,11 +287,6 @@ test('stale exclusion preserves linked outfit palettes while removing dangling o
 			'south',
 			0,
 			bakedFrame(m)
-		);
-		expectPixels(
-			composeCell(recolor(restored, pr.variants), pr.items, 'walk', 'south', 0, bakedFrame(m)),
-			expected,
-			pr.id
 		);
 		expectPixels(
 			crop(await decodePngBytes(files.get(`baked/${pr.id}/walk.png`)!), 0, 0, 96, 96),
