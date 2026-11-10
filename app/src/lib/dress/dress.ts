@@ -12,7 +12,6 @@ import type {
 	Preset,
 	Project
 } from '../store/manifest.ts';
-import { CURRENT_FORMAT } from '../store/manifest.ts';
 import {
 	applyIndex,
 	autoRamps,
@@ -155,8 +154,9 @@ export function materialNames(
 }
 
 /**
- * (Re)derive the materials of `items` (default: items without materials) and replace theirs in m.materials. Other materials'
- * colors are claimed first, so ramps stay disjoint. k = 0 -> autoRamps. Labels: materialNames().
+ * (Re)derive the materials of `items` (default: items without materials) and replace theirs in m.materials. Ramps are
+ * disjoint within each item; items own their colors even when another item uses the same RGBs. k = 0 -> autoRamps.
+ * Labels: materialNames().
  */
 export function deriveMaterials(
 	p: Project,
@@ -166,11 +166,10 @@ export function deriveMaterials(
 	const m = p.manifest,
 		ids = new Set(items.map((i) => i.id));
 	m.materials = m.materials.filter((x) => !ids.has(x.owner));
-	const globalClaims = new Set(m.materials.flatMap((x) => x.ramp.map(fromHex)));
 	for (const it of [...items].sort(
 		(a, b) => +(b.id === m.rig.baseItem) - +(a.id === m.rig.baseItem)
 	)) {
-		const claimed = m.format === CURRENT_FORMAT ? new Set<number>() : globalClaims;
+		const claimed = new Set<number>();
 		const counts = colorCounts(itemImgs(p, it));
 		let ramps: Hex[][], names: string[];
 		if (it.regions === 'shirt-shorts') {
@@ -336,19 +335,14 @@ export function hasCells(
 	);
 	if (it.id === m.rig.baseItem) return rows.some((row) => row?.some(Boolean));
 	const count = m.rig.animations.find((a) => a.id === anim)?.cells;
-	// Authored transparent equipment frames are valid (for example, glasses seen from behind). Preview coverage
-	// distinguishes them from null placeholders whose generation has not completed.
+	// Authored transparent equipment frames are valid (for example, glasses seen from behind). Coverage distinguishes
+	// them from null placeholders whose generation has not completed.
 	return (
 		rows.some((row) => row?.some(Boolean)) ||
 		(!!count &&
 			!!rows.length &&
 			rows.every((row) => row?.length === count) &&
-			!!it.coverage &&
-			Array.from({ length: count }, (_, i) => i).every(
-				(i) =>
-					it.coverage!.includes(`${anim}/${dir}/${i}` as CellKey) ||
-					(!!src && it.coverage!.includes(`${anim}/${src}/${i}` as CellKey))
-			))
+			covers(it, anim, dir, src, count))
 	);
 }
 
@@ -365,23 +359,31 @@ export function hasCompleteCells(m: Manifest, it: Item, anim: string, dir: Direc
 		)
 	)
 		return false;
-	if (!it.coverage) return hasCells(m, it, anim, dir);
-	return Array.from({ length: count }, (_, i) => i).every(
-		(i) =>
-			it.coverage!.includes(`${anim}/${dir}/${i}` as CellKey) ||
-			(!!src && it.coverage!.includes(`${anim}/${src}/${i}` as CellKey))
-	);
+	return it.id === m.rig.baseItem ? hasCells(m, it, anim, dir) : covers(it, anim, dir, src, count);
 }
+/** Every cell of the clip is in the item's coverage (a mirrored direction follows its source). */
+const covers = (
+	it: Item,
+	anim: string,
+	dir: DirectionName,
+	src: DirectionName | undefined,
+	count: number
+) =>
+	Array.from({ length: count }, (_, i) => i).every(
+		(i) =>
+			!!it.coverage?.includes(`${anim}/${dir}/${i}` as CellKey) ||
+			(!!src && !!it.coverage?.includes(`${anim}/${src}/${i}` as CellKey))
+	);
 
-/** Cell indices of a clip the item would vanish in. With a coverage list, the cells never recorded (a partial copy or
- * extension); recorded transparent cells are intentional, never missing. The base and items without a coverage list
- * (legacy) keep all-or-nothing clips. Mirrored directions follow their source. */
+/** Cell indices of a clip the item would vanish in: for equipment, the cells its coverage never recorded (a partial copy
+ * or extension); recorded transparent cells are intentional, never missing. The base keeps all-or-nothing clips. Mirrored
+ * directions follow their source. */
 export function missingFrames(m: Manifest, it: Item, anim: string, dir: DirectionName): number[] {
 	const cells = Array.from(
 		{ length: m.rig.animations.find((a) => a.id === anim)?.cells ?? 0 },
 		(_, i) => i
 	);
-	if (!it.coverage || it.id === m.rig.baseItem) return hasCells(m, it, anim, dir) ? [] : cells;
+	if (it.id === m.rig.baseItem) return hasCells(m, it, anim, dir) ? [] : cells;
 	const covered = new Set<string>(it.coverage),
 		src = m.rig.directions.find((d) => d.id === dir)?.mirrorOf;
 	return cells.filter(
@@ -470,7 +472,14 @@ export function selfTest() {
 		slots: [{ id: 'body' }, { id: 'back' }],
 		materials: [],
 		items: [
-			{ id: 'cape', name: 'Cape', slot: 'back', materials: [], layers: L('sha256:c') },
+			{
+				id: 'cape',
+				name: 'Cape',
+				slot: 'back',
+				materials: [],
+				layers: L('sha256:c'),
+				coverage: ['walk/south/0']
+			},
 			{ id: 'base', name: 'Base', slot: 'body', materials: [], layers: L('sha256:b', 'sha256:b') }
 		]
 	} as unknown as Manifest;
@@ -482,8 +491,8 @@ export function selfTest() {
 		`materials per item: ${JSON.stringify(m.materials)}`
 	);
 	console.assert(
-		!m.materials.find((x) => x.id === 'cape_1')!.ramp.includes('#b65941'),
-		'base claims its colors first'
+		m.materials.find((x) => x.id === 'cape_1')!.ramp.includes('#b65941'),
+		'every item owns its colors, including ones the base also uses'
 	);
 	const v = { cape_1: 'azure' };
 	const out = recolor(p, v);
@@ -494,9 +503,8 @@ export function selfTest() {
 		'azure'
 	)!.map(fromHex);
 	console.assert(
-		cols(out.images.get('sha256:c')!).slice(0, 2).join() === capeRamp.join() &&
-			cols(out.images.get('sha256:c')!)[2] === 0xb65941,
-		'cape swapped, shared skin color kept'
+		cols(out.images.get('sha256:c')!).every((c) => capeRamp.includes(c)),
+		'cape swapped, including the color it shares with the base'
 	);
 	console.assert(
 		out.images.get('sha256:b') === images.get('sha256:b') && recolor(p, {}) === p,

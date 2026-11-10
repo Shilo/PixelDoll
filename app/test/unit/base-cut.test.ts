@@ -438,7 +438,13 @@ test('an exact copy keeps the hidden ear px, flipped for a target view the sourc
 			slots,
 			items: [
 				item('base', 'body', 10, { idle: { east: [b] } }),
-				item('hood', 'head', 130, { idle: { east: [h] } }, { baseCut: { idle: { east: [[ear]] } } })
+				item(
+					'hood',
+					'head',
+					130,
+					{ idle: { east: [h] } },
+					{ baseCut: { idle: { east: [[ear]] } }, coverage: ['idle/east/0'] }
+				)
 			],
 			materials: [],
 			presets: [{ id: 'default', name: 'd', items: { body: 'base', head: 'hood' }, variants: {} }]

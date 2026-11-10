@@ -13,7 +13,7 @@ import {
 	validPaletteRepairs
 } from '../dress/item-palette.ts';
 import { colorCounts, fromHex } from '../dress/palette.ts';
-import { deriveMaterials, hasCells } from '../dress/dress.ts';
+import { deriveMaterials } from '../dress/dress.ts';
 import { decodePngBytes, encodePngBytes } from '../image/pngraw.ts';
 import { hardMaskBits } from '../image/hard-mask.ts';
 import * as db from '../store/db.ts';
@@ -1790,17 +1790,11 @@ export async function mergeClip(
 	};
 	const built = await buildItem({ spec, rig, cells, route: key, provenance: [], qa: q.qa, pad });
 	const out: Item = structuredClone(item);
-	const previousCoverage =
-		item.coverage ??
-		rig.animations.flatMap((a) =>
-			rig.directions
-				.filter((d) => !d.mirrorOf && hasCells(ctx.rec.manifest, item, a.id, d.id))
-				.flatMap((d) =>
-					Array.from({ length: a.cells }, (_, i) => `${a.id}/${d.id}/${i}` as CellKey)
-				)
-		);
 	out.coverage = [
-		...new Set([...previousCoverage.filter((key) => !expected.has(key)), ...built.item.coverage!])
+		...new Set([
+			...(item.coverage ?? []).filter((key) => !expected.has(key)),
+			...built.item.coverage!
+		])
 	];
 	out.layers.forEach((l, j) => {
 		l.cells = { ...l.cells, [anim]: { ...l.cells?.[anim], ...built.item.layers[j].cells![anim] } };

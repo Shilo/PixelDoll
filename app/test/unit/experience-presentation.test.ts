@@ -87,14 +87,17 @@ function fixture(
 		],
 		items: [
 			item('base', 'body', layers),
-			item('hat', 'head', [
-				{
-					id: 'main',
-					role: 'fg',
-					z: 2,
-					cells: { walk: { south: [gearHash, null] }, idle: { south: [gearHash, gearHash] } }
-				}
-			])
+			{
+				...item('hat', 'head', [
+					{
+						id: 'main',
+						role: 'fg',
+						z: 2,
+						cells: { walk: { south: [gearHash, null] }, idle: { south: [gearHash, gearHash] } }
+					}
+				]),
+				coverage: ['walk/south/0', 'walk/south/1', 'idle/south/0', 'idle/south/1']
+			}
 		]
 	};
 	return {

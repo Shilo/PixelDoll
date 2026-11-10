@@ -89,15 +89,22 @@ function fixture(directions: DirectionName[] = ['south', 'east']): Project {
 					walk: cells(body0, body1)
 				}
 			}),
-			item('hat', 'head', {
-				id: 'main',
-				role: 'fg',
-				z: 2,
-				cells: {
-					default: Object.fromEntries(directions.map((id) => [id, [hat]])),
-					walk: cells(hat, hat)
-				}
-			})
+			{
+				...item('hat', 'head', {
+					id: 'main',
+					role: 'fg',
+					z: 2,
+					cells: {
+						default: Object.fromEntries(directions.map((id) => [id, [hat]])),
+						walk: cells(hat, hat)
+					}
+				}),
+				coverage: directions.flatMap((d) => [
+					`default/${d}/0` as const,
+					`walk/${d}/0` as const,
+					`walk/${d}/1` as const
+				])
+			}
 		]
 	};
 	return {

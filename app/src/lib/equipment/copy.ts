@@ -2,13 +2,7 @@ import * as db from '../store/db.ts';
 import { cellHash, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import { cellImg, cutAt } from '../compose/compose.ts';
 import { stableStringify } from '../image/hash.ts';
-import {
-	CURRENT_FORMAT,
-	type Item,
-	type Manifest,
-	type Project,
-	type Preset
-} from '../store/manifest.ts';
+import { type Item, type Manifest, type Project, type Preset } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
 import { SLOTS } from '../items/items.ts';
 import { validate } from '../export/generic.ts';
@@ -61,16 +55,8 @@ export const extensionStamp = (m: Manifest, id: string): string => {
 		}
 	);
 };
-/** Cells an item already has: its coverage list, or every stored cell slot when it has none. */
-export const coveredCells = (it: Item): Set<string> =>
-	new Set<string>(
-		it.coverage ??
-			it.layers.flatMap((l) =>
-				Object.entries(l.cells ?? {}).flatMap(([anim, ds]) =>
-					Object.entries(ds).flatMap(([dir, cs]) => (cs ?? []).map((_, i) => `${anim}/${dir}/${i}`))
-				)
-			)
-	);
+/** Cells an item already has. */
+export const coveredCells = (it: Item): Set<string> => new Set<string>(it.coverage);
 const combinePartialQa = (old: QaSummary | undefined, next: QaSummary): QaSummary => {
 	if (!old) return { ...next, status: next.status === 'fail' ? 'fail' : 'warn' };
 	const worst = (['fail', 'warn', 'accepted', 'pass'] as const).find(
@@ -191,7 +177,6 @@ export async function prepareCopy(design: EquipmentDesign, target: Project): Pro
 			summary: { ...summary, status: 'warn' }
 		};
 	}
-	m.format = CURRENT_FORMAT;
 	m.items.push(item);
 	m.materials.push(...materials);
 	if (!m.slots.some((s) => s.id === item.slot))
@@ -310,7 +295,6 @@ export function publishCandidate(
 		return rec;
 	}
 	if (!rec.manifest.items.some((it) => it.id === item.id)) {
-		rec.manifest.format = CURRENT_FORMAT;
 		rec.manifest.items.push(structuredClone(item));
 		rec.manifest.materials.push(...structuredClone(candidate.materials));
 		if (!rec.manifest.slots.some((s) => s.id === item.slot))

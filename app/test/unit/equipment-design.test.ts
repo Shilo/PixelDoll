@@ -96,6 +96,7 @@ test('unambiguous repeated body poses reuse per cell; contradictory equipment do
 	});
 	p.manifest.items[0].layers[0].cells!.other = { south: [b] };
 	p.manifest.items[1].layers[0].cells!.other = { south: [other as typeof b] };
+	p.manifest.items[1].coverage!.push('other/south/0');
 	const assessment = await assessDesign(await createDesign(p, 'hat'), target);
 	expect(assessment.freeCells).toBe(0);
 	expect(assessment.status).toBe('unsupported');
@@ -116,6 +117,7 @@ test('mirror-resolved gear participates in ambiguity signatures', async () => {
 	});
 	body.layers[0].cells = { rest: { east: [b] }, other: { east: [b] } };
 	hat.layers[0].cells = { rest: { east: [h] }, other: { east: [other as typeof h] } };
+	hat.coverage = ['rest/east/0', 'other/east/0'];
 	const target = bodyOnly(p),
 		im = cellImg(p, body.layers[0], 'rest', 'west', 0)!,
 		mirrored = await cellHash(im);

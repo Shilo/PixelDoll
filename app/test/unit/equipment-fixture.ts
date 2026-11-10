@@ -26,7 +26,8 @@ export async function equipmentFixture(): Promise<Project> {
 		provenance: [],
 		layers: [
 			{ id: 'main', role: 'fg', z: slot === 'body' ? 10 : 130, cells: { rest: { south: [h] } } }
-		]
+		],
+		...(slot === 'body' ? {} : { coverage: ['rest/south/0' as const] })
 	});
 	return {
 		images: new Map([

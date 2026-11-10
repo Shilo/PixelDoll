@@ -294,7 +294,7 @@ test('local garment-region color processing preserves verified standing identity
 	expect(() => standingCoverage(ctx)).toThrow('No complete standing move');
 });
 
-test('a shared copy missing some frames of a move reports them, while recorded transparent frames and legacy items do not', async () => {
+test('a shared copy missing some frames of a move reports them, while recorded transparent frames do not', async () => {
 	const ctx = await fixture([['cast', 8]], ['south', 'east']),
 		m = ctx.rec.manifest,
 		hat = m.items[1],
@@ -323,10 +323,4 @@ test('a shared copy missing some frames of a move reports them, while recorded t
 	expect(missingFrames(m, hat, 'cast', 'south')).toEqual([4, 5, 6, 7]);
 	expect(coverageGaps(m, hat)).toEqual(['cast/south']);
 	hat.layers[0].cells!.cast.south = drawn;
-	// Without a coverage list (legacy items), a clip with any pixels still counts as present.
-	delete hat.coverage;
-	expect(coverageGaps(m, hat)).toEqual(['still-custom/south', 'still-custom/east']);
-	expect(missingFrames(m, hat, 'cast', 'south')).toEqual([]);
-	expect(missingFrames(m, hat, 'still-custom', 'south')).toEqual([0]); // whole clip missing: every frame
-	expect(missingAt(m, { head: 'hat' }, 'cast', 'south')).toEqual([]);
 });

@@ -859,12 +859,9 @@ export async function prepareExtensionFit(
 				dirs.some(
 					(d) =>
 						body.layers[0].cells?.[a.id]?.[d]?.some(Boolean) &&
-						(item.coverage
-							? Array.from(
-									{ length: a.cells },
-									(_, i) => `${a.id}/${d}/${i}` as NonNullable<typeof item.coverage>[number]
-								).some((k) => !item.coverage!.includes(k))
-							: !item.layers.some((l) => l.cells?.[a.id]?.[d]?.length === a.cells))
+						Array.from({ length: a.cells }, (_, i) => `${a.id}/${d}/${i}` as CellKey).some(
+							(k) => !item.coverage?.includes(k)
+						)
 				)
 		)
 		.map((a) => a.id);

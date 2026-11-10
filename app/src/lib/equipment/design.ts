@@ -1,12 +1,11 @@
 import { cellImg, layerFrame, over } from '../compose/compose.ts';
 import { variantOf, variantRampOf } from '../dress/dress.ts';
-import { fromHex, toHex, colorCounts, autoRamps } from '../dress/palette.ts';
+import { fromHex, toHex } from '../dress/palette.ts';
 import { chromaLayer, pickKey, toChroma, type Key } from '../image/chroma.ts';
 import { makeImg, type Img } from '../image/png.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { flipH } from '../rig/mirror.ts';
 import type { DirectionName, Item, Manifest, Project, Sha256, Preset } from '../store/manifest.ts';
-import { CURRENT_FORMAT } from '../store/manifest.ts';
 import type { EquipmentDesign } from './types.ts';
 import { designItem } from './types.ts';
 
@@ -61,7 +60,6 @@ export async function createDesign(
 	delete base.design;
 	delete item.design;
 	const selected: Preset['variants'] = {};
-	m.format = CURRENT_FORMAT;
 	m.name = (name?.trim() || original.name).slice(0, 60);
 	m.items = [base, item];
 	m.slots = m.slots.filter((s) => s.id === 'body' || s.id === item.slot);
@@ -79,26 +77,6 @@ export async function createDesign(
 		}
 		// A design owns resolved appearance; links to other equipment/skin are target-local, never portable pointers.
 		delete mat.linkTo;
-	}
-	// Legacy v1 derivation sometimes omitted RGBs claimed by the body. Make those item colors independently owned now.
-	const claimed = new Set(
-		m.materials.filter((x) => x.owner === item.id).flatMap((x) => x.ramp.map(fromHex))
-	);
-	const counts = colorCounts(
-		item.layers
-			.flatMap((l) =>
-				Object.values(l.cells ?? {}).flatMap((ds) =>
-					Object.values(ds ?? {}).flatMap((cs) => cs ?? [])
-				)
-			)
-			.flatMap((h) => (h && project.images.get(h)) || [])
-	);
-	let detail = 1;
-	for (const ramp of autoRamps(counts, claimed)) {
-		while (m.materials.some((mat) => mat.id === `${item.id}_saved_detail_${detail}`)) detail++;
-		const id = `${item.id}_saved_detail_${detail++}`;
-		m.materials.push({ id, owner: item.id, label: 'Detail', ramp, variants: {} });
-		item.materials.push(id);
 	}
 	m.presets = [
 		{

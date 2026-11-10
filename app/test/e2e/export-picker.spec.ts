@@ -1773,7 +1773,7 @@ for (const auto of [false, true])
 			hat.name = 'Share review hat';
 			hat.status = 'draft';
 			hat.materials = [];
-			delete hat.coverage;
+			hat.coverage = ['walk/south/0', 'walk/south/1'];
 			// Two unmistakable pixel markers, distinct from both the body and the saved hat.
 			const images = new Map(p.images),
 				hashes = [],

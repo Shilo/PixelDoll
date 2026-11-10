@@ -16,6 +16,7 @@ import type { CellKey } from '../../src/lib/store/manifest.ts';
 import type { Project, Item } from '../../src/lib/store/manifest.ts';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import { createDesign } from '../../src/lib/equipment/design.ts';
+import { deriveMaterials } from '../../src/lib/dress/dress.ts';
 import {
 	qualifiedFit,
 	fitFramingWarnings,
@@ -135,10 +136,11 @@ async function project(w: number, source = false): Promise<Project> {
 					z: 130,
 					cells: { rest: Object.fromEntries(dirs.map((d) => [d, [lh]])) }
 				}
-			]
+			],
+			coverage: dirs.map((d) => `rest/${d}/0` as CellKey)
 		});
 	}
-	return {
+	const fixture: Project = {
 		manifest: {
 			format: CURRENT_FORMAT,
 			name: 'Fixture',
@@ -154,6 +156,9 @@ async function project(w: number, source = false): Promise<Project> {
 		},
 		images
 	};
+	// The Studio derives an item's materials when it opens the character, before saving a design.
+	deriveMaterials(fixture, items.slice(1));
+	return fixture;
 }
 async function record(
 	cells: string[],

@@ -36,13 +36,7 @@ import { HEADROOM_MIN } from '../rig/freeze.ts';
 import { opaqueBox } from '../rig/normalize.ts';
 import { cellHash, cellKey, type DirectionName } from '../rig/rig.ts';
 import * as db from '../store/db.ts';
-import {
-	CURRENT_FORMAT,
-	type Material,
-	type Preset,
-	type Project,
-	type Provenance
-} from '../store/manifest.ts';
+import { type Material, type Preset, type Project, type Provenance } from '../store/manifest.ts';
 import { designColors, designRestReferences } from './design.ts';
 import { loadImages } from './store.ts';
 import { designItem, type EquipmentDesign } from './types.ts';
@@ -445,7 +439,6 @@ export async function evaluateRestFit(
 	}
 	manifest.items = [base, item];
 	manifest.materials = manifest.materials.filter((m) => m.owner === base.id);
-	manifest.format = CURRENT_FORMAT;
 	if (!manifest.slots.some((s) => s.id === 'head')) manifest.slots.push(slotOf('head'));
 	return { project: { manifest, images }, itemId: item.id, rest, warnings, fails };
 }
@@ -654,7 +647,6 @@ export async function evaluatePoseFit(
 		dressed: rest
 	});
 	const manifest = structuredClone(target.manifest);
-	manifest.format = CURRENT_FORMAT;
 	manifest.items.push(built.item);
 	if (!manifest.slots.some((s) => s.id === spec.slot)) manifest.slots.push(slotOf(spec.slot));
 	const project: Project = { manifest, images: new Map([...target.images, ...built.images]) };

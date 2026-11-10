@@ -173,7 +173,7 @@ export function buildPresentation(
 		const key = `${clip}/${direction}/${cells.join(',')}`;
 		if (cache.has(key)) return cache.get(key)!;
 		if (!item.layers.length || !cells.length) return false;
-		const coverage = item.coverage && new Set<string>(item.coverage);
+		const coverage = item.id === m.rig.baseItem ? null : new Set<string>(item.coverage);
 		const valid = cells.every((index) =>
 			item.layers.every((layer) => {
 				const c = cell(layer, clip, direction, index);

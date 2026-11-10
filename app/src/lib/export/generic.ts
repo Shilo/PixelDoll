@@ -143,7 +143,7 @@ export function validate(p: Project): string[] {
 				e.push(`${mat.id}: ramp colors must be six-digit #RRGGBB values`);
 				continue;
 			}
-			const key = m.format === CURRENT_FORMAT ? `${mat.owner}:${c.toLowerCase()}` : c.toLowerCase();
+			const key = `${mat.owner}:${c.toLowerCase()}`;
 			seen.has(key)
 				? e.push(`color ${c} in ramps ${seen.get(key)} and ${mat.id}`)
 				: seen.set(key, mat.id);
@@ -157,7 +157,7 @@ export function validate(p: Project): string[] {
 		if (
 			mat.defaultVariant &&
 			mat.ramp.every((c) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c)) &&
-			(m.format !== CURRENT_FORMAT || !variantRampOf(mat, mat.defaultVariant))
+			!variantRampOf(mat, mat.defaultVariant)
 		)
 			e.push(`${mat.id}: invalid default colorway`);
 	}
@@ -269,7 +269,7 @@ export function exportManifest(
 	for (const { mat, baseline, selections } of detached) {
 		delete mat.linkTo;
 		delete mat.defaultVariant;
-		if (m.format === CURRENT_FORMAT && baseline) mat.defaultVariant = baseline;
+		if (baseline) mat.defaultVariant = baseline;
 		m.presets.forEach((pr, i) => {
 			if (selections[i]) pr.variants[mat.id] = selections[i];
 			else delete pr.variants[mat.id];

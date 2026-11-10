@@ -88,7 +88,8 @@ async function fixture(fail = false) {
 				materials: [],
 				baseHash: hash,
 				provenance: [],
-				layers: [{ id: 'main', role: 'fg', z: 10, cells: structuredClone(cells) }]
+				layers: [{ id: 'main', role: 'fg', z: 10, cells: structuredClone(cells) }],
+				coverage: dirs.flatMap((d) => [0, 1, 2, 3].map((i) => `idle/${d}/${i}` as const))
 			}
 		]
 	};
@@ -436,6 +437,7 @@ test('missing-item pricing skips coverage already present for each item', async 
 		m = f.original.manifest;
 	const item = m.items[1];
 	delete item.layers[0].cells!.idle!.south;
+	item.coverage = item.coverage!.filter((key) => !key.startsWith('idle/south/'));
 	expect(
 		moveEstimate(m, {
 			id: 'idle',

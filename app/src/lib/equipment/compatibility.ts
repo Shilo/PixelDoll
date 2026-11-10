@@ -37,7 +37,7 @@ export async function assessDesign(
 	const reasons: string[] = [],
 		warnings = [...design.warnings],
 		matches: FitAssessment['matches'] = [];
-	const coverage = item.coverage ? new Set<string>(item.coverage) : null;
+	const coverage = new Set<string>(item.coverage);
 	const hashes = new WeakMap<Img, Promise<Sha256>>(),
 		cells = new WeakMap<Layer, Map<string, Img | null>>();
 	const hash = (im: Img) => {
@@ -70,11 +70,7 @@ export async function assessDesign(
 				from = sm.rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir;
 			for (const a of sm.rig.animations)
 				for (let i = 0; i < a.cells; i++) {
-					if (
-						coverage &&
-						!coverage.has(cellKey(a.id, dir, i)) &&
-						!coverage.has(cellKey(a.id, from, i))
-					)
+					if (!coverage.has(cellKey(a.id, dir, i)) && !coverage.has(cellKey(a.id, from, i)))
 						continue;
 					const base = frame(source, sb!.layers[0], a.id, dir, i);
 					if (
@@ -134,7 +130,6 @@ export async function assessDesign(
 				)
 					continue;
 				if (
-					coverage &&
 					frames.some(
 						(_, i) =>
 							!coverage.has(cellKey(sa.id, dir, i)) &&

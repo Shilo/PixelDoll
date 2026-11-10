@@ -274,6 +274,8 @@ test('an item saved before idle and walk existed gets items-only poses for exact
 			])
 		)
 	});
+	const covered = (anim: string, n: number) =>
+		dirs.flatMap((d) => Array.from({ length: n }, (_, i) => `${anim}/${d}/${i}`));
 	const cape = {
 		id: 'cape',
 		name: 'Cape',
@@ -283,7 +285,8 @@ test('an item saved before idle and walk existed gets items-only poses for exact
 		key: 'green',
 		dressed: {},
 		baseHash: m.rig.baseHash,
-		layers: [{ cells: { default: cells(1) } }]
+		layers: [{ cells: { default: cells(1) } }],
+		coverage: covered('default', 1)
 	};
 	m.items.push(cape as never);
 	const base = m.items.find((i) => i.id === m.rig.baseItem)!.layers[0];
@@ -293,10 +296,12 @@ test('an item saved before idle and walk existed gets items-only poses for exact
 		{ id: 'walk', frames: 8, items: ['cape'], dirs: dirs.slice(1), itemsOnly: true, seed: 9 }
 	]);
 	cape.layers[0].cells = { default: cells(1), walk: cells(8) } as never;
+	cape.coverage = [...covered('default', 1), ...covered('walk', 8)];
 	expect(missingItemMoves(m, 'cape', 9)).toEqual([]);
 	expect(missingItemMoves(m, 'no-such-item', 9)).toEqual([]);
 	// without stored keypoints (e.g. a demo copy), nothing can be posed, so nothing is offered
 	cape.layers[0].cells = { default: cells(1) } as never;
+	cape.coverage = covered('default', 1);
 	for (const src of Object.values(m.rig.animations.find((a) => a.id === 'walk')!.sources!))
 		src!.keypoints = [];
 	expect(missingItemMoves(m, 'cape', 9)).toEqual([]);

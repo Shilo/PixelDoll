@@ -63,7 +63,7 @@ export interface ZOverride {
 }
 
 export interface Item {
-	/** Explicit reviewed/generated target cells, including intentional transparent cells; absence is legacy coverage. */
+	/** Reviewed/generated target cells, including intentional transparent cells. Every equipment item has one; the base has none. */
 	coverage?: CellKey[];
 	/** Preview of a generating draft only (never saved): target cells whose calls have not landed yet. */
 	pending?: CellKey[];
