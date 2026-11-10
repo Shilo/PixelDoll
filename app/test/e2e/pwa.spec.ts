@@ -405,6 +405,9 @@ test('updates in an already-used tab require an explicit click, preserve its rel
 					version.scriptURL === server.url + 'sw.js' && version.status === 'activated'
 			)?.[0];
 		await expect.poll(activeVersion).toBeTruthy();
+		// Go offline before stopping the worker. setOffline waits for every worker Playwright tracks, and one that is still
+		// stopping never answers: stopping first hung CI to the test timeout, and a scratch loop hung in 6 of 6 runs.
+		await context.setOffline(true);
 		lifecycle.length = 0;
 		await cdp.send('ServiceWorker.stopWorker', { versionId: activeVersion()! });
 		// Existing pages can immediately wake the worker again. Observe the transition rather than requiring it to stay idle.
@@ -413,7 +416,6 @@ test('updates in an already-used tab require an explicit click, preserve its rel
 			a.inventory.filter((file) => file.path.startsWith(prefix)).slice(0, 2)
 		);
 		expect(oldPaths).toHaveLength(6);
-		await context.setOffline(true);
 		for (const file of oldPaths) {
 			const hash = await other.evaluate(async (url) => {
 				const response = await fetch(url);
