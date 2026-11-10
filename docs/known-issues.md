@@ -142,6 +142,10 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   in motion (torso garments 1.77 px per frame; 30 % of posed torso frames have 3 or more). Hiding those body pixels fixed
   boots and capes but not torso garments, and would multiply exported base variants past the export cap, so it was not
   adopted. See the [paper-doll system review](research/2026-11-10-paperdoll-system-review/README.md#3-the-1-px-rim-qualified-and-rejected).
+- **A 1 px key-tinted fringe can stay on item rims next to transparency.** Despill now only touches saturated, very dark or
+  bright-key-adjacent tinted pixels, so blue-gray steel keeps its color on azure and blue keys. A faint fringe whose only removed
+  neighbor is dark keeps its tint: 31 olive pixels on one frame of a red cloak on the green key (they were grayed before; the right
+  color would be the cloak's dark red). See the [chroma key reference](research/2026-11-09-paperdoll-video-review/chroma-key.md).
 - **The gray-smudge check (D1) compares views.** With three or more drawn views, a view is flagged only when it is much
   grayer than the item's least gray other view, so a neutral emblem drawn in every view passes. A smudge the provider adds
   to every view is therefore not flagged; items with one or two drawn views keep the stricter per-view rule. See the

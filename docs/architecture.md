@@ -240,7 +240,9 @@ Why green and not cyan or blue as the default (D27), with every measurement and 
   fold drawn in the key's darkest shade still becomes the item's dark color). The luminance-only snap turned blue-gray steel on
   the azure key into the plume's purple. A colored px that matches no clean color and scores below the key with a real key
   excess keeps its own color (jade, fern and turquoise gear were half-despilled into colors the item never had; 2026-11-07
-  cycle), unless the despilled result is near-gray.
+  cycle), unless the despilled result is near-gray. Only spill is touched: a tinted px that is saturated (S >= 0.35), very dark
+  or next to a bright px extraction removed (a removed dark outline leaves no light spill). Steel is drawn blue-gray on every mannequin (S up to 0.35 on green), the azure key's own
+  hue, so an excess-only test flattened 1,356 of 1,577 azure helm px to gray (2026-11-10 keys 3 review).
 - *Hidden body px* (`Item.baseCut`): PixelLab erases the ear tips under a hood or great helm wider than the head, and layers can
   only add px. The dressed keyframe decides where an item may hide body px (erased, above the neck + 3 rows, touching the item
   and the body's edge, ≥ 3 px components, ≤ 4 % of the body; never held items or in-place edit cells); each posed frame hides its own erased px only

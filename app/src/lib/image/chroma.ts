@@ -135,6 +135,8 @@ const hueSpread = (r: number, g: number, b: number): [number, number] => {
 
 /** Key score from which a color leans toward a key: a real key excess, scored below KT (2026-11-07 color audit). */
 export const NEAR_KEY = 20;
+/** Brightest channel below which a shade is too dark for its ratio score or saturation to tell a tint apart. */
+const DARK = 64;
 /** Share of an item's px whose raw color leans toward the key (NEAR_KEY <= score < KT). On the frozen benchmark clean items
  * stay at or below 7 % (one green-olive cloak shadow reads 53 %), while recorded key collisions read 31 % and a goblin-green
  * item the prompt never called green 100 %. The px that fully match the key were already removed as background. */
@@ -150,7 +152,7 @@ export function nearKeyShare(out: Img, mask: Uint8Array, key: Key): number {
 				s = keyScore(key, r, g, b);
 			// A very dark shade's ratio score is inflated by its tiny channels (a green-olive cloak shadow #24310c read 53 % while
 			// nothing was lost), so shades whose brightest channel is below 64 do not count (2026-11-07 review).
-			if (s >= NEAR_KEY && s < KT && Math.max(r, g, b) >= 64) near++;
+			if (s >= NEAR_KEY && s < KT && Math.max(r, g, b) >= DARK) near++;
 		}
 	return item ? near / item : 0;
 }
@@ -357,14 +359,43 @@ export function fillHoles(m: Uint8Array, C: Img, maxArea = 4): Uint8Array {
  * clean color that near, the luminance-nearest one (|Δlum| <= 0.08) wins unless the px is lightly tinted and de-spilled to
  * near-gray (steel stays gray): a cape fold drawn in the key's own darkest shade (it scores as key; absorbOutline kept it)
  * carries no item color and becomes the cape's dark red, not an off-palette black (round 3 review: 0 -> 1,355 px on a-cape).
+ *
+ * Only spill is touched: a key-tinted px that is saturated (HSV S >= SPILL_SAT), too dark for its saturation to mean anything
+ * (brightest channel < DARK; near-black outlines the model tints toward the key), or next to a bright px extraction removed
+ * from the dressed composite `C` (where key blends sit; a removed dark ramp outline leaves no light spill, and counting it
+ * grayed 150 rim px of azure steel that keep their color elsewhere in the frame). A tint by key excess alone also caught steel: it is drawn blue-gray on every
+ * mannequin (hue ~210, S up to 0.35 on green, where the key cannot have tinted it), which is the azure key's own hue, so the
+ * azure despill flattened 1,356 of 1,577 helm px to gray (2026-11-10 keys 3 review: S 0.18 -> 0.025; blue milder).
  */
 const SNAP = 40,
+	SPILL_SAT = 0.35,
 	chroma3 = (c: ArrayLike<number>) => Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]);
-export function despill(L: Img, key: Key, sT = 10): Img {
+export function despill(L: Img, key: Key, C?: Img, sT = 10): Img {
 	const o: Img = { w: L.w, h: L.h, data: new Uint8ClampedArray(L.data) },
 		d = L.data,
+		{ w, h } = L,
 		seen = new Set<number>(),
 		core: number[][] = [];
+	const spill = (p: number, r: number, g: number, b: number) => {
+		if (!d[p * 4 + 3] || tint(key, r, g, b) <= sT) return false;
+		const mx = Math.max(r, g, b);
+		return (
+			mx < DARK ||
+			chroma3([r, g, b]) >= SPILL_SAT * mx ||
+			(!!C &&
+				near(
+					w,
+					h,
+					p % w,
+					(p / w) | 0,
+					1,
+					(q) =>
+						!d[q * 4 + 3] &&
+						C.data[q * 4 + 3] >= 128 &&
+						Math.max(C.data[q * 4], C.data[q * 4 + 1], C.data[q * 4 + 2]) >= DARK
+				))
+		);
+	};
 	for (let i = 0; i < d.length; i += 4) {
 		const k = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
 		if (d[i + 3] && !seen.has(k) && tint(key, d[i], d[i + 1], d[i + 2]) <= sT) {
@@ -377,7 +408,7 @@ export function despill(L: Img, key: Key, sT = 10): Img {
 		const r = d[i],
 			g = d[i + 1],
 			b = d[i + 2];
-		if (!d[i + 3] || tint(key, r, g, b) <= sT) continue;
+		if (!spill(i / 4, r, g, b)) continue;
 		const c: number[] =
 			key === 'green'
 				? [r, Math.max(r, b), b]
@@ -508,7 +539,7 @@ export function chromaLayer(
 				mask[p] = 1;
 				L.data.set(C.data.subarray(p * 4, p * 4 + 4), p * 4);
 			}
-	return { layer: despill(L, key), mask };
+	return { layer: despill(L, key, C), mask };
 }
 
 /**
