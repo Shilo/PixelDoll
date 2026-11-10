@@ -20,7 +20,8 @@ Commits: `1b6230a7`, `16b787ef`, `84f718e3`, `1c59e22e`, `3a246fff`, `8b098785`,
 - **Unit tests (Vitest)** run test files in parallel. Each file already runs in its own process (the default `forks` pool with `isolate`), so module state never leaks between files. `--no-isolate` fails dozens of tests (28–53 measured): never turn isolation off.
   - CI uses Vitest's default worker count: CPUs − 1, which is 3 on a 4-vCPU runner.
   - Locally `maxWorkers: '50%'`. It measured faster than the default on 24 threads (3.8 s against 5–6 s), because each extra process only adds startup cost, and it leaves the machine usable.
-  - `testTimeout` is 5 s on CI and 20 s locally. With an 8-worker e2e run beside it, the heaviest export tests exceeded 5 s (1–10 failures per run); 20 s passed every run.
+  - `testTimeout` is 10 s on CI and 20 s locally. With an 8-worker e2e run beside it, the heaviest export tests exceeded 5 s (1–10 failures per run); 20 s passed every run.
+  - On CI the whole unit step took 35–60 s across runs of similar code (2026-11-06 to 11-10), a 1.7× spread, and the heaviest sweeps (`move-classification`, `bench`, `character-option-matrix` sizes) took 2.4–2.9 s. A 5 s limit left those within one slow runner of a false timeout, so CI uses 10 s (2026-11-10). A timeout is a hang detector, not a speed budget: watch durations with the table under "Warning signs".
 - **End-to-end tests (Playwright)** use `fullyParallel`. Every test owns a fresh browser context (storage, locks, BroadcastChannel), so any test can run beside any other, and shards split per test rather than per file.
   - **CI: one worker per runner, sixteen shard jobs** beside the `build` job. This follows Playwright's CI advice: get parallelism from sharding, not from piling workers onto one machine.
   - Each Studio page animates continuously and uses about three CPU threads. Two workers on a 4-vCPU runner made tests about 42% slower and produced a load flake (benchmark below).
@@ -71,7 +72,7 @@ Runs: [40187369452](https://github.com/Shilo/PixelDoll/actions/runs/40187369452)
 | Any e2e shard job | over 3 min including setup (about 35–45 s of each job) | `gh run view <id> --json jobs` |
 | One e2e test | over 45 s in CI (it costs every local run and inflates its slice) | `gh run view <id> --log` (list reporter prints each duration) |
 | Unit suite | over 15 s locally or 45 s in CI | `npx vitest run` from `app/` |
-| One unit file | over 3 s locally (CI is roughly 1.5× slower) | `npx vitest run --reporter=verbose` or `--reporter=json` |
+| One unit file | over 3 s locally (CI is 1.5–3.5× slower; `move-classification`'s sweep took 0.86 s locally and 2.86 s in CI) | `npx vitest run --reporter=verbose` or `--reporter=json` |
 | Flaky annotations, or "retry #1" lines in CI logs | any | the workflow summary annotations |
 
 Slowest tests on 2026-10-25 ([run 40185183099](https://github.com/Shilo/PixelDoll/actions/runs/40185183099)):
@@ -99,6 +100,8 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
    - Poll the condition with a wall-clock deadline (`until()` in `src/lib/pixellab/queue.ts`).
    - In Playwright, use `expect(...)`, `expect.poll` or a DOM signal, not `waitForTimeout`.
    - Never assume which concurrent async call reaches a hook first: crypto.subtle, IndexedDB and timers reorder under load. Select the held call by identity, or await whichever settles (`Promise.race`). `measurement-retry.test.ts` held "the second claim" but awaited one fixed caller, and hung to the 5 s timeout on CI whenever the other caller claimed second.
+   - A concurrent call may also never reach the hook at all. After that fix, the same test hung again on CI ([run 42804968716](https://github.com/Shilo/PixelDoll/actions/runs/42804968716)): one enqueue finished before the other's hashing did, so the second reused the in-memory job and never claimed. When a test needs every caller inside a dependency, hold them at a barrier until all have arrived.
+   - Don't collect results in completion order. `requestIdentity` pushed each input hash as it finished, so `item-trial.test.ts` failed about 1 run in 6 under load until each image reserved its slot in request order (2026-11-10).
 7. **Real-time windows asserted across separate `page.evaluate` round trips.** A round trip can take more than 180 ms under load.
    - For logic driven by time, hold page time still. `experience-parity.spec.ts` overrides `performance.now`, the only clock the wheel handler reads.
    - Have each action report its effect directly, e.g. "did this start a load?". Asynchronous follow-ups (`openProject`) can make a wrong step and a right step end on the same final state.

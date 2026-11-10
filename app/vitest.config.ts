@@ -9,8 +9,9 @@ export default defineConfig({
 		// CI keeps Vitest's default (CPUs − 1 = 3 on a 4-vCPU runner). Locally half the threads measured faster than the default on
 		// a 24-thread machine (3.8 s vs 5–6 s; extra processes only add startup cost) and leaves the machine usable.
 		maxWorkers: process.env.CI ? undefined : '50%',
-		// CI runners are quiet, so keep Vitest's strict 5 s. A workstation may also be running e2e or another agent's tests:
+		// CI runner speed varies about 1.7x between runs (suite 35-60 s), and the heaviest sweeps take 2.4-2.9 s there, so 10 s
+		// keeps that headroom while a real hang still fails fast. A workstation may also be running e2e or another agent's tests:
 		// the heaviest export tests then exceeded 5 s (measured), so wait longer there instead of failing on load.
-		testTimeout: process.env.CI ? 5_000 : 20_000
+		testTimeout: process.env.CI ? 10_000 : 20_000
 	}
 });
