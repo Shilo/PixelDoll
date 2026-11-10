@@ -294,3 +294,11 @@ test('accepted garment review counts persist without requiring fields on older s
 		footwearReviewFrames: 1
 	});
 });
+
+test('checks saved without per-move parts never turn into a pass after a clean addition', () => {
+	const { clips: _, legacy: __, ...old } = check([cell('idle/south/0', true)]).qa;
+	expect(old.status).toBe('fail');
+	const added = merge(item(old as ItemQa), [cell('slash/south/0')]);
+	expect(added.qa.status).not.toBe('pass');
+	expect(added.qa.legacy?.clips).toEqual(['idle/south']);
+});

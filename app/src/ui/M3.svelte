@@ -571,7 +571,7 @@
 			{#each accepted as it (it.id)}
 				<li>
 					<code>{it.id}</code>
-					{it.name} · {it.slot} · layers {it.layers.map((l) => `${l.id} z${l.z}`).join(', ')} · {it.extractor}/{it.key ??
+					{it.name} · {it.slot} · layers {it.layers.map((l) => `${l.id} z${l.z}`).join(', ')} · {it.route}/{it.key ??
 						''} · QA {it.qa?.status} · {it.provenance.reduce(
 						(s, p) => s + (p.usage?.generations ?? 0),
 						0

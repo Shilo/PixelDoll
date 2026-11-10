@@ -38,8 +38,9 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
 			)
 		)
 	];
-	// An item without any checks (the demo's items): every original clip stays explicitly unmeasured.
-	const baseline = old ? old.legacy : { clips: original };
+	// An item without per-move checks (the demo's items, or checks saved before them): every original clip stays explicitly
+	// unmeasured, so a clean addition never turns an old result into a pass.
+	const baseline = old?.legacy ?? (old?.clips ? undefined : { clips: original });
 	const remaining = baseline?.clips.filter((k) => !replaced.has(k)) ?? [];
 	const legacy = remaining.length ? { ...baseline!, clips: remaining } : undefined;
 	const parts: (QaSummary & { hand?: 'r' | 'l' | '?' })[] = [

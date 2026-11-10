@@ -561,8 +561,8 @@
 					<dd>{it.slot} · {it.layers.map((l) => `${l.id} z${l.z}`).join(', ')}</dd>
 					{#if it.prompt}<dt>Prompt</dt>
 						<dd>{it.prompt}</dd>{/if}
-					{#if it.extractor}<dt>Extractor</dt>
-						<dd>{it.extractor}{it.key ? ` · ${it.key} key` : ''}</dd>{/if}
+					{#if it.route}<dt>Route</dt>
+						<dd>{it.route}{it.key ? ` · ${it.key} key` : ''}</dd>{/if}
 					{#if it.qa}
 						<dt>QA</dt>
 						<dd>{it.qa.status}</dd>

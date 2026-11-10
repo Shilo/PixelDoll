@@ -83,7 +83,6 @@ export interface Item {
 	layers: Layer[];
 	baseHash: Sha256;
 	route?: 'skeleton-pose' | 'inpaint-grid' | 'ea2-anchor' | 'diff'; // manifest-spec v1.3
-	extractor?: 'chroma' | 'diff'; // deprecated (v1.2), still written for older readers
 	key?: 'green' | 'magenta' | 'blue' | 'azure';
 	dressed?: Partial<Record<DirectionName, Sha256>>; // skeleton-pose: dressed chroma keyframes
 	/** Standing clip bound to retained dressed references, including items made before rig setup. */

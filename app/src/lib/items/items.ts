@@ -3100,7 +3100,6 @@ export async function buildItem(o: {
 		layers,
 		baseHash: rig.baseHash,
 		route: o.route === 'none' ? 'diff' : spec.method === 'skel' ? 'skeleton-pose' : 'ea2-anchor',
-		extractor: o.route === 'none' ? 'diff' : 'chroma',
 		...(o.route !== 'none' ? { key: o.route } : {}),
 		...(spec.standing ? { standing: spec.standing } : {}),
 		...(o.anchorCell && spec.method !== 'skel' ? { anchorCell: o.anchorCell as CellKey } : {}),
