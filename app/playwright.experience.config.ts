@@ -1,4 +1,8 @@
 import { defineConfig } from '@playwright/test';
+import { offlineLaunch, refuseAgentServer } from './test/no-live-api.ts';
+
+const baseURL = process.env.BASE ?? 'http://127.0.0.1:5207';
+refuseAgentServer(baseURL);
 
 // Run against an already built/served production app without owning other suites' servers.
 export default defineConfig({
@@ -18,10 +22,11 @@ export default defineConfig({
 		]
 	],
 	use: {
-		baseURL: process.env.BASE ?? 'http://127.0.0.1:5207',
+		baseURL,
 		viewport: { width: 1440, height: 900 },
 		acceptDownloads: true,
 		launchOptions: {
+			...offlineLaunch,
 			downloadsPath: `${process.env.TEST_OUTPUT_DIR ?? 'test-results'}/experience-downloads`
 		},
 		screenshot: 'only-on-failure',

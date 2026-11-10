@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import { offlineLaunch, refuseAgentServer } from './test/no-live-api.ts';
 
 const previewPort = Number(process.env.E2E_PREVIEW_PORT ?? 5399);
 const devPort = Number(process.env.E2E_DEV_PORT ?? process.env.DEV_PORT ?? 5298);
@@ -6,6 +7,7 @@ const baseURL = process.env.BASE ?? `http://127.0.0.1:${previewPort}`;
 const devURL = `http://127.0.0.1:${devPort}`;
 process.env.DEV_PORT = String(devPort); // Workers inherit this; creator specs read it for their baseURL.
 const channel = process.env.PLAYWRIGHT_CHANNEL;
+refuseAgentServer(baseURL, devURL);
 
 export default defineConfig({
 	testDir: './test/e2e',
@@ -21,7 +23,7 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 1 : 0, // A CI timing flake is retried once and annotated as flaky.
 	reporter: process.env.CI ? [['list'], ['github']] : 'list',
-	use: { trace: 'retain-on-failure', channel },
+	use: { trace: 'retain-on-failure', channel, launchOptions: offlineLaunch },
 	webServer: [
 		...(!process.env.BASE
 			? [

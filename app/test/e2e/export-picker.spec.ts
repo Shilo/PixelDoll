@@ -250,6 +250,7 @@ test('global Export choices survive a browser restart, character changes and dyn
 		const context = await chromium.launchPersistentContext(profile, {
 			headless: true,
 			channel: info.project.use.channel,
+			args: info.project.use.launchOptions?.args, // persistent launches skip the config's offline guard
 			viewport: { width: 800, height: 600 }
 		});
 		await context.addInitScript(() => {

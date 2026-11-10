@@ -2195,3 +2195,14 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 	expect(requests).toEqual([]);
 	expect(errors).toEqual([]);
 });
+
+test('a PixelLab request no test mocks never reaches the network', async ({ page }) => {
+	await page.goto('about:blank');
+	const outcome = await page.evaluate(() =>
+		fetch('https://api.pixellab.ai/v2/balance', { mode: 'no-cors' }).then(
+			() => 'reached',
+			() => 'blocked'
+		)
+	);
+	expect(outcome).toBe('blocked');
+});

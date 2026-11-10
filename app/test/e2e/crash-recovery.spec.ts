@@ -19,6 +19,7 @@ test('Export choices and retained equipment survive abrupt browser termination a
 		const context = await chromium.launchPersistentContext(profile, {
 			headless: true,
 			channel: info.project.use.channel ?? 'chromium',
+			args: info.project.use.launchOptions?.args, // persistent launches skip the config's offline guard
 			baseURL: info.project.use.baseURL,
 			viewport: { width: 800, height: 600 }
 		});
