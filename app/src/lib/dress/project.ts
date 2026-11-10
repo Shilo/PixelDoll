@@ -34,6 +34,36 @@ interface ProjectRecord {
 
 export const FIXTURES = ['s2'];
 
+// Every open of a bundled character (the Studio and each demo thumbnail at startup) shares one download per file for the
+// page's lifetime; the set is fixed and small. A failed download is dropped so the next open fetches it again.
+const fixtureFiles = new Map<string, Promise<Uint8Array>>();
+function fixtureFile(url: string): Promise<Uint8Array> {
+	let file = fixtureFiles.get(url);
+	if (!file) {
+		file = fetch(url).then(async (response) => {
+			if (!response.ok)
+				throw new Error(
+					`The bundled character could not load (${response.status}). Reconnect and reload to try again.`
+				);
+			return new Uint8Array(await response.arrayBuffer());
+		});
+		fixtureFiles.set(url, file);
+		file.catch(() => fixtureFiles.delete(url)); // the caller awaiting it reports the error
+	}
+	return file;
+}
+
+/** The shared download keeps going for other opens; an abandoned open stops waiting for it at once. */
+function untilAborted<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
+	if (!signal) return work;
+	signal.throwIfAborted();
+	return new Promise<T>((resolve, reject) => {
+		const stop = () => reject(signal.reason);
+		signal.addEventListener('abort', stop, { once: true });
+		work.then(resolve, reject).finally(() => signal.removeEventListener('abort', stop));
+	});
+}
+
 /** Sources: "fixture:<name>" and every IndexedDB project record holding a current manifest. */
 export async function listSources(): Promise<{ id: string; label: string }[]> {
 	const recs = (await db.all<ProjectRecord>('projects')).filter(
@@ -57,14 +87,7 @@ export async function openSource(
 		const name = id.slice(8);
 		const project = await loadFixture(async (p) => {
 			signal?.throwIfAborted();
-			const response = await fetch(assetUrl(`fixtures/${name}/${p}`), { signal });
-			if (!response.ok)
-				throw new Error(
-					`The bundled character could not load (${response.status}). Reconnect and reload to try again.`
-				);
-			const bytes = new Uint8Array(await response.arrayBuffer());
-			signal?.throwIfAborted();
-			return bytes;
+			return untilAborted(fixtureFile(assetUrl(`fixtures/${name}/${p}`)), signal);
 		});
 		signal?.throwIfAborted();
 		const saved = await db.get<DressState>('projects', `dress-${id}`).catch(() => undefined);

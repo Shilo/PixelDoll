@@ -1,4 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest';
+import { readFile } from 'node:fs/promises';
 import { openSource } from '../../src/lib/dress/project.ts';
 import {
 	deleteOutdated,
@@ -119,26 +120,73 @@ test('canceling during metadata loading never starts cell reads', async () => {
 	expect(f.decode).not.toHaveBeenCalled();
 });
 
-test('a fixture fetch receives the same cancellation signal and cannot continue after abort', async () => {
+// The download is shared with other opens, so an abort ends this open, not the request.
+test('an abandoned fixture open stops waiting for its pending download at once and reads nothing more', async () => {
 	const f = fixture(),
-		controller = new AbortController();
-	const fetch = vi.fn(
-		(_url: string, options: RequestInit) =>
-			new Promise<Response>((_resolve, reject) => {
-				expect(options.signal).toBe(controller.signal);
-				controller.signal.addEventListener('abort', () => reject(controller.signal.reason), {
-					once: true
-				});
-			})
-	);
+		controller = new AbortController(),
+		download = pending<Response>();
+	const fetch = vi.fn(() => download.promise);
 	vi.stubGlobal('fetch', fetch);
 	const loading = openSource('fixture:s2', controller.signal),
 		rejected = expect(loading).rejects.toMatchObject({ name: 'AbortError' });
 	expect(fetch).toHaveBeenCalledOnce();
 	controller.abort();
 	await rejected;
+	download.resolve(new Response(null, { status: 503 })); // fails, so the next test downloads again
+	expect(fetch).toHaveBeenCalledOnce();
 	expect(f.get).not.toHaveBeenCalled();
 	expect(f.getBlob).not.toHaveBeenCalled();
+});
+
+/** A fresh module, so no download is cached yet; fetch serves the real demo files. */
+async function freshSource(fail?: (path: string) => boolean) {
+	vi.resetModules();
+	const fetch = vi.fn(async (url: string) => {
+		const path = new URL(url).pathname.slice(1);
+		if (fail?.(path)) return new Response(null, { status: 503 });
+		return new Response(await readFile(new URL(`../../public/${path}`, import.meta.url)));
+	});
+	vi.stubGlobal('fetch', fetch);
+	const { openSource } = await import('../../src/lib/dress/project.ts');
+	return { openSource, fetch };
+}
+const perUrl = (fetch: ReturnType<typeof vi.fn>) =>
+	fetch.mock.calls.reduce<Record<string, number>>((n, [url]) => {
+		n[url as string] = (n[url as string] ?? 0) + 1;
+		return n;
+	}, {});
+
+test('concurrent and later demo opens download each file once and get separate projects', async () => {
+	const { openSource, fetch } = await freshSource(),
+		abandoned = new AbortController();
+	const thumbnail = openSource('fixture:s2', abandoned.signal),
+		opens = [openSource('fixture:s2'), openSource('fixture:s2')];
+	expect(fetch).toHaveBeenCalledOnce(); // the thumbnail started the download; the others share it
+	abandoned.abort(); // the thumbnail's abort does not cancel the others' download
+	await expect(thumbnail).rejects.toMatchObject({ name: 'AbortError' });
+	const [studio, list] = await Promise.all(opens);
+	const reopened = await openSource('fixture:s2');
+	const counts = perUrl(fetch);
+	expect(Object.keys(counts)).toContain('http://localhost/fixtures/s2/fixture.json');
+	expect(Object.keys(counts).length).toBeGreaterThan(1);
+	expect(Object.values(counts).every((n) => n === 1)).toBe(true);
+	// Each open decodes its own copy: the Studio edits its project in place.
+	expect(studio.project.manifest === list.project.manifest).toBe(false);
+	expect(studio.project.images === reopened.project.images).toBe(false);
+	expect(reopened.project.manifest.rig.baseHash).toBe(studio.project.manifest.rig.baseHash);
+});
+
+test('a failed demo download is not kept: the next open downloads it again', async () => {
+	let down = true;
+	const { openSource, fetch } = await freshSource((path) => down && path.endsWith('walk.png'));
+	await expect(openSource('fixture:s2')).rejects.toThrow(
+		'The bundled character could not load (503)'
+	);
+	down = false;
+	await openSource('fixture:s2');
+	const counts = perUrl(fetch);
+	expect(counts['http://localhost/fixtures/s2/fixture.json']).toBe(1);
+	expect(Object.entries(counts).filter(([, n]) => n === 2)).toHaveLength(1);
 });
 
 for (const [name, read] of [

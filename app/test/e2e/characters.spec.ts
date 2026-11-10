@@ -1710,6 +1710,8 @@ test('a delayed earlier character load cannot replace the last selected characte
 		await route.continue();
 	});
 	const requested = page.waitForRequest('**/fixtures/s2/fixture.json', { timeout: 10_000 });
+	// The demo's files are downloaded once per page: a fresh page has not, so its demo open waits on the held file.
+	await reloadStudio(page);
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
@@ -1787,6 +1789,8 @@ test('item deletion finishing during navigation cannot reopen the old character'
 		await route.continue();
 	});
 	const requested = page.waitForRequest('**/fixtures/s2/fixture.json', { timeout: 10_000 });
+	// The demo's files are downloaded once per page: a fresh page has not, so its demo open waits on the held file.
+	await reloadStudio(page);
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
