@@ -3,6 +3,7 @@ import {
 	DESIGN,
 	GRAYISH,
 	grayShare,
+	smudgedViews,
 	dirGate,
 	itemQa,
 	slotOf,
@@ -139,4 +140,12 @@ test('the saved cape hem is already rejected by the design gate; clean views are
 	expect(grayShare(decode(fixture.capeKeys.north))).toBeGreaterThan(DESIGN.gray);
 	expect(grayShare(decode(fixture.capeKeys.south))).toBe(0);
 	expect(grayShare(decode(fixture.capeKeys.east))).toBe(0);
+	// the hem's colors are not drawn in the south and east views, so shared design colors do not excuse it
+	expect(
+		smudgedViews('back', 'a red cape', [
+			decode(fixture.capeKeys.south),
+			decode(fixture.capeKeys.east),
+			decode(fixture.capeKeys.north)
+		])
+	).toEqual([false, false, 'smudge']);
 });
