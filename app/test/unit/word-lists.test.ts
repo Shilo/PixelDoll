@@ -36,6 +36,41 @@ test('a gray smudge in one view still fails that view only', () => {
 	]);
 });
 
+test('gray drawn in two other views is shared design, not a smudge (live 2026-11-10: fletching, fox-tail tip)', () => {
+	const tinted = (gray: number, color: number[]) => {
+		const im = view(0);
+		for (let p = 0; p < gray; p++) im.data.set([...color, 255], p * 4);
+		return im;
+	};
+	const OFF = [225, 222, 215],
+		NEAR = [225 - 16, 222, 215 + 16],
+		FAR = [225 - 17, 222, 215];
+	// one view shows more of a part drawn in both other views (fletching seen from behind)
+	expect(smudgedViews('back', 'a red cape', [view(26), tinted(4, NEAR), tinted(4, NEAR)])).toEqual([
+		false,
+		false,
+		false
+	]);
+	// one channel 17 away is a different color: the share counts again
+	expect(smudgedViews('back', 'a red cape', [view(26), tinted(4, FAR), tinted(4, FAR)])).toEqual([
+		'smudge',
+		false,
+		false
+	]);
+	// shared with only one other view: still a smudge
+	expect(smudgedViews('back', 'a red cape', [view(26), tinted(4, OFF), view(0)])).toEqual([
+		'smudge',
+		false,
+		false
+	]);
+	// a smudge drawn in two of three views cannot excuse itself
+	expect(smudgedViews('back', 'a red cape', [view(26), view(26), view(0)])).toEqual([
+		'smudge',
+		'smudge',
+		false
+	]);
+});
+
 test('a negation must modify the belt itself', () => {
 	expect(expectsWaistBand('a tunic with no sleeves and a leather belt')).toBe(true);
 	expect(expectsWaistBand('a robe without a leather belt')).toBe(false);
@@ -121,6 +156,25 @@ test('review R3: a dark detail on one side is reported as uncertain, a gray smud
 		false,
 		false
 	]);
+	// an outline in every view shares no color with a dark patch or a dark-gray smudge (2026-11-10 review)
+	const outlined = (patch?: number[], line = [24, 22, 26]) => {
+		const im = tunic(patch);
+		for (let y = 3; y < 29; y++)
+			for (let x = 5; x < 27; x++)
+				if (y === 3 || y === 28 || x === 5 || x === 26)
+					im.data.set([...line, 255], (y * w + x) * 4);
+		return im;
+	};
+	expect(
+		smudgedViews('torso_outer', 'a blue tunic', [outlined(CHARCOAL), outlined(), outlined()])
+	).toEqual(['dark', false, false]);
+	expect(
+		smudgedViews('torso_outer', 'a blue tunic', [
+			outlined([60, 60, 60], [50, 48, 52]),
+			outlined(undefined, [50, 48, 52]),
+			outlined(undefined, [50, 48, 52])
+		])
+	).toEqual(['smudge', false, false]);
 	// a gray patch in one view stays a smudge
 	expect(smudgedViews('torso_outer', 'a blue tunic', [tunic(ASH), tunic(), tunic()])).toEqual([
 		'smudge',

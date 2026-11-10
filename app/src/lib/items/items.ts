@@ -2624,8 +2624,13 @@ function evaluateQa(
 // ---------- B14 dress design check (0 gens): gray smudges in a colorful keyframe ----------
 /** Share of near-gray px (HSV saturation < 0.25) in a colorful layer (median saturation ≥ 0.4), else 0. T3 Ranger keyframes:
  *  the red cape's smudged north hem 0.113; every clean view of hair, chest, trousers and cape ≤ 0.022 (gray items: median < 0.4). */
-export function grayShare(L: Img, darkPatches = true): number {
+export function grayShare(
+	L: Img,
+	darkPatches = true,
+	shared: (color: number) => boolean = () => false
+): number {
 	const sat: number[] = [];
+	let excused = 0;
 	// Near-black px (max channel < 48) are line art, not smudges: a black outline is gray by saturation, so every outlined
 	// colorful design failed D1 on every retry (2026-11-07 audit: a passing jester hat scored 0.23-0.31 against 0.05).
 	// A near-black px inside a solid near-black 3x3 patch is a blotch, not a line, and still counts (2026-11-07 review: a dark
@@ -2642,35 +2647,78 @@ export function grayShare(L: Img, darkPatches = true): number {
 				p = i / 4,
 				x = p % L.w,
 				y = (p / L.w) | 0;
-			if (mx >= 48) sat.push((mx - mn) / mx);
-			else if (
-				darkPatches &&
-				[-1, 0, 1].every((dy) => [-1, 0, 1].every((dx) => dark(x + dx, y + dy)))
+			const v =
+				mx >= 48
+					? (mx - mn) / mx
+					: darkPatches && [-1, 0, 1].every((dy) => [-1, 0, 1].every((dx) => dark(x + dx, y + dy)))
+						? mx
+							? (mx - mn) / mx
+							: 0
+						: undefined;
+			if (v == null) continue;
+			sat.push(v);
+			// only lit gray can be shared design: outline colors are in every view, so they would excuse any dark patch
+			if (
+				v < 0.25 &&
+				mx >= DESIGN.sharedLit &&
+				shared((L.data[i] << 16) | (L.data[i + 1] << 8) | L.data[i + 2])
 			)
-				sat.push(mx ? (mx - mn) / mx : 0);
+				excused++;
 		}
-	return sat.length && median(sat) >= 0.4 ? sat.filter((v) => v < 0.25).length / sat.length : 0;
+	return sat.length && median(sat) >= 0.4
+		? (sat.filter((v) => v < 0.25).length - excused) / sat.length
+		: 0;
 }
-export const DESIGN = { gray: 0.05 };
+/** sharedGray: Chebyshev distance for a shared design gray; sharedLit: the darkest max channel that can be shared, so outline
+ * shades (most item px with a max channel of 48-63) never excuse a dark-gray smudge (2026-11-10 review). */
+export const DESIGN = { gray: 0.05, sharedGray: 16, sharedLit: 64 };
 /** Prompts that ask for gray/black/white parts: the gray check does not apply. */
 export const GRAYISH = /gr[ae]y|silver|steel|iron|metal|chain|white|black|\bfur(?!i)|stone|\bash/i; // not sash, cashmere, furious
 
+/** Per drawn view: whether a color is a shared design color, i.e. within DESIGN.sharedGray of a color drawn in at least two
+ * other views (quiver fletching, a white fox-tail tip or buckles seen from the side; live 2026-11-10: 3 of 14 legitimate dress
+ * calls flagged). Two other views are required so that a smudge drawn in two views cannot excuse itself (one drawn in three of
+ * four or more views still can); with fewer, nothing is shared and the single-view rule stays. Line art and dark outline shades
+ * (max channel < DESIGN.sharedLit) are never shared, so an outline cannot excuse a dark patch or a dark-gray smudge. A smudge whose color the design draws in two other views is missed (known issue). */
+export function sharedDesignColors(layers: Img[]): ((color: number) => boolean)[] {
+	const drawn = layers.map((l) => l.data.some((v, i) => i % 4 === 3 && v));
+	const lit = (c: number) => Math.max(c >> 16, (c >> 8) & 255, c & 255) >= DESIGN.sharedLit;
+	const palettes = layers.map((l, i) => (drawn[i] ? colors(l).filter(lit) : []));
+	return layers.map((_, i) => {
+		const others = palettes.filter((_, j) => j !== i && drawn[j]),
+			memo = new Map<number, boolean>();
+		return (c: number) => {
+			let v = memo.get(c);
+			if (v == null)
+				memo.set(
+					c,
+					(v =
+						others.length >= 2 &&
+						others.filter((p) => p.some((o) => cdist(c, o) <= DESIGN.sharedGray)).length >= 2)
+				);
+			return v;
+		};
+	});
+}
+
 /** D1 per dressed view. A neutral part of the design (a skull emblem, a buckle, white trim) shows in every view, while a
- * smudge is view-specific (T3: the cape hem only from the north), so a view fails only when its gray share exceeds the lowest
- * share of the item's other drawn views by more than DESIGN.gray. Words naming gray parts still exempt the item; this covers
- * the neutral words the list misses (armor, skull, bone, pearl, other languages; 2026-11-07 audit). An item needs two other
- * drawn views to compare against; with fewer (one drawn view, or a two-view item where one smudged view would excuse the
- * other) the single-view rule stays. A smudge in every drawn view is not caught (known issue). */
+ * smudge is view-specific (T3: the cape hem only from the north), so only gray px whose color is not a shared design color
+ * count, and a view fails only when that share exceeds the lowest share of the item's other drawn views by more than
+ * DESIGN.gray. Words naming gray parts still exempt the item; this covers the neutral words the list misses (armor, skull,
+ * bone, pearl, other languages; 2026-11-07 audit). An item needs two other drawn views to compare against; with fewer (one
+ * drawn view, or a two-view item where one smudged view would excuse the other) the single-view rule stays. A smudge in
+ * every drawn view is not caught (known issue). */
 export function smudgedViews(
 	slot: string,
 	prompt: string,
 	layers: Img[]
 ): ('smudge' | 'dark' | false)[] {
 	const drawn = layers.map((l) => l.data.some((v, i) => i % 4 === 3 && v));
+	const shared = sharedDesignColors(layers);
 	const flagged = (darkPatches: boolean) => {
-		const share = layers.map((l, i) => (drawn[i] ? grayShare(l, darkPatches) : 0));
+		const share = layers.map((l, i) => (drawn[i] ? grayShare(l, darkPatches, shared[i]) : 0));
 		return layers.map((l, i) => {
-			if (!drawn[i] || !designGraySmudges(slot, prompt, l, darkPatches)) return false;
+			if (!drawn[i] || !designGraySmudges(slot, prompt, l, darkPatches, shared[i])) return false;
 			const others = share.filter((_, j) => j !== i && drawn[j]);
 			return others.length < 2 || share[i] - Math.min(...others) > DESIGN.gray;
 		});
@@ -2686,12 +2734,13 @@ export function designGraySmudges(
 	slot: string,
 	prompt: string,
 	layer: Img,
-	darkPatches = true
+	darkPatches = true,
+	shared?: (color: number) => boolean
 ): boolean {
 	if (GRAYISH.test(prompt)) return false;
 	if (slot === 'face_acc' && sum(maskOf(layer)) <= (32 * layer.w * layer.h) / (64 * 64))
 		return false;
-	return grayShare(layer, darkPatches) > DESIGN.gray;
+	return grayShare(layer, darkPatches, shared) > DESIGN.gray;
 }
 
 // ---------- H4 keyframe-consistency gate (port of S5 s5_dircheck.mjs, 0 gens) ----------

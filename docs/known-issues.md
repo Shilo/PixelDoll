@@ -149,8 +149,24 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   color would be the cloak's dark red). See the [chroma key reference](research/2026-11-09-paperdoll-video-review/chroma-key.md).
 - **The gray-smudge check (D1) compares views.** With three or more drawn views, a view is flagged only when it is much
   grayer than the item's least gray other view, so a neutral emblem drawn in every view passes. A smudge the provider adds
-  to every view is therefore not flagged; items with one or two drawn views keep the stricter per-view rule. See the
-  [word-list review](research/2026-11-07-paperdoll-cycle/review-word-lists.md).
+  to every view is therefore not flagged; items with one or two drawn views keep the stricter per-view rule. Lit gray px
+  whose color is drawn in at least two other views count as design, so a smudge close to such a gray part (or one drawn in
+  three or more views) is missed too: all 8 such synthetic smudges that the older rule caught. See the
+  [word-list review](research/2026-11-07-paperdoll-cycle/review-word-lists.md) and the
+  [2026-11-10 review](research/2026-11-10-external-layer-research-review/README.md).
+- **One wrong dressed view can save as clean.** The dress call draws one keyframe per drawn view, and every item check
+  compares a direction only with its own keyframe. A view drawn wrong is posed into that whole direction, passes every
+  gate and auto-saves.
+  - Live 2026-11-10: 3 of 79 views across 25 dress calls. The back of "a red cape" came out dusty rose on one seed and
+    maroon on another (2 of 3 seeds), and a robe was drawn open in one view. All 3 items saved as clean.
+  - Rejected checks: leave-one-out palette distance (one dress call shares one palette, so a recolor only reweights shared
+    colors), extent and area outliers (fox tails, backpacks and cape backs legitimately differ by view), and a weighted
+    foreign-color share (caught the cape, but its margin over a legitimate front-only crest was 0.056 on one prompt).
+  - Item-specific prompts or notes, such as "check the back view" for capes, are rejected: they assume what the item is
+    from its wording.
+  - Workaround: inspect every direction before exporting; Try again redraws the item.
+  - Revisit with more independent failing prompts before testing another check. See the
+    [2026-11-10 review](research/2026-11-10-external-layer-research-review/README.md).
 - **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 - **The authored east axe is an experimental import.** Its full clip can now be opened and inspected in Studio, but only one body/view is supported and rear-foot contact is unknown in two merged poses. The source PNGs and Studio's garment-tagged images have distinct pixel identities. See the [Studio integration evidence](research/2026-11-02-studio-axe-integration.md); it is not a universal preset.

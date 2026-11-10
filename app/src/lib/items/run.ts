@@ -75,6 +75,7 @@ import {
 	g2Fails,
 	grayShare,
 	smudgedViews,
+	sharedDesignColors,
 	gridPrompt,
 	packGrid,
 	bandOf,
@@ -1058,7 +1059,8 @@ export async function evaluateItem(
 			d.spec.slot,
 			d.spec.prompt,
 			kfCells.map((c) => c.layer)
-		);
+		),
+		sharedColors = sharedDesignColors(kfCells.map((c) => c.layer));
 	for (const [i, c] of kfCells.entries()) {
 		const o = dressOuts[i];
 		if (!c.area && hidden.has(o.key.split('/')[1]))
@@ -1073,7 +1075,7 @@ export async function evaluateItem(
 			!c.area && !hidden.has(o.key.split('/')[1]) && `G4 keyframe ${o.key}: item missing`,
 			// B14: flag a smudged design for review (T3: red cape north hem); it holds the early pose start, but only G1 stops poses
 			smudged[i] === 'smudge' &&
-				`D1 keyframe ${o.key}: ${(grayShare(c.layer) * 100).toFixed(0)} % gray smudges in a colorful design`
+				`D1 keyframe ${o.key}: ${(grayShare(c.layer, true, sharedColors[i]) * 100).toFixed(0)} % gray smudges in a colorful design`
 		].filter(Boolean);
 		if (smudged[i] === 'dark')
 			hiddenWarnings.push(

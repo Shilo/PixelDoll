@@ -340,7 +340,7 @@ D1 (dress, 0 gens): a colorful keyframe (median HSV saturation ≥ 0.4) with > 5
 review and holds the early pose start; the pose calls still run, since only G1 is structural (T3 cape north hem 11 %; clean
 views ≤ 2.2 %). It is skipped when the prompt asks for gray/metal/black/white parts. With three or more drawn views a view
 fails only when it is > 5 % grayer than the least gray other view, so a neutral emblem drawn in every view passes; a smudge
-in every view is then missed (2026-11-07). Near-black px (max channel < 48) are line art and do not count, so a black outline cannot
+in every view is then missed (2026-11-07). A gray px whose color (within 16 per channel) is drawn in at least two other views is shared design, not a smudge: quiver fletching, a white fox-tail tip (live 2026-11-10: 3 of 14 legitimate dress calls were flagged, 1 still is). Two views are required so a smudge drawn in two views cannot excuse itself (one in three of four or more views still can), and only lit grays (max channel ≥ 64) can be shared, so outline shades never excuse a dark patch or a dark-gray smudge. Near-black px (max channel < 48) are line art and do not count, so a black outline cannot
 fail an outlined design (2026-11-07). Handedness is set by the
 motion: authored weapon-hand actions and dressed keyframes keep it; prompts and hand marks do not [S3].
 
