@@ -321,11 +321,12 @@ This prevents a clean segment of a packed call from diluting a drifting one; per
 unchanged. A new per-clip review warning always carries an explanation. This does not add a cross-generation palette
 comparison to an older item's original design; each evaluation retains its own design reference.
 
-Older QA cannot be reconstructed exactly from transparent layers/composites. On a move edit, retain its indivisible
-scalar baseline and remaining original layer coverage, merge new parts, and prevent a clean status while old coverage
-remains. The inspector explicitly says older checks are incomplete and totals may include replaced frames. The baseline
-is removed only after all that coverage is replaced; an item without any old QA retains unknown coverage instead.
-This preserves historical evidence, not a claim that old totals measured every previously appended move.
+A free copy's checks cannot be split per move from transparent layers/composites. On a move edit, retain the copy's
+indivisible scalar summary (`qa.inherited`) for the moves not yet replaced, merge new parts, and prevent a clean status
+while inherited moves remain. The inspector shows "Partial checks": copied checks cover whole moves and totals may
+include replaced frames. The summary is removed only after all those moves are replaced; an item without any checks
+(the demo's items) lists its moves as inherited without a summary instead.
+This preserves the copied evidence, not a claim that its totals measured every previously appended move.
 G8 requires at least half a clip's frames to supply contact-qualified side votes. Positions must be finite for every inspected
 frame; missing positions cannot be reported as merely ambiguous. Conversely, valid overlapping wrists cannot be described
 as missing anchors. A confident sibling never hides an uncertain clip. Detached pixels retain `grip.none` diagnostics and
@@ -413,7 +414,7 @@ Same requests and ledger as before; only the order of the calls and what the Stu
 
 ## 6. Color model [M4]
 
-Materials = indexed ramps, shadow → highlight, disjoint within each item owner in `pixeldoll/2` (globally in legacy `pixeldoll/1`); derived per item from its layers (OKLab k-means,
+Materials = indexed ramps, shadow → highlight, disjoint within each item owner; derived per item from its layers (OKLab k-means,
 k ≤ 4 auto) and from the base. **Base regions (B15):** the base's shirt and shorts share one gray ramp (M4), so
 `lib/dress/regions.ts` splits them by position: garment grays (C < 0.04, L ≥ 0.18) form 4-connected components (outlines and
 skin separate the garments), each component goes to the shorts when ≥ 75 % of it lies at or below hip − 1.5 px along the

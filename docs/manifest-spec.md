@@ -1,19 +1,19 @@
-# PixelDoll manifest spec — `pixeldoll/2`
+# PixelDoll manifest spec — `pixeldoll/3`
 
-Author: A1 · Date: 2026-10-20; updated 2026-10-22 · Status: format 2, retaining the v1.3.1 rig contract (per-layer cell + pivot for oversize layers, S5/B8). Pipeline and rationale: [`architecture.md`](architecture.md).
+Author: A1 · Date: 2026-10-20; updated 2026-10-22 · Status: format 3, retaining the v1.3.1 rig contract (per-layer cell + pivot for oversize layers, S5/B8). Pipeline and rationale: [`architecture.md`](architecture.md).
 
 One schema serves two files:
 
 - **`project.json`** inside the project zip (backup/share; the app's own document). Layers reference cells by hash (`cells`),
   and QA + provenance are complete.
-- **`manifest.json`** inside the export zip (consumed by engines and importers). Layers reference sheets by path (`sheets`).
+- **`manifest.json`** inside the export zip (consumed by engines). Layers reference sheets by path (`sheets`).
   `cells` is dropped, everything else is kept (provenance is the credits trail [R5]).
 
 The API key never appears in either file.
 
-Current projects use `pixeldoll/2`. Readers also accept `pixeldoll/1`; its original global palette constraint remains enforced. Version 2 gives every item independent materials: material IDs remain globally unique, while source RGB ramps need only be disjoint within the same owner. Two items may therefore share both original pixels and RGB values and still recolor independently. Engines must apply material swaps to the owning item, including its tucked variants.
+Projects use `pixeldoll/3`, and the app reads no other version: data saved by earlier previews is deleted or rejected. Every item has independent materials: material IDs remain globally unique, while source RGB ramps need only be disjoint within the same owner. Two items may therefore share both original pixels and RGB values and still recolor independently. Engines must apply material swaps to the owning item, including its tucked variants.
 
-Version 2 also permits `Material.defaultVariant`: the approved baseline when an outfit has no explicit color selection. For affected items, canonical `Layer.sheets` render that baseline for all supplied engine runtimes, while optional `Layer.sourceSheets` point to the original source-ramp PNGs under `sources/`. Palette-aware consumers must start from `sourceSheets` when present. Original material ramps remain disjoint even when two selected variants share a color. Editable `project.json` always retains original raw cells and the complete material definitions.
+`Material.defaultVariant` is the approved baseline when an outfit has no explicit color selection. For affected items, canonical `Layer.sheets` render that baseline for all supplied engine runtimes, while optional `Layer.sourceSheets` point to the original source-ramp PNGs under `sources/`. Palette-aware consumers must start from `sourceSheets` when present. Original material ramps remain disjoint even when two selected variants share a color. Editable `project.json` always retains original raw cells and the complete material definitions.
 
 An accepted shared copy may carry `Item.design` lineage: the design ID/revision, immutable minimal source snapshot, palette-role mapping and target audit. Its referenced source images travel in `cells/` alongside the target frames. Library deletion therefore does not remove the copy's artwork or its portable reference. A separate equipment archive uses `pixeldoll-design/1` in `design.json`; it is not a character ZIP.
 
@@ -48,7 +48,7 @@ export type JointLabel =
 export interface Keypoint { label: JointLabel; x: number; y: number } // normalized 0..1 of the rig cell; no z_index
 
 export interface Manifest {
-  format: 'pixeldoll/1' | 'pixeldoll/2';
+  format: 'pixeldoll/3';
   name: string;
   app: string;                    // "PixelDoll 0.1.0"
   rig: Rig;
@@ -108,7 +108,7 @@ export interface Material {
   variants: Record<string, Hex[]>;       // same length as ramp; recolor = exact index swap
   linkTo?: string;                       // follow another material's selected variant (beard -> hair)
   owner: string;                         // item id that introduced it ("base" for skin/eyes/shirt/shorts)
-  defaultVariant?: string;               // /2 approved baseline when the outfit has no explicit selection
+  defaultVariant?: string;               // approved baseline when the outfit has no explicit selection
 }
 
 // ---------- slots ----------
@@ -155,8 +155,8 @@ export interface Item {
   anchorCell?: CellKey;                   // ea2-anchor: dressed cell passed as frame 1 to later calls
   provenance: Provenance[];
   qa?: ItemQa;                            // absent on the base
-  coverage?: CellKey[];                   // /2 known cells, including intentionally transparent cells
-  design?: EquipmentLineage;             // /2 pinned source snapshot, palette roles and target/reference audit
+  coverage?: CellKey[];                   // equipment only (required there): target cells, including intentionally transparent cells
+  design?: EquipmentLineage;             // pinned source snapshot, palette roles and target/reference audit
 }
 export interface Layer {
   id: 'main' | 'fg' | 'bg';
@@ -164,7 +164,7 @@ export interface Layer {
   z: number;                              // resolved static z (slot ladder or item override)
   cells?: Record<string, Partial<Record<DirectionName, (Sha256 | null)[]>>>; // project.json; null = transparent cell
   sheets?: Record<string, string>;        // manifest.json; anim id -> path of the sheet PNG
-  sourceSheets?: Record<string, string>;  // /2 original source-ramp sheets when sheets render defaultVariant
+  sourceSheets?: Record<string, string>;  // original source-ramp sheets when sheets render defaultVariant
   cell?: { w: number; h: number };        // v1.3.1: this layer's cell; default rig.cell. Held items: {w: 96, h: 96} [S5]
   pivot?: { x: number; y: number };       // v1.3.1: the SAME body point in this layer's cell; default rig.pivot.
                                           //   96 held layer: rig.pivot + (16, 16). manifest.json always writes both.
@@ -189,7 +189,7 @@ export interface ItemQa {
   minAreaRatio: number;                   // cell area / clip median, >= 0.5
   maxAreaCV: number;                      // per clip, <= 0.15
   maxPaletteDist: number;                 // worst clip/call segment vs evaluation's design palette, <= 15
-  clipPx: number;                         // legacy name: border-contact count for review, not pixels proven cropped
+  clipPx: number;                         // historical name: border-contact count for review, not pixels proven cropped
   grip?: { R: number; L: number; amb: number; none: number }; // held items (gripSide counts)
   rawKeyReviewFrames?: number;            // held frames with new body-key pixels before registration; review observation
   heldLoopReviewClips?: number;            // held clips with a shape or angle change at the playback seam
@@ -198,12 +198,13 @@ export interface ItemQa {
   rerolls: number;
   status: 'pass' | 'warn' | 'fail' | 'accepted'; // accepted = human override
   cells: Record<CellKey, CellQa>;
-  clips?: Record<string, QaSummary & { hand?: 'r' | 'l' | '?' }>; // animation/direction; current replaceable checks
-  legacy?: { clips: string[]; summary?: QaSummary }; // remaining older coverage; historical totals may be incomplete
+  clips: Record<string, QaSummary & { hand?: 'r' | 'l' | '?' }>; // animation/direction; current replaceable checks
+  inherited?: { clips: string[]; summary?: QaSummary }; // moves without their own checks: a free copy's indivisible
+                                          //   summary, or none for an item never checked; kept until those moves are replaced
 }
-// QaSummary contains ItemQa's scalar checks/status, excluding rerolls, cells, clips and legacy.
+// QaSummary contains ItemQa's scalar checks/status, excluding rerolls, cells, clips and inherited.
 // New move edits reduce the current parts; recorded retry history remains cumulative. Manual acceptance overrides
-// only non-clean parts. Old records are not silently reconstructed: while legacy coverage remains, status cannot pass.
+// only non-clean parts. While inherited moves remain, status cannot pass.
 // Each evaluation uses its own design palette; the paid retry gates remain per call. Optional QA fields survive export.
 export interface CellQa {
   route: 'posed' | 'grid' | 'ea2' | 'diff' | 'mirrored' | 'import';
@@ -265,7 +266,7 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
    layer has exactly the layer's cell size; cell and pivot are integers.
 3. Every `frames[].cell < cells`. Every `frames[].ms` is a positive integer.
 4. `item.baseHash === rig.baseHash` for exported items (stale items are excluded with a warning).
-5. Material IDs are globally unique. Ramps are pairwise disjoint within an owner in `pixeldoll/2`, and globally in `pixeldoll/1`; `variants[*].length === ramp.length`. Source and variant colors use six-digit `#RRGGBB` values.
+5. Material IDs are globally unique. Ramps are pairwise disjoint within an owner; `variants[*].length === ramp.length`. Source and variant colors use six-digit `#RRGGBB` values.
 6. Exactly one item has `slot: "body"`; it is `rig.baseItem`. Every item has either one `main` layer with role `fg`, or an `fg`/`bg` pair with matching roles. Import and export reject other layouts because native playback uses the foreground body as its clock.
 7. Draw order: ascending resolved z; ties broken by `slots` order, then `role` (bg before fg), then item id. Slot, layer and override depths must be signed 32-bit integers; native consumers store integer depths.
 8. Resolved z for a cell = the most specific matching `zOverride` (cell > anim > dir > none; on equal specificity the later entry
@@ -298,7 +299,7 @@ are preserved; use the character root's depth for positioning among scene object
 
 ```jsonc
 {
-  "format": "pixeldoll/1",
+  "format": "pixeldoll/3",
   "name": "hero",
   "app": "PixelDoll 0.1.0",
   "rig": {
@@ -389,6 +390,7 @@ are preserved; use the character root's depth for positioning among scene object
       "dressed": { "south": "sha256:d1…", "east": "sha256:d2…", "north": "sha256:d3…" },
       "layers": [ { "id": "main", "role": "fg", "z": 130,
         "sheets": { "idle": "layers/head/helmet_iron/main/idle.png", "walk": "layers/head/helmet_iron/main/walk.png" } } ],
+      "coverage": ["idle/south/0", "walk/south/0" /* shortened: every target cell of the generated directions */],
       "provenance": [
         { "endpoint": "/edit-animation-v2", "seed": 7, "jobId": "…", "requestHash": "sha256:…",
           "params": { "description": "This pixel art character is a solid bright green mannequin… Add only a simple gray steel knight helmet…",
@@ -408,7 +410,8 @@ are preserved; use the character root's depth for positioning among scene object
                 "walk/south/3": { "route": "posed", "provenance": 1, "area": 122, "keyKept": 0.99, "snappedPct": 98 },
                 "walk/west/3":  { "route": "mirrored", "provenance": 0, "area": 133, "snappedPct": 98 }
                 // shortened: one entry per cell
-              } } },
+              },
+              "clips": { "walk/south": { /* the same scalar checks for this move and direction */ } } } },
     { "id": "cape_red", "name": "Red cape", "slot": "back", "status": "accepted", "mirror": "flip",
       "materials": ["cape_cloth"], "prompt": "a long red cloth cape hanging from the shoulders",
       "baseHash": "sha256:5f1c…", "route": "skeleton-pose", "key": "green",
@@ -419,7 +422,7 @@ are preserved; use the character root's depth for positioning among scene object
       ],
       "provenance": [ /* 1 × /edit-animation-v2 dress + 12 × /animate-with-skeleton-v3 pose (shortened) */ ],
       "qa": { "minKeyKept": 0.974, "maxKeyOutside": 0.028, "shiftedFrames": 0, "minAreaRatio": 0.71, "maxAreaCV": 0.06,
-              "maxPaletteDist": 1.0, "clipPx": 0, "strayPx": 33, "rerolls": 1, "status": "pass", "cells": {} } }
+              "maxPaletteDist": 1.0, "clipPx": 0, "strayPx": 33, "rerolls": 1, "status": "pass", "cells": {}, "clips": {} } }
   ],
   "presets": [
     { "id": "default", "name": "Knight",
@@ -639,7 +642,7 @@ Every new export ZIP also contains `project.json` and `cells/<rgba-sha256>.png`.
 
 `project.json` has `format: "pixeldoll-project/1"`, the original in-memory `manifest` (including `layer.cells`, rest views and clip sources), and optional `character`, `skeletons` and `rigQa` from the local project record. Its presets include the exported current look. Cell filenames are the SHA-256 of decoded RGBA bytes, without the `sha256:` prefix; the importer verifies each referenced image hash before saving. Dressed item keyframes and rest images are included alongside animation and equipment cells. Local IDs, API keys and queue records are excluded.
 
-Import assigns a fresh local ID, writes blobs and project in one IndexedDB transaction, and preserves independent directions, sparse clips and layer pivots. For older ZIPs without `project.json`, the importer reconstructs cells from `manifest.json` sheet rows in rig direction order; unavailable original pose metadata is removed. ZIP parsing rejects unsafe paths, unsupported compression/encryption, corrupt CRCs and oversized archives. Deletion removes local project/draft records atomically while retaining shared cell blobs for ordinary garbage collection.
+Import assigns a fresh local ID, writes blobs and project in one IndexedDB transaction, and preserves independent directions, sparse clips and layer pivots. ZIPs without `project.json` (or PixelLab `metadata.json`) are rejected. ZIP parsing rejects unsafe paths, unsupported compression/encryption, corrupt CRCs and oversized archives. Deletion removes local project/draft records atomically while retaining shared cell blobs for ordinary garbage collection.
 
 Explicit rig setup measures every unique frozen body image with `estimate-skeleton`, registers all supplied rest views with `create-character-v3`, and atomically attaches the same rest/keypoint/anchor/character contract as creation. Existing artwork is not regenerated. Source camera `rig.view` and humanoid `rig.template` are retained. Imported sources use `route: "import"`, `motion: "estimated:frozen-import"` (or `"imported-rest"` for a matching one-cell rest), and actual measured keypoints. Their QA adherence is `null`; palette, feet and border checks still run. New moves use the normal skeleton-v3 render and independent adherence checks. Short item clips are padded to the API's three-frame minimum and trimmed; long clips are batched to at most fifteen poses with original cell indices preserved.
 
@@ -655,14 +658,13 @@ item copy per outfit and a `body_color` slot; it was never wired into exports an
 editable items, material ramps, outfit variant selections, rig and provenance. Body dimensions of 48/56 px inside a 64 px
 cell, legacy 32 px rig cells and 96 px held layers retain their geometry. Imported layer dimensions are bounded to
 1–256 px and pivots use the pixel-edge convention inside their own layer cell. Import budgets include repeated logical
-frame and sheet references, not just unique compressed files.
+frame references, not just unique compressed files.
 
 
 Accepted keyframe appearance exceptions use the optional `items[].designWarnings: string[]` field. These are the actual
 reviewed design messages, independent of replaceable per-frame/clip `qa` summaries. They remain on the item when a move
 is added or replaced, even when all old frame QA is invalidated, and survive editable ZIP export/import. Passing frame
-checks remain `pass`; Studio separately labels the accepted appearance warnings. The optional field does not change
-`pixeldoll/1`. Imports allow at most 100 nonempty strings of at most 2,000 characters each.
+checks remain `pass`; Studio separately labels the accepted appearance warnings. Imports allow at most 100 nonempty strings of at most 2,000 characters each.
 
 
 ### Explicit item palette repair history
@@ -674,5 +676,5 @@ require obsolete blobs in the editable ZIP; later clip replacements may supersed
 historical QA remain intact. The operation preserves alpha and pixel coordinates, changes no material definition or
 variant, and matches only unclaimed neutral/cool colors to the one eligible item-owned neutral ramp within 24/255 per
 channel. Ambiguous or unsupported colors stay unchanged. No PixelLab request or synthetic clean QA claim is implied.
-The optional field does not change `pixeldoll/1`. Imports validate bounded history arrays, known policy version, safe
+Imports validate bounded history arrays, known policy version, safe
 IDs, direction/frame/layer shapes, unique frame/layer entries, positive pixel counts and distinct valid hashes.

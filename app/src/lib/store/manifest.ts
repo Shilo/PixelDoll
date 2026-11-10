@@ -1,4 +1,4 @@
-// pixeldoll/1 manifest types (docs/manifest-spec.md §2). Rig types live in rig/rig.ts.
+// pixeldoll/3 manifest types (docs/manifest-spec.md §2). Rig types live in rig/rig.ts.
 import type { Img } from '../image/png.ts';
 import type { DirectionName, Rig, Sha256 } from '../rig/rig.ts';
 import type { EquipmentLineage } from '../equipment/types.ts';
