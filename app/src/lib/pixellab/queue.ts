@@ -193,8 +193,11 @@ async function mapDeep(
 	if (!v || typeof v !== 'object') return v;
 	const r = fn(v as Record<string, unknown>);
 	if (r) return r;
+	// Visit every key before awaiting any, like arrays: fn then runs synchronously in depth-first request order.
+	const entries = Object.entries(v),
+		values = await Promise.all(entries.map(([, x]) => mapDeep(x, fn)));
 	const out: Record<string, unknown> = {};
-	for (const [k, x] of Object.entries(v)) out[k] = await mapDeep(x, fn);
+	entries.forEach(([k], i) => (out[k] = values[i]));
 	return out;
 }
 
@@ -206,7 +209,7 @@ export async function requestIdentity(
 	const inputs: string[] = [];
 	const params = await mapDeep(req.body ?? null, (o) => {
 		if (!isB64(o)) return undefined;
-		// Reserve the slot now: sibling images hash concurrently, and completion order would make the list nondeterministic.
+		// Reserve the slot now, in request order: images hash concurrently, and completion order would vary.
 		const slot = inputs.push('') - 1;
 		return (async () => {
 			const sha = await putBlob(base64ToBytes(o.base64));

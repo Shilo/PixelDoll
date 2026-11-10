@@ -10,6 +10,10 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   [shared token contract](shared-token-security.md).
 - **Agent-only key mode is a convention.** `npm run dev:agent` reads `.env` for AI agents; humans use `npm run dev` (no
   key path). Builds refuse agent mode; the CI guard fails if key code or `.env` reaches `dist/`.
+- **A reopen at the instant the last tab closes can stall once (Chromium).** Closing every app tab activates a waiting
+  update. A navigation that starts within a few milliseconds of that close sometimes never sees the activation and spins
+  until reload; a reload or a new tab then loads normally. No PixelDoll worker code runs in that window, and a person
+  reopening by hand is far slower. The end-to-end test waits for activation before reopening (2026-11-10 stress runs).
 
 ## PixelLab credits and API
 

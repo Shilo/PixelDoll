@@ -980,7 +980,30 @@ test('a cached app can adopt a waiting update by closing all app tabs without cl
 		await discover(page, b);
 		await expectLoadedBuild(page, a);
 		const reopened = await context.newPage();
+		// Reopen only after the waiting release has taken over, as a person does. Navigating within milliseconds of closing
+		// the last tab raced Chromium's own controllee removal: the waiting worker was never activated and that navigation
+		// stalled to the test timeout (12 of 240 CI stress runs).
+		const cdp = await context.newCDPSession(reopened);
+		let waitingVersion: string | undefined,
+			adopted = false;
+		cdp.on('ServiceWorker.workerVersionUpdated', ({ versions }) => {
+			for (const version of versions) {
+				if (version.scriptURL !== server.url + 'sw.js') continue;
+				if (version.status === 'installed') waitingVersion = version.versionId;
+				if (version.status === 'activated' && version.versionId === waitingVersion) adopted = true;
+			}
+		});
+		await cdp.send('ServiceWorker.enable');
+		await expect.poll(() => waitingVersion).toBeTruthy();
 		await page.close();
+		await expect
+			// Activation retires old releases under a Web Lock; allow discover's 20 s, as load slowed it past 5 s.
+			.poll(() => adopted, {
+				message: 'closing the last tab activates the waiting release',
+				timeout: 20_000
+			})
+			.toBe(true);
+		await cdp.detach();
 		await reopened.goto(server.url);
 		await expectLoadedBuild(reopened, b);
 		await expect.poll(() => controllerBuild(reopened)).toBe(b.release.build);
