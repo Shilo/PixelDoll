@@ -1603,6 +1603,8 @@ export class Queue {
 		);
 	}
 	private finish(r: JobRec, state: RecState = 'done') {
+		// Concurrent paths (a double Stop, a poll landing during a cancel) may settle one record twice: count it once.
+		if (!live(r)) return;
 		const priced = requestCost(
 			usageOf((r.response as { usage?: unknown } | undefined)?.usage),
 			r.jobs.map((s) => usageOf(s.usage))

@@ -270,7 +270,8 @@ export function finishActivityCall(
 			});
 		const owner = jobs.get(jobId);
 		if (owner) {
-			const settled = terminal || (call.method === 'DELETE' && ok);
+			// A policy refusal ends the job as in the queue ledger, so its usage is final too.
+			const settled = terminal || policy || (call.method === 'DELETE' && ok);
 			// Only the settling response prices a job, as in the queue ledger: an interim poll's usage is not its final cost.
 			if (settled) owner.usage = usage;
 			owner.terminal = owner.terminal || settled;

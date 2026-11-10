@@ -35,7 +35,7 @@ Unity Editor execution remains unavailable because the installed editor has no a
 
 ## Follow-up 2026-11-09
 
-Shared-copy exports now run in Godot 4.7.1, Phaser 3.80.1/3.90.0/4.1.0 and Aseprite 1.3.18.6 with 0 differing pixels, and the Godot Aseprite Wizard 9.8.0 import path is verified with its required settings ([engine shared copies](engine-shared-copy-2026-11-09.md)). Unity Editor execution remains unavailable.
+Shared-copy exports now run in Godot 4.7.1, Phaser 3.80.1/3.90.0/4.1.0 and Aseprite 1.3.18.6 with 0 differing pixels, and the Godot Aseprite Wizard 9.8.0 import path is verified with its required settings ([engine shared copies](engine-shared-copy-2026-11-09.md)). The Unity Editor is now activated: native Editor, player and GPU render checks pass ([Unity playback](unity-playback-2026-10-28.md)).
 
 ## Primary references
 

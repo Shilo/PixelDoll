@@ -705,3 +705,56 @@ test('queued GET originals are inspectable once and a related poll cannot replac
 	});
 	expect(fetchMock).not.toHaveBeenCalled();
 });
+
+test('a policy refusal while processing keeps the usage it reports in live Activity', () => {
+	const sent = beginActivityCall('POST', 'https://api.pixellab.ai/v2/animate-character');
+	finishActivityCall(sent, 200, true, { background_job_id: 'refused-job' });
+	const poll = beginActivityCall('GET', 'https://api.pixellab.ai/v2/background-jobs/refused-job');
+	finishActivityCall(poll, 200, true, {
+		status: 'processing',
+		last_response: { code: 5000, error: 'refused' },
+		usage: usage(0.25)
+	});
+	expect(snapshot().find((call) => call.id === sent)).toMatchObject({
+		cost: { generations: 0.25, usd: 0 },
+		costSource: 'reported',
+		usagePending: false
+	});
+});
+
+test('stopping one running request twice at once counts its cost once', async () => {
+	const records = new Map<string, JobRec>();
+	const deletes: string[] = [];
+	const queue = new Queue({
+		all: async () => [...records.values()].map((record) => structuredClone(record)),
+		put: async (id, record) => void records.set(id, structuredClone(record)),
+		locks: null,
+		online: () => true,
+		now: () => 1000,
+		api: async <T>(_key: string, method: string, path: string) => {
+			if (method === 'DELETE') {
+				deletes.push(path);
+				await new Promise((resolve) => setTimeout(resolve, 20));
+			}
+			return {} as T;
+		}
+	});
+	queue.setKey('test-key');
+	records.set('stop-twice', {
+		id: 'stop-twice',
+		method: 'POST',
+		path: '/animate-character',
+		body: { seed: 1 },
+		label: 'Stop twice',
+		state: 'running',
+		requestStarted: true,
+		jobs: [{ id: 'job-stop', done: false, results: [] }],
+		createdAt: 1000,
+		gens: 0,
+		usd: 0
+	} as unknown as JobRec);
+	await queue.load();
+	await Promise.all([queue.cancel('stop-twice'), queue.cancel('stop-twice')]);
+	expect(records.get('stop-twice')).toMatchObject({ state: 'canceled', costUnknown: true });
+	expect(queue.snapshot().sessionUnknown).toBe(1);
+});
