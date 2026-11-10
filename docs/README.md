@@ -50,6 +50,7 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Current review handoffs and research
 
+- [Third-party paper-doll workflow and chroma key color](research/2026-11-09-paperdoll-video-review/README.md): video and screenshot review of another tool's per-piece dressing workflow, each idea challenged against PixelDoll, and a live 808-generation key A/B plus offline census: keep green as the default; fix the dark outline loss in `absorbOutline` (qualified offline, not implemented).
 - [PixMiniMax terminal skeleton recipe review](research/pixminimax-skeleton-recipe-review-2026-11-08.md): offline script and screenshot findings, managed `end_frame` support, and the recommendation to retain frozen-body paper dolling while testing explicit captions.
 - [Claude paperdoll session counter-review handoff (2026-11-07)](handoff/2026-11-07-claude-session-counter-review.md): asks Codex to challenge and offline-test the R1 to R7 corrections, the kept held wording and the whole session range, with no PixelLab calls.
 - [Complete-session review validation and fixes](reviews/2026-11-02-complete-session-counter-review.md): reproduced queue ownership, billing uncertainty, paid-probe grip, cross-tab source and unsent recovery defects; loop-contact correction, challenged palm evidence, full offline checks and retained Claude review/evidence.

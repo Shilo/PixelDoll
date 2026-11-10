@@ -230,6 +230,8 @@ near-key share (item px with key score 20 to 34 and a brightest channel of at le
 ratio score); 20 % or more adds a K1 review note, and on any collision (K1, keyframe G3 or G4) the draft's Try again uses a
 key chosen from the measured colors (`keyFor`, the shared-fit rule; off-body key px count only when they are more than 16
 from the key ramp), preferring keys the prompt allows (2026-11-07); G2 and posed-frame failures never switch (a collision cannot lower G2; G2 fails on erased body px). Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
+Why green and not cyan or blue as the default (D27), with every measurement and how to retest: the
+[chroma key reference](research/2026-11-09-paperdoll-video-review/chroma-key.md).
 
 **Round 3 cleanup rules** ([round 3](research/generation-quality-round3-2026-10-25.md)).
 - *Despill*: a key-tinted px first loses the key excess (the key channel down to the next one; azure in its rotated frame),
