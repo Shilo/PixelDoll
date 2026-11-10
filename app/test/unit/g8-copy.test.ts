@@ -43,5 +43,8 @@ test.each([
 test('a whole-item hand summary scoped to a move reads in plain words', () => {
 	expect(
 		plainReason('default/east: G8 off_hand: held in the right hand; slot off_hand expects hand_l')
-	).toBe('The item may be held in the wrong hand; check the intended hand');
+	).toBe('The item may be held in the wrong hand; Off hand expects the left hand');
+	expect(plainReason('G8 main_hand: held in the left hand; slot main_hand expects hand_r')).toBe(
+		'The item may be held in the wrong hand; Main hand expects the right hand'
+	);
 });

@@ -156,11 +156,12 @@ Open the character, then character menu → **Delete character…**. The confirm
 
 ## Add items
 
-In **Wardrobe**, pick a category (Head, Hair, Body, or **More** for Face, Legs, Feet, Back and Held item), then press
-**New <category> item**, or **Use a saved design** to fit a shared design.
+In **Wardrobe**, pick a category (Head, Hair, Body, or **More** for Face, Legs, Feet, Back, Main hand and Off hand), then
+press **New <category> item**, or **Use a saved design** to fit a shared design. **Main hand** is the character's right hand
+(a sword or staff) and **Off hand** the left hand (a shield, lantern or bow); one item of each can be worn together.
 
-1. **Where does it go?** Pick the group. **Details** lets you choose the exact slot (a beard goes under Hair, a shield in the
-   off hand).
+1. **Where does it go?** Pick the group. **Details** lets you choose the exact slot (a beard goes under Hair, a belt under
+   Legs).
 2. **What is it?** Describe the item, for example "leather hat", or tap an idea.
 3. Add an optional **Color hint**, then press **Make**.
 

@@ -132,7 +132,7 @@ test('experimental native attack imports with warnings and exact frame stepping 
 	await expect(
 		page.getByRole('heading', { name: 'EXPERIMENTAL east axe review', exact: true })
 	).toBeVisible();
-	await equipmentGroup(page, 'Hands');
+	await equipmentGroup(page, 'Main hand');
 	await expect(page.locator('.equipment-scroll')).toContainText('Needs a look');
 	const pause = page.getByRole('button', { name: 'Pause', exact: true });
 	if (await pause.count()) await pause.click();
@@ -1563,8 +1563,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		(before.rigQa as { clips: Record<string, { adherence: number | null }> }).clips['default/south']
 			.adherence
 	).toBeNull();
-	await newItem(page, 'Hands');
-	await page.getByRole('radio', { name: 'Held item', exact: true }).click();
+	await newItem(page, 'Main hand');
+	await page.getByRole('radio', { name: 'Main hand', exact: true }).click();
 	await page.getByRole('dialog').getByText('Details', { exact: true }).click();
 	await expect(page.getByRole('dialog')).toContainText('96 px canvas');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();

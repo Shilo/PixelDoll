@@ -121,7 +121,8 @@ export interface Slot {
   required?: boolean;                    // true only for "body"
   hides?: string[];                      // default: slots whose layers are hidden while this slot has a visible item
   clips?: string[];                      // B14: slots tucked under this slot's item (head: ["hair"]); see invariant 11
-  zOverrides?: ZOverride[];              // sparse exceptions
+  zOverrides?: ZOverride[];              // sparse exceptions; the default off_hand adds fg above main_hand in generated
+                                         //   (not mirrored) west, south-west and north-west views, where the left hand is near
   band?: boolean;                        // project only: clip extraction to the slot's keypoint y-band (held: false)
 }
 export interface ZOverride {

@@ -418,7 +418,7 @@
 	<section class="facing" aria-label="Character directions">
 		<Help
 			title="Directions"
-			text="Choose the views to keep and animate. V3 first creates all eight original views. Attached mirror buttons mirror a horizontal partner; a blue mirror button marks a derived view, and its held items switch hands (a right-handed sword appears in the left hand). Turning it off uses that view’s original artwork. For one facing, choose Side-scroller 2 and turn W off."
+			text="Choose the views to keep and animate. V3 first creates all eight original views. Attached mirror buttons mirror a horizontal partner; a blue mirror button marks a derived view, and its Main hand and Off hand items trade hands (a Main hand sword appears in the left hand). Turning it off uses that view’s original artwork. For one facing, choose Side-scroller 2 and turn W off."
 		/>
 		<div class="direction-presets" role="group" aria-label="Direction presets">
 			{#each PRESETS as p (p.id)}<button

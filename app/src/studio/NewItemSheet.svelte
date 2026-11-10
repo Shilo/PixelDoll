@@ -5,7 +5,7 @@
 	import { formDrafts } from './formDrafts.ts';
 	import GroupIcon from './GroupIcon.svelte';
 	import DesignLibrary from './DesignLibrary.svelte';
-	import { GROUPS, slotLabel, itemNameFrom, heldSlotFor } from './model.ts';
+	import { GROUPS, slotLabel, itemNameFrom } from './model.ts';
 	import { itemRoute } from './itemRoute.ts';
 	import { ui, doc, store, isDemo, startItem, withKey, copyDemo } from './state.svelte.ts';
 	import * as db from '../lib/store/db.ts';
@@ -26,15 +26,9 @@
 	let color = $state(draft?.color ?? '');
 	let name = $state(draft?.name ?? '');
 	let busy = $state(false);
-	const g = $derived(GROUPS.find((x) => x.id === group)!);
-	// a draft or a prefill (Try again, Make it again) carries a slot the user already chose
-	let slotPicked = $state(!!draft || !!ui.newItem.prompt);
+	const g = $derived(GROUPS.find((x) => x.id === group) ?? GROUPS[0]);
 	$effect(() => {
 		if (!g.slots.includes(slot)) slot = g.slots[0];
-	});
-	// held items follow their words (bows and shields go in the left hand) until the user picks the exact slot
-	$effect(() => {
-		if (g.id === 'Hands' && !slotPicked) slot = heldSlotFor(prompt);
 	});
 
 	const m = $derived(store.project?.manifest);
@@ -194,8 +188,7 @@
 							role="radio"
 							aria-checked={group === x.id}
 							tabindex={group === x.id ? 0 : -1}
-							onclick={() => (group = x.id)}
-							><GroupIcon group={x.id} size={14} />{x.id === 'Hands' ? 'Held item' : x.id}</button
+							onclick={() => (group = x.id)}><GroupIcon group={x.id} size={14} />{x.id}</button
 						>
 					{/each}
 				</div>
@@ -263,10 +256,7 @@
 						<label class="field"
 							><span class="label small">Exact slot</span>
 							<span class="select-wrap boxed"
-								><select
-									class="bu-select select"
-									bind:value={slot}
-									onchange={() => (slotPicked = true)}
+								><select class="bu-select select" bind:value={slot}
 									>{#each g.slots as s (s)}<option value={s}>{slotLabel(s)}</option>{/each}</select
 								><ChevronDown size={12} /></span
 							>

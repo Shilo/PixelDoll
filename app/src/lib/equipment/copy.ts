@@ -4,7 +4,7 @@ import { cellImg, cutAt } from '../compose/compose.ts';
 import { stableStringify } from '../image/hash.ts';
 import { type Item, type Manifest, type Project, type Preset } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
-import { SLOTS } from '../items/items.ts';
+import { SLOTS, slotLadder } from '../items/items.ts';
 import { validate } from '../export/generic.ts';
 import { mergeQa } from '../items/qa-summary.ts';
 import type { QaSummary } from '../store/manifest.ts';
@@ -180,7 +180,7 @@ export async function prepareCopy(design: EquipmentDesign, target: Project): Pro
 	m.items.push(item);
 	m.materials.push(...materials);
 	if (!m.slots.some((s) => s.id === item.slot))
-		m.slots.push(structuredClone(SLOTS.find((s) => s.id === item.slot)!));
+		m.slots.push(slotLadder(m.rig).find((s) => s.id === item.slot)!);
 	m.presets = [
 		{
 			id: 'fit-preview',

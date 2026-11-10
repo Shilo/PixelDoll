@@ -18,6 +18,7 @@ import {
 	itemRoute,
 	paletteDistance,
 	postProcess,
+	slotLadder,
 	slotOf,
 	unrotate,
 	f0Last,
@@ -648,7 +649,8 @@ export async function evaluatePoseFit(
 	});
 	const manifest = structuredClone(target.manifest);
 	manifest.items.push(built.item);
-	if (!manifest.slots.some((s) => s.id === spec.slot)) manifest.slots.push(slotOf(spec.slot));
+	if (!manifest.slots.some((s) => s.id === spec.slot))
+		manifest.slots.push(slotLadder(manifest.rig).find((s) => s.id === spec.slot)!);
 	const project: Project = { manifest, images: new Map([...target.images, ...built.images]) };
 	deriveMaterials(project, [built.item]);
 	const sourceImages = await loadImages(design.imageHashes, design.images);
