@@ -420,7 +420,20 @@ export function despill(L: Img, key: Key, sT = 10): Img {
  * line (cape) can come back as the key ramp's darkest color and would be keyed out (holes over the body, missing outline).
  * A dark key px (lum <= 0.3) is item when (a) it lies outside the base silhouette and touches the item (the mannequin cannot be
  * there), or (b) at least 5 of its 8 neighbors are item (a 1-px line inside the item). Two passes.
+ * Then (c), two passes of its own so (b) never counts its px: a key px touching the item that is no mannequin shade (darker
+ * than the ramp's darkest shade and more than `FAR` from the ramp) and whose exact color the cell's bare mannequin does not
+ * use. The model tints near-black item outlines over the body toward the key's darkest shade (green (4,19,0)); such a 1-px edge
+ * has only 2 to 4 item neighbors and lost braid outlines in every walk frame. On green, bare mannequins almost never hold such
+ * px (6 in 356 cells; 2026-11-09 key A/B), but on magenta the model draws the mannequin's own outline in one (35,14,28), so a
+ * color seen on the mannequin away from the item (`BARE` px) stays key. This only protects cells where that color shows 3+ px
+ * from the item: a mannequin outline drawn in it only next to the item is still absorbed (bench tunic, walk south-east: about 4
+ * neck px per frame), and one far px of an item's own outline color costs that cell its recovery (1 hair view in the A/B).
  */
+/** Chebyshev distance from the key ramp beyond which a dark key px is no mannequin shade (`absorbOutline` (c)). A cliff, not a
+ * margin: green's (4,19,0) sits 41 from (0,60,0); at 32 cast shadows under a hood joined the item, at 48 nothing was recovered. */
+const FAR = 40;
+/** Distance from any item px beyond which an off-ramp px is bare mannequin (its color then never counts as item outline). */
+const BARE = 3;
 export function absorbOutline(
 	mask: Uint8Array,
 	B: Img,
@@ -434,6 +447,11 @@ export function absorbOutline(
 	const dark = (p: number) =>
 		isKey(C, p, key, kT) &&
 		keyLum(key, C.data[p * 4], C.data[p * 4 + 1], C.data[p * 4 + 2]) <= lumMax;
+	const floor = keyLum(key, ...RAMP[key](0));
+	const offRamp = (p: number) => {
+		const [r, g, b] = C.data.subarray(p * 4, p * 4 + 3);
+		return keyLum(key, r, g, b) < floor && rampDistance(key, r, g, b) > FAR;
+	};
 	const itemNb = (m: Uint8Array, p: number) => {
 		const x = p % w,
 			y = (p / w) | 0;
@@ -453,6 +471,23 @@ export function absorbOutline(
 			const n = itemNb(prev, p);
 			if ((!B.data[p * 4 + 3] && n > 0) || n >= 5) o[p] = 1;
 		}
+	}
+	const rgb = (p: number) => (C.data[p * 4] << 16) | (C.data[p * 4 + 1] << 8) | C.data[p * 4 + 2];
+	const bare = new Set<number>();
+	for (let p = 0; p < o.length; p++)
+		if (
+			!o[p] &&
+			B.data[p * 4 + 3] &&
+			dark(p) &&
+			offRamp(p) &&
+			!near(w, h, p % w, (p / w) | 0, BARE - 1, (q) => !!o[q])
+		)
+			bare.add(rgb(p));
+	for (let pass = 0; pass < 2; pass++) {
+		const prev = o;
+		o = new Uint8Array(prev);
+		for (let p = 0; p < o.length; p++)
+			if (!prev[p] && dark(p) && offRamp(p) && !bare.has(rgb(p)) && itemNb(prev, p) > 0) o[p] = 1;
 	}
 	return o; // ponytail: no blind pinhole fill — enclosed key px can be real body (fingers inside a hilt)
 }

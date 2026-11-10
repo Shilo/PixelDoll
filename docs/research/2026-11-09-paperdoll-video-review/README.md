@@ -19,7 +19,7 @@ reconstruction).
 - **The A/B found one real green defect, and it has a qualified extraction fix.** Near-black item outlines drawn over the
   body come back tinted toward the mannequin's darkest shade, score as key and are removed. Blonde braids lost their outline
   in every walk frame. A one-condition change in `absorbOutline` recovers 98 % of those pixels offline with no gate flips and
-  no halos. Not implemented; tracked as a follow-up.
+  no halos. Implemented 2026-11-10 after two adversarial review rounds (section 3.5).
 - **The other workflow converged on what PixelDoll already does** (one item per call on a bare keyed body). Its distinctive
   ideas (five flat mannequin tones, a darker "limb line", single-hue gear recolored later, a hide mask between pieces,
   code-placed rigid frames) were each tested or checked against prior evidence and rejected. One candidate (keep hands in
@@ -188,7 +188,9 @@ cases, a regenerated bench report, and a rerun of the multi-tone skin set. [Outl
 ## 4. Recommendations
 
 1. **Keep green as the default and the current order.** No change to `KEYS`.
-2. **Fix the dark outline loss in `absorbOutline`** with the qualified rule, per key, with the tests and checks above. Free.
+2. **Fix the dark outline loss in `absorbOutline`.** Done 2026-11-10 after two adversarial review rounds, which added a
+   per-cell guard for keys whose mannequin outline uses the same shade (magenta); see the
+   [chroma key reference](chroma-key.md#the-green-outline-defect).
 3. **Fix the evaluation before any further key A/B:** count every dropped dark pixel next to the item regardless of ramp
    distance, and add a hue-accuracy check for saturated colors (the cyan and blue cloak defects escaped every metric).
 4. **Do not adopt** five-tone mannequins, the limb line, single-hue gear, the hide mask, code-placed rigid frames or hand

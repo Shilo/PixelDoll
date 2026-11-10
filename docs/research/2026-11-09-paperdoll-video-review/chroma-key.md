@@ -16,8 +16,8 @@ better than green and that green is too common in gear. PixelDoll uses green fir
 
 No. On the same bodies, items, prompts and seeds, cyan, azure and blue mannequins were **not better overall** than green, and
 each added failures on the most common armor and weapon materials that no quality gate catches. Green's only collision is green
-gear, which the key switch already handles. Green has one real defect (dark outlines drawn over the body are keyed out), and it
-is fixable in extraction without changing the key (board card "Keep dark item outlines drawn over the green key").
+gear, which the key switch already handles. Green had one real defect (dark outlines drawn over the body were keyed out), which
+was fixed in extraction on 2026-11-10 without changing the key (see [the green outline defect](#the-green-outline-defect)).
 
 What the practitioners' preference does get right: **green gear is common** (rangers, goblins, leaves, poison), so a green key
 must switch more often than a cyan one. PixelDoll handles that by measuring each item's colors and switching keys, so the
@@ -147,10 +147,24 @@ Of 380 px lost in the A/B, 378 lie inside the base silhouette and 328 are darker
 least 5 of 8 item neighbors; a one-pixel outline over the body has 2-4. The model almost never darkens the bare mannequin by
 itself (6 such px in 356 cells, all at least 3 px from any item).
 
-Qualified offline fix (not yet in the app): also keep a key-scored px that touches the item, is more than 40 per channel from the
-ramp and is darker than the key's own darkest shade. It recovered 315 of 321 confirmed outline px (98.1 %), kept at most 0.83
-wrong px per cell, made no halos and flipped no G2 or G3 result. A looser variant kept green blends on an elf ear and was
-rejected. [Outline recovery](evidence/outline-recovery.md).
+The offline prototype kept a key-scored px that touches the item, is more than 40 per channel from the ramp and is darker than
+the key's darkest shade. It recovered 315 of 321 confirmed outline px (98.1 %) with no gate flips. A looser variant kept green
+blends on an elf ear and was rejected. [Outline recovery](evidence/outline-recovery.md).
+
+**Implemented 2026-11-10 (`absorbOutline` rule (c), `app/src/lib/image/chroma.ts`), after two adversarial review rounds:**
+
+| Round | Objection | Evidence | Outcome |
+| --- | --- | --- | --- |
+| 1 | The premise "the mannequin never uses that shade" is false on magenta | The bench tunic added 574 px; 483 were (35,14,28), the same shade the model used for the mannequin's own head, ear and foot outline; the tunic grew spikes up the neck | Accepted: a shade the cell's bare mannequin uses 3+ px from the item stays key (per cell, exact RGB, every key). Rejected the alternative "green and blue only": per-cell evidence beats a key list |
+| 1 | Inside the old two-pass loop, the 5-of-8 rule counted the new px and absorbed real ramp shades (8,74,5) | 349 px added instead of 323 on the A/B; neck px on the tunic | Accepted: rule (c) runs as its own two passes after the old rules |
+| 1 | FAR 40 is a cliff, not a margin | (4,19,0) is 41 from the ramp; FAR 48 recovered 0, FAR 32 added hood cast shadows | Kept 40: no criterion did strictly better (an absolute green cut has the same cliff); a lighter tint only falls back to the old behavior. Pinned in a test |
+| 1 | Tests missed magenta, the cascade and the cliff | | Added: magenta kept or dropped, mannequin-used shade stays key on all keys, cascade, cliff |
+| 2 | Known gaps of the color exclusion | A mannequin outline seen only next to the item is still kept (about 4 neck px per frame on one magenta walk view); one far px of the item's outline shade blocks that view (1 hair view) | Accepted as limits, documented in code and `docs/known-issues.md`. A call-wide exclusion set would fix the tunic but lose the braids in all 8 dress views of one call |
+
+Final numbers: the A/B recovers 318 of 380 lost px (braids, plate, jerkin), the magenta bench tunic adds 71 px (mostly sleeve
+and hem outline, about 25 neck px), no G2 or G3 flips anywhere, the LPC skin-tone set is unchanged (0 of 5,460 tallies; it
+cannot trigger the rule, so it says nothing about skin tone either way), and the only bench line that moves is the tunic's area
+CV, 0.122 to 0.123.
 
 ## Open questions (not tested)
 
