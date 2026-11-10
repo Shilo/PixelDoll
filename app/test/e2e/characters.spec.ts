@@ -1710,6 +1710,15 @@ test('startup decodes the character it opens once: its thumbnail waits for the o
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
 	await expect(page.locator('.world-actors').first()).toBeVisible();
+	// Read the count only once startup work has settled, so a thumbnail decoding late cannot escape it.
+	const settled = () =>
+		page.evaluate(async () => {
+			const w = window as unknown as { digests: number },
+				before = w.digests;
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+			return w.digests === before;
+		});
+	await expect.poll(settled, { timeout: 30_000 }).toBe(true);
 	const { startup, oneOpen } = await page.evaluate(async () => {
 		const w = window as unknown as { digests: number },
 			path = '/src/lib/dress/project.ts',

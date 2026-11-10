@@ -2197,6 +2197,8 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 });
 
 test('a PixelLab request no test mocks never reaches the network', async ({ page }) => {
+	// The name must fail to resolve: the launch rule blocks it, not a missing connection.
+	const failed = page.waitForEvent('requestfailed', (r) => r.url().includes('api.pixellab.ai'));
 	await page.goto('about:blank');
 	const outcome = await page.evaluate(() =>
 		fetch('https://api.pixellab.ai/v2/balance', { mode: 'no-cors' }).then(
@@ -2205,4 +2207,5 @@ test('a PixelLab request no test mocks never reaches the network', async ({ page
 		)
 	);
 	expect(outcome).toBe('blocked');
+	expect((await failed).failure()?.errorText).toBe('net::ERR_NAME_NOT_RESOLVED');
 });

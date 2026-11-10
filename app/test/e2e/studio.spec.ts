@@ -359,14 +359,64 @@ async function expectDirectionGrid(page: Page, directions: (string | null)[], co
 	}
 }
 
+// The production build strips the __queue/__studio hooks and developer rigs, so the dev server checks them directly.
+test('dev server: offline pauses the queue, back online resumes it, and developer rigs stay collapsed', async ({
+	page,
+	context
+}, info) => {
+	await context.addInitScript(() => localStorage.setItem('pixeldoll.agentKey', 'off'));
+	// Open the Studio first so the app creates its database before the dev rig is added.
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await page.evaluate(
+		(format) =>
+			new Promise<void>((resolve, reject) => {
+				const r = indexedDB.open('pixeldoll');
+				r.onerror = () => reject(r.error);
+				r.onsuccess = () => {
+					const t = r.result.transaction('projects', 'readwrite');
+					t.objectStore('projects').put(
+						{
+							id: 'rig-e2edevrig00',
+							savedAt: '',
+							manifest: { format, name: 'E2E dev rig' },
+							origin: 'dev'
+						},
+						'rig-e2edevrig00'
+					);
+					t.oncomplete = () => {
+						r.result.close();
+						resolve();
+					};
+					t.onabort = () => reject(t.error);
+				};
+			}),
+		CURRENT_FORMAT
+	);
+	await reloadStudio(page);
+	await page.waitForFunction(() => window.__queue?.paused === null && !!window.__studio);
+	await context.setOffline(true);
+	await page.locator('.offline-banner', { hasText: 'You’re offline' }).waitFor();
+	await page.waitForFunction(() => window.__queue!.paused === 'offline');
+	await pickItem(page, 'Wizard hat'); // everything else still works
+	expect(await page.evaluate(() => window.__studio!.ui.selected)).toBe('hat_wizard');
+	await context.setOffline(false);
+	await page.locator('.offline-banner').waitFor({ state: 'detached' });
+	await page.waitForFunction(() => window.__queue!.paused === null);
+	await page.locator('.project-btn').click();
+	const projectMenu = page.locator('#project-menu');
+	await expect(projectMenu.getByText('Developer rigs', { exact: true })).toHaveCount(1);
+	await expect(projectMenu.getByText('E2E dev rig', { exact: true })).toBeHidden();
+});
+
 test('studio demo: dressing, storage, export and responsive controls', async ({
 	browser,
 	context: ctx,
 	page
 }, testInfo) => {
 	const BASE = testInfo.project.use.baseURL!;
-	// studio-dev reruns this demo on the dev server, the only build that exposes the __queue/__studio hooks.
-	const dev = testInfo.project.name === 'studio-dev';
 	const unexpectedRequests: string[] = [];
 	const blockApi = async (context: import('@playwright/test').BrowserContext) => {
 		await context.route('https://api.pixellab.ai/**', async (route) => {
@@ -544,23 +594,16 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	await page.waitForFunction(() => !document.querySelector('dialog[open]'));
 	step('Create: visible size and direction controls update frame and full generation cost');
 	assert.equal(
-		await page.evaluate(() => !!window.__queue && !!window.__studio),
-		dev,
-		'only the dev server exposes the queue and Studio hooks'
+		await page.evaluate(() => !!window.__queue || !!window.__studio),
+		false,
+		'the production build strips the queue and Studio hooks'
 	);
 	await ctx.setOffline(true);
 	await page.locator('.offline-banner', { hasText: 'You’re offline' }).waitFor();
-	if (dev) await page.waitForFunction(() => window.__queue!.paused === 'offline');
 	await pickItem(page, 'Wizard hat'); // everything else still works (selects the worn hat)
-	if (dev) assert.equal(await page.evaluate(() => window.__studio!.ui.selected), 'hat_wizard');
 	await ctx.setOffline(false);
 	await page.locator('.offline-banner').waitFor({ state: 'detached' });
-	if (dev) await page.waitForFunction(() => window.__queue!.paused === null);
-	step(
-		dev
-			? 'offline: banner + queue paused, back online: banner gone, queue resumed'
-			: 'offline: banner shown, back online: banner gone (queue checked in studio-dev)'
-	);
+	step('offline: banner shown, back online: banner gone (queue pause checked on the dev server)');
 
 	// ---- B10: sheets ----
 	// T1 P0: Create without a key -> the Connect sheet replaces it (8afef4f)
@@ -672,17 +715,11 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	await page.locator('.project-btn').click();
 	const projectMenu = page.locator('#project-menu');
 	await expect(projectMenu).toBeVisible();
-	// Developer rigs stay out of the main list; only the dev build offers their disclosure.
-	await expect(projectMenu.getByText('Developer rigs', { exact: true })).toHaveCount(dev ? 1 : 0);
-	const devRig = projectMenu.getByText('E2E dev rig', { exact: true });
-	await (dev ? expect(devRig).toBeHidden() : expect(devRig).toHaveCount(0));
+	await expect(projectMenu.getByText('Developer rigs', { exact: true })).toHaveCount(0);
+	await expect(projectMenu.getByText('E2E dev rig', { exact: true })).toHaveCount(0);
 	await page.keyboard.press('Escape');
 	await idb(null);
-	step(
-		dev
-			? 'dev keeps developer rigs inside their collapsed disclosure'
-			: 'production hides developer rigs and their disclosure'
-	);
+	step('production hides developer rigs and their disclosure');
 
 	// ---- B10: other sizes (fresh contexts: own storage) ----
 	async function at(
