@@ -69,20 +69,29 @@ test('request-only identity exactly matches the persisted enqueue identity witho
 	expect(r.inputs).toEqual(identity.inputs);
 });
 
-test('request identity lists input images in request order even when their hashes finish out of order', async () => {
-	const images = [png('AQID'), png('BAUG'), png('BwgJ')],
-		delays: Record<number, number> = { 1: 30, 4: 0, 7: 15 };
+test('request identity lists input images depth-first in request order even when their hashes finish out of order', async () => {
+	// Frames that each hold two images: an object's later keys must not wait for its earlier images before taking a slot.
+	const images = [png('AQID'), png('BAUG'), png('BwgJ'), png('CgsM'), png('DQ4P')],
+		delays: Record<number, number> = { 1: 30, 4: 0, 7: 15, 10: 5, 13: 0 };
 	const { inputs } = await requestIdentity(
-		{ method: 'POST', path: '/synthetic', body: { images, reference: png('CgsM') } },
+		{
+			method: 'POST',
+			path: '/synthetic',
+			body: {
+				frames: [
+					{ image: images[0], mask: images[1] },
+					{ image: images[2], mask: images[3] }
+				],
+				reference: images[4]
+			}
+		},
 		async (bytes) => {
 			await new Promise((resolve) => setTimeout(resolve, delays[bytes[0]] ?? 0));
 			return sha256(bytes);
 		}
 	);
 	const expected = await Promise.all(
-		[...images, png('CgsM')].map(async (image) =>
-			sha256(Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0)))
-		)
+		images.map(async (image) => sha256(Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0))))
 	);
 	expect(inputs).toEqual(expected);
 });
