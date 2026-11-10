@@ -28,7 +28,7 @@
 	const m = $derived(project?.manifest);
 	const rigAnim = $derived(m?.rig.animations.find((a) => a.id === anim));
 
-	// source: the S1 fixture or a frozen rig project from IndexedDB (M2 rig + M3 accepted items)
+	// source: the bundled demo fixture or a saved character from IndexedDB
 	let source = $state('fixture');
 	let stored = $state.raw<StoredProject[]>([]);
 	listProjects().then((p) => (stored = p));
@@ -37,7 +37,7 @@
 		try {
 			if (source === 'fixture')
 				project = await loadFixture(
-					async (p) => new Uint8Array(await (await fetch(`./fixtures/s1/${p}`)).arrayBuffer())
+					async (p) => new Uint8Array(await (await fetch(`./fixtures/s2/${p}`)).arrayBuffer())
 				);
 			else {
 				const p = (await loadProject(source)).project;
@@ -128,13 +128,13 @@
 
 {#if error}<p class="err">{error}</p>{/if}
 {#if !m}
-	<p>Loading the S1 fixture…</p>
+	<p>Loading the demo fixture…</p>
 {:else}
 	<p class="row">
 		<label
 			>Source
 			<select bind:value={source} data-testid="m5-source">
-				<option value="fixture">S1 fixture</option>
+				<option value="fixture">Demo fixture</option>
 				{#each stored as p (p.id)}<option value={p.id}
 						>{p.id} · {p.manifest.name} · {p.manifest.items.length - 1} items</option
 					>{/each}
@@ -142,15 +142,11 @@
 		</label>
 	</p>
 	<p>
-		{source === 'fixture' ? 'Fixture' : 'Project'} <code>{m.name}</code>: {source === 'fixture'
-			? 'real S1 PixelLab outputs'
-			: `${m.items.length - 1} accepted items:`}
-		{source === 'fixture'
-			? '(base walk + idle, helmet, leather vest, sword split fg/bg)'
-			: m.items
-					.filter((i) => i.slot !== 'body')
-					.map((i) => i.name)
-					.join(', ')}, {m.rig.cell.w}×{m.rig.cell.h}, pivot ({m.rig.pivot.x}, {m.rig.pivot.y}),
+		{source === 'fixture' ? 'Fixture' : 'Project'} <code>{m.name}</code>: {m.items.length - 1} items:
+		{m.items
+			.filter((i) => i.slot !== 'body')
+			.map((i) => i.name)
+			.join(', ')}, {m.rig.cell.w}×{m.rig.cell.h}, pivot ({m.rig.pivot.x}, {m.rig.pivot.y}),
 		directions {m.rig.directions
 			.map((d) => d.id + (d.mirrorOf ? ` (mirror of ${d.mirrorOf})` : ''))
 			.join(', ')}.

@@ -16,7 +16,7 @@
 	<a href="#/"><b>PixelDoll</b></a>
 	<ApiPeek scope="all" all />
 	<nav>
-		<a href="#/m1">M1</a> <a href="#/m2">M2</a> <a href="#/m3">M3</a> <a href="#/m4">M4</a>
+		<a href="#/m1">M1</a> <a href="#/m3">M3</a> <a href="#/m4">M4</a>
 		<a href="#/m5">M5</a> <a href="#/selftest">tests</a>
 	</nav>
 	<span data-testid="key-status">

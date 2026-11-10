@@ -125,7 +125,10 @@ async function fixture(frames = 18): Promise<RigCtx> {
 			ledger.listeners.forEach((cb) => cb({ jobs: ledger.records }));
 			return rec;
 		});
-	return { rec: { id: 'rig-imported-two-view', savedAt: '', manifest: m }, project };
+	return {
+		rec: { id: 'rig-imported-two-view', savedAt: '', origin: 'studio', manifest: m },
+		project
+	};
 }
 
 test('two-view unrigged imports extend just the chosen sparse move, reusing their standing purchase', async () => {

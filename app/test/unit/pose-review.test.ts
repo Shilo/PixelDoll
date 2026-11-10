@@ -141,7 +141,7 @@ function context(): RigCtx {
 		presets: []
 	};
 	return {
-		rec: { id: 'rig-test', savedAt: '', manifest },
+		rec: { id: 'rig-test', savedAt: '', origin: 'studio', manifest },
 		project: { manifest, images: new Map() }
 	};
 }

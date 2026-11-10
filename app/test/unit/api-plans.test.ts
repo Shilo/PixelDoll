@@ -96,7 +96,7 @@ test('authored moves count frames from an available unique rest view when south 
 
 test('item preflight contains only the requested plan and no automatic paid fallback', async () => {
 	const project = await equipmentFixture(),
-		rec = { id: 'fixture', savedAt: '', manifest: project.manifest };
+		rec = { id: 'fixture', savedAt: '', origin: 'studio' as const, manifest: project.manifest };
 	const points = LABELS.map((label) => ({ label, x: 0.5, y: 0.5 })),
 		reference = project.manifest.items[0].layers[0].cells!.rest!.south![0]!;
 	project.manifest.rig.rest = { south: { image: reference, keypoints: points } };

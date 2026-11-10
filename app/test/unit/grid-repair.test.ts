@@ -134,6 +134,7 @@ async function fixture(mode = 'pass', pad = 16, bladeEnd = 52) {
 		rec: {
 			id: 'rig-grid',
 			savedAt: 'original',
+			origin: 'studio',
 			manifest,
 			skeletons: Object.fromEntries(
 				dirs.flatMap((d) =>

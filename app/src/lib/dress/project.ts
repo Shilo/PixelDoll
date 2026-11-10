@@ -1,5 +1,5 @@
 // Dress-up persistence (browser): open a fixture or an IndexedDB project, save outfit presets + materials + z overrides.
-// IndexedDB projects (M2/M3 records with a manifest) are written back in place; fixtures get a side record "dress-<source>".
+// IndexedDB projects (records with a manifest) are written back in place; fixtures get a side record "dress-<source>".
 import { loadFixture } from '../compose/fixture.ts';
 import { loadProject, type StoredProject } from '../store/project.ts';
 import { rigArtworkVersion } from '../rig/rig.ts';
@@ -32,7 +32,7 @@ interface ProjectRecord {
 	moveRecovery?: StoredProject['moveRecovery'];
 }
 
-export const FIXTURES = ['s2', 's1'];
+export const FIXTURES = ['s2'];
 
 /** Sources: "fixture:<name>" and every IndexedDB project record holding a current manifest. */
 export async function listSources(): Promise<{ id: string; label: string }[]> {

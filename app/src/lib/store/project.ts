@@ -21,15 +21,8 @@ export interface StoredProject {
 	skeletons?: Record<string, Skeleton>; // cell key -> keypoints (mirrored cells flipped)
 	rigQa?: unknown;
 	character?: { id: string; looks: string };
-	origin?: 'studio' | 'dev'; // T2: who made it; the Studio's character menu lists only 'studio' rigs (dev rigs: M2 pages)
+	origin: 'studio' | 'dev'; // T2: who made it; the Studio's character menu lists only 'studio' rigs (dev rigs: dev pages)
 }
-
-/** Records from before `origin`: v1.3 creates (`character`) and demo copies (empty `pivotFrom`) came from the Studio. */
-export const originOf = (p: StoredProject): 'studio' | 'dev' =>
-	p.origin ??
-	(p.character || (p.rigQa as { pivotFrom?: string } | undefined)?.pivotFrom === ''
-		? 'studio'
-		: 'dev');
 
 export const OUTDATED =
 	'This character was saved by an earlier preview version and is no longer supported.';

@@ -77,6 +77,7 @@ async function fixture(validAttempts: boolean[]) {
 	let saved: projects.StoredProject = {
 		id: 'rig-measured',
 		savedAt: 'original',
+		origin: 'studio',
 		manifest,
 		character: { id: 'managed', looks: 'body' }
 	};

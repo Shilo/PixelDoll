@@ -196,6 +196,7 @@ test('the actual inpaint request enables lower clothing and keeps reference cell
 		rec: {
 			id: 'synthetic-garment',
 			savedAt: '',
+			origin: 'studio',
 			manifest,
 			skeletons: Object.fromEntries(
 				[0, 1, 2].map((i) => [`walk/south/${i}`, fromApi(points, manifest.rig.cell)])

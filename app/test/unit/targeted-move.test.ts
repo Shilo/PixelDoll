@@ -96,6 +96,7 @@ async function fixture(fail = false) {
 	let saved: projects.StoredProject = {
 		id: 'rig-target',
 		savedAt: 'original',
+		origin: 'studio',
 		manifest,
 		character: { id: 'managed', looks: 'body' },
 		skeletons: Object.fromEntries(

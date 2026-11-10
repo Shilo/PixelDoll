@@ -72,6 +72,7 @@ async function fixture() {
 		record: StoredProject = {
 			id: 'rig-pending',
 			savedAt: 'test',
+			origin: 'studio',
 			manifest: project.manifest,
 			character: { id: 'managed', looks: 'plain human' }
 		};

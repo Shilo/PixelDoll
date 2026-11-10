@@ -63,7 +63,10 @@ async function fixture(names: [string, number][] = [], dirs: DirectionName[] = [
 	item.dressed = Object.fromEntries(dirs.map((d) => [d, hash]));
 	item.layers[0].cells = { 'still-custom': Object.fromEntries(dirs.map((d) => [d, [null]])) };
 	item.coverage = dirs.map((d) => `still-custom/${d}/0` as const);
-	return { rec: { id: 'rig-progressive', savedAt: '', manifest: m }, project } satisfies RigCtx;
+	return {
+		rec: { id: 'rig-progressive', savedAt: '', origin: 'studio', manifest: m },
+		project
+	} satisfies RigCtx;
 }
 
 test.each([0, 1, 40])(

@@ -124,6 +124,7 @@ test('setup attaches measured poses, anchors, independent QA and provenance with
 	const rec = {
 		id: 'rig-fixture',
 		savedAt: '',
+		origin: 'studio' as const,
 		manifest: result.manifest,
 		character: { id: 'managed-fixture', looks: 'red hair, blue coat and boots' }
 	};

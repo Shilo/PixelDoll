@@ -122,6 +122,7 @@ beforeEach(async () => {
 	state.projects.set('rig-quality', {
 		id: 'rig-quality',
 		savedAt: '',
+		origin: 'studio',
 		manifest: m,
 		character: { id: 'saved-server-id', looks: 'A stylized humanoid' }
 	});

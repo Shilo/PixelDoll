@@ -644,7 +644,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 			id: string;
 			savedAt: string;
 			manifest: { format: string; name: string };
-			rigQa: { pivotFrom: string };
+			origin: string;
 		} | null
 	) =>
 		page.evaluate(async (put) => {
@@ -666,7 +666,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 		id: 'rig-e2edevrig00',
 		savedAt: '',
 		manifest: { format: CURRENT_FORMAT, name: 'E2E dev rig' },
-		rigQa: { pivotFrom: 'idle/south/0' }
+		origin: 'dev'
 	});
 	await page.reload();
 	await page.locator('.project-btn').click();

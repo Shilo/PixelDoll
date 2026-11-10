@@ -60,7 +60,10 @@ async function fixture() {
 		key: 'green',
 		dressed: { south: reference }
 	});
-	state.ctx = { rec: { id: 'rig-scoped-readiness', savedAt: '', manifest: m }, project };
+	state.ctx = {
+		rec: { id: 'rig-scoped-readiness', savedAt: '', origin: 'studio', manifest: m },
+		project
+	};
 	return {
 		manifest: m,
 		spec: {

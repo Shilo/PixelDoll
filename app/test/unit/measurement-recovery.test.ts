@@ -107,6 +107,7 @@ async function fixture(palette: boolean | 'partial' | 'broad' = false) {
 	let saved: projects.StoredProject = {
 		id: 'rig-recover',
 		savedAt: 'old',
+		origin: 'studio',
 		manifest,
 		character: { id: 'managed', looks: 'body' },
 		skeletons: {},

@@ -178,12 +178,22 @@ test('atomic free publication keeps saved default in wardrobe and rejects change
 	const p = await equipmentFixture(),
 		target = bodyOnly(p),
 		candidate = await prepareCopy(await createDesign(p, 'hat', { hat: 'blue' }), target);
-	const rec = { id: 'rig-target', manifest: structuredClone(target.manifest), savedAt: '' };
+	const rec = {
+		id: 'rig-target',
+		manifest: structuredClone(target.manifest),
+		savedAt: '',
+		origin: 'studio' as const
+	};
 	const out = publishCandidate(rec, candidate, { wear: false });
 	expect(out.manifest.materials.find((m) => m.owner === candidate.itemId)!.defaultVariant).toBe(
 		'blue'
 	);
-	const stale = { id: 'rig-target', manifest: structuredClone(target.manifest), savedAt: '' };
+	const stale = {
+		id: 'rig-target',
+		manifest: structuredClone(target.manifest),
+		savedAt: '',
+		origin: 'studio' as const
+	};
 	stale.manifest.slots[1].anchor = 'hand-r';
 	expect(() => publishCandidate(stale, candidate, { wear: true })).toThrow('character changed');
 });
@@ -270,9 +280,13 @@ test('partial extension retains original and transparent pixels, old QA, other d
 		extensionStamp: extensionStamp(m, existing.id),
 		reuseRest: true
 	};
-	const out = publishCandidate({ id: 'rig-target', savedAt: '', manifest: m }, ext, {
-			wear: false
-		}),
+	const out = publishCandidate(
+			{ id: 'rig-target', savedAt: '', origin: 'studio' as const, manifest: m },
+			ext,
+			{
+				wear: false
+			}
+		),
 		actual = out.manifest.items.find((it) => it.id === existing.id)!;
 	expect(actual.layers[0].cells!.rest!.south).toEqual([h, null, other]);
 	expect(actual.layers[0].cells!.rest!.east).toEqual([h, h, h]);

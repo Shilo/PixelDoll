@@ -148,7 +148,7 @@ async function fixture(modes: Mode[], directions: ('south' | 'west')[] = ['west'
 		]
 	};
 	const ctx: RigCtx = {
-		rec: { id: 'rig-selection', manifest, savedAt: 'original' },
+		rec: { id: 'rig-selection', manifest, savedAt: 'original', origin: 'studio' },
 		project: { manifest, images: new Map([[hash, base]]) }
 	};
 	vi.spyOn(db, 'getBlob').mockImplementation(async (sha) => blobs.get(sha));

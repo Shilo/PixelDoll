@@ -1011,7 +1011,10 @@ test('ZIP guard limits entry count and rejects an empty file with clear errors',
 
 test('sparse imported clips can be dressed without planning missing base frames', async () => {
 	const { project } = await readCharacterZip(await zip(await pixelLabFiles()));
-	const ctx = { rec: { id: 'rig-test', savedAt: '', manifest: project.manifest }, project };
+	const ctx = {
+		rec: { id: 'rig-test', savedAt: '', origin: 'studio' as const, manifest: project.manifest },
+		project
+	};
 	const selected = coverage(ctx);
 	expect(selected.clipDirs?.walking).toEqual(['south']);
 	const plan = planItem(project.manifest.rig, { ...selected, key: 'green', method: 'anchor' });

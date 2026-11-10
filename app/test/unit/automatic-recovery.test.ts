@@ -262,6 +262,7 @@ async function fixture(suspicious = false) {
 		rec: {
 			id: 'synthetic-auto',
 			savedAt: '',
+			origin: 'studio',
 			manifest,
 			skeletons: Object.fromEntries(
 				poses.map((p, i) => [`walking/south/${i}`, fromApi(p, manifest.rig.cell)])

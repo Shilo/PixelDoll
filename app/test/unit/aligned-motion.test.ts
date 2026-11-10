@@ -117,6 +117,7 @@ beforeEach(async () => {
 	state.projects.set('rig-aligned', {
 		id: 'rig-aligned',
 		savedAt: '',
+		origin: 'studio',
 		manifest: m,
 		character: { id: 'original-server-registration', looks: 'A humanoid' }
 	});

@@ -76,6 +76,7 @@ async function fixture(count: number) {
 	let saved: StoredProject = {
 		id: 'rig-setup-test',
 		savedAt: '',
+		origin: 'studio',
 		manifest: structuredClone(project.manifest)
 	};
 	const spec: SetupSpec = {

@@ -20,6 +20,7 @@ function fixture(): StoredProject {
 	return {
 		id: 'rig-test',
 		savedAt: 'before',
+		origin: 'studio',
 		manifest: {
 			format: CURRENT_FORMAT,
 			app: 'test',

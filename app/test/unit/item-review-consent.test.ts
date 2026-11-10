@@ -86,7 +86,7 @@ beforeEach(() => {
 			animations: []
 		}
 	};
-	state.record = { id: 'character', savedAt: '', manifest };
+	state.record = { id: 'character', savedAt: '', origin: 'studio', manifest };
 	state.saved = null;
 	state.changedAtSave = false;
 	state.imageWrites = -1;

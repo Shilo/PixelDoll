@@ -12,13 +12,7 @@ import {
 import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, randomOutfit, recolor, storeVariants } from '../lib/dress/dress.ts';
 import { drawList } from '../lib/compose/compose.ts';
-import {
-	deleteItem,
-	deleteOutdated,
-	listProjects,
-	loadProject,
-	originOf
-} from '../lib/store/project.ts';
+import { deleteItem, deleteOutdated, listProjects, loadProject } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import type {
 	CellKey,
@@ -523,7 +517,7 @@ export async function refreshProjects() {
 			id: p.id,
 			name: p.manifest.name,
 			demo: false,
-			dev: originOf(p) === 'dev',
+			dev: p.origin === 'dev',
 			savedAt: p.savedAt
 		}))
 	];

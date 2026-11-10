@@ -310,7 +310,12 @@ async function fixture() {
 			item
 		]
 	};
-	const current: store.StoredProject = { id: 'rig-test', savedAt: 'before', manifest },
+	const current: store.StoredProject = {
+			id: 'rig-test',
+			savedAt: 'before',
+			origin: 'studio',
+			manifest
+		},
 		images = new Map([
 			[h, raw],
 			[b, body]

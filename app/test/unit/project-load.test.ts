@@ -29,6 +29,7 @@ function fixture() {
 	const record: StoredProject = {
 		id: 'rig-load',
 		savedAt: '',
+		origin: 'studio',
 		manifest: {
 			format: CURRENT_FORMAT,
 			name: 'Cancelable character',
