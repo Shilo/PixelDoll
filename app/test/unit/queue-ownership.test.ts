@@ -100,7 +100,7 @@ test('REVIEW Studio leader submits a Motion Lab record it adopted from the share
 	console.log('roles', f.studio.role, f.lab.role, 'lock names', [...new Set(f.names)]);
 	const rec = await f.lab.enqueue(
 		{ method: 'POST', path: '/animate-with-skeleton-v3', body: { seed: 7 } },
-		{ tag: 'motion-lab-2026-10-28', playerRequested: true }
+		{ tag: 'motion-lab-2026-10-28' }
 	);
 	for (let i = 0; i < 4; i++) {
 		f.advance(31_000);
@@ -123,7 +123,7 @@ test('REVIEW a Motion Lab leader starves Studio work: Studio never leads while t
 	console.log('roles', f.studio.role, f.lab.role);
 	const rec = await f.studio.enqueue(
 		{ method: 'POST', path: '/create-character-v3', body: { seed: 9 } },
-		{ tag: 'studio-rig', playerRequested: true }
+		{ tag: 'studio-rig' }
 	);
 	f.studio.requestHandoff();
 	for (let i = 0; i < 6; i++) {

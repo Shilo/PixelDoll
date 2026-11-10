@@ -368,7 +368,6 @@ export async function submitStarter(
 			const job = await labQueue.enqueue(request, {
 				label: `Starter ${preset} · ${directions.join(', ')}`,
 				tag: LAB_TAG,
-				playerRequested: true,
 				resumeSafe: !resolved
 			});
 			call.recordId = job.id;

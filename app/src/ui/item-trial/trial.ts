@@ -424,7 +424,6 @@ export async function submitTrial(prepared: PreparedTrial): Promise<TrialRecord>
 				label: `Item trial ${checked.packet.label} / ${checked.arm} / ${checked.packet.seed}`,
 				tag: ITEM_TRIAL_TAG,
 				activityScope: ITEM_TRIAL_TAG,
-				playerRequested: true,
 				minimumTier: 1
 			});
 			record.jobId = job.id;

@@ -81,8 +81,7 @@ export async function dispatchFixedInpaint<P>(
 			const job = await labQueue.enqueue(request, {
 				label: approval.record.label,
 				tag: LAB_TAG,
-				activityScope: LAB_TAG,
-				playerRequested: true
+				activityScope: LAB_TAG
 			});
 			state.jobId = job.id;
 			localStorage.setItem(profile.key, JSON.stringify(state));

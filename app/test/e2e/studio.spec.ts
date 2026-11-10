@@ -3920,7 +3920,6 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 			...lost,
 			id: 'offline-joint-pending',
 			state: 'queued',
-			playerRequested: true,
 			attempts: 0,
 			...(await q.requestIdentity(pendingReq))
 		});

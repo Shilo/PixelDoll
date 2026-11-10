@@ -607,7 +607,7 @@ test('a continuation uses its existing group and durably retains the exact revie
 		path: '/characters/animations',
 		body: { animation_group_id: 'group-slash', directions: MORE }
 	});
-	expect(mocks.enqueue.mock.calls[0][1]).toMatchObject({ playerRequested: true, resumeSafe: true });
+	expect(mocks.enqueue.mock.calls[0][1]).toMatchObject({ resumeSafe: true });
 	expect(readStarter().calls.at(-1)?.pilotReview).toEqual(review);
 	expect(readStarter().calls.at(-1)?.recordId).toBe('queued-continuation');
 });

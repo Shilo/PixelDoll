@@ -53,7 +53,7 @@ for (const labFirst of [true, false])
 				await queue.connect();
 				const record = await queue.enqueue(
 					{ method: 'POST', path: '/inpaint-v3', body: { seed: lab ? 1 : 2 } },
-					{ tag: lab ? MOTION_LAB_TAG : 'studio-review', playerRequested: true }
+					{ tag: lab ? MOTION_LAB_TAG : 'studio-review' }
 				);
 				await queue.tick();
 				(window as unknown as { reviewQueue: InstanceType<typeof Queue> }).reviewQueue = queue;

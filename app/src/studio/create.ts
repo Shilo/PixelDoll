@@ -216,7 +216,6 @@ export async function run(
 		resumeSafe,
 		signal,
 		activityScope,
-		playerRequested: true,
 		minimumTier: 1,
 		attempt: signal ? generationAttempts.get(signal) : undefined,
 		...(recovery && req.path === '/estimate-skeleton' ? { estimateRetry: recovery.intent } : {})

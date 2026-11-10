@@ -71,7 +71,6 @@ export interface JobRec {
 	label: string;
 	tag?: string;
 	activityScope?: string;
-	playerRequested?: true; // current generation plan or explicit retry; old queued extras must not acquire consent on resume
 	method: Req['method'];
 	endpoint: string;
 	params: unknown; // request body; images replaced by {$blob: sha256}; never the key
@@ -580,7 +579,7 @@ export class Queue {
 							(x.state === 'done' && (seededOf(x) || x.endpoint === '/estimate-skeleton')))
 				);
 			this.recs.set(r.id, r);
-			if (this.checkGenerationConsent(r)) {
+			if (this.pollSubmitted(r)) {
 				void this.save(r).catch((e) => console.error('queue', e));
 				return true;
 			}
@@ -614,36 +613,17 @@ export class Queue {
 		void this.save(mine).catch((e) => console.error('queue', e));
 		return true;
 	}
-	/** Submitted jobs only poll. Unsent work from the former automatic-retry policy needs a fresh player request. */
-	private checkGenerationConsent(r: JobRec): boolean {
-		if ((r.state === 'queued' || r.state === 'submitting') && r.jobs.length) {
-			r.state = 'running';
-			r.waitingForPlan = undefined;
-			r.waitingForCapacity = false;
-			return true;
-		}
-		if (
-			r.state !== 'queued' ||
-			r.method !== 'POST' ||
-			!['m3', 'studio-move', 'studio-rig'].includes(r.tag ?? '') ||
-			r.playerRequested === true
-		)
-			return false;
-		Object.assign(r, {
-			state: 'failed',
-			requestStarted: false,
-			finishedAt: this.deps.now(),
-			waitingForPlan: undefined,
-			waitingForCapacity: false,
-			error:
-				'This queued generation needs renewed approval. Review the item or move and request a new attempt. No API request was made.'
-		});
-		this.submitScopes.delete(r.id);
+	/** Submitted jobs only poll: a record that already has a remote job is never sent again. */
+	private pollSubmitted(r: JobRec): boolean {
+		if ((r.state !== 'queued' && r.state !== 'submitting') || !r.jobs.length) return false;
+		r.state = 'running';
+		r.waitingForPlan = undefined;
+		r.waitingForCapacity = false;
 		return true;
 	}
 	async load() {
 		for (const r of await this.deps.all()) {
-			if (this.checkGenerationConsent(r)) await this.deps.put(r.id, r);
+			if (this.pollSubmitted(r)) await this.deps.put(r.id, r);
 			// Crashed between "submitting" and saving the job id: the server may have it. Never auto-resubmit.
 			if (r.state === 'submitting') {
 				r.state = r.requestStarted === false ? 'failed' : 'lost';
@@ -886,7 +866,6 @@ export class Queue {
 			label?: string;
 			tag?: string;
 			activityScope?: string;
-			playerRequested?: true;
 			minimumTier?: number;
 			cache?: boolean;
 			resumeSafe?: boolean;
@@ -926,7 +905,7 @@ export class Queue {
 		// Historical duplicates can exist from older versions. Prefer useful newer work before considering an old failure.
 		const active = matches.find(live);
 		if (active) {
-			if (this.checkGenerationConsent(active)) {
+			if (this.pollSubmitted(active)) {
 				await this.save(active);
 				return active;
 			}
@@ -973,7 +952,6 @@ export class Queue {
 				: {}),
 			label: meta.label ?? req.path,
 			tag: meta.tag,
-			...(meta.playerRequested === true ? { playerRequested: true as const } : {}),
 			activityScope: meta.activityScope,
 			minimumTier: meta.minimumTier,
 			method: req.method,
@@ -1161,7 +1139,7 @@ export class Queue {
 				(!this.connection || this.connection !== connection || connection?.signal.aborted));
 		if (disconnected()) return { ops: [] };
 		if (this.role !== 'follower')
-			for (const r of this.recs.values()) if (this.checkGenerationConsent(r)) await this.save(r);
+			for (const r of this.recs.values()) if (this.pollSubmitted(r)) await this.save(r);
 		const now = this.deps.now();
 		if (!(await this.network(now)) || disconnected()) return { ops: [] };
 		if (this.role === 'follower') return { ops: [] }; // the leader tab submits and polls
@@ -1259,7 +1237,7 @@ export class Queue {
 	}
 
 	private async submit(r: JobRec, probe: boolean) {
-		if (this.checkGenerationConsent(r)) {
+		if (this.pollSubmitted(r)) {
 			await this.save(r);
 			return;
 		}

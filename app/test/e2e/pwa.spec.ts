@@ -1366,7 +1366,6 @@ test('a persisted accepted generation blocks update without repeating or losing 
 							inputs: [],
 							requestHash: 'a'.repeat(64),
 							state: 'running',
-							playerRequested: true,
 							attempts: 1,
 							nextAt: 0,
 							createdAt: Date.now(),

@@ -602,7 +602,6 @@ async function submit(d: Draft, k: number, ctx: RigCtx): Promise<string> {
 			label,
 			tag: d.activityScope ? 'studio-move' : 'm3',
 			activityScope: d.activityScope,
-			playerRequested: true,
 			minimumTier: d.calls.some((c) => c.kind === 'pose' || c.kind === 'grid') ? 1 : 0
 		})
 	).id;
@@ -1660,7 +1659,6 @@ export async function poseItemClip(
 					{
 						label: `pose ${item.name} · ${anim} ${dir}`,
 						tag: 'studio-move',
-						playerRequested: true,
 						activityScope,
 						minimumTier: 1
 					},
@@ -1977,7 +1975,6 @@ async function gridItemClip(
 		{
 			label: `grid ${item.name} · ${anim} ${dir}`,
 			tag: 'studio-move',
-			playerRequested: true,
 			activityScope,
 			minimumTier: 1
 		},

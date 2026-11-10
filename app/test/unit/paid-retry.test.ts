@@ -56,7 +56,7 @@ test.each([200, 429, 500])(
 		const f = incompleteResponse(status),
 			q = f.make();
 		const request = { method: 'POST' as const, path: '/inpaint-v3', body: { seed: 881 } },
-			meta = { tag: 'm3', playerRequested: true as const };
+			meta = { tag: 'm3' };
 		const record = await q.enqueue(request, meta);
 		await q.tick();
 		expect(record.state).toBe('lost');

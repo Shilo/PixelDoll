@@ -103,7 +103,7 @@ test('REVIEW a non-ApiError raised after HTTP invocation is classified failed, n
 	q.setKey('synthetic');
 	const rec = await q.enqueue(
 		{ method: 'POST', path: '/inpaint-v3', body: { seed: 3 } },
-		{ tag: 'm3', playerRequested: true }
+		{ tag: 'm3' }
 	);
 	await q.tick();
 	console.log(

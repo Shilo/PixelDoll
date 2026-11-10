@@ -128,8 +128,7 @@ export async function importPilot(fixture: MotionFixture) {
 		const job = await labQueue.enqueue(request, {
 			label: reservation.record.label,
 			tag: LAB_TAG,
-			activityScope: LAB_TAG,
-			playerRequested: true
+			activityScope: LAB_TAG
 		});
 		state.importJobId = job.id;
 		save(state);
