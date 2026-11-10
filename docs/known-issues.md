@@ -153,11 +153,19 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   three or more views) is missed too: all 8 such synthetic smudges that the older rule caught. See the
   [word-list review](research/2026-11-07-paperdoll-cycle/review-word-lists.md) and the
   [2026-11-10 review](research/2026-11-10-external-layer-research-review/README.md).
-- **One wrong dressed view can save as clean.** Every item check compares a direction with its own dressed view, so a
-  view the dress call draws wrong (a recolored cape back, a robe drawn open in one view) is posed into that whole direction
-  and passes. Live 2026-11-10: 3 of 79 views, 2 of them the back of a red cape. No pixel check tested separated these from
-  legitimate view-dependent designs (front-only crests, quivers, tails); inspect every direction before exporting. See the
-  [2026-11-10 review](research/2026-11-10-external-layer-research-review/README.md).
+- **One wrong dressed view can save as clean.** The dress call draws one keyframe per drawn view, and every item check
+  compares a direction only with its own keyframe. A view drawn wrong is posed into that whole direction, passes every
+  gate and auto-saves.
+  - Live 2026-11-10: 3 of 79 views across 25 dress calls. The back of "a red cape" came out dusty rose on one seed and
+    maroon on another (2 of 3 seeds), and a robe was drawn open in one view. All 3 items saved as clean.
+  - Rejected checks: leave-one-out palette distance (one dress call shares one palette, so a recolor only reweights shared
+    colors), extent and area outliers (fox tails, backpacks and cape backs legitimately differ by view), and a weighted
+    foreign-color share (caught the cape, but its margin over a legitimate front-only crest was 0.056 on one prompt).
+  - Item-specific prompts or notes, such as "check the back view" for capes, are rejected: they assume what the item is
+    from its wording.
+  - Workaround: inspect every direction before exporting; Try again redraws the item.
+  - Revisit with more independent failing prompts before testing another check. See the
+    [2026-11-10 review](research/2026-11-10-external-layer-research-review/README.md).
 - **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 - **The authored east axe is an experimental import.** Its full clip can now be opened and inspected in Studio, but only one body/view is supported and rear-foot contact is unknown in two merged poses. The source PNGs and Studio's garment-tagged images have distinct pixel identities. See the [Studio integration evidence](research/2026-11-02-studio-axe-integration.md); it is not a universal preset.
