@@ -1686,6 +1686,38 @@ test('equipping an accepted item while opening its project survives reload', asy
 	);
 });
 
+test('startup decodes the character it opens once: its thumbnail waits for the open', async ({
+	page,
+	context
+}, info) => {
+	await context.route('https://*.pixellab.ai/**', (r) => r.abort());
+	// Every cell a load decodes is hashed, so hashing counts decoding work.
+	await context.addInitScript(() => {
+		const digest = crypto.subtle.digest.bind(crypto.subtle),
+			w = window as unknown as { digests: number };
+		w.digests = 0;
+		crypto.subtle.digest = (...args: Parameters<SubtleCrypto['digest']>) => {
+			w.digests++;
+			return digest(...args);
+		};
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await expect(page.locator('.world-actors').first()).toBeVisible();
+	const { startup, oneOpen } = await page.evaluate(async () => {
+		const w = window as unknown as { digests: number },
+			path = '/src/lib/dress/project.ts',
+			{ openSource } = await import(path);
+		const startup = w.digests;
+		await openSource('fixture:s2');
+		return { startup, oneOpen: w.digests - startup };
+	});
+	expect(oneOpen).toBeGreaterThan(0);
+	expect(startup).toBeLessThan(2 * oneOpen);
+});
+
 test('a delayed earlier character load cannot replace the last selected character', async ({
 	page,
 	context

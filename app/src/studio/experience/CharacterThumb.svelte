@@ -4,16 +4,21 @@
 	import { buildPresentation, southStill, renderPresentation } from './presentation.ts';
 	import type { Project, Preset } from '../../lib/store/manifest.ts';
 	import Sprite from '../Sprite.svelte';
-	import { doc, view, ui } from '../state.svelte.ts';
+	import { doc, view, ui, lastProject } from '../state.svelte.ts';
 	let { id, name, size = 64 }: { id: string; name: string; size?: number } = $props();
 	let project = $state.raw<Project | null>(null);
 	let items = $state<Preset['items']>({});
 	const selected = $derived(id === doc.id);
+	// Before any character is open, the Studio is opening the last one: its thumbnail waits for that live project instead of
+	// decoding the same character again alongside it.
+	const starting = $derived(!doc.id && doc.loading);
 	$effect(() => {
 		const key = id;
 		project = null;
 		items = {};
-		if (selected) return; // The selected character already uses the live project below.
+		// The selected character already uses the live project below. Only the starting character reads starting, so the others
+		// do not reload when it flips.
+		if (selected || (key === lastProject() && starting)) return;
 		const controller = new AbortController();
 		void openSource(key, controller.signal)
 			.then((r) => {
