@@ -2787,7 +2787,9 @@ test('new item progress, previews and completion survive reload without submitti
 		draft: { calls: [{ recId: pending.draft.calls[0].recId }] }
 	});
 	completed = true;
-	await expect.poll(saved).toMatchObject({ phase: 'review' });
+	// The queue polls a running job every POLL_MS (5 s, src/lib/pixellab/queue.ts), so completion lands about one interval
+	// later (measured 4.9-5.0 s): CI's default 5 s expect timeout failed this whenever the poll or extraction ran late.
+	await expect.poll(saved, { timeout: 15_000 }).toMatchObject({ phase: 'review' });
 	await page.evaluate(async (id) => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);

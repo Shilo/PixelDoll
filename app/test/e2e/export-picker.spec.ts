@@ -1610,8 +1610,6 @@ test('Preview, Top-down and Side-scroller always loop with global Play once both
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	await page.clock.install({ time: new Date('2026-10-27T12:00:00Z') });
-	await page.clock.pauseAt(new Date('2026-10-27T12:00:01Z'));
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
@@ -1625,8 +1623,11 @@ test('Preview, Top-down and Side-scroller always loop with global Play once both
 		];
 		s.ui.anim = 'walk';
 		s.ui.dir = 'south';
-		s.ui.playing = true;
+		// Studio's frame timer was scheduled before the fake clock exists, and the fake clearTimeout cannot cancel it, so it
+		// would fire in real time and decide whether the first Preview check sees any frames. Stop it natively first.
+		s.ui.playing = false;
 		s.doc.rev++;
+		await new Promise((resolve) => setTimeout(resolve));
 		const host = window as unknown as { appLoopFrames: number[] };
 		host.appLoopFrames = [];
 		const original = CanvasRenderingContext2D.prototype.drawImage;
@@ -1648,6 +1649,13 @@ test('Preview, Top-down and Side-scroller always loop with global Play once both
 			const value = hash >>> 0;
 			if (host.appLoopFrames.at(-1) !== value) host.appLoopFrames.push(value);
 		};
+	});
+	await page.clock.install({ time: new Date('2026-10-27T12:00:00Z') });
+	await page.clock.pauseAt(new Date('2026-10-27T12:00:01Z'));
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			s = await import(path);
+		s.ui.playing = true;
 	});
 	const modes = page.getByRole('navigation', { name: 'Character view' });
 	for (const playOnce of [true, false]) {

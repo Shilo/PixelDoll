@@ -530,6 +530,10 @@ test('standing state updates retain the preview, optional moves, edited names an
 		{ width: 844, height: 390 }
 	].entries()) {
 		await page.setViewportSize(size);
+		// The resize event, and the sheet placement it selects, arrive at the next rendering step, not before this returns.
+		await page.evaluate(
+			() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+		);
 		const bounds = await dialog.boundingBox();
 		await page.evaluate(() => {
 			(window as unknown as { holdImportDigest: boolean }).holdImportDigest = true;
