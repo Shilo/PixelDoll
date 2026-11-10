@@ -222,6 +222,19 @@ test('records in an earlier format are deleted, current records and other state 
 	]);
 });
 
+test('an unfinished creation saved before direction plans is removed; a current one stays', async () => {
+	vi.spyOn(db, 'all').mockResolvedValue([{ id: 'studio-create', spec: { name: 'Old', size: 48 } }]);
+	const del = vi.spyOn(db, 'del').mockResolvedValue(undefined);
+	expect(await deleteOutdated()).toBe(1);
+	expect(del.mock.calls.map(([, id]) => id)).toEqual(['studio-create']);
+	del.mockClear();
+	vi.spyOn(db, 'all').mockResolvedValue([
+		{ id: 'studio-create', spec: { name: 'New', size: 48, directions: [{ id: 'south' }] } }
+	]);
+	expect(await deleteOutdated()).toBe(0);
+	expect(del).not.toHaveBeenCalled();
+});
+
 test('removing an outdated character also removes its drafts, as deleting it would', async () => {
 	const drafts = {
 		id: 'studio-drafts',

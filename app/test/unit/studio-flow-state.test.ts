@@ -52,7 +52,9 @@ vi.mock('../../src/lib/equipment/fits.ts', async (original) => ({
 	listFits: mocks.fits
 }));
 
-vi.mock('../../src/lib/store/db.ts', () => ({
+vi.mock('../../src/lib/store/db.ts', async (original) => ({
+	withoutCharacters: (await original<typeof import('../../src/lib/store/db.ts')>())
+		.withoutCharacters,
 	put: mocks.put,
 	get: mocks.get,
 	del: mocks.del,
@@ -1585,7 +1587,7 @@ describe('move queue', () => {
 		directions: [{ id: 'south' as const }]
 	};
 
-	test('a create saved before explicit direction plans is not resumed and says why', async () => {
+	test('a create saved before explicit direction plans is removed at startup before resume', async () => {
 		const records = storage();
 		const { REQUEST_TEXT } = await import('../../src/studio/state.svelte.ts');
 		records.set('studio-create', {
@@ -1601,15 +1603,15 @@ describe('move queue', () => {
 			status: 'running',
 			requestText: REQUEST_TEXT
 		});
+		mocks.all.mockImplementation(async () => [...records.values()].map((r) => structuredClone(r)));
 		vi.resetModules();
 		const s = await import('../../src/studio/state.svelte.ts');
+		await s.refreshProjects(); // Studio.svelte runs this before resumeCreate
 		await s.resumeCreate();
 		expect(mocks.create).not.toHaveBeenCalled();
 		expect(records.has('studio-create')).toBe(false);
 		expect(s.creating.spec).toBeNull();
-		expect(s.ui.toast).toBe(
-			'A character creation saved by an earlier version cannot resume. Start a new character.'
-		);
+		expect(s.ui.toast).toBe('Removed 1 saved item made by an earlier preview version.');
 	});
 
 	test('a waiting Create after this tab resumed the closed tab create keeps that create and says why it did not start', async () => {

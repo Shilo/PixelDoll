@@ -902,7 +902,7 @@ export class Queue {
 			.filter((r) => r.requestHash === requestHash)
 			.reverse()
 			.sort((a, b) => b.createdAt - a.createdAt);
-		// Historical duplicates can exist from older versions. Prefer useful newer work before considering an old failure.
+		// Retries and repeats of one request share its hash. Prefer useful newer work before considering an old failure.
 		const active = matches.find(live);
 		if (active) {
 			if (this.pollSubmitted(active)) {
@@ -1193,7 +1193,7 @@ export class Queue {
 					continue; // Hold restricted work; allowed requests and accepted-job polling continue.
 				}
 				const slots = requestedSlots(r.endpoint, r.params);
-				// Oversized legacy batches may run alone; the server is the final authority on acceptance.
+				// A request needing more slots than the plan allows runs alone; the server is the final authority on acceptance.
 				if (active && active + slots > this.concurrency) continue;
 				active += slots;
 				const probe = this.throttled ? {} : null;
