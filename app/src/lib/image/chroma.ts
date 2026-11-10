@@ -5,6 +5,9 @@ import { makeImg, type Img } from './png.ts';
 // Blue (2026-10-25 campaign, arm K) is the third key, for prompts whose colors collide with both green and magenta (green + pink
 // or red). Azure (round 2, arm Z) is the fourth, for green + purple, violet or indigo: the green ramp rotated +90° in hue (210°);
 // its score, luminance and despill work in that rotated frame, exactly as measured.
+// Green stays the default on a continuous ramp after live tests against cyan, azure and blue defaults, skin-only cyan and flat
+// bright mannequins (2026-11-09/10, about 1,650 gens): read docs/research/2026-11-09-paperdoll-video-review/chroma-key.md before
+// changing a key, the order or the mannequin style.
 export type Key = 'green' | 'magenta' | 'blue' | 'azure';
 export const KEYS: Key[] = ['green', 'magenta', 'blue', 'azure'];
 export const KEY_NAME: Record<Key, string> = {
@@ -135,6 +138,8 @@ const hueSpread = (r: number, g: number, b: number): [number, number] => {
 
 /** Key score from which a color leans toward a key: a real key excess, scored below KT (2026-11-07 color audit). */
 export const NEAR_KEY = 20;
+/** Brightest channel below which a shade is too dark for its ratio score or saturation to tell a tint apart. */
+const DARK = 64;
 /** Share of an item's px whose raw color leans toward the key (NEAR_KEY <= score < KT). On the frozen benchmark clean items
  * stay at or below 7 % (one green-olive cloak shadow reads 53 %), while recorded key collisions read 31 % and a goblin-green
  * item the prompt never called green 100 %. The px that fully match the key were already removed as background. */
@@ -150,7 +155,7 @@ export function nearKeyShare(out: Img, mask: Uint8Array, key: Key): number {
 				s = keyScore(key, r, g, b);
 			// A very dark shade's ratio score is inflated by its tiny channels (a green-olive cloak shadow #24310c read 53 % while
 			// nothing was lost), so shades whose brightest channel is below 64 do not count (2026-11-07 review).
-			if (s >= NEAR_KEY && s < KT && Math.max(r, g, b) >= 64) near++;
+			if (s >= NEAR_KEY && s < KT && Math.max(r, g, b) >= DARK) near++;
 		}
 	return item ? near / item : 0;
 }
@@ -357,14 +362,43 @@ export function fillHoles(m: Uint8Array, C: Img, maxArea = 4): Uint8Array {
  * clean color that near, the luminance-nearest one (|Δlum| <= 0.08) wins unless the px is lightly tinted and de-spilled to
  * near-gray (steel stays gray): a cape fold drawn in the key's own darkest shade (it scores as key; absorbOutline kept it)
  * carries no item color and becomes the cape's dark red, not an off-palette black (round 3 review: 0 -> 1,355 px on a-cape).
+ *
+ * Only spill is touched: a key-tinted px that is saturated (HSV S >= SPILL_SAT), too dark for its saturation to mean anything
+ * (brightest channel < DARK; near-black outlines the model tints toward the key), or next to a bright px extraction removed
+ * from the dressed composite `C` (where key blends sit; a removed dark ramp outline leaves no light spill, and counting it
+ * grayed 150 rim px of azure steel that keep their color elsewhere in the frame). A tint by key excess alone also caught steel: it is drawn blue-gray on every
+ * mannequin (hue ~210, S up to 0.35 on green, where the key cannot have tinted it), which is the azure key's own hue, so the
+ * azure despill flattened 1,356 of 1,577 helm px to gray (2026-11-10 keys 3 review: S 0.18 -> 0.025; blue milder).
  */
 const SNAP = 40,
+	SPILL_SAT = 0.35,
 	chroma3 = (c: ArrayLike<number>) => Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]);
-export function despill(L: Img, key: Key, sT = 10): Img {
+export function despill(L: Img, key: Key, C?: Img, sT = 10): Img {
 	const o: Img = { w: L.w, h: L.h, data: new Uint8ClampedArray(L.data) },
 		d = L.data,
+		{ w, h } = L,
 		seen = new Set<number>(),
 		core: number[][] = [];
+	const spill = (p: number, r: number, g: number, b: number) => {
+		if (!d[p * 4 + 3] || tint(key, r, g, b) <= sT) return false;
+		const mx = Math.max(r, g, b);
+		return (
+			mx < DARK ||
+			chroma3([r, g, b]) >= SPILL_SAT * mx ||
+			(!!C &&
+				near(
+					w,
+					h,
+					p % w,
+					(p / w) | 0,
+					1,
+					(q) =>
+						!d[q * 4 + 3] &&
+						C.data[q * 4 + 3] >= 128 &&
+						Math.max(C.data[q * 4], C.data[q * 4 + 1], C.data[q * 4 + 2]) >= DARK
+				))
+		);
+	};
 	for (let i = 0; i < d.length; i += 4) {
 		const k = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
 		if (d[i + 3] && !seen.has(k) && tint(key, d[i], d[i + 1], d[i + 2]) <= sT) {
@@ -377,7 +411,7 @@ export function despill(L: Img, key: Key, sT = 10): Img {
 		const r = d[i],
 			g = d[i + 1],
 			b = d[i + 2];
-		if (!d[i + 3] || tint(key, r, g, b) <= sT) continue;
+		if (!spill(i / 4, r, g, b)) continue;
 		const c: number[] =
 			key === 'green'
 				? [r, Math.max(r, b), b]
@@ -420,7 +454,20 @@ export function despill(L: Img, key: Key, sT = 10): Img {
  * line (cape) can come back as the key ramp's darkest color and would be keyed out (holes over the body, missing outline).
  * A dark key px (lum <= 0.3) is item when (a) it lies outside the base silhouette and touches the item (the mannequin cannot be
  * there), or (b) at least 5 of its 8 neighbors are item (a 1-px line inside the item). Two passes.
+ * Then (c), two passes of its own so (b) never counts its px: a key px touching the item that is no mannequin shade (darker
+ * than the ramp's darkest shade and more than `FAR` from the ramp) and whose exact color the cell's bare mannequin does not
+ * use. The model tints near-black item outlines over the body toward the key's darkest shade (green (4,19,0)); such a 1-px edge
+ * has only 2 to 4 item neighbors and lost braid outlines in every walk frame. On green, bare mannequins almost never hold such
+ * px (6 in 356 cells; 2026-11-09 key A/B), but on magenta the model draws the mannequin's own outline in one (35,14,28), so a
+ * color seen on the mannequin away from the item (`BARE` px) stays key. This only protects cells where that color shows 3+ px
+ * from the item: a mannequin outline drawn in it only next to the item is still absorbed (bench tunic, walk south-east: about 4
+ * neck px per frame), and one far px of an item's own outline color costs that cell its recovery (1 hair view in the A/B).
  */
+/** Chebyshev distance from the key ramp beyond which a dark key px is no mannequin shade (`absorbOutline` (c)). A cliff, not a
+ * margin: green's (4,19,0) sits 41 from (0,60,0); at 32 cast shadows under a hood joined the item, at 48 nothing was recovered. */
+const FAR = 40;
+/** Distance from any item px beyond which an off-ramp px is bare mannequin (its color then never counts as item outline). */
+const BARE = 3;
 export function absorbOutline(
 	mask: Uint8Array,
 	B: Img,
@@ -434,6 +481,11 @@ export function absorbOutline(
 	const dark = (p: number) =>
 		isKey(C, p, key, kT) &&
 		keyLum(key, C.data[p * 4], C.data[p * 4 + 1], C.data[p * 4 + 2]) <= lumMax;
+	const floor = keyLum(key, ...RAMP[key](0));
+	const offRamp = (p: number) => {
+		const [r, g, b] = C.data.subarray(p * 4, p * 4 + 3);
+		return keyLum(key, r, g, b) < floor && rampDistance(key, r, g, b) > FAR;
+	};
 	const itemNb = (m: Uint8Array, p: number) => {
 		const x = p % w,
 			y = (p / w) | 0;
@@ -454,6 +506,23 @@ export function absorbOutline(
 			if ((!B.data[p * 4 + 3] && n > 0) || n >= 5) o[p] = 1;
 		}
 	}
+	const rgb = (p: number) => (C.data[p * 4] << 16) | (C.data[p * 4 + 1] << 8) | C.data[p * 4 + 2];
+	const bare = new Set<number>();
+	for (let p = 0; p < o.length; p++)
+		if (
+			!o[p] &&
+			B.data[p * 4 + 3] &&
+			dark(p) &&
+			offRamp(p) &&
+			!near(w, h, p % w, (p / w) | 0, BARE - 1, (q) => !!o[q])
+		)
+			bare.add(rgb(p));
+	for (let pass = 0; pass < 2; pass++) {
+		const prev = o;
+		o = new Uint8Array(prev);
+		for (let p = 0; p < o.length; p++)
+			if (!prev[p] && dark(p) && offRamp(p) && !bare.has(rgb(p)) && itemNb(prev, p) > 0) o[p] = 1;
+	}
 	return o; // ponytail: no blind pinhole fill — enclosed key px can be real body (fingers inside a hilt)
 }
 
@@ -473,7 +542,7 @@ export function chromaLayer(
 				mask[p] = 1;
 				L.data.set(C.data.subarray(p * 4, p * 4 + 4), p * 4);
 			}
-	return { layer: despill(L, key), mask };
+	return { layer: despill(L, key, C), mask };
 }
 
 /**

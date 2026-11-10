@@ -22,7 +22,7 @@ it with any change to extraction, cleanup or QA. Corpus `6666e4f54851`, gates `1
 | a-axe96 | main_hand / green | ok | 91.7 % (44/48) | 91.7 % (44/48) | – | 1 | 1 | 0.238 | – |
 | a-jester-magenta (reference) | head / magenta | ok | 100.0 % (202/202) | 0.0 % (0/202) | – | 3 | 0 | 0.000 | – |
 | a-jester-blue | head / blue | ok | 100.0 % (255/255) | 100.0 % (255/255) | – | 0 | 0 | 0.000 | – |
-| b-tunic | torso_outer / magenta | ok | – | – | – | 0 | 0 | 0.122 | – |
+| b-tunic | torso_outer / magenta | ok | – | – | – | 0 | 0 | 0.123 | – |
 | b-cloak | back / green | ok | – | – | – | 0 | 0 | 0.035 | 99 |
 | b-greathelm | head / green | ok | – | – | – | 0 | 0 | 0.007 | 370 |
 | b-jester (reference) | head / magenta | ok | 9.4 % (620/6564) | 0.0 % (0/6564) | – | 40 | 0 | 0.009 | – |

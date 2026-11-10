@@ -88,10 +88,13 @@ test('the blue ramp is key and common item colors are not', () => {
 	);
 	expect([...spill.data.slice(4, 7)]).toEqual([230, 90, 160]);
 	expect([...spill.data.slice(8, 11)]).toEqual([230, 90, 160]);
-	// lightly tinted blue-gray steel de-spilled to gray never takes a saturated item color (steel turned purple on azure)
+	// lightly tinted blue-gray steel de-spilled to gray never takes a saturated item color (steel turned purple on azure); since
+	// 2026-11-10 only px next to one extraction removed (opaque in the composite, not in the layer) are despilled at this tint
+	const steelPx = [120, 40, 160, 255, 100, 108, 135, 255];
 	const steel = despill(
-		{ w: 2, h: 1, data: new Uint8ClampedArray([120, 40, 160, 255, 100, 108, 135, 255]) },
-		'azure'
+		{ w: 3, h: 1, data: new Uint8ClampedArray([...steelPx, 0, 0, 0, 0]) },
+		'azure',
+		{ w: 3, h: 1, data: new Uint8ClampedArray([...steelPx, 40, 140, 255, 255]) }
 	);
 	expect(Math.max(...steel.data.slice(4, 7)) - Math.min(...steel.data.slice(4, 7))).toBeLessThan(
 		16

@@ -69,6 +69,24 @@ test('request-only identity exactly matches the persisted enqueue identity witho
 	expect(r.inputs).toEqual(identity.inputs);
 });
 
+test('request identity lists input images in request order even when their hashes finish out of order', async () => {
+	const images = [png('AQID'), png('BAUG'), png('BwgJ')],
+		delays: Record<number, number> = { 1: 30, 4: 0, 7: 15 };
+	const { inputs } = await requestIdentity(
+		{ method: 'POST', path: '/synthetic', body: { images, reference: png('CgsM') } },
+		async (bytes) => {
+			await new Promise((resolve) => setTimeout(resolve, delays[bytes[0]] ?? 0));
+			return sha256(bytes);
+		}
+	);
+	const expected = await Promise.all(
+		[...images, png('CgsM')].map(async (image) =>
+			sha256(Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0)))
+		)
+	);
+	expect(inputs).toEqual(expected);
+});
+
 test('explicit estimate retry preserves unknown original and resumes one persisted result without another POST', async () => {
 	const f = fixture(),
 		{ q, r } = await lost(f);
@@ -250,19 +268,28 @@ test('a delayed same-ID claim cannot replace the authoritative terminal in-memor
 	const f = fixture(),
 		{ r } = await lost(f);
 	f.succeed();
-	let count = 0,
+	let calls = 0,
+		count = 0,
 		release!: () => void,
-		entered!: () => void;
+		entered!: () => void,
+		bothCalled!: () => void;
 	const waiting = new Promise<void>((resolve) => {
 			entered = resolve;
 		}),
 		hold = new Promise<void>((resolve) => {
 			release = resolve;
+		}),
+		both = new Promise<void>((resolve) => {
+			bothCalled = resolve;
 		});
 	const claim = f.deps.claimEstimate!;
 	const q = new Queue({
 		...f.deps,
 		claimEstimate: async (record, choose) => {
+			// Without this barrier one enqueue can finish before the other hashes, so the second
+			// reuses the in-memory job without claiming and `waiting` never resolves.
+			if (++calls === 2) bothCalled();
+			await both;
 			const result = await claim(record, choose);
 			if (++count === 2) {
 				entered();

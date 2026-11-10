@@ -1,0 +1,244 @@
+# Chroma key color: why green stays the default (reference for future tests)
+
+Date: 2026-11-09 to 2026-11-10. Status: measured, decision recorded as PLAN D27. Read this before testing or changing the
+mannequin key (`app/src/lib/image/chroma.ts`).
+
+## The question
+
+Paper-doll practitioners the owner has talked to recolor the **mannequin or the human body itself** (not a background) to
+**cyan or blue** before asking the model to draw clothing on it, then remove that color. One third-party workflow reviewed in
+this spike does the same with a mid-blue body (`#40aae6` to `#25709b`, five flat tones, hue about 200; a purple body for
+another character). An earlier reported workflow mapped identified skin to a five-shade cyan ramp
+([chroma and occlusion spike](../tool-spikes-2026-11-06-chroma-and-occlusion.md)). A community member told the owner cyan keys
+better than green and that green is too common in gear. PixelDoll uses green first. Was that a mistake?
+
+## Answer
+
+No. On the same bodies, items, prompts and seeds, cyan, azure and blue mannequins were **not better overall** than green, and
+each added failures on the most common armor and weapon materials that no quality gate catches. Green's only collision is green
+gear, which the key switch already handles. Green had one real defect (dark outlines drawn over the body were keyed out), which
+was fixed in extraction on 2026-11-10 without changing the key (see [the green outline defect](#the-green-outline-defect)).
+
+What the practitioners' preference does get right: **green gear is common** (rangers, goblins, leaves, poison), so a green key
+must switch more often than a cyan one. PixelDoll handles that by measuring each item's colors and switching keys, so the
+frequency of green gear costs a fallback, not quality.
+
+## How PixelDoll keys (what was compared)
+
+- The whole frozen body (every opaque pixel) is mapped to a **continuous luminance ramp** in the key hue (`toChroma`), so
+  shading and drawn lines survive as darker key shades. Green ramp: (0,60,0) dark to (110,255,110) light.
+- After dressing, a pixel is the item unless it scores as key (`keyScore` ratio at least 35, `KT`). A rim guard,
+  `absorbOutline`, `despill` and small-component cleanup follow.
+- Key order: green, magenta (green items), blue (green plus pink or red, D19), azure (green plus purple, D21). The prompt words
+  pick the first key; on a collision the retry picks a key from the measured item colors (`keyFor`, 2026-11-07).
+- Blue is the green ramp with G and B swapped (hue 240). Azure is the green ramp rotated +90 degrees (hue 210). For this test,
+  **cyan was the green ramp rotated +60 degrees (hue 180)**, named "bright cyan" in the prompt and extracted by rotating back and
+  running the production green code. This is the method that qualified azure before it shipped (`spikes/api/c25/hue.mts`).
+
+## History of the green choice
+
+| When | What | Evidence |
+| --- | --- | --- |
+| 2026-10-21, S2, D3 | Green chosen in the first chroma spike; never A/B-tested as the default. | `docs/architecture.md` 4.4 |
+| 2026-10-25, D19 | Blue added for green plus pink or red: magenta keyed out the pink on every frame. | [campaign arm K](../generation-quality-campaign-2026-10-25.md) |
+| 2026-10-25, D21 | Azure added for green plus purple: magenta kept 1.3 % of the purple, azure 100 %. | [round 2 arm Z](../generation-quality-round2-2026-10-25.md) |
+| 2026-11-07 | Key retried from measured colors, not prompt words. | [measured key review](../2026-11-07-paperdoll-cycle/review-measured-key.md) |
+| 2026-11-09 | This test: green against cyan, azure and blue as the default. | below |
+
+## Test 1: offline census (free)
+
+86 dressed keyframe sets from earlier campaigns, each compared with the rest base it was dressed on (82,915 item px, 9 bodies),
+plus hand-built ramps for common materials. "Lost" means an item pixel scores as key and is removed with no warning.
+
+| Key (hue) | Ordinary items lost | Color-test items lost | Materials it destroys |
+| --- | ---: | ---: | --- |
+| green (120) | at most 1.44 % (own outputs, upper bound) | 37.8 % | emerald, forest, lime |
+| cyan (180) | 0.21 % (one dark teal-gray outline) | 25.3 % | turquoise, sky, ice, most emerald shades, dark teal outlines; flags denim and royal blue |
+| 195 variant | 0 % | 5.7 % | denim, royal blue, sky, ice |
+| azure (210) | 0 % | 1.8 % | denim, royal blue, sky, ice, navy, dark navy outlines |
+| blue (240) | 0.10 % (one navy outline) | 1.7 % | navy, denim, royal blue, sky, blue-black, dark navy outlines |
+| magenta (300) | 0 % | 11.3 % | purple |
+
+- Every warm material scores 0 on green: skin, hair, leather, wood, gold, olive, khaki. Losses start near hue 80 (lime). The
+  assumption that olive or yellow bleeds into green is false.
+- Real "emerald" gear was drawn at hue 150-163, so cyan loses it as often as green (7 of 9 sets).
+- Cyan's one measured advantage: a warm color half-blended with the key is lost in 19 of 57 cases on green and 5 of 57 on cyan.
+  Cool colors reverse it (green 24/42, cyan 36/42). Real green outputs rarely contain such blends (0.10 % near-key).
+- **The model draws in the key's hue.** On the real base 94 % of dark item px are neutral; on a mannequin, outlines and shadows
+  tint toward the key (green toward olive 25 %, blue and azure toward blue 46-47 %). This is why each key has its own outline
+  problem.
+- Ramp brightness: cyan 0.16-0.83 luminance, green 0.14-0.77, blue 0.03-0.50 (its dark third is near black, the weakest shading
+  cue). Nearest outline collisions: dark teal 18 from cyan and azure, dark navy 20 from azure and 26 from blue, dark green 26 from
+  green.
+
+Bias: the ordinary items were generated on green with "no bright green" wording and skew red, brown and steel; green-on-green
+losses can only be bounded. Details: [key census](evidence/key-census.md).
+
+## Test 2: live A/B (808 generations)
+
+Production dress (`edit-animation-v2`) and pose (`animate-with-skeleton-v3`) builders, identical prompts except the key name,
+identical seeds and bodies, through the owner's local API server.
+
+- Body A (64 px; south, east, north views): 10 items, seed 7 on all four keys; seed 11 on green, cyan and azure (blue dropped
+  after stage 1 by the pre-registered ranking).
+- Body B (the Studio default slender elf, 80 px, 5 views): helm, plate, hair, hood on green, cyan and azure.
+- Walk south, east, north for helm, cloak and hair, green against cyan.
+- Items: steel great helm, leather boots, red hooded cloak, gold crown with white fur, blonde braids, tan jerkin with brass
+  buttons, silver plate, khaki ranger hood (green never named), and two deliberate collisions: turquoise gem amulet, navy tunic.
+- 94 calls, 92 charged, 808 generations, nothing resent.
+
+**Decision rule, written before spending:** a key replaces green only if it has no more hard fails, a G2 mean within 0.005, no
+higher summed G3, is at least 25 % better on one failure mode visibly, adds no defect on steel, silver, gold, leather, jerkin or
+hair, and has no more walk hard fails. A tie keeps green.
+
+| Measure | green | cyan | azure | blue |
+| --- | --- | --- | --- | --- |
+| Hard fails, ordinary items, both bodies and walks | 0 | 0 | 0 | 0 |
+| G2 key kept, mean | 0.994-0.997 | 0.994-0.996 | 0.994-0.998 | 0.998 |
+| G3 summed, body B | 0.020 | 0.046 | 0.042 | not run |
+| Dark outline lost (braids, plate, jerkin) | braids 30 dress and 248 walk px, plate 27, jerkin 8 | 9 px at seed 11 | 6 px at seed 11 | plate 11 |
+| Steel helm px leaning to the key | 0.009 | 0.65 | 0.77 | 0.70 |
+| Silver plate px leaning to the key | 0.008 | 0.49 | 0.34 | 0.00 |
+| Helm px rewritten by despill | 21 | 306 | 817 | 271 |
+| Red cloak (visual) | clean | muddy, desaturated in dress and all 8 north walk frames | best | turned purple |
+| Turquoise gem | kept | not drawn at all; no gate fired | kept | kept |
+| Navy tunic | clean | survives, fully tinted | 211 of about 700 px kept; no hard fail | empty layer, hard fail |
+| Leather, gold, jerkin, khaki hood | clean | clean | clean | clean |
+
+Per item, per view and per walk direction: [live A/B results](evidence/live-key-ab.md).
+
+**Verdict:** cyan, the strongest challenger, failed the rule: no hard-fail advantage, a slightly higher G3, a new defect on
+steel and silver, and silent omissions. Azure loses navy silently and rewrites steel. Blue shares green's outline defect and
+empties navy gear. An independent reviewer judged the sheets before reading any conclusion and agreed (about 80 % confidence).
+
+## Why the practitioners' experience does not carry over
+
+These points are inferred from the measurements above; the practitioners' own setups were not available to test.
+
+1. **Steel is blue-gray on every key.** The independent reviewer measured blue minus red on gray helm px: about 24 on the green
+   mannequin and 17-35 on the others. The model draws steel cool regardless of the mannequin, so every blue-family key sits next
+   to the most common armor and weapon material. Green does not.
+2. **Flat tones vs a continuous ramp.** Five flat tones merge 21-34 % of the body's local edges that the continuous ramp keeps.
+   With few, bright tones the key sits far from every outline; with a continuous ramp the dark end of any key approaches dark
+   outlines (green (0,60,0), blue near black). The flat-tone setups were never tested here, so a five-tone cyan body may behave
+   differently from the ramp tested.
+3. **Skin-only keys.** A skin-only cyan key leaves hair, clothes and outlines in their own colors, so fewer item colors can
+   collide. PixelDoll keys the whole body because its bases are bare and a reliable per-frame skin region is not available.
+4. **No measured fallback.** Without a key switch, a cyan default avoids the common green-gear collision. PixelDoll switches
+   keys from measured colors, so it pays that collision once with a retry instead of losing steel quality on every item.
+5. **Small, warm-skewed content.** Hand-made sprites in these communities are mostly warm (skin, leather, wood); cyan is the
+   natural complement there. PixelDoll's census shows warm materials are already clean on green.
+
+## Known metric traps (fix before the next key A/B)
+
+- The A/B's "lost px" counted only dropped px more than 40 from the key ramp. Green's lost outline color (4,19,0) is 41 away, so
+  it counted, while navy or teal outlines lost on azure or cyan sit within 40 of those ramps and did not. Count every dropped dark
+  px adjacent to the item.
+- No metric checked the hue of saturated item colors, so the cyan and blue cloak defects escaped every number. Add a hue-accuracy
+  check against the same item on another key.
+- "Drift" is computed in each key's rotated frame and cannot be compared across keys.
+- Seed-to-seed design variance (pauldrons, braids in north views) was often larger than the key effect: use at least two seeds
+  per body and compare per item.
+
+## The green outline defect
+
+Of 380 px lost in the A/B, 378 lie inside the base silhouette and 328 are darker than the key ramp's darkest shade, e.g.
+(4,19,0). They score 72-94, so they never enter the item mask. `absorbOutline` keeps dark key px only off the body or with at
+least 5 of 8 item neighbors; a one-pixel outline over the body has 2-4. The model almost never darkens the bare mannequin by
+itself (6 such px in 356 cells, all at least 3 px from any item).
+
+The offline prototype kept a key-scored px that touches the item, is more than 40 per channel from the ramp and is darker than
+the key's darkest shade. It recovered 315 of 321 confirmed outline px (98.1 %) with no gate flips. A looser variant kept green
+blends on an elf ear and was rejected. [Outline recovery](evidence/outline-recovery.md).
+
+**Implemented 2026-11-10 (`absorbOutline` rule (c), `app/src/lib/image/chroma.ts`), after two adversarial review rounds:**
+
+| Round | Objection | Evidence | Outcome |
+| --- | --- | --- | --- |
+| 1 | The premise "the mannequin never uses that shade" is false on magenta | The bench tunic added 574 px; 483 were (35,14,28), the same shade the model used for the mannequin's own head, ear and foot outline; the tunic grew spikes up the neck | Accepted: a shade the cell's bare mannequin uses 3+ px from the item stays key (per cell, exact RGB, every key). Rejected the alternative "green and blue only": per-cell evidence beats a key list |
+| 1 | Inside the old two-pass loop, the 5-of-8 rule counted the new px and absorbed real ramp shades (8,74,5) | 349 px added instead of 323 on the A/B; neck px on the tunic | Accepted: rule (c) runs as its own two passes after the old rules |
+| 1 | FAR 40 is a cliff, not a margin | (4,19,0) is 41 from the ramp; FAR 48 recovered 0, FAR 32 added hood cast shadows | Kept 40: no criterion did strictly better (an absolute green cut has the same cliff); a lighter tint only falls back to the old behavior. Pinned in a test |
+| 1 | Tests missed magenta, the cascade and the cliff | | Added: magenta kept or dropped, mannequin-used shade stays key on all keys, cascade, cliff |
+| 2 | Known gaps of the color exclusion | A mannequin outline seen only next to the item is still kept (about 4 neck px per frame on one magenta walk view); one far px of the item's outline shade blocks that view (1 hair view) | Accepted as limits, documented in code and `docs/known-issues.md`. A call-wide exclusion set would fix the tunic but lose the braids in all 8 dress views of one call |
+
+Final numbers: the A/B recovers 318 of 380 lost px (braids, plate, jerkin), the magenta bench tunic adds 71 px (mostly sleeve
+and hem outline, about 25 neck px), no G2 or G3 flips anywhere, the LPC skin-tone set is unchanged (0 of 5,460 tallies; it
+cannot trigger the rule, so it says nothing about skin tone either way), and the only bench line that moves is the tunic's area
+CV, 0.122 to 0.123.
+
+## Test 3: keying strategy, not just hue (2026-11-10, 425 generations)
+
+New practitioner evidence prompted a second live test. Theik keys only the **skin** bright cyan (hair, eyes, mouth and outline
+keep their colors), prompts "no cyan clothing" and removes cyan afterwards; he reports minimal problems, never compared hues, and
+expects bright silver might lean cyan. Lexius learns the base's skin tones and drops them because posed frames reshade skin. A
+third-party system document showed body px wrongly cut as gear: natural skin 31-104 per frame, bright key body 0-22, bright key
+body with no dark outline 0-5.
+
+Corrections found while measuring: the third-party "plain outline" means the key body has **no dark line at all** (its outline
+is a pink just under the skin), and its chart measures body px cut as gear, the opposite failure from PixelDoll's lost item
+outlines. Theik's "bright cyan" skin is a six-tone ramp down to value 0.22, and his silver scores 0 on a cyan key. PixelDoll's
+bare bases are not mostly skin: skin is 30-44 % of px, outline 32-42 %, shirt and shorts 20-34 %.
+
+Arms (body A two seeds, body B one seed, walks for two items): production green ramp with rule (c); the cyan ramp from test 2;
+**flat bright cyan** and **flat bright green** mannequins with no dark shades, detected by a hue window and a value floor; and
+**skin-only cyan** with Theik's measured tones plus a learned palette of the base's other colors to remove hair, outline and
+underwear. The decision rule was written before spending; no arm passed it.
+
+| Finding | Evidence |
+| --- | --- |
+| **Dark mannequin shades decide the outline defect, not the hue.** | Flat arms dropped 0 dark item px on dress and walk, both hues, both bodies; braids stayed continuous in all 48 flat walk frames. Production with rule (c) still drops 272 novel dark px on core dress views and about 13 per braid walk frame. 39 % of the continuous ramp is below value 0.30. The number of tones does not matter. |
+| **The hue decides color and steel damage, whatever the strategy.** | Flat cyan turned the red cloak raspberry (hue 346, saturation 0.70 against 14 and 0.79 on green) and despill rewrote 804 of 934 helm px. Steel never scores as cyan key, but its native hue (202-216) is close enough that cyan cleanup rewrites it. |
+| **Skin-only keying only moves the problem.** | The body's black outline and the item's black outline are the same color, so braid outlines break wherever they cross the body. The learned palette removes body parts but also deletes gear sharing their colors: steel over gray underwear kept 48 of about 500 helm px (plate hard fail); the cloak lining got holes. Without the palette 10 of 15 views fail. |
+| **Posing does not reshade; dressing does.** | Skeleton-v3 posing of the natural base kept it; dressing kept only 1-3 % of natural px exact, but 99-100 % within 24. |
+| **Flat bodies did not hurt limb reading.** | No hard fails in 64 flat walk frames (two items only). |
+| **Brightness helps through the detector.** | A bright flat key allows a value floor and a narrow hue window, which is also why flat green kept the emerald tunic that the ratio score would cut. |
+
+Verdict: keep production green with rule (c). The one candidate worth a follow-up is a **flat bright green mannequin with no dark
+shades** (failed the rule only on a band-leak metric that mostly measured braid length, and by 1 degree of cloak hue). It would
+need a pre-registered rerun (body px leaked into the layer counted directly, despill in the pipeline, 2+ seeds, a 128 px body,
+all walk directions) and new production code: a flat `toChroma`, a window detector replacing `keyScore`/`KT` (rim guard,
+`absorbOutline`, G2/G3, `keyFor` and `nearKeyShare` depend on the ratio score), despill for dark tinted outlines, and flat
+magenta, blue and azure variants. Tracked as a board card. [Chroma strategies](evidence/chroma-strategies.md).
+
+Practitioner takeaway: cyan works for them on a few skin-keyed, clothed bodies with manual cleanup accepted (Theik's words);
+"as long as it has no overlap" is the real rule, and PixelDoll's measured key switch enforces it. The part of their method that
+does transfer is the bright mannequin without dark shades, and it transfers on green. (Test 4 then rejected it; see below.)
+
+## Test 4: every key and the flat mannequin (2026-11-10, 420 generations)
+
+The owner asked for every key color and fallback to be challenged, since changing the mannequin style changes which colors
+collide, under a 2,000-generation cap. A plan was written, challenged before spending (it cut about 80 gens of redundant arms,
+added a dark-skin body, a held sword and pure-green items, fixed a numeric tie band and a body-relative outline cut for dark skin,
+and found a production despill bug), and run in stages with a stop rule. Evidence: [plan](evidence/key-campaign-3/plan.md),
+[plan challenge](evidence/key-campaign-3/plan-challenge.md), [stage 1](evidence/key-campaign-3/stage1-flat-green.md),
+[fallback keys](evidence/key-campaign-3/fallback-keys.md), [despill sweep](evidence/key-campaign-3/despill-review.md).
+
+| Question | Answer | Evidence |
+| --- | --- | --- |
+| Free, before spending | Rescored with direct counts, flat green looked better on stored data (body leak 77 vs 175, dark px dropped 0 vs 272); the earlier "fail" came from a band-leak proxy. The flat detector cannot drop dark px by construction, so a new metric (dark key px kept next to the item) was added; plate 196 vs 326 turned out to be the plate's own outline ring. | Offline census of 200 sets, 153,651 item px |
+| Production bug found on the way | Despill treated any key-tinted px as spill; steel is drawn blue-gray on every mannequin (the azure hue), so azure grayed 1,356 of 1,577 helm px. Fixed (commit 0bded5ab): only saturated, very dark, or bright-removed-neighbor px are despilled. Azure helm 1,356 to 24 rewritten px, plate 472 to 53, steel saturation back within 0.03 of green; bench unchanged. A first version missed its targets because dark removed outline px counted as spill evidence; a review found it and the fix was narrowed. | Two review rounds; despill sweep |
+| Stage 1: flat bright green vs ramp green (22 calls, 260 gens; body B, 128 px body, dark-skin body B, held sword) | **Flat green rejected.** On a bright green body the model draws a red cloak with olive-brown folds in the raw output: north view olive px 114, 358, 145 and 1,842 on four bodies and seeds, against 0-36 on the ramp and 0 on every other key. Hard fails 0 both; key-tinted px 0 both; dark skin clean on both; sword gripped on both. Stop rule ended the flat track, so no flat fallbacks. | [stage 1](evidence/key-campaign-3/stage1-flat-green.md) |
+| Fallbacks on the ramp, with the despill fix (63 stored sets rerun free; 16 paid calls, 160 gens) | **All stay, order stays.** Magenta for green items: steel stays neutral blue-gray (0-4 % leaning magenta), no green lost; other candidates lose navy, denim and sky. Blue for green plus pink or red: azure lost nothing but drew reds and pinks 0.09-0.18 less saturated and made holly tunics mostly green, so it cannot replace blue. Azure for green plus purple: keeps 100 % of purple on 9 sets; magenta and blue cut it. The despill fix changed colors only, never a mask or gate. The later prompt change (commit 14a31bc1, dropping "natural") tested as no difference, so older outputs stay valid. | [fallback keys](evidence/key-campaign-3/fallback-keys.md) |
+
+Spend: 260 + 160 = 420 of the 2,000 cap (balance 17,448.1 to 17,028.1 on the local API); nothing resent.
+
+## Open questions (not tested)
+
+- A five-flat-tone cyan or blue mannequin against the same in green (the practitioners' exact setup): answered by tests 3 and 4
+  (flat bright cyan damages color and steel; flat bright green draws olive into red cloth).
+- A skin-only key on a body with clothes: answered by test 3 on PixelDoll's bare bases (fails); not tested on clothed bases.
+- Whether azure should come before magenta for green-only items: answered by test 4 (magenta stays; azure gives grayer steel
+  and loses navy).
+- Fallback keys in posed frames, on body B and 128 px bodies, and with a held weapon on magenta: not tested.
+- What colors real users ask for: there is no telemetry, and every sample here is skewed by its prompt set.
+
+## How to rerun
+
+- Live arm: `spikes/api/c25/arm_y.mts` (stages, items, keys), `eval_y.mts` (metrics and sheets), `y_env.mts` (resolves the agent
+  key from `.env` in memory and redirects only that process to the local API when the key references `PIXELLAB_SECRET_DEV`;
+  import it before `lib.mts`), `y_recover.mts` (GET-only recovery of jobs that outlived the client poll). Outputs:
+  `spikes/api/out/chroma-2026-11-09/` (local, git-ignored).
+- The local API timed out 13 long walk jobs (recovered without resending) and refused 2 with 429 (Tier 2 allows 11 concurrent
+  jobs). Keep pose concurrency at or below 6.
+- Offline: [scripts/census](scripts/census/) (needs the stored campaign outputs in `spikes/api/out/`) and
+  [scripts/outline](scripts/outline/) (wraps production extraction; set `OUT_DIR` for sheets).

@@ -206,9 +206,11 @@ export async function requestIdentity(
 	const inputs: string[] = [];
 	const params = await mapDeep(req.body ?? null, (o) => {
 		if (!isB64(o)) return undefined;
+		// Reserve the slot now: sibling images hash concurrently, and completion order would make the list nondeterministic.
+		const slot = inputs.push('') - 1;
 		return (async () => {
 			const sha = await putBlob(base64ToBytes(o.base64));
-			inputs.push(sha);
+			inputs[slot] = sha;
 			return { ...o, base64: undefined, $blob: sha };
 		})();
 	});

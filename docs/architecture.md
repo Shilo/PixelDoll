@@ -230,6 +230,8 @@ near-key share (item px with key score 20 to 34 and a brightest channel of at le
 ratio score); 20 % or more adds a K1 review note, and on any collision (K1, keyframe G3 or G4) the draft's Try again uses a
 key chosen from the measured colors (`keyFor`, the shared-fit rule; off-body key px count only when they are more than 16
 from the key ramp), preferring keys the prompt allows (2026-11-07); G2 and posed-frame failures never switch (a collision cannot lower G2; G2 fails on erased body px). Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
+Why green and not cyan or blue as the default (D27), with every measurement and how to retest: the
+[chroma key reference](research/2026-11-09-paperdoll-video-review/chroma-key.md).
 
 **Round 3 cleanup rules** ([round 3](research/generation-quality-round3-2026-10-25.md)).
 - *Despill*: a key-tinted px first loses the key excess (the key channel down to the next one; azure in its rotated frame),
@@ -238,7 +240,9 @@ from the key ramp), preferring keys the prompt allows (2026-11-07); G2 and posed
   fold drawn in the key's darkest shade still becomes the item's dark color). The luminance-only snap turned blue-gray steel on
   the azure key into the plume's purple. A colored px that matches no clean color and scores below the key with a real key
   excess keeps its own color (jade, fern and turquoise gear were half-despilled into colors the item never had; 2026-11-07
-  cycle), unless the despilled result is near-gray.
+  cycle), unless the despilled result is near-gray. Only spill is touched: a tinted px that is saturated (S >= 0.35), very dark
+  or next to a bright px extraction removed (a removed dark outline leaves no light spill). Steel is drawn blue-gray on every mannequin (S up to 0.35 on green), the azure key's own
+  hue, so an excess-only test flattened 1,356 of 1,577 azure helm px to gray (2026-11-10 keys 3 review).
 - *Hidden body px* (`Item.baseCut`): PixelLab erases the ear tips under a hood or great helm wider than the head, and layers can
   only add px. The dressed keyframe decides where an item may hide body px (erased, above the neck + 3 rows, touching the item
   and the body's edge, ≥ 3 px components, ≤ 4 % of the body; never held items or in-place edit cells); each posed frame hides its own erased px only

@@ -145,6 +145,16 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   itself; a warned or failed one stays a draft with its badge, and Keep it / Try again / Discard remain. The skeleton-v3
   animation workflow and every PixelLab request body are unchanged. See
   [review §17](docs/research/generation-pipeline-review-2026-10-25.md).
+- D27 (2026-11-10, measured): green stays the default mannequin key and the order stays green → magenta → blue → azure.
+  Practitioners favor cyan or blue mannequins, so cyan (hue 180), azure and blue were A/B-tested live as the default (808
+  gens) and in an offline census: no hard-fail or G2 advantage, while blue-family keys tinted or rewrote steel and silver,
+  dropped a turquoise gem and emptied navy gear with no gate firing. Green's one defect (dark item outlines over the body are
+  keyed out) is fixed in extraction (`absorbOutline` rule (c), 2026-11-10), not by a key change. A second test (425 gens) of
+  skin-only cyan and flat bright cyan and green mannequins found dark mannequin shades, not the hue, cause the outline loss;
+  none passed its rule. A third campaign (420 gens) rejected a flat bright green mannequin (the model draws olive folds into red
+  cloth on it) and rechallenged every fallback: magenta, blue and azure and their order stay; it also fixed a despill bug that
+  grayed steel on azure and blue. See the
+  [chroma key reference](docs/research/2026-11-09-paperdoll-video-review/chroma-key.md).
 
 ## Progressive equipment generation (2026-11-03)
 

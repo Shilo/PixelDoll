@@ -130,6 +130,23 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   is kept when it forms a straight line in a non-green color (a 1 px black strap keeps about 94 % on the deepest LPC tone),
   but on magenta, blue and azure backgrounds, and for dark bronze or teal straps, the old gap remains (as low as 32 % on the
   deepest tone). See [rim guard and skin tone](research/2026-11-07-paperdoll-cycle/fairness.md).
+- **Near-black outlines tinted toward the key are recovered only when the stand-in does not use that shade.** PixelLab
+  draws dark item outlines over the body in a near-black shade of the key (green (4,19,0)); they are kept when they touch
+  the item, unless the same shade also appears on the bare stand-in 3+ px from the item, which marks it as the stand-in's own
+  outline (magenta draws its outline that way). A stand-in outline seen only next to the item is still kept (about 4 neck
+  px per frame on one magenta tunic walk view), and one stray far pixel of the item's outline shade costs that view its
+  recovery (1 hair view in 356). Item outline px that stay within 40 of the key ramp are still keyed out, so long braids keep
+  short dashed gaps (about 13 px per walk frame); a flat bright mannequin with no dark shades avoided this in a live test but
+  made the model draw olive folds into red cloth, so it was rejected. See the [chroma key reference](research/2026-11-09-paperdoll-video-review/chroma-key.md).
+- **The body outline can show 1 px beside posed garment edges.** On posed frames the base's dark outline (sometimes a
+  sliver of shirt or skin) can sit just outside a torso garment, boot or cape edge, so the edge reads 2 px thick and flickers
+  in motion (torso garments 1.77 px per frame; 30 % of posed torso frames have 3 or more). Hiding those body pixels fixed
+  boots and capes but not torso garments, and would multiply exported base variants past the export cap, so it was not
+  adopted. See the [paper-doll system review](research/2026-11-10-paperdoll-system-review/README.md#3-the-1-px-rim-qualified-and-rejected).
+- **A 1 px key-tinted fringe can stay on item rims next to transparency.** Despill now only touches saturated, very dark or
+  bright-key-adjacent tinted pixels, so blue-gray steel keeps its color on azure and blue keys. A faint fringe whose only removed
+  neighbor is dark keeps its tint: 31 olive pixels on one frame of a red cloak on the green key (they were grayed before; the right
+  color would be the cloak's dark red). See the [chroma key reference](research/2026-11-09-paperdoll-video-review/chroma-key.md).
 - **The gray-smudge check (D1) compares views.** With three or more drawn views, a view is flagged only when it is much
   grayer than the item's least gray other view, so a neutral emblem drawn in every view passes. A smudge the provider adds
   to every view is therefore not flagged; items with one or two drawn views keep the stricter per-view rule. See the
