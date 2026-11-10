@@ -161,8 +161,7 @@ test('accepting an exception does not leave clean clips permanently marked for r
 
 /** Checks kept only as one summary, as a copied fit stores them (equipment/copy.ts). */
 const indivisible = (q: ItemQa): ItemQa => {
-	const { clips: _clips, ...rest } = q;
-	return { ...rest, legacy: { clips: Object.keys(q.clips ?? {}), summary: summaryOf(q) } };
+	return { ...q, clips: {}, legacy: { clips: Object.keys(q.clips), summary: summaryOf(q) } };
 };
 
 test('legacy totals are conservative and non-clean until all older coverage is replaced', () => {
@@ -293,12 +292,4 @@ test('accepted garment review counts persist without requiring fields on older s
 		unmeasured: true,
 		footwearReviewFrames: 1
 	});
-});
-
-test('checks saved without per-move parts never turn into a pass after a clean addition', () => {
-	const { clips: _, legacy: __, ...old } = check([cell('idle/south/0', true)]).qa;
-	expect(old.status).toBe('fail');
-	const added = merge(item(old as ItemQa), [cell('slash/south/0')]);
-	expect(added.qa.status).not.toBe('pass');
-	expect(added.qa.legacy?.clips).toEqual(['idle/south']);
 });

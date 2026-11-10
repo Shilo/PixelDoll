@@ -139,6 +139,7 @@ test('a saved item names the detail note for review', () => {
 		status: 'warn',
 		rerolls: 0,
 		cells: {},
+		clips: {},
 		detailReviewFrames: 2
 	} as ItemQa;
 	expect(qaReasons(q, false, true)).toContain(

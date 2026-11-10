@@ -1248,7 +1248,7 @@ export function withH4(
 	q.warnings.push(...h.warnings);
 	if (h.fails.size) q.qa.status = 'fail';
 	else if (h.warnings.length && q.qa.status === 'pass') q.qa.status = 'warn';
-	for (const [clip, summary] of Object.entries(q.qa.clips ?? {})) {
+	for (const [clip, summary] of Object.entries(q.qa.clips)) {
 		const part = dirGate(
 			slot,
 			cells.filter((c) => clipOf(c.key) === clip),
@@ -1772,8 +1772,8 @@ export async function mergeClip(
 		cells.some((c) => !expected.has(c.key)) ||
 		Object.keys(q.qa.cells).length !== expected.size ||
 		Object.keys(q.qa.cells).some((k) => !expected.has(k)) ||
-		dirs.some((d) => !q.qa.clips?.[`${anim}/${d}`]) ||
-		Object.keys(q.qa.clips ?? {}).length !== new Set(dirs).size
+		dirs.some((d) => !q.qa.clips[`${anim}/${d}`]) ||
+		Object.keys(q.qa.clips).length !== new Set(dirs).size
 	)
 		throw new Error('Move QA requires every frame of each replaced direction');
 	const spec: ItemSpec = {

@@ -164,7 +164,7 @@ export async function prepareCopy(design: EquipmentDesign, target: Project): Pro
 		item.qa.unmeasured = true;
 		item.qa.status = 'warn';
 		item.qa.cells = {};
-		delete item.qa.clips;
+		item.qa.clips = {};
 		const {
 			cells: _cells,
 			clips: _clips,
@@ -243,7 +243,7 @@ export function publishCandidate(
 			next.cells = Object.fromEntries(Object.entries(next.cells).filter(([k]) => additions.has(k)));
 			// A regenerated complete clip does not replace the QA evidence of original cells that are deliberately retained.
 			next.clips = Object.fromEntries(
-				Object.entries(next.clips ?? {}).flatMap(([key, summary]) => {
+				Object.entries(next.clips).flatMap(([key, summary]) => {
 					const [anim, dir] = key.split('/'),
 						count = rec.manifest.rig.animations.find((a) => a.id === anim)!.cells;
 					const keys = Array.from({ length: count }, (_, i) => `${anim}/${dir}/${i}`);
@@ -253,10 +253,7 @@ export function publishCandidate(
 							key,
 							keys.every((k) => additions.has(k))
 								? summary
-								: combinePartialQa(
-										existing.qa?.clips?.[key] ?? existing.qa?.legacy?.summary ?? existing.qa,
-										summary
-									)
+								: combinePartialQa(existing.qa?.clips[key] ?? existing.qa?.legacy?.summary, summary)
 						]
 					];
 				})

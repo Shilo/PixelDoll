@@ -143,6 +143,7 @@ test('new items describe independent rows truthfully while mirrored rigs keep fl
 				clipPx: 0,
 				status: 'pass',
 				cells: {},
+				clips: {},
 				rerolls: 0
 			}
 		});

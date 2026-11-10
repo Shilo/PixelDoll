@@ -51,8 +51,8 @@ function fixture(legacy = false): Manifest {
 	const qa = itemQa(rig, slotOf('head'), 'green', cells, 2).qa;
 	if (legacy) {
 		// Indivisible checks, as a copied fit stores them (equipment/copy.ts).
-		qa.legacy = { clips: Object.keys(qa.clips ?? {}), summary: summaryOf(qa) };
-		delete qa.clips;
+		qa.legacy = { clips: Object.keys(qa.clips), summary: summaryOf(qa) };
+		qa.clips = {};
 	}
 	const item: Item = {
 		id: 'hat',

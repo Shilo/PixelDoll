@@ -458,7 +458,8 @@ test('review shows every stored cell once when playback omits or repeats cells',
 									maxPaletteDist: 0,
 									clipPx: 0,
 									rerolls: 0,
-									cells: {}
+									cells: {},
+									clips: {}
 								}
 							}
 						: item

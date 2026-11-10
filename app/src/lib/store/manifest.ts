@@ -138,7 +138,7 @@ export interface QaSummary {
 export interface ItemQa extends QaSummary {
 	rerolls: number; // recorded retry history, not a count of current frames
 	cells: Record<CellKey, CellQa>;
-	clips?: Record<string, QaSummary & { hand?: 'r' | 'l' | '?' }>; // anim/direction; replaceable current checks
+	clips: Record<string, QaSummary & { hand?: 'r' | 'l' | '?' }>; // anim/direction; replaceable current checks
 	legacy?: { clips: string[]; summary?: QaSummary }; // indivisible older checks, retained until these clips are replaced
 }
 export interface CellQa {

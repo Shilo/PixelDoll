@@ -197,6 +197,7 @@ vi.mock('../../src/lib/equipment/generate.ts', () => ({
 			shiftedFrames: 0,
 			strayPx: 0,
 			rerolls: 0,
+			clips: {},
 			cells: Object.fromEntries(
 				paths.map((k) => [
 					k,

@@ -477,7 +477,8 @@ export async function buildStarterProject(
 		maxPaletteDist: 0,
 		clipPx: 0,
 		rerolls: 0,
-		cells: {}
+		cells: {},
+		clips: {}
 	};
 	const project: Project = {
 		images,

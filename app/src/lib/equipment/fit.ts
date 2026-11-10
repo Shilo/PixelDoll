@@ -135,7 +135,7 @@ async function appendFreeCells(fit: FitDraft, project: Project, item: Item): Pro
 		original = source.manifest.items.find((i) => i.id === extension.freeSource!.itemId)!;
 	item.qa ??= unknownQa();
 	const qa = item.qa,
-		clips = (qa.clips ??= {});
+		clips = qa.clips;
 	for (const match of extension.freeMatches) {
 		const [a, d, n] = match.target.split('/') as [string, DirectionName, string],
 			[sa, sd, sn] = match.source.split('/') as [string, DirectionName, string];

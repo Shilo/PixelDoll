@@ -392,12 +392,10 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
 		Object.entries(q.cells).some(
 			([k, c]) => (clip === null || k.startsWith(`${clip}/`)) && c.route === 'posed'
 		);
-	const parts: [string | null, QaSummary][] = q.clips
-		? [
-				...Object.entries(q.clips),
-				...(q.legacy?.summary ? [[null, q.legacy.summary] as [null, QaSummary]] : [])
-			]
-		: [[null, q]];
+	const parts: [string | null, QaSummary][] = [
+		...Object.entries(q.clips),
+		...(q.legacy?.summary ? [[null, q.legacy.summary] as [null, QaSummary]] : [])
+	];
 	for (const [clip, p] of parts) {
 		if (p.status === 'pass') continue;
 		if (p.minKeyKept < GATES.keyKept) r.push('G2');
@@ -410,13 +408,13 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
 	}
 	if (q.handedness === 'switched') r.push('G8');
 	if (held) {
-		for (const [clip, part] of Object.entries(q.clips ?? {})) {
+		for (const [clip, part] of Object.entries(q.clips)) {
 			if (!part.hand) r.push(`G8 ${clip}: handedness not checked`);
 			else if (part.hand === '?' && (!part.grip || part.grip.R + part.grip.L + part.grip.amb > 0))
 				r.push(`G8 ${clip}: grip side is unclear`);
 		}
 		if (q.grip?.none) r.push('G8 grip contact not confirmed');
-		if (!q.clips && !q.handedness) r.push('G8 handedness not checked');
+		if (!Object.keys(q.clips).length && !q.handedness) r.push('G8 handedness not checked');
 	}
 	return [...new Set(r.map(plainReason))];
 }

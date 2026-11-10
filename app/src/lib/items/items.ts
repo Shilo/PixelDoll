@@ -2604,6 +2604,7 @@ function evaluateQa(
 			rerolls,
 			status,
 			cells: cellsQa,
+			clips: {}, // itemQa fills the per-move parts
 			...(slot.class === 'held' && cells.some((c) => c.rawKeyOutside)
 				? { rawKeyReviewFrames: cells.filter((c) => c.rawKeyOutside).length }
 				: {}),

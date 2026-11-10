@@ -61,11 +61,12 @@ async function multiStateImportZip(incompatible = false, unreadable = false, sin
 	]);
 }
 
-/** The research artifact was saved by an earlier preview; restamp its unchanged data with the current format. */
+/** The research artifact was saved by an earlier preview; restamp its unchanged artwork in the current format. */
 async function currentArtifact(bytes: Uint8Array) {
 	const files = await unzip(bytes),
 		project = JSON.parse(new TextDecoder().decode(files.get('project.json')!));
 	project.manifest.format = CURRENT_FORMAT;
+	for (const item of project.manifest.items) if (item.qa) item.qa.clips ??= {};
 	files.set('project.json', new TextEncoder().encode(JSON.stringify(project)));
 	return Buffer.from(await zip([...files].map(([name, data]) => ({ name, data }))));
 }
@@ -944,6 +945,7 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 			status: 'warn',
 			rerolls: 0,
 			cells: {},
+			clips: {},
 			missingLowerFrames: 2,
 			footwearReviewFrames: 1,
 			waistReviewFrames: 1,

@@ -604,7 +604,7 @@ export async function evaluatePoseFit(
 		referenceBodies(rig, target.images),
 		spec.prompt
 	);
-	for (const [clip, summary] of Object.entries(qa.qa.clips ?? {})) {
+	for (const [clip, summary] of Object.entries(qa.qa.clips)) {
 		const count = rig.animations.find((a) => a.id === clip.split('/')[0])!.cells;
 		if (cells.filter((c) => c.key.startsWith(clip + '/')).length < count) {
 			if (summary.status === 'pass') summary.status = 'warn';
@@ -628,7 +628,7 @@ export async function evaluatePoseFit(
 		const [anim, dir] = c.key.split('/') as [string, DirectionName],
 			distance = paletteDistance(palettes.get(dir) ?? [], [c.layer]);
 		qa.qa.maxPaletteDist = Math.max(qa.qa.maxPaletteDist, distance);
-		const clip = qa.qa.clips?.[`${anim}/${dir}`];
+		const clip = qa.qa.clips[`${anim}/${dir}`];
 		if (clip) clip.maxPaletteDist = Math.max(clip.maxPaletteDist, distance);
 		if (distance > GATES.paletteDist) {
 			const message = `G6 ${c.key}: palette differs from the approved rest fit (${distance.toFixed(1)}).`;

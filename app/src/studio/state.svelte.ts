@@ -744,6 +744,7 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 			!obj(current) ||
 			!obj(current.items) ||
 			!obj(current.variants) ||
+			!Array.isArray(d.itemIds) ||
 			!Array.isArray(d.materials) ||
 			!Array.isArray(d.presets) ||
 			!obj(d.zOverrides) ||

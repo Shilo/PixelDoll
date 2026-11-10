@@ -58,7 +58,7 @@ export function invalidateMoveItems(
 		const legacyClips = old.legacy?.clips.filter((key) => !belongs(key));
 		const filtered: ItemQa = {
 			...old,
-			clips: Object.fromEntries(Object.entries(old.clips ?? {}).filter(([key]) => !belongs(key))),
+			clips: Object.fromEntries(Object.entries(old.clips).filter(([key]) => !belongs(key))),
 			cells: Object.fromEntries(Object.entries(old.cells).filter(([key]) => !belongs(key))),
 			...(legacyClips?.length ? { legacy: { ...old.legacy!, clips: legacyClips } } : {})
 		};

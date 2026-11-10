@@ -22,7 +22,7 @@ export interface DressState {
 	zOverrides: Record<string, ZOverride[]>;
 	hides: Record<string, string[] | null>;
 	current?: Outfit;
-	itemIds?: string[];
+	itemIds: string[];
 }
 interface ProjectRecord {
 	id: string;
@@ -92,7 +92,7 @@ export const dressOf = (m: Manifest, current?: Outfit): DressState => ({
 export function applyDress(m: Manifest, d: DressState) {
 	// An older autosave does not own items added after its snapshot. Retain their palettes, while allowing palette removal
 	// for items that the snapshot actually covered. Never restore materials for an item already removed in another action.
-	const owners = new Set([...(d.itemIds ?? []), ...d.materials.map((x) => x.owner)]),
+	const owners = new Set([...d.itemIds, ...d.materials.map((x) => x.owner)]),
 		current = new Set(m.items.map((it) => it.id));
 	m.materials = [
 		...structuredClone(d.materials).filter((x) => current.has(x.owner)),
@@ -167,10 +167,7 @@ export async function saveDress(id: string, m: Manifest, current: Outfit) {
 		if (!rec?.manifest) throw new Error(`project ${id} vanished`);
 		const manifest = rec.manifest,
 			live = new Set(manifest.items.map((it) => it.id));
-		const known = new Set([
-			...(d.itemIds ?? Object.keys(d.hides ?? {})),
-			...d.materials.map((mat) => mat.owner)
-		]);
+		const known = new Set([...d.itemIds, ...d.materials.map((mat) => mat.owner)]);
 		const retained = rec.dress?.current;
 		// A fit accepted after this snapshot owns its new materials and current equipped slot/variant selection.
 		const newSlots = Object.entries(retained?.items ?? {}).filter(
