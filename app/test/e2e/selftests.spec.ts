@@ -974,9 +974,9 @@ test('move QA survives real storage, ZIP export and directional replacements', a
 	await expect(value('shiftedFrames')).toHaveText('0');
 	await expect(value('strayPx')).toHaveText('0');
 	await run('roundtrip');
-	await run('legacy');
+	await run('copied');
 	await expect(value('status')).toHaveText('warn');
-	await expect(value('legacy')).toContainText('"clips"');
+	await expect(value('inherited')).toContainText('"clips"');
 	expect(errors).toEqual([]);
 	expect(paid).toEqual([]);
 });

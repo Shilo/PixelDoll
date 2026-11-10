@@ -12,7 +12,7 @@ import { composeCell } from '../../src/lib/compose/compose.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const hash = ('sha256:' + 'a'.repeat(64)) as `sha256:${string}`;
-function fixture(legacy = false): Manifest {
+function fixture(copied = false): Manifest {
 	const img = makeImg(64, 64);
 	img.data.set([255, 0, 0, 255], (32 * 64 + 32) * 4);
 	const rig: Manifest['rig'] = {
@@ -49,9 +49,9 @@ function fixture(legacy = false): Manifest {
 		keyOutside: 0
 	}));
 	const qa = itemQa(rig, slotOf('head'), 'green', cells, 2).qa;
-	if (legacy) {
+	if (copied) {
 		// Indivisible checks, as a copied fit stores them (equipment/copy.ts).
-		qa.legacy = { clips: Object.keys(qa.clips), summary: summaryOf(qa) };
+		qa.inherited = { clips: Object.keys(qa.clips), summary: summaryOf(qa) };
 		qa.clips = {};
 	}
 	const item: Item = {
@@ -120,10 +120,10 @@ test('replacement forgets the body px the item hid in that move only (round 3 ba
 	expect(item.baseCut).toBeUndefined();
 });
 
-test('legacy summaries remain explicitly incomplete only for retained coverage', () => {
+test('copied summaries remain explicitly incomplete only for retained coverage', () => {
 	const m = fixture(true);
 	invalidateMoveItems(m, 'slash');
-	expect(m.items[0].qa?.legacy?.clips).toEqual(['idle/south']);
+	expect(m.items[0].qa?.inherited?.clips).toEqual(['idle/south']);
 	expect(m.items[0].qa?.status).toBe('warn');
 	invalidateMoveItems(m, 'idle');
 	expect(m.items[0].qa).toBeUndefined();

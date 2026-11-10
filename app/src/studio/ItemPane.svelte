@@ -571,11 +571,11 @@
 								{it.qa.rawKeyReviewFrames} frames have new body-colored pixels before alignment. Ordinary
 								redraw shifts can cause this; quality status is unchanged.
 							</dd>{/if}
-						{#if it.qa.legacy}<dt>Older checks</dt>
+						{#if it.qa.inherited}<dt>Partial checks</dt>
 							<dd>
-								{it.qa.legacy.summary
-									? 'Older move checks are incomplete; totals may include replaced frames.'
-									: 'Checks are incomplete for older moves.'}
+								{it.qa.inherited.summary
+									? 'Copied checks cover whole moves; totals may include replaced frames.'
+									: 'Some moves have not been checked.'}
 							</dd>{/if}
 						{#if it.qa.unmeasured}
 							<dt>Measurements</dt>

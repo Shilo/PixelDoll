@@ -2,7 +2,7 @@ import type { CellKey, CellQa, Item, ItemQa, QaSummary } from '../store/manifest
 
 export const clipOf = (key: string) => key.split('/').slice(0, 2).join('/');
 export function summaryOf(q: ItemQa): QaSummary {
-	const { cells: _, clips: __, legacy: ___, rerolls: ____, ...summary } = q;
+	const { cells: _, clips: __, inherited: ___, rerolls: ____, ...summary } = q;
 	return summary;
 }
 
@@ -24,7 +24,7 @@ export function acceptQa(q: ItemQa): ItemQa {
 	};
 }
 
-/** Replace complete clip-directions. Indivisible checks (`legacy`) remain an explicitly conservative baseline. */
+/** Replace complete clip-directions. Inherited checks (`inherited`) remain an explicitly conservative baseline. */
 export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>): ItemQa {
 	const old = item.qa,
 		clips = { ...old?.clips, ...next.clips },
@@ -39,12 +39,12 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
 		)
 	];
 	// An item without any checks (the demo's items): every original clip stays explicitly unmeasured.
-	const baseline = old ? old.legacy : { clips: original };
+	const baseline = old ? old.inherited : { clips: original };
 	const remaining = baseline?.clips.filter((k) => !replaced.has(k)) ?? [];
-	const legacy = remaining.length ? { ...baseline!, clips: remaining } : undefined;
+	const inherited = remaining.length ? { ...baseline!, clips: remaining } : undefined;
 	const parts: (QaSummary & { hand?: 'r' | 'l' | '?' })[] = [
 		...Object.values(clips),
-		...(legacy?.summary ? [legacy.summary] : [])
+		...(inherited?.summary ? [inherited.summary] : [])
 	];
 	const min = (k: 'minKeyKept' | 'minAreaRatio') => Math.min(1, ...parts.map((p) => p[k]));
 	const max = (k: 'maxKeyOutside' | 'maxAreaCV' | 'maxPaletteDist') =>
@@ -78,7 +78,7 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
 			? 'warn'
 			: parts.some((p) => p.status === 'accepted')
 				? 'accepted'
-				: legacy
+				: inherited
 					? 'warn'
 					: 'pass';
 	const grip = parts.some((p) => p.grip)
@@ -113,7 +113,7 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
 		status,
 		rerolls: (old?.rerolls ?? 0) + next.rerolls,
 		clips,
-		...(legacy ? { legacy } : {}),
+		...(inherited ? { inherited } : {}),
 		cells: {
 			...Object.fromEntries(
 				Object.entries(old?.cells ?? {}).filter(([k]) => !replaced.has(clipOf(k)))

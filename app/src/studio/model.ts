@@ -394,7 +394,7 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
 		);
 	const parts: [string | null, QaSummary][] = [
 		...Object.entries(q.clips),
-		...(q.legacy?.summary ? [[null, q.legacy.summary] as [null, QaSummary]] : [])
+		...(q.inherited?.summary ? [[null, q.inherited.summary] as [null, QaSummary]] : [])
 	];
 	for (const [clip, p] of parts) {
 		if (p.status === 'pass') continue;

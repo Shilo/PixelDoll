@@ -55,14 +55,14 @@ export function invalidateMoveItems(
 			delete item.qa;
 			continue;
 		}
-		const legacyClips = old.legacy?.clips.filter((key) => !belongs(key));
+		const inheritedClips = old.inherited?.clips.filter((key) => !belongs(key));
 		const filtered: ItemQa = {
 			...old,
 			clips: Object.fromEntries(Object.entries(old.clips).filter(([key]) => !belongs(key))),
 			cells: Object.fromEntries(Object.entries(old.cells).filter(([key]) => !belongs(key))),
-			...(legacyClips?.length ? { legacy: { ...old.legacy!, clips: legacyClips } } : {})
+			...(inheritedClips?.length ? { inherited: { ...old.inherited!, clips: inheritedClips } } : {})
 		};
-		if (!legacyClips?.length) delete filtered.legacy;
+		if (!inheritedClips?.length) delete filtered.inherited;
 		// mergeQa aggregates the retained parts, including explicitly incomplete historical summaries.
 		const empty: ItemQa = {
 			minKeyKept: 1,

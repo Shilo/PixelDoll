@@ -168,11 +168,11 @@ export async function prepareCopy(design: EquipmentDesign, target: Project): Pro
 		const {
 			cells: _cells,
 			clips: _clips,
-			legacy: _legacy,
+			inherited: _inherited,
 			rerolls: _rerolls,
 			...summary
 		} = item.qa;
-		item.qa.legacy = {
+		item.qa.inherited = {
 			clips: [...new Set(assessment.matches.map((m) => m.target.split('/').slice(0, 2).join('/')))],
 			summary: { ...summary, status: 'warn' }
 		};
@@ -253,7 +253,10 @@ export function publishCandidate(
 							key,
 							keys.every((k) => additions.has(k))
 								? summary
-								: combinePartialQa(existing.qa?.clips[key] ?? existing.qa?.legacy?.summary, summary)
+								: combinePartialQa(
+										existing.qa?.clips[key] ?? existing.qa?.inherited?.summary,
+										summary
+									)
 						]
 					];
 				})

@@ -161,21 +161,21 @@ test('accepting an exception does not leave clean clips permanently marked for r
 
 /** Checks kept only as one summary, as a copied fit stores them (equipment/copy.ts). */
 const indivisible = (q: ItemQa): ItemQa => {
-	return { ...q, clips: {}, legacy: { clips: Object.keys(q.clips), summary: summaryOf(q) } };
+	return { ...q, clips: {}, inherited: { clips: Object.keys(q.clips), summary: summaryOf(q) } };
 };
 
-test('legacy totals are conservative and non-clean until all older coverage is replaced', () => {
+test('inherited totals are conservative and non-clean until all older coverage is replaced', () => {
 	const old = indivisible(check([cell('idle/south/0', true)]).qa);
 	const added = merge(item(old), [cell('slash/south/0')]);
-	expect(added.qa.legacy?.clips).toEqual(['idle/south']);
+	expect(added.qa.inherited?.clips).toEqual(['idle/south']);
 	expect(added.qa).toMatchObject({ minKeyKept: 0.8, clipPx: 1, status: 'fail' });
 	const fixed = merge(JSON.parse(JSON.stringify(added)) as Item, [cell('idle/south/0')]);
-	expect(fixed.qa.legacy).toBeUndefined();
+	expect(fixed.qa.inherited).toBeUndefined();
 	expect(fixed.qa).toMatchObject({ minKeyKept: 1, clipPx: 0, status: 'pass' });
 	const cleanOld = indivisible(check([cell('idle/south/0')]).qa);
 	expect(merge(item(cleanOld), [cell('slash/south/0')]).qa.status).toBe('warn');
 	const unknown = merge(item(), [cell('slash/south/0')]);
-	expect(unknown.qa.legacy).toEqual({ clips: ['idle/south'] });
+	expect(unknown.qa.inherited).toEqual({ clips: ['idle/south'] });
 	expect(unknown.qa.status).toBe('warn');
 });
 

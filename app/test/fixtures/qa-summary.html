@@ -40,7 +40,7 @@
 	><button id="east">Replace east</button>
 	<button id="reload">Reload saved checks</button
 	><button id="roundtrip">Verify ZIP round trip</button
-	><button id="legacy">Use older checks</button>
+	><button id="copied">Use copied checks</button>
 	<a href="/" target="_blank">Open in Studio</a>
 	<p id="status" role="status">Ready</p>
 	<table>
@@ -208,13 +208,13 @@
 			south: () => replace(['south']),
 			east: () => replace(['east']),
 			reload,
-			legacy: async () => {
+			copied: async () => {
 				await reload();
 				await db.update('projects', id, (rec) => {
 					// Indivisible checks, as a copied fit stores them (equipment/copy.ts).
 					const qa = rec.manifest.items.find((i) => i.id === itemId).qa;
-					qa.legacy = { clips: Object.keys(qa.clips), summary: summaryOf(qa) };
-					delete qa.clips;
+					qa.inherited = { clips: Object.keys(qa.clips), summary: summaryOf(qa) };
+					qa.clips = {};
 					return rec;
 				});
 				return replace(['south']);
