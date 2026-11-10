@@ -5,7 +5,7 @@ import { encodePngBytes } from '../image/pngraw.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import * as db from './db.ts';
 import type { Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.ts';
-import { supportedFormat } from './manifest.ts';
+import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
 
 export interface StoredProject {
 	id: string;
@@ -31,6 +31,34 @@ export const originOf = (p: StoredProject): 'studio' | 'dev' =>
 		? 'studio'
 		: 'dev');
 
+export const OUTDATED =
+	'This character was saved by an earlier preview version and is no longer supported.';
+
+/** Earlier preview formats are never upgraded: delete their characters, saved designs, fits and demo outfits. */
+export async function deleteOutdated(): Promise<number> {
+	const formatOf = (r: OutdatedCandidate) =>
+		r.kind === 'equipment-design'
+			? r.source?.format
+			: r.kind === 'equipment-fit-draft'
+				? r.plan?.design?.source?.format
+				: r.kind === 'dress' || r.manifest
+					? (r.format ?? r.manifest?.format)
+					: CURRENT_FORMAT;
+	const outdated = (await db.all<OutdatedCandidate>('projects')).filter(
+		(r) => typeof r?.id === 'string' && formatOf(r) !== CURRENT_FORMAT
+	);
+	for (const r of outdated) await db.del('projects', r.id);
+	return outdated.length;
+}
+interface OutdatedCandidate {
+	id: string;
+	kind?: string;
+	format?: string;
+	manifest?: { format?: string };
+	source?: { format?: string };
+	plan?: { design?: { source?: { format?: string } } };
+}
+
 export const listProjects = async () =>
 	(await db.all<StoredProject>('projects')).filter(
 		(p) => supportedFormat(p?.manifest?.format) && p.id?.startsWith('rig-')
@@ -45,6 +73,7 @@ export async function loadProject(
 	const rec = await db.get<StoredProject>('projects', id);
 	signal?.throwIfAborted();
 	if (!rec) throw new Error(`project ${id} not found`);
+	if (!supportedFormat(rec.manifest?.format)) throw new Error(OUTDATED);
 	const images = new Map<string, Img>();
 	const add = async (h: Sha256 | null | undefined, owner: string) => {
 		signal?.throwIfAborted();

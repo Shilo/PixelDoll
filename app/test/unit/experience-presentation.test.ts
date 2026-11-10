@@ -22,6 +22,7 @@ import {
 	keyboardVector,
 	pointerVector
 } from '../../src/studio/experience/movement.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const bodyHash: Sha256 = 'sha256:body',
 	gearHash: Sha256 = 'sha256:gear';
@@ -59,7 +60,7 @@ function fixture(
 		provenance: []
 	});
 	const manifest: Manifest = {
-		format: 'pixeldoll/2',
+		format: CURRENT_FORMAT,
 		name: 'Offline character',
 		app: '',
 		materials: [],

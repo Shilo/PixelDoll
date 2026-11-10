@@ -107,7 +107,7 @@ export function paperdollTscn(m: Manifest): string {
 }
 
 export const PAPERDOLL_GD = `extends Node2D
-## PixelDoll paperdoll (pixeldoll/1). body_fg is the clock: every other layer copies its animation, frame and
+## PixelDoll paperdoll (pixeldoll/3). body_fg is the clock: every other layer copies its animation, frame and
 ## progress on frame_changed, so layers cannot drift. library.tres retains every equipment dependency in game builds.
 ## Oversize layers (e.g. a 96x96 sword) have their own cell and pivot: equip sets each node's offset to -layer.pivot, so
 ## every layer's pivot lands on the node origin.

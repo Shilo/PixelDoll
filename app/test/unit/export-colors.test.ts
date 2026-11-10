@@ -11,6 +11,7 @@ import { readCharacterZip } from '../../src/lib/store/import.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import type { Manifest, Project } from '../../src/lib/store/manifest.ts';
 import { expectBytes, expectPixels } from './pixels.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 async function source(): Promise<Project> {
 	const images: Project['images'] = new Map(),
@@ -52,7 +53,7 @@ async function source(): Promise<Project> {
 	return {
 		images,
 		manifest: {
-			format: 'pixeldoll/1',
+			format: CURRENT_FORMAT,
 			app: 'PixelDoll',
 			name: 'Colored',
 			rig: {

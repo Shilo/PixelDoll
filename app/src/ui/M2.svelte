@@ -7,6 +7,7 @@
 	import * as db from '../lib/store/db.ts';
 	import { zip, type ZipEntry } from '../lib/store/zip.ts';
 	import type { Manifest, Provenance, CellKey } from '../lib/store/manifest.ts';
+	import { CURRENT_FORMAT } from '../lib/store/manifest.ts';
 	import {
 		ANCHORS,
 		DIRECTIONS,
@@ -310,7 +311,7 @@
 			if (s) skeletons[k] = s;
 		}
 		const manifest: Manifest = {
-			format: 'pixeldoll/1',
+			format: CURRENT_FORMAT,
 			name,
 			app: 'PixelDoll 0.1.0',
 			rig,
@@ -376,7 +377,7 @@
 	}
 	async function refreshStored() {
 		stored = (await db.all<StoredRig>('projects')).filter(
-			(p) => p?.manifest?.format === 'pixeldoll/1' && p.id?.startsWith('rig-')
+			(p) => p?.manifest?.format === CURRENT_FORMAT && p.id?.startsWith('rig-')
 		);
 	}
 	void refreshStored();

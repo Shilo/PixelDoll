@@ -8,6 +8,7 @@ import { cellHash } from '../../src/lib/rig/rig.ts';
 import { fromHex } from '../../src/lib/dress/palette.ts';
 import { variantRampOf } from '../../src/lib/dress/dress.ts';
 import type { Hex, Item, Material, Manifest } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 afterEach(() => vi.restoreAllMocks());
 const ramp: Hex[] = [
 	'#3e4143',
@@ -267,7 +268,7 @@ async function fixture() {
 		]
 	};
 	const manifest: Manifest = {
-		format: 'pixeldoll/1',
+		format: CURRENT_FORMAT,
 		name: 'Original',
 		app: '',
 		rig: {

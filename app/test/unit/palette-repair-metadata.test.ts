@@ -5,6 +5,7 @@ import { cellHash } from '../../src/lib/rig/rig.ts';
 import { projectEntries, readCharacterZip } from '../../src/lib/store/import.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import type { ItemPaletteRepair, Project } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 const before = `sha256:${'1'.repeat(64)}` as const,
 	after = `sha256:${'2'.repeat(64)}` as const;
 const lineage = (): ItemPaletteRepair => ({
@@ -21,7 +22,7 @@ async function project(): Promise<Project> {
 	return {
 		images: new Map([[hash, im]]),
 		manifest: {
-			format: 'pixeldoll/1',
+			format: CURRENT_FORMAT,
 			name: 'Lineage test',
 			app: 'PixelDoll',
 			materials: [],

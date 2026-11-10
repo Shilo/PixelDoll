@@ -10,6 +10,7 @@ import { cellHash } from '../../src/lib/rig/rig.ts';
 import { readCharacterZip } from '../../src/lib/store/import.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import type { Item, Material, Project } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const rgba = (im: ReturnType<typeof makeImg>, x = 32, y = 21) => [
 	...im.data.slice((y * 64 + x) * 4, (y * 64 + x) * 4 + 4)
@@ -58,7 +59,7 @@ async function fixture(): Promise<Project> {
 			[c, helmet]
 		]),
 		manifest: {
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			name: 'Palette fixture',
 			app: 'test',
 			rig: {
@@ -93,7 +94,7 @@ async function fixture(): Promise<Project> {
 	};
 }
 
-test('v2 derives independent ramps despite identical RGBs, while v1 keeps its historical contract', async () => {
+test('materials derive independent ramps despite identical RGBs', async () => {
 	const p = await fixture();
 	p.manifest.materials = [];
 	p.manifest.items.forEach((it) => {
@@ -104,8 +105,6 @@ test('v2 derives independent ramps despite identical RGBs, while v1 keeps its hi
 		p.manifest.items.filter((it) => it.id !== 'helmet').every((it) => it.materials.length)
 	).toBe(true);
 	expect(validate(p)).toEqual([]);
-	p.manifest.format = 'pixeldoll/1';
-	expect(validate(p).some((s) => s.includes('color'))).toBe(true);
 });
 
 test('identical hashes recolor per owner including an unworn or unmodified second copy', async () => {

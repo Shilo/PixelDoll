@@ -6,6 +6,7 @@ import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { readCharacterZip } from '../../src/lib/store/import.ts';
 import { cellHash, type DirectionName } from '../../src/lib/rig/rig.ts';
 import { sha256 } from '../../src/lib/image/hash.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 test('offline Motion Lab edits and roundtrips motions without requesting generations', async ({
 	page
@@ -1125,7 +1126,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 	page.on('pageerror', (error) => errors.push(error.message));
 	await page.goto('/motion-lab.html');
 	await expect(page.getByRole('status')).toContainText('Offline lab ready');
-	await page.evaluate(async () => {
+	await page.evaluate(async (format) => {
 		const dbPath = '/src/lib/store/db.ts',
 			imagePath = '/src/lib/image/png.ts',
 			codecPath = '/src/lib/image/pngraw.ts',
@@ -1168,7 +1169,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 			Object.fromEntries(DIRECTIONS.map((d: string) => [`default/${d}/0`, standing[d][0]]))
 		);
 		const manifest = {
-			format: 'pixeldoll/2',
+			format: format,
 			name: 'Synthetic starter source',
 			app: 'Offline UI fixture, no art qualification',
 			rig,
@@ -1207,7 +1208,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 		);
 		await db.put('projects', mirrored.id, mirrored);
 		localStorage.setItem('pixeldoll.studio.project', record.id);
-	});
+	}, CURRENT_FORMAT);
 	const starter = page.getByRole('region', { name: 'Eight-direction starter pack', exact: true });
 	await starter.getByRole('button', { name: 'Refresh saved results', exact: true }).click();
 	await starter

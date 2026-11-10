@@ -10,6 +10,7 @@ import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import type { Item, Manifest, Project } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 async function fixture(combinedCuts = false) {
 	const body = makeImg(4, 4),
@@ -57,7 +58,7 @@ async function fixture(combinedCuts = false) {
 	const p: Project = {
 		images,
 		manifest: {
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			name: 'Aseprite regression',
 			app: 'test',
 			rig: {

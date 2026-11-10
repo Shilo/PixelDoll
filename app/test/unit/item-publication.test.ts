@@ -2,6 +2,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import * as db from '../../src/lib/store/db.ts';
 import { saveItem, type StoredProject } from '../../src/lib/store/project.ts';
 import type { Item } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 afterEach(() => vi.restoreAllMocks());
 const item = (name: string): Item => ({
 	id: 'sword',
@@ -20,7 +21,7 @@ function fixture(): StoredProject {
 		id: 'rig-test',
 		savedAt: 'before',
 		manifest: {
-			format: 'pixeldoll/1',
+			format: CURRENT_FORMAT,
 			app: 'test',
 			name: 'Latest project name',
 			rig: {

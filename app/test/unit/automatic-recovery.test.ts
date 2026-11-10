@@ -25,6 +25,7 @@ import {
 	type RigCtx
 } from '../../src/lib/items/run.ts';
 import { draftQueueIds } from '../../src/studio/apiPlans.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const ledger = vi.hoisted(() => ({
 	records: new Map<string, JobRec>(),
@@ -200,7 +201,7 @@ async function fixture(suspicious = false) {
 		layers: [{ id: 'main', role: 'fg', z: 40, cells: { default: { south: [lh] } } }]
 	};
 	const manifest: Manifest = {
-		format: 'pixeldoll/2',
+		format: CURRENT_FORMAT,
 		app: 'test',
 		name: 'Synthetic',
 		materials: [],

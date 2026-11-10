@@ -17,6 +17,7 @@ import {
 import { planGens } from '../../src/lib/items/items.ts';
 import { queue } from '../../src/lib/pixellab/queue.ts';
 import { itemMoveOffer, moveEstimate, reviewItemMove } from '../../src/studio/create.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -130,7 +131,7 @@ test('does not replace structural validation for invalid estimates', () => {
 
 function context(): RigCtx {
 	const manifest: RigCtx['rec']['manifest'] = {
-		format: 'pixeldoll/1',
+		format: CURRENT_FORMAT,
 		app: 'synthetic test',
 		name: 'Synthetic character',
 		rig: rig(),

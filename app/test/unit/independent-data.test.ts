@@ -19,6 +19,7 @@ import { readCharacterZip } from '../../src/lib/store/import.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import type { Item, Layer, Manifest, Project } from '../../src/lib/store/manifest.ts';
 import { expectPixels } from './pixels.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const MIRRORS: Partial<Record<DirectionName, DirectionName>> = {
 	west: 'east',
@@ -157,7 +158,7 @@ async function fixture(count: 4 | 8, independent: boolean) {
 		});
 	}
 	const manifest: Manifest = {
-		format: 'pixeldoll/1',
+		format: CURRENT_FORMAT,
 		name: `${independent ? 'Independent' : 'Legacy'} ${count}`,
 		app: 'test',
 		rig,

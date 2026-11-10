@@ -122,7 +122,7 @@ test('current PixelLab multi-state ZIP preserves independent directions and spar
 	const imported = await readCharacterZip(bytes, id),
 		{ manifest: m, images } = imported.project;
 	expect(m.name).toBe('Imported character'); // State labels are not a group name, and this fixture has no shared prompt.
-	expect(m.format).toBe(CURRENT_FORMAT); // pixeldoll/1 recolor skips item colors the body uses
+	expect(m.format).toBe(CURRENT_FORMAT);
 	expect(imported.states).toHaveLength(2);
 	expect(m.rig.directions.map((d) => [d.id, d.mirrorOf])).toEqual([
 		['south', undefined],
@@ -1201,7 +1201,6 @@ test.each(['source-only', 'source-exceeds-canonical'] as const)(
 	async (layout) => {
 		const { project } = await readCharacterZip(await zip(await pixelLabFiles()));
 		const m = structuredClone(project.manifest);
-		m.format = 'pixeldoll/2';
 		m.rig.animations = [
 			{ id: 'idle', cells: 120, loop: true, frames: [{ cell: 0, ms: 100 }] },
 			{ id: 'rest', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }
@@ -1231,7 +1230,6 @@ test.each(['source-only', 'source-exceeds-canonical'] as const)(
 test('v2 sourceSheets-only imports preserve legitimate oversize96px source pixels and shared geometry', async () => {
 	const { project } = await readCharacterZip(await zip(await pixelLabFiles()));
 	const m = structuredClone(project.manifest);
-	m.format = 'pixeldoll/2';
 	m.rig.animations = [{ id: 'idle', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }];
 	m.items = [m.items[0]];
 	m.items[0].layers = [

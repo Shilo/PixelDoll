@@ -3,6 +3,7 @@ import { bakedFrame } from '../../src/lib/compose/compose.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import type { Item, Layer, Project, Sha256 } from '../../src/lib/store/manifest.ts';
 import { paintedFrame } from '../../src/studio/experience/bounds.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const bodyHash: Sha256 = 'sha256:body';
 function rectangle(w: number, h: number, x: number, y: number, width = 1, height = 1): Img {
@@ -29,7 +30,7 @@ function item(id: string, slot: string, layers: Layer[]): Item {
 function fixture(): Project {
 	return {
 		manifest: {
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			name: 'Bounds fixture',
 			app: '',
 			materials: [],

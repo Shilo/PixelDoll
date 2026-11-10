@@ -10,6 +10,7 @@ import { cellHash, type DirectionName } from '../../src/lib/rig/rig.ts';
 import { LABELS, fromApi } from '../../src/lib/rig/poses.ts';
 import { sha256 } from '../../src/lib/image/hash.ts';
 import type { Item, Manifest } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 afterEach(() => vi.restoreAllMocks());
 async function fixture(mode = 'pass', pad = 16, bladeEnd = 52) {
 	const dirs: DirectionName[] = ['south', 'east', 'north', 'west'],
@@ -77,7 +78,7 @@ async function fixture(mode = 'pass', pad = 16, bladeEnd = 52) {
 		]
 	};
 	const manifest: Manifest = {
-		format: 'pixeldoll/1',
+		format: CURRENT_FORMAT,
 		name: 'Test',
 		app: '',
 		slots: [],

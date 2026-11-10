@@ -1,5 +1,6 @@
 import { expect, type Page, type BrowserContext } from '@playwright/test';
 import { openStudio } from './immersive-helpers.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 // Live screencasting reproduced native profile-lock failures in the forced-crash controls on Windows.
 export const nativeCrashTrace = {
@@ -10,7 +11,7 @@ export const nativeCrashTrace = {
 } as const;
 
 export async function retainRunningFit(page: Page) {
-	await page.evaluate(async () => {
+	await page.evaluate(async (format) => {
 		const request = indexedDB.open('pixeldoll', 1);
 		const database = await new Promise<IDBDatabase>((resolve, reject) => {
 			request.onsuccess = () => resolve(request.result);
@@ -26,7 +27,7 @@ export async function retainRunningFit(page: Page) {
 				targetId: 'rig-takeover',
 				targetProjectId: 'rig-takeover',
 				stage: 'rest-running',
-				plan: {},
+				plan: { design: { source: { format } } },
 				error: '',
 				updatedAt: new Date().toISOString(),
 				spentGens: 0,
@@ -42,7 +43,7 @@ export async function retainRunningFit(page: Page) {
 			transaction.onabort = transaction.onerror = () => reject(transaction.error);
 		});
 		database.close();
-	});
+	}, CURRENT_FORMAT);
 }
 
 export async function retainedFitStage(page: Page): Promise<string> {

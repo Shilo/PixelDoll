@@ -7,6 +7,7 @@ import { unzip } from '../../src/lib/store/zip.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { readAseprite } from '../../src/lib/export/aseprite.ts';
 import { EXPORT_SETTINGS_KEY } from '../../src/lib/store/export-settings.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 async function savedExport(page: Page, dev: string) {
 	await page.setViewportSize({ width: 800, height: 600 }); // Eight parallel settings runs do not need eight full-size animated worlds.
@@ -1355,18 +1356,21 @@ for (const corruption of ['null-list', 'sparse-array'] as const)
 		await page.getByRole('button', { name: 'Close export' }).click();
 		const errors: string[] = [];
 		page.on('pageerror', (error) => errors.push(error.message));
-		await page.evaluate(async (corruption) => {
-			const path = '/src/lib/store/db.ts',
-				db = await import(path);
-			await db.put('projects', 'rig-broken-export-names', {
-				id: 'rig-broken-export-names',
-				manifest: {
-					format: 'pixeldoll/2',
-					name: 'Broken library character',
-					rig: { animations: corruption === 'sparse-array' ? Array(1) : null }
-				}
-			});
-		}, corruption);
+		await page.evaluate(
+			async ({ corruption, format }) => {
+				const path = '/src/lib/store/db.ts',
+					db = await import(path);
+				await db.put('projects', 'rig-broken-export-names', {
+					id: 'rig-broken-export-names',
+					manifest: {
+						format,
+						name: 'Broken library character',
+						rig: { animations: corruption === 'sparse-array' ? Array(1) : null }
+					}
+				});
+			},
+			{ corruption, format: CURRENT_FORMAT }
+		);
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
 		const dialog = page.getByRole('dialog');
 		await expect(dialog.locator('.notice.warn')).toContainText('Broken library character');

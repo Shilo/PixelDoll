@@ -100,7 +100,7 @@ async function fixtureArchive() {
 	const manifest = {
 		name: 'Phaser playback',
 		app: 'test',
-		format: 'pixeldoll/2',
+		format: 'pixeldoll/3',
 		rig,
 		slots: [
 			{ id: 'body', class: 'base', z: 10, required: true },

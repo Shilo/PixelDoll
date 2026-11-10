@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import { afterEach, expect, test, vi } from 'vitest';
 import { atlasJson, atlasName, phaserFiles, PAPERDOLL_JS } from '../../src/lib/export/phaser.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 // Execute the actual generated module; no copied runtime logic in this harness.
 const runtime = () =>
@@ -13,7 +14,7 @@ const fixture = () =>
 	({
 		name: 'Same name',
 		app: 'test',
-		format: 'pixeldoll/2',
+		format: CURRENT_FORMAT,
 		rig: {
 			baseItem: 'base',
 			cell: { w: 64, h: 64 },

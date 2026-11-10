@@ -30,6 +30,7 @@ import * as db from '../../src/lib/store/db.ts';
 import * as projects from '../../src/lib/store/project.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import * as itemRun from '../../src/lib/items/run.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 afterEach(() => vi.restoreAllMocks());
 async function fixture(palette: boolean | 'partial' | 'broad' = false) {
@@ -74,7 +75,7 @@ async function fixture(palette: boolean | 'partial' | 'broad' = false) {
 		rest: Object.fromEntries(dirs.map((d) => [d, { image: hash, keypoints: points }]))
 	};
 	const manifest: Manifest = {
-		format: 'pixeldoll/1',
+		format: CURRENT_FORMAT,
 		name: 'Recover',
 		app: '',
 		rig,

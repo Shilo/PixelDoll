@@ -15,12 +15,12 @@ export type {
 
 export type Hex = `#${string}`;
 export type CellKey = `${string}/${DirectionName}/${number}`;
-export const CURRENT_FORMAT = 'pixeldoll/2' as const;
+export const CURRENT_FORMAT = 'pixeldoll/3' as const;
 export const supportedFormat = (value: unknown): value is Manifest['format'] =>
-	value === 'pixeldoll/1' || value === CURRENT_FORMAT;
+	value === CURRENT_FORMAT;
 
 export interface Manifest {
-	format: 'pixeldoll/1' | 'pixeldoll/2';
+	format: typeof CURRENT_FORMAT;
 	name: string;
 	app: string;
 	rig: Rig;

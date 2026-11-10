@@ -147,7 +147,7 @@ export async function renderFixture() {
 		...extra
 	});
 	const manifest = {
-		format: 'pixeldoll/2',
+		format: 'pixeldoll/3',
 		name: 'Unity render review',
 		app: 'review',
 		rig,

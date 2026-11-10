@@ -13,6 +13,7 @@ import { rawClip, largestComponent } from '../../src/lib/rig/clips.ts';
 import type { RecoveryJob } from '../../dev-fixtures/audit-recovery/recovery.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import type { Project } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 async function fixture() {
 	const blobs = new Map<string, Blob>(),
 		jobs: RecoveryJob[] = [],
@@ -49,7 +50,7 @@ async function fixture() {
 		},
 		project: Project = {
 			manifest: {
-				format: 'pixeldoll/1',
+				format: CURRENT_FORMAT,
 				name: 'Test',
 				app: 'test',
 				slots: [],

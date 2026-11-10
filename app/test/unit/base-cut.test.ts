@@ -19,6 +19,7 @@ import { recolor } from '../../src/lib/dress/dress.ts';
 import { readCharacterZip } from '../../src/lib/store/import.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import { flipH } from '../../src/lib/rig/mirror.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 // Round 3 (docs/research/generation-quality-round3-2026-10-25.md): a hood that hides the body's ear tips exports as a baked
 // "<base>~<hood>" body every engine swaps to while the hood is worn; nothing else of the body changes.
@@ -59,7 +60,7 @@ async function project(cut: Item['baseCut']): Promise<Project> {
 		manifest: {
 			name: 'Hidden ears',
 			app: 'test',
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			rig: {
 				baseItem: 'base',
 				baseHash,
@@ -432,7 +433,7 @@ test('an exact copy keeps the hidden ear px, flipped for a target view the sourc
 		manifest: {
 			name: 's',
 			app: 'test',
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			rig: rig([{ id: 'east' }, { id: 'west', mirrorOf: 'east' }]),
 			slots,
 			items: [
@@ -451,7 +452,7 @@ test('an exact copy keeps the hidden ear px, flipped for a target view the sourc
 		manifest: {
 			name: 't',
 			app: 'test',
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			rig: rig([{ id: 'east' }, { id: 'west' }]),
 			slots,
 			items: [item('base', 'body', 10, { idle: { east: [b], west: [bw] } })],

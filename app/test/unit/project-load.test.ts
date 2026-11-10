@@ -1,9 +1,15 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { openSource } from '../../src/lib/dress/project.ts';
-import { loadProject, type StoredProject } from '../../src/lib/store/project.ts';
+import {
+	deleteOutdated,
+	loadProject,
+	OUTDATED,
+	type StoredProject
+} from '../../src/lib/store/project.ts';
 import * as db from '../../src/lib/store/db.ts';
 import * as png from '../../src/lib/image/png.ts';
 import type { Sha256 } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 afterEach(() => {
 	vi.restoreAllMocks();
@@ -24,7 +30,7 @@ function fixture() {
 		id: 'rig-load',
 		savedAt: '',
 		manifest: {
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			name: 'Cancelable character',
 			app: 'PixelDoll',
 			slots: [],
@@ -179,4 +185,38 @@ test('an active load retains all unique cells and propagates genuine failures', 
 	await expect(loadProject(f.record.id)).rejects.toThrow('Storage read failed');
 	f.decode.mockRejectedValueOnce(new Error('Malformed PNG'));
 	await expect(loadProject(f.record.id)).rejects.toThrow('Malformed PNG');
+});
+
+test('a character saved in an earlier format is rejected before any cell read', async () => {
+	const f = fixture();
+	(f.record.manifest as { format: string }).format = 'pixeldoll/2';
+	await expect(loadProject(f.record.id)).rejects.toThrow(OUTDATED);
+	expect(f.getBlob).not.toHaveBeenCalled();
+});
+
+test('records in an earlier format are deleted, current records and other state stay', async () => {
+	const old = 'pixeldoll/2',
+		records = [
+			{ id: 'rig-old', manifest: { format: old } },
+			{ id: 'rig-new', manifest: { format: CURRENT_FORMAT } },
+			{ id: 'equipment-design:old', kind: 'equipment-design', source: { format: old } },
+			{ id: 'equipment-design:new', kind: 'equipment-design', source: { format: CURRENT_FORMAT } },
+			{
+				id: 'fit-old',
+				kind: 'equipment-fit-draft',
+				plan: { design: { source: { format: old } } }
+			},
+			{ id: 'dress-fixture:s2', kind: 'dress' },
+			{ id: 'dress-fixture:new', kind: 'dress', format: CURRENT_FORMAT },
+			{ id: 'studio-drafts', gens: [] }
+		];
+	vi.spyOn(db, 'all').mockResolvedValue(records);
+	const del = vi.spyOn(db, 'del').mockResolvedValue(undefined);
+	expect(await deleteOutdated()).toBe(4);
+	expect(del.mock.calls.map(([, id]) => id)).toEqual([
+		'rig-old',
+		'equipment-design:old',
+		'fit-old',
+		'dress-fixture:s2'
+	]);
 });

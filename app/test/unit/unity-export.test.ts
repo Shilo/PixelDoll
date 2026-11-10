@@ -9,6 +9,7 @@ import { makeImg } from '../../src/lib/image/png.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import type { Item, Project } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 async function manifest() {
 	const project = await loadFixture(async (path) =>
@@ -126,7 +127,7 @@ test('Unity resolves a clipped canonical body for both the prefab preview and ru
 		manifest: {
 			name: 'Clipped body',
 			app: 'test',
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			rig: {
 				baseItem: 'base',
 				baseHash,

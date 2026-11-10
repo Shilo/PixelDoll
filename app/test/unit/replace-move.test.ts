@@ -9,6 +9,7 @@ import { itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts';
 import { summaryOf } from '../../src/lib/items/qa-summary.ts';
 import type { Item, Manifest } from '../../src/lib/store/manifest.ts';
 import { composeCell } from '../../src/lib/compose/compose.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const hash = ('sha256:' + 'a'.repeat(64)) as `sha256:${string}`;
 function fixture(legacy = false): Manifest {
@@ -76,7 +77,7 @@ function fixture(legacy = false): Manifest {
 		]
 	};
 	return {
-		format: 'pixeldoll/1',
+		format: CURRENT_FORMAT,
 		name: 'Test',
 		app: '',
 		rig,

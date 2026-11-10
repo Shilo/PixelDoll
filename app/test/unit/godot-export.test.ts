@@ -7,6 +7,7 @@ import { godotFiles, paperdollTscn, spriteFramesTres } from '../../src/lib/expor
 import { makeImg } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import type { Item, Project } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 async function fixture(): Promise<Project> {
 	const im = makeImg(64, 64);
@@ -34,7 +35,7 @@ async function fixture(): Promise<Project> {
 	return {
 		images: new Map([[hash, im]]),
 		manifest: {
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			name: 'Godot regression',
 			app: 'test',
 			rig: {

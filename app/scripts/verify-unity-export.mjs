@@ -90,7 +90,7 @@ async function fixtureArchive() {
 		)
 	);
 	const manifest = {
-		format: 'pixeldoll/2',
+		format: 'pixeldoll/3',
 		name: 'Unity layered playback',
 		app: 'review',
 		rig,

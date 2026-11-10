@@ -5,7 +5,7 @@ import { loadProject, type StoredProject } from '../store/project.ts';
 import { rigArtworkVersion } from '../rig/rig.ts';
 import * as db from '../store/db.ts';
 import type { Manifest, Material, Preset, Project, ZOverride } from '../store/manifest.ts';
-import { supportedFormat } from '../store/manifest.ts';
+import { CURRENT_FORMAT, supportedFormat } from '../store/manifest.ts';
 import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { assetUrl } from '../assets.ts';
@@ -15,6 +15,8 @@ export interface Outfit {
 	variants: Preset['variants'];
 }
 export interface DressState {
+	/** Snapshots from another format are ignored and removed (store/project.ts deleteOutdated). */
+	format: typeof CURRENT_FORMAT;
 	materials: Material[];
 	presets: Preset[];
 	zOverrides: Record<string, ZOverride[]>;
@@ -32,7 +34,7 @@ interface ProjectRecord {
 
 export const FIXTURES = ['s2', 's1'];
 
-/** Sources: "fixture:<name>" and every IndexedDB project record holding a pixeldoll/1 manifest. */
+/** Sources: "fixture:<name>" and every IndexedDB project record holding a current manifest. */
 export async function listSources(): Promise<{ id: string; label: string }[]> {
 	const recs = (await db.all<ProjectRecord>('projects')).filter(
 		(r) => supportedFormat(r?.manifest?.format) && r.id?.startsWith('rig-')
@@ -67,8 +69,9 @@ export async function openSource(
 		signal?.throwIfAborted();
 		const saved = await db.get<DressState>('projects', `dress-${id}`).catch(() => undefined);
 		signal?.throwIfAborted();
-		if (saved) applyDress(project.manifest, saved);
-		return { project, current: saved?.current };
+		if (saved?.format !== CURRENT_FORMAT) return { project };
+		applyDress(project.manifest, saved);
+		return { project, current: saved.current };
 	}
 	const { rec, project } = await loadProject(id, signal); // B4's loader (store/project.ts)
 	signal?.throwIfAborted();
@@ -76,6 +79,7 @@ export async function openSource(
 }
 
 export const dressOf = (m: Manifest, current?: Outfit): DressState => ({
+	format: CURRENT_FORMAT,
 	itemIds: m.items.map((it) => it.id),
 	materials: m.materials,
 	presets: m.presets,

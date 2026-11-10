@@ -12,7 +12,13 @@ import {
 import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, randomOutfit, recolor, storeVariants } from '../lib/dress/dress.ts';
 import { drawList } from '../lib/compose/compose.ts';
-import { deleteItem, listProjects, loadProject, originOf } from '../lib/store/project.ts';
+import {
+	deleteItem,
+	deleteOutdated,
+	listProjects,
+	loadProject,
+	originOf
+} from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import type {
 	CellKey,
@@ -23,6 +29,7 @@ import type {
 	Project,
 	ZOverride
 } from '../lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../lib/store/manifest.ts';
 import type { ItemPaletteRepairPlan, Draft, ItemResult } from '../lib/items/run.ts';
 import { loadDrafts } from '../lib/items/drafts.ts';
 import { app } from '../lib/app.svelte.ts';
@@ -490,6 +497,20 @@ export function stepPreviewFrame(direction: -1 | 1): void {
 }
 
 export async function refreshProjects() {
+	const removed = await deleteOutdated().catch((e: unknown) => {
+		console.error('outdated', e);
+		toast(
+			`Could not remove characters saved by an earlier preview version: ${(e as Error).message}`,
+			{
+				tone: 'danger'
+			}
+		);
+		return 0;
+	});
+	if (removed)
+		toast(
+			`Removed ${removed} saved ${removed === 1 ? 'item' : 'items'} made by an earlier preview version.`
+		);
 	const listed = await listProjects().catch((e: unknown) => {
 			console.error('projects', e);
 			toast(`Could not read your saved characters: ${(e as Error).message}`, { tone: 'danger' });
@@ -724,7 +745,7 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 		const obj = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v);
 		const current = d?.current;
 		if (
-			!d ||
+			d?.format !== CURRENT_FORMAT ||
 			!current ||
 			!obj(current) ||
 			!obj(current.items) ||

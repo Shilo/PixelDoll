@@ -14,6 +14,7 @@ import { expect, test, type Page } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 import './studio-thumbnails.ts';
 import './dialog-dismissal.ts';
 
@@ -664,7 +665,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	await idb({
 		id: 'rig-e2edevrig00',
 		savedAt: '',
-		manifest: { format: 'pixeldoll/1', name: 'E2E dev rig' },
+		manifest: { format: CURRENT_FORMAT, name: 'E2E dev rig' },
 		rigQa: { pivotFrom: 'idle/south/0' }
 	});
 	await page.reload();
@@ -928,12 +929,21 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 		'west',
 		'south-west'
 	].map((id) => ({ id }));
-	for (const it of data.manifest.items)
+	const added = ['south-east', 'north-east', 'north-west', 'south-west', 'west'];
+	for (const it of data.manifest.items) {
 		for (const layer of it.layers)
 			for (const dirs of Object.values(layer.cells ?? {}) as Record<string, unknown>[]) {
-				for (const dir of ['south-east', 'north-east', 'north-west', 'south-west', 'west'])
-					dirs[dir] = dirs.east ?? dirs.south;
+				for (const dir of added) dirs[dir] = dirs.east ?? dirs.south;
 			}
+		// Coverage follows the copied artwork.
+		const covered = new Set<string>(it.coverage);
+		for (const key of it.coverage ?? []) {
+			const [anim, dir, cell] = key.split('/');
+			const from = it.layers[0].cells[anim]?.east ? 'east' : 'south';
+			if (dir === from) for (const to of added) covered.add(`${anim}/${to}/${cell}`);
+		}
+		if (it.coverage) it.coverage = [...covered];
+	}
 	files.set('project.json', new TextEncoder().encode(JSON.stringify(data)));
 	const bytes = await zip([...files].map(([name, data]) => ({ name, data })));
 	await page.locator('.project-btn').click();
@@ -3196,10 +3206,16 @@ async function targetedRepairFixture(page: Page) {
 			m = rec.manifest,
 			base = m.items.find((it: { id: string }) => it.id === m.rig.baseItem);
 		m.rig.directions = m.rig.directions.map((d: { id: string }) => ({ id: d.id }));
-		for (const it of m.items)
+		for (const it of m.items) {
 			for (const layer of it.layers)
 				for (const dirs of Object.values(layer.cells ?? {}) as any[])
 					if (dirs.east && !dirs.west) dirs.west = [...dirs.east];
+			it.coverage?.push(
+				...it.coverage
+					.filter((key: string) => key.split('/')[1] === 'east')
+					.map((key: string) => key.replace('/east/', '/west/'))
+			);
+		}
 		const points = poses.LABELS.map((label: string, i: number) => ({
 			label,
 			x: 0.3 + i * 0.01,
@@ -3536,6 +3552,7 @@ test('partial missing gear and explicit item repair stay on the current move and
 		const p = s.store.project,
 			item = p.manifest.items.find((it: { id: string }) => it.id === id);
 		for (const layer of item.layers) delete layer.cells.walk.west;
+		item.coverage = item.coverage.filter((key: string) => !key.startsWith('walk/west/'));
 		s.store.project = {
 			...p,
 			manifest: {
@@ -3663,6 +3680,7 @@ test('unsafe imported equipment prices its frozen route and unsupported held off
 			keypoints: Array.from({ length: walk.cells }, (_, i) => (i === 1 ? bad : points))
 		};
 		for (const layer of item.layers) delete layer.cells.walk.south;
+		item.coverage = item.coverage.filter((key: string) => !key.startsWith('walk/south/'));
 		await db.put('projects', s.doc.id, rec);
 		await s.openProject(s.doc.id);
 		s.ui.anim = 'walk';

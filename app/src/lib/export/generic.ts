@@ -3,6 +3,7 @@
 import type { Img } from '../image/png.ts';
 import { validateRig } from '../rig/rig.ts';
 import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
+import { CURRENT_FORMAT } from '../store/manifest.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
 import { moveDirs, recolor, storeVariants, variantOf, variantRampOf } from '../dress/dress.ts';
 import { bakedFrame, layerFrame, tuckedId, variantCovers } from '../compose/compose.ts';
@@ -142,7 +143,7 @@ export function validate(p: Project): string[] {
 				e.push(`${mat.id}: ramp colors must be six-digit #RRGGBB values`);
 				continue;
 			}
-			const key = m.format === 'pixeldoll/2' ? `${mat.owner}:${c.toLowerCase()}` : c.toLowerCase();
+			const key = m.format === CURRENT_FORMAT ? `${mat.owner}:${c.toLowerCase()}` : c.toLowerCase();
 			seen.has(key)
 				? e.push(`color ${c} in ramps ${seen.get(key)} and ${mat.id}`)
 				: seen.set(key, mat.id);
@@ -156,7 +157,7 @@ export function validate(p: Project): string[] {
 		if (
 			mat.defaultVariant &&
 			mat.ramp.every((c) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c)) &&
-			(m.format !== 'pixeldoll/2' || !variantRampOf(mat, mat.defaultVariant))
+			(m.format !== CURRENT_FORMAT || !variantRampOf(mat, mat.defaultVariant))
 		)
 			e.push(`${mat.id}: invalid default colorway`);
 	}
@@ -268,7 +269,7 @@ export function exportManifest(
 	for (const { mat, baseline, selections } of detached) {
 		delete mat.linkTo;
 		delete mat.defaultVariant;
-		if (m.format === 'pixeldoll/2' && baseline) mat.defaultVariant = baseline;
+		if (m.format === CURRENT_FORMAT && baseline) mat.defaultVariant = baseline;
 		m.presets.forEach((pr, i) => {
 			if (selections[i]) pr.variants[mat.id] = selections[i];
 			else delete pr.variants[mat.id];
@@ -492,7 +493,7 @@ export function selfTest() {
 	const p = {
 		images: new Map(),
 		manifest: {
-			format: 'pixeldoll/1',
+			format: CURRENT_FORMAT,
 			name: 't',
 			app: 'x',
 			materials: [

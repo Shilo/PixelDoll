@@ -1,5 +1,6 @@
 // Phaser 3.80+ / 4 export (manifest-spec §6.4): one TexturePacker JSON-Hash atlas per sheet + PaperdollContainer.js.
 import type { Manifest } from '../store/manifest.ts';
+import { CURRENT_FORMAT } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
 import { layerFrame } from '../compose/compose.ts';
 
@@ -38,7 +39,7 @@ export function atlasJson(m: Manifest, itemId: string, layerId: string, anim: st
 	};
 }
 
-export const PAPERDOLL_JS = `// PixelDoll runtime for Phaser 3.80+ and Phaser 4 (pixeldoll/1). No Phaser import: works with the global or a bundled Phaser.
+export const PAPERDOLL_JS = `// PixelDoll runtime for Phaser 3.80+ and Phaser 4 (pixeldoll/3). No Phaser import: works with the global or a bundled Phaser.
 // The body sprite is the clock; every layer copies its frame name on each animation event, so layers cannot drift.
 //   const m = await loadPaperdoll(scene, 'assets/hero/');   // folder that holds manifest.json
 //   const doll = new Paperdoll(scene, 200, 150, m); doll.play('walk', 'south'); doll.equip('head', null);
@@ -277,7 +278,7 @@ Atlases: phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json (TexturePa
 export function selfTest() {
 	const m = {
 		app: 'PixelDoll',
-		format: 'pixeldoll/1',
+		format: CURRENT_FORMAT,
 		rig: {
 			cell: { w: 64, h: 64 },
 			pivot: { x: 32, y: 60 },

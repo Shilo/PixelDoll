@@ -1,6 +1,7 @@
 import { makeImg } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import type { Project, Item, Sha256 } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 export async function equipmentFixture(): Promise<Project> {
 	const body = makeImg(64, 64),
@@ -34,7 +35,7 @@ export async function equipmentFixture(): Promise<Project> {
 			[oh, other]
 		]),
 		manifest: {
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			name: 'Fixture',
 			app: 'test',
 			rig: {

@@ -3,6 +3,7 @@ import type { Item, ItemQa, Manifest } from '../../src/lib/store/manifest.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import { slotOf } from '../../src/lib/items/items.ts';
 import { acceptItemReview } from '../../src/lib/items/run.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const state = vi.hoisted(() => ({
 	record: null as StoredProject | null,
@@ -69,7 +70,7 @@ function artwork(): Item {
 beforeEach(() => {
 	const item = artwork();
 	const manifest: Manifest = {
-		format: 'pixeldoll/2',
+		format: CURRENT_FORMAT,
 		app: 'test',
 		name: 'Test',
 		items: [item],

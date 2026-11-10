@@ -10,6 +10,7 @@ import { cellHash, type Keypoint, type Rig } from '../../src/lib/rig/rig.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { inputCell, padImg, packGrid } from '../../src/lib/items/items.ts';
 import type { Item, Manifest } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 afterEach(() => vi.restoreAllMocks());
 type Mode = 'clean' | 'damaged' | 'worse' | 'count' | 'geometry' | 'lost' | 'canceled' | 'abort';
@@ -119,7 +120,7 @@ async function fixture(modes: Mode[], directions: ('south' | 'west')[] = ['west'
 		}
 	};
 	const manifest: Manifest = {
-		format: 'pixeldoll/1',
+		format: CURRENT_FORMAT,
 		app: 'test',
 		name: 'Synthetic',
 		rig,

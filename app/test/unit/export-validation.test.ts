@@ -3,13 +3,14 @@ import type { Project } from '../../src/lib/store/manifest.ts';
 import { validate } from '../../src/lib/export/generic.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { spriteFramesTres } from '../../src/lib/export/godot.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 function project(): Project {
 	const hash = `sha256:${'0'.repeat(64)}` as const;
 	return {
 		images: new Map(),
 		manifest: {
-			format: 'pixeldoll/1',
+			format: CURRENT_FORMAT,
 			name: 'Test',
 			app: 'PixelDoll',
 			materials: [],

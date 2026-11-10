@@ -25,6 +25,7 @@ import {
 	evaluatePoseFit,
 	type FitRecord
 } from '../../src/lib/equipment/generate.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const { blobs } = vi.hoisted(() => ({ blobs: new Map<string, Blob>() }));
 let serial = 0; // record() runs concurrently: a name from blobs.size would collide and keep whichever encode finished last
@@ -139,7 +140,7 @@ async function project(w: number, source = false): Promise<Project> {
 	}
 	return {
 		manifest: {
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			name: 'Fixture',
 			app: 'test',
 			rig,

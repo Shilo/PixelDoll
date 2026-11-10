@@ -18,6 +18,7 @@ import {
 } from '../../src/lib/items/run.ts';
 import { crop, plainReason, thumbCell } from '../../src/studio/model.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 // A fake ledger: enqueue records requests in order, the test lands them one at a time.
 // Record ids stay unique across tests, so a run a test leaves waiting never wakes on a later test's record.
@@ -105,7 +106,7 @@ async function fixture() {
 		dirs: DirectionName[] = ['south', 'east'],
 		points = LABELS.map((label) => ({ label, x: 0.5, y: label === 'NECK' ? 0.3 : 0.6 }));
 	const manifest: Manifest = {
-		format: 'pixeldoll/1',
+		format: CURRENT_FORMAT,
 		name: 'Test',
 		app: '',
 		slots: [],

@@ -12,6 +12,7 @@ import type {
 	Preset,
 	Project
 } from '../store/manifest.ts';
+import { CURRENT_FORMAT } from '../store/manifest.ts';
 import {
 	applyIndex,
 	autoRamps,
@@ -169,7 +170,7 @@ export function deriveMaterials(
 	for (const it of [...items].sort(
 		(a, b) => +(b.id === m.rig.baseItem) - +(a.id === m.rig.baseItem)
 	)) {
-		const claimed = m.format === 'pixeldoll/2' ? new Set<number>() : globalClaims;
+		const claimed = m.format === CURRENT_FORMAT ? new Set<number>() : globalClaims;
 		const counts = colorCounts(itemImgs(p, it));
 		let ramps: Hex[][], names: string[];
 		if (it.regions === 'shirt-shorts') {

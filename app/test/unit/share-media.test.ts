@@ -22,6 +22,7 @@ import {
 	shareDimensions,
 	sharePreviewFrames
 } from '../../src/studio/shareMedia.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const hash = (name: string) => `sha256:${name}` as Sha256;
 function fixture(directions: DirectionName[] = ['south', 'east']): Project {
@@ -49,7 +50,7 @@ function fixture(directions: DirectionName[] = ['south', 'east']): Project {
 		provenance: []
 	});
 	const manifest: Manifest = {
-		format: 'pixeldoll/2',
+		format: CURRENT_FORMAT,
 		name: 'Test character',
 		app: '',
 		materials: [],

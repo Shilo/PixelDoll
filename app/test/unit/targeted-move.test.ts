@@ -9,6 +9,7 @@ import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { cellHash, type Keypoint, type DirectionName } from '../../src/lib/rig/rig.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 afterEach(() => vi.restoreAllMocks());
 async function fixture(fail = false) {
 	const dirs: DirectionName[] = ['south', 'east', 'north', 'west'],
@@ -57,7 +58,7 @@ async function fixture(fail = false) {
 	};
 	const cells = { idle: Object.fromEntries(dirs.map((d) => [d, [hash, hash, hash, hash]])) };
 	const manifest: Manifest = {
-		format: 'pixeldoll/1',
+		format: CURRENT_FORMAT,
 		name: 'Test',
 		app: '',
 		rig,

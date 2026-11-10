@@ -20,6 +20,7 @@ import { toChroma } from '../../src/lib/image/chroma.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const ledger = vi.hoisted(() => ({ records: [] as JobRec[] }));
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({
@@ -228,7 +229,7 @@ test.each(['imported-rest', 'verified-standing', 'unrigged-standing'])(
 			};
 		localRig.animations.push({ ...structuredClone(localRig.animations[0]), id: 'still-alias' });
 		const manifest: Manifest = {
-			format: 'pixeldoll/1',
+			format: CURRENT_FORMAT,
 			app: 'test',
 			name: 'test',
 			rig: localRig,

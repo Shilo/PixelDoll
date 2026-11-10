@@ -13,6 +13,7 @@ import { readFile } from 'node:fs/promises';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes, decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { zip, unzip } from '../../src/lib/store/zip.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import { readCharacterZip } from '../../src/lib/store/import.ts';
@@ -60,6 +61,15 @@ async function multiStateImportZip(incompatible = false, unreadable = false, sin
 	]);
 }
 
+/** The research artifact was saved by an earlier preview; restamp its unchanged data with the current format. */
+async function currentArtifact(bytes: Uint8Array) {
+	const files = await unzip(bytes),
+		project = JSON.parse(new TextDecoder().decode(files.get('project.json')!));
+	project.manifest.format = CURRENT_FORMAT;
+	files.set('project.json', new TextEncoder().encode(JSON.stringify(project)));
+	return Buffer.from(await zip([...files].map(([name, data]) => ({ name, data }))));
+}
+
 test('experimental native attack imports with warnings and exact frame stepping without paid requests', async ({
 	page,
 	context
@@ -71,8 +81,10 @@ test('experimental native attack imports with warnings and exact frame stepping 
 		return route.abort();
 	});
 	page.on('pageerror', (error) => errors.push(error.message));
-	const bytes = await readFile(
-			new URL('../../../docs/research/artifacts/2026-11-02-east-axe-studio.zip', import.meta.url)
+	const bytes = await currentArtifact(
+			await readFile(
+				new URL('../../../docs/research/artifacts/2026-11-02-east-axe-studio.zip', import.meta.url)
+			)
 		),
 		native = await unzip(
 			await readFile(

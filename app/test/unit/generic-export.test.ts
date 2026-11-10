@@ -10,6 +10,7 @@ import { projectEntries, readCharacterZip } from '../../src/lib/store/import.ts'
 import type { Manifest, Project } from '../../src/lib/store/manifest.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import { expectPixels } from './pixels.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const hash = `sha256:${'0'.repeat(64)}` as const;
 const options = {
@@ -49,7 +50,7 @@ async function fixture(): Promise<Project> {
 		manifest: {
 			name: 'Export contract',
 			app: 'test',
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			rig: {
 				baseItem: 'base',
 				baseHash: hash,

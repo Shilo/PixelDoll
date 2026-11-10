@@ -1,9 +1,10 @@
 import type { Manifest } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 export const gdFixture = () =>
 	({
 		name: 'Native doll',
 		app: 'test',
-		format: 'pixeldoll/2',
+		format: CURRENT_FORMAT,
 		rig: {
 			baseHash: 'sha256:' + '1'.repeat(64),
 			baseItem: 'base',

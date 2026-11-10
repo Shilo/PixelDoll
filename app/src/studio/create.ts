@@ -2029,7 +2029,16 @@ export async function saveCopy(
 	if (standingSource && !m.rig.animations.some((a) => a.id === DEFAULT_MOVE)) {
 		const source = m.rig.animations.find((a) => a.id === standingSource);
 		if (!source) throw new Error('The demo standing reference is missing.');
-		for (const item of m.items)
+		for (const item of m.items) {
+			// Equipment covers the standing move exactly where it covers the source frame.
+			if (item.coverage)
+				item.coverage.push(
+					...m.rig.directions
+						.filter(
+							(dir) => !dir.mirrorOf && item.coverage!.includes(`${standingSource}/${dir.id}/0`)
+						)
+						.map((dir) => `${DEFAULT_MOVE}/${dir.id}/0` as const)
+				);
 			for (const layer of item.layers) {
 				(layer.cells ??= {})[DEFAULT_MOVE] = {};
 				for (const dir of m.rig.directions) {
@@ -2041,6 +2050,7 @@ export async function saveCopy(
 					if (image && hash) images.set(hash, image);
 				}
 			}
+		}
 		m.rig.animations.unshift({ id: DEFAULT_MOVE, cells: 1, loop: true, frames: playlist(1, 100) });
 		const hashes: Record<string, Sha256> = {},
 			base = m.items.find((i) => i.id === m.rig.baseItem)!;

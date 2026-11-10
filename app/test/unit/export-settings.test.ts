@@ -20,6 +20,7 @@ import { projectEntries, readCharacterZip } from '../../src/lib/store/import.ts'
 import { zip } from '../../src/lib/store/zip.ts';
 import * as db from '../../src/lib/store/db.ts';
 import type { Engine, Project } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 beforeEach(() => vi.stubGlobal('BroadcastChannel', undefined));
 afterEach(() => {
@@ -33,7 +34,7 @@ async function fixture(): Promise<Project> {
 	return {
 		images: new Map([[hash, image]]),
 		manifest: {
-			format: 'pixeldoll/2',
+			format: CURRENT_FORMAT,
 			name: 'Explicit playback',
 			app: 'PixelDoll',
 			rig: {

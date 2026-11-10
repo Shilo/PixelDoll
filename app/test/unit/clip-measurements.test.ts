@@ -9,6 +9,7 @@ import { cellHash, type Keypoint, type Rig } from '../../src/lib/rig/rig.ts';
 import { LABELS, hasAll } from '../../src/lib/rig/poses.ts';
 import { clipQa } from '../../src/lib/rig/clips.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 afterEach(() => vi.restoreAllMocks());
 const points = (): Keypoint[] =>
@@ -51,7 +52,7 @@ async function fixture(validAttempts: boolean[]) {
 		]
 	};
 	const manifest: Manifest = {
-		format: 'pixeldoll/1',
+		format: CURRENT_FORMAT,
 		name: 'Fixture',
 		app: '',
 		rig,

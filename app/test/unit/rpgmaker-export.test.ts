@@ -5,6 +5,7 @@ import { rpgMakerFiles, type RpgLayout } from '../../src/lib/export/rpgmaker.ts'
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { exportManifest } from '../../src/lib/export/generic.ts';
 import type { Manifest, Project } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 // Square cells, pivot (3, 7). Each frame is one pixel whose red channel names it (standing 200, walk cell n = 10 + n), at x 3
 // (south, north) or x 5 (east; west mirrors it to x 2), on row 6. `head` adds a marker (red 1) at x 3, row 2 to every frame.
@@ -108,7 +109,7 @@ async function project(o: Options = {}): Promise<Project> {
 		])
 	);
 	const manifest = {
-		format: 'pixeldoll/2',
+		format: CURRENT_FORMAT,
 		name: o.character ?? 'Hero Knight',
 		app: 'PixelDoll',
 		rig: {

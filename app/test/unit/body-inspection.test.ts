@@ -11,6 +11,7 @@ import { largestComponent } from '../../src/lib/rig/clips.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import type { Project, Item } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 async function fixture() {
 	const raw = makeImg(64, 64);
 	for (let y = 20; y < 50; y++)
@@ -78,7 +79,7 @@ async function fixture() {
 	};
 	const project: Project = {
 		manifest: {
-			format: 'pixeldoll/1',
+			format: CURRENT_FORMAT,
 			app: 'test',
 			name: 'Test',
 			rig: {

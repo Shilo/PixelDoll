@@ -9,6 +9,7 @@ import {
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { unzip } from '../../src/lib/store/zip.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 import { retainedFitFollower, retainedFitStage, queueOwner } from './retained-equipment.ts';
 
 test.beforeEach(async ({ context }) => {
@@ -228,7 +229,7 @@ test('cleanup retains a submitted fit job across a crash before its record ID wa
 	});
 	await openStudio(page, '/');
 	await expect(page.locator('.world-actors').first()).toBeVisible();
-	await page.evaluate(async () => {
+	await page.evaluate(async (format) => {
 		const request = indexedDB.open('pixeldoll', 1);
 		const database = await new Promise<IDBDatabase>((resolve, reject) => {
 			request.onsuccess = () => resolve(request.result);
@@ -245,7 +246,7 @@ test('cleanup retains a submitted fit job across a crash before its record ID wa
 				targetId: 'rig-recovery',
 				targetProjectId: 'rig-recovery',
 				stage: 'needs-attention',
-				plan: {},
+				plan: { design: { source: { format } } },
 				error: 'Submission interrupted before its record ID was saved',
 				updatedAt: new Date(old).toISOString(),
 				spentGens: 0,
@@ -284,7 +285,7 @@ test('cleanup retains a submitted fit job across a crash before its record ID wa
 			transaction.onabort = transaction.onerror = () => reject(transaction.error);
 		});
 		database.close();
-	});
+	}, CURRENT_FORMAT);
 	await reloadStudio(page);
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await page.locator('.project-btn').click();
