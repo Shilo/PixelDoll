@@ -250,19 +250,28 @@ test('a delayed same-ID claim cannot replace the authoritative terminal in-memor
 	const f = fixture(),
 		{ r } = await lost(f);
 	f.succeed();
-	let count = 0,
+	let calls = 0,
+		count = 0,
 		release!: () => void,
-		entered!: () => void;
+		entered!: () => void,
+		bothCalled!: () => void;
 	const waiting = new Promise<void>((resolve) => {
 			entered = resolve;
 		}),
 		hold = new Promise<void>((resolve) => {
 			release = resolve;
+		}),
+		both = new Promise<void>((resolve) => {
+			bothCalled = resolve;
 		});
 	const claim = f.deps.claimEstimate!;
 	const q = new Queue({
 		...f.deps,
 		claimEstimate: async (record, choose) => {
+			// Without this barrier one enqueue can finish before the other hashes, so the second
+			// reuses the in-memory job without claiming and `waiting` never resolves.
+			if (++calls === 2) bothCalled();
+			await both;
 			const result = await claim(record, choose);
 			if (++count === 2) {
 				entered();
