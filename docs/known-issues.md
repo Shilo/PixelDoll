@@ -134,7 +134,14 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   the item, unless the same shade also appears on the bare stand-in 3+ px from the item, which marks it as the stand-in's own
   outline (magenta draws its outline that way). A stand-in outline seen only next to the item is still kept (about 4 neck
   px per frame on one magenta tunic walk view), and one stray far pixel of the item's outline shade costs that view its
-  recovery (1 hair view in 356). See the [chroma key reference](research/2026-11-09-paperdoll-video-review/chroma-key.md).
+  recovery (1 hair view in 356). Item outline px that stay within 40 of the key ramp are still keyed out, so long braids keep
+  short dashed gaps (about 13 px per walk frame); a flat bright mannequin with no dark shades avoided this in a live test but
+  needs a new detector. See the [chroma key reference](research/2026-11-09-paperdoll-video-review/chroma-key.md).
+- **The body outline can show 1 px beside posed garment edges.** On posed frames the base's dark outline (sometimes a
+  sliver of shirt or skin) can sit just outside a torso garment, boot or cape edge, so the edge reads 2 px thick and flickers
+  in motion (torso garments 1.77 px per frame; 30 % of posed torso frames have 3 or more). Hiding those body pixels fixed
+  boots and capes but not torso garments, and would multiply exported base variants past the export cap, so it was not
+  adopted. See the [paper-doll system review](research/2026-11-10-paperdoll-system-review/README.md#3-the-1-px-rim-qualified-and-rejected).
 - **The gray-smudge check (D1) compares views.** With three or more drawn views, a view is flagged only when it is much
   grayer than the item's least gray other view, so a neutral emblem drawn in every view passes. A smudge the provider adds
   to every view is therefore not flagged; items with one or two drawn views keep the stricter per-view rule. See the

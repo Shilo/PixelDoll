@@ -166,10 +166,49 @@ and hem outline, about 25 neck px), no G2 or G3 flips anywhere, the LPC skin-ton
 cannot trigger the rule, so it says nothing about skin tone either way), and the only bench line that moves is the tunic's area
 CV, 0.122 to 0.123.
 
+## Test 3: keying strategy, not just hue (2026-11-10, 425 generations)
+
+New practitioner evidence prompted a second live test. Theik keys only the **skin** bright cyan (hair, eyes, mouth and outline
+keep their colors), prompts "no cyan clothing" and removes cyan afterwards; he reports minimal problems, never compared hues, and
+expects bright silver might lean cyan. Lexius learns the base's skin tones and drops them because posed frames reshade skin. A
+third-party system document showed body px wrongly cut as gear: natural skin 31-104 per frame, bright key body 0-22, bright key
+body with no dark outline 0-5.
+
+Corrections found while measuring: the third-party "plain outline" means the key body has **no dark line at all** (its outline
+is a pink just under the skin), and its chart measures body px cut as gear, the opposite failure from PixelDoll's lost item
+outlines. Theik's "bright cyan" skin is a six-tone ramp down to value 0.22, and his silver scores 0 on a cyan key. PixelDoll's
+bare bases are not mostly skin: skin is 30-44 % of px, outline 32-42 %, shirt and shorts 20-34 %.
+
+Arms (body A two seeds, body B one seed, walks for two items): production green ramp with rule (c); the cyan ramp from test 2;
+**flat bright cyan** and **flat bright green** mannequins with no dark shades, detected by a hue window and a value floor; and
+**skin-only cyan** with Theik's measured tones plus a learned palette of the base's other colors to remove hair, outline and
+underwear. The decision rule was written before spending; no arm passed it.
+
+| Finding | Evidence |
+| --- | --- |
+| **Dark mannequin shades decide the outline defect, not the hue.** | Flat arms dropped 0 dark item px on dress and walk, both hues, both bodies; braids stayed continuous in all 48 flat walk frames. Production with rule (c) still drops 272 novel dark px on core dress views and about 13 per braid walk frame. 39 % of the continuous ramp is below value 0.30. The number of tones does not matter. |
+| **The hue decides color and steel damage, whatever the strategy.** | Flat cyan turned the red cloak raspberry (hue 346, saturation 0.70 against 14 and 0.79 on green) and despill rewrote 804 of 934 helm px. Steel never scores as cyan key, but its native hue (202-216) is close enough that cyan cleanup rewrites it. |
+| **Skin-only keying only moves the problem.** | The body's black outline and the item's black outline are the same color, so braid outlines break wherever they cross the body. The learned palette removes body parts but also deletes gear sharing their colors: steel over gray underwear kept 48 of about 500 helm px (plate hard fail); the cloak lining got holes. Without the palette 10 of 15 views fail. |
+| **Posing does not reshade; dressing does.** | Skeleton-v3 posing of the natural base kept it; dressing kept only 1-3 % of natural px exact, but 99-100 % within 24. |
+| **Flat bodies did not hurt limb reading.** | No hard fails in 64 flat walk frames (two items only). |
+| **Brightness helps through the detector.** | A bright flat key allows a value floor and a narrow hue window, which is also why flat green kept the emerald tunic that the ratio score would cut. |
+
+Verdict: keep production green with rule (c). The one candidate worth a follow-up is a **flat bright green mannequin with no dark
+shades** (failed the rule only on a band-leak metric that mostly measured braid length, and by 1 degree of cloak hue). It would
+need a pre-registered rerun (body px leaked into the layer counted directly, despill in the pipeline, 2+ seeds, a 128 px body,
+all walk directions) and new production code: a flat `toChroma`, a window detector replacing `keyScore`/`KT` (rim guard,
+`absorbOutline`, G2/G3, `keyFor` and `nearKeyShare` depend on the ratio score), despill for dark tinted outlines, and flat
+magenta, blue and azure variants. Tracked as a board card. [Chroma strategies](evidence/chroma-strategies.md).
+
+Practitioner takeaway: cyan works for them on a few skin-keyed, clothed bodies with manual cleanup accepted (Theik's words);
+"as long as it has no overlap" is the real rule, and PixelDoll's measured key switch enforces it. The part of their method that
+does transfer is the bright mannequin without dark shades, and it transfers on green.
+
 ## Open questions (not tested)
 
-- A five-flat-tone cyan or blue mannequin against the same in green (the practitioners' exact setup).
-- A skin-only key on a body with clothes.
+- A five-flat-tone cyan or blue mannequin against the same in green (the practitioners' exact setup): answered by test 3 for
+  flat bright cyan and green.
+- A skin-only key on a body with clothes: answered by test 3 on PixelDoll's bare bases (fails); not tested on clothed bases.
 - Whether azure should come before magenta as the fallback for green-only items.
 - What colors real users ask for: there is no telemetry, and every sample here is skewed by its prompt set.
 

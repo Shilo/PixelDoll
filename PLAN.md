@@ -149,7 +149,9 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   Practitioners favor cyan or blue mannequins, so cyan (hue 180), azure and blue were A/B-tested live as the default (808
   gens) and in an offline census: no hard-fail or G2 advantage, while blue-family keys tinted or rewrote steel and silver,
   dropped a turquoise gem and emptied navy gear with no gate firing. Green's one defect (dark item outlines over the body are
-  keyed out) is fixed in extraction (`absorbOutline` rule (c), 2026-11-10), not by a key change. See the
+  keyed out) is fixed in extraction (`absorbOutline` rule (c), 2026-11-10), not by a key change. A second test (425 gens) of
+  skin-only cyan and flat bright cyan and green mannequins found dark mannequin shades, not the hue, cause the outline loss;
+  none passed its rule, and a flat bright green mannequin is a tracked follow-up. See the
   [chroma key reference](docs/research/2026-11-09-paperdoll-video-review/chroma-key.md).
 
 ## Progressive equipment generation (2026-11-03)
