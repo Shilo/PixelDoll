@@ -997,7 +997,11 @@ test('a cached app can adopt a waiting update by closing all app tabs without cl
 		await expect.poll(() => waitingVersion).toBeTruthy();
 		await page.close();
 		await expect
-			.poll(() => adopted, { message: 'closing the last tab activates the waiting release' })
+			// Activation retires old releases under a Web Lock; allow discover's 20 s, as load slowed it past 5 s.
+			.poll(() => adopted, {
+				message: 'closing the last tab activates the waiting release',
+				timeout: 20_000
+			})
 			.toBe(true);
 		await cdp.detach();
 		await reopened.goto(server.url);
