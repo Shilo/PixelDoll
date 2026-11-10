@@ -1,0 +1,303 @@
+{
+ "R": {
+  "prod": {
+   "liveFlags": [
+    "A-quiver-s1/north",
+    "A-backpack-s1/south",
+    "A-foxtail-s2/south"
+   ],
+   "benchFlags": [],
+   "targets": [
+    [
+     "T3 cape keys (helmet-occlusion.json)",
+     "PASS"
+    ],
+    [
+     "word-lists: skull emblem in every view",
+     "PASS"
+    ],
+    [
+     "word-lists: smudge in one view (T3 shape)",
+     "PASS"
+    ],
+    [
+     "word-lists: single drawn view",
+     "PASS"
+    ]
+   ],
+   "single": [
+    20,
+    41,
+    [
+     "a-cape~smudge@east",
+     "a-cape~smudge@north",
+     "a-chest~smudge@south",
+     "a-chest~smudge@east",
+     "a-chest~smudge@north",
+     "a-hair~smudge@north",
+     "b-tunic~smudge@south",
+     "b-tunic~smudge@south-east",
+     "b-tunic~smudge@east",
+     "b-tunic~smudge@north-east",
+     "b-tunic~smudge@north",
+     "b-cloak~smudge@south",
+     "b-cloak~smudge@south-east",
+     "b-cloak~smudge@east",
+     "b-cloak~smudge@north-east",
+     "b-cloak~smudge@north",
+     "b-jester-blue~smudge@south",
+     "n-cloak128~smudge@south",
+     "n-cloak128~smudge@east",
+     "n-cloak128~smudge@north"
+    ]
+   ],
+   "pair3": [
+    18,
+    42
+   ],
+   "pair5": [
+    44,
+    80
+   ],
+   "pairSiblingFlags": 0
+  },
+  "prodAny": {
+   "liveFlags": [
+    "A-quiver-s1/north",
+    "A-backpack-s1/south",
+    "A-foxtail-s2/south"
+   ],
+   "benchFlags": [],
+   "targets": [
+    [
+     "T3 cape keys (helmet-occlusion.json)",
+     "PASS"
+    ],
+    [
+     "word-lists: skull emblem in every view",
+     "PASS"
+    ],
+    [
+     "word-lists: smudge in one view (T3 shape)",
+     "PASS"
+    ],
+    [
+     "word-lists: single drawn view",
+     "PASS"
+    ]
+   ],
+   "single": [
+    20,
+    41,
+    [
+     "a-cape~smudge@east",
+     "a-cape~smudge@north",
+     "a-chest~smudge@south",
+     "a-chest~smudge@east",
+     "a-chest~smudge@north",
+     "a-hair~smudge@north",
+     "b-tunic~smudge@south",
+     "b-tunic~smudge@south-east",
+     "b-tunic~smudge@east",
+     "b-tunic~smudge@north-east",
+     "b-tunic~smudge@north",
+     "b-cloak~smudge@south",
+     "b-cloak~smudge@south-east",
+     "b-cloak~smudge@east",
+     "b-cloak~smudge@north-east",
+     "b-cloak~smudge@north",
+     "b-jester-blue~smudge@south",
+     "n-cloak128~smudge@south",
+     "n-cloak128~smudge@east",
+     "n-cloak128~smudge@north"
+    ]
+   ],
+   "pair3": [
+    18,
+    42
+   ],
+   "pair5": [
+    44,
+    80
+   ],
+   "pairSiblingFlags": 0
+  },
+  "union16": {
+   "liveFlags": [
+    "A-backpack-s1/south"
+   ],
+   "benchFlags": [],
+   "targets": [
+    [
+     "T3 cape keys (helmet-occlusion.json)",
+     "PASS"
+    ],
+    [
+     "word-lists: skull emblem in every view",
+     "PASS"
+    ],
+    [
+     "word-lists: smudge in one view (T3 shape)",
+     "PASS"
+    ],
+    [
+     "word-lists: single drawn view",
+     "PASS"
+    ]
+   ],
+   "single": [
+    20,
+    41,
+    [
+     "a-cape~smudge@east",
+     "a-cape~smudge@north",
+     "a-chest~smudge@south",
+     "a-chest~smudge@east",
+     "a-chest~smudge@north",
+     "a-hair~smudge@north",
+     "b-tunic~smudge@south",
+     "b-tunic~smudge@south-east",
+     "b-tunic~smudge@east",
+     "b-tunic~smudge@north-east",
+     "b-tunic~smudge@north",
+     "b-cloak~smudge@south",
+     "b-cloak~smudge@south-east",
+     "b-cloak~smudge@east",
+     "b-cloak~smudge@north-east",
+     "b-cloak~smudge@north",
+     "b-jester-blue~smudge@south",
+     "n-cloak128~smudge@south",
+     "n-cloak128~smudge@east",
+     "n-cloak128~smudge@north"
+    ]
+   ],
+   "pair3": [
+    2,
+    42
+   ],
+   "pair5": [
+    0,
+    80
+   ],
+   "pairSiblingFlags": 0
+  },
+  "union24": {
+   "liveFlags": [],
+   "benchFlags": [],
+   "targets": [
+    [
+     "T3 cape keys (helmet-occlusion.json)",
+     "PASS"
+    ],
+    [
+     "word-lists: skull emblem in every view",
+     "PASS"
+    ],
+    [
+     "word-lists: smudge in one view (T3 shape)",
+     "PASS"
+    ],
+    [
+     "word-lists: single drawn view",
+     "PASS"
+    ]
+   ],
+   "single": [
+    16,
+    41,
+    [
+     "a-cape~smudge@east",
+     "a-cape~smudge@north",
+     "b-tunic~smudge@south",
+     "b-tunic~smudge@south-east",
+     "b-tunic~smudge@east",
+     "b-tunic~smudge@north-east",
+     "b-tunic~smudge@north",
+     "b-cloak~smudge@south",
+     "b-cloak~smudge@south-east",
+     "b-cloak~smudge@east",
+     "b-cloak~smudge@north-east",
+     "b-cloak~smudge@north",
+     "b-jester-blue~smudge@south",
+     "n-cloak128~smudge@south",
+     "n-cloak128~smudge@east",
+     "n-cloak128~smudge@north"
+    ]
+   ],
+   "pair3": [
+    0,
+    42
+   ],
+   "pair5": [
+    0,
+    80
+   ],
+   "pairSiblingFlags": 0
+  },
+  "two16": {
+   "liveFlags": [
+    "A-backpack-s1/south"
+   ],
+   "benchFlags": [],
+   "targets": [
+    [
+     "T3 cape keys (helmet-occlusion.json)",
+     "PASS"
+    ],
+    [
+     "word-lists: skull emblem in every view",
+     "PASS"
+    ],
+    [
+     "word-lists: smudge in one view (T3 shape)",
+     "PASS"
+    ],
+    [
+     "word-lists: single drawn view",
+     "PASS"
+    ]
+   ],
+   "single": [
+    20,
+    41,
+    [
+     "a-cape~smudge@east",
+     "a-cape~smudge@north",
+     "a-chest~smudge@south",
+     "a-chest~smudge@east",
+     "a-chest~smudge@north",
+     "a-hair~smudge@north",
+     "b-tunic~smudge@south",
+     "b-tunic~smudge@south-east",
+     "b-tunic~smudge@east",
+     "b-tunic~smudge@north-east",
+     "b-tunic~smudge@north",
+     "b-cloak~smudge@south",
+     "b-cloak~smudge@south-east",
+     "b-cloak~smudge@east",
+     "b-cloak~smudge@north-east",
+     "b-cloak~smudge@north",
+     "b-jester-blue~smudge@south",
+     "n-cloak128~smudge@south",
+     "n-cloak128~smudge@east",
+     "n-cloak128~smudge@north"
+    ]
+   ],
+   "pair3": [
+    18,
+    42
+   ],
+   "pair5": [
+    44,
+    80
+   ],
+   "pairSiblingFlags": 0
+  }
+ },
+ "lost24": [
+  "a-chest~smudge@south",
+  "a-chest~smudge@east",
+  "a-chest~smudge@north",
+  "a-hair~smudge@north"
+ ]
+}

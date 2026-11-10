@@ -1,0 +1,325 @@
+{
+ "labeledAt": "2026-11-10T12:31:11.699Z",
+ "method": "by eye from 4x/5x nearest-neighbor contact sheets (sheets/), before any metric",
+ "labels": {
+  "A-hair-s1/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-hair-s1/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-hair-s1/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-hair-s2/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-hair-s2/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-hair-s2/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-quiver-s1/south": {
+   "label": "OK",
+   "note": "OK; strap partly lost in extraction near the shoulder (minor, not a design defect)"
+  },
+  "A-quiver-s1/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-quiver-s1/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-quiver-s2/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-quiver-s2/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-quiver-s2/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-capelet-s1/south": {
+   "label": "OK",
+   "note": "OK; open front, only shoulder pieces (view-dependent)"
+  },
+  "A-capelet-s1/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-capelet-s1/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-capelet-s2/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-capelet-s2/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-capelet-s2/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-backpack-s1/south": {
+   "label": "OK",
+   "note": "OK; only straps visible from the front (view-dependent)"
+  },
+  "A-backpack-s1/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-backpack-s1/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-backpack-s2/south": {
+   "label": "OK",
+   "note": "OK; only straps visible from the front (view-dependent)"
+  },
+  "A-backpack-s2/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-backpack-s2/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-tabard-s1/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-tabard-s1/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-tabard-s1/north": {
+   "label": "OK",
+   "note": "OK; plain back without crest (expected)"
+  },
+  "A-tabard-s2/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-tabard-s2/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-tabard-s2/north": {
+   "label": "OK",
+   "note": "OK; plain back without crest (expected)"
+  },
+  "A-cloak-s1/south": {
+   "label": "OK",
+   "note": "OK; collar plus hem fragments beside the legs (view-dependent)"
+  },
+  "A-cloak-s1/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-cloak-s1/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-cloak-s2/south": {
+   "label": "OK",
+   "note": "OK; collar plus side edges (view-dependent)"
+  },
+  "A-cloak-s2/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-cloak-s2/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-foxtail-s1/south": {
+   "label": "OK",
+   "note": "OK; tail low beside a leg"
+  },
+  "A-foxtail-s1/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-foxtail-s1/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-foxtail-s2/south": {
+   "label": "OK",
+   "note": "OK; small tail tip at the feet"
+  },
+  "A-foxtail-s2/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "A-foxtail-s2/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-redcape-s1/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-redcape-s1/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-redcape-s1/north": {
+   "label": "DEFECT",
+   "reason": "recolor",
+   "note": "strong: dusty rose/brown cape vs vivid red in south/east"
+  },
+  "B-redcape-s2/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-redcape-s2/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-redcape-s2/north": {
+   "label": "DEFECT",
+   "reason": "recolor",
+   "note": "mild: darker maroon with brown outline vs bright red east"
+  },
+  "B-redcape-s3/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-redcape-s3/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-redcape-s3/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-chest-s1/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-chest-s1/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-chest-s1/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-chest-s2/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-chest-s2/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-chest-s2/north": {
+   "label": "OK",
+   "note": "OK; back shows X straps, front plain plates (plausible design)"
+  },
+  "B-chest-s3/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-chest-s3/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-chest-s3/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-dress-s1/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-dress-s1/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-dress-s1/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-dress-s2/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-dress-s2/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-dress-s2/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-dress-s3/south": {
+   "label": "OK",
+   "note": "OK; lighter lit front but the side view shares the light blue"
+  },
+  "B-dress-s3/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "B-dress-s3/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "C-robe-s1/south": {
+   "label": "OK",
+   "note": "OK; belt knot only in front"
+  },
+  "C-robe-s1/south-east": {
+   "label": "OK",
+   "note": ""
+  },
+  "C-robe-s1/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "C-robe-s1/north-east": {
+   "label": "OK",
+   "note": ""
+  },
+  "C-robe-s1/north": {
+   "label": "OK",
+   "note": ""
+  },
+  "C-robe-s2/south": {
+   "label": "OK",
+   "note": ""
+  },
+  "C-robe-s2/south-east": {
+   "label": "DEFECT",
+   "reason": "wrong design",
+   "note": "mild: robe split open at the lower front exposing a leg; other views closed"
+  },
+  "C-robe-s2/east": {
+   "label": "OK",
+   "note": ""
+  },
+  "C-robe-s2/north-east": {
+   "label": "OK",
+   "note": ""
+  },
+  "C-robe-s2/north": {
+   "label": "OK",
+   "note": ""
+  }
+ }
+}
