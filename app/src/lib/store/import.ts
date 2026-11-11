@@ -209,7 +209,6 @@ async function editable(files: Map<string, Uint8Array>): Promise<ImportedCharact
 	manifestShape(m);
 	const refs = new Set<string>();
 	for (const it of m.items) {
-		for (const h of it.design?.snapshot.imageHashes ?? []) refs.add(h);
 		for (const h of Object.values(it.dressed ?? {})) if (h) refs.add(h);
 		for (const l of it.layers)
 			for (const dirs of Object.values(l.cells ?? {}))

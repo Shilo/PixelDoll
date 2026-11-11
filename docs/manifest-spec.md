@@ -15,7 +15,7 @@ Projects use `pixeldoll/3`, and the app reads no other version: data saved by ea
 
 `Material.defaultVariant` is the approved baseline when an outfit has no explicit color selection. For affected items, canonical `Layer.sheets` render that baseline for all supplied engine runtimes, while optional `Layer.sourceSheets` point to the original source-ramp PNGs under `sources/`. Palette-aware consumers must start from `sourceSheets` when present. Original material ramps remain disjoint even when two selected variants share a color. Editable `project.json` always retains original raw cells and the complete material definitions.
 
-An accepted shared copy may carry `Item.design` lineage: the design ID/revision, immutable minimal source snapshot, palette-role mapping and target audit. Its referenced source images travel in `cells/` alongside the target frames. Library deletion therefore does not remove the copy's artwork or its portable reference. A separate equipment archive uses `pixeldoll-design/1` in `design.json`; it is not a character ZIP.
+An item copied from another character is an ordinary item with its own IDs and materials; its cells reference the same content-addressed images, so deleting the source does not affect it. An `Item.design` field written by earlier previews is ignored.
 
 Animation `loop` records playback in exported files. Studio Export applies the user's global, persistent Play animation once choices to a cloned manifest, matching exact lowercase animation IDs. Unselected names loop; names never imply playback automatically. Imported playback metadata does not change global preferences. App previews, live views and sharing always loop. Format, dressed sheets and selected animation names are stored separately in IndexedDB under `studio-export-settings`, owned by `lib/store/export-settings.ts`; they are not per-character settings. Dressed sheets are optional extra PNGs; separate layers and outfit definitions remain included either way.
 
@@ -156,7 +156,7 @@ export interface Item {
   provenance: Provenance[];
   qa?: ItemQa;                            // absent on the base
   coverage?: CellKey[];                   // equipment only (required there): target cells, including intentionally transparent cells
-  design?: EquipmentLineage;             // pinned source snapshot, palette roles and target/reference audit
+  fittedFrom?: string;                    // character whose item was fitted here without generating; needs a look
 }
 export interface Layer {
   id: 'main' | 'fg' | 'bg';

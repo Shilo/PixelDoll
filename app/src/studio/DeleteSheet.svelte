@@ -30,7 +30,7 @@
 	<p>Delete <strong>{store.project?.manifest.name}</strong> from this device?</p>
 	<p class="muted">
 		This removes its items, outfits, and local changes. This cannot be undone. Export a ZIP first if
-		you want to keep a copy.
+		you want to keep a copy. Items copied to other characters stay.
 	</p>
 	<p class="faint small">Your original character in PixelLab stays in your PixelLab account.</p>
 	{#if reason || error}<p class="notice warn small" role="alert">

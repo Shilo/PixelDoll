@@ -1,6 +1,6 @@
 # Shared equipment designs and character-fitted copies
 
-Status: initial implementation verified under subsequent explicit user authorization. The original research and proposed qualification matrix below remain historical context. Exact copying, portable designs and reviewed fitting are implemented; the paid route is an experimental single-material headwear trial, not qualification of every item class. See the [implementation and verification report](../testing/shared-equipment-2026-10-22.md).
+Status: superseded (2026-11-10) by automatic sharing of every finished item between the user's characters (free exact copies on identical bodies, otherwise the normal New item); see the [user guide](../user-guide.md#use-items-from-your-other-characters). The design library, design ZIPs and paid fitting described here were removed. Kept as history.
 
 Open work is tracked in [shared-equipment cards on the board](https://github.com/users/Shilo/projects/7): failed Hurt output, broader qualification, additional paid classes, missing-reference recovery, unknown billing and engine execution. The proposals below are not a completed capability checklist; current behavior and measured limits are in the verification report.
 

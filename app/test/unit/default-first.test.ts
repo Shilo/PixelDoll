@@ -217,8 +217,8 @@ test('"Add idle + walk" restores what creation used to make, at the old price', 
 	});
 	const specs = baseMoveSpecs(rec.manifest, 7);
 	expect(specs).toEqual([
-		{ id: 'idle', action: 'idle', frames: 4, items: [], sharedItems: [], seed: 7 },
-		{ id: 'walk', action: 'walk', frames: 8, items: [], sharedItems: [], seed: 7 }
+		{ id: 'idle', action: 'idle', frames: 4, items: [], seed: 7 },
+		{ id: 'walk', action: 'walk', frames: 8, items: [], seed: 7 }
 	]); // the items it is priced for
 	// Creation + idle + walk = the pre-Default-first creation estimate (35.25 gens for Top-down 4).
 	expect(

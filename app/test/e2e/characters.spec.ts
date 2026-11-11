@@ -492,6 +492,60 @@ test('device import includes sibling moves and preserves explicit selections whe
 	).toHaveText(['Default', 'Right punch']);
 });
 
+test('browser Back respects an atomic import and closes sheets after it finishes', async ({
+	page
+}) => {
+	const bytes = await multiStateImportZip();
+	await openStudio(page, '/');
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click();
+	const dialog = page.getByRole('dialog', { name: 'Import character', exact: true });
+	await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({
+		name: 'multi-state.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from(bytes)
+	});
+	await expect(dialog.locator('.import-preview')).toContainText('3 moves');
+	await dialog
+		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
+		.uncheck();
+	// Pause the real content-hash work that opening the saved copy performs, without mocking the sheet's busy state.
+	await page.evaluate(() => {
+		const subtle = crypto.subtle,
+			original = subtle.digest;
+		let release!: () => void;
+		const gate = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		Object.defineProperty(subtle, 'digest', {
+			configurable: true,
+			value: async (algorithm: AlgorithmIdentifier, data: BufferSource) => {
+				await gate;
+				return original.call(subtle, algorithm, data);
+			}
+		});
+		(window as unknown as { releaseImport: () => void }).releaseImport = () => {
+			Object.defineProperty(subtle, 'digest', { configurable: true, value: original });
+			release();
+		};
+	});
+	try {
+		await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
+		await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeDisabled();
+		await page.goBack();
+		await expect(dialog).toBeVisible();
+		await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeDisabled();
+	} finally {
+		await page.evaluate(() => (window as unknown as { releaseImport: () => void }).releaseImport());
+	}
+	await expect(page.getByRole('dialog')).toHaveCount(0);
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click();
+	await expect(dialog).toBeVisible();
+	await page.goBack();
+	await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
 test('standing state updates retain the preview, optional moves, edited names and dialog geometry', async ({
 	page
 }) => {

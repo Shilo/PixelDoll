@@ -374,8 +374,7 @@ test('malformed hidden body pixels are rejected', async () => {
 });
 
 test('an exact copy keeps the hidden ear px, flipped for a target view the source mirrored', async () => {
-	const { createDesign } = await import('../../src/lib/equipment/design.ts');
-	const { prepareCopy } = await import('../../src/lib/equipment/copy.ts');
+	const { prepareCopy, flipper } = await import('../../src/lib/equipment/copy.ts');
 	const { flipH } = await import('../../src/lib/rig/mirror.ts');
 	const body = makeImg(64, 64),
 		hood = makeImg(64, 64),
@@ -459,12 +458,17 @@ test('an exact copy keeps the hidden ear px, flipped for a target view the sourc
 			presets: [{ id: 'default', name: 'd', items: { body: 'base' }, variants: {} }]
 		}
 	};
-	const cand = await prepareCopy(await createDesign(src, 'hood'), tgt),
-		id = cand.itemId;
+	const { flip, made } = flipper(async (h) => src.images.get(h)!);
+	const cand = (await prepareCopy(src.manifest, 'hood', {}, tgt.manifest, flip))!,
+		id = cand.item.id;
+	const copied: Project = {
+		manifest: { ...tgt.manifest, items: [...tgt.manifest.items, cand.item] },
+		images: new Map([...tgt.images, ...src.images, ...made])
+	};
 	const seen = (dir: 'east' | 'west', px: number) =>
-		composeCell(cand.project, { body: 'base', head: id }, 'idle', dir, 0).data[px * 4 + 3];
+		composeCell(copied, { body: 'base', head: id }, 'idle', dir, 0).data[px * 4 + 3];
 	expect(seen('east', ear)).toBe(0);
 	expect(seen('west', earW)).toBe(0);
 	expect(seen('east', 40 * 64 + 20)).toBe(255);
-	expect(validate(cand.project)).toEqual([]);
+	expect(validate(copied)).toEqual([]);
 });

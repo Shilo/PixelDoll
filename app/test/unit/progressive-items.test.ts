@@ -256,7 +256,7 @@ test('quick body moves never automatically include existing equipment', async ()
 	m.items[1].status = 'accepted';
 	const specs = baseMoveSpecs(m);
 	expect(specs).toHaveLength(2);
-	expect(specs.every((s) => !s.items.length && !s.sharedItems?.length)).toBe(true);
+	expect(specs.every((s) => !s.items.length)).toBe(true);
 });
 
 test('verified standing aliases share one paid dress and do not require source keypoints to be rig-ready', async () => {

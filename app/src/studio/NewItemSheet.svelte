@@ -4,7 +4,6 @@
 	import { itemPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import GroupIcon from './GroupIcon.svelte';
-	import DesignLibrary from './DesignLibrary.svelte';
 	import { GROUPS, slotLabel, itemNameFrom, heldSlotFor } from './model.ts';
 	import { itemRoute } from './itemRoute.ts';
 	import { ui, doc, store, isDemo, startItem, withKey, copyDemo } from './state.svelte.ts';
@@ -24,7 +23,7 @@
 	let slot = $state(draft?.slot ?? ui.newItem.slot);
 	let prompt = $state(draft?.prompt ?? ui.newItem.prompt);
 	let color = $state(draft?.color ?? '');
-	let name = $state(draft?.name ?? '');
+	let name = $state(draft?.name ?? ui.newItem.name);
 	let busy = $state(false);
 	const g = $derived(GROUPS.find((x) => x.id === group)!);
 	// a draft or a prefill (Try again, Make it again) carries a slot the user already chose
@@ -116,32 +115,8 @@
 	>
 {/snippet}
 
-<Sheet
-	title="New item"
-	onclose={() => (ui.sheet = null)}
-	footer={isDemo() || ui.newItemTab === 'designs' ? undefined : foot}
->
-	<div class="seg full" role="tablist" aria-label="Item source">
-		<button
-			role="tab"
-			aria-selected={ui.newItemTab === 'create'}
-			onclick={() => (ui.newItemTab = 'create')}>Create</button
-		><button
-			role="tab"
-			aria-selected={ui.newItemTab === 'designs'}
-			onclick={() => (ui.newItemTab = 'designs')}>Saved designs</button
-		>
-	</div>
-	{#if ui.newItemTab === 'designs'}
-		{#if isDemo()}<p class="notice small">
-				<Sparkles size={16} /><span
-					>Make an editable copy of the demo before adding a fitted item.</span
-				><button class="bu-action btn sm" data-variant="outline" disabled={busy} onclick={useCopy}
-					>Copy the demo body</button
-				>
-			</p>{/if}
-		{#key doc.id}<DesignLibrary />{/key}
-	{:else if isDemo()}
+<Sheet title="New item" onclose={() => (ui.sheet = null)} footer={isDemo() ? undefined : foot}>
+	{#if isDemo()}
 		<div class="notice small">
 			<Sparkles size={16} />
 			<span

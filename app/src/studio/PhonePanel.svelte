@@ -1,7 +1,7 @@
 <script lang="ts">
 	// Shared customization content for the desktop rail and mobile sheet.
 	import { popoverFocus } from './experience/focus.ts';
-	import { crop, GROUPS, HEALTH_LABEL, healthOf } from './model.ts';
+	import { crop, groupOf, GROUPS, HEALTH_LABEL, healthOf } from './model.ts';
 	import {
 		ui,
 		doc,
@@ -15,7 +15,11 @@
 		genProgress,
 		openNewItem,
 		randomize,
-		isDemo
+		isDemo,
+		shared,
+		sharedKey,
+		addShared,
+		withKey
 	} from './state.svelte.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import Thumb from './Thumb.svelte';
@@ -26,7 +30,8 @@
 	import Moves from './Moves.svelte';
 	import Lazy from './Lazy.svelte';
 	import Outfits from './Outfits.svelte';
-	import { Bookmark, CircleAlert, Ellipsis, Info, Plus, Shuffle, X, Check } from './icons.ts';
+	import SharedThumb from './SharedThumb.svelte';
+	import { CircleAlert, Ellipsis, Info, Plus, Shuffle, X, Check } from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
 	let more = $state<HTMLElement>();
@@ -41,6 +46,9 @@
 		items.find((i) => i.id === ui.selected) ?? items.find((i) => doc.items[i.slot] === i.id)
 	);
 	const gen = $derived(genOf(ui.selected));
+	const others = $derived(shared.items.filter((x) => g.slots.includes(x.item.slot)));
+	// A tapped item of another character that does not fit this body takes the selection area.
+	const unfit = $derived(others.find((x) => sharedKey(x) === ui.selected));
 	const categoryName = $derived(
 		g.id === 'Head' ? 'Headwear' : g.id === 'Hands' ? 'Held items' : g.id
 	);
@@ -194,6 +202,54 @@
 						onclick={() => clearSlots(g.slots)}><X size={18} /><span>None</span></button
 					>
 				</div>
+			{:else}
+				<div
+					class="category-empty"
+					role="group"
+					aria-label="{g.id === 'Hands' ? 'Held' : g.id} items"
+				>
+					<span class="muted">No saved items</span>
+				</div>
+			{/if}
+			{#if others.length}
+				<div class="shared-items">
+					<h3 class="shared-title small">From other characters</h3>
+					<div class="tiles" role="group" aria-label="From other characters">
+						{#each others as x (sharedKey(x))}
+							<button
+								data-variant="tile"
+								class="bu-action tile"
+								class:sel={ui.selected === sharedKey(x)}
+								aria-label="{x.item.name}, from {x.sourceName}"
+								aria-busy={shared.adding === sharedKey(x)}
+								disabled={!!shared.adding}
+								onclick={() => addShared(x)}
+							>
+								<span class="tile-art" aria-hidden="true"><SharedThumb entry={x} /></span><span
+									class="tile-name">{x.item.name}</span
+								><span class="tile-from faint small">from {x.sourceName}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+			{/if}
+			{#if unfit}
+				<div class="unfit" role="status">
+					<p class="small">Made for {unfit.sourceName}. It doesn’t fit {m.name} yet.</p>
+					<button
+						class="bu-action btn primary"
+						data-variant="primary"
+						onclick={() =>
+							withKey(() =>
+								openNewItem(groupOf(unfit.item.slot).id, {
+									slot: unfit.item.slot,
+									prompt: unfit.item.prompt,
+									name: unfit.item.name
+								})
+							)}>Make for {m.name}</button
+					>
+				</div>
+			{:else if items.length || pending.length}
 				{#if gen}
 					<Lazy load={() => import('./GenCard.svelte')} sheet={false} g={gen} />
 				{:else if sel}
@@ -213,14 +269,6 @@
 					</div>
 					<Colors only={sel.id} heading={false} />
 				{/if}
-			{:else}
-				<div
-					class="category-empty"
-					role="group"
-					aria-label="{g.id === 'Hands' ? 'Held' : g.id} items"
-				>
-					<span class="muted">No saved items</span>
-				</div>
 			{/if}
 			<button
 				class="bu-action equipment-create"
@@ -228,12 +276,6 @@
 				onclick={() => openNewItem(g.id)}
 				><Plus size={18} /><span>New {g.id === 'Hands' ? 'held' : g.id.toLowerCase()} item</span
 				></button
-			>
-			<button
-				class="bu-action equipment-saved"
-				data-variant="quiet"
-				onclick={() => openNewItem(g.id, undefined, 'designs')}
-				><Bookmark size={18} /><span>Use a saved design</span></button
 			>
 		{/if}
 	{:else if ui.tab === 'outfits'}

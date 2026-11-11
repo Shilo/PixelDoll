@@ -153,26 +153,32 @@ export function itemCell(
 	return out;
 }
 
-/** Stable item-only thumbnail, independent of playback. Prefer south and use another landed frame when needed. */
-export function thumbCell(p: Project, it: Item): Img | null {
-	if (!it.layers.length) return null;
-	const m = p.manifest;
+/** Cells with stored item art in thumbnail order (south first), with the images each needs. */
+export function* thumbCells(
+	m: Manifest,
+	it: Item
+): Generator<{ anim: string; dir: DirectionName; cell: number; hashes: string[] }> {
 	const dirs = [...m.rig.directions].sort(
 		(a, b) => Number(b.id === 'south') - Number(a.id === 'south')
 	);
 	for (const a of m.rig.animations)
 		for (const d of dirs)
 			for (const f of a.frames) {
-				// Sparse drafts can contain many pending cells. Skip absent references before allocating a composed frame.
-				if (
-					!it.layers.some(
-						(l) => (l.cells?.[a.id]?.[d.id] ?? l.cells?.[a.id]?.[d.mirrorOf ?? d.id])?.[f.cell]
-					)
-				)
-					continue;
-				const im = itemCell(p, it, a.id, d.id, f.cell);
-				if (im.data.some((v, i) => i % 4 === 3 && v)) return im;
+				const hashes = it.layers.flatMap(
+					(l) => (l.cells?.[a.id]?.[d.id] ?? l.cells?.[a.id]?.[d.mirrorOf ?? d.id])?.[f.cell] ?? []
+				);
+				if (hashes.length) yield { anim: a.id, dir: d.id, cell: f.cell, hashes };
 			}
+}
+
+/** Stable item-only thumbnail, independent of playback. Prefer south and use another landed frame when needed. */
+export function thumbCell(p: Project, it: Item): Img | null {
+	if (!it.layers.length) return null;
+	// Sparse drafts can contain many pending cells: only cells with references allocate a composed frame.
+	for (const c of thumbCells(p.manifest, it)) {
+		const im = itemCell(p, it, c.anim, c.dir, c.cell);
+		if (im.data.some((v, i) => i % 4 === 3 && v)) return im;
+	}
 	return null;
 }
 

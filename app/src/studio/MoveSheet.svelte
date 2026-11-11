@@ -82,10 +82,7 @@
 			? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) || freeMoveId()
 			: action
 	);
-	const items = $derived(m ? posable(m).filter((item) => !item.design) : []);
-	const sharedItems = $derived(
-		m?.items.filter((item) => item.design && item.status === 'accepted') ?? []
-	);
+	const items = $derived(m ? posable(m) : []);
 	const replacing = $derived(have.has(id) && !reservedMove(id));
 	const availableDirs = $derived(
 		m?.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id) ?? []
@@ -105,9 +102,6 @@
 	const motionIssue = $derived(m && id ? bodyMoveIssue(m, motion) : '');
 	let included = $state<string[]>(draft?.items ?? []);
 	const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id));
-	const sharedChosen = $derived(
-		sharedItems.filter((i) => included.includes(i.id)).map((i) => i.id)
-	);
 	const est = $derived(
 		m && id && targetDirs.length && !motionIssue
 			? moveEstimate(m, { ...motion, items: chosen, dirs: targetDirs })
@@ -225,7 +219,6 @@
 		const spec = {
 			...motion,
 			items: chosen,
-			sharedItems: sharedChosen,
 			poseStyle: 'visible-side-v1' as const,
 			seed: 1 + Math.floor(Math.random() * 1_000_000),
 			...(replacing ? { dirs: [...targetDirs] } : {})
@@ -330,7 +323,6 @@
 				plan={movePlan(rec, {
 					...motion,
 					items: chosen,
-					sharedItems: sharedChosen,
 					poseStyle: 'visible-side-v1',
 					...(replacing ? { dirs: [...targetDirs] } : {})
 				})}
@@ -446,18 +438,6 @@
 			{#if recoveryError}<p class="notice bad small">
 					<CircleAlert size={14} />{recoveryError}
 				</p>{/if}
-			{#if moving.done && moving.fitIds.length}<p class="notice small">
-					<Check size={14} /><span
-						>The body move is ready. {moving.fitIds.length} shared equipment {moving.fitIds
-							.length === 1
-							? 'copy needs'
-							: 'copies need'} a separately priced animation review.</span
-					><button
-						class="bu-action btn sm"
-						data-variant="outline"
-						onclick={() => (ui.sheet = 'activity')}>Review equipment fits</button
-					>
-				</p>{/if}
 			{#each moving.warnings as warning (warning)}<p class="notice warn small">
 					<CircleAlert size={14} />{bodyQualityNote(warning)}
 				</p>{/each}
@@ -558,26 +538,6 @@
 					<p class="faint small">
 						Items are left out by default to keep the initial cost down. Generate them for this move
 						later from each item’s details.
-					</p>
-				</div>
-			{/if}
-			{#if sharedItems.length}
-				<div class="field">
-					<span class="label">Prepare shared equipment reviews</span>
-					{#each sharedItems as it (it.id)}<label class="check"
-							><input
-								type="checkbox"
-								checked={included.includes(it.id)}
-								onchange={(e) =>
-									(included = e.currentTarget.checked
-										? [...included, it.id]
-										: included.filter((x) => x !== it.id))}
-							/>{it.name}<span class="faint small">No charge now</span></label
-						>{/each}
-					<p class="faint small">
-						After the body move is ready, review each fitted copy in Activity. Its animation price
-						is shown before you start. Existing item frames stay unchanged until you keep the
-						reviewed result.
 					</p>
 				</div>
 			{/if}

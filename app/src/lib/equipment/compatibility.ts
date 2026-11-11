@@ -1,239 +1,173 @@
-import { cellImg, layerFrame } from '../compose/compose.ts';
-import { cellHash, cellKey, type DirectionName, type Sha256 } from '../rig/rig.ts';
-import { sha256, stableStringify } from '../image/hash.ts';
+// Free sharing between characters: an item copies only onto byte-identical frozen body cells. Stored cells are
+// content-addressed by their RGBA hash, so manifests decide; only a view one character mirrors and the other draws needs
+// its flipped image's hash.
+import { layerFrame } from '../compose/compose.ts';
+import { cellKey, type DirectionName, type Sha256 } from '../rig/rig.ts';
+import { stableStringify } from '../image/hash.ts';
 import { canPose, SLOTS } from '../items/items.ts';
-import type { Manifest, Project, Layer } from '../store/manifest.ts';
-import type { Img } from '../image/png.ts';
-import { designItem, type EquipmentDesign, type FitAssessment } from './types.ts';
-import { loadImages } from './store.ts';
+import type { Item, Layer, Manifest } from '../store/manifest.ts';
 
-export async function targetAudit(project: Project): Promise<Sha256> {
-	const m = project.manifest,
-		base = m.items.find((it) => it.id === m.rig.baseItem);
-	if (!base) throw new Error('The target has no frozen body.');
-	const cells: Record<string, string | null> = {};
-	for (const a of m.rig.animations)
-		for (const d of m.rig.directions)
-			for (let i = 0; i < a.cells; i++) {
-				const im = cellImg(project, base.layers[0], a.id, d.id, i);
-				cells[cellKey(a.id, d.id, i)] = im ? await cellHash(im) : null;
-			}
-	return `sha256:${await sha256(stableStringify({ cell: m.rig.cell, pivot: m.rig.pivot, view: m.rig.view, template: m.rig.template, directions: m.rig.directions, cells, rest: m.rig.rest, poses: m.rig.animations.map((a) => ({ id: a.id, sources: a.sources })) }))}`;
+export interface CellMatch {
+	target: string;
+	source: string;
 }
-const geometry = (m: Manifest) => stableStringify({ cell: m.rig.cell, pivot: m.rig.pivot });
-export async function assessDesign(
-	design: EquipmentDesign,
-	target: Project
-): Promise<FitAssessment> {
-	const source: Project = {
-		manifest: design.source,
-		images: await loadImages(design.imageHashes, design.images)
-	};
-	const sm = source.manifest,
-		tm = target.manifest,
-		item = designItem(design),
-		sb = sm.items.find((it) => it.id === sm.rig.baseItem),
-		tb = tm.items.find((it) => it.id === tm.rig.baseItem);
-	const reasons: string[] = [],
-		warnings = [...design.warnings],
-		matches: FitAssessment['matches'] = [];
-	const coverage = new Set<string>(item.coverage);
-	const hashes = new WeakMap<Img, Promise<Sha256>>(),
-		cells = new WeakMap<Layer, Map<string, Img | null>>();
-	const hash = (im: Img) => {
-		let value = hashes.get(im);
-		if (!value) {
-			value = cellHash(im);
-			hashes.set(im, value);
-		}
-		return value;
-	};
-	const frame = (p: Project, layer: Layer, anim: string, dir: DirectionName, i: number) => {
-		let cache = cells.get(layer);
-		if (!cache) {
-			cache = new Map();
-			cells.set(layer, cache);
-		}
-		const key = cellKey(anim, dir, i);
-		if (!cache.has(key)) cache.set(key, cellImg(p, layer, anim, dir, i));
-		return cache.get(key)!;
-	};
-	const indices = new Map<
+export interface CopyAssessment {
+	/** Target cells whose body equals a source cell, and the source cell whose item art they take. */
+	matches: CellMatch[];
+	/** The target's standing views equal the source's, so later moves can be generated for the copy like any item. */
+	canExtend: boolean;
+	/** Some body cells are identical, so a free copy covers them. Moves the item lacks here, as on its source, stay missing
+	 *  like any item's and are made through the normal item path. */
+	fits: boolean;
+}
+/** The hash of a stored image flipped horizontally. */
+export type Flip = (hash: Sha256) => Promise<Sha256>;
+
+/** A cell's content hash: stored, or its mirror source's image flipped (null = transparent or absent). */
+export async function cellId(
+	m: Manifest,
+	layer: Layer,
+	anim: string,
+	dir: DirectionName,
+	i: number,
+	flip: Flip
+): Promise<Sha256 | null> {
+	const stored = layer.cells?.[anim]?.[dir];
+	if (stored) return stored[i] ?? null;
+	const src = m.rig.directions.find((d) => d.id === dir)?.mirrorOf;
+	const id = src ? await cellId(m, layer, anim, src, i, flip) : null;
+	return id && flip(id);
+}
+const bodyOf = (m: Manifest) => m.items.find((it) => it.id === m.rig.baseItem);
+const geometry = (m: Manifest) =>
+	stableStringify({
+		cell: m.rig.cell,
+		pivot: m.rig.pivot,
+		body: bodyOf(m) && layerFrame(m.rig, bodyOf(m)!.layers[0])
+	});
+const slotOf = (m: Manifest, id: string) =>
+	m.slots.find((s) => s.id === id) ?? SLOTS.find((s) => s.id === id);
+
+export async function assessCopy(
+	source: Manifest,
+	item: Item,
+	target: Manifest,
+	flip: Flip
+): Promise<CopyAssessment> {
+	const sb = bodyOf(source),
+		tb = bodyOf(target);
+	if (!sb || !tb) throw new Error('A character is missing its frozen body.');
+	const sourceDir = (dir: DirectionName) =>
+		source.rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir;
+	const coverage = new Set<string>(item.coverage ?? []);
+	const covers = (anim: string, dir: DirectionName, i: number) =>
+		coverage.has(cellKey(anim, dir, i)) || coverage.has(cellKey(anim, sourceDir(dir), i));
+	const hashAt = (m: Manifest, layer: Layer, anim: string, dir: DirectionName, i: number) =>
+		cellId(m, layer, anim, dir, i, flip);
+	// The equipment raster of every layer: equal signatures are interchangeable, different ones are an ambiguous choice.
+	const signature = async (anim: string, dir: DirectionName, cells: number[]) =>
+		stableStringify(
+			await Promise.all(
+				item.layers.map(async (l) => ({
+					geometry: layerFrame(source.rig, l),
+					cells: await Promise.all(cells.map((i) => hashAt(source, l, anim, dir, i)))
+				}))
+			)
+		);
+	const hasLayer = (anim: string, dir: DirectionName, cells: number) =>
+		item.layers.some(
+			(l) => (l.cells?.[anim]?.[dir] ?? l.cells?.[anim]?.[sourceDir(dir)])?.length === cells
+		);
+	const sameGeometry =
+		geometry(source) === geometry(target) &&
+		(!source.rig.view || !target.rig.view || source.rig.view === target.rig.view) &&
+		(!source.rig.template || !target.rig.template || source.rig.template === target.rig.template);
+	const slot = slotOf(target, item.slot),
+		from = source.slots.find((s) => s.id === item.slot);
+	const slotMatches = !!slot && !!from && slot.class === from.class && slot.anchor === from.anchor;
+	const targetDirs = target.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id);
+	const matches: CellMatch[] = [],
+		clipDirs: Record<string, DirectionName[]> = {};
+	// Source cells by body hash, per direction, for clips whose lengths or names differ.
+	const byBody = new Map<
 		DirectionName,
 		Promise<Map<Sha256, { key: string; signature: string }[]>>
 	>();
 	const sourceIndex = (dir: DirectionName) => {
-		let index = indices.get(dir);
-		if (index) return index;
-		index = (async () => {
-			const out = new Map<Sha256, { key: string; signature: string }[]>(),
-				from = sm.rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir;
-			for (const a of sm.rig.animations)
-				for (let i = 0; i < a.cells; i++) {
-					if (!coverage.has(cellKey(a.id, dir, i)) && !coverage.has(cellKey(a.id, from, i)))
-						continue;
-					const base = frame(source, sb!.layers[0], a.id, dir, i);
-					if (
-						!base ||
-						!item.layers.some(
-							(l) => (l.cells?.[a.id]?.[dir] ?? l.cells?.[a.id]?.[from])?.length === a.cells
-						)
-					)
-						continue;
-					const bodyHash = await hash(base),
-						layers = await Promise.all(
-							item.layers.map(async (l) => {
-								const im = frame(source, l, a.id, dir, i);
-								return { geometry: layerFrame(sm.rig, l), hash: im ? await hash(im) : null };
-							})
-						);
-					const entry = { key: cellKey(a.id, dir, i), signature: stableStringify(layers) };
-					out.set(bodyHash, [...(out.get(bodyHash) ?? []), entry]);
+		let index = byBody.get(dir);
+		if (!index) {
+			index = (async () => {
+				const out = new Map<Sha256, { key: string; signature: string }[]>();
+				for (const a of source.rig.animations) {
+					if (!hasLayer(a.id, dir, a.cells)) continue;
+					for (let i = 0; i < a.cells; i++) {
+						const hash = covers(a.id, dir, i) && (await hashAt(source, sb.layers[0], a.id, dir, i));
+						if (!hash) continue;
+						const entry = {
+							key: cellKey(a.id, dir, i),
+							signature: await signature(a.id, dir, [i])
+						};
+						out.set(hash, [...(out.get(hash) ?? []), entry]);
+					}
 				}
-			return out;
-		})();
-		indices.set(dir, index);
+				return out;
+			})();
+			byBody.set(dir, index);
+		}
 		return index;
 	};
-	if (!sb || !tb) throw new Error('The source or target frozen body is missing.');
-	const targetDirs = tm.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id);
-	const clipDirs: Record<string, DirectionName[]> = {};
-	let totalCells = 0,
-		ambiguous = false;
-	const geometricallyEqual =
-		geometry(sm) === geometry(tm) &&
-		(!sm.rig.view || !tm.rig.view || sm.rig.view === tm.rig.view) &&
-		(!sm.rig.template || !tm.rig.template || sm.rig.template === tm.rig.template);
-	const slot = tm.slots.find((s) => s.id === item.slot) ?? SLOTS.find((s) => s.id === item.slot),
-		sourceSlot = sm.slots.find((s) => s.id === item.slot);
-	const slotMatches =
-		!!slot && !!sourceSlot && slot.class === sourceSlot.class && slot.anchor === sourceSlot.anchor;
-	for (const ta of tm.rig.animations) {
+	for (const ta of target.rig.animations) {
 		clipDirs[ta.id] = [];
 		for (const dir of targetDirs) {
-			const frames = Array.from({ length: ta.cells }, (_, i) =>
-				frame(target, tb.layers[0], ta.id, dir, i)
-			);
-			if (!frames.some(Boolean)) continue;
-			totalCells += ta.cells;
+			const cells = Array.from({ length: ta.cells }, (_, i) => i),
+				bodies = await Promise.all(cells.map((i) => hashAt(target, tb.layers[0], ta.id, dir, i)));
+			if (!bodies.some(Boolean)) continue;
 			clipDirs[ta.id].push(dir);
-			if (frames.some((im) => !im) || !geometricallyEqual || !slotMatches) continue;
-			const targetHashes = await Promise.all(frames.map((im) => hash(im!)));
-			const possible: { anim: string; keys: string[]; signature: string }[] = [];
-			for (const sa of sm.rig.animations.filter((a) => a.cells === ta.cells)) {
-				const sourceFrames = frames.map((_, i) => frame(source, sb.layers[0], sa.id, dir, i));
-				if (sourceFrames.some((im) => !im)) continue;
-				if (
-					!(await Promise.all(sourceFrames.map((im) => hash(im!)))).every(
-						(h, i) => h === targetHashes[i]
-					)
-				)
-					continue;
-				if (
-					frames.some(
-						(_, i) =>
-							!coverage.has(cellKey(sa.id, dir, i)) &&
-							!coverage.has(
-								cellKey(sa.id, sm.rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir, i)
-							)
-					)
-				)
-					continue;
-				const from = sm.rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir;
-				if (
-					!item.layers.some(
-						(l) => (l.cells?.[sa.id]?.[dir] ?? l.cells?.[sa.id]?.[from])?.length === sa.cells
-					)
-				)
-					continue;
-				const layers = await Promise.all(
-					item.layers.map(async (l) => ({
-						geometry: layerFrame(sm.rig, l),
-						cells: await Promise.all(
-							Array.from({ length: sa.cells }, async (_, i) => {
-								const im = frame(source, l, sa.id, dir, i);
-								return im ? hash(im) : null;
-							})
-						)
-					}))
+			if (bodies.some((b) => !b) || !sameGeometry || !slotMatches) continue;
+			const possible: { anim: string; signature: string }[] = [];
+			for (const sa of source.rig.animations) {
+				if (sa.cells !== ta.cells || !hasLayer(sa.id, dir, sa.cells)) continue;
+				if (!cells.every((i) => covers(sa.id, dir, i))) continue;
+				const same = await Promise.all(
+					cells.map(async (i) => (await hashAt(source, sb.layers[0], sa.id, dir, i)) === bodies[i])
 				);
-				possible.push({
-					anim: sa.id,
-					keys: frames.map((_, i) => cellKey(sa.id, dir, i)),
-					signature: stableStringify(layers)
-				});
+				if (same.every(Boolean))
+					possible.push({ anim: sa.id, signature: await signature(sa.id, dir, cells) });
 			}
-			// An equal named clip still needs all frozen body cells to match. Different names are accepted only unambiguously.
+			// An equal named clip wins; differently named clips only when they agree on the equipment.
 			const chosen =
 				possible.find((p) => p.anim === ta.id) ??
 				(new Set(possible.map((p) => p.signature)).size === 1 ? possible[0] : undefined);
 			if (chosen) {
-				chosen.keys.forEach((source, i) =>
-					matches.push({ source, target: cellKey(ta.id, dir, i) })
-				);
+				for (const i of cells)
+					matches.push({ source: cellKey(chosen.anim, dir, i), target: cellKey(ta.id, dir, i) });
 				continue;
 			}
-			// Different clip lengths can still share an unambiguous frozen pose (including a repeated standing cell).
-			// Require every matching source pose to agree on the complete equipment raster, not merely the body hash.
-			for (const [i, bodyHash] of targetHashes.entries()) {
-				const candidates = (await sourceIndex(dir)).get(bodyHash) ?? [];
+			// Different clip lengths can still share an unambiguous frozen pose (a repeated standing cell).
+			const index = await sourceIndex(dir);
+			for (const i of cells) {
+				const candidates = index.get(bodies[i]!) ?? [];
 				if (new Set(candidates.map((c) => c.signature)).size === 1)
 					matches.push({ target: cellKey(ta.id, dir, i), source: candidates[0].key });
-				else if (candidates.length) ambiguous = true;
 			}
 		}
 	}
-	const missingCells = totalCells - matches.length;
-	if (missingCells) reasons.push('This body or its moves need a fitted copy of this design.');
-	if (!slotMatches) reasons.push('The target slot or grip differs from the saved source.');
-	if (ambiguous)
-		reasons.push(
-			'Several source moves match these poses. Their equipment differs; automatic copying cannot choose safely.'
-		);
-	if (!sm.rig.view || !tm.rig.view)
-		warnings.push('Camera metadata is incomplete. Review the copied views before keeping them.');
-	if (tm.rig.directions.some((d) => d.mirrorOf) && slot?.class === 'held')
-		warnings.push(
-			'Mirrored character views also mirror the equipment and may swap its anatomical hand.'
-		);
-	const targetRigReady =
-		!!tm.rig.rest &&
-		canPose(tm.rig, {
-			anims: tm.rig.animations.filter((a) => clipDirs[a.id].length).map((a) => a.id),
+	const canExtend =
+		!!target.rig.rest &&
+		!!item.dressed &&
+		canPose(target.rig, {
+			anims: target.rig.animations.filter((a) => clipDirs[a.id].length).map((a) => a.id),
 			dirs: targetDirs,
 			clipDirs
-		});
-	const canExtend =
-		targetRigReady &&
-		!!item.dressed &&
+		}) &&
 		targetDirs.every(
 			(d) =>
-				item.dressed?.[d] && stableStringify(tm.rig.rest?.[d]) === stableStringify(sm.rig.rest?.[d])
+				!!item.dressed?.[d] &&
+				stableStringify(target.rig.rest?.[d]) === stableStringify(source.rig.rest?.[d])
 		);
-	if (matches.length && !canExtend)
-		warnings.push(
-			'Ready for the copied frames. A target rest fit or setup is needed before adding new moves to this copy.'
-		);
-	const status: FitAssessment['status'] =
-		!totalCells || !slot || (ambiguous && !matches.length)
-			? 'unsupported'
-			: !missingCells
-				? 'ready'
-				: targetRigReady
-					? 'fit'
-					: 'setup';
-	if (status === 'setup')
-		reasons.push('Set up the target character’s pose rig before fitting this design.');
 	return {
-		status,
-		freeCells: matches.length,
-		totalCells,
-		missingCells,
+		matches,
 		canExtend,
-		targetRigReady,
-		canCopy: matches.length > 0,
-		reasons,
-		warnings: [...new Set(warnings)],
-		matches
+		fits: matches.length > 0
 	};
 }

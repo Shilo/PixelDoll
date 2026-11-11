@@ -1,5 +1,7 @@
 # Shared equipment implementation and verification
 
+Status: superseded (2026-11-10) by automatic sharing of every finished item between the user's characters; the design library, design ZIPs and paid fitting verified here were removed. Kept as history.
+
 Date: 2026-10-22. User authorized implementation, live PixelLab generations, independent adversarial review and commits on main. This report describes the supported implementation; the broader [research plan](../research/shared-equipment-fitted-copies-plan.md) is not a claim that every fitting class is qualified.
 
 ## Delivered behavior

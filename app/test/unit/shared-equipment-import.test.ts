@@ -1,7 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest';
-import { equipmentFixture, bodyOnly } from './equipment-fixture.ts';
-import { createDesign } from '../../src/lib/equipment/design.ts';
-import { prepareCopy } from '../../src/lib/equipment/copy.ts';
+import { equipmentFixture } from './equipment-fixture.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { readCharacterZip, saveImportedCharacter } from '../../src/lib/store/import.ts';
 import { loadProject } from '../../src/lib/store/project.ts';
@@ -27,27 +25,18 @@ beforeEach(() => {
 	memory.blobs.clear();
 });
 
-test('saved shared equipment can reopen after editable ZIP import', async () => {
-	const source = await equipmentFixture(),
-		extra = [...source.images.keys()].at(-1)! as `sha256:${string}`;
-	source.manifest.items[1].dressed = { south: extra };
-	source.manifest.items[1].key = 'green';
-	source.manifest.items[1].route = 'skeleton-pose';
-	const design = await createDesign(source, 'hat', { hat: 'blue' }),
-		candidate = await prepareCopy(design, bodyOnly(source));
-	candidate.project.manifest.presets[0].items.head = candidate.itemId;
-	const exported = await exportFiles(candidate.project, { engines: ['generic'], baked: true });
+test('a character ZIP from the shared-design era still imports; its item.design is ignored', async () => {
+	const source = await equipmentFixture();
+	// The retired lineage pinned a design snapshot whose images need not be in the archive.
+	Object.assign(source.manifest.items[1], {
+		design: {
+			designId: 'equipment-design:old',
+			snapshot: { name: 'Old hat', imageHashes: [`sha256:${'f'.repeat(64)}`] }
+		}
+	});
+	const exported = await exportFiles(source, { engines: ['generic'], baked: true });
 	expect(exported.errors).toEqual([]);
-	const restored = await readCharacterZip(await zip(exported.entries)),
-		item = restored.project.manifest.items.find((i) => i.id === candidate.itemId)!;
-	expect(item.coverage).toEqual(
-		candidate.project.manifest.items.find((i) => i.id === candidate.itemId)!.coverage
-	);
-	expect(item.design).toEqual(
-		candidate.project.manifest.items.find((i) => i.id === candidate.itemId)!.design
-	);
-	for (const hash of item.design!.snapshot.imageHashes)
-		expect(restored.project.images.has(hash)).toBe(true);
+	const restored = await readCharacterZip(await zip(exported.entries));
 	const expected = composeCell(
 		recolor(restored.project, {}),
 		restored.project.manifest.presets[0].items,
@@ -55,9 +44,10 @@ test('saved shared equipment can reopen after editable ZIP import', async () => 
 		'south',
 		0
 	);
-	// Reopen from only the newly persisted records/blobs, not the export's in-memory image map.
-	const id = await saveImportedCharacter(restored, 'Restored shared equipment'),
+	// Reopen from only the newly persisted records and blobs, not the export's in-memory image map.
+	const id = await saveImportedCharacter(restored, 'Restored character'),
 		reopened = await loadProject(id);
+	expect(reopened.project.manifest.items.map((it) => it.id)).toEqual(['base', 'hat']);
 	expect(
 		composeCell(
 			recolor(reopened.project, {}),

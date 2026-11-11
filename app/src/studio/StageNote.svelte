@@ -12,9 +12,7 @@
 		moving,
 		queueMoves,
 		withKey,
-		openNewItem,
-		openItemExtension,
-		extensionPreparing
+		openNewItem
 	} from './state.svelte.ts';
 	import { TriangleAlert } from './icons.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -52,8 +50,7 @@
 			: []
 	);
 	const poseOffer = $derived(m && poseSpecs.length ? itemMoveOffer(m, poseSpecs) : null);
-	const shared = $derived(missing.find((i) => i.design));
-	const remake = $derived(missing.find((i) => !i.design && i.prompt));
+	const remake = $derived(missing.find((i) => i.prompt));
 	const busy = $derived(
 		!!moving.spec &&
 			moving.projectId === doc.id &&
@@ -95,14 +92,6 @@
 		{:else if isDemo()}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'create')}
 				>Make your own</button
-			>
-		{:else if shared}
-			<button
-				class="bu-action btn sm"
-				data-variant="outline"
-				disabled={extensionPreparing(shared.id)}
-				onclick={() => openItemExtension(shared.id, [anim!.id])}
-				>{extensionPreparing(shared.id) ? 'Checking fit…' : 'Review equipment fit'}</button
 			>
 		{:else if poseSpecs.length === missing.length}
 			<span class="api-action"

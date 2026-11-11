@@ -38,16 +38,11 @@
 		moving,
 		settingUp,
 		matchItemPalette,
-		acceptItemIssues,
-		openSaveDesign,
-		openPinnedDesign,
-		openItemExtension,
-		extensionPreparing
+		acceptItemIssues
 	} from './state.svelte.ts';
 	import {
 		ArrowUp,
 		ArrowDown,
-		Bookmark,
 		Check,
 		ChevronRight,
 		CircleCheck,
@@ -106,7 +101,6 @@
 	const sourceDir = $derived(m?.rig.directions.find((d) => d.id === ui.dir)?.mirrorOf ?? ui.dir);
 	const repairSpec = $derived(
 		it &&
-			!it.design &&
 			anim &&
 			it.route === 'skeleton-pose' &&
 			it.key &&
@@ -224,16 +218,19 @@
 	const designReasons = $derived([
 		...new Set((it?.designWarnings ?? []).flatMap((s) => s.split('; ')).map(plainReason))
 	]);
-	const reasons = $derived(
-		it?.qa
+	const reasons = $derived([
+		...(it?.fittedFrom
+			? [`Fitted from ${it.fittedFrom}’s item without generating; check each move.`]
+			: []),
+		...(it?.qa
 			? qaReasons(
 					it.qa,
 					SLOTS.find((s) => s.id === it.slot)?.class === 'held',
 					it.route === 'skeleton-pose',
 					m?.rig
 				)
-			: []
-	);
+			: [])
+	]);
 	let confirmRemove = $state(false);
 	let onlyDir = $state(false);
 	let acceptingIssues = $state(false);
@@ -276,10 +273,6 @@
 				{#if hiddenNow}<span class="badge">Hidden by another item</span>{/if}
 			</p>
 		</header>
-		{#if it.design}<p class="muted small">
-				Independent copy of “{it.design.snapshot.name}”. Its colors and outfits belong to this
-				character.
-			</p>{/if}
 
 		{#if anim}
 			<div
@@ -311,24 +304,7 @@
 				data-variant="outline"
 				onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button
 			>
-			{#if it.status === 'accepted' && it.slot !== 'body'}<button
-					class="bu-action btn"
-					data-variant="outline"
-					onclick={() => openSaveDesign(it.id)}><Bookmark size={14} />Save as shared design</button
-				>{/if}
-			{#if it.design && !isDemo()}<button
-					class="bu-action btn"
-					data-variant="outline"
-					onclick={() => openPinnedDesign(it.id)}>View saved design</button
-				>{/if}
-			{#if it.design && gaps.length && !isDemo()}<button
-					class="bu-action btn"
-					data-variant="outline"
-					disabled={extensionPreparing(it.id)}
-					onclick={() => openItemExtension(it.id)}
-					>{extensionPreparing(it.id) ? 'Checking fit…' : 'Fit missing frames'}</button
-				>{/if}
-			{#if !isDemo() && it.prompt && !it.design}
+			{#if !isDemo() && it.prompt}
 				<button
 					class="bu-action btn"
 					data-variant="outline"

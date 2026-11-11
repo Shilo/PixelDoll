@@ -24,7 +24,6 @@
 		settingUp,
 		initUi,
 		refreshProjects,
-		refreshFits,
 		openProject,
 		lastProject,
 		loadGens,
@@ -32,7 +31,6 @@
 		resumeCreate,
 		resumeMove,
 		resumeSetup,
-		resumeFitStages,
 		startupResumed,
 		startupFailed,
 		prefetchFlows,
@@ -58,8 +56,6 @@
 		move: () => import('./MoveSheet.svelte'),
 		import: () => import('./ImportSheet.svelte'),
 		setup: () => import('./SetupSheet.svelte'),
-		savedesign: () => import('./DesignSaveSheet.svelte'),
-		fitdesign: () => import('./FitDesignSheet.svelte'),
 		item: () => import('./ItemPane.svelte'),
 		notes: () => import('./StageNote.svelte'),
 		gen: () => import('./GenCard.svelte')
@@ -92,8 +88,6 @@
 			await resumeCreate();
 			await resumeMove();
 			await resumeSetup();
-			if (queue.role !== 'follower') await resumeFitStages();
-			await refreshFits();
 			startupResumed();
 			// Once startup is done, fetch the on-demand code so it keeps working if the connection drops or a deploy replaces its
 			// files. Production only: the dev server would transform every module on each page load. lazy() logs failures.
@@ -286,8 +280,6 @@
 	{#if ui.sheet === 'import'}<Lazy load={parts.import} />{/if}
 	{#if ui.sheet === 'delete'}<DeleteSheet />{/if}
 	{#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
-	{#if ui.sheet === 'savedesign'}<Lazy load={parts.savedesign} />{/if}
-	{#if ui.sheet === 'fitdesign'}<Lazy load={parts.fitdesign} />{/if}
 	{#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
 		<Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}
 			><Lazy load={parts.item} id={ui.selected} /></Sheet
