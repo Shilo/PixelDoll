@@ -434,7 +434,7 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
 }
 
 /** Where to look at a free re-fit of another character's item, in plain words: one line per move and direction whose
- *  frames failed a check, with its first such frame to show. */
+ *  frames failed a check, with its first such frame to show, and one per view whose source design has a finding. */
 export function refitNotes(
 	m: Manifest,
 	it: Item
@@ -444,16 +444,29 @@ export function refitNotes(
 	const check = {
 		angle: `the forearm points another way than on ${from}`,
 		body: 'the grip may float off the body',
-		hidden: `${from}’s body hid part of the item there`
+		hidden: `${from}’s body hid part of the item there`,
+		smudge: `${from}’s design has gray smudges in this view`,
+		dark: `${from}’s design has a dark patch the other views lack`
 	};
 	const list = (xs: (string | number)[]) =>
 		xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : `${xs[0]}`;
-	return (it.refit ?? []).map((n) => ({
-		text: `${moveLabel(n.anim, ids)} facing ${n.dir.replaceAll('-', ' ')}, ${n.frames.length > 1 ? 'frames' : 'frame'} ${list(n.frames.map((f) => f + 1))}: ${list(n.checks.map((c) => check[c]))}.`,
-		anim: n.anim,
-		dir: n.dir,
-		frame: Math.min(...n.frames)
-	}));
+	return (it.refit ?? []).map((n) => {
+		const view = n.dir.replaceAll('-', ' '),
+			facing = `facing ${view}`,
+			move = moveLabel(n.anim, ids);
+		// A design finding covers its whole view; a one-frame move has no frame to name.
+		const where = n.checks.every((c) => c === 'smudge' || c === 'dark')
+			? `Facing ${view}`
+			: m.rig.animations.find((a) => a.id === n.anim)?.cells === 1
+				? `${move} ${facing}`
+				: `${move} ${facing}, ${n.frames.length > 1 ? 'frames' : 'frame'} ${list(n.frames.map((f) => f + 1))}`;
+		return {
+			text: `${where}: ${list(n.checks.map((c) => check[c]))}.`,
+			anim: n.anim,
+			dir: n.dir,
+			frame: Math.min(...n.frames)
+		};
+	});
 }
 
 /** A mirrored view flips its drawn view's pixels, so a Main hand item shows in the left hand there. */

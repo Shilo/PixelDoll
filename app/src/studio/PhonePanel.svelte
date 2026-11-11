@@ -313,8 +313,8 @@
 											)}>Make one for {m.name}</button
 									>
 									<p class="faint small" id="unfit-note">
-										Drawn new from the same description, so it may look different. The price shows
-										before anything is made.
+										Drawn new from the same description, so it may look different. It starts with
+										the standing pose; you add moves later, each priced first.
 									</p>
 								</div>
 							{/if}

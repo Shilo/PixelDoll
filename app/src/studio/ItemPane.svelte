@@ -40,7 +40,9 @@
 		settingUp,
 		matchItemPalette,
 		acceptItemIssues,
-		showFrame
+		showFrame,
+		shared,
+		copyFromSource
 	} from './state.svelte.ts';
 	import {
 		ArrowUp,
@@ -226,6 +228,7 @@
 	// A copy without its own standing design (a re-fit, or a copy whose standing views differ) cannot be extended to more
 	// moves: only an item made for this character can.
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
+	const freeFrames = $derived(it ? (shared.free[it.id] ?? 0) : 0);
 	const reasons = $derived(
 		it?.qa
 			? qaReasons(
@@ -345,7 +348,8 @@
 			{/if}
 		</div>
 
-		{#if designReasons.length}
+		<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
+		{#if designReasons.length && !it.refit}
 			<div class="field">
 				<span class="sec-title">Accepted appearance warnings</span>
 				<ul class="reasons small">
@@ -407,10 +411,25 @@
 		{#if moveGaps.length}<p class="notice warn small">
 				<TriangleAlert size={14} />Missing some or all {moveName} frames facing {moveGaps.join(
 					', '
-				)}. It won’t show in those frames.{#if remakeOnly && !isDemo()}
+				)}. It won’t show in those frames.{#if remakeOnly && !isDemo() && !freeFrames}
 					Make one for {m.name} to wear it in every move.{/if}
 			</p>{/if}
-		{#if missingMoves.length}
+		{#if freeFrames && it.copiedFrom && !isDemo()}
+			<!-- An exact copy whose source item gained frames for this body since: copied over for free, not made again. -->
+			<div class="field">
+				<button
+					class="bu-action btn"
+					data-variant="outline"
+					disabled={!!shared.adding}
+					onclick={() => copyFromSource(it.id)}
+					>Copy from {it.copiedFrom.name} <span class="cost">Free</span></button
+				>
+				<p class="faint small">
+					{it.copiedFrom.name} has {freeFrames}
+					{freeFrames === 1 ? 'frame' : 'frames'} of this item that {m.name} lacks. Nothing is generated.
+				</p>
+			</div>
+		{:else if missingMoves.length}
 			<div class="field">
 				{#if missingMoves.length > 1}<label class="field"
 						><span class="label small">Generate item for move</span><select

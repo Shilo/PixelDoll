@@ -41,7 +41,7 @@ import { GROUPS, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import type { SetupSpec } from './setup.ts';
 import { forgetFits, listShared, type SharedItem } from '../lib/equipment/shared.ts';
-import { acceptCopy } from '../lib/equipment/copy.ts';
+import { acceptCopy, copyMoreFrames, freeFrames } from '../lib/equipment/copy.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
@@ -990,6 +990,8 @@ class Shared {
 	error = $state('');
 	/** Items left out because their images could not be read (each logged). */
 	skipped = $state(0);
+	/** Frames each exact copy of the open character can take from its source for free, by item id. */
+	free = $state.raw<Record<string, number>>({});
 }
 export const shared = new Shared();
 export const sharedKey = (entry: SharedItem) => `shared:${entry.sourceId}/${entry.item.id}`;
@@ -1001,13 +1003,18 @@ export async function refreshShared() {
 		shared.items = [];
 		shared.error = '';
 		shared.skipped = 0;
+		shared.free = {};
 		return;
 	}
 	try {
-		const { items, skipped } = await listShared(doc.id, store.project.manifest);
+		const [{ items, skipped }, free] = await Promise.all([
+			listShared(doc.id, store.project.manifest),
+			freeFrames(store.project.manifest)
+		]);
 		if (request !== sharedRequest) return;
 		shared.items = items;
 		shared.skipped = skipped;
+		shared.free = free;
 		shared.error = '';
 	} catch (e) {
 		console.error('shared', e);
@@ -1058,6 +1065,32 @@ export async function addShared(entry: SharedItem) {
 		await refreshShared();
 	} catch (e) {
 		toast(`Could not add ${entry.item.name}: ${(e as Error).message}`, { tone: 'danger' });
+	} finally {
+		shared.adding = '';
+	}
+}
+
+/** Free: an exact copy takes the frames its source item gained since (moves added there), into the same item. */
+export async function copyFromSource(itemId: string) {
+	const it = itemById(itemId);
+	if (isDemo() || !it?.copiedFrom || shared.adding) return;
+	const projectId = doc.id,
+		request = openRequest,
+		from = it.copiedFrom.name;
+	shared.adding = itemId;
+	try {
+		await flushSave();
+		const n = await copyMoreFrames(projectId, itemId);
+		if (doc.id !== projectId || request !== openRequest) return;
+		if (n) {
+			await openProject(projectId, { quiet: true });
+			toast(
+				`Copied ${n} ${n === 1 ? 'frame' : 'frames'} of ${it.name} from ${from}. No generations used.`
+			);
+		} else toast(`${from} has no more frames of ${it.name} for this character.`);
+		await refreshShared();
+	} catch (e) {
+		toast(`Could not copy frames of ${it.name}: ${(e as Error).message}`, { tone: 'danger' });
 	} finally {
 		shared.adding = '';
 	}

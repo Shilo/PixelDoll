@@ -27,8 +27,11 @@ import { copyShell, flipper, type CopyCandidate } from './copy.ts';
 export const REFIT = {
 	/** Elbow-to-wrist angle difference between the source and target frame (degrees). */
 	maxForearmDeg: 15,
-	/** Share of the item's pixels over the source body that stay over the target body once moved. */
+	/** Share of the item's pixels over the source body that stay over or beside the target body once moved. */
 	minKeptOnBody: 0.7,
+	/** How far (px, either axis) a moved front pixel may sit from the target body and still count as on it: slimmer bodies
+	 *  put a correct grip 1 to 2 px off their outline (live 2026-11-10). */
+	keptReachPx: 2,
 	/** Item area against its standing frame in that direction (a frame where the body hid part of it). */
 	minArea: 0.8,
 	/** Mean joint distance (px) under which a frame counts as the standing pose. */
@@ -37,18 +40,29 @@ export const REFIT = {
 	maxFailing: 0.25
 };
 const HELD_ANCHOR: Record<string, 'LEFT' | 'RIGHT'> = { main_hand: 'RIGHT', off_hand: 'LEFT' };
-/** The source's own checks found the item in the other hand or changing hands (G8): a moved copy would keep that. */
+/** A pure side view: one arm hides the other there, so its grip side is unreliable (live 2026-11-10: a sword visibly in the
+ *  right hand facing east was judged left in every east move). Front, back and diagonal views show both hands. */
+const sideView = (clip: string) => /\/(east|west)$/.test(clip);
+/** The source's own checks found the item in the other hand or changing hands (G8) in a view that shows both hands: a moved
+ *  copy would keep that. Item-wide verdicts mix every view, so they decide only when no move recorded its own hand. */
 const wrongHand = (item: Item) => {
 	const want = HELD_ANCHOR[item.slot] === 'RIGHT' ? 'r' : 'l',
 		q = item.qa;
+	if (!q) return !!item.designWarnings?.some((w) => w.includes('expects hand_'));
+	const clips = Object.entries(q.clips),
+		decided = (c: { hand?: string }) => c.hand === 'r' || c.hand === 'l';
+	if (
+		clips.some(
+			([clip, c]) =>
+				!sideView(clip) && ((decided(c) && c.hand !== want) || c.handedness === 'switched')
+		) ||
+		(q.inherited?.summary?.handedness === 'switched' &&
+			q.inherited.clips.some((clip) => !sideView(clip)))
+	)
+		return true;
+	if (clips.some(([, c]) => decided(c))) return false;
 	return (
-		!!item.designWarnings?.some((w) => w.includes('expects hand_')) ||
-		(!!q &&
-			[q, q.inherited?.summary, ...Object.values(q.clips)].some(
-				(p) => p?.handedness === 'switched'
-			)) ||
-		(!!q &&
-			Object.values(q.clips).some((c) => (c.hand === 'r' || c.hand === 'l') && c.hand !== want))
+		!!item.designWarnings?.some((w) => w.includes('expects hand_')) || q.handedness === 'switched'
 	);
 };
 /** The item may re-fit onto other bodies: a held item in its own hand that hides nothing of its own body and was drawn for
@@ -110,6 +124,12 @@ const forearm = (k: Keypoint[], side: string, cell: Rig['cell']) => {
 const angleBetween = (a: number, b: number) => Math.abs(((((a - b) % 360) + 540) % 360) - 180);
 const opaque = (im: Img | null, x: number, y: number) =>
 	!!im && x >= 0 && y >= 0 && x < im.w && y < im.h && im.data[(y * im.w + x) * 4 + 3] >= 128;
+/** Some opaque pixel lies within `r` px of (x, y) on both axes. */
+const near = (im: Img | null, x: number, y: number, r: number) => {
+	for (let b = -r; b <= r; b++)
+		for (let a = -r; a <= r; a++) if (opaque(im, x + a, y + b)) return true;
+	return false;
+};
 const pixels = (im: Img | null) => {
 	let n = 0;
 	for (let i = 3; im && i < im.data.length; i += 4) if (im.data[i]) n++;
@@ -295,7 +315,7 @@ async function fit(
 			image(source, sb, sa, td, +si),
 			image(target, tb, ta, td, +ti)
 		]);
-		// Front pixels over the source body stay over the target body (the grip and anything held across the torso).
+		// Front pixels over the source body stay over or beside the target body (the grip and anything held across the torso).
 		let over = 0,
 			kept = 0;
 		for (const [j, im] of layers.entries()) {
@@ -306,7 +326,14 @@ async function fit(
 					if (!opaque(im, x, y)) continue;
 					if (!opaque(sBodyIm, x - sFrames[j].x + sBody.x, y - sFrames[j].y + sBody.y)) continue;
 					over++;
-					if (opaque(tBodyIm, x + dx - tFrames[j].x + tBody.x, y + dy - tFrames[j].y + tBody.y))
+					if (
+						near(
+							tBodyIm,
+							x + dx - tFrames[j].x + tBody.x,
+							y + dy - tFrames[j].y + tBody.y,
+							REFIT.keptReachPx
+						)
+					)
 						kept++;
 				}
 		}
@@ -325,7 +352,24 @@ async function fit(
 		note.checks = [...new Set([...note.checks, ...checks])];
 		notes.set(`${anim}/${dir}`, note);
 	}
-	return { plan, moves, notes: [...notes.values()] };
+	return { plan, moves, notes: [...notes.values(), ...designNotes(original, plan)] };
+}
+
+/** The source's own design findings (D1: gray smudges or a dark patch in one view's keyframe) move with the item into every
+ *  frame of that view: one note each, on the first frame that view takes here. They are not fit failures, so they never count
+ *  toward the limit. */
+function designNotes(original: Item, plan: CellMatch[]): RefitNote[] {
+	const out: RefitNote[] = [];
+	for (const w of original.designWarnings ?? []) {
+		const found = /^D1 keyframe [^/]+\/([a-z-]+)\/\d+: (.*)$/.exec(w);
+		const first = found && plan.find((m) => m.target.split('/')[1] === found[1]);
+		if (!found || !first) continue;
+		const [anim, dir, i] = first.target.split('/') as [string, DirectionName, string],
+			check = found[2].includes('dark patch') ? 'dark' : 'smudge';
+		if (!out.some((n) => n.dir === dir && n.checks[0] === check))
+			out.push({ anim, dir, frames: [+i], checks: [check] });
+	}
+	return out;
 }
 
 /** The target cells a free re-fit would cover, or null when there is none (the same checks as refitShared, without making the

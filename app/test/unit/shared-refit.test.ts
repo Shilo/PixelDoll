@@ -1,7 +1,8 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { acceptCopy, sharedFit } from '../../src/lib/equipment/copy.ts';
-import { refitShared } from '../../src/lib/equipment/refit.ts';
+import { acceptCopy, copyMoreFrames, freeFrames, sharedFit } from '../../src/lib/equipment/copy.ts';
+import { REFIT, refitShared } from '../../src/lib/equipment/refit.ts';
+import { refitNotes } from '../../src/studio/model.ts';
 import { forgetFits, listShared } from '../../src/lib/equipment/shared.ts';
 import { translate } from '../../src/lib/items/items.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
@@ -93,10 +94,10 @@ const fill = (im: Img, x0: number, y0: number, w: number, h: number, rgba: numbe
 	for (let y = y0; y < y0 + h; y++)
 		for (let x = x0; x < x0 + w; x++) im.data.set(rgba, (y * im.w + x) * 4);
 };
-/** A body block from the shoulders to the feet, moved by (dx, dy). */
-function bodyAt(dx: number, dy: number) {
+/** A body block from the shoulders to the feet, moved by (dx, dy), its left side (the right hand's) trimmed by `slim` px. */
+function bodyAt(dx: number, dy: number, slim = 0) {
 	const im = makeImg(64, 64);
-	fill(im, 24 + dx, 12 + dy, 16, 48, [180, 120, 90, 255]);
+	fill(im, 24 + dx + slim, 12 + dy, 16 - slim, 48, [180, 120, 90, 255]);
 	return im;
 }
 /** A sword in the right hand on the 96 px held canvas (pad 16): grip over the body, blade and guard beyond it. */
@@ -118,6 +119,8 @@ interface Spec {
 	/** An extra two-frame move with these joints. */
 	extra?: { id: string; at: Record<string, Px> };
 	sword?: boolean;
+	/** Px trimmed from the body's left side. */
+	slim?: number;
 }
 async function character(o: Spec): Promise<Project> {
 	const [dx, dy] = o.at ?? [0, 0];
@@ -127,7 +130,7 @@ async function character(o: Spec): Promise<Project> {
 			images.set(h, im);
 			return h;
 		};
-	const body = await put(bodyAt(dx, dy));
+	const body = await put(bodyAt(dx, dy, o.slim));
 	const rest = o.swapped
 		? pose(dx, dy, { 'RIGHT ARM': POSE['LEFT ARM'], 'LEFT ARM': POSE['RIGHT ARM'] })
 		: pose(dx, dy);
@@ -287,7 +290,7 @@ test('a held item on a body moved by a known offset moves by exactly that offset
 	const item = (await acceptCopy('rig-knight', 'sword', 'rig-squire'))!;
 	expect(item).not.toBeNull();
 	expect(item.id).not.toBe('sword');
-	expect(item.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight' });
+	expect(item.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight', item: 'sword' });
 	// No frame failed a check: it keeps the source's checks, and only notes would ask for a look.
 	expect(item.refit).toEqual([]);
 	expect(item.qa?.status).toBe('pass');
@@ -442,6 +445,69 @@ test('an item the source’s checks found in the wrong hand does not re-fit', as
 	expect(await refit(warned, target)).toBeNull();
 });
 
+test('a wrong hand found only facing east or west, where one arm hides the other, does not refuse a re-fit', async () => {
+	const target = await squire(),
+		source = await knight(),
+		qa = source.manifest.items[1].qa!,
+		{ cells: _cells, clips: _clips, rerolls: _rerolls, ...summary } = qa;
+	qa.clips = {
+		'slash/south': { ...summary, hand: 'r' },
+		'slash/east': { ...summary, hand: 'l' },
+		'default/west': { ...summary, hand: 'l' }
+	};
+	// The item-wide verdict mixes every view, so it saw a switch.
+	qa.handedness = 'switched';
+	expect(await refit(source, target)).not.toBeNull();
+	// A diagonal shows both hands: it decides like the front.
+	qa.clips['slash/south-east'] = { ...summary, hand: 'l' };
+	expect(await refit(source, target)).toBeNull();
+	// Without any view's own hand, the item-wide verdict decides.
+	qa.clips = {};
+	expect(await refit(source, target)).toBeNull();
+});
+
+test('a grip up to 2 px beside a slimmer body still counts as on it; farther, it may float', async () => {
+	// The blade lies 2 px left of this body's edge, the guard partly over it.
+	expect(
+		(await refit(await knight(), await character({ name: 'Slim', slim: 5 })))!.item.refit
+	).toEqual([]);
+	const far = await character({ name: 'Slimmer', slim: 6 });
+	expect(await refit(await knight(), far)).toBeNull();
+	REFIT.maxFailing = 1;
+	try {
+		expect((await refit(await knight(), far))!.item.refit).toEqual([
+			{ anim: 'default', dir: 'south', frames: [0], checks: ['body'] },
+			{ anim: 'slash', dir: 'south', frames: [0, 1], checks: ['body'] }
+		]);
+	} finally {
+		REFIT.maxFailing = 0.25;
+	}
+});
+
+test('the source design’s smudges move with a re-fit as notes on that view, never counted as failed frames', async () => {
+	const source = await knight(),
+		target = await squire();
+	source.manifest.items[1].designWarnings = [
+		'D1 keyframe rest/south/0: 5 % gray smudges in a colorful design',
+		'D1 keyframe rest/south/0: a dark patch not seen in the other views, possibly not part of the design'
+	];
+	const fit = (await refit(source, target))!;
+	expect(fit.item.refit).toEqual([
+		{ anim: 'default', dir: 'south', frames: [0], checks: ['smudge'] },
+		{ anim: 'default', dir: 'south', frames: [0], checks: ['dark'] }
+	]);
+	// In plain words: a design finding names its view, a one-frame move no frame number.
+	fit.item.copiedFrom = { id: 'rig-knight', name: 'Knight', item: 'sword' };
+	fit.item.refit!.push({ anim: 'default', dir: 'south', frames: [0], checks: ['angle'] });
+	fit.item.refit!.push({ anim: 'slash', dir: 'south', frames: [1], checks: ['body'] });
+	expect(refitNotes(target.manifest, fit.item).map((n) => n.text)).toEqual([
+		'Facing south: Knight’s design has gray smudges in this view.',
+		'Facing south: Knight’s design has a dark patch the other views lack.',
+		'Default facing south: the forearm points another way than on Knight.',
+		'Slash facing south, frame 2: the grip may float off the body.'
+	]);
+});
+
 const loadStored = async (h: Sha256) => {
 	const blob = memory.blobs.get(h.slice(7));
 	if (!blob) throw new Error(`missing ${h}`);
@@ -471,7 +537,7 @@ test('a re-fit never re-fits again, but copies exactly onto an identical body wi
 	expect(await sharedFit(holder, fitted, twin.manifest, loadStored)).toBe('copy');
 	const copied = (await acceptCopy('rig-fencer', fitted.id, 'rig-twin'))!;
 	expect(copied.refit).toEqual(fitted.refit);
-	expect(copied.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight' });
+	expect(copied.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight', item: 'sword' });
 });
 
 test('an exact copy missing frames the item has on its source gives way to a re-fit that covers them', async () => {
@@ -762,7 +828,7 @@ test('an exact copy references the stored images without rewriting them, and fai
 	);
 	memory.blobs.set(blade, kept!);
 	const item = (await acceptCopy('rig-knight', 'sword', 'rig-page'))!;
-	expect(item.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight' });
+	expect(item.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight', item: 'sword' });
 	expect(item.refit).toBeUndefined();
 	expect(memory.blobs.get(blade)).toBe(kept);
 	// Credits keep the source's calls for attribution, labeled as copied so they are not counted as spent here.
@@ -773,4 +839,59 @@ test('an exact copy references the stored images without rewriting them, and fai
 	expect(creditsCsv(m)).toContain(
 		'"PixelLab (https://pixellab.ai); made for Knight and copied here without generating"'
 	);
+});
+
+/** The slash drawn with its own body pose (a pixel apart from the standing body), so only a slash frame can dress it. */
+async function swung(p: Project) {
+	const im = bodyAt(0, 0);
+	fill(im, 0, 0, 1, 1, [1, 2, 3, 255]);
+	const h = await cellHash(im);
+	p.images.set(h, im);
+	p.manifest.items[0].layers[0].cells!.slash!.south = [h, h];
+	return p;
+}
+test('an exact copy takes the frames its source item gained since, for free, into the same item', async () => {
+	// Copied while the Knight's sword had only its standing frame.
+	const early = await swung(await knight()),
+		sword = early.manifest.items[1];
+	sword.coverage = ['default/south/0'];
+	delete sword.layers[0].cells!.slash;
+	await store('rig-knight', early);
+	await store('rig-page', await swung(await character({ name: 'Page' })));
+	const copy = (await acceptCopy('rig-knight', 'sword', 'rig-page'))!;
+	expect(copy.coverage).toEqual(['default/south/0']);
+	const page = () => loadProject('rig-page').then((p) => p.project);
+	expect(await freeFrames((await page()).manifest)).toEqual({});
+	expect(await copyMoreFrames('rig-page', copy.id)).toBe(0);
+	// The Knight's sword gains the slash.
+	const later = await swung(await knight());
+	await store('rig-knight', later);
+	const before = (await page()).manifest;
+	expect(await freeFrames(before)).toEqual({ [copy.id]: 2 });
+	expect(await copyMoreFrames('rig-page', copy.id)).toBe(2);
+	const after = await page(),
+		item = after.manifest.items.find((it) => it.id === copy.id)!;
+	expect(after.manifest.items.filter((it) => it.slot === 'main_hand')).toHaveLength(1);
+	expect(item.coverage).toEqual(['default/south/0', 'slash/south/0', 'slash/south/1']);
+	expect(item.layers[0].cells).toEqual(later.manifest.items[1].layers[0].cells);
+	// The same item: its own materials (the user's colors) stay.
+	expect(item.materials).toEqual(copy.materials);
+	expect(after.manifest.materials).toEqual(before.materials);
+	expect(item.qa?.clips['slash/south']).toBeDefined();
+	// Nothing left to copy.
+	expect(await freeFrames(after.manifest)).toEqual({});
+	expect(await copyMoreFrames('rig-page', copy.id)).toBe(0);
+});
+
+test('a re-fit never takes more frames from its source', async () => {
+	const early = await knight();
+	early.manifest.items[1].coverage = ['default/south/0'];
+	delete early.manifest.items[1].layers[0].cells!.slash;
+	await store('rig-knight', early);
+	await store('rig-squire', await character({ name: 'Squire', at: [2, 1] }));
+	const fitted = (await acceptCopy('rig-knight', 'sword', 'rig-squire'))!;
+	expect(fitted.refit).toEqual([]);
+	await store('rig-knight', await knight());
+	expect(await freeFrames((await loadProject('rig-squire')).project.manifest)).toEqual({});
+	expect(await copyMoreFrames('rig-squire', fitted.id)).toBe(0);
 });

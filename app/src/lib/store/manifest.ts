@@ -94,18 +94,20 @@ export interface Item {
 	designWarnings?: string[]; // explicitly accepted keyframe design issues, retained when move QA is replaced
 	paletteRepairs?: ItemPaletteRepair[]; // explicit local edits; paid source provenance and historical QA remain intact
 	qa?: ItemQa; // not read by compose/export
-	/** The saved character this item was copied from without generating; its provenance records that character's paid calls. */
-	copiedFrom?: { id: string; name: string };
+	/** The saved character this item was copied from without generating, and its item there; its provenance records that
+	 *  character's paid calls. */
+	copiedFrom?: { id: string; name: string; item?: string };
 	/** A free approximate re-fit of the copied item onto this body: the frames whose checks failed, to look at (may be empty). */
 	refit?: RefitNote[];
 }
 /** Frames of one move and direction of a re-fitted item whose checks failed: the forearm turns another way than on the source
- *  ('angle'), the grip no longer lies over the body ('body'), or the source's body hid part of the item there ('hidden'). */
+ *  ('angle'), the grip no longer lies over the body ('body'), or the source's body hid part of the item there ('hidden'). A
+ *  source design finding for a whole view ('smudge': gray smudges, 'dark': a dark patch) names that view's first frame. */
 export interface RefitNote {
 	anim: string;
 	dir: DirectionName;
 	frames: number[];
-	checks: ('angle' | 'body' | 'hidden')[];
+	checks: ('angle' | 'body' | 'hidden' | 'smudge' | 'dark')[];
 }
 /** Original and corrected layer references for an explicit free color edit. Historical source blobs need not remain loaded. */
 export interface ItemPaletteRepair {

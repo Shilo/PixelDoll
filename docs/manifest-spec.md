@@ -157,15 +157,16 @@ export interface Item {
   provenance: Provenance[];
   qa?: ItemQa;                            // absent on the base
   coverage?: CellKey[];                   // equipment only (required there): target cells, including intentionally transparent cells
-  copiedFrom?: { id: string; name: string }; // character this item was copied from without generating; its provenance
-                                          //   holds that character's paid calls
+  copiedFrom?: { id: string; name: string; item?: string }; // character (and its item) this item was copied from without
+                                          //   generating; its provenance holds that character's paid calls
   refit?: RefitNote[];                    // a free approximate re-fit onto this body: frames whose checks failed (may be empty)
 }
 export interface RefitNote {               // frames of one move and direction of a re-fit whose checks failed
   anim: string;
   dir: DirectionName;
   frames: number[];
-  checks: ('angle' | 'body' | 'hidden')[]; // forearm turned, grip off the body, source body hid part of the item
+  checks: ('angle' | 'body' | 'hidden' | 'smudge' | 'dark')[]; // forearm turned, grip off the body, source body hid part
+                                          //   of the item; or the source design's gray smudges or dark patch in that view
 }
 export interface Layer {
   id: 'main' | 'fg' | 'bg';

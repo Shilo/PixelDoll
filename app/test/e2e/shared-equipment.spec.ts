@@ -180,7 +180,7 @@ test('an item made for a different body offers to make it for this character, an
 	const unfit = page.locator('.equipment-scroll .unfit');
 	await expect(unfit).toContainText('Drawn for Giant’s body, so it doesn’t fit Adventurer copy.');
 	await expect(unfit).toContainText(
-		'Drawn new from the same description, so it may look different. The price shows before anything is made.'
+		'Drawn new from the same description, so it may look different. It starts with the standing pose; you add moves later, each priced first.'
 	);
 	const make = unfit.getByRole('button', { name: 'Make one for Adventurer copy', exact: true });
 	// The offer opens right after the tapped tile, inside the list; the offer itself takes focus (Tab then reaches its button),
@@ -245,6 +245,79 @@ test('the From your other characters row fits a phone without horizontal overflo
 		expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
 	}
 	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('a copy missing frames its source item has copies them for free into the same item', async ({
+	page,
+	context
+}) => {
+	const requests: string[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		requests.push(route.request().method() + ' ' + new URL(route.request().url()).pathname);
+		await route.abort();
+	});
+	const others = await threeCharacters(page);
+	await others
+		.getByRole('button', { name: 'Traveling wizard hat, from Twin, free copy', exact: true })
+		.click();
+	await expect(page.locator('.bu-toast')).toContainText('No generations used.');
+	// As if the copy was made before Twin's hat had its walk: drop the copy's walk frames.
+	const dropped = await page.evaluate(async () => {
+		const request = indexedDB.open('pixeldoll', 1);
+		const database = await new Promise<IDBDatabase>((resolve, reject) => {
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => reject(request.error);
+		});
+		const store = database.transaction('projects', 'readwrite').objectStore('projects');
+		const all = await new Promise<{ id: string; manifest: { name: string; items: any[] } }[]>(
+			(resolve, reject) => {
+				const read = store.getAll();
+				read.onsuccess = () => resolve(read.result);
+				read.onerror = () => reject(read.error);
+			}
+		);
+		const rec = all.find((r) => r.manifest.name === 'Adventurer copy')!,
+			copy = rec.manifest.items.find((it) => it.copiedFrom?.name === 'Twin')!;
+		const before = copy.coverage.length;
+		copy.coverage = copy.coverage.filter((k: string) => !k.startsWith('walk/'));
+		for (const layer of copy.layers) delete layer.cells.walk;
+		store.put(rec, rec.id);
+		await new Promise<void>((resolve, reject) => {
+			store.transaction.oncomplete = () => resolve();
+			store.transaction.onerror = store.transaction.onabort = () => reject(store.transaction.error);
+		});
+		database.close();
+		return before - copy.coverage.length;
+	});
+	expect(dropped).toBeGreaterThan(0);
+	await reloadStudio(page);
+	await equipmentGroup(page, 'Head');
+	await page
+		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
+		.getByRole('button', { name: 'Traveling wizard hat', exact: true })
+		.click();
+	const details = await selectedItemDetails(page);
+	const copy = details.getByRole('button', { name: 'Copy from Twin · Free', exact: true });
+	await expect(copy).toBeVisible();
+	await expect(details).toContainText(
+		`Twin has ${dropped} frames of this item that Adventurer copy lacks. Nothing is generated.`
+	);
+	await expect(details.getByRole('button', { name: /^Make for / })).toHaveCount(0);
+	await copy.click();
+	await expect(page.locator('.bu-toast').last()).toContainText(
+		`Copied ${dropped} frames of Traveling wizard hat from Twin. No generations used.`
+	);
+	await reloadStudio(page);
+	await equipmentGroup(page, 'Head');
+	const hats = page
+		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
+		.getByRole('button', { name: 'Traveling wizard hat', exact: true });
+	await expect(hats).toHaveCount(1);
+	await hats.click();
+	await expect(
+		(await selectedItemDetails(page)).getByRole('button', { name: 'Copy from Twin · Free' })
+	).toHaveCount(0);
+	expect(requests).toEqual([]);
 });
 
 test('another character’s sword re-fits a body standing 1 px aside for free and asks for a look', async ({

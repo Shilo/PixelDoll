@@ -12,7 +12,9 @@
 		moving,
 		queueMoves,
 		withKey,
-		openNewItem
+		openNewItem,
+		shared,
+		copyFromSource
 	} from './state.svelte.ts';
 	import { TriangleAlert } from './icons.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -50,6 +52,7 @@
 			: []
 	);
 	const poseOffer = $derived(m && poseSpecs.length ? itemMoveOffer(m, poseSpecs) : null);
+	const freeCopy = $derived(missing.find((i) => shared.free[i.id]));
 	const remake = $derived(missing.find((i) => i.prompt));
 	const copyOnly = $derived(!!m && !!remake?.copiedFrom && !extendable(m, remake.id));
 	const busy = $derived(
@@ -93,6 +96,15 @@
 		{:else if isDemo()}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'create')}
 				>Make your own</button
+			>
+		{:else if freeCopy?.copiedFrom}
+			<!-- An exact copy whose source item gained these frames since: copied over for free, not made again. -->
+			<button
+				class="bu-action btn sm primary"
+				data-variant="primary"
+				disabled={!!shared.adding}
+				onclick={() => copyFromSource(freeCopy.id)}
+				>Copy from {freeCopy.copiedFrom.name} <span class="cost">Free</span></button
 			>
 		{:else if poseSpecs.length === missing.length}
 			<span class="api-action"

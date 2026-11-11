@@ -8,11 +8,13 @@ import { flipH } from '../rig/mirror.ts';
 import { cellHash, cellKey } from '../rig/rig.ts';
 import { variantOf, variantRampOf } from '../dress/dress.ts';
 import { putItem, slotLadder } from '../items/items.ts';
+import { clipOf, mergeQa, summaryOf } from '../items/qa-summary.ts';
 import type { StoredProject } from '../store/project.ts';
 import type {
 	CellKey,
 	DirectionName,
 	Item,
+	ItemQa,
 	Manifest,
 	Material,
 	Preset,
@@ -24,6 +26,7 @@ import {
 	bodyOf,
 	cellId,
 	covered,
+	type CellMatch,
 	type CopyAssessment,
 	type Flip
 } from './compatibility.ts';
@@ -90,19 +93,41 @@ export async function prepareCopy(
 		target,
 		assessment.matches.map((match) => match.target)
 	);
-	const cells = target.rig.animations;
-	const layerCells = item.layers.map(() => ({}) as NonNullable<Item['layers'][number]['cells']>),
-		baseCut: NonNullable<Item['baseCut']> = {};
-	for (const match of assessment.matches) {
+	item.layers.forEach((layer) => {
+		layer.cells = {};
+		delete layer.sheets;
+	});
+	delete item.baseCut;
+	await putCells(source, original, target, item, assessment.matches, flip);
+	// Standing references only fit future moves when the standing views match.
+	if (!assessment.canExtend) {
+		delete item.dressed;
+		delete item.route;
+	}
+	return { item, materials, assessment };
+}
+
+/** Puts the source item's art of each matched cell into the copy's cells, with the base px an identical body hides under it (a
+ *  mirrored source view flips both). The copy's layers are the source's, in order. */
+async function putCells(
+	source: Manifest,
+	original: Item,
+	target: Manifest,
+	item: Item,
+	matches: CellMatch[],
+	flip: Flip
+) {
+	for (const match of matches) {
 		const [ta, td, ti] = match.target.split('/') as [string, DirectionName, string],
 			[sa, sd, si] = match.source.split('/') as [string, DirectionName, string],
-			n = cells.find((a) => a.id === ta)!.cells;
-		// An identical body cell hides the same base px under the item (a mirrored source view flips them).
+			n = target.rig.animations.find((a) => a.id === ta)!.cells;
 		const cut = cutAt(source, original, sa, sd, +si);
 		if (cut?.length)
-			((baseCut[ta] ??= {})[td] ??= Array(n).fill(null))[+ti] = [...cut].sort((a, b) => a - b);
+			(((item.baseCut ??= {})[ta] ??= {})[td] ??= Array(n).fill(null))[+ti] = [...cut].sort(
+				(a, b) => a - b
+			);
 		for (const [i, layer] of original.layers.entries())
-			((layerCells[i][ta] ??= {})[td] ??= Array(n).fill(null))[+ti] = await cellId(
+			(((item.layers[i].cells ??= {})[ta] ??= {})[td] ??= Array(n).fill(null))[+ti] = await cellId(
 				source,
 				layer,
 				sa,
@@ -111,18 +136,6 @@ export async function prepareCopy(
 				flip
 			);
 	}
-	item.layers.forEach((layer, i) => {
-		layer.cells = layerCells[i];
-		delete layer.sheets;
-	});
-	if (Object.keys(baseCut).length) item.baseCut = baseCut;
-	else delete item.baseCut;
-	// Standing references only fit future moves when the standing views match.
-	if (!assessment.canExtend) {
-		delete item.dressed;
-		delete item.route;
-	}
-	return { item, materials, assessment };
 }
 
 /** A new, independent item from another character's: own ids and materials (the source's current colors as defaults) and
@@ -239,15 +252,7 @@ export async function acceptCopy(
 	if (!source || !original) throw new Error('That character or item was removed.');
 	if (!target) throw new Error('This character was removed.');
 	const variants = source.dress?.current?.variants ?? source.manifest.presets[0]?.variants ?? {};
-	const missing = (h: string) =>
-		new Error(
-			`An image of ${original.name} is missing (${h.replace('sha256:', '').slice(0, 12)}).`
-		);
-	const load = async (h: Sha256) => {
-		const blob = await db.getBlob(h.slice(7));
-		if (!blob) throw missing(h);
-		return decodePng(blob);
-	};
+	const { missing, load } = stored(original);
 	const { flip, made } = flipper(load);
 	const copy = await prepareCopy(source.manifest, itemId, variants, target.manifest, flip),
 		fitted: { refit?: CopyCandidate | null } = {};
@@ -265,22 +270,12 @@ export async function acceptCopy(
 	const { item, materials } = candidate;
 	// The paid calls were made for the first character an item was copied from. An exact copy of a re-fit keeps the re-fit's
 	// notes too: its pixels and body are identical, so they still name exactly the frames to check.
-	item.copiedFrom = original.copiedFrom ?? { id: sourceId, name: source.manifest.name };
-	// New images (flipped views, moved frames) are stored with the copy; the others are already stored and only checked, in the
-	// same transaction, so a concurrent deletion and cleanup of the source cannot sweep them.
-	const blobs = new Map<string, Blob>(),
-		stored: string[] = [];
-	for (const h of itemHashes(item)) {
-		const im = made.get(h) ?? candidate.images?.get(h);
-		if (im)
-			blobs.set(
-				h.slice(7),
-				new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
-			);
-		else stored.push(h.slice(7));
-	}
-	const body = (m: Manifest) =>
-		stableStringify({ rig: m.rig, body: m.items.find((it) => it.id === m.rig.baseItem) });
+	item.copiedFrom = original.copiedFrom ?? {
+		id: sourceId,
+		name: source.manifest.name,
+		item: original.id
+	};
+	const { blobs, keys } = await blobsOf(item, (h) => made.get(h) ?? candidate.images?.get(h));
 	let added = item;
 	await db.updateCharacter<StoredProject>(
 		targetId,
@@ -304,7 +299,113 @@ export async function acceptCopy(
 			rec.savedAt = new Date().toISOString();
 			return rec;
 		},
-		{ keys: stored, missing: (key) => missing(key) }
+		{ keys, missing }
 	);
 	return added;
+}
+
+/** Reads an item's stored images, naming the item when one is gone. */
+function stored(item: Item) {
+	const missing = (h: string) =>
+		new Error(`An image of ${item.name} is missing (${h.replace('sha256:', '').slice(0, 12)}).`);
+	const load = async (h: Sha256) => {
+		const blob = await db.getBlob(h.slice(7));
+		if (!blob) throw missing(h);
+		return decodePng(blob);
+	};
+	return { missing, load };
+}
+/** New images (flipped views, moved frames) are written with the item; the others are already stored and only checked, in the
+ *  same transaction, so a concurrent deletion and cleanup of the source cannot sweep them. */
+async function blobsOf(item: Item, made: (hash: Sha256) => Img | undefined) {
+	const blobs = new Map<string, Blob>(),
+		keys: string[] = [];
+	for (const h of itemHashes(item)) {
+		const im = made(h);
+		if (im)
+			blobs.set(
+				h.slice(7),
+				new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
+			);
+		else keys.push(h.slice(7));
+	}
+	return { blobs, keys };
+}
+const body = (m: Manifest) =>
+	stableStringify({ rig: m.rig, body: m.items.find((it) => it.id === m.rig.baseItem) });
+
+/** Cells an exact copy lacks here that its source item now covers on an identical body (moves the source gained after the
+ *  copy), or null when there are none. A re-fit never takes more: its art was moved for this body, not copied. */
+async function fromSource(target: Manifest, item: Item, flip: Flip) {
+	const from = item.copiedFrom;
+	if (!from?.item || item.refit) return null;
+	const rec = await db.get<StoredProject>('projects', from.id),
+		source = rec?.manifest,
+		original = source?.items.find((it) => it.id === from.item);
+	if (
+		!source ||
+		!original ||
+		original.status !== 'accepted' ||
+		original.baseHash !== source.rig.baseHash ||
+		original.layers.length !== item.layers.length
+	)
+		return null;
+	const have = new Set<string>(item.coverage ?? []),
+		matches = (await assessCopy(source, original, target, flip)).matches.filter(
+			(m) => !have.has(m.target)
+		);
+	return matches.length ? { source, original, matches } : null;
+}
+
+/** How many frames each exact copy of `target` can take from its source for free, by item id (copies with none left out). */
+export async function freeFrames(target: Manifest): Promise<Record<string, number>> {
+	const out: Record<string, number> = {};
+	for (const item of target.items) {
+		if (item.status !== 'accepted' || !item.copiedFrom?.item || item.refit) continue;
+		const found = await fromSource(target, item, flipper(stored(item).load).flip);
+		if (found) out[item.id] = found.matches.length;
+	}
+	return out;
+}
+
+/** Adds to an exact copy, in place, the frames its source item now has for this body (same item: its colors, outfits and
+ *  own frames stay). Returns how many frames were added (0 when none are left). Never generates anything. */
+export async function copyMoreFrames(targetId: string, itemId: string): Promise<number> {
+	const target = await db.get<StoredProject>('projects', targetId),
+		item = target?.manifest.items.find((it) => it.id === itemId);
+	if (!target || !item) throw new Error('That item was removed.');
+	const { missing, load } = stored(item);
+	const { flip, made } = flipper(load);
+	const found = await fromSource(target.manifest, item, flip);
+	if (!found) return 0;
+	const { source, original, matches } = found,
+		next = structuredClone(item);
+	await putCells(source, original, target.manifest, next, matches, flip);
+	next.coverage = [...(next.coverage ?? []), ...(matches.map((m) => m.target) as CellKey[])];
+	if (next.qa && original.qa) {
+		// Each added move keeps its source move's checks (the art is the same), else the source's summary, as a copy does.
+		const clips: ItemQa['clips'] = {};
+		for (const m of matches)
+			clips[clipOf(m.target)] ??= original.qa.clips[clipOf(m.source)] ?? summaryOf(original.qa);
+		next.qa = mergeQa(next, { ...summaryOf(original.qa), rerolls: 0, cells: {}, clips }, {});
+	}
+	const { blobs, keys } = await blobsOf(next, (h) => made.get(h));
+	await db.updateCharacter<StoredProject>(
+		targetId,
+		blobs,
+		(rec) => {
+			const at = rec?.manifest.items.findIndex((it) => it.id === itemId) ?? -1;
+			if (!rec || at < 0) throw new Error('That item was removed.');
+			if (
+				body(rec.manifest) !== body(target.manifest) ||
+				stableStringify(rec.manifest.items[at]) !== stableStringify(item)
+			)
+				throw new Error('This character changed while the frames were being copied. Try again.');
+			rec.manifest.items[at] = next;
+			rec.savedAt = new Date().toISOString();
+			return rec;
+		},
+		{ keys, missing }
+	);
+	return matches.length;
 }
