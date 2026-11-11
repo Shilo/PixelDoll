@@ -42,7 +42,16 @@ import {
 	poseCallGens,
 	rawClip
 } from '../rig/clips.ts';
-import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
+import type {
+	CellKey,
+	CellQa,
+	Item,
+	ItemQa,
+	Layer,
+	Manifest,
+	Provenance,
+	Slot
+} from '../store/manifest.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 import { INPAINT_TIER_ONE_SIDE } from '../pixellab/plans.ts';
 import { clipOf, summaryOf } from './qa-summary.ts';
@@ -514,23 +523,40 @@ export const SLOTS: Slot[] = [
 	{ id: 'main_hand', z: 150, bgZ: 1, class: 'held', anchor: 'hand_r', zOverrides: heldBgOverCape() }
 ];
 export const slotOf = (id: string) => SLOTS.find((s) => s.id === id)!;
-/** Where the character's left side faces the viewer, the off hand (hand_l) is the near hand, so its front layer draws over the
- * main-hand item. Only originally generated views: a mirrored view flips its source's pixels (the main hand is near there), so
- * it keeps the source's order. */
+/** Where the character's left side faces the viewer, the off hand (hand_l) is the near hand, so its layers draw over the
+ * main-hand item's (front over front, and back over back where both back layers share a z). Only originally generated views:
+ * a mirrored view flips its source's pixels (the main hand is near there), so it keeps the source's order. */
 const NEAR_OFF_HAND: readonly DirectionName[] = ['west', 'south-west', 'north-west'];
+/** A slot's back-layer z facing `dir`, as compose resolves whole-direction overrides (a direction's own before an undirected one). */
+const bgZAt = (slot: Slot, dir: DirectionName) => {
+	const bg = (slot.zOverrides ?? []).filter((o) => o.layer === 'bg' && !o.anim && o.cell == null);
+	return (bg.findLast((o) => o.dir === dir) ?? bg.findLast((o) => !o.dir))?.z ?? slot.bgZ ?? 0;
+};
 /** The default slot ladder for a rig (fresh copies): SLOTS plus the near-hand order of its generated left-side views. */
 export const slotLadder = (rig: Pick<Rig, 'directions'>): Slot[] =>
 	SLOTS.map((slot) => {
 		const s = structuredClone(slot);
-		if (s.id === 'off_hand')
-			s.zOverrides = [
-				...(s.zOverrides ?? []),
-				...rig.directions
-					.filter((d) => !d.mirrorOf && NEAR_OFF_HAND.includes(d.id))
-					.map((d) => ({ layer: 'fg' as const, z: slotOf('main_hand').z + 5, dir: d.id }))
-			];
+		if (s.id !== 'off_hand') return s;
+		const main = slotOf('main_hand');
+		for (const { id: dir } of rig.directions.filter(
+			(d) => !d.mirrorOf && NEAR_OFF_HAND.includes(d.id)
+		)) {
+			s.zOverrides = [...(s.zOverrides ?? []), { layer: 'fg', z: main.z + 5, dir }];
+			if (bgZAt(s, dir) <= bgZAt(main, dir))
+				s.zOverrides.push({ layer: 'bg', z: bgZAt(main, dir) + 1, dir });
+		}
 		return s;
 	});
+/** Add or replace an item (same id) and insert its slot in ladder order if missing. */
+export function putItem(m: Pick<Manifest, 'items' | 'slots'>, item: Item, ladder: Slot[]) {
+	m.items = [...m.items.filter((i) => i.id !== item.id), item];
+	if (!m.slots.some((s) => s.id === item.slot)) {
+		const order = (s: string) => ladder.findIndex((x) => x.id === s);
+		m.slots = [...m.slots, ladder.find((s) => s.id === item.slot)!].sort(
+			(a, b) => order(a.id) - order(b.id)
+		);
+	}
+}
 
 export type Route = Key | 'none'; // 'none' = diff fallback on the real base
 export interface ItemSpec {

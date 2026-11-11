@@ -68,6 +68,7 @@ import {
 	anchored,
 	planGens,
 	slotLadder,
+	putItem,
 	gridEstimate,
 	repairGridLayout,
 	bandMask,
@@ -1285,8 +1286,8 @@ async function previewProject(
 		pending
 	});
 	const m: Manifest = structuredClone(ctx.rec.manifest);
-	m.items = [...m.items.filter((i) => i.id !== item.id), item];
-	if (!m.slots.some((s) => s.id === item.slot)) m.slots = [...m.slots, slotOf(item.slot)];
+	// A slot the character lacks comes in ladder order with its rig's near-hand order, as when the item is saved.
+	putItem(m, item, slotLadder(m.rig));
 	return { manifest: m, images: new Map([...ctx.project.images, ...images]) };
 }
 

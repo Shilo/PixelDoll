@@ -307,6 +307,8 @@ export function itemNameFrom(desc: string): string {
 export type Health = 'clean' | 'accepted' | 'look' | 'stale' | 'demo';
 export function healthOf(m: Manifest, it: Item): Health {
 	if (it.baseHash !== m.rig.baseHash) return 'stale';
+	// A free re-fit with frames to check, whatever its source's checks said.
+	if (it.refit?.length) return 'look';
 	if (it.qa?.status === 'fail' || it.qa?.status === 'warn') return 'look';
 	if (it.designWarnings?.length || it.qa?.status === 'accepted') return 'accepted';
 	if (!it.qa) return 'demo';
@@ -432,9 +434,11 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
 }
 
 /** Where to look at a free re-fit of another character's item, in plain words: one line per move and direction whose
- *  frames failed a check. */
-export function refitReasons(m: Manifest, it: Item): string[] {
-	if (!it.refit) return [];
+ *  frames failed a check, with its first such frame to show. */
+export function refitNotes(
+	m: Manifest,
+	it: Item
+): { text: string; anim: string; dir: DirectionName; frame: number }[] {
 	const from = it.copiedFrom?.name ?? 'another character',
 		ids = m.rig.animations.map((a) => a.id);
 	const check = {
@@ -444,13 +448,29 @@ export function refitReasons(m: Manifest, it: Item): string[] {
 	};
 	const list = (xs: (string | number)[]) =>
 		xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : `${xs[0]}`;
-	return [
-		`Fitted from ${from}’s item without generating; check each move.`,
-		...it.refit.map(
-			(n) =>
-				`${moveLabel(n.anim, ids)} facing ${n.dir.replaceAll('-', ' ')}, ${n.frames.length > 1 ? 'frames' : 'frame'} ${list(n.frames.map((f) => f + 1))}: ${list(n.checks.map((c) => check[c]))}.`
-		)
-	];
+	return (it.refit ?? []).map((n) => ({
+		text: `${moveLabel(n.anim, ids)} facing ${n.dir.replaceAll('-', ' ')}, ${n.frames.length > 1 ? 'frames' : 'frame'} ${list(n.frames.map((f) => f + 1))}: ${list(n.checks.map((c) => check[c]))}.`,
+		anim: n.anim,
+		dir: n.dir,
+		frame: Math.min(...n.frames)
+	}));
+}
+
+/** A mirrored view flips its drawn view's pixels, so a Main hand item shows in the left hand there. */
+export const HANDS_SWAP = 'so hands swap there';
+export const KEEP_EACH_HAND = 'Characters made with Unique 8 keep each hand.';
+/** One line for the hand groups when the character has mirrored views, naming them in plain words; '' when it has none. */
+export function mirroredHandsNote(rig: Pick<Rig, 'directions'>): string {
+	const views = rig.directions.filter((d) => d.mirrorOf).map((d) => d.id);
+	if (!views.length) return '';
+	const side = views.find((d) => !d.includes('-'));
+	const words =
+		side && views.length === 3 && views.every((d) => d.endsWith(side))
+			? `${side} and the ${side} diagonals`
+			: views.length > 1
+				? `${views.slice(0, -1).join(', ')} and ${views.at(-1)}`.replaceAll('-', ' ')
+				: views[0].replaceAll('-', ' ');
+	return `Facing ${words}, this character is mirrored, ${HANDS_SWAP}. ${KEEP_EACH_HAND}`;
 }
 
 export const fmtGens = (n: number) => `${Math.round(n * 10) / 10} gens`;

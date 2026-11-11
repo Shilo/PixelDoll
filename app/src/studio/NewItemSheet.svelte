@@ -4,7 +4,7 @@
 	import { itemPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import GroupIcon from './GroupIcon.svelte';
-	import { GROUPS, slotLabel, itemNameFrom, namesOffHandItem } from './model.ts';
+	import { GROUPS, slotLabel, itemNameFrom, mirroredHandsNote, namesOffHandItem } from './model.ts';
 	import { itemRoute } from './itemRoute.ts';
 	import { ui, doc, store, isDemo, startItem, withKey, copyDemo } from './state.svelte.ts';
 	import * as db from '../lib/store/db.ts';
@@ -55,6 +55,7 @@
 	const plan = $derived(planned.plan);
 	const OFF_HAND_HINT = 'Shields and bows usually go in the off hand.';
 	const offHandHint = $derived(group === 'Main hand' && namesOffHandItem(prompt));
+	const handNote = $derived(m ? mirroredHandsNote(m.rig) : '');
 
 	async function make(i: typeof input, consent?: Parameters<typeof startItem>[1]) {
 		formDrafts.item = undefined;
@@ -171,7 +172,10 @@
 				</div>
 				{#if group === 'Main hand' || group === 'Off hand'}<p class="faint small">
 						Main hand is the character’s right hand; Off hand is the left.
-					</p>{/if}
+					</p>
+					{#if handNote}<p class="faint small">
+							{handNote}
+						</p>{/if}{/if}
 				<!-- Always present and only filled while the hint shows: announced once, not on every keystroke. -->
 				<span class="sr" aria-live="polite">{offHandHint ? OFF_HAND_HINT : ''}</span>
 			</div>

@@ -5,6 +5,8 @@ import { decodePng, type Img } from '../image/png.ts';
 import { recolor } from '../dress/dress.ts';
 import { listProjects } from '../store/project.ts';
 import type { Item, Manifest, Preset, Project, Sha256 } from '../store/manifest.ts';
+import { sha256, stableStringify } from '../image/hash.ts';
+import { bodyOf } from './compatibility.ts';
 import { itemKey, sharedFit, type SharedFit } from './copy.ts';
 
 export interface SharedItem {
@@ -32,9 +34,21 @@ const latest = (item: Item, fallback: string) =>
 	item.provenance.reduce((at, p) => (p.createdAt > at ? p.createdAt : at), '') || fallback;
 const RANK: Record<SharedFit, number> = { copy: 0, refit: 1, remake: 2 };
 
+/** Outcomes of earlier listings by source save, item and the target's rig, body and slots: a refresh decides only what
+ *  changed since. Only the latest listing's entries are kept. */
+let fits = new Map<string, SharedFit>();
+/** Forget the remembered outcomes (an add found one out of date). */
+export const forgetFits = () => {
+	fits = new Map();
+};
+
 /** Items of other studio characters, without ones this character already has; one entry per item: the one that fits this
- *  character best (exact copy, then re-fit, then made new), the most recent first. Free entries list first. */
-export async function listShared(targetId: string, target: Manifest | null): Promise<SharedItem[]> {
+ *  character best (exact copy, then re-fit, then made new), the most recent first. Free entries list first. An entry whose
+ *  images cannot be read is skipped and counted, so the others still list. */
+export async function listShared(
+	targetId: string,
+	target: Manifest | null
+): Promise<{ items: SharedItem[]; skipped: number }> {
 	const own = new Set(target?.items.filter((it) => it.status === 'accepted').map(itemKey) ?? []),
 		groups = new Map<string, Omit<SharedItem, 'fit'>[]>();
 	for (const rec of await listProjects()) {
@@ -75,19 +89,39 @@ export async function listShared(targetId: string, target: Manifest | null): Pro
 				);
 			return im;
 		};
-	const kept: SharedItem[] = [];
+	const shape = target
+			? await sha256(
+					stableStringify({ rig: target.rig, body: bodyOf(target), slots: target.slots })
+				)
+			: '',
+		known = fits,
+		kept: SharedItem[] = [];
+	let skipped = 0;
+	fits = new Map();
 	for (const entries of groups.values()) {
 		let best: SharedItem | undefined;
 		for (const entry of entries.sort((a, b) => b.at.localeCompare(a.at))) {
-			const fit = target ? await sharedFit(entry.source, entry.item, target, load) : 'remake';
+			const key = [entry.sourceId, entry.savedAt, entry.item.id, targetId, shape].join('|');
+			let fit = known.get(key);
+			try {
+				fit ??= target ? await sharedFit(entry.source, entry.item, target, load) : 'remake';
+			} catch (e) {
+				console.warn('shared item skipped', entry.sourceId, entry.item.id, e);
+				skipped++;
+				continue;
+			}
+			fits.set(key, fit);
 			if (!best || RANK[fit] < RANK[best.fit]) best = { ...entry, fit };
 			if (fit === 'copy') break;
 		}
-		kept.push(best!);
+		if (best) kept.push(best);
 	}
-	return kept.sort(
-		(a, b) => +(a.fit === 'remake') - +(b.fit === 'remake') || b.at.localeCompare(a.at)
-	);
+	return {
+		items: kept.sort(
+			(a, b) => +(a.fit === 'remake') - +(b.fit === 'remake') || b.at.localeCompare(a.at)
+		),
+		skipped
+	};
 }
 
 /** The source character with its current colors and only the images its item's first visible frame needs, for a thumbnail. */

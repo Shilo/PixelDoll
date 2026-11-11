@@ -6,6 +6,7 @@ import type { Skeleton } from '../rig/skeleton.ts';
 import * as db from './db.ts';
 import type { Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.ts';
 import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
+import { putItem } from '../items/items.ts';
 
 export interface StoredProject {
 	id: string;
@@ -27,14 +28,11 @@ export interface StoredProject {
 export const OUTDATED =
 	'This character was saved by an earlier preview version and is no longer supported.';
 
-const retiredDesign = (r: OutdatedCandidate) =>
-	r.kind === 'equipment-design' || r.kind === 'equipment-fit-draft';
 /** Earlier preview formats are never upgraded: delete their characters, demo outfits, retired shared-design and fit records
- * and an unfinished character creation saved before explicit direction plans (its paid pipeline is never re-keyed). Counts the
- * retired designs (and their fits) apart from the other records. */
-export async function deleteOutdated(): Promise<{ designs: number; other: number }> {
+ * and an unfinished character creation saved before explicit direction plans (its paid pipeline is never re-keyed). */
+export async function deleteOutdated(): Promise<number> {
 	const formatOf = (r: OutdatedCandidate) =>
-		retiredDesign(r)
+		r.kind === 'equipment-design' || r.kind === 'equipment-fit-draft'
 			? undefined
 			: r.kind === 'dress' || r.manifest
 				? (r.format ?? r.manifest?.format)
@@ -52,8 +50,7 @@ export async function deleteOutdated(): Promise<{ designs: number; other: number
 			const change = db.withoutCharacters(r, gone);
 			if (change) await db.put('projects', r.id, change);
 		}
-	const designs = outdated.filter(retiredDesign).length;
-	return { designs, other: outdated.length - designs };
+	return outdated.length;
 }
 interface OutdatedCandidate {
 	id: string;
@@ -125,17 +122,6 @@ export async function saveItem(
 		rec.savedAt = new Date().toISOString();
 		return rec;
 	});
-}
-
-/** Add or replace an item (same id) and insert its slot in ladder order if missing. */
-export function putItem(m: Manifest, item: Item, ladder: Slot[]) {
-	m.items = [...m.items.filter((i) => i.id !== item.id), item];
-	if (!m.slots.some((s) => s.id === item.slot)) {
-		const order = (s: string) => ladder.findIndex((x) => x.id === s);
-		m.slots = [...m.slots, ladder.find((s) => s.id === item.slot)!].sort(
-			(a, b) => order(a.id) - order(b.id)
-		);
-	}
 }
 
 export async function deleteItem(id: string, itemId: string): Promise<void> {

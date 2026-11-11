@@ -1569,9 +1569,14 @@ dialog.sheet.bottom .foot-note {
 	font-weight: 500;
 	color: var(--text-2);
 }
-/* The offer spans the row under the tapped tile; dense flow keeps that row's later tiles beside it. */
-.shared-tiles {
-	grid-auto-flow: row dense;
+/* The divider and the offer each take a whole row, in reading order: the offer right after the tapped tile, later tiles after
+   it, so the screen and Tab agree. */
+.shared-divider {
+	grid-column: 1 / -1;
+	margin: 4px 0 0;
+}
+.hand-note {
+	margin: 0;
 }
 .unfit {
 	grid-column: 1 / -1;
@@ -1582,6 +1587,22 @@ dialog.sheet.bottom .foot-note {
 }
 .unfit p {
 	margin: 0;
+}
+.refit-notes {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+/* A note is a sentence: it wraps and reads from the start, like the reasons list. */
+.refit-notes .btn {
+	height: auto;
+	min-height: 32px;
+	justify-content: flex-start;
+	text-align: start;
+	white-space: normal;
 }
 .sel-row {
 	display: flex;

@@ -40,7 +40,7 @@ import type {
 import { GROUPS, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import type { SetupSpec } from './setup.ts';
-import { listShared, type SharedItem } from '../lib/equipment/shared.ts';
+import { forgetFits, listShared, type SharedItem } from '../lib/equipment/shared.ts';
 import { acceptCopy } from '../lib/equipment/copy.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
 import type { Img } from '../lib/image/png.ts';
@@ -374,6 +374,20 @@ export function stepPreviewFrame(direction: -1 | 1): void {
 	ui.frame = ((ui.frame % count) + count + direction) % count;
 }
 
+/** Pause the stage on one frame (a cell of a move, in one direction) for a closer look. */
+export function showFrame(anim: string, dir: DirectionName, cell: number): void {
+	const clip = store.project?.manifest.rig.animations.find((a) => a.id === anim);
+	if (!clip) return;
+	ui.anim = anim;
+	ui.dir = dir;
+	ui.all = false;
+	ui.playing = false;
+	ui.frame = Math.max(
+		0,
+		clip.frames.findIndex((f) => f.cell === cell)
+	);
+}
+
 /** False when the saved characters could not be read (already reported). */
 export async function refreshProjects(): Promise<boolean> {
 	const removed = await deleteOutdated().catch((e: unknown) => {
@@ -384,22 +398,12 @@ export async function refreshProjects(): Promise<boolean> {
 				tone: 'danger'
 			}
 		);
-		return { designs: 0, other: 0 };
+		return 0;
 	});
-	// One notice: a second toast would replace the first.
-	const notices = [
-		...(removed.other
-			? [
-					`Removed ${removed.other} saved ${removed.other === 1 ? 'item' : 'items'} made by an earlier preview version.`
-				]
-			: []),
-		...(removed.designs
-			? [
-					`Removed ${removed.designs} saved ${removed.designs === 1 ? 'design' : 'designs'} from an earlier version. Items from your other characters now appear in the wardrobe automatically.`
-				]
-			: [])
-	];
-	if (notices.length) toast(notices.join(' '));
+	if (removed)
+		toast(
+			`Removed ${removed} saved ${removed === 1 ? 'item' : 'items'} made by an earlier preview version.`
+		);
 	const listed = await listProjects().catch((e: unknown) => {
 			console.error('projects', e);
 			toast(`Could not read your saved characters: ${(e as Error).message}`, { tone: 'danger' });
@@ -984,6 +988,8 @@ class Shared {
 	adding = $state('');
 	/** A failed read shows in the wardrobe where the items would be, without displacing startup notices. */
 	error = $state('');
+	/** Items left out because their images could not be read (each logged). */
+	skipped = $state(0);
 }
 export const shared = new Shared();
 export const sharedKey = (entry: SharedItem) => `shared:${entry.sourceId}/${entry.item.id}`;
@@ -994,12 +1000,14 @@ export async function refreshShared() {
 	if (isDemo() || !store.project) {
 		shared.items = [];
 		shared.error = '';
+		shared.skipped = 0;
 		return;
 	}
 	try {
-		const items = await listShared(doc.id, store.project.manifest);
+		const { items, skipped } = await listShared(doc.id, store.project.manifest);
 		if (request !== sharedRequest) return;
 		shared.items = items;
+		shared.skipped = skipped;
 		shared.error = '';
 	} catch (e) {
 		console.error('shared', e);
@@ -1007,19 +1015,37 @@ export async function refreshShared() {
 			shared.error = `Could not read items from your other characters: ${(e as Error).message}`;
 	}
 }
-/** Free: wear a copy when the bodies match, or a re-fitted copy of a held item to check. Otherwise select the entry, so the
- *  wardrobe offers to make it for this character. The tile stays busy until the list no longer offers what was added. */
+let sharedSoon: ReturnType<typeof setTimeout> | undefined;
+/** Re-read once activity settles (another tab's drafts change on every job update). */
+function refreshSharedSoon() {
+	clearTimeout(sharedSoon);
+	sharedSoon = setTimeout(() => void refreshShared(), 1500);
+}
+/** Free: wear a copy when the bodies match, or a re-fitted copy of a held item to check. An item to make new (or one that
+ *  turns out not to fit after all) is selected instead, so the wardrobe offers to make it for this character. The tile stays
+ *  busy until the list no longer offers what was added. */
 export async function addShared(entry: SharedItem) {
 	if (isDemo() || shared.adding) return;
+	const key = sharedKey(entry);
+	if (entry.fit === 'remake') {
+		ui.selected = key;
+		return;
+	}
 	const projectId = doc.id,
 		request = openRequest;
-	shared.adding = sharedKey(entry);
+	shared.adding = key;
 	try {
 		await flushSave();
 		const item = await acceptCopy(entry.sourceId, entry.item.id, projectId);
 		if (doc.id !== projectId || request !== openRequest) return;
 		if (!item) {
-			ui.selected = sharedKey(entry);
+			// The listed outcome was out of date: show what the list says now before offering anything.
+			forgetFits();
+			await refreshShared();
+			if (doc.id !== projectId || request !== openRequest) return;
+			const now = shared.items.find((x) => sharedKey(x) === key);
+			if (now?.fit === 'remake') ui.selected = key;
+			else toast(`${entry.item.name} changed meanwhile. Check its tile and try again.`);
 			return;
 		}
 		await openProject(projectId, { quiet: true });
@@ -1167,7 +1193,7 @@ queue.subscribe((s) => {
 		(list) => {
 			if (driving || JSON.stringify(list) === mirrored) return;
 			setGens(list);
-			void refreshShared(); // the leader tab may have saved an item to another character
+			refreshSharedSoon(); // the leader tab may have saved an item to another character
 			for (const g of gens)
 				if (g.phase === 'review' && !store.results[g.draft.spec.id]) void evalGen(g);
 		},

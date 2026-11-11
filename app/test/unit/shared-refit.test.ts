@@ -1,11 +1,11 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { acceptCopy } from '../../src/lib/equipment/copy.ts';
+import { acceptCopy, sharedFit } from '../../src/lib/equipment/copy.ts';
 import { refitShared } from '../../src/lib/equipment/refit.ts';
-import { listShared } from '../../src/lib/equipment/shared.ts';
+import { forgetFits, listShared } from '../../src/lib/equipment/shared.ts';
 import { translate } from '../../src/lib/items/items.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
-import { makeImg, type Img } from '../../src/lib/image/png.ts';
+import { decodePng, makeImg, type Img } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash, DEFAULT_MOVE, type Keypoint, type Rig } from '../../src/lib/rig/rig.ts';
 import { loadProject } from '../../src/lib/store/project.ts';
@@ -45,6 +45,7 @@ beforeEach(() => {
 	memory.records.clear();
 	memory.blobs.clear();
 	memory.writes = 0;
+	forgetFits();
 });
 async function store(id: string, p: Project) {
 	for (const [hash, im] of p.images)
@@ -287,8 +288,9 @@ test('a held item on a body moved by a known offset moves by exactly that offset
 	expect(item).not.toBeNull();
 	expect(item.id).not.toBe('sword');
 	expect(item.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight' });
+	// No frame failed a check: it keeps the source's checks, and only notes would ask for a look.
 	expect(item.refit).toEqual([]);
-	expect(item.qa?.status).toBe('warn');
+	expect(item.qa?.status).toBe('pass');
 	expect(item.coverage).toEqual(['default/south/0', 'slash/south/0', 'slash/south/1']);
 	expect(item.dressed).toBeUndefined();
 	expect(item.route).toBeUndefined();
@@ -390,6 +392,107 @@ test('only held items re-fit, and never one that hides body pixels', async () =>
 	delete sword.baseCut;
 	sword.slot = 'head';
 	expect(await refit(source, target)).toBeNull();
+});
+
+const withViews = async (p: Promise<Project>, directions: Rig['directions']) => {
+	const out = await p;
+	out.manifest.rig.directions = directions;
+	return out;
+};
+const squire = () => character({ name: 'Squire', at: [1, 0] });
+
+test('views must be drawn or mirrored alike: a view mirrored on one character and drawn on the other does not fit', async () => {
+	const mirrored: Rig['directions'] = [
+		{ id: 'south' },
+		{ id: 'east' },
+		{ id: 'west', mirrorOf: 'east' }
+	];
+	const drawn: Rig['directions'] = [{ id: 'south' }, { id: 'east' }, { id: 'west' }];
+	const pair = async (from: Rig['directions'], to: Rig['directions']) =>
+		refit(await withViews(knight(), from), await withViews(squire(), to));
+	expect(await pair(mirrored, mirrored)).not.toBeNull();
+	expect(await pair(drawn, drawn)).not.toBeNull();
+	expect(await pair(mirrored, drawn)).toBeNull();
+	expect(await pair(drawn, mirrored)).toBeNull();
+});
+
+test('a source lacking a view the target draws does not fit; a source with more views does', async () => {
+	const four: Rig['directions'] = [{ id: 'south' }],
+		eight: Rig['directions'] = [{ id: 'south' }, { id: 'south-east' }];
+	expect(await refit(await withViews(knight(), four), await withViews(squire(), eight))).toBeNull();
+	expect(
+		await refit(await withViews(knight(), eight), await withViews(squire(), four))
+	).not.toBeNull();
+});
+
+test('an item the source’s checks found in the wrong hand does not re-fit', async () => {
+	const target = await squire();
+	const held = async (hand: 'r' | 'l') => {
+		const source = await knight(),
+			qa = source.manifest.items[1].qa!;
+		qa.clips['slash/south'] = { ...qa, hand };
+		return source;
+	};
+	expect(await refit(await held('r'), target)).not.toBeNull();
+	expect(await refit(await held('l'), target)).toBeNull();
+	const warned = await knight();
+	warned.manifest.items[1].designWarnings = [
+		'G8 main_hand: held in the left hand; slot main_hand expects hand_r'
+	];
+	expect(await refit(warned, target)).toBeNull();
+});
+
+const loadStored = async (h: Sha256) => {
+	const blob = memory.blobs.get(h.slice(7));
+	if (!blob) throw new Error(`missing ${h}`);
+	return decodePng(blob);
+};
+
+test('a re-fit never re-fits again, but copies exactly onto an identical body with its notes and first source', async () => {
+	const fencer = (name: string) =>
+		character({ name, at: [1, 0], slash1: turned, extra: { id: 'idle', at: {} } });
+	await store('rig-knight', await knight());
+	await store('rig-fencer', await fencer('Fencer'));
+	const fitted = (await acceptCopy('rig-knight', 'sword', 'rig-fencer'))!;
+	expect(fitted.refit).toEqual([{ anim: 'slash', dir: 'south', frames: [1], checks: ['angle'] }]);
+	// A different body: made new rather than fitted from an approximation; the original still re-fits.
+	const holder = (await loadProject('rig-fencer')).project.manifest,
+		ranger = await character({ name: 'Ranger', at: [2, 0], extra: { id: 'idle', at: {} } }),
+		other = ranger.manifest,
+		original = await knight();
+	await store('rig-ranger', ranger);
+	expect(await sharedFit(holder, fitted, other, loadStored)).toBe('remake');
+	expect(await sharedFit(original.manifest, original.manifest.items[1], other, loadStored)).toBe(
+		'refit'
+	);
+	// The holder's identical twin: an exact copy keeps the notes, which name the same frames there.
+	const twin = await fencer('Twin');
+	await store('rig-twin', twin);
+	expect(await sharedFit(holder, fitted, twin.manifest, loadStored)).toBe('copy');
+	const copied = (await acceptCopy('rig-fencer', fitted.id, 'rig-twin'))!;
+	expect(copied.refit).toEqual(fitted.refit);
+	expect(copied.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight' });
+});
+
+test('an exact copy missing frames the item has on its source gives way to a re-fit that covers them', async () => {
+	const source = await knight(),
+		target = await character({ name: 'Twin' });
+	// The same body except the second slash frame, which differs by one pixel away from the hand.
+	const changed = bodyAt(0, 0);
+	fill(changed, 0, 0, 1, 1, [1, 2, 3, 255]);
+	const h = await cellHash(changed);
+	target.images.set(h, changed);
+	target.manifest.items[0].layers[0].cells!.slash!.south![1] = h;
+	await store('rig-knight', source);
+	await store('rig-twin', target);
+	const sword = source.manifest.items[1];
+	expect(await sharedFit(source.manifest, sword, target.manifest, loadStored)).toBe('refit');
+	const item = (await acceptCopy('rig-knight', 'sword', 'rig-twin'))!;
+	expect(item.coverage).toEqual(['default/south/0', 'slash/south/0', 'slash/south/1']);
+	expect(item.refit).toEqual([]);
+	// Every frame matches on an identical body: an exact copy.
+	const page = await character({ name: 'Page' });
+	expect(await sharedFit(source.manifest, sword, page.manifest, loadStored)).toBe('copy');
 });
 
 test('a different pivot re-fits through each rig’s own pivot; a different canvas never does', async () => {
@@ -600,12 +703,39 @@ test('the list says how each item comes to this character, prefers the copy that
 			'a mirror sword'
 		)
 	);
-	const list = await listShared('rig-page', page.manifest);
+	const { items: list } = await listShared('rig-page', page.manifest);
 	expect(list.map((x) => [x.sourceName, x.item.prompt, x.fit])).toEqual([
 		['Fencer', 'a fencing sword', 'refit'],
 		['Knight', 'a steel sword', 'copy'],
 		['Mirror', 'a mirror sword', 'remake']
 	]);
+});
+
+test('an item whose images cannot be read is skipped and counted; the others still list', async () => {
+	const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+	const broken = await knight();
+	broken.manifest.items[1].layers[0].cells!.slash.south![1] = `sha256:${'f'.repeat(64)}` as Sha256;
+	await store('rig-knight', broken);
+	await store(
+		'rig-fencer',
+		dated(
+			await character({ name: 'Fencer', at: [1, 0], sword: true }),
+			'2026-11-03T00:00:00.000Z',
+			'a fencing sword'
+		)
+	);
+	const squire = await character({ name: 'Squire', at: [2, 1] });
+	await store('rig-squire', squire);
+	const { items, skipped } = await listShared('rig-squire', squire.manifest);
+	expect(items.map((x) => [x.sourceName, x.fit])).toEqual([['Fencer', 'refit']]);
+	expect(skipped).toBe(1);
+	expect(warn).toHaveBeenCalledWith(
+		'shared item skipped',
+		'rig-knight',
+		'sword',
+		expect.any(Error)
+	);
+	warn.mockRestore();
 });
 
 test('a second tap while the first copy is saving returns the copy already added', async () => {

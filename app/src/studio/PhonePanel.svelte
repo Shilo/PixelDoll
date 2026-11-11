@@ -1,7 +1,8 @@
 <script lang="ts">
 	// Shared customization content for the desktop rail and mobile sheet.
 	import { popoverFocus } from './experience/focus.ts';
-	import { crop, groupOf, GROUPS, HEALTH_LABEL, healthOf } from './model.ts';
+	import { crop, groupOf, GROUPS, HEALTH_LABEL, healthOf, mirroredHandsNote } from './model.ts';
+	import { itemKey } from '../lib/equipment/copy.ts';
 	import {
 		ui,
 		doc,
@@ -50,11 +51,24 @@
 		const x = genOf(ui.selected);
 		return x && g.slots.includes(x.input.slot) ? x : undefined;
 	});
-	const others = $derived(shared.items.filter((x) => g.slots.includes(x.item.slot)));
-	// A tapped item of another character that does not fit this body takes the selection area.
-	const unfit = $derived(others.find((x) => sharedKey(x) === ui.selected));
+	// Requests this character is already making: an item to make new for it would only repeat one.
+	const making = $derived(
+		new Set(gens.filter((x) => x.draft.rigId === doc.id).map((x) => itemKey(x.input)))
+	);
+	const others = $derived(
+		shared.items.filter(
+			(x) => g.slots.includes(x.item.slot) && (x.fit !== 'remake' || !making.has(itemKey(x.item)))
+		)
+	);
+	const free = $derived(others.filter((x) => x.fit !== 'remake'));
+	const paid = $derived(others.filter((x) => x.fit === 'remake'));
+	// A tapped item of another character that does not fit this body opens an offer under its tile.
+	const unfit = $derived(paid.find((x) => sharedKey(x) === ui.selected));
 	const FIT_NAME = { copy: 'free copy', refit: 'free fit to check', remake: 'make new' };
-	const FIT_CAPTION = { copy: '', refit: 'Free · check fit', remake: 'Make new' };
+	const FIT_CAPTION = { copy: 'Free', refit: 'Free · check fit', remake: '' };
+	const handNote = $derived(
+		m && (g.id === 'Main hand' || g.id === 'Off hand') ? mirroredHandsNote(m.rig) : ''
+	);
 	const categoryName = $derived(g.id === 'Head' ? 'Headwear' : g.id);
 	// T2: keep the selected slot chip in view (Body was half under the Random button on a 375 px phone)
 	let chips = $state<HTMLElement>();
@@ -126,7 +140,9 @@
 				<h2>{categoryName}</h2>
 				<span class="muted small"
 					>{items.length + pending.length}
-					{items.length + pending.length === 1 ? 'item' : 'items'}</span
+					{items.length + pending.length === 1 ? 'item' : 'items'}{others.length
+						? ` · ${others.length} from others`
+						: ''}</span
 				><button
 					class="bu-action btn icon plain"
 					data-variant="quiet"
@@ -135,6 +151,7 @@
 					onclick={randomize}><Shuffle size={18} /></button
 				>
 			</div>
+			{#if handNote}<p class="faint small hand-note">{handNote}</p>{/if}
 			{#if items.length || pending.length}
 				<div class="tiles" role="group" aria-label="{g.id} items">
 					{#each items as it (it.id)}
@@ -208,67 +225,7 @@
 					<span class="muted">No items yet</span>
 				</div>
 			{/if}
-			{#if shared.error}<p class="notice warn small" role="alert">{shared.error}</p>{/if}
-			{#if others.length}
-				<div class="shared-items">
-					<div class="shared-head">
-						<h3 class="shared-title small">From your other characters</h3>
-						<p class="faint small">Free when the body matches. Others can be made new.</p>
-					</div>
-					<div class="tiles shared-tiles" role="group" aria-label="From your other characters">
-						{#each others as x (sharedKey(x))}
-							{@const key = sharedKey(x)}
-							{@const adding = shared.adding === key}
-							<button
-								data-variant="tile"
-								class="bu-action tile"
-								class:sel={ui.selected === key}
-								aria-pressed={ui.selected === key}
-								aria-label="{x.item.name}, from {x.sourceName}, {FIT_NAME[x.fit]}"
-								aria-busy={adding}
-								disabled={!!shared.adding}
-								onclick={() => (ui.selected === key ? (ui.selected = '') : addShared(x))}
-							>
-								<span class="tile-art" aria-hidden="true"><SharedThumb entry={x} /></span><span
-									class="tile-name">{x.item.name}</span
-								><span class="tile-from faint small">from {x.sourceName}</span>
-								{#if adding}<span class="tile-from faint small">Adding…</span
-									>{:else if FIT_CAPTION[x.fit]}<span class="tile-from faint small"
-										>{FIT_CAPTION[x.fit]}</span
-									>{/if}
-							</button>
-							{#if unfit === x}
-								{@const name = unfit.item.name}
-								<div class="unfit">
-									<p class="small" id="unfit-why">
-										Drawn for {unfit.sourceName}’s body, so it doesn’t fit {m.name}.
-									</p>
-									<button
-										class="bu-action btn primary"
-										data-variant="primary"
-										aria-describedby="unfit-why unfit-note"
-										{@attach (el) => el.focus()}
-										onclick={() =>
-											withKey(() =>
-												openNewItem(groupOf(unfit.item.slot).id, {
-													slot: unfit.item.slot,
-													prompt: unfit.item.prompt || name,
-													name
-												})
-											)}>Make one for {m.name}</button
-									>
-									<p class="faint small" id="unfit-note">
-										Drawn new from the same description, so it may look different. The price shows
-										before anything is made.
-									</p>
-								</div>
-							{/if}
-						{/each}
-					</div>
-				</div>
-			{/if}
-			<!-- The offer under a tapped tile is the only action: no selection card, no second primary button. -->
-			{#if !unfit && (items.length || pending.length)}
+			{#if items.length || pending.length}
 				{#if gen}
 					<Lazy load={() => import('./GenCard.svelte')} sheet={false} g={gen} />
 				{:else if sel}
@@ -289,14 +246,85 @@
 					<Colors only={sel.id} heading={false} />
 				{/if}
 			{/if}
-			{#if !unfit}
-				<button
-					class="bu-action equipment-create"
-					data-variant="primary"
-					onclick={() => openNewItem(g.id)}
-					><Plus size={18} /><span>New {g.id.toLowerCase()} item</span></button
-				>
+			<!-- Stays in place while an offer below is open, but yields the one primary action to it. -->
+			<button
+				class="bu-action equipment-create"
+				data-variant={unfit ? 'outline' : 'primary'}
+				onclick={() => openNewItem(g.id)}
+				><Plus size={18} /><span>New {g.id.toLowerCase()} item</span></button
+			>
+			{#if shared.error}<p class="notice warn small" role="alert">{shared.error}</p>{/if}
+			{#if others.length}
+				<div class="shared-items">
+					<div class="shared-head">
+						<h3 class="shared-title small">From your other characters</h3>
+						{#if !free.length}<p class="faint small">Make new for {m.name}</p>
+						{:else if paid.length}<p class="faint small">Free when the body matches</p>{/if}
+					</div>
+					<div class="tiles shared-tiles" role="group" aria-label="From your other characters">
+						{#each others as x, i (sharedKey(x))}
+							{@const key = sharedKey(x)}
+							{@const adding = shared.adding === key}
+							{@const remake = x.fit === 'remake'}
+							{#if remake && i === free.length && free.length}<p class="shared-divider faint small">
+									Make new for {m.name}
+								</p>{/if}
+							<button
+								data-variant="tile"
+								class="bu-action tile"
+								class:sel={ui.selected === key}
+								aria-pressed={remake ? ui.selected === key : undefined}
+								aria-label="{x.item.name}, from {x.sourceName}, {FIT_NAME[x.fit]}"
+								aria-busy={adding}
+								disabled={!!shared.adding}
+								onclick={() => (ui.selected === key ? (ui.selected = '') : addShared(x))}
+							>
+								<span class="tile-art" aria-hidden="true"><SharedThumb entry={x} /></span><span
+									class="tile-name">{x.item.name}</span
+								><span class="tile-from faint small">from {x.sourceName}</span>
+								{#if adding}<span class="tile-from faint small">Adding…</span
+									>{:else if FIT_CAPTION[x.fit]}<span class="tile-from muted small"
+										>{FIT_CAPTION[x.fit]}</span
+									>{/if}
+							</button>
+							{#if unfit === x}
+								{@const name = unfit.item.name}
+								<div
+									class="unfit"
+									tabindex="-1"
+									role="group"
+									aria-label="Make {name} for {m.name}"
+									{@attach (el) => el.focus()}
+								>
+									<p class="small" id="unfit-why">
+										Drawn for {unfit.sourceName}’s body, so it doesn’t fit {m.name}.
+									</p>
+									<button
+										class="bu-action btn primary"
+										data-variant="primary"
+										aria-describedby="unfit-why unfit-note"
+										onclick={() =>
+											withKey(() =>
+												openNewItem(groupOf(unfit.item.slot).id, {
+													slot: unfit.item.slot,
+													prompt: unfit.item.prompt || name,
+													name
+												})
+											)}>Make one for {m.name}</button
+									>
+									<p class="faint small" id="unfit-note">
+										Drawn new from the same description, so it may look different. The price shows
+										before anything is made.
+									</p>
+								</div>
+							{/if}
+						{/each}
+					</div>
+				</div>
 			{/if}
+			{#if shared.skipped}<p class="faint small">
+					Some items from other characters couldn’t be read.
+				</p>{/if}
 		{/if}
 	{:else if ui.tab === 'outfits'}
 		<Outfits />

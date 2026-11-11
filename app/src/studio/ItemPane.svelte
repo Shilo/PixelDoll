@@ -3,7 +3,7 @@
 	import { hiddenSlots, equipped } from '../lib/compose/compose.ts';
 	import { SLOTS, slotLadder } from '../lib/items/items.ts';
 	import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts';
-	import { missingItemMoves, itemMoveOffer } from './create.ts';
+	import { extendable, missingItemMoves, itemMoveOffer } from './create.ts';
 	import { movePlan } from './apiPlans.ts';
 	import ApiPeek from './ApiPeek.svelte';
 	import Sprite from './Sprite.svelte';
@@ -17,7 +17,7 @@
 		plainReason,
 		moveLabel,
 		qaReasons,
-		refitReasons,
+		refitNotes,
 		unknownCostText
 	} from './model.ts';
 	import {
@@ -39,7 +39,8 @@
 		moving,
 		settingUp,
 		matchItemPalette,
-		acceptItemIssues
+		acceptItemIssues,
+		showFrame
 	} from './state.svelte.ts';
 	import {
 		ArrowUp,
@@ -221,17 +222,20 @@
 	const designReasons = $derived([
 		...new Set((it?.designWarnings ?? []).flatMap((s) => s.split('; ')).map(plainReason))
 	]);
-	const reasons = $derived([
-		...(m && it ? refitReasons(m, it) : []),
-		...(it?.qa
+	const notes = $derived(m && it ? refitNotes(m, it) : []);
+	// A copy without its own standing design (a re-fit, or a copy whose standing views differ) cannot be extended to more
+	// moves: only an item made for this character can.
+	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
+	const reasons = $derived(
+		it?.qa
 			? qaReasons(
 					it.qa,
 					SLOTS.find((s) => s.id === it.slot)?.class === 'held',
 					it.route === 'skeleton-pose',
 					m?.rig
 				)
-			: [])
-	]);
+			: []
+	);
 	let confirmRemove = $state(false);
 	let onlyDir = $state(false);
 	let acceptingIssues = $state(false);
@@ -306,7 +310,7 @@
 				onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button
 			>
 			{#if !isDemo() && it.prompt}
-				<!-- A fitted copy is remade for this body like any shared item that does not fit it. -->
+				<!-- A fitted copy is remade for this body like any shared item that does not fit it, named from its description. -->
 				<button
 					class="bu-action btn"
 					data-variant="outline"
@@ -314,10 +318,9 @@
 						withKey(() =>
 							openNewItem(groupOf(it.slot).id, {
 								slot: it.slot,
-								prompt: it.prompt,
-								name: it.refit ? it.name : undefined
+								prompt: it.prompt
 							})
-						)}><RefreshCw size={14} />{it.refit ? `Make one for ${m.name}` : 'Try again'}</button
+						)}><RefreshCw size={14} />{remakeOnly ? `Make one for ${m.name}` : 'Try again'}</button
 				>
 			{/if}
 			{#if !isDemo()}
@@ -357,7 +360,30 @@
 				{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}
 			</ul>
 		{/if}
-		{#if !isDemo() && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}
+		{#if notes.length}
+			<div class="field">
+				<p class="small" id="refit-{it.id}">
+					Fitted for free from {it.copiedFrom?.name ?? 'another character'}’s item. Check these
+					frames:
+				</p>
+				<ul class="refit-notes" aria-labelledby="refit-{it.id}">
+					{#each notes as note (note.text)}<li>
+							<button
+								class="bu-action btn sm plain"
+								data-variant="quiet"
+								title="Show this frame"
+								onclick={() => {
+									showFrame(note.anim, note.dir, note.frame);
+									// The details sheet covers the stage: close it to show the frame.
+									if (ui.sheet === 'item') ui.sheet = null;
+								}}><TriangleAlert size={12} />{note.text}</button
+							>
+						</li>{/each}
+				</ul>
+			</div>
+		{/if}
+		<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
+		{#if !isDemo() && !it.refit && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}
 			<div class="field">
 				<p class="notice warn small">
 					Checks found issues. No paid retry was started. You can request another attempt or accept
@@ -381,7 +407,8 @@
 		{#if moveGaps.length}<p class="notice warn small">
 				<TriangleAlert size={14} />Missing some or all {moveName} frames facing {moveGaps.join(
 					', '
-				)}. It won’t show in those frames.
+				)}. It won’t show in those frames.{#if remakeOnly && !isDemo()}
+					Make one for {m.name} to wear it in every move.{/if}
 			</p>{/if}
 		{#if missingMoves.length}
 			<div class="field">

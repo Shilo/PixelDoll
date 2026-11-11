@@ -2,7 +2,7 @@
 	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import type { DirectionName, Item } from '../lib/store/manifest.ts';
-	import { itemMoveOffer, missingItemMoves } from './create.ts';
+	import { extendable, itemMoveOffer, missingItemMoves } from './create.ts';
 	import { groupOf, moveLabel } from './model.ts';
 	import {
 		ui,
@@ -51,6 +51,7 @@
 	);
 	const poseOffer = $derived(m && poseSpecs.length ? itemMoveOffer(m, poseSpecs) : null);
 	const remake = $derived(missing.find((i) => i.prompt));
+	const copyOnly = $derived(!!m && !!remake?.copiedFrom && !extendable(m, remake.id));
 	const busy = $derived(
 		!!moving.spec &&
 			moving.projectId === doc.id &&
@@ -112,18 +113,19 @@
 				></span
 			>
 			{#if poseOffer?.error}<span role="status">{poseOffer.error}</span>{/if}
-		{:else if remake?.standing}
+		{:else if remake?.standing && !copyOnly}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'setup')}
 				>Set up character</button
 			>
 		{:else if remake}
+			<!-- A copy without its own standing design cannot be posed onto more moves: make one for this character. -->
 			<button
 				class="bu-action btn sm"
 				data-variant="outline"
 				onclick={() =>
 					withKey(() =>
 						openNewItem(groupOf(remake.slot).id, { slot: remake.slot, prompt: remake.prompt })
-					)}>Make it again…</button
+					)}>{copyOnly ? `Make one for ${m?.name}` : 'Make it again…'}</button
 			>
 		{/if}
 	</div>

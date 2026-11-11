@@ -83,18 +83,25 @@ test('another character’s item on the same body is worn for free, survives rel
 	page.on('pageerror', (e) => errors.push(e.message));
 	const others = await threeCharacters(page);
 	await expect(page.locator('.equipment-scroll')).toContainText('From your other characters');
-	await expect(page.locator('.equipment-scroll .shared-head')).toContainText(
-		'Free when the body matches. Others can be made new.'
+	await expect(page.locator('.equipment-scroll .shared-head')).toHaveText(
+		/From your other characters\s*Free when the body matches/
 	);
-	// Only items this character does not already have: its own helmet and hat stay off the list. Free ones come first; an exact
-	// copy has no caption, an item for another body says it is made new.
+	await expect(page.locator('.equipment-heading')).toContainText('2 items · 2 from others');
+	// Only items this character does not already have: its own helmet and hat stay off the list. Free ones come first, captioned
+	// "Free"; an item for another body sits under the "Make new" divider, after New item.
 	await expect(others.getByRole('button')).toHaveText([
-		/^\s*Traveling wizard hat\s*from Twin\s*$/,
-		/^\s*Giant helmet\s*from Giant\s*Make new\s*$/
+		/^\s*Traveling wizard hat\s*from Twin\s*Free\s*$/,
+		/^\s*Giant helmet\s*from Giant\s*$/
 	]);
+	await expect(others.locator('.shared-divider')).toHaveText('Make new for Adventurer copy');
+	const create = page.getByRole('button', { name: 'New head item', exact: true });
+	expect((await create.boundingBox())!.y).toBeLessThan((await others.boundingBox())!.y);
 	await expect(
 		others.getByRole('button', { name: 'Giant helmet, from Giant, make new', exact: true })
-	).toBeVisible();
+	).toHaveAttribute('aria-pressed', 'false');
+	await expect(
+		others.getByRole('button', { name: 'Traveling wizard hat, from Twin, free copy', exact: true })
+	).not.toHaveAttribute('aria-pressed');
 	await others
 		.getByRole('button', { name: 'Traveling wizard hat, from Twin, free copy', exact: true })
 		.click();
@@ -106,7 +113,12 @@ test('another character’s item on the same body is worn for free, survives rel
 		.getByRole('button', { name: 'Traveling wizard hat', exact: true });
 	await expect(own).toHaveAttribute('aria-pressed', 'true');
 	await expect(page.locator('.sel-name')).toHaveText('Traveling wizard hat');
-	await expect(others.getByRole('button')).toHaveText([/Giant helmet\s*from Giant\s*Make new/]);
+	// Only an item to make new is left: the subtitle says so and no divider is needed.
+	await expect(others.getByRole('button')).toHaveText([/^\s*Giant helmet\s*from Giant\s*$/]);
+	await expect(page.locator('.equipment-scroll .shared-head')).toHaveText(
+		/From your other characters\s*Make new for Adventurer copy/
+	);
+	await expect(others.locator('.shared-divider')).toHaveCount(0);
 	// The copy's details credit the character it was made for.
 	const copyDetails = await selectedItemDetails(page);
 	await expect(copyDetails).toContainText('Made for Twin; copied here for free');
@@ -171,21 +183,23 @@ test('an item made for a different body offers to make it for this character, an
 		'Drawn new from the same description, so it may look different. The price shows before anything is made.'
 	);
 	const make = unfit.getByRole('button', { name: 'Make one for Adventurer copy', exact: true });
-	// The offer opens under the tapped tile's row, inside the list, takes focus and is the only primary action.
+	// The offer opens right after the tapped tile, inside the list; the offer itself takes focus (Tab then reaches its button),
+	// and it holds the only primary action: New item stays in place as a secondary button.
+	await expect(unfit).toBeFocused();
+	await page.keyboard.press('Tab');
 	await expect(make).toBeFocused();
 	await expect(giant).toHaveAttribute('aria-pressed', 'true');
 	await expect(others.locator('.unfit')).toHaveCount(1);
 	expect((await unfit.boundingBox())!.y).toBeGreaterThanOrEqual(
 		(await giant.boundingBox())!.y + (await giant.boundingBox())!.height
 	);
-	await expect(page.getByRole('button', { name: 'New head item', exact: true })).toHaveCount(0);
-	await expect(
-		page.locator('.equipment-scroll').getByRole('button', { name: 'Giant helmet', exact: true })
-	).toHaveCount(0);
+	const create = page.getByRole('button', { name: 'New head item', exact: true });
+	await expect(create).toHaveAttribute('data-variant', 'outline');
+	await expect(page.locator('.equipment-scroll [data-variant="primary"]')).toHaveCount(1);
 	// Tapping the tile again closes the offer.
 	await giant.click();
 	await expect(unfit).toHaveCount(0);
-	await expect(page.getByRole('button', { name: 'New head item', exact: true })).toBeVisible();
+	await expect(create).toHaveAttribute('data-variant', 'primary');
 	await giant.click();
 	await make.click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
@@ -219,11 +233,11 @@ test('the From your other characters row fits a phone without horizontal overflo
 	const others = await threeCharacters(page);
 	await expect(others.getByRole('button')).toHaveCount(2);
 	await others.getByRole('button', { name: 'Giant helmet, from Giant, make new' }).click();
-	const make = page
-		.locator('.equipment-scroll .unfit')
-		.getByRole('button', { name: 'Make one for Adventurer copy', exact: true });
-	await expect(make).toBeFocused();
-	await expect(make).toBeInViewport();
+	const unfit = page.locator('.equipment-scroll .unfit');
+	await expect(unfit).toBeFocused();
+	await expect(
+		unfit.getByRole('button', { name: 'Make one for Adventurer copy', exact: true })
+	).toBeInViewport();
 	const viewport = page.viewportSize()!;
 	for (const tile of await others.getByRole('button').all()) {
 		const box = (await tile.boundingBox())!;
@@ -293,13 +307,14 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 			'RIGHT EAR': [28, 20],
 			'LEFT EAR': [36, 20]
 		};
-		const skeleton = (dx: number) =>
-			poses.LABELS.map((label: string) => ({
-				label,
-				x: (at[label][0] + dx) / 64,
-				y: at[label][1] / 64
-			}));
-		const rig = (record: typeof copy, dx: number) => {
+		// `turned`: the right forearm points sideways instead of down (the wrist stays put).
+		const skeleton = (dx: number, turned = false) =>
+			poses.LABELS.map((label: string) => {
+				const [x, y] = turned && label === 'RIGHT ELBOW' ? [21, 40] : at[label];
+				return { label, x: (x + dx) / 64, y: y / 64 };
+			});
+		// `turn`: one walk frame facing south where the arm turns, so that frame fails the forearm check.
+		const rig = (record: typeof copy, dx: number, turn = false) => {
 			const r = record.manifest.rig,
 				b = record.manifest.items.find((it: { id: string }) => it.id === r.baseItem);
 			r.rest = {};
@@ -309,7 +324,9 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 					(a.sources ??= {})[dir] = {
 						route: 'skeleton-v3',
 						reference: r.rest[dir].image,
-						keypoints: Array.from({ length: a.cells }, () => skeleton(dx)),
+						keypoints: Array.from({ length: a.cells }, (_, i) =>
+							skeleton(dx, turn && a.id === 'walk' && dir === 'south' && i === 1)
+						),
 						provenance: []
 					};
 			}
@@ -362,7 +379,7 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 			}
 		);
 		rig(lefty, 1);
-		rig(copy, 0);
+		rig(copy, 0, true);
 		await db.put('projects', lefty.id, lefty);
 		await db.put('projects', copy.id, copy);
 	});
@@ -384,12 +401,28 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 	await expect(page.locator('.sel-name')).toHaveText('Lefty sword');
 	await expect(page.locator('.sel-row .badge')).toHaveText('Needs a look');
 	const details = await selectedItemDetails(page);
-	await expect(details).toContainText(
-		'Fitted from Lefty’s item without generating; check each move.'
-	);
+	await expect(details).toContainText('Fitted for free from Lefty’s item. Check these frames:');
+	// A re-fit's issues are its fit: nothing to accept as is; a new item for this body is offered instead.
+	await expect(details.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0);
 	await expect(
 		details.getByRole('button', { name: 'Make one for Adventurer copy', exact: true })
 	).toBeVisible();
+	// Each note shows its frame on the stage, paused.
+	const note = details.getByRole('button', { name: /^Walk facing south, frame 2: / });
+	await expect(note).toHaveText(/the forearm points another way than on Lefty/);
+	await note.click();
+	// The details sheet closes so the stage shows that frame.
+	await expect(page.getByRole('dialog')).toHaveCount(0);
+	expect(
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				s = await import(path);
+			const clip = s.store.project.manifest.rig.animations.find(
+				(a: { id: string }) => a.id === s.ui.anim
+			);
+			return [s.ui.anim, s.ui.dir, clip.frames[s.ui.frame].cell, s.ui.playing];
+		})
+	).toEqual(['walk', 'south', 1, false]);
 	expect(requests).toEqual([]);
 	expect(errors).toEqual([]);
 });

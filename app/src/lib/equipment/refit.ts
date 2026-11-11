@@ -1,9 +1,9 @@
 // A free, approximate fit of another character's held item (Main hand / Off hand) onto a different body on the same canvas
 // size: every frame's layers move by the offset between the two bodies' wrists, never resampled. Each rig maps its keypoints
 // to the layer canvas through its own pivot, so the pivots may differ. It is offered only when both characters share the
-// item's moves and at most a quarter of the frames fail a grip check below; head items never fit this way (head sizes differ by
-// 2 to 5 px on the same canvas). Offline study, 2026-11-10: authored moves passed 23 of 27 frames, walks 24 to 30 of 36, and
-// one imported character had its hand labels swapped. Never generates anything.
+// item's views (drawn or mirrored alike) and moves, and at most a quarter of the frames fail a grip check below; head items
+// never fit this way (head sizes differ by 2 to 5 px on the same canvas). The offline check over stored characters
+// (2026-11-10) is recorded in docs/known-issues.md under Shared items. Never generates anything.
 import { layerFrame, type Frame } from '../compose/compose.ts';
 import type { Img } from '../image/png.ts';
 import { kpAt, observedKeypoints, poseDist, translate } from '../items/items.ts';
@@ -37,9 +37,28 @@ export const REFIT = {
 	maxFailing: 0.25
 };
 const HELD_ANCHOR: Record<string, 'LEFT' | 'RIGHT'> = { main_hand: 'RIGHT', off_hand: 'LEFT' };
-/** The item may re-fit onto other bodies: a held item that hides nothing of its own body. */
+/** The source's own checks found the item in the other hand or changing hands (G8): a moved copy would keep that. */
+const wrongHand = (item: Item) => {
+	const want = HELD_ANCHOR[item.slot] === 'RIGHT' ? 'r' : 'l',
+		q = item.qa;
+	return (
+		!!item.designWarnings?.some((w) => w.includes('expects hand_')) ||
+		(!!q &&
+			[q, q.inherited?.summary, ...Object.values(q.clips)].some(
+				(p) => p?.handedness === 'switched'
+			)) ||
+		(!!q &&
+			Object.values(q.clips).some((c) => (c.hand === 'r' || c.hand === 'l') && c.hand !== want))
+	);
+};
+/** The item may re-fit onto other bodies: a held item in its own hand that hides nothing of its own body and was drawn for
+ *  it (a re-fit is never re-fitted again: its approximations would add up). */
 export const refittable = (item: Item) =>
-	!!HELD_ANCHOR[item.slot] && !item.baseCut && !item.hides?.length;
+	!!HELD_ANCHOR[item.slot] &&
+	!item.baseCut &&
+	!item.hides?.length &&
+	!item.refit &&
+	!wrongHand(item);
 
 const mirrorOf = (rig: Rig, dir: DirectionName) =>
 	rig.directions.find((d) => d.id === dir)?.mirrorOf;
@@ -107,6 +126,14 @@ const staysOn = (im: Img, dx: number, dy: number) => {
 			}
 	return true;
 };
+/** Every view of the target exists on the source and is drawn, or mirrored from the same view, there too. A mirrored view
+ *  flips its drawn view's art (the hands swap), so a view drawn on one character and mirrored on the other would put the
+ *  item in the other hand; a view the source never drew has nothing to move. */
+const sameViews = (source: Manifest, target: Manifest) =>
+	target.rig.directions.every((d) => {
+		const s = source.rig.directions.find((x) => x.id === d.id);
+		return !!s && s.mirrorOf === d.mirrorOf;
+	});
 /** Same canvas size and the same camera when both record one; the pivots may differ. */
 const sameCanvas = (source: Manifest, target: Manifest) =>
 	stableStringify(source.rig.cell) === stableStringify(target.rig.cell) &&
@@ -147,7 +174,12 @@ async function fit(
 	const side = HELD_ANCHOR[original.slot];
 	// Hidden body px and hidden slots belong to the source's body.
 	if (!side || !refittable(original)) return null;
-	if (!sameCanvas(source, target) || !sameSlot(source, target, original.slot)) return null;
+	if (
+		!sameCanvas(source, target) ||
+		!sameViews(source, target) ||
+		!sameSlot(source, target, original.slot)
+	)
+		return null;
 	if (!rightHanded(source) || !rightHanded(target)) return null;
 	const sb = bodyOf(source)?.layers[0],
 		tb = bodyOf(target)?.layers[0];
@@ -296,14 +328,15 @@ async function fit(
 	return { plan, moves, notes: [...notes.values()] };
 }
 
-/** The item can be re-fitted onto `target` for free (the same checks as refitShared, without making the moved images). */
-export async function canRefit(
+/** The target cells a free re-fit would cover, or null when there is none (the same checks as refitShared, without making the
+ *  moved images). */
+export async function refitCells(
 	source: Manifest,
 	item: Item,
 	target: Manifest,
 	load: (hash: Sha256) => Promise<Img>
-): Promise<boolean> {
-	return !!(await fit(source, item, target, load));
+): Promise<string[] | null> {
+	return (await fit(source, item, target, load))?.plan.map((m) => m.target) ?? null;
 }
 
 /** The re-fitted copy, or null when the item cannot fit this body without being made for it. */

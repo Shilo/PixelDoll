@@ -5,10 +5,10 @@ import { cutAt } from '../compose/compose.ts';
 import { decodePng, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { flipH } from '../rig/mirror.ts';
-import { cellHash } from '../rig/rig.ts';
+import { cellHash, cellKey } from '../rig/rig.ts';
 import { variantOf, variantRampOf } from '../dress/dress.ts';
-import { slotLadder } from '../items/items.ts';
-import { putItem, type StoredProject } from '../store/project.ts';
+import { putItem, slotLadder } from '../items/items.ts';
+import type { StoredProject } from '../store/project.ts';
 import type {
 	CellKey,
 	DirectionName,
@@ -19,8 +19,15 @@ import type {
 	Sha256
 } from '../store/manifest.ts';
 import { stableStringify } from '../image/hash.ts';
-import { assessCopy, cellId, type CopyAssessment, type Flip } from './compatibility.ts';
-import { canRefit, refitShared, refittable } from './refit.ts';
+import {
+	assessCopy,
+	bodyOf,
+	cellId,
+	covered,
+	type CopyAssessment,
+	type Flip
+} from './compatibility.ts';
+import { refitCells, refitShared, refittable } from './refit.ts';
 
 export interface CopyCandidate {
 	item: Item;
@@ -169,19 +176,46 @@ export function copyShell(
 }
 
 /** Same slot and same request: the same item for the wardrobe's purposes. */
-export const itemKey = (item: Item) =>
+export const itemKey = (item: Pick<Item, 'slot' | 'prompt' | 'name'>) =>
 	`${item.slot}\n${(item.prompt.trim() || item.name).toLowerCase().replace(/\s+/g, ' ')}`;
 
 /** How another character's item comes to `target`: an exact free copy, a free approximate re-fit, or a new item made for it. */
 export type SharedFit = 'copy' | 'refit' | 'remake';
+/** Target cells (drawn views with a body) at a move, direction and frame the item covers on its source. */
+function wanted(source: Manifest, item: Item, target: Manifest): string[] {
+	const body = bodyOf(target)?.layers[0],
+		out: string[] = [];
+	for (const a of target.rig.animations)
+		for (const { id: dir } of target.rig.directions.filter((d) => !d.mirrorOf))
+			for (let i = 0; i < a.cells; i++)
+				if (body?.cells?.[a.id]?.[dir]?.[i] && covered(source, item, a.id, dir, i))
+					out.push(cellKey(a.id, dir, i));
+	return out;
+}
+/** An exact copy when it covers every cell the item covers on its source; otherwise whichever of the exact copy and a re-fit
+ *  covers more cells (the exact copy on a tie: its pixels need no look). `refit` runs only when needed. */
+async function choose(
+	source: Manifest,
+	item: Item,
+	target: Manifest,
+	copy: string[] | null,
+	refit: () => Promise<string[] | null>
+): Promise<SharedFit> {
+	if (copy && wanted(source, item, target).every((k) => copy.includes(k))) return 'copy';
+	const fitted = refittable(item) ? await refit() : null;
+	if (fitted && fitted.length > (copy?.length ?? 0)) return 'refit';
+	return copy ? 'copy' : 'remake';
+}
 export async function sharedFit(
 	source: Manifest,
 	item: Item,
 	target: Manifest,
 	load: (hash: Sha256) => Promise<Img>
 ): Promise<SharedFit> {
-	if ((await assessCopy(source, item, target, flipper(load).flip)).fits) return 'copy';
-	return refittable(item) && (await canRefit(source, item, target, load)) ? 'refit' : 'remake';
+	const copy = await assessCopy(source, item, target, flipper(load).flip);
+	return choose(source, item, target, copy.fits ? copy.matches.map((m) => m.target) : null, () =>
+		refitCells(source, item, target, load)
+	);
 }
 
 /** Copy an item of another saved character into `targetId` in one transaction: exact on an identical body, otherwise a free
@@ -215,14 +249,23 @@ export async function acceptCopy(
 		return decodePng(blob);
 	};
 	const { flip, made } = flipper(load);
-	const candidate =
-		(await prepareCopy(source.manifest, itemId, variants, target.manifest, flip)) ??
-		(await refitShared(source.manifest, itemId, variants, target.manifest, load));
+	const copy = await prepareCopy(source.manifest, itemId, variants, target.manifest, flip),
+		fitted: { refit?: CopyCandidate | null } = {};
+	const how = await choose(
+		source.manifest,
+		original,
+		target.manifest,
+		copy?.item.coverage ?? null,
+		async () =>
+			(fitted.refit = await refitShared(source.manifest, itemId, variants, target.manifest, load))
+				?.item.coverage ?? null
+	);
+	const candidate = how === 'copy' ? copy : how === 'refit' ? fitted.refit : null;
 	if (!candidate) return null;
 	const { item, materials } = candidate;
-	// The paid calls were made for the first character an item was copied from.
+	// The paid calls were made for the first character an item was copied from. An exact copy of a re-fit keeps the re-fit's
+	// notes too: its pixels and body are identical, so they still name exactly the frames to check.
 	item.copiedFrom = original.copiedFrom ?? { id: sourceId, name: source.manifest.name };
-	if (item.refit && item.qa) item.qa.status = 'warn';
 	// New images (flipped views, moved frames) are stored with the copy; the others are already stored and only checked, in the
 	// same transaction, so a concurrent deletion and cleanup of the source cannot sweep them.
 	const blobs = new Map<string, Blob>(),

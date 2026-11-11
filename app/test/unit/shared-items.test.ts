@@ -2,7 +2,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { equipmentFixture, bodyOnly } from './equipment-fixture.ts';
 import { acceptCopy, flipper, prepareCopy } from '../../src/lib/equipment/copy.ts';
 import { assessCopy } from '../../src/lib/equipment/compatibility.ts';
-import { listShared } from '../../src/lib/equipment/shared.ts';
+import { forgetFits, listShared } from '../../src/lib/equipment/shared.ts';
 import { loadProject, type StoredProject } from '../../src/lib/store/project.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
@@ -37,6 +37,7 @@ beforeEach(() => {
 	memory.records.clear();
 	memory.blobs.clear();
 	memory.writes = 0;
+	forgetFits();
 });
 
 async function store(
@@ -87,13 +88,13 @@ test('other characters’ finished items are listed once, without this character
 	Object.assign(hatOf(dev), { prompt: 'a dev cap' });
 	await store('rig-draft', draft);
 	await store('rig-dev', dev, { origin: 'dev' });
-	const list = await listShared('rig-target', target.manifest);
+	const { items: list } = await listShared('rig-target', target.manifest);
 	expect(list.map((x) => [x.sourceId, x.sourceName, x.item.name])).toEqual([
 		['rig-newer', 'Newer', 'New hood']
 	]);
 	// The open character's own items never list; another character's hood is its duplicate.
 	expect(
-		(await listShared('rig-newer', newer.manifest)).map((x) => [x.sourceId, x.item.prompt])
+		(await listShared('rig-newer', newer.manifest)).items.map((x) => [x.sourceId, x.item.prompt])
 	).toEqual([['rig-target', 'hat']]);
 });
 
@@ -173,7 +174,7 @@ test('deleting the source removes its entry while the copy stays intact', async 
 	const item = (await acceptCopy('rig-source', 'hat', 'rig-target'))!;
 	const expected = worn((await loadProject('rig-target')).project, { body: 'base', head: item.id });
 	const sources = async () =>
-		(await listShared('rig-third', third.manifest)).map((x) => x.sourceId);
+		(await listShared('rig-third', third.manifest)).items.map((x) => x.sourceId);
 	expect(await sources()).toEqual(['rig-source']);
 	memory.records.delete('rig-source'); // blobs stay, as when a character is deleted
 	// The copy is an ordinary item of its character, so it is offered from there now.

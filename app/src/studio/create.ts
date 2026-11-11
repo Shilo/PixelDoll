@@ -1336,6 +1336,10 @@ async function inspectMeasurementRecovery(
 	};
 }
 
+/** The item, when frames for more moves can be made for it from its own standing design (copies without one cannot). */
+export const extendable = (m: Manifest, itemId: string) =>
+	[...posable(m), ...anchorable(m)].find((i) => i.id === itemId);
+
 /** Moves a saved item lacks, e.g. idle and walk added after it was planned on the standing views, as items-only specs (addMove
  * keeps the body clip and poses only these directions, the same request "Make it" sends). Only directions the body has frames
  * and stored keypoints for count (the Default move's standing views are never posed). The user starts them from a priced offer; nothing is queued automatically (credits are real money). */
@@ -1344,7 +1348,7 @@ export function missingItemMoves(
 	itemId: string,
 	seed = 1 + Math.floor(Math.random() * 1_000_000)
 ): MoveSpec[] {
-	const item = [...posable(m), ...anchorable(m)].find((i) => i.id === itemId);
+	const item = extendable(m, itemId);
 	if (!item) return [];
 	const { clipDirs } = coverage({ rec: { manifest: m } } as RigCtx);
 	const anchored = item.route === 'ea2-anchor';

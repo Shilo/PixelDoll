@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
-import { composeCell } from '../../src/lib/compose/compose.ts';
-import { slotLadder } from '../../src/lib/items/items.ts';
-import { namesOffHandItem } from '../../src/studio/model.ts';
+import { composeCell, resolveZ } from '../../src/lib/compose/compose.ts';
+import { putItem, slotLadder } from '../../src/lib/items/items.ts';
+import { mirroredHandsNote, namesOffHandItem } from '../../src/studio/model.ts';
 import type { Img } from '../../src/lib/image/png.ts';
 import type { RigDirection } from '../../src/lib/rig/rig.ts';
 import type { Item, Layer, Manifest, Project } from '../../src/lib/store/manifest.ts';
@@ -81,6 +81,56 @@ test('the default ladder only adds near-hand order for generated left-side views
 	expect(offFg([{ id: 'west' }, { id: 'south-west', mirrorOf: 'south-east' }])).toEqual(['west']);
 	const main = slotLadder({ directions: [{ id: 'west' }] }).find((s) => s.id === 'main_hand')!;
 	expect(main.zOverrides!.every((o) => o.layer === 'bg')).toBe(true);
+});
+
+test('in generated left-side views the off hand’s back layer also draws over the main hand’s', () => {
+	const dirs = ['west', 'south-west', 'north-west', 'east'] as const;
+	const bg = (directions: RigDirection[], id: string, dir: (typeof dirs)[number]) => {
+		const slot = slotLadder({ directions }).find((s) => s.id === id)!;
+		return resolveZ(slot, { role: 'bg', z: slot.bgZ! }, 'idle', dir, 0);
+	};
+	const generated = dirs.map((id) => ({ id }));
+	for (const dir of ['west', 'south-west', 'north-west'] as const)
+		expect(bg(generated, 'off_hand', dir), dir).toBeGreaterThan(bg(generated, 'main_hand', dir));
+	expect(bg(generated, 'off_hand', 'east')).toBe(bg(generated, 'main_hand', 'east'));
+	// From behind, both stay under the cape's back layer (z 4).
+	expect(bg(generated, 'off_hand', 'north-west')).toBeLessThan(4);
+	// A mirrored west keeps east's order: a tie that slot order gives to the main hand.
+	const mirrored: RigDirection[] = [{ id: 'east' }, { id: 'west', mirrorOf: 'east' }];
+	expect(bg(mirrored, 'off_hand', 'west')).toBe(bg(mirrored, 'main_hand', 'west'));
+});
+
+test('an item whose slot the character lacks brings the rig’s near-hand order (review preview and save)', () => {
+	const directions: RigDirection[] = [{ id: 'east' }, { id: 'west' }];
+	const m = {
+		rig: { directions },
+		slots: slotLadder({ directions }).filter((s) => s.id === 'body'),
+		items: []
+	} as unknown as Manifest;
+	putItem(m, { id: 'shield', slot: 'off_hand', layers: [] } as unknown as Item, slotLadder(m.rig));
+	expect(m.slots.map((s) => s.id)).toEqual(['body', 'off_hand']);
+	expect(m.slots[1].zOverrides!.filter((o) => o.dir === 'west').map((o) => o.layer)).toEqual([
+		'bg',
+		'fg',
+		'bg'
+	]);
+});
+
+test('the mirrored-hands note names the mirrored views in plain words, and only when there are any', () => {
+	const note = (directions: RigDirection[]) => mirroredHandsNote({ directions });
+	expect(note([{ id: 'south' }, { id: 'east' }, { id: 'west' }])).toBe('');
+	expect(note([{ id: 'east' }, { id: 'west', mirrorOf: 'east' }])).toBe(
+		'Facing west, this character is mirrored, so hands swap there. Characters made with Unique 8 keep each hand.'
+	);
+	expect(
+		note([
+			{ id: 'east' },
+			{ id: 'west', mirrorOf: 'east' },
+			{ id: 'south-west', mirrorOf: 'south-east' },
+			{ id: 'north-west', mirrorOf: 'north-east' }
+		])
+	).toMatch(/^Facing west and the west diagonals, this character is mirrored/);
+	expect(note([{ id: 'south-east', mirrorOf: 'south-west' }])).toMatch(/^Facing south east, /);
 });
 
 test('the New item hint recognizes shields and bows by the item subject only', () => {

@@ -8,6 +8,7 @@
 	import { enhanceCharacter } from './enhanceCharacter.ts';
 	import { routes } from '../lib/pixellab/routes.ts';
 	import { ArrowUp, PersonStanding, Copy, Check, WandSparkles, Undo2 } from './icons.ts';
+	import { HANDS_SWAP, KEEP_EACH_HAND } from './model.ts';
 	import MirrorViews from '@lucide/svelte/icons/triangles-centerline-dashed-vertical';
 	import {
 		ANGLES,
@@ -418,7 +419,7 @@
 	<section class="facing" aria-label="Character directions">
 		<Help
 			title="Directions"
-			text="Choose the views to keep and animate. V3 first creates all eight original views. Attached mirror buttons mirror a horizontal partner; a blue mirror button marks a derived view, and its Main hand and Off hand items trade hands (a Main hand sword appears in the left hand). Turning it off uses that view’s original artwork. For one facing, choose Side-scroller 2 and turn W off."
+			text="Choose the views to keep and animate. V3 first creates all eight original views. Attached mirror buttons mirror a horizontal partner; a blue mirror button marks a derived view, {HANDS_SWAP} (a Main hand sword appears in the left hand). {KEEP_EACH_HAND} Turning it off uses that view’s original artwork. For one facing, choose Side-scroller 2 and turn W off."
 		/>
 		<div class="direction-presets" role="group" aria-label="Direction presets">
 			{#each PRESETS as p (p.id)}<button
