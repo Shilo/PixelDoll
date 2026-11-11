@@ -1,4 +1,10 @@
-import { openStudio, reloadStudio, equipmentGroup, newItem } from './immersive-helpers.ts';
+import {
+	openStudio,
+	reloadStudio,
+	equipmentGroup,
+	newItem,
+	selectedItemDetails
+} from './immersive-helpers.ts';
 import { test, expect, type Page } from '@playwright/test';
 
 test.beforeEach(async ({ context }) => {
@@ -184,4 +190,160 @@ test('the From other characters row fits a phone without horizontal overflow', a
 		expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
 	}
 	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('another character’s sword re-fits a body standing 1 px aside for free and asks for a look', async ({
+	page,
+	context
+}, info) => {
+	const requests: string[] = [],
+		errors: string[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		requests.push(route.request().method() + ' ' + new URL(route.request().url()).pathname);
+		await route.abort();
+	});
+	page.on('pageerror', (e) => errors.push(e.message));
+	// The dev server serves the app's modules, so the fixture moves real demo frames with the app's own image code.
+	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	await openStudio(page, dev);
+	await newItem(page, 'Head');
+	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
+	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
+	await page.keyboard.press('Escape');
+	await expect(page.getByRole('dialog')).toHaveCount(0);
+	await page.evaluate(async () => {
+		const paths = {
+				state: '/src/studio/state.svelte.ts',
+				db: '/src/lib/store/db.ts',
+				poses: '/src/lib/rig/poses.ts',
+				items: '/src/lib/items/items.ts',
+				png: '/src/lib/image/png.ts',
+				raw: '/src/lib/image/pngraw.ts',
+				rig: '/src/lib/rig/rig.ts'
+			},
+			s = await import(paths.state),
+			db = await import(paths.db),
+			poses = await import(paths.poses),
+			items = await import(paths.items),
+			png = await import(paths.png),
+			raw = await import(paths.raw),
+			rigs = await import(paths.rig);
+		const copy = await db.get('projects', s.doc.id),
+			m = copy.manifest,
+			body = m.items.find((it: { id: string }) => it.id === m.rig.baseItem);
+		// A standing skeleton (the right hand on the viewer's left facing south), moved by dx px.
+		const at: Record<string, [number, number]> = {
+			NOSE: [32, 20],
+			NECK: [32, 26],
+			'RIGHT SHOULDER': [28, 28],
+			'RIGHT ELBOW': [27, 34],
+			'RIGHT ARM': [27, 40],
+			'LEFT SHOULDER': [36, 28],
+			'LEFT ELBOW': [37, 34],
+			'LEFT ARM': [37, 40],
+			'RIGHT HIP': [30, 44],
+			'RIGHT KNEE': [30, 52],
+			'RIGHT LEG': [30, 60],
+			'LEFT HIP': [34, 44],
+			'LEFT KNEE': [34, 52],
+			'LEFT LEG': [34, 60],
+			'RIGHT EYE': [30, 19],
+			'LEFT EYE': [34, 19],
+			'RIGHT EAR': [28, 20],
+			'LEFT EAR': [36, 20]
+		};
+		const skeleton = (dx: number) =>
+			poses.LABELS.map((label: string) => ({
+				label,
+				x: (at[label][0] + dx) / 64,
+				y: at[label][1] / 64
+			}));
+		const rig = (record: typeof copy, dx: number) => {
+			const r = record.manifest.rig,
+				b = record.manifest.items.find((it: { id: string }) => it.id === r.baseItem);
+			r.rest = {};
+			for (const { id: dir } of r.directions.filter((d: { mirrorOf?: string }) => !d.mirrorOf)) {
+				r.rest[dir] = { image: b.layers[0].cells.walk[dir][0], keypoints: skeleton(dx) };
+				for (const a of r.animations)
+					(a.sources ??= {})[dir] = {
+						route: 'skeleton-v3',
+						reference: r.rest[dir].image,
+						keypoints: Array.from({ length: a.cells }, () => skeleton(dx)),
+						provenance: []
+					};
+			}
+		};
+		// "Lefty": the same character standing 1 px to the right, holding its own sword.
+		const lefty = structuredClone(copy);
+		lefty.id = 'rig-lefty';
+		lefty.manifest.name = 'Lefty';
+		const moved = new Map<string, string>();
+		const shift = async (hash: string | null) => {
+			if (!hash) return hash;
+			if (!moved.has(hash)) {
+				const im = items.translate(await png.decodePng(await db.getBlob(hash.slice(7))), 1, 0),
+					h = await rigs.cellHash(im);
+				await db.put(
+					'blobs',
+					h.slice(7),
+					new Blob([await raw.encodePngBytes(im)], { type: 'image/png' })
+				);
+				moved.set(hash, h);
+			}
+			return moved.get(hash)!;
+		};
+		const baseHash = 'sha256:' + 'c'.repeat(64);
+		lefty.manifest.rig.baseHash = baseHash;
+		for (const it of lefty.manifest.items) {
+			it.baseHash = baseHash;
+			if (it.id !== body.id && it.id !== 'sword_steel') continue;
+			for (const layer of it.layers)
+				for (const dirs of Object.values(layer.cells) as Record<string, (string | null)[]>[])
+					for (const dir of Object.keys(dirs)) dirs[dir] = await Promise.all(dirs[dir].map(shift));
+		}
+		Object.assign(
+			lefty.manifest.items.find((it: { id: string }) => it.id === 'sword_steel'),
+			{
+				name: 'Lefty sword',
+				prompt: 'a lefty sword',
+				qa: {
+					status: 'pass',
+					rerolls: 0,
+					cells: {},
+					clips: {},
+					minKeyKept: 1,
+					maxKeyOutside: 0,
+					minAreaRatio: 1,
+					maxAreaCV: 0,
+					maxPaletteDist: 0,
+					clipPx: 0
+				}
+			}
+		);
+		rig(lefty, 1);
+		rig(copy, 0);
+		await db.put('projects', lefty.id, lefty);
+		await db.put('projects', copy.id, copy);
+	});
+	await reloadStudio(page);
+	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
+	await equipmentGroup(page, 'Main hand');
+	const others = page
+		.locator('.equipment-scroll')
+		.getByRole('group', { name: 'From other characters' });
+	await others.getByRole('button', { name: 'Lefty sword, from Lefty', exact: true }).click();
+	await expect(page.locator('.bu-toast')).toContainText(
+		'Added Lefty sword from Lefty. Check it in each move.'
+	);
+	await expect(page.locator('.sel-name')).toHaveText('Lefty sword');
+	await expect(page.locator('.sel-row .badge')).toHaveText('Needs a look');
+	const details = await selectedItemDetails(page);
+	await expect(details).toContainText(
+		'Fitted from Lefty’s item without generating; check each move.'
+	);
+	await expect(
+		details.getByRole('button', { name: 'Make for Adventurer copy', exact: true })
+	).toBeVisible();
+	expect(requests).toEqual([]);
+	expect(errors).toEqual([]);
 });

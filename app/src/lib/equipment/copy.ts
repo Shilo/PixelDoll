@@ -26,6 +26,8 @@ export interface CopyCandidate {
 	item: Item;
 	materials: Material[];
 	assessment: CopyAssessment;
+	/** New images the item references (a re-fit's moved cells), stored with it. */
+	images?: Map<Sha256, Img>;
 }
 
 /** Image blobs an item references (cells and dressed references). */
@@ -74,26 +76,13 @@ export async function prepareCopy(
 		throw new Error('That item is no longer available.');
 	const assessment = await assessCopy(source, original, target, flip);
 	if (!assessment.fits) return null;
-	const item = structuredClone(original),
-		id = `gear-${crypto.randomUUID()}`;
-	item.id = id;
-	item.baseHash = target.rig.baseHash;
-	item.coverage = assessment.matches.map((match) => match.target as CellKey);
-	const materials = source.materials
-		.filter((mat) => mat.owner === itemId)
-		.map((mat, i) => {
-			const copy: Material = { ...structuredClone(mat), id: `${id}_${i + 1}`, owner: id };
-			// Links point at the source's other materials; the copy owns its resolved colors.
-			delete copy.linkTo;
-			const name = variantOf(source, variants, mat.id),
-				ramp = name ? variantRampOf(mat, name) : undefined;
-			if (name && ramp) {
-				copy.variants[name] = ramp;
-				copy.defaultVariant = name;
-			} else delete copy.defaultVariant;
-			return copy;
-		});
-	item.materials = materials.map((mat) => mat.id);
+	const { item, materials } = copyShell(
+		source,
+		original,
+		variants,
+		target,
+		assessment.matches.map((match) => match.target)
+	);
 	const cells = target.rig.animations;
 	const layerCells = item.layers.map(() => ({}) as NonNullable<Item['layers'][number]['cells']>),
 		baseCut: NonNullable<Item['baseCut']> = {};
@@ -126,8 +115,42 @@ export async function prepareCopy(
 		delete item.dressed;
 		delete item.route;
 	}
+	return { item, materials, assessment };
+}
+
+/** A new, independent item from another character's: own ids and materials (the source's current colors as defaults) and
+ *  coverage of the `targets` cells, with the source checks kept as one summary per copied move. The caller sets its cells. */
+export function copyShell(
+	source: Manifest,
+	original: Item,
+	variants: Preset['variants'],
+	target: Manifest,
+	targets: string[]
+): { item: Item; materials: Material[] } {
+	const item = structuredClone(original),
+		id = `gear-${crypto.randomUUID()}`,
+		itemId = original.id;
+	item.id = id;
+	item.baseHash = target.rig.baseHash;
+	item.coverage = targets as CellKey[];
+	const materials = source.materials
+		.filter((mat) => mat.owner === itemId)
+		.map((mat, i) => {
+			const copy: Material = { ...structuredClone(mat), id: `${id}_${i + 1}`, owner: id };
+			// Links point at the source's other materials; the copy owns its resolved colors.
+			delete copy.linkTo;
+			const name = variantOf(source, variants, mat.id),
+				ramp = name ? variantRampOf(mat, name) : undefined;
+			if (name && ramp) {
+				copy.variants[name] = ramp;
+				copy.defaultVariant = name;
+			} else delete copy.defaultVariant;
+			return copy;
+		});
+	item.materials = materials.map((mat) => mat.id);
 	if (item.qa) {
-		// The art is unchanged on an identical body, so the source checks still describe it, as one summary per copied move.
+		// The art is unchanged on an identical body, so the source checks still describe it, as one summary per copied move (a
+		// re-fit's moved art is marked for review on top).
 		const {
 			cells: _cells,
 			clips: _clips,
@@ -138,11 +161,11 @@ export async function prepareCopy(
 		item.qa.cells = {};
 		item.qa.clips = {};
 		item.qa.inherited = {
-			clips: [...new Set(assessment.matches.map((m) => m.target.split('/').slice(0, 2).join('/')))],
+			clips: [...new Set(targets.map((key) => key.split('/').slice(0, 2).join('/')))],
 			summary
 		};
 	}
-	return { item, materials, assessment };
+	return { item, materials };
 }
 
 /** Copy an item of another saved character into `targetId` in one transaction: exact on an identical body, otherwise a free
@@ -166,14 +189,15 @@ export async function acceptCopy(
 	if (!source || !original) throw new Error('That character or item was removed.');
 	if (!target) throw new Error('This character was removed.');
 	const variants = source.dress?.current?.variants ?? source.manifest.presets[0]?.variants ?? {};
-	const { flip, made } = flipper(async (h) => {
+	const load = async (h: Sha256) => {
 		const blob = await db.getBlob(h.slice(7));
 		if (!blob) throw new Error(`An image of ${original.name} is missing (${h.slice(7, 19)}).`);
 		return decodePng(blob);
-	});
+	};
+	const { flip, made } = flipper(load);
 	let candidate = await prepareCopy(source.manifest, itemId, variants, target.manifest, flip);
 	if (!candidate) {
-		candidate = await refitShared(source.manifest, itemId, variants, target.manifest);
+		candidate = await refitShared(source.manifest, itemId, variants, target.manifest, load);
 		if (!candidate) return null;
 		candidate.item.fittedFrom = source.manifest.name;
 		if (candidate.item.qa) candidate.item.qa.status = 'warn';
@@ -182,7 +206,7 @@ export async function acceptCopy(
 	// Store the referenced blobs with the copy, so a concurrent deletion and cleanup of the source cannot sweep them.
 	const blobs = new Map<string, Blob>();
 	for (const h of itemHashes(item)) {
-		const im = made.get(h),
+		const im = made.get(h) ?? candidate.images?.get(h),
 			blob = im
 				? new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
 				: await db.getBlob(h.slice(7));

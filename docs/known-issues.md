@@ -192,7 +192,17 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 Free sharing copies only onto byte-identical frozen body cells with the same geometry and slot semantics; any other body
 needs the item made for it at normal cost. Preserve: exact per-cell proof for copying; independent ids, materials and
 outfit choices on each copy; safe deletion of the source character; and no generation without the New item sheet's
-estimate and consent. A free approximate fit for held items (re-anchoring by joints) is not implemented yet.
+estimate and consent.
+
+Main hand and Off hand items can also get a free approximate re-fit: each frame moves by the offset between the two
+bodies' wrists, without resampling, and the copy is marked **Needs a look**. Limits: only the same canvas size, pivot and
+camera; both characters need stored skeleton keypoints, and every target move must exist on the source with the same
+frame count (or stand still); one forearm angle, body overlap, occlusion or canvas-edge failure in any frame rejects
+the whole item; the grip is approximate (whole-pixel wrist offset, no rotation); items that hide body pixels or slots
+never re-fit; head items never re-fit (head sizes differ by 2 to 5 px on the same canvas). Characters stored with
+mirrored hand labels are rejected. Among the saved real characters available offline, no cross-character pair passes
+yet: their pivots differ (y 56, 58, 59, 60 or 64), one imported character family has swapped labels, and their move
+sets differ.
 
 Sharing covers this browser origin's saved characters only; there is no account or cloud sync. Clearing browser storage
 can lose unexported work.

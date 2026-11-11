@@ -885,7 +885,7 @@ const shiftMask = (m: Uint8Array, w: number, dx: number, dy: number) => {
 	return o;
 };
 /** Mean px position of keypoint labels on a (padded) canvas. */
-const kpAt = (
+export const kpAt = (
 	k: Keypoint[] | undefined,
 	labels: string[],
 	cell: { w: number; h: number },
@@ -1534,7 +1534,7 @@ function bestShift(B: Img, C: Img, route: Route): [number, number] {
 	return best;
 }
 /** Translate an image by (dx, dy) px (never resampled; px moved off the canvas are dropped). */
-function translate(im: Img, dx: number, dy: number): Img {
+export function translate(im: Img, dx: number, dy: number): Img {
 	const o = makeImg(im.w, im.h);
 	for (let y = 0; y < im.h; y++)
 		for (let x = 0; x < im.w; x++) {

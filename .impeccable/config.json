@@ -12,6 +12,24 @@
         ],
         "createdAt": "2026-11-10T19:50:51.299Z",
         "reason": "agent triage: copy.ts is a TypeScript data module with no <img> markup; L42 is a closing brace of a stable-stringify helper"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "app/src/lib/equipment/refit.ts"
+        ],
+        "createdAt": "2026-11-11T04:50:26.968Z",
+        "reason": "agent triage: refit.ts is a TypeScript data module with no markup; the flagged lines are the generic type Promise<Img>"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "app/test/unit/shared-refit.test.ts"
+        ],
+        "createdAt": "2026-11-11T04:52:39.038Z",
+        "reason": "agent triage: TypeScript unit test with no markup; the flagged line is the generic type Promise<Img>"
       }
     ]
   }

@@ -33,8 +33,12 @@ Living document: status and decisions. Open tasks live on the [PixelDoll board](
   other characters". An identical body gets a free exact copy (an ordinary, independent item); a different body gets
   "Make for <character>", the normal priced New item. This replaced the design library, design ZIPs and the paid
   cross-body fit (old records are deleted; history in the
-  [verification report](docs/testing/shared-equipment-2026-10-22.md)). A free joint-anchored fit for held items is the
-  next phase.
+  [verification report](docs/testing/shared-equipment-2026-10-22.md)). Decision (2026-11-10): Main hand / Off hand
+  items on a different body of the same canvas, pivot and moves get a free joint-shift re-fit (each frame moved by the
+  wrist offset), marked Needs a look; any failing frame rejects the item. Evidence (offline study of real stored
+  characters): authored moves passed 23 of 27 frames and walks 24 to 30 of 36 with forearm angle <= 15 degrees, body
+  overlap >= 0.7 and area >= 0.8 of standing; head items passed 0% and stay excluded; one import had swapped hand labels,
+  so a south-view handedness check rejects it. Limits in docs/known-issues.md.
 - **PixelLab credits:** the ≈212 balance was an earlier free-GET snapshot, not the balance after subsequent shared-fit
   tests. Shield validation spent 99 generations (34 + 65); later fitting can report USD as well as generations, with
   three unknown Cast measurement outcomes retained without resubmission. Professional-audit tests also changed the

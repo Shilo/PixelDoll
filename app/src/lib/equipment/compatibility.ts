@@ -5,7 +5,7 @@ import { layerFrame } from '../compose/compose.ts';
 import { cellKey, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import { stableStringify } from '../image/hash.ts';
 import { canPose, SLOTS } from '../items/items.ts';
-import type { Item, Layer, Manifest } from '../store/manifest.ts';
+import type { CellKey, Item, Layer, Manifest } from '../store/manifest.ts';
 
 export interface CellMatch {
 	target: string;
@@ -38,15 +38,31 @@ export async function cellId(
 	const id = src ? await cellId(m, layer, anim, src, i, flip) : null;
 	return id && flip(id);
 }
-const bodyOf = (m: Manifest) => m.items.find((it) => it.id === m.rig.baseItem);
+export const bodyOf = (m: Manifest) => m.items.find((it) => it.id === m.rig.baseItem);
 const geometry = (m: Manifest) =>
 	stableStringify({
 		cell: m.rig.cell,
 		pivot: m.rig.pivot,
 		body: bodyOf(m) && layerFrame(m.rig, bodyOf(m)!.layers[0])
 	});
+/** Same canvas, pivot and body layer frame, and the same camera when both record one. */
+export const sameGeometry = (source: Manifest, target: Manifest) =>
+	geometry(source) === geometry(target) &&
+	(!source.rig.view || !target.rig.view || source.rig.view === target.rig.view) &&
+	(!source.rig.template || !target.rig.template || source.rig.template === target.rig.template);
 const slotOf = (m: Manifest, id: string) =>
 	m.slots.find((s) => s.id === id) ?? SLOTS.find((s) => s.id === id);
+/** The target draws the slot like the source: same class and anchor. */
+export const sameSlot = (source: Manifest, target: Manifest, id: string) => {
+	const slot = slotOf(target, id),
+		from = source.slots.find((s) => s.id === id);
+	return !!slot && !!from && slot.class === from.class && slot.anchor === from.anchor;
+};
+/** The item covers a cell of its character (a mirrored view through its drawn source view). */
+export const covered = (m: Manifest, item: Item, anim: string, dir: DirectionName, i: number) =>
+	[dir, m.rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir].some((d) =>
+		item.coverage?.includes(cellKey(anim, d, i) as CellKey)
+	);
 
 export async function assessCopy(
 	source: Manifest,
@@ -59,9 +75,8 @@ export async function assessCopy(
 	if (!sb || !tb) throw new Error('A character is missing its frozen body.');
 	const sourceDir = (dir: DirectionName) =>
 		source.rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir;
-	const coverage = new Set<string>(item.coverage ?? []);
 	const covers = (anim: string, dir: DirectionName, i: number) =>
-		coverage.has(cellKey(anim, dir, i)) || coverage.has(cellKey(anim, sourceDir(dir), i));
+		covered(source, item, anim, dir, i);
 	const hashAt = (m: Manifest, layer: Layer, anim: string, dir: DirectionName, i: number) =>
 		cellId(m, layer, anim, dir, i, flip);
 	// The equipment raster of every layer: equal signatures are interchangeable, different ones are an ambiguous choice.
@@ -78,13 +93,7 @@ export async function assessCopy(
 		item.layers.some(
 			(l) => (l.cells?.[anim]?.[dir] ?? l.cells?.[anim]?.[sourceDir(dir)])?.length === cells
 		);
-	const sameGeometry =
-		geometry(source) === geometry(target) &&
-		(!source.rig.view || !target.rig.view || source.rig.view === target.rig.view) &&
-		(!source.rig.template || !target.rig.template || source.rig.template === target.rig.template);
-	const slot = slotOf(target, item.slot),
-		from = source.slots.find((s) => s.id === item.slot);
-	const slotMatches = !!slot && !!from && slot.class === from.class && slot.anchor === from.anchor;
+	const compatible = sameGeometry(source, target) && sameSlot(source, target, item.slot);
 	const targetDirs = target.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id);
 	const matches: CellMatch[] = [],
 		clipDirs: Record<string, DirectionName[]> = {};
@@ -123,7 +132,7 @@ export async function assessCopy(
 				bodies = await Promise.all(cells.map((i) => hashAt(target, tb.layers[0], ta.id, dir, i)));
 			if (!bodies.some(Boolean)) continue;
 			clipDirs[ta.id].push(dir);
-			if (bodies.some((b) => !b) || !sameGeometry || !slotMatches) continue;
+			if (bodies.some((b) => !b) || !compatible) continue;
 			const possible: { anim: string; signature: string }[] = [];
 			for (const sa of source.rig.animations) {
 				if (sa.cells !== ta.cells || !hasLayer(sa.id, dir, sa.cells)) continue;

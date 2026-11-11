@@ -111,6 +111,11 @@ never spends anything.
 - **Different body:** pixel layers drawn for one body do not fit another. The tile shows "Made for <character>. It
   doesn't fit <this character> yet." with **Make for <this character>**, which opens **New item** with the same
   category, description and name. Its price is shown there before anything is generated.
+- **Main hand and Off hand on a different body:** when both characters have the same frame size and standing point and
+  share the item's moves, tapping the tile adds a free copy moved to this character's hand in every frame, then shows
+  "Added <item> from <character>. Check it in each move." Its details mark it **Needs a look** and offer **Make for
+  <this character>** for a version made for this body. When any frame does not line up, the tile offers **Make for
+  <this character>** as above.
 
 Moves the copy lacks here, like any item, show a missing-frames notice with a priced **Make it**. Deleting a character
 only stops its items from appearing; copies already added to other characters stay. Items are shared within this

@@ -307,12 +307,19 @@
 				onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button
 			>
 			{#if !isDemo() && it.prompt}
+				<!-- A fitted copy is remade for this body like any shared item that does not fit it. -->
 				<button
 					class="bu-action btn"
 					data-variant="outline"
 					onclick={() =>
-						withKey(() => openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt }))}
-					><RefreshCw size={14} />Try again</button
+						withKey(() =>
+							openNewItem(groupOf(it.slot).id, {
+								slot: it.slot,
+								prompt: it.prompt,
+								name: it.fittedFrom ? it.name : undefined
+							})
+						)}
+					><RefreshCw size={14} />{it.fittedFrom && m ? `Make for ${m.name}` : 'Try again'}</button
 				>
 			{/if}
 			{#if !isDemo()}

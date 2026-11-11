@@ -995,7 +995,8 @@ export async function refreshShared() {
 			shared.error = `Could not read items from your other characters: ${(e as Error).message}`;
 	}
 }
-/** Free: wear a copy when the bodies match. Otherwise select the entry, so the wardrobe offers to make it for this character. */
+/** Free: wear a copy when the bodies match, or a re-fitted copy of a held item to check. Otherwise select the entry, so the
+ *  wardrobe offers to make it for this character. */
 export async function addShared(entry: SharedItem) {
 	if (isDemo() || shared.adding) return;
 	const projectId = doc.id,
@@ -1011,7 +1012,9 @@ export async function addShared(entry: SharedItem) {
 		}
 		await openProject(projectId, { quiet: true });
 		if (doc.id === projectId) wear(item.id);
-		toast(`Added ${item.name} from ${entry.sourceName}.`);
+		toast(
+			`Added ${item.name} from ${entry.sourceName}.${item.fittedFrom ? ' Check it in each move.' : ''}`
+		);
 	} catch (e) {
 		toast(`Could not add ${entry.item.name}: ${(e as Error).message}`, { tone: 'danger' });
 	} finally {
