@@ -53,6 +53,8 @@
 		}
 	});
 	const plan = $derived(planned.plan);
+	const OFF_HAND_HINT = 'Shields and bows usually go in the off hand.';
+	const offHandHint = $derived(group === 'Main hand' && namesOffHandItem(prompt));
 
 	async function make(i: typeof input, consent?: Parameters<typeof startItem>[1]) {
 		formDrafts.item = undefined;
@@ -167,6 +169,11 @@
 						>
 					{/each}
 				</div>
+				{#if group === 'Main hand' || group === 'Off hand'}<p class="faint small">
+						Main hand is the character’s right hand; Off hand is the left.
+					</p>{/if}
+				<!-- Always present and only filled while the hint shows: announced once, not on every keystroke. -->
+				<span class="sr" aria-live="polite">{offHandHint ? OFF_HAND_HINT : ''}</span>
 			</div>
 			<label class="field">
 				<span class="label">What is it?</span>
@@ -177,8 +184,8 @@
 					placeholder="e.g. {g.ideas[0]?.label ?? 'a leather hat'}"
 					maxlength="300"></textarea>
 			</label>
-			{#if group === 'Main hand' && namesOffHandItem(prompt)}<p class="notice small" role="status">
-					<Info size={16} /><span>Shields and bows are held in the off hand.</span><button
+			{#if offHandHint}<p class="notice small">
+					<Info size={16} /><span>{OFF_HAND_HINT}</span><button
 						class="bu-action btn sm"
 						data-variant="outline"
 						onclick={() => (group = 'Off hand')}>Use Off hand</button

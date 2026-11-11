@@ -425,6 +425,11 @@ export const cellKeypoints = (rig: Rig, key: string) => {
 	const [a, d, i] = key.split('/') as [string, DirectionName, string];
 	return clipKeypoints(rig, a, d)?.[+i];
 };
+/** Joints of one posed cell as drawn: measured on its frozen frame when complete, else the requested keypoints. */
+export const observedKeypoints = (rig: Rig, anim: string, dir: DirectionName, i: number) => {
+	const measured = rig.animations.find((a) => a.id === anim)?.sources?.[dir]?.measured?.[i];
+	return hasAll(measured) ? measured : clipKeypoints(rig, anim, dir)?.[i];
+};
 /** NECK y of a cell on its (padded) canvas, pixel-edge: posed cells use their stored keypoints, standing cells the rest view's. */
 export const neckY = (rig: Rig, key: string, pad = 0): number | undefined => {
 	const [a, d] = key.split('/') as [string, DirectionName],
@@ -2936,11 +2941,7 @@ export function dirGate(
 				design = keys[dir];
 			if (!c.posed || !design || action(anim, dir)) continue;
 			const rest = rig.rest?.[dir]?.keypoints,
-				pose = cellKeypoints(rig, c.key);
-			const measured = rig.animations.find((a) => a.id === anim)?.sources?.[dir]?.measured?.[
-				+frame
-			];
-			const observed = hasAll(measured) ? measured : pose;
+				observed = observedKeypoints(rig, anim, dir, +frame);
 			if (
 				missingLowerGarment(
 					design,

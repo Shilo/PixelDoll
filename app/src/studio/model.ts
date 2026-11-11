@@ -431,6 +431,28 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
 	return [...new Set(r.map(plainReason))];
 }
 
+/** Where to look at a free re-fit of another character's item, in plain words: one line per move and direction whose
+ *  frames failed a check. */
+export function refitReasons(m: Manifest, it: Item): string[] {
+	if (!it.refit) return [];
+	const from = it.copiedFrom?.name ?? 'another character',
+		ids = m.rig.animations.map((a) => a.id);
+	const check = {
+		angle: `the forearm points another way than on ${from}`,
+		body: 'the grip may float off the body',
+		hidden: `${from}’s body hid part of the item there`
+	};
+	const list = (xs: (string | number)[]) =>
+		xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : `${xs[0]}`;
+	return [
+		`Fitted from ${from}’s item without generating; check each move.`,
+		...it.refit.map(
+			(n) =>
+				`${moveLabel(n.anim, ids)} facing ${n.dir.replaceAll('-', ' ')}, ${n.frames.length > 1 ? 'frames' : 'frame'} ${list(n.frames.map((f) => f + 1))}: ${list(n.checks.map((c) => check[c]))}.`
+		)
+	];
+}
+
 export const fmtGens = (n: number) => `${Math.round(n * 10) / 10} gens`;
 /** Appended to a reported spend: calls PixelLab did not price are unknown, never $0. */
 export const unknownCostText = (calls = 0) => (calls ? ` + ${calls} unknown` : '');

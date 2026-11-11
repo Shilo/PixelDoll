@@ -164,7 +164,7 @@ export function initUi() {
 		if (document.visibilityState === 'hidden') {
 			keepUnsaved();
 			void flushSave();
-		}
+		} else void refreshShared(); // characters may have changed in another tab meanwhile
 	};
 	const leave = () => {
 		keepUnsaved();
@@ -384,12 +384,22 @@ export async function refreshProjects(): Promise<boolean> {
 				tone: 'danger'
 			}
 		);
-		return 0;
+		return { designs: 0, other: 0 };
 	});
-	if (removed)
-		toast(
-			`Removed ${removed} saved ${removed === 1 ? 'item' : 'items'} made by an earlier preview version.`
-		);
+	// One notice: a second toast would replace the first.
+	const notices = [
+		...(removed.other
+			? [
+					`Removed ${removed.other} saved ${removed.other === 1 ? 'item' : 'items'} made by an earlier preview version.`
+				]
+			: []),
+		...(removed.designs
+			? [
+					`Removed ${removed.designs} saved ${removed.designs === 1 ? 'design' : 'designs'} from an earlier version. Items from your other characters now appear in the wardrobe automatically.`
+				]
+			: [])
+	];
+	if (notices.length) toast(notices.join(' '));
 	const listed = await listProjects().catch((e: unknown) => {
 			console.error('projects', e);
 			toast(`Could not read your saved characters: ${(e as Error).message}`, { tone: 'danger' });
@@ -406,6 +416,8 @@ export async function refreshProjects(): Promise<boolean> {
 			savedAt: p.savedAt
 		}))
 	];
+	// Items of a character created, renamed or deleted here or in another tab.
+	void refreshShared();
 	// Drop unload snapshots of characters deleted here or in another tab (only when the listing is known to be complete).
 	if (listed)
 		try {
@@ -979,13 +991,13 @@ let sharedRequest = 0;
 /** Re-read the other characters' items for the open character (the demo receives none). */
 export async function refreshShared() {
 	const request = ++sharedRequest;
-	if (isDemo()) {
+	if (isDemo() || !store.project) {
 		shared.items = [];
 		shared.error = '';
 		return;
 	}
 	try {
-		const items = await listShared(doc.id, store.project?.manifest ?? null);
+		const items = await listShared(doc.id, store.project.manifest);
 		if (request !== sharedRequest) return;
 		shared.items = items;
 		shared.error = '';
@@ -996,7 +1008,7 @@ export async function refreshShared() {
 	}
 }
 /** Free: wear a copy when the bodies match, or a re-fitted copy of a held item to check. Otherwise select the entry, so the
- *  wardrobe offers to make it for this character. */
+ *  wardrobe offers to make it for this character. The tile stays busy until the list no longer offers what was added. */
 export async function addShared(entry: SharedItem) {
 	if (isDemo() || shared.adding) return;
 	const projectId = doc.id,
@@ -1013,8 +1025,11 @@ export async function addShared(entry: SharedItem) {
 		await openProject(projectId, { quiet: true });
 		if (doc.id === projectId) wear(item.id);
 		toast(
-			`Added ${item.name} from ${entry.sourceName}.${item.fittedFrom ? ' Check it in each move.' : ''}`
+			item.refit
+				? `Fitted ${item.name} from ${entry.sourceName} for free. Check it in each move.`
+				: `Copied ${item.name} from ${entry.sourceName}. No generations used.`
 		);
+		await refreshShared();
 	} catch (e) {
 		toast(`Could not add ${entry.item.name}: ${(e as Error).message}`, { tone: 'danger' });
 	} finally {
@@ -1152,6 +1167,7 @@ queue.subscribe((s) => {
 		(list) => {
 			if (driving || JSON.stringify(list) === mirrored) return;
 			setGens(list);
+			void refreshShared(); // the leader tab may have saved an item to another character
 			for (const g of gens)
 				if (g.phase === 'review' && !store.results[g.draft.spec.id]) void evalGen(g);
 		},
@@ -1188,13 +1204,15 @@ export function startupResumed() {
 	runWaiting();
 }
 
-export function startupFailed(error: unknown) {
+/** `reported`: the failure already showed its own notice. */
+export function startupFailed(error: unknown, reported = false) {
 	studioStartup = 'failed';
 	console.error('studio startup', error);
-	toast(
-		'PixelDoll could not finish loading your saved work. Reload or use update recovery if a new version is available.',
-		{ tone: 'danger' }
-	);
+	if (!reported)
+		toast(
+			'PixelDoll could not finish loading your saved work. Reload or use update recovery if a new version is available.',
+			{ tone: 'danger' }
+		);
 }
 
 interface ItemAttemptConsent {
@@ -1481,7 +1499,10 @@ export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
 				auto ? { quiet: true, ...(worn ? { wear: item.id } : {}) } : { wear: item.id }
 			);
 		}
-		if (doc.id !== g.draft.rigId) drop(g);
+		if (doc.id !== g.draft.rigId) {
+			drop(g);
+			void refreshShared(); // the new item is offered to the character in view
+		}
 		toast(auto ? `${item.name} saved` : `${item.name} added`);
 		return true;
 	} finally {

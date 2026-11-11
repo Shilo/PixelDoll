@@ -2,12 +2,15 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { acceptCopy } from '../../src/lib/equipment/copy.ts';
 import { refitShared } from '../../src/lib/equipment/refit.ts';
+import { listShared } from '../../src/lib/equipment/shared.ts';
 import { translate } from '../../src/lib/items/items.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash, DEFAULT_MOVE, type Keypoint, type Rig } from '../../src/lib/rig/rig.ts';
 import { loadProject } from '../../src/lib/store/project.ts';
+import { composeCell } from '../../src/lib/compose/compose.ts';
+import { creditsCsv } from '../../src/lib/export/generic.ts';
 import {
 	CURRENT_FORMAT,
 	type Item,
@@ -28,8 +31,10 @@ vi.mock('../../src/lib/store/db.ts', () => ({
 	updateCharacter: async (
 		id: string,
 		blobs: Map<string, Blob>,
-		fn: (record: unknown) => unknown
+		fn: (record: unknown) => unknown,
+		stored?: { keys: Iterable<string>; missing: (key: string) => Error }
 	) => {
+		for (const key of stored?.keys ?? []) if (!memory.blobs.has(key)) throw stored!.missing(key);
 		const record = fn(structuredClone(memory.records.get(id)));
 		for (const [hash, blob] of blobs) memory.blobs.set(hash, blob);
 		memory.records.set(id, structuredClone(record));
@@ -281,7 +286,8 @@ test('a held item on a body moved by a known offset moves by exactly that offset
 	const item = (await acceptCopy('rig-knight', 'sword', 'rig-squire'))!;
 	expect(item).not.toBeNull();
 	expect(item.id).not.toBe('sword');
-	expect(item.fittedFrom).toBe('Knight');
+	expect(item.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight' });
+	expect(item.refit).toEqual([]);
 	expect(item.qa?.status).toBe('warn');
 	expect(item.coverage).toEqual(['default/south/0', 'slash/south/0', 'slash/south/1']);
 	expect(item.dressed).toBeUndefined();
@@ -297,14 +303,47 @@ test('a held item on a body moved by a known offset moves by exactly that offset
 	expect((await loadProject('rig-knight')).project.manifest).toEqual(source.manifest);
 });
 
-test('a forearm at a different angle does not fit', async () => {
-	const source = await knight(),
-		target = await character({
+const turned = { 'RIGHT ELBOW': [21, 36] as Px, 'RIGHT ARM': [27, 37] as Px };
+test('a forearm at a different angle in more than a quarter of the frames does not fit', async () => {
+	// One of three frames.
+	expect(
+		await refit(await knight(), await character({ name: 'Fencer', at: [1, 0], slash1: turned }))
+	).toBeNull();
+});
+
+test('up to a quarter of the frames may fail a check: the copy names them for a look', async () => {
+	// One of five frames: the standing frame also dresses a still two-frame idle.
+	const fit = (await refit(
+		await knight(),
+		await character({
 			name: 'Fencer',
 			at: [1, 0],
-			slash1: { 'RIGHT ELBOW': [21, 36], 'RIGHT ARM': [27, 37] }
-		});
-	expect(await refit(source, target)).toBeNull();
+			slash1: turned,
+			extra: { id: 'idle', at: {} }
+		})
+	))!;
+	expect(fit).not.toBeNull();
+	expect(fit.item.coverage).toHaveLength(5);
+	expect(fit.item.refit).toEqual([{ anim: 'slash', dir: 'south', frames: [1], checks: ['angle'] }]);
+	// The failing frame still moves with the wrist.
+	const source = await knight();
+	expect(cellsOf(fit.item, fit.images!)['slash/south/1']).toEqual(
+		translate(source.images.get(source.manifest.items[1].layers[0].cells!.slash.south![1]!)!, 1, 0)
+	);
+});
+
+test('measured joints place the item where the body was drawn', async () => {
+	const source = await knight(),
+		target = await character({ name: 'Squire', at: [1, 0] });
+	// Re-estimated on the frozen frames: the drawn slash stands 1 px further right than requested.
+	const slash = target.manifest.rig.animations.find((a) => a.id === 'slash')!.sources!.south!;
+	slash.measured = [pose(2, 0), pose(2, 0, { 'RIGHT ARM': [27, 37] })];
+	const fit = (await refit(source, target))!,
+		before = cellsOf(source.manifest.items[1], source.images),
+		after = cellsOf(fit.item, fit.images!);
+	expect(after['default/south/0']).toEqual(translate(before['default/south/0']!, 1, 0));
+	expect(after['slash/south/0']).toEqual(translate(before['slash/south/0']!, 2, 0));
+	expect(after['slash/south/1']).toEqual(translate(before['slash/south/1']!, 2, 0));
 });
 
 test('a character whose hand labels are swapped does not fit', async () => {
@@ -353,10 +392,47 @@ test('only held items re-fit, and never one that hides body pixels', async () =>
 	expect(await refit(source, target)).toBeNull();
 });
 
-test('a different canvas or pivot never re-fits', async () => {
+test('a different pivot re-fits through each rig’s own pivot; a different canvas never does', async () => {
 	const source = await knight(),
-		target = await character({ name: 'Squire', at: [1, 0] });
-	target.manifest.rig.pivot = { x: 32, y: 61 };
+		target = await character({ name: 'Squire', at: [2, 1] });
+	target.manifest.rig.pivot = { x: 31, y: 62 };
+	const fit = (await refit(source, target))!;
+	expect(fit).not.toBeNull();
+	// The padded held layer keeps its 16 px around the target's pivot, so it still lines up with the body by pivot.
+	expect(fit.item.layers[0].cell).toEqual({ w: 96, h: 96 });
+	expect(fit.item.layers[0].pivot).toEqual({ x: 31 + 16, y: 62 + 16 });
+	const before = cellsOf(source.manifest.items[1], source.images),
+		after = cellsOf(fit.item, fit.images!);
+	for (const [key, im] of Object.entries(before)) expect(after[key]).toEqual(translate(im!, 2, 1));
+	// Composed on each body's own canvas, the sword sits on the body exactly as on the source.
+	const worn = (p: Project, item: Item, images: Map<Sha256, Img>) =>
+		composeCell(
+			{
+				...p,
+				images: new Map([...p.images, ...images]),
+				manifest: { ...p.manifest, items: [p.manifest.items[0], item] }
+			},
+			{ body: 'base', main_hand: item.id },
+			'slash',
+			'south',
+			1
+		);
+	const onBody = (im: Img) => {
+		const px = (rgba: string) => {
+			const out: [number, number][] = [];
+			for (let y = 0; y < im.h; y++)
+				for (let x = 0; x < im.w; x++)
+					if (im.data.subarray((y * im.w + x) * 4, (y * im.w + x) * 4 + 4).join() === rgba)
+						out.push([x, y]);
+			return out;
+		};
+		const [x0, y0] = px('180,120,90,255')[0];
+		return px('200,200,210,255').map(([x, y]) => `${x - x0},${y - y0}`);
+	};
+	const placed = onBody(worn(source, source.manifest.items[1], new Map()));
+	expect(placed.length).toBeGreaterThan(0);
+	expect(onBody(worn(target, fit.item, fit.images!))).toEqual(placed);
+	target.manifest.rig.cell = { w: 72, h: 72 };
 	expect(await refit(source, target)).toBeNull();
 });
 
@@ -481,4 +557,90 @@ test('the bench adventurer’s real sword re-fits a body standing 1 px to the si
 	const out = cellsOf(fit.item, fit.images!);
 	expect(Object.keys(out).sort()).toEqual([...sword.keys()].sort());
 	for (const [key, im] of sword) expect(out[key]).toEqual(translate(im, 1, 0));
+});
+
+// ---------- the wardrobe list ----------
+const dated = (p: Project, at: string, prompt?: string) => {
+	const sword = p.manifest.items[1];
+	sword.provenance = [{ createdAt: at, produced: [] } as never];
+	if (prompt) Object.assign(sword, { prompt, name: prompt.replace(/^an? /, '') });
+	return p;
+};
+
+test('the list says how each item comes to this character, prefers the copy that fits and lists free items first', async () => {
+	const page = await character({ name: 'Page' });
+	// Only accepted items count as this character's own: a draft of the same request does not hide one.
+	page.manifest.items.push({
+		...structuredClone((await knight()).manifest.items[1]),
+		id: 'draft',
+		status: 'draft',
+		prompt: 'a mirror sword'
+	});
+	await store('rig-page', page);
+	// The same request twice: the older exact copy beats the newer re-fit.
+	await store('rig-knight', dated(await knight(), '2026-11-02T00:00:00.000Z'));
+	await store(
+		'rig-squire',
+		dated(await character({ name: 'Squire', at: [2, 1], sword: true }), '2026-11-05T00:00:00.000Z')
+	);
+	await store(
+		'rig-fencer',
+		dated(
+			await character({ name: 'Fencer', at: [1, 0], sword: true }),
+			'2026-11-03T00:00:00.000Z',
+			'a fencing sword'
+		)
+	);
+	// Hand labels swapped: made new; newest, but listed after the free ones.
+	await store(
+		'rig-mirror',
+		dated(
+			await character({ name: 'Mirror', at: [1, 0], swapped: true, sword: true }),
+			'2026-11-09T00:00:00.000Z',
+			'a mirror sword'
+		)
+	);
+	const list = await listShared('rig-page', page.manifest);
+	expect(list.map((x) => [x.sourceName, x.item.prompt, x.fit])).toEqual([
+		['Fencer', 'a fencing sword', 'refit'],
+		['Knight', 'a steel sword', 'copy'],
+		['Mirror', 'a mirror sword', 'remake']
+	]);
+});
+
+test('a second tap while the first copy is saving returns the copy already added', async () => {
+	await store('rig-knight', await knight());
+	await store('rig-squire', await character({ name: 'Squire', at: [2, 1] }));
+	const [a, b] = await Promise.all([
+		acceptCopy('rig-knight', 'sword', 'rig-squire'),
+		acceptCopy('rig-knight', 'sword', 'rig-squire')
+	]);
+	expect(b!.id).toBe(a!.id);
+	const items = (await loadProject('rig-squire')).project.manifest.items;
+	expect(items.filter((it) => it.slot === 'main_hand')).toHaveLength(1);
+});
+
+test('an exact copy references the stored images without rewriting them, and fails if one is gone', async () => {
+	const source = await knight();
+	await store('rig-knight', source);
+	await store('rig-page', await character({ name: 'Page' }));
+	const blade = source.manifest.items[1].layers[0].cells!.slash.south![1]!.slice(7);
+	const kept = memory.blobs.get(blade);
+	memory.blobs.delete(blade);
+	await expect(acceptCopy('rig-knight', 'sword', 'rig-page')).rejects.toThrow(
+		`An image of Steel sword is missing (${blade.slice(0, 12)}).`
+	);
+	memory.blobs.set(blade, kept!);
+	const item = (await acceptCopy('rig-knight', 'sword', 'rig-page'))!;
+	expect(item.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight' });
+	expect(item.refit).toBeUndefined();
+	expect(memory.blobs.get(blade)).toBe(kept);
+	// Credits keep the source's calls for attribution, labeled as copied so they are not counted as spent here.
+	const m = (await loadProject('rig-page')).project.manifest;
+	m.items.find((it) => it.id === item.id)!.provenance = [
+		{ endpoint: '/x', jobId: 'j1', seed: 1, createdAt: 'then', produced: [] } as never
+	];
+	expect(creditsCsv(m)).toContain(
+		'"PixelLab (https://pixellab.ai); made for Knight and copied here without generating"'
+	);
 });

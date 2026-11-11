@@ -20,7 +20,7 @@ import type {
 } from '../store/manifest.ts';
 import { stableStringify } from '../image/hash.ts';
 import { assessCopy, cellId, type CopyAssessment, type Flip } from './compatibility.ts';
-import { refitShared } from './refit.ts';
+import { canRefit, refitShared, refittable } from './refit.ts';
 
 export interface CopyCandidate {
 	item: Item;
@@ -168,9 +168,25 @@ export function copyShell(
 	return { item, materials };
 }
 
+/** Same slot and same request: the same item for the wardrobe's purposes. */
+export const itemKey = (item: Item) =>
+	`${item.slot}\n${(item.prompt.trim() || item.name).toLowerCase().replace(/\s+/g, ' ')}`;
+
+/** How another character's item comes to `target`: an exact free copy, a free approximate re-fit, or a new item made for it. */
+export type SharedFit = 'copy' | 'refit' | 'remake';
+export async function sharedFit(
+	source: Manifest,
+	item: Item,
+	target: Manifest,
+	load: (hash: Sha256) => Promise<Img>
+): Promise<SharedFit> {
+	if ((await assessCopy(source, item, target, flipper(load).flip)).fits) return 'copy';
+	return refittable(item) && (await canRefit(source, item, target, load)) ? 'refit' : 'remake';
+}
+
 /** Copy an item of another saved character into `targetId` in one transaction: exact on an identical body, otherwise a free
- *  approximate fit when one exists (marked for review). Returns the new item, or null when it does not fit (nothing is
- *  written). Never generates anything. */
+ *  approximate fit when one exists (marked for review). Returns the new item, the copy this character already holds of it
+ *  (a second tap while the first was saving), or null when it does not fit (nothing is written). Never generates anything. */
 export async function acceptCopy(
 	sourceId: string,
 	itemId: string,
@@ -189,40 +205,63 @@ export async function acceptCopy(
 	if (!source || !original) throw new Error('That character or item was removed.');
 	if (!target) throw new Error('This character was removed.');
 	const variants = source.dress?.current?.variants ?? source.manifest.presets[0]?.variants ?? {};
+	const missing = (h: string) =>
+		new Error(
+			`An image of ${original.name} is missing (${h.replace('sha256:', '').slice(0, 12)}).`
+		);
 	const load = async (h: Sha256) => {
 		const blob = await db.getBlob(h.slice(7));
-		if (!blob) throw new Error(`An image of ${original.name} is missing (${h.slice(7, 19)}).`);
+		if (!blob) throw missing(h);
 		return decodePng(blob);
 	};
 	const { flip, made } = flipper(load);
-	let candidate = await prepareCopy(source.manifest, itemId, variants, target.manifest, flip);
-	if (!candidate) {
-		candidate = await refitShared(source.manifest, itemId, variants, target.manifest, load);
-		if (!candidate) return null;
-		candidate.item.fittedFrom = source.manifest.name;
-		if (candidate.item.qa) candidate.item.qa.status = 'warn';
-	}
+	const candidate =
+		(await prepareCopy(source.manifest, itemId, variants, target.manifest, flip)) ??
+		(await refitShared(source.manifest, itemId, variants, target.manifest, load));
+	if (!candidate) return null;
 	const { item, materials } = candidate;
-	// Store the referenced blobs with the copy, so a concurrent deletion and cleanup of the source cannot sweep them.
-	const blobs = new Map<string, Blob>();
+	// The paid calls were made for the first character an item was copied from.
+	item.copiedFrom = original.copiedFrom ?? { id: sourceId, name: source.manifest.name };
+	if (item.refit && item.qa) item.qa.status = 'warn';
+	// New images (flipped views, moved frames) are stored with the copy; the others are already stored and only checked, in the
+	// same transaction, so a concurrent deletion and cleanup of the source cannot sweep them.
+	const blobs = new Map<string, Blob>(),
+		stored: string[] = [];
 	for (const h of itemHashes(item)) {
-		const im = made.get(h) ?? candidate.images?.get(h),
-			blob = im
-				? new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
-				: await db.getBlob(h.slice(7));
-		if (!blob) throw new Error(`An image of ${original.name} is missing (${h.slice(7, 19)}).`);
-		blobs.set(h.slice(7), blob);
+		const im = made.get(h) ?? candidate.images?.get(h);
+		if (im)
+			blobs.set(
+				h.slice(7),
+				new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
+			);
+		else stored.push(h.slice(7));
 	}
 	const body = (m: Manifest) =>
 		stableStringify({ rig: m.rig, body: m.items.find((it) => it.id === m.rig.baseItem) });
-	await db.updateCharacter<StoredProject>(targetId, blobs, (rec) => {
-		if (!rec) throw new Error('This character was removed.');
-		if (body(rec.manifest) !== body(target.manifest))
-			throw new Error('This character changed while the item was being added. Try again.');
-		putItem(rec.manifest, item, slotLadder(rec.manifest.rig));
-		rec.manifest.materials.push(...materials);
-		rec.savedAt = new Date().toISOString();
-		return rec;
-	});
-	return item;
+	let added = item;
+	await db.updateCharacter<StoredProject>(
+		targetId,
+		blobs,
+		(rec) => {
+			if (!rec) throw new Error('This character was removed.');
+			if (body(rec.manifest) !== body(target.manifest))
+				throw new Error('This character changed while the item was being added. Try again.');
+			const held = rec.manifest.items.find(
+				(it) =>
+					it.status === 'accepted' &&
+					it.copiedFrom?.id === item.copiedFrom!.id &&
+					itemKey(it) === itemKey(item)
+			);
+			if (held) {
+				added = held;
+				return rec;
+			}
+			putItem(rec.manifest, item, slotLadder(rec.manifest.rig));
+			rec.manifest.materials.push(...materials);
+			rec.savedAt = new Date().toISOString();
+			return rec;
+		},
+		{ keys: stored, missing: (key) => missing(key) }
+	);
+	return added;
 }

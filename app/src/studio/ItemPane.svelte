@@ -17,6 +17,7 @@
 		plainReason,
 		moveLabel,
 		qaReasons,
+		refitReasons,
 		unknownCostText
 	} from './model.ts';
 	import {
@@ -221,9 +222,7 @@
 		...new Set((it?.designWarnings ?? []).flatMap((s) => s.split('; ')).map(plainReason))
 	]);
 	const reasons = $derived([
-		...(it?.fittedFrom
-			? [`Fitted from ${it.fittedFrom}’s item without generating; check each move.`]
-			: []),
+		...(m && it ? refitReasons(m, it) : []),
 		...(it?.qa
 			? qaReasons(
 					it.qa,
@@ -316,10 +315,9 @@
 							openNewItem(groupOf(it.slot).id, {
 								slot: it.slot,
 								prompt: it.prompt,
-								name: it.fittedFrom ? it.name : undefined
+								name: it.refit ? it.name : undefined
 							})
-						)}
-					><RefreshCw size={14} />{it.fittedFrom && m ? `Make for ${m.name}` : 'Try again'}</button
+						)}><RefreshCw size={14} />{it.refit ? `Make one for ${m.name}` : 'Try again'}</button
 				>
 			{/if}
 			{#if !isDemo()}
@@ -587,7 +585,9 @@
 					{/if}
 					<dt>Source calls</dt>
 					<dd>
-						{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{usdSpent
+						{it.copiedFrom
+							? `Made for ${it.copiedFrom.name}; copied here for free · `
+							: ''}{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{usdSpent
 							? `$${usdSpent.toFixed(3)} · `
 							: ''}{unknownSpent ? `${unknownSpent} unknown cost · ` : ''}{it.provenance.length} PixelLab
 						{it.provenance.length === 1 ? 'call' : 'calls'}

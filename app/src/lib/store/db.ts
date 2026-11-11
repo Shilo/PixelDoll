@@ -62,20 +62,28 @@ export async function putCharacter(
 	});
 }
 
-/** Publish a completed rig without a gap between new image blobs and their project references. */
+/** Publish a completed rig without a gap between new image blobs and their project references. `stored`: blobs the record
+ *  references that are already stored; they are checked in the same transaction, so a concurrent cleanup cannot sweep them
+ *  between the check and the write. */
 export async function updateCharacter<T>(
 	id: string,
 	blobs: Map<string, Blob>,
-	fn: (record: T | undefined) => T
+	fn: (record: T | undefined) => T,
+	stored?: { keys: Iterable<string>; missing: (key: string) => Error }
 ): Promise<void> {
 	const db = await open();
 	return new Promise((res, rej) => {
 		const t = db.transaction(['projects', 'blobs'], 'readwrite'),
 			projects = t.objectStore('projects'),
-			read = projects.get(id);
-		let error: unknown;
-		read.onsuccess = () => {
+			read = projects.get(id),
+			keys = [...(stored?.keys ?? [])];
+		let error: unknown,
+			pending = keys.length + 1,
+			missing: string | undefined;
+		const write = () => {
+			if (--pending) return;
 			try {
+				if (missing) throw stored!.missing(missing);
 				const record = fn(read.result);
 				for (const [hash, blob] of blobs) t.objectStore('blobs').put(blob, hash);
 				projects.put(record, id);
@@ -84,6 +92,14 @@ export async function updateCharacter<T>(
 				t.abort();
 			}
 		};
+		read.onsuccess = write;
+		for (const key of keys) {
+			const count = t.objectStore('blobs').count(key);
+			count.onsuccess = () => {
+				if (!count.result) missing ??= key;
+				write();
+			};
+		}
 		t.oncomplete = () => res();
 		t.onerror = t.onabort = () => rej(error ?? t.error);
 	});

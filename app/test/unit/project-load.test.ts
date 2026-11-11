@@ -261,7 +261,7 @@ test('records in an earlier format and retired shared-design records are deleted
 		];
 	vi.spyOn(db, 'all').mockResolvedValue(records);
 	const del = vi.spyOn(db, 'del').mockResolvedValue(undefined);
-	expect(await deleteOutdated()).toBe(5);
+	expect(await deleteOutdated()).toEqual({ designs: 3, other: 2 });
 	expect(del.mock.calls.map(([, id]) => id)).toEqual([
 		'rig-old',
 		'equipment-design:old',
@@ -274,13 +274,13 @@ test('records in an earlier format and retired shared-design records are deleted
 test('an unfinished creation saved before direction plans is removed; a current one stays', async () => {
 	vi.spyOn(db, 'all').mockResolvedValue([{ id: 'studio-create', spec: { name: 'Old', size: 48 } }]);
 	const del = vi.spyOn(db, 'del').mockResolvedValue(undefined);
-	expect(await deleteOutdated()).toBe(1);
+	expect(await deleteOutdated()).toEqual({ designs: 0, other: 1 });
 	expect(del.mock.calls.map(([, id]) => id)).toEqual(['studio-create']);
 	del.mockClear();
 	vi.spyOn(db, 'all').mockResolvedValue([
 		{ id: 'studio-create', spec: { name: 'New', size: 48, directions: [{ id: 'south' }] } }
 	]);
-	expect(await deleteOutdated()).toBe(0);
+	expect(await deleteOutdated()).toEqual({ designs: 0, other: 0 });
 	expect(del).not.toHaveBeenCalled();
 });
 
@@ -298,7 +298,7 @@ test('removing an outdated character also removes its drafts, as deleting it wou
 	vi.spyOn(db, 'all').mockResolvedValue(records);
 	const del = vi.spyOn(db, 'del').mockResolvedValue(undefined);
 	const put = vi.spyOn(db, 'put').mockResolvedValue(undefined);
-	expect(await deleteOutdated()).toBe(1);
+	expect(await deleteOutdated()).toEqual({ designs: 0, other: 1 });
 	expect(del.mock.calls.map(([, id]) => id)).toEqual(['rig-old']);
 	expect(put.mock.calls).toEqual([
 		['projects', 'studio-drafts', { ...drafts, gens: [drafts.gens[1]] }],

@@ -100,22 +100,26 @@ exported like any move. "Default" can't be used as the name of another move.
 
 ## Use items from your other characters
 
-Every finished item of your other saved characters on this device appears in the wardrobe, under **From other
+Every finished item of your other saved characters on this device appears in the wardrobe, under **From your other
 characters** in its category. Each tile shows the item as that character wears it, with a "from <character>" caption.
-Items this character already has (same slot and description) are not repeated. Nothing needs saving, and showing them
+Items this character already has (same slot and description) are not repeated; when several characters have the same
+item, the one that fits this character best is listed. Free items come first. Nothing needs saving, and showing them
 never spends anything.
 
-- **Same body** (an editable copy of the same character, or a re-import): tapping the tile adds an exact copy and wears
-  it, for free. The copy is an ordinary item of this character with its own colors, starting from the colors the other
-  character wears. Undo takes it off again; **Remove** in its details deletes it.
-- **Different body:** pixel layers drawn for one body do not fit another. The tile shows "Made for <character>. It
-  doesn't fit <this character> yet." with **Make for <this character>**, which opens **New item** with the same
-  category, description and name. Its price is shown there before anything is generated.
-- **Main hand and Off hand on a different body:** when both characters have the same frame size and standing point and
-  share the item's moves, tapping the tile adds a free copy moved to this character's hand in every frame, then shows
-  "Added <item> from <character>. Check it in each move." Its details mark it **Needs a look** and offer **Make for
-  <this character>** for a version made for this body. When any frame does not line up, the tile offers **Make for
-  <this character>** as above.
+- **Same body** (an editable copy of the same character, or a re-import): the tile has no extra caption. Tapping it adds
+  an exact copy and wears it, for free: "Copied <item> from <character>. No generations used." The copy is an ordinary
+  item of this character with its own colors, starting from the colors the other character wears. Undo takes it off
+  again; **Remove** in its details deletes it. Its details say the source calls were made for the other character and
+  copied here for free.
+- **Main hand and Off hand on a different body:** the tile says "Free · check fit" when both characters have the same
+  frame size and camera and share the item's moves. Tapping it adds a free copy moved to this character's hand in every
+  frame: "Fitted <item> from <character> for free. Check it in each move." Its details mark it **Needs a look**, name
+  the moves, directions and frames to check, and offer **Make one for <this character>** for a version made for this
+  body.
+- **Different body:** the tile says "Make new". Pixel layers drawn for one body do not fit another. After you tap it,
+  a message under the tile says "Drawn for <character>'s body, so it doesn't fit <this character>." with **Make one for
+  <this character>**, which opens **New item** with the same category, description and name. It is drawn new, so it may
+  look different; its price is shown there before anything is generated.
 
 Moves the copy lacks here, like any item, show a missing-frames notice with a priced **Make it**. Deleting a character
 only stops its items from appearing; copies already added to other characters stay. Items are shared within this
@@ -162,7 +166,7 @@ Open the character, then character menu → **Delete character…**. The confirm
 ## Add items
 
 In **Wardrobe**, pick a category (Head, Hair, Body, or **More** for Face, Legs, Feet, Back, Main hand and Off hand), then
-press **New <category> item**. Items of your other characters are listed below your own under **From other characters**.
+press **New <category> item**. Items of your other characters are listed below your own under **From your other characters**.
 **Main hand** is the character's right hand (a sword or staff) and **Off hand** the left hand (a shield, lantern or bow);
 one item of each can be worn together.
 

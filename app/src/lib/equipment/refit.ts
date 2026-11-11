@@ -1,11 +1,12 @@
-// A free, approximate fit of another character's held item (Main hand / Off hand) onto a different body of the same size:
-// every frame's layers move by the offset between the two bodies' wrists, never resampled. It is offered only when both
-// characters share the item's moves and every frame passes the grip checks below; head items never fit this way (head
-// sizes differ by 2 to 5 px on the same canvas). Offline study, 2026-11-10: authored moves passed 23 of 27 frames, walks
-// 24 to 30 of 36, and one imported character had its hand labels swapped. Never generates anything.
-import { layerFrame } from '../compose/compose.ts';
+// A free, approximate fit of another character's held item (Main hand / Off hand) onto a different body on the same canvas
+// size: every frame's layers move by the offset between the two bodies' wrists, never resampled. Each rig maps its keypoints
+// to the layer canvas through its own pivot, so the pivots may differ. It is offered only when both characters share the
+// item's moves and at most a quarter of the frames fail a grip check below; head items never fit this way (head sizes differ by
+// 2 to 5 px on the same canvas). Offline study, 2026-11-10: authored moves passed 23 of 27 frames, walks 24 to 30 of 36, and
+// one imported character had its hand labels swapped. Never generates anything.
+import { layerFrame, type Frame } from '../compose/compose.ts';
 import type { Img } from '../image/png.ts';
-import { clipKeypoints, kpAt, poseDist, translate } from '../items/items.ts';
+import { kpAt, observedKeypoints, poseDist, translate } from '../items/items.ts';
 import { actionOf } from '../rig/clips.ts';
 import {
 	cellHash,
@@ -17,18 +18,12 @@ import {
 	type Rig,
 	type Sha256
 } from '../rig/rig.ts';
-import type { Layer, Manifest, Preset } from '../store/manifest.ts';
-import {
-	bodyOf,
-	cellId,
-	covered,
-	sameGeometry,
-	sameSlot,
-	type CellMatch
-} from './compatibility.ts';
+import type { Item, Layer, Manifest, Preset, RefitNote } from '../store/manifest.ts';
+import { stableStringify } from '../image/hash.ts';
+import { bodyOf, cellId, covered, sameSlot, type CellMatch } from './compatibility.ts';
 import { copyShell, flipper, type CopyCandidate } from './copy.ts';
 
-/** Limits per frame, from the offline study. */
+/** Limits from the offline study. */
 export const REFIT = {
 	/** Elbow-to-wrist angle difference between the source and target frame (degrees). */
 	maxForearmDeg: 15,
@@ -37,9 +32,14 @@ export const REFIT = {
 	/** Item area against its standing frame in that direction (a frame where the body hid part of it). */
 	minArea: 0.8,
 	/** Mean joint distance (px) under which a frame counts as the standing pose. */
-	nearStandingPx: 1
+	nearStandingPx: 1,
+	/** Share of the target's frames that may fail the checks above and still be offered, marked for a look. */
+	maxFailing: 0.25
 };
 const HELD_ANCHOR: Record<string, 'LEFT' | 'RIGHT'> = { main_hand: 'RIGHT', off_hand: 'LEFT' };
+/** The item may re-fit onto other bodies: a held item that hides nothing of its own body. */
+export const refittable = (item: Item) =>
+	!!HELD_ANCHOR[item.slot] && !item.baseCut && !item.hides?.length;
 
 const mirrorOf = (rig: Rig, dir: DirectionName) =>
 	rig.directions.find((d) => d.id === dir)?.mirrorOf;
@@ -62,7 +62,7 @@ function standingMove(m: Manifest, dir: DirectionName): string | undefined {
 				matchesStanding(m.rig, a, drawn, body?.cells?.[a.id]?.[drawn]?.[0] ?? null)
 		)?.id;
 }
-/** Requested keypoints of one cell; a standing move uses its standing view's. */
+/** Joints of one cell as drawn (measured, else requested); a standing move uses its standing view's. */
 function keypointsAt(
 	m: Manifest,
 	anim: string,
@@ -72,7 +72,7 @@ function keypointsAt(
 	const src = mirrorOf(m.rig, dir);
 	if (src) return flipped(keypointsAt(m, anim, src, i));
 	return (
-		clipKeypoints(m.rig, anim, dir)?.[i] ??
+		observedKeypoints(m.rig, anim, dir, i) ??
 		(standingMove(m, dir) === anim ? m.rig.rest?.[dir]?.keypoints : undefined)
 	);
 }
@@ -96,22 +96,58 @@ const pixels = (im: Img | null) => {
 	for (let i = 3; im && i < im.data.length; i += 4) if (im.data[i]) n++;
 	return n;
 };
+/** No visible pixel of `im` leaves its canvas when moved by (dx, dy). */
+const staysOn = (im: Img, dx: number, dy: number) => {
+	for (let y = 0; y < im.h; y++)
+		for (let x = 0; x < im.w; x++)
+			if (im.data[(y * im.w + x) * 4 + 3]) {
+				const X = x + dx,
+					Y = y + dy;
+				if (X < 0 || Y < 0 || X >= im.w || Y >= im.h) return false;
+			}
+	return true;
+};
+/** Same canvas size and the same camera when both record one; the pivots may differ. */
+const sameCanvas = (source: Manifest, target: Manifest) =>
+	stableStringify(source.rig.cell) === stableStringify(target.rig.cell) &&
+	(!source.rig.view || !target.rig.view || source.rig.view === target.rig.view) &&
+	(!source.rig.template || !target.rig.template || source.rig.template === target.rig.template);
+/** A copied layer on the target: an own pivot keeps its padding around the target's pivot. */
+const onTarget = (source: Manifest, target: Manifest, layer: Layer): Layer =>
+	layer.pivot
+		? {
+				...layer,
+				pivot: {
+					x: layer.pivot.x - source.rig.pivot.x + target.rig.pivot.x,
+					y: layer.pivot.y - source.rig.pivot.y + target.rig.pivot.y
+				}
+			}
+		: layer;
+/** A body-cell point (px) on a layer's canvas: both place the same body point at their pivot. */
+const onLayer = (p: [number, number], body: Frame, layer: Frame): [number, number] => [
+	p[0] - body.x + layer.x,
+	p[1] - body.y + layer.y
+];
 
-/** The re-fitted copy, or null when the item cannot fit this body without being made for it. */
-export async function refitShared(
+interface Fitted {
+	plan: CellMatch[];
+	/** Per planned cell: the item's layer images there on the source and how far each moves (layer canvas px). */
+	moves: { layers: (Img | null)[]; shifts: [number, number][] }[];
+	notes: RefitNote[];
+}
+
+/** Where every target cell takes its art from and how far it moves, or null when the item cannot fit this body without being
+ *  made for it. Loads images only through `load`. */
+async function fit(
 	source: Manifest,
-	itemId: string,
-	variants: Preset['variants'],
+	original: Item,
 	target: Manifest,
 	load: (hash: Sha256) => Promise<Img>
-): Promise<CopyCandidate | null> {
-	const original = source.items.find((it) => it.id === itemId);
-	if (!original || original.slot === 'body' || original.variantOf)
-		throw new Error('That item is no longer available.');
+): Promise<Fitted | null> {
 	const side = HELD_ANCHOR[original.slot];
 	// Hidden body px and hidden slots belong to the source's body.
-	if (!side || original.baseCut || original.hides?.length) return null;
-	if (!sameGeometry(source, target) || !sameSlot(source, target, original.slot)) return null;
+	if (!side || !refittable(original)) return null;
+	if (!sameCanvas(source, target) || !sameSlot(source, target, original.slot)) return null;
 	if (!rightHanded(source) || !rightHanded(target)) return null;
 	const sb = bodyOf(source)?.layers[0],
 		tb = bodyOf(target)?.layers[0];
@@ -193,28 +229,37 @@ export async function refitShared(
 		return ref;
 	};
 
+	// Each rig places its body and the item's layers around its own pivot.
 	const cell = target.rig.cell,
-		frames = original.layers.map((l) => layerFrame(source.rig, l)),
-		bodyFrame = layerFrame(target.rig, tb),
-		{ pivot } = target.rig;
-	const layerCells = original.layers.map(() => ({}) as NonNullable<Layer['cells']>),
-		images = new Map<Sha256, Img>();
+		sBody = layerFrame(source.rig, sb),
+		tBody = layerFrame(target.rig, tb),
+		sFrames = original.layers.map((l) => layerFrame(source.rig, l)),
+		tFrames = original.layers.map((l) => layerFrame(target.rig, onTarget(source, target, l)));
+	const moves: Fitted['moves'] = [],
+		failing = new Map<string, Set<RefitNote['checks'][number]>>();
 	for (const match of plan) {
 		const [ta, td, ti] = match.target.split('/') as [string, DirectionName, string],
 			[sa, , si] = match.source.split('/') as [string, DirectionName, string];
 		const sk = keypointsAt(source, sa, td, +si),
 			tk = keypointsAt(target, ta, td, +ti);
-		if (!sk || !tk) return null;
-		const sw = kpAt(sk, [`${side} ARM`], cell, 0),
-			tw = kpAt(tk, [`${side} ARM`], cell, 0),
-			sf = forearm(sk, side, cell),
-			tf = forearm(tk, side, cell);
-		if (!sw || !tw || sf == null || tf == null || angleBetween(sf, tf) > REFIT.maxForearmDeg)
-			return null;
-		const dx = Math.round(tw[0] - sw[0]),
-			dy = Math.round(tw[1] - sw[1]);
+		const sw = sk && kpAt(sk, [`${side} ARM`], cell, 0),
+			tw = tk && kpAt(tk, [`${side} ARM`], cell, 0),
+			sf = sk && forearm(sk, side, cell),
+			tf = tk && forearm(tk, side, cell);
+		// Without both wrists and forearms the item has nowhere to go.
+		if (!sw || !tw || sf == null || tf == null) return null;
+		const shifts = sFrames.map((sFrame, j): [number, number] => {
+			const from = onLayer(sw, sBody, sFrame),
+				to = onLayer(tw, tBody, tFrames[j]);
+			return [Math.round(to[0] - from[0]), Math.round(to[1] - from[1])];
+		});
 		const layers = await Promise.all(original.layers.map((l) => image(source, l, sa, td, +si)));
-		const [sBody, tBody] = await Promise.all([
+		// A pixel moved off its layer's canvas would be lost.
+		if (layers.some((im, j) => im && !staysOn(im, ...shifts[j]))) return null;
+		moves.push({ layers, shifts });
+		const checks = new Set<RefitNote['checks'][number]>();
+		if (angleBetween(sf, tf) > REFIT.maxForearmDeg) checks.add('angle');
+		const [sBodyIm, tBodyIm] = await Promise.all([
 			image(source, sb, sa, td, +si),
 			image(target, tb, ta, td, +ti)
 		]);
@@ -223,23 +268,65 @@ export async function refitShared(
 			kept = 0;
 		for (const [j, im] of layers.entries()) {
 			if (!im || original.layers[j].role !== 'fg') continue;
-			const ox = frames[j].x - pivot.x - (bodyFrame.x - pivot.x),
-				oy = frames[j].y - pivot.y - (bodyFrame.y - pivot.y);
+			const [dx, dy] = shifts[j];
 			for (let y = 0; y < im.h; y++)
 				for (let x = 0; x < im.w; x++) {
-					if (!opaque(im, x, y) || !opaque(sBody, x - ox, y - oy)) continue;
+					if (!opaque(im, x, y)) continue;
+					if (!opaque(sBodyIm, x - sFrames[j].x + sBody.x, y - sFrames[j].y + sBody.y)) continue;
 					over++;
-					if (opaque(tBody, x - ox + dx, y - oy + dy)) kept++;
+					if (opaque(tBodyIm, x + dx - tFrames[j].x + tBody.x, y + dy - tFrames[j].y + tBody.y))
+						kept++;
 				}
 		}
-		if (over && kept / over < REFIT.minKeptOnBody) return null;
+		if (over && kept / over < REFIT.minKeptOnBody) checks.add('body');
 		const ref = await referenceArea(td);
-		if (ref && (await area(sa, td, +si)) / ref < REFIT.minArea) return null;
-		const n = target.rig.animations.find((a) => a.id === ta)!.cells;
-		for (const [j, im] of layers.entries()) {
-			const moved = im && translate(im, dx, dy);
-			// A pixel moved off the layer's canvas would be lost.
-			if (moved && pixels(moved) !== pixels(im)) return null;
+		if (ref && (await area(sa, td, +si)) / ref < REFIT.minArea) checks.add('hidden');
+		if (checks.size) failing.set(match.target, checks);
+	}
+	if (failing.size > plan.length * REFIT.maxFailing) return null;
+	// One note per move and direction, frames in order.
+	const notes = new Map<string, RefitNote>();
+	for (const [key, checks] of failing) {
+		const [anim, dir, i] = key.split('/') as [string, DirectionName, string],
+			note = notes.get(`${anim}/${dir}`) ?? { anim, dir, frames: [], checks: [] };
+		note.frames.push(+i);
+		note.checks = [...new Set([...note.checks, ...checks])];
+		notes.set(`${anim}/${dir}`, note);
+	}
+	return { plan, moves, notes: [...notes.values()] };
+}
+
+/** The item can be re-fitted onto `target` for free (the same checks as refitShared, without making the moved images). */
+export async function canRefit(
+	source: Manifest,
+	item: Item,
+	target: Manifest,
+	load: (hash: Sha256) => Promise<Img>
+): Promise<boolean> {
+	return !!(await fit(source, item, target, load));
+}
+
+/** The re-fitted copy, or null when the item cannot fit this body without being made for it. */
+export async function refitShared(
+	source: Manifest,
+	itemId: string,
+	variants: Preset['variants'],
+	target: Manifest,
+	load: (hash: Sha256) => Promise<Img>
+): Promise<CopyCandidate | null> {
+	const original = source.items.find((it) => it.id === itemId);
+	if (!original || original.slot === 'body' || original.variantOf)
+		throw new Error('That item is no longer available.');
+	const fitted = await fit(source, original, target, load);
+	if (!fitted) return null;
+	const { plan, moves, notes } = fitted;
+	const layerCells = original.layers.map(() => ({}) as NonNullable<Layer['cells']>),
+		images = new Map<Sha256, Img>();
+	for (const [p, match] of plan.entries()) {
+		const [ta, td, ti] = match.target.split('/') as [string, DirectionName, string],
+			n = target.rig.animations.find((a) => a.id === ta)!.cells;
+		for (const [j, im] of moves[p].layers.entries()) {
+			const moved = im && translate(im, ...moves[p].shifts[j]);
 			const h = moved && pixels(moved) ? await cellHash(moved) : null;
 			if (h) images.set(h, moved!);
 			((layerCells[j][ta] ??= {})[td] ??= Array(n).fill(null))[+ti] = h;
@@ -252,10 +339,13 @@ export async function refitShared(
 		target,
 		plan.map((m) => m.target)
 	);
-	item.layers.forEach((layer, j) => {
-		layer.cells = layerCells[j];
-		delete layer.sheets;
+	item.layers = item.layers.map((layer, j) => {
+		const placed = onTarget(source, target, layer);
+		placed.cells = layerCells[j];
+		delete placed.sheets;
+		return placed;
 	});
+	item.refit = notes;
 	// The standing references show the source's body.
 	delete item.dressed;
 	delete item.route;

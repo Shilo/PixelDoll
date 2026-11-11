@@ -1,24 +1,30 @@
 <script lang="ts">
 	// Another character's item as worn there: loads only the images of its first visible frame.
+	import { untrack } from 'svelte';
 	import { sharedPreview, type SharedItem } from '../lib/equipment/shared.ts';
 	import type { Project } from '../lib/store/manifest.ts';
-	import { groupOf, thumbCells } from './model.ts';
+	import { groupOf, thumbCell, thumbCells } from './model.ts';
 	import Thumb from './Thumb.svelte';
 	import GroupIcon from './GroupIcon.svelte';
 	let { entry }: { entry: SharedItem } = $props();
 	let project = $state.raw<Project | null>(null);
+	// A refreshed list brings new entry objects for unchanged items: reload only when the source was saved again.
+	const key = $derived(`${entry.sourceId}/${entry.item.id}/${entry.savedAt}`);
 	$effect(() => {
-		const e = entry,
-			first = thumbCells(e.source, e.item).next();
+		void key;
+		const e = untrack(() => entry);
 		let stale = false;
 		project = null;
-		if (!first.done)
-			sharedPreview(e, first.value.hashes)
-				.then((p) => {
-					if (!stale) project = p;
-				})
-				// The tile keeps its group icon and still names the item; the failure stays visible in the console.
-				.catch((error: unknown) => console.error('shared thumbnail', error));
+		void (async () => {
+			// Like Thumb, skip frames where the item is fully transparent (a hand item hidden behind the body).
+			for (const cell of thumbCells(e.source, e.item)) {
+				const p = await sharedPreview(e, cell.hashes);
+				if (stale) return;
+				if (thumbCell(p, e.item)) return (project = p);
+			}
+		})()
+			// The tile keeps its group icon and still names the item; the failure stays visible in the console.
+			.catch((error: unknown) => console.error('shared thumbnail', error));
 		return () => {
 			stale = true;
 		};

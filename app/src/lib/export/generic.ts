@@ -345,7 +345,10 @@ export function creditsCsv(m: Manifest, layerSheets = true): string {
 				String(pv?.seed ?? ''),
 				pv?.createdAt ?? '',
 				it.prompt,
-				'PixelLab (https://pixellab.ai)'
+				// A copy's calls were paid once, for the character it was made for: labeled, so totals do not count them twice.
+				it.copiedFrom
+					? `PixelLab (https://pixellab.ai); made for ${it.copiedFrom.name} and copied here without generating`
+					: 'PixelLab (https://pixellab.ai)'
 			]);
 	}
 	return [...new Set(rows.map((r) => r.map(csv).join(',')))].join('\n') + '\n'; // identical provenance steps once (T1 P2-7)

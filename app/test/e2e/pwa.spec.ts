@@ -822,7 +822,13 @@ for (const loading of ['stalled', 'failed'] as const) {
 					: 'PixelDoll could not finish loading your saved work.';
 			if (loading === 'stalled')
 				await expect(page.locator('html')).toHaveAttribute('data-stalled-read', 'yes');
-			else await expect(page.getByText(reason, { exact: false }).first()).toBeVisible();
+			// The failed read says so once; the generic startup notice is not added on top of it.
+			else {
+				await expect(page.locator('.bu-toast')).toContainText(
+					'Could not read your saved characters: Saved work read failed'
+				);
+				await expect(page.getByText(reason, { exact: false })).toHaveCount(0);
+			}
 			server.deploy(b);
 			await (await discover(page, b)).click();
 			const paused = page.getByRole('dialog', { name: 'Update paused', exact: true });

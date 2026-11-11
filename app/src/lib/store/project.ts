@@ -27,11 +27,14 @@ export interface StoredProject {
 export const OUTDATED =
 	'This character was saved by an earlier preview version and is no longer supported.';
 
+const retiredDesign = (r: OutdatedCandidate) =>
+	r.kind === 'equipment-design' || r.kind === 'equipment-fit-draft';
 /** Earlier preview formats are never upgraded: delete their characters, demo outfits, retired shared-design and fit records
- * and an unfinished character creation saved before explicit direction plans (its paid pipeline is never re-keyed). */
-export async function deleteOutdated(): Promise<number> {
+ * and an unfinished character creation saved before explicit direction plans (its paid pipeline is never re-keyed). Counts the
+ * retired designs (and their fits) apart from the other records. */
+export async function deleteOutdated(): Promise<{ designs: number; other: number }> {
 	const formatOf = (r: OutdatedCandidate) =>
-		r.kind === 'equipment-design' || r.kind === 'equipment-fit-draft'
+		retiredDesign(r)
 			? undefined
 			: r.kind === 'dress' || r.manifest
 				? (r.format ?? r.manifest?.format)
@@ -49,7 +52,8 @@ export async function deleteOutdated(): Promise<number> {
 			const change = db.withoutCharacters(r, gone);
 			if (change) await db.put('projects', r.id, change);
 		}
-	return outdated.length;
+	const designs = outdated.filter(retiredDesign).length;
+	return { designs, other: outdated.length - designs };
 }
 interface OutdatedCandidate {
 	id: string;

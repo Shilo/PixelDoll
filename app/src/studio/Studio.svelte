@@ -88,8 +88,10 @@
 			await resumeCreate();
 			await resumeMove();
 			await resumeSetup();
-			// An unreadable character list means saved work did not load; the update controls offer recovery.
-			if (!listed) throw new Error('Your saved characters could not be read.');
+			// An unreadable character list means saved work did not load; the update controls offer recovery. refreshProjects
+			// already said so.
+			if (!listed)
+				return startupFailed(new Error('Your saved characters could not be read.'), true);
 			startupResumed();
 			// Once startup is done, fetch the on-demand code so it keeps working if the connection drops or a deploy replaces its
 			// files. Production only: the dev server would transform every module on each page load. lazy() logs failures.

@@ -23,8 +23,10 @@ vi.mock('../../src/lib/store/db.ts', () => ({
 	updateCharacter: async (
 		id: string,
 		blobs: Map<string, Blob>,
-		fn: (record: unknown) => unknown
+		fn: (record: unknown) => unknown,
+		stored?: { keys: Iterable<string>; missing: (key: string) => Error }
 	) => {
+		for (const key of stored?.keys ?? []) if (!memory.blobs.has(key)) throw stored!.missing(key);
 		const record = fn(structuredClone(memory.records.get(id)));
 		for (const [hash, blob] of blobs) memory.blobs.set(hash, blob);
 		memory.records.set(id, structuredClone(record));

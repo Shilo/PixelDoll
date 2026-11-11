@@ -30,12 +30,16 @@ Living document: status and decisions. Open tasks live on the [PixelDoll board](
   pixels explain the mismatch; true deformations still fail. Appended move QA now links to the selected source record
   by produced frame key, including grid fallbacks and prior history. See `docs/testing/item-quality-follow-up-2026-10-22.md`.
 - **Shared items:** every finished item of the user's other saved characters is listed in the wardrobe under "From
-  other characters". An identical body gets a free exact copy (an ordinary, independent item); a different body gets
-  "Make for <character>", the normal priced New item. This replaced the design library, design ZIPs and the paid
+  your other characters", free entries first, each tile captioned with how it comes to the open character (free copy,
+  "Free · check fit" or "Make new"). An identical body gets a free exact copy (an ordinary, independent item that
+  records which character it was copied from); a different body gets "Make one for <character>", the normal priced New
+  item. This replaced the design library, design ZIPs and the paid
   cross-body fit (old records are deleted; history in the
   [verification report](docs/testing/shared-equipment-2026-10-22.md)). Decision (2026-11-10): Main hand / Off hand
-  items on a different body of the same canvas, pivot and moves get a free joint-shift re-fit (each frame moved by the
-  wrist offset), marked Needs a look; any failing frame rejects the item. Evidence (offline study of real stored
+  items on a different body of the same canvas and moves get a free joint-shift re-fit (each frame moved by the wrist
+  offset, mapped through each rig's own pivot), marked Needs a look. Decision (2026-11-10, review round): structural
+  failures reject the item; per-frame forearm, body-overlap and area checks may fail on up to 25% of the frames, which
+  the copy names for review. Evidence (offline study of real stored
   characters): authored moves passed 23 of 27 frames and walks 24 to 30 of 36 with forearm angle <= 15 degrees, body
   overlap >= 0.7 and area >= 0.8 of standing; head items passed 0% and stay excluded; one import had swapped hand labels,
   so a south-view handedness check rejects it. Limits in docs/known-issues.md.

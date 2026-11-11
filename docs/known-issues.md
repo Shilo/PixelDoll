@@ -78,6 +78,9 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   off the body behind or beside it, and the part over the body on top of everything. Where PixelLab draws the fist over the
   grip, those pixels stay body, so the grip shows under the fingers, as a real grip would. The layering cuts nothing from the
   item at the grip; extraction cleanup can still drop small detached parts elsewhere.
+- **Older characters' Off hand layer order.** Characters saved before Main hand and Off hand were split keep their
+  earlier Off hand layer order, so **Layer order** shows **Reset** on their Off hand items until pressed; there is no
+  migration.
 - **Side views can put an Off hand item in the main hand.** In east views PixelLab sometimes draws a lantern, shield or bow
   in the hand nearest the viewer, the sword hand, instead of the far left hand behind the body. The hand check
   (G8) flags it for review; keeping the item keeps the wrong hand, and a mirrored west copies it. Try again or a repair of
@@ -195,14 +198,16 @@ outfit choices on each copy; safe deletion of the source character; and no gener
 estimate and consent.
 
 Main hand and Off hand items can also get a free approximate re-fit: each frame moves by the offset between the two
-bodies' wrists, without resampling, and the copy is marked **Needs a look**. Limits: only the same canvas size, pivot and
-camera; both characters need stored skeleton keypoints, and every target move must exist on the source with the same
-frame count (or stand still); one forearm angle, body overlap, occlusion or canvas-edge failure in any frame rejects
-the whole item; the grip is approximate (whole-pixel wrist offset, no rotation); items that hide body pixels or slots
-never re-fit; head items never re-fit (head sizes differ by 2 to 5 px on the same canvas). Characters stored with
-mirrored hand labels are rejected. Among the saved real characters available offline, no cross-character pair passes
-yet: their pivots differ (y 56, 58, 59, 60 or 64), one imported character family has swapped labels, and their move
-sets differ.
+bodies' wrists (measured joints when stored, else the requested ones), without resampling, and the copy is marked
+**Needs a look** with the frames to check. Limits: only the same canvas size and camera (each rig maps its keypoints
+through its own pivot, so pivots may differ); both characters need stored skeleton keypoints, and every target move must
+exist on the source with the same frame count (or stand still); a pixel pushed off the canvas, a missing wrist or
+forearm, or mirrored hand labels reject the item; forearm angle, body overlap and occlusion checks may fail on up to a
+quarter of the frames, more rejects it; the grip is approximate (whole-pixel wrist offset, no rotation); items that hide
+body pixels or slots never re-fit; head items never re-fit (head sizes differ by 2 to 5 px on the same canvas). Offline
+check over the stored real characters (2026-11-10): the bench adventurer's axe re-fits the Ranger with 7 of 36 frames to
+check; its sword (13 of 36) and bow (11 of 36) on the Ranger and its axe on the imported Ragnarok (8 of 27) fail more
+than a quarter; its sword on Ragnarok leaves the canvas; the other pairs differ in moves or hand labels.
 
 Sharing covers this browser origin's saved characters only; there is no account or cloud sync. Clearing browser storage
 can lose unexported work.

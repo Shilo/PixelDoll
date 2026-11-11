@@ -494,7 +494,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	await equipmentGroup(page, 'Off hand');
 	await expect(page.getByRole('heading', { name: 'Off hand', exact: true })).toBeVisible();
 	await expect(page.getByRole('group', { name: 'Off hand items', exact: true })).toContainText(
-		'No saved items'
+		'No items yet'
 	);
 	await expect(page.getByRole('button', { name: 'New off hand item', exact: true })).toBeVisible();
 	await equipmentGroup(page, 'Head');

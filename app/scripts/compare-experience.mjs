@@ -313,12 +313,6 @@ async function capture(kind, url) {
 						.waitFor();
 					await extra('new-item-form');
 					await close('New item');
-					await page.getByRole('button', { name: 'Use a saved design', exact: true }).click();
-					await dialog('New item')
-						.getByRole('tab', { name: 'Saved designs', exact: true })
-						.waitFor();
-					await extra('saved-designs');
-					await close('New item');
 					await page.getByRole('button', { name: 'Characters', exact: true }).click();
 					await page.getByRole('button', { name: 'Import', exact: true }).click();
 					await dialog('Import character').waitFor();
