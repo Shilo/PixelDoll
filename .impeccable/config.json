@@ -1,3 +1,18 @@
 {
-  "buildPath": "code"
+  "buildPath": "code",
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "app/src/lib/equipment/copy.ts"
+        ],
+        "createdAt": "2026-11-10T19:50:51.299Z",
+        "reason": "agent triage: copy.ts is a TypeScript data module with no <img> markup; L42 is a closing brace of a stable-stringify helper"
+      }
+    ]
+  }
 }
