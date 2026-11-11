@@ -229,8 +229,9 @@
 	// moves: only an item made for this character can.
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
 	const freeFrames = $derived(it ? (shared.free[it.id] ?? 0) : 0);
+	// A re-fit's checks were measured on the source body; its fit notes replace them.
 	const reasons = $derived(
-		it?.qa
+		it?.qa && !it.refit
 			? qaReasons(
 					it.qa,
 					SLOTS.find((s) => s.id === it.slot)?.class === 'held',
