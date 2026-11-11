@@ -224,8 +224,18 @@ than a quarter; its sword on Ragnarok leaves the canvas; the other pairs differ 
 characters (2026-11-11, 4 directions with a mirrored west): Knight A's sword and shield re-fit Scout B with 13 % and 18 %
 of frames to check and Knight C with 20 % and 0 %, all in side views.
 
+**Make one for** draws a new item for the other body from the same description and category, at the normal new-item
+price; it does not reuse the original's pixels, so it may look different, and like any new item it starts with the
+standing pose (moves are priced and made separately). Keeping the original's look needs reference-image dressing
+(Later card "Concept-image items").
+
 Sharing covers this browser origin's saved characters only; there is no account or cloud sync. Clearing browser storage
 can lose unexported work.
+
+## Layout
+
+- On a 390 px phone with the equipment panel expanded, the character sprite overlaps the Preview / Top-down /
+  Side-scroller labels (Later card "Keep the phone character clear of the view tabs").
 
 ## Testing scope
 
