@@ -76,7 +76,7 @@
 		const off = initUi();
 		toast(PREVIEW_NOTICE.description, PREVIEW_NOTICE);
 		void (async () => {
-			await refreshProjects();
+			const listed = await refreshProjects();
 			await openProject(lastProject());
 			// A failed read keeps item work stopped (startItem and Clear finished wait for it); create and moves still resume.
 			await loadGens().catch((e: Error) => {
@@ -88,6 +88,8 @@
 			await resumeCreate();
 			await resumeMove();
 			await resumeSetup();
+			// An unreadable character list means saved work did not load; the update controls offer recovery.
+			if (!listed) throw new Error('Your saved characters could not be read.');
 			startupResumed();
 			// Once startup is done, fetch the on-demand code so it keeps working if the connection drops or a deploy replaces its
 			// files. Production only: the dev server would transform every module on each page load. lazy() logs failures.

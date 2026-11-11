@@ -46,7 +46,10 @@
 		items.find((i) => i.id === ui.selected) ?? items.find((i) => doc.items[i.slot] === i.id)
 	);
 	// The selection area belongs to the browsed group: a draft selected in another group is not shown here.
-	const gen = $derived(pending.find((x) => x === genOf(ui.selected)));
+	const gen = $derived.by(() => {
+		const x = genOf(ui.selected);
+		return x && g.slots.includes(x.input.slot) ? x : undefined;
+	});
 	const others = $derived(shared.items.filter((x) => g.slots.includes(x.item.slot)));
 	// A tapped item of another character that does not fit this body takes the selection area.
 	const unfit = $derived(others.find((x) => sharedKey(x) === ui.selected));
@@ -203,6 +206,7 @@
 					<span class="muted">No saved items</span>
 				</div>
 			{/if}
+			{#if shared.error}<p class="notice warn small" role="alert">{shared.error}</p>{/if}
 			{#if others.length}
 				<div class="shared-items">
 					<h3 class="shared-title small">From other characters</h3>

@@ -374,7 +374,8 @@ export function stepPreviewFrame(direction: -1 | 1): void {
 	ui.frame = ((ui.frame % count) + count + direction) % count;
 }
 
-export async function refreshProjects() {
+/** False when the saved characters could not be read (already reported). */
+export async function refreshProjects(): Promise<boolean> {
 	const removed = await deleteOutdated().catch((e: unknown) => {
 		console.error('outdated', e);
 		toast(
@@ -414,6 +415,7 @@ export async function refreshProjects() {
 		} catch {
 			/* storage blocked */
 		}
+	return !!listed;
 }
 
 let openRequest = 0,
@@ -968,6 +970,8 @@ export async function removeItem(itemId: string) {
 class Shared {
 	items = $state.raw<SharedItem[]>([]);
 	adding = $state('');
+	/** A failed read shows in the wardrobe where the items would be, without displacing startup notices. */
+	error = $state('');
 }
 export const shared = new Shared();
 export const sharedKey = (entry: SharedItem) => `shared:${entry.sourceId}/${entry.item.id}`;
@@ -977,16 +981,18 @@ export async function refreshShared() {
 	const request = ++sharedRequest;
 	if (isDemo()) {
 		shared.items = [];
+		shared.error = '';
 		return;
 	}
 	try {
 		const items = await listShared(doc.id, store.project?.manifest ?? null);
-		if (request === sharedRequest) shared.items = items;
+		if (request !== sharedRequest) return;
+		shared.items = items;
+		shared.error = '';
 	} catch (e) {
 		console.error('shared', e);
-		toast(`Could not read items from your other characters: ${(e as Error).message}`, {
-			tone: 'danger'
-		});
+		if (request === sharedRequest)
+			shared.error = `Could not read items from your other characters: ${(e as Error).message}`;
 	}
 }
 /** Free: wear a copy when the bodies match. Otherwise select the entry, so the wardrobe offers to make it for this character. */
