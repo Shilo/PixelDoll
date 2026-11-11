@@ -6,6 +6,7 @@
 		Glasses,
 		PersonStanding,
 		Scissors,
+		Shield,
 		Shirt,
 		Sword
 	} from './icons.ts';
@@ -19,7 +20,8 @@
 			Legs: PersonStanding,
 			Feet: Footprints,
 			Back: Backpack,
-			Hands: Sword
+			'Main hand': Sword,
+			'Off hand': Shield
 		}[group] ?? Shirt
 	);
 </script>

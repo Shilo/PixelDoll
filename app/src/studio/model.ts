@@ -27,7 +27,7 @@ export interface Group {
 	empty: string;
 	ideas: { label: string; slot?: string }[];
 }
-/** 16 architecture slots in 8 groups; slots[0] = default slot for a new item. */
+/** 16 architecture slots in 9 groups; slots[0] = default slot for a new item. */
 export const GROUPS: Group[] = [
 	{
 		id: 'Head',
@@ -91,27 +91,18 @@ export const GROUPS: Group[] = [
 		ideas: [{ label: 'red cape' }, { label: 'travel backpack' }, { label: 'quiver of arrows' }]
 	},
 	{
-		id: 'Hands',
-		slots: ['main_hand', 'off_hand'],
+		id: 'Main hand',
+		slots: ['main_hand'],
 		empty: 'weapons',
-		ideas: [
-			{ label: 'steel sword' },
-			{ label: 'wooden staff' },
-			{ label: 'round shield', slot: 'off_hand' }
-		]
+		ideas: [{ label: 'steel sword' }, { label: 'wooden staff' }, { label: 'battle axe' }]
+	},
+	{
+		id: 'Off hand',
+		slots: ['off_hand'],
+		empty: 'shields',
+		ideas: [{ label: 'round shield' }, { label: 'iron lantern' }, { label: 'wooden longbow' }]
 	}
 ];
-/** Held items PixelLab draws in the left hand: bows (archery prior; round 2 arm B: main hand got the right hand on 1/3 seeds,
- * off hand 3/3) and shields (the main-hand wording forbids a shield). Crossbows stay in the main hand. */
-// (?!-): "shield-breaker axe" and "bow-staff" name the main-hand weapon. "aegis" is left out: it names engravings and crests too.
-const OFF_HAND =
-	/\b(?:long|short|recurve|hunting|war|great|flat)?bows?\b(?!-)|\b(?:shield|buckler|targe|pavise|scutum)s?\b(?!-)/i;
-// The item's subject decides: "a steel sword with a scutum emblem" is a sword (2026-11-07 counter-review R6). The cut is at
-// attachment and decoration clauses only, so color pairs and adjective lists stay ("a black and gold kite shield").
-const SUBJECT_END =
-	/\s+(?:with|that|which|bearing|featuring|showing|depicting|decorated|engraved|emblazoned|etched|painted|carved|inlaid|of|from|on|in|for|by|at|to|under|over|around|hanging|holding|held|carrying|dangling|attached|wrapped|covered|trimmed|lined|studded|made)\s+/i;
-export const heldSlotFor = (prompt: string) =>
-	OFF_HAND.test(stripCount(prompt).split(SUBJECT_END)[0]) ? 'off_hand' : 'main_hand';
 export const groupOf = (slot: string) => GROUPS.find((g) => g.slots.includes(slot)) ?? GROUPS[3];
 export const SLOT_LABEL: Record<string, string> = {
 	head: 'Head',
@@ -294,6 +285,18 @@ const itemHead = (desc: string) => {
 	)[0];
 	return head.split(/\s+/).length > 4 ? head.split(/\s+of\s+/i)[0] : head;
 };
+/** Held items PixelLab draws in the left hand: bows (archery prior; round 2 arm B: main hand got the right hand on 1/3 seeds,
+ * off hand 3/3) and shields (the main-hand wording forbids a shield). Crossbows stay in the main hand. */
+// (?!-): "shield-breaker axe" and "bow-staff" name the main-hand weapon. "aegis" is left out: it names engravings and crests too.
+const OFF_HAND =
+	/\b(?:long|short|recurve|hunting|war|great|flat)?bows?\b(?!-)|\b(?:shield|buckler|targe|pavise|scutum)s?\b(?!-)/i;
+// The item's subject decides: "a steel sword with a scutum emblem" is a sword (2026-11-07 counter-review R6). The cut is at
+// attachment and decoration clauses only, so color pairs and adjective lists stay ("a black and gold kite shield").
+const SUBJECT_END =
+	/\s+(?:with|that|which|bearing|featuring|showing|depicting|decorated|engraved|emblazoned|etched|painted|carved|inlaid|of|from|on|in|for|by|at|to|under|over|around|hanging|holding|held|carrying|dangling|attached|wrapped|covered|trimmed|lined|studded|made)\s+/i;
+/** A hint only: the description names a shield or bow, which belongs in the off hand. The user's group choice stands. */
+export const namesOffHandItem = (prompt: string) =>
+	OFF_HAND.test(stripCount(prompt).split(SUBJECT_END)[0]);
 /** Item name from its description, sentence case like the demo: "a straw farmer hat, frayed" -> "Straw farmer hat" (T1 P2-15). */
 export function itemNameFrom(desc: string): string {
 	const head = itemHead(desc);
@@ -349,6 +352,9 @@ export function plainReason(s: string): string {
 			return `The grip could not be confirmed; inspect the item at the hand${where}`;
 		if (s.includes('other clips') || s === 'G8')
 			return `The item may change hands between views; check the intended hand${where}`;
+		const expects = /slot (\S+) expects hand_([lr])$/.exec(s);
+		if (expects)
+			return `The item may be held in the wrong hand; ${slotLabel(expects[1])} expects the ${expects[2] === 'r' ? 'right' : 'left'} hand${where}`;
 		return `The item may be held in the wrong hand; check the intended hand${where}`;
 	}
 	const key =
@@ -461,15 +467,11 @@ export function selfTest() {
 		`itemNameFrom ${itemNameFrom('a straw farmer hat')}`
 	);
 	console.assert(
-		['a wooden longbow', 'short bow', 'Round Shield', 'elven bow with gold', 'a yew warbow'].every(
-			(x) => heldSlotFor(x) === 'off_hand'
-		) &&
-			['steel sword', 'a crossbow', 'elbow pads', 'rainbow staff'].every(
-				(x) => heldSlotFor(x) === 'main_hand'
-			),
-		'heldSlotFor'
+		groupOf('off_hand').id === 'Off hand' &&
+			groupOf('main_hand').id === 'Main hand' &&
+			groupOf('waist').id === 'Legs',
+		'groupOf'
 	);
-	console.assert(groupOf('off_hand').id === 'Hands' && groupOf('waist').id === 'Legs', 'groupOf');
 	console.assert(crop(s)!.w === 1 && crop(makeImg(2, 2)) === null, 'crop');
 	console.assert(plainReason('G4 walk/south: item missing').includes('missing'), 'plainReason');
 }

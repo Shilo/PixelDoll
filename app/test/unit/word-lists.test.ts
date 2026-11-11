@@ -2,7 +2,6 @@ import { expect, test } from 'vitest';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { smudgedViews } from '../../src/lib/items/items.ts';
 import { expectsWaistBand } from '../../src/lib/items/design-consistency.ts';
-import { heldSlotFor } from '../../src/studio/model.ts';
 
 const w = 32;
 const view = (gray: number) => {
@@ -78,13 +77,7 @@ test('a negation must modify the belt itself', () => {
 	expect(expectsWaistBand('no belt')).toBe(false);
 });
 
-test('common shield words default to the off hand', () => {
-	for (const p of ['a wooden targe', 'a tall pavise', 'round shield', 'longbow'])
-		expect(heldSlotFor(p), p).toBe('off_hand');
-	expect(heldSlotFor('steel sword')).toBe('main_hand');
-});
-
-test('review cases: two-view items, wider negations and weapon names', () => {
+test('review cases: two-view items and wider negations', () => {
 	// a two-view item smudged in both views: one view cannot excuse the other (2026-11-07 review)
 	expect(smudgedViews('back', 'a red cape', [view(26), view(26)])).toEqual(['smudge', 'smudge']);
 	for (const p of [
@@ -96,28 +89,14 @@ test('review cases: two-view items, wider negations and weapon names', () => {
 		expect(expectsWaistBand(p), p).toBe(false);
 	for (const p of ['a vest with no buttons, and a belt', 'no hat but a red belt'])
 		expect(expectsWaistBand(p), p).toBe(true);
-	for (const p of ['aegis-engraved sword', 'shield-breaker axe', 'spear with an aegis crest'])
-		expect(heldSlotFor(p), p).toBe('main_hand');
 });
 
-test('review R5 and R6: counts keep the noun, and decorations do not move the item to the other hand', async () => {
+test('review R5: counts keep the noun', async () => {
 	const { itemNameFrom } = await import('../../src/studio/model.ts');
 	expect(itemNameFrom('a pair of leather boots')).toBe('Leather boots');
 	expect(itemNameFrom('the pair of leather gloves')).toBe('Leather gloves');
 	expect(itemNameFrom('pair of leather boots')).toBe('Leather boots');
 	expect(itemNameFrom('iron lantern hanging from a short chain')).toBe('Iron lantern');
-	for (const p of [
-		'a steel sword with a scutum emblem',
-		'a battle axe with a shield-shaped guard',
-		'a mace decorated with a bow'
-	])
-		expect(heldSlotFor(p), p).toBe('main_hand');
-	for (const p of [
-		'a scutum',
-		'a round wooden shield with a lion emblem',
-		'a wooden longbow with a leather grip'
-	])
-		expect(heldSlotFor(p), p).toBe('off_hand');
 });
 
 test('review R3: a dark detail on one side is reported as uncertain, a gray smudge still as a smudge', async () => {
@@ -188,26 +167,8 @@ test('review R3: a dark detail on one side is reported as uncertain, a gray smud
 	).toBe('A dark patch is not seen in the other views; check that it is part of the design');
 });
 
-test('review round 2: color pairs and adjective lists keep shields in the off hand; "of" names keep their meaning', async () => {
+test('review round 2: "of" names keep their meaning', async () => {
 	const { itemNameFrom } = await import('../../src/studio/model.ts');
-	for (const p of [
-		'a black and gold kite shield',
-		'a red and white round shield',
-		'a large, round wooden shield',
-		'a sturdy, iron-banded wooden shield',
-		'a golden, ornate buckler',
-		'a shield of the realm',
-		'a pair of shields',
-		'a pair of bucklers'
-	])
-		expect(heldSlotFor(p), p).toBe('off_hand');
-	for (const p of [
-		'a steel sword with a scutum emblem',
-		'a sword of the shield guard',
-		'a two-handed sword',
-		'a mace engraved with a bow'
-	])
-		expect(heldSlotFor(p), p).toBe('main_hand');
 	for (const [desc, name] of [
 		['a cloak of shadows', 'Cloak of shadows'],
 		['a ring of power', 'Ring of power'],

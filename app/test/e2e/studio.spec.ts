@@ -488,6 +488,18 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	assert.equal(await pressed('Wizard hat'), 'true');
 	step('undo / redo (button + shortcut)');
 
+	await equipmentGroup(page, 'Main hand');
+	await expect(page.getByRole('heading', { name: 'Main hand', exact: true })).toBeVisible();
+	assert.equal(await pressed('Steel longsword'), 'true');
+	await equipmentGroup(page, 'Off hand');
+	await expect(page.getByRole('heading', { name: 'Off hand', exact: true })).toBeVisible();
+	await expect(page.getByRole('group', { name: 'Off hand items', exact: true })).toContainText(
+		'No saved items'
+	);
+	await expect(page.getByRole('button', { name: 'New off hand item', exact: true })).toBeVisible();
+	await equipmentGroup(page, 'Head');
+	step('held items have separate Main hand and Off hand groups');
+
 	const before = await stage();
 	await equipmentMode(page, 'Colors');
 	await page.locator('.colors .swatch[aria-label="azure"]').first().click();
@@ -1138,7 +1150,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	const item = page.getByRole('dialog', { name: 'New item', exact: true });
-	await item.getByRole('radio', { name: 'Held item', exact: true }).click();
+	await item.getByRole('radio', { name: 'Main hand', exact: true }).click();
 	await item.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a silver sword');
 	await item.getByRole('radio', { name: 'azure', exact: true }).click();
 	await expect(item.getByRole('button', { name: /^Make/ })).toContainText(/Est\. \d+ gens/);
@@ -1157,7 +1169,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await expect(item.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue(
 		'a silver sword'
 	);
-	await expect(item.getByRole('radio', { name: 'Held item', exact: true })).toHaveAttribute(
+	await expect(item.getByRole('radio', { name: 'Main hand', exact: true })).toHaveAttribute(
 		'aria-checked',
 		'true'
 	);
@@ -4516,7 +4528,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 		await s.openProject(s.doc.id);
 		s.pick(id);
 	}, fixture.itemId);
-	await newItem(page, 'Hands');
+	await newItem(page, 'Main hand');
 	const newSheet = page.getByRole('dialog', { name: 'New item', exact: true });
 	await newSheet.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a steel sword');
 	await expect(newSheet).toContainText('Make the standing design first');
@@ -4665,10 +4677,16 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		s.ui.selected = 'gen:' + draft.spec.id;
 		return route.itemRoute.plan(ctx.rec.manifest.rig, ctx, input).gens;
 	});
-	await equipmentGroup(page, 'Hands');
+	await equipmentGroup(page, 'Main hand');
 	const panel = page.locator('.gen'),
 		retry = panel.getByRole('button', { name: /^Try again/ });
 	expect(expected).toBe(10); // only four padded standing references; walking frames are a separate purchase now
+	await expect(retry).toBeEnabled();
+	// The selection area belongs to the browsed group: the main-hand draft does not show under Off hand.
+	await equipmentGroup(page, 'Off hand');
+	await expect(page.locator('.equipment-scroll .gen')).toHaveCount(0);
+	await equipmentGroup(page, 'Main hand');
+	await expect(page.locator('.equipment-scroll .gen')).toHaveCount(1);
 	await expect(retry).toBeEnabled();
 	await expect(retry).toHaveText(`Try again Est. ${expected} gens`);
 	await panel

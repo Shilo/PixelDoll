@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { coverageGaps, moveDirs } from '../lib/dress/dress.ts';
 	import { hiddenSlots, equipped } from '../lib/compose/compose.ts';
-	import { SLOTS } from '../lib/items/items.ts';
+	import { SLOTS, slotLadder } from '../lib/items/items.ts';
 	import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts';
 	import { missingItemMoves, itemMoveOffer } from './create.ts';
 	import { movePlan } from './apiPlans.ts';
@@ -55,7 +55,9 @@
 	const m = $derived(store.project?.manifest);
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const it = $derived(m?.items.find((i) => i.id === id));
-	const ladder = $derived(SLOTS.find((s) => s.id === it?.slot)?.zOverrides ?? []);
+	const ladder = $derived(
+		m ? (slotLadder(m.rig).find((s) => s.id === it?.slot)?.zOverrides ?? []) : []
+	);
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const hiddenNow = $derived(m && it ? hiddenSlots(m, equipped(m, doc.items)).has(it.slot) : false);
 	const health = $derived(m && it ? healthOf(m, it) : 'demo');

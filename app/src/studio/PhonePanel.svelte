@@ -45,13 +45,12 @@
 	const sel = $derived(
 		items.find((i) => i.id === ui.selected) ?? items.find((i) => doc.items[i.slot] === i.id)
 	);
-	const gen = $derived(genOf(ui.selected));
+	// The selection area belongs to the browsed group: a draft selected in another group is not shown here.
+	const gen = $derived(pending.find((x) => x === genOf(ui.selected)));
 	const others = $derived(shared.items.filter((x) => g.slots.includes(x.item.slot)));
 	// A tapped item of another character that does not fit this body takes the selection area.
 	const unfit = $derived(others.find((x) => sharedKey(x) === ui.selected));
-	const categoryName = $derived(
-		g.id === 'Head' ? 'Headwear' : g.id === 'Hands' ? 'Held items' : g.id
-	);
+	const categoryName = $derived(g.id === 'Head' ? 'Headwear' : g.id);
 	// T2: keep the selected slot chip in view (Body was half under the Random button on a 375 px phone)
 	let chips = $state<HTMLElement>();
 	$effect(() => {
@@ -111,10 +110,7 @@
 								onclick={() => {
 									ui.group = group.id;
 									more?.hidePopover();
-								}}
-								><GroupIcon group={group.id} /><span
-									>{group.id === 'Hands' ? 'Held item' : group.id}</span
-								></button
+								}}><GroupIcon group={group.id} /><span>{group.id}</span></button
 							>{/each}
 					</div>
 				</div>
@@ -135,7 +131,7 @@
 				>
 			</div>
 			{#if items.length || pending.length}
-				<div class="tiles" role="group" aria-label="{g.id === 'Hands' ? 'Held' : g.id} items">
+				<div class="tiles" role="group" aria-label="{g.id} items">
 					{#each items as it (it.id)}
 						<button
 							data-variant="tile"
@@ -203,11 +199,7 @@
 					>
 				</div>
 			{:else}
-				<div
-					class="category-empty"
-					role="group"
-					aria-label="{g.id === 'Hands' ? 'Held' : g.id} items"
-				>
+				<div class="category-empty" role="group" aria-label="{g.id} items">
 					<span class="muted">No saved items</span>
 				</div>
 			{/if}
@@ -274,8 +266,7 @@
 				class="bu-action equipment-create"
 				data-variant="primary"
 				onclick={() => openNewItem(g.id)}
-				><Plus size={18} /><span>New {g.id === 'Hands' ? 'held' : g.id.toLowerCase()} item</span
-				></button
+				><Plus size={18} /><span>New {g.id.toLowerCase()} item</span></button
 			>
 		{/if}
 	{:else if ui.tab === 'outfits'}

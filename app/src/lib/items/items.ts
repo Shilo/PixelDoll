@@ -509,6 +509,23 @@ export const SLOTS: Slot[] = [
 	{ id: 'main_hand', z: 150, bgZ: 1, class: 'held', anchor: 'hand_r', zOverrides: heldBgOverCape() }
 ];
 export const slotOf = (id: string) => SLOTS.find((s) => s.id === id)!;
+/** Where the character's left side faces the viewer, the off hand (hand_l) is the near hand, so its front layer draws over the
+ * main-hand item. Only originally generated views: a mirrored view flips its source's pixels (the main hand is near there), so
+ * it keeps the source's order. */
+const NEAR_OFF_HAND: readonly DirectionName[] = ['west', 'south-west', 'north-west'];
+/** The default slot ladder for a rig (fresh copies): SLOTS plus the near-hand order of its generated left-side views. */
+export const slotLadder = (rig: Pick<Rig, 'directions'>): Slot[] =>
+	SLOTS.map((slot) => {
+		const s = structuredClone(slot);
+		if (s.id === 'off_hand')
+			s.zOverrides = [
+				...(s.zOverrides ?? []),
+				...rig.directions
+					.filter((d) => !d.mirrorOf && NEAR_OFF_HAND.includes(d.id))
+					.map((d) => ({ layer: 'fg' as const, z: slotOf('main_hand').z + 5, dir: d.id }))
+			];
+		return s;
+	});
 
 export type Route = Key | 'none'; // 'none' = diff fallback on the real base
 export interface ItemSpec {

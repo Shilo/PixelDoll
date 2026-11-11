@@ -7,7 +7,7 @@ import { encodePngBytes } from '../image/pngraw.ts';
 import { flipH } from '../rig/mirror.ts';
 import { cellHash } from '../rig/rig.ts';
 import { variantOf, variantRampOf } from '../dress/dress.ts';
-import { SLOTS } from '../items/items.ts';
+import { slotLadder } from '../items/items.ts';
 import { putItem, type StoredProject } from '../store/project.ts';
 import type {
 	CellKey,
@@ -195,12 +195,7 @@ export async function acceptCopy(
 		if (!rec) throw new Error('This character was removed.');
 		if (body(rec.manifest) !== body(target.manifest))
 			throw new Error('This character changed while the item was being added. Try again.');
-		const slot = source.manifest.slots.find((s) => s.id === item.slot);
-		putItem(
-			rec.manifest,
-			item,
-			SLOTS.map((s) => (s.id === slot?.id ? slot : s))
-		);
+		putItem(rec.manifest, item, slotLadder(rec.manifest.rig));
 		rec.manifest.materials.push(...materials);
 		rec.savedAt = new Date().toISOString();
 		return rec;

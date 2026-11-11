@@ -67,7 +67,7 @@ import {
 	reusesStanding,
 	anchored,
 	planGens,
-	SLOTS,
+	slotLadder,
 	gridEstimate,
 	repairGridLayout,
 	bandMask,
@@ -1368,7 +1368,7 @@ export async function acceptItem(
 	// would have moved it; a replaced or recolored cell means it may not, so it is refused rather than saved for another body.
 	const made = ctx.rec.manifest,
 		anims = made.rig.animations.map((a) => a.id);
-	await saveItem(d.rigId, item, images, SLOTS, (cur) => {
+	await saveItem(d.rigId, item, images, slotLadder(made.rig), (cur) => {
 		if (cur.manifest.rig.baseHash === item.baseHash) return;
 		if (bodyCells(cur.manifest, anims) !== bodyCells(made, anims))
 			throw new Error(
@@ -1818,7 +1818,7 @@ export async function mergeClip(
 	);
 	out.provenance = [...out.provenance, ...prov];
 	out.qa = mergeQa(item, q.qa, qaCells);
-	await saveItem(ctx.rec.id, out, built.images, SLOTS, (current) => {
+	await saveItem(ctx.rec.id, out, built.images, slotLadder(ctx.rec.manifest.rig), (current) => {
 		const currentItem = current.manifest.items.find((i) => i.id === item.id);
 		if (
 			!currentItem ||

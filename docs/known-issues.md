@@ -78,8 +78,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   off the body behind or beside it, and the part over the body on top of everything. Where PixelLab draws the fist over the
   grip, those pixels stay body, so the grip shows under the fingers, as a real grip would. The layering cuts nothing from the
   item at the grip; extraction cleanup can still drop small detached parts elsewhere.
-- **Side views can put an off-hand item in the near hand.** In east and west views PixelLab sometimes draws a lantern,
-  shield or bow in the hand nearest the viewer, the sword hand, instead of the far hand behind the body. The hand check
+- **Side views can put an Off hand item in the main hand.** In east views PixelLab sometimes draws a lantern, shield or bow
+  in the hand nearest the viewer, the sword hand, instead of the far left hand behind the body. The hand check
   (G8) flags it for review; keeping the item keeps the wrong hand, and a mirrored west copies it. Try again or a repair of
   that view draws a new one (2026-11-07 live test: the lantern in east).
 - **Historical item QA.** Older saved items lack replaceable checks; after an edit they stay marked for review with an

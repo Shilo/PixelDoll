@@ -56,21 +56,13 @@ export async function equipmentGroup(page: Page, name: string) {
 		await page.getByRole('tab', { name: new RegExp(`^${name}\\b`) }).click();
 	else {
 		await page.locator('.slot-chips').getByRole('button', { name: 'More', exact: true }).click();
-		await page
-			.locator('#more-equipment')
-			.getByRole('button', { name: name === 'Hands' ? 'Held item' : name, exact: true })
-			.click();
+		await page.locator('#more-equipment').getByRole('button', { name, exact: true }).click();
 	}
 }
 
 export async function newItem(page: Page, group = 'Head') {
 	await equipmentGroup(page, group);
-	await page
-		.getByRole('button', {
-			name: `New ${group === 'Hands' ? 'held' : group.toLowerCase()} item`,
-			exact: true
-		})
-		.click();
+	await page.getByRole('button', { name: `New ${group.toLowerCase()} item`, exact: true }).click();
 }
 
 export async function selectedItemDetails(page: Page) {
@@ -81,7 +73,17 @@ export async function selectedItemDetails(page: Page) {
 	// that selection through the same category controls available to a person;
 	// every category shows its equipped item's row, so look for the selected tile first.
 	for (const target of ['.equipment-scroll .tile.sel', '.equipment-scroll .sel-row']) {
-		for (const group of ['Head', 'Hair', 'Body', 'Face', 'Legs', 'Feet', 'Back', 'Hands']) {
+		for (const group of [
+			'Head',
+			'Hair',
+			'Body',
+			'Face',
+			'Legs',
+			'Feet',
+			'Back',
+			'Main hand',
+			'Off hand'
+		]) {
 			if (await page.locator(target).count()) break;
 			await equipmentGroup(page, group);
 		}
@@ -99,7 +101,17 @@ export async function selectedItemDetails(page: Page) {
 export async function pickItem(page: Page, name: string) {
 	await equipmentMode(page, 'Wardrobe');
 	const item = page.locator('.equipment-scroll .tile').getByText(name, { exact: true });
-	for (const group of ['Head', 'Hair', 'Body', 'Face', 'Legs', 'Feet', 'Back', 'Hands']) {
+	for (const group of [
+		'Head',
+		'Hair',
+		'Body',
+		'Face',
+		'Legs',
+		'Feet',
+		'Back',
+		'Main hand',
+		'Off hand'
+	]) {
 		if (await item.count()) break;
 		await equipmentGroup(page, group);
 	}

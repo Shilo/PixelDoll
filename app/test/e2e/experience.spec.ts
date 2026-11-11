@@ -346,12 +346,12 @@ test('all production extra categories, native menu focus, mode controls and Tab 
 	await expect
 		.poll(() => menu.evaluate((node) => node.contains(document.activeElement)))
 		.toBe(true);
-	for (const label of ['Face', 'Legs', 'Feet', 'Back', 'Held item'])
+	for (const label of ['Face', 'Legs', 'Feet', 'Back', 'Main hand', 'Off hand'])
 		await expect(menu.getByRole('button', { name: label, exact: true })).toBeVisible();
-	await menu.getByRole('button', { name: 'Held item', exact: true }).click();
+	await menu.getByRole('button', { name: 'Main hand', exact: true }).click();
 	await expect(menu).not.toBeVisible();
 	await expect(more).toBeFocused();
-	await expect(page.getByRole('group', { name: 'Held items', exact: true })).toBeVisible();
+	await expect(page.getByRole('group', { name: 'Main hand items', exact: true })).toBeVisible();
 	await world(page).focus();
 	await page.keyboard.press('Tab');
 	await expect(world(page)).not.toBeFocused();
@@ -477,7 +477,8 @@ test('shallow landscape More menu stays clamped and every additional equipment g
 		['Legs', 'Legs'],
 		['Feet', 'Feet'],
 		['Back', 'Back'],
-		['Held item', 'Held']
+		['Main hand', 'Main hand'],
+		['Off hand', 'Off hand']
 	] as const) {
 		await page.getByRole('button', { name: 'More', exact: true }).click();
 		const popup = page.locator('#more-equipment');
@@ -500,7 +501,7 @@ test('shallow landscape More menu stays clamped and every additional equipment g
 				})
 			)
 			.toBe(true);
-		if (label === 'Held item') await screenshot(page, 'landscape-more-equipment');
+		if (label === 'Off hand') await screenshot(page, 'landscape-more-equipment');
 		await item.click();
 		await expect(popup).not.toBeVisible();
 		await expect(page.getByRole('group', { name: `${group} items`, exact: true })).toBeVisible();

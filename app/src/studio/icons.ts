@@ -22,6 +22,7 @@ export { default as Crown } from '@lucide/svelte/icons/crown';
 export { default as Glasses } from '@lucide/svelte/icons/glasses';
 export { default as Footprints } from '@lucide/svelte/icons/footprints';
 export { default as Sword } from '@lucide/svelte/icons/sword';
+export { default as Shield } from '@lucide/svelte/icons/shield';
 export { default as Backpack } from '@lucide/svelte/icons/backpack';
 export { default as Scissors } from '@lucide/svelte/icons/scissors';
 export { default as KeyRound } from '@lucide/svelte/icons/key-round';
