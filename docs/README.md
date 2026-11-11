@@ -68,7 +68,7 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 | Doc | What |
 |---|---|
 | [architecture.md](architecture.md) | v1.3: allowed models (D8), rig contract, item pipeline (chroma mannequin + skeleton-posed keyframe, 96 px held items), slots and z ladder, color model, queue/storage/key, cost model, risks. |
-| [manifest-spec.md](manifest-spec.md) | `pixeldoll/3` manifest: owner-local palettes, shared-copy lineage, source sheets, invariants, ZIP layout and per-engine mapping. |
+| [manifest-spec.md](manifest-spec.md) | `pixeldoll/3` manifest: owner-local palettes, copied items, source sheets, invariants, ZIP layout and per-engine mapping. |
 | [user-guide.md](user-guide.md) | The Studio in plain language. |
 | [pixellab-plans.md](pixellab-plans.md) | Editable tier limits, Free/Trial handling, and the plan requirements of the REST endpoints PixelDoll calls. |
 | [agent-instructions.md](agent-instructions.md) | How to keep AGENTS.md short and effective: what belongs, how to word rules, how to verify an edit. |
@@ -132,9 +132,7 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 | [visuals/how-items-are-drawn.html](research/visuals/how-items-are-drawn.html) | Frame scrubber comparing today's posing with dressing the real frames, with every PixelLab call and its price. Open the file in a browser. |
 | [SHARED_NOTES.md](research/SHARED_NOTES.md) | Append-only cross-agent findings. |
 | [pixellab-openapi-v2.json](research/pixellab/pixellab-openapi-v2.json) | PixelLab REST v2 OpenAPI snapshot (102 paths). |
-| [Shared equipment designs with fitted copies](research/shared-equipment-fitted-copies-plan.md) | Agreed design and qualification plan; implemented local library, exact reuse and independent fitted copies. Paid fitting starts with an experimental single-material headwear route. |
-
-Shared-system limits and follow-up tasks live in [shared-equipment cards on the board](https://github.com/users/Shilo/projects/7).
+| [Shared equipment designs with fitted copies](research/shared-equipment-fitted-copies-plan.md) | Superseded history: the design library, design ZIPs and paid fitting, replaced by automatic sharing of finished items between characters. |
 The research plan is broader than the delivered paid trial; the verification report records both accepted and rejected live results.
 
 Older inputs, kept for history:
@@ -187,7 +185,7 @@ Screenshots for all reports: [`testing/img/` at 1f95029](https://github.com/Shil
 | [Character import compatibility](testing/character-import-compatibility-2026-10-22.md) | Actual PixelLab raw/default ZIPs, format boundaries, pagination, Cancel regression and shared-equipment planning. |
 | [Character ZIP import audit (2026-11-04)](testing/character-import-2026-11-04.md) | Eight owner-supplied exports, all 39 states, multi-state moves, larger canvases, drag-and-drop and responsive move labels. |
 | [Imported setup concurrency (2026-11-04)](testing/setup-concurrency-2026-11-04.md) | Bounded joint checks through the account queue, failure draining, cached resume and offline 411-frame validation. |
-| [Shared equipment verification](testing/shared-equipment-2026-10-22.md) | Library/copy lifecycle, paid rest and animation reviews, independent palettes, new moves, adversarial fixes and real exported artifacts. |
+| [Shared equipment verification](testing/shared-equipment-2026-10-22.md) | Superseded history: library/copy lifecycle, paid rest and animation reviews, independent palettes, new moves and exported artifacts. |
 | [M1](testing/M1_report.md) | Key + job queue: resume after reload, IndexedDB ledger. |
 | [M2](testing/M2_report.md) | Rig freeze: normalize, pivot, mirror, anchors, `baseHash`. Built for template frames, later updated by B7. |
 | [M3](testing/M3_report.md) | Item lab: chroma extraction, QA gates G1–G10, automatic re-roll, fg/bg split. |

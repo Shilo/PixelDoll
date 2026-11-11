@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
 import { composeCell } from '../../src/lib/compose/compose.ts';
 import { slotLadder } from '../../src/lib/items/items.ts';
+import { namesOffHandItem } from '../../src/studio/model.ts';
 import type { Img } from '../../src/lib/image/png.ts';
 import type { RigDirection } from '../../src/lib/rig/rig.ts';
 import type { Item, Layer, Manifest, Project } from '../../src/lib/store/manifest.ts';
@@ -80,4 +81,28 @@ test('the default ladder only adds near-hand order for generated left-side views
 	expect(offFg([{ id: 'west' }, { id: 'south-west', mirrorOf: 'south-east' }])).toEqual(['west']);
 	const main = slotLadder({ directions: [{ id: 'west' }] }).find((s) => s.id === 'main_hand')!;
 	expect(main.zOverrides!.every((o) => o.layer === 'bg')).toBe(true);
+});
+
+test('the New item hint recognizes shields and bows by the item subject only', () => {
+	for (const p of [
+		'a wooden longbow',
+		'short bow',
+		'Round Shield',
+		'a wooden targe',
+		'a tall pavise',
+		'a black and gold kite shield',
+		'a pair of bucklers',
+		'a wooden longbow with a leather grip'
+	])
+		expect(namesOffHandItem(p), p).toBe(true);
+	for (const p of [
+		'steel sword',
+		'a crossbow',
+		'elbow pads',
+		'rainbow staff',
+		'shield-breaker axe',
+		'a steel sword with a scutum emblem',
+		'a mace engraved with a bow'
+	])
+		expect(namesOffHandItem(p), p).toBe(false);
 });

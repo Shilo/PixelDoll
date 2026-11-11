@@ -5,7 +5,7 @@
 	import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
 	import { fmtNum, unknownCostText } from './model.ts';
-	import { ui, store, cleanUp, toast, equipment, refreshFits, openFit } from './state.svelte.ts';
+	import { ui, cleanUp, toast } from './state.svelte.ts';
 	async function clear() {
 		let n: Awaited<ReturnType<typeof cleanUp>>;
 		try {
@@ -27,40 +27,9 @@
 		const t = setInterval(() => (now = Date.now()), 1000);
 		return () => clearInterval(t);
 	});
-	const refreshEquipment = () => {
-		void refreshFits().catch(() =>
-			toast('Could not load saved equipment fits.', { tone: 'danger' })
-		);
-	};
-	$effect(() => {
-		refreshEquipment();
-	});
-	const fits = $derived(
-		equipment.fits.filter((f) => f.stage !== 'accepted' && f.stage !== 'discarded')
-	);
-	const fitLabel = (stage: string) =>
-		({
-			ready: 'Ready to preview',
-			'rest-running': 'Fitting at rest',
-			'rest-review': 'Review rest fit',
-			'pose-running': 'Animating fit',
-			'fit-review': 'Review fitted copy',
-			'needs-attention': 'Needs attention'
-		})[stage] ?? stage;
 	const jobs = $derived([...$queue.jobs].reverse());
 	const running = $derived(jobs.filter((r) => r.state === 'running' || r.state === 'submitting'));
 	const queued = $derived(jobs.filter((r) => r.state === 'queued'));
-	$effect(() => {
-		if (
-			!equipment.running.length &&
-			!fits.some((f) => f.stage.endsWith('running')) &&
-			!running.length &&
-			!queued.length
-		)
-			return;
-		const t = setInterval(refreshEquipment, 2000);
-		return () => clearInterval(t);
-	});
 	const done = $derived(
 		jobs.filter((r) => !['running', 'submitting', 'queued'].includes(r.state)).slice(0, 12)
 	);
@@ -157,31 +126,6 @@
 						></span
 					>{/if}
 			</p>
-		{/if}
-		{#if fits.length}
-			<section class="act-group">
-				<span class="sec-title">Equipment fits</span>
-				<ul>
-					{#each fits as fit (fit.id)}
-						<li>
-							<CircleAlert size={16} /><span class="act-main"
-								><b>{fit.name}</b><span class="muted small"
-									>{store.projects.find((p) => p.id === fit.targetId)?.name ?? 'Character'} · {fitLabel(
-										fit.stage
-									)} · {+fit.spentGens.toFixed(2)} gens{fit.spentUsd && fit.spentUsd > 0
-										? ` + $${fit.spentUsd.toFixed(3)}`
-										: ''}{unknownCostText(fit.spentUnknown)} spent</span
-								></span
-							><button
-								class="bu-action btn sm"
-								data-variant="outline"
-								onclick={() => openFit(fit.id)}
-								>{fit.stage.endsWith('running') ? 'View' : 'Continue'}</button
-							>
-						</li>
-					{/each}
-				</ul>
-			</section>
 		{/if}
 		{#if !running.length && !queued.length}<p class="muted">Nothing generating.</p>{/if}
 		{#if running.length}

@@ -40,8 +40,8 @@ import type {
 import { GROUPS, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import type { SetupSpec } from './setup.ts';
-import { listFits, clearFinishedFits, resumeFits } from '../lib/equipment/fits.ts';
-import type { EquipmentDesign, FitDraft } from '../lib/equipment/types.ts';
+import { listShared, type SharedItem } from '../lib/equipment/shared.ts';
+import { acceptCopy } from '../lib/equipment/copy.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
@@ -63,12 +63,11 @@ const itemRun = () =>
 			})
 		)
 	);
-const fitFlow = () => lazy(() => import('../lib/equipment/fit.ts'));
 const setupFlow = () => lazy(() => import('./setup.ts'));
 /** After startup: fetch the pipelines so a later action still works offline or after a deploy replaced their files.
  * A failure is logged by lazy() and shown again when the action runs. */
 export const prefetchFlows = () =>
-	Promise.allSettled([createFlow(), itemFlow(), itemRun(), fitFlow(), setupFlow()]);
+	Promise.allSettled([createFlow(), itemFlow(), itemRun(), setupFlow()]);
 import.meta.hot?.dispose((data) => {
 	data.flowReloading = true;
 	queue.disconnect();
@@ -113,9 +112,7 @@ export type SheetId =
 	| 'rename'
 	| 'import'
 	| 'delete'
-	| 'setup'
-	| 'savedesign'
-	| 'fitdesign';
+	| 'setup';
 const sizeNow = (): Size => {
 	const w = innerWidth,
 		h = innerHeight;
@@ -137,11 +134,7 @@ export const ui = $state({
 	sheet: null as SheetId,
 	sheetBusy: false,
 	importSource: 'device' as 'device' | 'pixellab',
-	newItemTab: 'create' as 'create' | 'designs',
-	designId: '',
-	designMode: 'copy' as 'copy' | 'fit',
-	fitId: '',
-	newItem: { group: 'Head', slot: '', prompt: '' },
+	newItem: { group: 'Head', slot: '', prompt: '', name: '' },
 	anim: '',
 	dir: 'south' as DirectionName,
 	all: false,
@@ -342,115 +335,6 @@ class Store {
 	results = $state.raw<Record<string, ItemResult | null>>({});
 }
 export const store = new Store();
-class DesignSource {
-	project = $state.raw<Project | null>(null);
-	itemId = $state('');
-	variants = $state.raw<Preset['variants']>({});
-}
-export const designSource = new DesignSource();
-class EquipmentState {
-	fits = $state.raw<FitDraft[]>([]);
-	running = $state<string[]>([]);
-	preparing = $state<string[]>([]);
-	previewDesign = $state.raw<EquipmentDesign | null>(null);
-}
-export const equipment = new EquipmentState();
-export async function refreshFits() {
-	equipment.fits = await listFits();
-}
-/** Resuming a stage loads the fitting pipeline. If that (or storage) fails, say so; the fit stays running and a reload
- * resumes it. */
-export async function resumeFitStages() {
-	try {
-		await resumeFits();
-	} catch (e) {
-		toast(e instanceof Error ? e.message : String(e), { tone: 'danger' });
-	}
-}
-export function openFit(id: string) {
-	equipment.previewDesign = null;
-	ui.fitId = id;
-	ui.designId = '';
-	ui.sheet = 'fitdesign';
-}
-/** Accepted items pin the source even after its library entry has been deleted. */
-export function openPinnedDesign(itemId: string) {
-	const item = store.project?.manifest.items.find((i) => i.id === itemId);
-	if (!item?.design) return;
-	equipment.previewDesign = item.design.snapshot;
-	ui.designId = '';
-	ui.designMode = 'fit';
-	ui.fitId = '';
-	ui.sheet = 'fitdesign';
-}
-export async function openItemExtension(itemId: string, anims?: string[]) {
-	if (follower()) return;
-	const id = doc.id;
-	const sheet = ui.sheet;
-	const pending = `${id}/${itemId}`;
-	if (equipment.preparing.includes(pending)) return;
-	equipment.preparing = [...equipment.preparing, pending];
-	try {
-		await flushSave();
-		const fit = await (await fitFlow()).prepareExtensionFit(id, itemId, { anims });
-		await refreshFits();
-		if (doc.id === id && ui.sheet === sheet) openFit(fit.id);
-		else toast('Equipment fit prepared in Activity');
-	} catch (e) {
-		toast(e instanceof Error ? e.message : 'Could not prepare this equipment fit.', {
-			tone: 'danger'
-		});
-	} finally {
-		equipment.preparing = equipment.preparing.filter((key) => key !== pending);
-	}
-}
-export const extensionPreparing = (itemId: string) =>
-	equipment.preparing.includes(`${doc.id}/${itemId}`);
-/** A hidden sheet never owns the lifetime of a paid fit stage. */
-async function trackFit(id: string, action: () => Promise<FitDraft>) {
-	if (equipment.running.includes(id)) return;
-	equipment.running = [...equipment.running, id];
-	try {
-		const finished = await action();
-		toast(
-			finished.stage === 'rest-review' || finished.stage === 'fit-review'
-				? 'Equipment fit is ready for review in Activity'
-				: 'Equipment fit needs attention in Activity',
-			{ tone: finished.stage === 'needs-attention' ? 'warning' : 'info' }
-		);
-	} catch (e) {
-		toast(e instanceof Error ? e.message : 'The equipment fit needs attention in Activity.', {
-			tone: 'danger'
-		});
-	} finally {
-		equipment.running = equipment.running.filter((x) => x !== id);
-		await refreshFits();
-	}
-}
-export const runFitStage = (id: string, stage: 'rest' | 'pose', poseBudget = 0) =>
-	trackFit(id, async () => {
-		const f = await fitFlow();
-		return stage === 'rest' ? f.runRestFit(id) : f.approveRestAndPose(id, poseBudget);
-	});
-export const retryFitStage = (id: string, stage: 'rest' | 'pose', budget: number) =>
-	trackFit(id, async () => (await fitFlow()).retryFit(id, stage, budget));
-/** Capture the displayed colorway before opening a sheet or changing characters. */
-export function openSaveDesign(itemId: string) {
-	if (
-		!store.project ||
-		!store.project.manifest.items.some(
-			(i) => i.id === itemId && i.slot !== 'body' && i.status === 'accepted'
-		)
-	)
-		return;
-	designSource.project = {
-		manifest: structuredClone(store.project.manifest),
-		images: new Map(store.project.images)
-	};
-	designSource.itemId = itemId;
-	designSource.variants = $state.snapshot(doc.variants);
-	ui.sheet = 'savedesign';
-}
 export const doc = $state({
 	id: '',
 	loading: true,
@@ -490,7 +374,8 @@ export function stepPreviewFrame(direction: -1 | 1): void {
 	ui.frame = ((ui.frame % count) + count + direction) % count;
 }
 
-export async function refreshProjects() {
+/** False when the saved characters could not be read (already reported). */
+export async function refreshProjects(): Promise<boolean> {
 	const removed = await deleteOutdated().catch((e: unknown) => {
 		console.error('outdated', e);
 		toast(
@@ -530,6 +415,7 @@ export async function refreshProjects() {
 		} catch {
 			/* storage blocked */
 		}
+	return !!listed;
 }
 
 let openRequest = 0,
@@ -604,6 +490,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (ui.selected && !quiet)
 			ui.group = groupOf(m.items.find((i) => i.id === ui.selected)!.slot).id;
 		lsSet(K.last, id);
+		void refreshShared();
 		doc.rev++;
 		savedEdits = edits; // nothing is pending (flushed above): what was just loaded is saved, so only later edits count
 		// Keep it equips the accepted item while opening, or an outfit left unsaved by an unload; persist it now.
@@ -773,12 +660,6 @@ export function deletionBlocked(): string {
 	if (queue.role === 'follower')
 		return 'Manage characters in the other PixelDoll tab, or close it first.';
 	if (
-		equipment.fits.some(
-			(f) => f.targetId === doc.id && f.stage !== 'accepted' && f.stage !== 'discarded'
-		)
-	)
-		return 'Finish or discard this character’s equipment fits in Activity before deleting it.';
-	if (
 		!queue.idle() ||
 		gens.some((g) => g.phase === 'running') ||
 		settling.size ||
@@ -799,10 +680,7 @@ function generationSettled() {
 		!takeOverRunning &&
 		!afterConnect &&
 		!itemStarting &&
-		!runningGens.size &&
-		!equipment.preparing.length &&
-		!equipment.running.length &&
-		!equipment.fits.some((f) => f.stage.endsWith('running'))
+		!runningGens.size
 	);
 }
 const heldCreate = () => creating.spec && !creating.projectId;
@@ -903,7 +781,6 @@ export async function prepareForUpdate(): Promise<void> {
 }
 
 export async function removeProject(): Promise<void> {
-	await refreshFits(); // Persisted drafts may have changed in another tab since the menu opened.
 	const reason = deletionBlocked();
 	if (reason) throw new Error(reason);
 	const id = doc.id,
@@ -1089,6 +966,59 @@ export async function removeItem(itemId: string) {
 	if (doc.id === projectId && request === openRequest) await openProject(projectId);
 }
 
+// ---------- items from other characters ----------
+class Shared {
+	items = $state.raw<SharedItem[]>([]);
+	adding = $state('');
+	/** A failed read shows in the wardrobe where the items would be, without displacing startup notices. */
+	error = $state('');
+}
+export const shared = new Shared();
+export const sharedKey = (entry: SharedItem) => `shared:${entry.sourceId}/${entry.item.id}`;
+let sharedRequest = 0;
+/** Re-read the other characters' items for the open character (the demo receives none). */
+export async function refreshShared() {
+	const request = ++sharedRequest;
+	if (isDemo()) {
+		shared.items = [];
+		shared.error = '';
+		return;
+	}
+	try {
+		const items = await listShared(doc.id, store.project?.manifest ?? null);
+		if (request !== sharedRequest) return;
+		shared.items = items;
+		shared.error = '';
+	} catch (e) {
+		console.error('shared', e);
+		if (request === sharedRequest)
+			shared.error = `Could not read items from your other characters: ${(e as Error).message}`;
+	}
+}
+/** Free: wear a copy when the bodies match. Otherwise select the entry, so the wardrobe offers to make it for this character. */
+export async function addShared(entry: SharedItem) {
+	if (isDemo() || shared.adding) return;
+	const projectId = doc.id,
+		request = openRequest;
+	shared.adding = sharedKey(entry);
+	try {
+		await flushSave();
+		const item = await acceptCopy(entry.sourceId, entry.item.id, projectId);
+		if (doc.id !== projectId || request !== openRequest) return;
+		if (!item) {
+			ui.selected = sharedKey(entry);
+			return;
+		}
+		await openProject(projectId, { quiet: true });
+		if (doc.id === projectId) wear(item.id);
+		toast(`Added ${item.name} from ${entry.sourceName}.`);
+	} catch (e) {
+		toast(`Could not add ${entry.item.name}: ${(e as Error).message}`, { tone: 'danger' });
+	} finally {
+		shared.adding = '';
+	}
+}
+
 /** The demo is a bundled fixture; items are generated into an editable copy in IndexedDB. */
 export async function copyDemo(): Promise<string> {
 	const project = store.project!; // the open character when asked, not after the pipeline loads
@@ -1237,8 +1167,6 @@ async function takeOver() {
 		await resumeCreate();
 		await resumeMove();
 		await resumeSetup();
-		await resumeFitStages();
-		await refreshFits();
 		resumedHere = true;
 	} catch (e) {
 		cancelWaitingForTab(); // never run a click on top of work this tab could not resume
@@ -1609,19 +1537,12 @@ const FLOW_TAGS = ['studio-base', 'studio-rig', 'studio-move', 'studio-setup', '
 export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number; blobs: number }> {
 	if (queue.role === 'follower') return { jobs: 0, blobs: 0 };
 	await loadGens(); // before the drafts load, `gens` is empty and their records would look unreferenced
-	if (maxAge === 0) await clearFinishedFits();
 	const drafts = [...gens.map((g) => g.draft), ...(await loadDrafts())];
 	const refs = new Set(drafts.flatMap((d) => d.calls.flatMap((c) => [c.recId, ...c.old])));
-	const allFits = await listFits();
-	equipment.fits = allFits;
-	const fits = allFits.filter((fit) => fit.stage !== 'accepted' && fit.stage !== 'discarded');
-	for (const fit of fits) for (const call of fit.calls) if (call.recId) refs.add(call.recId);
-	const fitTags = new Set(fits.flatMap((fit) => fit.calls.map((call) => `${fit.id}:${call.id}`)));
 	const flow = !!(
 		creating.spec ||
 		moving.spec ||
 		settingUp.spec ||
-		fits.some((f) => f.stage === 'rest-running' || f.stage === 'pose-running') ||
 		(await db.get('projects', CREATE_KEY)) ||
 		(await db.get('projects', MOVE_KEY)) ||
 		(await db.get('projects', SETUP_KEY))
@@ -1630,7 +1551,6 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 	const jobs = await queue.clearFinished(
 		(r) =>
 			refs.has(r.id) ||
-			fitTags.has(r.tag ?? '') ||
 			(flow && FLOW_TAGS.includes(r.tag ?? '')) ||
 			(r.finishedAt ?? r.createdAt) > cutoff
 	);
@@ -1640,14 +1560,13 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 
 export function openNewItem(
 	group: string,
-	prefill?: { slot?: string; prompt?: string },
-	tab: typeof ui.newItemTab = 'create'
+	prefill?: { slot?: string; prompt?: string; name?: string }
 ) {
-	ui.newItemTab = tab;
 	ui.newItem = {
 		group,
 		slot: prefill?.slot ?? GROUPS.find((g) => g.id === group)!.slots[0],
-		prompt: prefill?.prompt ?? ''
+		prompt: prefill?.prompt ?? '',
+		name: prefill?.name ?? ''
 	};
 	ui.sheet = 'newitem';
 }
@@ -1830,7 +1749,6 @@ export const moving = $state({
 	progress: null as Progress | null,
 	error: '',
 	done: false,
-	fitIds: [] as string[],
 	warnings: [] as string[],
 	queued: [] as QueuedMove[]
 });
@@ -1910,7 +1828,6 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		progress: null,
 		error: '',
 		done: false,
-		fitIds: [],
 		warnings: []
 	});
 	try {
@@ -1954,10 +1871,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 				})
 			: await flow.addMove(projectId, spec, progress);
 		if (!current()) return;
-		moving.fitIds = result.fitIds;
 		moving.warnings = result.warnings;
-		await refreshFits();
-		if (!current()) return;
 		moving.done = true;
 		await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
 		if (!current()) return;
@@ -2139,7 +2053,6 @@ export async function resumeMove() {
 			progress: r.progress ?? null,
 			error: r.error || STOPPED,
 			done: false,
-			fitIds: [],
 			warnings: []
 		});
 	else void startMove(r.projectId, r.spec);
@@ -2155,7 +2068,6 @@ export async function dismissMove() {
 		progress: null,
 		error: '',
 		done: false,
-		fitIds: [],
 		warnings: [],
 		queued: others
 	});

@@ -191,7 +191,6 @@ test('complete artwork with review notes is saved without buying another candida
 	expect(qa.warnings).toHaveLength(2);
 	const f = await fixture([true, false]);
 	const result = await f.run();
-	expect(result.fitIds).toEqual([]);
 	expect(result.warnings).toEqual(
 		expect.arrayContaining([
 			expect.stringContaining('palette similarity'),

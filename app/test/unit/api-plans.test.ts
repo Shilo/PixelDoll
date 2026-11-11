@@ -5,8 +5,6 @@ import {
 	characterZipPlan,
 	createPlan,
 	draftQueueIds,
-	fitPlan,
-	fitRetryPlan,
 	itemPlan,
 	libraryPlan,
 	movePlan,
@@ -22,7 +20,6 @@ import { equipmentFixture } from './equipment-fixture.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { DIRECTIONS } from '../../src/lib/rig/rig.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
-import type { FitPlan, FitDraft } from '../../src/lib/equipment/types.ts';
 
 test.each([4, 8] as const)(
 	'create preflight baseline matches the %i-direction estimate and makes no animation calls',
@@ -201,97 +198,4 @@ test('cancellation depends on actual queue state and generation history retains 
 		calls: [{ recId: 'current', old: ['paid-first', 'paid-reroll', 'grid'] }]
 	} as Draft;
 	expect(draftQueueIds(draft)).toEqual(['current', 'paid-first', 'paid-reroll', 'grid']);
-});
-
-test('fitting lists each pose batch, excludes imported standing frames, and retries only failed batches', async () => {
-	const project = await equipmentFixture(),
-		m = project.manifest,
-		reference = m.items[0].layers[0].cells!.rest!.south![0]!;
-	m.rig.animations[0].sources = {
-		south: { route: 'import', motion: 'imported-rest', reference, provenance: [] }
-	};
-	m.rig.animations.push({
-		id: 'walk',
-		cells: 16,
-		frames: Array.from({ length: 16 }, (_, cell) => ({ cell, ms: 100 })),
-		loop: true
-	});
-	m.items[0].layers[0].cells!.walk = { south: Array.from({ length: 16 }, () => reference) };
-	const plan: FitPlan = {
-		design: {
-			kind: 'equipment-design',
-			format: 'pixeldoll-design/1',
-			id: 'hat',
-			revision: reference,
-			name: 'Hat',
-			slot: 'head',
-			itemId: 'hat',
-			createdAt: '',
-			source: m,
-			imageHashes: [reference],
-			variants: {},
-			warnings: []
-		},
-		targetId: 'target',
-		targetAudit: reference,
-		targetStamp: 'stamp',
-		previewGens: 10,
-		poseGens: 6,
-		directions: ['south'],
-		createdAt: '',
-		assessment: {
-			status: 'fit',
-			freeCells: 0,
-			totalCells: 17,
-			missingCells: 17,
-			canExtend: true,
-			targetRigReady: true,
-			canCopy: false,
-			reasons: [],
-			warnings: [],
-			matches: []
-		}
-	};
-	const baseline = fitPlan(plan, 'pose', undefined, false, m).filter((call) => !call.background);
-	expect(baseline).toHaveLength(2);
-	expect(baseline.reduce((sum, call) => sum + (call.generations ?? 0), 0)).toBe(6);
-	expect(baseline.every((call) => call.label?.includes('walk south'))).toBe(true);
-	plan.extension = {
-		itemId: 'hat',
-		anims: ['walk'],
-		cells: ['walk/south/0', 'walk/south/1', 'walk/south/15'],
-		stamp: 'extension',
-		reuseRest: true
-	};
-	expect(
-		fitPlan(plan, 'pose', undefined, false, m).filter((call) => !call.background)
-	).toMatchObject([{ generations: 2 }]);
-	const draft: FitDraft = {
-		kind: 'equipment-fit-draft',
-		format: 'pixeldoll-fit/1',
-		id: 'fit',
-		name: 'Fit hat',
-		targetId: 'target',
-		targetProjectId: 'target',
-		plan,
-		stage: 'needs-attention',
-		updatedAt: '',
-		error: '',
-		previewGens: 10,
-		poseGens: 6,
-		spentGens: 16,
-		budget: { previewGens: 10, poseGens: 6 },
-		retryStage: 'pose',
-		retryGens: 3,
-		failedCells: ['walk/south/15'],
-		calls: [
-			{ id: 'ok', stage: 'pose', cells: ['walk/south/0'], seed: 1, limit: 3 },
-			{ id: 'failed', stage: 'pose', cells: ['walk/south/15'], seed: 2, limit: 3 },
-			{ id: 'old', stage: 'pose', cells: ['walk/south/15'], seed: 3, limit: 3, superseded: true }
-		]
-	};
-	const retry = fitRetryPlan(draft).filter((call) => !call.background);
-	expect(retry).toHaveLength(1);
-	expect(retry[0]).toMatchObject({ generations: 3, path: '/animate-with-skeleton-v3' });
-	expect(retry[0].note).toContain('walk/south/15');
 });

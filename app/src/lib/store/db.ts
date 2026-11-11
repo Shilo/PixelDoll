@@ -89,48 +89,9 @@ export async function updateCharacter<T>(
 	});
 }
 
-/** Publish an accepted fit, its character and PNGs in one transaction. The draft marker makes repeated acceptance safe. */
-export async function updateCharacterAndDraft<T, D>(
-	id: string,
-	draftId: string,
-	blobs: Map<string, Blob>,
-	fn: (project: T | undefined, draft: D | undefined) => { project: T; draft: D }
-): Promise<void> {
-	const database = await open();
-	return new Promise((resolve, reject) => {
-		const t = database.transaction(['projects', 'blobs'], 'readwrite'),
-			projects = t.objectStore('projects');
-		const project = projects.get(id),
-			draft = projects.get(draftId);
-		let error: unknown;
-		draft.onsuccess = () => {
-			try {
-				const result = fn(project.result, draft.result);
-				for (const [hash, blob] of blobs) t.objectStore('blobs').put(blob, hash);
-				projects.put(result.project, id);
-				projects.put(result.draft, draftId);
-			} catch (e) {
-				error = e;
-				t.abort();
-			}
-		};
-		t.oncomplete = () => resolve();
-		t.onerror = t.onabort = () => reject(error ?? t.error);
-	});
-}
-
-/** A record's change when characters `ids` are deleted: their drafts leave the shared draft lists and their finished fit drafts
- * go ('delete'); undefined when the record does not depend on them. */
-export function withoutCharacters(
-	r: any,
-	ids: Set<string>
-): 'delete' | Record<string, unknown> | undefined {
-	if (
-		r?.kind === 'equipment-fit-draft' &&
-		ids.has(r.targetId) &&
-		['accepted', 'discarded'].includes(r.stage)
-	)
-		return 'delete';
+/** A record's change when characters `ids` are deleted: their drafts leave the shared draft lists; undefined when the record
+ * does not depend on them. */
+export function withoutCharacters(r: any, ids: Set<string>): Record<string, unknown> | undefined {
 	const list = r?.id === 'studio-drafts' ? 'gens' : r?.id === 'm3-drafts' ? 'drafts' : undefined;
 	if (!list) return;
 	const kept = r[list].filter(
@@ -159,13 +120,7 @@ export async function deleteCharacter(id: string): Promise<void> {
 					(r.id === 'studio-drafts' &&
 						r.gens?.some((g: { phase: string }) => g.phase === 'running'))
 			);
-			const fit = records.result.some(
-				(r) =>
-					r.kind === 'equipment-fit-draft' &&
-					r.targetId === id &&
-					!['accepted', 'discarded'].includes(r.stage)
-			);
-			if (busy || work || fit) {
+			if (busy || work) {
 				error = new Error('Finish or dismiss pending generation work before deleting a character.');
 				t.abort();
 				return;
@@ -173,8 +128,7 @@ export async function deleteCharacter(id: string): Promise<void> {
 			projects.delete(id);
 			for (const r of records.result) {
 				const change = withoutCharacters(r, new Set([id]));
-				if (change === 'delete') projects.delete(r.id);
-				else if (change) projects.put(change, r.id);
+				if (change) projects.put(change, r.id);
 			}
 		};
 		t.oncomplete = () => res();

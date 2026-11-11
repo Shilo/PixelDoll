@@ -5,13 +5,13 @@ import { join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { openStudio } from './immersive-helpers.ts';
-import { nativeCrashTrace, retainRunningFit, retainedFitStage } from './retained-equipment.ts';
+import { nativeCrashTrace } from './queue-lock.ts';
 
 const execFileAsync = promisify(execFile);
 
 test.use({ trace: { ...nativeCrashTrace } });
 
-test('Export choices and retained equipment survive abrupt browser termination and restart', async ({}, info) => {
+test('Export choices survive abrupt browser termination and restart', async ({}, info) => {
 	const profile = await mkdtemp(join(tmpdir(), 'pd-crash-'));
 	const requests: string[] = [];
 	const launch = async () => {
@@ -51,8 +51,6 @@ test('Export choices and retained equipment survive abrupt browser termination a
 		await dressed.uncheck();
 		await expect(dressed).toBeEnabled();
 		await dialog.getByRole('button', { name: 'Close export' }).click();
-		await retainRunningFit(page);
-		expect(await retainedFitStage(page)).toBe('rest-running');
 		await page.evaluate(() =>
 			addEventListener('pagehide', () => localStorage.setItem('crash-test:pagehide', 'yes'))
 		);
@@ -110,9 +108,6 @@ test('Export choices and retained equipment survive abrupt browser termination a
 		context = await launch();
 		const reopened = context.pages()[0];
 		await openStudio(reopened, '/');
-		await expect
-			.poll(() => retainedFitStage(reopened), { timeout: 15_000 })
-			.toBe('needs-attention');
 		expect(await reopened.evaluate(() => localStorage.getItem('crash-test:pagehide'))).toBeNull();
 		await reopened.getByRole('button', { name: 'Export', exact: true }).click();
 		const settings = reopened.getByRole('dialog');

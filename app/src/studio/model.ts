@@ -144,26 +144,32 @@ export function itemCell(
 	return out;
 }
 
-/** Stable item-only thumbnail, independent of playback. Prefer south and use another landed frame when needed. */
-export function thumbCell(p: Project, it: Item): Img | null {
-	if (!it.layers.length) return null;
-	const m = p.manifest;
+/** Cells with stored item art in thumbnail order (south first), with the images each needs. */
+export function* thumbCells(
+	m: Manifest,
+	it: Item
+): Generator<{ anim: string; dir: DirectionName; cell: number; hashes: string[] }> {
 	const dirs = [...m.rig.directions].sort(
 		(a, b) => Number(b.id === 'south') - Number(a.id === 'south')
 	);
 	for (const a of m.rig.animations)
 		for (const d of dirs)
 			for (const f of a.frames) {
-				// Sparse drafts can contain many pending cells. Skip absent references before allocating a composed frame.
-				if (
-					!it.layers.some(
-						(l) => (l.cells?.[a.id]?.[d.id] ?? l.cells?.[a.id]?.[d.mirrorOf ?? d.id])?.[f.cell]
-					)
-				)
-					continue;
-				const im = itemCell(p, it, a.id, d.id, f.cell);
-				if (im.data.some((v, i) => i % 4 === 3 && v)) return im;
+				const hashes = it.layers.flatMap(
+					(l) => (l.cells?.[a.id]?.[d.id] ?? l.cells?.[a.id]?.[d.mirrorOf ?? d.id])?.[f.cell] ?? []
+				);
+				if (hashes.length) yield { anim: a.id, dir: d.id, cell: f.cell, hashes };
 			}
+}
+
+/** Stable item-only thumbnail, independent of playback. Prefer south and use another landed frame when needed. */
+export function thumbCell(p: Project, it: Item): Img | null {
+	if (!it.layers.length) return null;
+	// Sparse drafts can contain many pending cells: only cells with references allocate a composed frame.
+	for (const c of thumbCells(p.manifest, it)) {
+		const im = itemCell(p, it, c.anim, c.dir, c.cell);
+		if (im.data.some((v, i) => i % 4 === 3 && v)) return im;
+	}
 	return null;
 }
 
@@ -279,6 +285,18 @@ const itemHead = (desc: string) => {
 	)[0];
 	return head.split(/\s+/).length > 4 ? head.split(/\s+of\s+/i)[0] : head;
 };
+/** Held items PixelLab draws in the left hand: bows (archery prior; round 2 arm B: main hand got the right hand on 1/3 seeds,
+ * off hand 3/3) and shields (the main-hand wording forbids a shield). Crossbows stay in the main hand. */
+// (?!-): "shield-breaker axe" and "bow-staff" name the main-hand weapon. "aegis" is left out: it names engravings and crests too.
+const OFF_HAND =
+	/\b(?:long|short|recurve|hunting|war|great|flat)?bows?\b(?!-)|\b(?:shield|buckler|targe|pavise|scutum)s?\b(?!-)/i;
+// The item's subject decides: "a steel sword with a scutum emblem" is a sword (2026-11-07 counter-review R6). The cut is at
+// attachment and decoration clauses only, so color pairs and adjective lists stay ("a black and gold kite shield").
+const SUBJECT_END =
+	/\s+(?:with|that|which|bearing|featuring|showing|depicting|decorated|engraved|emblazoned|etched|painted|carved|inlaid|of|from|on|in|for|by|at|to|under|over|around|hanging|holding|held|carrying|dangling|attached|wrapped|covered|trimmed|lined|studded|made)\s+/i;
+/** A hint only: the description names a shield or bow, which belongs in the off hand. The user's group choice stands. */
+export const namesOffHandItem = (prompt: string) =>
+	OFF_HAND.test(stripCount(prompt).split(SUBJECT_END)[0]);
 /** Item name from its description, sentence case like the demo: "a straw farmer hat, frayed" -> "Straw farmer hat" (T1 P2-15). */
 export function itemNameFrom(desc: string): string {
 	const head = itemHead(desc);

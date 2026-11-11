@@ -1318,7 +1318,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	const fixture = await freePaletteFixture(page, true),
+	const fixture = await freePaletteFixture(page),
 		pane = await selectedItemDetails(page);
 	const eligibility = await page.evaluate(async (id) => {
 		const p = '/src/studio/state.svelte.ts',
@@ -1329,19 +1329,15 @@ test('free item color matching is offline, scoped, persistent and preserves save
 			key: item.key,
 			dressed: !!item.dressed.west,
 			frames: s.store.project.manifest.rig.animations.find((a: { id: string }) => a.id === 'walk')
-				.sources.west.keypoints.length,
-			shared: !!item.design
+				.sources.west.keypoints.length
 		};
 	}, fixture.itemId);
 	expect(eligibility).toMatchObject({
 		route: 'skeleton-pose',
 		key: 'green',
 		dressed: true,
-		frames: 8,
-		shared: true
+		frames: 8
 	});
-	await expect(pane.getByRole('button', { name: /^Try new item frames/ })).toHaveCount(0);
-	await expect(pane.getByRole('button', { name: 'View saved design', exact: true })).toBeVisible();
 	const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ });
 	await expect(action).toBeVisible();
 	await expect(pane).toContainText('Match 2 pixels in 2 saved Walk frames facing west');
@@ -4686,6 +4682,12 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		retry = panel.getByRole('button', { name: /^Try again/ });
 	expect(expected).toBe(10); // only four padded standing references; walking frames are a separate purchase now
 	await expect(retry).toBeEnabled();
+	// The selection area belongs to the browsed group: the main-hand draft does not show under Off hand.
+	await equipmentGroup(page, 'Off hand');
+	await expect(page.locator('.equipment-scroll .gen')).toHaveCount(0);
+	await equipmentGroup(page, 'Main hand');
+	await expect(page.locator('.equipment-scroll .gen')).toHaveCount(1);
+	await expect(retry).toBeEnabled();
 	await expect(retry).toHaveText(`Try again Est. ${expected} gens`);
 	await panel
 		.locator('.actions .api-action')
@@ -4724,11 +4726,11 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 	expect(requests).toEqual([]);
 });
 
-async function freePaletteFixture(page: Page, shared = false) {
+async function freePaletteFixture(page: Page) {
 	const fixture = await targetedRepairFixture(page);
 	await oversizedItemFixture(page, fixture.itemId);
 	const before = await page.evaluate(
-		async ({ id, shared }) => {
+		async ({ id }) => {
 			const p = '/src/studio/state.svelte.ts',
 				s = await import(p),
 				dbPath = '/src/lib/store/db.ts',
@@ -4781,41 +4783,6 @@ async function freePaletteFixture(page: Page, shared = false) {
 			s.pick(id);
 			s.setVariant(metalId, 'azure');
 			await s.flushSave();
-			if (shared) {
-				const projectPath = '/src/lib/store/project.ts',
-					projectModule = await import(projectPath),
-					designPath = '/src/lib/equipment/design.ts',
-					designs = await import(designPath),
-					compatibilityPath = '/src/lib/equipment/compatibility.ts',
-					compatibility = await import(compatibilityPath),
-					copyPath = '/src/lib/equipment/copy.ts',
-					copies = await import(copyPath),
-					storePath = '/src/lib/equipment/store.ts',
-					equipmentStore = await import(storePath);
-				const ctx = await projectModule.loadProject(s.doc.id),
-					design = await designs.createDesign(
-						ctx.project,
-						id,
-						s.doc.variants,
-						'Pinned palette fixture'
-					),
-					pinned = ctx.rec.manifest.items.find((it: { id: string }) => it.id === id);
-				pinned.design = {
-					designId: design.id,
-					revision: design.revision,
-					snapshot: equipmentStore.snapshotDesign(design),
-					roleMaterials: Object.fromEntries(pinned.materials.map((m: string) => [m, m])),
-					targetAudit: await compatibility.targetAudit(ctx.project),
-					targetStamp: copies.targetStamp(ctx.rec.manifest, pinned.slot),
-					dressedStamp: designs.restStamp(ctx.rec.manifest)
-				};
-				await db.put('projects', s.doc.id, ctx.rec);
-				await s.openProject(s.doc.id);
-				s.ui.anim = 'walk';
-				s.ui.dir = 'west';
-				s.ui.playing = false;
-				s.pick(id);
-			}
 			const saved = await db.get('projects', s.doc.id),
 				savedItem = saved.manifest.items.find((it: { id: string }) => it.id === id);
 			const unscoped = structuredClone(savedItem.layers);
@@ -4834,7 +4801,7 @@ async function freePaletteFixture(page: Page, shared = false) {
 				sourceHash: hash
 			};
 		},
-		{ id: fixture.itemId, shared }
+		{ id: fixture.itemId }
 	);
 	const diagnosis = await page.evaluate(async (id) => {
 		const p = '/src/studio/state.svelte.ts',

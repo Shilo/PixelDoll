@@ -98,23 +98,23 @@ to dress the Default pose first. **Moves → Add idle + walk** offers the same l
 **Default** is the character's standing pose: one still frame per direction, listed first in Moves and Share and
 exported like any move. "Default" can't be used as the name of another move.
 
-## Share equipment designs between characters
+## Use items from your other characters
 
-Select an accepted equipment item and press **Save as shared design**. Check the current colors in the preview and name the design. This saves an independent local snapshot of its artwork and references.
+Every finished item of your other saved characters on this device appears in the wardrobe, under **From other
+characters** in its category. Each tile shows the item as that character wears it, with a "from <character>" caption.
+Items this character already has (same slot and description) are not repeated. Nothing needs saving, and showing them
+never spends anything.
 
-On another character, choose **New item → Saved designs**:
+- **Same body** (an editable copy of the same character, or a re-import): tapping the tile adds an exact copy and wears
+  it, for free. The copy is an ordinary item of this character with its own colors, starting from the colors the other
+  character wears. Undo takes it off again; **Remove** in its details deletes it.
+- **Different body:** pixel layers drawn for one body do not fit another. The tile shows "Made for <character>. It
+  doesn't fit <this character> yet." with **Make for <this character>**, which opens **New item** with the same
+  category, description and name. Its price is shown there before anything is generated.
 
-- **Review free copy** reuses frames whose frozen body pixels and geometry match. If only some frames match, **Review available copy · Free** shows the available coverage and its gaps. Copying uses no PixelLab generations.
-- **View fit** checks whether a different body can use a reference fit. The initial paid trial supports single-material headwear on known 64 px low top-down humanoid rigs with complete standing references. Other slots and multi-material designs still support compatible free copies.
-- Paid fitting has separate prices and reviews: preview the standing fit first, then approve animation. Inspect every direction and move before **Keep and wear** or **Keep in wardrobe**. Failed attempts can still be billed; retries require a separate priced action. PixelLab may report charges in generations or dollars. The displayed generation estimate is not a dollar spending cap; reported charges remain visible after failures and retries.
-
-Each kept copy has its own wardrobe entry, colors and outfit choices. Changing the source or removing its library entry leaves existing copies intact. **Export** on a design card downloads a portable `.pixeldoll-design.zip`; **Import design** restores it. Character exports also keep their accepted copies and pinned references.
-
-When you add a move, shared equipment gets a separate review for its missing frames. Matching frames copy for free; approved standing references can be reused without another standing-fit charge. Unaccepted or failed drafts do not replace wardrobe artwork. An export can therefore contain the new body move while warning that an item has no equipment frames for it.
-
-Paid fitting is experimental: a successful standing fit does not guarantee every move will preserve the design. Visible deformation blocks keeping the result; an occlusion warning still needs visual review. Broader item classes and recovery of missing old equipment references remain on the [shared equipment backlog](https://github.com/users/Shilo/projects/7).
-
-The library lives in this browser's storage, with no account sync. Download design and character ZIPs to keep backups or move them to another device. A design ZIP contains equipment references; use a character ZIP to preserve the whole editable character.
+Moves the copy lacks here, like any item, show a missing-frames notice with a priced **Make it**. Deleting a character
+only stops its items from appearing; copies already added to other characters stay. Items are shared within this
+browser's storage only; export character ZIPs to keep backups or move characters to another device.
 
 ## Import an existing character
 
@@ -144,7 +144,7 @@ If a move has different frame counts by direction, those direction groups appear
 
 Leave **Set up the pose rig next** checked to prepare imported artwork for the same equipment and move pipeline used by created characters. You can also choose character menu → **Set up character…** later. Review the existing appearance and standing reference, then check the estimated price before starting. Setup finds joints on every unique body frame (0.1 gen each) and connects the supplied standing views to your current PixelLab account (0.25 gen). It keeps existing pixels, layers, colors and outfits intact. Saved standing views stay fixed to preserve existing equipment alignment.
 
-Each character has its own fitted equipment layers. Imported and created characters use the same tools to make those layers, including the [shared design library](#share-equipment-designs-between-characters) within its current compatibility and experimental fitting limits.
+Each character has its own fitted equipment layers. Imported and created characters use the same tools to make those layers, and can [use items from your other characters](#use-items-from-your-other-characters) when their bodies match.
 
 Setup supports square 32–256 px humanoid frames with all four cardinal views or saved original views for reconnection. Missing views and empty frames are reported before spending. Little space above the head produces a warning about tall hair or hats, without rejecting a contained body. Imported clothes and hair remain part of the base, and must be described as such. After setup, new equipment uses the shared chroma-key, skeleton posing, quality checks and oversize weapon pipeline; new moves use the existing appearance and camera view. Original clips retain their measured joints; pose adherence is unavailable because those frames have no original requested pose to compare against.
 
@@ -157,8 +157,9 @@ Open the character, then character menu → **Delete character…**. The confirm
 ## Add items
 
 In **Wardrobe**, pick a category (Head, Hair, Body, or **More** for Face, Legs, Feet, Back, Main hand and Off hand), then
-press **New <category> item**, or **Use a saved design** to fit a shared design. **Main hand** is the character's right hand
-(a sword or staff) and **Off hand** the left hand (a shield, lantern or bow); one item of each can be worn together.
+press **New <category> item**. Items of your other characters are listed below your own under **From other characters**.
+**Main hand** is the character's right hand (a sword or staff) and **Off hand** the left hand (a shield, lantern or bow);
+one item of each can be worn together.
 
 1. **Where does it go?** Pick the group. **Details** lets you choose the exact slot (a beard goes under Hair, a belt under
    Legs).

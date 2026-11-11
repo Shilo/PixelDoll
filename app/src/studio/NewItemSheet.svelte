@@ -4,15 +4,14 @@
 	import { itemPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import GroupIcon from './GroupIcon.svelte';
-	import DesignLibrary from './DesignLibrary.svelte';
-	import { GROUPS, slotLabel, itemNameFrom } from './model.ts';
+	import { GROUPS, slotLabel, itemNameFrom, namesOffHandItem } from './model.ts';
 	import { itemRoute } from './itemRoute.ts';
 	import { ui, doc, store, isDemo, startItem, withKey, copyDemo } from './state.svelte.ts';
 	import * as db from '../lib/store/db.ts';
 	import { SWATCHES } from '../lib/dress/dress.ts';
 	import type { RigCtx } from '../lib/items/run.ts';
 	import { rigReady } from '../lib/rig/setup.ts';
-	import { ChevronDown, ChevronRight, Sparkles, TriangleAlert } from './icons.ts';
+	import { ChevronDown, ChevronRight, Info, Sparkles, TriangleAlert } from './icons.ts';
 
 	const draft =
 		formDrafts.item?.projectId === doc.id &&
@@ -24,7 +23,7 @@
 	let slot = $state(draft?.slot ?? ui.newItem.slot);
 	let prompt = $state(draft?.prompt ?? ui.newItem.prompt);
 	let color = $state(draft?.color ?? '');
-	let name = $state(draft?.name ?? '');
+	let name = $state(draft?.name ?? ui.newItem.name);
 	let busy = $state(false);
 	const g = $derived(GROUPS.find((x) => x.id === group) ?? GROUPS[0]);
 	$effect(() => {
@@ -110,32 +109,8 @@
 	>
 {/snippet}
 
-<Sheet
-	title="New item"
-	onclose={() => (ui.sheet = null)}
-	footer={isDemo() || ui.newItemTab === 'designs' ? undefined : foot}
->
-	<div class="seg full" role="tablist" aria-label="Item source">
-		<button
-			role="tab"
-			aria-selected={ui.newItemTab === 'create'}
-			onclick={() => (ui.newItemTab = 'create')}>Create</button
-		><button
-			role="tab"
-			aria-selected={ui.newItemTab === 'designs'}
-			onclick={() => (ui.newItemTab = 'designs')}>Saved designs</button
-		>
-	</div>
-	{#if ui.newItemTab === 'designs'}
-		{#if isDemo()}<p class="notice small">
-				<Sparkles size={16} /><span
-					>Make an editable copy of the demo before adding a fitted item.</span
-				><button class="bu-action btn sm" data-variant="outline" disabled={busy} onclick={useCopy}
-					>Copy the demo body</button
-				>
-			</p>{/if}
-		{#key doc.id}<DesignLibrary />{/key}
-	{:else if isDemo()}
+<Sheet title="New item" onclose={() => (ui.sheet = null)} footer={isDemo() ? undefined : foot}>
+	{#if isDemo()}
 		<div class="notice small">
 			<Sparkles size={16} />
 			<span
@@ -202,6 +177,13 @@
 					placeholder="e.g. {g.ideas[0]?.label ?? 'a leather hat'}"
 					maxlength="300"></textarea>
 			</label>
+			{#if group === 'Main hand' && namesOffHandItem(prompt)}<p class="notice small" role="status">
+					<Info size={16} /><span>Shields and bows are held in the off hand.</span><button
+						class="bu-action btn sm"
+						data-variant="outline"
+						onclick={() => (group = 'Off hand')}>Use Off hand</button
+					>
+				</p>{/if}
 			<div class="chips" aria-label="Ideas">
 				{#each g.ideas as idea (idea.label)}
 					<button

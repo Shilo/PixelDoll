@@ -29,11 +29,12 @@ Living document: status and decisions. Open tasks live on the [PixelDoll board](
   pixel repair. A forearm-covered helmet can now require review instead of an H4 retry when head-aligned observed arm
   pixels explain the mismatch; true deformations still fail. Appended move QA now links to the selected source record
   by produced frame key, including grid fallbacks and prior history. See `docs/testing/item-quality-follow-up-2026-10-22.md`.
-- **Shared equipment:** local immutable design library, portable design ZIPs, free compatible copies and independent
-  target palettes are implemented. Paid cross-body fitting remains an experimental single-material headwear trial.
-  Live idle/walk and Cast export/reimport passed; a Hurt helmet extension failed and remains blocked. Broader classes,
-  reliability and validation work are tracked on the [board](https://github.com/users/Shilo/projects/7); see the
-  [verification report](docs/testing/shared-equipment-2026-10-22.md) for scope and actual charges.
+- **Shared items:** every finished item of the user's other saved characters is listed in the wardrobe under "From
+  other characters". An identical body gets a free exact copy (an ordinary, independent item); a different body gets
+  "Make for <character>", the normal priced New item. This replaced the design library, design ZIPs and the paid
+  cross-body fit (old records are deleted; history in the
+  [verification report](docs/testing/shared-equipment-2026-10-22.md)). A free joint-anchored fit for held items is the
+  next phase.
 - **PixelLab credits:** the ≈212 balance was an earlier free-GET snapshot, not the balance after subsequent shared-fit
   tests. Shield validation spent 99 generations (34 + 65); later fitting can report USD as well as generations, with
   three unknown Cast measurement outcomes retained without resubmission. Professional-audit tests also changed the

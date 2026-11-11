@@ -187,16 +187,15 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   setup/import limit. Arbitrary PNG-folder or spritesheet ZIPs are not supported character import formats; they would
   need a user-confirmed layout mapper.
 
-## Shared equipment guardrails
+## Shared items between characters
 
-Preserve: immutable pinned design snapshots; safe source/library deletion; independent target materials/outfits; exact
-per-cell pixel/geometry proof for free copying; reuse of approved target rest references; generation of only missing
-cells; palette normalization before fit planning; durable review and atomic wardrobe publication; honest
-incomplete-measurement/provenance labels; and no automatic resubmission of uncertain paid requests.
+Free sharing copies only onto byte-identical frozen body cells with the same geometry and slot semantics; any other body
+needs the item made for it at normal cost. Preserve: exact per-cell proof for copying; independent ids, materials and
+outfit choices on each copy; safe deletion of the source character; and no generation without the New item sheet's
+estimate and consent. A free approximate fit for held items (re-anchoring by joints) is not implemented yet.
 
-"Shared" means this browser origin's local library plus portable design ZIPs; there is no account or cloud sync.
-Clearing browser storage can lose unexported work. Cloud sync, a public gallery and universal automatic retargeting are
-out of scope.
+Sharing covers this browser origin's saved characters only; there is no account or cloud sync. Clearing browser storage
+can lose unexported work.
 
 ## Testing scope
 

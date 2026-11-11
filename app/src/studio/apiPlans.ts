@@ -29,10 +29,8 @@ import { defaultMethod, type Draft, type RigCtx } from '../lib/items/run.ts';
 import { standingCoverage, type NewItemInput } from './itemRoute.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import type { SetupPlan } from '../lib/rig/setup.ts';
-import type { FitDraft, FitPlan } from '../lib/equipment/types.ts';
 import type { JobRec } from '../lib/pixellab/queue.ts';
 import { characterId } from '../lib/pixellab/library.ts';
-import type { Manifest } from '../lib/store/manifest.ts';
 import { hasCompleteCells } from '../lib/dress/dress.ts';
 
 export interface PeekCall {
@@ -300,7 +298,7 @@ export function movePlan(
 				});
 		}
 	}
-	for (const item of m.items.filter((item) => spec.items.includes(item.id) && !item.design)) {
+	for (const item of m.items.filter((item) => spec.items.includes(item.id))) {
 		const missingDirs = generatedDirections.filter(
 			(d) =>
 				item.dressed?.[d] &&
@@ -410,92 +408,3 @@ export const queuedPlan = (jobs: JobRec[]): PeekCall[] =>
 							note: 'Continues checking this submitted job.'
 						}))
 		);
-export function fitPlan(
-	plan: FitPlan | null,
-	stage: 'rest' | 'pose',
-	draft?: FitDraft | null,
-	resume = false,
-	target?: Manifest
-): PeekCall[] {
-	if (resume)
-		return (draft?.calls.filter((c) => c.stage === stage && !c.superseded) ?? []).map((c) => ({
-			method: 'GET',
-			path: '/background-jobs/{job_id}',
-			label: 'Continue checking submitted fit',
-			background: true,
-			note: `No new paid submission. Reattaches to saved request ${c.recId ?? 'record'} and checks its returned job IDs.`
-		}));
-	if (!plan) return [];
-	if (stage === 'rest')
-		return plan.previewGens
-			? [
-					{
-						method: 'POST',
-						path: '/transfer-outfit-v2',
-						label: 'Transfer the saved standing design',
-						generations: plan.previewGens,
-						note: `Sends the saved source reference and ${plan.directions.length} target standing images, transfer instructions and a fresh seed. The complete payload is prepared on submission. No automatic paid retry.`
-					},
-					...lifecycle()
-				]
-			: [];
-	if (!target)
-		return [
-			{
-				method: 'POST',
-				path: '/animate-with-skeleton-v3',
-				label: 'Animation request count unavailable',
-				note: 'Target move coverage must finish loading before individual requests can be listed. Payloads depend on approved fitted references.'
-			}
-		];
-	const calls: PeekCall[] = [],
-		rig = target.rig,
-		base = target.items.find((item) => item.id === rig.baseItem);
-	const selected = plan.extension ? new Set(plan.extension.cells) : null;
-	for (const anim of rig.animations)
-		for (const direction of plan.directions) {
-			if (
-				!base?.layers[0].cells?.[anim.id]?.[direction]?.some(Boolean) ||
-				(anim.cells === 1 && anim.sources?.[direction]?.motion === 'imported-rest')
-			)
-				continue;
-			const indices = Array.from({ length: anim.cells }, (_, index) => index).filter(
-				(index) => !selected || selected.has(`${anim.id}/${direction}/${index}`)
-			);
-			if (!indices.length) continue;
-			for (const batch of poseBatches(indices.length)) {
-				const cells = indices
-					.slice(batch.start, batch.start + batch.count)
-					.map((index) => `${anim.id}/${direction}/${index}`);
-				calls.push({
-					method: 'POST',
-					path: '/animate-with-skeleton-v3',
-					label: `${anim.id} ${direction} · ${batch.count} fitted frames`,
-					generations: planGens([{ kind: 'pose', cells }]),
-					note: `Sends approved fitted standing image, stored target rest and animation keypoints, appearance, action, direction and a fresh seed. No automatic paid retry. Coverage: ${cells.join(', ')}.`
-				});
-			}
-		}
-	return [...calls, ...lifecycle()];
-}
-export function fitRetryPlan(draft: FitDraft | null): PeekCall[] {
-	if (!draft?.retryStage) return [];
-	const stage = draft.retryStage;
-	return [
-		...draft.calls
-			.filter(
-				(call) =>
-					call.stage === stage &&
-					!call.superseded &&
-					(stage === 'rest' || call.cells.some((cell) => draft.failedCells?.includes(cell)))
-			)
-			.map((call): PeekCall => ({
-				method: 'POST',
-				path: stage === 'rest' ? '/transfer-outfit-v2' : '/animate-with-skeleton-v3',
-				label: `Retry ${stage} · ${call.cells.length} frames`,
-				generations: call.limit,
-				note: `New paid attempt for approved failed coverage only, with a fresh seed. The complete image and keypoint payload is prepared on submission. Coverage: ${call.cells.join(', ')}.`
-			})),
-		...lifecycle()
-	];
-}

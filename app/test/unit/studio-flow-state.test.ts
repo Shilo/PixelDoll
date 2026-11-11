@@ -15,7 +15,6 @@ const mocks = vi.hoisted(() => ({
 	match: vi.fn(),
 	load: vi.fn(),
 	source: vi.fn(),
-	fits: vi.fn(),
 	put: vi.fn(),
 	get: vi.fn(),
 	del: vi.fn(),
@@ -46,10 +45,6 @@ vi.mock('../../src/lib/store/project.ts', async (original) => ({
 vi.mock('../../src/lib/dress/project.ts', async (original) => ({
 	...(await original<typeof import('../../src/lib/dress/project.ts')>()),
 	openSource: mocks.source
-}));
-vi.mock('../../src/lib/equipment/fits.ts', async (original) => ({
-	...(await original<typeof import('../../src/lib/equipment/fits.ts')>()),
-	listFits: mocks.fits
 }));
 
 vi.mock('../../src/lib/store/db.ts', async (original) => ({
@@ -95,7 +90,6 @@ beforeEach(() => {
 	mocks.put.mockResolvedValue(undefined);
 	mocks.get.mockResolvedValue(undefined);
 	mocks.del.mockResolvedValue(undefined);
-	mocks.fits.mockResolvedValue([]);
 	mocks.clear.mockResolvedValue(0);
 	mocks.all.mockResolvedValue([]);
 	stubGlobals();
@@ -960,39 +954,31 @@ test('a palette refresh re-reads export preferences saved after its project read
 	expect(mocks.match).toHaveBeenCalledOnce();
 });
 
-test('merged move flow keeps durable guards while publishing separately reviewed shared fit results', async () => {
-	const body = pending<{ fitIds: string[]; warnings: string[] }>(),
-		fits = pending<any[]>();
+test('merged move flow keeps durable guards while publishing its warnings', async () => {
+	const body = pending<{ warnings: string[] }>();
 	let callback!: (p: Progress) => void;
 	mocks.move.mockImplementation((_project, _spec, onProgress) => {
 		callback = onProgress;
 		return body.promise;
 	});
-	mocks.fits.mockReturnValueOnce(fits.promise);
 	const s = await import('../../src/studio/state.svelte.ts');
-	s.moving.fitIds = ['old-review'];
 	s.moving.warnings = ['old-warning'];
-	const spec = { ...recoverySpec, sharedItems: ['shared-helmet'] };
+	const spec = { ...recoverySpec };
 	const run = s.startMove('other-project', spec);
 	await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce());
 	expect(mocks.put.mock.calls[0][2]).toMatchObject({ status: 'running', spec });
-	expect(s.moving.fitIds).toEqual([]);
 	expect(s.moving.warnings).toEqual([]);
 	callback(progress('animate', 3));
-	body.resolve({ fitIds: ['new-review'], warnings: ['Review equipment separately'] });
-	await vi.waitFor(() => expect(mocks.fits).toHaveBeenCalledOnce());
-	expect(s.moving.fitIds).toEqual(['new-review']);
-	expect(s.moving.warnings).toEqual(['Review equipment separately']);
 	await s.startMove('other-project', { ...spec, seed: 987 });
 	expect(mocks.move).toHaveBeenCalledOnce();
-	fits.resolve([]);
+	body.resolve({ warnings: ['Review equipment separately'] });
 	await run;
+	expect(s.moving.warnings).toEqual(['Review equipment separately']);
 	expect(s.moving.done).toBe(true);
 	expect(mocks.del).toHaveBeenCalledWith('projects', 'studio-move');
 	callback(progress('animate', 99));
 	expect(s.moving.progress).toEqual(progress('animate', 3));
 	await s.dismissMove();
-	expect(s.moving.fitIds).toEqual([]);
 	expect(s.moving.warnings).toEqual([]);
 });
 
@@ -1174,7 +1160,7 @@ test('an unreadable character list is reported instead of showing only the demo 
 describe('move queue', () => {
 	const idle = { id: 'idle', action: 'idle', frames: 4, items: [], seed: 1 },
 		walk = { id: 'walk', action: 'walk', frames: 8, items: [], seed: 1 };
-	const done = { fitIds: [], warnings: [] };
+	const done = { warnings: [] };
 	function storage() {
 		const records = new Map<string, any>();
 		mocks.put.mockImplementation(async (_store, id, value) => {
@@ -1431,6 +1417,9 @@ describe('move queue', () => {
 			const s = await import('../../src/studio/state.svelte.ts'),
 				run = vi.fn();
 			const notify = mocks.subscribe.mock.calls.at(-1)![0] as (snapshot: { role: string }) => void;
+			// A takeover ends by resuming setup; its prune reads the same record once more.
+			const setupReads = () =>
+				mocks.get.mock.calls.filter(([, id]) => id === 'studio-setup').length;
 			const lead = () => {
 					queue.role = 'leader';
 					notify({ role: 'leader' });
@@ -1451,15 +1440,17 @@ describe('move queue', () => {
 			follow();
 			s.withKey(run);
 			s.ui.sheet = null; // left Activity some other way
+			let reads = setupReads();
 			lead();
-			await vi.waitFor(() => expect(mocks.fits.mock.calls.length).toBeGreaterThanOrEqual(2)); // the second takeover finished
+			await vi.waitFor(() => expect(setupReads()).toBeGreaterThanOrEqual(reads + 2)); // the second takeover finished
 			expect(run).toHaveBeenCalledOnce();
 			follow();
 			s.withKey(run);
 			s.cancelWaitingForTab();
 			expect(mocks.handoff).toHaveBeenLastCalledWith(false);
+			reads = setupReads();
 			lead();
-			await vi.waitFor(() => expect(mocks.fits.mock.calls.length).toBeGreaterThanOrEqual(3));
+			await vi.waitFor(() => expect(setupReads()).toBeGreaterThanOrEqual(reads + 2));
 			expect(run).toHaveBeenCalledOnce();
 		} finally {
 			queue.role = 'leader';
@@ -1535,7 +1526,7 @@ describe('move queue', () => {
 		}
 	});
 
-	test('this tab never offers its jobs between queued moves, during a fit stage or while Connect holds a paid action', async () => {
+	test('this tab never offers its jobs between queued moves or while Connect holds a paid action', async () => {
 		const records = storage(),
 			first = pending<typeof done>();
 		mocks.move.mockReturnValueOnce(first.promise).mockReturnValue(new Promise(() => {}));
@@ -1563,9 +1554,6 @@ describe('move queue', () => {
 			queue: { canYield: () => boolean };
 		};
 		expect(q.canYield()).toBe(true);
-		t.equipment.running = ['equipment-fit:x']; // a fit stage preparing before its first job
-		expect(q.canYield()).toBe(false);
-		t.equipment.running = [];
 		app.key = '';
 		t.withKey(vi.fn()); // Connect waits with a paid action
 		expect([t.ui.sheet, q.canYield()]).toEqual(['connect', false]);
@@ -2334,7 +2322,7 @@ describe('optional review', () => {
 			mocks.source.mockImplementation(async (id: string) =>
 				id === 'other' ? other.promise : opened()
 			);
-			mocks.move.mockResolvedValue({ fitIds: [], warnings: [] });
+			mocks.move.mockResolvedValue({ warnings: [] });
 			mocks.setup.mockResolvedValue(undefined);
 			const s = await import('../../src/studio/state.svelte.ts');
 			s.store.project = { manifest: fixtureManifest(), images: new Map() };
@@ -2369,7 +2357,7 @@ describe('optional review', () => {
 		mocks.source.mockImplementation(async (id: string) =>
 			id === 'project' ? reload.promise : opened()
 		);
-		mocks.move.mockResolvedValue({ fitIds: [], warnings: [] });
+		mocks.move.mockResolvedValue({ warnings: [] });
 		const s = await import('../../src/studio/state.svelte.ts');
 		s.store.project = { manifest: fixtureManifest(), images: new Map() };
 		s.doc.id = 'project';
@@ -2591,7 +2579,7 @@ test.each(['artwork', 'price', 'unchanged'] as const)(
 		mocks.move.mockImplementation(async (_projectId, spec, _progress, onReviewed) => {
 			delete spec.itemReview;
 			await onReviewed?.();
-			return { fitIds: [], warnings: [] };
+			return { warnings: [] };
 		});
 		app.key = '';
 		s.withKey(() => {
@@ -2654,7 +2642,7 @@ test.each([false, true])(
 				raw.itemReview = reviewed;
 				throw error;
 			}
-			return { fitIds: [], warnings: [] };
+			return { warnings: [] };
 		});
 		const run = s.startMove('project', spec);
 		await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce());

@@ -1,7 +1,6 @@
 // pixeldoll/3 manifest types (docs/manifest-spec.md §2). Rig types live in rig/rig.ts.
 import type { Img } from '../image/png.ts';
 import type { DirectionName, Rig, Sha256 } from '../rig/rig.ts';
-import type { EquipmentLineage } from '../equipment/types.ts';
 export type {
 	ClipSource,
 	DirectionName,
@@ -95,7 +94,8 @@ export interface Item {
 	designWarnings?: string[]; // explicitly accepted keyframe design issues, retained when move QA is replaced
 	paletteRepairs?: ItemPaletteRepair[]; // explicit local edits; paid source provenance and historical QA remain intact
 	qa?: ItemQa; // not read by compose/export
-	design?: EquipmentLineage;
+	/** Name of the character whose item was fitted onto this body without generating; its frames need a look. */
+	fittedFrom?: string;
 }
 /** Original and corrected layer references for an explicit free color edit. Historical source blobs need not remain loaded. */
 export interface ItemPaletteRepair {

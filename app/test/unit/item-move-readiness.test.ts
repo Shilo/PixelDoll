@@ -82,7 +82,6 @@ test('a priced existing item move executes without joints on unrelated moves or 
 		offer = itemMoveOffer(manifest, [spec]);
 	expect(offer.gens).toBe(3);
 	await expect(addMove('rig-scoped-readiness', offer.specs[0])).resolves.toEqual({
-		fitIds: [],
 		warnings: []
 	});
 	expect(state.pose).toHaveBeenCalledOnce();

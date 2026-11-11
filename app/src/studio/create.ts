@@ -103,7 +103,6 @@ import {
 } from './replaceMove.ts';
 import { facingErrors, sizeErrors, validBodySize } from './characterConfig.ts';
 import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
-import { prepareExtensionFit } from '../lib/equipment/index.ts';
 import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, hasCompleteCells } from '../lib/dress/dress.ts';
 import { saveSplit } from '../lib/dress/project.ts';
@@ -897,7 +896,6 @@ export interface MoveSpec {
 	text?: string;
 	frames: number;
 	items: string[];
-	sharedItems?: string[];
 	itemsOnly?: true;
 	seed: number;
 	replace?: boolean;
@@ -1159,7 +1157,7 @@ async function inspectBodyPaletteRepair(
 		...plan,
 		...plan.palette,
 		itemGens: poseGens(
-			spec.items.filter((id) => !rec.manifest.items.find((item) => item.id === id)?.design).length,
+			spec.items.length,
 			moveFrames(rec.manifest, spec),
 			moveDirections(rec.manifest, spec.dirs).length
 		)
@@ -1346,7 +1344,7 @@ export function missingItemMoves(
 	itemId: string,
 	seed = 1 + Math.floor(Math.random() * 1_000_000)
 ): MoveSpec[] {
-	const item = [...posable(m), ...anchorable(m)].find((i) => i.id === itemId && !i.design);
+	const item = [...posable(m), ...anchorable(m)].find((i) => i.id === itemId);
 	if (!item) return [];
 	const { clipDirs } = coverage({ rec: { manifest: m } } as RigCtx);
 	const anchored = item.route === 'ea2-anchor';
@@ -1383,7 +1381,6 @@ export function baseMoveSpecs(
 		action: a.name,
 		frames: a.frames,
 		items: [],
-		sharedItems: [],
 		seed
 	}));
 }
@@ -1427,16 +1424,15 @@ export function moveEstimate(
 					(poseCallGens(n) +
 						n * EST +
 						(s.action === 'walk' ? 3 + n * EST : isAuthoredAction(s.action) ? 0 : 1 + n * EST));
-	const directItems = s.items.filter((id) => !m.items.find((item) => item.id === id)?.design);
 	const items =
 		s.itemMethod === 'grid'
-			? directItems.reduce((sum, id) => {
+			? s.items.reduce((sum, id) => {
 					const item = m.items.find((i) => i.id === id);
 					if (!item) throw new Error('The selected equipment is no longer available.');
 					const cell = item.layers[0]?.cell ?? m.rig.cell;
 					return sum + repairGridLayout(cell, n, 1).gens * dirs;
 				}, 0)
-			: directItems.reduce((sum, id) => {
+			: s.items.reduce((sum, id) => {
 					const item = m.items.find((i) => i.id === id)!;
 					const targets = moveDirections(m, s.dirs).filter(
 						(d) => !s.itemsOnly || s.replace || !hasCompleteCells(m, item, s.id, d)
@@ -1448,7 +1444,7 @@ export function moveEstimate(
 							: itemPoseGens(m.rig, item, s.id, n, targets))
 					);
 				}, 0);
-	return { gens: body + items, body, items, frames: n, minutes: 4 + directItems.length * 3 };
+	return { gens: body + items, body, items, frames: n, minutes: 4 + s.items.length * 3 };
 }
 
 /** Bind a delayed item-only click to its priced artwork. Other queued moves may update this item's unrelated clips. */
@@ -1530,7 +1526,7 @@ export async function addMove(
 	spec: MoveSpec,
 	onProgress: (p: Progress) => void = () => {},
 	onReviewed: () => Promise<void> = async () => {}
-): Promise<{ fitIds: string[]; warnings: string[]; reviewItems?: string[] }> {
+): Promise<{ warnings: string[]; reviewItems?: string[] }> {
 	approvedMeasurementIds(spec.measurementRecovery);
 	checkedPaletteIntent(spec.bodyPaletteRepair);
 	const { rec } = await loadProject(projectId);
@@ -1562,7 +1558,6 @@ export async function addMove(
 			spec.replace ||
 			spec.measurementRecovery ||
 			spec.bodyPaletteRepair ||
-			spec.sharedItems?.length ||
 			!spec.items.length ||
 			spec.items.some((id) => !anchorable(rec.manifest).some((i) => i.id === id))
 		)
@@ -1606,7 +1601,7 @@ export async function addMove(
 		intent && !published ? await measurementRecoveryPlan(projectId, spec) : undefined;
 	if (!published && (spec.replace || !existing))
 		await addBodyClip(projectId, spec, onProgress, recovery);
-	// Freeze durable garment-region colors before either direct posing or shared-fit target stamps.
+	// Freeze durable garment-region colors before posing.
 	// saveSplit also advances an exact audit recovery receipt, so interrupted equipment work can resume safely.
 	const normalized = await loadProject(projectId),
 		split = await splitBase(normalized.project);
@@ -1639,7 +1634,7 @@ export async function addMove(
 	};
 	const plans = spec.items.flatMap((id) => {
 		const it = fresh.rec.manifest.items.find((i) => i.id === id);
-		return it && !it.design
+		return it
 			? [
 					{
 						id,
@@ -1660,8 +1655,7 @@ export async function addMove(
 		if (!plan.dirs.length) continue;
 		const ctx = await loadProject(projectId),
 			it = ctx.rec.manifest.items.find((i) => i.id === plan.id);
-		if (!it || it.design)
-			throw new Error('This item changed or was removed while the move was being prepared.');
+		if (!it) throw new Error('This item changed or was removed while the move was being prepared.');
 		assertArtwork(ctx.rec.manifest, plan.id, plan.dirs);
 		if (spec.itemMethod === 'anchor')
 			await animateAnchoredItem(ctx, it, spec.id, plan.dirs, spec.seed, tick, {
@@ -1673,7 +1667,7 @@ export async function addMove(
 			for (const d of plan.dirs) {
 				const current = await loadProject(projectId),
 					item = current.rec.manifest.items.find((i) => i.id === plan.id);
-				if (!item || item.design)
+				if (!item)
 					throw new Error('This item changed or was removed while the move was being prepared.');
 				assertArtwork(current.rec.manifest, plan.id, [d]);
 				const result = await regridClip(current, item, spec.id, d, spec.seed);
@@ -1702,21 +1696,13 @@ export async function addMove(
 				);
 			});
 	}
-	// Shared copies require a separately priced, reviewed candidate. Preparing it never sends a paid request.
-	const shared = (await loadProject(projectId)).rec;
-	const sharedIds = [
-		...new Set([
-			...(spec.sharedItems ?? []),
-			...spec.items.filter((id) => shared.manifest.items.find((item) => item.id === id)?.design)
-		])
-	];
-	const clipQa = (shared.rigQa as { clips?: Record<string, ClipQa> } | undefined)?.clips ?? {};
+	const saved = (await loadProject(projectId)).rec;
+	const clipQa = (saved.rigQa as { clips?: Record<string, ClipQa> } | undefined)?.clips ?? {};
 	// Include this move's current nested observations, including after resume. Flattened historical notes may be stale.
-	const fitIds: string[] = [],
-		warnings: string[] = Object.entries(clipQa)
-			.filter(([clip]) => clip.startsWith(`${spec.id}/`))
-			.flatMap(([clip, qa]) => warn(clip, qa));
-	const reviewItems = shared.manifest.items
+	const warnings: string[] = Object.entries(clipQa)
+		.filter(([clip]) => clip.startsWith(`${spec.id}/`))
+		.flatMap(([clip, qa]) => warn(clip, qa));
+	const reviewItems = saved.manifest.items
 		.filter(
 			(item) =>
 				spec.items.includes(item.id) &&
@@ -1728,21 +1714,9 @@ export async function addMove(
 		.map((item) => item.id);
 	for (const id of reviewItems)
 		warnings.push(
-			`${shared.manifest.items.find((item) => item.id === id)!.name}: item quality checks need review. No paid retry was started.`
+			`${saved.manifest.items.find((item) => item.id === id)!.name}: item quality checks need review. No paid retry was started.`
 		);
-	for (const id of sharedIds) {
-		const item = shared.manifest.items.find((i) => i.id === id);
-		if (!item?.design) continue;
-		try {
-			fitIds.push((await prepareExtensionFit(projectId, id, { anims: [spec.id], dirs })).id);
-		} catch (e) {
-			warnings.push(
-				`${item.name}: ${e instanceof Error ? e.message : 'The equipment fit could not be prepared.'}`
-			);
-		}
-	}
 	return {
-		fitIds,
 		warnings: [...new Set(warnings)],
 		...(reviewItems.length ? { reviewItems } : {})
 	};

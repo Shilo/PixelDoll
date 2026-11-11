@@ -27,19 +27,17 @@ export interface StoredProject {
 export const OUTDATED =
 	'This character was saved by an earlier preview version and is no longer supported.';
 
-/** Earlier preview formats are never upgraded: delete their characters, saved designs, fits, demo outfits and an unfinished
- * character creation saved before explicit direction plans (its paid pipeline is never re-keyed). */
+/** Earlier preview formats are never upgraded: delete their characters, demo outfits, retired shared-design and fit records
+ * and an unfinished character creation saved before explicit direction plans (its paid pipeline is never re-keyed). */
 export async function deleteOutdated(): Promise<number> {
 	const formatOf = (r: OutdatedCandidate) =>
-		r.kind === 'equipment-design'
-			? r.source?.format
-			: r.kind === 'equipment-fit-draft'
-				? r.plan?.design?.source?.format
-				: r.kind === 'dress' || r.manifest
-					? (r.format ?? r.manifest?.format)
-					: r.id === 'studio-create' && !Array.isArray(r.spec?.directions)
-						? undefined
-						: CURRENT_FORMAT;
+		r.kind === 'equipment-design' || r.kind === 'equipment-fit-draft'
+			? undefined
+			: r.kind === 'dress' || r.manifest
+				? (r.format ?? r.manifest?.format)
+				: r.id === 'studio-create' && !Array.isArray(r.spec?.directions)
+					? undefined
+					: CURRENT_FORMAT;
 	const outdated = (await db.all<OutdatedCandidate>('projects')).filter(
 		(r) => typeof r?.id === 'string' && formatOf(r) !== CURRENT_FORMAT
 	);
@@ -49,8 +47,7 @@ export async function deleteOutdated(): Promise<number> {
 	if (gone.size)
 		for (const r of await db.all<{ id: string }>('projects')) {
 			const change = db.withoutCharacters(r, gone);
-			if (change === 'delete') await db.del('projects', r.id);
-			else if (change) await db.put('projects', r.id, change);
+			if (change) await db.put('projects', r.id, change);
 		}
 	return outdated.length;
 }
@@ -59,8 +56,6 @@ interface OutdatedCandidate {
 	kind?: string;
 	format?: string;
 	manifest?: { format?: string };
-	source?: { format?: string };
-	plan?: { design?: { source?: { format?: string } } };
 	spec?: { directions?: unknown };
 }
 
@@ -92,7 +87,6 @@ export async function loadProject(
 	};
 	for (const v of Object.values(rec.manifest.rig.rest ?? {})) await add(v?.image, 'rest view');
 	for (const it of rec.manifest.items) {
-		for (const h of it.design?.snapshot.imageHashes ?? []) await add(h, `${it.id} source design`);
 		for (const h of Object.values(it.dressed ?? {})) await add(h, `${it.id} dressed view`);
 		for (const l of it.layers)
 			for (const dirs of Object.values(l.cells ?? {}))
@@ -123,17 +117,21 @@ export async function saveItem(
 	await db.updateCharacter<StoredProject>(id, blobs, (rec) => {
 		if (!rec) throw new Error(`project ${id} not found`);
 		check?.(rec);
-		const m = rec.manifest;
-		m.items = [...m.items.filter((i) => i.id !== item.id), item];
-		if (!m.slots.some((s) => s.id === item.slot)) {
-			const order = (s: string) => ladder.findIndex((x) => x.id === s);
-			m.slots = [...m.slots, ladder.find((s) => s.id === item.slot)!].sort(
-				(a, b) => order(a.id) - order(b.id)
-			);
-		}
+		putItem(rec.manifest, item, ladder);
 		rec.savedAt = new Date().toISOString();
 		return rec;
 	});
+}
+
+/** Add or replace an item (same id) and insert its slot in ladder order if missing. */
+export function putItem(m: Manifest, item: Item, ladder: Slot[]) {
+	m.items = [...m.items.filter((i) => i.id !== item.id), item];
+	if (!m.slots.some((s) => s.id === item.slot)) {
+		const order = (s: string) => ladder.findIndex((x) => x.id === s);
+		m.slots = [...m.slots, ladder.find((s) => s.id === item.slot)!].sort(
+			(a, b) => order(a.id) - order(b.id)
+		);
+	}
 }
 
 export async function deleteItem(id: string, itemId: string): Promise<void> {
