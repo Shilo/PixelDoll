@@ -9,6 +9,10 @@
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
 	import CastCarousel from './CastCarousel.svelte';
+	import ZoomControls from './ZoomControls.svelte';
+	import { sceneZoom } from './sceneZoom.ts';
+	import { sceneArtFits, sceneCamera } from './zoom.ts';
+	import { castPose } from './carousel.ts';
 	import {
 		ui,
 		doc,
@@ -88,16 +92,77 @@
 	const castSize = (offset: number) =>
 		64 * (offset ? Math.max(1, Math.round(castScale * 0.56)) : castScale);
 	const heroHeight = $derived(
-		experience.screen === 'characters' ? 50 * castScale : experience.heroHeight || 50 * castScale
+		experience.screen === 'characters'
+			? 50 * castScale * castPose(0, g.stage.r - g.stage.l, castSize(0), castSize(1)).scale
+			: experience.heroHeight || 50 * castScale
 	);
 	// The world rises with Preview's lifted feet (WorldStage), so its horizon stays on the characters' eye line.
-	const world = $derived(
+	const baseWorld = $derived(
 		placeWorld(
 			g,
 			worldArt(ui.theme),
 			{ x: g.feet.x, y: g.feet.y - (experience.screen === 'studio' ? experience.lift : 0) },
 			heroHeight
 		)
+	);
+	const selectionArt = $derived.by(() => {
+		const width = g.stage.r - g.stage.l;
+		return neighbors.map(({ offset }) => {
+			const pose = castPose(offset, width, castSize(0), castSize(1));
+			const size = castSize(0) * pose.scale;
+			const bottom = g.feet.y + pose.y;
+			return {
+				offset,
+				box: {
+					l: g.stage.l + width / 2 + pose.x - size / 2,
+					r: g.stage.l + width / 2 + pose.x + size / 2,
+					t: bottom - size,
+					b: bottom
+				}
+			};
+		});
+	});
+	const selectionClearance = $derived({
+		l: g.stage.l,
+		r: g.stage.r,
+		t: g.headerBottom + 16,
+		b: g.sheet ? g.listTop : g.h
+	});
+	const selectionCamera = $derived(
+		sceneCamera({
+			value: experience.sceneZoom,
+			anchor: g.feet,
+			backdrop: baseWorld,
+			plate: worldArt(ui.theme),
+			viewport: { l: 0, t: 0, r: g.w, b: baseWorld.coverBottom },
+			clearance: selectionClearance,
+			art: selectionArt.filter(({ offset }) => !offset).map(({ box }) => box)
+		})
+	);
+	const culledOffsets = $derived(
+		selectionCamera.value > 1
+			? selectionArt
+					.filter(
+						({ offset, box }) => offset && !sceneArtFits(box, selectionCamera, selectionClearance)
+					)
+					.map(({ offset }) => offset)
+			: []
+	);
+	const activeCamera = $derived(
+		experience.screen === 'characters' ? selectionCamera : experience.sceneCamera
+	);
+	const world = $derived(
+		experience.screen === 'characters' || experience.mode === 'preview'
+			? (activeCamera?.backdrop ?? baseWorld)
+			: baseWorld
+	);
+	function changeZoom(value: number) {
+		experience.sceneZoom = value;
+	}
+	const sceneIsZoomed = $derived(
+		activeCamera &&
+			activeCamera.value !== 1 &&
+			(experience.screen === 'characters' || experience.mode === 'preview')
 	);
 	const px = (n: number) => `${Math.round(n * 100) / 100}px`;
 	const vars = $derived(
@@ -124,7 +189,10 @@
 			['--world-y', world.y],
 			['--world-cover', world.coverBottom]
 		]
-			.map(([k, v]) => `${k}:${px(v as number)}`)
+			.map(
+				([k, v]) =>
+					`${k}:${typeof k === 'string' && k.startsWith('--world-') && sceneIsZoomed ? `${v}px` : px(v as number)}`
+			)
 			.join(';')
 	);
 	// The offline banner lives outside the scene: just above the playback bar on Customize, above Customize on a
@@ -389,6 +457,26 @@
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 		<div
 			class="selection-world bu-focus"
+			{@attach (node) =>
+				sceneZoom(node, {
+					get value() {
+						return selectionCamera.value;
+					},
+					get min() {
+						return selectionCamera.min;
+					},
+					get max() {
+						return selectionCamera.max;
+					},
+					get enabled() {
+						return !ui.sheet;
+					},
+					onchange: changeZoom,
+					wheel: 'modified'
+				})}
+			data-scene-zoom={selectionCamera.value}
+			data-scene-min={selectionCamera.min}
+			data-scene-max={selectionCamera.max}
 			role="application"
 			aria-label="Character selection. WASD or arrows select; Enter customizes."
 			tabindex="0"
@@ -402,6 +490,9 @@
 				sideSize={castSize(1)}
 				direction={castDirection}
 				{name}
+				zoom={selectionCamera.value}
+				cameraX={g.feet.x - g.stage.l}
+				{culledOffsets}
 				select={pick}
 			/>
 			{#if list.length}<div class="selected-caption">
@@ -428,6 +519,14 @@
 							>
 						</div>{/if}
 				</div>{:else}<p class="empty-cast">No matching characters</p>{/if}
+		</div>
+		<div class="scene-zoom-controls">
+			<ZoomControls
+				value={selectionCamera.value}
+				min={selectionCamera.min}
+				max={selectionCamera.max}
+				onchange={changeZoom}
+			/>
 		</div>
 		<aside class="cast-library" aria-label="Your characters">
 			<div class="cast-search">
@@ -473,6 +572,16 @@
 		<div class="experience-stage">
 			<WorldStage playbackHeight={previewHeight} bind:missing />
 		</div>
+		{#if experience.mode === 'preview' && activeCamera}
+			<div class="scene-zoom-controls">
+				<ZoomControls
+					value={activeCamera.value}
+					min={activeCamera.min}
+					max={activeCamera.max}
+					onchange={changeZoom}
+				/>
+			</div>
+		{/if}
 		{#if experience.mode === 'preview' && m}
 			<div class="experience-playback">
 				<div

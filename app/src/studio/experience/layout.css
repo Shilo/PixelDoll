@@ -709,7 +709,27 @@
 .selection-world {
 	position: absolute;
 	inset: 0;
-	pointer-events: none;
+	pointer-events: auto;
+	touch-action: none;
+}
+.scene-zoom {
+	position: absolute;
+	z-index: 3;
+	left: calc(var(--stage-left) + 12px);
+	top: calc(var(--stage-top) + 8px);
+	display: flex;
+	align-items: center;
+	padding: 2px;
+}
+.scene-zoom .bu-action {
+	min-width: 44px;
+	min-height: 44px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+.scene-zoom .scene-zoom-reset {
+	min-width: 58px;
 }
 .cast {
 	position: absolute;

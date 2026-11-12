@@ -14,6 +14,9 @@
 		sideSize,
 		direction,
 		name,
+		zoom = 1,
+		cameraX,
+		culledOffsets = [],
 		select
 	}: {
 		entries: Entry[];
@@ -22,6 +25,9 @@
 		sideSize: number;
 		direction: number;
 		name: string;
+		zoom?: number;
+		cameraX?: number;
+		culledOffsets?: number[];
 		select: (id: string, activate: boolean) => void;
 	} = $props();
 	let width = $state(0),
@@ -158,36 +164,49 @@
 </script>
 
 <div class="cast" bind:clientWidth={width} bind:clientHeight={height}>
-	{#each actors as actor (actor.p.id)}
-		<button
-			{@attach register(actor.p.id)}
-			class="cast-character carousel-character"
-			class:chosen={!actor.offset && !actor.leaving}
-			data-character-id={actor.p.id}
-			inert={actor.leaving}
-			aria-hidden={actor.leaving ? 'true' : undefined}
-			aria-label={actor.offset ? `Select ${actor.p.name}` : `Customize ${name}`}
-			style:width="{size}px"
-			style:margin-left="{-size / 2}px"
-			onpointerdown={() => {
-				pressed = { id: actor.p.id, activate: !actor.offset };
-			}}
-			onpointercancel={() => {
-				pressed = null;
-			}}
-			onclick={(event) => clicked(event, actor)}
-		>
-			<CharacterThumb id={actor.p.id} name={actor.p.name} {size} />
-			{#if REFLECTION.enabled && REFLECTION.selection}
-				<span class="cast-reflection" aria-hidden="true">
-					<CharacterThumb id={actor.p.id} name={actor.p.name} {size} />
-				</span>
-			{/if}
-		</button>
-	{/each}
+	<div
+		class="cast-camera"
+		style:transform="scale({zoom})"
+		style:transform-origin="{cameraX ?? width / 2}px 100%"
+	>
+		{#each actors as actor (actor.p.id)}
+			{@const culled = !!actor.offset && culledOffsets.includes(actor.offset)}
+			<button
+				{@attach register(actor.p.id)}
+				class="cast-character carousel-character"
+				class:chosen={!actor.offset && !actor.leaving}
+				data-character-id={actor.p.id}
+				inert={actor.leaving || culled}
+				aria-hidden={actor.leaving || culled ? 'true' : undefined}
+				style:visibility={culled ? 'hidden' : undefined}
+				aria-label={actor.offset ? `Select ${actor.p.name}` : `Customize ${name}`}
+				style:width="{size}px"
+				style:margin-left="{-size / 2}px"
+				onpointerdown={() => {
+					pressed = { id: actor.p.id, activate: !actor.offset };
+				}}
+				onpointercancel={() => {
+					pressed = null;
+				}}
+				onclick={(event) => clicked(event, actor)}
+			>
+				<CharacterThumb id={actor.p.id} name={actor.p.name} {size} />
+				{#if REFLECTION.enabled && REFLECTION.selection}
+					<span class="cast-reflection" aria-hidden="true">
+						<CharacterThumb id={actor.p.id} name={actor.p.name} {size} />
+					</span>
+				{/if}
+			</button>
+		{/each}
+	</div>
 </div>
 
 <style>
+	.cast-camera {
+		position: absolute;
+		inset: 0;
+	}
+
 	.cast-character.carousel-character {
 		position: absolute;
 		left: 50%;

@@ -55,6 +55,7 @@ export default defineConfig({
 				'character-creator.spec.ts',
 				'creator-request-matrix.spec.ts',
 				'experience-parity.spec.ts',
+				'scene-zoom.spec.ts',
 				'pwa.spec.ts',
 				'pwa-startup.spec.ts'
 			],

@@ -9,6 +9,8 @@
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { paintedFrame, reachFrame, actorScale, previewBounds } from './bounds.ts';
 	import { planLineup } from './lineup.ts';
+	import { sceneArtFits, sceneCamera, zoomBox } from './zoom.ts';
+	import { sceneZoom } from './sceneZoom.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
 	const RING_GAP = 12;
@@ -83,6 +85,20 @@
 						(d) => [d, grounding?.facings.get(d)?.reach ?? reachFrame(p, d)] as const
 					)
 				: []
+		);
+	});
+	const shownReach = $derived.by(() => {
+		void doc.rev;
+		const project = view.project;
+		return new Map(
+			(availability?.directions ?? []).map((direction) => {
+				const frame = project ? paintedFrame(project, view.items, direction) : null;
+				const origin = grounding?.facings.get(direction);
+				return [
+					direction,
+					frame ? { ...frame, x: frame.x + (origin?.x ?? 0), y: frame.y + (origin?.y ?? 0) } : null
+				] as const;
+			})
 		);
 	});
 	// Facings that can stand beside the selected one: they play the same move the same way (all animated, or all
@@ -210,6 +226,12 @@
 	}
 	// Where each Preview facing stands, so a click on a companion selects it.
 	let picks: { direction: DirectionName; l: number; r: number; t: number; b: number }[] = [];
+	let pendingTap: {
+		pointerId: number;
+		x: number;
+		y: number;
+		direction: DirectionName | undefined;
+	} | null = null;
 	const picked = (e: { clientX: number; clientY: number }) =>
 		experience.mode === 'preview' && !ui.sheet
 			? picks.find(
@@ -225,6 +247,12 @@
 		if (e.button !== 0 || ui.sheet) return;
 		host.focus({ preventScroll: true });
 		const direction = picked(e);
+		if (experience.mode === 'preview' && e.pointerType === 'touch') {
+			pendingTap = e.isPrimary
+				? { pointerId: e.pointerId, x: e.clientX, y: e.clientY, direction }
+				: null;
+			return;
+		}
 		if (direction) ui.dir = direction;
 		if (experience.mode === 'preview' || pad) return;
 		host.setPointerCapture(e.pointerId);
@@ -251,15 +279,32 @@
 		host?.classList.remove('pick');
 	}
 	function drag(e: PointerEvent) {
+		if (
+			pendingTap?.pointerId === e.pointerId &&
+			Math.hypot(e.clientX - pendingTap.x, e.clientY - pendingTap.y) > 8
+		)
+			pendingTap = null;
 		pointer = { clientX: e.clientX, clientY: e.clientY };
 		updateHover();
 		if (pad) stick = pad.move(e.pointerId, { x: e.clientX, y: e.clientY });
 	}
 	function up(e: PointerEvent) {
+		if (pendingTap?.pointerId === e.pointerId) {
+			const tap = pendingTap;
+			pendingTap = null;
+			if (
+				e.type === 'pointerup' &&
+				Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 8 &&
+				tap.direction &&
+				picked(e) === tap.direction
+			)
+				ui.dir = tap.direction;
+		}
 		if (stick.pointerId !== e.pointerId) return;
 		release();
 	}
 	function stop() {
+		pendingTap = null;
 		keys.clear();
 		release();
 		clearHover();
@@ -355,6 +400,7 @@
 			last = performance.now(),
 			renderKey = '',
 			lastProject: unknown,
+			cameraStamp = '',
 			imageCache: ReturnType<typeof renderPresentation> | null = null;
 		const animate = (now: number) => {
 			const dt = Math.min(50, now - last);
@@ -420,6 +466,92 @@
 				}
 			}
 			if (lift !== experience.lift) experience.lift = lift;
+			const clearance = {
+				l: place.stage.l + 8,
+				r: place.stage.r - 8,
+				t: place.stage.t + (place.compactPlayback ? 66 : 16),
+				b: place.playbackTop - 2
+			};
+			const facingBoxes = new Map(
+				(row?.facings ?? [ui.dir]).map((direction, index) => {
+					const box = shownReach.get(direction) ?? facingReach.get(direction) ?? reach ?? fitFrame;
+					const scale = row?.scale ?? (fitFrame ? actorScale(fitFrame, room, dpr) : 1);
+					const center = anchor.x + (row?.offsets[index] ?? 0);
+					return [
+						direction,
+						box
+							? {
+									l: center - box.x * scale,
+									r: center + (box.w - box.x) * scale,
+									t: anchor.y - box.y * scale,
+									b: anchor.y + (box.h - box.y) * scale
+								}
+							: { l: center, r: center, t: anchor.y, b: anchor.y }
+					];
+				})
+			);
+			const ringBoxes = new Map(
+				(row?.facings ?? []).flatMap((direction, index) => {
+					if (!fitFrame || !row || row.facings.length < 2) return [];
+					const radius = ringRadius(fitFrame.w, row.scale);
+					const flat = ringFlatness(EYE * heroNow, backdrop.scale, art.focal);
+					const rise = ringRise(
+						grounding?.facings.get(direction)?.standingHeight ?? 0,
+						row.scale,
+						radius * flat,
+						dpr
+					);
+					const margin = RING_STROKE / 2 + 1 / dpr;
+					const center = anchor.x + row.offsets[index];
+					return [
+						[
+							direction,
+							{
+								l: center - radius - margin,
+								r: center + radius + margin,
+								t: anchor.y - rise - radius * flat - margin,
+								b: anchor.y - rise + radius * flat + margin
+							}
+						] as const
+					];
+				})
+			);
+			const selectedBox = facingBoxes.get(ui.dir);
+			const selectedRing = ringBoxes.get(ui.dir);
+			const zoom = sceneCamera({
+				value: live ? 1 : experience.sceneZoom,
+				anchor,
+				backdrop,
+				plate: art,
+				viewport: { l: 0, t: 0, r: width, b: backdrop.coverBottom },
+				clearance,
+				art: live || !selectedBox ? [] : [selectedBox, ...(selectedRing ? [selectedRing] : [])]
+			});
+			const visibleFacings = (row?.facings ?? [ui.dir]).filter((direction) => {
+				if (direction === ui.dir || zoom.value <= 1) return true;
+				const box = facingBoxes.get(direction);
+				const ring = ringBoxes.get(direction);
+				return (
+					!!box &&
+					sceneArtFits(box, zoom, clearance) &&
+					(!ring || sceneArtFits(ring, zoom, clearance))
+				);
+			});
+			if (!live) {
+				const stamp = JSON.stringify(zoom);
+				if (stamp !== cameraStamp) {
+					cameraStamp = stamp;
+					experience.sceneCamera = zoom;
+				}
+				if (zoom.value !== 1) {
+					g.translate(anchor.x, anchor.y);
+					g.scale(zoom.value, zoom.value);
+					g.translate(-anchor.x, -anchor.y);
+				}
+			}
+			host.dataset.sceneZoom = String(zoom.value);
+			host.dataset.sceneMin = String(zoom.min);
+			host.dataset.sceneMax = String(zoom.max);
 			let velocity = stick.origin
 				? { x: stick.value.x, y: -stick.value.y }
 				: keyboardVector(keys, experience.mode === 'side');
@@ -584,8 +716,8 @@
 					if (hero !== experience.heroHeight) experience.heroHeight = hero;
 					const snap = (n: number) => Math.round(n * dpr) / dpr;
 					// The selected facing keeps its reflection; the others stand beside it, sharing its move, frame and floor.
-					const facings = row?.facings ?? [ui.dir],
-						at = (d: DirectionName) => point.x + (row?.offsets[facings.indexOf(d)] ?? 0);
+					const facings = visibleFacings,
+						at = (d: DirectionName) => point.x + (row?.offsets[row.facings.indexOf(d)] ?? 0);
 					const origin = (d: DirectionName) => grounding?.facings.get(d),
 						selectedOrigin = origin(p.direction ?? ui.dir);
 					const x = snap(at(ui.dir) - (frame.x + (selectedOrigin?.x ?? 0)) * scale),
@@ -597,10 +729,16 @@
 									left = at(direction) - box.x * scale;
 								return {
 									direction,
-									l: left,
-									r: left + box.w * scale,
-									t: point.y - box.y * scale,
-									b: point.y + (box.h - box.y) * scale
+									...zoomBox(
+										{
+											l: left,
+											r: left + box.w * scale,
+											t: point.y - box.y * scale,
+											b: point.y + (box.h - box.y) * scale
+										},
+										anchor,
+										zoom.value
+									)
 								};
 							});
 					updateHover();
@@ -608,7 +746,7 @@
 					// never moves with the walk or collides with tall gear; the sprite is drawn over its back half. A circle
 					// on the world floor looks as flat as the floor is foreshortened there: rows below the horizon over focal.
 					const flat = ringFlatness(point.y - backdrop.eye, backdrop.scale, art.focal);
-					if (facings.length > 1)
+					if (row && row.facings.length > 1)
 						for (const [d, alpha] of [
 							[ui.dir, 0.85],
 							[hovered, 0.3]
@@ -672,6 +810,7 @@
 		raf = requestAnimationFrame(animate);
 		return () => {
 			disposed = true;
+			experience.sceneCamera = null;
 			cancelAnimationFrame(raf);
 			ground?.destroy();
 			document.removeEventListener('pointerdown', secondaryDown, true);
@@ -688,6 +827,26 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div
 	class="world-stage bu-focus"
+	{@attach (node) =>
+		sceneZoom(node, {
+			get value() {
+				const camera = experience.sceneCamera;
+				return camera ? Math.min(camera.max, Math.max(camera.min, experience.sceneZoom)) : 1;
+			},
+			get min() {
+				return experience.sceneCamera?.min ?? 1;
+			},
+			get max() {
+				return experience.sceneCamera?.max ?? 1;
+			},
+			get enabled() {
+				return experience.mode === 'preview' && !ui.sheet;
+			},
+			onchange: (value) => {
+				experience.sceneZoom = value;
+			},
+			wheel: 'plain'
+		})}
 	id="world-stage"
 	bind:this={host}
 	role="application"

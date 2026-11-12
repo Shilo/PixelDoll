@@ -100,6 +100,14 @@ The [direct prototype parity review](production-prototype-parity.md) corrected t
 
 `focus.ts` restores actual activation targets, including WebKit pointer behavior, and positions the menus, Share panel and API Peek inspector against their triggers with four-side collision handling and the Bronze pointer. Help tooltips use the same pointed shell with top/bottom placement. Native selects and modal sheets keep their native presentation. `appearance.js` restores the saved light/dark choice before the app initializes, including native color-scheme.
 
+## Scene zoom
+
+Characters and Customize Preview share a bounded scene camera. Automatic fitting remains the 100% default. The camera uniformly scales the background, characters, reflections, floor rings, and character hit regions around the composition's grounded scene anchor. Captions, menus, playback, and equipment controls stay fixed. Live views and Inspect retain their separate camera behavior. The New character modal is a form, not this scene; its fields and size guide retain native scrolling and browser zoom.
+
+Use the scene's minus, percentage reset, and plus buttons, or pinch on its artwork or empty space. Characters keeps plain-wheel character navigation and uses Ctrl/Cmd+wheel for zoom; Preview also accepts plain wheel. With the scene itself focused, `+` or `=` zooms in, `-` zooms out, and `0` resets. Middle-clicking the artwork or empty scene resets without activating a character. Native fields, buttons, dialogs, and popovers keep their own input behavior.
+
+Bounds follow the current resolution and composition rather than promising a fixed percentage range. Zoom-out stops where the finite background plate would expose an edge, which can be 100% at automatic fit. Zoom-in is capped at 150% and further limited by the selected character and floor ring's available clearance, including the zoom controls on narrow Preview stages. Decorative reflections may fade below the stage and do not constrain fitting. At enlarged zoom levels, companions that would clip are hidden without moving the selected character or refitting the remaining lineup. Reset restores the automatic composition, and resizing recomputes the effective bounds without saving camera settings in a project.
+
 ## Intentional differences from a mockup
 
 The prototype's fake three-character cast becomes the user's actual library. Real equipment categories and all workflow forms remain accessible. The creator has working validation and cost/recovery states rather than decorative fields. Short phones reserve space for the actual painted sprite and permit equipment scrolling/expansion; the sprite is not enlarged through overlapping controls. Source pixels and original clip proportions take precedence over generated mockup embellishment.

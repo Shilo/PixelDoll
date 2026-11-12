@@ -1,9 +1,12 @@
 /** Presentation state only. Projects, saves and paid workflows stay in Studio state. */
+import type { SceneCamera } from './zoom.ts';
 export type WorldMode = 'preview' | 'topdown' | 'side';
 export const experience = $state({
 	screen: 'characters' as 'characters' | 'studio',
 	mode: 'preview' as WorldMode,
 	presentation: 'animation' as string,
+	sceneZoom: 1,
+	sceneCamera: null as SceneCamera | null,
 	/** Painted height of the hero above its feet in CSS px; the world scales its horizon to the hero's eye line. */
 	heroHeight: 0,
 	/** How far Preview raises the feet above the layout's feet line so its floor ring clears the playback bar. */
