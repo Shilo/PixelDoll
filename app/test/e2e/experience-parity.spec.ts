@@ -1056,11 +1056,30 @@ for (const viewport of [
 				.boundingBox())!;
 			const center = views.x + views.width / 2,
 				stageCenter = (g.stage.l + g.stage.r) / 2;
-			if (viewport.width >= 1280) expect(center).toBeCloseTo(stageCenter, 0);
-			else
-				expect(Math.abs(center - stageCenter)).toBeLessThanOrEqual(
-					Math.abs(viewport.width / 2 - stageCenter) + 1
-				);
+			// Either on the character's center, or held 12 px from the name or the actions (font widths vary by platform).
+			const edges = await page.evaluate(() => {
+				const right = (sel: string) =>
+					Math.max(
+						...[...document.querySelector(sel)!.children].map(
+							(e) => e.getBoundingClientRect().right
+						)
+					);
+				const left = (sel: string) =>
+					Math.min(
+						...[...document.querySelector(sel)!.children]
+							.map((e) => e.getBoundingClientRect())
+							.filter((r) => r.width > 0)
+							.map((r) => r.left)
+					);
+				return { start: right('.header-start'), end: left('.header-actions') };
+			});
+			const centered = Math.abs(center - stageCenter) < 1,
+				againstStart = Math.abs(views.x - (edges.start + 12)) < 1.5,
+				againstEnd = Math.abs(views.x + views.width - (edges.end - 12)) < 1.5;
+			expect(centered || againstStart || againstEnd).toBe(true);
+			expect(Math.abs(center - stageCenter)).toBeLessThanOrEqual(
+				Math.abs(viewport.width / 2 - stageCenter) + 1
+			);
 		}
 		// The playback bar sits between the stage and the panel.
 		const playback = (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!;
