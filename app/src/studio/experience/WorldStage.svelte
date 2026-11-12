@@ -4,10 +4,18 @@
 	import { experience, characters, setMode } from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
 	import { MOTION, REFLECTION, WORLDS, worldArt } from './config.ts';
-	import { heroRoom, layout, placeWorld } from './geometry.ts';
+	import { EYE, heroRoom, layout, placeWorld } from './geometry.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
-	import { paintedFrame, actorScale } from './bounds.ts';
+	import { paintedFrame, reachFrame, actorScale } from './bounds.ts';
+	import { planLineup } from './lineup.ts';
+	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
+	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
+	const RING_GAP = 12;
+	const RING_STROKE = 1.5;
+	const ringRadius = (bodyWidth: number, scale: number) => Math.max(12, bodyWidth * scale * 0.35);
+	const ringFlatness = (belowHorizon: number, worldScale: number, focal: number) =>
+		Math.min(1, Math.max(0, belowHorizon) / (worldScale * focal));
 	import {
 		buildPresentation,
 		resolvePreview,
@@ -51,6 +59,32 @@
 		const p = view.project;
 		return p ? paintedFrame(p, {}) : null;
 	});
+	// How far any of the character's gear can reach: Preview's lineup sizes and spaces its facings by it.
+	const reach = $derived.by(() => {
+		void doc.rev;
+		const p = view.project;
+		return p ? reachFrame(p) : null;
+	});
+	// Each facing's own reach packs the lineup tightly and bounds its click target.
+	const facingReach = $derived.by(() => {
+		void doc.rev;
+		const p = view.project;
+		return new Map(
+			p ? (availability?.directions ?? []).map((d) => [d, reachFrame(p, d)] as const) : []
+		);
+	});
+	// Facings that can stand beside the selected one: they play the same move the same way (all animated, or all
+	// still), so the lineup never shows a stand-in. A selected facing that itself falls back stands alone.
+	const lineupDirections = $derived.by(() => {
+		const a = availability;
+		if (!a) return [];
+		const selected = resolvePreview(a, { clip: ui.anim, direction: ui.dir });
+		if (selected.direction !== ui.dir || selected.kind === 'unavailable') return [];
+		return a.directions.filter((direction) => {
+			const p = resolvePreview(a, { clip: ui.anim, direction });
+			return p.direction === direction && p.kind === selected.kind && p.clip === selected.clip;
+		});
+	});
 	const keys = new Set<string>();
 	let position: Vector = { x: 0, y: 0 },
 		camera: Vector = { x: 0, y: 0 },
@@ -67,6 +101,7 @@
 	}
 	let reset = () => {
 		keys.clear();
+		clearHover();
 		release();
 		position = { x: 0, y: 0 };
 		camera = { x: 0, y: 0 };
@@ -161,9 +196,24 @@
 			stepPreviewFrame(k === '.' ? 1 : -1);
 		}
 	}
+	// Where each Preview facing stands, so a click on a companion selects it.
+	let picks: { direction: DirectionName; l: number; r: number; t: number; b: number }[] = [];
+	const picked = (e: { clientX: number; clientY: number }) =>
+		experience.mode === 'preview' && !ui.sheet
+			? picks.find(
+					(p) =>
+						p.direction !== ui.dir &&
+						e.clientX >= p.l &&
+						e.clientX <= p.r &&
+						e.clientY >= p.t &&
+						e.clientY <= p.b
+				)?.direction
+			: undefined;
 	function down(e: PointerEvent) {
 		if (e.button !== 0 || ui.sheet) return;
 		host.focus({ preventScroll: true });
+		const direction = picked(e);
+		if (direction) ui.dir = direction;
 		if (experience.mode === 'preview' || pad) return;
 		host.setPointerCapture(e.pointerId);
 		const { regular, compact, compactQuery, deadZone } = MOTION.joystick;
@@ -176,7 +226,21 @@
 		});
 		stick = pad.begin(e.pointerId, { x: e.clientX, y: e.clientY });
 	}
+	// The companion under the pointer shows a faint ring: clicking it selects that facing.
+	let hovered: DirectionName | undefined;
+	let pointer: { clientX: number; clientY: number } | undefined;
+	function updateHover() {
+		hovered = pointer ? picked(pointer) : undefined;
+		host.classList.toggle('pick', !!hovered);
+	}
+	function clearHover() {
+		pointer = undefined;
+		hovered = undefined;
+		host?.classList.remove('pick');
+	}
 	function drag(e: PointerEvent) {
+		pointer = { clientX: e.clientX, clientY: e.clientY };
+		updateHover();
 		if (pad) stick = pad.move(e.pointerId, { x: e.clientX, y: e.clientY });
 	}
 	function up(e: PointerEvent) {
@@ -186,6 +250,7 @@
 	function stop() {
 		keys.clear();
 		release();
+		clearHover();
 	}
 	// Non-primary touch taps do not consistently produce native clicks. Keep the
 	// first world finger's capture while a deliberate second tap operates a button.
@@ -236,6 +301,44 @@
 			skyContext = sky.getContext('2d')!;
 		let skyStamp = '',
 			disposed = false;
+		// One cached canvas per companion facing; recomposed only when its frame, outfit or project changes.
+		const companions = new Map<
+			DirectionName,
+			{
+				key: string;
+				availability: unknown;
+				canvas: HTMLCanvasElement | null;
+				result: ReturnType<typeof renderPresentation>;
+			}
+		>();
+		const companion = (
+			a: NonNullable<typeof availability>,
+			direction: DirectionName,
+			playing: number
+		) => {
+			const p = resolvePreview(a, { clip: ui.anim, direction }),
+				cell = p.kind === 'animation' ? playing : p.cell,
+				key = JSON.stringify([p.kind, p.clip, cell, view.items, doc.rev]);
+			const cached = companions.get(direction);
+			if (cached?.key === key && cached.availability === a) return cached;
+			const result = renderPresentation(a, view.items, p, cell),
+				image = result.image;
+			let canvas = cached?.canvas ?? null;
+			if (image) {
+				canvas ??= document.createElement('canvas');
+				canvas.width = image.w;
+				canvas.height = image.h;
+				canvas
+					.getContext('2d')!
+					.putImageData(new ImageData(new Uint8ClampedArray(image.data), image.w, image.h), 0, 0);
+			}
+			const entry = { key, availability: a, canvas: image ? canvas : null, result };
+			companions.set(direction, entry);
+			return entry;
+		};
+		// The theme's accent for the lineup ring, read when the page's applied theme changes.
+		let accent = '',
+			accentTheme = '';
 		let raf = 0,
 			last = performance.now(),
 			renderKey = '',
@@ -244,6 +347,7 @@
 		const animate = (now: number) => {
 			const dt = Math.min(50, now - last);
 			last = now;
+			picks = [];
 			const a = availability,
 				dpr = devicePixelRatio || 1;
 			const width = innerWidth,
@@ -253,25 +357,62 @@
 				canvas.height = Math.round(height * dpr);
 				renderKey = '';
 			}
+			if (accentTheme !== document.documentElement.dataset.theme) {
+				accentTheme = document.documentElement.dataset.theme ?? '';
+				accent = getComputedStyle(host).getPropertyValue('--bu-accent').trim();
+			}
 			g.setTransform(dpr, 0, 0, dpr, 0, 0);
 			g.clearRect(0, 0, width, height);
 			g.imageSmoothingEnabled = false;
-			// The feet sit just above the playback bar in every view, so switching views never moves the character.
+			// The feet sit just above the playback bar in every view; only a Preview lineup lifts them to clear its ring.
 			const place = layout(width, height, 'studio');
 			const anchor = { x: place.feet.x, y: place.feet.y };
 			const room = heroRoom(place);
-			// The world image, sky and side floor share one horizon: the character's eye line (geometry.ts placeWorld).
+			const live = experience.mode !== 'preview';
+			// Preview fills a wide stage with a lineup of facings; the live views keep one moving actor.
+			const row =
+				!live && fitFrame
+					? planLineup({
+							available: lineupDirections,
+							selected: ui.dir,
+							body: fitFrame,
+							reach: reach ?? fitFrame,
+							facing: (d) => facingReach.get(d) ?? reach ?? fitFrame,
+							room,
+							width: place.stage.r - place.stage.l,
+							dpr
+						})
+					: null;
+			// The world image, sky and side floor share one horizon: the eye line of the characters as drawn
+			// (geometry.ts placeWorld), so a lineup's smaller scale pulls the whole world back with it.
 			const heroNow = fitFrame
-				? Math.round(fitFrame.y * actorScale(fitFrame, room, dpr))
+				? Math.round(fitFrame.y * (row?.scale ?? actorScale(fitFrame, room, dpr)))
 				: experience.heroHeight;
-			const art = worldArt(ui.theme),
-				backdrop = placeWorld(place, art, anchor, heroNow);
-			// The stick reports screen space (y down); the ground's y points north.
+			const art = worldArt(ui.theme);
+			let backdrop = placeWorld(place, art, anchor, heroNow),
+				lift = 0;
+			// A lineup's floor ring reaches below the feet; raise the characters (and the world with them) so the ring
+			// keeps a comfortable gap above the playback bar.
+			if (row && fitFrame && row.facings.length > 1) {
+				const below =
+					ringRadius(fitFrame.w, row.scale) *
+					ringFlatness(EYE * heroNow, backdrop.scale, art.focal);
+				lift = Math.max(
+					0,
+					Math.ceil(
+						below + RING_STROKE / 2 + 1 / dpr + RING_GAP - (place.playbackTop - place.feet.y)
+					)
+				);
+				if (lift) {
+					anchor.y -= lift;
+					backdrop = placeWorld(place, art, anchor, heroNow);
+				}
+			}
+			if (lift !== experience.lift) experience.lift = lift;
 			let velocity = stick.origin
 				? { x: stick.value.x, y: -stick.value.y }
 				: keyboardVector(keys, experience.mode === 'side');
 			if (ui.sheet || document.hidden) velocity = { x: 0, y: 0 };
-			const live = experience.mode !== 'preview';
 			if (live)
 				({ position, camera } = integrateMovement(
 					position,
@@ -400,15 +541,13 @@
 							missing = { clip: p.clip, direction: p.direction, items };
 					} else if (missing) missing = null;
 				}
-				note = [
+				const notes = [
 					p.issue,
 					live && result?.hiddenItems.length
 						? `${result.hiddenItems.length} equipped item${result.hiddenItems.length === 1 ? '' : 's'} hidden for this view`
 						: ''
-				]
-					.filter(Boolean)
-					.join(' · ');
-				loadingNote = result?.loading ?? '';
+				].filter(Boolean);
+				const loadings = new Set(result?.loading ? [result.loading] : []);
 				if ((velocity.x || velocity.y) && !hasMoved) {
 					hasMoved = true;
 					hint = false;
@@ -429,12 +568,64 @@
 					const frame = result.frame,
 						point = s ? s.project(position, options) : anchor;
 					const fit = fitFrame ?? frame,
-						scale = actorScale(fit, room, dpr),
+						scale = row?.scale ?? actorScale(fit, room, dpr),
 						hero = Math.round(fit.y * scale);
 					if (hero !== experience.heroHeight) experience.heroHeight = hero;
 					const snap = (n: number) => Math.round(n * dpr) / dpr;
-					const x = snap(point.x - frame.x * scale),
+					// The selected facing keeps its reflection; the others stand beside it, sharing its move, frame and floor.
+					const facings = row?.facings ?? [ui.dir],
+						at = (d: DirectionName) => point.x + (row?.offsets[facings.indexOf(d)] ?? 0);
+					const x = snap(at(ui.dir) - frame.x * scale),
 						y = snap(point.y - frame.y * scale);
+					picks = live
+						? []
+						: facings.map((direction) => {
+								const box = facingReach.get(direction) ?? reach ?? fit,
+									left = at(direction) - box.x * scale;
+								return {
+									direction,
+									l: left,
+									r: left + box.w * scale,
+									t: point.y - box.y * scale,
+									b: point.y + (box.h - box.y) * scale
+								};
+							});
+					updateHover();
+					// A lineup marks its selected facing with a thin accent ring on the floor, anchored to the feet so it
+					// never moves with the walk or collides with tall gear; the sprite is drawn over its back half. A circle
+					// on the world floor looks as flat as the floor is foreshortened there: rows below the horizon over focal.
+					const flat = ringFlatness(point.y - backdrop.eye, backdrop.scale, art.focal);
+					if (facings.length > 1)
+						for (const [d, alpha] of [
+							[ui.dir, 0.85],
+							[hovered, 0.3]
+						] as const) {
+							if (!d || !facings.includes(d) || (alpha < 0.5 && d === ui.dir)) continue;
+							const rx = ringRadius(fit.w, scale);
+							g.save();
+							g.globalAlpha = alpha;
+							g.strokeStyle = accent;
+							g.lineWidth = RING_STROKE;
+							g.beginPath();
+							g.ellipse(snap(at(d)), snap(point.y), rx, rx * flat, 0, 0, Math.PI * 2);
+							g.stroke();
+							g.restore();
+						}
+					for (const d of facings) {
+						if (d === ui.dir) continue;
+						const entry = companion(a, d, view.cell),
+							other = entry.canvas;
+						if (entry.result.issue) notes.push(entry.result.issue);
+						if (entry.result.loading) loadings.add(entry.result.loading);
+						if (other)
+							g.drawImage(
+								other,
+								snap(at(d) - frame.x * scale),
+								y,
+								other.width * scale,
+								other.height * scale
+							);
+					}
 					if (REFLECTION.enabled && REFLECTION[experience.mode]) {
 						g.save();
 						g.globalAlpha = REFLECTION.opacity;
@@ -448,9 +639,13 @@
 					host.dataset.camera = `${camera.x.toFixed(2)},${camera.y.toFixed(2)}`;
 					host.dataset.presentation = p.kind;
 					host.dataset.facing = p.direction ?? '';
+					host.dataset.lineup = facings.join(' ');
 				}
+				note = notes.join(' · ');
+				loadingNote = [...loadings].join(' · ');
 				previous = p;
 			}
+			if (!picks.length) updateHover();
 			raf = requestAnimationFrame(animate);
 		};
 		raf = requestAnimationFrame(animate);
@@ -487,6 +682,7 @@
 	onpointermove={drag}
 	onpointerup={up}
 	onpointercancel={up}
+	onpointerleave={clearHover}
 	onlostpointercapture={up}
 	class:live={experience.mode !== 'preview'}
 >

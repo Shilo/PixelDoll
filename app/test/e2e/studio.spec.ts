@@ -2003,7 +2003,13 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
 	);
 	const notes = page.locator('.world-loading-items');
 	const coverage = page.getByRole('button', { name: '1 equipped item needs frames', exact: true });
-	await expect(notes).toHaveCount(0); // south landed: the draft is drawn
+	await expect(page.locator('.world-stage')).toHaveAttribute('data-facing', 'south');
+	await expect(page.locator('.world-stage')).toHaveAttribute('data-lineup', /north/);
+	await expect(
+		notes,
+		'South is ready, but the visible companion facings are still loading'
+	).toHaveText('Loading helm loading — East, North');
+	await expect(coverage).toHaveCount(0);
 	for (const dir of ['east', 'west', 'north']) {
 		await studio((s, d) => {
 			s.ui.dir = d;

@@ -59,6 +59,13 @@
 	align-items: center;
 	pointer-events: auto;
 }
+/* Equal-width view tabs (as wide as the widest label, or 44 px icons) whose labels keep their bold width (Bronze
+   .bu-tab-text), so switching views never moves a label. */
+.view-modes {
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: 1fr;
+}
 .header-start {
 	gap: 4px;
 	min-width: 0;
@@ -309,6 +316,10 @@
 }
 .world-stage.live {
 	touch-action: none;
+}
+/* Over a Preview companion facing, which a click selects. */
+.world-stage.pick .world-input {
+	cursor: pointer;
 }
 .world-input {
 	position: fixed;

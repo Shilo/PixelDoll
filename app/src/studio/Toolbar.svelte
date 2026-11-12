@@ -183,7 +183,10 @@
 					title={label}
 					onclick={() => changeMode(id)}
 					><span class="bu-tab-label"
-						><Icon size={18} aria-hidden="true" /><span class="view-label">{label}</span></span
+						><Icon size={18} aria-hidden="true" /><span
+							class="view-label bu-tab-text"
+							data-text={label}>{label}</span
+						></span
 					></button
 				>{/each}
 		</div>

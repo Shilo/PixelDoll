@@ -184,6 +184,8 @@ export interface WorldArt {
 	/** Horizon (the eye line) and floor point as fractions of the image height; the floor point sits on the vanishing line x 0.5. */
 	horizon: number;
 	floor: number;
+	/** The floor's focal length in image px (config.ts WORLDS). */
+	focal: number;
 }
 export interface Placement {
 	scale: number;
