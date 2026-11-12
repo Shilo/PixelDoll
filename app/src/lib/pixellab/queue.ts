@@ -910,6 +910,7 @@ export class Queue {
 		// Retries and repeats of one request share its hash. Prefer useful newer work before considering an old failure.
 		const active = matches.find(live);
 		if (active) {
+			this.observeScope(active.id, meta.signal, meta.attempt);
 			if (this.pollSubmitted(active)) {
 				await this.save(active);
 				return active;
@@ -918,7 +919,6 @@ export class Queue {
 				active.minimumTier = meta.minimumTier;
 				await this.save(active);
 			}
-			if (active.state !== 'running') this.observeScope(active.id, meta.signal, meta.attempt);
 			return active;
 		}
 		const done = matches.find((r) => r.state === 'done');
@@ -1039,7 +1039,7 @@ export class Queue {
 	}
 
 	/** A deduplicated request may serve several flows. One failed consumer cannot cancel another consumer's work. */
-	private observeScope(id: string, signal?: AbortSignal, attempt?: number) {
+	observeScope(id: string, signal?: AbortSignal, attempt?: number) {
 		let consumers = this.submitScopes.get(id);
 		if (!consumers)
 			this.submitScopes.set(id, (consumers = { signals: new Map(), unscoped: false }));
@@ -1049,17 +1049,15 @@ export class Queue {
 		}
 		if (consumers.signals.has(signal)) return;
 		consumers.signals.set(signal, Number.isSafeInteger(attempt) ? attempt : undefined);
-		signal.addEventListener(
-			'abort',
-			() => {
-				if (this.flowAborted(id)) {
-					const r = this.recs.get(id);
-					if (r?.state === 'queued') r.autoCanceledAttempts = this.cancellationAttempts(id);
-					void this.cancel(id, true).catch(() => {});
-				}
-			},
-			{ once: true }
-		);
+		const abort = () => {
+			if (this.flowAborted(id)) {
+				const r = this.recs.get(id);
+				if (r?.state === 'queued') r.autoCanceledAttempts = this.cancellationAttempts(id);
+				void this.cancel(id, true).catch(() => {});
+			}
+		};
+		if (signal.aborted) abort();
+		else signal.addEventListener('abort', abort, { once: true });
 	}
 	private flowAborted(id: string): boolean {
 		const consumers = this.submitScopes.get(id);
@@ -1069,6 +1067,11 @@ export class Queue {
 			consumers.signals.size > 0 &&
 			[...consumers.signals.keys()].every((s) => s.aborted)
 		);
+	}
+	async cancelAbortedScope(id: string) {
+		const record = this.recs.get(id);
+		if (record?.state === 'canceled') await this.save(record);
+		else if (this.flowAborted(id) && record?.state === 'queued') await this.cancel(id, true);
 	}
 	private cancellationAttempts(id: string): number[] | undefined {
 		const consumers = this.submitScopes.get(id),

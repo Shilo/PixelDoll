@@ -127,8 +127,9 @@ test('draft item artwork appears before wearing, keeps running progress, and sto
 	});
 	await equipmentGroup(page, 'Hair');
 	const tile = page.locator('.equipment-scroll').getByRole('button', { name: /^Early hair, / });
+	const progress = page.getByRole('progressbar', { name: 'Early hair progress', exact: true });
 	await expect(tile).toHaveAttribute('aria-pressed', 'false');
-	await expect(tile.locator('.ring')).toBeVisible();
+	await expect(progress).toHaveAttribute('aria-valuenow', '50');
 	await expect(tile.locator('canvas')).toHaveCount(0);
 	await expect(tile).toContainText('50%');
 	await page.evaluate(async () => {
@@ -145,7 +146,7 @@ test('draft item artwork appears before wearing, keeps running progress, and sto
 		};
 	});
 	await expect(tile.locator('canvas')).toBeVisible();
-	await expect(tile.locator('.tile-progress.overlay .ring')).toBeVisible();
+	await expect(progress).toHaveAttribute('aria-valuenow', '50');
 	await expect(tile).toHaveAttribute('aria-pressed', 'false');
 	expect(
 		await tile.locator('canvas').evaluate((c: HTMLCanvasElement) => [c.width, c.height])
@@ -180,7 +181,7 @@ test('draft item artwork appears before wearing, keeps running progress, and sto
 		};
 	});
 	await expect(tile.locator('canvas')).toBeVisible();
-	await expect(tile.locator('.tile-progress.overlay .ring')).toBeVisible();
+	await expect(progress).toHaveAttribute('aria-valuenow', '50');
 	await expect(tile).toHaveAttribute('aria-pressed', 'false');
 	expect(
 		await tile.locator('canvas').evaluate((c: HTMLCanvasElement) => [c.width, c.height])
@@ -206,7 +207,7 @@ test('draft item artwork appears before wearing, keeps running progress, and sto
 				s = await import(p);
 			s.gens[0].phase = phase;
 		}, phase);
-		await expect(tile.locator('.ring')).toHaveCount(0);
+		await expect(progress).toHaveCount(0);
 		await expect(tile.locator('canvas')).toBeVisible();
 	}
 	await page.evaluate(async () => {

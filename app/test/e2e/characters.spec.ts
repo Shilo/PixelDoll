@@ -1150,7 +1150,7 @@ test('a standing consistency stop cannot keep an item before its requested walki
 				preview: p
 			}
 		};
-		s.ui.selected = `gen:${item.id}`;
+		await s.openGenerationReview(item.id);
 	});
 	const review = page.locator('.gen');
 	await expect(review.locator('.badge.look')).toContainText('Needs a look');

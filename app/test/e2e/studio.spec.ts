@@ -23,6 +23,40 @@ test.beforeEach(async ({ context }) => {
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort()); // stay offline by default; a test's own route overrides this
 });
 
+async function reviewSelectedDraft(page: Page) {
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.openGenerationReview(state.ui.selected.slice(4));
+	});
+}
+
+async function standingItemCharacter(page: Page) {
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			s = await import(statePath);
+		const projectPath = '/src/lib/store/project.ts',
+			project = await import(projectPath);
+		const dbPath = '/src/lib/store/db.ts',
+			db = await import(dbPath);
+		await s.copyDemo();
+		const ctx = await project.loadProject(s.doc.id),
+			m = ctx.rec.manifest;
+		// A standing frame keeps the real pipeline small; the API duplicates it to meet the two-frame edit minimum.
+		const walk = m.rig.animations.find((a: { id: string }) => a.id === 'walk');
+		m.rig.animations = [
+			{ ...walk, id: 'custom-standing', cells: 1, frames: walk.frames.slice(0, 1) }
+		];
+		m.rig.directions = m.rig.directions.filter((d: { id: string }) => d.id === 'south');
+		delete m.rig.rest;
+		m.items = m.items.filter((item: { id: string }) => item.id === m.rig.baseItem);
+		const base = m.items[0].layers[0];
+		base.cells = { 'custom-standing': { south: base.cells.walk.south.slice(0, 1) } };
+		await db.put('projects', ctx.rec.id, ctx.rec);
+		await s.openProject(ctx.rec.id);
+	});
+}
+
 async function showNotification(
 	page: Page,
 	message: string,
@@ -1810,6 +1844,7 @@ test('draft review can inspect every generated move and only its available views
 		s.store.results[it.id] = { cells: [], qa: null, g1: new Map(), preview: p };
 		s.ui.selected = 'gen:' + it.id;
 	});
+	await reviewSelectedDraft(page);
 	const review = page.locator('.gen');
 	await expect(review.getByRole('button', { name: /^Try again/ })).toContainText('Est.');
 	await expect(
@@ -2018,11 +2053,11 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
 		await expect(page.locator('.world-coverage', { hasText: 'hidden' })).toHaveCount(0);
 		await expect(coverage).toHaveCount(0);
 	}
-	const card = page.locator('.gen');
-	await card.getByRole('button', { name: 'Take off', exact: true }).click();
+	await expect(page.locator('.gen')).toHaveCount(0);
+	await tile.click();
 	await expect(tile).toHaveAttribute('aria-pressed', 'false');
 	await expect(notes).toHaveCount(0);
-	await card.getByRole('button', { name: 'Wear', exact: true }).click();
+	await tile.click();
 	await expect(notes).toHaveText('Loading helm loading — East, North');
 	// finished with gaps: those views are missing (hidden and said so), no longer loading; Discard takes the draft off
 	await studio((s) => {
@@ -2033,7 +2068,9 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
 	await coverage.click();
 	await expect(page.locator('#preview-coverage')).toContainText('Loading helm');
 	await coverage.click();
-	await card.getByRole('button', { name: 'Discard', exact: true }).click();
+	await page.getByRole('button', { name: 'More options for Loading helm', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Review item…', exact: true }).click();
+	await page.locator('.gen').getByRole('button', { name: 'Discard', exact: true }).click();
 	await expect(tile).toHaveCount(0);
 	await expect(coverage).toHaveCount(0);
 	expect(
@@ -2287,6 +2324,7 @@ test('mixed malformed draft calls cannot claim Clean when surviving frame checks
 		};
 		s.ui.selected = 'gen:' + it.id;
 	});
+	await reviewSelectedDraft(page);
 	const review = page.locator('.gen');
 	await expect(review.locator('.badge.look')).toHaveText('Needs a look');
 	await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeDisabled();
@@ -2753,12 +2791,12 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
 		});
 		s.ui.selected = 'gen:' + it.id;
 	});
-	const gen = page.locator('.gen');
-	await expect(gen).toContainText(
-		'Keep this tab open while PixelLab responds. You can keep dressing up. Unknown outcomes stop for review in Activity.'
-	);
-	await expect(gen).not.toContainText('picks up where it left off');
-	await page.getByRole('button', { name: 'Activity', exact: true }).click();
+	await expect(page.locator('.gen')).toHaveCount(0);
+	await page.getByRole('button', { name: 'More options for Waiting fixture', exact: true }).click();
+	const menu = page.locator('#item-menu');
+	await expect(menu).toContainText(/Keep this tab open|Waiting for your PixelLab key/);
+	await expect(menu).not.toContainText('picks up where it left off');
+	await menu.getByRole('menuitem', { name: 'Activity…', exact: true }).click();
 	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
 	await expect(activity.locator('#activity-submitting-stop')).toHaveText(
 		'Stop is unavailable until PixelLab responds.'
@@ -2808,10 +2846,196 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
 		'You’re offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs.'
 	);
 	await activity.getByRole('button', { name: 'Done', exact: true }).click();
-	await expect(gen).toContainText(
-		'Paused while you’re offline. Submitted jobs may still finish or charge.'
-	);
+	await page.getByRole('button', { name: 'More options for Waiting fixture', exact: true }).click();
+	await expect(menu).toContainText(/Paused while you are offline|Waiting for your PixelLab key/);
 	expect(posts).toEqual([]);
+});
+
+test('item tile cancellation confirms cost, retries failed saves and stays canceled after reload', async ({
+	page,
+	context
+}, info) => {
+	const requests: string[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request(),
+			path = new URL(request.url()).pathname;
+		if (path === '/v2/balance')
+			return route.fulfill({
+				json: {
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 },
+					credits: { type: 'usd', usd: 0 }
+				}
+			});
+		if (request.method() !== 'GET') requests.push(request.method() + ' ' + path);
+		if (request.method() === 'POST')
+			return route.fulfill({ status: 202, json: { background_job_id: 'cancel-item-fixture' } });
+		if (path === '/v2/background-jobs/cancel-item-fixture')
+			return route.fulfill({
+				json: { id: 'cancel-item-fixture', status: 'processing', last_response: { progress: 0.42 } }
+			});
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-cancel-item-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await standingItemCharacter(page);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.startItem({ name: 'Ponytail', slot: 'hair', prompt: 'a ponytail' });
+	});
+	await equipmentGroup(page, 'Hair');
+	const tile = page.locator('[data-tile^="gen:"]');
+	await expect(page.getByRole('progressbar', { name: /progress/ })).toHaveAttribute(
+		'aria-valuenow',
+		'42'
+	);
+	await expect(tile).toContainText(/~[1-9] min left/);
+	await expect(tile).toContainText('Ponytail');
+	await expect(page.locator('.gen')).toHaveCount(0);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		state.gens[0].input.name = 'Ponytail with a long ribbon';
+	});
+	for (const theme of ['dark', 'light']) {
+		await page.evaluate(async (theme) => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			state.ui.theme = theme;
+			state.applyTheme();
+		}, theme);
+		for (const [width, height] of [
+			[320, 568],
+			[844, 390],
+			[1440, 900]
+		]) {
+			await page.setViewportSize({ width, height });
+			await equipmentGroup(page, 'Hair');
+			await tile.scrollIntoViewIfNeeded();
+			const bounds = await tile.evaluate((element) => {
+				element.style.width = '92px';
+				const tile = element.getBoundingClientRect(),
+					name = element.querySelector('.tile-name')!,
+					progress = element.querySelector('.generation-progress')!;
+				return {
+					nameHeight: name.getBoundingClientRect().height,
+					lineHeight: parseFloat(getComputedStyle(name).lineHeight),
+					nameBottom: name.getBoundingClientRect().bottom,
+					progressBottom: progress.getBoundingClientRect().bottom,
+					tileBottom: tile.bottom
+				};
+			});
+			expect(bounds.nameHeight).toBeGreaterThanOrEqual(bounds.lineHeight);
+			expect(bounds.nameBottom).toBeLessThanOrEqual(bounds.tileBottom);
+			expect(bounds.progressBottom).toBeLessThanOrEqual(bounds.tileBottom);
+			await tile.evaluate((element) => element.style.removeProperty('width'));
+			await page.screenshot({
+				path: info.outputPath('generation-' + theme + '-' + width + '.png')
+			});
+		}
+	}
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		state.gens[0].input.name = 'Ponytail';
+	});
+	await tile.focus();
+	await page.keyboard.press('Shift+F10');
+	const menu = page.locator('#item-menu');
+	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
+	await expect(menu.getByRole('button', { name: 'Keep generating', exact: true })).toBeFocused();
+	await expect(menu).toContainText('Generations already used will not be refunded.');
+	await page.keyboard.press('Escape');
+	const more = page.getByRole('button', { name: 'More options for Ponytail', exact: true });
+	await expect(more).toBeFocused();
+	await more.click();
+	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
+	await menu.getByRole('button', { name: 'Keep generating', exact: true }).click();
+	await expect(tile).toContainText('42%');
+	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
+	await page.evaluate(() => {
+		const put = IDBObjectStore.prototype.put;
+		(window as unknown as { restoreItemPut: () => void }).restoreItemPut = () =>
+			(IDBObjectStore.prototype.put = put);
+		IDBObjectStore.prototype.put = function (value, key) {
+			if (key === 'studio-drafts') throw new Error('Synthetic cancellation save failure');
+			return put.call(this, value, key);
+		};
+	});
+	await menu.getByRole('button', { name: 'Cancel generation', exact: true }).click();
+	await expect(menu.getByRole('alert')).toContainText('Synthetic cancellation save failure');
+	await expect(
+		menu.getByRole('menuitem', { name: 'Save cancellation', exact: true })
+	).toBeVisible();
+	await page.evaluate(() => (window as unknown as { restoreItemPut: () => void }).restoreItemPut());
+	await menu.getByRole('menuitem', { name: 'Save cancellation', exact: true }).click();
+	await expect(menu).not.toBeVisible();
+	await expect(more).toBeFocused();
+	await reloadStudio(page);
+	await equipmentGroup(page, 'Hair');
+	await expect(page.locator('[data-tile^="gen:"]')).toHaveAttribute(
+		'aria-label',
+		'Ponytail, Canceled'
+	);
+	await page.getByRole('button', { name: 'More options for Ponytail', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Review item…', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'Item review', exact: true })).toBeVisible();
+	await page.locator('.gen').getByRole('button', { name: 'Discard', exact: true }).click();
+	await expect(page.getByRole('dialog')).toHaveCount(0);
+	expect(
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts';
+			return (await import(path)).ui.sheet;
+		})
+	).toBeNull();
+	expect(requests).toEqual(['POST /v2/edit-animation-v2']);
+});
+
+test('cancel during the initial item save never starts a paid runner', async ({ page }, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await standingItemCharacter(page);
+	const result = await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		const put = IDBObjectStore.prototype.put;
+		let cancellation: Promise<boolean> | undefined,
+			first = true;
+		IDBObjectStore.prototype.put = function (value, key) {
+			const request = put.call(this, value, key);
+			if (key === 'studio-drafts' && first) {
+				first = false;
+				cancellation = state.cancelGen(state.gens[0]);
+			}
+			return request;
+		};
+		try {
+			await state.startItem({ name: 'Early cancellation', slot: 'hair', prompt: 'short hair' });
+			await cancellation;
+			return {
+				phase: state.gens[0].phase,
+				canceled: state.gens[0].canceled,
+				calls: state.gens[0].draft.calls.map((call: { recId?: string }) => call.recId)
+			};
+		} finally {
+			IDBObjectStore.prototype.put = put;
+		}
+	});
+	expect(result).toMatchObject({ phase: 'failed', canceled: true });
+	expect(result.calls.every((id: string | undefined) => id === undefined)).toBe(true);
 });
 
 test('new item progress, previews and completion survive reload without submitting completed jobs again', async ({
@@ -2864,35 +3088,20 @@ test('new item progress, previews and completion survive reload without submitti
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
+	await standingItemCharacter(page);
 	const id = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
 			s = await import(statePath);
-		const projectPath = '/src/lib/store/project.ts',
-			project = await import(projectPath);
-		const dbPath = '/src/lib/store/db.ts',
-			db = await import(dbPath);
-		await s.copyDemo();
-		const ctx = await project.loadProject(s.doc.id),
-			m = ctx.rec.manifest;
-		// A standing frame keeps the real pipeline small; the API duplicates it to meet the two-frame edit minimum.
-		const walk = m.rig.animations.find((a: { id: string }) => a.id === 'walk');
-		m.rig.animations = [
-			{ ...walk, id: 'custom-standing', cells: 1, frames: walk.frames.slice(0, 1) }
-		];
-		m.rig.directions = m.rig.directions.filter((d: { id: string }) => d.id === 'south');
-		delete m.rig.rest;
-		m.items = m.items.filter((item: { id: string }) => item.id === m.rig.baseItem);
-		const base = m.items[0].layers[0];
-		base.cells = { 'custom-standing': { south: base.cells.walk.south.slice(0, 1) } };
-		await db.put('projects', ctx.rec.id, ctx.rec);
-		await s.openProject(ctx.rec.id);
 		await s.startItem({ name: 'Progress fixture', slot: 'hair', prompt: 'short hair' });
 		return s.gens[0].draft.spec.id;
 	});
 	await equipmentGroup(page, 'Hair');
-	const gen = page.locator('.gen');
-	await expect(gen).toContainText('Designing');
-	await expect(gen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+	await expect(page.locator('.gen')).toHaveCount(0);
+	const progress = page.getByRole('progressbar', {
+		name: 'Progress fixture progress',
+		exact: true
+	});
+	await expect(progress).toHaveAttribute('aria-valuenow', '50');
 	const saved = () =>
 		page.evaluate(async () => {
 			const p = '/src/lib/store/db.ts',
@@ -2914,9 +3123,9 @@ test('new item progress, previews and completion survive reload without submitti
 	await page.evaluate(async (id) => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
-		s.ui.selected = 'gen:' + id;
+		await s.openGenerationReview(id);
 	}, id);
-	await equipmentGroup(page, 'Hair');
+	const gen = page.locator('.gen');
 	await expect(gen).toContainText('Needs a look'); // Returning the unchanged mannequin deliberately fails item QA.
 	await expect(gen.getByRole('progressbar')).toHaveCount(0);
 	await expect
@@ -4752,16 +4961,22 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		return route.itemRoute.plan(ctx.rec.manifest.rig, ctx, input).gens;
 	});
 	await equipmentGroup(page, 'Main hand');
+	await reviewSelectedDraft(page);
 	const panel = page.locator('.gen'),
 		retry = panel.getByRole('button', { name: /^Try again/ });
 	expect(expected).toBe(10); // only four padded standing references; walking frames are a separate purchase now
 	await expect(retry).toBeEnabled();
-	// The selection's details belong to its own category: the main-hand draft shows once, in the Main hand section.
+	await expect(page.getByRole('dialog', { name: 'Item review', exact: true })).toBeVisible();
+	await expect(page.locator('.equipment-scroll .gen')).toHaveCount(0);
+	await page
+		.getByRole('dialog', { name: 'Item review', exact: true })
+		.getByRole('button', { name: 'Done', exact: true })
+		.click();
 	await equipmentGroup(page, 'Off hand');
-	await expect(page.locator('.equipment-scroll .gen')).toHaveCount(1);
 	await expect(section(page, 'Off hand').locator('.gen')).toHaveCount(0);
 	await equipmentGroup(page, 'Main hand');
-	await expect(section(page, 'Main hand').locator('.gen')).toHaveCount(1);
+	await reviewSelectedDraft(page);
+	await expect(page.locator('.gen')).toHaveCount(1);
 	await expect(retry).toBeEnabled();
 	await expect(retry).toHaveText(`Try again Est. ${expected} gens`);
 	await panel

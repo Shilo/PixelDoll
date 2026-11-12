@@ -217,17 +217,25 @@ export const recIn = (list: JobRec[], id?: string) =>
 	id ? list.find((j) => j.id === id) : undefined;
 const recOf = (id?: string) => recIn(jobs, id);
 const terminal = (r?: JobRec) => !!r && !['queued', 'submitting', 'running'].includes(r.state);
-const settled = (id: string) =>
-	new Promise<JobRec>((res) => {
+const settled = (id: string, signal?: AbortSignal) =>
+	new Promise<JobRec>((res, reject) => {
+		signal?.throwIfAborted();
 		let done = false;
+		const abort = () => {
+			done = true;
+			un();
+			reject(signal!.reason);
+		};
 		const un = queue.subscribe((s) => {
 			const r = s.jobs.find((j) => j.id === id);
 			if (!done && terminal(r)) {
 				done = true;
+				signal?.removeEventListener('abort', abort);
 				res(r!);
 				queueMicrotask(() => un());
 			}
 		});
+		if (!done) signal?.addEventListener('abort', abort, { once: true });
 	});
 const outputsOf = (r: JobRec) => [...(r.jobs[0]?.results ?? [])].sort(frameOrder);
 /** Outputs of call k in cell order (an anchored call's first output is the anchor's: dropped). */
@@ -587,7 +595,7 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 }
 
 /** A dropped call keeps its paid record in `old` so its previous design or key never lands in the current draft. */
-async function submit(d: Draft, k: number, ctx: RigCtx): Promise<string> {
+async function submit(d: Draft, k: number, ctx: RigCtx, signal?: AbortSignal): Promise<string> {
 	const c = d.calls[k],
 		dropped = drops.get(c),
 		route = d.spec.key;
@@ -599,8 +607,10 @@ async function submit(d: Draft, k: number, ctx: RigCtx): Promise<string> {
 			: ''
 	})`;
 	const req = await callRequest(d, k, ctx);
+	signal?.throwIfAborted();
 	const id = (
 		await queue.enqueue(req, {
+			signal,
 			label,
 			tag: d.activityScope ? 'studio-move' : 'm3',
 			activityScope: d.activityScope,
@@ -615,19 +625,24 @@ async function runCall(
 	d: Draft,
 	k: number,
 	ctx: RigCtx,
-	persist: () => Promise<unknown>
+	persist: () => Promise<unknown>,
+	signal?: AbortSignal
 ): Promise<JobRec> {
+	signal?.throwIfAborted();
 	let id = d.calls[k].recId;
 	if (id && !recOf(id))
 		throw new Error(
 			'The saved generation record is unavailable. No request was resent. Review this item before starting a new attempt.'
 		);
 	if (!id) {
-		id = await submit(d, k, ctx);
+		id = await submit(d, k, ctx, signal);
+		signal?.throwIfAborted();
 		await persist();
 	}
 	const r = recOf(id)!;
-	return terminal(r) ? r : settled(r.id);
+	if (signal) queue.observeScope(id, signal);
+	signal?.throwIfAborted();
+	return terminal(r) ? r : settled(r.id, signal);
 }
 
 /** New seed for call k (k = 0 also drops the later calls: their anchor came from the old design). */
@@ -657,6 +672,7 @@ export const failsOf = (res: ItemResult, k: number) => [
 ];
 
 export interface RunHooks {
+	signal?: AbortSignal;
 	status?: (s: string) => void;
 	persist?: () => Promise<unknown>;
 	result?: (r: ItemResult) => void;
@@ -669,6 +685,7 @@ export const isClean = (r: ItemResult) =>
 
 /** Run each batch of the player-requested plan once. Checks never authorize another paid attempt. */
 export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<ItemResult | null> {
+	h.signal?.throwIfAborted();
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
 	const persist = h.persist ?? (async () => {}),
@@ -685,7 +702,9 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
 	let chain: Promise<unknown> = Promise.resolve();
 	const evalItem = () => {
 		const r = chain.then(async () => {
+			h.signal?.throwIfAborted();
 			const x = await evaluateItem(d, ctx, h.standingPalettes);
+			h.signal?.throwIfAborted();
 			h.result?.(x);
 			return x;
 		});
@@ -699,14 +718,16 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
 	let streaming = false,
 		again = false;
 	const landed = () => {
-		if (!h.result) return;
+		if (!h.result || h.signal?.aborted) return;
 		if (streaming) {
 			again = true;
 			return;
 		}
 		streaming = true;
 		evalItem()
-			.catch((e) => console.error('item preview', e))
+			.catch((e) => {
+				if (!h.signal?.aborted) console.error('item preview', e);
+			})
 			.finally(() => {
 				streaming = false;
 				if (again) {
@@ -716,11 +737,15 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
 			});
 	};
 	// dress chunks report through their gate evaluation (poseEarly)
-	const call = (k: number) =>
-		runCall(d, k, ctx, persist).then((r) => {
+	const started: Promise<JobRec>[] = [];
+	const call = (k: number) => {
+		const pending = runCall(d, k, ctx, persist, h.signal).then((r) => {
 			if (r.state === 'done' && d.calls[k]?.kind !== 'dress') landed();
 			return r;
 		});
+		started.push(pending);
+		return pending;
+	};
 	/** Pose calls of the directions call k dressed. */
 	const posesOf = (k: number) => {
 		const dirs = new Set(d.calls[k].cells.map((x) => x.split('/')[1]));
@@ -736,6 +761,7 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
 		if (d.calls.filter((c) => c.kind === 'dress').length > 1) return landed();
 		if (!posesOf(k).length) return;
 		const res = await evalItem();
+		h.signal?.throwIfAborted();
 		if (failsOf(res, 0).length || failsOf(res, k).length) return;
 		status('poses');
 		for (const p of posesOf(k))
@@ -797,9 +823,10 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
 			);
 		} while (false);
 	} catch (e) {
-		d.log.push(`error: ${(e as Error).message}`);
+		if (!h.signal?.aborted) d.log.push(`error: ${(e as Error).message}`);
 	} finally {
-		await persist();
+		if (h.signal?.aborted) await Promise.allSettled(started);
+		if (!h.signal?.aborted) await persist();
 	}
 	return res;
 }
