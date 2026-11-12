@@ -1,3 +1,4 @@
+import { sampleTimeline, timelineDuration } from '../../lib/runtime/timeline.js';
 import {
 	bakedFrame,
 	composeCell,
@@ -205,7 +206,7 @@ export function buildPresentation(
 		for (const animation of m.rig.animations) {
 			const usable = new Map<DirectionName, BodySequence>();
 			animations.set(animation.id, usable);
-			const duration = animation.frames.reduce((sum, frame) => sum + frame.ms, 0);
+			const duration = timelineDuration(animation.frames);
 			const validTimeline =
 				Number.isInteger(animation.cells) &&
 				animation.cells > 0 &&
@@ -506,15 +507,7 @@ export function advancePlayback(
 				dt
 			: 0;
 	elapsedMs %= sequence.duration;
-	let remaining = elapsedMs,
-		cell = sequence.frames.at(-1)!.cell;
-	for (const frame of sequence.frames) {
-		if (remaining < frame.ms) {
-			cell = frame.cell;
-			break;
-		}
-		remaining -= frame.ms;
-	}
+	const cell = sampleTimeline(sequence.frames, elapsedMs);
 	return { key, elapsedMs, duration: sequence.duration, cell };
 }
 

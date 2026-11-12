@@ -8,6 +8,8 @@ import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { readAseprite } from '../../src/lib/export/aseprite.ts';
 import { EXPORT_SETTINGS_KEY } from '../../src/lib/store/export-settings.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { PAPERDOLL_JS } from '../../src/lib/export/phaser.ts';
+import { runtimeTypes } from '../../src/lib/runtime/sources.ts';
 
 async function savedExport(page: Page, dev: string) {
 	await page.setViewportSize({ width: 800, height: 600 }); // Eight parallel settings runs do not need eight full-size animated worlds.
@@ -819,6 +821,40 @@ test('Export takes the live current look and keeps a different saved outfit in t
 			(sample.y * saved.w + sample.x) * 4 + 4
 		)
 	]).toEqual([0, 0, 255, 255]);
+});
+
+test('the UI exports the canonical JavaScript runtime with full dressed demo sheets', async ({
+	page
+}, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
+	await openStudio(page, info.project.use.baseURL!);
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('radio', { name: 'Phaser', exact: true }).check();
+	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
+	await dialog
+		.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
+		.check();
+	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+	const button = dialog.getByRole('button', { name: /^Download ZIP/ });
+	await expect(button).toBeEnabled();
+	const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
+	await download.saveAs(info.outputPath('runtime-demo.phaser.pixeldoll.zip'));
+	const files = await unzip(new Uint8Array(await readFile((await download.path())!))),
+		text = (name: string) => new TextDecoder().decode(files.get(name));
+	expect(text('phaser/PaperdollContainer.js')).toBe(PAPERDOLL_JS);
+	expect(text('phaser/types.d.ts')).toBe(runtimeTypes);
+	const manifest = JSON.parse(text('manifest.json'));
+	expect(manifest.rig.directions.length).toBeGreaterThanOrEqual(4);
+	expect(manifest.items.length).toBeGreaterThan(1);
+	expect(manifest.export.baked).toContain('current');
+	for (const preset of manifest.export.baked)
+		for (const move of manifest.rig.animations)
+			expect(files.has(`baked/${preset}/${move.id}.png`)).toBe(true);
 });
 
 test('actual UI ZIPs materialize global playback in every engine and asset format', async ({

@@ -1,0 +1,304 @@
+export type Hex = `#${string}`;
+
+export type CellKey = `${string}/${DirectionName}/${number}`;
+
+export interface Manifest {
+	format: 'pixeldoll/3';
+	name: string;
+	app: string;
+	rig: Rig;
+	materials: Material[];
+	slots: Slot[]; // array order = tie-break for equal z
+	items: Item[]; // includes the base (slot "body")
+	presets: Preset[]; // presets[0] = default
+	export?: ExportInfo;
+}
+
+export interface Material {
+	id: string;
+	label: string;
+	ramp: Hex[];
+	variants: Record<string, Hex[]>;
+	linkTo?: string;
+	owner: string;
+	/** v2 approved baseline, used when an outfit has no explicit selection. */
+	defaultVariant?: string;
+}
+
+export interface Slot {
+	id: string;
+	z: number;
+	bgZ?: number;
+	class: 'base' | 'rigid' | 'held' | 'worn';
+	anchor?: string;
+	required?: boolean;
+	hides?: string[];
+	clips?: string[]; // B14: slots tucked under this slot's item (hair under a helmet: only what hangs below the brim shows); hides wins
+	zOverrides?: ZOverride[];
+	band?: boolean;
+}
+
+export interface ZOverride {
+	layer: 'fg' | 'bg';
+	z: number;
+	dir?: DirectionName;
+	anim?: string;
+	cell?: number;
+}
+
+export interface Item {
+	/** Reviewed/generated target cells, including intentional transparent cells. Every equipment item has one; the base has none. */
+	coverage?: CellKey[];
+	/** Preview of a generating draft only (never saved): target cells whose calls have not landed yet. */
+	pending?: CellKey[];
+	id: string;
+	name: string;
+	slot: string;
+	status: 'draft' | 'accepted' | 'stale';
+	mirror: 'flip' | 'generate';
+	hides?: string[];
+	variantOf?: string; // B14 export only: baked "<item>~<under>" copy of item `variantOf` tucked under item `under` (slot.clips)
+	under?: string;
+	/** Export-only body variant requiring every listed equipped item. Canonical owner stays `variantOf`. */
+	underAll?: string[];
+	materials: string[];
+	regions?: 'shirt-shorts'; // B15 base only: garment grays carry their region in the blue LSB (even = shirt, odd = shorts)
+	prompt: string;
+	layers: Layer[];
+	baseHash: Sha256;
+	route?: 'skeleton-pose' | 'inpaint-grid' | 'ea2-anchor' | 'diff'; // manifest-spec v1.3
+	key?: 'green' | 'magenta' | 'blue' | 'azure';
+	dressed?: Partial<Record<DirectionName, Sha256>>; // skeleton-pose: dressed chroma keyframes
+	/** Standing clip bound to retained dressed references, including items made before rig setup. */
+	standing?: string;
+	/** Base px this item hides per cell (ear tips under a hood), as sorted y * rig.cell.w + x indices; generated directions only
+	 *  (a mirrored direction flips its source). Studio clears them while the item is worn; exports bake each valid equipment combination. */
+	baseCut?: Record<string, Partial<Record<DirectionName, (number[] | null)[]>>>;
+	anchorCell?: CellKey; // ea2-anchor: design-call cell passed as frame 1 to later calls
+	provenance: Provenance[];
+	designWarnings?: string[]; // explicitly accepted keyframe design issues, retained when move QA is replaced
+	paletteRepairs?: ItemPaletteRepair[]; // explicit local edits; paid source provenance and historical QA remain intact
+	qa?: ItemQa; // not read by compose/export
+	/** The saved character this item was copied from without generating, and its item there; its provenance records that
+	 *  character's paid calls. */
+	copiedFrom?: { id: string; name: string; item?: string };
+	/** A free approximate re-fit of the copied item onto this body: the frames whose checks failed, to look at (may be empty). */
+	refit?: RefitNote[];
+}
+
+export interface RefitNote {
+	anim: string;
+	dir: DirectionName;
+	frames: number[];
+	checks: ('angle' | 'body' | 'hidden' | 'smudge' | 'dark')[];
+}
+
+export interface ItemPaletteRepair {
+	version: 'neutral-owned-v1';
+	materialId: string;
+	anim: string;
+	dir: DirectionName;
+	frames: {
+		cell: number;
+		changedPixels: number;
+		layers: { id: string; before: Sha256; after: Sha256 }[];
+	}[];
+}
+
+export interface QaSummary {
+	/** Contains reused cells without a new API measurement; aggregate numeric checks are incomplete. */
+	unmeasured?: boolean;
+	minKeyKept: number;
+	maxKeyOutside: number;
+	minAreaRatio: number;
+	maxAreaCV: number;
+	maxPaletteDist: number;
+	clipPx: number; // historical name: border-contact observations, not a measurement of pixels lost outside the frame
+	handedness?: 'ok' | 'switched';
+	shiftedFrames?: number; // cells whose silhouette fits the base better at a non-zero 1 px shift
+	missingLowerFrames?: number; // distinct frames missing lower-garment coverage compared with their standing design
+	footwearReviewFrames?: number; // distinct frames whose observed foot coverage needs review; one frame counts once even if both feet differ
+	waistReviewFrames?: number; // visible waist-band omissions relative to a dressed reference that clearly has the requested detail
+	facingReviewFrames?: number; // observable upper-torso matches to the opposite standing view
+	detailReviewFrames?: number; // posed frames missing a same-color detail patch of their dressed design (G15 review note)
+	rawKeyReviewFrames?: number; // held frames with exact new key-colored pixels before registration; informational, never changes status
+	heldLoopReviewClips?: number; // held items with a shape or angle jump at the playback seam
+	heldHangReviewClips?: number; // held clips excused from G9 because the item hangs below the hand (review note)
+	motionReviewClips?: number; // observable item changes needing review when motion overrides a gait label
+	grip?: { R: number; L: number; amb: number; none: number }; // held items, per cell
+	strayPx?: number; // extraction/cleanup removals, including permission clipping; not a semantic artifact count
+	status: 'pass' | 'warn' | 'fail' | 'accepted';
+}
+
+export interface ItemQa extends QaSummary {
+	rerolls: number; // recorded retry history, not a count of current frames
+	cells: Record<CellKey, CellQa>;
+	clips: Record<string, QaSummary & { hand?: 'r' | 'l' | '?' }>; // anim/direction; replaceable current checks
+	inherited?: { clips: string[]; summary?: QaSummary }; // moves without their own checks: a copy's indivisible summary, or none yet; kept until those moves are replaced
+}
+
+export interface CellQa {
+	route:
+		| 'posed'
+		| 'ea2'
+		| 'grid'
+		| 'diff'
+		| 'chroma'
+		| 'propagated'
+		| 'mirrored'
+		| 'two-pass'
+		| 'import';
+	provenance?: number;
+	area: number;
+	keyKept?: number;
+	rawKeyOutside?: {
+		pixels: number;
+		bounds: { x: number; y: number; w: number; h: number };
+		space: 'raw-output-cell';
+		nearestWristPx?: number;
+	}; // raw padded layer canvas; no pose tolerance
+	offset?: [number, number];
+	repaired?: boolean; // held (S5): item lost by the pose, dressed keyframe pasted at the wrist move
+	snappedPct?: number; // no palette snap yet
+}
+
+export interface Layer {
+	id: 'main' | 'fg' | 'bg';
+	role: 'fg' | 'bg';
+	z: number;
+	cells?: Record<string, Partial<Record<DirectionName, (Sha256 | null)[]>>>; // project; null = transparent
+	sheets?: Record<string, string>; // export manifest; anim -> sheet path
+	sourceSheets?: Record<string, string>; // v2 original source-ramp sheets when canonical sheets render defaults
+	cell?: { w: number; h: number }; // v1.3.1 oversize layer (held items: 96x96); default rig.cell; always written in manifest.json
+	pivot?: { x: number; y: number }; // same body point in this layer's cell (rig.pivot + pad); default rig.pivot
+}
+
+export interface Provenance {
+	endpoint: string;
+	params: Record<string, unknown>;
+	seed: number;
+	requestHash: Sha256;
+	jobId?: string;
+	usage?: { generations?: number; usd?: number };
+	createdAt: string;
+	produced: CellKey[];
+}
+
+export interface Preset {
+	id: string;
+	name: string;
+	items: Record<string, string | null>; // slot -> item id
+	variants: Record<string, string>;
+}
+
+export type Engine = (readonly [
+	'generic',
+	'godot',
+	'unity',
+	'phaser',
+	'gdevelop',
+	'aseprite',
+	'rpgmaker',
+	'rpgmakerxp'
+])[number];
+
+export interface ExportInfo {
+	exportedAt: string;
+	layout: 'pixeldoll-sheets/1';
+	engines: Engine[];
+	pixelsPerUnit: number;
+	baked?: string[];
+	bakedCell?: { w: number; h: number }; // v1.3.1: baked composite cell = union of every exported layer around the pivot
+	bakedPivot?: { x: number; y: number };
+}
+
+export interface Project {
+	manifest: Manifest;
+	images: Map<string, Img>;
+	/** Render-only owner-local palettes. Original content hashes and persisted PNGs never change. */
+	layerImages?: Map<Layer, Map<string, Img>>;
+}
+
+export type DirectionName =
+	'south' | 'south-east' | 'east' | 'north-east' | 'north' | 'north-west' | 'west' | 'south-west';
+
+export type Sha256 = `sha256:${string}`;
+
+export type AnchorId = 'head' | 'neck' | 'hand_r' | 'hand_l' | 'hip' | 'foot_r' | 'foot_l';
+
+export interface RigDirection {
+	id: DirectionName;
+	mirrorOf?: DirectionName;
+}
+
+export interface Keypoint {
+	label: string;
+	x: number;
+	y: number;
+	/** skeleton-v3 hints, 0-255 nearness (about 128 at the body) and draw order; see armDepth in poses.ts. */
+	depth?: number;
+	z_index?: number;
+}
+
+export interface RestView {
+	image: Sha256;
+	keypoints: Keypoint[];
+}
+
+export interface ClipSource {
+	route: 'skeleton-v3' | 'pixminimax' | 'v3' | 'import';
+	reference: Sha256; // first_frame sent (rig.rest[dir].image)
+	keypoints?: Keypoint[][]; // [cell][18]: the sequence sent to raw skeleton-v3; items are posed with exactly this
+	motion?: string; // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "pixminimax:<text>"
+	measured?: Keypoint[][]; // [cell][18]: re-estimated on the frozen frames (QA, anchors)
+	processing?: {
+		version: 'near-rest-v1';
+		rawPaletteFit: number;
+		rawOutliers: number;
+		changedPixels: number;
+		remainingOutliers: number;
+		changedFrames: number[];
+		rawInputHashes: Sha256[];
+		inputHashes: Sha256[];
+	};
+	provenance: number[]; // indexes into the base item's provenance
+}
+
+export interface RigAnimation {
+	id: string;
+	/** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
+	directions?: DirectionName[];
+	cells: number;
+	/** Serialized playback metadata. Global Export preferences replace it on export copies; app previews and sharing always loop. */
+	loop: boolean;
+	frames: { cell: number; ms: number }[];
+	source?: {
+		endpoint: string;
+		mode?: string;
+		template_animation_id?: string;
+		action_description?: string;
+	};
+	sources?: Partial<Record<DirectionName, ClipSource>>; // v1.3: generated directions only (mirrors derive)
+}
+
+export type AnchorTrack = Record<string, Partial<Record<DirectionName, [number, number][]>>>;
+
+export interface Rig {
+	view?: 'low top-down' | 'high top-down' | 'side';
+	template?: string;
+	cell: { w: number; h: number };
+	pivot: { x: number; y: number }; // pixel-edge coords
+	directions: RigDirection[];
+	animations: RigAnimation[];
+	baseItem: string;
+	baseHash: Sha256;
+	pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 12)
+	rest?: Partial<Record<DirectionName, RestView>>; // original standing views, including unused views retained for account reconnection
+	anchors?: Partial<Record<AnchorId, AnchorTrack>>;
+}
+
+export interface Img {
+	w: number;
+	h: number;
+	data: Uint8ClampedArray;
+}

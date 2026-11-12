@@ -13,13 +13,11 @@ import type {
 	Project
 } from '../store/manifest.ts';
 import {
-	applyIndex,
 	autoRamps,
 	colorCounts,
 	deriveRamps,
 	fromHex,
 	hueName,
-	indexImg,
 	lab,
 	tintRamp,
 	toHex,
@@ -203,20 +201,8 @@ export function deriveMaterials(
 	}
 }
 
-/** Selected variant of a material, following linkTo (cycles stop). */
-export function variantOf(
-	m: Manifest,
-	variants: Preset['variants'],
-	id: string,
-	seen = new Set<string>()
-): string | undefined {
-	const mat = m.materials.find((x) => x.id === id);
-	if (!mat || seen.has(id)) return undefined;
-	seen.add(id);
-	return mat.linkTo
-		? variantOf(m, variants, mat.linkTo, seen)
-		: (variants[id] ?? mat.defaultVariant);
-}
+export { variantOf } from '../runtime/colors.js';
+import { variantOf, recolor as recolorProject } from '../runtime/colors.js';
 
 /** Variant names: a swatch name, "#rrggbb", or "tint:<swatch|#hex>" (grayscale × tint). Stored names win. */
 export function variantRampOf(mat: Material, name: string): Hex[] | undefined {
@@ -237,73 +223,8 @@ export function storeVariants(m: Manifest, ...selections: Preset['variants'][]) 
 		}
 }
 
-// ponytail: index cache keyed by image object; a rebuilt project rebuilds its indices.
-// The last rendered copy is kept too, so an outfit change re-renders nothing and the copies keep their identity for the
-// stage's per-image caches. One copy per image: two owners sharing a hash with different colors re-render each time.
-const cache = new WeakMap<Img, { sig: string; idx: Int16Array; table?: string; out?: Img }>();
-
-/** Project view with the selected variants swapped in (exact index swap). Same cell hashes, so compose is unchanged. */
 export function recolor(p: Project, variants: Preset['variants']): Project {
-	const m = p.manifest;
-	let images: Map<string, Img> | null = null;
-	const layerImages = new Map<Layer, Map<string, Img>>();
-	for (const it of m.items) {
-		const mats = it.materials.flatMap(
-			(id) =>
-				m.materials.find((x) => x.id === id && (x.owner === it.id || x.owner === it.variantOf)) ??
-				[]
-		);
-		const ids = new Map<number, number>(),
-			table: number[] = [];
-		for (const mat of mats) {
-			const name = variantOf(m, variants, mat.id),
-				r = name ? variantRampOf(mat, name) : undefined;
-			mat.ramp.forEach((h, i) => {
-				ids.set(fromHex(h), table.length);
-				table.push(r ? fromHex(r[i]) : -1);
-			});
-		}
-		if (!table.some((c) => c >= 0)) continue;
-		images ??= new Map(p.images);
-		const sig = mats.map((x) => x.ramp.join()).join('|'),
-			t = Int32Array.from(table),
-			tsig = table.join();
-		for (const l of it.layers) {
-			const local = new Map<string, Img>();
-			for (const d of Object.values(l.cells ?? {}))
-				for (const h of Object.values(d ?? {}).flat()) {
-					const im = h && p.images.get(h);
-					if (!im) continue;
-					let c = cache.get(im);
-					if (!c || c.sig !== sig) cache.set(im, (c = { sig, idx: indexImg(im, ids) }));
-					if (c.table !== tsig) {
-						c.table = tsig;
-						c.out = applyIndex(im, c.idx, t);
-					}
-					const rendered = c.out!;
-					local.set(h!, rendered);
-					// Preserve the traditional map for consumers inspecting a single item's images; composition uses owner-local refs.
-					images.set(h!, rendered);
-				}
-			layerImages.set(l, local);
-		}
-	}
-	// Every layer, including unmodified layers, gets an explicit raw override when any item is recolored. Otherwise an
-	// uncolored copy sharing a hash with a colored one would accidentally read that copy's palette from `images`.
-	if (images)
-		for (const it of m.items)
-			for (const l of it.layers)
-				if (!layerImages.has(l)) {
-					const local = new Map<string, Img>();
-					for (const dirs of Object.values(l.cells ?? {}))
-						for (const cells of Object.values(dirs ?? {}))
-							for (const h of cells ?? []) {
-								const im = h && p.images.get(h);
-								if (h && im) local.set(h, im);
-							}
-					layerImages.set(l, local);
-				}
-	return images ? { manifest: m, images, layerImages } : p;
+	return recolorProject(p, variants, variantRampOf);
 }
 
 /** Random outfit: each non-body slot gets none or one of its items; each unlinked material keeps its source or gets a swatch. */

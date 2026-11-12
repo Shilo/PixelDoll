@@ -1,5 +1,6 @@
 // Direction plans and horizontal mirroring (architecture §2). Mirrored cells are flips of the source direction's cells.
-import { makeImg, type Img } from '../image/png.ts';
+import { makeImg } from '../image/png.ts';
+import { flipH } from '../runtime/paperdoll.js';
 import { DIRECTIONS, type DirectionName, type RigDirection } from './rig.ts';
 
 export type DirMode = '4' | '8' | 'all';
@@ -35,15 +36,7 @@ export function planDirections(
 	return { dirs: dirs.sort(byOrder), missing };
 }
 
-export function flipH(im: Img): Img {
-	const o = makeImg(im.w, im.h);
-	for (let y = 0; y < im.h; y++)
-		for (let x = 0; x < im.w; x++) {
-			const s = (y * im.w + x) * 4;
-			o.data.set(im.data.subarray(s, s + 4), (y * im.w + (im.w - 1 - x)) * 4);
-		}
-	return o;
-}
+export { flipH } from '../runtime/paperdoll.js';
 /** Mirror a pixel index column. (Pixel-edge coords use w - x; the pivot x = w/2 is unchanged.) */
 export const flipX = (x: number, w: number) => w - 1 - x;
 

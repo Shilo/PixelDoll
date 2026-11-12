@@ -223,24 +223,51 @@ function atlasArgs(url: string, m: Manifest): [string, string, string] {
 }
 afterEach(() => vi.unstubAllGlobals());
 
-test('Phaser selects the complete body-cut combination independently of equipment insertion order', () => {
+test('Phaser selects and synchronizes the complete body-cut combination independently of equipment insertion order', async () => {
 	const m = fixture(),
 		source = m.items[0],
-		{ Paperdoll } = runtime();
+		{ Paperdoll, loadPaperdoll, texKey } = runtime(),
+		harness = sceneHarness();
+	m.rig.baseHash = `sha256:${'0'.repeat(64)}`;
+	for (const item of m.items) {
+		item.baseHash = m.rig.baseHash;
+		item.materials = [];
+	}
+	m.items[2].baseCut = { walk: { south: [[0], [1]] } };
+	m.slots.push({ id: 'back', z: 5, class: 'worn' });
 	m.items.push(
+		{ ...m.items[2], id: 'cape', slot: 'back' },
 		{ ...source, id: 'base~hat', variantOf: 'base', under: 'hat' },
 		{ ...source, id: 'base~cape', variantOf: 'base', under: 'cape' },
 		{ ...source, id: 'base~cape~hat', variantOf: 'base', underAll: ['cape', 'hat'] }
 	);
+	browserHarness(m);
+	const loaded = await loadPaperdoll(harness.scene, '/hero/'),
+		doll = new Paperdoll(harness.scene, 0, 0, loaded);
+	doll.play('walk', 'south');
 	for (const equipped of [
 		{ body: 'base', head: 'hat', back: 'cape' },
 		{ back: 'cape', body: 'base', head: 'hat' }
-	])
+	]) {
 		expect(Paperdoll.prototype.shown.call({ m, equipped }, 'body')).toBe('base~cape~hat');
+		doll.applyPreset({ items: equipped, variants: {} });
+		expect(doll.body.key).toBe(texKey(loaded, 'base~cape~hat', 'main', 'walk'));
+	}
 	expect(
 		Paperdoll.prototype.shown.call({ m, equipped: { body: 'base', head: 'hat' } }, 'body')
 	).toBe('base~hat');
 	expect(Paperdoll.prototype.shown.call({ m, equipped: { body: 'base' } }, 'body')).toBe('base');
+	doll.equip('back', null);
+	expect(doll.body.key).toBe(texKey(loaded, 'base~hat', 'main', 'walk'));
+	doll.equip('head', null);
+	expect(doll.body.key).toBe(texKey(loaded, 'base', 'main', 'walk'));
+	m.items.find((item) => item.id === 'cape')!.baseHash = `sha256:${'1'.repeat(64)}`;
+	expect(
+		Paperdoll.prototype.shown.call(
+			{ m, equipped: { body: 'base', head: 'hat', back: 'cape' } },
+			'body'
+		)
+	).toBe('base~hat');
 });
 
 test('Phaser quick start selects the first playable move and its supported direction', () => {

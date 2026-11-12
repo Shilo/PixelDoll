@@ -175,29 +175,8 @@ export function tintRamp(ramp: Hex[], pick: Hex): Hex[] {
 	});
 }
 
-/** Pixel -> color id (index into `ids` order) or -1. Precomputed once per (image, material set); recolor is then a table write. */
-export function indexImg(im: Img, ids: Map<number, number>): Int16Array {
-	const out = new Int16Array(im.w * im.h).fill(-1);
-	for (let i = 0, p = 0; i < im.data.length; i += 4, p++)
-		if (im.data[i + 3])
-			out[p] = ids.get((im.data[i] << 16) | (im.data[i + 1] << 8) | im.data[i + 2]) ?? -1;
-	return out;
-}
-
-/** Exact swap: color id j -> table[j] (0xRRGGBB, or -1 = keep). Only table colors are introduced. */
-export function applyIndex(im: Img, idx: Int16Array, table: Int32Array): Img {
-	const d = new Uint8ClampedArray(im.data);
-	for (let p = 0; p < idx.length; p++) {
-		const j = idx[p],
-			c = j < 0 ? -1 : table[j];
-		if (c >= 0) {
-			d[p * 4] = c >> 16;
-			d[p * 4 + 1] = (c >> 8) & 255;
-			d[p * 4 + 2] = c & 255;
-		}
-	}
-	return { w: im.w, h: im.h, data: d };
-}
+export { indexImg, applyIndex } from '../runtime/colors.js';
+import { indexImg, applyIndex } from '../runtime/colors.js';
 
 const HUES: [string, number][] = [
 	['red', 20],

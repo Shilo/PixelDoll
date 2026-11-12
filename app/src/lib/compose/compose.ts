@@ -10,150 +10,52 @@ import type {
 	Manifest,
 	Preset,
 	Project,
-	Rig,
 	Sha256,
 	Slot
 } from '../store/manifest.ts';
-
-/** `under`: equipped items this item is tucked under (slot.clips, B14); compose clips its cells on the fly. */
-export interface Draw {
-	item: Item;
-	layer: Layer;
-	slot: Slot;
-	z: number;
-	under: Item[];
-}
-
-/** A cell size plus the pivot inside it (pixel-edge coords). Layers line up by pivot: a layer's cell sits at
- *  (frame.x - layer.x, frame.y - layer.y) in a frame (manifest-spec v1.3.1 oversize layers). */
-export interface Frame {
-	w: number;
-	h: number;
-	x: number;
-	y: number;
-}
-export const rigFrame = (rig: Pick<Rig, 'cell' | 'pivot'>): Frame => ({
-	...rig.cell,
-	...rig.pivot
-});
-export const layerFrame = (
-	rig: Pick<Rig, 'cell' | 'pivot'>,
-	l: Pick<Layer, 'cell' | 'pivot'>
-): Frame => ({ ...rig.cell, ...rig.pivot, ...l.cell, ...l.pivot });
-/** Smallest frame that holds every given frame around a shared pivot (baked composites). */
-export function unionFrame(fs: Frame[]): Frame {
-	const x = Math.max(...fs.map((f) => f.x)),
-		y = Math.max(...fs.map((f) => f.y));
-	return {
-		x,
-		y,
-		w: x + Math.max(...fs.map((f) => f.w - f.x)),
-		h: y + Math.max(...fs.map((f) => f.h - f.y))
-	};
-}
-/** Frame for baked composites: the union of every layer of every item (one cell size per export, not per preset). */
-export const bakedFrame = (m: Manifest): Frame =>
-	unionFrame([
-		rigFrame(m.rig),
-		...m.items.flatMap((it) => it.layers.map((l) => layerFrame(m.rig, l)))
-	]);
-
-/** Equipped items of a preset (slot -> item); the base is always on. */
-export function equipped(m: Manifest, items: Preset['items']): Item[] {
-	return m.items.filter((it) => it.id === m.rig.baseItem || items[it.slot] === it.id);
-}
-
-/** Slots an item hides while worn (item.hides ?? slot.hides). */
-const hidesOf = (m: Manifest, it: Item) =>
-	it.hides ?? m.slots.find((x) => x.id === it.slot)?.hides ?? [];
-/** Slots hidden by equipped items (item.hides ?? slot.hides). Of two worn items that hide each other's slot (two two-handed
- *  items), the one in the later slot stays visible and the other's hides do not apply, so they never both vanish. */
-// ponytail: otherwise hides come from every equipped item, even one that is itself hidden; chains are not resolved.
-export function hiddenSlots(m: Manifest, items: Item[]): Set<string> {
-	const at = (slot: string) => m.slots.findIndex((s) => s.id === slot);
-	const out = new Set<string>();
-	for (const it of items) {
-		const mine = hidesOf(m, it);
-		if (
-			items.some(
-				(o) =>
-					o !== it &&
-					mine.includes(o.slot) &&
-					hidesOf(m, o).includes(it.slot) &&
-					at(o.slot) > at(it.slot)
-			)
-		)
-			continue;
-		for (const s of mine) out.add(s);
-	}
-	return out;
-}
-
-// ---------- two-handed items: a hand item that hides the other hand ----------
-/** The other hand of a hand slot. */
-export const OTHER_HAND: Readonly<Record<string, string>> = {
-	main_hand: 'off_hand',
-	off_hand: 'main_hand'
-};
-/** A two-handed item takes both hands: it is a hand item that hides the other hand while worn. */
-export const twoHanded = (m: Manifest, it: Item) =>
-	!!OTHER_HAND[it.slot] && hidesOf(m, it).includes(OTHER_HAND[it.slot]);
-/** Both hands as one outfit allows: a two-handed item and an item in the other hand are never worn together. The hand in
- *  `keep` (the one just changed) stays; without it the Main hand does. Returns the outfit and what was taken off by what. */
-export function settleHands(
-	m: Manifest,
-	items: Preset['items'],
-	keep?: string
-): { items: Preset['items']; removed?: Item; by?: Item } {
-	const worn = (slot: string) => m.items.find((i) => i.id === items[slot] && i.slot === slot);
-	const main = worn('main_hand'),
-		off = worn('off_hand');
-	if (!main || !off || (!twoHanded(m, main) && !twoHanded(m, off))) return { items };
-	const [removed, by] = keep === 'off_hand' ? [main, off] : [off, main];
-	return { items: { ...items, [removed.slot]: null }, removed, by };
-}
-
-// ---------- B14 tuck-under (slot.clips): hair under a helmet keeps only what hangs below the brim ----------
-/** Equipped items whose slot tucks `slot` under them (slot.clips). Hidden or not: every engine runtime uses the same rule. */
-export const tuckers = (m: Manifest, on: Item[], slot: string) =>
-	on.filter(
-		(c) => c.slot !== slot && (m.slots.find((s) => s.id === c.slot)?.clips ?? []).includes(slot)
-	);
-/** Variant id of `item` tucked under `over` (exports bake these: engines swap sheets, they never mask). */
-export const tuckedId = (item: string, over: string | readonly string[]) =>
-	`${item}~${typeof over === 'string' ? over : over.join('~')}`;
-/** Equipment required by a baked variant. Combined body variants retain a canonical material owner. */
-export const variantCovers = (item: Pick<Item, 'under' | 'underAll'>): string[] =>
-	item.underAll ?? (item.under ? [item.under] : []);
-/** The equipped items as drawn: an item tucked under another uses its baked variant when the project has one. */
-export const shownItems = (m: Manifest, on: Item[]): Item[] =>
-	on.map((it) => {
-		const covers = new Set(
-			(it.id === m.rig?.baseItem
-				? on.filter((c) => c.baseHash === m.rig.baseHash && affectsBody(m, c))
-				: tuckers(m, on, it.slot)
-			).map((c) => c.id)
-		);
-		let shown = it,
-			count = 0;
-		for (const variant of m.items) {
-			const required = variantCovers(variant);
-			if (
-				variant.variantOf === it.id &&
-				required.length > count &&
-				required.every((id) => covers.has(id))
-			) {
-				shown = variant;
-				count = required.length;
-			}
-		}
-		return shown;
-	});
+import {
+	tuckedId,
+	cutAt,
+	cutBodyLayer,
+	tucked,
+	affectsBody,
+	cellImg,
+	over,
+	composeCell,
+	tuck,
+	resolveZ,
+	drawList,
+	bakedFrame,
+	unionFrame,
+	shownItems
+} from '../runtime/paperdoll.js';
+export {
+	rigFrame,
+	layerFrame,
+	unionFrame,
+	bakedFrame,
+	equipped,
+	hiddenSlots,
+	OTHER_HAND,
+	twoHanded,
+	settleHands,
+	tuckers,
+	tuckedId,
+	variantCovers,
+	shownItems,
+	cutAt,
+	cutBase,
+	tuck,
+	resolveZ,
+	drawList,
+	cellImg,
+	over,
+	composeCell
+} from '../runtime/paperdoll.js';
+export type { Draw, Frame } from '../runtime/paperdoll.js';
 
 /** Bound complete body-cover combinations before allocating their cells and export sheets. */
 export const MAX_BODY_CUT_VARIANTS = 256;
-const affectsBody = (m: Manifest, item: Item) =>
-	!!item.baseCut || (m.slots.find((s) => s.id === item.slot)?.clips ?? []).includes('body');
 const bodyCoverGroups = (m: Manifest) => {
 	const groups = new Map<string, Item[]>();
 	for (const item of m.items.filter(
@@ -176,22 +78,6 @@ export const bodyCutVariantCount = (m: Manifest) =>
 export const bodyCutVariantLimit = (count: number) =>
 	`This inventory needs ${count} body variants. Export supports at most ${MAX_BODY_CUT_VARIANTS}. Export fewer designs that hide body pixels.`;
 
-// ---------- round 3: items that hide body px (Item.baseCut: ear tips under a hood) ----------
-/** Base px an item hides in one cell (rig-cell indices); a mirrored direction flips its source's. */
-export function cutAt(
-	m: Manifest,
-	item: Item,
-	anim: string,
-	dir: DirectionName,
-	cell: number
-): number[] | null {
-	const stored = item.baseCut?.[anim]?.[dir];
-	if (stored) return stored[cell] ?? null;
-	const src = m.rig.directions.find((d) => d.id === dir)?.mirrorOf,
-		w = m.rig.cell.w,
-		s = src ? cutAt(m, item, anim, src, cell) : null;
-	return s && s.map((p) => p - 2 * (p % w) + w - 1);
-}
 /** Forget an item's hidden body px in some directions of a move (their cells were replaced or removed). */
 export function dropCut(item: Item, anim: string, dirs: Iterable<DirectionName>) {
 	const a = item.baseCut?.[anim];
@@ -200,93 +86,6 @@ export function dropCut(item: Item, anim: string, dirs: Iterable<DirectionName>)
 	if (!Object.keys(a).length) delete item.baseCut![anim];
 	if (!Object.keys(item.baseCut!).length) delete item.baseCut;
 }
-/** A base cell with the px of every worn item's cut cleared (idempotent: a baked "<base>~<item>" variant stays the same). */
-export function cutBase(im: Img, cuts: (number[] | null)[]): Img {
-	if (!cuts.some((c) => c?.length)) return im;
-	const o: Img = { w: im.w, h: im.h, data: im.data.slice() };
-	for (const c of cuts) for (const p of c ?? []) o.data.fill(0, p * 4, p * 4 + 4);
-	return o;
-}
-
-/** Stored cuts use rig coordinates even when the body layer has its own canvas and pivot. */
-function cutBodyLayer(im: Img, cuts: (number[] | null)[], rig: Rig, layer: Layer): Img {
-	const frame = layerFrame(rig, layer),
-		dx = frame.x - rig.pivot.x,
-		dy = frame.y - rig.pivot.y;
-	const local = cuts.map(
-		(cut) =>
-			cut?.flatMap((pixel) => {
-				const x = (pixel % rig.cell.w) + dx,
-					y = Math.floor(pixel / rig.cell.w) + dy;
-				return x >= 0 && y >= 0 && x < im.w && y < im.h ? [y * im.w + x] : [];
-			}) ?? null
-	);
-	return cutBase(im, local);
-}
-
-/**
- * Drop the px of `im` (frame `f`) that sit under the covering layers' silhouette: per column, everything at or above the
- * cover's lowest opaque row (inside the helmet and hair poking out of its top); columns beside the cover use the nearest
- * covered column (hair cannot stick out sideways above the brim). Px below the brim stay (long hair). Idempotent.
- * ponytail: the cover is the whole item silhouette; a circlet or a hat with a hole would clip everything above its lowest row
- * (per-item clip masks if such items appear).
- */
-export function tuck(im: Img, f: Frame, covers: [Img | null, Frame][]): Img {
-	const brim = new Array<number>(im.w).fill(-1);
-	for (const [c, g] of covers) {
-		if (!c) continue;
-		for (let y = 0; y < c.h; y++)
-			for (let x = 0; x < c.w; x++) {
-				if (!c.data[(y * c.w + x) * 4 + 3]) continue;
-				const X = x - g.x + f.x,
-					Y = y - g.y + f.y; // same body point (layers align by pivot)
-				if (X >= 0 && X < im.w) brim[X] = Math.max(brim[X], Y);
-			}
-	}
-	if (brim.every((b) => b < 0)) return im;
-	// uncovered columns (beside the cover, or a gap between its parts) take the nearest covered column, the higher brim on a tie:
-	// symmetric, so tucking commutes with a mirrored view (a left-to-right fill gave gaps the left brim; round 3 review)
-	const own = brim.slice();
-	for (let x = 0; x < im.w; x++) {
-		if (own[x] >= 0) continue;
-		let l = x - 1,
-			r = x + 1;
-		while (l >= 0 && own[l] < 0) l--;
-		while (r < im.w && own[r] < 0) r++;
-		const dl = l >= 0 ? x - l : Infinity,
-			dr = r < im.w ? r - x : Infinity;
-		brim[x] = dl < dr ? own[l] : dr < dl ? own[r] : Math.max(own[l], own[r]);
-	}
-	const o: Img = { w: im.w, h: im.h, data: im.data.slice() };
-	for (let y = 0; y < im.h; y++)
-		for (let x = 0; x < im.w; x++)
-			if (y <= brim[x]) o.data.fill(0, (y * im.w + x) * 4, (y * im.w + x) * 4 + 4);
-	return o;
-}
-const tucked = (
-	p: Project,
-	im: Img | null,
-	l: Layer,
-	under: Item[],
-	anim: string,
-	dir: DirectionName,
-	cell: number
-): Img | null =>
-	im && under.length
-		? tuck(
-				im,
-				layerFrame(p.manifest.rig, l),
-				under.flatMap((c) =>
-					c.layers.map(
-						(cl) =>
-							[cellImg(p, cl, anim, dir, cell), layerFrame(p.manifest.rig, cl)] as [
-								Img | null,
-								Frame
-							]
-					)
-				)
-			)
-		: im;
 
 /** Export copy of `p` with a baked "<item>~<over>" variant per (tucked item, covering item) pair: engines swap to it when both
  *  are worn (stored directions only; a mirrored view is the flip of its source, and tucking commutes with the flip). Stale
@@ -392,124 +191,6 @@ export async function withTuckVariants(p: Project): Promise<Project> {
 			add.push(v);
 		}
 	return { manifest: { ...m, items: [...m.items, ...add] }, images, layerImages: p.layerImages };
-}
-
-/** Most specific matching zOverride (cell > anim > dir > none; later wins on ties), else layer.z. */
-export function resolveZ(
-	slot: Slot | undefined,
-	layer: Pick<Layer, 'role' | 'z'>,
-	anim: string,
-	dir: DirectionName,
-	cell: number
-): number {
-	let z = layer.z,
-		best = -1;
-	for (const o of slot?.zOverrides ?? []) {
-		if (
-			o.layer !== layer.role ||
-			(o.dir && o.dir !== dir) ||
-			(o.anim && o.anim !== anim) ||
-			(o.cell != null && o.cell !== cell)
-		)
-			continue;
-		const rank = o.cell != null ? 3 : o.anim ? 2 : o.dir ? 1 : 0;
-		if (rank >= best) {
-			best = rank;
-			z = o.z;
-		}
-	}
-	return z;
-}
-
-/** Draw order for one cell: ascending z, then slot order, bg before fg, then item id. */
-export function drawList(
-	m: Manifest,
-	items: Preset['items'],
-	anim: string,
-	dir: DirectionName,
-	cell: number
-): Draw[] {
-	const on = equipped(m, items),
-		hidden = hiddenSlots(m, on);
-	const slotIx = (id: string) => m.slots.findIndex((s) => s.id === id);
-	const list: Draw[] = [];
-	for (const item of shownItems(m, on)) {
-		if (hidden.has(item.slot)) continue;
-		const slot = m.slots.find((s) => s.id === item.slot)!,
-			under = item.variantOf ? [] : tuckers(m, on, item.slot); // a baked variant is already tucked
-		for (const layer of item.layers)
-			list.push({ item, layer, slot, z: resolveZ(slot, layer, anim, dir, cell), under });
-	}
-	return list.sort(
-		(a, b) =>
-			a.z - b.z ||
-			slotIx(a.item.slot) - slotIx(b.item.slot) ||
-			(a.layer.role === b.layer.role ? 0 : a.layer.role === 'bg' ? -1 : 1) ||
-			a.item.id.localeCompare(b.item.id)
-	);
-}
-
-/** A layer's cell image; null = transparent. A mirrored direction without stored cells is a flip of its source. */
-export function cellImg(
-	p: Project,
-	layer: Layer,
-	anim: string,
-	dir: DirectionName,
-	cell: number
-): Img | null {
-	const stored = layer.cells?.[anim]?.[dir];
-	if (stored) {
-		const h = stored[cell];
-		return h ? (p.layerImages?.get(layer)?.get(h) ?? p.images.get(h) ?? null) : null;
-	}
-	const src = p.manifest.rig.directions.find((d) => d.id === dir)?.mirrorOf;
-	const im = src ? cellImg(p, layer, anim, src, cell) : null;
-	return im && flipH(im);
-}
-
-/** Straight-alpha source-over of src onto dst at (x, y), in place, clipped to dst. Binary alpha = plain copy. */
-export function over(dst: Img, src: Img, x = 0, y = 0) {
-	for (let sy = Math.max(0, -y); sy < Math.min(src.h, dst.h - y); sy++)
-		for (let sx = Math.max(0, -x); sx < Math.min(src.w, dst.w - x); sx++) {
-			const s = (sy * src.w + sx) * 4,
-				ta = src.data[s + 3];
-			if (!ta) continue;
-			const d = ((y + sy) * dst.w + x + sx) * 4;
-			if (ta === 255) {
-				dst.data.set(src.data.subarray(s, s + 4), d);
-				continue;
-			}
-			const ba = dst.data[d + 3] / 255,
-				a = ta / 255,
-				oa = a + ba * (1 - a);
-			for (let c = 0; c < 3; c++)
-				dst.data[d + c] = Math.round((src.data[s + c] * a + dst.data[d + c] * ba * (1 - a)) / oa);
-			dst.data[d + 3] = Math.round(oa * 255);
-		}
-}
-
-/** Composite of one cell on `frame` (default the rig cell: oversize layers are clipped to it; bakedFrame() keeps them whole). */
-export function composeCell(
-	p: Project,
-	items: Preset['items'],
-	anim: string,
-	dir: DirectionName,
-	cell: number,
-	frame = rigFrame(p.manifest.rig)
-): Img {
-	const out = makeImg(frame.w, frame.h),
-		m = p.manifest;
-	const cuts = equipped(m, items)
-		.filter((it) => it.baseCut && it.baseHash === m.rig.baseHash)
-		.map((it) => cutAt(m, it, anim, dir, cell));
-	for (const d of drawList(m, items, anim, dir, cell)) {
-		let im = tucked(p, cellImg(p, d.layer, anim, dir, cell), d.layer, d.under, anim, dir, cell);
-		if (im && (d.item.id === m.rig.baseItem || d.item.variantOf === m.rig.baseItem))
-			im = cutBodyLayer(im, cuts, m.rig, d.layer);
-		const f = layerFrame(m.rig, d.layer);
-		if (im) over(out, im, frame.x - f.x, frame.y - f.y);
-	}
-	return out;
 }
 
 export async function selfTest() {

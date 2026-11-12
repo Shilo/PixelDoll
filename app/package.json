@@ -6,6 +6,8 @@
 	"homepage": "https://pixeldoll.app/",
 	"type": "module",
 	"scripts": {
+		"runtime:sync": "node scripts/sync-runtime.mjs",
+		"prebuild": "node scripts/sync-runtime.mjs --check",
 		"dev": "vite",
 		"dev:agent": "vite --mode agent --port 5199 --strictPort",
 		"build": "vite build && node scripts/dist-guard.mjs",
