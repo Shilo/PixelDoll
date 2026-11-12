@@ -344,6 +344,22 @@ scripts, that no schema change is needed, and that the offline numbers reproduce
 - Dual wielding means one generation that draws a pair, one weapon in each hand. Proposed below, pending confirmation.
 - Budget: only the generations that are necessary. Revised below, pending confirmation.
 
+## Live test (2026-11-12)
+
+Knight A (80 px frame, four directions with west mirrored, Default, Idle and Walk), already on the agent account, so no
+test character was created. Its Main hand "steel sword" was used as the source.
+
+- **Make one for the Off hand:** the row opened New item for the Off hand with "steel sword" filled in, at 10 generations
+  for the standing design. The new sword came back in the **left** hand in the front, side and back views, with the same
+  design (gray blade, gold crossguard) as the original. Its angle differs (the original points up, the copy down).
+- **Walk (9 generations):** the two swords walk together, one per hand. Front and back pass every check with the sword in the
+  left hand on all 8 frames. The side view (east, and its mirror west) fails the hand check on 4 of 8 frames: the swords
+  cross there and the far hand is hidden, the side-view limit already recorded for Off hand items. Try again redraws it.
+- **Not generated:** a two-handed greatsword. The switch costs nothing, and the owner accepted the one-hand carry in Idle and
+  Walk, so a new item would only repeat today's drawing.
+- **Spent:** 16.35 generations by the account balance (estimate 19), no dollars. Images stay local in `docs/testing/img/`
+  (`two-handed-live-pair-standing.png`, `two-handed-live-pair-walk.png`).
+
 ## Decisions for the owner (first version)
 
 1. **Approve the design**: a Two-handed switch in the ⋮ menu, stored as the existing hide rule; dual wielding as one item per
