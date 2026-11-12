@@ -65,8 +65,8 @@ export const MOTION = {
 	cameraResponse: 9,
 	/** Touch stick sizes in CSS px; compact applies on narrow or short screens such as phones in landscape. */
 	joystick: {
-		regular: { base: 144, thumb: 56, gap: 4 },
-		compact: { base: 128, thumb: 48, gap: 4 },
+		regular: { base: 144, thumb: 56 },
+		compact: { base: 128, thumb: 48 },
 		compactQuery: '(max-width: 360px), (max-height: 400px)',
 		deadZone: 8
 	},

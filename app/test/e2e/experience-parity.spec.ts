@@ -954,7 +954,7 @@ test.describe('two-finger equipment input', () => {
 
 // Desktop drives the stick with a mouse; the others use real touch through CDP. Sizes mirror MOTION.joystick.
 for (const screen of [
-	{ name: 'desktop', width: 1440, height: 900, touch: false, theme: 'dark' },
+	{ name: 'desktop', width: 1920, height: 1080, touch: false, theme: 'dark' },
 	{ name: 'tablet portrait', width: 820, height: 1180, touch: true, theme: 'light' },
 	{ name: 'phone portrait', width: 390, height: 844, touch: true, theme: 'dark' },
 	{ name: 'phone landscape', width: 844, height: 390, touch: true, theme: 'light' },
@@ -966,14 +966,14 @@ for (const screen of [
 			isMobile: screen.touch,
 			hasTouch: screen.touch
 		});
-		test('the thumb stays on a circle, follows the finger and moves the character in both live views', async ({
+		test('the thumb center stays on a circle, follows the finger and moves the character in both live views', async ({
 			page,
 			context
 		}, testInfo) => {
 			const compact = screen.width <= 360 || screen.height <= 400;
 			const base = compact ? 128 : 144,
 				thumb = compact ? 48 : 56,
-				travel = (base - thumb) / 2 - 4;
+				travel = base / 2;
 			await context.addInitScript((theme) => {
 				try {
 					localStorage.setItem('pixeldoll.theme', theme);
@@ -1022,11 +1022,6 @@ for (const screen of [
 					return {
 						base: { x: b.x + b.width / 2, y: b.y + b.height / 2, width: b.width, height: b.height },
 						thumb: { x: t.x + t.width / 2, y: t.y + t.height / 2, width: t.width },
-						inside:
-							t.left >= b.left - 0.5 &&
-							t.right <= b.right + 0.5 &&
-							t.top >= b.top - 0.5 &&
-							t.bottom <= b.bottom + 0.5,
 						thumbColor: getComputedStyle(knob).backgroundColor,
 						accent
 					};
@@ -1050,6 +1045,11 @@ for (const screen of [
 					const side = view === 'Side-scroller';
 					await modes(page).getByRole('button', { name: view, exact: true }).click();
 					await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
+					// Notices overlay the world; clear them so the screenshot shows the whole stick.
+					for (const dismiss of await page
+						.getByRole('button', { name: 'Dismiss notification' })
+						.all())
+						if (await dismiss.isVisible()) await dismiss.click();
 					const start = (await blank())!;
 					expect(start, 'a blank world point fits the whole stick').toBeTruthy();
 					await press('down', start.x, start.y);
@@ -1062,15 +1062,14 @@ for (const screen of [
 					near(m.thumb.x, start.x);
 					near(m.thumb.y, start.y);
 					expect(m.thumbColor).toBe(m.accent);
-					// Past full throw on a diagonal: the old per-axis clamp left the ring here.
+					// Past full throw on a diagonal: the thumb center stops on the ring and the ring follows.
 					const finger = side
-						? { x: start.x - 70, y: start.y + 50 }
-						: { x: start.x + 60, y: start.y - 60 };
+						? { x: start.x - 100, y: start.y + 50 }
+						: { x: start.x + 80, y: start.y - 80 };
 					await press('move', (start.x + finger.x) / 2, (start.y + finger.y) / 2);
 					await press('move', finger.x, finger.y);
 					await expect.poll(async () => Math.round((await measure())!.thumb.x)).toBe(finger.x);
 					m = (await measure())!;
-					expect(m.inside).toBe(true);
 					near(Math.hypot(m.thumb.x - m.base.x, m.thumb.y - m.base.y), travel);
 					if (side) {
 						near(m.thumb.y, start.y);

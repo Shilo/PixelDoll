@@ -15,13 +15,12 @@
 </script>
 
 {#if snapshot.origin}<div
-		class="joystick bu-floating {className}"
-		class:track={axis === 'x'}
+		class="joystick {className}"
+		class:horizontal={axis === 'x'}
 		style:left="{snapshot.origin.x}px"
 		style:top="{snapshot.origin.y}px"
 		style:--joystick-base="{size.base}px"
 		style:--joystick-thumb="{size.thumb}px"
-		style:--joystick-gap="{size.gap}px"
 		aria-hidden="true"
 	>
 		<span
@@ -31,13 +30,14 @@
 	</div>{/if}
 
 <style>
-	/* Bronze's floating material and accent keep the stick in the theme; only geometry is set here. */
+	/* An open ring and a solid thumb in Bronze roles keep the world visible; only geometry is set here. */
 	.joystick {
 		position: fixed;
 		box-sizing: border-box;
 		width: var(--joystick-base);
 		height: var(--joystick-base);
 		translate: -50% -50%;
+		border: 2px solid var(--bu-border);
 		border-radius: 50%;
 		display: grid;
 		place-items: center;
@@ -45,21 +45,12 @@
 		touch-action: none;
 		animation: joystick-in var(--bu-duration) ease-out;
 	}
-	.joystick.track {
-		height: calc(var(--joystick-thumb) + 2 * var(--joystick-gap));
+	/* Side-scrolling: a horizontal track whose ends sit at full throw. */
+	.joystick.horizontal {
+		height: calc(var(--joystick-thumb) + 8px);
 		border-radius: 999px;
 	}
-	/* Marks the neutral center once the thumb moves off it. */
-	.joystick::before {
-		content: '';
-		grid-area: 1 / 1;
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background: var(--bu-muted);
-	}
 	.joystick-thumb {
-		grid-area: 1 / 1;
 		box-sizing: border-box;
 		width: var(--joystick-thumb);
 		height: var(--joystick-thumb);
