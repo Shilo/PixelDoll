@@ -999,6 +999,175 @@ test.describe('two-finger equipment input', () => {
 	});
 });
 
+// Desktop drives the stick with a mouse; the others use real touch through CDP. Sizes mirror MOTION.joystick.
+for (const screen of [
+	{ name: 'desktop', width: 1920, height: 1080, touch: false, theme: 'dark' },
+	{ name: 'tablet portrait', width: 820, height: 1180, touch: true, theme: 'light' },
+	{ name: 'phone portrait', width: 390, height: 844, touch: true, theme: 'dark' },
+	{ name: 'phone landscape', width: 844, height: 390, touch: true, theme: 'light' },
+	{ name: 'small phone', width: 320, height: 568, touch: true, theme: 'dark' }
+] as const)
+	test.describe(`world joystick on ${screen.name}`, () => {
+		test.use({
+			viewport: { width: screen.width, height: screen.height },
+			isMobile: screen.touch,
+			hasTouch: screen.touch
+		});
+		test('the thumb center stays on a circle, follows the finger and moves the character in both live views', async ({
+			page,
+			context
+		}, testInfo) => {
+			const compact = screen.width <= 360 || screen.height <= 400;
+			const base = compact ? 128 : 144,
+				thumb = compact ? 44 : 48,
+				travel = (base - thumb) / 2 - 2;
+			await context.addInitScript((theme) => {
+				try {
+					localStorage.setItem('pixeldoll.theme', theme);
+				} catch {
+					/* Opaque initial pages have no storage. */
+				}
+			}, screen.theme);
+			await landing(page);
+			await page.locator('.customize-action').click();
+			const near = (actual: number, expected: number) =>
+				expect(Math.abs(actual - expected)).toBeLessThan(1);
+			const position = () =>
+				world(page).evaluate((element) => element.dataset.position!.split(',').map(Number));
+			// A blank world point with room for the whole base, nearest the stage center.
+			const blank = () =>
+				page.evaluate(
+					(inset) => {
+						const r = document.querySelector('.world-stage')!.getBoundingClientRect();
+						const points: { x: number; y: number }[] = [];
+						for (let y = r.top + inset; y <= r.bottom - inset; y += 8)
+							for (let x = r.left + inset; x <= r.right - inset; x += 8) points.push({ x, y });
+						const center = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+						points.sort(
+							(a, b) =>
+								Math.hypot(a.x - center.x, a.y - center.y) -
+								Math.hypot(b.x - center.x, b.y - center.y)
+						);
+						const found = points.find((p) =>
+							document.elementFromPoint(p.x, p.y)?.classList.contains('world-input')
+						);
+						return found && { x: Math.round(found.x), y: Math.round(found.y) };
+					},
+					base / 2 + 4
+				);
+			const measure = () =>
+				page.evaluate(() => {
+					const stick = document.querySelector('.world-stick');
+					if (!stick) return null;
+					const knob = stick.querySelector('.joystick-thumb')!,
+						b = stick.getBoundingClientRect(),
+						t = knob.getBoundingClientRect();
+					const probe = document.body.appendChild(document.createElement('i'));
+					probe.style.background = 'var(--bu-accent)';
+					const accent = getComputedStyle(probe).backgroundColor;
+					probe.remove();
+					return {
+						base: { x: b.x + b.width / 2, y: b.y + b.height / 2, width: b.width, height: b.height },
+						thumb: { x: t.x + t.width / 2, y: t.y + t.height / 2, width: t.width },
+						inside:
+							t.left >= b.left - 0.5 &&
+							t.right <= b.right + 0.5 &&
+							t.top >= b.top - 0.5 &&
+							t.bottom <= b.bottom + 0.5,
+						thumbEdge: getComputedStyle(knob).borderTopColor,
+						trackShadow: getComputedStyle(stick).boxShadow,
+						trackOutline: getComputedStyle(stick).outlineStyle,
+						thumbShadow: getComputedStyle(knob).boxShadow,
+						thumbOutline: getComputedStyle(knob).outlineStyle,
+						accent
+					};
+				});
+			const cdp = screen.touch ? await context.newCDPSession(page) : null;
+			const press = async (type: 'down' | 'move' | 'up', x = 0, y = 0) => {
+				if (cdp)
+					await cdp.send('Input.dispatchTouchEvent', {
+						type: type === 'down' ? 'touchStart' : type === 'move' ? 'touchMove' : 'touchEnd',
+						touchPoints: type === 'up' ? [] : [{ x, y, id: 1 }]
+					});
+				else if (type === 'down') {
+					await page.mouse.move(x, y);
+					await page.mouse.down();
+				} else if (type === 'move') await page.mouse.move(x, y, { steps: 4 });
+				else await page.mouse.up();
+			};
+			let pressed = false;
+			try {
+				for (const view of ['Top-down', 'Side-scroller'] as const) {
+					const side = view === 'Side-scroller';
+					await modes(page).getByRole('button', { name: view, exact: true }).click();
+					await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
+					// Notices overlay the world; clear them so the screenshot shows the whole stick.
+					for (const dismiss of await page
+						.getByRole('button', { name: 'Dismiss notification' })
+						.all())
+						if (await dismiss.isVisible()) await dismiss.click();
+					const start = (await blank())!;
+					expect(start, 'a blank world point fits the whole stick').toBeTruthy();
+					await press('down', start.x, start.y);
+					pressed = true;
+					await expect(page.locator('.world-stick')).toBeVisible();
+					// Measure after the entrance scale settles.
+					await page.waitForFunction(
+						() => document.querySelector('.world-stick')!.getAnimations().length === 0
+					);
+					let m = (await measure())!;
+					near(m.base.width, base);
+					near(m.base.height, side ? thumb + 4 : base);
+					near(m.thumb.width, thumb);
+					near(m.thumb.x, start.x);
+					near(m.thumb.y, start.y);
+					// Past full throw on a diagonal: the thumb stops inside the ring and the ring follows.
+					const finger = side
+						? { x: start.x - 100, y: start.y + 50 }
+						: { x: start.x + 80, y: start.y - 80 };
+					await press('move', (start.x + finger.x) / 2, (start.y + finger.y) / 2);
+					await press('move', finger.x, finger.y);
+					await expect.poll(async () => Math.round((await measure())!.thumb.x)).toBe(finger.x);
+					m = (await measure())!;
+					expect(m.inside).toBe(true);
+					near(Math.hypot(m.thumb.x - m.base.x, m.thumb.y - m.base.y), travel);
+					expect(m.thumbEdge, 'the thumb is outlined in the theme accent').toBe(m.accent);
+					for (const treatment of [m.trackShadow, m.trackOutline, m.thumbShadow, m.thumbOutline])
+						expect(treatment, 'the joystick has one edge without a halo, keyline or shadow').toBe(
+							'none'
+						);
+					if (side) {
+						near(m.thumb.y, start.y);
+						near(m.base.y, start.y);
+					} else near(m.thumb.y, finger.y);
+					if (side) {
+						await expect.poll(async () => (await position())[0]).toBeLessThan(-2);
+						expect((await position())[1]).toBe(0);
+					} else
+						await expect
+							.poll(async () => {
+								const [x, y] = await position();
+								return x > 2 && y > 2;
+							})
+							.toBe(true);
+					await testInfo.attach(`${screen.name}, ${view}`, {
+						body: await page.screenshot(),
+						contentType: 'image/png'
+					});
+					await press('up');
+					pressed = false;
+					await expect(page.locator('.world-stick')).toHaveCount(0);
+					const stopped = await position();
+					await page.waitForTimeout(120);
+					expect(await position()).toEqual(stopped);
+				}
+			} finally {
+				if (pressed) await press('up');
+				await cdp?.detach();
+			}
+		});
+	});
+
 test('category Random is one named undo step and Random look stays reachable on a 320 px phone', async ({
 	page
 }) => {

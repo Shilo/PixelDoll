@@ -82,22 +82,6 @@ export function keyboardVector(keys: ReadonlySet<string>, horizontalOnly = false
 	});
 }
 
-/** Pointer displacement uses screen coordinates; preserve analog strength outside the dead zone. */
-export function pointerVector(
-	x: number,
-	y: number,
-	radius: number,
-	deadZone = 0.12,
-	horizontalOnly = false
-): Vector {
-	if (![x, y, radius, deadZone].every(Number.isFinite) || radius <= 0) return { x: 0, y: 0 };
-	const vector = { x: x / radius, y: horizontalOnly ? 0 : -y / radius },
-		length = Math.hypot(vector.x, vector.y);
-	if (length <= Math.max(0, deadZone)) return { x: 0, y: 0 };
-	const strength = Math.min(1, length);
-	return { x: (vector.x / length) * strength, y: (vector.y / length) * strength };
-}
-
 /** Bounded integration avoids a jump after a background tab resumes. It never changes the requested velocity. */
 export function integrateMovement(
 	position: Vector,

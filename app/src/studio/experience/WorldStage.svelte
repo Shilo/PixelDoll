@@ -25,9 +25,10 @@
 		livePlaybackDelta,
 		type Presentation
 	} from './presentation.ts';
+	import { IDLE, Joystick, joystickTravel, type JoystickSize } from '../../lib/input/joystick.ts';
+	import JoystickView from '../../lib/input/Joystick.svelte';
 	import {
 		keyboardVector,
-		pointerVector,
 		nearestDirection,
 		integrateMovement,
 		MOVEMENT_KEYS,
@@ -47,7 +48,9 @@
 	let note = $state(''),
 		loadingNote = $state(''),
 		rendererWarning = $state('');
-	let stick = $state<{ id: number; x: number; y: number; dx: number; dy: number } | null>(null);
+	let pad: Joystick | null = null,
+		padSize = $state.raw<JoystickSize>(MOTION.joystick.regular),
+		stick = $state.raw(IDLE);
 	const secondaryTouches = new Map<number, { button: HTMLButtonElement; x: number; y: number }>();
 	let consumedTouch: { x: number; y: number; until: number } | null = null;
 	const availability = $derived.by(() => {
@@ -102,8 +105,10 @@
 	let clock: ReturnType<typeof advancePlayback> | undefined;
 	const noticed = new Set<string>();
 	function release() {
-		if (stick && host?.hasPointerCapture(stick.id)) host.releasePointerCapture(stick.id);
-		stick = null;
+		const id = stick.pointerId;
+		if (id !== null && host?.hasPointerCapture(id)) host.releasePointerCapture(id);
+		pad = null;
+		stick = IDLE;
 		secondaryTouches.clear();
 	}
 	let reset = () => {
@@ -221,9 +226,17 @@
 		host.focus({ preventScroll: true });
 		const direction = picked(e);
 		if (direction) ui.dir = direction;
-		if (experience.mode === 'preview' || stick) return;
+		if (experience.mode === 'preview' || pad) return;
 		host.setPointerCapture(e.pointerId);
-		stick = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, dy: 0 };
+		const { regular, compact, compactQuery, deadZone } = MOTION.joystick;
+		padSize = matchMedia(compactQuery).matches ? compact : regular;
+		pad = new Joystick({
+			axis: experience.mode === 'side' ? 'x' : 'xy',
+			travel: joystickTravel(padSize),
+			deadZone,
+			follow: true
+		});
+		stick = pad.begin(e.pointerId, { x: e.clientX, y: e.clientY });
 	}
 	// The companion under the pointer shows a faint ring: clicking it selects that facing.
 	let hovered: DirectionName | undefined;
@@ -240,14 +253,11 @@
 	function drag(e: PointerEvent) {
 		pointer = { clientX: e.clientX, clientY: e.clientY };
 		updateHover();
-		if (stick?.id === e.pointerId)
-			stick = { ...stick, dx: e.clientX - stick.x, dy: e.clientY - stick.y };
+		if (pad) stick = pad.move(e.pointerId, { x: e.clientX, y: e.clientY });
 	}
 	function up(e: PointerEvent) {
-		if (stick?.id === e.pointerId) {
-			stick = null;
-			if (host.hasPointerCapture(e.pointerId)) host.releasePointerCapture(e.pointerId);
-		}
+		if (stick.pointerId !== e.pointerId) return;
+		release();
 	}
 	function stop() {
 		keys.clear();
@@ -259,7 +269,7 @@
 	function secondaryDown(e: PointerEvent) {
 		const button =
 			e.target instanceof Element ? e.target.closest<HTMLButtonElement>('button') : null;
-		if (stick && e.pointerType === 'touch' && !e.isPrimary && button && !button.disabled)
+		if (pad && e.pointerType === 'touch' && !e.isPrimary && button && !button.disabled)
 			secondaryTouches.set(e.pointerId, { button, x: e.clientX, y: e.clientY });
 	}
 	function secondaryUp(e: PointerEvent) {
@@ -410,15 +420,9 @@
 				}
 			}
 			if (lift !== experience.lift) experience.lift = lift;
-			let velocity = keyboardVector(keys, experience.mode === 'side');
-			if (stick)
-				velocity = pointerVector(
-					stick.dx,
-					stick.dy,
-					MOTION.joystickRadius,
-					MOTION.deadZone / MOTION.joystickRadius,
-					experience.mode === 'side'
-				);
+			let velocity = stick.origin
+				? { x: stick.value.x, y: -stick.value.y }
+				: keyboardVector(keys, experience.mode === 'side');
 			if (ui.sheet || document.hidden) velocity = { x: 0, y: 0 };
 			if (live)
 				({ position, camera } = integrateMovement(
@@ -721,16 +725,9 @@
 				{[rendererWarning, note].filter(Boolean).join(' · ')}
 			</p>{/if}
 	</div>{/if}
-{#if stick}<div
-		class="world-stick"
-		style:left="{stick.x}px"
-		style:top="{stick.y}px"
-		aria-hidden="true"
-	>
-		<span
-			style:transform="translate({Math.max(-40, Math.min(40, stick.dx))}px,{Math.max(
-				-40,
-				Math.min(40, stick.dy)
-			)}px)"
-		></span>
-	</div>{/if}
+<JoystickView
+	class="world-stick"
+	snapshot={stick}
+	size={padSize}
+	axis={experience.mode === 'side' ? 'x' : 'xy'}
+/>
