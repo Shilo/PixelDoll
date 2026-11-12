@@ -782,6 +782,53 @@ test('selection wheel normalizes deltas, discards bursts and stale fractions, an
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	expect(await wheel(120)).toBe(false);
 	expect(await selected()).toBe(index);
+	await page.keyboard.press('Escape');
+	await expect(page.locator(':popover-open')).toHaveCount(0);
+	// A list that can scroll keeps the wheel in both directions, even at its ends; one that fits still steps.
+	const wheelOnRow = (deltaY: number, t: number) =>
+		page.evaluate(
+			({ deltaY, t }) => {
+				(window as unknown as { t: number }).t = t;
+				return !document
+					.querySelector('.character-row')!
+					.dispatchEvent(new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true }));
+			},
+			{ deltaY, t }
+		);
+	await page.locator('.character-rows').evaluate((el) => {
+		el.style.maxHeight = '40px';
+		el.scrollTop = 0;
+	});
+	expect(await wheelOnRow(-120, 3000)).toBe(false); // at the top
+	expect(await wheelOnRow(120, 3300)).toBe(false);
+	await page.locator('.character-rows').evaluate((el) => (el.scrollTop = el.scrollHeight));
+	expect(await wheelOnRow(120, 3600)).toBe(false); // at the bottom
+	expect(await selected()).toBe(index);
+	await page.locator('.character-rows').evaluate((el) => (el.style.maxHeight = ''));
+	expect(await wheelOnRow(120, 3900)).toBe(true);
+	await step(1);
+	// Thumbnails are read once and shared: stepping and opening the name menu read only the character being opened.
+	await page.evaluate(() => {
+		const w = window as unknown as { characterReads: number };
+		w.characterReads = 0;
+		const get = IDBObjectStore.prototype.get;
+		IDBObjectStore.prototype.get = function (this: IDBObjectStore, key: IDBValidKey) {
+			if (this.name === 'projects' && String(key).startsWith('rig-')) w.characterReads++;
+			return get.call(this, key);
+		};
+	});
+	const reads = () =>
+		page.evaluate(() => (window as unknown as { characterReads: number }).characterReads);
+	for (const delta of [1, 1, -1]) {
+		await page
+			.getByRole('button', { name: delta > 0 ? 'Next character' : 'Previous character' })
+			.click();
+		await step(delta);
+	}
+	await page.locator('.selected-name').click();
+	await expect(page.locator('#project-menu .character-thumbnail canvas')).toHaveCount(3);
+	await page.keyboard.press('Escape');
+	expect(await reads()).toBeLessThanOrEqual(3);
 });
 
 // Moved from experience.spec.ts (screenshot config) so these behavioral checks gate deploys.

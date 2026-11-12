@@ -174,6 +174,11 @@
 			return;
 		}
 		if (!e.deltaY || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+		// A list that can scroll keeps the wheel, even at its end, so reaching the end never switches the character.
+		if (insideScrollView(e.target)) {
+			wheelAmount = 0;
+			return;
+		}
 		e.preventDefault();
 		const now = performance.now(),
 			delta = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
@@ -188,6 +193,14 @@
 		next(Math.sign(wheelAmount));
 		wheelAmount = 0;
 		lastWheelStep = now;
+	}
+	function insideScrollView(target: EventTarget | null) {
+		for (let el = target instanceof Element ? target : null; el; el = el.parentElement) {
+			const { overflowY } = getComputedStyle(el);
+			if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight)
+				return true;
+		}
+		return false;
 	}
 	function panel(id: typeof ui.tab) {
 		document
