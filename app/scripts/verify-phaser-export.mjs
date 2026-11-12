@@ -156,9 +156,177 @@ async function fixtureArchive() {
 		[false, true]
 	);
 	await writeFile(join(vendor, 'pipeline-fixture.pixeldoll.zip'), result.zip);
-	return { label: 'global-settings-pipeline', fixture: true, zip: result.zip };
+	return {
+		label: 'global-settings-pipeline',
+		fixture: true,
+		zip: result.zip,
+		project: { manifest, images }
+	};
 }
-const archives = [await fixtureArchive()];
+async function adversarialArchive(source) {
+	const manifest = structuredClone(source.manifest),
+		images = new Map(source.images);
+	manifest.name = 'Eight direction runtime';
+	manifest.rig.directions = [
+		{ id: 'south' },
+		{ id: 'south-east' },
+		{ id: 'east' },
+		{ id: 'north-east' },
+		{ id: 'north' },
+		{ id: 'north-west', mirrorOf: 'north-east' },
+		{ id: 'west', mirrorOf: 'east' },
+		{ id: 'south-west', mirrorOf: 'south-east' }
+	];
+	const directions = manifest.rig.directions.filter((direction) => !direction.mirrorOf);
+	for (const item of manifest.items) {
+		const layer = item.layers[0];
+		delete layer.cell;
+		delete layer.pivot;
+		const cells = {};
+		for (const [index, direction] of directions.entries()) {
+			cells[direction.id] = [];
+			for (let cell = 0; cell < 2; cell++) {
+				const image = makeImg(64, 64);
+				for (let y = 0; y < (item.slot === 'body' ? 64 : 13); y++)
+					for (let x = 0; x < 64; x++) image.data.set([100, 100, 100, 255], (y * 64 + x) * 4);
+				image.data.set(
+					[20 + index * 35, 30 + cell * 160, 210 - index * 30, 255],
+					((20 + cell) * 64 + 10 + index) * 4
+				);
+				const hash = await cellHash(image);
+				images.set(hash, image);
+				cells[direction.id].push(hash);
+			}
+		}
+		layer.cells = Object.fromEntries(
+			manifest.rig.animations.map((move) => [move.id, structuredClone(cells)])
+		);
+	}
+	manifest.slots[1].clips = ['hair'];
+	manifest.slots.push(
+		{ id: 'hair', class: 'worn', z: 15 },
+		{ id: 'chest', class: 'worn', z: 25, clips: ['body'] },
+		{
+			id: 'back',
+			class: 'worn',
+			z: 5,
+			zOverrides: [
+				{ layer: 'fg', dir: 'north', z: 35 },
+				{ layer: 'fg', anim: 'walk', z: 8 },
+				{ layer: 'fg', anim: 'walk', cell: 0, z: -5 }
+			]
+		},
+		{ id: 'off_hand', class: 'held', z: 40 },
+		{ id: 'main_hand', class: 'held', z: 40 }
+	);
+	const makeItem = async (id, slot, z, width, height, pivot, paint, extra = {}) => {
+		const image = makeImg(width, height);
+		paint(image);
+		const hash = await cellHash(image);
+		images.set(hash, image);
+		return {
+			id,
+			name: id,
+			slot,
+			status: 'accepted',
+			baseHash: manifest.rig.baseHash,
+			mirror: 'flip',
+			materials: [],
+			prompt: '',
+			provenance: [],
+			layers: [
+				{
+					id: 'main',
+					role: 'fg',
+					z,
+					cell: { w: width, h: height },
+					pivot,
+					cells: Object.fromEntries(
+						manifest.rig.animations.map((move) => [
+							move.id,
+							Object.fromEntries(directions.map((direction) => [direction.id, [hash, hash]]))
+						])
+					)
+				}
+			],
+			...extra
+		};
+	};
+	const dot = (image, x, y, rgba) => image.data.set(rgba, (y * image.w + x) * 4);
+	const hair = await makeItem('hair', 'hair', 15, 64, 64, { x: 32, y: 60 }, (image) => {
+		for (let y = 0; y < 26; y++)
+			for (let x = 12; x < 51; x++) dot(image, x, y, [120, 30, 200, 255]);
+	});
+	const coat = await makeItem('coat', 'chest', 25, 64, 64, { x: 32, y: 60 }, (image) => {
+		for (let y = 26; y < 40; y++)
+			for (let x = 18; x < 46; x++) dot(image, x, y, [20, 180, 60, 255]);
+	});
+	const cape = await makeItem('cape', 'back', 8, 64, 64, { x: 32, y: 60 }, (image) => {
+		for (let y = 15; y < 50; y++) dot(image, 12, y, [220, 40, 70, 128]);
+	});
+	cape.layers[0].id = 'fg';
+	cape.layers.push({ ...structuredClone(cape.layers[0]), id: 'bg', role: 'bg', z: -10 });
+	const weapon = await makeItem(
+		'weapon',
+		'main_hand',
+		40,
+		96,
+		80,
+		{ x: 48, y: 68 },
+		(image) => {
+			for (let y = 10; y < 65; y++) dot(image, 3, y, [240, 180, 20, 128]);
+		},
+		{ hides: ['off_hand'] }
+	);
+	const shield = await makeItem(
+		'shield',
+		'off_hand',
+		40,
+		64,
+		64,
+		{ x: 32, y: 60 },
+		(image) => dot(image, 52, 30, [50, 200, 255, 255]),
+		{ hides: ['main_hand'] }
+	);
+	manifest.items.push(hair, coat, cape, weapon, shield);
+	manifest.items.find((item) => item.id === 'hat').baseCut = Object.fromEntries(
+		manifest.rig.animations.map((move) => [
+			move.id,
+			Object.fromEntries(
+				directions.map((direction) => [direction.id, [[15 * 64 + 10], [16 * 64 + 11]]])
+			)
+		])
+	);
+	manifest.presets = [
+		['bare', {}],
+		['hair', { hair: 'hair' }],
+		['hat', { head: 'hat', hair: 'hair' }],
+		['coat', { chest: 'coat', back: 'cape' }],
+		['combined', { head: 'hat', hair: 'hair', chest: 'coat', back: 'cape', main_hand: 'weapon' }],
+		['hands', { off_hand: 'shield', main_hand: 'weapon' }]
+	].map(([id, items]) => ({
+		id,
+		name: id,
+		items: { body: 'base', ...items },
+		variants: { skin: id === 'combined' ? 'red' : 'blue' }
+	}));
+	const copy = structuredClone(manifest);
+	applyExportSettings(copy, { engine: 'phaser', dressedCharacterSheets: true, playOnce: ['walk'] });
+	const result = await exportZip(
+		{ manifest: copy, images },
+		{ engines: ['phaser'], baked: true, exportedAt: '2026-11-12T00:00:00.000Z' }
+	);
+	assert.deepEqual(result.errors, []);
+	await writeFile(join(vendor, 'adversarial-fixture.pixeldoll.zip'), result.zip);
+	return {
+		label: 'eight-direction-masks-hands-alpha',
+		fixture: false,
+		adversarial: true,
+		zip: result.zip
+	};
+}
+const basic = await fixtureArchive();
+const archives = [basic, await adversarialArchive(basic.project)];
 for (const file of values.zip ?? [])
 	archives.push({
 		label: basename(file),
@@ -181,8 +349,10 @@ try {
 		for (const renderer of ['CANVAS', 'WEBGL'])
 			for (const archive of archives) {
 				for (const control of archive.fixture
-					? ['none', 'old-duration', 'no-repeat', 'no-layer-update']
-					: ['none']) {
+					? ['none', 'old-duration', 'no-repeat', 'no-layer-update', 'wrong-pivot']
+					: archive.adversarial
+						? ['none', 'no-covers', 'no-hides', 'no-palette', 'wrong-direction']
+						: ['none']) {
 					const page = await browser.newPage(),
 						errors = [],
 						label = `${bundle.version} ${renderer} ${archive.label} ${control}`;
@@ -196,11 +366,9 @@ try {
 								runtime.includes('duration: f.ms }'),
 								'Old-duration control must mutate the current frame mapping.'
 							);
-							assert(
-								runtime.includes('duration: a.frames.reduce((total, frame) => total + frame.ms, 0)')
-							);
+							assert(runtime.includes('duration: timelineDuration(a.frames)'));
 							runtime = runtime.replace(
-								'duration: a.frames.reduce((total, frame) => total + frame.ms, 0)',
+								'duration: timelineDuration(a.frames)',
 								'frameRate: 1000 / Math.min(...a.frames.map(frame => frame.ms))'
 							);
 							runtime = runtime.replace(
@@ -213,6 +381,18 @@ try {
 						} else if (control === 'no-layer-update') {
 							assert(runtime.includes("'animationupdate', "));
 							runtime = runtime.replace("'animationupdate', ", '');
+						} else if (control === 'no-covers') {
+							assert(runtime.includes('for (const item of shownItems(m, on))'));
+							runtime = runtime.replace(
+								'for (const item of shownItems(m, on))',
+								'for (const item of on)'
+							);
+						} else if (control === 'no-hides') {
+							assert(runtime.includes('if (hidden.has(item.slot)) continue;'));
+							runtime = runtime.replace('if (hidden.has(item.slot)) continue;', '');
+						} else if (control === 'no-palette') {
+							assert(runtime.includes('if (!table.size) return original;'));
+							runtime = runtime.replace('if (!table.size) return original;', 'return original;');
 						}
 						await page.route('**/*', (route) => {
 							const url = new URL(route.request().url());
@@ -248,13 +428,14 @@ try {
 									return new Promise((resolve, reject) => {
 										const timeout = setTimeout(
 											() => reject(new Error('Engine initialization timeout')),
-											15000
+											60000
 										);
 										const game = new Phaser.Game({
 											type: Phaser[renderer],
 											width: 256,
 											height: 256,
 											pixelArt: true,
+											backgroundColor: '#ff00ff',
 											roundPixels: true,
 											audio: { noAudio: true },
 											scene: {
@@ -457,6 +638,139 @@ try {
 															doll.body.off('animationrepeat', repeated);
 															doll.body.off('animationcomplete', completed);
 														}
+														if (
+															!['old-duration', 'no-repeat', 'no-layer-update'].includes(control) &&
+															m.export?.baked?.length
+														) {
+															const size = m.export?.bakedCell,
+																pivot = m.export?.bakedPivot;
+															if (renderer === 'CANVAS') this.cameras.main.setRoundPixels(false);
+															check(
+																size && pivot && m.export.baked?.length,
+																'pixels: export must contain combined outfit sheets'
+															);
+															doll.container.setPosition(
+																pivot.x + (control === 'wrong-pivot' ? 1 : 0),
+																pivot.y
+															);
+															let comparedPixels = 0,
+																comparedFrames = 0;
+															for (const preset of m.presets) {
+																if (!m.export.baked.includes(preset.id)) continue;
+																doll.applyPreset(preset);
+																for (const move of m.rig.animations) {
+																	const response = await fetch(
+																		'/hero/baked/' + preset.id + '/' + move.id + '.png'
+																	);
+																	check(response.ok, 'pixels: missing combined outfit sheet');
+																	const bitmap = await createImageBitmap(await response.blob());
+																	const canvas = document.createElement('canvas');
+																	canvas.width = bitmap.width;
+																	canvas.height = bitmap.height;
+																	const context = canvas.getContext('2d', {
+																		willReadFrequently: true
+																	});
+																	context.drawImage(bitmap, 0, 0);
+																	bitmap.close();
+																	const expected = context.getImageData(
+																		0,
+																		0,
+																		canvas.width,
+																		canvas.height
+																	).data;
+																	for (const [row, direction] of m.rig.directions.entries()) {
+																		if (move.directions && !move.directions.includes(direction.id))
+																			continue;
+																		doll.play(
+																			move.id,
+																			control === 'wrong-direction' && direction.id === 'west'
+																				? 'east'
+																				: direction.id
+																		);
+																		doll.body.anims.pause();
+																		for (const [index, frame] of move.frames.entries()) {
+																			doll.body.anims.setCurrentFrame(
+																				doll.body.anims.currentAnim.frames[index]
+																			);
+																			doll.sync();
+																			await new Promise((resolve) =>
+																				game.events.once('postrender', resolve)
+																			);
+																			const actual = await new Promise((resolve) =>
+																				game.renderer.snapshotArea(
+																					0,
+																					0,
+																					size.w,
+																					size.h,
+																					(image) => {
+																						const target = document.createElement('canvas');
+																						target.width = size.w;
+																						target.height = size.h;
+																						const targetContext = target.getContext('2d');
+																						targetContext.drawImage(image, 0, 0);
+																						resolve(
+																							targetContext.getImageData(0, 0, size.w, size.h).data
+																						);
+																					}
+																				)
+																			);
+																			for (let y = 0; y < size.h; y++)
+																				for (let x = 0; x < size.w; x++) {
+																					const source =
+																						((row * size.h + y) * canvas.width +
+																							frame.cell * size.w +
+																							x) *
+																						4;
+																					const target = (y * size.w + x) * 4,
+																						alpha = expected[source + 3] / 255;
+																					for (let channel = 0; channel < 3; channel++) {
+																						const wanted = Math.round(
+																							expected[source + channel] * alpha +
+																								(channel === 1 ? 0 : 255) * (1 - alpha)
+																						);
+																						check(
+																							Math.abs(actual[target + channel] - wanted) <=
+																								(alpha > 0 && alpha < 1 ? 1 : 0),
+																							'pixels: ' +
+																								preset.id +
+																								'/' +
+																								move.id +
+																								'/' +
+																								direction.id +
+																								'/' +
+																								frame.cell +
+																								' at ' +
+																								x +
+																								',' +
+																								y +
+																								': actual ' +
+																								Array.from(actual.slice(target, target + 4)) +
+																								' expected ' +
+																								Array.from(expected.slice(source, source + 4)) +
+																								' channel ' +
+																								channel +
+																								' wanted ' +
+																								wanted
+																						);
+																					}
+																					comparedPixels++;
+																				}
+																			comparedFrames++;
+																		}
+																	}
+																}
+															}
+															renders.push({
+																comparedPixels,
+																comparedFrames,
+																canvasIntegerPositioning: renderer === 'CANVAS'
+															});
+														} else if (control === 'none') {
+															renders.push({
+																pixelOracle: 'not-run',
+																reason: 'No combined outfit sheets in this export'
+															});
+														}
 														doll.destroy();
 														clearTimeout(timeout);
 														resolve({
@@ -482,7 +796,17 @@ try {
 							failure = error;
 						}
 						if (control !== 'none') {
-							const expectedFailure = control === 'no-layer-update' ? 'synchronization:' : 'clock:';
+							const expectedFailure = [
+								'wrong-pivot',
+								'no-covers',
+								'no-hides',
+								'no-palette',
+								'wrong-direction'
+							].includes(control)
+								? 'pixels:'
+								: control === 'no-layer-update'
+									? 'synchronization:'
+									: 'clock:';
 							assert(
 								failure && failure.message.includes(expectedFailure),
 								`Negative control was not caught by ${expectedFailure}: ${failure?.message ?? 'passed'}`

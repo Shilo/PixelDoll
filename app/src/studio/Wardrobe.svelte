@@ -1,7 +1,7 @@
 <script lang="ts" module>
 	// Survives tab switches (the list unmounts) so returning to Wardrobe keeps the reader's place, for the same character
 	// and only while no other view has picked a different category meanwhile.
-	let memory: { id: string; group: string; scroll: number } | null = null;
+	let memory: { id: string; open: number; group: string; scroll: number } | null = null;
 </script>
 
 <script lang="ts">
@@ -57,7 +57,6 @@
 		CircleAlert,
 		EllipsisVertical,
 		EyeOff,
-		LoaderCircle,
 		Plus,
 		Shuffle,
 		TriangleAlert
@@ -70,10 +69,11 @@
 	// The group the list itself last reported; any other change to ui.group came from elsewhere and scrolls to it.
 	// Mount decides the first position (restore or show), so neither effect below acts on the initial values.
 	let reported = untrack(() => ui.group);
+	let reportedOpen = untrack(() => ui.wardrobeOpenRevision);
 	let suppressSpy = false,
 		spyFrame = 0;
 	// The tile last brought into view, so a selection is revealed once (when it changes or its tile first appears).
-	let revealed = untrack(() => ui.selected);
+	let revealed = untrack(() => ({ open: ui.wardrobeOpenRevision, key: ui.selected }));
 	let menuFor = $state(''),
 		menuOpen = $state(false);
 	const seen = new SvelteSet<string>();
@@ -177,7 +177,13 @@
 	const sectionId = (id: string) => `wardrobe-${id.replace(/\s+/g, '-').toLowerCase()}`;
 
 	function remember() {
-		if (list) memory = { id: doc.id, group: ui.group, scroll: list.scrollTop };
+		if (list)
+			memory = {
+				id: doc.id,
+				open: ui.wardrobeOpenRevision,
+				group: ui.group,
+				scroll: list.scrollTop
+			};
 	}
 	function spy() {
 		spyFrame = 0;
@@ -201,7 +207,13 @@
 		reported = id;
 		ui.group = id;
 		if (instant) {
-			list.scrollTop += section.getBoundingClientRect().top - list.getBoundingClientRect().top + 1;
+			list.scrollTop =
+				id === GROUPS[0].id
+					? 0
+					: list.scrollTop +
+						section.getBoundingClientRect().top -
+						list.getBoundingClientRect().top +
+						1;
 			remember();
 			return;
 		}
@@ -239,15 +251,25 @@
 	$effect(() => {
 		// Another view (a missing-frames link, a new item, a review) picked a category: bring it to the top.
 		const id = ui.group;
-		if (id !== reported) void tick().then(() => show(id, true));
+		const open = ui.wardrobeOpenRevision;
+		if (id !== reported || open !== reportedOpen) {
+			reportedOpen = open;
+			void tick().then(() => show(id, true));
+		}
 	});
 	$effect(() => {
 		// A selection made anywhere (a tile, Random, a new draft, a review) shows its whole tile once it exists.
 		const key = ui.selected;
+		const open = ui.wardrobeOpenRevision;
 		void sections;
-		if (!key || key === untrack(() => revealed)) return;
+		if (!key) {
+			revealed = { open, key };
+			return;
+		}
+		if (untrack(() => revealed.open === open && revealed.key === key)) return;
 		void tick().then(() => {
-			if (ui.selected === key && reveal(key)) revealed = key;
+			if (ui.wardrobeOpenRevision === open && ui.selected === key && reveal(key))
+				revealed = { open, key };
 		});
 	});
 	$effect(() => {
@@ -262,15 +284,17 @@
 		const last = list?.querySelector<HTMLElement>('[data-group]:last-of-type');
 		const unwatch = list && last ? watchListSpacer(list, last, (h) => (spacer = h)) : undefined;
 		const group = ui.group;
+		const open = ui.wardrobeOpenRevision;
 		void tick().then(() => {
 			if (!list) return;
-			if (memory?.id === doc.id && memory.group === group) list.scrollTop = memory.scroll;
+			if (memory?.id === doc.id && memory.open === open && memory.group === group)
+				list.scrollTop = memory.scroll;
 			else {
 				void show(group, true);
 				// A selection in the category just shown (a reviewed item) is revealed in it; one elsewhere stays put.
 				const tile = list.querySelector(`[data-tile="${CSS.escape(ui.selected)}"]`);
 				if (tile?.closest(`[data-group="${CSS.escape(group)}"]`) && reveal(ui.selected))
-					revealed = ui.selected;
+					revealed = { open, key: ui.selected };
 			}
 		});
 		return () => {
@@ -451,29 +475,38 @@
 										}}
 									>
 										<span class="bu-tile-art tile-art" aria-hidden="true">
-											{#if thumbnail}<Sprite
-													img={thumbnail}
-													k={1}
-													w={thumbnail.w}
-													h={thumbnail.h}
-													fitToBox
-													label={x.input.name}
-												/>
-											{:else if preview && previewItem}<Thumb
-													project={preview}
-													item={previewItem}
-												/>
-											{:else if x.phase === 'failed'}<CircleAlert size={24} />
-											{:else if x.phase === 'running' && !info.attention}<LoaderCircle
-													size={24}
-													class="spin"
-												/>{:else}<GroupIcon group={g.id} size={24} />{/if}
+											<span class="generation-artwork" class:generating={x.phase === 'running'}>
+												{#if thumbnail}<Sprite
+														img={thumbnail}
+														k={1}
+														w={thumbnail.w}
+														h={thumbnail.h}
+														fitToBox
+														label={x.input.name}
+													/>
+												{:else if preview && previewItem}<Thumb
+														project={preview}
+														item={previewItem}
+														box={x.phase === 'running' ? 12 : 40}
+													/>
+												{:else if x.phase === 'failed'}<CircleAlert size={24} />
+												{:else if x.phase !== 'running'}<GroupIcon group={g.id} size={24} />{/if}
+											</span>
+											{#if x.phase === 'running'}<span
+													class="ring generation-ring"
+													style:--p={p.pct}
+												></span>{/if}
 										</span>
 										{#if x.phase === 'running'}<span
-												class="generation-progress small num"
-												aria-hidden="true">{p.pct}% · {info.text}</span
-											>{:else}<span class="generation-progress small">{info.text}</span>{/if}
-										<span class="bu-tile-label tile-name">{x.input.name}</span>
+												class="generation-percent bu-muted small num"
+												aria-hidden="true">{p.pct}%</span
+											>{/if}
+										<span class="generation-caption">
+											<span class="generation-time bu-muted small num" aria-hidden="true"
+												>{info.text}</span
+											>
+											<span class="bu-tile-label tile-name">{x.input.name}</span>
+										</span>
 										{#if info.attention}<span
 												class="bu-tile-status tile-status"
 												data-tone="warning"

@@ -19,8 +19,8 @@ import {
 	shownItems
 } from '../compose/compose.ts';
 import type { OutFile } from './generic.ts';
-import { variantOf, variantRampOf } from '../dress/dress.ts';
-import { applyIndex, fromHex, indexImg } from '../dress/palette.ts';
+import { variantRampOf } from '../dress/dress.ts';
+import { applyPalette, paletteMap } from '../runtime/colors.js';
 
 type Bytes = ArrayLike<number>;
 const w16 = (v: number) => [v & 255, (v >> 8) & 255]; // also SHORT (two's complement)
@@ -148,31 +148,13 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
 	// Start from raw sheets when defaults are baked into layers/. Never map a default color as though it were a source.
 	const colored = new Map<L, Map<string, Img>>();
 	for (const l of all) {
-		const ids = new Map<number, number>(),
-			colors: number[] = [];
-		for (const id of l.item.materials ?? []) {
-			const mat = m.materials.find(
-				(x) => x.id === id && (x.owner === l.item.id || x.owner === l.item.variantOf)
-			);
-			if (!mat) continue;
-			const name = variantOf(m, m.presets[0]?.variants ?? {}, id),
-				ramp = name ? variantRampOf(mat, name) : undefined;
-			mat.ramp.forEach((h, i) => {
-				ids.set(fromHex(h), colors.length);
-				colors.push(ramp ? fromHex(ramp[i]) : -1);
-			});
-		}
+		const colors = paletteMap(m, l.item, m.presets[0]?.variants ?? {}, variantRampOf);
 		const local = new Map<string, Img>();
 		for (const anim of new Set(frames.map((fr) => fr.anim))) {
 			const path = l.layer.sourceSheets?.[anim] ?? l.layer.sheets?.[anim],
 				sheet = path && sheets.get(path);
 			if (!sheet) throw new Error(`Aseprite missing sheet for ${l.item.id}.${l.layer.id}/${anim}.`);
-			local.set(
-				anim,
-				colors.some((c) => c >= 0)
-					? applyIndex(sheet, indexImg(sheet, ids), Int32Array.from(colors))
-					: sheet
-			);
+			local.set(anim, colors.size ? applyPalette(sheet, colors) : sheet);
 		}
 		colored.set(l, local);
 	}
@@ -390,6 +372,7 @@ export async function selfTest() {
 	}; // 2 cells x 2 dirs, south row empty
 	const m = {
 		name: 'hero t',
+		materials: [],
 		rig: {
 			cell: { w: 2, h: 2 },
 			pivot: { x: 1, y: 2 },
@@ -417,11 +400,13 @@ export async function selfTest() {
 			{
 				id: 'base',
 				slot: 'body',
+				materials: [],
 				layers: [{ id: 'main', role: 'fg', z: 10, sheets: { walk: 'b.png' } }]
 			},
 			{
 				id: 'sw',
 				slot: 'main_hand',
+				materials: [],
 				layers: [
 					{
 						id: 'fg',
@@ -442,7 +427,7 @@ export async function selfTest() {
 				]
 			}
 		],
-		presets: [{ id: 'd', items: { main_hand: null } }]
+		presets: [{ id: 'd', items: { main_hand: null }, variants: {} }]
 	} as unknown as Manifest;
 	const sheets = new Map<string, Img>([
 		['b.png', two(2, 2, 1)],

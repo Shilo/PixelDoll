@@ -1,7 +1,7 @@
 // Native Unity Editor and optional Windows Mono player validation. No accounts, installs, or PixelLab calls.
 // From app/: node --experimental-transform-types scripts/verify-unity-export.mjs --editor <Unity.exe> [--zip export.zip] [--build-player]
 import assert from 'node:assert/strict';
-import { execFile, spawn } from 'node:child_process';
+import { execFile, execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFile, mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve, sep } from 'node:path';
@@ -26,6 +26,12 @@ const { values } = parseArgs({
 assert(values.editor, 'Pass the installed, activated Editor executable with --editor.');
 const editor = resolve(values.editor);
 assert((await stat(editor)).isFile(), 'Editor executable does not exist.');
+const editorVersion = execFileSync(editor, ['-version'], {
+	encoding: 'utf8',
+	windowsHide: true,
+	timeout: 30000
+}).trim();
+assert.match(editorVersion, /^\d+\.\d+\.\d+[abfp]\d+$/, 'Expected one Unity Editor version.');
 const cache = join(app, 'node_modules/.cache/unity-export-review');
 await mkdir(cache, { recursive: true });
 const project = values.output ? resolve(values.output) : await mkdtemp(join(cache, 'run-'));
@@ -202,6 +208,10 @@ await writeFile(
 for (const [index, file] of (values.zip ?? []).entries())
 	await save('ActualUi' + index, new Uint8Array(await readFile(resolve(file))));
 await mkdir(join(project, 'ProjectSettings'), { recursive: true });
+await writeFile(
+	join(project, 'ProjectSettings/ProjectVersion.txt'),
+	`m_EditorVersion: ${editorVersion}\n`
+);
 // The supplied Editor opens the fresh project using its own version; no installation or upgrade of user data.
 await mkdir(join(project, 'Packages'), { recursive: true });
 await writeFile(

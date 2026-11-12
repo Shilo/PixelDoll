@@ -3,6 +3,7 @@ import type { Manifest } from '../store/manifest.ts';
 import { CURRENT_FORMAT } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
 import { layerFrame } from '../compose/compose.ts';
+import { runtimeSources, runtimeTypes } from '../runtime/sources.ts';
 
 export const atlasName = (...parts: string[]) =>
 	parts.map((part) => `${part.length}-${part}`).join('_') + '.json';
@@ -39,11 +40,15 @@ export function atlasJson(m: Manifest, itemId: string, layerId: string, anim: st
 	};
 }
 
-export const PAPERDOLL_JS = `// PixelDoll runtime for Phaser 3.80+ and Phaser 4 (pixeldoll/3). No Phaser import: works with the global or a bundled Phaser.
+export const PAPERDOLL_JS =
+	Object.values(runtimeSources).join('\n') +
+	'\n' +
+	`// PixelDoll runtime for Phaser 3.80+ and Phaser 4 (pixeldoll/3). No Phaser import: works with the global or a bundled Phaser.
 // The body sprite is the clock; every layer copies its frame name on each animation event, so layers cannot drift.
 //   const m = await loadPaperdoll(scene, 'assets/hero/');   // folder that holds manifest.json
 //   const doll = new Paperdoll(scene, 200, 150, m); doll.play('walk', 'south'); doll.equip('head', null);
 // Game config: pixelArt: true, roundPixels: true (Phaser 4 defaults roundPixels to false).
+// For exact Canvas pixels at integer positions, use scene.cameras.main.setRoundPixels(false): Canvas otherwise expands sprites by half a pixel.
 
 export const texKey = (m, item, layer, anim) => 'pd:' + JSON.stringify([m._base ?? m.name, item, layer, anim]);
 export const animKey = (m, anim, dir) => 'pd:' + JSON.stringify([m._base ?? m.name, anim, dir]);
@@ -85,7 +90,7 @@ export async function loadPaperdoll(scene, base) {
         if (failed.length) {
           for (const e of queued) if (scene.textures.exists(e.key)) scene.textures.remove(e.key);
           reject(new Error('PixelDoll: failed to load ' + failed.join(', ')));
-        } else resolve();
+        } else resolve(undefined);
       });
       for (const e of queued) scene.load.atlas(e.key, base + e.sheet, m._atlases[e.key]);
       if (!scene.load.isLoading()) scene.load.start();
@@ -95,7 +100,7 @@ export async function loadPaperdoll(scene, base) {
       const key = animKey(m, a.id, d.id);
       if (!scene.anims.exists(key)) {
         // Supported Phaser releases use a nonzero frame duration instead of the base interval.
-        scene.anims.create({ key, repeat: a.loop ? -1 : 0, duration: a.frames.reduce((total, frame) => total + frame.ms, 0),
+        scene.anims.create({ key, repeat: a.loop ? -1 : 0, duration: timelineDuration(a.frames),
           frames: a.frames.map((f) => ({ key: texKey(m, m.rig.baseItem, body.id, a.id), frame: a.id + '_' + d.id + '_' + f.cell, duration: f.ms })),
         });
       }
@@ -104,24 +109,6 @@ export async function loadPaperdoll(scene, base) {
   })();
   cache.set(base, work);
   try { return await work; } catch (error) { cache.delete(base); throw error; }
-}
-
-/** Exact source-RGB swaps, local to an item's materials (including tucked variants). */
-export function paletteMap(m, item, variants) {
-  const table = new Map();
-  const variant = (id, seen = new Set()) => {
-    const mat = m.materials.find((x) => x.id === id);
-    if (!mat || seen.has(id)) return undefined;
-    seen.add(id);
-    return mat.linkTo ? variant(mat.linkTo, seen) : variants[id] ?? mat.defaultVariant;
-  };
-  for (const id of item.materials) {
-    const mat = m.materials.find((x) => x.id === id && (x.owner === item.id || x.owner === item.variantOf));
-    if (!mat) continue;
-    const ramp = mat.variants[variant(id)];
-    if (ramp) mat.ramp.forEach((color, i) => table.set(parseInt(color.slice(1), 16), parseInt(ramp[i].slice(1), 16)));
-  }
-  return table;
 }
 
 export class Paperdoll {
@@ -141,7 +128,9 @@ export class Paperdoll {
         this.container.add(sprite);
       }
     }
-    this.body = this.nodes.find((n) => n.slot.id === 'body' && n.role === 'fg').sprite;
+    const bodyNode = this.nodes.find((n) => n.slot.id === 'body' && n.role === 'fg');
+    if (!bodyNode) throw new Error('PixelDoll: missing foreground body layer');
+    this.body = bodyNode.sprite;
     for (const ev of ['animationstart', 'animationupdate', 'animationrepeat', 'animationrestart']) this.body.on(ev, () => this.sync());
   }
 
@@ -159,6 +148,8 @@ export class Paperdoll {
   }
 
   applyPreset(preset) {
+    if (typeof preset === 'string') preset = this.m.presets.find((entry) => entry.id === preset);
+    if (!preset) throw new Error('PixelDoll: unknown outfit');
     this.equipped = { ...preset.items, body: this.m.rig.baseItem };
     this.setVariants(preset.variants);
   }
@@ -175,13 +166,10 @@ export class Paperdoll {
       const canvas = document.createElement('canvas');
       canvas.width = source.width; canvas.height = source.height;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) throw new Error('PixelDoll: Canvas 2D is unavailable');
       ctx.drawImage(source, 0, 0);
       const image = ctx.getImageData(0, 0, canvas.width, canvas.height), pixels = image.data;
-      for (let i = 0; i < pixels.length; i += 4) {
-        if (!pixels[i + 3]) continue;
-        const color = table.get((pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2]);
-        if (color != null) { pixels[i] = color >> 16; pixels[i + 1] = (color >> 8) & 255; pixels[i + 2] = color & 255; }
-      }
+      pixels.set(applyPalette({ w: canvas.width, h: canvas.height, data: pixels }, table).data);
       ctx.putImageData(image, 0, 0);
       const texture = this.scene.textures.addCanvas(key, canvas);
       this.scene.textures.addAtlasJSONHash(key, texture, this.m._atlases[original]);
@@ -191,16 +179,7 @@ export class Paperdoll {
 
   /** The item drawn in a slot: "<item>~<other>" (baked: hair tucked under a worn helmet, slots[].clips) when it exists. */
   shown(slot) {
-    const id = this.equipped[slot];
-    const equipped = new Set(Object.values(this.equipped));
-    let shown = id, count = 0;
-    for (const variant of this.m.items) {
-      const required = variant.underAll ?? (variant.under ? [variant.under] : []);
-      if (variant.variantOf === id && required.length > count && required.every((cover) => equipped.has(cover))) {
-        shown = variant.id; count = required.length;
-      }
-    }
-    return shown;
+    return shownItems(this.m, equipped(this.m, this.equipped)).find((item) => item.slot === slot)?.id;
   }
 
   layerOf(n) {
@@ -210,31 +189,19 @@ export class Paperdoll {
 
   /** Most specific zOverride (cell > anim > dir > none, later wins on ties), else the layer's z. */
   z(slot, layer, cell) {
-    let z = layer.z, best = -1;
-    for (const o of slot.zOverrides ?? []) {
-      if (o.layer !== layer.role || (o.dir && o.dir !== this.dir) || (o.anim && o.anim !== this.anim) || (o.cell != null && o.cell !== cell)) continue;
-      const rank = o.cell != null ? 3 : o.anim ? 2 : o.dir ? 1 : 0;
-      if (rank >= best) { best = rank; z = o.z; }
-    }
-    return z;
+    return resolveZ(slot, layer, this.anim, this.dir, cell);
   }
 
   sync() {
     const frame = this.body.anims.currentFrame;
     if (!frame) return;
     const name = frame.textureFrame, cell = +name.slice(name.lastIndexOf('_') + 1);
-    const hidden = new Set(), at = (slot) => this.m.slots.findIndex((s) => s.id === slot);
-    const worn = Object.entries(this.equipped).map(([slot, id]) => [slot, this.m.items.find((i) => i.id === id)]).filter((w) => w[1]);
-    const hidesOf = ([slot, it]) => it.hides ?? this.m.slots.find((s) => s.id === slot)?.hides ?? [];
-    // Of two worn items that hide each other's slot (two two-handed items), the later slot stays visible.
-    for (const w of worn)
-      if (!worn.some((o) => o !== w && hidesOf(w).includes(o[0]) && hidesOf(o).includes(w[0]) && at(o[0]) > at(w[0])))
-        for (const h of hidesOf(w)) hidden.add(h);
+    const draws = drawList(this.m, this.equipped, this.anim, this.dir, cell);
     for (const n of this.nodes) {
-      const hit = this.layerOf(n);
-      n.sprite.setVisible(!!hit?.layer && !hidden.has(n.slot.id));
+      const hit = draws.find((draw) => draw.slot.id === n.slot.id && draw.layer.role === n.role);
+      n.sprite.setVisible(!!hit);
       if (!hit?.layer) continue;
-      n.sprite.depth = this.z(n.slot, hit.layer, cell);
+      n.sprite.depth = hit.z;
       n.sprite.setTexture(this.texture(hit.item, hit.layer), name);
     }
     this.container.sort('depth', (a, b) => a.depth - b.depth || a.pdOrder - b.pdOrder);
@@ -254,12 +221,15 @@ export function phaserFiles(m: Manifest): OutFile[] {
 					data: JSON.stringify(atlasJson(m, it.id, l.id, a.id), null, 1) + '\n'
 				});
 	files.push({ name: 'phaser/PaperdollContainer.js', data: PAPERDOLL_JS });
+	files.push({ name: 'phaser/types.d.ts', data: runtimeTypes });
 	const dir = `assets/${m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`;
 	const initial = m.rig.animations.find((a) => (a.directions ?? m.rig.directions).length > 0);
 	files.push({
 		name: 'phaser/README.txt',
 		data: `1. Copy the whole export folder into your game's assets, e.g. ${dir}
 2. Game config: pixelArt: true, roundPixels: true (Phaser 4 defaults roundPixels to false).
+   For exact Canvas pixels, position characters at integer coordinates and call scene.cameras.main.setRoundPixels(false).
+   Phaser Canvas roundPixels expands each sprite by half a pixel; WebGL does not need this adjustment.
 3. In a scene (Phaser 3.80+ or 4):
      import { loadPaperdoll, Paperdoll } from './${dir}phaser/PaperdollContainer.js'
      async create() {
@@ -267,8 +237,12 @@ export function phaserFiles(m: Manifest): OutFile[] {
        const doll = new Paperdoll(this, 200, 150, m)
        doll.play(${JSON.stringify(initial?.id ?? 'walk')}, ${JSON.stringify(initial?.directions?.[0] ?? m.rig.directions[0]?.id ?? 'south')})
      }
-Switch outfits with doll.applyPreset(m.presets[1]); recolor with doll.setVariants({ material_id: "stored_variant" }).
+Switch outfits with doll.applyPreset(m.presets[1]) or doll.applyPreset(outfitId); unknown outfit IDs throw without changing the doll.
+Recolor with doll.setVariants({ material_id: "stored_variant" }).
 Palette swaps use exact source RGBs and stored material ramps in Canvas or WebGL.
+paletteMap returns only active source-RGB to target-RGB swaps; unselected colors are omitted.
+This module also exports the engine-neutral paper-doll API used inside PixelDoll itself, including composeCell, drawList, paletteMap and sampleTimeline.
+The adjacent types.d.ts supplies portable data types for checked JavaScript consumers; no TypeScript compilation is required.
 Call doll.destroy() when removing a character. Palette textures are cached until Phaser game teardown.
 PaperdollContainer.js is an ES module and fetches manifest.json: serve the game over http (a dev server), not file://.
 Atlases: phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json (TexturePacker hash), frames named <move>_<direction>_<frame>.

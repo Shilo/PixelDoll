@@ -11,7 +11,7 @@ import {
 	pickItem,
 	section
 } from './immersive-helpers.ts';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
@@ -55,6 +55,92 @@ async function standingItemCharacter(page: Page) {
 		await db.put('projects', ctx.rec.id, ctx.rec);
 		await s.openProject(ctx.rec.id);
 	});
+}
+
+async function expectGenerationTileGeometry(tile: Locator, running = true) {
+	const bounds = await tile.evaluate((element) => {
+		const rect = element.getBoundingClientRect(),
+			empty = element.closest('.slot-tiles')!.querySelector('.item-tile[data-variant="empty"]')!,
+			emptyRect = empty.getBoundingClientRect(),
+			emptyIcon = empty.querySelector('.bu-tile-art svg')!.getBoundingClientRect(),
+			name = element.querySelector('.tile-name')!,
+			time = element.querySelector('.generation-time')!,
+			ring = element.querySelector('.generation-ring')?.getBoundingClientRect(),
+			percent = element.querySelector('.generation-percent')?.getBoundingClientRect();
+		const line = (node: Element) => {
+			const box = node.getBoundingClientRect(),
+				style = getComputedStyle(node);
+			return {
+				height: box.height,
+				lineHeight: parseFloat(style.lineHeight),
+				top: box.top,
+				bottom: box.bottom,
+				left: box.left,
+				right: box.right,
+				whiteSpace: style.whiteSpace,
+				overflow: style.overflow,
+				ellipsis: style.textOverflow,
+				color: style.color
+			};
+		};
+		return {
+			height: rect.height,
+			width: rect.width,
+			emptyHeight: emptyRect.height,
+			emptyWidth: emptyRect.width,
+			left: rect.left,
+			right: rect.right,
+			bottom: rect.bottom,
+			name: line(name),
+			time: line(time),
+			emptyNameBottom:
+				empty.querySelector('.bu-tile-label')!.getBoundingClientRect().bottom - emptyRect.top,
+			ring: ring && {
+				width: ring.width,
+				height: ring.height,
+				top: ring.top,
+				bottom: ring.bottom,
+				centerX: ring.x + ring.width / 2 - rect.x,
+				centerY: ring.y + ring.height / 2 - rect.y
+			},
+			iconCenterY: emptyIcon.y + emptyIcon.height / 2 - emptyRect.y,
+			percent: percent && {
+				top: percent.top,
+				bottom: percent.bottom,
+				height: percent.height,
+				lineHeight: parseFloat(
+					getComputedStyle(element.querySelector('.generation-percent')!).lineHeight
+				)
+			}
+		};
+	});
+	expect(bounds.height).toBe(102);
+	expect(bounds.height).toBe(bounds.emptyHeight);
+	expect(bounds.width).toBeCloseTo(bounds.emptyWidth, 1);
+	for (const line of [bounds.name, bounds.time]) {
+		expect(line.height).toBeCloseTo(line.lineHeight, 1);
+		expect(line.whiteSpace).toBe('nowrap');
+		expect(line.overflow).toBe('hidden');
+		expect(line.ellipsis).toBe('ellipsis');
+		expect(line.left).toBeGreaterThanOrEqual(bounds.left);
+		expect(line.right).toBeLessThanOrEqual(bounds.right);
+		expect(line.bottom).toBeLessThanOrEqual(bounds.bottom);
+	}
+	expect(bounds.time.color).not.toBe(bounds.name.color);
+	expect(bounds.time.bottom).toBeCloseTo(bounds.name.top, 1);
+	expect(bounds.name.bottom - (bounds.bottom - bounds.height)).toBeCloseTo(
+		bounds.emptyNameBottom,
+		1
+	);
+	if (running) {
+		expect(bounds.ring!.width).toBe(24);
+		expect(bounds.ring!.height).toBe(24);
+		expect(bounds.ring!.centerX).toBeCloseTo(bounds.width / 2, 1);
+		expect(bounds.ring!.centerY).toBeCloseTo(bounds.iconCenterY, 1);
+		expect(bounds.percent!.height).toBeCloseTo(bounds.percent!.lineHeight, 1);
+		expect(bounds.percent!.bottom).toBeLessThanOrEqual(bounds.ring!.top);
+		expect(bounds.ring!.bottom).toBeLessThanOrEqual(bounds.time.top);
+	}
 }
 
 async function showNotification(
@@ -2895,6 +2981,155 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
 	expect(posts).toEqual([]);
 });
 
+test('generation tiles keep fixed geometry across progress and terminal states', async ({
+	page
+}, info) => {
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await standingItemCharacter(page);
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath),
+			queuePath = '/src/lib/pixellab/queue.ts',
+			{ queue } = await import(queuePath),
+			projectPath = '/src/lib/store/project.ts',
+			project = await import(projectPath),
+			routePath = '/src/studio/itemRoute.ts',
+			{ itemRoute } = await import(routePath);
+		queue.disconnect();
+		const base = state.store.project.manifest.items.find(
+			(item: { slot: string }) => item.slot === 'body'
+		);
+		state.store.project = {
+			...state.store.project,
+			manifest: {
+				...state.store.project.manifest,
+				items: [
+					...state.store.project.manifest.items,
+					...Array.from({ length: 4 }, (_, index) => ({
+						...base,
+						id: 'layout-hair-' + index,
+						slot: 'hair',
+						name: 'Saved hair ' + index
+					}))
+				]
+			}
+		};
+		const input = {
+				name: 'PonytailWithAnExtremelyLongUnbrokenRibbonTitle',
+				slot: 'hair',
+				prompt: 'a ponytail'
+			},
+			draft = await itemRoute.draft(await project.loadProject(state.doc.id), input, []);
+		draft.calls[0].recId = 'geometry-fixture';
+		state.gens.push({
+			draft,
+			input,
+			phase: 'running',
+			status: 'Designing',
+			requestText: state.REQUEST_TEXT
+		});
+		queue.key = 'synthetic-layout-key';
+		queue.recs.set('geometry-fixture', {
+			id: 'geometry-fixture',
+			state: 'running',
+			submittedAt: Date.now(),
+			jobs: [{ id: 'remote', progress: 0, results: [] }],
+			label: 'Ponytail',
+			params: {},
+			inputs: [],
+			createdAt: Date.now(),
+			method: 'POST',
+			endpoint: '/edit-animation-v2',
+			gens: 0,
+			usd: 0,
+			attempts: 1
+		});
+		queue.emit();
+	});
+	const tile = page.locator('[data-tile^="gen:"]');
+	for (const theme of ['dark', 'light']) {
+		for (const [width, height] of [
+			[320, 568],
+			[844, 390],
+			[1440, 900]
+		]) {
+			await page.setViewportSize({ width, height });
+			await equipmentGroup(page, 'Hair');
+			for (const variant of [
+				'zero',
+				'progress',
+				'complete',
+				'queued',
+				'paused',
+				'overrun',
+				'failed',
+				'review',
+				'canceled',
+				'save'
+			]) {
+				await page.evaluate(
+					async ({ variant, theme }) => {
+						const statePath = '/src/studio/state.svelte.ts',
+							state = await import(statePath),
+							queuePath = '/src/lib/pixellab/queue.ts',
+							{ queue } = await import(queuePath),
+							generation = state.gens[0],
+							rec = queue.recs.get('geometry-fixture')!;
+						state.ui.theme = theme;
+						state.applyTheme();
+						generation.phase =
+							variant === 'review'
+								? 'review'
+								: ['failed', 'canceled', 'save'].includes(variant)
+									? 'failed'
+									: 'running';
+						generation.canceled = variant === 'canceled' || variant === 'save';
+						generation.cancelSaveFailed = variant === 'save';
+						generation.error = variant === 'failed' ? 'Synthetic failure' : undefined;
+						queue.paused = variant === 'paused' ? 'offline' : null;
+						rec.state =
+							variant === 'queued' ? 'queued' : variant === 'complete' ? 'done' : 'running';
+						rec.submittedAt =
+							variant === 'queued'
+								? undefined
+								: Date.now() - (variant === 'overrun' ? 3_600_000 : 0);
+						rec.jobs[0].progress = variant === 'zero' ? 0 : variant === 'complete' ? 1 : 0.16;
+						queue.emit();
+					},
+					{ variant, theme }
+				);
+				const expectedStatus: Record<string, string | RegExp> = {
+					zero: /~[1-9]min left/,
+					progress: /~[1-9]min left/,
+					complete: 'Checking frames',
+					queued: 'Queued',
+					paused: 'Paused',
+					overrun: 'Taking longer',
+					failed: 'Failed',
+					review: 'Review',
+					canceled: 'Canceled',
+					save: 'Save cancellation'
+				};
+				await expect(tile.locator('.generation-time')).toHaveText(expectedStatus[variant]);
+				await expect(tile.locator('.generation-ring')).toHaveCount(
+					['failed', 'review', 'canceled', 'save'].includes(variant) ? 0 : 1
+				);
+				await expect(tile.locator('.generation-percent')).toHaveCount(
+					['failed', 'review', 'canceled', 'save'].includes(variant) ? 0 : 1
+				);
+				await expect(page.locator('[data-tile^="layout-hair-"]')).toHaveCount(4);
+				await expectGenerationTileGeometry(
+					tile,
+					!['failed', 'review', 'canceled', 'save'].includes(variant)
+				);
+			}
+		}
+	}
+});
+
 test('item tile cancellation confirms cost, retries failed saves and stays canceled after reload', async ({
 	page,
 	context
@@ -2940,7 +3175,7 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 		'aria-valuenow',
 		'42'
 	);
-	await expect(tile).toContainText(/~[1-9] min left/);
+	await expect(tile).toContainText(/~[1-9]min left/);
 	await expect(tile).toContainText('Ponytail');
 	await expect(page.locator('.gen')).toHaveCount(0);
 	await page.evaluate(async () => {
@@ -2963,23 +3198,7 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 			await page.setViewportSize({ width, height });
 			await equipmentGroup(page, 'Hair');
 			await tile.scrollIntoViewIfNeeded();
-			const bounds = await tile.evaluate((element) => {
-				element.style.width = '92px';
-				const tile = element.getBoundingClientRect(),
-					name = element.querySelector('.tile-name')!,
-					progress = element.querySelector('.generation-progress')!;
-				return {
-					nameHeight: name.getBoundingClientRect().height,
-					lineHeight: parseFloat(getComputedStyle(name).lineHeight),
-					nameBottom: name.getBoundingClientRect().bottom,
-					progressBottom: progress.getBoundingClientRect().bottom,
-					tileBottom: tile.bottom
-				};
-			});
-			expect(bounds.nameHeight).toBeGreaterThanOrEqual(bounds.lineHeight);
-			expect(bounds.nameBottom).toBeLessThanOrEqual(bounds.tileBottom);
-			expect(bounds.progressBottom).toBeLessThanOrEqual(bounds.tileBottom);
-			await tile.evaluate((element) => element.style.removeProperty('width'));
+			await expectGenerationTileGeometry(tile);
 			await page.screenshot({
 				path: info.outputPath('generation-' + theme + '-' + width + '.png')
 			});
@@ -5487,6 +5706,173 @@ test('tile status shows on the tile and in its name, and Recolor opens the itemâ
 	await expect(heading).toBeInViewport();
 	const list = (await page.locator('.color-sections').boundingBox())!;
 	expect(Math.abs((await heading.boundingBox())!.y - list.y)).toBeLessThan(24);
+});
+
+for (const width of [1280, 390])
+	test(`ordinary character loading starts Wardrobe at the top (${width}px)`, async ({
+		page
+	}, info) => {
+		await page.emulateMedia({ reducedMotion: 'reduce' });
+		await page.addInitScript(() => {
+			localStorage.setItem('pixeldoll.agentKey', 'off');
+			localStorage.setItem('pixeldoll.welcomed', '1');
+		});
+		await page.setViewportSize({ width, height: 844 });
+		const url = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+			.baseURL!;
+		await page.goto(url);
+		await expect(page.locator('.customize-action')).toBeEnabled({ timeout: 20_000 });
+		await page.locator('.customize-action').click();
+		const list = page.locator('#wardrobe-list');
+		const atTop = async () => {
+			await expect(list).toBeVisible();
+			await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(0);
+			await expect(page.locator('[data-rail="Head"]')).toHaveAttribute('aria-current', 'true');
+		};
+		await atTop();
+		await equipmentGroup(page, 'Back');
+		await list.evaluate((element) => (element.scrollTop += 25));
+		const offset = await list.evaluate((element) => element.scrollTop);
+		expect(offset).toBeGreaterThan(0);
+		await equipmentMode(page, 'Colors');
+		await equipmentMode(page, 'Wardrobe');
+		await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(offset);
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.openProject(state.doc.id, { quiet: true });
+		});
+		await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(offset);
+		const copy = await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.copyDemo();
+			return state.doc.id;
+		});
+		await atTop();
+		await list.evaluate((element) => (element.scrollTop = 25));
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.openProject('fixture:s2');
+		});
+		await atTop();
+		await equipmentGroup(page, 'Back');
+		await equipmentMode(page, 'Colors');
+		await page.evaluate(async (id) => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.openProject(id);
+		}, copy);
+		await equipmentMode(page, 'Wardrobe');
+		await atTop();
+		await list.evaluate((element) => (element.scrollTop = 25));
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.openProject(state.doc.id);
+		});
+		await atTop();
+		await list.evaluate((element) => (element.scrollTop = 25));
+		await equipmentMode(page, 'Colors');
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.openProject(state.doc.id);
+		});
+		await equipmentMode(page, 'Wardrobe');
+		await atTop();
+		await page.reload();
+		await expect(page.locator('.customize-action')).toBeEnabled({ timeout: 20_000 });
+		await page.locator('.customize-action').click();
+		await atTop();
+	});
+
+test('explicit item opens reveal shared IDs and quiet refresh keeps the selected tile in place', async ({
+	page
+}, info) => {
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	const ids = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath);
+		const projectPath = '/src/lib/store/project.ts',
+			project = await import(projectPath);
+		const dbPath = '/src/lib/store/db.ts',
+			db = await import(dbPath);
+		const first = await state.copyDemo();
+		const context = await project.loadProject(first);
+		const helmet = context.rec.manifest.items.find(
+			(item: { id: string }) => item.id === 'helmet_steel'
+		);
+		context.rec.manifest.items.unshift(
+			...Array.from({ length: 24 }, (_, index) => ({
+				...structuredClone(helmet),
+				id: `extra-helmet-${index}`,
+				name: `Extra helmet ${index}`
+			}))
+		);
+		await db.put('projects', first, context.rec);
+		await state.openProject(first);
+		const second = await state.copyDemo();
+		await state.openProject(first, { wear: 'hat_wizard' });
+		return { first, second };
+	});
+	const list = page.locator('#wardrobe-list');
+	const visibleBelowHeader = async () => {
+		await expect
+			.poll(() =>
+				list.evaluate((element) => {
+					const tile = element.querySelector('[data-tile="hat_wizard"]')!.getBoundingClientRect();
+					const header = element.querySelector('.bu-section-head')!.getBoundingClientRect();
+					return tile.top >= header.bottom && tile.bottom <= element.getBoundingClientRect().bottom;
+				})
+			)
+			.toBe(true);
+	};
+	await visibleBelowHeader();
+	await page.evaluate(async (id) => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.openProject(id, { wear: 'hat_wizard' });
+	}, ids.second);
+	await visibleBelowHeader();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.openProject(state.doc.id, { wear: 'hat_wizard' });
+	});
+	await visibleBelowHeader();
+	const before = await page.evaluate(() => ({
+		selected: window.__studio!.ui.selected,
+		scroll: document.querySelector('#wardrobe-list')!.scrollTop
+	}));
+	expect(before.selected).toBe('hat_wizard');
+	expect(before.scroll).toBeGreaterThan(0);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.openProject(state.doc.id, { quiet: true });
+	});
+	expect(await page.evaluate(() => window.__studio!.ui.selected)).toBe(before.selected);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(before.scroll);
+	await page.evaluate(async (id) => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.openProject(id);
+	}, ids.first);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(0);
+	await page.evaluate(() => {
+		window.__studio!.ui.selected = 'hat_wizard';
+	});
+	await visibleBelowHeader();
 });
 
 test('Wardrobe lands on a category picked while closed and reveals tiles below the sticky header', async ({

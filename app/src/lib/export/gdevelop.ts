@@ -3,6 +3,7 @@ import type { Manifest } from '../store/manifest.ts';
 import type { Img } from '../image/png.ts';
 import type { OutFile } from './generic.ts';
 import { layerFrame } from '../compose/compose.ts';
+import { runtimeSources } from '../runtime/sources.ts';
 
 /** Stable character identity: renaming/base changes create a separate library; same-character reexports retain names. */
 export function gdCharacterKey(m: Manifest): string {
@@ -21,6 +22,9 @@ const resourceName = (object: string, anim: number, row: number, cell: number) =
 /** Embedded as a native JavaScript event: no network fetch, package dependency or external script registration. */
 export const GDEVELOP_RUNTIME = `
 function createPixelDoll(scene, m, names, x = 320, y = 240, preset = m.presets[0]) {
+${Object.values(runtimeSources)
+	.join('\n')
+	.replace(/^export /gm, '')}
   const d = { x, y, z: 0, layer: '', m, scene, names, nodes: new Map(), textures: new Map(), destroyed: false,
     equipped: { ...preset?.items, body: m.rig.baseItem }, variants: { ...preset?.variants }, elapsed: 0 };
   const available = (a) => a.directions ?? m.rig.directions.map((v) => v.id);
@@ -39,20 +43,6 @@ function createPixelDoll(scene, m, names, x = 320, y = 240, preset = m.presets[0
     if (!preset) throw new Error('PixelDoll: unknown outfit');
     d.equipped = { ...preset.items, body: m.rig.baseItem }; return d.setVariants(preset.variants);
   };
-  const palette = (item) => {
-    const map = new Map();
-    const variant = (id, seen = new Set()) => {
-      const mat = m.materials.find((v) => v.id === id);
-      if (!mat || seen.has(id)) return undefined;
-      seen.add(id); return mat.linkTo ? variant(mat.linkTo, seen) : d.variants[id] ?? mat.defaultVariant;
-    };
-    for (const id of item.materials) {
-      const mat = m.materials.find((v) => v.id === id && (v.owner === item.id || v.owner === item.variantOf));
-      const ramp = mat?.variants[variant(id)];
-      if (ramp) mat.ramp.forEach((c, i) => map.set(parseInt(c.slice(1), 16), parseInt(ramp[i].slice(1), 16)));
-    }
-    return map;
-  };
   const texture = (resource, map) => {
     const manager = scene.getGame().getImageManager();
     if (!map.size) return manager.getPIXITexture(resource);
@@ -62,11 +52,8 @@ function createPixelDoll(scene, m, names, x = 320, y = 240, preset = m.presets[0
       if (!image) throw new Error('PixelDoll: image not loaded ' + resource);
       const canvas = document.createElement('canvas'); canvas.width = image.width; canvas.height = image.height;
       const ctx = canvas.getContext('2d', { willReadFrequently: true }); ctx.drawImage(image, 0, 0);
-      const data = ctx.getImageData(0, 0, canvas.width, canvas.height), p = data.data;
-      for (let i = 0; i < p.length; i += 4) {
-        const c = p[i + 3] && map.get((p[i] << 16) | (p[i + 1] << 8) | p[i + 2]);
-        if (c !== undefined && p[i + 3]) { p[i] = c >> 16; p[i + 1] = (c >> 8) & 255; p[i + 2] = c & 255; }
-      }
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      data.data.set(applyPalette({ w: canvas.width, h: canvas.height, data: data.data }, map).data);
       ctx.putImageData(data, 0, 0);
       const tex = PIXI.Texture.from(canvas); tex.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
       d.textures.set(key, tex);
@@ -75,45 +62,22 @@ function createPixelDoll(scene, m, names, x = 320, y = 240, preset = m.presets[0
   };
   d.sync = () => {
     if (!d.anim || d.destroyed) return;
-    const a = d.anim, total = a.frames.reduce((n, f) => n + f.ms, 0);
-    let time = a.loop ? d.elapsed % total : Math.min(d.elapsed, total - 0.000001), frame = a.frames[0];
-    for (const f of a.frames) { frame = f; if (time < f.ms) break; time -= f.ms; }
-    d.cell = frame.cell;
-    const on = m.items.filter((i) => i.id === m.rig.baseItem || d.equipped[i.slot] === i.id);
-    const hidesOf = (i) => i.hides ?? m.slots.find((s) => s.id === i.slot)?.hides ?? [], at = (slot) => m.slots.findIndex((s) => s.id === slot);
-    // Of two worn items that hide each other's slot (two two-handed items), the later slot stays visible.
-    const hidden = new Set(on.filter((i) => !on.some((o) => o !== i && hidesOf(i).includes(o.slot) && hidesOf(o).includes(i.slot) && at(o.slot) > at(i.slot))).flatMap(hidesOf));
+    const a = d.anim;
+    d.cell = sampleTimeline(a.frames, d.elapsed, a.loop);
     for (const node of d.nodes.values()) node.hide();
     const visible = [];
-    for (const [si, slot] of m.slots.entries()) {
-      let item = on.find((i) => i.slot === slot.id);
-      if (!item || hidden.has(slot.id)) continue;
-      let selected = item, count = 0;
-      for (const variant of m.items) {
-        const required = variant.underAll ?? (variant.under ? [variant.under] : []);
-        if (variant.variantOf === item.id && required.length > count && required.every((id) => on.some((over) => over.id === id))) {
-          selected = variant; count = required.length;
-        }
-      }
-      item = selected;
-      for (const l of item.layers) {
-        const name = names[item.id][l.id];
-        let node = d.nodes.get(name);
-        if (!node) { node = scene.createObject(name); if (!node) throw new Error('PixelDoll: missing Sprite ' + name); d.nodes.set(name, node); }
-        node.setLayer(d.layer); node.hide(false); node.setAnimationName(JSON.stringify([a.id, d.dir])); node.setAnimationFrame(frame.cell); node.pauseAnimation();
-        // Native Sprite originPoint is the exported layer pivot, so all layers share the character position.
-        node.setPosition(d.x, d.y);
-        let z = l.z, best = -1;
-        for (const o of slot.zOverrides ?? []) {
-          if (o.layer !== l.role || (o.dir && o.dir !== d.dir) || (o.anim && o.anim !== a.id) || (o.cell != null && o.cell !== frame.cell)) continue;
-          const rank = o.cell != null ? 3 : o.anim ? 2 : o.dir ? 1 : 0;
-          if (rank >= best) { z = o.z; best = rank; }
-        }
-        node.updatePreRender(scene);
-        const ai = m.rig.animations.indexOf(a), row = m.rig.directions.findIndex((v) => v.id === d.dir);
-        node.getRendererObject().texture = texture(name + '_' + ai + '_' + row + '_' + frame.cell + '.png', palette(item));
-        visible.push({ node, z, order: si * 2 + (l.role === 'bg' ? 0 : 1) });
-      }
+    for (const draw of drawList(m, d.equipped, a.id, d.dir, d.cell)) {
+      const { item, layer: l } = draw;
+      const name = names[item.id][l.id];
+      let node = d.nodes.get(name);
+      if (!node) { node = scene.createObject(name); if (!node) throw new Error('PixelDoll: missing Sprite ' + name); d.nodes.set(name, node); }
+      node.setLayer(d.layer); node.hide(false); node.setAnimationName(JSON.stringify([a.id, d.dir])); node.setAnimationFrame(d.cell); node.pauseAnimation();
+      // Native Sprite originPoint is the exported layer pivot, so all layers share the character position.
+      node.setPosition(d.x, d.y);
+      node.updatePreRender(scene);
+      const ai = m.rig.animations.indexOf(a), row = m.rig.directions.findIndex((v) => v.id === d.dir);
+      node.getRendererObject().texture = texture(name + '_' + ai + '_' + row + '_' + d.cell + '.png', paletteMap(m, item, d.variants));
+      visible.push({ node, z: draw.z, order: visible.length });
     }
     // Integer z ranks preserve arbitrary/negative z overrides and stable ties without renderer creation-order dependence.
     visible.sort((a, b) => a.z - b.z || a.order - b.order).forEach((v, i) => v.node.setZOrder(d.z + i));

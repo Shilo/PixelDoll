@@ -649,21 +649,57 @@
 .item-tile .tile-from {
 	font-size: 12px;
 }
-.item-tile:has(.generation-progress) .bu-tile-art {
-	height: 42px;
+.generation-artwork {
+	display: grid;
+	place-items: center;
+	width: 40px;
+	height: 40px;
 }
-.item-tile:has(.generation-progress) {
-	height: auto;
-	min-height: 102px;
+.generation-artwork.generating {
+	width: 12px;
+	height: 12px;
+	overflow: hidden;
 }
-.item-tile .generation-progress,
-.item-tile:has(.generation-progress) .tile-name {
-	flex-shrink: 0;
+.generation-artwork.generating svg {
+	width: 12px;
+	height: 12px;
 }
-.generation-progress {
-	max-width: 100%;
+.generation-ring {
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 24px;
+	height: 24px;
+}
+.generation-percent {
+	position: absolute;
+	top: 6px;
+	left: 6px;
+	right: 6px;
+	white-space: nowrap;
 	line-height: 1.2;
-	text-wrap: balance;
+}
+.generation-caption {
+	position: relative;
+	flex: none;
+	width: 100%;
+	min-width: 0;
+	height: 1.25em;
+	line-height: 1.25em;
+}
+.generation-caption .tile-name {
+	display: block;
+	line-height: inherit;
+}
+.generation-time {
+	position: absolute;
+	bottom: 100%;
+	left: 0;
+	right: 0;
+	line-height: 1.2;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 .section-body .shared-items {
 	padding-top: 4px;

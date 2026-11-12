@@ -21,10 +21,10 @@ const status = (jobs: JobRec[], now = 60_000, g = generation()) =>
 	generationStatus(g, jobs, now, true, null);
 
 test('countdown decreases from submission, not draft creation or page mounting', () => {
-	expect(status([record('running')]).text).toBe('~7 min left');
-	expect(status([record('running')], 120_000).text).toBe('~6 min left');
+	expect(status([record('running')]).text).toBe('~7min left');
+	expect(status([record('running')], 120_000).text).toBe('~6min left');
 	expect(status([record('running')], 480_000).text).toBe('Taking longer');
-	expect(status([record('running')], 1).text).toBe('~7 min left');
+	expect(status([record('running')], 1).text).toBe('~7min left');
 });
 
 test('queue, credentials, pauses and unknown outcomes replace speculative countdowns', () => {
@@ -57,7 +57,7 @@ test('local checks and terminal states never promise zero seconds', () => {
 });
 
 test('a finished design does not hide remaining queued or unsubmitted batches', () => {
-	expect(status([record('done')], 60_000, generation(2)).text).toBe('~7 min left');
+	expect(status([record('done')], 60_000, generation(2)).text).toBe('~7min left');
 	expect(
 		status(
 			[record('done'), record('queued', { id: '1', submittedAt: undefined })],

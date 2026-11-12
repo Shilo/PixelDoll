@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { asepriteFile, readAseprite } from '../../src/lib/export/aseprite.ts';
 import { coreFiles, exportManifest } from '../../src/lib/export/generic.ts';
 import { bakedFrame, composeCell, withTuckVariants } from '../../src/lib/compose/compose.ts';
@@ -11,6 +11,7 @@ import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import type { Item, Manifest, Project } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import * as colors from '../../src/lib/runtime/colors.js';
 
 async function fixture(combinedCuts = false) {
 	const body = makeImg(4, 4),
@@ -165,6 +166,26 @@ test('Aseprite keeps layered pivots, first-outfit palettes, tucked visibility, t
 			(c) => c.layer === a.layers.findIndex((l) => l.name === 'main_hand.sword')
 		)!.z
 	).toBeLessThan(0);
+});
+
+test('Aseprite executes canonical palette selection changes for its first-outfit cells', async () => {
+	const { m, sheets } = await fixture();
+	const palette = vi.spyOn(colors, 'paletteMap').mockReturnValue(new Map([[0x646464, 0x123456]]));
+	try {
+		const result = await readAseprite(await asepriteFile(m, sheets));
+		expect(palette).toHaveBeenCalledWith(
+			m,
+			m.items[0],
+			m.presets[0].variants,
+			expect.any(Function)
+		);
+		const body = result.frames[0].cels.find(
+			(cel) => cel.layer === result.layers.findIndex((layer) => layer.name === 'body.base')
+		)!;
+		expect([...body.img!.data.slice(20, 24)]).toEqual([0x12, 0x34, 0x56, 255]);
+	} finally {
+		palette.mockRestore();
+	}
 });
 
 test('Aseprite refuses native-format overflow and empty timelines instead of writing corrupt documents', async () => {
