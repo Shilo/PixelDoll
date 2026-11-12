@@ -5,6 +5,7 @@
 	import Colors from './Colors.svelte';
 	import GroupIcon from './GroupIcon.svelte';
 	import { groupOf } from './model.ts';
+	import { watchListSpacer } from './listSpacer.ts';
 	import { ui, doc, store, randomizeColors, resetColors } from './state.svelte.ts';
 	import { PersonStanding, RotateCcw, Shuffle } from './icons.ts';
 
@@ -30,6 +31,13 @@
 			: []
 	);
 	let list = $state<HTMLElement>();
+	// Room under the last section so Recolor can still bring it to the top, as in Wardrobe.
+	let spacer = $state(0);
+	$effect(() => {
+		void sections.length;
+		const last = list?.querySelector<HTMLElement>('section:last-of-type');
+		if (list && last) return watchListSpacer(list, last, (h) => (spacer = h));
+	});
 	$effect(() => {
 		// Recolor in an item's details opens this tab on that item's section, once.
 		const id = ui.colorsFocus;
@@ -84,4 +92,9 @@
 	{:else}
 		<p class="muted">Wear something to change its colors.</p>
 	{/each}
+	{#if sections.length}<div
+			class="list-spacer"
+			style:height="{spacer}px"
+			aria-hidden="true"
+		></div>{/if}
 </div>

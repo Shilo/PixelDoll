@@ -590,18 +590,17 @@
 }
 .slot-tiles {
 	display: grid;
-	/* At most four columns (ui-lab-5): tiles fill their track and stay square up to 112 px tall. */
-	grid-template-columns: repeat(auto-fill, minmax(max(96px, calc((100% - 24px) / 4)), 1fr));
+	/* At most four columns, tiles at least 88 px wide (ui-lab-9): 3 per row at 1280, 4 from 1440. */
+	grid-template-columns: repeat(auto-fill, minmax(max(88px, calc((100% - 24px) / 4)), 1fr));
 	gap: 8px;
 }
 .sheet-layout .slot-tiles {
 	grid-template-columns: repeat(auto-fill, minmax(max(92px, calc((100% - 24px) / 4)), 1fr));
 }
 .item-tile {
-	/* An explicit width: a grid item with an aspect ratio would otherwise shrink to its height cap, not fill its track. */
 	width: 100%;
-	aspect-ratio: 1;
-	max-height: 112px;
+	/* A fixed height around a fixed 64 px art box, so item art keeps whole-pixel scales at every column count. */
+	height: 102px;
 	font-size: 13px;
 }
 /* A real item's tile with its ⋮ beside it (a sibling control): the ⋮ sits top-left, the worn check top-right. */
@@ -623,12 +622,11 @@
 	top: 5px;
 	right: 6px;
 }
-/* The art box itself is smaller than the tile so pixel art reads at about half the tile's height;
-   the thumbnail still fills one axis of its box. */
+/* A fixed 64 px art box: item art draws at the largest whole-pixel scale that fits (Thumb box). */
 .item-tile .bu-tile-art {
 	flex: none;
-	width: 80%;
-	height: 56%;
+	width: min(100%, 64px);
+	height: 64px;
 	margin-block: auto;
 }
 .item-tile.shared-tile .bu-tile-art {
@@ -638,9 +636,8 @@
 	stroke-width: 1.5;
 }
 .item-tile.shared-tile {
-	aspect-ratio: auto;
+	height: auto;
 	min-height: 112px;
-	max-height: none;
 }
 .item-tile .tile-from {
 	font-size: 12px;
@@ -875,6 +872,10 @@
 	gap: 12px;
 	font-size: 16px;
 	padding: 12px;
+}
+/* The Characters panel ends in its Customize button, not a scrolling list, so it keeps the edge margin. */
+.cast-library {
+	bottom: max(var(--edge), env(safe-area-inset-bottom));
 }
 .sheet-layout .cast-library {
 	left: var(--edge);

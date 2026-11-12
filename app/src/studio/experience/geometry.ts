@@ -79,7 +79,9 @@ export function layout(w: number, h: number, screen: Screen): Layout {
 	const top = short || phone ? 8 : 12,
 		row = short || phone ? 44 : 48,
 		headerBottom = top + row;
-	const rail = w < 1100 ? (w < 900 ? 300 : 320) : Math.min(420, Math.max(340, w * 0.24));
+	// Desktop panels grow to a third of the window (up to 480 px) so the Wardrobe fits 3 items per row at 1280 and 4 from
+	// 1440 (ui-lab-9); the hero's scale is set by the height, so it only shifts left.
+	const rail = w < 1100 ? (w < 900 ? 300 : 320) : Math.min(480, Math.max(340, w * 0.33));
 	const studio = screen === 'studio';
 	// Phone widths always use the sheet: a side rail would leave no stage (320×400 is short but too narrow).
 	let sheet = phone || (!short && (w <= 760 || (w < h && w <= 1024)));

@@ -310,9 +310,13 @@ test.describe('responsive item thumbnail fitting', () => {
 						await expect(tile.locator('.tile-art svg')).toBeAttached();
 						continue;
 					}
+					// Art that fits the 64 px art box draws at a whole device-pixel scale; larger art shrinks to fit the box.
+					const small = shape.artW <= 64 && shape.artH <= 64,
+						dpr = await page.evaluate(() => devicePixelRatio),
+						k = Math.max(1, Math.floor(Math.min(64 / shape.artW, 64 / shape.artH) * dpr));
 					await expect
 						.poll(() =>
-							tile.evaluate((el) => {
+							tile.evaluate((el, small) => {
 								const art = el.querySelector<HTMLElement>('.tile-art')!,
 									canvas = art.querySelector<HTMLCanvasElement>('canvas')!;
 								if (!canvas) return null;
@@ -327,11 +331,13 @@ test.describe('responsive item thumbnail fitting', () => {
 									nearest: ['pixelated', 'crisp-edges'].includes(style.imageRendering),
 									canvasFits: c.width <= box.width + 1 && c.height <= box.height + 1,
 									artFits: box.width <= button.width && box.height <= button.height,
-									fillsAnAxis:
-										Math.min(
-											Math.abs(canvas.width * fit - box.width),
-											Math.abs(canvas.height * fit - box.height)
-										) < 1,
+									scaled: small
+										? Math.abs(c.width * devicePixelRatio - canvas.width) < 1 &&
+											Math.abs(c.height * devicePixelRatio - canvas.height) < 1
+										: Math.min(
+												Math.abs(canvas.width * fit - box.width),
+												Math.abs(canvas.height * fit - box.height)
+											) < 1,
 									opaqueEdges: [
 										0,
 										canvas.width - 1,
@@ -345,15 +351,15 @@ test.describe('responsive item thumbnail fitting', () => {
 												.data[3] === 255
 									)
 								};
-							})
+							}, small)
 						)
 						.toEqual({
-							backing: [shape.artW, shape.artH],
-							contain: 'contain',
+							backing: small ? [shape.artW * k, shape.artH * k] : [shape.artW, shape.artH],
+							contain: small ? 'fill' : 'contain',
 							nearest: true,
 							canvasFits: true,
 							artFits: true,
-							fillsAnAxis: true,
+							scaled: true,
 							opaqueEdges: true
 						});
 					if (theme === 'dark' && width === 1440 && ['wide', 'tall', 'tiny'].includes(shape.id)) {
@@ -377,11 +383,8 @@ test.describe('responsive item thumbnail fitting', () => {
 						for (let y = 0; y < screenshot.h; y++)
 							for (let x = 0; x < screenshot.w; x++) {
 								const i = (y * screenshot.w + x) * 4;
-								if (
-									screenshot.data[i] === 27 &&
-									screenshot.data[i + 1] === 169 &&
-									screenshot.data[i + 2] === 211
-								) {
+								// Art shrunk below 2 CSS px (the 3 px wide tall line in a 64 px box) blends with the tile, so match its tint.
+								if (screenshot.data[i + 2] - screenshot.data[i] > 60) {
 									x0 = Math.min(x0, x);
 									y0 = Math.min(y0, y);
 									x1 = Math.max(x1, x);

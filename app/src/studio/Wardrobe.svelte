@@ -41,6 +41,7 @@
 		withKey
 	} from './state.svelte.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
+	import { watchListSpacer } from './listSpacer.ts';
 	import Thumb from './Thumb.svelte';
 	import Sprite from './Sprite.svelte';
 	import GroupIcon from './GroupIcon.svelte';
@@ -238,13 +239,7 @@
 	onMount(() => {
 		// Room under the last category so tapping its slot can still bring it to the top: sized before the first scroll.
 		const last = list?.querySelector<HTMLElement>('[data-group]:last-of-type');
-		const size = () => {
-			if (list && last) spacer = Math.max(0, list.clientHeight - last.offsetHeight);
-		};
-		size();
-		const observer = new ResizeObserver(size);
-		if (list) observer.observe(list);
-		if (last) observer.observe(last);
+		const unwatch = list && last ? watchListSpacer(list, last, (h) => (spacer = h)) : undefined;
 		const group = ui.group;
 		void tick().then(() => {
 			if (!list) return;
@@ -258,7 +253,7 @@
 			}
 		});
 		return () => {
-			observer.disconnect();
+			unwatch?.();
 			cancelAnimationFrame(spyFrame);
 		};
 	});
@@ -372,7 +367,11 @@
 										}}
 									>
 										<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(it.id)}
-											>{#if seen.has(it.id)}<Thumb project={view.project} item={it} />{/if}</span
+											>{#if seen.has(it.id)}<Thumb
+													project={view.project}
+													item={it}
+													box={64}
+												/>{/if}</span
 										><span class="bu-tile-label tile-name">{it.name}</span>
 										{#if on}<span class="bu-tile-check" aria-hidden="true"><Check /></span
 											>{:else if st.look || st.missing}<span

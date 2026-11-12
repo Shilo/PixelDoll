@@ -203,7 +203,8 @@ describe('scene geometry', () => {
 		expect(layout(844, 390, 'studio').sheet).toBe(false);
 		expect(layout(1024, 768, 'studio').sheet).toBe(false);
 		expect(layout(1920, 1080, 'studio').edge).toBe(32);
-		expect(layout(1440, 900, 'studio').rail).toBeCloseTo(345.6);
+		expect(layout(1440, 900, 'studio').rail).toBeCloseTo(475.2);
+		expect(layout(2560, 1080, 'studio').rail).toBe(480);
 		expect(layout(1024, 768, 'studio').rail).toBe(320);
 	});
 

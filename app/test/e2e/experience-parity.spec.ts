@@ -153,6 +153,19 @@ async function landing(page: Page) {
 	await expect(page.locator('.customize-action')).toBeEnabled();
 }
 
+test('the Characters panel keeps its Customize button on the edge margin', async ({ page }) => {
+	for (const [width, height] of [
+		[1440, 900],
+		[1920, 1080]
+	]) {
+		await page.setViewportSize({ width, height });
+		await landing(page);
+		const g = layout(width, height, 'characters');
+		const action = (await page.locator('.customize-action').boundingBox())!;
+		expect(action.y + action.height).toBeCloseTo(height - g.edge, 0);
+	}
+});
+
 test('full screen includes the whole app and survives screen changes, dialogs and external exit', async ({
 	page
 }) => {
@@ -284,23 +297,27 @@ test('full screen and view navigation stay separate while Activity is in the hea
 	).toBeVisible();
 	for (const width of [320, 360, 390, 760, 920, 1024, 1101, 1279, 1280, 1440]) {
 		await page.setViewportSize({ width, height: 900 });
-		const overlap = await modes(page).evaluate((nav) => {
-			const bounds = nav.getBoundingClientRect();
-			// The view tabs now live in the header; only the other header controls must stay clear of them.
-			return [...document.querySelectorAll('.experience-header button')].some((button) => {
-				if (nav.contains(button)) return false;
-				const rect = button.getBoundingClientRect();
-				return (
-					rect.width > 0 &&
-					rect.height > 0 &&
-					rect.left < bounds.right &&
-					rect.right > bounds.left &&
-					rect.top < bounds.bottom &&
-					rect.bottom > bounds.top
-				);
+		// The switch re-centers on the character one frame after a resize (ResizeObserver), so let it settle.
+		const overlap = () =>
+			modes(page).evaluate((nav) => {
+				const bounds = nav.getBoundingClientRect();
+				// The view tabs now live in the header; only the other header controls must stay clear of them.
+				return [...document.querySelectorAll('.experience-header button')].some((button) => {
+					if (nav.contains(button)) return false;
+					const rect = button.getBoundingClientRect();
+					return (
+						rect.width > 0 &&
+						rect.height > 0 &&
+						rect.left < bounds.right &&
+						rect.right > bounds.left &&
+						rect.top < bounds.bottom &&
+						rect.bottom > bounds.top
+					);
+				});
 			});
-		});
-		expect(overlap, `View navigation overlaps header at ${width}px`).toBe(false);
+		await expect
+			.poll(overlap, { message: `View navigation overlaps header at ${width}px` })
+			.toBe(false);
 		await page.getByRole('button', { name: 'Enter full screen', exact: true }).click();
 		await page.getByRole('button', { name: 'Exit full screen', exact: true }).click();
 	}
