@@ -20,7 +20,7 @@ import {
 import { baseMoveSpecs, createCharacter, type CreateSpec } from '../../src/studio/create.ts';
 import { createPlan, movePlan } from '../../src/studio/apiPlans.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
-import { BASE_BODY } from '../../src/studio/model.ts';
+import { UNDERWEAR_BODY } from '../../src/studio/model.ts';
 import { DIRECTIONS, type DirectionName } from '../../src/lib/rig/rig.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { normalize } from '../../src/lib/rig/normalize.ts';
@@ -217,7 +217,7 @@ test('all 21 appearance choices, including Not set, map into the exact descripti
 			// Exercise Not set as removal, rather than only checking the already-unset initial state.
 			writeTrait(draft, key, choices[key][0]);
 			writeTrait(draft, key, option);
-			const expected = `Distinctive freckles\n${option === UNSET ? '' : `${TRAITS[key].label}: ${option}\n`}${BASE_BODY}`;
+			const expected = `Distinctive freckles\n${option === UNSET ? '' : `${TRAITS[key].label}: ${option}\n`}${UNDERWEAR_BODY}`;
 			expect(draft.prompt).toBe(expected);
 			const parsed = newCharacterDraft();
 			readPrompt(parsed, expected);

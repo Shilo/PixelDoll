@@ -40,6 +40,7 @@
 		TriangleAlert
 	} from './icons.ts';
 
+	let { source }: { source: 'device' | 'pixellab' } = $props();
 	let prepared = $state.raw<ImportedCharacter | null>(null);
 	let previewValid = $state(false),
 		nameInitialized = false;
@@ -95,7 +96,7 @@
 		);
 	});
 	$effect(() => {
-		if (ui.importSource === 'pixellab' && app.key && !listed) {
+		if (source === 'pixellab' && app.key && !listed) {
 			listed = true;
 			void load(0);
 		}
@@ -317,46 +318,23 @@
 <svelte:window ondragover={preventFileNavigation} ondrop={preventFileNavigation} />
 
 <Sheet
-	title="Import character"
+	title={source === 'device' ? 'Import from device' : 'Import from PixelLab'}
 	onclose={close}
 	cancelDisabled={saving}
 	className={prepared
 		? 'import-sheet import-review'
-		: ui.importSource === 'pixellab' && app.key && !app.keyRejected
+		: source === 'pixellab' && app.key && !app.keyRejected
 			? 'import-sheet import-browse'
 			: 'import-sheet'}
 >
-	<div class="api-action">
-		<ApiPeek
-			scope="library-open"
-			label="Browse PixelLab characters"
-			plan={libraryPlan()}
-			activityScope={listScope(0)}
-		/>
-		<div class="seg full" style="flex:1" role="tablist" aria-label="Import source">
-			<button
-				role="tab"
-				aria-selected={ui.importSource === 'device'}
-				tabindex={ui.importSource === 'device' ? 0 : -1}
-				disabled={busy}
-				onclick={() => {
-					ui.importSource = 'device';
-					reset();
-				}}>From this device</button
-			>
-			<button
-				role="tab"
-				aria-selected={ui.importSource === 'pixellab'}
-				aria-busy={loading}
-				tabindex={ui.importSource === 'pixellab' ? 0 : -1}
-				disabled={busy}
-				onclick={() => {
-					ui.importSource = 'pixellab';
-					reset();
-				}}>From PixelLab</button
-			>
-		</div>
-	</div>
+	{#if source === 'pixellab'}<div class="api-action">
+			<ApiPeek
+				scope="library-open"
+				label="Browse PixelLab characters"
+				plan={libraryPlan()}
+				activityScope={listScope(0)}
+			/>
+		</div>{/if}
 	{#if states.length > 1}
 		<div class="field">
 			<label class="label" for="import-standing-state">Standing pose state</label>
@@ -398,7 +376,7 @@
 		</section>
 	{/if}
 	{#if !prepared}
-		{#if ui.importSource === 'device'}
+		{#if source === 'device'}
 			<section
 				class="bu-dialog-surface import-drop"
 				aria-label="Character ZIP drop area"
@@ -451,8 +429,7 @@
 					disabled={busy}
 					onclick={() =>
 						withKey(() => {
-							ui.importSource = 'pixellab';
-							ui.sheet = 'import';
+							ui.sheet = 'importPixelLab';
 						}, false)}><KeyRound size={16} />Connect PixelLab to browse your characters</button
 				>
 			{:else}

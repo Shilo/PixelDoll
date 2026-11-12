@@ -2,11 +2,14 @@
 	// One shared per-tile item menu (approved in docs/design/2026-11-11-ui-refinement/ui-lab-7.html): an arrowed popover
 	// anchored to the tile's ⋮ at every size, with Wear as a toggle in its header.
 	import PopoverArrow from './PopoverArrow.svelte';
+	import { downloadItemZip } from './download.svelte.ts';
 	import Thumb from './Thumb.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { extendable } from './create.ts';
 	import { groupOf, groupLabel, slotLabel } from './model.ts';
 	import { OTHER_HAND, twoHanded } from '../lib/compose/compose.ts';
+	import type { generationStatus } from './generationStatus.ts';
+	import { queue } from '../lib/pixellab/queue.ts';
 	import {
 		ui,
 		doc,
@@ -16,10 +19,14 @@
 		isDemo,
 		withKey,
 		openNewItem,
-		toggleTwoHanded
+		toggleTwoHanded,
+		cancelGen,
+		openGenerationReview,
+		type Gen
 	} from './state.svelte.ts';
 	import {
 		Circle,
+		Download,
 		CircleCheck,
 		CopyPlus,
 		HandGrab,
@@ -34,7 +41,9 @@
 		id,
 		status,
 		onremove,
-		open = $bindable(false)
+		open = $bindable(false),
+		generation,
+		generationInfo
 	}: {
 		/** The item the menu is for. */
 		id: string;
@@ -43,9 +52,29 @@
 		/** Removes the item for good once confirmed (Wardrobe moves focus to a neighbor afterwards). */
 		onremove: (id: string) => void;
 		open?: boolean;
+		generation?: Gen;
+		generationInfo?: ReturnType<typeof generationStatus>;
 	} = $props();
 	let menu = $state<HTMLElement>();
 	let confirming = $state(false);
+	let cancelBusy = $state(false);
+	let cancelError = $state('');
+	async function cancel() {
+		if (!generation) return;
+		cancelBusy = true;
+		cancelError = '';
+		try {
+			if (await cancelGen(generation)) close();
+		} catch (error) {
+			confirming = false;
+			cancelError =
+				error instanceof Error
+					? error.message
+					: 'Could not save cancellation. Keep this tab open and try again.';
+		} finally {
+			cancelBusy = false;
+		}
+	}
 	const m = $derived(store.project?.manifest);
 	const it = $derived(m?.items.find((i) => i.id === id));
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
@@ -120,7 +149,10 @@
 	}}
 	ontoggle={(e) => {
 		open = e.newState === 'open';
-		if (!open) confirming = false;
+		if (!open) {
+			confirming = false;
+			cancelError = '';
+		}
 		// Open on the first command, not the header's Wear toggle.
 		popoverFocus(e, false);
 		if (open)
@@ -130,7 +162,87 @@
 	}}
 >
 	<PopoverArrow />
-	{#if it && m && view.project}
+	{#if generation && generationInfo}
+		<div class="menu-surface bu-popover-surface bu-floating">
+			<div class="item-menu-head">
+				<span class="item-menu-title"
+					><strong id="generation-menu-name">{generation.input.name}</strong><small
+						>{generationInfo.text}</small
+					></span
+				>
+			</div>
+			<div class="item-menu-confirm">
+				<p class="small">{generationInfo.detail}</p>
+				{#if generation.phase === 'running'}<p class="small">
+						{generation.status || 'Preparing your item'} · {generation.input.prompt}
+					</p>{/if}
+				{#if confirming && generation.phase === 'running'}
+					<div role="group" aria-labelledby="cancel-item-question">
+						<p id="cancel-item-question">Cancel this item?</p>
+						<p class="small" id="cancel-item-consequences">
+							Generations already used will not be refunded. Requests already sent may still finish
+							and charge. No further batches will start.
+						</p>
+						<div class="actions">
+							<button
+								class="bu-action btn danger"
+								data-variant="outline"
+								disabled={cancelBusy}
+								aria-describedby="cancel-item-consequences"
+								onclick={cancel}>Cancel generation</button
+							>
+							<button
+								class="bu-action btn plain"
+								data-variant="quiet"
+								disabled={cancelBusy}
+								{@attach focusKeep}
+								onclick={() => (confirming = false)}>Keep generating</button
+							>
+						</div>
+					</div>
+				{:else}
+					<div role="menu" aria-labelledby="generation-menu-name">
+						{#if generation.cancelSaveFailed}<button
+								{@attach focusKeep}
+								class="row bu-action"
+								data-variant="quiet"
+								role="menuitem"
+								disabled={cancelBusy}
+								onclick={cancel}>Save cancellation</button
+							>{/if}
+						{#if generation.phase !== 'running'}
+							<button
+								class="row bu-action"
+								data-variant="quiet"
+								role="menuitem"
+								onclick={() => act(() => void openGenerationReview(generation!.draft.spec.id))}
+								><Info size={16} />Review item…</button
+							>
+						{/if}
+						<button
+							class="row bu-action"
+							data-variant="quiet"
+							role="menuitem"
+							onclick={() => act(() => (ui.sheet = 'activity'))}><Info size={16} />Activity…</button
+						>
+						{#if generation.phase === 'running' && $queue.role !== 'follower'}
+							<button
+								{@attach focusKeep}
+								class="row bu-action danger"
+								data-variant="quiet"
+								role="menuitem"
+								onclick={() => (confirming = true)}><Trash size={16} />Cancel generation…</button
+							>
+						{/if}
+					</div>
+				{/if}
+				{#if generation.phase === 'running' && $queue.role === 'follower'}<p class="small">
+						Cancel from the tab that is generating this item.
+					</p>{/if}
+				{#if cancelError}<p class="notice bad small" role="alert">{cancelError}</p>{/if}
+			</div>
+		</div>
+	{:else if it && m && view.project}
 		<div class="menu-surface bu-popover-surface bu-floating">
 			<div class="item-menu-head">
 				<span class="item-menu-art" aria-hidden="true"
@@ -242,6 +354,13 @@
 								: 'Try again…'}<small class="row-aside">Paid</small></button
 						>
 					{/if}
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						role="menuitem"
+						onclick={() => act(() => void downloadItemZip(it.id))}
+						><Download size={16} />Download ZIP</button
+					>
 					{#if !isDemo()}
 						<hr class="bu-separator" />
 						<button

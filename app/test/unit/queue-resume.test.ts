@@ -398,6 +398,57 @@ test('one failed scoped consumer cannot cancel a shared queued request still nee
 	expect(shared.state).toBe('done');
 });
 
+test('an already-aborted adopted scope stops queued work immediately', async () => {
+	const scope = new AbortController();
+	const queue = new Queue({ locks: null, put: async () => {} });
+	const record = await queue.enqueue(request, { signal: scope.signal });
+	const resumed = new Queue({
+		locks: null,
+		put: async () => {},
+		all: async () => [structuredClone(record)]
+	});
+	await resumed.load();
+	const adopted = new AbortController();
+	adopted.abort();
+	resumed.observeScope(record.id, adopted.signal);
+	await resumed.cancelAbortedScope(record.id);
+	expect(resumed.snapshot().jobs[0].state).toBe('canceled');
+});
+
+test('cancellation during a deduplicated tier save observes both consumers before awaiting storage', async () => {
+	const first = new AbortController(),
+		second = new AbortController();
+	let hold = false,
+		release!: () => void,
+		entered!: () => void;
+	const waiting = new Promise<void>((resolve) => {
+		entered = resolve;
+	});
+	const queue = new Queue({
+		locks: null,
+		put: async () => {
+			if (hold) {
+				hold = false;
+				entered();
+				await new Promise<void>((resolve) => {
+					release = resolve;
+				});
+			}
+		}
+	});
+	const record = await queue.enqueue(request, { signal: first.signal });
+	hold = true;
+	const deduped = queue.enqueue(request, { signal: second.signal, minimumTier: 1 });
+	await waiting;
+	first.abort();
+	second.abort();
+	expect(record.state).toBe('canceled');
+	release();
+	await deduped;
+	await queue.cancelAbortedScope(record.id);
+	expect(record.state).toBe('canceled');
+});
+
 test('all scoped consumers failing cancels a shared queued request without a POST', async () => {
 	const a = new AbortController(),
 		b = new AbortController();
@@ -442,6 +493,24 @@ test('a live unscoped consumer pins shared work when a scoped consumer fails', a
 	await q.tick();
 	expect(posts).toBe(1);
 	expect(shared.state).toBe('done');
+});
+
+test('a resumed record can attach cancellation without reconstructing its paid request', async () => {
+	const fixtureData = fixture(500),
+		initial = fixtureData.make();
+	const saved = await initial.enqueue(request);
+	const recovered = fixtureData.make();
+	await recovered.load();
+	const canceled = new AbortController(),
+		active = new AbortController();
+	recovered.observeScope(saved.id, canceled.signal);
+	recovered.observeScope(saved.id, active.signal);
+	canceled.abort();
+	expect(fixtureData.records.get(saved.id)?.state).toBe('queued');
+	active.abort();
+	await recovered.tick();
+	expect(fixtureData.posts()).toBe(0);
+	expect(fixtureData.records.get(saved.id)?.state).toBe('canceled');
 });
 
 test('scoped recovery can adopt a historical queued record with no live in-memory consumer', async () => {
@@ -656,6 +725,27 @@ test('submission-start notification occurs after HTTP invocation even when a sub
 	expect(posts).toBe(1);
 	un();
 	q.disconnect();
+});
+
+test('scope cancellation awaits durable storage and can retry a failed cancellation save', async () => {
+	const records = new Map<string, JobRec>(),
+		scope = new AbortController();
+	let fail = false;
+	const queue = new Queue({
+		locks: null,
+		put: async (id, record) => {
+			if (fail) throw new Error('Storage unavailable');
+			records.set(id, structuredClone(record));
+		}
+	});
+	const record = await queue.enqueue(request, { signal: scope.signal });
+	fail = true;
+	scope.abort();
+	await expect(queue.cancelAbortedScope(record.id)).rejects.toThrow('Storage unavailable');
+	expect(records.get(record.id)?.state).toBe('queued');
+	fail = false;
+	await queue.cancelAbortedScope(record.id);
+	expect(records.get(record.id)?.state).toBe('canceled');
 });
 
 test('an interrupted HTTP submission without a durable receipt stays lost across repeated queue restarts', async () => {

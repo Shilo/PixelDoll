@@ -1,6 +1,7 @@
 # Bare-skin base bodies: prompt wording research (2026-10-25)
 
-Status: **shipped.** New characters are drawn fully bare. The clothes clause in `BASE_CLOTHES`
+Status: **historical default, now explicit Nude opt-in.** New characters now request plain white underwear by default.
+The tested bare-body clothes clause in `BASE_CLOTHES`
 (`app/src/studio/model.ts`) is "with plain bare skin everywhere, nothing worn". Part of
 [round 5](lexingel-paperdoll-findings-round5-2026-10-25.md). Harness arm W in `spikes/api/c25/arm_r5.mts` (modes `W`,
 `W2` to `W7`), with frames and the ledger in `spikes/api/out/c25e/W/` (git-ignored). Spend: 140 gens of drawings plus five

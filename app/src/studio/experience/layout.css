@@ -649,15 +649,21 @@
 .item-tile .tile-from {
 	font-size: 12px;
 }
-.tile-progress {
-	position: absolute;
-	inset: 0;
-	display: grid;
-	place-items: center;
-	pointer-events: none;
+.item-tile:has(.generation-progress) .bu-tile-art {
+	height: 42px;
 }
-.tile-progress.overlay {
-	inset: auto 0 0 auto;
+.item-tile:has(.generation-progress) {
+	height: auto;
+	min-height: 102px;
+}
+.item-tile .generation-progress,
+.item-tile:has(.generation-progress) .tile-name {
+	flex-shrink: 0;
+}
+.generation-progress {
+	max-width: 100%;
+	line-height: 1.2;
+	text-wrap: balance;
 }
 .section-body .shared-items {
 	padding-top: 4px;
@@ -833,7 +839,7 @@
 	flex-direction: column;
 	gap: 8px;
 }
-.character-row {
+:is(.character-row, .new-character-row) {
 	width: 100%;
 	display: flex;
 	align-items: center;
@@ -849,6 +855,34 @@
 	flex-direction: column;
 	gap: 2px;
 	min-width: 0;
+}
+.character-entry {
+	position: relative;
+	min-width: 0;
+	flex-shrink: 0;
+}
+.character-entry > :is(.character-row, .row) {
+	width: 100%;
+	padding-right: 48px;
+}
+.character-more {
+	position: absolute;
+	right: 2px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 44px;
+	height: 44px;
+}
+.new-character-row {
+	min-height: 44px;
+	flex-shrink: 0;
+}
+.new-character-icon {
+	width: 48px;
+	height: 28px;
+	display: grid;
+	place-items: center;
+	flex-shrink: 0;
 }
 .character-row strong {
 	font-weight: 600;

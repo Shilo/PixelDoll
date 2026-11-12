@@ -1,5 +1,5 @@
 import { DIRECTIONS, type DirectionName, type RigDirection, type Rig } from '../lib/rig/rig.ts';
-import { BASE_BODY, isBaseBody } from './model.ts';
+import { BASE_BODY, UNDERWEAR_BODY, isBaseBody } from './model.ts';
 
 export const BODY_SIZES = [48, 64, 96, 128] as const;
 export const TRAITS = {
@@ -131,7 +131,7 @@ export function newCharacterDraft(): CharacterDraft {
 		build: UNSET,
 		proportions: UNSET,
 		skin: UNSET,
-		prompt: BASE_BODY,
+		prompt: UNDERWEAR_BODY,
 		body: 64,
 		bodyPreset: 64,
 		frame: 80,
@@ -177,6 +177,17 @@ export function readPrompt(
 	}
 	const details = lines.filter((line, i) => !owned.has(i) && !isBaseBody(line)).join('\n');
 	d.details = preserveDetailsWhitespace ? details : details.trim();
+}
+export function isNudeBase(d: Pick<CharacterDraft, 'prompt'>): boolean {
+	const bodies = d.prompt.split('\n').filter(isBaseBody);
+	return bodies.length === 1 && bodies[0].trim() === BASE_BODY;
+}
+export function writeNudeBase(d: CharacterDraft, nude: boolean): void {
+	const lines = d.prompt.split('\n');
+	const first = lines.findIndex(isBaseBody);
+	const next = lines.filter((line) => !isBaseBody(line));
+	next.splice(first < 0 ? next.length : first, 0, nude ? BASE_BODY : UNDERWEAR_BODY);
+	readPrompt(d, next.join('\n'));
 }
 export function writeTrait(d: CharacterDraft, key: Trait, value: string): void {
 	const lines = d.prompt.split('\n'),

@@ -20,6 +20,7 @@
 		store,
 		view,
 		gens,
+		genOf,
 		creating,
 		settingUp,
 		initUi,
@@ -46,7 +47,7 @@
 	import Toast from './Toast.svelte';
 	import PwaRuntime from './PwaRuntime.svelte';
 
-	// On-demand parts, out of the startup bundle (GenCard renders in PhonePanel).
+	// On-demand parts, out of the startup bundle.
 	const parts = {
 		connect: () => import('./ConnectSheet.svelte'),
 		create: () => import('./CreateSheet.svelte'),
@@ -54,12 +55,18 @@
 		export: () => import('./ExportSheet.svelte'),
 		activity: () => import('./ActivitySheet.svelte'),
 		move: () => import('./MoveSheet.svelte'),
-		import: () => import('./ImportSheet.svelte'),
+		importZip: () => import('./ImportSheet.svelte'),
+		importPixelLab: () => import('./ImportSheet.svelte'),
 		setup: () => import('./SetupSheet.svelte'),
 		item: () => import('./ItemPane.svelte'),
 		notes: () => import('./StageNote.svelte'),
 		gen: () => import('./GenCard.svelte')
 	};
+
+	$effect(() => {
+		if (ui.sheet === 'gen' && (!genOf(ui.selected) || genOf(ui.selected)?.phase === 'running'))
+			ui.sheet = null;
+	});
 
 	// once on mount (an $effect would re-run on every state it reads, e.g. the theme)
 	onMount(() => {
@@ -289,12 +296,20 @@
 	{#if ui.sheet === 'activity'}<Lazy load={parts.activity} />{/if}
 	{#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
-	{#if ui.sheet === 'import'}<Lazy load={parts.import} />{/if}
+	{#if ui.sheet === 'importZip' || ui.sheet === 'importPixelLab'}{#key ui.sheet}<Lazy
+				load={parts[ui.sheet]}
+				source={ui.sheet === 'importZip' ? 'device' : 'pixellab'}
+			/>{/key}{/if}
 	{#if ui.sheet === 'delete'}<DeleteSheet />{/if}
 	{#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
 	{#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
 		<Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}
 			><Lazy load={parts.item} id={ui.selected} /></Sheet
+		>
+	{/if}
+	{#if ui.sheet === 'gen' && genOf(ui.selected)}
+		<Sheet title="Item review" cancel="Done" onclose={() => (ui.sheet = null)}
+			><Lazy load={parts.gen} g={genOf(ui.selected)!} /></Sheet
 		>
 	{/if}
 </div>

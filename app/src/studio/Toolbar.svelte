@@ -5,6 +5,8 @@
 	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
 	import SharePopover from './SharePopover.svelte';
+	import CharacterActions from './CharacterActions.svelte';
+	import NewCharacterButton from './NewCharacterButton.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import ApiPeek from './ApiPeek.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
@@ -37,7 +39,6 @@
 		Share2,
 		Ellipsis,
 		KeyRound,
-		Plus,
 		Redo2,
 		Sun,
 		Moon,
@@ -193,20 +194,7 @@
 	{/if}
 	<div class="header-actions">
 		{#if experience.screen === 'characters'}
-			<button
-				class="bu-action selection-import"
-				data-variant="outline"
-				onclick={() => {
-					ui.importSource = 'device';
-					ui.sheet = 'import';
-				}}><Download size={16} /><span>Import</span></button
-			>
-			<button
-				class="bu-action selection-create"
-				data-variant="outline"
-				aria-label="New character"
-				onclick={() => (ui.sheet = 'create')}><Plus size={16} /><span>New character</span></button
-			>
+			<NewCharacterButton />
 		{:else}
 			<button
 				class="bu-action header-random"
@@ -442,30 +430,21 @@
 		{/if}
 		<p class="menu-sec">Characters</p>
 		{#snippet proj(p: (typeof store.projects)[number])}
-			<button
-				class="row"
-				role="menuitemradio"
-				aria-checked={p.id === doc.id}
-				aria-label={p.name}
-				onclick={() => pick(p.id)}
-			>
-				<CharacterThumb id={p.id} name={p.name} size={48} /><span class="row-name">{p.name}</span
-				>{#if p.id === doc.id}<Check size={14} />{/if}
-			</button>
+			<CharacterActions id={p.id} name={p.name}>
+				<button
+					class="row"
+					role="menuitemradio"
+					aria-checked={p.id === doc.id}
+					aria-label={p.name}
+					onclick={() => pick(p.id)}
+				>
+					<CharacterThumb id={p.id} name={p.name} size={48} /><span class="row-name">{p.name}</span
+					>{#if p.id === doc.id}<Check size={14} />{/if}
+				</button>
+			</CharacterActions>
 		{/snippet}
 		{#each store.projects.filter((p) => !p.dev) as p (p.id)}{@render proj(p)}{/each}
-		<button class="row" role="menuitem" aria-label="New character…" onclick={() => sheet('create')}
-			><Plus size={16} /><span class="row-name">New character…</span></button
-		>
-		<button
-			class="row"
-			role="menuitem"
-			aria-label="Import character…"
-			onclick={() => {
-				ui.importSource = 'device';
-				sheet('import');
-			}}><Download size={16} /><span class="row-name">Import character…</span></button
-		>
+		<NewCharacterButton row />
 		{#if !isDemo()}<button
 				class="row"
 				role="menuitem"
@@ -484,8 +463,10 @@
 				class="row"
 				role="menuitem"
 				aria-label="Delete character…"
-				onclick={() => sheet('delete')}
-				><Trash size={16} /><span class="row-name">Delete character…</span></button
+				onclick={() => {
+					ui.deleting = doc.id;
+					sheet('delete');
+				}}><Trash size={16} /><span class="row-name">Delete character…</span></button
 			>{/if}
 		<hr />
 		<button

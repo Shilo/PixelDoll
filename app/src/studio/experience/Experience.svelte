@@ -2,6 +2,8 @@
 	import { onMount, tick } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import Toolbar from '../Toolbar.svelte';
+	import CharacterActions from '../CharacterActions.svelte';
+	import NewCharacterButton from '../NewCharacterButton.svelte';
 	import PhonePanel from '../PhonePanel.svelte';
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
@@ -27,9 +29,7 @@
 		Play,
 		Pause,
 		Grid2x2,
-		TriangleAlert,
-		Download,
-		Plus
+		TriangleAlert
 	} from '../icons.ts';
 	import { directionInfo, directionLabel } from './movement.ts';
 	import { characterFacts, groupOf, moveLabel } from '../model.ts';
@@ -438,36 +438,25 @@
 					placeholder={g.sheet ? 'Search' : 'Search characters'}
 					bind:value={search}
 				/>
-				{#if g.sheet}<button
-						class="bu-action cast-action"
-						data-variant="outline"
-						aria-label="New character"
-						onclick={() => (ui.sheet = 'create')}><Plus size={16} /><span>New</span></button
-					><button
-						class="bu-action cast-action"
-						data-variant="outline"
-						aria-label="Import"
-						title="Import"
-						onclick={() => {
-							ui.importSource = 'device';
-							ui.sheet = 'import';
-						}}><Download size={16} /></button
-					>{/if}
+				{#if g.sheet}<NewCharacterButton compact />{/if}
 			</div>
 			<div class="character-rows">
 				{#each list as p (p.id)}
 					{@const facts = p.facts ?? openedFacts.get(p.id)}
-					<button
-						class="bu-action character-row"
-						data-variant="row"
-						aria-pressed={p.id === doc.id}
-						onclick={() => pick(p.id)}
-						><CharacterThumb id={p.id} name={p.name} /><span
-							><strong>{p.name.replace(/ \(demo\)$/, '')}</strong>{#if facts}<small>{facts}</small
-								>{/if}</span
-						></button
-					>
+					<CharacterActions id={p.id} name={p.name}>
+						<button
+							class="bu-action character-row"
+							data-variant="row"
+							aria-pressed={p.id === doc.id}
+							onclick={() => pick(p.id)}
+							><CharacterThumb id={p.id} name={p.name} /><span
+								><strong>{p.name.replace(/ \(demo\)$/, '')}</strong>{#if facts}<small>{facts}</small
+									>{/if}</span
+							></button
+						>
+					</CharacterActions>
 				{:else}<p class="muted">No matching characters</p>{/each}
+				<NewCharacterButton row />
 			</div>
 			<button
 				class="bu-action customize-action"

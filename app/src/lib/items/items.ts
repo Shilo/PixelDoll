@@ -665,6 +665,8 @@ export const editGens = (canvas: { w: number; h: number }) => {
 	const s = Math.max(canvas.w, canvas.h);
 	return s <= 128 ? 10 : s <= 170 ? 15 : 25;
 };
+export const itemGenerationMinutes = (calls: number) => 5 + Math.ceil(calls / 3) * 2;
+
 export function planGens(
 	p: { kind: CallKind; cells: string[] }[],
 	gridCell = { w: 64, h: 64 }

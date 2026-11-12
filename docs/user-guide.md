@@ -65,6 +65,7 @@ Character menu → **New character…**
 
 1. Enter a **Name** in the title bar for your library and exports. It is not sent as part of the prompt.
 2. In **Appearance**, add **Details** and choose Kind, Build, Proportions or Skin. **Not set** adds no extra hint.
+   New characters request plain white underwear. Turn on **Nude**, below Skin, only if you want nothing worn.
    Switch to **Prompt** to edit the exact V3 text. Complete lines such as `Kind: Elf` update the matching control; other
    prose stays in Details. The muted preview and Copy button always use the complete prompt.
 3. Choose a **Body size** preset (48, 64, 96 or 128 px), or type 32–256 pixels in 4px increments. This is V3's source canvas,
@@ -87,7 +88,8 @@ V3 always creates all eight original views. PixelDoll pads and registers them, k
 selected mirrors. The standing views appear in the creator as soon as they are drawn; they all arrive together. Asymmetric details change sides in a mirrored view; use an independent view
 when that matters. A result that does not fit the chosen frame stops with a size error instead of silently cropping it.
 
-New characters have plain bare skin with nothing worn, so every item you add sits directly on the body.
+Underwear is part of the base, not a removable item, and may show through open clothing. **Nude** requests plain bare skin
+with nothing worn instead. These are generation instructions, not a guarantee of coverage; review the generated character.
 
 Keep this tab open while PixelLab responds; you can keep dressing existing characters. After reopening, PixelDoll can resume requests with a
 known job ID and reuse saved results. If a submitted request has an unknown outcome, generation stops for review in

@@ -134,6 +134,32 @@ async function releaseProjectTransaction(page: Page) {
 	);
 }
 
+test('externally refreshed playback settings rebuild the already prepared ZIP', async ({
+	page
+}, info) => {
+	await savedExport(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).check();
+	const button = dialog.getByRole('button', { name: /^Download ZIP/ });
+	await expect(button).toBeEnabled();
+	await page.evaluate(async () => {
+		const path = '/src/lib/store/export-settings.ts';
+		const { saveExportSetting } = await import(path);
+		await saveExportSetting({ animation: 'walk', playOnce: true });
+	});
+	await expect(dialog.locator('.export-summary dd').first()).toHaveText('Walk');
+	await expect(button).toBeEnabled();
+	const [download] = await Promise.all([page.waitForEvent('download'), button.click()]);
+	const files = await unzip(new Uint8Array(await readFile((await download.path())!)));
+	const manifest = JSON.parse(new TextDecoder().decode(files.get('manifest.json')!));
+	expect(manifest.rig.animations.find((move: { id: string }) => move.id === 'walk').loop).toBe(
+		false
+	);
+});
+
 test('loading global preferences preserves native focus and permits settings navigation before the read completes', async ({
 	page
 }, info) => {
@@ -2774,7 +2800,11 @@ test('Share choices reset to the current stage when switching characters', async
 	await page.getByRole('button', { name: /Download ZIP/ }).click();
 	const bytes = await readFile((await (await download).path())!);
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
 	await page
 		.getByLabel('Character ZIP', { exact: true })
 		.setInputFiles({ name: 'share-memory.zip', mimeType: 'application/zip', buffer: bytes });
