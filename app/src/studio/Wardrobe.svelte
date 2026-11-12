@@ -17,8 +17,7 @@
 		GROUPS,
 		HEALTH_LABEL,
 		healthOf,
-		missingFramesNote,
-		mirroredHandsNote
+		missingFramesNote
 	} from './model.ts';
 	import { itemKey } from '../lib/equipment/copy.ts';
 	import {
@@ -145,8 +144,7 @@
 				free,
 				paid: others.filter((x) => x.fit === 'remake'),
 				worn: items.some((i) => doc.items[i.slot] === i.id) || g.slots.some((s) => !!doc.drafts[s]),
-				choices: m ? groupRandomChoices(g.id).length : 0,
-				handNote: m && (g.id === 'Main hand' || g.id === 'Off hand') ? mirroredHandsNote(m.rig) : ''
+				choices: m ? groupRandomChoices(g.id).length : 0
 			};
 		})
 	);
@@ -327,7 +325,6 @@
 						>
 					</div>
 					<div class="section-body">
-						{#if s.handNote}<p class="faint small hand-note">{s.handNote}</p>{/if}
 						<div class="slot-tiles" role="group" aria-label="{s.label} items">
 							<button
 								class="bu-tile item-tile"
@@ -377,8 +374,8 @@
 										<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(it.id)}
 											>{#if seen.has(it.id)}<Thumb project={view.project} item={it} />{/if}</span
 										><span class="bu-tile-label tile-name">{it.name}</span>
-										{#if on}<span class="bu-tile-check" aria-hidden="true"><Check /></span>{/if}
-										{#if st.look || st.missing}<span
+										{#if on}<span class="bu-tile-check" aria-hidden="true"><Check /></span
+											>{:else if st.look || st.missing}<span
 												class="bu-tile-status tile-status"
 												data-tone="warning"
 												title={[st.look, st.missing].filter(Boolean).join(' · ')}

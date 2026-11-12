@@ -42,9 +42,11 @@
 		void doc.rev;
 		return view.project ? buildPresentation(view.project, { loading: doc.loading }) : null;
 	});
+	// Scale and camera follow the bare base body only, so equipping a tall hat or a long weapon never resizes the character.
 	const fitFrame = $derived.by(() => {
 		void doc.rev;
-		return view.project ? paintedFrame(view.project, view.items) : null;
+		const p = view.project;
+		return p ? paintedFrame(p, {}) : null;
 	});
 	const keys = new Set<string>();
 	let position: Vector = { x: 0, y: 0 },

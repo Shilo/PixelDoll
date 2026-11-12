@@ -5140,7 +5140,9 @@ test('tile status shows on the tile and in its name, and Recolor opens the itemâ
 		exact: true
 	});
 	await expect(hair).toHaveAttribute('data-dim');
-	await expect(hair.locator('.tile-status[data-tone="hidden"]')).toBeVisible();
+	// A worn tile shows only its check mark in the status corner; the hidden status stays in its name and dimmed art.
+	await expect(hair.locator('.bu-tile-check')).toBeVisible();
+	await expect(hair.locator('.tile-status')).toHaveCount(0);
 	await section(page, 'Hair')
 		.getByRole('button', { name: 'More options for Messy brown hair', exact: true })
 		.click();

@@ -476,7 +476,9 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 		.locator('.equipment-scroll')
 		.getByRole('button', { name: /^Lefty sword, needs a look/ });
 	await expect(fitted).toHaveAttribute('data-selected');
-	await expect(fitted.locator('.tile-status[data-tone="warning"]')).toBeVisible();
+	// Worn after the free fit: the check mark takes the status corner; the warning stays in the tile's name.
+	await expect(fitted.locator('.bu-tile-check')).toBeVisible();
+	await expect(fitted.locator('.tile-status')).toHaveCount(0);
 	const details = await selectedItemDetails(page);
 	await expect(details).toContainText('Fitted for free from Lefty’s item. Check these frames:');
 	// A re-fit's issues are its fit: nothing to accept as is; a new item for this body is offered instead.

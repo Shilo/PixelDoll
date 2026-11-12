@@ -596,10 +596,11 @@
 	width: 44px;
 	height: 44px;
 }
+/* Status shares the check mark's corner: a worn item shows the check, an unworn one its status. */
 .item-tile .tile-status {
 	position: absolute;
-	bottom: 30px;
-	left: 8px;
+	top: 5px;
+	right: 6px;
 }
 /* The art box itself is smaller than the tile so pixel art reads at about half the tile's height;
    the thumbnail still fills one axis of its box. */
@@ -632,9 +633,6 @@
 }
 .tile-progress.overlay {
 	inset: auto 0 0 auto;
-}
-.hand-note {
-	margin: 0;
 }
 .section-body .shared-items {
 	padding-top: 4px;

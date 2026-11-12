@@ -1459,9 +1459,6 @@ dialog.sheet.bottom .foot-note {
 	grid-column: 1 / -1;
 	margin: 4px 0 0;
 }
-.hand-note {
-	margin: 0;
-}
 .unfit {
 	grid-column: 1 / -1;
 	display: flex;
