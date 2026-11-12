@@ -59,6 +59,13 @@
 	align-items: center;
 	pointer-events: auto;
 }
+/* Equal-width view tabs (as wide as the widest label, or 44 px icons) whose labels keep their bold width (Bronze
+   .bu-tab-text), so switching views never moves a label. */
+.view-modes {
+	display: grid;
+	grid-auto-flow: column;
+	grid-auto-columns: 1fr;
+}
 .header-start {
 	gap: 4px;
 	min-width: 0;
@@ -310,6 +317,10 @@
 .world-stage.live {
 	touch-action: none;
 }
+/* Over a Preview companion facing, which a click selects. */
+.world-stage.pick .world-input {
+	cursor: pointer;
+}
 .world-input {
 	position: fixed;
 	inset: 0;
@@ -492,22 +503,15 @@
 	display: flex;
 	flex: none;
 }
-/* The tabs fill the row, so there is no dead space between targets; the label carries the underline (Bronze
-   .bu-tab-label). Wardrobe starts at the list edge and the last tab sits over the slot rail column, centered with its
-   icons. */
+/* Equal-width tabs with centered labels, like Material fixed tabs and Apple segmented controls: they fill the row, so
+   there is no dead space between targets, and the label carries the underline (Bronze .bu-tab-label). */
 .equipment-modes button {
-	flex: 1;
+	flex: 1 1 0;
 	justify-content: center;
 	min-width: 44px;
 	min-height: 44px;
 	padding: 0;
 	font-size: 15px;
-}
-.equipment-modes button:first-child {
-	justify-content: flex-start;
-}
-.equipment-modes button:last-child {
-	flex: 0 0 var(--slot-rail-width);
 }
 .customize-panel {
 	display: flex;
@@ -1061,25 +1065,8 @@
 	max-width: 260px;
 	font-size: 14px;
 }
-.world-stick {
-	position: fixed;
-	width: 92px;
-	height: 92px;
-	margin: -46px;
-	border: 1px solid var(--bu-border);
-	background: var(--bu-gesture-track);
-	border-radius: 50%;
-	pointer-events: none;
+.studio-app .world-stick {
 	z-index: 3;
-	display: grid;
-	place-items: center;
-}
-.world-stick span {
-	width: 24px;
-	height: 24px;
-	border-radius: 50%;
-	background: var(--bu-gesture-thumb);
-	border: 1px solid var(--bu-accent);
 }
 .experience-error {
 	position: absolute;

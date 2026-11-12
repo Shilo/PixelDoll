@@ -4,11 +4,12 @@ import {
 	hiddenSlots,
 	layerFrame,
 	rigFrame,
+	unionFrame,
 	shownItems,
 	type Frame
 } from '../../lib/compose/compose.ts';
 import type { Img } from '../../lib/image/png.ts';
-import type { Preset, Project } from '../../lib/store/manifest.ts';
+import type { DirectionName, Preset, Project } from '../../lib/store/manifest.ts';
 
 interface Pixels {
 	left: number;
@@ -61,8 +62,13 @@ const validFrame = (frame: Frame): boolean =>
 /** Stable painted union of every pose of the current visible outfit, including
  * original body rests. Frame.x/y locate the pivot within this union, exactly as
  * bakedFrame does. Use only for fitting; render/export still use the full frame.
+ * With a direction, only that facing's poses count (a mirrored facing as its source, flipped).
  * Call on project/outfit changes, never once per animation frame. */
-export function paintedFrame(project: Project, items: Preset['items']): Frame {
+export function paintedFrame(
+	project: Project,
+	items: Preset['items'],
+	direction?: DirectionName
+): Frame {
 	const m = project.manifest;
 	const baked = bakedFrame(m),
 		rig = rigFrame(m.rig);
@@ -73,20 +79,29 @@ export function paintedFrame(project: Project, items: Preset['items']): Frame {
 			? rig
 			: { w: 64, h: 64, x: 32, y: 64 };
 	if (!validFrame(baked) || !validFrame(rig)) return fallback;
-	const mirrored = m.rig.directions.some((direction) => !!direction.mirrorOf);
+	const mirrored = !direction && m.rig.directions.some((d) => !!d.mirrorOf),
+		source = direction && m.rig.directions.find((d) => d.id === direction)?.mirrorOf;
 	const on = equipped(m, items),
 		hidden = hiddenSlots(m, on);
 	let left = Infinity,
 		top = Infinity,
 		right = -Infinity,
 		bottom = -Infinity;
-	function include(image: Img | undefined, frame: Frame): boolean {
+	function include(image: Img | undefined, frame: Frame, flip: boolean): boolean {
 		if (!image || image.w !== frame.w || image.h !== frame.h || !validFrame(frame)) return false;
 		const bounds = paintedPixels(image);
 		if (bounds === false) return false;
 		if (!bounds) return true;
-		const x0 = mirrored ? Math.min(bounds.left, frame.w - bounds.right) : bounds.left;
-		const x1 = mirrored ? Math.max(bounds.right, frame.w - bounds.left) : bounds.right;
+		const x0 = flip
+			? frame.w - bounds.right
+			: mirrored
+				? Math.min(bounds.left, frame.w - bounds.right)
+				: bounds.left;
+		const x1 = flip
+			? frame.w - bounds.left
+			: mirrored
+				? Math.max(bounds.right, frame.w - bounds.left)
+				: bounds.right;
 		left = Math.min(left, x0 - frame.x);
 		right = Math.max(right, x1 - frame.x);
 		top = Math.min(top, bounds.top - frame.y);
@@ -102,7 +117,16 @@ export function paintedFrame(project: Project, items: Preset['items']): Frame {
 			for (const directions of Object.values(layer.cells ?? {})) {
 				if (!directions || typeof directions !== 'object' || Array.isArray(directions))
 					return fallback;
-				for (const cells of Object.values(directions)) {
+				const own = direction && directions[direction],
+					mirror = source && directions[source];
+				const lists: [unknown, boolean][] = !direction
+					? Object.values(directions).map((cells) => [cells, false])
+					: own
+						? [[own, false]]
+						: mirror
+							? [[mirror, true]]
+							: [];
+				for (const [cells, flip] of lists) {
 					if (!Array.isArray(cells)) return fallback;
 					for (const hash of cells) {
 						if (hash === null) continue; // Authored transparent cell.
@@ -110,7 +134,8 @@ export function paintedFrame(project: Project, items: Preset['items']): Frame {
 							typeof hash !== 'string' ||
 							!include(
 								project.layerImages?.get(layer)?.get(hash) ?? project.images.get(hash),
-								frame
+								frame,
+								flip
 							)
 						)
 							return fallback;
@@ -122,6 +147,72 @@ export function paintedFrame(project: Project, items: Preset['items']): Frame {
 	return Number.isFinite(left)
 		? { w: right - left, h: bottom - top, x: left === 0 ? 0 : -left, y: top === 0 ? 0 : -top }
 		: fallback;
+}
+
+/** Painted union of the bare body and every item the character owns, each worn alone: the room any outfit can
+ * need. It does not depend on what is worn, so fitting by it never changes when gear is equipped. Call on project
+ * changes, never once per animation frame. With a direction, only that facing counts. */
+export function reachFrame(project: Project, direction?: DirectionName): Frame {
+	let left = Infinity,
+		top = Infinity,
+		right = -Infinity,
+		bottom = -Infinity;
+	const include = (f: Frame) => {
+		left = Math.min(left, -f.x);
+		top = Math.min(top, -f.y);
+		right = Math.max(right, f.w - f.x);
+		bottom = Math.max(bottom, f.h - f.y);
+	};
+	include(paintedFrame(project, {}, direction));
+	const m = project.manifest;
+	for (const item of m.items)
+		if (item.id !== m.rig.baseItem)
+			include(paintedFrame(project, { [item.slot]: item.id }, direction));
+	return { w: right - left, h: bottom - top, x: -left, y: -top };
+}
+
+export function previewBounds(project: Project) {
+	const rig = project.manifest.rig;
+	const bodies: Frame[] = [];
+	const facings = new Map<
+		DirectionName,
+		{ x: number; y: number; standingHeight: number; reach: Frame }
+	>();
+	for (const direction of rig.directions) {
+		const body = paintedFrame(project, {}, direction.id);
+		const reference =
+			rig.rest?.[direction.id] ?? (direction.mirrorOf ? rig.rest?.[direction.mirrorOf] : undefined);
+		const image = reference && project.images.get(reference.image);
+		const pixels =
+			image && image.w === rig.cell.w && image.h === rig.cell.h ? paintedPixels(image) : null;
+		const flip = !rig.rest?.[direction.id] && !!direction.mirrorOf;
+		const referenceFrame = pixels
+			? {
+					w: pixels.right - pixels.left,
+					h: pixels.bottom - pixels.top,
+					x: rig.pivot.x - (flip ? rig.cell.w - pixels.right : pixels.left),
+					y: rig.pivot.y - pixels.top
+				}
+			: body;
+		const x = referenceFrame.w / 2 - referenceFrame.x;
+		const y = referenceFrame.h - referenceFrame.y;
+		const reach = unionFrame([reachFrame(project, direction.id), referenceFrame]);
+		facings.set(direction.id, {
+			x,
+			y,
+			standingHeight: referenceFrame.h,
+			reach: { ...reach, x: reach.x + x, y: reach.y + y }
+		});
+		const fitted = unionFrame([body, referenceFrame]);
+		bodies.push({ ...fitted, x: fitted.x + x, y: fitted.y + y });
+	}
+	return {
+		body: bodies.length ? unionFrame(bodies) : paintedFrame(project, {}),
+		reach: facings.size
+			? unionFrame([...facings.values()].map((facing) => facing.reach))
+			: reachFrame(project),
+		facings
+	};
 }
 
 /** Fit the complete pivot-relative frame into the room around the feet: `above` the pivot (the hero's share of

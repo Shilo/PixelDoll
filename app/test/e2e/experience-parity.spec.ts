@@ -2,6 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { equipmentGroup, equipmentMode } from './immersive-helpers.ts';
 import { layout } from '../../src/studio/experience/geometry.ts';
+import { focalSlot, pickFacings } from '../../src/studio/experience/lineup.ts';
+import { DIRECTIONS, type DirectionName } from '../../src/lib/rig/rig.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
@@ -163,6 +165,40 @@ test('the Characters panel keeps its Customize button on the edge margin', async
 		const g = layout(width, height, 'characters');
 		const action = (await page.locator('.customize-action').boundingBox())!;
 		expect(action.y + action.height).toBeCloseTo(height - g.edge, 0);
+	}
+});
+
+test('view tabs keep equal widths and never move when switching views', async ({ page }) => {
+	for (const [width, height] of [
+		[1440, 900],
+		[960, 800],
+		[390, 844]
+	]) {
+		await page.setViewportSize({ width, height });
+		await landing(page);
+		await page.locator('.customize-action').click();
+		const tabs = modes(page).getByRole('button');
+		const boxes = () =>
+			tabs.evaluateAll((all) =>
+				all.map((tab) => {
+					const r = tab.getBoundingClientRect(),
+						label = tab.querySelector('.bu-tab-label')!.getBoundingClientRect();
+					return [r.x, r.width, label.x, label.width].map((n) => Math.round(n * 10) / 10);
+				})
+			);
+		const first = await boxes();
+		const widths = first.map((b) => b[1]);
+		expect(Math.max(...widths) - Math.min(...widths), `equal view tabs at ${width}px`).toBeLessThan(
+			1
+		);
+		for (const name of ['Top-down', 'Side-scroller', 'Preview']) {
+			await modes(page).getByRole('button', { name, exact: true }).click();
+			await expect(modes(page).getByRole('button', { name, exact: true })).toHaveAttribute(
+				'aria-pressed',
+				'true'
+			);
+			expect(await boxes(), `${name} keeps every tab in place at ${width}px`).toEqual(first);
+		}
 	}
 });
 
@@ -493,6 +529,7 @@ test('Moves preserves paused Preview and Side-scroller enters using an authored 
 	await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
 	await expect(world(page)).toHaveAttribute('data-presentation', 'still');
+	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
 	await expect(page.getByRole('combobox', { name: 'Move', exact: true })).toHaveValue(
 		'cross-punch'
 	);
@@ -504,6 +541,8 @@ test('Moves preserves paused Preview and Side-scroller enters using an authored 
 		'aria-pressed',
 		'true'
 	);
+	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
+	await page.getByRole('button', { name: 'Face south', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
 });
 
@@ -561,12 +600,20 @@ test('imported move names remain readable, distinct and contained in Preview and
 		'Right punch (right-punch)',
 		longLabel
 	]);
+	await expect(move).toHaveValue('default');
+	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
+	const inspectAction = page
+		.getByRole('toolbar', { name: 'Preview controls', exact: true })
+		.getByRole('button', { name: 'Inspect', exact: true });
+	await expect(inspectAction).toHaveText('');
+	await expect(inspectAction).toHaveAttribute('title', 'Inspect');
 	await move.selectOption('right_punch');
 	await expect(move).toHaveValue('right_punch');
 	await move.selectOption('right-punch');
 	await expect(move).toHaveValue('right-punch');
 	await move.selectOption(longId);
 	await expect(move).toHaveAttribute('title', longLabel);
+	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
 	const sizes = [
 		{ width: 1440, height: 900 },
 		{ width: 900, height: 820 },
@@ -1791,6 +1838,175 @@ test.describe('two-finger equipment input', () => {
 	});
 });
 
+// Desktop drives the stick with a mouse; the others use real touch through CDP. Sizes mirror MOTION.joystick.
+for (const screen of [
+	{ name: 'desktop', width: 1920, height: 1080, touch: false, theme: 'dark' },
+	{ name: 'tablet portrait', width: 820, height: 1180, touch: true, theme: 'light' },
+	{ name: 'phone portrait', width: 390, height: 844, touch: true, theme: 'dark' },
+	{ name: 'phone landscape', width: 844, height: 390, touch: true, theme: 'light' },
+	{ name: 'small phone', width: 320, height: 568, touch: true, theme: 'dark' }
+] as const)
+	test.describe(`world joystick on ${screen.name}`, () => {
+		test.use({
+			viewport: { width: screen.width, height: screen.height },
+			isMobile: screen.touch,
+			hasTouch: screen.touch
+		});
+		test('the thumb center stays on a circle, follows the finger and moves the character in both live views', async ({
+			page,
+			context
+		}, testInfo) => {
+			const compact = screen.width <= 360 || screen.height <= 400;
+			const base = compact ? 128 : 144,
+				thumb = compact ? 44 : 48,
+				travel = (base - thumb) / 2 - 2;
+			await context.addInitScript((theme) => {
+				try {
+					localStorage.setItem('pixeldoll.theme', theme);
+				} catch {
+					/* Opaque initial pages have no storage. */
+				}
+			}, screen.theme);
+			await landing(page);
+			await page.locator('.customize-action').click();
+			const near = (actual: number, expected: number) =>
+				expect(Math.abs(actual - expected)).toBeLessThan(1);
+			const position = () =>
+				world(page).evaluate((element) => element.dataset.position!.split(',').map(Number));
+			// A blank world point with room for the whole base, nearest the stage center.
+			const blank = () =>
+				page.evaluate(
+					(inset) => {
+						const r = document.querySelector('.world-stage')!.getBoundingClientRect();
+						const points: { x: number; y: number }[] = [];
+						for (let y = r.top + inset; y <= r.bottom - inset; y += 8)
+							for (let x = r.left + inset; x <= r.right - inset; x += 8) points.push({ x, y });
+						const center = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+						points.sort(
+							(a, b) =>
+								Math.hypot(a.x - center.x, a.y - center.y) -
+								Math.hypot(b.x - center.x, b.y - center.y)
+						);
+						const found = points.find((p) =>
+							document.elementFromPoint(p.x, p.y)?.classList.contains('world-input')
+						);
+						return found && { x: Math.round(found.x), y: Math.round(found.y) };
+					},
+					base / 2 + 4
+				);
+			const measure = () =>
+				page.evaluate(() => {
+					const stick = document.querySelector('.world-stick');
+					if (!stick) return null;
+					const knob = stick.querySelector('.joystick-thumb')!,
+						b = stick.getBoundingClientRect(),
+						t = knob.getBoundingClientRect();
+					const probe = document.body.appendChild(document.createElement('i'));
+					probe.style.background = 'var(--bu-accent)';
+					const accent = getComputedStyle(probe).backgroundColor;
+					probe.remove();
+					return {
+						base: { x: b.x + b.width / 2, y: b.y + b.height / 2, width: b.width, height: b.height },
+						thumb: { x: t.x + t.width / 2, y: t.y + t.height / 2, width: t.width },
+						inside:
+							t.left >= b.left - 0.5 &&
+							t.right <= b.right + 0.5 &&
+							t.top >= b.top - 0.5 &&
+							t.bottom <= b.bottom + 0.5,
+						thumbEdge: getComputedStyle(knob).borderTopColor,
+						trackShadow: getComputedStyle(stick).boxShadow,
+						trackOutline: getComputedStyle(stick).outlineStyle,
+						thumbShadow: getComputedStyle(knob).boxShadow,
+						thumbOutline: getComputedStyle(knob).outlineStyle,
+						accent
+					};
+				});
+			const cdp = screen.touch ? await context.newCDPSession(page) : null;
+			const press = async (type: 'down' | 'move' | 'up', x = 0, y = 0) => {
+				if (cdp)
+					await cdp.send('Input.dispatchTouchEvent', {
+						type: type === 'down' ? 'touchStart' : type === 'move' ? 'touchMove' : 'touchEnd',
+						touchPoints: type === 'up' ? [] : [{ x, y, id: 1 }]
+					});
+				else if (type === 'down') {
+					await page.mouse.move(x, y);
+					await page.mouse.down();
+				} else if (type === 'move') await page.mouse.move(x, y, { steps: 4 });
+				else await page.mouse.up();
+			};
+			let pressed = false;
+			try {
+				for (const view of ['Top-down', 'Side-scroller'] as const) {
+					const side = view === 'Side-scroller';
+					await modes(page).getByRole('button', { name: view, exact: true }).click();
+					await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
+					// Notices overlay the world; clear them so the screenshot shows the whole stick.
+					for (const dismiss of await page
+						.getByRole('button', { name: 'Dismiss notification' })
+						.all())
+						if (await dismiss.isVisible()) await dismiss.click();
+					const start = (await blank())!;
+					expect(start, 'a blank world point fits the whole stick').toBeTruthy();
+					await press('down', start.x, start.y);
+					pressed = true;
+					await expect(page.locator('.world-stick')).toBeVisible();
+					// Measure after the entrance scale settles.
+					await page.waitForFunction(
+						() => document.querySelector('.world-stick')!.getAnimations().length === 0
+					);
+					let m = (await measure())!;
+					near(m.base.width, base);
+					near(m.base.height, side ? thumb + 4 : base);
+					near(m.thumb.width, thumb);
+					near(m.thumb.x, start.x);
+					near(m.thumb.y, start.y);
+					// Past full throw on a diagonal: the thumb stops inside the ring and the ring follows.
+					const finger = side
+						? { x: start.x - 100, y: start.y + 50 }
+						: { x: start.x + 80, y: start.y - 80 };
+					await press('move', (start.x + finger.x) / 2, (start.y + finger.y) / 2);
+					await press('move', finger.x, finger.y);
+					await expect.poll(async () => Math.round((await measure())!.thumb.x)).toBe(finger.x);
+					m = (await measure())!;
+					expect(m.inside).toBe(true);
+					near(Math.hypot(m.thumb.x - m.base.x, m.thumb.y - m.base.y), travel);
+					expect(m.thumbEdge, 'the thumb is outlined in the theme accent').toBe(m.accent);
+					for (const treatment of [m.trackShadow, m.trackOutline, m.thumbShadow, m.thumbOutline])
+						expect(treatment, 'the joystick has one edge without a halo, keyline or shadow').toBe(
+							'none'
+						);
+					if (side) {
+						near(m.thumb.y, start.y);
+						near(m.base.y, start.y);
+					} else near(m.thumb.y, finger.y);
+					if (side) {
+						await expect.poll(async () => (await position())[0]).toBeLessThan(-2);
+						expect((await position())[1]).toBe(0);
+					} else
+						await expect
+							.poll(async () => {
+								const [x, y] = await position();
+								return x > 2 && y > 2;
+							})
+							.toBe(true);
+					await testInfo.attach(`${screen.name}, ${view}`, {
+						body: await page.screenshot(),
+						contentType: 'image/png'
+					});
+					await press('up');
+					pressed = false;
+					await expect(page.locator('.world-stick')).toHaveCount(0);
+					const stopped = await position();
+					await page.waitForTimeout(120);
+					expect(await position()).toEqual(stopped);
+				}
+			} finally {
+				if (pressed) await press('up');
+				await cdp?.detach();
+			}
+		});
+	});
+
 test('category Random is one named undo step and Random look stays reachable on a 320 px phone', async ({
 	page
 }) => {
@@ -2017,6 +2233,15 @@ test('short tab labels, the character name and sheet Done buttons keep 44 px tar
 		expect(box.width).toBeGreaterThanOrEqual(44);
 		expect(box.height).toBeGreaterThanOrEqual(44);
 	}
+	// Equal-width tabs fill the row, and the slot rail ends flush with the tab bar's right edge.
+	const row = await tabs.evaluate((el) => ({
+		bar: el.getBoundingClientRect().toJSON(),
+		widths: [...el.querySelectorAll('[role=tab]')].map((t) => t.getBoundingClientRect().width),
+		rail: document.querySelector('.slot-rail')?.getBoundingClientRect().toJSON()
+	}));
+	expect(Math.max(...row.widths) - Math.min(...row.widths)).toBeLessThanOrEqual(1);
+	expect(row.widths.reduce((a, b) => a + b, 0)).toBeCloseTo(row.bar.width, 0);
+	if (row.rail) expect(row.rail.right).toBeCloseTo(row.bar.right, 0);
 	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
 	const done = page
 		.getByRole('dialog', { name: 'Inspect character', exact: true })
@@ -2035,4 +2260,632 @@ test('short tab labels, the character name and sheet Done buttons keep 44 px tar
 			].every(([px, py]) => el.contains(document.elementFromPoint(px, py)));
 		})
 	).toBe(true);
+});
+
+test.describe('Preview facing lineup', () => {
+	// The dev server serves the app's modules, so a check can give the demo character any set of directions.
+	test.use({ baseURL: `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}` });
+
+	test('wrapped Preview controls reserve their actual height above the panel', async ({ page }) => {
+		await customize(page);
+		await pause(page);
+		await page.evaluate(async (directions) => {
+			const path = '/src/studio/state.svelte.ts';
+			const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			const m = s.store.project!.manifest;
+			const body = m.items.find((item) => item.id === m.rig.baseItem)!;
+			m.items = [body];
+			m.rig.directions = directions.map((id) => ({ id }));
+			for (const layer of body.layers)
+				for (const cells of Object.values(layer.cells ?? {}))
+					for (const direction of directions) cells[direction] = cells.south;
+			s.doc.items = {};
+			s.store.project = { ...s.store.project!, manifest: { ...m } };
+			s.doc.rev++;
+		}, DIRECTIONS);
+		const heights = new Set<number>();
+		for (const theme of ['dark', 'light'] as const) {
+			await page.evaluate(async (theme) => {
+				const path = '/src/studio/state.svelte.ts';
+				(await import(path)).ui.theme = theme;
+			}, theme);
+			for (const [width, height] of [
+				[500, 700],
+				[444, 700],
+				[1000, 700],
+				[500, 400],
+				[320, 400],
+				[390, 844],
+				[844, 390],
+				[1920, 1080],
+				[500, 700]
+			]) {
+				await page.setViewportSize({ width, height });
+				await expect(page.locator('.world-actors')).toHaveJSProperty('width', width);
+				const controls = page.getByRole('toolbar', { name: 'Preview controls' });
+				await expect
+					.poll(
+						async () => {
+							const bar = (await controls.boundingBox())!;
+							const top = await page
+								.locator('.experience')
+								.evaluate((element) =>
+									Number.parseFloat(getComputedStyle(element).getPropertyValue('--playback-top'))
+								);
+							return Math.abs(top - bar.y);
+						},
+						{ message: `${theme} ${width}×${height}: geometry tracks the wrapped toolbar` }
+					)
+					.toBeLessThanOrEqual(1);
+				const bar = (await controls.boundingBox())!;
+				heights.add(Math.round(bar.height));
+				const bottom = await page.locator('.world-actors').evaluate((canvas: HTMLCanvasElement) => {
+					const data = canvas
+						.getContext('2d')!
+						.getImageData(0, 0, canvas.width, canvas.height).data;
+					let bottom = 0;
+					for (let offset = 3; offset < data.length; offset += 4)
+						if (data[offset] > 128)
+							bottom = Math.max(bottom, Math.floor(offset / 4 / canvas.width) + 1);
+					return bottom / (canvas.width / innerWidth);
+				});
+				expect(
+					bottom,
+					`${theme} ${width}×${height}: characters and rings clear controls`
+				).toBeLessThanOrEqual(bar.y - 8);
+				const panel = await page.locator('.equipment-rail').boundingBox();
+				if (panel && panel.width > width / 2)
+					expect(
+						bar.y + bar.height,
+						`${theme} ${width}×${height}: controls clear the sheet`
+					).toBeLessThanOrEqual(panel.y - 8);
+				for (const box of await controls
+					.getByRole('button')
+					.evaluateAll((buttons) =>
+						buttons
+							.filter((button) => button.getClientRects().length)
+							.map((button) => button.getBoundingClientRect().toJSON())
+					)) {
+					expect(box.width).toBeGreaterThanOrEqual(44);
+					expect(box.height).toBeGreaterThanOrEqual(44);
+				}
+			}
+		}
+		expect([...heights].some((height) => height >= 100)).toBe(true);
+		expect([...heights].some((height) => height >= 146)).toBe(true);
+		expect(heights.has(54)).toBe(true);
+		const views = page.getByRole('group', { name: 'Character view', exact: true });
+		for (const mode of ['Top-down', 'Side-scroller', 'Preview']) {
+			await views.getByRole('button', { name: mode, exact: true }).click();
+			const expected =
+				mode === 'Preview'
+					? (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!.height
+					: 54;
+			await expect
+				.poll(() =>
+					page
+						.locator('.experience')
+						.evaluate((element) =>
+							Number.parseFloat(getComputedStyle(element).getPropertyValue('--playback-height'))
+						)
+				)
+				.toBe(expected);
+		}
+	});
+
+	for (const density of [1, 2])
+		test.describe(`floor rings at DPR ${density}`, () => {
+			test.use({ deviceScaleFactor: density });
+			test('grounds offset body art on the selected ring in every direction', async ({ page }) => {
+				await page.setViewportSize({ width: 1920, height: 1080 });
+				await customize(page);
+				await pause(page);
+				const directions = [
+					'south',
+					'south-east',
+					'east',
+					'north-east',
+					'north',
+					'north-west',
+					'west',
+					'south-west'
+				] as const;
+				await page.evaluate(async (directions) => {
+					const path = '/src/studio/state.svelte.ts';
+					const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+					const project = s.store.project!,
+						m = project.manifest;
+					const body = m.items.find((item) => item.id === m.rig.baseItem)!;
+					m.items = [body];
+					m.rig.cell = { w: 64, h: 64 };
+					m.rig.pivot = { x: 32, y: 56 };
+					m.rig.rest = undefined;
+					m.rig.directions = directions.map((id) => ({ id }));
+					m.rig.animations = [
+						{ ...m.rig.animations[0], id: 'walk', cells: 1, frames: [{ cell: 0, ms: 400 }] }
+					];
+					body.regions = undefined;
+					body.materials = [];
+					body.layers = [{ id: 'main', role: 'fg', z: 0, cells: { walk: {} } }];
+					for (const [index, direction] of directions.entries()) {
+						const hash = `sha256:offset-${direction}` as const;
+						const data = new Uint8ClampedArray(64 * 64 * 4);
+						const left = 5 + index * 5,
+							bottom = 44 + index * 2;
+						for (let row = bottom - (24 + index * 3); row < bottom; row++)
+							for (let column = left; column < left + 12; column++)
+								data.set([31 + index * 20, 47, 233, 255], (row * 64 + column) * 4);
+						project.images.set(hash, { w: 64, h: 64, data });
+						body.layers[0].cells!.walk[direction] = [hash];
+					}
+					s.doc.items = {};
+					s.ui.anim = 'walk';
+					s.ui.dir = 'south';
+					s.ui.frame = 0;
+					s.doc.rev++;
+					const ellipse = CanvasRenderingContext2D.prototype.ellipse;
+					CanvasRenderingContext2D.prototype.ellipse = function (...args) {
+						if (
+							this.canvas.classList.contains('world-actors') &&
+							(Math.abs(this.globalAlpha - 0.85) < 0.01 || Math.abs(this.globalAlpha - 0.3) < 0.01)
+						)
+							this.canvas.dataset[this.globalAlpha > 0.5 ? 'groundRing' : 'hoverRing'] =
+								JSON.stringify({
+									x: args[0],
+									y: args[1],
+									ry: args[3],
+									direction: s.ui.dir
+								});
+						return ellipse.apply(this, args);
+					};
+				}, directions);
+				for (const [index, direction] of directions.entries()) {
+					await page.evaluate(async (direction) => {
+						const path = '/src/studio/state.svelte.ts';
+						(await import(path)).ui.dir = direction;
+					}, direction);
+					await expect(world(page)).toHaveAttribute('data-facing', direction);
+					await expect
+						.poll(
+							() =>
+								page.locator('.world-actors').evaluate((canvas: HTMLCanvasElement, index) => {
+									const ring = JSON.parse(canvas.dataset.groundRing ?? 'null');
+									const pixels = canvas
+										.getContext('2d')!
+										.getImageData(0, 0, canvas.width, canvas.height).data;
+									let left = Infinity,
+										right = -Infinity,
+										top = Infinity,
+										bottom = -Infinity;
+									for (let offset = 0; offset < pixels.length; offset += 4) {
+										if (
+											pixels[offset] !== 31 + index * 20 ||
+											pixels[offset + 1] !== 47 ||
+											pixels[offset + 2] !== 233 ||
+											pixels[offset + 3] !== 255
+										)
+											continue;
+										const column = (offset / 4) % canvas.width,
+											row = Math.floor(offset / 4 / canvas.width);
+										left = Math.min(left, column);
+										right = Math.max(right, column + 1);
+										top = Math.min(top, row);
+										bottom = Math.max(bottom, row + 1);
+									}
+									const density = canvas.width / innerWidth;
+									const rise =
+										ring &&
+										Math.floor(Math.min((bottom - top) / density / 32, ring.ry / 2) * density) /
+											density;
+									return (
+										ring &&
+										ring.direction ===
+											document.querySelector('.world-stage')?.getAttribute('data-facing') &&
+										Math.abs((left + right) / 2 / density - ring.x) <= 1 &&
+										rise > 0 &&
+										Math.abs(bottom / density - ring.y - rise) <= 1 / density &&
+										ring.y + ring.ry > bottom / density
+									);
+								}, index),
+							{ message: `${direction}: centered ring rises conservatively into the feet` }
+						)
+						.toBe(true);
+					const companion = await page
+						.locator('.world-actors')
+						.evaluate((canvas: HTMLCanvasElement, selectedIndex) => {
+							const pixels = canvas
+								.getContext('2d')!
+								.getImageData(0, 0, canvas.width, canvas.height).data;
+							let target = -1,
+								left = Infinity,
+								right = -Infinity,
+								top = Infinity,
+								bottom = -Infinity;
+							for (let offset = 0; offset < pixels.length; offset += 4) {
+								const index = (pixels[offset] - 31) / 20;
+								if (
+									!Number.isInteger(index) ||
+									index < 0 ||
+									index > 7 ||
+									index === selectedIndex ||
+									pixels[offset + 1] !== 47 ||
+									pixels[offset + 2] !== 233 ||
+									pixels[offset + 3] !== 255
+								)
+									continue;
+								if (target < 0) target = index;
+								if (target !== index) continue;
+								const column = (offset / 4) % canvas.width,
+									row = Math.floor(offset / 4 / canvas.width);
+								left = Math.min(left, column);
+								right = Math.max(right, column + 1);
+								top = Math.min(top, row);
+								bottom = Math.max(bottom, row + 1);
+							}
+							const density = canvas.width / innerWidth;
+							return {
+								target,
+								x: (left + right) / 2 / density,
+								y: (top + bottom) / 2 / density,
+								bottom: bottom / density,
+								height: (bottom - top) / density,
+								density
+							};
+						}, index);
+					expect(companion.target).toBeGreaterThanOrEqual(0);
+					await page.mouse.move(companion.x, companion.y);
+					await expect(world(page)).toHaveClass(/\bpick\b/);
+					await expect
+						.poll(
+							() =>
+								page.locator('.world-actors').evaluate((canvas, companion) => {
+									const ring = JSON.parse(
+										(canvas as HTMLCanvasElement).dataset.hoverRing ?? 'null'
+									);
+									const rise =
+										ring &&
+										Math.floor(Math.min(companion.height / 32, ring.ry / 2) * companion.density) /
+											companion.density;
+									return (
+										ring &&
+										Math.abs(ring.x - companion.x) <= 1 &&
+										rise > 0 &&
+										Math.abs(companion.bottom - ring.y - rise) <= 1 / companion.density
+									);
+								}, companion),
+							{ message: `${direction}: companion hover uses its own standing height` }
+						)
+						.toBe(true);
+					await page.mouse.move(0, 0);
+				}
+			});
+		});
+
+	test('renders synchronized companions, selects them, and reports incomplete gear', async ({
+		page
+	}) => {
+		await page.setViewportSize({ width: 1920, height: 1080 });
+		await customize(page);
+		await pause(page);
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			const project = s.store.project!,
+				m = project.manifest,
+				base = m.items.find((item) => item.id === m.rig.baseItem)!,
+				layer = base.layers[0];
+			m.rig.directions = [{ id: 'south' }, { id: 'north' }, { id: 'east' }];
+			m.rig.animations = [
+				{
+					...m.rig.animations[0],
+					id: 'walk',
+					cells: 2,
+					frames: [
+						{ cell: 0, ms: 400 },
+						{ cell: 1, ms: 400 }
+					]
+				}
+			];
+			base.regions = undefined;
+			base.materials = [];
+			base.layers = [layer];
+			layer.cells = { walk: {} };
+			for (const [index, direction] of (['south', 'north', 'east'] as const).entries()) {
+				layer.cells.walk[direction] = [];
+				for (let cell = 0; cell < 2; cell++) {
+					const hash = `sha256:lineup-${direction}-${cell}` as const,
+						{ w, h } = m.rig.cell,
+						data = new Uint8ClampedArray(w * h * 4);
+					for (let row = m.rig.pivot.y - 40; row < m.rig.pivot.y; row++)
+						for (let column = m.rig.pivot.x - 10; column < m.rig.pivot.x + 10; column++)
+							data.set([31 + index * 60, 47 + cell * 100, 233, 255], (row * w + column) * 4);
+					project.images.set(hash, { w, h, data });
+					layer.cells.walk[direction]!.push(hash);
+				}
+			}
+			m.items = [base];
+			s.doc.items = {};
+			s.ui.anim = 'walk';
+			s.ui.dir = 'south';
+			s.ui.frame = 0;
+			s.doc.rev++;
+		});
+		const painted = () =>
+			page.locator('.world-actors').evaluate((canvas: HTMLCanvasElement) => {
+				const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data,
+					boxes = [0, 1, 2].map(() => ({
+						left: Infinity,
+						right: -Infinity,
+						top: Infinity,
+						bottom: -Infinity,
+						cells: [] as number[]
+					}));
+				for (let offset = 0; offset < data.length; offset += 4) {
+					const index = (data[offset] - 31) / 60,
+						cell = (data[offset + 1] - 47) / 100;
+					if (
+						!Number.isInteger(index) ||
+						index < 0 ||
+						index > 2 ||
+						![0, 1].includes(cell) ||
+						data[offset + 2] !== 233 ||
+						data[offset + 3] !== 255
+					)
+						continue;
+					const box = boxes[index],
+						column = (offset / 4) % canvas.width,
+						row = Math.floor(offset / 4 / canvas.width);
+					box.left = Math.min(box.left, column);
+					box.right = Math.max(box.right, column);
+					box.top = Math.min(box.top, row);
+					box.bottom = Math.max(box.bottom, row);
+					if (!box.cells.includes(cell)) box.cells.push(cell);
+				}
+				return boxes;
+			});
+		await expect
+			.poll(async () => (await painted()).map((box) => box.cells))
+			.toEqual([[0], [0], [0]]);
+		const boxes = await painted();
+		for (const box of boxes) expect(box.right - box.left).toBeGreaterThan(20);
+		const ordered = [...boxes].sort((before, after) => before.left - after.left);
+		for (let index = 1; index < ordered.length; index++)
+			expect(ordered[index].left).toBeGreaterThan(ordered[index - 1].right);
+		await world(page).focus();
+		await page.keyboard.press('.');
+		await expect
+			.poll(async () => (await painted()).map((box) => box.cells))
+			.toEqual([[1], [1], [1]]);
+		await page.getByRole('button', { name: 'Play', exact: true }).click();
+		await expect
+			.poll(async () => (await painted()).map((box) => box.cells))
+			.toEqual([[0], [0], [0]]);
+		await pause(page);
+		const north = boxes[1],
+			pointer = { x: (north.left + north.right) / 2, y: (north.top + north.bottom) / 2 };
+		await page.mouse.move(pointer.x, pointer.y);
+		await expect(world(page)).toHaveClass(/\bpick\b/);
+		await page.mouse.click(pointer.x, pointer.y);
+		await expect(world(page)).toHaveAttribute('data-facing', 'north');
+		await page.getByRole('button', { name: 'Characters', exact: true }).hover();
+		await expect(world(page)).not.toHaveClass(/\bpick\b/);
+		await page.mouse.move(pointer.x, pointer.y);
+		await world(page).focus();
+		await page.keyboard.press('2');
+		await expect(world(page)).not.toHaveClass(/\bpick\b/);
+		await page.keyboard.press('1');
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			const m = s.store.project!.manifest,
+				base = m.items[0];
+			m.items.push({
+				...base,
+				id: 'lineup-hat',
+				name: 'Lineup hat',
+				slot: 'head',
+				coverage: ['walk/south/0', 'walk/south/1'],
+				layers: [{ ...base.layers[0], cells: { walk: { south: [null, null] } } }]
+			});
+			s.doc.items = { head: 'lineup-hat' };
+			s.ui.dir = 'south';
+			s.doc.rev++;
+		});
+		await expect(world(page)).toHaveAttribute('data-facing', 'south');
+		await expect(page.locator('.world-coverage')).toContainText('missing walk / North frames');
+		await expect(page.locator('.world-coverage')).toContainText('missing walk / East frames');
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			s.store.project!.manifest.items[1].pending = ['walk/north/0', 'walk/east/0'];
+			s.doc.rev++;
+		});
+		await expect(page.locator('.world-loading-items')).toContainText('Lineup hat loading');
+		await expect(page.locator('.world-loading-items')).toContainText('North, East');
+		await expect(page.locator('.world-coverage').filter({ hasText: 'missing walk' })).toHaveCount(
+			0
+		);
+	});
+
+	type Rig = [DirectionName, DirectionName?][];
+	const sets: [string, Rig][] = [
+		['one direction', [['south']]],
+		['side-scroller', [['east'], ['west', 'east']]],
+		['front and back', [['south'], ['north']]],
+		['three directions', [['south'], ['east'], ['north']]],
+		['top-down 4', [['south'], ['east'], ['north'], ['west', 'east']]],
+		[
+			'diagonal 4',
+			[['south-east'], ['north-east'], ['south-west', 'south-east'], ['north-west', 'north-east']]
+		],
+		['five directions', [['south'], ['south-east'], ['east'], ['north-east'], ['north']]],
+		['six directions', [['south'], ['south-east'], ['east'], ['north-east'], ['north'], ['west']]],
+		[
+			'seven directions',
+			[['south'], ['south-east'], ['east'], ['north-east'], ['north'], ['west'], ['south-west']]
+		],
+		[
+			'top-down 8',
+			[
+				['south'],
+				['south-east'],
+				['east'],
+				['north-east'],
+				['north'],
+				['north-west', 'north-east'],
+				['west', 'east'],
+				['south-west', 'south-east']
+			]
+		],
+		[
+			'unique 8',
+			[
+				['south'],
+				['south-east'],
+				['east'],
+				['north-east'],
+				['north'],
+				['north-west'],
+				['west'],
+				['south-west']
+			]
+		]
+	];
+	// Ultra-wide to phones, landscape and portrait.
+	const sizes = [
+		[3440, 1440],
+		[2560, 1440],
+		[1920, 1080],
+		[1440, 900],
+		[1366, 768],
+		[1024, 1366],
+		[768, 1024],
+		[844, 390],
+		[390, 844]
+	] as const;
+
+	for (const [name, rig] of sets)
+		test(`${name}: every selection shows the preferred facings that fit, inside the stage`, async ({
+			page
+		}) => {
+			test.slow();
+			await customize(page);
+			await pause(page);
+			const available = rig.map(([id]) => id);
+			// Directions the demo lacks reuse a drawn facing's cells, so each one plays a real move.
+			await page.evaluate(async (rig) => {
+				const path = '/src/studio/state.svelte.ts',
+					s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+				const m = s.store.project!.manifest,
+					drawn: Record<string, string> = {
+						'south-east': 'south',
+						'south-west': 'south',
+						'north-east': 'north',
+						'north-west': 'north',
+						west: 'east'
+					};
+				for (const item of m.items)
+					for (const layer of item.layers)
+						for (const directions of Object.values(layer.cells ?? {}) as Record<string, unknown>[])
+							for (const [direction, from] of Object.entries(drawn))
+								directions[direction] ??= directions[from];
+				m.rig.directions = rig.map(([id, mirrorOf]) => (mirrorOf ? { id, mirrorOf } : { id }));
+				s.store.project = { ...s.store.project!, manifest: { ...m } };
+				s.ui.dir = rig[0][0];
+				s.doc.rev++;
+			}, rig);
+			await expect(
+				page.getByRole('group', { name: 'Direction', exact: true }).getByRole('button')
+			).toHaveCount(available.length);
+			const counts = new Map<string, number>();
+			await page.evaluate(() => {
+				const ellipse = CanvasRenderingContext2D.prototype.ellipse;
+				CanvasRenderingContext2D.prototype.ellipse = function (...args) {
+					if (
+						this.canvas.classList.contains('world-actors') &&
+						Math.abs(this.globalAlpha - 0.85) < 0.01
+					) {
+						this.canvas.dataset.targetX = String(args[0]);
+						this.canvas.dataset.targetDirection =
+							document.querySelector('.world-stage')?.getAttribute('data-facing') ?? '';
+					}
+					return ellipse.apply(this, args);
+				};
+			});
+			for (const [width, height] of sizes) {
+				await page.setViewportSize({ width, height });
+				const targets = new Map<number, number>();
+				for (const selected of available) {
+					await page.evaluate(async (dir) => {
+						const path = '/src/studio/state.svelte.ts';
+						(await import(path)).ui.dir = dir;
+					}, selected);
+					await expect(world(page)).toHaveAttribute('data-facing', selected);
+					await expect
+						.poll(async () =>
+							((await world(page).getAttribute('data-lineup')) ?? '').split(' ').includes(selected)
+						)
+						.toBe(true);
+					const shown = ((await world(page).getAttribute('data-lineup')) ?? '').split(' ');
+					const label = `${name} at ${width}×${height}, ${selected} selected`;
+					expect(shown, label).toEqual(pickFacings(available, selected, shown.length));
+					expect(shown.indexOf(selected), label).toBe(focalSlot(shown.length));
+					if (shown.length > 1) {
+						const canvas = page.locator('.world-actors');
+						await expect(canvas).toHaveAttribute('data-target-direction', selected);
+						const target = Number(await canvas.getAttribute('data-target-x'));
+						const controls = await page
+							.getByRole('toolbar', { name: 'Preview controls' })
+							.boundingBox();
+						if (shown.length % 2)
+							expect(
+								Math.abs(target - controls!.x - controls!.width / 2),
+								label
+							).toBeLessThanOrEqual(1);
+						else expect(target, label).toBeLessThan(controls!.x + controls!.width / 2);
+						if (targets.has(shown.length)) expect(target, label).toBe(targets.get(shown.length));
+						else targets.set(shown.length, target);
+					}
+					counts.set(
+						`${width}×${height}`,
+						Math.max(counts.get(`${width}×${height}`) ?? 0, shown.length)
+					);
+				}
+				// Nothing is drawn past the stage: the row never reaches under the panel or off screen.
+				const g = layout(width, height, 'studio');
+				const painted = await page
+					.locator('.world-actors')
+					.evaluate((canvas: HTMLCanvasElement) => {
+						const c = canvas.getContext('2d')!,
+							data = c.getImageData(0, 0, canvas.width, canvas.height).data,
+							scale = canvas.width / innerWidth;
+						let left = Infinity,
+							right = -Infinity,
+							bottom = -Infinity;
+						for (let y = 0; y < canvas.height; y++)
+							for (let x = 0; x < canvas.width; x++)
+								if (data[(y * canvas.width + x) * 4 + 3]) {
+									left = Math.min(left, x / scale);
+									right = Math.max(right, (x + 1) / scale);
+									// The faint reflection aside, the lowest solid pixel: the ring, or the feet without one.
+									if (data[(y * canvas.width + x) * 4 + 3] > 128)
+										bottom = Math.max(bottom, (y + 1) / scale);
+								}
+						return { left, right, bottom };
+					});
+				expect(painted.left, `${name} at ${width}×${height}`).toBeGreaterThanOrEqual(g.stage.l);
+				expect(painted.right, `${name} at ${width}×${height}`).toBeLessThanOrEqual(g.stage.r);
+				// The floor ring keeps clear space above the playback bar.
+				const bar = (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!;
+				const gap =
+					((await world(page).getAttribute('data-lineup')) ?? '').split(' ').length > 1 ? 12 : 8;
+				expect(painted.bottom, `${name} at ${width}×${height}`).toBeLessThanOrEqual(bar.y - gap);
+			}
+			const capacity = pickFacings(available, available[0], 5).length;
+			// Wide windows show a lineup whenever the character has a second facing to show; it never grows as
+			// the window narrows.
+			if (capacity > 1) expect(counts.get('1920×1080')).toBeGreaterThan(1);
+			const widths = ['3440×1440', '2560×1440', '1920×1080', '1366×768'].map((k) => counts.get(k)!);
+			for (let i = 1; i < widths.length; i++) expect(widths[i]).toBeLessThanOrEqual(widths[i - 1]);
+		});
 });

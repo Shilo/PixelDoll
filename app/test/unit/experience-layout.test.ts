@@ -5,10 +5,39 @@ import {
 	heroRoom,
 	heroScale,
 	layout,
-	placeWorld
+	placeWorld,
+	ringRise
 } from '../../src/studio/experience/geometry.ts';
 import { worldArt } from '../../src/studio/experience/config.ts';
 import { projection } from '../../src/studio/experience/ground.ts';
+
+describe('conservative floor ring rise', () => {
+	test('uses visible standing height and rounds down only in device pixels', () => {
+		expect(ringRise(64, 1, 20)).toBe(2);
+		expect(ringRise(48, 1, 20)).toBe(1);
+		expect(ringRise(48, 1, 20, 2)).toBe(1.5);
+		expect(ringRise(16, 0.5, 20, 2)).toBe(0);
+		expect(ringRise(63, 2, 20)).toBe(3);
+		expect(ringRise(64, 2, 20)).toBe(4);
+	});
+
+	test('caps the rise at half the ellipse depth without forcing a minimum', () => {
+		expect(ringRise(256, 4, 7, 2)).toBe(3.5);
+		expect(ringRise(64, 2, 0.5)).toBe(0);
+		expect(ringRise(0, 2, 20)).toBe(0);
+	});
+
+	for (const density of [1, 1.5, 2])
+		for (const scale of [0.35, 1, 1.75, 4.2])
+			test(`preserves conservative bounds and upscale equivalence at ${density} DPR, ${scale} scale`, () => {
+				const rise = ringRise(63, scale, 9, density);
+				expect(rise).toBeGreaterThanOrEqual(0);
+				expect(rise).toBeLessThanOrEqual((63 * scale) / 32);
+				expect(rise).toBeLessThanOrEqual(4.5);
+				expect(rise * density).toBeCloseTo(Math.round(rise * density));
+				expect(ringRise(126, scale / 2, 9, density)).toBe(rise);
+			});
+});
 
 describe('immersive stage frame fitting', () => {
 	for (const frame of [
@@ -56,6 +85,41 @@ const SIZES = [
 ] as const;
 
 describe('scene geometry', () => {
+	for (const height of [54, 100, 146, 192])
+		test(`reserves a measured ${height}px playback bar without moving its bottom edge`, () => {
+			for (const [width, viewportHeight] of [
+				[500, 700],
+				[1000, 700],
+				[844, 390]
+			]) {
+				const before = layout(width, viewportHeight, 'studio');
+				const after = layout(width, viewportHeight, 'studio', height);
+				expect(after.playbackHeight).toBe(height);
+				expect(after.playbackTop + after.playbackHeight).toBe(
+					before.playbackTop + before.playbackHeight
+				);
+				expect(after.feet.y).toBe(before.feet.y - (height - before.playbackHeight));
+				expect(after.stage).toEqual(before.stage);
+				expect(heroRoom(after).above).toBeLessThanOrEqual(heroRoom(before).above);
+			}
+		});
+
+	test('unmeasured controls and hidden Preview controls use the single-row baseline', () => {
+		expect(layout(500, 700, 'studio', 0)).toEqual(layout(500, 700, 'studio'));
+		expect(layout(500, 700, 'characters', 146)).toEqual(layout(500, 700, 'characters'));
+	});
+
+	test('hides an unusable short-phone sheet rather than covering wrapped controls', () => {
+		const before = layout(320, 400, 'studio');
+		const wrapped = layout(320, 400, 'studio', 146);
+		expect(before.sheetHeight).toBe(200);
+		expect(wrapped.sheet).toBe(true);
+		expect(wrapped.sheetHeight).toBe(0);
+		expect(wrapped.stage.r).toBe(before.stage.r);
+		expect(wrapped.playbackTop + wrapped.playbackHeight).toBeLessThanOrEqual(400);
+		expect(wrapped.feet.y).toBeGreaterThan(wrapped.stage.t);
+	});
+
 	for (const [w, h] of SIZES)
 		for (const screen of ['studio', 'characters'] as const)
 			for (const theme of ['dark', 'light'] as const)

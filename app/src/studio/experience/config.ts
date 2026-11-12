@@ -27,6 +27,9 @@ export const WORLDS: Record<
 		horizon: number;
 		/** Where the character stands, as a fraction of the image height on its vanishing line (x 0.5). */
 		floorPoint: number;
+		/** The floor's focal length in image px, measured from the tile nearest the floor point (height to width of a
+		 * square tile = rows below the horizon / focal): it sets how flat a circle on the floor looks. */
+		focal: number;
 		sample: Sample;
 	}
 > = {
@@ -37,6 +40,7 @@ export const WORLDS: Record<
 		fog: [0.145, 0.155, 0.165],
 		horizon: 0.53,
 		floorPoint: 0.8,
+		focal: 700,
 		sample: [0.58, 0.82, 0.055, 0.055]
 	},
 	light: {
@@ -46,6 +50,7 @@ export const WORLDS: Record<
 		fog: [0.94, 0.92, 0.88],
 		horizon: 0.475,
 		floorPoint: 0.8,
+		focal: 760,
 		sample: [0.57, 0.82, 0.055, 0.055]
 	}
 };
@@ -63,8 +68,13 @@ export const REFLECTION = {
 export const MOTION = {
 	speed: 95,
 	cameraResponse: 9,
-	joystickRadius: 46,
-	deadZone: 8,
+	/** Touch stick sizes in CSS px; compact applies on narrow or short screens such as phones in landscape. */
+	joystick: {
+		regular: { base: 144, thumb: 48, stroke: 2 },
+		compact: { base: 128, thumb: 44, stroke: 2 },
+		compactQuery: '(max-width: 360px), (max-height: 400px)',
+		deadZone: 8
+	},
 	tileSize: 100
 };
 
@@ -74,5 +84,11 @@ const WORLD_SIZE = [1672, 941] as const;
 /** The world image's geometry for uniform placement (geometry.ts). */
 export const worldArt = (theme: WorldTheme) => {
 	const w = WORLDS[theme];
-	return { width: WORLD_SIZE[0], height: WORLD_SIZE[1], horizon: w.horizon, floor: w.floorPoint };
+	return {
+		width: WORLD_SIZE[0],
+		height: WORLD_SIZE[1],
+		horizon: w.horizon,
+		floor: w.floorPoint,
+		focal: w.focal
+	};
 };

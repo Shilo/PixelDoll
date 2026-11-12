@@ -58,6 +58,20 @@ export const VIEW_TABS = 40;
 const PANEL_ROW = 44;
 /** The eye line sits this share of the visible character height above the feet. */
 export const EYE = 0.86;
+
+export function ringRise(
+	standingHeight: number,
+	scale: number,
+	verticalRadius: number,
+	dpr = 1
+): number {
+	const density = Math.max(1, dpr);
+	return (
+		Math.floor(Math.max(0, Math.min((standingHeight * scale) / 32, verticalRadius / 2)) * density) /
+		density
+	);
+}
+
 const GAP = 12;
 /** Stage widths below which the playback bar goes compact, then cycles facing (Play, move, four directions need ~300 px). */
 const COMPACT_STAGE = 430,
@@ -72,7 +86,9 @@ const MIN_STAGE = 200;
 /** Room above the feet a phone keeps for the hero: a whole 64 px frame at 2 whole pixels per pixel. */
 const PHONE_HERO = 128;
 
-export function layout(w: number, h: number, screen: Screen): Layout {
+export function layout(w: number, h: number, screen: Screen, measuredPlaybackHeight = 0): Layout {
+	const playbackHeight =
+		screen === 'studio' ? Math.max(PLAYBACK_HEIGHT, measuredPlaybackHeight) : PLAYBACK_HEIGHT;
 	const short = h <= 540,
 		phone = w <= 600;
 	const edge = phone ? 16 : w < 1100 ? 20 : w >= 1920 ? 32 : 24;
@@ -101,6 +117,10 @@ export function layout(w: number, h: number, screen: Screen): Layout {
 			sheetHeight = 0;
 		} else sheetHeight = h - headerBottom - tabs - STAGE_FLOOR >= MIN_SHEET ? MIN_SHEET : 0;
 	}
+	if (studio && sheet && sheetHeight) {
+		const available = h - headerBottom - tabs - STAGE_FLOOR - (playbackHeight - PLAYBACK_HEIGHT);
+		sheetHeight = available >= MIN_SHEET ? Math.min(sheetHeight, available) : 0;
+	}
 	const sheetTop = h - sheetHeight;
 	const railTop = headerBottom + (short ? 4 : 12);
 	const stage: Box = sheet
@@ -108,8 +128,7 @@ export function layout(w: number, h: number, screen: Screen): Layout {
 		: { l: 0, r: Math.max(0, w - edge - rail - GAP), t: headerBottom + tabs, b: h };
 	const stageWidth = stage.r - stage.l,
 		compactPlayback = stageWidth <= COMPACT_STAGE,
-		cycleFacing = stageWidth < CYCLE_STAGE,
-		playbackHeight = PLAYBACK_HEIGHT;
+		cycleFacing = stageWidth < CYCLE_STAGE;
 	// A phone held sideways (short, with the floating view tabs) lowers the bar to the window edge and lets the hero
 	// fill more of the little height left, so it still draws at 2 whole pixels per pixel.
 	const tight = studio && short && !sheet && tabs > 0;
@@ -184,6 +203,8 @@ export interface WorldArt {
 	/** Horizon (the eye line) and floor point as fractions of the image height; the floor point sits on the vanishing line x 0.5. */
 	horizon: number;
 	floor: number;
+	/** The floor's focal length in image px (config.ts WORLDS). */
+	focal: number;
 }
 export interface Placement {
 	scale: number;

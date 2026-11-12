@@ -4,7 +4,6 @@ import {
 	integrateMovement,
 	keyboardVector,
 	nearestDirection,
-	pointerVector,
 	unit
 } from '../../src/studio/experience/movement.ts';
 
@@ -47,16 +46,6 @@ describe('shared world movement', () => {
 		expect(unit({ x: NaN, y: 1 })).toEqual({ x: 0, y: 0 });
 		expect(unit({ x: 0.01, y: 0 }, 0.1)).toEqual({ x: 0, y: 0 });
 		expect(nearestDirection(['south'], { x: Infinity, y: 1 })).toBeNull();
-		expect(pointerVector(NaN, 1, 40)).toEqual({ x: 0, y: 0 });
-	});
-
-	test('joystick displacement converts screen y and preserves analog speed without diagonal overspeed', () => {
-		expect(pointerVector(2, 2, 40)).toEqual({ x: 0, y: 0 });
-		expect(pointerVector(20, 0, 40)).toEqual({ x: 0.5, y: -0 });
-		const diagonal = pointerVector(40, -40, 40);
-		expect(Math.hypot(diagonal.x, diagonal.y)).toBeCloseTo(1);
-		expect(diagonal.y).toBeGreaterThan(0);
-		expect(pointerVector(0, 40, 40, 0.12, true)).toEqual({ x: 0, y: 0 });
 	});
 
 	test('simulation integrates actual velocity independently of sprite coverage and bounds long frame gaps', () => {

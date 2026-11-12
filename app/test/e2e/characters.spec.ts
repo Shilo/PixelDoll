@@ -140,12 +140,13 @@ test('experimental native attack imports with warnings and exact frame stepping 
 			.getByRole('region', { name: 'Main hand', exact: true })
 			.getByRole('button', { name: /, needs a look/ })
 	).toBeVisible();
-	const pause = page.getByRole('button', { name: 'Pause', exact: true });
-	if (await pause.count()) await pause.click();
-	await page.getByRole('combobox', { name: 'Move', exact: true }).selectOption('axe-attack');
 	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
-	const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true }),
-		next = inspect.getByRole('button', { name: 'Next frame', exact: true }),
+	const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true });
+	await expect(inspect).toBeVisible();
+	const pause = inspect.getByRole('button', { name: 'Pause', exact: true });
+	if (await pause.count()) await pause.click();
+	await inspect.getByRole('combobox', { name: 'Move', exact: true }).selectOption('axe-attack');
+	const next = inspect.getByRole('button', { name: 'Next frame', exact: true }),
 		previous = inspect.getByRole('button', { name: 'Previous frame', exact: true });
 	const pixels = () =>
 		inspect
