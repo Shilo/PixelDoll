@@ -130,6 +130,7 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
 - **Stay offline.** Route `https://*.pixellab.ai/**` to fixtures or `abort()`, and keep the existing "no paid request" assertions.
 - **Before merging anything that changes timing or waits,** run it under load: `npm run e2e -- <spec> --repeat-each=10 --workers=8` with your own `E2E_PREVIEW_PORT` / `E2E_DEV_PORT` / `TEST_OUTPUT_DIR`, and once in CI mode: `CI=1 npm run e2e -- <spec> --workers=1`.
 - **Prove a timing or guard test can fail.** Temporarily break the app code it guards, confirm the test fails, then restore the file exactly.
+- **Concurrent runs build separately.** With `E2E_PREVIEW_PORT` set, `npm run e2e` (app/scripts/e2e.mjs) sets `E2E_DIST_DIR=dist-e2e-<port>`, builds into `app/dist-e2e-<port>/`, previews that folder and deletes it when the run ends. Only that wrapper sets `E2E_DIST_DIR` (app/dist-dir.ts rejects other names), so no CI variable can redirect the Pages build away from `dist/`. A shared `dist/` rebuilt by another agent's run replaced hashed chunks under a running preview server, so a lazy import 404'd and its "Part of PixelDoll could not load" toast covered dialogs: the intermittent failure of "setup and move drafts survive canceled connection" (2026-11-11).
 
 ## Open options, measured or modeled but not done
 

@@ -25,7 +25,7 @@ colors:
 typography:
   display:
     fontFamily: "Georgia, 'Times New Roman', serif"
-    fontSize: "clamp(28px, 3.2vw, 44px)"
+    fontSize: "20px"
     fontWeight: 400
     lineHeight: 1.15
   headline:
@@ -111,8 +111,8 @@ components:
   item-tile:
     textColor: "{colors.text}"
     rounded: "{rounded.control}"
-    padding: "12px 6px"
-    height: "148px"
+    padding: "6px 6px 9px"
+    height: "112px"
   item-tile-selected:
     textColor: "{colors.accent}"
     rounded: "{rounded.control}"
@@ -140,15 +140,15 @@ components:
 
 # Design System: PixelDoll
 
-All shared appearance (colors, materials, states, focus, borders, radii) comes from `@shilo/bronze-ui` 0.2.8 (`styles/tokens.css` and `styles/components.css`). The tokens above mirror its `--bu-*` variables; Bronze is the source of truth, and a change to them belongs in the Bronze repository first. Translucent materials (outline, tile, floating, action hover, selected) are derived Bronze roles, so they are described in prose and in `.impeccable/design.json` rather than as frontmatter colors. PixelDoll owns layout, geometry, spacing and the world scene (`app/src/studio/experience/layout.css`, `config.ts`, `ground.ts`), plus a few local rules noted below. The workflow contract is [docs/design/production-experience.md](docs/design/production-experience.md).
+All shared appearance (colors, materials, states, focus, borders, radii) comes from `@shilo/bronze-ui` 0.2.8 plus its unreleased additions pending release as 0.3.0 (rail tabs, item tiles, sticky section headers with `stickyFade`, edge fades and the top toast region) (`styles/tokens.css` and `styles/components.css`). The tokens above mirror its `--bu-*` variables; Bronze is the source of truth, and a change to them belongs in the Bronze repository first. Translucent materials (outline, tile, floating, action hover, selected) are derived Bronze roles, so they are described in prose and in `.impeccable/design.json` rather than as frontmatter colors. PixelDoll owns layout, geometry, spacing and the world scene (`app/src/studio/experience/layout.css`, `config.ts`, `ground.ts`), plus a few local rules noted below. The workflow contract is [docs/design/production-experience.md](docs/design/production-experience.md).
 
-This file records the current interface; it is not a new direction. Verified against the running app on 2026-11-09 (Characters, Customize with Preview, Top-down and Side-scroller, Wardrobe, Colors, Export, More and New character, at 1440×900 and 390×844, dark and light) and against the CSS cited here. Other sizes come from the stylesheets, not new captures.
+This file records the current interface; it is not a new direction. Updated 2026-11-11 for the approved Studio refinement ([UI lab 5](docs/design/2026-11-11-ui-refinement/ui-lab-5.html)) and checked against the running app at 1920×1080, 2560×1080, 1440×900, 1280×720, 1024×768, 768×1024, 390×844, 844×390 and 320×568 in dark and light.
 
 ## Overview
 
 **Creative North Star: "In character views, the character is prominent and controls are grouped around it."**
 
-Characters and Customize share a full-window world background: a photographic floor that fades into mist (dark stone in dark mode, pale polished stone in light mode). Characters centers the selected character beside the library. Customize places the character's name and description at the upper left, equipment and colors in a column on the right, and the playback controls in a small floating bar under the character. New character instead uses a full-screen form over the same world background. On phones the pieces stack: header, name, view tabs, a shorter stage, and an expandable bottom panel for equipment.
+Characters and Customize share a world background: a photographic floor that fades into mist (dark stone in dark mode, pale polished stone in light mode). It is scaled uniformly, never stretched, with its horizon on the character's eye line and its vanishing line on the character, so the feet always stand on its floor. Characters centers the selected character beside the library. Customize has an immersive top bar (no solid bar) with the character's name menu, the view tabs and the actions; equipment and colors sit in a column on the right, and the playback controls in a small floating bar just under the character's feet. New character instead uses a full-screen form over the same world background. On phones and portrait tablets the panel becomes a bottom sheet and the view tabs float under the bar.
 
 The look is calm and modern: system sans-serif text, Lucide line icons, thin borders, and a single warm bronze accent. The only serif is Georgia for screen titles and character names. The character's pixels are never lit, tinted, filtered or resized with smoothing. Internally the two world themes are called Obsidian (dark) and Porcelain (light), together "Obsidian / Porcelain Bronze" ([approved direction](docs/design/2026-10-22-redesign/round-4-discussion/current-design.md)).
 
@@ -201,13 +201,13 @@ A warm neutral palette (charcoal and parchment) with one bronze accent and four 
 
 ### Hierarchy
 
-- **Display** (Georgia 400, 1.15): Characters and the current character's name at the upper left use `clamp(28px, 3.2vw, 44px)` with component-specific responsive overrides. New character uses `clamp(28px, 2.3vw, 40px)` on desktop and 28px in the phone layout.
-- **Headline** (Georgia 400, normal line height): the selected character's name below the Characters stage. 30px by default, 38px above 1100px wide when at least 541px tall, 28px in the phone layout and 24px in short landscape.
-- **Title / headings** (Segoe UI, sized per component; the `title` token is the equipment heading): 19px weight 600 equipment headings ("Headwear", "Character colors"), 18px standard dialog headings ("Export") and 24px weight 600 for "Your characters".
+- **Display** (Georgia 400, 1.15): the character's name in the top bar's name menu, 20px (18px on phones), and the Characters title in the bar, 19px (17px on phones). New character uses `clamp(28px, 2.3vw, 40px)` on desktop and 28px in the phone layout.
+- **Headline** (Georgia 400, 1.2): the selected character's name below the Characters stage, 30px (24px on phones).
+- **Title / headings** (Segoe UI, sized per component): 14px weight 600 sticky section headers in Wardrobe and Colors ("Head", "Character") and 18px standard dialog headings ("Export"). Panels have no title rows.
 - **Body** (Segoe UI 400, 16px, 1.4): tab labels, item names and form text in panels. The app does not load Bronze's base stylesheet; its own default is 14px with a 1.4 line height. Inputs stay at 16px or larger so phones do not zoom.
 - **Action** (Segoe UI 600, 16px, 1.4): labels of bronze-filled primary actions on the scene (14px in the phone layout).
-- **Label** (Segoe UI 400, 14px, 1.4): header actions, small descriptions, counts and the muted "Customize character" eyebrow.
-- **Caption** (Segoe UI 400, 12px, 1.4): help hints, field sub-labels, costs ("~2-5 gens") and keyboard hints on the live views.
+- **Label** (Segoe UI 400, 14px, 1.4): header actions, small descriptions and counts.
+- **Caption** (Segoe UI 400, 11 to 12px, 1.4): the facts line under the name ("64 px · 4 directions · 2 moves · 6 items", hidden under 900px wide or 540px tall), 11px slot rail labels, help hints, field sub-labels, costs ("~2-5 gens") and keyboard hints on the live views.
 - **Mono** (13px, 1.6): API call previews and other code.
 
 ### Named Rules
@@ -218,16 +218,19 @@ A warm neutral palette (charcoal and parchment) with one bronze accent and four 
 
 ## Layout
 
-- **Scene first.** Characters and Customize fill the viewport (`100dvh`, no page scroll). The world image covers the background, and two reading gradients (from the top and from the right) keep text and controls readable over it. They start at 85% and 88% surface in dark mode and 90% and 92% in light mode, and fade out.
-- **Header.** Characters shows the brand with Import, New character, Full screen and More. Customize shows the Characters back action, undo/redo, Share, Export, Full screen and More, with Activity while jobs run. From 761px wide (and at least 541px tall) the header sits 20px from the top in a 44px row; above 1100px wide and at least 541px tall it sits 28px from the top in a 50px row. On phones the header actions become icons, and on compact phones Redo moves into More.
-- **View tabs.** From 1280px wide and at least 541px tall, Preview / Top-down / Side-scroller sit at the top center of the header. From 761px to 1279px wide (at least 541px tall) they stay in the character details below the name, so they cannot overlap header actions.
-- **Desktop columns.** The identity block sits at the left from about 14% down. A right column of `clamp(300px, 21.56vw, 414px)` holds the cast list or the equipment panel and scrolls on its own. The stage and playback bar center in the space left of that column. Side margins are `clamp(28px, 2.92vw, 56px)` on wide desktop; up to 1100px wide the margin is 24px and the column a fixed 300px.
-- **Equipment grid.** Desktop uses two columns with 16px gaps and a full-width None action below the items. Phones use three columns with 8px gaps, compact cards, and None as a grid cell.
-- **Phones (760px wide or less, at least 541px tall).** Margins drop to 20px. The equipment panel becomes a bottom sheet under a shorter stage, opened and closed with an expand/collapse button at its top edge (a click, not a drag), over a gradient from the floating to the sheet material. On Characters, search, New and Import sit above the cast and Customize is pinned at the bottom.
-- **Short landscape (540px tall or less, at least 600px wide).** The stage stays beside the controls so the sprite keeps its space. At 500px tall or less (and 601px wide or more), dialogs open as a full-height right-side sheet.
+- **Scene first.** Characters and Customize fill the viewport (`100dvh`, no page scroll). The world image is scaled uniformly from its source size (one `WORLD_SIZE` in `config.ts`). Its horizon (per theme in `WORLDS`) sits on the character's eye line, 0.86 of the visible sprite height above the feet, and its vanishing line (x 0.5) on the character; the floor is a uniform plane, so the feet always stand on it. The scale is the largest of the world's own proportions and what covers the viewport width, the top and the covered bottom with no gaps (down to just under the phone sheet on Customize, the whole height on Characters). It grows up to 1.3x that to keep the vanishing line on the character; past that it stays at 1.3x and is clamped to the viewport edge instead (short landscape beside the rail), so the scale changes continuously while resizing. Top-down and Side-scroller draw the sky with the same placement, and the side view's floor horizon is the same eye line. Two reading gradients (from the top, and from the right beside a rail) keep text and controls readable. They start at 85% and 88% surface in dark mode and 90% and 92% in light mode, and fade out.
+- **One geometry source.** `app/src/studio/experience/geometry.ts` computes margins, header, rail, sheet, stage, the character's feet and the world placement for every size; CSS receives them as custom properties on `.experience`, and the actor canvas, cast and toasts read the same numbers.
+- **Margins and header.** Side margins are 16px on phones (600px wide or less), 20px under 1100px, 24px on desktop and 32px from 1920px. The header sits 8px from the top on phones and short landscape and 12px otherwise, in a 44px row (48px elsewhere). Touch targets stay 44px.
+- **Top bar (Customize).** Back icon, then the name menu (Georgia name, chevron and the facts line); the prompt with Copy prompt, rename and the other character actions live in that menu. The view tabs are underline tabs centered in the bar (icons only under 1000px). Then Random look (dice), Undo, Redo, Share and Export (with text from 1100px, icons below), Activity while jobs run, Full screen and More. On phones (600px and below) Redo and Share move into More so the name stays readable (Share's popover then points at More); Random look follows up to 430px and Undo up to 360px. Export and Full screen always stay on the bar.
+- **Top bar (Characters).** "PixelDoll | Characters" with the character count, then Import and New character (beside search on phones), Full screen and More. Neither screen has a left identity block.
+- **Desktop columns.** The right column is `clamp(340px, 24vw, 420px)` from 1100px wide, 320px from 900px and 300px below. It starts 12px under the header (4px in short landscape) and ends one margin from the bottom. The stage is everything left of it, and toasts center over it (over the whole width in short landscape).
+- **Character size.** The largest whole-device-pixel scale that fills 75% of the free stage height (header to playback bar) on Customize and about 60% on Characters, at most 62% of the stage width. The feet sit 14px above the playback bar in every view.
+- **Bottom sheet.** Phones (760px wide or less) and portrait tablets (1024px wide or less) use a bottom sheet of `clamp(45% of the height, 240px, height - 250px)` with a decorative handle, and the view tabs float under the bar as an icon row. On Characters the cast list starts at 60% of the height. Short landscape (540px tall or less) keeps the side rail. A phone too short for a 200px sheet (a phone held sideways) moves the panel beside the stage when a 200px stage still fits; otherwise the sheet keeps 200px when the stage still fits above it, and hides until the window grows when it does not (never a 1-199px sheet).
+- **Panel.** Full-width underline tabs Wardrobe, Colors, Outfits and Moves, with no title rows below them. Wardrobe and Colors are each one continuous list with sticky section headers; Outfits ends with a "Save current look" row and Moves with "Add a move".
+- **Equipment grid.** At most four columns of tiles at least 88px wide (84px on phones), up to 112px tall, with 8px gaps.
 - **New character.** A full-screen form: four columns on wide desktop (size guide, appearance, body geometry, directions), three at 1250px, two at 1000px, stacked on phones. Cost and Create stay in the action footer.
-- **Key scene and creator breakpoints:** 360, 600, 760/761, 1000, 1100, 1250 and 1279/1280px wide; 500, 540/541 and 700px tall.
-- **Spacing rhythm.** Bronze steps of 4, 8, 12, 16, 24 and 32px, with gaps of 8 to 20px inside panels.
+- **Key scene breakpoints:** 360, 400, 600, 760, 900, 1000, 1024 (portrait), 1100 and 1920px wide; 540px tall. The creator also uses 1250px wide and 500px tall.
+- **Spacing rhythm.** Bronze steps of 4, 8, 12, 16, 20, 24 and 32px, with gaps of 8 to 16px inside panels.
 
 ## Elevation & Depth
 
@@ -261,14 +264,19 @@ Gently rounded and consistent: 8px for controls, buttons, inputs, tiles and pale
 
 ### Tabs
 
-- **Style:** view and panel-mode buttons (Preview/Top-down/Side-scroller; Wardrobe/Colors/Outfits/Moves) use `aria-pressed`; the selected one is bronze, weight 600, with a 1px bronze underline. Appearance/Prompt in New character is a tablist with `aria-selected` and a 2px underline.
-- **Category tabs:** Head, Hair, Body and More stack a Lucide icon (27px on desktop, 20px on phones) over the label. They use tab semantics with `aria-selected` and the same 1px bronze underline.
+- **Style:** the view switch (Preview/Top-down/Side-scroller) is a group of `aria-pressed` buttons over one stage; the full-width panel tabs (Wardrobe/Colors/Outfits/Moves) are a tablist with a real panel, `aria-selected` and arrow-key movement. Both show the current choice in bronze, weight 600, with a 1px bronze underline. Moves keeps its position in live views behind an invisible placeholder. Appearance/Prompt in New character is a tablist with a 2px underline.
+- **Slot rail:** navigation (`<nav>` with `aria-current`, arrow keys move and show) on the right of Wardrobe, one Bronze rail tab per category in `GROUPS`: a custom gear-shape line icon (22px, `GroupIcon.svelte`) over an 11px label that wraps to two lines. Selected is bronze with a thin underline under the label; a small bronze dot marks a category with something worn. It scrolls by wheel or touch with no visible scrollbar and shows edge fades only where more slots exist. Tapping a slot scrolls its section to the top (instantly under reduced motion); the rail follows the section under the sticky header. The Body category is shown as Chest.
+- **Section headers:** sticky, with no backing; content fades from 10px inside the header's lower edge to 10px below it (Bronze `stickyFade`). A Wardrobe header shows the category icon, name, item count, category Random (shuffle, disabled when there is no other item) and + (New item, which shows its cost in the dialog). A Colors header shows Random colors and Reset.
 
 ### Item tiles
 
-- **Style:** cards with a 1px rim border, the Bronze tile material, 8px corners, and the item's pixel art (about 90px tall on desktop, nearest-neighbor) above its name.
+- **Style:** Bronze item tiles: 1px rim border, tile material, 8px corners, the item's pixel art (nearest-neighbor) filling the space above a label on a shared bottom baseline. Item art renders as tiles come near the list's viewport.
 - **Selected:** bronze border, selected background, bronze name and a bronze check mark in the top-right corner.
-- **None:** removes the item; full-width row below the grid on desktop, a grid cell on phones.
+- **Empty:** always the first tile; dashed and muted, or selected (solid bronze) when nothing in the category is worn. Its accessible name is fixed ("Empty head"); `aria-pressed` carries whether nothing is worn.
+- **New:** an outline-material tile beside Empty, only when the category has no items. There is no New item button under the list.
+- **Options (⋮):** every saved item tile has an always-visible Bronze `.bu-tile-more` button in its top-left corner (the worn check stays top-right), a sibling of the tile button, with a 44px hit area (Bronze also guarantees 44px under coarse pointers). It, a right-click on the tile and Shift+F10 open the same arrowed Bronze popover at every size (no bottom sheet); the same ⋮ toggles it closed. The header shows the item's art, name and a status line ("Wearing" first when worn, then any warning or Hidden by another item, else the category) and a Wear toggle at its right: one fixed name, "Wear {item}", with `aria-pressed` for the state and an empty circle (not worn) or a checked circle (worn). Then Details…, Try again… (paid, priced in the next sheet), a separator and Remove… last (confirmed in place). Escape returns focus to the ⋮; Tab or Shift+Tab out of the menu closes it. After a removal, focus moves to the next tile in the category, else the previous one (Empty at least), else the category heading, never the paid + button. A press on a tile while the menu is open only closes the menu (it never also wears or takes off that tile). When the ⋮ scrolls out of view the menu closes and focus stays on the ⋮ without scrolling back. Empty, New, draft and shared tiles have no ⋮; the demo hides Try again and Remove as before.
+- **Status:** a warning glyph (`.bu-tile-status[data-tone=warning]`) for Needs a look, Made for another body or missing frames in moves the body has ("Missing some Walk frames", "Missing frames in 2 moves"; Details names the directions); dimmed art and an eye-off glyph (`.bu-tile[data-dim]`) for an item hidden by another worn item. There is no Demo badge on tiles and no separate selected-item row. Status words join the tile's accessible name ("Wizard hat, needs a look"); worn state is `aria-pressed`. Tiles stay single-select: a tap wears or replaces.
+- **Random:** the top bar's Random look changes every item and color; a category's Random wears a different item of that category with new colors for it; Colors' Random changes colors only. Each press is one undo step with a scoped label ("Random head item").
 
 ### Palette ramps
 
@@ -287,12 +295,12 @@ The header is the only global navigation (see Layout for its contents per screen
 
 ### Playback bar
 
-A floating bar under the character in Preview: play/pause, a native move select, direction buttons (S, E, N, W and diagonals when present) with the current one on the direction-selected material, and Inspect. Inspect opens the precise direction grid, frame stepping, zoom and checkerboard tools in a native modal, separate from the immersive Preview. The live views replace the bar with a short keyboard hint at the lower left.
+A floating bar under the character in Preview: play/pause, a native move select, direction buttons (S, E, N, W and diagonals when present) with the current one on the direction-selected material, and Inspect. Every control is a 44px target. On a stage 430px wide or less (`geometry.ts` compactPlayback) Inspect moves into More, the separators and the Still word go (the world note explains it) and the move select takes the remaining room; under 300px (phone landscape beside the rail) one 44px facing button shows the current direction's letter, is named "Facing: South" and steps to the next direction on each press, so the bar is always one row. Inspect opens the precise direction grid, frame stepping, zoom and checkerboard tools in a native modal, separate from the immersive Preview. The live views replace the bar with a short keyboard hint at the lower left, with a plain note under it when a move is missing ("No Idle move yet, so the character stands still"). There the Moves tab stays in place but is aria-disabled, with its reason as its description (outside the tab list) and a toast on tap: movement picks idle or walk. Tab still reaches it; arrows step past it without selecting it.
 
 ### Dialogs and notices
 
 - **Dialogs:** surface, 1px rim, 16px corners, dialog shadow, sticky header and footer separated by 1px lines; full-width bottom sheets on phones.
-- **Toasts and notices:** surface with an 8% tone tint, 12px corners, a 3px tone stripe and tone-colored icon, 14px text with a 1.5 line height (Bronze sets toast type itself) and a dismiss button. Toasts are centered horizontally near the upper content area, placed to avoid the header and identity controls, with a scrollable height limited by the viewport or the phone equipment panel.
+- **Toasts and notices:** surface with an 8% tone tint, 12px corners, a 3px tone stripe and tone-colored icon, 14px text with a 1.5 line height (Bronze sets toast type itself) and a dismiss button. Toasts are top-anchored 8px under the header (under the floating view tabs on phones), centered over the stage column beside a tall rail and over the whole width in short landscape (on Customize starting under the panel tabs, so it never covers them) or over a phone sheet (wider, so shorter), at most 420px wide, with a scrollable height that never reaches down over the phone sheet or within 12px of Preview's playback bar (Bronze `.bu-toast-region`). Inside a sheet they sit under its title and close button.
 
 ### Character stage
 
@@ -300,7 +308,7 @@ The character is drawn on a canvas at an integer pixel scale where possible, wit
 
 ### Icons
 
-Lucide line icons for all functional icons, at the size each component sets (for example 16px in header actions and Inspect, 18px in playback, 27px for desktop categories). Bronze's shared recipes use 20px icons with a 1.6 stroke where they apply.
+Lucide line icons for functional icons, at the size each component sets (for example 16px in header actions and Inspect, 18px in playback). Equipment categories use custom gear-shape line icons drawn on the same 24px grid with a 1.6 stroke. Bronze's shared recipes use 20px icons with a 1.6 stroke where they apply.
 
 ## Do's and Don'ts
 
@@ -312,6 +320,7 @@ Lucide line icons for all functional icons, at the size each component sets (for
 - **Do** use Georgia only for screen titles and character names, and Lucide for functional icons at the size their component sets.
 - **Do** keep primary touch targets about 44px and inputs at 16px or larger on phones.
 - **Do** check every visual change in dark and light at desktop and phone sizes (including 320×568 and 844×390).
+- **Do** keep scene geometry in `geometry.ts`; don't hard-code stage, feet, rail or sheet positions in CSS.
 
 ### Don't:
 

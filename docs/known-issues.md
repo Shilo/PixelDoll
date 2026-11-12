@@ -236,8 +236,20 @@ can lose unexported work.
 
 - On a 390 px phone with the equipment panel expanded, the character sprite overlaps the Preview / Top-down /
   Side-scroller labels (Later card "Keep the phone character clear of the view tabs").
+- The character is drawn at a whole-pixel scale rounded down from the target, so on desktop it fills about 56% of the
+  free stage height instead of 60% (Characters) and slightly less than 75% on Customize.
+- Windows shorter than about 250 px (for example 320×240) hide the equipment panel until the window grows, so only the
+  stage and playback remain.
+- In short phone landscape (568×320) the Preview notice spans the width under the header and covers the Characters
+  search box until it is dismissed.
+- Side-panel landscape sizes (844×390, 667×375, 568×320) shift the world image off-center when centering it on the
+  character would need more than 1.3× upscaling; the horizon still stays at eye level.
 
 ## Testing scope
 
 Physical-phone testing is out of scope by user decision (2026-10-22). The live site passed the keyless Studio
 regression in Edge, including emulated phone and tablet layouts; no physical-device or real-key claim.
+
+- A full local end-to-end run at default parallelism can occasionally time out while the app is still starting (20 s),
+  most recently in "standing-first items quote only standing…"; the same test passes when run alone (2026-11-11). Board
+  card "Stop end-to-end startup timeouts under full parallel load".
