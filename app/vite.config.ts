@@ -8,6 +8,7 @@ import { agentApiBase, localSameOrigin, resolveAgentKey } from './agent-key.ts';
 import { appVersion } from './version.ts';
 import { randomUUID } from 'node:crypto';
 import { pwaBuild } from './pwa-build.ts';
+import { distDir } from './dist-dir.ts';
 
 // Dev-only fixtures (s1, s4rig, s5): served at /fixtures/<name>/... by the dev server, never copied into dist.
 const DEV_FIXTURES = fileURLToPath(new URL('./dev-fixtures', import.meta.url));
@@ -204,6 +205,7 @@ export default defineConfig(({ command, mode }) => {
 		server: { watch: { ignored: ['**/test-results*/**'] } },
 		// Early observation must not import the chunk that mounts Studio or connects its generation queue.
 		build: {
+			outDir: distDir(),
 			rolldownOptions: {
 				output: {
 					codeSplitting: {

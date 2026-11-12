@@ -2,6 +2,8 @@ import { test, expect, type Page, type Locator } from '@playwright/test';
 import { mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { unzip } from '../../src/lib/store/zip.ts';
+import { layout } from '../../src/studio/experience/geometry.ts';
+import { openInspect } from './immersive-helpers.ts';
 
 const captures = resolve('test-results/experience');
 const requests = new WeakMap<Page, string[]>();
@@ -58,17 +60,34 @@ async function customize(page: Page) {
 	await landing(page);
 	await page.locator('.customize-action').click();
 	await expect(page.locator('.world-stage')).toHaveAttribute('data-position', '0.00,0.00');
-	await expect(page.getByRole('navigation', { name: 'Customization panels' })).toBeVisible();
+	await expect(page.getByRole('tablist', { name: 'Customization panels' })).toBeVisible();
 }
 
-const modes = (page: Page) => page.getByRole('navigation', { name: 'Character view' });
-const panels = (page: Page) => page.getByRole('navigation', { name: 'Customization panels' });
+const modes = (page: Page) => page.getByRole('group', { name: 'Character view' });
+const panels = (page: Page) => page.getByRole('tablist', { name: 'Customization panels' });
 const world = (page: Page) => page.locator('.world-stage');
 const pair = async (node: Locator, attribute = 'data-position') =>
 	(await node.getAttribute(attribute))!.split(',').map(Number);
 const actorPixels = (page: Page) =>
 	page.locator('.world-actors').evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL());
 
+/** Tap a slot in the Wardrobe rail and wait for its section to finish scrolling to the top. */
+async function slot(page: Page, name: RegExp) {
+	await page
+		.getByRole('navigation', { name: 'Equipment slots', exact: true })
+		.getByRole('button', { name })
+		.click();
+	const list = page.locator('#wardrobe-list');
+	let last = -1;
+	await expect
+		.poll(async () => {
+			const top = await list.evaluate((el) => el.scrollTop);
+			const settled = top === last;
+			last = top;
+			return settled;
+		})
+		.toBe(true);
+}
 async function pause(page: Page) {
 	const pauseButton = page.getByRole('button', { name: 'Pause', exact: true });
 	if (await pauseButton.isVisible()) await pauseButton.click();
@@ -113,19 +132,29 @@ for (const theme of ['dark', 'light'] as const)
 				await page.getByRole('button', { name: 'Light mode', exact: true }).click();
 			}
 			await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-			const caption = (await page.locator('.selected-caption h2').boundingBox())!;
-			const selection = (await page.locator('.selection-world').boundingBox())!;
+			const caption = (await page.locator('.selected-name-text').boundingBox())!;
+			const stage = (await page.locator('.cast').boundingBox())!;
 			expect(
-				Math.abs(caption.x + caption.width / 2 - selection.x - selection.width / 2),
-				'Center the character name itself within the selection world'
+				Math.abs(caption.x + caption.width / 2 - stage.x - stage.width / 2),
+				'Center the character name itself within the stage column'
 			).toBeLessThanOrEqual(1);
-			if (size === 'phone')
-				expect(
-					await page
-						.locator('.scene-backdrop')
-						.evaluate((el) => getComputedStyle(el).backgroundSize),
-					'Characters has no equipment sheet; the world fills the screen'
-				).toBe('cover');
+			// The world image itself (not just its element) covers the whole screen, uniformly scaled: Characters has no
+			// equipment sheet to hide a gap.
+			expect(
+				await page.locator('.scene-backdrop').evaluate((el) => {
+					const style = getComputedStyle(el),
+						box = el.getBoundingClientRect(),
+						[w, h] = style.backgroundSize.split(' ').map(parseFloat),
+						[x, y] = style.backgroundPosition.split(' ').map(parseFloat),
+						issues: string[] = [];
+					if (box.top > 0 || box.bottom < innerHeight || box.width < innerWidth)
+						issues.push('element short of the screen');
+					if (x > 0.5 || y > 0.5 || x + w < innerWidth - 0.5 || y + h < box.height - 0.5)
+						issues.push('image gap');
+					if (Math.abs(w / h - 1672 / 941) > 0.002) issues.push('stretched');
+					return issues;
+				})
+			).toEqual([]);
 			await screenshot(page, `${size}-${theme}-characters`);
 			await page.getByRole('button', { name: 'New character', exact: true }).click();
 			const creator = page.getByRole('dialog', { name: 'New character', exact: true });
@@ -166,36 +195,42 @@ for (const theme of ['dark', 'light'] as const)
 			await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
 			await pause(page);
 			if (size === 'phone') {
-				await page.getByRole('tab', { name: /^Head/ }).click();
+				await slot(page, /^Head/);
 				const head = page.getByRole('group', { name: 'Head items', exact: true });
 				const helmet = (await head
 					.getByRole('button', { name: 'Steel helmet', exact: true })
 					.boundingBox())!;
-				const hat = (await head
-					.getByRole('button', { name: 'Wizard hat', exact: true })
+				const hat = (await head.getByRole('button', { name: /^Wizard hat(,|$)/ }).boundingBox())!;
+				const empty = (await head
+					.getByRole('button', { name: 'Empty head', exact: true })
 					.boundingBox())!;
-				const none = (await head.getByRole('button', { name: 'None', exact: true }).boundingBox())!;
-				expect(helmet.x + helmet.width).toBeLessThanOrEqual(hat.x + 1);
-				expect(hat.x + hat.width).toBeLessThanOrEqual(none.x + 1);
-				expect(helmet.y).toBeCloseTo(hat.y, 0);
-				expect(hat.y).toBeCloseTo(none.y, 0);
+				// Empty is always the first tile, then the items in reading order, as equal tiles. The phone sheet fits two
+				// columns (approved lab: at least 92 px per tile), so the third tile starts the next row.
+				expect(empty.x + empty.width).toBeLessThanOrEqual(helmet.x + 1);
+				expect(empty.y).toBeCloseTo(helmet.y, 0);
+				expect(hat.y > helmet.y + helmet.height - 1 || hat.x >= helmet.x + helmet.width - 1).toBe(
+					true
+				);
+				expect(hat.width).toBeCloseTo(helmet.width, 0);
+				expect(empty.width).toBeCloseTo(helmet.width, 0);
 				expect(helmet.width).toBeCloseTo(hat.width, 0);
-				expect(hat.width).toBeCloseTo(none.width, 0);
 			}
 			if (size === 'desktop') {
 				const viewModes = (await modes(page).boundingBox())!;
 				const header = (await page.locator('.experience-header').boundingBox())!;
-				expect(viewModes.y).toBeCloseTo(28, 0);
-				expect(viewModes.x + viewModes.width / 2).toBeCloseTo(1440 * 0.46, 0);
-				expect(header.y).toBeCloseTo(28, 0);
+				// Approved top bar: 12 px from the top, a 48 px row, view tabs centered in the window.
+				expect(header.y).toBeCloseTo(12, 0);
+				expect(header.height).toBeCloseTo(48, 0);
+				expect(viewModes.y).toBeCloseTo(12, 0);
+				expect(viewModes.x + viewModes.width / 2).toBeCloseTo(1440 / 2, 0);
 				const viewSize = await modes(page)
 					.getByRole('button', { name: 'Preview', exact: true })
 					.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
-				expect(viewSize).toBeCloseTo(17.28, 1); // Approved clamp(17px, 1.2vw, 23px) at 1440px.
-				const headerSize = await page
-					.getByRole('button', { name: 'Characters', exact: true })
+				expect(viewSize).toBe(15);
+				const nameSize = await page
+					.locator('.name-menu .name-text')
 					.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
-				expect(headerSize).toBe(16);
+				expect(nameSize).toBe(20);
 			}
 			const playback = page.getByRole('toolbar', { name: 'Preview controls' });
 			expect(
@@ -221,8 +256,10 @@ for (const theme of ['dark', 'light'] as const)
 					'true'
 				);
 				await expect(page.getByRole('toolbar', { name: 'Preview controls' })).toHaveCount(0);
-				await expect(panels(page).getByRole('button', { name: 'Moves', exact: true })).toHaveCount(
-					0
+				// Moves keeps its place, disabled with its reason, so the tabs never shift.
+				await expect(panels(page).getByRole('tab', { name: 'Moves', exact: true })).toHaveAttribute(
+					'aria-disabled',
+					'true'
 				);
 				await expect(
 					page.locator('.world-hint'),
@@ -248,20 +285,21 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
 }) => {
 	await customize(page);
 	await pause(page);
-	await page.getByRole('tab', { name: /^Head/ }).click();
+	await slot(page, /^Head/);
 	await expect(page.getByRole('button', { name: 'New head item', exact: true })).toHaveCount(1);
 	const head = page.getByRole('group', { name: 'Head items', exact: true });
-	const none = head.getByRole('button', { name: 'None', exact: true });
+	const none = head.getByRole('button', { name: 'Empty head', exact: true });
 	await expect(none).toBeVisible();
-	const headBox = (await head.boundingBox())!,
-		noneBox = (await none.boundingBox())!;
+	const noneBox = (await none.boundingBox())!;
 	const helmetBox = (await head
 		.getByRole('button', { name: 'Steel helmet', exact: true })
 		.boundingBox())!;
-	expect(noneBox.width).toBeGreaterThanOrEqual(headBox.width - 2);
-	expect(noneBox.y).toBeGreaterThanOrEqual(helmetBox.y + helmetBox.height - 1);
+	// Empty is the first tile, the same size as the items beside it.
+	expect(noneBox.x + noneBox.width).toBeLessThanOrEqual(helmetBox.x + 1);
+	expect(noneBox.y).toBeCloseTo(helmetBox.y, 0);
+	expect(noneBox.height).toBeCloseTo(helmetBox.height, 0);
 	const helmet = page.getByRole('button', { name: 'Steel helmet', exact: true });
-	const hat = page.getByRole('button', { name: 'Wizard hat', exact: true });
+	const hat = page.getByRole('button', { name: /^Wizard hat(,|$)/ });
 	await expect(helmet).toHaveAttribute('aria-pressed', 'true');
 	const initial = await actorPixels(page);
 	await hat.click();
@@ -272,17 +310,19 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
 	await expect(hat).toHaveAttribute('aria-pressed', 'false');
 	await hat.click();
 	await expect(hat).toHaveAttribute('aria-pressed', 'true');
-	await page.getByRole('button', { name: 'None', exact: true }).click();
+	await none.click();
 	await expect(hat).toHaveAttribute('aria-pressed', 'false');
 	await page.getByRole('button', { name: /^Undo/ }).click();
 	await expect(hat).toHaveAttribute('aria-pressed', 'true');
-	await page.getByRole('button', { name: 'Wizard hat details', exact: true }).click();
+	const hatOptions = page.getByRole('button', { name: 'More options for Wizard hat', exact: true });
+	await hatOptions.click();
+	await page.getByRole('menuitem', { name: 'Details…', exact: true }).click();
 	const details = page.getByRole('dialog', { name: 'Item', exact: true });
 	await expect(details).toContainText('Wizard hat');
 	await expect(details.getByRole('button', { name: 'Take off', exact: true })).toBeVisible();
 	await details.getByRole('button', { name: 'Done', exact: true }).click();
-	await expect(page.getByRole('button', { name: 'Wizard hat details', exact: true })).toBeFocused();
-	await panels(page).getByRole('button', { name: 'Colors', exact: true }).click();
+	await expect(hatOptions).toBeFocused();
+	await panels(page).getByRole('tab', { name: 'Colors', exact: true }).click();
 	const beforeColors = await actorPixels(page);
 	await page.getByRole('radio', { name: 'azure', exact: true }).first().click();
 	await expect(page.getByRole('radio', { name: 'azure', exact: true }).first()).toHaveAttribute(
@@ -290,7 +330,7 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
 		'true'
 	);
 	await expect.poll(() => actorPixels(page)).not.toBe(beforeColors);
-	await panels(page).getByRole('button', { name: 'Outfits', exact: true }).click();
+	await panels(page).getByRole('tab', { name: 'Outfits', exact: true }).click();
 	await page.getByRole('button', { name: 'Save current look', exact: true }).click();
 	await page.getByRole('textbox', { name: 'Outfit name', exact: true }).fill('Offline bronze look');
 	await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -328,7 +368,7 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
 	await page.reload();
 	await expect(page.locator('.customize-action')).toBeEnabled();
 	await page.locator('.customize-action').click();
-	await panels(page).getByRole('button', { name: 'Outfits', exact: true }).click();
+	await panels(page).getByRole('tab', { name: 'Outfits', exact: true }).click();
 	await expect(outfit).toBeVisible();
 	await page
 		.getByRole('button', { name: 'Delete outfit Offline bronze look', exact: true })
@@ -340,18 +380,30 @@ test('all production extra categories, native menu focus, mode controls and Tab 
 	page
 }) => {
 	await customize(page);
-	const more = page.getByRole('button', { name: 'More', exact: true });
-	await more.click();
-	const menu = page.locator('#more-equipment');
-	await expect
-		.poll(() => menu.evaluate((node) => node.contains(document.activeElement)))
-		.toBe(true);
-	for (const label of ['Face', 'Legs', 'Feet', 'Back', 'Main hand', 'Off hand'])
-		await expect(menu.getByRole('button', { name: label, exact: true })).toBeVisible();
-	await menu.getByRole('button', { name: 'Main hand', exact: true }).click();
-	await expect(menu).not.toBeVisible();
-	await expect(more).toBeFocused();
-	await expect(page.getByRole('group', { name: 'Main hand items', exact: true })).toBeVisible();
+	// Every production category is in the one Wardrobe list and its slot rail; none hides behind More.
+	const rail = page.getByRole('navigation', { name: 'Equipment slots', exact: true });
+	for (const label of [
+		'Head',
+		'Hair',
+		'Face',
+		'Chest',
+		'Legs',
+		'Feet',
+		'Back',
+		'Main hand',
+		'Off hand'
+	])
+		await expect(rail.getByRole('button', { name: new RegExp(`^${label}\\b`) })).toBeAttached();
+	const mainHand = rail.getByRole('button', { name: /^Main hand\b/ });
+	await mainHand.click();
+	await expect(mainHand).toHaveAttribute('aria-current', 'true');
+	await expect(page.getByRole('group', { name: 'Main hand items', exact: true })).toBeInViewport();
+	// The rail is navigation over the list's sections: arrows move to and show the next slot.
+	await mainHand.focus();
+	await page.keyboard.press('ArrowDown');
+	const offHand = rail.getByRole('button', { name: /^Off hand\b/ });
+	await expect(offHand).toBeFocused();
+	await expect(offHand).toHaveAttribute('aria-current', 'true');
 	await world(page).focus();
 	await page.keyboard.press('Tab');
 	await expect(world(page)).not.toBeFocused();
@@ -359,14 +411,14 @@ test('all production extra categories, native menu focus, mode controls and Tab 
 		'aria-pressed',
 		'true'
 	);
-	await page.locator('.project-btn').click();
+	await page.locator('.name-menu').click();
 	const projects = page.getByRole('menu', { name: 'Characters', exact: true });
 	await expect(
 		projects.getByRole('menuitemradio', { name: 'Adventurer (demo)', exact: true })
 	).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect(projects).not.toBeVisible();
-	await expect(page.locator('.project-btn')).toBeFocused();
+	await expect(page.locator('.name-menu')).toBeFocused();
 	const options = page.getByRole('button', { name: 'More options', exact: true });
 	await options.click();
 	const optionMenu = page.locator('#experience-options');
@@ -424,7 +476,7 @@ test('320px inspection keeps both native selects and All directions within its t
 	await expect(sheet).toBeVisible();
 	await page.keyboard.press('Control+Alt+i');
 	await expect(sheet).toHaveCount(0);
-	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
+	await openInspect(page);
 	const bar = sheet.getByRole('toolbar', { name: 'Preview controls', exact: true });
 	const move = bar.getByRole('combobox', { name: 'Move', exact: true });
 	const direction = bar.getByRole('combobox', { name: 'Direction', exact: true });
@@ -467,33 +519,17 @@ test('320px inspection keeps both native selects and All directions within its t
 	await screenshot(page, 'phone-320-inspection-controls');
 });
 
-test('shallow landscape More menu stays clamped and every additional equipment group is reachable', async ({
-	page
-}) => {
+test('shallow landscape slot rail reaches every equipment category', async ({ page }) => {
 	await page.setViewportSize({ width: 844, height: 390 });
 	await customize(page);
-	for (const [label, group] of [
-		['Face', 'Face'],
-		['Legs', 'Legs'],
-		['Feet', 'Feet'],
-		['Back', 'Back'],
-		['Main hand', 'Main hand'],
-		['Off hand', 'Off hand']
-	] as const) {
-		await page.getByRole('button', { name: 'More', exact: true }).click();
-		const popup = page.locator('#more-equipment');
-		await expect(popup).toBeVisible();
-		const box = (await popup.boundingBox())!;
-		expect(box.x).toBeGreaterThanOrEqual(0);
-		expect(box.y).toBeGreaterThanOrEqual(0);
-		expect(box.x + box.width).toBeLessThanOrEqual(844);
-		expect(box.y + box.height).toBeLessThanOrEqual(390);
-		const item = popup.getByRole('button', { name: label, exact: true });
-		await item.scrollIntoViewIfNeeded();
-		await expect(item).toBeInViewport();
+	const rail = page.getByRole('navigation', { name: 'Equipment slots', exact: true });
+	for (const label of ['Face', 'Legs', 'Feet', 'Back', 'Main hand', 'Off hand']) {
+		const tab = rail.getByRole('button', { name: new RegExp(`^${label}\\b`) });
+		await tab.scrollIntoViewIfNeeded();
+		await expect(tab).toBeInViewport();
 		await expect
 			.poll(() =>
-				item.evaluate((button) => {
+				tab.evaluate((button) => {
 					const rect = button.getBoundingClientRect();
 					return button.contains(
 						document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
@@ -501,10 +537,10 @@ test('shallow landscape More menu stays clamped and every additional equipment g
 				})
 			)
 			.toBe(true);
-		if (label === 'Off hand') await screenshot(page, 'landscape-more-equipment');
-		await item.click();
-		await expect(popup).not.toBeVisible();
-		await expect(page.getByRole('group', { name: `${group} items`, exact: true })).toBeVisible();
+		await tab.click();
+		await expect(tab).toHaveAttribute('aria-current', 'true');
+		await expect(page.getByRole('group', { name: `${label} items`, exact: true })).toBeInViewport();
+		if (label === 'Off hand') await screenshot(page, 'landscape-slot-rail');
 	}
 });
 
@@ -517,16 +553,18 @@ test.describe('touch world ownership', () => {
 		await customize(page);
 		await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 		await expect(world(page)).toBeFocused();
+		// On a phone the actor host spans the stage's width; the band beside the floating view tabs, above the host,
+		// is still open world.
 		const host = (await world(page).boundingBox())!;
-		const start = { x: Math.max(2, host.x / 2), y: Math.round(host.y + host.height / 2) };
-		expect(start.x).toBeLessThan(host.x);
+		const start = { x: 12, y: Math.round(host.y - 16) };
+		expect(start.y).toBeLessThan(host.y);
 		expect(
 			await page.evaluate(({ x, y }) => {
 				const element = document.elementFromPoint(x, y);
 				return (
 					!!element &&
 					!element.closest(
-						'button,input,select,textarea,a,nav,.equipment-rail,.scene-identity,header,[popover],dialog'
+						'button,input,select,textarea,a,nav,.equipment-rail,header,[popover],dialog'
 					)
 				);
 			}, start)
@@ -555,7 +593,7 @@ test.describe('touch world ownership', () => {
 			await page.waitForTimeout(120);
 			expect(await pair(world(page))).toEqual(stopped);
 			const control = (await panels(page)
-				.getByRole('button', { name: 'Colors', exact: true })
+				.getByRole('tab', { name: 'Colors', exact: true })
 				.boundingBox())!;
 			await touch('touchStart', control.x + control.width / 2, control.y + control.height / 2);
 			await expect(page.locator('.world-stick')).toHaveCount(0);
@@ -697,23 +735,15 @@ for (const viewport of [
 	{ width: 390, height: 844 },
 	{ width: 320, height: 568 }
 ])
-	test(`phone ${viewport.width}×${viewport.height} equipment reserves painted actor space collapsed and expanded`, async ({
+	test(`phone ${viewport.width}×${viewport.height} equipment sheet reserves painted actor space`, async ({
 		page
 	}) => {
 		await page.setViewportSize(viewport);
 		await customize(page);
 		await pause(page);
-		await expect(page.getByRole('button', { name: /^Undo/ })).toBeVisible();
-		// Short phones intentionally start expanded. Exercise both states explicitly.
-		const collapse = page.getByRole('button', { name: 'Collapse equipment', exact: true });
-		if (await collapse.isVisible()) await collapse.click();
-		for (const expanded of [false, true]) {
-			if (expanded) {
-				await page.getByRole('button', { name: 'Expand equipment', exact: true }).click();
-				await expect(
-					page.getByRole('button', { name: 'Collapse equipment', exact: true })
-				).toHaveAttribute('aria-expanded', 'true');
-			}
+		await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeVisible();
+		// The sheet has one height, clamp(45% of the window, 240 px, window - 250 px).
+		{
 			// Wait for the animation-frame renderer to consume the new measured stage.
 			await page.evaluate(
 				() =>
@@ -749,9 +779,11 @@ for (const viewport of [
 			expect(bounds.top).toBeGreaterThanOrEqual(views.y + views.height);
 			expect(bounds.bottom).toBeLessThanOrEqual(playback.y);
 			expect(playback.y + playback.height).toBeLessThanOrEqual(rail.y);
-			await screenshot(
-				page,
-				`phone-${viewport.width}-dark-${expanded ? 'expanded' : 'collapsed'}-equipment`
+			// The sheet height comes from the one geometry source (compact heights keep room for a 2x hero).
+			expect(rail.height).toBeCloseTo(
+				layout(viewport.width, viewport.height, 'studio').sheetHeight,
+				0
 			);
+			await screenshot(page, `phone-${viewport.width}-dark-equipment`);
 		}
 	});

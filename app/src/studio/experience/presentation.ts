@@ -7,6 +7,7 @@ import {
 	type Frame
 } from '../../lib/compose/compose.ts';
 import { DEFAULT_MOVE } from '../../lib/rig/rig.ts';
+import { moveLabel } from '../model.ts';
 import type { Img } from '../../lib/image/png.ts';
 import type {
 	DirectionName,
@@ -321,20 +322,22 @@ function withIssue(a: PresentationAvailability, result: Presentation): Presentat
 		return result;
 	const wholeClip = !a.animations.get(result.requestedClip)?.size;
 	if (wholeClip && result.clip === DEFAULT_MOVE) return result; // a new character stands in its Default pose until idle/walk are added
+	// Plain words for people, not diagnostics: what is missing, then what they see instead.
+	const move = moveLabel(result.requestedClip);
 	const missing = wholeClip
-		? result.requestedClip
-		: `${directionLabel(result.intendedDirection ?? '')} ${result.requestedClip}`;
+		? `No ${move} move yet`
+		: `${move} has no ${directionLabel(result.intendedDirection ?? '').toLowerCase()} frames yet`;
 	const showing =
 		result.kind === 'unavailable'
-			? 'no artwork available'
+			? 'so there is nothing to show'
 			: result.kind !== 'animation'
-				? 'showing a still pose'
+				? 'so the character stands still'
 				: result.clip !== result.requestedClip
-					? `showing ${result.clip}`
-					: `showing ${directionLabel(result.direction!)}`;
+					? `so it plays ${moveLabel(result.clip!)}`
+					: `so it faces ${directionLabel(result.direction!).toLowerCase()}`;
 	return {
 		...result,
-		issue: `${missing} missing — ${showing}`,
+		issue: `${missing}, ${showing}`,
 		issueKey: `${result.requestedClip}:${wholeClip ? 'all' : result.intendedDirection}`
 	};
 }

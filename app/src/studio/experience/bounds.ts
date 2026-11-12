@@ -124,25 +124,23 @@ export function paintedFrame(project: Project, items: Preset['items']): Frame {
 		: fallback;
 }
 
-/** Fit the complete pivot-relative frame. Oversize gear and large imported
- * sprites must not cross controls. Prefer whole device pixels; a source larger
- * than the available stage is minified with nearest-neighbor sampling. */
+/** Fit the complete pivot-relative frame into the room around the feet: `above` the pivot (the hero's share of
+ * the free stage height), `side` px each way from it and `below` it. Oversize gear and large imported sprites must
+ * not cross controls. Prefer whole device pixels; a source larger than the room is minified with nearest-neighbor
+ * sampling. */
 export function actorScale(
 	frame: { w: number; h: number; x: number; y: number },
-	area: { width: number; height: number },
-	dpr = 1,
-	preferred = 6,
-	anchorRatio = 0.77
+	room: { above: number; side: number; below: number },
+	dpr = 1
 ): number {
 	const density = Math.max(1, dpr);
 	const fit = Math.max(
 		0,
 		Math.min(
-			preferred,
-			(area.width * 0.5) / Math.max(1, frame.x),
-			(area.width * 0.5) / Math.max(1, frame.w - frame.x),
-			frame.y > 0 ? (area.height * anchorRatio) / frame.y : Infinity,
-			frame.h - frame.y > 0 ? (area.height * (1 - anchorRatio)) / (frame.h - frame.y) : Infinity
+			room.side / Math.max(1, frame.x),
+			room.side / Math.max(1, frame.w - frame.x),
+			frame.y > 0 ? room.above / frame.y : Infinity,
+			frame.h - frame.y > 0 ? room.below / (frame.h - frame.y) : Infinity
 		)
 	);
 	return fit * density < 1 ? fit : Math.floor(fit * density) / density;

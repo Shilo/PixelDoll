@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { app } from '../lib/app.svelte.ts';
 	import { popoverFocus } from './experience/focus.ts';
-	import { experience, characters } from './experience/state.svelte.ts';
+	import { tick } from 'svelte';
+	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
 	import SharePopover from './SharePopover.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
@@ -9,7 +10,7 @@
 	import FullscreenButton from './FullscreenButton.svelte';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
-	import { fmtNum } from './model.ts';
+	import { characterFacts, fmtNum } from './model.ts';
 	import {
 		ui,
 		doc,
@@ -20,6 +21,9 @@
 		openProject,
 		undo,
 		redo,
+		randomize,
+		refreshProjects,
+		characterName,
 		toggleTheme,
 		isDemo
 	} from './state.svelte.ts';
@@ -42,10 +46,39 @@
 		Activity,
 		Pencil,
 		Trash,
-		PersonStanding
+		PersonStanding,
+		ChevronDown,
+		Copy,
+		Dices,
+		Eye,
+		Layers2,
+		Mountain,
+		Grid2x2
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
+	const name = $derived(characterName());
+	const prompt = $derived(m?.items.find((it) => it.id === m.rig.baseItem)?.prompt ?? '');
+	const characterCount = $derived(store.projects.filter((p) => !p.dev).length);
+	const VIEWS = [
+		['preview', 'Preview', Eye],
+		['topdown', 'Top-down', Layers2],
+		['side', 'Side-scroller', Mountain]
+	] as const;
+	async function changeMode(mode: WorldMode) {
+		setMode(mode);
+		await tick();
+		document.querySelector<HTMLElement>('.world-stage')?.focus({ preventScroll: true });
+	}
+	let copyMessage = $state('');
+	async function copyPrompt() {
+		try {
+			await navigator.clipboard.writeText(prompt);
+			copyMessage = 'Copied';
+		} catch {
+			copyMessage = 'Select the prompt to copy it';
+		}
+	}
 	const devRigs = $derived(import.meta.env.DEV ? store.projects.filter((p) => p.dev) : []);
 	const active = $derived($queue.counts.running + $queue.counts.pending);
 	const busy = $derived(
@@ -62,6 +95,7 @@
 		close();
 		if (id !== doc.id) void openProject(id);
 	};
+	const closeOptions = () => document.getElementById('experience-options')?.hidePopover();
 	const sheet = (s: typeof ui.sheet) => {
 		close();
 		ui.sheet = s;
@@ -74,10 +108,45 @@
 				class="bu-action header-back"
 				data-variant="quiet"
 				aria-label="Characters"
-				onclick={characters}
-				><ChevronLeft size={18} /><span class="header-back-label">Characters</span></button
-			>{:else}<span class="brand"><PersonStanding size={20} />PixelDoll</span>{/if}
+				title="Characters"
+				onclick={characters}><ChevronLeft size={20} /></button
+			><!-- The page heading sits beside the menu button: a heading is not allowed inside a button. -->
+			<h1 class="sr">{name}</h1>
+			<button
+				class="name-menu project-btn"
+				popovertarget="project-menu"
+				aria-haspopup="menu"
+				onclick={() => void refreshProjects()}
+				><span class="name-line"
+					><span class="name-text">{name}</span>
+					<ChevronDown size={16} /></span
+				>{#if m}<span class="name-facts">{characterFacts(m)}</span>{/if}</button
+			>{:else}<span class="brand"><PersonStanding size={20} />PixelDoll</span><span
+				class="brand-divider"
+				aria-hidden="true"
+			></span>
+			<h1 class="screen-title">Characters</h1>
+			<span class="screen-count num"
+				>{characterCount}<span class="sr"
+					>{` ${characterCount === 1 ? 'character' : 'characters'}`}</span
+				></span
+			>{/if}
 	</div>
+	{#if experience.screen === 'studio'}
+		<!-- A view switch over one stage, not tabs with panels: pressed toggle buttons. -->
+		<div class="view-modes" role="group" aria-label="Character view">
+			{#each VIEWS as [id, label, Icon] (id)}<button
+					class="bu-action"
+					data-variant="tab"
+					aria-pressed={experience.mode === id}
+					aria-controls="world-stage"
+					aria-label={label}
+					title={label}
+					onclick={() => changeMode(id)}
+					><Icon size={18} aria-hidden="true" /><span class="view-label">{label}</span></button
+				>{/each}
+		</div>
+	{/if}
 	<div class="header-actions">
 		{#if experience.screen === 'characters'}
 			<button
@@ -92,16 +161,22 @@
 				class="bu-action selection-create"
 				data-variant="outline"
 				aria-label="New character"
-				onclick={() => (ui.sheet = 'create')}
-				><Plus size={16} /><span class="desktop-name">New character</span><span class="mobile-name"
-					>New</span
-				></button
+				onclick={() => (ui.sheet = 'create')}><Plus size={16} /><span>New character</span></button
 			>
 		{:else}
+			<button
+				class="bu-action header-random"
+				data-variant="quiet"
+				aria-label="Random look"
+				title="Random look (items and colors)"
+				disabled={!m}
+				onclick={randomize}><Dices size={18} /></button
+			>
 			<button
 				class="bu-action header-undo"
 				data-variant="quiet"
 				aria-label={undoLabel ? 'Undo ' + undoLabel : 'Undo'}
+				title={undoLabel ? 'Undo ' + undoLabel : 'Undo'}
 				disabled={!undoLabel}
 				onclick={undo}><Undo2 size={18} /></button
 			>
@@ -109,6 +184,7 @@
 				class="bu-action header-redo"
 				data-variant="quiet"
 				aria-label={redoLabel ? 'Redo ' + redoLabel : 'Redo'}
+				title={redoLabel ? 'Redo ' + redoLabel : 'Redo'}
 				disabled={!redoLabel}
 				onclick={redo}><Redo2 size={18} /></button
 			>
@@ -116,6 +192,7 @@
 				class="bu-action header-share"
 				data-variant="outline"
 				aria-label="Share character"
+				title="Share"
 				popovertarget="share-popover"
 				disabled={!m}><Share2 size={16} /><span>Share</span></button
 			>
@@ -123,6 +200,7 @@
 				class="bu-action header-export"
 				data-variant="outline"
 				aria-label="Export"
+				title="Export"
 				onclick={() => (ui.sheet = 'export')}
 				disabled={!m}><Download size={16} /><span>Export</span></button
 			>
@@ -139,6 +217,7 @@
 			class="bu-action"
 			data-variant="quiet"
 			aria-label="More options"
+			data-popover-fallback="share-popover"
 			popovertarget="experience-options"><Ellipsis size={20} /></button
 		>
 	</div>
@@ -153,12 +232,22 @@
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
+		<!-- Phones move lower-frequency bar actions here, so the character name keeps its room. -->
+		{#if experience.screen === 'studio'}<button
+				class="row bu-action mobile-random"
+				data-variant="quiet"
+				disabled={!m}
+				onclick={() => {
+					closeOptions();
+					randomize();
+				}}><Dices size={18} /><span class="row-name">Random look</span></button
+			>{/if}
 		{#if experience.screen === 'studio'}<button
 				class="row bu-action mobile-undo"
 				data-variant="quiet"
 				disabled={!undoLabel}
 				onclick={() => {
-					document.getElementById('experience-options')?.hidePopover();
+					closeOptions();
 					undo();
 				}}
 				><Undo2 size={18} /><span class="row-name">{undoLabel ? 'Undo ' + undoLabel : 'Undo'}</span
@@ -169,17 +258,37 @@
 				data-variant="quiet"
 				disabled={!redoLabel}
 				onclick={() => {
-					document.getElementById('experience-options')?.hidePopover();
+					closeOptions();
 					redo();
 				}}
 				><Redo2 size={18} /><span class="row-name">{redoLabel ? 'Redo ' + redoLabel : 'Redo'}</span
 				></button
 			>{/if}
+		{#if experience.screen === 'studio'}<button
+				class="row bu-action mobile-share"
+				data-variant="quiet"
+				disabled={!m}
+				onclick={() => {
+					closeOptions();
+					document.getElementById('share-popover')?.showPopover();
+				}}><Share2 size={18} /><span class="row-name">Share</span></button
+			>{/if}
+		<!-- Narrow phones move Inspect here from the playback bar so its controls keep full-size targets. -->
+		{#if experience.screen === 'studio' && experience.mode === 'preview'}<button
+				class="row bu-action mobile-inspect"
+				data-variant="quiet"
+				disabled={!m}
+				onclick={() => {
+					closeOptions();
+					ui.sheet = 'inspect';
+				}}><Grid2x2 size={18} /><span class="row-name">Inspect</span></button
+			>{/if}
+		{#if experience.screen === 'studio'}<hr class="mobile-sep" />{/if}
 		<button
 			class="row bu-action"
 			data-variant="quiet"
 			onclick={() => {
-				document.getElementById('experience-options')?.hidePopover();
+				closeOptions();
 				ui.sheet = 'activity';
 			}}
 			><Activity size={18} /><span class="row-name">Activity</span
@@ -212,7 +321,7 @@
 			class="row bu-action"
 			data-variant="quiet"
 			onclick={() => {
-				document.getElementById('experience-options')?.hidePopover();
+				closeOptions();
 				ui.sheet = 'connect';
 			}}
 			><KeyRound size={18} /><span class="row-name"
@@ -228,7 +337,7 @@
 			data-variant="quiet"
 			onclick={() => {
 				toggleTheme();
-				document.getElementById('experience-options')?.hidePopover();
+				closeOptions();
 			}}
 			>{#if ui.theme === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}<span
 				class="row-name">{ui.theme === 'dark' ? 'Light mode' : 'Dark mode'}</span
@@ -266,10 +375,27 @@
 	bind:this={menu}
 	role="menu"
 	aria-label="Characters"
-	ontoggle={popoverFocus}
+	ontoggle={(e) => {
+		copyMessage = '';
+		popoverFocus(e);
+	}}
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
+		{#if experience.screen === 'studio' && prompt}
+			<div class="menu-prompt">
+				<p class="menu-sec">Prompt</p>
+				<p class="menu-prompt-text">{prompt}</p>
+				<button
+					class="row"
+					role="menuitem"
+					aria-label={copyMessage || 'Copy prompt'}
+					onclick={copyPrompt}
+					><Copy size={16} /><span class="row-name">{copyMessage || 'Copy prompt'}</span></button
+				>
+			</div>
+			<hr />
+		{/if}
 		<p class="menu-sec">Characters</p>
 		{#snippet proj(p: (typeof store.projects)[number])}
 			<button

@@ -327,7 +327,7 @@ test('the offline status stays compact and leaves the character and controls vis
 					)
 			);
 			await checkLayout(
-				'.cast-character.chosen,.selected-caption button,.selected-caption span,.customize-action,.scene-identity h1,.cast-library input,.toast'
+				'.cast-character.chosen,.selected-caption button,.selected-caption span,.customize-action,.cast-library input,.toast'
 			);
 		}
 		await page.setViewportSize({ width: 390, height: 844 });
@@ -1461,7 +1461,7 @@ test('a busy update shields studio shortcuts after Tab leaves its disabled Close
 	try {
 		await openInstalled(page, server.url, a);
 		await enterStudio(page);
-		const item = page.locator('.equipment-scroll .tile').first();
+		const item = page.locator('.equipment-scroll .item-tile').first();
 		const before = await item.getAttribute('aria-pressed');
 		await item.click();
 		const worn = before === 'true' ? 'false' : 'true';

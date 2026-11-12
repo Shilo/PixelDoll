@@ -1657,7 +1657,7 @@ test('Preview, Top-down and Side-scroller always loop with global Play once both
 			s = await import(path);
 		s.ui.playing = true;
 	});
-	const modes = page.getByRole('navigation', { name: 'Character view' });
+	const modes = page.getByRole('group', { name: 'Character view' });
 	for (const playOnce of [true, false]) {
 		await page.evaluate(async (playOnce) => {
 			const path = '/src/lib/store/export-settings.ts',
@@ -2402,10 +2402,12 @@ test('Share popover follows the selected move, direction and Animate switch on d
 		return actual;
 	};
 	const headerFits = async () => {
+		// The phone's view tabs float in their own row under the bar; compare the bar's own controls.
 		const buttons = await page
 			.locator('.experience-header button:visible')
 			.evaluateAll((elements) =>
 				elements
+					.filter((element) => !element.closest('.view-modes'))
 					.map((element) => {
 						const { left, right } = element.getBoundingClientRect();
 						return [left, right];
@@ -2558,9 +2560,18 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	);
 	await expect(popover.getByRole('switch')).not.toBeChecked();
 
+	await page.keyboard.press('Escape');
 	await page.setViewportSize({ width: 390, height: 844 });
-	await expect(trigger.locator('span')).toBeHidden();
+	// Phones keep Export on the bar and open Share from More; the popover then points at More.
+	await expect(trigger).toBeHidden();
 	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page
+		.locator('#experience-options')
+		.getByRole('button', { name: 'Share', exact: true })
+		.click();
+	await expect(popover).toBeVisible();
+	await expect(popover.getByRole('combobox', { name: 'Move' })).toHaveValue('cross-punch');
 	const box = (await popover.boundingBox())!;
 	expect(box.x).toBeGreaterThanOrEqual(0);
 	expect(box.x + box.width).toBeLessThanOrEqual(390);
@@ -2596,7 +2607,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await fixedLayout(smallLayout);
 	await popover.getByRole('combobox', { name: 'Move' }).selectOption('__all_moves__');
 	await fixedLayout(smallLayout);
-	await expect(page.getByRole('button', { name: 'Share character' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
 	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
 	await headerFits();
 	await page.screenshot({ path: testInfo.outputPath('share-grid-320.png') });
@@ -2624,7 +2635,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await popover.getByRole('combobox', { name: 'Move' }).selectOption('walk');
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south');
 	await page.setViewportSize({ width: 320, height: 390 });
-	await expect(page.getByRole('button', { name: 'Share character' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Share character' })).toBeHidden();
 	await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible();
 	await headerFits();
 	expect(
@@ -2680,7 +2691,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	expect(reachableDownload.y + reachableDownload.height).toBeLessThanOrEqual(390);
 	await page.setViewportSize({ width: 390, height: 844 });
 	await expect(page.locator('.header-export')).toBeVisible();
-	await page.getByRole('button', { name: 'More options' }).click();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'Export game assets' })).toHaveCount(0);
 	const disabledRedo = page.locator('.mobile-redo');
 	await expect(disabledRedo).toBeDisabled();

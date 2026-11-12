@@ -133,7 +133,13 @@ test('experimental native attack imports with warnings and exact frame stepping 
 		page.getByRole('heading', { name: 'EXPERIMENTAL east axe review', exact: true })
 	).toBeVisible();
 	await equipmentGroup(page, 'Main hand');
-	await expect(page.locator('.equipment-scroll')).toContainText('Needs a look');
+	// Status shows on the tile itself and in its accessible name.
+	await expect(
+		page
+			.locator('.equipment-scroll')
+			.getByRole('region', { name: 'Main hand', exact: true })
+			.getByRole('button', { name: /, needs a look/ })
+	).toBeVisible();
 	const pause = page.getByRole('button', { name: 'Pause', exact: true });
 	if (await pause.count()) await pause.click();
 	await page.getByRole('combobox', { name: 'Move', exact: true }).selectOption('axe-attack');
@@ -200,21 +206,19 @@ test('experimental native attack imports with warnings and exact frame stepping 
 	}
 	await inspect.getByRole('button', { name: 'Done', exact: true }).click();
 	await page.setViewportSize({ width: 1280, height: 720 });
+	const empty = page
+		.locator('.equipment-scroll')
+		.getByRole('button', { name: 'Empty main hand', exact: true });
+	await empty.click();
+	await expect(empty).toHaveAttribute('aria-pressed', 'true');
 	await page
 		.locator('.equipment-scroll')
-		.getByRole('button', { name: 'None', exact: true })
-		.click();
-	await expect(
-		page.locator('.equipment-scroll').getByRole('button', { name: 'None', exact: true })
-	).toHaveAttribute('aria-pressed', 'true');
-	await page
-		.locator('.equipment-scroll')
-		.getByRole('button', { name: 'Experimental palm-gripped axe', exact: true })
+		.getByRole('button', { name: /^Experimental palm-gripped axe(,|$)/ })
 		.click();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await page.getByRole('button', { name: 'Settings', exact: true }).click();
 	await page.getByRole('checkbox', { name: 'Axe attack', exact: true }).check();
-	await page.getByRole('button', { name: 'Back', exact: true }).click();
+	await page.getByRole('dialog').getByRole('button', { name: 'Back', exact: true }).click();
 	const downloading = page.waitForEvent('download');
 	await page.getByRole('button', { name: /Download ZIP/ }).click();
 	const exported = await unzip(await readFile((await (await downloading).path())!)),
@@ -1094,7 +1098,6 @@ test('a standing consistency stop cannot keep an item before its requested walki
 			.map((d: { id: string }) => d.id);
 		s.ui.playing = false;
 		s.ui.anim = 'walk';
-		s.ui.inspTab = 'item';
 		const calls = [
 			{
 				kind: 'dress',

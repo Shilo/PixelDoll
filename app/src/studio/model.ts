@@ -11,6 +11,7 @@ import type {
 	QaSummary
 } from '../lib/store/manifest.ts';
 import { GATES, isAction } from '../lib/items/items.ts';
+import { coverageGaps } from '../lib/dress/dress.ts';
 import type { Rig } from '../lib/rig/rig.ts';
 
 /** A body-QA note with a readable clip and direction prefix ("walk/west: ..." -> "Walk west: ..."). */
@@ -103,6 +104,17 @@ export const GROUPS: Group[] = [
 		ideas: [{ label: 'round shield' }, { label: 'iron lantern' }, { label: 'wooden longbow' }]
 	}
 ];
+const count = (n: number, one: string) => `${n} ${n === 1 ? one : one + 's'}`;
+/** A character's shape at a glance: "64 px · 4 directions · 2 moves · 6 items". */
+export const characterFacts = (m: Manifest) =>
+	[
+		`${m.rig.cell.w} px`,
+		count(m.rig.directions.length, 'direction'),
+		count(m.rig.animations.length, 'move'),
+		count(m.items.filter((i) => i.id !== m.rig.baseItem).length, 'item')
+	].join(' · ');
+/** The visible name of a category. "Body" stays the stable id; people see it as Chest. */
+export const groupLabel = (id: string) => (id === 'Body' ? 'Chest' : id);
 export const groupOf = (slot: string) => GROUPS.find((g) => g.slots.includes(slot)) ?? GROUPS[3];
 export const SLOT_LABEL: Record<string, string> = {
 	head: 'Head',
@@ -321,6 +333,19 @@ export const HEALTH_LABEL: Record<Health, string> = {
 	stale: 'Made for another body',
 	demo: 'Demo'
 };
+
+/** Frames an item lacks in moves its body has (dress.ts coverageGaps), where it would vanish: a short warning for its
+ * tile and menu. Details names the exact directions. */
+export function missingFramesNote(m: Manifest, it: Item): string {
+	const moves = [...new Set(coverageGaps(m, it).map((g) => g.split('/')[0]))];
+	if (!moves.length) return '';
+	return moves.length === 1
+		? `Missing some ${moveLabel(
+				moves[0],
+				m.rig.animations.map((a) => a.id)
+			)} frames`
+		: `Missing frames in ${moves.length} moves`;
+}
 
 /** QA gate messages in plain words (D1 §5.5). */
 export function plainReason(s: string): string {

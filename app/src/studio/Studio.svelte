@@ -183,23 +183,31 @@
 
 	function onkey(e: KeyboardEvent) {
 		const t = e.target as HTMLElement;
-		// T2: arrow keys (Home/End) move between the options of a segmented control, tab list or radio group (selection follows
-		// focus, WAI-ARIA) and between the rows of the character menu (focus only)
-		const group = t.closest?.('[role=tablist], [role=radiogroup], .seg[role=group], [role=menu]');
+		// T2: arrow keys (Home/End) move between the options of a segmented control, tab list, radio group or a [data-arrows]
+		// rail (selection follows focus, WAI-ARIA) and between the rows of a menu (focus only)
+		const group = t.closest?.(
+			'[role=tablist], [role=radiogroup], .seg[role=group], [role=menu], [data-arrows]'
+		);
 		if (group && /^(Arrow(Left|Right|Up|Down)|Home|End)$/.test(e.key)) {
 			const menu = group.getAttribute('role') === 'menu';
-			const opts = [...group.querySelectorAll<HTMLElement>(menu ? '.row' : 'button')].filter(
+			const all = [...group.querySelectorAll<HTMLElement>(menu ? '.row' : 'button')].filter(
 				(o) => !(o as HTMLButtonElement).disabled && o.getClientRects().length
 			);
-			const i = opts.indexOf(t);
-			if (i < 0) return;
+			// aria-disabled options stay focusable by Tab with their reason, but arrows (which select) skip them; from one,
+			// arrows step to its nearest enabled neighbor.
+			const opts = all.filter((o) => o.getAttribute('aria-disabled') !== 'true');
+			const at = all.indexOf(t);
+			if (at < 0 || !opts.length) return;
 			e.preventDefault();
+			const before = opts.filter((o) => all.indexOf(o) < at).length,
+				enabled = opts.includes(t);
 			const n =
 				e.key === 'Home'
 					? 0
 					: e.key === 'End'
 						? opts.length - 1
-						: (i + (/Right|Down/.test(e.key) ? 1 : -1) + opts.length) % opts.length;
+						: (before + (/Right|Down/.test(e.key) ? (enabled ? 1 : 0) : -1) + opts.length) %
+							opts.length;
 			opts[n].focus();
 			if (!menu) opts[n].click();
 			return;

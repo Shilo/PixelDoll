@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
-import { equipmentGroup } from './immersive-helpers.ts';
+import { equipmentGroup, equipmentMode } from './immersive-helpers.ts';
+import { layout } from '../../src/studio/experience/geometry.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
@@ -116,9 +117,12 @@ test('anchored popovers point at their triggers on all four sides', async ({ pag
 
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.locator('.customize-action').click();
-	const equipment = page.getByRole('button', { name: 'More', exact: true });
-	await equipment.click();
-	await check('more-equipment', '[popovertarget="more-equipment"]', 'top');
+	// On a phone the character menu opens from the name in the top bar, below it.
+	await page
+		.locator('#project-menu')
+		.evaluate((node) => node.setAttribute('data-placement', 'bottom-start'));
+	await page.locator('.name-menu').click();
+	await check('project-menu', '.name-menu', 'bottom');
 });
 
 test('closing a popover with a clipped trigger restores focus to a visible control', async ({
@@ -142,7 +146,7 @@ test('closing a popover with a clipped trigger restores focus to a visible contr
 
 const world = (page: Page) => page.locator('.world-stage');
 const selection = (page: Page) => page.getByRole('application', { name: /^Character selection\./ });
-const modes = (page: Page) => page.getByRole('navigation', { name: 'Character view', exact: true });
+const modes = (page: Page) => page.getByRole('group', { name: 'Character view', exact: true });
 
 async function landing(page: Page) {
 	await page.goto('/');
@@ -282,7 +286,9 @@ test('full screen and view navigation stay separate while Activity is in the hea
 		await page.setViewportSize({ width, height: 900 });
 		const overlap = await modes(page).evaluate((nav) => {
 			const bounds = nav.getBoundingClientRect();
+			// The view tabs now live in the header; only the other header controls must stay clear of them.
 			return [...document.querySelectorAll('.experience-header button')].some((button) => {
+				if (nav.contains(button)) return false;
 				const rect = button.getBoundingClientRect();
 				return (
 					rect.width > 0 &&
@@ -396,23 +402,14 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	expect(await world(page).evaluate((el) => getComputedStyle(el, '::after').content)).toBe('none');
 	await page.keyboard.press('ArrowLeft');
 	await expect(world(page)).toHaveAttribute('data-facing', 'west');
-	const prompt = page.locator('.prompt-disclosure');
-	await prompt.locator('summary').click();
-	await expect(prompt).toHaveAttribute('open', '');
-	// The prompt keeps its line breaks, but whitespace between the popup's elements must not indent Copy prompt.
-	const copyIndent = await prompt.locator('div').evaluate((popup) => {
-		const box = getComputedStyle(popup);
-		return (
-			popup.querySelector('button')!.getBoundingClientRect().left -
-			popup.getBoundingClientRect().left -
-			parseFloat(box.borderLeftWidth) -
-			parseFloat(box.paddingLeft)
-		);
-	});
-	expect(copyIndent).toBeCloseTo(0, 0);
-	await world(page).focus();
+	// The prompt moved into the name menu, which Escape closes before the world leaves for Characters.
+	await page.locator('.name-menu').click();
+	const menu = page.locator('#project-menu');
+	await expect(menu.locator('.menu-prompt-text')).toBeVisible();
+	await expect(menu.getByRole('menuitem', { name: 'Copy prompt', exact: true })).toBeVisible();
 	await page.keyboard.press('Escape');
-	await expect(prompt).not.toHaveAttribute('open');
+	await expect(menu).not.toBeVisible();
+	await world(page).focus();
 	await expect(world(page)).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect(selection(page)).toBeFocused();
@@ -472,8 +469,8 @@ test('Moves preserves paused Preview and Side-scroller enters using an authored 
 	const pause = page.getByRole('button', { name: 'Pause', exact: true });
 	if (await pause.isVisible()) await pause.click();
 	await page
-		.getByRole('navigation', { name: 'Customization panels' })
-		.getByRole('button', { name: 'Moves', exact: true })
+		.getByRole('tablist', { name: 'Customization panels' })
+		.getByRole('tab', { name: 'Moves', exact: true })
 		.click();
 	await page.locator('.move-row').filter({ hasText: 'Cross punch' }).click();
 	await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
@@ -564,7 +561,22 @@ test('imported move names remain readable, distinct and contained in Preview and
 		await page.setViewportSize(size);
 		const bar = page.getByRole('toolbar', { name: 'Preview controls', exact: true });
 		await expect(move).toBeInViewport();
-		await expect(bar.getByRole('button', { name: 'Inspect', exact: true })).toBeInViewport();
+		// Narrow phones move Inspect into More rather than shrinking the bar's targets below 44 px.
+		if (size.width <= 430) {
+			await expect(bar.getByRole('button', { name: 'Inspect', exact: true })).toBeHidden();
+			await page.getByRole('button', { name: 'More options', exact: true }).click();
+			await expect(
+				page.locator('#experience-options').getByRole('button', { name: 'Inspect', exact: true })
+			).toBeVisible();
+			await page.keyboard.press('Escape');
+		} else await expect(bar.getByRole('button', { name: 'Inspect', exact: true })).toBeInViewport();
+		const targets = await bar.evaluate((node) =>
+			[...node.querySelectorAll('button, select')]
+				.map((element) => element.getBoundingClientRect())
+				.filter((r) => r.width > 0)
+				.map((r) => Math.min(r.width, r.height))
+		);
+		expect(Math.min(...targets), `${size.width}×${size.height} targets`).toBeGreaterThanOrEqual(44);
 		const geometry = await bar.evaluate((node) => {
 			const children = [...node.children].filter(
 				(element) => element.getBoundingClientRect().width > 0
@@ -683,7 +695,7 @@ test('selection wheel normalizes deltas, discards bursts and stale fractions, an
 			.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
 			.uncheck();
 		await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
-		await expect(page.locator('.scene-identity h1')).toHaveText(`Wheel character ${copy + 1}`, {
+		await expect(page.locator('.name-menu .name-text')).toHaveText(`Wheel character ${copy + 1}`, {
 			timeout: 30_000
 		}); // a full import saves and reopens the character
 	}
@@ -760,7 +772,7 @@ async function customize(page: Page) {
 	await landing(page);
 	await page.locator('.customize-action').click();
 	await expect(page.locator('.world-stage')).toHaveAttribute('data-position', '0.00,0.00');
-	await expect(page.getByRole('navigation', { name: 'Customization panels' })).toBeVisible();
+	await expect(page.getByRole('tablist', { name: 'Customization panels' })).toBeVisible();
 }
 async function pause(page: Page) {
 	const pauseButton = page.getByRole('button', { name: 'Pause', exact: true });
@@ -770,7 +782,7 @@ async function pause(page: Page) {
 test('phone More preserves Redo and closes after restoring a taken-off item state', async ({
 	page
 }) => {
-	await page.setViewportSize({ width: 390, height: 844 });
+	await page.setViewportSize({ width: 360, height: 844 });
 	await customize(page);
 	await pause(page);
 	const options = page.getByRole('button', { name: 'More options', exact: true });
@@ -778,14 +790,23 @@ test('phone More preserves Redo and closes after restoring a taken-off item stat
 	await options.click();
 	await expect(popup.getByRole('button', { name: 'Redo', exact: true })).toBeDisabled();
 	await page.keyboard.press('Escape');
-	await page.getByRole('tab', { name: /^Head/ }).click();
+	await page
+		.getByRole('navigation', { name: 'Equipment slots', exact: true })
+		.getByRole('button', { name: /^Head/ })
+		.click();
 	const helmet = page.getByRole('button', { name: 'Steel helmet', exact: true });
-	const none = page.getByRole('button', { name: 'None', exact: true });
+	const none = page.getByRole('button', { name: 'Empty head', exact: true });
 	await expect(helmet).toHaveAttribute('aria-pressed', 'true');
+	// One fixed name; aria-pressed carries whether the slot is empty.
+	await expect(none).toHaveAttribute('aria-pressed', 'false');
 	await none.click();
 	await expect(none).toHaveAttribute('aria-pressed', 'true');
+	await expect(none).toHaveAccessibleName('Empty head');
 	await expect(helmet).toHaveAttribute('aria-pressed', 'false');
-	await page.getByRole('button', { name: /^Undo/ }).click();
+	// On a 360 px phone Undo and Redo both live in More.
+	await options.click();
+	await popup.getByRole('button', { name: /^Undo/ }).click();
+	await expect(popup).not.toBeVisible();
 	await expect(helmet).toHaveAttribute('aria-pressed', 'true');
 	await options.click();
 	const redo = popup.getByRole('button', { name: 'Redo Take off', exact: true });
@@ -875,7 +896,7 @@ test.describe('two-finger equipment input', () => {
 		const box = (await world(page).boundingBox())!;
 		const start = { x: box.x + 12, y: box.y + box.height / 2, id: 1 };
 		const moving = { ...start, x: start.x + 42 };
-		const hat = page.getByRole('button', { name: 'Wizard hat', exact: true });
+		const hat = page.getByRole('button', { name: /^Wizard hat(,|$)/ });
 		const target = (await hat.boundingBox())!;
 		const second = { x: target.x + target.width / 2, y: target.y + target.height / 2, id: 2 };
 		const cdp = await context.newCDPSession(page);
@@ -912,4 +933,209 @@ test.describe('two-finger equipment input', () => {
 			await cdp.detach();
 		}
 	});
+});
+
+test('category Random is one named undo step and Random look stays reachable on a 320 px phone', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await customize(page);
+	await pause(page);
+	const undo = page.locator('.header-undo'),
+		redo = page.locator('.header-redo');
+	await expect(undo).toBeDisabled();
+	await page.getByRole('button', { name: 'Random head item', exact: true }).click();
+	await expect(undo).toHaveAccessibleName('Undo Random head item');
+	await undo.click();
+	await expect(undo).toBeDisabled();
+	await expect(redo).toHaveAccessibleName('Redo Random head item');
+	// The demo wears its only chest item: that category has nothing else to switch to.
+	await expect(page.getByRole('button', { name: 'Random chest item', exact: true })).toBeDisabled();
+	// Outfits: Cancel and Save hand focus back to the button that opened the name field.
+	await equipmentMode(page, 'Outfits');
+	const saveLook = page.getByRole('button', { name: 'Save current look', exact: true });
+	await saveLook.click();
+	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(saveLook).toBeFocused();
+	await saveLook.click();
+	await page.getByRole('textbox', { name: 'Outfit name', exact: true }).fill('Focus look');
+	await page.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(saveLook).toBeFocused();
+	await equipmentMode(page, 'Wardrobe');
+
+	// Phones move lower-frequency actions into More, so the character name stays whole.
+	for (const width of [390, 320]) {
+		await page.setViewportSize({ width, height: 568 });
+		await expect
+			.poll(() =>
+				page.locator('.name-line .name-text').evaluate((h) => h.scrollWidth <= h.clientWidth)
+			)
+			.toBe(true);
+	}
+	await expect(page.locator('.header-random')).toBeHidden();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	const menu = page.locator('#experience-options');
+	await menu.getByRole('button', { name: 'Random look', exact: true }).click();
+	await expect(menu).toBeHidden();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await expect(menu.getByRole('button', { name: 'Undo Random look', exact: true })).toBeEnabled();
+	await page.keyboard.press('Escape');
+});
+
+/** Issues with the world image: element short of the screen, a gap or a stretched image. */
+const worldIssues = (page: Page) =>
+	page.locator('.scene-backdrop').evaluate((el) => {
+		const style = getComputedStyle(el),
+			box = el.getBoundingClientRect(),
+			[w, h] = style.backgroundSize.split(' ').map(parseFloat),
+			[x, y] = style.backgroundPosition.split(' ').map(parseFloat),
+			issues: string[] = [];
+		if (box.top > 0 || box.width < innerWidth) issues.push('element short of the screen');
+		if (x > 0.5 || y > 0.5 || x + w < innerWidth - 0.5 || y + h < box.height - 0.5)
+			issues.push('image gap');
+		if (Math.abs(w / h - 1672 / 941) > 0.002) issues.push('stretched');
+		return issues;
+	});
+
+// The geometry checks that experience.spec.ts only runs in its screenshot config, so main CI gates on them too.
+for (const viewport of [
+	{ width: 1440, height: 900 },
+	{ width: 2560, height: 1080 },
+	{ width: 1280, height: 720 },
+	{ width: 390, height: 844 },
+	{ width: 320, height: 568 },
+	{ width: 320, height: 400 },
+	{ width: 844, height: 390 }
+])
+	test(`${viewport.width}×${viewport.height} world covers the screen, the sheet and header follow the shared geometry`, async ({
+		page
+	}) => {
+		await page.setViewportSize(viewport);
+		await landing(page);
+		// Characters: the world image covers the whole screen, uniformly scaled.
+		expect(await worldIssues(page)).toEqual([]);
+		expect(
+			(await page.locator('.scene-backdrop').boundingBox())!.height,
+			'Characters has no sheet to hide a gap'
+		).toBeCloseTo(viewport.height, 0);
+		await page.locator('.customize-action').click();
+		await expect(page.getByRole('tablist', { name: 'Customization panels' })).toBeVisible();
+		await pause(page);
+		const g = layout(viewport.width, viewport.height, 'studio');
+		// Customize: covered down to just under the sheet (or the whole screen beside a rail), never stretched.
+		expect(await worldIssues(page)).toEqual([]);
+		expect((await page.locator('.scene-backdrop').boundingBox())!.height).toBeCloseTo(
+			g.sheet ? g.sheetTop + 24 : viewport.height,
+			0
+		);
+		const rail = (await page.locator('.equipment-rail').boundingBox())!;
+		if (g.sheet) expect(rail.height).toBeCloseTo(g.sheetHeight, 0);
+		const header = (await page.locator('.experience-header').boundingBox())!;
+		expect(header.y).toBeCloseTo(g.top, 0);
+		expect(header.height).toBeCloseTo(g.row, 0);
+		if (!g.phone && !g.short) {
+			// The view switch is centered in the window on the header row.
+			const views = (await page
+				.getByRole('group', { name: 'Character view', exact: true })
+				.boundingBox())!;
+			expect(views.x + views.width / 2).toBeCloseTo(viewport.width / 2, 0);
+		}
+		// The playback bar sits between the stage and the panel.
+		const playback = (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!;
+		expect(playback.y + playback.height).toBeLessThanOrEqual(g.sheet ? rail.y : viewport.height);
+		expect(playback.x).toBeGreaterThanOrEqual(0);
+		expect(playback.x + playback.width).toBeLessThanOrEqual(viewport.width);
+	});
+
+test('leaving a live view clears its sky so Preview never shows a stale one', async ({ page }) => {
+	await customize(page);
+	const painted = () =>
+		page.locator('.world-sky').evaluate((canvas) => {
+			const c = canvas as HTMLCanvasElement;
+			if (!c.width || !c.height) return false;
+			const data = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+			for (let i = 3; i < data.length; i += 4) if (data[i]) return true;
+			return false;
+		});
+	const views = page.getByRole('group', { name: 'Character view', exact: true });
+	await views.getByRole('button', { name: 'Top-down', exact: true }).click();
+	await expect.poll(painted, { timeout: 10_000 }).toBe(true);
+	await views.getByRole('button', { name: 'Preview', exact: true }).click();
+	await expect.poll(painted).toBe(false);
+	await views.getByRole('button', { name: 'Side-scroller', exact: true }).click();
+	await expect.poll(painted, { timeout: 10_000 }).toBe(true);
+	await views.getByRole('button', { name: 'Preview', exact: true }).click();
+	await expect.poll(painted).toBe(false);
+});
+
+test('Moves stays in place, disabled with its reason, in the live views', async ({ page }) => {
+	await customize(page);
+	const tabs = page.getByRole('tablist', { name: 'Customization panels' });
+	const moves = tabs.getByRole('tab', { name: 'Moves', exact: true });
+	const before = (await moves.boundingBox())!;
+	const views = page.getByRole('group', { name: 'Character view', exact: true });
+	for (const view of ['Top-down', 'Side-scroller']) {
+		await views.getByRole('button', { name: view, exact: true }).click();
+		await expect(moves).toHaveAttribute('aria-disabled', 'true');
+		await expect(moves).toHaveAccessibleDescription(/Moves are picked in Preview/);
+		const box = (await moves.boundingBox())!;
+		expect(Math.abs(box.x - before.x) + Math.abs(box.width - before.width)).toBeLessThan(1);
+		// Playwright treats aria-disabled as not actionable; a person can still tap it and gets the reason.
+		await moves.click({ force: true });
+		await expect(moves).toHaveAttribute('aria-selected', 'false');
+		await expect(page.locator('.toast')).toContainText('Moves are picked in Preview');
+		// Arrow keys (which select) skip it.
+		const outfits = tabs.getByRole('tab', { name: 'Outfits', exact: true });
+		await outfits.click();
+		await page.keyboard.press('ArrowRight');
+		await expect(tabs.getByRole('tab', { name: 'Wardrobe', exact: true })).toBeFocused();
+		// Tab still reaches it, so keyboard and screen reader users get its reason, and arrows step on from it without
+		// selecting it.
+		await outfits.click();
+		await page.keyboard.press('Tab');
+		await expect(moves).toBeFocused();
+		await page.keyboard.press('ArrowLeft');
+		await expect(outfits).toBeFocused();
+		await expect(outfits).toHaveAttribute('aria-selected', 'true');
+		// The reason sits outside the tab list, which may own only tabs.
+		await expect(tabs.locator('#moves-tab-note')).toHaveCount(0);
+	}
+	// The live views explain a missing move in plain words, without diagnostics.
+	await expect(page.locator('.world-notes')).not.toContainText('missing —');
+	await views.getByRole('button', { name: 'Preview', exact: true }).click();
+	await expect(moves).not.toHaveAttribute('aria-disabled', 'true');
+});
+
+test('short tab labels, the character name and sheet Done buttons keep 44 px targets', async ({
+	page
+}) => {
+	await landing(page);
+	expect((await page.locator('.selected-name').boundingBox())!.height).toBeGreaterThanOrEqual(44);
+	await page.locator('.customize-action').click();
+	const tabs = page.getByRole('tablist', { name: 'Customization panels' });
+	await expect(tabs).toBeVisible();
+	for (const box of await tabs
+		.getByRole('tab')
+		.evaluateAll((all) => all.map((tab) => tab.getBoundingClientRect().toJSON()))) {
+		expect(box.width).toBeGreaterThanOrEqual(44);
+		expect(box.height).toBeGreaterThanOrEqual(44);
+	}
+	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
+	const done = page
+		.getByRole('dialog', { name: 'Inspect character', exact: true })
+		.getByRole('button', { name: 'Done', exact: true });
+	// The label stays compact; an invisible box answers presses 22 px around its center.
+	expect(
+		await done.evaluate((el) => {
+			const r = el.getBoundingClientRect(),
+				x = r.left + r.width / 2,
+				y = r.top + r.height / 2;
+			return [
+				[x, y - 21],
+				[x, y + 21],
+				[x - 21, y],
+				[x + 21, y]
+			].every(([px, py]) => el.contains(document.elementFromPoint(px, py)));
+		})
+	).toBe(true);
 });

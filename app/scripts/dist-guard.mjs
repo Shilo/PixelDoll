@@ -1,7 +1,9 @@
-// Part of `npm run build` (and so CI): fails if dist/ carries dev or agent-key code, an .env file or a source map (file or
-// inline). Prints file names only, never the matched content. Same check as PixelLab Backpack's scripts/dist-guard.mjs.
+// Part of `npm run build` (and so CI): fails if the build folder (dist/, or an e2e run's own, dist-dir.ts) carries dev
+// or agent-key code, an .env file or a source map (file or inline). Prints file names only, never the matched content.
+// Same check as PixelLab Backpack's scripts/dist-guard.mjs.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
+import { distDir } from '../dist-dir.ts';
 
 // Historical names are leak indicators, not a list of permitted environment references. resolveAgentKey covers any name.
 
@@ -28,8 +30,9 @@ const MARKERS = [
 const DEV_UI = ['Developer rigs', '8-dir held dress: every direction dressed once'];
 const bad = [];
 let startupPolicies = 0;
-for (const rel of readdirSync('dist', { recursive: true })) {
-	const file = join('dist', rel);
+const dist = distDir();
+for (const rel of readdirSync(dist, { recursive: true })) {
+	const file = join(dist, rel);
 	if (!statSync(file).isFile()) continue;
 	const name = basename(file);
 	if (name.startsWith('.env')) bad.push(`${file}: .env file`);
@@ -55,9 +58,10 @@ for (const rel of readdirSync('dist', { recursive: true })) {
 		}
 	}
 }
-if (startupPolicies !== 1) bad.push('dist/assets: missing or duplicated isolated startup policy');
+if (startupPolicies !== 1)
+	bad.push(`${join(dist, 'assets')}: missing or duplicated isolated startup policy`);
 if (bad.length) {
-	console.error(`dist guard: ${bad.length} problem(s) in dist/\n${bad.join('\n')}`);
+	console.error(`dist guard: ${bad.length} problem(s) in ${dist}/\n${bad.join('\n')}`);
 	process.exit(1);
 }
-console.log('dist guard: clean');
+console.log(`dist guard: ${dist}/ clean`);

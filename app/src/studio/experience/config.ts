@@ -25,6 +25,8 @@ export const WORLDS: Record<
 		seam: RGB;
 		fog: RGB;
 		horizon: number;
+		/** Where the character stands, as a fraction of the image height on its vanishing line (x 0.5). */
+		floorPoint: number;
 		sample: Sample;
 	}
 > = {
@@ -34,6 +36,7 @@ export const WORLDS: Record<
 		seam: [0.49, 0.4, 0.27],
 		fog: [0.145, 0.155, 0.165],
 		horizon: 0.53,
+		floorPoint: 0.8,
 		sample: [0.58, 0.82, 0.055, 0.055]
 	},
 	light: {
@@ -42,6 +45,7 @@ export const WORLDS: Record<
 		seam: [0.48, 0.36, 0.22],
 		fog: [0.94, 0.92, 0.88],
 		horizon: 0.475,
+		floorPoint: 0.8,
 		sample: [0.57, 0.82, 0.055, 0.055]
 	}
 };
@@ -62,4 +66,13 @@ export const MOTION = {
 	joystickRadius: 46,
 	deadZone: 8,
 	tileSize: 100
+};
+
+/** Pixel size of every world image (public/worlds/*-stage.png); the world is scaled uniformly from it, never stretched. */
+const WORLD_SIZE = [1672, 941] as const;
+
+/** The world image's geometry for uniform placement (geometry.ts). */
+export const worldArt = (theme: WorldTheme) => {
+	const w = WORLDS[theme];
+	return { width: WORLD_SIZE[0], height: WORLD_SIZE[1], horizon: w.horizon, floor: w.floorPoint };
 };

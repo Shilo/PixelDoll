@@ -10,7 +10,13 @@ import {
 	type DressState
 } from '../lib/dress/project.ts';
 import { splitBase } from '../lib/dress/regions.ts';
-import { deriveMaterials, randomOutfit, recolor, storeVariants } from '../lib/dress/dress.ts';
+import {
+	deriveMaterials,
+	randomOutfit,
+	randomVariants,
+	recolor,
+	storeVariants
+} from '../lib/dress/dress.ts';
 import { drawList } from '../lib/compose/compose.ts';
 import { deleteItem, deleteOutdated, listProjects, loadProject } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
@@ -37,7 +43,7 @@ import type {
 	MoveSpec,
 	Progress
 } from './create.ts';
-import { GROUPS, groupOf, uniqueBy } from './model.ts';
+import { characterFacts, GROUPS, groupLabel, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import type { SetupSpec } from './setup.ts';
 import { forgetFits, listShared, type SharedItem } from '../lib/equipment/shared.ts';
@@ -128,7 +134,7 @@ export const ui = $state({
 	theme: (lsGet(K.theme) === 'light' ? 'light' : 'dark') as 'light' | 'dark',
 	welcome: !lsGet(K.welcomed),
 	tab: 'wardrobe' as 'wardrobe' | 'colors' | 'outfits' | 'moves', // phone
-	inspTab: 'item' as 'item' | 'colors' | 'moves',
+	colorsFocus: '', // item id whose Colors section the Colors tab scrolls to once (Recolor in item details)
 	group: 'Head',
 	selected: '', // item id, or "gen:<draft id>"
 	sheet: null as SheetId,
@@ -328,6 +334,8 @@ export interface ProjectRef {
 	demo: boolean;
 	dev: boolean;
 	savedAt: string;
+	/** Shape at a glance for saved characters; the demo's comes from its open manifest. */
+	facts?: string;
 }
 class Store {
 	project = $state.raw<Project | null>(null);
@@ -417,7 +425,9 @@ export async function refreshProjects(): Promise<boolean> {
 			name: p.manifest.name,
 			demo: false,
 			dev: p.origin === 'dev',
-			savedAt: p.savedAt
+			savedAt: p.savedAt,
+			// A developer rig frozen on the M2 pages need not carry a full rig; it has no card facts.
+			facts: p.manifest.rig?.cell ? characterFacts(p.manifest) : undefined
 		}))
 	];
 	// Items of a character created, renamed or deleted here or in another tab.
@@ -855,10 +865,59 @@ export function setVariant(matId: string, name: string | null) {
 		else doc.variants[matId] = name;
 	});
 }
-export function resetColors(matIds?: string[]) {
-	commit('Reset colors', () => {
+export function resetColors(matIds?: string[], label = 'Reset colors') {
+	commit(label, () => {
 		for (const k of matIds ?? Object.keys(doc.variants)) delete doc.variants[k];
 	});
+}
+/** Items a category's Random can switch to: every item of the group except the ones worn now. */
+export function groupRandomChoices(groupId: string) {
+	const m = store.project?.manifest,
+		g = GROUPS.find((x) => x.id === groupId);
+	if (!m || !g) return [];
+	return m.items.filter((i) => g.slots.includes(i.slot) && doc.items[i.slot] !== i.id);
+}
+/** Category Random: a different item of that category, worn in its own slot, with new colors. One undo step. */
+export function randomizeGroup(groupId: string) {
+	const m = store.project?.manifest,
+		g = GROUPS.find((x) => x.id === groupId),
+		choices = groupRandomChoices(groupId);
+	if (!m || !g || !choices.length) return;
+	const it = choices[Math.floor(Math.random() * choices.length)];
+	const variants = randomVariants(
+		m,
+		m.materials.filter((x) => x.owner === it.id),
+		Math.random,
+		1,
+		doc.variants
+	);
+	commit(`Random ${groupLabel(g.id).toLowerCase()} item`, () => {
+		// A category can wear several layers (an inner and an outer top); the pick replaces only its own slot.
+		doc.items[it.slot] = it.id;
+		Object.assign(doc.variants, variants);
+	});
+	ui.selected = it.id;
+}
+/** Colors-only Random for the given item ids (the character or one worn item). Never changes what is worn. */
+export function randomizeColors(owners: string[], label: string) {
+	const m = store.project?.manifest;
+	if (!m) return;
+	const variants = randomVariants(
+		m,
+		m.materials.filter((x) => owners.includes(x.owner)),
+		Math.random,
+		1,
+		doc.variants
+	);
+	commit(label, () => Object.assign(doc.variants, variants));
+}
+/** The open character's name as people see it (the demo without its "(demo)" suffix). */
+export function characterName() {
+	return (
+		store.projects.find((p) => p.id === doc.id)?.name.replace(/ \(demo\)$/, '') ??
+		store.project?.manifest.name ??
+		'Character'
+	);
 }
 export function randomize() {
 	const r = randomOutfit(store.project!.manifest);
@@ -1431,7 +1490,6 @@ export async function openGenerationReview(id: string) {
 	if (!gens.includes(g) || doc.id !== g.draft.rigId) return;
 	ui.sheet = null;
 	ui.tab = 'wardrobe';
-	ui.inspTab = 'item';
 	ui.group = groupOf(g.input.slot).id;
 	ui.selected = `gen:${id}`;
 }
@@ -1448,7 +1506,6 @@ async function openItemReview(projectId: string, itemId: string, anim?: string) 
 	ui.selected = item.id;
 	ui.group = groupOf(item.slot).id;
 	ui.tab = 'wardrobe';
-	ui.inspTab = 'item';
 	if (anim) {
 		ui.anim = anim;
 		ui.frame = 0;

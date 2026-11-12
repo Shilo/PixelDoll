@@ -3,7 +3,8 @@
 	import { ui, doc, view, toast, stepPreviewFrame } from '../state.svelte.ts';
 	import { experience, characters, setMode } from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
-	import { MOTION, REFLECTION, WORLDS } from './config.ts';
+	import { MOTION, REFLECTION, WORLDS, worldArt } from './config.ts';
+	import { heroRoom, layout, placeWorld } from './geometry.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { paintedFrame, actorScale } from './bounds.ts';
@@ -142,10 +143,8 @@
 			setMode((['preview', 'topdown', 'side'] as const)[Number(k) - 1]);
 		} else if (!e.repeat && (k === 'escape' || k === 'backspace')) {
 			e.preventDefault();
-			const popover = document.querySelector<HTMLElement>('[popover]:popover-open'),
-				prompt = document.querySelector<HTMLDetailsElement>('.prompt-disclosure[open]');
+			const popover = document.querySelector<HTMLElement>('[popover]:popover-open');
 			if (popover) popover.hidePopover();
-			else if (prompt) prompt.open = false;
 			else characters();
 		} else if (!e.repeat && k === ' ' && experience.mode === 'preview') {
 			e.preventDefault();
@@ -234,7 +233,6 @@
 			const dt = Math.min(50, now - last);
 			last = now;
 			const a = availability,
-				rect = host.getBoundingClientRect(),
 				dpr = devicePixelRatio || 1;
 			const width = innerWidth,
 				height = innerHeight;
@@ -246,20 +244,16 @@
 			g.setTransform(dpr, 0, 0, dpr, 0, 0);
 			g.clearRect(0, 0, width, height);
 			g.imageSmoothingEnabled = false;
-			const mobile = width <= 760,
-				short = height <= 540 && width >= height;
-			const desiredY = height * (mobile ? (short ? 0.65 : 0.52) : 0.755);
-			const anchor = {
-				x: rect.x + rect.width / 2,
-				y: Math.max(rect.top, Math.min(rect.bottom - 8, desiredY))
-			};
-			const anchorRatio = rect.height > 0 ? (anchor.y - rect.y) / rect.height : 0;
-			const preferred = Math.max(
-				1,
-				Math.floor(
-					Math.min(rect.width / (mobile ? 110 : 130), (height * (mobile ? 0.24 : 0.4)) / 50)
-				)
-			);
+			// The feet sit just above the playback bar in every view, so switching views never moves the character.
+			const place = layout(width, height, 'studio');
+			const anchor = { x: place.feet.x, y: place.feet.y };
+			const room = heroRoom(place);
+			// The world image, sky and side floor share one horizon: the character's eye line (geometry.ts placeWorld).
+			const heroNow = fitFrame
+				? Math.round(fitFrame.y * actorScale(fitFrame, room, dpr))
+				: experience.heroHeight;
+			const art = worldArt(ui.theme),
+				backdrop = placeWorld(place, art, anchor, heroNow);
 			let velocity = keyboardVector(keys, experience.mode === 'side');
 			if (stick)
 				velocity = pointerVector(
@@ -287,15 +281,26 @@
 				theme: ui.theme,
 				mode: experience.mode,
 				anchor,
-				camera
+				camera,
+				eye: backdrop.eye
 			};
 			const world = WORLDS[ui.theme],
 				skyUrl = world.backgrounds[experience.mode],
 				s = live ? scene : undefined;
 			const horizon = s?.projection(options).horizon;
-			const nextSky = [skyUrl, width, height, dpr, horizon ?? 'preview'].join('|');
+			const nextSky = [
+				skyUrl,
+				width,
+				height,
+				dpr,
+				horizon ?? 'preview',
+				backdrop.scale,
+				backdrop.x,
+				backdrop.y
+			].join('|');
 			if (nextSky !== skyStamp) {
 				skyStamp = nextSky;
+				// Resizing the backing store clears it, so returning to Preview never leaves a stale sky.
 				sky.width = Math.round(width * dpr);
 				sky.height = Math.round(height * dpr);
 				if (s && horizon !== undefined)
@@ -303,20 +308,24 @@
 						.loadBackground(skyUrl)
 						.then((image) => {
 							if (disposed || skyStamp !== nextSky) return;
+							// The backdrop's own placement: uniform scale, image horizon on the eye line and the floor's horizon.
+							const sky = backdrop;
 							skyContext.setTransform(dpr, 0, 0, dpr, 0, 0);
+							skyContext.clearRect(0, 0, width, height);
+							skyContext.save();
+							skyContext.beginPath();
+							skyContext.rect(0, 0, width, Math.max(horizon + 24, 1));
+							skyContext.clip();
 							skyContext.drawImage(
 								image,
-								0,
-								0,
-								image.width,
-								image.height * world.horizon,
-								0,
-								0,
-								width,
-								Math.max(horizon + 24, 1)
+								sky.x,
+								sky.y,
+								sky.scale * image.width,
+								sky.scale * image.height
 							);
+							skyContext.restore();
 						})
-						.catch(() => {});
+						.catch((error) => console.error('world sky', error));
 			}
 			if (scene) {
 				ground ??= new scene.Ground(floor);
@@ -412,7 +421,10 @@
 				if (img && result) {
 					const frame = result.frame,
 						point = s ? s.project(position, options) : anchor;
-					const scale = actorScale(fitFrame ?? frame, rect, dpr, preferred, anchorRatio);
+					const fit = fitFrame ?? frame,
+						scale = actorScale(fit, room, dpr),
+						hero = Math.round(fit.y * scale);
+					if (hero !== experience.heroHeight) experience.heroHeight = hero;
 					const snap = (n: number) => Math.round(n * dpr) / dpr;
 					const x = snap(point.x - frame.x * scale),
 						y = snap(point.y - frame.y * scale);
@@ -453,6 +465,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div
 	class="world-stage bu-focus"
+	id="world-stage"
 	bind:this={host}
 	role="application"
 	tabindex="0"

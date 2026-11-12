@@ -8,7 +8,8 @@ import {
 	selectedItemDetails,
 	inspectStage,
 	openAccount,
-	pickItem
+	pickItem,
+	section
 } from './immersive-helpers.ts';
 import { expect, test, type Page } from '@playwright/test';
 import assert from 'node:assert/strict';
@@ -86,6 +87,17 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 		{ tone: 'danger' }
 	);
 	await expect.poll(() => notice.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+	// Inside a sheet the long message stays under its title and close button and above its bottom edge.
+	await expect
+		.poll(() =>
+			notice.evaluate((el) => {
+				const r = el.getBoundingClientRect(),
+					dialog = el.closest('dialog')!.getBoundingClientRect(),
+					head = el.closest('dialog')!.querySelector('.sheet-head')!.getBoundingClientRect();
+				return r.top >= head.bottom && r.bottom <= dialog.bottom;
+			})
+		)
+		.toBe(true);
 	await notice.evaluate((el) => (el.scrollTop = el.scrollHeight));
 	const close = await dismiss().boundingBox();
 	expect(close).not.toBeNull();
@@ -97,6 +109,20 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	await expect(notice).toHaveCount(0);
 	await page.keyboard.press('Escape');
 	await expect(dialog).toHaveCount(0);
+	// On a phone's Customize screen a long message scrolls inside its region, never down over the equipment sheet.
+	await page.setViewportSize({ width: 390, height: 844 });
+	await showNotification(page, 'Saved. ' + 'A long status message that keeps going. '.repeat(60), {
+		duration: 0
+	});
+	await expect(notice).toBeVisible();
+	await expect
+		.poll(async () => {
+			const toast = (await notice.boundingBox())!,
+				sheet = (await page.locator('.equipment-rail').boundingBox())!;
+			return toast.y + toast.height <= sheet.y - 11;
+		})
+		.toBe(true);
+	expect(await notice.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
 });
 
 test('the startup preview notice expires after eight seconds', async ({ page }, info) => {
@@ -215,10 +241,17 @@ test('top notifications fit both themes across desktop, tablet and phone orienta
 								issues: string[] = [];
 							if (r.left < 0 || r.top < 0 || r.right > innerWidth + 1 || r.bottom > innerHeight + 1)
 								issues.push('outside viewport');
-							if (Math.abs(r.left + r.width / 2 - innerWidth / 2) > 1) issues.push('off center');
+							// Centered over the stage column: the whole width over a phone sheet or in short landscape (where it
+							// wraps less), else the world left of the rail.
+							const column = document.querySelector('.sheet-layout, .short-layout')
+								? { left: 0, right: innerWidth }
+								: document.querySelector('.experience-stage, .cast')!.getBoundingClientRect();
+							if (Math.abs(r.left + r.width / 2 - (column.left + column.right) / 2) > 1)
+								issues.push('off center');
+							if (r.width > 421) issues.push('wider than 420');
 							if (el.scrollWidth > el.clientWidth) issues.push('horizontal clipping');
 							for (const target of document.querySelectorAll<HTMLElement>(
-								'.experience-header,.view-modes,.selection-import,.selection-create,.cast-library>.bu-input,.equipment-modes,.sheet-expand'
+								'.experience-header,.view-modes,.selection-import,.selection-create,.cast-library>.bu-input,.equipment-modes,.sheet-layout .equipment-rail'
 							)) {
 								if (!target.getClientRects().length) continue;
 								const b = target.getBoundingClientRect();
@@ -444,10 +477,14 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	});
 	await openStudio(page, `${BASE}/#/`, { waitUntil: 'networkidle' });
 	await page.waitForSelector('.world-actors');
+	// Tile names start with the item name; status words (such as missing frames) follow after a comma.
 	const pressed = (name: string) =>
 		page
 			.locator('.equipment-scroll')
-			.getByRole('button', { name, exact: true })
+			.getByRole('button', {
+				// Plain names only (letters, spaces and commas), so no escaping is needed.
+				name: new RegExp(`^${name}(,|$)`)
+			})
 			.getAttribute('aria-pressed');
 	const stage = () =>
 		page
@@ -459,27 +496,27 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	// pause playback so the stage is comparable
 	await page.getByRole('button', { name: 'Pause', exact: true }).click();
 	assert.equal(await pressed('Steel helmet'), 'true');
-	await page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).click();
+	await page.locator('.equipment-scroll .item-tile', { hasText: 'Wizard hat' }).click();
 	assert.equal(await pressed('Wizard hat'), 'true');
 	assert.equal(await pressed('Steel helmet'), 'false');
 	step('wear swaps the item in the slot');
 
-	await page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).click();
+	await page.locator('.equipment-scroll .item-tile', { hasText: 'Wizard hat' }).click();
 	assert.equal(await pressed('Wizard hat'), 'false');
-	assert.equal(await pressed('None'), 'true');
-	assert.equal(await page.locator('.sel-name').textContent(), 'Wizard hat');
+	assert.equal(await pressed('Empty head'), 'true');
+	await expect(page.locator('.item-tile[data-selected]')).toHaveAccessibleName(/^Wizard hat(,|$)/);
 	await page
 		.locator('.equipment-scroll')
-		.getByRole('button', { name: 'None', exact: true })
+		.getByRole('button', { name: 'Empty head', exact: true })
 		.click();
 	await expect(page.locator('.header-undo')).toHaveAttribute(
 		'aria-label',
 		'Undo Take off Wizard hat'
 	);
-	await page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).click();
+	await page.locator('.equipment-scroll .item-tile', { hasText: 'Wizard hat' }).click();
 	assert.equal(await pressed('Wizard hat'), 'true');
 	step(
-		'tapping a worn item takes it off, tapping again wears it; None with nothing worn adds no undo step'
+		'tapping a worn item takes it off, tapping again wears it; Empty with nothing worn adds no undo step'
 	);
 
 	for (let i = 0; i < 3; i++) await page.getByRole('button', { name: /^Undo/ }).click();
@@ -493,10 +530,11 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	assert.equal(await pressed('Steel longsword'), 'true');
 	await equipmentGroup(page, 'Off hand');
 	await expect(page.getByRole('heading', { name: 'Off hand', exact: true })).toBeVisible();
-	await expect(page.getByRole('group', { name: 'Off hand items', exact: true })).toContainText(
-		'No items yet'
+	// An empty category shows Empty first and a New tile beside it, plus the header's +.
+	await expect(page.getByRole('group', { name: 'Off hand items', exact: true })).toHaveText(
+		/^\s*Empty\s*New\s*$/
 	);
-	await expect(page.getByRole('button', { name: 'New off hand item', exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'New off hand item', exact: true })).toHaveCount(2);
 	await equipmentGroup(page, 'Head');
 	step('held items have separate Main hand and Off hand groups');
 
@@ -511,7 +549,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	step('recolor changes the stage pixels');
 
 	await equipmentMode(page, 'Outfits');
-	await page.locator('[aria-label="Save current look"]').click();
+	await page.getByRole('button', { name: 'Save current look', exact: true }).click();
 	await page.locator('input[aria-label="Outfit name"]').fill('Smoke look');
 	await page.getByRole('button', { name: 'Save', exact: true }).click();
 	await page.locator('.outfits .row', { hasText: 'Smoke look' }).waitFor();
@@ -770,11 +808,28 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 				).toBeVisible();
 				await p.keyboard.press('Escape');
 			}
-			await p.getByRole('button', { name: 'Random look' }).click();
-			assert.ok(
-				await p.getByRole('button', { name: /^Undo Random look/ }).isEnabled(),
-				`${name}: random look`
-			);
+			// Phones up to 430 px keep Random look in More.
+			if (await p.locator('.header-random').isVisible()) await p.locator('.header-random').click();
+			else {
+				await p.getByRole('button', { name: 'More options', exact: true }).click();
+				await p
+					.locator('#experience-options')
+					.getByRole('button', { name: 'Random look', exact: true })
+					.click();
+			}
+			// Narrow phones keep Undo in More.
+			if (await p.locator('.header-undo').isVisible())
+				assert.ok(
+					await p.getByRole('button', { name: /^Undo Random look/ }).isEnabled(),
+					`${name}: random look`
+				);
+			else {
+				await p.getByRole('button', { name: 'More options', exact: true }).click();
+				await expect(
+					p.locator('#experience-options').getByRole('button', { name: /^Undo Random look/ })
+				).toBeEnabled();
+				await p.keyboard.press('Escape');
+			}
 			await equipmentMode(p, 'Outfits');
 			await p.getByRole('button', { name: 'Save current look' }).click();
 			await p.locator('input[aria-label="Outfit name"]').fill('Phone look');
@@ -783,7 +838,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 			step(`${name}: Outfits, Random look and Redo reachable (P1-2)`);
 		});
 	await at({ width: 768, height: 1024 }, async (p) => {
-		assert.ok(await p.locator('.tiles').isVisible(), 'tablet: wardrobe tiles visible');
+		assert.ok(await p.locator('.slot-tiles').first().isVisible(), 'tablet: wardrobe tiles visible');
 		const box = await p.locator('.world-stage').boundingBox(),
 			rail = await p.locator('.equipment-rail').boundingBox();
 		assert.ok(
@@ -791,7 +846,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 			`tablet: preview and wardrobe do not overlap ${JSON.stringify({ box, rail })}`
 		);
 		await equipmentGroup(p, 'Head');
-		await p.locator('.tile', { hasText: 'Steel helmet' }).click();
+		await p.locator('.item-tile', { hasText: 'Steel helmet' }).click();
 		assert.equal(await p.locator('.drawer, .drawer-scrim').count(), 0);
 		step(
 			'tablet portrait: preview and wardrobe remain separate, nothing covers the character (P1-3)'
@@ -841,11 +896,9 @@ test('an outfit edit survives an immediate reload inside the autosave delay', as
 		localStorage.setItem('pixeldoll.welcomed', '1');
 	});
 	await openStudio(page, '/#/');
-	const hat = page
-		.locator('.equipment-scroll')
-		.getByRole('button', { name: 'Wizard hat', exact: true });
+	const hat = page.locator('.equipment-scroll').getByRole('button', { name: /^Wizard hat(,|$)/ });
 	const worn = (await hat.getAttribute('aria-pressed')) === 'true' ? 'false' : 'true';
-	await page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).click();
+	await page.locator('.equipment-scroll .item-tile', { hasText: 'Wizard hat' }).click();
 	await expect(hat).toHaveAttribute('aria-pressed', worn);
 	// A page-initiated reload 20 ms later lost the edit every time before the localStorage snapshot (page.reload() did not).
 	const loaded = page.waitForEvent('load');
@@ -1229,10 +1282,13 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await page.getByRole('menuitem', { name: 'Character selection', exact: true }).click();
 	await page
 		.locator('.character-rows .character-row')
-		.filter({ hasText: 'Demo character' })
+		.filter({ has: page.getByText('Adventurer', { exact: true }) })
 		.click();
 	await page.locator('.customize-action').click();
-	await expect(page.locator('.project-btn')).toHaveText('Adventurer');
+	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer');
+	// The page heading names the character outside the menu button (a heading cannot sit inside a button).
+	await expect(page.getByRole('heading', { level: 1, name: 'Adventurer' })).toHaveCount(1);
+	await expect(page.locator('.project-btn h1')).toHaveCount(0);
 });
 
 test('closing Connect before its code loads still discards the pending action', async ({
@@ -1409,12 +1465,15 @@ test('free item color matching is offline, scoped, persistent and preserves save
 	}, fixture.itemId);
 	await selectedItemDetails(page);
 	await expect(pane.locator('.badge.accepted')).toHaveText('Accepted');
-	await expect(pane.getByRole('radio', { name: 'azure', exact: true }).first()).toHaveAttribute(
-		'aria-checked',
-		'true'
-	);
 	await expect(pane.getByRole('button', { name: /^Match item colors.*Free$/ })).toHaveCount(0);
-	await pane.getByRole('button', { name: 'Done', exact: true }).click();
+	// The saved recolor survives: the item's colors live in the Colors tab, which Recolor opens.
+	await pane.getByRole('button', { name: 'Recolor', exact: true }).click();
+	await expect(
+		page
+			.locator(`.color-sections [data-owner="${fixture.itemId}"]`)
+			.getByRole('radio', { name: 'azure', exact: true })
+			.first()
+	).toHaveAttribute('aria-checked', 'true');
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Export', exact: true });
 	await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click();
@@ -1468,7 +1527,7 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
 				{ initial, shared, legacy }
 			);
 			await openStudio(page, '/#/');
-			await expect(page.locator('.project-btn')).toHaveText('Adventurer');
+			await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer');
 			await expect(page.locator('.world-actors').first()).toBeVisible();
 			await page.locator('.project-btn').click();
 			await page
@@ -1625,10 +1684,11 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitemradio', { name: 'Adventurer (demo)', exact: true }).click();
-	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
-	await expect(page.getByRole('dialog', { name: 'Add a move', exact: true })).toContainText(
-		'Moves are added to your own character.'
-	);
+	// Wait for the switch itself: clicking Add a move before the demo replaced the fixture raced the load (the old flake).
+	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer');
+	await expect(page.locator('.move-list')).toBeVisible();
+	// The draft stays with its character: the read-only demo offers no Add a move at all.
+	await expect(page.getByRole('button', { name: 'Add a move', exact: true })).toHaveCount(0);
 	expect(requests).toEqual([]);
 });
 
@@ -1641,13 +1701,22 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 	});
 	await openStudio(page, '/');
 	await expect(page.locator('.world-actors').first()).toBeVisible();
-	const tabs = page.getByRole('tablist', { name: 'Slots', exact: true });
+	// The slot rail is section navigation with one Tab stop; Down arrow moves to and shows the next slot.
+	const tabs = page.getByRole('navigation', { name: 'Equipment slots', exact: true });
 	await expect(tabs.locator('[tabindex="0"]')).toHaveCount(1);
-	await tabs.getByRole('tab', { name: /^Head\b/ }).focus();
-	await page.keyboard.press('ArrowRight');
-	await expect(tabs.getByRole('tab', { name: /^Hair\b/ })).toBeFocused();
-	await expect(tabs.getByRole('tab', { name: /^Hair\b/ })).toHaveAttribute('aria-selected', 'true');
+	await tabs.getByRole('button', { name: /^Head\b/ }).click();
+	await tabs.getByRole('button', { name: /^Head\b/ }).focus();
+	await page.keyboard.press('ArrowDown');
+	await expect(tabs.getByRole('button', { name: /^Hair\b/ })).toBeFocused();
+	await expect(tabs.getByRole('button', { name: /^Hair\b/ })).toHaveAttribute(
+		'aria-current',
+		'true'
+	);
 	await expect(tabs.locator('[tabindex="0"]')).toHaveCount(1);
+	await page.keyboard.press('End');
+	await expect(tabs.getByRole('button').last()).toBeFocused();
+	await page.keyboard.press('Home');
+	await expect(tabs.getByRole('button').first()).toBeFocused();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const engines = page.getByRole('group', { name: 'Export format', exact: true });
 	await expect(engines.getByRole('radio', { name: /Godot/ })).toBeChecked();
@@ -1703,7 +1772,7 @@ test('draft review can inspect every generated move and only its available views
 		const s = (
 			window as unknown as {
 				__studio: {
-					ui: { playing: boolean; frame: number; anim: string; inspTab: string; selected: string };
+					ui: { playing: boolean; frame: number; anim: string; selected: string };
 					doc: { id: string };
 					store: { project: any; results: Record<string, unknown> };
 					gens: unknown[];
@@ -1715,7 +1784,6 @@ test('draft review can inspect every generated move and only its available views
 		s.ui.playing = false;
 		s.ui.frame = 0;
 		s.ui.anim = 'walk';
-		s.ui.inspTab = 'item';
 		const p = s.store.project,
 			it = p.manifest.items.find((i: { slot: string }) => i.slot === 'head');
 		s.gens.push({
@@ -2161,7 +2229,7 @@ test('mixed malformed draft calls cannot claim Clean when surviving frame checks
 		const s = (
 			window as unknown as {
 				__studio: {
-					ui: { playing: boolean; anim: string; inspTab: string; selected: string };
+					ui: { playing: boolean; anim: string; selected: string };
 					doc: { id: string };
 					store: { project: any; results: Record<string, unknown> };
 					gens: unknown[];
@@ -2172,7 +2240,6 @@ test('mixed malformed draft calls cannot claim Clean when surviving frame checks
 		await s.loadGens();
 		s.ui.playing = false;
 		s.ui.anim = 'walk';
-		s.ui.inspTab = 'item';
 		const p = s.store.project,
 			it = p.manifest.items.find((i: { slot: string }) => i.slot === 'head');
 		const calls = ['south', 'east'].map((d) => ({
@@ -2340,11 +2407,16 @@ test('long item and outfit names leave wardrobe controls inside the desktop side
 		// The outer rail permits the documented 8px focus/swatch paint overflow.
 		const overflows = [
 			side,
-			...side.querySelectorAll('.equipment-scroll, .tiles, .tile, .tile-name')
+			...side.querySelectorAll('.equipment-scroll, .slot-tiles, .item-tile, .tile-name')
 		]
-			.filter((n) => n.scrollWidth > n.clientWidth + (n === side ? 8 : 1))
+			// Tile labels truncate with a visible ellipsis by design; nothing else may overflow.
+			.filter(
+				(n) =>
+					n.scrollWidth > n.clientWidth + (n === side ? 8 : 1) &&
+					getComputedStyle(n).textOverflow !== 'ellipsis'
+			)
 			.map((n) => n.className);
-		const controls = [...side.querySelectorAll('.tile, .sel-row button')].map((n) => {
+		const controls = [...side.querySelectorAll('.item-tile, .tile-more')].map((n) => {
 			const r = n.getBoundingClientRect();
 			return { left: r.left, right: r.right, width: r.width };
 		});
@@ -2358,7 +2430,7 @@ test('long item and outfit names leave wardrobe controls inside the desktop side
 	}
 	await page
 		.locator('.equipment-scroll')
-		.getByRole('button', { name: 'None', exact: true })
+		.getByRole('button', { name: 'Empty head', exact: true })
 		.click();
 	await expect(wear).toHaveAttribute('aria-pressed', 'false');
 	await equipmentMode(page, 'Outfits');
@@ -2583,7 +2655,7 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
 	await page.evaluate(async () => {
 		const w = window as unknown as {
 			__studio: {
-				ui: { selected: string; inspTab: string };
+				ui: { selected: string };
 				doc: { id: string };
 				store: { project: any };
 				gens: any[];
@@ -2674,7 +2746,6 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
 			status: 'Starting'
 		});
 		s.ui.selected = 'gen:' + it.id;
-		s.ui.inspTab = 'item';
 	});
 	const gen = page.locator('.gen');
 	await expect(gen).toContainText(
@@ -2810,7 +2881,6 @@ test('new item progress, previews and completion survive reload without submitti
 		await db.put('projects', ctx.rec.id, ctx.rec);
 		await s.openProject(ctx.rec.id);
 		await s.startItem({ name: 'Progress fixture', slot: 'hair', prompt: 'short hair' });
-		s.ui.inspTab = 'item';
 		return s.gens[0].draft.spec.id;
 	});
 	await equipmentGroup(page, 'Hair');
@@ -2839,7 +2909,6 @@ test('new item progress, previews and completion survive reload without submitti
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
 		s.ui.selected = 'gen:' + id;
-		s.ui.inspTab = 'item';
 	}, id);
 	await equipmentGroup(page, 'Hair');
 	await expect(gen).toContainText('Needs a look'); // Returning the unchanged mannequin deliberately fails item QA.
@@ -4673,7 +4742,6 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 			status: 'Stopped',
 			error: 'Synthetic completed fallback failed review'
 		});
-		s.ui.inspTab = 'item';
 		s.ui.selected = 'gen:' + draft.spec.id;
 		return route.itemRoute.plan(ctx.rec.manifest.rig, ctx, input).gens;
 	});
@@ -4682,11 +4750,12 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		retry = panel.getByRole('button', { name: /^Try again/ });
 	expect(expected).toBe(10); // only four padded standing references; walking frames are a separate purchase now
 	await expect(retry).toBeEnabled();
-	// The selection area belongs to the browsed group: the main-hand draft does not show under Off hand.
+	// The selection's details belong to its own category: the main-hand draft shows once, in the Main hand section.
 	await equipmentGroup(page, 'Off hand');
-	await expect(page.locator('.equipment-scroll .gen')).toHaveCount(0);
-	await equipmentGroup(page, 'Main hand');
 	await expect(page.locator('.equipment-scroll .gen')).toHaveCount(1);
+	await expect(section(page, 'Off hand').locator('.gen')).toHaveCount(0);
+	await equipmentGroup(page, 'Main hand');
+	await expect(section(page, 'Main hand').locator('.gen')).toHaveCount(1);
 	await expect(retry).toBeEnabled();
 	await expect(retry).toHaveText(`Try again Est. ${expected} gens`);
 	await panel
@@ -4872,3 +4941,278 @@ for (const changed of ['item', 'rig'] as const)
 		expect(saved.audit).toBeUndefined();
 		expect(requests).toEqual([]);
 	});
+
+// ---- Per-tile item menu (docs/design/2026-11-11-ui-refinement/ui-lab-7.html) and Wardrobe placement ----
+
+async function editableCopy(page: Page) {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(page, '/#/');
+	await newItem(page, 'Head');
+	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
+	await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor();
+	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(page.getByRole('dialog')).toHaveCount(0);
+}
+const itemMenu = (page: Page) => page.locator('#item-menu');
+const menuOpen = (page: Page) => itemMenu(page).evaluate((m) => m.matches(':popover-open'));
+/** The open menu is an arrowed popover fully inside the viewport. */
+async function expectAnchoredMenu(page: Page) {
+	const menu = itemMenu(page);
+	await expect.poll(() => menuOpen(page)).toBe(true);
+	await expect(menu.locator('.bu-popover-arrow')).toBeVisible();
+	const viewport = page.viewportSize()!;
+	const box = (await menu.locator('.bu-popover-surface').boundingBox())!;
+	expect(box.x).toBeGreaterThanOrEqual(0);
+	expect(box.y).toBeGreaterThanOrEqual(0);
+	expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+	expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+}
+
+test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Escape returns to the ⋮', async ({
+	page
+}) => {
+	await editableCopy(page);
+	await equipmentGroup(page, 'Head');
+	const head = section(page, 'Head');
+	const hat = head.getByRole('button', { name: /^Wizard hat(,|$)/ });
+	const more = head.getByRole('button', { name: 'More options for Wizard hat', exact: true });
+	// A sibling control, never nested in the tile, with a large hit area.
+	expect(await more.evaluate((b) => !!b.closest('.item-tile'))).toBe(false);
+	await expect(more).toHaveAttribute('aria-haspopup', 'menu');
+	await expect(more).toHaveAttribute('aria-expanded', 'false');
+	const hit = (await more.boundingBox())!;
+	expect(Math.min(hit.width, hit.height)).toBeGreaterThanOrEqual(44);
+	// The category's Random and + actions are full 44 px targets too.
+	for (const name of ['Random head item', 'New head item']) {
+		const box = (await head.getByRole('button', { name, exact: true }).boundingBox())!;
+		expect(Math.min(box.width, box.height), name).toBeGreaterThanOrEqual(44);
+	}
+	// Empty and New tiles have no menu.
+	await expect(head.getByRole('button', { name: /^More options for Empty/ })).toHaveCount(0);
+
+	await more.click();
+	await expectAnchoredMenu(page);
+	await expect(more).toHaveAttribute('aria-expanded', 'true');
+	const items = itemMenu(page).getByRole('menuitem');
+	await expect(items.first()).toHaveAccessibleName('Details…');
+	await expect(items.first()).toBeFocused();
+	await expect(items.last()).toHaveAccessibleName('Remove…');
+	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
+	await page.keyboard.press('ArrowDown');
+	await expect(items.nth(1)).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect.poll(() => menuOpen(page)).toBe(false);
+	await expect(more).toBeFocused();
+	await expect(more).toHaveAttribute('aria-expanded', 'false');
+
+	// The same ⋮ toggles it closed again.
+	await more.click();
+	await expect.poll(() => menuOpen(page)).toBe(true);
+	await more.click();
+	await expect.poll(() => menuOpen(page)).toBe(false);
+	await expect(more).toHaveAttribute('aria-expanded', 'false');
+	// Tab and Shift+Tab out of the menu close it, like any menu; focus moves on rather than to the page.
+	await more.click();
+	await expect(items.first()).toBeFocused();
+	await items.last().focus();
+	await page.keyboard.press('Tab');
+	await expect.poll(() => menuOpen(page)).toBe(false);
+	expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
+	await more.click();
+	await expect(items.first()).toBeFocused();
+	await page.keyboard.press('Shift+Tab');
+	// Shift+Tab from the first command reaches the header's Wear toggle, still inside the menu.
+	await expect(
+		itemMenu(page).getByRole('button', { name: 'Wear Wizard hat', exact: true })
+	).toBeFocused();
+	await page.keyboard.press('Shift+Tab');
+	await expect.poll(() => menuOpen(page)).toBe(false);
+
+	// A press on a tile while the menu is open only dismisses the menu: it never also wears or takes off that tile.
+	const helmet = head.getByRole('button', { name: /^Steel helmet(,|$)/ });
+	const helmetWorn = (await helmet.getAttribute('aria-pressed'))!;
+	await more.click();
+	await expect.poll(() => menuOpen(page)).toBe(true);
+	await helmet.click();
+	await expect.poll(() => menuOpen(page)).toBe(false);
+	await expect(helmet).toHaveAttribute('aria-pressed', helmetWorn);
+	// The next press acts as usual (pressed twice, so the outfit is unchanged).
+	await helmet.click();
+	await expect(helmet).not.toHaveAttribute('aria-pressed', helmetWorn);
+	await helmet.click();
+	await expect(helmet).toHaveAttribute('aria-pressed', helmetWorn);
+
+	// The hat lacks north Walk and Cross punch frames (and more in this copy): a warning on its tile, in its name
+	// and in its menu.
+	await expect(hat).toHaveAccessibleName(/^Wizard hat, missing frames in \d+ moves$/);
+	await expect(hat.locator('.tile-status[data-tone="warning"]')).toBeVisible();
+	await hat.click({ button: 'right' });
+	await expectAnchoredMenu(page);
+	await expect(itemMenu(page)).toContainText('Wizard hat');
+	await expect(itemMenu(page).locator('.item-menu-title small')).toContainText(
+		/Missing frames in \d+ moves/
+	);
+	await page.keyboard.press('Escape');
+	await expect(more).toBeFocused();
+
+	await hat.focus();
+	await page.keyboard.press('Shift+F10');
+	await expectAnchoredMenu(page);
+	await expect(items.first()).toBeFocused();
+
+	// Wear is a toggle in the menu header, not a command: one fixed name, the state in aria-pressed, and a different
+	// glyph and status line for each state.
+	const toggle = itemMenu(page).getByRole('button', { name: 'Wear Wizard hat', exact: true });
+	await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+	await expect(toggle).toHaveAttribute('title', 'Wear');
+	const glyph = () => toggle.locator('svg').getAttribute('class');
+	const offGlyph = await glyph();
+	await expect(itemMenu(page).locator('.item-menu-title small')).not.toContainText('Wearing');
+	await toggle.click();
+	await expect(hat).toHaveAttribute('aria-pressed', 'true');
+	await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+	await expect(toggle).toHaveAccessibleName('Wear Wizard hat');
+	await expect.poll(glyph).not.toBe(offGlyph);
+	await expect(itemMenu(page).locator('.item-menu-title small')).toContainText('Wearing');
+
+	// Remove asks first, focusing the safe choice.
+	await items.last().click();
+	await expect(itemMenu(page)).toContainText('Remove Wizard hat for good?');
+	await expect(itemMenu(page).getByRole('button', { name: 'Keep', exact: true })).toBeFocused();
+	// Focus then lands on the next tile in the category, else the previous one (Empty at least), never the paid
+	// New item button.
+	const neighbor = await hat.evaluate((tile) => {
+		const tiles = [...tile.closest('.slot-tiles')!.querySelectorAll<HTMLElement>('.bu-tile')];
+		const at = tiles.indexOf(tile as HTMLElement);
+		return (tiles[at + 1] ?? tiles[at - 1]).getAttribute('aria-label')!;
+	});
+	await itemMenu(page).getByRole('button', { name: 'Remove for good', exact: true }).click();
+	await expect(hat).toHaveCount(0);
+	await expect(head.getByRole('button', { name: neighbor, exact: true })).toBeFocused();
+
+	// Details opens the item sheet; closing it returns focus to this tile's ⋮.
+	const helmetMore = head.getByRole('button', {
+		name: 'More options for Steel helmet',
+		exact: true
+	});
+	await helmetMore.click();
+	await itemMenu(page).getByRole('menuitem', { name: 'Details…', exact: true }).click();
+	const details = page.getByRole('dialog', { name: 'Item', exact: true });
+	await expect(details.locator('.insp-title')).toHaveText('Steel helmet');
+	await details.getByRole('button', { name: 'Done', exact: true }).click();
+	await expect(helmetMore).toBeFocused();
+
+	// Scrolling the ⋮ out of view closes the menu; focus stays on that ⋮, without scrolling back or jumping to the header.
+	await helmetMore.click();
+	await expect.poll(() => menuOpen(page)).toBe(true);
+	await page.locator('#wardrobe-list').evaluate((list) => (list.scrollTop += 2000));
+	await expect.poll(() => menuOpen(page)).toBe(false);
+	await expect(helmetMore).toBeFocused();
+	await expect(helmetMore).not.toBeInViewport();
+
+	// Phones get the same arrowed popover, kept on screen.
+	await page.setViewportSize({ width: 390, height: 844 });
+	await equipmentGroup(page, 'Head');
+	await helmetMore.click();
+	await expectAnchoredMenu(page);
+	await page.keyboard.press('Escape');
+	await expect(helmetMore).toBeFocused();
+});
+
+test('tile status shows on the tile and in its name, and Recolor opens the item’s colors', async ({
+	page
+}) => {
+	await editableCopy(page);
+	// The worn helmet hides the worn hair.
+	await pickItem(page, 'Steel helmet');
+	let details = await selectedItemDetails(page);
+	await details
+		.getByRole('group', { name: 'When worn, hide', exact: true })
+		.getByRole('button', { name: 'Hair', exact: true })
+		.click();
+	await details.getByRole('button', { name: 'Done', exact: true }).click();
+	await equipmentGroup(page, 'Hair');
+	const hair = section(page, 'Hair').getByRole('button', {
+		name: 'Messy brown hair, hidden by another item',
+		exact: true
+	});
+	await expect(hair).toHaveAttribute('data-dim');
+	await expect(hair.locator('.tile-status[data-tone="hidden"]')).toBeVisible();
+	await section(page, 'Hair')
+		.getByRole('button', { name: 'More options for Messy brown hair', exact: true })
+		.click();
+	await expect(itemMenu(page)).toContainText('Hidden by another item');
+	await page.keyboard.press('Escape');
+	// No Demo badge on tiles.
+	await expect(page.locator('.equipment-scroll .item-tile .badge')).toHaveCount(0);
+
+	await pickItem(page, 'Red cape');
+	details = await selectedItemDetails(page);
+	// The trimmed sheet links to the Colors tab instead of repeating it.
+	await expect(details.locator('.colors')).toHaveCount(0);
+	await details.getByRole('button', { name: 'Recolor', exact: true }).click();
+	await expect(page.getByRole('dialog')).toHaveCount(0);
+	await expect(
+		page
+			.getByRole('tablist', { name: 'Customization panels', exact: true })
+			.getByRole('tab', { name: 'Colors', exact: true })
+	).toHaveAttribute('aria-selected', 'true');
+	const heading = page.locator('.color-sections').getByRole('heading', { name: 'Red cape' });
+	await expect(heading).toBeInViewport();
+	const list = (await page.locator('.color-sections').boundingBox())!;
+	expect(Math.abs((await heading.boundingBox())!.y - list.y)).toBeLessThan(24);
+});
+
+test('Wardrobe lands on a category picked while closed and reveals tiles below the sticky header', async ({
+	page
+}, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await page.setViewportSize({ width: 1280, height: 720 });
+	// The dev server exposes the studio state (window.__studio) used to pick a category from elsewhere.
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await equipmentGroup(page, 'Back');
+	await equipmentMode(page, 'Colors');
+	// Another view (a review, a missing-frames link) picks a category while the Wardrobe is closed.
+	await page.evaluate(() => {
+		const s = (window as unknown as { __studio: { ui: { group: string; tab: string } } }).__studio;
+		s.ui.group = 'Main hand';
+		s.ui.tab = 'wardrobe';
+	});
+	const list = page.locator('#wardrobe-list');
+	const top = async (name: string) =>
+		(await section(page, name).boundingBox())!.y - (await list.boundingBox())!.y;
+	await expect.poll(() => top('Main hand')).toBeLessThan(4);
+	const rail = page.getByRole('navigation', { name: 'Equipment slots', exact: true });
+	await expect(rail.getByRole('button', { name: /^Main hand\b/ })).toHaveAttribute(
+		'aria-current',
+		'true'
+	);
+
+	// A tile half under a category's sticky header is brought fully into view when selected.
+	await equipmentGroup(page, 'Head');
+	const head = section(page, 'Head');
+	const header = head.locator('.bu-section-head');
+	const hat = head.getByRole('button', { name: /^Wizard hat(,|$)/ });
+	await list.evaluate((el) => (el.scrollTop += 50));
+	await page.evaluate(() => {
+		(window as unknown as { __studio: { ui: { selected: string } } }).__studio.ui.selected =
+			'hat_wizard';
+	});
+	await expect
+		.poll(async () => {
+			const tile = (await hat.boundingBox())!,
+				bar = (await header.boundingBox())!,
+				box = (await list.boundingBox())!;
+			return tile.y >= bar.y + bar.height && tile.y + tile.height <= box.y + box.height;
+		})
+		.toBe(true);
+});

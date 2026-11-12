@@ -3,7 +3,8 @@ import {
 	reloadStudio,
 	equipmentGroup,
 	newItem,
-	selectedItemDetails
+	selectedItemDetails,
+	section
 } from './immersive-helpers.ts';
 import { test, expect, type Page } from '@playwright/test';
 
@@ -86,7 +87,7 @@ test('another character’s item on the same body is worn for free, survives rel
 	await expect(page.locator('.equipment-scroll .shared-head')).toHaveText(
 		/From your other characters\s*Free when the body matches/
 	);
-	await expect(page.locator('.equipment-heading')).toContainText('2 items · 2 from others');
+	await expect(section(page, 'Head').locator('.bu-section-count')).toHaveText('2 items');
 	// Only items this character does not already have: its own helmet and hat stay off the list. Free ones come first, captioned
 	// "Free"; an item for another body sits under the "Make new" divider, after New item.
 	await expect(others.getByRole('button')).toHaveText([
@@ -110,9 +111,9 @@ test('another character’s item on the same body is worn for free, survives rel
 	);
 	const own = page
 		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
-		.getByRole('button', { name: 'Traveling wizard hat', exact: true });
+		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ });
 	await expect(own).toHaveAttribute('aria-pressed', 'true');
-	await expect(page.locator('.sel-name')).toHaveText('Traveling wizard hat');
+	await expect(own).toHaveAttribute('data-selected');
 	// Only an item to make new is left: the subtitle says so and no divider is needed.
 	await expect(others.getByRole('button')).toHaveText([/^\s*Giant helmet\s*from Giant\s*$/]);
 	await expect(page.locator('.equipment-scroll .shared-head')).toHaveText(
@@ -184,7 +185,7 @@ test('an item made for a different body offers to make it for this character, an
 	);
 	const make = unfit.getByRole('button', { name: 'Make one for Adventurer copy', exact: true });
 	// The offer opens right after the tapped tile, inside the list; the offer itself takes focus (Tab then reaches its button),
-	// and it holds the only primary action: New item stays in place as a secondary button.
+	// and it holds the only primary action: New item stays in place as the section's quiet + button.
 	await expect(unfit).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect(make).toBeFocused();
@@ -193,13 +194,13 @@ test('an item made for a different body offers to make it for this character, an
 	expect((await unfit.boundingBox())!.y).toBeGreaterThanOrEqual(
 		(await giant.boundingBox())!.y + (await giant.boundingBox())!.height
 	);
-	const create = page.getByRole('button', { name: 'New head item', exact: true });
-	await expect(create).toHaveAttribute('data-variant', 'outline');
+	const create = section(page, 'Head').getByRole('button', { name: 'New head item', exact: true });
+	await expect(create).toHaveAttribute('data-variant', 'quiet');
 	await expect(page.locator('.equipment-scroll [data-variant="primary"]')).toHaveCount(1);
 	// Tapping the tile again closes the offer.
 	await giant.click();
 	await expect(unfit).toHaveCount(0);
-	await expect(create).toHaveAttribute('data-variant', 'primary');
+	await expect(page.locator('.equipment-scroll [data-variant="primary"]')).toHaveCount(0);
 	await giant.click();
 	await make.click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
@@ -220,7 +221,7 @@ test('an item made for a different body offers to make it for this character, an
 	// Selecting another tile clears the offer.
 	await page
 		.locator('.equipment-scroll')
-		.getByRole('button', { name: 'Wizard hat', exact: true })
+		.getByRole('button', { name: /^Wizard hat(,|$)/ })
 		.click();
 	await expect(unfit).toHaveCount(0);
 	expect(requests.filter((r) => !r.startsWith('GET '))).toEqual([]);
@@ -294,7 +295,7 @@ test('a copy missing frames its source item has copies them for free into the sa
 	await equipmentGroup(page, 'Head');
 	await page
 		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
-		.getByRole('button', { name: 'Traveling wizard hat', exact: true })
+		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })
 		.click();
 	const details = await selectedItemDetails(page);
 	const copy = details.getByRole('button', { name: 'Copy from Twin · Free', exact: true });
@@ -311,7 +312,7 @@ test('a copy missing frames its source item has copies them for free into the sa
 	await equipmentGroup(page, 'Head');
 	const hats = page
 		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
-		.getByRole('button', { name: 'Traveling wizard hat', exact: true });
+		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ });
 	await expect(hats).toHaveCount(1);
 	await hats.click();
 	await expect(
@@ -471,8 +472,11 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 	await expect(page.locator('.bu-toast')).toContainText(
 		'Fitted Lefty sword from Lefty for free. Check it in each move.'
 	);
-	await expect(page.locator('.sel-name')).toHaveText('Lefty sword');
-	await expect(page.locator('.sel-row .badge')).toHaveText('Needs a look');
+	const fitted = page
+		.locator('.equipment-scroll')
+		.getByRole('button', { name: /^Lefty sword, needs a look/ });
+	await expect(fitted).toHaveAttribute('data-selected');
+	await expect(fitted.locator('.tile-status[data-tone="warning"]')).toBeVisible();
 	const details = await selectedItemDetails(page);
 	await expect(details).toContainText('Fitted for free from Lefty’s item. Check these frames:');
 	// A re-fit's issues are its fit: nothing to accept as is; a new item for this body is offered instead.

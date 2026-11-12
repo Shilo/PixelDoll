@@ -84,7 +84,6 @@ test('draft item artwork appears before wearing, keeps running progress, and sto
 		queue.disconnect();
 		s.ui.playing = false;
 		s.ui.selected = '';
-		s.ui.inspTab = 'character';
 		const spec = {
 			id: 'early_hair',
 			name: 'Early hair',

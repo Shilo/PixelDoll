@@ -4,7 +4,14 @@
 	import { itemPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import GroupIcon from './GroupIcon.svelte';
-	import { GROUPS, slotLabel, itemNameFrom, mirroredHandsNote, namesOffHandItem } from './model.ts';
+	import {
+		GROUPS,
+		groupLabel,
+		slotLabel,
+		itemNameFrom,
+		mirroredHandsNote,
+		namesOffHandItem
+	} from './model.ts';
 	import { itemRoute } from './itemRoute.ts';
 	import { ui, doc, store, isDemo, startItem, withKey, copyDemo } from './state.svelte.ts';
 	import * as db from '../lib/store/db.ts';
@@ -63,8 +70,7 @@
 		try {
 			ui.sheet = null;
 			await startItem(i, consent);
-			if (ui.size === 'expanded' || ui.size === 'medium') ui.inspTab = 'item';
-			else ui.tab = 'wardrobe';
+			ui.tab = 'wardrobe';
 		} finally {
 			busy = false;
 		}
@@ -166,7 +172,8 @@
 							role="radio"
 							aria-checked={group === x.id}
 							tabindex={group === x.id ? 0 : -1}
-							onclick={() => (group = x.id)}><GroupIcon group={x.id} size={14} />{x.id}</button
+							onclick={() => (group = x.id)}
+							><GroupIcon group={x.id} size={14} />{groupLabel(x.id)}</button
 						>
 					{/each}
 				</div>

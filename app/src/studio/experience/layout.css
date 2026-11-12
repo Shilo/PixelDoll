@@ -1,11 +1,13 @@
-/* PixelDoll composition only. Shared materials/states come from Bronze UI. */
+/* PixelDoll composition only. Shared materials/states come from Bronze UI.
+   Scene geometry (margins, header, rail, sheet, stage, feet, world placement) is computed once in
+   geometry.ts and arrives here as custom properties on .experience, with layout classes for the
+   phone sheet (sheet-layout), short landscape (short-layout) and phones (phone-layout). */
 .experience {
-	--rail: clamp(300px, 21.56vw, 414px);
-	--edge: clamp(28px, 2.92vw, 56px);
 	position: relative;
 	height: 100dvh;
 	width: 100%;
 	overflow: hidden;
+	background: var(--bu-canvas);
 }
 .scene-backdrop,
 .scene-reading {
@@ -13,307 +15,280 @@
 	inset: 0;
 	pointer-events: none;
 }
+/* Uniformly scaled with its floor point under the feet; only as tall as the visible stage. */
 .scene-backdrop {
+	bottom: auto;
+	height: var(--world-cover);
 	background-image: var(--world-image);
-	background-size: 100% 100%;
-	background-position: center;
+	background-repeat: no-repeat;
+	background-size: var(--world-w) var(--world-h);
+	background-position: var(--world-x) var(--world-y);
 	background-color: var(--bu-canvas);
 }
 .scene-reading {
 	z-index: 1;
 	background:
-		linear-gradient(180deg, var(--bu-reading-start), transparent 37%),
+		linear-gradient(180deg, var(--bu-reading-start), transparent 30%),
 		linear-gradient(270deg, var(--bu-reading-end), transparent 35%);
 }
+.sheet-layout .scene-reading {
+	background: linear-gradient(180deg, var(--bu-reading-start), transparent 30%);
+}
+
+/* ---------- top bar: no solid bar, controls sit on the scene ---------- */
 .experience-header {
 	position: absolute;
-	inset: 20px var(--edge) auto;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
 	z-index: 5;
-	gap: 16px;
-	height: 44px;
-	pointer-events: none;
-}
-.header-actions,
-.header-start {
-	display: flex;
+	top: max(var(--header-top), env(safe-area-inset-top));
+	left: var(--edge);
+	right: var(--edge);
+	height: var(--header-row);
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(max-content, 1fr);
 	align-items: center;
 	gap: 8px;
+	pointer-events: none;
+}
+.header-start,
+.header-actions,
+.view-modes {
+	display: flex;
+	align-items: center;
 	pointer-events: auto;
 }
-.mobile-redo {
-	display: none !important;
+.header-start {
+	gap: 4px;
+	min-width: 0;
+	grid-column: 1;
 }
-.mobile-undo {
-	display: none !important;
+.header-actions {
+	grid-column: 3;
+	justify-content: flex-end;
+	gap: 4px;
 }
-.experience-header .bu-action,
-.view-modes .bu-action {
+.experience-header .bu-action {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	gap: 8px;
-	min-height: 40px;
-	padding: 8px 12px;
+	min-width: 44px;
+	min-height: 44px;
+	padding: 0 12px;
 	font-size: 14px;
+	white-space: nowrap;
+}
+.experience-header .bu-action[data-variant='quiet'] {
+	padding: 0;
+}
+/* Phones keep every header target 44 px but tighter, so the name keeps its room: the view tabs float below, so the
+   bar has no middle column, and the actions take only their own width. */
+.phone-layout .experience-header {
+	grid-template-columns: minmax(0, 1fr) auto max-content;
+	column-gap: 0;
+}
+.phone-layout :is(.header-actions, .header-start) {
+	gap: 0;
+}
+.experience
+	:is(.mobile-random, .mobile-undo, .mobile-redo, .mobile-share, .mobile-inspect, .mobile-sep) {
+	display: none !important;
 }
 .brand {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	font-weight: 500;
-	font-size: 16px;
-}
-.mobile-name {
-	display: none;
-}
-.scene-identity {
-	position: absolute;
-	z-index: 4;
-	top: 14%;
-	left: var(--edge);
-	max-width: min(380px, calc(100% - var(--rail) - 80px));
-}
-.scene-identity h1 {
-	font: 400 clamp(28px, 3.2vw, 44px)/1.15 var(--bu-display);
-	margin: 0;
-}
-.scene-identity p {
-	color: var(--bu-muted);
-	font-size: 16px;
-	margin: 0 0 12px;
-}
-.project-btn {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-	max-width: 100%;
-	background: none;
-	border: 0;
-	padding: 0;
-	text-align: left;
-}
-.project-btn h1 {
-	overflow: hidden;
-	text-overflow: ellipsis;
+	font-weight: 600;
+	font-size: 15px;
 	white-space: nowrap;
 }
-.prompt-disclosure {
-	position: relative;
-	margin-top: 12px;
-	font-size: 16px;
-	max-width: 380px;
-}
-.prompt-disclosure summary {
-	list-style: none;
-	min-height: 40px;
-	cursor: pointer;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	color: var(--bu-muted);
-	padding-right: 20px;
-}
-.prompt-disclosure summary::-webkit-details-marker {
-	display: none;
-}
-.prompt-disclosure summary > svg {
-	position: absolute;
-	right: 0;
-	top: 0.2em;
-	width: 1em;
-	height: 1em;
-}
-.prompt-disclosure[open] div {
-	position: absolute;
-	top: 28px;
-	left: 0;
-	width: min(560px, calc(100vw - 40px));
-	max-height: 240px;
-	overflow: auto;
-	padding: 18px;
-	background: var(--bu-surface);
-	border: 1px solid var(--bu-rim);
-	border-radius: var(--bu-radius-panel);
-	box-shadow: var(--bu-shadow);
-	z-index: 20;
-}
-/* On the prompt only: on the popup it would also render the space before Copy prompt as an indent. */
-.prompt-disclosure[open] p {
-	white-space: pre-wrap;
-}
-.view-modes {
-	display: flex;
-	gap: 16px;
-	margin-top: 22px;
-	width: max-content;
-}
-.view-modes .bu-action {
-	padding-inline: 0;
-	min-height: 40px;
-}
-.cast-library,
-.equipment-rail {
-	position: absolute;
-	z-index: 4;
-	right: var(--edge);
-	width: var(--rail);
-	top: 20%;
-	bottom: 12.5%;
-	display: flex;
-	flex-direction: column;
-	min-height: 0;
-	gap: 18px;
-}
-.cast-library h2 {
-	font: 600 24px var(--bu-font);
-}
-.cast-library .bu-input {
-	width: 100%;
-	min-height: 52px;
-	font-size: 18px;
-}
-.character-rows {
-	min-height: 0;
-	overflow: auto;
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-.character-row {
-	width: 100%;
-	display: flex;
-	align-items: center;
-	gap: 20px;
-	padding: 10px 12px;
-	min-height: 92px;
-	text-align: left;
-}
-.character-row > span:last-child {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	min-width: 0;
-}
-.character-row strong {
-	font-weight: 500;
-	font-size: 20px;
-}
-.character-row small {
-	color: var(--bu-muted);
-	font-size: 14px;
-}
-.character-thumbnail {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 64px;
-}
-.customize-action {
-	min-height: 56px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 12px;
-	font-size: 16px;
-	padding: 12px;
-}
-.selection-world {
-	position: absolute;
-	left: 0;
-	right: calc(var(--rail) + var(--edge));
-	top: 220px;
-	bottom: 8%;
-}
-.cast {
-	position: fixed;
-	left: 0;
-	right: calc(var(--rail) + var(--edge));
-	top: 0;
-	height: 77dvh;
-	display: flex;
-	align-items: flex-end;
-	justify-content: center;
-	gap: 5%;
-	pointer-events: none;
-}
-.cast-character {
-	position: relative;
-	border: 0;
-	background: none;
-	padding: 0;
-	max-width: 30%;
-	margin-bottom: 30px;
-	pointer-events: auto;
-}
-.cast-character.chosen {
-	max-width: 48%;
-	margin-bottom: 0;
-}
-.cast-character .character-thumbnail {
-	min-width: 0;
-}
-.cast-reflection {
-	position: absolute;
-	top: 100%;
-	left: 0;
-	right: 0;
-	transform: scaleY(-0.35);
-	transform-origin: top;
-	opacity: 0.12;
-	mask-image: linear-gradient(transparent 20%, black);
-	pointer-events: none;
-}
-.selected-caption {
-	position: fixed;
-	top: 81.5%;
-	left: 0;
-	right: calc(var(--rail) + var(--edge));
-	text-align: center;
-	z-index: 2;
-}
-.selected-caption h2 {
-	font: 400 30px var(--bu-display);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.selected-name {
-	position: relative;
-	margin: auto;
-	min-height: 40px;
-	width: max-content;
-	max-width: calc(100% - 48px);
-}
-.selected-name > svg {
-	position: absolute;
-	left: calc(100% + 8px);
+.brand-divider {
 	flex: none;
+	width: 1px;
+	height: 20px;
+	margin: 0 8px;
+	background: var(--bu-line);
 }
-.selected-caption > div {
+.screen-title {
+	margin: 0;
+	font: 400 19px/1.2 var(--bu-display);
+	white-space: nowrap;
+}
+.screen-count {
+	margin-left: 4px;
+	color: var(--bu-muted);
+	font-size: 13px;
+}
+.name-menu {
+	display: flex;
+	max-width: none;
+	font-weight: 400;
+	flex-direction: column;
+	justify-content: center;
+	align-items: flex-start;
+	min-width: 0;
+	min-height: 44px;
+	padding: 0 4px;
+	border: 0;
+	border-radius: var(--bu-radius-control);
+	background: none;
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+.name-menu:hover .name-line svg {
+	color: var(--bu-accent);
+}
+.name-menu:focus-visible {
+	outline: 2px solid var(--bu-focus);
+	outline-offset: 2px;
+}
+.name-line {
 	display: flex;
 	align-items: center;
-	justify-content: center;
-	gap: 28px;
-	margin-top: 12px;
+	gap: 4px;
+	max-width: 100%;
+}
+.name-line .name-text {
+	margin: 0;
+	min-width: 0;
+	font: 400 20px/1.15 var(--bu-display);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.name-line svg {
+	flex: none;
+	color: var(--bu-muted);
+}
+.name-facts {
+	max-width: 100%;
 	color: var(--bu-muted);
 	font-size: 12px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
-.selected-caption > div > button {
-	display: grid;
-	place-items: center;
-	width: 40px;
+.phone-layout .name-line .name-text {
+	font-size: 18px;
+}
+.phone-layout .screen-title {
+	font-size: 17px;
+}
+/* View switch: underline tabs centered in the bar. */
+.view-modes {
+	grid-column: 2;
+	gap: 24px;
+}
+.view-modes .bu-action {
+	height: var(--header-row);
+	padding: 0;
+	gap: 6px;
+	font-size: 15px;
+}
+.experience-header .view-modes svg {
+	display: none;
+}
+@media (max-width: 999px) {
+	.view-modes {
+		gap: 4px;
+	}
+	.view-modes .view-label {
+		display: none;
+	}
+	.experience-header .view-modes svg {
+		display: block;
+	}
+	.view-modes .bu-action {
+		width: 40px;
+	}
+}
+/* Phones and sheets: a floating icon tab row under the bar. */
+:is(.sheet-layout, .phone-layout) .view-modes {
+	position: absolute;
+	top: var(--header-row);
+	left: 50%;
+	transform: translateX(-50%);
+	gap: 4px;
+}
+/* A phone held sideways keeps the panel beside the stage (geometry.ts): the tab row centers over the stage instead. */
+.phone-layout:not(.sheet-layout) .view-modes {
+	/* The whole header is the containing block (an absolute grid item's is its grid area otherwise). */
+	grid-column: 1 / -1;
+	left: calc((var(--stage-left) + 100vw - var(--stage-right)) / 2 - var(--edge));
+}
+:is(.sheet-layout, .phone-layout) .view-modes .view-label {
+	display: none;
+}
+:is(.sheet-layout, .phone-layout) .experience-header .view-modes svg {
+	display: block;
+}
+:is(.sheet-layout, .phone-layout) .experience-header .view-modes .bu-action {
+	width: 44px;
 	height: 40px;
 }
+@media (max-width: 899px), (max-height: 540px) {
+	.name-facts {
+		display: none;
+	}
+}
+/* Share and Export carry text only where the bar has room. */
+@media (max-width: 1099px) {
+	.header-share span,
+	.header-export span {
+		display: none;
+	}
+	.experience-header :is(.header-share, .header-export) {
+		padding: 0;
+		border-color: transparent;
+		background: none;
+	}
+}
+.sheet-layout :is(.selection-import, .selection-create) {
+	display: none;
+}
+/* Phones keep Back, the name, Random look, Undo, Export, Full screen and More in the bar; Redo and Share move into More
+   so the character name stays readable (Share's popover then points at More). Random look follows up to 430 px and
+   Undo up to 360 px. Full screen always stays on the bar (production-experience.md). */
+.phone-layout:not(.selection) :is(.header-redo, .header-share) {
+	display: none !important;
+}
+.phone-layout:not(.selection) :is(.mobile-redo, .mobile-share) {
+	display: flex !important;
+}
+.phone-layout:not(.selection) .mobile-sep {
+	display: block !important;
+}
+@media (max-width: 430px) {
+	.phone-layout .header-random {
+		display: none !important;
+	}
+	.phone-layout:not(.selection) .mobile-random {
+		display: flex !important;
+	}
+}
+@media (max-width: 360px) {
+	.phone-layout .name-line .name-text {
+		font-size: 16px;
+	}
+	.phone-layout .header-undo {
+		display: none !important;
+	}
+	.phone-layout:not(.selection) .mobile-undo {
+		display: flex !important;
+	} /* The screen title carries the bar; the brand returns from 361px. */
+	.brand,
+	.brand-divider {
+		display: none;
+	}
+}
+
+/* ---------- stage ---------- */
 .experience-stage {
 	position: absolute;
-	left: 0;
-	right: calc(var(--rail) + var(--edge));
-	top: 280px;
-	bottom: 20%;
+	left: var(--stage-left);
+	right: var(--stage-right);
+	top: var(--stage-top);
+	bottom: var(--stage-bottom);
 }
 .world-stage {
 	width: 100%;
@@ -342,9 +317,7 @@
 	height: 100dvh;
 	pointer-events: none;
 }
-.world-sky {
-	z-index: 0;
-}
+.world-sky,
 .world-ground {
 	z-index: 0;
 }
@@ -356,36 +329,45 @@
 	inset: 50% 0 auto;
 	text-align: center;
 }
+/* The playback bar sits under the feet, centered on the character. */
 .experience-playback {
 	position: absolute;
 	z-index: 3;
-	top: 83.3%;
-	bottom: auto;
-	left: 0;
-	right: calc(var(--rail) + var(--edge));
+	/* Bottom-anchored: a bar that wraps (long move names, eight directions) grows up, never under the sheet. */
+	bottom: calc(100% - var(--playback-top) - var(--playback-height));
+	left: var(--stage-left);
+	right: var(--stage-right);
 	display: flex;
 	justify-content: center;
+	padding: 0 8px;
+	pointer-events: none;
 }
 .playback-bar {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	flex-wrap: wrap;
-	gap: 12px;
-	padding: 4px 12px;
-	border-radius: var(--bu-radius-control);
-	max-width: 100%;
+	gap: 2px;
 	min-height: 54px;
+	max-width: 100%;
+	padding: 4px 6px;
+	pointer-events: auto;
 }
 .playback-bar .bu-action {
 	display: flex;
 	gap: 6px;
 	align-items: center;
 	justify-content: center;
-	min-width: 40px;
+	min-width: 44px;
 	height: 44px;
-	padding: 6px;
-	font-size: 18px;
+	padding: 0 8px;
+	font-size: 15px;
+}
+.playback-sep {
+	width: 1px;
+	height: 24px;
+	margin: 0 4px;
+	background: var(--bu-line);
 }
 .playback-move {
 	display: flex;
@@ -396,8 +378,8 @@
 	height: 44px;
 	min-width: 0;
 	max-width: 180px;
-	padding: 0 8px;
-	font-size: 20px;
+	padding: 0 10px;
+	font-size: 15px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -413,90 +395,233 @@
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: center;
+	gap: 2px;
+}
+.facing-buttons .bu-action {
+	padding: 0;
+}
+/* A narrow stage (geometry.ts compactPlayback) keeps every control a full 44 px target instead of compressing them:
+   Inspect (infrequent) moves into More, the separators and the "Still" word go (the world note says why), and the
+   move select takes the room left. Narrower still (cycleFacing), one facing button steps through the directions so
+   the bar stays one row. */
+.compact-playback .experience-playback {
+	padding: 0 4px;
+}
+.compact-playback .playback-bar {
+	padding: 4px;
+}
+.compact-playback .playback-bar .bu-action {
+	min-width: 44px;
+	padding: 0;
+}
+.compact-playback .playback-move {
+	flex: 1 1 auto;
+}
+.compact-playback .playback-bar select {
+	flex: 1;
+	max-width: none;
+	padding: 0 6px;
+	font-size: 14px;
+}
+.compact-playback :is(.playback-inspect, .playback-still, .playback-sep) {
+	display: none !important;
+}
+.compact-playback .mobile-inspect {
+	display: flex !important;
+}
+.facing-cycle {
+	flex: none;
+}
+
+/* ---------- side rail, or the phone's bottom sheet ---------- */
+.cast-library,
+.equipment-rail {
+	position: absolute;
+	z-index: 4;
+	right: var(--edge);
+	width: var(--rail);
+	top: var(--rail-top);
+	bottom: var(--edge);
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	gap: 12px;
 }
 .equipment-rail {
-	top: 18%;
-	bottom: 24px;
-	gap: 20px;
+	gap: 8px;
+}
+/* A window too short for a usable sheet hides the panel until it grows (geometry.ts). */
+.no-panel .equipment-rail {
+	display: none;
+}
+.sheet-layout .equipment-rail {
+	left: 0;
+	right: 0;
+	width: auto;
+	top: auto;
+	bottom: 0;
+	height: var(--sheet-height);
+	gap: 4px;
+	padding: 0 var(--edge) max(var(--edge), env(safe-area-inset-bottom));
+	background: var(--bu-sheet);
+	border-top: 1px solid var(--bu-rim);
+	border-radius: var(--bu-radius-dialog) var(--bu-radius-dialog) 0 0;
+	box-shadow: var(--bu-shadow);
+}
+.sheet-handle {
+	flex: none;
+	width: 36px;
+	height: 4px;
+	margin: 8px auto 0;
+	border-radius: 2px;
+	background: var(--bu-muted);
+	opacity: 0.5;
 }
 .equipment-modes {
 	display: flex;
 	justify-content: space-between;
-	gap: 12px;
+	flex: none;
 }
-/* Live views hide Moves behind an invisible placeholder (as in the prototype), so the other tabs keep their Preview positions. */
-.equipment-modes :is(button, .tab-placeholder) {
-	min-height: 50px;
-	padding: 8px 0;
-	font-size: 16px;
+/* Tabs keep their short labels; min-width gives short ones (Colors, Moves) a full 44 px target. */
+.equipment-modes button {
+	min-width: 44px;
+	min-height: 44px;
+	padding: 0;
+	font-size: 15px;
 }
-.equipment-modes .tab-placeholder {
-	visibility: hidden;
+.customize-panel {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
 }
 .equipment-scroll {
-	overflow: auto;
-	min-height: 0;
-	padding: 8px;
-	margin: -8px;
-	flex: 1;
-	font-size: 16px;
-}
-.equipment-scroll .small,
-.equipment-scroll .ramp-label {
 	font-size: 14px;
 }
-.equipment-scroll .panel {
-	gap: 18px;
-}
-.equipment-scroll .slot-chips {
-	margin: 0;
-	padding: 0 0 18px;
-	gap: 8px;
-	overflow: visible;
-	width: 100%;
-	border-bottom: 1px solid var(--bu-line);
-	justify-content: space-between;
-}
-.equipment-scroll .slot-chip {
-	border-radius: 0;
-	padding: 8px 0;
-	gap: 14px;
-	min-height: 80px;
-	height: auto;
-	font-size: 15px;
+.panel-list {
 	flex: 1;
-	flex-direction: column;
+	min-height: 0;
+	overflow: auto;
+	padding: 4px 4px 4px 0;
 }
-.equipment-scroll .slot-chip .category-count {
-	display: none;
+
+/* Wardrobe: one continuous list, the slot column on the right. */
+.wardrobe {
+	display: flex;
+	gap: 12px;
+	flex: 1;
+	min-height: 0;
 }
-.equipment-scroll .chip-row {
-	overflow: visible;
-	gap: 10px;
-}
-.equipment-scroll .slot-chip svg {
-	width: 27px;
-	height: 27px;
-}
-.equipment-scroll .tiles {
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 16px;
-}
-.equipment-scroll .tile {
+.section-list {
 	position: relative;
-	padding: 12px 6px;
-	min-height: 148px;
-	height: auto;
+	flex: 1;
+	min-width: 0;
+	min-height: 0;
+	overflow: auto;
+	/* Room for a tile's focus ring at the list's edges, which the scroll box would otherwise clip. */
+	padding: 0 6px 6px 5px;
+	scrollbar-width: thin;
+}
+.color-sections {
+	flex: 1;
+}
+.slot-rail {
+	flex: none;
+	width: 64px;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+.slot-rail-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.slot-tab {
+	flex: none;
+	width: 100%;
+	min-height: 52px;
+	padding: 7px 2px 6px;
+}
+.slot-tab .bu-rail-label {
+	max-width: 60px;
+}
+.slot-section {
+	padding-bottom: 16px;
+}
+.slot-section .bu-section-head {
+	font-size: 14px;
+}
+.section-action {
+	display: grid;
+	place-items: center;
+	/* A full 44 px target; the negative block margin keeps the sticky header's height. */
+	width: 44px;
+	height: 44px;
+	margin: -6px -6px -6px -2px;
+}
+.section-body {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
 }
-.equipment-scroll .tile-art {
+.slot-tiles {
+	display: grid;
+	/* At most four columns (ui-lab-5): tiles fill their track and stay square up to 112 px tall. */
+	grid-template-columns: repeat(auto-fill, minmax(max(96px, calc((100% - 24px) / 4)), 1fr));
+	gap: 8px;
+}
+.sheet-layout .slot-tiles {
+	grid-template-columns: repeat(auto-fill, minmax(max(92px, calc((100% - 24px) / 4)), 1fr));
+}
+.item-tile {
+	/* An explicit width: a grid item with an aspect ratio would otherwise shrink to its height cap, not fill its track. */
+	width: 100%;
+	aspect-ratio: 1;
+	max-height: 112px;
+	font-size: 13px;
+}
+/* A real item's tile with its ⋮ beside it (a sibling control): the ⋮ sits top-left, the worn check top-right. */
+.tile-wrap {
 	position: relative;
-	height: 90px;
 	min-width: 0;
-	min-height: 0;
+}
+.tile-more {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1;
+	width: 44px;
+	height: 44px;
+}
+.item-tile .tile-status {
+	position: absolute;
+	bottom: 30px;
+	left: 8px;
+}
+/* The art box itself is smaller than the tile so pixel art reads at about half the tile's height;
+   the thumbnail still fills one axis of its box. */
+.item-tile .bu-tile-art {
 	flex: none;
+	width: 80%;
+	height: 56%;
+	margin-block: auto;
+}
+.item-tile.shared-tile .bu-tile-art {
+	height: 72px;
+}
+.item-tile .bu-tile-art > svg {
+	stroke-width: 1.5;
+}
+.item-tile.shared-tile {
+	aspect-ratio: auto;
+	min-height: 112px;
+	max-height: none;
+}
+.item-tile .tile-from {
+	font-size: 12px;
 }
 .tile-progress {
 	position: absolute;
@@ -508,35 +633,25 @@
 .tile-progress.overlay {
 	inset: auto 0 0 auto;
 }
-.equipment-scroll .tile-name {
-	font-size: 16px;
-	line-height: 1.4;
-	white-space: normal;
+.hand-note {
+	margin: 0;
 }
-.equipment-heading {
-	display: flex;
-	align-items: center;
+.section-body .shared-items {
+	padding-top: 4px;
+	border: 0;
+}
+.color-sections .colors {
 	gap: 10px;
 }
-.equipment-heading h2 {
-	font-size: 19px;
-	font-weight: 600;
-	margin: 0;
-	flex: 1;
-}
-.equipment-heading .btn {
-	min-width: 32px;
-	width: 32px;
-}
-.equipment-scroll :is(.sec-title, .group-head h3) {
-	font-size: 18px;
-	font-weight: 500;
-	color: var(--bu-text);
-}
-.equipment-scroll .sec-head .btn {
+.add-row {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	width: 100%;
+	min-height: 44px;
+	margin-top: 8px;
 	font-size: 14px;
-	min-height: 40px;
-	gap: 6px;
 }
 .equipment-scroll .group.outfits {
 	margin: 0;
@@ -544,57 +659,223 @@
 	border: 0;
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
-}
-.equipment-scroll .group-head {
-	padding: 0;
-}
-.equipment-scroll .group-head .glyph {
-	display: none;
 }
 .equipment-scroll .rows {
 	padding: 0;
-	gap: 8px;
+	gap: 4px;
 }
 .equipment-scroll .rows .row {
-	min-height: 44px;
+	min-height: 52px;
 	padding: 8px 12px;
 }
 .equipment-scroll .move-list {
-	gap: 8px;
+	gap: 4px;
 }
 .equipment-scroll .move-text {
 	min-width: 0;
 	overflow-wrap: anywhere;
 }
-.equipment-none,
-.equipment-create {
+
+/* ---------- Characters ---------- */
+.selection-world {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+.cast {
+	position: absolute;
+	left: var(--stage-left);
+	right: var(--stage-right);
+	top: 0;
+	height: var(--feet-y);
 	display: flex;
+	align-items: flex-end;
 	justify-content: center;
+	gap: 5%;
+	pointer-events: none;
+}
+.cast-character {
+	position: relative;
+	border: 0;
+	background: none;
+	padding: 0;
+	max-width: 30%;
+	margin-bottom: 30px;
+	pointer-events: auto;
+}
+.cast-character.chosen {
+	max-width: 48%;
+	margin-bottom: 0;
+}
+.cast-character .character-thumbnail {
+	min-width: 0;
+}
+.cast-character .sprite {
+	max-width: 100%;
+}
+.cast-reflection {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	transform: scaleY(-0.35);
+	transform-origin: top;
+	opacity: 0.12;
+	mask-image: linear-gradient(transparent 20%, black);
+	pointer-events: none;
+}
+.selected-caption {
+	position: absolute;
+	z-index: 2;
+	top: calc(var(--feet-y) + 14px);
+	left: var(--stage-left);
+	right: var(--stage-right);
+	text-align: center;
+	pointer-events: auto;
+}
+.selected-name-text {
+	display: block;
+	margin: 0;
+	font: 400 30px/1.2 var(--bu-display);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.phone-layout .selected-name-text {
+	font-size: 24px;
+}
+.selected-name {
+	position: relative;
+	margin: auto;
+	min-height: 44px;
+	width: max-content;
+	max-width: calc(100% - 48px);
+}
+.selected-name > svg {
+	position: absolute;
+	left: calc(100% + 8px);
+	flex: none;
+	color: var(--bu-muted);
+}
+.selected-step {
+	display: flex;
 	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	margin-top: 4px;
+	color: var(--bu-muted);
+	font-size: 13px;
+}
+.selected-step > button {
+	display: grid;
+	place-items: center;
+	width: 44px;
+	height: 44px;
+}
+.selected-caption .project-btn {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	max-width: 100%;
+	background: none;
+	border: 0;
+	padding: 0;
+	text-align: left;
+}
+.cast-search {
+	display: flex;
 	gap: 8px;
-	min-height: 46px;
-	width: 100%;
+	flex: none;
+}
+.cast-search .bu-input {
+	flex: 1;
+	min-height: 44px;
 	font-size: 16px;
 }
-.equipment-none {
-	grid-column: 1/-1;
+.cast-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-width: 44px;
+	min-height: 44px;
+	padding: 0 12px;
+	font-size: 14px;
 }
-.equipped-check {
-	position: absolute;
-	top: 8px;
-	right: 8px;
+.character-rows {
+	min-height: 0;
+	overflow: auto;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.character-row {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 12px 8px 8px;
+	min-height: 68px;
+	text-align: left;
+	border-color: var(--bu-rim);
+	background: var(--bu-tile);
+}
+.character-row > span:last-child {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+.character-row strong {
+	font-weight: 600;
+	font-size: 16px;
+}
+.character-row[aria-pressed='true'] strong {
 	color: var(--bu-accent);
 }
-.equipment-scroll .sel-row {
-	margin-top: 6px;
+.character-row small {
+	color: var(--bu-muted);
+	font-size: 13px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
-.equipment-scroll .colors {
-	overflow: visible;
+.character-thumbnail {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 48px;
 }
-.sheet-expand {
-	display: none;
+.customize-action {
+	flex: none;
+	min-height: 52px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	font-size: 16px;
+	padding: 12px;
 }
+.sheet-layout .cast-library {
+	left: var(--edge);
+	right: var(--edge);
+	width: auto;
+	top: var(--list-top);
+	bottom: max(var(--edge), env(safe-area-inset-bottom));
+	gap: 8px;
+}
+.sheet-layout .customize-action {
+	min-height: 48px;
+}
+.empty-cast {
+	position: absolute;
+	inset: 50% 0 auto;
+	text-align: center;
+	color: var(--bu-muted);
+}
+
+/* ---------- Inspect, menus, notes ---------- */
 .inspection-stage {
 	position: relative;
 	z-index: 3;
@@ -614,19 +895,73 @@
 .inspection-sheet .sheet-body {
 	padding: 12px;
 }
-.empty-cast {
-	position: absolute;
-	inset: 50% 0 auto;
-	text-align: center;
-	color: var(--bu-muted);
-}
 .close-inspection {
 	min-height: 40px;
 	margin: 8px;
 }
-
-.menu.more-equipment {
-	width: 250px;
+/* Per-tile item menu: header (art, name, status, Wear toggle), then commands. */
+.menu.item-menu {
+	width: min(280px, calc(100vw - 16px));
+}
+.item-menu-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 2px 0 6px 8px;
+	margin-bottom: 4px;
+	border-bottom: 1px solid var(--bu-line);
+}
+.item-menu-art {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+}
+.item-menu-title {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.item-menu-title strong {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 15px;
+}
+.item-menu-title small {
+	display: flex;
+	align-items: baseline;
+	gap: 4px;
+	color: var(--bu-muted);
+	font-size: 13px;
+}
+.item-menu-title small > svg {
+	flex: none;
+	align-self: center;
+}
+.item-menu-title small.look {
+	color: var(--bu-warning);
+}
+.item-menu-wear {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 44px;
+	height: 44px;
+}
+.item-menu .row-aside {
+	margin-left: auto;
+	color: var(--bu-muted);
+	font-size: 13px;
+}
+.item-menu-confirm {
+	padding: 4px 8px 8px;
+}
+.item-menu-confirm p {
+	margin: 0 0 8px;
 }
 .menu.preview-coverage {
 	width: min(320px, calc(100vw - 24px));
@@ -649,16 +984,29 @@
 .menu .character-thumbnail {
 	min-width: 48px;
 }
+.menu-prompt {
+	max-width: min(420px, calc(100vw - 48px));
+}
+.menu-prompt-text {
+	margin: 0;
+	padding: 0 12px 4px;
+	max-height: 160px;
+	overflow: auto;
+	color: var(--bu-muted);
+	font-size: 14px;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
 .world-notes {
 	position: fixed;
-	left: var(--edge);
-	bottom: 18px;
+	left: calc(var(--stage-left) + var(--edge));
+	bottom: calc(var(--stage-bottom) + 16px);
 	z-index: 4;
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
 	gap: 6px;
-	max-width: min(420px, calc(100% - var(--rail) - 100px));
+	max-width: min(420px, calc(100% - var(--stage-right) - 2 * var(--edge)));
 	pointer-events: none;
 }
 .world-notes p {
@@ -667,6 +1015,9 @@
 .world-coverage {
 	font-size: 13px;
 	color: var(--bu-muted);
+}
+.short-layout .world-coverage {
+	display: none;
 }
 .world-loading-items {
 	display: flex;
@@ -679,7 +1030,7 @@
 }
 .world-hint {
 	max-width: 260px;
-	font-size: 16px;
+	font-size: 14px;
 }
 .world-stick {
 	position: fixed;
@@ -711,28 +1062,12 @@
 .studio-app .offline-banner {
 	z-index: 30;
 	top: auto;
-	bottom: max(20px, env(safe-area-inset-bottom));
-	width: max-content;
-}
-.toast {
-	position: fixed;
-	z-index: 40;
-	top: max(env(safe-area-inset-top), var(--toast-top, 88px));
-	left: 50%;
-	transform: translateX(-50%);
-	width: max-content;
-	max-width: min(480px, calc(100vw - 32px));
-	max-height: var(--toast-height, 45dvh);
-	overflow: auto;
-}
-.toast > .bu-toast {
-	position: relative;
-	inset: auto;
+	left: var(--scene-edge, 16px);
 	transform: none;
-	width: 100%;
-	max-width: none;
-	margin: 0;
+	bottom: calc(var(--scene-banner-bottom, 12px) + env(safe-area-inset-bottom));
+	width: max-content;
 }
+
 /* The existing real creator becomes a full-screen work surface, retaining every
    validation, recovery, request preview and saving control. */
 .studio-app dialog.sheet.character-sheet {
@@ -960,396 +1295,7 @@
 		width: 140px;
 	}
 }
-@media (min-width: 1101px) and (min-height: 541px) {
-	.experience-header {
-		top: 28px;
-		height: 50px;
-	}
-	.experience-header .bu-action {
-		min-height: 50px;
-		font-size: 16px;
-	}
-	.view-modes {
-		position: fixed;
-		top: 28px;
-		left: 46%;
-		transform: translateX(-50%);
-		margin: 0;
-		gap: clamp(24px, 2.4vw, 46px);
-	}
-	.view-modes .bu-action {
-		min-height: 52px;
-		font-size: clamp(17px, 1.2vw, 23px);
-	}
-	.experience.selection .scene-identity p {
-		font-size: 20px;
-	}
-	.character-row strong {
-		font-size: 22px;
-	}
-	.selected-caption h2 {
-		font-size: 38px;
-	}
-	.selected-caption > div {
-		font-size: 14px;
-	}
-}
-@media (max-width: 1100px) {
-	.experience {
-		--rail: 300px;
-		--edge: 24px;
-	}
-	.scene-identity {
-		max-width: calc(100% - var(--rail) - 65px);
-	}
-	.equipment-modes {
-		gap: 8px;
-	}
-	.equipment-scroll .slot-chips {
-		gap: 10px;
-	}
-	.equipment-scroll .slot-chip svg {
-		width: 22px;
-		height: 22px;
-	}
-	.character-sheet .sheet-body {
-		justify-content: flex-start;
-	}
-}
-@media (min-width: 761px) and (max-width: 1100px) and (min-height: 541px) {
-	.world-hint {
-		font-size: 13px;
-	}
-	.scene-identity {
-		top: 17%;
-	}
-	.scene-identity h1 {
-		font-size: 32px;
-	}
-	.scene-identity p,
-	.prompt-disclosure {
-		font-size: 14px;
-	}
-	.experience-stage {
-		top: 300px;
-	}
-	.playback-bar {
-		gap: 4px;
-		padding: 4px;
-	}
-	.playback-bar .bu-action {
-		font-size: 14px;
-		min-width: 32px;
-	}
-	.playback-bar select {
-		font-size: 16px;
-		max-width: 130px;
-	}
-}
-/* Keep view tabs with character details until Full screen and busy Activity both have room. */
-@media (min-width: 761px) and (max-width: 1279px) and (min-height: 541px) {
-	.view-modes {
-		position: static;
-		margin-top: 22px;
-		gap: 24px;
-		transform: none;
-	}
-}
-@media (min-width: 761px) and (min-height: 541px) and (max-height: 700px) {
-	.studio-app:has(.experience.selection) .offline-banner {
-		left: auto;
-		right: 20px;
-		transform: none;
-	}
-}
 @media (max-width: 760px) and (min-height: 541px) {
-	.studio-app .offline-banner {
-		top: max(190px, env(safe-area-inset-top));
-		bottom: auto;
-	}
-	/* Characters keeps the status above Customize and below the character navigation. */
-	.studio-app:has(.experience.selection) .offline-banner {
-		top: auto;
-		bottom: max(82px, env(safe-area-inset-bottom));
-		padding-block: 4px;
-	}
-	.experience {
-		--edge: 20px;
-		--rail: 0px;
-	}
-	.experience-header {
-		inset: 12px var(--edge) auto;
-		gap: 8px;
-	}
-	.experience-header .bu-action {
-		min-height: 44px;
-		padding: 8px;
-		gap: 5px;
-	}
-	.header-actions {
-		gap: 4px;
-	}
-	.header-redo {
-		display: none !important;
-	}
-	.header-share span,
-	.header-export span {
-		display: none;
-	}
-	.mobile-redo {
-		display: flex !important;
-	}
-	.scene-identity {
-		top: 75px;
-		max-width: calc(100% - 40px);
-		right: 20px;
-	}
-	.scene-identity h1 {
-		font-size: 30px;
-	}
-	.scene-identity p {
-		font-size: 12px;
-		margin-bottom: 8px;
-	}
-	.view-modes {
-		gap: 24px;
-		margin-top: 14px;
-	}
-	.view-modes .bu-action {
-		font-size: 14px;
-	}
-	.scene-backdrop {
-		background-size: auto 70%;
-		background-repeat: no-repeat;
-		background-position: center top;
-	}
-	.scene-reading {
-		background: linear-gradient(
-			180deg,
-			var(--bu-reading-start),
-			transparent 35%,
-			transparent 60%,
-			var(--bu-reading-end)
-		);
-	}
-	/* Studio crops the world above its equipment sheet; Characters has no sheet, so the world fills the screen. */
-	.experience.selection .scene-backdrop {
-		background-size: cover;
-		background-position: center;
-	}
-	.cast-library {
-		left: 20px;
-		right: 20px;
-		width: auto;
-		top: auto;
-		bottom: 24px;
-		gap: 12px;
-	}
-	.cast-library h2,
-	.character-rows {
-		display: none;
-	}
-	.cast-library > .bu-input {
-		position: fixed;
-		top: 140px;
-		left: 20px;
-		width: calc(100% - 192px);
-		min-height: 44px;
-		font-size: 14px;
-	}
-	.selection-create,
-	.selection-import {
-		position: fixed;
-		top: 140px;
-		min-height: 44px !important;
-		font-size: 13px !important;
-	}
-	.selection-create {
-		right: 88px;
-		width: 76px;
-	}
-	.selection-import {
-		right: 20px;
-		width: 60px;
-	}
-	.studio-app .selection-import svg,
-	.desktop-name {
-		display: none;
-	}
-	.mobile-name {
-		display: inline;
-	}
-	.selection-world {
-		top: 240px;
-		bottom: 110px;
-		left: 0;
-		right: 0;
-	}
-	.cast-character.chosen {
-		max-width: 55%;
-	}
-	.cast {
-		right: 0;
-		height: 57.5dvh;
-		gap: 0;
-	}
-	.cast-character .sprite {
-		max-width: 100%;
-		height: auto !important;
-	}
-	.selected-caption {
-		top: 64%;
-		right: 0;
-	}
-	.selected-caption h2 {
-		font-size: 28px;
-	}
-	.experience-stage {
-		top: 222px;
-		left: 12px;
-		right: 12px;
-		bottom: calc(40dvh + 60px);
-	}
-	.experience-playback {
-		top: auto;
-		left: 12px;
-		right: 12px;
-		bottom: calc(40dvh + 8px);
-	}
-	.playback-bar {
-		gap: 0;
-		padding: 4px;
-	}
-	.playback-bar .bu-action {
-		min-width: 30px;
-		min-height: 40px;
-		font-size: 12px;
-		padding: 4px;
-	}
-	.playback-bar select {
-		max-width: 130px;
-		font-size: 16px;
-		padding: 0 3px;
-	}
-	.equipment-rail {
-		top: auto;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		width: auto;
-		height: 40dvh;
-		gap: 8px;
-		padding: 0 20px max(16px, env(safe-area-inset-bottom));
-		background: linear-gradient(180deg, var(--bu-floating), var(--bu-sheet));
-		border-radius: 0;
-	}
-	.sheet-expand {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		min-height: 24px;
-		height: 24px;
-		flex: none;
-		padding: 0;
-	}
-	.sheet-expand span {
-		width: 32px;
-		height: 3px;
-		background: var(--bu-muted);
-		border-radius: 4px;
-	}
-	.equipment-modes {
-		flex: none;
-		gap: 14px;
-	}
-	.equipment-modes :is(button, .tab-placeholder) {
-		min-height: 40px;
-		font-size: 14px;
-	}
-	.equipment-scroll .panel {
-		gap: 8px;
-	}
-	.equipment-scroll {
-		font-size: 14px;
-	}
-	.equipment-scroll .small {
-		font-size: 12px;
-	}
-	.equipment-heading h2 {
-		font-size: 16px;
-	}
-	.equipment-heading {
-		gap: 6px;
-	}
-	.equipment-scroll .slot-chip {
-		min-height: 52px;
-		padding: 4px 0;
-		gap: 3px;
-		font-size: 13px;
-	}
-	.equipment-scroll .slot-chip svg {
-		width: 20px;
-		height: 20px;
-	}
-	.equipment-scroll .tile {
-		min-height: 80px;
-		padding: 4px;
-		gap: 4px;
-	}
-	.equipment-scroll .tiles {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 8px;
-	}
-	.equipment-none {
-		grid-column: auto;
-		flex-direction: column;
-		gap: 12px;
-		min-height: 80px;
-	}
-	.equipment-scroll .tile-name {
-		font-size: 13px;
-	}
-	.equipment-none,
-	.equipment-create {
-		min-height: 44px;
-		font-size: 14px;
-	}
-	.equipment-scroll .slot-chips {
-		gap: 16px;
-		padding-bottom: 6px;
-	}
-	.equipment-scroll .tile-art {
-		height: 50px;
-	}
-	.experience.expanded .equipment-rail {
-		height: 48dvh;
-	}
-	.experience.expanded .experience-stage {
-		bottom: calc(48dvh + 90px);
-		top: 205px;
-	}
-	.experience.expanded .experience-playback {
-		bottom: calc(48dvh + 22px);
-	}
-	.world-notes {
-		left: 20px;
-		bottom: calc(40dvh + 2px);
-		max-width: calc(100% - 40px);
-	}
-	.world-coverage {
-		font-size: 12px;
-	}
-	.world-hint {
-		max-width: none;
-		font-size: 12px;
-	}
-	.equipment-scroll :is(.sec-title, .group-head h3) {
-		font-size: 16px;
-	}
-	.expanded .world-notes {
-		bottom: calc(48dvh + 2px);
-	}
-
 	.studio-app .character-sheet .sheet-head {
 		padding: 64px 20px 12px;
 	}
@@ -1407,93 +1353,7 @@
 		font-size: 18px;
 	}
 }
-@media (max-width: 359px) {
-	.header-undo,
-	.header-redo {
-		display: none !important;
-	}
-	.header-back-label {
-		display: none;
-	}
-	.header-share span,
-	.header-export span {
-		display: none;
-	}
-	.mobile-undo,
-	.mobile-redo {
-		display: flex !important;
-	}
-}
 @media (max-height: 540px) and (min-width: 600px) {
-	.studio-app .offline-banner {
-		top: max(54px, env(safe-area-inset-top));
-		bottom: auto;
-	}
-	.experience {
-		--edge: 16px;
-		--rail: 300px;
-	}
-	.experience-header {
-		top: 8px;
-	}
-	.scene-identity {
-		top: 65px;
-	}
-	.scene-identity h1 {
-		font-size: 25px;
-	}
-	.scene-identity p {
-		margin-bottom: 4px;
-	}
-	.prompt-disclosure {
-		margin-top: 6px;
-	}
-	.view-modes {
-		margin-top: 8px;
-	}
-	.equipment-rail,
-	.cast-library {
-		top: 80px;
-		bottom: 16px;
-		gap: 10px;
-	}
-	.equipment-rail {
-		padding: 8px;
-		background: var(--bu-sheet-soft);
-		border-radius: var(--bu-radius-panel);
-	}
-	.experience-stage {
-		top: 190px;
-		bottom: 76px;
-	}
-	.experience-playback {
-		top: auto;
-		bottom: 18px;
-	}
-	.selection-world {
-		top: 120px;
-		bottom: 24px;
-	}
-	.cast {
-		height: 65dvh;
-	}
-	.cast-character .sprite {
-		max-height: 150px;
-		height: auto !important;
-		width: auto !important;
-	}
-	.selected-caption {
-		top: 70%;
-	}
-	.selected-caption h2 {
-		font-size: 24px;
-	}
-	.selected-caption > div {
-		margin-top: 0;
-	}
-	.world-coverage {
-		display: none;
-	}
 	.studio-app .character-sheet .sheet-head {
 		padding: 52px 20px 12px;
 	}
@@ -1515,59 +1375,8 @@
 		right: 20px;
 	}
 }
-@media (max-width: 760px) and (min-height: 541px) and (max-height: 700px) {
-	/* This layout leaves room below the title, where the device count is hidden. */
-	.studio-app:has(.experience.selection) .offline-banner {
-		top: max(106px, env(safe-area-inset-top));
-		bottom: auto;
-	}
-	.scene-identity {
-		top: 68px;
-	}
-	.scene-identity > p {
-		display: none;
-	}
-	.scene-identity h1 {
-		font-size: 26px;
-	}
-	.prompt-disclosure {
-		margin-top: 6px;
-		font-size: 12px;
-	}
-	.view-modes {
-		margin-top: 8px;
-	}
-	.view-modes .bu-action {
-		min-height: 36px;
-	}
-	.equipment-rail {
-		height: 31dvh;
-		padding-inline: 16px;
-	}
-	.experience-stage {
-		top: 172px;
-		bottom: calc(31dvh + 80px);
-	}
-	.experience-playback {
-		bottom: calc(31dvh + 12px);
-	}
-	.experience.expanded .equipment-rail {
-		height: min(48dvh, calc(100dvh - 330px));
-	}
-	.experience.expanded .prompt-disclosure {
-		display: none;
-	}
-	.experience.expanded .experience-stage {
-		top: 144px;
-		bottom: calc(min(48dvh, 100dvh - 330px) + 80px);
-	}
-	.experience.expanded .experience-playback {
-		bottom: calc(min(48dvh, 100dvh - 330px) + 12px);
-	}
-	.world-notes {
-		bottom: calc(31dvh + 2px);
-	}
-	.expanded .world-notes {
-		bottom: calc(min(48dvh, 100dvh - 330px) + 2px);
+@media (max-width: 1100px) {
+	.character-sheet .sheet-body {
+		justify-content: flex-start;
 	}
 }

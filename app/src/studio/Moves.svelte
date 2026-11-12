@@ -32,7 +32,6 @@
 </script>
 
 <div class="colors">
-	<span class="sec-title">Moves</span>
 	{#if m && view.project}
 		<div class="move-list">
 			{#each m.rig.animations as a (a.id)}
@@ -134,7 +133,7 @@
 				manifest={m}
 			/>{/if}
 		{#if !isDemo()}<button
-				class="bu-action btn"
+				class="bu-action add-row"
 				data-variant="outline"
 				onclick={() => (ui.sheet = 'move')}><Plus size={16} />Add a move</button
 			>{/if}

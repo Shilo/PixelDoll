@@ -22,6 +22,7 @@
 	let w = $state(0),
 		h = $state(0);
 	let transportHeight = $state(64);
+	let wrapped = $state(false);
 	$effect(() => {
 		const ro = new ResizeObserver(([e]) => {
 			w = e.contentRect.width;
@@ -32,10 +33,24 @@
 	});
 	$effect(() => {
 		if (!bar) return;
-		const observer = new ResizeObserver(([entry]) => {
-			transportHeight = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height;
+		const toolbar = bar;
+		const observer = new ResizeObserver(() => {
+			transportHeight = toolbar.offsetHeight;
+			// A wrapped bar would leave separators alone at a row's start or end, so it drops them. Hidden, they come
+			// back only once the one-row bar has room for them again, so the bar never flips between the two.
+			const items = [...toolbar.children].filter(
+				(c): c is HTMLElement =>
+					c instanceof HTMLElement &&
+					!c.classList.contains('bar-sep') &&
+					!!c.getClientRects().length
+			);
+			const first = items[0];
+			const rows = first && items.some((c) => c.offsetTop >= first.offsetTop + first.offsetHeight);
+			const room = (toolbar.offsetParent?.clientWidth ?? Infinity) - 16 - toolbar.offsetWidth;
+			wrapped = !!rows || (wrapped && room < 24);
 		});
 		observer.observe(bar);
+		if (bar.offsetParent) observer.observe(bar.offsetParent);
 		return () => observer.disconnect();
 	});
 
@@ -160,7 +175,13 @@
 			{/if}
 		</div>
 
-		<div class="canvas-bar" bind:this={bar} role="toolbar" aria-label="Preview controls">
+		<div
+			class="canvas-bar"
+			bind:this={bar}
+			data-wrapped={wrapped || undefined}
+			role="toolbar"
+			aria-label="Preview controls"
+		>
 			<button
 				class="bu-action btn icon plain"
 				data-variant="quiet"
@@ -302,6 +323,9 @@
 	}
 	.canvas-bar > :global(*) {
 		flex-shrink: 0;
+	}
+	.canvas-bar[data-wrapped] .bar-sep {
+		display: none;
 	}
 	.canvas-bar .move-select {
 		min-width: 0;

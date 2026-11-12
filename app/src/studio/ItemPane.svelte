@@ -7,7 +7,6 @@
 	import { movePlan } from './apiPlans.ts';
 	import ApiPeek from './ApiPeek.svelte';
 	import Sprite from './Sprite.svelte';
-	import Colors from './Colors.svelte';
 	import {
 		HEALTH_LABEL,
 		groupOf,
@@ -50,6 +49,7 @@
 		Check,
 		ChevronRight,
 		CircleCheck,
+		Palette,
 		RefreshCw,
 		Trash,
 		TriangleAlert
@@ -240,6 +240,14 @@
 				)
 			: []
 	);
+	// Only worn items (and the body) have a section in the Colors tab.
+	const recolorable = $derived(!!m && !!it && on && m.materials.some((x) => x.owner === it.id));
+	function recolor() {
+		if (!it) return;
+		ui.colorsFocus = it.id;
+		ui.tab = 'colors';
+		ui.sheet = null;
+	}
 	let confirmRemove = $state(false);
 	let onlyDir = $state(false);
 	let acceptingIssues = $state(false);
@@ -306,48 +314,6 @@
 				{/each}
 			</div>
 		{/if}
-
-		<div class="actions">
-			<button
-				class="bu-action btn {on ? '' : 'primary'}"
-				data-variant="outline"
-				onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button
-			>
-			{#if !isDemo() && it.prompt}
-				<!-- A fitted copy is remade for this body like any shared item that does not fit it, named from its description. -->
-				<button
-					class="bu-action btn"
-					data-variant="outline"
-					onclick={() =>
-						withKey(() =>
-							openNewItem(groupOf(it.slot).id, {
-								slot: it.slot,
-								prompt: it.prompt
-							})
-						)}><RefreshCw size={14} />{remakeOnly ? `Make one for ${m.name}` : 'Try again'}</button
-				>
-			{/if}
-			{#if !isDemo()}
-				{#if confirmRemove}
-					<button
-						class="bu-action btn danger"
-						data-variant="outline"
-						onclick={() => removeItem(it.id)}><Trash size={14} />Remove for good</button
-					>
-					<button
-						class="bu-action btn plain"
-						data-variant="quiet"
-						onclick={() => (confirmRemove = false)}>Keep</button
-					>
-				{:else}
-					<button
-						class="bu-action btn plain danger"
-						data-variant="quiet"
-						onclick={() => (confirmRemove = true)}><Trash size={14} />Remove</button
-					>
-				{/if}
-			{/if}
-		</div>
 
 		<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
 		{#if designReasons.length && !it.refit}
@@ -529,7 +495,54 @@
 		{#if colorError}<p class="notice bad small"><TriangleAlert size={14} />{colorError}</p>{/if}
 		{#if colorDone}<p class="notice small">{colorDone}</p>{/if}
 
-		<Colors only={it.id} />
+		<div class="actions">
+			<button
+				class="bu-action btn {on ? '' : 'primary'}"
+				data-variant="outline"
+				onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button
+			>
+			{#if !isDemo() && it.prompt}
+				<!-- A fitted copy is remade for this body like any shared item that does not fit it, named from its description. -->
+				<button
+					class="bu-action btn"
+					data-variant="outline"
+					onclick={() =>
+						withKey(() =>
+							openNewItem(groupOf(it.slot).id, {
+								slot: it.slot,
+								prompt: it.prompt
+							})
+						)}><RefreshCw size={14} />{remakeOnly ? `Make one for ${m.name}` : 'Try again'}</button
+				>
+			{/if}
+			{#if !isDemo()}
+				{#if confirmRemove}
+					<button
+						class="bu-action btn danger"
+						data-variant="outline"
+						onclick={() => removeItem(it.id)}><Trash size={14} />Remove for good</button
+					>
+					<button
+						class="bu-action btn plain"
+						data-variant="quiet"
+						onclick={() => (confirmRemove = false)}>Keep</button
+					>
+				{:else}
+					<button
+						class="bu-action btn plain danger"
+						data-variant="quiet"
+						onclick={() => (confirmRemove = true)}><Trash size={14} />Remove</button
+					>
+				{/if}
+			{/if}
+		</div>
+
+		{#if recolorable}
+			<!-- Colors live in the Colors tab; this opens it on the item's own section. -->
+			<button class="bu-action btn plain recolor-link" data-variant="quiet" onclick={recolor}
+				><Palette size={14} />Recolor<ChevronRight size={14} /></button
+			>
+		{/if}
 
 		<div class="field">
 			<span class="sec-title">Layer order</span>

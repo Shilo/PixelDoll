@@ -3,8 +3,9 @@ import { readFile, readdir } from 'node:fs/promises';
 import { createServer, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { revisionPath, type PwaRelease } from '../../pwa-build.ts';
+import { distDir } from '../../dist-dir.ts';
 
-const DIST = new URL('../../dist/', import.meta.url);
+const DIST = new URL(`../../${distDir()}/`, import.meta.url);
 const TEXT = /\.(?:html|js|css|json|webmanifest|svg|txt)$/;
 const TYPES: Record<string, string> = {
 	html: 'text/html',

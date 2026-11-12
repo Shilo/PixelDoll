@@ -312,13 +312,28 @@ export function randomOutfit(m: Manifest, rnd = Math.random): Pick<Preset, 'item
 	for (const s of m.slots)
 		if (s.id !== 'body')
 			items[s.id] = pick([null, ...m.items.filter((i) => i.slot === s.id).map((i) => i.id)]);
+	return { items, variants: randomVariants(m, m.materials, rnd, 0.6) };
+}
+
+/** Random colors for these materials: each unlinked one gets a swatch with chance `p` (otherwise keeps its source).
+ * With `current`, a recolored material never lands on the swatch it already wears, so a press always reads as a change. */
+export function randomVariants(
+	m: Manifest,
+	mats: Material[],
+	rnd = Math.random,
+	p = 1,
+	current: Preset['variants'] = {}
+): Preset['variants'] {
 	const variants: Preset['variants'] = {};
-	for (const mat of m.materials) {
+	for (const mat of mats) {
 		const skin = mat.owner === m.rig.baseItem && ['red', 'orange'].includes(hueName(mat.ramp)); // ponytail: hue guess for "skin"
-		if (!mat.linkTo && rnd() < 0.6)
-			variants[mat.id] = pick(skin ? SKIN_TONES : Object.keys(SWATCHES));
+		const options = (skin ? SKIN_TONES : Object.keys(SWATCHES)).filter(
+			(x) => x !== current[mat.id]
+		);
+		if (!mat.linkTo && options.length && rnd() < p)
+			variants[mat.id] = options[Math.floor(rnd() * options.length)];
 	}
-	return { items, variants };
+	return variants;
 }
 
 /** The item has pixels in (anim, dir); a mirrored direction without its own cells follows its source. */

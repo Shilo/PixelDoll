@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { Notice } from '@shilo/bronze-ui/svelte';
 	import { onDestroy } from 'svelte';
-	import { ui, doc, activateToast, dismissToast, pauseToast, resumeToast } from './state.svelte.ts';
+	import { ui, activateToast, dismissToast, pauseToast, resumeToast } from './state.svelte.ts';
 	import { experience } from './experience/state.svelte.ts';
+	import { layout } from './experience/geometry.ts';
 	import { restoreTrigger } from './experience/focus.ts';
 	import { updateNotice } from './updateNotice.svelte.ts';
 	import PwaNotice from './PwaNotice.svelte';
@@ -36,61 +37,54 @@
 			if (focused && document.activeElement === document.body) restoreTrigger(from);
 		}
 	}
+	let viewportWidth = $state(innerWidth),
+		viewportHeight = $state(innerHeight);
+	// Inside a sheet: under its header (title and close), centered over the sheet and above its bottom edge.
+	let sheetBox = $state<{ top: number; left: number; right: number; bottom: number } | null>(null);
 	$effect(() => {
-		if (!host) return;
-		void ui.size;
-		void experience.screen;
-		void doc.id;
-		const el = host;
-		const dialog = el.closest('dialog');
-		const anchors = [
-			...(dialog ?? document).querySelectorAll<HTMLElement>(
-				dialog
-					? '.sheet-head'
-					: '.experience-header,.scene-identity,.selection-import,.selection-create,.cast-library>.bu-input'
-			)
-		];
-		const position = () => {
-			const box = el.getBoundingClientRect();
-			let top = Math.max(16, Math.min(160, innerHeight * 0.14));
-			const obstacles = anchors
-				.filter((a) => a.getClientRects().length)
-				.map((a) => a.getBoundingClientRect())
-				.sort((a, b) => a.top - b.top);
-			// Intrinsic height keeps a clipped long message from oscillating between two positions.
-			for (const a of obstacles)
-				if (
-					a.left < box.right &&
-					a.right > box.left &&
-					a.bottom > top &&
-					a.top < top + el.scrollHeight
-				)
-					top = a.bottom + 12;
-			top = Math.min(top, innerHeight - 60);
-			const panel = !dialog && document.querySelector('.equipment-rail')?.getBoundingClientRect();
-			const bottom =
-				panel && panel.width > innerWidth * 0.8 && panel.top > top
-					? panel.top - 12
-					: innerHeight - 16;
-			el.style.setProperty('--toast-top', `${top}px`);
-			el.style.setProperty(
-				'--toast-height',
-				`${Math.max(44, Math.min(innerHeight * 0.45, bottom - top))}px`
-			);
+		const dialog = host?.closest('dialog');
+		if (!dialog) return void (sheetBox = null);
+		const measure = () => {
+			const box = dialog.getBoundingClientRect(),
+				head = dialog.querySelector('.sheet-head')?.getBoundingClientRect();
+			sheetBox = {
+				top: Math.max(16, (head ?? box).bottom + 8),
+				left: box.left,
+				right: box.right,
+				bottom: box.bottom
+			};
 		};
-		let frame = 0;
-		const schedule = () => {
-			cancelAnimationFrame(frame);
-			frame = requestAnimationFrame(position);
-		};
-		const observer = new ResizeObserver(schedule);
-		for (const a of [el, ...anchors]) observer.observe(a);
-		position();
-		addEventListener('resize', schedule);
+		measure();
+		// The sheet slides in and resizes with its content; follow it.
+		const observer = new ResizeObserver(measure);
+		observer.observe(dialog);
+		dialog.addEventListener('transitionend', measure);
 		return () => {
 			observer.disconnect();
-			cancelAnimationFrame(frame);
-			removeEventListener('resize', schedule);
+			dialog.removeEventListener('transitionend', measure);
+		};
+	});
+	// Under the top bar, centered over the stage column (the whole width over a sheet or in short landscape), at most
+	// 420 px wide, and never down over the phone's equipment sheet or Preview's playback bar.
+	const place = $derived.by(() => {
+		if (sheetBox)
+			return {
+				top: sheetBox.top,
+				center: (sheetBox.left + sheetBox.right) / 2,
+				room: sheetBox.right - sheetBox.left - 32,
+				height: Math.min(viewportHeight * 0.45, sheetBox.bottom - 12 - sheetBox.top)
+			};
+		const g = layout(viewportWidth, viewportHeight, experience.screen),
+			studio = experience.screen === 'studio',
+			bottom = Math.min(
+				studio && g.sheet ? g.sheetTop - 12 : viewportHeight - 16,
+				studio && experience.mode === 'preview' ? g.playbackTop - 12 : Infinity
+			);
+		return {
+			top: g.toastTop,
+			center: (g.column.l + g.column.r) / 2,
+			room: g.column.r - g.column.l - 2 * g.edge,
+			height: Math.min(viewportHeight * 0.45, bottom - g.toastTop)
 		};
 	});
 	onDestroy(() => {
@@ -100,9 +94,15 @@
 </script>
 
 <svelte:document onvisibilitychange={() => (hidden = document.hidden)} />
+<svelte:window bind:innerWidth={viewportWidth} bind:innerHeight={viewportHeight} />
 {#if updateNotice.visible || (ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet))}
 	<div
-		class="toast"
+		class="toast bu-toast-region"
+		data-placement="top"
+		style:--bu-toast-top="{place.top}px"
+		style:--bu-toast-center="{place.center}px"
+		style:--bu-toast-room="{place.room}px"
+		style:--bu-toast-height="{Math.max(44, place.height)}px"
 		bind:this={host}
 		role="presentation"
 		onpointerenter={() => {
@@ -137,10 +137,3 @@
 		<PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
 	</div>
 {/if}
-
-<style>
-	.toast {
-		display: grid;
-		gap: 8px;
-	}
-</style>

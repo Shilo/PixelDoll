@@ -573,16 +573,6 @@ dialog select option {
 	flex-direction: column;
 	gap: 14px;
 }
-.sec-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-}
-.sec-head .actions {
-	flex-wrap: nowrap;
-	gap: 2px;
-}
 .sec-title {
 	font-size: var(--fs-sm);
 	font-weight: 600;
@@ -592,9 +582,6 @@ dialog select option {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
-}
-.mat-name {
-	font-weight: 500;
 }
 .swatches {
 	display: flex;
@@ -844,30 +831,6 @@ dialog select option {
 .group {
 	margin-top: 2px;
 }
-.group-head {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	min-height: 32px;
-	padding: 0 0 0 8px;
-}
-.group-head h3 {
-	font-size: var(--fs);
-	font-weight: 600;
-}
-.group-head .add {
-	margin-left: auto;
-}
-.category-count {
-	color: var(--text-3);
-}
-.glyph {
-	width: 20px;
-	display: grid;
-	place-items: center;
-	color: var(--text-2);
-	flex: none;
-}
 .group.outfits {
 	margin-top: 12px;
 	padding-top: 8px;
@@ -928,24 +891,7 @@ dialog select option {
 	padding: 4px 8px;
 }
 
-/* inspector */
-.inspector {
-	display: flex;
-	flex-direction: column;
-	height: 100%;
-	min-height: 0;
-}
-.inspector-tabs {
-	flex: none;
-	padding: 12px;
-}
-.inspector-content {
-	flex: 1;
-	min-height: 0;
-	overflow: auto;
-	scrollbar-gutter: stable;
-	padding: 0 12px 12px;
-}
+/* item details */
 .insp-body {
 	display: flex;
 	flex-direction: column;
@@ -997,20 +943,6 @@ dialog select option {
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 8px;
-}
-.empty {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	text-align: center;
-	gap: 10px;
-	padding: 24px 12px;
-	color: var(--text-2);
-}
-.empty-title {
-	font-weight: 600;
-	font-size: var(--fs-md);
-	color: var(--text);
 }
 .gen {
 	display: flex;
@@ -1287,6 +1219,20 @@ dialog.sheet.side::backdrop {
 .sheet-head > .btn {
 	justify-self: start;
 }
+/* Text buttons in a sheet header (Done, Cancel) keep their compact label; an invisible box gives them a full 44 px
+   target without growing the header. */
+.sheet-head > .btn.link {
+	position: relative;
+}
+.sheet-head > .btn.link::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: max(100%, 44px);
+	height: max(100%, 44px);
+	transform: translate(-50%, -50%);
+}
 .sheet-title {
 	font-size: var(--fs-md);
 	font-weight: 600;
@@ -1467,73 +1413,11 @@ dialog.sheet.bottom .foot-note {
 	flex-direction: column;
 	gap: 14px;
 }
-.slot-chips {
-	display: flex;
-	gap: 6px;
-	overflow-x: auto;
-	scrollbar-width: none;
-	margin: 0 -16px;
-	padding: 2px 16px;
-}
-.slot-chip {
-	flex: none;
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	height: 40px;
-	padding: 0 14px 0 10px;
-	border-radius: var(--r-pill);
-	border: 1px solid var(--line-strong);
-	background: transparent;
-	color: var(--text-2);
-	font-weight: 500;
-}
-
-.slot-chip[aria-selected='true'] .category-count {
-	color: inherit;
-}
-.category-empty {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	min-height: 44px;
-	padding-top: 8px;
-	border-top: 1px solid var(--line);
-	color: var(--text-2);
-}
-.category-empty .add {
-	margin-left: auto;
-}
-.tiles {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-	gap: 8px;
-}
-.tile {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 4px;
-	padding: 0;
-	border: 0;
-	background: none;
-	color: var(--text-2);
-	min-width: 0;
-}
 .tile-art {
 	width: 100%;
 	display: grid;
 	place-items: center;
 	overflow: hidden;
-}
-
-.tile[aria-pressed='true'] {
-	color: var(--text);
-	font-weight: 600;
-}
-
-.tile.sel {
-	color: var(--text);
 }
 .tile-name {
 	font-size: var(--fs-sm);
@@ -1603,22 +1487,6 @@ dialog.sheet.bottom .foot-note {
 	justify-content: flex-start;
 	text-align: start;
 	white-space: normal;
-}
-.sel-row {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-.sel-name {
-	font-weight: 600;
-	font-size: var(--fs-md);
-	min-width: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.sel-row .btn {
-	margin-left: auto;
 }
 .dock {
 	position: fixed;
@@ -1768,17 +1636,6 @@ dialog.sheet.bottom .foot-note {
 .land-col > .seg > button {
 	height: 36px;
 }
-.land-col .slot-chips {
-	margin: 0 -12px;
-	padding: 2px 12px;
-}
-.land-col .slot-chip {
-	height: 36px;
-}
-.land-col .tiles {
-	grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-}
-
 /* ---------- welcome (first run) ---------- */
 .welcome {
 	min-height: 100dvh;
@@ -1990,19 +1847,6 @@ dialog.sheet.bottom .foot-note {
 		opacity: 1;
 	}
 }
-.chip-row {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	margin-right: -8px;
-}
-.chip-row .slot-chips {
-	flex: 1;
-	min-width: 0;
-	margin-right: 0;
-	padding-right: 4px;
-}
-
 /* touch targets >= 44 px on touch screens (T1 P2-4) */
 @media (pointer: coarse) {
 	.canvas-bar .seg > button {
@@ -2012,8 +1856,6 @@ dialog.sheet.bottom .foot-note {
 	}
 	.btn.sm,
 	.chip,
-	.slot-chip,
-	.land-col .slot-chip,
 	.land-col > .seg > button,
 	.seg > button {
 		height: 44px;

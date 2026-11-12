@@ -19,8 +19,10 @@ export function rememberActivation(event: Event) {
 			: null;
 	if (!target) return;
 	const popover = target.closest<HTMLElement>('[popover]');
+	// A popover shared by many invokers (the per-tile item menu) answers to the one that opened it.
 	trigger = popover
-		? document.querySelector<HTMLElement>(`[popovertarget="${popover.id}"]`)
+		? (openers.get(popover) ??
+			document.querySelector<HTMLElement>(`[popovertarget="${popover.id}"]`))
 		: target;
 }
 export function openingTrigger(): HTMLElement | null {
@@ -56,6 +58,19 @@ function visibleInViewport(target: HTMLElement | null): target is HTMLElement {
 	}
 	return right > left && bottom > top;
 }
+/** Whether `target` sits in a scroll container that can scroll it back into view. */
+function inScroller(target: HTMLElement) {
+	if (!target.isConnected) return false;
+	for (let parent = target.parentElement; parent; parent = parent.parentElement) {
+		const style = getComputedStyle(parent);
+		if (
+			/auto|scroll/.test(style.overflowY + style.overflowX) &&
+			(parent.scrollHeight > parent.clientHeight || parent.scrollWidth > parent.clientWidth)
+		)
+			return true;
+	}
+	return false;
+}
 export function restoreTrigger(target: HTMLElement | null) {
 	const dialog = document.querySelector<HTMLDialogElement>('dialog[open]');
 	if (dialog) {
@@ -78,8 +93,11 @@ export function popoverFocus(
 	const source =
 		activated?.getAttribute('popovertarget') === menu.id && visibleInViewport(activated)
 			? activated
-			: ([
-					...document.querySelectorAll<HTMLElement>(`[popovertarget="${CSS.escape(menu.id)}"]`)
+			: // A trigger hidden at this width (Share inside More on phones) hands its anchor to `data-popover-fallback`.
+				([
+					...document.querySelectorAll<HTMLElement>(
+						`[popovertarget="${CSS.escape(menu.id)}"], [data-popover-fallback="${CSS.escape(menu.id)}"]`
+					)
 				].find(visibleInViewport) ?? null);
 	const opener = event.newState === 'open' ? source : (openers.get(menu) ?? source);
 	const prior = placements.get(menu);
@@ -115,6 +133,8 @@ export function popoverFocus(
 				}).then(({ x, y, placement, middlewareData }) => {
 					if (!active || current !== sequence) return;
 					if (middlewareData.hide?.referenceHidden) {
+						// The trigger scrolled out of view: closing must not pull focus to the header (see below).
+						menu.dataset.scrolledAway = '';
 						menu.hidePopover();
 						return;
 					}
@@ -138,8 +158,12 @@ export function popoverFocus(
 		if (focusFirst)
 			requestAnimationFrame(() => {
 				if (!menu.matches(':popover-open')) return;
+				// A menu with a current choice opens on it (the open character, below the name menu's prompt).
 				// Hidden (phone-only) and disabled rows ignore focus(), so move on to the first row that takes it.
-				for (const row of menu.querySelectorAll<HTMLElement>('button,[href],input')) {
+				for (const row of [
+					...menu.querySelectorAll<HTMLElement>('[aria-checked="true"]'),
+					...menu.querySelectorAll<HTMLElement>('button,[href],input')
+				]) {
 					row.focus();
 					if (document.activeElement === row) break;
 				}
@@ -148,12 +172,19 @@ export function popoverFocus(
 		openers.delete(menu);
 		const surface = menu.querySelector<HTMLElement>(':scope > .bu-popover-surface');
 		if (surface) surface.style.maxHeight = '';
+		const scrolledAway = 'scrolledAway' in menu.dataset;
+		delete menu.dataset.scrolledAway;
 		// Do not steal focus from a control/world the user clicked to dismiss it.
 		if (
 			document.activeElement === document.body ||
 			menu.contains(document.activeElement) ||
 			document.activeElement === opener
-		)
-			restoreTrigger(opener);
+		) {
+			// Scrolled out of a list, the opener is still the right place to continue from: focus it where it is, without
+			// scrolling the list back, instead of falling back to the header. A trigger clipped away for good still
+			// falls back to a visible control.
+			if (scrolledAway && opener && inScroller(opener)) opener.focus({ preventScroll: true });
+			else restoreTrigger(opener);
+		}
 	}
 }

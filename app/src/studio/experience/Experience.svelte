@@ -1,13 +1,23 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
+	import { SvelteMap } from 'svelte/reactivity';
 	import Toolbar from '../Toolbar.svelte';
 	import PhonePanel from '../PhonePanel.svelte';
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
-	import { ui, doc, store, openProject, refreshProjects } from '../state.svelte.ts';
-	import { experience, customize, characters, setMode, type WorldMode } from './state.svelte.ts';
-	import { WORLDS, REFLECTION } from './config.ts';
+	import {
+		ui,
+		doc,
+		store,
+		openProject,
+		refreshProjects,
+		characterName,
+		toast
+	} from '../state.svelte.ts';
+	import { experience, customize, characters } from './state.svelte.ts';
+	import { WORLDS, REFLECTION, worldArt } from './config.ts';
+	import { heroScale, layout, placeWorld } from './geometry.ts';
 	import {
 		ChevronDown,
 		ChevronLeft,
@@ -15,23 +25,15 @@
 		Play,
 		Pause,
 		Grid2x2,
-		Copy,
-		TriangleAlert
+		TriangleAlert,
+		Download,
+		Plus
 	} from '../icons.ts';
 	import { directionInfo, directionLabel } from './movement.ts';
-	import { groupOf, moveLabel } from '../model.ts';
+	import { characterFacts, groupOf, moveLabel } from '../model.ts';
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	let search = $state('');
-	let copyMessage = $state('');
-	async function copyPrompt() {
-		try {
-			await navigator.clipboard.writeText(prompt);
-			copyMessage = 'Copied';
-		} catch {
-			copyMessage = 'Select the prompt to copy it';
-		}
-	}
 	let selection = $state<HTMLDivElement>();
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
@@ -39,12 +41,12 @@
 		viewportHeight = $state(720);
 	const m = $derived(store.project?.manifest);
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
-	const name = $derived(
-		store.projects.find((p) => p.id === doc.id)?.name.replace(/ \(demo\)$/, '') ??
-			m?.name ??
-			'Character'
-	);
-	const prompt = $derived(m?.items.find((it) => it.id === m.rig.baseItem)?.prompt ?? '');
+	const name = $derived(characterName());
+	// Facts for characters opened this session (the demo has no stored manifest summary).
+	const openedFacts = new SvelteMap<string, string>();
+	$effect(() => {
+		if (m && doc.id && !doc.loading) openedFacts.set(doc.id, characterFacts(m));
+	});
 	const list = $derived(
 		store.projects.filter((p) => !p.dev && p.name.toLowerCase().includes(search.toLowerCase()))
 	);
@@ -63,35 +65,64 @@
 					}))
 			: list.map((p) => ({ offset: 0, p }))
 	);
+	const MOVES_OFF = 'Moves are picked in Preview. Here, moving plays idle or walk.';
 	const tabs = [
 		['wardrobe', 'Wardrobe'],
 		['colors', 'Colors'],
 		['outfits', 'Outfits'],
 		['moves', 'Moves']
 	] as const;
-	const modes = [
-		['preview', 'Preview'],
-		['topdown', 'Top-down'],
-		['side', 'Side-scroller']
-	] as const;
-	const castScale = $derived.by(() => {
-		const mobile = viewportWidth <= 760,
-			short = viewportHeight <= 540;
-		const rail = Math.min(414, Math.max(300, viewportWidth * 0.2156));
-		const edge = Math.min(56, Math.max(28, viewportWidth * 0.0292));
-		const width = mobile ? viewportWidth : viewportWidth - rail - edge;
-		return Math.max(
-			1,
-			Math.floor(
-				Math.min(
-					width / (mobile ? 100 : 130),
-					(viewportHeight * (short ? 0.3 : mobile ? 0.26 : 0.43)) / 50
-				)
-			)
-		);
-	});
+	const g = $derived(layout(viewportWidth, viewportHeight, experience.screen));
+	// The cast is drawn from 64 px frames whose bodies stand about 50 px tall and 48 px wide.
+	const castScale = $derived(heroScale(g, 50, 48));
 	const castSize = (offset: number) =>
 		64 * (offset ? Math.max(1, Math.round(castScale * 0.56)) : castScale);
+	const heroHeight = $derived(
+		experience.screen === 'characters' ? 50 * castScale : experience.heroHeight || 50 * castScale
+	);
+	const world = $derived(placeWorld(g, worldArt(ui.theme), g.feet, heroHeight));
+	const px = (n: number) => `${Math.round(n * 100) / 100}px`;
+	const vars = $derived(
+		[
+			['--edge', g.edge],
+			['--header-top', g.top],
+			['--header-row', g.row],
+			['--header-bottom', g.headerBottom],
+			['--rail', g.rail],
+			['--rail-top', g.railTop],
+			['--sheet-height', g.sheetHeight],
+			['--stage-left', g.stage.l],
+			['--stage-right', g.w - g.stage.r],
+			['--stage-top', g.stage.t],
+			['--stage-bottom', g.h - g.stage.b],
+			['--feet-x', g.feet.x],
+			['--feet-y', g.feet.y],
+			['--playback-top', g.playbackTop],
+			['--playback-height', g.playbackHeight],
+			['--list-top', g.listTop],
+			['--world-w', world.scale * worldArt(ui.theme).width],
+			['--world-h', world.scale * worldArt(ui.theme).height],
+			['--world-x', world.x],
+			['--world-y', world.y],
+			['--world-cover', world.coverBottom]
+		]
+			.map(([k, v]) => `${k}:${px(v as number)}`)
+			.join(';')
+	);
+	// The offline banner lives outside the scene: just above the playback bar on Customize, above Customize on a
+	// phone's cast list, else at the bottom left, clear of the caption, actions and toasts.
+	$effect(() => {
+		const bottom =
+			experience.screen === 'studio' ? g.h - g.playbackTop + 8 : g.sheet ? g.edge + 56 : 12;
+		const root = document.documentElement.style;
+		root.setProperty('--scene-banner-bottom', `${bottom}px`);
+		root.setProperty('--scene-edge', `${g.edge}px`);
+	});
+	onMount(() => () => {
+		const root = document.documentElement.style;
+		root.removeProperty('--scene-banner-bottom');
+		root.removeProperty('--scene-edge');
+	});
 	const background = $derived(
 		WORLDS[ui.theme].backgrounds[
 			ui.sheet === 'create'
@@ -123,8 +154,6 @@
 		}
 	}
 	onMount(() => {
-		const short = matchMedia('(max-width:760px) and (max-height:700px)');
-		if (short.matches) experience.expanded = true;
 		window.addEventListener('wheel', wheel, { passive: false });
 		return () => window.removeEventListener('wheel', wheel);
 	});
@@ -159,11 +188,6 @@
 		next(Math.sign(wheelAmount));
 		wheelAmount = 0;
 		lastWheelStep = now;
-	}
-	async function changeMode(mode: WorldMode) {
-		setMode(mode);
-		await tick();
-		document.querySelector<HTMLElement>('.world-stage')?.focus({ preventScroll: true });
 	}
 	function panel(id: typeof ui.tab) {
 		document
@@ -222,12 +246,6 @@
 		}
 		// Backspace on ordinary controls stays native; the focused world owns Back.
 		if (e.key === 'Backspace') return;
-		const disclosure = document.querySelector<HTMLDetailsElement>('.prompt-disclosure[open]');
-		if (disclosure) {
-			disclosure.open = false;
-			e.preventDefault();
-			return;
-		}
 		if (experience.screen === 'studio') {
 			characters();
 			e.preventDefault();
@@ -247,17 +265,18 @@
 <div
 	class="experience"
 	class:selection={experience.screen === 'characters'}
-	class:expanded={experience.expanded}
+	class:sheet-layout={g.sheet}
+	class:short-layout={g.short}
+	class:phone-layout={g.phone}
+	class:compact-playback={g.compactPlayback}
+	class:no-panel={experience.screen === 'studio' && g.sheet && !g.sheetHeight}
 	style:--world-image="url('{background}')"
+	style={vars}
 >
 	<div class="scene-backdrop" aria-hidden="true"></div>
 	<div class="scene-reading" aria-hidden="true"></div>
 	<Toolbar />
 	{#if experience.screen === 'characters'}
-		<div class="scene-identity">
-			<h1>Characters</h1>
-			<p>{store.projects.filter((p) => !p.dev).length} on this device</p>
-		</div>
 		<!-- Keyboard focus on this game region scopes selection shortcuts. -->
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 		<div
@@ -286,56 +305,69 @@
 				{/each}
 			</div>
 			{#if list.length}<div class="selected-caption">
+					<!-- The heading sits beside the menu button: a heading is not allowed inside a button. -->
+					<h2 class="sr">{name}</h2>
 					<button
 						class="selected-name project-btn"
 						popovertarget="project-menu"
 						onclick={() => void refreshProjects()}
-						><h2>{name}</h2>
+						><span class="selected-name-text">{name}</span>
 						<ChevronDown size={16} /></button
 					>
-					<div>
-						<button
-							class="bu-action"
-							data-variant="quiet"
-							aria-label="Previous character"
-							disabled={list.length < 2}
-							onclick={() => next(-1)}><ChevronLeft size={18} /></button
-						><span
-							>{doc.id.startsWith('fixture:') ? 'Demo character' : 'Saved on this device'} · {Math.max(
-								0,
-								index
-							) + 1} / {list.length}</span
-						><button
-							class="bu-action"
-							data-variant="quiet"
-							aria-label="Next character"
-							disabled={list.length < 2}
-							onclick={() => next(1)}><ChevronRight size={18} /></button
-						>
-					</div>
+					{#if list.length > 1}<div class="selected-step">
+							<button
+								class="bu-action"
+								data-variant="quiet"
+								aria-label="Previous character"
+								onclick={() => next(-1)}><ChevronLeft size={18} /></button
+							><span class="num">{Math.max(0, index) + 1} / {list.length}</span><button
+								class="bu-action"
+								data-variant="quiet"
+								aria-label="Next character"
+								onclick={() => next(1)}><ChevronRight size={18} /></button
+							>
+						</div>{/if}
 				</div>{:else}<p class="empty-cast">No matching characters</p>{/if}
 		</div>
 		<aside class="cast-library" aria-label="Your characters">
-			<h2>Your characters</h2>
-			<input
-				class="bu-input"
-				type="search"
-				aria-label="Search characters"
-				placeholder="Search characters"
-				bind:value={search}
-			/>
+			<div class="cast-search">
+				<input
+					class="bu-input"
+					type="search"
+					aria-label="Search characters"
+					placeholder={g.sheet ? 'Search' : 'Search characters'}
+					bind:value={search}
+				/>
+				{#if g.sheet}<button
+						class="bu-action cast-action"
+						data-variant="outline"
+						aria-label="New character"
+						onclick={() => (ui.sheet = 'create')}><Plus size={16} /><span>New</span></button
+					><button
+						class="bu-action cast-action"
+						data-variant="outline"
+						aria-label="Import"
+						title="Import"
+						onclick={() => {
+							ui.importSource = 'device';
+							ui.sheet = 'import';
+						}}><Download size={16} /></button
+					>{/if}
+			</div>
 			<div class="character-rows">
-				{#each list as p (p.id)}<button
+				{#each list as p (p.id)}
+					{@const facts = p.facts ?? openedFacts.get(p.id)}
+					<button
 						class="bu-action character-row"
 						data-variant="row"
 						aria-pressed={p.id === doc.id}
 						onclick={() => pick(p.id)}
 						><CharacterThumb id={p.id} name={p.name} /><span
-							><strong>{p.name.replace(/ \(demo\)$/, '')}</strong><small
-								>{p.demo ? 'Demo character' : 'Saved on this device'}</small
-							></span
+							><strong>{p.name.replace(/ \(demo\)$/, '')}</strong>{#if facts}<small>{facts}</small
+								>{/if}</span
 						></button
-					>{:else}<p class="muted">No matching characters</p>{/each}
+					>
+				{:else}<p class="muted">No matching characters</p>{/each}
 			</div>
 			<button
 				class="bu-action customize-action"
@@ -346,34 +378,6 @@
 			>
 		</aside>
 	{:else}
-		<div class="scene-identity">
-			<p>Customize character</p>
-			<button
-				class="project-btn"
-				popovertarget="project-menu"
-				aria-haspopup="menu"
-				onclick={() => void refreshProjects()}
-				><h1>{name}</h1>
-				<ChevronDown size={18} /></button
-			>
-			{#if prompt}<details class="prompt-disclosure" ontoggle={() => (copyMessage = '')}>
-					<summary>{prompt}<ChevronDown size={16} /></summary>
-					<div>
-						<p>{prompt}</p>
-						<button class="bu-action" data-variant="outline" onclick={copyPrompt}
-							><Copy size={16} />{copyMessage || 'Copy prompt'}</button
-						>
-					</div>
-				</details>{/if}
-			<nav class="view-modes" aria-label="Character view">
-				{#each modes as [id, label]}<button
-						class="bu-action"
-						data-variant="tab"
-						aria-pressed={experience.mode === id}
-						onclick={() => changeMode(id as WorldMode)}>{label}</button
-					>{/each}
-			</nav>
-		</div>
 		<div class="experience-stage">
 			<WorldStage bind:missing />
 		</div>
@@ -398,20 +402,38 @@
 								>{/each}</select
 						></label
 					>
-					{#if experience.presentation !== 'animation'}<span class="small muted"
+					{#if experience.presentation !== 'animation'}<span class="small muted playback-still"
 							>{experience.presentation === 'unavailable' ? 'Unavailable' : 'Still'}</span
 						>{/if}
-					<div class="facing-buttons" role="group" aria-label="Direction">
-						{#each m.rig.directions as d}<button
-								class="bu-action"
-								data-variant="direction"
-								aria-pressed={ui.dir === d.id}
-								aria-label="Face {d.id}"
-								onclick={() => (ui.dir = d.id)}>{directionInfo(d.id)?.short ?? d.id}</button
-							>{/each}
-					</div>
-					<button class="bu-action" data-variant="quiet" onclick={() => (ui.sheet = 'inspect')}
-						><Grid2x2 size={16} /><span>Inspect</span></button
+					<span class="playback-sep" aria-hidden="true"></span>
+					{#if g.cycleFacing}
+						<!-- Too narrow for a button per direction: one button steps through them, so the bar stays one row. -->
+						{@const dirs = m.rig.directions.map((d) => d.id)}
+						<button
+							class="bu-action facing-cycle"
+							data-variant="direction"
+							aria-label="Facing: {directionLabel(ui.dir)}"
+							title="Facing {directionLabel(ui.dir)}. Next direction"
+							onclick={() => (ui.dir = dirs[(dirs.indexOf(ui.dir) + 1) % dirs.length] ?? dirs[0])}
+							>{directionInfo(ui.dir)?.short ?? ui.dir}</button
+						>
+					{:else}
+						<div class="facing-buttons" role="group" aria-label="Direction">
+							{#each m.rig.directions as d}<button
+									class="bu-action"
+									data-variant="direction"
+									aria-pressed={ui.dir === d.id}
+									aria-label="Face {d.id}"
+									onclick={() => (ui.dir = d.id)}>{directionInfo(d.id)?.short ?? d.id}</button
+								>{/each}
+						</div>
+					{/if}
+					<span class="playback-sep" aria-hidden="true"></span>
+					<button
+						class="bu-action playback-inspect"
+						data-variant="quiet"
+						aria-label="Inspect"
+						onclick={() => (ui.sheet = 'inspect')}><Grid2x2 size={16} /><span>Inspect</span></button
 					>
 					{#if missing}
 						<button
@@ -455,22 +477,30 @@
 			</div>
 		{/if}
 		<aside class="equipment-rail" aria-label="Customization">
-			<button
-				class="sheet-expand bu-action"
-				data-variant="quiet"
-				aria-label={experience.expanded ? 'Collapse equipment' : 'Expand equipment'}
-				aria-expanded={experience.expanded}
-				onclick={() => (experience.expanded = !experience.expanded)}><span></span></button
-			>
-			<nav class="equipment-modes" aria-label="Customization panels">
-				{#each tabs as [id, label]}{#if experience.mode === 'preview' || id !== 'moves'}<button
-							class="bu-action"
-							data-variant="tab"
-							aria-pressed={ui.tab === id}
-							onclick={() => panel(id)}>{label}</button
-						>{:else}<span class="tab-placeholder" aria-hidden="true">{label}</span>{/if}{/each}
-			</nav>
-			<div class="equipment-scroll"><PhonePanel /></div>
+			{#if g.sheet}<span class="sheet-handle" aria-hidden="true"></span>{/if}
+			<div class="equipment-modes" role="tablist" aria-label="Customization panels">
+				<!-- Moves stays in place in the live views, aria-disabled: there movement picks idle or walk. It stays in the Tab
+				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->
+				{#each tabs as [id, label]}{@const off =
+						id === 'moves' && experience.mode !== 'preview'}<button
+						class="bu-action"
+						data-variant="tab"
+						role="tab"
+						id="customization-tab-{id}"
+						aria-selected={ui.tab === id}
+						aria-controls="customization-panel"
+						aria-disabled={off || undefined}
+						aria-describedby={off ? 'moves-tab-note' : undefined}
+						title={off ? MOVES_OFF : undefined}
+						tabindex={ui.tab === id || off ? 0 : -1}
+						onclick={() => {
+							if (off) toast(MOVES_OFF);
+							else panel(id);
+						}}>{label}</button
+					>{/each}
+			</div>
+			<span class="sr" id="moves-tab-note">{MOVES_OFF}</span>
+			<PhonePanel />
 		</aside>
 	{/if}
 	{#if doc.error}<p class="experience-error" role="alert">{doc.error}</p>{/if}

@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { groupLabel } from '../../src/studio/model.ts';
 
 /** A disabled control looks the same hovered as at rest and shows the not-allowed cursor. */
 export async function noDisabledHover(page: Page, locator: Locator) {
@@ -19,7 +20,7 @@ export async function noDisabledHover(page: Page, locator: Locator) {
 	expect(resting.cursor).toBe('not-allowed');
 }
 
-/** Enter through Characters and open Head, which the former all-category sidebar always exposed. */
+/** Enter through Characters and bring Head to the top of the Wardrobe list. */
 export async function enterStudio(page: Page) {
 	// First load opens IndexedDB and fixtures; under a busy full suite this can exceed the default 5s.
 	await expect(page.locator('.customize-action, .experience-stage')).toBeVisible({
@@ -47,52 +48,48 @@ export async function equipmentMode(page: Page, name: 'Wardrobe' | 'Colors' | 'O
 	const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true });
 	if (await inspect.count())
 		await inspect.getByRole('button', { name: 'Done', exact: true }).click();
-	await page.locator('.equipment-modes').getByRole('button', { name, exact: true }).click();
+	await page
+		.getByRole('tablist', { name: 'Customization panels', exact: true })
+		.getByRole('tab', { name, exact: true })
+		.click();
 }
 
+export { groupLabel };
+
+/** Wardrobe is one list of every category; the slot rail brings a category's section to the top. */
 export async function equipmentGroup(page: Page, name: string) {
 	await equipmentMode(page, 'Wardrobe');
-	if (['Head', 'Hair', 'Body'].includes(name))
-		await page.getByRole('tab', { name: new RegExp(`^${name}\\b`) }).click();
-	else {
-		await page.locator('.slot-chips').getByRole('button', { name: 'More', exact: true }).click();
-		await page.locator('#more-equipment').getByRole('button', { name, exact: true }).click();
-	}
+	const label = groupLabel(name);
+	await page
+		.getByRole('navigation', { name: 'Equipment slots', exact: true })
+		.getByRole('button', { name: new RegExp(`^${label}\\b`) })
+		.click();
+	await expect(section(page, name)).toBeInViewport();
 }
+
+/** A category's section in the Wardrobe list. */
+export const section = (page: Page, name: string) =>
+	page.getByRole('region', { name: groupLabel(name), exact: true });
 
 export async function newItem(page: Page, group = 'Head') {
 	await equipmentGroup(page, group);
-	await page.getByRole('button', { name: `New ${group.toLowerCase()} item`, exact: true }).click();
+	await section(page, group)
+		.getByRole('button', { name: `New ${groupLabel(group).toLowerCase()} item`, exact: true })
+		.first()
+		.click();
 }
 
 export async function selectedItemDetails(page: Page) {
 	const existing = page.getByRole('dialog').filter({ has: page.locator('.insp-body') });
 	if (await existing.count()) return existing;
 	await equipmentMode(page, 'Wardrobe');
-	// Fixture-driven tests may select a real item in a different category. Reach
-	// that selection through the same category controls available to a person;
-	// every category shows its equipped item's row, so look for the selected tile first.
-	for (const target of ['.equipment-scroll .tile.sel', '.equipment-scroll .sel-row']) {
-		for (const group of [
-			'Head',
-			'Hair',
-			'Body',
-			'Face',
-			'Legs',
-			'Feet',
-			'Back',
-			'Main hand',
-			'Off hand'
-		]) {
-			if (await page.locator(target).count()) break;
-			await equipmentGroup(page, group);
-		}
-		if (await page.locator(target).count()) break;
-	}
-	await page
-		.locator('.equipment-scroll .sel-row')
-		.getByRole('button', { name: / details$/ })
-		.click();
+	// The list shows every category, so the selected item's tile is already in it; its ⋮ menu opens the details.
+	const more = page.locator(
+		'.equipment-scroll .tile-wrap:has(.item-tile[data-selected]) .tile-more'
+	);
+	await more.scrollIntoViewIfNeeded();
+	await more.click();
+	await page.getByRole('menuitem', { name: 'Details…', exact: true }).click();
 	const dialog = page.getByRole('dialog');
 	await expect(dialog.locator('.insp-body')).toBeVisible();
 	return dialog;
@@ -100,33 +97,33 @@ export async function selectedItemDetails(page: Page) {
 
 export async function pickItem(page: Page, name: string) {
 	await equipmentMode(page, 'Wardrobe');
-	const item = page.locator('.equipment-scroll .tile').getByText(name, { exact: true });
-	for (const group of [
-		'Head',
-		'Hair',
-		'Body',
-		'Face',
-		'Legs',
-		'Feet',
-		'Back',
-		'Main hand',
-		'Off hand'
-	]) {
-		if (await item.count()) break;
-		await equipmentGroup(page, group);
-	}
+	const item = page.locator('.equipment-scroll .item-tile').getByText(name, { exact: true });
+	await item.scrollIntoViewIfNeeded();
 	// Tapping a worn tile takes the item off, so tap it again to leave it worn and selected
 	const worn = await page
-		.locator('.equipment-scroll .tile[aria-pressed="true"]')
+		.locator('.equipment-scroll .item-tile[aria-pressed="true"]')
 		.filter({ has: page.getByText(name, { exact: true }) })
 		.count();
 	await item.click();
 	if (worn) await item.click();
 }
 
+/** Open Inspect from the playback bar, or from More where a narrow stage moves it (geometry.ts compactPlayback). */
+export async function openInspect(page: Page) {
+	const bar = page
+		.getByRole('toolbar', { name: 'Preview controls', exact: true })
+		.getByRole('button', { name: 'Inspect', exact: true });
+	if (await bar.isVisible()) return bar.click();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page
+		.locator('#experience-options')
+		.getByRole('button', { name: 'Inspect', exact: true })
+		.click();
+}
+
 export async function inspectStage(page: Page) {
 	if (await page.getByRole('dialog', { name: 'Inspect character', exact: true }).count()) return;
-	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
+	await openInspect(page);
 	await expect(page.locator('.inspection-stage .stage')).toBeVisible();
 }
 

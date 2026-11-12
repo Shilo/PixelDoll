@@ -13,12 +13,15 @@ export interface RenderOptions {
 	mode: WorldMode;
 	anchor: Point;
 	camera: Point;
+	/** The character's eye line (geometry.ts placeWorld): the side view's horizon, matching the world image. */
+	eye: number;
 }
 
-/** The same perspective as the approved prototype, independent of actor/UI layout. */
+/** The approved prototype's perspective. The side view's horizon is the character's eye line, so its floor meets the
+ * world image's horizon; the top-down view looks down from above the screen. */
 export function projection(options: RenderOptions) {
 	const { height: viewportHeight, mode, anchor, camera } = options;
-	const horizon = mode === 'side' ? anchor.y - viewportHeight * 0.13 : -viewportHeight * 0.4;
+	const horizon = mode === 'side' ? Math.min(options.eye, anchor.y - 1) : -viewportHeight * 0.4;
 	const focal = viewportHeight * 1.1,
 		height = mode === 'side' ? 95 : 600;
 	const depth = (focal * height) / (anchor.y - horizon);

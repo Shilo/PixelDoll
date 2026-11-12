@@ -2111,7 +2111,6 @@ describe('optional review', () => {
 				expect(s.ui).toMatchObject({
 					selected: 'gen:helm0',
 					tab: 'wardrobe',
-					inspTab: 'item',
 					sheet: null
 				});
 			else expect(s.ui.selected).toBe('');
@@ -2736,4 +2735,38 @@ test('review drafts re-checked together after a reload all keep their results', 
 	} finally {
 		vi.doUnmock('../../src/lib/items/run.ts');
 	}
+});
+
+test('category Random switches to another item of that category in its own slot, as one named undo step', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	s.store.project = { manifest: fixtureManifest(), images: new Map() };
+	s.doc.id = 'fixture:s2';
+	s.doc.items = { body: 'base', head: 'helmet_steel', torso_inner: 'vest_leather' };
+	s.doc.variants = {};
+	s.doc.undo = [];
+	// Head holds a helmet (worn) and a wizard hat: only the hat is a choice.
+	expect(s.groupRandomChoices('Head').map((i) => i.id)).toEqual(['hat_wizard']);
+	s.randomizeGroup('Head');
+	expect(s.doc.items).toEqual({ body: 'base', head: 'hat_wizard', torso_inner: 'vest_leather' });
+	expect(s.ui.selected).toBe('hat_wizard');
+	expect(s.doc.undo.map((u) => u.label)).toEqual(['Random head item']);
+	// The visible category name is used: the Body group reads as Chest.
+	s.doc.items = { body: 'base' };
+	s.randomizeGroup('Body');
+	expect(s.doc.items).toEqual({ body: 'base', torso_inner: 'vest_leather' });
+	expect(s.doc.undo.at(-1)!.label).toBe('Random chest item');
+});
+
+test('category Random is unavailable when the only item of that category is already worn', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	s.store.project = { manifest: fixtureManifest(), images: new Map() };
+	s.doc.id = 'fixture:s2';
+	s.doc.items = { body: 'base', back: 'cape_red' };
+	s.doc.undo = [];
+	expect(s.groupRandomChoices('Back')).toEqual([]);
+	s.randomizeGroup('Back');
+	expect(s.doc.items).toEqual({ body: 'base', back: 'cape_red' });
+	expect(s.doc.undo).toEqual([]);
+	// An empty category with no items has no choices either.
+	expect(s.groupRandomChoices('Face')).toEqual([]);
 });
