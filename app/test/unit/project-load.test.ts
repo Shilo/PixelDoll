@@ -24,9 +24,12 @@ function pending<T>() {
 	});
 	return { promise, resolve };
 }
+// Decoded cells are cached by hash for the page's lifetime, so each fixture gets cells no earlier test decoded.
+let fixtures = 0;
 function fixture() {
-	const first = `sha256:${'1'.repeat(64)}` as Sha256,
-		second = `sha256:${'2'.repeat(64)}` as Sha256;
+	const n = (++fixtures).toString(16).padStart(8, '0'),
+		first = `sha256:${'1'.repeat(56)}${n}` as Sha256,
+		second = `sha256:${'2'.repeat(56)}${n}` as Sha256;
 	const record: StoredProject = {
 		id: 'rig-load',
 		savedAt: '',
@@ -230,10 +233,18 @@ test('an active load retains all unique cells and propagates genuine failures', 
 	expect([...loaded.project.images.keys()]).toEqual([f.first, f.second]);
 	expect(f.getBlob).toHaveBeenCalledTimes(2);
 	expect(f.decode).toHaveBeenCalledTimes(2);
-	f.getBlob.mockRejectedValueOnce(new Error('Storage read failed'));
-	await expect(loadProject(f.record.id)).rejects.toThrow('Storage read failed');
-	f.decode.mockRejectedValueOnce(new Error('Malformed PNG'));
-	await expect(loadProject(f.record.id)).rejects.toThrow('Malformed PNG');
+	// A later load (a thumbnail, then the open) shares the decoded cells instead of reading them again.
+	const again = await loadProject(f.record.id);
+	expect([...again.project.images.keys()]).toEqual([f.first, f.second]);
+	expect(again.project.images.get(f.first)).toBe(loaded.project.images.get(f.first));
+	expect(f.getBlob).toHaveBeenCalledTimes(2);
+	expect(f.decode).toHaveBeenCalledTimes(2);
+	const unread = fixture();
+	unread.getBlob.mockRejectedValueOnce(new Error('Storage read failed'));
+	await expect(loadProject(unread.record.id)).rejects.toThrow('Storage read failed');
+	const malformed = fixture();
+	malformed.decode.mockRejectedValueOnce(new Error('Malformed PNG'));
+	await expect(loadProject(malformed.record.id)).rejects.toThrow('Malformed PNG');
 });
 
 test('a character saved in an earlier format is rejected before any cell read', async () => {
