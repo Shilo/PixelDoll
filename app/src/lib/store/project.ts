@@ -82,6 +82,11 @@ export function rememberDecoded(h: Sha256, image: Img) {
 		decodedBytes -= old.data.length;
 	}
 }
+export function getDecoded(h: Sha256): Img | undefined {
+	const image = decoded.get(h);
+	if (image) rememberDecoded(h, image);
+	return image;
+}
 /** Shared work keeps going for other callers; an abandoned caller stops waiting for it at once. */
 export function untilAborted<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
 	if (!signal) return work;
@@ -95,11 +100,8 @@ export function untilAborted<T>(work: Promise<T>, signal?: AbortSignal): Promise
 // Loads that need the same cell at once share one read; one no load still waits for stops before decoding.
 const cellReads = new Map<Sha256, { work: Promise<Img>; waiting: number }>();
 async function decodeCell(h: Sha256, owner: string, signal?: AbortSignal): Promise<Img> {
-	const known = decoded.get(h);
-	if (known) {
-		rememberDecoded(h, known);
-		return known;
-	}
+	const known = getDecoded(h);
+	if (known) return known;
 	let read = cellReads.get(h);
 	if (!read) {
 		const started = { work: Promise.resolve() as unknown as Promise<Img>, waiting: 0 };

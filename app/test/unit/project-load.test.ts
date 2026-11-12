@@ -1,6 +1,9 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { openSource } from '../../src/lib/dress/project.ts';
+import { splitBase } from '../../src/lib/dress/regions.ts';
+import * as rig from '../../src/lib/rig/rig.ts';
+import { rememberDecoded } from '../../src/lib/store/project.ts';
 import {
 	deleteOutdated,
 	loadProject,
@@ -90,6 +93,51 @@ function fixture() {
 	const decode = vi.spyOn(png, 'decodePng').mockResolvedValue(image);
 	return { record, image, blob, get, getBlob, decode, first, second };
 }
+
+test('split results stop retaining pixels after decoded-cache eviction', async () => {
+	const fixtureData = fixture();
+	fixtureData.image.data.fill(128);
+	const original = structuredClone(fixtureData.record.manifest);
+	const project = () => ({
+		manifest: structuredClone(original),
+		images: new Map([
+			[fixtureData.first, fixtureData.image],
+			[fixtureData.second, fixtureData.image]
+		])
+	});
+	const hash = vi.spyOn(rig, 'cellHash');
+	const remember = vi.spyOn(await import('../../src/lib/store/project.ts'), 'rememberDecoded');
+	await splitBase(project());
+	expect(remember).toHaveBeenCalled();
+	expect(new Set(remember.mock.calls.map(([, image]) => image)).size).toBe(1);
+	hash.mockClear();
+	await splitBase(project());
+	expect(hash).not.toHaveBeenCalled();
+	rememberDecoded('sha256:oversized', {
+		w: 1,
+		h: 1,
+		data: new Uint8ClampedArray(96 * 1024 * 1024 + 1)
+	});
+	await splitBase(project());
+	expect(hash).toHaveBeenCalled();
+});
+
+test('an unchanged split keeps the original shared pixel buffer', async () => {
+	const fixtureData = fixture();
+	for (let offset = 0; offset < fixtureData.image.data.length; offset += 4)
+		fixtureData.image.data.set([200, 100, 50, 255], offset);
+	const sourceHash = await rig.cellHash(fixtureData.image);
+	const manifest = JSON.parse(
+		JSON.stringify(fixtureData.record.manifest)
+			.replaceAll(fixtureData.first, sourceHash)
+			.replaceAll(fixtureData.second, sourceHash)
+	) as typeof fixtureData.record.manifest;
+	const remember = vi.spyOn(await import('../../src/lib/store/project.ts'), 'rememberDecoded');
+	const split = await splitBase({ manifest, images: new Map([[sourceHash, fixtureData.image]]) });
+	expect(split.changed).toBe(0);
+	expect(remember).toHaveBeenCalled();
+	for (const [, image] of remember.mock.calls) expect(image).toBe(fixtureData.image);
+});
 
 test('a canceled loader performs no metadata, blob or fixture fetch reads', async () => {
 	const f = fixture(),

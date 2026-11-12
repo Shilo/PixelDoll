@@ -466,7 +466,8 @@ export async function refreshProjects(): Promise<boolean> {
 }
 
 let openRequest = 0,
-	opening = ''; // opening: the character the newest open is loading ('' when it finished)
+	opening = $state(''); // opening: the character the newest open is loading ('' when it finished)
+export const openingProjectId = () => opening;
 /** keep.wear: equip that item (Keep it). keep.quiet: reload the open character in place (a draft saved itself): the view, the
  *  selection and undo stay, and the stage does not show loading. */
 export async function openProject(id: string, keep?: { wear?: string; quiet?: boolean }) {

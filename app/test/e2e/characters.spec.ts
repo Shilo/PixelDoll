@@ -2089,6 +2089,20 @@ test('every character loads its frames once across switching, menus and updates,
 		w.frameReads = {};
 		w.recordReads = 0;
 		w.digests = 0;
+		const decoding = window as unknown as { decodes: number };
+		decoding.decodes = 0;
+		window.DecompressionStream = new Proxy(DecompressionStream, {
+			construct(target, args, newTarget) {
+				decoding.decodes++;
+				return Reflect.construct(target, args, newTarget);
+			}
+		});
+		window.createImageBitmap = new Proxy(createImageBitmap, {
+			apply(target, receiver, args) {
+				decoding.decodes++;
+				return Reflect.apply(target, receiver, args);
+			}
+		});
 		w.blank = [];
 		w.sampling = false;
 		const get = IDBObjectStore.prototype.get;
@@ -2097,8 +2111,6 @@ test('every character loads its frames once across switching, menus and updates,
 			else if (this.name === 'projects' && String(key).startsWith('rig-')) w.recordReads++;
 			return get.call(this, key);
 		};
-		// Every cell decoded, rebuilt (the demo) or split is hashed as a cell, so cell hashing counts image work; other
-		// hashing (item metadata) is not image work.
 		const digest = crypto.subtle.digest.bind(crypto.subtle);
 		crypto.subtle.digest = (...args: Parameters<SubtleCrypto['digest']>) => {
 			if (new Error().stack?.includes('cellHash')) w.digests++;
@@ -2136,6 +2148,7 @@ test('every character loads its frames once across switching, menus and updates,
 				frames: counts.length,
 				reads: counts.reduce((a, b) => a + b, 0),
 				maxPerFrame: Math.max(0, ...counts),
+				decodes: (window as unknown as { decodes: number }).decodes,
 				records: w.recordReads,
 				digests: w.digests,
 				blank: [...w.blank]
@@ -2143,6 +2156,7 @@ test('every character loads its frames once across switching, menus and updates,
 		});
 	const settled = async () => {
 		await expect(page.locator('.customize-action')).toBeEnabled({ timeout: 30_000 });
+		await expect(page.locator('.customize-action')).toHaveAttribute('aria-busy', 'false');
 		await expect
 			.poll(
 				() =>
@@ -2225,6 +2239,7 @@ test('every character loads its frames once across switching, menus and updates,
 	await page.keyboard.press('Escape');
 	await settled();
 	const warm = await stats();
+	expect(warm.decodes).toBeGreaterThan(0);
 	expect(warm.maxPerFrame).toBe(1); // no frame was read twice, even while thumbnails and opens overlapped
 	expect(warm.blank).toEqual([]);
 
@@ -2233,18 +2248,19 @@ test('every character loads its frames once across switching, menus and updates,
 	await page.evaluate(() => ((window as unknown as { sampling: boolean }).sampling = true));
 	const opens: string[] = [];
 	const step = async (how: () => Promise<void>) => {
+		await expect(page.locator('.customize-action')).toHaveAttribute('aria-busy', 'false');
 		const before = await selectedName();
 		await how();
 		await expect.poll(selectedName).not.toBe(before);
 		await expect(page.locator('.customize-action')).toBeEnabled();
+		await expect(page.locator('.customize-action')).toHaveAttribute('aria-busy', 'false');
 		opens.push((await selectedName())!);
 	};
 	for (let i = 0; i < 6; i++)
 		await step(() => page.getByRole('button', { name: 'Next character', exact: true }).click());
 	for (let i = 0; i < 3; i++)
 		await step(() => page.getByRole('button', { name: 'Previous character', exact: true }).click());
-	for (const delta of [120, -120, 120]) {
-		await page.waitForTimeout(250); // past the wheel cooldown
+	for (const delta of [200, -200, 200]) {
 		await step(() =>
 			page.evaluate((deltaY) => {
 				window.dispatchEvent(new WheelEvent('wheel', { deltaY, cancelable: true }));
@@ -2264,7 +2280,8 @@ test('every character loads its frames once across switching, menus and updates,
 	const switched = await stats();
 	expect(switched.blank).toEqual([]);
 	expect(switched.reads).toBe(warm.reads); // no frame read again
-	expect(switched.digests).toBe(warm.digests); // nothing decoded again, the demo included
+	expect(switched.digests).toBe(warm.digests);
+	expect(switched.decodes).toBe(warm.decodes);
 	expect(switched.records - warm.records).toBeLessThanOrEqual(opens.length); // only each open's small record
 
 	// Another tab saves a different outfit for a character not selected: the next listing redraws its thumbnail, from
@@ -2287,7 +2304,46 @@ test('every character loads its frames once across switching, menus and updates,
 	await settled();
 	const updated = await stats();
 	expect(updated.reads).toBe(warm.reads);
+	expect(updated.decodes).toBe(warm.decodes);
 	expect(updated.blank).toEqual([]);
+	const previousArtwork = await thumbOf(target);
+	const replacement = `Updated ${target}`;
+	await seed([replacement], 12);
+	await page.evaluate(
+		async ({ id, replacement, name }) => {
+			const { all, updateCharacter, deleteCharacter } = await import(
+				/* @vite-ignore */ String('/src/lib/store/db.ts')
+			);
+			const source = (await all('projects')).find(
+				(record: { manifest?: { name: string } }) => record.manifest?.name === replacement
+			);
+			if (!source) throw new Error('Replacement artwork was not saved');
+			await updateCharacter(id, new Map(), (record: typeof source) => {
+				if (!record) throw new Error('Character to update was not saved');
+				return {
+					...record,
+					manifest: { ...source.manifest, name },
+					savedAt: new Date().toISOString()
+				};
+			});
+			await deleteCharacter(source.id);
+		},
+		{ id: await idOf(target), replacement, name: target }
+	);
+	await page.locator('.selected-name').click();
+	await page.keyboard.press('Escape');
+	await expect.poll(() => thumbOf(target)).not.toBe(previousArtwork);
+	await settled();
+	const replaced = await stats();
+	expect(replaced.reads).toBeGreaterThan(updated.reads);
+	expect(replaced.decodes).toBeGreaterThan(updated.decodes);
+	expect(replaced.maxPerFrame).toBe(1);
+	expect(replaced.blank).toEqual([]);
+	await step(() => rows.filter({ hasText: target }).click());
+	await settled();
+	const reopened = await stats();
+	expect(reopened.reads).toBe(replaced.reads);
+	expect(reopened.decodes).toBe(replaced.decodes);
 
 	// A deleted character leaves the list; a newly imported one loads each of its frames once.
 	await page.evaluate(
