@@ -274,6 +274,28 @@ test('concurrent loads share each cell read, and one abandoning it does not stop
 	expect(g.decode).toHaveBeenCalledTimes(2);
 });
 
+test('a load arriving as an abandoned cell read is dropped starts its own read', async () => {
+	// Start the later load a few microtasks apart, so one lands between the dropped read's rejection and its cleanup.
+	for (let ticks = 0; ticks < 12; ticks++) {
+		const f = fixture(),
+			blob = pending<Blob>(),
+			controller = new AbortController();
+		f.getBlob.mockClear(); // fixture() reuses one spy
+		f.getBlob.mockReturnValueOnce(blob.promise);
+		const abandoned = loadProject(f.record.id, controller.signal),
+			rejected = expect(abandoned).rejects.toMatchObject({ name: 'AbortError' });
+		await vi.waitFor(() => expect(f.getBlob).toHaveBeenCalledOnce());
+		controller.abort();
+		await rejected;
+		blob.resolve(f.blob);
+		const later = (async () => {
+			for (let i = 0; i < ticks; i++) await Promise.resolve();
+			return loadProject(f.record.id);
+		})();
+		expect([...(await later).project.images.keys()]).toEqual([f.first, f.second]);
+	}
+});
+
 test('a character saved in an earlier format is rejected before any cell read', async () => {
 	const f = fixture();
 	(f.record.manifest as { format: string }).format = 'pixeldoll/2';

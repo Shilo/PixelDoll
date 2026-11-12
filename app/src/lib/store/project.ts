@@ -104,8 +104,11 @@ async function decodeCell(h: Sha256, owner: string, signal?: AbortSignal): Promi
 		const started = { work: Promise.resolve() as unknown as Promise<Img>, waiting: 0 };
 		started.work = (async () => {
 			const b = await db.getBlob(h.slice(7));
-			if (!started.waiting)
+			if (!started.waiting) {
+				// Retire it now, so a load arriving before this rejection settles starts a fresh read.
+				if (cellReads.get(h) === started) cellReads.delete(h);
 				throw new DOMException('No load needs this cell any more', 'AbortError');
+			}
 			if (!b) throw new Error(`${owner}: cell blob ${h.slice(0, 19)} missing`);
 			const image = await decodePng(b);
 			rememberDecoded(h, image);
