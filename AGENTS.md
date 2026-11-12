@@ -109,3 +109,4 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - Check GET /balance only unless the task needs generations.
 - Keyless scripts set localStorage pixeldoll.agentKey to off on the agent server so nothing can spend. The switch is read at page load and covers every tab of that origin, so keep it set for the whole run.
 - Never expose the agent server beyond localhost (no --host, tunnels or port forwards).
+- In T3 Code, do every manual browser check, including of your own edits, with its preview tools (preview_open and the rest; load them first if deferred); keep Playwright for test specs.
