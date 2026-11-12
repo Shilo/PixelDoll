@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { hiddenSlots, settleHands, twoHanded } from '../../src/lib/compose/compose.ts';
+import { missingAt } from '../../src/lib/dress/dress.ts';
 import { GDEVELOP_RUNTIME, gdCharacterKey, gdObjectName } from '../../src/lib/export/gdevelop.ts';
 import { SLOTS } from '../../src/lib/items/items.ts';
 import type { Item, Manifest } from '../../src/lib/store/manifest.ts';
@@ -124,4 +125,25 @@ test('the exported GDevelop runtime keeps the Main hand visible when game code e
 	d.equip('main_hand', null);
 	d.update(1);
 	expect(hidden('bow')).toBe(false);
+});
+
+test('the missing-frames warning follows the same rule: the visible one of two items that hide each other is checked', () => {
+	const base = {
+			...item('base', 'body'),
+			layers: [{ id: 'main', role: 'fg', z: 10, cells: { walk: { south: ['sha256:a'] } } }]
+		} as unknown as Item,
+		cape = { ...item('cape', 'back', ['head']), coverage: [] } as Item,
+		hat = { ...item('hat', 'head', ['back']), coverage: [] } as Item,
+		mm = {
+			...manifest([base, cape, hat]),
+			rig: {
+				baseItem: 'base',
+				directions: [{ id: 'south' }],
+				animations: [{ id: 'walk', cells: 1, frames: [{ cell: 0, ms: 100 }] }]
+			}
+		} as unknown as Manifest;
+	// head comes after back in the slot order, so the hat stays visible and is the one reported (both were hidden before)
+	expect(missingAt(mm, { head: 'hat', back: 'cape' }, 'walk', 'south').map((i) => i.id)).toEqual([
+		'hat'
+	]);
 });

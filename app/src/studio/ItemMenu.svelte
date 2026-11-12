@@ -199,6 +199,12 @@
 								aria-checked={both}
 								checked={both}
 								onchange={() => toggleTwoHanded(it.id)}
+								onkeydown={(e) => {
+									// a menu item takes Enter as well as Space (a native checkbox only toggles on Space)
+									if (e.key !== 'Enter') return;
+									e.preventDefault();
+									toggleTwoHanded(it.id);
+								}}
 							/>
 						</label>
 						{#if !isDemo() && it.prompt && !both}

@@ -5347,5 +5347,41 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 		prompt
 	);
 	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+
+	// Enter toggles the switch like any menu item.
+	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
+	const toggle = itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' });
+	await toggle.focus();
+	await page.keyboard.press('Enter');
+	await expect(toggle).toBeChecked();
+	await page.keyboard.press('Escape');
+	await expect(shield).toHaveAttribute('aria-pressed', 'false');
+
+	// An outfit keeps the Main hand even when only its Off hand differs from what is worn, and still counts as current.
+	const outfit = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			s = await import(statePath);
+		const p = {
+			id: 'both-hands',
+			name: 'Both hands',
+			items: { ...s.doc.items, off_hand: 'round_shield' },
+			variants: { ...s.doc.variants }
+		};
+		s.applyPreset(p);
+		return { main: s.doc.items.main_hand, off: s.doc.items.off_hand, same: s.sameOutfit(p) };
+	});
+	expect(outfit).toEqual({ main: 'sword_steel', off: null, same: true });
+
+	// An item put on by Keep it that needs the other hand is one undoable edit.
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			s = await import(statePath);
+		await s.openProject(s.doc.id, { wear: 'round_shield' });
+	});
+	await expect(shield).toHaveAttribute('aria-pressed', 'true');
+	await expect(sword).toHaveAttribute('aria-pressed', 'false');
+	await page.getByRole('button', { name: 'Undo Wear Round shield', exact: true }).click();
+	await expect(sword).toHaveAttribute('aria-pressed', 'true');
+	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 	expect(posts).toEqual([]);
 });

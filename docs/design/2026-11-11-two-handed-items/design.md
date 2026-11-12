@@ -360,6 +360,20 @@ test character was created. Its Main hand "steel sword" was used as the source.
 - **Spent:** 16.35 generations by the account balance (estimate 19), no dollars. Images stay local in `docs/testing/img/`
   (`two-handed-live-pair-standing.png`, `two-handed-live-pair-walk.png`).
 
+## Review of the finished change
+
+GPT 6.1 Sol reviewed commit d15128e4 against the code. Every finding was accepted and fixed, with a test that fails without
+the fix:
+
+| Finding                                                                                          | Fix                                                                                       |
+| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Major: an outfit or Random look kept the Off hand when only the Off hand changed.                | Whole-outfit edits always keep the Main hand (`commit` takes the hand the edit is about). |
+| Major: accepting a worn draft (or Keep it) took the other item off with no undo step or message. | That change is replayed as one undoable edit with its message.                            |
+| Minor: an outfit saved before an item became two-handed never showed as current.                 | `sameOutfit` compares against the outfit as it is worn.                                   |
+| Minor: copying a shared item hid the "took off" message.                                         | The copy message includes it.                                                             |
+| Minor: the missing-frames warning ignored the tie-break between two items that hide each other.  | `missingAt` uses the shared `hiddenSlots`.                                                |
+| Minor: Enter did not toggle the switch.                                                          | Enter toggles it, like Space.                                                             |
+
 ## Decisions for the owner (first version)
 
 1. **Approve the design**: a Two-handed switch in the ⋮ menu, stored as the existing hide rule; dual wielding as one item per
