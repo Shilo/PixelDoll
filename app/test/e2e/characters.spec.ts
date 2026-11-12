@@ -1776,16 +1776,25 @@ test('startup decodes the character it opens once: its thumbnail waits for the o
 			return w.digests === before;
 		});
 	await expect.poll(settled, { timeout: 30_000 }).toBe(true);
-	const { startup, oneOpen } = await page.evaluate(async () => {
+	const { startup, reopen, build } = await page.evaluate(async () => {
 		const w = window as unknown as { digests: number },
-			path = '/src/lib/dress/project.ts',
-			{ openSource } = await import(path);
+			paths = ['/src/lib/dress/project.ts', '/src/lib/compose/fixture.ts', '/src/lib/assets.ts'],
+			[{ openSource }, { loadFixture }, { assetUrl }] = await Promise.all(
+				paths.map((path) => import(path))
+			);
 		const startup = w.digests;
-		await openSource('fixture:s2');
-		return { startup, oneOpen: w.digests - startup };
+		await openSource('fixture:s2'); // the demo is built once, so opening it again decodes nothing
+		const reopen = w.digests - startup,
+			before = w.digests;
+		await loadFixture(
+			async (p: string) =>
+				new Uint8Array(await (await fetch(assetUrl(`fixtures/s2/${p}`))).arrayBuffer())
+		);
+		return { startup, reopen, build: w.digests - before };
 	});
-	expect(oneOpen).toBeGreaterThan(0);
-	expect(startup).toBeLessThan(2 * oneOpen);
+	expect(build).toBeGreaterThan(0);
+	expect(startup).toBeLessThan(2 * build);
+	expect(reopen).toBe(0);
 });
 
 test('a delayed earlier character load cannot replace the last selected character', async ({

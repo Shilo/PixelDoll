@@ -439,7 +439,11 @@ export async function refreshProjects(): Promise<boolean> {
 			demo: false,
 			dev: p.origin === 'dev',
 			savedAt: p.savedAt,
-			look: `${p.savedAt} ${stableStringify(dressOf(p.manifest, (p as { dress?: { current?: Outfit } }).dress?.current))}`,
+			// A developer rig (never shown as a character) may lack the items and slots a dress state reads.
+			look:
+				p.origin === 'dev'
+					? p.savedAt
+					: `${p.savedAt} ${stableStringify(dressOf(p.manifest, (p as { dress?: { current?: Outfit } }).dress?.current))}`,
 			// A developer rig frozen on the M2 pages need not carry a full rig; it has no card facts.
 			facts: p.manifest.rig?.cell ? characterFacts(p.manifest) : undefined
 		}))
