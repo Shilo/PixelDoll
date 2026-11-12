@@ -5708,6 +5708,173 @@ test('tile status shows on the tile and in its name, and Recolor opens the itemâ
 	expect(Math.abs((await heading.boundingBox())!.y - list.y)).toBeLessThan(24);
 });
 
+for (const width of [1280, 390])
+	test(`ordinary character loading starts Wardrobe at the top (${width}px)`, async ({
+		page
+	}, info) => {
+		await page.emulateMedia({ reducedMotion: 'reduce' });
+		await page.addInitScript(() => {
+			localStorage.setItem('pixeldoll.agentKey', 'off');
+			localStorage.setItem('pixeldoll.welcomed', '1');
+		});
+		await page.setViewportSize({ width, height: 844 });
+		const url = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+			.baseURL!;
+		await page.goto(url);
+		await expect(page.locator('.customize-action')).toBeEnabled({ timeout: 20_000 });
+		await page.locator('.customize-action').click();
+		const list = page.locator('#wardrobe-list');
+		const atTop = async () => {
+			await expect(list).toBeVisible();
+			await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(0);
+			await expect(page.locator('[data-rail="Head"]')).toHaveAttribute('aria-current', 'true');
+		};
+		await atTop();
+		await equipmentGroup(page, 'Back');
+		await list.evaluate((element) => (element.scrollTop += 25));
+		const offset = await list.evaluate((element) => element.scrollTop);
+		expect(offset).toBeGreaterThan(0);
+		await equipmentMode(page, 'Colors');
+		await equipmentMode(page, 'Wardrobe');
+		await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(offset);
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.openProject(state.doc.id, { quiet: true });
+		});
+		await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(offset);
+		const copy = await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.copyDemo();
+			return state.doc.id;
+		});
+		await atTop();
+		await list.evaluate((element) => (element.scrollTop = 25));
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.openProject('fixture:s2');
+		});
+		await atTop();
+		await equipmentGroup(page, 'Back');
+		await equipmentMode(page, 'Colors');
+		await page.evaluate(async (id) => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.openProject(id);
+		}, copy);
+		await equipmentMode(page, 'Wardrobe');
+		await atTop();
+		await list.evaluate((element) => (element.scrollTop = 25));
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.openProject(state.doc.id);
+		});
+		await atTop();
+		await list.evaluate((element) => (element.scrollTop = 25));
+		await equipmentMode(page, 'Colors');
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			await state.openProject(state.doc.id);
+		});
+		await equipmentMode(page, 'Wardrobe');
+		await atTop();
+		await page.reload();
+		await expect(page.locator('.customize-action')).toBeEnabled({ timeout: 20_000 });
+		await page.locator('.customize-action').click();
+		await atTop();
+	});
+
+test('explicit item opens reveal shared IDs and quiet refresh keeps the selected tile in place', async ({
+	page
+}, info) => {
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	const ids = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath);
+		const projectPath = '/src/lib/store/project.ts',
+			project = await import(projectPath);
+		const dbPath = '/src/lib/store/db.ts',
+			db = await import(dbPath);
+		const first = await state.copyDemo();
+		const context = await project.loadProject(first);
+		const helmet = context.rec.manifest.items.find(
+			(item: { id: string }) => item.id === 'helmet_steel'
+		);
+		context.rec.manifest.items.unshift(
+			...Array.from({ length: 24 }, (_, index) => ({
+				...structuredClone(helmet),
+				id: `extra-helmet-${index}`,
+				name: `Extra helmet ${index}`
+			}))
+		);
+		await db.put('projects', first, context.rec);
+		await state.openProject(first);
+		const second = await state.copyDemo();
+		await state.openProject(first, { wear: 'hat_wizard' });
+		return { first, second };
+	});
+	const list = page.locator('#wardrobe-list');
+	const visibleBelowHeader = async () => {
+		await expect
+			.poll(() =>
+				list.evaluate((element) => {
+					const tile = element.querySelector('[data-tile="hat_wizard"]')!.getBoundingClientRect();
+					const header = element.querySelector('.bu-section-head')!.getBoundingClientRect();
+					return tile.top >= header.bottom && tile.bottom <= element.getBoundingClientRect().bottom;
+				})
+			)
+			.toBe(true);
+	};
+	await visibleBelowHeader();
+	await page.evaluate(async (id) => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.openProject(id, { wear: 'hat_wizard' });
+	}, ids.second);
+	await visibleBelowHeader();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.openProject(state.doc.id, { wear: 'hat_wizard' });
+	});
+	await visibleBelowHeader();
+	const before = await page.evaluate(() => ({
+		selected: window.__studio!.ui.selected,
+		scroll: document.querySelector('#wardrobe-list')!.scrollTop
+	}));
+	expect(before.selected).toBe('hat_wizard');
+	expect(before.scroll).toBeGreaterThan(0);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.openProject(state.doc.id, { quiet: true });
+	});
+	expect(await page.evaluate(() => window.__studio!.ui.selected)).toBe(before.selected);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(before.scroll);
+	await page.evaluate(async (id) => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.openProject(id);
+	}, ids.first);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(0);
+	await page.evaluate(() => {
+		window.__studio!.ui.selected = 'hat_wizard';
+	});
+	await visibleBelowHeader();
+});
+
 test('Wardrobe lands on a category picked while closed and reveals tiles below the sticky header', async ({
 	page
 }, info) => {
