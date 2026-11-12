@@ -610,24 +610,29 @@
 	height: 102px;
 	font-size: 13px;
 }
-/* A real item's tile with its ⋮ beside it (a sibling control): the ⋮ sits top-left, the worn check top-right. */
+/* A real item's tile with its ⋮ beside it (a sibling control): the ⋮ sits top-right, where menus usually open, and the
+   worn check top-left. The ⋮ keeps a full-height target but reaches only 32 px into the tile, like the character rows'
+   ⋮ beside their name, so a press meant for the tile rarely opens the menu. */
 .tile-wrap {
 	position: relative;
 	min-width: 0;
 }
-.tile-more {
+.tile-wrap > .tile-more {
 	position: absolute;
 	top: 0;
-	left: 0;
+	right: 0;
 	z-index: 1;
-	width: 44px;
+	width: 32px;
+	min-width: 0;
 	height: 44px;
 }
-/* Status shares the check mark's corner: a worn item shows the check, an unworn one its status. */
-.item-tile .tile-status {
+/* Status shares the check mark's corner: a worn item shows the check, an unworn one its status. Every Wardrobe tile,
+   Empty included, keeps the check in the same corner. */
+.item-tile :is(.bu-tile-check, .tile-status) {
 	position: absolute;
 	top: 5px;
-	right: 6px;
+	right: auto;
+	left: 6px;
 }
 /* A fixed 64 px art box: item art draws at the largest whole-pixel scale that fits (Thumb box). */
 .item-tile .bu-tile-art {
@@ -894,6 +899,9 @@
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+	/* Room for a row's focus ring, which the scroll box would otherwise clip; the margin keeps the rows aligned. */
+	padding: 5px;
+	margin: -5px;
 }
 :is(.character-row, .new-character-row) {
 	width: 100%;
@@ -939,6 +947,30 @@
 	display: grid;
 	place-items: center;
 	flex-shrink: 0;
+}
+/* The library's final row reads as an add tile, like the Wardrobe's New tile: its plus sits in the thumbnail column and
+   its label in the name column. Beside the side rail's character rows it takes their height; under the phone's stacked
+   scene, or alone, it stays shorter. */
+.character-rows .bu-action.new-character-row {
+	min-height: 56px;
+	border-color: var(--bu-rim);
+	background: var(--bu-outline);
+	font-size: 16px;
+	font-weight: 600;
+}
+.character-rows .bu-action.new-character-row:hover {
+	border-color: var(--bu-accent);
+	color: var(--bu-accent);
+}
+.character-rows .new-character-icon {
+	width: 64px;
+	color: var(--bu-muted);
+}
+.character-rows .new-character-row:hover .new-character-icon {
+	color: inherit;
+}
+.experience:not(.sheet-layout) .character-rows:has(.character-entry) .new-character-icon {
+	height: 64px;
 }
 .character-row strong {
 	font-weight: 600;

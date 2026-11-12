@@ -6,6 +6,7 @@
 	import CharacterThumb from './experience/CharacterThumb.svelte';
 	import SharePopover from './SharePopover.svelte';
 	import CharacterActions from './CharacterActions.svelte';
+	import DeleteRow, { DEMO_CHARACTER_LOCKED } from './DeleteRow.svelte';
 	import NewCharacterButton from './NewCharacterButton.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import ApiPeek from './ApiPeek.svelte';
@@ -46,7 +47,6 @@
 		House,
 		Activity,
 		Pencil,
-		Trash,
 		PersonStanding,
 		ChevronDown,
 		Copy,
@@ -459,15 +459,14 @@
 				onclick={() => sheet('setup')}
 				><PersonStanding size={16} /><span class="row-name">Set up character…</span></button
 			>{/if}
-		{#if !isDemo()}<button
-				class="row"
-				role="menuitem"
-				aria-label="Delete character…"
-				onclick={() => {
-					ui.deleting = doc.id;
-					sheet('delete');
-				}}><Trash size={16} /><span class="row-name">Delete character…</span></button
-			>{/if}
+		<DeleteRow
+			label="Delete character…"
+			locked={isDemo() ? DEMO_CHARACTER_LOCKED : ''}
+			onclick={() => {
+				ui.deleting = doc.id;
+				sheet('delete');
+			}}
+		/>
 		<hr />
 		<button
 			class="row"

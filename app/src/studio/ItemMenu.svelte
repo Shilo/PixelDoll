@@ -4,6 +4,7 @@
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { downloadItemZip } from './download.svelte.ts';
 	import Thumb from './Thumb.svelte';
+	import DeleteRow from './DeleteRow.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { extendable } from './create.ts';
 	import { groupOf, groupLabel, slotLabel } from './model.ts';
@@ -273,12 +274,12 @@
 			</div>
 			{#if confirming}
 				<div class="item-menu-confirm" role="group" aria-labelledby="item-menu-confirm">
-					<p class="small" id="item-menu-confirm">Remove {it.name} for good?</p>
+					<p class="small" id="item-menu-confirm">Delete {it.name} for good?</p>
 					<div class="actions">
 						<button
 							class="bu-action btn danger"
 							data-variant="outline"
-							onclick={() => act(() => onremove(it.id))}><Trash size={14} />Remove for good</button
+							onclick={() => act(() => onremove(it.id))}><Trash size={14} />Delete for good</button
 						>
 						<button
 							class="bu-action btn plain"
@@ -361,16 +362,13 @@
 						onclick={() => act(() => void downloadItemZip(it.id))}
 						><Download size={16} />Download ZIP</button
 					>
-					{#if !isDemo()}
-						<hr class="bu-separator" />
-						<button
-							class="row bu-action danger"
-							data-variant="quiet"
-							role="menuitem"
-							onclick={() => (confirming = true)}
-							><Trash size={16} aria-hidden="true" />Remove…</button
-						>
-					{/if}
+					<hr class="bu-separator" />
+					<DeleteRow
+						class="bu-action"
+						label="Delete item…"
+						locked={isDemo() ? "Demo items can't be deleted" : ''}
+						onclick={() => (confirming = true)}
+					/>
 				</div>
 			{/if}
 		</div>

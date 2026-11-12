@@ -1459,9 +1459,12 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('Adventurer');
 	await page.locator('.project-btn').click();
-	await expect(page.getByRole('menuitem', { name: 'Delete character…', exact: true })).toHaveCount(
-		0
-	);
+	// The demo keeps Delete in place, unavailable, and says why.
+	const demoDelete = page.getByRole('menuitem', { name: 'Delete character…', exact: true });
+	await expect(demoDelete).toHaveAttribute('aria-disabled', 'true');
+	await expect(demoDelete).toHaveAccessibleDescription("The demo character can't be deleted");
+	await demoDelete.click({ force: true });
+	await expect(page.getByRole('dialog', { name: 'Delete character?' })).toHaveCount(0);
 	await expect(page.getByRole('menuitemradio', { name: /^Imported/ })).toHaveCount(0);
 	expect(errors).toEqual([]);
 	expect(requests).toEqual([]);

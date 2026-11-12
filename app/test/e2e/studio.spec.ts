@@ -5519,12 +5519,17 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	const head = section(page, 'Head');
 	const hat = head.getByRole('button', { name: /^Wizard hat(,|$)/ });
 	const more = head.getByRole('button', { name: 'More options for Wizard hat', exact: true });
-	// A sibling control, never nested in the tile, with a large hit area.
+	// A sibling control, never nested in the tile, in its top-right corner: a full-height target that reaches only 32 px
+	// into the tile (WCAG 2.5.8 asks for 24), so a press meant for the tile rarely opens the menu.
 	expect(await more.evaluate((b) => !!b.closest('.item-tile'))).toBe(false);
 	await expect(more).toHaveAttribute('aria-haspopup', 'menu');
 	await expect(more).toHaveAttribute('aria-expanded', 'false');
 	const hit = (await more.boundingBox())!;
-	expect(Math.min(hit.width, hit.height)).toBeGreaterThanOrEqual(44);
+	const tile = (await hat.boundingBox())!;
+	expect(hit.height).toBeGreaterThanOrEqual(44);
+	expect(hit.width).toBe(32);
+	expect(hit.x + hit.width).toBeCloseTo(tile.x + tile.width, 0);
+	expect(hit.y).toBeCloseTo(tile.y, 0);
 	// The category's Random and + actions are full 44 px targets too.
 	for (const name of ['Random head item', 'New head item']) {
 		const box = (await head.getByRole('button', { name, exact: true }).boundingBox())!;
@@ -5539,7 +5544,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	const items = itemMenu(page).getByRole('menuitem');
 	await expect(items.first()).toHaveAccessibleName('Details…');
 	await expect(items.first()).toBeFocused();
-	await expect(items.last()).toHaveAccessibleName('Remove…');
+	await expect(items.last()).toHaveAccessibleName('Delete item…');
 	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
 	await page.keyboard.press('ArrowDown');
 	await expect(items.nth(1)).toBeFocused();
@@ -5618,9 +5623,9 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expect.poll(glyph).not.toBe(offGlyph);
 	await expect(itemMenu(page).locator('.item-menu-title small')).toContainText('Wearing');
 
-	// Remove asks first, focusing the safe choice.
+	// Delete asks first, focusing the safe choice.
 	await items.last().click();
-	await expect(itemMenu(page)).toContainText('Remove Wizard hat for good?');
+	await expect(itemMenu(page)).toContainText('Delete Wizard hat for good?');
 	await expect(itemMenu(page).getByRole('button', { name: 'Keep', exact: true })).toBeFocused();
 	// Focus then lands on the next tile in the category, else the previous one (Empty at least), never the paid
 	// New item button.
@@ -5629,7 +5634,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 		const at = tiles.indexOf(tile as HTMLElement);
 		return (tiles[at + 1] ?? tiles[at - 1]).getAttribute('aria-label')!;
 	});
-	await itemMenu(page).getByRole('button', { name: 'Remove for good', exact: true }).click();
+	await itemMenu(page).getByRole('button', { name: 'Delete for good', exact: true }).click();
 	await expect(hat).toHaveCount(0);
 	await expect(head.getByRole('button', { name: neighbor, exact: true })).toBeFocused();
 

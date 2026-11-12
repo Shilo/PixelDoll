@@ -852,6 +852,21 @@ dialog select option {
 .row:hover:not(:disabled):not([aria-disabled='true']) {
 	background: var(--bg-hover);
 }
+.row.danger {
+	color: var(--bad);
+}
+/* An unavailable row keeps its place, dimmed like Bronze's unavailable actions, and says why underneath (DeleteRow). */
+.row[aria-disabled='true'] {
+	color: var(--text);
+	opacity: 0.42;
+	cursor: not-allowed;
+}
+.row-reason {
+	display: block;
+	font-size: var(--fs-sm);
+	font-weight: 400;
+	white-space: normal;
+}
 .row-name {
 	flex: 1;
 	min-width: 0;

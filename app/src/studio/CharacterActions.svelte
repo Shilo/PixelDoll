@@ -2,7 +2,8 @@
 	import type { Snippet } from 'svelte';
 	import { ui } from './state.svelte.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
-	import { EllipsisVertical, Download, Trash } from './icons.ts';
+	import { EllipsisVertical, Download } from './icons.ts';
+	import DeleteRow, { DEMO_CHARACTER_LOCKED } from './DeleteRow.svelte';
 	import { contextMenu } from '../lib/input/contextMenu.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
@@ -46,19 +47,17 @@
 				void downloadCharacterZip(id);
 			}}><Download size={16} />Download ZIP</button
 		>
-		{#if !id.startsWith('fixture:')}
-			<button
-				class="row danger"
-				role="menuitem"
-				onclick={() => {
-					menu.hidePopover();
-					document
-						.querySelectorAll<HTMLElement>('[popover]:popover-open')
-						.forEach((popover) => popover.hidePopover());
-					ui.deleting = id;
-					ui.sheet = 'delete';
-				}}><Trash size={16} />Delete character…</button
-			>
-		{/if}
+		<DeleteRow
+			label="Delete character…"
+			locked={id.startsWith('fixture:') ? DEMO_CHARACTER_LOCKED : ''}
+			onclick={() => {
+				menu.hidePopover();
+				document
+					.querySelectorAll<HTMLElement>('[popover]:popover-open')
+					.forEach((popover) => popover.hidePopover());
+				ui.deleting = id;
+				ui.sheet = 'delete';
+			}}
+		/>
 	</div>
 </div>
