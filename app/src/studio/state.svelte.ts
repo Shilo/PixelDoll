@@ -140,6 +140,7 @@ export const ui = $state({
 	tab: 'wardrobe' as 'wardrobe' | 'colors' | 'outfits' | 'moves', // phone
 	colorsFocus: '', // item id whose Colors section the Colors tab scrolls to once (Recolor in item details)
 	group: 'Head',
+	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
 	sheet: null as SheetId,
 	sheetBusy: false,
@@ -566,13 +567,13 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 				{ keepHand: wornSlot }
 			);
 		} else doc.items = settleHands(m, doc.items).items; // an outfit read as saved keeps the Main hand
-		if (!quiet)
-			ui.selected =
-				keep?.wear ??
-				m.items.find((i) => i.id !== m.rig.baseItem && doc.items[i.slot] === i.id)?.id ??
-				'';
-		if (ui.selected && !quiet)
-			ui.group = groupOf(m.items.find((i) => i.id === ui.selected)!.slot).id;
+		if (!quiet) {
+			ui.selected = keep?.wear ?? '';
+			ui.group = ui.selected
+				? groupOf(m.items.find((i) => i.id === ui.selected)!.slot).id
+				: GROUPS[0].id;
+			ui.wardrobeOpenRevision++;
+		}
 		lsSet(K.last, id);
 		void refreshShared();
 		doc.rev++;

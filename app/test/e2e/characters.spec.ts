@@ -1168,7 +1168,7 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	await page.evaluate(async () => {
+	const garmentName = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
 			dbPath = '/src/lib/store/db.ts';
 		const s = await import(statePath),
@@ -1193,9 +1193,10 @@ test('saved garment issues wait for explicit acceptance, preserve their notes an
 			facingReviewFrames: 1
 		};
 		await db.put('projects', s.doc.id, rec);
+		return item.name;
 	});
 	await reloadStudio(page);
-	await equipmentGroup(page, 'Body');
+	await pickItem(page, garmentName);
 	const pane = await selectedItemDetails(page);
 	await expect(pane.locator('.badge.look')).toContainText('Needs a look');
 	await expect(
