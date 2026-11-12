@@ -76,7 +76,7 @@ export function generationStatus(
 		itemGenerationMinutes(g.draft.calls.length) * 60_000 -
 		Math.max(0, now - Math.min(...submitted));
 	return {
-		text: remaining > 0 ? '~' + Math.ceil(remaining / 60_000) + ' min left' : 'Taking longer',
+		text: remaining > 0 ? '~' + Math.ceil(remaining / 60_000) + 'min left' : 'Taking longer',
 		detail:
 			remaining > 0
 				? 'Approximate time, excluding extra queue delays. Keep this tab open; you can keep dressing up.'
