@@ -15,9 +15,9 @@ const started = (overrides: Partial<JoystickOptions> = {}) => {
 const length = (p: { x: number; y: number }) => Math.hypot(p.x, p.y);
 
 describe('joystick', () => {
-	test('full throw puts the thumb center on the base ring', () => {
-		expect(joystickTravel({ base: 144, thumb: 56 })).toBe(72);
-		expect(joystickTravel({ base: 128, thumb: 48 })).toBe(64);
+	test('full throw stops with the thumb edge inside the ring stroke', () => {
+		expect(joystickTravel({ base: 144, thumb: 48, stroke: 2 })).toBe(46);
+		expect(joystickTravel({ base: 128, thumb: 44, stroke: 2 })).toBe(40);
 	});
 
 	test('the thumb stays inside a circle, not a square, at every angle', () => {

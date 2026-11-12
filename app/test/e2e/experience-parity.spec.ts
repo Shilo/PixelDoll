@@ -972,8 +972,8 @@ for (const screen of [
 		}, testInfo) => {
 			const compact = screen.width <= 360 || screen.height <= 400;
 			const base = compact ? 128 : 144,
-				thumb = compact ? 48 : 56,
-				travel = base / 2;
+				thumb = compact ? 44 : 48,
+				travel = (base - thumb) / 2 - 2;
 			await context.addInitScript((theme) => {
 				try {
 					localStorage.setItem('pixeldoll.theme', theme);
@@ -1016,14 +1016,19 @@ for (const screen of [
 						b = stick.getBoundingClientRect(),
 						t = knob.getBoundingClientRect();
 					const probe = document.body.appendChild(document.createElement('i'));
-					probe.style.background = 'var(--bu-accent)';
-					const accent = getComputedStyle(probe).backgroundColor;
+					probe.style.background = 'var(--bu-text)';
+					const ink = getComputedStyle(probe).backgroundColor;
 					probe.remove();
 					return {
 						base: { x: b.x + b.width / 2, y: b.y + b.height / 2, width: b.width, height: b.height },
 						thumb: { x: t.x + t.width / 2, y: t.y + t.height / 2, width: t.width },
+						inside:
+							t.left >= b.left - 0.5 &&
+							t.right <= b.right + 0.5 &&
+							t.top >= b.top - 0.5 &&
+							t.bottom <= b.bottom + 0.5,
 						thumbColor: getComputedStyle(knob).backgroundColor,
-						accent
+						ink
 					};
 				});
 			const cdp = screen.touch ? await context.newCDPSession(page) : null;
@@ -1055,14 +1060,17 @@ for (const screen of [
 					await press('down', start.x, start.y);
 					pressed = true;
 					await expect(page.locator('.world-stick')).toBeVisible();
+					// Measure after the entrance scale settles.
+					await page.waitForFunction(
+						() => document.querySelector('.world-stick')!.getAnimations().length === 0
+					);
 					let m = (await measure())!;
 					near(m.base.width, base);
-					near(m.base.height, side ? thumb + 8 : base);
+					near(m.base.height, side ? thumb + 12 : base);
 					near(m.thumb.width, thumb);
 					near(m.thumb.x, start.x);
 					near(m.thumb.y, start.y);
-					expect(m.thumbColor).toBe(m.accent);
-					// Past full throw on a diagonal: the thumb center stops on the ring and the ring follows.
+					// Past full throw on a diagonal: the thumb stops inside the ring and the ring follows.
 					const finger = side
 						? { x: start.x - 100, y: start.y + 50 }
 						: { x: start.x + 80, y: start.y - 80 };
@@ -1070,7 +1078,10 @@ for (const screen of [
 					await press('move', finger.x, finger.y);
 					await expect.poll(async () => Math.round((await measure())!.thumb.x)).toBe(finger.x);
 					m = (await measure())!;
+					expect(m.inside).toBe(true);
 					near(Math.hypot(m.thumb.x - m.base.x, m.thumb.y - m.base.y), travel);
+					// Full throw draws the thumb in solid theme ink, never the accent.
+					await expect.poll(async () => (await measure())!.thumbColor).toBe(m.ink);
 					if (side) {
 						near(m.thumb.y, start.y);
 						near(m.base.y, start.y);

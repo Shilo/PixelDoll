@@ -5,10 +5,11 @@ export interface Point {
 }
 /** 'x' locks the stick to a horizontal track (side-scrolling). */
 export type JoystickAxis = 'xy' | 'x';
-/** Outer diameters of the base ring and the thumb. */
+/** Outer diameters of the base ring and the thumb, and the ring's stroke width. */
 export interface JoystickSize {
 	readonly base: number;
 	readonly thumb: number;
+	readonly stroke: number;
 }
 export interface JoystickOptions {
 	readonly axis: JoystickAxis;
@@ -38,8 +39,9 @@ export const IDLE: JoystickSnapshot = Object.freeze({
 });
 const finite = (p: Point) => Number.isFinite(p.x) && Number.isFinite(p.y);
 
-/** The thumb's center reaches the base ring at full throw; the thumb itself may overhang it. */
-export const joystickTravel = (size: JoystickSize): number => size.base / 2;
+/** At full throw the thumb's edge meets the inside of the ring, so the thumb never leaves its base. */
+export const joystickTravel = (size: JoystickSize): number =>
+	(size.base - size.thumb) / 2 - size.stroke;
 
 /** One floating stick: it appears where a pointer lands and follows only that pointer until it lifts. */
 export class Joystick {
