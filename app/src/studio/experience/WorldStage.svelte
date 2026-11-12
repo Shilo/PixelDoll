@@ -4,7 +4,7 @@
 	import { experience, characters, setMode } from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
 	import { MOTION, REFLECTION, WORLDS, worldArt } from './config.ts';
-	import { EYE, heroRoom, layout, placeWorld } from './geometry.ts';
+	import { EYE, heroRoom, layout, placeWorld, ringRise } from './geometry.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { paintedFrame, reachFrame, actorScale, previewBounds } from './bounds.ts';
@@ -614,13 +614,15 @@
 							[hovered, 0.3]
 						] as const) {
 							if (!d || !facings.includes(d) || (alpha < 0.5 && d === ui.dir)) continue;
-							const rx = ringRadius(fit.w, scale);
+							const rx = ringRadius(fit.w, scale),
+								ry = rx * flat,
+								rise = ringRise(origin(d)?.standingHeight ?? 0, scale, ry, dpr);
 							g.save();
 							g.globalAlpha = alpha;
 							g.strokeStyle = accent;
 							g.lineWidth = RING_STROKE;
 							g.beginPath();
-							g.ellipse(snap(at(d)), snap(point.y), rx, rx * flat, 0, 0, Math.PI * 2);
+							g.ellipse(snap(at(d)), snap(point.y) - rise, rx, ry, 0, 0, Math.PI * 2);
 							g.stroke();
 							g.restore();
 						}

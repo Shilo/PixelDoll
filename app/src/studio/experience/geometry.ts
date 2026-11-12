@@ -58,6 +58,20 @@ export const VIEW_TABS = 40;
 const PANEL_ROW = 44;
 /** The eye line sits this share of the visible character height above the feet. */
 export const EYE = 0.86;
+
+export function ringRise(
+	standingHeight: number,
+	scale: number,
+	verticalRadius: number,
+	dpr = 1
+): number {
+	const density = Math.max(1, dpr);
+	return (
+		Math.floor(Math.max(0, Math.min((standingHeight * scale) / 32, verticalRadius / 2)) * density) /
+		density
+	);
+}
+
 const GAP = 12;
 /** Stage widths below which the playback bar goes compact, then cycles facing (Play, move, four directions need ~300 px). */
 const COMPACT_STAGE = 430,

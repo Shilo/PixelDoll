@@ -75,6 +75,15 @@ function weapon(project: Project, image: Img, hash: Sha256 = 'sha256:weapon'): I
 }
 
 describe('Preview body grounding', () => {
+	for (const size of [64, 128])
+		for (const top of [2, 12])
+			test(`measures painted standing height independently of ${size}px padding at ${top}`, () => {
+				const project = fixture();
+				project.manifest.rig.cell = { w: size, h: size };
+				project.images.set(bodyHash, rectangle(size, size, 5, top, 12, 40));
+				expect(previewBounds(project).facings.get('south')?.standingHeight).toBe(40);
+			});
+
 	test('centers offset artwork on the floor instead of the saved rig pivot', () => {
 		const project = fixture();
 		project.images.set(bodyHash, rectangle(64, 64, 35, 8, 20, 40));
@@ -89,8 +98,8 @@ describe('Preview body grounding', () => {
 		project.manifest.items[0].layers[0].cells!.walk.east = ['sha256:east'];
 		project.images.set('sha256:east', rectangle(64, 64, 40, 10, 6, 40));
 		const bounds = previewBounds(project);
-		expect(bounds.facings.get('east')).toMatchObject({ x: 11, y: -6 });
-		expect(bounds.facings.get('west')).toMatchObject({ x: -11, y: -6 });
+		expect(bounds.facings.get('east')).toMatchObject({ x: 11, y: -6, standingHeight: 40 });
+		expect(bounds.facings.get('west')).toMatchObject({ x: -11, y: -6, standingHeight: 40 });
 		expect(bounds.facings.get('east')!.reach).toEqual(bounds.facings.get('west')!.reach);
 		expect(bounds.body).toEqual({ w: 24, h: 48, x: 12, y: 48 });
 	});
@@ -103,8 +112,8 @@ describe('Preview body grounding', () => {
 		const before = previewBounds(project);
 		weapon(project, rectangle(96, 96, 0, 0, 96, 96));
 		const after = previewBounds(project);
-		expect(before.facings.get('south')).toMatchObject({ x: 0, y: 0 });
-		expect(after.facings.get('south')).toMatchObject({ x: 0, y: 0 });
+		expect(before.facings.get('south')).toMatchObject({ x: 0, y: 0, standingHeight: 48 });
+		expect(after.facings.get('south')).toMatchObject({ x: 0, y: 0, standingHeight: 48 });
 		expect(after.body).toEqual(before.body);
 		expect(after.reach.w).toBeGreaterThan(before.reach.w);
 	});
@@ -115,10 +124,18 @@ describe('Preview body grounding', () => {
 		project.manifest.items[0].layers[0].cells = { walk: { east: [bodyHash] } };
 		project.images.set(bodyHash, rectangle(64, 64, 40, 8, 12, 40));
 		project.manifest.rig.rest = { east: { image: bodyHash, keypoints: [] } };
-		expect(previewBounds(project).facings.get('west')).toMatchObject({ x: -14, y: -8 });
+		expect(previewBounds(project).facings.get('west')).toMatchObject({
+			x: -14,
+			y: -8,
+			standingHeight: 40
+		});
 		project.images.set('sha256:west-rest', rectangle(64, 64, 10, 8, 12, 42));
 		project.manifest.rig.rest.west = { image: 'sha256:west-rest', keypoints: [] };
-		expect(previewBounds(project).facings.get('west')).toMatchObject({ x: -16, y: -6 });
+		expect(previewBounds(project).facings.get('west')).toMatchObject({
+			x: -16,
+			y: -6,
+			standingHeight: 42
+		});
 	});
 
 	test('falls back to loaded body poses when the rest image is missing or transparent', () => {
@@ -128,6 +145,7 @@ describe('Preview body grounding', () => {
 		expect(previewBounds(project).facings.get('south')).toMatchObject({ x: 13, y: -8 });
 		project.images.set('sha256:rest', makeImg(64, 64));
 		expect(previewBounds(project).facings.get('south')).toMatchObject({ x: 13, y: -8 });
+		expect(previewBounds(project).facings.get('south')?.standingHeight).toBe(40);
 	});
 
 	test('includes a larger rest in fitting even when animated poses are smaller', () => {

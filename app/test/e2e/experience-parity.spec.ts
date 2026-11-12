@@ -1534,112 +1534,193 @@ test.describe('Preview facing lineup', () => {
 		}
 	});
 
-	test('grounds offset body art on the selected ring in every direction', async ({ page }) => {
-		await page.setViewportSize({ width: 1920, height: 1080 });
-		await customize(page);
-		await pause(page);
-		const directions = [
-			'south',
-			'south-east',
-			'east',
-			'north-east',
-			'north',
-			'north-west',
-			'west',
-			'south-west'
-		] as const;
-		await page.evaluate(async (directions) => {
-			const path = '/src/studio/state.svelte.ts';
-			const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
-			const project = s.store.project!,
-				m = project.manifest;
-			const body = m.items.find((item) => item.id === m.rig.baseItem)!;
-			m.items = [body];
-			m.rig.cell = { w: 64, h: 64 };
-			m.rig.pivot = { x: 32, y: 56 };
-			m.rig.rest = undefined;
-			m.rig.directions = directions.map((id) => ({ id }));
-			m.rig.animations = [
-				{ ...m.rig.animations[0], id: 'walk', cells: 1, frames: [{ cell: 0, ms: 400 }] }
-			];
-			body.regions = undefined;
-			body.materials = [];
-			body.layers = [{ id: 'main', role: 'fg', z: 0, cells: { walk: {} } }];
-			for (const [index, direction] of directions.entries()) {
-				const hash = `sha256:offset-${direction}` as const;
-				const data = new Uint8ClampedArray(64 * 64 * 4);
-				const left = 5 + index * 5,
-					bottom = 44 + index * 2;
-				for (let row = bottom - 32; row < bottom; row++)
-					for (let column = left; column < left + 12; column++)
-						data.set([31 + index * 20, 47, 233, 255], (row * 64 + column) * 4);
-				project.images.set(hash, { w: 64, h: 64, data });
-				body.layers[0].cells!.walk[direction] = [hash];
-			}
-			s.doc.items = {};
-			s.ui.anim = 'walk';
-			s.ui.dir = 'south';
-			s.ui.frame = 0;
-			s.doc.rev++;
-			const ellipse = CanvasRenderingContext2D.prototype.ellipse;
-			CanvasRenderingContext2D.prototype.ellipse = function (...args) {
-				if (
-					this.canvas.classList.contains('world-actors') &&
-					Math.abs(this.globalAlpha - 0.85) < 0.01
-				)
-					this.canvas.dataset.groundRing = JSON.stringify({
-						x: args[0],
-						y: args[1],
-						direction: s.ui.dir
-					});
-				return ellipse.apply(this, args);
-			};
-		}, directions);
-		for (const [index, direction] of directions.entries()) {
-			await page.evaluate(async (direction) => {
-				const path = '/src/studio/state.svelte.ts';
-				(await import(path)).ui.dir = direction;
-			}, direction);
-			await expect(world(page)).toHaveAttribute('data-facing', direction);
-			await expect
-				.poll(
-					() =>
-						page.locator('.world-actors').evaluate((canvas: HTMLCanvasElement, index) => {
-							const ring = JSON.parse(canvas.dataset.groundRing ?? 'null');
+	for (const density of [1, 2])
+		test.describe(`floor rings at DPR ${density}`, () => {
+			test.use({ deviceScaleFactor: density });
+			test('grounds offset body art on the selected ring in every direction', async ({ page }) => {
+				await page.setViewportSize({ width: 1920, height: 1080 });
+				await customize(page);
+				await pause(page);
+				const directions = [
+					'south',
+					'south-east',
+					'east',
+					'north-east',
+					'north',
+					'north-west',
+					'west',
+					'south-west'
+				] as const;
+				await page.evaluate(async (directions) => {
+					const path = '/src/studio/state.svelte.ts';
+					const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+					const project = s.store.project!,
+						m = project.manifest;
+					const body = m.items.find((item) => item.id === m.rig.baseItem)!;
+					m.items = [body];
+					m.rig.cell = { w: 64, h: 64 };
+					m.rig.pivot = { x: 32, y: 56 };
+					m.rig.rest = undefined;
+					m.rig.directions = directions.map((id) => ({ id }));
+					m.rig.animations = [
+						{ ...m.rig.animations[0], id: 'walk', cells: 1, frames: [{ cell: 0, ms: 400 }] }
+					];
+					body.regions = undefined;
+					body.materials = [];
+					body.layers = [{ id: 'main', role: 'fg', z: 0, cells: { walk: {} } }];
+					for (const [index, direction] of directions.entries()) {
+						const hash = `sha256:offset-${direction}` as const;
+						const data = new Uint8ClampedArray(64 * 64 * 4);
+						const left = 5 + index * 5,
+							bottom = 44 + index * 2;
+						for (let row = bottom - (24 + index * 3); row < bottom; row++)
+							for (let column = left; column < left + 12; column++)
+								data.set([31 + index * 20, 47, 233, 255], (row * 64 + column) * 4);
+						project.images.set(hash, { w: 64, h: 64, data });
+						body.layers[0].cells!.walk[direction] = [hash];
+					}
+					s.doc.items = {};
+					s.ui.anim = 'walk';
+					s.ui.dir = 'south';
+					s.ui.frame = 0;
+					s.doc.rev++;
+					const ellipse = CanvasRenderingContext2D.prototype.ellipse;
+					CanvasRenderingContext2D.prototype.ellipse = function (...args) {
+						if (
+							this.canvas.classList.contains('world-actors') &&
+							(Math.abs(this.globalAlpha - 0.85) < 0.01 || Math.abs(this.globalAlpha - 0.3) < 0.01)
+						)
+							this.canvas.dataset[this.globalAlpha > 0.5 ? 'groundRing' : 'hoverRing'] =
+								JSON.stringify({
+									x: args[0],
+									y: args[1],
+									ry: args[3],
+									direction: s.ui.dir
+								});
+						return ellipse.apply(this, args);
+					};
+				}, directions);
+				for (const [index, direction] of directions.entries()) {
+					await page.evaluate(async (direction) => {
+						const path = '/src/studio/state.svelte.ts';
+						(await import(path)).ui.dir = direction;
+					}, direction);
+					await expect(world(page)).toHaveAttribute('data-facing', direction);
+					await expect
+						.poll(
+							() =>
+								page.locator('.world-actors').evaluate((canvas: HTMLCanvasElement, index) => {
+									const ring = JSON.parse(canvas.dataset.groundRing ?? 'null');
+									const pixels = canvas
+										.getContext('2d')!
+										.getImageData(0, 0, canvas.width, canvas.height).data;
+									let left = Infinity,
+										right = -Infinity,
+										top = Infinity,
+										bottom = -Infinity;
+									for (let offset = 0; offset < pixels.length; offset += 4) {
+										if (
+											pixels[offset] !== 31 + index * 20 ||
+											pixels[offset + 1] !== 47 ||
+											pixels[offset + 2] !== 233 ||
+											pixels[offset + 3] !== 255
+										)
+											continue;
+										const column = (offset / 4) % canvas.width,
+											row = Math.floor(offset / 4 / canvas.width);
+										left = Math.min(left, column);
+										right = Math.max(right, column + 1);
+										top = Math.min(top, row);
+										bottom = Math.max(bottom, row + 1);
+									}
+									const density = canvas.width / innerWidth;
+									const rise =
+										ring &&
+										Math.floor(Math.min((bottom - top) / density / 32, ring.ry / 2) * density) /
+											density;
+									return (
+										ring &&
+										ring.direction ===
+											document.querySelector('.world-stage')?.getAttribute('data-facing') &&
+										Math.abs((left + right) / 2 / density - ring.x) <= 1 &&
+										rise > 0 &&
+										Math.abs(bottom / density - ring.y - rise) <= 1 / density &&
+										ring.y + ring.ry > bottom / density
+									);
+								}, index),
+							{ message: `${direction}: centered ring rises conservatively into the feet` }
+						)
+						.toBe(true);
+					const companion = await page
+						.locator('.world-actors')
+						.evaluate((canvas: HTMLCanvasElement, selectedIndex) => {
 							const pixels = canvas
 								.getContext('2d')!
 								.getImageData(0, 0, canvas.width, canvas.height).data;
-							let left = Infinity,
+							let target = -1,
+								left = Infinity,
 								right = -Infinity,
+								top = Infinity,
 								bottom = -Infinity;
 							for (let offset = 0; offset < pixels.length; offset += 4) {
+								const index = (pixels[offset] - 31) / 20;
 								if (
-									pixels[offset] !== 31 + index * 20 ||
+									!Number.isInteger(index) ||
+									index < 0 ||
+									index > 7 ||
+									index === selectedIndex ||
 									pixels[offset + 1] !== 47 ||
 									pixels[offset + 2] !== 233 ||
 									pixels[offset + 3] !== 255
 								)
 									continue;
+								if (target < 0) target = index;
+								if (target !== index) continue;
 								const column = (offset / 4) % canvas.width,
 									row = Math.floor(offset / 4 / canvas.width);
 								left = Math.min(left, column);
 								right = Math.max(right, column + 1);
+								top = Math.min(top, row);
 								bottom = Math.max(bottom, row + 1);
 							}
 							const density = canvas.width / innerWidth;
-							return (
-								ring &&
-								ring.direction ===
-									document.querySelector('.world-stage')?.getAttribute('data-facing') &&
-								Math.abs((left + right) / 2 / density - ring.x) <= 1 &&
-								Math.abs(bottom / density - ring.y) <= 1
-							);
-						}, index),
-					{ message: `${direction}: body center and feet meet the ring` }
-				)
-				.toBe(true);
-		}
-	});
+							return {
+								target,
+								x: (left + right) / 2 / density,
+								y: (top + bottom) / 2 / density,
+								bottom: bottom / density,
+								height: (bottom - top) / density,
+								density
+							};
+						}, index);
+					expect(companion.target).toBeGreaterThanOrEqual(0);
+					await page.mouse.move(companion.x, companion.y);
+					await expect(world(page)).toHaveClass(/\bpick\b/);
+					await expect
+						.poll(
+							() =>
+								page.locator('.world-actors').evaluate((canvas, companion) => {
+									const ring = JSON.parse(
+										(canvas as HTMLCanvasElement).dataset.hoverRing ?? 'null'
+									);
+									const rise =
+										ring &&
+										Math.floor(Math.min(companion.height / 32, ring.ry / 2) * companion.density) /
+											companion.density;
+									return (
+										ring &&
+										Math.abs(ring.x - companion.x) <= 1 &&
+										rise > 0 &&
+										Math.abs(companion.bottom - ring.y - rise) <= 1 / companion.density
+									);
+								}, companion),
+							{ message: `${direction}: companion hover uses its own standing height` }
+						)
+						.toBe(true);
+					await page.mouse.move(0, 0);
+				}
+			});
+		});
 
 	test('renders synchronized companions, selects them, and reports incomplete gear', async ({
 		page

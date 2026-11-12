@@ -174,7 +174,10 @@ export function reachFrame(project: Project, direction?: DirectionName): Frame {
 export function previewBounds(project: Project) {
 	const rig = project.manifest.rig;
 	const bodies: Frame[] = [];
-	const facings = new Map<DirectionName, { x: number; y: number; reach: Frame }>();
+	const facings = new Map<
+		DirectionName,
+		{ x: number; y: number; standingHeight: number; reach: Frame }
+	>();
 	for (const direction of rig.directions) {
 		const body = paintedFrame(project, {}, direction.id);
 		const reference =
@@ -194,7 +197,12 @@ export function previewBounds(project: Project) {
 		const x = referenceFrame.w / 2 - referenceFrame.x;
 		const y = referenceFrame.h - referenceFrame.y;
 		const reach = unionFrame([reachFrame(project, direction.id), referenceFrame]);
-		facings.set(direction.id, { x, y, reach: { ...reach, x: reach.x + x, y: reach.y + y } });
+		facings.set(direction.id, {
+			x,
+			y,
+			standingHeight: referenceFrame.h,
+			reach: { ...reach, x: reach.x + x, y: reach.y + y }
+		});
 		const fitted = unionFrame([body, referenceFrame]);
 		bodies.push({ ...fitted, x: fitted.x + x, y: fitted.y + y });
 	}
