@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { bakedFrame } from '../../src/lib/compose/compose.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import type { Item, Layer, Project, Sha256 } from '../../src/lib/store/manifest.ts';
-import { paintedFrame } from '../../src/studio/experience/bounds.ts';
+import { paintedFrame, reachFrame } from '../../src/studio/experience/bounds.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const bodyHash: Sha256 = 'sha256:body';
@@ -131,6 +131,26 @@ describe('stable painted outfit frame', () => {
 			layer = p.manifest.items[0].layers[0];
 		p.layerImages = new Map([[layer, new Map([[bodyHash, rectangle(64, 64, 25, 10, 10, 40)]])]]);
 		expect(paintedFrame(p, {})).toEqual({ w: 10, h: 40, x: 7, y: 46 });
+	});
+
+	test('one facing counts only its own poses, and a mirrored facing its source flipped', () => {
+		const p = fixture(),
+			body = p.manifest.items[0].layers[0];
+		p.images.set('sha256:east', rectangle(64, 64, 40, 10, 6, 46));
+		body.cells = { walk: { south: [bodyHash], east: ['sha256:east'] } };
+		p.manifest.rig.directions.push({ id: 'east' }, { id: 'west', mirrorOf: 'east' });
+		expect(paintedFrame(p, {}, 'south')).toEqual({ w: 24, h: 48, x: 12, y: 48 });
+		expect(paintedFrame(p, {}, 'east')).toEqual({ w: 6, h: 46, x: -8, y: 46 });
+		expect(paintedFrame(p, {}, 'west')).toEqual({ w: 6, h: 46, x: 14, y: 46 });
+		// Without a direction every facing still counts, mirrored both ways.
+		expect(paintedFrame(p, {}).w).toBe(28);
+	});
+
+	test('a facing reach unions the bare body and each owned item worn alone in that facing', () => {
+		const p = fixture();
+		weapon(p, rectangle(96, 96, 10, 40, 30, 4));
+		expect(reachFrame(p, 'south')).toEqual({ w: 50, h: 48, x: 38, y: 48 });
+		expect(reachFrame(p, 'south')).toEqual(reachFrame(p));
 	});
 
 	test('conservatively includes horizontal counterparts for declared mirrors', () => {

@@ -317,6 +317,10 @@
 .world-stage.live {
 	touch-action: none;
 }
+/* Over a Preview companion facing, which a click selects. */
+.world-stage.pick .world-input {
+	cursor: pointer;
+}
 .world-input {
 	position: fixed;
 	inset: 0;

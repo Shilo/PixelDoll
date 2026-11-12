@@ -2,6 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { equipmentGroup, equipmentMode } from './immersive-helpers.ts';
 import { layout } from '../../src/studio/experience/geometry.ts';
+import { pickFacings } from '../../src/studio/experience/lineup.ts';
+import type { DirectionName } from '../../src/lib/rig/rig.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
@@ -1239,4 +1241,146 @@ test('short tab labels, the character name and sheet Done buttons keep 44 px tar
 			].every(([px, py]) => el.contains(document.elementFromPoint(px, py)));
 		})
 	).toBe(true);
+});
+
+test.describe('Preview facing lineup', () => {
+	// The dev server serves the app's modules, so a check can give the demo character any set of directions.
+	test.use({ baseURL: `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}` });
+
+	type Rig = [DirectionName, DirectionName?][];
+	const sets: [string, Rig][] = [
+		['one direction', [['south']]],
+		['side-scroller', [['east'], ['west', 'east']]],
+		['front and back', [['south'], ['north']]],
+		['three directions', [['south'], ['east'], ['north']]],
+		['top-down 4', [['south'], ['east'], ['north'], ['west', 'east']]],
+		[
+			'diagonal 4',
+			[['south-east'], ['north-east'], ['south-west', 'south-east'], ['north-west', 'north-east']]
+		],
+		['five directions', [['south'], ['south-east'], ['east'], ['north-east'], ['north']]],
+		['six directions', [['south'], ['south-east'], ['east'], ['north-east'], ['north'], ['west']]],
+		[
+			'seven directions',
+			[['south'], ['south-east'], ['east'], ['north-east'], ['north'], ['west'], ['south-west']]
+		],
+		[
+			'top-down 8',
+			[
+				['south'],
+				['south-east'],
+				['east'],
+				['north-east'],
+				['north'],
+				['north-west', 'north-east'],
+				['west', 'east'],
+				['south-west', 'south-east']
+			]
+		],
+		[
+			'unique 8',
+			[
+				['south'],
+				['south-east'],
+				['east'],
+				['north-east'],
+				['north'],
+				['north-west'],
+				['west'],
+				['south-west']
+			]
+		]
+	];
+	// Ultra-wide to phones, landscape and portrait.
+	const sizes = [
+		[3440, 1440],
+		[2560, 1440],
+		[1920, 1080],
+		[1440, 900],
+		[1366, 768],
+		[1024, 1366],
+		[768, 1024],
+		[844, 390],
+		[390, 844]
+	] as const;
+
+	for (const [name, rig] of sets)
+		test(`${name}: every selection shows the preferred facings that fit, inside the stage`, async ({
+			page
+		}) => {
+			test.slow();
+			await customize(page);
+			await pause(page);
+			const available = rig.map(([id]) => id);
+			// Directions the demo lacks reuse a drawn facing's cells, so each one plays a real move.
+			await page.evaluate(async (rig) => {
+				const path = '/src/studio/state.svelte.ts',
+					s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+				const m = s.store.project!.manifest,
+					drawn: Record<string, string> = {
+						'south-east': 'south',
+						'south-west': 'south',
+						'north-east': 'north',
+						'north-west': 'north',
+						west: 'east'
+					};
+				for (const item of m.items)
+					for (const layer of item.layers)
+						for (const directions of Object.values(layer.cells ?? {}) as Record<string, unknown>[])
+							for (const [direction, from] of Object.entries(drawn))
+								directions[direction] ??= directions[from];
+				m.rig.directions = rig.map(([id, mirrorOf]) => (mirrorOf ? { id, mirrorOf } : { id }));
+				s.ui.dir = rig[0][0];
+				s.doc.rev++;
+			}, rig);
+			const counts = new Map<string, number>();
+			for (const [width, height] of sizes) {
+				await page.setViewportSize({ width, height });
+				for (const selected of available) {
+					await page.evaluate(async (dir) => {
+						const path = '/src/studio/state.svelte.ts';
+						(await import(path)).ui.dir = dir;
+					}, selected);
+					await expect(world(page)).toHaveAttribute('data-facing', selected);
+					await expect
+						.poll(async () =>
+							((await world(page).getAttribute('data-lineup')) ?? '').split(' ').includes(selected)
+						)
+						.toBe(true);
+					const shown = ((await world(page).getAttribute('data-lineup')) ?? '').split(' ');
+					const label = `${name} at ${width}×${height}, ${selected} selected`;
+					expect(shown, label).toEqual(pickFacings(available, selected, shown.length));
+					counts.set(
+						`${width}×${height}`,
+						Math.max(counts.get(`${width}×${height}`) ?? 0, shown.length)
+					);
+				}
+				// Nothing is drawn past the stage: the row never reaches under the panel or off screen.
+				const g = layout(width, height, 'studio');
+				const painted = await page
+					.locator('.world-actors')
+					.evaluate((canvas: HTMLCanvasElement) => {
+						const c = canvas.getContext('2d')!,
+							data = c.getImageData(0, 0, canvas.width, canvas.height).data,
+							scale = canvas.width / innerWidth;
+						let left = Infinity,
+							right = -Infinity;
+						for (let y = 0; y < canvas.height; y++)
+							for (let x = 0; x < canvas.width; x++)
+								if (data[(y * canvas.width + x) * 4 + 3]) {
+									left = Math.min(left, x / scale);
+									right = Math.max(right, (x + 1) / scale);
+								}
+						return { left, right };
+					});
+				expect(painted.left, `${name} at ${width}×${height}`).toBeGreaterThanOrEqual(g.stage.l);
+				expect(painted.right, `${name} at ${width}×${height}`).toBeLessThanOrEqual(g.stage.r);
+			}
+			const capacity = pickFacings(available, available[0], 5).length;
+			// Wide windows show a lineup whenever the character has a second facing to show; it never grows as
+			// the window narrows.
+			if (capacity > 1) expect(counts.get('1920×1080')).toBeGreaterThan(1);
+			const widths = ['3440×1440', '2560×1440', '1920×1080', '1366×768'].map((k) => counts.get(k)!);
+			for (let i = 1; i < widths.length; i++) expect(widths[i]).toBeLessThanOrEqual(widths[i - 1]);
+		});
 });

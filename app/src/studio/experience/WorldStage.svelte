@@ -7,7 +7,8 @@
 	import { heroRoom, layout, placeWorld } from './geometry.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
-	import { paintedFrame, actorScale } from './bounds.ts';
+	import { paintedFrame, reachFrame, actorScale } from './bounds.ts';
+	import { planLineup } from './lineup.ts';
 	import {
 		buildPresentation,
 		resolvePreview,
@@ -47,6 +48,32 @@
 		void doc.rev;
 		const p = view.project;
 		return p ? paintedFrame(p, {}) : null;
+	});
+	// How far any of the character's gear can reach: Preview's lineup sizes and spaces its facings by it.
+	const reach = $derived.by(() => {
+		void doc.rev;
+		const p = view.project;
+		return p ? reachFrame(p) : null;
+	});
+	// Each facing's own reach packs the lineup tightly and bounds its click target.
+	const facingReach = $derived.by(() => {
+		void doc.rev;
+		const p = view.project;
+		return new Map(
+			p ? (availability?.directions ?? []).map((d) => [d, reachFrame(p, d)] as const) : []
+		);
+	});
+	// Facings that can stand beside the selected one: they play the same move the same way (all animated, or all
+	// still), so the lineup never shows a stand-in. A selected facing that itself falls back stands alone.
+	const lineupDirections = $derived.by(() => {
+		const a = availability;
+		if (!a) return [];
+		const selected = resolvePreview(a, { clip: ui.anim, direction: ui.dir });
+		if (selected.direction !== ui.dir || selected.kind === 'unavailable') return [];
+		return a.directions.filter((direction) => {
+			const p = resolvePreview(a, { clip: ui.anim, direction });
+			return p.direction === direction && p.kind === selected.kind && p.clip === selected.clip;
+		});
 	});
 	const keys = new Set<string>();
 	let position: Vector = { x: 0, y: 0 },
@@ -156,14 +183,33 @@
 			stepPreviewFrame(k === '.' ? 1 : -1);
 		}
 	}
+	// Where each Preview facing stands, so a click on a companion selects it.
+	let picks: { direction: DirectionName; l: number; r: number; t: number; b: number }[] = [];
+	const picked = (e: PointerEvent) =>
+		experience.mode === 'preview'
+			? picks.find(
+					(p) =>
+						p.direction !== ui.dir &&
+						e.clientX >= p.l &&
+						e.clientX <= p.r &&
+						e.clientY >= p.t &&
+						e.clientY <= p.b
+				)?.direction
+			: undefined;
 	function down(e: PointerEvent) {
 		if (e.button !== 0 || ui.sheet) return;
 		host.focus({ preventScroll: true });
+		const direction = picked(e);
+		if (direction) ui.dir = direction;
 		if (experience.mode === 'preview' || stick) return;
 		host.setPointerCapture(e.pointerId);
 		stick = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, dy: 0 };
 	}
+	// The companion under the pointer shows a faint ring: clicking it selects that facing.
+	let hovered: DirectionName | undefined;
 	function drag(e: PointerEvent) {
+		hovered = picked(e);
+		host.classList.toggle('pick', !!hovered);
 		if (stick?.id === e.pointerId)
 			stick = { ...stick, dx: e.clientX - stick.x, dy: e.clientY - stick.y };
 	}
@@ -226,6 +272,37 @@
 			skyContext = sky.getContext('2d')!;
 		let skyStamp = '',
 			disposed = false;
+		// One cached canvas per companion facing; recomposed only when its frame, outfit or project changes.
+		const companions = new Map<
+			DirectionName,
+			{ key: string; availability: unknown; canvas: HTMLCanvasElement | null }
+		>();
+		const companion = (
+			a: NonNullable<typeof availability>,
+			direction: DirectionName,
+			playing: number
+		): HTMLCanvasElement | null => {
+			const p = resolvePreview(a, { clip: ui.anim, direction }),
+				cell = p.kind === 'animation' ? playing : p.cell,
+				key = JSON.stringify([p.kind, p.clip, cell, view.items, doc.rev]);
+			const cached = companions.get(direction);
+			if (cached?.key === key && cached.availability === a) return cached.canvas;
+			const image = renderPresentation(a, view.items, p, cell).image;
+			let canvas = cached?.canvas ?? null;
+			if (image) {
+				canvas ??= document.createElement('canvas');
+				canvas.width = image.w;
+				canvas.height = image.h;
+				canvas
+					.getContext('2d')!
+					.putImageData(new ImageData(new Uint8ClampedArray(image.data), image.w, image.h), 0, 0);
+			}
+			companions.set(direction, { key, availability: a, canvas: image ? canvas : null });
+			return image ? canvas : null;
+		};
+		// The theme's accent for the lineup ring, read when the page's applied theme changes.
+		let accent = '',
+			accentTheme = '';
 		let raf = 0,
 			last = performance.now(),
 			renderKey = '',
@@ -234,6 +311,7 @@
 		const animate = (now: number) => {
 			const dt = Math.min(50, now - last);
 			last = now;
+			picks = [];
 			const a = availability,
 				dpr = devicePixelRatio || 1;
 			const width = innerWidth,
@@ -243,6 +321,10 @@
 				canvas.height = Math.round(height * dpr);
 				renderKey = '';
 			}
+			if (accentTheme !== document.documentElement.dataset.theme) {
+				accentTheme = document.documentElement.dataset.theme ?? '';
+				accent = getComputedStyle(host).getPropertyValue('--bu-accent').trim();
+			}
 			g.setTransform(dpr, 0, 0, dpr, 0, 0);
 			g.clearRect(0, 0, width, height);
 			g.imageSmoothingEnabled = false;
@@ -250,9 +332,25 @@
 			const place = layout(width, height, 'studio');
 			const anchor = { x: place.feet.x, y: place.feet.y };
 			const room = heroRoom(place);
-			// The world image, sky and side floor share one horizon: the character's eye line (geometry.ts placeWorld).
+			const live = experience.mode !== 'preview';
+			// Preview fills a wide stage with a lineup of facings; the live views keep one moving actor.
+			const row =
+				!live && fitFrame
+					? planLineup({
+							available: lineupDirections,
+							selected: ui.dir,
+							body: fitFrame,
+							reach: reach ?? fitFrame,
+							facing: (d) => facingReach.get(d) ?? reach ?? fitFrame,
+							room,
+							width: place.stage.r - place.stage.l,
+							dpr
+						})
+					: null;
+			// The world image, sky and side floor share one horizon: the eye line of the characters as drawn
+			// (geometry.ts placeWorld), so a lineup's smaller scale pulls the whole world back with it.
 			const heroNow = fitFrame
-				? Math.round(fitFrame.y * actorScale(fitFrame, room, dpr))
+				? Math.round(fitFrame.y * (row?.scale ?? actorScale(fitFrame, room, dpr)))
 				: experience.heroHeight;
 			const art = worldArt(ui.theme),
 				backdrop = placeWorld(place, art, anchor, heroNow);
@@ -266,7 +364,6 @@
 					experience.mode === 'side'
 				);
 			if (ui.sheet || document.hidden) velocity = { x: 0, y: 0 };
-			const live = experience.mode !== 'preview';
 			if (live)
 				({ position, camera } = integrateMovement(
 					position,
@@ -424,12 +521,62 @@
 					const frame = result.frame,
 						point = s ? s.project(position, options) : anchor;
 					const fit = fitFrame ?? frame,
-						scale = actorScale(fit, room, dpr),
+						scale = row?.scale ?? actorScale(fit, room, dpr),
 						hero = Math.round(fit.y * scale);
 					if (hero !== experience.heroHeight) experience.heroHeight = hero;
 					const snap = (n: number) => Math.round(n * dpr) / dpr;
-					const x = snap(point.x - frame.x * scale),
+					// The selected facing keeps its reflection; the others stand beside it, sharing its move, frame and floor.
+					const facings = row?.facings ?? [ui.dir],
+						at = (d: DirectionName) => point.x + (row?.offsets[facings.indexOf(d)] ?? 0);
+					const x = snap(at(ui.dir) - frame.x * scale),
 						y = snap(point.y - frame.y * scale);
+					// A lineup marks its selected facing with a thin accent ring on the floor, anchored to the feet so it
+					// never moves with the walk or collides with tall gear; the sprite is drawn over its back half.
+					if (facings.length > 1)
+						for (const [d, alpha] of [
+							[ui.dir, 0.85],
+							[hovered, 0.3]
+						] as const) {
+							if (!d || !facings.includes(d) || (alpha < 0.5 && d === ui.dir)) continue;
+							const rx = Math.max(12, fit.w * scale * 0.35);
+							g.save();
+							g.globalAlpha = alpha;
+							g.strokeStyle = accent;
+							g.lineWidth = 1.5;
+							g.beginPath();
+							g.ellipse(
+								snap(at(d)),
+								snap(point.y + 1),
+								rx,
+								Math.min(6, rx * 0.25),
+								0,
+								0,
+								Math.PI * 2
+							);
+							g.stroke();
+							g.restore();
+						}
+					for (const d of facings) {
+						const box = facingReach.get(d) ?? reach ?? fit,
+							left = at(d) - box.x * scale;
+						picks.push({
+							direction: d,
+							l: left,
+							r: left + box.w * scale,
+							t: point.y - box.y * scale,
+							b: point.y + (box.h - box.y) * scale
+						});
+						if (d === ui.dir) continue;
+						const other = companion(a, d, view.cell);
+						if (other)
+							g.drawImage(
+								other,
+								snap(at(d) - frame.x * scale),
+								y,
+								other.width * scale,
+								other.height * scale
+							);
+					}
 					if (REFLECTION.enabled && REFLECTION[experience.mode]) {
 						g.save();
 						g.globalAlpha = REFLECTION.opacity;
@@ -443,6 +590,7 @@
 					host.dataset.camera = `${camera.x.toFixed(2)},${camera.y.toFixed(2)}`;
 					host.dataset.presentation = p.kind;
 					host.dataset.facing = p.direction ?? '';
+					host.dataset.lineup = facings.join(' ');
 				}
 				previous = p;
 			}
@@ -482,6 +630,7 @@
 	onpointermove={drag}
 	onpointerup={up}
 	onpointercancel={up}
+	onpointerleave={() => (hovered = undefined)}
 	onlostpointercapture={up}
 	class:live={experience.mode !== 'preview'}
 >
