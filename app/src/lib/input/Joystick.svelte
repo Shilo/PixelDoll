@@ -12,13 +12,11 @@
 		axis?: JoystickAxis;
 		class?: string;
 	} = $props();
-	const full = $derived(Math.hypot(snapshot.value.x, snapshot.value.y) >= 0.999);
 </script>
 
 {#if snapshot.origin}<div
 		class="joystick {className}"
 		class:horizontal={axis === 'x'}
-		class:full
 		style:left="{snapshot.origin.x}px"
 		style:top="{snapshot.origin.y}px"
 		style:--joystick-base="{size.base}px"
@@ -33,43 +31,37 @@
 	</div>{/if}
 
 <style>
-	/* Drawn over the world, not a panel, so it uses the theme's ink (text color) at low alpha rather than
-	   panel borders or the accent: a quiet ring and a near-solid puck that flip together with the theme. */
+	/* A translucent bronze knob with a solid accent edge in a lightly tinted bronze ring, tuned against the
+	   live world in both themes. Color-mixes of Bronze tokens only; geometry comes from the size props. */
 	.joystick {
 		position: fixed;
 		box-sizing: border-box;
 		width: var(--joystick-base);
 		height: var(--joystick-base);
 		translate: -50% -50%;
-		border: var(--joystick-stroke) solid color-mix(in srgb, var(--bu-text) 38%, transparent);
+		border: var(--joystick-stroke) solid color-mix(in srgb, var(--bu-accent) 50%, transparent);
 		border-radius: 50%;
+		background: color-mix(in srgb, var(--bu-accent) 6%, transparent);
 		/* A faint canvas halo keeps the ring readable over bright art. */
-		box-shadow: 0 0 0 1px color-mix(in srgb, var(--bu-canvas) 30%, transparent);
+		box-shadow: 0 0 0 1px color-mix(in srgb, var(--bu-canvas) 35%, transparent);
 		display: grid;
 		place-items: center;
 		pointer-events: none;
-		transition: border-color var(--bu-duration) ease-out;
 		animation: joystick-in var(--bu-duration) ease-out;
 	}
-	/* Side-scrolling: a groove with a 4px reveal around the thumb. */
+	/* Side-scrolling: a groove exactly as tall as the thumb inside its stroke, so the thumb fills it. */
 	.joystick.horizontal {
-		height: calc(var(--joystick-thumb) + 2 * var(--joystick-stroke) + 8px);
+		height: calc(var(--joystick-thumb) + 2 * var(--joystick-stroke));
 		border-radius: 999px;
-	}
-	.joystick.full {
-		border-color: color-mix(in srgb, var(--bu-text) 62%, transparent);
 	}
 	.joystick-thumb {
 		box-sizing: border-box;
 		width: var(--joystick-thumb);
 		height: var(--joystick-thumb);
 		border-radius: 50%;
-		background: color-mix(in srgb, var(--bu-text) 88%, transparent);
-		box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
-		transition: background-color var(--bu-duration) ease-out;
-	}
-	.full .joystick-thumb {
-		background-color: var(--bu-text);
+		background: color-mix(in srgb, var(--bu-accent) 70%, transparent);
+		border: 2px solid var(--bu-accent);
+		box-shadow: 0 2px 6px rgb(0 0 0 / 0.18);
 	}
 	@keyframes joystick-in {
 		from {
@@ -79,17 +71,13 @@
 	}
 	@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
 		.joystick {
-			border-color: var(--bu-muted);
+			border-color: var(--bu-accent);
+			background: none;
 			box-shadow: none;
 		}
 		.joystick-thumb {
-			background: var(--bu-text);
-			box-shadow: 0 0 0 2px var(--bu-canvas);
-		}
-	}
-	@media (prefers-contrast: more) {
-		.joystick {
-			border-color: var(--bu-text);
+			background: var(--bu-accent);
+			box-shadow: none;
 		}
 	}
 	@media (forced-colors: active) {
@@ -97,12 +85,9 @@
 			border-color: CanvasText;
 			box-shadow: none;
 		}
-		.joystick.full {
-			border-color: Highlight;
-		}
 		.joystick-thumb {
 			background: Highlight;
-			border: 2px solid CanvasText;
+			border-color: Highlight;
 			box-shadow: none;
 		}
 	}

@@ -1016,8 +1016,8 @@ for (const screen of [
 						b = stick.getBoundingClientRect(),
 						t = knob.getBoundingClientRect();
 					const probe = document.body.appendChild(document.createElement('i'));
-					probe.style.background = 'var(--bu-text)';
-					const ink = getComputedStyle(probe).backgroundColor;
+					probe.style.background = 'var(--bu-accent)';
+					const accent = getComputedStyle(probe).backgroundColor;
 					probe.remove();
 					return {
 						base: { x: b.x + b.width / 2, y: b.y + b.height / 2, width: b.width, height: b.height },
@@ -1027,8 +1027,8 @@ for (const screen of [
 							t.right <= b.right + 0.5 &&
 							t.top >= b.top - 0.5 &&
 							t.bottom <= b.bottom + 0.5,
-						thumbColor: getComputedStyle(knob).backgroundColor,
-						ink
+						thumbEdge: getComputedStyle(knob).borderTopColor,
+						accent
 					};
 				});
 			const cdp = screen.touch ? await context.newCDPSession(page) : null;
@@ -1066,7 +1066,7 @@ for (const screen of [
 					);
 					let m = (await measure())!;
 					near(m.base.width, base);
-					near(m.base.height, side ? thumb + 12 : base);
+					near(m.base.height, side ? thumb + 4 : base);
 					near(m.thumb.width, thumb);
 					near(m.thumb.x, start.x);
 					near(m.thumb.y, start.y);
@@ -1080,8 +1080,7 @@ for (const screen of [
 					m = (await measure())!;
 					expect(m.inside).toBe(true);
 					near(Math.hypot(m.thumb.x - m.base.x, m.thumb.y - m.base.y), travel);
-					// Full throw draws the thumb in solid theme ink, never the accent.
-					await expect.poll(async () => (await measure())!.thumbColor).toBe(m.ink);
+					expect(m.thumbEdge, 'the thumb is outlined in the theme accent').toBe(m.accent);
 					if (side) {
 						near(m.thumb.y, start.y);
 						near(m.base.y, start.y);
