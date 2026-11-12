@@ -146,6 +146,45 @@ test('draft item artwork appears before wearing, keeps running progress, and sto
 		};
 	});
 	await expect(tile.locator('canvas')).toBeVisible();
+	const expectArtworkInsideRing = async () => {
+		const bounds = await tile.evaluate((element) => {
+			const art = element.querySelector('.generation-artwork')!.getBoundingClientRect(),
+				content = element
+					.querySelector('.generation-artwork canvas, .generation-artwork svg')!
+					.getBoundingClientRect(),
+				ring = element.querySelector('.generation-ring')!.getBoundingClientRect(),
+				percent = element.querySelector('.generation-percent')!.getBoundingClientRect(),
+				time = element.querySelector('.generation-time')!.getBoundingClientRect();
+			return {
+				contentLeft: content.left,
+				contentRight: content.right,
+				contentTop: content.top,
+				contentBottom: content.bottom,
+				artLeft: art.left,
+				artRight: art.right,
+				artWidth: art.width,
+				artHeight: art.height,
+				centerX: art.x + art.width / 2,
+				centerY: art.y + art.height / 2,
+				ringX: ring.x + ring.width / 2,
+				ringY: ring.y + ring.height / 2,
+				percentBottom: percent.bottom,
+				artTop: art.top,
+				artBottom: art.bottom,
+				timeTop: time.top
+			};
+		});
+		expect(Math.hypot(bounds.artWidth, bounds.artHeight)).toBeLessThan(18);
+		expect(bounds.centerX).toBe(bounds.ringX);
+		expect(bounds.centerY).toBe(bounds.ringY);
+		expect(bounds.percentBottom).toBeLessThan(bounds.artTop);
+		expect(bounds.artBottom).toBeLessThan(bounds.timeTop);
+		expect(bounds.contentLeft).toBeGreaterThanOrEqual(bounds.artLeft);
+		expect(bounds.contentRight).toBeLessThanOrEqual(bounds.artRight);
+		expect(bounds.contentTop).toBeGreaterThanOrEqual(bounds.artTop);
+		expect(bounds.contentBottom).toBeLessThanOrEqual(bounds.artBottom);
+	};
+	await expectArtworkInsideRing();
 	await expect(progress).toHaveAttribute('aria-valuenow', '50');
 	await expect(tile).toHaveAttribute('aria-pressed', 'false');
 	expect(
@@ -197,10 +236,37 @@ test('draft item artwork appears before wearing, keeps running progress, and sto
 		s.store.results = { ...s.store.results, early_hair: { ...result, thumbnail: undefined } };
 	});
 	await expect(tile.locator('canvas')).toBeVisible();
+	await expectArtworkInsideRing();
 	expect(
 		await tile.locator('canvas').evaluate((c: HTMLCanvasElement) => [c.width, c.height])
 	).toEqual([30, 6]);
 	expect(await thumbnailWorkDuringPlayback(page)).toEqual({ reads: 0, draws: 0, rawReads: 0 });
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path),
+			result = state.store.results.early_hair;
+		result.preview.manifest.items.find(
+			(item: { id: string }) => item.id === 'early_hair'
+		).layers[0].cells.walk.south = [null];
+		state.store.results = {
+			...state.store.results,
+			early_hair: { ...result, preview: { ...result.preview } }
+		};
+	});
+	await expect(tile.locator('.generation-artwork svg')).toBeVisible();
+	await expectArtworkInsideRing();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path),
+			result = state.store.results.early_hair;
+		result.preview.manifest.items.find(
+			(item: { id: string }) => item.id === 'early_hair'
+		).layers[0].cells.walk.south = ['early-pixels'];
+		state.store.results = {
+			...state.store.results,
+			early_hair: { ...result, preview: { ...result.preview } }
+		};
+	});
 	for (const phase of ['review', 'failed']) {
 		await page.evaluate(async (phase) => {
 			const p = '/src/studio/state.svelte.ts',

@@ -56,7 +56,6 @@
 		CircleAlert,
 		EllipsisVertical,
 		EyeOff,
-		LoaderCircle,
 		Plus,
 		Shuffle,
 		TriangleAlert
@@ -463,29 +462,38 @@
 										}}
 									>
 										<span class="bu-tile-art tile-art" aria-hidden="true">
-											{#if thumbnail}<Sprite
-													img={thumbnail}
-													k={1}
-													w={thumbnail.w}
-													h={thumbnail.h}
-													fitToBox
-													label={x.input.name}
-												/>
-											{:else if preview && previewItem}<Thumb
-													project={preview}
-													item={previewItem}
-												/>
-											{:else if x.phase === 'failed'}<CircleAlert size={24} />
-											{:else if x.phase === 'running' && !info.attention}<LoaderCircle
-													size={24}
-													class="spin"
-												/>{:else}<GroupIcon group={g.id} size={24} />{/if}
+											<span class="generation-artwork" class:generating={x.phase === 'running'}>
+												{#if thumbnail}<Sprite
+														img={thumbnail}
+														k={1}
+														w={thumbnail.w}
+														h={thumbnail.h}
+														fitToBox
+														label={x.input.name}
+													/>
+												{:else if preview && previewItem}<Thumb
+														project={preview}
+														item={previewItem}
+														box={x.phase === 'running' ? 12 : 40}
+													/>
+												{:else if x.phase === 'failed'}<CircleAlert size={24} />
+												{:else if x.phase !== 'running'}<GroupIcon group={g.id} size={24} />{/if}
+											</span>
+											{#if x.phase === 'running'}<span
+													class="ring generation-ring"
+													style:--p={p.pct}
+												></span>{/if}
 										</span>
 										{#if x.phase === 'running'}<span
-												class="generation-progress small num"
-												aria-hidden="true">{p.pct}% · {info.text}</span
-											>{:else}<span class="generation-progress small">{info.text}</span>{/if}
-										<span class="bu-tile-label tile-name">{x.input.name}</span>
+												class="generation-percent bu-muted small num"
+												aria-hidden="true">{p.pct}%</span
+											>{/if}
+										<span class="generation-caption">
+											<span class="generation-time bu-muted small num" aria-hidden="true"
+												>{info.text}</span
+											>
+											<span class="bu-tile-label tile-name">{x.input.name}</span>
+										</span>
 										{#if info.attention}<span
 												class="bu-tile-status tile-status"
 												data-tone="warning"
