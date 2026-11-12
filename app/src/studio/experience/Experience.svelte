@@ -10,8 +10,8 @@
 	import CharacterThumb from './CharacterThumb.svelte';
 	import CastCarousel from './CastCarousel.svelte';
 	import ZoomControls from './ZoomControls.svelte';
-	import { sceneZoom } from './sceneZoom.ts';
-	import { sceneArtFits, sceneCamera } from './zoom.ts';
+	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
+	import { sceneArtFits, sceneCamera, type SceneCamera } from './zoom.ts';
 	import { castPose } from './carousel.ts';
 	import {
 		ui,
@@ -156,8 +156,19 @@
 			? (activeCamera?.backdrop ?? baseWorld)
 			: baseWorld
 	);
+	// The automatic fit needs no controls; they appear once the scene is zoomed, mainly to reset it.
+	const zoomed = (camera: Pick<SceneCamera, 'value'>) => Math.abs(camera.value - 1) > 1e-4;
 	function changeZoom(value: number) {
+		const fromControls = document.activeElement?.closest('.scene-zoom');
 		experience.sceneZoom = value;
+		// Returning to the fit hides the controls, so keyboard focus moves to the scene they zoomed.
+		if (fromControls && !zoomed({ value }))
+			void tick().then(() =>
+				(experience.screen === 'characters'
+					? selection
+					: document.querySelector<HTMLElement>('.world-stage')
+				)?.focus({ preventScroll: true })
+			);
 	}
 	const sceneIsZoomed = $derived(
 		activeCamera &&
@@ -313,13 +324,14 @@
 		});
 		return () => cancelAnimationFrame(frame);
 	});
+	// A plain wheel zooms the scene (sceneZoom); a wheel turned while Ctrl or Cmd is held steps through the characters
+	// anywhere on this screen, instead of zooming the page.
 	function wheel(e: WheelEvent) {
 		if (
 			experience.screen !== 'characters' ||
 			list.length < 2 ||
 			ui.sheet ||
-			e.ctrlKey ||
-			e.metaKey ||
+			!modifiedWheel(e) ||
 			e.altKey ||
 			e.shiftKey ||
 			document.querySelector(':popover-open')
@@ -328,11 +340,6 @@
 			return;
 		}
 		if (!e.deltaY || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-			resetWheel();
-			return;
-		}
-		// A list that can scroll keeps the wheel, even at its end, so reaching the end never switches the character.
-		if (insideScrollView(e.target)) {
 			resetWheel();
 			return;
 		}
@@ -356,14 +363,6 @@
 		wheelTargetDirection = Math.sign(distance);
 		wheelTarget = list[(start + distance + list.length) % list.length].id;
 		if (customizeRequested) customizeRequested = wheelTarget;
-	}
-	function insideScrollView(target: EventTarget | null) {
-		for (let el = target instanceof Element ? target : null; el; el = el.parentElement) {
-			const { overflowY } = getComputedStyle(el);
-			if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight)
-				return true;
-		}
-		return false;
 	}
 	function panel(id: typeof ui.tab) {
 		document
@@ -472,7 +471,8 @@
 						return !ui.sheet;
 					},
 					onchange: changeZoom,
-					wheel: 'modified'
+					onswipe: next,
+					modifiedWheel: 'pass'
 				})}
 			data-scene-zoom={selectionCamera.value}
 			data-scene-min={selectionCamera.min}
@@ -520,14 +520,16 @@
 						</div>{/if}
 				</div>{:else}<p class="empty-cast">No matching characters</p>{/if}
 		</div>
-		<div class="scene-zoom-controls">
-			<ZoomControls
-				value={selectionCamera.value}
-				min={selectionCamera.min}
-				max={selectionCamera.max}
-				onchange={changeZoom}
-			/>
-		</div>
+		{#if zoomed(selectionCamera)}
+			<div class="scene-zoom-controls">
+				<ZoomControls
+					value={selectionCamera.value}
+					min={selectionCamera.min}
+					max={selectionCamera.max}
+					onchange={changeZoom}
+				/>
+			</div>
+		{/if}
 		<aside class="cast-library" aria-label="Your characters">
 			<div class="cast-search">
 				<input
@@ -572,7 +574,7 @@
 		<div class="experience-stage">
 			<WorldStage playbackHeight={previewHeight} bind:missing />
 		</div>
-		{#if experience.mode === 'preview' && activeCamera}
+		{#if experience.mode === 'preview' && activeCamera && zoomed(activeCamera)}
 			<div class="scene-zoom-controls">
 				<ZoomControls
 					value={activeCamera.value}

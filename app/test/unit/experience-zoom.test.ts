@@ -3,7 +3,13 @@ import { worldArt } from '../../src/studio/experience/config.ts';
 import { castPose } from '../../src/studio/experience/carousel.ts';
 import { heroRoom, heroScale, layout, placeWorld } from '../../src/studio/experience/geometry.ts';
 import { planLineup } from '../../src/studio/experience/lineup.ts';
-import { sceneArtFits, sceneCamera, zoomBox, zoomPoint } from '../../src/studio/experience/zoom.ts';
+import {
+	CHARACTER_ZOOM_MIN,
+	sceneArtFits,
+	sceneCamera,
+	zoomBox,
+	zoomPoint
+} from '../../src/studio/experience/zoom.ts';
 
 const anchor = { x: 400, y: 400 };
 const backdrop = { x: -200, y: -200, scale: 1, eye: 200, coverBottom: 600, centered: true };
@@ -122,18 +128,25 @@ describe('finite scene camera', () => {
 		expect(zoomBox(options.art[0], anchor, 1)).toEqual(options.art[0]);
 	});
 
-	test('derives the lower limit from the tightest plate margin', () => {
+	test('stops the background at the tightest plate margin while characters shrink to their minimum', () => {
 		const camera = sceneCamera({ ...options, value: 0.1 });
-		expect(camera.min).toBeCloseTo(2 / 3);
+		expect(camera.min).toBe(CHARACTER_ZOOM_MIN);
 		expect(camera.value).toBe(camera.min);
+		expect(camera.backdrop.scale).toBeCloseTo((backdrop.scale * 2) / 3);
 		expect(camera.backdrop.x).toBeCloseTo(0);
 		expect(camera.backdrop.y).toBeCloseTo(0);
+		// Both zoom together down to the background's limit.
+		const together = sceneCamera({ ...options, value: 0.8 });
+		expect(together.backdrop.scale).toBeCloseTo(backdrop.scale * 0.8);
 	});
 
-	test('a plate already touching an edge prohibits zooming out', () => {
-		const camera = sceneCamera({ ...options, backdrop: { ...backdrop, x: 0 }, value: 0.5 });
-		expect(camera.min).toBe(1);
-		expect(camera.value).toBe(1);
+	test('a plate already touching an edge keeps the background at fit while characters still zoom out', () => {
+		const camera = sceneCamera({ ...options, backdrop: { ...backdrop, x: 0 }, value: 0.1 });
+		expect(camera.min).toBe(CHARACTER_ZOOM_MIN);
+		expect(camera.value).toBe(CHARACTER_ZOOM_MIN);
+		expect(camera.backdrop).toEqual({ ...backdrop, x: 0 });
+		// The characters' grounded anchor never moves, so their feet stay on the unchanged floor.
+		expect(zoomPoint(anchor, anchor, camera.value)).toEqual(anchor);
 	});
 
 	test('fits selected actor and ring bounds, not the decorative reflection', () => {
@@ -222,7 +235,7 @@ describe('finite scene camera', () => {
 						viewport: { l: 0, t: 0, r: width, b: base.coverBottom }
 					});
 					const result = camera.backdrop;
-					expect(camera.min).toBeGreaterThan(0);
+					expect(camera.min).toBe(CHARACTER_ZOOM_MIN);
 					expect(camera.min).toBeLessThanOrEqual(1);
 					expect(result.x).toBeLessThanOrEqual(1e-9);
 					expect(result.y).toBeLessThanOrEqual(1e-9);

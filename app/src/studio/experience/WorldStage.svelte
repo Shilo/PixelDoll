@@ -845,7 +845,7 @@
 			onchange: (value) => {
 				experience.sceneZoom = value;
 			},
-			wheel: 'plain'
+			modifiedWheel: 'zoom'
 		})}
 	id="world-stage"
 	bind:this={host}

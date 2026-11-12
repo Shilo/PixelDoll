@@ -5,6 +5,9 @@ export interface ScenePoint {
 	y: number;
 }
 
+/** Characters shrink to half their automatic fit at most: smaller sprites lose too much detail to dress. */
+export const CHARACTER_ZOOM_MIN = 0.5;
+
 export interface SceneCamera {
 	value: number;
 	min: number;
@@ -77,24 +80,28 @@ export function sceneCamera(options: {
 				maximum = Math.min(maximum, (clearance[high] - pivot) / (box[high] - pivot));
 		}
 	}
-	const min = Math.max(Number.EPSILON, Math.min(1, minimum));
+	// The finite background plate stops zooming out where it would expose an edge; past that only the characters (with
+	// their floor rings and hit regions) keep shrinking around the grounded anchor, so their feet stay on the floor.
+	const backdropMin = Math.max(Number.EPSILON, Math.min(1, minimum));
+	const min = Math.min(backdropMin, CHARACTER_ZOOM_MIN);
 	const max = Math.max(1, maximum);
 	const value = Math.max(min, Math.min(max, Number.isFinite(options.value) ? options.value : 1));
-	const position = zoomPoint(backdrop, anchor, value);
+	const shown = Math.max(value, backdropMin);
+	const position = zoomPoint(backdrop, anchor, shown);
 	return {
 		value,
 		min,
 		max,
 		anchor,
 		backdrop:
-			value === 1
+			shown === 1
 				? backdrop
 				: {
 						...backdrop,
 						x: position.x,
 						y: position.y,
-						scale: backdrop.scale * value,
-						eye: anchor.y + (backdrop.eye - anchor.y) * value
+						scale: backdrop.scale * shown,
+						eye: anchor.y + (backdrop.eye - anchor.y) * shown
 					}
 	};
 }

@@ -5,15 +5,43 @@ export interface SceneZoomOptions {
 	readonly min: number;
 	readonly max: number;
 	readonly enabled: boolean;
-	wheel: 'modified' | 'plain';
+	/** What a wheel turned while Ctrl or Cmd is held does: zoom too, or pass to the screen (Characters navigates). */
+	modifiedWheel: 'zoom' | 'pass';
 	onchange: (value: number) => void;
+	/** A one-finger horizontal swipe: 1 toward the next item (finger moving left), -1 toward the previous. */
+	onswipe?: (direction: 1 | -1) => void;
 }
+
+// Trackpad pinches reach the page as wheel events with ctrlKey set, but no Control key press; tracking the real key
+// tells a pinch (always zoom) from a wheel turned while Control is held.
+let controlHeld = false;
+let tracking = 0;
+const trackControl = (event: KeyboardEvent) => {
+	controlHeld = event.ctrlKey;
+};
+const releaseControl = () => {
+	controlHeld = false;
+};
+
+/** A wheel turned while the person holds Ctrl or Cmd, as opposed to a plain wheel or a trackpad pinch. */
+export function modifiedWheel(event: WheelEvent): boolean {
+	return event.metaKey || (event.ctrlKey && controlHeld);
+}
+
+/** A swipe travels this far horizontally, mostly sideways, to count. */
+const SWIPE = { distance: 48, ratio: 1.5 };
 
 export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => void {
 	const touches = new Map<number, { x: number; y: number }>();
 	let distance = 0;
 	let pinching = false;
 	let suppressClick = false;
+	let swipe: { id: number; x: number; y: number } | null = null;
+	if (!tracking++) {
+		window.addEventListener('keydown', trackControl, true);
+		window.addEventListener('keyup', trackControl, true);
+		window.addEventListener('blur', releaseControl);
+	}
 	const available = () => options.enabled && !document.querySelector('[popover]:popover-open');
 	const change = (value: number) => {
 		if (Number.isFinite(value))
@@ -33,6 +61,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 		touches.clear();
 		distance = 0;
 		pinching = false;
+		swipe = null;
 		for (const pointerId of held)
 			if (node.hasPointerCapture(pointerId)) node.releasePointerCapture(pointerId);
 	};
@@ -46,6 +75,21 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 		if (node.hasPointerCapture(event.pointerId)) node.releasePointerCapture(event.pointerId);
 		distance = span();
 		if (!touches.size) pinching = false;
+		if (swipe?.id !== event.pointerId) return;
+		const dx = event.clientX - swipe.x,
+			dy = event.clientY - swipe.y;
+		swipe = null;
+		if (
+			event.type !== 'pointerup' ||
+			!options.onswipe ||
+			!available() ||
+			Math.abs(dx) < SWIPE.distance ||
+			Math.abs(dx) < Math.abs(dy) * SWIPE.ratio
+		)
+			return;
+		// The lifted finger must not also tap the character it started on.
+		suppressClick = true;
+		options.onswipe(dx < 0 ? 1 : -1);
 	}
 	const cleanups = [
 		on(
@@ -57,7 +101,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 					editable(event.target) ||
 					event.altKey ||
 					event.shiftKey ||
-					(options.wheel === 'modified' && !event.ctrlKey && !event.metaKey) ||
+					(options.modifiedWheel === 'pass' && modifiedWheel(event)) ||
 					!event.deltaY ||
 					Math.abs(event.deltaX) > Math.abs(event.deltaY)
 				)
@@ -98,7 +142,11 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 				}
 				if (event.pointerType !== 'touch') return;
 				touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
-				if (touches.size < 2) return;
+				if (touches.size < 2) {
+					swipe = { id: event.pointerId, x: event.clientX, y: event.clientY };
+					return;
+				}
+				swipe = null;
 				event.preventDefault();
 				event.stopImmediatePropagation();
 				suppressClick = pinching = true;
@@ -154,5 +202,11 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 	return () => {
 		for (const cleanup of cleanups) cleanup();
 		clear();
+		if (!--tracking) {
+			window.removeEventListener('keydown', trackControl, true);
+			window.removeEventListener('keyup', trackControl, true);
+			window.removeEventListener('blur', releaseControl);
+			controlHeld = false;
+		}
 	};
 }

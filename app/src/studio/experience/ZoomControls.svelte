@@ -18,7 +18,7 @@
 	class="scene-zoom bu-floating"
 	role="group"
 	aria-label="Scene zoom"
-	title="Pinch or Ctrl/Cmd+wheel to zoom. Focus the scene for +, -, and 0. Middle-click resets."
+	title="Wheel or pinch to zoom. Focus the scene for +, -, and 0. Middle-click resets."
 >
 	<span class="sr" id={description}>{Math.round(value * 100)}% of automatic fit</span>
 	<button
