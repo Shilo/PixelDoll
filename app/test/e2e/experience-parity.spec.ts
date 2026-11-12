@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { equipmentGroup, equipmentMode } from './immersive-helpers.ts';
 import { layout } from '../../src/studio/experience/geometry.ts';
 import { focalSlot, pickFacings } from '../../src/studio/experience/lineup.ts';
-import type { DirectionName } from '../../src/lib/rig/rig.ts';
+import { DIRECTIONS, type DirectionName } from '../../src/lib/rig/rig.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
@@ -529,6 +529,7 @@ test('Moves preserves paused Preview and Side-scroller enters using an authored 
 	await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
 	await page.getByRole('button', { name: 'Face north', exact: true }).click();
 	await expect(world(page)).toHaveAttribute('data-presentation', 'still');
+	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
 	await expect(page.getByRole('combobox', { name: 'Move', exact: true })).toHaveValue(
 		'cross-punch'
 	);
@@ -540,6 +541,8 @@ test('Moves preserves paused Preview and Side-scroller enters using an authored 
 		'aria-pressed',
 		'true'
 	);
+	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
+	await page.getByRole('button', { name: 'Face south', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
 });
 
@@ -597,12 +600,20 @@ test('imported move names remain readable, distinct and contained in Preview and
 		'Right punch (right-punch)',
 		longLabel
 	]);
+	await expect(move).toHaveValue('default');
+	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
+	const inspectAction = page
+		.getByRole('toolbar', { name: 'Preview controls', exact: true })
+		.getByRole('button', { name: 'Inspect', exact: true });
+	await expect(inspectAction).toHaveText('');
+	await expect(inspectAction).toHaveAttribute('title', 'Inspect');
 	await move.selectOption('right_punch');
 	await expect(move).toHaveValue('right_punch');
 	await move.selectOption('right-punch');
 	await expect(move).toHaveValue('right-punch');
 	await move.selectOption(longId);
 	await expect(move).toHaveAttribute('title', longLabel);
+	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
 	const sizes = [
 		{ width: 1440, height: 900 },
 		{ width: 900, height: 820 },
@@ -1247,6 +1258,220 @@ test.describe('Preview facing lineup', () => {
 	// The dev server serves the app's modules, so a check can give the demo character any set of directions.
 	test.use({ baseURL: `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}` });
 
+	test('wrapped Preview controls reserve their actual height above the panel', async ({ page }) => {
+		await customize(page);
+		await pause(page);
+		await page.evaluate(async (directions) => {
+			const path = '/src/studio/state.svelte.ts';
+			const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			const m = s.store.project!.manifest;
+			const body = m.items.find((item) => item.id === m.rig.baseItem)!;
+			m.items = [body];
+			m.rig.directions = directions.map((id) => ({ id }));
+			for (const layer of body.layers)
+				for (const cells of Object.values(layer.cells ?? {}))
+					for (const direction of directions) cells[direction] = cells.south;
+			s.doc.items = {};
+			s.store.project = { ...s.store.project!, manifest: { ...m } };
+			s.doc.rev++;
+		}, DIRECTIONS);
+		const heights = new Set<number>();
+		for (const theme of ['dark', 'light'] as const) {
+			await page.evaluate(async (theme) => {
+				const path = '/src/studio/state.svelte.ts';
+				(await import(path)).ui.theme = theme;
+			}, theme);
+			for (const [width, height] of [
+				[500, 700],
+				[444, 700],
+				[1000, 700],
+				[500, 400],
+				[320, 400],
+				[390, 844],
+				[844, 390],
+				[1920, 1080],
+				[500, 700]
+			]) {
+				await page.setViewportSize({ width, height });
+				await expect(page.locator('.world-actors')).toHaveJSProperty('width', width);
+				const controls = page.getByRole('toolbar', { name: 'Preview controls' });
+				await expect
+					.poll(
+						async () => {
+							const bar = (await controls.boundingBox())!;
+							const top = await page
+								.locator('.experience')
+								.evaluate((element) =>
+									Number.parseFloat(getComputedStyle(element).getPropertyValue('--playback-top'))
+								);
+							return Math.abs(top - bar.y);
+						},
+						{ message: `${theme} ${width}×${height}: geometry tracks the wrapped toolbar` }
+					)
+					.toBeLessThanOrEqual(1);
+				const bar = (await controls.boundingBox())!;
+				heights.add(Math.round(bar.height));
+				const bottom = await page.locator('.world-actors').evaluate((canvas: HTMLCanvasElement) => {
+					const data = canvas
+						.getContext('2d')!
+						.getImageData(0, 0, canvas.width, canvas.height).data;
+					let bottom = 0;
+					for (let offset = 3; offset < data.length; offset += 4)
+						if (data[offset] > 128)
+							bottom = Math.max(bottom, Math.floor(offset / 4 / canvas.width) + 1);
+					return bottom / (canvas.width / innerWidth);
+				});
+				expect(
+					bottom,
+					`${theme} ${width}×${height}: characters and rings clear controls`
+				).toBeLessThanOrEqual(bar.y - 8);
+				const panel = await page.locator('.equipment-rail').boundingBox();
+				if (panel && panel.width > width / 2)
+					expect(
+						bar.y + bar.height,
+						`${theme} ${width}×${height}: controls clear the sheet`
+					).toBeLessThanOrEqual(panel.y - 8);
+				for (const box of await controls
+					.getByRole('button')
+					.evaluateAll((buttons) =>
+						buttons
+							.filter((button) => button.getClientRects().length)
+							.map((button) => button.getBoundingClientRect().toJSON())
+					)) {
+					expect(box.width).toBeGreaterThanOrEqual(44);
+					expect(box.height).toBeGreaterThanOrEqual(44);
+				}
+			}
+		}
+		expect([...heights].some((height) => height >= 100)).toBe(true);
+		expect([...heights].some((height) => height >= 146)).toBe(true);
+		expect(heights.has(54)).toBe(true);
+		const views = page.getByRole('group', { name: 'Character view', exact: true });
+		for (const mode of ['Top-down', 'Side-scroller', 'Preview']) {
+			await views.getByRole('button', { name: mode, exact: true }).click();
+			const expected =
+				mode === 'Preview'
+					? (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!.height
+					: 54;
+			await expect
+				.poll(() =>
+					page
+						.locator('.experience')
+						.evaluate((element) =>
+							Number.parseFloat(getComputedStyle(element).getPropertyValue('--playback-height'))
+						)
+				)
+				.toBe(expected);
+		}
+	});
+
+	test('grounds offset body art on the selected ring in every direction', async ({ page }) => {
+		await page.setViewportSize({ width: 1920, height: 1080 });
+		await customize(page);
+		await pause(page);
+		const directions = [
+			'south',
+			'south-east',
+			'east',
+			'north-east',
+			'north',
+			'north-west',
+			'west',
+			'south-west'
+		] as const;
+		await page.evaluate(async (directions) => {
+			const path = '/src/studio/state.svelte.ts';
+			const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			const project = s.store.project!,
+				m = project.manifest;
+			const body = m.items.find((item) => item.id === m.rig.baseItem)!;
+			m.items = [body];
+			m.rig.cell = { w: 64, h: 64 };
+			m.rig.pivot = { x: 32, y: 56 };
+			m.rig.rest = undefined;
+			m.rig.directions = directions.map((id) => ({ id }));
+			m.rig.animations = [
+				{ ...m.rig.animations[0], id: 'walk', cells: 1, frames: [{ cell: 0, ms: 400 }] }
+			];
+			body.regions = undefined;
+			body.materials = [];
+			body.layers = [{ id: 'main', role: 'fg', z: 0, cells: { walk: {} } }];
+			for (const [index, direction] of directions.entries()) {
+				const hash = `sha256:offset-${direction}` as const;
+				const data = new Uint8ClampedArray(64 * 64 * 4);
+				const left = 5 + index * 5,
+					bottom = 44 + index * 2;
+				for (let row = bottom - 32; row < bottom; row++)
+					for (let column = left; column < left + 12; column++)
+						data.set([31 + index * 20, 47, 233, 255], (row * 64 + column) * 4);
+				project.images.set(hash, { w: 64, h: 64, data });
+				body.layers[0].cells!.walk[direction] = [hash];
+			}
+			s.doc.items = {};
+			s.ui.anim = 'walk';
+			s.ui.dir = 'south';
+			s.ui.frame = 0;
+			s.doc.rev++;
+			const ellipse = CanvasRenderingContext2D.prototype.ellipse;
+			CanvasRenderingContext2D.prototype.ellipse = function (...args) {
+				if (
+					this.canvas.classList.contains('world-actors') &&
+					Math.abs(this.globalAlpha - 0.85) < 0.01
+				)
+					this.canvas.dataset.groundRing = JSON.stringify({
+						x: args[0],
+						y: args[1],
+						direction: s.ui.dir
+					});
+				return ellipse.apply(this, args);
+			};
+		}, directions);
+		for (const [index, direction] of directions.entries()) {
+			await page.evaluate(async (direction) => {
+				const path = '/src/studio/state.svelte.ts';
+				(await import(path)).ui.dir = direction;
+			}, direction);
+			await expect(world(page)).toHaveAttribute('data-facing', direction);
+			await expect
+				.poll(
+					() =>
+						page.locator('.world-actors').evaluate((canvas: HTMLCanvasElement, index) => {
+							const ring = JSON.parse(canvas.dataset.groundRing ?? 'null');
+							const pixels = canvas
+								.getContext('2d')!
+								.getImageData(0, 0, canvas.width, canvas.height).data;
+							let left = Infinity,
+								right = -Infinity,
+								bottom = -Infinity;
+							for (let offset = 0; offset < pixels.length; offset += 4) {
+								if (
+									pixels[offset] !== 31 + index * 20 ||
+									pixels[offset + 1] !== 47 ||
+									pixels[offset + 2] !== 233 ||
+									pixels[offset + 3] !== 255
+								)
+									continue;
+								const column = (offset / 4) % canvas.width,
+									row = Math.floor(offset / 4 / canvas.width);
+								left = Math.min(left, column);
+								right = Math.max(right, column + 1);
+								bottom = Math.max(bottom, row + 1);
+							}
+							const density = canvas.width / innerWidth;
+							return (
+								ring &&
+								ring.direction ===
+									document.querySelector('.world-stage')?.getAttribute('data-facing') &&
+								Math.abs((left + right) / 2 / density - ring.x) <= 1 &&
+								Math.abs(bottom / density - ring.y) <= 1
+							);
+						}, index),
+					{ message: `${direction}: body center and feet meet the ring` }
+				)
+				.toBe(true);
+		}
+	});
+
 	test('renders synchronized companions, selects them, and reports incomplete gear', async ({
 		page
 	}) => {
@@ -1476,12 +1701,31 @@ test.describe('Preview facing lineup', () => {
 							for (const [direction, from] of Object.entries(drawn))
 								directions[direction] ??= directions[from];
 				m.rig.directions = rig.map(([id, mirrorOf]) => (mirrorOf ? { id, mirrorOf } : { id }));
+				s.store.project = { ...s.store.project!, manifest: { ...m } };
 				s.ui.dir = rig[0][0];
 				s.doc.rev++;
 			}, rig);
+			await expect(
+				page.getByRole('group', { name: 'Direction', exact: true }).getByRole('button')
+			).toHaveCount(available.length);
 			const counts = new Map<string, number>();
+			await page.evaluate(() => {
+				const ellipse = CanvasRenderingContext2D.prototype.ellipse;
+				CanvasRenderingContext2D.prototype.ellipse = function (...args) {
+					if (
+						this.canvas.classList.contains('world-actors') &&
+						Math.abs(this.globalAlpha - 0.85) < 0.01
+					) {
+						this.canvas.dataset.targetX = String(args[0]);
+						this.canvas.dataset.targetDirection =
+							document.querySelector('.world-stage')?.getAttribute('data-facing') ?? '';
+					}
+					return ellipse.apply(this, args);
+				};
+			});
 			for (const [width, height] of sizes) {
 				await page.setViewportSize({ width, height });
+				const targets = new Map<number, number>();
 				for (const selected of available) {
 					await page.evaluate(async (dir) => {
 						const path = '/src/studio/state.svelte.ts';
@@ -1497,6 +1741,22 @@ test.describe('Preview facing lineup', () => {
 					const label = `${name} at ${width}×${height}, ${selected} selected`;
 					expect(shown, label).toEqual(pickFacings(available, selected, shown.length));
 					expect(shown.indexOf(selected), label).toBe(focalSlot(shown.length));
+					if (shown.length > 1) {
+						const canvas = page.locator('.world-actors');
+						await expect(canvas).toHaveAttribute('data-target-direction', selected);
+						const target = Number(await canvas.getAttribute('data-target-x'));
+						const controls = await page
+							.getByRole('toolbar', { name: 'Preview controls' })
+							.boundingBox();
+						if (shown.length % 2)
+							expect(
+								Math.abs(target - controls!.x - controls!.width / 2),
+								label
+							).toBeLessThanOrEqual(1);
+						else expect(target, label).toBeLessThan(controls!.x + controls!.width / 2);
+						if (targets.has(shown.length)) expect(target, label).toBe(targets.get(shown.length));
+						else targets.set(shown.length, target);
+					}
 					counts.set(
 						`${width}×${height}`,
 						Math.max(counts.get(`${width}×${height}`) ?? 0, shown.length)

@@ -7,7 +7,7 @@
 	import { EYE, heroRoom, layout, placeWorld } from './geometry.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
-	import { paintedFrame, reachFrame, actorScale } from './bounds.ts';
+	import { paintedFrame, reachFrame, actorScale, previewBounds } from './bounds.ts';
 	import { planLineup } from './lineup.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
@@ -34,8 +34,12 @@
 		type Vector
 	} from './movement.ts';
 	let {
-		missing = $bindable(null)
-	}: { missing: { clip: string; direction: DirectionName; items: Item[] } | null } = $props();
+		missing = $bindable(null),
+		playbackHeight = 0
+	}: {
+		missing: { clip: string; direction: DirectionName; items: Item[] } | null;
+		playbackHeight?: number;
+	} = $props();
 	let host: HTMLDivElement,
 		canvas: HTMLCanvasElement,
 		floor: HTMLCanvasElement,
@@ -50,24 +54,32 @@
 		void doc.rev;
 		return view.project ? buildPresentation(view.project, { loading: doc.loading }) : null;
 	});
+	const grounding = $derived.by(() => {
+		void doc.rev;
+		return view.project && experience.mode === 'preview' ? previewBounds(view.project) : null;
+	});
 	// Scale and camera follow the bare base body only, so equipping a tall hat or a long weapon never resizes the character.
 	const fitFrame = $derived.by(() => {
 		void doc.rev;
 		const p = view.project;
-		return p ? paintedFrame(p, {}) : null;
+		return grounding?.body ?? (p ? paintedFrame(p, {}) : null);
 	});
 	// How far any of the character's gear can reach: Preview's lineup sizes and spaces its facings by it.
 	const reach = $derived.by(() => {
 		void doc.rev;
 		const p = view.project;
-		return p ? reachFrame(p) : null;
+		return grounding?.reach ?? (p ? reachFrame(p) : null);
 	});
-	// Each facing's own reach packs the lineup tightly and bounds its click target.
+	// Each facing's own reach bounds its click target.
 	const facingReach = $derived.by(() => {
 		void doc.rev;
 		const p = view.project;
 		return new Map(
-			p ? (availability?.directions ?? []).map((d) => [d, reachFrame(p, d)] as const) : []
+			p
+				? (availability?.directions ?? []).map(
+						(d) => [d, grounding?.facings.get(d)?.reach ?? reachFrame(p, d)] as const
+					)
+				: []
 		);
 	});
 	// Facings that can stand beside the selected one: they play the same move the same way (all animated, or all
@@ -355,7 +367,7 @@
 			g.clearRect(0, 0, width, height);
 			g.imageSmoothingEnabled = false;
 			// The feet sit just above the playback bar in every view; only a Preview lineup lifts them to clear its ring.
-			const place = layout(width, height, 'studio');
+			const place = layout(width, height, 'studio', playbackHeight);
 			const anchor = { x: place.feet.x, y: place.feet.y };
 			const room = heroRoom(place);
 			const live = experience.mode !== 'preview';
@@ -367,7 +379,6 @@
 							selected: ui.dir,
 							body: fitFrame,
 							reach: reach ?? fitFrame,
-							facing: (d) => facingReach.get(d) ?? reach ?? fitFrame,
 							room,
 							width: place.stage.r - place.stage.l,
 							dpr
@@ -571,8 +582,10 @@
 					// The selected facing keeps its reflection; the others stand beside it, sharing its move, frame and floor.
 					const facings = row?.facings ?? [ui.dir],
 						at = (d: DirectionName) => point.x + (row?.offsets[facings.indexOf(d)] ?? 0);
-					const x = snap(at(ui.dir) - frame.x * scale),
-						y = snap(point.y - frame.y * scale);
+					const origin = (d: DirectionName) => grounding?.facings.get(d),
+						selectedOrigin = origin(p.direction ?? ui.dir);
+					const x = snap(at(ui.dir) - (frame.x + (selectedOrigin?.x ?? 0)) * scale),
+						y = snap(point.y - (frame.y + (selectedOrigin?.y ?? 0)) * scale);
 					picks = live
 						? []
 						: facings.map((direction) => {
@@ -616,8 +629,8 @@
 						if (other)
 							g.drawImage(
 								other,
-								snap(at(d) - frame.x * scale),
-								y,
+								snap(at(d) - (frame.x + (origin(d)?.x ?? 0)) * scale),
+								snap(point.y - (frame.y + (origin(d)?.y ?? 0)) * scale),
 								other.width * scale,
 								other.height * scale
 							);
@@ -627,7 +640,13 @@
 						g.globalAlpha = REFLECTION.opacity;
 						g.translate(0, snap(point.y));
 						g.scale(1, -REFLECTION.compression);
-						g.drawImage(reflected, x, -frame.y * scale, img.w * scale, img.h * scale);
+						g.drawImage(
+							reflected,
+							x,
+							-(frame.y + (selectedOrigin?.y ?? 0)) * scale,
+							img.w * scale,
+							img.h * scale
+						);
 						g.restore();
 					}
 					g.drawImage(source, x, y, img.w * scale, img.h * scale);

@@ -110,6 +110,25 @@ describe('lineup fitting', () => {
 		room = { above: 56 * 14 + 5, side: 433, below: 200 },
 		four = preset('four');
 
+	test('the target stays at the same slot across every facing, centered in odd rows', () => {
+		for (const reach of [body, { ...body, w: 90, x: 70 }])
+			for (const width of [200, 700, 1396, 2400, 3440]) {
+				const rows = preset('eight').map((selected) =>
+					planLineup({ available: preset('eight'), selected, body, reach, room, width })
+				);
+				for (const row of rows) {
+					expect(row.offsets).toEqual(rows[0].offsets);
+					expect(row.scale).toBe(rows[0].scale);
+					if (row.facings.length % 2) expect(row.offsets[focalSlot(row.facings.length)]).toBe(0);
+					if (row.facings.length === 1) continue;
+					for (const offset of row.offsets) {
+						expect(offset - reach.x * row.scale).toBeGreaterThanOrEqual(-width / 2 + 16);
+						expect(offset + (reach.w - reach.x) * row.scale).toBeLessThanOrEqual(width / 2 - 16);
+					}
+				}
+			}
+	});
+
 	test('a wide stage shows three equal facings at a smaller whole-pixel scale', () => {
 		const row = planLineup({
 			available: four,
@@ -174,8 +193,7 @@ describe('lineup fitting', () => {
 		for (let i = 1; i < row.offsets.length; i++) expect(left[i]).toBeGreaterThan(right[i - 1]);
 		expect(left[0]).toBeGreaterThanOrEqual(-1396 / 2 + 16);
 		expect(right.at(-1)!).toBeLessThanOrEqual(1396 / 2 - 16);
-		// The row's reach, not its pivots, is centered.
-		expect(Math.abs(left[0] + right.at(-1)!)).toBeLessThanOrEqual(1);
+		expect(row.offsets[focalSlot(row.facings.length)]).toBe(0);
 	});
 
 	test("a lineup never drops below half the single facing's scale", () => {
@@ -203,29 +221,25 @@ describe('lineup fitting', () => {
 		expect(row).toEqual({ facings: ['south'], scale: 2, offsets: [0] });
 	});
 
-	test('facings pack by their own reach, one gap apart, near the stage center', () => {
+	test('fixed slots reserve the shared reach and one gap for every facing', () => {
 		const reach = { w: 56, h: 64, x: 28, y: 56 },
-			narrow = { w: 36, h: 64, x: 18, y: 56 },
-			spread = planLineup({ available: four, selected: 'south', body, reach, room, width: 1396 }),
 			packed = planLineup({
 				available: four,
 				selected: 'south',
 				body,
 				reach,
-				facing: () => narrow,
 				room,
 				width: 1396
 			});
-		// Same count and scale as before; only the spacing tightens.
-		expect(packed.facings).toEqual(spread.facings);
-		expect(packed.scale).toBe(spread.scale);
+		expect(packed.facings).toEqual(dirs('N S E'));
 		const gap = body.w * 0.25 * packed.scale;
 		for (let i = 1; i < 3; i++) {
 			const between =
-				packed.offsets[i] - narrow.x * packed.scale - (packed.offsets[i - 1] + 18 * packed.scale);
+				packed.offsets[i] -
+				reach.x * packed.scale -
+				(packed.offsets[i - 1] + (reach.w - reach.x) * packed.scale);
 			expect(Math.abs(between - gap)).toBeLessThanOrEqual(1);
 		}
-		expect(packed.offsets[2]).toBeLessThan(spread.offsets[2]);
 		expect(packed.offsets[0]).toBe(-packed.offsets[2]);
 	});
 

@@ -4,6 +4,7 @@ import {
 	hiddenSlots,
 	layerFrame,
 	rigFrame,
+	unionFrame,
 	shownItems,
 	type Frame
 } from '../../lib/compose/compose.ts';
@@ -168,6 +169,42 @@ export function reachFrame(project: Project, direction?: DirectionName): Frame {
 		if (item.id !== m.rig.baseItem)
 			include(paintedFrame(project, { [item.slot]: item.id }, direction));
 	return { w: right - left, h: bottom - top, x: -left, y: -top };
+}
+
+export function previewBounds(project: Project) {
+	const rig = project.manifest.rig;
+	const bodies: Frame[] = [];
+	const facings = new Map<DirectionName, { x: number; y: number; reach: Frame }>();
+	for (const direction of rig.directions) {
+		const body = paintedFrame(project, {}, direction.id);
+		const reference =
+			rig.rest?.[direction.id] ?? (direction.mirrorOf ? rig.rest?.[direction.mirrorOf] : undefined);
+		const image = reference && project.images.get(reference.image);
+		const pixels =
+			image && image.w === rig.cell.w && image.h === rig.cell.h ? paintedPixels(image) : null;
+		const flip = !rig.rest?.[direction.id] && !!direction.mirrorOf;
+		const referenceFrame = pixels
+			? {
+					w: pixels.right - pixels.left,
+					h: pixels.bottom - pixels.top,
+					x: rig.pivot.x - (flip ? rig.cell.w - pixels.right : pixels.left),
+					y: rig.pivot.y - pixels.top
+				}
+			: body;
+		const x = referenceFrame.w / 2 - referenceFrame.x;
+		const y = referenceFrame.h - referenceFrame.y;
+		const reach = unionFrame([reachFrame(project, direction.id), referenceFrame]);
+		facings.set(direction.id, { x, y, reach: { ...reach, x: reach.x + x, y: reach.y + y } });
+		const fitted = unionFrame([body, referenceFrame]);
+		bodies.push({ ...fitted, x: fitted.x + x, y: fitted.y + y });
+	}
+	return {
+		body: bodies.length ? unionFrame(bodies) : paintedFrame(project, {}),
+		reach: facings.size
+			? unionFrame([...facings.values()].map((facing) => facing.reach))
+			: reachFrame(project),
+		facings
+	};
 }
 
 /** Fit the complete pivot-relative frame into the room around the feet: `above` the pivot (the hero's share of

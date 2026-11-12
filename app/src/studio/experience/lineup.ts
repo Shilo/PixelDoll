@@ -73,16 +73,12 @@ export interface Lineup {
 
 /** How many facings fit and at what shared scale. Height fitting uses the bare body (`body`), as for a single
  * facing; widths use `reach`, the room any of the character's items can need (bounds.ts reachFrame), so no outfit
- * crosses a neighbor or the stage edge and equipping gear never resizes the lineup. The row itself is packed by
- * each facing's own reach (`facing`), so neighbors stand a comfortable gap apart near the stage center instead
- * of spreading to its edges. */
+ * crosses a neighbor or the stage edge and equipping gear never resizes the lineup. */
 export function planLineup(options: {
 	available: readonly DirectionName[];
 	selected: DirectionName;
 	body: Frame;
 	reach: Frame;
-	/** One facing's reach (bounds.ts reachFrame with a direction); defaults to `reach`. */
-	facing?: (direction: DirectionName) => Frame;
 	room: { above: number; side: number; below: number };
 	/** Stage width in px. */
 	width: number;
@@ -103,28 +99,18 @@ export function planLineup(options: {
 	const candidates = pickFacings(available, selected, MAX_FACINGS);
 	for (let n = candidates.length; n >= 2; n--) {
 		const gap = body.w * GAP,
-			fit = width / Math.max(1, n * reach.w + (n - 1) * gap),
+			fit =
+				width / Math.max(1, (n - 1) * (reach.w + gap) + 2 * Math.max(reach.x, reach.w - reach.x)),
 			scale = Math.min(single, fit * density < 1 ? fit : Math.floor(fit * density) / density);
 		if (scale < Math.max(MIN_SCALE, MIN_SHARE * single)) continue;
 		const facings = pickFacings(available, selected, n);
-		// Each facing stands one gap past its neighbor's reach; the row's painted extent is centered on the stage.
-		const reaches = facings.map((d) => options.facing?.(d) ?? reach),
-			pivots = [0];
-		for (let i = 1; i < n; i++) {
-			const before = reaches[i - 1],
-				after = reaches[i];
-			pivots.push(pivots[i - 1] + (before.w - before.x + gap + after.x) * scale);
-		}
-		const center =
-			(pivots[0] -
-				reaches[0].x * scale +
-				pivots[n - 1] +
-				(reaches[n - 1].w - reaches[n - 1].x) * scale) /
-			2;
 		return {
 			facings,
 			scale,
-			offsets: pivots.map((p) => Math.round((p - center) * density) / density)
+			offsets: facings.map(
+				(_, index) =>
+					Math.round((index - (n - 1) / 2) * (reach.w + gap) * scale * density) / density
+			)
 		};
 	}
 	return alone;

@@ -72,7 +72,9 @@ const MIN_STAGE = 200;
 /** Room above the feet a phone keeps for the hero: a whole 64 px frame at 2 whole pixels per pixel. */
 const PHONE_HERO = 128;
 
-export function layout(w: number, h: number, screen: Screen): Layout {
+export function layout(w: number, h: number, screen: Screen, measuredPlaybackHeight = 0): Layout {
+	const playbackHeight =
+		screen === 'studio' ? Math.max(PLAYBACK_HEIGHT, measuredPlaybackHeight) : PLAYBACK_HEIGHT;
 	const short = h <= 540,
 		phone = w <= 600;
 	const edge = phone ? 16 : w < 1100 ? 20 : w >= 1920 ? 32 : 24;
@@ -101,6 +103,10 @@ export function layout(w: number, h: number, screen: Screen): Layout {
 			sheetHeight = 0;
 		} else sheetHeight = h - headerBottom - tabs - STAGE_FLOOR >= MIN_SHEET ? MIN_SHEET : 0;
 	}
+	if (studio && sheet && sheetHeight) {
+		const available = h - headerBottom - tabs - STAGE_FLOOR - (playbackHeight - PLAYBACK_HEIGHT);
+		sheetHeight = available >= MIN_SHEET ? Math.min(sheetHeight, available) : 0;
+	}
 	const sheetTop = h - sheetHeight;
 	const railTop = headerBottom + (short ? 4 : 12);
 	const stage: Box = sheet
@@ -108,8 +114,7 @@ export function layout(w: number, h: number, screen: Screen): Layout {
 		: { l: 0, r: Math.max(0, w - edge - rail - GAP), t: headerBottom + tabs, b: h };
 	const stageWidth = stage.r - stage.l,
 		compactPlayback = stageWidth <= COMPACT_STAGE,
-		cycleFacing = stageWidth < CYCLE_STAGE,
-		playbackHeight = PLAYBACK_HEIGHT;
+		cycleFacing = stageWidth < CYCLE_STAGE;
 	// A phone held sideways (short, with the floating view tabs) lowers the bar to the window edge and lets the hero
 	// fill more of the little height left, so it still draws at 2 whole pixels per pixel.
 	const tight = studio && short && !sheet && tabs > 0;
