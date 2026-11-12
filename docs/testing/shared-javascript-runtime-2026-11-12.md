@@ -20,7 +20,7 @@ in Phaser exports. No Phaser renderer was embedded in Studio. See the
   Existing equipment, mask, color, geometry, export and presentation suites continue exercising the
   canonical functions through their former application entry points.
 
-## Final automated results
+## First-iteration automated results
 
 Primary runs use Node 24.22.1. No dependency or test configuration was changed.
 
@@ -170,7 +170,7 @@ Runs use Node 24.22.1 and dedicated test output/port pairs. No paid requests wer
 
 The first Unity harness attempt did not reach compilation: without `ProjectVersion.txt`, the Editor
 expanded the minimal verification project's package list to unrelated defaults and stalled resolving
-them. Only that invocation's verified process tree was stopped. The harness now reads the installed
+them. Only that invocation's verified Editor and package-manager processes were stopped. The harness now reads the installed
 Editor version with `-version` and writes project-version metadata before opening the isolated project.
 The new fresh project retained its five required packages and completed all native assertions. This
 changes test-project setup, not the exported C# implementation or application dependencies.
@@ -188,5 +188,26 @@ The fresh full-demo Phaser ZIP is
 Phaser ZIP is `be6b5cab8b90a8e0913334e35d0f6087fe032e5a80d87f7644b7e06e0ed7fcab`, and the actual UI
 Unity ZIP is `b27a36436ebd2af7e514a8ece600fab2ba25673a215b72ed550a028289e71747`.
 
-No new manual T3 browser session or live generation is claimed for this second iteration. The first
-iteration's manual-browser limitations remain documented; the new browser checks above are automated.
+### Final low-worker and merged checks
+
+Main's generation-tile fix (`4a28fe27`) was integrated as `27a0a72e`. On that tree,
+`npm run check` passed and all 2,283 unit tests passed with Godot enabled and two workers, without
+the earlier fork-termination warnings. A fresh full E2E run then passed **310 of 310 tests** in
+11.4 minutes with two workers and no retries. Its traces and UI ZIPs remain separate in
+`app/test-results-runtime-final-low-usage/`; no earlier failed-run evidence was overwritten.
+
+Before publication, main's wardrobe-scroll fix (`c44a92b4`) was integrated cleanly as `70ce5efe`.
+It changed no runtime, export or schema source. On that merged tree, `npm run check` and all
+2,283 unit tests passed again, followed by all **102 Studio and character E2E tests** in 3.2 minutes
+with two workers. This rerun covers the new upstream loading/reopening behavior and equipment,
+recolor, drafts, review, storage and export interactions. It is targeted merged-state coverage, not
+a claim that the earlier 310-test run included the later upstream commit. Production builds,
+canonical-source synchronization and distribution guards passed in both E2E invocations.
+
+A fresh keyless T3 preview session at localhost:5228 loaded the character-selection page. Read-only
+page evaluation confirmed the Adventurer demo, its customization controls and four canvas elements.
+However, both snapshot attempts returned `Preview automation snapshot timed out after 15000ms`,
+and clicking Customize also timed out without changing the observed page. The tab and owned dev
+server were closed. This is not a successful manual dressing or visual-regression verification;
+the application workflow evidence above comes from Playwright and native-engine automation.
+No live PixelLab generation was needed or performed.
