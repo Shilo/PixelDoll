@@ -122,3 +122,71 @@ Board access initially failed with `approval required by policy, but AskForAppro
 A final retry through the normal CLI succeeded. Tracking was reconciled with the existing
 [dogfooding card](https://github.com/users/Shilo/projects/7/views/1?pane=issue&itemId=301924471),
 rather than creating a duplicate.
+
+## Independent second iteration
+
+The first implementation was committed as `14fa4814`. A new Sol medium delegate independently
+retraced the entire application/runtime/export boundary and implemented three reproducible fixes:
+
+- Phaser now accepts an outfit object or exported ID in `applyPreset`. An unknown ID throws without
+  changing equipment or palettes, matching the other live controllers' ID-based contract.
+- GDevelop's controller embeds and executes the canonical JavaScript for equipment, cover selection,
+  ordering, palettes and timeline sampling, rather than maintaining those rules independently.
+- Aseprite uses canonical palette selection as well as canonical pixel application.
+
+A separate Flash low adversarial review challenged the resulting implementation. Its differential
+GDevelop harness reported 509 scenarios with no old/new behavior differences. The coordinator accepted
+the missing verification and regression-test findings, then added stronger preset state/atomicity
+assertions, a palette mutation control and actual GDevelop execution after canonical regeneration.
+The generator now rejects imports, export lists and default exports that would make native-event
+embedding unsafe. Regression tests edit a copied canonical module, prove the stale-source guard
+fails, regenerate with the real script, and execute the changed internal, Phaser and GDevelop paths.
+
+These fixes were committed as `9d58c764`, then current main was integrated cleanly as `6d4ec497`
+(upstream `65bd8976`) before the final checks. The narrowly scoped AGENTS.md pointer is intentional:
+agents must read the architecture and synchronization workflow before editing shared paper-doll
+behavior, without duplicating that contract in agent instructions.
+
+Source synchronization is explicit, not a dev-server watcher. Format canonical changes and run
+`npm run runtime:sync`; the production prebuild rejects stale transport/types. Godot and Unity remain
+native-language implementations requiring conformance tests. Generic PNG/JSON, Aseprite and RPG Maker
+are asset formats with their documented timing/layout policies, not interchangeable live controllers.
+This does not claim arbitrary host-edited manifests or future engine versions have been verified.
+
+### Integrated verification
+
+Runs use Node 24.22.1 and dedicated test output/port pairs. No paid requests were made.
+
+| Check                                   | Result                                                                                                                                                                                                                                |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run check`                         | Passed again after the native-harness change; zero Svelte errors/warnings, TypeScript and formatting clean.                                                                                                                           |
+| Full units with `GODOT_BIN` set         | 181 files and 2,283 tests passed, zero skips. The final two-worker repeat also passed all assertions, with fork-termination warnings during host memory pressure.                                                                     |
+| First integrated full E2E, four workers | 304 passed, five failed in 18.3 minutes. Original traces and UI ZIPs remain in `app/test-results-runtime-iteration2/`.                                                                                                                |
+| Isolated E2E rerun, one worker          | All five failures passed unchanged in 1.3 minutes: crash recovery, browser-restart export preferences, incomplete PWA release recovery, full Studio workflow and item long-press/export. No assertion or timeout was weakened.        |
+| Native Phaser matrix                    | 72 cases passed: 24 positive runs and 48 detected negative controls, across 3.80.1, 3.90.0 and 4.1.0 in Canvas/WebGL. Compared 2,484 frames and 16,736,256 pixels with the same exact/alpha-rounding contract as the first iteration. |
+| Native GDevelop 5.6.285                 | Fresh official editor-core import, official HTML export and shipped GDJS/PIXI execution passed timing, origins, masks, depth, palettes, independent dolls, stop, unequip and destruction checks.                                      |
+| Native Godot and Aseprite               | Passed through the full unit run, including the enabled Godot 4.7.2 executable and installed Aseprite batch equivalence checks.                                                                                                       |
+| Native Unity 6000.4.0f1                 | Fresh UI Unity ZIP plus timing/render fixtures passed 4,486 Editor Play Mode checks, 15 duration-contract probes, 648 Gamma GPU checks and 648 Linear GPU checks. The optional standalone-player build was not run.                   |
+
+The first Unity harness attempt did not reach compilation: without `ProjectVersion.txt`, the Editor
+expanded the minimal verification project's package list to unrelated defaults and stalled resolving
+them. Only that invocation's verified process tree was stopped. The harness now reads the installed
+Editor version with `-version` and writes project-version metadata before opening the isolated project.
+The new fresh project retained its five required packages and completed all native assertions. This
+changes test-project setup, not the exported C# implementation or application dependencies.
+
+Local evidence:
+
+- `app/test-results-runtime-evidence/phaser-iteration2.json`: exact bundle/archive hashes and all
+  positive/negative-control results, using fresh UI downloads from this iteration.
+- `app/node_modules/.cache/gdevelop-native-verification/`: official export, `result.json` and preview.
+- `app/node_modules/.cache/unity-export-review/shared-runtime-iteration2-versioned/`: source archive
+  identities, native results, 15 duration samples, both GPU reports and Editor logs.
+
+The fresh full-demo Phaser ZIP is
+`73877aadd7f9e776b5e172e58181f77f53e4a06e432d9d08859d314d1e5fa8f0` (SHA-256); the global-playback
+Phaser ZIP is `be6b5cab8b90a8e0913334e35d0f6087fe032e5a80d87f7644b7e06e0ed7fcab`, and the actual UI
+Unity ZIP is `b27a36436ebd2af7e514a8ece600fab2ba25673a215b72ed550a028289e71747`.
+
+No new manual T3 browser session or live generation is claimed for this second iteration. The first
+iteration's manual-browser limitations remain documented; the new browser checks above are automated.
