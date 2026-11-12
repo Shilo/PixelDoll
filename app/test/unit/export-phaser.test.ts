@@ -371,6 +371,26 @@ test('generated Phaser runtime recolors source pixels per owner, resolves linked
 	expect(doll.container.destroy).toHaveBeenCalledOnce();
 });
 
+test('Phaser accepts outfit IDs and rejects unknown outfits without clearing equipment or colors', async () => {
+	const m = fixture(),
+		api = runtime(),
+		h = sceneHarness();
+	browserHarness(m);
+	const loaded = await api.loadPaperdoll(h.scene, '/hero/');
+	const doll = new api.Paperdoll(h.scene, 0, 0, loaded);
+	doll.play('walk', 'south');
+	doll.applyPreset('two');
+	expect(doll.equipped).toEqual({ hair: 'hair', head: null, body: 'base' });
+	expect(doll.variants).toEqual({ skin: 'red' });
+	const before = { items: { ...doll.equipped }, variants: { ...doll.variants } };
+	expect(() => doll.applyPreset('missing')).toThrow('unknown outfit');
+	expect(doll.equipped).toEqual(before.items);
+	expect(doll.variants).toEqual(before.variants);
+	doll.applyPreset(loaded.presets[0]);
+	expect(doll.equipped.head).toBe('hat');
+	expect(doll.variants).toEqual({});
+});
+
 test('generated loader reports HTTP failures and removes partial textures before retry', async () => {
 	const m = fixture(),
 		api = runtime(),

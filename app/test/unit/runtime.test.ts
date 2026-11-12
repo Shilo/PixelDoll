@@ -1,6 +1,8 @@
-import { readFile, readdir, mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { readFile, readdir, mkdtemp, writeFile, rm, cp, mkdir, symlink } from 'node:fs/promises';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import { expect, test } from 'vitest';
 import * as core from '../../src/lib/runtime/paperdoll.js';
@@ -96,6 +98,68 @@ test('the shipped standalone JavaScript contains every canonical source byte-for
 	);
 	expect(typeof module.Paperdoll).toBe('function');
 	expect(typeof module.composeCell).toBe('function');
+});
+
+test('a canonical edit fails the stale guard and regeneration changes internal and delivered behavior together', async () => {
+	const directory = await mkdtemp(join(tmpdir(), 'pixeldoll-runtime-sync-')),
+		app = fileURLToPath(new URL('../../', import.meta.url)),
+		script = join(directory, 'scripts/sync-runtime.mjs');
+	try {
+		await mkdir(join(directory, 'scripts'));
+		await cp(join(app, 'src/lib'), join(directory, 'src/lib'), { recursive: true });
+		for (const name of ['package.json', 'prettier.config.js', 'scripts/sync-runtime.mjs'])
+			await cp(join(app, name), join(directory, name));
+		await symlink(join(app, 'node_modules'), join(directory, 'node_modules'), 'junction');
+		const run = (...args: string[]) =>
+			execFileSync(process.execPath, ['--experimental-transform-types', ...args], {
+				cwd: directory,
+				encoding: 'utf8'
+			});
+		run(script, '--check');
+		const canonical = join(directory, 'src/lib/runtime/timeline.js');
+		const source = await readFile(canonical, 'utf8');
+		for (const unsupported of [
+			"import './colors.js';",
+			'export { timelineDuration as duration };',
+			'export default timelineDuration;'
+		]) {
+			await writeFile(canonical, source + '\n' + unsupported);
+			const rejected = spawnSync(process.execPath, [script, '--check'], {
+				cwd: directory,
+				encoding: 'utf8'
+			});
+			expect(rejected.status).not.toBe(0);
+			expect(rejected.stderr).toContain('runtime embedding requires named declarations');
+		}
+		const mutation = source.replace('total + frame.ms, 0);', 'total + frame.ms, 0) + 100;');
+		expect(mutation).not.toBe(source);
+		await writeFile(canonical, mutation);
+		const stale = spawnSync(process.execPath, [script, '--check'], {
+			cwd: directory,
+			encoding: 'utf8'
+		});
+		expect(stale.status).not.toBe(0);
+		expect(stale.stderr).toContain('Runtime export sources are stale');
+		run(script);
+		run(script, '--check');
+		const result = run(
+			'--input-type=module',
+			'--eval',
+			`const internal = await import(${JSON.stringify(pathToFileURL(canonical).href)});
+const { PAPERDOLL_JS } = await import(${JSON.stringify(pathToFileURL(join(directory, 'src/lib/export/phaser.ts')).href)});
+const { GDEVELOP_RUNTIME } = await import(${JSON.stringify(pathToFileURL(join(directory, 'src/lib/export/gdevelop.ts')).href)});
+const delivered = await import('data:text/javascript;base64,' + Buffer.from(PAPERDOLL_JS).toString('base64'));
+const frames = [{cell: 0, ms: 80}];
+const create = new Function(GDEVELOP_RUNTIME + '\\nreturn createPixelDoll;')();
+const manifest = {rig: {baseItem: 'base', directions: [{id: 'south'}], animations: [{id: 'walk', loop: true, frames: [{cell: 0, ms: 80}, {cell: 1, ms: 80}]}]}, slots: [], items: [], presets: []};
+const doll = create({}, manifest, {});
+doll.update(160);
+console.log(JSON.stringify([internal.timelineDuration(frames), delivered.timelineDuration(frames), doll.cell]));`
+		);
+		expect(JSON.parse(result)).toEqual([180, 180, 1]);
+	} finally {
+		await rm(directory, { recursive: true, force: true });
+	}
 });
 
 test('the delivered JavaScript and its portable types check without application source files', async () => {

@@ -49,6 +49,14 @@ Deliberate boundaries:
   second pixel compositor or equipment resolver.
 - Phaser texture loading, sprite placement and native frame events remain adapter responsibilities.
   `sync()` consumes the same `drawList()` used by internal composition, not a second visibility or z rule.
+- GDevelop's native JavaScript event embeds the canonical modules inside its controller factory, removing
+  only ES module `export` keywords. Its adapter uses `sampleTimeline`, `drawList`, `paletteMap` and
+  `applyPalette`; Sprite resources, origins and renderer textures remain GDevelop-specific.
+  Module-local caches are therefore per-controller in GDevelop. Shared behavior must not depend on
+  cross-controller mutable state; recolor caches are performance-only.
+- Aseprite resolves and applies first-outfit palettes through the canonical color API. Generic and RPG
+  Maker baked frames use the canonical compositor. Godot and Unity retain native-language controllers,
+  so their independent implementations still require native conformance checks rather than source identity.
 
 Add runtime behavior to the canonical JavaScript modules, not the TypeScript facades. Existing
 application entry points preserve caller interfaces; direct canonical imports are appropriate for
@@ -112,9 +120,24 @@ The production prebuild refuses a stale generated transport file. Unit tests com
 module byte-for-byte, verify that the shipped module contains those bytes, import the delivered module
 without Phaser or DOM initialization, and assert internal composition exports are the same functions.
 Do not edit `sources.ts` by hand. Do not add independent paper-doll rules to the Phaser adapter.
+The GDevelop adapter follows the same rule. A regression test edits a copied canonical timeline module,
+proves the stale guard rejects it, runs the real generator, then executes the internal and delivered
+modules and a GDevelop controller to verify all changed together. Separate GDevelop mutation controls
+verify it executes canonical timeline, draw-list and palette decisions, rather than carrying unused text.
+The generator rejects imports, export lists and default exports in canonical modules. Keep public
+exports on named declarations so the embedded native-event form remains safe to generate.
 
 The same command regenerates `types.d.ts` from the existing TypeScript data contracts. Changes to those
 contracts require resynchronizing the export transport as well. The prebuild checks both generated files.
+This remains an explicit synchronization workflow, not a development-server watcher: after editing a
+canonical module, run the synchronization command before testing an export from an already-running dev server.
+
+Phaser and GDevelop accept either an outfit object or its exported ID in `applyPreset`. Unknown IDs
+throw without changing equipment or colors. Godot's `set_preset` and Unity's `ApplyPreset` use IDs.
+Native controllers can change equipment and exact stored palettes at runtime. Generic exports are
+PNG/JSON integration assets, Aseprite records the first outfit's visible layers and per-frame timing,
+and RPG Maker deliberately resamples a walk into its fixed step-sheet layout. Those formats do not
+provide a live controller API equivalent to Phaser, Godot, Unity or GDevelop.
 
 See `app/test/unit/runtime.test.ts` for source identity and independent pixel/timeline golden values;
 existing mask, equipment, palette, presentation and export suites cover their established behavior.

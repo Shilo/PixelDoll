@@ -148,6 +148,8 @@ export class Paperdoll {
   }
 
   applyPreset(preset) {
+    if (typeof preset === 'string') preset = this.m.presets.find((entry) => entry.id === preset);
+    if (!preset) throw new Error('PixelDoll: unknown outfit');
     this.equipped = { ...preset.items, body: this.m.rig.baseItem };
     this.setVariants(preset.variants);
   }
@@ -235,7 +237,8 @@ export function phaserFiles(m: Manifest): OutFile[] {
        const doll = new Paperdoll(this, 200, 150, m)
        doll.play(${JSON.stringify(initial?.id ?? 'walk')}, ${JSON.stringify(initial?.directions?.[0] ?? m.rig.directions[0]?.id ?? 'south')})
      }
-Switch outfits with doll.applyPreset(m.presets[1]); recolor with doll.setVariants({ material_id: "stored_variant" }).
+Switch outfits with doll.applyPreset(m.presets[1]) or doll.applyPreset(outfitId); unknown outfit IDs throw without changing the doll.
+Recolor with doll.setVariants({ material_id: "stored_variant" }).
 Palette swaps use exact source RGBs and stored material ramps in Canvas or WebGL.
 paletteMap returns only active source-RGB to target-RGB swaps; unselected colors are omitted.
 This module also exports the engine-neutral paper-doll API used inside PixelDoll itself, including composeCell, drawList, paletteMap and sampleTimeline.

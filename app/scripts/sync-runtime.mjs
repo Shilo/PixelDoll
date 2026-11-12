@@ -24,6 +24,28 @@ const runtimeTypes = await format(
 const sources = {};
 for (const name of (await readdir(directory)).filter((name) => name.endsWith('.js')).sort()) {
 	sources[name] = await readFile(new URL(name, directory), 'utf8');
+	const module = ts.createSourceFile(
+		name,
+		sources[name],
+		ts.ScriptTarget.Latest,
+		true,
+		ts.ScriptKind.JS
+	);
+	if (
+		module.statements.some(
+			(statement) =>
+				ts.isImportDeclaration(statement) ||
+				ts.isExportDeclaration(statement) ||
+				ts.isExportAssignment(statement) ||
+				(ts.canHaveModifiers(statement) &&
+					ts
+						.getModifiers(statement)
+						?.some((modifier) => modifier.kind === ts.SyntaxKind.DefaultKeyword))
+		)
+	)
+		throw new Error(
+			`${name}: runtime embedding requires named declarations without imports, export lists or defaults.`
+		);
 }
 const target = new URL('sources.ts', directory);
 const content = await format(
