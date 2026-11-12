@@ -5,7 +5,7 @@
 </script>
 
 <script lang="ts">
-	import { contextMenu } from './contextMenu.ts';
+	import { contextMenu } from '../lib/input/contextMenu.ts';
 	// One continuous list of every equipment category with sticky headers, and a slot rail that follows and drives it.
 	import { onMount, tick, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -349,16 +349,7 @@
 								{@const on = doc.items[it.slot] === it.id && !doc.drafts[it.slot]}
 								{@const st = statusOf(it)}
 								<!-- The ⋮ is a sibling of the tile, never nested in it; right-click and Shift+F10 open the same menu. -->
-								<div
-									class="tile-wrap"
-									role="none"
-									use:contextMenu={() => {
-										const tile = list?.querySelector<HTMLElement>(
-											`[data-tile="${CSS.escape(it.id)}"]`
-										);
-										if (tile?.parentElement) openMenu(tile.parentElement);
-									}}
-								>
+								<div class="tile-wrap" role="none" {@attach contextMenu(openMenu)}>
 									<button
 										class="bu-tile item-tile"
 										data-selected={ui.selected === it.id || undefined}

@@ -3,7 +3,7 @@
 	import { ui } from './state.svelte.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
 	import { EllipsisVertical, Download, Trash } from './icons.ts';
-	import { contextMenu } from './contextMenu.ts';
+	import { contextMenu } from '../lib/input/contextMenu.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
 	let { id, name, children }: { id: string; name: string; children: Snippet } = $props();
@@ -15,7 +15,7 @@
 	}
 </script>
 
-<div class="character-entry" use:contextMenu={open}>
+<div class="character-entry" {@attach contextMenu(open)}>
 	{@render children()}
 	<button
 		bind:this={more}

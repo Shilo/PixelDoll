@@ -4,6 +4,8 @@ Implemented on `feat/game-experience-rework`, 2026-10-23. This is the production
 
 ## Experience and preserved workflows
 
+Context-menu gestures share the typed attachment in `app/src/lib/input/contextMenu.ts`. Apply `{@attach contextMenu(open)}` to a row or tile wrapper; the callback receives that element, while the caller owns the actual menu. The attachment owns gesture detection, release-click suppression and listener/timer cleanup. Character rows and item tiles use this same API without their own gesture handlers.
+
 Character rows in the library and character picker have a sibling ⋮ control for Download ZIP and Delete character. Right-click, Shift+F10 and touch/pen long-press open the same menu without selecting the character. Deletion remains confirmed and unavailable during pending generation work; the bundled demo cannot be deleted. Item menus also offer Download ZIP. Character downloads preserve the current look and saved outfits; item downloads contain that item and its fitted base body, with current colors and an editable copy. One New character menu offers Create from scratch…, Import from device… and Import from PixelLab… from both the header and a shorter final library row. Import sources open separate dialogs rather than tabs.
 
 Apply [simplicity-first design](../usability-principles.md) to changes in these workflows: keep common tasks direct, reveal necessary secondary options in context, and preserve costs, errors, accessibility and recovery. The guide defines interaction principles; this document retains the workflow and theme ownership contracts.
