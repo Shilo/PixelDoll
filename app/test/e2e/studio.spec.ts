@@ -5349,7 +5349,9 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 
 	// Enter toggles the switch like any menu item.
+	await expect(page.getByRole('dialog', { name: 'New item', exact: true })).toHaveCount(0);
 	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
+	await expectAnchoredMenu(page);
 	const toggle = itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' });
 	await toggle.focus();
 	await page.keyboard.press('Enter');
