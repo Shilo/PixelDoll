@@ -1,6 +1,6 @@
 import { openStudio, openAccount } from './immersive-helpers.ts';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { BASE_BODY } from '../../src/studio/model.ts';
+import { BASE_BODY, UNDERWEAR_BODY } from '../../src/studio/model.ts';
 
 // Real UI and fetch serialization, fake transport. Every create POST is captured then refused before any generation.
 // Direction source plans are inspected separately: the initial V3 POST intentionally generates all eight originals.
@@ -128,6 +128,27 @@ async function plannedCreation(page: Page, sheet: Locator) {
 	).toBe(8);
 	await peek.getByRole('button', { name: 'Close API calls', exact: true }).click();
 }
+
+test('underwear is default and Nude explicitly switches the exact outgoing prompt', async ({
+	page
+}) => {
+	const { sheet, submit } = await setup(page);
+	const nude = sheet.getByRole('switch', { name: 'Nude', exact: true });
+	await expect(nude).not.toBeChecked();
+	expect((await submit()).description).toBe(UNDERWEAR_BODY);
+	await nude.focus();
+	await page.keyboard.press('Space');
+	await expect(nude).toBeChecked();
+	expect((await submit()).description).toBe(BASE_BODY);
+	await nude.uncheck();
+	expect((await submit()).description).toBe(UNDERWEAR_BODY);
+	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
+	await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).fill(BASE_BODY);
+	await sheet.getByRole('tab', { name: 'Appearance', exact: true }).click();
+	await expect(nude).toBeChecked();
+	await sheet.getByLabel('Skin', { exact: true }).selectOption('Tan');
+	expect((await submit()).description).toBe(`Skin: Tan\n${BASE_BODY}`);
+});
 
 // Every value of every control is mapped exhaustively in test/unit/character-option-matrix.test.ts; here each control's wiring
 // reaches the HTTP JSON once, plus Not set and exact custom text.

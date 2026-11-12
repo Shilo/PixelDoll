@@ -247,21 +247,30 @@ export function itemPreviewFrames(p: Project, it: Item, anim: string): Img[][] {
 	return clip.frames.map((_, i) => cropped.slice(i * dirs.length, (i + 1) * dirs.length));
 }
 
-/** Base prompt: the user's words + a bare paper-doll body, so no garment shows through the items' gaps (round 5: the former
+/** Nude opt-in prompt: the user's words + a bare paper-doll body, so no garment shows through the items' gaps (round 5: the former
  * t-shirt showed in necklines, armholes and open fronts). The shortest wording that drew no garment on a man and a woman over
  * four seeds; without "everywhere" or "nothing worn" men get briefs or a loincloth. "nude" and "underwear" are avoided. See
  * docs/research/bare-skin-base-wording-2026-10-25.md. */
 export const BASE_CLOTHES = 'with plain bare skin everywhere, nothing worn';
 export const BASE_BODY = `plain bald paperdoll base body, ${BASE_CLOTHES}, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso`;
-export const isBaseBody = (line: string) => line.trim() === BASE_BODY;
-export const withoutBaseBody = (text: string) => text.replace(BASE_BODY, '');
+export const UNDERWEAR_CLOTHES = 'wearing a plain white underwear set';
+export const UNDERWEAR_BODY = BASE_BODY.replace(BASE_CLOTHES, UNDERWEAR_CLOTHES);
+export const isBaseBody = (line: string) =>
+	line.trim() === BASE_BODY || line.trim() === UNDERWEAR_BODY;
+export const withoutBaseBody = (text: string) =>
+	text.replace(UNDERWEAR_BODY, '').replace(BASE_BODY, '');
 /** The clothes of the base body line in a prompt, or undefined when the prompt has none. */
 export const baseClothesIn = (text: string) =>
-	text.includes(BASE_BODY) ? BASE_CLOTHES : undefined;
-export const basePrompt = (desc: string) => `${desc.trim().replace(/[.\s]+$/, '')}, ${BASE_BODY}`;
+	text.includes(UNDERWEAR_BODY)
+		? UNDERWEAR_CLOTHES
+		: text.includes(BASE_BODY)
+			? BASE_CLOTHES
+			: undefined;
+export const basePrompt = (desc: string) =>
+	`${desc.trim().replace(/[.\s]+$/, '')}, ${UNDERWEAR_BODY}`;
 /** What the base LOOKS like (raw skeleton-v3 `description`, S3): no pose words, empty hands. `clothes` null: the description
  * says what the body wears (an exact prompt without a base body line), so no base clothes are added on top of it. */
-export const looksOf = (desc: string, clothes: string | null = BASE_CLOTHES) =>
+export const looksOf = (desc: string, clothes: string | null = UNDERWEAR_CLOTHES) =>
 	`${desc.trim().replace(/[.\s]+$/, '')}, ${clothes == null ? '' : `bald, ${clothes}, barefoot, `}empty hands, no weapon`;
 
 export const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());

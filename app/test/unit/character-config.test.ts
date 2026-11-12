@@ -4,6 +4,7 @@ import {
 	draftErrors,
 	facingErrors,
 	facingOf,
+	isNudeBase,
 	newCharacterDraft,
 	PRESETS,
 	presetOf,
@@ -13,9 +14,10 @@ import {
 	toggleMirror,
 	UNSET,
 	writeDetails,
+	writeNudeBase,
 	writeTrait
 } from '../../src/studio/characterConfig.ts';
-import { BASE_BODY } from '../../src/studio/model.ts';
+import { BASE_BODY, UNDERWEAR_BODY } from '../../src/studio/model.ts';
 import { DIRECTIONS } from '../../src/lib/rig/rig.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { skeletonInput, unpadSkeleton } from '../../src/lib/rig/estimate.ts';
@@ -61,6 +63,53 @@ test('mixed direction operations cannot create dangling or cyclic mirrors', () =
 		])
 	).not.toEqual([]);
 });
+test('new drafts request underwear and require an explicit nude choice', () => {
+	const draft = newCharacterDraft();
+	expect(draft.prompt).toBe(UNDERWEAR_BODY);
+	expect(draft.prompt).toContain('wearing a plain white underwear set');
+	expect(isNudeBase(draft)).toBe(false);
+	writeDetails(draft, 'an adult human woman');
+	writeNudeBase(draft, true);
+	expect(draft.prompt).toBe(`an adult human woman\n${BASE_BODY}`);
+	expect(isNudeBase(draft)).toBe(true);
+	writeTrait(draft, 'skin', 'Tan');
+	writeDetails(draft, 'an adult human man');
+	writeNudeBase(draft, false);
+	expect(draft.prompt).toBe(`an adult human man\nSkin: Tan\n${UNDERWEAR_BODY}`);
+	expect(draft.details).toBe('an adult human man');
+	expect(isNudeBase(draft)).toBe(false);
+	expect(newCharacterDraft().prompt).toBe(UNDERWEAR_BODY);
+});
+
+test.each([BASE_BODY, UNDERWEAR_BODY])(
+	'coverage survives exact parsing and appearance edits: %s',
+	(body) => {
+		const draft = newCharacterDraft();
+		readPrompt(draft, `freckles\n${body}`);
+		expect(draft.details).toBe('freckles');
+		expect(isNudeBase(draft)).toBe(body === BASE_BODY);
+		writeTrait(draft, 'kind', 'Elf');
+		writeDetails(draft, 'a calm face ');
+		expect(draft.prompt).toBe(`a calm face \nKind: Elf\n${body}`);
+	}
+);
+
+test('custom and conflicting exact prompts are untouched until coverage is explicitly changed', () => {
+	const draft = newCharacterDraft();
+	for (const prompt of [
+		'a knight in armor\n',
+		`${BASE_BODY}\n${UNDERWEAR_BODY}`,
+		`${BASE_BODY}\n${BASE_BODY}`
+	]) {
+		readPrompt(draft, prompt);
+		expect(draft.prompt).toBe(prompt);
+		expect(isNudeBase(draft)).toBe(false);
+		writeNudeBase(draft, false);
+		expect(draft.prompt.split(UNDERWEAR_BODY)).toHaveLength(2);
+		expect(draft.prompt).not.toContain(BASE_BODY);
+	}
+});
+
 test('raw prompts are lossless and prose is never guessed as a trait', () => {
 	const d = newCharacterDraft(),
 		text = 'Not an elf. No pale skin.\n\nKind: Elf\nBuild: Broad\n  keep this  \n';

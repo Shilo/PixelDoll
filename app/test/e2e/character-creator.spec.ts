@@ -12,6 +12,7 @@ import { unzip } from '../../src/lib/store/zip.ts';
 import { flipH } from '../../src/lib/rig/mirror.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
+import { BASE_BODY, UNDERWEAR_BODY } from '../../src/studio/model.ts';
 const fulfill = async (route: Route, response: Response) =>
 	route.fulfill({
 		status: response.status,
@@ -672,6 +673,48 @@ test('Appearance enhancement cannot clear selected hints with repeated clauses o
 		'Pointed ears'
 	);
 	await expect(sheet.getByRole('combobox', { name: 'Kind', exact: true })).toHaveValue('Elf');
+});
+
+test('Appearance enhancement preserves coverage and changing Nude clears stale Undo', async ({
+	page,
+	context
+}) => {
+	const api = new CharacterApi();
+	let returnedBody = BASE_BODY;
+	await context.route('https://*.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		if (new URL(request.url()).pathname === '/v2/enhance-character-v3-prompt') {
+			await route.fulfill({ json: { enhanced_prompt: `A calm face\n${returnedBody}` } });
+		} else
+			await fulfill(
+				route,
+				await api.handle(request.method(), request.url(), request.postDataJSON())
+			);
+	});
+	const sheet = await open(page);
+	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('Freckles');
+	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await connect(page);
+	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toBeVisible();
+	await expect(sheet.getByRole('button', { name: 'Edit exact prompt', exact: true })).toHaveText(
+		`A calm face\n${UNDERWEAR_BODY}`
+	);
+	const nude = sheet.getByRole('switch', { name: 'Nude', exact: true });
+	await expect(nude).not.toBeChecked();
+	await nude.check();
+	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toHaveCount(0);
+	returnedBody = UNDERWEAR_BODY;
+	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('Freckles');
+	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
+	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toBeVisible();
+	await expect(nude).toBeChecked();
+	await expect(sheet.getByRole('button', { name: 'Edit exact prompt', exact: true })).toHaveText(
+		`A calm face\n${BASE_BODY}`
+	);
+	await sheet.getByRole('button', { name: 'Undo', exact: true }).click();
+	await expect(sheet.getByRole('button', { name: 'Edit exact prompt', exact: true })).toHaveText(
+		`Freckles\n${BASE_BODY}`
+	);
 });
 
 test('late enhancement cannot overwrite edits or reopen a closed form', async ({

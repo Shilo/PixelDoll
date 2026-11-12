@@ -21,7 +21,6 @@
 		ui,
 		doc,
 		store,
-		genProgress,
 		acceptGen,
 		discardGen,
 		retryGen,
@@ -29,12 +28,10 @@
 		type Gen
 	} from './state.svelte.ts';
 	import { CircleAlert, CircleCheck, ChevronRight, LoaderCircle, TriangleAlert } from './icons.ts';
-	import { app } from '../lib/app.svelte.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { draftPlan, draftQueueIds, itemPlan, type PeekCall } from './apiPlans.ts';
 
 	let { g }: { g: Gen } = $props();
-	const p = $derived(genProgress(g, $queue.jobs));
 	const spent = $derived(gensOf(g.draft, $queue.jobs));
 	const spentUsd = $derived(usdOf(g.draft, $queue.jobs));
 	const spentUnknown = $derived(unknownCostsOf(g.draft, $queue.jobs));
@@ -144,35 +141,12 @@
 				{#if clean}<span class="badge clean"><CircleCheck size={12} />Clean</span>{:else}<span
 						class="badge look"><TriangleAlert size={12} />Needs a look</span
 					>{/if}
-			{:else if g.phase === 'failed'}<span class="badge look"><CircleAlert size={12} />Failed</span>
+			{:else if g.phase === 'failed'}<span class="badge look"
+					><CircleAlert size={12} />{g.canceled ? 'Canceled' : 'Failed'}</span
+				>
 			{:else}<span class="badge accent">Generating</span>{/if}
 		</p>
 	</header>
-
-	{#if g.phase === 'running'}
-		<div class="field">
-			<div class="field-row small">
-				<span>{g.status || 'Starting'}</span><span class="num muted">{p.pct}%</span>
-			</div>
-			<div
-				class="track"
-				role="progressbar"
-				aria-valuenow={p.pct}
-				aria-valuemin={0}
-				aria-valuemax={100}
-				aria-label="{g.input.name} progress"
-			>
-				<div class="fill" style:width="{Math.max(4, p.pct)}%"></div>
-			</div>
-			<p class="muted small">
-				{#if !app.key}Waiting for your PixelLab key.{:else if $queue.paused === 'offline'}Paused
-					while you’re offline. Submitted jobs may still finish or charge.{:else if $queue.paused}PixelLab
-					paused the queue ({$queue.paused}).{:else}{g.draft.calls.length} batches of frames · about {5 +
-						Math.ceil(g.draft.calls.length / 3) * 2} min + queue time. Keep this tab open while PixelLab
-					responds. You can keep dressing up. Unknown outcomes stop for review in Activity.{/if}
-			</p>
-		</div>
-	{/if}
 
 	{#if g.draft.rigId === doc.id && g.phase !== 'failed'}
 		<button class="bu-action btn" data-variant="outline" onclick={() => wearDraft(g.draft.spec.id)}
@@ -276,7 +250,9 @@
 			<CircleAlert size={14} />{g.error?.includes('5000') ||
 			g.error?.toLowerCase().includes('policy')
 				? 'PixelLab declined this prompt. Try different words.'
-				: 'This item could not be made.'}
+				: g.canceled
+					? 'Generation canceled. Already used generations are not refunded.'
+					: 'This item could not be made.'}
 		</p>
 		<div class="actions">
 			<span class="api-action"

@@ -17,6 +17,7 @@
 		COMPASS,
 		DIRECTION_LABELS,
 		draftErrors,
+		isNudeBase,
 		PRESETS,
 		presetOf,
 		readPrompt,
@@ -28,6 +29,7 @@
 		UNSET,
 		validBodySize,
 		writeDetails,
+		writeNudeBase,
 		writeTrait,
 		type CharacterDraft,
 		type Trait
@@ -296,6 +298,23 @@
 						>
 					</div>
 				{/each}
+				<div class="trait-row">
+					<Help
+						title="Nude"
+						text="Off: plain white underwear. On: nothing worn. Underwear is part of the base and may show through open clothing. Exact prompt edits can override this guidance. Review generated coverage."
+					/>
+					<input
+						class="bu-switch"
+						type="checkbox"
+						role="switch"
+						aria-label="Nude"
+						checked={isNudeBase(d)}
+						onchange={(event) => {
+							edited();
+							writeNudeBase(d, event.currentTarget.checked);
+						}}
+					/>
+				</div>
 				<div class="prompt-note">
 					<button
 						class="prompt-excerpt"

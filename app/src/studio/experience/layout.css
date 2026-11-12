@@ -649,15 +649,21 @@
 .item-tile .tile-from {
 	font-size: 12px;
 }
-.tile-progress {
-	position: absolute;
-	inset: 0;
-	display: grid;
-	place-items: center;
-	pointer-events: none;
+.item-tile:has(.generation-progress) .bu-tile-art {
+	height: 42px;
 }
-.tile-progress.overlay {
-	inset: auto 0 0 auto;
+.item-tile:has(.generation-progress) {
+	height: auto;
+	min-height: 102px;
+}
+.item-tile .generation-progress,
+.item-tile:has(.generation-progress) .tile-name {
+	flex-shrink: 0;
+}
+.generation-progress {
+	max-width: 100%;
+	line-height: 1.2;
+	text-wrap: balance;
 }
 .section-body .shared-items {
 	padding-top: 4px;

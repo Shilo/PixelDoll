@@ -42,11 +42,13 @@
 		withKey
 	} from './state.svelte.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
+	import { app } from '../lib/app.svelte.ts';
+	import { generationStatus } from './generationStatus.ts';
+	import { openGenerationReview } from './state.svelte.ts';
 	import { watchListSpacer } from './listSpacer.ts';
 	import Thumb from './Thumb.svelte';
 	import Sprite from './Sprite.svelte';
 	import GroupIcon from './GroupIcon.svelte';
-	import Lazy from './Lazy.svelte';
 	import SharedThumb from './SharedThumb.svelte';
 	import ItemMenu from './ItemMenu.svelte';
 	import {
@@ -55,6 +57,7 @@
 		CircleAlert,
 		EllipsisVertical,
 		EyeOff,
+		LoaderCircle,
 		Plus,
 		Shuffle,
 		TriangleAlert
@@ -115,6 +118,16 @@
 		});
 	}
 	const menuItem = $derived(m?.items.find((i) => i.id === menuFor));
+	const menuGeneration = $derived(genOf(menuFor));
+	$effect(() => {
+		if (menuOpen && menuFor.startsWith('gen:') && !menuGeneration)
+			document.getElementById('item-menu')?.hidePopover();
+	});
+	let now = $state(Date.now());
+	onMount(() => {
+		const timer = window.setInterval(() => (now = Date.now()), 15_000);
+		return () => window.clearInterval(timer);
+	});
 	function openMenu(wrap: HTMLElement) {
 		const more = wrap.querySelector<HTMLButtonElement>('.tile-more');
 		if (!more) return;
@@ -159,8 +172,6 @@
 			};
 		})
 	);
-	// A selected draft's card lives under its own category.
-	const selectedGen = $derived(genOf(ui.selected));
 	const FIT_NAME = { copy: 'free copy', refit: 'free fit to check', remake: 'make new' };
 	const FIT_CAPTION = { copy: 'Free', refit: 'Free · check fit', remake: '' };
 	const sectionId = (id: string) => `wardrobe-${id.replace(/\s+/g, '-').toLowerCase()}`;
@@ -299,8 +310,6 @@
 				{@const lower = s.label.toLowerCase()}
 				{@const count = s.items.length + s.pending.length}
 				{@const unfit = s.paid.find((x) => sharedKey(x) === ui.selected)}
-				{@const gen =
-					selectedGen && g.slots.includes(selectedGen.input.slot) ? selectedGen : undefined}
 				<section
 					class="slot-section"
 					data-group={g.id}
@@ -404,6 +413,7 @@
 							{/each}
 							{#each s.pending as x (x.draft.spec.id)}
 								{@const p = genProgress(x, $queue.jobs)}
+								{@const info = generationStatus(x, $queue.jobs, now, !!app.key, $queue.paused)}
 								{@const on = doc.drafts[x.draft.spec.slot] === x.draft.spec.id}
 								{@const preview = store.results[x.draft.spec.id]?.preview}
 								{@const previewItem = preview?.manifest.items.find(
@@ -412,37 +422,89 @@
 								{@const firstFrame = store.results[x.draft.spec.id]?.thumbnail}
 								{@const thumbnail = firstFrame ? crop(firstFrame) : null}
 								<!-- a draft tile wears the draft like a saved item (display only, while it loads or awaits review) -->
-								<button
-									class="bu-tile item-tile"
-									data-selected={ui.selected === `gen:${x.draft.spec.id}` || undefined}
-									data-tile="gen:{x.draft.spec.id}"
-									aria-label="{x.input.name}, {p.label}"
-									aria-pressed={on}
-									onclick={() =>
-										x.phase === 'failed'
-											? (ui.selected = `gen:${x.draft.spec.id}`)
-											: wearDraft(x.draft.spec.id)}
+								<div
+									class="tile-wrap"
+									role="none"
+									oncontextmenu={(event) => {
+										event.preventDefault();
+										openMenu(event.currentTarget);
+									}}
 								>
-									<span class="bu-tile-art tile-art" aria-hidden="true">
-										{#if thumbnail}<Sprite
-												img={thumbnail}
-												k={1}
-												w={thumbnail.w}
-												h={thumbnail.h}
-												fitToBox
-												label={x.input.name}
-											/>
-										{:else if preview && previewItem}<Thumb project={preview} item={previewItem} />
-										{:else if x.phase === 'failed'}<CircleAlert size={24} />
-										{:else if x.phase !== 'running'}<GroupIcon group={g.id} size={24} />{/if}
+									<button
+										class="bu-tile item-tile"
+										data-selected={ui.selected === `gen:${x.draft.spec.id}` || undefined}
+										data-tile="gen:{x.draft.spec.id}"
+										aria-label="{x.input.name}, {x.phase === 'running'
+											? p.pct + '%, '
+											: ''}{info.text}{x.phase !== 'running' && on ? ', Wearing' : ''}"
+										aria-pressed={x.phase === 'running' ? on : undefined}
+										aria-haspopup={x.phase !== 'running' ? 'dialog' : undefined}
+										onclick={() =>
+											x.phase !== 'running'
+												? void openGenerationReview(x.draft.spec.id)
+												: wearDraft(x.draft.spec.id)}
+										onkeydown={(event) => {
+											if (event.key === 'F10' && event.shiftKey) {
+												event.preventDefault();
+												openMenu(event.currentTarget.parentElement!);
+											}
+										}}
+									>
+										<span class="bu-tile-art tile-art" aria-hidden="true">
+											{#if thumbnail}<Sprite
+													img={thumbnail}
+													k={1}
+													w={thumbnail.w}
+													h={thumbnail.h}
+													fitToBox
+													label={x.input.name}
+												/>
+											{:else if preview && previewItem}<Thumb
+													project={preview}
+													item={previewItem}
+												/>
+											{:else if x.phase === 'failed'}<CircleAlert size={24} />
+											{:else if x.phase === 'running' && !info.attention}<LoaderCircle
+													size={24}
+													class="spin"
+												/>{:else}<GroupIcon group={g.id} size={24} />{/if}
+										</span>
 										{#if x.phase === 'running'}<span
-												class="tile-progress"
-												class:overlay={!!previewItem || !!thumbnail}
-												><span class="ring" class:spin={!p.pct} style:--p={p.pct}></span></span
+												class="generation-progress small num"
+												aria-hidden="true">{p.pct}% · {info.text}</span
+											>{:else}<span class="generation-progress small">{info.text}</span>{/if}
+										<span class="bu-tile-label tile-name">{x.input.name}</span>
+										{#if info.attention}<span
+												class="bu-tile-status tile-status"
+												data-tone="warning"
+												title={info.text}
+												aria-hidden="true"><TriangleAlert size={14} /></span
+											>{:else if on}<span class="bu-tile-check" aria-hidden="true"><Check /></span
 											>{/if}
-									</span><span class="bu-tile-label tile-name">{p.short}</span>
-									{#if on}<span class="bu-tile-check" aria-hidden="true"><Check /></span>{/if}
-								</button>
+									</button>
+									{#if x.phase === 'running'}<span
+											class="sr"
+											role="progressbar"
+											aria-label="{x.input.name} progress"
+											aria-valuenow={p.pct}
+											aria-valuemin={0}
+											aria-valuemax={100}
+											aria-valuetext="{p.pct}%, {info.text}"
+										></span>{/if}
+									<button
+										class="bu-tile-more tile-more"
+										popovertarget="item-menu"
+										aria-haspopup="menu"
+										aria-expanded={menuOpen && menuFor === 'gen:' + x.draft.spec.id}
+										title="Options"
+										aria-label="More options for {x.input.name}"
+										onclick={() => {
+											if (menuOpen && menuFor !== 'gen:' + x.draft.spec.id)
+												document.getElementById('item-menu')?.hidePopover();
+											menuFor = 'gen:' + x.draft.spec.id;
+										}}><EllipsisVertical size={18} /></button
+									>
+								</div>
 							{/each}
 							{#if !count}
 								<button
@@ -455,9 +517,6 @@
 								>
 							{/if}
 						</div>
-						{#if gen}
-							<Lazy load={() => import('./GenCard.svelte')} sheet={false} g={gen} />
-						{/if}
 						{#if s.others.length}
 							<div class="shared-items">
 								<div class="shared-head">
@@ -546,6 +605,10 @@
 		<!-- Always mounted: a ⋮ click opens it in the same task, before the chosen item renders into it. -->
 		<ItemMenu
 			id={menuFor}
+			generation={menuGeneration}
+			generationInfo={menuGeneration
+				? generationStatus(menuGeneration, $queue.jobs, now, !!app.key, $queue.paused)
+				: undefined}
 			status={menuItem ? statusOf(menuItem) : { look: '', missing: '', hidden: false }}
 			onremove={(id) => void remove(id)}
 			bind:open={menuOpen}

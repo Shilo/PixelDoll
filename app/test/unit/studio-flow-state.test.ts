@@ -22,7 +22,9 @@ const mocks = vi.hoisted(() => ({
 	clear: vi.fn(),
 	subscribe: vi.fn(),
 	handoff: vi.fn(),
-	all: vi.fn()
+	all: vi.fn(),
+	cancelScoped: vi.fn(),
+	observe: vi.fn()
 }));
 vi.mock('../../src/studio/create.ts', () => ({
 	createCharacter: mocks.create,
@@ -63,7 +65,9 @@ vi.mock('../../src/lib/pixellab/queue.ts', () => ({
 		subscribe: mocks.subscribe,
 		requestHandoff: mocks.handoff,
 		idle: () => true,
-		clearFinished: mocks.clear
+		clearFinished: mocks.clear,
+		observeScope: mocks.observe,
+		cancelAbortedScope: mocks.cancelScoped
 	}
 }));
 
@@ -95,6 +99,28 @@ beforeEach(() => {
 	stubGlobals();
 });
 afterEach(() => vi.unstubAllGlobals());
+test('canceling from a follower explains that generation has not stopped without opening Activity', async () => {
+	const state = await import('../../src/studio/state.svelte.ts');
+	const { queue } = await import('../../src/lib/pixellab/queue.ts');
+	queue.role = 'follower';
+	try {
+		state.ui.sheet = null;
+		const generation = {
+			phase: 'running',
+			draft: { spec: { id: 'follower-cancel' } }
+		} as import('../../src/studio/state.svelte.ts').Gen;
+		await expect(state.cancelGen(generation)).rejects.toThrow(
+			'This tab has not stopped the generation'
+		);
+		expect(state.ui.sheet).toBeNull();
+		expect(generation.phase).toBe('running');
+		expect(generation.canceled).toBeUndefined();
+		expect(mocks.handoff).not.toHaveBeenCalled();
+	} finally {
+		queue.role = 'leader';
+	}
+});
+
 function pending<T>() {
 	let resolve!: (value: T) => void, reject!: (error: unknown) => void;
 	const promise = new Promise<T>((a, b) => {
@@ -1961,7 +1987,11 @@ describe('optional review', () => {
 		preview: null
 	};
 	function routeMock(
-		result: (d: unknown, ctx: unknown, h: { result?: (r: unknown) => void }) => Promise<unknown>,
+		result: (
+			d: unknown,
+			ctx: unknown,
+			h: { result?: (r: unknown) => void; signal?: AbortSignal; persist?: () => Promise<unknown> }
+		) => Promise<unknown>,
 		price = () => 10
 	) {
 		const accept = vi.fn(async (d: { spec: { id: string }; acceptedAt?: string }) => {
@@ -2007,6 +2037,52 @@ describe('optional review', () => {
 		vi.doUnmock('../../src/studio/itemRoute.ts');
 		vi.doUnmock('../../src/lib/dress/regions.ts');
 		vi.doUnmock('../../src/lib/dress/dress.ts');
+	});
+
+	test('another draft cannot save cancellation as complete before its ledger writes commit', async () => {
+		const hooks: import('../../src/lib/items/run.ts').RunHooks[] = [];
+		routeMock((_draft, _ctx, hook) => {
+			hooks.push(hook);
+			return new Promise((resolve) =>
+				hook.signal!.addEventListener('abort', () => resolve(null), { once: true })
+			);
+		});
+		mocks.load.mockResolvedValue({ rec: { id: 'project', manifest: fixtureManifest() } });
+		const state = await import('../../src/studio/state.svelte.ts');
+		state.doc.id = 'project';
+		await state.startItem({ name: 'A', slot: 'head', prompt: 'a helm' });
+		await vi.waitFor(() => expect(hooks).toHaveLength(1));
+		const generation = state.gens[0],
+			write = pending<void>();
+		const other = structuredClone(generation);
+		other.draft.spec.id = 'other-draft';
+		other.phase = 'failed';
+		state.gens.push(other);
+		generation.draft.calls.push({
+			recId: 'cancel-record',
+			old: [],
+			cells: ['rest/south/0'],
+			seed: 1,
+			rerolls: 0,
+			kind: 'dress'
+		});
+		mocks.cancelScoped.mockReturnValueOnce(write.promise);
+		const cancel = state.cancelGen(generation);
+		const failure = expect(cancel).rejects.toThrow('Ledger unavailable');
+		await vi.waitFor(() => expect(mocks.cancelScoped).toHaveBeenCalled());
+		let snapshot: { gens: { phase: string; canceled?: boolean }[] } | undefined;
+		mocks.put.mockImplementation(async (_store, key, value) => {
+			if (key === 'studio-drafts') snapshot = structuredClone(value);
+		});
+		await state.discardGen(other);
+		expect(snapshot!.gens[0]).toMatchObject({ phase: 'running' });
+		expect(snapshot!.gens[0].canceled).toBeUndefined();
+		write.reject(new Error('Ledger unavailable'));
+		await failure;
+		expect(generation.cancelSaveFailed).toBe(true);
+		mocks.cancelScoped.mockResolvedValue(undefined);
+		expect(await state.cancelGen(generation)).toBe(true);
+		expect(snapshot!.gens[0]).toMatchObject({ phase: 'failed', canceled: true });
 	});
 
 	test('a clean draft saves itself in place: the worn slot keeps it, undo and the view stay', async () => {
@@ -2111,7 +2187,7 @@ describe('optional review', () => {
 				expect(s.ui).toMatchObject({
 					selected: 'gen:helm0',
 					tab: 'wardrobe',
-					sheet: null
+					sheet: 'gen'
 				});
 			else expect(s.ui.selected).toBe('');
 		}
