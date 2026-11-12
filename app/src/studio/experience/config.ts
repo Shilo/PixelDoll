@@ -63,8 +63,13 @@ export const REFLECTION = {
 export const MOTION = {
 	speed: 95,
 	cameraResponse: 9,
-	joystickRadius: 46,
-	deadZone: 8,
+	/** Touch stick sizes in CSS px; compact applies on narrow or short screens such as phones in landscape. */
+	joystick: {
+		regular: { base: 144, thumb: 56, gap: 4 },
+		compact: { base: 128, thumb: 48, gap: 4 },
+		compactQuery: '(max-width: 360px), (max-height: 400px)',
+		deadZone: 8
+	},
 	tileSize: 100
 };
 
