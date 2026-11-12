@@ -875,9 +875,14 @@ export function groupRandomChoices(groupId: string) {
 	const m = store.project?.manifest,
 		g = GROUPS.find((x) => x.id === groupId);
 	if (!m || !g) return [];
-	return m.items.filter((i) => g.slots.includes(i.slot) && doc.items[i.slot] !== i.id);
+	const items = m.items.filter((i) => g.slots.includes(i.slot)),
+		others = items.filter((i) => doc.items[i.slot] !== i.id);
+	if (others.length) return others;
+	// Nothing else to switch to: the worn item stays and only its colors re-roll (when it has any).
+	return items.filter((i) => m.materials.some((x) => x.owner === i.id));
 }
-/** Category Random: a different item of that category, worn in its own slot, with new colors. One undo step. */
+/** Category Random: a different item of that category, worn in its own slot, with new colors; when the worn item is the
+ *  only one, just its colors re-roll. One undo step. */
 export function randomizeGroup(groupId: string) {
 	const m = store.project?.manifest,
 		g = GROUPS.find((x) => x.id === groupId),

@@ -3,6 +3,9 @@
    geometry.ts and arrives here as custom properties on .experience, with layout classes for the
    phone sheet (sheet-layout), short landscape (short-layout) and phones (phone-layout). */
 .experience {
+	--slot-rail-width: 64px;
+	/* Bottom room inside the panel lists: the edge margin on the side panel; the sheet pads itself. */
+	--panel-bottom: max(var(--edge), env(safe-area-inset-bottom));
 	position: relative;
 	height: 100dvh;
 	width: 100%;
@@ -174,14 +177,16 @@
 .phone-layout .screen-title {
 	font-size: 17px;
 }
-/* View switch: underline tabs centered in the bar. */
+/* View switch: underline tabs, preferably centered over the character (Toolbar.svelte centerOnStage). The buttons
+   touch, so the whole row is clickable; padding gives the labels their spacing. */
 .view-modes {
 	grid-column: 2;
-	gap: 24px;
+	gap: 0;
+	translate: var(--view-shift, 0) 0;
 }
 .view-modes .bu-action {
 	height: var(--header-row);
-	padding: 0;
+	padding: 0 12px;
 	gap: 6px;
 	font-size: 15px;
 }
@@ -190,7 +195,7 @@
 }
 @media (max-width: 999px) {
 	.view-modes {
-		gap: 4px;
+		gap: 0;
 	}
 	.view-modes .view-label {
 		display: none;
@@ -199,7 +204,9 @@
 		display: block;
 	}
 	.view-modes .bu-action {
-		width: 40px;
+		width: 44px;
+		padding: 0;
+		justify-content: center;
 	}
 }
 /* Phones and sheets: a floating icon tab row under the bar. */
@@ -208,7 +215,8 @@
 	top: var(--header-row);
 	left: 50%;
 	transform: translateX(-50%);
-	gap: 4px;
+	translate: none;
+	gap: 0;
 }
 /* A phone held sideways keeps the panel beside the stage (geometry.ts): the tab row centers over the stage instead. */
 .phone-layout:not(.sheet-layout) .view-modes {
@@ -441,7 +449,8 @@
 	right: var(--edge);
 	width: var(--rail);
 	top: var(--rail-top);
-	bottom: var(--edge);
+	/* The lists scroll to the window edge; their bottom padding keeps the resting content on the edge margin. */
+	bottom: 0;
 	display: flex;
 	flex-direction: column;
 	min-height: 0;
@@ -455,6 +464,8 @@
 	display: none;
 }
 .sheet-layout .equipment-rail {
+	/* The sheet already pads its bottom edge; the lists keep only room for a focus ring. */
+	--panel-bottom: 6px;
 	left: 0;
 	right: 0;
 	width: auto;
@@ -479,15 +490,24 @@
 }
 .equipment-modes {
 	display: flex;
-	justify-content: space-between;
 	flex: none;
 }
-/* Tabs keep their short labels; min-width gives short ones (Colors, Moves) a full 44 px target. */
+/* The tabs fill the row, so there is no dead space between targets; the label carries the underline (Bronze
+   .bu-tab-label). Wardrobe starts at the list edge and the last tab sits over the slot rail column, centered with its
+   icons. */
 .equipment-modes button {
+	flex: 1;
+	justify-content: center;
 	min-width: 44px;
 	min-height: 44px;
 	padding: 0;
 	font-size: 15px;
+}
+.equipment-modes button:first-child {
+	justify-content: flex-start;
+}
+.equipment-modes button:last-child {
+	flex: 0 0 var(--slot-rail-width);
 }
 .customize-panel {
 	display: flex;
@@ -502,7 +522,7 @@
 	flex: 1;
 	min-height: 0;
 	overflow: auto;
-	padding: 4px 4px 4px 0;
+	padding: 4px 4px var(--panel-bottom) 0;
 }
 
 /* Wardrobe: one continuous list, the slot column on the right. */
@@ -518,8 +538,9 @@
 	min-width: 0;
 	min-height: 0;
 	overflow: auto;
-	/* Room for a tile's focus ring at the list's edges, which the scroll box would otherwise clip. */
-	padding: 0 6px 6px 5px;
+	/* Room for a tile's focus ring at the list's edges, which the scroll box would otherwise clip, and the edge margin at
+	   the bottom (the panel itself runs to the window edge). */
+	padding: 0 6px var(--panel-bottom) 5px;
 	scrollbar-width: thin;
 }
 .color-sections {
@@ -527,7 +548,7 @@
 }
 .slot-rail {
 	flex: none;
-	width: 64px;
+	width: var(--slot-rail-width);
 	overflow-y: auto;
 	overflow-x: hidden;
 }
@@ -536,7 +557,7 @@
 	flex-direction: column;
 	gap: 2px;
 	margin: 0;
-	padding: 0;
+	padding: 0 0 var(--panel-bottom);
 	list-style: none;
 }
 .slot-tab {

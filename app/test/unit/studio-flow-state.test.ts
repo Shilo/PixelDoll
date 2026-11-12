@@ -2757,16 +2757,25 @@ test('category Random switches to another item of that category in its own slot,
 	expect(s.doc.undo.at(-1)!.label).toBe('Random chest item');
 });
 
-test('category Random is unavailable when the only item of that category is already worn', async () => {
+test('category Random re-rolls the colors when the only item of that category is already worn', async () => {
 	const s = await import('../../src/studio/state.svelte.ts');
-	s.store.project = { manifest: fixtureManifest(), images: new Map() };
+	const manifest = fixtureManifest();
+	manifest.materials = [
+		{ id: 'cloth', owner: 'cape_red', ramp: ['#7a1f1f', '#c0392b', '#f1948a'] }
+	];
+	s.store.project = { manifest, images: new Map() };
 	s.doc.id = 'fixture:s2';
 	s.doc.items = { body: 'base', back: 'cape_red' };
+	s.doc.variants = { cloth: 'crimson' };
 	s.doc.undo = [];
-	expect(s.groupRandomChoices('Back')).toEqual([]);
+	expect(s.groupRandomChoices('Back').map((i) => i.id)).toEqual(['cape_red']);
 	s.randomizeGroup('Back');
 	expect(s.doc.items).toEqual({ body: 'base', back: 'cape_red' });
-	expect(s.doc.undo).toEqual([]);
-	// An empty category with no items has no choices either.
+	expect(s.doc.variants.cloth).toBeDefined();
+	expect(s.doc.variants.cloth).not.toBe('crimson');
+	expect(s.doc.undo.map((u) => u.label)).toEqual(['Random back item']);
+	// Without colors to change, or with no items at all, there is nothing to randomize.
+	s.store.project!.manifest.materials = [];
+	expect(s.groupRandomChoices('Back')).toEqual([]);
 	expect(s.groupRandomChoices('Face')).toEqual([]);
 });

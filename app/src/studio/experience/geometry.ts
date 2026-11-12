@@ -114,7 +114,7 @@ export function layout(w: number, h: number, screen: Screen): Layout {
 	// The bar never rises into the header or the view tabs, even in windows too short for the usual spacing.
 	const playbackTop = Math.max(
 		stage.t + 16 + 14,
-		(sheetHeight ? sheetTop - 10 : tight ? h - 8 : h - edge - 4) - playbackHeight
+		(sheetHeight ? sheetTop - 10 : tight ? h - 8 : h - edge) - playbackHeight
 	);
 	const listTop = Math.round(h * 0.6);
 	// The feet always stay below the header, even in windows too short for the usual spacing.

@@ -949,8 +949,17 @@ test('category Random is one named undo step and Random look stays reachable on 
 	await undo.click();
 	await expect(undo).toBeDisabled();
 	await expect(redo).toHaveAccessibleName('Redo Random head item');
-	// The demo wears its only chest item: that category has nothing else to switch to.
-	await expect(page.getByRole('button', { name: 'Random chest item', exact: true })).toBeDisabled();
+	// The demo wears its only chest item: Random keeps it and re-rolls its colors, as one named undo step.
+	const chestRandom = page.getByRole('button', { name: 'Random chest item', exact: true });
+	await expect(chestRandom).toBeEnabled();
+	await chestRandom.click();
+	await expect(undo).toHaveAccessibleName('Undo Random chest item');
+	await expect(
+		page
+			.locator('.equipment-scroll')
+			.getByRole('button', { name: /^Leather vest/ })
+			.first()
+	).toHaveAttribute('aria-pressed', 'true');
 	// Outfits: Cancel and Save hand focus back to the button that opened the name field.
 	await equipmentMode(page, 'Outfits');
 	const saveLook = page.getByRole('button', { name: 'Save current look', exact: true });
@@ -1030,15 +1039,28 @@ for (const viewport of [
 		);
 		const rail = (await page.locator('.equipment-rail').boundingBox())!;
 		if (g.sheet) expect(rail.height).toBeCloseTo(g.sheetHeight, 0);
+		// Beside the stage, the panel and its slot rail run to the window's bottom edge (the lists pad their own margin).
+		else {
+			expect(rail.y + rail.height).toBeCloseTo(viewport.height, 0);
+			const slots = await page.getByRole('navigation', { name: 'Equipment slots' }).boundingBox();
+			if (slots) expect(slots.y + slots.height).toBeCloseTo(viewport.height, 0);
+		}
 		const header = (await page.locator('.experience-header').boundingBox())!;
 		expect(header.y).toBeCloseTo(g.top, 0);
 		expect(header.height).toBeCloseTo(g.row, 0);
 		if (!g.phone && !g.short) {
-			// The view switch is centered in the window on the header row.
+			// The view switch prefers the character's center (the stage's middle); with too little room beside the name
+			// and actions it stops at the nearest clear spot, never farther from the character than the window center.
 			const views = (await page
 				.getByRole('group', { name: 'Character view', exact: true })
 				.boundingBox())!;
-			expect(views.x + views.width / 2).toBeCloseTo(viewport.width / 2, 0);
+			const center = views.x + views.width / 2,
+				stageCenter = (g.stage.l + g.stage.r) / 2;
+			if (viewport.width >= 1280) expect(center).toBeCloseTo(stageCenter, 0);
+			else
+				expect(Math.abs(center - stageCenter)).toBeLessThanOrEqual(
+					Math.abs(viewport.width / 2 - stageCenter) + 1
+				);
 		}
 		// The playback bar sits between the stage and the panel.
 		const playback = (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!;

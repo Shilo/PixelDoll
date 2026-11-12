@@ -100,6 +100,45 @@
 		close();
 		ui.sheet = s;
 	};
+	/** Prefer centering the view switch over the character (the stage's middle), not the window; stay clear of the
+	 *  name and the actions, and fall back to the bar's center when there is no room. Floating rows (phones,
+	 *  sheets) are positioned by CSS and are left alone. */
+	function centerOnStage(node: HTMLElement) {
+		const header = node.parentElement!;
+		const update = () => {
+			node.style.removeProperty('--view-shift');
+			if (getComputedStyle(node).position === 'absolute') return;
+			const css = getComputedStyle(node),
+				stageCenter =
+					(parseFloat(css.getPropertyValue('--stage-left')) +
+						innerWidth -
+						parseFloat(css.getPropertyValue('--stage-right'))) /
+					2;
+			// The side columns stretch to fill the grid, so measure the controls inside them, not the columns.
+			const visible = (selector: string) =>
+				[...(header.querySelector(selector)?.children ?? [])]
+					.map((el) => el.getBoundingClientRect())
+					.filter((r) => r.width > 0);
+			const box = node.getBoundingClientRect(),
+				start = visible('.header-start'),
+				end = visible('.header-actions');
+			if (!Number.isFinite(stageCenter) || !start.length || !end.length) return;
+			const gap = 12,
+				min = Math.max(...start.map((r) => r.right)) + gap - box.left,
+				max = Math.min(...end.map((r) => r.left)) - gap - box.right;
+			if (min > max) return;
+			const shift = Math.min(max, Math.max(min, stageCenter - (box.left + box.width / 2)));
+			node.style.setProperty('--view-shift', `${Math.round(shift)}px`);
+		};
+		const observer = new ResizeObserver(update);
+		for (const el of [header, ...header.children]) observer.observe(el);
+		addEventListener('resize', update);
+		update();
+		return () => {
+			observer.disconnect();
+			removeEventListener('resize', update);
+		};
+	}
 </script>
 
 <header class="experience-header">
@@ -134,7 +173,7 @@
 	</div>
 	{#if experience.screen === 'studio'}
 		<!-- A view switch over one stage, not tabs with panels: pressed toggle buttons. -->
-		<div class="view-modes" role="group" aria-label="Character view">
+		<div class="view-modes" role="group" aria-label="Character view" {@attach centerOnStage}>
 			{#each VIEWS as [id, label, Icon] (id)}<button
 					class="bu-action"
 					data-variant="tab"
@@ -143,7 +182,9 @@
 					aria-label={label}
 					title={label}
 					onclick={() => changeMode(id)}
-					><Icon size={18} aria-hidden="true" /><span class="view-label">{label}</span></button
+					><span class="bu-tab-label"
+						><Icon size={18} aria-hidden="true" /><span class="view-label">{label}</span></span
+					></button
 				>{/each}
 		</div>
 	{/if}

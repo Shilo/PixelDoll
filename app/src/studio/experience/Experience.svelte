@@ -496,7 +496,7 @@
 						onclick={() => {
 							if (off) toast(MOVES_OFF);
 							else panel(id);
-						}}>{label}</button
+						}}><span class="bu-tab-label">{label}</span></button
 					>{/each}
 			</div>
 			<span class="sr" id="moves-tab-note">{MOVES_OFF}</span>
