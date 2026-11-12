@@ -5,6 +5,7 @@
 </script>
 
 <script lang="ts">
+	import { contextMenu } from '../lib/input/contextMenu.ts';
 	// One continuous list of every equipment category with sticky headers, and a slot rail that follows and drives it.
 	import { onMount, tick, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
@@ -356,14 +357,7 @@
 								{@const on = doc.items[it.slot] === it.id && !doc.drafts[it.slot]}
 								{@const st = statusOf(it)}
 								<!-- The ⋮ is a sibling of the tile, never nested in it; right-click and Shift+F10 open the same menu. -->
-								<div
-									class="tile-wrap"
-									role="none"
-									oncontextmenu={(e) => {
-										e.preventDefault();
-										openMenu(e.currentTarget);
-									}}
-								>
+								<div class="tile-wrap" role="none" {@attach contextMenu(openMenu)}>
 									<button
 										class="bu-tile item-tile"
 										data-selected={ui.selected === it.id || undefined}
@@ -379,12 +373,6 @@
 											.filter(Boolean)
 											.join(', ')}
 										onclick={() => wear(it.id)}
-										onkeydown={(e) => {
-											if (e.key === 'F10' && e.shiftKey) {
-												e.preventDefault();
-												openMenu(e.currentTarget.parentElement!);
-											}
-										}}
 									>
 										<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(it.id)}
 											>{#if seen.has(it.id)}<Thumb

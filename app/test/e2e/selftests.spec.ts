@@ -2118,7 +2118,11 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 	}
 	await openStudio(page, '/');
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'starter.pixeldoll.zip',
 		mimeType: 'application/zip',

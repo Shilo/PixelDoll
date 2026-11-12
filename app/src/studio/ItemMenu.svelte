@@ -2,6 +2,7 @@
 	// One shared per-tile item menu (approved in docs/design/2026-11-11-ui-refinement/ui-lab-7.html): an arrowed popover
 	// anchored to the tile's ⋮ at every size, with Wear as a toggle in its header.
 	import PopoverArrow from './PopoverArrow.svelte';
+	import { downloadItemZip } from './download.svelte.ts';
 	import Thumb from './Thumb.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { extendable } from './create.ts';
@@ -25,6 +26,7 @@
 	} from './state.svelte.ts';
 	import {
 		Circle,
+		Download,
 		CircleCheck,
 		CopyPlus,
 		HandGrab,
@@ -352,6 +354,13 @@
 								: 'Try again…'}<small class="row-aside">Paid</small></button
 						>
 					{/if}
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						role="menuitem"
+						onclick={() => act(() => void downloadItemZip(it.id))}
+						><Download size={16} />Download ZIP</button
+					>
 					{#if !isDemo()}
 						<hr class="bu-separator" />
 						<button

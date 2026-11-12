@@ -1,16 +1,18 @@
 <script lang="ts">
 	import Sheet from './Sheet.svelte';
-	import { ui, store, deletionBlocked, removeProject } from './state.svelte.ts';
+	import { ui, doc, store, deletionBlocked, removeProject } from './state.svelte.ts';
+	import { downloadCharacterZip } from './download.svelte.ts';
 	import { Trash, TriangleAlert } from './icons.ts';
 	let busy = $state(false),
 		error = $state('');
-	const reason = $derived(deletionBlocked());
+	const id = $derived(ui.deleting || doc.id);
+	const reason = $derived(deletionBlocked(id));
 	async function remove() {
 		if (busy || reason) return;
 		busy = true;
 		error = '';
 		try {
-			await removeProject();
+			await removeProject(id);
 			ui.sheet = null;
 		} catch (e) {
 			error = (e as Error).message;
@@ -27,7 +29,9 @@
 		if (!busy) ui.sheet = null;
 	}}
 >
-	<p>Delete <strong>{store.project?.manifest.name}</strong> from this device?</p>
+	<p>
+		Delete <strong>{store.projects.find((project) => project.id === id)?.name}</strong> from this device?
+	</p>
 	<p class="muted">
 		This removes its items, outfits, and local changes. This cannot be undone. Export a ZIP first if
 		you want to keep a copy. Items copied to other characters stay.
@@ -41,7 +45,7 @@
 			class="bu-action btn"
 			data-variant="outline"
 			disabled={busy}
-			onclick={() => (ui.sheet = 'export')}>Export a copy</button
+			onclick={() => void downloadCharacterZip(id)}>Download a copy</button
 		>
 		<button
 			class="bu-action btn danger"

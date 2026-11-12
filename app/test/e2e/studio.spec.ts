@@ -735,7 +735,11 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	);
 	step('base colors: Shirt, Shorts and Skin recolor separately');
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'New character…' }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	const cost = async () => {
 		const value = await page.locator('dialog .foot-note').textContent();
 		assert.ok(value, 'Create cost is shown');
@@ -778,7 +782,11 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	// ---- B10: sheets ----
 	// T1 P0: Create without a key -> the Connect sheet replaces it (8afef4f)
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'New character…' }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	await expect(page.locator('dialog').getByLabel('Name', { exact: true })).toBeFocused(); // first field focused, not Cancel (checked before fill() moves focus)
 	await page.locator('dialog textarea').fill('a cheerful elf archer');
 	await page
@@ -1169,7 +1177,11 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	files.set('project.json', new TextEncoder().encode(JSON.stringify(data)));
 	const bytes = await zip([...files].map(([name, data]) => ({ name, data })));
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'eight-directions.zip',
 		mimeType: 'application/zip',
@@ -1353,7 +1365,11 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await item.getByRole('button', { name: 'Cancel', exact: true }).click();
 
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'New character…', exact: true }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	const character = page.getByRole('dialog', { name: 'New character', exact: true });
 	await character
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -1366,7 +1382,11 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await expect(page.getByRole('dialog', { name: 'Connect PixelLab' })).toBeVisible();
 	await page.goBack();
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'New character…', exact: true }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	await expect(character.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'a cheerful elf archer'
 	);
@@ -1448,7 +1468,11 @@ test('closing Connect before its code loads still discards the pending action', 
 	});
 	await openStudio(page, '/#/');
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'New character…', exact: true }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	const character = page.getByRole('dialog', { name: 'New character', exact: true });
 	await character
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -1740,7 +1764,11 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	files.set('project.json', new TextEncoder().encode(JSON.stringify(data)));
 	const archive = await zip([...files].map(([name, data]) => ({ name, data })));
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'draft-fixture.zip',
 		mimeType: 'application/zip',
@@ -1850,7 +1878,11 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 	await expect(engines.getByRole('radio', { name: /Phaser/ })).not.toBeFocused();
 	await page.getByRole('button', { name: 'Close export', exact: true }).click();
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'New character…', exact: true }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	const editor = page.getByRole('tablist', { name: 'Prompt editor', exact: true });
 	await expect(editor.locator('[tabindex="0"]')).toHaveCount(1);
 	await editor.getByRole('tab', { name: 'Appearance', exact: true }).focus();
@@ -2226,7 +2258,11 @@ async function busyFirstTab(
 	await expect(second.locator('#experience-options')).toContainText('Other tab');
 	await second.keyboard.press('Escape');
 	await second.locator('.project-btn').click();
-	await second.getByRole('menuitem', { name: 'New character…', exact: true }).click();
+	await second
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await second.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	const create = second.getByRole('dialog', { name: 'New character', exact: true });
 	await create
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -2251,7 +2287,11 @@ test('a click waiting on a busy first tab continues as soon as that tab is idle,
 		0
 	);
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'New character…', exact: true }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	await page
 		.getByRole('dialog', { name: 'New character', exact: true })
 		.getByRole('button', { name: 'Start over', exact: true })
@@ -2308,7 +2348,11 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 	await follower.keyboard.press('Escape');
 	async function openCreate() {
 		await follower.locator('.project-btn').click();
-		await follower.getByRole('menuitem', { name: 'New character…', exact: true }).click();
+		await follower
+			.locator('#project-menu')
+			.getByRole('button', { name: 'New character', exact: true })
+			.click();
+		await follower.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 		return follower.getByRole('dialog', { name: 'New character', exact: true });
 	}
 	let create = await openCreate();
@@ -5397,6 +5441,62 @@ async function editableCopy(page: Page) {
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 const itemMenu = (page: Page) => page.locator('#item-menu');
+
+test('item long-press opens without wearing, cancels on movement, and downloads an editable item ZIP', async ({
+	page
+}) => {
+	await editableCopy(page);
+	await equipmentGroup(page, 'Head');
+	const tile = section(page, 'Head').getByRole('button', { name: /^Wizard hat(,|$)/ });
+	const worn = await tile.getAttribute('aria-pressed');
+	await tile.click({ button: 'right' });
+	await expect(itemMenu(page)).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(itemMenu(page)).toBeHidden();
+	const pointer = {
+		pointerId: 71,
+		pointerType: 'touch',
+		isPrimary: true,
+		button: 0,
+		clientX: 80,
+		clientY: 90
+	};
+	const touch = await page.context().newCDPSession(page);
+	for (const target of [
+		tile,
+		section(page, 'Head').getByRole('button', { name: 'More options for Wizard hat', exact: true })
+	]) {
+		const box = (await target.boundingBox())!;
+		await touch.send('Input.dispatchTouchEvent', {
+			type: 'touchStart',
+			touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }]
+		});
+		await expect(itemMenu(page)).toBeVisible();
+		await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+		await expect(itemMenu(page)).toBeVisible();
+		await expect(tile).toHaveAttribute('aria-pressed', worn!);
+		await page.keyboard.press('Escape');
+		await expect(itemMenu(page)).toBeHidden();
+	}
+	await tile.dispatchEvent('pointerdown', pointer);
+	await tile.dispatchEvent('pointermove', { ...pointer, clientY: 120 });
+	await tile.dispatchEvent('pointerup', pointer);
+	await expect(itemMenu(page)).toBeHidden();
+	await tile.click();
+	await expect(tile).not.toHaveAttribute('aria-pressed', worn!);
+	await tile.click({ button: 'right' });
+	const downloaded = page.waitForEvent('download');
+	await itemMenu(page).getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();
+	const download = await downloaded;
+	expect(download.suggestedFilename()).toMatch(/wizard-hat\.pixeldoll\.zip$/);
+	const bytes = readFileSync((await download.path())!);
+	const { readCharacterZip } = await import('../../src/lib/store/import.ts');
+	const imported = await readCharacterZip(new Uint8Array(bytes));
+	expect(
+		imported.project.manifest.items.filter((item) => !item.variantOf).map((item) => item.name)
+	).toContain('Wizard hat');
+	expect(imported.project.manifest.items.filter((item) => !item.variantOf)).toHaveLength(2);
+});
 const menuOpen = (page: Page) => itemMenu(page).evaluate((m) => m.matches(':popover-open'));
 /** The open menu is an arrowed popover fully inside the viewport. */
 async function expectAnchoredMenu(page: Page) {

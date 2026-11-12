@@ -94,8 +94,7 @@
 				class="bu-action btn plain"
 				data-variant="quiet"
 				onclick={() => {
-					ui.importSource = 'device';
-					ui.sheet = 'import';
+					ui.sheet = 'importZip';
 				}}><Download size={16} />Import an existing character</button
 			>
 			<p class="faint small">
