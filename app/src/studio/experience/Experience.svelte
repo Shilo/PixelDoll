@@ -6,6 +6,7 @@
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
+	import CastCarousel from './CastCarousel.svelte';
 	import {
 		ui,
 		doc,
@@ -17,7 +18,7 @@
 		toast
 	} from '../state.svelte.ts';
 	import { experience, customize as enterCustomize, characters } from './state.svelte.ts';
-	import { WORLDS, REFLECTION, worldArt } from './config.ts';
+	import { WORLDS, worldArt } from './config.ts';
 	import { heroScale, layout, placeWorld } from './geometry.ts';
 	import {
 		ChevronDown,
@@ -35,6 +36,7 @@
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	let search = $state('');
+	let castDirection = $state(1);
 	let selection = $state<HTMLDivElement>();
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
@@ -133,15 +135,23 @@
 					: experience.mode
 		]
 	);
-	async function pick(id: string) {
+	async function pick(id: string, activate = true) {
 		resetWheel();
 		if (doc.loading) return;
-		if (id === doc.id) customize();
-		else await openProject(id);
+		if (id === doc.id) {
+			if (activate) customize();
+		} else {
+			const distance =
+				(list.findIndex((project) => project.id === id) - Math.max(0, index) + list.length) %
+				list.length;
+			castDirection = distance <= list.length / 2 ? 1 : -1;
+			await openProject(id);
+		}
 	}
 	function next(delta: number) {
 		resetWheel();
 		if (list.length < 2 || doc.loading) return;
+		castDirection = Math.sign(delta);
 		void openProject(list[(Math.max(0, index) + delta + list.length) % list.length].id);
 	}
 	function selectionKey(e: KeyboardEvent) {
@@ -167,6 +177,7 @@
 	let wheelAmount = 0,
 		lastWheelAt = -Infinity,
 		wheelDirection = 0,
+		wheelTargetDirection = 1,
 		wheelIntent = 0,
 		wheelContext = '';
 	let wheelTarget = $state(''),
@@ -209,8 +220,10 @@
 			return;
 		}
 		const target = wheelTarget,
-			intent = wheelIntent;
+			intent = wheelIntent,
+			direction = wheelTargetDirection;
 		const frame = requestAnimationFrame(() => {
+			castDirection = direction;
 			void openProject(target).then(() => {
 				if (wheelIntent === intent) wheelTarget = '';
 			});
@@ -257,6 +270,7 @@
 			list.findIndex((p) => p.id === (wheelTarget || doc.id))
 		);
 		wheelIntent++;
+		wheelTargetDirection = Math.sign(distance);
 		wheelTarget = list[(start + distance + list.length) % list.length].id;
 		if (customizeRequested) customizeRequested = wheelTarget;
 	}
@@ -366,23 +380,15 @@
 			bind:this={selection}
 			onkeydown={selectionKey}
 		>
-			<div class="cast">
-				{#each neighbors as { p, offset } (p.id)}
-					<button
-						class="cast-character"
-						class:chosen={!offset}
-						onclick={() => pick(p.id)}
-						aria-label={offset ? `Select ${p.name}` : `Customize ${name}`}
-					>
-						<CharacterThumb id={p.id} name={p.name} size={castSize(offset)} />
-						{#if REFLECTION.enabled && REFLECTION.selection}<span
-								class="cast-reflection"
-								aria-hidden="true"
-								><CharacterThumb id={p.id} name={p.name} size={castSize(offset)} /></span
-							>{/if}
-					</button>
-				{/each}
-			</div>
+			<CastCarousel
+				entries={neighbors}
+				context={list.map((project) => project.id).join('\0')}
+				size={castSize(0)}
+				sideSize={castSize(1)}
+				direction={castDirection}
+				{name}
+				select={pick}
+			/>
 			{#if list.length}<div class="selected-caption">
 					<!-- The heading sits beside the menu button: a heading is not allowed inside a button. -->
 					<h2 class="sr">{name}</h2>

@@ -721,6 +721,313 @@ test('a lone character ignores wheel navigation and keyboard steps without reope
 	await expect(page.locator('.customize-action')).toBeEnabled();
 });
 
+test('character carousel retargets real animations, keeps canvases, and settles reduced motion and small lists', async ({
+	page
+}, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await page.emulateMedia({ reducedMotion: 'no-preference' });
+	await page.goto(dev);
+	await expect(page.locator('.customize-action')).toHaveAttribute('aria-busy', 'false');
+	const ids = await page.evaluate(async () => {
+		const { openSource } = await import(/* @vite-ignore */ String('/src/lib/dress/project.ts'));
+		const { saveImportedCharacter } = await import(
+			/* @vite-ignore */ String('/src/lib/store/import.ts')
+		);
+		const { refreshProjects, openProject, store } = await import(
+			/* @vite-ignore */ String('/src/studio/state.svelte.ts')
+		);
+		const { project } = await openSource('fixture:s2');
+		for (let copy = 1; copy <= 6; copy++)
+			await saveImportedCharacter(
+				{
+					project: { manifest: structuredClone(project.manifest), images: project.images },
+					extra: {},
+					warnings: []
+				},
+				`Carousel ${copy <= 3 ? 'trio ' : ''}${copy <= 2 ? 'pair ' : ''}${copy}`
+			);
+		await refreshProjects();
+		await openProject(store.projects[0].id);
+		return store.projects.map((project: { id: string }) => project.id);
+	});
+	const chosen = page.locator('.cast-character.chosen');
+	const settled = () =>
+		expect
+			.poll(() =>
+				page.locator('.cast').evaluate((cast) => cast.getAnimations({ subtree: true }).length)
+			)
+			.toBe(0);
+	await settled();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[0]);
+	await page.locator('.cast').evaluate((cast) => {
+		const state = window as unknown as {
+			carouselCanvas: HTMLCanvasElement;
+			carouselNode: Element;
+			carouselDimensions: number[];
+			carouselButton: Element;
+			carouselRect: string;
+			carouselAnimate: typeof Element.prototype.animate;
+		};
+		state.carouselNode = cast.querySelector('.chosen')!;
+		state.carouselCanvas = state.carouselNode.querySelector('canvas')!;
+		state.carouselDimensions = [state.carouselCanvas.width, state.carouselCanvas.height];
+		state.carouselButton = document.querySelector('.customize-action')!;
+		state.carouselRect = JSON.stringify(state.carouselButton.getBoundingClientRect().toJSON());
+		const animate = Element.prototype.animate;
+		state.carouselAnimate = animate;
+		Element.prototype.animate = function (...args: Parameters<Element['animate']>) {
+			const animation = animate.apply(this, args);
+			if (this.matches('.carousel-character')) {
+				animation.pause();
+				animation.currentTime = 0;
+			}
+			return animation;
+		};
+	});
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[1]);
+	await expect
+		.poll(() =>
+			page.locator('.cast').evaluate((cast) => cast.getAnimations({ subtree: true }).length)
+		)
+		.toBeGreaterThan(0);
+	const halfway = await page.locator('.cast').evaluate((cast) => {
+		const state = window as unknown as {
+			carouselCanvas: HTMLCanvasElement;
+			carouselNode: HTMLElement;
+			carouselDimensions: number[];
+			carouselButton: Element;
+			carouselRect: string;
+			carouselSample: string;
+		};
+		for (const animation of cast.getAnimations({ subtree: true })) {
+			if (animation.effect!.getTiming().duration !== 220)
+				throw new Error('Unbounded carousel duration');
+			animation.currentTime = 80;
+		}
+		state.carouselSample = getComputedStyle(state.carouselNode).transform;
+		return {
+			retained:
+				state.carouselCanvas === state.carouselNode.querySelector('canvas') &&
+				state.carouselCanvas.isConnected,
+			dimensions: [state.carouselCanvas.width, state.carouselCanvas.height],
+			previousDimensions: state.carouselDimensions,
+			buttonStable:
+				document.querySelector('.customize-action') === state.carouselButton &&
+				JSON.stringify(state.carouselButton.getBoundingClientRect().toJSON()) ===
+					state.carouselRect,
+			moving: state.carouselSample !== state.carouselNode.style.transform,
+			pixels: state.carouselCanvas
+				.getContext('2d')!
+				.getImageData(0, 0, state.carouselCanvas.width, state.carouselCanvas.height)
+				.data.some((value, index) => index % 4 === 3 && value !== 0)
+		};
+	});
+	expect(halfway.retained).toBe(true);
+	expect(halfway.dimensions).toEqual(halfway.previousDimensions);
+	expect(halfway.buttonStable).toBe(true);
+	expect(halfway.moving).toBe(true);
+	expect(halfway.pixels).toBe(true);
+	await page.getByRole('button', { name: 'Previous character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[0]);
+	expect(
+		await page.evaluate(() => {
+			const state = window as unknown as { carouselNode: HTMLElement; carouselSample: string };
+			return getComputedStyle(state.carouselNode).transform === state.carouselSample;
+		})
+	).toBe(true);
+	const finish = async () => {
+		await page.locator('.cast').evaluate((cast) => {
+			for (const animation of cast.getAnimations({ subtree: true })) animation.finish();
+		});
+		await settled();
+		await expect(page.locator('.cast-character')).toHaveCount(3);
+	};
+	await finish();
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[1]);
+	const firstExit = page.locator(`.cast-character[data-character-id="${ids.at(-1)}"]`);
+	await firstExit.evaluate((node) => {
+		for (const animation of node.getAnimations()) animation.currentTime = 80;
+	});
+	const exitOpacity = await firstExit.evaluate((node) => getComputedStyle(node).opacity);
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[2]);
+	await expect(firstExit).toHaveCount(1);
+	expect(await firstExit.evaluate((node) => getComputedStyle(node).opacity)).toBe(exitOpacity);
+	expect(
+		await firstExit.evaluate((node) => node.getAnimations()[0].effect!.getTiming().duration)
+	).toBe(140);
+	await page.getByRole('button', { name: 'Previous character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[1]);
+	expect(
+		await firstExit.evaluate((node) => {
+			const frames = (node.getAnimations()[0].effect as KeyframeEffect).getKeyframes();
+			return new DOMMatrix(String(frames.at(-1)!.transform)).m41;
+		})
+	).toBeLessThan(0);
+	await finish();
+	const open = async (id: string) => {
+		await page.locator('.character-row').nth(ids.indexOf(id)).click();
+		await expect(chosen).toHaveAttribute('data-character-id', id);
+	};
+	await open(ids[0]);
+	await finish();
+	await page
+		.locator('.selection-world')
+		.dispatchEvent('wheel', { deltaY: 400, bubbles: true, cancelable: true });
+	await expect(chosen).toHaveAttribute('data-character-id', ids[2]);
+	expect(
+		await page
+			.locator(`.cast-character[data-character-id="${ids[1]}"]`)
+			.evaluate((node) => (node.getAnimations()[0].effect as KeyframeEffect).getKeyframes().length)
+	).toBe(2);
+	await finish();
+	await open(ids[1]);
+	await finish();
+	await page.evaluate(
+		(blockedIds) => {
+			const state = window as unknown as {
+				carouselReleases: Record<string, () => void>;
+				carouselGet: typeof IDBObjectStore.prototype.get;
+			};
+			state.carouselReleases = {};
+			const blocks = new Set(blockedIds);
+			state.carouselGet = IDBObjectStore.prototype.get;
+			IDBObjectStore.prototype.get = function (key: IDBValidKey) {
+				if (this.name === 'projects' && blocks.delete(String(key))) {
+					const transaction = this.transaction;
+					transaction.addEventListener(
+						'complete',
+						(event) => {
+							event.stopImmediatePropagation();
+							state.carouselReleases[String(key)] = () =>
+								transaction.dispatchEvent(new Event('complete'));
+						},
+						{ once: true }
+					);
+				}
+				return state.carouselGet.call(this, key);
+			};
+			window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, cancelable: true }));
+		},
+		[ids[2], ids[1]]
+	);
+	const blocked = (id: string) =>
+		expect
+			.poll(() =>
+				page.evaluate(
+					(target) =>
+						typeof (window as unknown as { carouselReleases: Record<string, () => void> })
+							.carouselReleases[target],
+					id
+				)
+			)
+			.toBe('function');
+	const release = (id: string) =>
+		page.evaluate(
+			(target) =>
+				(window as unknown as { carouselReleases: Record<string, () => void> }).carouselReleases[
+					target
+				](),
+			id
+		);
+	await blocked(ids[2]);
+	await page
+		.locator('.selection-world')
+		.dispatchEvent('wheel', { deltaY: -200, bubbles: true, cancelable: true });
+	await release(ids[2]);
+	await blocked(ids[1]);
+	await expect(chosen).toHaveAttribute('data-character-id', ids[2]);
+	const arrival = await page
+		.locator(`.cast-character[data-character-id="${ids[3]}"]`)
+		.evaluate(
+			(node) =>
+				new DOMMatrix(
+					String((node.getAnimations()[0].effect as KeyframeEffect).getKeyframes()[0].transform)
+				).m41
+		);
+	expect(arrival).toBeGreaterThan(0);
+	await release(ids[1]);
+	await expect(chosen).toHaveAttribute('data-character-id', ids[1]);
+	await finish();
+	await page.evaluate(() => {
+		IDBObjectStore.prototype.get = (
+			window as unknown as { carouselGet: typeof IDBObjectStore.prototype.get }
+		).carouselGet;
+	});
+	await open(ids[0]);
+	await finish();
+	await page.evaluate(async (id) => {
+		const { openProject } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
+		await openProject(id);
+	}, ids[3]);
+	await expect(chosen).toHaveAttribute('data-character-id', ids[3]);
+	await expect(page.locator('.cast-character[inert]')).toHaveCount(3);
+	await finish();
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[4]);
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await settled();
+	await expect(page.locator('.cast-character')).toHaveCount(3);
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[5]);
+	await settled();
+	await page.emulateMedia({ reducedMotion: 'no-preference' });
+	const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+	await search.fill('Carousel trio');
+	await expect(page.locator('.character-row')).toHaveCount(3);
+	await settled();
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect
+		.poll(() =>
+			page
+				.locator('.cast')
+				.evaluate((cast) =>
+					cast
+						.getAnimations({ subtree: true })
+						.some((animation) => (animation.effect as KeyframeEffect).getKeyframes().length === 4)
+				)
+		)
+		.toBe(true);
+	await finish();
+	await search.fill('Carousel trio pair');
+	await expect(page.locator('.cast-character')).toHaveCount(2);
+	await settled();
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect
+		.poll(() =>
+			page.locator('.cast').evaluate((cast) => cast.getAnimations({ subtree: true }).length)
+		)
+		.toBe(2);
+	await page.setViewportSize({ width: 390, height: 844 });
+	await settled();
+	await expect(page.locator('.cast-character')).toHaveCount(2);
+	await search.fill('Carousel trio pair 1');
+	await expect(page.locator('.cast-character')).toHaveCount(1);
+	await settled();
+	await page
+		.locator('.selection-world')
+		.dispatchEvent('wheel', { deltaY: 1000, bubbles: true, cancelable: true });
+	await settled();
+	await expect(page.locator('.cast-character')).toHaveCount(1);
+	await search.fill('No carousel matches');
+	await expect(page.locator('.cast-character')).toHaveCount(0);
+	await settled();
+	await page.evaluate(() => {
+		Element.prototype.animate = (
+			window as unknown as { carouselAnimate: typeof Element.prototype.animate }
+		).carouselAnimate;
+	});
+	await search.fill('');
+	await expect(page.locator('.cast-character')).toHaveCount(3);
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await settled();
+	await expect(page.locator('.cast-character')).toHaveCount(3);
+	await expect(page.getByRole('button', { name: 'Next character', exact: true })).toBeFocused();
+});
+
 test('fast wheel input skips intermediate loads and keeps the latest selection while loading', async ({
 	page
 }, info) => {
