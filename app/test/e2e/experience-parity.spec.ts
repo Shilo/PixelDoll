@@ -1365,17 +1365,24 @@ test.describe('Preview facing lineup', () => {
 							data = c.getImageData(0, 0, canvas.width, canvas.height).data,
 							scale = canvas.width / innerWidth;
 						let left = Infinity,
-							right = -Infinity;
+							right = -Infinity,
+							bottom = -Infinity;
 						for (let y = 0; y < canvas.height; y++)
 							for (let x = 0; x < canvas.width; x++)
 								if (data[(y * canvas.width + x) * 4 + 3]) {
 									left = Math.min(left, x / scale);
 									right = Math.max(right, (x + 1) / scale);
+									// The faint reflection aside, the lowest solid pixel: the ring, or the feet without one.
+									if (data[(y * canvas.width + x) * 4 + 3] > 128)
+										bottom = Math.max(bottom, (y + 1) / scale);
 								}
-						return { left, right };
+						return { left, right, bottom };
 					});
 				expect(painted.left, `${name} at ${width}×${height}`).toBeGreaterThanOrEqual(g.stage.l);
 				expect(painted.right, `${name} at ${width}×${height}`).toBeLessThanOrEqual(g.stage.r);
+				// The floor ring keeps clear space above the playback bar.
+				const bar = (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!;
+				expect(painted.bottom, `${name} at ${width}×${height}`).toBeLessThanOrEqual(bar.y - 8);
 			}
 			const capacity = pickFacings(available, available[0], 5).length;
 			// Wide windows show a lineup whenever the character has a second facing to show; it never grows as

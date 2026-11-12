@@ -80,7 +80,15 @@
 	const heroHeight = $derived(
 		experience.screen === 'characters' ? 50 * castScale : experience.heroHeight || 50 * castScale
 	);
-	const world = $derived(placeWorld(g, worldArt(ui.theme), g.feet, heroHeight));
+	// The world rises with Preview's lifted feet (WorldStage), so its horizon stays on the characters' eye line.
+	const world = $derived(
+		placeWorld(
+			g,
+			worldArt(ui.theme),
+			{ x: g.feet.x, y: g.feet.y - (experience.screen === 'studio' ? experience.lift : 0) },
+			heroHeight
+		)
+	);
 	const px = (n: number) => `${Math.round(n * 100) / 100}px`;
 	const vars = $derived(
 		[

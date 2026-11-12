@@ -4,11 +4,17 @@
 	import { experience, characters, setMode } from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
 	import { MOTION, REFLECTION, WORLDS, worldArt } from './config.ts';
-	import { heroRoom, layout, placeWorld } from './geometry.ts';
+	import { EYE, heroRoom, layout, placeWorld } from './geometry.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { paintedFrame, reachFrame, actorScale } from './bounds.ts';
 	import { planLineup } from './lineup.ts';
+	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
+	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
+	const RING_GAP = 12;
+	const ringRadius = (bodyWidth: number, scale: number) => Math.max(12, bodyWidth * scale * 0.35);
+	const ringFlatness = (belowHorizon: number, worldScale: number, focal: number) =>
+		Math.min(1, Math.max(0, belowHorizon) / (worldScale * focal));
 	import {
 		buildPresentation,
 		resolvePreview,
@@ -328,7 +334,7 @@
 			g.setTransform(dpr, 0, 0, dpr, 0, 0);
 			g.clearRect(0, 0, width, height);
 			g.imageSmoothingEnabled = false;
-			// The feet sit just above the playback bar in every view, so switching views never moves the character.
+			// The feet sit just above the playback bar in every view; only a Preview lineup lifts them to clear its ring.
 			const place = layout(width, height, 'studio');
 			const anchor = { x: place.feet.x, y: place.feet.y };
 			const room = heroRoom(place);
@@ -352,8 +358,22 @@
 			const heroNow = fitFrame
 				? Math.round(fitFrame.y * (row?.scale ?? actorScale(fitFrame, room, dpr)))
 				: experience.heroHeight;
-			const art = worldArt(ui.theme),
-				backdrop = placeWorld(place, art, anchor, heroNow);
+			const art = worldArt(ui.theme);
+			let backdrop = placeWorld(place, art, anchor, heroNow),
+				lift = 0;
+			// A lineup's floor ring reaches below the feet; raise the characters (and the world with them) so the ring
+			// keeps a comfortable gap above the playback bar.
+			if (row && fitFrame && row.facings.length > 1) {
+				const below =
+					ringRadius(fitFrame.w, row.scale) *
+					ringFlatness(EYE * heroNow, backdrop.scale, art.focal);
+				lift = Math.max(0, Math.ceil(below + RING_GAP - (place.playbackTop - place.feet.y)));
+				if (lift) {
+					anchor.y -= lift;
+					backdrop = placeWorld(place, art, anchor, heroNow);
+				}
+			}
+			if (lift !== experience.lift) experience.lift = lift;
 			let velocity = keyboardVector(keys, experience.mode === 'side');
 			if (stick)
 				velocity = pointerVector(
@@ -533,17 +553,14 @@
 					// A lineup marks its selected facing with a thin accent ring on the floor, anchored to the feet so it
 					// never moves with the walk or collides with tall gear; the sprite is drawn over its back half. A circle
 					// on the world floor looks as flat as the floor is foreshortened there: rows below the horizon over focal.
-					const flat = Math.min(
-						1,
-						Math.max(0, point.y - backdrop.eye) / (backdrop.scale * art.focal)
-					);
+					const flat = ringFlatness(point.y - backdrop.eye, backdrop.scale, art.focal);
 					if (facings.length > 1)
 						for (const [d, alpha] of [
 							[ui.dir, 0.85],
 							[hovered, 0.3]
 						] as const) {
 							if (!d || !facings.includes(d) || (alpha < 0.5 && d === ui.dir)) continue;
-							const rx = Math.max(12, fit.w * scale * 0.35);
+							const rx = ringRadius(fit.w, scale);
 							g.save();
 							g.globalAlpha = alpha;
 							g.strokeStyle = accent;
