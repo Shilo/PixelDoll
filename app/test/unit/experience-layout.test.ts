@@ -5,10 +5,39 @@ import {
 	heroRoom,
 	heroScale,
 	layout,
-	placeWorld
+	placeWorld,
+	ringRise
 } from '../../src/studio/experience/geometry.ts';
 import { worldArt } from '../../src/studio/experience/config.ts';
 import { projection } from '../../src/studio/experience/ground.ts';
+
+describe('conservative floor ring rise', () => {
+	test('uses visible standing height and rounds down only in device pixels', () => {
+		expect(ringRise(64, 1, 20)).toBe(2);
+		expect(ringRise(48, 1, 20)).toBe(1);
+		expect(ringRise(48, 1, 20, 2)).toBe(1.5);
+		expect(ringRise(16, 0.5, 20, 2)).toBe(0);
+		expect(ringRise(63, 2, 20)).toBe(3);
+		expect(ringRise(64, 2, 20)).toBe(4);
+	});
+
+	test('caps the rise at half the ellipse depth without forcing a minimum', () => {
+		expect(ringRise(256, 4, 7, 2)).toBe(3.5);
+		expect(ringRise(64, 2, 0.5)).toBe(0);
+		expect(ringRise(0, 2, 20)).toBe(0);
+	});
+
+	for (const density of [1, 1.5, 2])
+		for (const scale of [0.35, 1, 1.75, 4.2])
+			test(`preserves conservative bounds and upscale equivalence at ${density} DPR, ${scale} scale`, () => {
+				const rise = ringRise(63, scale, 9, density);
+				expect(rise).toBeGreaterThanOrEqual(0);
+				expect(rise).toBeLessThanOrEqual((63 * scale) / 32);
+				expect(rise).toBeLessThanOrEqual(4.5);
+				expect(rise * density).toBeCloseTo(Math.round(rise * density));
+				expect(ringRise(126, scale / 2, 9, density)).toBe(rise);
+			});
+});
 
 describe('immersive stage frame fitting', () => {
 	for (const frame of [
