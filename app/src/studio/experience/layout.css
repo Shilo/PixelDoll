@@ -711,30 +711,24 @@
 	right: var(--stage-right);
 	top: 0;
 	height: var(--feet-y);
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) 48% minmax(0, 1fr);
-	align-items: end;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
 	gap: 5%;
 	pointer-events: none;
 }
 .cast-character {
 	position: relative;
-	grid-column: 1;
-	grid-row: 1;
-	justify-self: center;
 	border: 0;
 	background: none;
 	padding: 0;
-	max-width: 100%;
+	max-width: 30%;
 	margin-bottom: 30px;
 	pointer-events: auto;
 }
 .cast-character.chosen {
-	grid-column: 2;
+	max-width: 48%;
 	margin-bottom: 0;
-}
-.cast-character.chosen ~ .cast-character {
-	grid-column: 3;
 }
 .cast-character .character-thumbnail {
 	min-width: 0;

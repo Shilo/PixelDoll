@@ -3,17 +3,19 @@ import { castPose, carouselFrames } from '../../src/studio/experience/carousel.t
 
 describe('character carousel geometry', () => {
 	it('centers one character and preserves side height and scale', () => {
-		expect(castPose(0, 1, 1000, 320, 192)).toEqual({ x: 0, y: 0, scale: 1 });
-		expect(castPose(-1, 3, 1000, 320, 192)).toEqual({ x: -306, y: -30, scale: 0.6 });
-		expect(castPose(1, 3, 1000, 320, 192)).toEqual({ x: 306, y: -30, scale: 0.6 });
+		expect(castPose(0, 1000, 320, 192)).toEqual({ x: 0, y: 0, scale: 1 });
+		expect(castPose(-1, 1000, 320, 192)).toEqual({ x: -306, y: -30, scale: 0.6 });
+		expect(castPose(1, 1000, 320, 192)).toEqual({ x: 306, y: -30, scale: 0.6 });
 	});
-	it('centers the two-character pair without a duplicate', () => {
-		expect(castPose(-1, 2, 1000, 320, 192).x).toBe(-185);
-		expect(castPose(0, 2, 1000, 320, 192).x).toBe(121);
+	it('keeps the selected slot centered even when one neighbor is absent', () => {
+		for (const width of [300, 768, 1000, 1920]) {
+			expect(castPose(0, width, 320, 192).x).toBe(0);
+			expect(castPose(-1, width, 320, 192).x).toBe(-castPose(1, width, 320, 192).x);
+		}
 	});
 	it('fits narrow stages without changing the artwork backing size', () => {
-		expect(castPose(0, 3, 300, 320, 192).scale).toBe(0.45);
-		expect(castPose(1, 3, 300, 320, 192).scale).toBe(0.28125);
+		expect(castPose(0, 300, 320, 192).scale).toBe(0.45);
+		expect(castPose(1, 300, 320, 192).scale).toBe(0.28125);
 	});
 	it('routes wrapped actors invisibly around the edges', () => {
 		const frames = carouselFrames(

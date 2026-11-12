@@ -119,7 +119,7 @@
 		for (const actor of actors) {
 			const node = nodes.get(actor.p.id);
 			if (!node) continue;
-			const pose = castPose(actor.offset, next.length, width, size, sideSize);
+			const pose = castPose(actor.offset, width, size, sideSize);
 			if (actor.leaving) pose.x = -(actor.exitDirection ?? forward) * edge;
 			const endpoint = castTransform(pose);
 			node.style.transform = endpoint;
