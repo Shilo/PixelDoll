@@ -166,6 +166,40 @@ test('the Characters panel keeps its Customize button on the edge margin', async
 	}
 });
 
+test('view tabs keep equal widths and never move when switching views', async ({ page }) => {
+	for (const [width, height] of [
+		[1440, 900],
+		[960, 800],
+		[390, 844]
+	]) {
+		await page.setViewportSize({ width, height });
+		await landing(page);
+		await page.locator('.customize-action').click();
+		const tabs = modes(page).getByRole('button');
+		const boxes = () =>
+			tabs.evaluateAll((all) =>
+				all.map((tab) => {
+					const r = tab.getBoundingClientRect(),
+						label = tab.querySelector('.bu-tab-label')!.getBoundingClientRect();
+					return [r.x, r.width, label.x, label.width].map((n) => Math.round(n * 10) / 10);
+				})
+			);
+		const first = await boxes();
+		const widths = first.map((b) => b[1]);
+		expect(Math.max(...widths) - Math.min(...widths), `equal view tabs at ${width}px`).toBeLessThan(
+			1
+		);
+		for (const name of ['Top-down', 'Side-scroller', 'Preview']) {
+			await modes(page).getByRole('button', { name, exact: true }).click();
+			await expect(modes(page).getByRole('button', { name, exact: true })).toHaveAttribute(
+				'aria-pressed',
+				'true'
+			);
+			expect(await boxes(), `${name} keeps every tab in place at ${width}px`).toEqual(first);
+		}
+	}
+});
+
 test('full screen includes the whole app and survives screen changes, dialogs and external exit', async ({
 	page
 }) => {
