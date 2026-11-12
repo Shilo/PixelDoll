@@ -116,6 +116,7 @@ export type SheetId =
 	| 'export'
 	| 'activity'
 	| 'item'
+	| 'gen'
 	| 'move'
 	| 'rename'
 	| 'import'
@@ -1308,6 +1309,8 @@ export interface Gen {
 	phase: 'running' | 'review' | 'failed';
 	status: string;
 	error?: string;
+	canceled?: boolean;
+	cancelSaveFailed?: boolean;
 	requestText?: number;
 }
 export const gens = $state<Gen[]>([]);
@@ -1325,6 +1328,9 @@ const saveGens = () =>
 // other's studio-drafts). A follower tab shows the leader's drafts, re-read when the ledger changes, and takes over when
 // the leader's tab closes.
 const runningGens = new Set<string>();
+const generationControllers = new Map<string, AbortController>();
+const generationRuns = new Map<string, Promise<void>>();
+const cancellationRequested = new Set<string>();
 let loading: Promise<void> | null = null,
 	gensReady = false,
 	driving = false,
@@ -1533,15 +1539,32 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
 }
 async function runGen(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>) {
 	const id = g.draft.spec.id;
-	if (runningGens.has(id)) return;
+	if (
+		runningGens.has(id) ||
+		cancellationRequested.has(id) ||
+		g.canceled ||
+		g.phase !== 'running' ||
+		!gens.includes(g)
+	)
+		return;
 	runningGens.add(id);
+	const controller = new AbortController();
+	generationControllers.set(id, controller);
 	try {
-		await runGenOnce(g, ctx);
+		const pending = runGenOnce(g, ctx, controller.signal);
+		generationRuns.set(id, pending);
+		await pending;
 	} finally {
 		runningGens.delete(id);
+		generationControllers.delete(id);
+		generationRuns.delete(id);
 	}
 }
-async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>) {
+async function runGenOnce(
+	g: Gen,
+	ctx?: Awaited<ReturnType<typeof loadProject>>,
+	signal?: AbortSignal
+) {
 	g.phase = 'running';
 	g.error = undefined;
 	// a draft saved or discarded meanwhile keeps no result: a late preview must not bring it back
@@ -1553,17 +1576,19 @@ async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>)
 		const res = await (
 			await itemFlow()
 		).run(g.draft, ctx, {
+			signal,
 			status: (s) => (g.status = s === 'design call' ? 'Designing' : 'Adding the other moves'),
 			persist: saveGens,
 			result
 		});
-		if (!gens.includes(g)) return;
+		if (!gens.includes(g) || signal?.aborted) return;
 		result(res);
 		g.phase = res?.qa && res.cells.length ? 'review' : 'failed';
 		if (g.phase === 'failed')
 			g.error = g.draft.log.at(-1) ?? 'PixelLab did not return usable frames';
 		g.status = '';
 	} catch (e) {
+		if (signal?.aborted) return;
 		// The pipeline did not load, so this attempt submitted nothing: keep the draft running for a reload to resume.
 		if (e instanceof LoadError) {
 			g.status = '';
@@ -1595,7 +1620,7 @@ export async function openGenerationReview(id: string) {
 	if (!g || g.phase === 'running') return;
 	await openProject(g.draft.rigId);
 	if (!gens.includes(g) || doc.id !== g.draft.rigId) return;
-	ui.sheet = null;
+	ui.sheet = 'gen';
 	ui.tab = 'wardrobe';
 	ui.group = groupOf(g.input.slot).id;
 	ui.selected = `gen:${id}`;
@@ -1732,6 +1757,41 @@ export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
 		settling.delete(id);
 	}
 }
+export async function cancelGen(g: Gen): Promise<boolean> {
+	const id = g.draft.spec.id;
+	if (queue.role === 'follower')
+		throw new Error(
+			'Cancel this item in the tab that is generating it. This tab has not stopped the generation.'
+		);
+	if (settling.has(id) || (g.phase !== 'running' && !g.canceled)) return false;
+	settling.add(id);
+	cancellationRequested.add(id);
+	try {
+		const controller = generationControllers.get(id) ?? new AbortController();
+		for (const call of g.draft.calls)
+			if (call.recId) queue.observeScope(call.recId, controller.signal);
+		controller.abort();
+		await generationRuns.get(id);
+		await Promise.all(
+			g.draft.calls.flatMap((call) => (call.recId ? [queue.cancelAbortedScope(call.recId)] : []))
+		);
+		g.canceled = true;
+		g.cancelSaveFailed = false;
+		g.phase = 'failed';
+		g.status = '';
+		g.error =
+			'Canceled. Generations already used are not refunded. Requests already sent may still finish and charge. Review Activity for their outcomes.';
+		takeOffGone();
+		await saveGens();
+		cancellationRequested.delete(id);
+		return true;
+	} catch (error) {
+		g.cancelSaveFailed = true;
+		throw error;
+	} finally {
+		settling.delete(id);
+	}
+}
 export async function discardGen(g: Gen): Promise<boolean> {
 	const id = g.draft.spec.id;
 	if (follower() || settling.has(id)) return false;
@@ -1819,9 +1879,9 @@ export function openNewItem(
 }
 
 /** Progress of an item generation from the job ledger: share of calls done (+ the running calls' own progress). */
-export function genProgress(g: Gen, jobs: JobRec[]): { pct: number; short: string; label: string } {
-	if (g.phase === 'review') return { pct: 100, short: 'Review', label: 'ready to review' };
-	if (g.phase === 'failed') return { pct: 0, short: 'Failed', label: 'failed' };
+export function genProgress(g: Gen, jobs: JobRec[]): { pct: number } {
+	if (g.phase === 'review') return { pct: 100 };
+	if (g.phase === 'failed') return { pct: 0 };
 	const recs = g.draft.calls.map((c) => jobs.find((j) => j.id === c.recId));
 	const part = recs.reduce(
 		(s, r) =>
@@ -1834,13 +1894,7 @@ export function genProgress(g: Gen, jobs: JobRec[]): { pct: number; short: strin
 		0
 	);
 	const pct = Math.round((part / Math.max(1, recs.length)) * 100);
-	const waiting =
-		recs.some((r) => r?.state === 'queued') && !recs.some((r) => r?.state === 'running');
-	return {
-		pct,
-		short: waiting ? 'Queued' : `${pct}%`,
-		label: `${g.status || 'Generating'} · ${pct}%`
-	};
+	return { pct };
 }
 
 // A caught failure must stay terminal across reload; only an explicit start clears it. A load failure is not one: the

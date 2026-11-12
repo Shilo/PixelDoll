@@ -102,8 +102,7 @@
 </script>
 
 {#snippet foot()}
-	<span class="foot-note">{plan ? `About ${plan.minutes + 2} min. You can keep working.` : ''}</span
-	>
+	<span class="foot-note">{plan ? `About ${plan.minutes} min. You can keep working.` : ''}</span>
 	<span class="api-action"
 		><ApiPeek
 			scope="item-make"

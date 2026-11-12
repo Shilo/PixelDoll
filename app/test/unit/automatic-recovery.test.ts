@@ -43,6 +43,7 @@ vi.mock('../../src/lib/pixellab/queue.ts', () => ({
 		requestHash: ledger.identities.get(JSON.stringify(req)) ?? 'never-sent'
 	}),
 	queue: {
+		observeScope() {},
 		subscribe(cb: (s: { jobs: JobRec[] }) => void) {
 			ledger.listeners.add(cb);
 			cb({ jobs: [...ledger.records.values()] });
@@ -314,6 +315,120 @@ async function singleStandingFixture() {
 	ledger.project = structuredClone(f.ctx.rec);
 	return { ...f, draft };
 }
+
+test('canceling an item before starting submits no paid request', async () => {
+	const fixture = await singleStandingFixture(),
+		controller = new AbortController();
+	controller.abort();
+	await expect(
+		runItem(fixture.draft, fixture.ctx, { signal: controller.signal })
+	).rejects.toThrow();
+	expect(ledger.enqueues).toBe(0);
+});
+
+test('canceling a submitted design stops waiting without deleting paid history or starting dependent calls', async () => {
+	const fixtureData = await fixture(),
+		controller = new AbortController();
+	const draft = newDraft(fixtureData.ctx, {
+		name: 'Cancelable submitted item',
+		slot: 'torso_inner',
+		prompt: fixtureData.item.prompt!,
+		key: 'green',
+		anims: ['walking'],
+		dirs: ['south']
+	});
+	ledger.output = async () => [fixtureData.dressed, fixtureData.dressed];
+	let reached!: () => void;
+	const persisted = new Promise<void>((resolve) => {
+		reached = resolve;
+	});
+	const listenerCount = ledger.listeners.size;
+	const running = runItem(draft, fixtureData.ctx, {
+		signal: controller.signal,
+		persist: async () => {
+			const record = ledger.records.get(draft.calls[0].recId!);
+			if (record) {
+				record.state = 'running';
+				reached();
+			}
+		}
+	});
+	await persisted;
+	controller.abort();
+	await running;
+	expect(ledger.enqueues).toBe(1);
+	expect(ledger.records.get(draft.calls[0].recId!)?.state).toBe('running');
+	expect(ledger.listeners.size).toBe(listenerCount);
+});
+
+test('cancellation drains a delayed parallel enqueue before the runner settles', async () => {
+	const data = await singleStandingFixture(),
+		controller = new AbortController();
+	const draft = data.draft;
+	const dress = { ...draft.calls[0], kind: 'dress' as const };
+	draft.calls = Array.from({ length: 3 }, (_, index) => ({
+		...dress,
+		seed: dress.seed + index,
+		old: []
+	}));
+	let release!: () => void,
+		entered!: () => void,
+		outputs = 0,
+		finished = false;
+	const waiting = new Promise<void>((resolve) => {
+		entered = resolve;
+	});
+	ledger.output = async () => {
+		if (++outputs === 3) {
+			entered();
+			await new Promise<void>((resolve) => {
+				release = resolve;
+			});
+		}
+		return [data.dressed, data.dressed];
+	};
+	const running = runItem(draft, data.ctx, {
+		signal: controller.signal,
+		persist: async () => {
+			const record = ledger.records.get(draft.calls[1].recId!);
+			if (record) record.state = 'running';
+		}
+	}).then(() => {
+		finished = true;
+	});
+	await waiting;
+	controller.abort();
+	await new Promise((resolve) => setTimeout(resolve, 0));
+	expect(finished).toBe(false);
+	release();
+	await running;
+	expect(draft.calls.every((call) => !!call.recId)).toBe(true);
+	expect(ledger.enqueues).toBe(3);
+	expect(draft.log).toEqual([]);
+});
+
+test('canceling during design preserves its ledger record and starts no dependent request', async () => {
+	const fixtureData = await fixture(),
+		controller = new AbortController();
+	const draft = newDraft(fixtureData.ctx, {
+		name: 'Cancelable item',
+		slot: 'torso_inner',
+		prompt: fixtureData.item.prompt!,
+		key: 'green',
+		anims: ['walking'],
+		dirs: ['south']
+	});
+	expect(draft.calls.length).toBeGreaterThan(1);
+	ledger.output = async () => {
+		controller.abort();
+		return [fixtureData.dressed, fixtureData.dressed];
+	};
+	await runItem(draft, fixtureData.ctx, { signal: controller.signal });
+	expect(ledger.enqueues).toBe(1);
+	expect(ledger.requests.map((request) => request.path)).toEqual(['/edit-animation-v2']);
+	expect(draft.calls[0].recId).toBeTruthy();
+	expect(ledger.records.size).toBe(1);
+});
 
 async function retainedMaskedGrid(badMask?: 'gray' | 'alpha' | 'canvas') {
 	const f = await fixture(),
