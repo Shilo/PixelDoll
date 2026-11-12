@@ -2123,8 +2123,16 @@ test('every character loads its frames once across switching, menus and updates,
 				for (const c of document.querySelectorAll<HTMLCanvasElement>(
 					'.character-thumbnail canvas'
 				)) {
+					if (!c.checkVisibility()) continue;
 					const g = c.getContext('2d')!;
-					if (!g.getImageData(0, 0, c.width, c.height).data.some((v, i) => i % 4 === 3 && v))
+					const pixels = g.getImageData(0, 0, c.width, c.height).data;
+					let visible = false;
+					for (let alpha = 3; alpha < pixels.length; alpha += 4)
+						if (pixels[alpha]) {
+							visible = true;
+							break;
+						}
+					if (!visible)
 						w.blank.push(
 							c.closest('button')?.getAttribute('aria-label') ??
 								c.closest('button')?.querySelector('strong')?.textContent ??
@@ -2360,6 +2368,7 @@ test('every character loads its frames once across switching, menus and updates,
 	await expect(rows).toHaveCount(5);
 	await expect(rows.filter({ hasText: 'Hero 3' })).toHaveCount(0);
 	await step(() => rows.filter({ hasText: 'Hero 5' }).click());
+	await expect(page.locator('.selected-name-text')).toHaveText('Hero 5');
 	await settled();
 	const imported = await stats();
 	expect(imported.frames).toBeGreaterThan(updated.frames);
@@ -2377,4 +2386,6 @@ test('every character loads its frames once across switching, menus and updates,
 	const final = await stats();
 	expect(final.blank).toEqual([]);
 	expect(final.maxPerFrame).toBe(1);
+	expect(final.reads).toBe(imported.reads);
+	expect(final.decodes).toBe(imported.decodes);
 });
