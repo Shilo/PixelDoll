@@ -492,22 +492,15 @@
 	display: flex;
 	flex: none;
 }
-/* The tabs fill the row, so there is no dead space between targets; the label carries the underline (Bronze
-   .bu-tab-label). Wardrobe starts at the list edge and the last tab sits over the slot rail column, centered with its
-   icons. */
+/* Equal-width tabs with centered labels, like Material fixed tabs and Apple segmented controls: they fill the row, so
+   there is no dead space between targets, and the label carries the underline (Bronze .bu-tab-label). */
 .equipment-modes button {
-	flex: 1;
+	flex: 1 1 0;
 	justify-content: center;
 	min-width: 44px;
 	min-height: 44px;
 	padding: 0;
 	font-size: 15px;
-}
-.equipment-modes button:first-child {
-	justify-content: flex-start;
-}
-.equipment-modes button:last-child {
-	flex: 0 0 var(--slot-rail-width);
 }
 .customize-panel {
 	display: flex;

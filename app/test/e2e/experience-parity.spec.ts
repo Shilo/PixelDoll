@@ -1178,6 +1178,15 @@ test('short tab labels, the character name and sheet Done buttons keep 44 px tar
 		expect(box.width).toBeGreaterThanOrEqual(44);
 		expect(box.height).toBeGreaterThanOrEqual(44);
 	}
+	// Equal-width tabs fill the row, and the slot rail ends flush with the tab bar's right edge.
+	const row = await tabs.evaluate((el) => ({
+		bar: el.getBoundingClientRect().toJSON(),
+		widths: [...el.querySelectorAll('[role=tab]')].map((t) => t.getBoundingClientRect().width),
+		rail: document.querySelector('.slot-rail')?.getBoundingClientRect().toJSON()
+	}));
+	expect(Math.max(...row.widths) - Math.min(...row.widths)).toBeLessThanOrEqual(1);
+	expect(row.widths.reduce((a, b) => a + b, 0)).toBeCloseTo(row.bar.width, 0);
+	if (row.rail) expect(row.rail.right).toBeCloseTo(row.bar.right, 0);
 	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
 	const done = page
 		.getByRole('dialog', { name: 'Inspect character', exact: true })
