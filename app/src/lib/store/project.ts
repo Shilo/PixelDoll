@@ -71,7 +71,8 @@ export const listProjects = async () =>
 const DECODED_BUDGET = 96 * 1024 * 1024;
 const decoded = new Map<Sha256, Img>();
 let decodedBytes = 0;
-function rememberDecoded(h: Sha256, image: Img) {
+/** Also for cells made and saved here, so the next load does not read them back. */
+export function rememberDecoded(h: Sha256, image: Img) {
 	if (decoded.delete(h)) decodedBytes -= image.data.length;
 	decoded.set(h, image);
 	decodedBytes += image.data.length;

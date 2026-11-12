@@ -1,10 +1,15 @@
 // Dress-up persistence (browser): open a fixture or an IndexedDB project, save outfit presets + materials + z overrides.
 // IndexedDB projects (records with a manifest) are written back in place; fixtures get a side record "dress-<source>".
 import { loadFixture } from '../compose/fixture.ts';
-import { loadProject, untilAborted, type StoredProject } from '../store/project.ts';
+import {
+	loadProject,
+	rememberDecoded,
+	untilAborted,
+	type StoredProject
+} from '../store/project.ts';
 import { rigArtworkVersion } from '../rig/rig.ts';
 import * as db from '../store/db.ts';
-import type { Manifest, Material, Preset, Project, ZOverride } from '../store/manifest.ts';
+import type { Manifest, Material, Preset, Project, Sha256, ZOverride } from '../store/manifest.ts';
 import { CURRENT_FORMAT, supportedFormat } from '../store/manifest.ts';
 import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
@@ -180,6 +185,8 @@ export async function saveSplit(
 			};
 		return rec;
 	});
+	// The next open reads these cells: they are already decoded here.
+	for (const [h, im] of split.images) rememberDecoded(h as Sha256, im);
 }
 
 /** Save. For IndexedDB projects: one atomic read-modify-write (db.update), so concurrent item writes are kept (R6 P1-5). */
