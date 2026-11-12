@@ -904,6 +904,124 @@ test('selection search shows an honest zero-result state and preserves native ed
 	await expect(page.locator('.customize-action')).toBeEnabled();
 });
 
+test.describe('selected cast centering', () => {
+	test.use({ baseURL: `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}` });
+	for (const theme of ['dark', 'light'] as const)
+		for (const [width, height] of [
+			[1920, 1080],
+			[768, 1024],
+			[390, 844],
+			[844, 390]
+		])
+			test(`${theme} ${width}x${height}: one, two and three characters keep every selection centered`, async ({
+				page
+			}) => {
+				await page.setViewportSize({ width, height });
+				await landing(page);
+				await page.evaluate(async (theme) => {
+					const statePath = '/src/studio/state.svelte.ts',
+						dbPath = '/src/lib/store/db.ts';
+					const state = (await import(
+						statePath
+					)) as typeof import('../../src/studio/state.svelte.ts');
+					const db = (await import(dbPath)) as typeof import('../../src/lib/store/db.ts');
+					for (const [name, width, height] of [
+						['Wide', 96, 64],
+						['Tall', 48, 96]
+					] as const) {
+						const manifest = JSON.parse(
+							JSON.stringify(state.store.project!.manifest)
+						) as NonNullable<typeof state.store.project>['manifest'];
+						const canvas = document.createElement('canvas');
+						canvas.width = width;
+						canvas.height = height;
+						const context = canvas.getContext('2d')!;
+						context.fillStyle = '#d08050';
+						context.fillRect(width / 4, 4, width / 2, height - 12);
+						const blob = await new Promise<Blob>((resolve) =>
+							canvas.toBlob((blob) => resolve(blob!))
+						);
+						const hash = `sha256:cast-${name}` as const,
+							id = `rig-cast-${name}`;
+						const body = manifest.items.find((item) => item.id === manifest.rig.baseItem)!;
+						body.regions = undefined;
+						body.materials = [];
+						body.baseHash = hash;
+						body.layers = [{ id: 'main', role: 'fg', z: 0, cells: { walk: { south: [hash] } } }];
+						manifest.name = `Center pair ${name}`;
+						manifest.items = [body];
+						manifest.materials = [];
+						manifest.presets = [];
+						manifest.rig.cell = { w: width, h: height };
+						manifest.rig.pivot = { x: width / 2, y: height - 8 };
+						manifest.rig.baseHash = hash;
+						manifest.rig.rest = undefined;
+						manifest.rig.directions = [{ id: 'south' }];
+						manifest.rig.animations = [
+							{
+								...manifest.rig.animations[0],
+								id: 'walk',
+								cells: 1,
+								frames: [{ cell: 0, ms: 400 }]
+							}
+						];
+						await db.putCharacter(
+							id,
+							{ id, manifest, origin: 'studio', savedAt: new Date().toISOString() },
+							new Map([[hash.slice(7), blob]])
+						);
+					}
+					state.ui.theme = theme;
+					await state.refreshProjects();
+				}, theme);
+				const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+				for (const [query, count] of [
+					['Adventurer', 1],
+					['Center pair', 2],
+					['', 3]
+				] as const) {
+					await search.fill(query);
+					await expect(page.locator('.character-row')).toHaveCount(count);
+					await expect(page.locator('.character-row[aria-pressed="true"]')).toHaveCount(1);
+					await expect(page.locator('.customize-action')).toBeEnabled();
+					for (let index = 0; index < count; index++) {
+						const row = page.locator('.character-row').nth(index);
+						if ((await row.getAttribute('aria-pressed')) !== 'true') await row.click();
+						await expect(row).toHaveAttribute('aria-pressed', 'true');
+						await expect(page.locator('.customize-action')).toBeEnabled();
+						await expect(page.locator('.cast-character')).toHaveCount(count);
+						await expect
+							.poll(
+								() =>
+									page.locator('.cast').evaluate((cast) => {
+										const stage = cast.getBoundingClientRect();
+										const selected = cast.querySelector('.chosen')!.getBoundingClientRect();
+										const caption = document
+											.querySelector('.selected-caption')!
+											.getBoundingClientRect();
+										const center = stage.left + stage.width / 2;
+										return Math.max(
+											Math.abs(selected.left + selected.width / 2 - center),
+											Math.abs(caption.left + caption.width / 2 - center)
+										);
+									}),
+								{
+									message: `${count} characters, selection ${index}: selected cast aligns with its caption`
+								}
+							)
+							.toBeLessThanOrEqual(1);
+						await selection(page).focus();
+						await page.keyboard.press('ArrowRight');
+						await expect(page.locator('.character-row').nth((index + 1) % count)).toHaveAttribute(
+							'aria-pressed',
+							'true'
+						);
+						await expect(page.locator('.customize-action')).toBeEnabled();
+					}
+				}
+			});
+});
+
 test('saved light appearance applies before the application module initializes', async ({
 	page,
 	context
