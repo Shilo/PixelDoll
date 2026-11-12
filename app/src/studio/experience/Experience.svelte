@@ -37,10 +37,17 @@
 	let selection = $state<HTMLDivElement>();
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
+	let playbackHeight = $state(0);
+	const previewHeight = $derived(experience.mode === 'preview' ? playbackHeight : 0);
 	let viewportWidth = $state(1280),
 		viewportHeight = $state(720);
 	const m = $derived(store.project?.manifest);
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
+	const selectedMove = $derived(m?.rig.animations.find((animation) => animation.id === ui.anim));
+	const canPlay = $derived(
+		experience.presentation === 'animation' &&
+			selectedMove?.frames.some((frame) => frame.cell !== selectedMove.frames[0]?.cell)
+	);
 	const name = $derived(characterName());
 	// Facts for characters opened this session (the demo has no stored manifest summary).
 	const openedFacts = new SvelteMap<string, string>();
@@ -72,7 +79,7 @@
 		['outfits', 'Outfits'],
 		['moves', 'Moves']
 	] as const;
-	const g = $derived(layout(viewportWidth, viewportHeight, experience.screen));
+	const g = $derived(layout(viewportWidth, viewportHeight, experience.screen, previewHeight));
 	// The cast is drawn from 64 px frames whose bodies stand about 50 px tall and 48 px wide.
 	const castScale = $derived(heroScale(g, 50, 48));
 	const castSize = (offset: number) =>
@@ -80,7 +87,15 @@
 	const heroHeight = $derived(
 		experience.screen === 'characters' ? 50 * castScale : experience.heroHeight || 50 * castScale
 	);
-	const world = $derived(placeWorld(g, worldArt(ui.theme), g.feet, heroHeight));
+	// The world rises with Preview's lifted feet (WorldStage), so its horizon stays on the characters' eye line.
+	const world = $derived(
+		placeWorld(
+			g,
+			worldArt(ui.theme),
+			{ x: g.feet.x, y: g.feet.y - (experience.screen === 'studio' ? experience.lift : 0) },
+			heroHeight
+		)
+	);
 	const px = (n: number) => `${Math.round(n * 100) / 100}px`;
 	const vars = $derived(
 		[
@@ -379,18 +394,25 @@
 		</aside>
 	{:else}
 		<div class="experience-stage">
-			<WorldStage bind:missing />
+			<WorldStage playbackHeight={previewHeight} bind:missing />
 		</div>
 		{#if experience.mode === 'preview' && m}
 			<div class="experience-playback">
-				<div class="playback-bar bu-floating" role="toolbar" aria-label="Preview controls">
-					<button
-						class="bu-action"
-						data-variant="quiet"
-						aria-label={ui.playing ? 'Pause' : 'Play'}
-						onclick={() => (ui.playing = !ui.playing)}
-						>{#if ui.playing}<Pause size={18} />{:else}<Play size={18} />{/if}</button
-					>
+				<div
+					class="playback-bar bu-floating"
+					role="toolbar"
+					aria-label="Preview controls"
+					bind:offsetHeight={playbackHeight}
+				>
+					{#if canPlay}
+						<button
+							class="bu-action"
+							data-variant="quiet"
+							aria-label={ui.playing ? 'Pause' : 'Play'}
+							onclick={() => (ui.playing = !ui.playing)}
+							>{#if ui.playing}<Pause size={18} />{:else}<Play size={18} />{/if}</button
+						>
+					{/if}
 					<label class="playback-move"
 						><span class="sr">Move</span><select
 							class="bu-select"
@@ -433,7 +455,8 @@
 						class="bu-action playback-inspect"
 						data-variant="quiet"
 						aria-label="Inspect"
-						onclick={() => (ui.sheet = 'inspect')}><Grid2x2 size={16} /><span>Inspect</span></button
+						title="Inspect"
+						onclick={() => (ui.sheet = 'inspect')}><Grid2x2 size={16} /></button
 					>
 					{#if missing}
 						<button

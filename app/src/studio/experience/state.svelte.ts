@@ -5,7 +5,9 @@ export const experience = $state({
 	mode: 'preview' as WorldMode,
 	presentation: 'animation' as string,
 	/** Painted height of the hero above its feet in CSS px; the world scales its horizon to the hero's eye line. */
-	heroHeight: 0
+	heroHeight: 0,
+	/** How far Preview raises the feet above the layout's feet line so its floor ring clears the playback bar. */
+	lift: 0
 });
 export function customize() {
 	experience.screen = 'studio';

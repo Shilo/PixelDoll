@@ -317,6 +317,10 @@
 .world-stage.live {
 	touch-action: none;
 }
+/* Over a Preview companion facing, which a click selects. */
+.world-stage.pick .world-input {
+	cursor: pointer;
+}
 .world-input {
 	position: fixed;
 	inset: 0;
@@ -1066,25 +1070,8 @@
 	max-width: 260px;
 	font-size: 14px;
 }
-.world-stick {
-	position: fixed;
-	width: 92px;
-	height: 92px;
-	margin: -46px;
-	border: 1px solid var(--bu-border);
-	background: var(--bu-gesture-track);
-	border-radius: 50%;
-	pointer-events: none;
+.studio-app .world-stick {
 	z-index: 3;
-	display: grid;
-	place-items: center;
-}
-.world-stick span {
-	width: 24px;
-	height: 24px;
-	border-radius: 50%;
-	background: var(--bu-gesture-thumb);
-	border: 1px solid var(--bu-accent);
 }
 .experience-error {
 	position: absolute;

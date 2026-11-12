@@ -56,6 +56,41 @@ const SIZES = [
 ] as const;
 
 describe('scene geometry', () => {
+	for (const height of [54, 100, 146, 192])
+		test(`reserves a measured ${height}px playback bar without moving its bottom edge`, () => {
+			for (const [width, viewportHeight] of [
+				[500, 700],
+				[1000, 700],
+				[844, 390]
+			]) {
+				const before = layout(width, viewportHeight, 'studio');
+				const after = layout(width, viewportHeight, 'studio', height);
+				expect(after.playbackHeight).toBe(height);
+				expect(after.playbackTop + after.playbackHeight).toBe(
+					before.playbackTop + before.playbackHeight
+				);
+				expect(after.feet.y).toBe(before.feet.y - (height - before.playbackHeight));
+				expect(after.stage).toEqual(before.stage);
+				expect(heroRoom(after).above).toBeLessThanOrEqual(heroRoom(before).above);
+			}
+		});
+
+	test('unmeasured controls and hidden Preview controls use the single-row baseline', () => {
+		expect(layout(500, 700, 'studio', 0)).toEqual(layout(500, 700, 'studio'));
+		expect(layout(500, 700, 'characters', 146)).toEqual(layout(500, 700, 'characters'));
+	});
+
+	test('hides an unusable short-phone sheet rather than covering wrapped controls', () => {
+		const before = layout(320, 400, 'studio');
+		const wrapped = layout(320, 400, 'studio', 146);
+		expect(before.sheetHeight).toBe(200);
+		expect(wrapped.sheet).toBe(true);
+		expect(wrapped.sheetHeight).toBe(0);
+		expect(wrapped.stage.r).toBe(before.stage.r);
+		expect(wrapped.playbackTop + wrapped.playbackHeight).toBeLessThanOrEqual(400);
+		expect(wrapped.feet.y).toBeGreaterThan(wrapped.stage.t);
+	});
+
 	for (const [w, h] of SIZES)
 		for (const screen of ['studio', 'characters'] as const)
 			for (const theme of ['dark', 'light'] as const)

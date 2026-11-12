@@ -17,11 +17,8 @@ import {
 	resolvePreview,
 	southStill
 } from '../../src/studio/experience/presentation.ts';
-import {
-	integrateMovement,
-	keyboardVector,
-	pointerVector
-} from '../../src/studio/experience/movement.ts';
+import { integrateMovement, keyboardVector } from '../../src/studio/experience/movement.ts';
+import { Joystick } from '../../src/lib/input/joystick.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const bodyHash: Sha256 = 'sha256:body',
@@ -304,8 +301,10 @@ describe('production body presentation', () => {
 			}
 			return { distance: Math.hypot(position.x, position.y), clock };
 		};
-		const full = sample(pointerVector(40, 0, 40)),
-			half = sample(pointerVector(20, 0, 40));
+		const stick = new Joystick({ axis: 'xy', travel: 40, deadZone: 0, follow: false });
+		stick.begin(1, { x: 0, y: 0 });
+		const full = sample(stick.move(1, { x: 40, y: 0 }).value),
+			half = sample(stick.move(1, { x: 20, y: 0 }).value);
 		expect(full.distance).toBe(20);
 		expect(full.clock).toMatchObject({ elapsedMs: 200, cell: 1 });
 		expect(half.distance).toBe(10);

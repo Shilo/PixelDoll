@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { bakedFrame } from '../../src/lib/compose/compose.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import type { Item, Layer, Project, Sha256 } from '../../src/lib/store/manifest.ts';
-import { paintedFrame } from '../../src/studio/experience/bounds.ts';
+import { paintedFrame, reachFrame, previewBounds } from '../../src/studio/experience/bounds.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const bodyHash: Sha256 = 'sha256:body';
@@ -74,6 +74,72 @@ function weapon(project: Project, image: Img, hash: Sha256 = 'sha256:weapon'): I
 	return result;
 }
 
+describe('Preview body grounding', () => {
+	test('centers offset artwork on the floor instead of the saved rig pivot', () => {
+		const project = fixture();
+		project.images.set(bodyHash, rectangle(64, 64, 35, 8, 20, 40));
+		const bounds = previewBounds(project);
+		expect(bounds.facings.get('south')).toMatchObject({ x: 13, y: -8 });
+		expect(bounds.body).toEqual({ w: 20, h: 40, x: 10, y: 40 });
+	});
+
+	test('grounds each facing and its mirror independently without changing slot sizes', () => {
+		const project = fixture();
+		project.manifest.rig.directions.push({ id: 'east' }, { id: 'west', mirrorOf: 'east' });
+		project.manifest.items[0].layers[0].cells!.walk.east = ['sha256:east'];
+		project.images.set('sha256:east', rectangle(64, 64, 40, 10, 6, 40));
+		const bounds = previewBounds(project);
+		expect(bounds.facings.get('east')).toMatchObject({ x: 11, y: -6 });
+		expect(bounds.facings.get('west')).toMatchObject({ x: -11, y: -6 });
+		expect(bounds.facings.get('east')!.reach).toEqual(bounds.facings.get('west')!.reach);
+		expect(bounds.body).toEqual({ w: 24, h: 48, x: 12, y: 48 });
+	});
+
+	test('uses the original rest as a stable anchor across motion extremes and equipment', () => {
+		const project = fixture();
+		project.manifest.rig.rest = { south: { image: bodyHash, keypoints: [] } };
+		project.images.set('sha256:motion', rectangle(64, 64, 30, 2, 20, 60));
+		project.manifest.items[0].layers[0].cells!.attack = { south: ['sha256:motion'] };
+		const before = previewBounds(project);
+		weapon(project, rectangle(96, 96, 0, 0, 96, 96));
+		const after = previewBounds(project);
+		expect(before.facings.get('south')).toMatchObject({ x: 0, y: 0 });
+		expect(after.facings.get('south')).toMatchObject({ x: 0, y: 0 });
+		expect(after.body).toEqual(before.body);
+		expect(after.reach.w).toBeGreaterThan(before.reach.w);
+	});
+
+	test('flips a source rest anchor for mirrors but preserves an authored target rest', () => {
+		const project = fixture();
+		project.manifest.rig.directions = [{ id: 'east' }, { id: 'west', mirrorOf: 'east' }];
+		project.manifest.items[0].layers[0].cells = { walk: { east: [bodyHash] } };
+		project.images.set(bodyHash, rectangle(64, 64, 40, 8, 12, 40));
+		project.manifest.rig.rest = { east: { image: bodyHash, keypoints: [] } };
+		expect(previewBounds(project).facings.get('west')).toMatchObject({ x: -14, y: -8 });
+		project.images.set('sha256:west-rest', rectangle(64, 64, 10, 8, 12, 42));
+		project.manifest.rig.rest.west = { image: 'sha256:west-rest', keypoints: [] };
+		expect(previewBounds(project).facings.get('west')).toMatchObject({ x: -16, y: -6 });
+	});
+
+	test('falls back to loaded body poses when the rest image is missing or transparent', () => {
+		const project = fixture();
+		project.images.set(bodyHash, rectangle(64, 64, 35, 8, 20, 40));
+		project.manifest.rig.rest = { south: { image: 'sha256:rest', keypoints: [] } };
+		expect(previewBounds(project).facings.get('south')).toMatchObject({ x: 13, y: -8 });
+		project.images.set('sha256:rest', makeImg(64, 64));
+		expect(previewBounds(project).facings.get('south')).toMatchObject({ x: 13, y: -8 });
+	});
+
+	test('includes a larger rest in fitting even when animated poses are smaller', () => {
+		const project = fixture();
+		project.manifest.rig.rest = { south: { image: 'sha256:rest', keypoints: [] } };
+		project.images.set('sha256:rest', rectangle(64, 64, 16, 2, 32, 54));
+		const bounds = previewBounds(project);
+		expect(bounds.body).toEqual({ w: 32, h: 54, x: 16, y: 54 });
+		expect(bounds.reach).toEqual(bounds.body);
+	});
+});
+
 describe('stable painted outfit frame', () => {
 	test('ignores blank oversize padding without changing the baked drawing frame or pixels', () => {
 		const p = fixture();
@@ -131,6 +197,35 @@ describe('stable painted outfit frame', () => {
 			layer = p.manifest.items[0].layers[0];
 		p.layerImages = new Map([[layer, new Map([[bodyHash, rectangle(64, 64, 25, 10, 10, 40)]])]]);
 		expect(paintedFrame(p, {})).toEqual({ w: 10, h: 40, x: 7, y: 46 });
+	});
+
+	test('one facing counts only its own poses, and a mirrored facing its source flipped', () => {
+		const p = fixture(),
+			body = p.manifest.items[0].layers[0];
+		p.images.set('sha256:east', rectangle(64, 64, 40, 10, 6, 46));
+		body.cells = { walk: { south: [bodyHash], east: ['sha256:east'] } };
+		p.manifest.rig.directions.push({ id: 'east' }, { id: 'west', mirrorOf: 'east' });
+		expect(paintedFrame(p, {}, 'south')).toEqual({ w: 24, h: 48, x: 12, y: 48 });
+		expect(paintedFrame(p, {}, 'east')).toEqual({ w: 6, h: 46, x: -8, y: 46 });
+		expect(paintedFrame(p, {}, 'west')).toEqual({ w: 6, h: 46, x: 14, y: 46 });
+		// Without a direction every facing still counts, mirrored both ways.
+		expect(paintedFrame(p, {}).w).toBe(28);
+	});
+
+	test('a facing reach unions the bare body and each owned item worn alone in that facing', () => {
+		const p = fixture();
+		weapon(p, rectangle(96, 96, 10, 40, 30, 4));
+		expect(reachFrame(p, 'south')).toEqual({ w: 50, h: 48, x: 38, y: 48 });
+		expect(reachFrame(p, 'south')).toEqual(reachFrame(p));
+	});
+
+	test('missing equipment facings keep the drawn body reach instead of the full baked frame', () => {
+		const p = fixture();
+		weapon(p, rectangle(96, 96, 10, 40, 30, 4));
+		p.manifest.rig.directions.push({ id: 'north' });
+		p.manifest.items[0].layers[0].cells!.walk.north = [bodyHash];
+		expect(reachFrame(p, 'north')).toEqual({ w: 24, h: 48, x: 12, y: 48 });
+		expect(reachFrame(p, 'north')).not.toEqual(bakedFrame(p.manifest));
 	});
 
 	test('conservatively includes horizontal counterparts for declared mirrors', () => {
