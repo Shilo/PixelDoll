@@ -730,7 +730,747 @@ test('resizing stops held live input without teleporting, while a view change re
 	await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
 });
 
-test('selection wheel normalizes deltas, discards bursts and stale fractions, and preserves modified gestures', async ({
+test('a lone character ignores wheel navigation and keyboard steps without reopening', async ({
+	page
+}, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await page.goto(dev);
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	await expect(page.locator('.character-row')).toHaveCount(1);
+	const result = await page.evaluate(async () => {
+		const { doc, store } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
+		const revision = doc.rev,
+			project = store.project;
+		const selection = document.querySelector<HTMLElement>('[role="application"]')!;
+		const intercepted = [];
+		for (const deltaY of [120, -120, 1, -1, 480]) {
+			intercepted.push(
+				!selection.dispatchEvent(
+					new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true })
+				)
+			);
+			await new Promise(requestAnimationFrame);
+		}
+		for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'd']) {
+			selection.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+			await new Promise(requestAnimationFrame);
+		}
+		return {
+			intercepted,
+			sameProject: store.project === project,
+			revisionDelta: doc.rev - revision
+		};
+	});
+	expect(result.intercepted).toEqual([false, false, false, false, false]);
+	expect(result.sameProject).toBe(true);
+	expect(result.revisionDelta).toBe(0);
+	await expect(page.locator('.customize-action')).toBeEnabled();
+});
+
+test('character carousel retargets real animations, keeps canvases, and settles reduced motion and small lists', async ({
+	page
+}, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await page.emulateMedia({ reducedMotion: 'no-preference' });
+	await page.goto(dev);
+	await expect(page.locator('.customize-action')).toHaveAttribute('aria-busy', 'false');
+	const ids = await page.evaluate(async () => {
+		const { openSource } = await import(/* @vite-ignore */ String('/src/lib/dress/project.ts'));
+		const { saveImportedCharacter } = await import(
+			/* @vite-ignore */ String('/src/lib/store/import.ts')
+		);
+		const { refreshProjects, openProject, store } = await import(
+			/* @vite-ignore */ String('/src/studio/state.svelte.ts')
+		);
+		const { project } = await openSource('fixture:s2');
+		for (let copy = 1; copy <= 6; copy++)
+			await saveImportedCharacter(
+				{
+					project: { manifest: structuredClone(project.manifest), images: project.images },
+					extra: {},
+					warnings: []
+				},
+				`Carousel ${copy <= 3 ? 'trio ' : ''}${copy <= 2 ? 'pair ' : ''}${copy}`
+			);
+		await refreshProjects();
+		await openProject(store.projects[0].id);
+		return store.projects.map((project: { id: string }) => project.id);
+	});
+	const chosen = page.locator('.cast-character.chosen');
+	const settled = () =>
+		expect
+			.poll(() =>
+				page.locator('.cast').evaluate((cast) => cast.getAnimations({ subtree: true }).length)
+			)
+			.toBe(0);
+	await settled();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[0]);
+	await page.locator('.cast').evaluate((cast) => {
+		const state = window as unknown as {
+			carouselCanvas: HTMLCanvasElement;
+			carouselNode: Element;
+			carouselDimensions: number[];
+			carouselButton: Element;
+			carouselRect: string;
+			carouselAnimate: typeof Element.prototype.animate;
+		};
+		state.carouselNode = cast.querySelector('.chosen')!;
+		state.carouselCanvas = state.carouselNode.querySelector('canvas')!;
+		state.carouselDimensions = [state.carouselCanvas.width, state.carouselCanvas.height];
+		state.carouselButton = document.querySelector('.customize-action')!;
+		state.carouselRect = JSON.stringify(state.carouselButton.getBoundingClientRect().toJSON());
+		const animate = Element.prototype.animate;
+		state.carouselAnimate = animate;
+		Element.prototype.animate = function (...args: Parameters<Element['animate']>) {
+			const animation = animate.apply(this, args);
+			if (this.matches('.carousel-character')) {
+				animation.pause();
+				animation.currentTime = 0;
+			}
+			return animation;
+		};
+	});
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[1]);
+	await expect
+		.poll(() =>
+			page.locator('.cast').evaluate((cast) => cast.getAnimations({ subtree: true }).length)
+		)
+		.toBeGreaterThan(0);
+	const halfway = await page.locator('.cast').evaluate((cast) => {
+		const state = window as unknown as {
+			carouselCanvas: HTMLCanvasElement;
+			carouselNode: HTMLElement;
+			carouselDimensions: number[];
+			carouselButton: Element;
+			carouselRect: string;
+			carouselSample: string;
+		};
+		for (const animation of cast.getAnimations({ subtree: true })) {
+			if (animation.effect!.getTiming().duration !== 220)
+				throw new Error('Unbounded carousel duration');
+			animation.currentTime = 80;
+		}
+		state.carouselSample = getComputedStyle(state.carouselNode).transform;
+		return {
+			retained:
+				state.carouselCanvas === state.carouselNode.querySelector('canvas') &&
+				state.carouselCanvas.isConnected,
+			dimensions: [state.carouselCanvas.width, state.carouselCanvas.height],
+			previousDimensions: state.carouselDimensions,
+			buttonStable:
+				document.querySelector('.customize-action') === state.carouselButton &&
+				JSON.stringify(state.carouselButton.getBoundingClientRect().toJSON()) ===
+					state.carouselRect,
+			moving: state.carouselSample !== state.carouselNode.style.transform,
+			pixels: state.carouselCanvas
+				.getContext('2d')!
+				.getImageData(0, 0, state.carouselCanvas.width, state.carouselCanvas.height)
+				.data.some((value, index) => index % 4 === 3 && value !== 0)
+		};
+	});
+	expect(halfway.retained).toBe(true);
+	expect(halfway.dimensions).toEqual(halfway.previousDimensions);
+	expect(halfway.buttonStable).toBe(true);
+	expect(halfway.moving).toBe(true);
+	expect(halfway.pixels).toBe(true);
+	await page.getByRole('button', { name: 'Previous character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[0]);
+	expect(
+		await page.evaluate(() => {
+			const state = window as unknown as { carouselNode: HTMLElement; carouselSample: string };
+			return getComputedStyle(state.carouselNode).transform === state.carouselSample;
+		})
+	).toBe(true);
+	const finish = async () => {
+		await page.locator('.cast').evaluate((cast) => {
+			for (const animation of cast.getAnimations({ subtree: true })) animation.finish();
+		});
+		await settled();
+		await expect(page.locator('.cast-character')).toHaveCount(3);
+	};
+	await finish();
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[1]);
+	const firstExit = page.locator(`.cast-character[data-character-id="${ids.at(-1)}"]`);
+	await firstExit.evaluate((node) => {
+		for (const animation of node.getAnimations()) animation.currentTime = 80;
+	});
+	const exitOpacity = await firstExit.evaluate((node) => getComputedStyle(node).opacity);
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[2]);
+	await expect(firstExit).toHaveCount(1);
+	expect(await firstExit.evaluate((node) => getComputedStyle(node).opacity)).toBe(exitOpacity);
+	expect(
+		await firstExit.evaluate((node) => node.getAnimations()[0].effect!.getTiming().duration)
+	).toBe(140);
+	await page.getByRole('button', { name: 'Previous character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[1]);
+	expect(
+		await firstExit.evaluate((node) => {
+			const frames = (node.getAnimations()[0].effect as KeyframeEffect).getKeyframes();
+			return new DOMMatrix(String(frames.at(-1)!.transform)).m41;
+		})
+	).toBeLessThan(0);
+	await finish();
+	const open = async (id: string) => {
+		await page.locator('.character-row').nth(ids.indexOf(id)).click();
+		await expect(chosen).toHaveAttribute('data-character-id', id);
+	};
+	await open(ids[0]);
+	await finish();
+	await page
+		.locator('.selection-world')
+		.dispatchEvent('wheel', { deltaY: 400, bubbles: true, cancelable: true });
+	await expect(chosen).toHaveAttribute('data-character-id', ids[2]);
+	expect(
+		await page
+			.locator(`.cast-character[data-character-id="${ids[1]}"]`)
+			.evaluate((node) => (node.getAnimations()[0].effect as KeyframeEffect).getKeyframes().length)
+	).toBe(2);
+	await finish();
+	await open(ids[1]);
+	await finish();
+	await page.evaluate(
+		(blockedIds) => {
+			const state = window as unknown as {
+				carouselReleases: Record<string, () => void>;
+				carouselGet: typeof IDBObjectStore.prototype.get;
+			};
+			state.carouselReleases = {};
+			const blocks = new Set(blockedIds);
+			state.carouselGet = IDBObjectStore.prototype.get;
+			IDBObjectStore.prototype.get = function (key: IDBValidKey) {
+				if (this.name === 'projects' && blocks.delete(String(key))) {
+					const transaction = this.transaction;
+					transaction.addEventListener(
+						'complete',
+						(event) => {
+							event.stopImmediatePropagation();
+							state.carouselReleases[String(key)] = () =>
+								transaction.dispatchEvent(new Event('complete'));
+						},
+						{ once: true }
+					);
+				}
+				return state.carouselGet.call(this, key);
+			};
+			window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, cancelable: true }));
+		},
+		[ids[2], ids[1]]
+	);
+	const blocked = (id: string) =>
+		expect
+			.poll(() =>
+				page.evaluate(
+					(target) =>
+						typeof (window as unknown as { carouselReleases: Record<string, () => void> })
+							.carouselReleases[target],
+					id
+				)
+			)
+			.toBe('function');
+	const release = (id: string) =>
+		page.evaluate(
+			(target) =>
+				(window as unknown as { carouselReleases: Record<string, () => void> }).carouselReleases[
+					target
+				](),
+			id
+		);
+	await blocked(ids[2]);
+	await page
+		.locator('.selection-world')
+		.dispatchEvent('wheel', { deltaY: -200, bubbles: true, cancelable: true });
+	await release(ids[2]);
+	await blocked(ids[1]);
+	await expect(chosen).toHaveAttribute('data-character-id', ids[2]);
+	const arrival = await page
+		.locator(`.cast-character[data-character-id="${ids[3]}"]`)
+		.evaluate(
+			(node) =>
+				new DOMMatrix(
+					String((node.getAnimations()[0].effect as KeyframeEffect).getKeyframes()[0].transform)
+				).m41
+		);
+	expect(arrival).toBeGreaterThan(0);
+	await release(ids[1]);
+	await expect(chosen).toHaveAttribute('data-character-id', ids[1]);
+	await finish();
+	await page.evaluate(() => {
+		IDBObjectStore.prototype.get = (
+			window as unknown as { carouselGet: typeof IDBObjectStore.prototype.get }
+		).carouselGet;
+	});
+	await open(ids[0]);
+	await finish();
+	await page.evaluate(async (id) => {
+		const { openProject } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
+		await openProject(id);
+	}, ids[3]);
+	await expect(chosen).toHaveAttribute('data-character-id', ids[3]);
+	await expect(page.locator('.cast-character[inert]')).toHaveCount(3);
+	await finish();
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[4]);
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await settled();
+	await expect(page.locator('.cast-character')).toHaveCount(3);
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect(chosen).toHaveAttribute('data-character-id', ids[5]);
+	await settled();
+	await page.emulateMedia({ reducedMotion: 'no-preference' });
+	const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+	await search.fill('Carousel trio');
+	await expect(page.locator('.character-row')).toHaveCount(3);
+	await settled();
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect
+		.poll(() =>
+			page
+				.locator('.cast')
+				.evaluate((cast) =>
+					cast
+						.getAnimations({ subtree: true })
+						.some((animation) => (animation.effect as KeyframeEffect).getKeyframes().length === 4)
+				)
+		)
+		.toBe(true);
+	await finish();
+	await search.fill('Carousel trio pair');
+	await expect(page.locator('.cast-character')).toHaveCount(2);
+	await settled();
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await expect
+		.poll(() =>
+			page.locator('.cast').evaluate((cast) => cast.getAnimations({ subtree: true }).length)
+		)
+		.toBe(2);
+	await page.setViewportSize({ width: 390, height: 844 });
+	await settled();
+	await expect(page.locator('.cast-character')).toHaveCount(2);
+	await search.fill('Carousel trio pair 1');
+	await expect(page.locator('.cast-character')).toHaveCount(1);
+	await settled();
+	await page
+		.locator('.selection-world')
+		.dispatchEvent('wheel', { deltaY: 1000, bubbles: true, cancelable: true });
+	await settled();
+	await expect(page.locator('.cast-character')).toHaveCount(1);
+	await search.fill('No carousel matches');
+	await expect(page.locator('.cast-character')).toHaveCount(0);
+	await settled();
+	await page.evaluate(() => {
+		Element.prototype.animate = (
+			window as unknown as { carouselAnimate: typeof Element.prototype.animate }
+		).carouselAnimate;
+	});
+	await search.fill('');
+	await expect(page.locator('.cast-character')).toHaveCount(3);
+	await page.getByRole('button', { name: 'Next character', exact: true }).click();
+	await settled();
+	await expect(page.locator('.cast-character')).toHaveCount(3);
+	await expect(page.getByRole('button', { name: 'Next character', exact: true })).toBeFocused();
+});
+
+test('fast wheel input skips intermediate loads and keeps the latest selection while loading', async ({
+	page
+}, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await page.goto(dev);
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	const ids = await page.evaluate(async () => {
+		const { openSource } = await import(/* @vite-ignore */ String('/src/lib/dress/project.ts'));
+		const { saveImportedCharacter } = await import(
+			/* @vite-ignore */ String('/src/lib/store/import.ts')
+		);
+		const { refreshProjects, openProject, store } = await import(
+			/* @vite-ignore */ String('/src/studio/state.svelte.ts')
+		);
+		const { project } = await openSource('fixture:s2');
+		const { splitBase } = await import(/* @vite-ignore */ String('/src/lib/dress/regions.ts'));
+		await splitBase(project);
+		for (let copy = 1; copy <= 6; copy++)
+			await saveImportedCharacter(
+				{
+					project: { manifest: structuredClone(project.manifest), images: project.images },
+					extra: {},
+					warnings: []
+				},
+				`Wheel test ${copy}${copy === 1 ? ' with an exceptionally long character name' : ''}`
+			);
+		await refreshProjects();
+		await openProject(store.projects[0].id);
+		return store.projects.map((project: { id: string }) => project.id);
+	});
+	const rows = page.locator('.character-row');
+	await expect(rows).toHaveCount(7);
+	await expect(rows.first()).toHaveAttribute('aria-pressed', 'true');
+	await expect(rows.locator('canvas')).toHaveCount(7);
+	const customizeButton = page.locator('.customize-action');
+	await customizeButton.evaluate((button) => {
+		(window as unknown as { customizeButton: Element }).customizeButton = button;
+	});
+	const customizeAppearance = () =>
+		customizeButton.evaluate((button) => ({
+			sameNode: button === (window as unknown as { customizeButton: Element }).customizeButton,
+			rect: button.getBoundingClientRect().toJSON(),
+			opacity: getComputedStyle(button).opacity
+		}));
+	await expect(customizeButton).toHaveText(
+		`Customize ${await page.locator('.selected-name-text').textContent()}`
+	);
+	const readyAppearance = await customizeAppearance();
+	await page.evaluate(async () => {
+		const { store } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
+		const state = window as unknown as {
+			wheelReads: string[];
+			wheelBlocks: string[];
+			wheelReleases: Record<string, () => void>;
+			releaseWheelRead?: () => void;
+			wheelFailures?: string[];
+		};
+		state.wheelReads = [];
+		state.wheelBlocks = [store.projects[1].id];
+		state.wheelReleases = {};
+		performance.now = () => 0;
+		const original = IDBObjectStore.prototype.get;
+		IDBObjectStore.prototype.get = function (key: IDBValidKey) {
+			if (this.name === 'projects' && String(key).startsWith('rig-'))
+				state.wheelReads.push(String(key));
+			const blocked = state.wheelBlocks.indexOf(String(key));
+			if (this.name === 'projects' && blocked !== -1) {
+				state.wheelBlocks.splice(blocked, 1);
+				const transaction = this.transaction;
+				transaction.addEventListener(
+					'complete',
+					(event) => {
+						event.stopImmediatePropagation();
+						state.releaseWheelRead = () => transaction.dispatchEvent(new Event('complete'));
+						state.wheelReleases[String(key)] = state.releaseWheelRead;
+					},
+					{ once: true }
+				);
+			}
+			const request = original.call(this, key);
+			if (this.name === 'projects' && state.wheelFailures?.includes(String(key)))
+				Object.defineProperty(request, 'result', { get: () => undefined });
+			return request;
+		};
+		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, cancelable: true }));
+	});
+	await expect(customizeButton).toHaveAttribute('aria-busy', 'true');
+	expect(await customizeAppearance()).toEqual(readyAppearance);
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() => typeof (window as unknown as { releaseWheelRead?: () => void }).releaseWheelRead
+			)
+		)
+		.toBe('function');
+	await page.evaluate(async () => {
+		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, cancelable: true }));
+		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, cancelable: true }));
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+		);
+	});
+	expect(
+		await page.evaluate(() => (window as unknown as { wheelReads: string[] }).wheelReads)
+	).toEqual([ids[1]]);
+	await expect(customizeButton).toHaveAttribute('aria-busy', 'true');
+	await expect(rows.first()).toHaveAttribute('aria-pressed', 'true');
+	await page.evaluate(() =>
+		(window as unknown as { releaseWheelRead: () => void }).releaseWheelRead()
+	);
+	await expect(rows.nth(3)).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	expect(await customizeAppearance()).toEqual(readyAppearance);
+	const reads = await page.evaluate(
+		() => (window as unknown as { wheelReads: string[] }).wheelReads
+	);
+	expect(reads).toEqual([ids[1], ids[3]]);
+	await page.evaluate(() => {
+		performance.now = () => 300;
+		window.dispatchEvent(new WheelEvent('wheel', { deltaY: -1000, cancelable: true }));
+	});
+	await expect(rows.nth(5)).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	const send = (deltas: number[], time: number) =>
+		page.evaluate(
+			async ({ deltas, time }) => {
+				performance.now = () => time;
+				for (const deltaY of deltas)
+					window.dispatchEvent(new WheelEvent('wheel', { deltaY, cancelable: true }));
+				await new Promise<void>((resolve) =>
+					requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+				);
+			},
+			{ deltas, time }
+		);
+	const readIds = () =>
+		page.evaluate(() => (window as unknown as { wheelReads: string[] }).wheelReads);
+	await page.evaluate(() => {
+		(window as unknown as { wheelReads: string[] }).wheelReads = [];
+	});
+	await send([200, 200, 200], 600);
+	await expect(rows.nth(1)).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	expect(await readIds()).toEqual([ids[1]]);
+	await send([500], 900);
+	await expect(rows.nth(3)).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	await send([100], 910);
+	await expect(rows.nth(4)).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	for (const [turn, init] of [
+		{ shiftKey: true },
+		{ ctrlKey: true },
+		{ metaKey: true },
+		{ altKey: true },
+		{ deltaX: 600 }
+	].entries()) {
+		const before = await readIds();
+		await send([140], 1200 + turn * 600);
+		await page.evaluate(
+			(init) =>
+				window.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true, ...init })),
+			init
+		);
+		await send([60], 1210 + turn * 600);
+		expect(await readIds()).toEqual(before);
+		await expect(rows.nth(4)).toHaveAttribute('aria-pressed', 'true');
+	}
+	await page.evaluate(async (ids) => {
+		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, ctrlKey: true, cancelable: true }));
+		const { openProject } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
+		await openProject(ids[5]);
+		const state = window as unknown as {
+			wheelBlocks: string[];
+			wheelReads: string[];
+			wheelReleases: Record<string, () => void>;
+		};
+		state.wheelReads = [];
+		state.wheelBlocks = [ids[6], ids[4]];
+		state.wheelReleases = {};
+	}, ids);
+	const held = (id: string) =>
+		expect
+			.poll(() =>
+				page.evaluate(
+					(id) =>
+						typeof (window as unknown as { wheelReleases: Record<string, () => void> })
+							.wheelReleases[id],
+					id
+				)
+			)
+			.toBe('function');
+	const release = (id: string) =>
+		page.evaluate(
+			(id) =>
+				(window as unknown as { wheelReleases: Record<string, () => void> }).wheelReleases[id](),
+			id
+		);
+	await send([200], 1500);
+	await held(ids[6]);
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.evaluate((id) => {
+		void import(/* @vite-ignore */ String('/src/studio/state.svelte.ts')).then(({ openProject }) =>
+			openProject(id)
+		);
+	}, ids[4]);
+	await held(ids[4]);
+	await page.keyboard.press('Escape');
+	await expect(page.locator(':popover-open')).toHaveCount(0);
+	await send([200], 1800);
+	await release(ids[6]);
+	await send([], 1800);
+	await release(ids[4]);
+	await expect
+		.poll(() =>
+			page.evaluate(async () => {
+				const { doc } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
+				return {
+					id: doc.id,
+					loading: doc.loading,
+					reads: (window as unknown as { wheelReads: string[] }).wheelReads
+				};
+			})
+		)
+		.toEqual({ id: ids[6], loading: false, reads: [ids[6], ids[4], ids[6]] });
+	await expect(rows.nth(6)).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	expect(await readIds()).toEqual([ids[6], ids[4], ids[6]]);
+	for (const cancel of ['popover', 'filter', 'row', 'modifier']) {
+		await page.evaluate(async (ids) => {
+			window.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, ctrlKey: true, cancelable: true }));
+			const { openProject } = await import(
+				/* @vite-ignore */ String('/src/studio/state.svelte.ts')
+			);
+			await openProject(ids[0]);
+			const state = window as unknown as {
+				wheelReads: string[];
+				wheelBlocks: string[];
+				wheelReleases: Record<string, () => void>;
+			};
+			state.wheelReads = [];
+			state.wheelBlocks = [ids[1]];
+			state.wheelReleases = {};
+		}, ids);
+		await send([200], 2100);
+		await held(ids[1]);
+		await send([200], 2110);
+		await customizeButton.click();
+		await expect(page.locator('.experience')).toHaveClass(/selection/);
+		const search = page.getByRole('searchbox', { name: 'Search characters', exact: true });
+		if (cancel === 'popover')
+			await page.getByRole('button', { name: 'More options', exact: true }).click();
+		if (cancel === 'filter') await search.fill('Wheel test 3');
+		if (cancel === 'row') await rows.nth(4).click();
+		if (cancel === 'modifier')
+			await page.evaluate(() =>
+				window.dispatchEvent(
+					new WheelEvent('wheel', { deltaY: 100, ctrlKey: true, cancelable: true })
+				)
+			);
+		await release(ids[1]);
+		await expect(page.locator('.customize-action')).toBeEnabled();
+		await send([], 2110);
+		await expect(page.locator('.experience')).toHaveClass(/selection/);
+		if (cancel === 'filter') {
+			await expect(rows).toHaveCount(1);
+			await expect(rows.first()).toHaveAttribute('aria-pressed', 'true');
+			expect(await readIds()).toEqual([ids[1], ids[4]]);
+			await search.fill('');
+		} else {
+			await expect(rows.nth(1)).toHaveAttribute('aria-pressed', 'true');
+			expect(await readIds()).toEqual([ids[1]]);
+		}
+		if (cancel === 'popover') await page.keyboard.press('Escape');
+	}
+	for (const [scenario, viewport] of [
+		{ width: 1280, height: 720 },
+		{ width: 1280, height: 720 },
+		{ width: 390, height: 844 },
+		{ width: 390, height: 844 }
+	].entries()) {
+		await page.setViewportSize(viewport);
+		await page.evaluate(
+			async ({ ids, light }) => {
+				const { characters } = await import(
+					/* @vite-ignore */ String('/src/studio/experience/state.svelte.ts')
+				);
+				const { openProject, ui, applyTheme } = await import(
+					/* @vite-ignore */ String('/src/studio/state.svelte.ts')
+				);
+				characters();
+				ui.theme = light ? 'light' : 'dark';
+				applyTheme();
+				await openProject(ids[0]);
+				const state = window as unknown as {
+					wheelReads: string[];
+					wheelBlocks: string[];
+					wheelReleases: Record<string, () => void>;
+				};
+				state.wheelReads = [];
+				state.wheelBlocks = [ids[1]];
+				state.wheelReleases = {};
+			},
+			{ ids, light: scenario % 2 === 1 }
+		);
+		await expect(customizeButton).toHaveAttribute('aria-busy', 'false');
+		await customizeButton.evaluate((button) => {
+			(window as unknown as { customizeButton: Element }).customizeButton = button;
+		});
+		const appearance = await customizeAppearance();
+		await expect(customizeButton).toHaveText(
+			`Customize ${await page.locator('.selected-name-text').textContent()}`
+		);
+		await send([200], 3000);
+		await held(ids[1]);
+		await send([1000], 3010);
+		expect(await customizeAppearance()).toEqual(appearance);
+		await expect(customizeButton).toHaveAttribute('aria-busy', 'true');
+		if (scenario === 3) {
+			await customizeButton.click();
+			await send([], 3010);
+			await expect(page.locator('.experience')).toHaveClass(/selection/);
+			expect(await readIds()).toEqual([ids[1]]);
+		}
+		await release(ids[1]);
+		if (scenario !== 3) {
+			await expect(rows.nth(6)).toHaveAttribute('aria-pressed', 'true');
+			await expect(customizeButton).toHaveAttribute('aria-busy', 'false');
+			expect(await customizeAppearance()).toEqual(appearance);
+			await expect(customizeButton).toHaveAccessibleName(/Customize Wheel test 1 with/);
+			await expect(customizeButton).toHaveText(
+				'Customize Wheel test 1 with an exceptionally long character name'
+			);
+			await customizeButton.click();
+		}
+		await expect(page.locator('.experience')).not.toHaveClass(/selection/);
+		expect(await readIds()).toEqual([ids[1], ids[6]]);
+		expect(
+			await page.evaluate(async () => {
+				const { doc } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
+				return doc.id;
+			})
+		).toBe(ids[6]);
+	}
+	for (const [source, fails] of [
+		['wheel', true],
+		['row', false],
+		['row', true]
+	] as const) {
+		await page.evaluate(
+			async ({ ids, fails }) => {
+				const { characters } = await import(
+					/* @vite-ignore */ String('/src/studio/experience/state.svelte.ts')
+				);
+				const { openProject } = await import(
+					/* @vite-ignore */ String('/src/studio/state.svelte.ts')
+				);
+				characters();
+				await openProject(ids[0]);
+				const state = window as unknown as {
+					wheelReads: string[];
+					wheelBlocks: string[];
+					wheelFailures: string[];
+					wheelReleases: Record<string, () => void>;
+				};
+				state.wheelReads = [];
+				state.wheelBlocks = [ids[1]];
+				state.wheelFailures = fails ? [ids[1]] : [];
+				state.wheelReleases = {};
+			},
+			{ ids, fails }
+		);
+		if (source === 'wheel') await send([200], 4000);
+		else await rows.nth(1).click();
+		await held(ids[1]);
+		await customizeButton.click();
+		await release(ids[1]);
+		await expect
+			.poll(() =>
+				page.evaluate(async () => {
+					const { doc } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
+					return doc.loading;
+				})
+			)
+			.toBe(false);
+		await send([], 4000);
+		if (fails) {
+			await expect(page.locator('.experience')).toHaveClass(/selection/);
+			await expect(customizeButton).toHaveAttribute('aria-busy', 'false');
+		} else await expect(page.locator('.experience')).not.toHaveClass(/selection/);
+		expect(await readIds()).toEqual([ids[1]]);
+	}
+});
+
+test('selection wheel preserves fast input, normalizes deltas, and respects native scrolling', async ({
 	page
 }) => {
 	await landing(page);
@@ -783,9 +1523,6 @@ test('selection wheel normalizes deltas, discards bursts and stale fractions, an
 	for (const init of [{ shiftKey: true }, { ctrlKey: true }, { deltaX: 120 }])
 		expect(await wheel(60, init)).toBe(false);
 	expect(await selected()).toBe(index);
-	// The approved cooldown and fraction window are both 180 ms. Page time is held still (the handler reads only performance.now),
-	// so each event lands at an exact time however slow loads or round trips are, and reports whether it started a character
-	// load (Customize is disabled while loading). A step selects asynchronously, so final indices alone can mask a wrong step.
 	await page.evaluate(() => {
 		const w = window as unknown as { t: number },
 			t0 = performance.now();
@@ -797,8 +1534,9 @@ test('selection wheel normalizes deltas, discards bursts and stale fractions, an
 			async ({ t, deltaY, deltaMode }) => {
 				(window as unknown as { t: number }).t = t;
 				window.dispatchEvent(new WheelEvent('wheel', { deltaY, deltaMode, cancelable: true }));
-				await new Promise((resolve) => setTimeout(resolve));
-				return document.querySelector<HTMLButtonElement>('.customize-action')!.disabled;
+				await new Promise<void>((resolve) =>
+					requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+				);
 			},
 			{ t, deltaY, deltaMode }
 		);
@@ -807,28 +1545,129 @@ test('selection wheel normalizes deltas, discards bursts and stale fractions, an
 		await expect.poll(selected).toBe(index);
 		await expect(page.locator('.customize-action')).toBeEnabled();
 	};
-	expect(await at(0, 3, 1)).toBe(true);
-	await step(1); // lines × 16 px
-	expect(await at(300, -40)).toBe(true);
-	await step(-1);
-	expect(await at(600, 20)).toBe(false);
-	expect(await at(800, 20)).toBe(false); // a fraction older than 180 ms is discarded
-	expect(await at(900, 20)).toBe(true);
-	await step(1); // fractions inside 180 ms add up to 40
-	expect(await at(1200, 30)).toBe(false);
-	expect(await at(1210, -30)).toBe(false); // a sign change restarts the fraction
-	expect(await at(1220, -10)).toBe(true);
-	await step(-1);
-	expect(await at(1500, -30)).toBe(false); // below the threshold in the negative direction too
-	expect(await at(1800, 40)).toBe(true);
+	await at(0, 100);
+	expect(await selected()).toBe(index);
+	await at(250, 60);
+	expect(await selected()).toBe(index);
+	await at(500, 40);
 	await step(1);
-	expect(await at(1900, 120)).toBe(false); // inside the cooldown even a full burst is discarded
-	expect(await at(1990, 30)).toBe(false); // and leaves no fraction behind (30 alone, not 150)
-	expect(await at(2300, 1, 2)).toBe(true);
-	await step(1); // pages × viewport height
+	await wheel(1, { ctrlKey: true });
+	await at(0, 400);
+	await step(2);
+	await at(300, 13, 1);
+	await step(1); // lines × 16 px
+	await at(600, -200);
+	await step(-1);
+	await at(900, 120);
+	expect(await selected()).toBe(index);
+	await at(1500, 120);
+	expect(await selected()).toBe(index);
+	await at(1510, 80);
+	await step(1);
+	await at(2100, 140);
+	expect(await selected()).toBe(index);
+	await at(2110, -140);
+	expect(await selected()).toBe(index);
+	await at(2120, -60);
+	await step(-1);
+	await at(2700, -140);
+	expect(await selected()).toBe(index);
+	await at(3300, 200);
+	await step(1);
+	await at(3310, 200);
+	await step(1);
+	await at(3320, 200);
+	await step(1);
+	await at(3900, 1, 2);
+	await step(2);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	expect(await wheel(120)).toBe(false);
 	expect(await selected()).toBe(index);
+	await page.keyboard.press('Escape');
+	await expect(page.locator(':popover-open')).toHaveCount(0);
+	// A list that can scroll keeps the wheel in both directions, even at its ends; one that fits still steps.
+	const wheelOnRow = (deltaY: number, t: number) =>
+		page.evaluate(
+			({ deltaY, t }) => {
+				(window as unknown as { t: number }).t = t;
+				return !document
+					.querySelector('.character-row')!
+					.dispatchEvent(new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true }));
+			},
+			{ deltaY, t }
+		);
+	await page.locator('.character-rows').evaluate((el) => {
+		el.style.maxHeight = '40px';
+		el.scrollTop = 0;
+	});
+	await page.locator('.character-rows').hover();
+	await page.mouse.wheel(0, 120);
+	await expect
+		.poll(() => page.locator('.character-rows').evaluate((el) => el.scrollTop))
+		.toBeGreaterThan(0);
+	expect(await selected()).toBe(index);
+	await page.locator('.character-rows').evaluate((el) => (el.scrollTop = 0));
+	expect(await wheelOnRow(-120, 3000)).toBe(false); // at the top
+	expect(await wheelOnRow(120, 3300)).toBe(false);
+	await page.locator('.character-rows').evaluate((el) => (el.scrollTop = el.scrollHeight));
+	expect(await wheelOnRow(120, 3600)).toBe(false); // at the bottom
+	expect(await selected()).toBe(index);
+	await page.locator('.character-rows').evaluate((el) => (el.style.maxHeight = ''));
+	expect(await wheelOnRow(200, 3900)).toBe(true);
+	await step(1);
+	// Thumbnails are read once and shared: stepping and opening the name menu read only the record of the character being
+	// opened, and its frames, already decoded for its thumbnail, are not read or decoded again.
+	await page.evaluate(() => {
+		const w = window as unknown as { characterReads: number; frameReads: number };
+		w.characterReads = w.frameReads = 0;
+		const get = IDBObjectStore.prototype.get;
+		IDBObjectStore.prototype.get = function (this: IDBObjectStore, key: IDBValidKey) {
+			if (this.name === 'projects' && String(key).startsWith('rig-')) w.characterReads++;
+			if (this.name === 'blobs') w.frameReads++;
+			return get.call(this, key);
+		};
+	});
+	const reads = () =>
+		page.evaluate(() => (window as unknown as { characterReads: number }).characterReads);
+	const frameReads = () =>
+		page.evaluate(() => (window as unknown as { frameReads: number }).frameReads);
+	for (const delta of [1, 1, -1]) {
+		await page
+			.getByRole('button', { name: delta > 0 ? 'Next character' : 'Previous character' })
+			.click();
+		await step(delta);
+	}
+	await page.locator('.selected-name').click();
+	const menuThumbs = page.locator('#project-menu .character-thumbnail canvas');
+	await expect(menuThumbs).toHaveCount(3);
+	// Each menu thumbnail is drawn from the shared still at once, not blank while it loads.
+	expect(
+		await menuThumbs.evaluateAll((canvases) =>
+			(canvases as HTMLCanvasElement[]).map((c) =>
+				c
+					.getContext('2d')!
+					.getImageData(0, 0, c.width, c.height)
+					.data.some((v, i) => i % 4 === 3 && v > 0)
+			)
+		)
+	).toEqual([true, true, true]);
+	await page.keyboard.press('Escape');
+	expect(await reads()).toBeLessThanOrEqual(3);
+	expect(await frameReads()).toBe(0);
+	const currentName = await page.locator('.selected-name-text').textContent();
+	await page.getByRole('searchbox', { name: 'Search characters', exact: true }).fill(currentName!);
+	await expect(rows).toHaveCount(1);
+	const beforeSingleResult = await reads();
+	expect(await wheelOnRow(120, 5000)).toBe(false);
+	expect(await wheelOnRow(-120, 5300)).toBe(false);
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+			)
+	);
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	expect(await reads()).toBe(beforeSingleResult);
 });
 
 // Moved from experience.spec.ts (screenshot config) so these behavioral checks gate deploys.

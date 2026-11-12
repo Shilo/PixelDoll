@@ -78,8 +78,14 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   off the body behind or beside it, and the part over the body on top of everything. Where PixelLab draws the fist over the
   grip, those pixels stay body, so the grip shows under the fingers, as a real grip would. The layering cuts nothing from the
   item at the grip; extraction cleanup can still drop small detached parts elsewhere.
-- **One grip per hand.** Main hand is always the character's right hand and Off hand the left: left-handed characters
-  and two-handed grips (a greatsword or bow held in both hands) are not supported; the item is drawn in one hand.
+- **Two-handed items are drawn in one hand.** Main hand is always the character's right hand and Off hand the left;
+  left-handed characters are not supported. A **Two-handed** item takes both hands (the other hand's item comes off), but the
+  frozen body is never redrawn, so the item stays drawn in its own hand: both hands hold it only in frames where the move
+  already brings the hands together, and idle and walk carry it in one hand. No check tells a fist on a handle from a blade
+  passing near a wrist; review those frames by eye. A two-handed item is never re-fitted for free onto another body (the
+  re-fit moves an item by one wrist), as for any item that hides a slot.
+- **A matching weapon for the other hand is drawn again.** **Make one for the Off hand…** reuses the description, not the
+  pixels, so the pair can differ in small details.
 - **A west main-hand item may cover the legs.** In a drawn west view the main hand is the far hand, but an item is split
   only into the part over the body and the part beside it, so a main-hand blade drawn across the legs stays in front of
   them.

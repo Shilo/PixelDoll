@@ -1,0 +1,152 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Two-handed items and dual wielding: mock-up</title>
+<style>
+	* { box-sizing: border-box; }
+	body { margin: 0; font: 14px/1.4 var(--font-sans, system-ui, sans-serif); color: var(--foreground); }
+	h2 { font-size: 15px; margin: 22px 0 4px; }
+	h2:first-child { margin-top: 0; }
+	p.cap { margin: 0 0 10px; color: var(--muted-foreground); font-size: 13px; }
+	.row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+	.panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; flex: 1 1 300px; min-width: 0; }
+	.panel > .tag { font-size: 12px; color: var(--muted-foreground); margin-bottom: 10px; }
+
+	/* item menu */
+	.menu { background: var(--popover); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; max-width: 290px; }
+	.head { display: flex; align-items: center; gap: 10px; padding: 6px 6px 10px; }
+	.head .art { width: 40px; height: 40px; border-radius: 8px; background: var(--secondary); overflow: hidden; flex: none; padding: 4px; }
+	.head .title { flex: 1; min-width: 0; }
+	.head strong { display: block; }
+	.head small { color: var(--muted-foreground); }
+	.wear { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); display: grid; place-items: center; flex: none; }
+	.wear.on { border-color: var(--primary); color: var(--primary); }
+	.mrow { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-radius: 8px; }
+	.mrow.new { background: var(--accent-surface, var(--secondary)); }
+	.mrow .grow { flex: 1; }
+	.mrow small { color: var(--muted-foreground); }
+	.mrow.danger { color: var(--destructive); }
+	.sep { height: 1px; background: var(--border); margin: 4px 0; }
+	.switch { width: 34px; height: 20px; border-radius: 10px; background: var(--secondary); border: 1px solid var(--border); position: relative; flex: none; }
+	.switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted-foreground); }
+	.switch.on { background: var(--primary); border-color: var(--primary); }
+	.switch.on::after { left: 16px; background: var(--primary-foreground, var(--background)); }
+	.ico { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+	/* wardrobe */
+	.sec { margin-bottom: 14px; }
+	.sec:last-child { margin-bottom: 0; }
+	.sechead { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 4px; }
+	.note { font-size: 12.5px; color: var(--muted-foreground); margin: 0 0 8px; }
+	.tiles { display: flex; gap: 8px; flex-wrap: wrap; }
+	.tile { width: 92px; height: 92px; border: 1px solid var(--border); border-radius: 10px; background: var(--secondary); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 6px 4px; font-size: 12px; text-align: center; overflow: hidden; }
+	.tile.on { border-color: var(--primary); }
+	.tile.dim { opacity: 0.45; }
+	.tile .check { position: absolute; top: 5px; right: 6px; color: var(--primary); font-size: 12px; }
+	.tile .badge { position: absolute; top: 5px; right: 6px; color: var(--muted-foreground); }
+	.tile .crop { position: absolute; top: 4px; left: 50%; margin-left: -30px; }
+	.tile span.name { position: relative; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+	.tile .empty { position: absolute; top: 20px; left: 50%; margin-left: -13px; width: 26px; height: 26px; color: var(--muted-foreground); }
+
+	/* sprite crops: every source image is a 96 px frame scaled 4x (384 px); the character sits around its center */
+	.crop { overflow: hidden; position: relative; }
+	.crop img { image-rendering: pixelated; position: absolute; display: block; }
+	.stage { display: flex; gap: 10px; flex-wrap: wrap; }
+	.shot { text-align: center; font-size: 12px; color: var(--muted-foreground); }
+	.shot .crop { width: 150px; height: 150px; background: var(--secondary); border-radius: 10px; margin-bottom: 4px; }
+	.shot .crop img { width: 288px; height: 288px; left: -66px; top: -92px; }
+	.tthumb { position: absolute; top: 8px; left: 50%; width: 56px; height: 56px; margin-left: -28px; object-fit: contain; image-rendering: pixelated; }
+	.head .art img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+</style>
+
+<h2>1. The item's ⋮ menu</h2>
+<p class="cap">Two new rows on Main hand and Off hand items only. Everything else in the menu is as it is today.</p>
+<div class="row">
+	<div class="panel">
+		<div class="tag">A one-handed sword</div>
+		<div class="menu">
+			<div class="head">
+				<div class="art"><img src="out/thumb-sword.png" alt="" /></div>
+				<div class="title"><strong>Steel sword</strong><small>Wearing</small></div>
+				<div class="wear on">✓</div>
+			</div>
+			<div class="mrow"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg><span class="grow">Details…</span></div>
+			<div class="mrow new"><svg class="ico" viewBox="0 0 24 24"><path d="M7 11V6a2 2 0 0 1 4 0v5M11 10V5a2 2 0 0 1 4 0v6M15 11V8a2 2 0 0 1 4 0v7a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-3-5a2 2 0 0 1 3-2l1 1" /></svg><span class="grow">Two-handed</span><span class="switch"></span></div>
+			<div class="mrow new"><svg class="ico" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M4 16V6a2 2 0 0 1 2-2h10" /></svg><span class="grow">Make one for the Off hand…</span><small>Paid</small></div>
+			<div class="mrow"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" /></svg><span class="grow">Try again…</span><small>Paid</small></div>
+			<div class="sep"></div>
+			<div class="mrow danger"><svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg><span class="grow">Remove…</span></div>
+		</div>
+	</div>
+	<div class="panel">
+		<div class="tag">Switched to two-handed (free, instant, can be undone)</div>
+		<div class="menu">
+			<div class="head">
+				<div class="art"><img src="out/thumb-sword.png" alt="" /></div>
+				<div class="title"><strong>Steel greatsword</strong><small>Wearing · Two-handed</small></div>
+				<div class="wear on">✓</div>
+			</div>
+			<div class="mrow"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg><span class="grow">Details…</span></div>
+			<div class="mrow new"><svg class="ico" viewBox="0 0 24 24"><path d="M7 11V6a2 2 0 0 1 4 0v5M11 10V5a2 2 0 0 1 4 0v6M15 11V8a2 2 0 0 1 4 0v7a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-3-5a2 2 0 0 1 3-2l1 1" /></svg><span class="grow">Two-handed</span><span class="switch on"></span></div>
+			<div class="mrow"><svg class="ico" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" /></svg><span class="grow">Try again…</span><small>Paid</small></div>
+			<div class="sep"></div>
+			<div class="mrow danger"><svg class="ico" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg><span class="grow">Remove…</span></div>
+		</div>
+	</div>
+</div>
+
+<h2>2. The wardrobe while a two-handed item is worn</h2>
+<p class="cap">Wearing the greatsword took the other hand's item off. The other hand says who holds it. Tapping an item there puts it on and takes the greatsword off; Undo brings the earlier look back.</p>
+<div class="row">
+	<div class="panel">
+		<div class="sec">
+			<div class="sechead">Main hand</div>
+			<div class="tiles">
+				<div class="tile"><svg class="ico empty" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M5.6 5.6l12.8 12.8" /></svg><span class="name">Empty</span></div>
+				<div class="tile on"><img class="tthumb" src="out/thumb-sword.png" alt="" /><span class="check">✓</span><span class="name">Steel greatsword</span></div>
+			</div>
+		</div>
+		<div class="sec">
+			<div class="sechead">Off hand</div>
+			<p class="note">Held by Steel greatsword (two-handed).</p>
+			<div class="tiles">
+				<div class="tile on"><svg class="ico empty" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M5.6 5.6l12.8 12.8" /></svg><span class="check">✓</span><span class="name">Empty</span></div>
+				<div class="tile"><img class="tthumb" src="out/thumb-bow.png" alt="" /><span class="name">Longbow</span></div>
+			</div>
+		</div>
+	</div>
+	<div class="panel">
+		<div class="tag">On the character (real stored frames: the sword is drawn in its own hand, and the second hand closes on it wherever the move brings the hands together)</div>
+		<div class="stage">
+			<div class="shot"><div class="crop"><img src="out/mock-two-handed-walk.png" alt="" /></div>Walk: carried, other hand empty</div>
+			<div class="shot"><div class="crop"><img src="out/mock-two-handed-slash-south.png" alt="" /></div>Slash, front: hands meet</div>
+			<div class="shot"><div class="crop"><img src="out/mock-two-handed-slash-east.png" alt="" /></div>Slash, side: hands meet</div>
+		</div>
+	</div>
+</div>
+
+<h2>3. Dual wielding</h2>
+<p class="cap">One item per hand, as today. "Make one for the Off hand…" draws the same design for the other hand, so a pair matches.</p>
+<div class="row">
+	<div class="panel">
+		<div class="sec">
+			<div class="sechead">Main hand</div>
+			<div class="tiles">
+				<div class="tile"><svg class="ico empty" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M5.6 5.6l12.8 12.8" /></svg><span class="name">Empty</span></div>
+				<div class="tile on"><img class="tthumb" src="out/thumb-sword.png" alt="" /><span class="check">✓</span><span class="name">Steel sword</span></div>
+			</div>
+		</div>
+		<div class="sec">
+			<div class="sechead">Off hand</div>
+			<div class="tiles">
+				<div class="tile"><svg class="ico empty" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M5.6 5.6l12.8 12.8" /></svg><span class="name">Empty</span></div>
+				<div class="tile on"><img class="tthumb" src="out/thumb-sword.png" style="transform:scaleX(-1)" alt="" /><span class="check">✓</span><span class="name">Steel sword</span></div>
+			</div>
+		</div>
+	</div>
+	<div class="panel">
+		<div class="tag">On the character (real stored frames of two different items, a sword and a bow, in the app's own draw order; a stored matching pair does not exist yet and is what the live test draws)</div>
+		<div class="stage">
+			<div class="shot"><div class="crop"><img src="out/mock-dual-walk.png" alt="" /></div>Main hand and Off hand together</div>
+		</div>
+	</div>
+</div>

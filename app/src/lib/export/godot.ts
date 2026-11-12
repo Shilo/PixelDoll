@@ -193,10 +193,20 @@ func _refresh() -> void:
 	var clock_playing := body.is_playing()
 	var clock_speed := body.get_playing_speed() / body.speed_scale if body.speed_scale != 0.0 else 1.0
 	var hidden := {}
+	var hides := {}
 	for slot in equipped:
 		var it := _find(manifest["items"], equipped[slot])
 		if not it.is_empty():
-			for h in it.get("hides", _find(manifest["slots"], slot).get("hides", [])):
+			hides[slot] = it.get("hides", _find(manifest["slots"], slot).get("hides", []))
+	var order: Array = manifest["slots"].map(func(s): return s["id"])
+	for slot in hides:
+		# Of two worn items that hide each other's slot (two two-handed items), the later slot stays visible.
+		var yields := false
+		for other in hides:
+			if other != slot and hides[slot].has(other) and hides[other].has(slot) and order.find(other) > order.find(slot):
+				yields = true
+		if not yields:
+			for h in hides[slot]:
 				hidden[h] = true
 	for node in _layers():
 		var layer := _layer_of(node)

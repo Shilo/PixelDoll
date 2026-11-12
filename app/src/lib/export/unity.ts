@@ -207,12 +207,20 @@ namespace PixelDoll
             var baseItem = Item(data.baseItem);
             if (baseItem != null)
                 foreach (var h in baseItem.hasHides ? baseItem.hides : Slot("body")?.hides ?? Array.Empty<string>()) hidden.Add(h);
+            var worn = new List<PdItem>();
             foreach (var e in equipped)
             {
                 if (e.slot == "body") continue;
                 var it = Item(e.item);
-                if (it == null) continue;
-                foreach (var h in it.hasHides ? it.hides : Slot(it.slot)?.hides ?? Array.Empty<string>()) hidden.Add(h);
+                if (it != null) worn.Add(it);
+            }
+            string[] HidesOf(PdItem it) => it.hasHides ? it.hides : Slot(it.slot)?.hides ?? Array.Empty<string>();
+            int At(string slot) => Array.FindIndex(data.slots, x => x.id == slot);
+            foreach (var it in worn)
+            {
+                // Of two worn items that hide each other's slot (two two-handed items), the later slot stays visible.
+                if (worn.Exists(o => o != it && Array.IndexOf(HidesOf(it), o.slot) >= 0 && Array.IndexOf(HidesOf(o), it.slot) >= 0 && At(o.slot) > At(it.slot))) continue;
+                foreach (var h in HidesOf(it)) hidden.Add(h);
             }
             var visible = new List<KeyValuePair<PdNode, int>>();
             foreach (var n in nodes)

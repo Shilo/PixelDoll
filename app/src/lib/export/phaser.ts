@@ -223,11 +223,13 @@ export class Paperdoll {
     const frame = this.body.anims.currentFrame;
     if (!frame) return;
     const name = frame.textureFrame, cell = +name.slice(name.lastIndexOf('_') + 1);
-    const hidden = new Set();
-    for (const [slot, id] of Object.entries(this.equipped)) {
-      const it = this.m.items.find((i) => i.id === id);
-      for (const h of it?.hides ?? this.m.slots.find((s) => s.id === slot)?.hides ?? []) if (it) hidden.add(h);
-    }
+    const hidden = new Set(), at = (slot) => this.m.slots.findIndex((s) => s.id === slot);
+    const worn = Object.entries(this.equipped).map(([slot, id]) => [slot, this.m.items.find((i) => i.id === id)]).filter((w) => w[1]);
+    const hidesOf = ([slot, it]) => it.hides ?? this.m.slots.find((s) => s.id === slot)?.hides ?? [];
+    // Of two worn items that hide each other's slot (two two-handed items), the later slot stays visible.
+    for (const w of worn)
+      if (!worn.some((o) => o !== w && hidesOf(w).includes(o[0]) && hidesOf(o).includes(w[0]) && at(o[0]) > at(w[0])))
+        for (const h of hidesOf(w)) hidden.add(h);
     for (const n of this.nodes) {
       const hit = this.layerOf(n);
       n.sprite.setVisible(!!hit?.layer && !hidden.has(n.slot.id));

@@ -9,6 +9,7 @@ import type { Img } from '../image/png.ts';
 import { opaqueBox } from '../rig/normalize.ts';
 import { baseHashOf, cellHash, cellKeys, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import type { Project } from '../store/manifest.ts';
+import { getDecoded, rememberDecoded } from '../store/project.ts';
 import { lab } from './palette.ts';
 
 /** Garment grays: low chroma (skin is warm, C ≥ 0.09; eye whites 0.044) and not the near-black outline (B15 probe on S4 rig). */
@@ -137,6 +138,8 @@ function fitLine(im: Img, line: BodyLine, votes: Map<number, [number, number]>):
  * Shorts / Skin. `images`: the new cell images; `dirty`: something to persist (saveSplit). Idempotent: the votes come from
  * the anchor lines, which do not see the region bit.
  */
+const SPLITS_KEPT = 32; // characters; past it the least recently opened are split again when opened
+const splits = new Map<string, Sha256[]>();
 export async function splitBase(
 	p: Project
 ): Promise<{ changed: number; dirty: boolean; oldHash: Sha256; images: Map<Sha256, Img> }> {
@@ -156,10 +159,37 @@ export async function splitBase(
 						line = im && lineAt(p, anim, dir, i, im);
 					if (im && line) jobs.push({ cells, i, im, line });
 				}
-	const votes = tally(jobs.map((j) => [j.im, splitCell(j.im, j.line)]));
-	for (const { cells, i, im, line } of jobs) {
-		const out = splitCell(im, fitLine(im, line, votes)),
-			k = await cellHash(out);
+	// The split follows from the cells and their lines alone, so reopening a character reuses it instead of redoing the
+	// pixel work (the demo, rebuilt unsplit on every open, included).
+	const key = jobs.map((j) => `${j.cells[j.i]} ${JSON.stringify(j.line)}`).join('|');
+	const hashes = splits.get(key);
+	let outs = hashes?.map((hash) => p.images.get(hash) ?? getDecoded(hash));
+	let outputHashes = hashes;
+	if (outs?.every((image) => image !== undefined))
+		splits.delete(key); // most recent last
+	else {
+		const votes = tally(jobs.map((j) => [j.im, splitCell(j.im, j.line)]));
+		outs = [];
+		outputHashes = [];
+		const unique = new Map(p.images);
+		for (const { im, line } of jobs) {
+			const out = splitCell(im, fitLine(im, line, votes));
+			const hash = await cellHash(out);
+			const image = unique.get(hash) ?? getDecoded(hash) ?? out;
+			unique.set(hash, image);
+			rememberDecoded(hash, image);
+			outputHashes.push(hash);
+			outs.push(image);
+		}
+	}
+	splits.set(key, outputHashes!);
+	for (const [n] of splits) {
+		if (splits.size <= SPLITS_KEPT) break;
+		splits.delete(n);
+	}
+	for (const [n, { cells, i }] of jobs.entries()) {
+		const k = outputHashes![n],
+			out = outs![n]!;
 		if (k === cells[i]) continue;
 		p.images.set(k, out);
 		images.set(k, out);

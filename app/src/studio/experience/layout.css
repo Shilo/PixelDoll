@@ -592,6 +592,9 @@
 	flex-direction: column;
 	gap: 10px;
 }
+.section-note {
+	margin: 0;
+}
 .slot-tiles {
 	display: grid;
 	/* At most four columns, tiles at least 88 px wide (ui-lab-9): 3 per row at 1280, 4 from 1440. */
@@ -883,6 +886,15 @@
 	font-size: 16px;
 	padding: 12px;
 }
+.customize-action span {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.customize-action svg {
+	flex: none;
+}
 /* The Characters panel ends in its Customize button, not a scrolling list, so it keeps the edge margin. */
 .cast-library {
 	bottom: max(var(--edge), env(safe-area-inset-bottom));
@@ -986,6 +998,17 @@
 	margin-left: auto;
 	color: var(--bu-muted);
 	font-size: 13px;
+}
+.item-menu-switch {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	cursor: pointer;
+}
+.item-menu-switch > span {
+	display: flex;
+	align-items: center;
+	gap: 12px;
 }
 .item-menu-confirm {
 	padding: 4px 8px 8px;

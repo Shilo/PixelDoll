@@ -5224,3 +5224,166 @@ test('Wardrobe lands on a category picked while closed and reveals tiles below t
 		})
 		.toBe(true);
 });
+
+test('a hand item can be two-handed, takes both hands, and offers a matching item for the other hand', async ({
+	page,
+	context
+}, info) => {
+	const posts: string[] = [];
+	await context.route('https://api.pixellab.ai/**', (route) => {
+		if (route.request().method() === 'POST') posts.push(new URL(route.request().url()).pathname);
+		if (new URL(route.request().url()).pathname === '/v2/balance')
+			return route.fulfill({
+				json: {
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 },
+					credits: { type: 'usd', usd: 0 }
+				}
+			});
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-two-handed-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	// An editable copy of the demo with a second hand item (the sword's art in the Off hand), worn with the sword.
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			s = await import(statePath);
+		const projectPath = '/src/lib/store/project.ts',
+			project = await import(projectPath);
+		const dbPath = '/src/lib/store/db.ts',
+			db = await import(dbPath);
+		await s.copyDemo();
+		const ctx = await project.loadProject(s.doc.id),
+			m = ctx.rec.manifest;
+		const sword = m.items.find((i: { slot: string }) => i.slot === 'main_hand');
+		m.items.push({
+			...structuredClone(sword),
+			id: 'round_shield',
+			name: 'Round shield',
+			slot: 'off_hand',
+			materials: []
+		});
+		m.slots.push({
+			...structuredClone(m.slots.find((x: { id: string }) => x.id === 'main_hand')),
+			id: 'off_hand',
+			z: 140
+		});
+		await db.put('projects', ctx.rec.id, ctx.rec);
+		await s.openProject(ctx.rec.id);
+		s.pick(sword.id);
+		s.pick('round_shield');
+	});
+	const main = section(page, 'Main hand'),
+		off = section(page, 'Off hand');
+	const sword = main.getByRole('button', { name: /^Steel longsword(,|$)/ }),
+		shield = off.getByRole('button', { name: /^Round shield(,|$)/ });
+	await equipmentGroup(page, 'Main hand');
+	await expect(sword).toHaveAttribute('aria-pressed', 'true');
+	await expect(shield).toHaveAttribute('aria-pressed', 'true');
+
+	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
+	await expectAnchoredMenu(page);
+	const twoHanded = itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' });
+	await expect(twoHanded).not.toBeChecked();
+	await expect(
+		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Off hand… Paid' })
+	).toBeVisible();
+
+	// Switching it on while worn takes the other hand's item off, says so, and Undo brings it back.
+	await twoHanded.click();
+	await expect(twoHanded).toBeChecked();
+	await expect(itemMenu(page).locator('.item-menu-title small')).toContainText('Two-handed');
+	await expect(itemMenu(page).getByRole('menuitem', { name: /^Make one for/ })).toHaveCount(0);
+	await expect(
+		page.getByText('Took off Round shield: Steel longsword is two-handed')
+	).toBeVisible();
+	await page.keyboard.press('Escape');
+	await expect(shield).toHaveAttribute('aria-pressed', 'false');
+	await expect(sword).toHaveAttribute('aria-pressed', 'true');
+	await expect(off).toContainText('Held by Steel longsword (two-handed).');
+
+	// Putting something in the other hand takes the two-handed item off.
+	await shield.click();
+	await expect(shield).toHaveAttribute('aria-pressed', 'true');
+	await expect(sword).toHaveAttribute('aria-pressed', 'false');
+	await expect(page.getByText('Took off Steel longsword (two-handed)')).toBeVisible();
+	await expect(off).not.toContainText('Held by');
+	await page.getByRole('button', { name: /^Undo/ }).click();
+	await expect(sword).toHaveAttribute('aria-pressed', 'true');
+	await expect(shield).toHaveAttribute('aria-pressed', 'false');
+
+	// The switch is undoable and off again offers the other hand.
+	await page.getByRole('button', { name: /^Undo/ }).click();
+	await expect(shield).toHaveAttribute('aria-pressed', 'true');
+	await expect(off).not.toContainText('Held by');
+
+	// Make one for the other hand opens New item for that hand with the same description; the Off hand item offers
+	// the Main hand.
+	await off.getByRole('button', { name: 'More options for Round shield', exact: true }).click();
+	await expect(
+		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Main hand… Paid' })
+	).toBeVisible();
+	await page.keyboard.press('Escape');
+	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
+	await itemMenu(page).getByRole('menuitem', { name: 'Make one for the Off hand… Paid' }).click();
+	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
+	await expect(sheet.getByRole('radio', { name: 'Off hand', exact: true })).toHaveAttribute(
+		'aria-checked',
+		'true'
+	);
+	const prompt = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			s = await import(statePath);
+		return s.store.project.manifest.items.find((i: { slot: string }) => i.slot === 'main_hand')
+			.prompt;
+	});
+	await expect(sheet.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue(
+		prompt
+	);
+	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+
+	// Enter toggles the switch like any menu item.
+	await expect(page.getByRole('dialog', { name: 'New item', exact: true })).toHaveCount(0);
+	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
+	await expectAnchoredMenu(page);
+	const toggle = itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' });
+	await toggle.focus();
+	await page.keyboard.press('Enter');
+	await expect(toggle).toBeChecked();
+	await page.keyboard.press('Escape');
+	await expect(shield).toHaveAttribute('aria-pressed', 'false');
+
+	// An outfit keeps the Main hand even when only its Off hand differs from what is worn, and still counts as current.
+	const outfit = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			s = await import(statePath);
+		const p = {
+			id: 'both-hands',
+			name: 'Both hands',
+			items: { ...s.doc.items, off_hand: 'round_shield' },
+			variants: { ...s.doc.variants }
+		};
+		s.applyPreset(p);
+		return { main: s.doc.items.main_hand, off: s.doc.items.off_hand, same: s.sameOutfit(p) };
+	});
+	expect(outfit).toEqual({ main: 'sword_steel', off: null, same: true });
+
+	// An item put on by Keep it that needs the other hand is one undoable edit.
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			s = await import(statePath);
+		await s.openProject(s.doc.id, { wear: 'round_shield' });
+	});
+	await expect(shield).toHaveAttribute('aria-pressed', 'true');
+	await expect(sword).toHaveAttribute('aria-pressed', 'false');
+	await page.getByRole('button', { name: 'Undo Wear Round shield', exact: true }).click();
+	await expect(sword).toHaveAttribute('aria-pressed', 'true');
+	await expect(shield).toHaveAttribute('aria-pressed', 'false');
+	expect(posts).toEqual([]);
+});

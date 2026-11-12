@@ -1,6 +1,9 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { openSource } from '../../src/lib/dress/project.ts';
+import { splitBase } from '../../src/lib/dress/regions.ts';
+import * as rig from '../../src/lib/rig/rig.ts';
+import { rememberDecoded } from '../../src/lib/store/project.ts';
 import {
 	deleteOutdated,
 	loadProject,
@@ -24,9 +27,12 @@ function pending<T>() {
 	});
 	return { promise, resolve };
 }
+// Decoded cells are cached by hash for the page's lifetime, so each fixture gets cells no earlier test decoded.
+let fixtures = 0;
 function fixture() {
-	const first = `sha256:${'1'.repeat(64)}` as Sha256,
-		second = `sha256:${'2'.repeat(64)}` as Sha256;
+	const n = (++fixtures).toString(16).padStart(8, '0'),
+		first = `sha256:${'1'.repeat(56)}${n}` as Sha256,
+		second = `sha256:${'2'.repeat(56)}${n}` as Sha256;
 	const record: StoredProject = {
 		id: 'rig-load',
 		savedAt: '',
@@ -87,6 +93,51 @@ function fixture() {
 	const decode = vi.spyOn(png, 'decodePng').mockResolvedValue(image);
 	return { record, image, blob, get, getBlob, decode, first, second };
 }
+
+test('split results stop retaining pixels after decoded-cache eviction', async () => {
+	const fixtureData = fixture();
+	fixtureData.image.data.fill(128);
+	const original = structuredClone(fixtureData.record.manifest);
+	const project = () => ({
+		manifest: structuredClone(original),
+		images: new Map([
+			[fixtureData.first, fixtureData.image],
+			[fixtureData.second, fixtureData.image]
+		])
+	});
+	const hash = vi.spyOn(rig, 'cellHash');
+	const remember = vi.spyOn(await import('../../src/lib/store/project.ts'), 'rememberDecoded');
+	await splitBase(project());
+	expect(remember).toHaveBeenCalled();
+	expect(new Set(remember.mock.calls.map(([, image]) => image)).size).toBe(1);
+	hash.mockClear();
+	await splitBase(project());
+	expect(hash).not.toHaveBeenCalled();
+	rememberDecoded('sha256:oversized', {
+		w: 1,
+		h: 1,
+		data: new Uint8ClampedArray(96 * 1024 * 1024 + 1)
+	});
+	await splitBase(project());
+	expect(hash).toHaveBeenCalled();
+});
+
+test('an unchanged split keeps the original shared pixel buffer', async () => {
+	const fixtureData = fixture();
+	for (let offset = 0; offset < fixtureData.image.data.length; offset += 4)
+		fixtureData.image.data.set([200, 100, 50, 255], offset);
+	const sourceHash = await rig.cellHash(fixtureData.image);
+	const manifest = JSON.parse(
+		JSON.stringify(fixtureData.record.manifest)
+			.replaceAll(fixtureData.first, sourceHash)
+			.replaceAll(fixtureData.second, sourceHash)
+	) as typeof fixtureData.record.manifest;
+	const remember = vi.spyOn(await import('../../src/lib/store/project.ts'), 'rememberDecoded');
+	const split = await splitBase({ manifest, images: new Map([[sourceHash, fixtureData.image]]) });
+	expect(split.changed).toBe(0);
+	expect(remember).toHaveBeenCalled();
+	for (const [, image] of remember.mock.calls) expect(image).toBe(fixtureData.image);
+});
 
 test('a canceled loader performs no metadata, blob or fixture fetch reads', async () => {
 	const f = fixture(),
@@ -170,10 +221,13 @@ test('concurrent and later demo opens download each file once and get separate p
 	expect(Object.keys(counts)).toContain('http://localhost/fixtures/s2/fixture.json');
 	expect(Object.keys(counts).length).toBeGreaterThan(1);
 	expect(Object.values(counts).every((n) => n === 1)).toBe(true);
-	// Each open decodes its own copy: the Studio edits its project in place.
+	// Each open gets its own manifest and image map: the Studio edits its project in place.
 	expect(studio.project.manifest === list.project.manifest).toBe(false);
 	expect(studio.project.images === reopened.project.images).toBe(false);
 	expect(reopened.project.manifest.rig.baseHash).toBe(studio.project.manifest.rig.baseHash);
+	// The artwork is built once: every open shares the same decoded images.
+	const [hash, image] = [...studio.project.images][0];
+	expect(reopened.project.images.get(hash)).toBe(image);
 });
 
 test('a failed demo download is not kept: the next open downloads it again', async () => {
@@ -230,10 +284,64 @@ test('an active load retains all unique cells and propagates genuine failures', 
 	expect([...loaded.project.images.keys()]).toEqual([f.first, f.second]);
 	expect(f.getBlob).toHaveBeenCalledTimes(2);
 	expect(f.decode).toHaveBeenCalledTimes(2);
-	f.getBlob.mockRejectedValueOnce(new Error('Storage read failed'));
-	await expect(loadProject(f.record.id)).rejects.toThrow('Storage read failed');
-	f.decode.mockRejectedValueOnce(new Error('Malformed PNG'));
-	await expect(loadProject(f.record.id)).rejects.toThrow('Malformed PNG');
+	// A later load (a thumbnail, then the open) shares the decoded cells instead of reading them again.
+	const again = await loadProject(f.record.id);
+	expect([...again.project.images.keys()]).toEqual([f.first, f.second]);
+	expect(again.project.images.get(f.first)).toBe(loaded.project.images.get(f.first));
+	expect(f.getBlob).toHaveBeenCalledTimes(2);
+	expect(f.decode).toHaveBeenCalledTimes(2);
+	const unread = fixture();
+	unread.getBlob.mockRejectedValueOnce(new Error('Storage read failed'));
+	await expect(loadProject(unread.record.id)).rejects.toThrow('Storage read failed');
+	const malformed = fixture();
+	malformed.decode.mockRejectedValueOnce(new Error('Malformed PNG'));
+	await expect(loadProject(malformed.record.id)).rejects.toThrow('Malformed PNG');
+});
+
+test('concurrent loads share each cell read, and one abandoning it does not stop the other', async () => {
+	const f = fixture();
+	const [a, b] = await Promise.all([loadProject(f.record.id), loadProject(f.record.id)]);
+	expect(f.getBlob).toHaveBeenCalledTimes(2);
+	expect(f.decode).toHaveBeenCalledTimes(2);
+	expect(a.project.images.get(f.second)).toBe(b.project.images.get(f.second));
+	const g = fixture(),
+		blob = pending<Blob>(),
+		controller = new AbortController();
+	g.getBlob.mockClear(); // the same spies as f's
+	g.decode.mockClear();
+	g.getBlob.mockReturnValueOnce(blob.promise);
+	const abandoned = loadProject(g.record.id, controller.signal),
+		rejected = expect(abandoned).rejects.toMatchObject({ name: 'AbortError' });
+	await vi.waitFor(() => expect(g.getBlob).toHaveBeenCalledOnce());
+	const kept = loadProject(g.record.id);
+	controller.abort();
+	await rejected;
+	blob.resolve(g.blob);
+	expect([...(await kept).project.images.keys()]).toEqual([g.first, g.second]);
+	expect(g.getBlob).toHaveBeenCalledTimes(2);
+	expect(g.decode).toHaveBeenCalledTimes(2);
+});
+
+test('a load arriving as an abandoned cell read is dropped starts its own read', async () => {
+	// Start the later load a few microtasks apart, so one lands between the dropped read's rejection and its cleanup.
+	for (let ticks = 0; ticks < 12; ticks++) {
+		const f = fixture(),
+			blob = pending<Blob>(),
+			controller = new AbortController();
+		f.getBlob.mockClear(); // fixture() reuses one spy
+		f.getBlob.mockReturnValueOnce(blob.promise);
+		const abandoned = loadProject(f.record.id, controller.signal),
+			rejected = expect(abandoned).rejects.toMatchObject({ name: 'AbortError' });
+		await vi.waitFor(() => expect(f.getBlob).toHaveBeenCalledOnce());
+		controller.abort();
+		await rejected;
+		blob.resolve(f.blob);
+		const later = (async () => {
+			for (let i = 0; i < ticks; i++) await Promise.resolve();
+			return loadProject(f.record.id);
+		})();
+		expect([...(await later).project.images.keys()]).toEqual([f.first, f.second]);
+	}
 });
 
 test('a character saved in an earlier format is rejected before any cell read', async () => {

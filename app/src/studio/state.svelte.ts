@@ -7,9 +7,11 @@ import {
 	openSource,
 	saveDress,
 	saveSplit,
-	type DressState
+	type DressState,
+	type Outfit
 } from '../lib/dress/project.ts';
 import { splitBase } from '../lib/dress/regions.ts';
+import { keepThumbnails } from './experience/thumbnails.svelte.ts';
 import {
 	deriveMaterials,
 	randomOutfit,
@@ -17,7 +19,7 @@ import {
 	recolor,
 	storeVariants
 } from '../lib/dress/dress.ts';
-import { drawList } from '../lib/compose/compose.ts';
+import { drawList, OTHER_HAND, settleHands, twoHanded } from '../lib/compose/compose.ts';
 import { deleteItem, deleteOutdated, listProjects, loadProject } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import type {
@@ -334,6 +336,8 @@ export interface ProjectRef {
 	demo: boolean;
 	dev: boolean;
 	savedAt: string;
+	/** Changes whenever the saved look does (body, items or outfit), so a character's thumbnail redraws only then. */
+	look: string;
 	/** Shape at a glance for saved characters; the demo's comes from its open manifest. */
 	facts?: string;
 }
@@ -368,7 +372,18 @@ class View {
 		return p ? recolor(p, $state.snapshot(doc.variants)) : null;
 	});
 	project = $derived.by(() => this.recolored && withDrafts(this.recolored));
-	items = $derived.by(() => ({ ...doc.items, ...doc.drafts }));
+	// a worn draft is never invisible: a draft in the other hand shows instead of a two-handed item (display only)
+	items = $derived.by(() => {
+		const m = this.project?.manifest,
+			on = { ...doc.items, ...doc.drafts };
+		return m
+			? settleHands(
+					m,
+					on,
+					Object.keys(doc.drafts).find((s) => OTHER_HAND[s])
+				).items
+			: on;
+	});
 	anim = $derived(store.project?.manifest.rig.animations.find((a) => a.id === ui.anim));
 	cell = $derived(this.anim ? this.anim.frames[ui.frame % this.anim.frames.length].cell : 0);
 }
@@ -418,21 +433,38 @@ export async function refreshProjects(): Promise<boolean> {
 			return null;
 		}),
 		own = (listed ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+	// An outfit save changes the dress state (outfit, palettes, hides, layer order), not savedAt, which orders the list; the
+	// demo's dress state is its own record.
+	const demoDress = await db.get('projects', `dress-${DEMO}`).catch(() => undefined);
 	store.projects = [
-		{ id: DEMO, name: 'Adventurer (demo)', demo: true, dev: false, savedAt: '' },
+		{
+			id: DEMO,
+			name: 'Adventurer (demo)',
+			demo: true,
+			dev: false,
+			savedAt: '',
+			look: stableStringify(demoDress ?? null)
+		},
 		...own.map((p) => ({
 			id: p.id,
 			name: p.manifest.name,
 			demo: false,
 			dev: p.origin === 'dev',
 			savedAt: p.savedAt,
+			// A developer rig (never shown as a character) may lack the items and slots a dress state reads.
+			look:
+				p.origin === 'dev'
+					? p.savedAt
+					: `${p.savedAt} ${stableStringify(dressOf(p.manifest, (p as { dress?: { current?: Outfit } }).dress?.current))}`,
 			// A developer rig frozen on the M2 pages need not carry a full rig; it has no card facts.
 			facts: p.manifest.rig?.cell ? characterFacts(p.manifest) : undefined
 		}))
 	];
 	// Items of a character created, renamed or deleted here or in another tab.
 	void refreshShared();
-	// Drop unload snapshots of characters deleted here or in another tab (only when the listing is known to be complete).
+	// Drop unload snapshots and thumbnails of characters deleted here or in another tab (only when the listing is known to
+	// be complete).
+	if (listed) keepThumbnails(new Set(store.projects.map((p) => p.id)));
 	if (listed)
 		try {
 			for (const k of Object.keys(localStorage))
@@ -445,7 +477,8 @@ export async function refreshProjects(): Promise<boolean> {
 }
 
 let openRequest = 0,
-	opening = ''; // opening: the character the newest open is loading ('' when it finished)
+	opening = $state(''); // opening: the character the newest open is loading ('' when it finished)
+export const openingProjectId = () => opening;
 /** keep.wear: equip that item (Keep it). keep.quiet: reload the open character in place (a draft saved itself): the view, the
  *  selection and undo stay, and the stage does not show loading. */
 export async function openProject(id: string, keep?: { wear?: string; quiet?: boolean }) {
@@ -478,11 +511,16 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 			doc.variants = { ...current.variants };
 		} // in place: keep the live outfit
 		if (id !== doc.id) doc.drafts = {};
+		// Items put on by this open (Keep it, an accepted worn draft): if one needs a hand that a two-handed item holds, the
+		// change is replayed below as one undoable edit with its message.
+		const outfit = { ...doc.items },
+			newlyWorn: Item[] = [];
 		if (keep?.wear) {
 			const it = m.items.find((i) => i.id === keep.wear);
 			if (it) {
 				doc.items[it.slot] = it.id;
 				delete doc.drafts[it.slot];
+				newlyWorn.push(it);
 			}
 		}
 		if (!quiet) {
@@ -505,9 +543,21 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 				doc.items[item.slot] = item.id;
 				delete doc.drafts[item.slot];
 				acceptedWear = true;
+				newlyWorn.push(item);
 			}
 			drop(g);
 		}
+		const wornSlot = newlyWorn.at(-1)?.slot;
+		if (wornSlot && settleHands(m, doc.items, wornSlot).removed) {
+			doc.items = outfit;
+			commit(
+				`Wear ${newlyWorn.map((i) => i.name).join(', ')}`,
+				() => {
+					for (const it of newlyWorn) doc.items[it.slot] = it.id;
+				},
+				{ keepHand: wornSlot }
+			);
+		} else doc.items = settleHands(m, doc.items).items; // an outfit read as saved keeps the Main hand
 		if (!quiet)
 			ui.selected =
 				keep?.wear ??
@@ -561,18 +611,42 @@ function restore(s: string) {
 	bump();
 	save();
 }
-/** Every user edit goes through here: undo entry, apply, re-render, autosave. */
-export function commit(label: string, fn: () => void) {
+/** Every user edit goes through here: undo entry, apply, re-render, autosave. A two-handed item and an item in the other hand
+ *  are never kept together: `keepHand` names the hand the edit is about (a whole outfit or look passes the Main hand);
+ *  without it, the one hand the edit put an item on stays. Returns the message about what came off, which is shown unless
+ *  `quiet`. */
+export function commit(
+	label: string,
+	fn: () => void,
+	o: { keepHand?: string; quiet?: boolean } = {}
+): string | undefined {
 	if (!store.project) return;
 	doc.undo = [...doc.undo.slice(-99), { label, snap: snap() }];
 	doc.redo = [];
 	const before = { ...doc.items };
 	fn();
+	const changed = Object.keys(OTHER_HAND).filter(
+		(s) => doc.items[s] && (doc.items[s] ?? null) !== (before[s] ?? null)
+	);
+	const hands = settleHands(
+		store.project.manifest,
+		doc.items,
+		o.keepHand ?? (changed.length === 1 ? changed[0] : undefined)
+	);
+	let note: string | undefined;
+	if (hands.removed) {
+		doc.items = hands.items;
+		note = twoHanded(store.project.manifest, hands.removed)
+			? `Took off ${hands.removed.name} (two-handed)`
+			: `Took off ${hands.removed.name}: ${hands.by!.name} is two-handed`;
+		if (!o.quiet) toast(note);
+	}
 	// a saved item put on or taken off a slot replaces the draft worn there
 	for (const slot of Object.keys(doc.drafts))
 		if ((doc.items[slot] ?? null) !== (before[slot] ?? null)) delete doc.drafts[slot];
 	bump();
 	save();
+	return note;
 }
 /** Manifest edits are in place; a new top-level object lets every `$derived(store.project.manifest)` see the change. */
 function bump() {
@@ -841,16 +915,21 @@ export async function removeProject(): Promise<void> {
 
 // ---- edits ----
 const itemById = (id: string) => store.project?.manifest.items.find((i) => i.id === id);
-export function wear(id: string) {
+/** Put an item on or take it off. Returns what came off with it (a two-handed item), shown unless `quiet`. */
+export function wear(id: string, quiet = false): string | undefined {
 	const it = itemById(id);
 	if (!it) return;
 	const on = doc.items[it.slot] === id && !doc.drafts[it.slot];
 	delete doc.drafts[it.slot]; // a saved item put on or taken off replaces the draft worn in its slot
-	if (doc.items[it.slot] !== (on ? null : id))
-		commit(`${on ? 'Take off' : 'Wear'} ${it.name}`, () => {
-			doc.items[it.slot] = on ? null : id;
-		});
 	ui.selected = id;
+	if (doc.items[it.slot] !== (on ? null : id))
+		return commit(
+			`${on ? 'Take off' : 'Wear'} ${it.name}`,
+			() => {
+				doc.items[it.slot] = on ? null : id;
+			},
+			{ quiet }
+		);
 }
 export function clearSlots(slots: string[]) {
 	for (const s of slots) delete doc.drafts[s];
@@ -926,16 +1005,24 @@ export function characterName() {
 }
 export function randomize() {
 	const r = randomOutfit(store.project!.manifest);
-	commit('Random look', () => {
-		doc.items = { ...r.items, body: store.project!.manifest.rig.baseItem };
-		doc.variants = r.variants;
-	});
+	commit(
+		'Random look',
+		() => {
+			doc.items = { ...r.items, body: store.project!.manifest.rig.baseItem };
+			doc.variants = r.variants;
+		},
+		{ keepHand: 'main_hand', quiet: true }
+	);
 }
 export function applyPreset(p: Preset) {
-	commit(`Wear ${p.name}`, () => {
-		doc.items = { ...p.items };
-		doc.variants = { ...p.variants };
-	});
+	commit(
+		`Wear ${p.name}`,
+		() => {
+			doc.items = { ...p.items };
+			doc.variants = { ...p.variants };
+		},
+		{ keepHand: 'main_hand', quiet: true }
+	);
 }
 export function savePreset(name: string) {
 	const m = store.project!.manifest;
@@ -963,20 +1050,34 @@ export function deletePreset(id: string) {
 		m.presets = m.presets.filter((p) => p.id !== id);
 	});
 }
-export const sameOutfit = (p: Preset) =>
-	Object.keys({ ...p.items, ...doc.items }).every(
-		(k) => (p.items[k] ?? null) === (doc.items[k] ?? null) || k === 'body'
-	) &&
-	JSON.stringify(Object.entries(p.variants).sort()) ===
-		JSON.stringify(Object.entries($state.snapshot(doc.variants)).sort());
+export const sameOutfit = (p: Preset) => {
+	// an outfit saved before one of its hand items became two-handed is worn with the Main hand kept
+	const items = store.project ? settleHands(store.project.manifest, p.items).items : p.items;
+	return (
+		Object.keys({ ...items, ...doc.items }).every(
+			(k) => (items[k] ?? null) === (doc.items[k] ?? null) || k === 'body'
+		) &&
+		JSON.stringify(Object.entries(p.variants).sort()) ===
+			JSON.stringify(Object.entries($state.snapshot(doc.variants)).sort())
+	);
+};
 
 export function toggleHide(itemId: string, slot: string) {
 	const m = store.project!.manifest,
 		it = itemById(itemId)!;
 	const cur = it.hides ?? m.slots.find((s) => s.id === it.slot)?.hides ?? [];
-	commit(`${cur.includes(slot) ? 'Show' : 'Hide'} ${slot}`, () => {
-		it.hides = cur.includes(slot) ? cur.filter((s) => s !== slot) : [...cur, slot];
-	});
+	commit(
+		`${cur.includes(slot) ? 'Show' : 'Hide'} ${slot}`,
+		() => {
+			it.hides = cur.includes(slot) ? cur.filter((s) => s !== slot) : [...cur, slot];
+		},
+		{ keepHand: it.slot }
+	);
+}
+/** A two-handed item takes both hands: it hides the other hand while worn (the same rule as a hood hiding hair). */
+export function toggleTwoHanded(itemId: string) {
+	const it = itemById(itemId);
+	if (it && OTHER_HAND[it.slot]) toggleHide(itemId, OTHER_HAND[it.slot]);
 }
 
 /** Move the item's front layer one step in the draw order of the current frame (all directions, or only the current one). */
@@ -1120,11 +1221,12 @@ export async function addShared(entry: SharedItem) {
 			return;
 		}
 		await openProject(projectId, { quiet: true });
-		if (doc.id === projectId) wear(item.id);
+		const note = doc.id === projectId ? wear(item.id, true) : undefined;
 		toast(
-			item.refit
+			(item.refit
 				? `Fitted ${item.name} from ${entry.sourceName} for free. Check it in each move.`
-				: `Copied ${item.name} from ${entry.sourceName}. No generations used.`
+				: `Copied ${item.name} from ${entry.sourceName}. No generations used.`) +
+				(note ? ` ${note}.` : '')
 		);
 		await refreshShared();
 	} catch (e) {

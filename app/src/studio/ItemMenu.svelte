@@ -5,9 +5,30 @@
 	import Thumb from './Thumb.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { extendable } from './create.ts';
-	import { groupOf, groupLabel } from './model.ts';
-	import { ui, doc, store, view, wear, isDemo, withKey, openNewItem } from './state.svelte.ts';
-	import { Circle, CircleCheck, Info, RefreshCw, Trash, TriangleAlert, EyeOff } from './icons.ts';
+	import { groupOf, groupLabel, slotLabel } from './model.ts';
+	import { OTHER_HAND, twoHanded } from '../lib/compose/compose.ts';
+	import {
+		ui,
+		doc,
+		store,
+		view,
+		wear,
+		isDemo,
+		withKey,
+		openNewItem,
+		toggleTwoHanded
+	} from './state.svelte.ts';
+	import {
+		Circle,
+		CircleCheck,
+		CopyPlus,
+		HandGrab,
+		Info,
+		RefreshCw,
+		Trash,
+		TriangleAlert,
+		EyeOff
+	} from './icons.ts';
 
 	let {
 		id,
@@ -30,10 +51,13 @@
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
 	const warn = $derived(!!(status.look || status.missing));
+	const otherHand = $derived(it ? OTHER_HAND[it.slot] : undefined);
+	const both = $derived(!!m && !!it && twoHanded(m, it));
 	// Worn items say so first; any status follows, and an item with neither names its category.
 	const sentence = $derived(
 		[
 			on ? 'Wearing' : '',
+			both ? 'Two-handed' : '',
 			status.look,
 			status.missing,
 			status.hidden ? 'Hidden by another item' : ''
@@ -164,6 +188,43 @@
 								ui.sheet = 'item';
 							})}><Info size={16} aria-hidden="true" />Details…</button
 					>
+					{#if otherHand}
+						<!-- Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
+						<label class="row bu-action bu-check item-menu-switch" data-variant="quiet">
+							<span><HandGrab size={16} aria-hidden="true" />Two-handed</span>
+							<input
+								class="bu-switch"
+								type="checkbox"
+								role="menuitemcheckbox"
+								aria-checked={both}
+								checked={both}
+								onchange={() => toggleTwoHanded(it.id)}
+								onkeydown={(e) => {
+									// a menu item takes Enter as well as Space (a native checkbox only toggles on Space)
+									if (e.key !== 'Enter') return;
+									e.preventDefault();
+									toggleTwoHanded(it.id);
+								}}
+							/>
+						</label>
+						{#if !isDemo() && it.prompt && !both}
+							<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
+							<button
+								class="row bu-action"
+								data-variant="quiet"
+								role="menuitem"
+								onclick={() =>
+									act(() =>
+										withKey(() =>
+											openNewItem(groupOf(otherHand).id, { slot: otherHand, prompt: it.prompt })
+										)
+									)}
+								><CopyPlus size={16} aria-hidden="true" />Make one for the {slotLabel(
+									otherHand
+								)}…<small class="row-aside">Paid</small></button
+							>
+						{/if}
+					{/if}
 					{#if !isDemo() && it.prompt}
 						<!-- The New item sheet that opens next prices the attempt before anything is spent. -->
 						<button

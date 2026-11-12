@@ -26,6 +26,7 @@ import {
 	variantRamp
 } from './palette.ts';
 import { isGarment, isShorts } from './regions.ts';
+import { hiddenSlots } from '../compose/compose.ts';
 
 export const SWATCHES: Record<string, Hex> = {
 	crimson: '#b02832',
@@ -440,9 +441,7 @@ export function missingAt(
 	dir: DirectionName
 ): Item[] {
 	const on = m.items.filter((it) => it.id !== m.rig.baseItem && worn[it.slot] === it.id);
-	const hidden = new Set(
-		on.flatMap((it) => it.hides ?? m.slots.find((s) => s.id === it.slot)?.hides ?? [])
-	);
+	const hidden = hiddenSlots(m, on);
 	return moveDirs(m, anim).includes(dir)
 		? on.filter((it) => !hidden.has(it.slot) && incomplete(m, it, anim, dir))
 		: [];
