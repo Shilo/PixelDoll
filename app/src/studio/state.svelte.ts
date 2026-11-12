@@ -11,6 +11,7 @@ import {
 	type Outfit
 } from '../lib/dress/project.ts';
 import { splitBase } from '../lib/dress/regions.ts';
+import { keepThumbnails } from './experience/thumbnails.svelte.ts';
 import {
 	deriveMaterials,
 	randomOutfit,
@@ -450,7 +451,9 @@ export async function refreshProjects(): Promise<boolean> {
 	];
 	// Items of a character created, renamed or deleted here or in another tab.
 	void refreshShared();
-	// Drop unload snapshots of characters deleted here or in another tab (only when the listing is known to be complete).
+	// Drop unload snapshots and thumbnails of characters deleted here or in another tab (only when the listing is known to
+	// be complete).
+	if (listed) keepThumbnails(new Set(store.projects.map((p) => p.id)));
 	if (listed)
 		try {
 			for (const k of Object.keys(localStorage))

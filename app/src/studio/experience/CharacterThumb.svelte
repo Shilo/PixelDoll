@@ -1,16 +1,3 @@
-<script module lang="ts">
-	import { SvelteMap } from 'svelte/reactivity';
-	import type { Img } from '../../lib/image/png.ts';
-	import type { Frame } from '../../lib/compose/compose.ts';
-	// One still per character, shared by every thumbnail (cast, its reflection, the list and the name menu): stepping to
-	// another character or opening the menu reuses it instead of reading and decoding the character again, so nothing blinks.
-	// look is the listed revision it was drawn from; a newer one redraws it in the background, keeping the old one shown.
-	const stills = new SvelteMap<string, { look: string; image: Img | null; frame: Frame }>();
-	// Per character, the newest write: a live look or a read. Only the newest read may publish, and none after a live look.
-	// Plain on purpose: finishing a read must not rerun the effects (a failed read would retry in a loop).
-	const newest = new Map<string, { look: string; reading: boolean }>();
-</script>
-
 <script lang="ts">
 	import { openSource } from '../../lib/dress/project.ts';
 	import { recolor } from '../../lib/dress/dress.ts';
@@ -18,6 +5,7 @@
 	import Sprite from '../Sprite.svelte';
 	import { doc, view, ui, store, lastProject } from '../state.svelte.ts';
 	import { untrack } from 'svelte';
+	import { stills, newest } from './thumbnails.svelte.ts';
 	let { id, name, size = 64 }: { id: string; name: string; size?: number } = $props();
 	const selected = $derived(id === doc.id);
 	const look = $derived(store.projects.find((p) => p.id === id)?.look ?? '');
