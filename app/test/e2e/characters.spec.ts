@@ -1777,16 +1777,25 @@ test('startup decodes the character it opens once: its thumbnail waits for the o
 			return w.digests === before;
 		});
 	await expect.poll(settled, { timeout: 30_000 }).toBe(true);
-	const { startup, oneOpen } = await page.evaluate(async () => {
+	const { startup, reopen, build } = await page.evaluate(async () => {
 		const w = window as unknown as { digests: number },
-			path = '/src/lib/dress/project.ts',
-			{ openSource } = await import(path);
+			paths = ['/src/lib/dress/project.ts', '/src/lib/compose/fixture.ts', '/src/lib/assets.ts'],
+			[{ openSource }, { loadFixture }, { assetUrl }] = await Promise.all(
+				paths.map((path) => import(path))
+			);
 		const startup = w.digests;
-		await openSource('fixture:s2');
-		return { startup, oneOpen: w.digests - startup };
+		await openSource('fixture:s2'); // the demo is built once, so opening it again decodes nothing
+		const reopen = w.digests - startup,
+			before = w.digests;
+		await loadFixture(
+			async (p: string) =>
+				new Uint8Array(await (await fetch(assetUrl(`fixtures/s2/${p}`))).arrayBuffer())
+		);
+		return { startup, reopen, build: w.digests - before };
 	});
-	expect(oneOpen).toBeGreaterThan(0);
-	expect(startup).toBeLessThan(2 * oneOpen);
+	expect(build).toBeGreaterThan(0);
+	expect(startup).toBeLessThan(2 * build);
+	expect(reopen).toBe(0);
 });
 
 test('a delayed earlier character load cannot replace the last selected character', async ({
@@ -2060,4 +2069,312 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
 	}, id);
 	await expect(pane.locator('.badge.accepted')).toContainText('Accepted');
 	await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible();
+});
+
+// Character loading across several saved characters. Each copy of the demo is tinted, so every character has its own pixels
+// and frame hashes and cannot borrow another's decoded frames. Runs on the dev server, which serves the app's modules.
+test('every character loads its frames once across switching, menus and updates, and thumbnails never blank', async ({
+	page,
+	context
+}, info) => {
+	test.setTimeout(180_000);
+	await context.route('https://*.pixellab.ai/**', (r) => r.abort());
+	await context.addInitScript(() => {
+		const w = window as unknown as {
+			frameReads: Record<string, number>;
+			recordReads: number;
+			digests: number;
+			blank: string[];
+			sampling: boolean;
+		};
+		w.frameReads = {};
+		w.recordReads = 0;
+		w.digests = 0;
+		const decoding = window as unknown as { decodes: number };
+		decoding.decodes = 0;
+		window.DecompressionStream = new Proxy(DecompressionStream, {
+			construct(target, args, newTarget) {
+				decoding.decodes++;
+				return Reflect.construct(target, args, newTarget);
+			}
+		});
+		window.createImageBitmap = new Proxy(createImageBitmap, {
+			apply(target, receiver, args) {
+				decoding.decodes++;
+				return Reflect.apply(target, receiver, args);
+			}
+		});
+		w.blank = [];
+		w.sampling = false;
+		const get = IDBObjectStore.prototype.get;
+		IDBObjectStore.prototype.get = function (this: IDBObjectStore, key: IDBValidKey) {
+			if (this.name === 'blobs') w.frameReads[String(key)] = (w.frameReads[String(key)] ?? 0) + 1;
+			else if (this.name === 'projects' && String(key).startsWith('rig-')) w.recordReads++;
+			return get.call(this, key);
+		};
+		const digest = crypto.subtle.digest.bind(crypto.subtle);
+		crypto.subtle.digest = (...args: Parameters<SubtleCrypto['digest']>) => {
+			if (new Error().stack?.includes('cellHash')) w.digests++;
+			return digest(...args);
+		};
+		// Every animation frame, while sampling: any shown thumbnail with no visible pixel is a blink.
+		const sample = () => {
+			if (w.sampling)
+				for (const c of document.querySelectorAll<HTMLCanvasElement>(
+					'.character-thumbnail canvas'
+				)) {
+					const g = c.getContext('2d')!;
+					if (!g.getImageData(0, 0, c.width, c.height).data.some((v, i) => i % 4 === 3 && v))
+						w.blank.push(
+							c.closest('button')?.getAttribute('aria-label') ??
+								c.closest('button')?.querySelector('strong')?.textContent ??
+								c.outerHTML
+						);
+				}
+			requestAnimationFrame(sample);
+		};
+		requestAnimationFrame(sample);
+	});
+	const devURL = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	const stats = () =>
+		page.evaluate(() => {
+			const w = window as unknown as {
+				frameReads: Record<string, number>;
+				recordReads: number;
+				digests: number;
+				blank: string[];
+			};
+			const counts = Object.values(w.frameReads);
+			return {
+				frames: counts.length,
+				reads: counts.reduce((a, b) => a + b, 0),
+				maxPerFrame: Math.max(0, ...counts),
+				decodes: (window as unknown as { decodes: number }).decodes,
+				records: w.recordReads,
+				digests: w.digests,
+				blank: [...w.blank]
+			};
+		});
+	const settled = async () => {
+		await expect(page.locator('.customize-action')).toBeEnabled({ timeout: 30_000 });
+		await expect(page.locator('.customize-action')).toHaveAttribute('aria-busy', 'false');
+		await expect
+			.poll(
+				() =>
+					page.evaluate(async () => {
+						const w = window as unknown as { digests: number; recordReads: number },
+							before = w.digests + w.recordReads;
+						await new Promise((resolve) => setTimeout(resolve, 600));
+						return w.digests + w.recordReads === before;
+					}),
+				{ timeout: 30_000 }
+			)
+			.toBe(true);
+	};
+	const seed = (names: string[], tint: number) =>
+		page.evaluate(
+			async ({ names, tint }) => {
+				const load = (path: string) => import(/* @vite-ignore */ path);
+				const [{ openSource }, { saveImportedCharacter }, { cellHash }] = await Promise.all([
+					load('/src/lib/dress/project.ts'),
+					load('/src/lib/store/import.ts'),
+					load('/src/lib/rig/rig.ts')
+				]);
+				const { project } = await openSource('fixture:s2');
+				for (const [k, name] of names.entries()) {
+					const shift = (tint + k) * 37,
+						images = new Map(),
+						renamed = new Map<string, string>();
+					for (const [hash, im] of project.images as Map<
+						string,
+						{ w: number; h: number; data: Uint8ClampedArray }
+					>) {
+						const data = im.data.slice();
+						for (let i = 0; i < data.length; i += 4)
+							if (data[i + 3]) data[i + 2] = (data[i + 2] + shift) % 256;
+						const tinted = { w: im.w, h: im.h, data },
+							h = await cellHash(tinted);
+						renamed.set(hash, h);
+						images.set(h, tinted);
+					}
+					let json = JSON.stringify(project.manifest);
+					for (const [from, to] of renamed) json = json.split(from).join(to);
+					await saveImportedCharacter(
+						{ project: { manifest: JSON.parse(json), images }, extra: {}, warnings: [] },
+						name
+					);
+				}
+			},
+			{ names, tint }
+		);
+	const rows = page.locator('.character-row');
+	const thumbOf = (name: string) =>
+		page
+			.locator('.character-row', { hasText: name })
+			.locator('canvas')
+			.evaluate((c) => (c as HTMLCanvasElement).toDataURL());
+	const idOf = (name: string) =>
+		page.evaluate(async (name) => {
+			const { all } = await import(/* @vite-ignore */ String('/src/lib/store/db.ts'));
+			return ((await all('projects')) as { id: string; manifest?: { name: string } }[]).find(
+				(r) => r.manifest?.name === name
+			)!.id;
+		}, name);
+	const selectedName = () => page.locator('.selected-name-text').textContent();
+
+	await page.goto(devURL);
+	await settled();
+	await seed(['Hero 1', 'Hero 2', 'Hero 3', 'Hero 4'], 1);
+	// A fresh page: nothing decoded yet, as after a reload.
+	await page.reload();
+	await settled();
+	await expect(rows).toHaveCount(5);
+	// First visits, with the name menu open once: each frame may be read once here. A character's first open also splits
+	// its body into shirt and shorts and saves that once; its next open checks the saved split once more. So go round twice.
+	for (let i = 0; i < 10; i++) {
+		await page.getByRole('button', { name: 'Next character', exact: true }).click();
+		await settled();
+	}
+	await page.locator('.selected-name').click();
+	await expect(page.locator('#project-menu .character-thumbnail canvas')).toHaveCount(5);
+	await page.keyboard.press('Escape');
+	await settled();
+	const warm = await stats();
+	expect(warm.decodes).toBeGreaterThan(0);
+	expect(warm.maxPerFrame).toBe(1); // no frame was read twice, even while thumbnails and opens overlapped
+	expect(warm.blank).toEqual([]);
+
+	// Every way of switching, back and forth, with the menu opened between: nothing is read or decoded again, and no
+	// thumbnail blinks.
+	await page.evaluate(() => ((window as unknown as { sampling: boolean }).sampling = true));
+	const opens: string[] = [];
+	const step = async (how: () => Promise<void>) => {
+		await expect(page.locator('.customize-action')).toHaveAttribute('aria-busy', 'false');
+		const before = await selectedName();
+		await how();
+		await expect.poll(selectedName).not.toBe(before);
+		await expect(page.locator('.customize-action')).toBeEnabled();
+		await expect(page.locator('.customize-action')).toHaveAttribute('aria-busy', 'false');
+		opens.push((await selectedName())!);
+	};
+	for (let i = 0; i < 6; i++)
+		await step(() => page.getByRole('button', { name: 'Next character', exact: true }).click());
+	for (let i = 0; i < 3; i++)
+		await step(() => page.getByRole('button', { name: 'Previous character', exact: true }).click());
+	for (const delta of [200, -200, 200]) {
+		await step(() =>
+			page.evaluate((deltaY) => {
+				window.dispatchEvent(new WheelEvent('wheel', { deltaY, cancelable: true }));
+			}, delta)
+		);
+	}
+	for (const name of ['Hero 2', 'Adventurer', 'Hero 4', 'Hero 1'])
+		if ((await selectedName()) !== name) await step(() => rows.filter({ hasText: name }).click());
+	for (const name of ['Hero 3', 'Hero 2']) {
+		await page.locator('.selected-name').click();
+		await step(() =>
+			page.locator('#project-menu').getByRole('menuitemradio', { name, exact: true }).click()
+		);
+		await page.keyboard.press('Escape');
+	}
+	await settled();
+	const switched = await stats();
+	expect(switched.blank).toEqual([]);
+	expect(switched.reads).toBe(warm.reads); // no frame read again
+	expect(switched.digests).toBe(warm.digests);
+	expect(switched.decodes).toBe(warm.decodes);
+	expect(switched.records - warm.records).toBeLessThanOrEqual(opens.length); // only each open's small record
+
+	// Another tab saves a different outfit for a character not selected: the next listing redraws its thumbnail, from
+	// frames already decoded.
+	const target = (await selectedName()) === 'Hero 4' ? 'Hero 1' : 'Hero 4';
+	const before = await thumbOf(target);
+	await page.evaluate(
+		async (id) => {
+			const { openSource, saveDress } = await import(
+				/* @vite-ignore */ String('/src/lib/dress/project.ts')
+			);
+			const { project } = await openSource(id);
+			await saveDress(id, project.manifest, { items: {}, variants: {} });
+		},
+		await idOf(target)
+	);
+	await page.locator('.selected-name').click();
+	await page.keyboard.press('Escape');
+	await expect.poll(() => thumbOf(target)).not.toBe(before);
+	await settled();
+	const updated = await stats();
+	expect(updated.reads).toBe(warm.reads);
+	expect(updated.decodes).toBe(warm.decodes);
+	expect(updated.blank).toEqual([]);
+	const previousArtwork = await thumbOf(target);
+	const replacement = `Updated ${target}`;
+	await seed([replacement], 12);
+	await page.evaluate(
+		async ({ id, replacement, name }) => {
+			const { all, updateCharacter, deleteCharacter } = await import(
+				/* @vite-ignore */ String('/src/lib/store/db.ts')
+			);
+			const source = (await all('projects')).find(
+				(record: { manifest?: { name: string } }) => record.manifest?.name === replacement
+			);
+			if (!source) throw new Error('Replacement artwork was not saved');
+			await updateCharacter(id, new Map(), (record: typeof source) => {
+				if (!record) throw new Error('Character to update was not saved');
+				return {
+					...record,
+					manifest: { ...source.manifest, name },
+					savedAt: new Date().toISOString()
+				};
+			});
+			await deleteCharacter(source.id);
+		},
+		{ id: await idOf(target), replacement, name: target }
+	);
+	await page.locator('.selected-name').click();
+	await page.keyboard.press('Escape');
+	await expect.poll(() => thumbOf(target)).not.toBe(previousArtwork);
+	await settled();
+	const replaced = await stats();
+	expect(replaced.reads).toBeGreaterThan(updated.reads);
+	expect(replaced.decodes).toBeGreaterThan(updated.decodes);
+	expect(replaced.maxPerFrame).toBe(1);
+	expect(replaced.blank).toEqual([]);
+	await step(() => rows.filter({ hasText: target }).click());
+	await settled();
+	const reopened = await stats();
+	expect(reopened.reads).toBe(replaced.reads);
+	expect(reopened.decodes).toBe(replaced.decodes);
+
+	// A deleted character leaves the list; a newly imported one loads each of its frames once.
+	await page.evaluate(
+		async (id) => {
+			const { deleteCharacter } = await import(/* @vite-ignore */ String('/src/lib/store/db.ts'));
+			await deleteCharacter(id);
+		},
+		await idOf('Hero 3')
+	);
+	await seed(['Hero 5'], 9);
+	await page.locator('.selected-name').click();
+	await page.keyboard.press('Escape');
+	await expect(rows).toHaveCount(5);
+	await expect(rows.filter({ hasText: 'Hero 3' })).toHaveCount(0);
+	await step(() => rows.filter({ hasText: 'Hero 5' }).click());
+	await settled();
+	const imported = await stats();
+	expect(imported.frames).toBeGreaterThan(updated.frames);
+	expect(imported.maxPerFrame).toBe(1);
+	// Only the new character, with nothing to show before its first load, may have been blank.
+	expect(imported.blank.filter((label) => !label.includes('Hero 5'))).toEqual([]);
+	// Once loaded, it stays drawn like the others.
+	await page.evaluate(() => ((window as unknown as { blank: string[] }).blank = []));
+	for (let i = 0; i < 5; i++)
+		await step(() => page.getByRole('button', { name: 'Next character', exact: true }).click());
+	await page.locator('.selected-name').click();
+	await expect(page.locator('#project-menu .character-thumbnail canvas')).toHaveCount(5);
+	await page.keyboard.press('Escape');
+	await settled();
+	const final = await stats();
+	expect(final.blank).toEqual([]);
+	expect(final.maxPerFrame).toBe(1);
 });

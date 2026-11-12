@@ -6,17 +6,19 @@
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
+	import CastCarousel from './CastCarousel.svelte';
 	import {
 		ui,
 		doc,
 		store,
 		openProject,
+		openingProjectId,
 		refreshProjects,
 		characterName,
 		toast
 	} from '../state.svelte.ts';
-	import { experience, customize, characters } from './state.svelte.ts';
-	import { WORLDS, REFLECTION, worldArt } from './config.ts';
+	import { experience, customize as enterCustomize, characters } from './state.svelte.ts';
+	import { WORLDS, worldArt } from './config.ts';
 	import { heroScale, layout, placeWorld } from './geometry.ts';
 	import {
 		ChevronDown,
@@ -34,6 +36,7 @@
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	let search = $state('');
+	let castDirection = $state(1);
 	let selection = $state<HTMLDivElement>();
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
@@ -147,13 +150,23 @@
 					: experience.mode
 		]
 	);
-	async function pick(id: string) {
+	async function pick(id: string, activate = true) {
+		resetWheel();
 		if (doc.loading) return;
-		if (id === doc.id) customize();
-		else await openProject(id);
+		if (id === doc.id) {
+			if (activate) customize();
+		} else {
+			const distance =
+				(list.findIndex((project) => project.id === id) - Math.max(0, index) + list.length) %
+				list.length;
+			castDirection = distance <= list.length / 2 ? 1 : -1;
+			await openProject(id);
+		}
 	}
 	function next(delta: number) {
-		if (!list.length || doc.loading) return;
+		resetWheel();
+		if (list.length < 2 || doc.loading) return;
+		castDirection = Math.sign(delta);
 		void openProject(list[(Math.max(0, index) + delta + list.length) % list.length].id);
 	}
 	function selectionKey(e: KeyboardEvent) {
@@ -170,14 +183,72 @@
 	}
 	onMount(() => {
 		window.addEventListener('wheel', wheel, { passive: false });
-		return () => window.removeEventListener('wheel', wheel);
+		window.addEventListener('beforetoggle', openingPopover, true);
+		return () => {
+			window.removeEventListener('wheel', wheel);
+			window.removeEventListener('beforetoggle', openingPopover, true);
+		};
 	});
 	let wheelAmount = 0,
-		lastWheelAt = 0,
-		lastWheelStep = -Infinity;
+		lastWheelAt = -Infinity,
+		wheelDirection = 0,
+		wheelTargetDirection = 1,
+		wheelIntent = 0,
+		wheelContext = '';
+	let wheelTarget = $state(''),
+		customizeRequested = $state('');
+	function customize() {
+		customizeRequested = wheelTarget || openingProjectId() || doc.id;
+	}
+	function resetWheel() {
+		wheelAmount = wheelDirection = 0;
+		wheelIntent++;
+		lastWheelAt = -Infinity;
+		wheelTarget = '';
+		customizeRequested = '';
+	}
+	function openingPopover(e: Event) {
+		if (e instanceof ToggleEvent && e.newState === 'open') resetWheel();
+	}
+	$effect(() => {
+		const context = [experience.screen, ui.sheet, search, ...list.map((p) => p.id)].join('\0');
+		if (context !== wheelContext) {
+			wheelContext = context;
+			resetWheel();
+		}
+	});
+	$effect(() => {
+		if (doc.loading || openingProjectId()) return;
+		if (!wheelTarget || wheelTarget === doc.id) {
+			if (customizeRequested) {
+				const target = customizeRequested;
+				customizeRequested = '';
+				if (
+					doc.id === target &&
+					m &&
+					list.length &&
+					experience.screen === 'characters' &&
+					!ui.sheet
+				)
+					enterCustomize();
+			}
+			return;
+		}
+		const target = wheelTarget,
+			intent = wheelIntent,
+			direction = wheelTargetDirection;
+		const frame = requestAnimationFrame(() => {
+			castDirection = direction;
+			void openProject(target).then(() => {
+				if (wheelIntent === intent) wheelTarget = '';
+			});
+		});
+		return () => cancelAnimationFrame(frame);
+	});
 	function wheel(e: WheelEvent) {
 		if (
 			experience.screen !== 'characters' ||
+			list.length < 2 ||
 			ui.sheet ||
 			e.ctrlKey ||
 			e.metaKey ||
@@ -185,24 +256,46 @@
 			e.shiftKey ||
 			document.querySelector(':popover-open')
 		) {
-			wheelAmount = 0;
+			resetWheel();
 			return;
 		}
-		if (!e.deltaY || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+		if (!e.deltaY || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+			resetWheel();
+			return;
+		}
+		// A list that can scroll keeps the wheel, even at its end, so reaching the end never switches the character.
+		if (insideScrollView(e.target)) {
+			resetWheel();
+			return;
+		}
 		e.preventDefault();
 		const now = performance.now(),
 			delta = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
-		if (now - lastWheelAt > 180 || Math.sign(delta) !== Math.sign(wheelAmount)) wheelAmount = 0;
+		if (now - lastWheelAt > 500 || Math.sign(delta) !== wheelDirection) wheelAmount = 0;
 		lastWheelAt = now;
-		if (now - lastWheelStep < 180) {
-			wheelAmount = 0;
-			return;
-		}
+		wheelDirection = Math.sign(delta);
 		wheelAmount += delta;
-		if (Math.abs(wheelAmount) < 40) return;
-		next(Math.sign(wheelAmount));
-		wheelAmount = 0;
-		lastWheelStep = now;
+		const stepDistance = 200,
+			steps = Math.trunc(wheelAmount / stepDistance);
+		if (!steps) return;
+		wheelAmount -= steps * stepDistance;
+		const distance = Math.max(1 - list.length, Math.min(list.length - 1, steps));
+		const start = Math.max(
+			0,
+			list.findIndex((p) => p.id === (wheelTarget || doc.id))
+		);
+		wheelIntent++;
+		wheelTargetDirection = Math.sign(distance);
+		wheelTarget = list[(start + distance + list.length) % list.length].id;
+		if (customizeRequested) customizeRequested = wheelTarget;
+	}
+	function insideScrollView(target: EventTarget | null) {
+		for (let el = target instanceof Element ? target : null; el; el = el.parentElement) {
+			const { overflowY } = getComputedStyle(el);
+			if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight)
+				return true;
+		}
+		return false;
 	}
 	function panel(id: typeof ui.tab) {
 		document
@@ -302,23 +395,15 @@
 			bind:this={selection}
 			onkeydown={selectionKey}
 		>
-			<div class="cast">
-				{#each neighbors as { p, offset } (p.id)}
-					<button
-						class="cast-character"
-						class:chosen={!offset}
-						onclick={() => pick(p.id)}
-						aria-label={offset ? `Select ${p.name}` : `Customize ${name}`}
-					>
-						<CharacterThumb id={p.id} name={p.name} size={castSize(offset)} />
-						{#if REFLECTION.enabled && REFLECTION.selection}<span
-								class="cast-reflection"
-								aria-hidden="true"
-								><CharacterThumb id={p.id} name={p.name} size={castSize(offset)} /></span
-							>{/if}
-					</button>
-				{/each}
-			</div>
+			<CastCarousel
+				entries={neighbors}
+				context={list.map((project) => project.id).join('\0')}
+				size={castSize(0)}
+				sideSize={castSize(1)}
+				direction={castDirection}
+				{name}
+				select={pick}
+			/>
 			{#if list.length}<div class="selected-caption">
 					<!-- The heading sits beside the menu button: a heading is not allowed inside a button. -->
 					<h2 class="sr">{name}</h2>
@@ -388,8 +473,11 @@
 				class="bu-action customize-action"
 				data-variant="primary"
 				onclick={customize}
-				disabled={doc.loading || !m || !list.length}
-				>Customize {name}<ChevronRight size={16} /></button
+				aria-label={`Customize ${name}`}
+				title={`Customize ${name}`}
+				aria-busy={doc.loading || !!openingProjectId() || !!wheelTarget}
+				disabled={!m || !list.length}
+				><span>Customize {name}</span><ChevronRight size={16} /></button
 			>
 		</aside>
 	{:else}

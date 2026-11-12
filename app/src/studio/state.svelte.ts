@@ -7,9 +7,11 @@ import {
 	openSource,
 	saveDress,
 	saveSplit,
-	type DressState
+	type DressState,
+	type Outfit
 } from '../lib/dress/project.ts';
 import { splitBase } from '../lib/dress/regions.ts';
+import { keepThumbnails } from './experience/thumbnails.svelte.ts';
 import {
 	deriveMaterials,
 	randomOutfit,
@@ -334,6 +336,8 @@ export interface ProjectRef {
 	demo: boolean;
 	dev: boolean;
 	savedAt: string;
+	/** Changes whenever the saved look does (body, items or outfit), so a character's thumbnail redraws only then. */
+	look: string;
 	/** Shape at a glance for saved characters; the demo's comes from its open manifest. */
 	facts?: string;
 }
@@ -429,21 +433,38 @@ export async function refreshProjects(): Promise<boolean> {
 			return null;
 		}),
 		own = (listed ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+	// An outfit save changes the dress state (outfit, palettes, hides, layer order), not savedAt, which orders the list; the
+	// demo's dress state is its own record.
+	const demoDress = await db.get('projects', `dress-${DEMO}`).catch(() => undefined);
 	store.projects = [
-		{ id: DEMO, name: 'Adventurer (demo)', demo: true, dev: false, savedAt: '' },
+		{
+			id: DEMO,
+			name: 'Adventurer (demo)',
+			demo: true,
+			dev: false,
+			savedAt: '',
+			look: stableStringify(demoDress ?? null)
+		},
 		...own.map((p) => ({
 			id: p.id,
 			name: p.manifest.name,
 			demo: false,
 			dev: p.origin === 'dev',
 			savedAt: p.savedAt,
+			// A developer rig (never shown as a character) may lack the items and slots a dress state reads.
+			look:
+				p.origin === 'dev'
+					? p.savedAt
+					: `${p.savedAt} ${stableStringify(dressOf(p.manifest, (p as { dress?: { current?: Outfit } }).dress?.current))}`,
 			// A developer rig frozen on the M2 pages need not carry a full rig; it has no card facts.
 			facts: p.manifest.rig?.cell ? characterFacts(p.manifest) : undefined
 		}))
 	];
 	// Items of a character created, renamed or deleted here or in another tab.
 	void refreshShared();
-	// Drop unload snapshots of characters deleted here or in another tab (only when the listing is known to be complete).
+	// Drop unload snapshots and thumbnails of characters deleted here or in another tab (only when the listing is known to
+	// be complete).
+	if (listed) keepThumbnails(new Set(store.projects.map((p) => p.id)));
 	if (listed)
 		try {
 			for (const k of Object.keys(localStorage))
@@ -456,7 +477,8 @@ export async function refreshProjects(): Promise<boolean> {
 }
 
 let openRequest = 0,
-	opening = ''; // opening: the character the newest open is loading ('' when it finished)
+	opening = $state(''); // opening: the character the newest open is loading ('' when it finished)
+export const openingProjectId = () => opening;
 /** keep.wear: equip that item (Keep it). keep.quiet: reload the open character in place (a draft saved itself): the view, the
  *  selection and undo stay, and the stage does not show loading. */
 export async function openProject(id: string, keep?: { wear?: string; quiet?: boolean }) {
