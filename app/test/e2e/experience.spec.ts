@@ -156,7 +156,8 @@ for (const theme of ['dark', 'light'] as const)
 				})
 			).toEqual([]);
 			await screenshot(page, `${size}-${theme}-characters`);
-			await page.getByRole('button', { name: 'New character', exact: true }).click();
+			await page.getByRole('button', { name: 'New character', exact: true }).first().click();
+			await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 			const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 			await expect(creator.getByLabel('Details', { exact: true })).toBeVisible();
 			// Name sits above the form in the heading; fine pointers start there, phones avoid forcing the keyboard
@@ -441,9 +442,10 @@ test('creator validation stays real; Cancel and Escape restore the native opener
 	page
 }) => {
 	await landing(page);
-	const opener = page.getByRole('button', { name: 'New character', exact: true });
+	const opener = page.getByRole('button', { name: 'New character', exact: true }).first();
 	await opener.focus();
 	await page.keyboard.press('Enter');
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	const create = creator.getByRole('button', { name: 'Create character', exact: true });
 	await creator.getByRole('tab', { name: 'Prompt', exact: true }).click();
@@ -702,9 +704,10 @@ test('offline export and device import remain accessible production actions', as
 	await expect(sheet).toHaveCount(0);
 	await expect(exportButton).toBeFocused();
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
-	const importer = page.getByRole('button', { name: 'Import', exact: true });
+	const importer = page.getByRole('button', { name: 'New character', exact: true }).first();
 	await importer.click();
-	const importSheet = page.getByRole('dialog', { name: 'Import character', exact: true });
+	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	const importSheet = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await importSheet
 		.getByLabel('Character ZIP', { exact: true })
 		.setInputFiles({ name: 'offline-character.zip', mimeType: 'application/zip', buffer: bytes });

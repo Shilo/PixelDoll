@@ -3,16 +3,16 @@
 	// Export (M5): one engine at a time; the zip is built when the sheet opens so the button can name its size.
 	import Sheet from './Sheet.svelte';
 	import { tick, untrack } from 'svelte';
-	import { exportZip } from '../lib/export/export.ts';
+	import { buildExport } from '../lib/export/build.ts';
+	import { editableData, fileSlug, saveZip } from './download.svelte.ts';
 	import { ROWS as RPG_ROWS, walkMove } from '../lib/export/rpgmaker.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { stableStringify } from '../lib/image/hash.ts';
-	import { coverageGaps, missingFrames, moveDirs, storeVariants } from '../lib/dress/dress.ts';
+	import { coverageGaps, missingFrames, moveDirs } from '../lib/dress/dress.ts';
 	import * as db from '../lib/store/db.ts';
 	import { listProjects, type StoredProject } from '../lib/store/project.ts';
 	import {
 		exportAnimationCatalog,
-		applyExportSettings,
 		InvalidExportSettings,
 		readExportSettings,
 		resetInvalidExportSettings,
@@ -21,7 +21,7 @@
 		type ExportSettingChange,
 		type ExportSettings
 	} from '../lib/store/export-settings.ts';
-	import type { DirectionName, Engine, Manifest, Preset } from '../lib/store/manifest.ts';
+	import type { DirectionName, Engine } from '../lib/store/manifest.ts';
 	import { ui, doc, store, toast, isDemo } from './state.svelte.ts';
 	import { moveLabel } from './model.ts';
 	import {
@@ -378,22 +378,12 @@
 			b = baked,
 			p = store.project;
 		const projectId = doc.id,
-			demo = isDemo();
+			demo = isDemo(),
+			settings = preferences;
 		if (!p || !ready || saving) return;
 		busy = true;
 		result = null;
-		const presets: Preset[] = [
-			{
-				id: 'current',
-				name: 'Current look',
-				items: $state.snapshot(doc.items),
-				variants: $state.snapshot(doc.variants)
-			},
-			...p.manifest.presets.filter((x) => x.id !== 'current')
-		];
-		const manifest = structuredClone({ ...p.manifest, presets }) as Manifest;
-		applyExportSettings(manifest, preferences!);
-		storeVariants(manifest, ...presets.map((x) => x.variants));
+		const look = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
 		let stale = false;
 		void (async () => {
 			const rec = demo ? undefined : await db.get<StoredProject>('projects', projectId);
@@ -402,8 +392,8 @@
 				.filter(([clip, checks]) => {
 					const [anim, dir] = clip.split('/');
 					return (
-						manifest.rig.animations.some((a) => a.id === anim) &&
-						moveDirs(manifest, anim).some((d) => d === dir) &&
+						p.manifest.rig.animations.some((a) => a.id === anim) &&
+						moveDirs(p.manifest, anim).some((d) => d === dir) &&
 						Array.isArray(checks?.fails) &&
 						checks.fails.length > 0
 					);
@@ -413,16 +403,13 @@
 					return `${nice(anim)} facing ${dir.replaceAll('-', ' ')}`;
 				});
 			return {
-				...(await exportZip(
-					{ manifest, images: p.images },
-					{
-						engines: [e],
-						baked: b,
-						projectData: rec
-							? { character: rec.character, skeletons: rec.skeletons, rigQa: rec.rigQa }
-							: undefined
-					}
-				)),
+				...(await buildExport(p, {
+					engine: e,
+					baked: b,
+					look,
+					settings: settings!,
+					projectData: editableData(rec)
+				})),
 				rigIssues
 			};
 		})()
@@ -457,17 +444,9 @@
 	const kb = $derived(result?.zip ? Math.max(1, Math.round(result.zip.length / 1024)) : 0);
 	function download() {
 		if (!result?.zip || !m || busy || saving || refreshing || !ready) return;
-		const a = document.createElement('a');
-		a.href = URL.createObjectURL(
-			new Blob([result.zip as Uint8Array<ArrayBuffer>], { type: 'application/zip' })
-		);
-		a.download = `${(store.projects.find((p) => p.id === doc.id)?.name ?? m.name)
-			.replace(/\s*\(demo\)/, '')
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, '-')}-${engine}.pixeldoll.zip`;
-		a.click();
-		setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
-		toast(`Downloaded ${a.download}`); // T1 P3: confirm, and get out of the way
+		const filename = `${fileSlug(store.projects.find((p) => p.id === doc.id)?.name ?? m.name)}-${engine}.pixeldoll.zip`;
+		saveZip(result.zip, filename);
+		toast(`Downloaded ${filename}`); // T1 P3: confirm, and get out of the way
 		ui.sheet = null;
 	}
 </script>

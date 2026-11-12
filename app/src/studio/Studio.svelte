@@ -54,7 +54,8 @@
 		export: () => import('./ExportSheet.svelte'),
 		activity: () => import('./ActivitySheet.svelte'),
 		move: () => import('./MoveSheet.svelte'),
-		import: () => import('./ImportSheet.svelte'),
+		importZip: () => import('./ImportSheet.svelte'),
+		importPixelLab: () => import('./ImportSheet.svelte'),
 		setup: () => import('./SetupSheet.svelte'),
 		item: () => import('./ItemPane.svelte'),
 		notes: () => import('./StageNote.svelte'),
@@ -289,7 +290,10 @@
 	{#if ui.sheet === 'activity'}<Lazy load={parts.activity} />{/if}
 	{#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
-	{#if ui.sheet === 'import'}<Lazy load={parts.import} />{/if}
+	{#if ui.sheet === 'importZip' || ui.sheet === 'importPixelLab'}{#key ui.sheet}<Lazy
+				load={parts[ui.sheet]}
+				source={ui.sheet === 'importZip' ? 'device' : 'pixellab'}
+			/>{/key}{/if}
 	{#if ui.sheet === 'delete'}<DeleteSheet />{/if}
 	{#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
 	{#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}

@@ -118,7 +118,8 @@ export type SheetId =
 	| 'item'
 	| 'move'
 	| 'rename'
-	| 'import'
+	| 'importZip'
+	| 'importPixelLab'
 	| 'delete'
 	| 'setup';
 const sizeNow = (): Size => {
@@ -141,7 +142,7 @@ export const ui = $state({
 	selected: '', // item id, or "gen:<draft id>"
 	sheet: null as SheetId,
 	sheetBusy: false,
-	importSource: 'device' as 'device' | 'pixellab',
+	deleting: '', // the character the Delete sheet is for
 	newItem: { group: 'Head', slot: '', prompt: '', name: '' },
 	anim: '',
 	dir: 'south' as DirectionName,
@@ -476,6 +477,14 @@ export async function refreshProjects(): Promise<boolean> {
 	return !!listed;
 }
 
+/** A saved character as the Studio shows it, read without opening it. */
+export async function readCharacter(id: string) {
+	const r = await openSource(id);
+	const split = await splitBase(r.project); // B15: shirt / shorts color regions on the base (idempotent; fixtures in memory)
+	deriveMaterials(r.project); // items without materials (new items, fresh fixtures)
+	return { r, split };
+}
+
 let openRequest = 0,
 	opening = $state(''); // opening: the character the newest open is loading ('' when it finished)
 export const openingProjectId = () => opening;
@@ -492,10 +501,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 	if (!quiet) doc.loading = true;
 	doc.error = '';
 	try {
-		const r = await openSource(id);
+		const { r, split } = await readCharacter(id);
 		if (request !== openRequest) return;
-		const split = await splitBase(r.project); // B15: shirt / shorts color regions on the base (idempotent; fixtures in memory)
-		deriveMaterials(r.project); // items without materials (new items, fresh fixtures)
 		if (split.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
 		if (request !== openRequest) return;
 		await flushSave(); // an edit made to the previous character while this one loaded lands before it is replaced
@@ -754,9 +761,9 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 }
 
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
-export function deletionBlocked(): string {
-	if (isDemo()) return 'The bundled demo cannot be deleted.';
-	if (doc.loading) return 'Wait for the character to finish loading.';
+export function deletionBlocked(id = doc.id): string {
+	if (id.startsWith('fixture:')) return 'The bundled demo cannot be deleted.';
+	if (doc.loading || opening) return 'Wait for the character to finish loading.';
 	if (queue.role === 'follower')
 		return 'Manage characters in the other PixelDoll tab, or close it first.';
 	if (
@@ -880,12 +887,14 @@ export async function prepareForUpdate(): Promise<void> {
 	if (changed) throw new Error(changed);
 }
 
-export async function removeProject(): Promise<void> {
-	const reason = deletionBlocked();
+export async function removeProject(id = doc.id): Promise<void> {
+	const reason = deletionBlocked(id);
 	if (reason) throw new Error(reason);
-	const id = doc.id,
-		request = openRequest,
-		name = store.project?.manifest.name ?? 'Character';
+	const request = openRequest,
+		name =
+			(id === doc.id ? store.project?.manifest.name : undefined) ??
+			store.projects.find((p) => p.id === id)?.name ??
+			'Character';
 	await flushSave();
 	await db.deleteCharacter(id);
 	const deletedDrafts = new Set(

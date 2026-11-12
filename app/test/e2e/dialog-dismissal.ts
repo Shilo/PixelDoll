@@ -72,10 +72,14 @@ for (const [width, height, touch] of [
 					close: 'Cancel'
 				},
 				{
-					name: 'Import character',
+					name: 'Import from device',
 					open: async () => {
 						await page.locator('.project-btn').click();
-						await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click();
+						await page
+							.locator('#project-menu')
+							.getByRole('button', { name: 'New character', exact: true })
+							.click();
+						await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
 					},
 					close: 'Cancel'
 				},
@@ -83,7 +87,11 @@ for (const [width, height, touch] of [
 					name: 'New character',
 					open: async () => {
 						await page.locator('.project-btn').click();
-						await page.getByRole('menuitem', { name: 'New character…', exact: true }).click();
+						await page
+							.locator('#project-menu')
+							.getByRole('button', { name: 'New character', exact: true })
+							.click();
+						await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 					},
 					field: 'Details',
 					close: 'Cancel'

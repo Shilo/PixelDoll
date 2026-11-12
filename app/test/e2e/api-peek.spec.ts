@@ -22,7 +22,11 @@ test.beforeEach(async ({ context }) => {
 
 async function newCharacter(page: Page) {
 	await page.locator('.project-btn').click();
-	await page.getByRole('menuitem', { name: 'New character…', exact: true }).click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	await expect(page.locator('dialog[open]')).toHaveAccessibleName('New character');
 }
 
@@ -710,8 +714,7 @@ for (const sameUrl of [false, true])
 			const { setKey } = await import(appPath),
 				{ ui } = await import(statePath);
 			setKey('offline-fixture-not-a-key', false);
-			ui.importSource = 'pixellab';
-			ui.sheet = 'import';
+			ui.sheet = 'importPixelLab';
 		});
 		const image = page.locator('.library-character img');
 		await previewRequested;
@@ -819,7 +822,7 @@ for (const sameUrl of [false, true])
 			Array.from({ length: sameUrl ? 6 : 2 }, () => ({ cache: 'no-store', credentials: 'omit' }))
 		);
 		await page
-			.getByRole('dialog', { name: 'Import character', exact: true })
+			.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
 			.getByRole('button', { name: 'Cancel', exact: true })
 			.click();
 		expect(

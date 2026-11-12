@@ -833,7 +833,7 @@
 	flex-direction: column;
 	gap: 8px;
 }
-.character-row {
+:is(.character-row, .new-character-row) {
 	width: 100%;
 	display: flex;
 	align-items: center;
@@ -849,6 +849,34 @@
 	flex-direction: column;
 	gap: 2px;
 	min-width: 0;
+}
+.character-entry {
+	position: relative;
+	min-width: 0;
+	flex-shrink: 0;
+}
+.character-entry > :is(.character-row, .row) {
+	width: 100%;
+	padding-right: 48px;
+}
+.character-more {
+	position: absolute;
+	right: 2px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 44px;
+	height: 44px;
+}
+.new-character-row {
+	min-height: 44px;
+	flex-shrink: 0;
+}
+.new-character-icon {
+	width: 48px;
+	height: 28px;
+	display: grid;
+	place-items: center;
+	flex-shrink: 0;
 }
 .character-row strong {
 	font-weight: 600;
