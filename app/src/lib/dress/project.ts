@@ -1,7 +1,7 @@
 // Dress-up persistence (browser): open a fixture or an IndexedDB project, save outfit presets + materials + z overrides.
 // IndexedDB projects (records with a manifest) are written back in place; fixtures get a side record "dress-<source>".
 import { loadFixture } from '../compose/fixture.ts';
-import { loadProject, type StoredProject } from '../store/project.ts';
+import { loadProject, untilAborted, type StoredProject } from '../store/project.ts';
 import { rigArtworkVersion } from '../rig/rig.ts';
 import * as db from '../store/db.ts';
 import type { Manifest, Material, Preset, Project, ZOverride } from '../store/manifest.ts';
@@ -53,15 +53,16 @@ function fixtureFile(url: string): Promise<Uint8Array> {
 	return file;
 }
 
-/** The shared download keeps going for other opens; an abandoned open stops waiting for it at once. */
-function untilAborted<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
-	if (!signal) return work;
-	signal.throwIfAborted();
-	return new Promise<T>((resolve, reject) => {
-		const stop = () => reject(signal.reason);
-		signal.addEventListener('abort', stop, { once: true });
-		work.then(resolve, reject).finally(() => signal.removeEventListener('abort', stop));
-	});
+// A bundled character is built from its files once for the page's lifetime; a failed build is dropped and tried again.
+const fixtureProjects = new Map<string, Promise<Project>>();
+function fixtureProject(name: string): Promise<Project> {
+	let built = fixtureProjects.get(name);
+	if (!built) {
+		built = loadFixture((p) => fixtureFile(assetUrl(`fixtures/${name}/${p}`)));
+		fixtureProjects.set(name, built);
+		built.catch(() => fixtureProjects.delete(name)); // the opens awaiting it report the error
+	}
+	return built;
 }
 
 /** Sources: "fixture:<name>" and every IndexedDB project record holding a current manifest. */
@@ -84,12 +85,12 @@ export async function openSource(
 ): Promise<{ project: Project; current?: Outfit }> {
 	signal?.throwIfAborted();
 	if (id.startsWith('fixture:')) {
-		const name = id.slice(8);
-		const project = await loadFixture(async (p) => {
-			signal?.throwIfAborted();
-			return untilAborted(fixtureFile(assetUrl(`fixtures/${name}/${p}`)), signal);
-		});
-		signal?.throwIfAborted();
+		const built = await untilAborted(fixtureProject(id.slice(8)), signal);
+		// Each open gets its own manifest and image map (the Studio edits them in place); the decoded images are shared.
+		const project: Project = {
+			manifest: structuredClone(built.manifest),
+			images: new Map(built.images)
+		};
 		const saved = await db.get<DressState>('projects', `dress-${id}`).catch(() => undefined);
 		signal?.throwIfAborted();
 		if (saved?.format !== CURRENT_FORMAT) return { project };

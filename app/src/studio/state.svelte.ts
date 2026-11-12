@@ -7,7 +7,8 @@ import {
 	openSource,
 	saveDress,
 	saveSplit,
-	type DressState
+	type DressState,
+	type Outfit
 } from '../lib/dress/project.ts';
 import { splitBase } from '../lib/dress/regions.ts';
 import {
@@ -420,7 +421,8 @@ export async function refreshProjects(): Promise<boolean> {
 			return null;
 		}),
 		own = (listed ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
-	// An outfit save changes the dress, not savedAt (which orders the list); the demo's dress is its own record.
+	// An outfit save changes the dress state (outfit, palettes, hides, layer order), not savedAt, which orders the list; the
+	// demo's dress state is its own record.
 	const demoDress = await db.get('projects', `dress-${DEMO}`).catch(() => undefined);
 	store.projects = [
 		{
@@ -437,7 +439,7 @@ export async function refreshProjects(): Promise<boolean> {
 			demo: false,
 			dev: p.origin === 'dev',
 			savedAt: p.savedAt,
-			look: `${p.savedAt} ${stableStringify((p as { dress?: unknown }).dress ?? null)}`,
+			look: `${p.savedAt} ${stableStringify(dressOf(p.manifest, (p as { dress?: { current?: Outfit } }).dress?.current))}`,
 			// A developer rig frozen on the M2 pages need not carry a full rig; it has no card facts.
 			facts: p.manifest.rig?.cell ? characterFacts(p.manifest) : undefined
 		}))

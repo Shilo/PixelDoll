@@ -173,10 +173,13 @@ test('concurrent and later demo opens download each file once and get separate p
 	expect(Object.keys(counts)).toContain('http://localhost/fixtures/s2/fixture.json');
 	expect(Object.keys(counts).length).toBeGreaterThan(1);
 	expect(Object.values(counts).every((n) => n === 1)).toBe(true);
-	// Each open decodes its own copy: the Studio edits its project in place.
+	// Each open gets its own manifest and image map: the Studio edits its project in place.
 	expect(studio.project.manifest === list.project.manifest).toBe(false);
 	expect(studio.project.images === reopened.project.images).toBe(false);
 	expect(reopened.project.manifest.rig.baseHash).toBe(studio.project.manifest.rig.baseHash);
+	// The artwork is built once: every open shares the same decoded images.
+	const [hash, image] = [...studio.project.images][0];
+	expect(reopened.project.images.get(hash)).toBe(image);
 });
 
 test('a failed demo download is not kept: the next open downloads it again', async () => {
@@ -245,6 +248,30 @@ test('an active load retains all unique cells and propagates genuine failures', 
 	const malformed = fixture();
 	malformed.decode.mockRejectedValueOnce(new Error('Malformed PNG'));
 	await expect(loadProject(malformed.record.id)).rejects.toThrow('Malformed PNG');
+});
+
+test('concurrent loads share each cell read, and one abandoning it does not stop the other', async () => {
+	const f = fixture();
+	const [a, b] = await Promise.all([loadProject(f.record.id), loadProject(f.record.id)]);
+	expect(f.getBlob).toHaveBeenCalledTimes(2);
+	expect(f.decode).toHaveBeenCalledTimes(2);
+	expect(a.project.images.get(f.second)).toBe(b.project.images.get(f.second));
+	const g = fixture(),
+		blob = pending<Blob>(),
+		controller = new AbortController();
+	g.getBlob.mockClear(); // the same spies as f's
+	g.decode.mockClear();
+	g.getBlob.mockReturnValueOnce(blob.promise);
+	const abandoned = loadProject(g.record.id, controller.signal),
+		rejected = expect(abandoned).rejects.toMatchObject({ name: 'AbortError' });
+	await vi.waitFor(() => expect(g.getBlob).toHaveBeenCalledOnce());
+	const kept = loadProject(g.record.id);
+	controller.abort();
+	await rejected;
+	blob.resolve(g.blob);
+	expect([...(await kept).project.images.keys()]).toEqual([g.first, g.second]);
+	expect(g.getBlob).toHaveBeenCalledTimes(2);
+	expect(g.decode).toHaveBeenCalledTimes(2);
 });
 
 test('a character saved in an earlier format is rejected before any cell read', async () => {

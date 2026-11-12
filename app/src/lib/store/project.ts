@@ -81,6 +81,50 @@ function rememberDecoded(h: Sha256, image: Img) {
 		decodedBytes -= old.data.length;
 	}
 }
+/** Shared work keeps going for other callers; an abandoned caller stops waiting for it at once. */
+export function untilAborted<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
+	if (!signal) return work;
+	signal.throwIfAborted();
+	return new Promise<T>((resolve, reject) => {
+		const stop = () => reject(signal.reason);
+		signal.addEventListener('abort', stop, { once: true });
+		work.then(resolve, reject).finally(() => signal.removeEventListener('abort', stop));
+	});
+}
+// Loads that need the same cell at once share one read; one no load still waits for stops before decoding.
+const cellReads = new Map<Sha256, { work: Promise<Img>; waiting: number }>();
+async function decodeCell(h: Sha256, owner: string, signal?: AbortSignal): Promise<Img> {
+	const known = decoded.get(h);
+	if (known) {
+		rememberDecoded(h, known);
+		return known;
+	}
+	let read = cellReads.get(h);
+	if (!read) {
+		const started = { work: Promise.resolve() as unknown as Promise<Img>, waiting: 0 };
+		started.work = (async () => {
+			const b = await db.getBlob(h.slice(7));
+			if (!started.waiting)
+				throw new DOMException('No load needs this cell any more', 'AbortError');
+			if (!b) throw new Error(`${owner}: cell blob ${h.slice(0, 19)} missing`);
+			const image = await decodePng(b);
+			rememberDecoded(h, image);
+			return image;
+		})().finally(() => {
+			if (cellReads.get(h) === started) cellReads.delete(h);
+		});
+		// Every waiting load reports a failure; one all of them abandoned has no one to tell.
+		started.work.catch(() => undefined);
+		cellReads.set(h, started);
+		read = started;
+	}
+	read.waiting++;
+	try {
+		return await untilAborted(read.work, signal);
+	} finally {
+		read.waiting--;
+	}
+}
 
 /** Decode every cell referenced by the manifest's layers (and the v1.3 rest views) into Project.images. */
 export async function loadProject(
@@ -96,18 +140,8 @@ export async function loadProject(
 	const add = async (h: Sha256 | null | undefined, owner: string) => {
 		signal?.throwIfAborted();
 		if (!h || images.has(h)) return;
-		const known = decoded.get(h);
-		if (known) {
-			rememberDecoded(h, known);
-			images.set(h, known);
-			return;
-		}
-		const b = await db.getBlob(h.slice(7));
+		const image = await decodeCell(h, owner, signal);
 		signal?.throwIfAborted();
-		if (!b) throw new Error(`${owner}: cell blob ${h.slice(0, 19)} missing`);
-		const image = await decodePng(b);
-		signal?.throwIfAborted();
-		rememberDecoded(h, image);
 		images.set(h, image);
 	};
 	for (const v of Object.values(rec.manifest.rig.rest ?? {})) await add(v?.image, 'rest view');
