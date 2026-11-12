@@ -334,6 +334,8 @@ export interface ProjectRef {
 	demo: boolean;
 	dev: boolean;
 	savedAt: string;
+	/** Changes whenever the saved look does (body, items or outfit), so a character's thumbnail redraws only then. */
+	look: string;
 	/** Shape at a glance for saved characters; the demo's comes from its open manifest. */
 	facts?: string;
 }
@@ -418,14 +420,24 @@ export async function refreshProjects(): Promise<boolean> {
 			return null;
 		}),
 		own = (listed ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+	// An outfit save changes the dress, not savedAt (which orders the list); the demo's dress is its own record.
+	const demoDress = await db.get('projects', `dress-${DEMO}`).catch(() => undefined);
 	store.projects = [
-		{ id: DEMO, name: 'Adventurer (demo)', demo: true, dev: false, savedAt: '' },
+		{
+			id: DEMO,
+			name: 'Adventurer (demo)',
+			demo: true,
+			dev: false,
+			savedAt: '',
+			look: stableStringify(demoDress ?? null)
+		},
 		...own.map((p) => ({
 			id: p.id,
 			name: p.manifest.name,
 			demo: false,
 			dev: p.origin === 'dev',
 			savedAt: p.savedAt,
+			look: `${p.savedAt} ${stableStringify((p as { dress?: unknown }).dress ?? null)}`,
 			// A developer rig frozen on the M2 pages need not carry a full rig; it has no card facts.
 			facts: p.manifest.rig?.cell ? characterFacts(p.manifest) : undefined
 		}))

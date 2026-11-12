@@ -65,6 +65,23 @@ export const listProjects = async () =>
 		(p) => supportedFormat(p?.manifest?.format) && p.id?.startsWith('rig-')
 	);
 
+// Decoded cells by content hash, shared by every read: a character's thumbnail and its later open (and every reopen) decode
+// each cell once. Safe because a hash names exact pixels and cells are never changed in place (edits make new images). Past
+// the budget the least recently used are dropped and decoded again when needed.
+const DECODED_BUDGET = 96 * 1024 * 1024;
+const decoded = new Map<Sha256, Img>();
+let decodedBytes = 0;
+function rememberDecoded(h: Sha256, image: Img) {
+	if (decoded.delete(h)) decodedBytes -= image.data.length;
+	decoded.set(h, image);
+	decodedBytes += image.data.length;
+	for (const [k, old] of decoded) {
+		if (decodedBytes <= DECODED_BUDGET) break;
+		decoded.delete(k);
+		decodedBytes -= old.data.length;
+	}
+}
+
 /** Decode every cell referenced by the manifest's layers (and the v1.3 rest views) into Project.images. */
 export async function loadProject(
 	id: string,
@@ -79,11 +96,18 @@ export async function loadProject(
 	const add = async (h: Sha256 | null | undefined, owner: string) => {
 		signal?.throwIfAborted();
 		if (!h || images.has(h)) return;
+		const known = decoded.get(h);
+		if (known) {
+			rememberDecoded(h, known);
+			images.set(h, known);
+			return;
+		}
 		const b = await db.getBlob(h.slice(7));
 		signal?.throwIfAborted();
 		if (!b) throw new Error(`${owner}: cell blob ${h.slice(0, 19)} missing`);
 		const image = await decodePng(b);
 		signal?.throwIfAborted();
+		rememberDecoded(h, image);
 		images.set(h, image);
 	};
 	for (const v of Object.values(rec.manifest.rig.rest ?? {})) await add(v?.image, 'rest view');

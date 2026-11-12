@@ -807,18 +807,22 @@ test('selection wheel normalizes deltas, discards bursts and stale fractions, an
 	await page.locator('.character-rows').evaluate((el) => (el.style.maxHeight = ''));
 	expect(await wheelOnRow(120, 3900)).toBe(true);
 	await step(1);
-	// Thumbnails are read once and shared: stepping and opening the name menu read only the character being opened.
+	// Thumbnails are read once and shared: stepping and opening the name menu read only the record of the character being
+	// opened, and its frames, already decoded for its thumbnail, are not read or decoded again.
 	await page.evaluate(() => {
-		const w = window as unknown as { characterReads: number };
-		w.characterReads = 0;
+		const w = window as unknown as { characterReads: number; frameReads: number };
+		w.characterReads = w.frameReads = 0;
 		const get = IDBObjectStore.prototype.get;
 		IDBObjectStore.prototype.get = function (this: IDBObjectStore, key: IDBValidKey) {
 			if (this.name === 'projects' && String(key).startsWith('rig-')) w.characterReads++;
+			if (this.name === 'blobs') w.frameReads++;
 			return get.call(this, key);
 		};
 	});
 	const reads = () =>
 		page.evaluate(() => (window as unknown as { characterReads: number }).characterReads);
+	const frameReads = () =>
+		page.evaluate(() => (window as unknown as { frameReads: number }).frameReads);
 	for (const delta of [1, 1, -1]) {
 		await page
 			.getByRole('button', { name: delta > 0 ? 'Next character' : 'Previous character' })
@@ -826,9 +830,22 @@ test('selection wheel normalizes deltas, discards bursts and stale fractions, an
 		await step(delta);
 	}
 	await page.locator('.selected-name').click();
-	await expect(page.locator('#project-menu .character-thumbnail canvas')).toHaveCount(3);
+	const menuThumbs = page.locator('#project-menu .character-thumbnail canvas');
+	await expect(menuThumbs).toHaveCount(3);
+	// Each menu thumbnail is drawn from the shared still at once, not blank while it loads.
+	expect(
+		await menuThumbs.evaluateAll((canvases) =>
+			(canvases as HTMLCanvasElement[]).map((c) =>
+				c
+					.getContext('2d')!
+					.getImageData(0, 0, c.width, c.height)
+					.data.some((v, i) => i % 4 === 3 && v > 0)
+			)
+		)
+	).toEqual([true, true, true]);
 	await page.keyboard.press('Escape');
 	expect(await reads()).toBeLessThanOrEqual(3);
+	expect(await frameReads()).toBe(0);
 });
 
 // Moved from experience.spec.ts (screenshot config) so these behavioral checks gate deploys.
