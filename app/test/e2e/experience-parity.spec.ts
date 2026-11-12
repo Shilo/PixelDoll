@@ -1028,6 +1028,10 @@ for (const screen of [
 							t.top >= b.top - 0.5 &&
 							t.bottom <= b.bottom + 0.5,
 						thumbEdge: getComputedStyle(knob).borderTopColor,
+						trackShadow: getComputedStyle(stick).boxShadow,
+						trackOutline: getComputedStyle(stick).outlineStyle,
+						thumbShadow: getComputedStyle(knob).boxShadow,
+						thumbOutline: getComputedStyle(knob).outlineStyle,
 						accent
 					};
 				});
@@ -1081,6 +1085,10 @@ for (const screen of [
 					expect(m.inside).toBe(true);
 					near(Math.hypot(m.thumb.x - m.base.x, m.thumb.y - m.base.y), travel);
 					expect(m.thumbEdge, 'the thumb is outlined in the theme accent').toBe(m.accent);
+					for (const treatment of [m.trackShadow, m.trackOutline, m.thumbShadow, m.thumbOutline])
+						expect(treatment, 'the joystick has one edge without a halo, keyline or shadow').toBe(
+							'none'
+						);
 					if (side) {
 						near(m.thumb.y, start.y);
 						near(m.base.y, start.y);
