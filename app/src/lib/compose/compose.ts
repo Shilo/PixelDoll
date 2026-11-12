@@ -63,13 +63,54 @@ export function equipped(m: Manifest, items: Preset['items']): Item[] {
 	return m.items.filter((it) => it.id === m.rig.baseItem || items[it.slot] === it.id);
 }
 
-/** Slots hidden by equipped items (item.hides ?? slot.hides). */
-// ponytail: hides come from every equipped item, even one that is itself hidden; chains are not resolved.
+/** Slots an item hides while worn (item.hides ?? slot.hides). */
+const hidesOf = (m: Manifest, it: Item) =>
+	it.hides ?? m.slots.find((x) => x.id === it.slot)?.hides ?? [];
+/** Slots hidden by equipped items (item.hides ?? slot.hides). Of two worn items that hide each other's slot (two two-handed
+ *  items), the one in the later slot stays visible and the other's hides do not apply, so they never both vanish. */
+// ponytail: otherwise hides come from every equipped item, even one that is itself hidden; chains are not resolved.
 export function hiddenSlots(m: Manifest, items: Item[]): Set<string> {
+	const at = (slot: string) => m.slots.findIndex((s) => s.id === slot);
 	const out = new Set<string>();
-	for (const it of items)
-		for (const s of it.hides ?? m.slots.find((x) => x.id === it.slot)?.hides ?? []) out.add(s);
+	for (const it of items) {
+		const mine = hidesOf(m, it);
+		if (
+			items.some(
+				(o) =>
+					o !== it &&
+					mine.includes(o.slot) &&
+					hidesOf(m, o).includes(it.slot) &&
+					at(o.slot) > at(it.slot)
+			)
+		)
+			continue;
+		for (const s of mine) out.add(s);
+	}
 	return out;
+}
+
+// ---------- two-handed items: a hand item that hides the other hand ----------
+/** The other hand of a hand slot. */
+export const OTHER_HAND: Readonly<Record<string, string>> = {
+	main_hand: 'off_hand',
+	off_hand: 'main_hand'
+};
+/** A two-handed item takes both hands: it is a hand item that hides the other hand while worn. */
+export const twoHanded = (m: Manifest, it: Item) =>
+	!!OTHER_HAND[it.slot] && hidesOf(m, it).includes(OTHER_HAND[it.slot]);
+/** Both hands as one outfit allows: a two-handed item and an item in the other hand are never worn together. The hand in
+ *  `keep` (the one just changed) stays; without it the Main hand does. Returns the outfit and what was taken off by what. */
+export function settleHands(
+	m: Manifest,
+	items: Preset['items'],
+	keep?: string
+): { items: Preset['items']; removed?: Item; by?: Item } {
+	const worn = (slot: string) => m.items.find((i) => i.id === items[slot] && i.slot === slot);
+	const main = worn('main_hand'),
+		off = worn('off_hand');
+	if (!main || !off || (!twoHanded(m, main) && !twoHanded(m, off))) return { items };
+	const [removed, by] = keep === 'off_hand' ? [main, off] : [off, main];
+	return { items: { ...items, [removed.slot]: null }, removed, by };
 }
 
 // ---------- B14 tuck-under (slot.clips): hair under a helmet keeps only what hangs below the brim ----------

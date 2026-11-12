@@ -17,7 +17,7 @@ import {
 	recolor,
 	storeVariants
 } from '../lib/dress/dress.ts';
-import { drawList } from '../lib/compose/compose.ts';
+import { drawList, OTHER_HAND, settleHands, twoHanded } from '../lib/compose/compose.ts';
 import { deleteItem, deleteOutdated, listProjects, loadProject } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import type {
@@ -368,7 +368,18 @@ class View {
 		return p ? recolor(p, $state.snapshot(doc.variants)) : null;
 	});
 	project = $derived.by(() => this.recolored && withDrafts(this.recolored));
-	items = $derived.by(() => ({ ...doc.items, ...doc.drafts }));
+	// a worn draft is never invisible: a draft in the other hand shows instead of a two-handed item (display only)
+	items = $derived.by(() => {
+		const m = this.project?.manifest,
+			on = { ...doc.items, ...doc.drafts };
+		return m
+			? settleHands(
+					m,
+					on,
+					Object.keys(doc.drafts).find((s) => OTHER_HAND[s])
+				).items
+			: on;
+	});
 	anim = $derived(store.project?.manifest.rig.animations.find((a) => a.id === ui.anim));
 	cell = $derived(this.anim ? this.anim.frames[ui.frame % this.anim.frames.length].cell : 0);
 }
@@ -496,7 +507,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (!quiet) ui.frame = 0;
 		store.project = r.project;
 		// Another acceptance can supersede its reload. Retire worn drafts only when their saved items are published.
-		let acceptedWear = false;
+		let acceptedWear = false,
+			wornSlot = m.items.find((i) => i.id === keep?.wear)?.slot;
 		for (const g of [...gens]) {
 			if (!g.draft.acceptedAt) continue;
 			const item = g.draft.rigId === id ? m.items.find((i) => i.id === g.draft.spec.id) : undefined;
@@ -505,9 +517,12 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 				doc.items[item.slot] = item.id;
 				delete doc.drafts[item.slot];
 				acceptedWear = true;
+				wornSlot = item.slot;
 			}
 			drop(g);
 		}
+		// a newly worn item keeps its hand; an outfit read as saved keeps the Main hand
+		doc.items = settleHands(m, doc.items, wornSlot).items;
 		if (!quiet)
 			ui.selected =
 				keep?.wear ??
@@ -561,13 +576,32 @@ function restore(s: string) {
 	bump();
 	save();
 }
-/** Every user edit goes through here: undo entry, apply, re-render, autosave. */
-export function commit(label: string, fn: () => void) {
+/** Every user edit goes through here: undo entry, apply, re-render, autosave. `keepHand` is the hand an edit is about when it
+ *  changes no worn item (switching an item to two-handed); otherwise the one hand put on by the edit stays. */
+export function commit(label: string, fn: () => void, keepHand?: string) {
 	if (!store.project) return;
 	doc.undo = [...doc.undo.slice(-99), { label, snap: snap() }];
 	doc.redo = [];
 	const before = { ...doc.items };
 	fn();
+	const changed = Object.keys(OTHER_HAND).filter(
+		(s) => doc.items[s] && (doc.items[s] ?? null) !== (before[s] ?? null)
+	);
+	const hands = settleHands(
+		store.project.manifest,
+		doc.items,
+		keepHand ?? (changed.length === 1 ? changed[0] : undefined)
+	);
+	if (hands.removed) {
+		doc.items = hands.items;
+		// One edit about one hand says what came off; a whole new outfit or look just shows the result.
+		if (keepHand || changed.length === 1)
+			toast(
+				twoHanded(store.project.manifest, hands.removed)
+					? `Took off ${hands.removed.name} (two-handed)`
+					: `Took off ${hands.removed.name}: ${hands.by!.name} is two-handed`
+			);
+	}
 	// a saved item put on or taken off a slot replaces the draft worn there
 	for (const slot of Object.keys(doc.drafts))
 		if ((doc.items[slot] ?? null) !== (before[slot] ?? null)) delete doc.drafts[slot];
@@ -974,9 +1008,18 @@ export function toggleHide(itemId: string, slot: string) {
 	const m = store.project!.manifest,
 		it = itemById(itemId)!;
 	const cur = it.hides ?? m.slots.find((s) => s.id === it.slot)?.hides ?? [];
-	commit(`${cur.includes(slot) ? 'Show' : 'Hide'} ${slot}`, () => {
-		it.hides = cur.includes(slot) ? cur.filter((s) => s !== slot) : [...cur, slot];
-	});
+	commit(
+		`${cur.includes(slot) ? 'Show' : 'Hide'} ${slot}`,
+		() => {
+			it.hides = cur.includes(slot) ? cur.filter((s) => s !== slot) : [...cur, slot];
+		},
+		it.slot
+	);
+}
+/** A two-handed item takes both hands: it hides the other hand while worn (the same rule as a hood hiding hair). */
+export function toggleTwoHanded(itemId: string) {
+	const it = itemById(itemId);
+	if (it && OTHER_HAND[it.slot]) toggleHide(itemId, OTHER_HAND[it.slot]);
 }
 
 /** Move the item's front layer one step in the draw order of the current frame (all directions, or only the current one). */

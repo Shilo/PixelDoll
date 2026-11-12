@@ -27,16 +27,16 @@ Open **More options → Connect PixelLab**, or the account entry in the characte
 
 A gen is one PixelLab generation from your account's monthly allowance. Creation and item actions show an estimated price beside or inside their button. Enhance uses about 0.05 gens per request. Typical prices:
 
-| Action | About |
-|---|---|
-| Create a character (its standing **Default** pose) | about 2–5 gens |
-| **Add idle + walk**, default **Top-down 8** (5 drawn views, west mirrored) | about 55 gens for the body; items are generated separately |
-| **Top-down 4** / **Diagonal 4** / **Side-scroller 2** | about 33 / 22 / 11 gens |
-| **Unique 8** (every view drawn independently) | about 88 gens |
-| Make an item | standing views only, about 10 gens for frames up to 80 px; larger or padded held items can require more batches |
-| Add a move | depends on the move, views and selected items; shown before spending |
-| Try again on an item | shown on the button |
-| Dress up, recolor, outfits, export | free |
+| Action                                                                     | About                                                                                                           |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Create a character (its standing **Default** pose)                         | about 2–5 gens                                                                                                  |
+| **Add idle + walk**, default **Top-down 8** (5 drawn views, west mirrored) | about 55 gens for the body; items are generated separately                                                      |
+| **Top-down 4** / **Diagonal 4** / **Side-scroller 2**                      | about 33 / 22 / 11 gens                                                                                         |
+| **Unique 8** (every view drawn independently)                              | about 88 gens                                                                                                   |
+| Make an item                                                               | standing views only, about 10 gens for frames up to 80 px; larger or padded held items can require more batches |
+| Add a move                                                                 | depends on the move, views and selected items; shown before spending                                            |
+| Try again on an item                                                       | shown on the button                                                                                             |
+| Dress up, recolor, outfits, export                                         | free                                                                                                            |
 
 The price is an estimate. Empty body output or a wrong frame count may retry once. Body pose estimates, silhouette movement, color differences and border contact are review notes and do not trigger paid redraws. Equipment fitting keeps its separate automatic checks and retry budget.
 PixelLab may bill some calls in dollars. Automatic quality retries and fallbacks cost extra; queue and generation time vary.
@@ -137,12 +137,12 @@ Press **Import** on the Characters screen or choose the character menu → **Imp
 
 Supported ZIP layouts:
 
-| Layout | What it needs |
-|---|---|
-| Current PixelLab export | `metadata.json` with its state/frame paths, plus those PNGs. State folders and frame filenames can vary because the metadata maps them. |
-| Older PixelLab frame export | `metadata.json`, `rotations/<direction>.png`, and optional `animations/<move>/<direction>/frame_<number>.png`. |
-| Current PixelDoll export | Editable `project.json` and original `cells/` images, alongside any engine files. This is PixelDoll's documented open format. |
-| Older PixelDoll engine export | PixelDoll `manifest.json` and its referenced spritesheets. An arbitrary game-engine ZIP without that manifest is not supported. |
+| Layout                        | What it needs                                                                                                                           |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Current PixelLab export       | `metadata.json` with its state/frame paths, plus those PNGs. State folders and frame filenames can vary because the metadata maps them. |
+| Older PixelLab frame export   | `metadata.json`, `rotations/<direction>.png`, and optional `animations/<move>/<direction>/frame_<number>.png`.                          |
+| Current PixelDoll export      | Editable `project.json` and original `cells/` images, alongside any engine files. This is PixelDoll's documented open format.           |
+| Older PixelDoll engine export | PixelDoll `manifest.json` and its referenced spritesheets. An arbitrary game-engine ZIP without that manifest is not supported.         |
 
 These layouts may sit inside enclosing folders. Several candidate enclosing character folders are refused rather than guessed. For PixelLab's multiple states within one metadata file, choose the **Standing pose**. Local ZIPs initially include moves from every animated state; **Moves to import** lets you exclude versions you do not want. Moves keep their source state's appearance, including any clothes or hair. States containing only standing artwork add no invented animations. PixelLab link/library imports initially include only the requested state's moves, with the same optional state choices when the archive contains more.
 
@@ -172,6 +172,14 @@ In **Wardrobe**, pick a category (Head, Hair, Body, or **More** for Face, Legs, 
 press **New <category> item**. Items of your other characters are listed below your own under **From your other characters**.
 **Main hand** is the character's right hand (a sword or staff) and **Off hand** the left hand (a shield, lantern or bow);
 one item of each can be worn together.
+
+- **Two-handed items.** Turn on **Two-handed** in an item's ⋮ menu (free) for a greatsword, spear, staff or bow. A two-handed
+  item takes both hands: wearing it takes off the other hand's item, and wearing something in the other hand takes the
+  two-handed item off. The body is never redrawn, so the item stays drawn in its own hand; both hands hold it only in frames
+  where the move brings the hands together (a slash, for example). In idle and walk it is carried in one hand.
+- **Dual wielding.** Wear one item in each hand. To get a matching weapon for the other hand, choose **Make one for the Off
+  hand…** (or **…the Main hand…**) in the item's ⋮ menu: it opens New item with the same description for the other hand, at
+  the usual price. It is drawn again, so small details can differ.
 
 1. **Where does it go?** Pick the group. **Details** lets you choose the exact slot (a beard goes under Hair, a belt under
    Legs).

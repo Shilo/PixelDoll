@@ -344,6 +344,20 @@ func run() -> void:
 	doll.manifest.materials[1]["linkTo"] = "b"
 	doll.set_variant("a", "blue")
 	check(color(doll, "hair") == Color8(100, 100, 100), "Linked cycles must retain source palette")
+	doll.equip("head", "hat")
+	doll.equip("back", "cape")
+	for it in doll.manifest.items:
+		if it.id == "hat":
+			it["hides"] = ["back"]
+		if it.id == "cape":
+			it["hides"] = ["head"]
+	doll._refresh()
+	check(doll.get_node("back_fg").visible and not doll.get_node("head_fg").visible, "Two items that hide each other keep the later slot visible")
+	for it in doll.manifest.items:
+		if it.id == "hat" or it.id == "cape":
+			it.erase("hides")
+	doll._refresh()
+	check(doll.get_node("back_fg").visible and doll.get_node("head_fg").visible, "Both show again without hides")
 	for a in doll.manifest.rig.animations:
 		doll.play_anim(a.id, "south")
 		for i in 45:

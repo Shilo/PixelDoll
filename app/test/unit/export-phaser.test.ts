@@ -382,3 +382,30 @@ test('generated runtime keeps stable equal-depth order and applies most-specific
 	doll.sync();
 	expect(doll.container.list.map((s: any) => s.pdOrder)).toEqual([0, 1, 2]);
 });
+
+test('generated runtime keeps the later slot visible when two equipped items hide each other (two-handed items)', async () => {
+	const m = fixture(),
+		api = runtime(),
+		h = sceneHarness();
+	m.slots.push({ id: 'off_hand', z: 140 } as never, { id: 'main_hand', z: 150 } as never);
+	for (const [id, slot, other] of [
+		['bow', 'off_hand', 'main_hand'],
+		['greatsword', 'main_hand', 'off_hand']
+	])
+		m.items.push({
+			id,
+			slot,
+			hides: [other],
+			materials: [],
+			layers: [{ id: 'main', role: 'fg', z: 140, sheets: { walk: `layers/${id}.png` } }]
+		} as never);
+	browserHarness(m);
+	const doll = new api.Paperdoll(h.scene, 0, 0, await api.loadPaperdoll(h.scene, '/hero/'));
+	doll.play('walk', 'south');
+	const shown = (slot: string) => doll.nodes.find((n: any) => n.slot.id === slot).sprite.visible;
+	doll.equip('off_hand', 'bow');
+	doll.equip('main_hand', 'greatsword');
+	expect([shown('main_hand'), shown('off_hand')]).toEqual([true, false]);
+	doll.equip('main_hand', null);
+	expect(shown('off_hand')).toBe(true);
+});

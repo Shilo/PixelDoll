@@ -80,7 +80,9 @@ function createPixelDoll(scene, m, names, x = 320, y = 240, preset = m.presets[0
     for (const f of a.frames) { frame = f; if (time < f.ms) break; time -= f.ms; }
     d.cell = frame.cell;
     const on = m.items.filter((i) => i.id === m.rig.baseItem || d.equipped[i.slot] === i.id);
-    const hidden = new Set(on.flatMap((i) => i.hides ?? m.slots.find((s) => s.id === i.slot)?.hides ?? []));
+    const hidesOf = (i) => i.hides ?? m.slots.find((s) => s.id === i.slot)?.hides ?? [], at = (slot) => m.slots.findIndex((s) => s.id === slot);
+    // Of two worn items that hide each other's slot (two two-handed items), the later slot stays visible.
+    const hidden = new Set(on.filter((i) => !on.some((o) => o !== i && hidesOf(i).includes(o.slot) && hidesOf(o).includes(i.slot) && at(o.slot) > at(i.slot))).flatMap(hidesOf));
     for (const node of d.nodes.values()) node.hide();
     const visible = [];
     for (const [si, slot] of m.slots.entries()) {

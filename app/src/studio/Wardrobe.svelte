@@ -8,7 +8,7 @@
 	// One continuous list of every equipment category with sticky headers, and a slot rail that follows and drives it.
 	import { onMount, tick, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { equipped, hiddenSlots } from '../lib/compose/compose.ts';
+	import { equipped, hiddenSlots, OTHER_HAND, twoHanded } from '../lib/compose/compose.ts';
 	import { edgeFade, scrollToTop, stickyFade } from '@shilo/bronze-ui/svelte';
 	import {
 		crop,
@@ -145,7 +145,16 @@
 				free,
 				paid: others.filter((x) => x.fit === 'remake'),
 				worn: items.some((i) => doc.items[i.slot] === i.id) || g.slots.some((s) => !!doc.drafts[s]),
-				choices: m ? groupRandomChoices(g.id).length : 0
+				choices: m ? groupRandomChoices(g.id).length : 0,
+				// a two-handed item worn in the other hand holds this one too
+				holder: m
+					? g.slots
+							.filter((slot) => OTHER_HAND[slot])
+							.map((slot) =>
+								m.items.find((i) => i.slot === OTHER_HAND[slot] && view.items[i.slot] === i.id)
+							)
+							.find((i) => !!i && twoHanded(m, i))
+					: undefined
 			};
 		})
 	);
@@ -320,6 +329,9 @@
 						>
 					</div>
 					<div class="section-body">
+						{#if s.holder}<p class="section-note faint small">
+								Held by {s.holder.name} (two-handed).
+							</p>{/if}
 						<div class="slot-tiles" role="group" aria-label="{s.label} items">
 							<button
 								class="bu-tile item-tile"
