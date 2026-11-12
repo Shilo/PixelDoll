@@ -17,8 +17,7 @@ const PICK: DirectionName[] = [
 	'south-west',
 	'north-west'
 ];
-/** Left-to-right order: a turnaround from front to back. A west-side facing takes its twin's place, so clicking
- * another shown facing only moves the selection and never reorders the row. */
+/** Turnaround order, front to back; a west-side facing takes its twin's place. */
 const ROW: DirectionName[] = [
 	'south',
 	'south-east',
@@ -39,9 +38,14 @@ const GAP = 0.25;
 /** Clear space kept at each side of the stage. */
 const MARGIN = 16;
 
+/** Where the selected facing stands: the center of an odd row, left of center in an even one. */
+export const focalSlot = (count: number) => Math.floor((count - 1) / 2);
+
 const twin = (d: DirectionName) => PAIRS.find((p) => p.includes(d))?.find((v) => v !== d);
 
-/** Up to `count` facings in row order, always including `selected`; never a facing with its horizontal twin. */
+/** Up to `count` facings left to right, always including `selected`; never a facing with its horizontal twin.
+ * The turnaround is rotated so the selected facing stands at the focal slot (`focalSlot`), the others continuing
+ * around it in turnaround order: selecting a neighbor turns the row like a turntable. */
 export function pickFacings(
 	available: readonly DirectionName[],
 	selected: DirectionName,
@@ -55,7 +59,9 @@ export function pickFacings(
 		if (available.includes(d) && !shown.includes(d) && !(other && shown.includes(other)))
 			shown.push(d);
 	}
-	return shown.sort((a, b) => ROW.indexOf(a) - ROW.indexOf(b));
+	shown.sort((a, b) => ROW.indexOf(a) - ROW.indexOf(b));
+	const turn = shown.indexOf(selected) - focalSlot(shown.length);
+	return shown.map((_, i) => shown[(i + turn + shown.length) % shown.length]);
 }
 
 export interface Lineup {

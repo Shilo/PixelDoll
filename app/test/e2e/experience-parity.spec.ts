@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { equipmentGroup, equipmentMode } from './immersive-helpers.ts';
 import { layout } from '../../src/studio/experience/geometry.ts';
-import { pickFacings } from '../../src/studio/experience/lineup.ts';
+import { focalSlot, pickFacings } from '../../src/studio/experience/lineup.ts';
 import type { DirectionName } from '../../src/lib/rig/rig.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
@@ -1350,6 +1350,7 @@ test.describe('Preview facing lineup', () => {
 					const shown = ((await world(page).getAttribute('data-lineup')) ?? '').split(' ');
 					const label = `${name} at ${width}×${height}, ${selected} selected`;
 					expect(shown, label).toEqual(pickFacings(available, selected, shown.length));
+					expect(shown.indexOf(selected), label).toBe(focalSlot(shown.length));
 					counts.set(
 						`${width}×${height}`,
 						Math.max(counts.get(`${width}×${height}`) ?? 0, shown.length)

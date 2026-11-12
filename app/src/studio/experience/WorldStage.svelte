@@ -531,7 +531,12 @@
 					const x = snap(at(ui.dir) - frame.x * scale),
 						y = snap(point.y - frame.y * scale);
 					// A lineup marks its selected facing with a thin accent ring on the floor, anchored to the feet so it
-					// never moves with the walk or collides with tall gear; the sprite is drawn over its back half.
+					// never moves with the walk or collides with tall gear; the sprite is drawn over its back half. A circle
+					// on the world floor looks as flat as the floor is foreshortened there: rows below the horizon over focal.
+					const flat = Math.min(
+						1,
+						Math.max(0, point.y - backdrop.eye) / (backdrop.scale * art.focal)
+					);
 					if (facings.length > 1)
 						for (const [d, alpha] of [
 							[ui.dir, 0.85],
@@ -544,15 +549,7 @@
 							g.strokeStyle = accent;
 							g.lineWidth = 1.5;
 							g.beginPath();
-							g.ellipse(
-								snap(at(d)),
-								snap(point.y + 1),
-								rx,
-								Math.min(6, rx * 0.25),
-								0,
-								0,
-								Math.PI * 2
-							);
+							g.ellipse(snap(at(d)), snap(point.y), rx, rx * flat, 0, 0, Math.PI * 2);
 							g.stroke();
 							g.restore();
 						}

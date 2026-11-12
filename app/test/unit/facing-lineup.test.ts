@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import type { DirectionName } from '../../src/lib/rig/rig.ts';
 import { PRESETS } from '../../src/studio/characterConfig.ts';
-import { MIN_SHARE, pickFacings, planLineup } from '../../src/studio/experience/lineup.ts';
+import {
+	MIN_SHARE,
+	focalSlot,
+	pickFacings,
+	planLineup
+} from '../../src/studio/experience/lineup.ts';
 
 const short: Record<string, DirectionName> = {
 	S: 'south',
@@ -21,29 +26,29 @@ describe('lineup facings', () => {
 	const cases: [string, string, number, string][] = [
 		['eight', 'S', 1, 'S'],
 		['eight', 'S', 2, 'S N'],
-		['eight', 'S', 3, 'S E N'],
-		['eight', 'S', 5, 'S SE E NE N'],
-		['eight', 'E', 2, 'S E'],
+		['eight', 'S', 3, 'N S E'],
+		['eight', 'S', 5, 'NE N S SE E'],
+		['eight', 'E', 2, 'E S'],
 		['eight', 'E', 3, 'S E N'],
 		['eight', 'E', 5, 'S SE E NE N'],
-		['eight', 'W', 2, 'S W'],
+		['eight', 'W', 2, 'W S'],
 		['eight', 'W', 3, 'S W N'],
 		['eight', 'W', 5, 'S SE W NE N'],
 		['eight', 'NE', 3, 'S NE N'],
-		['eight', 'NE', 5, 'S SE E NE N'],
+		['eight', 'NE', 5, 'SE E NE N S'],
 		['eight', 'SW', 3, 'S SW N'],
-		['eight', 'SW', 5, 'S SW E NE N'],
-		['eight', 'NW', 5, 'S SE E NW N'],
-		['unique', 'S', 5, 'S SE E NE N'],
-		['four', 'S', 3, 'S E N'],
-		['four', 'S', 5, 'S E N'],
-		['four', 'N', 2, 'S N'],
+		['eight', 'SW', 5, 'N S SW E NE'],
+		['eight', 'NW', 5, 'SE E NW N S'],
+		['unique', 'S', 5, 'NE N S SE E'],
+		['four', 'S', 3, 'N S E'],
+		['four', 'S', 5, 'N S E'],
+		['four', 'N', 2, 'N S'],
 		['four', 'E', 3, 'S E N'],
 		['four', 'W', 5, 'S W N'],
-		['diagonal', 'NE', 5, 'SE NE'],
+		['diagonal', 'NE', 5, 'NE SE'],
 		['diagonal', 'SE', 5, 'SE NE'],
 		['diagonal', 'SW', 5, 'SW NE'],
-		['diagonal', 'NW', 5, 'SE NW'],
+		['diagonal', 'NW', 5, 'NW SE'],
 		['side', 'E', 5, 'E'],
 		['side', 'W', 5, 'W']
 	];
@@ -54,10 +59,10 @@ describe('lineup facings', () => {
 
 	test('custom direction sets', () => {
 		expect(pickFacings(dirs('S'), 'south', 5)).toEqual(dirs('S'));
-		expect(pickFacings(dirs('S E'), 'east', 5)).toEqual(dirs('S E'));
-		expect(pickFacings(dirs('S N'), 'north', 5)).toEqual(dirs('S N'));
+		expect(pickFacings(dirs('S E'), 'east', 5)).toEqual(dirs('E S'));
+		expect(pickFacings(dirs('S N'), 'north', 5)).toEqual(dirs('N S'));
 		expect(pickFacings(dirs('E W'), 'west', 5)).toEqual(dirs('W'));
-		expect(pickFacings(dirs('N NE E'), 'north', 5)).toEqual(dirs('E NE N'));
+		expect(pickFacings(dirs('N NE E'), 'north', 5)).toEqual(dirs('NE N E'));
 		expect(pickFacings(dirs('W NW'), 'west', 5)).toEqual(dirs('W NW'));
 		expect(pickFacings(dirs('SE SW'), 'south-west', 5)).toEqual(dirs('SW'));
 	});
@@ -82,9 +87,20 @@ describe('lineup facings', () => {
 		}
 	});
 
-	test('clicking another shown facing keeps the row', () => {
+	test('the selected facing stands at the focal slot, and selecting a shown neighbor turns the same row', () => {
+		for (const p of PRESETS) {
+			const available: readonly DirectionName[] = p.selected;
+			for (const selected of available)
+				for (let count = 1; count <= 5; count++) {
+					const shown = pickFacings(available, selected, count);
+					expect(shown.indexOf(selected)).toBe(focalSlot(shown.length));
+				}
+		}
+		expect([1, 2, 3, 4, 5].map(focalSlot)).toEqual([0, 0, 1, 1, 2]);
 		const row = pickFacings(preset('four'), 'south', 3);
-		for (const d of row) expect(pickFacings(preset('four'), d, 3)).toEqual(row);
+		for (const d of row)
+			expect([...pickFacings(preset('four'), d, 3)].sort()).toEqual([...row].sort());
+		expect(pickFacings(preset('four'), 'east', 3)).toEqual(dirs('S E N'));
 	});
 });
 
@@ -103,7 +119,7 @@ describe('lineup fitting', () => {
 			room,
 			width: 1396
 		});
-		expect(row.facings).toEqual(dirs('S E N'));
+		expect(row.facings).toEqual(dirs('N S E'));
 		expect(row.scale).toBe(9);
 		expect(row.scale).toBeGreaterThanOrEqual(MIN_SHARE * 14);
 		expect(row.offsets[0]).toBe(-row.offsets[2]);
@@ -152,7 +168,7 @@ describe('lineup fitting', () => {
 	test('far-reaching gear keeps every facing clear of its neighbors and inside the stage', () => {
 		const reach = { w: 50, h: 64, x: 30, y: 56 },
 			row = planLineup({ available: four, selected: 'south', body, reach, room, width: 1396 });
-		expect(row.facings).toEqual(dirs('S E N'));
+		expect(row.facings).toEqual(dirs('N S E'));
 		const left = row.offsets.map((o) => o - reach.x * row.scale),
 			right = row.offsets.map((o) => o + (reach.w - reach.x) * row.scale);
 		for (let i = 1; i < row.offsets.length; i++) expect(left[i]).toBeGreaterThan(right[i - 1]);
