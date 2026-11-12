@@ -153,6 +153,15 @@ describe('stable painted outfit frame', () => {
 		expect(reachFrame(p, 'south')).toEqual(reachFrame(p));
 	});
 
+	test('missing equipment facings keep the drawn body reach instead of the full baked frame', () => {
+		const p = fixture();
+		weapon(p, rectangle(96, 96, 10, 40, 30, 4));
+		p.manifest.rig.directions.push({ id: 'north' });
+		p.manifest.items[0].layers[0].cells!.walk.north = [bodyHash];
+		expect(reachFrame(p, 'north')).toEqual({ w: 24, h: 48, x: 12, y: 48 });
+		expect(reachFrame(p, 'north')).not.toEqual(bakedFrame(p.manifest));
+	});
+
 	test('conservatively includes horizontal counterparts for declared mirrors', () => {
 		const p = fixture();
 		p.images.set(bodyHash, rectangle(64, 64, 10, 10, 2, 3));

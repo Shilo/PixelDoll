@@ -1247,6 +1247,152 @@ test.describe('Preview facing lineup', () => {
 	// The dev server serves the app's modules, so a check can give the demo character any set of directions.
 	test.use({ baseURL: `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}` });
 
+	test('renders synchronized companions, selects them, and reports incomplete gear', async ({
+		page
+	}) => {
+		await page.setViewportSize({ width: 1920, height: 1080 });
+		await customize(page);
+		await pause(page);
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			const project = s.store.project!,
+				m = project.manifest,
+				base = m.items.find((item) => item.id === m.rig.baseItem)!,
+				layer = base.layers[0];
+			m.rig.directions = [{ id: 'south' }, { id: 'north' }, { id: 'east' }];
+			m.rig.animations = [
+				{
+					...m.rig.animations[0],
+					id: 'walk',
+					cells: 2,
+					frames: [
+						{ cell: 0, ms: 400 },
+						{ cell: 1, ms: 400 }
+					]
+				}
+			];
+			base.regions = undefined;
+			base.materials = [];
+			base.layers = [layer];
+			layer.cells = { walk: {} };
+			for (const [index, direction] of (['south', 'north', 'east'] as const).entries()) {
+				layer.cells.walk[direction] = [];
+				for (let cell = 0; cell < 2; cell++) {
+					const hash = `sha256:lineup-${direction}-${cell}` as const,
+						{ w, h } = m.rig.cell,
+						data = new Uint8ClampedArray(w * h * 4);
+					for (let row = m.rig.pivot.y - 40; row < m.rig.pivot.y; row++)
+						for (let column = m.rig.pivot.x - 10; column < m.rig.pivot.x + 10; column++)
+							data.set([31 + index * 60, 47 + cell * 100, 233, 255], (row * w + column) * 4);
+					project.images.set(hash, { w, h, data });
+					layer.cells.walk[direction]!.push(hash);
+				}
+			}
+			m.items = [base];
+			s.doc.items = {};
+			s.ui.anim = 'walk';
+			s.ui.dir = 'south';
+			s.ui.frame = 0;
+			s.doc.rev++;
+		});
+		const painted = () =>
+			page.locator('.world-actors').evaluate((canvas: HTMLCanvasElement) => {
+				const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data,
+					boxes = [0, 1, 2].map(() => ({
+						left: Infinity,
+						right: -Infinity,
+						top: Infinity,
+						bottom: -Infinity,
+						cells: [] as number[]
+					}));
+				for (let offset = 0; offset < data.length; offset += 4) {
+					const index = (data[offset] - 31) / 60,
+						cell = (data[offset + 1] - 47) / 100;
+					if (
+						!Number.isInteger(index) ||
+						index < 0 ||
+						index > 2 ||
+						![0, 1].includes(cell) ||
+						data[offset + 2] !== 233 ||
+						data[offset + 3] !== 255
+					)
+						continue;
+					const box = boxes[index],
+						column = (offset / 4) % canvas.width,
+						row = Math.floor(offset / 4 / canvas.width);
+					box.left = Math.min(box.left, column);
+					box.right = Math.max(box.right, column);
+					box.top = Math.min(box.top, row);
+					box.bottom = Math.max(box.bottom, row);
+					if (!box.cells.includes(cell)) box.cells.push(cell);
+				}
+				return boxes;
+			});
+		await expect
+			.poll(async () => (await painted()).map((box) => box.cells))
+			.toEqual([[0], [0], [0]]);
+		const boxes = await painted();
+		for (const box of boxes) expect(box.right - box.left).toBeGreaterThan(20);
+		const ordered = [...boxes].sort((before, after) => before.left - after.left);
+		for (let index = 1; index < ordered.length; index++)
+			expect(ordered[index].left).toBeGreaterThan(ordered[index - 1].right);
+		await world(page).focus();
+		await page.keyboard.press('.');
+		await expect
+			.poll(async () => (await painted()).map((box) => box.cells))
+			.toEqual([[1], [1], [1]]);
+		await page.getByRole('button', { name: 'Play', exact: true }).click();
+		await expect
+			.poll(async () => (await painted()).map((box) => box.cells))
+			.toEqual([[0], [0], [0]]);
+		await pause(page);
+		const north = boxes[1],
+			pointer = { x: (north.left + north.right) / 2, y: (north.top + north.bottom) / 2 };
+		await page.mouse.move(pointer.x, pointer.y);
+		await expect(world(page)).toHaveClass(/\bpick\b/);
+		await page.mouse.click(pointer.x, pointer.y);
+		await expect(world(page)).toHaveAttribute('data-facing', 'north');
+		await page.getByRole('button', { name: 'Characters', exact: true }).hover();
+		await expect(world(page)).not.toHaveClass(/\bpick\b/);
+		await page.mouse.move(pointer.x, pointer.y);
+		await world(page).focus();
+		await page.keyboard.press('2');
+		await expect(world(page)).not.toHaveClass(/\bpick\b/);
+		await page.keyboard.press('1');
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			const m = s.store.project!.manifest,
+				base = m.items[0];
+			m.items.push({
+				...base,
+				id: 'lineup-hat',
+				name: 'Lineup hat',
+				slot: 'head',
+				coverage: ['walk/south/0', 'walk/south/1'],
+				layers: [{ ...base.layers[0], cells: { walk: { south: [null, null] } } }]
+			});
+			s.doc.items = { head: 'lineup-hat' };
+			s.ui.dir = 'south';
+			s.doc.rev++;
+		});
+		await expect(world(page)).toHaveAttribute('data-facing', 'south');
+		await expect(page.locator('.world-coverage')).toContainText('missing walk / North frames');
+		await expect(page.locator('.world-coverage')).toContainText('missing walk / East frames');
+		await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts',
+				s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			s.store.project!.manifest.items[1].pending = ['walk/north/0', 'walk/east/0'];
+			s.doc.rev++;
+		});
+		await expect(page.locator('.world-loading-items')).toContainText('Lineup hat loading');
+		await expect(page.locator('.world-loading-items')).toContainText('North, East');
+		await expect(page.locator('.world-coverage').filter({ hasText: 'missing walk' })).toHaveCount(
+			0
+		);
+	});
+
 	type Rig = [DirectionName, DirectionName?][];
 	const sets: [string, Rig][] = [
 		['one direction', [['south']]],
@@ -1382,7 +1528,9 @@ test.describe('Preview facing lineup', () => {
 				expect(painted.right, `${name} at ${width}×${height}`).toBeLessThanOrEqual(g.stage.r);
 				// The floor ring keeps clear space above the playback bar.
 				const bar = (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!;
-				expect(painted.bottom, `${name} at ${width}×${height}`).toBeLessThanOrEqual(bar.y - 8);
+				const gap =
+					((await world(page).getAttribute('data-lineup')) ?? '').split(' ').length > 1 ? 12 : 8;
+				expect(painted.bottom, `${name} at ${width}×${height}`).toBeLessThanOrEqual(bar.y - gap);
 			}
 			const capacity = pickFacings(available, available[0], 5).length;
 			// Wide windows show a lineup whenever the character has a second facing to show; it never grows as
