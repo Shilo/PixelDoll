@@ -185,11 +185,7 @@
 	const activeCamera = $derived(
 		experience.screen === 'characters' ? selectionCamera : experience.sceneCamera
 	);
-	const world = $derived(
-		experience.screen === 'characters' || experience.mode === 'preview'
-			? (activeCamera?.backdrop ?? baseWorld)
-			: baseWorld
-	);
+	const world = $derived(activeCamera?.backdrop ?? baseWorld);
 	// The automatic fit needs no controls; they appear once the person zooms, mainly to reset it.
 	// Preview's zoom, read from the shared state rather than its last drawn frame, so its controls follow input at once.
 	const previewZoom = $derived(sharedZoom('studio', experience.zoomFits.studio));
@@ -605,7 +601,7 @@
 		<div class="experience-stage">
 			<WorldStage playbackHeight={previewHeight} bind:missing />
 		</div>
-		{#if experience.mode === 'preview' && experience.zoomFits.studio && experience.sceneZoom !== null}
+		{#if experience.zoomFits.studio && experience.sceneZoom !== null}
 			<div class="scene-zoom-controls">
 				<ZoomControls zoom={previewZoom} onchange={changeZoom} />
 			</div>

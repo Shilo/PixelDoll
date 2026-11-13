@@ -1,4 +1,5 @@
 import { MOTION, WORLDS, type WorldMode, type WorldTheme } from './config.ts';
+import { zoomPoint, type SceneCamera } from './zoom.ts';
 
 export interface Point {
 	x: number;
@@ -15,6 +16,7 @@ export interface RenderOptions {
 	camera: Point;
 	/** The character's eye line (geometry.ts placeWorld): the side view's horizon, matching the world image. */
 	eye: number;
+	zoom?: Pick<SceneCamera, 'value' | 'anchor' | 'offset'>;
 }
 
 /** The approved prototype's perspective. The side view's horizon is the character's eye line, so its floor meets the
@@ -25,7 +27,17 @@ export function projection(options: RenderOptions) {
 	const focal = viewportHeight * 1.1,
 		height = mode === 'side' ? 95 : 600;
 	const depth = (focal * height) / (anchor.y - horizon);
-	return { horizon, focal, height, depth, anchor, camera };
+	const zoom = options.zoom;
+	return {
+		horizon: zoom
+			? zoomPoint({ x: anchor.x, y: horizon }, zoom.anchor, zoom.value, zoom.offset).y
+			: horizon,
+		focal: focal * (zoom?.value ?? 1),
+		height,
+		depth,
+		anchor: zoom ? zoomPoint(anchor, zoom.anchor, zoom.value, zoom.offset) : anchor,
+		camera
+	};
 }
 
 export function project(point: Point, options: RenderOptions): Point {

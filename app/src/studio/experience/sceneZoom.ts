@@ -13,6 +13,7 @@ export interface SceneZoomOptions {
 	onchange: (scale: number | null) => void;
 	/** A one-finger horizontal swipe: 1 toward the next item (finger moving left), -1 toward the previous. */
 	onswipe?: (direction: 1 | -1) => void;
+	onpinch?: () => void;
 }
 
 // Trackpad pinches reach the page as wheel events with ctrlKey set, but no Control key press; tracking the real key
@@ -55,7 +56,8 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 	// A pinch is direct manipulation and stays precise; released near a fit or a whole multiple, it lands on it. Anything
 	// that changed the zoom since (a reset, a key, a button) wins over the settle.
 	const settlePinch = () => {
-		if (options.stored === pinched) options.onchange(settleZoom(options.zoom, pinched));
+		if (available() && options.stored === pinched)
+			options.onchange(settleZoom(options.zoom, pinched));
 		pinched = NaN;
 	};
 	const pinch = (value: number) => {
@@ -82,6 +84,8 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 			: 0;
 	};
 	const clear = () => {
+		clearTimeout(pinchSettle);
+		pinched = NaN;
 		const held = [...touches.keys()];
 		touches.clear();
 		distance = 0;
@@ -92,6 +96,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 	};
 	function end(event: PointerEvent) {
 		if (!touches.has(event.pointerId)) return;
+		if (event.type === 'pointercancel') pinched = NaN;
 		if (pinching) {
 			event.preventDefault();
 			event.stopImmediatePropagation();
@@ -101,7 +106,8 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 		distance = span();
 		if (!touches.size && pinching) {
 			pinching = false;
-			settlePinch();
+			if (event.type === 'pointerup') settlePinch();
+			else pinched = NaN;
 		}
 		if (swipe?.id !== event.pointerId) return;
 		const dx = event.clientX - swipe.x,
@@ -194,6 +200,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 				event.preventDefault();
 				event.stopImmediatePropagation();
 				suppressClick = pinching = true;
+				options.onpinch?.();
 				distance = span();
 				for (const pointerId of touches.keys()) node.setPointerCapture(pointerId);
 			},

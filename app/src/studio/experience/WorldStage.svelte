@@ -10,7 +10,14 @@
 	import { bakedFrame } from '../../lib/compose/compose.ts';
 	import { paintedFrame, reachFrame, actorScale, previewBounds, framePosition } from './bounds.ts';
 	import { inspectionLineup, planLineup } from './lineup.ts';
-	import { cameraFramePosition, sceneArtFits, sceneCamera, zoomBox, zoomCeiling } from './zoom.ts';
+	import {
+		cameraFramePosition,
+		sceneArtFits,
+		sceneCamera,
+		zoomBox,
+		zoomCeiling,
+		zoomPoint
+	} from './zoom.ts';
 	import { sceneZoom } from './sceneZoom.ts';
 	import { frameRecorder } from './paint.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
@@ -60,10 +67,11 @@
 		void doc.rev;
 		return view.project ? buildPresentation(view.project, { loading: doc.loading }) : null;
 	});
-	const grounding = $derived.by(() => {
+	const bodyBounds = $derived.by(() => {
 		void doc.rev;
-		return view.project && experience.mode === 'preview' ? previewBounds(view.project) : null;
+		return view.project ? previewBounds(view.project) : null;
 	});
+	const grounding = $derived(experience.mode === 'preview' ? bodyBounds : null);
 	const drawingFrame = $derived.by(() => {
 		void doc.rev;
 		return view.project ? bakedFrame(view.project.manifest) : null;
@@ -466,7 +474,7 @@
 					: fittedRow;
 			const fit = row?.scale ?? (fitFrame ? actorScale(fitFrame, room, dpr) : 0);
 			const shared = sharedZoom('studio', fit);
-			const magnification = live || !fit ? 1 : shared.scale / fit;
+			const magnification = !fit ? 1 : shared.scale / fit;
 			// The world image, sky and side floor share one horizon: the eye line of the characters as drawn
 			// (geometry.ts placeWorld), so a lineup's smaller scale pulls the whole world back with it.
 			const heroNow = fitFrame
@@ -505,13 +513,16 @@
 				y: anchor.y
 			};
 			// The selected facing's fit in CSS px per art px; the shared zoom is absolute (zoom.ts).
-			if (!live && fit > 0) {
+			if (fit > 0) {
 				previewFit = fit;
 				if (experience.zoomFits.studio !== fit) experience.zoomFits.studio = fit;
+				if (experience.zoomFits[experience.mode] !== fit)
+					experience.zoomFits[experience.mode] = fit;
 				const ceiling = zoomCeiling(experience.zoomCeiling, fit);
 				if (ceiling !== experience.zoomCeiling) experience.zoomCeiling = ceiling;
 			}
 			const reference = grounding?.facings.get(ui.dir);
+			const bodyReference = bodyBounds?.facings.get(ui.dir);
 			const framePivot = {
 				x: (drawingFrame?.x ?? 0) + (reference?.x ?? 0),
 				y: (drawingFrame?.y ?? 0) + (reference?.y ?? 0)
@@ -527,15 +538,17 @@
 				value: magnification,
 				anchor: groundedFocus,
 				framing: clearance,
+				bodyHeight: live ? (bodyReference?.standingHeight ?? fitFrame?.h ?? 0) * fit : undefined,
 				centerX: inspecting ? (clearance.l + clearance.r) / 2 : undefined,
 				backdrop,
 				plate: art,
 				viewport: { l: 0, t: 0, r: width, b: backdrop.coverBottom },
 				center: {
-					x: groundedFocus.x,
+					x: groundedFocus.x + (live ? (bodyReference?.x ?? 0) * fit : 0),
 					y:
 						groundedFocus.y -
-						((grounding?.facings.get(ui.dir)?.standingHeight ?? fitFrame?.h ?? 0) * fit) / 2
+						((bodyReference?.standingHeight ?? fitFrame?.h ?? 0) * fit) / 2 +
+						(live ? (bodyReference?.y ?? 0) * fit : 0)
 				}
 			});
 			const drawPosition = (
@@ -577,19 +590,19 @@
 					sceneArtFits({ l: ring.x - radius, r: ring.x + radius, t: 0, b: 0 }, zoom, horizontal)
 				);
 			});
+			const stamp = JSON.stringify(zoom);
+			if (stamp !== cameraStamp) {
+				cameraStamp = stamp;
+				experience.sceneCamera = zoom;
+			}
 			if (!live) {
-				const stamp = JSON.stringify(zoom);
-				if (stamp !== cameraStamp) {
-					cameraStamp = stamp;
-					experience.sceneCamera = zoom;
-				}
 				if (zoom.value !== 1 || zoom.offset.x !== 0 || zoom.offset.y !== 0) {
 					g.translate(zoom.anchor.x + zoom.offset.x, zoom.anchor.y + zoom.offset.y);
 					g.scale(zoom.value, zoom.value);
 					g.translate(-zoom.anchor.x, -zoom.anchor.y);
 				}
 			}
-			host.dataset.sceneZoom = String(live ? fit : shared.scale);
+			host.dataset.sceneZoom = String(shared.scale);
 			host.dataset.sceneFit = String(shared.fit);
 			host.dataset.sceneCamera = String(zoom.value);
 			host.dataset.sceneAnchor = `${zoom.anchor.x},${zoom.anchor.y}`;
@@ -617,7 +630,14 @@
 				mode: experience.mode,
 				anchor,
 				camera,
-				eye: backdrop.eye
+				eye: backdrop.eye,
+				zoom: live
+					? {
+							value: zoom.backdrop.scale / backdrop.scale,
+							anchor: zoom.anchor,
+							offset: zoom.offset
+						}
+					: undefined
 			};
 			const world = WORLDS[ui.theme],
 				skyUrl = world.backgrounds[experience.mode],
@@ -629,9 +649,9 @@
 				height,
 				dpr,
 				horizon ?? 'preview',
-				backdrop.scale,
-				backdrop.x,
-				backdrop.y
+				zoom.backdrop.scale,
+				zoom.backdrop.x,
+				zoom.backdrop.y
 			].join('|');
 			if (nextSky !== skyStamp) {
 				skyStamp = nextSky;
@@ -644,8 +664,9 @@
 						.then((image) => {
 							if (disposed || skyStamp !== nextSky) return;
 							// The backdrop's own placement: uniform scale, image horizon on the eye line and the floor's horizon.
-							const sky = backdrop;
+							const sky = zoom.backdrop;
 							skyContext.setTransform(dpr, 0, 0, dpr, 0, 0);
+							skyContext.imageSmoothingEnabled = false;
 							skyContext.clearRect(0, 0, width, height);
 							skyContext.save();
 							skyContext.beginPath();
@@ -754,10 +775,14 @@
 				}
 				if (img && result) {
 					const frame = result.frame,
-						point = s ? s.project(position, options) : anchor;
+						point = s
+							? s.project(position, options)
+							: options.zoom
+								? zoomPoint(anchor, options.zoom.anchor, options.zoom.value, options.zoom.offset)
+								: anchor;
 					const fit = fitFrame ?? frame,
-						scale = row?.scale ?? actorScale(fit, room, dpr),
-						hero = Math.round(fit.y * scale);
+						scale = live ? shared.scale : (row?.scale ?? actorScale(fit, room, dpr)),
+						hero = heroNow;
 					if (hero !== experience.heroHeight) experience.heroHeight = hero;
 					const snap = (n: number) => Math.round(n * dpr) / dpr;
 					// The selected facing keeps its reflection; the others stand beside it, sharing its move, frame and floor.
@@ -893,8 +918,10 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div
 	class="world-stage bu-focus"
-	{@attach (node) =>
-		sceneZoom(node, {
+	{@attach (node) => {
+		const mode = experience.mode;
+		const enabled = !ui.sheet;
+		return sceneZoom(node, {
 			get zoom() {
 				return sharedZoom('studio', previewFit);
 			},
@@ -902,13 +929,20 @@
 				return experience.sceneZoom;
 			},
 			get enabled() {
-				return experience.mode === 'preview' && !ui.sheet;
+				return enabled && experience.mode === mode;
+			},
+			onpinch: () => {
+				pad = null;
+				stick = IDLE;
+				pendingTap = null;
+				secondaryTouches.clear();
 			},
 			onchange: (scale) => {
 				experience.sceneZoom = scale;
 			},
 			modifiedWheel: 'zoom'
-		})}
+		});
+	}}
 	id="world-stage"
 	bind:this={host}
 	role="application"

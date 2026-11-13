@@ -469,13 +469,25 @@ async function actorBounds(page: Page, minimumAlpha = 128) {
 		const scaleX = rect.width / canvas.width,
 			scaleY = rect.height / canvas.height;
 		if (!right || !bottom) throw new Error('The actor canvas is empty');
+		const uniforms = Reflect.get(window, '__groundUniforms') as
+			Record<string, number | number[]> | undefined;
+		const stage = document.querySelector<HTMLElement>('.world-stage');
 		return {
 			left: rect.left + left * scaleX,
 			top: rect.top + top * scaleY,
 			right: rect.left + right * scaleX,
 			bottom: rect.top + bottom * scaleY,
 			width: (right - left) * scaleX,
-			height: (bottom - top) * scaleY
+			height: (bottom - top) * scaleY,
+			ground: uniforms
+				? {
+						values: structuredClone(uniforms),
+						position: stage!.dataset.position!.split(',').map(Number),
+						zoom: Number(stage!.dataset.sceneZoom),
+						fit: Number(stage!.dataset.sceneFit),
+						dpr: devicePixelRatio
+					}
+				: undefined
 		};
 	}, minimumAlpha);
 }
@@ -883,6 +895,40 @@ test('Preview zoom keeps actors and backdrop on one camera and fits them at max'
 test('asymmetric padded artwork enlarges around its body and shrinks around its real ground on both screens', async ({
 	page
 }) => {
+	await page.addInitScript(() => {
+		const names = new WeakMap<WebGLUniformLocation, string>();
+		const values: Record<string, number | number[]> = {};
+		Reflect.set(window, '__groundUniforms', values);
+		const prototype = WebGL2RenderingContext.prototype;
+		const location = prototype.getUniformLocation;
+		const scalar = prototype.uniform1f;
+		const vector = prototype.uniform2f;
+		prototype.getUniformLocation = function (program, name) {
+			const result = location.call(this, program, name);
+			if (result) names.set(result, name);
+			return result;
+		};
+		prototype.uniform1f = function (location, value) {
+			const name = location && names.get(location);
+			if (
+				name &&
+				this.canvas instanceof HTMLCanvasElement &&
+				this.canvas.classList.contains('world-ground')
+			)
+				values[name] = value;
+			return scalar.call(this, location, value);
+		};
+		prototype.uniform2f = function (location, x, y) {
+			const name = location && names.get(location);
+			if (
+				name &&
+				this.canvas instanceof HTMLCanvasElement &&
+				this.canvas.classList.contains('world-ground')
+			)
+				values[name] = [x, y];
+			return vector.call(this, location, x, y);
+		};
+	});
 	await page.setViewportSize({ width: 1280, height: 660 });
 	await page.goto('/');
 	await expect(page.locator('.customize-action')).toBeEnabled();
@@ -1020,6 +1066,92 @@ test('asymmetric padded artwork enlarges around its body and shrinks around its 
 			await backdrop(page),
 			`${width}x${height}: recentered background covers the scene`
 		);
+	}
+	await page.setViewportSize({ width: 1440, height: 900 });
+	for (const mode of ['Top-down', 'Side-scroller']) {
+		await page
+			.getByRole('group', { name: 'Character view', exact: true })
+			.getByRole('button', { name: mode, exact: true })
+			.click();
+		await resetZoom(page, preview);
+		const painted = await actorBounds(page, 255);
+		const fit = (await readScene(preview)).fit;
+		const room = await page.evaluate(async () => {
+			const { layout } = await import(
+				/* @vite-ignore */ String('/src/studio/experience/geometry.ts')
+			);
+			const geometry = layout(innerWidth, innerHeight, 'studio');
+			return {
+				x: (geometry.stage.l + geometry.stage.r) / 2,
+				top: geometry.stage.t + (geometry.compactPlayback ? 66 : 16),
+				bottom: geometry.playbackTop - 2
+			};
+		});
+		const middle = fit * (1 + Math.max(0.25, (room.bottom - room.top) / (32 * fit) - 1) / 2);
+		expect(middle).toBeLessThanOrEqual((await readScene(preview)).max);
+		await page.evaluate(async (scale) => {
+			const { experience } = await import(
+				/* @vite-ignore */ String('/src/studio/experience/state.svelte.ts')
+			);
+			experience.sceneZoom = scale;
+		}, middle);
+		await expect.poll(async () => (await readScene(preview)).zoom).toBe(middle);
+		const moved = await actorBounds(page, 255);
+		expect(
+			Math.abs((moved.left + moved.right) / 2 - ((painted.left + painted.right) / 2 + room.x) / 2)
+		).toBeLessThanOrEqual(1);
+		expect(
+			Math.abs(
+				(moved.top + moved.bottom) / 2 -
+					((painted.top + painted.bottom) / 2 + (room.top + room.bottom) / 2) / 2
+			)
+		).toBeLessThanOrEqual(1);
+		await zoomToMax(page, preview);
+		const anchor = (await preview.getAttribute('data-scene-anchor'))!.split(',').map(Number);
+		expect(
+			Math.abs(anchor[0] - (painted.left + painted.right) / 2),
+			`${mode} uses padded standing center x`
+		).toBeLessThanOrEqual(halfPixel);
+		expect(
+			Math.abs(anchor[1] - (painted.top + painted.bottom) / 2),
+			`${mode} uses padded standing center y`
+		).toBeLessThanOrEqual(halfPixel);
+		expectCovered(await backdrop(page), `${mode} padded max`);
+		await zoomToMin(page, preview);
+		await preview.focus();
+		await page.keyboard.down('d');
+		await expect
+			.poll(async () => Number((await preview.getAttribute('data-position'))!.split(',')[0]))
+			.toBeGreaterThan(0);
+		await page.keyboard.up('d');
+		await settle(page);
+		const small = await actorBounds(page, 255);
+		const sample = small.ground!;
+		const uniforms = sample.values;
+		const [x, y] = sample.position;
+		const groundAnchor = uniforms.anchor as number[],
+			camera = uniforms.camera as number[];
+		const focal = uniforms.focal as number,
+			height = uniforms.height as number,
+			depth = uniforms.depth as number;
+		const z = depth + y - camera[1];
+		const projected = {
+			x: (groundAnchor[0] + ((x - camera[0]) * focal) / z) / sample.dpr,
+			y: ((uniforms.horizon as number) + (focal * height) / z) / sample.dpr,
+			factor: focal / ((uniforms.viewport as number[])[1] * 1.1)
+		};
+		expect(
+			projected.factor,
+			`${mode} finite background has reached its coverage clamp`
+		).toBeGreaterThan(sample.zoom / sample.fit);
+		expect(
+			Math.abs(small.left + 23 * sample.zoom - projected.x),
+			`${mode} actual shader and sprite ground x agree below clamp`
+		).toBeLessThanOrEqual(1);
+		expect(
+			Math.abs(small.bottom + 45 * sample.zoom - projected.y),
+			`${mode} actual shader and sprite ground y agree below clamp`
+		).toBeLessThanOrEqual(1);
 	}
 });
 
@@ -1468,9 +1600,9 @@ test('Characters and Customize share one absolute zoom: the same level, label an
 		})
 		.toBeLessThanOrEqual(1.5);
 
-	// A live view draws at its own fit, and Preview returns to the shared level.
 	await view('Top-down');
-	await expect(zoomGroup(page)).toHaveCount(0);
+	await expect.poll(async () => (await readScene(preview)).zoom).toBe(lowered);
+	await expect(label()).toHaveText(percent(lowered));
 	await view('Preview');
 	await expect.poll(async () => (await readScene(preview)).zoom).toBe(lowered);
 	const ceiling = (await readScene(preview)).max;
@@ -1835,6 +1967,226 @@ for (let count = 1; count <= 5; count++)
 				'more horizontal room never hides a facing at a fixed chosen scale'
 			).toBeGreaterThanOrEqual(widths[index - 1]);
 	});
+
+test('playable zoom shares scale across views, preserves movement and native input, and resets', async ({
+	page
+}) => {
+	await seedCharacters(page, 1);
+	await page.locator('.customize-action').click();
+	const host = world(page);
+	const view = (name: string) =>
+		page
+			.getByRole('group', { name: 'Character view', exact: true })
+			.getByRole('button', { name, exact: true })
+			.click();
+	for (const mode of ['Top-down', 'Side-scroller']) {
+		await view(mode);
+		await waitForScene(host);
+		await resetZoom(page, host);
+		const base = await readScene(host);
+		expect(await wheel(host, { deltaY: -120 })).toBe(true);
+		await expect.poll(async () => (await readScene(host)).zoom).toBeGreaterThan(base.fit);
+		const chosen = (await readScene(host)).zoom;
+		await expect(
+			zoomGroup(page).getByRole('button', { name: 'Reset scene zoom', exact: true })
+		).toHaveText(percent(chosen));
+		await host.focus();
+		await page.keyboard.down('d');
+		await expect
+			.poll(async () => Number((await host.getAttribute('data-position'))!.split(',')[0]))
+			.toBeGreaterThan(0);
+		await page.keyboard.up('d');
+		await settle(page);
+		const position = await host.getAttribute('data-position');
+		await press(page, host, '-');
+		expect(await host.getAttribute('data-position')).toBe(position);
+		await press(page, host, '+');
+		expect(await host.getAttribute('data-position')).toBe(position);
+		const shared = (await readScene(host)).zoom;
+		for (const other of ['Preview', 'Top-down', 'Side-scroller']) {
+			await view(other);
+			await expect.poll(async () => (await readScene(host)).zoom).toBe(shared);
+		}
+		await view(mode);
+		await host.focus();
+		await page.keyboard.down('Alt');
+		expect(await wheel(host, { deltaY: -120, altKey: true })).toBe(false);
+		await page.keyboard.up('Alt');
+		expect((await readScene(host)).zoom).toBe(shared);
+		const box = (await host.boundingBox())!;
+		await page.mouse.click(box.x + box.width / 2, box.y + 180, { button: 'middle' });
+		await expectAtFit(host, `${mode} middle reset`);
+		await expect(zoomGroup(page)).toHaveCount(0);
+	}
+});
+
+test('playable zoom keeps the fallback actor on its environment camera when the renderer fails to load', async ({
+	page
+}) => {
+	await page.route('**/src/studio/experience/ground.ts*', (route) => route.abort());
+	await seedCharacters(page, 1);
+	await page.locator('.customize-action').click();
+	const host = world(page);
+	await page
+		.getByRole('group', { name: 'Character view', exact: true })
+		.getByRole('button', { name: 'Top-down', exact: true })
+		.click();
+	await expect(page.locator('.world-coverage')).toContainText('Test world unavailable');
+	await resetZoom(page, host);
+	const base = await actorBounds(page, 255);
+	await zoomStep(page, host, 'in');
+	const state = await readScene(host);
+	const shown = await actorBounds(page, 255);
+	const [x, y] = (await host.getAttribute('data-scene-anchor'))!.split(',').map(Number);
+	const [dx, dy] = (await host.getAttribute('data-scene-offset'))!.split(',').map(Number);
+	const factor = state.zoom / state.fit;
+	expect(
+		Math.abs(
+			(shown.left + shown.right) / 2 - (x + ((base.left + base.right) / 2 - x) * factor + dx)
+		)
+	).toBeLessThanOrEqual(1.5);
+	expect(Math.abs(shown.bottom - (y + (base.bottom - y) * factor + dy))).toBeLessThanOrEqual(1.5);
+	expectCovered(await backdrop(page), 'renderer failure fallback');
+});
+
+test('playable zoom keeps absolute sprite size and covered backgrounds across responsive views', async ({
+	page
+}, info) => {
+	await seedCharacters(page, 1);
+	await page.locator('.customize-action').click();
+	const host = world(page);
+	for (const theme of THEMES) {
+		await setTheme(page, theme);
+		for (const [width, height] of [
+			[320, 568],
+			[568, 320],
+			[390, 844],
+			[844, 390],
+			[1440, 900],
+			[1919, 951],
+			[2560, 1080],
+			[1080, 2560]
+		] as const) {
+			const retained = (await readScene(host)).zoom;
+			await page.setViewportSize({ width, height });
+			await expect.poll(async () => (await readScene(host)).zoom).toBe(retained);
+			for (const mode of ['Top-down', 'Side-scroller']) {
+				await page
+					.getByRole('group', { name: 'Character view', exact: true })
+					.getByRole('button', { name: mode, exact: true })
+					.click();
+				await resetZoom(page, host);
+				const base = await readScene(host);
+				const body = await actorBounds(page, 255);
+				if (width === 390 || width === 1440)
+					await shot(page, info, `live-${mode}-${theme}-${width}x${height}-fit`);
+				const scale = Math.max(base.min, base.fit * 0.75);
+				await page.evaluate(async (scale) => {
+					const { experience } = await import(
+						/* @vite-ignore */ String('/src/studio/experience/state.svelte.ts')
+					);
+					experience.sceneZoom = scale;
+				}, scale);
+				await expect.poll(async () => (await readScene(host)).zoom).toBe(scale);
+				await expect
+					.poll(async () =>
+						Math.abs((await actorBounds(page, 255)).height - (body.height * scale) / base.fit)
+					)
+					.toBeLessThanOrEqual(2);
+				expectCovered(await backdrop(page), `${mode} ${theme} ${width}x${height}`);
+				if (width === 390 || width === 1440)
+					await shot(page, info, `live-${mode}-${theme}-${width}x${height}-low`);
+				await page.evaluate(async (scale) => {
+					const { experience } = await import(
+						/* @vite-ignore */ String('/src/studio/experience/state.svelte.ts')
+					);
+					experience.sceneZoom = scale;
+				}, base.max);
+				await expect.poll(async () => (await readScene(host)).zoom).toBe(base.max);
+				expectCovered(await backdrop(page), `${mode} max ${theme} ${width}x${height}`);
+				await shot(page, info, `live-${mode}-${theme}-${width}x${height}-max`);
+			}
+		}
+	}
+});
+
+test.describe('playable touch zoom', () => {
+	test.use({
+		viewport: { width: 390, height: 844 },
+		isMobile: true,
+		hasTouch: true,
+		deviceScaleFactor: 2
+	});
+	test('pinch takes over joystick and remaining fingers never resume movement', async ({
+		page,
+		context
+	}) => {
+		await seedCharacters(page, 1);
+		await page.locator('.customize-action').click();
+		const host = world(page);
+		const cdp = await context.newCDPSession(page);
+		const touch = (
+			type: 'touchStart' | 'touchMove' | 'touchEnd' | 'touchCancel',
+			points: { x: number; y: number; id: number }[]
+		) =>
+			cdp.send('Input.dispatchTouchEvent', {
+				type,
+				touchPoints: points.map((point) => ({ ...point, radiusX: 1, radiusY: 1 }))
+			});
+		for (const mode of ['Top-down', 'Side-scroller']) {
+			await page
+				.getByRole('group', { name: 'Character view', exact: true })
+				.getByRole('button', { name: mode, exact: true })
+				.click();
+			await resetZoom(page, host);
+			const fit = (await readScene(host)).fit;
+			const a = { x: 110, y: 230, id: 1 },
+				b = { x: 190, y: 230, id: 2 };
+			await touch('touchStart', [a]);
+			await touch('touchMove', [{ ...a, x: 140 }]);
+			await expect(page.locator('.world-stick')).toBeVisible();
+			await expect
+				.poll(async () => Number((await host.getAttribute('data-position'))!.split(',')[0]))
+				.toBeGreaterThan(0);
+			await touch('touchStart', [{ ...a, x: 140 }, b]);
+			await expect(page.locator('.world-stick')).toHaveCount(0);
+			await settle(page);
+			const position = await host.getAttribute('data-position');
+			await touch('touchMove', [
+				{ ...a, x: 90 },
+				{ ...b, x: 230 }
+			]);
+			await expect.poll(async () => (await readScene(host)).zoom).toBeGreaterThan(fit);
+			await touch('touchEnd', [{ ...a, x: 90 }]);
+			await touch('touchMove', [{ ...a, x: 150 }]);
+			await settle(page);
+			expect(await host.getAttribute('data-position')).toBe(position);
+			const canceled = (await readScene(host)).zoom;
+			await touch('touchCancel', []);
+			await settle(page);
+			expect((await readScene(host)).zoom).toBe(canceled);
+			await touch('touchStart', [a]);
+			await touch('touchMove', [{ ...a, x: 140 }]);
+			await expect(page.locator('.world-stick')).toBeVisible();
+			await touch('touchEnd', []);
+			await expect(page.locator('.world-stick')).toHaveCount(0);
+			await resetZoom(page, host);
+			await touch('touchStart', [a]);
+			await touch('touchStart', [a, b]);
+			await touch('touchMove', [
+				{ ...a, x: 100 },
+				{ ...b, x: 210 }
+			]);
+			await settle(page);
+			const switched = (await readScene(host)).zoom;
+			await page.keyboard.press(mode === 'Top-down' ? '3' : '2');
+			await touch('touchEnd', []);
+			await expect(page.locator('.world-stick')).toHaveCount(0);
+			await expect.poll(async () => (await readScene(host)).zoom).toBe(switched);
+		}
+		await cdp.detach();
+	});
+});
 
 test.describe('touch character swipe', () => {
 	test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

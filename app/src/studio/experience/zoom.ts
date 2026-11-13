@@ -196,6 +196,7 @@ export function sceneCamera(options: {
 	center?: ScenePoint;
 	framing?: Box;
 	centerX?: number;
+	bodyHeight?: number;
 }): SceneCamera {
 	const { backdrop, plate, viewport } = options;
 	const plateBox = {
@@ -209,7 +210,7 @@ export function sceneCamera(options: {
 	const offset = { x: 0, y: 0 };
 	const { center, framing } = options;
 	if (value > 1 && center && framing) {
-		const height = 2 * (options.anchor.y - center.y);
+		const height = options.bodyHeight ?? 2 * (options.anchor.y - center.y);
 		const available = framing.b - framing.t;
 		if (height > 0 && available > 0 && framing.r > framing.l) {
 			const range = Math.max(0.25, available / height - 1);
