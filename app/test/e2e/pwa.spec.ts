@@ -147,6 +147,32 @@ test('startup shows workspace status during a stalled ledger read and replaces i
 	}
 });
 
+test('a startup module that fails to load reports it and offers Reload', async ({ page }) => {
+	const release = await testRelease('startup-module', '9.8.2'),
+		server = await pwaServer(release);
+	try {
+		// Routes see these requests because a failed first visit never registers the offline worker.
+		const startupModule = /\/assets\/[^/]*startup-update-[^/]*\.js$/;
+		await page.route(startupModule, (route) => route.abort('aborted'));
+		let documents = 0;
+		page.on('request', (request) => {
+			if (request.isNavigationRequest() && request.frame() === page.mainFrame()) documents++;
+		});
+		await page.goto(server.url);
+		const startup = page.locator('#startup-message');
+		await expect(startup.getByRole('alert')).toHaveText(
+			'PixelDoll could not finish loading. Check your connection, then reload.',
+			{ timeout: 20_000 }
+		);
+		await page.unroute(startupModule);
+		await startup.getByRole('button', { name: 'Reload', exact: true }).click();
+		await expect(page.locator('.customize-action')).toBeVisible({ timeout: 20_000 });
+		expect(documents).toBe(2);
+	} finally {
+		await server.close();
+	}
+});
+
 test('a revisioned retired update page cannot load from a retained release cache', async ({
 	page
 }) => {
