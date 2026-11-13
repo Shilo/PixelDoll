@@ -186,6 +186,8 @@ test.describe('creation safety', () => {
 			await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill(name);
 			await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A plain human');
 			await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click();
+			const closedAdvanced = sheet.locator('details.advanced:not([open]) > summary');
+			if (await closedAdvanced.count()) await closedAdvanced.click(); // Seed is under Advanced
 			await sheet.getByRole('textbox', { name: 'Seed', exact: true }).fill('4242');
 		};
 		await configure('Keep my outfit');
@@ -897,6 +899,8 @@ for (const viewport of [
 				(b) => b.w >= (viewport.width <= 599 || viewport.height <= 499 ? 44 : 28) && b.h >= 44
 			)
 		).toBe(true);
+		const closedAdvanced = sheet.locator('details.advanced:not([open]) > summary');
+		if (await closedAdvanced.count()) await closedAdvanced.click(); // Seed is under Advanced
 		await sheet.getByRole('textbox', { name: 'Seed', exact: true }).fill('123');
 		await sheet.getByRole('button', { name: 'Camera', exact: true }).click();
 		const tooltip = sheet.getByRole('tooltip');

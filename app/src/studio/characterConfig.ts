@@ -118,8 +118,48 @@ export interface CharacterDraft {
 	selected: DirectionName[];
 	mirrors: Mirrors;
 	seed: string;
+	/** Advanced: drawing model and V3 style guidance ('' = PixelLab's default). */
+	model?: CharacterModel;
+	outline?: string;
+	detail?: string;
 	tab: 'appearance' | 'prompt';
 	enhanceOnConnect?: 'details' | 'prompt';
+}
+/** The model that draws a new character. Both end in the same V3 registration, so moves and items work the same way. */
+export type CharacterModel = 'v3' | 'pro-flash';
+export const MODELS: { id: CharacterModel; label: string; help: string }[] = [
+	{ id: 'v3', label: 'Character V3', help: 'Balanced proportions. The default.' },
+	{
+		id: 'pro-flash',
+		label: 'Pro Flash',
+		help: 'A chibi style with a big head and short legs, at about three times the cost.'
+	}
+];
+/** V3 style hints (soft guidance the model may not follow exactly); Pro Flash has no equivalent. */
+export const OUTLINES = [
+	{ value: '', label: 'Default (black)' },
+	{ value: 'single color outline', label: 'Colored' },
+	{ value: 'selective outline', label: 'Selective' },
+	{ value: 'lineless', label: 'None' }
+] as const;
+export const DETAILS = [
+	{ value: '', label: 'Default (medium)' },
+	{ value: 'low detail', label: 'Low' },
+	{ value: 'highly detailed', label: 'High' }
+] as const;
+export const OUTLINE_VALUES: string[] = OUTLINES.map((o) => o.value).filter(Boolean);
+export const DETAIL_VALUES: string[] = DETAILS.map((o) => o.value).filter(Boolean);
+/** Advanced choices as CreateSpec fields; defaults are left out, so a default creation keeps its request identity. */
+export function styleOf(d: Pick<CharacterDraft, 'model' | 'outline' | 'detail'>): {
+	model?: 'pro-flash';
+	outline?: string;
+	detail?: string;
+} {
+	if (d.model === 'pro-flash') return { model: 'pro-flash' };
+	return {
+		...(d.outline ? { outline: d.outline } : {}),
+		...(d.detail ? { detail: d.detail } : {})
+	};
 }
 export const autoFrame = (body: number) =>
 	Math.min(256, 16 * Math.ceil((body + 2 * Math.min(16, Math.max(8, Math.ceil(body / 8)))) / 16));

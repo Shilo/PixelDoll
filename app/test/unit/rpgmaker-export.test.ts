@@ -405,7 +405,6 @@ test('the zip holds only the sheets, README, credits and the editable copy, buil
 				sheetName,
 				sheetName.replace('Hero_Knight', 'Hero_Knight_Night'),
 				sheetName.replace('Hero_Knight', 'Hero_Knight_night_2'),
-				'CREDITS.txt',
 				'README.txt',
 				'project.json'
 			].sort()
@@ -427,13 +426,6 @@ test('a view measured on only some frames uses its requested keypoints instead o
 		keys: { south: { keypoints: gait('south', [0, 0.3, 0, -0.3]), measured } }
 	});
 	expect(reds(vxOf(p), 3, 0)).toEqual([11, 200, 13]);
-});
-
-test('credits name no layer sheets, since RPG Maker zips have none', async () => {
-	const r = await exportFiles(await project({ size: 32 }), { engines: ['rpgmaker'], baked: false });
-	const credits = new TextDecoder().decode(r.entries.find((e) => e.name === 'CREDITS.txt')!.data);
-	expect(credits.split('\n')[1]).toMatch(/^"body","Body","body","",/); // empty sheets column
-	expect(credits).not.toContain('layers/');
 });
 
 test('a walk without any keypoints takes its steps from the side view bare-body foot span', async () => {

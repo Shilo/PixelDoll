@@ -11,14 +11,7 @@ import {
 	withTuckVariants
 } from '../compose/compose.ts';
 import { asepriteFiles } from './aseprite.ts';
-import {
-	coreFiles,
-	creditsCsv,
-	exportManifest,
-	genericFiles,
-	validate,
-	type OutFile
-} from './generic.ts';
+import { coreFiles, exportManifest, genericFiles, validate, type OutFile } from './generic.ts';
 import { godotFiles } from './godot.ts';
 import { phaserFiles } from './phaser.ts';
 import { unityFiles } from './unity.ts';
@@ -99,7 +92,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		};
 	}
 	const { manifest: m, warnings } = exportManifest(p, o);
-	// RPG Maker uses no layers, manifest or generic README: its zip holds only its sheets, credits and the editable copy
+	// RPG Maker uses no layers, manifest or generic README: its zip holds only its sheets, README and the editable copy
 	const rpg = o.engines.includes('rpgmaker')
 		? 'vx'
 		: o.engines.includes('rpgmakerxp')
@@ -111,9 +104,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			warnings,
 			errors: ['RPG Maker sheets export on their own; choose one format.']
 		};
-	const files: OutFile[] = rpg
-		? [{ name: 'CREDITS.txt', data: creditsCsv(m, false) }]
-		: coreFiles(p, m);
+	const files: OutFile[] = rpg ? [] : coreFiles(p, m);
 	const sheets = new Map(
 		files.flatMap((f) =>
 			typeof f.data === 'object' && 'w' in f.data ? [[f.name, f.data] as [string, Img]] : []

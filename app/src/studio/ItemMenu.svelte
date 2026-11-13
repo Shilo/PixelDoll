@@ -314,7 +314,11 @@
 						onclick={() =>
 							act(() =>
 								withKey(() =>
-									openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt })
+									openNewItem(groupOf(it.slot).id, {
+										slot: it.slot,
+										prompt: it.prompt,
+										route: it.route
+									})
 								)
 							)}
 						><RefreshCw size={16} aria-hidden="true" />{remakeOnly

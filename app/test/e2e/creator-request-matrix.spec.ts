@@ -68,12 +68,17 @@ async function setup(page: Page) {
 	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New character', exact: true });
 	await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill('Local library name only');
+	const closedAdvanced = sheet.locator('details.advanced:not([open]) > summary');
+	if (await closedAdvanced.count()) await closedAdvanced.click(); // Seed is under Advanced
 	await sheet.getByRole('textbox', { name: 'Seed', exact: true }).fill('343');
 	async function submit(freshAttempt = true) {
 		const before = posted.length;
 		// Each matrix case requests new work. Repeating the same paid request after a terminal refusal is deliberately deduplicated.
-		if (freshAttempt)
+		if (freshAttempt) {
+			const closed = sheet.locator('details.advanced:not([open]) > summary');
+			if (await closed.count()) await closed.click(); // Start over closes Advanced again
 			await sheet.getByRole('textbox', { name: 'Seed', exact: true }).fill(String(343 + before));
+		}
 		await sheet.getByRole('button', { name: 'Create character', exact: true }).click();
 		await expect.poll(() => posted.length).toBe(before + 1);
 		await expect(sheet).toContainText('Offline matrix capture complete');
@@ -288,11 +293,18 @@ test('all cameras and blank, zero and maximum safe seeds reach outgoing JSON wit
 		await sheet.getByRole('combobox', { name: 'Camera', exact: true }).selectOption(view);
 		expect((await submit()).view).toBe(view);
 	}
+	// Seed is under Advanced, which Start over closes again.
+	const closedAdvanced = sheet.locator('details.advanced:not([open]) > summary');
+	const openAdvanced = async () => {
+		if (await closedAdvanced.count()) await closedAdvanced.click();
+	};
 	const seed = sheet.getByRole('textbox', { name: 'Seed', exact: true });
 	for (const value of ['0', String(Number.MAX_SAFE_INTEGER - 100_000)]) {
+		await openAdvanced();
 		await seed.fill(value);
 		expect((await submit(false)).seed).toBe(Number(value));
 	}
+	await openAdvanced();
 	await seed.fill('');
 	const random = (await submit(false)).seed;
 	expect(Number.isInteger(random) && random >= 1 && random <= 2_000_000_000).toBe(true);

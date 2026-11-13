@@ -1333,6 +1333,25 @@ const toProv = (r: JobRec, c: CallState): Provenance => ({
 	createdAt: new Date(r.submittedAt ?? r.createdAt).toISOString(),
 	produced: [...c.cells] as Provenance['produced']
 });
+/** A draft's receipts: its current calls in call order (CellQa.provenance indexes them), then the done attempts that
+ *  re-rolls replaced, each with its own seed, so a saved item's recorded cost includes them. */
+function draftProvenance(d: Draft): Provenance[] {
+	const current = d.calls.map((c) => toProv(recOf(c.recId)!, c));
+	const used = new Set(d.calls.map((c) => c.recId));
+	const replaced = [...new Set(d.calls.flatMap((c) => c.old))]
+		.filter((id) => !used.has(id))
+		.map(recOf)
+		// A failed or canceled attempt counts only when PixelLab reported what it billed.
+		.filter((r): r is JobRec => r?.state === 'done' || (!!r && !!reportedUsage(r)))
+		.map((r): Provenance => {
+			const seed = (r.params as { seed?: unknown } | null)?.seed;
+			return {
+				...toProv(r, { cells: [], seed: typeof seed === 'number' ? seed : 0, rerolls: 0, old: [] }),
+				replaced: true
+			};
+		});
+	return [...current, ...replaced];
+}
 /** The body cells (what baseHash covers) of `anims`, comparable across records. */
 const bodyCells = (m: Manifest, anims: string[]) =>
 	stableStringify([
@@ -1370,7 +1389,7 @@ export async function acceptItem(
 				if (key.startsWith(`${d.spec.standing}/`))
 					dressed[key.split('/')[1] as DirectionName] = await img(out.sha);
 		}
-	const provenance = d.calls.map((c) => toProv(recOf(c.recId)!, c));
+	const provenance = draftProvenance(d);
 	const { item, images } = await buildItem({
 		spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec,
 		rig: ctx.rec.manifest.rig,
@@ -1539,7 +1558,7 @@ export async function animateAnchoredItem(
 		anim,
 		dirs,
 		cells,
-		draft.calls.map((c) => toProv(recOf(c.recId)!, c)),
+		draftProvenance(draft),
 		result.qa,
 		0,
 		needsMaterials ? materials : undefined

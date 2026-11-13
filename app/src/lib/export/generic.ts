@@ -1,5 +1,4 @@
 // Generic export (manifest-spec §3, §5, §6.6): validation, the exported manifest.json, _stripN strips, baked composites,
-// LPC-style credits (provenance trail).
 import type { Img } from '../image/png.ts';
 import { validateRig } from '../rig/rig.ts';
 import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
@@ -321,39 +320,6 @@ export function exportManifest(
 	return { manifest: m, warnings };
 }
 
-const csv = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-
-/** CREDITS.txt (CSV text; not .csv, which Godot imports as a translation table): one row per generating call (LPC credits spirit: every shipped sheet traceable to its source). */
-/** `layerSheets: false` for zips without layer sheets (RPG Maker), whose sheets column stays empty. */
-export function creditsCsv(m: Manifest, layerSheets = true): string {
-	const rows = [
-		['item', 'name', 'slot', 'sheets', 'endpoint', 'jobId', 'seed', 'createdAt', 'prompt', 'source']
-	];
-	for (const it of m.items.filter((x) => !x.variantOf)) {
-		// a tucked variant comes from its item's calls
-		const sheets = layerSheets
-			? it.layers.flatMap((l) => Object.values(l.sheets ?? {})).join(' ')
-			: '';
-		for (const pv of it.provenance.length ? it.provenance : [undefined])
-			rows.push([
-				it.id,
-				it.name,
-				it.slot,
-				sheets,
-				pv?.endpoint ?? '',
-				pv?.jobId ?? '',
-				String(pv?.seed ?? ''),
-				pv?.createdAt ?? '',
-				it.prompt,
-				// A copy's calls were paid once, for the character it was made for: labeled, so totals do not count them twice.
-				it.copiedFrom
-					? `PixelLab (https://pixellab.ai); made for ${it.copiedFrom.name} and copied here without generating`
-					: 'PixelLab (https://pixellab.ai)'
-			]);
-	}
-	return [...new Set(rows.map((r) => r.map(csv).join(',')))].join('\n') + '\n'; // identical provenance steps once (T1 P2-7)
-}
-
 const ENGINE_START: Record<string, string> = {
 	godot:
 		'Godot 4: copy this folder into your project and instance godot/Paperdoll.tscn (see godot/README.txt).',
@@ -389,7 +355,6 @@ What is inside
   baked/          the finished character per outfit: baked/<outfit>/<move>.png`
 											: ''
 									}
-  CREDITS.txt     where each item came from (PixelLab calls), CSV
   project.json    editable character for importing back into PixelDoll
   cells/          original frame and rest images for the editable copy
 
@@ -402,12 +367,11 @@ Pixel art: use nearest-neighbor filtering and whole-pixel positions.
 `;
 }
 
-/** Layer sheets (all engines need them) + README + manifest + credits. */
+/** Layer sheets (all engines need them) + README + manifest. */
 export function coreFiles(p: Project, m: Manifest): OutFile[] {
 	const files: OutFile[] = [
 		{ name: 'README.txt', data: readme(m) },
-		{ name: 'manifest.json', data: JSON.stringify(m, null, 2) + '\n' },
-		{ name: 'CREDITS.txt', data: creditsCsv(m) }
+		{ name: 'manifest.json', data: JSON.stringify(m, null, 2) + '\n' }
 	];
 	const byId = new Map(p.manifest.items.map((i) => [i.id, i]));
 	const defaults = recolor(p, {});
@@ -585,14 +549,6 @@ export function selfTest() {
 			m.export!.baked![0] === 'default' &&
 			!!p.manifest.items[0].layers[0].cells,
 		'export info, source untouched'
-	);
-	console.assert(creditsCsv(m).split('\n')[1].includes('"p, ""q"""'), 'csv quoting');
-	const pv = { endpoint: '/x', seed: 7, createdAt: 'T' };
-	console.assert(
-		creditsCsv({ ...m, items: [{ ...m.items[0], provenance: [pv, pv] }] } as Manifest)
-			.trim()
-			.split('\n').length === 2,
-		'credits: identical steps once'
 	);
 	console.assert(
 		(m.rig.animations[0] as { directions?: string[] }).directions!.length === 0 &&

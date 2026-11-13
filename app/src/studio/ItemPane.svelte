@@ -4,6 +4,7 @@
 	import { SLOTS, slotLadder } from '../lib/items/items.ts';
 	import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts';
 	import { extendable, missingItemMoves, itemMoveOffer } from './create.ts';
+	import GenerationDetails from './GenerationDetails.svelte';
 	import { movePlan } from './apiPlans.ts';
 	import ApiPeek from './ApiPeek.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
@@ -66,12 +67,6 @@
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const hiddenNow = $derived(m && it ? hiddenSlots(m, equipped(m, doc.items)).has(it.slot) : false);
 	const health = $derived(m && it ? healthOf(m, it) : 'demo');
-	const routeNames = {
-		'skeleton-pose': 'Skeleton posing',
-		'inpaint-grid': 'Inpainted grid',
-		'ea2-anchor': 'Anchored frame edits',
-		diff: 'Difference extraction'
-	};
 	const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim));
 	const made = $derived(m ? moveDirs(m, ui.anim) : []);
 	// Cache a shared crop across every frame and direction, rather than resizing the strip on each playback tick.
@@ -217,11 +212,6 @@
 			colorBusy = false;
 		}
 	}
-	const gensSpent = $derived(
-		it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0
-	);
-	const usdSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.usd ?? 0), 0) : 0);
-	const unknownSpent = $derived(it ? it.provenance.filter((p) => !p.usage).length : 0);
 	const designReasons = $derived([
 		...new Set((it?.designWarnings ?? []).flatMap((s) => s.split('; ')).map(plainReason))
 	]);
@@ -511,7 +501,8 @@
 						withKey(() =>
 							openNewItem(groupOf(it.slot).id, {
 								slot: it.slot,
-								prompt: it.prompt
+								prompt: it.prompt,
+								route: it.route
 							})
 						)}><RefreshCw size={14} />{remakeOnly ? `Make one for ${m.name}` : 'Try again'}</button
 				>
@@ -583,6 +574,11 @@
 		{/if}
 
 		<details class="disclosure">
+			<summary><ChevronRight size={14} />How it was made</summary>
+			<div><GenerationDetails {m} {it} /></div>
+		</details>
+
+		<details class="disclosure">
 			<summary><ChevronRight size={14} />Details</summary>
 			<div>
 				<dl class="kv">
@@ -590,8 +586,6 @@
 					<dd class="mono">{it.id}</dd>
 					<dt>Slot</dt>
 					<dd>{it.slot} · {it.layers.map((l) => `${l.id} z${l.z}`).join(', ')}</dd>
-					{#if it.prompt}<dt>Prompt</dt>
-						<dd>{it.prompt}</dd>{/if}
 					{#if it.route}<dt>Route</dt>
 						<dd>{it.route}{it.key ? ` · ${it.key} key` : ''}</dd>{/if}
 					{#if it.qa}
@@ -631,19 +625,8 @@
 						<dt>Re-rolls</dt>
 						<dd>{it.qa.rerolls}</dd>
 					{/if}
-					<dt>Source calls</dt>
-					<dd>
-						{it.copiedFrom
-							? `Made for ${it.copiedFrom.name}; copied here for free · `
-							: ''}{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{usdSpent
-							? `$${usdSpent.toFixed(3)} · `
-							: ''}{unknownSpent ? `${unknownSpent} unknown cost · ` : ''}{it.provenance.length} PixelLab
-						{it.provenance.length === 1 ? 'call' : 'calls'}
-					</dd>
 					{#if gaps.length}<dt>Missing frames</dt>
 						<dd>{gaps.join(', ')}</dd>{/if}
-					<dt>Method</dt>
-					<dd>{it.route ? routeNames[it.route] : 'Not recorded'}</dd>
 				</dl>
 			</div>
 		</details>

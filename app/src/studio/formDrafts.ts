@@ -9,6 +9,7 @@ export const formDrafts: {
 		prompt: string;
 		color: string;
 		name: string;
+		method?: import('../lib/items/items.ts').Method;
 	};
 	character?: CharacterDraft;
 	setup?: { projectId: string; looks: string; restAnim: string };

@@ -17,7 +17,8 @@
 		draftErrors,
 		facingOf,
 		freshSeed,
-		newCharacterDraft
+		newCharacterDraft,
+		styleOf
 	} from './characterConfig.ts';
 	import { nameFrom, bodyQualityNote as plain } from './model.ts';
 	import {
@@ -44,7 +45,8 @@
 		frame: frameSize,
 		view: d.view,
 		directions: facingOf(d),
-		exactPrompt: true
+		exactPrompt: true,
+		...styleOf(d)
 	});
 	const est = $derived(estimate(creating.spec ?? formSpec));
 	const lo = $derived(Math.round(est.gens)),
