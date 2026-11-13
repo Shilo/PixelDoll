@@ -6,12 +6,13 @@
 // - runs below normal priority, so the desktop stays responsive (the build, servers and browsers inherit it).
 // A run with its own E2E_PREVIEW_PORT builds into its own dist-e2e-<port> folder and removes it afterwards (dist-dir.ts);
 // every other run keeps the E2E_DIST_DIR it was given, or uses dist/.
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import net from 'node:net';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { e2ePorts } from '../e2e-ports.ts';
 
 const app = fileURLToPath(new URL('..', import.meta.url));
 const args = process.argv.slice(2);
@@ -122,6 +123,55 @@ async function turn() {
 	}
 }
 
+// A wrapper killed without its children leaves the two Vite servers listening for good (measured: still up four minutes
+// later), and the next run would fail on a port error that invites the wrong fix. Holding the queue proves no queued run
+// owns them, so stop them; anything else on those ports is reported, never stopped.
+const fail = (message) => {
+	console.error(message);
+	process.exit(2);
+};
+const listening = (port) =>
+	new Promise((resolve) => {
+		const socket = net.connect(port, '127.0.0.1');
+		socket.once('connect', () => {
+			socket.destroy();
+			resolve(true);
+		});
+		socket.once('error', () => resolve(false));
+	});
+async function stopLeftServers() {
+	const { preview, dev } = e2ePorts();
+	const held = [];
+	for (const port of process.env.BASE ? [dev] : [preview, dev])
+		if (await listening(port)) held.push(port);
+	if (!held.length) return;
+	if (process.platform !== 'win32')
+		fail(
+			`Port ${held.join(' and ')} is still held, probably by the servers of a run that was killed. Stop them first: ` +
+				held.map((port) => `lsof -ti tcp:${port} | xargs kill`).join('; ')
+		);
+	for (const line of execFileSync('netstat', ['-ano', '-p', 'tcp'], { encoding: 'utf8' }).split(
+		'\n'
+	)) {
+		const [, port, pid] =
+			line.match(/^\s*TCP\s+127\.0\.0\.1:(\d+)\s+\S+\s+LISTENING\s+(\d+)/) ?? [];
+		if (!held.includes(Number(port))) continue;
+		const command = execFileSync(
+			'powershell',
+			[
+				'-NoProfile',
+				'-Command',
+				`(Get-CimInstance Win32_Process -Filter "ProcessId=${pid}").CommandLine`
+			],
+			{ encoding: 'utf8' }
+		).trim();
+		if (!/[\\/]vite[\\/]/.test(command))
+			fail(`Port ${port} is held by another program (process ${pid}): ${command}`);
+		console.log(`Stopping the server a killed run left on port ${port}.`);
+		execFileSync('taskkill', ['/PID', pid, '/T', '/F'], { stdio: 'ignore' });
+	}
+}
+
 let child;
 // Ctrl+C while waiting leaves the queue. Once the children run it reaches them as well: outlive them, so the queue is
 // released and the build folder removed only after they stop. A run killed outright frees the queue at once even if its
@@ -142,6 +192,7 @@ if (workstation) {
 	const below = os.constants.priority.PRIORITY_BELOW_NORMAL;
 	if (os.getPriority() < below) os.setPriority(below); // never raise a run that was started lower
 	await turn();
+	await stopLeftServers();
 }
 let status = await run('npm', ['run', 'build']);
 if (status === 0) {

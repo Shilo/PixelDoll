@@ -1,8 +1,8 @@
 import { defineConfig } from '@playwright/test';
+import { e2ePorts } from './e2e-ports.ts';
 import { offlineLaunch, refuseAgentServer } from './test/no-live-api.ts';
 
-const previewPort = Number(process.env.E2E_PREVIEW_PORT ?? 5399);
-const devPort = Number(process.env.E2E_DEV_PORT ?? process.env.DEV_PORT ?? 5298);
+const { preview: previewPort, dev: devPort } = e2ePorts();
 const baseURL = process.env.BASE ?? `http://127.0.0.1:${previewPort}`;
 const devURL = `http://127.0.0.1:${devPort}`;
 process.env.DEV_PORT = String(devPort); // Workers inherit this; creator specs read it for their baseURL.
