@@ -177,8 +177,8 @@ Before changing a paper-doll behavior or public controller operation:
 3. Keep this contract, the export-format specification and generated engine READMEs aligned. Record
    deliberate differences here instead of adding compatibility aliases or a universal renderer framework.
 4. Run the source synchronization workflow below when canonical code or its data types change. Run
-   `npm run check`, the unit suite, and affected application export/selftest E2E specs. Shared-core or
-   presentation changes require full E2E, as defined in `AGENTS.md`.
+   `npm run check`, the unit suite, and affected application export/selftest E2E specs. `AGENTS.md` "Testing" maps
+   areas to specs and lists the cross-cutting changes that need the full suite.
 5. Run the affected native checks: `GODOT_BIN` enables `godot-export.test.ts`; the Phaser, GDevelop and
    Unity verifiers live in `app/scripts/verify-*-export.mjs` and `verify-gdevelop-engine.mjs`.
    Playback checks include repeated selection, explicit restart and completion replay; palette checks
@@ -219,7 +219,8 @@ The GDevelop adapter follows the same rule. A regression test edits a copied can
 proves the stale guard rejects it, runs the real generator, then executes the internal and delivered
 modules and a GDevelop controller to verify all changed together. Separate GDevelop mutation controls
 verify it executes canonical timeline, draw-list and palette decisions, rather than carrying unused text.
-The generator rejects imports, export lists and default exports in canonical modules. Keep public
+The generator rejects imports, export lists and default exports in canonical modules (the checks live in
+`app/scripts/runtime-modules.mjs`, which unit tests call directly). Keep public
 exports on named declarations so the embedded native-event form remains safe to generate.
 It also checks that every line beginning with `export ` is an actual top-level export modifier,
 and every such modifier uses that prefix. Misleading prefixes inside multiline strings/comments

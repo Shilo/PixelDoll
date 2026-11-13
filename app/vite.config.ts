@@ -200,9 +200,10 @@ export default defineConfig(({ command, mode }) => {
 			agent && agentKey(envFile, apiBase),
 			command === 'build' && pwaBuild({ build, version, commit })
 		],
-		// Vite ignores only test-results/. Each agent's own TEST_OUTPUT_DIR (test-results-*, as in .gitignore) streams trace
+		// Vite ignores only test-results/. A run with its own TEST_OUTPUT_DIR (test-results-*, as in .gitignore) streams trace
 		// files all run long; watched, they saturate the dev server's CPU and later dev-server specs time out.
-		server: { watch: { ignored: ['**/test-results*/**'] } },
+		// npm run check rewrites its svelte-check cache while another session's dev-server specs may be running.
+		server: { watch: { ignored: ['**/test-results*/**', '**/.svelte-check/**'] } },
 		// Early observation must not import the chunk that mounts Studio or connects its generation queue.
 		build: {
 			outDir: distDir(),

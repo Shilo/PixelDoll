@@ -1,6 +1,22 @@
 # Test performance: keeping unit and end-to-end tests fast
 
-Last measured 2026-10-25. Read this before changing `app/vitest.config.ts`, `app/playwright.config.ts`, `.github/workflows/pages.yml`, or before adding slow or timing-sensitive tests.
+Last measured 2026-10-25; workstation load and suite size remeasured 2026-11-12 (next section). Read this before changing `app/vitest.config.ts`, `app/playwright.config.ts`, `.github/workflows/pages.yml`, or before adding slow or timing-sensitive tests.
+
+## Workstation load, 2026-11-12
+
+Agents were running far more than a change needed, several sessions at once, and the owner's workstation froze. What was measured, and what now prevents it:
+
+| Problem (measured) | Now |
+|---|---|
+| `npm run e2e` with no arguments ran the whole suite: 329 tests, 26 minutes of serial test time | On a workstation the wrapper (`app/scripts/e2e.mjs`) refuses to run without a scope; `--all` is the full suite |
+| Sessions ran e2e at the same time; each run's four workers plus servers already use about half the CPU | One run at a time per machine, across every checkout: the wrapper holds loopback port 5397 for the whole run and later runs print "Waiting" until it is free. The system frees the port when its holder exits, so a killed run leaves no stale lock |
+| A direct `npx playwright test` skipped the build and the queue | `playwright.config.ts` refuses a workstation run that did not come through the wrapper (listing still works) |
+| Test processes competed with the desktop | Unit and e2e runs lower their own priority (below normal); the build, servers and browser processes inherit it. On a loaded machine a 4-test spec took 7.8 to 8.9 s lowered against 7.0 to 7.2 s at normal priority |
+| 482 leftover `test-results-*` folders and logs in `app/` (8.1 GB, 87,727 files), one per agent run with its own `TEST_OUTPUT_DIR`: `prettier --check .` took 114 s walking them (13 s without), and every recursive search crawled | Runs are queued, so the default ports and `test-results/` never collide: leave `E2E_PREVIEW_PORT`, `E2E_DEV_PORT` and `TEST_OUTPUT_DIR` unset and write no output into `app/` |
+| `npm run check` repeated all its work on every run: about 60 s on a clean tree (svelte-check 25 s, test types 20 s, Prettier 13 s, node types 2 s) | svelte-check `--incremental`, `incremental` TypeScript projects and `prettier --cache` reuse results for unchanged files: about 10 s on a repeat run (3.4 s, 3 s, 1.8 s, 1.9 s). Each was checked to still fail on a new error. CI has no cache and runs everything |
+| The unit suite grew to 186 files and 2,379 tests, about 100 s of CPU: 13 s at 12 workers, 23 s at 8, 30 s at 6, 43 s at 4 | `maxWorkers: '50%'` stays (the burst is shortest); the run yields to the desktop through its priority |
+
+The queue, the scope check and the lowered priority do not apply in CI, and there is no switch to skip the queue. Limits: `playwright.experience.config.ts` runs against an already served build and bypasses the queue, and a run that is killed outright frees the queue even if its browsers take a moment to die. `npm run check` drops its caches whenever the lockfile, Node version or a Svelte, Prettier or TypeScript config changes (`app/scripts/check-cache.mjs`), because svelte-check and Prettier do not notice those changes themselves.
 
 ## Where we started and where we are
 
@@ -28,7 +44,7 @@ Commits: `1b6230a7`, `16b787ef`, `84f718e3`, `1c59e22e`, `3a246fff`, `8b098785`,
   - A push uses 17 jobs. GitHub Free allows 20 concurrent jobs per account, so a second push (or another workflow) while one runs queues some jobs: it finishes later, but it still runs.
   - **Local: `workers: '20%'`**, which gives 4 on 24 threads and 1 on 8 or fewer. 6 and 12 workers were slower and caused timeouts.
   - Don't raise it for a single run either: each animating Studio page used about three threads when measured, so 6 or more workers saturated a 24-thread machine. On 2026-10-25 one shared-equipment test failed 12 of 12 times at 12 workers and passed 8 of 8 at 6, with no race involved. Other sessions on the same machine add to that load.
-  - The explicitly requested Windows eight-worker Share/keyboard stress has a separate `playwright.stress.config.ts`: `npm run e2e -- --config=playwright.stress.config.ts`. It repeats the three existing cases ten times with zero retries and inherits the ordinary browser, screenshots, DOM traces, assertions and deadlines. Arrange an exclusive test window first: another four-worker suite was observed contaminating a cohort. This does not raise ordinary local/CI concurrency. See [Windows cold-start qualification](windows-cold-start-2026-11-04.md) for results, environment and fresh-server procedure.
+  - The explicitly requested Windows eight-worker Share/keyboard stress has a separate `playwright.stress.config.ts`: `npm run e2e -- --config=playwright.stress.config.ts`. It repeats the three existing cases ten times with zero retries and inherits the ordinary browser, screenshots, DOM traces, assertions and deadlines. The queue keeps other wrapper runs out; also stop unit runs and checks first: another four-worker suite was observed contaminating a cohort. This does not raise ordinary local/CI concurrency. See [Windows cold-start qualification](windows-cold-start-2026-11-04.md) for results, environment and fresh-server procedure.
   - Dev-server tests (those that `import('/src/...')` in the page, plus characters and creator-request-matrix) fail first under that overload: Vite transforms each module on request, and at 4 workers a blank first page still had 61 of about 200 module requests pending after 20 s. Vite's `server.warmup` cut an idle first load from 0.87 s to 0.2 s but did not reduce these failures (5 and 4 failed with it, against 5 without), so it was not adopted. CI's one worker per runner does not hit this.
   - The production preview strips the dev-only `__queue`/`__studio` hooks, so a `studio demo:` test asserts they are absent, and a small `dev server:` test in `studio.spec.ts` checks the queue pausing offline and resuming online instead of rerunning the whole demo.
   - `expect.timeout` is 5 s on CI (an unloaded single worker) and 15 s locally (workers share the CPU).
@@ -41,7 +57,7 @@ Commits: `1b6230a7`, `16b787ef`, `84f718e3`, `1c59e22e`, `3a246fff`, `8b098785`,
   - A newer push to a non-main ref cancels its older run.
   - On main, a run that has started always finishes. A queued one can be replaced by a newer push, which is then tested and deployed itself.
   - Manual runs have their own concurrency group, so they can't replace a pending deployable push.
-- **Agents** run `npm run check`, `npm test` and only the specs mapped in AGENTS.md "End-to-end scope". CI runs everything before deploying.
+- **Agents** run `npm run check`, `npm test` and only the specs mapped in AGENTS.md "Testing", once, when a change is complete. CI runs everything before deploying.
 
 ## How sharding actually splits the work
 
@@ -49,10 +65,10 @@ CI does not use Playwright's `--shard`. Playwright 1.64–1.65 (`filterForShard`
 
 Since 2026-11-10 each e2e job runs `node scripts/e2e-shard.mjs <n>/16 <file>` and then `playwright test --test-list <file>`:
 
-- **Plan:** every job lists all tests and assigns them, heaviest first, to the shard with the least recorded time so far, using `app/test/e2e/durations.json` (averaged CI durations). A test without a recorded duration, new or renamed, weighs as a median test. Every job computes the same plan from the same commit. On the recorded durations each shard holds about 80 s.
+- **Plan:** every job lists all tests and assigns them, heaviest first, to the shard with the least recorded time so far, using `app/test/e2e/durations.json` (averaged CI durations). A test without a recorded duration, new or renamed, weighs as a median test. Every job computes the same plan from the same commit. On the recorded durations each shard holds about 95 s (2026-11-12).
 - **Guards:** the step fails before any test runs if the shards do not cover every test exactly once, if a title is empty, padded or contains `›` or a newline, if two tests share a title path, if `durations.json` holds a non-number, or if Playwright's own `--list` with that file does not select exactly the planned tests.
 - **Helper files:** a test list loads only the files it names. `dialog-dismissal.ts`, `studio-thumbnails.ts` and `setup-concurrency.ts` register tests from inside other specs, so a list naming only their tests selected nothing (verified). The script adds a `(load file)` line for every spec file; that title matches no test, and the selection guard would catch it if one ever did.
-- **Refreshing durations:** the plan stays valid without it, but balance drifts as tests change. After a large test change, refresh from recent green runs: `gh run view <id> --log > ci-<id>.log` for two or three runs, then `node scripts/e2e-shard.mjs update ci-*.log` from `app/` (in Git Bash; it refuses to write when fewer than half the tests have a duration), and commit the JSON.
+- **Refreshing durations:** the plan stays valid without it, but balance drifts as tests change: by 2026-11-12 the suite had grown from 248 to 329 tests, the 85 new ones weighed as a 3 s median although several run 15 to 37 s, and shards ran 76 to 138 s against a planned 80 s (a refresh put every shard at about 95 s). After a large test change, refresh from recent green runs: `gh run view <id> --log > ci-<id>.log` for two or three runs, then `node scripts/e2e-shard.mjs update ci-*.log` from `app/` (in Git Bash; it refuses to write when fewer than half the tests have a duration), and commit the JSON.
 - Earlier attempts inside `--shard` gave little: registering heavy tests apart (2026-10-25) took the slowest shard from 99–112 s to 72–87 s for a while, splitting long tests did nothing (the parts stay adjacent), and `PWTEST_SHARD_WEIGHTS` is an undocumented internal variable.
 
 ### Benchmark, 2026-10-25
@@ -94,7 +110,7 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
 ## What made tests slow or flaky before (don't reintroduce)
 
 1. **Serial runners.** Playwright had `workers: 1` and Vitest `fileParallelism: false`, left over from older scripts, with no shared state that needed them.
-2. **`toEqual` on pixel buffers.** Vitest walks typed arrays element by element: one loop over 341 images took 6.2 s; a byte compare takes 5 ms. Use `expectPixels(actual, expected, label)` or `expectBytes` from `app/test/unit/pixels.ts`. They check size, array type and every byte, and accept `null` for empty cells.
+2. **`toEqual` on pixel buffers.** Vitest walks typed arrays element by element: one loop over 341 images took 6.2 s; a byte compare takes 5 ms. It came back in `shared-refit.test.ts` (one test 7 to 10 s on CI, 0.35 s under the limit) until 2026-11-12. Use `expectPixels(actual, expected, label)` or `expectBytes` from `app/test/unit/pixels.ts`. They check size, array type and every byte, and accept `null` for empty cells.
 3. **Exhaustive matrices in e2e.** Every combination of a pure function belongs in a unit test (`test/unit/character-option-matrix.test.ts` covers all 863 facing plans and 12,082 transitions). An e2e test proves the UI is wired: one case per control or template.
 4. **Duplicate end-to-end variants.** A full creation, export and reimport run per preset, where two variants already covered the distinct paths.
 5. **Sequential browser round trips.** The Inspector check made about 12 Playwright calls per animation sample. Read related geometry in one `locator.evaluate`. Remember that `getBoundingClientRect` gives a hidden element a zero box, where `boundingBox()` gave `null`, so assert a real size.
@@ -122,6 +138,7 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
     - The same day "top notifications fit both themes…" merged its dismiss and show calls into one evaluate and reused its last polled measurement as evidence: about 340 fewer round trips over 168 notices, 13.0–20.4 s against 24.9–40.0 s.
     - Under 16 busy CPU threads, the affected tests passed 108 of 110 at 8 workers (`--repeat-each=10`). Both failures were the first page load on the dev server, described under the local workers above.
 12. **Pausing a fake clock at its install time.** `page.clock.install({ time })` keeps the clock running, so `pauseAt(time)` threw "Cannot fast-forward to the past" whenever the install had already advanced it. Pause at a later time.
+13. **Starting Node inside a unit test.** Each `spawnSync` of a script costs about 0.9 s on a slow CI runner. `runtime.test.ts` started 13 and failed its 10 s limit on slow runners (two of the four pushes after it grew to 13). Export the logic and call it in the test process (`scripts/runtime-modules.mjs`), and keep one real start to prove the command line's exit status and message.
 
 ## Rules for new tests
 
@@ -131,14 +148,22 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
   - UI wiring and user flows in e2e.
 - **Keep every e2e test independent.** No ordering or shared state between tests or files. `fullyParallel` and sharding depend on it.
 - **Keep tests lean.** Shard time is the sum of its tests and no shard can finish before its heaviest test, so cut real work and round trips. After adding a test over about 20 s, refresh `app/test/e2e/durations.json` once it has passed in CI (see How sharding actually splits the work).
-- **Register a new spec in `app/playwright.config.ts` `testMatch`**, or it never runs (it is silently skipped). Then, if its name does not reveal its area, add it to AGENTS.md "End-to-end scope".
+- **Register a new spec in `app/playwright.config.ts` `testMatch`**, or it never runs (it is silently skipped). Then, if its name does not reveal its area, add it to AGENTS.md "Testing".
 - **Stay offline.** Route `https://*.pixellab.ai/**` to fixtures or `abort()`, and keep the existing "no paid request" assertions.
-- **Before merging anything that changes timing or waits,** run it under load: `npm run e2e -- <spec> --repeat-each=10 --workers=8` with your own `E2E_PREVIEW_PORT` / `E2E_DEV_PORT` / `TEST_OUTPUT_DIR`, and once in CI mode: `CI=1 npm run e2e -- <spec> --workers=1`.
+- **Before merging anything that changes timing or waits,** repeat it, only when the task is about timing: `npm run e2e -- <spec> -g "<title>" --repeat-each=10`, and once in CI mode: `CI=1 npm run e2e -- <spec> --workers=1`. The run holds the machine's one e2e slot, so keep it to the tests you changed.
 - **Prove a timing or guard test can fail.** Temporarily break the app code it guards, confirm the test fails, then restore the file exactly.
-- **Concurrent runs build separately.** With `E2E_PREVIEW_PORT` set, `npm run e2e` (app/scripts/e2e.mjs) sets `E2E_DIST_DIR=dist-e2e-<port>`, builds into `app/dist-e2e-<port>/`, previews that folder and deletes it when the run ends. Only that wrapper sets `E2E_DIST_DIR` (app/dist-dir.ts rejects other names), so no CI variable can redirect the Pages build away from `dist/`. A shared `dist/` rebuilt by another agent's run replaced hashed chunks under a running preview server, so a lazy import 404'd and its "Part of PixelDoll could not load" toast covered dialogs: the intermittent failure of "setup and move drafts survive canceled connection" (2026-11-11).
+- **Runs are queued, and a run with its own port still builds separately.** Ordinary runs wait for each other (Workstation load, above) and share `dist/` and `test-results/` in turn. With `E2E_PREVIEW_PORT` set, `npm run e2e` (app/scripts/e2e.mjs) sets `E2E_DIST_DIR=dist-e2e-<port>`, builds into `app/dist-e2e-<port>/`, previews that folder and deletes it when the run ends. Only that wrapper sets `E2E_DIST_DIR` (app/dist-dir.ts rejects other names), so no CI variable can redirect the Pages build away from `dist/`. A shared `dist/` rebuilt by another agent's run replaced hashed chunks under a running preview server, so a lazy import 404'd and its "Part of PixelDoll could not load" toast covered dialogs: the intermittent failure of "setup and move drafts survive canceled connection" (2026-11-11).
 
 ## Open options, measured or modeled but not done
 
+- **End-to-end tests that repeat unit coverage** (audit of 2026-11-12, not done because other branches were editing these files; seconds are CI test time):
+  - `scene-zoom.spec.ts` runs every camera check in both themes at ten sizes (14 tests, 174 s). The plate cover math per theme and size is a unit matrix (`experience-zoom.test.ts`); the full size loop in one theme plus one size in the other would save about 50 s.
+  - `creator-request-matrix.spec.ts` still loops presets, cameras and seeds whose mapping `character-option-matrix.test.ts` covers: one value per control would save 15 to 25 s of 51 s.
+  - `character-creator.spec.ts` "creator fits" loads the page once per viewport (10 tests, 22 s): one load resized ten times would save about 14 s.
+  - `studio.spec.ts`: the notification fit test checks 14 sizes in two themes (16 s; five sizes would save about 10 s), "refuses a stale rig review" repeats `item-palette.test.ts` (8 s), and the demo test opens four extra browser contexts (about 5 s).
+  - `dialog-dismissal.ts` runs 320x568 through the same touch-portrait path as 390x844 (8.5 s).
+  - Done: the Preview facing lineup ran 11 rigs through 9 sizes (71 s); five rigs remain and the dropped custom sets joined the unit invariants in `facing-lineup.test.ts` (saves about 37 s).
+- **Running part of `studio.spec.ts`.** It holds 60 tests (271 s). Playwright tags (`{ tag: '@repair' }`, selected with `--grep @repair`) would give each area a 20 to 60 s subset without renaming tests or moving them; check first that tags do not change the titles `scripts/e2e-shard.mjs update` parses.
 - **Setup per shard is about 20–25 s.** Browser caching saves about 3–6 s and Playwright advises against it.
 - **The 15 s local expect timeout** hides UI steps that take up to 15 s on a loaded workstation. CI's 5 s still catches them.
 - **The unload snapshot covers only the debounced dress state.** Other flows (character creation, import, moves) write through their own awaited saves; a new debounced write path would need the same treatment. Known limits:
@@ -153,7 +178,7 @@ From `app/`:
 
 ```bash
 npx vitest run --reporter=verbose                  # per-test unit durations
-npm run e2e                                        # full suite, local workers
+npm run e2e -- --all                               # full suite, local workers (waits for any other run)
 npm run e2e -- <spec>                              # targeted
 node scripts/e2e-shard.mjs 3/16 $TEMP/shard.txt && CI=1 npm run e2e -- --test-list $TEMP/shard.txt   # one CI shard (1 worker, 5 s expect, 1 retry)
 gh run view <run-id> --json createdAt,updatedAt,jobs
@@ -162,7 +187,7 @@ gh run view <run-id> --log                         # per-test durations from the
 
 ### Where a slow test spends its time
 
-Record a trace (`npm run e2e -- <spec>:<line> --workers=1 --trace=on`; plain `npx playwright test` skips the build and tests a stale `dist`), then sum action time per spec line. Save this as a scratch file outside the repo and run `node prof.mjs test-results/<test-dir>/trace.zip`:
+Record a trace (`npm run e2e -- <spec>:<line> --workers=1 --trace=on`; plain `npx playwright test` is refused on a workstation, because it would skip the build and the queue), then sum action time per spec line. Save this as a scratch file outside the repo and run `node prof.mjs test-results/<test-dir>/trace.zip`:
 
 ```js
 // prof.mjs: sum traced Playwright action time per spec line (needs `unzip` on PATH, e.g. Git Bash).

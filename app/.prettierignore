@@ -5,6 +5,7 @@ package-lock.json
 test-results*/
 .runtime-sync-*/
 playwright-report/
+.svelte-check/
 blob-report/
 coverage/
 

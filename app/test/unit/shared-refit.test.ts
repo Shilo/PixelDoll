@@ -18,6 +18,7 @@ import {
 	type Sha256
 } from '../../src/lib/store/manifest.ts';
 import { runCase } from '../../scripts/bench.ts';
+import { expectPixels } from './pixels.ts';
 
 const memory = vi.hoisted(() => ({
 	records: new Map<string, unknown>(),
@@ -302,7 +303,8 @@ test('a held item on a body moved by a known offset moves by exactly that offset
 	const before = cellsOf(source.manifest.items[1], source.images),
 		after = cellsOf(copied, saved.project.images);
 	expect(Object.keys(after)).toEqual(Object.keys(before));
-	for (const [key, im] of Object.entries(before)) expect(after[key]).toEqual(translate(im!, 2, 1));
+	for (const [key, im] of Object.entries(before))
+		expectPixels(after[key], translate(im!, 2, 1), key);
 	// The source keeps its item.
 	expect((await loadProject('rig-knight')).project.manifest).toEqual(source.manifest);
 });
@@ -331,7 +333,8 @@ test('up to a quarter of the frames may fail a check: the copy names them for a 
 	expect(fit.item.refit).toEqual([{ anim: 'slash', dir: 'south', frames: [1], checks: ['angle'] }]);
 	// The failing frame still moves with the wrist.
 	const source = await knight();
-	expect(cellsOf(fit.item, fit.images!)['slash/south/1']).toEqual(
+	expectPixels(
+		cellsOf(fit.item, fit.images!)['slash/south/1'],
 		translate(source.images.get(source.manifest.items[1].layers[0].cells!.slash.south![1]!)!, 1, 0)
 	);
 });
@@ -345,9 +348,9 @@ test('measured joints place the item where the body was drawn', async () => {
 	const fit = (await refit(source, target))!,
 		before = cellsOf(source.manifest.items[1], source.images),
 		after = cellsOf(fit.item, fit.images!);
-	expect(after['default/south/0']).toEqual(translate(before['default/south/0']!, 1, 0));
-	expect(after['slash/south/0']).toEqual(translate(before['slash/south/0']!, 2, 0));
-	expect(after['slash/south/1']).toEqual(translate(before['slash/south/1']!, 2, 0));
+	expectPixels(after['default/south/0'], translate(before['default/south/0']!, 1, 0));
+	expectPixels(after['slash/south/0'], translate(before['slash/south/0']!, 2, 0));
+	expectPixels(after['slash/south/1'], translate(before['slash/south/1']!, 2, 0));
 });
 
 test('a character whose hand labels are swapped does not fit', async () => {
@@ -571,7 +574,8 @@ test('a different pivot re-fits through each rig’s own pivot; a different canv
 	expect(fit.item.layers[0].pivot).toEqual({ x: 31 + 16, y: 62 + 16 });
 	const before = cellsOf(source.manifest.items[1], source.images),
 		after = cellsOf(fit.item, fit.images!);
-	for (const [key, im] of Object.entries(before)) expect(after[key]).toEqual(translate(im!, 2, 1));
+	for (const [key, im] of Object.entries(before))
+		expectPixels(after[key], translate(im!, 2, 1), key);
 	// Composed on each body's own canvas, the sword sits on the body exactly as on the source.
 	const worn = (p: Project, item: Item, images: Map<Sha256, Img>) =>
 		composeCell(
@@ -724,7 +728,7 @@ test('the bench adventurer’s real sword re-fits a body standing 1 px to the si
 	expect(fit).not.toBeNull();
 	const out = cellsOf(fit.item, fit.images!);
 	expect(Object.keys(out).sort()).toEqual([...sword.keys()].sort());
-	for (const [key, im] of sword) expect(out[key]).toEqual(translate(im, 1, 0));
+	for (const [key, im] of sword) expectPixels(out[key], translate(im, 1, 0), key);
 });
 
 // ---------- the wardrobe list ----------

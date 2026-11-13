@@ -13,6 +13,7 @@ import { runtimeSources, runtimeTypes } from '../../src/lib/runtime/sources.ts';
 import { PAPERDOLL_JS, phaserFiles } from '../../src/lib/export/phaser.ts';
 import { CURRENT_FORMAT, type Project, type Item } from '../../src/lib/store/manifest.ts';
 import { orderingProbe } from '../fixtures/runtime-order.ts';
+import { assertEmbeddable } from '../../scripts/runtime-modules.mjs';
 
 const delivered = () =>
 	new Function(
@@ -102,47 +103,67 @@ test('the shipped standalone JavaScript contains every canonical source byte-for
 	expect(typeof module.composeCell).toBe('function');
 });
 
-test('a canonical edit fails the stale guard and regeneration changes internal and delivered behavior together', async () => {
+const app = fileURLToPath(new URL('../../', import.meta.url));
+/** A private copy of everything the synchronization script reads and writes, and Node runs inside it. */
+async function workspace() {
 	const directory = await mkdtemp(join(tmpdir(), 'pixeldoll-runtime-sync-')),
-		app = fileURLToPath(new URL('../../', import.meta.url)),
 		script = join(directory, 'scripts/sync-runtime.mjs');
-	try {
-		await mkdir(join(directory, 'scripts'));
-		await cp(join(app, 'src/lib'), join(directory, 'src/lib'), { recursive: true });
-		for (const name of ['package.json', 'prettier.config.js', 'scripts/sync-runtime.mjs'])
-			await cp(join(app, name), join(directory, name));
-		await symlink(join(app, 'node_modules'), join(directory, 'node_modules'), 'junction');
-		const run = (...args: string[]) =>
-			execFileSync(process.execPath, ['--experimental-transform-types', ...args], {
-				cwd: directory,
-				encoding: 'utf8'
-			});
-		run(script, '--check');
-		const canonical = join(directory, 'src/lib/runtime/timeline.js');
-		const source = await readFile(canonical, 'utf8');
-		for (const unsupported of [
-			"import './colors.js';",
-			'export { timelineDuration as duration };',
-			'export default timelineDuration;',
-			'const example = `\nexport text inside a template\n`;',
-			'/*\nexport text inside a comment\n*/',
-			'  export const indented = 1;'
-		]) {
-			await writeFile(canonical, source + '\n' + unsupported);
-			const rejected = spawnSync(process.execPath, [script, '--check'], {
-				cwd: directory,
-				encoding: 'utf8'
-			});
-			expect(rejected.status).not.toBe(0);
-			expect(rejected.stderr).toContain('runtime embedding requires named declarations');
-		}
-		const mutation = source.replace('total + frame.ms, 0);', 'total + frame.ms, 0) + 100;');
-		expect(mutation).not.toBe(source);
-		await writeFile(canonical, mutation);
-		const stale = spawnSync(process.execPath, [script, '--check'], {
+	await mkdir(join(directory, 'scripts'));
+	await cp(join(app, 'src/lib'), join(directory, 'src/lib'), { recursive: true });
+	for (const name of [
+		'package.json',
+		'prettier.config.js',
+		'scripts/sync-runtime.mjs',
+		'scripts/runtime-modules.mjs'
+	])
+		await cp(join(app, name), join(directory, name));
+	await symlink(join(app, 'node_modules'), join(directory, 'node_modules'), 'junction');
+	const run = (...args: string[]) =>
+		execFileSync(process.execPath, ['--experimental-transform-types', ...args], {
 			cwd: directory,
 			encoding: 'utf8'
 		});
+	const check = () =>
+		spawnSync(process.execPath, [script, '--check'], { cwd: directory, encoding: 'utf8' });
+	return { directory, script, run, check };
+}
+
+// Each Node start costs about a second on a slow CI runner, so the syntax forms are checked in this process and the
+// command line is proven once, in the next test.
+test('canonical modules reject imports, export lists, defaults and export text the embedding cannot strip', () => {
+	expect(() => assertEmbeddable(runtimeSources)).not.toThrow();
+	for (const unsupported of [
+		"import './colors.js';",
+		'export { timelineDuration as duration };',
+		'export default timelineDuration;',
+		'const example = `\nexport text inside a template\n`;',
+		'/*\nexport text inside a comment\n*/',
+		'  export const indented = 1;'
+	])
+		expect(
+			() =>
+				assertEmbeddable({
+					...runtimeSources,
+					'timeline.js': runtimeSources['timeline.js'] + '\n' + unsupported
+				}),
+			unsupported
+		).toThrow('timeline.js: runtime embedding requires named declarations');
+});
+
+test('a canonical edit fails the stale guard and regeneration changes internal and delivered behavior together', async () => {
+	const { directory, script, run, check } = await workspace();
+	try {
+		run(script, '--check');
+		const canonical = join(directory, 'src/lib/runtime/timeline.js');
+		const source = await readFile(canonical, 'utf8');
+		await writeFile(canonical, source + "\nimport './colors.js';");
+		const rejected = check();
+		expect(rejected.status).not.toBe(0);
+		expect(rejected.stderr).toContain('runtime embedding requires named declarations');
+		const mutation = source.replace('total + frame.ms, 0);', 'total + frame.ms, 0) + 100;');
+		expect(mutation).not.toBe(source);
+		await writeFile(canonical, mutation);
+		const stale = check();
 		expect(stale.status).not.toBe(0);
 		expect(stale.stderr).toContain('Runtime export sources are stale');
 		run(script);
@@ -162,6 +183,14 @@ doll.update(160);
 console.log(JSON.stringify([internal.timelineDuration(frames), delivered.timelineDuration(frames), doll.cell]));`
 		);
 		expect(JSON.parse(result)).toEqual([180, 180, 1]);
+	} finally {
+		await rm(directory, { recursive: true, force: true });
+	}
+});
+
+test('a canonical ordering edit regenerates into every JavaScript consumer', async () => {
+	const { directory, script, run } = await workspace();
+	try {
 		const probe = join(directory, 'test/fixtures/runtime-order.ts');
 		await mkdir(join(directory, 'test/fixtures'), { recursive: true });
 		await cp(join(app, 'test/fixtures/runtime-order.ts'), probe);
