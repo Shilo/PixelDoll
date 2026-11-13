@@ -86,7 +86,7 @@ npm --prefix app test           # Vitest: existing module assertions + runner fa
 npm --prefix app run selftest   # compatibility alias for npm test
 ```
 
-**Browser regression tests** use `@playwright/test` **1.64.1** with managed Chromium. They build the app, start their own local servers, exercise Studio workflows against the production build and run browser-only PNG/IndexedDB self-tests against the dev harness. Tests use the bundled demo, isolated storage and blocked PixelLab API requests: no key or credits are needed.
+**Browser regression tests** use `@playwright/test` **1.65.0** with managed Chromium. They build the app, start their own local servers, exercise Studio workflows against the production build and run browser-only PNG/IndexedDB self-tests against the dev harness. Tests use the bundled demo, isolated storage and blocked PixelLab API requests: no key or credits are needed.
 
 ```sh
 npx --prefix app playwright install chromium   # first time only; a bare Linux machine may also need --with-deps (CI does not)

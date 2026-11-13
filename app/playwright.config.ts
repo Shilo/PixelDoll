@@ -10,7 +10,7 @@ const channel = process.env.PLAYWRIGHT_CHANNEL;
 refuseAgentServer(baseURL, devURL);
 // A workstation run comes through `npm run e2e` (scripts/e2e.mjs), which builds first and waits for any other run on the
 // machine; a direct `playwright test` would test a stale build beside that run. Listing tests starts nothing.
-if (!process.env.CI && !process.env.E2E_QUEUED && !process.argv.includes('--list'))
+if (!process.env.GITHUB_ACTIONS && !process.env.E2E_QUEUED && !process.argv.includes('--list'))
 	throw new Error(
 		'Run end-to-end tests with: npm run e2e -- <spec names> [-g "<title>"]. It builds first and queues behind any other run on this machine.'
 	);

@@ -119,6 +119,7 @@
 	"[studio] › experience-parity.spec.ts › PWA fullscreen launch hides an unusable toggle while standalone permits it": 1.1,
 	"[studio] › experience-parity.spec.ts › Preview facing lineup › floor rings at DPR 1 › grounds offset body art on the selected ring in every direction": 2.9,
 	"[studio] › experience-parity.spec.ts › Preview facing lineup › floor rings at DPR 2 › grounds offset body art on the selected ring in every direction": 4.2,
+	"[studio] › experience-parity.spec.ts › Preview facing lineup › front and back: every selection shows the preferred facings that fit, inside the stage": 5,
 	"[studio] › experience-parity.spec.ts › Preview facing lineup › one direction: every selection shows the preferred facings that fit, inside the stage": 3.4,
 	"[studio] › experience-parity.spec.ts › Preview facing lineup › renders synchronized companions, selects them, and reports incomplete gear": 2.3,
 	"[studio] › experience-parity.spec.ts › Preview facing lineup › side-scroller: every selection shows the preferred facings that fit, inside the stage": 3.7,

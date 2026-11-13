@@ -1,6 +1,7 @@
 // `npm run check` reuses svelte-check and Prettier results for unchanged files, but neither cache notices a changed
-// dependency or config (svelte-check keys on file size and time, Prettier ignores plugin versions). Drop both caches
-// whenever one of those inputs changes, so a stale cache can never pass what CI, which has none, would fail.
+// dependency, Node version or config (svelte-check keys on file size and time, Prettier ignores plugin versions). Drop
+// both caches whenever one of those inputs changes, so a stale cache can never pass what CI, which has none, would fail.
+// The installed packages count as well as the lockfile: an install can change them while the lockfile stays the same.
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 
@@ -8,6 +9,7 @@ const app = new URL('../', import.meta.url);
 const hash = createHash('sha256').update(process.version);
 for (const name of [
 	'package-lock.json',
+	'node_modules/.package-lock.json',
 	'svelte.config.js',
 	'prettier.config.js',
 	'.prettierignore',

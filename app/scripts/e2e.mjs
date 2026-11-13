@@ -1,5 +1,5 @@
 // `npm run e2e`: build, then run Playwright with any extra arguments.
-// On a workstation (no CI variable) a run also:
+// On a workstation (anywhere but GitHub Actions, so a local CI=1 run too) a run also:
 // - needs a scope: spec names, or --all for the full suite, which CI already runs on every push;
 // - waits its turn: one run at a time on this machine, across every checkout and agent session, because overlapping runs
 //   saturate the CPU and fail each other's tests on timeouts (docs/testing/test-performance.md);
@@ -15,12 +15,30 @@ import { fileURLToPath } from 'node:url';
 
 const app = fileURLToPath(new URL('..', import.meta.url));
 const args = process.argv.slice(2);
-const workstation = !process.env.CI;
+const workstation = !process.env.GITHUB_ACTIONS;
 
-// A scope is a spec name (any argument that is not a flag), a test list, another config, or --all. Flags alone, such as
-// --workers=2 or --last-failed, would still run or search the whole suite.
+// A scope is a spec name, a test list, another config, or --all. Flags alone, such as --workers 2 or --last-failed,
+// would still run or search the whole suite, so the value that follows a flag is not taken for a spec name.
+const VALUE_FLAGS = [
+	'-g',
+	'--grep',
+	'--grep-invert',
+	'-j',
+	'--workers',
+	'--project',
+	'--repeat-each',
+	'--retries',
+	'--reporter',
+	'--timeout',
+	'--trace',
+	'--max-failures',
+	'--output',
+	'--shard'
+];
 const scoped = args.some(
-	(arg) => !arg.startsWith('-') || /^(--all|--test-list|--config|-c)\b/.test(arg)
+	(arg, i) =>
+		/^(--all|--test-list|--config|-c)\b/.test(arg) ||
+		(!arg.startsWith('-') && !VALUE_FLAGS.includes(args[i - 1]))
 );
 if (workstation && !scoped) {
 	console.error(
@@ -38,9 +56,15 @@ const packages = (path) =>
 	JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8')).packages;
 const locked = packages('../package-lock.json'),
 	installed = packages('../node_modules/.package-lock.json');
-const behind = Object.keys(installed).filter(
-	(name) => locked[name]?.version !== installed[name].version
+const { dependencies, devDependencies } = JSON.parse(
+	readFileSync(new URL('../package.json', import.meta.url), 'utf8')
 );
+const behind = [
+	...Object.keys(installed).filter((name) => locked[name]?.version !== installed[name].version),
+	...Object.keys({ ...dependencies, ...devDependencies })
+		.map((name) => `node_modules/${name}`)
+		.filter((name) => !installed[name]) // a dependency this checkout added since the last install
+];
 if (behind.length) {
 	console.error(
 		`node_modules does not match package-lock.json (${behind.slice(0, 3).join(', ')}): run npm ci in app/ first.`
