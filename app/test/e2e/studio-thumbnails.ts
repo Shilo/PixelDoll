@@ -2,18 +2,34 @@ import { expect, test, type Page } from '@playwright/test';
 import { equipmentGroup, equipmentMode, openStudio } from './immersive-helpers.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 
-test('outfit thumbnails load with the tab, match saved colors and stay static during playback', async ({
+test('move and outfit thumbnails load only with their tab and preserve saved colors', async ({
 	page
 }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
+		let draws = 0;
+		const canvases = new WeakSet<HTMLCanvasElement>();
+		const original = CanvasRenderingContext2D.prototype.drawImage;
+		CanvasRenderingContext2D.prototype.drawImage = function (
+			image: CanvasImageSource,
+			...coords: number[]
+		) {
+			if (this.canvas instanceof HTMLCanvasElement) {
+				if (this.canvas.closest('.move-thumb')) canvases.add(this.canvas);
+				if (canvases.has(this.canvas)) draws++;
+			}
+			return Reflect.apply(original, this, [image, ...coords]);
+		};
+		Object.defineProperty(window, '__moveThumbnailDraws', { get: () => draws });
 	});
 	await openStudio(
 		page,
 		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
 	);
 	await expect(page.locator('.outfit-thumb')).toHaveCount(0);
+	await expect(page.locator('.move-thumb')).toHaveCount(0);
+	expect(await page.evaluate(() => Reflect.get(window, '__moveThumbnailDraws'))).toBe(0);
 	await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
 			state = await import(statePath);
@@ -29,6 +45,8 @@ test('outfit thumbnails load with the tab, match saved colors and stay static du
 	});
 	await equipmentMode(page, 'Outfits');
 	await expect(page.locator('.outfit-thumb canvas').first()).toBeVisible();
+	await expect(page.locator('.move-thumb')).toHaveCount(0);
+	expect(await page.evaluate(() => Reflect.get(window, '__moveThumbnailDraws'))).toBe(0);
 	const pixels = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
 			state = await import(statePath);
@@ -87,6 +105,8 @@ test('outfit thumbnails load with the tab, match saved colors and stay static du
 	await equipmentMode(page, 'Moves');
 	await expect(page.locator('.outfit-thumb')).toHaveCount(0);
 	await expect(page.locator('.move-row').first()).toHaveAttribute('data-variant', 'tile');
+	await expect(page.locator('.move-thumb canvas').first()).toBeVisible();
+	expect(await page.evaluate(() => Reflect.get(window, '__moveThumbnailDraws'))).toBeGreaterThan(0);
 	await page.screenshot({ path: info.outputPath('moves-desktop-dark.png') });
 	for (const theme of ['light', 'dark']) {
 		await page.evaluate(async (theme) => {
@@ -99,8 +119,21 @@ test('outfit thumbnails load with the tab, match saved colors and stay static du
 		await page.screenshot({ path: info.outputPath(`moves-phone-${theme}.png`) });
 		await equipmentMode(page, 'Outfits');
 		await expect(saved).toHaveAttribute('aria-pressed', 'true');
+		await expect(page.locator('.move-thumb')).toHaveCount(0);
+		const hiddenWork = await page.evaluate(async () => {
+			const before = Reflect.get(window, '__moveThumbnailDraws');
+			const statePath = '/src/studio/state.svelte.ts',
+				state = await import(statePath);
+			for (let frame = 0; frame < 12; frame++) {
+				state.ui.frame = frame % 8;
+				await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+			}
+			return Reflect.get(window, '__moveThumbnailDraws') - before;
+		});
+		expect(hiddenWork).toBe(0);
 		await page.screenshot({ path: info.outputPath(`outfits-phone-${theme}.png`) });
 		await equipmentMode(page, 'Moves');
+		await expect(page.locator('.move-thumb canvas').first()).toBeVisible();
 	}
 });
 
