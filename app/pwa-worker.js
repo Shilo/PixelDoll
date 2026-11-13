@@ -95,29 +95,41 @@ async function cancelNavigationPin(id, build) {
 	});
 }
 
-async function digest(response) {
-	const bytes = await response.arrayBuffer();
+async function digest(bytes) {
 	return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (byte) =>
 		byte.toString(16).padStart(2, '0')
 	).join('');
 }
 
+/** Reads the body once and returns a factory for responses holding exactly the verified bytes. Never answer with a clone's
+ * twin: Chromium streams that body through this worker, so a worker the browser stops before the page has read it fails
+ * the request, and a failed startup module left PixelDoll on its opening message. */
+async function verified(response, file) {
+	if (!response?.ok) return undefined;
+	const bytes = await response.arrayBuffer();
+	if ((await digest(bytes)) !== file.hash) return undefined;
+	const { status, statusText, headers } = response;
+	return () => new Response(bytes, { status, statusText, headers });
+}
+
 async function currentResponse(file, repair = true) {
 	const cache = await caches.open(CACHE);
-	const stored = await cache.match(file.url);
-	if (stored?.ok && (await digest(stored.clone())) === file.hash) return stored;
+	const stored = await verified(await cache.match(file.url), file);
+	if (stored) return stored();
 	if (!repair) throw new Error('The downloaded update is incomplete. Reconnect and try again.');
 	// A public URL can now belong to a later deployment. Only this worker's exact bytes can repair its release.
-	const response = await fetch(file.url, {
-		cache: 'no-store',
-		credentials: 'omit',
-		redirect: 'error',
-		signal: AbortSignal.timeout(20_000)
-	});
-	if (!response.ok || (await digest(response.clone())) !== file.hash)
-		throw new Error('The downloaded update is incomplete. Reconnect and try again.');
-	await cache.put(file.url, response.clone());
-	return response;
+	const downloaded = await verified(
+		await fetch(file.url, {
+			cache: 'no-store',
+			credentials: 'omit',
+			redirect: 'error',
+			signal: AbortSignal.timeout(20_000)
+		}),
+		file
+	);
+	if (!downloaded) throw new Error('The downloaded update is incomplete. Reconnect and try again.');
+	await cache.put(file.url, downloaded());
+	return downloaded();
 }
 
 async function verify(repair = true) {
@@ -135,15 +147,17 @@ self.addEventListener('install', (event) => {
 				// A failed deployment or a CDN serving mixed releases must never replace the last complete offline app.
 				const results = await Promise.allSettled(
 					FILE_URLS.map(async (file) => {
-						const response = await fetch(file.url, {
-							cache: 'no-store',
-							credentials: 'omit',
-							redirect: 'error',
-							signal: AbortSignal.timeout(20_000)
-						});
-						if (!response.ok || (await digest(response.clone())) !== file.hash)
-							throw new Error('PWA release bytes did not match this build');
-						await cache.put(file.url, response);
+						const response = await verified(
+							await fetch(file.url, {
+								cache: 'no-store',
+								credentials: 'omit',
+								redirect: 'error',
+								signal: AbortSignal.timeout(20_000)
+							}),
+							file
+						);
+						if (!response) throw new Error('PWA release bytes did not match this build');
+						await cache.put(file.url, response());
 					})
 				);
 				const failure = results.find((result) => result.status === 'rejected');
