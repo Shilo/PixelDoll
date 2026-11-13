@@ -38,6 +38,8 @@
 		shared,
 		sharedKey,
 		addShared,
+		copyDemoAndAdd,
+		isDemo,
 		removeItem,
 		withKey
 	} from './state.svelte.ts';
@@ -172,8 +174,18 @@
 			};
 		})
 	);
-	const FIT_NAME = { copy: 'free copy', refit: 'free fit to check', remake: 'make new' };
-	const FIT_CAPTION = { copy: 'Free', refit: 'Free · check fit', remake: '' };
+	const FIT_NAME = {
+		copy: 'free copy',
+		refit: 'free fit to check',
+		unfitted: 'free, not fitted to this body',
+		remake: 'make new'
+	};
+	const FIT_CAPTION = {
+		copy: 'Free',
+		refit: 'Free · check fit',
+		unfitted: 'Free · not fitted',
+		remake: ''
+	};
 	const sectionId = (id: string) => `wardrobe-${id.replace(/\s+/g, '-').toLowerCase()}`;
 
 	function remember() {
@@ -334,6 +346,7 @@
 				{@const lower = s.label.toLowerCase()}
 				{@const count = s.items.length + s.pending.length}
 				{@const unfit = s.paid.find((x) => sharedKey(x) === ui.selected)}
+				{@const demoPick = isDemo() ? s.free.find((x) => sharedKey(x) === ui.selected) : undefined}
 				<section
 					class="slot-section"
 					data-group={g.id}
@@ -555,7 +568,9 @@
 								<div class="shared-head">
 									<h4 class="shared-title small">From your other characters</h4>
 									{#if !s.free.length}<p class="faint small">Make new for {m.name}</p>
-									{:else if s.paid.length}<p class="faint small">Free when the body matches</p>{/if}
+									{:else if s.paid.length}<p class="faint small">
+											Free on the same frame size and view
+										</p>{/if}
 								</div>
 								<div
 									class="slot-tiles"
@@ -575,7 +590,7 @@
 											class="bu-tile item-tile shared-tile"
 											data-selected={ui.selected === key || undefined}
 											data-tile={key}
-											aria-pressed={remake ? ui.selected === key : undefined}
+											aria-pressed={remake || isDemo() ? ui.selected === key : undefined}
 											aria-label="{x.item.name}, from {x.sourceName}, {FIT_NAME[x.fit]}"
 											aria-busy={adding}
 											disabled={!!shared.adding}
@@ -591,6 +606,35 @@
 													>{FIT_CAPTION[x.fit]}</span
 												>{/if}
 										</button>
+										{#if demoPick === x}
+											{@const name = demoPick.item.name}
+											<div
+												class="unfit"
+												tabindex="-1"
+												role="group"
+												aria-label="Copy the demo to wear {name}"
+												{@attach (el) => el.focus()}
+											>
+												<p class="small" id="demo-pick-why">
+													The demo can’t change. Copy it to wear {name}.{#if demoPick.fit === 'unfitted'}{' '}
+														It was drawn for {demoPick.sourceName}’s body, so it may not line up.{/if}
+												</p>
+												<button
+													class="bu-action btn primary"
+													data-variant="primary"
+													aria-describedby="demo-pick-why demo-pick-note"
+													aria-busy={shared.adding === sharedKey(demoPick)}
+													disabled={!!shared.adding}
+													onclick={() => copyDemoAndAdd(demoPick)}
+													>Copy demo and wear <span class="cost">Free</span></button
+												>
+												<p class="faint small" id="demo-pick-note">
+													Saves an editable copy of the demo on this device, or opens the one you
+													made, and wears
+													{name} there. Nothing is generated.
+												</p>
+											</div>
+										{/if}
 										{#if unfit === x}
 											{@const name = unfit.item.name}
 											<div

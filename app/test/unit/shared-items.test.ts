@@ -10,6 +10,9 @@ import { cellHash } from '../../src/lib/rig/rig.ts';
 import { composeCell } from '../../src/lib/compose/compose.ts';
 import { recolor } from '../../src/lib/dress/dress.ts';
 import type { Item, Preset, Project } from '../../src/lib/store/manifest.ts';
+import { healthOf } from '../../src/studio/model.ts';
+import { exportManifest, validate } from '../../src/lib/export/generic.ts';
+import { exportFiles } from '../../src/lib/export/export.ts';
 
 const memory = vi.hoisted(() => ({
 	records: new Map<string, unknown>(),
@@ -128,19 +131,158 @@ test('an identical body copies the item pixel for pixel, as an independent item 
 	expect(after).toEqual(source.manifest);
 });
 
-test('a different body cannot fit: nothing is written and the item must be made for it', async () => {
-	await store('rig-source', named(await equipmentFixture(), 'Knight'));
-	const target = bodyOnly(await equipmentFixture()),
+async function otherBody(name: string, pivot = { x: 32, y: 56 }) {
+	const target = named(bodyOnly(await equipmentFixture()), name),
 		body = makeImg(64, 64);
 	body.data.set([10, 20, 30, 255], (40 * 64 + 20) * 4);
 	const hash = await cellHash(body);
 	target.images.set(hash, body);
 	target.manifest.items[0].layers[0].cells = { rest: { south: [hash] } };
+	target.manifest.rig.pivot = pivot;
+	return target;
+}
+
+test('a different body on the same canvas wears the item as drawn, unfitted, at its place in the frame', async () => {
+	const source = named(await equipmentFixture(), 'Knight');
+	// Body px the hat hides on its own body: another body's px, never cut from this one.
+	hatOf(source).baseCut = { rest: { south: [[50 * 64 + 20]] } };
+	await store('rig-source', source);
+	const target = await otherBody('Squire', { x: 30, y: 54 });
+	await store('rig-target', target);
+	const { items: listed } = await listShared('rig-target', target.manifest);
+	expect(listed.map((x) => x.fit)).toEqual(['unfitted']);
+	const item = (await acceptCopy('rig-source', 'hat', 'rig-target'))!;
+	expect(item).toMatchObject({ unfitted: true, coverage: ['rest/south/0'] });
+	expect(item.baseCut).toBeUndefined();
+	// Drawn on the rig cell, so it stays there although the pivots differ (32, 56 there; 30, 54 here).
+	expect(item.layers[0].pivot).toBeUndefined();
+	expect(item.layers[0].cells).toEqual(hatOf(source).layers[0].cells);
+	const copied = (await loadProject('rig-target')).project,
+		hat = worn(copied, { head: item.id }),
+		at = (x: number, y: number) => [...hat.data.slice((y * 64 + x) * 4, (y * 64 + x) * 4 + 4)];
+	expect(at(20, 18)).toEqual([120, 120, 120, 255]);
+	// Never offered on from here: the original is.
+	await store('rig-third', named(bodyOnly(await equipmentFixture()), 'Page'));
+	const third = (await listShared('rig-third', (await loadProject('rig-third')).project.manifest))
+		.items;
+	expect(third.map((x) => [x.sourceId, x.fit])).toEqual([['rig-source', 'copy']]);
+});
+
+test('a different frame size or camera cannot be worn: nothing is written and the item must be made for it', async () => {
+	await store('rig-source', named(await equipmentFixture(), 'Knight'));
+	const target = await otherBody('Giant');
+	target.manifest.rig.cell = { w: 96, h: 96 };
 	await store('rig-target', target);
 	const before = structuredClone(memory.records.get('rig-target'));
+	expect((await listShared('rig-target', target.manifest)).items.map((x) => x.fit)).toEqual([
+		'remake'
+	]);
 	expect(await acceptCopy('rig-source', 'hat', 'rig-target')).toBeNull();
+	const side = await otherBody('Side');
+	side.manifest.rig.view = 'side';
+	await store('rig-side', side);
+	expect(await acceptCopy('rig-source', 'hat', 'rig-side')).toBeNull();
 	expect(memory.writes).toBe(0);
 	expect(memory.records.get('rig-target')).toEqual(before);
+});
+
+test('a move with another frame count is left out of an unfitted copy rather than retimed', async () => {
+	const source = named(await equipmentFixture(), 'Knight');
+	await store('rig-source', source);
+	const target = await otherBody('Squire'),
+		cells = target.manifest.items[0].layers[0].cells!;
+	target.manifest.rig.animations.push({
+		id: 'walk',
+		cells: 2,
+		frames: [
+			{ cell: 0, ms: 100 },
+			{ cell: 1, ms: 100 }
+		],
+		loop: true
+	});
+	cells.walk = { south: [cells.rest!.south![0], cells.rest!.south![0]] };
+	source.manifest.rig.animations.push({
+		id: 'walk',
+		cells: 1,
+		frames: [{ cell: 0, ms: 100 }],
+		loop: true
+	});
+	hatOf(source).coverage!.push('walk/south/0');
+	hatOf(source).layers[0].cells!.walk = { south: [hatOf(source).layers[0].cells!.rest!.south![0]] };
+	await store('rig-source', source);
+	await store('rig-target', target);
+	const item = (await acceptCopy('rig-source', 'hat', 'rig-target'))!;
+	expect(item.coverage).toEqual(['rest/south/0']);
+	expect(item.layers[0].cells?.walk).toBeUndefined();
+});
+
+test('a padded unfitted layer keeps its place and its padding around this pivot, so mirrored views still export', async () => {
+	const source = named(await equipmentFixture(), 'Knight'),
+		hat = hatOf(source),
+		padded = makeImg(96, 96);
+	padded.data.set([120, 120, 120, 255], (34 * 96 + 36) * 4);
+	const h = await cellHash(padded);
+	source.images.set(h, padded);
+	Object.assign(hat.layers[0], {
+		cell: { w: 96, h: 96 },
+		pivot: { x: 48, y: 72 },
+		cells: { rest: { south: [h] } }
+	});
+	await store('rig-source', source);
+	const target = await otherBody('Squire', { x: 30, y: 54 });
+	target.manifest.rig.directions = [{ id: 'south' }, { id: 'north', mirrorOf: 'south' }];
+	await store('rig-target', target);
+	const item = (await acceptCopy('rig-source', 'hat', 'rig-target'))!;
+	expect(item.layers[0]).toMatchObject({ cell: { w: 96, h: 96 }, pivot: { x: 46, y: 70 } });
+	const p = (await loadProject('rig-target')).project,
+		art = worn(p, { head: item.id }),
+		at = (x: number, y: number) => [...art.data.slice((y * 64 + x) * 4, (y * 64 + x) * 4 + 4)];
+	expect(at(20, 18)).toEqual([120, 120, 120, 255]);
+	expect(validate(p)).toEqual([]);
+	const out = await exportFiles(p, { engines: ['generic'], baked: false });
+	expect(out.errors).toEqual([]);
+	expect(out.warnings).toEqual([
+		'hat: worn as drawn for another body, not fitted to this character.'
+	]);
+});
+
+test('exact frames win over wearing the whole item unfitted: a partly matching body gets a partial exact copy', async () => {
+	const source = named(await equipmentFixture(), 'Knight'),
+		hat = hatOf(source),
+		walk = { id: 'walk', cells: 1, frames: [{ cell: 0, ms: 100 }], loop: true };
+	source.manifest.rig.animations.push(walk);
+	hat.coverage!.push('walk/south/0');
+	hat.layers[0].cells!.walk = { south: [hat.layers[0].cells!.rest!.south![0]] };
+	source.manifest.items[0].layers[0].cells!.walk = {
+		south: [source.manifest.items[0].layers[0].cells!.rest!.south![0]]
+	};
+	await store('rig-source', source);
+	// The same standing body; its walk was drawn differently.
+	const target = named(bodyOnly(await equipmentFixture()), 'Squire'),
+		other = await otherBody('Other');
+	target.manifest.rig.animations.push(walk);
+	target.manifest.items[0].layers[0].cells!.walk = {
+		south: [other.manifest.items[0].layers[0].cells!.rest!.south![0]]
+	};
+	for (const [h, im] of other.images) target.images.set(h, im);
+	await store('rig-target', target);
+	expect((await listShared('rig-target', target.manifest)).items.map((x) => x.fit)).toEqual([
+		'copy'
+	]);
+	const item = (await acceptCopy('rig-source', 'hat', 'rig-target'))!;
+	expect(item.unfitted).toBeUndefined();
+	expect(item.coverage).toEqual(['rest/south/0']);
+});
+
+test('an unfitted copy needs a look and is named in export warnings', async () => {
+	await store('rig-source', named(await equipmentFixture(), 'Knight'));
+	await store('rig-target', await otherBody('Squire'));
+	const item = (await acceptCopy('rig-source', 'hat', 'rig-target'))!;
+	const p = (await loadProject('rig-target')).project;
+	expect(healthOf(p.manifest, item)).toBe('look');
+	expect(exportManifest(p, { engines: ['generic'], baked: false }).warnings).toEqual([
+		'hat: worn as drawn for another body, not fitted to this character.'
+	]);
 });
 
 test('views both characters mirror are covered by their drawn source view', async () => {

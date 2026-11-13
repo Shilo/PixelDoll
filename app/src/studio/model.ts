@@ -329,8 +329,8 @@ export function itemNameFrom(desc: string): string {
 export type Health = 'clean' | 'accepted' | 'look' | 'stale' | 'demo';
 export function healthOf(m: Manifest, it: Item): Health {
 	if (it.baseHash !== m.rig.baseHash) return 'stale';
-	// A free re-fit with frames to check, whatever its source's checks said.
-	if (it.refit?.length) return 'look';
+	// A free re-fit with frames to check, or a copy worn as drawn for another body, whatever its source's checks said.
+	if (it.refit?.length || it.unfitted) return 'look';
 	if (it.qa?.status === 'fail' || it.qa?.status === 'warn') return 'look';
 	if (it.designWarnings?.length || it.qa?.status === 'accepted') return 'accepted';
 	if (!it.qa) return 'demo';

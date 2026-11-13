@@ -15,6 +15,7 @@ import type {
 	DirectionName,
 	Item,
 	ItemQa,
+	Layer,
 	Manifest,
 	Material,
 	Preset,
@@ -26,11 +27,12 @@ import {
 	bodyOf,
 	cellId,
 	covered,
+	sameSlot,
 	type CellMatch,
 	type CopyAssessment,
 	type Flip
 } from './compatibility.ts';
-import { refitCells, refitShared, refittable } from './refit.ts';
+import { onTarget, refitCells, refitShared, refittable, sameCanvas } from './refit.ts';
 
 export interface CopyCandidate {
 	item: Item;
@@ -192,8 +194,9 @@ export function copyShell(
 export const itemKey = (item: Pick<Item, 'slot' | 'prompt' | 'name'>) =>
 	`${item.slot}\n${(item.prompt.trim() || item.name).toLowerCase().replace(/\s+/g, ' ')}`;
 
-/** How another character's item comes to `target`: an exact free copy, a free approximate re-fit, or a new item made for it. */
-export type SharedFit = 'copy' | 'refit' | 'remake';
+/** How another character's item comes to `target`: an exact free copy, a free approximate re-fit, a free copy worn as drawn
+ *  for the other body without fitting, or a new item made for it. */
+export type SharedFit = 'copy' | 'refit' | 'unfitted' | 'remake';
 /** Target cells (drawn views with a body) at a move, direction and frame the item covers on its source. */
 function wanted(source: Manifest, item: Item, target: Manifest): string[] {
 	const body = bodyOf(target)?.layers[0],
@@ -205,8 +208,26 @@ function wanted(source: Manifest, item: Item, target: Manifest): string[] {
 					out.push(cellKey(a.id, dir, i));
 	return out;
 }
+/** Target cells a copy worn as drawn takes, each from the same move, direction and frame of the source: only on a canvas of the
+ *  same size and camera (no scaling) and only where the move has as many frames on both (no retiming). */
+export function unfittedCells(source: Manifest, item: Item, target: Manifest): string[] {
+	// Approximations never stack: a re-fit or unfitted copy is not worn as drawn again (its original is offered instead).
+	if (
+		item.unfitted ||
+		item.refit ||
+		!sameCanvas(source, target) ||
+		!sameSlot(source, target, item.slot)
+	)
+		return [];
+	const frames = new Map(source.rig.animations.map((a) => [a.id, a.cells]));
+	return wanted(source, item, target).filter((k) => {
+		const anim = k.split('/')[0];
+		return frames.get(anim) === target.rig.animations.find((a) => a.id === anim)?.cells;
+	});
+}
 /** An exact copy when it covers every cell the item covers on its source; otherwise whichever of the exact copy and a re-fit
- *  covers more cells (the exact copy on a tie: its pixels need no look). `refit` runs only when needed. */
+ *  covers more cells (the exact copy on a tie: its pixels need no look); only when neither covers any, a copy worn as drawn.
+ *  `refit` runs only when needed. */
 async function choose(
 	source: Manifest,
 	item: Item,
@@ -217,7 +238,38 @@ async function choose(
 	if (copy && wanted(source, item, target).every((k) => copy.includes(k))) return 'copy';
 	const fitted = refittable(item) ? await refit() : null;
 	if (fitted && fitted.length > (copy?.length ?? 0)) return 'refit';
-	return copy ? 'copy' : 'remake';
+	if (copy) return 'copy';
+	return unfittedCells(source, item, target).length ? 'unfitted' : 'remake';
+}
+/** A free copy of `original` worn as drawn: its source cells unchanged, at the same place in the frame. The source body's cuts,
+ *  standing references and fit notes describe another body, so they are dropped. Null when no cell maps. */
+async function unfittedCopy(
+	source: Manifest,
+	original: Item,
+	variants: Preset['variants'],
+	target: Manifest,
+	flip: Flip
+): Promise<CopyCandidate | null> {
+	const cells = unfittedCells(source, original, target);
+	if (!cells.length) return null;
+	const { item, materials } = copyShell(source, original, variants, target, cells);
+	item.layers = item.layers.map((layer) => {
+		const placed: Layer = { ...onTarget(source, target, layer), cells: {} };
+		delete placed.sheets;
+		return placed;
+	});
+	await putCells(
+		source,
+		original,
+		target,
+		item,
+		cells.map((k) => ({ source: k, target: k })),
+		flip
+	);
+	for (const key of ['baseCut', 'dressed', 'route', 'standing', 'anchorCell', 'refit'] as const)
+		delete item[key];
+	item.unfitted = true;
+	return { item, materials, assessment: { matches: [], canExtend: false, fits: true } };
 }
 export async function sharedFit(
 	source: Manifest,
@@ -232,7 +284,7 @@ export async function sharedFit(
 }
 
 /** Copy an item of another saved character into `targetId` in one transaction: exact on an identical body, otherwise a free
- *  approximate fit when one exists (marked for review). Returns the new item, the copy this character already holds of it
+ *  approximate fit when one exists, otherwise the item as drawn for the other body (both marked for review). Returns the new item, the copy this character already holds of it
  *  (a second tap while the first was saving), or null when it does not fit (nothing is written). Never generates anything. */
 export async function acceptCopy(
 	sourceId: string,
@@ -265,7 +317,14 @@ export async function acceptCopy(
 			(fitted.refit = await refitShared(source.manifest, itemId, variants, target.manifest, load))
 				?.item.coverage ?? null
 	);
-	const candidate = how === 'copy' ? copy : how === 'refit' ? fitted.refit : null;
+	const candidate =
+		how === 'copy'
+			? copy
+			: how === 'refit'
+				? fitted.refit
+				: how === 'unfitted'
+					? await unfittedCopy(source.manifest, original, variants, target.manifest, flip)
+					: null;
 	if (!candidate) return null;
 	const { item, materials } = candidate;
 	// The paid calls were made for the first character an item was copied from. An exact copy of a re-fit keeps the re-fit's
@@ -338,7 +397,7 @@ const body = (m: Manifest) =>
  *  copy), or null when there are none. A re-fit never takes more: its art was moved for this body, not copied. */
 async function fromSource(target: Manifest, item: Item, flip: Flip) {
 	const from = item.copiedFrom;
-	if (!from?.item || item.refit) return null;
+	if (!from?.item || item.refit || item.unfitted) return null;
 	const rec = await db.get<StoredProject>('projects', from.id),
 		source = rec?.manifest,
 		original = source?.items.find((it) => it.id === from.item);
@@ -361,7 +420,8 @@ async function fromSource(target: Manifest, item: Item, flip: Flip) {
 export async function freeFrames(target: Manifest): Promise<Record<string, number>> {
 	const out: Record<string, number> = {};
 	for (const item of target.items) {
-		if (item.status !== 'accepted' || !item.copiedFrom?.item || item.refit) continue;
+		if (item.status !== 'accepted' || !item.copiedFrom?.item || item.refit || item.unfitted)
+			continue;
 		const found = await fromSource(target, item, flipper(stored(item).load).flip);
 		if (found) out[item.id] = found.matches.length;
 	}

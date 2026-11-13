@@ -50,7 +50,7 @@ import { characterFacts, GROUPS, groupLabel, groupOf, uniqueBy } from './model.t
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import type { SetupSpec } from './setup.ts';
 import { forgetFits, listShared, type SharedItem } from '../lib/equipment/shared.ts';
-import { acceptCopy, copyMoreFrames, freeFrames } from '../lib/equipment/copy.ts';
+import { acceptCopy, copyMoreFrames, freeFrames, itemKey } from '../lib/equipment/copy.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
@@ -1181,10 +1181,10 @@ class Shared {
 export const shared = new Shared();
 export const sharedKey = (entry: SharedItem) => `shared:${entry.sourceId}/${entry.item.id}`;
 let sharedRequest = 0;
-/** Re-read the other characters' items for the open character (the demo receives none). */
+/** Re-read the other characters' items for the open character, the demo included (it adds them to a copy of itself). */
 export async function refreshShared() {
 	const request = ++sharedRequest;
-	if (isDemo() || !store.project) {
+	if (!store.project) {
 		shared.items = [];
 		shared.error = '';
 		shared.skipped = 0;
@@ -1193,7 +1193,7 @@ export async function refreshShared() {
 	}
 	try {
 		const [{ items, skipped }, free] = await Promise.all([
-			listShared(doc.id, store.project.manifest),
+			listShared(doc.id, store.project.manifest, store.project.images),
 			freeFrames(store.project.manifest)
 		]);
 		if (request !== sharedRequest) return;
@@ -1213,19 +1213,29 @@ function refreshSharedSoon() {
 	clearTimeout(sharedSoon);
 	sharedSoon = setTimeout(() => void refreshShared(), 1500);
 }
-/** Free: wear a copy when the bodies match, or a re-fitted copy of a held item to check. An item to make new (or one that
- *  turns out not to fit after all) is selected instead, so the wardrobe offers to make it for this character. The tile stays
- *  busy until the list no longer offers what was added. */
+/** Free: wear a copy when the bodies match, a re-fitted copy of a held item to check, or else a copy as drawn for the other
+ *  body. An item to make new (or one that turns out not to fit after all) is selected instead, so the wardrobe offers to make
+ *  it for this character; so is any item on the demo, which offers to copy itself first. The tile stays busy until the list
+ *  no longer offers what was added. */
 export async function addShared(entry: SharedItem) {
-	if (isDemo() || shared.adding) return;
+	if (shared.adding) return;
 	const key = sharedKey(entry);
-	if (entry.fit === 'remake') {
+	if (entry.fit === 'remake' || isDemo()) {
 		ui.selected = key;
 		return;
 	}
-	const projectId = doc.id,
-		request = openRequest;
 	shared.adding = key;
+	try {
+		await addEntry(entry);
+	} finally {
+		shared.adding = '';
+	}
+}
+/** addShared's work, run while the caller holds `shared.adding`. */
+async function addEntry(entry: SharedItem) {
+	const key = sharedKey(entry),
+		projectId = doc.id,
+		request = openRequest;
 	try {
 		await flushSave();
 		const item = await acceptCopy(entry.sourceId, entry.item.id, projectId);
@@ -1243,16 +1253,17 @@ export async function addShared(entry: SharedItem) {
 		await openProject(projectId, { quiet: true });
 		const note = doc.id === projectId ? wear(item.id, true) : undefined;
 		toast(
-			(item.refit
-				? `Fitted ${item.name} from ${entry.sourceName} for free. Check it in each move.`
-				: `Copied ${item.name} from ${entry.sourceName}. No generations used.`) +
-				(note ? ` ${note}.` : '')
+			(item.unfitted
+				? `Wearing ${item.name} as drawn for ${entry.sourceName}. It may not line up with this body. No generations used.`
+				: item.refit
+					? `Fitted ${item.name} from ${entry.sourceName} for free. Check it in each move.`
+					: `Copied ${item.name} from ${entry.sourceName}. No generations used.`) +
+				(note ? ` ${note}.` : ''),
+			item.unfitted ? { tone: 'warning' } : undefined
 		);
 		await refreshShared();
 	} catch (e) {
 		toast(`Could not add ${entry.item.name}: ${(e as Error).message}`, { tone: 'danger' });
-	} finally {
-		shared.adding = '';
 	}
 }
 
@@ -1282,12 +1293,53 @@ export async function copyFromSource(itemId: string) {
 	}
 }
 
-/** The demo is a bundled fixture; items are generated into an editable copy in IndexedDB. */
+/** Free: the demo never changes, so copy it (or open the copy made before) and add the item there, fitted to the copy afresh
+ *  (the copy gains a standing move). An item the copy already has is worn instead. The tiles stay busy throughout, and
+ *  nothing more happens once the player opens another character. */
+export async function copyDemoAndAdd(entry: SharedItem) {
+	if (!isDemo() || shared.adding) return;
+	shared.adding = sharedKey(entry);
+	try {
+		let id: string;
+		try {
+			id = await copyDemo();
+		} catch (e) {
+			toast(`Could not copy the demo: ${(e as Error).message}`, { tone: 'danger' });
+			return;
+		}
+		const request = openRequest;
+		if (doc.id !== id) return;
+		await refreshShared();
+		if (doc.id !== id || request !== openRequest) return;
+		const now = shared.items.find(
+			(x) => x.sourceId === entry.sourceId && x.item.id === entry.item.id
+		);
+		if (now?.fit === 'remake') ui.selected = sharedKey(now);
+		else if (now) await addEntry(now);
+		else {
+			const held = store.project?.manifest.items.find(
+				(it) => it.status === 'accepted' && itemKey(it) === itemKey(entry.item)
+			);
+			if (!held)
+				toast(`${entry.item.name} is no longer available on ${entry.sourceName}.`, {
+					tone: 'warning'
+				});
+			else if (doc.items[held.slot] === held.id) ui.selected = held.id;
+			else wear(held.id);
+		}
+	} finally {
+		shared.adding = '';
+	}
+}
+
+/** The demo is a bundled fixture; items are generated into an editable copy in IndexedDB. Opens the copy unless the player
+ *  opened another character meanwhile. */
 export async function copyDemo(): Promise<string> {
-	const project = store.project!; // the open character when asked, not after the pipeline loads
+	const project = store.project!, // the open character when asked, not after the pipeline loads
+		request = openRequest;
 	const id = await (await createFlow()).saveCopy(project, 'Adventurer copy', 'walk');
 	await refreshProjects();
-	await openProject(id);
+	if (request === openRequest) await openProject(id);
 	return id;
 }
 

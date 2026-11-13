@@ -759,7 +759,7 @@ test('the list says how each item comes to this character, prefers the copy that
 			'a fencing sword'
 		)
 	);
-	// Hand labels swapped: made new; newest, but listed after the free ones.
+	// Hand labels swapped: no re-fit, so worn as drawn; newest, but listed after the fitted ones.
 	await store(
 		'rig-mirror',
 		dated(
@@ -772,7 +772,7 @@ test('the list says how each item comes to this character, prefers the copy that
 	expect(list.map((x) => [x.sourceName, x.item.prompt, x.fit])).toEqual([
 		['Fencer', 'a fencing sword', 'refit'],
 		['Knight', 'a steel sword', 'copy'],
-		['Mirror', 'a mirror sword', 'remake']
+		['Mirror', 'a mirror sword', 'unfitted']
 	]);
 });
 

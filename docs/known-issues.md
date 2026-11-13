@@ -200,8 +200,13 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## Shared items between characters
 
-Free sharing copies only onto byte-identical frozen body cells with the same geometry and slot semantics; any other body
-needs the item made for it at normal cost. Preserve: exact per-cell proof for copying; independent ids, materials and
+Free sharing copies exactly onto byte-identical frozen body cells with the same geometry and slot semantics. When no
+frame copies or re-fits, any other body on the same canvas size and camera can wear the item free and unfitted (owner decision, 2026-11-12: wearing an item
+that does not fit beats hiding it): the source cells are copied unchanged, keyed by move id, direction and frame where
+the move has the same frame count on both, at the same place in the frame (a padded layer keeps its padding around the
+target pivot, as a re-fit does, so layers stay centered for mirrored views). The source body's cuts, standing references and fit notes are dropped, so the body can show through where the
+source body hid it, and nothing checks the alignment: the item is marked **Needs a look**, named in export warnings, never
+re-fitted, extended or shared on, and a re-fit is never worn unfitted elsewhere (its original is offered instead). A different canvas size or camera still needs the item made for it at normal cost. Preserve: exact per-cell proof for copying; independent ids, materials and
 outfit choices on each copy; safe deletion of the source character; and no generation without the New item sheet's
 estimate and consent.
 

@@ -72,6 +72,7 @@ export const refittable = (item: Item) =>
 	!item.baseCut &&
 	!item.hides?.length &&
 	!item.refit &&
+	!item.unfitted &&
 	!wrongHand(item);
 
 const mirrorOf = (rig: Rig, dir: DirectionName) =>
@@ -155,12 +156,13 @@ const sameViews = (source: Manifest, target: Manifest) =>
 		return !!s && s.mirrorOf === d.mirrorOf;
 	});
 /** Same canvas size and the same camera when both record one; the pivots may differ. */
-const sameCanvas = (source: Manifest, target: Manifest) =>
+export const sameCanvas = (source: Manifest, target: Manifest) =>
 	stableStringify(source.rig.cell) === stableStringify(target.rig.cell) &&
 	(!source.rig.view || !target.rig.view || source.rig.view === target.rig.view) &&
 	(!source.rig.template || !target.rig.template || source.rig.template === target.rig.template);
-/** A copied layer on the target: an own pivot keeps its padding around the target's pivot. */
-const onTarget = (source: Manifest, target: Manifest, layer: Layer): Layer =>
+/** A copied layer on the target: an own pivot keeps its padding around the target's pivot, so its pixels keep their place in
+ *  the frame and a layer centered on the source cell stays centered (mirrored views flip the whole layer cell). */
+export const onTarget = (source: Manifest, target: Manifest, layer: Layer): Layer =>
 	layer.pivot
 		? {
 				...layer,

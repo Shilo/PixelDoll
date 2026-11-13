@@ -102,12 +102,12 @@ exported like any move. "Default" can't be used as the name of another move.
 
 ## Use items from your other characters
 
-Every finished item of your other saved characters on this device appears in the wardrobe, under **From your other
-characters** in its category, below **New item**. The category heading counts them ("2 items · 3 from others"). Each
+Every finished item of your other saved characters on this device appears in the wardrobe of every character, the demo
+included, under **From your other characters** in its category, below **New item**. The category heading counts them ("2 items · 3 from others"). Each
 tile shows the item as that character wears it, with a "from <character>" caption. Items this character already has
 (same slot and description) are not repeated, nor items it is making right now; when several characters have the same
-item, the one that fits this character best is listed. Free items come first. Nothing needs saving, and showing them
-never spends anything.
+item, the one that fits this character best is listed. Fitted free items come first, then free items not fitted to
+this body, then items to make new. Nothing needs saving, and showing them never spends anything.
 
 - **Same body** (an editable copy of the same character, or a re-import): the tile says "Free". Tapping it adds an exact
   copy and wears it, for free: "Copied <item> from <character>. No generations used." The copy is an ordinary item of
@@ -119,14 +119,23 @@ never spends anything.
   every frame: "Fitted <item> from <character> for free. Check it in each move." When some frames fit less well, its
   details mark it **Needs a look** and list them; tap one to show that frame on the stage. **Make one for <this
   character>** in its details makes a version for this body.
-- **Different body:** these tiles sit under "Make new for <this character>". Pixel layers drawn for one body do not fit
-  another. After you tap one, a message under the tile says "Drawn for <character>'s body, so it doesn't fit <this
-  character>." with **Make one for <this character>**, which opens **New item** with the same category, description and
-  name. It is drawn new, so it may look different; its price is shown there before anything is generated.
+- **Different body, same frame size and view:** the tile says "Free · not fitted". Tapping it still wears the item, for
+  free, exactly as it was drawn for the other body: "Wearing <item> as drawn for <character>. It may not line up with
+  this body. No generations used." Its pixels are unchanged and keep their place in the frame, so it may float, clip
+  or leave gaps, and moves with another frame count are left out. Its details mark it **Needs a look**, say so, and offer
+  **Make one for <this character>**; exports list it among their warnings.
+- **Different frame size or view:** these tiles sit under "Make new for <this character>". Pixels drawn at another size
+  or camera cannot be worn. After you tap one, a message under the tile says "Drawn for <character>'s body, so it
+  doesn't fit <this character>." with **Make one for <this character>**, which opens **New item** with the same category,
+  description and name. It is drawn new, so it may look different; its price is shown there before anything is
+  generated.
+- **On the demo:** the demo never changes, so tapping a free tile shows **Copy demo and wear**. It saves an editable copy
+  of the demo on this device (or opens the copy made before), then adds the item there as above. Nothing is generated.
 
 A copy with the same standing views as its source gets moves added later like any item (a missing-frames notice with a
 priced **Make it**). A free fit, or a copy whose standing views differ, has no standing design for this body, so its
-missing-frames notice offers **Make one for <this character>** instead. Deleting a character
+missing-frames notice offers **Make one for <this character>** instead. An item worn without fitting is never offered to
+other characters; its original is. Deleting a character
 only stops its items from appearing; copies already added to other characters stay. Items are shared within this
 browser's storage only; export character ZIPs to keep backups or move characters to another device.
 
