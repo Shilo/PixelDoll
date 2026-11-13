@@ -749,26 +749,43 @@ test('a lone character ignores wheel navigation and keyboard steps without reope
 		const revision = doc.rev,
 			project = store.project;
 		const selection = document.querySelector<HTMLElement>('[role="application"]')!;
-		const intercepted = [];
+		const zoom = () => Number(selection.dataset.sceneZoom);
+		const fit = zoom();
+		const zoomed = [];
 		for (const deltaY of [120, -120, 1, -1, 480]) {
-			intercepted.push(
+			zoomed.push(
 				!selection.dispatchEvent(
 					new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true })
 				)
 			);
 			await new Promise(requestAnimationFrame);
 		}
+		const zoomedOut = Math.abs(zoom() - fit) > 0.01;
+		// A Cmd wheel is a navigation wheel that the scene passes on; a Ctrl wheel with no Control key held is a
+		// trackpad pinch, so the scene zooms it. Neither may step a lone character.
+		const modified = [
+			!selection.dispatchEvent(
+				new WheelEvent('wheel', { deltaY: 200, metaKey: true, bubbles: true, cancelable: true })
+			),
+			!selection.dispatchEvent(
+				new WheelEvent('wheel', { deltaY: 200, ctrlKey: true, bubbles: true, cancelable: true })
+			)
+		];
 		for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'd']) {
 			selection.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
 			await new Promise(requestAnimationFrame);
 		}
 		return {
-			intercepted,
+			zoomed,
+			zoomedOut,
+			modified,
 			sameProject: store.project === project,
 			revisionDelta: doc.rev - revision
 		};
 	});
-	expect(result.intercepted).toEqual([false, false, false, false, false]);
+	expect(result.zoomed).toEqual([true, true, true, true, true]);
+	expect(result.zoomedOut).toBe(true);
+	expect(result.modified).toEqual([false, true]);
 	expect(result.sameProject).toBe(true);
 	expect(result.revisionDelta).toBe(0);
 	await expect(page.locator('.customize-action')).toBeEnabled();
@@ -927,9 +944,12 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 	};
 	await open(ids[0]);
 	await finish();
-	await page
-		.locator('.selection-world')
-		.dispatchEvent('wheel', { deltaY: 400, bubbles: true, cancelable: true });
+	await page.locator('.selection-world').dispatchEvent('wheel', {
+		deltaY: 400,
+		metaKey: true,
+		bubbles: true,
+		cancelable: true
+	});
 	await expect(chosen).toHaveAttribute('data-character-id', ids[2]);
 	expect(
 		await page
@@ -963,7 +983,9 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 				}
 				return state.carouselGet.call(this, key);
 			};
-			window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, cancelable: true }));
+			window.dispatchEvent(
+				new WheelEvent('wheel', { deltaY: 200, metaKey: true, cancelable: true })
+			);
 		},
 		[ids[2], ids[1]]
 	);
@@ -987,9 +1009,12 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 			id
 		);
 	await blocked(ids[2]);
-	await page
-		.locator('.selection-world')
-		.dispatchEvent('wheel', { deltaY: -200, bubbles: true, cancelable: true });
+	await page.locator('.selection-world').dispatchEvent('wheel', {
+		deltaY: -200,
+		metaKey: true,
+		bubbles: true,
+		cancelable: true
+	});
 	await release(ids[2]);
 	await blocked(ids[1]);
 	await expect(chosen).toHaveAttribute('data-character-id', ids[2]);
@@ -1060,11 +1085,18 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 	await search.fill('Carousel trio pair 1');
 	await expect(page.locator('.cast-character')).toHaveCount(1);
 	await settled();
-	await page
-		.locator('.selection-world')
-		.dispatchEvent('wheel', { deltaY: 1000, bubbles: true, cancelable: true });
+	// A Cmd wheel steps anywhere on this screen, but a search with one match has nowhere to step and the scene keeps
+	// its zoom.
+	const fit = await page.locator('.selection-world').getAttribute('data-scene-zoom');
+	await page.locator('.selection-world').dispatchEvent('wheel', {
+		deltaY: 1000,
+		metaKey: true,
+		bubbles: true,
+		cancelable: true
+	});
 	await settled();
 	await expect(page.locator('.cast-character')).toHaveCount(1);
+	await expect(page.locator('.selection-world')).toHaveAttribute('data-scene-zoom', fit!);
 	await search.fill('No carousel matches');
 	await expect(page.locator('.cast-character')).toHaveCount(0);
 	await settled();
@@ -1130,6 +1162,8 @@ test('fast wheel input skips intermediate loads and keeps the latest selection w
 		`Customize ${await page.locator('.selected-name-text').textContent()}`
 	);
 	const readyAppearance = await customizeAppearance();
+	// The first steps turn the wheel while Control is really held; the rest hold Cmd, which needs no key tracking.
+	await page.keyboard.down('Control');
 	await page.evaluate(async () => {
 		const { store } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
 		const state = window as unknown as {
@@ -1166,7 +1200,7 @@ test('fast wheel input skips intermediate loads and keeps the latest selection w
 				Object.defineProperty(request, 'result', { get: () => undefined });
 			return request;
 		};
-		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, cancelable: true }));
+		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, ctrlKey: true, cancelable: true }));
 	});
 	await expect(customizeButton).toHaveAttribute('aria-busy', 'true');
 	expect(await customizeAppearance()).toEqual(readyAppearance);
@@ -1178,8 +1212,8 @@ test('fast wheel input skips intermediate loads and keeps the latest selection w
 		)
 		.toBe('function');
 	await page.evaluate(async () => {
-		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, cancelable: true }));
-		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, cancelable: true }));
+		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, ctrlKey: true, cancelable: true }));
+		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 200, ctrlKey: true, cancelable: true }));
 		await new Promise<void>((resolve) =>
 			requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
 		);
@@ -1201,16 +1235,21 @@ test('fast wheel input skips intermediate loads and keeps the latest selection w
 	expect(reads).toEqual([ids[1], ids[3]]);
 	await page.evaluate(() => {
 		performance.now = () => 300;
-		window.dispatchEvent(new WheelEvent('wheel', { deltaY: -1000, cancelable: true }));
+		window.dispatchEvent(
+			new WheelEvent('wheel', { deltaY: -1000, ctrlKey: true, cancelable: true })
+		);
 	});
 	await expect(rows.nth(5)).toHaveAttribute('aria-pressed', 'true');
 	await expect(page.locator('.customize-action')).toBeEnabled();
+	await page.keyboard.up('Control');
 	const send = (deltas: number[], time: number) =>
 		page.evaluate(
 			async ({ deltas, time }) => {
 				performance.now = () => time;
 				for (const deltaY of deltas)
-					window.dispatchEvent(new WheelEvent('wheel', { deltaY, cancelable: true }));
+					window.dispatchEvent(
+						new WheelEvent('wheel', { deltaY, metaKey: true, cancelable: true })
+					);
 				await new Promise<void>((resolve) =>
 					requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
 				);
@@ -1232,10 +1271,11 @@ test('fast wheel input skips intermediate loads and keeps the latest selection w
 	await send([100], 910);
 	await expect(rows.nth(4)).toHaveAttribute('aria-pressed', 'true');
 	await expect(page.locator('.customize-action')).toBeEnabled();
+	// Wheels that never step clear the pending distance: Shift and Alt belong to the page and browser, a Ctrl pinch or
+	// a horizontal swipe zooms the scene.
 	for (const [turn, init] of [
 		{ shiftKey: true },
 		{ ctrlKey: true },
-		{ metaKey: true },
 		{ altKey: true },
 		{ deltaX: 600 }
 	].entries()) {
@@ -1250,7 +1290,22 @@ test('fast wheel input skips intermediate loads and keeps the latest selection w
 		expect(await readIds()).toEqual(before);
 		await expect(rows.nth(4)).toHaveAttribute('aria-pressed', 'true');
 	}
+	// A Cmd wheel is a navigation wheel, so it keeps the pending distance instead of clearing it: 140 + 60 px still
+	// crosses one step, and the reverse wheel brings the same character straight back.
+	await send([140], 4200);
+	await page.evaluate(() =>
+		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, metaKey: true, cancelable: true }))
+	);
+	await send([60], 4210);
+	await expect(rows.nth(5)).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	await page.evaluate(() =>
+		window.dispatchEvent(new WheelEvent('wheel', { deltaY: -200, metaKey: true, cancelable: true }))
+	);
+	await expect(rows.nth(4)).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.customize-action')).toBeEnabled();
 	await page.evaluate(async (ids) => {
+		// A trackpad pinch: the scene zooms it and any pending step is dropped.
 		window.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, ctrlKey: true, cancelable: true }));
 		const { openProject } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
 		await openProject(ids[5]);
@@ -1312,6 +1367,7 @@ test('fast wheel input skips intermediate loads and keeps the latest selection w
 	expect(await readIds()).toEqual([ids[6], ids[4], ids[6]]);
 	for (const cancel of ['popover', 'filter', 'row', 'modifier']) {
 		await page.evaluate(async (ids) => {
+			// A pinch drops any pending step so the explicit open below is the one that matters.
 			window.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, ctrlKey: true, cancelable: true }));
 			const { openProject } = await import(
 				/* @vite-ignore */ String('/src/studio/state.svelte.ts')
@@ -1337,6 +1393,7 @@ test('fast wheel input skips intermediate loads and keeps the latest selection w
 		if (cancel === 'filter') await search.fill('Wheel test 3');
 		if (cancel === 'row') await rows.nth(4).click();
 		if (cancel === 'modifier')
+			// A pinch in the middle of a step cancels it.
 			await page.evaluate(() =>
 				window.dispatchEvent(
 					new WheelEvent('wheel', { deltaY: 100, ctrlKey: true, cancelable: true })
@@ -1522,16 +1579,33 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 			elements.findIndex((element) => element.getAttribute('aria-pressed') === 'true')
 		);
 	let index = await selected();
+	// A plain wheel over the scene zooms it instead of stepping; one notch out and back leaves it at its fit.
+	const scene = page.locator('.selection-world');
+	const zoom = async () => Number(await scene.getAttribute('data-scene-zoom'));
+	const fit = await zoom();
+	await scene.dispatchEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true });
+	await expect.poll(zoom).toBeLessThan(fit);
+	expect(await selected()).toBe(index);
+	await scene.dispatchEvent('wheel', { deltaY: -120, bubbles: true, cancelable: true });
+	await expect.poll(async () => Math.abs((await zoom()) - fit)).toBeLessThan(1e-3);
+	expect(await selected()).toBe(index);
 	const wheel = (
 		deltaY: number,
-		init: { deltaMode?: number; deltaX?: number; shiftKey?: boolean; ctrlKey?: boolean } = {}
+		init: {
+			deltaMode?: number;
+			deltaX?: number;
+			shiftKey?: boolean;
+			ctrlKey?: boolean;
+			metaKey?: boolean;
+		} = {}
 	) =>
 		page.evaluate(
 			({ deltaY, init }) =>
 				!window.dispatchEvent(new WheelEvent('wheel', { deltaY, cancelable: true, ...init })),
 			{ deltaY, init }
 		);
-	for (const init of [{ shiftKey: true }, { ctrlKey: true }, { deltaX: 120 }])
+	// A plain wheel, Shift, a Ctrl pinch and a horizontal swipe all leave the cast alone.
+	for (const init of [{}, { shiftKey: true }, { ctrlKey: true }, { deltaX: 120 }])
 		expect(await wheel(60, init)).toBe(false);
 	expect(await selected()).toBe(index);
 	await page.evaluate(() => {
@@ -1544,7 +1618,9 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 		page.evaluate(
 			async ({ t, deltaY, deltaMode }) => {
 				(window as unknown as { t: number }).t = t;
-				window.dispatchEvent(new WheelEvent('wheel', { deltaY, deltaMode, cancelable: true }));
+				window.dispatchEvent(
+					new WheelEvent('wheel', { deltaY, deltaMode, metaKey: true, cancelable: true })
+				);
 				await new Promise<void>((resolve) =>
 					requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
 				);
@@ -1562,7 +1638,8 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 	expect(await selected()).toBe(index);
 	await at(500, 40);
 	await step(1);
-	await wheel(1, { ctrlKey: true });
+	// A trackpad pinch clears the pending distance and never steps, so the next turn starts over.
+	expect(await wheel(1, { ctrlKey: true })).toBe(false);
 	await at(0, 400);
 	await step(2);
 	await at(300, 13, 1);
@@ -1592,20 +1669,24 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 	await at(3900, 1, 2);
 	await step(2);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	expect(await wheel(120)).toBe(false);
+	// Even a Cmd wheel drops its pending step while a popover is open.
+	expect(await wheel(120, { metaKey: true })).toBe(false);
 	expect(await selected()).toBe(index);
 	await page.keyboard.press('Escape');
 	await expect(page.locator(':popover-open')).toHaveCount(0);
-	// A list that can scroll keeps the wheel in both directions, even at its ends; one that fits still steps.
-	const wheelOnRow = (deltaY: number, t: number) =>
+	// A plain wheel over the list scrolls it natively and never steps; a Cmd wheel steps from anywhere, including over
+	// a list that can still scroll.
+	const wheelOnRow = (deltaY: number, t: number, init: { metaKey?: boolean } = {}) =>
 		page.evaluate(
-			({ deltaY, t }) => {
+			({ deltaY, t, init }) => {
 				(window as unknown as { t: number }).t = t;
 				return !document
 					.querySelector('.character-row')!
-					.dispatchEvent(new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true }));
+					.dispatchEvent(
+						new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true, ...init })
+					);
 			},
-			{ deltaY, t }
+			{ deltaY, t, init }
 		);
 	await page.locator('.character-rows').evaluate((el) => {
 		el.style.maxHeight = '40px';
@@ -1623,8 +1704,10 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 	await page.locator('.character-rows').evaluate((el) => (el.scrollTop = el.scrollHeight));
 	expect(await wheelOnRow(120, 3600)).toBe(false); // at the bottom
 	expect(await selected()).toBe(index);
+	expect(await wheelOnRow(200, 3700, { metaKey: true })).toBe(true);
+	await step(1); // the list still scrolls, and the modified wheel steps anyway
 	await page.locator('.character-rows').evaluate((el) => (el.style.maxHeight = ''));
-	expect(await wheelOnRow(200, 3900)).toBe(true);
+	expect(await wheelOnRow(200, 3900, { metaKey: true })).toBe(true);
 	await step(1);
 	// Thumbnails are read once and shared: stepping and opening the name menu read only the record of the character being
 	// opened, and its frames, already decoded for its thumbnail, are not read or decoded again.
@@ -1669,8 +1752,9 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 	await page.getByRole('searchbox', { name: 'Search characters', exact: true }).fill(currentName!);
 	await expect(rows).toHaveCount(1);
 	const beforeSingleResult = await reads();
-	expect(await wheelOnRow(120, 5000)).toBe(false);
-	expect(await wheelOnRow(-120, 5300)).toBe(false);
+	// One match leaves nowhere to step, even for a Cmd wheel.
+	expect(await wheelOnRow(120, 5000, { metaKey: true })).toBe(false);
+	expect(await wheelOnRow(-120, 5300, { metaKey: true })).toBe(false);
 	await page.evaluate(
 		() =>
 			new Promise<void>((resolve) =>

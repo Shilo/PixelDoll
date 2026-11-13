@@ -50,6 +50,9 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 	const editable = (target: EventTarget | null) =>
 		target instanceof Element &&
 		!!target.closest('input, textarea, select, [contenteditable], button:not(.cast-character), a');
+	// Buttons and links have no wheel behavior of their own, so a wheel over the scene's caption still zooms it.
+	const scrollsItself = (target: EventTarget | null) =>
+		target instanceof Element && !!target.closest('input, textarea, select, [contenteditable]');
 	const span = () => {
 		const points = [...touches.values()];
 		return points.length === 2
@@ -98,7 +101,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 			(event) => {
 				if (
 					!available() ||
-					editable(event.target) ||
+					scrollsItself(event.target) ||
 					event.altKey ||
 					event.shiftKey ||
 					(options.modifiedWheel === 'pass' && modifiedWheel(event)) ||

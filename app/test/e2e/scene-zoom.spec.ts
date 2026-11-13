@@ -671,6 +671,13 @@ test('wheel, keys, middle click and native controls only change zoom where the s
 	await expect.poll(async () => (await readScene(host)).zoom).toBeGreaterThan(1);
 	expect(await chosen.getAttribute('data-character-id'), 'plain wheel never navigates').toBe(first);
 	await resetZoom(page, host);
+	// The caption's buttons have no wheel of their own, so the scene still zooms over them.
+	expect(
+		await wheel(page.locator('.selected-name'), { deltaY: -240 }),
+		'wheel over the caption'
+	).toBe(true);
+	await expect.poll(async () => (await readScene(host)).zoom).toBeGreaterThan(1);
+	await resetZoom(page, host);
 	// A trackpad pinch arrives as a Ctrl wheel without the Control key held: it zooms, never navigates.
 	expect(await wheel(host, { deltaY: 240, ctrlKey: true }), 'a trackpad pinch zooms').toBe(true);
 	await expect.poll(async () => (await readScene(host)).zoom).toBeLessThan(1);

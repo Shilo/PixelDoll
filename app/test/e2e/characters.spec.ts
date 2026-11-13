@@ -2469,12 +2469,23 @@ test('every character loads its frames once across switching, menus and updates,
 		await step(() => page.getByRole('button', { name: 'Next character', exact: true }).click());
 	for (let i = 0; i < 3; i++)
 		await step(() => page.getByRole('button', { name: 'Previous character', exact: true }).click());
-	for (const delta of [200, -200, 200]) {
+	const navigations: [number, { metaKey?: boolean; ctrlKey?: boolean }][] = [
+		[200, { metaKey: true }],
+		[-200, { ctrlKey: true }],
+		[200, { metaKey: true }]
+	];
+	for (const [delta, init] of navigations) {
+		// The middle step really holds Control, so its Ctrl wheel is not mistaken for a trackpad pinch.
+		if (init.ctrlKey) await page.keyboard.down('Control');
 		await step(() =>
-			page.evaluate((deltaY) => {
-				window.dispatchEvent(new WheelEvent('wheel', { deltaY, cancelable: true }));
-			}, delta)
+			page.evaluate(
+				({ deltaY, init }) => {
+					window.dispatchEvent(new WheelEvent('wheel', { deltaY, cancelable: true, ...init }));
+				},
+				{ deltaY: delta, init }
+			)
 		);
+		if (init.ctrlKey) await page.keyboard.up('Control');
 	}
 	for (const name of ['Hero 2', 'Adventurer', 'Hero 4', 'Hero 1'])
 		if ((await selectedName()) !== name) await step(() => rows.filter({ hasText: name }).click());
