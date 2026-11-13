@@ -106,6 +106,9 @@ Set `PLAYWRIGHT_CHANNEL=msedge` for an optional installed-Edge run. That is a se
 
 ## Export targets
 
+The character, item, outfit and move menus offer **Download ZIP**. An outfit ZIP keeps that saved look and its items.
+A move ZIP also keeps Default and any standing-reference moves its items need, so the character remains editable after import.
+
 The Studio's **Export** sheet groups **Engines and frameworks** separately from **Assets**, and builds one zip per selected
 target, on your device, for free. Each zip contains `README.txt` (quick start), `manifest.json` ([spec](docs/manifest-spec.md)),
 `layers/` (one sheet per item layer and

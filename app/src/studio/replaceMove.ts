@@ -1,9 +1,9 @@
 import type { StoredProject } from '../lib/store/project.ts';
-import { mergeQa } from '../lib/items/qa-summary.ts';
+import { retainItemQa } from '../lib/items/qa-summary.ts';
 import { dropCut } from '../lib/compose/compose.ts';
 import { rigArtworkVersion, type DirectionName, type Rig, type Sha256 } from '../lib/rig/rig.ts';
 import type { Skeleton } from '../lib/rig/skeleton.ts';
-import type { ItemQa, Manifest } from '../lib/store/manifest.ts';
+import type { Manifest } from '../lib/store/manifest.ts';
 
 /** Include western mirror children whenever their authored source changes. */
 export function affectedMoveDirections(
@@ -29,15 +29,6 @@ export function invalidateMoveItems(
 	};
 	for (const item of manifest.items) {
 		if (item.id === manifest.rig.baseItem) continue;
-		const original = [
-			...new Set(
-				item.layers.flatMap((l) =>
-					Object.entries(l.cells ?? {}).flatMap(([a, dirs]) =>
-						Object.keys(dirs).map((d) => `${a}/${d}`)
-					)
-				)
-			)
-		];
 		for (const layer of item.layers) {
 			if (layer.cells?.[anim]) {
 				for (const d of changed) delete layer.cells[anim]![d];
@@ -48,35 +39,7 @@ export function invalidateMoveItems(
 		dropCut(item, anim, changed); // the hidden ear px belong to the old body frames
 		if (item.anchorCell && belongs(item.anchorCell)) delete item.anchorCell;
 		if (item.coverage) item.coverage = item.coverage.filter((key) => !belongs(key));
-		const old = item.qa;
-		if (!old) continue;
-		const remaining = original.filter((key) => !belongs(key));
-		if (!remaining.length) {
-			delete item.qa;
-			continue;
-		}
-		const inheritedClips = old.inherited?.clips.filter((key) => !belongs(key));
-		const filtered: ItemQa = {
-			...old,
-			clips: Object.fromEntries(Object.entries(old.clips).filter(([key]) => !belongs(key))),
-			cells: Object.fromEntries(Object.entries(old.cells).filter(([key]) => !belongs(key))),
-			...(inheritedClips?.length ? { inherited: { ...old.inherited!, clips: inheritedClips } } : {})
-		};
-		if (!inheritedClips?.length) delete filtered.inherited;
-		// mergeQa aggregates the retained parts, including explicitly incomplete historical summaries.
-		const empty: ItemQa = {
-			minKeyKept: 1,
-			maxKeyOutside: 0,
-			minAreaRatio: 1,
-			maxAreaCV: 0,
-			maxPaletteDist: 0,
-			clipPx: 0,
-			status: 'pass',
-			rerolls: 0,
-			clips: {},
-			cells: {}
-		};
-		item.qa = mergeQa({ ...item, qa: filtered }, empty, {});
+		retainItemQa(item, (key) => !belongs(key));
 	}
 }
 

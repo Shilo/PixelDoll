@@ -372,8 +372,9 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
 	await panels(page).getByRole('tab', { name: 'Outfits', exact: true }).click();
 	await expect(outfit).toBeVisible();
 	await page
-		.getByRole('button', { name: 'Delete outfit Offline bronze look', exact: true })
+		.getByRole('button', { name: 'More actions for Offline bronze look', exact: true })
 		.click();
+	await page.getByRole('menuitem', { name: 'Delete outfit', exact: true }).click();
 	await expect(outfit).toHaveCount(0);
 });
 

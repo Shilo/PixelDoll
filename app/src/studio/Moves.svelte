@@ -6,6 +6,9 @@
 	import Lazy from './Lazy.svelte';
 	import { ChevronRight, Plus } from './icons.ts';
 	import { moveLabel } from './model.ts';
+	import SavedActions from './SavedActions.svelte';
+	import { downloadMoveZip } from './download.svelte.ts';
+	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
 	const m = $derived(store.project?.manifest);
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const nice = (id: string) => moveLabel(id, moveIds);
@@ -43,40 +46,48 @@
 					dirs.length +
 					m.rig.directions.filter((d) => d.mirrorOf && dirs.some((x) => x.id === d.mirrorOf))
 						.length}
-				<button
-					class="move-row bu-action"
-					data-variant="row"
-					aria-pressed={ui.anim === a.id}
-					onclick={() => {
-						ui.anim = a.id;
-						ui.frame = 0;
-					}}
+				<SavedActions
+					name={nice(a.id)}
+					kind="move"
+					locked={moveDeletionBlocked(a.id)}
+					ondownload={() => downloadMoveZip(a.id)}
+					ondelete={() => removeMove(a.id)}
 				>
-					<span class="move-thumb"
-						><Sprite
-							img={win(
-								composeCell(
-									view.project,
-									doc.items,
-									a.id,
-									dirs[0]?.id ?? 'south',
-									a.frames[ui.frame % a.frames.length].cell
-								)
-							)}
-							{k}
-							limit={56}
-							label="{nice(a.id)} preview"
-						/></span
+					<button
+						class="move-row bu-action"
+						data-variant="row"
+						aria-pressed={ui.anim === a.id}
+						onclick={() => {
+							ui.anim = a.id;
+							ui.frame = 0;
+						}}
 					>
-					<span class="move-text"
-						><b>{nice(a.id)}</b><span class="muted small"
-							>{a.cells}
-							{a.cells === 1 ? 'frame' : 'frames'} · {nDirs === 1
-								? `${dirs[0]?.id ?? 'one'} only`
-								: `${nDirs} directions`}</span
-						></span
-					>
-				</button>
+						<span class="move-thumb"
+							><Sprite
+								img={win(
+									composeCell(
+										view.project,
+										doc.items,
+										a.id,
+										dirs[0]?.id ?? 'south',
+										a.frames[ui.frame % a.frames.length].cell
+									)
+								)}
+								{k}
+								limit={56}
+								label="{nice(a.id)} preview"
+							/></span
+						>
+						<span class="move-text"
+							><b>{nice(a.id)}</b><span class="muted small"
+								>{a.cells}
+								{a.cells === 1 ? 'frame' : 'frames'} · {nDirs === 1
+									? `${dirs[0]?.id ?? 'one'} only`
+									: `${nDirs} directions`}</span
+							></span
+						>
+					</button>
+				</SavedActions>
 			{/each}
 		</div>
 		<details class="disclosure">
