@@ -146,7 +146,7 @@ enforced; `https://shilo.github.io/PixelDoll/` redirects there. The same build a
 Publish to `main` with `npm --prefix app run land`: it pushes the commit to a temporary branch, waits for that CI run and
 fast-forwards `main` only when it passed, so a failing commit cannot block the deploy. A pre-push hook refuses a push to
 `main` of a commit CI has not passed; enable it once per clone, from the main checkout:
-`git config core.hooksPath "$(git rev-parse --show-toplevel)/.githooks"`.
+`git config core.hooksPath "$(git rev-parse --show-toplevel)/.githooks"`. Every worktree runs that checkout's copy of the hook, so keep the main checkout on `main`.
 
 GitHub Pages cannot set response headers, so the Content-Security-Policy is a `<meta>` tag in `app/index.html`. It allows
 scripts from `'self'` only and network calls to `api.pixellab.ai` and PixelLab's image hosts. Add any new origin there.
