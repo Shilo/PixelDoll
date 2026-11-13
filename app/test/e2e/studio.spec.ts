@@ -248,8 +248,9 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 test('the startup preview notice expires after eight seconds', async ({ page }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 	const time = new Date('2026-11-02T12:00:00Z');
+	// Pause after the installed time: the installed clock runs until the pause, and pausing in its past throws (seen under load).
 	await page.clock.install({ time });
-	await page.clock.pauseAt(time);
+	await page.clock.pauseAt(new Date(time.getTime() + 1000));
 	await page.goto(dev);
 	const preview = page.getByRole('status').filter({ hasText: /Preview · v/ });
 	await expect(preview).toBeVisible();
