@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { onMount, tick, untrack } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import Toolbar from '../Toolbar.svelte';
 	import CharacterActions from '../CharacterActions.svelte';
@@ -11,7 +11,8 @@
 	import CastCarousel from './CastCarousel.svelte';
 	import ZoomControls from './ZoomControls.svelte';
 	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
-	import { sceneArtFits, sceneCamera, type SceneCamera } from './zoom.ts';
+	import { resolveZoom, sceneArtFits, sceneCamera, zoomCeiling } from './zoom.ts';
+	import { stills, thumbScale } from './thumbnails.svelte.ts';
 	import { castPose } from './carousel.ts';
 	import {
 		ui,
@@ -128,9 +129,34 @@
 		t: g.headerBottom + 16,
 		b: g.sheet ? g.listTop : g.h
 	});
+	// The selected character's fit in CSS px per art px, exactly as its thumbnail draws it: the shared zoom is absolute,
+	// and the camera multiplies this fit by the shown scale / fit.
+	const selectionFit = $derived.by(() => {
+		const id = neighbors.find(({ offset }) => !offset)?.p.id ?? doc.id;
+		const size = castSize(0);
+		return (
+			thumbScale(size, stills.get(id), ui.dpr) *
+			castPose(0, g.stage.r - g.stage.l, size, castSize(1)).scale
+		);
+	});
+	const selectionZoom = $derived(
+		resolveZoom(
+			experience.sceneZoom,
+			selectionFit,
+			zoomCeiling(experience.zoomCeiling, selectionFit)
+		)
+	);
+	$effect(() => {
+		if (experience.screen !== 'characters') return;
+		const ceiling = zoomCeiling(
+			untrack(() => experience.zoomCeiling),
+			selectionFit
+		);
+		if (ceiling !== untrack(() => experience.zoomCeiling)) experience.zoomCeiling = ceiling;
+	});
 	const selectionCamera = $derived(
 		sceneCamera({
-			value: experience.sceneZoom,
+			value: selectionZoom.scale / selectionFit,
 			anchor: g.feet,
 			backdrop: baseWorld,
 			plate: worldArt(ui.theme),
@@ -158,14 +184,12 @@
 			? (activeCamera?.backdrop ?? baseWorld)
 			: baseWorld
 	);
-	// The automatic fit needs no controls; they appear once the scene is zoomed, mainly to reset it. A zoom that would
-	// read 100% counts as the fit, so the controls never show a reset with nothing to undo.
-	const zoomed = (camera: Pick<SceneCamera, 'value'>) => Math.round(camera.value * 100) !== 100;
-	function changeZoom(value: number) {
+	// The automatic fit needs no controls; they appear once the person zooms, mainly to reset it.
+	function changeZoom(scale: number | null) {
 		const fromControls = document.activeElement?.closest('.scene-zoom');
-		experience.sceneZoom = value;
+		experience.sceneZoom = scale;
 		// Returning to the fit hides the controls, so keyboard focus moves to the scene they zoomed.
-		if (fromControls && !zoomed({ value }))
+		if (fromControls && scale === null)
 			void tick().then(() =>
 				(experience.screen === 'characters'
 					? selection
@@ -461,14 +485,8 @@
 			class="selection-world bu-focus"
 			{@attach (node) =>
 				sceneZoom(node, {
-					get value() {
-						return selectionCamera.value;
-					},
-					get min() {
-						return selectionCamera.min;
-					},
-					get max() {
-						return selectionCamera.max;
+					get zoom() {
+						return selectionZoom;
 					},
 					get enabled() {
 						return !ui.sheet;
@@ -477,9 +495,10 @@
 					onswipe: next,
 					modifiedWheel: 'pass'
 				})}
-			data-scene-zoom={selectionCamera.value}
-			data-scene-min={selectionCamera.min}
-			data-scene-max={selectionCamera.max}
+			data-scene-zoom={selectionZoom.scale}
+			data-scene-fit={selectionZoom.fit}
+			data-scene-min={selectionZoom.min}
+			data-scene-max={selectionZoom.max}
 			role="application"
 			aria-label="Character selection. WASD or arrows select; Enter customizes; plus and minus zoom."
 			tabindex="0"
@@ -524,14 +543,9 @@
 						</div>{/if}
 				</div>{:else}<p class="empty-cast">No matching characters</p>{/if}
 		</div>
-		{#if zoomed(selectionCamera)}
+		{#if selectionZoom.zoomed}
 			<div class="scene-zoom-controls">
-				<ZoomControls
-					value={selectionCamera.value}
-					min={selectionCamera.min}
-					max={selectionCamera.max}
-					onchange={changeZoom}
-				/>
+				<ZoomControls zoom={selectionZoom} onchange={changeZoom} />
 			</div>
 		{/if}
 		<aside class="cast-library" aria-label="Your characters">
@@ -578,14 +592,9 @@
 		<div class="experience-stage">
 			<WorldStage playbackHeight={previewHeight} bind:missing />
 		</div>
-		{#if experience.mode === 'preview' && activeCamera && zoomed(activeCamera)}
+		{#if experience.mode === 'preview' && experience.sceneCamera?.zoom.zoomed}
 			<div class="scene-zoom-controls">
-				<ZoomControls
-					value={activeCamera.value}
-					min={activeCamera.min}
-					max={activeCamera.max}
-					onchange={changeZoom}
-				/>
+				<ZoomControls zoom={experience.sceneCamera.zoom} onchange={changeZoom} />
 			</div>
 		{/if}
 		{#if experience.mode === 'preview' && m}

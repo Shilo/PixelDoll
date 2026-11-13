@@ -1,14 +1,14 @@
 import { on } from 'svelte/events';
-import { ZOOM_FIT_SNAP, zoomStep } from './zoom.ts';
+import { settleZoom, zoomStep, type SceneZoom } from './zoom.ts';
 
 export interface SceneZoomOptions {
-	readonly value: number;
-	readonly min: number;
-	readonly max: number;
+	/** This screen's resolved zoom: the scale shown, its fit and the shared bounds. */
+	readonly zoom: SceneZoom;
 	readonly enabled: boolean;
 	/** What a wheel turned while Ctrl or Cmd is held does: zoom too, or pass to the screen (Characters navigates). */
 	modifiedWheel: 'zoom' | 'pass';
-	onchange: (value: number) => void;
+	/** A chosen scale, or null to show each screen's fit again. */
+	onchange: (scale: number | null) => void;
 	/** A one-finger horizontal swipe: 1 toward the next item (finger moving left), -1 toward the previous. */
 	onswipe?: (direction: 1 | -1) => void;
 }
@@ -44,12 +44,9 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 	let wheelDistance = 0,
 		lastWheelAt = -Infinity,
 		pinchSettle = 0;
-	const step = (direction: 1 | -1) =>
-		change(zoomStep(options.value, direction, options.min, options.max));
-	// A pinch is direct manipulation and stays precise; released near the fit, it lands on it exactly.
-	const settlePinch = () => {
-		if (Math.abs(options.value - 1) < ZOOM_FIT_SNAP) change(1);
-	};
+	const step = (direction: 1 | -1) => options.onchange(zoomStep(options.zoom, direction));
+	// A pinch is direct manipulation and stays precise; released near the fit or a whole multiple, it lands on it.
+	const settlePinch = () => options.onchange(settleZoom(options.zoom, options.zoom.scale));
 	if (!tracking++) {
 		window.addEventListener('keydown', trackControl, true);
 		window.addEventListener('keyup', trackControl, true);
@@ -58,7 +55,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 	const available = () => options.enabled && !document.querySelector('[popover]:popover-open');
 	const change = (value: number) => {
 		if (Number.isFinite(value))
-			options.onchange(Math.min(options.max, Math.max(options.min, value)));
+			options.onchange(Math.min(options.zoom.max, Math.max(options.zoom.min, value)));
 	};
 	const editable = (target: EventTarget | null) =>
 		target instanceof Element &&
@@ -131,7 +128,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 					(event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? node.clientHeight : 1);
 				// A trackpad pinch (Ctrl without the key held) follows the fingers precisely, like a touch pinch.
 				if (event.ctrlKey && !modifiedWheel(event)) {
-					change(options.value * Math.exp(-Math.max(-500, Math.min(500, delta)) * 0.01));
+					change(options.zoom.scale * Math.exp(-Math.max(-500, Math.min(500, delta)) * 0.01));
 					clearTimeout(pinchSettle);
 					pinchSettle = window.setTimeout(settlePinch, 200);
 					return;
@@ -160,7 +157,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 				return;
 			if (!['+', '=', '-', '0'].includes(event.key)) return;
 			event.preventDefault();
-			if (event.key === '0') change(1);
+			if (event.key === '0') options.onchange(null);
 			else step(event.key === '-' ? -1 : 1);
 		}),
 		on(
@@ -172,7 +169,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 				if (event.button === 1) {
 					event.preventDefault();
 					event.stopImmediatePropagation();
-					change(1);
+					options.onchange(null);
 					return;
 				}
 				if (event.pointerType !== 'touch') return;
@@ -204,7 +201,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 				event.preventDefault();
 				event.stopImmediatePropagation();
 				const next = span();
-				if (next > 0 && distance > 0) change((options.value * next) / distance);
+				if (next > 0 && distance > 0) change((options.zoom.scale * next) / distance);
 				distance = next;
 			},
 			{ capture: true, passive: false }

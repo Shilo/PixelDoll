@@ -5,7 +5,7 @@
 	import Sprite from '../Sprite.svelte';
 	import { doc, view, ui, store, lastProject } from '../state.svelte.ts';
 	import { untrack } from 'svelte';
-	import { stills, newest } from './thumbnails.svelte.ts';
+	import { stills, newest, thumbBacking } from './thumbnails.svelte.ts';
 	let { id, name, size = 64 }: { id: string; name: string; size?: number } = $props();
 	const selected = $derived(id === doc.id);
 	const look = $derived(store.projects.find((p) => p.id === id)?.look ?? '');
@@ -55,7 +55,7 @@
 <span class="character-thumbnail" aria-hidden="true"
 	><Sprite
 		img={shown?.image ?? null}
-		k={Math.max(1, Math.floor((size / (shown?.frame.h ?? 64)) * ui.dpr))}
+		k={thumbBacking(size, shown ?? undefined, ui.dpr)}
 		limit={size}
 		label={name}
 	/></span

@@ -1,6 +1,7 @@
 import { SvelteMap } from 'svelte/reactivity';
 import type { Img } from '../../lib/image/png.ts';
 import type { Frame } from '../../lib/compose/compose.ts';
+import { spriteScale } from '../spriteScale.ts';
 
 // One still per character, shared by every thumbnail (cast, its reflection, the list and the name menu): stepping to
 // another character or opening the menu reuses it instead of reading and decoding the character again, so nothing blinks.
@@ -9,6 +10,24 @@ export const stills = new SvelteMap<string, { look: string; image: Img | null; f
 // Per character, the newest write: a live look or a read. Only the newest read may publish, and none after a live look.
 // Plain on purpose: finishing a read must not rerun the effects (a failed read would retry in a loop).
 export const newest = new Map<string, { look: string; reading: boolean }>();
+
+type Still = { image: Img | null; frame: Frame };
+
+/** The whole device px per art px a character thumbnail of `size` CSS px backs its frame with. */
+export function thumbBacking(size: number, still: Still | undefined, dpr: number): number {
+	return Math.max(1, Math.floor((size / (still?.frame.h ?? 64)) * dpr));
+}
+
+/** CSS px per art px of a character thumbnail of `size` CSS px, as CharacterThumb and Sprite draw it. */
+export function thumbScale(size: number, still: Still | undefined, dpr: number): number {
+	return spriteScale(
+		thumbBacking(size, still, dpr),
+		still?.image?.w ?? 64,
+		still?.image?.h ?? 64,
+		dpr,
+		size
+	);
+}
 
 /** Drop the stills of characters no longer listed (deleted here or in another tab); a read still running for one is
  *  discarded when it finishes. Call only with a complete listing. */

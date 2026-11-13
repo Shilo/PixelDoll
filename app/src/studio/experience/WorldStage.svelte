@@ -9,7 +9,7 @@
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { paintedFrame, reachFrame, actorScale, previewBounds } from './bounds.ts';
 	import { planLineup } from './lineup.ts';
-	import { sceneArtFits, sceneCamera, zoomBox } from './zoom.ts';
+	import { resolveZoom, sceneArtFits, sceneCamera, zoomBox, zoomCeiling } from './zoom.ts';
 	import { sceneZoom } from './sceneZoom.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
@@ -522,8 +522,19 @@
 				x: anchor.x + (row?.offsets[row.facings.indexOf(ui.dir)] ?? 0),
 				y: anchor.y
 			};
+			// The selected facing's fit in CSS px per art px; the shared zoom is absolute (zoom.ts).
+			const fit = row?.scale ?? (fitFrame ? actorScale(fitFrame, room, dpr) : 0);
+			if (!live && fit > 0) {
+				const ceiling = zoomCeiling(experience.zoomCeiling, fit);
+				if (ceiling !== experience.zoomCeiling) experience.zoomCeiling = ceiling;
+			}
+			const shared = resolveZoom(
+				experience.sceneZoom,
+				fit || 1,
+				zoomCeiling(experience.zoomCeiling, fit || 1)
+			);
 			const zoom = sceneCamera({
-				value: live ? 1 : experience.sceneZoom,
+				value: live || !fit ? 1 : shared.scale / fit,
 				anchor: focus,
 				backdrop,
 				plate: art,
@@ -543,10 +554,11 @@
 				);
 			});
 			if (!live) {
-				const stamp = JSON.stringify(zoom);
+				const published = { ...zoom, zoom: shared };
+				const stamp = JSON.stringify(published);
 				if (stamp !== cameraStamp) {
 					cameraStamp = stamp;
-					experience.sceneCamera = zoom;
+					experience.sceneCamera = published;
 				}
 				if (zoom.value !== 1) {
 					g.translate(zoom.anchor.x, zoom.anchor.y);
@@ -554,10 +566,12 @@
 					g.translate(-zoom.anchor.x, -zoom.anchor.y);
 				}
 			}
-			host.dataset.sceneZoom = String(zoom.value);
+			host.dataset.sceneZoom = String(live ? fit : shared.scale);
+			host.dataset.sceneFit = String(shared.fit);
+			host.dataset.sceneCamera = String(zoom.value);
 			host.dataset.sceneAnchor = `${zoom.anchor.x},${zoom.anchor.y}`;
-			host.dataset.sceneMin = String(zoom.min);
-			host.dataset.sceneMax = String(zoom.max);
+			host.dataset.sceneMin = String(shared.min);
+			host.dataset.sceneMax = String(shared.max);
 			let velocity = stick.origin
 				? { x: stick.value.x, y: -stick.value.y }
 				: keyboardVector(keys, experience.mode === 'side');
@@ -835,21 +849,14 @@
 	class="world-stage bu-focus"
 	{@attach (node) =>
 		sceneZoom(node, {
-			get value() {
-				const camera = experience.sceneCamera;
-				return camera ? Math.min(camera.max, Math.max(camera.min, experience.sceneZoom)) : 1;
-			},
-			get min() {
-				return experience.sceneCamera?.min ?? 1;
-			},
-			get max() {
-				return experience.sceneCamera?.max ?? 1;
+			get zoom() {
+				return experience.sceneCamera?.zoom ?? { scale: 1, fit: 1, min: 1, max: 1, zoomed: false };
 			},
 			get enabled() {
 				return experience.mode === 'preview' && !ui.sheet;
 			},
-			onchange: (value) => {
-				experience.sceneZoom = value;
+			onchange: (scale) => {
+				experience.sceneZoom = scale;
 			},
 			modifiedWheel: 'zoom'
 		})}

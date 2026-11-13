@@ -1,18 +1,16 @@
 <script lang="ts">
 	import { Minus, Plus } from '../icons.ts';
-	import { zoomStep } from './zoom.ts';
+	import { zoomStep, type SceneZoom } from './zoom.ts';
 	const description = $props.id();
 	let {
-		value,
-		min,
-		max,
+		zoom,
 		onchange
 	}: {
-		value: number;
-		min: number;
-		max: number;
-		onchange: (value: number) => void;
+		zoom: SceneZoom;
+		/** A chosen scale, or null to show the fit again. */
+		onchange: (scale: number | null) => void;
 	} = $props();
+	const percent = $derived(Math.round(zoom.scale * 100));
 </script>
 
 <div
@@ -21,27 +19,27 @@
 	aria-label="Scene zoom"
 	title="Wheel or pinch to zoom. Focus the scene for +, -, and 0. Middle-click resets."
 >
-	<span class="sr" id={description}>{Math.round(value * 100)}% of automatic fit</span>
+	<span class="sr" id={description}>{percent}% of the character's true size</span>
 	<button
 		class="bu-action"
 		data-variant="quiet"
 		aria-label="Zoom out"
-		disabled={value <= min + 0.0001}
-		onclick={() => onchange(zoomStep(value, -1, min, max))}><Minus size={18} /></button
+		disabled={zoom.scale <= zoom.min + 1e-9}
+		onclick={() => onchange(zoomStep(zoom, -1))}><Minus size={18} /></button
 	>
 	<button
 		class="bu-action scene-zoom-reset num"
 		data-variant="quiet"
 		aria-label="Reset scene zoom"
 		aria-describedby={description}
-		title="Reset zoom (0 or middle-click in the scene)"
-		onclick={() => onchange(1)}>{Math.round(value * 100)}%</button
+		title="Reset to the fit (0 or middle-click in the scene)"
+		onclick={() => onchange(null)}>{percent}%</button
 	>
 	<button
 		class="bu-action"
 		data-variant="quiet"
 		aria-label="Zoom in"
-		disabled={value >= max - 0.0001}
-		onclick={() => onchange(zoomStep(value, 1, min, max))}><Plus size={18} /></button
+		disabled={zoom.scale >= zoom.max - 1e-9}
+		onclick={() => onchange(zoomStep(zoom, 1))}><Plus size={18} /></button
 	>
 </div>

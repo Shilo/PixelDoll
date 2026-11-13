@@ -2,6 +2,7 @@
 	// Crisp pixel sprite: the backing store is k DEVICE px per sprite px (integer), CSS size = cell * k / devicePixelRatio,
 	// so pixels stay even at DPR 1.25 / 1.5 too (D1 §3.6). The checker squares are 8 sprite px.
 	import type { Img } from '../lib/image/png.ts';
+	import { spriteScale } from './spriteScale.ts';
 	import { ui } from './state.svelte.ts';
 	let {
 		img,
@@ -42,7 +43,7 @@
 	});
 	const px = $derived(k / ui.dpr);
 	// Small UI thumbnails may shrink for display; their backing pixels and the stored/exported artwork stay intact.
-	const fit = $derived(limit ? Math.min(1, limit / Math.max(width * px, height * px)) : 1);
+	const shown = $derived(spriteScale(k, width, height, ui.dpr, limit));
 </script>
 
 <span class="sprite-box" class:fit-box={fitToBox} role="img" aria-label={label}
@@ -52,8 +53,8 @@
 		class:checker
 		width={width * k}
 		height={height * k}
-		style:width={fitToBox ? '100%' : `${width * px * fit}px`}
-		style:height={fitToBox ? '100%' : `${height * px * fit}px`}
+		style:width={fitToBox ? '100%' : `${width * shown}px`}
+		style:height={fitToBox ? '100%' : `${height * shown}px`}
 		style:--chk="{16 * px}px"
 	></canvas></span
 >
