@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { castPose, carouselFrames } from '../../src/studio/experience/carousel.ts';
+import {
+	castPose,
+	castTransform,
+	carouselFrames,
+	carouselRoute
+} from '../../src/studio/experience/carousel.ts';
 import { heroScale, layout } from '../../src/studio/experience/geometry.ts';
 import { groundedThumb, thumbAnchors } from '../../src/studio/experience/thumbnails.svelte.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
@@ -17,23 +22,23 @@ describe('character carousel geometry', () => {
 					const heroSize = size * hero.scale;
 					const sideSize = size * side.scale;
 					const gap = side.x - (sideSize * span) / 2 - (heroSize * span) / 2;
-					expect(sideSize / heroSize).toBeCloseTo(0.85);
-					expect(side.y).toBeCloseTo(-heroSize * 0.0375);
-					expect(gap).toBeCloseTo(Math.max(12, Math.min(48, heroSize * 0.1)));
+					expect(sideSize / heroSize).toBeCloseTo(0.75);
+					expect(side.y).toBeCloseTo(-heroSize * 0.0625);
+					expect(gap).toBeCloseTo(Math.max(16, Math.min(80, heroSize * 0.18)));
 					expect(side.x + (sideSize * span) / 2 + gap).toBeLessThanOrEqual(stage / 2 + 1e-8);
 				}
 			}
 		}
 	});
 	it('centers one character and keeps companions slightly smaller and higher', () => {
-		expect(castPose(0, 1000, 320)).toEqual({ x: 0, y: 0, scale: 1 });
-		expect(castPose(-1, 1000, 320)).toEqual({ x: -328, y: -12, scale: 0.85 });
-		expect(castPose(1, 1000, 320)).toEqual({ x: 328, y: -12, scale: 0.85 });
+		expect(castPose(0, 1200, 320)).toEqual({ x: 0, y: 0, scale: 1 });
+		expect(castPose(-1, 1200, 320)).toEqual({ x: -337.6, y: -20, scale: 0.75 });
+		expect(castPose(1, 1200, 320)).toEqual({ x: 337.6, y: -20, scale: 0.75 });
 	});
 	it('uses painted silhouettes instead of transparent frame padding for closer horizontal slots', () => {
-		const full = castPose(1, 1000, 320);
-		const trimmed = castPose(1, 1000, 320, 0.6);
-		expect(trimmed.x).toBeCloseTo(209.6);
+		const full = castPose(1, 1200, 320);
+		const trimmed = castPose(1, 1200, 320, 0.6);
+		expect(trimmed.x).toBeCloseTo(225.6);
 		expect(trimmed.x).toBeLessThan(full.x * 0.7);
 		expect(trimmed.y).toBe(full.y);
 		expect(trimmed.scale).toBe(full.scale);
@@ -41,12 +46,12 @@ describe('character carousel geometry', () => {
 	it('packs asymmetric silhouettes with the same comfortable gap on both sides', () => {
 		const hero = { l: -120, r: 40 };
 		const side = { l: -30, r: 60 };
-		const right = castPose(1, 1000, 320, 1, { hero, side });
-		const left = castPose(-1, 1000, 320, 1, { hero, side });
-		expect(right.x + side.l * right.scale - hero.r).toBeCloseTo(32);
-		expect(hero.l - (left.x + side.r * left.scale)).toBeCloseTo(32);
-		expect(right.x).toBeCloseTo(97.5);
-		expect(left.x).toBeCloseTo(-203);
+		const right = castPose(1, 1200, 320, 1, { hero, side });
+		const left = castPose(-1, 1200, 320, 1, { hero, side });
+		expect(right.x + side.l * right.scale - hero.r).toBeCloseTo(57.6);
+		expect(hero.l - (left.x + side.r * left.scale)).toBeCloseTo(57.6);
+		expect(right.x).toBeCloseTo(120.1);
+		expect(left.x).toBeCloseTo(-222.6);
 		expect(left.y).toBe(right.y);
 	});
 	it('keeps mixed-size and asymmetrically padded bodies on the same slot feet line', () => {
@@ -76,8 +81,8 @@ describe('character carousel geometry', () => {
 				expect(art.t).toBeCloseTo(-250);
 				expect(art.b).toBeCloseTo(0);
 				for (const offset of [-1, 0, 1]) {
-					const pose = castPose(offset, 1000, 320);
-					expect(art.b * pose.scale + pose.y).toBeCloseTo(offset ? -12 : 0);
+					const pose = castPose(offset, 1200, 320);
+					expect(art.b * pose.scale + pose.y).toBeCloseTo(offset ? -20 : 0);
 				}
 			}
 		}
@@ -89,28 +94,72 @@ describe('character carousel geometry', () => {
 		}
 	});
 	it('fits narrow stages without changing the artwork backing size', () => {
-		expect(castPose(0, 300, 320).scale).toBeCloseTo(252 / 2.7 / 320);
-		expect(castPose(1, 300, 320).scale).toBeCloseTo((252 / 2.7 / 320) * 0.85);
+		expect(castPose(0, 300, 320).scale).toBeCloseTo(300 / 3.22 / 320);
+		expect(castPose(1, 300, 320).scale).toBeCloseTo((300 / 3.22 / 320) * 0.75);
 	});
-	it('routes wrapped actors invisibly around the edges', () => {
-		const frames = carouselFrames(
-			{ transform: 'translate(-306px, -30px) scale(0.6)', opacity: '1' },
-			{ x: 306, y: -30, scale: 0.6 },
-			820,
-			true,
-			1
-		);
-		expect(frames).toHaveLength(4);
-		expect(frames[1]).toMatchObject({ opacity: 0, offset: 0.45 });
-		expect(frames[2]).toMatchObject({ opacity: 0, offset: 0.46 });
-		expect(frames[1].transform).toContain('-820px');
-		expect(frames[2].transform).toContain('820px');
-		expect(frames[3]).toMatchObject({ opacity: 1 });
+	it('bounds wraps to virtual slots with an invisible midpoint and independently eased legs', () => {
+		for (const direction of [-1, 1]) {
+			for (const width of [300, 1000, 3440]) {
+				const slots = {
+					exit: castPose(-2 * direction, width, 320),
+					enter: castPose(2 * direction, width, 320)
+				};
+				const from = {
+					transform: castTransform(castPose(-direction, width, 320)),
+					opacity: '0.7'
+				};
+				const target = castPose(direction, width, 320);
+				const frames = carouselFrames(from, target, slots, true);
+				expect(frames).toHaveLength(4);
+				expect(frames[0]).toMatchObject(from);
+				expect(frames[1]).toMatchObject({
+					transform: castTransform(slots.exit),
+					opacity: 0,
+					offset: 0.5
+				});
+				expect(frames[2]).toMatchObject({
+					transform: castTransform(slots.enter),
+					opacity: 0,
+					offset: 0.5
+				});
+				expect(frames[0].easing).toBe('cubic-bezier(0.16, 1, 0.3, 1)');
+				expect(frames[2].easing).toBe(frames[0].easing);
+				expect(frames[3]).toEqual({ transform: castTransform(target), opacity: 1 });
+				expect(Math.sign(slots.exit.x)).toBe(-direction);
+				expect(Math.sign(slots.enter.x)).toBe(direction);
+				expect(Math.abs(slots.enter.x)).toBeCloseTo(2 * Math.abs(target.x));
+			}
+		}
 	});
 	it('retargets from the sampled pose instead of restarting', () => {
 		const current = { transform: 'matrix(0.8, 0, 0, 0.8, 123, -15)', opacity: '0.7' };
-		const frames = carouselFrames(current, { x: 0, y: 0, scale: 1 }, 820, false, -1);
+		const slots = { exit: castPose(2, 1000, 320), enter: castPose(-2, 1000, 320) };
+		const frames = carouselFrames(current, { x: 0, y: 0, scale: 1 }, slots, false);
 		expect(frames).toHaveLength(2);
 		expect(frames[0]).toEqual(current);
+	});
+	it('plans pair, trio, and two-step routes in both strip directions including hero arrivals', () => {
+		for (const direction of [-1, 1]) {
+			for (const [from, to, shift, wrap] of [
+				[0, -1, -1, false],
+				[-1, 0, -1, true],
+				[-1, 1, -1, true],
+				[1, 0, -1, false],
+				[1, -1, -2, false],
+				[-1, 0, -2, true]
+			] as const) {
+				const route = carouselRoute(from * direction, to * direction, shift * direction);
+				expect(route).toEqual({ wrap, exit: -2 * direction, enter: 2 * direction });
+				if (!wrap) continue;
+				const frames = carouselFrames(
+					{ transform: castTransform(castPose(from * direction, 1000, 320)), opacity: '1' },
+					castPose(to * direction, 1000, 320),
+					{ exit: castPose(route.exit, 1000, 320), enter: castPose(route.enter, 1000, 320) },
+					route.wrap
+				);
+				expect(frames[1]).toMatchObject({ opacity: 0, offset: 0.5 });
+				expect(frames[2]).toMatchObject({ opacity: 0, offset: 0.5 });
+			}
+		}
 	});
 });

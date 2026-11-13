@@ -1,6 +1,6 @@
 export type CastPose = { x: number; y: number; scale: number };
 
-const SIDE_SCALE = 0.85;
+const SIDE_SCALE = 0.75;
 
 export function castPose(
 	offset: number,
@@ -10,8 +10,8 @@ export function castPose(
 	art?: { hero: { l: number; r: number }; side: { l: number; r: number } }
 ): CastPose {
 	const castSpan = (1 + 2 * SIDE_SCALE) * span;
-	const fitted = Math.min(size, width / (castSpan + 4 * 0.1));
-	const gap = Math.max(12, Math.min(48, fitted * 0.1));
+	const fitted = Math.min(size, width / (castSpan + 4 * 0.18));
+	const gap = Math.max(16, Math.min(80, fitted * 0.18));
 	const hero = Math.min(size, Math.max(0, width - 4 * gap) / castSpan);
 	const side = hero * SIDE_SCALE;
 	const reach = art
@@ -29,17 +29,30 @@ export function castTransform(pose: CastPose): string {
 export function carouselFrames(
 	from: { transform: string; opacity: string },
 	to: CastPose,
-	edge: number,
-	wrap: boolean,
-	direction: number
+	slots: { exit: CastPose; enter: CastPose },
+	wrap: boolean
 ): Keyframe[] {
 	const end = { transform: castTransform(to), opacity: 1 };
 	return wrap
 		? [
-				from,
-				{ transform: castTransform({ ...to, x: -direction * edge }), opacity: 0, offset: 0.45 },
-				{ transform: castTransform({ ...to, x: direction * edge }), opacity: 0, offset: 0.46 },
+				{ ...from, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+				{ transform: castTransform(slots.exit), opacity: 0, offset: 0.5 },
+				{
+					transform: castTransform(slots.enter),
+					opacity: 0,
+					offset: 0.5,
+					easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
+				},
 				end
 			]
 		: [from, end];
+}
+
+export function carouselRoute(from: number, to: number, shift: number) {
+	const direction = Math.sign(shift) || -1;
+	return {
+		wrap: (to - from) * direction < 0,
+		exit: 2 * direction,
+		enter: -2 * direction
+	};
 }

@@ -303,7 +303,7 @@ describe('finite scene camera', () => {
 		const pose = castPose(0, geometry.stage.r, 64 * scale);
 		const hero = 50 * scale * pose.scale;
 		expect(pose.scale).toBeLessThan(1);
-		expect(hero).toBeCloseTo((50 * geometry.stage.r) / (3.1 * 64));
+		expect(hero).toBeCloseTo((50 * geometry.stage.r) / (3.22 * 64));
 		const base = placeWorld(geometry, worldArt('dark'), geometry.feet, hero);
 		expect(base.eye).toBeCloseTo(geometry.feet.y - hero * 0.86);
 	});

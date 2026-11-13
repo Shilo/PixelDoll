@@ -906,7 +906,7 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 		state.carouselAnimate = animate;
 		Element.prototype.animate = function (...args: Parameters<Element['animate']>) {
 			const animation = animate.apply(this, args);
-			if (this.matches('.carousel-character')) {
+			if (this.matches('.carousel-character, .cast-reflection-actor')) {
 				animation.pause();
 				animation.currentTime = 0;
 			}
@@ -957,6 +957,36 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 	expect(halfway.buttonStable).toBe(true);
 	expect(halfway.moving).toBe(true);
 	expect(halfway.pixels).toBe(true);
+	const boundedMotion = async () => {
+		const routes = await page.locator('.cast-character').evaluateAll((nodes) =>
+			nodes.flatMap((node) => {
+				const animation = node.getAnimations()[0];
+				if (!animation) return [];
+				const frames = (animation.effect as KeyframeEffect).getKeyframes();
+				const reflection = node.previousElementSibling!.getAnimations()[0];
+				return [
+					{
+						frames,
+						reflection: (reflection.effect as KeyframeEffect).getKeyframes(),
+						timing: animation.effect!.getTiming(),
+						reflectionTiming: reflection.effect!.getTiming(),
+						positions: frames.map((frame) => new DOMMatrix(String(frame.transform)).m41)
+					}
+				];
+			})
+		);
+		for (const route of routes) {
+			expect(route.reflection).toEqual(route.frames);
+			expect(route.reflectionTiming).toEqual(route.timing);
+			if (route.frames.length !== 4) continue;
+			expect(route.timing.easing).toBe('linear');
+			expect(route.frames[1]).toMatchObject({ opacity: '0', offset: 0.5 });
+			expect(route.frames[2]).toMatchObject({ opacity: '0', offset: 0.5 });
+			expect(route.positions[0] * route.positions[1]).toBeGreaterThanOrEqual(0);
+			expect(route.positions[2] * route.positions[3]).toBeGreaterThanOrEqual(0);
+		}
+	};
+	await boundedMotion();
 	await page.getByRole('button', { name: 'Previous character', exact: true }).click();
 	await expect(chosen).toHaveAttribute('data-character-id', ids[0]);
 	expect(
@@ -1127,6 +1157,7 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 				)
 		)
 		.toBe(true);
+	await boundedMotion();
 	await finish();
 	await search.fill('Carousel trio pair');
 	await expect(page.locator('.cast-character')).toHaveCount(2);
@@ -1136,7 +1167,13 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 		.poll(() =>
 			page.locator('.cast').evaluate((cast) => cast.getAnimations({ subtree: true }).length)
 		)
-		.toBe(2);
+		.toBe(4);
+	expect(
+		await chosen.evaluate(
+			(node) => (node.getAnimations()[0].effect as KeyframeEffect).getKeyframes().length
+		)
+	).toBe(4);
+	await boundedMotion();
 	await page.setViewportSize({ width: 390, height: 844 });
 	await settled();
 	await expect(page.locator('.cast-character')).toHaveCount(2);
@@ -1157,6 +1194,7 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 	await expect(page.locator('.selection-world')).toHaveAttribute('data-scene-zoom', fit!);
 	await search.fill('No carousel matches');
 	await expect(page.locator('.cast-character')).toHaveCount(0);
+	await expect(page.locator('.selection-ring')).toHaveCount(0);
 	await settled();
 	await page.evaluate(() => {
 		Element.prototype.animate = (
@@ -2011,6 +2049,32 @@ test.describe('selected cast centering', () => {
 								}
 							)
 							.toBeLessThanOrEqual(1);
+						const ring = page.locator('.selection-ring');
+						await expect(ring).toHaveCount(1);
+						await expect(ring).toHaveAttribute(
+							'data-selected-id',
+							(await page.locator('.cast-character.chosen').getAttribute('data-character-id'))!
+						);
+						await expect
+							.poll(() =>
+								ring.evaluate((node) => {
+									const bounds = node.getBoundingClientRect();
+									const chosen = document
+										.querySelector('.cast-character.chosen')!
+										.getBoundingClientRect();
+									const caption = document
+										.querySelector('.selected-caption')!
+										.getBoundingClientRect();
+									const cast = document.querySelector('.cast')!.getBoundingClientRect();
+									return (
+										Math.abs(bounds.left + bounds.width / 2 - cast.left - cast.width / 2) <= 1 &&
+										bounds.top <= chosen.bottom &&
+										bounds.bottom >= chosen.bottom &&
+										caption.top - bounds.bottom >= 12
+									);
+								})
+							)
+							.toBe(true);
 						await selection(page).focus();
 						await page.keyboard.press('ArrowRight');
 						await expect(page.locator('.character-row').nth((index + 1) % count)).toHaveAttribute(

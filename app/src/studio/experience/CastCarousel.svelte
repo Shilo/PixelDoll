@@ -3,8 +3,9 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import CharacterThumb from './CharacterThumb.svelte';
 	import CastReflection from './CastReflection.svelte';
+	import SelectionRing from './SelectionRing.svelte';
 	import { ui } from '../state.svelte.ts';
-	import { carouselFrames, castPose, castTransform } from './carousel.ts';
+	import { carouselFrames, carouselRoute, castPose, castTransform } from './carousel.ts';
 	import { groundedThumb, stills } from './thumbnails.svelte.ts';
 	type Entry = { p: { id: string; name: string }; offset: number };
 	type Actor = Entry & { leaving?: boolean; exitDirection?: number };
@@ -103,6 +104,12 @@
 	) {
 		const epoch = ++generation;
 		const old = previous;
+		const shifts = next.flatMap((actor) => {
+			const before = old.find((entry) => entry.p.id === actor.p.id);
+			const shift = before ? actor.offset - before.offset : 0;
+			return shift * forward < 0 ? [shift] : [];
+		});
+		const shift = shifts.sort((left, right) => Math.abs(left) - Math.abs(right))[0] ?? -forward;
 		const moving =
 			geometry === layout &&
 			!prefersReducedMotion.current &&
@@ -142,23 +149,32 @@
 		}
 		actors = [
 			...next,
-			...exits.map((actor) => ({
-				...actor,
-				leaving: true,
-				exitDirection: actor.exitDirection ?? forward
-			}))
+			...exits.map((actor) => {
+				const sampled = poses.get(actor.p.id);
+				const side = sampled ? Math.sign(new DOMMatrixReadOnly(sampled.transform).m41) : 0;
+				return {
+					...actor,
+					leaving: true,
+					exitDirection: actor.exitDirection ?? (-side || forward)
+				};
+			})
 		];
 		await tick();
 		if (epoch !== generation) return;
-		const edge = width / 2 + size;
 		for (const actor of actors) {
 			const node = nodes.get(actor.p.id);
 			if (!node) continue;
 			const side =
 				artwork[next.findIndex((entry) => entry.p.id === actor.p.id)] ??
 				groundedThumb(size, stills.get(actor.p.id), ui.dpr);
-			const pose = castPose(actor.offset, width, size, span, { hero, side });
-			if (actor.leaving) pose.x = -(actor.exitDirection ?? forward) * edge;
+			const poseAt = (offset: number) => castPose(offset, width, size, span, { hero, side });
+			const before = old.find((entry) => entry.p.id === actor.p.id);
+			const route = carouselRoute(before?.offset ?? actor.offset, actor.offset, shift);
+			const slots = {
+				exit: poseAt(actor.leaving ? -2 * (actor.exitDirection ?? forward) : route.exit),
+				enter: poseAt(route.enter)
+			};
+			const pose = actor.leaving ? slots.exit : poseAt(actor.offset);
 			const endpoint = castTransform(pose);
 			node.style.transform = endpoint;
 			node.style.opacity = actor.leaving ? '0' : '1';
@@ -169,21 +185,23 @@
 			}
 			if (!moving) continue;
 			const from = poses.get(actor.p.id) ?? {
-				transform: castTransform({ ...pose, x: forward * edge }),
+				transform: castTransform(slots.enter),
 				opacity: '0'
 			};
-			const before = old.find((entry) => entry.p.id === actor.p.id);
 			const wrap = Boolean(
-				before?.offset && actor.offset && (actor.offset - before.offset) * forward > 0
+				!actor.leaving &&
+				before &&
+				route.wrap &&
+				(new DOMMatrixReadOnly(from.transform).m41 - pose.x) * shift > 0
 			);
-			const frames = carouselFrames(from, pose, edge, wrap, forward);
+			const frames = carouselFrames(from, pose, slots, wrap);
 			if (actor.leaving) frames[frames.length - 1].opacity = 0;
 			const animation = node.animate(frames, {
 				duration:
 					actor.leaving && exits.find((entry) => entry.p.id === actor.p.id)?.leaving
 						? (durations.get(actor.p.id) ?? 220)
 						: 220,
-				easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
+				easing: wrap ? 'linear' : 'cubic-bezier(0.16, 1, 0.3, 1)'
 			});
 			animations.set(actor.p.id, animation);
 			if (reflection)
@@ -267,6 +285,15 @@
 				</div>
 			</button>
 		{/each}
+		<SelectionRing
+			{size}
+			{span}
+			{width}
+			{zoom}
+			{floorHorizon}
+			{floorFocal}
+			selectedId={entries.find((entry) => !entry.offset)?.p.id ?? null}
+		/>
 	</div>
 </div>
 

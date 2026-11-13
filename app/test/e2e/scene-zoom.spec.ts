@@ -58,12 +58,11 @@ async function usableScene(page: Page, preview = false) {
 			.querySelector(studio ? '.experience-stage' : '.cast')!
 			.getBoundingClientRect();
 		const header = document.querySelector('.experience-header')!.getBoundingClientRect();
-		const caption = document.querySelector('.selected-caption')?.getBoundingClientRect();
 		const playback = document.querySelector('.experience-playback')?.getBoundingClientRect();
 		return {
 			x: (stage.left + stage.right) / 2,
 			top: studio ? stage.top + (stage.width <= 430 ? 66 : 16) : header.bottom + 16,
-			bottom: studio ? playback!.top - 2 : caption!.top - 14
+			bottom: studio ? playback!.top - 2 : stage.bottom
 		};
 	}, preview);
 }
@@ -1034,7 +1033,7 @@ test('asymmetric padded artwork enlarges around its body and shrinks around its 
 		expect(main.ground).toBeCloseTo(main.feet, 2);
 		for (const side of actors.filter((actor) => !actor.chosen)) {
 			expect(side.ground).toBeLessThan(main.ground);
-			expect(side.height / main.height).toBeCloseTo(0.85, 2);
+			expect(side.height / main.height).toBeCloseTo(0.75, 2);
 			expect(side.box.right <= main.box.left || side.box.left >= main.box.right).toBe(true);
 		}
 		const painted = await castRects(page);
@@ -1045,7 +1044,7 @@ test('asymmetric padded artwork enlarges around its body and shrinks around its 
 				side.right <= paintedMain.left
 					? paintedMain.left - side.right
 					: side.left - paintedMain.right;
-			const expectedGap = Math.max(12, Math.min(48, main.height * (64 / 50) * 0.1));
+			const expectedGap = Math.max(16, Math.min(80, main.height * (64 / 50) * 0.18));
 			expect(gap).toBeCloseTo(expectedGap, 1);
 		}
 		await shot(page, info, `selection-grounded-${target === id ? 'padded' : 'fixture'}`);

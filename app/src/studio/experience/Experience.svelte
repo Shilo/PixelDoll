@@ -14,6 +14,7 @@
 	import { sceneArtFits, sceneCamera, zoomCeiling } from './zoom.ts';
 	import { stills, groundedThumb, thumbScale } from './thumbnails.svelte.ts';
 	import { castPose } from './carousel.ts';
+	import { floorRing, RING_GAP } from './floorRing.ts';
 	import {
 		ui,
 		doc,
@@ -164,6 +165,18 @@
 		);
 	});
 	const selectionZoom = $derived(sharedZoom('characters', selectionFit));
+	const selectionCaptionGap = $derived.by(() => {
+		const ring = floorRing(
+			selectedStill?.body.w ?? 64,
+			selectedStill?.body.h ?? 50,
+			selectionFit,
+			1,
+			g.feet.y - baseWorld.eye,
+			baseWorld.scale * worldArt(ui.theme).focal,
+			ui.dpr
+		);
+		return Math.max(14, ring.ry - ring.rise + ring.stroke / 2 + RING_GAP);
+	});
 	$effect(() => {
 		if (experience.screen !== 'characters') return;
 		const fit = selectionFit;
@@ -540,7 +553,7 @@
 				floorFocal={baseWorld.scale * worldArt(ui.theme).focal}
 				select={pick}
 			/>
-			{#if list.length}<div class="selected-caption">
+			{#if list.length}<div class="selected-caption" style:top="{g.feet.y + selectionCaptionGap}px">
 					<!-- The heading sits beside the menu button: a heading is not allowed inside a button. -->
 					<h2 class="sr">{name}</h2>
 					<button

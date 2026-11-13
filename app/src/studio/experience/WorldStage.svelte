@@ -11,7 +11,8 @@
 		reflectionStyle,
 		floorFlatness
 	} from './reflection.ts';
-	import { EYE, heroRoom, layout, placeWorld, ringRadius, ringRise } from './geometry.ts';
+	import { EYE, heroRoom, layout, placeWorld, ringRadius } from './geometry.ts';
+	import { floorRing, RING_GAP, RING_STROKE } from './floorRing.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { bakedFrame } from '../../lib/compose/compose.ts';
@@ -29,8 +30,6 @@
 	import { frameRecorder } from './paint.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
-	const RING_GAP = 12;
-	const RING_STROKE = 1.5;
 	const ringFlatness = (belowHorizon: number, worldScale: number, focal: number) =>
 		floorFlatness(belowHorizon, worldScale * focal);
 	import {
@@ -862,7 +861,6 @@
 					// A lineup marks its selected facing with a thin accent ring on the floor, anchored to the feet so it
 					// never moves with the walk or collides with tall gear; the sprite is drawn over its back half. A circle
 					// on the world floor looks as flat as the floor is foreshortened there: rows below the horizon over focal.
-					const flat = ringFlatness(point.y - backdrop.eye, backdrop.scale, art.focal);
 					if (row && facings.length > 1)
 						for (const [d, alpha] of [
 							[ui.dir, 0.85],
@@ -870,15 +868,19 @@
 						] as const) {
 							if (!d || !facings.includes(d) || (alpha < 0.5 && d === ui.dir)) continue;
 							const ringZoom = inspecting ? magnification : 1;
-							const rx = ringRadius(fit.w, scale, ringZoom),
-								ry = rx * flat,
-								rise =
-									ringRise(origin(d)?.standingHeight ?? 0, scale * ringZoom, ry * ringZoom, dpr) /
-									ringZoom;
+							const { rx, ry, rise, stroke } = floorRing(
+								fit.w,
+								origin(d)?.standingHeight ?? 0,
+								scale,
+								ringZoom,
+								point.y - backdrop.eye,
+								backdrop.scale * art.focal,
+								dpr
+							);
 							g.save();
 							g.globalAlpha = alpha;
 							g.strokeStyle = accent;
-							g.lineWidth = RING_STROKE / (inspecting ? magnification : 1);
+							g.lineWidth = stroke;
 							g.beginPath();
 							const center = inspecting
 								? drawPosition({ x: 0, y: 0 }, { x: at(d), y: point.y - rise }, 1)
