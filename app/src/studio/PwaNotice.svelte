@@ -6,7 +6,7 @@
 	let { paused = false, ondismiss }: { paused?: boolean; ondismiss: () => void } = $props();
 	$effect(() => {
 		const phase = updateNotice.phase;
-		if (!updateNotice.visible || $pwa.reloading || (!$pwa.ready && !$pwa.error)) return;
+		if (!updateNotice.visible || $pwa.reloading) return;
 		if (paused) {
 			updateNotice.pause(phase);
 			return;

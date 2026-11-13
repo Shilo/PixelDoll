@@ -586,7 +586,7 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await expect(indicator).toHaveCSS('animation-duration', '0s');
 		await page.emulateMedia({ reducedMotion: 'no-preference' });
 		await page.clock.fastForward(20000);
-		await expect(downloading).toBeVisible();
+		await expect(downloading).toHaveCount(0);
 		held.release();
 		await discover(page, d);
 		const latest = page.getByRole('status').filter({ hasText: 'Update to v8.9.4' });

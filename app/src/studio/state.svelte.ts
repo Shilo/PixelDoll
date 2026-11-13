@@ -291,9 +291,7 @@ export function toast(s: string, options: number | ToastOptions = 4000) {
 	ui.toastTone = o.tone ?? 'info';
 	ui.toastSheet = ui.sheet;
 	ui.toastAction = o.action ?? null;
-	toastRemaining = o.pending
-		? 0
-		: (o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000));
+	toastRemaining = o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000);
 	armToast();
 	return true;
 }

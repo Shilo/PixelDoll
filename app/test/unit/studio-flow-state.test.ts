@@ -2552,14 +2552,24 @@ test('unresolved errors reject lower-priority messages without changing their co
 	}
 });
 
-test('pending toasts stay until replaced or dismissed without leaving stale loading state', async () => {
+test('pending indicators preserve normal toast timeouts and clear on replacement or dismissal', async () => {
 	const s = await import('../../src/studio/state.svelte.ts');
 	vi.useFakeTimers();
 	try {
 		s.toast('Preparing download...', { pending: true });
-		vi.advanceTimersByTime(60_000);
+		vi.advanceTimersByTime(3999);
 		expect(s.ui.toast).toBe('Preparing download...');
 		expect(s.ui.toastPending).toBe(true);
+		vi.advanceTimersByTime(1);
+		expect(s.ui.toast).toBe('');
+		expect(s.ui.toastPending).toBe(false);
+		s.toast('Preparing download...', { pending: true, duration: 8000 });
+		vi.advanceTimersByTime(7999);
+		expect(s.ui.toastPending).toBe(true);
+		vi.advanceTimersByTime(1);
+		expect(s.ui.toast).toBe('');
+		expect(s.ui.toastPending).toBe(false);
+		s.toast('Preparing download...', { pending: true });
 		s.toast('Downloaded character.zip');
 		expect(s.ui.toastPending).toBe(false);
 		vi.advanceTimersByTime(4000);
