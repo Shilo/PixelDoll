@@ -955,29 +955,17 @@
 	place-items: center;
 	flex-shrink: 0;
 }
-/* The library's final row reads as an add tile, like the Wardrobe's New tile: its plus sits in the thumbnail column and
-   its label in the name column. Beside the side rail's character rows it takes their height; under the phone's stacked
-   scene, or alone, it stays shorter. */
-.character-rows .bu-action.new-character-row {
-	min-height: 56px;
-	border-color: var(--bu-rim);
-	background: var(--bu-outline);
+/* The library's final row looks like an unselected character row at about half its height (a full touch target): its
+   plus sits in the thumbnail column and its label in the name column. */
+.character-rows .new-character-row {
+	min-height: 44px;
+	padding-block: 4px;
 	font-size: 16px;
 	font-weight: 600;
-}
-.character-rows .bu-action.new-character-row:hover {
-	border-color: var(--bu-accent);
-	color: var(--bu-accent);
 }
 .character-rows .new-character-icon {
 	width: 64px;
 	color: var(--bu-muted);
-}
-.character-rows .new-character-row:hover .new-character-icon {
-	color: inherit;
-}
-.experience:not(.sheet-layout) .character-rows:has(.character-entry) .new-character-icon {
-	height: 64px;
 }
 .character-row strong {
 	font-weight: 600;
