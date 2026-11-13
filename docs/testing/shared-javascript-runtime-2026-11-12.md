@@ -255,3 +255,44 @@ it is not a second rendered compositor. Procedural palette generation, draft-cov
 export mask preparation remain authoring policies with existing parity tests. No additional visible
 defect was demonstrated for those suggestions. Preview looping and hand-conflict interaction policy
 remain the documented distinctions, and native-language adapters still require conformance testing.
+
+### Follow-up verification and baseline control
+
+The initial follow-up `npm run check` passed, followed by 183 unit files and 2,334 passing tests
+with Godot enabled. The first two-worker full E2E run had 324 passes and one PWA second-tab startup
+timeout in 9.2 minutes. A three-repeat serial run of that unchanged PWA test had two passes and one
+later release-activation timeout. Neither assertion nor timeout was changed.
+
+To challenge attribution, an unmodified `git archive` of `00ade519` was built in a temporary copy
+with the existing dependencies linked and read-only Git metadata supplied to the build. The same
+PWA test ran five times serially: three passed and two failed at the same later release-activation
+assertion. That failure therefore also exists without these runtime fixes. This does not prove
+that every observed startup timeout shares that cause, and no PWA fix is claimed here. The original
+full-run evidence remains in `app/test-results-runtime-sol-opus/`, the repeats in
+`app/test-results-runtime-sol-opus-pwa-rerun/`, and the baseline traces in the temporary baseline's
+`app/test-results-pwa-baseline/` directory. The failed initial baseline setup attempts did not run
+tests: Node refused TypeScript under `node_modules`, then the temporary build needed Git metadata.
+
+Implementation and review rationale were committed as `bf5acc9c`. Main's subsequent zoom changes
+were integrated as `2005ff24` before the final verification. On that integrated state,
+`npm run check` passed and all 183 unit files and 2,337 tests passed with Godot enabled and two workers.
+The final full E2E run then passed **327 of 327 tests** in 9.9 minutes with two workers and no
+retries, including the previously intermittent PWA test. Its independent output directory is
+`app/test-results-runtime-sol-opus-final/`. Production source-sync and distribution guards also
+passed. The earlier failures and baseline control are retained rather than replaced by this green run.
+
+Fresh native Phaser verification then passed all 72 cases: 24 positive executions and 48 detected
+negative controls across Phaser 3.80.1, 3.90.0 and 4.1.0 in Canvas and WebGL, using both generated
+fixtures and the final run's actual UI ZIPs. It compared 2,484 frames and 16,736,256 pixels under
+the existing exact/partial-alpha contract. The report is
+`app/test-results-runtime-evidence/phaser-sol-opus.json`. The full-demo UI ZIP SHA-256 is
+`11be94a6453264a00103c3aac7a0d6c148020201406ae8dca9d7df912c55dfe2`; the global-settings UI ZIP is
+`276b351b564d36a2b8ab2b035ad27e238f144c1b63444a39d706aa742bafa620`.
+
+Fresh GDevelop 5.6.285 verification passed the official editor-core import, official HTML export
+and shipped GDJS/PIXI rendering checks for timing, pivots, masks, depth, palettes, independent dolls,
+stopping, unequipping and destruction. Evidence is in
+`app/node_modules/.cache/gdevelop-native-verification/`; the previous output was copied to its
+`-pre-sol-opus` sibling before this run. Native Aseprite equivalence and enabled Godot checks passed
+in the full unit run. Unity's adapter was not changed; no fresh Unity Editor or standalone-player
+run is claimed in this follow-up. No manual preview session or paid PixelLab call was needed.
