@@ -10,6 +10,10 @@ test.beforeEach(async ({ context }) => {
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort());
 });
 
+/** Messages the controlling worker, which wakes it. While an update activates, that worker is the outgoing one: Chromium
+ * stops it as soon as it is idle, but a message that restarts it clears that request, and with DevTools attached (as
+ * Playwright is) it never reports idle again, so activation waits minutes. After an update, await the reloaded document
+ * (expectLoadedBuild) before asking. */
 async function controllerBuild(page: Page) {
 	return page.evaluate(async () => {
 		const worker = navigator.serviceWorker.controller;
@@ -406,8 +410,8 @@ test('updates in an already-used tab require an explicit click, preserve its rel
 		await expect(other.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		await page.bringToFront();
 		await update.click();
-		await expect.poll(() => controllerBuild(page)).toBe(b.release.build);
 		await expectLoadedBuild(page, b);
+		await expect.poll(() => controllerBuild(page)).toBe(b.release.build);
 		await expect(page.locator('.customize-action')).toBeVisible();
 		await expect(prompt).toHaveValue('Do not discard this unfinished form');
 		// The other tab now has B's worker but must retain A's exact public and lazy code bytes.
@@ -465,8 +469,8 @@ test('updates in an already-used tab require an explicit click, preserve its rel
 		const next = await discover(page, c);
 		expect(await controllerBuild(page)).toBe(b.release.build);
 		await next.click();
-		await expect.poll(() => controllerBuild(page)).toBe(c.release.build);
 		await expectLoadedBuild(page, c);
+		await expect.poll(() => controllerBuild(page)).toBe(c.release.build);
 		await other.close();
 		other = undefined;
 		const d = await testRelease('d', '8.1.4');
@@ -556,8 +560,8 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await expect(latest).toHaveCount(0);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await menu.getByRole('button', { name: 'Update to v8.9.4', exact: true }).click();
-		await expect.poll(() => controllerBuild(page)).toBe(d.release.build);
 		await expectLoadedBuild(page, d);
+		await expect.poll(() => controllerBuild(page)).toBe(d.release.build);
 	} finally {
 		await server.close();
 	}
