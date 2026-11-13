@@ -235,7 +235,11 @@
 					disabled={!$pwa.ready}
 					onclick={updateInNewTab}>Update now</button
 				>
-			{:else}<p role="status">Preparing the update. Keep this tab open.</p>{/if}
+			{:else}<p role="status">
+					{$pwa.reloading
+						? 'Ready to update. Reloading...'
+						: 'Preparing the update. Keep this tab open.'}
+				</p>{/if}
 		</div>
 	{/if}
 </dialog>

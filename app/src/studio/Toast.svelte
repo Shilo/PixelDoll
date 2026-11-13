@@ -7,6 +7,7 @@
 	import { restoreTrigger } from './experience/focus.ts';
 	import { updateNotice } from './updateNotice.svelte.ts';
 	import PwaNotice from './PwaNotice.svelte';
+	import PendingIndicator from './PendingIndicator.svelte';
 
 	let host = $state<HTMLDivElement>();
 	let focusFrom: HTMLElement | null = null;
@@ -93,6 +94,8 @@
 	});
 </script>
 
+{#snippet pendingIndicator()}<PendingIndicator />{/snippet}
+
 <svelte:document onvisibilitychange={() => (hidden = document.hidden)} />
 <svelte:window bind:innerWidth={viewportWidth} bind:innerHeight={viewportHeight} />
 {#if updateNotice.visible || (ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet))}
@@ -130,11 +133,10 @@
 				class="bu-toast"
 				title={ui.toastTitle || undefined}
 				tone={ui.toastTone}
+				indicator={ui.toastPending ? pendingIndicator : undefined}
 				live
 				onactivate={activate}
-				ondismiss={dismiss}
-				>{#if ui.toastPending}<span class="bu-spinner" aria-hidden="true"
-					></span>{' '}{/if}{ui.toast}</Notice
+				ondismiss={dismiss}>{ui.toast}</Notice
 			>{/if}
 		<PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
 	</div>

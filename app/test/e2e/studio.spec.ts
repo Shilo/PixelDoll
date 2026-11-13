@@ -175,9 +175,11 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	await expect(notice).toHaveCount(0);
 	await expect(world).toBeFocused();
 	await showNotification(page, 'Preparing download...', { pending: true });
-	await expect(notice.locator('.bu-spinner')).toBeVisible();
+	await expect(notice).toContainText('Preparing download...');
+	await expect(notice.locator('.bu-notice-indicator .ring.spin')).toBeVisible();
+	await expect(notice.locator('.bu-notice > svg')).toHaveCount(0);
 	await showNotification(page, 'Saved changes');
-	await expect(notice.locator('.bu-spinner')).toHaveCount(0);
+	await expect(notice.locator('.bu-notice-indicator')).toHaveCount(0);
 	await expect(notice).toContainText('Saved changes');
 	await expect(notice.locator('strong')).toHaveCount(0);
 	await dismiss().click();

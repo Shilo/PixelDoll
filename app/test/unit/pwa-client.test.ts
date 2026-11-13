@@ -156,12 +156,16 @@ async function setup() {
 	vi.stubGlobal('location', { reload });
 	vi.stubGlobal('fetch', fetch);
 	const client = await import('../../src/lib/pwa.ts');
+	const reloadStates: boolean[] = [];
+	client.pwa.subscribe((state) => reloadStates.push(state.reloading));
 	return {
 		client,
+		reloadStates,
 		fetch,
 		getRegistration,
 		register,
 		registration,
+		serviceWorker,
 		update,
 		reload,
 		messages,
@@ -493,6 +497,12 @@ describe('automatic startup updates revalidate asynchronous work', () => {
 	it('uses the verified fast path and records loop protection only immediately before reload', async () => {
 		const app = await readyStartup();
 		try {
+			app.reload.mockImplementationOnce(() => {
+				expect(get(app.client.pwa)).toMatchObject({ ready: true, reloading: true });
+				expect(app.beforeReload).toHaveBeenCalledOnce();
+				expect([...app.marker.values()]).toEqual(['1']);
+			});
+			expect(app.reloadStates).not.toContain(true);
 			await app.client.applyUpdate(async () => {}, app.automatic);
 			expect(app.messages).toContain('ACTIVATE');
 			expect(app.beforeReload).toHaveBeenCalledOnce();
@@ -526,6 +536,44 @@ describe('automatic startup updates revalidate asynchronous work', () => {
 		}
 	});
 
+	it('does not announce reload when startup loop protection cannot be saved', async () => {
+		const app = await readyStartup();
+		try {
+			vi.stubGlobal('sessionStorage', {
+				setItem: () => {
+					throw new Error('Storage denied');
+				}
+			});
+			await expect(app.client.applyUpdate(async () => {}, app.automatic)).rejects.toBeInstanceOf(
+				app.policy.StartupUpdateCancelled
+			);
+			expect(app.reloadStates).not.toContain(true);
+			expect(app.reload).not.toHaveBeenCalled();
+		} finally {
+			app.stop();
+		}
+	});
+
+	it('does not announce reload when the staged files fail verification', async () => {
+		const app = await readyStartup();
+		try {
+			const worker = app.registration.waiting!,
+				postMessage = worker.postMessage;
+			worker.postMessage = (message, ports) => {
+				if (message.type === 'VERIFY') ports[0]!.postMessage({ ready: false });
+				else postMessage(message, ports);
+			};
+			await expect(app.client.applyUpdate(async () => {}, app.automatic)).rejects.toThrow(
+				'The update is incomplete.'
+			);
+			expect(app.reloadStates).not.toContain(true);
+			expect(app.beforeReload).not.toHaveBeenCalled();
+			expect(app.reload).not.toHaveBeenCalled();
+		} finally {
+			app.stop();
+		}
+	});
+
 	it('refreshes an explicit update and refuses an obsolete notice when a newer deployment is discovered', async () => {
 		const app = await readyStartup();
 		try {
@@ -538,6 +586,7 @@ describe('automatic startup updates revalidate asynchronous work', () => {
 			expect(get(app.client.pwa).available).toEqual(later);
 			expect(app.messages).not.toContain('ACTIVATE');
 			expect(app.reload).not.toHaveBeenCalled();
+			expect(app.reloadStates).not.toContain(true);
 		} finally {
 			app.stop();
 		}
@@ -572,6 +621,7 @@ describe('automatic startup updates revalidate asynchronous work', () => {
 				expect(app.beforeReload).not.toHaveBeenCalled();
 				expect(app.marker.size).toBe(0);
 				expect(app.reload).not.toHaveBeenCalled();
+				expect(app.reloadStates).not.toContain(true);
 				if (type === 'VERIFY') expect(app.messages).not.toContain('ACTIVATE');
 				expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true });
 			} finally {
@@ -605,6 +655,7 @@ describe('automatic startup updates revalidate asynchronous work', () => {
 			expect(await result).toBeInstanceOf(app.policy.StartupUpdateCancelled);
 			expect(app.reload).not.toHaveBeenCalled();
 			expect(app.beforeReload).not.toHaveBeenCalled();
+			expect(app.reloadStates).not.toContain(true);
 			await app.client.applyUpdate(async () => {});
 			expect(app.reload).toHaveBeenCalledOnce();
 		} finally {
@@ -614,6 +665,75 @@ describe('automatic startup updates revalidate asynchronous work', () => {
 });
 
 describe('manual update save deadlines', () => {
+	it.each(['release', 'controller', 'redundant worker'] as const)(
+		'never announces reload when the %s changes during the final save',
+		async (replacement) => {
+			const app = await setup();
+			app.start();
+			await settle();
+			let finishSave!: () => void,
+				checks = 0;
+			const finalSave = new Promise<void>((resolve) => {
+				finishSave = resolve;
+			});
+			const result = app.client
+				.applyUpdate(async () => {
+					if (++checks === 3) await finalSave;
+				})
+				.catch((error) => error);
+			await settle();
+			expect(checks).toBe(3);
+			if (replacement === 'release')
+				app.client.pwa.update((state) => ({ ...state, available: later, ready: true }));
+			else if (replacement === 'redundant worker') app.registration.active.state = 'redundant';
+			else {
+				app.stage(later);
+				app.registration.active = app.registration.waiting!;
+				app.serviceWorker.controller = app.registration.waiting!;
+			}
+			finishSave();
+			expect((await result).message).toMatch(/changed|Another version activated/);
+			expect(app.reloadStates).not.toContain(true);
+			expect(app.reload).not.toHaveBeenCalled();
+		}
+	);
+
+	it.each([1, 2, 3])('never announces reload when save check %s fails', async (failedCheck) => {
+		const app = await setup();
+		app.start();
+		await settle();
+		let checks = 0;
+		await expect(
+			app.client.applyUpdate(async () => {
+				if (++checks === failedCheck) throw new Error('Storage is full');
+			})
+		).rejects.toThrow('Storage is full');
+		expect(app.reloadStates).not.toContain(true);
+		expect(app.reload).not.toHaveBeenCalled();
+		expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true });
+	});
+
+	it('returns to ready when invoking reload throws', async () => {
+		const app = await setup();
+		app.start();
+		await settle();
+		app.reload.mockImplementationOnce(() => {
+			expect(get(app.client.pwa).reloading).toBe(true);
+			throw new Error('Navigation blocked');
+		});
+		await expect(app.client.applyUpdate(async () => {})).rejects.toThrow('Navigation blocked');
+		expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true, reloading: false });
+	});
+
+	it('prepares a separate tab without announcing a reload in the current document', async () => {
+		const app = await setup();
+		app.start();
+		await settle();
+		expect(await app.client.prepareUpdateInNewTab()).toBe(scope);
+		expect(app.reloadStates).not.toContain(true);
+		expect(app.reload).not.toHaveBeenCalled();
+	});
+
 	it.each([1, 2, 3])(
 		'releases the update when save check %s stalls without reloading after a late save',
 		async (stalledCheck) => {
@@ -642,6 +762,7 @@ describe('manual update save deadlines', () => {
 			finishSave();
 			await settle();
 			expect(app.reload).not.toHaveBeenCalled();
+			expect(app.reloadStates).not.toContain(true);
 			if (stalledCheck < 3) expect(app.messages).not.toContain('ACTIVATE');
 		}
 	);

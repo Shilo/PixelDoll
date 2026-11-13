@@ -559,20 +559,74 @@ test('update notices expire without hiding the menu action, survive interaction,
 		server.deploy(d);
 		await page.evaluate(() => window.dispatchEvent(new Event('online')));
 		await held.requested;
-		const latest = page.getByRole('status').filter({ hasText: 'Update to v8.9.4' });
-		await expect(latest).toContainText('Downloading update...');
-		await expect(latest.locator('.bu-spinner')).toBeVisible();
+		const downloading = page.getByRole('status').filter({ hasText: 'Downloading update...' });
+		await expect(downloading.locator('strong')).toHaveText('Update to v8.9.4');
+		await expect(downloading.locator('.bu-small')).toHaveText('Downloading update...');
+		const indicator = downloading.locator('.bu-notice-indicator .ring.spin');
+		await expect(indicator).toBeVisible();
+		await expect(downloading.locator(':scope > svg')).toHaveCount(0);
+		expect(
+			await indicator.evaluate((element) => {
+				const style = getComputedStyle(element),
+					box = element.parentElement!.getBoundingClientRect();
+				return {
+					width: box.width,
+					height: box.height,
+					duration: style.animationDuration,
+					mask: style.maskImage
+				};
+			})
+		).toMatchObject({
+			width: 20,
+			height: 20,
+			duration: '1.2s',
+			mask: expect.stringContaining('radial-gradient')
+		});
+		await page.emulateMedia({ reducedMotion: 'reduce' });
+		await expect(indicator).toHaveCSS('animation-duration', '0s');
+		await page.emulateMedia({ reducedMotion: 'no-preference' });
 		await page.clock.fastForward(20000);
-		await expect(latest).toBeVisible();
+		await expect(downloading).toBeVisible();
 		held.release();
 		await discover(page, d);
-		await expect(latest).toContainText('Ready to update.');
-		await expect(latest.locator('.bu-spinner')).toHaveCount(0);
+		const latest = page.getByRole('status').filter({ hasText: 'Update to v8.9.4' });
+		await expect(latest.locator('.bu-small')).toHaveText('Ready to update.');
+		await expect(latest.locator('.bu-notice-indicator')).toHaveCount(0);
 		await page.clock.fastForward(15000);
 		await expect(latest).toHaveCount(0);
+		await page.evaluate(() => {
+			addEventListener(
+				'beforeunload',
+				() => {
+					const notice = [...document.querySelectorAll('.bu-notice[role="status"]')].find(
+						(element) =>
+							element.querySelector('.bu-small')?.textContent?.trim() ===
+							'Ready to update. Reloading...'
+					);
+					sessionStorage.setItem(
+						'pwa-reload-notice',
+						JSON.stringify({
+							text: notice?.querySelector('.bu-small')?.textContent?.trim(),
+							actions: notice?.querySelectorAll('button').length,
+							dialog: document
+								.querySelector('.pwa-dialog[open] [role="status"]')
+								?.textContent?.trim()
+						})
+					);
+				},
+				{ once: true }
+			);
+		});
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await menu.getByRole('button', { name: 'Update to v8.9.4', exact: true }).click();
 		await expectLoadedBuild(page, d);
+		expect(
+			await page.evaluate(() => JSON.parse(sessionStorage.getItem('pwa-reload-notice')!))
+		).toEqual({
+			text: 'Ready to update. Reloading...',
+			actions: 0,
+			dialog: 'Ready to update. Reloading...'
+		});
 		await expect.poll(() => controllerBuild(page)).toBe(d.release.build);
 	} finally {
 		await server.close();
