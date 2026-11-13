@@ -67,16 +67,14 @@
 	let alive = true;
 	const frame = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
 	// Advanced starts open when a reopened draft already changed something there, so no choice is hidden.
-	const advancedOpen = !!(d.seed || d.model === 'pro-flash' || d.outline || d.detail);
+	// It is bound, not set once, so a re-render (a new summary note after a model change) never closes it.
+	let advancedOpen = $state(!!(d.seed || (d.model && d.model !== 'v3') || d.outline || d.detail));
+	const v3 = $derived((d.model ?? 'v3') === 'v3');
 	const advancedNote = $derived(
 		[
-			d.model === 'pro-flash' ? 'Pro Flash' : '',
-			d.model !== 'pro-flash' && d.outline
-				? `${OUTLINES.find((o) => o.value === d.outline)?.label} outline`
-				: '',
-			d.model !== 'pro-flash' && d.detail
-				? `${DETAILS.find((o) => o.value === d.detail)?.label} detail`
-				: '',
+			v3 ? '' : MODELS.find((m) => m.id === d.model)?.label,
+			v3 && d.outline ? `${OUTLINES.find((o) => o.value === d.outline)?.label} outline` : '',
+			v3 && d.detail ? `${DETAILS.find((o) => o.value === d.detail)?.label} detail` : '',
 			d.seed ? `seed ${d.seed}` : ''
 		]
 			.filter(Boolean)
@@ -336,18 +334,19 @@
 					<Help
 						title="Nude"
 						text="Off: plain white underwear. On: nothing worn. Underwear is part of the base and may show through open clothing. Exact prompt edits can override this guidance. Review generated coverage."
-					/>
-					<input
-						class="bu-switch"
-						type="checkbox"
-						role="switch"
-						aria-label="Nude"
-						checked={isNudeBase(d)}
-						onchange={(event) => {
-							edited();
-							writeNudeBase(d, event.currentTarget.checked);
-						}}
-					/>
+					/><label class="bu-check bu-action nude-field" data-variant="field"
+						><span>{isNudeBase(d) ? 'Nothing worn' : 'White underwear'}</span><input
+							class="bu-switch"
+							type="checkbox"
+							role="switch"
+							aria-label="Nude"
+							checked={isNudeBase(d)}
+							onchange={(event) => {
+								edited();
+								writeNudeBase(d, event.currentTarget.checked);
+							}}
+						/></label
+					>
 				</div>
 				<div class="prompt-note">
 					<button
@@ -523,7 +522,7 @@
 			{/each}
 		</div>
 		<span class="direction-announcement" aria-live="polite">{announcement}</span>
-		<details class="disclosure advanced" open={advancedOpen}>
+		<details class="disclosure advanced" bind:open={advancedOpen}>
 			<summary
 				><ChevronRight size={14} />Advanced{#if advancedNote}<span class="faint advanced-note"
 						>{advancedNote}</span
@@ -533,7 +532,7 @@
 				<div class="trait-row">
 					<Help
 						title="Model"
-						text="The PixelLab model that draws the character. Character V3 is the default. Pro Flash draws a chibi style at about three times the cost. Either way the character is registered with V3, so moves and items work the same."
+						text="The PixelLab model that draws the character. Pro follows the prompt more closely at several times the cost. Pro Flash draws a chibi style at about three times the cost. Every model registers the character with V3, so moves and items work the same."
 					/><select
 						class="bu-input input"
 						aria-label="Model"
@@ -543,7 +542,7 @@
 							>{/each}</select
 					>
 				</div>
-				{#if (d.model ?? 'v3') === 'v3'}
+				{#if v3}
 					<div class="trait-row">
 						<Help
 							title="Outline"
@@ -683,6 +682,13 @@
 	}
 	.trait-row :global(.help-title) {
 		align-self: center;
+	}
+	/* A field like the selects above it: the state on the left, the switch at the trailing edge. */
+	.nude-field {
+		justify-content: space-between;
+		padding: 0 9px 0 12px;
+		border-radius: var(--bu-radius-control);
+		font-size: 16px;
 	}
 	.input {
 		width: 100%;

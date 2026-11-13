@@ -32,7 +32,7 @@ Evidence tags: **[S1]–[S4]** live spikes, **[M1]–[M5]** mockup reports, **[R
 
 | Purpose | Allowed | Banned |
 |---|---|---|
-| Create characters | `create-character-v3` (default), `create-character-pro-flash` (chibi styles only) | `create-character-pro`, 4/8-direction standard routes |
+| Create characters | `create-character-v3` (default), `create-character-pro` (closer prompt adherence, 32–168 px), `create-character-pro-flash` (chibi styles only) | 4/8-direction standard routes |
 | Animate | `skeleton-v3` (raw `/animate-with-skeleton-v3`, managed `mode: "skeleton-v3"`), `pixminimax`, `v3` (managed or raw text) | `mode: "template"`, `mode: "pro"`, legacy `/animate-with-skeleton` |
 | Skeleton | `estimate-skeleton` | — |
 | Edit (Pro allowed for editing) | `edit-animation-v2`, `inpaint-v3` (best); `transfer-outfit-v2` (reference-image dressing: concept-image items, experimental until their spike passes); Pro Flash / Pixen only for drafts | `edit-images-v2` for layers (shifts every frame [S4]) |

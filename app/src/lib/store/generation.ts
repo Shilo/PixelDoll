@@ -4,6 +4,7 @@ import type { Item, Manifest, Provenance } from './manifest.ts';
 
 const TOOLS: Record<string, string> = {
 	'/create-character-v3': 'Character V3',
+	'/create-character-pro': 'Character Pro',
 	'/create-character-pro-flash': 'Character Pro Flash',
 	'/estimate-skeleton': 'Skeleton estimate',
 	'/animate-with-skeleton-v3': 'Skeleton animation V3',
@@ -120,6 +121,7 @@ const ROUTES: Record<NonNullable<Item['route']>, string> = {
 };
 export const routeName = (route: Item['route']) => (route ? ROUTES[route] : '');
 
+const CREATORS = ['/create-character-v3', '/create-character-pro', '/create-character-pro-flash'];
 /** The summary for one item; the base body describes the character's creation. */
 export function generationDetails(m: Manifest, it: Item): GenerationDetails {
 	const prov = it.provenance ?? [];
@@ -137,11 +139,7 @@ export function generationDetails(m: Manifest, it: Item): GenerationDetails {
 	};
 	if (it.id === m.rig.baseItem) {
 		// The first drawing call made from text: the character as created.
-		const created = prov.find(
-			(p) =>
-				(p.endpoint === '/create-character-v3' || p.endpoint === '/create-character-pro-flash') &&
-				!p.params?.reference_image
-		);
+		const created = prov.find((p) => CREATORS.includes(p.endpoint) && !p.params?.reference_image);
 		const size = created?.params?.image_size as { width?: number; height?: number } | undefined;
 		add('Body', size?.width ? `${size.width} px` : undefined);
 		add('Frame', `${m.rig.cell.w} × ${m.rig.cell.h} px`);

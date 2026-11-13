@@ -35,7 +35,7 @@ PixelLab returns one composited image per call and has no layers. PixelDoll turn
 ## Capabilities and Constraints
 
 - Pipeline: create-character-v3 base, skeleton-v3 rig with stored keypoints, items dressed on a chroma-keyed copy of the base with Pro edit-animation-v2, posed per move with animate-with-skeleton-v3, extracted by color key, with Pro inpaint-v3 as the per-clip fallback. Held weapons use a padded layer sharing the body pivot.
-- Only the PixelLab models listed in AGENTS.md are allowed; Pro is for editing only.
+- Only the PixelLab models listed in AGENTS.md are allowed.
 - Sprites export at native size and are never rescaled for an engine.
 - Data is saved locally and automatically. The app is in preview: no backward compatibility for older saved data, but old data must never brick it.
 - Remembered credentials live in optional plaintext `localStorage['pixellabApiKey']`, shared across apps on the origin, by design.

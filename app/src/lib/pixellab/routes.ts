@@ -59,6 +59,15 @@ export interface CreateCharacterProFlash {
 	template_id?: string;
 	seed?: number;
 }
+/** Pro draws all eight views itself (create_with_style, text only); it follows prompts more closely than V3. */
+export interface CreateCharacterPro {
+	description: string;
+	image_size: Size; // 32-168; the stored canvas may grow to 256 to fit the drawing
+	view?: CreateCharacterV3['view'];
+	template_id?: string;
+	seed?: number;
+	no_background?: boolean;
+}
 export interface EnhanceCharacterV3Prompt {
 	description: string;
 	image_size: Size;
@@ -162,6 +171,7 @@ export interface AnimateSkeletonV3 {
 
 export const routes = {
 	createCharacterV3: (b: CreateCharacterV3) => post('/create-character-v3', b),
+	createCharacterPro: (b: CreateCharacterPro) => post('/create-character-pro', b),
 	createCharacterProFlash: (b: CreateCharacterProFlash) => post('/create-character-pro-flash', b),
 	enhanceCharacterV3Prompt: (b: EnhanceCharacterV3Prompt) =>
 		post('/enhance-character-v3-prompt', b),

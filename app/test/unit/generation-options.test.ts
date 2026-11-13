@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 import { createCharacter, drawRequest, estimate } from '../../src/studio/create.ts';
 import { createPlan, itemPlan } from '../../src/studio/apiPlans.ts';
 import { itemRoute } from '../../src/studio/itemRoute.ts';
-import { styleOf } from '../../src/studio/characterConfig.ts';
+import { draftErrors, newCharacterDraft, styleOf } from '../../src/studio/characterConfig.ts';
 import {
 	costText,
 	generationDetails,
@@ -58,6 +58,32 @@ test('V3 style hints reach the request; Pro Flash drops them and no_background',
 	});
 });
 
+test('Pro draws from text with a transparent background and no V3 hints', () => {
+	const pro = drawRequest({ ...spec, exactPrompt: true, model: 'pro' }, 7);
+	expect(pro.path).toBe('/create-character-pro');
+	expect(pro.body).toEqual({
+		description: 'farmer',
+		image_size: { width: 48, height: 48 },
+		view: 'low top-down',
+		template_id: 'mannequin',
+		seed: 7,
+		no_background: true
+	});
+	expect(styleOf({ model: 'pro', outline: 'lineless' })).toEqual({ model: 'pro' });
+	expect(toolOf({ endpoint: '/create-character-pro', params: {} })).toBe('Character Pro');
+});
+
+test('Pro refuses bodies over 168 px in the form and before spending', async () => {
+	const d = { ...newCharacterDraft(), body: 172, model: 'pro' as const };
+	expect(draftErrors(d).join(' ')).toContain('Pro draws bodies up to 168 px.');
+	expect(draftErrors({ ...d, body: 168 }).join(' ')).not.toContain('Pro draws');
+	expect(draftErrors({ ...d, model: 'v3' }).join(' ')).not.toContain('Pro draws');
+	const e = await createCharacter({ ...spec, size: 172, frame: 256, model: 'pro' }).catch(
+		(e: Error) => e.message
+	);
+	expect(e).toContain('Pro draws bodies up to 168 px.');
+});
+
 test('Pro Flash estimates follow the measured /pro-flash/cost table', () => {
 	const flash = (size: number) => estimate({ directions: four, size, model: 'pro-flash' }).gens;
 	expect(flash(48)).toBe(6.25); // billed 6 + 0.25 registration live (2026-11-12)
@@ -66,6 +92,12 @@ test('Pro Flash estimates follow the measured /pro-flash/cost table', () => {
 	expect(flash(200)).toBe(11.25);
 	expect(flash(256)).toBe(17.25);
 	expect(estimate({ directions: four, size: 48 }).gens).toBe(2.25);
+	// Pro: billed 10 gens at 48 px and 25 at 128 px (live 2026-11-13); other sizes disclose a range up to a safe bound.
+	const pro = (size: number) => estimate({ directions: four, size, model: 'pro' });
+	expect(pro(48)).toMatchObject({ gens: 10.25, maxGens: 10.65 });
+	expect(pro(128)).toMatchObject({ gens: 25.25, maxGens: 25.65 });
+	expect(pro(96)).toMatchObject({ gens: 19.25, maxGens: 25.65 });
+	expect(pro(168)).toMatchObject({ gens: 25.25, maxGens: 33.65 });
 	// The preview's first call is the draw at the same price.
 	const plan = createPlan({ ...spec, model: 'pro-flash' });
 	expect(plan[0].path).toBe('/create-character-pro-flash');
@@ -77,7 +109,7 @@ test('creation refuses unknown models, hints and hints combined with Pro Flash b
 		createCharacter({ ...spec, ...extra } as Parameters<typeof createCharacter>[0]).catch(
 			(e: Error) => e.message
 		);
-	expect(await bad({ model: 'pro' })).toContain('Invalid model.');
+	expect(await bad({ model: 'pro-max' })).toContain('Invalid model.');
 	expect(await bad({ outline: 'thick' })).toContain('Invalid outline.');
 	expect(await bad({ detail: 'ultra' })).toContain('Invalid detail.');
 	expect(await bad({ model: 'pro-flash', outline: 'lineless' })).toContain(

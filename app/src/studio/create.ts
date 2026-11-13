@@ -106,6 +106,7 @@ import {
 	DETAIL_VALUES,
 	OUTLINE_VALUES,
 	facingErrors,
+	modelErrors,
 	sizeErrors,
 	validBodySize
 } from './characterConfig.ts';
@@ -125,8 +126,8 @@ export interface CreateSpec {
 	directions: RigDirection[];
 	view?: Rig['view'];
 	exactPrompt?: boolean;
-	/** Advanced: Pro Flash draws instead of V3 (absent = V3); outline and detail are V3 style hints. */
-	model?: 'pro-flash';
+	/** Advanced: Pro or Pro Flash draws instead of V3 (absent = V3); outline and detail are V3 style hints. */
+	model?: 'pro' | 'pro-flash';
 	outline?: string;
 	detail?: string;
 	activityScope?: string;
@@ -150,7 +151,7 @@ export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPromp
 		baseClothesIn(spec.description) ?? null
 	);
 };
-/** The first, paid drawing call: Character V3 from text, or Pro Flash when chosen in Advanced. */
+/** The first, paid drawing call: Character V3 from text, or Pro or Pro Flash when chosen in Advanced. */
 export function drawRequest(
 	spec: Pick<
 		CreateSpec,
@@ -165,6 +166,7 @@ export function drawRequest(
 		template_id: 'mannequin',
 		...(seed === undefined ? {} : { seed })
 	};
+	if (spec.model === 'pro') return routes.createCharacterPro({ ...common, no_background: true });
 	return spec.model === 'pro-flash'
 		? routes.createCharacterProFlash(common)
 		: routes.createCharacterV3({
@@ -180,6 +182,14 @@ export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model'>
 	const n = spec.directions.filter((d) => !d.mirrorOf).length;
 	// Pro Flash's first image (GET /pro-flash/cost, provisional, 2026-11-12): 5 gens to 96 px, 6 to 208 px, then 9; V3's
 	// costs 1. The eight rotations are priced alike.
+	if (spec.model === 'pro') {
+		// Pro has no price quote and draws all eight views in one call: 10 gens at 48 px and 25 at 128 px (billed live,
+		// 2026-11-13). Other sizes span a straight-line guess and the nearest measured bound, so the maximum is never low.
+		const line = 10 + ((spec.size - 48) * 15) / 80,
+			lo = Math.ceil(Math.min(25, Math.max(10, line))) + 0.25,
+			hi = (spec.size <= 48 ? 10 : Math.ceil(Math.max(25, line))) + 0.25;
+		return { gens: lo, maxGens: +(hi + n * EST).toFixed(2), minutes: 5 };
+	}
 	const first = spec.model !== 'pro-flash' ? 1 : spec.size <= 96 ? 5 : spec.size <= 208 ? 6 : 9;
 	const gens = +(first + 0.25 + Math.ceil((spec.size * spec.size * 8) / 65536)).toFixed(2);
 	// Missing managed rest joints may require one estimate per direction.
@@ -717,7 +727,10 @@ export async function createCharacter(
 		...(spec.view && !['low top-down', 'high top-down', 'side'].includes(spec.view)
 			? ['Invalid camera.']
 			: []),
-		...(spec.model !== undefined && spec.model !== 'pro-flash' ? ['Invalid model.'] : []),
+		...(spec.model !== undefined && spec.model !== 'pro' && spec.model !== 'pro-flash'
+			? ['Invalid model.']
+			: []),
+		...modelErrors(spec.model, spec.size),
 		...((spec.outline !== undefined || spec.detail !== undefined) && spec.model
 			? ['Outline and detail apply to Character V3 only.']
 			: []),
@@ -749,7 +762,10 @@ export async function createCharacter(
 
 	// 2. all eight original rotations on the frame. Re-import for rest keypoints.
 	onProgress({ step: 'rest', done: 0, total: 1, recIds: [] });
-	const rots = await imagesOf(base),
+	// Pro returns an unlabeled list in PixelLab's direction order, which DIRECTIONS shares (verified live 2026-11-13).
+	const rots = (await imagesOf(base)).map((r) =>
+			spec.model === 'pro' ? { ...r, label: DIRECTIONS[Number(r.label)] ?? r.label } : r
+		),
 		rest = {} as Record<DirectionName, Img>,
 		restWarnings: string[] = [];
 	let pad: [number, number] = [0, 0];

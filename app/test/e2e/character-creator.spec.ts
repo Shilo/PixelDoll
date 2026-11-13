@@ -1247,3 +1247,28 @@ function offlineCreation(config: CreationCase) {
 		expect(errors).toEqual([]);
 	});
 }
+
+test('switching the model keeps Advanced open and the Nude switch sits in its field', async ({
+	page
+}) => {
+	const sheet = await open(page);
+	await sheet.locator('details.advanced > summary').click();
+	const model = sheet.getByRole('combobox', { name: 'Model', exact: true });
+	await expect(model.locator('option')).toHaveText(['Default (V3)', 'Pro', 'Pro Flash']);
+	await model.selectOption('pro');
+	await expect(sheet.locator('details.advanced')).toHaveAttribute('open', '');
+	await expect(sheet.getByRole('combobox', { name: 'Outline', exact: true })).toHaveCount(0);
+	await model.selectOption('v3');
+	await expect(sheet.locator('details.advanced')).toHaveAttribute('open', '');
+	await expect(sheet.getByRole('combobox', { name: 'Outline', exact: true })).toBeVisible();
+	// The switch is drawn inside its own field; none of its parts float elsewhere on the sheet.
+	const nude = sheet.getByRole('switch', { name: 'Nude', exact: true });
+	const field = await sheet.locator('.nude-field').boundingBox(),
+		knob = await nude.boundingBox();
+	expect([Math.round(knob!.width), Math.round(knob!.height)]).toEqual([44, 26]);
+	expect(knob!.x).toBeGreaterThan(field!.x);
+	expect(knob!.x + knob!.width).toBeLessThan(field!.x + field!.width);
+	await expect(sheet.locator('.nude-field')).toContainText('White underwear');
+	await nude.check();
+	await expect(sheet.locator('.nude-field')).toContainText('Nothing worn');
+});

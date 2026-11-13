@@ -125,17 +125,24 @@ export interface CharacterDraft {
 	tab: 'appearance' | 'prompt';
 	enhanceOnConnect?: 'details' | 'prompt';
 }
-/** The model that draws a new character. Both end in the same V3 registration, so moves and items work the same way. */
-export type CharacterModel = 'v3' | 'pro-flash';
+/** The model that draws a new character. All end in the same V3 registration, so moves and items work the same way. */
+export type CharacterModel = 'v3' | 'pro' | 'pro-flash';
+/** create-character-pro draws 32-168 px frames. */
+export const PRO_MAX_BODY = 168;
 export const MODELS: { id: CharacterModel; label: string; help: string }[] = [
-	{ id: 'v3', label: 'Character V3', help: 'Balanced proportions. The default.' },
+	{ id: 'v3', label: 'Default (V3)', help: 'Balanced proportions.' },
+	{
+		id: 'pro',
+		label: 'Pro',
+		help: `Follows the prompt more closely, at several times the cost. Body size up to ${PRO_MAX_BODY} px.`
+	},
 	{
 		id: 'pro-flash',
 		label: 'Pro Flash',
 		help: 'A chibi style with a big head and short legs, at about three times the cost.'
 	}
 ];
-/** V3 style hints (soft guidance the model may not follow exactly); Pro Flash has no equivalent. */
+/** V3 style hints (soft guidance the model may not follow exactly); the Pro models have no equivalent. */
 export const OUTLINES = [
 	{ value: '', label: 'Default (black)' },
 	{ value: 'single color outline', label: 'Colored' },
@@ -151,11 +158,11 @@ export const OUTLINE_VALUES: string[] = OUTLINES.map((o) => o.value).filter(Bool
 export const DETAIL_VALUES: string[] = DETAILS.map((o) => o.value).filter(Boolean);
 /** Advanced choices as CreateSpec fields; defaults are left out, so a default creation keeps its request identity. */
 export function styleOf(d: Pick<CharacterDraft, 'model' | 'outline' | 'detail'>): {
-	model?: 'pro-flash';
+	model?: 'pro' | 'pro-flash';
 	outline?: string;
 	detail?: string;
 } {
-	if (d.model === 'pro-flash') return { model: 'pro-flash' };
+	if (d.model === 'pro' || d.model === 'pro-flash') return { model: d.model };
 	return {
 		...(d.outline ? { outline: d.outline } : {}),
 		...(d.detail ? { detail: d.detail } : {})
@@ -329,6 +336,10 @@ export function facingErrors(dirs: RigDirection[]): string[] {
 	}
 	return errors;
 }
+export const modelErrors = (model: CharacterModel | undefined, body: number | undefined) =>
+	model === 'pro' && Number.isFinite(body) && body! > PRO_MAX_BODY
+		? [`Pro draws bodies up to ${PRO_MAX_BODY} px. Choose a smaller body or another model.`]
+		: [];
 export const validBodySize = (body: number | undefined) =>
 	Number.isInteger(body) && body! >= 32 && body! <= 256 && body! % 4 === 0;
 export function sizeErrors(body: number | undefined, frame: number | undefined): string[] {
@@ -343,6 +354,7 @@ export function sizeErrors(body: number | undefined, frame: number | undefined):
 export function draftErrors(d: CharacterDraft): string[] {
 	return [
 		...sizeErrors(d.body, d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame),
+		...modelErrors(d.model, d.body),
 		...facingErrors(facingOf(d)),
 		...(d.seed &&
 		(!/^\d+$/.test(d.seed) ||
