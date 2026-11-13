@@ -17,6 +17,7 @@
 		"selftest": "npm test",
 		"test": "vitest run",
 		"e2e": "node scripts/e2e.mjs",
+		"land": "node scripts/land.mjs",
 		"bench": "node scripts/bench.ts"
 	},
 	"devDependencies": {
