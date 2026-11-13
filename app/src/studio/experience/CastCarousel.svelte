@@ -5,12 +5,14 @@
 	import CastReflection from './CastReflection.svelte';
 	import { ui } from '../state.svelte.ts';
 	import { carouselFrames, castPose, castTransform } from './carousel.ts';
+	import { groundedThumb, stills } from './thumbnails.svelte.ts';
 	type Entry = { p: { id: string; name: string }; offset: number };
 	type Actor = Entry & { leaving?: boolean; exitDirection?: number };
 	let {
 		entries,
 		context,
 		size,
+		span = 1,
 		direction,
 		name,
 		zoom = 1,
@@ -25,6 +27,7 @@
 		entries: Entry[];
 		context: string;
 		size: number;
+		span?: number;
 		direction: number;
 		name: string;
 		zoom?: number;
@@ -45,6 +48,12 @@
 	const reflectionAnimations = new Map<string, Animation>();
 	const animations = new Map<string, Animation>();
 	let previous: Entry[] = [];
+	const heroArt = $derived(
+		groundedThumb(size, stills.get(entries.find((entry) => !entry.offset)?.p.id ?? ''), ui.dpr)
+	);
+	const artwork = $derived(
+		JSON.stringify(entries.map(({ p }) => groundedThumb(size, stills.get(p.id), ui.dpr)))
+	);
 	let geometry = '';
 	let generation = 0;
 	let pressed: { id: string; activate: boolean } | null = null;
@@ -76,13 +85,22 @@
 	});
 	$effect(() => {
 		const next = entries;
-		const layout = [context, width, height, size, ui.dpr, prefersReducedMotion.current].join('\0');
+		const art = JSON.parse(artwork) as ReturnType<typeof groundedThumb>[];
+		const layout = [context, width, height, size, span, ui.dpr, prefersReducedMotion.current].join(
+			'\0'
+		);
 		const forward = untrack(() => direction) || 1;
 		untrack(() => {
-			void reconcile(next, layout, forward);
+			void reconcile(next, layout, forward, heroArt, art);
 		});
 	});
-	async function reconcile(next: Entry[], layout: string, forward: number) {
+	async function reconcile(
+		next: Entry[],
+		layout: string,
+		forward: number,
+		hero: ReturnType<typeof groundedThumb>,
+		artwork: ReturnType<typeof groundedThumb>[]
+	) {
 		const epoch = ++generation;
 		const old = previous;
 		const moving =
@@ -136,7 +154,10 @@
 		for (const actor of actors) {
 			const node = nodes.get(actor.p.id);
 			if (!node) continue;
-			const pose = castPose(actor.offset, width, size);
+			const side =
+				artwork[next.findIndex((entry) => entry.p.id === actor.p.id)] ??
+				groundedThumb(size, stills.get(actor.p.id), ui.dpr);
+			const pose = castPose(actor.offset, width, size, span, { hero, side });
 			if (actor.leaving) pose.x = -(actor.exitDirection ?? forward) * edge;
 			const endpoint = castTransform(pose);
 			node.style.transform = endpoint;
@@ -192,6 +213,7 @@
 	>
 		{#each actors as actor (actor.p.id)}
 			{@const culled = !!actor.offset && culledOffsets.includes(actor.offset)}
+			{@const art = groundedThumb(size, stills.get(actor.p.id), ui.dpr)}
 			<div
 				{@attach registerReflection(actor.p.id)}
 				class="cast-reflection-actor"
@@ -200,7 +222,19 @@
 				style:width="{size}px"
 				style:margin-left="{-size / 2}px"
 			>
-				<CastReflection id={actor.p.id} {size} horizon={floorHorizon} focal={floorFocal} />
+				<div
+					class="cast-art"
+					style:width="{size}px"
+					style:transform="translate({art.x}px, {art.y}px) scale({art.scale})"
+				>
+					<CastReflection
+						id={actor.p.id}
+						{size}
+						floorY={castPose(actor.offset, width, size, span).y}
+						horizon={floorHorizon}
+						focal={floorFocal}
+					/>
+				</div>
 			</div>
 			<button
 				{@attach register(actor.p.id)}
@@ -211,8 +245,10 @@
 				aria-hidden={actor.leaving || culled ? 'true' : undefined}
 				style:visibility={culled ? 'hidden' : undefined}
 				aria-label={actor.offset ? `Select ${actor.p.name}` : `Customize ${name}`}
-				style:width="{size}px"
-				style:margin-left="{-size / 2}px"
+				style:width="{art.r - art.l}px"
+				style:height="{Math.max(0, -art.t)}px"
+				style:margin-left="{art.l}px"
+				style:transform-origin="{-art.l}px 100%"
 				onpointerdown={() => {
 					pressed = { id: actor.p.id, activate: !actor.offset };
 				}}
@@ -221,7 +257,14 @@
 				}}
 				onclick={(event) => clicked(event, actor)}
 			>
-				<CharacterThumb id={actor.p.id} name={actor.p.name} {size} />
+				<div
+					class="cast-art"
+					style:width="{size}px"
+					style:left="{-size / 2 - art.l}px"
+					style:transform="translate({art.x}px, {art.y}px) scale({art.scale})"
+				>
+					<CharacterThumb id={actor.p.id} name={actor.p.name} {size} />
+				</div>
 			</button>
 		{/each}
 	</div>
@@ -231,6 +274,12 @@
 	.cast-camera {
 		position: absolute;
 		inset: 0;
+	}
+	.cast-art {
+		position: absolute;
+		bottom: 0;
+		transform-origin: 50% 100%;
+		pointer-events: none;
 	}
 
 	.cast-character.carousel-character,

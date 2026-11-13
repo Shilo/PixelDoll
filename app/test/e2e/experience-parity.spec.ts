@@ -1985,15 +1985,24 @@ test.describe('selected cast centering', () => {
 						await expect
 							.poll(
 								() =>
-									page.locator('.cast').evaluate((cast) => {
+									page.locator('.cast').evaluate(async (cast) => {
+										const { stills } = await import(
+											/* @vite-ignore */ String('/src/studio/experience/thumbnails.svelte.ts')
+										);
 										const stage = cast.getBoundingClientRect();
-										const selected = cast.querySelector('.chosen')!.getBoundingClientRect();
+										const node = cast.querySelector<HTMLElement>('.chosen')!;
+										const still = stills.get(node.dataset.characterId!)!;
+										const selected = node.querySelector('canvas')!.getBoundingClientRect();
+										const bodyCenter =
+											selected.left +
+											((still.frame.x + still.body.w / 2 - still.body.x) * selected.width) /
+												still.image!.w;
 										const caption = document
 											.querySelector('.selected-caption')!
 											.getBoundingClientRect();
 										const center = stage.left + stage.width / 2;
 										return Math.max(
-											Math.abs(selected.left + selected.width / 2 - center),
+											Math.abs(bodyCenter - center),
 											Math.abs(caption.left + caption.width / 2 - center)
 										);
 									}),

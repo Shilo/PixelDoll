@@ -6,7 +6,7 @@ import { crop, characterFacts } from '../model.ts';
 import { stableStringify } from '../../lib/image/hash.ts';
 import type { Preset, Project } from '../../lib/store/manifest.ts';
 import { buildPresentation, southStill, renderPresentation } from './presentation.ts';
-import { standingFrame } from './bounds.ts';
+import { standingFrame, paintedPixels } from './bounds.ts';
 
 const cropped = new WeakMap<Img, Img | null>();
 
@@ -80,6 +80,25 @@ export function thumbAnchors(size: number, still: Still | undefined, dpr: number
 		y: (frame.y + body.h - body.y - height) * scale
 	};
 	return { ground, center: { x: ground.x, y: ground.y - (body.h * scale) / 2 } };
+}
+
+export function groundedThumb(size: number, still: Still | undefined, dpr: number) {
+	const scale = (size * 50) / (64 * (still?.body?.h ?? 50));
+	const correction = scale / thumbScale(size, still, dpr);
+	const { ground, center } = thumbAnchors(size, still, dpr);
+	const width = still?.image?.w ?? 64;
+	const height = still?.image?.h ?? 64;
+	const bounds = still?.image && paintedPixels(still.image);
+	return {
+		x: -ground.x * correction,
+		y: -ground.y * correction,
+		scale: correction,
+		center: (center.y - ground.y) * correction,
+		l: ((bounds ? bounds.left : 0) - width / 2) * scale - ground.x * correction,
+		r: ((bounds ? bounds.right : width) - width / 2) * scale - ground.x * correction,
+		t: ((bounds ? bounds.top : 0) - height) * scale - ground.y * correction,
+		b: ((bounds ? bounds.bottom : height) - height) * scale - ground.y * correction
+	};
 }
 
 /** Drop the stills of characters no longer listed (deleted here or in another tab); a read still running for one is

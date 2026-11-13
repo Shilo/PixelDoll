@@ -11,7 +11,7 @@
 	import ZoomControls from './ZoomControls.svelte';
 	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
 	import { sceneArtFits, sceneCamera, zoomCeiling } from './zoom.ts';
-	import { stills, thumbAnchors, thumbScale } from './thumbnails.svelte.ts';
+	import { stills, groundedThumb, thumbScale } from './thumbnails.svelte.ts';
 	import { castPose } from './carousel.ts';
 	import {
 		ui,
@@ -92,9 +92,18 @@
 	// The cast is drawn from 64 px frames whose bodies stand about 50 px tall and 48 px wide.
 	const castScale = $derived(heroScale(g, 50, 48));
 	const castSize = $derived(64 * castScale);
+	const castSpan = $derived(
+		Math.max(
+			...list.map(({ id }) => {
+				const art = groundedThumb(castSize, stills.get(id), ui.dpr);
+				return (2 * Math.max(-art.l, art.r)) / castSize;
+			}),
+			0.01
+		)
+	);
 	const heroHeight = $derived(
 		experience.screen === 'characters'
-			? 50 * castScale * castPose(0, g.stage.r - g.stage.l, castSize).scale
+			? 50 * castScale * castPose(0, g.stage.r - g.stage.l, castSize, castSpan).scale
 			: experience.heroHeight || 50 * castScale
 	);
 	// The world rises with Preview's lifted feet (WorldStage), so its horizon stays on the characters' eye line.
@@ -108,17 +117,18 @@
 	);
 	const selectionArt = $derived.by(() => {
 		const width = g.stage.r - g.stage.l;
-		return neighbors.map(({ offset }) => {
-			const pose = castPose(offset, width, castSize);
-			const size = castSize * pose.scale;
+		const hero = groundedThumb(castSize, selectedStill, ui.dpr);
+		return neighbors.map(({ offset, p }) => {
+			const art = groundedThumb(castSize, stills.get(p.id), ui.dpr);
+			const pose = castPose(offset, width, castSize, castSpan, { hero, side: art });
 			const bottom = g.feet.y + pose.y;
 			return {
 				offset,
 				box: {
-					l: g.stage.l + width / 2 + pose.x - size / 2,
-					r: g.stage.l + width / 2 + pose.x + size / 2,
-					t: bottom - size,
-					b: bottom
+					l: g.stage.l + width / 2 + pose.x + art.l * pose.scale,
+					r: g.stage.l + width / 2 + pose.x + art.r * pose.scale,
+					t: bottom + art.t * pose.scale,
+					b: bottom + art.b * pose.scale
 				}
 			};
 		});
@@ -134,19 +144,23 @@
 	);
 	const selectionFocus = $derived.by(() => {
 		const size = castSize;
-		const pose = castPose(0, g.stage.r - g.stage.l, size);
-		const anchors = thumbAnchors(size, selectedStill, ui.dpr);
+		const pose = castPose(0, g.stage.r - g.stage.l, size, castSpan);
+		const art = groundedThumb(size, selectedStill, ui.dpr);
 		const place = (point: { x: number; y: number }) => ({
 			x: (g.stage.l + g.stage.r) / 2 + pose.x + point.x * pose.scale,
 			y: g.feet.y + pose.y + point.y * pose.scale
 		});
-		return { ground: place(anchors.ground), center: place(anchors.center) };
+		return { ground: place({ x: 0, y: 0 }), center: place({ x: 0, y: art.center }) };
 	});
 	// The selected character's fit in CSS px per art px, exactly as its thumbnail draws it: the shared zoom is absolute,
 	// and the camera multiplies this fit by the shown scale / fit.
 	const selectionFit = $derived.by(() => {
 		const size = castSize;
-		return thumbScale(size, selectedStill, ui.dpr) * castPose(0, g.stage.r - g.stage.l, size).scale;
+		return (
+			thumbScale(size, selectedStill, ui.dpr) *
+			groundedThumb(size, selectedStill, ui.dpr).scale *
+			castPose(0, g.stage.r - g.stage.l, size, castSpan).scale
+		);
 	});
 	const selectionZoom = $derived(sharedZoom('characters', selectionFit));
 	$effect(() => {
@@ -513,6 +527,7 @@
 				entries={neighbors}
 				context={list.map((project) => project.id).join('\0')}
 				size={castSize}
+				span={castSpan}
 				direction={castDirection}
 				{name}
 				zoom={selectionCamera.value}

@@ -5,11 +5,13 @@
 	let {
 		id,
 		size,
+		floorY,
 		horizon,
 		focal
 	}: {
 		id: string;
 		size: number;
+		floorY: number;
 		horizon: number;
 		focal: number;
 	} = $props();
@@ -17,7 +19,7 @@
 	const scale = $derived(thumbScale(size, still, ui.dpr));
 	const groundRow = $derived(still ? still.frame.y + still.body.h - still.body.y : 0);
 	const floor = $derived((groundRow - (still?.image?.h ?? 0)) * scale);
-	const style = $derived(reflectionStyle(floor, horizon, focal));
+	const style = $derived(reflectionStyle(floorY, horizon, focal));
 	const source = $derived(
 		still?.image ? reflectionCanvas(still.image, groundRow, still.body.h) : null
 	);

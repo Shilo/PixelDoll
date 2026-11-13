@@ -128,6 +128,17 @@ async function seedCharacters(page: Page, copies = 2) {
 	}, copies);
 	await expect(page.locator('.character-row')).toHaveCount(copies + 1);
 	await expect(page.locator('.customize-action')).toBeEnabled();
+	await expect
+		.poll(() =>
+			page.evaluate(async (ids: string[]) => {
+				const { stills } = await import(
+					/* @vite-ignore */ String('/src/studio/experience/thumbnails.svelte.ts')
+				);
+				return ids.every((id) => !!stills.get(id)?.image);
+			}, ids)
+		)
+		.toBe(true);
+	await settle(page);
 	return ids as string[];
 }
 
@@ -429,16 +440,32 @@ async function expectCastScale(page: Page, scale: number, label: string) {
 
 async function castRects(page: Page) {
 	return page.evaluate(() =>
-		[...document.querySelectorAll('.cast-character:not([inert]) canvas.sprite')].map((canvas) => {
+		[
+			...document.querySelectorAll<HTMLCanvasElement>('.cast-character:not([inert]) canvas.sprite')
+		].map((canvas) => {
 			const rect = canvas.getBoundingClientRect();
+			const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+			let left = canvas.width,
+				top = canvas.height,
+				right = 0,
+				bottom = 0;
+			for (let row = 0; row < canvas.height; row++)
+				for (let column = 0; column < canvas.width; column++)
+					if (data[(row * canvas.width + column) * 4 + 3]) {
+						left = Math.min(left, column);
+						right = Math.max(right, column + 1);
+						top = Math.min(top, row);
+						bottom = Math.max(bottom, row + 1);
+					}
+			const scale = rect.width / canvas.width;
 			return {
 				chosen: !!canvas.closest('.chosen'),
-				left: rect.left,
-				top: rect.top,
-				right: rect.right,
-				bottom: rect.bottom,
-				width: rect.width,
-				height: rect.height
+				left: rect.left + left * scale,
+				top: rect.top + top * scale,
+				right: rect.left + right * scale,
+				bottom: rect.top + bottom * scale,
+				width: (right - left) * scale,
+				height: (bottom - top) * scale
 			};
 		})
 	);
@@ -894,7 +921,7 @@ test('Preview zoom keeps actors and backdrop on one camera and fits them at max'
 
 test('asymmetric padded artwork enlarges around its body and shrinks around its real ground on both screens', async ({
 	page
-}) => {
+}, info) => {
 	await page.addInitScript(() => {
 		const names = new WeakMap<WebGLUniformLocation, string>();
 		const values: Record<string, number | number[]> = {};
@@ -976,6 +1003,53 @@ test('asymmetric padded artwork enlarges around its body and shrinks around its 
 	await resetZoom(page, host);
 	await castSettled(page);
 	const base = await castBody(page);
+	for (const target of ['fixture:s2', id]) {
+		await page.evaluate(async (target) => {
+			const { openProject } = await import(
+				/* @vite-ignore */ String('/src/studio/state.svelte.ts')
+			);
+			await openProject(target);
+		}, target);
+		await castSettled(page);
+		const actors = await page.evaluate(async () => {
+			const { stills } = await import(
+				/* @vite-ignore */ String('/src/studio/experience/thumbnails.svelte.ts')
+			);
+			const host = document.querySelector<HTMLElement>('.experience')!;
+			const feet = parseFloat(host.style.getPropertyValue('--feet-y'));
+			return [...document.querySelectorAll<HTMLElement>('.cast-character')].map((node) => {
+				const still = stills.get(node.dataset.characterId!)!;
+				const rect = node.querySelector('canvas')!.getBoundingClientRect();
+				const scale = rect.width / still.image!.w;
+				return {
+					chosen: node.classList.contains('chosen'),
+					ground: rect.top + (still.frame.y + still.body.h - still.body.y) * scale,
+					height: still.body.h * scale,
+					feet,
+					box: node.getBoundingClientRect().toJSON()
+				};
+			});
+		});
+		const main = actors.find((actor) => actor.chosen)!;
+		expect(main.ground).toBeCloseTo(main.feet, 2);
+		for (const side of actors.filter((actor) => !actor.chosen)) {
+			expect(side.ground).toBeLessThan(main.ground);
+			expect(side.height / main.height).toBeCloseTo(0.85, 2);
+			expect(side.box.right <= main.box.left || side.box.left >= main.box.right).toBe(true);
+		}
+		const painted = await castRects(page);
+		const paintedMain = painted.find((actor) => actor.chosen)!;
+		for (const side of painted.filter((actor) => !actor.chosen)) {
+			expect(side.right <= paintedMain.left || side.left >= paintedMain.right).toBe(true);
+			const gap =
+				side.right <= paintedMain.left
+					? paintedMain.left - side.right
+					: side.left - paintedMain.right;
+			expect(gap).toBeGreaterThanOrEqual(7.9);
+			expect(gap).toBeLessThanOrEqual(16.1);
+		}
+		await shot(page, info, `selection-grounded-${target === id ? 'padded' : 'fixture'}`);
+	}
 	const baseScene = await readScene(host);
 	const rect = await chosenRect(page);
 	expect(base.ground).toBeCloseTo(rect.top + (rect.height * 55) / 112, 0);

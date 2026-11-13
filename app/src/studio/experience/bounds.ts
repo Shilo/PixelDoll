@@ -20,7 +20,7 @@ interface Pixels {
 // Images are immutable project assets. Replacing an image invalidates its entry
 // naturally; palette copies have their own identities. Null means transparent.
 const pixels = new WeakMap<Img, Pixels | null | false>();
-function paintedPixels(image: Img): Pixels | null | false {
+export function paintedPixels(image: Img): Pixels | null | false {
 	const cached = pixels.get(image);
 	if (cached !== undefined) return cached;
 	const { w, h, data } = image;
