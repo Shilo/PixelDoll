@@ -553,9 +553,21 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await expect(menu.getByRole('button', { name: 'Update to v8.9.3', exact: true })).toBeEnabled();
 		await expect(newer).toHaveCount(0);
 		await page.keyboard.press('Escape');
+		const held = server.hold(
+			[...d.files.keys()].find((path) => path.startsWith('assets/') && path.endsWith('.js'))!
+		);
 		server.deploy(d);
-		await discover(page, d);
+		await page.evaluate(() => window.dispatchEvent(new Event('online')));
+		await held.requested;
 		const latest = page.getByRole('status').filter({ hasText: 'Update to v8.9.4' });
+		await expect(latest).toContainText('Downloading update...');
+		await expect(latest.locator('.bu-spinner')).toBeVisible();
+		await page.clock.fastForward(20000);
+		await expect(latest).toBeVisible();
+		held.release();
+		await discover(page, d);
+		await expect(latest).toContainText('Ready to update.');
+		await expect(latest.locator('.bu-spinner')).toHaveCount(0);
 		await page.clock.fastForward(15000);
 		await expect(latest).toHaveCount(0);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();

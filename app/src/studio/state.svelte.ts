@@ -164,6 +164,7 @@ export const ui = $state({
 	bg: 'checker' as 'checker' | 'solid',
 	toast: '',
 	toastTitle: '',
+	toastPending: false,
 	toastTone: 'info' as 'info' | 'success' | 'warning' | 'danger',
 	toastSheet: null as SheetId,
 	toastAction: null as (() => void | Promise<void>) | null,
@@ -230,6 +231,7 @@ let toastRevision = 0,
 const toastPauses = new Set<'pointer' | 'focus'>();
 type ToastOptions = {
 	title?: string;
+	pending?: boolean;
 	tone?: typeof ui.toastTone;
 	duration?: number;
 	action?: () => void | Promise<void>;
@@ -245,6 +247,7 @@ export function dismissToast() {
 	toastPauses.clear();
 	ui.toast = '';
 	ui.toastTitle = '';
+	ui.toastPending = false;
 	ui.toastAction = null;
 }
 export async function activateToast() {
@@ -284,10 +287,13 @@ export function toast(s: string, options: number | ToastOptions = 4000) {
 	toastRevision++;
 	ui.toast = s;
 	ui.toastTitle = o.title ?? '';
+	ui.toastPending = o.pending ?? false;
 	ui.toastTone = o.tone ?? 'info';
 	ui.toastSheet = ui.sheet;
 	ui.toastAction = o.action ?? null;
-	toastRemaining = o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000);
+	toastRemaining = o.pending
+		? 0
+		: (o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000));
 	armToast();
 	return true;
 }
