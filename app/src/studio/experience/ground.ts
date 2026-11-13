@@ -77,6 +77,9 @@ export class Ground {
 	private loading = new Set<string>();
 	private disposed = false;
 	private message: string | null = null;
+	/** The options of the frame on screen. A WebGL canvas keeps showing its last frame until drawn again, so an unchanged
+	 * floor is not cleared and redrawn on every animation frame. */
+	private drawn = '';
 
 	constructor(private canvas: HTMLCanvasElement) {
 		canvas.addEventListener('webglcontextlost', this.contextLost);
@@ -99,6 +102,7 @@ export class Ground {
 	};
 
 	private initialize() {
+		this.drawn = '';
 		try {
 			const gl = this.canvas.getContext('webgl2', {
 				alpha: true,
@@ -185,6 +189,8 @@ export class Ground {
 		const gl = this.gl,
 			program = this.program;
 		if (!gl || !program || gl.isContextLost()) return;
+		const stamp = JSON.stringify(options);
+		if (stamp === this.drawn) return;
 		const dpr = options.dpr || 1,
 			width = Math.max(1, Math.round(options.width * dpr)),
 			height = Math.max(1, Math.round(options.height * dpr));
@@ -195,7 +201,10 @@ export class Ground {
 		gl.viewport(0, 0, width, height);
 		gl.clearColor(0, 0, 0, 0);
 		gl.clear(gl.COLOR_BUFFER_BIT);
-		if (options.mode === 'preview' || options.width <= 0 || options.height <= 0) return;
+		if (options.mode === 'preview' || options.width <= 0 || options.height <= 0) {
+			this.drawn = stamp;
+			return;
+		}
 		const theme = options.theme,
 			world = WORLDS[theme];
 		const url = world.backgrounds[options.mode],
@@ -245,6 +254,7 @@ export class Ground {
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.uniform1i(uniform('material'), 0);
 		gl.drawArrays(gl.TRIANGLES, 0, 3);
+		this.drawn = stamp;
 	}
 
 	private release() {
