@@ -936,13 +936,12 @@
 	min-width: 0;
 	flex-shrink: 0;
 }
-.character-entry > :is(.character-row, .row),
-.outfits .rows .row {
+.character-entry > :is(.character-row, .row, .move-row),
+.outfits .rows .character-entry > .row {
 	width: 100%;
 	padding-right: 48px;
 }
-.character-more,
-.outfits .row-del {
+.character-more {
 	position: absolute;
 	right: 2px;
 	top: 50%;

@@ -24,6 +24,45 @@ export function acceptQa(q: ItemQa): ItemQa {
 	};
 }
 
+export function retainItemQa(item: Item, keep: (key: string) => boolean): void {
+	const old = item.qa;
+	if (!old) return;
+	if (
+		!item.layers.some((layer) =>
+			Object.entries(layer.cells ?? {}).some(([anim, dirs]) =>
+				Object.keys(dirs).some((dir) => keep(`${anim}/${dir}`))
+			)
+		)
+	) {
+		delete item.qa;
+		return;
+	}
+	const inheritedClips = old.inherited?.clips.filter(keep);
+	const filtered: ItemQa = {
+		...old,
+		clips: Object.fromEntries(Object.entries(old.clips).filter(([key]) => keep(key))),
+		cells: Object.fromEntries(Object.entries(old.cells).filter(([key]) => keep(key)))
+	};
+	if (inheritedClips?.length) filtered.inherited = { ...old.inherited!, clips: inheritedClips };
+	else delete filtered.inherited;
+	item.qa = mergeQa(
+		{ ...item, qa: filtered },
+		{
+			minKeyKept: 1,
+			maxKeyOutside: 0,
+			minAreaRatio: 1,
+			maxAreaCV: 0,
+			maxPaletteDist: 0,
+			clipPx: 0,
+			status: 'pass',
+			rerolls: 0,
+			clips: {},
+			cells: {}
+		},
+		{}
+	);
+}
+
 /** Replace complete clip-directions. Inherited checks (`inherited`) remain an explicitly conservative baseline. */
 export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>): ItemQa {
 	const old = item.qa,

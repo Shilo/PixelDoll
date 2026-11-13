@@ -5502,6 +5502,168 @@ async function editableCopy(page: Page) {
 }
 const itemMenu = (page: Page) => page.locator('#item-menu');
 
+for (const kind of ['outfit', 'move'] as const) {
+	test(`${kind} actions share mouse, keyboard and touch menus, download scoped ZIPs, and delete safely`, async ({
+		page
+	}) => {
+		await editableCopy(page);
+		await equipmentMode(page, kind === 'outfit' ? 'Outfits' : 'Moves');
+		let name = 'Saved menu look';
+		if (kind === 'outfit') {
+			await page.getByRole('button', { name: 'Save current look', exact: true }).click();
+			await page.getByRole('textbox', { name: 'Outfit name' }).fill(name);
+			await page.getByRole('button', { name: 'Save', exact: true }).click();
+		} else name = 'Walk';
+		const row =
+			kind === 'outfit'
+				? page.locator('.outfits .character-entry').filter({ hasText: name })
+				: page.locator('.move-list .character-entry').filter({
+						has: page.getByRole('button', { name: `More actions for ${name}`, exact: true })
+					});
+		const choice = row.locator('button').first();
+		const trigger = row.getByRole('button', { name: `More actions for ${name}`, exact: true });
+		const menu = page.getByRole('menu', { name: `Actions for ${name}`, exact: true });
+		if (kind === 'outfit') {
+			await expect(row.locator('.badge')).toHaveCount(1);
+			await equipmentGroup(page, 'Head');
+			await section(page, 'Head').getByRole('button', { name: 'Empty head', exact: true }).click();
+			await equipmentMode(page, 'Outfits');
+			await expect(row.locator('.badge')).toHaveCount(0);
+		} else {
+			await page.locator('.move-row').filter({ hasText: 'Cross punch' }).click();
+			await expect(choice).toHaveAttribute('aria-pressed', 'false');
+		}
+		await trigger.click();
+		await expect(menu).toBeVisible();
+		await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+		await expect(menu.locator('hr')).toHaveCount(1);
+		await expect(menu.getByRole('menuitem', { name: 'Download ZIP', exact: true })).toBeFocused();
+		await page.keyboard.press('Escape');
+		await expect(trigger).toBeFocused();
+		await choice.click({ button: 'right' });
+		await expect(menu).toBeVisible();
+		await page.keyboard.press('Escape');
+		await choice.focus();
+		await page.keyboard.press('Shift+F10');
+		await expect(menu).toBeVisible();
+		await page.keyboard.press('Escape');
+		const originalViewport = page.viewportSize()!;
+		const originalTheme = await page.evaluate(() => document.documentElement.dataset.theme);
+		for (const theme of ['dark', 'light']) {
+			await page.evaluate((theme) => (document.documentElement.dataset.theme = theme), theme);
+			for (const viewport of [{ width: 390, height: 844 }, originalViewport]) {
+				await page.setViewportSize(viewport);
+				await equipmentMode(page, kind === 'outfit' ? 'Outfits' : 'Moves');
+				await trigger.click();
+				await expect(menu).toBeVisible();
+				await expect(menu.locator('.bu-popover-arrow')).toBeVisible();
+				await expect(menu.getByRole('menuitem', { name: 'Download ZIP', exact: true })).toHaveCSS(
+					'padding-right',
+					'12px'
+				);
+				const bounds = (await menu.locator('.menu-surface').boundingBox())!;
+				expect(bounds.x).toBeGreaterThanOrEqual(0);
+				expect(bounds.y).toBeGreaterThanOrEqual(0);
+				expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width);
+				expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height);
+				await page.keyboard.press('Escape');
+			}
+		}
+		await page.evaluate((theme) => {
+			if (theme) document.documentElement.dataset.theme = theme;
+			else delete document.documentElement.dataset.theme;
+		}, originalTheme);
+		const touch = await page.context().newCDPSession(page);
+		for (const target of [choice, trigger]) {
+			const box = (await target.boundingBox())!;
+			await touch.send('Input.dispatchTouchEvent', {
+				type: 'touchStart',
+				touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }]
+			});
+			await expect(menu).toBeVisible();
+			await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+			await expect(menu).toBeVisible();
+			await page.keyboard.press('Escape');
+		}
+		const pointer = {
+			pointerId: 71,
+			pointerType: 'touch',
+			isPrimary: true,
+			button: 0,
+			clientX: 80,
+			clientY: 90
+		};
+		await choice.dispatchEvent('pointerdown', pointer);
+		await choice.dispatchEvent('pointermove', { ...pointer, clientY: 120 });
+		await choice.dispatchEvent('pointerup', pointer);
+		await page.waitForTimeout(600);
+		await expect(menu).toBeHidden();
+		if (kind === 'outfit') await expect(row.locator('.badge')).toHaveCount(0);
+		else await expect(choice).toHaveAttribute('aria-pressed', 'false');
+		await trigger.click();
+		const downloaded = page.waitForEvent('download');
+		await menu.getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();
+		const download = await downloaded;
+		expect(download.suggestedFilename()).toMatch(
+			kind === 'outfit' ? /saved-menu-look\.pixeldoll\.zip$/ : /walk\.pixeldoll\.zip$/
+		);
+		const { readCharacterZip } = await import('../../src/lib/store/import.ts');
+		const imported = await readCharacterZip(new Uint8Array(readFileSync((await download.path())!)));
+		if (kind === 'outfit') expect(imported.project.manifest.presets).toHaveLength(1);
+		else
+			expect(imported.project.manifest.rig.animations.map((move) => move.id)).toEqual([
+				'default',
+				'walk'
+			]);
+		await trigger.click();
+		if (kind === 'move') {
+			await menu.getByRole('menuitem', { name: 'Delete move…', exact: true }).click();
+			const confirm = page.getByRole('alertdialog', { name: `Delete ${name}?`, exact: true });
+			await expect(confirm.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
+			await page.keyboard.press('Escape');
+			await expect(row).toBeVisible();
+			await trigger.click();
+			await menu.getByRole('menuitem', { name: 'Delete move…', exact: true }).click();
+			await confirm.getByRole('button', { name: 'Delete', exact: true }).click();
+		} else {
+			await menu.getByRole('menuitem', { name: 'Delete outfit', exact: true }).click();
+			await expect(page.getByRole('alertdialog')).toHaveCount(0);
+			await expect(row).toHaveCount(0);
+			await page.getByRole('button', { name: 'Undo Delete outfit', exact: true }).click();
+			await expect(row).toBeVisible();
+			await trigger.click();
+			await menu.getByRole('menuitem', { name: 'Delete outfit', exact: true }).click();
+		}
+		await expect(row).toHaveCount(0);
+		await reloadStudio(page);
+		await equipmentMode(page, kind === 'outfit' ? 'Outfits' : 'Moves');
+		await expect(row).toHaveCount(0);
+		if (kind === 'move') {
+			const remaining = page.locator('.move-list .character-entry');
+			while ((await remaining.count()) > 1) {
+				await remaining
+					.last()
+					.getByRole('button', { name: /^More actions/ })
+					.click();
+				await page.getByRole('menuitem', { name: 'Delete move…', exact: true }).click();
+				await page
+					.getByRole('alertdialog')
+					.getByRole('button', { name: 'Delete', exact: true })
+					.click();
+				await expect(page.getByRole('alertdialog')).toHaveCount(0);
+			}
+			await expect(remaining).toHaveCount(1);
+			await remaining
+				.getByRole('button', { name: 'More actions for Default', exact: true })
+				.click();
+			await expect(
+				page.getByRole('menuitem', { name: 'Delete move…', exact: true })
+			).toHaveAttribute('aria-disabled', 'true');
+			await expect(remaining).toContainText('Default');
+		}
+	});
+}
+
 test('item long-press opens without wearing, cancels on movement, and downloads an editable item ZIP', async ({
 	page
 }) => {
