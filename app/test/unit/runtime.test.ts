@@ -12,6 +12,7 @@ import * as timeline from '../../src/lib/runtime/timeline.js';
 import { runtimeSources, runtimeTypes } from '../../src/lib/runtime/sources.ts';
 import { PAPERDOLL_JS, phaserFiles } from '../../src/lib/export/phaser.ts';
 import { CURRENT_FORMAT, type Project, type Item } from '../../src/lib/store/manifest.ts';
+import { orderingProbe } from '../fixtures/runtime-order.ts';
 
 const delivered = () =>
 	new Function(
@@ -90,7 +91,8 @@ test('the shipped standalone JavaScript contains every canonical source byte-for
 		'rigFrame',
 		'layerFrame',
 		'bakedFrame',
-		'resolveZ'
+		'resolveZ',
+		'compareDraws'
 	] as const)
 		expect(compose[name], name).toBe(core[name]);
 	const module = await import(
@@ -121,7 +123,10 @@ test('a canonical edit fails the stale guard and regeneration changes internal a
 		for (const unsupported of [
 			"import './colors.js';",
 			'export { timelineDuration as duration };',
-			'export default timelineDuration;'
+			'export default timelineDuration;',
+			'const example = `\nexport text inside a template\n`;',
+			'/*\nexport text inside a comment\n*/',
+			'  export const indented = 1;'
 		]) {
 			await writeFile(canonical, source + '\n' + unsupported);
 			const rejected = spawnSync(process.execPath, [script, '--check'], {
@@ -157,9 +162,43 @@ doll.update(160);
 console.log(JSON.stringify([internal.timelineDuration(frames), delivered.timelineDuration(frames), doll.cell]));`
 		);
 		expect(JSON.parse(result)).toEqual([180, 180, 1]);
+		const probe = join(directory, 'test/fixtures/runtime-order.ts');
+		await mkdir(join(directory, 'test/fixtures'), { recursive: true });
+		await cp(join(app, 'test/fixtures/runtime-order.ts'), probe);
+		const orderSource = join(directory, 'src/lib/runtime/paperdoll.js');
+		const original = await readFile(orderSource, 'utf8');
+		const reversed = original.replace(
+			'slotIndex(left.item.slot) - slotIndex(right.item.slot)',
+			'slotIndex(right.item.slot) - slotIndex(left.item.slot)'
+		);
+		expect(reversed).not.toBe(original);
+		await writeFile(orderSource, reversed);
+		run(script);
+		const ordered = run(
+			'--input-type=module',
+			'--eval',
+			`const { orderingProbe } = await import(${JSON.stringify(pathToFileURL(probe).href)}); console.log(JSON.stringify(await orderingProbe()));`
+		);
+		expect(JSON.parse(ordered)).toEqual({
+			canonical: ['base', 'Z', 'A'],
+			pixel: [2, 0, 0, 255],
+			phaser: ['base', 'Z', 'A'],
+			gdevelop: ['base', 'Z', 'A'],
+			aseprite: ['base', 'Z', 'A']
+		});
 	} finally {
 		await rm(directory, { recursive: true, force: true });
 	}
+});
+
+test('equal-depth layers have independent expected ordering in all JavaScript consumers', async () => {
+	expect(await orderingProbe()).toEqual({
+		canonical: ['base', 'A', 'Z'],
+		pixel: [3, 0, 0, 255],
+		phaser: ['base', 'A', 'Z'],
+		gdevelop: ['base', 'A', 'Z'],
+		aseprite: ['base', 'A', 'Z']
+	});
 });
 
 test('the delivered JavaScript and its portable types check without application source files', async () => {

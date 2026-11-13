@@ -123,7 +123,6 @@ export class Paperdoll {
       const roles = new Set(manifest.items.filter((i) => i.slot === s.id).flatMap((i) => i.layers.map((l) => l.role)));
       for (const role of [...roles].sort((a, b) => (a === 'bg' ? -1 : 0) - (b === 'bg' ? -1 : 0))) { // bg before fg (compose tie-break)
         const sprite = scene.add.sprite(0, 0, '__DEFAULT').setName(\`\${s.id}_\${role}\`).setVisible(false);
-        sprite.pdOrder = this.nodes.length; // B14: equal depth keeps compose's order (slot, bg before fg), never the last frame's
         this.nodes.push({ slot: s, role, sprite });
         this.container.add(sprite);
       }
@@ -198,13 +197,15 @@ export class Paperdoll {
     const name = frame.textureFrame, cell = +name.slice(name.lastIndexOf('_') + 1);
     const draws = drawList(this.m, this.equipped, this.anim, this.dir, cell);
     for (const n of this.nodes) {
-      const hit = draws.find((draw) => draw.slot.id === n.slot.id && draw.layer.role === n.role);
+      const order = draws.findIndex((draw) => draw.slot.id === n.slot.id && draw.layer.role === n.role);
+      const hit = draws[order];
+      n.sprite.pdOrder = order < 0 ? draws.length : order;
       n.sprite.setVisible(!!hit);
       if (!hit?.layer) continue;
       n.sprite.depth = hit.z;
       n.sprite.setTexture(this.texture(hit.item, hit.layer), name);
     }
-    this.container.sort('depth', (a, b) => a.depth - b.depth || a.pdOrder - b.pdOrder);
+    this.container.sort('pdOrder', (a, b) => a.pdOrder - b.pdOrder);
   }
 
   destroy() { this.container.destroy(); }

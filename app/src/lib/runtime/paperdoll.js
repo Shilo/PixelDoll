@@ -322,6 +322,19 @@ export function resolveZ(slot, layer, anim, dir, cell) {
 	return z;
 }
 /**
+ * @param {Manifest} manifest
+ * @returns {(left: Pick<Draw, 'item' | 'layer' | 'z'>, right: Pick<Draw, 'item' | 'layer' | 'z'>) => number}
+ */
+export function compareDraws(manifest) {
+	/** @param {string} id */
+	const slotIndex = (id) => manifest.slots.findIndex((slot) => slot.id === id);
+	return (left, right) =>
+		left.z - right.z ||
+		slotIndex(left.item.slot) - slotIndex(right.item.slot) ||
+		(left.layer.role === right.layer.role ? 0 : left.layer.role === 'bg' ? -1 : 1) ||
+		left.item.id.localeCompare(right.item.id);
+}
+/**
  * @param {Manifest} m
  * @param {Preset['items']} items
  * @param {string} anim
@@ -332,8 +345,6 @@ export function resolveZ(slot, layer, anim, dir, cell) {
 export function drawList(m, items, anim, dir, cell) {
 	const on = equipped(m, items),
 		hidden = hiddenSlots(m, on);
-	/** @param {string} id */
-	const slotIx = (id) => m.slots.findIndex((s) => s.id === id);
 	const list = /** @type {Draw[]} */ ([]);
 	for (const item of shownItems(m, on)) {
 		if (hidden.has(item.slot)) continue;
@@ -342,13 +353,7 @@ export function drawList(m, items, anim, dir, cell) {
 		for (const layer of item.layers)
 			list.push({ item, layer, slot, z: resolveZ(slot, layer, anim, dir, cell), under });
 	}
-	return list.sort(
-		(a, b) =>
-			a.z - b.z ||
-			slotIx(a.item.slot) - slotIx(b.item.slot) ||
-			(a.layer.role === b.layer.role ? 0 : a.layer.role === 'bg' ? -1 : 1) ||
-			a.item.id.localeCompare(b.item.id)
-	);
+	return list.sort(compareDraws(m));
 }
 /**
  * @param {Project} p

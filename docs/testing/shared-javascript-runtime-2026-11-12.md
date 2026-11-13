@@ -211,3 +211,47 @@ and clicking Customize also timed out without changing the observed page. The ta
 server were closed. This is not a successful manual dressing or visual-regression verification;
 the application workflow evidence above comes from Playwright and native-engine automation.
 No live PixelLab generation was needed or performed.
+
+## Sol and Opus follow-up challenge
+
+Two new independent reviews used GPT-6.1 Sol medium and Claude Opus 5.5 medium against main
+`00ade519`. Both received the original goal: genuinely execute one canonical paper-doll implementation
+inside PixelDoll and JavaScript exports, not merely ship matching source text or rename old helpers.
+Their briefs also required distinguishing appropriate engine/UI policy from avoidable behavior forks.
+
+The coordinator independently reproduced and accepted these findings:
+
+- Sol found item-only thumbnails and inspector previews sorting background before foreground instead
+  of honoring canonical depth and cell overrides. An overlapping split item rendered red in `itemCell`
+  but blue in canonical composition when its foreground depth moved below its background. The new
+  regression failed before the fix. Item-only previews now call canonical `composeCell` on a scoped
+  one-item project view, retaining union geometry and owner-local image identities.
+- Opus found Phaser using sprite-creation order for depth ties and Aseprite copying the canonical
+  comparator and visibility assembly. Present-day ties matched, so this was forward-change drift,
+  not a claim of already incorrect ordinary Phaser pixels. The coordinator independently reversed
+  canonical slot ties: the compositor changed from base/A/Z to base/Z/A, while Phaser and Aseprite
+  stayed base/A/Z. A copied-source regression reproduced this failure before the fixes.
+- `compareDraws` now owns the ordering in canonical `drawList` and Aseprite's complete editable
+  layer stack, including hidden layers and per-frame depth exceptions. Aseprite visibility comes
+  from canonical `drawList`. Phaser and GDevelop assign renderer order from that list, without a
+  second sort. The copied-source mutation now verifies actual compositor pixels, Phaser sprite
+  order, GDevelop z ranks and decoded Aseprite cel order together. A separate visibility mutation
+  verifies that Aseprite consumes canonical draw decisions.
+- Opus's optional embedding concern was valid as a narrow forward-safety issue: a string/comment
+  line beginning with `export ` would be changed by GDevelop's stripping regex. Synchronization now
+  verifies those prefixes against parsed top-level export modifiers. Regression cases reject
+  misleading string/comment prefixes and indented declarations, rather than silently corrupting
+  emitted code. This adds no runtime parser, dependency or second implementation.
+
+All three behavioral gaps predated the original extraction. They were missed integration paths,
+not regressions introduced by moving the core. Sol described Aseprite's comparator as optional
+maintenance; Opus's executable mutation and the user's forward-change requirement justify fixing it.
+The existing Phaser test now checks the same expected sprite identities instead of `pdOrder` numbers:
+those numbers are deliberately current draw ranks, no longer permanent creation indices.
+
+The coordinator did not broaden this into new caching, viewport fitting or authoring abstractions.
+Fitting already calls canonical equipment/visibility primitives and intentionally unions stored poses;
+it is not a second rendered compositor. Procedural palette generation, draft-coverage diagnostics and
+export mask preparation remain authoring policies with existing parity tests. No additional visible
+defect was demonstrated for those suggestions. Preview looping and hand-conflict interaction policy
+remain the documented distinctions, and native-language adapters still require conformance testing.

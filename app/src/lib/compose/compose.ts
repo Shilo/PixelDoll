@@ -47,6 +47,7 @@ export {
 	cutBase,
 	tuck,
 	resolveZ,
+	compareDraws,
 	drawList,
 	cellImg,
 	over,

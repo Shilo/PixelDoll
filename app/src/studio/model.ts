@@ -1,7 +1,7 @@
 // Studio model helpers (pure, node-runnable): user-facing slot groups (D1 §4.1), item thumbnails, base prompts, wording for
 // QA and costs. Frame placement lives in lib/rig/normalize.ts (one rule for M2/M3/Studio).
 import { makeImg, type Img } from '../lib/image/png.ts';
-import { cellImg, layerFrame, over, unionFrame } from '../lib/compose/compose.ts';
+import { composeCell, layerFrame, unionFrame } from '../lib/compose/compose.ts';
 import type {
 	DirectionName,
 	Item,
@@ -136,7 +136,7 @@ export const SLOT_LABEL: Record<string, string> = {
 };
 export const slotLabel = (s: string) => SLOT_LABEL[s] ?? s;
 
-/** One item alone (all its layers, bg under fg) in one cell; mirrored directions flip their source. Oversize layers (v1.3.1,
+/** One item alone in canonical draw order in one cell; mirrored directions flip their source. Oversize layers (v1.3.1,
  * e.g. 96 px held items) line up by pivot on the union of the item's layer frames. */
 export function itemCell(
 	p: Project,
@@ -146,14 +146,15 @@ export function itemCell(
 	cell: number
 ): Img {
 	const rig = p.manifest.rig,
-		frame = unionFrame(it.layers.map((l) => layerFrame(rig, l))),
-		out = makeImg(frame.w, frame.h);
-	for (const l of [...it.layers].sort((a, b) => +(a.role === 'fg') - +(b.role === 'fg'))) {
-		const im = cellImg(p, l, anim, dir, cell),
-			f = layerFrame(rig, l);
-		if (im) over(out, im, frame.x - f.x, frame.y - f.y);
-	}
-	return out;
+		frame = unionFrame(it.layers.map((l) => layerFrame(rig, l)));
+	return composeCell(
+		{ ...p, manifest: { ...p.manifest, items: [it] } },
+		{ [it.slot]: it.id },
+		anim,
+		dir,
+		cell,
+		frame
+	);
 }
 
 /** Cells with stored item art in thumbnail order (south first), with the images each needs. */

@@ -12,6 +12,7 @@ import { cellHash } from '../../src/lib/rig/rig.ts';
 import type { Item, Manifest, Project } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 import * as colors from '../../src/lib/runtime/colors.js';
+import * as runtime from '../../src/lib/runtime/paperdoll.js';
 
 async function fixture(combinedCuts = false) {
 	const body = makeImg(4, 4),
@@ -185,6 +186,18 @@ test('Aseprite executes canonical palette selection changes for its first-outfit
 		expect([...body.img!.data.slice(20, 24)]).toEqual([0x12, 0x34, 0x56, 255]);
 	} finally {
 		palette.mockRestore();
+	}
+});
+
+test('Aseprite layer visibility follows canonical draw decisions', async () => {
+	const { m, sheets } = await fixture();
+	const draws = vi.spyOn(runtime, 'drawList').mockReturnValue([]);
+	try {
+		const result = await readAseprite(await asepriteFile(m, sheets));
+		expect(draws).toHaveBeenCalledWith(m, m.presets[0].items, 'walk', 'south', 0);
+		expect(result.layers.every((layer) => !layer.visible)).toBe(true);
+	} finally {
+		draws.mockRestore();
 	}
 });
 
