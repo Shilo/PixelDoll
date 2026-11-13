@@ -1547,10 +1547,10 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await page.getByRole('menuitem', { name: 'Character selection', exact: true }).click();
 	await page
 		.locator('.character-rows .character-row')
-		.filter({ has: page.getByText('Adventurer', { exact: true }) })
+		.filter({ has: page.getByText('Adventurer (Demo)', { exact: true }) })
 		.click();
 	await page.locator('.customize-action').click();
-	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer');
+	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)');
 	// The page heading names the character outside the menu button (a heading cannot sit inside a button).
 	await expect(page.getByRole('heading', { level: 1, name: 'Adventurer' })).toHaveCount(1);
 	await expect(page.locator('.project-btn h1')).toHaveCount(0);
@@ -1796,7 +1796,7 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
 				{ initial, shared, legacy }
 			);
 			await openStudio(page, '/#/');
-			await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer');
+			await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)');
 			await expect(page.locator('.world-actors').first()).toBeVisible();
 			await page.locator('.project-btn').click();
 			await page
@@ -1958,7 +1958,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitemradio', { name: 'Adventurer (demo)', exact: true }).click();
 	// Wait for the switch itself: clicking Add a move before the demo replaced the fixture raced the load (the old flake).
-	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer');
+	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)');
 	await expect(page.locator('.move-list')).toBeVisible();
 	// The draft stays with its character: the read-only demo offers no Add a move at all.
 	await expect(page.getByRole('button', { name: 'Add a move', exact: true })).toHaveCount(0);
@@ -5839,8 +5839,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 		.getByRole('button', { name: /^Wizard hat(,|$)/ })
 		.and(page.locator('.bu-tile:not(.shared-tile)'));
 	const more = head.getByRole('button', { name: 'More options for Wizard hat', exact: true });
-	// A sibling control, never nested in the tile, drawn 3 px inside its top-right corner at 28 by 25 px (WCAG 2.5.8
-	// asks for 24), so a press meant for the tile rarely opens the menu.
+	// A sibling control, never nested in the tile, drawn 3 px inside its top-right corner at 28 by 25 px.
 	expect(await more.evaluate((b) => !!b.closest('.item-tile'))).toBe(false);
 	await expect(more).toHaveAttribute('aria-haspopup', 'menu');
 	await expect(more).toHaveAttribute('aria-expanded', 'false');
@@ -5852,22 +5851,21 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 		hit.width,
 		hit.height
 	]).toEqual([3, 3, 28, 25]);
-	// Its target still reaches the tile's outer top and right edges, so that corner never falls through to the tile: an
-	// invisible extension of the button 3 px up and right, which stays out of the tile's way below and beside it.
+	// Its 48 px target reaches the tile's outer top and right edges and extends inward without reaching adjacent tiles.
 	expect(
 		await more.evaluate((button) => {
 			const reach = getComputedStyle(button, '::before');
-			return [reach.content, reach.position, reach.top, reach.right, reach.bottom, reach.left];
+			return [reach.content, reach.position, reach.top, reach.right, reach.width, reach.height];
 		})
-	).toEqual(['""', 'absolute', '-3px', '-3px', '0px', '0px']);
+	).toEqual(['""', 'absolute', '-3px', '-3px', '48px', '48px']);
 	// The worn check and status sit in the opposite, top-left corner, 6 px inside the 1 px border.
 	const status = (await hat.locator('.tile-status, .bu-tile-check').first().boundingBox())!;
 	expect(status.x).toBeCloseTo(tile.x + 7, 0);
 	expect(status.x + status.width).toBeLessThan(hit.x);
-	// The category's Random and + actions are full 44 px targets too.
+	// The category's Random and + actions are full 48 px targets too.
 	for (const name of ['Random head item', 'New head item']) {
 		const box = (await head.getByRole('button', { name, exact: true }).boundingBox())!;
-		expect(Math.min(box.width, box.height), name).toBeGreaterThanOrEqual(44);
+		expect(Math.min(box.width, box.height), name).toBeGreaterThanOrEqual(48);
 	}
 	// Empty and New tiles have no menu.
 	await expect(head.getByRole('button', { name: /^More options for Empty/ })).toHaveCount(0);

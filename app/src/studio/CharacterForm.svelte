@@ -805,7 +805,7 @@
 		grid-column: span 3;
 	}
 	.compass {
-		--mirror-width: 29px;
+		--mirror-width: var(--ctl-h);
 		display: grid;
 		grid-template-columns: calc(56px + var(--mirror-width)) 56px calc(56px + var(--mirror-width));
 		gap: 6px;
@@ -838,9 +838,6 @@
 		flex: 0 0 var(--mirror-width);
 	}
 	@media (pointer: coarse) {
-		.compass {
-			--mirror-width: 44px;
-		}
 		.creator-tabs button {
 			min-height: 44px;
 		}
@@ -954,9 +951,6 @@
 		}
 		.direction-tile {
 			height: 56px;
-		}
-		.compass {
-			--mirror-width: 44px;
 		}
 		.facing {
 			max-width: none;

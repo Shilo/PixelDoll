@@ -275,6 +275,17 @@
 	display: block !important;
 }
 @media (max-width: 430px) {
+	.phone-layout .experience-header {
+		left: 8px;
+		right: 8px;
+	}
+	.phone-layout .name-text .bu-muted {
+		display: block;
+		font-size: 12px;
+	}
+	.phone-layout .name-facts {
+		display: none;
+	}
 	.phone-layout .header-random {
 		display: none !important;
 	}
@@ -1287,7 +1298,7 @@
 .studio-app .character-sheet .character-name {
 	width: 100%;
 	max-width: none;
-	min-height: 44px;
+	min-height: var(--ctl-h);
 	font-size: 16px;
 }
 .studio-app .character-sheet .sheet-body {
@@ -1384,13 +1395,14 @@
 .studio-app .character-sheet .facing > .help-title {
 	font-size: 14px;
 }
-/* 16 px text keeps phones from zooming. Only one-line fields get the 44 px floor: textareas size themselves (.details-input,
-   .exact-input) and switches keep their own shape, which :where adds without raising specificity. */
+/* 16 px text keeps phones from zooming. Only one-line fields get the control-height floor, so they line up with the 48 px
+   buttons beside them (Frame's Auto): textareas size themselves (.details-input, .exact-input) and switches keep their own
+   shape, which :where adds without raising specificity. */
 .studio-app .character-sheet :is(input, select, textarea) {
 	font-size: 16px;
 }
 .studio-app .character-sheet :is(input:where(:not([type='checkbox'], [type='radio'])), select) {
-	min-height: 44px;
+	min-height: var(--ctl-h);
 }
 .studio-app .character-sheet .details-input {
 	min-height: 112px;

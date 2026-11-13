@@ -1255,7 +1255,7 @@ test('fast wheel input skips intermediate loads and keeps the latest selection w
 			opacity: getComputedStyle(button).opacity
 		}));
 	await expect(customizeButton).toHaveText(
-		`Customize ${await page.locator('.selected-name-text').textContent()}`
+		`Customize ${await page.locator('.selected-caption h2').textContent()}`
 	);
 	const readyAppearance = await customizeAppearance();
 	// The first steps turn the wheel while Control is really held; the rest hold Cmd, which needs no key tracking.
@@ -1546,7 +1546,7 @@ test('fast wheel input skips intermediate loads and keeps the latest selection w
 		});
 		const appearance = await customizeAppearance();
 		await expect(customizeButton).toHaveText(
-			`Customize ${await page.locator('.selected-name-text').textContent()}`
+			`Customize ${await page.locator('.selected-caption h2').textContent()}`
 		);
 		await send([200], 3000);
 		await held(ids[1]);
@@ -1844,7 +1844,7 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 	await page.keyboard.press('Escape');
 	expect(await reads()).toBeLessThanOrEqual(3);
 	expect(await frameReads()).toBe(0);
-	const currentName = await page.locator('.selected-name-text').textContent();
+	const currentName = await page.locator('.selected-caption h2').textContent();
 	await page.getByRole('searchbox', { name: 'Search characters', exact: true }).fill(currentName!);
 	await expect(rows).toHaveCount(1);
 	const beforeSingleResult = await reads();
@@ -2066,11 +2066,14 @@ test.describe('selected cast centering', () => {
 										.querySelector('.selected-caption')!
 										.getBoundingClientRect();
 									const cast = document.querySelector('.cast')!.getBoundingClientRect();
+									const library = document.querySelector('.cast-library')!.getBoundingClientRect();
 									return (
 										Math.abs(bounds.left + bounds.width / 2 - cast.left - cast.width / 2) <= 1 &&
 										bounds.top <= chosen.bottom &&
 										bounds.bottom >= chosen.bottom &&
-										caption.top - bounds.bottom >= 12
+										caption.top - bounds.bottom >= 12 &&
+										(!document.querySelector('.sheet-layout') ||
+											library.top - caption.bottom >= 11.9)
 									);
 								})
 							)

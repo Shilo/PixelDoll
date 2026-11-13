@@ -52,6 +52,7 @@
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
 	let playbackHeight = $state(0);
+	let selectionCaptionHeight = $state(0);
 	const previewHeight = $derived(experience.mode === 'preview' ? playbackHeight : 0);
 	let viewportWidth = $state(1280),
 		viewportHeight = $state(720);
@@ -135,12 +136,6 @@
 			};
 		});
 	});
-	const selectionClearance = $derived({
-		l: g.stage.l,
-		r: g.stage.r,
-		t: g.headerBottom + 16,
-		b: g.sheet ? g.listTop : g.h
-	});
 	const selectedStill = $derived(
 		stills.get(neighbors.find(({ offset }) => !offset)?.p.id ?? doc.id)
 	);
@@ -176,6 +171,18 @@
 			ui.dpr
 		);
 		return Math.max(14, ring.ry - ring.rise + ring.stroke / 2 + RING_GAP);
+	});
+	const selectionListTop = $derived(
+		Math.max(
+			g.listTop,
+			list.length ? g.feet.y + selectionCaptionGap + selectionCaptionHeight + RING_GAP : 0
+		)
+	);
+	const selectionClearance = $derived({
+		l: g.stage.l,
+		r: g.stage.r,
+		t: g.headerBottom + 16,
+		b: g.sheet ? selectionListTop : g.h
 	});
 	$effect(() => {
 		if (experience.screen !== 'characters') return;
@@ -249,7 +256,7 @@
 			['--feet-y', g.feet.y],
 			['--playback-top', g.playbackTop],
 			['--playback-height', g.playbackHeight],
-			['--list-top', g.listTop],
+			['--list-top', selectionListTop],
 			['--world-w', world.scale * worldArt(ui.theme).width],
 			['--world-h', world.scale * worldArt(ui.theme).height],
 			['--world-x', world.x],
@@ -553,7 +560,11 @@
 				floorFocal={baseWorld.scale * worldArt(ui.theme).focal}
 				select={pick}
 			/>
-			{#if list.length}<div class="selected-caption" style:top="{g.feet.y + selectionCaptionGap}px">
+			{#if list.length}<div
+					class="selected-caption"
+					bind:offsetHeight={selectionCaptionHeight}
+					style:top="{g.feet.y + selectionCaptionGap}px"
+				>
 					<!-- The heading sits beside the menu button: a heading is not allowed inside a button. -->
 					<h2 class="sr">{name}</h2>
 					<button

@@ -22,6 +22,8 @@
 	let w = $state(0),
 		h = $state(0);
 	let transportHeight = $state(64);
+	let directionGrid = $state<HTMLElement>();
+	let directionRowHeight = $state(0);
 	let wrapped = $state(false);
 	$effect(() => {
 		const ro = new ResizeObserver(([e]) => {
@@ -51,6 +53,25 @@
 		});
 		observer.observe(bar);
 		if (bar.offsetParent) observer.observe(bar.offsetParent);
+		return () => observer.disconnect();
+	});
+
+	$effect(() => {
+		const grid = directionGrid;
+		if (!grid) {
+			directionRowHeight = 0;
+			return;
+		}
+		const observer = new ResizeObserver(() => {
+			directionRowHeight = Math.max(
+				0,
+				...Array.from(
+					grid.querySelectorAll('figure'),
+					(figure) => figure.getBoundingClientRect().height
+				)
+			);
+		});
+		observer.observe(grid);
 		return () => observer.disconnect();
 	});
 
@@ -125,7 +146,11 @@
 			: null;
 </script>
 
-<div class="stage" bind:this={box}>
+<div
+	class="stage"
+	bind:this={box}
+	style:min-height={ui.all ? `${Math.ceil(barH + directionRowHeight) + 2}px` : undefined}
+>
 	{#if doc.loading && !m}
 		<div class="stage-msg">
 			<span class="bu-ring ring spin" aria-hidden="true"></span><span class="sr">Loading</span>
@@ -133,7 +158,7 @@
 	{:else if m}
 		<div class="stage-art" style:margin-bottom="{barH}px">
 			{#if ui.all}
-				<div class="all-dirs" style:--cols={cols}>
+				<div class="all-dirs" bind:this={directionGrid} style:--cols={cols}>
 					{#each grid as d, i (i)}
 						{#if d}
 							<figure>

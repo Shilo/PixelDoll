@@ -888,7 +888,7 @@ dialog select option {
 }
 .inline-form {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto 44px;
+	grid-template-columns: minmax(0, 1fr) auto var(--ctl-h);
 	align-items: center;
 	gap: 8px;
 	margin-top: 8px;
@@ -897,10 +897,10 @@ dialog select option {
 	min-width: 0;
 }
 .inline-form :is(.input, .btn) {
-	height: 44px;
+	height: var(--ctl-h);
 }
 .inline-form .btn.icon {
-	width: 44px;
+	width: var(--ctl-h);
 }
 
 /* item details */

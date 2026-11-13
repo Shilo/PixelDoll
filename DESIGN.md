@@ -140,6 +140,8 @@ components:
 
 # Design System: PixelDoll
 
+Button geometry update, November 13, 2026: production Studio actions now use a shared 48 by 48 CSS-pixel minimum, including icon actions and expanded item-menu hit areas. This supersedes the older 40/44px action dimensions below. See [Button sizing](docs/design/button-sizing.md) for the audit, native-unit distinction, compact scrolling panels, and playback breakpoints.
+
 All shared appearance (colors, materials, states, focus, borders, radii) comes from `@shilo/bronze-ui` 0.2.8 plus its unreleased additions pending release as 0.3.0 (rail tabs, item tiles, sticky section headers with `stickyFade`, edge fades and the top toast region) (`styles/tokens.css` and `styles/components.css`). The tokens above mirror its `--bu-*` variables; Bronze is the source of truth, and a change to them belongs in the Bronze repository first. Translucent materials (outline, tile, floating, action hover, selected) are derived Bronze roles, so they are described in prose and in `.impeccable/design.json` rather than as frontmatter colors. PixelDoll owns layout, geometry, spacing and the world scene (`app/src/studio/experience/layout.css`, `config.ts`, `ground.ts`), plus a few local rules noted below. The workflow contract is [docs/design/production-experience.md](docs/design/production-experience.md).
 
 This file records the current interface; it is not a new direction. Updated 2026-11-11 for the approved Studio refinement ([UI lab 5](docs/design/2026-11-11-ui-refinement/ui-lab-5.html)) and checked against the running app at 1920×1080, 2560×1080, 1440×900, 1280×720, 1024×768, 768×1024, 390×844, 844×390 and 320×568 in dark and light.
