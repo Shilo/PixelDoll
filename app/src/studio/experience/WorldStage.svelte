@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { ui, doc, view, toast, stepPreviewFrame } from '../state.svelte.ts';
-	import { experience, characters, setMode } from './state.svelte.ts';
+	import { experience, characters, setMode, sharedZoom } from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
 	import { MOTION, REFLECTION, WORLDS, worldArt } from './config.ts';
 	import { EYE, heroRoom, layout, placeWorld, ringRise } from './geometry.ts';
@@ -9,7 +9,7 @@
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { paintedFrame, reachFrame, actorScale, previewBounds } from './bounds.ts';
 	import { planLineup } from './lineup.ts';
-	import { resolveZoom, sceneArtFits, sceneCamera, zoomBox, zoomCeiling } from './zoom.ts';
+	import { sceneArtFits, sceneCamera, zoomBox, zoomCeiling } from './zoom.ts';
 	import { sceneZoom } from './sceneZoom.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
@@ -118,6 +118,8 @@
 		camera: Vector = { x: 0, y: 0 },
 		previous: Presentation | undefined;
 	let hasMoved = false;
+	// Preview's latest fit, so input reads the shared zoom as it is now rather than as the last frame drew it.
+	let previewFit = 0;
 	let clock: ReturnType<typeof advancePlayback> | undefined;
 	const noticed = new Set<string>();
 	function release() {
@@ -525,14 +527,12 @@
 			// The selected facing's fit in CSS px per art px; the shared zoom is absolute (zoom.ts).
 			const fit = row?.scale ?? (fitFrame ? actorScale(fitFrame, room, dpr) : 0);
 			if (!live && fit > 0) {
+				previewFit = fit;
+				if (experience.zoomFits.studio !== fit) experience.zoomFits.studio = fit;
 				const ceiling = zoomCeiling(experience.zoomCeiling, fit);
 				if (ceiling !== experience.zoomCeiling) experience.zoomCeiling = ceiling;
 			}
-			const shared = resolveZoom(
-				experience.sceneZoom,
-				fit || 1,
-				zoomCeiling(experience.zoomCeiling, fit || 1)
-			);
+			const shared = sharedZoom('studio', fit);
 			const zoom = sceneCamera({
 				value: live || !fit ? 1 : shared.scale / fit,
 				anchor: focus,
@@ -554,11 +554,10 @@
 				);
 			});
 			if (!live) {
-				const published = { ...zoom, zoom: shared };
-				const stamp = JSON.stringify(published);
+				const stamp = JSON.stringify(zoom);
 				if (stamp !== cameraStamp) {
 					cameraStamp = stamp;
-					experience.sceneCamera = published;
+					experience.sceneCamera = zoom;
 				}
 				if (zoom.value !== 1) {
 					g.translate(zoom.anchor.x, zoom.anchor.y);
@@ -850,7 +849,7 @@
 	{@attach (node) =>
 		sceneZoom(node, {
 			get zoom() {
-				return experience.sceneCamera?.zoom ?? { scale: 1, fit: 1, min: 1, max: 1, zoomed: false };
+				return sharedZoom('studio', previewFit);
 			},
 			get enabled() {
 				return experience.mode === 'preview' && !ui.sheet;

@@ -11,7 +11,7 @@
 	import CastCarousel from './CastCarousel.svelte';
 	import ZoomControls from './ZoomControls.svelte';
 	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
-	import { resolveZoom, sceneArtFits, sceneCamera, zoomCeiling } from './zoom.ts';
+	import { sceneArtFits, sceneCamera, zoomCeiling } from './zoom.ts';
 	import { stills, thumbScale } from './thumbnails.svelte.ts';
 	import { castPose } from './carousel.ts';
 	import {
@@ -24,7 +24,12 @@
 		characterName,
 		toast
 	} from '../state.svelte.ts';
-	import { experience, customize as enterCustomize, characters } from './state.svelte.ts';
+	import {
+		experience,
+		customize as enterCustomize,
+		characters,
+		sharedZoom
+	} from './state.svelte.ts';
 	import { WORLDS, worldArt } from './config.ts';
 	import { heroScale, layout, placeWorld } from './geometry.ts';
 	import {
@@ -139,20 +144,15 @@
 			castPose(0, g.stage.r - g.stage.l, size, castSize(1)).scale
 		);
 	});
-	const selectionZoom = $derived(
-		resolveZoom(
-			experience.sceneZoom,
-			selectionFit,
-			zoomCeiling(experience.zoomCeiling, selectionFit)
-		)
-	);
+	const selectionZoom = $derived(sharedZoom('characters', selectionFit));
 	$effect(() => {
 		if (experience.screen !== 'characters') return;
-		const ceiling = zoomCeiling(
-			untrack(() => experience.zoomCeiling),
-			selectionFit
-		);
-		if (ceiling !== untrack(() => experience.zoomCeiling)) experience.zoomCeiling = ceiling;
+		const fit = selectionFit;
+		untrack(() => {
+			if (experience.zoomFits.characters !== fit) experience.zoomFits.characters = fit;
+			const ceiling = zoomCeiling(experience.zoomCeiling, fit);
+			if (ceiling !== experience.zoomCeiling) experience.zoomCeiling = ceiling;
+		});
 	});
 	const selectionCamera = $derived(
 		sceneCamera({
@@ -185,17 +185,20 @@
 			: baseWorld
 	);
 	// The automatic fit needs no controls; they appear once the person zooms, mainly to reset it.
+	// Preview's zoom, read from the shared state rather than its last drawn frame, so its controls follow input at once.
+	const previewZoom = $derived(sharedZoom('studio', experience.zoomFits.studio));
 	function changeZoom(scale: number | null) {
 		const fromControls = document.activeElement?.closest('.scene-zoom');
 		experience.sceneZoom = scale;
 		// Returning to the fit hides the controls, so keyboard focus moves to the scene they zoomed.
-		if (fromControls && scale === null)
-			void tick().then(() =>
+		if (fromControls)
+			void tick().then(() => {
+				if (document.querySelector('.scene-zoom')) return;
 				(experience.screen === 'characters'
 					? selection
 					: document.querySelector<HTMLElement>('.world-stage')
-				)?.focus({ preventScroll: true })
-			);
+				)?.focus({ preventScroll: true });
+			});
 	}
 	const sceneIsZoomed = $derived(
 		activeCamera &&
@@ -592,9 +595,9 @@
 		<div class="experience-stage">
 			<WorldStage playbackHeight={previewHeight} bind:missing />
 		</div>
-		{#if experience.mode === 'preview' && experience.sceneCamera?.zoom.zoomed}
+		{#if experience.mode === 'preview' && experience.zoomFits.studio && previewZoom.zoomed}
 			<div class="scene-zoom-controls">
-				<ZoomControls zoom={experience.sceneCamera.zoom} onchange={changeZoom} />
+				<ZoomControls zoom={previewZoom} onchange={changeZoom} />
 			</div>
 		{/if}
 		{#if experience.mode === 'preview' && m}

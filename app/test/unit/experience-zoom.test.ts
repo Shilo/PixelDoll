@@ -4,7 +4,6 @@ import { castPose } from '../../src/studio/experience/carousel.ts';
 import { heroRoom, heroScale, layout, placeWorld } from '../../src/studio/experience/geometry.ts';
 import { planLineup } from '../../src/studio/experience/lineup.ts';
 import {
-	fitLevel,
 	resolveZoom,
 	sceneArtFits,
 	sceneCamera,
@@ -186,111 +185,120 @@ describe('finite scene camera', () => {
 });
 
 describe('absolute zoom', () => {
-	const zoom = (stored: number | null, fit: number, ceiling = 0): SceneZoom =>
-		resolveZoom(stored, fit, zoomCeiling(ceiling, fit));
-	/** Step `count` times one way and back, returning every level visited and where it ends. */
+	/** One screen's zoom with this fit, the other screen's fit and the ceiling the session reached. */
+	const zoom = (stored: number | null, fit: number, other = 0, ceiling = 0): SceneZoom =>
+		resolveZoom(stored, fit, [other], ceiling);
+	/** Step `count` times one way, then the same count back, from `start`. */
 	function roundTrip(start: SceneZoom, direction: 1 | -1, count: number) {
-		let stored: number | null = start.zoomed ? start.scale : null;
-		const at = (value: number | null) => resolveZoom(value, start.fit, start.max);
-		const path = [at(stored).scale];
-		for (let i = 0; i < count; i++) path.push(at((stored = zoomStep(at(stored), direction))).scale);
+		const at = (scale: number) => resolveZoom(scale, start.fit, start.stops, start.max);
+		let shown = start;
+		const path = [shown.scale];
+		for (let i = 0; i < count; i++) path.push((shown = at(zoomStep(shown, direction))).scale);
 		const back = [];
 		for (let i = 0; i < count; i++)
-			back.push(at((stored = zoomStep(at(stored), direction === 1 ? -1 : 1))).scale);
-		return { path, back, stored };
+			back.push((shown = at(zoomStep(shown, direction === 1 ? -1 : 1))).scale);
+		return { path, back };
 	}
 
 	test('the ladder holds every whole multiple, with even steps of at most 25% between them', () => {
-		const ladder = zoomLadder(12);
-		expect(ladder.map((level) => Math.round(level * 100))).toEqual([
+		expect(zoomLadder(12).map((level) => Math.round(level * 100))).toEqual([
 			100, 125, 150, 175, 200, 250, 300, 350, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200
 		]);
-		for (let whole = 1; whole <= 40; whole++) expect(zoomLadder(40)).toContain(whole);
 		const big = zoomLadder(40);
+		for (let whole = 1; whole <= 40; whole++) expect(big).toContain(whole);
 		for (let i = 1; i < big.length; i++) {
 			expect(big[i]).toBeGreaterThan(big[i - 1]);
 			expect(big[i] / big[i - 1]).toBeLessThanOrEqual(1.25 + 1e-9);
 		}
 	});
 
-	test('a fit within 3% of a whole multiple shows that multiple; others show exactly', () => {
-		expect(fitLevel(3.96)).toBe(4);
-		expect(fitLevel(4.1)).toBe(4);
-		expect(fitLevel(3.6)).toBe(3.6);
-		expect(fitLevel(2.5)).toBe(2.5);
-		expect(fitLevel(0.75)).toBe(0.75);
-	});
-
-	test.each([0.75, 1, 2, 2.5, 3.333, 3.6, 3.96, 4, 7.2, 12.5, 20])(
-		'from a %s fit, every step one way and back retraces the same levels to the fit',
-		(fit) => {
-			const start = zoom(null, fit);
+	test.each([
+		[0.75, 0],
+		[1, 0],
+		[2.5, 3],
+		[3.333, 4],
+		[3.6, 4],
+		[3.96, 3.6],
+		[4, 3],
+		[7.2, 6],
+		[12.5, 9],
+		[20, 16]
+	])(
+		'from a %s fit (other screen %s), every step one way and back retraces exactly',
+		(fit, other) => {
+			const start = zoom(null, fit, other);
+			expect(start.scale, 'the default keeps the fit exactly').toBe(fit);
+			expect(start.zoomed).toBe(false);
 			const levels = zoomLevels(start);
-			const below = levels.filter((level) => level < start.fit).length;
-			const above = levels.filter((level) => level > start.fit).length;
 			for (const [direction, count] of [
-				[-1, below],
-				[1, above]
+				[-1, levels.filter((level) => level < fit).length],
+				[1, levels.filter((level) => level > fit).length]
 			] as const)
 				for (let n = 1; n <= count; n++) {
-					const { path, back, stored } = roundTrip(start, direction, n);
+					const { path, back } = roundTrip(start, direction, n);
 					expect(new Set(path).size, 'every step reaches a new level').toBe(n + 1);
 					expect(back, 'stepping back retraces the same levels').toEqual(
 						path.slice(0, -1).reverse()
 					);
-					expect(stored, 'back at the fit, nothing is stored').toBeNull();
 				}
-			expect(levels[0]).toBe(Math.min(1, start.fit));
-			for (let whole = 1; whole <= start.max; whole++)
-				if (whole >= start.min) expect(levels).toContain(whole);
+			expect(levels[0]).toBe(Math.min(1, fit, other || Infinity));
+			for (let whole = 1; whole <= start.max; whole++) expect(levels).toContain(whole);
+			expect(levels).toContain(fit);
+			if (other) expect(levels).toContain(other);
 		}
 	);
 
-	test('steps near the fit are never too small to see', () => {
-		for (const fit of [1.3, 2.4, 3.6, 3.96, 5.5, 7.2]) {
-			const levels = zoomLevels(zoom(null, fit));
-			for (let i = 1; i < levels.length; i++)
-				if (levels[i] !== Math.round(levels[i]) || levels[i - 1] !== Math.round(levels[i - 1]))
-					expect(
-						levels[i] / levels[i - 1],
-						`${fit}: ${levels[i - 1]} to ${levels[i]}`
-					).toBeGreaterThan(1.03);
-		}
+	test('both screens step through the same levels, so a level reached on one retraces on the other', () => {
+		const characters = zoom(null, 3.6, 2.4),
+			customize = zoom(null, 2.4, 3.6);
+		expect(zoomLevels(characters)).toEqual(zoomLevels(customize));
+		// 250% chosen on Characters, then stepped on Customize, returns to 250% exactly.
+		const chosen = resolveZoom(2.5, 2.4, [3.6], 0);
+		const up = resolveZoom(zoomStep(chosen, 1), 2.4, [3.6], 0);
+		expect(zoomStep(up, -1)).toBe(2.5);
+		const down = resolveZoom(zoomStep(chosen, -1), 2.4, [3.6], 0);
+		expect(down.scale).toBe(2.4);
+		expect(zoomStep(down, 1)).toBe(2.5);
+	});
+
+	test('a chosen scale reads the same on both screens, and controls show only away from each fit', () => {
+		const ceiling = zoomCeiling(zoomCeiling(0, 3.6), 4);
+		expect(ceiling).toBe(8);
+		const characters = resolveZoom(4, 3.6, [4], ceiling),
+			customize = resolveZoom(4, 4, [3.6], ceiling);
+		expect([characters.scale, customize.scale]).toEqual([4, 4]);
+		expect(characters.max).toBe(customize.max);
+		expect(characters.zoomed, '400% on a 360% fit shows the controls').toBe(true);
+		expect(customize.zoomed, '400% on a 400% fit is the default view').toBe(false);
+		// The ceiling only grows: a smaller window later never clamps a level chosen earlier.
+		expect(zoomCeiling(ceiling, 2)).toBe(8);
+		expect(resolveZoom(7, 2, [], ceiling).scale).toBe(7);
+		// Unzoomed, each screen shows its own fit.
+		expect(resolveZoom(null, 3.6, [4], ceiling).scale).toBe(3.6);
+		expect(resolveZoom(null, 4, [3.6], ceiling).scale).toBe(4);
 	});
 
 	test('a scale between levels steps to the nearest level that way', () => {
 		const pinched = zoom(4.4, 3.6);
 		expect(zoomStep(pinched, 1)).toBe(5);
 		expect(zoomStep(pinched, -1)).toBe(4);
-		expect(zoomStep(zoom(3.7, 3.6), -1)).toBeNull();
+		expect(zoomStep(zoom(3.7, 3.6), -1)).toBe(3.6);
 	});
 
-	test('both screens share the stored scale and one ceiling, so a level never reads differently', () => {
-		const ceiling = zoomCeiling(zoomCeiling(0, 3.6), 4);
-		const characters = resolveZoom(7, 3.6, ceiling),
-			customize = resolveZoom(7, 4, ceiling);
-		expect([characters.scale, customize.scale]).toEqual([7, 7]);
-		expect(characters.max).toBe(customize.max);
-		expect(ceiling).toBe(8);
-		// It only grows: a smaller window later never clamps a level chosen earlier.
-		expect(zoomCeiling(ceiling, 2)).toBe(8);
-		// Unzoomed, each screen shows its own fit.
-		expect(resolveZoom(null, 3.6, ceiling)).toMatchObject({ scale: 3.6, zoomed: false });
-		expect(resolveZoom(null, 4, ceiling)).toMatchObject({ scale: 4, zoomed: false });
-	});
-
-	test('bounds run from 100% (or a smaller fit) to the shared ceiling', () => {
+	test('bounds run from 100% (or a smaller fit) to at least twice every fit', () => {
 		expect(zoom(0.2, 3).scale).toBe(1);
 		expect(zoom(50, 3).scale).toBe(6);
+		expect(zoom(50, 3, 4).scale).toBe(8);
 		expect(zoom(null, 0.75)).toMatchObject({ min: 0.75, scale: 0.75 });
 		expect(zoom(0.5, 0.75).scale).toBe(0.75);
 		expect(zoomStep(zoom(1, 3), -1)).toBe(1);
 		expect(zoomStep(zoom(6, 3), 1)).toBe(6);
 	});
 
-	test('a pinch settles on the fit or a whole multiple within 4%, else stays exact', () => {
-		const at = zoom(null, 3.6);
-		expect(settleZoom(at, 3.7)).toBeNull();
+	test('a pinch settles on a fit or a whole multiple within 4%, else stays exact', () => {
+		const at = zoom(null, 3.6, 2.4);
+		expect(settleZoom(at, 3.7)).toBe(3.6);
+		expect(settleZoom(at, 2.45)).toBe(2.4);
 		expect(settleZoom(at, 5.1)).toBe(5);
 		expect(settleZoom(at, 4.6)).toBe(4.6);
 		expect(settleZoom(at, 0.4)).toBe(1);

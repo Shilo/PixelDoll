@@ -7,23 +7,13 @@ export interface ScenePoint {
 
 /*
  * Zoom is absolute: a scale is CSS pixels per art pixel, shown as a percentage, so 100% is the character's true size and
- * 400% draws every art pixel 4 CSS pixels wide. Each screen fits its selected character as before (the "fit"); the camera
- * multiplies that fit by scale / fit. Both screens share the stored scale, so a level reads and draws the same size on
- * each. Until the person zooms, the stored scale is null and every screen shows its own fit.
+ * 400% draws every art pixel 4 CSS pixels wide. Each screen fits its selected character as before (its "fit", kept
+ * exactly); the camera multiplies that fit by scale / fit. Until the person zooms, nothing is stored and every screen
+ * shows its own fit; once they do, the stored scale is shared, so a level reads and draws the same size on each screen.
  */
 
-/** A fit within this share of a whole multiple uses the multiple, so stepping off it is never a step too small to see. */
-const WHOLE_SNAP = 0.03;
-/** Between-levels closer than this share to the fit are dropped, for the same reason. */
-const FIT_GAP = 0.06;
-/** A pinch released this close to the fit or a whole multiple lands on it exactly. */
+/** A pinch released this close to a fit or a whole multiple lands on it exactly. */
 export const ZOOM_SNAP = 0.04;
-
-/** The scale a screen shows by default for a fit: the fit itself, or a whole multiple within 3% of it. */
-export function fitLevel(fit: number): number {
-	const whole = Math.round(fit);
-	return whole >= 1 && Math.abs(fit - whole) <= WHOLE_SNAP * whole ? whole : fit;
-}
 
 /**
  * Every whole multiple from 100%, with even steps between n and n + 1 while a step would otherwise exceed 25%:
@@ -44,59 +34,78 @@ export function zoomLadder(max: number): number[] {
 export interface SceneZoom {
 	/** The scale shown, in CSS pixels per art pixel. */
 	scale: number;
-	/** This screen's default scale (fitLevel of its fit). */
+	/** This screen's fit. */
 	fit: number;
+	/** Both screens' latest fits, which every ladder includes so the two screens step through the same levels. */
+	stops: readonly number[];
 	min: number;
 	max: number;
-	/** The person chose this scale; otherwise the screen shows its fit. */
+	/** The shown scale differs from this screen's fit (as displayed), so the controls show to reset it. */
 	zoomed: boolean;
 }
 
-/** The shared zoom on one screen: the stored scale (null for the fit) within the shared bounds. */
-export function resolveZoom(stored: number | null, fit: number, ceiling: number): SceneZoom {
-	const level = fitLevel(fit);
-	const min = Math.min(1, level),
-		max = Math.max(ceiling, level);
+/**
+ * One screen's view of the shared zoom. `stored` is the chosen scale, or null for each screen's fit; `fits` are both
+ * screens' latest fits (0 while unknown). Bounds run from 100% (or a smaller fit) to `ceiling`, at least twice every fit.
+ */
+export function resolveZoom(
+	stored: number | null,
+	fit: number,
+	fits: readonly number[],
+	ceiling: number
+): SceneZoom {
+	const stops = [...new Set([...fits.filter((value) => value > 0), fit])].sort((a, b) => a - b);
+	const min = Math.min(1, ...stops),
+		max = stops.reduce(zoomCeiling, ceiling);
 	const scale =
-		stored === null || !Number.isFinite(stored) ? level : Math.min(max, Math.max(min, stored));
-	return { scale, fit: level, min, max, zoomed: stored !== null && Number.isFinite(stored) };
+		stored === null || !Number.isFinite(stored) ? fit : Math.min(max, Math.max(min, stored));
+	return {
+		scale,
+		fit,
+		stops,
+		min,
+		max,
+		zoomed: Math.round(scale * 100) !== Math.round(fit * 100)
+	};
 }
 
 /** The shared upper bound grows to twice the largest fit seen and never shrinks, so no screen clamps a stored scale. */
 export function zoomCeiling(previous: number, fit: number): number {
-	return Math.max(previous, Math.ceil(2 * fitLevel(fit)));
+	return Math.max(previous, Math.ceil(2 * fit));
 }
 
-/** The levels a wheel notch, key or button steps through on a screen: the ladder within its bounds, plus its fit. Every
- *  level, the fit included, is on the list, so stepping one way and back always retraces the same levels. */
-export function zoomLevels(zoom: Pick<SceneZoom, 'fit' | 'min' | 'max'>): number[] {
-	const { fit, min, max } = zoom;
-	const levels = zoomLadder(max).filter(
-		(level) =>
-			level >= min &&
-			(Number.isInteger(level) || Math.abs(level - fit) > FIT_GAP * fit || level === fit)
-	);
-	return [...new Set([min, ...levels, fit, max])].sort((a, b) => a - b);
+/** The levels a wheel notch, key or button steps through: the ladder within the bounds plus both screens' fits. Both
+ *  screens build the same list, and every level stays on it, so stepping one way and back always retraces it. */
+export function zoomLevels(zoom: Pick<SceneZoom, 'stops' | 'min' | 'max'>): number[] {
+	const { stops, min, max } = zoom;
+	return [
+		...new Set([
+			min,
+			...zoomLadder(max).filter((level) => level >= min),
+			...stops.filter((stop) => stop >= min && stop <= max),
+			max
+		])
+	].sort((a, b) => a - b);
 }
 
-/** The next level in `direction` from `scale`; a scale between levels (after a pinch) goes to the nearest level that
- *  way. Returns null when the step lands on the screen's fit, which is stored as "not zoomed". */
-export function zoomStep(zoom: SceneZoom, direction: 1 | -1): number | null {
+/** The next level in `direction` from the shown scale; a scale between levels (after a pinch) goes to the nearest level
+ *  that way. */
+export function zoomStep(zoom: SceneZoom, direction: 1 | -1): number {
 	const levels = zoomLevels(zoom);
-	const next =
+	return (
 		(direction > 0
 			? levels.find((level) => level > zoom.scale + 1e-9)
-			: levels.findLast((level) => level < zoom.scale - 1e-9)) ?? zoom.scale;
-	return next === zoom.fit ? null : next;
+			: levels.findLast((level) => level < zoom.scale - 1e-9)) ?? zoom.scale
+	);
 }
 
-/** Where a pinch released at `scale` settles: the fit (null) or a whole multiple within 4%, else exactly where it is. */
-export function settleZoom(zoom: SceneZoom, scale: number): number | null {
-	if (Math.abs(scale - zoom.fit) <= ZOOM_SNAP * zoom.fit) return null;
-	const whole = Math.round(scale);
-	return whole >= zoom.min && whole <= zoom.max && Math.abs(scale - whole) <= ZOOM_SNAP * whole
-		? whole
-		: Math.min(zoom.max, Math.max(zoom.min, scale));
+/** Where a pinch released at `scale` settles: a fit or a whole multiple within 4%, else exactly where it is. */
+export function settleZoom(zoom: SceneZoom, scale: number): number {
+	const near = [...zoom.stops, Math.round(scale)].find(
+		(target) =>
+			target >= zoom.min && target <= zoom.max && Math.abs(scale - target) <= ZOOM_SNAP * target
+	);
+	return near ?? Math.min(zoom.max, Math.max(zoom.min, scale));
 }
 
 export interface SceneCamera {
