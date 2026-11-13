@@ -1300,6 +1300,66 @@ test('Characters and Customize share one absolute zoom: the same level, label an
 		.toBeLessThanOrEqual(1.5);
 });
 
+test('a level reached on one screen retraces exactly on the other, whatever the two fits', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 1440, height: 900 });
+	await seedCharacters(page, 1);
+	const host = selection(page);
+	await resetZoom(page, host);
+	const charactersFit = (await readScene(host)).fit;
+	// Stepping away and back stores Characters' own fit as the chosen level.
+	await press(page, host, '=');
+	await press(page, host, '-');
+	expect((await readScene(host)).zoom).toBe(charactersFit);
+	await page.locator('.customize-action').click();
+	const preview = world(page);
+	await expect(preview).toBeVisible();
+	await expect.poll(async () => (await readScene(preview)).zoom).toBe(charactersFit);
+	const previewFit = (await readScene(preview)).fit;
+	expect(previewFit, 'the two screens fit differently here').not.toBe(charactersFit);
+	for (const [away, back] of [
+		['-', '='],
+		['=', '-']
+	]) {
+		await press(page, preview, away);
+		expect((await readScene(preview)).zoom).not.toBe(charactersFit);
+		await press(page, preview, back);
+		expect((await readScene(preview)).zoom, `${away} then ${back} on Customize`).toBe(
+			charactersFit
+		);
+	}
+	await page.locator('.header-back').click();
+	await expect(host).toBeVisible();
+	expect((await readScene(host)).zoom, 'back on Characters, still the same level').toBe(
+		charactersFit
+	);
+	await expectCastScale(page, charactersFit, 'back on Characters');
+});
+
+for (const dpr of [1.25, 2, 3])
+	test.describe(`at devicePixelRatio ${dpr}`, () => {
+		test.use({ deviceScaleFactor: dpr, viewport: { width: 1280, height: 800 } });
+
+		test('each screen opens at its fit, drawn at exactly the percentage it reads; Customize in whole device pixels', async ({
+			page
+		}) => {
+			await seedCharacters(page, 1);
+			const host = selection(page);
+			await expectAtFit(host, 'Characters opens at its fit');
+			const characters = await readScene(host);
+			// Characters may shrink its thumbnail to its box, so only Customize promises whole device pixels.
+			await expectCastScale(page, characters.zoom, `Characters at DPR ${dpr}`);
+			await page.locator('.customize-action').click();
+			const preview = world(page);
+			await expect(preview).toBeVisible();
+			await expectAtFit(preview, 'Customize opens at its own fit');
+			const customize = await readScene(preview);
+			expect(Number.isInteger(Math.round(customize.fit * dpr * 1e6) / 1e6)).toBe(true);
+			await expect(zoomGroup(page), 'no controls at the default').toHaveCount(0);
+		});
+	});
+
 test('Preview keeps the selected facing at one scale while every lineup size from 1 to 5 fits', async ({
 	page
 }, info) => {

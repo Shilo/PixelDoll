@@ -3,6 +3,7 @@ import { worldArt } from '../../src/studio/experience/config.ts';
 import { castPose } from '../../src/studio/experience/carousel.ts';
 import { heroRoom, heroScale, layout, placeWorld } from '../../src/studio/experience/geometry.ts';
 import { planLineup } from '../../src/studio/experience/lineup.ts';
+import { thumbScale } from '../../src/studio/experience/thumbnails.svelte.ts';
 import {
 	resolveZoom,
 	sceneArtFits,
@@ -260,14 +261,48 @@ describe('absolute zoom', () => {
 		expect(zoomStep(resolveZoom(zoomStep(chosen, -1), 2.4, [3.75], 0), 1)).toBe(3.75);
 	});
 
-	test("the other screen's fit is dropped when a level sits within 3%, so no step is invisible", () => {
-		// 1440x900: Characters fits at 696.6%, Customize at 700%.
-		const customize = zoom(null, 7, 6.966);
-		expect(zoomLevels(customize)).not.toContain(6.966);
-		expect(zoomLevels(customize)).toContain(7);
-		// Its own fit always stays, even beside a whole multiple.
-		expect(zoomLevels(zoom(null, 6.966, 7))).toEqual(expect.arrayContaining([6.966, 7]));
-	});
+	test.each([
+		[6.162, 7],
+		[2.03, 3],
+		[6.966, 7],
+		[1.997, 3],
+		[4.952, 2.4],
+		[3.05, 3.5]
+	])(
+		'fits %s and %s give both screens one ladder, and every level retraces after switching',
+		(a, b) => {
+			const onA = (scale: number | null) => resolveZoom(scale, a, [b], 0),
+				onB = (scale: number | null) => resolveZoom(scale, b, [a], 0);
+			const levels = zoomLevels(onA(null));
+			expect(zoomLevels(onB(null)), 'the same list on both screens').toEqual(levels);
+			expect(levels).toEqual(expect.arrayContaining([a, b]));
+			// Reach each level on one screen, switch, and step away and back on the other.
+			for (const level of levels)
+				for (const [here, there] of [
+					[onA, onB],
+					[onB, onA]
+				]) {
+					const shown = there(here(level).scale);
+					for (const direction of [1, -1] as const) {
+						const away = there(zoomStep(shown, direction));
+						if (away.scale === shown.scale) continue;
+						expect(zoomStep(away, direction === 1 ? -1 : 1), `${level} via the other screen`).toBe(
+							level
+						);
+					}
+				}
+			// No step from a fit to a between-level is under 3%; whole multiples always stay, however close.
+			for (const fit of [a, b]) {
+				const at = levels.indexOf(fit);
+				for (const neighbor of [levels[at - 1], levels[at + 1]])
+					if (neighbor !== undefined && ![a, b].includes(neighbor) && !Number.isInteger(neighbor))
+						expect(Math.abs(neighbor - fit) / fit, `${fit} beside ${neighbor}`).toBeGreaterThan(
+							0.03
+						);
+			}
+			for (let whole = 1; whole <= levels.at(-1)!; whole++) expect(levels).toContain(whole);
+		}
+	);
 
 	test('a chosen scale reads the same on both screens, and controls show only away from each fit', () => {
 		const ceiling = zoomCeiling(zoomCeiling(0, 3.6), 4);
@@ -293,6 +328,11 @@ describe('absolute zoom', () => {
 		expect(zoomStep(zoom(3.7, 3.6), -1)).toBe(3.6);
 	});
 
+	test('at a bound, a step returns the same scale, which the input then ignores', () => {
+		const smallFit = zoom(null, 0.8, 3);
+		expect(zoomStep(smallFit, -1), 'at the minimum, zooming out stays put').toBe(smallFit.scale);
+	});
+
 	test('bounds run from 100% (or a smaller fit) to at least twice every fit', () => {
 		expect(zoom(0.2, 3).scale).toBe(1);
 		expect(zoom(50, 3).scale).toBe(6);
@@ -310,5 +350,38 @@ describe('absolute zoom', () => {
 		expect(settleZoom(at, 5.1)).toBe(5);
 		expect(settleZoom(at, 4.6)).toBe(4.6);
 		expect(settleZoom(at, 0.4)).toBe(1);
+	});
+});
+
+describe('character thumbnail scale', () => {
+	const still = (w: number, h: number) =>
+		({
+			image: { w, h, data: new Uint8ClampedArray(0) },
+			frame: { x: 0, y: 0, w, h }
+		}) as Parameters<typeof thumbScale>[1];
+	test.each([
+		// size, frame, devicePixelRatio, CSS px per art px
+		[256, 64, 1, 4],
+		[256, 48, 1, 5],
+		[256, 128, 1, 2],
+		[256, 32, 1.25, 8],
+		[200, 64, 2, 3],
+		[200, 96, 1.5, 2]
+	])(
+		'a %s px box draws a %s px frame at DPR %s in whole device pixels: %s',
+		(size, frame, dpr, scale) => {
+			const shown = thumbScale(size, still(frame, frame), dpr);
+			expect(shown).toBe(scale);
+			expect(Number.isInteger(shown * dpr), 'whole device pixels per art pixel').toBe(true);
+			expect(frame * shown).toBeLessThanOrEqual(size);
+		}
+	);
+
+	test('a frame larger than its box shrinks to fit it', () => {
+		expect(thumbScale(64, still(128, 128), 1)).toBe(0.5);
+	});
+
+	test('before its still loads, a thumbnail assumes a 64 px frame', () => {
+		expect(thumbScale(256, undefined, 1)).toBe(4);
 	});
 });

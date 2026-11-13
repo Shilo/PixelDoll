@@ -36,7 +36,7 @@ export interface SceneZoom {
 	scale: number;
 	/** This screen's fit. */
 	fit: number;
-	/** Both screens' latest fits, which every ladder includes so the two screens step through the same levels. */
+	/** Both screens' latest fits (this one included), which every ladder includes so both step through the same levels. */
 	stops: readonly number[];
 	min: number;
 	max: number;
@@ -74,28 +74,21 @@ export function zoomCeiling(previous: number, fit: number): number {
 	return Math.max(previous, Math.ceil(2 * fit));
 }
 
-/** The other screen's fit joins the ladder only when no level is already this close, so no step is too small to see. */
-const STOP_GAP = 0.03;
+/** Between-levels this close to a fit are dropped, so a step from a fit is rarely too small to see. Whole multiples always
+ *  stay, so a fit right beside one (696.6% next to 700%) keeps that small step. */
+const FIT_GAP = 0.03;
 
-/** The levels a wheel notch, key or button steps through: the ladder within the bounds, this screen's fit, and the other
- *  screen's fit unless a level already sits within 3% of it. Every level stays on the list, so stepping one way and back
- *  always retraces it, and a level reached on one screen retraces on the other. */
-export function zoomLevels(zoom: Pick<SceneZoom, 'fit' | 'stops' | 'min' | 'max'>): number[] {
-	const { fit, stops, min, max } = zoom;
-	const levels = [
-		min,
-		...zoomLadder(max).filter((level) => level >= min),
-		...(fit >= min && fit <= max ? [fit] : []),
-		max
-	];
-	for (const stop of stops)
-		if (
-			stop >= min &&
-			stop <= max &&
-			levels.every((level) => Math.abs(level - stop) > STOP_GAP * stop)
-		)
-			levels.push(stop);
-	return [...new Set(levels)].sort((a, b) => a - b);
+/** The levels a wheel notch, key or button steps through: the ladder within the bounds plus both screens' fits. It is
+ *  the same list on both screens, so stepping one way and back always retraces it, wherever a level was reached. */
+export function zoomLevels(zoom: Pick<SceneZoom, 'stops' | 'min' | 'max'>): number[] {
+	const { min, max } = zoom;
+	const fits = zoom.stops.filter((fit) => fit >= min && fit <= max);
+	const ladder = zoomLadder(max).filter(
+		(level) =>
+			level >= min &&
+			(Number.isInteger(level) || !fits.some((fit) => Math.abs(level - fit) <= FIT_GAP * fit))
+	);
+	return [...new Set([min, ...ladder, ...fits, max])].sort((a, b) => a - b);
 }
 
 /** The next level in `direction` from the shown scale; a scale between levels (after a pinch) goes to the nearest level

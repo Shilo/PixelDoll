@@ -4,6 +4,8 @@ import { settleZoom, zoomStep, type SceneZoom } from './zoom.ts';
 export interface SceneZoomOptions {
 	/** This screen's resolved zoom: the scale shown, its fit and the shared bounds. */
 	readonly zoom: SceneZoom;
+	/** The stored scale (null for each screen's fit), so a pinch settles only if nothing replaced it since. */
+	readonly stored: number | null;
 	readonly enabled: boolean;
 	/** What a wheel turned while Ctrl or Cmd is held does: zoom too, or pass to the screen (Characters navigates). */
 	modifiedWheel: 'zoom' | 'pass';
@@ -45,16 +47,21 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 		lastWheelAt = -Infinity,
 		pinchSettle = 0,
 		pinched = NaN;
-	const step = (direction: 1 | -1) => options.onchange(zoomStep(options.zoom, direction));
+	// A step that changes nothing (already at a bound) stores nothing, so the default stays each screen's own fit.
+	const step = (direction: 1 | -1) => {
+		const next = zoomStep(options.zoom, direction);
+		if (next !== options.zoom.scale) options.onchange(next);
+	};
 	// A pinch is direct manipulation and stays precise; released near a fit or a whole multiple, it lands on it. Anything
 	// that changed the zoom since (a reset, a key, a button) wins over the settle.
 	const settlePinch = () => {
-		if (options.zoom.scale === pinched) options.onchange(settleZoom(options.zoom, pinched));
+		if (options.stored === pinched) options.onchange(settleZoom(options.zoom, pinched));
 		pinched = NaN;
 	};
 	const pinch = (value: number) => {
-		change(value);
-		pinched = options.zoom.scale;
+		if (!Number.isFinite(value)) return;
+		pinched = Math.min(options.zoom.max, Math.max(options.zoom.min, value));
+		options.onchange(pinched);
 	};
 	if (!tracking++) {
 		window.addEventListener('keydown', trackControl, true);
@@ -62,10 +69,6 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 		window.addEventListener('blur', releaseControl);
 	}
 	const available = () => options.enabled && !document.querySelector('[popover]:popover-open');
-	const change = (value: number) => {
-		if (Number.isFinite(value))
-			options.onchange(Math.min(options.zoom.max, Math.max(options.zoom.min, value)));
-	};
 	const editable = (target: EventTarget | null) =>
 		target instanceof Element &&
 		!!target.closest('input, textarea, select, [contenteditable], button:not(.cast-character), a');

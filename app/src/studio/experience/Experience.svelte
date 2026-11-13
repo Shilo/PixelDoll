@@ -491,6 +491,9 @@
 					get zoom() {
 						return selectionZoom;
 					},
+					get stored() {
+						return experience.sceneZoom;
+					},
 					get enabled() {
 						return !ui.sheet;
 					},

@@ -851,6 +851,9 @@
 			get zoom() {
 				return sharedZoom('studio', previewFit);
 			},
+			get stored() {
+				return experience.sceneZoom;
+			},
 			get enabled() {
 				return experience.mode === 'preview' && !ui.sheet;
 			},
