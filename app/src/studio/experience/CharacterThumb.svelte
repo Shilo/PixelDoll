@@ -1,26 +1,31 @@
 <script lang="ts">
 	import { openSource } from '../../lib/dress/project.ts';
 	import { recolor } from '../../lib/dress/dress.ts';
-	import { buildPresentation, southStill, renderPresentation } from './presentation.ts';
 	import Sprite from '../Sprite.svelte';
 	import { doc, view, ui, store, lastProject } from '../state.svelte.ts';
 	import { untrack } from 'svelte';
-	import { stills, newest, thumbBacking } from './thumbnails.svelte.ts';
-	import { standingFrame } from './bounds.ts';
-	let { id, name, size = 64 }: { id: string; name: string; size?: number } = $props();
+	import {
+		stills,
+		newest,
+		thumbBacking,
+		croppedThumbnail,
+		characterStill
+	} from './thumbnails.svelte.ts';
+	let {
+		id,
+		name,
+		size = 64,
+		trim = false
+	}: { id: string; name: string; size?: number; trim?: boolean } = $props();
 	const selected = $derived(id === doc.id);
 	const look = $derived(store.projects.find((p) => p.id === id)?.look ?? '');
 	// Before any character is open, the Studio is opening the last one: its thumbnail waits for that live project instead of
 	// decoding the same character again alongside it.
 	const starting = $derived(!doc.id && doc.loading);
-	const draw = (project: Parameters<typeof buildPresentation>[0], items: typeof doc.items) => {
-		const assets = buildPresentation(project);
-		const pose = southStill(assets);
-		const { image, frame } = renderPresentation(assets, items, pose);
-		return { image, frame, body: standingFrame(project, pose.direction ?? 'south') };
-	};
 	// The selected character follows live edits, and its last look is what it keeps once another one is selected.
-	const live = $derived(selected && view.project ? draw(view.project, doc.items) : null);
+	const live = $derived(
+		selected && view.project ? characterStill(view.project, doc.items, doc.rev) : null
+	);
 	$effect(() => {
 		if (!live) return;
 		const at = untrack(() => look);
@@ -42,7 +47,7 @@
 				if (newest.get(key) !== request) return;
 				const outfit = r.current ?? r.project.manifest.presets[0];
 				stills.set(key, {
-					...draw(recolor(r.project, outfit?.variants ?? {}), outfit?.items ?? {}),
+					...characterStill(recolor(r.project, outfit?.variants ?? {}), outfit?.items ?? {}),
 					look: at
 				});
 			})
@@ -52,13 +57,21 @@
 			});
 	});
 	const shown = $derived(live ?? stills.get(id) ?? null);
+	const image = $derived(
+		trim && shown?.image ? croppedThumbnail(shown.image) : (shown?.image ?? null)
+	);
+	const backing = $derived(
+		trim && image
+			? Math.max(1, Math.floor((size / Math.max(image.w, image.h)) * ui.dpr))
+			: thumbBacking(size, shown ?? undefined, ui.dpr)
+	);
+	const fitToBox = $derived(trim && !!image && (image.w > size || image.h > size));
 </script>
 
-<span class="character-thumbnail" aria-hidden="true"
-	><Sprite
-		img={shown?.image ?? null}
-		k={thumbBacking(size, shown ?? undefined, ui.dpr)}
-		limit={size}
-		label={name}
-	/></span
+<span
+	class="character-thumbnail"
+	aria-hidden="true"
+	style:width={trim ? size + 'px' : undefined}
+	style:height={trim ? size + 'px' : undefined}
+	><Sprite img={image} k={backing} limit={size} {fitToBox} label={name} /></span
 >
