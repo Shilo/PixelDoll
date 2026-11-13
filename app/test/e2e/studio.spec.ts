@@ -697,10 +697,12 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	await page.locator('input[aria-label="Outfit name"]').fill('Smoke look');
 	await page.getByRole('button', { name: 'Save', exact: true }).click();
 	await page.locator('.outfits .row', { hasText: 'Smoke look' }).waitFor();
-	assert.ok(
-		await page.locator('.outfits .row', { hasText: 'Smoke look' }).locator('.badge').isVisible()
+	await expect(page.locator('.outfits .row', { hasText: 'Smoke look' })).toHaveAttribute(
+		'aria-pressed',
+		'true'
 	);
-	step('outfit saved and marked current');
+	await expect(page.locator('.outfits .badge')).toHaveCount(0);
+	step('outfit saved and selected without a redundant badge');
 
 	await inspectStage(page);
 	await page.keyboard.press('2');
@@ -1003,7 +1005,35 @@ for (const [name, viewport] of [
 				await p.keyboard.press('Escape');
 			}
 			await equipmentMode(p, 'Outfits');
-			await p.getByRole('button', { name: 'Save current look' }).click();
+			const addLook = p.getByRole('button', { name: 'Save current look' });
+			const addLookBounds = await addLook.boundingBox();
+			await addLook.click();
+			const [list, input, save, cancel] = await Promise.all(
+				[
+					p.locator('.outfits .rows'),
+					p.getByRole('textbox', { name: 'Outfit name' }),
+					p.getByRole('button', { name: 'Save', exact: true }),
+					p.locator('.outfits').getByRole('button', { name: 'Cancel', exact: true })
+				].map((control) => control.boundingBox())
+			);
+			expect(input!.x).toBeCloseTo(list!.x);
+			expect(input!.y).toBeCloseTo(addLookBounds!.y);
+			expect(input!.height).toBeCloseTo(addLookBounds!.height);
+			expect(cancel!.x + cancel!.width).toBeCloseTo(list!.x + list!.width);
+			expect(input!.x + input!.width + 8).toBeCloseTo(save!.x);
+			expect(save!.x + save!.width + 8).toBeCloseTo(cancel!.x);
+			const focusClearance = await p
+				.getByRole('textbox', { name: 'Outfit name' })
+				.evaluate((field) => {
+					const ring = getComputedStyle(field);
+					return {
+						available:
+							field.getBoundingClientRect().left -
+							field.closest('.panel-list')!.getBoundingClientRect().left,
+						required: parseFloat(ring.outlineWidth) + parseFloat(ring.outlineOffset)
+					};
+				});
+			expect(focusClearance.available).toBeGreaterThanOrEqual(focusClearance.required);
 			await p.locator('input[aria-label="Outfit name"]').fill('Phone look');
 			await p.getByRole('button', { name: 'Save', exact: true }).click();
 			await p.locator('.row', { hasText: 'Phone look' }).waitFor();
@@ -5529,11 +5559,11 @@ for (const kind of ['outfit', 'move'] as const) {
 		const trigger = row.getByRole('button', { name: `More actions for ${name}`, exact: true });
 		const menu = page.getByRole('menu', { name: `Actions for ${name}`, exact: true });
 		if (kind === 'outfit') {
-			await expect(row.locator('.badge')).toHaveCount(1);
+			await expect(choice).toHaveAttribute('aria-pressed', 'true');
 			await equipmentGroup(page, 'Head');
 			await section(page, 'Head').getByRole('button', { name: 'Empty head', exact: true }).click();
 			await equipmentMode(page, 'Outfits');
-			await expect(row.locator('.badge')).toHaveCount(0);
+			await expect(choice).toHaveAttribute('aria-pressed', 'false');
 		} else {
 			await page.locator('.move-row').filter({ hasText: 'Cross punch' }).click();
 			await expect(choice).toHaveAttribute('aria-pressed', 'false');
@@ -5603,8 +5633,7 @@ for (const kind of ['outfit', 'move'] as const) {
 		await choice.dispatchEvent('pointerup', pointer);
 		await page.waitForTimeout(600);
 		await expect(menu).toBeHidden();
-		if (kind === 'outfit') await expect(row.locator('.badge')).toHaveCount(0);
-		else await expect(choice).toHaveAttribute('aria-pressed', 'false');
+		await expect(choice).toHaveAttribute('aria-pressed', 'false');
 		await trigger.click();
 		const downloaded = page.waitForEvent('download');
 		await menu.getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();

@@ -335,7 +335,7 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
 	await page.getByRole('button', { name: 'Save current look', exact: true }).click();
 	await page.getByRole('textbox', { name: 'Outfit name', exact: true }).fill('Offline bronze look');
 	await page.getByRole('button', { name: 'Save', exact: true }).click();
-	const outfit = page.getByRole('button', { name: 'Offline bronze look Current', exact: true });
+	const outfit = page.getByRole('button', { name: 'Offline bronze look', exact: true });
 	await expect(outfit).toBeVisible();
 	// Persistence is debounced; observe the saved result rather than reloading during its edit window.
 	await expect

@@ -891,13 +891,25 @@ dialog select option {
 	min-width: 0;
 	width: auto;
 }
+.panel-list:has(> .outfits) {
+	margin-left: -5px;
+	padding-left: 5px;
+}
 .inline-form {
-	display: flex;
-	gap: 6px;
-	padding: 4px 0 4px 28px;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto 44px;
+	align-items: center;
+	gap: 8px;
+	margin-top: 8px;
 }
 .inline-form .input {
-	padding: 4px 8px;
+	min-width: 0;
+}
+.inline-form :is(.input, .btn) {
+	height: 44px;
+}
+.inline-form .btn.icon {
+	width: 44px;
 }
 
 /* item details */
