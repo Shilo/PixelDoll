@@ -122,7 +122,7 @@ test('another character’s item on the same body is worn for free, survives rel
 	await expect(others.locator('.shared-divider')).toHaveCount(0);
 	// The copy's details credit the character it was made for.
 	const copyDetails = await selectedItemDetails(page);
-	await expect(copyDetails).toContainText('Made for Twin; copied here for free');
+	await expect(copyDetails).toContainText('paid once for Twin; copied here for free');
 	await page.keyboard.press('Escape');
 	await page.keyboard.press('Control+z');
 	await expect(own).toHaveAttribute('aria-pressed', 'false');
@@ -211,7 +211,7 @@ test('an item made for a different body offers to make it for this character, an
 	await expect(sheet.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue(
 		'a giant helmet'
 	);
-	await sheet.getByText('Details', { exact: true }).click();
+	await sheet.getByText('Advanced', { exact: true }).click();
 	await expect(sheet.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
 		'Giant helmet'
 	);

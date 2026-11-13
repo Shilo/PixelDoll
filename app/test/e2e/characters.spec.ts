@@ -1826,7 +1826,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	).toBeNull();
 	await newItem(page, 'Main hand');
 	await page.getByRole('radio', { name: 'Main hand', exact: true }).click();
-	await page.getByRole('dialog').getByText('Details', { exact: true }).click();
+	await page.getByRole('dialog').getByText('Advanced', { exact: true }).click();
 	await expect(page.getByRole('dialog')).toContainText('96 px canvas');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'Moves');
@@ -2254,8 +2254,8 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
 	await expect(
 		pane.getByText('Some body pixels were changed by the model', { exact: true })
 	).toBeVisible();
-	await pane.getByText('Details', { exact: true }).click();
-	await expect(pane.getByText('10 gens · $0.080 · 1 PixelLab call', { exact: true })).toBeVisible();
+	await pane.getByText('How it was made', { exact: true }).click();
+	await expect(pane.getByText('10 gens · $0.080 · 1 call', { exact: true })).toBeVisible();
 	await page.evaluate(async (id) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
