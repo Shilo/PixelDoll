@@ -1013,31 +1013,20 @@ dialog select option {
 	flex-direction: column;
 	gap: 4px;
 }
-.move-row {
+.move-row,
+.outfits .rows .row {
 	width: 100%;
 	display: flex;
 	align-items: center;
 	gap: 10px;
 	padding: 4px 10px 4px 4px;
-	border: 0;
-	border-radius: var(--r-ctl);
-	background: transparent;
-	color: var(--text-2);
 	text-align: left;
 }
-.move-row:hover:not(:disabled):not([aria-disabled='true']) {
-	background: var(--bg-hover);
-}
-.move-row[aria-pressed='true'] {
-	background: var(--bg-sel);
-	color: var(--text);
-}
-.move-thumb {
+.move-thumb,
+.outfit-thumb {
 	width: 56px;
 	height: 56px;
 	overflow: hidden;
-	border-radius: var(--r-ctl);
-	background: var(--stage);
 	display: grid;
 	place-items: center;
 	flex: none;
@@ -1046,7 +1035,6 @@ dialog select option {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
-	color: var(--text);
 }
 
 /* popover menu (project switcher) */
