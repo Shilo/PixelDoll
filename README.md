@@ -49,13 +49,6 @@ npm ci
 npm run dev        # http://localhost:5173
 ```
 
-**T3 worktrees.** After the worktree creation base includes `t3.json`, use **Import from t3.json** once to enable its
-dependency setup action; committing the file alone does not activate it. T3's setup environment must already provide
-supported Node.js and npm versions as declared in `app/package.json`. Fresh-worktree setup blocks agent startup until
-the locked install succeeds, using a separate `app/node_modules` per worktree and npm's shared download cache.
-This is a clean reinstall that replaces the dependency tree, so do not target an existing worktree with active servers
-or tests. The setup action does not select or install a runtime for subsequent agent sessions.
-
 Open `#/` for character selection; the bundled demo needs no key. Choose **Customize** to dress it or try **Top-down** and **Side-scroller** movement. To generate, open **More options → Connect PixelLab** and paste a key from
 <https://pixellab.ai/account>. It stays in memory unless you check *Remember on this device*, and is only sent to
 `api.pixellab.ai`. `npm run dev` handles the key exactly like the deployed site: there is no key file, endpoint or button.
@@ -142,11 +135,6 @@ requires no PixelLab secret or key environment variable. Enable Pages once: **Se
 Actions**. The site is served at <https://pixeldoll.app/>, a custom domain verified on the GitHub account with HTTPS
 enforced; `https://shilo.github.io/PixelDoll/` redirects there. The same build also works under a sub-path (a fork's
 `<user>.github.io/PixelDoll/`) because Vite's `base` is `./` and the router uses `#/` hashes.
-
-Publish to `main` with `npm --prefix app run land`: it pushes the commit to a temporary branch, waits for that CI run and
-fast-forwards `main` only when it passed, so a failing commit cannot block the deploy. A pre-push hook refuses a push to
-`main` of a commit CI has not passed; enable it once per clone, from the main checkout:
-`git config core.hooksPath "$(git rev-parse --show-toplevel)/.githooks"`. Every worktree runs that checkout's copy of the hook, so keep the main checkout on `main`.
 
 GitHub Pages cannot set response headers, so the Content-Security-Policy is a `<meta>` tag in `app/index.html`. It allows
 scripts from `'self'` only and network calls to `api.pixellab.ai` and PixelLab's image hosts. Add any new origin there.
