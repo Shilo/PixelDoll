@@ -2921,22 +2921,12 @@ test.describe('Preview facing lineup', () => {
 	});
 
 	type Rig = [DirectionName, DirectionName?][];
+	// Which facings a rig shows is a pure rule, checked for every preset and custom set in test/unit/facing-lineup.test.ts.
+	// These rigs prove the stage draws that row: alone, fewer facings than fit (even and odd), and eight with and without mirrors.
 	const sets: [string, Rig][] = [
 		['one direction', [['south']]],
 		['side-scroller', [['east'], ['west', 'east']]],
-		['front and back', [['south'], ['north']]],
 		['three directions', [['south'], ['east'], ['north']]],
-		['top-down 4', [['south'], ['east'], ['north'], ['west', 'east']]],
-		[
-			'diagonal 4',
-			[['south-east'], ['north-east'], ['south-west', 'south-east'], ['north-west', 'north-east']]
-		],
-		['five directions', [['south'], ['south-east'], ['east'], ['north-east'], ['north']]],
-		['six directions', [['south'], ['south-east'], ['east'], ['north-east'], ['north'], ['west']]],
-		[
-			'seven directions',
-			[['south'], ['south-east'], ['east'], ['north-east'], ['north'], ['west'], ['south-west']]
-		],
 		[
 			'top-down 8',
 			[

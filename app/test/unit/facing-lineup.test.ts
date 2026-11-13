@@ -20,6 +20,11 @@ const short: Record<string, DirectionName> = {
 };
 const dirs = (s: string) => s.split(' ').map((d) => short[d]);
 const preset = (id: string) => PRESETS.find((p) => p.id === id)!.selected;
+/** Every preset, and custom sets of two to seven facings with fewer than a full row or with mirrored pairs. */
+const rigs: readonly (readonly DirectionName[])[] = [
+	...PRESETS.map((p) => p.selected),
+	...['S N', 'S E N', 'S SE E NE N', 'S SE E NE N W', 'S SE E NE N W SW'].map(dirs)
+];
 
 describe('lineup facings', () => {
 	// [preset, selected, count, expected left-to-right]
@@ -73,8 +78,7 @@ describe('lineup facings', () => {
 
 	test('every selection on every preset: selected shown, no twins, no repeats', () => {
 		const twins = [dirs('E W'), dirs('NE NW'), dirs('SE SW')];
-		for (const p of PRESETS) {
-			const available: readonly DirectionName[] = p.selected;
+		for (const available of rigs) {
 			for (const selected of available)
 				for (let count = 1; count <= 5; count++) {
 					const shown = pickFacings(available, selected, count);
@@ -88,8 +92,7 @@ describe('lineup facings', () => {
 	});
 
 	test('the selected facing stands at the focal slot, and selecting a shown neighbor turns the same row', () => {
-		for (const p of PRESETS) {
-			const available: readonly DirectionName[] = p.selected;
+		for (const available of rigs) {
 			for (const selected of available)
 				for (let count = 1; count <= 5; count++) {
 					const shown = pickFacings(available, selected, count);

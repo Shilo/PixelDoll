@@ -83,6 +83,7 @@ jobs:
       # No --with-deps: the runner already has Chromium's libraries, and the apt mirror it used stalled shards for up to
       # 10 min. Fonts the app's stacks resolve to are identical either way (docs/testing/test-performance.md).
       - run: npx playwright install chromium # native crash profiles use full Chromium; ordinary tests use the headless shell
+        timeout-minutes: 5 # usually under 15 s; a stalled download fails here instead of holding the job for 15 minutes
       - run: npm run e2e -- --test-list "$RUNNER_TEMP/e2e-shard.txt" # list + GitHub annotations for failures and flakes (playwright.config.ts)
         timeout-minutes: 10 # a step timeout fails the step (job timeouts cancel it), so traces still upload
       - if: ${{ !cancelled() && hashFiles('app/test-results/**/trace.zip') != '' }} # failures and retried flakes
