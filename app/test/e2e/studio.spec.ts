@@ -1363,6 +1363,43 @@ test('desktop resize keeps preview controls and customization reachable across p
 	}
 });
 
+test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Return', async ({
+	page
+}) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(page, '/#/');
+	await newItem(page, 'Head');
+	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
+	const item = page.getByRole('dialog', { name: 'New item', exact: true });
+	const prompt = item.getByRole('textbox', { name: 'What is it?', exact: true });
+	const make = item.getByRole('button', { name: /^Make/ });
+	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+	await prompt.fill('   ');
+	await prompt.press('Control+Enter');
+	await expect(make).toBeDisabled();
+	await expect(connect).toHaveCount(0);
+	await page.setViewportSize({ width: 390, height: 844 });
+	await prompt.fill('a leather hat');
+	await prompt.press('Enter');
+	await expect(prompt).toHaveValue('a leather hat\n');
+	await expect(item).toBeVisible();
+	await expect(make).toBeEnabled();
+	await prompt.dispatchEvent('keydown', { key: 'Enter', ctrlKey: true, isComposing: true });
+	await prompt.dispatchEvent('keydown', { key: 'Enter', ctrlKey: true, repeat: true });
+	await expect(connect).toHaveCount(0);
+	for (const shortcut of ['Control+Enter', 'Meta+Enter']) {
+		await prompt.press(shortcut);
+		await expect(connect).toBeVisible();
+		await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await newItem(page, 'Head');
+		await expect(prompt).toHaveValue('a leather hat\n');
+		await expect(make).toContainText(/Est\. \d+ gens/);
+	}
+});
+
 test('canceling Connect preserves generation drafts and discards the pending action', async ({
 	page
 }) => {

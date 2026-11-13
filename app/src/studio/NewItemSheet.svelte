@@ -67,6 +67,7 @@
 		}
 	});
 	const plan = $derived(planned.plan);
+	const canMake = $derived(!!prompt.trim() && !busy && !!plan?.calls);
 	// Advanced offers a method only when this character can use both; otherwise Automatic is the only one.
 	const automatic = $derived.by(() => {
 		if (!m || !rec) return null;
@@ -111,6 +112,8 @@
 		}
 	}
 	function go() {
+		if (!canMake) return;
+		busy = true;
 		formDrafts.item = {
 			projectId: doc.id,
 			sourceGroup: ui.newItem.group,
@@ -127,6 +130,20 @@
 			: undefined;
 		withKey(() => void make(i, consent), !!plan?.minimumTier);
 	}
+	function promptKeydown(event: KeyboardEvent) {
+		if (
+			event.key !== 'Enter' ||
+			!(event.ctrlKey || event.metaKey) ||
+			event.altKey ||
+			event.shiftKey ||
+			event.isComposing ||
+			event.repeat ||
+			event.defaultPrevented
+		)
+			return;
+		event.preventDefault();
+		go();
+	}
 </script>
 
 {#snippet foot()}
@@ -139,7 +156,7 @@
 		/><button
 			class="bu-action btn primary lg"
 			data-variant="primary"
-			disabled={!prompt.trim() || busy || !plan?.calls}
+			disabled={!canMake}
 			onclick={go}>Make <span class="cost">Est. {plan?.gens ?? '–'} gens</span></button
 		></span
 	>
@@ -219,9 +236,13 @@
 					class="bu-input input"
 					rows="2"
 					bind:value={prompt}
+					onkeydown={promptKeydown}
+					aria-keyshortcuts="Control+Enter Meta+Enter"
+					aria-describedby="item-submit-hint"
 					placeholder="e.g. {g.ideas[0]?.label ?? 'a leather hat'}"
 					maxlength="300"></textarea>
 			</label>
+			<p class="faint small" id="item-submit-hint">Ctrl+Enter or Cmd+Enter to make the item.</p>
 			{#if offHandHint}<p class="notice small">
 					<Info size={16} /><span>{OFF_HAND_HINT}</span><button
 						class="bu-action btn sm"
