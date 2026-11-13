@@ -43,10 +43,19 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 	let swipe: { id: number; x: number; y: number } | null = null;
 	let wheelDistance = 0,
 		lastWheelAt = -Infinity,
-		pinchSettle = 0;
+		pinchSettle = 0,
+		pinched = NaN;
 	const step = (direction: 1 | -1) => options.onchange(zoomStep(options.zoom, direction));
-	// A pinch is direct manipulation and stays precise; released near the fit or a whole multiple, it lands on it.
-	const settlePinch = () => options.onchange(settleZoom(options.zoom, options.zoom.scale));
+	// A pinch is direct manipulation and stays precise; released near a fit or a whole multiple, it lands on it. Anything
+	// that changed the zoom since (a reset, a key, a button) wins over the settle.
+	const settlePinch = () => {
+		if (options.zoom.scale === pinched) options.onchange(settleZoom(options.zoom, pinched));
+		pinched = NaN;
+	};
+	const pinch = (value: number) => {
+		change(value);
+		pinched = options.zoom.scale;
+	};
 	if (!tracking++) {
 		window.addEventListener('keydown', trackControl, true);
 		window.addEventListener('keyup', trackControl, true);
@@ -128,7 +137,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 					(event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? node.clientHeight : 1);
 				// A trackpad pinch (Ctrl without the key held) follows the fingers precisely, like a touch pinch.
 				if (event.ctrlKey && !modifiedWheel(event)) {
-					change(options.zoom.scale * Math.exp(-Math.max(-500, Math.min(500, delta)) * 0.01));
+					pinch(options.zoom.scale * Math.exp(-Math.max(-500, Math.min(500, delta)) * 0.01));
 					clearTimeout(pinchSettle);
 					pinchSettle = window.setTimeout(settlePinch, 200);
 					return;
@@ -201,7 +210,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 				event.preventDefault();
 				event.stopImmediatePropagation();
 				const next = span();
-				if (next > 0 && distance > 0) change((options.zoom.scale * next) / distance);
+				if (next > 0 && distance > 0) pinch((options.zoom.scale * next) / distance);
 				distance = next;
 			},
 			{ capture: true, passive: false }

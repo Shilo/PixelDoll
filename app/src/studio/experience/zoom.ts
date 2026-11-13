@@ -74,18 +74,28 @@ export function zoomCeiling(previous: number, fit: number): number {
 	return Math.max(previous, Math.ceil(2 * fit));
 }
 
-/** The levels a wheel notch, key or button steps through: the ladder within the bounds plus both screens' fits. Both
- *  screens build the same list, and every level stays on it, so stepping one way and back always retraces it. */
-export function zoomLevels(zoom: Pick<SceneZoom, 'stops' | 'min' | 'max'>): number[] {
-	const { stops, min, max } = zoom;
-	return [
-		...new Set([
-			min,
-			...zoomLadder(max).filter((level) => level >= min),
-			...stops.filter((stop) => stop >= min && stop <= max),
-			max
-		])
-	].sort((a, b) => a - b);
+/** The other screen's fit joins the ladder only when no level is already this close, so no step is too small to see. */
+const STOP_GAP = 0.03;
+
+/** The levels a wheel notch, key or button steps through: the ladder within the bounds, this screen's fit, and the other
+ *  screen's fit unless a level already sits within 3% of it. Every level stays on the list, so stepping one way and back
+ *  always retraces it, and a level reached on one screen retraces on the other. */
+export function zoomLevels(zoom: Pick<SceneZoom, 'fit' | 'stops' | 'min' | 'max'>): number[] {
+	const { fit, stops, min, max } = zoom;
+	const levels = [
+		min,
+		...zoomLadder(max).filter((level) => level >= min),
+		...(fit >= min && fit <= max ? [fit] : []),
+		max
+	];
+	for (const stop of stops)
+		if (
+			stop >= min &&
+			stop <= max &&
+			levels.every((level) => Math.abs(level - stop) > STOP_GAP * stop)
+		)
+			levels.push(stop);
+	return [...new Set(levels)].sort((a, b) => a - b);
 }
 
 /** The next level in `direction` from the shown scale; a scale between levels (after a pinch) goes to the nearest level
@@ -99,13 +109,19 @@ export function zoomStep(zoom: SceneZoom, direction: 1 | -1): number {
 	);
 }
 
-/** Where a pinch released at `scale` settles: a fit or a whole multiple within 4%, else exactly where it is. */
+/** Where a pinch released at `scale` settles: the nearest fit or whole multiple within 4% (this screen's fit on a tie),
+ *  else exactly where it is. */
 export function settleZoom(zoom: SceneZoom, scale: number): number {
-	const near = [...zoom.stops, Math.round(scale)].find(
-		(target) =>
-			target >= zoom.min && target <= zoom.max && Math.abs(scale - target) <= ZOOM_SNAP * target
-	);
-	return near ?? Math.min(zoom.max, Math.max(zoom.min, scale));
+	let best = Math.min(zoom.max, Math.max(zoom.min, scale)),
+		distance = Infinity;
+	for (const target of [zoom.fit, ...zoom.stops, Math.round(scale)]) {
+		const gap = Math.abs(scale - target) / target;
+		if (target >= zoom.min && target <= zoom.max && gap <= ZOOM_SNAP && gap < distance) {
+			best = target;
+			distance = gap;
+		}
+	}
+	return best;
 }
 
 export interface SceneCamera {

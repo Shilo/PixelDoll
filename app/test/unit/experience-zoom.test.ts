@@ -244,21 +244,29 @@ describe('absolute zoom', () => {
 			expect(levels[0]).toBe(Math.min(1, fit, other || Infinity));
 			for (let whole = 1; whole <= start.max; whole++) expect(levels).toContain(whole);
 			expect(levels).toContain(fit);
-			if (other) expect(levels).toContain(other);
+			// The other screen's fit is a stop unless a level already sits within 3% of it.
+			if (other && !levels.includes(other))
+				expect(levels.some((level) => Math.abs(level - other) <= 0.03 * other)).toBe(true);
 		}
 	);
 
 	test('both screens step through the same levels, so a level reached on one retraces on the other', () => {
-		const characters = zoom(null, 3.6, 2.4),
-			customize = zoom(null, 2.4, 3.6);
+		const characters = zoom(null, 3.75, 2.4),
+			customize = zoom(null, 2.4, 3.75);
 		expect(zoomLevels(characters)).toEqual(zoomLevels(customize));
-		// 250% chosen on Characters, then stepped on Customize, returns to 250% exactly.
-		const chosen = resolveZoom(2.5, 2.4, [3.6], 0);
-		const up = resolveZoom(zoomStep(chosen, 1), 2.4, [3.6], 0);
-		expect(zoomStep(up, -1)).toBe(2.5);
-		const down = resolveZoom(zoomStep(chosen, -1), 2.4, [3.6], 0);
-		expect(down.scale).toBe(2.4);
-		expect(zoomStep(down, 1)).toBe(2.5);
+		// 375% (Characters' fit) chosen there, then stepped on Customize, returns to 375% exactly.
+		const chosen = resolveZoom(3.75, 2.4, [3.75], 0);
+		expect(zoomStep(resolveZoom(zoomStep(chosen, 1), 2.4, [3.75], 0), -1)).toBe(3.75);
+		expect(zoomStep(resolveZoom(zoomStep(chosen, -1), 2.4, [3.75], 0), 1)).toBe(3.75);
+	});
+
+	test("the other screen's fit is dropped when a level sits within 3%, so no step is invisible", () => {
+		// 1440x900: Characters fits at 696.6%, Customize at 700%.
+		const customize = zoom(null, 7, 6.966);
+		expect(zoomLevels(customize)).not.toContain(6.966);
+		expect(zoomLevels(customize)).toContain(7);
+		// Its own fit always stays, even beside a whole multiple.
+		expect(zoomLevels(zoom(null, 6.966, 7))).toEqual(expect.arrayContaining([6.966, 7]));
 	});
 
 	test('a chosen scale reads the same on both screens, and controls show only away from each fit', () => {
