@@ -79,13 +79,13 @@
 		index < 0
 			? []
 			: list.length > 1
-			? [-1, 0, 1]
-					.filter((n) => !(list.length === 2 && n === 1))
-					.map((offset) => ({
-						offset,
-						p: list[(Math.max(0, index) + offset + list.length) % list.length]
-					}))
-			: list.map((p) => ({ offset: 0, p }))
+				? [-1, 0, 1]
+						.filter((n) => !(list.length === 2 && n === 1))
+						.map((offset) => ({
+							offset,
+							p: list[(Math.max(0, index) + offset + list.length) % list.length]
+						}))
+				: list.map((p) => ({ offset: 0, p }))
 	);
 	const MOVES_OFF = 'Moves are picked in Preview. Here, moving plays idle or walk.';
 	const tabs = [
