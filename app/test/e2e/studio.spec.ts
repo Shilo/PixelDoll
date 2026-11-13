@@ -5579,21 +5579,26 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	const head = section(page, 'Head');
 	const hat = head.getByRole('button', { name: /^Wizard hat(,|$)/ });
 	const more = head.getByRole('button', { name: 'More options for Wizard hat', exact: true });
-	// A sibling control, never nested in the tile, at its top-left edge: a full-height target that reaches only 32 px
-	// into the tile (WCAG 2.5.8 asks for 24), so a press meant for the tile rarely opens the menu.
+	// A sibling control, never nested in the tile, drawn 3 px inside its top-left corner at 28 by 25 px (WCAG 2.5.8 asks
+	// for 24), so a press meant for the tile rarely opens the menu.
 	expect(await more.evaluate((b) => !!b.closest('.item-tile'))).toBe(false);
 	await expect(more).toHaveAttribute('aria-haspopup', 'menu');
 	await expect(more).toHaveAttribute('aria-expanded', 'false');
 	const hit = (await more.boundingBox())!;
 	const tile = (await hat.boundingBox())!;
-	expect(hit.height).toBeGreaterThanOrEqual(44);
-	expect(hit.width).toBe(32);
-	expect(hit.x).toBeCloseTo(tile.x, 0);
+	expect([hit.x - tile.x, hit.y - tile.y, hit.width, hit.height]).toEqual([3, 3, 28, 25]);
+	// Its target still reaches the tile's outer top and left edges, so that corner never falls through to the tile: an
+	// invisible extension of the button 3 px up and left, which stays out of the tile's way below and beside it.
+	expect(
+		await more.evaluate((button) => {
+			const reach = getComputedStyle(button, '::before');
+			return [reach.content, reach.position, reach.top, reach.left, reach.right, reach.bottom];
+		})
+	).toEqual(['""', 'absolute', '-3px', '-3px', '0px', '0px']);
 	// The worn check and status sit in the opposite, top-right corner, 6 px inside the 1 px border.
 	const status = (await hat.locator('.tile-status, .bu-tile-check').first().boundingBox())!;
 	expect(status.x + status.width).toBeCloseTo(tile.x + tile.width - 7, 0);
 	expect(status.x).toBeGreaterThan(hit.x + hit.width);
-	expect(hit.y).toBeCloseTo(tile.y, 0);
 	// The category's Random and + actions are full 44 px targets too.
 	for (const name of ['Random head item', 'New head item']) {
 		const box = (await head.getByRole('button', { name, exact: true }).boundingBox())!;

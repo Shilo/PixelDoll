@@ -612,24 +612,30 @@
 	font-size: 13px;
 }
 /* A real item's tile with its ⋮ beside it (a sibling control): the ⋮ sits at the tile's top-left edge, the worn check
-   and status top-right. The ⋮ keeps a full-height target but reaches only 32 px into the tile, so a press meant for the
-   tile rarely opens the menu. */
+   and status top-right. The ⋮ is a small 28 by 25 px target in that corner, so a press meant for the tile rarely opens
+   the menu. */
 .tile-wrap {
 	position: relative;
 	min-width: 0;
 }
 .tile-wrap > .tile-more {
 	position: absolute;
-	top: 0;
-	left: 0;
+	/* Inside the tile's border, and just tall enough that the centered glyph's top dot is level with the top of the
+	   worn check in the opposite corner. */
+	top: 3px;
+	left: 3px;
 	z-index: 1;
-	width: 32px;
+	width: 28px;
 	min-width: 0;
-	height: 44px;
-	/* The target keeps its full height, but the glyph sits at the top, its middle dot level with the check or status
-	   icon's center in the opposite corner. */
-	place-items: start center;
-	padding-top: 4px;
+	height: 25px;
+	min-height: 0;
+}
+/* The target reaches the tile's outer edges above and to the left, so a press in that corner never falls through to the
+   tile, while the visible button and its highlight stay inside the border. */
+.tile-wrap > .tile-more::before {
+	content: '';
+	position: absolute;
+	inset: -3px 0 0 -3px;
 }
 /* Status shares the check mark's corner: a worn item shows the check, an unworn one its status. Every Wardrobe tile,
    Empty included, keeps the check in the same corner. */
