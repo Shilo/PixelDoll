@@ -22,6 +22,62 @@ import { composeCell } from '../../src/lib/compose/compose.ts';
 
 const ID = 'f6a0bdc5-354e-4682-8df3-55fc3d118737';
 
+test('unselected demo shows its facts after reload', async ({ page }, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await page.goto(
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const state = await import(path);
+		await state.copyDemo();
+		await state.renameProject('Saved hero');
+	});
+	await page.reload();
+	const rows = page.locator('.cast-library .character-row');
+	await expect(rows.filter({ hasText: 'Saved hero' })).toHaveAttribute('aria-pressed', 'true');
+	await expect(rows.filter({ hasText: 'Adventurer' }).locator('small')).toHaveText(
+		'64 px · 4 directions · 2 moves · 6 items'
+	);
+	await expect(rows.filter({ hasText: 'Adventurer' })).toHaveAttribute('aria-pressed', 'false');
+	await expect
+		.poll(() =>
+			rows.locator('canvas').evaluateAll(
+				(elements) =>
+					elements.length === 2 &&
+					elements.every((element) => {
+						const canvas = element as HTMLCanvasElement;
+						const { width, height } = canvas;
+						const pixels = canvas.getContext('2d')!.getImageData(0, 0, width, height).data;
+						const visible = (x: number, y: number) => pixels[(y * width + x) * 4 + 3] > 0;
+						const bounds = canvas.getBoundingClientRect();
+						return (
+							Math.abs(bounds.width * devicePixelRatio - width) < 0.1 &&
+							Math.abs(bounds.height * devicePixelRatio - height) < 0.1 &&
+							Array.from({ length: width }, (_, x) => x).some((x) => visible(x, 0)) &&
+							Array.from({ length: width }, (_, x) => x).some((x) => visible(x, height - 1)) &&
+							Array.from({ length: height }, (_, y) => y).some((y) => visible(0, y)) &&
+							Array.from({ length: height }, (_, y) => y).some((y) => visible(width - 1, y))
+						);
+					})
+			)
+		)
+		.toBe(true);
+	await rows.filter({ hasText: 'Adventurer' }).click();
+	await expect(rows.filter({ hasText: 'Adventurer' })).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.customize-action')).toHaveAttribute('aria-busy', 'false');
+	await page.reload();
+	await expect(rows.filter({ hasText: 'Adventurer' })).toHaveAttribute('aria-pressed', 'true');
+	await expect(rows.locator('small')).toHaveText([
+		'64 px · 4 directions · 2 moves · 6 items',
+		'64 px · 4 directions · 3 moves · 6 items'
+	]);
+});
+
 test('character actions download and delete an unopened character without selecting it', async ({
 	page
 }, info) => {

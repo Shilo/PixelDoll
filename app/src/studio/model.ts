@@ -201,6 +201,7 @@ export function crop(im: Img): Img | null {
 				y1 = y;
 			}
 	if (x1 < 0) return null;
+	if (x0 === 0 && y0 === 0 && x1 === im.w - 1 && y1 === im.h - 1) return im;
 	const o = makeImg(x1 - x0 + 1, y1 - y0 + 1);
 	for (let y = 0; y < o.h; y++)
 		o.data.set(
