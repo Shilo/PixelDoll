@@ -51,11 +51,11 @@ export interface Layout {
 	toastTop: number;
 }
 
-export const PLAYBACK_HEIGHT = 54;
+export const PLAYBACK_HEIGHT = 58;
 /** The phone's floating view tab row under the header. */
-export const VIEW_TABS = 40;
-/** The side rail's first row: Customize's panel tabs, 44 px. */
-const PANEL_ROW = 44;
+export const VIEW_TABS = 48;
+/** The side rail's first row: Customize's panel tabs, 48 px. */
+const PANEL_ROW = 48;
 /** The eye line sits this share of the visible character height above the feet. */
 export const EYE = 0.86;
 
@@ -97,7 +97,7 @@ export function layout(w: number, h: number, screen: Screen, measuredPlaybackHei
 		phone = w <= 600;
 	const edge = phone ? 16 : w < 1100 ? 20 : w >= 1920 ? 32 : 24;
 	const top = short || phone ? 8 : 12,
-		row = short || phone ? 44 : 48,
+		row = 48,
 		headerBottom = top + row;
 	// Desktop panels grow to a third of the window (up to 480 px) so the Wardrobe fits 3 items per row at 1280 and 4 from
 	// 1440 (ui-lab-9); the hero's scale is set by the height, so it only shifts left.

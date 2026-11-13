@@ -11,7 +11,7 @@
 	--fs-sm: 12px;
 	--fs-md: 16px;
 	--fs-title: 28px;
-	--ctl-h: 40px;
+	--ctl-h: 48px;
 	--tb-h: 72px;
 	--r-ctl: var(--bu-radius-control);
 	--r-card: var(--bu-radius-panel);
@@ -48,12 +48,22 @@
 @media (pointer: coarse), (max-width: 760px) {
 	:root,
 	:root[data-theme] {
-		--ctl-h: 44px;
 		--fs: 14px;
 		--fs-sm: 12px;
 	}
 }
 /* Host geometry stays local. Appearance and states are package recipes. */
+:root .studio-app :is(button, .bu-action, .swatch):not(.tile-more) {
+	min-width: var(--ctl-h);
+	min-height: var(--ctl-h);
+}
+:where(.studio-app) .bu-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 0 12px;
+}
 .studio-app .bu-action {
 	font-family: var(--bu-font);
 }

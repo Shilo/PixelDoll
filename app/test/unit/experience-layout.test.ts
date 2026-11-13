@@ -85,7 +85,7 @@ const SIZES = [
 ] as const;
 
 describe('scene geometry', () => {
-	for (const height of [54, 100, 146, 192])
+	for (const height of [58, 100, 146, 192])
 		test(`reserves a measured ${height}px playback bar without moving its bottom edge`, () => {
 			for (const [width, viewportHeight] of [
 				[500, 700],
@@ -110,13 +110,13 @@ describe('scene geometry', () => {
 	});
 
 	test('hides an unusable short-phone sheet rather than covering wrapped controls', () => {
-		const before = layout(320, 400, 'studio');
-		const wrapped = layout(320, 400, 'studio', 146);
+		const before = layout(320, 404, 'studio');
+		const wrapped = layout(320, 404, 'studio', 146);
 		expect(before.sheetHeight).toBe(200);
 		expect(wrapped.sheet).toBe(true);
 		expect(wrapped.sheetHeight).toBe(0);
 		expect(wrapped.stage.r).toBe(before.stage.r);
-		expect(wrapped.playbackTop + wrapped.playbackHeight).toBeLessThanOrEqual(400);
+		expect(wrapped.playbackTop + wrapped.playbackHeight).toBeLessThanOrEqual(404);
 		expect(wrapped.feet.y).toBeGreaterThan(wrapped.stage.t);
 	});
 
@@ -221,7 +221,8 @@ describe('scene geometry', () => {
 			}
 		// A phone held sideways gets the side rail rather than a 70 px sheet.
 		expect(layout(568, 320, 'studio').sheet).toBe(false);
-		expect(layout(320, 400, 'studio').sheetHeight).toBe(200);
+		expect(layout(320, 404, 'studio').sheetHeight).toBe(200);
+		expect(layout(320, 400, 'studio').sheetHeight).toBe(0);
 		// 320×240 has no room for a usable sheet under the stage, so the panel hides.
 		expect(layout(320, 240, 'studio').sheetHeight).toBe(0);
 	});
@@ -229,7 +230,7 @@ describe('scene geometry', () => {
 	test('the playback bar is always one row; stages under 300 px cycle facing with one button', () => {
 		for (const [w, h] of SIZES) {
 			const g = layout(w, h, 'studio');
-			expect(g.playbackHeight).toBe(54);
+			expect(g.playbackHeight).toBe(58);
 			expect(g.cycleFacing, `${w}×${h}`).toBe(g.stage.r - g.stage.l < 300);
 		}
 		expect(layout(568, 320, 'studio').cycleFacing).toBe(true);
