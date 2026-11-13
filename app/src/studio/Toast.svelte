@@ -132,7 +132,9 @@
 				tone={ui.toastTone}
 				live
 				onactivate={activate}
-				ondismiss={dismiss}>{ui.toast}</Notice
+				ondismiss={dismiss}
+				>{#if ui.toastPending}<span class="bu-spinner" aria-hidden="true"
+					></span>{' '}{/if}{ui.toast}</Notice
 			>{/if}
 		<PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
 	</div>

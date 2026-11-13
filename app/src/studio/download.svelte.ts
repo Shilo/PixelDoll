@@ -70,7 +70,7 @@ async function download(
 ) {
 	if (pending.has(key)) return;
 	pending.add(key);
-	toast(`Preparing ${label}…`);
+	toast(`Preparing ${label}...`, { pending: true });
 	try {
 		const { zip, filename } = await build();
 		saveZip(zip, filename);

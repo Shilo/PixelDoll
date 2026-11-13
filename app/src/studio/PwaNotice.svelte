@@ -6,7 +6,7 @@
 	let { paused = false, ondismiss }: { paused?: boolean; ondismiss: () => void } = $props();
 	$effect(() => {
 		const phase = updateNotice.phase;
-		if (!updateNotice.visible) return;
+		if (!updateNotice.visible || (!$pwa.ready && !$pwa.error)) return;
 		if (paused) {
 			updateNotice.pause(phase);
 			return;
@@ -30,10 +30,12 @@
 		onactivate={$pwa.ready ? requestUpdate : undefined}
 		ondismiss={dismiss}
 	>
-		{#if $pwa.ready}Available. Reloads this tab; your saved characters and outfits stay. View and
-			undo history reset.{:else}Downloading for offline use. Your current work can continue.{/if}
-		{#if app.key && !app.remembered}Your session-only PixelLab connection will need reconnecting.{/if}
+		{#if $pwa.ready}Ready to update. Reloads this tab; saved work stays. View and undo history
+			reset.
+		{:else if !$pwa.error}<span class="bu-spinner" aria-hidden="true"></span>{' '}Downloading
+			update...{/if}
+		{#if $pwa.ready && app.key && !app.remembered}Reconnect PixelLab after updating.{/if}
 		{#if $pwa.error}<span>{$pwa.error}</span>{/if}
-		Update later from More options.
+		Update later in More options.
 	</Notice>
 {/if}
