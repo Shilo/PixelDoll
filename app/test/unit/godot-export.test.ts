@@ -28,7 +28,11 @@ async function fixture(): Promise<Project> {
 				id: 'main',
 				role: 'fg',
 				z: slot === 'body' ? 10 : 110,
-				cells: { 'walk-fast': { south: [hash, hash] }, walk_fast: { south: [hash, hash] } }
+				cells: {
+					'walk-fast': { south: [hash, hash] },
+					walk_fast: { south: [hash, hash] },
+					once: { south: [hash, hash] }
+				}
 			}
 		]
 	});
@@ -44,10 +48,10 @@ async function fixture(): Promise<Project> {
 				baseItem: 'base',
 				baseHash: hash,
 				directions: [{ id: 'south' }],
-				animations: ['walk-fast', 'walk_fast'].map((id) => ({
+				animations: ['walk-fast', 'walk_fast', 'once'].map((id) => ({
 					id,
 					cells: 2,
-					loop: true,
+					loop: id !== 'once',
 					frames: [
 						{ cell: 1, ms: 125 },
 						{ cell: 0, ms: 50 },
@@ -243,6 +247,7 @@ test.skipIf(!process.env.GODOT_BIN)(
 		writeFileSync(join(directory, 'native.log'), run.stdout + run.stderr);
 		expect(run.status, run.stdout + run.stderr).toBe(0);
 		expect(run.stdout + run.stderr).not.toMatch(/SCRIPT ERROR|ERROR:/);
+		expect((run.stderr.match(/WARNING: PixelDoll:/g) ?? []).length).toBe(8);
 		expect(run.stdout).toContain('GODOT_EXPORT_PASS');
 		expect(readFileSync(join(directory, 'native.log'), 'utf8')).toContain('GODOT_EXPORT_PASS');
 		writeFileSync(
@@ -275,6 +280,7 @@ test.skipIf(!process.env.GODOT_BIN)(
 		writeFileSync(join(directory, 'packed-runtime.log'), packed.stdout + packed.stderr);
 		expect(packed.status, packed.stdout + packed.stderr).toBe(0);
 		expect(packed.stdout + packed.stderr).not.toMatch(/ERROR:/);
+		expect((packed.stderr.match(/WARNING: PixelDoll:/g) ?? []).length).toBe(8);
 		expect(packed.stdout).toContain('GODOT_EXPORT_PASS');
 	},
 	120_000
@@ -319,9 +325,9 @@ func run() -> void:
 	check(doll.body.z_index < doll.get_node("hair_fg").z_index, "Equal-depth ranks preserve manifest slot order")
 	doll.manifest.slots[1]["zOverrides"] = [{"layer": "fg", "cell": 0, "z": 10001}]
 	doll.body.set_frame_and_progress(0, 0.0)
-	doll.play_anim("walk-fast", "east")
+	check(not doll.play_anim("walk-fast", "east"), "Unavailable view reports failure")
 	check(doll.dir == "south", "Unavailable view must not replace active playback")
-	doll.play_anim("empty", "south")
+	check(not doll.play_anim("empty", "south"), "Unavailable move reports failure")
 	check(doll.anim == "walk-fast", "Empty move must not replace active playback")
 	check(doll.equipped.body == "base", "Default must retain frozen base even with body:null")
 	check(color(doll, "hair") == Color.BLUE, "Default must use sourceSheets and defaultVariant")
@@ -331,9 +337,25 @@ func run() -> void:
 	doll.set_preset("red")
 	check(color(doll, "hair") == Color.RED, "Preset variant must replace default")
 	check(doll.body.frame == 1 and is_equal_approx(doll.body.frame_progress, 0.4) and doll.body.is_playing(), "Palette changes must preserve playback")
-	doll.equip("body", "")
-	doll.equip("hair", "base")
+	doll.set_variant("a", null)
+	check(color(doll, "hair") == Color.BLUE, "Clearing a selection restores its material default without changing equipment")
+	check(doll.equipped.hair == "a" and doll.body.frame == 1 and is_equal_approx(doll.body.frame_progress, 0.4), "Clearing a selection preserves equipment and playback")
+	doll.set_variant("a", "")
+	check(color(doll, "hair") == Color8(100, 100, 100), "Empty selection means source colors, not the material default")
+	doll.set_variant("a", null)
+	doll.play_anim("walk_fast", "south")
+	check(doll.body.frame == 1 and is_equal_approx(doll.body.frame_progress, 0.4), "Repeated play preserves active progress")
+	doll.play_anim("walk_fast", "south", true)
+	check(doll.body.frame == 0 and is_zero_approx(doll.body.frame_progress), "Explicit restart returns to the first playlist entry")
+	check(not doll.equip("body", ""), "Frozen-body mutation reports failure")
+	check(not doll.equip("hair", "base"), "Wrong-slot equipment reports failure")
 	check(doll.equipped.body == "base" and doll.equipped.hair == "a", "Frozen base and wrong-slot guards")
+	var before := JSON.stringify({"items": doll.equipped, "variants": doll.variants})
+	check(not doll.set_preset("missing"), "Unknown outfit reports failure")
+	check(not doll.set_preset(""), "An empty outfit ID must not silently clear equipment")
+	check(not doll.set_variant("missing", "red"), "Unknown material reports failure")
+	check(not doll.set_variant("a", 42), "Invalid color type reports failure before mutation")
+	check(JSON.stringify({"items": doll.equipped, "variants": doll.variants}) == before, "Rejected outfit and material preserve state")
 	doll.equip("hair", "b")
 	check(color(doll, "hair") == Color8(100, 100, 100), "Unworn alternate equipment must load without palette bleed")
 	doll.set_variant("b", "blue")
@@ -358,7 +380,15 @@ func run() -> void:
 			it.erase("hides")
 	doll._refresh()
 	check(doll.get_node("back_fg").visible and doll.get_node("head_fg").visible, "Both show again without hides")
+	doll.play_anim("once", "south", true)
+	for tick in 20:
+		await process_frame
+	check(not doll.body.is_playing() and doll.body.frame == 2, "Once-only playback completes and holds the final playlist entry")
+	doll.play_anim("once", "south")
+	check(doll.body.is_playing() and doll.body.frame == 0 and is_zero_approx(doll.body.frame_progress), "Selecting a completed once-only clip replays it")
 	for a in doll.manifest.rig.animations:
+		if a.has("directions") and a.directions.is_empty():
+			continue
 		doll.play_anim(a.id, "south")
 		for i in 45:
 			await process_frame

@@ -42,7 +42,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 
 ## Code
 
-- Shared paper-doll runtime, application facades and Phaser/GDevelop exports: read `docs/architecture/javascript-runtime.md` before editing; follow its canonical-source, synchronization and parity-check workflow.
+- Paper-doll runtime, application facades and all engine exports: read `docs/architecture/javascript-runtime.md` before editing; follow its cross-engine behavior contract, canonical-source synchronization and native parity-check workflow.
 - PixelLab plan policy (tier limits, tool access): edit `PLAN_JOB_LIMITS` in app/src/lib/pixellab/plans.ts; sources in docs/pixellab-plans.md
 - Studio UI: app/src/studio/
 - Dev-only pages: app/src/ui/

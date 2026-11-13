@@ -163,7 +163,7 @@ function sceneHarness() {
 					depth: 0,
 					key: '',
 					frame: '',
-					anims: { currentFrame: null as any },
+					anims: { currentFrame: null as any, currentAnim: null as any, isPlaying: false },
 					setName() {
 						return this;
 					},
@@ -176,9 +176,14 @@ function sceneHarness() {
 						this.frame = frame;
 						return this;
 					},
-					play(this: any, key: string) {
+					play(this: any, key: string, ignoreIfPlaying = false) {
+						if (ignoreIfPlaying && this.anims.isPlaying && this.anims.currentAnim?.key === key)
+							return this;
+						this.anims.currentAnim = { key };
+						this.anims.isPlaying = true;
 						this.anims.currentFrame = { textureFrame: animations.get(key).frames[0].frame };
 						this.emit('animationstart');
+						return this;
 					}
 				})
 		}
@@ -222,6 +227,26 @@ function atlasArgs(url: string, m: Manifest): [string, string, string] {
 	return [item.id, 'main', 'walk'];
 }
 afterEach(() => vi.unstubAllGlobals());
+
+test('Phaser repeated play preserves active progress, supports explicit restart and replays completed clips', async () => {
+	const m = fixture(),
+		api = runtime(),
+		h = sceneHarness();
+	browserHarness(m);
+	const loaded = await api.loadPaperdoll(h.scene, '/hero/');
+	const doll = new api.Paperdoll(h.scene, 0, 0, loaded);
+	doll.play('walk', 'south');
+	doll.body.anims.currentFrame = { textureFrame: 'walk_south_0' };
+	doll.play('walk', 'south');
+	expect(doll.body.anims.currentFrame.textureFrame).toBe('walk_south_0');
+	doll.play('walk', 'south', true);
+	expect(doll.body.anims.currentFrame.textureFrame).toBe('walk_south_1');
+	doll.body.anims.currentFrame = { textureFrame: 'walk_south_0' };
+	doll.body.anims.isPlaying = false;
+	doll.play('walk', 'south');
+	expect(doll.body.anims.currentFrame.textureFrame).toBe('walk_south_1');
+	expect(doll.body.anims.isPlaying).toBe(true);
+});
 
 test('Phaser selects and synchronizes the complete body-cut combination independently of equipment insertion order', async () => {
 	const m = fixture(),
@@ -279,6 +304,15 @@ test('Phaser quick start selects the first playable move and its supported direc
 
 test('atlas filenames cannot collide when item and move identifiers contain underscores', () => {
 	expect(atlasName('a', 'main', 'main_walk')).not.toBe(atlasName('a_main', 'main', 'walk'));
+});
+
+test('atlas metadata points to the same source-color sheet used by the loader', () => {
+	const m = fixture();
+	for (const item of m.items)
+		for (const layer of item.layers)
+			expect(atlasJson(m, item.id, layer.id, 'walk').meta.image).toBe(
+				`../${layer.sourceSheets?.walk ?? layer.sheets!.walk}`
+			);
 });
 
 test.each([

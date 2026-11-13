@@ -117,6 +117,93 @@ last authored cell when looping is false. Empty, nonfinite or nonpositive-durati
 The core assumes a validated manifest, just as the existing compositor did. Application-specific
 draft coverage filtering and recovery happen before rendering; the core does not schedule generation.
 
+## Cross-engine behavior contract
+
+Consistency means matching paper-doll results and operation semantics, not imposing JavaScript names,
+renderers or loading on other engines. The engine-neutral JavaScript is authoritative for equipment,
+visibility, cover selection, depth, geometry, pixels, palettes and timeline sampling. Native ports
+implement those same decisions in their host language; changing JavaScript does not update them automatically.
+
+| Operation                                    | Phaser / GDevelop                                   | Godot                                         | Unity                                    |
+| -------------------------------------------- | --------------------------------------------------- | --------------------------------------------- | ---------------------------------------- |
+| Select animation                             | `play(move, direction, restart = false)`            | `play_anim(move, direction, restart = false)` | `Play(move, direction, restart = false)` |
+| Change one slot                              | `equip(slot, item)`                                 | `equip(slot, item)`                           | `Equip(slot, item)`                      |
+| Apply complete outfit                        | `applyPreset(idOrObject)`                           | `set_preset(id)`                              | `ApplyPreset(id)`                        |
+| Change color selections                      | `setVariants(map)` replaces all explicit selections | `set_variant(material, name)` changes one     | `SetVariant(material, name)` changes one |
+| Remove explicit color                        | Omit the key or use `null` in the replacement map   | `set_variant(material, null)`                 | `SetVariant(material, null)`             |
+| Unequip a non-body slot                      | `null`                                              | `""`                                          | `null` or `""`                           |
+| Invalid move, direction, equipment or outfit | Throws before mutation                              | Warning and `false`, before mutation          | Warning and `false`, before mutation     |
+| Disposal                                     | `destroy()`                                         | Native `queue_free()`                         | Native `Destroy(gameObject)`             |
+
+All four live controllers must preserve these behaviors:
+
+- Selecting the active move/direction preserves its progress. Selecting a different move/direction
+  starts at the beginning. Selecting a completed once-only clip replays it. Explicit `restart = true`
+  starts the requested clip from its first playlist entry, even if it is already active.
+- Frame lists retain authored order, repeated cells and individual durations. Loops repeat; once-only
+  clips hold their final cell. Equipment, outfit and palette changes do not restart animation.
+- The body cannot be unequipped. Equipment must belong to the requested slot and cannot directly
+  select a baked variant. Equipped hidden items still contribute the documented hides/cuts rules.
+  Hand-conflict removal in the Studio is interaction policy; exported controllers resolve visibility
+  without silently removing the other equipped item.
+- Applying an outfit replaces equipment and explicit colors, with the frozen body restored. Removing
+  an explicit color restores its material default, not necessarily the original source colors. An
+  empty-string color selection uses source colors. Linked materials follow their target selection.
+  JavaScript color maps replace the selection set; native setters deliberately change one key.
+- Invalid operations leave equipment, colors and playback unchanged. JavaScript exceptions and native
+  warning/boolean results are intentional host-language differences, not permission to fail silently.
+- Unknown material keys in JavaScript replacement maps are retained but have no visual effect; native
+  one-material setters reject unknown material IDs. Unknown variant names, like empty strings, use
+  source colors in all four controllers. Phaser mutators return `undefined`; GDevelop returns the doll
+  for chaining. These return conventions do not change rendered results.
+- Stored layer pivots and cell sizes, most-specific depth overrides, slot/role tie order, exact RGB
+  swaps, alpha and source-image immutability retain the same meaning in every renderer.
+- Instances keep independent equipment, colors and clocks. Disposal releases owned nodes/resources;
+  Phaser's documented game-wide palette texture cache lasts until game teardown.
+
+Generic PNG/JSON is an integration format, not a live API. Aseprite records editable layers and the
+first outfit. RPG Maker resamples to its fixed sheet format. These targets must use shared decisions
+where applicable, but cannot expose live operations the destination format does not support.
+
+## Maintaining cross-engine consistency
+
+Before changing a paper-doll behavior or public controller operation:
+
+1. Reproduce the problem with a failing golden or exported-runtime test. Identify affected consumers
+   from the operation table, including native controllers and asset-only exports where applicable.
+2. Put engine-neutral behavior in the canonical modules. Keep rendering, loading, native naming and
+   lifecycle in adapters. Update native ports in the same change, or document and justify why a port
+   is unaffected. Do not treat matching JavaScript source as evidence of native behavior.
+3. Keep this contract, the export-format specification and generated engine READMEs aligned. Record
+   deliberate differences here instead of adding compatibility aliases or a universal renderer framework.
+4. Run the source synchronization workflow below when canonical code or its data types change. Run
+   `npm run check`, the unit suite, and affected application export/selftest E2E specs. Shared-core or
+   presentation changes require full E2E, as defined in `AGENTS.md`.
+5. Run the affected native checks: `GODOT_BIN` enables `godot-export.test.ts`; the Phaser, GDevelop and
+   Unity verifiers live in `app/scripts/verify-*-export.mjs` and `verify-gdevelop-engine.mjs`.
+   Playback checks include repeated selection, explicit restart and completion replay; palette checks
+   include restoration and owner isolation; rejected calls must preserve state and report failure.
+   Preserve negative controls and test a freshly generated export, not a previously downloaded runtime.
+6. Have an independent reviewer challenge the behavior, tests and intentional differences. Report
+   exact engine versions and what actually ran. An unavailable native engine or skipped opt-in test
+   is a verification limitation, never a native conformance pass.
+
+Native tests are opt-in because their engines are not installed by the ordinary unit/CI workflow.
+Default unit tests guard export construction and JavaScript execution; they do not replace native
+GDScript/C# execution. Do not claim that every native port automatically inherits future JavaScript fixes.
+
+Required scenario coverage lives in these existing harnesses rather than a second test framework:
+
+| Scenario                                     | Executable checks                                                                                                         |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Shared rendering, ordering and palettes      | `runtime.test.ts`, `runtime-preset.test.ts`, `export-phaser.test.ts`, `gdevelop-export.test.ts`                           |
+| Repeat selection, restart, completion replay | `verify-phaser-export.mjs`, `verify-gdevelop-engine.mjs`, native `godot-export.test.ts`, `unity-review/NativePlayback.cs` |
+| Rejection atomicity and palette restoration  | Controller unit tests, native `godot-export.test.ts`, `unity-review/NativePlayback.cs`                                    |
+| Portable resources and export boundary       | `export-portability.test.ts`, `export-validation.test.ts`                                                                 |
+
+Paths in this table are under `app/test/unit/` or `app/scripts/`. Test exported runtime bytes and
+native controller output; matching source text alone is not evidence of matching engine behavior.
+
 ## Maintaining exact source identity
 
 `app/scripts/sync-runtime.mjs` generates `runtime/sources.ts`, a transport-only copy of the exact JS
@@ -137,6 +224,8 @@ exports on named declarations so the embedded native-event form remains safe to 
 It also checks that every line beginning with `export ` is an actual top-level export modifier,
 and every such modifier uses that prefix. Misleading prefixes inside multiline strings/comments
 or indented export declarations fail synchronization instead of being silently changed by embedding.
+It also rejects cross-module top-level binding collisions before writing transport files, since
+the delivered modules share one scope. `runtime-sync.test.ts` exercises that failure and recovery.
 
 The same command regenerates `types.d.ts` from the existing TypeScript data contracts. Changes to those
 contracts require resynchronizing the export transport as well. The prebuild checks both generated files.
@@ -144,11 +233,21 @@ This remains an explicit synchronization workflow, not a development-server watc
 canonical module, run the synchronization command before testing an export from an already-running dev server.
 
 Phaser and GDevelop accept either an outfit object or its exported ID in `applyPreset`. Unknown IDs
-throw without changing equipment or colors. Godot's `set_preset` and Unity's `ApplyPreset` use IDs.
+throw without changing equipment or colors. Constructors resolve the same IDs/objects. Canonical
+`validEquipment` supplies the slot/item rule to setters and `resolvePreset`; malformed custom outfits
+are rejected atomically. Stored presets with missing, wrong-slot or baked-variant references fail
+export validation. Known stale items remain warnings and are removed from the exported outfit.
+Godot's `set_preset` and Unity's `ApplyPreset` use IDs.
 Native controllers can change equipment and exact stored palettes at runtime. Generic exports are
 PNG/JSON integration assets, Aseprite records the first outfit's visible layers and per-frame timing,
 and RPG Maker deliberately resamples a walk into its fixed step-sheet layout. Those formats do not
 provide a live controller API equivalent to Phaser, Godot, Unity or GDevelop.
+
+Exported path segments escape Windows device IDs with a leading underscore (`con` becomes `_con`)
+without changing the manifest's immutable IDs. Valid IDs cannot start with an underscore, so this
+cannot collide with an unescaped valid ID. Layer `sheets`/`sourceSheets` contain the resulting paths;
+baked paths use the same escaping for outfit and move IDs. Display-derived Unity/Aseprite/RPG Maker
+names use the shared portable-name helper. The final archive path check remains a safety backstop.
 
 See `app/test/unit/runtime.test.ts` for source identity and independent pixel/timeline golden values;
 existing mask, equipment, palette, presentation and export suites cover their established behavior.

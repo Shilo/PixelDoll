@@ -12,6 +12,7 @@ import type { Img } from '../image/png.ts';
 import type { DirectionName, Item, Layer, Manifest, Slot } from '../store/manifest.ts';
 import { bakedFrame, compareDraws, drawList, layerFrame, resolveZ } from '../compose/compose.ts';
 import type { OutFile } from './generic.ts';
+import { portableAssetName } from './paths.ts';
 import { variantRampOf } from '../dress/dress.ts';
 import { applyPalette, paletteMap } from '../runtime/colors.js';
 
@@ -244,7 +245,7 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
 }
 
 export async function asepriteFiles(m: Manifest, sheets: Map<string, Img>): Promise<OutFile[]> {
-	const name = m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'paperdoll';
+	const name = portableAssetName(m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'paperdoll');
 	return [
 		{ name: `aseprite/${name}.aseprite`, data: await asepriteFile(m, sheets) },
 		{

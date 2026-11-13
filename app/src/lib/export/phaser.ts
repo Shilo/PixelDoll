@@ -31,7 +31,7 @@ export function atlasJson(m: Manifest, itemId: string, layerId: string, anim: st
 		meta: {
 			app: m.app,
 			version: m.format,
-			image: `../${l.sheets![anim]}`,
+			image: `../${l.sourceSheets?.[anim] ?? l.sheets![anim]}`,
 			format: 'RGBA8888',
 			size: { w: a.cells * w, h: rig.directions.length * h },
 			scale: '1'
@@ -112,11 +112,12 @@ export async function loadPaperdoll(scene, base) {
 }
 
 export class Paperdoll {
-  constructor(scene, x, y, manifest, preset = manifest.presets[0]) {
+  constructor(scene, x, y, manifest, preset = manifest.presets[0] ?? { items: {}, variants: {} }) {
+    const resolved = resolvePreset(manifest, preset);
     this.scene = scene;
     this.m = manifest;
-    this.equipped = { ...preset?.items, body: manifest.rig.baseItem };
-    this.variants = { ...preset?.variants };
+    this.equipped = resolved.items;
+    this.variants = resolved.variants;
     this.container = scene.add.container(x, y);
     this.nodes = []; // one sprite per (slot, role) any item uses
     for (const s of manifest.slots) {
@@ -133,24 +134,23 @@ export class Paperdoll {
     for (const ev of ['animationstart', 'animationupdate', 'animationrepeat', 'animationrestart']) this.body.on(ev, () => this.sync());
   }
 
-  play(anim, dir) {
+  play(anim, dir, restart = false) {
     const move = this.m.rig.animations.find((a) => a.id === anim);
     if (!move || !available(this.m, move).some((d) => d.id === dir)) throw new Error('PixelDoll: unavailable move/direction ' + anim + '/' + dir);
     this.anim = anim; this.dir = dir;
-    this.body.play(animKey(this.m, anim, dir));
+    this.body.play(animKey(this.m, anim, dir), !restart);
     this.sync();
   }
 
   equip(slot, itemId) {
-    if (slot === 'body' || !this.m.slots.some((s) => s.id === slot) || (itemId != null && !this.m.items.some((i) => i.id === itemId && i.slot === slot && !i.variantOf))) throw new Error('PixelDoll: invalid equipment for ' + slot);
+    if (slot === 'body' || !validEquipment(this.m, slot, itemId)) throw new Error('PixelDoll: invalid equipment for ' + slot);
     this.equipped[slot] = itemId; this.sync();
   }
 
   applyPreset(preset) {
-    if (typeof preset === 'string') preset = this.m.presets.find((entry) => entry.id === preset);
-    if (!preset) throw new Error('PixelDoll: unknown outfit');
-    this.equipped = { ...preset.items, body: this.m.rig.baseItem };
-    this.setVariants(preset.variants);
+    const resolved = resolvePreset(this.m, preset);
+    this.equipped = resolved.items;
+    this.setVariants(resolved.variants);
   }
 
   setVariants(variants) { this.variants = { ...variants }; this.sync(); }
@@ -239,7 +239,10 @@ export function phaserFiles(m: Manifest): OutFile[] {
        doll.play(${JSON.stringify(initial?.id ?? 'walk')}, ${JSON.stringify(initial?.directions?.[0] ?? m.rig.directions[0]?.id ?? 'south')})
      }
 Switch outfits with doll.applyPreset(m.presets[1]) or doll.applyPreset(outfitId); unknown outfit IDs throw without changing the doll.
+play(anim, dir) preserves an active clip's progress, starts changed moves/directions at the beginning and replays a completed once-only clip. Pass true as the third argument to restart explicitly.
+Invalid move/direction, equipment and outfit IDs throw before changing state. Unequip a non-body slot with null.
 Recolor with doll.setVariants({ material_id: "stored_variant" }).
+setVariants replaces all explicit color selections. Omitted keys or null restore material defaults; an empty-string selection uses source colors. Linked materials follow their target's selection.
 Palette swaps use exact source RGBs and stored material ramps in Canvas or WebGL.
 paletteMap returns only active source-RGB to target-RGB swaps; unselected colors are omitted.
 This module also exports the engine-neutral paper-doll API used inside PixelDoll itself, including composeCell, drawList, paletteMap and sampleTimeline.

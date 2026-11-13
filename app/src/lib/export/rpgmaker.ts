@@ -8,6 +8,7 @@ import { bakedFrame, composeCell, over, type Frame } from '../compose/compose.ts
 import { DEFAULT_MOVE, type DirectionName, type RigAnimation } from '../rig/rig.ts';
 import { moveWords, WALK_WORDS } from '../rig/clips.ts';
 import { moveDirs } from '../dress/dress.ts';
+import { portableAssetName } from './paths.ts';
 import type { Manifest, Project } from '../store/manifest.ts';
 import { outfitProject, type OutFile } from './generic.ts';
 
@@ -183,9 +184,6 @@ const safeName = (s: string) =>
 		.replace(/\p{M}+/gu, '')
 		.replace(/[^\w-]+/g, '_')
 		.replace(/^_+|_+$/g, '');
-/** Windows cannot extract files named like devices (CON.png). */
-const notDevice = (name: string) =>
-	/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(name) ? `${name}_` : name;
 
 export type RpgLayout = 'vx' | 'xp';
 
@@ -317,8 +315,8 @@ export function rpgMakerFiles(
 		drawn.push(data);
 		// the first preset is the current look (Export sheet) or the default outfit: the plain character name
 		const want = i ? `${name}_${safeName(pr.name) || safeName(pr.id) || 'outfit'}` : name;
-		let base = notDevice(want);
-		for (let n = 2; used.has(base.toLowerCase()); n++) base = notDevice(`${want}_${n}`);
+		let base = portableAssetName(want);
+		for (let n = 2; used.has(base.toLowerCase()); n++) base = portableAssetName(`${want}_${n}`);
 		used.add(base.toLowerCase());
 		// grounded walk frames may still dip a pixel below the standing frame, and art can hang below the feet line: kept, and
 		// only a larger drop is worth a note

@@ -3,6 +3,7 @@ package-lock.json
 
 # Test output (ignored by the repo-root .gitignore, which Prettier does not read from app/)
 test-results*/
+.runtime-sync-*/
 playwright-report/
 blob-report/
 coverage/

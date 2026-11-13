@@ -21,27 +21,28 @@ const resourceName = (object: string, anim: number, row: number, cell: number) =
 
 /** Embedded as a native JavaScript event: no network fetch, package dependency or external script registration. */
 export const GDEVELOP_RUNTIME = `
-function createPixelDoll(scene, m, names, x = 320, y = 240, preset = m.presets[0]) {
+function createPixelDoll(scene, m, names, x = 320, y = 240, preset = m.presets[0] ?? { items: {}, variants: {} }) {
 ${Object.values(runtimeSources)
 	.join('\n')
 	.replace(/^export /gm, '')}
+  const resolved = resolvePreset(m, preset);
   const d = { x, y, z: 0, layer: '', m, scene, names, nodes: new Map(), textures: new Map(), destroyed: false,
-    equipped: { ...preset?.items, body: m.rig.baseItem }, variants: { ...preset?.variants }, elapsed: 0 };
+    equipped: resolved.items, variants: resolved.variants, elapsed: 0 };
   const available = (a) => a.directions ?? m.rig.directions.map((v) => v.id);
-  d.play = (anim, dir) => {
+  d.play = (anim, dir, restart = false) => {
     const a = m.rig.animations.find((a) => a.id === anim);
     if (!a || !available(a).includes(dir)) throw new Error('PixelDoll: unavailable move/direction ' + anim + '/' + dir);
-    d.anim = a; d.dir = dir; d.elapsed = 0; d.sync(); return d;
+    if (restart || d.anim !== a || d.dir !== dir || (!a.loop && d.elapsed >= timelineDuration(a.frames))) d.elapsed = 0;
+    d.anim = a; d.dir = dir; d.sync(); return d;
   };
   d.equip = (slot, id) => {
-    if (slot === 'body' || !m.slots.some((s) => s.id === slot) || (id != null && !m.items.some((i) => i.id === id && i.slot === slot && !i.variantOf))) throw new Error('PixelDoll: invalid equipment for ' + slot);
+    if (slot === 'body' || !validEquipment(m, slot, id)) throw new Error('PixelDoll: invalid equipment for ' + slot);
     d.equipped[slot] = id; d.sync(); return d;
   };
   d.setVariants = (variants) => { d.variants = { ...variants }; d.sync(); return d; };
   d.applyPreset = (preset) => {
-    if (typeof preset === 'string') preset = m.presets.find((p) => p.id === preset);
-    if (!preset) throw new Error('PixelDoll: unknown outfit');
-    d.equipped = { ...preset.items, body: m.rig.baseItem }; return d.setVariants(preset.variants);
+    const resolved = resolvePreset(m, preset);
+    d.equipped = resolved.items; return d.setVariants(resolved.variants);
   };
   const texture = (resource, map) => {
     const manager = scene.getGame().getImageManager();
@@ -253,7 +254,7 @@ export function gdevelopFiles(m: Manifest, sheets: Map<string, Img>): OutFile[] 
 	files.push({ name: 'gdevelop/Paperdoll.js', data: eventCode + '\n' });
 	files.push({
 		name: 'gdevelop/README.txt',
-		data: `GDevelop 5.6.285+ native project\n\nOpen game.json in GDevelop, then Preview. Every item layer is a native Sprite object with registered individual PNG frames and a shared pivot origin. One JavaScript event drives exact frame timing and equipment; Paperdoll.js is a readable copy already embedded in the event (do not run it twice).\n\nExisting project: copy all Sprite objects from this scene, copy the PixelDoll JavaScript event into your destination scene, and copy images/ alongside its project file (preserve registered resource paths). GDevelop's object copy imports resources; check Resources for missing files before preview/export. Place the event before events using the controller. Keep all objects/resources, including unequipped items.\n\nIn a later JavaScript event:\n  const library = runtimeScene[${JSON.stringify(namespace)}];\n  const doll = library.dolls[0];\n  doll.x = 320; doll.y = 240; // position is the shared pivot\n  doll.play(moveId, directionId); // restarts; call on a change, not every frame\n  doll.equip(slotId, itemId); // null unequips; body is protected\n  doll.applyPreset(outfitId); // stored preset id or preset object\n  doll.setVariants({ materialId: "storedVariantId" });\n  const second = library.create(400, 240); // independently equipped/recolored\n  doll.layer = ""; doll.z = 0; // scene layer and first consecutive layer z rank\n  doll.destroy();\n\nThe embedded event updates every doll once per scene frame; do not call update again. Reserve enough consecutive z values for each doll's visible layers. Source palette pixels remain immutable; recolored PIXI textures belong to each doll and are released by destroy(). Native JavaScript events use GDevelop's PIXI renderer; 2D Canvas/WebGL texture rendering, exact RGB palette ramps, linked defaults, outfit colors, hides, baked tuck variants, per-cell z overrides and variable/repeated-frame timelines are preserved. Non-looping clips stop on their last frame.\n\nSprite collision masks cover individual layers; use a separate gameplay collision object for the character body. Native Sprite/resource/library identities include a stable 16-hex character key derived from its name and frozen base hash. Different characters with the same item IDs can coexist; importing the same name/base export again replaces that library. Create multiple doll instances with library.create(). Image filenames are short for Windows extraction. Generated Sprite names encode item/layer IDs to prevent user-name collisions. No extension installation or network request is needed.\n`
+		data: `GDevelop 5.6.285+ native project\n\nOpen game.json in GDevelop, then Preview. Every item layer is a native Sprite object with registered individual PNG frames and a shared pivot origin. One JavaScript event drives exact frame timing and equipment; Paperdoll.js is a readable copy already embedded in the event (do not run it twice).\n\nExisting project: copy all Sprite objects from this scene, copy the PixelDoll JavaScript event into your destination scene, and copy images/ alongside its project file (preserve registered resource paths). GDevelop's object copy imports resources; check Resources for missing files before preview/export. Place the event before events using the controller. Keep all objects/resources, including unequipped items.\n\nIn a later JavaScript event:\n  const library = runtimeScene[${JSON.stringify(namespace)}];\n  const doll = library.dolls[0];\n  doll.x = 320; doll.y = 240; // position is the shared pivot\n  doll.play(moveId, directionId); // preserves active progress; true as third argument restarts\n  doll.equip(slotId, itemId); // null unequips; body is protected\n  doll.applyPreset(outfitId); // stored preset id or preset object\n  doll.setVariants({ materialId: "storedVariantId" });\n  const second = library.create(400, 240); // independently equipped/recolored\n  doll.layer = ""; doll.z = 0; // scene layer and first consecutive layer z rank\n  doll.destroy();\n\nplay preserves active progress, starts changed moves/directions at the beginning and replays completed once-only clips. Invalid move/direction, equipment and outfit IDs throw before changing state; null unequips non-body slots. setVariants replaces explicit selections: omitted keys or null restore material defaults, while an empty-string selection uses source colors. Linked materials follow the target selection.\n\nThe embedded event updates every doll once per scene frame; do not call update again. Reserve enough consecutive z values for each doll's visible layers. Source palette pixels remain immutable; recolored PIXI textures belong to each doll and are released by destroy(). Native JavaScript events use GDevelop's PIXI renderer; 2D Canvas/WebGL texture rendering, exact RGB palette ramps, linked defaults, outfit colors, hides, baked tuck variants, per-cell z overrides and variable/repeated-frame timelines are preserved. Non-looping clips stop on their last frame.\n\nSprite collision masks cover individual layers; use a separate gameplay collision object for the character body. Native Sprite/resource/library identities include a stable 16-hex character key derived from its name and frozen base hash. Different characters with the same item IDs can coexist; importing the same name/base export again replaces that library. Create multiple doll instances with library.create(). Image filenames are short for Windows extraction. Generated Sprite names encode item/layer IDs to prevent user-name collisions. No extension installation or network request is needed.\n`
 	});
 	return files;
 }

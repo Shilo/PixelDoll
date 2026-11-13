@@ -2,11 +2,11 @@
 /** @typedef {import('./types.d.ts').Manifest} ColorManifest */
 /** @typedef {import('./types.d.ts').Item} ColorItem */
 /** @typedef {import('./types.d.ts').Material} ColorMaterial */
-/** @typedef {import('./types.d.ts').Preset} ColorPreset */
+/** @typedef {Record<string, string | null | undefined>} ColorSelections */
 /** @typedef {import('./types.d.ts').Hex} ColorHex */
 /** @typedef {import('./types.d.ts').Img} ColorImg */
 
-/** @param {ColorManifest} manifest @param {ColorPreset['variants']} variants @param {string} id @param {Set<string>} [seen] @returns {string | undefined} */
+/** @param {ColorManifest} manifest @param {ColorSelections} variants @param {string} id @param {Set<string>} [seen] @returns {string | undefined} */
 export function variantOf(manifest, variants, id, seen = new Set()) {
 	const material = manifest.materials.find((entry) => entry.id === id);
 	if (!material || seen.has(id)) return undefined;
@@ -19,7 +19,7 @@ export function variantOf(manifest, variants, id, seen = new Set()) {
 /** @type {WeakMap<ColorImg, {sig: string, idx: Int16Array, table?: string, out?: ColorImg}>} */
 const cache = new WeakMap();
 
-/** @param {import('./types.d.ts').Project} p @param {ColorPreset['variants']} variants @param {(material: ColorMaterial, name: string) => ColorHex[] | undefined} [resolveRamp] @returns {import('./types.d.ts').Project} */
+/** @param {import('./types.d.ts').Project} p @param {ColorSelections} variants @param {(material: ColorMaterial, name: string) => ColorHex[] | undefined} [resolveRamp] @returns {import('./types.d.ts').Project} */
 export function recolor(p, variants, resolveRamp = (material, name) => material.variants[name]) {
 	const m = p.manifest;
 	let images = null;
@@ -73,7 +73,7 @@ export function recolor(p, variants, resolveRamp = (material, name) => material.
 	return images ? { manifest: m, images, layerImages } : p;
 }
 
-/** @param {ColorManifest} manifest @param {ColorItem} item @param {ColorPreset['variants']} variants @param {(material: ColorMaterial, name: string) => ColorHex[] | undefined} [resolveRamp] */
+/** @param {ColorManifest} manifest @param {ColorItem} item @param {ColorSelections} variants @param {(material: ColorMaterial, name: string) => ColorHex[] | undefined} [resolveRamp] */
 function materialPalette(
 	manifest,
 	item,
@@ -96,7 +96,7 @@ function materialPalette(
 }
 
 /** Active exact RGB swaps only; colors without a selected ramp are omitted.
- * @param {ColorManifest} manifest @param {ColorItem} item @param {ColorPreset['variants']} variants @param {(material: ColorMaterial, name: string) => ColorHex[] | undefined} [resolveRamp] */
+ * @param {ColorManifest} manifest @param {ColorItem} item @param {ColorSelections} variants @param {(material: ColorMaterial, name: string) => ColorHex[] | undefined} [resolveRamp] */
 export function paletteMap(manifest, item, variants, resolveRamp) {
 	return new Map(
 		[...materialPalette(manifest, item, variants, resolveRamp)].filter(([, color]) => color >= 0)

@@ -156,7 +156,7 @@ const { GDEVELOP_RUNTIME } = await import(${JSON.stringify(pathToFileURL(join(di
 const delivered = await import('data:text/javascript;base64,' + Buffer.from(PAPERDOLL_JS).toString('base64'));
 const frames = [{cell: 0, ms: 80}];
 const create = new Function(GDEVELOP_RUNTIME + '\\nreturn createPixelDoll;')();
-const manifest = {rig: {baseItem: 'base', directions: [{id: 'south'}], animations: [{id: 'walk', loop: true, frames: [{cell: 0, ms: 80}, {cell: 1, ms: 80}]}]}, slots: [], items: [], presets: []};
+const manifest = {rig: {baseItem: 'base', directions: [{id: 'south'}], animations: [{id: 'walk', loop: true, frames: [{cell: 0, ms: 80}, {cell: 1, ms: 80}]}]}, slots: [{id: 'body'}], items: [{id: 'base', slot: 'body', layers: []}], materials: [], presets: []};
 const doll = create({}, manifest, {});
 doll.update(160);
 console.log(JSON.stringify([internal.timelineDuration(frames), delivered.timelineDuration(frames), doll.cell]));`
@@ -278,6 +278,22 @@ test('public palette maps contain only active swaps and omit unselected source c
 		expect([...runtime.paletteMap(original.manifest, item, {})]).toEqual([]);
 		expect([...runtime.paletteMap(original.manifest, item, { base: 'red' })]).toEqual([
 			[0x646464, 0xff0000]
+		]);
+	}
+});
+
+test('palette null restores defaults while empty and unknown selections preserve source colors', () => {
+	const { manifest } = project();
+	manifest.materials[0].defaultVariant = 'blue';
+	for (const runtime of [colors, delivered()]) {
+		for (const selection of [{}, { base: null }])
+			expect([...runtime.paletteMap(manifest, manifest.items[0], selection)]).toEqual([
+				[0x646464, 0x0000ff]
+			]);
+		for (const selection of [{ base: '' }, { base: 'unknown' }])
+			expect([...runtime.paletteMap(manifest, manifest.items[0], selection)]).toEqual([]);
+		expect([...runtime.paletteMap(manifest, manifest.items[0], { missing: 'red' })]).toEqual([
+			[0x646464, 0x0000ff]
 		]);
 	}
 });

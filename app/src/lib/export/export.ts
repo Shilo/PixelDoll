@@ -18,6 +18,7 @@ import { unityFiles } from './unity.ts';
 import { gdevelopFiles } from './gdevelop.ts';
 import { rpgMakerFiles } from './rpgmaker.ts';
 import { projectEntries, type ImportedCharacter } from '../store/import.ts';
+import { reservedPathSegment } from './paths.ts';
 
 export interface ExportOptions {
 	engines: Engine[];
@@ -153,6 +154,8 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 	const projectFiles = await projectEntries(src, o.projectData);
 	const names = new Set<string>();
 	for (const { name } of [...files, ...projectFiles]) {
+		if (name.split('/').some(reservedPathSegment))
+			errors.push(`Reserved Windows export path: ${name}. This export cannot be packaged safely.`);
 		if (
 			!name ||
 			/[\\:\u0000-\u001f]/.test(name) ||

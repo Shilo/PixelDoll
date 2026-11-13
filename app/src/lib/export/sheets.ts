@@ -11,12 +11,13 @@ import {
 	type Frame
 } from '../compose/compose.ts';
 import type { DirectionName, Item, Layer, Preset, Project } from '../store/manifest.ts';
+import { portablePathId } from './paths.ts';
 
 export const sheetPath = (
 	item: Pick<Item, 'id' | 'slot'>,
 	layer: Pick<Layer, 'id'>,
 	anim: string
-) => `layers/${item.slot}/${item.id}/${layer.id}/${anim}.png`;
+) => `layers/${[item.slot, item.id, layer.id, anim].map(portablePathId).join('/')}.png`;
 
 function grid(
 	p: Project,

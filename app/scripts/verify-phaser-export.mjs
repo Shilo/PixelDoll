@@ -12,6 +12,7 @@ import { applyExportSettings } from '../src/lib/store/export-settings.ts';
 import { unzip } from '../src/lib/store/zip.ts';
 import { baseHashOf, cellHash } from '../src/lib/rig/rig.ts';
 import { makeImg } from '../src/lib/image/png.ts';
+import { bakedSheetPath } from '../src/lib/export/paths.ts';
 
 const app = fileURLToPath(new URL('..', import.meta.url));
 const { values } = parseArgs({
@@ -335,6 +336,15 @@ for (const file of values.zip ?? [])
 	});
 for (const archive of archives) {
 	archive.files = await unzip(archive.zip);
+	const manifest = JSON.parse(new TextDecoder().decode(archive.files.get('manifest.json')));
+	archive.bakedPaths = Object.fromEntries(
+		manifest.presets.map((preset) => [
+			preset.id,
+			Object.fromEntries(
+				manifest.rig.animations.map((move) => [move.id, bakedSheetPath(preset.id, move.id)])
+			)
+		])
+	);
 	archive.sha256 = sha(archive.zip);
 	assert(
 		archive.files.has('phaser/PaperdollContainer.js'),
@@ -349,7 +359,14 @@ try {
 		for (const renderer of ['CANVAS', 'WEBGL'])
 			for (const archive of archives) {
 				for (const control of archive.fixture
-					? ['none', 'old-duration', 'no-repeat', 'no-layer-update', 'wrong-pivot']
+					? [
+							'none',
+							'old-duration',
+							'no-repeat',
+							'no-layer-update',
+							'wrong-pivot',
+							'restart-every-play'
+						]
 					: archive.adversarial
 						? ['none', 'no-covers', 'no-hides', 'no-palette', 'wrong-direction']
 						: ['none']) {
@@ -374,6 +391,12 @@ try {
 							runtime = runtime.replace(
 								'duration: f.ms }',
 								'duration: f.ms - Math.min(...a.frames.map(frame => frame.ms)) }'
+							);
+						} else if (control === 'restart-every-play') {
+							assert(runtime.includes('this.body.play(animKey(this.m, anim, dir), !restart)'));
+							runtime = runtime.replace(
+								'this.body.play(animKey(this.m, anim, dir), !restart)',
+								'this.body.play(animKey(this.m, anim, dir))'
 							);
 						} else if (control === 'no-repeat') {
 							assert(runtime.includes('repeat: a.loop ? -1 : 0'));
@@ -423,7 +446,7 @@ try {
 						let data, failure;
 						try {
 							data = await page.evaluate(
-								async ({ renderer, fixture, control }) => {
+								async ({ renderer, fixture, control, bakedPaths }) => {
 									const api = await import('/hero/phaser/PaperdollContainer.js');
 									return new Promise((resolve, reject) => {
 										const timeout = setTimeout(
@@ -530,6 +553,7 @@ try {
 															}
 															for (const time of [...boundaries].sort((a, b) => a - b)) {
 																while (elapsed < time) {
+																	if (elapsed < total) doll.play(move.id, dir);
 																	const delta = Math.min(1, time - elapsed);
 																	elapsed += delta;
 																	doll.body.anims.update(elapsed, delta);
@@ -611,7 +635,13 @@ try {
 																	'palette: selected outfit recolor'
 																);
 															}
+															const finalIndex = doll.body.anims.currentFrame.index;
 															doll.play(move.id, dir);
+															check(
+																doll.body.anims.currentFrame.index === (move.loop ? finalIndex : 1),
+																'play: repeated selection changes active progress or does not replay a completed clip'
+															);
+															doll.play(move.id, dir, true);
 															check(
 																doll.body.anims.currentFrame.index === 1 &&
 																	doll.body.anims.isPlaying,
@@ -660,7 +690,7 @@ try {
 																doll.applyPreset(preset);
 																for (const move of m.rig.animations) {
 																	const response = await fetch(
-																		'/hero/baked/' + preset.id + '/' + move.id + '.png'
+																		'/hero/' + bakedPaths[preset.id][move.id]
 																	);
 																	check(response.ok, 'pixels: missing combined outfit sheet');
 																	const bitmap = await createImageBitmap(await response.blob());
@@ -790,7 +820,7 @@ try {
 										});
 									});
 								},
-								{ renderer, fixture: archive.fixture, control }
+								{ renderer, fixture: archive.fixture, control, bakedPaths: archive.bakedPaths }
 							);
 						} catch (error) {
 							failure = error;

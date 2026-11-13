@@ -273,6 +273,15 @@ export interface ExportInfo {
 
 ### 2.1 Oversize layers (v1.3.1)
 
+Stored outfit equipment references must name an existing non-variant item in the matching slot;
+missing items, wrong-slot references and unknown slots reject export. Frozen-body normalization
+still applies. Known stale items remain warnings and are removed from the exported outfit.
+The export boundary accepts only the current manifest format, without migration.
+
+Immutable IDs remain unchanged in exported JSON. Windows device-name path segments use a leading
+underscore in layer/source sheets and baked paths (`con` becomes `_con`); valid IDs cannot start
+with an underscore, so the escaping is collision-free. Follow each layer's stored sheet paths.
+
 Held items need room outside the body cell (8 px above it in an overhead slash, 5 px below it in a walk [S5]), so a layer may
 have its own `cell` and `pivot`. Layers line up **by pivot**: a layer's cell sits at `rig.pivot − layer.pivot` in rig-cell
 coordinates (the 96 sword at (−16, −16)). Grid, frame names, playlists and the clock are unchanged, so engines still sync by
@@ -769,6 +778,13 @@ are preserved; use the character root's depth for positioning among scene object
 
 ## 5. Export zip layout (`pixeldoll-sheets/1`)
 
+In the path templates below, ID segments matching Windows device names (`con`, `prn`, `aux`, `nul`,
+`com0` through `com9`, `lpt0` through `lpt9`, case-insensitively) gain a leading underscore.
+Manifest IDs do not change. For example, outfit `aux` and move `con` resolve to
+`baked/_aux/_con.png`; ordinary IDs keep their spelling. Layer sheets carry explicit paths in
+`sheets` and `sourceSheets`. Baked integrations derive paths from `export.baked` and animation IDs
+using this rule (`bakedSheetPath` in `app/src/lib/export/paths.ts`).
+
 ```
 <name>.pixeldoll.zip
   manifest.json                                   # authoritative; everything below is derived from it
@@ -819,7 +835,7 @@ ms / msBase}`. AtlasTexture `filter_clip = true`, region = the layer's own cell 
   `centered = false`, `offset = -layer.pivot` (of the equipped layer; `equip` re-sets it, so a 96 sword and a 64 item can share a
   slot), `z_index = layer z`, `texture_filter = NEAREST`. `body_fg` is the master clock. Verified with a 96 sword [B8].
 - `paperdoll.gd`: master `frame_changed`/`animation_changed` → every other layer `set_frame_and_progress`;
-  `equip(slot, item_id)` swaps the slot's fg/bg resources and applies `hides`; `play_anim(anim, dir)` selects a supported
+  `equip(slot, item_id)` swaps the slot's fg/bg resources and applies `hides`; `play_anim(anim, dir, restart = false)` selects a supported
   move/view and applies `zOverrides`. `set_preset(id)` and `set_variant(material_id, name)` perform exact owner-local
   source-ramp swaps, including linked/default variants. Palette refresh preserves the clock's frame, progress and playback.
 - Native `library.tres` stores manifest metadata and references every equipment resource, so alternate items survive
@@ -831,10 +847,11 @@ This new test inspects native resource/image data; it does not repeat the histor
 
 ### 6.3 Unity (2022.3 LTS / Unity 6) — Editor importer, no hand-written `.meta`
 
-2026-10-23 status: generated C# compiles against installed Unity 6000.4.0f1 assemblies plus official Sprite package interface
-sources and a signature-only factory shim. A deprecated `GetInstanceID` compatibility warning remains. The importer has
-**not run in an activated editor** (batchmode exits 198: no valid license). Native rendering, runtime palette behavior and
-asset-reference persistence remain unverified in Unity. Only `com.unity.2d.sprite` is required; 2D Animation is not referenced.
+The Unity 6000.4.0f1 importer and runtime have run in an activated Editor and a Windows Mono standalone
+player. Native playback, equipment, palettes, asset references and rendered pixels have been verified;
+see [Unity verification](testing/unity-playback-2026-10-28.md) for the original results and the
+[cross-engine API audit](testing/cross-engine-api-contract-2026-11-12.md) for the current contract checks.
+Only `com.unity.2d.sprite` is required; 2D Animation is not referenced.
 Export adds `pixeldoll_unity.json` (flattened for `JsonUtility`) and two per-character asmdefs/namespaces.
 
 - `PixelDollImporter.cs` (`AssetPostprocessor` + a menu command reading `pixeldoll_unity.json`): for each sheet sets Sprite Mode
@@ -853,17 +870,21 @@ Export adds `pixeldoll_unity.json` (flattened for `JsonUtility`) and two per-cha
 
 ### 6.4 Phaser 3 / 4 — atlas JSON with customData
 
-Verified [M5]: Phaser 3.80, 3.90 and 4.2.1 render 0 differing px vs `baked/`; layer frame names match the body every step.
+Historical verification [M5] covered Phaser 3.80, 3.90 and 4.2.1. The current
+[native verifier evidence](testing/cross-engine-api-contract-2026-11-12.md) covers pinned
+3.80.1, 3.90.0 and 4.1.0; layer frame names match the body every step.
 
 - One TexturePacker **JSON-Hash** atlas per sheet (length-prefixed item/layer/animation identifiers → `layers/.../<anim>.png`): frames
   `<anim>_<dir>_<cell>` with `frame` rect (the layer's cell), `rotated:false`, `trimmed:false`, `sourceSize`, `pivot` (§6.1, per
   layer: sprites at the same container position line up by pivot because `setFrame` applies each frame's custom pivot [B8]). Extra top-level key
   `"pixeldoll": {"item", "layer", "slot", "role", "z", "anim"}` lands in `texture.customData` [R3].
 - `PaperdollContainer.js`: loads manifest/atlases with folder-scoped keys and error reporting; creates supported body
-  animations from playlists. Phaser **adds** per-frame duration to its base interval: set `frameRate = 1000 / minMs` and
-  each `duration = ms - minMs`. Layers follow `animationupdate`; resolved z and stable slot/role order control drawing.
+  animations from playlists. Each frame uses its absolute authored `duration = ms`; animation duration is
+  the sum of those durations. Layers follow `animationupdate`; the canonical draw-list order controls drawing.
   `play(anim, dir)`, `equip(slot, itemId)`, `applyPreset(preset)` and `setVariants(selections)` preserve the frozen base,
-  hides, tucked variants and owner-local source-ramp palettes. `destroy()` removes the container; palette textures remain
+  hides, tucked variants and owner-local source-ramp palettes. Repeated `play` preserves active progress;
+  changed moves/directions and completed once-only clips start at the beginning. A third `true` argument explicitly restarts.
+  `destroy()` removes the container; palette textures remain
   cached until game teardown. Use `pixelArt: true`, `roundPixels: true`.
 
 2026-10-23 smoke: Phaser 3.90.0 and 4.1.0, Canvas and WebGL, passed exact 80/180/100 ms timing, palette switching,
@@ -903,7 +924,7 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   `(worldPivot.x - layer.pivot.x, worldPivot.y - layer.pivot.y)` as each layer's top-left. Default colors are baked into
   canonical sheets; palette-aware integrations start from `sourceSheets` when provided.
 - `baked/<preset>/<anim>.png`: the compositor's output on the same grid with `export.bakedCell` / `bakedPivot` (§2.1), for
-  engines without layering (RPG Maker style).
+  engines without layering (RPG Maker style). Apply the ID-segment escaping rule in §5, not raw IDs.
 
 ### 6.7 GDevelop — editable native project and Sprite controller
 

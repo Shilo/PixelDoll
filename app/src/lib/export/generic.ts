@@ -7,6 +7,8 @@ import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
 import { moveDirs, recolor, storeVariants, variantOf, variantRampOf } from '../dress/dress.ts';
 import { bakedFrame, layerFrame, tuckedId, variantCovers } from '../compose/compose.ts';
 import { validPaletteRepairs } from '../dress/item-palette.ts';
+import { resolvePreset } from '../runtime/paperdoll.js';
+import { bakedSheetPath } from './paths.ts';
 
 export type OutFile = { name: string; data: string | Img | Uint8Array };
 const nativeDepth = (z: number) => Number.isInteger(z) && z >= -2147483648 && z <= 2147483647;
@@ -41,6 +43,16 @@ const validCut = (m: Manifest, cut: NonNullable<Item['baseCut']>) =>
 export function validate(p: Project): string[] {
 	const m = p.manifest,
 		e = validateRig(m.rig);
+	if (m.format !== CURRENT_FORMAT) e.push(`unsupported manifest format: ${m.format}`);
+	for (const preset of m.presets) {
+		try {
+			resolvePreset(m, preset);
+		} catch (error) {
+			e.push(
+				`${preset.id}: ${String(error instanceof Error ? error.message : error).replace(/^PixelDoll: /, '')}`
+			);
+		}
+	}
 	// IDs become archive paths and engine resource names; validate them before producing either.
 	const id = /^[a-z0-9][a-z0-9_-]*$/;
 	for (const [kind, rows] of [
@@ -360,6 +372,10 @@ What is inside
   project.json    editable character for importing back into PixelDoll
   cells/          original frame and rest images for the editable copy
 
+Path segments derived from IDs prefix Windows device names (con, prn, aux, nul, com0-com9,
+lpt0-lpt9) with an underscore, case-insensitively. IDs in manifest.json stay unchanged.
+For example, outfit aux and move con use baked/_aux/_con.png. Layer sheets have explicit manifest paths.
+
 Outfit colors are exact palette swaps (materials[].ramp and variants, presets[].variants); the runtimes swap them while
 the character plays, so a game can change them.
 
@@ -435,7 +451,7 @@ Use nearest-neighbor filtering, whole-pixel positions and straight RGBA alpha. T
 		for (const pr of m.presets)
 			for (const a of rig.animations)
 				files.push({
-					name: `baked/${pr.id}/${a.id}.png`,
+					name: bakedSheetPath(pr.id, a.id),
 					data: bakedSheet(outfitProject(p, m, pr), pr.items, a.id, bf)
 				});
 	return files;

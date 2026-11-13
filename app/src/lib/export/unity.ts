@@ -3,6 +3,7 @@
 import type { Manifest } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
 import { layerFrame, variantCovers } from '../compose/compose.ts';
+import { portableAssetName } from './paths.ts';
 
 function exportId(m: Manifest): string {
 	// Namespace + assembly identity: importing different characters must not define duplicate C# types.
@@ -15,7 +16,7 @@ function exportId(m: Manifest): string {
 export function unityJson(m: Manifest) {
 	const { rig } = m;
 	return {
-		name: m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'Paperdoll',
+		name: portableAssetName(m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'Paperdoll'),
 		exportId: exportId(m),
 		cellW: rig.cell.w,
 		cellH: rig.cell.h,
@@ -136,47 +137,51 @@ namespace PixelDoll
         public SpriteRenderer Body => nodes.Find(n => n.slot == "body" && n.role == "fg")?.renderer;
 
         /// Selects the generated state, preserving active playback and replaying a completed non-looping clip.
-        public void Play(string anim, string dir)
+        public bool Play(string anim, string dir, bool restart = false)
         {
             var move = Array.Find(data.animations, a => a.id == anim);
-            if (move == null || Array.IndexOf(move.directions, dir) < 0) return;
+            if (move == null || Array.IndexOf(move.directions, dir) < 0) { Debug.LogWarning("PixelDoll: unavailable move/direction " + anim + "/" + dir, this); return false; }
             var animator = GetComponent<Animator>();
             var stateName = anim + "_" + dir;
             var current = animator.GetCurrentAnimatorStateInfo(0);
-            if (!move.loop && current.shortNameHash == Animator.StringToHash(stateName) && current.normalizedTime >= 1f) animator.Play(stateName, 0, 0f);
+            if (restart || (!move.loop && current.shortNameHash == Animator.StringToHash(stateName) && current.normalizedTime >= 1f)) animator.Play(stateName, 0, 0f);
             else animator.Play(stateName);
+            return true;
         }
 
         /// Equips itemId in slot (null or "" = empty); hides are re-applied on the next LateUpdate.
-        public void Equip(string slot, string itemId)
+        public bool Equip(string slot, string itemId)
         {
             var item = Item(itemId);
-            if (slot == "body" || Slot(slot) == null || (!string.IsNullOrEmpty(itemId) && (item == null || item.slot != slot || !string.IsNullOrEmpty(item.variantOf)))) return;
+            if (slot == "body" || Slot(slot) == null || (!string.IsNullOrEmpty(itemId) && (item == null || item.slot != slot || !string.IsNullOrEmpty(item.variantOf)))) { Debug.LogWarning("PixelDoll: invalid equipment for " + slot, this); return false; }
             var e = equipped.Find(x => x.slot == slot);
             if (e == null) equipped.Add(e = new PdEquip { slot = slot });
             e.item = itemId ?? "";
             dirty = true;
+            return true;
         }
 
         /// Uses exported exact palette ramps. null removes an explicit selection and restores the material default.
-        public void SetVariant(string id, string variant)
+        public bool SetVariant(string id, string variant)
         {
-            if (Array.Find(data.materials, m => m.id == id) == null) return;
+            if (Array.Find(data.materials, m => m.id == id) == null) { Debug.LogWarning("PixelDoll: unknown material " + id, this); return false; }
             variants.RemoveAll(v => v.id == id);
             if (variant != null) variants.Add(new PdVariant { id = id, variant = variant });
             dirty = true;
+            return true;
         }
 
-        public void ApplyPreset(string id)
+        public bool ApplyPreset(string id)
         {
             var p = Array.Find(data.presets, x => x.id == id);
-            if (p == null) return;
+            if (p == null) { Debug.LogWarning("PixelDoll: unknown outfit " + id, this); return false; }
             equipped = new List<PdEquip>();
             foreach (var e in p.items) if (e.slot != "body") equipped.Add(new PdEquip { slot = e.slot, item = e.item });
             equipped.Add(new PdEquip { slot = "body", item = data.baseItem });
             variants = new List<PdVariant>();
             foreach (var v in p.variants) variants.Add(new PdVariant { id = v.id, variant = v.variant });
             dirty = true;
+            return true;
         }
 
         void LateUpdate() => Sync();
@@ -544,9 +549,11 @@ Tools > PixelDoll > ${identity} > Import if no prefab appeared.
 Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export?.pixelsPerUnit ?? m.rig.cell.w}, pivot at the feet),
 <anim>_<dir>.anim clips for supported views, ${unityJson(m).name}.controller and ${unityJson(m).name}.prefab
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
-Runtime namespace: ${ns}. Paperdoll.Play(anim, dir), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
+Runtime namespace: ${ns}. Paperdoll.Play(anim, dir, restart = false), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
 Play preserves an active clip's progress. Calling it again after the same non-looping clip completes replays that clip.
-SetVariant uses the exported exact ramps (including linked material defaults); null restores the default.
+Changed moves/directions start at the beginning. Pass true as Play's third argument to restart explicitly.
+These methods return true on success; invalid move/direction, equipment, outfit or material IDs return false and log an engine warning before changing state. Unequip with null or "".
+SetVariant changes one explicit selection using exported exact ramps; null restores the default, while "" uses source colors. Linked materials follow their target's selection.
 Palettes are owner-local, use the original source sheets and cache recolored textures/sprites per doll until it is destroyed.
 Source textures are readable for these swaps. Do not put them in a Sprite Atlas (packing/rotation changes their source coordinates).
 Default preview colors are persistent sprite assets; changing presets/colors is applied during Play Mode.

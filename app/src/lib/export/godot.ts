@@ -130,7 +130,11 @@ func _ready() -> void:
 	manifest = library.get_meta("manifest")
 	body.frame_changed.connect(_sync)
 	body.animation_changed.connect(_sync)
-	set_preset(manifest["presets"][0]["id"] if not manifest["presets"].is_empty() else "")
+	if manifest["presets"].is_empty():
+		equipped["body"] = manifest["rig"]["baseItem"]
+		_refresh()
+	else:
+		set_preset(manifest["presets"][0]["id"])
 	for move in manifest["rig"]["animations"]:
 		var directions: Array = move.get("directions", manifest["rig"]["directions"].map(func(d): return d["id"]))
 		if not directions.is_empty():
@@ -139,34 +143,43 @@ func _ready() -> void:
 
 
 ## Plays "<anim>_<dir>" on the body; layers follow.
-func play_anim(a: String, d: String) -> void:
+func play_anim(a: String, d: String, restart: bool = false) -> bool:
 	var move := _find(manifest["rig"]["animations"], a)
 	if move.is_empty() or (move.has("directions") and not move["directions"].has(d)):
-		return
+		push_warning("PixelDoll: unavailable move/direction %s/%s" % [a, d])
+		return false
 	if not body.sprite_frames.has_animation("%s_%s" % [a, d]):
-		return
+		push_warning("PixelDoll: unavailable move/direction %s/%s" % [a, d])
+		return false
 	anim = a
 	dir = d
+	if restart:
+		body.stop()
 	body.play("%s_%s" % [a, d])
 	_sync()
+	return true
 
 
 ## Equips item_id in slot ("" = empty), then re-applies hides.
-func equip(slot: String, item_id: String) -> void:
+func equip(slot: String, item_id: String) -> bool:
 	if slot == "body" or _find(manifest["slots"], slot).is_empty():
-		return
+		push_warning("PixelDoll: invalid equipment for %s" % slot)
+		return false
 	var item := _find(manifest["items"], item_id)
 	if not item_id.is_empty() and (item.is_empty() or item["slot"] != slot or item.has("variantOf")):
-		return
+		push_warning("PixelDoll: invalid equipment for %s" % slot)
+		return false
 	equipped[slot] = item_id
 	_refresh()
+	return true
 
 
 ## Outfit palettes are exact source-ramp swaps; names must exist in the exported materials' variants.
-func set_preset(preset_id: String) -> void:
+func set_preset(preset_id: String) -> bool:
 	var preset := _find(manifest["presets"], preset_id)
-	if preset.is_empty() and not preset_id.is_empty():
-		return
+	if preset.is_empty():
+		push_warning("PixelDoll: unknown outfit %s" % preset_id)
+		return false
 	var items: Dictionary = preset.get("items", {})
 	for slot in manifest["slots"]:
 		equipped[slot["id"]] = items.get(slot["id"], "") if items.get(slot["id"]) != null else ""
@@ -175,15 +188,24 @@ func set_preset(preset_id: String) -> void:
 	_frame_cache.clear()
 	_texture_cache.clear()
 	_refresh()
+	return true
 
 
-func set_variant(material_id: String, variant_name: String) -> void:
+func set_variant(material_id: String, variant_name: Variant = null) -> bool:
 	if _find(manifest["materials"], material_id).is_empty():
-		return
-	variants[material_id] = variant_name
+		push_warning("PixelDoll: unknown material %s" % material_id)
+		return false
+	if variant_name != null and not variant_name is String:
+		push_warning("PixelDoll: color selection must be a string or null")
+		return false
+	if variant_name == null:
+		variants.erase(material_id)
+	else:
+		variants[material_id] = variant_name
 	_frame_cache.clear()
 	_texture_cache.clear()
 	_refresh()
+	return true
 
 
 func _refresh() -> void:
@@ -372,7 +394,10 @@ export function godotFiles(m: Manifest): OutFile[] {
 	files.push({
 		name: 'godot/README.txt',
 		data: `Copy the whole export folder into your Godot 4 project, then instance godot/Paperdoll.tscn.
-API: play_anim(anim, dir), equip(slot, item_id) ("" = empty slot), set_preset(preset_id), set_variant(material_id, variant_name).
+API: play_anim(anim, dir, restart = false), equip(slot, item_id) ("" = empty slot), set_preset(preset_id), set_variant(material_id, variant_name).
+play_anim preserves active progress, starts changed moves/directions at the beginning and replays completed once-only clips. Pass true to restart explicitly.
+These methods return true on success; invalid move/direction, equipment, outfit or material IDs return false and emit an engine warning before changing state.
+set_variant changes one explicit selection; null removes it and restores the material default, while "" uses source colors. Linked materials follow their target's selection.
 The frozen base body stays equipped. body_fg is the clock; other layers follow it. Palette swaps use exact source RGBs,
 owner-local materials, linked selections and defaults; variant names must exist in exported materials[].variants.
 library.tres retains the manifest and all equipment resources, including for selected-scene game exports.
