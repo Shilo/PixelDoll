@@ -96,6 +96,7 @@ async function expectGenerationTileGeometry(tile: Locator, running = true) {
 			emptyNameBottom:
 				empty.querySelector('.bu-tile-label')!.getBoundingClientRect().bottom - emptyRect.top,
 			ring: ring && {
+				mask: getComputedStyle(element.querySelector('.generation-ring')!).maskImage,
 				width: ring.width,
 				height: ring.height,
 				top: ring.top,
@@ -133,6 +134,7 @@ async function expectGenerationTileGeometry(tile: Locator, running = true) {
 		1
 	);
 	if (running) {
+		expect(bounds.ring!.mask).toContain('2.5px');
 		expect(bounds.ring!.width).toBe(24);
 		expect(bounds.ring!.height).toBe(24);
 		expect(bounds.ring!.centerX).toBeCloseTo(bounds.width / 2, 1);

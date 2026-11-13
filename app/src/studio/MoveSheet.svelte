@@ -385,7 +385,7 @@
 					{@const done = moving.done || i < stepIx}
 					<li class:done class:now={!moving.done && i === stepIx}>
 						{#if done}<Check size={16} />{:else if i === stepIx && !moving.error}<span
-								class="ring spin"
+								class="bu-ring ring spin"
 								aria-hidden="true"
 							></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}
 						{s.label}{#if !moving.done && i === stepIx && moving.progress && moving.progress.total > 1}<span

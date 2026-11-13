@@ -35,7 +35,7 @@
 	"dependencies": {
 		"@floating-ui/dom": "1.8.0",
 		"@lucide/svelte": "1.70.0",
-		"@shilo/bronze-ui": "https://github.com/Shilo/bronze-ui/releases/download/v0.3.5/shilo-bronze-ui-0.3.5.tgz",
+		"@shilo/bronze-ui": "https://github.com/Shilo/bronze-ui/releases/download/v0.3.6/shilo-bronze-ui-0.3.6.tgz",
 		"gifenc": "1.0.3"
 	},
 	"packageManager": "npm@11.19.1",

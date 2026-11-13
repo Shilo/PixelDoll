@@ -509,18 +509,10 @@ dialog select option {
 
 /* ---------- progress ---------- */
 .ring {
-	--p: 0;
 	flex: none;
 	display: inline-block;
 	width: 18px;
 	height: 18px;
-	border-radius: 50%;
-	background: conic-gradient(var(--accent-text) calc(var(--p) * 1%), var(--line-strong) 0);
-	mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-}
-.ring.spin {
-	background: conic-gradient(var(--accent-text) 30%, var(--line-strong) 0);
-	animation: spin 1.2s linear infinite;
 }
 @keyframes spin {
 	to {

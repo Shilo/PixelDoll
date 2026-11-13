@@ -91,7 +91,7 @@
 		>
 		{#if busy}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'move')}
-				><span class="ring spin" aria-hidden="true"></span>Making…</button
+				><span class="bu-ring ring spin" aria-hidden="true"></span>Making…</button
 			>
 		{:else if isDemo()}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'create')}

@@ -544,7 +544,7 @@
 												{:else if x.phase !== 'running'}<GroupIcon group={g.id} size={24} />{/if}
 											</span>
 											{#if x.phase === 'running'}<span
-													class="ring generation-ring"
+													class="bu-ring ring generation-ring"
 													style:--p={p.pct}
 												></span>{/if}
 										</span>
