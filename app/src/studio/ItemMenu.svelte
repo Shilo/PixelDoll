@@ -40,7 +40,8 @@
 		Trash,
 		TriangleAlert,
 		EyeOff,
-		Puzzle
+		Puzzle,
+		Ban
 	} from './icons.ts';
 
 	let {
@@ -246,7 +247,10 @@
 				<span class="item-menu-title">
 					<strong id="item-menu-name">{entry.item.name}</strong>
 					<small class:look={entry.fit !== 'copy'}
-						>{#if entry.fit === 'unfitted' || remake}<Puzzle
+						>{#if remake}<Ban
+								size={12}
+								aria-hidden="true"
+							/>{:else if entry.fit === 'unfitted'}<Puzzle
 								size={12}
 								aria-hidden="true"
 							/>{:else if entry.fit === 'refit'}<TriangleAlert
