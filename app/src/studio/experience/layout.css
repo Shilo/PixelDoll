@@ -611,8 +611,8 @@
 	height: 102px;
 	font-size: 13px;
 }
-/* A real item's tile with its ⋮ beside it (a sibling control): the ⋮ sits at the tile's top-left edge, the worn check
-   and status top-right. The ⋮ is a small 28 by 25 px target in that corner, so a press meant for the tile rarely opens
+/* A real item's tile with its ⋮ beside it (a sibling control): the ⋮ sits in the tile's top-right corner, where menus
+   usually open, the worn check and status top-left. The ⋮ is a small 28 by 25 px target in that corner, so a press meant for the tile rarely opens
    the menu. */
 .tile-wrap {
 	position: relative;
@@ -623,27 +623,27 @@
 	/* Inside the tile's border, and just tall enough that the centered glyph's top dot is level with the top of the
 	   worn check in the opposite corner. */
 	top: 3px;
-	left: 3px;
+	right: 3px;
 	z-index: 1;
 	width: 28px;
 	min-width: 0;
 	height: 25px;
 	min-height: 0;
 }
-/* The target reaches the tile's outer edges above and to the left, so a press in that corner never falls through to the
+/* The target reaches the tile's outer edges above and to the right, so a press in that corner never falls through to the
    tile, while the visible button and its highlight stay inside the border. */
 .tile-wrap > .tile-more::before {
 	content: '';
 	position: absolute;
-	inset: -3px 0 0 -3px;
+	inset: -3px -3px 0 0;
 }
 /* Status shares the check mark's corner: a worn item shows the check, an unworn one its status. Every Wardrobe tile,
    Empty included, keeps the check in the same corner. */
 .item-tile :is(.bu-tile-check, .tile-status) {
 	position: absolute;
 	top: 5px;
-	right: 6px;
-	left: auto;
+	right: auto;
+	left: 6px;
 }
 /* A fixed 64 px art box: item art draws at the largest whole-pixel scale that fits (Thumb box). */
 .item-tile .bu-tile-art {
