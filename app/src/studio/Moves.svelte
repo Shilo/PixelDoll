@@ -45,7 +45,7 @@
 						.length}
 				<button
 					class="move-row bu-action"
-					data-variant="row"
+					data-variant="tile"
 					aria-pressed={ui.anim === a.id}
 					onclick={() => {
 						ui.anim = a.id;
@@ -106,7 +106,7 @@
 			</div>
 		</details>
 		{#if mine && moving.spec}
-			<button class="move-row bu-action" data-variant="row" onclick={() => (ui.sheet = 'move')}
+			<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
 				><span class="ring" class:spin={!moving.error} aria-hidden="true"></span><span
 					class="move-text"
 					><b>{nice(moving.spec.id)}</b><span class="muted small"
@@ -118,7 +118,7 @@
 			>
 		{/if}
 		{#each queued as q, i (i)}
-			<button class="move-row bu-action" data-variant="row" onclick={() => (ui.sheet = 'move')}
+			<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
 				><span class="ring" aria-hidden="true"></span><span class="move-text"
 					><b>{nice(q.spec.id)}</b><span class="muted small"
 						>{moving.error ? 'Waiting for the failed move' : 'Queued'}</span

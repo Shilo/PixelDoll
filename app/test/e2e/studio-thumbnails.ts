@@ -1,6 +1,108 @@
 import { expect, test, type Page } from '@playwright/test';
-import { equipmentGroup, openStudio } from './immersive-helpers.ts';
+import { equipmentGroup, equipmentMode, openStudio } from './immersive-helpers.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
+
+test('outfit thumbnails load with the tab, match saved colors and stay static during playback', async ({
+	page
+}, info) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await expect(page.locator('.outfit-thumb')).toHaveCount(0);
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath);
+		state.ui.playing = false;
+		state.savePreset('Thumbnail colors');
+		const preset = state.store.project.manifest.presets.at(-1);
+		const material = state.store.project.manifest.materials.find(
+			(entry: any) => entry.id === 'cape_red_1'
+		);
+		if (!material || !Object.values(preset.items).includes(material.owner))
+			throw new Error('The color regression must exercise equipped cape material');
+		preset.variants = { ...preset.variants, cape_red_1: 'azure' };
+	});
+	await equipmentMode(page, 'Outfits');
+	await expect(page.locator('.outfit-thumb canvas').first()).toBeVisible();
+	const pixels = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath);
+		const presentationPath = '/src/studio/experience/presentation.ts',
+			{ buildPresentation, southStill, renderPresentation } = await import(presentationPath);
+		const dressPath = '/src/lib/dress/dress.ts',
+			{ recolor } = await import(dressPath);
+		return state.store.project.manifest.presets.map((preset: any, index: number) => {
+			const assets = buildPresentation(recolor(state.store.project, preset.variants));
+			const image = renderPresentation(assets, preset.items, southStill(assets)).image;
+			const source = buildPresentation(state.store.project);
+			const sourceImage = renderPresentation(source, preset.items, southStill(source)).image;
+			const canvas = document.querySelectorAll<HTMLCanvasElement>('.outfit-thumb canvas')[index];
+			const actual = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+			return {
+				matches:
+					image.w === canvas.width &&
+					image.h === canvas.height &&
+					actual.every((value, offset) => value === image.data[offset]),
+				painted: actual.some((value, offset) => offset % 4 === 3 && value > 0),
+				recolored:
+					preset.name !== 'Thumbnail colors' ||
+					image.data.some((value: number, offset: number) => value !== sourceImage.data[offset])
+			};
+		});
+	});
+	for (const image of pixels)
+		expect(image).toEqual({ matches: true, painted: true, recolored: true });
+	await page.screenshot({ path: info.outputPath('outfits-desktop-dark.png') });
+	const work = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath);
+		let draws = 0;
+		const original = CanvasRenderingContext2D.prototype.drawImage;
+		CanvasRenderingContext2D.prototype.drawImage = function (
+			image: CanvasImageSource,
+			...coords: number[]
+		) {
+			if (this.canvas instanceof HTMLCanvasElement && this.canvas.closest('.outfit-thumb')) draws++;
+			return Reflect.apply(original, this, [image, ...coords]);
+		};
+		try {
+			for (let frame = 0; frame < 12; frame++) {
+				state.ui.frame = frame % 8;
+				await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+			}
+			return draws;
+		} finally {
+			CanvasRenderingContext2D.prototype.drawImage = original;
+		}
+	});
+	expect(work).toBe(0);
+	const saved = page.locator('.outfits .row').filter({ hasText: 'Thumbnail colors' });
+	await saved.click();
+	await expect(saved).toHaveAttribute('aria-pressed', 'true');
+	await equipmentMode(page, 'Moves');
+	await expect(page.locator('.outfit-thumb')).toHaveCount(0);
+	await expect(page.locator('.move-row').first()).toHaveAttribute('data-variant', 'tile');
+	await page.screenshot({ path: info.outputPath('moves-desktop-dark.png') });
+	for (const theme of ['light', 'dark']) {
+		await page.evaluate(async (theme) => {
+			const statePath = '/src/studio/state.svelte.ts',
+				state = await import(statePath);
+			state.ui.theme = theme;
+			state.applyTheme();
+		}, theme);
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.screenshot({ path: info.outputPath(`moves-phone-${theme}.png`) });
+		await equipmentMode(page, 'Outfits');
+		await expect(saved).toHaveAttribute('aria-pressed', 'true');
+		await page.screenshot({ path: info.outputPath(`outfits-phone-${theme}.png`) });
+		await equipmentMode(page, 'Moves');
+	}
+});
 
 async function thumbnailWorkDuringPlayback(page: Page) {
 	return page.evaluate(async () => {

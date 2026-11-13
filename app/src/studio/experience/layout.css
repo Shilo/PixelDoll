@@ -745,10 +745,6 @@
 	padding: 0;
 	gap: 4px;
 }
-.equipment-scroll .rows .row {
-	min-height: 52px;
-	padding: 8px 12px;
-}
 .equipment-scroll .move-list {
 	gap: 4px;
 }
@@ -931,16 +927,19 @@
 	gap: 2px;
 	min-width: 0;
 }
-.character-entry {
+.character-entry,
+.outfits .rows li {
 	position: relative;
 	min-width: 0;
 	flex-shrink: 0;
 }
-.character-entry > :is(.character-row, .row) {
+.character-entry > :is(.character-row, .row),
+.outfits .rows .row {
 	width: 100%;
 	padding-right: 48px;
 }
-.character-more {
+.character-more,
+.outfits .row-del {
 	position: absolute;
 	right: 2px;
 	top: 50%;
