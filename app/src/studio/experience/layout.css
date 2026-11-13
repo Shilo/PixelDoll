@@ -934,8 +934,11 @@
 	right: 2px;
 	top: 50%;
 	transform: translateY(-50%);
+	display: grid;
+	place-items: center;
 	width: 44px;
 	height: 44px;
+	padding: 0;
 }
 .new-character-row {
 	min-height: 44px;

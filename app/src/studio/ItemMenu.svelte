@@ -5,6 +5,7 @@
 	import { downloadItemZip } from './download.svelte.ts';
 	import Thumb from './Thumb.svelte';
 	import DeleteRow from './DeleteRow.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { extendable } from './create.ts';
 	import { groupOf, groupLabel, slotLabel } from './model.ts';
@@ -57,7 +58,10 @@
 		generationInfo?: ReturnType<typeof generationStatus>;
 	} = $props();
 	let menu = $state<HTMLElement>();
-	let confirming = $state(false);
+	/** The item awaiting its Delete alert; captured so the alert outlives the closed menu. */
+	let deleting = $state<{ id: string; name: string } | null>(null);
+	/** The running generation's Cancel alert is open. */
+	let cancelling = $state(false);
 	let cancelBusy = $state(false);
 	let cancelError = $state('');
 	async function cancel() {
@@ -65,9 +69,11 @@
 		cancelBusy = true;
 		cancelError = '';
 		try {
-			if (await cancelGen(generation)) close();
+			if (await cancelGen(generation)) {
+				cancelling = false;
+				close();
+			}
 		} catch (error) {
-			confirming = false;
 			cancelError =
 				error instanceof Error
 					? error.message
@@ -123,10 +129,15 @@
 		window.addEventListener('pointerdown', down, { capture: true });
 		return () => window.removeEventListener('pointerdown', down, { capture: true });
 	});
-	// Keep focus inside the menu when its rows swap for the removal confirmation.
+	// Keep focus inside the menu when a row appears in place of another.
 	const focusKeep = (node: HTMLElement) => {
 		node.focus();
 	};
+	/** Close the menu (focus returns to its ⋮), then ask in an alert. */
+	function ask(open: () => void) {
+		close();
+		open();
+	}
 </script>
 
 <div
@@ -150,10 +161,7 @@
 	}}
 	ontoggle={(e) => {
 		open = e.newState === 'open';
-		if (!open) {
-			confirming = false;
-			cancelError = '';
-		}
+		if (!open && !cancelling) cancelError = '';
 		// Open on the first command, not the header's Wear toggle.
 		popoverFocus(e, false);
 		if (open)
@@ -177,70 +185,47 @@
 				{#if generation.phase === 'running'}<p class="small">
 						{generation.status || 'Preparing your item'} · {generation.input.prompt}
 					</p>{/if}
-				{#if confirming && generation.phase === 'running'}
-					<div role="group" aria-labelledby="cancel-item-question">
-						<p id="cancel-item-question">Cancel this item?</p>
-						<p class="small" id="cancel-item-consequences">
-							Generations already used will not be refunded. Requests already sent may still finish
-							and charge. No further batches will start.
-						</p>
-						<div class="actions">
-							<button
-								class="bu-action btn danger"
-								data-variant="outline"
-								disabled={cancelBusy}
-								aria-describedby="cancel-item-consequences"
-								onclick={cancel}>Cancel generation</button
-							>
-							<button
-								class="bu-action btn plain"
-								data-variant="quiet"
-								disabled={cancelBusy}
-								{@attach focusKeep}
-								onclick={() => (confirming = false)}>Keep generating</button
-							>
-						</div>
-					</div>
-				{:else}
-					<div role="menu" aria-labelledby="generation-menu-name">
-						{#if generation.cancelSaveFailed}<button
-								{@attach focusKeep}
-								class="row bu-action"
-								data-variant="quiet"
-								role="menuitem"
-								disabled={cancelBusy}
-								onclick={cancel}>Save cancellation</button
-							>{/if}
-						{#if generation.phase !== 'running'}
-							<button
-								class="row bu-action"
-								data-variant="quiet"
-								role="menuitem"
-								onclick={() => act(() => void openGenerationReview(generation!.draft.spec.id))}
-								><Info size={16} />Review item…</button
-							>
-						{/if}
+				<div role="menu" aria-labelledby="generation-menu-name">
+					{#if generation.cancelSaveFailed}<button
+							{@attach focusKeep}
+							class="row bu-action"
+							data-variant="quiet"
+							role="menuitem"
+							disabled={cancelBusy}
+							onclick={cancel}>Save cancellation</button
+						>{/if}
+					{#if generation.phase !== 'running'}
 						<button
 							class="row bu-action"
 							data-variant="quiet"
 							role="menuitem"
-							onclick={() => act(() => (ui.sheet = 'activity'))}><Info size={16} />Activity…</button
+							onclick={() => act(() => void openGenerationReview(generation!.draft.spec.id))}
+							><Info size={16} />Review item…</button
 						>
-						{#if generation.phase === 'running' && $queue.role !== 'follower'}
-							<button
-								{@attach focusKeep}
-								class="row bu-action danger"
-								data-variant="quiet"
-								role="menuitem"
-								onclick={() => (confirming = true)}><Trash size={16} />Cancel generation…</button
-							>
-						{/if}
-					</div>
-				{/if}
+					{/if}
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						role="menuitem"
+						onclick={() => act(() => (ui.sheet = 'activity'))}><Info size={16} />Activity…</button
+					>
+					{#if generation.phase === 'running' && $queue.role !== 'follower'}
+						<button
+							{@attach focusKeep}
+							class="row bu-action danger"
+							data-variant="quiet"
+							role="menuitem"
+							onclick={() => ask(() => (cancelling = true))}
+							><Trash size={16} />Cancel generation…</button
+						>
+					{/if}
+				</div>
 				{#if generation.phase === 'running' && $queue.role === 'follower'}<p class="small">
 						Cancel from the tab that is generating this item.
 					</p>{/if}
-				{#if cancelError}<p class="notice bad small" role="alert">{cancelError}</p>{/if}
+				{#if cancelError && !cancelling}<p class="notice bad small" role="alert">
+						{cancelError}
+					</p>{/if}
 			</div>
 		</div>
 	{:else if it && m && view.project}
@@ -272,74 +257,38 @@
 						/>{/if}</button
 				>
 			</div>
-			{#if confirming}
-				<div class="item-menu-confirm" role="group" aria-labelledby="item-menu-confirm">
-					<p class="small" id="item-menu-confirm">Delete {it.name} for good?</p>
-					<div class="actions">
-						<button
-							class="bu-action btn danger"
-							data-variant="outline"
-							onclick={() => act(() => onremove(it.id))}><Trash size={14} />Delete for good</button
-						>
-						<button
-							class="bu-action btn plain"
-							data-variant="quiet"
-							{@attach focusKeep}
-							onclick={() => (confirming = false)}>Keep</button
-						>
-					</div>
-				</div>
-			{:else}
-				<div role="menu" aria-labelledby="item-menu-name">
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						role="menuitem"
-						onclick={() =>
-							act(() => {
-								ui.selected = it.id;
-								ui.sheet = 'item';
-							})}><Info size={16} aria-hidden="true" />Details…</button
-					>
-					{#if otherHand}
-						<!-- Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
-						<label class="row bu-action bu-check item-menu-switch" data-variant="quiet">
-							<span><HandGrab size={16} aria-hidden="true" />Two-handed</span>
-							<input
-								class="bu-switch"
-								type="checkbox"
-								role="menuitemcheckbox"
-								aria-checked={both}
-								checked={both}
-								onchange={() => toggleTwoHanded(it.id)}
-								onkeydown={(e) => {
-									// a menu item takes Enter as well as Space (a native checkbox only toggles on Space)
-									if (e.key !== 'Enter') return;
-									e.preventDefault();
-									toggleTwoHanded(it.id);
-								}}
-							/>
-						</label>
-						{#if !isDemo() && it.prompt && !both}
-							<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
-							<button
-								class="row bu-action"
-								data-variant="quiet"
-								role="menuitem"
-								onclick={() =>
-									act(() =>
-										withKey(() =>
-											openNewItem(groupOf(otherHand).id, { slot: otherHand, prompt: it.prompt })
-										)
-									)}
-								><CopyPlus size={16} aria-hidden="true" />Make one for the {slotLabel(
-									otherHand
-								)}…<small class="row-aside">Paid</small></button
-							>
-						{/if}
-					{/if}
-					{#if !isDemo() && it.prompt}
-						<!-- The New item sheet that opens next prices the attempt before anything is spent. -->
+			<div role="menu" aria-labelledby="item-menu-name">
+				<button
+					class="row bu-action"
+					data-variant="quiet"
+					role="menuitem"
+					onclick={() =>
+						act(() => {
+							ui.selected = it.id;
+							ui.sheet = 'item';
+						})}><Info size={16} aria-hidden="true" />Details…</button
+				>
+				{#if otherHand}
+					<!-- Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
+					<label class="row bu-action bu-check item-menu-switch" data-variant="quiet">
+						<span><HandGrab size={16} aria-hidden="true" />Two-handed</span>
+						<input
+							class="bu-switch"
+							type="checkbox"
+							role="menuitemcheckbox"
+							aria-checked={both}
+							checked={both}
+							onchange={() => toggleTwoHanded(it.id)}
+							onkeydown={(e) => {
+								// a menu item takes Enter as well as Space (a native checkbox only toggles on Space)
+								if (e.key !== 'Enter') return;
+								e.preventDefault();
+								toggleTwoHanded(it.id);
+							}}
+						/>
+					</label>
+					{#if !isDemo() && it.prompt && !both}
+						<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
 						<button
 							class="row bu-action"
 							data-variant="quiet"
@@ -347,30 +296,79 @@
 							onclick={() =>
 								act(() =>
 									withKey(() =>
-										openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt })
+										openNewItem(groupOf(otherHand).id, { slot: otherHand, prompt: it.prompt })
 									)
 								)}
-							><RefreshCw size={16} aria-hidden="true" />{remakeOnly
-								? `Make one for ${m.name}…`
-								: 'Try again…'}<small class="row-aside">Paid</small></button
+							><CopyPlus size={16} aria-hidden="true" />Make one for the {slotLabel(
+								otherHand
+							)}…<small class="row-aside">Paid</small></button
 						>
 					{/if}
+				{/if}
+				{#if !isDemo() && it.prompt}
+					<!-- The New item sheet that opens next prices the attempt before anything is spent. -->
 					<button
 						class="row bu-action"
 						data-variant="quiet"
 						role="menuitem"
-						onclick={() => act(() => void downloadItemZip(it.id))}
-						><Download size={16} />Download ZIP</button
+						onclick={() =>
+							act(() =>
+								withKey(() =>
+									openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt })
+								)
+							)}
+						><RefreshCw size={16} aria-hidden="true" />{remakeOnly
+							? `Make one for ${m.name}…`
+							: 'Try again…'}<small class="row-aside">Paid</small></button
 					>
-					<hr class="bu-separator" />
-					<DeleteRow
-						class="bu-action"
-						label="Delete item…"
-						locked={isDemo() ? "Demo items can't be deleted" : ''}
-						onclick={() => (confirming = true)}
-					/>
-				</div>
-			{/if}
+				{/if}
+				<button
+					class="row bu-action"
+					data-variant="quiet"
+					role="menuitem"
+					onclick={() => act(() => void downloadItemZip(it.id))}
+					><Download size={16} />Download ZIP</button
+				>
+				<hr class="bu-separator" />
+				<DeleteRow
+					class="bu-action"
+					label="Delete item…"
+					locked={isDemo() ? "Demo items can't be deleted" : ''}
+					onclick={() => ask(() => (deleting = { id: it.id, name: it.name }))}
+				/>
+			</div>
 		</div>
 	{/if}
 </div>
+{#if deleting}
+	{@const target = deleting}
+	<ConfirmDialog
+		title="Delete {target.name}?"
+		action="Delete"
+		oncancel={() => (deleting = null)}
+		onconfirm={() => {
+			const id = target.id;
+			deleting = null;
+			onremove(id);
+		}}><p>This can't be undone.</p></ConfirmDialog
+	>
+{/if}
+<!-- A failed save keeps the alert open to show why, even though the generation has already stopped. -->
+{#if cancelling && generation && (generation.phase === 'running' || cancelError)}
+	<ConfirmDialog
+		title="Cancel {generation.input.name}?"
+		action="Cancel item"
+		busyAction="Canceling…"
+		cancel="Keep"
+		busy={cancelBusy}
+		problem={cancelError}
+		oncancel={() => {
+			cancelling = false;
+			cancelError = '';
+		}}
+		onconfirm={cancel}
+		><p>
+			Generations already used are not refunded, and requests already sent may still charge.
+		</p></ConfirmDialog
+	>
+{/if}

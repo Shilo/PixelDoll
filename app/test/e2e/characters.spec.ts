@@ -74,12 +74,12 @@ test('character actions download and delete an unopened character without select
 	expect(imported.project.manifest.items.length).toBeGreaterThan(1);
 	await row.locator('.character-more').click({ button: 'right' });
 	await menu.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
-	await expect(page.getByRole('dialog')).toContainText('Disposable hero');
+	await expect(page.getByRole('alertdialog', { name: 'Delete Disposable hero?' })).toBeVisible();
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await row.locator('.character-row').focus();
 	await page.keyboard.press('Shift+F10');
 	await menu.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
-	await page.getByRole('button', { name: 'Delete character', exact: true }).click();
+	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(row).toHaveCount(0);
 	await expect(selected).toContainText('Adventurer');
 	expect(
@@ -1444,14 +1444,17 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 		page.getByRole('menuitemradio', { name: 'Imported two', exact: true })
 	).toBeVisible();
 	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
-	await expect(page.getByRole('dialog')).toContainText('Imported two');
+	await expect(page.getByRole('alertdialog')).toContainText('Imported two');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Imported two');
 	// All characters created by this test are disposable fixtures in an isolated browser context.
 	for (const remaining of ['Imported one', 'Adventurer (demo)']) {
 		await page.locator('.project-btn').click();
 		await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
-		await page.getByRole('button', { name: 'Delete character', exact: true }).click();
+		await page
+			.getByRole('alertdialog')
+			.getByRole('button', { name: 'Delete', exact: true })
+			.click();
 		await expect(page.locator('.project-btn')).toContainText(remaining.replace(/ \(demo\)$/, ''), {
 			timeout: 30_000
 		});
@@ -1462,9 +1465,9 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	// The demo keeps Delete in place, unavailable, and says why.
 	const demoDelete = page.getByRole('menuitem', { name: 'Delete character…', exact: true });
 	await expect(demoDelete).toHaveAttribute('aria-disabled', 'true');
-	await expect(demoDelete).toHaveAccessibleDescription("The demo character can't be deleted");
+	await expect(demoDelete).toHaveAccessibleDescription("Demo character can't be deleted");
 	await demoDelete.click({ force: true });
-	await expect(page.getByRole('dialog', { name: 'Delete character?' })).toHaveCount(0);
+	await expect(page.getByRole('alertdialog')).toHaveCount(0);
 	await expect(page.getByRole('menuitemradio', { name: /^Imported/ })).toHaveCount(0);
 	expect(errors).toEqual([]);
 	expect(requests).toEqual([]);
@@ -1688,7 +1691,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 			};
 		});
 	});
-	await page.getByRole('button', { name: 'Delete character', exact: true }).click();
+	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(page.getByRole('alert')).toContainText('pending generation work');
 	expect(calls.every((c) => c.startsWith('GET '))).toBe(true);
 	expect(calls).toContain(`GET /v2/characters/${ID}/zip?states=${ID}`);

@@ -140,9 +140,9 @@ test('another character’s item on the same body is worn for free, survives rel
 	await expect(page.locator('.project-btn')).toContainText('Twin');
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
-	const confirm = page.getByRole('dialog', { name: 'Delete character?', exact: true });
+	const confirm = page.getByRole('alertdialog');
 	await expect(confirm).toContainText('Items copied to other characters stay.');
-	await confirm.getByRole('button', { name: 'Delete character', exact: true }).click();
+	await confirm.getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(confirm).toHaveCount(0);
 	await page.locator('.project-btn').click();
 	await expect(page.getByRole('menuitemradio', { name: 'Twin', exact: true })).toHaveCount(0);

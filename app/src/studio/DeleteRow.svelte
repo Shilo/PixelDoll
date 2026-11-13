@@ -1,5 +1,5 @@
 <script module lang="ts">
-	export const DEMO_CHARACTER_LOCKED = "The demo character can't be deleted";
+	export const DEMO_CHARACTER_LOCKED = "Demo character can't be deleted";
 </script>
 
 <script lang="ts">

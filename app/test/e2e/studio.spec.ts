@@ -1133,13 +1133,17 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 		expect(new Set(pixels).size).toBeGreaterThan(1);
 	}
 	await checkFrames();
-	await inspector.getByRole('button', { name: 'Remove', exact: true }).click();
+	// Delete asks in an alert over the details; Cancel keeps the item and the details open.
+	await inspector.getByRole('button', { name: 'Delete item…', exact: true }).click();
+	const deleteAlert = page.getByRole('alertdialog', { name: /^Delete .+\?$/ });
+	await expect(deleteAlert.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect(deleteAlert).toHaveCount(0);
+	await expect(inspector).toBeVisible();
 	await inspector.getByRole('button', { name: 'Done', exact: true }).click();
 	await pickItem(page, 'Steel helmet');
 	inspector = await selectedItemDetails(page);
-	await expect(inspector.getByRole('button', { name: 'Remove for good', exact: true })).toHaveCount(
-		0
-	);
+	await expect(page.getByRole('alertdialog')).toHaveCount(0);
 
 	await inspector.getByRole('button', { name: 'Done', exact: true }).click();
 
@@ -3213,15 +3217,20 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 	await page.keyboard.press('Shift+F10');
 	const menu = page.locator('#item-menu');
 	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
-	await expect(menu.getByRole('button', { name: 'Keep generating', exact: true })).toBeFocused();
-	await expect(menu).toContainText('Generations already used will not be refunded.');
+	const cancelAlert = page.getByRole('alertdialog', { name: 'Cancel Ponytail?' });
+	await expect(menu).not.toBeVisible();
+	await expect(cancelAlert.getByRole('button', { name: 'Keep', exact: true })).toBeFocused();
+	await expect(cancelAlert).toContainText('Generations already used are not refunded');
 	await page.keyboard.press('Escape');
+	await expect(cancelAlert).toHaveCount(0);
 	const more = page.getByRole('button', { name: 'More options for Ponytail', exact: true });
 	await expect(more).toBeFocused();
 	await more.click();
 	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
-	await menu.getByRole('button', { name: 'Keep generating', exact: true }).click();
+	await cancelAlert.getByRole('button', { name: 'Keep', exact: true }).click();
+	await expect(cancelAlert).toHaveCount(0);
 	await expect(tile).toContainText('42%');
+	await more.click();
 	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
 	await page.evaluate(() => {
 		const put = IDBObjectStore.prototype.put;
@@ -3232,8 +3241,12 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 			return put.call(this, value, key);
 		};
 	});
-	await menu.getByRole('button', { name: 'Cancel generation', exact: true }).click();
-	await expect(menu.getByRole('alert')).toContainText('Synthetic cancellation save failure');
+	await cancelAlert.getByRole('button', { name: 'Cancel item', exact: true }).click();
+	// A failed save stays in the alert; after closing it, the menu offers to save the cancellation again.
+	await expect(cancelAlert.getByRole('alert')).toContainText('Synthetic cancellation save failure');
+	await cancelAlert.getByRole('button', { name: 'Keep', exact: true }).click();
+	await expect(more).toBeFocused();
+	await more.click();
 	await expect(
 		menu.getByRole('menuitem', { name: 'Save cancellation', exact: true })
 	).toBeVisible();
@@ -5625,8 +5638,9 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 
 	// Delete asks first, focusing the safe choice.
 	await items.last().click();
-	await expect(itemMenu(page)).toContainText('Delete Wizard hat for good?');
-	await expect(itemMenu(page).getByRole('button', { name: 'Keep', exact: true })).toBeFocused();
+	const deleteAlert = page.getByRole('alertdialog', { name: 'Delete Wizard hat?' });
+	await expect(itemMenu(page)).not.toBeVisible();
+	await expect(deleteAlert.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
 	// Focus then lands on the next tile in the category, else the previous one (Empty at least), never the paid
 	// New item button.
 	const neighbor = await hat.evaluate((tile) => {
@@ -5634,7 +5648,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 		const at = tiles.indexOf(tile as HTMLElement);
 		return (tiles[at + 1] ?? tiles[at - 1]).getAttribute('aria-label')!;
 	});
-	await itemMenu(page).getByRole('button', { name: 'Delete for good', exact: true }).click();
+	await deleteAlert.getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(hat).toHaveCount(0);
 	await expect(head.getByRole('button', { name: neighbor, exact: true })).toBeFocused();
 

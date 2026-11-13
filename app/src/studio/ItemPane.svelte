@@ -6,6 +6,7 @@
 	import { extendable, missingItemMoves, itemMoveOffer } from './create.ts';
 	import { movePlan } from './apiPlans.ts';
 	import ApiPeek from './ApiPeek.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 	import Sprite from './Sprite.svelte';
 	import {
 		HEALTH_LABEL,
@@ -516,24 +517,11 @@
 				>
 			{/if}
 			{#if !isDemo()}
-				{#if confirmRemove}
-					<button
-						class="bu-action btn danger"
-						data-variant="outline"
-						onclick={() => removeItem(it.id)}><Trash size={14} />Remove for good</button
-					>
-					<button
-						class="bu-action btn plain"
-						data-variant="quiet"
-						onclick={() => (confirmRemove = false)}>Keep</button
-					>
-				{:else}
-					<button
-						class="bu-action btn plain danger"
-						data-variant="quiet"
-						onclick={() => (confirmRemove = true)}><Trash size={14} />Remove</button
-					>
-				{/if}
+				<button
+					class="bu-action btn plain danger"
+					data-variant="quiet"
+					onclick={() => (confirmRemove = true)}><Trash size={14} />Delete item…</button
+				>
 			{/if}
 		</div>
 
@@ -660,4 +648,17 @@
 			</div>
 		</details>
 	</div>
+{/if}
+{#if confirmRemove && it}
+	{@const target = it}
+	<ConfirmDialog
+		title="Delete {target.name}?"
+		action="Delete"
+		oncancel={() => (confirmRemove = false)}
+		onconfirm={() => {
+			const id = target.id;
+			confirmRemove = false;
+			void removeItem(id);
+		}}><p>This can't be undone.</p></ConfirmDialog
+	>
 {/if}
