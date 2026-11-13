@@ -59,3 +59,44 @@ The subsequent `npm run check` passed, including Svelte diagnostics, all TypeScr
 application formatting. Under concurrent browser load and roughly 1.3 GB free physical memory,
 the first final unit run exceeded existing timeouts in runtime synchronization and shared-refit tests.
 Those failures must not be treated as green runs or hidden by relaxed assertions or timeouts.
+
+After integrating main's `7c56b861` as `3f8d8701`, the full check passed again. The full unit run
+passed 2,378 tests and timed out in one unrelated measurement-recovery case. Its unchanged file
+then passed all 61 tests serially in 6.96 seconds. All 2,379 tests are covered across those runs,
+including enabled native Godot 4.7.2 and Aseprite checks. The three earlier timeouts passed in
+the integrated full run. There was no assertion change or timeout increase.
+
+Fresh native verification on that integrated source passed:
+
+| Engine                       | Result                                                                                                                                         | Local evidence                                                         |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Unity 6000.4.0f1             | Editor Play Mode 4,361 checks; Windows Mono player 3,580; GPU rendering 648 each in Editor, player and Linear color space                      | `app/node_modules/.cache/unity-export-review/run-7eZ09Z/`              |
+| GDevelop 5.6.285             | Official editor-core import, official web export and shipped GDJS/PIXI checks, including repeated play, completion replay and explicit restart | `app/node_modules/.cache/gdevelop-native-verification/result.json`     |
+| Phaser 3.80.1, 3.90.0, 4.1.0 | All 66 generated-fixture executions passed in Canvas and WebGL, including detected negative controls                                           | `app/node_modules/.cache/export-review-phaser/api-contract-final.json` |
+
+The Unity harness's initial earlier attempt had a test-helper scope error, corrected before the
+fresh runs above. These are actual native executions, not compilation-only or source-string claims.
+
+A manual T3 browser check opened the integrated production build's demo, entered Customize,
+opened Export, selected Phaser and downloaded the ready 382,756-byte ZIP. T3 snapshot and normal
+click automation timed out; DOM-backed browser interaction completed the check. No screenshot
+or visual-layout approval is claimed from that session. The browser download receipt confirmed
+completion; automatic test ZIPs are retained for subsequent native verification.
+
+The final full E2E suite passed **329 of 329 tests**, with two workers, no retries and no source
+edits during the run (14.8 minutes). The build, runtime stale-source guard and distribution guard
+passed. Output is retained under `app/test-results-api-contract-final/`.
+
+The two fresh Phaser ZIPs produced by those browser tests then passed the real-engine verifier:
+**78 executions**, comprising 24 positive runs and 54 detected negative controls across the three
+pinned Phaser versions in Canvas and WebGL. The positive runs compared 2,484 frames and
+16,736,256 pixels under the existing exact/partial-alpha contract. No pixel tolerance was relaxed.
+The report is `app/node_modules/.cache/export-review-phaser/api-contract-final-ui.json`.
+
+- Global-settings UI ZIP SHA-256: `9ca7bcd81a344be0fb70c8e243fe9a46505b7437da0b3bcb85c4322eb847d66a`.
+- Full-demo UI ZIP SHA-256: `9c0c942d184fd0f91425dc7559e5258ce9845066e5409584334f787e53a80895`.
+
+Native claims are limited to the named installed versions and generated validated exports.
+No native RPG Maker application or additional Unity/Godot releases were run. Asset-only formats
+retain their format-specific tests; native ports do not automatically inherit JavaScript edits.
+All requested independent implementation reviews are complete, with no remaining confirmed defect.

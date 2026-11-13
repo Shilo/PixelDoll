@@ -849,7 +849,8 @@ This new test inspects native resource/image data; it does not repeat the histor
 
 The Unity 6000.4.0f1 importer and runtime have run in an activated Editor and a Windows Mono standalone
 player. Native playback, equipment, palettes, asset references and rendered pixels have been verified;
-see [Unity verification](testing/unity-playback-2026-10-28.md) for dated results, controls and limitations.
+see [Unity verification](testing/unity-playback-2026-10-28.md) for the original results and the
+[cross-engine API audit](testing/cross-engine-api-contract-2026-11-12.md) for the current contract checks.
 Only `com.unity.2d.sprite` is required; 2D Animation is not referenced.
 Export adds `pixeldoll_unity.json` (flattened for `JsonUtility`) and two per-character asmdefs/namespaces.
 
@@ -870,7 +871,7 @@ Export adds `pixeldoll_unity.json` (flattened for `JsonUtility`) and two per-cha
 ### 6.4 Phaser 3 / 4 — atlas JSON with customData
 
 Historical verification [M5] covered Phaser 3.80, 3.90 and 4.2.1. The current
-[native verifier evidence](testing/shared-javascript-runtime-2026-11-12.md) covers pinned
+[native verifier evidence](testing/cross-engine-api-contract-2026-11-12.md) covers pinned
 3.80.1, 3.90.0 and 4.1.0; layer frame names match the body every step.
 
 - One TexturePacker **JSON-Hash** atlas per sheet (length-prefixed item/layer/animation identifiers → `layers/.../<anim>.png`): frames
