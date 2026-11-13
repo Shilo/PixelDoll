@@ -220,9 +220,10 @@
 	// moves: only an item made for this character can.
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
 	const freeFrames = $derived(it ? (shared.free[it.id] ?? 0) : 0);
-	// A re-fit's or unfitted copy's checks were measured on the source body; its fit notes replace them.
+	// A re-fit's checks were measured on the source body; its fit notes replace them. An unfitted copy keeps its source's pixels,
+	// so the source's findings (a grip in the wrong hand) still describe them.
 	const reasons = $derived(
-		it?.qa && !it.refit && !it.unfitted
+		it?.qa && !it.refit
 			? qaReasons(
 					it.qa,
 					SLOTS.find((s) => s.id === it.slot)?.class === 'held',

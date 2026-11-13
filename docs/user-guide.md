@@ -119,16 +119,19 @@ this body, then items to make new. Nothing needs saving, and showing them never 
   every frame: "Fitted <item> from <character> for free. Check it in each move." When some frames fit less well, its
   details mark it **Needs a look** and list them; tap one to show that frame on the stage. **Make one for <this
   character>** in its details makes a version for this body.
-- **Different body, same frame size and view:** the tile says "Free · not fitted". Tapping it still wears the item, for
-  free, exactly as it was drawn for the other body: "Wearing <item> as drawn for <character>. It may not line up with
-  this body. No generations used." Its pixels are unchanged and keep their place in the frame, so it may float, clip
-  or leave gaps, and moves with another frame count are left out. Its details mark it **Needs a look**, say so, and offer
-  **Make one for <this character>**; exports list it among their warnings.
-- **Different frame size or view:** these tiles sit under "Make new for <this character>". Pixels drawn at another size
-  or camera cannot be worn. After you tap one, a message under the tile says "Drawn for <character>'s body, so it
-  doesn't fit <this character>." with **Make one for <this character>**, which opens **New item** with the same category,
-  description and name. It is drawn new, so it may look different; its price is shown there before anything is
-  generated.
+- **Any other body, frame size or camera:** the tile says "Free · not fitted". Tapping it still wears the item, for free,
+  exactly as it was drawn for the other body: "Wearing <item> as drawn for <character>. It may not line up with this
+  body. No generations used." (with "at its own <size> px size" when the frame sizes differ). Its pixels are never
+  scaled: on the same frame size they keep their place in the frame; on another size the item keeps its own canvas,
+  centered and standing on the same ground. It may float, clip, look the wrong size or leave gaps, and moves with
+  another name or frame count are left out. Its details mark it **Needs a look**, say so, show the other character's
+  findings for the item (such as a grip in the wrong hand), and offer **Make one for <this character>**; exports list
+  it among their warnings.
+- **No move in common:** only an item that would not show in any frame (none of its moves has the same name and frame
+  count here) sits under "Make new for <this character>". After you tap one, a message under the tile says "It can't be
+  worn as drawn on <this character>." with **Make one for <this character>**, which
+  opens **New item** with the same category, description and name. It is drawn new, so it may look different; its price
+  is shown there before anything is generated.
 - **On the demo:** the demo never changes, so tapping a free tile shows **Copy demo and wear**. It saves an editable copy
   of the demo on this device (or opens the copy made before), then adds the item there as above. Nothing is generated.
 

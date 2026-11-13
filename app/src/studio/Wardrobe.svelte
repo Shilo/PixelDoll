@@ -568,9 +568,7 @@
 								<div class="shared-head">
 									<h4 class="shared-title small">From your other characters</h4>
 									{#if !s.free.length}<p class="faint small">Make new for {m.name}</p>
-									{:else if s.paid.length}<p class="faint small">
-											Free on the same frame size and view
-										</p>{/if}
+									{:else if s.paid.length}<p class="faint small">Free when a move matches</p>{/if}
 								</div>
 								<div
 									class="slot-tiles"
@@ -645,7 +643,7 @@
 												{@attach (el) => el.focus()}
 											>
 												<p class="small" id="unfit-why">
-													Drawn for {unfit.sourceName}’s body, so it doesn’t fit {m.name}.
+													It can’t be worn as drawn on {m.name}.
 												</p>
 												<button
 													class="bu-action btn primary"
