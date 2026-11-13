@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import type { Project } from '../../src/lib/store/manifest.ts';
-import { validate } from '../../src/lib/export/generic.ts';
+import { exportManifest, validate } from '../../src/lib/export/generic.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { spriteFramesTres } from '../../src/lib/export/godot.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
@@ -70,6 +70,47 @@ test('playlist cell references and counts must be integers', () => {
 	expect(validate(p).some((e) => e.includes('bad frame'))).toBe(true);
 	p.manifest.rig.animations[0].cells = 1.5;
 	expect(validate(p).some((e) => e.includes('no cells'))).toBe(true);
+});
+
+test('validation and export reject unsupported manifest formats', async () => {
+	const p = project();
+	Object.assign(p.manifest, { format: 'pixeldoll/2' });
+	expect(validate(p).some((error) => error.includes('format'))).toBe(true);
+	const result = await exportFiles(p, { engines: ['generic'], baked: true });
+	expect(result.errors.some((error) => error.includes('format'))).toBe(true);
+	expect(result.entries).toHaveLength(0);
+});
+
+test.each([
+	['wrong-slot', { head: 'base' }],
+	['missing', { head: 'missing' }],
+	['unknown-slot', { unknown: null }]
+])('validation and export reject %s stored preset equipment', async (_label, items) => {
+	const p = project();
+	p.manifest.slots.push({ id: 'head', z: 20, class: 'worn' });
+	p.manifest.presets[0].items = items;
+	expect(
+		validate(p).some((error) => error.includes('default:') && error.includes('equipment'))
+	).toBe(true);
+	const result = await exportFiles(p, { engines: ['generic'], baked: true });
+	expect(result.errors.some((error) => error.includes('equipment'))).toBe(true);
+	expect(result.entries).toHaveLength(0);
+});
+
+test('valid stale equipment is still excluded instead of rejecting its preset', () => {
+	const p = project();
+	p.manifest.slots.push({ id: 'head', z: 20, class: 'worn' });
+	p.manifest.items.push({
+		...structuredClone(p.manifest.items[0]),
+		id: 'old',
+		slot: 'head',
+		baseHash: `sha256:${'1'.repeat(64)}`
+	});
+	p.manifest.presets[0].items.head = 'old';
+	expect(validate(p)).toEqual([]);
+	const result = exportManifest(p, { engines: ['generic'], baked: false });
+	expect(result.manifest.presets[0].items.head).toBeNull();
+	expect(result.warnings.some((warning) => warning.includes('old: stale'))).toBe(true);
 });
 
 test('Godot resources keep distinct valid animation IDs distinct after escaping', () => {

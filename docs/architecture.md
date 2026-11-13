@@ -22,8 +22,8 @@ Evidence tags: **[S1]–[S4]** live spikes, **[M1]–[M5]** mockup reports, **[R
    never draws or resamples.
 3. **Minimal human work**: one prompt per item; everything runs automatically. A clean item saves itself; a flagged one
    waits for an optional Keep it / Try again / Discard review [D26, supersedes D7's mandatory review].
-4. **Correct engine output**: Godot 4.7 and Phaser 3.80/3.90/4.2 render pixel-identical to PixelDoll's compositor [M5];
-   Unity compiles, live check deferred [D5].
+4. **Correct engine output**: Godot 4.7 and Phaser 3.80/3.90/4.1 render pixel-identical to PixelDoll's compositor ([current evidence](testing/shared-javascript-runtime-2026-11-12.md));
+   Unity has native Editor, standalone player and GPU checks ([evidence](testing/shared-javascript-runtime-2026-11-12.md)).
 5. **Fully client-side** on GitHub Pages; the browser calls `https://api.pixellab.ai/v2` with the user's key [D1].
 
 **Non-goals (v1)**: layers from character states; body-shape axis (one base per project, items bound by `baseHash`); bones/IK at runtime (skeletons are a *generation* tool, not an export feature); semi-transparent VFX; backend.
@@ -513,7 +513,7 @@ USD billing and unknown charges prevent treating any estimate as an account spen
 | Pose presets tuned for one body | Free preview before paying; per-body check. |
 | Server failures / silent direction drop | Poll known jobs; never automatically resend unknown paid outcomes. Require the exact requested direction set before publication. |
 | Small figure (48 base) | Product call (D4: 56 px optional). |
-| Unity importer not run live | Deferred [D5]. |
+| Native engine drift | Follow the [runtime contract](architecture/javascript-runtime.md) and rerun generated native controllers, not compilation alone. |
 
 ## 12. Mockups
 

@@ -76,6 +76,31 @@ export function equipped(m, items) {
 	return m.items.filter((it) => it.id === m.rig.baseItem || items[it.slot] === it.id);
 }
 /**
+ * @param {Manifest} manifest
+ * @param {Pick<Preset, 'items' | 'variants'> | string} preset
+ * @returns {Pick<Preset, 'items' | 'variants'>}
+ */
+export function resolvePreset(manifest, preset) {
+	const selected =
+		typeof preset === 'string' ? manifest.presets.find((entry) => entry.id === preset) : preset;
+	if (!selected) throw new Error('PixelDoll: unknown outfit');
+	const items = { ...selected.items, body: manifest.rig.baseItem };
+	for (const [slot, itemId] of Object.entries(items)) {
+		if (slot === 'body') continue;
+		if (!validEquipment(manifest, slot, itemId))
+			throw new Error('PixelDoll: invalid equipment for ' + slot);
+	}
+	return { items, variants: { ...selected.variants } };
+}
+/** @param {Manifest} manifest @param {string} slot @param {string | null | undefined} itemId */
+export function validEquipment(manifest, slot, itemId) {
+	return (
+		manifest.slots.some((entry) => entry.id === slot) &&
+		(itemId == null ||
+			manifest.items.some((item) => item.id === itemId && item.slot === slot && !item.variantOf))
+	);
+}
+/**
  * @param {Manifest} m
  * @param {Item} it
  */

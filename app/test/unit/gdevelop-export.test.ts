@@ -81,6 +81,9 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
 	expect(d.cell).toBe(1);
 	d.update(80);
 	expect(d.cell).toBe(0);
+	d.play('walk', 'south');
+	expect(d.elapsed).toBe(80);
+	expect(d.cell).toBe(0);
 	expect(second.cell).toBe(1);
 	expect([...d.nodes.keys()]).toContain(gdObjectName('hair~hat', 'main', gdCharacterKey(m)));
 	expect(d.nodes.get(gdObjectName('hat', 'main', gdCharacterKey(m))).z).toBe(0);
@@ -101,6 +104,16 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
 	d.play('stop', 'south');
 	d.update(999);
 	expect(d.cell).toBe(1);
+	d.play('stop', 'south');
+	expect(d.elapsed).toBe(0);
+	expect(d.cell).toBe(0);
+	d.update(60);
+	d.play('stop', 'south');
+	expect(d.elapsed).toBe(60);
+	expect(d.cell).toBe(1);
+	d.play('stop', 'south', true);
+	expect(d.elapsed).toBe(0);
+	expect(d.cell).toBe(0);
 	d.destroy();
 	expect(d.nodes.size).toBe(0);
 	expect(second.nodes.size).toBeGreaterThan(0);
@@ -189,7 +202,10 @@ test('GDevelop executes canonical timeline changes rather than a separate playli
 	expect(mutated).not.toBe(GDEVELOP_RUNTIME);
 	const create = new Function(mutated + '\nreturn createPixelDoll;')();
 	const m = gdFixture();
-	m.items = [];
+	m.items = m.items
+		.filter((item) => item.id === m.rig.baseItem)
+		.map((item) => ({ ...item, layers: [] }));
+	m.presets = [];
 	const d = create({}, m, {});
 	d.update(80);
 	expect(d.cell).toBe(1);

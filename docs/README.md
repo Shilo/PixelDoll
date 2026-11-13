@@ -3,7 +3,7 @@
 Start with [architecture.md](architecture.md) (v1.3, current pipeline) and [manifest-spec.md](manifest-spec.md) (export
 format). Project state and decisions D1–D17: [PLAN.md](../PLAN.md). Open work: the [board](https://github.com/users/Shilo/projects/7); accepted limits: [known-issues.md](known-issues.md). Casual users: [user-guide.md](user-guide.md).
 
-The [shared JavaScript runtime](architecture/javascript-runtime.md) documents how internal paper-doll rendering and Phaser exports use the same canonical source.
+The [shared JavaScript runtime and cross-engine API contract](architecture/javascript-runtime.md) documents canonical application/JavaScript behavior, native-port responsibilities and required parity checks. The [cross-engine audit](testing/cross-engine-api-contract-2026-11-12.md) records the challenged fixes and verification.
 
 For a new agent-led research and implementation cycle, invoke the [repeatable paper-doll improvement workflow](handoff/paperdoll-improvement-cycle.md). It covers repository review, online discovery, local source and tool experiments, independent challenge, live PixelLab testing, and verified improvements.
 

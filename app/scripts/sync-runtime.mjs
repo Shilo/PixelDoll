@@ -6,6 +6,7 @@ import { CURRENT_FORMAT, EXPORT_ENGINES } from '../src/lib/store/manifest.ts';
 
 const directory = new URL('../src/lib/runtime/', import.meta.url);
 const options = { ...(await resolveConfig(fileURLToPath(new URL('sources.ts', directory)))) };
+const owners = new Map();
 const declarations = [];
 for (const path of ['../store/manifest.ts', '../rig/rig.ts', '../image/png.ts']) {
 	const text = await readFile(new URL(path, directory), 'utf8');
@@ -13,6 +14,24 @@ for (const path of ['../store/manifest.ts', '../rig/rig.ts', '../image/png.ts'])
 	for (const statement of source.statements)
 		if (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement))
 			declarations.push(statement.getText(source));
+}
+function moduleBindings(module) {
+	const names = [];
+	const collect = (name) => {
+		if (ts.isIdentifier(name)) names.push(name.text);
+		else
+			for (const element of name.elements) if (ts.isBindingElement(element)) collect(element.name);
+	};
+	for (const statement of module.statements) {
+		if (ts.isVariableStatement(statement))
+			for (const declaration of statement.declarationList.declarations) collect(declaration.name);
+		else if (
+			(ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) &&
+			statement.name
+		)
+			names.push(statement.name.text);
+	}
+	return names;
 }
 const runtimeTypes = await format(
 	declarations
@@ -56,6 +75,14 @@ for (const name of (await readdir(directory)).filter((name) => name.endsWith('.j
 		throw new Error(
 			`${name}: runtime embedding requires named declarations without imports, export lists or defaults.`
 		);
+	for (const binding of moduleBindings(module)) {
+		const owner = owners.get(binding);
+		if (owner && owner !== name)
+			throw new Error(
+				`${name}: top-level binding "${binding}" is already declared in ${owner}. Canonical runtime modules are concatenated into one module, so module-scope names must be unique.`
+			);
+		owners.set(binding, name);
+	}
 }
 const target = new URL('sources.ts', directory);
 const content = await format(

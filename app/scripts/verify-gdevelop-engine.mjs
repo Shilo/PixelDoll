@@ -195,7 +195,7 @@ try {
 				ctx.drawImage(canvas, 0, 0);
 				return [...ctx.getImageData(0, 0, 1, 1).data];
 			};
-			d.play('walk', 'south');
+			d.play('walk', 'south', true);
 			const body = d.nodes.get(bodyName).getRendererObject(),
 				hat = d.nodes.get(hatName).getRendererObject();
 			const origins = {
@@ -213,6 +213,8 @@ try {
 			const renderedBody = [...extract().slice(0, 4)],
 				initialMarker = [...extract().slice(-4)];
 			d.update(80);
+			d.play('walk', 'south');
+			const repeatedPlay = d.elapsed === 80 && d.cell === 0;
 			const next = {
 				cell: d.cell,
 				hatZ: d.nodes.get(hatName).getZOrder(),
@@ -229,6 +231,11 @@ try {
 			d.play('stop', 'south');
 			d.update(999);
 			const stopped = d.cell;
+			d.play('stop', 'south');
+			const replay = d.elapsed === 0 && d.cell === 0;
+			d.update(60);
+			d.play('stop', 'south', true);
+			const restart = d.elapsed === 0 && d.cell === 0;
 			d.equip('head', null);
 			const hatHidden = d.nodes.get(hatName).isHidden();
 			d.m.items.find((i) => i.id === 'hat').hides = ['hair'];
@@ -253,6 +260,9 @@ try {
 				initialMarker,
 				nextMarker,
 				stopped,
+				repeatedPlay,
+				replay,
+				restart,
 				hatHidden,
 				hiddenHair,
 				rejects,
@@ -282,6 +292,7 @@ try {
 	});
 	assert.deepEqual(result.origins, { body: [319, 238], hat: [318, 237] });
 	assert.equal(result.stopped, 1);
+	assert.ok(result.repeatedPlay && result.replay && result.restart);
 	assert.ok(
 		result.hatHidden &&
 			result.hiddenHair &&

@@ -23,7 +23,15 @@ namespace PixelDollNativeReview
         public static Report report = new Report();
         public static void Check(bool ok, string name, string detail = "") { report.checks.Add(new Observation { name = name, passed = ok, detail = detail }); }
         public static object Field(object instance, string name) => instance.GetType().GetField(name).GetValue(instance);
-        public static void Invoke(object instance, string name, params object[] args) => instance.GetType().GetMethod(name).Invoke(instance, args);
+        public static object Invoke(object instance, string name, params object[] args)
+        {
+            var method = instance.GetType().GetMethod(name);
+            var parameters = method.GetParameters();
+            int supplied = args.Length;
+            Array.Resize(ref args, parameters.Length);
+            for (int index = supplied; index < parameters.Length; index++) args[index] = parameters[index].DefaultValue;
+            return method.Invoke(instance, args);
+        }
         public static void VerifyPlayback(string label, GameObject prefab, Data data)
         {
             var instance = UnityEngine.Object.Instantiate(prefab);
@@ -35,6 +43,9 @@ namespace PixelDollNativeReview
                 var state = move.id + "_" + direction;
                 Invoke(doll, "Play", move.id, direction); animator.Update(0); Invoke(doll, "Sync");
                 Check(clock.sprite != null && clock.sprite.name == state + "_" + move.frames[0].cell, label + ": exported Play starts " + state);
+                animator.Update(move.frames[0].ms / 2000f);
+                Invoke(doll, "Play", move.id, direction, true); animator.Update(0); Invoke(doll, "Sync");
+                Check(animator.GetCurrentAnimatorStateInfo(0).normalizedTime == 0f && clock.sprite.name == state + "_" + move.frames[0].cell, label + ": explicit restart resets active playback " + state);
                 // Reset only the measurement setup; the exported Play wrapper is independently checked above and below.
                 animator.Play(state, 0, 0f); animator.Update(0); Invoke(doll, "Sync");
                 animator.Update(move.frames[0].ms / 2000f); Invoke(doll, "Sync");
@@ -81,12 +92,13 @@ namespace PixelDollNativeReview
                 if (!move.loop) Check(clock.sprite != null && clock.sprite.name == state + "_" + move.frames[0].cell && animator.GetCurrentAnimatorStateInfo(0).normalizedTime < .01f, label + ": replay completed once " + state, "normalizedTime=" + animator.GetCurrentAnimatorStateInfo(0).normalizedTime);
                 else Check(Math.Abs(animator.GetCurrentAnimatorStateInfo(0).normalizedTime - completedTime) < .0001f && clock.sprite == completedSprite, label + ": repeated Play preserves active loop " + state);
             }
-            if (label == "LayeredTiming") VerifyEquipmentAndPalette(label, prefab, doll, clock);
+            if (label == "LayeredTiming") VerifyEquipmentAndPalette(label, prefab, doll, clock, data);
             UnityEngine.Object.DestroyImmediate(instance);
         }
 
-        static void VerifyEquipmentAndPalette(string label, GameObject prefab, object doll, SpriteRenderer clock)
+        static void VerifyEquipmentAndPalette(string label, GameObject prefab, object doll, SpriteRenderer clock, Data data)
         {
+            var animator = ((Component)doll).GetComponent<Animator>();
             var nodes = ((IEnumerable)Field(doll, "nodes")).Cast<object>().ToArray();
             Func<string, SpriteRenderer> renderer = slot => (SpriteRenderer)Field(nodes.First(node => (string)Field(node, "slot") == slot), "renderer");
             Check(!renderer("hair").enabled && renderer("head").enabled, label + ": equipped hat hides hair");
@@ -110,6 +122,29 @@ namespace PixelDollNativeReview
             Check(peerBody.sprite.texture == peerTexture, label + ": palette stays instance-local");
             Invoke(doll, "SetVariant", "skin", null); Invoke(doll, "Sync");
             Check(renderer("body").sprite.texture == original, label + ": default palette restores cached texture");
+            Invoke(doll, "SetVariant", "skin", ""); Invoke(doll, "Sync");
+            Check(renderer("body").sprite.texture != original && clock.sprite.name == frame, label + ": empty selection restores source colors without moving frame");
+            Invoke(doll, "SetVariant", "skin", null); Invoke(doll, "Sync");
+            Check(renderer("body").sprite.texture == original, label + ": null restores default after source colors");
+            var unchanged = JsonUtility.ToJson(doll);
+            var unchangedFrame = clock.sprite;
+            var unchangedTime = animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
+            var warnings = new List<string>();
+            Application.LogCallback capture = (message, stack, type) => { if (type == LogType.Warning && message.StartsWith("PixelDoll: ")) warnings.Add(message); };
+            Application.logMessageReceived += capture;
+            try
+            {
+                Check(!(bool)Invoke(doll, "Play", "missing", "south"), label + ": unavailable animation reports failure");
+                Check(!(bool)Invoke(doll, "Play", data.animations[0].id, "missing"), label + ": unavailable direction reports failure");
+                Check(!(bool)Invoke(doll, "Equip", "body", null), label + ": body mutation reports failure");
+                Check(!(bool)Invoke(doll, "Equip", "head", data.baseItem), label + ": wrong-slot equipment reports failure");
+                Check(!(bool)Invoke(doll, "ApplyPreset", "missing"), label + ": unknown outfit reports failure");
+                Check(!(bool)Invoke(doll, "SetVariant", "missing", "red"), label + ": unknown material reports failure");
+            }
+            finally { Application.logMessageReceived -= capture; }
+            Check(warnings.Count == 6, label + ": rejected API calls surface six engine warnings");
+            Invoke(doll, "Sync");
+            Check(JsonUtility.ToJson(doll) == unchanged && clock.sprite == unchangedFrame && animator.GetCurrentAnimatorStateInfo(0).normalizedTime == unchangedTime, label + ": rejected calls leave equipment, colors and playback unchanged");
             UnityEngine.Object.DestroyImmediate(peerInstance);
         }
 

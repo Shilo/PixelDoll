@@ -199,6 +199,7 @@ test('body variants exclude mutually exclusive and stale cutters, and reject exc
 	expect(bodyCutVariantCount(p.manifest)).toBe(2);
 	expect((await withTuckVariants(p)).manifest.items.some((item) => item.underAll)).toBe(false);
 	p.manifest.items = p.manifest.items.filter((item) => item.id === 'base');
+	p.manifest.presets = p.manifest.presets.map((preset) => ({ ...preset, items: { body: 'base' } }));
 	for (let i = 0; i < MAX_BODY_CUT_VARIANTS + 1; i++)
 		p.manifest.items.push({
 			...structuredClone(built.manifest.items.find((item) => item.id === 'hood')!),
