@@ -504,9 +504,13 @@ test('editor help opens from either the toggle or help icon and follows the acti
 	await expect(sheet.getByRole('tooltip')).toHaveCount(0);
 	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
 	await toggle.hover();
-	await expect(sheet.getByRole('tooltip')).toContainText('This exact text is sent to V3');
+	await expect(sheet.getByRole('tooltip')).toContainText(
+		'This exact text is sent to the selected model'
+	);
 	await sheet.getByRole('button', { name: 'Prompt help', exact: true }).click();
-	await expect(sheet.getByRole('tooltip')).toContainText('This exact text is sent to V3');
+	await expect(sheet.getByRole('tooltip')).toContainText(
+		'This exact text is sent to the selected model'
+	);
 	await page.keyboard.press('Escape');
 	await expect(sheet).toBeVisible();
 });
@@ -1258,9 +1262,37 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 	await model.selectOption('pro');
 	await expect(sheet.locator('details.advanced')).toHaveAttribute('open', '');
 	await expect(sheet.getByRole('combobox', { name: 'Outline', exact: true })).toHaveCount(0);
+	// The model's limits (MODELS) drive the body field: a size V3 accepts survives switching to Pro, which explains and
+	// blocks it instead of clamping it.
+	const body = sheet.getByRole('spinbutton', { name: 'Body size', exact: true });
 	await model.selectOption('v3');
+	await body.fill('172');
+	await expect(body).not.toHaveAttribute('aria-invalid', 'true');
+	await model.selectOption('pro');
+	await expect(body).toHaveValue('172');
+	await expect(body).toHaveAttribute('max', '168');
+	await expect(body).toHaveAttribute('aria-invalid', 'true');
+	await expect(sheet.locator('.field-error')).toHaveText(
+		'Body size must be 32–168 whole pixels with Pro.'
+	);
+	await expect(sheet.getByRole('button', { name: /^Create character/ })).toBeDisabled();
+	await model.selectOption('v3');
+	await expect(body).toHaveAttribute('max', '256');
+	await expect(sheet.locator('.field-error')).toHaveCount(0);
+	await expect(sheet.getByRole('button', { name: /^Create character/ })).toBeEnabled();
 	await expect(sheet.locator('details.advanced')).toHaveAttribute('open', '');
 	await expect(sheet.getByRole('combobox', { name: 'Outline', exact: true })).toBeVisible();
+	// The sheet's 44 px floor is for one-line fields only: taller fields and switches keep their own size.
+	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveCSS(
+		'min-height',
+		'112px'
+	);
+	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
+	await expect(sheet.getByRole('textbox', { name: 'Exact prompt', exact: true })).toHaveCSS(
+		'min-height',
+		'302px'
+	);
+	await sheet.getByRole('tab', { name: 'Appearance', exact: true }).click();
 	// The switch is drawn inside its own field; none of its parts float elsewhere on the sheet.
 	const nude = sheet.getByRole('switch', { name: 'Nude', exact: true });
 	const field = await sheet.locator('.nude-field').boundingBox(),

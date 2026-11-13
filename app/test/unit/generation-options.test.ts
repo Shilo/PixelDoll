@@ -1,9 +1,18 @@
 // Advanced creation options (model, outline, detail, item method) and the generation details read from provenance.
 import { expect, test } from 'vitest';
-import { createCharacter, drawRequest, estimate } from '../../src/studio/create.ts';
+import { createCharacter, drawRequest, estimate, labelViews } from '../../src/studio/create.ts';
 import { createPlan, itemPlan } from '../../src/studio/apiPlans.ts';
 import { itemRoute } from '../../src/studio/itemRoute.ts';
-import { draftErrors, newCharacterDraft, styleOf } from '../../src/studio/characterConfig.ts';
+import {
+	MODELS,
+	MODEL_IDS,
+	bodyErrors,
+	draftErrors,
+	modelOf,
+	newCharacterDraft,
+	styleOf
+} from '../../src/studio/characterConfig.ts';
+import { DIRECTIONS } from '../../src/lib/rig/rig.ts';
 import {
 	costText,
 	generationDetails,
@@ -73,15 +82,55 @@ test('Pro draws from text with a transparent background and no V3 hints', () => 
 	expect(toolOf({ endpoint: '/create-character-pro', params: {} })).toBe('Character Pro');
 });
 
-test('Pro refuses bodies over 168 px in the form and before spending', async () => {
+test('every model limit comes from the MODELS table, in the form and before spending', async () => {
+	expect(MODEL_IDS).toEqual(['v3', 'pro', 'pro-flash']);
+	expect(modelOf(undefined)).toBe(MODELS.v3);
+	expect(modelOf('nonsense')).toBe(MODELS.v3);
+	expect(MODEL_IDS.map((id) => [id, MODELS[id].body.max, MODELS[id].styleHints])).toEqual([
+		['v3', 256, true],
+		['pro', 168, false],
+		['pro-flash', 256, false]
+	]);
+	const proError = 'Body size must be 32–168 whole pixels with Pro.';
+	expect(bodyErrors(172, 'pro')).toEqual([proError]);
+	expect(bodyErrors(168, 'pro')).toEqual([]);
+	expect(bodyErrors(172, 'v3')).toEqual([]);
+	expect(bodyErrors(170, 'v3')).toEqual(['Body size must use 4 px steps (32, 36, …, 256).']);
 	const d = { ...newCharacterDraft(), body: 172, model: 'pro' as const };
-	expect(draftErrors(d).join(' ')).toContain('Pro draws bodies up to 168 px.');
-	expect(draftErrors({ ...d, body: 168 }).join(' ')).not.toContain('Pro draws');
-	expect(draftErrors({ ...d, model: 'v3' }).join(' ')).not.toContain('Pro draws');
-	const e = await createCharacter({ ...spec, size: 172, frame: 256, model: 'pro' }).catch(
+	expect(draftErrors(d)).toContain(proError);
+	expect(draftErrors({ ...d, body: 168 })).toEqual([]);
+	expect(draftErrors({ ...d, model: 'v3' })).toEqual([]);
+	for (const frame of [256, undefined]) {
+		const e = await createCharacter({ ...spec, size: 172, frame, model: 'pro' }).catch(
+			(e: Error) => e.message
+		);
+		expect(e).toMatch(/Body size must be 32–168/);
+	}
+	// A limit change is a one-line edit: raising Pro's maximum lets 172 through everywhere.
+	const max = MODELS.pro.body.max;
+	MODELS.pro.body.max = 176;
+	try {
+		expect(draftErrors(d)).toEqual([]);
+	} finally {
+		MODELS.pro.body.max = max;
+	}
+});
+
+test('only models with style hints send outline and detail', async () => {
+	expect(styleOf({ model: 'v3', outline: 'lineless' })).toEqual({ outline: 'lineless' });
+	expect(styleOf({ model: 'pro', outline: 'lineless' })).toEqual({ model: 'pro' });
+	const e = await createCharacter({ ...spec, model: 'pro', detail: 'low detail' }).catch(
 		(e: Error) => e.message
 	);
-	expect(e).toContain('Pro draws bodies up to 168 px.');
+	expect(e).toContain('Outline and detail do not apply to Pro.');
+});
+
+test("Pro's unlabeled views map to PixelLab's direction order; labeled views pass through", () => {
+	const unlabeled = DIRECTIONS.map((_, i) => ({ label: String(i) }));
+	expect(labelViews('pro', unlabeled).map((v) => v.label)).toEqual(DIRECTIONS);
+	const labeled = [{ label: 'south' }, { label: 'east' }];
+	expect(labelViews('pro-flash', labeled)).toBe(labeled);
+	expect(labelViews(undefined, labeled)).toBe(labeled);
 });
 
 test('Pro Flash estimates follow the measured /pro-flash/cost table', () => {
@@ -98,6 +147,10 @@ test('Pro Flash estimates follow the measured /pro-flash/cost table', () => {
 	expect(pro(128)).toMatchObject({ gens: 25.25, maxGens: 25.65 });
 	expect(pro(96)).toMatchObject({ gens: 19.25, maxGens: 25.65 });
 	expect(pro(168)).toMatchObject({ gens: 25.25, maxGens: 33.65 });
+	// The API preview discloses the same Pro range as the footer, not only its low end.
+	const note = createPlan({ ...spec, size: 96, model: 'pro' })[0].note;
+	expect(note).toContain('about 19–25 gens at 96 px');
+	expect(createPlan({ ...spec, size: 48, model: 'pro' })[0].note).toContain('about 10 gens');
 	// The preview's first call is the draw at the same price.
 	const plan = createPlan({ ...spec, model: 'pro-flash' });
 	expect(plan[0].path).toBe('/create-character-pro-flash');
@@ -113,7 +166,7 @@ test('creation refuses unknown models, hints and hints combined with Pro Flash b
 	expect(await bad({ outline: 'thick' })).toContain('Invalid outline.');
 	expect(await bad({ detail: 'ultra' })).toContain('Invalid detail.');
 	expect(await bad({ model: 'pro-flash', outline: 'lineless' })).toContain(
-		'Outline and detail apply to Character V3 only.'
+		'Outline and detail do not apply to Pro Flash.'
 	);
 });
 

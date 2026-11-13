@@ -22,12 +22,16 @@
 		ANGLES,
 		autoFrame,
 		BODY_SIZES,
+		BODY_STEP,
+		bodyErrors,
 		COMPASS,
 		DETAILS,
 		DIRECTION_LABELS,
 		draftErrors,
 		isNudeBase,
+		MODEL_IDS,
 		MODELS,
+		modelOf,
 		OUTLINES,
 		PRESETS,
 		presetOf,
@@ -69,12 +73,18 @@
 	// Advanced starts open when a reopened draft already changed something there, so no choice is hidden.
 	// It is bound, not set once, so a re-render (a new summary note after a model change) never closes it.
 	let advancedOpen = $state(!!(d.seed || (d.model && d.model !== 'v3') || d.outline || d.detail));
-	const v3 = $derived((d.model ?? 'v3') === 'v3');
+	// The selected model's limits (MODELS in characterConfig.ts) decide which controls show and what they accept.
+	const model = $derived(modelOf(d.model));
+	const bodyError = $derived(bodyErrors(d.body, d.model)[0] ?? '');
 	const advancedNote = $derived(
 		[
-			v3 ? '' : MODELS.find((m) => m.id === d.model)?.label,
-			v3 && d.outline ? `${OUTLINES.find((o) => o.value === d.outline)?.label} outline` : '',
-			v3 && d.detail ? `${DETAILS.find((o) => o.value === d.detail)?.label} detail` : '',
+			model === MODELS.v3 ? '' : model.label,
+			model.styleHints && d.outline
+				? `${OUTLINES.find((o) => o.value === d.outline)?.label} outline`
+				: '',
+			model.styleHints && d.detail
+				? `${DETAILS.find((o) => o.value === d.detail)?.label} detail`
+				: '',
 			d.seed ? `seed ${d.seed}` : ''
 		]
 			.filter(Boolean)
@@ -84,11 +94,12 @@
 	const errors = $derived(draftErrors(d));
 	const enhanceTarget = $derived(d.tab === 'appearance' ? 'details' : 'prompt');
 	let editorHelp: { show: () => Promise<void>; hide: () => void };
-	const editorHelpId = $props.id();
+	const editorHelpId = $props.id(),
+		bodyErrorId = `${editorHelpId}-body-error`;
 	const editorHelpText = $derived(
 		d.tab === 'appearance'
 			? 'Describe distinctive features, then choose appearance hints below. These choices build the linked prompt. Hair, clothes and gear are added later.'
-			: 'This exact text is sent to V3. Complete lines such as Kind: Elf update Appearance. Other text stays in Details; prose is never guessed as a trait.'
+			: 'This exact text is sent to the selected model. Complete lines such as Kind: Elf update Appearance. Other text stays in Details; prose is never guessed as a trait.'
 	);
 	// Enhance with the chosen V3 style hints, so the text it writes fits the drawing they guide.
 	const enhanceInput = () => ({
@@ -388,12 +399,15 @@
 		<div class="creator-field">
 			<Help
 				title="Body size"
-				text="The source canvas V3 draws into, in pixels—not a guaranteed opaque body height. Choose 32–256 pixels in 4 px steps. The frame adds space for movement and equipment."
+				text="The source canvas the model draws into, in pixels—not a guaranteed opaque body height. This model accepts {model
+					.body.min}–{model.body
+					.max} pixels in {BODY_STEP} px steps. The frame adds space for movement and equipment."
 			/>
 			<div class="body-presets" role="group" aria-label="Body size presets">
 				{#each BODY_SIZES as size (size)}<button
 						class="bu-action btn"
 						data-variant="outline"
+						disabled={size < model.body.min || size > model.body.max}
 						aria-pressed={d.bodyPreset === size}
 						onclick={() => {
 							d.body = size;
@@ -406,13 +420,16 @@
 					class="bu-input input"
 					aria-label="Body size"
 					type="number"
-					min="32"
-					max="256"
-					step="4"
+					min={model.body.min}
+					max={model.body.max}
+					step={BODY_STEP}
+					aria-invalid={!!bodyError}
+					aria-describedby={bodyError ? bodyErrorId : undefined}
 					bind:value={d.body}
 					oninput={() => (d.bodyPreset = null)}
 				/><span aria-hidden="true">px</span>
 			</div>
+			{#if bodyError}<p class="field-error" id={bodyErrorId}>{bodyError}</p>{/if}
 		</div>
 		<div class="creator-field">
 			<Help
@@ -532,17 +549,17 @@
 				<div class="trait-row">
 					<Help
 						title="Model"
-						text="The PixelLab model that draws the character. Pro follows the prompt more closely at several times the cost. Pro Flash draws a chibi style at about three times the cost. Every model registers the character with V3, so moves and items work the same."
+						text="The PixelLab model that draws the character. Each model accepts its own body sizes and options, so the controls change with it. Every model registers the character with V3, so moves and items work the same."
 					/><select
 						class="bu-input input"
 						aria-label="Model"
 						value={d.model ?? 'v3'}
 						onchange={(e) => (d.model = e.currentTarget.value as CharacterModel)}
-						>{#each MODELS as model (model.id)}<option value={model.id}>{model.label}</option
+						>{#each MODEL_IDS as id (id)}<option value={id}>{MODELS[id].label}</option
 							>{/each}</select
 					>
 				</div>
-				{#if v3}
+				{#if model.styleHints}
 					<div class="trait-row">
 						<Help
 							title="Outline"
@@ -570,7 +587,9 @@
 						>
 					</div>
 				{:else}
-					<p class="faint small">{MODELS.find((x) => x.id === d.model)?.help}</p>
+					<p class="faint small">
+						{model.help} Body size {model.body.min}–{model.body.max} px.
+					</p>
 				{/if}
 				<div class="trait-row">
 					<Help
@@ -884,8 +903,14 @@
 		line-height: 1.5;
 		overflow-wrap: anywhere;
 	}
-	.creator-validation {
+	.creator-validation,
+	.field-error {
 		color: var(--danger-text, var(--text-2));
+	}
+	.field-error {
+		margin: 0;
+		font-size: var(--fs-sm);
+		line-height: 1.5;
 	}
 	@media (max-width: 850px) {
 		.creator-grid {

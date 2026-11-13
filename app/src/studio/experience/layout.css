@@ -1384,8 +1384,12 @@
 .studio-app .character-sheet .facing > .help-title {
 	font-size: 14px;
 }
-.studio-app .character-sheet :is(input:not([type='checkbox'], [type='radio']), select, textarea) {
+/* 16 px text keeps phones from zooming. Only one-line fields get the 44 px floor: textareas size themselves (.details-input,
+   .exact-input) and switches keep their own shape, which :where adds without raising specificity. */
+.studio-app .character-sheet :is(input, select, textarea) {
 	font-size: 16px;
+}
+.studio-app .character-sheet :is(input:where(:not([type='checkbox'], [type='radio'])), select) {
 	min-height: 44px;
 }
 .studio-app .character-sheet .details-input {

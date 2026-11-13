@@ -174,9 +174,7 @@ test('all 57 supported four-pixel body sizes map exactly and every unsupported i
 			);
 			// A persisted legacy spec without an explicit frame must also stop before contacting PixelLab.
 			const { frame: _, ...legacy } = { ...specOf(plans[0]), size: body };
-			await expect(createCharacter(legacy)).rejects.toThrow(
-				'Body size must be 32–256 pixels in 4 px steps'
-			);
+			await expect(createCharacter(legacy)).rejects.toThrow('Body size must use 4 px steps');
 			continue;
 		}
 		sizes++;

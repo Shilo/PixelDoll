@@ -104,11 +104,13 @@ import {
 } from './replaceMove.ts';
 import {
 	DETAIL_VALUES,
+	MODEL_IDS,
 	OUTLINE_VALUES,
+	bodyErrors,
 	facingErrors,
-	modelErrors,
+	modelOf,
 	sizeErrors,
-	validBodySize
+	type CharacterModel
 } from './characterConfig.ts';
 import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
 import { splitBase } from '../lib/dress/regions.ts';
@@ -127,7 +129,7 @@ export interface CreateSpec {
 	view?: Rig['view'];
 	exactPrompt?: boolean;
 	/** Advanced: Pro or Pro Flash draws instead of V3 (absent = V3); outline and detail are V3 style hints. */
-	model?: 'pro' | 'pro-flash';
+	model?: Exclude<CharacterModel, 'v3'>;
 	outline?: string;
 	detail?: string;
 	activityScope?: string;
@@ -176,6 +178,30 @@ export function drawRequest(
 				...(spec.detail ? { detail: spec.detail } : {})
 			});
 }
+/** Pro has no price quote and draws all eight views in one call: what it billed live (2026-11-13). */
+export const PRO_RECEIPTS = [
+	{ size: 48, gens: 10 },
+	{ size: 128, gens: 25 }
+] as const;
+/** Pro's draw price at a size: exact at a receipt; elsewhere provisional, from a straight line through the receipts up
+ * to the nearer receipt. */
+export function proDrawGens(size: number): { lo: number; hi: number } {
+	const [a, b] = PRO_RECEIPTS,
+		line = a.gens + ((size - a.size) * (b.gens - a.gens)) / (b.size - a.size);
+	return {
+		lo: Math.ceil(Math.min(b.gens, Math.max(a.gens, line))),
+		hi: size <= a.size ? a.gens : Math.ceil(Math.max(b.gens, line))
+	};
+}
+/** Pro returns its views as an unlabeled list in PixelLab's direction order, which DIRECTIONS shares (verified live
+ * 2026-11-13); the other models label each view by direction already. */
+export const labelViews = <T extends { label: string }>(
+	model: CreateSpec['model'],
+	views: T[]
+): T[] =>
+	model === 'pro'
+		? views.map((v) => ({ ...v, label: DIRECTIONS[Number(v.label)] ?? v.label }))
+		: views;
 /** Cost from measured prices: base 2 + import 0.25. Creation makes only the Default move (the standing views); idle, walk
  * and other moves are added later and priced by moveEstimate. */
 export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model'>) {
@@ -183,12 +209,8 @@ export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model'>
 	// Pro Flash's first image (GET /pro-flash/cost, provisional, 2026-11-12): 5 gens to 96 px, 6 to 208 px, then 9; V3's
 	// costs 1. The eight rotations are priced alike.
 	if (spec.model === 'pro') {
-		// Pro has no price quote and draws all eight views in one call: 10 gens at 48 px and 25 at 128 px (billed live,
-		// 2026-11-13). Other sizes span a straight-line guess and the nearest measured bound, so the maximum is never low.
-		const line = 10 + ((spec.size - 48) * 15) / 80,
-			lo = Math.ceil(Math.min(25, Math.max(10, line))) + 0.25,
-			hi = (spec.size <= 48 ? 10 : Math.ceil(Math.max(25, line))) + 0.25;
-		return { gens: lo, maxGens: +(hi + n * EST).toFixed(2), minutes: 5 };
+		const draw = proDrawGens(spec.size);
+		return { gens: draw.lo + 0.25, maxGens: +(draw.hi + 0.25 + n * EST).toFixed(2), minutes: 5 };
 	}
 	const first = spec.model !== 'pro-flash' ? 1 : spec.size <= 96 ? 5 : spec.size <= 208 ? 6 : 9;
 	const gens = +(first + 0.25 + Math.ceil((spec.size * spec.size * 8) / 65536)).toFixed(2);
@@ -712,10 +734,9 @@ export async function createCharacter(
 		DIRS = directions.filter((d) => !d.mirrorOf).map((d) => d.id);
 	const errors = [
 		...facingErrors(directions),
-		...(spec.frame !== undefined ? sizeErrors(spec.size, cell) : []),
-		...(spec.frame === undefined && !validBodySize(spec.size)
-			? ['Body size must be 32–256 pixels in 4 px steps.']
-			: []),
+		...(spec.frame !== undefined
+			? sizeErrors(spec.size, cell, spec.model)
+			: bodyErrors(spec.size, spec.model)),
 		...(!spec.description.trim() || spec.description.length > 2000
 			? ['Enter a prompt of 1–2,000 characters.']
 			: []),
@@ -727,12 +748,9 @@ export async function createCharacter(
 		...(spec.view && !['low top-down', 'high top-down', 'side'].includes(spec.view)
 			? ['Invalid camera.']
 			: []),
-		...(spec.model !== undefined && spec.model !== 'pro' && spec.model !== 'pro-flash'
-			? ['Invalid model.']
-			: []),
-		...modelErrors(spec.model, spec.size),
-		...((spec.outline !== undefined || spec.detail !== undefined) && spec.model
-			? ['Outline and detail apply to Character V3 only.']
+		...(spec.model !== undefined && !MODEL_IDS.includes(spec.model) ? ['Invalid model.'] : []),
+		...((spec.outline !== undefined || spec.detail !== undefined) && !modelOf(spec.model).styleHints
+			? [`Outline and detail do not apply to ${modelOf(spec.model).label}.`]
 			: []),
 		...(spec.outline !== undefined && !OUTLINE_VALUES.includes(spec.outline)
 			? ['Invalid outline.']
@@ -762,10 +780,7 @@ export async function createCharacter(
 
 	// 2. all eight original rotations on the frame. Re-import for rest keypoints.
 	onProgress({ step: 'rest', done: 0, total: 1, recIds: [] });
-	// Pro returns an unlabeled list in PixelLab's direction order, which DIRECTIONS shares (verified live 2026-11-13).
-	const rots = (await imagesOf(base)).map((r) =>
-			spec.model === 'pro' ? { ...r, label: DIRECTIONS[Number(r.label)] ?? r.label } : r
-		),
+	const rots = labelViews(spec.model, await imagesOf(base)),
 		rest = {} as Record<DirectionName, Img>,
 		restWarnings: string[] = [];
 	let pad: [number, number] = [0, 0];

@@ -127,22 +127,42 @@ export interface CharacterDraft {
 }
 /** The model that draws a new character. All end in the same V3 registration, so moves and items work the same way. */
 export type CharacterModel = 'v3' | 'pro' | 'pro-flash';
-/** create-character-pro draws 32-168 px frames. */
-export const PRO_MAX_BODY = 168;
-export const MODELS: { id: CharacterModel; label: string; help: string }[] = [
-	{ id: 'v3', label: 'Default (V3)', help: 'Balanced proportions.' },
-	{
-		id: 'pro',
-		label: 'Pro',
-		help: `Follows the prompt more closely, at several times the cost. Body size up to ${PRO_MAX_BODY} px.`
+export interface ModelLimits {
+	label: string;
+	help: string;
+	/** Body sizes PixelDoll accepts for this model, in BODY_STEP steps (check the OpenAPI snapshot before widening). */
+	body: { min: number; max: number };
+	/** Whether the model takes V3's outline and detail hints. */
+	styleHints: boolean;
+}
+export const BODY_STEP = 4;
+/** Each model's creation limits, in one place: the New character form and every validation read this table, so changing
+ * a limit is a one-line edit. v3 is the default. Prices live in estimate() (create.ts). */
+export const MODELS: Record<CharacterModel, ModelLimits> = {
+	v3: {
+		label: 'Default (V3)',
+		help: 'Balanced proportions.',
+		body: { min: 32, max: 256 },
+		styleHints: true
 	},
-	{
-		id: 'pro-flash',
+	pro: {
+		label: 'Pro',
+		help: 'Follows the prompt more closely, at several times the cost.',
+		body: { min: 32, max: 168 },
+		styleHints: false
+	},
+	'pro-flash': {
 		label: 'Pro Flash',
-		help: 'A chibi style with a big head and short legs, at about three times the cost.'
+		help: 'A chibi style with a big head and short legs, at about three times the cost.',
+		body: { min: 32, max: 256 },
+		styleHints: false
 	}
-];
-/** V3 style hints (soft guidance the model may not follow exactly); the Pro models have no equivalent. */
+};
+export const MODEL_IDS = Object.keys(MODELS) as CharacterModel[];
+/** The limits of a model; absent or unknown means the default (createCharacter refuses unknown models separately). */
+export const modelOf = (model?: string): ModelLimits =>
+	MODELS[model && Object.hasOwn(MODELS, model) ? (model as CharacterModel) : 'v3'];
+/** V3 style hints (soft guidance the model may not follow exactly), for models with styleHints. */
 export const OUTLINES = [
 	{ value: '', label: 'Default (black)' },
 	{ value: 'single color outline', label: 'Colored' },
@@ -158,12 +178,14 @@ export const OUTLINE_VALUES: string[] = OUTLINES.map((o) => o.value).filter(Bool
 export const DETAIL_VALUES: string[] = DETAILS.map((o) => o.value).filter(Boolean);
 /** Advanced choices as CreateSpec fields; defaults are left out, so a default creation keeps its request identity. */
 export function styleOf(d: Pick<CharacterDraft, 'model' | 'outline' | 'detail'>): {
-	model?: 'pro' | 'pro-flash';
+	model?: Exclude<CharacterModel, 'v3'>;
 	outline?: string;
 	detail?: string;
 } {
-	if (d.model === 'pro' || d.model === 'pro-flash') return { model: d.model };
+	const model = d.model && d.model !== 'v3' ? { model: d.model } : {};
+	if (!modelOf(d.model).styleHints) return model;
 	return {
+		...model,
 		...(d.outline ? { outline: d.outline } : {}),
 		...(d.detail ? { detail: d.detail } : {})
 	};
@@ -336,16 +358,27 @@ export function facingErrors(dirs: RigDirection[]): string[] {
 	}
 	return errors;
 }
-export const modelErrors = (model: CharacterModel | undefined, body: number | undefined) =>
-	model === 'pro' && Number.isFinite(body) && body! > PRO_MAX_BODY
-		? [`Pro draws bodies up to ${PRO_MAX_BODY} px. Choose a smaller body or another model.`]
-		: [];
-export const validBodySize = (body: number | undefined) =>
-	Number.isInteger(body) && body! >= 32 && body! <= 256 && body! % 4 === 0;
-export function sizeErrors(body: number | undefined, frame: number | undefined): string[] {
-	if (!Number.isInteger(body) || body! < 32 || body! > 256)
-		return ['Body size must be 32–256 whole pixels.'];
-	if (!validBodySize(body)) return ['Body size must use 4 px steps (32, 36, 40, …, 256).'];
+/** The body size problem for a model, if any (its range from MODELS). */
+export function bodyErrors(body: number | undefined, model?: string): string[] {
+	const m = modelOf(model),
+		{ min, max } = m.body;
+	if (!Number.isInteger(body) || body! < min || body! > max)
+		return [
+			`Body size must be ${min}–${max} whole pixels${m === MODELS.v3 ? '' : ` with ${m.label}`}.`
+		];
+	if (body! % BODY_STEP)
+		return [`Body size must use ${BODY_STEP} px steps (${min}, ${min + BODY_STEP}, …, ${max}).`];
+	return [];
+}
+export const validBodySize = (body: number | undefined, model?: string) =>
+	!bodyErrors(body, model).length;
+export function sizeErrors(
+	body: number | undefined,
+	frame: number | undefined,
+	model?: string
+): string[] {
+	const bad = bodyErrors(body, model);
+	if (bad.length) return bad;
 	const min = autoFrame(body!);
 	return !Number.isInteger(frame) || frame! < min || frame! > 256
 		? [`Frame must be ${min}–256 whole pixels.`]
@@ -353,8 +386,11 @@ export function sizeErrors(body: number | undefined, frame: number | undefined):
 }
 export function draftErrors(d: CharacterDraft): string[] {
 	return [
-		...sizeErrors(d.body, d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame),
-		...modelErrors(d.model, d.body),
+		...sizeErrors(
+			d.body,
+			d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame,
+			d.model
+		),
 		...facingErrors(facingOf(d)),
 		...(d.seed &&
 		(!/^\d+$/.test(d.seed) ||

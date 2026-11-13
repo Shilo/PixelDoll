@@ -10,7 +10,9 @@ import {
 	estimate,
 	isAuthoredAction,
 	moveDirections,
-	moveFrames
+	moveFrames,
+	PRO_RECEIPTS,
+	proDrawGens
 } from './create.ts';
 import { poseBatches, poseCallGens } from '../lib/rig/clips.ts';
 import { pickKey } from '../lib/image/chroma.ts';
@@ -46,6 +48,11 @@ export interface PeekCall {
 const dependent =
 	'Payload unavailable until the preceding result is ready. Actual sent data is shown when available.';
 const selectedSeed = 'A fresh seed is selected when you run this action.';
+const proPriceNote = (size: number) => {
+	const { lo, hi } = proDrawGens(size);
+	const receipts = PRO_RECEIPTS.map((r) => `${r.gens} gens at ${r.size} px`).join(' and ');
+	return `Pro has no price quote: about ${lo === hi ? lo : `${lo}–${hi}`} gens at ${size} px, estimated from receipts of ${receipts}.`;
+};
 const lifecycle = (): PeekCall[] => [
 	{
 		method: 'GET',
@@ -113,7 +120,16 @@ export function createPlan(spec: CreateSpec, freshSeed = false): PeekCall[] {
 			...drawRequest(spec, seed),
 			label: 'Create base character',
 			generations: +(estimate(spec).gens - 0.25).toFixed(2),
-			...(freshSeed ? { note: `Known fields only. ${selectedSeed}` } : {})
+			...(freshSeed || spec.model === 'pro'
+				? {
+						note: [
+							freshSeed ? `Known fields only. ${selectedSeed}` : '',
+							spec.model === 'pro' ? proPriceNote(spec.size) : ''
+						]
+							.filter(Boolean)
+							.join(' ')
+					}
+				: {})
 		},
 		{
 			method: 'POST',

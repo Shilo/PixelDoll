@@ -66,15 +66,18 @@ Character menu → **New character…**
 1. Enter a **Name** in the title bar for your library and exports. It is not sent as part of the prompt.
 2. In **Appearance**, add **Details** and choose Kind, Build, Proportions or Skin. **Not set** adds no extra hint.
    New characters request plain white underwear. Turn on **Nude**, below Skin, only if you want nothing worn.
-   Switch to **Prompt** to edit the exact V3 text. Complete lines such as `Kind: Elf` update the matching control; other
+   Switch to **Prompt** to edit the exact prompt text. Complete lines such as `Kind: Elf` update the matching control; other
    prose stays in Details. The muted preview and Copy button always use the complete prompt.
-3. Choose a **Body size** preset (48, 64, 96 or 128 px), or type 32–256 pixels in 4px increments. This is V3's source canvas,
-   not a guaranteed opaque body height. **Frame → Auto** adds padding; type a larger frame for more room, up to 256 px.
+3. Choose a **Body size** preset (48, 64, 96 or 128 px), or type a size in 4px increments: 32–256 px, or up to 168 px
+   with the Pro model. This is the model's source canvas, not a guaranteed opaque body height. **Frame → Auto** adds padding; type a larger frame for more room, up to 256 px.
    Neither padding nor export rescale the artwork. Above an 80 px frame, a note warns that items cost more.
 4. Choose **Directions**: Top-down 8 (default), Top-down 4, Diagonal 4, Side-scroller 2 or Unique 8. Individual arrows
    toggle retained views. Attached mirror buttons derive that view from its horizontal partner. Select the opposite
    mirror button to reverse the source. Removing a source makes its remaining partner independent. **Unique 8** has no mirrors.
-5. Check **Camera** and leave **Seed** blank for a fresh variation, or enter a non-negative whole seed. The seed affects
+5. Check **Camera**. **Advanced** holds the **Model** (Default V3; Pro, which follows the prompt more closely at several
+   times the cost; or Pro Flash, a chibi style), V3's Outline and Detail hints and the **Seed**. The form adjusts to the
+   chosen model, and a body size it cannot draw is flagged before anything is spent. Leave **Seed** blank for a fresh
+   variation, or enter a non-negative whole seed. The seed affects
    the drawing rather than one appearance trait, and moves added later pick their own seeds; reuse can give similar
    results but does not guarantee identical pixels.
 6. Press **Create character**. It draws your character standing in the selected directions, its **Default** pose, in a
@@ -84,7 +87,7 @@ Hover a title on desktop, or tap it on mobile, for help. **Enhance** uses the V3
 and camera; the same button becomes **Undo**. It never runs automatically during creation. A failed or stale response keeps
 your text, and no enhancement is automatically retried.
 
-V3 always creates all eight original views. PixelDoll pads and registers them, keeps the selected views and derives the
+Every model creates all eight original views. PixelDoll pads and registers them, keeps the selected views and derives the
 selected mirrors. The standing views appear in the creator as soon as they are drawn; they all arrive together. Asymmetric details change sides in a mirrored view; use an independent view
 when that matters. A result that does not fit the chosen frame stops with a size error instead of silently cropping it.
 
