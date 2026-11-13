@@ -638,7 +638,7 @@
 	inset: -3px -3px 0 0;
 }
 /* The worn check and status icons share the top-left corner (the ⋮ has the other): a row that wraps after three icons,
-   over the art, so a tile never grows. Every Wardrobe tile, Empty included, keeps the check in the same place. An icon
+   over the art, so a tile never grows: four to a row, or three on a tile too narrow to keep them clear of the ⋮. Every Wardrobe tile, Empty included, keeps the check in the same place. An icon
    takes the pointer so its title explains it on hover; a click on it still reaches the tile it sits in. */
 .item-tile .tile-marks {
 	position: absolute;
@@ -647,8 +647,8 @@
 	z-index: 1;
 	display: flex;
 	flex-wrap: wrap;
-	gap: 4px;
-	width: calc(14px * 3 + 4px * 2);
+	gap: 3px;
+	width: min(14px * 4 + 3px * 3, 100% - 37px);
 	pointer-events: none;
 }
 .tile-marks > :is(.bu-tile-check, .tile-status) {

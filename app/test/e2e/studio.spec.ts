@@ -5884,7 +5884,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await deleteAlert.getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(hat).toHaveCount(0);
 	await expect(grid.locator('.shared-tile', { hasText: 'Wizard hat' })).toHaveAccessibleName(
-		/^Wizard hat, .*from Adventurer$/
+		/^Wizard hat, from Adventurer(,|$)/
 	);
 	await expect(head.getByRole('button', { name: neighbor, exact: true })).toBeFocused();
 

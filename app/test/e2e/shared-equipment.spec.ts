@@ -125,7 +125,7 @@ test('another character’s item on the same body is worn for free, survives rel
 	// The demo's wizard hat has no frames for some moves: an exact copy, but it hides there.
 	const hat = sharedTile(others, 'Traveling wizard hat');
 	await expect(hat).toHaveAccessibleName(
-		/^Traveling wizard hat, missing frames in \d+ moves?, from Twin$/
+		/^Traveling wizard hat, from Twin, missing frames in \d+ moves?$/
 	);
 	await expect(hat).not.toHaveAttribute('aria-pressed');
 	await hat.click();
@@ -198,14 +198,14 @@ test('a shared item’s ⋮ explains how it fits and makes one for this characte
 	const others = await threeCharacters(page);
 	const giant = sharedTile(others, 'Giant helmet');
 	await expect(giant).toHaveAccessibleName(
-		'Giant helmet, not fitted to this body, missing some Cross punch frames, from Giant'
+		'Giant helmet, from Giant, not fitted to this body, missing some Cross punch frames'
 	);
-	// Each icon explains itself on hover, problems first; the ⋮ menu says the same, for touch too.
+	// Each icon explains itself on hover, where it came from first; the ⋮ menu says the same, in the same order, for touch too.
 	const titles = [
+		'From Giant. Wearing it copies it here for free.',
 		// Its standing move shows the helmet's standing frame and its walk uses Giant's walk; the punch has no art, so it hides.
 		'Drawn for Giant’s body, so it may float, clip or leave gaps. Default uses the first Giant default frame; Walk uses Giant walk.',
-		'Missing some Cross punch frames; it hides there.',
-		'From Giant. Wearing it copies it here for free.'
+		'Missing some Cross punch frames; it hides there.'
 	];
 	expect(
 		await giant.locator('.tile-status').evaluateAll((el) => el.map((e) => e.getAttribute('title')))
@@ -251,17 +251,17 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 	);
 	const own = page.locator('.equipment-scroll [role=group][aria-label="Head items"]');
 	const worn = own.getByRole('button', {
-		name: 'Stout helmet, not fitted to this body, copied from Stout',
+		name: 'Stout helmet, copied from Stout, not fitted to this body',
 		exact: true
 	});
 	await expect(worn).toHaveAttribute('aria-pressed', 'true');
-	// Worn, not fitted and copied: the check, the fit glyph and where it came from, each explained on hover.
+	// Worn, copied and not fitted: the check, where it came from and the fit glyph, each explained on hover.
 	await expect(worn.locator('.bu-tile-check')).toHaveAttribute('title', 'Wearing');
 	expect(
 		await worn.locator('.tile-status').evaluateAll((el) => el.map((e) => e.getAttribute('title')))
 	).toEqual([
-		'Drawn for Stout’s body, so it may float, clip or leave gaps.',
-		'Copied from Stout for free.'
+		'Copied from Stout for free.',
+		'Drawn for Stout’s body, so it may float, clip or leave gaps.'
 	]);
 	await expect(others.locator('.shared-tile', { hasText: 'Stout helmet' })).toHaveCount(0);
 	await reloadStudio(page);
@@ -544,7 +544,7 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 	await equipmentGroup(page, 'Main hand');
 	const others = page.locator('.equipment-scroll [role=group][aria-label="Main hand items"]');
 	await expect(sharedTile(others, 'Lefty sword')).toHaveAccessibleName(
-		'Lefty sword, check fit, from Lefty'
+		'Lefty sword, from Lefty, check fit'
 	);
 	await sharedTile(others, 'Lefty sword').click();
 	await expect(page.locator('.bu-toast')).toContainText(
@@ -552,7 +552,7 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 	);
 	const fitted = page
 		.locator('.equipment-scroll')
-		.getByRole('button', { name: /^Lefty sword, needs a look/ });
+		.getByRole('button', { name: /^Lefty sword, copied from Lefty, needs a look/ });
 	await expect(fitted).toHaveAttribute('data-selected');
 	// Worn after the free fit: the check mark, and beside it the warning, explained on hover.
 	await expect(fitted.locator('.bu-tile-check')).toBeVisible();

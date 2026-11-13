@@ -22,8 +22,8 @@
 		missing: { icon: Clapperboard, tone: 'warning' },
 		hidden: { icon: EyeOff, tone: 'hidden' }
 	};
-	/** Left to right: the worn check keeps its corner, then problems worst first, then where the item came from. */
-	const ORDER: MarkKind[] = ['worn', 'blocked', 'unfitted', 'check', 'missing', 'hidden', 'shared'];
+	/** Left to right, on the tile and in its ⋮ menu: worn, where it came from, then problems worst first. */
+	const ORDER: MarkKind[] = ['worn', 'shared', 'blocked', 'unfitted', 'check', 'missing', 'hidden'];
 	export const sortMarks = (marks: (Mark | false | undefined | null | '')[]) =>
 		(marks.filter(Boolean) as Mark[]).sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
 </script>
