@@ -1,4 +1,10 @@
+import os from 'node:os';
 import { defineConfig } from 'vitest/config';
+
+// A workstation run yields to the desktop and to other work: the test processes inherit the lowered priority.
+// A run that was started lower still stays there.
+const below = os.constants.priority.PRIORITY_BELOW_NORMAL;
+if (!process.env.CI && os.getPriority() < below) os.setPriority(below);
 
 export default defineConfig({
 	define: { __AGENT_API_BASE__: 'null' }, // as in every non-agent mode (vite.config.ts)

@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-e2e-*
+.svelte-check
 .runtime-sync-*/
 dist-ssr
 *.local

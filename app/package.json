@@ -12,7 +12,7 @@
 		"dev:agent": "vite --mode agent --port 5199 --strictPort",
 		"build": "vite build && node scripts/dist-guard.mjs",
 		"preview": "vite preview",
-		"check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json && tsc -p tsconfig.test.json && prettier --check .",
+		"check": "node scripts/check-cache.mjs && svelte-check --tsconfig ./tsconfig.app.json --incremental && tsc -p tsconfig.node.json && tsc -p tsconfig.test.json && prettier --check --cache .",
 		"format": "prettier --write .",
 		"selftest": "npm test",
 		"test": "vitest run",

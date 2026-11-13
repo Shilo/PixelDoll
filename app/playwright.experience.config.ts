@@ -8,7 +8,7 @@ refuseAgentServer(baseURL);
 export default defineConfig({
 	testDir: './test/e2e',
 	testMatch: ['experience.spec.ts', 'experience-parity.spec.ts'],
-	outputDir: `${process.env.TEST_OUTPUT_DIR ?? 'test-results'}/experience-run`, // concurrent agents each set their own
+	outputDir: `${process.env.TEST_OUTPUT_DIR ?? 'test-results'}/experience-run`,
 	timeout: 45_000,
 	expect: { timeout: 8_000 },
 	workers: 1,
