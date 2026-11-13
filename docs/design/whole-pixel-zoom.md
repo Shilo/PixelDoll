@@ -5,82 +5,62 @@ rediscovery. Board card: "Make scene zoom levels whole-pixel".
 
 ## Background
 
-Characters and Customize Preview share one scene zoom (`app/src/studio/experience/zoom.ts`, `sceneZoom.ts`). Wheel
-notches, the `+`/`-` keys and the zoom buttons step through fixed levels, `ZOOM_STEPS` = 50, 60, 70, 80, 90, 100, 110,
-125 and 150%. Pinch zoom is continuous and snaps to 100% when released within 4% of it. Both screens share the 50 to
-150% bounds so a level reads and scales the same on each.
+Scene zoom is absolute (see "Scene zoom" in [production-experience.md](production-experience.md)): 100% is one CSS
+pixel per art pixel. Wheel, keys and buttons step through every whole multiple (100, 200, 300, 400%, ...) with even
+steps between them while a step would exceed 25% (125, 150, 175, 250 and 350%), plus each screen's fit
+(`zoomLevels` in `app/src/studio/experience/zoom.ts`).
 
-"100%" is the automatic fit, not the sprite's native size. How each screen picks its fit:
+Pixel-perfect means every art pixel covers the same whole number of device pixels. That already holds for:
 
-- **Customize Preview** (`WorldStage.svelte`, `lineup.ts`): `actorScale` and `planLineup` choose a whole number of
-  device pixels per art pixel (`Math.floor(fit * density) / density`), so 100% is already pixel-perfect.
-- **Characters** (`Experience.svelte`, `carousel.ts`): `heroScale` floors to a whole CSS-pixel multiple, but `castPose`
-  then caps the selected character at 48% of the stage width (`Math.min(size, width * 0.48)`). On phones that cap makes
-  the cast fractional even at 100%.
+- every whole multiple on a whole-number `devicePixelRatio` (1, 2, 3);
+- 150%, 250% and 350% at `devicePixelRatio` 2;
+- Customize's fit, which `actorScale` and `planLineup` choose in whole device pixels.
 
 ## The concern
 
-Pixel-perfect means every art pixel covers the same whole number of device pixels, not native size. A level that
-multiplies a whole-pixel fit by a non-integer factor breaks that. Example with a 4x fit:
+Nearest-neighbor rendering keeps edges sharp, but a non-whole scale draws some art pixels one device pixel wider than
+others. Symptoms: outlines of varying thickness, uneven dither, and shimmer while a walk cycle moves pixels across the
+uneven grid. It remains for:
 
-| Level  | 50% | 60%  | 70%  | 80%  | 90%  | 100% | 110% | 125% | 150% |
-| ------ | --- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| Scale  | 2x  | 2.4x | 2.8x | 3.2x | 3.6x | 4x   | 4.4x | 5x   | 6x   |
-| Whole? | yes | no   | no   | no   | no   | yes  | no   | yes  | yes  |
+- the in-between levels (125, 150, 175, 250, 350%) at `devicePixelRatio` 1;
+- every level at fractional `devicePixelRatio` (Windows scaling 125% or 150%), where 100% is 1.25 or 1.5 device pixels;
+- the Characters fit on phones, which `castPose` caps at 48% of the stage width (`app/src/studio/experience/carousel.ts`)
+  and can therefore be fractional, including the default view.
 
-Non-whole scales draw some art pixels one device pixel wider than others (nearest-neighbor rendering keeps edges sharp
-but uneven). Symptoms: outlines of varying thickness, uneven dither and checker patterns, and shimmer while a walk cycle
-moves pixels across the uneven grid.
-
-How visible it is depends on scale and display density:
-
-- A one-pixel difference is 50% of an art pixel at 2x, 33% at 3x, about 12% at 8x.
-- High-density displays (phones, Retina, most laptops at 2x or 3x) make it subtle.
-- It is most visible on 1x desktop monitors with a small fit (2x or 3x).
-- Fractional OS scaling (Windows 125% or 150%, `devicePixelRatio` 1.25 or 1.5) cannot be whole-pixel at every level.
+Visibility shrinks with scale: a one-pixel difference is 50% of an art pixel at 2x but about 12% at 8x, and high-density
+displays make it subtle. It is most visible on 1x monitors at small scales.
 
 ## Options
 
-1. **Snap each level to the nearest whole-pixel scale.** Cheapest, but at small fits several steps collapse to the same
-   size (3x fit at 1x density: 60 to 90% all draw at 2x), so steps appear to do nothing.
-2. **Generate the levels from the fit:** `k / (fit * devicePixelRatio)` for integer `k`, kept within 50 to 150%. With
-   8 device pixels per art pixel (4x fit, 2x display): 50, 62.5, 75, 87.5, 100, 112.5, 125, 137.5 and 150%. Every step
-   is pixel-perfect and distinct, but the ladder depends on the fit, so the two screens only match when their fits do.
-3. **Option 2 plus one shared whole-pixel fit for both screens.** Characters adopts Customize's whole-device-pixel fit
-   rule and drops the fractional 48% width cap, so both screens share one ladder: identical percentages, pixel-perfect
-   everywhere, and stepping still returns to exactly 100%. Cost: the cast on phones changes size slightly, and small
-   fits get few levels (1x fit at 2x density: 50, 100, 150%).
-4. **Label zoom as pixel scale (2x, 3x, ...).** Honest for pixel art, but 100% no longer means the fit, and the
-   percentage consistency the owner asked for is lost.
+1. **Drop the in-between levels at `devicePixelRatio` 1** (step 100, 200, 300, ...). Every level pixel-perfect there, but
+   coarse at small scales (one step from 100% doubles the size).
+2. **Generate in-between levels in whole device pixels**: levels k / `devicePixelRatio`. At 2x this is already the case
+   for 150, 250 and 350%; at 1x there are none between whole multiples. Ladders then differ between displays.
+3. **Make the Characters fit whole-pixel**: drop the fractional 48% cap in favor of the largest whole-device-pixel scale
+   that fits that width. The default framing on phones changes slightly.
+4. **Accept fractional `devicePixelRatio`**: 100% stays one CSS pixel; pixel-perfect there would mean defining 100% in
+   device pixels, which makes characters smaller on scaled displays.
 
 ## Recommendation
 
-Option 3, labels rounded to whole percents (63%, 88%), with fallbacks:
-
-- Keep the current `ZOOM_STEPS` when the generated ladder has fewer than three levels, or when `devicePixelRatio` is
-  fractional and few whole-pixel scales exist.
-- A pinch snaps to the nearest generated level on release (replacing the 4% band).
-
-Only `ZOOM_STEPS` and its consumers change; `zoomStep`, the shared bounds, head-keeping and swipe logic stay.
+Only if the measurement below shows visible artifacts: option 3 first (it fixes the default view itself), then option 1
+behind a measurement on a 1x monitor. Keep option 4: CSS pixels are the honest unit for "true size".
 
 ## Rollout without regressions
 
-1. **Measure first.** Screenshot 100% against 110% on a 1x monitor with a small fit (for example 1280x720 at 1x). If the
-   difference is not visible, close the card.
-2. Unify the fit (the riskiest step): Characters uses Customize's fit rule. Compare screenshots on phone and desktop,
-   portrait and landscape, dark and light, before continuing.
-3. Generate the ladder from the shared fit and `devicePixelRatio`; recompute on resize and display change.
-4. Add the fallbacks and pinch snapping.
+1. **Measure first.** Screenshot 125% and 100% on a 1x monitor with a small fit, and the Characters default on a phone.
+   If the difference is not visible, close the card.
+2. Option 3 is the riskiest step (cast layout on phones): compare screenshots on phone and desktop, portrait and
+   landscape, dark and light, before continuing.
 
 ## Testing
 
-- **Unit** (`app/test/unit/experience-zoom.test.ts`): generate ladders for fits 1x to 8x and `devicePixelRatio` 1, 1.25,
-  1.5, 2 and 3. Every generated level times fit times density is an integer; the ladder contains exactly 1; it stays
-  within 50 to 150%; the fallback applies below three levels; stepping out and back returns to 1.
-- **End-to-end** (`app/test/e2e/scene-zoom.spec.ts`): at every level, the selected sprite's device-pixel width divided
-  by its art width is an integer on both screens; the existing round-trip, cross-screen, resize and swipe tests keep
-  passing unchanged.
-- **Visual:** a screenshot matrix of levels across 320x568, 390x844, 844x390, 1280x720 and 1920x1080, both themes,
-  `deviceScaleFactor` 1 and 2, checking outlines and a walk cycle for shimmer.
-- **Regression:** the full `npm run e2e` suite, since the Characters fit change touches cast layout, the carousel and
-  hit regions.
+- **Unit** (`app/test/unit/experience-zoom.test.ts`): ladders keep every whole multiple, stay strictly increasing, and
+  retrace exactly from fits 0.75 to 20; any change keeps those.
+- **End-to-end** (`app/test/e2e/scene-zoom.spec.ts`): at each whole multiple on `deviceScaleFactor` 1 and 2, the selected
+  sprite's device-pixel width divided by its art width is an integer on both screens; the round-trip, cross-screen,
+  resize and swipe tests keep passing unchanged.
+- **Visual:** a screenshot matrix across 320x568, 390x844, 844x390, 1280x720 and 1920x1080, both themes, checking
+  outlines and a walk cycle for shimmer.
+- **Regression:** the full `npm run e2e` suite if the Characters fit changes, since it touches cast layout, the carousel
+  and hit regions.
