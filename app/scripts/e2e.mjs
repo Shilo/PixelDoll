@@ -47,7 +47,7 @@ if (workstation && !scoped) {
 			'npm run e2e needs spec names here: the full suite takes minutes of heavy CPU, and CI runs it on every push.',
 			'  npm run e2e -- <spec names> [-g "<title>"]   the specs that cover your change (AGENTS.md "Testing")',
 			'  npm run e2e -- <spec names> --last-failed    of those specs, only what failed in the last run',
-			'  npm run e2e -- --all                         the full suite: cross-cutting changes, or when asked'
+			'  npm run e2e -- --all                         the full suite: only when asked (npm run land runs it in CI)'
 		].join('\n')
 	);
 	process.exit(2);

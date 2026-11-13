@@ -67,30 +67,33 @@ if (ships(main, sha) && !proven(sha)) {
 	const before = runs(sha);
 	let ci = before.find((known) => known.status !== 'completed'); // a branch you pushed yourself may already be running
 	const branch = ci ? '' : `land/${sha.slice(0, 10)}`;
-	if (branch) git('push', '--quiet', 'origin', `${sha}:refs/heads/${branch}`);
+	if (branch) {
+		git('push', '--quiet', 'origin', `${sha}:refs/heads/${branch}`);
+		// The run and its logs outlive the branch. On exit, because fail() leaves through process.exit.
+		process.on('exit', () => run('git', ['push', '--quiet', 'origin', '--delete', branch]));
+	}
 	for (let tries = 0; !ci && tries < 24; tries++) {
 		await new Promise((resolve) => setTimeout(resolve, 5000));
+		// A push starts a run only if the commits new to GitHub change what ships: not when the commit is already there
+		// under another branch, or when only docs came after the last push. Then start the run by hand.
+		if (tries === 4) out('gh', 'workflow', 'run', WORKFLOW, '--ref', branch);
 		ci = runs(sha).find((found) => !before.some((known) => known.databaseId === found.databaseId));
 	}
-	let problem = ci ? '' : `No CI run started for ${branch} within two minutes; main is unchanged.`;
-	if (ci) {
-		console.log(`Waiting for CI on ${sha.slice(0, 8)} (about 3 minutes): ${ci.url}`);
-		run('gh', ['run', 'watch', String(ci.databaseId), '--interval', '15'], 'ignore');
-		const { conclusion, jobs } = JSON.parse(
-			out('gh', 'run', 'view', String(ci.databaseId), '--json', 'conclusion,jobs')
-		);
-		if (conclusion !== 'success')
-			problem =
-				`CI ${conclusion || 'did not finish'} on ${sha.slice(0, 8)}; main is unchanged. Failed: ` +
+	if (!ci) fail(`No CI run started for ${branch} within two minutes; main is unchanged.`);
+	console.log(`Waiting for CI on ${sha.slice(0, 8)} (about 3 minutes): ${ci.url}`);
+	run('gh', ['run', 'watch', String(ci.databaseId), '--interval', '15'], 'ignore');
+	const { conclusion, jobs } = JSON.parse(
+		out('gh', 'run', 'view', String(ci.databaseId), '--json', 'conclusion,jobs')
+	);
+	if (conclusion !== 'success')
+		fail(
+			`CI ${conclusion || 'did not finish'} on ${sha.slice(0, 8)}; main is unchanged. Failed jobs: ` +
 				jobs
-					.filter((job) => job.conclusion === 'failure')
+					.filter((job) => !['success', 'skipped'].includes(job.conclusion))
 					.map((job) => job.name)
 					.join(', ') +
-				`\nRead it with: gh run view ${ci.databaseId} --log-failed\nFix it, commit and land again.`;
-	}
-	// The run and its logs outlive the branch. Removed before failing: process.exit skips a finally block.
-	if (branch) run('git', ['push', '--quiet', 'origin', '--delete', branch]);
-	if (problem) fail(problem);
+				`\nRead them with: gh run view ${ci.databaseId} --log-failed\nFix it, commit and land again.`
+		);
 }
 
 // The pre-push hook asks --check here; main can also have moved while CI ran.

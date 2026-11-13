@@ -178,7 +178,7 @@ From `app/`:
 ```bash
 npx vitest run --reporter=verbose                  # per-test unit durations
 npm run e2e -- --all                               # full suite, local workers (waits for any other run)
-git push origin HEAD:refs/heads/try/<name>         # full suite in CI on any branch; read it with gh run list --branch try/<name>
+git push origin HEAD:refs/heads/try/<name>         # full suite in CI on any branch (if the push changes app/); read it with gh run list --branch try/<name>
 npm run e2e -- <spec>                              # targeted
 node scripts/e2e-shard.mjs 3/16 $TEMP/shard.txt && CI=1 npm run e2e -- --test-list $TEMP/shard.txt   # one CI shard (1 worker, 5 s expect, 1 retry)
 gh run view <run-id> --json createdAt,updatedAt,jobs
