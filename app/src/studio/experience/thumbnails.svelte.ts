@@ -15,6 +15,10 @@ export function croppedThumbnail(image: Img): Img | null {
 	return cropped.get(image)!;
 }
 
+export function croppedBacking(size: number, image: Img, dpr: number): number {
+	return Math.max(1, Math.floor((size / Math.max(image.w, image.h)) * dpr));
+}
+
 type CharacterStill = { image: Img | null; frame: Frame; body: Frame; facts: string };
 const rendered = new WeakMap<Project, { key: string; still: CharacterStill }>();
 

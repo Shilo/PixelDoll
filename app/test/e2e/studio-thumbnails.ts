@@ -111,19 +111,31 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 			{ buildPresentation, southStill, renderPresentation } = await import(presentationPath);
 		const dressPath = '/src/lib/dress/dress.ts',
 			{ recolor } = await import(dressPath);
+		const modelPath = '/src/studio/model.ts',
+			{ crop } = await import(modelPath);
 		return state.store.project.manifest.presets.map((preset: any, index: number) => {
 			const assets = buildPresentation(recolor(state.store.project, preset.variants));
-			const image = renderPresentation(assets, preset.items, southStill(assets)).image;
+			const image = crop(renderPresentation(assets, preset.items, southStill(assets)).image);
 			const source = buildPresentation(state.store.project);
-			const sourceImage = renderPresentation(source, preset.items, southStill(source)).image;
+			const sourceImage = crop(renderPresentation(source, preset.items, southStill(source)).image);
 			const canvas = document.querySelectorAll<HTMLCanvasElement>('.outfit-thumb canvas')[index];
 			const actual = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+			const backing = Math.max(1, Math.floor((56 / Math.max(image.w, image.h)) * state.ui.dpr));
 			return {
 				matches:
-					image.w === canvas.width &&
-					image.h === canvas.height &&
-					actual.every((value, offset) => value === image.data[offset]),
+					image.w * backing === canvas.width &&
+					image.h * backing === canvas.height &&
+					actual.every((value, offset) => {
+						const pixel = Math.floor(offset / 4);
+						const sourcePixel =
+							Math.floor(Math.floor(pixel / canvas.width) / backing) * image.w +
+							Math.floor((pixel % canvas.width) / backing);
+						return value === image.data[sourcePixel * 4 + (offset % 4)];
+					}),
 				painted: actual.some((value, offset) => offset % 4 === 3 && value > 0),
+				fits:
+					canvas.getBoundingClientRect().width <= 56.1 &&
+					canvas.getBoundingClientRect().height <= 56.1,
 				recolored:
 					preset.name !== 'Thumbnail colors' ||
 					image.data.some((value: number, offset: number) => value !== sourceImage.data[offset])
@@ -131,7 +143,7 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 		});
 	});
 	for (const image of pixels)
-		expect(image).toEqual({ matches: true, painted: true, recolored: true });
+		expect(image).toEqual({ matches: true, painted: true, fits: true, recolored: true });
 	await page.screenshot({ path: info.outputPath('outfits-desktop-dark.png') });
 	const work = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
@@ -166,6 +178,66 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 	expect(await rowHeight('.move-row')).toBe(characterHeight);
 	await expectFixedRow('.move-row', '.move-text > *');
 	expect(await page.evaluate(() => Reflect.get(window, '__moveThumbnailDraws'))).toBeGreaterThan(0);
+	const moveUpdates = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath);
+		const animation = state.store.project.manifest.rig.animations[0];
+		const originalFrames = animation.frames;
+		const originalItems = { ...state.doc.items };
+		const originalVariants = { ...state.doc.variants };
+		const canvas = document.querySelector<HTMLCanvasElement>('.move-thumb canvas')!;
+		const originalDraw = CanvasRenderingContext2D.prototype.drawImage;
+		const pixels = () =>
+			canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+		const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+		let draws = 0;
+		try {
+			animation.frames = Array.from({ length: 3 }, () => ({ ...originalFrames[0] }));
+			state.doc.rev++;
+			state.ui.frame = 0;
+			await nextFrame();
+			CanvasRenderingContext2D.prototype.drawImage = function (
+				image: CanvasImageSource,
+				...coords: number[]
+			) {
+				if (this.canvas === canvas) draws++;
+				return Reflect.apply(originalDraw, this, [image, ...coords]);
+			};
+			state.doc.rev++;
+			await nextFrame();
+			const revisionDraws = draws;
+			for (let frame = 1; frame <= 9; frame++) {
+				state.ui.frame = frame;
+				await nextFrame();
+			}
+			const repeatDraws = draws - revisionDraws;
+			const equipped = pixels();
+			state.doc.items.head = null;
+			await nextFrame();
+			const unequipped = pixels();
+			state.doc.variants.cape_red_1 = '#00ff00';
+			await nextFrame();
+			const recolored = pixels();
+			return {
+				revisionDraws,
+				repeatDraws,
+				equipmentChanged: equipped.some((value, index) => value !== unequipped[index]),
+				colorsChanged: unequipped.some((value, index) => value !== recolored[index])
+			};
+		} finally {
+			CanvasRenderingContext2D.prototype.drawImage = originalDraw;
+			animation.frames = originalFrames;
+			state.doc.items = originalItems;
+			state.doc.variants = originalVariants;
+			state.doc.rev++;
+		}
+	});
+	expect(moveUpdates).toEqual({
+		revisionDraws: 1,
+		repeatDraws: 0,
+		equipmentChanged: true,
+		colorsChanged: true
+	});
 	await page.screenshot({ path: info.outputPath('moves-desktop-dark.png') });
 	for (const theme of ['light', 'dark']) {
 		await page.evaluate(async (theme) => {

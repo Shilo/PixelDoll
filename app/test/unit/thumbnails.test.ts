@@ -9,6 +9,12 @@ import {
 import { makeImg } from '../../src/lib/image/png.ts';
 import { readFile } from 'node:fs/promises';
 import { loadFixture } from '../../src/lib/compose/fixture.ts';
+import { crop } from '../../src/studio/model.ts';
+import {
+	buildPresentation,
+	renderPresentation,
+	southStill
+} from '../../src/studio/experience/presentation.ts';
 
 test('selected thumbnails share composition and cropping until their outfit or artwork changes', async () => {
 	const project = await loadFixture(
@@ -62,4 +68,39 @@ test('a complete listing drops the thumbnails of characters no longer listed', (
 	keepThumbnails(new Set(['fixture:s2', 'rig-kept']));
 	expect([...stills.keys()]).toEqual(['rig-kept']);
 	expect(newest.has('rig-deleted')).toBe(false);
+});
+
+test('static outfit trimming preserves the full padded weapon silhouette and faint edge pixels', async () => {
+	const project = await loadFixture(
+		async (path) =>
+			new Uint8Array(await readFile(new URL('../../public/fixtures/s2/' + path, import.meta.url)))
+	);
+	const weapon = project.manifest.items.find((item) => item.id === 'sword_steel')!;
+	const image = makeImg(160, 96);
+	image.data.set([220, 30, 50, 1], (5 * 160 + 2) * 4);
+	image.data.set([50, 30, 220, 255], (90 * 160 + 157) * 4);
+	const hash = `sha256:${'f'.repeat(64)}` as const;
+	project.images.set(hash, image);
+	weapon.layers = [
+		{
+			id: 'fg',
+			role: 'fg',
+			z: 200,
+			cell: { w: 160, h: 96 },
+			pivot: { x: 80, y: 80 },
+			cells: Object.fromEntries(
+				project.manifest.rig.animations.map((clip) => [clip.id, { south: [hash] }])
+			)
+		}
+	];
+	const assets = buildPresentation(project);
+	const still = renderPresentation(assets, { main_hand: weapon.id }, southStill(assets));
+	const trimmed = crop(still.image!)!;
+	expect([still.image!.w, still.image!.h]).toEqual([160, 96]);
+	expect([trimmed.w, trimmed.h]).toEqual([156, 86]);
+	expect([...trimmed.data.slice(0, 4)]).toEqual([220, 30, 50, 1]);
+	expect([...trimmed.data.slice(-4)]).toEqual([50, 30, 220, 255]);
+	const visible = (pixels: Uint8ClampedArray) =>
+		pixels.filter((value, index) => index % 4 === 3 && value > 0).length;
+	expect(visible(trimmed.data)).toBe(visible(still.image!.data));
 });

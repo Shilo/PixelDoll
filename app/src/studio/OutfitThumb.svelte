@@ -7,7 +7,7 @@
 		type PresentationAvailability,
 		type Presentation
 	} from './experience/presentation.ts';
-	import { thumbBacking } from './experience/thumbnails.svelte.ts';
+	import { croppedBacking, croppedThumbnail } from './experience/thumbnails.svelte.ts';
 	import { ui } from './state.svelte.ts';
 	import { PersonStanding } from './icons.ts';
 	import Sprite from './Sprite.svelte';
@@ -25,13 +25,17 @@
 			preview.pose
 		)
 	);
+	const image = $derived(still.image && croppedThumbnail(still.image));
+	const backing = $derived(image ? croppedBacking(56, image, ui.dpr) : 1);
+	const fitToBox = $derived(!!image && (image.w > 56 || image.h > 56));
 </script>
 
 <span class="outfit-thumb" aria-hidden="true">
-	{#if still.image}<Sprite
-			img={still.image}
-			k={thumbBacking(56, still, ui.dpr)}
+	{#if image}<Sprite
+			img={image}
+			k={backing}
 			limit={56}
+			{fitToBox}
 			label={preset.name}
 		/>{:else}<PersonStanding size={24} />{/if}
 </span>

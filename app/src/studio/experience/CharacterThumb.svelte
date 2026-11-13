@@ -8,6 +8,7 @@
 		stills,
 		newest,
 		thumbBacking,
+		croppedBacking,
 		croppedThumbnail,
 		characterStill
 	} from './thumbnails.svelte.ts';
@@ -62,7 +63,7 @@
 	);
 	const backing = $derived(
 		trim && image
-			? Math.max(1, Math.floor((size / Math.max(image.w, image.h)) * ui.dpr))
+			? croppedBacking(size, image, ui.dpr)
 			: thumbBacking(size, shown ?? undefined, ui.dpr)
 	);
 	const fitToBox = $derived(trim && !!image && (image.w > size || image.h > size));

@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { composeCell } from '../lib/compose/compose.ts';
 	import Sprite from './Sprite.svelte';
-	import { makeImg, type Img } from '../lib/image/png.ts';
+	import { moveThumbnails } from './moveThumbnails.ts';
 	import { ui, doc, store, view, isDemo, moving } from './state.svelte.ts';
 	import Lazy from './Lazy.svelte';
 	import { ChevronRight, Plus } from './icons.ts';
@@ -19,23 +18,14 @@
 	const baseMissing = $derived(
 		!!m && ['idle', 'walk'].some((id) => !m!.rig.animations.some((a) => a.id === id))
 	);
-	// fixed 56 px window (bottom-centered, no per-frame jitter) so the thumbnail is shown 1:1 instead of shrunk
-	const win = (im: Img) => {
-		if (im.w < 56 || im.h < 56 || im.w > 64 || im.h > 64) return im;
-		const o = makeImg(56, 56),
-			x0 = (im.w - 56) >> 1,
-			y0 = im.h - 56;
-		for (let y = 0; y < 56; y++)
-			o.data.set(
-				im.data.subarray(((y0 + y) * im.w + x0) * 4, ((y0 + y) * im.w + x0 + 56) * 4),
-				y * 56 * 4
-			);
-		return o;
-	};
+	const thumbnails = $derived.by(() => {
+		void doc.rev;
+		return view.project ? moveThumbnails(view.project, $state.snapshot(doc.items)) : null;
+	});
 </script>
 
 <div class="colors">
-	{#if m && view.project}
+	{#if m && view.project && thumbnails}
 		<div class="move-list">
 			{#each m.rig.animations as a (a.id)}
 				{@const base = m.items.find((i) => i.id === m.rig.baseItem)}
@@ -64,14 +54,10 @@
 					>
 						<span class="move-thumb"
 							><Sprite
-								img={win(
-									composeCell(
-										view.project,
-										doc.items,
-										a.id,
-										dirs[0]?.id ?? 'south',
-										a.frames[ui.frame % a.frames.length].cell
-									)
+								img={thumbnails(
+									a.id,
+									dirs[0]?.id ?? 'south',
+									a.frames[ui.frame % a.frames.length].cell
 								)}
 								{k}
 								limit={56}
