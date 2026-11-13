@@ -611,7 +611,7 @@
 		<div class="experience-stage">
 			<WorldStage playbackHeight={previewHeight} bind:missing />
 		</div>
-		{#if experience.mode === 'preview' && experience.zoomFits.studio && previewZoom.zoomed}
+		{#if experience.mode === 'preview' && experience.zoomFits.studio && experience.sceneZoom !== null}
 			<div class="scene-zoom-controls">
 				<ZoomControls zoom={previewZoom} onchange={changeZoom} />
 			</div>

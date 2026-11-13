@@ -146,6 +146,29 @@ export function zoomBox(box: Box, anchor: ScenePoint, value: number, offset?: Sc
 	return { l: topLeft.x, t: topLeft.y, r: bottomRight.x, b: bottomRight.y };
 }
 
+export function cameraFramePosition(
+	frame: ScenePoint,
+	point: ScenePoint,
+	scale: number,
+	camera: SceneCamera,
+	dpr = 1
+): ScenePoint {
+	const shown = zoomPoint(
+		{ x: point.x - frame.x * scale, y: point.y - frame.y * scale },
+		camera.anchor,
+		camera.value,
+		camera.offset
+	);
+	return {
+		x:
+			camera.anchor.x +
+			(Math.round(shown.x * dpr) / dpr - camera.anchor.x - camera.offset.x) / camera.value,
+		y:
+			camera.anchor.y +
+			(Math.round(shown.y * dpr) / dpr - camera.anchor.y - camera.offset.y) / camera.value
+	};
+}
+
 export function sceneArtFits(
 	box: Box,
 	camera: Pick<SceneCamera, 'anchor' | 'value'> & Partial<Pick<SceneCamera, 'offset'>>,
@@ -172,6 +195,7 @@ export function sceneCamera(options: {
 	viewport: Box;
 	center?: ScenePoint;
 	framing?: Box;
+	centerX?: number;
 }): SceneCamera {
 	const { backdrop, plate, viewport } = options;
 	const plateBox = {
@@ -194,6 +218,7 @@ export function sceneCamera(options: {
 			offset.y = ((framing.t + framing.b) / 2 - center.y) * progress;
 		}
 	}
+	if (center && options.centerX !== undefined) offset.x = options.centerX - center.x;
 	let minimum = 0;
 	for (const [axis, low, high] of [
 		['x', 'l', 'r'],
@@ -209,7 +234,10 @@ export function sceneCamera(options: {
 	}
 	// The finite background plate stops zooming out where it would expose an edge; past that only the characters (with
 	// their floor rings and hit regions) keep shrinking around the grounded anchor, so their feet stay on the floor.
-	const backdropMin = Math.max(Number.EPSILON, value > 1 ? minimum : Math.min(1, minimum));
+	const backdropMin = Math.max(
+		Number.EPSILON,
+		value > 1 || offset.x !== 0 || offset.y !== 0 ? minimum : Math.min(1, minimum)
+	);
 	const shown = Math.max(value, backdropMin);
 	const position = zoomPoint(backdrop, anchor, shown, offset);
 	return {
@@ -217,7 +245,7 @@ export function sceneCamera(options: {
 		anchor,
 		offset,
 		backdrop:
-			shown === 1
+			shown === 1 && offset.x === 0 && offset.y === 0
 				? backdrop
 				: {
 						...backdrop,
