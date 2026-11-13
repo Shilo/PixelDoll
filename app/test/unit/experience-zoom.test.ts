@@ -5,7 +5,6 @@ import { heroRoom, heroScale, layout, placeWorld } from '../../src/studio/experi
 import { planLineup } from '../../src/studio/experience/lineup.ts';
 import { thumbScale } from '../../src/studio/experience/thumbnails.svelte.ts';
 import {
-	fitLevel,
 	resolveZoom,
 	sceneArtFits,
 	sceneCamera,
@@ -276,7 +275,7 @@ describe('absolute zoom', () => {
 				onB = (scale: number | null) => resolveZoom(scale, b, [a], 0);
 			const levels = zoomLevels(onA(null));
 			expect(zoomLevels(onB(null)), 'the same list on both screens').toEqual(levels);
-			expect(levels).toEqual(expect.arrayContaining([fitLevel(a), fitLevel(b)]));
+			expect(levels).toEqual(expect.arrayContaining([a, b]));
 			// Reach each level on one screen, switch, and step away and back on the other.
 			for (const level of levels)
 				for (const [here, there] of [
@@ -292,11 +291,10 @@ describe('absolute zoom', () => {
 						);
 					}
 				}
-			// Every whole multiple stays, steps never exceed 25%, and no two levels read the same percentage.
+			// Every whole multiple stays and steps never exceed 25%.
 			for (let whole = 1; whole <= levels.at(-1)!; whole++) expect(levels).toContain(whole);
 			for (let i = 1; i < levels.length; i++) {
 				expect(levels[i] / levels[i - 1]).toBeLessThanOrEqual(1.25 + 1e-9);
-				expect(Math.round(levels[i] * 100)).not.toBe(Math.round(levels[i - 1] * 100));
 			}
 		}
 	);
@@ -317,13 +315,9 @@ describe('absolute zoom', () => {
 		expect(resolveZoom(9, 3, [], 6).scale, 'or after a ceiling it reached').toBe(9);
 	});
 
-	test('a fit within 0.5% of a ladder level is shown at it; others are shown exactly', () => {
-		expect(fitLevel(2.997)).toBe(3);
-		expect(fitLevel(6.966)).toBe(7);
-		expect(fitLevel(2.497)).toBe(2.5);
-		expect(fitLevel(3.6)).toBe(3.6);
-		expect(fitLevel(1.27)).toBe(1.27);
-		expect(resolveZoom(null, 2.997, [], 0).scale).toBe(3);
+	test('a fit is kept exactly, even right beside a ladder level', () => {
+		expect(resolveZoom(null, 2.997, [], 0).scale).toBe(2.997);
+		expect(zoomLevels(resolveZoom(null, 6.966, [], 0))).toEqual(expect.arrayContaining([6.966, 7]));
 	});
 
 	test('a chosen scale reads the same on both screens, and controls show only away from each fit', () => {

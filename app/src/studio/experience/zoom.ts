@@ -44,31 +44,19 @@ export interface SceneZoom {
 	zoomed: boolean;
 }
 
-/** A fit this close to a ladder level is shown at it (a sub-pixel change), so no two levels read the same percentage. */
-const LEVEL_SNAP = 0.005;
-
-/** The scale a fit is shown at: the fit, or a ladder level within 0.5% of it. */
-export function fitLevel(fit: number): number {
-	return (
-		zoomLadder(Math.ceil(fit) + 1).find((level) => Math.abs(fit - level) <= LEVEL_SNAP * level) ??
-		fit
-	);
-}
-
 /**
  * One screen's view of the shared zoom. `stored` is the chosen scale, or null for each screen's fit; `fits` are both
  * screens' latest fits (0 while unknown). Bounds run from 100% (or a smaller fit) to `ceiling`, at least twice every fit.
  */
 export function resolveZoom(
 	stored: number | null,
-	measured: number,
+	fit: number,
 	fits: readonly number[],
 	ceiling: number
 ): SceneZoom {
-	const fit = fitLevel(measured);
-	const stops = [...new Set([...fits.filter((value) => value > 0).map(fitLevel), fit])].sort(
-		(a, b) => a - b
-	);
+	// The fit is kept exactly, so the default view draws exactly as before; a fit right beside a ladder level (696.6% next
+	// to 700%) leaves that small step.
+	const stops = [...new Set([...fits.filter((value) => value > 0), fit])].sort((a, b) => a - b);
 	// A chosen scale stays in bounds even if a fit that allowed it has since grown, so it never silently changes.
 	const chosen = stored !== null && Number.isFinite(stored) && stored > 0 ? [stored] : [];
 	const min = Math.min(1, ...stops, ...chosen),
