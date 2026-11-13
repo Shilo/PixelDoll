@@ -1,4 +1,5 @@
 import { on } from 'svelte/events';
+import { ZOOM_FIT_SNAP, zoomStep } from './zoom.ts';
 
 export interface SceneZoomOptions {
 	readonly value: number;
@@ -28,6 +29,9 @@ export function modifiedWheel(event: WheelEvent): boolean {
 	return event.metaKey || (event.ctrlKey && controlHeld);
 }
 
+/** One wheel step: a mouse notch (about 100 px) steps once, however large; small trackpad scrolls add up to one. */
+const WHEEL_STEP = 50;
+
 /** A swipe travels this far horizontally, mostly sideways, to count. */
 const SWIPE = { distance: 48, ratio: 1.5 };
 
@@ -37,6 +41,15 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 	let pinching = false;
 	let suppressClick = false;
 	let swipe: { id: number; x: number; y: number } | null = null;
+	let wheelDistance = 0,
+		lastWheelAt = -Infinity,
+		pinchSettle = 0;
+	const step = (direction: 1 | -1) =>
+		change(zoomStep(options.value, direction, options.min, options.max));
+	// A pinch is direct manipulation and stays precise; released near the fit, it lands on it exactly.
+	const settlePinch = () => {
+		if (Math.abs(options.value - 1) < ZOOM_FIT_SNAP) change(1);
+	};
 	if (!tracking++) {
 		window.addEventListener('keydown', trackControl, true);
 		window.addEventListener('keyup', trackControl, true);
@@ -77,7 +90,10 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 		touches.delete(event.pointerId);
 		if (node.hasPointerCapture(event.pointerId)) node.releasePointerCapture(event.pointerId);
 		distance = span();
-		if (!touches.size) pinching = false;
+		if (!touches.size && pinching) {
+			pinching = false;
+			settlePinch();
+		}
 		if (swipe?.id !== event.pointerId) return;
 		const dx = event.clientX - swipe.x,
 			dy = event.clientY - swipe.y;
@@ -113,7 +129,22 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 				const delta =
 					event.deltaY *
 					(event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? node.clientHeight : 1);
-				change(options.value * Math.exp(-Math.max(-500, Math.min(500, delta)) * 0.002));
+				// A trackpad pinch (Ctrl without the key held) follows the fingers precisely, like a touch pinch.
+				if (event.ctrlKey && !modifiedWheel(event)) {
+					change(options.value * Math.exp(-Math.max(-500, Math.min(500, delta)) * 0.01));
+					clearTimeout(pinchSettle);
+					pinchSettle = window.setTimeout(settlePinch, 200);
+					return;
+				}
+				const now = performance.now();
+				if (now - lastWheelAt > 400 || Math.sign(delta) !== Math.sign(wheelDistance))
+					wheelDistance = 0;
+				lastWheelAt = now;
+				wheelDistance += delta;
+				if (Math.abs(wheelDistance) < WHEEL_STEP) return;
+				// The rest of a notch is dropped, so every notch is exactly one step.
+				wheelDistance = 0;
+				step(delta < 0 ? 1 : -1);
 			},
 			{ passive: false }
 		),
@@ -129,7 +160,8 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 				return;
 			if (!['+', '=', '-', '0'].includes(event.key)) return;
 			event.preventDefault();
-			change(event.key === '0' ? 1 : options.value * (event.key === '-' ? 1 / 1.1 : 1.1));
+			if (event.key === '0') change(1);
+			else step(event.key === '-' ? -1 : 1);
 		}),
 		on(
 			node,
@@ -205,6 +237,7 @@ export function sceneZoom(node: HTMLElement, options: SceneZoomOptions): () => v
 	return () => {
 		for (const cleanup of cleanups) cleanup();
 		clear();
+		clearTimeout(pinchSettle);
 		if (!--tracking) {
 			window.removeEventListener('keydown', trackControl, true);
 			window.removeEventListener('keyup', trackControl, true);

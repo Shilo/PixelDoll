@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Minus, Plus } from '../icons.ts';
+	import { zoomStep } from './zoom.ts';
 	const description = $props.id();
 	let {
 		value,
@@ -26,7 +27,7 @@
 		data-variant="quiet"
 		aria-label="Zoom out"
 		disabled={value <= min + 0.0001}
-		onclick={() => onchange(Math.max(min, value / 1.1))}><Minus size={18} /></button
+		onclick={() => onchange(zoomStep(value, -1, min, max))}><Minus size={18} /></button
 	>
 	<button
 		class="bu-action scene-zoom-reset num"
@@ -41,6 +42,6 @@
 		data-variant="quiet"
 		aria-label="Zoom in"
 		disabled={value >= max - 0.0001}
-		onclick={() => onchange(Math.min(max, value * 1.1))}><Plus size={18} /></button
+		onclick={() => onchange(zoomStep(value, 1, min, max))}><Plus size={18} /></button
 	>
 </div>

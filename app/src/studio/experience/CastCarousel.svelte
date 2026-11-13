@@ -16,6 +16,7 @@
 		name,
 		zoom = 1,
 		cameraX,
+		cameraRise = 0,
 		culledOffsets = [],
 		select
 	}: {
@@ -27,6 +28,8 @@
 		name: string;
 		zoom?: number;
 		cameraX?: number;
+		/** How far above the cast's floor line the zoom pivots (it rises to keep a tall head in view). */
+		cameraRise?: number;
 		culledOffsets?: number[];
 		select: (id: string, activate: boolean) => void;
 	} = $props();
@@ -167,7 +170,7 @@
 	<div
 		class="cast-camera"
 		style:transform="scale({zoom})"
-		style:transform-origin="{cameraX ?? width / 2}px 100%"
+		style:transform-origin="{cameraX ?? width / 2}px calc(100% - {cameraRise}px)"
 	>
 		{#each actors as actor (actor.p.id)}
 			{@const culled = !!actor.offset && culledOffsets.includes(actor.offset)}

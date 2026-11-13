@@ -516,16 +516,21 @@
 					];
 				})
 			);
-			const selectedBox = facingBoxes.get(ui.dir);
-			const selectedRing = ringBoxes.get(ui.dir);
+			// The camera zooms around the selected facing's feet, so it stays in place at every level and companions
+			// spread outward, hidden once they would clip; a lineup's center would push an edge facing off the stage.
+			const focus = {
+				x: anchor.x + (row?.offsets[row.facings.indexOf(ui.dir)] ?? 0),
+				y: anchor.y
+			};
 			const zoom = sceneCamera({
 				value: live ? 1 : experience.sceneZoom,
-				anchor,
+				anchor: focus,
 				backdrop,
 				plate: art,
 				viewport: { l: 0, t: 0, r: width, b: backdrop.coverBottom },
-				clearance,
-				art: live || !selectedBox ? [] : [selectedBox, ...(selectedRing ? [selectedRing] : [])]
+				head: facingBoxes.has(ui.dir)
+					? { top: facingBoxes.get(ui.dir)!.t, limit: clearance.t }
+					: undefined
 			});
 			const visibleFacings = (row?.facings ?? [ui.dir]).filter((direction) => {
 				if (direction === ui.dir || zoom.value <= 1) return true;
@@ -544,12 +549,13 @@
 					experience.sceneCamera = zoom;
 				}
 				if (zoom.value !== 1) {
-					g.translate(anchor.x, anchor.y);
+					g.translate(zoom.anchor.x, zoom.anchor.y);
 					g.scale(zoom.value, zoom.value);
-					g.translate(-anchor.x, -anchor.y);
+					g.translate(-zoom.anchor.x, -zoom.anchor.y);
 				}
 			}
 			host.dataset.sceneZoom = String(zoom.value);
+			host.dataset.sceneAnchor = `${zoom.anchor.x},${zoom.anchor.y}`;
 			host.dataset.sceneMin = String(zoom.min);
 			host.dataset.sceneMax = String(zoom.max);
 			let velocity = stick.origin
@@ -736,7 +742,7 @@
 											t: point.y - box.y * scale,
 											b: point.y + (box.h - box.y) * scale
 										},
-										anchor,
+										zoom.anchor,
 										zoom.value
 									)
 								};
