@@ -164,10 +164,9 @@ export function sceneCamera(options: {
 	backdrop: Placement;
 	plate: Pick<WorldArt, 'width' | 'height'>;
 	viewport: Box;
-	/** The selected actor's top at the fit, and the highest it may be shown: zooming in pans up to keep it in view. */
-	head?: { top: number; limit: number };
+	center?: ScenePoint;
 }): SceneCamera {
-	const { backdrop, plate, viewport, head } = options;
+	const { backdrop, plate, viewport } = options;
 	const plateBox = {
 		l: backdrop.x,
 		r: backdrop.x + backdrop.scale * plate.width,
@@ -175,15 +174,7 @@ export function sceneCamera(options: {
 		b: backdrop.y + backdrop.scale * plate.height
 	};
 	const value = Number.isFinite(options.value) && options.value > 0 ? options.value : 1;
-	// Zoom grows up from the feet, so a tall character's head would leave the top first, and the head is where people
-	// look when they zoom in. Past that point the pivot rises just enough to hold the head at its limit; the feet go
-	// lower instead.
-	let anchor = options.anchor;
-	if (head && value > 1 && head.top >= head.limit) {
-		const shownTop = anchor.y + (head.top - anchor.y) * value;
-		if (shownTop < head.limit)
-			anchor = { x: anchor.x, y: (head.limit - head.top * value) / (1 - value) };
-	}
+	const anchor = value > 1 ? (options.center ?? options.anchor) : options.anchor;
 	let minimum = 0;
 	for (const [axis, low, high] of [
 		['x', 'l', 'r'],

@@ -324,6 +324,21 @@ async function chosenRect(page: Page) {
 		});
 }
 
+async function castBody(page: Page) {
+	return page.evaluate(async () => {
+		const { stills } = await import(
+			/* @vite-ignore */ String('/src/studio/experience/thumbnails.svelte.ts')
+		);
+		const chosen = document.querySelector<HTMLElement>('.cast-character.chosen')!;
+		const still = stills.get(chosen.dataset.characterId!)!;
+		const rect = chosen.querySelector('canvas.sprite')!.getBoundingClientRect();
+		const scale = rect.width / still.image!.w;
+		const x = rect.left + (still.frame.x + still.body.w / 2 - still.body.x) * scale;
+		const ground = rect.top + (still.frame.y + still.body.h - still.body.y) * scale;
+		return { x, ground, center: ground - (still.body.h * scale) / 2 };
+	});
+}
+
 /** Waits for the carousel's finite transitions, so a measurement reads the settled cast. */
 async function castSettled(page: Page) {
 	await page.evaluate(async () => {
@@ -547,6 +562,12 @@ async function verifySelectionZoom(
 			expectCovered(baseBackdrop, `${label}: automatic fit covers the scene`);
 			await castSettled(page);
 			const baseCast = await chosenRect(page);
+			const baseBody = await castBody(page);
+			expect(
+				await page
+					.locator('.scene-backdrop')
+					.evaluate((node) => getComputedStyle(node).imageRendering)
+			).toBe('pixelated');
 
 			// One step proves the backdrop and the cast move on the same camera factor.
 			await zoomStep(page, host, 'in');
@@ -605,10 +626,15 @@ async function verifySelectionZoom(
 			expect(actors.length, `${label}: all current actors are measured`).toBeGreaterThan(0);
 			for (const actor of actors) {
 				if (actor.chosen) {
+					const body = await castBody(page);
+					expect(body.x, `${label}: the painted body stays horizontally centered`).toBeCloseTo(
+						baseBody.x,
+						0
+					);
 					expect(
-						actor.left + actor.width / 2,
-						`${label}: the selected actor stays centered on the camera pivot`
-					).toBeCloseTo(baseCast.left + baseCast.width / 2, 0);
+						body.center,
+						`${label}: enlargement keeps the painted body center fixed`
+					).toBeCloseTo(baseBody.center, 0);
 					continue;
 				}
 				expect(actor.left, `${label}: no companion crosses the left edge`).toBeGreaterThanOrEqual(
@@ -656,6 +682,15 @@ async function verifySelectionZoom(
 				})
 				.toBeCloseTo(bottom.zoom / base.zoom, 3);
 			await expectCastScale(page, bottom.zoom, `${label}: min`);
+			const grounded = await castBody(page);
+			expect(grounded.x, `${label}: the grounded body keeps its horizontal position`).toBeCloseTo(
+				baseBody.x,
+				0
+			);
+			expect(grounded.ground, `${label}: zoom-out keeps the real ground point fixed`).toBeCloseTo(
+				baseBody.ground,
+				0
+			);
 
 			await resetZoom(page, host);
 			const final = await readScene(host);
@@ -790,16 +825,108 @@ test('Preview zoom keeps actors and backdrop on one camera and fits them at max'
 	expect(bounds.right, 'preview max: actors stay inside the stage').toBeLessThanOrEqual(
 		stage.right + 1
 	);
-	expect(bounds.top, 'preview max: the head stays under the header').toBeGreaterThanOrEqual(
-		stage.top - 1
-	);
-	expect(bounds.bottom, 'preview max: actors stay above the playback bar').toBeLessThanOrEqual(
-		playbackTop + 1
-	);
+	const pivot = (await host.getAttribute('data-scene-anchor'))!.split(',').map(Number);
+	expect(
+		pivot[1],
+		'preview max: enlargement pivots above the ground at the body center'
+	).toBeLessThan(playbackTop - baseActor.height / 4);
 	expect(bounds.height, 'preview max: the painted actor zooms in').toBeGreaterThan(
 		baseActor.height + 0.5
 	);
 	await shot(page, info, 'preview-1440x900-max');
+});
+
+test('asymmetric padded artwork enlarges around its body and shrinks around its real ground on both screens', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 1280, height: 660 });
+	await page.goto('/');
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	const id = await page.evaluate(async () => {
+		const { openSource } = await import(/* @vite-ignore */ String('/src/lib/dress/project.ts'));
+		const { saveImportedCharacter } = await import(
+			/* @vite-ignore */ String('/src/lib/store/import.ts')
+		);
+		const { makeImg } = await import(/* @vite-ignore */ String('/src/lib/image/png.ts'));
+		const { cellHash } = await import(/* @vite-ignore */ String('/src/lib/rig/rig.ts'));
+		const { refreshProjects, openProject } = await import(
+			/* @vite-ignore */ String('/src/studio/state.svelte.ts')
+		);
+		const { project } = await openSource('fixture:s2');
+		const manifest = structuredClone(project.manifest);
+		const image = makeImg(80, 112);
+		for (let row = 23; row < 55; row++)
+			for (let column = 17; column < 30; column++)
+				image.data.set([180, 70, 40, 255], (row * 80 + column) * 4);
+		const hash = await cellHash(image);
+		const body = manifest.items.find((item: { id: string }) => item.id === manifest.rig.baseItem)!;
+		body.layers = [{ id: 'main', role: 'fg', z: 0, cells: { walk: { south: [hash] } } }];
+		body.baseHash = hash;
+		manifest.items = [body];
+		manifest.slots = manifest.slots.filter((slot: { id: string }) => slot.id === body.slot);
+		manifest.presets = [];
+		manifest.rig.cell = { w: 80, h: 112 };
+		manifest.rig.pivot = { x: 40, y: 100 };
+		manifest.rig.baseHash = hash;
+		manifest.rig.directions = [{ id: 'south' }];
+		manifest.rig.animations = [
+			{ id: 'walk', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }
+		];
+		manifest.rig.rest = { south: { image: hash, keypoints: [] } };
+		const saved = await saveImportedCharacter(
+			{ project: { manifest, images: new Map([[hash, image]]) }, extra: {}, warnings: [] },
+			'Padded zoom'
+		);
+		await refreshProjects();
+		await openProject(saved);
+		return saved;
+	});
+	await expect(page.locator('.cast-character.chosen')).toHaveAttribute('data-character-id', id);
+	const host = selection(page);
+	await resetZoom(page, host);
+	await castSettled(page);
+	const base = await castBody(page);
+	const rect = await chosenRect(page);
+	expect(base.ground).toBeCloseTo(rect.top + (rect.height * 55) / 112, 0);
+	expect(base.ground).toBeLessThan(rect.top + rect.height - 30);
+	await zoomToMax(page, host);
+	const enlarged = await castBody(page);
+	expect(enlarged.x).toBeCloseTo(base.x, 0);
+	expect(enlarged.center).toBeCloseTo(base.center, 0);
+	await zoomToMin(page, host);
+	const small = await castBody(page);
+	expect(small.x).toBeCloseTo(base.x, 0);
+	expect(small.ground).toBeCloseTo(base.ground, 0);
+	await resetZoom(page, host);
+	await page.locator('.customize-action').click();
+	const preview = world(page);
+	await resetZoom(page, preview);
+	const original = await actorBounds(page);
+	await zoomStep(page, preview, 'in');
+	const expanded = await actorBounds(page);
+	const pivot = (await preview.getAttribute('data-scene-anchor'))!.split(',').map(Number);
+	const center = {
+		x: (original.left + original.right) / 2,
+		y: (original.top + original.bottom) / 2
+	};
+	expect(pivot[0], 'the camera uses the actual device-snapped horizontal center').toBeCloseTo(
+		center.x,
+		6
+	);
+	expect(pivot[1], 'the camera uses the actual device-snapped vertical center').toBeCloseTo(
+		center.y,
+		6
+	);
+	const halfPixel = 0.5 / (await page.evaluate(() => devicePixelRatio)) + 1e-6;
+	expect(
+		Math.abs((expanded.left + expanded.right) / 2 - center.x),
+		'nearest-neighbor raster centroids round by at most half a physical pixel'
+	).toBeLessThanOrEqual(halfPixel);
+	expect(Math.abs((expanded.top + expanded.bottom) / 2 - center.y)).toBeLessThanOrEqual(halfPixel);
+	await resetZoom(page, preview);
+	await zoomToMin(page, preview);
+	const reduced = await actorBounds(page);
+	expect(reduced.bottom).toBeCloseTo(original.bottom, 0);
 });
 
 test('wheel, keys, middle click and native controls only change zoom where the scene owns input', async ({
@@ -1446,11 +1573,6 @@ test('Preview keeps the selected facing at one scale while every lineup size fro
 			maxActor.right,
 			`${count} facings: visible actors stay inside the stage`
 		).toBeLessThanOrEqual(stage.right + 1);
-		// A tall fit on a short screen pans up to hold the head in view; the feet may pass the playback bar instead.
-		expect(
-			maxActor.top,
-			`${count} facings: the selected head stays under the header`
-		).toBeGreaterThanOrEqual(stage.top - 1);
 		// Every facing shares the selected one's height and floor line, so the lineup's top lands exactly where the
 		// camera's pivot and level put it, even when a short screen sends the feet below the stage.
 		const pivot = Number((await host.getAttribute('data-scene-anchor'))!.split(',')[1]);
@@ -1465,7 +1587,7 @@ test('Preview keeps the selected facing at one scale while every lineup size fro
 			.poll(async () => (await actorBounds(page)).top, {
 				message: `${count} facings: the selected actor's scale is stable at max`
 			})
-			.toBeCloseTo(pivot + (unzoomedTop - pivot) * camera, 0);
+			.toBeCloseTo(Math.max(0, pivot + (unzoomedTop - pivot) * camera), 0);
 		await shot(page, info, `facings-${count}-max`);
 
 		// Reset restores the exact base offsets, so culling is presentation only.

@@ -2,7 +2,12 @@ import { describe, expect, test } from 'vitest';
 import { bakedFrame } from '../../src/lib/compose/compose.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import type { Item, Layer, Project, Sha256 } from '../../src/lib/store/manifest.ts';
-import { paintedFrame, reachFrame, previewBounds } from '../../src/studio/experience/bounds.ts';
+import {
+	paintedFrame,
+	reachFrame,
+	previewBounds,
+	standingFrame
+} from '../../src/studio/experience/bounds.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 const bodyHash: Sha256 = 'sha256:body';
@@ -301,6 +306,7 @@ describe('stable painted outfit frame', () => {
 		});
 		expect(paintedFrame(p, {})).toEqual({ w: 24, h: 48, x: 12, y: 48 });
 		expect(paintedFrame(p, {})).toEqual({ w: 24, h: 48, x: 12, y: 48 });
+		expect(standingFrame(p, 'south')).toEqual({ w: 24, h: 48, x: 12, y: 48 });
 		expect(reads).toBe(1);
 		p.images.set(bodyHash, rectangle(64, 64, 30, 30));
 		expect(paintedFrame(p, {})).toEqual({ w: 1, h: 1, x: 2, y: 26 });

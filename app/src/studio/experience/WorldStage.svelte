@@ -7,7 +7,8 @@
 	import { EYE, heroRoom, layout, placeWorld, ringRise } from './geometry.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
-	import { paintedFrame, reachFrame, actorScale, previewBounds } from './bounds.ts';
+	import { bakedFrame } from '../../lib/compose/compose.ts';
+	import { paintedFrame, reachFrame, actorScale, previewBounds, framePosition } from './bounds.ts';
 	import { planLineup } from './lineup.ts';
 	import { sceneArtFits, sceneCamera, zoomBox, zoomCeiling } from './zoom.ts';
 	import { sceneZoom } from './sceneZoom.ts';
@@ -63,6 +64,10 @@
 	const grounding = $derived.by(() => {
 		void doc.rev;
 		return view.project && experience.mode === 'preview' ? previewBounds(view.project) : null;
+	});
+	const drawingFrame = $derived.by(() => {
+		void doc.rev;
+		return view.project ? bakedFrame(view.project.manifest) : null;
 	});
 	// Scale and camera follow the bare base body only, so equipping a tall hat or a long weapon never resizes the character.
 	const fitFrame = $derived.by(() => {
@@ -525,8 +530,7 @@
 					];
 				})
 			);
-			// The camera zooms around the selected facing's feet, so it stays in place at every level and companions
-			// spread outward, hidden once they would clip; a lineup's center would push an edge facing off the stage.
+			// Use the selected facing, not a lineup's center: even-count lineups place it away from the middle.
 			const focus = {
 				x: anchor.x + (row?.offsets[row.facings.indexOf(ui.dir)] ?? 0),
 				y: anchor.y
@@ -540,15 +544,28 @@
 				if (ceiling !== experience.zoomCeiling) experience.zoomCeiling = ceiling;
 			}
 			const shared = sharedZoom('studio', fit);
+			const reference = grounding?.facings.get(ui.dir);
+			const framePivot = {
+				x: (drawingFrame?.x ?? 0) + (reference?.x ?? 0),
+				y: (drawingFrame?.y ?? 0) + (reference?.y ?? 0)
+			};
+			const drawn = framePosition(framePivot, focus, fit, dpr);
+			const groundedFocus = {
+				x: drawn.x + framePivot.x * fit,
+				y: drawn.y + framePivot.y * fit
+			};
 			const zoom = sceneCamera({
 				value: live || !fit ? 1 : shared.scale / fit,
-				anchor: focus,
+				anchor: groundedFocus,
 				backdrop,
 				plate: art,
 				viewport: { l: 0, t: 0, r: width, b: backdrop.coverBottom },
-				head: facingBoxes.has(ui.dir)
-					? { top: facingBoxes.get(ui.dir)!.t, limit: clearance.t }
-					: undefined
+				center: {
+					x: groundedFocus.x,
+					y:
+						groundedFocus.y -
+						((grounding?.facings.get(ui.dir)?.standingHeight ?? fitFrame?.h ?? 0) * fit) / 2
+				}
 			});
 			const visibleFacings = (row?.facings ?? [ui.dir]).filter((direction) => {
 				if (direction === ui.dir || zoom.value <= 1) return true;
@@ -747,8 +764,12 @@
 						at = (d: DirectionName) => point.x + (row?.offsets[row.facings.indexOf(d)] ?? 0);
 					const origin = (d: DirectionName) => grounding?.facings.get(d),
 						selectedOrigin = origin(p.direction ?? ui.dir);
-					const x = snap(at(ui.dir) - (frame.x + (selectedOrigin?.x ?? 0)) * scale),
-						y = snap(point.y - (frame.y + (selectedOrigin?.y ?? 0)) * scale);
+					const { x, y } = framePosition(
+						{ x: frame.x + (selectedOrigin?.x ?? 0), y: frame.y + (selectedOrigin?.y ?? 0) },
+						{ x: at(ui.dir), y: point.y },
+						scale,
+						dpr
+					);
 					picks = live
 						? []
 						: facings.map((direction) => {

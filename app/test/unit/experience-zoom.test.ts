@@ -3,7 +3,8 @@ import { worldArt } from '../../src/studio/experience/config.ts';
 import { castPose } from '../../src/studio/experience/carousel.ts';
 import { heroRoom, heroScale, layout, placeWorld } from '../../src/studio/experience/geometry.ts';
 import { planLineup } from '../../src/studio/experience/lineup.ts';
-import { thumbScale } from '../../src/studio/experience/thumbnails.svelte.ts';
+import { thumbAnchors, thumbScale } from '../../src/studio/experience/thumbnails.svelte.ts';
+import { framePosition } from '../../src/studio/experience/bounds.ts';
 import {
 	resolveZoom,
 	sceneArtFits,
@@ -30,6 +31,53 @@ const clearance = { l: 40, t: 100, r: 760, b: 500 };
 const target = { l: 300, t: 200, r: 500, b: 450 };
 
 describe('finite scene camera', () => {
+	test.each([1, 1.25, 1.5, 2])(
+		'odd-width body centers stay fixed through retained-ceiling zoom at DPR %s',
+		(dpr) => {
+			const frame = { x: 32.5, y: 64 };
+			const fit = 3;
+			const position = framePosition(frame, anchor, fit, dpr);
+			const ground = { x: position.x + frame.x * fit, y: position.y + frame.y * fit };
+			const center = { x: ground.x, y: ground.y - (39 * fit) / 2 };
+			for (const value of [0.3, 2, 3, 4]) {
+				const camera = sceneCamera({ ...options, anchor: ground, center, value });
+				const fixed = value > 1 ? center : ground;
+				expect(zoomPoint(fixed, camera.anchor, camera.value)).toEqual(fixed);
+			}
+		}
+	);
+
+	test.each([1.01, 2, 4])(
+		'zoom-in %s keeps the painted body center fixed instead of pinning the head',
+		(value) => {
+			const center = { x: 380, y: 300 };
+			const camera = sceneCamera({ ...options, value, center });
+			expect(camera.anchor).toEqual(center);
+			expect(zoomPoint(center, camera.anchor, camera.value)).toEqual(center);
+			expect(camera.backdrop.scale).toBe(backdrop.scale * value);
+		}
+	);
+	test.each([0.1, 0.5, 1])(
+		'zoom-out %s keeps the body ground fixed regardless of the enlargement pivot',
+		(value) => {
+			const camera = sceneCamera({ ...options, value, center: { x: 380, y: 300 } });
+			expect(camera.anchor).toEqual(anchor);
+			expect(zoomPoint(anchor, camera.anchor, camera.value)).toEqual(anchor);
+		}
+	);
+
+	test('crossing fit is continuous and reversing zoom does not change its position', () => {
+		const center = { x: 380, y: 300 };
+		for (const value of [1 - 1e-8, 1, 1 + 1e-8]) {
+			const camera = sceneCamera({ ...options, value, center });
+			const shown = zoomPoint(center, camera.anchor, camera.value);
+			expect(shown.x).toBeCloseTo(center.x, 5);
+			expect(shown.y).toBeCloseTo(center.y, 5);
+		}
+		const at = (value: number) => sceneCamera({ ...options, value, center });
+		expect([2, 3, 2].map((value) => at(value).anchor)).toEqual([center, center, center]);
+	});
+
 	test('a full Preview lineup can zoom while edge companions cull at their baseline offsets', () => {
 		const geometry = layout(1440, 900, 'studio');
 		const body = { w: 24, h: 50, x: 12, y: 50 };
@@ -376,6 +424,28 @@ describe('absolute zoom', () => {
 });
 
 describe('character thumbnail scale', () => {
+	test.each([1, 1.25, 2])(
+		'asymmetric non-square padding uses the body ground and center at DPR %s',
+		(dpr) => {
+			const padded = {
+				image: { w: 80, h: 112, data: new Uint8ClampedArray(0) },
+				frame: { w: 80, h: 112, x: 40, y: 100 },
+				body: { w: 12, h: 32, x: 23, y: 77 }
+			};
+			const scale = thumbScale(160, padded, dpr);
+			const anchors = thumbAnchors(160, padded, dpr);
+			expect(anchors.ground).toEqual({ x: -17 * scale, y: -57 * scale });
+			expect(anchors.center).toEqual({ x: -17 * scale, y: -73 * scale });
+			const camera = sceneCamera({
+				...options,
+				anchor: anchors.ground,
+				center: anchors.center,
+				value: 0.5
+			});
+			expect(zoomPoint(anchors.ground, camera.anchor, camera.value)).toEqual(anchors.ground);
+		}
+	);
+
 	const still = (w: number, h: number) =>
 		({
 			image: { w, h, data: new Uint8ClampedArray(0) },

@@ -28,7 +28,7 @@
 		name: string;
 		zoom?: number;
 		cameraX?: number;
-		/** How far above the cast's floor line the zoom pivots (it rises to keep a tall head in view). */
+		/** Distance from the cast's frame-bottom line to the painted zoom pivot. */
 		cameraRise?: number;
 		culledOffsets?: number[];
 		select: (id: string, activate: boolean) => void;

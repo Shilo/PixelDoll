@@ -6,6 +6,7 @@
 	import { doc, view, ui, store, lastProject } from '../state.svelte.ts';
 	import { untrack } from 'svelte';
 	import { stills, newest, thumbBacking } from './thumbnails.svelte.ts';
+	import { standingFrame } from './bounds.ts';
 	let { id, name, size = 64 }: { id: string; name: string; size?: number } = $props();
 	const selected = $derived(id === doc.id);
 	const look = $derived(store.projects.find((p) => p.id === id)?.look ?? '');
@@ -14,8 +15,9 @@
 	const starting = $derived(!doc.id && doc.loading);
 	const draw = (project: Parameters<typeof buildPresentation>[0], items: typeof doc.items) => {
 		const assets = buildPresentation(project);
-		const { image, frame } = renderPresentation(assets, items, southStill(assets));
-		return { image, frame };
+		const pose = southStill(assets);
+		const { image, frame } = renderPresentation(assets, items, pose);
+		return { image, frame, body: standingFrame(project, pose.direction ?? 'south') };
 	};
 	// The selected character follows live edits, and its last look is what it keeps once another one is selected.
 	const live = $derived(selected && view.project ? draw(view.project, doc.items) : null);

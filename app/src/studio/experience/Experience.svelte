@@ -12,7 +12,7 @@
 	import ZoomControls from './ZoomControls.svelte';
 	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
 	import { sceneArtFits, sceneCamera, zoomCeiling } from './zoom.ts';
-	import { stills, thumbScale } from './thumbnails.svelte.ts';
+	import { stills, thumbAnchors, thumbScale } from './thumbnails.svelte.ts';
 	import { castPose } from './carousel.ts';
 	import {
 		ui,
@@ -134,13 +134,25 @@
 		t: g.headerBottom + 16,
 		b: g.sheet ? g.listTop : g.h
 	});
+	const selectedStill = $derived(
+		stills.get(neighbors.find(({ offset }) => !offset)?.p.id ?? doc.id)
+	);
+	const selectionFocus = $derived.by(() => {
+		const size = castSize(0);
+		const pose = castPose(0, g.stage.r - g.stage.l, size, castSize(1));
+		const anchors = thumbAnchors(size, selectedStill, ui.dpr);
+		const place = (point: { x: number; y: number }) => ({
+			x: (g.stage.l + g.stage.r) / 2 + pose.x + point.x * pose.scale,
+			y: g.feet.y + pose.y + point.y * pose.scale
+		});
+		return { ground: place(anchors.ground), center: place(anchors.center) };
+	});
 	// The selected character's fit in CSS px per art px, exactly as its thumbnail draws it: the shared zoom is absolute,
 	// and the camera multiplies this fit by the shown scale / fit.
 	const selectionFit = $derived.by(() => {
-		const id = neighbors.find(({ offset }) => !offset)?.p.id ?? doc.id;
 		const size = castSize(0);
 		return (
-			thumbScale(size, stills.get(id), ui.dpr) *
+			thumbScale(size, selectedStill, ui.dpr) *
 			castPose(0, g.stage.r - g.stage.l, size, castSize(1)).scale
 		);
 	});
@@ -157,14 +169,11 @@
 	const selectionCamera = $derived(
 		sceneCamera({
 			value: selectionZoom.scale / selectionFit,
-			anchor: g.feet,
+			anchor: selectionFocus.ground,
+			center: selectionFocus.center,
 			backdrop: baseWorld,
 			plate: worldArt(ui.theme),
-			viewport: { l: 0, t: 0, r: g.w, b: baseWorld.coverBottom },
-			head: {
-				top: selectionArt.find(({ offset }) => !offset)?.box.t ?? g.feet.y,
-				limit: selectionClearance.t
-			}
+			viewport: { l: 0, t: 0, r: g.w, b: baseWorld.coverBottom }
 		})
 	);
 	const culledOffsets = $derived(
@@ -519,7 +528,7 @@
 				direction={castDirection}
 				{name}
 				zoom={selectionCamera.value}
-				cameraX={g.feet.x - g.stage.l}
+				cameraX={selectionCamera.anchor.x - g.stage.l}
 				cameraRise={g.feet.y - selectionCamera.anchor.y}
 				{culledOffsets}
 				select={pick}

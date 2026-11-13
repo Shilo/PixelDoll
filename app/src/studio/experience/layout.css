@@ -27,6 +27,7 @@
 	background-size: var(--world-w) var(--world-h);
 	background-position: var(--world-x) var(--world-y);
 	background-color: var(--bu-canvas);
+	image-rendering: pixelated;
 }
 .scene-reading {
 	z-index: 1;
