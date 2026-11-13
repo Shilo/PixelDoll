@@ -9,10 +9,24 @@ Task-tracking rationale, review findings and accepted tool limits: [Task managem
 ## Use the saved authorization
 
 Run the requested operation with the existing credential first. For board commands, follow the Tasks section of
-[AGENTS.md](../AGENTS.md). Codex must run the board CLI outside the sandbox under
-[board.rules](../.codex/rules/board.rules), which requires approval because the script can use the user's credential.
-Reuse approval already granted in the current session when applicable; preserve that rule. Sandbox execution approval
-and GitHub login are separate steps.
+[AGENTS.md](../AGENTS.md). In Codex, use the active session's execution policy:
+
+- With `danger-full-access`, run normally. There is no sandbox to escape, so do not pass `sandbox_permissions`.
+- With a sandbox, run normally first. If isolation prevents access to saved authorization and the session permits
+  approval, request approval for execution outside the sandbox. Reuse applicable approval already granted.
+- With `approval_policy = "never"`, do not request escalation. If the runtime rejects execution and cannot request
+  approval, report the actual rejection and leave tracking pending. Do not change command spelling, wrap the command
+  or use another tool to evade that rejection.
+
+Do not add an unconditional repository `decision = "prompt"` rule for the board CLI. It requires approval even in
+sessions with `approval_policy = "never"`, including this T3 Code Full Access configuration, making that requirement
+impossible to satisfy. Runtime sandbox restrictions still apply without that extra rule. Execution permission and
+GitHub authorization are separate; neither grants approval for work outside the user's requested scope.
+
+Codex loads execution rules at startup. After changing repository rules, restart the affected Codex session/runtime
+before verifying the normal board command. Already running sessions can retain the old rejection; do not treat that
+as a GitHub credential failure or work around it with another invocation. Existing worktrees need the same rule
+change before their sessions restart.
 
 If authentication or access fails, diagnose it in the same user context that can access the saved credential:
 
