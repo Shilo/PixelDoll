@@ -1,3 +1,4 @@
+import { flushSync } from 'svelte';
 import { get, writable } from 'svelte/store';
 
 export interface Release {
@@ -116,6 +117,7 @@ declare global {
 export const pwa = writable({
 	available: null as Release | null,
 	ready: false,
+	reloading: false,
 	offlineReady: false,
 	error: '',
 	installable: false,
@@ -355,9 +357,17 @@ interface StartupUpdate {
 }
 
 export async function applyUpdate(prepare: () => Promise<void>, automatic?: StartupUpdate) {
-	await activateUpdate(prepare, automatic);
-	automatic?.beforeReload();
-	location.reload();
+	await activateUpdate(prepare, automatic, () => {
+		automatic?.beforeReload();
+		try {
+			pwa.update((s) => ({ ...s, reloading: true }));
+			flushSync();
+			location.reload();
+		} catch (error) {
+			pwa.update((s) => ({ ...s, reloading: false }));
+			throw error;
+		}
+	});
 }
 
 /** The existing Studio stays open. Verify the active worker that will serve the next navigation. */
@@ -366,7 +376,11 @@ export async function prepareUpdateInNewTab() {
 	return base.href;
 }
 
-async function activateUpdate(prepare?: () => Promise<void>, automatic?: StartupUpdate) {
+async function activateUpdate(
+	prepare?: () => Promise<void>,
+	automatic?: StartupUpdate,
+	commitReload?: () => void
+) {
 	const target = get(pwa).available;
 	if (!target || !registration) throw new Error('No update is ready yet.');
 	const validate = () => {
@@ -410,12 +424,16 @@ async function activateUpdate(prepare?: () => Promise<void>, automatic?: Startup
 		);
 		validate();
 	}
-	const controller = prepare ? navigator.serviceWorker.controller : null;
 	// First-time/uncontrolled tabs use the active worker on their next navigation.
-	const active = controller ?? registration.active;
+	const servingWorker = () =>
+		(prepare ? navigator.serviceWorker.controller : null) ?? registration?.active;
+	const active = servingWorker();
 	if (!active || readRelease(await workerMessage(active, 'GET_RELEASE')).build !== target.build)
 		throw new Error('Another version activated. Review the update and try again.');
 	validate();
 	await prepareToReload();
 	validate();
+	if (active !== servingWorker() || active.state === 'redundant')
+		throw new Error('Another version activated. Review the update and try again.');
+	commitReload?.();
 }

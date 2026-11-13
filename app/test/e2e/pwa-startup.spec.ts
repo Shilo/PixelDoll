@@ -284,8 +284,31 @@ test('a fresh launch survives programmatic focus changes and updates every chang
 			return { trustedElementBlur, focused: document.hasFocus() };
 		});
 		expect(focusTransfer).toEqual({ trustedElementBlur: true, focused: true });
+		await fresh.evaluate(() => {
+			addEventListener(
+				'beforeunload',
+				() => {
+					sessionStorage.setItem(
+						'pwa-startup-reload-notice',
+						[...document.querySelectorAll('.bu-toast[role="status"] .bu-small')]
+							.filter((element) =>
+								element
+									.closest('.bu-notice')
+									?.querySelector('strong')
+									?.textContent?.startsWith('Update to v')
+							)
+							.map((element) => element.textContent?.trim())
+							.join('\n')
+					);
+				},
+				{ once: true }
+			);
+		});
 		held.release();
 		await loadedBuild(fresh, b);
+		expect(await fresh.evaluate(() => sessionStorage.getItem('pwa-startup-reload-notice'))).toBe(
+			'Ready to update. Reloading...'
+		);
 		await fresh.clock.resume();
 		await expect(fresh.locator('.customize-action')).toBeVisible();
 		await expect(fresh.locator('html')).toHaveAttribute('data-startup-artwork-release', 'B');

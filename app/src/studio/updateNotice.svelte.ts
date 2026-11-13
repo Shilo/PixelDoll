@@ -5,10 +5,14 @@ const status = fromStore(pwa);
 // Shared across Toast mounts when a sheet opens or closes; polling must not resurrect an expired notice.
 const hidden = $state({ build: '', phase: '' });
 const phase = $derived(
-	status.current.available ? `${status.current.available.build}:${status.current.ready}` : ''
+	status.current.available
+		? `${status.current.available.build}:${status.current.reloading ? 'reloading' : status.current.ready}`
+		: ''
 );
 const visible = $derived(
-	!!phase && hidden.build !== status.current.available?.build && hidden.phase !== phase
+	!!phase &&
+		(status.current.reloading ||
+			(hidden.build !== status.current.available?.build && hidden.phase !== phase))
 );
 let timedPhase = '',
 	remaining = 0,
