@@ -49,13 +49,6 @@ npm ci
 npm run dev        # http://localhost:5173
 ```
 
-**T3 worktrees.** After the worktree creation base includes `t3.json`, use **Import from t3.json** once to enable its
-dependency setup action; committing the file alone does not activate it. T3's setup environment must already provide
-supported Node.js and npm versions as declared in `app/package.json`. Fresh-worktree setup blocks agent startup until
-the locked install succeeds, using a separate `app/node_modules` per worktree and npm's shared download cache.
-This is a clean reinstall that replaces the dependency tree, so do not target an existing worktree with active servers
-or tests. The setup action does not select or install a runtime for subsequent agent sessions.
-
 Open `#/` for character selection; the bundled demo needs no key. Choose **Customize** to dress it or try **Top-down** and **Side-scroller** movement. To generate, open **More options → Connect PixelLab** and paste a key from
 <https://pixellab.ai/account>. It stays in memory unless you check *Remember on this device*, and is only sent to
 `api.pixellab.ai`. `npm run dev` handles the key exactly like the deployed site: there is no key file, endpoint or button.
