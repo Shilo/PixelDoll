@@ -51,10 +51,20 @@ export interface CreateCharacterV3 {
 	reference_image?: B64Image; // import mode: south view; with every other direction in direction_images = 0.25 gen, pixel-exact (S3)
 	direction_images?: Partial<Record<Direction, B64Image>>;
 }
+/** Pro Flash draws the south view, then V3 rotates it into 8 (S4: chibi style; rejects no_background and n_directions 4). */
+export interface CreateCharacterProFlash {
+	description: string;
+	image_size?: Size; // 16-256 in 4 px steps
+	view?: CreateCharacterV3['view'];
+	template_id?: string;
+	seed?: number;
+}
 export interface EnhanceCharacterV3Prompt {
 	description: string;
 	image_size: Size;
 	view?: CreateCharacterV3['view'];
+	outline?: string;
+	detail?: string;
 }
 export interface EnhancedCharacterV3Prompt {
 	enhanced_prompt: string;
@@ -152,6 +162,7 @@ export interface AnimateSkeletonV3 {
 
 export const routes = {
 	createCharacterV3: (b: CreateCharacterV3) => post('/create-character-v3', b),
+	createCharacterProFlash: (b: CreateCharacterProFlash) => post('/create-character-pro-flash', b),
 	enhanceCharacterV3Prompt: (b: EnhanceCharacterV3Prompt) =>
 		post('/enhance-character-v3-prompt', b),
 	animateCharacter: (b: CharacterAnimation) => post('/characters/animations', b),

@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { ui } from './state.svelte.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
-	import { EllipsisVertical, Download, Trash } from './icons.ts';
+	import { EllipsisVertical, Download, Info, Trash } from './icons.ts';
 	import { contextMenu } from '../lib/input/contextMenu.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
@@ -45,6 +45,18 @@
 				menu.hidePopover();
 				void downloadCharacterZip(id);
 			}}><Download size={16} />Download ZIP</button
+		>
+		<button
+			class="row"
+			role="menuitem"
+			onclick={() => {
+				menu.hidePopover();
+				document
+					.querySelectorAll<HTMLElement>('[popover]:popover-open')
+					.forEach((popover) => popover.hidePopover());
+				ui.details = id;
+				ui.sheet = 'details';
+			}}><Info size={16} />Details…</button
 		>
 		{#if !id.startsWith('fixture:')}
 			<button

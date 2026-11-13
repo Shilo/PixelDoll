@@ -37,6 +37,7 @@ import { loadDrafts } from '../lib/items/drafts.ts';
 import { app } from '../lib/app.svelte.ts';
 import { accountTier } from '../lib/pixellab/plans.ts';
 import type { NewItemInput } from './itemRoute.ts';
+import type { Method } from '../lib/items/items.ts';
 import type { Key } from '../lib/image/chroma.ts';
 import type {
 	BodyPaletteRepairPlan,
@@ -122,6 +123,7 @@ export type SheetId =
 	| 'importZip'
 	| 'importPixelLab'
 	| 'delete'
+	| 'details'
 	| 'setup';
 const sizeNow = (): Size => {
 	const w = innerWidth,
@@ -145,7 +147,14 @@ export const ui = $state({
 	sheet: null as SheetId,
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
-	newItem: { group: 'Head', slot: '', prompt: '', name: '' },
+	details: '', // the character the Details sheet is for
+	newItem: { group: 'Head', slot: '', prompt: '', name: '' } as {
+		group: string;
+		slot: string;
+		prompt: string;
+		name: string;
+		method?: Method;
+	},
 	anim: '',
 	dir: 'south' as DirectionName,
 	all: false,
@@ -1877,13 +1886,15 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 
 export function openNewItem(
 	group: string,
-	prefill?: { slot?: string; prompt?: string; name?: string }
+	prefill?: { slot?: string; prompt?: string; name?: string; route?: Item['route'] }
 ) {
 	ui.newItem = {
 		group,
 		slot: prefill?.slot ?? GROUPS.find((g) => g.id === group)!.slots[0],
 		prompt: prefill?.prompt ?? '',
-		name: prefill?.name ?? ''
+		name: prefill?.name ?? '',
+		// Trying an item again keeps the animation method it was made with.
+		...(prefill?.route === 'ea2-anchor' ? { method: 'anchor' as const } : {})
 	};
 	ui.sheet = 'newitem';
 }

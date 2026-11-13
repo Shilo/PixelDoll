@@ -12,11 +12,12 @@
 		mirroredHandsNote,
 		namesOffHandItem
 	} from './model.ts';
-	import { itemRoute } from './itemRoute.ts';
+	import { itemRoute, standingCoverage } from './itemRoute.ts';
 	import { ui, doc, store, isDemo, startItem, withKey, copyDemo } from './state.svelte.ts';
 	import * as db from '../lib/store/db.ts';
 	import { SWATCHES } from '../lib/dress/dress.ts';
-	import type { RigCtx } from '../lib/items/run.ts';
+	import { defaultMethod, type RigCtx } from '../lib/items/run.ts';
+	import type { Method } from '../lib/items/items.ts';
 	import { rigReady } from '../lib/rig/setup.ts';
 	import { ChevronDown, ChevronRight, Info, Sparkles, TriangleAlert } from './icons.ts';
 
@@ -31,6 +32,7 @@
 	let prompt = $state(draft?.prompt ?? ui.newItem.prompt);
 	let color = $state(draft?.color ?? '');
 	let name = $state(draft?.name ?? ui.newItem.name);
+	let method = $state<Method | ''>(draft?.method ?? ui.newItem.method ?? '');
 	let busy = $state(false);
 	const g = $derived(GROUPS.find((x) => x.id === group) ?? GROUPS[0]);
 	$effect(() => {
@@ -40,7 +42,12 @@
 	const m = $derived(store.project?.manifest);
 	const fullPrompt = $derived(`${prompt.trim()}${color ? `, ${color} colored` : ''}`);
 	const itemName = $derived(name.trim() || itemNameFrom(prompt) || 'New item');
-	const input = $derived({ name: itemName, slot, prompt: fullPrompt });
+	const input = $derived({
+		name: itemName,
+		slot,
+		prompt: fullPrompt,
+		...(method ? { method } : {})
+	});
 	// the project record (skeletons decide the route); pixels are not needed for the plan
 	let rec = $state.raw<RigCtx['rec'] | null>(null);
 	$effect(() => {
@@ -60,6 +67,26 @@
 		}
 	});
 	const plan = $derived(planned.plan);
+	// Advanced offers a method only when this character can use both; otherwise Automatic is the only one.
+	const automatic = $derived.by(() => {
+		if (!m || !rec) return null;
+		try {
+			const ctx = { rec: { ...rec, manifest: m } } as RigCtx;
+			return defaultMethod(ctx, standingCoverage(ctx));
+		} catch {
+			return null;
+		}
+	});
+	const METHODS: Record<Method, { label: string; help: string }> = {
+		skel: {
+			label: 'Skeleton posing',
+			help: 'Dresses the standing views once, then poses that design onto each move with the character’s skeleton (Skeleton animation V3). Keeps one design everywhere; held items follow the hand.'
+		},
+		anchor: {
+			label: 'Frame editing',
+			help: 'Edits each move’s frames directly (Edit animation V2), anchored on the standing design. An alternative when posing bends an item badly, such as a stiff cape. Later moves use the same method.'
+		}
+	};
 	const OFF_HAND_HINT = 'Shields and bows usually go in the off hand.';
 	const offHandHint = $derived(group === 'Main hand' && namesOffHandItem(prompt));
 	const handNote = $derived(m ? mirroredHandsNote(m.rig) : '');
@@ -91,7 +118,8 @@
 			slot,
 			prompt,
 			color,
-			name
+			name,
+			...(method ? { method } : {})
 		};
 		const i = $state.snapshot(input);
 		const consent = plan
@@ -241,8 +269,8 @@
 				item or request a paid retry. No quality retries or repairs run without your request.
 				PixelLab may bill dollars and queue time varies.
 			</p>
-			<details class="disclosure">
-				<summary><ChevronRight size={14} />Details</summary>
+			<details class="disclosure" open={!!method}>
+				<summary><ChevronRight size={14} />Advanced</summary>
 				<div>
 					<label class="field"
 						><span class="label small">Name</span><input
@@ -260,6 +288,20 @@
 								><ChevronDown size={12} /></span
 							>
 						</label>
+					{/if}
+					{#if automatic === 'skel'}
+						<label class="field"
+							><span class="label small">Animation method</span>
+							<span class="select-wrap boxed"
+								><select class="bu-select select" bind:value={method}
+									><option value="">Automatic ({METHODS[automatic].label})</option
+									>{#each Object.entries(METHODS) as [id, x] (id)}<option value={id}
+											>{x.label}</option
+										>{/each}</select
+								><ChevronDown size={12} /></span
+							>
+						</label>
+						<p class="faint small">{METHODS[method || automatic].help}</p>
 					{/if}
 					{#if plan}<p class="faint small">
 							{plan.calls} PixelLab calls · {plan.cells} frames · {itemRoute.label}{plan.cell

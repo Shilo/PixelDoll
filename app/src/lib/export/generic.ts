@@ -4,6 +4,7 @@ import type { Img } from '../image/png.ts';
 import { validateRig } from '../rig/rig.ts';
 import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
 import { CURRENT_FORMAT } from '../store/manifest.ts';
+import { requestPromptOf, toolOf } from '../store/generation.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
 import { moveDirs, recolor, storeVariants, variantOf, variantRampOf } from '../dress/dress.ts';
 import { bakedFrame, layerFrame, tuckedId, variantCovers } from '../compose/compose.ts';
@@ -323,11 +324,28 @@ export function exportManifest(
 
 const csv = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 
-/** CREDITS.txt (CSV text; not .csv, which Godot imports as a translation table): one row per generating call (LPC credits spirit: every shipped sheet traceable to its source). */
+/** CREDITS.txt (CSV text; not .csv, which Godot imports as a translation table): one row per generating call (LPC credits spirit: every shipped sheet traceable to its source).
+ *  prompt is what the person wrote; requestPrompt what PixelDoll sent; generations and usd are PixelLab's reported cost (blank = unknown). */
 /** `layerSheets: false` for zips without layer sheets (RPG Maker), whose sheets column stays empty. */
 export function creditsCsv(m: Manifest, layerSheets = true): string {
 	const rows = [
-		['item', 'name', 'slot', 'sheets', 'endpoint', 'jobId', 'seed', 'createdAt', 'prompt', 'source']
+		[
+			'item',
+			'name',
+			'slot',
+			'sheets',
+			'endpoint',
+			'tool',
+			'jobId',
+			'seed',
+			'createdAt',
+			'prompt',
+			'requestPrompt',
+			'generations',
+			'usd',
+			'replaced',
+			'source'
+		]
 	];
 	for (const it of m.items.filter((x) => !x.variantOf)) {
 		// a tucked variant comes from its item's calls
@@ -341,10 +359,15 @@ export function creditsCsv(m: Manifest, layerSheets = true): string {
 				it.slot,
 				sheets,
 				pv?.endpoint ?? '',
+				pv ? toolOf(pv) : '',
 				pv?.jobId ?? '',
 				String(pv?.seed ?? ''),
 				pv?.createdAt ?? '',
 				it.prompt,
+				pv ? requestPromptOf(pv) : '',
+				String(pv?.usage?.generations ?? ''),
+				String(pv?.usage?.usd ?? ''),
+				pv?.replaced ? 'yes' : '',
 				// A copy's calls were paid once, for the character it was made for: labeled, so totals do not count them twice.
 				it.copiedFrom
 					? `PixelLab (https://pixellab.ai); made for ${it.copiedFrom.name} and copied here without generating`
@@ -389,7 +412,7 @@ What is inside
   baked/          the finished character per outfit: baked/<outfit>/<move>.png`
 											: ''
 									}
-  CREDITS.txt     where each item came from (PixelLab calls), CSV
+  CREDITS.txt     how each item was made: PixelLab tool, prompts, seed and cost per call, CSV
   project.json    editable character for importing back into PixelDoll
   cells/          original frame and rest images for the editable copy
 

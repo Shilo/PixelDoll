@@ -208,6 +208,7 @@ export interface Provenance {
   usage?: { generations?: number; usd?: number };
   createdAt: string; // ISO 8601
   produced: CellKey[]; // cells this call produced directly
+  replaced?: true; // a paid attempt a re-roll replaced; listed after the current calls so recorded costs stay complete
 }
 /** Gates of architecture §4.5; worst value over all cells/clips of the item. */
 export interface ItemQa {
@@ -772,7 +773,8 @@ are preserved; use the character root's depth for positioning among scene object
 <name>.pixeldoll.zip
   manifest.json                                   # authoritative; everything below is derived from it
   README.txt                                      # what is inside + quick start per engine
-  CREDITS.txt                                     # CSV text, one row per PixelLab call: job id, endpoint, seed, prompt
+  CREDITS.txt                                     # CSV text, one row per PixelLab call: endpoint, tool, job id, seed, date,
+                                                  #   typed and sent prompt, reported generations and USD, re-rolled
                                                   #   (B11: not .csv, which Godot imports as a translation table)
   layers/<slot>/<item>/<layer>/<anim>.png         # ONE untrimmed PNG per layer per animation
                                                   #   rows = rig.directions (mirrored rows baked), cols = cells

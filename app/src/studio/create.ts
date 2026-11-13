@@ -101,7 +101,13 @@ import {
 	invalidateMoveItems,
 	moveRigVersion
 } from './replaceMove.ts';
-import { facingErrors, sizeErrors, validBodySize } from './characterConfig.ts';
+import {
+	DETAIL_VALUES,
+	OUTLINE_VALUES,
+	facingErrors,
+	sizeErrors,
+	validBodySize
+} from './characterConfig.ts';
 import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
 import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, hasCompleteCells } from '../lib/dress/dress.ts';
@@ -118,6 +124,10 @@ export interface CreateSpec {
 	directions: RigDirection[];
 	view?: Rig['view'];
 	exactPrompt?: boolean;
+	/** Advanced: Pro Flash draws instead of V3 (absent = V3); outline and detail are V3 style hints. */
+	model?: 'pro-flash';
+	outline?: string;
+	detail?: string;
 	activityScope?: string;
 	projectId?: string;
 }
@@ -139,11 +149,38 @@ export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPromp
 		baseClothesIn(spec.description) ?? null
 	);
 };
+/** The first, paid drawing call: Character V3 from text, or Pro Flash when chosen in Advanced. */
+export function drawRequest(
+	spec: Pick<
+		CreateSpec,
+		'description' | 'exactPrompt' | 'size' | 'view' | 'model' | 'outline' | 'detail'
+	>,
+	seed: number | undefined
+): Req {
+	const common = {
+		description: spec.exactPrompt ? spec.description : basePrompt(spec.description),
+		image_size: { width: spec.size, height: spec.size },
+		view: spec.view ?? 'low top-down',
+		template_id: 'mannequin',
+		...(seed === undefined ? {} : { seed })
+	};
+	return spec.model === 'pro-flash'
+		? routes.createCharacterProFlash(common)
+		: routes.createCharacterV3({
+				...common,
+				no_background: true,
+				...(spec.outline ? { outline: spec.outline } : {}),
+				...(spec.detail ? { detail: spec.detail } : {})
+			});
+}
 /** Cost from measured prices: base 2 + import 0.25. Creation makes only the Default move (the standing views); idle, walk
  * and other moves are added later and priced by moveEstimate. */
-export function estimate(spec: Pick<CreateSpec, 'directions' | 'size'>) {
+export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model'>) {
 	const n = spec.directions.filter((d) => !d.mirrorOf).length;
-	const gens = +(1.25 + Math.ceil((spec.size * spec.size * 8) / 65536)).toFixed(2);
+	// Pro Flash's first image (GET /pro-flash/cost, provisional, 2026-11-12): 5 gens to 96 px, 6 to 208 px, then 9; V3's
+	// costs 1. The eight rotations are priced alike.
+	const first = spec.model !== 'pro-flash' ? 1 : spec.size <= 96 ? 5 : spec.size <= 208 ? 6 : 9;
+	const gens = +(first + 0.25 + Math.ceil((spec.size * spec.size * 8) / 65536)).toFixed(2);
 	// Missing managed rest joints may require one estimate per direction.
 	return { gens, maxGens: +(gens + n * EST).toFixed(2), minutes: 5 };
 }
@@ -678,6 +715,16 @@ export async function createCharacter(
 			: []),
 		...(spec.view && !['low top-down', 'high top-down', 'side'].includes(spec.view)
 			? ['Invalid camera.']
+			: []),
+		...(spec.model !== undefined && spec.model !== 'pro-flash' ? ['Invalid model.'] : []),
+		...((spec.outline !== undefined || spec.detail !== undefined) && spec.model
+			? ['Outline and detail apply to Character V3 only.']
+			: []),
+		...(spec.outline !== undefined && !OUTLINE_VALUES.includes(spec.outline)
+			? ['Invalid outline.']
+			: []),
+		...(spec.detail !== undefined && !DETAIL_VALUES.includes(spec.detail)
+			? ['Invalid detail.']
 			: [])
 	];
 	if (errors.length) throw new Error(errors.join(' '));
@@ -690,14 +737,7 @@ export async function createCharacter(
 	// 1. base character, text only (8 rotations)
 	onProgress({ step: 'draw', done: 0, total: 1, recIds: [] });
 	const base = await run(
-		routes.createCharacterV3({
-			description: spec.exactPrompt ? spec.description : basePrompt(spec.description),
-			image_size: { width: spec.size, height: spec.size },
-			view,
-			template_id: 'mannequin',
-			seed: spec.seed,
-			no_background: true
-		}),
+		drawRequest(spec, spec.seed),
 		`${spec.name} · creating`,
 		'studio-base',
 		false,

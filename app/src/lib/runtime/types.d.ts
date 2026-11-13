@@ -182,6 +182,8 @@ export interface Provenance {
 	usage?: { generations?: number; usd?: number };
 	createdAt: string;
 	produced: CellKey[];
+	/** A paid attempt that a later re-roll replaced: kept after the current calls so recorded costs stay complete. */
+	replaced?: true;
 }
 
 export interface Preset {

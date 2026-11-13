@@ -19,7 +19,8 @@ import {
 	planGens,
 	itemGenerationMinutes,
 	planItem,
-	type ItemSpec
+	type ItemSpec,
+	type Method
 } from '../lib/items/items.ts';
 import type { Item, Rig } from '../lib/store/manifest.ts';
 import { DEFAULT_MOVE, matchesStanding } from '../lib/rig/rig.ts';
@@ -29,7 +30,8 @@ export interface NewItemInput {
 	slot: string;
 	prompt: string;
 	key?: Key;
-} // key: measured by a previous attempt (Try again)
+	method?: Method;
+} // key: measured by a previous attempt (Try again); method: chosen in Advanced (absent = automatic)
 export interface ItemRoute {
 	label: string;
 	/** Calls and cost before anything is spent ("Make · N gens"). */
@@ -113,14 +115,25 @@ const spec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> => ({
 	slot: i.slot,
 	prompt: i.prompt,
 	key: i.key ?? pickKey(i.prompt),
+	...(i.method ? { method: i.method } : {}),
 	...standingCoverage(ctx)
 });
+/** The animation method a new item will use: the one chosen, else the rig's default. A chosen skeleton posing the rig
+ *  cannot do is refused here, before anything is spent, rather than quietly replaced. */
+export function itemMethod(ctx: RigCtx, s: Omit<ItemSpec, 'id'>): Method {
+	const automatic = defaultMethod(ctx, s);
+	if (s.method === 'skel' && (automatic !== 'skel' || s.key === 'none'))
+		throw new Error(
+			'Skeleton posing is not available for this item on this character. Choose Automatic.'
+		);
+	return s.method ?? automatic;
+}
 
 export const chromaEdit: ItemRoute = {
 	label: `chroma mannequin + ${libRoute.name}`,
 	plan(rig, ctx, input) {
 		const s = spec(ctx, input),
-			method = defaultMethod(ctx, s),
+			method = itemMethod(ctx, s),
 			p = planItem(rig, { ...s, method }),
 			pad = padOf(s.slot, method, rig.cell);
 		// held slots route to S5's 96 px oversize canvas automatically (same price: pose calls bill by frames, not canvas)
@@ -133,7 +146,10 @@ export const chromaEdit: ItemRoute = {
 			...(pad ? { cell: rig.cell.w + 2 * pad } : {})
 		};
 	},
-	draft: (ctx, input, taken) => newDraft(ctx, spec(ctx, input), taken),
+	draft: (ctx, input, taken) => {
+		const s = spec(ctx, input);
+		return newDraft(ctx, { ...s, method: itemMethod(ctx, s) }, taken);
+	},
 	run: (d, ctx, hooks) => runItem(d, ctx, hooks),
 	accept: async (d, ctx, res) => (await acceptItem(d, ctx, res)).item,
 	spent: (d) => gensOf(d)

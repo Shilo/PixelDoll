@@ -60,7 +60,8 @@
 		setup: () => import('./SetupSheet.svelte'),
 		item: () => import('./ItemPane.svelte'),
 		notes: () => import('./StageNote.svelte'),
-		gen: () => import('./GenCard.svelte')
+		gen: () => import('./GenCard.svelte'),
+		details: () => import('./DetailsSheet.svelte')
 	};
 
 	$effect(() => {
@@ -301,6 +302,7 @@
 				source={ui.sheet === 'importZip' ? 'device' : 'pixellab'}
 			/>{/key}{/if}
 	{#if ui.sheet === 'delete'}<DeleteSheet />{/if}
+	{#if ui.sheet === 'details'}<Lazy load={parts.details} />{/if}
 	{#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
 	{#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
 		<Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}

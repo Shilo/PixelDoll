@@ -6,11 +6,12 @@ import {
 	bodyAction,
 	bodyMoveIssue,
 	creationLooks,
+	drawRequest,
+	estimate,
 	isAuthoredAction,
 	moveDirections,
 	moveFrames
 } from './create.ts';
-import { basePrompt } from './model.ts';
 import { poseBatches, poseCallGens } from '../lib/rig/clips.ts';
 import { pickKey } from '../lib/image/chroma.ts';
 import {
@@ -25,8 +26,8 @@ import {
 	dressItem,
 	type ItemSpec
 } from '../lib/items/items.ts';
-import { defaultMethod, type Draft, type RigCtx } from '../lib/items/run.ts';
-import { standingCoverage, type NewItemInput } from './itemRoute.ts';
+import type { Draft, RigCtx } from '../lib/items/run.ts';
+import { itemMethod, standingCoverage, type NewItemInput } from './itemRoute.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import type { SetupPlan } from '../lib/rig/setup.ts';
 import type { JobRec } from '../lib/pixellab/queue.ts';
@@ -109,16 +110,9 @@ export function createPlan(spec: CreateSpec, freshSeed = false): PeekCall[] {
 		looks = creationLooks(spec);
 	const calls: PeekCall[] = [
 		{
-			...routes.createCharacterV3({
-				description: spec.exactPrompt ? spec.description : basePrompt(spec.description),
-				image_size: { width: spec.size, height: spec.size },
-				view,
-				template_id: 'mannequin',
-				...(seed === undefined ? {} : { seed }),
-				no_background: true
-			}),
+			...drawRequest(spec, seed),
 			label: 'Create base character',
-			generations: 1 + Math.ceil((spec.size * spec.size * 8) / 65536),
+			generations: +(estimate(spec).gens - 0.25).toFixed(2),
 			...(freshSeed ? { note: `Known fields only. ${selectedSeed}` } : {})
 		},
 		{
@@ -200,12 +194,14 @@ export function itemPlan(ctx: RigCtx | null, input: NewItemInput): PeekCall[] {
 	if (!ctx) return [];
 	try {
 		const spec = {
+			name: input.name,
 			prompt: input.prompt,
 			slot: input.slot,
 			key: input.key ?? pickKey(input.prompt),
+			...(input.method ? { method: input.method } : {}),
 			...standingCoverage(ctx)
 		};
-		const method = defaultMethod(ctx, spec);
+		const method = itemMethod(ctx, spec);
 		const calls = planItem(ctx.rec.manifest.rig, { ...spec, method });
 		return [...itemCalls({ ...spec, method }, calls, ctx.rec.manifest.rig.cell), ...lifecycle()];
 	} catch {

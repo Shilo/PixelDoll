@@ -7,7 +7,15 @@
 	import { ApiError } from '../lib/pixellab/client.ts';
 	import { enhanceCharacter } from './enhanceCharacter.ts';
 	import { routes } from '../lib/pixellab/routes.ts';
-	import { ArrowUp, PersonStanding, Copy, Check, WandSparkles, Undo2 } from './icons.ts';
+	import {
+		ArrowUp,
+		PersonStanding,
+		Copy,
+		Check,
+		ChevronRight,
+		WandSparkles,
+		Undo2
+	} from './icons.ts';
 	import { HANDS_SWAP, KEEP_EACH_HAND } from './model.ts';
 	import MirrorViews from '@lucide/svelte/icons/triangles-centerline-dashed-vertical';
 	import {
@@ -15,13 +23,17 @@
 		autoFrame,
 		BODY_SIZES,
 		COMPASS,
+		DETAILS,
 		DIRECTION_LABELS,
 		draftErrors,
 		isNudeBase,
+		MODELS,
+		OUTLINES,
 		PRESETS,
 		presetOf,
 		readPrompt,
 		setPreset,
+		styleOf,
 		toggleDirection,
 		toggleMirror,
 		TRAITS,
@@ -32,6 +44,7 @@
 		writeNudeBase,
 		writeTrait,
 		type CharacterDraft,
+		type CharacterModel,
 		type Trait
 	} from './characterConfig.ts';
 
@@ -53,6 +66,22 @@
 	let abort: AbortController | undefined;
 	let alive = true;
 	const frame = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
+	// Advanced starts open when a reopened draft already changed something there, so no choice is hidden.
+	const advancedOpen = !!(d.seed || d.model === 'pro-flash' || d.outline || d.detail);
+	const advancedNote = $derived(
+		[
+			d.model === 'pro-flash' ? 'Pro Flash' : '',
+			d.model !== 'pro-flash' && d.outline
+				? `${OUTLINES.find((o) => o.value === d.outline)?.label} outline`
+				: '',
+			d.model !== 'pro-flash' && d.detail
+				? `${DETAILS.find((o) => o.value === d.detail)?.label} detail`
+				: '',
+			d.seed ? `seed ${d.seed}` : ''
+		]
+			.filter(Boolean)
+			.join(' · ')
+	);
 	const preset = $derived(presetOf(d));
 	const errors = $derived(draftErrors(d));
 	const enhanceTarget = $derived(d.tab === 'appearance' ? 'details' : 'prompt');
@@ -63,10 +92,15 @@
 			? 'Describe distinctive features, then choose appearance hints below. These choices build the linked prompt. Hair, clothes and gear are added later.'
 			: 'This exact text is sent to V3. Complete lines such as Kind: Elf update Appearance. Other text stays in Details; prose is never guessed as a trait.'
 	);
+	// Enhance with the chosen V3 style hints, so the text it writes fits the drawing they guide.
 	const enhanceInput = () => ({
 		description: d.prompt,
 		image_size: { width: d.body || 0, height: d.body || 0 },
-		view: d.view
+		view: d.view,
+		...(({ outline, detail }) => ({
+			...(outline ? { outline } : {}),
+			...(detail ? { detail } : {})
+		}))(styleOf(d))
 	});
 	const canEnhance = (target: 'details' | 'prompt') =>
 		!busy &&
@@ -489,19 +523,71 @@
 			{/each}
 		</div>
 		<span class="direction-announcement" aria-live="polite">{announcement}</span>
-		<div class="creator-field seed">
-			<Help
-				title="Seed"
-				text="Controls the random starting point for character generation. Moves added later pick their own seeds. It does not randomize one specific trait. Leave blank for a fresh seed. Reusing it can give similar results, but does not guarantee identical pixels."
-			/><input
-				class="bu-input input"
-				aria-label="Seed"
-				inputmode="numeric"
-				pattern="[0-9]*"
-				bind:value={d.seed}
-				placeholder="Random"
-			/>
-		</div>
+		<details class="disclosure advanced" open={advancedOpen}>
+			<summary
+				><ChevronRight size={14} />Advanced{#if advancedNote}<span class="faint advanced-note"
+						>{advancedNote}</span
+					>{/if}</summary
+			>
+			<div>
+				<div class="trait-row">
+					<Help
+						title="Model"
+						text="The PixelLab model that draws the character. Character V3 is the default. Pro Flash draws a chibi style at about three times the cost. Either way the character is registered with V3, so moves and items work the same."
+					/><select
+						class="bu-input input"
+						aria-label="Model"
+						value={d.model ?? 'v3'}
+						onchange={(e) => (d.model = e.currentTarget.value as CharacterModel)}
+						>{#each MODELS as model (model.id)}<option value={model.id}>{model.label}</option
+							>{/each}</select
+					>
+				</div>
+				{#if (d.model ?? 'v3') === 'v3'}
+					<div class="trait-row">
+						<Help
+							title="Outline"
+							text="Outline style guidance for Character V3. The model may not follow it exactly."
+						/><select
+							class="bu-input input"
+							aria-label="Outline"
+							value={d.outline ?? ''}
+							onchange={(e) => (d.outline = e.currentTarget.value)}
+							>{#each OUTLINES as o (o.value)}<option value={o.value}>{o.label}</option
+								>{/each}</select
+						>
+					</div>
+					<div class="trait-row">
+						<Help
+							title="Detail"
+							text="Detail level guidance for Character V3. The model may not follow it exactly."
+						/><select
+							class="bu-input input"
+							aria-label="Detail"
+							value={d.detail ?? ''}
+							onchange={(e) => (d.detail = e.currentTarget.value)}
+							>{#each DETAILS as o (o.value)}<option value={o.value}>{o.label}</option
+								>{/each}</select
+						>
+					</div>
+				{:else}
+					<p class="faint small">{MODELS.find((x) => x.id === d.model)?.help}</p>
+				{/if}
+				<div class="trait-row">
+					<Help
+						title="Seed"
+						text="Controls the random starting point for character generation. Moves added later pick their own seeds. It does not randomize one specific trait. Leave blank for a fresh seed. Reusing it can give similar results, but does not guarantee identical pixels."
+					/><input
+						class="bu-input input"
+						aria-label="Seed"
+						inputmode="numeric"
+						pattern="[0-9]*"
+						bind:value={d.seed}
+						placeholder="Random"
+					/>
+				</div>
+			</div>
+		</details>
 	</section>
 </div>
 {#if errors.length}<p class="creator-validation" role="status">{errors[0]}</p>{/if}
@@ -767,8 +853,23 @@
 		clip-path: inset(50%);
 		white-space: nowrap;
 	}
-	.seed {
+	.advanced {
 		margin-top: 4px;
+	}
+	.advanced > summary {
+		min-height: 36px;
+	}
+	.advanced-note {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-weight: 400;
+		font-size: var(--fs-sm);
+	}
+	.advanced > div {
+		padding-left: 0;
+		gap: 10px;
 	}
 	.creator-message,
 	.creator-validation {
