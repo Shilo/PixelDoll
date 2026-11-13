@@ -156,13 +156,10 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
 
 ## Open options, measured or modeled but not done
 
-- **End-to-end tests that repeat unit coverage** (audit of 2026-11-12, not done because other branches were editing these files; seconds are CI test time):
-  - `scene-zoom.spec.ts` runs every camera check in both themes at ten sizes (14 tests, 174 s). The plate cover math per theme and size is a unit matrix (`experience-zoom.test.ts`); the full size loop in one theme plus one size in the other would save about 50 s.
-  - `creator-request-matrix.spec.ts` still loops presets, cameras and seeds whose mapping `character-option-matrix.test.ts` covers: one value per control would save 15 to 25 s of 51 s.
-  - `character-creator.spec.ts` "creator fits" loads the page once per viewport (10 tests, 22 s): one load resized ten times would save about 14 s.
-  - `studio.spec.ts`: the notification fit test checks 14 sizes in two themes (16 s; five sizes would save about 10 s), "refuses a stale rig review" repeats `item-palette.test.ts` (8 s), and the demo test opens four extra browser contexts (about 5 s).
-  - `dialog-dismissal.ts` runs 320x568 through the same touch-portrait path as 390x844 (8.5 s).
+- **End-to-end tests that repeat unit coverage** (audit of 2026-11-12; seconds are CI test time):
   - Done: the Preview facing lineup ran 11 rigs through 9 sizes (71 s); five rigs remain and the dropped custom sets joined the unit invariants in `facing-lineup.test.ts` (saves about 37 s).
+  - Done: `scene-zoom.spec.ts` ran every camera check on both plates at ten sizes (eight tests, 190 s). Both plates share one pixel size and one camera, and their placement is a unit matrix for both themes at every one of those sizes (`experience-zoom.test.ts`), so the dark plate keeps all ten sizes and the light plate runs three: the smallest phone and the two most extreme shapes (saves about 70 s).
+  - Left alone, because each saves under 10 s and would cost real coverage or clearer failures: `creator-request-matrix.spec.ts` (52 s; its remaining loops post a few values per control), the ten "creator fits" viewport tests (2 s each), `dialog-dismissal.ts` at 320x568 (7 s) and "refuses a stale rig review" (2 s).
 - **Running part of `studio.spec.ts`.** It holds 60 tests (271 s). Playwright tags (`{ tag: '@repair' }`, selected with `--grep @repair`) would give each area a 20 to 60 s subset without renaming tests or moving them; check first that tags do not change the titles `scripts/e2e-shard.mjs update` parses.
 - **Setup per shard is about 20–25 s.** Browser caching saves about 3–6 s and Playwright advises against it.
 - **The 15 s local expect timeout** hides UI steps that take up to 15 s on a loaded workstation. CI's 5 s still catches them.

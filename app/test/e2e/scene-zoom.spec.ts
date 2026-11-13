@@ -36,6 +36,14 @@ const SIZES_B = [
 	[1080, 2560]
 ] as const;
 const THEMES = ['dark', 'light'] as const;
+// Both plates share one pixel size and one camera; a theme changes only its horizon, floor and focal points, and that
+// placement is checked for both themes at every size above in test/unit/experience-zoom.test.ts. The dark plate runs
+// every size here; the light plate proves its wiring on the smallest phone and the two most extreme shapes.
+const SIZES_LIGHT = [
+	[320, 568],
+	[2560, 1080],
+	[1080, 2560]
+] as const;
 
 const selection = (page: Page) => page.locator('.selection-world');
 const world = (page: Page) => page.locator('.world-stage');
@@ -661,18 +669,12 @@ test('selection zoom is a bounded uniform camera that fits every actor and reset
 	await verifySelectionZoom(page, info, SIZES_A, 'dark');
 });
 
-test('selection zoom is a bounded uniform camera that fits every actor and resets to exactly the fit (light)', async ({
-	page
-}, info) => {
-	await verifySelectionZoom(page, info, SIZES_A, 'light');
-});
-
 test('selection zoom holds the same camera on rotated screens (dark)', async ({ page }, info) => {
 	await verifySelectionZoom(page, info, SIZES_B, 'dark');
 });
 
-test('selection zoom holds the same camera on rotated screens (light)', async ({ page }, info) => {
-	await verifySelectionZoom(page, info, SIZES_B, 'light');
+test('selection zoom holds the same camera on the light plate', async ({ page }, info) => {
+	await verifySelectionZoom(page, info, SIZES_LIGHT, 'light');
 });
 
 async function verifyPreviewZoomMatrix(
@@ -724,17 +726,19 @@ async function verifyPreviewZoomMatrix(
 	}
 }
 
-for (const theme of THEMES) {
-	test(`Preview zoom keeps every screen covering and resets on portrait and small landscape screens (${theme})`, async ({
-		page
-	}, info) => {
-		await verifyPreviewZoomMatrix(page, info, SIZES_A, theme);
-	});
+test('Preview zoom keeps every screen covering and resets on portrait and small landscape screens (dark)', async ({
+	page
+}, info) => {
+	await verifyPreviewZoomMatrix(page, info, SIZES_A, 'dark');
+});
 
-	test(`Preview zoom keeps every rotated screen covering (${theme})`, async ({ page }, info) => {
-		await verifyPreviewZoomMatrix(page, info, SIZES_B, theme);
-	});
-}
+test('Preview zoom keeps every rotated screen covering (dark)', async ({ page }, info) => {
+	await verifyPreviewZoomMatrix(page, info, SIZES_B, 'dark');
+});
+
+test('Preview zoom keeps the light plate covering', async ({ page }, info) => {
+	await verifyPreviewZoomMatrix(page, info, SIZES_LIGHT, 'light');
+});
 
 test('Preview zoom keeps actors and backdrop on one camera and fits them at max', async ({
 	page

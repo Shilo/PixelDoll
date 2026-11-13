@@ -155,11 +155,17 @@ describe('finite scene camera', () => {
 		for (const screen of ['characters', 'studio'] as const)
 			for (const [width, height] of [
 				[320, 568],
+				[568, 320],
 				[390, 844],
 				[844, 390],
 				[768, 1024],
+				[1024, 768],
 				[1280, 720],
-				[1920, 1080]
+				[900, 1440],
+				[1440, 900],
+				[1920, 1080],
+				[2560, 1080],
+				[1080, 2560]
 			]) {
 				test(`${theme} ${screen} ${width}x${height} never reveals a plate edge`, () => {
 					const geometry = layout(width, height, screen);
