@@ -26,7 +26,7 @@
 {#if $pwa.available && updateNotice.visible}
 	<Notice
 		class="bu-toast"
-		title={$pwa.ready || $pwa.error ? `Update to v${$pwa.available.version}` : undefined}
+		title={`Update to v${$pwa.available.version}`}
 		tone="info"
 		indicator={$pwa.reloading || (!$pwa.ready && !$pwa.error) ? pendingIndicator : undefined}
 		live

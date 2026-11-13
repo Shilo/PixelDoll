@@ -560,7 +560,8 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await page.evaluate(() => window.dispatchEvent(new Event('online')));
 		await held.requested;
 		const downloading = page.getByRole('status').filter({ hasText: 'Downloading update...' });
-		await expect(downloading.locator('.bu-notice-content')).toHaveText('Downloading update...');
+		await expect(downloading.locator('strong')).toHaveText('Update to v8.9.4');
+		await expect(downloading.locator('.bu-small')).toHaveText('Downloading update...');
 		const indicator = downloading.locator('.bu-notice-indicator .ring.spin');
 		await expect(indicator).toBeVisible();
 		await expect(downloading.locator(':scope > svg')).toHaveCount(0);
