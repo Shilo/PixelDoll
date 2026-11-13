@@ -246,6 +246,8 @@ export function exportManifest(
 	const items = src.items.filter((it) => {
 		const ok = it.baseHash === src.rig.baseHash;
 		if (!ok) warnings.push(`${it.id}: stale (baseHash differs from the rig), excluded`);
+		else if (it.unfitted)
+			warnings.push(`${it.name}: worn as drawn for another body, not fitted to this character.`);
 		return ok;
 	});
 	const ids = new Set(items.map((i) => i.id));

@@ -424,10 +424,14 @@ test('generated runtime keeps stable equal-depth order and applies most-specific
 	];
 	const doll = new api.Paperdoll(h.scene, 0, 0, loaded);
 	doll.play('walk', 'south');
-	expect(doll.container.list.map((s: any) => s.pdOrder)).toEqual([1, 0, 2]);
+	expect(doll.container.list).toEqual([
+		doll.nodes[1].sprite,
+		doll.nodes[0].sprite,
+		doll.nodes[2].sprite
+	]);
 	loaded.slots[1].zOverrides = [];
 	doll.sync();
-	expect(doll.container.list.map((s: any) => s.pdOrder)).toEqual([0, 1, 2]);
+	expect(doll.container.list).toEqual(doll.nodes.map((node: any) => node.sprite));
 });
 
 test('generated runtime keeps the later slot visible when two equipped items hide each other (two-handed items)', async () => {

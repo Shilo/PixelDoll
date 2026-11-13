@@ -220,7 +220,8 @@
 	// moves: only an item made for this character can.
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
 	const freeFrames = $derived(it ? (shared.free[it.id] ?? 0) : 0);
-	// A re-fit's checks were measured on the source body; its fit notes replace them.
+	// A re-fit's checks were measured on the source body; its fit notes replace them. An unfitted copy keeps its source's pixels,
+	// so the source's findings (a grip in the wrong hand) still describe them.
 	const reasons = $derived(
 		it?.qa && !it.refit
 			? qaReasons(
@@ -307,6 +308,7 @@
 		{/if}
 
 		<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
+		<!-- An unfitted copy keeps its source's pixels, so the source's accepted design findings still describe them. -->
 		{#if designReasons.length && !it.refit}
 			<div class="field">
 				<span class="sec-title">Accepted appearance warnings</span>
@@ -344,8 +346,13 @@
 				</ul>
 			</div>
 		{/if}
+		{#if it.unfitted}<p class="notice warn small">
+				<TriangleAlert size={14} />Worn as drawn for {it.copiedFrom?.name ?? 'another character'}’s
+				body, without fitting, so it may float, clip or leave gaps on {m.name}.{#if !isDemo()}{' '}Make
+					one for {m.name} to fit it.{/if}
+			</p>{/if}
 		<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
-		{#if !isDemo() && !it.refit && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}
+		{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}
 			<div class="field">
 				<p class="notice warn small">
 					Checks found issues. No paid retry was started. You can request another attempt or accept

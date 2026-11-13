@@ -99,6 +99,9 @@ export interface Item {
 	copiedFrom?: { id: string; name: string; item?: string };
 	/** A free approximate re-fit of the copied item onto this body: the frames whose checks failed, to look at (may be empty). */
 	refit?: RefitNote[];
+	/** A free copy of another body's item worn as drawn there, without fitting: its pixels are unchanged and keep their place in
+	 *  the frame, so it may float, clip or leave gaps. Never shared on, re-fitted or extended. */
+	unfitted?: true;
 }
 /** Frames of one move and direction of a re-fitted item whose checks failed: the forearm turns another way than on the source
  *  ('angle'), the grip no longer lies over the body ('body'), or the source's body hid part of the item there ('hidden'). A

@@ -200,8 +200,18 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## Shared items between characters
 
-Free sharing copies only onto byte-identical frozen body cells with the same geometry and slot semantics; any other body
-needs the item made for it at normal cost. Preserve: exact per-cell proof for copying; independent ids, materials and
+Free sharing copies exactly onto byte-identical frozen body cells with the same geometry and slot semantics. When no
+frame copies or re-fits, any other body can wear the item free and unfitted, whatever its canvas size or camera, (owner decision, 2026-11-12: wearing an item
+that does not fit beats hiding it): the source cells are copied unchanged, keyed by move id, direction and frame where
+the move has the same frame count on both, never scaled: on the same canvas size at the same place in the frame (a padded layer
+keeps its padding around the target pivot, as a re-fit does); on another size each layer keeps its own canvas, centered
+across the target cell with its pivot row on the target's; when the widths differ by an odd number of px and the target
+mirrors views, each copied frame gains one transparent column so it can center. A layer whose pivot would fall outside it
+or that would grow past 256 px is not worn (export would reject it); nor is an item with no move
+in common, which would show nowhere. The source body's cuts, standing references and fit notes are dropped, so the body can show through where the
+source body hid it, and nothing checks the alignment: the item is marked **Needs a look**, named in export warnings, never
+re-fitted, extended or shared on, and a re-fit is never re-fitted again, though its pixels may be worn as drawn (the original wins a tie). An unfitted copy's details
+show the source's findings for the unchanged pixels (a grip in the wrong hand stays a warning, not a block). Preserve: exact per-cell proof for copying; independent ids, materials and
 outfit choices on each copy; safe deletion of the source character; and no generation without the New item sheet's
 estimate and consent.
 

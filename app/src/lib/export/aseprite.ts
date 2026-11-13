@@ -10,14 +10,7 @@
 //    composeCell on the baked frame. Colors and visibility match the first outfit (including default/linked ramps).
 import type { Img } from '../image/png.ts';
 import type { DirectionName, Item, Layer, Manifest, Slot } from '../store/manifest.ts';
-import {
-	bakedFrame,
-	equipped,
-	hiddenSlots,
-	layerFrame,
-	resolveZ,
-	shownItems
-} from '../compose/compose.ts';
+import { bakedFrame, compareDraws, drawList, layerFrame, resolveZ } from '../compose/compose.ts';
 import type { OutFile } from './generic.ts';
 import { variantRampOf } from '../dress/dress.ts';
 import { applyPalette, paletteMap } from '../runtime/colors.js';
@@ -57,17 +50,9 @@ const zlib = async (b: Uint8Array) =>
 interface L {
 	item: Item;
 	layer: Layer;
-	slotIx: number;
+	z: number;
 	slot?: Slot;
 }
-const sortLayers = (ls: L[], z: (l: L) => number) =>
-	[...ls].sort(
-		(a, b) =>
-			z(a) - z(b) ||
-			a.slotIx - b.slotIx ||
-			(a.layer.role === b.layer.role ? 0 : a.layer.role === 'bg' ? -1 : 1) ||
-			a.item.id.localeCompare(b.item.id)
-	);
 
 /** The .aseprite bytes for an exported manifest + its layer sheets (path -> Img, as built by coreFiles). */
 export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promise<Uint8Array> {
@@ -77,7 +62,7 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
 		item.layers.map((layer) => ({
 			item,
 			layer,
-			slotIx: m.slots.findIndex((s) => s.id === item.slot),
+			z: layer.z,
 			slot: m.slots.find((s) => s.id === item.slot)
 		}))
 	);
@@ -91,24 +76,8 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
 		range('cel x', bf.x - f.x, -32768, 32767);
 		range('cel y', bf.y - f.y, -32768, 32767);
 	}
-	const stack = sortLayers(all, (l) => l.layer.z);
-	const worn = equipped(m, m.presets[0]?.items ?? {}),
-		hidden = hiddenSlots(m, worn),
-		on = shownItems(m, worn); // B14: a tucked variant replaces its item
-	const visible = (l: L) => on.includes(l.item) && !hidden.has(l.item.slot);
-	const layerChunks = stack.map((l) =>
-		chunk(
-			0x2004,
-			w16(visible(l) ? 3 : 2),
-			w16(0),
-			w16(0),
-			w16(0),
-			w16(0),
-			w16(0),
-			[255, 0, 0, 0],
-			str(`${l.item.slot}.${l.item.id}${l.item.layers.length > 1 ? `.${l.layer.id}` : ''}`)
-		)
-	);
+	const compare = compareDraws(m),
+		stack = [...all].sort(compare);
 
 	// timeline: playlist entries of every move × direction it has
 	const frames: { anim: string; dir: DirectionName; row: number; cell: number; ms: number }[] = [],
@@ -145,6 +114,27 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
 			'Aseprite export needs at least one animation frame with an available direction.'
 		);
 	range('tag count', tags.length, 1, 65535);
+	const firstFrame = frames[0];
+	const visible = new Set(
+		drawList(m, m.presets[0]?.items ?? {}, firstFrame.anim, firstFrame.dir, firstFrame.cell).map(
+			(draw) => draw.layer
+		)
+	);
+	const layerChunks = stack.map((entry) =>
+		chunk(
+			0x2004,
+			w16(visible.has(entry.layer) ? 3 : 2),
+			w16(0),
+			w16(0),
+			w16(0),
+			w16(0),
+			w16(0),
+			[255, 0, 0, 0],
+			str(
+				`${entry.item.slot}.${entry.item.id}${entry.item.layers.length > 1 ? `.${entry.layer.id}` : ''}`
+			)
+		)
+	);
 	// Start from raw sheets when defaults are baked into layers/. Never map a default color as though it were a source.
 	const colored = new Map<L, Map<string, Img>>();
 	for (const l of all) {
@@ -162,10 +152,13 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
 	const out: Bytes[] = [];
 	for (const [fi, fr] of frames.entries()) {
 		const z = new Map(
-			sortLayers(all, (l) => resolveZ(l.slot, l.layer, fr.anim, fr.dir, fr.cell)).map((l, i) => [
-				l,
-				i
-			])
+			all
+				.map((entry) => ({
+					...entry,
+					z: resolveZ(entry.slot, entry.layer, fr.anim, fr.dir, fr.cell)
+				}))
+				.sort(compare)
+				.map((entry, index) => [entry.layer, index])
 		);
 		const chunks: Bytes[] = fi
 			? []
@@ -190,9 +183,9 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
 		for (const [li, l] of stack.entries()) {
 			const f = layerFrame(rig, l.layer),
 				sheet = colored.get(l)!.get(fr.anim)!;
-			range('cel z-index', z.get(l)! - li, -32768, 32767);
+			range('cel z-index', z.get(l.layer)! - li, -32768, 32767);
 			const head = [w16(li), w16(bf.x - f.x), w16(bf.y - f.y), [255]],
-				zi = w16(z.get(l)! - li),
+				zi = w16(z.get(l.layer)! - li),
 				pad = [0, 0, 0, 0, 0];
 			const key = `${li}/${fr.anim}/${fr.dir}/${fr.cell}`,
 				link = first.get(key);

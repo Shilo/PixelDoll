@@ -28,11 +28,14 @@ const shareable = (m: Manifest, item: Item) =>
 	item.id !== m.rig.baseItem &&
 	item.slot !== 'body' &&
 	!item.variantOf &&
+	!item.unfitted &&
 	item.baseHash === m.rig.baseHash &&
 	!!item.coverage?.length;
 const latest = (item: Item, fallback: string) =>
 	item.provenance.reduce((at, p) => (p.createdAt > at ? p.createdAt : at), '') || fallback;
-const RANK: Record<SharedFit, number> = { copy: 0, refit: 1, remake: 2 };
+const RANK: Record<SharedFit, number> = { copy: 0, refit: 1, unfitted: 2, remake: 3 };
+/** Listing order: items fitted to this body, then ones worn as drawn, then ones to make new. */
+const tier = (x: SharedItem) => (x.fit === 'remake' ? 2 : x.fit === 'unfitted' ? 1 : 0);
 
 /** Outcomes of earlier listings by source save, item and the target's rig, body and slots: a refresh decides only what
  *  changed since. Only the latest listing's entries are kept. */
@@ -43,11 +46,12 @@ export const forgetFits = () => {
 };
 
 /** Items of other studio characters, without ones this character already has; one entry per item: the one that fits this
- *  character best (exact copy, then re-fit, then made new), the most recent first. Free entries list first. An entry whose
- *  images cannot be read is skipped and counted, so the others still list. */
+ *  character best (exact copy, then re-fit, then worn as drawn, then made new), the most recent first within each tier. An entry whose images cannot be read is skipped and counted, so the others still list. `images` are decoded images
+ *  already in memory (the open character's; the bundled demo's are not stored), read before storage. */
 export async function listShared(
 	targetId: string,
-	target: Manifest | null
+	target: Manifest | null,
+	images?: ReadonlyMap<string, Img>
 ): Promise<{ items: SharedItem[]; skipped: number }> {
 	const own = new Set(target?.items.filter((it) => it.status === 'accepted').map(itemKey) ?? []),
 		groups = new Map<string, Omit<SharedItem, 'fit'>[]>();
@@ -79,6 +83,8 @@ export async function listShared(
 	const decoded = new Map<Sha256, Promise<Img>>(),
 		load = (h: Sha256) => {
 			let im = decoded.get(h);
+			const local = images?.get(h);
+			if (!im && local) decoded.set(h, (im = Promise.resolve(local)));
 			if (!im)
 				decoded.set(
 					h,
@@ -111,15 +117,19 @@ export async function listShared(
 				continue;
 			}
 			fits.set(key, fit);
-			if (!best || RANK[fit] < RANK[best.fit]) best = { ...entry, fit };
+			// On a tie the original beats a re-fit of it (its pixels were moved for another body).
+			if (
+				!best ||
+				RANK[fit] < RANK[best.fit] ||
+				(RANK[fit] === RANK[best.fit] && !!best.item.refit && !entry.item.refit)
+			)
+				best = { ...entry, fit };
 			if (fit === 'copy') break;
 		}
 		if (best) kept.push(best);
 	}
 	return {
-		items: kept.sort(
-			(a, b) => +(a.fit === 'remake') - +(b.fit === 'remake') || b.at.localeCompare(a.at)
-		),
+		items: kept.sort((a, b) => tier(a) - tier(b) || b.at.localeCompare(a.at)),
 		skipped
 	};
 }

@@ -77,10 +77,10 @@ ${Object.values(runtimeSources)
       node.updatePreRender(scene);
       const ai = m.rig.animations.indexOf(a), row = m.rig.directions.findIndex((v) => v.id === d.dir);
       node.getRendererObject().texture = texture(name + '_' + ai + '_' + row + '_' + d.cell + '.png', paletteMap(m, item, d.variants));
-      visible.push({ node, z: draw.z, order: visible.length });
+      visible.push(node);
     }
     // Integer z ranks preserve arbitrary/negative z overrides and stable ties without renderer creation-order dependence.
-    visible.sort((a, b) => a.z - b.z || a.order - b.order).forEach((v, i) => v.node.setZOrder(d.z + i));
+    visible.forEach((node, i) => node.setZOrder(d.z + i));
   };
   d.update = (ms) => { if (!d.destroyed) { d.elapsed += Math.max(0, ms); d.sync(); } };
   d.destroy = () => {

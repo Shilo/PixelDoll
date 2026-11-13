@@ -84,6 +84,9 @@ export interface Item {
 	copiedFrom?: { id: string; name: string; item?: string };
 	/** A free approximate re-fit of the copied item onto this body: the frames whose checks failed, to look at (may be empty). */
 	refit?: RefitNote[];
+	/** A free copy of another body's item worn as drawn there, without fitting: its pixels are unchanged and keep their place in
+	 *  the frame, so it may float, clip or leave gaps. Never shared on, re-fitted or extended. */
+	unfitted?: true;
 }
 
 export interface RefitNote {

@@ -211,3 +211,88 @@ and clicking Customize also timed out without changing the observed page. The ta
 server were closed. This is not a successful manual dressing or visual-regression verification;
 the application workflow evidence above comes from Playwright and native-engine automation.
 No live PixelLab generation was needed or performed.
+
+## Sol and Opus follow-up challenge
+
+Two new independent reviews used GPT-6.1 Sol medium and Claude Opus 5.5 medium against main
+`00ade519`. Both received the original goal: genuinely execute one canonical paper-doll implementation
+inside PixelDoll and JavaScript exports, not merely ship matching source text or rename old helpers.
+Their briefs also required distinguishing appropriate engine/UI policy from avoidable behavior forks.
+
+The coordinator independently reproduced and accepted these findings:
+
+- Sol found item-only thumbnails and inspector previews sorting background before foreground instead
+  of honoring canonical depth and cell overrides. An overlapping split item rendered red in `itemCell`
+  but blue in canonical composition when its foreground depth moved below its background. The new
+  regression failed before the fix. Item-only previews now call canonical `composeCell` on a scoped
+  one-item project view, retaining union geometry and owner-local image identities.
+- Opus found Phaser using sprite-creation order for depth ties and Aseprite copying the canonical
+  comparator and visibility assembly. Present-day ties matched, so this was forward-change drift,
+  not a claim of already incorrect ordinary Phaser pixels. The coordinator independently reversed
+  canonical slot ties: the compositor changed from base/A/Z to base/Z/A, while Phaser and Aseprite
+  stayed base/A/Z. A copied-source regression reproduced this failure before the fixes.
+- `compareDraws` now owns the ordering in canonical `drawList` and Aseprite's complete editable
+  layer stack, including hidden layers and per-frame depth exceptions. Aseprite visibility comes
+  from canonical `drawList`. Phaser and GDevelop assign renderer order from that list, without a
+  second sort. The copied-source mutation now verifies actual compositor pixels, Phaser sprite
+  order, GDevelop z ranks and decoded Aseprite cel order together. A separate visibility mutation
+  verifies that Aseprite consumes canonical draw decisions.
+- Opus's optional embedding concern was valid as a narrow forward-safety issue: a string/comment
+  line beginning with `export ` would be changed by GDevelop's stripping regex. Synchronization now
+  verifies those prefixes against parsed top-level export modifiers. Regression cases reject
+  misleading string/comment prefixes and indented declarations, rather than silently corrupting
+  emitted code. This adds no runtime parser, dependency or second implementation.
+
+All three behavioral gaps predated the original extraction. They were missed integration paths,
+not regressions introduced by moving the core. Sol described Aseprite's comparator as optional
+maintenance; Opus's executable mutation and the user's forward-change requirement justify fixing it.
+The existing Phaser test now checks the same expected sprite identities instead of `pdOrder` numbers:
+those numbers are deliberately current draw ranks, no longer permanent creation indices.
+
+The coordinator did not broaden this into new caching, viewport fitting or authoring abstractions.
+Fitting already calls canonical equipment/visibility primitives and intentionally unions stored poses;
+it is not a second rendered compositor. Procedural palette generation, draft-coverage diagnostics and
+export mask preparation remain authoring policies with existing parity tests. No additional visible
+defect was demonstrated for those suggestions. Preview looping and hand-conflict interaction policy
+remain the documented distinctions, and native-language adapters still require conformance testing.
+
+### Follow-up verification and baseline control
+
+The initial follow-up `npm run check` passed, followed by 183 unit files and 2,334 passing tests
+with Godot enabled. The first two-worker full E2E run had 324 passes and one PWA second-tab startup
+timeout in 9.2 minutes. A three-repeat serial run of that unchanged PWA test had two passes and one
+later release-activation timeout. Neither assertion nor timeout was changed.
+
+To challenge attribution, an unmodified `git archive` of `00ade519` was built in a temporary copy
+with the existing dependencies linked and read-only Git metadata supplied to the build. The same
+PWA test ran five times serially: three passed and two failed at the same later release-activation
+assertion. That failure therefore also exists without these runtime fixes. This does not prove
+that every observed startup timeout shares that cause, and no PWA fix is claimed here. The original
+full-run evidence remains in `app/test-results-runtime-sol-opus/`, the repeats in
+`app/test-results-runtime-sol-opus-pwa-rerun/`, and the baseline traces in the temporary baseline's
+`app/test-results-pwa-baseline/` directory. The failed initial baseline setup attempts did not run
+tests: Node refused TypeScript under `node_modules`, then the temporary build needed Git metadata.
+
+Implementation and review rationale were committed as `bf5acc9c`. Main's subsequent zoom changes
+were integrated as `2005ff24` before the final verification. On that integrated state,
+`npm run check` passed and all 183 unit files and 2,337 tests passed with Godot enabled and two workers.
+The final full E2E run then passed **327 of 327 tests** in 9.9 minutes with two workers and no
+retries, including the previously intermittent PWA test. Its independent output directory is
+`app/test-results-runtime-sol-opus-final/`. Production source-sync and distribution guards also
+passed. The earlier failures and baseline control are retained rather than replaced by this green run.
+
+Fresh native Phaser verification then passed all 72 cases: 24 positive executions and 48 detected
+negative controls across Phaser 3.80.1, 3.90.0 and 4.1.0 in Canvas and WebGL, using both generated
+fixtures and the final run's actual UI ZIPs. It compared 2,484 frames and 16,736,256 pixels under
+the existing exact/partial-alpha contract. The report is
+`app/test-results-runtime-evidence/phaser-sol-opus.json`. The full-demo UI ZIP SHA-256 is
+`11be94a6453264a00103c3aac7a0d6c148020201406ae8dca9d7df912c55dfe2`; the global-settings UI ZIP is
+`276b351b564d36a2b8ab2b035ad27e238f144c1b63444a39d706aa742bafa620`.
+
+Fresh GDevelop 5.6.285 verification passed the official editor-core import, official HTML export
+and shipped GDJS/PIXI rendering checks for timing, pivots, masks, depth, palettes, independent dolls,
+stopping, unequipping and destruction. Evidence is in
+`app/node_modules/.cache/gdevelop-native-verification/`; the previous output was copied to its
+`-pre-sol-opus` sibling before this run. Native Aseprite equivalence and enabled Godot checks passed
+in the full unit run. Unity's adapter was not changed; no fresh Unity Editor or standalone-player
+run is claimed in this follow-up. No manual preview session or paid PixelLab call was needed.

@@ -31,7 +31,17 @@ for (const name of (await readdir(directory)).filter((name) => name.endsWith('.j
 		true,
 		ts.ScriptKind.JS
 	);
+	const declarations = module.statements.flatMap((statement) =>
+		ts.canHaveModifiers(statement)
+			? (ts.getModifiers(statement) ?? [])
+					.filter((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+					.map((modifier) => modifier.getStart(module))
+			: []
+	);
+	const prefixes = [...sources[name].matchAll(/^export /gm)].map((match) => match.index);
 	if (
+		declarations.length !== prefixes.length ||
+		declarations.some((start, index) => start !== prefixes[index]) ||
 		module.statements.some(
 			(statement) =>
 				ts.isImportDeclaration(statement) ||

@@ -16,8 +16,9 @@ test.beforeEach(async ({ context }) => {
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort()); // stay offline by default; a test's own route overrides this
 });
 
-/** An editable copy of the demo, plus two more saved characters made from it: "Twin" (the same body) with a traveling
- *  wizard hat, and "Giant" (a different body: its pivot moved) with a giant helmet. Then reopens the copy. */
+/** An editable copy of the demo, plus three more saved characters made from it: "Twin" (the same body) with a traveling
+ *  wizard hat, "Stout" (a different body on the same canvas: its pivot moved) with a stout helmet, and "Giant" (no move in
+ *  common: every move renamed) with a giant helmet. Then reopens the copy. */
 async function threeCharacters(page: Page) {
 	await openStudio(page, '/');
 	await newItem(page, 'Head');
@@ -33,7 +34,10 @@ async function threeCharacters(page: Page) {
 		});
 		const store = database.transaction('projects', 'readwrite').objectStore('projects');
 		const all = await new Promise<
-			{ id: string; manifest?: { name: string; rig: { pivot: { x: number } }; items: any[] } }[]
+			{
+				id: string;
+				manifest?: { name: string; rig: { pivot: { x: number }; view?: string }; items: any[] };
+			}[]
 		>((resolve, reject) => {
 			const read = store.getAll();
 			read.onsuccess = () => resolve(read.result);
@@ -52,8 +56,21 @@ async function threeCharacters(page: Page) {
 		};
 		const giant = clone('rig-giant', 'Giant', 'helmet_steel', 'Giant helmet', 'a giant helmet');
 		giant.manifest!.rig.pivot.x += 1;
+		const renamed = (key: string) => `giant-${key}`;
+		for (const move of (giant.manifest as any).rig.animations) move.id = renamed(move.id);
+		for (const item of giant.manifest!.items) {
+			for (const layer of item.layers)
+				layer.cells = Object.fromEntries(
+					Object.entries(layer.cells ?? {}).map(([move, cells]) => [renamed(move), cells])
+				);
+			item.coverage = item.coverage?.map((key: string) => renamed(key));
+			delete item.baseCut;
+		}
+		const stout = clone('rig-stout', 'Stout', 'helmet_steel', 'Stout helmet', 'a stout helmet');
+		stout.manifest!.rig.pivot.x += 1;
 		for (const rec of [
 			clone('rig-twin', 'Twin', 'hat_wizard', 'Traveling wizard hat', 'a traveling wizard hat'),
+			stout,
 			giant
 		])
 			store.put(rec, rec.id);
@@ -85,13 +102,14 @@ test('another character’s item on the same body is worn for free, survives rel
 	const others = await threeCharacters(page);
 	await expect(page.locator('.equipment-scroll')).toContainText('From your other characters');
 	await expect(page.locator('.equipment-scroll .shared-head')).toHaveText(
-		/From your other characters\s*Free when the body matches/
+		/From your other characters\s*Free when a move matches/
 	);
 	await expect(section(page, 'Head').locator('.bu-section-count')).toHaveText('2 items');
 	// Only items this character does not already have: its own helmet and hat stay off the list. Free ones come first, captioned
-	// "Free"; an item for another body sits under the "Make new" divider, after New item.
+	// "Free"; an item for another camera sits under the "Make new" divider, after New item.
 	await expect(others.getByRole('button')).toHaveText([
 		/^\s*Traveling wizard hat\s*from Twin\s*Free\s*$/,
+		/^\s*Stout helmet\s*from Stout\s*Free · not fitted\s*$/,
 		/^\s*Giant helmet\s*from Giant\s*$/
 	]);
 	await expect(others.locator('.shared-divider')).toHaveText('Make new for Adventurer copy');
@@ -114,12 +132,7 @@ test('another character’s item on the same body is worn for free, survives rel
 		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ });
 	await expect(own).toHaveAttribute('aria-pressed', 'true');
 	await expect(own).toHaveAttribute('data-selected');
-	// Only an item to make new is left: the subtitle says so and no divider is needed.
-	await expect(others.getByRole('button')).toHaveText([/^\s*Giant helmet\s*from Giant\s*$/]);
-	await expect(page.locator('.equipment-scroll .shared-head')).toHaveText(
-		/From your other characters\s*Make new for Adventurer copy/
-	);
-	await expect(others.locator('.shared-divider')).toHaveCount(0);
+	await expect(others.getByRole('button')).toHaveText([/^\s*Stout helmet/, /^\s*Giant helmet/]);
 	// The copy's details credit the character it was made for.
 	const copyDetails = await selectedItemDetails(page);
 	await expect(copyDetails).toContainText('paid once for Twin; copied here for free');
@@ -156,7 +169,7 @@ test('another character’s item on the same body is worn for free, survives rel
 	expect(errors).toEqual([]);
 });
 
-test('an item made for a different body offers to make it for this character, and nothing is submitted', async ({
+test('an item sharing no move with this character offers to make it for this character, and nothing is submitted', async ({
 	page,
 	context
 }) => {
@@ -179,7 +192,7 @@ test('an item made for a different body offers to make it for this character, an
 	const giant = others.getByRole('button', { name: 'Giant helmet, from Giant, make new' });
 	await giant.click();
 	const unfit = page.locator('.equipment-scroll .unfit');
-	await expect(unfit).toContainText('Drawn for Giant’s body, so it doesn’t fit Adventurer copy.');
+	await expect(unfit).toContainText('It can’t be worn as drawn on Adventurer copy.');
 	await expect(unfit).toContainText(
 		'Drawn new from the same description, so it may look different. It starts with the standing pose; you add moves later, each priced first.'
 	);
@@ -227,12 +240,106 @@ test('an item made for a different body offers to make it for this character, an
 	expect(requests.filter((r) => !r.startsWith('GET '))).toEqual([]);
 });
 
+test('an item drawn for another body on the same canvas is worn as drawn for free, with a warning and an offer to fit it', async ({
+	page,
+	context
+}) => {
+	const requests: string[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		requests.push(route.request().method() + ' ' + new URL(route.request().url()).pathname);
+		await route.abort();
+	});
+	const others = await threeCharacters(page);
+	// Fitted copies list before the ones worn as drawn, and those before the ones to make new.
+	await expect(others.getByRole('button')).toHaveText([
+		/^Traveling wizard hat/,
+		/^Stout helmet.*Free · not fitted/,
+		/^Giant helmet/
+	]);
+	await others
+		.getByRole('button', {
+			name: 'Stout helmet, from Stout, free, not fitted to this body',
+			exact: true
+		})
+		.click();
+	await expect(page.locator('.bu-toast')).toContainText(
+		'Wearing Stout helmet as drawn for Stout. It may not line up with this body. No generations used.'
+	);
+	const own = page.locator('.equipment-scroll [role=group][aria-label="Head items"]');
+	await expect(own.getByRole('button', { name: /^Stout helmet(,|$)/ })).toHaveCount(1);
+	await expect(others.getByRole('button', { name: /^Stout helmet/ })).toHaveCount(0);
+	// Once the free ones are taken, only an item to make new is left: the subtitle says so and no divider is needed.
+	await others
+		.getByRole('button', { name: 'Traveling wizard hat, from Twin, free copy', exact: true })
+		.click();
+	await expect(others.getByRole('button')).toHaveText([/^\s*Giant helmet\s*from Giant\s*$/]);
+	await expect(page.locator('.equipment-scroll .shared-head')).toHaveText(
+		/From your other characters\s*Make new for Adventurer copy/
+	);
+	await expect(others.locator('.shared-divider')).toHaveCount(0);
+	await reloadStudio(page);
+	await equipmentGroup(page, 'Head');
+	await own.getByRole('button', { name: /^Stout helmet(,|$)/ }).click();
+	const details = await selectedItemDetails(page);
+	await expect(details).toContainText(
+		'Worn as drawn for Stout’s body, without fitting, so it may float, clip or leave gaps on Adventurer copy. Make one for Adventurer copy to fit it.'
+	);
+	await expect(
+		details.getByRole('button', { name: 'Make one for Adventurer copy', exact: true })
+	).toBeVisible();
+	expect(requests).toEqual([]);
+});
+
+test('the demo lists items from other characters and copies itself to wear one', async ({
+	page,
+	context
+}) => {
+	const requests: string[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		requests.push(route.request().method() + ' ' + new URL(route.request().url()).pathname);
+		await route.abort();
+	});
+	await threeCharacters(page);
+	await page.evaluate(() => localStorage.setItem('pixeldoll.studio.project', 'fixture:s2'));
+	await reloadStudio(page);
+	await expect(page.locator('.project-btn')).not.toContainText('Adventurer copy');
+	await equipmentGroup(page, 'Head');
+	const others = page
+		.locator('.equipment-scroll')
+		.getByRole('group', { name: 'From your other characters' });
+	const hat = others.getByRole('button', {
+		name: 'Traveling wizard hat, from Twin, free copy',
+		exact: true
+	});
+	await expect(others.getByRole('button')).toHaveCount(3);
+	await hat.click();
+	await expect(hat).toHaveAttribute('aria-pressed', 'true');
+	const offer = page.locator('.equipment-scroll .unfit');
+	await expect(offer).toBeFocused();
+	await expect(offer).toContainText('The demo can’t change. Copy it to wear Traveling wizard hat.');
+	// Tapping the tile again closes the offer without copying.
+	await hat.click();
+	await expect(offer).toHaveCount(0);
+	await hat.click();
+	await offer.getByRole('button', { name: 'Copy demo and wear · Free', exact: true }).click();
+	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
+	await expect(page.locator('.bu-toast').last()).toContainText(
+		'Copied Traveling wizard hat from Twin. No generations used.'
+	);
+	await expect(
+		page
+			.locator('.equipment-scroll [role=group][aria-label="Head items"]')
+			.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })
+	).toHaveCount(1);
+	expect(requests).toEqual([]);
+});
+
 test('the From your other characters row fits a phone without horizontal overflow and shows the offer after a tap', async ({
 	page
 }) => {
 	await page.setViewportSize({ width: 390, height: 844 });
 	const others = await threeCharacters(page);
-	await expect(others.getByRole('button')).toHaveCount(2);
+	await expect(others.getByRole('button')).toHaveCount(3);
 	await others.getByRole('button', { name: 'Giant helmet, from Giant, make new' }).click();
 	const unfit = page.locator('.equipment-scroll .unfit');
 	await expect(unfit).toBeFocused();

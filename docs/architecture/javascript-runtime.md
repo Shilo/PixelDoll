@@ -62,6 +62,14 @@ Add runtime behavior to the canonical JavaScript modules, not the TypeScript fac
 application entry points preserve caller interfaces; direct canonical imports are appropriate for
 other engine-neutral modules. Phaser's public `z()` and `layerOf()` convenience methods remain available.
 
+Item-only thumbnails and inspector frames call `composeCell` with a project view containing just
+that item and its layer-union frame. Other equipment is intentionally excluded, but depth overrides,
+mirroring, owner-local images and pixel composition are not reimplemented. `compareDraws(manifest)`
+owns the total layer ordering, including equal-depth ties; `drawList` and Aseprite's editable
+all-layer stack both use it. Aseprite gets first-outfit visibility from `drawList`. Phaser and
+GDevelop assign renderer ranks from the returned draw-list order instead of creation-order ties
+or a second depth sort. Change ordering in the canonical comparator, not in these adapters.
+
 Primary API references reviewed: [Phaser animations](https://docs.phaser.io/phaser/concepts/animations)
 and [TypeScript JavaScript checking](https://www.typescriptlang.org/docs/handbook/type-checking-javascript-files.html).
 Native engine tests, not documentation alone, verify nonuniform Phaser frame durations and synchronization.
@@ -126,6 +134,9 @@ modules and a GDevelop controller to verify all changed together. Separate GDeve
 verify it executes canonical timeline, draw-list and palette decisions, rather than carrying unused text.
 The generator rejects imports, export lists and default exports in canonical modules. Keep public
 exports on named declarations so the embedded native-event form remains safe to generate.
+It also checks that every line beginning with `export ` is an actual top-level export modifier,
+and every such modifier uses that prefix. Misleading prefixes inside multiline strings/comments
+or indented export declarations fail synchronization instead of being silently changed by embedding.
 
 The same command regenerates `types.d.ts` from the existing TypeScript data contracts. Changes to those
 contracts require resynchronizing the export transport as well. The prebuild checks both generated files.
