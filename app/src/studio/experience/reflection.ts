@@ -6,11 +6,11 @@ export const REFLECTION = {
 	preview: true,
 	topdown: true,
 	side: true,
-	opacity: 0.16,
+	opacity: 0.22,
 	compression: 0.35,
 	fadeHeight: 0.7,
 	overheadCompression: 0.35,
-	overheadOpacity: 0.5
+	overheadOpacity: 0.6
 };
 
 export const floorFlatness = (belowHorizon: number, focal: number) =>
