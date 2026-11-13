@@ -55,6 +55,12 @@ test('floor perspective is bounded, camera-side and less reflective from above',
 	const overhead = reflectionStyle(500, -400, 800);
 	expect(side.compression).toBeGreaterThan(overhead.compression);
 	expect(side.opacity).toBeGreaterThan(overhead.opacity);
+	expect(overhead.compression).toBeCloseTo(0.25);
+	for (const flat of [0, 0.1, 0.25, 0.4]) {
+		const style = reflectionStyle(flat * 800, 0, 800);
+		expect(style.compression).toBeCloseTo(0.35 * (1 - flat * 0.65));
+		expect(style.opacity).toBeCloseTo(0.22 * (1 - flat * 0.4));
+	}
 	for (const style of [side, overhead, reflectionStyle(500, 500, 800)]) {
 		expect(style.compression).toBeGreaterThan(0);
 		expect(style.compression).toBeLessThanOrEqual(1);

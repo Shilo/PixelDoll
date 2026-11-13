@@ -8,6 +8,7 @@ export const REFLECTION = {
 	side: true,
 	opacity: 0.22,
 	compression: 0.35,
+	minimumCompression: 0.25,
 	fadeHeight: 0.7,
 	overheadCompression: 0.35,
 	overheadOpacity: 0.6
@@ -20,7 +21,10 @@ export function reflectionStyle(floor: number, horizon: number, focal: number) {
 	const flat = floorFlatness(floor - horizon, focal);
 	return {
 		opacity: REFLECTION.opacity * (1 - flat * (1 - REFLECTION.overheadOpacity)),
-		compression: REFLECTION.compression * (1 - flat * (1 - REFLECTION.overheadCompression))
+		compression: Math.max(
+			REFLECTION.minimumCompression,
+			REFLECTION.compression * (1 - flat * (1 - REFLECTION.overheadCompression))
+		)
 	};
 }
 
