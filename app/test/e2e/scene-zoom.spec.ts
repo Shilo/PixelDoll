@@ -2055,6 +2055,9 @@ test('playable zoom keeps absolute sprite size and covered backgrounds across re
 	await seedCharacters(page, 1);
 	await page.locator('.customize-action').click();
 	const host = world(page);
+	const fit = (await readScene(host)).fit;
+	await press(page, host, '+');
+	await expect.poll(async () => (await readScene(host)).zoom).toBeGreaterThan(fit);
 	for (const theme of THEMES) {
 		await setTheme(page, theme);
 		for (const [width, height] of [
