@@ -529,14 +529,14 @@ test('a re-fit never re-fits again, but copies exactly onto an identical body wi
 		other = ranger.manifest,
 		original = await knight();
 	await store('rig-ranger', ranger);
-	expect(await sharedFit(holder, fitted, other, loadStored)).toBe('unfitted');
-	expect(await sharedFit(original.manifest, original.manifest.items[1], other, loadStored)).toBe(
-		'refit'
-	);
+	expect((await sharedFit(holder, fitted, other, loadStored)).fit).toBe('unfitted');
+	expect(
+		(await sharedFit(original.manifest, original.manifest.items[1], other, loadStored)).fit
+	).toBe('refit');
 	// The holder's identical twin: an exact copy keeps the notes, which name the same frames there.
 	const twin = await fencer('Twin');
 	await store('rig-twin', twin);
-	expect(await sharedFit(holder, fitted, twin.manifest, loadStored)).toBe('copy');
+	expect((await sharedFit(holder, fitted, twin.manifest, loadStored)).fit).toBe('copy');
 	const copied = (await acceptCopy('rig-fencer', fitted.id, 'rig-twin'))!;
 	expect(copied.refit).toEqual(fitted.refit);
 	expect(copied.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight', item: 'sword' });
@@ -554,13 +554,13 @@ test('an exact copy missing frames the item has on its source gives way to a re-
 	await store('rig-knight', source);
 	await store('rig-twin', target);
 	const sword = source.manifest.items[1];
-	expect(await sharedFit(source.manifest, sword, target.manifest, loadStored)).toBe('refit');
+	expect((await sharedFit(source.manifest, sword, target.manifest, loadStored)).fit).toBe('refit');
 	const item = (await acceptCopy('rig-knight', 'sword', 'rig-twin'))!;
 	expect(item.coverage).toEqual(['default/south/0', 'slash/south/0', 'slash/south/1']);
 	expect(item.refit).toEqual([]);
 	// Every frame matches on an identical body: an exact copy.
 	const page = await character({ name: 'Page' });
-	expect(await sharedFit(source.manifest, sword, page.manifest, loadStored)).toBe('copy');
+	expect((await sharedFit(source.manifest, sword, page.manifest, loadStored)).fit).toBe('copy');
 });
 
 test('a different pivot re-fits through each rig’s own pivot; a different canvas never does', async () => {

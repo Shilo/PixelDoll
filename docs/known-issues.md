@@ -203,18 +203,22 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 Free sharing copies exactly onto byte-identical frozen body cells with the same geometry and slot semantics. When no
 frame copies or re-fits, any other body can wear the item free and unfitted, whatever its canvas size, camera, moves or
 frame counts (owner decisions, 2026-11-12 and 2026-11-13: wearing an item that does not fit beats hiding it, with a soft
-warning). Each target cell takes one source cell unchanged: per view, the nearest view the item is drawn in (front or back
-first on a tie); per frame, the same move with its frames spread proportionally (frame i of n takes floor(i * m / n) of
-m), else a move of the same kind (actionOf), else the item's standing frame. Each approximation is recorded on the item
+warning). Each target cell takes one source cell unchanged, from the same view only (a mirrored view through its drawn
+view): the same move with its frames spread proportionally (frame i of n takes floor(i * m / n) of m), else a move of the
+same kind (actionOf); a one-frame standing move takes the item's standing frame (its source's standing move, else its first
+frame: the demo's walk starts standing). Cells with no art stay empty and the item hides there, like any item's missing
+frames (owner decision, 2026-11-13: hiding beats borrowing another view or pose); shared tiles warn about them before the
+item is worn. Each approximation is recorded on the item
 (`unfitted` notes) and named in its tile, menu and details. Pixels are never scaled: on the same canvas size at the same place in the frame (a padded layer
 keeps its padding around the target pivot, as a re-fit does); on another size each layer keeps its own canvas, centered
 across the target cell with its pivot row on the target's; when the widths differ by an odd number of px and the target
 mirrors views, each copied frame gains one transparent column so it can center. A layer whose pivot would fall outside it
-or that would grow past 256 px is not worn (export would reject it); that is the only block. A slot only the source
+or that would grow past 256 px is not worn (export would reject it); nor is an item with no art for any of the target's
+moves and views. Those are the only blocks. A slot only the source
 defines comes with its item. The bundled demo is a source too: its images are not stored, so a copy writes them with the
 item. The demo itself never changes: wearing an item there saves an editable copy of the demo first. The source body's cuts, standing references and fit notes are dropped, so the body can show through where the
 source body hid it, and nothing checks the alignment: the item is marked **Not fitted**, named in export warnings, never
-re-fitted, extended or shared on, and a re-fit is never re-fitted again, though its pixels may be worn as drawn (the original wins a tie). An unfitted copy's details
+re-fitted or extended, and a re-fit is never re-fitted again; both may be worn as drawn elsewhere, unchanged (the original wins a tie). An unfitted copy's details
 show the source's findings for the unchanged pixels (a grip in the wrong hand stays a warning, not a block). Preserve: exact per-cell proof for copying; independent ids, materials and
 outfit choices on each copy; safe deletion of the source character; and no generation without the New item sheet's
 estimate and consent.

@@ -91,7 +91,7 @@ export interface Item {
 }
 
 export interface UnfitNote {
-	how: 'retimed' | 'similar' | 'standing' | 'direction' | 'size';
+	how: 'retimed' | 'similar' | 'standing' | 'size';
 	anim?: string;
 	dir?: DirectionName;
 	from?: string;

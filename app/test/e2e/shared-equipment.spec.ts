@@ -192,12 +192,13 @@ test('a shared item’s ⋮ explains how it fits and makes one for this characte
 	// Its status glyph explains the fit on hover; the ⋮ shows the same in a menu, for touch too.
 	await expect(giant.locator('.tile-status')).toHaveAttribute(
 		'title',
-		/^Drawn for Giant’s body, so it may float, clip or leave gaps\. .*uses the standing pose/
+		// Its standing move shows the helmet's standing frame and its walk uses Giant's walk; the punch has no art, so it hides.
+		/^Drawn for Giant’s body, so it may float, clip or leave gaps\. Default uses the first Giant default frame; Walk uses Giant walk\. Missing some Cross punch frames; it hides there\.$/
 	);
 	await others.getByRole('button', { name: 'More options for Giant helmet', exact: true }).click();
 	const menu = page.locator('#item-menu');
 	await expect(menu).toContainText('From Giant · Free · not fitted');
-	await expect(menu).toContainText('uses the standing pose');
+	await expect(menu).toContainText('Missing some Cross punch frames; it hides there.');
 	await expect(menu.getByRole('menuitem', { name: /^Wear/ })).toBeFocused();
 	await menu.getByRole('menuitem', { name: /^Make one for Adventurer copy…/ }).click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
@@ -289,7 +290,7 @@ test('the demo lists items from other characters and wears one in a saved copy o
 		.click();
 	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
 	await expect(page.locator('.bu-toast').last()).toContainText(
-		'Saved an editable copy of the demo. Copied Traveling wizard hat from Twin. No generations used.'
+		'Opened your editable copy of the demo. Copied Traveling wizard hat from Twin. No generations used.'
 	);
 	await expect(
 		page

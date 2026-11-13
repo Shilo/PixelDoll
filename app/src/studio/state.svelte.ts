@@ -1365,7 +1365,8 @@ export async function copyDemoAndAdd(entry: SharedItem) {
 		const now = shared.items.find(
 			(x) => x.sourceId === entry.sourceId && x.item.id === entry.item.id
 		);
-		const saved = 'Saved an editable copy of the demo. ';
+		// The copy may have been made before (the demo has one editable copy per body).
+		const saved = 'Opened your editable copy of the demo. ';
 		if (now?.fit === 'remake') {
 			ui.selected = sharedKey(now);
 			toast(`${saved}${entry.item.name} can’t be worn on it; its ⋮ menu can make one.`);

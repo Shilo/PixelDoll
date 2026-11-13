@@ -7,7 +7,7 @@ import { listProjects } from '../store/project.ts';
 import type { Item, Manifest, Preset, Project, Sha256, UnfitNote } from '../store/manifest.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { bodyOf } from './compatibility.ts';
-import { itemKey, sharedFit, unfittedPlan, type SharedFit } from './copy.ts';
+import { itemKey, sharedFit, unfittedPlan, type SharedChoice, type SharedFit } from './copy.ts';
 
 export interface SharedItem {
 	sourceId: string;
@@ -23,6 +23,8 @@ export interface SharedItem {
 	fit: SharedFit;
 	/** What wearing it unfitted approximates (fit 'unfitted' only). */
 	notes?: UnfitNote[];
+	/** The target cells it would cover here: the item is hidden in the others. */
+	cells: string[];
 	/** A bundled source's decoded images: they are not stored. */
 	images?: ReadonlyMap<string, Img>;
 }
@@ -41,7 +43,6 @@ const shareable = (m: Manifest, item: Item) =>
 	item.id !== m.rig.baseItem &&
 	item.slot !== 'body' &&
 	!item.variantOf &&
-	!item.unfitted &&
 	item.baseHash === m.rig.baseHash &&
 	!!item.coverage?.length;
 const latest = (item: Item, fallback: string) =>
@@ -52,7 +53,7 @@ const tier = (x: SharedItem) => (x.fit === 'remake' ? 2 : x.fit === 'unfitted' ?
 
 /** Outcomes of earlier listings by source save, item and the target's rig, body and slots: a refresh decides only what
  *  changed since. Only the latest listing's entries are kept. */
-let fits = new Map<string, SharedFit>();
+let fits = new Map<string, SharedChoice>();
 /** Forget the remembered outcomes (an add found one out of date). */
 export const forgetFits = () => {
 	fits = new Map();
@@ -69,7 +70,7 @@ export async function listShared(
 	bundled: readonly BundledSource[] = []
 ): Promise<{ items: SharedItem[]; skipped: number }> {
 	const own = new Set(target?.items.filter((it) => it.status === 'accepted').map(itemKey) ?? []),
-		groups = new Map<string, Omit<SharedItem, 'fit'>[]>();
+		groups = new Map<string, Omit<SharedItem, 'fit' | 'cells'>[]>();
 	const sources = [
 		...(await listProjects())
 			.filter((rec) => rec.origin !== 'dev')
@@ -136,22 +137,26 @@ export async function listShared(
 		let best: SharedItem | undefined;
 		for (const entry of entries.sort((a, b) => b.at.localeCompare(a.at))) {
 			const key = [entry.sourceId, entry.savedAt, entry.item.id, targetId, shape].join('|');
-			let fit = known.get(key);
+			let choice = known.get(key);
 			try {
-				fit ??= target ? await sharedFit(entry.source, entry.item, target, load) : 'remake';
+				choice ??= target
+					? await sharedFit(entry.source, entry.item, target, load)
+					: { fit: 'remake', cells: [] };
 			} catch (e) {
 				console.warn('shared item skipped', entry.sourceId, entry.item.id, e);
 				skipped++;
 				continue;
 			}
-			fits.set(key, fit);
-			// On a tie the original beats a re-fit of it (its pixels were moved for another body).
+			fits.set(key, choice);
+			const { fit } = choice,
+				approximated = (it: Item) => !!(it.refit || it.unfitted);
+			// On a tie the original beats a re-fit or an unfitted copy of it (their pixels were placed for another body).
 			if (
 				!best ||
 				RANK[fit] < RANK[best.fit] ||
-				(RANK[fit] === RANK[best.fit] && !!best.item.refit && !entry.item.refit)
+				(RANK[fit] === RANK[best.fit] && approximated(best.item) && !approximated(entry.item))
 			)
-				best = { ...entry, fit };
+				best = { ...entry, ...choice };
 			if (fit === 'copy') break;
 		}
 		// Worked out once for the entry listed, not on every render of its tile and menu.

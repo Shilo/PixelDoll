@@ -104,11 +104,12 @@ export interface Item {
 	 *  extended. */
 	unfitted?: UnfitNote[];
 }
-/** What an unfitted copy approximates: a move drawn with another frame count ('retimed'), another move of the same kind
- *  ('similar') or the standing frame ('standing') of its source (`from`), a view drawn facing another way ('direction', `from`
- *  the source view), or art drawn at another frame size ('size', `from` the source size in px). */
+/** What an unfitted copy approximates: a move drawn with another frame count ('retimed', `from` that count), another move of the
+ *  same kind ('similar', `from` that move), a standing move shown in the first frame of another move ('standing', `from` that
+ *  move), or art drawn at another frame size ('size', `from` the source size in px). Frames without art stay empty: the item is
+ *  hidden there, like any item's missing frames. */
 export interface UnfitNote {
-	how: 'retimed' | 'similar' | 'standing' | 'direction' | 'size';
+	how: 'retimed' | 'similar' | 'standing' | 'size';
 	anim?: string;
 	dir?: DirectionName;
 	from?: string;

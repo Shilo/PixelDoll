@@ -104,7 +104,7 @@ exported like any move. "Default" can't be used as the name of another move.
 
 Every finished item of your other characters (the ones saved on this device and the bundled demo) appears in the
 wardrobe of every character, the demo included, under **From your other characters** in its category, below **New
-item**. The category heading counts them ("2 items · 3 from others"). Each
+item**. Each
 tile shows the item as that character wears it, with a "from <character>" caption. Items this character already has
 (same slot and description) are not repeated, nor items it is making right now; when several characters have the same
 item, the one that fits this character best is listed. Fitted free items come first, then free items not fitted to
@@ -126,21 +126,24 @@ generated). A status glyph on the tile explains itself on hover.
   Tapping it still wears the item, for free, drawn as it was for the other body: "Wearing <item> as drawn for
   <character>. It may not line up with this body. No generations used." Its pixels are never scaled or moved: on the
   same frame size they keep their place in the frame; on another size the item keeps its own canvas, centered and
-  standing on the same ground. Every frame shows something when it can: a move with another frame count is spread over
-  this character's frames, a move the item lacks uses one of the same kind (any walk for a walk) or else its standing
-  pose, and a view it lacks uses its nearest view (front or back first). The tile's hover text, its ⋮ menu and its details
-  name each of these, mark it **Not fitted** with the same glyph, show the other character's findings for the item (such
+  standing on the same ground. A move with another frame count is spread over this character's frames, a move the item
+  lacks uses one of the same kind (any walk for a walk), and a standing move shows the item's standing frame. Anywhere else
+  the item has no art for, a move or a view, it is hidden, like any item's missing frames. The tile's hover text, its ⋮
+  menu and its details name each of these and any moves it hides in, mark it **Not fitted** with the same glyph, show the other character's findings for the item (such
   as a grip in the wrong hand), and offer **Make one for <this character>**; exports list it among their warnings.
-- **Can't be worn:** only an item that could not be exported here (wider than 256 px) says so; tapping it opens its ⋮
-  menu with **Make one for <this character>…**.
+- **Missing frames:** any shared tile whose item has no art for some of this character's moves shows a warning glyph
+  saying "Missing some <move> frames" before you wear it; it hides there once worn.
+- **Can't be worn:** only an item that would show in no frame here (it has no art for any of this character's moves and
+  views) or could not be exported here (wider than 256 px) says so with a no-entry glyph; tapping it opens its ⋮ menu
+  with **Make one for <this character>…**.
 - **On the demo:** the demo never changes, so tapping a tile saves an editable copy of the demo on this device (or
-  opens the copy made before) and wears the item there: "Saved an editable copy of the demo. …" Nothing is generated.
+  opens the copy made before) and wears the item there: "Opened your editable copy of the demo. …" Nothing is generated.
   The demo's own items are offered to your other characters the same way.
 
 A copy with the same standing views as its source gets moves added later like any item (a missing-frames notice with a
 priced **Make it**). A free fit, or a copy whose standing views differ, has no standing design for this body, so its
-missing-frames notice offers **Make one for <this character>** instead. An item worn without fitting is never offered to
-other characters; its original is. Deleting a character
+missing-frames notice offers **Make one for <this character>** instead. An item worn without fitting is offered to other
+characters too, but its original wins when both are listed. Deleting a character
 only stops its items from appearing; copies already added to other characters stay. Items are shared within this
 browser's storage only; export character ZIPs to keep backups or move characters to another device.
 

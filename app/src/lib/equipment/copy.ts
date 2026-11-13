@@ -210,38 +210,17 @@ function wanted(source: Manifest, item: Item, target: Manifest): string[] {
 					out.push(cellKey(a.id, dir, i));
 	return out;
 }
-/** Facings around the compass, for the nearest drawn view. */
-const RING: DirectionName[] = [
-	'south',
-	'south-east',
-	'east',
-	'north-east',
-	'north',
-	'north-west',
-	'west',
-	'south-west'
-];
-/** Views by closeness to `dir`; a front or back view wins a tie (a hat reads best from there). */
-const nearest = (dir: DirectionName) => {
-	const at = RING.indexOf(dir),
-		apart = (d: DirectionName) => {
-			const n = Math.abs(RING.indexOf(d) - at);
-			return Math.min(n, RING.length - n);
-		},
-		side = (d: DirectionName) => +!(d === 'south' || d === 'north');
-	return [...RING].sort((a, b) => apart(a) - apart(b) || side(a) - side(b));
-};
 export interface UnfittedPlan {
 	/** The source cell each target cell wears. */
 	matches: CellMatch[];
 	notes: UnfitNote[];
 }
-/** How a copy worn as drawn fills every target cell it can, never scaling or moving pixels: per view, the nearest view the item
- *  is drawn in; per frame, the same move (frames spread over the target's count), else a move of the same kind, else the item's
- *  standing frame. Empty only when the item has no art for this character at all, or its canvas could not be exported here. */
+/** How a copy worn as drawn fills the target cells its art exists for, never scaling or moving pixels. Per view: only a view the
+ *  item is drawn in (a mirrored one through its drawn view). Per frame: the same move (its frames spread over the target's
+ *  count), else a move of the same kind (any walk for a walk); a one-frame standing move takes the item's standing frame.
+ *  Anything else stays empty, so the item is hidden there, as an item's own missing frames are. Empty when the item has no art
+ *  for this character at all, or its canvas could not be exported here. */
 export function unfittedPlan(source: Manifest, item: Item, target: Manifest): UnfittedPlan {
-	// An unfitted copy is not shared on (its original is); a re-fit's pixels may be worn as drawn, unchanged.
-	if (item.unfitted) return { matches: [], notes: [] };
 	// A layer that cannot sit centered on a whole pixel, whose pivot falls outside it, or that grows past 256 px could not be
 	// exported.
 	const mirrored = target.rig.directions.some((d) => d.mirrorOf);
@@ -263,10 +242,8 @@ export function unfittedPlan(source: Manifest, item: Item, target: Manifest): Un
 	const body = bodyOf(target)?.layers[0],
 		covers = (anim: string, dir: DirectionName, i: number) => covered(source, item, anim, dir, i),
 		frames = (a: { cells: number }) => Array.from({ length: a.cells }, (_, i) => i),
-		drawn = (anim: string, dir: DirectionName) => {
-			const a = source.rig.animations.find((x) => x.id === anim);
-			return !!a && frames(a).some((i) => covers(anim, dir, i));
-		},
+		/** The item's standing frame facing `dir`: its standing move's, else its first frame (the demo has no standing move:
+		 *  its walk starts standing, as its saved copy assumes). */
 		standing = (dir: DirectionName) => {
 			const still = standingMove(source, dir);
 			if (still && covers(still, dir, 0)) return { anim: still, frame: 0 };
@@ -278,43 +255,43 @@ export function unfittedPlan(source: Manifest, item: Item, target: Manifest): Un
 		note = (n: UnfitNote) => notes.set(stableStringify(n), n);
 	for (const ta of target.rig.animations)
 		for (const { id: dir } of target.rig.directions.filter((d) => !d.mirrorOf)) {
-			const from = nearest(dir).find((d) => source.rig.animations.some((a) => drawn(a.id, d)));
-			if (!from) continue;
 			const moves = [
-				source.rig.animations.find((a) => a.id === ta.id && drawn(a.id, from)),
-				source.rig.animations.find(
-					(a) => a.id !== ta.id && actionOf(a.id) === actionOf(ta.id) && drawn(a.id, from)
-				)
-			].filter((a) => !!a);
-			let used = false;
+				...source.rig.animations.filter((a) => a.id === ta.id),
+				...source.rig.animations.filter((a) => a.id !== ta.id && actionOf(a.id) === actionOf(ta.id))
+			];
+			const still = ta.cells === 1 && standingMove(target, dir) === ta.id;
 			for (const i of frames(ta)) {
 				if (!body?.cells?.[ta.id]?.[dir]?.[i]) continue;
 				let pick: { anim: string; frame: number } | undefined;
 				for (const sa of moves) {
 					const j = Math.floor((i * sa.cells) / ta.cells);
-					if (!covers(sa.id, from, j)) continue;
+					if (!covers(sa.id, dir, j)) continue;
 					pick = { anim: sa.id, frame: j };
 					if (sa.id !== ta.id) note({ how: 'similar', anim: ta.id, from: sa.id });
 					if (sa.cells !== ta.cells) note({ how: 'retimed', anim: ta.id, from: String(sa.cells) });
 					break;
 				}
-				if (!pick) {
-					pick = standing(from);
-					// A standing move worn in the standing pose needs no note.
-					if (pick && standingMove(target, dir) !== ta.id) note({ how: 'standing', anim: ta.id });
+				if (!pick && still) {
+					pick = standing(dir);
+					// Its own standing move needs no note; a frame of another move does.
+					if (pick && pick.anim !== standingMove(source, dir))
+						note({ how: 'standing', anim: ta.id, from: pick.anim });
 				}
-				if (!pick) continue;
-				used = true;
-				matches.push({
-					target: cellKey(ta.id, dir, i),
-					source: cellKey(pick.anim, from, pick.frame)
-				});
+				if (pick)
+					matches.push({
+						target: cellKey(ta.id, dir, i),
+						source: cellKey(pick.anim, dir, pick.frame)
+					});
 			}
-			if (used && from !== dir) note({ how: 'direction', dir, from });
 		}
 	if (matches.length && source.rig.cell.w !== target.rig.cell.w)
 		note({ how: 'size', from: String(source.rig.cell.w) });
 	return { matches, notes: [...notes.values()] };
+}
+/** How an item comes to a character, and the target cells it would cover there (the others hide it). */
+export interface SharedChoice {
+	fit: SharedFit;
+	cells: string[];
 }
 /** An exact copy when it covers every cell the item covers on its source; otherwise whichever of the exact copy and a re-fit
  *  covers more cells (the exact copy on a tie: its pixels need no look); only when neither covers any, a copy worn as drawn.
@@ -325,12 +302,14 @@ async function choose(
 	target: Manifest,
 	copy: string[] | null,
 	refit: () => Promise<string[] | null>
-): Promise<SharedFit> {
-	if (copy && wanted(source, item, target).every((k) => copy.includes(k))) return 'copy';
+): Promise<SharedChoice> {
+	if (copy && wanted(source, item, target).every((k) => copy.includes(k)))
+		return { fit: 'copy', cells: copy };
 	const fitted = refittable(item) ? await refit() : null;
-	if (fitted && fitted.length > (copy?.length ?? 0)) return 'refit';
-	if (copy) return 'copy';
-	return unfittedPlan(source, item, target).matches.length ? 'unfitted' : 'remake';
+	if (fitted && fitted.length > (copy?.length ?? 0)) return { fit: 'refit', cells: fitted };
+	if (copy) return { fit: 'copy', cells: copy };
+	const cells = unfittedPlan(source, item, target).matches.map((m) => m.target);
+	return { fit: cells.length ? 'unfitted' : 'remake', cells };
 }
 /** A source layer on the target, unscaled. On the same frame size its pixels keep their place in the frame unless that leaves
  *  it off-center for mirrored views. Otherwise it
@@ -411,7 +390,7 @@ export async function sharedFit(
 	item: Item,
 	target: Manifest,
 	load: (hash: Sha256) => Promise<Img>
-): Promise<SharedFit> {
+): Promise<SharedChoice> {
 	const copy = await assessCopy(source, item, target, flipper(load).flip);
 	return choose(source, item, target, copy.fits ? copy.matches.map((m) => m.target) : null, () =>
 		refitCells(source, item, target, load)
@@ -451,7 +430,7 @@ export async function acceptCopy(
 	const { flip, made } = flipper(load);
 	const copy = await prepareCopy(source.manifest, itemId, variants, target.manifest, flip),
 		fitted: { refit?: CopyCandidate | null } = {};
-	const how = await choose(
+	const { fit: how } = await choose(
 		source.manifest,
 		original,
 		target.manifest,

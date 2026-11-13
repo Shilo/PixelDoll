@@ -485,10 +485,8 @@ export function unfitText(m: Manifest, from: string, notes: unknown): string {
 				: n.how === 'similar'
 					? `${move(n.anim)} uses ${move(n.from)}`
 					: n.how === 'standing'
-						? `${move(n.anim)} uses the standing pose`
-						: n.how === 'direction'
-							? `facing ${n.dir?.replaceAll('-', ' ')} uses the ${n.from?.replaceAll('-', ' ')} view`
-							: `drawn at ${n.from} px`
+						? `${move(n.anim)} uses the first ${move(n.from)} frame`
+						: `drawn at ${n.from} px`
 		);
 	return `Drawn for ${from}’s body, so it may float, clip or leave gaps.${
 		parts.length ? ` ${parts.join('; ').replace(/^./, (c) => c.toUpperCase())}.` : ''

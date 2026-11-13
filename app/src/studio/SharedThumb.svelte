@@ -8,8 +8,11 @@
 	import GroupIcon from './GroupIcon.svelte';
 	let { entry }: { entry: SharedItem } = $props();
 	let project = $state.raw<Project | null>(null);
-	// A refreshed list brings new entry objects for unchanged items: reload only when the source was saved again.
-	const key = $derived(`${entry.sourceId}/${entry.item.id}/${entry.savedAt}`);
+	// A refreshed list brings new entry objects for unchanged items: reload only when the source was saved again or its colors
+	// changed (the bundled demo keeps its colors apart from a save time).
+	const key = $derived(
+		`${entry.sourceId}/${entry.item.id}/${entry.savedAt}/${JSON.stringify(entry.variants)}`
+	);
 	$effect(() => {
 		void key;
 		const e = untrack(() => entry);

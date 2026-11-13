@@ -23,6 +23,7 @@
 	} from './model.ts';
 	import { itemKey } from '../lib/equipment/copy.ts';
 	import type { SharedItem } from '../lib/equipment/shared.ts';
+	import type { CellKey } from '../lib/store/manifest.ts';
 	import {
 		ui,
 		doc,
@@ -196,13 +197,20 @@
 	/** How another character's item comes to this one, in a sentence for its status glyph and ⋮ menu. */
 	function sharedNote(x: SharedItem): string {
 		if (!m) return '';
-		if (x.fit === 'unfitted') return unfitText(m, x.sourceName, x.notes ?? []);
-		if (x.fit === 'refit')
-			return `Fitted to this body from ${x.sourceName}’s item for free. Check it in each move.`;
 		if (x.fit === 'remake')
-			return `None of its frames can show on ${m.name}. Make one for this character instead.`;
-		return `The same body as ${x.sourceName}: an exact copy.`;
+			return `It can’t be worn on ${m.name}: it has no frames for this character’s moves and views, or its art is too large to export. Make one for this character instead.`;
+		const fit =
+			x.fit === 'unfitted'
+				? unfitText(m, x.sourceName, x.notes ?? [])
+				: x.fit === 'refit'
+					? `Fitted to this body from ${x.sourceName}’s item for free. Check it in each move.`
+					: `The same body as ${x.sourceName}: an exact copy.`;
+		const missing = sharedMissing(x);
+		return missing ? `${fit} ${missing}; it hides there.` : fit;
 	}
+	/** Moves the item has no art for here, worded like an own item's missing frames (it hides in them once worn). */
+	const sharedMissing = (x: SharedItem) =>
+		m ? missingFramesNote(m, { ...x.item, coverage: x.cells as CellKey[] }) : '';
 	const sectionId = (id: string) => `wardrobe-${id.replace(/\s+/g, '-').toLowerCase()}`;
 
 	function remember() {
@@ -445,12 +453,21 @@
 											>{/if}{#if st.unfit}<span
 												class="bu-tile-status tile-status"
 												data-tone="warning"
-												title={[st.unfit, st.look, st.missing].filter(Boolean).join(' ')}
+												title={[
+													st.unfit,
+													st.look,
+													st.missing,
+													st.hidden ? 'Hidden by another item' : ''
+												]
+													.filter(Boolean)
+													.join(' · ')}
 												aria-hidden="true"><Puzzle size={14} /></span
 											>{:else if st.look || st.missing}<span
 												class="bu-tile-status tile-status"
 												data-tone="warning"
-												title={[st.look, st.missing].filter(Boolean).join(' · ')}
+												title={[st.look, st.missing, st.hidden ? 'Hidden by another item' : '']
+													.filter(Boolean)
+													.join(' · ')}
 												aria-hidden="true"><TriangleAlert size={14} /></span
 											>{:else if st.hidden && !on}<span
 												class="bu-tile-status tile-status"
@@ -610,7 +627,7 @@
 												data-tile={key}
 												aria-label="{x.item.name}, from {x.sourceName}, {FIT_NAME[x.fit]}"
 												aria-busy={adding}
-												disabled={!!shared.adding}
+												aria-disabled={!!shared.adding || undefined}
 												onclick={(e) =>
 													remake ? openMenu(e.currentTarget.parentElement!) : addShared(x)}
 											>
@@ -622,12 +639,18 @@
 												{#if adding}<span class="tile-from faint small">Adding…</span>{:else}<span
 														class="tile-from muted small">{FIT_CAPTION[x.fit]}</span
 													>{/if}
-												{#if x.fit === 'unfitted' || remake}<span
+												<!-- Can't be worn, not fitted, or a fit with frames to check or missing: each glyph explains itself on hover. -->
+												{#if remake}<span
+														class="bu-tile-status tile-status"
+														data-tone="warning"
+														title={sharedNote(x)}
+														aria-hidden="true"><Ban size={14} /></span
+													>{:else if x.fit === 'unfitted'}<span
 														class="bu-tile-status tile-status"
 														data-tone="warning"
 														title={sharedNote(x)}
 														aria-hidden="true"><Puzzle size={14} /></span
-													>{:else if x.fit === 'refit'}<span
+													>{:else if x.fit === 'refit' || sharedMissing(x)}<span
 														class="bu-tile-status tile-status"
 														data-tone="warning"
 														title={sharedNote(x)}

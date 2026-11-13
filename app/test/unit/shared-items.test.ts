@@ -8,6 +8,9 @@ import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import { composeCell } from '../../src/lib/compose/compose.ts';
+import * as core from '../../src/lib/runtime/paperdoll.js';
+import { PAPERDOLL_JS } from '../../src/lib/export/phaser.ts';
+import { decodePng } from '../../src/lib/image/png.ts';
 import { recolor } from '../../src/lib/dress/dress.ts';
 import type { Item, Preset, Project } from '../../src/lib/store/manifest.ts';
 import { healthOf, unfitText } from '../../src/studio/model.ts';
@@ -254,26 +257,31 @@ test('an unevenly padded layer from a body that mirrors nothing is centered on a
 	expect((await exportFiles(p, { engines: ['generic'], baked: false })).errors).toEqual([]);
 });
 
-test('a move the item lacks shows its standing pose, and that is noted', async () => {
+test('a standing move takes the item’s standing frame; another move the item lacks hides it, and both are noted', async () => {
 	await store('rig-source', named(await equipmentFixture(), 'Knight'));
 	const target = await otherBody('Dancer'),
-		cells = target.manifest.items[0].layers[0].cells!;
+		stand = target.manifest.items[0].layers[0].cells!.rest!.south![0];
 	target.manifest.rig.animations = [
-		{ id: 'dance', cells: 1, frames: [{ cell: 0, ms: 100 }], loop: true }
+		{ id: 'default', cells: 1, frames: [{ cell: 0, ms: 100 }], loop: true },
+		{
+			id: 'dance',
+			cells: 2,
+			frames: [0, 1].map((cell) => ({ cell, ms: 100 })),
+			loop: true
+		}
 	];
-	target.manifest.items[0].layers[0].cells = { dance: cells.rest! };
+	target.manifest.items[0].layers[0].cells = {
+		default: { south: [stand] },
+		dance: { south: [stand, stand] }
+	};
 	await store('rig-target', target);
-	expect((await listShared('rig-target', target.manifest)).items.map((x) => x.fit)).toEqual([
-		'unfitted'
-	]);
 	const item = (await acceptCopy('rig-source', 'hat', 'rig-target'))!;
+	// The standing move shows the item's first frame (its source has no standing move); the dance has no art: it hides there.
 	expect(item).toMatchObject({
-		coverage: ['dance/south/0'],
-		unfitted: [{ how: 'standing', anim: 'dance' }]
+		coverage: ['default/south/0'],
+		unfitted: [{ how: 'standing', anim: 'default', from: 'rest' }]
 	});
-	expect(item.layers[0].cells?.dance?.south).toEqual(
-		hatOf(await equipmentFixture()).layers[0].cells!.rest!.south
-	);
+	expect(item.layers[0].cells?.dance).toBeUndefined();
 });
 
 test('a move with another frame count is spread over this character’s frames, and that is noted', async () => {
@@ -308,7 +316,7 @@ test('a move with another frame count is spread over this character’s frames, 
 	expect(item.unfitted).toEqual([{ how: 'retimed', anim: 'walk', from: '2' }]);
 });
 
-test('a view the item lacks wears its nearest view, front or back first, and that is noted', async () => {
+test('a view the item lacks hides it there rather than borrow another view', async () => {
 	await store('rig-source', named(await equipmentFixture(), 'Knight'));
 	const target = await otherBody('Squire'),
 		layer = target.manifest.items[0].layers[0];
@@ -318,9 +326,9 @@ test('a view the item lacks wears its nearest view, front or back first, and tha
 	};
 	await store('rig-target', target);
 	const item = (await acceptCopy('rig-source', 'hat', 'rig-target'))!;
-	expect(item.coverage).toEqual(['rest/south/0', 'rest/south-east/0']);
-	expect(item.layers[0].cells?.rest?.['south-east']).toEqual(item.layers[0].cells?.rest?.south);
-	expect(item.unfitted).toEqual([{ how: 'direction', dir: 'south-east', from: 'south' }]);
+	expect(item.coverage).toEqual(['rest/south/0']);
+	expect(item.layers[0].cells?.rest?.['south-east']).toBeUndefined();
+	expect(item.unfitted).toEqual([]);
 });
 
 test('a layer export would refuse is the one item that cannot be worn: nothing is written', async () => {
@@ -388,9 +396,10 @@ test('exact frames win over wearing the whole item unfitted: a partly matching b
 	};
 	for (const [h, im] of other.images) target.images.set(h, im);
 	await store('rig-target', target);
-	expect((await listShared('rig-target', target.manifest)).items.map((x) => x.fit)).toEqual([
-		'copy'
-	]);
+	// The listing says which cells it covers here, so its tile can warn that it hides in the walk.
+	expect(
+		(await listShared('rig-target', target.manifest)).items.map((x) => [x.fit, x.cells])
+	).toEqual([['copy', ['rest/south/0']]]);
 	const item = (await acceptCopy('rig-source', 'hat', 'rig-target'))!;
 	expect(item.unfitted).toBeUndefined();
 	expect(item.coverage).toEqual(['rest/south/0']);
@@ -479,4 +488,71 @@ test('a copy saved before fit notes were recorded (unfitted: true) still reads, 
 	expect(unfitText(m, 'Knight', [{ how: 'size', from: '48' }])).toBe(
 		'Drawn for Knight’s body, so it may float, clip or leave gaps. Drawn at 48 px.'
 	);
+});
+
+test('the exported runtime equips an unfitted copy and draws it exactly as the app does, hidden where it has no art', async () => {
+	// Another frame size and a move the item has no art for: the copy's cells are baked, so the public API needs nothing else.
+	await store('rig-source', named(await equipmentFixture(), 'Knight'));
+	const giant = named(bodyOnly(await equipmentFixture()), 'Giant'),
+		body = makeImg(96, 96);
+	body.data.set([10, 20, 30, 255], (80 * 96 + 40) * 4);
+	const hash = await cellHash(body);
+	giant.images.set(hash, body);
+	giant.manifest.items[0].layers[0].cells = {
+		rest: { south: [hash] },
+		jump: { south: [hash, hash] }
+	};
+	Object.assign(giant.manifest.rig, {
+		cell: { w: 96, h: 96 },
+		pivot: { x: 48, y: 88 },
+		directions: [{ id: 'south' }, { id: 'north', mirrorOf: 'south' }],
+		animations: [
+			...giant.manifest.rig.animations,
+			{ id: 'jump', cells: 2, frames: [0, 1].map((cell) => ({ cell, ms: 100 })), loop: true }
+		]
+	});
+	await store('rig-giant', giant);
+	const item = (await acceptCopy('rig-source', 'hat', 'rig-giant'))!;
+	const app = (await loadProject('rig-giant')).project;
+	const out = await exportFiles(app, { engines: ['phaser'], baked: false });
+	expect(out.errors).toEqual([]);
+	// The game loads the exported editable project: its manifest and its cells.
+	const file = (name: string) => out.entries.find((e) => e.name === name)!.data;
+	const exported: Project = {
+		manifest: JSON.parse(new TextDecoder().decode(file('project.json'))).manifest,
+		images: new Map()
+	};
+	for (const h of new Set([hash, ...item.layers[0].cells!.rest!.south!.filter((x) => !!x)]))
+		exported.images.set(
+			h!,
+			await decodePng(new Blob([file(`cells/${h!.slice(7)}.png`) as Uint8Array<ArrayBuffer>]))
+		);
+	const runtime = new Function(
+		PAPERDOLL_JS.replace(/^export /gm, '') + '\nreturn { composeCell, bakedFrame, validEquipment };'
+	)() as Pick<typeof core, 'composeCell' | 'bakedFrame' | 'validEquipment'>;
+	const outfit = { body: 'base', head: item.id };
+	expect(() => runtime.validEquipment(exported.manifest, 'head', item.id)).not.toThrow();
+	for (const [anim, cell] of [
+		['rest', 0],
+		['jump', 0],
+		['jump', 1]
+	] as const)
+		for (const dir of ['south', 'north'] as const) {
+			const frame = core.bakedFrame(app.manifest),
+				inApp = composeCell(app, outfit, anim, dir, cell, frame);
+			expect(
+				runtime.composeCell(
+					exported,
+					outfit,
+					anim,
+					dir,
+					cell,
+					runtime.bakedFrame(exported.manifest)
+				)
+			).toEqual(inApp);
+			// Where the item has no art (the jump), it hides: the frame shows the body alone, in both.
+			if (anim === 'jump')
+				expect(inApp).toEqual(composeCell(app, { body: 'base' }, anim, dir, cell, frame));
+			else expect(inApp).not.toEqual(composeCell(app, { body: 'base' }, anim, dir, cell, frame));
+		}
 });
