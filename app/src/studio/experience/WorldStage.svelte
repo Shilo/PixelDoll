@@ -557,6 +557,7 @@
 			const zoom = sceneCamera({
 				value: live || !fit ? 1 : shared.scale / fit,
 				anchor: groundedFocus,
+				framing: clearance,
 				backdrop,
 				plate: art,
 				viewport: { l: 0, t: 0, r: width, b: backdrop.coverBottom },
@@ -584,7 +585,7 @@
 					experience.sceneCamera = zoom;
 				}
 				if (zoom.value !== 1) {
-					g.translate(zoom.anchor.x, zoom.anchor.y);
+					g.translate(zoom.anchor.x + zoom.offset.x, zoom.anchor.y + zoom.offset.y);
 					g.scale(zoom.value, zoom.value);
 					g.translate(-zoom.anchor.x, -zoom.anchor.y);
 				}
@@ -593,6 +594,7 @@
 			host.dataset.sceneFit = String(shared.fit);
 			host.dataset.sceneCamera = String(zoom.value);
 			host.dataset.sceneAnchor = `${zoom.anchor.x},${zoom.anchor.y}`;
+			host.dataset.sceneOffset = `${zoom.offset.x},${zoom.offset.y}`;
 			host.dataset.sceneMin = String(shared.min);
 			host.dataset.sceneMax = String(shared.max);
 			let velocity = stick.origin
@@ -785,7 +787,8 @@
 											b: point.y + (box.h - box.y) * scale
 										},
 										zoom.anchor,
-										zoom.value
+										zoom.value,
+										zoom.offset
 									)
 								};
 							});

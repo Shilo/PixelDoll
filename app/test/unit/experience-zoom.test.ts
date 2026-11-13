@@ -31,6 +31,102 @@ const clearance = { l: 40, t: 100, r: 760, b: 500 };
 const target = { l: 300, t: 200, r: 500, b: 450 };
 
 describe('finite scene camera', () => {
+	test('nearly full-height framing stays continuous while resizing through capacity', () => {
+		const center = { x: 200, y: 200 };
+		const ground = { x: 200, y: 256 };
+		const positions = [113, 112.000001, 112, 111.999999, 111].map((height) => {
+			const camera = sceneCamera({
+				...options,
+				anchor: ground,
+				center,
+				value: 1.1,
+				framing: { l: 0, r: 390, t: 158, b: 158 + height }
+			});
+			return zoomPoint(center, camera.anchor, camera.value, camera.offset);
+		});
+		for (let index = 1; index < positions.length; index++)
+			expect(Math.abs(positions[index].y - positions[index - 1].y)).toBeLessThan(0.51);
+	});
+
+	test('translated magnification cannot expose a tightly covered plate edge', () => {
+		const camera = sceneCamera({
+			value: 1.001,
+			anchor: { x: 100, y: 250 },
+			center: { x: 100, y: 200 },
+			framing: { l: 0, r: 400, t: 150, b: 251 },
+			backdrop: { ...backdrop, x: 0, y: 0 },
+			plate: { width: 400, height: 300 },
+			viewport: { l: 0, r: 400, t: 0, b: 300 }
+		});
+		expect(camera.backdrop.x).toBeLessThanOrEqual(1e-9);
+		expect(camera.backdrop.y).toBeLessThanOrEqual(1e-9);
+		expect(camera.backdrop.x + camera.backdrop.scale * 400).toBeGreaterThanOrEqual(400 - 1e-9);
+		expect(camera.backdrop.y + camera.backdrop.scale * 300).toBeGreaterThanOrEqual(300 - 1e-9);
+	});
+
+	test('magnification centers the painted body in the usable stage instead of preserving its low fit position', () => {
+		const center = { x: 420, y: 350 };
+		const framing = { l: 20, r: 700, t: 80, b: 460 };
+		const camera = sceneCamera({ ...options, center, value: 4, framing });
+		const shown = zoomPoint(center, camera.anchor, camera.value, camera.offset);
+		expect(shown.x).toBeCloseTo((framing.l + framing.r) / 2, 8);
+		expect(shown.y).toBeCloseTo((framing.t + framing.b) / 2, 8);
+	});
+
+	test.each([1, 1.25, 1.5, 2, 3])(
+		'usable-space centering is continuous, reversible and pixel-padding independent at DPR %s',
+		(dpr) => {
+			const framing = { l: 0, r: 719, t: 76, b: 863 };
+			const frame = { x: 32.5, y: 100 };
+			const fit = 7;
+			const drawn = framePosition(frame, { x: 410, y: 800 }, fit, dpr);
+			const ground = { x: drawn.x + frame.x * fit, y: drawn.y + frame.y * fit };
+			const height = 39 * fit;
+			const center = { x: ground.x, y: ground.y - height / 2 };
+			const midpoint = { x: (framing.l + framing.r) / 2, y: (framing.t + framing.b) / 2 };
+			const fills = (framing.b - framing.t) / height;
+			const at = (value: number) =>
+				sceneCamera({ ...options, anchor: ground, center, framing, value });
+			const shown = (value: number) => {
+				const camera = at(value);
+				return zoomPoint(center, camera.anchor, value, camera.offset);
+			};
+			for (const value of [1 - 1e-8, 1, 1 + 1e-8]) {
+				expect(shown(value).x).toBeCloseTo(center.x, 5);
+				expect(shown(value).y).toBeCloseTo(center.y, 5);
+			}
+			const halfway = shown((1 + fills) / 2);
+			expect(halfway.x).toBeCloseTo((center.x + midpoint.x) / 2, 8);
+			expect(halfway.y).toBeCloseTo((center.y + midpoint.y) / 2, 8);
+			for (const value of [fills, fills + 1e-8, 16, fills]) {
+				expect(shown(value).x).toBeCloseTo(midpoint.x, 8);
+				expect(shown(value).y).toBeCloseTo(midpoint.y, 8);
+			}
+			for (const value of [0.1, 0.5, 1]) {
+				const camera = at(value);
+				expect(zoomPoint(ground, camera.anchor, value, camera.offset)).toEqual(ground);
+			}
+			const camera = at(fills);
+			const body = { l: center.x - 20, r: center.x + 20, t: center.y - height / 2, b: ground.y };
+			const box = zoomBox(body, camera.anchor, camera.value, camera.offset);
+			expect(box.t).toBeCloseTo(framing.t, 8);
+			expect(box.b).toBeCloseTo(framing.b, 8);
+		}
+	);
+
+	test.each([380, 380.000001, 500])(
+		'an already full-height body of %s stays finite and leaves fit continuously',
+		(height) => {
+			const framing = { l: 20, r: 700, t: 80, b: 460 };
+			const center = { x: 420, y: anchor.y - height / 2 };
+			const at = (value: number) => sceneCamera({ ...options, center, framing, value });
+			const near = at(1 + 1e-8);
+			expect(zoomPoint(center, near.anchor, near.value, near.offset).y).toBeCloseTo(center.y, 5);
+			const full = at(2);
+			expect(zoomPoint(center, full.anchor, full.value, full.offset)).toEqual({ x: 360, y: 270 });
+		}
+	);
+
 	test.each([1, 1.25, 1.5, 2])(
 		'odd-width body centers stay fixed through retained-ceiling zoom at DPR %s',
 		(dpr) => {
@@ -219,22 +315,37 @@ describe('finite scene camera', () => {
 					const geometry = layout(width, height, screen);
 					const plate = worldArt(theme);
 					const base = placeWorld(geometry, plate, geometry.feet, 50 * heroScale(geometry, 50, 48));
-					const camera = sceneCamera({
-						...options,
-						// 100% of a 20x fit: the deepest zoom-out a large screen allows.
-						value: 0.05,
-						anchor: geometry.feet,
-						backdrop: base,
-						plate,
-						viewport: { l: 0, t: 0, r: width, b: base.coverBottom }
-					});
-					const result = camera.backdrop;
-					expect(result.x).toBeLessThanOrEqual(1e-9);
-					expect(result.y).toBeLessThanOrEqual(1e-9);
-					expect(result.x + result.scale * plate.width).toBeGreaterThanOrEqual(width - 1e-9);
-					expect(result.y + result.scale * plate.height).toBeGreaterThanOrEqual(
-						base.coverBottom - 1e-9
-					);
+					for (const value of [0.05, 1, 1.01, 2, 4, 16]) {
+						for (const shift of [-0.1, 0, 0.1]) {
+							const height = 50 * heroScale(geometry, 50, 48);
+							const ground = {
+								x: geometry.feet.x + (geometry.stage.r - geometry.stage.l) * shift,
+								y: geometry.feet.y
+							};
+							const camera = sceneCamera({
+								...options,
+								value,
+								anchor: ground,
+								center: { x: ground.x, y: ground.y - height / 2 },
+								framing: {
+									l: geometry.stage.l,
+									r: geometry.stage.r,
+									t: geometry.stage.t + 16,
+									b: screen === 'studio' ? geometry.playbackTop - 2 : geometry.feet.y
+								},
+								backdrop: base,
+								plate,
+								viewport: { l: 0, t: 0, r: width, b: base.coverBottom }
+							});
+							const result = camera.backdrop;
+							expect(result.x).toBeLessThanOrEqual(1e-9);
+							expect(result.y).toBeLessThanOrEqual(1e-9);
+							expect(result.x + result.scale * plate.width).toBeGreaterThanOrEqual(width - 1e-9);
+							expect(result.y + result.scale * plate.height).toBeGreaterThanOrEqual(
+								base.coverBottom - 1e-9
+							);
+						}
+					}
 				});
 			}
 });

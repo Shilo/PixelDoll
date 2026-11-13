@@ -17,6 +17,7 @@
 		zoom = 1,
 		cameraX,
 		cameraRise = 0,
+		cameraOffset = { x: 0, y: 0 },
 		culledOffsets = [],
 		select
 	}: {
@@ -30,6 +31,7 @@
 		cameraX?: number;
 		/** Distance from the cast's frame-bottom line to the painted zoom pivot. */
 		cameraRise?: number;
+		cameraOffset?: { x: number; y: number };
 		culledOffsets?: number[];
 		select: (id: string, activate: boolean) => void;
 	} = $props();
@@ -169,7 +171,7 @@
 <div class="cast" bind:clientWidth={width} bind:clientHeight={height}>
 	<div
 		class="cast-camera"
-		style:transform="scale({zoom})"
+		style:transform="translate({cameraOffset.x}px, {cameraOffset.y}px) scale({zoom})"
 		style:transform-origin="{cameraX ?? width / 2}px calc(100% - {cameraRise}px)"
 	>
 		{#each actors as actor (actor.p.id)}
