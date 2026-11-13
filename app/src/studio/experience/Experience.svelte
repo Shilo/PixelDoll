@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount, tick, untrack } from 'svelte';
-	import { SvelteMap } from 'svelte/reactivity';
 	import Toolbar from '../Toolbar.svelte';
 	import CharacterActions from '../CharacterActions.svelte';
 	import NewCharacterButton from '../NewCharacterButton.svelte';
@@ -42,7 +41,7 @@
 		TriangleAlert
 	} from '../icons.ts';
 	import { directionInfo, directionLabel } from './movement.ts';
-	import { characterFacts, groupOf, moveLabel } from '../model.ts';
+	import { groupOf, moveLabel } from '../model.ts';
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	let search = $state('');
@@ -62,11 +61,6 @@
 			selectedMove?.frames.some((frame) => frame.cell !== selectedMove.frames[0]?.cell)
 	);
 	const name = $derived(characterName());
-	// Facts for characters opened this session (the demo has no stored manifest summary).
-	const openedFacts = new SvelteMap<string, string>();
-	$effect(() => {
-		if (m && doc.id && !doc.loading) openedFacts.set(doc.id, characterFacts(m));
-	});
 	const list = $derived(
 		store.projects.filter((p) => !p.dev && p.name.toLowerCase().includes(search.toLowerCase()))
 	);
@@ -580,14 +574,14 @@
 			</div>
 			<div class="character-rows">
 				{#each list as p (p.id)}
-					{@const facts = p.facts ?? openedFacts.get(p.id)}
+					{@const facts = p.facts ?? stills.get(p.id)?.facts}
 					<CharacterActions id={p.id} name={p.name}>
 						<button
 							class="bu-action character-row"
 							data-variant="row"
 							aria-pressed={p.id === doc.id}
 							onclick={() => pick(p.id)}
-							><CharacterThumb id={p.id} name={p.name} /><span
+							><CharacterThumb id={p.id} name={p.name} trim /><span
 								><strong>{p.name.replace(/ \(demo\)$/, '')}</strong>{#if facts}<small>{facts}</small
 									>{/if}</span
 							></button
@@ -611,7 +605,7 @@
 		<div class="experience-stage">
 			<WorldStage playbackHeight={previewHeight} bind:missing />
 		</div>
-		{#if experience.mode === 'preview' && experience.zoomFits.studio && previewZoom.zoomed}
+		{#if experience.mode === 'preview' && experience.zoomFits.studio && experience.sceneZoom !== null}
 			<div class="scene-zoom-controls">
 				<ZoomControls zoom={previewZoom} onchange={changeZoom} />
 			</div>

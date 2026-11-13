@@ -1,11 +1,19 @@
 import { describe, expect, test } from 'vitest';
 import { worldArt } from '../../src/studio/experience/config.ts';
 import { castPose } from '../../src/studio/experience/carousel.ts';
-import { heroRoom, heroScale, layout, placeWorld } from '../../src/studio/experience/geometry.ts';
+import {
+	heroRoom,
+	heroScale,
+	layout,
+	placeWorld,
+	ringRadius,
+	ringRise
+} from '../../src/studio/experience/geometry.ts';
 import { planLineup } from '../../src/studio/experience/lineup.ts';
 import { thumbAnchors, thumbScale } from '../../src/studio/experience/thumbnails.svelte.ts';
 import { framePosition } from '../../src/studio/experience/bounds.ts';
 import {
+	cameraFramePosition,
 	resolveZoom,
 	sceneArtFits,
 	sceneCamera,
@@ -31,6 +39,80 @@ const clearance = { l: 40, t: 100, r: 760, b: 500 };
 const target = { l: 300, t: 200, r: 500, b: 450 };
 
 describe('finite scene camera', () => {
+	test.each([1, 1.25, 1.5, 2, 3])('inspection rings use final screen units at DPR %s', (dpr) => {
+		for (const width of [1, 10, 13, 40, 64]) {
+			const chosen = 6.125;
+			const radius = ringRadius(width, chosen);
+			const rise = ringRise(10, chosen, radius * 0.2, dpr);
+			for (const fit of [0.5, 1, 2, 2.5, 3, 6, 9]) {
+				const magnification = chosen / fit;
+				const drawnRadius = ringRadius(width, fit, magnification);
+				expect(drawnRadius * magnification).toBeCloseTo(radius, 10);
+				expect(
+					ringRise(10, fit * magnification, drawnRadius * magnification * 0.2, dpr)
+				).toBeCloseTo(rise, 10);
+			}
+		}
+	});
+
+	test.each([1, 1.25, 1.5, 2, 3])(
+		'final raster positions, not fit-relative origins, snap at DPR %s',
+		(dpr) => {
+			const frame = { x: 32.5, y: 100 };
+			for (const scale of [1, 3, 6.125, 9, 24]) {
+				const origins = [1, 2, 3, 5, 6, 7, 9, 14].map((fit) => {
+					const point = { x: 419.2 + 73.25 * fit, y: 840 };
+					const camera = sceneCamera({
+						...options,
+						value: scale / fit,
+						anchor: { x: 419.2, y: 840 }
+					});
+					const position = cameraFramePosition(frame, point, fit, camera, dpr);
+					const raster = zoomPoint(position, camera.anchor, camera.value, camera.offset);
+					expect(raster.x * dpr).toBeCloseTo(Math.round(raster.x * dpr), 8);
+					return raster.x;
+				});
+				origins.forEach((origin) => expect(origin).toBeCloseTo(origins[0], 8));
+			}
+		}
+	);
+
+	test.each([0.5, 1])('a translated flush backdrop stays covered at multiplier %s', (value) => {
+		const camera = sceneCamera({
+			value,
+			anchor: { x: 50, y: 50 },
+			center: { x: 50, y: 50 },
+			centerX: 51,
+			backdrop: { ...backdrop, x: 0, y: 0 },
+			plate: { width: 100, height: 100 },
+			viewport: { l: 0, r: 100, t: 0, b: 100 }
+		});
+		expect(camera.backdrop.x).toBeLessThanOrEqual(1e-8);
+		expect(camera.backdrop.x + camera.backdrop.scale * 100).toBeGreaterThanOrEqual(100 - 1e-8);
+	});
+	test.each([0.1, 0.5, 1, 1.001, 1.25, 2, 4])(
+		'inspection at %s pins the selected x independently of vertical progress',
+		(value) => {
+			const center = { x: 229.5, y: 650 };
+			const ground = { x: center.x, y: 850 };
+			const camera = sceneCamera({
+				...options,
+				value,
+				anchor: ground,
+				center,
+				centerX: 419.2,
+				framing: clearance
+			});
+			const shown = zoomPoint(center, camera.anchor, camera.value, camera.offset);
+			expect(shown.x).toBeCloseTo(419.2, 8);
+			if (value <= 1)
+				expect(zoomPoint(ground, camera.anchor, value, camera.offset).y).toBe(ground.y);
+			expect(camera.backdrop.x).toBeLessThanOrEqual(1e-8);
+			expect(
+				camera.backdrop.x + camera.backdrop.scale * options.plate.width
+			).toBeGreaterThanOrEqual(options.viewport.r - 1e-8);
+		}
+	);
 	test('nearly full-height framing stays continuous while resizing through capacity', () => {
 		const center = { x: 200, y: 200 };
 		const ground = { x: 200, y: 256 };

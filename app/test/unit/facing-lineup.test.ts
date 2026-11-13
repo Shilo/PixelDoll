@@ -4,6 +4,7 @@ import { PRESETS } from '../../src/studio/characterConfig.ts';
 import {
 	MIN_SHARE,
 	focalSlot,
+	inspectionLineup,
 	pickFacings,
 	planLineup
 } from '../../src/studio/experience/lineup.ts';
@@ -25,6 +26,27 @@ const rigs: readonly (readonly DirectionName[])[] = [
 	...PRESETS.map((p) => p.selected),
 	...['S N', 'S E N', 'S SE E NE N', 'S SE E NE N W', 'S SE E NE N W SW'].map(dirs)
 ];
+
+describe('chosen-scale inspection lineup', () => {
+	test.each([1, 1.25, 1.5, 2, 3])('selected slots do not depend on fit at DPR %s', (dpr) => {
+		const body = { w: 40, h: 64, x: 10, y: 56 };
+		const reach = { ...body, w: 90, x: 70 };
+		for (const available of rigs)
+			for (const selected of available) {
+				let expected: number[] | undefined;
+				for (let deviceScale = 1; deviceScale <= 24; deviceScale++) {
+					const scale = deviceScale / dpr;
+					const row = inspectionLineup({ available, selected, body, reach, scale });
+					expect(row.offsets[row.facings.indexOf(selected)]).toBe(0);
+					expect(row.facings).toEqual(pickFacings(available, selected, 5));
+					const displayed = row.offsets.map((offset) => (offset * 9) / scale);
+					if (expected)
+						displayed.forEach((offset, index) => expect(offset).toBeCloseTo(expected![index], 8));
+					expected = displayed;
+				}
+			}
+	});
+});
 
 describe('lineup facings', () => {
 	// [preset, selected, count, expected left-to-right]

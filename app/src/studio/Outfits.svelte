@@ -1,11 +1,33 @@
 <script lang="ts">
 	// Saved looks (presets) for the customization panel's Outfits tab.
-	import { store, applyPreset, savePreset, deletePreset, sameOutfit } from './state.svelte.ts';
+	import { store, doc, applyPreset, savePreset, deletePreset, sameOutfit } from './state.svelte.ts';
+	import type { Img } from '../lib/image/png.ts';
+	import { buildPresentation, southStill } from './experience/presentation.ts';
+	import OutfitThumb from './OutfitThumb.svelte';
 	import { tick } from 'svelte';
 	import { Plus, X } from './icons.ts';
 	import SavedActions from './SavedActions.svelte';
 	import { downloadOutfitZip } from './download.svelte.ts';
 	const m = $derived(store.project?.manifest);
+	const preview = $derived.by(() => {
+		void doc.rev;
+		if (!store.project) return null;
+		const assets = buildPresentation(store.project);
+		const pose = southStill(assets);
+		const images = new Map<string, Img>();
+		if (pose.clip)
+			for (const item of store.project.manifest.items)
+				for (const layer of item.layers)
+					for (const cells of Object.values(layer.cells?.[pose.clip] ?? {})) {
+						const hash = cells?.[pose.cell];
+						const image = hash && store.project.images.get(hash);
+						if (hash && image) images.set(hash, image);
+					}
+		return {
+			assets: { ...assets, project: { ...store.project, images } },
+			pose
+		};
+	});
 	let naming = $state(false);
 	let outfitName = $state('');
 	let addButton = $state<HTMLButtonElement>();
@@ -35,10 +57,14 @@
 						ondownload={() => downloadOutfitZip(p.id)}
 						ondelete={() => deletePreset(p.id)}
 					>
-						<button class="row bu-action" data-variant="outline" onclick={() => applyPreset(p)}
-							><span class="row-name">{p.name}</span>{#if sameOutfit(p)}<span class="badge"
-									>Current</span
-								>{/if}</button
+						<button
+							class="row bu-action"
+							data-variant="tile"
+							aria-pressed={sameOutfit(p)}
+							onclick={() => applyPreset(p)}
+							>{#if preview}<OutfitThumb {preview} preset={p} />{/if}<span class="row-name"
+								>{p.name}</span
+							>{#if sameOutfit(p)}<span class="badge">Current</span>{/if}</button
 						>
 					</SavedActions>
 				</li>

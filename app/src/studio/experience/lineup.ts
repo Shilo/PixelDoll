@@ -71,6 +71,23 @@ export interface Lineup {
 	offsets: number[];
 }
 
+export function inspectionLineup(options: {
+	available: readonly DirectionName[];
+	selected: DirectionName;
+	body: Frame;
+	reach: Frame;
+	scale: number;
+}): Lineup {
+	const { available, selected, body, reach, scale } = options;
+	const facings = pickFacings(available, selected, MAX_FACINGS);
+	const focal = facings.indexOf(selected);
+	return {
+		facings,
+		scale,
+		offsets: facings.map((_, index) => (index - focal) * (reach.w + body.w * GAP) * scale)
+	};
+}
+
 /** How many facings fit and at what shared scale. Height fitting uses the bare body (`body`), as for a single
  * facing; widths use `reach`, the room any of the character's items can need (bounds.ts reachFrame), so no outfit
  * crosses a neighbor or the stage edge and equipping gear never resizes the lineup. */

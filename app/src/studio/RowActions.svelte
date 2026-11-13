@@ -54,7 +54,4 @@
 	.character-entry {
 		width: 100%;
 	}
-	.character-entry > :global(.move-row) {
-		padding-right: 48px;
-	}
 </style>

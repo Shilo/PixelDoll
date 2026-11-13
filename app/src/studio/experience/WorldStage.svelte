@@ -4,20 +4,19 @@
 	import { experience, characters, setMode, sharedZoom } from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
 	import { MOTION, REFLECTION, WORLDS, worldArt } from './config.ts';
-	import { EYE, heroRoom, layout, placeWorld, ringRise } from './geometry.ts';
+	import { EYE, heroRoom, layout, placeWorld, ringRadius, ringRise } from './geometry.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { bakedFrame } from '../../lib/compose/compose.ts';
 	import { paintedFrame, reachFrame, actorScale, previewBounds, framePosition } from './bounds.ts';
-	import { planLineup } from './lineup.ts';
-	import { sceneArtFits, sceneCamera, zoomBox, zoomCeiling } from './zoom.ts';
+	import { inspectionLineup, planLineup } from './lineup.ts';
+	import { cameraFramePosition, sceneArtFits, sceneCamera, zoomBox, zoomCeiling } from './zoom.ts';
 	import { sceneZoom } from './sceneZoom.ts';
 	import { frameRecorder } from './paint.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
 	const RING_GAP = 12;
 	const RING_STROKE = 1.5;
-	const ringRadius = (bodyWidth: number, scale: number) => Math.max(12, bodyWidth * scale * 0.35);
 	const ringFlatness = (belowHorizon: number, worldScale: number, focal: number) =>
 		Math.min(1, Math.max(0, belowHorizon) / (worldScale * focal));
 	import {
@@ -441,8 +440,9 @@
 			const anchor = { x: place.feet.x, y: place.feet.y };
 			const room = heroRoom(place);
 			const live = experience.mode !== 'preview';
+			const inspecting = !live && experience.sceneZoom !== null;
 			// Preview fills a wide stage with a lineup of facings; the live views keep one moving actor.
-			const row =
+			const fittedRow =
 				!live && fitFrame
 					? planLineup({
 							available: lineupDirections,
@@ -454,6 +454,19 @@
 							dpr
 						})
 					: null;
+			const row =
+				inspecting && fittedRow && fitFrame
+					? inspectionLineup({
+							available: lineupDirections,
+							selected: ui.dir,
+							body: fitFrame,
+							reach: reach ?? fitFrame,
+							scale: fittedRow.scale
+						})
+					: fittedRow;
+			const fit = row?.scale ?? (fitFrame ? actorScale(fitFrame, room, dpr) : 0);
+			const shared = sharedZoom('studio', fit);
+			const magnification = live || !fit ? 1 : shared.scale / fit;
 			// The world image, sky and side floor share one horizon: the eye line of the characters as drawn
 			// (geometry.ts placeWorld), so a lineup's smaller scale pulls the whole world back with it.
 			const heroNow = fitFrame
@@ -464,9 +477,9 @@
 				lift = 0;
 			// A lineup's floor ring reaches below the feet; raise the characters (and the world with them) so the ring
 			// keeps a comfortable gap above the playback bar.
-			if (row && fitFrame && row.facings.length > 1) {
+			if (fittedRow && fitFrame && fittedRow.facings.length > 1) {
 				const below =
-					ringRadius(fitFrame.w, row.scale) *
+					ringRadius(fitFrame.w, fittedRow.scale) *
 					ringFlatness(EYE * heroNow, backdrop.scale, art.focal);
 				lift = Math.max(
 					0,
@@ -486,78 +499,35 @@
 				t: place.stage.t + (place.compactPlayback ? 66 : 16),
 				b: place.playbackTop - 2
 			};
-			const facingBoxes = new Map(
-				(row?.facings ?? [ui.dir]).map((direction, index) => {
-					const box = shownReach.get(direction) ?? facingReach.get(direction) ?? reach ?? fitFrame;
-					const scale = row?.scale ?? (fitFrame ? actorScale(fitFrame, room, dpr) : 1);
-					const center = anchor.x + (row?.offsets[index] ?? 0);
-					return [
-						direction,
-						box
-							? {
-									l: center - box.x * scale,
-									r: center + (box.w - box.x) * scale,
-									t: anchor.y - box.y * scale,
-									b: anchor.y + (box.h - box.y) * scale
-								}
-							: { l: center, r: center, t: anchor.y, b: anchor.y }
-					];
-				})
-			);
-			const ringBoxes = new Map(
-				(row?.facings ?? []).flatMap((direction, index) => {
-					if (!fitFrame || !row || row.facings.length < 2) return [];
-					const radius = ringRadius(fitFrame.w, row.scale);
-					const flat = ringFlatness(EYE * heroNow, backdrop.scale, art.focal);
-					const rise = ringRise(
-						grounding?.facings.get(direction)?.standingHeight ?? 0,
-						row.scale,
-						radius * flat,
-						dpr
-					);
-					const margin = RING_STROKE / 2 + 1 / dpr;
-					const center = anchor.x + row.offsets[index];
-					return [
-						[
-							direction,
-							{
-								l: center - radius - margin,
-								r: center + radius + margin,
-								t: anchor.y - rise - radius * flat - margin,
-								b: anchor.y - rise + radius * flat + margin
-							}
-						] as const
-					];
-				})
-			);
 			// Use the selected facing, not a lineup's center: even-count lineups place it away from the middle.
 			const focus = {
 				x: anchor.x + (row?.offsets[row.facings.indexOf(ui.dir)] ?? 0),
 				y: anchor.y
 			};
 			// The selected facing's fit in CSS px per art px; the shared zoom is absolute (zoom.ts).
-			const fit = row?.scale ?? (fitFrame ? actorScale(fitFrame, room, dpr) : 0);
 			if (!live && fit > 0) {
 				previewFit = fit;
 				if (experience.zoomFits.studio !== fit) experience.zoomFits.studio = fit;
 				const ceiling = zoomCeiling(experience.zoomCeiling, fit);
 				if (ceiling !== experience.zoomCeiling) experience.zoomCeiling = ceiling;
 			}
-			const shared = sharedZoom('studio', fit);
 			const reference = grounding?.facings.get(ui.dir);
 			const framePivot = {
 				x: (drawingFrame?.x ?? 0) + (reference?.x ?? 0),
 				y: (drawingFrame?.y ?? 0) + (reference?.y ?? 0)
 			};
 			const drawn = framePosition(framePivot, focus, fit, dpr);
-			const groundedFocus = {
-				x: drawn.x + framePivot.x * fit,
-				y: drawn.y + framePivot.y * fit
-			};
+			const groundedFocus = inspecting
+				? focus
+				: {
+						x: drawn.x + framePivot.x * fit,
+						y: drawn.y + framePivot.y * fit
+					};
 			const zoom = sceneCamera({
-				value: live || !fit ? 1 : shared.scale / fit,
+				value: magnification,
 				anchor: groundedFocus,
 				framing: clearance,
+				centerX: inspecting ? (clearance.l + clearance.r) / 2 : undefined,
 				backdrop,
 				plate: art,
 				viewport: { l: 0, t: 0, r: width, b: backdrop.coverBottom },
@@ -568,14 +538,43 @@
 						((grounding?.facings.get(ui.dir)?.standingHeight ?? fitFrame?.h ?? 0) * fit) / 2
 				}
 			});
+			const drawPosition = (
+				frame: { x: number; y: number },
+				point: { x: number; y: number },
+				scale: number
+			) =>
+				inspecting
+					? cameraFramePosition(frame, point, scale, zoom, dpr)
+					: framePosition(frame, point, scale, dpr);
+			const horizontal = { ...clearance, t: -Infinity, b: Infinity };
 			const visibleFacings = (row?.facings ?? [ui.dir]).filter((direction) => {
-				if (direction === ui.dir || zoom.value <= 1) return true;
-				const box = facingBoxes.get(direction);
-				const ring = ringBoxes.get(direction);
+				if (direction === ui.dir || !inspecting) return true;
+				const box = shownReach.get(direction) ?? facingReach.get(direction) ?? reach ?? fitFrame;
+				if (!box) return false;
+				const reference = grounding?.facings.get(direction);
+				const pivot = {
+					x: (drawingFrame?.x ?? 0) + (reference?.x ?? 0),
+					y: (drawingFrame?.y ?? 0) + (reference?.y ?? 0)
+				};
+				const point = {
+					x: anchor.x + (row?.offsets[row.facings.indexOf(direction)] ?? 0),
+					y: anchor.y
+				};
+				const drawn = drawPosition(pivot, point, fit);
+				const ground = { x: drawn.x + pivot.x * fit, y: drawn.y + pivot.y * fit };
+				const bounds = {
+					l: ground.x - box.x * fit,
+					r: ground.x + (box.w - box.x) * fit,
+					t: 0,
+					b: 0
+				};
+				const ring = drawPosition({ x: 0, y: 0 }, point, 1);
+				const radius =
+					ringRadius(fitFrame?.w ?? box.w, fit, magnification) +
+					(RING_STROKE / 2 + 1 / dpr) / magnification;
 				return (
-					!!box &&
-					sceneArtFits(box, zoom, clearance) &&
-					(!ring || sceneArtFits(ring, zoom, clearance))
+					sceneArtFits(bounds, zoom, horizontal) &&
+					sceneArtFits({ l: ring.x - radius, r: ring.x + radius, t: 0, b: 0 }, zoom, horizontal)
 				);
 			});
 			if (!live) {
@@ -584,7 +583,7 @@
 					cameraStamp = stamp;
 					experience.sceneCamera = zoom;
 				}
-				if (zoom.value !== 1) {
+				if (zoom.value !== 1 || zoom.offset.x !== 0 || zoom.offset.y !== 0) {
 					g.translate(zoom.anchor.x + zoom.offset.x, zoom.anchor.y + zoom.offset.y);
 					g.scale(zoom.value, zoom.value);
 					g.translate(-zoom.anchor.x, -zoom.anchor.y);
@@ -766,25 +765,30 @@
 						at = (d: DirectionName) => point.x + (row?.offsets[row.facings.indexOf(d)] ?? 0);
 					const origin = (d: DirectionName) => grounding?.facings.get(d),
 						selectedOrigin = origin(p.direction ?? ui.dir);
-					const { x, y } = framePosition(
+					const { x, y } = drawPosition(
 						{ x: frame.x + (selectedOrigin?.x ?? 0), y: frame.y + (selectedOrigin?.y ?? 0) },
 						{ x: at(ui.dir), y: point.y },
-						scale,
-						dpr
+						scale
 					);
 					picks = live
 						? []
 						: facings.map((direction) => {
-								const box = facingReach.get(direction) ?? reach ?? fit,
-									left = at(direction) - box.x * scale;
+								const box = facingReach.get(direction) ?? reach ?? fit;
+								const pivot = {
+									x: frame.x + (origin(direction)?.x ?? 0),
+									y: frame.y + (origin(direction)?.y ?? 0)
+								};
+								const drawn = drawPosition(pivot, { x: at(direction), y: point.y }, scale);
+								const left = drawn.x + (pivot.x - box.x) * scale;
+								const top = drawn.y + (pivot.y - box.y) * scale;
 								return {
 									direction,
 									...zoomBox(
 										{
 											l: left,
 											r: left + box.w * scale,
-											t: point.y - box.y * scale,
-											b: point.y + (box.h - box.y) * scale
+											t: top,
+											b: top + box.h * scale
 										},
 										zoom.anchor,
 										zoom.value,
@@ -797,21 +801,27 @@
 					// never moves with the walk or collides with tall gear; the sprite is drawn over its back half. A circle
 					// on the world floor looks as flat as the floor is foreshortened there: rows below the horizon over focal.
 					const flat = ringFlatness(point.y - backdrop.eye, backdrop.scale, art.focal);
-					if (row && row.facings.length > 1)
+					if (row && facings.length > 1)
 						for (const [d, alpha] of [
 							[ui.dir, 0.85],
 							[hovered, 0.3]
 						] as const) {
 							if (!d || !facings.includes(d) || (alpha < 0.5 && d === ui.dir)) continue;
-							const rx = ringRadius(fit.w, scale),
+							const ringZoom = inspecting ? magnification : 1;
+							const rx = ringRadius(fit.w, scale, ringZoom),
 								ry = rx * flat,
-								rise = ringRise(origin(d)?.standingHeight ?? 0, scale, ry, dpr);
+								rise =
+									ringRise(origin(d)?.standingHeight ?? 0, scale * ringZoom, ry * ringZoom, dpr) /
+									ringZoom;
 							g.save();
 							g.globalAlpha = alpha;
 							g.strokeStyle = accent;
-							g.lineWidth = RING_STROKE;
+							g.lineWidth = RING_STROKE / (inspecting ? magnification : 1);
 							g.beginPath();
-							g.ellipse(snap(at(d)), snap(point.y) - rise, rx, ry, 0, 0, Math.PI * 2);
+							const center = inspecting
+								? drawPosition({ x: 0, y: 0 }, { x: at(d), y: point.y - rise }, 1)
+								: { x: snap(at(d)), y: snap(point.y) - rise };
+							g.ellipse(center.x, center.y, rx, ry, 0, 0, Math.PI * 2);
 							g.stroke();
 							g.restore();
 						}
@@ -821,19 +831,22 @@
 							other = entry.canvas;
 						if (entry.result.issue) notes.push(entry.result.issue);
 						if (entry.result.loading) loadings.add(entry.result.loading);
-						if (other)
-							g.drawImage(
-								other,
-								snap(at(d) - (frame.x + (origin(d)?.x ?? 0)) * scale),
-								snap(point.y - (frame.y + (origin(d)?.y ?? 0)) * scale),
-								other.width * scale,
-								other.height * scale
+						if (other) {
+							const position = drawPosition(
+								{ x: frame.x + (origin(d)?.x ?? 0), y: frame.y + (origin(d)?.y ?? 0) },
+								{ x: at(d), y: point.y },
+								scale
 							);
+							g.drawImage(other, position.x, position.y, other.width * scale, other.height * scale);
+						}
 					}
 					if (REFLECTION.enabled && REFLECTION[experience.mode]) {
 						g.save();
 						g.globalAlpha = REFLECTION.opacity;
-						g.translate(0, snap(point.y));
+						g.translate(
+							0,
+							inspecting ? y + (frame.y + (selectedOrigin?.y ?? 0)) * scale : snap(point.y)
+						);
 						g.scale(1, -REFLECTION.compression);
 						g.drawImage(
 							reflected,

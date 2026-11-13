@@ -445,8 +445,8 @@ async function castRects(page: Page) {
 }
 
 /** Painted actor bounds as screen pixels, read from the composited canvas (device pixels divided out). */
-async function actorBounds(page: Page) {
-	return page.evaluate(() => {
+async function actorBounds(page: Page, minimumAlpha = 128) {
+	return page.evaluate((minimumAlpha) => {
 		const canvas = document.querySelector<HTMLCanvasElement>('.world-actors');
 		if (!canvas) throw new Error('No .world-actors canvas');
 		const context = canvas.getContext('2d');
@@ -459,7 +459,7 @@ async function actorBounds(page: Page) {
 		for (let y = 0; y < canvas.height; y++)
 			for (let x = 0; x < canvas.width; x++)
 				// The deliberately faded .12 reflection is decoration, not an actor: count opaque art and rings only.
-				if (pixels[(y * canvas.width + x) * 4 + 3] >= 128) {
+				if (pixels[(y * canvas.width + x) * 4 + 3] >= minimumAlpha) {
 					left = Math.min(left, x);
 					top = Math.min(top, y);
 					right = Math.max(right, x + 1);
@@ -477,7 +477,7 @@ async function actorBounds(page: Page) {
 			width: (right - left) * scaleX,
 			height: (bottom - top) * scaleY
 		};
-	});
+	}, minimumAlpha);
 }
 
 async function wheel(
@@ -525,9 +525,12 @@ async function zoomToEnd(page: Page, host: Locator, direction: 'in' | 'out') {
 		if (direction === 'in' ? zoom >= max - 1e-9 : zoom <= min + 1e-9) break;
 		await zoomStep(page, host, direction);
 	}
-	// A screen whose fit is its bound ends at the automatic fit, where there are no controls to disable.
+	// Preview retains a reset for chosen inspection composition even when its scale equals the automatic fit.
 	const end = await readScene(host);
-	if (end.zoom === end.fit) await expect(zoomGroup(page)).toHaveCount(0);
+	if (end.zoom === end.fit)
+		await expect(zoomGroup(page)).toHaveCount(
+			(await host.evaluate((node) => node.classList.contains('world-stage'))) ? 1 : 0
+		);
 	else
 		await expect(
 			zoomGroup(page).getByRole('button', { name: `Zoom ${direction}`, exact: true })
@@ -553,8 +556,15 @@ async function resetZoom(page: Page, host: Locator) {
 
 /** The scene shows its own automatic fit (which may change with the character, move or screen size). */
 async function expectAtFit(host: Locator, message: string) {
-	const { zoom, fit } = await readScene(host);
-	expect(zoom, message).toBe(fit);
+	await expect
+		.poll(
+			async () => {
+				const { zoom, fit } = await readScene(host);
+				return zoom - fit;
+			},
+			{ message }
+		)
+		.toBe(0);
 }
 
 /** A focused-scene key; the next frame publishes the camera. */
@@ -830,14 +840,14 @@ test('Preview zoom keeps actors and backdrop on one camera and fits them at max'
 	expect(initial.zoom, 'Preview opens at its fit').toBe(initial.fit);
 	await expect.poll(async () => (await actorBounds(page)).width).toBeGreaterThan(0);
 	const baseBackdrop = await backdrop(page);
-	const baseActor = await actorBounds(page);
+	const baseActor = await actorBounds(page, 255);
 	await zoomStep(page, host, 'in');
 	await expect.poll(async () => (await readScene(host)).zoom).toBeGreaterThan(initial.fit);
 	const stepped = await readScene(host);
 	const factor = stepped.zoom / initial.zoom;
 	await expectBackdropFactor(page, baseBackdrop, factor, 'preview one step');
 	await expect
-		.poll(async () => (await actorBounds(page)).height / baseActor.height, {
+		.poll(async () => (await actorBounds(page, 255)).height / baseActor.height, {
 			message: 'preview: painted actors use the same camera factor as the backdrop'
 		})
 		.toBeCloseTo(factor, 1);
@@ -950,22 +960,24 @@ test('asymmetric padded artwork enlarges around its body and shrinks around its 
 		x: (original.left + original.right) / 2,
 		y: (original.top + original.bottom) / 2
 	};
+	const area = await usableScene(page, true);
 	const target = framedCenter(
 		{ x: center.x, center: center.y, ground: original.bottom },
-		await usableScene(page, true),
+		area,
 		(await readScene(preview)).zoom / initial.fit
 	);
-	expect(pivot[0], 'the camera uses the actual device-snapped horizontal center').toBeCloseTo(
-		center.x,
-		6
-	);
+	const offset = (await preview.getAttribute('data-scene-offset'))!.split(',').map(Number);
+	expect(
+		Math.abs(pivot[0] + offset[0] - area.x),
+		'layout and DOM stage midpoints agree within CSS layout quantization'
+	).toBeLessThanOrEqual(1 / 64);
 	expect(pivot[1], 'the camera uses the actual device-snapped vertical center').toBeCloseTo(
 		center.y,
 		6
 	);
 	const halfPixel = 0.5 / (await page.evaluate(() => devicePixelRatio)) + 1e-6;
 	expect(
-		Math.abs((expanded.left + expanded.right) / 2 - target.x),
+		Math.abs((expanded.left + expanded.right) / 2 - area.x),
 		'nearest-neighbor raster centroids round by at most half a physical pixel'
 	).toBeLessThanOrEqual(halfPixel);
 	expect(Math.abs((expanded.top + expanded.bottom) / 2 - target.y)).toBeLessThanOrEqual(halfPixel);
@@ -993,9 +1005,9 @@ test('asymmetric padded artwork enlarges around its body and shrinks around its 
 		await settle(page);
 		const filled = await actorBounds(page);
 		expect(
-			(filled.left + filled.right) / 2,
+			Math.abs((filled.left + filled.right) / 2 - area.x),
 			`${width}x${height}: centered across the actual stage`
-		).toBeCloseTo(area.x, 0);
+		).toBeLessThanOrEqual(halfPixel);
 		expect(filled.top, `${width}x${height}: painted top reaches the available top`).toBeCloseTo(
 			area.top,
 			0
@@ -1149,6 +1161,12 @@ test('wheel, keys, middle click and native controls only change zoom where the s
 	// Middle click resets Preview without changing facing or position.
 	await preview.focus();
 	await page.keyboard.press('+');
+	await expect
+		.poll(async () => {
+			const { zoom, fit } = await readScene(preview);
+			return zoom - fit;
+		})
+		.toBeGreaterThan(0);
 	const facing = await preview.getAttribute('data-facing');
 	const position = await preview.getAttribute('data-position');
 	const worldBox = (await preview.boundingBox())!;
@@ -1689,6 +1707,134 @@ test('Preview keeps the selected facing at one scale while every lineup size fro
 		await expect(page.locator('.customize-action')).toBeVisible();
 	}
 });
+
+test('chosen Preview zoom centers the selected facing across even-lineup resize thresholds', async ({
+	page
+}, info) => {
+	await page.setViewportSize({ width: 1305, height: 951 });
+	await page.goto('/');
+	await expect(page.locator('.customize-action')).toBeEnabled();
+	await page.locator('.customize-action').click();
+	const host = world(page);
+	await waitForScene(host);
+	await expect(host).toHaveAttribute('data-lineup', /^\S+ \S+$/);
+	await page.evaluate(async () => {
+		const { experience } = await import(
+			/* @vite-ignore */ String('/src/studio/experience/state.svelte.ts')
+		);
+		experience.sceneZoom = 9;
+	});
+	await expect.poll(async () => (await readScene(host)).zoom).toBe(9);
+	for (const [width, height] of [
+		[1305, 951],
+		[1559, 951],
+		[1305, 650],
+		[1305, 951]
+	]) {
+		await page.setViewportSize({ width, height });
+		await expect
+			.poll(async () => {
+				const area = await usableScene(page, true);
+				const anchor = Number((await host.getAttribute('data-scene-anchor'))!.split(',')[0]);
+				const offset = Number((await host.getAttribute('data-scene-offset'))!.split(',')[0]);
+				return Math.abs(anchor + offset - area.x);
+			})
+			.toBeLessThanOrEqual(1);
+		await expect.poll(async () => (await readScene(host)).zoom).toBe(9);
+	}
+	await shot(page, info, 'even-lineup-centered');
+	const fit = (await readScene(host)).fit;
+	await page.evaluate(async (fit) => {
+		const { experience } = await import(
+			/* @vite-ignore */ String('/src/studio/experience/state.svelte.ts')
+		);
+		experience.sceneZoom = fit;
+	}, fit);
+	await expect(
+		zoomGroup(page).getByRole('button', { name: 'Reset scene zoom', exact: true })
+	).toBeVisible();
+	await resetZoom(page, host);
+	await expect(host).toHaveAttribute('data-lineup', /^\S+ \S+$/);
+});
+
+for (let count = 1; count <= 5; count++)
+	test(`chosen Preview composition remains centered and stable while resizing ${count} facing character`, async ({
+		page
+	}, info) => {
+		await page.setViewportSize({ width: 1920, height: 951 });
+		await seedFacingCharacters(page);
+		await page
+			.locator('.character-row')
+			.filter({ hasText: `Zoom facings ${count}` })
+			.click();
+		await page.locator('.customize-action').click();
+		const host = world(page);
+		await waitForScene(host);
+		const pause = page.getByRole('button', { name: 'Pause', exact: true });
+		if (await pause.isVisible()) await pause.click();
+		for (const scale of [3, 9, 14]) {
+			await page.evaluate(async (scale) => {
+				const { experience } = await import(
+					/* @vite-ignore */ String('/src/studio/experience/state.svelte.ts')
+				);
+				experience.sceneZoom = scale;
+			}, scale);
+			for (const [width, height] of [...SIZES_A, ...SIZES_B, [1305, 951], [1559, 951]]) {
+				await page.setViewportSize({ width, height });
+				await settle(page);
+				const area = await usableScene(page, true);
+				const anchor = Number((await host.getAttribute('data-scene-anchor'))!.split(',')[0]);
+				const offset = Number((await host.getAttribute('data-scene-offset'))!.split(',')[0]);
+				expect(
+					Math.abs(anchor + offset - area.x),
+					`${count} facings ${scale}x ${width}x${height}: selected center`
+				).toBeLessThanOrEqual(1);
+				expect((await readScene(host)).zoom).toBe(scale);
+				expectCovered(await backdrop(page), `${count} facings ${scale}x ${width}x${height}`);
+			}
+		}
+		await page.setViewportSize({ width: 1305, height: 951 });
+		await shot(page, info, `inspection-${count}-facings`);
+		await page.evaluate(async () => {
+			const { experience } = await import(
+				/* @vite-ignore */ String('/src/studio/experience/state.svelte.ts')
+			);
+			experience.sceneZoom = 6.125;
+		});
+		const heights: string[] = [];
+		for (let height = 600; height <= 1000; height += 20) {
+			await page.setViewportSize({ width: 1305, height });
+			await settle(page);
+			const frames = await host.evaluate(async (node) => {
+				const result: string[] = [];
+				for (let frame = 0; frame < 4; frame++) {
+					await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+					result.push((node as HTMLElement).dataset.lineup ?? '');
+				}
+				return result;
+			});
+			expect(
+				new Set(frames).size,
+				'settled viewport must not alternate visible facings between frames'
+			).toBe(1);
+			heights.push(frames[0]);
+		}
+		expect(
+			new Set(heights).size,
+			'height-only resizing must not change horizontal companion visibility'
+		).toBe(1);
+		const widths: number[] = [];
+		for (let width = 1000; width <= 1600; width += 20) {
+			await page.setViewportSize({ width, height: 951 });
+			await settle(page);
+			widths.push((await host.getAttribute('data-lineup'))!.split(' ').length);
+		}
+		for (let index = 1; index < widths.length; index++)
+			expect(
+				widths[index],
+				'more horizontal room never hides a facing at a fixed chosen scale'
+			).toBeGreaterThanOrEqual(widths[index - 1]);
+	});
 
 test.describe('touch character swipe', () => {
 	test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

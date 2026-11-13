@@ -66,7 +66,7 @@ export const REFLECTION = {
 	compression: 0.35
 };
 export const MOTION = {
-	speed: 95,
+	speed: 300,
 	cameraResponse: 9,
 	/** Touch stick sizes in CSS px; compact applies on narrow or short screens such as phones in landscape. */
 	joystick: {

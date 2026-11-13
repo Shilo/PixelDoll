@@ -59,6 +59,10 @@ const PANEL_ROW = 44;
 /** The eye line sits this share of the visible character height above the feet. */
 export const EYE = 0.86;
 
+export function ringRadius(bodyWidth: number, scale: number, magnification = 1): number {
+	return Math.max(12, bodyWidth * scale * magnification * 0.35) / magnification;
+}
+
 export function ringRise(
 	standingHeight: number,
 	scale: number,
