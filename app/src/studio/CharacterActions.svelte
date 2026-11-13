@@ -5,11 +5,13 @@
 	import { Download, Info } from './icons.ts';
 	import DeleteRow, { DEMO_CHARACTER_LOCKED } from './DeleteRow.svelte';
 	import RowActions from './RowActions.svelte';
+	import DemoCopyRow from './DemoCopyRow.svelte';
 	let { id, name, children }: { id: string; name: string; children: Snippet } = $props();
 </script>
 
 <RowActions {name} {children}>
 	{#snippet actions(close)}
+		<DemoCopyRow {id} {close} />
 		<button
 			class="row"
 			role="menuitem"

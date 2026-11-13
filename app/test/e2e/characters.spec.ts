@@ -31,12 +31,34 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
 	);
 	await expect(page.locator('.customize-action')).toBeEnabled();
+	await expect(page.locator('.selected-name-text')).toHaveText('Adventurer (Demo)');
+	await expect(page.locator('.character-row strong .bu-muted')).toHaveText('(Demo)');
+	await page
+		.getByRole('button', { name: 'More actions for Adventurer (demo)', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await expect(page.locator('.selected-name-text')).toHaveText('Adventurer copy');
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts';
 		const state = await import(path);
-		await state.copyDemo();
 		await state.renameProject('Saved hero');
 	});
+	await page.getByRole('button', { name: 'More actions for Saved hero', exact: true }).click();
+	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
+	await page.keyboard.press('Escape');
+	await page
+		.getByRole('button', { name: 'More actions for Adventurer (demo)', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await expect(
+		page.locator('.cast-library').getByRole('menuitem', {
+			name: 'Edit a copy',
+			exact: true,
+			includeHidden: true
+		})
+	).toBeEnabled();
+	await expect(page.locator('.selected-name-text')).toHaveText('Saved hero');
+	await expect(page.locator('.cast-library .character-row')).toHaveCount(2);
 	await page.reload();
 	const rows = page.locator('.cast-library .character-row');
 	await expect(rows.filter({ hasText: 'Saved hero' })).toHaveAttribute('aria-pressed', 'true');
@@ -76,6 +98,13 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 		'64 px · 4 directions · 2 moves · 6 items',
 		'64 px · 4 directions · 3 moves · 6 items'
 	]);
+	await page.locator('.customize-action').click();
+	await expect(page.locator('.name-text')).toHaveText('Adventurer (Demo)');
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
+	await expect(page.locator('.name-text')).toHaveText('Saved hero');
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
 });
 
 test('character actions download and delete an unopened character without selecting it', async ({

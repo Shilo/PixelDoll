@@ -6,6 +6,8 @@
 	import CharacterThumb from './experience/CharacterThumb.svelte';
 	import SharePopover from './SharePopover.svelte';
 	import CharacterActions from './CharacterActions.svelte';
+	import CharacterName from './CharacterName.svelte';
+	import DemoCopyRow from './DemoCopyRow.svelte';
 	import DeleteRow, { DEMO_CHARACTER_LOCKED } from './DeleteRow.svelte';
 	import NewCharacterButton from './NewCharacterButton.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
@@ -158,7 +160,7 @@
 				aria-haspopup="menu"
 				onclick={() => void refreshProjects()}
 				><span class="name-line"
-					><span class="name-text">{name}</span>
+					><span class="name-text"><CharacterName id={doc.id} {name} /></span>
 					<ChevronDown size={16} /></span
 				>{#if m}<span class="name-facts">{characterFacts(m)}</span>{/if}</button
 			>{:else}<span class="brand"><PersonStanding size={20} />PixelDoll</span><span
@@ -265,6 +267,7 @@
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
 		<!-- Phones move lower-frequency bar actions here, so the character name keeps its room. -->
+		{#if experience.screen === 'studio'}<DemoCopyRow id={doc.id} close={closeOptions} />{/if}
 		{#if experience.screen === 'studio'}<button
 				class="row bu-action mobile-random"
 				data-variant="quiet"
@@ -438,7 +441,8 @@
 					aria-label={p.name}
 					onclick={() => pick(p.id)}
 				>
-					<CharacterThumb id={p.id} name={p.name} size={48} /><span class="row-name">{p.name}</span
+					<CharacterThumb id={p.id} name={p.name} size={48} /><span class="row-name"
+						><CharacterName id={p.id} name={p.name} /></span
 					>{#if p.id === doc.id}<Check size={14} />{/if}
 				</button>
 			</CharacterActions>

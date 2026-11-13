@@ -2,6 +2,7 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import Toolbar from '../Toolbar.svelte';
 	import CharacterActions from '../CharacterActions.svelte';
+	import CharacterName from '../CharacterName.svelte';
 	import NewCharacterButton from '../NewCharacterButton.svelte';
 	import PhonePanel from '../PhonePanel.svelte';
 	import WorldStage from './WorldStage.svelte';
@@ -546,7 +547,7 @@
 						class="selected-name project-btn"
 						popovertarget="project-menu"
 						onclick={() => void refreshProjects()}
-						><span class="selected-name-text">{name}</span>
+						><span class="selected-name-text"><CharacterName id={doc.id} {name} /></span>
 						<ChevronDown size={16} /></button
 					>
 					{#if list.length > 1}<div class="selected-step">
@@ -590,7 +591,8 @@
 							aria-pressed={p.id === doc.id}
 							onclick={() => pick(p.id)}
 							><CharacterThumb id={p.id} name={p.name} trim /><span
-								><strong>{p.name.replace(/ \(demo\)$/, '')}</strong>{#if facts}<small>{facts}</small
+								><strong><CharacterName id={p.id} name={p.name} /></strong>{#if facts}<small
+										>{facts}</small
 									>{/if}</span
 							></button
 						>
