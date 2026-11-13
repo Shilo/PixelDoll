@@ -23,6 +23,7 @@
 	} from './model.ts';
 	import { itemKey } from '../lib/equipment/copy.ts';
 	import type { SharedItem } from '../lib/equipment/shared.ts';
+	import type { SharedStatus } from './ItemMenu.svelte';
 	import type { CellKey } from '../lib/store/manifest.ts';
 	import {
 		ui,
@@ -207,6 +208,16 @@
 					: `The same body as ${x.sourceName}: an exact copy.`;
 		const missing = sharedMissing(x);
 		return missing ? `${fit} ${missing}; it hides there.` : fit;
+	}
+	/** The one status a shared tile and its ⋮ menu show, worst first: can't be worn (muted: not available here, not an error),
+	 *  not fitted, then a fit to check or moves it hides in. */
+	function sharedStatus(x: SharedItem): SharedStatus {
+		if (x.fit === 'remake') return { glyph: 'ban', caption: FIT_CAPTION.remake };
+		if (x.fit === 'unfitted') return { glyph: 'puzzle', caption: FIT_CAPTION.unfitted };
+		if (x.fit === 'refit') return { glyph: 'warning', caption: FIT_CAPTION.refit };
+		return sharedMissing(x)
+			? { glyph: 'warning', caption: 'Free · missing moves' }
+			: { glyph: '', caption: FIT_CAPTION.copy };
 	}
 	/** Moves the item has no art for here, worded like an own item's missing frames (it hides in them once worn). */
 	const sharedMissing = (x: SharedItem) =>
@@ -619,12 +630,14 @@
 										{@const key = sharedKey(x)}
 										{@const adding = shared.adding === key}
 										{@const remake = x.fit === 'remake'}
+										{@const status = sharedStatus(x)}
 										<!-- Like an own tile: the tile wears it (on the demo, in a saved copy), the ⋮ explains how it fits. -->
 										<div class="tile-wrap" role="none" {@attach contextMenu(openMenu)}>
 											<button
 												class="bu-tile item-tile shared-tile"
 												data-selected={ui.selected === key || undefined}
 												data-tile={key}
+												data-dim={remake || undefined}
 												aria-label="{x.item.name}, from {x.sourceName}, {FIT_NAME[x.fit]}"
 												aria-busy={adding}
 												aria-disabled={!!shared.adding || undefined}
@@ -637,20 +650,20 @@
 													class="tile-from faint small">from {x.sourceName}</span
 												>
 												{#if adding}<span class="tile-from faint small">Adding…</span>{:else}<span
-														class="tile-from muted small">{FIT_CAPTION[x.fit]}</span
+														class="tile-from muted small">{status.caption}</span
 													>{/if}
 												<!-- Can't be worn, not fitted, or a fit with frames to check or missing: each glyph explains itself on hover. -->
-												{#if remake}<span
+												{#if status.glyph === 'ban'}<span
 														class="bu-tile-status tile-status"
-														data-tone="warning"
+														data-tone="hidden"
 														title={sharedNote(x)}
 														aria-hidden="true"><Ban size={14} /></span
-													>{:else if x.fit === 'unfitted'}<span
+													>{:else if status.glyph === 'puzzle'}<span
 														class="bu-tile-status tile-status"
 														data-tone="warning"
 														title={sharedNote(x)}
 														aria-hidden="true"><Puzzle size={14} /></span
-													>{:else if x.fit === 'refit' || sharedMissing(x)}<span
+													>{:else if status.glyph === 'warning'}<span
 														class="bu-tile-status tile-status"
 														data-tone="warning"
 														title={sharedNote(x)}
@@ -689,6 +702,7 @@
 			id={menuFor}
 			entry={menuShared}
 			note={menuShared ? sharedNote(menuShared) : ''}
+			shared={menuShared ? sharedStatus(menuShared) : undefined}
 			generation={menuGeneration}
 			generationInfo={menuGeneration
 				? generationStatus(menuGeneration, $queue.jobs, now, !!app.key, $queue.paused)

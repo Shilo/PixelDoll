@@ -1,3 +1,11 @@
+<script lang="ts" module>
+	/** A shared tile's status glyph and caption, worst cause first. */
+	export interface SharedStatus {
+		glyph: 'ban' | 'puzzle' | 'warning' | '';
+		caption: string;
+	}
+</script>
+
 <script lang="ts">
 	// One shared per-tile item menu (approved in docs/design/2026-11-11-ui-refinement/ui-lab-7.html): an arrowed popover
 	// anchored to the tile's ⋮ at every size, with Wear as a toggle in its header.
@@ -48,6 +56,7 @@
 		id,
 		entry,
 		note = '',
+		shared,
 		status,
 		onremove,
 		open = $bindable(false),
@@ -59,6 +68,8 @@
 		/** Another character's item the menu is for instead, and how it comes to this one (Wardrobe's sharedNote). */
 		entry?: SharedItem;
 		note?: string;
+		/** How that shared item is shown on its tile (Wardrobe's sharedStatus): the menu header says the same. */
+		shared?: SharedStatus;
 		/** The item's status words (see Wardrobe's statusOf); `unfit` is the sentence for an item not fitted to this body. */
 		status: { look: string; unfit: string; missing: string; hidden: boolean };
 		/** Removes the item for good once confirmed (Wardrobe moves focus to a neighbor afterwards). */
@@ -246,25 +257,17 @@
 				<span class="item-menu-art" aria-hidden="true"><SharedThumb {entry} /></span>
 				<span class="item-menu-title">
 					<strong id="item-menu-name">{entry.item.name}</strong>
-					<small class:look={entry.fit !== 'copy'}
-						>{#if remake}<Ban
+					<small class:look={shared?.glyph === 'puzzle' || shared?.glyph === 'warning'}
+						>{#if shared?.glyph === 'ban'}<Ban
 								size={12}
 								aria-hidden="true"
-							/>{:else if entry.fit === 'unfitted'}<Puzzle
+							/>{:else if shared?.glyph === 'puzzle'}<Puzzle
 								size={12}
 								aria-hidden="true"
-							/>{:else if entry.fit === 'refit'}<TriangleAlert
+							/>{:else if shared?.glyph === 'warning'}<TriangleAlert
 								size={12}
 								aria-hidden="true"
-							/>{/if}<span
-							>From {entry.sourceName} · {remake
-								? 'Can’t be worn'
-								: entry.fit === 'copy'
-									? 'Free'
-									: entry.fit === 'refit'
-										? 'Free · check fit'
-										: 'Free · not fitted'}</span
-						></small
+							/>{/if}<span>From {entry.sourceName} · {shared?.caption}</span></small
 					>
 				</span>
 			</div>

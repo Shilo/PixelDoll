@@ -107,7 +107,8 @@ test('another character’s item on the same body is worn for free, survives rel
 	// captioned "Free"; every other item is free too, worn as drawn.
 	const tiles = others.locator('.shared-tile');
 	await expect(tiles).toHaveText([
-		/^\s*Traveling wizard hat\s*from Twin\s*Free\s*$/,
+		// The demo's wizard hat has no frames for some moves: an exact copy, but it hides there.
+		/^\s*Traveling wizard hat\s*from Twin\s*Free · missing moves\s*$/,
 		/^\s*(Stout|Giant) helmet\s*from (Stout|Giant)\s*Free · not fitted\s*$/,
 		/^\s*(Stout|Giant) helmet\s*from (Stout|Giant)\s*Free · not fitted\s*$/
 	]);
