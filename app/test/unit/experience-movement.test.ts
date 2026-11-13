@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'vitest';
+import { Joystick } from '../../src/lib/input/joystick.ts';
+import { MOTION } from '../../src/studio/experience/config.ts';
 import {
 	directionInfo,
 	integrateMovement,
@@ -8,6 +10,29 @@ import {
 } from '../../src/studio/experience/movement.ts';
 
 describe('shared world movement', () => {
+	test('live worlds travel three ground tiles per second at full throw and preserve analog speed', () => {
+		for (const axis of ['xy', 'x'] as const) {
+			const stick = new Joystick({ axis, travel: 40, deadZone: 8, follow: false });
+			stick.begin(1, { x: 0, y: 0 });
+			for (const strength of [0, 0.25, 0.5, 1]) {
+				const { value } = stick.move(1, { x: 8 + 32 * strength, y: 0 });
+				let position = { x: 0, y: 0 },
+					camera = { x: 0, y: 0 };
+				for (let frame = 0; frame < 60; frame++)
+					({ position, camera } = integrateMovement(
+						position,
+						camera,
+						value,
+						1 / 60,
+						MOTION.speed,
+						MOTION.cameraResponse
+					));
+				expect(position.x).toBeCloseTo(MOTION.tileSize * 3 * strength);
+				expect(position.y).toBe(0);
+			}
+		}
+	});
+
 	test('keyboard chords normalize, opposite keys cancel, and side view projects onto the ground axis', () => {
 		const diagonal = keyboardVector(new Set(['W', 'ArrowRight']));
 		expect(diagonal.x).toBeCloseTo(Math.SQRT1_2);
