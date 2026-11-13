@@ -135,8 +135,10 @@
 			backdrop: baseWorld,
 			plate: worldArt(ui.theme),
 			viewport: { l: 0, t: 0, r: g.w, b: baseWorld.coverBottom },
-			clearance: selectionClearance,
-			art: selectionArt.filter(({ offset }) => !offset).map(({ box }) => box)
+			head: {
+				top: selectionArt.find(({ offset }) => !offset)?.box.t ?? g.feet.y,
+				limit: selectionClearance.t
+			}
 		})
 	);
 	const culledOffsets = $derived(
@@ -493,6 +495,7 @@
 				{name}
 				zoom={selectionCamera.value}
 				cameraX={g.feet.x - g.stage.l}
+				cameraRise={g.feet.y - selectionCamera.anchor.y}
 				{culledOffsets}
 				select={pick}
 			/>

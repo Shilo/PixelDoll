@@ -176,12 +176,9 @@ async function waitForScene(host: Locator) {
 async function expectSceneBounds(host: Locator, label: string) {
 	await waitForScene(host);
 	const { zoom, min, max } = await readScene(host);
-	expect(min, `${label}: min is finite`).toBeGreaterThan(0);
-	expect(min, `${label}: min never zooms past automatic fit`).toBeLessThanOrEqual(1 + 1e-9);
-	// A width-limited screen can legitimately leave no room to zoom in; the detailed desktop checks require a
-	// real range there. Everywhere, max never exceeds the promised 1.5 cap.
-	expect(max, `${label}: max is at least automatic fit`).toBeGreaterThanOrEqual(1);
-	expect(max, `${label}: max never exceeds the 1.5 cap`).toBeLessThanOrEqual(1.5 + 1e-9);
+	// Both screens share one range at every size, so a level reads and scales the same everywhere.
+	expect(min, `${label}: every screen zooms out to 50%`).toBe(0.5);
+	expect(max, `${label}: every screen zooms in to 150%`).toBe(1.5);
 	expect(zoom, `${label}: zoom stays inside the camera bounds`).toBeGreaterThanOrEqual(min - 1e-9);
 	expect(zoom, `${label}: zoom stays inside the camera bounds`).toBeLessThanOrEqual(max + 1e-9);
 	return { zoom, min, max };
@@ -279,6 +276,7 @@ async function castRects(page: Page) {
 		[...document.querySelectorAll('.cast-character:not([inert]) canvas.sprite')].map((canvas) => {
 			const rect = canvas.getBoundingClientRect();
 			return {
+				chosen: !!canvas.closest('.chosen'),
 				left: rect.left,
 				top: rect.top,
 				right: rect.right,
@@ -409,10 +407,8 @@ async function verifySelectionZoom(
 			await setTheme(page, theme);
 			await settle(page);
 			await resetZoom(page, host);
-			const { zoom, max } = await expectSceneBounds(host, label);
+			const { zoom } = await expectSceneBounds(host, label);
 			expect(zoom, `${label}: reset is exactly automatic fit`).toBe(1);
-			if (theme === 'dark' && width === 1440 && height === 900)
-				expect(max, `${label}: a desktop screen has a real zoom-in range`).toBeGreaterThan(1.1);
 			await expect(zoomGroup(page), `${label}: the fit shows no zoom controls`).toHaveCount(0);
 			const baseBackdrop = await backdrop(page);
 			expectCovered(baseBackdrop, `${label}: automatic fit covers the scene`);
@@ -447,13 +443,11 @@ async function verifySelectionZoom(
 				`${label}: reset restores exact scale`
 			).toBeLessThan(0.02);
 
-			// The upper bound is the geometry fit, not a guess: every actor stays inside its clearance at max.
+			// At 150% the selected actor may rise under the header, as zoom does; companions that would leave the
+			// clearance are culled, so every visible actor stays on screen sideways and grounded.
 			await zoomToMax(page, host);
 			const top = await readScene(host);
-			expect(top.zoom, `${label}: zoom in stops exactly at max`).toBeCloseTo(top.max, 6);
-			expect(top.max, `${label}: max stays inside the promised 1.5 cap`).toBeLessThanOrEqual(
-				1.5 + 1e-9
-			);
+			expect(top.zoom, `${label}: zoom in stops exactly at 150%`).toBe(1.5);
 			await expectBackdropFactor(page, baseBackdrop, top.zoom, `${label}: max`);
 			expectCovered(await backdrop(page), `${label}: max still covers the scene`);
 			const headerBottom = await page
@@ -466,9 +460,10 @@ async function verifySelectionZoom(
 				expect(actor.right, `${label}: no actor crosses the right edge`).toBeLessThanOrEqual(
 					width + 1
 				);
-				expect(actor.top, `${label}: no actor rises into the header`).toBeGreaterThanOrEqual(
-					headerBottom + 14
-				);
+				if (!actor.chosen)
+					expect(actor.top, `${label}: no companion rises into the header`).toBeGreaterThanOrEqual(
+						headerBottom + 14
+					);
 				expect(actor.bottom, `${label}: no actor drops below the stage`).toBeLessThanOrEqual(
 					height + 1
 				);
@@ -565,15 +560,7 @@ async function verifyPreviewZoomMatrix(
 			const top = await readScene(host);
 			await expectBackdropFactor(page, baseBackdrop, top.zoom, `${label}: max`);
 			expectCovered(await backdrop(page), `${label}: max covers the scene`);
-			if (top.zoom > 1) {
-				const actors = await actorBounds(page);
-				const controls = (await zoomGroup(page).boundingBox())!;
-				if (actors.left < controls.x + controls.width && actors.right > controls.x)
-					expect(
-						actors.top,
-						`${label}: zoom keeps artwork below overlapping controls`
-					).toBeGreaterThanOrEqual(controls.y + controls.height - 1);
-			}
+			expect(top.zoom, `${label}: Preview zooms in to the same 150%`).toBe(1.5);
 			await shot(page, info, `preview-${theme}-${width}x${height}-max`);
 			await zoomToMin(page, host);
 			expect((await readScene(host)).zoom, `${label}: characters shrink to half`).toBeCloseTo(
@@ -613,7 +600,7 @@ test('Preview zoom keeps actors and backdrop on one camera and fits them at max'
 	const host = world(page);
 	await resetZoom(page, host);
 	const initial = await readScene(host);
-	expect(initial.max, 'desktop Preview has a real zoom-in range').toBeGreaterThan(1.1);
+	expect(initial.max, 'Preview shares the 150% cap').toBe(1.5);
 	await expect.poll(async () => (await actorBounds(page)).width).toBeGreaterThan(0);
 	const baseBackdrop = await backdrop(page);
 	const baseActor = await actorBounds(page);
@@ -644,10 +631,9 @@ test('Preview zoom keeps actors and backdrop on one camera and fits them at max'
 	expect(bounds.right, 'preview max: actors stay inside the stage').toBeLessThanOrEqual(
 		stage.right + 1
 	);
-	expect(
-		bounds.top,
-		'preview max: actors rise under the header but not through it'
-	).toBeGreaterThanOrEqual(stage.top - 1);
+	expect(bounds.top, 'preview max: the head stays under the header').toBeGreaterThanOrEqual(
+		stage.top - 1
+	);
 	expect(bounds.bottom, 'preview max: actors stay above the playback bar').toBeLessThanOrEqual(
 		playbackTop + 1
 	);
@@ -851,27 +837,138 @@ test('wheel bursts compose synchronously instead of reading a stale frame', asyn
 	const host = world(page);
 	await resetZoom(page, host);
 	const bounds = await expectSceneBounds(host, 'wheel burst');
-	const expected = Math.exp(0.04);
-	expect(bounds.max, 'the wheel burst is not clamped by max').toBeGreaterThan(expected + 1e-6);
+	expect(bounds.max, 'the wheel burst is not clamped by max').toBe(1.5);
 	const immediate = await page.evaluate(async () => {
 		const state = await import(/* @vite-ignore */ String('/src/studio/experience/state.svelte.ts'));
 		const target = document.querySelector('.world-stage')!;
 		for (let index = 0; index < 2; index++)
 			target.dispatchEvent(
-				new WheelEvent('wheel', { deltaY: -10, bubbles: true, cancelable: true })
+				new WheelEvent('wheel', { deltaY: -100, bubbles: true, cancelable: true })
 			);
 		return state.experience.sceneZoom;
 	});
-	expect(immediate, 'both wheel events use the value the first one produced').toBeCloseTo(
-		expected,
-		8
-	);
+	expect(immediate, 'the second notch steps from the level the first one reached').toBe(1.25);
 	await settle(page);
 	await expect
 		.poll(async () => (await readScene(host)).zoom, {
 			message: 'the rendered camera catches up to the burst without losing a step'
 		})
-		.toBeCloseTo(expected, 6);
+		.toBe(1.25);
+});
+
+test('wheel notches, keys and buttons retrace the same levels back to exactly 100%', async ({
+	page
+}) => {
+	await seedCharacters(page, 2);
+	const host = selection(page);
+	await resetZoom(page, host);
+	const zoom = async () => (await readScene(host)).zoom;
+	const notch = async (deltaY: number) => {
+		await wheel(host, { deltaY });
+		await settle(page);
+		return zoom();
+	};
+	// Mouse notches: 100 px each (120 on some mice), small trackpad scrolls add up to a step.
+	const out: number[] = [];
+	for (let i = 0; i < 3; i++) out.push(await notch(i === 1 ? 120 : 100));
+	expect(out, 'each notch out is one level').toEqual([0.9, 0.8, 0.7]);
+	expect(await notch(20), 'a small scroll alone does not step').toBe(0.7);
+	expect(await notch(-20), 'reversing drops the partial step').toBe(0.7);
+	const back: number[] = [];
+	for (let i = 0; i < 3; i++) back.push(await notch(-100));
+	expect(back, 'notches in retrace the same levels').toEqual([0.8, 0.9, 1]);
+	await expect(zoomGroup(page), 'back at the fit, the controls hide').toHaveCount(0);
+	for (let i = 0; i < 3; i++) await notch(-30);
+	expect(await zoom(), 'trackpad scrolling adds up to one step').toBe(1.1);
+	await resetZoom(page, host);
+
+	// Keys, then buttons, cross 100% both ways on the same levels.
+	await host.focus();
+	for (const key of ['=', '=', '-', '-', '-', '-', '=', '=']) await page.keyboard.press(key);
+	expect(await zoom(), 'keys return to exactly 100%').toBe(1);
+	await zoomStep(page, host, 'in');
+	const group = zoomGroup(page);
+	await group.getByRole('button', { name: 'Zoom in', exact: true }).click();
+	expect(await zoom()).toBe(1.25);
+	await group.getByRole('button', { name: 'Zoom out', exact: true }).click();
+	await group.getByRole('button', { name: 'Zoom out', exact: true }).click();
+	expect(await zoom(), 'buttons return to exactly 100%').toBe(1);
+	await expect(group).toHaveCount(0);
+
+	// A trackpad pinch stays precise between levels, and the next notch lands back on the ladder.
+	await wheel(host, { deltaY: -10, ctrlKey: true });
+	await expect.poll(zoom).toBeCloseTo(Math.exp(0.1), 6);
+	await page.waitForTimeout(300);
+	expect(await zoom(), 'a pinch outside the snap band keeps its value').toBeCloseTo(
+		Math.exp(0.1),
+		6
+	);
+	expect(await notch(100), 'a notch out from between levels lands on the level below').toBe(1.1);
+	expect(await notch(100)).toBe(1);
+	await wheel(host, { deltaY: -3, ctrlKey: true });
+	await expect.poll(zoom).toBeGreaterThan(1);
+	await page.waitForTimeout(300);
+	expect(await zoom(), 'a pinch released near the fit lands on it exactly').toBe(1);
+});
+
+test('Characters and Customize share one zoom: the same level, label and scale both ways', async ({
+	page
+}) => {
+	await page.setViewportSize({ width: 1280, height: 800 });
+	await seedCharacters(page, 2);
+	const host = selection(page);
+	await resetZoom(page, host);
+	const label = () =>
+		zoomGroup(page).getByRole('button', { name: 'Reset scene zoom', exact: true });
+	const preview = world(page);
+	const view = (name: string) =>
+		page
+			.getByRole('group', { name: 'Character view', exact: true })
+			.getByRole('button', { name, exact: true })
+			.click();
+
+	// 150% on Characters stays 150% in Customize, then 60% in Customize stays 60% back on Characters.
+	await host.focus();
+	for (let i = 0; i < 3; i++) await page.keyboard.press('=');
+	expect((await readScene(host)).zoom).toBe(1.5);
+	await expect(label()).toHaveText('150%');
+	const castAt150 = await chosenRect(page);
+	await page.locator('.customize-action').click();
+	await expect(preview).toBeVisible();
+	await view('Preview');
+	await expect.poll(async () => (await readScene(preview)).zoom).toBe(1.5);
+	await expect(label()).toHaveText('150%');
+	for (let i = 0; i < 7; i++) await zoomStep(page, preview, 'out');
+	expect((await readScene(preview)).zoom).toBe(0.6);
+	await expect(label()).toHaveText('60%');
+
+	// A live view draws at its own fit, and Preview returns to the shared level.
+	await view('Top-down');
+	await expect(zoomGroup(page)).toHaveCount(0);
+	await view('Preview');
+	await expect.poll(async () => (await readScene(preview)).zoom).toBe(0.6);
+
+	await page.locator('.header-back').click();
+	await expect(host).toBeVisible();
+	await expect.poll(async () => (await readScene(host)).zoom).toBe(0.6);
+	await expect(label()).toHaveText('60%');
+	await expect
+		.poll(async () => (await chosenRect(page)).width / castAt150.width, {
+			message: 'the cast scales by the shared level'
+		})
+		.toBeCloseTo(0.6 / 1.5, 3);
+
+	// Resizing never changes the shared level.
+	for (const [width, height] of [
+		[390, 844],
+		[844, 390],
+		[1440, 900]
+	]) {
+		await page.setViewportSize({ width, height });
+		await settle(page);
+		expect((await readScene(host)).zoom, `${width}x${height} keeps the level`).toBe(0.6);
+	}
+	await resetZoom(page, host);
 });
 
 test('Preview keeps the selected facing at one scale while every lineup size from 1 to 5 fits', async ({
@@ -942,9 +1039,6 @@ test('Preview keeps the selected facing at one scale while every lineup size fro
 		const stage = await page
 			.locator('.experience-stage')
 			.evaluate((element) => element.getBoundingClientRect().toJSON());
-		const playbackTop = await page
-			.locator('.experience-playback')
-			.evaluate((bar) => bar.getBoundingClientRect().top);
 		const maxActor = await actorBounds(page);
 		expect(
 			maxActor.left,
@@ -954,19 +1048,19 @@ test('Preview keeps the selected facing at one scale while every lineup size fro
 			maxActor.right,
 			`${count} facings: visible actors stay inside the stage`
 		).toBeLessThanOrEqual(stage.right + 1);
+		// A tall fit on a short screen pans up to hold the head in view; the feet may pass the playback bar instead.
 		expect(
 			maxActor.top,
-			`${count} facings: visible actors stay under the header`
+			`${count} facings: the selected head stays under the header`
 		).toBeGreaterThanOrEqual(stage.top - 1);
-		expect(
-			maxActor.bottom,
-			`${count} facings: visible actors stay above the playback bar`
-		).toBeLessThanOrEqual(playbackTop + 1);
+		// Every facing shares the selected one's height and floor line, so the lineup's top lands exactly where the
+		// camera's pivot and level put it, even when a short screen sends the feet below the stage.
+		const pivot = Number((await host.getAttribute('data-scene-anchor'))!.split(',')[1]);
 		await expect
-			.poll(async () => (await actorBounds(page)).height / baseActor.height, {
+			.poll(async () => (await actorBounds(page)).top, {
 				message: `${count} facings: the selected actor's scale is stable at max`
 			})
-			.toBeCloseTo(top.zoom, 1);
+			.toBeCloseTo(pivot + (baseActor.top - pivot) * top.zoom, 0);
 		await shot(page, info, `facings-${count}-max`);
 
 		// Reset restores the exact base offsets, so culling is presentation only.
