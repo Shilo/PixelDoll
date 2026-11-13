@@ -156,8 +156,9 @@
 			? (activeCamera?.backdrop ?? baseWorld)
 			: baseWorld
 	);
-	// The automatic fit needs no controls; they appear once the scene is zoomed, mainly to reset it.
-	const zoomed = (camera: Pick<SceneCamera, 'value'>) => Math.abs(camera.value - 1) > 1e-4;
+	// The automatic fit needs no controls; they appear once the scene is zoomed, mainly to reset it. A zoom that would
+	// read 100% counts as the fit, so the controls never show a reset with nothing to undo.
+	const zoomed = (camera: Pick<SceneCamera, 'value'>) => Math.round(camera.value * 100) !== 100;
 	function changeZoom(value: number) {
 		const fromControls = document.activeElement?.closest('.scene-zoom');
 		experience.sceneZoom = value;
@@ -478,7 +479,7 @@
 			data-scene-min={selectionCamera.min}
 			data-scene-max={selectionCamera.max}
 			role="application"
-			aria-label="Character selection. WASD or arrows select; Enter customizes."
+			aria-label="Character selection. WASD or arrows select; Enter customizes; plus and minus zoom."
 			tabindex="0"
 			bind:this={selection}
 			onkeydown={selectionKey}
