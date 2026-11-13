@@ -610,9 +610,9 @@
 	height: 102px;
 	font-size: 13px;
 }
-/* A real item's tile with its ⋮ beside it (a sibling control): the ⋮ sits top-right, where menus usually open, and the
-   worn check top-left. The ⋮ keeps a full-height target but reaches only 32 px into the tile, like the character rows'
-   ⋮ beside their name, so a press meant for the tile rarely opens the menu. */
+/* A real item's tile with its ⋮ beside it (a sibling control): the ⋮ sits at the tile's top-left edge, the worn check
+   and status top-right. The ⋮ keeps a full-height target but reaches only 32 px into the tile, so a press meant for the
+   tile rarely opens the menu. */
 .tile-wrap {
 	position: relative;
 	min-width: 0;
@@ -620,7 +620,7 @@
 .tile-wrap > .tile-more {
 	position: absolute;
 	top: 0;
-	right: 0;
+	left: 0;
 	z-index: 1;
 	width: 32px;
 	min-width: 0;
@@ -631,8 +631,8 @@
 .item-tile :is(.bu-tile-check, .tile-status) {
 	position: absolute;
 	top: 5px;
-	right: auto;
-	left: 6px;
+	right: 6px;
+	left: auto;
 }
 /* A fixed 64 px art box: item art draws at the largest whole-pixel scale that fits (Thumb box). */
 .item-tile .bu-tile-art {
