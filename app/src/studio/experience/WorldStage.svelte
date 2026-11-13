@@ -3,7 +3,14 @@
 	import { ui, doc, view, toast, stepPreviewFrame } from '../state.svelte.ts';
 	import { experience, characters, setMode, sharedZoom } from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
-	import { MOTION, REFLECTION, WORLDS, worldArt } from './config.ts';
+	import { MOTION, WORLDS, worldArt } from './config.ts';
+	import {
+		REFLECTION,
+		drawReflection,
+		reflectionCanvas,
+		reflectionStyle,
+		floorFlatness
+	} from './reflection.ts';
 	import { EYE, heroRoom, layout, placeWorld, ringRadius, ringRise } from './geometry.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
@@ -25,7 +32,7 @@
 	const RING_GAP = 12;
 	const RING_STROKE = 1.5;
 	const ringFlatness = (belowHorizon: number, worldScale: number, focal: number) =>
-		Math.min(1, Math.max(0, belowHorizon) / (worldScale * focal));
+		floorFlatness(belowHorizon, worldScale * focal);
 	import {
 		buildPresentation,
 		resolvePreview,
@@ -71,7 +78,7 @@
 		void doc.rev;
 		return view.project ? previewBounds(view.project) : null;
 	});
-	const grounding = $derived(experience.mode === 'preview' ? bodyBounds : null);
+	const grounding = $derived(bodyBounds);
 	const drawingFrame = $derived.by(() => {
 		void doc.rev;
 		return view.project ? bakedFrame(view.project.manifest) : null;
@@ -370,9 +377,7 @@
 			g = paint.context,
 			source = document.createElement('canvas'),
 			sg = source.getContext('2d')!;
-		const reflected = document.createElement('canvas'),
-			rg = reflected.getContext('2d')!,
-			skyContext = sky.getContext('2d')!;
+		const skyContext = sky.getContext('2d')!;
 		let skyStamp = '',
 			disposed = false;
 		const restored = () => paint.invalidate();
@@ -544,11 +549,8 @@
 				plate: art,
 				viewport: { l: 0, t: 0, r: width, b: backdrop.coverBottom },
 				center: {
-					x: groundedFocus.x + (live ? (bodyReference?.x ?? 0) * fit : 0),
-					y:
-						groundedFocus.y -
-						((bodyReference?.standingHeight ?? fitFrame?.h ?? 0) * fit) / 2 +
-						(live ? (bodyReference?.y ?? 0) * fit : 0)
+					x: groundedFocus.x,
+					y: groundedFocus.y - ((bodyReference?.standingHeight ?? fitFrame?.h ?? 0) * fit) / 2
 				}
 			});
 			const drawPosition = (
@@ -720,17 +722,6 @@
 							0,
 							0
 						);
-						reflected.width = source.width;
-						reflected.height = source.height;
-						rg.drawImage(source, 0, 0);
-						rg.globalCompositeOperation = 'destination-in';
-						const fade = rg.createLinearGradient(0, 0, 0, imageCache.frame.y);
-						fade.addColorStop(0, 'transparent');
-						fade.addColorStop(0.3, 'transparent');
-						fade.addColorStop(1, 'black');
-						rg.fillStyle = fade;
-						rg.fillRect(0, 0, source.width, source.height);
-						rg.globalCompositeOperation = 'source-over';
 						paint.redrawn();
 					}
 				}
@@ -785,7 +776,6 @@
 						hero = heroNow;
 					if (hero !== experience.heroHeight) experience.heroHeight = hero;
 					const snap = (n: number) => Math.round(n * dpr) / dpr;
-					// The selected facing keeps its reflection; the others stand beside it, sharing its move, frame and floor.
 					const facings = visibleFacings,
 						at = (d: DirectionName) => point.x + (row?.offsets[row.facings.indexOf(d)] ?? 0);
 					const origin = (d: DirectionName) => grounding?.facings.get(d),
@@ -822,6 +812,53 @@
 								};
 							});
 					updateHover();
+					const others = facings
+						.filter((direction) => direction !== ui.dir)
+						.map((direction) => {
+							const entry = companion(a, direction, view.cell);
+							if (entry.result.issue) notes.push(entry.result.issue);
+							if (entry.result.loading) loadings.add(entry.result.loading);
+							const ground = origin(direction);
+							return {
+								entry,
+								ground,
+								...drawPosition(
+									{
+										x: entry.result.frame.x + (ground?.x ?? 0),
+										y: entry.result.frame.y + (ground?.y ?? 0)
+									},
+									{ x: at(direction), y: point.y },
+									scale
+								)
+							};
+						});
+					if (REFLECTION.enabled && REFLECTION[experience.mode]) {
+						const floorProjection = s?.projection(options);
+						const reflect = (
+							image: typeof img,
+							frame: typeof result.frame,
+							ground: typeof selectedOrigin,
+							left: number,
+							top: number
+						) => {
+							const groundRow = frame.y + (ground?.y ?? 0);
+							drawReflection(
+								g,
+								reflectionCanvas(image, groundRow, ground?.standingHeight ?? fit.h),
+								{ x: left, y: top, scale, groundRow },
+								reflectionStyle(
+									top + groundRow * scale,
+									floorProjection?.horizon ?? backdrop.eye,
+									floorProjection?.focal ?? backdrop.scale * art.focal
+								)
+							);
+						};
+						for (const other of others) {
+							const image = other.entry.result.image;
+							if (image) reflect(image, other.entry.result.frame, other.ground, other.x, other.y);
+						}
+						reflect(img, frame, selectedOrigin, x, y);
+					}
 					// A lineup marks its selected facing with a thin accent ring on the floor, anchored to the feet so it
 					// never moves with the walk or collides with tall gear; the sprite is drawn over its back half. A circle
 					// on the world floor looks as flat as the floor is foreshortened there: rows below the horizon over focal.
@@ -850,38 +887,15 @@
 							g.stroke();
 							g.restore();
 						}
-					for (const d of facings) {
-						if (d === ui.dir) continue;
-						const entry = companion(a, d, view.cell),
-							other = entry.canvas;
-						if (entry.result.issue) notes.push(entry.result.issue);
-						if (entry.result.loading) loadings.add(entry.result.loading);
-						if (other) {
-							const position = drawPosition(
-								{ x: frame.x + (origin(d)?.x ?? 0), y: frame.y + (origin(d)?.y ?? 0) },
-								{ x: at(d), y: point.y },
-								scale
+					for (const other of others)
+						if (other.entry.canvas)
+							g.drawImage(
+								other.entry.canvas,
+								other.x,
+								other.y,
+								other.entry.canvas.width * scale,
+								other.entry.canvas.height * scale
 							);
-							g.drawImage(other, position.x, position.y, other.width * scale, other.height * scale);
-						}
-					}
-					if (REFLECTION.enabled && REFLECTION[experience.mode]) {
-						g.save();
-						g.globalAlpha = REFLECTION.opacity;
-						g.translate(
-							0,
-							inspecting ? y + (frame.y + (selectedOrigin?.y ?? 0)) * scale : snap(point.y)
-						);
-						g.scale(1, -REFLECTION.compression);
-						g.drawImage(
-							reflected,
-							x,
-							-(frame.y + (selectedOrigin?.y ?? 0)) * scale,
-							img.w * scale,
-							img.h * scale
-						);
-						g.restore();
-					}
 					g.drawImage(source, x, y, img.w * scale, img.h * scale);
 					host.dataset.position = `${position.x.toFixed(2)},${position.y.toFixed(2)}`;
 					host.dataset.camera = `${camera.x.toFixed(2)},${camera.y.toFixed(2)}`;
