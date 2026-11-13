@@ -623,7 +623,7 @@
 	font-size: 13px;
 }
 /* A real item's tile with its ⋮ beside it (a sibling control): the ⋮ sits in the tile's top-right corner, where menus
-   usually open, the worn check and status top-left. The visible ⋮ stays compact; its target uses the standard control size. */
+   usually open, the worn check and status top-left. Its compact target leaves the rest of the tile for equipping. */
 .tile-wrap {
 	position: relative;
 	min-width: 0;
@@ -640,14 +640,11 @@
 	height: 25px;
 	min-height: 0;
 }
-/* The target reaches inward from the tile's outer corner, while the visible button and its highlight stay inside the border. */
+/* Cover only the top and right border gaps; the left and bottom follow the visible button. */
 .tile-wrap > .tile-more::before {
 	content: '';
 	position: absolute;
-	top: -3px;
-	right: -3px;
-	width: var(--ctl-h);
-	height: var(--ctl-h);
+	inset: -3px -3px 0 0;
 }
 /* The worn check and status icons share the top-left corner (the ⋮ has the other): a row over the art, so a tile never
    grows, that wraps after four icons, or three on a tile too narrow to keep them clear of the ⋮. Every Wardrobe tile,

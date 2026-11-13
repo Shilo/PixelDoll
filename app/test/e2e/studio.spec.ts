@@ -5858,13 +5858,27 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 		hit.width,
 		hit.height
 	]).toEqual([3, 3, 28, 25]);
-	// Its 48 px target reaches the tile's outer top and right edges and extends inward without reaching adjacent tiles.
+	// Only the top and right gaps extend the target; the bottom and left follow the visible button.
 	expect(
 		await more.evaluate((button) => {
 			const reach = getComputedStyle(button, '::before');
 			return [reach.content, reach.position, reach.top, reach.right, reach.width, reach.height];
 		})
-	).toEqual(['""', 'absolute', '-3px', '-3px', '48px', '48px']);
+	).toEqual(['""', 'absolute', '-3px', '-3px', '31px', '28px']);
+	const targets = await more.evaluate((button) => {
+		const r = button.getBoundingClientRect();
+		return [
+			[r.left + r.width / 2, r.top - 2],
+			[r.right + 2, r.top + r.height / 2],
+			[r.right + 2, r.top - 2],
+			[r.left + 1, r.bottom - 1],
+			[r.left - 1, r.top + r.height / 2],
+			[r.left + r.width / 2, r.bottom + 1]
+		].map(([x, y]) =>
+			document.elementFromPoint(x!, y!)?.closest('button')?.classList.contains('tile-more')
+		);
+	});
+	expect(targets).toEqual([true, true, true, true, false, false]);
 	// The worn check and status sit in the opposite, top-left corner, 6 px inside the 1 px border.
 	const status = (await hat.locator('.tile-status, .bu-tile-check').first().boundingBox())!;
 	expect(status.x).toBeCloseTo(tile.x + 7, 0);
