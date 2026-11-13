@@ -1,6 +1,7 @@
 // Rig contract (manifest-spec §2 `Rig`), per-cell hashes, baseHash and validation.
 import { sha256, stableStringify } from '../image/hash.ts';
 import type { Img } from '../image/png.ts';
+import type { Layer } from '../store/manifest.ts';
 
 export type DirectionName =
 	'south' | 'south-east' | 'east' | 'north-east' | 'north' | 'north-west' | 'west' | 'south-west';
@@ -119,6 +120,19 @@ export function cellKeys(rig: Pick<Rig, 'directions' | 'animations'>): string[] 
 	return rig.animations.flatMap((a) =>
 		rig.directions.flatMap((d) => Array.from({ length: a.cells }, (_, i) => cellKey(a.id, d.id, i)))
 	);
+}
+
+export function storedCellHashes(
+	rig: Pick<Rig, 'directions' | 'animations'>,
+	cells: Layer['cells']
+): Record<string, Sha256> {
+	const hashes: Record<string, Sha256> = {};
+	for (const key of cellKeys(rig)) {
+		const [anim, dir, index] = key.split('/') as [string, DirectionName, string];
+		const hash = cells?.[anim]?.[dir]?.[Number(index)];
+		if (hash) hashes[key] = hash;
+	}
+	return hashes;
 }
 
 /** sha256 over the cell hashes joined by "\n" in canonical order. */

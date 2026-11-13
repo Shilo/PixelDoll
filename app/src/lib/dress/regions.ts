@@ -7,7 +7,13 @@
 import { components } from '../image/chroma.ts';
 import type { Img } from '../image/png.ts';
 import { opaqueBox } from '../rig/normalize.ts';
-import { baseHashOf, cellHash, cellKeys, type DirectionName, type Sha256 } from '../rig/rig.ts';
+import {
+	baseHashOf,
+	cellHash,
+	storedCellHashes,
+	type DirectionName,
+	type Sha256
+} from '../rig/rig.ts';
 import type { Project } from '../store/manifest.ts';
 import { getDecoded, rememberDecoded } from '../store/project.ts';
 import { lab } from './palette.ts';
@@ -197,14 +203,7 @@ export async function splitBase(
 		changed++;
 	}
 	if (changed) {
-		const l = base.layers[0],
-			hashes: Record<string, Sha256> = {};
-		for (const key of cellKeys(rig)) {
-			const [a, d, i] = key.split('/') as [string, DirectionName, string];
-			const h = l.cells?.[a]?.[d]?.[+i];
-			if (h) hashes[key] = h;
-		}
-		rig.baseHash = await baseHashOf(rig, hashes);
+		rig.baseHash = await baseHashOf(rig, storedCellHashes(rig, base.layers[0].cells));
 		for (const it of m.items) if (it.baseHash === oldHash) it.baseHash = rig.baseHash;
 	}
 	const dirty = !!changed || base.regions !== 'shirt-shorts';

@@ -2552,6 +2552,27 @@ test('unresolved errors reject lower-priority messages without changing their co
 	}
 });
 
+test('pending toasts stay until replaced or dismissed without leaving stale loading state', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	vi.useFakeTimers();
+	try {
+		s.toast('Preparing download...', { pending: true });
+		vi.advanceTimersByTime(60_000);
+		expect(s.ui.toast).toBe('Preparing download...');
+		expect(s.ui.toastPending).toBe(true);
+		s.toast('Downloaded character.zip');
+		expect(s.ui.toastPending).toBe(false);
+		vi.advanceTimersByTime(4000);
+		expect(s.ui.toast).toBe('');
+		s.toast('Preparing download...', { pending: true });
+		s.dismissToast();
+		expect(s.ui.toastPending).toBe(false);
+	} finally {
+		s.dismissToast();
+		vi.useRealTimers();
+	}
+});
+
 test('toast activation runs its optional action before dismissal, while close only dismisses', async () => {
 	const s = await import('../../src/studio/state.svelte.ts');
 	s.toast('Preview', { duration: 0 });

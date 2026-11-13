@@ -5,7 +5,9 @@
 	import { buildPresentation, southStill } from './experience/presentation.ts';
 	import OutfitThumb from './OutfitThumb.svelte';
 	import { tick } from 'svelte';
-	import { Plus, Trash, X } from './icons.ts';
+	import { Plus, X } from './icons.ts';
+	import SavedActions from './SavedActions.svelte';
+	import { downloadOutfitZip } from './download.svelte.ts';
 	const m = $derived(store.project?.manifest);
 	const preview = $derived.by(() => {
 		void doc.rev;
@@ -49,22 +51,22 @@
 		<ul class="rows">
 			{#each m.presets as p (p.id)}
 				<li>
-					<button
-						class="row bu-action"
-						data-variant="tile"
-						aria-pressed={sameOutfit(p)}
-						onclick={() => applyPreset(p)}
-						>{#if preview}<OutfitThumb {preview} preset={p} />{/if}<span class="row-name"
-							>{p.name}</span
-						>{#if sameOutfit(p)}<span class="badge">Current</span>{/if}</button
+					<SavedActions
+						name={p.name}
+						kind="outfit"
+						ondownload={() => downloadOutfitZip(p.id)}
+						ondelete={() => deletePreset(p.id)}
 					>
-					<button
-						class="bu-action btn icon plain sm row-del"
-						data-variant="quiet"
-						aria-label="Delete outfit {p.name}"
-						title="Delete outfit"
-						onclick={() => deletePreset(p.id)}><Trash size={14} /></button
-					>
+						<button
+							class="row bu-action"
+							data-variant="tile"
+							aria-pressed={sameOutfit(p)}
+							onclick={() => applyPreset(p)}
+							>{#if preview}<OutfitThumb {preview} preset={p} />{/if}<span class="row-name"
+								>{p.name}</span
+							>{#if sameOutfit(p)}<span class="badge">Current</span>{/if}</button
+						>
+					</SavedActions>
 				</li>
 			{:else}
 				<li class="faint small" style="padding:4px 8px">

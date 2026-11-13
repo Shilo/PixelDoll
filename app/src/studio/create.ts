@@ -40,6 +40,7 @@ import {
 	cellHash,
 	cellKey,
 	cellKeys,
+	storedCellHashes,
 	defaultMs,
 	playlist,
 	retainPlaybackChoices,
@@ -1979,12 +1980,7 @@ async function addBodyClip(
 		: [...frig.animations, anim];
 	(layer.cells ??= {})[spec.id] = cellMap;
 	// adding a clip changes baseHash; items made against the old base keep every old cell, so they move to the new hash
-	const hashes: Record<string, Sha256> = {};
-	for (const k of cellKeys(frig)) {
-		const [a, d, i] = k.split('/') as [string, DirectionName, string];
-		const h = layer.cells[a]?.[d]?.[+i];
-		if (h) hashes[k] = h;
-	}
+	const hashes = storedCellHashes(frig, layer.cells);
 	const oldHash = frig.baseHash;
 	frig.baseHash = await baseHashOf(frig, hashes);
 	// Unchanged clips keep their hashes. Replaced clips lose item coverage in the publication transaction below.

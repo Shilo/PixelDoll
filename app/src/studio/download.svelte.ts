@@ -6,6 +6,8 @@ import * as db from '../lib/store/db.ts';
 import { readExportSettings } from '../lib/store/export-settings.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import type { Project } from '../lib/store/manifest.ts';
+import { retainMoveMetadata } from '../lib/rig/moves.ts';
+import { moveLabel } from './model.ts';
 import { doc, store, readCharacter, toast } from './state.svelte.ts';
 
 /** The saved record's rig data, so the ZIP imports back as an editable character (the demo has none). */
@@ -43,12 +45,17 @@ async function source(projectId: string): Promise<{ project: Project; look: Look
 
 async function zipOf(projectId: string, { project, look }: { project: Project; look: Look }) {
 	const { buildExport } = await lazy(() => import('../lib/export/build.ts'));
+	const original = await projectData(projectId);
+	const extra = original && {
+		...original,
+		...retainMoveMetadata(original, new Set(project.manifest.rig.animations.map((move) => move.id)))
+	};
 	const r = await buildExport(project, {
 		engine: 'generic',
 		baked: false,
 		look,
 		settings: await readExportSettings(),
-		projectData: await projectData(projectId)
+		projectData: extra
 	});
 	if (!r.zip) throw new Error(r.errors.slice(0, 3).join('; ') || 'This export is not valid.');
 	return r.zip;
@@ -63,7 +70,7 @@ async function download(
 ) {
 	if (pending.has(key)) return;
 	pending.add(key);
-	toast(`Preparing ${label}…`);
+	toast(`Preparing ${label}...`, { pending: true });
 	try {
 		const { zip, filename } = await build();
 		saveZip(zip, filename);
@@ -96,6 +103,39 @@ export function downloadItemZip(itemId: string) {
 		return {
 			zip: await zipOf(projectId, itemProject(project, itemId, look)),
 			filename: `${fileSlug(character)}-${fileSlug(it.name)}.pixeldoll.zip`
+		};
+	});
+}
+
+export function downloadOutfitZip(outfitId: string) {
+	const projectId = doc.id;
+	const outfit = store.project?.manifest.presets.find((preset) => preset.id === outfitId);
+	if (!outfit) return Promise.resolve();
+	const project = { ...store.project!, manifest: structuredClone(store.project!.manifest) };
+	return download(`outfit:${projectId}/${outfitId}`, outfit.name, async () => {
+		const { outfitProject } = await lazy(() => import('../lib/export/build.ts'));
+		return {
+			zip: await zipOf(projectId, outfitProject(project, outfitId)),
+			filename: `${fileSlug(project.manifest.name)}-${fileSlug(outfit.name)}.pixeldoll.zip`
+		};
+	});
+}
+
+export function downloadMoveZip(moveId: string) {
+	const projectId = doc.id;
+	const label = moveLabel(
+		moveId,
+		store.project?.manifest.rig.animations.map((move) => move.id)
+	);
+	return download(`move:${projectId}/${moveId}`, label, async () => {
+		const { project, look } = await source(projectId);
+		const { moveProject } = await lazy(() => import('../lib/export/build.ts'));
+		return {
+			zip: await zipOf(projectId, {
+				project: await moveProject(project, moveId),
+				look
+			}),
+			filename: `${fileSlug(project.manifest.name)}-${fileSlug(moveId)}.pixeldoll.zip`
 		};
 	});
 }

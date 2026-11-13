@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { equipmentGroup, equipmentMode, openStudio } from './immersive-helpers.ts';
+import { enterStudio, equipmentGroup, equipmentMode, openStudio } from './immersive-helpers.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 
 test('move and outfit thumbnails load only with their tab and preserve saved colors', async ({
@@ -23,10 +23,22 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 		};
 		Object.defineProperty(window, '__moveThumbnailDraws', { get: () => draws });
 	});
-	await openStudio(
-		page,
+	await page.goto(
 		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
 	);
+	await expect(page.locator('.character-row').first()).toBeVisible();
+	const rowHeight = (selector: string) =>
+		page
+			.locator(selector)
+			.first()
+			.evaluate((element) => element.getBoundingClientRect().height);
+	const characterHeight = await rowHeight('.character-row');
+	await page.screenshot({ path: info.outputPath('characters-desktop-dark.png') });
+	await page.locator('.project-btn').click();
+	await expect(page.locator('.menu:popover-open .character-entry > .row').first()).toBeVisible();
+	expect(await rowHeight('.menu:popover-open .character-entry > .row')).toBe(characterHeight);
+	await page.keyboard.press('Escape');
+	await enterStudio(page);
 	await expect(page.locator('.outfit-thumb')).toHaveCount(0);
 	await expect(page.locator('.move-thumb')).toHaveCount(0);
 	expect(await page.evaluate(() => Reflect.get(window, '__moveThumbnailDraws'))).toBe(0);
@@ -45,6 +57,7 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 	});
 	await equipmentMode(page, 'Outfits');
 	await expect(page.locator('.outfit-thumb canvas').first()).toBeVisible();
+	expect(await rowHeight('.outfits .row')).toBe(characterHeight);
 	await expect(page.locator('.move-thumb')).toHaveCount(0);
 	expect(await page.evaluate(() => Reflect.get(window, '__moveThumbnailDraws'))).toBe(0);
 	const pixels = await page.evaluate(async () => {
@@ -106,6 +119,7 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 	await expect(page.locator('.outfit-thumb')).toHaveCount(0);
 	await expect(page.locator('.move-row').first()).toHaveAttribute('data-variant', 'tile');
 	await expect(page.locator('.move-thumb canvas').first()).toBeVisible();
+	expect(await rowHeight('.move-row')).toBe(characterHeight);
 	expect(await page.evaluate(() => Reflect.get(window, '__moveThumbnailDraws'))).toBeGreaterThan(0);
 	await page.screenshot({ path: info.outputPath('moves-desktop-dark.png') });
 	for (const theme of ['light', 'dark']) {
@@ -116,9 +130,11 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 			state.applyTheme();
 		}, theme);
 		await page.setViewportSize({ width: 390, height: 844 });
+		expect(await rowHeight('.move-row')).toBe(characterHeight);
 		await page.screenshot({ path: info.outputPath(`moves-phone-${theme}.png`) });
 		await equipmentMode(page, 'Outfits');
 		await expect(saved).toHaveAttribute('aria-pressed', 'true');
+		expect(await rowHeight('.outfits .row')).toBe(characterHeight);
 		await expect(page.locator('.move-thumb')).toHaveCount(0);
 		const hiddenWork = await page.evaluate(async () => {
 			const before = Reflect.get(window, '__moveThumbnailDraws');
@@ -134,6 +150,13 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 		await page.screenshot({ path: info.outputPath(`outfits-phone-${theme}.png`) });
 		await equipmentMode(page, 'Moves');
 		await expect(page.locator('.move-thumb canvas').first()).toBeVisible();
+		await page.locator('.project-btn').click();
+		await page.getByRole('menuitem', { name: 'Character selection', exact: true }).click();
+		await expect(page.locator('.character-row').first()).toBeVisible();
+		expect(await rowHeight('.character-row')).toBe(characterHeight);
+		await page.screenshot({ path: info.outputPath(`characters-phone-${theme}.png`) });
+		await enterStudio(page);
+		await equipmentMode(page, 'Moves');
 	}
 });
 

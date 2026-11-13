@@ -885,17 +885,10 @@ dialog select option {
 	align-items: center;
 	gap: 2px;
 }
-.rows .row {
+.rows .character-entry > .row {
 	flex: 1;
 	min-width: 0;
 	width: auto;
-}
-.row-del {
-	opacity: 0;
-}
-.rows li:hover .row-del,
-.row-del:focus-visible {
-	opacity: 1;
 }
 .inline-form {
 	display: flex;
@@ -1014,7 +1007,7 @@ dialog select option {
 	gap: 4px;
 }
 .move-row,
-.outfits .rows .row {
+.outfits .rows .character-entry > .row {
 	width: 100%;
 	display: flex;
 	align-items: center;
@@ -1842,8 +1835,7 @@ dialog.sheet.bottom .foot-note {
 	min-width: 0;
 }
 @media (pointer: coarse) {
-	.rows .wear,
-	.row-del {
+	.rows .wear {
 		opacity: 1;
 	}
 }
