@@ -822,6 +822,64 @@ test('character carousel retargets real animations, keeps canvases, and settles 
 		return store.projects.map((project: { id: string }) => project.id);
 	});
 	const chosen = page.locator('.cast-character.chosen');
+	await page.evaluate(async (id) => {
+		const { openProject } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
+		await openProject(id);
+	}, ids[1]);
+	await page.addInitScript((id) => {
+		const state = window as unknown as {
+			releaseSavedCharacter?: () => void;
+			startupCarouselAnimations: number;
+		};
+		state.startupCarouselAnimations = 0;
+		const animate = Element.prototype.animate;
+		Element.prototype.animate = function (...args: Parameters<Element['animate']>) {
+			if (this.matches('.carousel-character')) state.startupCarouselAnimations++;
+			return animate.apply(this, args);
+		};
+		const get = IDBObjectStore.prototype.get;
+		IDBObjectStore.prototype.get = function (key: IDBValidKey) {
+			if (this.name === 'projects' && key === id) {
+				const transaction = this.transaction;
+				transaction.addEventListener(
+					'complete',
+					(event) => {
+						event.stopImmediatePropagation();
+						state.releaseSavedCharacter = () => {
+							IDBObjectStore.prototype.get = get;
+							transaction.dispatchEvent(new Event('complete'));
+						};
+					},
+					{ once: true }
+				);
+			}
+			return get.call(this, key);
+		};
+	}, ids[1]);
+	await page.reload();
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() =>
+					typeof (window as unknown as { releaseSavedCharacter?: () => void }).releaseSavedCharacter
+			)
+		)
+		.toBe('function');
+	await expect(chosen).toHaveCount(0);
+	await page.evaluate(() => {
+		(window as unknown as { releaseSavedCharacter: () => void }).releaseSavedCharacter();
+	});
+	await expect(chosen).toHaveAttribute('data-character-id', ids[1]);
+	await expect(page.locator('.customize-action')).toHaveAttribute('aria-busy', 'false');
+	expect(
+		await page.evaluate(
+			() => (window as unknown as { startupCarouselAnimations: number }).startupCarouselAnimations
+		)
+	).toBe(0);
+	await page.evaluate(async (id) => {
+		const { openProject } = await import(/* @vite-ignore */ String('/src/studio/state.svelte.ts'));
+		await openProject(id);
+	}, ids[0]);
 	const settled = () =>
 		expect
 			.poll(() =>
