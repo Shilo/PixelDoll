@@ -4,6 +4,8 @@
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { downloadItemZip } from './download.svelte.ts';
 	import Thumb from './Thumb.svelte';
+	import SharedThumb from './SharedThumb.svelte';
+	import type { SharedItem } from '../lib/equipment/shared.ts';
 	import DeleteRow from './DeleteRow.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { popoverFocus } from './experience/focus.ts';
@@ -24,6 +26,7 @@
 		toggleTwoHanded,
 		cancelGen,
 		openGenerationReview,
+		addShared,
 		type Gen
 	} from './state.svelte.ts';
 	import {
@@ -36,11 +39,14 @@
 		RefreshCw,
 		Trash,
 		TriangleAlert,
-		EyeOff
+		EyeOff,
+		Puzzle
 	} from './icons.ts';
 
 	let {
 		id,
+		entry,
+		note = '',
 		status,
 		onremove,
 		open = $bindable(false),
@@ -49,8 +55,11 @@
 	}: {
 		/** The item the menu is for. */
 		id: string;
-		/** The item's status words (see Wardrobe's statusOf). */
-		status: { look: string; missing: string; hidden: boolean };
+		/** Another character's item the menu is for instead, and how it comes to this one (Wardrobe's sharedNote). */
+		entry?: SharedItem;
+		note?: string;
+		/** The item's status words (see Wardrobe's statusOf); `unfit` is the sentence for an item not fitted to this body. */
+		status: { look: string; unfit: string; missing: string; hidden: boolean };
 		/** Removes the item for good once confirmed (Wardrobe moves focus to a neighbor afterwards). */
 		onremove: (id: string) => void;
 		open?: boolean;
@@ -86,7 +95,7 @@
 	const it = $derived(m?.items.find((i) => i.id === id));
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
-	const warn = $derived(!!(status.look || status.missing));
+	const warn = $derived(!!(status.look || status.missing || status.unfit));
 	const otherHand = $derived(it ? OTHER_HAND[it.slot] : undefined);
 	const both = $derived(!!m && !!it && twoHanded(m, it));
 	// Worn items say so first; any status follows, and an item with neither names its category.
@@ -94,6 +103,7 @@
 		[
 			on ? 'Wearing' : '',
 			both ? 'Two-handed' : '',
+			status.unfit ? 'Not fitted' : '',
 			status.look,
 			status.missing,
 			status.hidden ? 'Hidden by another item' : ''
@@ -228,6 +238,68 @@
 					</p>{/if}
 			</div>
 		</div>
+	{:else if entry && m}
+		{@const remake = entry.fit === 'remake'}
+		<div class="menu-surface bu-popover-surface bu-floating">
+			<div class="item-menu-head">
+				<span class="item-menu-art" aria-hidden="true"><SharedThumb {entry} /></span>
+				<span class="item-menu-title">
+					<strong id="item-menu-name">{entry.item.name}</strong>
+					<small class:look={entry.fit !== 'copy'}
+						>{#if entry.fit === 'unfitted' || remake}<Puzzle
+								size={12}
+								aria-hidden="true"
+							/>{:else if entry.fit === 'refit'}<TriangleAlert
+								size={12}
+								aria-hidden="true"
+							/>{/if}<span
+							>From {entry.sourceName} · {remake
+								? 'Can’t be worn'
+								: entry.fit === 'copy'
+									? 'Free'
+									: entry.fit === 'refit'
+										? 'Free · check fit'
+										: 'Free · not fitted'}</span
+						></small
+					>
+				</span>
+			</div>
+			{#if note}<p class="small item-menu-note">{note}</p>{/if}
+			<div role="menu" aria-labelledby="item-menu-name">
+				{#if !remake}
+					<!-- Free: copies it to this character and wears it; the demo saves an editable copy of itself first. -->
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						role="menuitem"
+						onclick={() => act(() => void addShared(entry))}
+						><Circle size={16} aria-hidden="true" />{isDemo()
+							? 'Wear in a copy of the demo'
+							: 'Wear'}<small class="row-aside">Free</small></button
+					>
+				{/if}
+				<!-- The New item sheet that opens next prices it before anything is spent; an item without a description is
+				     described by its name. -->
+				<button
+					class="row bu-action"
+					data-variant="quiet"
+					role="menuitem"
+					onclick={() =>
+						act(() =>
+							withKey(() =>
+								openNewItem(groupOf(entry.item.slot).id, {
+									slot: entry.item.slot,
+									prompt: entry.item.prompt || entry.item.name,
+									name: entry.item.name
+								})
+							)
+						)}
+					><RefreshCw size={16} aria-hidden="true" />Make one for {m.name}…<small class="row-aside"
+						>Paid</small
+					></button
+				>
+			</div>
+		</div>
 	{:else if it && m && view.project}
 		<div class="menu-surface bu-popover-surface bu-floating">
 			<div class="item-menu-head">
@@ -237,10 +309,12 @@
 				<span class="item-menu-title">
 					<strong id="item-menu-name">{it.name}</strong>
 					<small class:look={warn}
-						>{#if warn}<TriangleAlert size={12} aria-hidden="true" />{:else if status.hidden}<EyeOff
+						>{#if status.unfit}<Puzzle size={12} aria-hidden="true" />{:else if warn}<TriangleAlert
 								size={12}
 								aria-hidden="true"
-							/>{/if}<span>{sentence}</span></small
+							/>{:else if status.hidden}<EyeOff size={12} aria-hidden="true" />{/if}<span
+							>{sentence}</span
+						></small
 					>
 				</span>
 				<!-- One fixed name; aria-pressed carries the state, and the glyph changes from an empty to a checked circle. -->
@@ -257,6 +331,7 @@
 						/>{/if}</button
 				>
 			</div>
+			{#if status.unfit}<p class="small item-menu-note">{status.unfit}</p>{/if}
 			<div role="menu" aria-labelledby="item-menu-name">
 				<button
 					class="row bu-action"

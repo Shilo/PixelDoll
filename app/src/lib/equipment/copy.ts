@@ -19,7 +19,8 @@ import type {
 	Manifest,
 	Material,
 	Preset,
-	Sha256
+	Sha256,
+	UnfitNote
 } from '../store/manifest.ts';
 import { stableStringify } from '../image/hash.ts';
 import {
@@ -27,12 +28,13 @@ import {
 	bodyOf,
 	cellId,
 	covered,
-	sameSlot,
 	type CellMatch,
 	type CopyAssessment,
 	type Flip
 } from './compatibility.ts';
-import { onTarget, refitCells, refitShared, refittable } from './refit.ts';
+import { onTarget, refitCells, refitShared, refittable, standingMove } from './refit.ts';
+import { actionOf } from '../rig/clips.ts';
+import type { BundledSource } from './shared.ts';
 
 export interface CopyCandidate {
 	item: Item;
@@ -208,11 +210,38 @@ function wanted(source: Manifest, item: Item, target: Manifest): string[] {
 					out.push(cellKey(a.id, dir, i));
 	return out;
 }
-/** Target cells a copy worn as drawn takes, each from the same move, direction and frame of the source, whatever the frame size
- *  or camera (never scaled), only where the move has as many frames on both (no retiming). None means nothing would show. */
-export function unfittedCells(source: Manifest, item: Item, target: Manifest): string[] {
+/** Facings around the compass, for the nearest drawn view. */
+const RING: DirectionName[] = [
+	'south',
+	'south-east',
+	'east',
+	'north-east',
+	'north',
+	'north-west',
+	'west',
+	'south-west'
+];
+/** Views by closeness to `dir`; a front or back view wins a tie (a hat reads best from there). */
+const nearest = (dir: DirectionName) => {
+	const at = RING.indexOf(dir),
+		apart = (d: DirectionName) => {
+			const n = Math.abs(RING.indexOf(d) - at);
+			return Math.min(n, RING.length - n);
+		},
+		side = (d: DirectionName) => +!(d === 'south' || d === 'north');
+	return [...RING].sort((a, b) => apart(a) - apart(b) || side(a) - side(b));
+};
+export interface UnfittedPlan {
+	/** The source cell each target cell wears. */
+	matches: CellMatch[];
+	notes: UnfitNote[];
+}
+/** How a copy worn as drawn fills every target cell it can, never scaling or moving pixels: per view, the nearest view the item
+ *  is drawn in; per frame, the same move (frames spread over the target's count), else a move of the same kind, else the item's
+ *  standing frame. Empty only when the item has no art for this character at all, or its canvas could not be exported here. */
+export function unfittedPlan(source: Manifest, item: Item, target: Manifest): UnfittedPlan {
 	// An unfitted copy is not shared on (its original is); a re-fit's pixels may be worn as drawn, unchanged.
-	if (item.unfitted || !sameSlot(source, target, item.slot)) return [];
+	if (item.unfitted) return { matches: [], notes: [] };
 	// A layer that cannot sit centered on a whole pixel, whose pivot falls outside it, or that grows past 256 px could not be
 	// exported.
 	const mirrored = target.rig.directions.some((d) => d.mirrorOf);
@@ -230,12 +259,62 @@ export function unfittedCells(source: Manifest, item: Item, target: Manifest): s
 			);
 		})
 	)
-		return [];
-	const frames = new Map(source.rig.animations.map((a) => [a.id, a.cells]));
-	return wanted(source, item, target).filter((k) => {
-		const anim = k.split('/')[0];
-		return frames.get(anim) === target.rig.animations.find((a) => a.id === anim)?.cells;
-	});
+		return { matches: [], notes: [] };
+	const body = bodyOf(target)?.layers[0],
+		covers = (anim: string, dir: DirectionName, i: number) => covered(source, item, anim, dir, i),
+		frames = (a: { cells: number }) => Array.from({ length: a.cells }, (_, i) => i),
+		drawn = (anim: string, dir: DirectionName) => {
+			const a = source.rig.animations.find((x) => x.id === anim);
+			return !!a && frames(a).some((i) => covers(anim, dir, i));
+		},
+		standing = (dir: DirectionName) => {
+			const still = standingMove(source, dir);
+			if (still && covers(still, dir, 0)) return { anim: still, frame: 0 };
+			for (const a of source.rig.animations)
+				for (const i of frames(a)) if (covers(a.id, dir, i)) return { anim: a.id, frame: i };
+		};
+	const matches: CellMatch[] = [],
+		notes = new Map<string, UnfitNote>(),
+		note = (n: UnfitNote) => notes.set(stableStringify(n), n);
+	for (const ta of target.rig.animations)
+		for (const { id: dir } of target.rig.directions.filter((d) => !d.mirrorOf)) {
+			const from = nearest(dir).find((d) => source.rig.animations.some((a) => drawn(a.id, d)));
+			if (!from) continue;
+			const moves = [
+				source.rig.animations.find((a) => a.id === ta.id && drawn(a.id, from)),
+				source.rig.animations.find(
+					(a) => a.id !== ta.id && actionOf(a.id) === actionOf(ta.id) && drawn(a.id, from)
+				)
+			].filter((a) => !!a);
+			let used = false;
+			for (const i of frames(ta)) {
+				if (!body?.cells?.[ta.id]?.[dir]?.[i]) continue;
+				let pick: { anim: string; frame: number } | undefined;
+				for (const sa of moves) {
+					const j = Math.floor((i * sa.cells) / ta.cells);
+					if (!covers(sa.id, from, j)) continue;
+					pick = { anim: sa.id, frame: j };
+					if (sa.id !== ta.id) note({ how: 'similar', anim: ta.id, from: sa.id });
+					if (sa.cells !== ta.cells) note({ how: 'retimed', anim: ta.id, from: String(sa.cells) });
+					break;
+				}
+				if (!pick) {
+					pick = standing(from);
+					// A standing move worn in the standing pose needs no note.
+					if (pick && standingMove(target, dir) !== ta.id) note({ how: 'standing', anim: ta.id });
+				}
+				if (!pick) continue;
+				used = true;
+				matches.push({
+					target: cellKey(ta.id, dir, i),
+					source: cellKey(pick.anim, from, pick.frame)
+				});
+			}
+			if (used && from !== dir) note({ how: 'direction', dir, from });
+		}
+	if (matches.length && source.rig.cell.w !== target.rig.cell.w)
+		note({ how: 'size', from: String(source.rig.cell.w) });
+	return { matches, notes: [...notes.values()] };
 }
 /** An exact copy when it covers every cell the item covers on its source; otherwise whichever of the exact copy and a re-fit
  *  covers more cells (the exact copy on a tie: its pixels need no look); only when neither covers any, a copy worn as drawn.
@@ -251,7 +330,7 @@ async function choose(
 	const fitted = refittable(item) ? await refit() : null;
 	if (fitted && fitted.length > (copy?.length ?? 0)) return 'refit';
 	if (copy) return 'copy';
-	return unfittedCells(source, item, target).length ? 'unfitted' : 'remake';
+	return unfittedPlan(source, item, target).matches.length ? 'unfitted' : 'remake';
 }
 /** A source layer on the target, unscaled. On the same frame size its pixels keep their place in the frame unless that leaves
  *  it off-center for mirrored views. Otherwise it
@@ -283,8 +362,8 @@ function padRight(im: Img): Img {
 		out.data.set(im.data.subarray(y * im.w * 4, (y + 1) * im.w * 4), y * (im.w + 1) * 4);
 	return out;
 }
-/** A free copy of `original` worn as drawn: its source cells unchanged, at the same place in the frame. The source body's cuts,
- *  standing references and fit notes describe another body, so they are dropped. Null when no cell maps. */
+/** A free copy of `original` worn as drawn (see unfittedPlan): its source cells unchanged, at the same place in the frame. The
+ *  source body's cuts, standing references and fit notes describe another body, so they are dropped. Null when no cell maps. */
 async function unfittedCopy(
 	source: Manifest,
 	original: Item,
@@ -293,9 +372,15 @@ async function unfittedCopy(
 	flip: Flip,
 	read: (hash: Sha256) => Promise<Img>
 ): Promise<CopyCandidate | null> {
-	const cells = unfittedCells(source, original, target);
-	if (!cells.length) return null;
-	const { item, materials } = copyShell(source, original, variants, target, cells);
+	const plan = unfittedPlan(source, original, target);
+	if (!plan.matches.length) return null;
+	const { item, materials } = copyShell(
+		source,
+		original,
+		variants,
+		target,
+		plan.matches.map((m) => m.target)
+	);
 	const padded = new Set<number>();
 	item.layers = item.layers.map((layer, i) => {
 		const { pad, ...placed } = asDrawn(source, target, layer);
@@ -304,14 +389,7 @@ async function unfittedCopy(
 		delete out.sheets;
 		return out;
 	});
-	await putCells(
-		source,
-		original,
-		target,
-		item,
-		cells.map((k) => ({ source: k, target: k })),
-		flip
-	);
+	await putCells(source, original, target, item, plan.matches, flip);
 	const images = new Map<Sha256, Img>();
 	for (const i of padded)
 		for (const dirs of Object.values(item.layers[i].cells ?? {}))
@@ -325,7 +403,7 @@ async function unfittedCopy(
 				}
 	for (const key of ['baseCut', 'dressed', 'route', 'standing', 'anchorCell', 'refit'] as const)
 		delete item[key];
-	item.unfitted = true;
+	item.unfitted = plan.notes;
 	return { item, materials, assessment: { matches: [], canExtend: false, fits: true }, images };
 }
 export async function sharedFit(
@@ -346,22 +424,30 @@ export async function sharedFit(
 export async function acceptCopy(
 	sourceId: string,
 	itemId: string,
-	targetId: string
+	targetId: string,
+	bundled?: BundledSource
 ): Promise<Item | null> {
 	if (!targetId.startsWith('rig-'))
 		throw new Error('Make an editable copy of the demo to add items to it.');
-	const [source, target] = await Promise.all([
-		db.get<StoredProject & { dress?: { current?: Pick<Preset, 'variants'> } }>(
-			'projects',
-			sourceId
-		),
+	const [record, target] = await Promise.all([
+		bundled
+			? undefined
+			: db.get<StoredProject & { dress?: { current?: Pick<Preset, 'variants'> } }>(
+					'projects',
+					sourceId
+				),
 		db.get<StoredProject>('projects', targetId)
 	]);
-	const original = source?.manifest.items.find((it) => it.id === itemId);
+	const source = bundled ?? record,
+		original = source?.manifest.items.find((it) => it.id === itemId);
 	if (!source || !original) throw new Error('That character or item was removed.');
 	if (!target) throw new Error('This character was removed.');
-	const variants = source.dress?.current?.variants ?? source.manifest.presets[0]?.variants ?? {};
-	const { missing, load } = stored(original);
+	const variants =
+		bundled?.variants ??
+		record?.dress?.current?.variants ??
+		source.manifest.presets[0]?.variants ??
+		{};
+	const { missing, load } = stored(original, bundled?.images);
 	const { flip, made } = flipper(load);
 	const copy = await prepareCopy(source.manifest, itemId, variants, target.manifest, flip),
 		fitted: { refit?: CopyCandidate | null } = {};
@@ -398,7 +484,11 @@ export async function acceptCopy(
 		name: source.manifest.name,
 		item: original.id
 	};
-	const { blobs, keys } = await blobsOf(item, (h) => made.get(h) ?? candidate.images?.get(h));
+	// A bundled source's images are not stored: they are written with the copy.
+	const { blobs, keys } = await blobsOf(
+		item,
+		(h) => made.get(h) ?? candidate.images?.get(h) ?? bundled?.images.get(h)
+	);
 	let added = item;
 	await db.updateCharacter<StoredProject>(
 		targetId,
@@ -417,7 +507,11 @@ export async function acceptCopy(
 				added = held;
 				return rec;
 			}
-			putItem(rec.manifest, item, slotLadder(rec.manifest.rig));
+			// A slot only the source defines (a custom one) comes with its item.
+			putItem(rec.manifest, item, [
+				...slotLadder(rec.manifest.rig),
+				...source.manifest.slots.filter((s) => s.id === item.slot)
+			]);
 			rec.manifest.materials.push(...materials);
 			rec.savedAt = new Date().toISOString();
 			return rec;
@@ -428,10 +522,12 @@ export async function acceptCopy(
 }
 
 /** Reads an item's stored images, naming the item when one is gone. */
-function stored(item: Item) {
+function stored(item: Item, kept?: ReadonlyMap<string, Img>) {
 	const missing = (h: string) =>
 		new Error(`An image of ${item.name} is missing (${h.replace('sha256:', '').slice(0, 12)}).`);
 	const load = async (h: Sha256) => {
+		const im = kept?.get(h);
+		if (im) return im;
 		const blob = await db.getBlob(h.slice(7));
 		if (!blob) throw missing(h);
 		return decodePng(blob);

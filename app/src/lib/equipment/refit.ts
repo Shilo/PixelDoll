@@ -84,7 +84,7 @@ const standingKeypoints = (rig: Rig, dir: DirectionName): Keypoint[] | undefined
 	return src ? flipped(standingKeypoints(rig, src)) : rig.rest?.[dir]?.keypoints;
 };
 /** The one-frame move showing a direction's standing view, if the character has one (Default first). */
-function standingMove(m: Manifest, dir: DirectionName): string | undefined {
+export function standingMove(m: Manifest, dir: DirectionName): string | undefined {
 	const drawn = mirrorOf(m.rig, dir) ?? dir,
 		body = bodyOf(m)?.layers[0];
 	return m.rig.animations

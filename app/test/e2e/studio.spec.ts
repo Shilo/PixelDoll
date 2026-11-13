@@ -5744,7 +5744,10 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await editableCopy(page);
 	await equipmentGroup(page, 'Head');
 	const head = section(page, 'Head');
-	const hat = head.getByRole('button', { name: /^Wizard hat(,|$)/ });
+	// The character's own tile: once it is deleted, the demo's own Wizard hat is offered from the demo instead.
+	const hat = head
+		.getByRole('group', { name: 'Head items', exact: true })
+		.getByRole('button', { name: /^Wizard hat(,|$)/ });
 	const more = head.getByRole('button', { name: 'More options for Wizard hat', exact: true });
 	// A sibling control, never nested in the tile, drawn 3 px inside its top-right corner at 28 by 25 px (WCAG 2.5.8
 	// asks for 24), so a press meant for the tile rarely opens the menu.

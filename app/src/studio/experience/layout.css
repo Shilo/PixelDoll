@@ -637,13 +637,20 @@
 	position: absolute;
 	inset: -3px -3px 0 0;
 }
-/* Status shares the check mark's corner: a worn item shows the check, an unworn one its status. Every Wardrobe tile,
-   Empty included, keeps the check in the same corner. */
+/* Status shares the check mark's corner: the check first, a status beside it on a worn item. Every Wardrobe tile, Empty
+   included, keeps the check in the same corner. A status glyph takes the pointer so its title explains it on hover (a
+   click on it still reaches the tile it sits in). */
 .item-tile :is(.bu-tile-check, .tile-status) {
 	position: absolute;
 	top: 5px;
 	right: auto;
 	left: 6px;
+}
+.item-tile .tile-status {
+	pointer-events: auto;
+}
+.item-tile .bu-tile-check + .tile-status {
+	left: 24px;
 }
 /* A fixed 64 px art box: item art draws at the largest whole-pixel scale that fits (Thumb box). */
 .item-tile .bu-tile-art {
@@ -1109,6 +1116,13 @@
 }
 .item-menu-title small.look {
 	color: var(--bu-warning);
+}
+/* Why an item does not fit this body: one short paragraph between the header and the commands. */
+.item-menu-note {
+	margin: 0 0 6px;
+	padding: 0 8px 6px;
+	border-bottom: 1px solid var(--bu-line);
+	color: var(--bu-muted);
 }
 .item-menu-wear {
 	flex: none;

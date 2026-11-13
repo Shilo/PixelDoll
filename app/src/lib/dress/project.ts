@@ -84,24 +84,30 @@ export async function listSources(): Promise<{ id: string; label: string }[]> {
 	];
 }
 
+/** A bundled fixture with its saved colors and outfit. Each call gets its own manifest and image map (the Studio edits them in
+ *  place); the decoded images are shared. Also read, without opening it, to offer the demo's items to other characters. */
+export async function openFixture(
+	id: string,
+	signal?: AbortSignal
+): Promise<{ project: Project; current?: Outfit }> {
+	const built = await untilAborted(fixtureProject(id.slice(8)), signal);
+	const project: Project = {
+		manifest: structuredClone(built.manifest),
+		images: new Map(built.images)
+	};
+	const saved = await db.get<DressState>('projects', `dress-${id}`).catch(() => undefined);
+	signal?.throwIfAborted();
+	if (saved?.format !== CURRENT_FORMAT) return { project };
+	applyDress(project.manifest, saved);
+	return { project, current: saved.current };
+}
+
 export async function openSource(
 	id: string,
 	signal?: AbortSignal
 ): Promise<{ project: Project; current?: Outfit }> {
 	signal?.throwIfAborted();
-	if (id.startsWith('fixture:')) {
-		const built = await untilAborted(fixtureProject(id.slice(8)), signal);
-		// Each open gets its own manifest and image map (the Studio edits them in place); the decoded images are shared.
-		const project: Project = {
-			manifest: structuredClone(built.manifest),
-			images: new Map(built.images)
-		};
-		const saved = await db.get<DressState>('projects', `dress-${id}`).catch(() => undefined);
-		signal?.throwIfAborted();
-		if (saved?.format !== CURRENT_FORMAT) return { project };
-		applyDress(project.manifest, saved);
-		return { project, current: saved.current };
-	}
+	if (id.startsWith('fixture:')) return openFixture(id, signal);
 	const { rec, project } = await loadProject(id, signal); // B4's loader (store/project.ts)
 	signal?.throwIfAborted();
 	return { project, current: (rec as ProjectRecord).dress?.current };

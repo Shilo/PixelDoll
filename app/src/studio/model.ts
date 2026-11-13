@@ -8,7 +8,8 @@ import type {
 	ItemQa,
 	Manifest,
 	Project,
-	QaSummary
+	QaSummary,
+	UnfitNote
 } from '../lib/store/manifest.ts';
 import { GATES, isAction } from '../lib/items/items.ts';
 import { coverageGaps } from '../lib/dress/dress.ts';
@@ -327,11 +328,12 @@ export function itemNameFrom(desc: string): string {
 	return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '';
 }
 
-export type Health = 'clean' | 'accepted' | 'look' | 'stale' | 'demo';
+export type Health = 'clean' | 'accepted' | 'look' | 'unfitted' | 'stale' | 'demo';
 export function healthOf(m: Manifest, it: Item): Health {
 	if (it.baseHash !== m.rig.baseHash) return 'stale';
-	// A free re-fit with frames to check, or a copy worn as drawn for another body, whatever its source's checks said.
-	if (it.refit?.length || it.unfitted) return 'look';
+	// A copy worn as drawn for another body, or a free re-fit with frames to check, whatever its source's checks said.
+	if (it.unfitted) return 'unfitted';
+	if (it.refit?.length) return 'look';
 	if (it.qa?.status === 'fail' || it.qa?.status === 'warn') return 'look';
 	if (it.designWarnings?.length || it.qa?.status === 'accepted') return 'accepted';
 	if (!it.qa) return 'demo';
@@ -341,6 +343,7 @@ export const HEALTH_LABEL: Record<Health, string> = {
 	clean: 'Clean',
 	accepted: 'Accepted',
 	look: 'Needs a look',
+	unfitted: 'Not fitted',
 	stale: 'Made for another body',
 	demo: 'Demo'
 };
@@ -467,6 +470,29 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
 		if (!Object.keys(q.clips).length && !q.handedness) r.push('G8 handedness not checked');
 	}
 	return [...new Set(r.map(plainReason))];
+}
+
+/** Why an item worn as drawn for another body may not line up here, in one plain sentence. `from` names that character and
+ *  `notes` say what was approximated (an unfitted item's own notes, or a shared entry's plan). */
+export function unfitText(m: Manifest, from: string, notes: unknown): string {
+	// A copy saved by the release before notes were recorded holds `true`: it reads as one without notes.
+	const list: readonly UnfitNote[] = Array.isArray(notes) ? notes : [],
+		ids = m.rig.animations.map((a) => a.id),
+		move = (id = '') => moveLabel(id, ids),
+		parts = list.map((n) =>
+			n.how === 'retimed'
+				? `${move(n.anim)} spread from ${n.from} frames`
+				: n.how === 'similar'
+					? `${move(n.anim)} uses ${move(n.from)}`
+					: n.how === 'standing'
+						? `${move(n.anim)} uses the standing pose`
+						: n.how === 'direction'
+							? `facing ${n.dir?.replaceAll('-', ' ')} uses the ${n.from?.replaceAll('-', ' ')} view`
+							: `drawn at ${n.from} px`
+		);
+	return `Drawn for ${from}’s body, so it may float, clip or leave gaps.${
+		parts.length ? ` ${parts.join('; ').replace(/^./, (c) => c.toUpperCase())}.` : ''
+	}`;
 }
 
 /** Where to look at a free re-fit of another character's item, in plain words: one line per move and direction whose

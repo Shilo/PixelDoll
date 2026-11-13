@@ -19,6 +19,7 @@
 		moveLabel,
 		qaReasons,
 		refitNotes,
+		unfitText,
 		unknownCostText
 	} from './model.ts';
 	import {
@@ -54,7 +55,8 @@
 		Palette,
 		RefreshCw,
 		Trash,
-		TriangleAlert
+		TriangleAlert,
+		Puzzle
 	} from './icons.ts';
 
 	let { id }: { id: string } = $props();
@@ -275,6 +277,8 @@
 				{#if health !== 'demo' || isDemo()}<span class="badge {health}"
 						>{#if health === 'clean'}<CircleCheck
 								size={12}
+							/>{:else if health === 'unfitted'}<Puzzle
+								size={12}
 							/>{:else if health !== 'demo'}<TriangleAlert size={12} />{/if}{HEALTH_LABEL[
 							health
 						]}</span
@@ -319,7 +323,7 @@
 				</ul>
 			</div>
 		{/if}
-		{#if (health === 'look' || health === 'accepted') && reasons.length}
+		{#if (health === 'look' || health === 'unfitted' || health === 'accepted') && reasons.length}
 			<ul class="reasons small">
 				{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}
 			</ul>
@@ -347,9 +351,11 @@
 			</div>
 		{/if}
 		{#if it.unfitted}<p class="notice warn small">
-				<TriangleAlert size={14} />Worn as drawn for {it.copiedFrom?.name ?? 'another character'}’s
-				body, without fitting, so it may float, clip or leave gaps on {m.name}.{#if !isDemo()}{' '}Make
-					one for {m.name} to fit it.{/if}
+				<Puzzle size={14} />{unfitText(
+					m,
+					it.copiedFrom?.name ?? 'another character',
+					it.unfitted
+				)}{#if !isDemo()}{' '}Make one for {m.name} to fit it.{/if}
 			</p>{/if}
 		<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
 		{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}

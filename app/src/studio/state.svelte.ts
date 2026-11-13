@@ -5,6 +5,7 @@ import {
 	applyDress,
 	dressOf,
 	openSource,
+	openFixture,
 	saveDress,
 	saveSplit,
 	type DressState,
@@ -49,7 +50,12 @@ import type {
 import { characterFacts, GROUPS, groupLabel, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import type { SetupSpec } from './setup.ts';
-import { forgetFits, listShared, type SharedItem } from '../lib/equipment/shared.ts';
+import {
+	forgetFits,
+	listShared,
+	type BundledSource,
+	type SharedItem
+} from '../lib/equipment/shared.ts';
 import { acceptCopy, copyMoreFrames, freeFrames, itemKey } from '../lib/equipment/copy.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
 import type { Img } from '../lib/image/png.ts';
@@ -1187,8 +1193,10 @@ export const sharedKey = (entry: SharedItem) => `shared:${entry.sourceId}/${entr
 let sharedRequest = 0;
 /** Re-read the other characters' items for the open character, the demo included (it adds them to a copy of itself). */
 export async function refreshShared() {
-	const request = ++sharedRequest;
-	if (!store.project) {
+	const request = ++sharedRequest,
+		project = store.project,
+		id = doc.id;
+	if (!project) {
 		shared.items = [];
 		shared.error = '';
 		shared.skipped = 0;
@@ -1197,8 +1205,21 @@ export async function refreshShared() {
 	}
 	try {
 		const [{ items, skipped }, free] = await Promise.all([
-			listShared(doc.id, store.project.manifest, store.project.images),
-			freeFrames(store.project.manifest)
+			(async () => {
+				// The saved characters' items still list if the demo cannot be read; it counts as unreadable.
+				const demo = id.startsWith('fixture:')
+					? []
+					: await demoSource().then(
+							(d) => [d],
+							(e) => {
+								console.warn('demo items unavailable', e);
+								return null;
+							}
+						);
+				const listed = await listShared(id, project.manifest, project.images, demo ?? []);
+				return demo ? listed : { ...listed, skipped: listed.skipped + 1 };
+			})(),
+			freeFrames(project.manifest)
 		]);
 		if (request !== sharedRequest) return;
 		shared.items = items;
@@ -1210,6 +1231,16 @@ export async function refreshShared() {
 		if (request === sharedRequest)
 			shared.error = `Could not read items from your other characters: ${(e as Error).message}`;
 	}
+}
+/** The bundled demo, offered as a source to the saved characters with its current colors (its images are not stored). */
+async function demoSource(): Promise<BundledSource> {
+	const { project, current } = await openFixture(DEMO);
+	return {
+		id: DEMO,
+		manifest: project.manifest,
+		variants: current?.variants ?? project.manifest.presets[0]?.variants ?? {},
+		images: project.images
+	};
 }
 let sharedSoon: ReturnType<typeof setTimeout> | undefined;
 /** Re-read once activity settles (another tab's drafts change on every job update). */
@@ -1224,10 +1255,11 @@ function refreshSharedSoon() {
 export async function addShared(entry: SharedItem) {
 	if (shared.adding) return;
 	const key = sharedKey(entry);
-	if (entry.fit === 'remake' || isDemo()) {
+	if (entry.fit === 'remake') {
 		ui.selected = key;
 		return;
 	}
+	if (isDemo()) return copyDemoAndAdd(entry);
 	shared.adding = key;
 	try {
 		await addEntry(entry);
@@ -1235,14 +1267,24 @@ export async function addShared(entry: SharedItem) {
 		shared.adding = '';
 	}
 }
-/** addShared's work, run while the caller holds `shared.adding`. */
-async function addEntry(entry: SharedItem) {
+/** addShared's work, run while the caller holds `shared.adding`. `lead` opens its toast (what happened first). */
+async function addEntry(entry: SharedItem, lead = '') {
 	const key = sharedKey(entry),
 		projectId = doc.id,
 		request = openRequest;
 	try {
 		await flushSave();
-		const item = await acceptCopy(entry.sourceId, entry.item.id, projectId);
+		const item = await acceptCopy(
+			entry.sourceId,
+			entry.item.id,
+			projectId,
+			entry.images && {
+				id: entry.sourceId,
+				manifest: entry.source,
+				variants: entry.variants,
+				images: entry.images
+			}
+		);
 		if (doc.id !== projectId || request !== openRequest) return;
 		if (!item) {
 			// The listed outcome was out of date: show what the list says now before offering anything.
@@ -1257,15 +1299,16 @@ async function addEntry(entry: SharedItem) {
 		await openProject(projectId, { quiet: true });
 		const note = doc.id === projectId ? wear(item.id, true) : undefined;
 		toast(
-			(item.unfitted
-				? `Wearing ${item.name} as drawn for ${entry.sourceName}${
-						entry.source.rig.cell.w === store.project?.manifest.rig.cell.w
-							? ''
-							: ` at its own ${entry.source.rig.cell.w} px size`
-					}. It may not line up with this body. No generations used.`
-				: item.refit
-					? `Fitted ${item.name} from ${entry.sourceName} for free. Check it in each move.`
-					: `Copied ${item.name} from ${entry.sourceName}. No generations used.`) +
+			lead +
+				(item.unfitted
+					? `Wearing ${item.name} as drawn for ${entry.sourceName}${
+							entry.source.rig.cell.w === store.project?.manifest.rig.cell.w
+								? ''
+								: ` at its own ${entry.source.rig.cell.w} px size`
+						}. It may not line up with this body. No generations used.`
+					: item.refit
+						? `Fitted ${item.name} from ${entry.sourceName} for free. Check it in each move.`
+						: `Copied ${item.name} from ${entry.sourceName}. No generations used.`) +
 				(note ? ` ${note}.` : ''),
 			item.unfitted ? { tone: 'warning' } : undefined
 		);
@@ -1322,8 +1365,11 @@ export async function copyDemoAndAdd(entry: SharedItem) {
 		const now = shared.items.find(
 			(x) => x.sourceId === entry.sourceId && x.item.id === entry.item.id
 		);
-		if (now?.fit === 'remake') ui.selected = sharedKey(now);
-		else if (now) await addEntry(now);
+		const saved = 'Saved an editable copy of the demo. ';
+		if (now?.fit === 'remake') {
+			ui.selected = sharedKey(now);
+			toast(`${saved}${entry.item.name} can’t be worn on it; its ⋮ menu can make one.`);
+		} else if (now) await addEntry(now, saved);
 		else {
 			const held = store.project?.manifest.items.find(
 				(it) => it.status === 'accepted' && itemKey(it) === itemKey(entry.item)
@@ -1332,8 +1378,11 @@ export async function copyDemoAndAdd(entry: SharedItem) {
 				toast(`${entry.item.name} is no longer available on ${entry.sourceName}.`, {
 					tone: 'warning'
 				});
-			else if (doc.items[held.slot] === held.id) ui.selected = held.id;
-			else wear(held.id);
+			else {
+				if (doc.items[held.slot] === held.id) ui.selected = held.id;
+				else wear(held.id, true);
+				toast(`${saved}Wearing its ${held.name}. No generations used.`);
+			}
 		}
 	} finally {
 		shared.adding = '';

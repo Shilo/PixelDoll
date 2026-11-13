@@ -14,6 +14,7 @@ export { default as Plus } from '@lucide/svelte/icons/plus';
 export { default as X } from '@lucide/svelte/icons/x';
 export { default as Check } from '@lucide/svelte/icons/check';
 export { default as TriangleAlert } from '@lucide/svelte/icons/triangle-alert';
+export { default as Puzzle } from '@lucide/svelte/icons/puzzle';
 export { default as LoaderCircle } from '@lucide/svelte/icons/loader-circle';
 export { default as Sparkles } from '@lucide/svelte/icons/sparkles';
 export { default as Palette } from '@lucide/svelte/icons/palette';
