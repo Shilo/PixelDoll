@@ -33,10 +33,53 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 			.first()
 			.evaluate((element) => element.getBoundingClientRect().height);
 	const characterHeight = await rowHeight('.character-row');
+	expect(characterHeight).toBe(74);
+	const expectFixedRow = async (selector: string, textSelector: string) => {
+		const result = await page
+			.locator(selector)
+			.first()
+			.evaluate((row, textSelector) => {
+				const labels = [...row.querySelectorAll<HTMLElement>(textSelector)];
+				const originals = labels.map((label) => ({
+					text: label.textContent,
+					style: label.getAttribute('style')
+				}));
+				try {
+					for (const label of labels) {
+						label.textContent = 'A very long name with many words '.repeat(20);
+						label.style.fontSize = '24px';
+						label.style.lineHeight = '1.25';
+					}
+					return {
+						height: row.getBoundingClientRect().height,
+						truncated:
+							labels.length > 0 &&
+							labels.every((label) => {
+								const style = getComputedStyle(label);
+								return (
+									style.whiteSpace === 'nowrap' &&
+									style.textOverflow === 'ellipsis' &&
+									label.scrollWidth > label.clientWidth
+								);
+							})
+					};
+				} finally {
+					labels.forEach((label, index) => {
+						label.textContent = originals[index].text;
+						const style = originals[index].style;
+						if (style === null) label.removeAttribute('style');
+						else label.setAttribute('style', style);
+					});
+				}
+			}, textSelector);
+		expect(result).toEqual({ height: 74, truncated: true });
+	};
+	await expectFixedRow('.character-row', 'strong, small');
 	await page.screenshot({ path: info.outputPath('characters-desktop-dark.png') });
 	await page.locator('.project-btn').click();
 	await expect(page.locator('.menu:popover-open .character-entry > .row').first()).toBeVisible();
 	expect(await rowHeight('.menu:popover-open .character-entry > .row')).toBe(characterHeight);
+	await expectFixedRow('.menu:popover-open .character-entry > .row', '.row-name');
 	await page.keyboard.press('Escape');
 	await enterStudio(page);
 	await expect(page.locator('.outfit-thumb')).toHaveCount(0);
@@ -58,6 +101,7 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 	await equipmentMode(page, 'Outfits');
 	await expect(page.locator('.outfit-thumb canvas').first()).toBeVisible();
 	expect(await rowHeight('.outfits .row')).toBe(characterHeight);
+	await expectFixedRow('.outfits .row', '.row-name');
 	await expect(page.locator('.move-thumb')).toHaveCount(0);
 	expect(await page.evaluate(() => Reflect.get(window, '__moveThumbnailDraws'))).toBe(0);
 	const pixels = await page.evaluate(async () => {
@@ -120,6 +164,7 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 	await expect(page.locator('.move-row').first()).toHaveAttribute('data-variant', 'tile');
 	await expect(page.locator('.move-thumb canvas').first()).toBeVisible();
 	expect(await rowHeight('.move-row')).toBe(characterHeight);
+	await expectFixedRow('.move-row', '.move-text > *');
 	expect(await page.evaluate(() => Reflect.get(window, '__moveThumbnailDraws'))).toBeGreaterThan(0);
 	await page.screenshot({ path: info.outputPath('moves-desktop-dark.png') });
 	for (const theme of ['light', 'dark']) {
@@ -131,10 +176,12 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 		}, theme);
 		await page.setViewportSize({ width: 390, height: 844 });
 		expect(await rowHeight('.move-row')).toBe(characterHeight);
+		await expectFixedRow('.move-row', '.move-text > *');
 		await page.screenshot({ path: info.outputPath(`moves-phone-${theme}.png`) });
 		await equipmentMode(page, 'Outfits');
 		await expect(saved).toHaveAttribute('aria-pressed', 'true');
 		expect(await rowHeight('.outfits .row')).toBe(characterHeight);
+		await expectFixedRow('.outfits .row', '.row-name');
 		await expect(page.locator('.move-thumb')).toHaveCount(0);
 		const hiddenWork = await page.evaluate(async () => {
 			const before = Reflect.get(window, '__moveThumbnailDraws');
@@ -154,6 +201,7 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 		await page.getByRole('menuitem', { name: 'Character selection', exact: true }).click();
 		await expect(page.locator('.character-row').first()).toBeVisible();
 		expect(await rowHeight('.character-row')).toBe(characterHeight);
+		await expectFixedRow('.character-row', 'strong, small');
 		await page.screenshot({ path: info.outputPath(`characters-phone-${theme}.png`) });
 		await enterStudio(page);
 		await equipmentMode(page, 'Moves');

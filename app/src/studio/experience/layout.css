@@ -750,7 +750,6 @@
 }
 .equipment-scroll .move-text {
 	min-width: 0;
-	overflow-wrap: anywhere;
 }
 
 /* ---------- Characters ---------- */
@@ -921,14 +920,30 @@
 	background: var(--bu-tile);
 }
 :is(.character-row, .character-entry > .row, .outfits .rows > li > .row, .move-row) {
+	height: 74px;
 	min-height: 74px;
+	max-height: 74px;
+	flex-shrink: 0;
 	padding-block: 4px;
+	overflow: hidden;
 }
 .character-row > span:last-child {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	min-width: 0;
+}
+.character-row > span:last-child,
+.move-text {
+	max-height: 100%;
+	overflow: hidden;
+}
+.character-row > span:last-child > *,
+.move-text > * {
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 .character-entry,
 .outfits .rows li {
