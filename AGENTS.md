@@ -34,7 +34,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - Broad execution requests ("work on pending tasks", "do everything") cover only unmarked Ready cards, from the top, one at a time; list the marked ones you skipped. Leave Later, Progress and unrelated cards alone.
 - "What's next?": report Progress cards, then recommend the top eligible Ready card; move nothing.
 - Starting: show the card, read its Refs, recheck status, then move it to Progress before edits. Resolve blockers and obtain missing approval for required generations, installs, accounts or decisions before dependent work; mark unmet prerequisites and keep or return to Ready. Reuse approval already given.
-- Completion: move to Done only when the entire card is complete, the checks in End-to-end scope pass and no requested review remains. Otherwise record "Left: …" as the body's last line and keep Progress; if only unrequested scope remains, return to Ready, or Later if that remainder was deferred. Remove Left once complete.
+- Completion: move to Done only when the entire card is complete, the checks in Testing pass and no requested review remains. Otherwise record "Left: …" as the body's last line and keep Progress; if only unrequested scope remains, return to Ready, or Later if that remainder was deferred. Remove Left once complete.
 - History: reopen Done only for incomplete original delivery; later regressions or new outcomes get a new linked card.
 - Delegating: the coordinating agent manages the card; sub-agents use it without creating cards or changing its status.
 - Tracking failures: if board access fails or restoration is pending, report the pending tracking and continue only independently authorized file work. Recheck the board before reconciling or retrying uncertain mutations; never claim unsynchronized updates succeeded.
@@ -63,22 +63,32 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 
 - Run all from app/. Install with npm ci; add dependencies with npm install -E and commit the lockfile.
 - Format only files you changed (npx prettier --write <files>); npm run check fails on unformatted files.
-- Unit tests: npm test [-- <file filter>]
-- End-to-end tests: npm run e2e, or npm run e2e -- <spec names> [-g "<title>"] [--last-failed]; it builds and starts its own servers.
-- Concurrent agents: give each run its own E2E_PREVIEW_PORT, E2E_DEV_PORT and TEST_OUTPUT_DIR; --last-failed reads the same TEST_OUTPUT_DIR.
+- Unit tests: npm test [-- <file filter>] [-t "<name>"]
+- End-to-end tests: npm run e2e -- <spec names> [-g "<title>"] [--last-failed]; it builds and starts its own servers. On a workstation it needs spec names (--all is the full suite) and runs one at a time per machine: when it prints "Waiting", keep waiting.
+- Start it in the background or with your longest command timeout and wait for it to exit: a killed run loses its place. Never start a second run or call Playwright directly.
+- Leave E2E_PREVIEW_PORT, E2E_DEV_PORT and TEST_OUTPUT_DIR unset, and add no logs or output folders to app/ (they slow npm run check for everyone).
 
-## End-to-end scope
+## Testing
 
-- CI runs the full end-to-end suite on every push that changes app/ or its workflow, sharded, and Pages deploys only after it passes.
-- Agents run npm run check and npm test (skip both for docs-only changes), plus only the end-to-end specs that cover what they changed (none for docs-only or test/unit-only changes).
-- Run the full end-to-end suite locally only for cross-cutting changes (studio state, storage, queue, shared components, test/e2e/immersive-helpers.ts, test/fixtures/, src/studio/experience/, Playwright config) or when asked.
+- CI runs check, all unit tests and the full end-to-end suite on every push that changes app/ or its workflow, and gates the Pages deploy. The workstation is shared with the owner and other sessions, so local runs prove your change only.
+- Run the full set of checks once, when the change is complete: npm run check and npm test (skip both for docs-only changes), plus only the end-to-end specs that cover what you changed (none for docs-only or unit-test-only changes). Before that, run only the one test that reproduces the bug or covers the code you are changing.
+- Rerun a passed check only after changing code it covers; repeat a test for stability only when the task is about flakiness.
+- A failure your change cannot explain: rerun that test once on its own; if it passes, report a suspected flake and move on.
+- Run the full end-to-end suite locally (npm run e2e -- --all) only for cross-cutting changes (studio state, storage, queue, shared components, test/e2e/immersive-helpers.ts, test/fixtures/, Experience.svelte, layout.css, geometry.ts or theme.css in src/studio/experience/, Playwright config) or when asked.
+- If another agent started you, run no checks, tests, builds or servers unless your brief names the exact command; "verify" or "make sure it works" names none. Coordinators: name the exact commands in a brief or say "run nothing", then verify the combined result once.
+- New tests: add one only for changed behavior that no existing test would catch. A bug fix gets one regression test and a behavior change updates the tests that cover it; refactors, copy and styling get none unless they fix a regression.
+- Test at the cheapest level that proves it: unit tests for logic (value combinations belong there, not in end-to-end), browser self-tests for browser APIs, end-to-end only for UI wiring and user flows (one case per control). Extend an existing end-to-end test before adding one.
 - Spec names in app/test/e2e/ match their areas, except:
-  - studio covers dressing, outfits, drafts, Activity, review, repair, recolor and export
-  - credential changes (remembered token, Forget, canceled Connect) run auth and studio
+  - studio covers dressing, outfits, drafts, Activity, review, repair and recolor; it is the largest spec, so narrow it with -g
+  - Export runs export-picker and crash-recovery; runtime and engine exports also run their unit tests (docs/architecture/javascript-runtime.md)
+  - Preview lineup, floor rings, joystick, wheel and world layout run experience-parity; zoom and pinch run scene-zoom
+  - queue, tabs and account capacity run concurrency and studio -g "first tab|busy tab|Activity"; PixelLab request wiring runs api-peek
+  - tests in helper files run through their spec: studio -g "dialog dismissal", studio -g "thumbnail|draft item artwork", characters -g "rig setup"
+  - credential changes (remembered token, Forget, canceled Connect) run auth and studio -g "remembered key|Connect"
   - early theme (app/public/appearance.js) runs experience-parity
   - modules registered in src/lib/selftests.ts run in selftests
-- Before changing test configs, CI shards or adding slow or timing-sensitive tests, read docs/testing/test-performance.md.
-- experience.spec.ts (screenshot captures) runs only with playwright.experience.config.ts.
+- Before adding an end-to-end, slow or timing-sensitive test, or changing test configs or CI shards, read docs/testing/test-performance.md.
+- experience.spec.ts (screenshot captures) runs only when asked, with playwright.experience.config.ts against an already served build; it bypasses the queue, so first check that no end-to-end run is active.
 
 ## Rules
 

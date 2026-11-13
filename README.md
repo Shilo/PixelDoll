@@ -90,10 +90,10 @@ npm --prefix app run selftest   # compatibility alias for npm test
 
 ```sh
 npx --prefix app playwright install chromium   # first time only; a bare Linux machine may also need --with-deps (CI does not)
-npm --prefix app run e2e                       # builds + dist guard, then Studio flows and browser self-tests
+npm --prefix app run e2e -- --all              # builds + dist guard, then Studio flows and browser self-tests; or name spec files instead of --all
 ```
 
-Set `PLAYWRIGHT_CHANNEL=msedge` for an optional installed-Edge run. That is a separate check; a Chromium pass does not establish cross-browser compatibility. The legacy `node app/scripts/e2e-studio.mjs` entry point delegates to the Studio Playwright project and expects an existing build. `E2E_PREVIEW_PORT` and `E2E_DEV_PORT` select unused local ports when testing multiple checkouts. `BASE` can point it at an already-running normal local server; keyless regressions do not need the agent server.
+Set `PLAYWRIGHT_CHANNEL=msedge` for an optional installed-Edge run. That is a separate check; a Chromium pass does not establish cross-browser compatibility. On a workstation `npm run e2e` runs one at a time per machine: a second run, from any checkout, waits for the first. `E2E_PREVIEW_PORT` and `E2E_DEV_PORT` change its local ports when the defaults are taken. `BASE` can point it at an already-running normal local server; keyless regressions do not need the agent server.
 
 `node app/scripts/shoot-mvp.mjs` remains a separate screenshot utility (local-only output in `docs/testing/img/`). The production UI keeps its existing custom CSS and Lucide icons; no GlassKit is used. See [toolchain validation](docs/testing/toolchain-standardization-2026-10-22.md).
 
