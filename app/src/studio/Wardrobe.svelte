@@ -23,7 +23,7 @@
 	} from './model.ts';
 	import { itemKey } from '../lib/equipment/copy.ts';
 	import type { SharedItem } from '../lib/equipment/shared.ts';
-	import type { SharedStatus } from './ItemMenu.svelte';
+	import TileMarks, { sortMarks, type Mark } from './TileMarks.svelte';
 	import type { CellKey } from '../lib/store/manifest.ts';
 	import {
 		ui,
@@ -59,9 +59,7 @@
 		Check,
 		CircleAlert,
 		EllipsisVertical,
-		EyeOff,
 		Plus,
-		Puzzle,
 		Shuffle,
 		TriangleAlert
 	} from './icons.ts';
@@ -96,6 +94,40 @@
 			hidden: doc.items[it.slot] === it.id && hidden.has(it.slot)
 		};
 	}
+	/** Every corner icon an own item's tile shows, each with the words its tooltip and ⋮ menu give. */
+	function marksOf(it: NonNullable<typeof m>['items'][number]): Mark[] {
+		const st = statusOf(it);
+		const from = it.copiedFrom?.name;
+		return sortMarks([
+			doc.items[it.slot] === it.id &&
+				!doc.drafts[it.slot] && { kind: 'worn', label: 'Wearing', text: 'Wearing' },
+			!!from && {
+				kind: 'shared',
+				label: `Copied from ${from}`,
+				text: `Copied from ${from} for free.`
+			},
+			!!st.unfit && { kind: 'unfitted', label: 'Not fitted to this body', text: st.unfit },
+			!!st.look && { kind: 'check', label: st.look, text: `${st.look}.` },
+			!!st.missing && {
+				kind: 'missing',
+				label: st.missing,
+				text: `${st.missing}; it hides there.`
+			},
+			st.hidden && {
+				kind: 'hidden',
+				label: 'Hidden by another item',
+				text: 'Hidden by another item.'
+			}
+		]);
+	}
+	/** An accessible tile name: the item, then what its icons say (a worn tile says so with aria-pressed). */
+	const tileName = (name: string, marks: Mark[]) =>
+		[
+			name,
+			...marks
+				.filter((x) => x.kind !== 'worn')
+				.map((x) => x.label[0].toLowerCase() + x.label.slice(1))
+		].join(', ');
 	/** Stands for the Empty tile, which has no data-tile key, when picking where focus lands after a removal. */
 	const EMPTY = 'empty';
 	/** Remove an item for good, then focus the next tile in its category, else the previous one (the Empty tile at
@@ -183,41 +215,36 @@
 			};
 		})
 	);
-	const FIT_NAME = {
-		copy: 'free copy',
-		refit: 'free fit to check',
-		unfitted: 'free, not fitted to this body',
-		remake: 'can’t be worn here'
-	};
-	const FIT_CAPTION = {
-		copy: 'Free',
-		refit: 'Free · check fit',
-		unfitted: 'Free · not fitted',
-		remake: 'Can’t be worn'
-	};
-	/** How another character's item comes to this one, in a sentence for its status glyph and ⋮ menu. */
-	function sharedNote(x: SharedItem): string {
-		if (!m) return '';
-		if (x.fit === 'remake')
-			return `It can’t be worn on ${m.name}: it has no frames for this character’s moves and views, or its art is too large to export. Make one for this character instead.`;
-		const fit =
-			x.fit === 'unfitted'
-				? unfitText(m, x.sourceName, x.notes ?? [])
-				: x.fit === 'refit'
-					? `Fitted to this body from ${x.sourceName}’s item for free. Check it in each move.`
-					: `The same body as ${x.sourceName}: an exact copy.`;
-		const missing = sharedMissing(x);
-		return missing ? `${fit} ${missing}; it hides there.` : fit;
-	}
-	/** The one status a shared tile and its ⋮ menu show, worst first: can't be worn (muted: not available here, not an error),
-	 *  not fitted, then a fit to check or moves it hides in. */
-	function sharedStatus(x: SharedItem): SharedStatus {
-		if (x.fit === 'remake') return { glyph: 'ban', caption: FIT_CAPTION.remake };
-		if (x.fit === 'unfitted') return { glyph: 'puzzle', caption: FIT_CAPTION.unfitted };
-		if (x.fit === 'refit') return { glyph: 'warning', caption: FIT_CAPTION.refit };
-		return sharedMissing(x)
-			? { glyph: 'warning', caption: 'Free · missing moves' }
-			: { glyph: '', caption: FIT_CAPTION.copy };
+	/** Every corner icon another character's item shows here, each with the words its tooltip and ⋮ menu give. */
+	function sharedMarks(x: SharedItem): Mark[] {
+		if (!m) return [];
+		const missing = x.fit === 'remake' ? '' : sharedMissing(x);
+		return sortMarks([
+			{
+				kind: 'shared',
+				label: `From ${x.sourceName}`,
+				text:
+					x.fit === 'remake'
+						? `From ${x.sourceName}.`
+						: `From ${x.sourceName}. Wearing it copies it here for free.`
+			},
+			x.fit === 'remake' && {
+				kind: 'blocked',
+				label: 'Can’t be worn',
+				text: `It can’t be worn on ${m.name}: it has no frames for this character’s moves and views, or its art is too large to export. Make one for this character instead.`
+			},
+			x.fit === 'unfitted' && {
+				kind: 'unfitted',
+				label: 'Not fitted to this body',
+				text: unfitText(m, x.sourceName, x.notes ?? [])
+			},
+			x.fit === 'refit' && {
+				kind: 'check',
+				label: 'Check fit',
+				text: `Fitted to this body from ${x.sourceName}’s item for free. Check it in each move.`
+			},
+			!!missing && { kind: 'missing', label: missing, text: `${missing}; it hides there.` }
+		]);
 	}
 	/** Moves the item has no art for here, worded like an own item's missing frames (it hides in them once worn). */
 	const sharedMissing = (x: SharedItem) =>
@@ -422,15 +449,14 @@
 								onclick={() => clearSlots(g.slots)}
 								><span class="bu-tile-art tile-art" aria-hidden="true"><Ban size={26} /></span><span
 									class="bu-tile-label">Empty</span
-								>{#if !s.worn}<span
-										class="bu-tile-check"
-										title="Nothing worn here"
-										aria-hidden="true"><Check /></span
+								>{#if !s.worn}<span class="tile-marks" aria-hidden="true"
+										><span class="bu-tile-check" title="Nothing worn here"><Check /></span></span
 									>{/if}</button
 							>
 							{#each s.items as it (it.id)}
 								{@const on = doc.items[it.slot] === it.id && !doc.drafts[it.slot]}
 								{@const st = statusOf(it)}
+								{@const marks = marksOf(it)}
 								<!-- The ⋮ is a sibling of the tile, never nested in it; right-click and Shift+F10 open the same menu. -->
 								<div class="tile-wrap" role="none" {@attach contextMenu(openMenu)}>
 									<button
@@ -439,15 +465,7 @@
 										data-tile={it.id}
 										data-dim={st.hidden || undefined}
 										aria-pressed={on}
-										aria-label={[
-											it.name,
-											st.unfit ? 'not fitted to this body' : '',
-											st.look.toLowerCase(),
-											st.missing.toLowerCase(),
-											st.hidden ? 'hidden by another item' : ''
-										]
-											.filter(Boolean)
-											.join(', ')}
+										aria-label={tileName(it.name, marks)}
 										onclick={() => wear(it.id)}
 									>
 										<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(it.id)}
@@ -457,35 +475,7 @@
 													box={64}
 												/>{/if}</span
 										><span class="bu-tile-label tile-name">{it.name}</span>
-										<!-- A worn item shows its check, with a warning beside it (a hidden worn item says so in its name and dimmed art
-											only); each glyph's title explains it on hover. -->
-										{#if on}<span class="bu-tile-check" title="Wearing" aria-hidden="true"
-												><Check /></span
-											>{/if}{#if st.unfit}<span
-												class="bu-tile-status tile-status"
-												data-tone="warning"
-												title={[
-													st.unfit,
-													st.look,
-													st.missing,
-													st.hidden ? 'Hidden by another item' : ''
-												]
-													.filter(Boolean)
-													.join(' · ')}
-												aria-hidden="true"><Puzzle size={14} /></span
-											>{:else if st.look || st.missing}<span
-												class="bu-tile-status tile-status"
-												data-tone="warning"
-												title={[st.look, st.missing, st.hidden ? 'Hidden by another item' : '']
-													.filter(Boolean)
-													.join(' · ')}
-												aria-hidden="true"><TriangleAlert size={14} /></span
-											>{:else if st.hidden && !on}<span
-												class="bu-tile-status tile-status"
-												data-tone="hidden"
-												title="Hidden by another item"
-												aria-hidden="true"><EyeOff size={14} /></span
-											>{/if}
+										<TileMarks {marks} />
 									</button>
 									<button
 										class="bu-tile-more tile-more"
@@ -575,12 +565,12 @@
 											>
 											<span class="bu-tile-label tile-name">{x.input.name}</span>
 										</span>
-										{#if info.attention}<span
-												class="bu-tile-status tile-status"
-												data-tone="warning"
-												title={info.text}
-												aria-hidden="true"><TriangleAlert size={14} /></span
-											>{:else if on}<span class="bu-tile-check" aria-hidden="true"><Check /></span
+										{#if info.attention || on}<span class="tile-marks" aria-hidden="true"
+												>{#if info.attention}<span
+														class="bu-tile-status tile-status"
+														data-tone="warning"
+														title={info.text}><TriangleAlert size={14} /></span
+													>{:else}<span class="bu-tile-check"><Check /></span>{/if}</span
 											>{/if}
 									</button>
 									{#if x.phase === 'running'}<span
@@ -607,7 +597,45 @@
 									>
 								</div>
 							{/each}
-							{#if !count}
+							{#each s.others as x (sharedKey(x))}
+								{@const key = sharedKey(x)}
+								{@const adding = shared.adding === key}
+								{@const remake = x.fit === 'remake'}
+								{@const marks = sharedMarks(x)}
+								<!-- Like an own tile: the tile wears it (on the demo, in a saved copy), the ⋮ explains how it fits. -->
+								<div class="tile-wrap" role="none" {@attach contextMenu(openMenu)}>
+									<button
+										class="bu-tile item-tile shared-tile"
+										data-selected={ui.selected === key || undefined}
+										data-tile={key}
+										data-dim={remake || adding || undefined}
+										aria-label={tileName(x.item.name, marks)}
+										aria-busy={adding}
+										aria-disabled={!!shared.adding || undefined}
+										onclick={(e) =>
+											remake ? openMenu(e.currentTarget.parentElement!) : addShared(x)}
+									>
+										<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(key)}
+											>{#if seen.has(key)}<SharedThumb entry={x} />{/if}</span
+										><span class="bu-tile-label tile-name">{adding ? 'Adding…' : x.item.name}</span>
+										<TileMarks {marks} />
+									</button>
+									<button
+										class="bu-tile-more tile-more"
+										popovertarget="item-menu"
+										aria-haspopup="menu"
+										aria-expanded={menuOpen && menuFor === key}
+										aria-label="More options for {x.item.name}"
+										title="Options"
+										onclick={() => {
+											if (menuOpen && menuFor !== key)
+												document.getElementById('item-menu')?.hidePopover();
+											menuFor = key;
+										}}><EllipsisVertical size={18} /></button
+									>
+								</div>
+							{/each}
+							{#if !count && !s.others.length}
 								<button
 									class="bu-tile item-tile"
 									data-variant="add"
@@ -618,76 +646,6 @@
 								>
 							{/if}
 						</div>
-						{#if s.others.length}
-							<div class="shared-items">
-								<h4 class="shared-title small">From your other characters</h4>
-								<div
-									class="slot-tiles"
-									role="group"
-									aria-label="{s.label} from your other characters"
-								>
-									{#each s.others as x (sharedKey(x))}
-										{@const key = sharedKey(x)}
-										{@const adding = shared.adding === key}
-										{@const remake = x.fit === 'remake'}
-										{@const status = sharedStatus(x)}
-										<!-- Like an own tile: the tile wears it (on the demo, in a saved copy), the ⋮ explains how it fits. -->
-										<div class="tile-wrap" role="none" {@attach contextMenu(openMenu)}>
-											<button
-												class="bu-tile item-tile shared-tile"
-												data-selected={ui.selected === key || undefined}
-												data-tile={key}
-												data-dim={remake || undefined}
-												aria-label="{x.item.name}, from {x.sourceName}, {FIT_NAME[x.fit]}"
-												aria-busy={adding}
-												aria-disabled={!!shared.adding || undefined}
-												onclick={(e) =>
-													remake ? openMenu(e.currentTarget.parentElement!) : addShared(x)}
-											>
-												<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(key)}
-													>{#if seen.has(key)}<SharedThumb entry={x} />{/if}</span
-												><span class="bu-tile-label tile-name">{x.item.name}</span><span
-													class="tile-from faint small">from {x.sourceName}</span
-												>
-												{#if adding}<span class="tile-from faint small">Adding…</span>{:else}<span
-														class="tile-from muted small">{status.caption}</span
-													>{/if}
-												<!-- Can't be worn, not fitted, or a fit with frames to check or missing: each glyph explains itself on hover. -->
-												{#if status.glyph === 'ban'}<span
-														class="bu-tile-status tile-status"
-														data-tone="hidden"
-														title={sharedNote(x)}
-														aria-hidden="true"><Ban size={14} /></span
-													>{:else if status.glyph === 'puzzle'}<span
-														class="bu-tile-status tile-status"
-														data-tone="warning"
-														title={sharedNote(x)}
-														aria-hidden="true"><Puzzle size={14} /></span
-													>{:else if status.glyph === 'warning'}<span
-														class="bu-tile-status tile-status"
-														data-tone="warning"
-														title={sharedNote(x)}
-														aria-hidden="true"><TriangleAlert size={14} /></span
-													>{/if}
-											</button>
-											<button
-												class="bu-tile-more tile-more"
-												popovertarget="item-menu"
-												aria-haspopup="menu"
-												aria-expanded={menuOpen && menuFor === key}
-												aria-label="More options for {x.item.name}"
-												title="Options"
-												onclick={() => {
-													if (menuOpen && menuFor !== key)
-														document.getElementById('item-menu')?.hidePopover();
-													menuFor = key;
-												}}><EllipsisVertical size={18} /></button
-											>
-										</div>
-									{/each}
-								</div>
-							</div>
-						{/if}
 					</div>
 				</section>
 			{/each}
@@ -701,13 +659,11 @@
 		<ItemMenu
 			id={menuFor}
 			entry={menuShared}
-			note={menuShared ? sharedNote(menuShared) : ''}
-			shared={menuShared ? sharedStatus(menuShared) : undefined}
+			marks={menuShared ? sharedMarks(menuShared) : menuItem ? marksOf(menuItem) : []}
 			generation={menuGeneration}
 			generationInfo={menuGeneration
 				? generationStatus(menuGeneration, $queue.jobs, now, !!app.key, $queue.paused)
 				: undefined}
-			status={menuItem ? statusOf(menuItem) : { look: '', unfit: '', missing: '', hidden: false }}
 			onremove={(id) => void remove(id)}
 			bind:open={menuOpen}
 		/>

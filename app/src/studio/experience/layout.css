@@ -637,20 +637,23 @@
 	position: absolute;
 	inset: -3px -3px 0 0;
 }
-/* Status shares the check mark's corner: the check first, a status beside it on a worn item. Every Wardrobe tile, Empty
-   included, keeps the check in the same corner. A status glyph takes the pointer so its title explains it on hover (a
-   click on it still reaches the tile it sits in). */
-.item-tile :is(.bu-tile-check, .tile-status) {
+/* The worn check and status icons share the top-left corner (the ⋮ has the other): a row that wraps after three icons,
+   over the art, so a tile never grows. Every Wardrobe tile, Empty included, keeps the check in the same place. An icon
+   takes the pointer so its title explains it on hover; a click on it still reaches the tile it sits in. */
+.item-tile .tile-marks {
 	position: absolute;
 	top: 5px;
-	right: auto;
 	left: 6px;
+	z-index: 1;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	width: calc(14px * 3 + 4px * 2);
+	pointer-events: none;
 }
-.item-tile .tile-status {
+.tile-marks > :is(.bu-tile-check, .tile-status) {
+	position: static;
 	pointer-events: auto;
-}
-.item-tile .bu-tile-check + .tile-status {
-	left: 24px;
 }
 /* A fixed 64 px art box: item art draws at the largest whole-pixel scale that fits (Thumb box). */
 .item-tile .bu-tile-art {
@@ -659,18 +662,8 @@
 	height: 64px;
 	margin-block: auto;
 }
-.item-tile.shared-tile .bu-tile-art {
-	height: 72px;
-}
 .item-tile .bu-tile-art > svg {
 	stroke-width: 1.5;
-}
-.item-tile.shared-tile {
-	height: auto;
-	min-height: 112px;
-}
-.item-tile .tile-from {
-	font-size: 12px;
 }
 .generation-artwork {
 	display: grid;
@@ -723,10 +716,6 @@
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-}
-.section-body .shared-items {
-	padding-top: 4px;
-	border: 0;
 }
 .color-sections .colors {
 	gap: 10px;
@@ -1110,19 +1099,26 @@
 	color: var(--bu-muted);
 	font-size: 13px;
 }
-.item-menu-title small > svg {
-	flex: none;
-	align-self: center;
-}
-.item-menu-title small.look {
-	color: var(--bu-warning);
-}
-/* Why an item does not fit this body: one short paragraph between the header and the commands. */
-.item-menu-note {
+/* What each of the tile's icons means, one line each, between the header and the commands. */
+.item-menu-marks {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
 	margin: 0 0 6px;
-	padding: 0 8px 6px;
+	padding: 0 8px 8px;
 	border-bottom: 1px solid var(--bu-line);
 	color: var(--bu-muted);
+	list-style: none;
+}
+.item-menu-marks li {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+}
+.item-menu-marks :is(.bu-tile-check, .tile-status) {
+	position: static;
+	flex: none;
+	margin-top: 2px;
 }
 .item-menu-wear {
 	flex: none;

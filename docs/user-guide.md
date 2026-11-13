@@ -103,26 +103,37 @@ exported like any move. "Default" can't be used as the name of another move.
 ## Use items from your other characters
 
 Every finished item of your other characters (the ones saved on this device and the bundled demo) appears in the
-wardrobe of every character, the demo included, under **From your other characters** in its category, below **New
-item**. Each
-tile shows the item as that character wears it, with a "from <character>" caption. Items this character already has
-(same slot and description) are not repeated, nor items it is making right now; when several characters have the same
-item, the one that fits this character best is listed. Fitted free items come first, then free items not fitted to
-this body. Nothing needs saving, and showing them never spends anything. Every tile has a ⋮ menu: it says how the item
-fits this character, wears it, and offers **Make one for <this character>…** (priced in **New item** before anything is
-generated). A status glyph on the tile explains itself on hover.
+wardrobe of every character, the demo included, in the same grid as its own items, after them. Each tile shows the
+item as that character wears it, with its name only, and a people icon saying it comes from another character. Items
+this character already has (same slot and description) are not repeated, nor items it is making right now; when several
+characters have the same item, the one that fits this character best is listed. Fitted free items come first, then free
+items not fitted to this body. Nothing needs saving, and showing them never spends anything. Every tile has a ⋮ menu: it
+explains each of the tile's icons (which character the item is from, how it fits, any moves it hides in), wears it, and
+offers **Make one for <this character>…** (priced in **New item** before anything is generated).
 
-- **Same body** (an editable copy of the same character, or a re-import): the tile says "Free". Tapping it adds an exact
+A tile's icons sit in its top-left corner, three to a row, and each explains itself on hover:
+
+| Icon                    | Means                                        |
+| ----------------------- | -------------------------------------------- |
+| Check                   | Wearing                                      |
+| No-entry, red           | Can't be worn here (its tile dims)           |
+| Puzzle piece, amber     | Not fitted to this body                      |
+| Warning triangle, amber | Check the fit, or the item needs a look      |
+| Clapperboard, amber     | Missing frames in some moves; it hides there |
+| Crossed-out eye, grey   | Hidden by another worn item (its tile dims)  |
+| People, grey            | From another character, or copied from one   |
+
+- **Same body** (an editable copy of the same character, or a re-import): no fit icon. Tapping it adds an exact
   copy and wears it, for free: "Copied <item> from <character>. No generations used." The copy is an ordinary item of
   this character with its own colors, starting from the colors the other character wears. Undo takes it off again;
   **Remove** in its details deletes it. Its details say the source calls were made for the other character and copied
   here for free.
-- **Main hand and Off hand on a different body:** the tile says "Free · check fit" when both characters have the same
+- **Main hand and Off hand on a different body:** the tile shows the warning triangle when both characters have the same
   frame size, camera and views and share the item's moves. Tapping it adds a free copy moved to this character's hand in
   every frame: "Fitted <item> from <character> for free. Check it in each move." When some frames fit less well, its
   details mark it **Needs a look** and list them; tap one to show that frame on the stage. **Make one for <this
   character>** in its details makes a version for this body.
-- **Any other body, frame size, camera or moves:** the tile says "Free · not fitted" and shows a puzzle-piece glyph.
+- **Any other body, frame size, camera or moves:** the tile shows the puzzle piece.
   Tapping it still wears the item, for free, drawn as it was for the other body: "Wearing <item> as drawn for
   <character>. It may not line up with this body. No generations used." Its pixels are never scaled or moved: on the
   same frame size they keep their place in the frame; on another size the item keeps its own canvas, centered and
@@ -131,10 +142,10 @@ generated). A status glyph on the tile explains itself on hover.
   the item has no art for, a move or a view, it is hidden, like any item's missing frames. The tile's hover text, its ⋮
   menu and its details name each of these and any moves it hides in, mark it **Not fitted** with the same glyph, show the other character's findings for the item (such
   as a grip in the wrong hand), and offer **Make one for <this character>**; exports list it among their warnings.
-- **Missing frames:** any shared tile whose item has no art for some of this character's moves shows a warning glyph
-  saying "Missing some <move> frames" before you wear it; it hides there once worn.
+- **Missing frames:** any tile whose item has no art for some of this character's moves shows the clapperboard, saying
+  "Missing some <move> frames" before you wear it; it hides there once worn.
 - **Can't be worn:** only an item that would show in no frame here (it has no art for any of this character's moves and
-  views) or could not be exported here (wider than 256 px) says so with a no-entry glyph; tapping it opens its ⋮ menu
+  views) or could not be exported here (wider than 256 px) says so with the red no-entry icon; tapping it opens its ⋮ menu
   with **Make one for <this character>…**.
 - **On the demo:** the demo never changes, so tapping a tile saves an editable copy of the demo on this device (or
   opens the copy made before) and wears the item there: "Opened your editable copy of the demo. …" Nothing is generated.
@@ -188,7 +199,7 @@ Open the character, then character menu → **Delete character…**. The confirm
 ## Add items
 
 In **Wardrobe**, pick a category (Head, Hair, Body, or **More** for Face, Legs, Feet, Back, Main hand and Off hand), then
-press **New <category> item**. Items of your other characters are listed below your own under **From your other characters**.
+press **New <category> item**. Items of your other characters are listed after your own, marked with the people icon.
 **Main hand** is the character's right hand (a sword or staff) and **Off hand** the left hand (a shield, lantern or bow);
 one item of each can be worn together.
 

@@ -1,11 +1,3 @@
-<script lang="ts" module>
-	/** A shared tile's status glyph and caption, worst cause first. */
-	export interface SharedStatus {
-		glyph: 'ban' | 'puzzle' | 'warning' | '';
-		caption: string;
-	}
-</script>
-
 <script lang="ts">
 	// One shared per-tile item menu (approved in docs/design/2026-11-11-ui-refinement/ui-lab-7.html): an arrowed popover
 	// anchored to the tile's ⋮ at every size, with Wear as a toggle in its header.
@@ -14,6 +6,7 @@
 	import Thumb from './Thumb.svelte';
 	import SharedThumb from './SharedThumb.svelte';
 	import type { SharedItem } from '../lib/equipment/shared.ts';
+	import TileMarks, { type Mark } from './TileMarks.svelte';
 	import DeleteRow from './DeleteRow.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { popoverFocus } from './experience/focus.ts';
@@ -45,19 +38,13 @@
 		HandGrab,
 		Info,
 		RefreshCw,
-		Trash,
-		TriangleAlert,
-		EyeOff,
-		Puzzle,
-		Ban
+		Trash
 	} from './icons.ts';
 
 	let {
 		id,
 		entry,
-		note = '',
-		shared,
-		status,
+		marks,
 		onremove,
 		open = $bindable(false),
 		generation,
@@ -65,13 +52,10 @@
 	}: {
 		/** The item the menu is for. */
 		id: string;
-		/** Another character's item the menu is for instead, and how it comes to this one (Wardrobe's sharedNote). */
+		/** Another character's item the menu is for instead. */
 		entry?: SharedItem;
-		note?: string;
-		/** How that shared item is shown on its tile (Wardrobe's sharedStatus): the menu header says the same. */
-		shared?: SharedStatus;
-		/** The item's status words (see Wardrobe's statusOf); `unfit` is the sentence for an item not fitted to this body. */
-		status: { look: string; unfit: string; missing: string; hidden: boolean };
+		/** The icons the item's tile shows (Wardrobe's marksOf or sharedMarks): the menu explains each one. */
+		marks: Mark[];
 		/** Removes the item for good once confirmed (Wardrobe moves focus to a neighbor afterwards). */
 		onremove: (id: string) => void;
 		open?: boolean;
@@ -107,21 +91,13 @@
 	const it = $derived(m?.items.find((i) => i.id === id));
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
-	const warn = $derived(!!(status.look || status.missing || status.unfit));
 	const otherHand = $derived(it ? OTHER_HAND[it.slot] : undefined);
 	const both = $derived(!!m && !!it && twoHanded(m, it));
-	// Worn items say so first; any status follows, and an item with neither names its category.
+	// The header names the category; the lines below it explain each of the tile's icons.
 	const sentence = $derived(
-		[
-			on ? 'Wearing' : '',
-			both ? 'Two-handed' : '',
-			status.unfit ? 'Not fitted' : '',
-			status.look,
-			status.missing,
-			status.hidden ? 'Hidden by another item' : ''
-		]
-			.filter(Boolean)
-			.join(' · ') || (it ? groupLabel(groupOf(it.slot).id) : '')
+		it
+			? [groupLabel(groupOf(it.slot).id), both ? 'Two-handed' : ''].filter(Boolean).join(' · ')
+			: ''
 	);
 	function close() {
 		menu?.hidePopover();
@@ -257,21 +233,10 @@
 				<span class="item-menu-art" aria-hidden="true"><SharedThumb {entry} /></span>
 				<span class="item-menu-title">
 					<strong id="item-menu-name">{entry.item.name}</strong>
-					<small class:look={shared?.glyph === 'puzzle' || shared?.glyph === 'warning'}
-						>{#if shared?.glyph === 'ban'}<Ban
-								size={12}
-								aria-hidden="true"
-							/>{:else if shared?.glyph === 'puzzle'}<Puzzle
-								size={12}
-								aria-hidden="true"
-							/>{:else if shared?.glyph === 'warning'}<TriangleAlert
-								size={12}
-								aria-hidden="true"
-							/>{/if}<span>From {entry.sourceName} · {shared?.caption}</span></small
-					>
+					<small>{groupLabel(groupOf(entry.item.slot).id)}</small>
 				</span>
 			</div>
-			{#if note}<p class="small item-menu-note">{note}</p>{/if}
+			<TileMarks {marks} list />
 			<div role="menu" aria-labelledby="item-menu-name">
 				{#if !remake}
 					<!-- Free: copies it to this character and wears it; the demo saves an editable copy of itself first. -->
@@ -315,14 +280,7 @@
 				>
 				<span class="item-menu-title">
 					<strong id="item-menu-name">{it.name}</strong>
-					<small class:look={warn}
-						>{#if status.unfit}<Puzzle size={12} aria-hidden="true" />{:else if warn}<TriangleAlert
-								size={12}
-								aria-hidden="true"
-							/>{:else if status.hidden}<EyeOff size={12} aria-hidden="true" />{/if}<span
-							>{sentence}</span
-						></small
-					>
+					<small>{sentence}</small>
 				</span>
 				<!-- One fixed name; aria-pressed carries the state, and the glyph changes from an empty to a checked circle. -->
 				<button
@@ -338,7 +296,7 @@
 						/>{/if}</button
 				>
 			</div>
-			{#if status.unfit}<p class="small item-menu-note">{status.unfit}</p>{/if}
+			<TileMarks {marks} list />
 			<div role="menu" aria-labelledby="item-menu-name">
 				<button
 					class="row bu-action"

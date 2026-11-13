@@ -1423,25 +1423,6 @@ dialog.sheet.bottom .foot-note {
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-.tile-from {
-	max-width: 100%;
-	margin-top: -4px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-.shared-items {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding-top: 8px;
-	border-top: 1px solid var(--line);
-}
-.shared-title {
-	margin: 0;
-	font-weight: 500;
-	color: var(--text-2);
-}
 .refit-notes {
 	display: flex;
 	flex-direction: column;

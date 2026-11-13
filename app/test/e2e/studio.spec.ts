@@ -5744,10 +5744,12 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await editableCopy(page);
 	await equipmentGroup(page, 'Head');
 	const head = section(page, 'Head');
-	// The character's own tile: once it is deleted, the demo's own Wizard hat is offered from the demo instead.
-	const hat = head
-		.getByRole('group', { name: 'Head items', exact: true })
-		.getByRole('button', { name: /^Wizard hat(,|$)/ });
+	// The character's own tile: once it is deleted, the demo's own Wizard hat is offered from the demo instead, in the
+	// same grid.
+	const grid = head.getByRole('group', { name: 'Head items', exact: true });
+	const hat = grid
+		.getByRole('button', { name: /^Wizard hat(,|$)/ })
+		.and(page.locator('.bu-tile:not(.shared-tile)'));
 	const more = head.getByRole('button', { name: 'More options for Wizard hat', exact: true });
 	// A sibling control, never nested in the tile, drawn 3 px inside its top-right corner at 28 by 25 px (WCAG 2.5.8
 	// asks for 24), so a press meant for the tile rarely opens the menu.
@@ -5841,8 +5843,8 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await hat.click({ button: 'right' });
 	await expectAnchoredMenu(page);
 	await expect(itemMenu(page)).toContainText('Wizard hat');
-	await expect(itemMenu(page).locator('.item-menu-title small')).toContainText(
-		/Missing frames in \d+ moves/
+	await expect(itemMenu(page).locator('.item-menu-marks')).toContainText(
+		/Missing frames in \d+ moves; it hides there\./
 	);
 	await page.keyboard.press('Escape');
 	await expect(more).toBeFocused();
@@ -5859,13 +5861,13 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expect(toggle).toHaveAttribute('title', 'Wear');
 	const glyph = () => toggle.locator('svg').getAttribute('class');
 	const offGlyph = await glyph();
-	await expect(itemMenu(page).locator('.item-menu-title small')).not.toContainText('Wearing');
+	await expect(itemMenu(page).locator('.item-menu-marks')).not.toContainText('Wearing');
 	await toggle.click();
 	await expect(hat).toHaveAttribute('aria-pressed', 'true');
 	await expect(toggle).toHaveAttribute('aria-pressed', 'true');
 	await expect(toggle).toHaveAccessibleName('Wear Wizard hat');
 	await expect.poll(glyph).not.toBe(offGlyph);
-	await expect(itemMenu(page).locator('.item-menu-title small')).toContainText('Wearing');
+	await expect(itemMenu(page).locator('.item-menu-marks')).toContainText('Wearing');
 
 	// Delete asks first, focusing the safe choice.
 	await items.last().click();
@@ -5881,6 +5883,9 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	});
 	await deleteAlert.getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(hat).toHaveCount(0);
+	await expect(grid.locator('.shared-tile', { hasText: 'Wizard hat' })).toHaveAccessibleName(
+		/^Wizard hat, .*from Adventurer$/
+	);
 	await expect(head.getByRole('button', { name: neighbor, exact: true })).toBeFocused();
 
 	// Details opens the item sheet; closing it returns focus to this tile's ⋮.
@@ -5930,9 +5935,12 @@ test('tile status shows on the tile and in its name, and Recolor opens the item�
 		exact: true
 	});
 	await expect(hair).toHaveAttribute('data-dim');
-	// A worn tile shows only its check mark in the status corner; the hidden status stays in its name and dimmed art.
+	// A worn tile shows its check mark, and beside it the hidden status, also in its name and dimmed art.
 	await expect(hair.locator('.bu-tile-check')).toBeVisible();
-	await expect(hair.locator('.tile-status')).toHaveCount(0);
+	await expect(hair.locator('.tile-status[data-tone="hidden"]')).toHaveAttribute(
+		'title',
+		'Hidden by another item.'
+	);
 	await section(page, 'Hair')
 		.getByRole('button', { name: 'More options for Messy brown hair', exact: true })
 		.click();
