@@ -168,20 +168,103 @@ test('a different body on the same canvas wears the item as drawn, unfitted, at 
 	expect(third.map((x) => [x.sourceId, x.fit])).toEqual([['rig-source', 'copy']]);
 });
 
-test('a different frame size or camera cannot be worn: nothing is written and the item must be made for it', async () => {
+test('a different frame size or camera is still worn as drawn, unscaled, centered and on the same ground', async () => {
 	await store('rig-source', named(await equipmentFixture(), 'Knight'));
-	const target = await otherBody('Giant');
-	target.manifest.rig.cell = { w: 96, h: 96 };
+	const giant = named(bodyOnly(await equipmentFixture()), 'Giant'),
+		body = makeImg(96, 96);
+	body.data.set([10, 20, 30, 255], (80 * 96 + 40) * 4);
+	const hash = await cellHash(body);
+	giant.images.set(hash, body);
+	giant.manifest.items[0].layers[0].cells = { rest: { south: [hash] } };
+	Object.assign(giant.manifest.rig, {
+		cell: { w: 96, h: 96 },
+		pivot: { x: 48, y: 88 },
+		directions: [{ id: 'south' }, { id: 'north', mirrorOf: 'south' }]
+	});
+	await store('rig-giant', giant);
+	expect((await listShared('rig-giant', giant.manifest)).items.map((x) => x.fit)).toEqual([
+		'unfitted'
+	]);
+	const item = (await acceptCopy('rig-source', 'hat', 'rig-giant'))!;
+	// Its own 64 px canvas, centered across the 96 px cell, its pivot row (56) on the giant's (88).
+	expect(item).toMatchObject({ unfitted: true, coverage: ['rest/south/0'] });
+	expect(item.layers[0]).toMatchObject({ cell: { w: 64, h: 64 }, pivot: { x: 32, y: 56 } });
+	const p = (await loadProject('rig-giant')).project;
+	const art = composeCell(p, { head: item.id }, 'rest', 'south', 0),
+		at = (x: number, y: number) => [...art.data.slice((y * 96 + x) * 4, (y * 96 + x) * 4 + 4)];
+	expect(at(20 + 16, 18 + 32)).toEqual([120, 120, 120, 255]);
+	expect((await exportFiles(p, { engines: ['generic'], baked: false })).errors).toEqual([]);
+	// Another camera on the same canvas.
+	const side = await otherBody('Side');
+	side.manifest.rig.view = 'side';
+	await store('rig-side', side);
+	expect((await acceptCopy('rig-source', 'hat', 'rig-side'))?.unfitted).toBe(true);
+});
+
+test('an odd width difference on a mirrored body gains one transparent column, so the item centers and exports', async () => {
+	const source = named(await equipmentFixture(), 'Knight');
+	await store('rig-source', source);
+	const odd = named(bodyOnly(await equipmentFixture()), 'Odd'),
+		body = makeImg(65, 65);
+	body.data.set([10, 20, 30, 255], (60 * 65 + 30) * 4);
+	const hash = await cellHash(body);
+	odd.images.set(hash, body);
+	odd.manifest.items[0].layers[0].cells = { rest: { south: [hash] } };
+	Object.assign(odd.manifest.rig, {
+		cell: { w: 65, h: 65 },
+		pivot: { x: 32, y: 57 },
+		directions: [{ id: 'south' }, { id: 'north', mirrorOf: 'south' }]
+	});
+	await store('rig-odd', odd);
+	const item = (await acceptCopy('rig-source', 'hat', 'rig-odd'))!;
+	expect(item.layers[0]).toMatchObject({ cell: { w: 65, h: 64 }, pivot: { x: 32, y: 56 } });
+	const p = (await loadProject('rig-odd')).project,
+		wide = p.images.get(item.layers[0].cells!.rest!.south![0]!)!;
+	expect([wide.w, wide.h]).toEqual([65, 64]);
+	// Every source pixel is where it was in its own canvas; only the new right column is empty.
+	const at = (x: number, y: number) => [...wide.data.slice((y * 65 + x) * 4, (y * 65 + x) * 4 + 4)];
+	expect(at(20, 18)).toEqual([120, 120, 120, 255]);
+	expect(at(64, 18)).toEqual([0, 0, 0, 0]);
+	expect((await exportFiles(p, { engines: ['generic'], baked: false })).errors).toEqual([]);
+});
+
+test('an unevenly padded layer from a body that mirrors nothing is centered on a mirrored body rather than refused', async () => {
+	const source = named(await equipmentFixture(), 'Knight'),
+		hat = hatOf(source),
+		wide = makeImg(96, 64);
+	wide.data.set([120, 120, 120, 255], (18 * 96 + 40) * 4);
+	const h = await cellHash(wide);
+	source.images.set(h, wide);
+	// 20 px of padding on the left of the body cell, 12 on the right: fine where nothing mirrors.
+	Object.assign(hat.layers[0], {
+		cell: { w: 96, h: 64 },
+		pivot: { x: 52, y: 56 },
+		cells: { rest: { south: [h] } }
+	});
+	await store('rig-source', source);
+	const target = await otherBody('Squire');
+	target.manifest.rig.directions = [{ id: 'south' }, { id: 'north', mirrorOf: 'south' }];
+	await store('rig-target', target);
+	const item = (await acceptCopy('rig-source', 'hat', 'rig-target'))!;
+	expect(item.layers[0]).toMatchObject({ cell: { w: 96, h: 64 }, pivot: { x: 48, y: 56 } });
+	const p = (await loadProject('rig-target')).project;
+	expect((await exportFiles(p, { engines: ['generic'], baked: false })).errors).toEqual([]);
+});
+
+test('an item with no move in common cannot show at all: nothing is written and it must be made for this character', async () => {
+	await store('rig-source', named(await equipmentFixture(), 'Knight'));
+	const target = await otherBody('Dancer'),
+		cells = target.manifest.items[0].layers[0].cells!;
+	target.manifest.rig.animations = [
+		{ id: 'dance', cells: 1, frames: [{ cell: 0, ms: 100 }], loop: true }
+	];
+	target.manifest.items[0].layers[0].cells = { dance: cells.rest! };
 	await store('rig-target', target);
 	const before = structuredClone(memory.records.get('rig-target'));
 	expect((await listShared('rig-target', target.manifest)).items.map((x) => x.fit)).toEqual([
 		'remake'
 	]);
 	expect(await acceptCopy('rig-source', 'hat', 'rig-target')).toBeNull();
-	const side = await otherBody('Side');
-	side.manifest.rig.view = 'side';
-	await store('rig-side', side);
-	expect(await acceptCopy('rig-source', 'hat', 'rig-side')).toBeNull();
 	expect(memory.writes).toBe(0);
 	expect(memory.records.get('rig-target')).toEqual(before);
 });

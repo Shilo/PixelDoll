@@ -17,8 +17,8 @@ test.beforeEach(async ({ context }) => {
 });
 
 /** An editable copy of the demo, plus three more saved characters made from it: "Twin" (the same body) with a traveling
- *  wizard hat, "Stout" (a different body on the same canvas: its pivot moved) with a stout helmet, and "Giant" (another
- *  camera) with a giant helmet. Then reopens the copy. */
+ *  wizard hat, "Stout" (a different body on the same canvas: its pivot moved) with a stout helmet, and "Giant" (no move in
+ *  common: every move renamed) with a giant helmet. Then reopens the copy. */
 async function threeCharacters(page: Page) {
 	await openStudio(page, '/');
 	await newItem(page, 'Head');
@@ -56,7 +56,16 @@ async function threeCharacters(page: Page) {
 		};
 		const giant = clone('rig-giant', 'Giant', 'helmet_steel', 'Giant helmet', 'a giant helmet');
 		giant.manifest!.rig.pivot.x += 1;
-		giant.manifest!.rig.view = 'side';
+		const renamed = (key: string) => `giant-${key}`;
+		for (const move of (giant.manifest as any).rig.animations) move.id = renamed(move.id);
+		for (const item of giant.manifest!.items) {
+			for (const layer of item.layers)
+				layer.cells = Object.fromEntries(
+					Object.entries(layer.cells ?? {}).map(([move, cells]) => [renamed(move), cells])
+				);
+			item.coverage = item.coverage?.map((key: string) => renamed(key));
+			delete item.baseCut;
+		}
 		const stout = clone('rig-stout', 'Stout', 'helmet_steel', 'Stout helmet', 'a stout helmet');
 		stout.manifest!.rig.pivot.x += 1;
 		for (const rec of [
@@ -93,7 +102,7 @@ test('another character’s item on the same body is worn for free, survives rel
 	const others = await threeCharacters(page);
 	await expect(page.locator('.equipment-scroll')).toContainText('From your other characters');
 	await expect(page.locator('.equipment-scroll .shared-head')).toHaveText(
-		/From your other characters\s*Free on the same frame size and view/
+		/From your other characters\s*Free when a move matches/
 	);
 	await expect(section(page, 'Head').locator('.bu-section-count')).toHaveText('2 items');
 	// Only items this character does not already have: its own helmet and hat stay off the list. Free ones come first, captioned
@@ -160,7 +169,7 @@ test('another character’s item on the same body is worn for free, survives rel
 	expect(errors).toEqual([]);
 });
 
-test('an item made for a different body offers to make it for this character, and nothing is submitted', async ({
+test('an item sharing no move with this character offers to make it for this character, and nothing is submitted', async ({
 	page,
 	context
 }) => {
@@ -183,7 +192,7 @@ test('an item made for a different body offers to make it for this character, an
 	const giant = others.getByRole('button', { name: 'Giant helmet, from Giant, make new' });
 	await giant.click();
 	const unfit = page.locator('.equipment-scroll .unfit');
-	await expect(unfit).toContainText('Drawn for Giant’s body, so it doesn’t fit Adventurer copy.');
+	await expect(unfit).toContainText('It can’t be worn as drawn on Adventurer copy.');
 	await expect(unfit).toContainText(
 		'Drawn new from the same description, so it may look different. It starts with the standing pose; you add moves later, each priced first.'
 	);

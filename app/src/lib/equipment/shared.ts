@@ -117,7 +117,13 @@ export async function listShared(
 				continue;
 			}
 			fits.set(key, fit);
-			if (!best || RANK[fit] < RANK[best.fit]) best = { ...entry, fit };
+			// On a tie the original beats a re-fit of it (its pixels were moved for another body).
+			if (
+				!best ||
+				RANK[fit] < RANK[best.fit] ||
+				(RANK[fit] === RANK[best.fit] && !!best.item.refit && !entry.item.refit)
+			)
+				best = { ...entry, fit };
 			if (fit === 'copy') break;
 		}
 		if (best) kept.push(best);

@@ -1,8 +1,8 @@
 // A free copy of another character's item: an ordinary, independent item with its own ids and materials whose cells reuse the
 // source's content-addressed blobs (or their flips, for a view the source mirrors), so its pixels stay byte-identical.
 import * as db from '../store/db.ts';
-import { cutAt } from '../compose/compose.ts';
-import { decodePng, type Img } from '../image/png.ts';
+import { cutAt, layerFrame } from '../compose/compose.ts';
+import { decodePng, makeImg, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { flipH } from '../rig/mirror.ts';
 import { cellHash, cellKey } from '../rig/rig.ts';
@@ -32,7 +32,7 @@ import {
 	type CopyAssessment,
 	type Flip
 } from './compatibility.ts';
-import { onTarget, refitCells, refitShared, refittable, sameCanvas } from './refit.ts';
+import { onTarget, refitCells, refitShared, refittable } from './refit.ts';
 
 export interface CopyCandidate {
 	item: Item;
@@ -208,15 +208,27 @@ function wanted(source: Manifest, item: Item, target: Manifest): string[] {
 					out.push(cellKey(a.id, dir, i));
 	return out;
 }
-/** Target cells a copy worn as drawn takes, each from the same move, direction and frame of the source: only on a canvas of the
- *  same size and camera (no scaling) and only where the move has as many frames on both (no retiming). */
+/** Target cells a copy worn as drawn takes, each from the same move, direction and frame of the source, whatever the frame size
+ *  or camera (never scaled), only where the move has as many frames on both (no retiming). None means nothing would show. */
 export function unfittedCells(source: Manifest, item: Item, target: Manifest): string[] {
-	// Approximations never stack: a re-fit or unfitted copy is not worn as drawn again (its original is offered instead).
+	// An unfitted copy is not shared on (its original is); a re-fit's pixels may be worn as drawn, unchanged.
+	if (item.unfitted || !sameSlot(source, target, item.slot)) return [];
+	// A layer that cannot sit centered on a whole pixel, whose pivot falls outside it, or that grows past 256 px could not be
+	// exported.
+	const mirrored = target.rig.directions.some((d) => d.mirrorOf);
 	if (
-		item.unfitted ||
-		item.refit ||
-		!sameCanvas(source, target) ||
-		!sameSlot(source, target, item.slot)
+		item.layers.some((layer) => {
+			const f = layerFrame(target.rig, asDrawn(source, target, layer));
+			return (
+				f.x < 0 ||
+				f.x > f.w ||
+				f.y < 0 ||
+				f.y > f.h ||
+				f.w > 256 ||
+				f.h > 256 ||
+				(mirrored && 2 * (target.rig.pivot.x - f.x) + f.w !== target.rig.cell.w)
+			);
+		})
 	)
 		return [];
 	const frames = new Map(source.rig.animations.map((a) => [a.id, a.cells]));
@@ -241,6 +253,36 @@ async function choose(
 	if (copy) return 'copy';
 	return unfittedCells(source, item, target).length ? 'unfitted' : 'remake';
 }
+/** A source layer on the target, unscaled. On the same frame size its pixels keep their place in the frame unless that leaves
+ *  it off-center for mirrored views. Otherwise it
+ *  keeps its own canvas, centered across the target cell (mirrored views flip the whole layer cell) with its pivot row on the
+ *  target's, so the item stands on the same ground; when the widths differ by an odd number of px and the target mirrors, the
+ *  canvas gains one transparent column on the right (`pad`) so it can center. */
+function asDrawn(source: Manifest, target: Manifest, layer: Layer): Layer & { pad?: 1 } {
+	const mirrored = target.rig.directions.some((d) => d.mirrorOf);
+	if (stableStringify(source.rig.cell) === stableStringify(target.rig.cell)) {
+		// Kept in place unless that leaves it off-center for mirrored views (a source that mirrors none padded it unevenly).
+		const placed = onTarget(source, target, layer),
+			f = layerFrame(target.rig, placed);
+		if (!mirrored || 2 * (target.rig.pivot.x - f.x) + f.w === target.rig.cell.w) return placed;
+	}
+	const { w, h, y } = layerFrame(source.rig, layer),
+		pad = mirrored && (target.rig.cell.w - w) % 2 ? 1 : 0,
+		wide = w + pad;
+	return {
+		...layer,
+		cell: { w: wide, h },
+		pivot: { x: target.rig.pivot.x - Math.floor((target.rig.cell.w - wide) / 2), y },
+		...(pad ? { pad: 1 as const } : {})
+	};
+}
+/** The image with one transparent column added on the right. */
+function padRight(im: Img): Img {
+	const out = makeImg(im.w + 1, im.h);
+	for (let y = 0; y < im.h; y++)
+		out.data.set(im.data.subarray(y * im.w * 4, (y + 1) * im.w * 4), y * (im.w + 1) * 4);
+	return out;
+}
 /** A free copy of `original` worn as drawn: its source cells unchanged, at the same place in the frame. The source body's cuts,
  *  standing references and fit notes describe another body, so they are dropped. Null when no cell maps. */
 async function unfittedCopy(
@@ -248,15 +290,19 @@ async function unfittedCopy(
 	original: Item,
 	variants: Preset['variants'],
 	target: Manifest,
-	flip: Flip
+	flip: Flip,
+	read: (hash: Sha256) => Promise<Img>
 ): Promise<CopyCandidate | null> {
 	const cells = unfittedCells(source, original, target);
 	if (!cells.length) return null;
 	const { item, materials } = copyShell(source, original, variants, target, cells);
-	item.layers = item.layers.map((layer) => {
-		const placed: Layer = { ...onTarget(source, target, layer), cells: {} };
-		delete placed.sheets;
-		return placed;
+	const padded = new Set<number>();
+	item.layers = item.layers.map((layer, i) => {
+		const { pad, ...placed } = asDrawn(source, target, layer);
+		if (pad) padded.add(i);
+		const out: Layer = { ...placed, cells: {} };
+		delete out.sheets;
+		return out;
 	});
 	await putCells(
 		source,
@@ -266,10 +312,21 @@ async function unfittedCopy(
 		cells.map((k) => ({ source: k, target: k })),
 		flip
 	);
+	const images = new Map<Sha256, Img>();
+	for (const i of padded)
+		for (const dirs of Object.values(item.layers[i].cells ?? {}))
+			for (const row of Object.values(dirs ?? {}))
+				for (const [j, h] of (row ?? []).entries()) {
+					if (!h) continue;
+					const im = padRight(await read(h)),
+						wide = await cellHash(im);
+					images.set(wide, im);
+					row![j] = wide;
+				}
 	for (const key of ['baseCut', 'dressed', 'route', 'standing', 'anchorCell', 'refit'] as const)
 		delete item[key];
 	item.unfitted = true;
-	return { item, materials, assessment: { matches: [], canExtend: false, fits: true } };
+	return { item, materials, assessment: { matches: [], canExtend: false, fits: true }, images };
 }
 export async function sharedFit(
 	source: Manifest,
@@ -323,7 +380,14 @@ export async function acceptCopy(
 			: how === 'refit'
 				? fitted.refit
 				: how === 'unfitted'
-					? await unfittedCopy(source.manifest, original, variants, target.manifest, flip)
+					? await unfittedCopy(
+							source.manifest,
+							original,
+							variants,
+							target.manifest,
+							flip,
+							async (h) => made.get(h) ?? (await load(h))
+						)
 					: null;
 	if (!candidate) return null;
 	const { item, materials } = candidate;

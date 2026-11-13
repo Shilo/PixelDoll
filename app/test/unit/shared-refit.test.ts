@@ -520,13 +520,13 @@ test('a re-fit never re-fits again, but copies exactly onto an identical body wi
 	await store('rig-fencer', await fencer('Fencer'));
 	const fitted = (await acceptCopy('rig-knight', 'sword', 'rig-fencer'))!;
 	expect(fitted.refit).toEqual([{ anim: 'slash', dir: 'south', frames: [1], checks: ['angle'] }]);
-	// A different body: made new rather than fitted from an approximation; the original still re-fits.
+	// A different body: the re-fit's pixels are only worn as drawn, never fitted again; the original still re-fits.
 	const holder = (await loadProject('rig-fencer')).project.manifest,
 		ranger = await character({ name: 'Ranger', at: [2, 0], extra: { id: 'idle', at: {} } }),
 		other = ranger.manifest,
 		original = await knight();
 	await store('rig-ranger', ranger);
-	expect(await sharedFit(holder, fitted, other, loadStored)).toBe('remake');
+	expect(await sharedFit(holder, fitted, other, loadStored)).toBe('unfitted');
 	expect(await sharedFit(original.manifest, original.manifest.items[1], other, loadStored)).toBe(
 		'refit'
 	);

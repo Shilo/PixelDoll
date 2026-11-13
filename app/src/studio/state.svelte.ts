@@ -1254,7 +1254,11 @@ async function addEntry(entry: SharedItem) {
 		const note = doc.id === projectId ? wear(item.id, true) : undefined;
 		toast(
 			(item.unfitted
-				? `Wearing ${item.name} as drawn for ${entry.sourceName}. It may not line up with this body. No generations used.`
+				? `Wearing ${item.name} as drawn for ${entry.sourceName}${
+						entry.source.rig.cell.w === store.project?.manifest.rig.cell.w
+							? ''
+							: ` at its own ${entry.source.rig.cell.w} px size`
+					}. It may not line up with this body. No generations used.`
 				: item.refit
 					? `Fitted ${item.name} from ${entry.sourceName} for free. Check it in each move.`
 					: `Copied ${item.name} from ${entry.sourceName}. No generations used.`) +
