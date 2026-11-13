@@ -1429,7 +1429,7 @@ describe('move queue', () => {
 		expect(run).toHaveBeenCalledOnce();
 	});
 
-	test('a paid action in a tab that does not run the jobs waits in Activity, runs once this tab has taken over, and leaving Activity cancels it', async () => {
+	test('a paid action in a tab that does not run the jobs runs once this tab has taken over, explains a longer wait in Activity, and never runs once canceled', async () => {
 		storage();
 		const { app } = (await import('../../src/lib/app.svelte.ts')) as unknown as {
 			app: { key: string };
@@ -1455,29 +1455,35 @@ describe('move queue', () => {
 					notify({ role: 'follower' });
 				};
 			await s.loadGens();
+			// An idle leader tab hands over at once: the click waits quietly, without Activity, then runs.
 			s.withKey(run);
 			expect(run).not.toHaveBeenCalled();
-			expect([s.ui.sheet, s.ui.waitingForTab]).toEqual(['activity', true]);
+			expect([s.ui.sheet, s.ui.waitingForTab]).toEqual([null, true]);
 			expect(mocks.handoff).toHaveBeenLastCalledWith(true); // asks an idle leader tab to hand over now
 			notify({ role: 'follower' });
 			lead();
 			await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
-			expect([s.ui.waitingForTab, mocks.handoff.mock.lastCall]).toEqual([false, [false]]);
+			expect([s.ui.sheet, s.ui.waitingForTab, mocks.handoff.mock.lastCall]).toEqual([
+				null,
+				false,
+				[false]
+			]);
+			// A busy leader tab keeps the jobs: Activity explains the wait, and the click still runs on takeover.
 			follow();
 			s.withKey(run);
-			s.ui.sheet = null; // left Activity some other way
-			let reads = setupReads();
+			await vi.waitFor(() => expect(s.ui.sheet).toBe('activity'), { timeout: 3000 });
 			lead();
-			await vi.waitFor(() => expect(setupReads()).toBeGreaterThanOrEqual(reads + 2)); // the second takeover finished
-			expect(run).toHaveBeenCalledOnce();
+			await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(2));
+			// Canceled (Studio does so when the player leaves Activity): nothing runs on takeover.
+			s.ui.sheet = null;
 			follow();
 			s.withKey(run);
 			s.cancelWaitingForTab();
 			expect(mocks.handoff).toHaveBeenLastCalledWith(false);
-			reads = setupReads();
+			const reads = setupReads();
 			lead();
-			await vi.waitFor(() => expect(setupReads()).toBeGreaterThanOrEqual(reads + 2));
-			expect(run).toHaveBeenCalledOnce();
+			await vi.waitFor(() => expect(setupReads()).toBeGreaterThanOrEqual(reads + 2)); // the takeover finished
+			expect(run).toHaveBeenCalledTimes(2);
 		} finally {
 			queue.role = 'leader';
 		}

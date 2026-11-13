@@ -140,9 +140,13 @@
 	$effect(() => {
 		if (ui.sheet !== 'connect') clearPendingConnection();
 	});
-	// Leaving Activity by any route (Done, Back, another sheet) cancels a click waiting there for the other tab.
+	// Leaving Activity by any route (Done, Back, another sheet) cancels a click waiting there for the other tab. Before
+	// Activity opens, the click waits quietly for an idle tab to hand over the jobs.
+	let sheetBefore: typeof ui.sheet = null;
 	$effect(() => {
-		if (ui.sheet !== 'activity') cancelWaitingForTab();
+		const sheet = ui.sheet;
+		if (sheetBefore === 'activity' && sheet !== 'activity') cancelWaitingForTab();
+		sheetBefore = sheet;
 	});
 	const onpop = () => {
 		if (!sheetEntry) return;

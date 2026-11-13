@@ -2487,6 +2487,13 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 	await openStudio(page, '/');
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	const follower = await context.newPage();
+	// Records whether Activity ever opened in this tab, however briefly.
+	await follower.addInitScript(() => {
+		new MutationObserver(() => {
+			if (document.querySelector('#sheet-title')?.textContent === 'Activity')
+				(window as unknown as { sawActivity: boolean }).sawActivity = true;
+		}).observe(document, { childList: true, subtree: true, characterData: true });
+	});
 	await openStudio(follower, '/');
 	await follower.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(follower.locator('#experience-options')).toContainText('Other tab');
@@ -2506,11 +2513,11 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 		.fill('a cheerful copper clockwork scout');
 	await create.getByRole('button', { name: 'Side-scroller 2', exact: true }).click();
 	await create.getByRole('button', { name: /^Create/ }).click();
-	// The first tab runs nothing, so it hands the jobs over and the click continues here (no key: Connect).
-	// A busy first tab keeps them and the click waits in Activity (unit and queue self-tests).
+	// The first tab runs nothing, so it hands the jobs over and the click continues here (no key: Connect) without
+	// Activity ever opening. A busy first tab keeps them and the click waits in Activity (the tests above).
 	const connect = follower.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	await expect(connect).toBeVisible({ timeout: 15000 });
-	await expect(follower.getByRole('dialog', { name: 'Activity', exact: true })).toHaveCount(0);
+	expect(await follower.evaluate(() => 'sawActivity' in window)).toBe(false);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.locator('#experience-options')).toContainText('Other tab');
 	await page.keyboard.press('Escape');

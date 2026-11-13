@@ -174,10 +174,14 @@ export const ui = $state({
 	toastTone: 'info' as 'info' | 'success' | 'warning' | 'danger',
 	toastSheet: null as SheetId,
 	toastAction: null as (() => void | Promise<void>) | null,
-	waitingForTab: false // a spending action waits in Activity for the other tab that runs the jobs
+	waitingForTab: false // a spending action waits for the other tab that runs the jobs
 });
 let afterConnect: { run: () => void; requiresRig: boolean } | null = null;
 let afterTakeOver: (() => void) | null = null;
+let waitingNotice: ReturnType<typeof setTimeout> | undefined;
+/** How long a click waits for an idle tab to hand over the jobs before Activity explains the wait: a handoff takes well
+ *  under a second, so most clicks simply continue. */
+const HANDOFF_GRACE_MS = 1500;
 
 export function initUi() {
 	const on = () => {
@@ -302,32 +306,40 @@ export function toast(s: string, options: number | ToastOptions = 4000) {
 	return true;
 }
 
-/** Only the queue-leader tab drives generations. Explain blocked actions above any open native modal. A spending action
- *  `waits` there and runs once this tab takes over the jobs and has resumed the old leader's work; leaving Activity
- *  cancels it. */
+/** Only the queue-leader tab drives generations. A spending action `waits` and runs once this tab takes over the jobs and
+ *  has resumed the old leader's work: an idle leader tab hands them over at once, so the click just continues. Activity
+ *  opens (above any open native modal) only when the other tab keeps them, to explain the wait; leaving it cancels. */
 const follower = (waits?: () => void) => {
 	if (queue.role !== 'follower') return false;
+	clearTimeout(waitingNotice);
 	afterTakeOver = waits ?? null;
 	ui.waitingForTab = !!waits;
-	ui.sheet = 'activity';
-	queue.requestHandoff(!!waits); // an idle leader tab hands the jobs over at once
+	queue.requestHandoff(!!waits);
+	if (!waits) ui.sheet = 'activity';
+	else
+		waitingNotice = setTimeout(() => {
+			if (afterTakeOver === waits) ui.sheet = 'activity';
+		}, HANDOFF_GRACE_MS);
 	return true;
 };
 /** Run the waiting click: only in the lead, after takeOver resumed the stored create, move and setup (so it queues behind
- *  them instead of overwriting them), and only while the user is still in Activity. */
+ *  them instead of overwriting them). */
 function runWaiting() {
 	if (!afterTakeOver || queue.role === 'follower' || !resumedHere) return;
-	const run = ui.sheet === 'activity' ? afterTakeOver : null;
+	const run = afterTakeOver;
 	cancelWaitingForTab();
-	run?.();
+	run();
 }
 export function cancelWaitingForTab() {
+	clearTimeout(waitingNotice);
 	afterTakeOver = null;
 	ui.waitingForTab = false;
 	queue.requestHandoff(false);
 }
 
-/** Run a spending action; without a key the Connect sheet opens first and the action runs once a key is set. */
+/** Run a spending action; without a key the Connect sheet opens first and the action runs once a key is set. In a tab
+ *  that is not running the jobs, it waits for them (see follower). Wrap only the step that spends: a button that just
+ *  opens a sheet which prices the work first never needs it, since that sheet's own action does. */
 export function withKey(fn: () => void, requiresRig = false) {
 	if (follower(() => withKey(fn, requiresRig))) return;
 	if (requiresRig && app.key && accountTier(app.balance) === 0) {
