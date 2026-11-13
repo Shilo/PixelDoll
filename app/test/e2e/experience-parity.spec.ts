@@ -2682,12 +2682,21 @@ test.describe('Preview facing lineup', () => {
 				});
 				REFLECTION.enabled = true;
 				await frame();
-				return { changed, above, alteredBody, maxAlpha, covered, contacts, actors: starts.length };
+				return {
+					changed,
+					above,
+					alteredBody,
+					maxAlpha,
+					alphaLimit: Math.ceil(REFLECTION.opacity * 255),
+					covered,
+					contacts,
+					actors: starts.length
+				};
 			});
 			expect(measured.changed, mode).toBeGreaterThan(0);
 			expect(measured.above, mode).toBe(0);
 			expect(measured.alteredBody, mode).toBe(0);
-			expect(measured.maxAlpha, mode).toBeLessThanOrEqual(41);
+			expect(measured.maxAlpha, mode).toBeLessThanOrEqual(measured.alphaLimit);
 			expect(measured.covered, mode).toBe(true);
 			for (const gap of measured.contacts) {
 				expect(gap, mode).toBeGreaterThanOrEqual(0);
