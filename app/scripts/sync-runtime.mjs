@@ -3,10 +3,10 @@ import { fileURLToPath } from 'node:url';
 import { format, resolveConfig } from 'prettier';
 import ts from 'typescript';
 import { CURRENT_FORMAT, EXPORT_ENGINES } from '../src/lib/store/manifest.ts';
+import { assertEmbeddable } from './runtime-modules.mjs';
 
 const directory = new URL('../src/lib/runtime/', import.meta.url);
 const options = { ...(await resolveConfig(fileURLToPath(new URL('sources.ts', directory)))) };
-const owners = new Map();
 const declarations = [];
 for (const path of ['../store/manifest.ts', '../rig/rig.ts', '../image/png.ts']) {
 	const text = await readFile(new URL(path, directory), 'utf8');
@@ -14,24 +14,6 @@ for (const path of ['../store/manifest.ts', '../rig/rig.ts', '../image/png.ts'])
 	for (const statement of source.statements)
 		if (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement))
 			declarations.push(statement.getText(source));
-}
-function moduleBindings(module) {
-	const names = [];
-	const collect = (name) => {
-		if (ts.isIdentifier(name)) names.push(name.text);
-		else
-			for (const element of name.elements) if (ts.isBindingElement(element)) collect(element.name);
-	};
-	for (const statement of module.statements) {
-		if (ts.isVariableStatement(statement))
-			for (const declaration of statement.declarationList.declarations) collect(declaration.name);
-		else if (
-			(ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) &&
-			statement.name
-		)
-			names.push(statement.name.text);
-	}
-	return names;
 }
 const runtimeTypes = await format(
 	declarations
@@ -41,49 +23,9 @@ const runtimeTypes = await format(
 	{ ...options, parser: 'typescript' }
 );
 const sources = {};
-for (const name of (await readdir(directory)).filter((name) => name.endsWith('.js')).sort()) {
+for (const name of (await readdir(directory)).filter((name) => name.endsWith('.js')).sort())
 	sources[name] = await readFile(new URL(name, directory), 'utf8');
-	const module = ts.createSourceFile(
-		name,
-		sources[name],
-		ts.ScriptTarget.Latest,
-		true,
-		ts.ScriptKind.JS
-	);
-	const declarations = module.statements.flatMap((statement) =>
-		ts.canHaveModifiers(statement)
-			? (ts.getModifiers(statement) ?? [])
-					.filter((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
-					.map((modifier) => modifier.getStart(module))
-			: []
-	);
-	const prefixes = [...sources[name].matchAll(/^export /gm)].map((match) => match.index);
-	if (
-		declarations.length !== prefixes.length ||
-		declarations.some((start, index) => start !== prefixes[index]) ||
-		module.statements.some(
-			(statement) =>
-				ts.isImportDeclaration(statement) ||
-				ts.isExportDeclaration(statement) ||
-				ts.isExportAssignment(statement) ||
-				(ts.canHaveModifiers(statement) &&
-					ts
-						.getModifiers(statement)
-						?.some((modifier) => modifier.kind === ts.SyntaxKind.DefaultKeyword))
-		)
-	)
-		throw new Error(
-			`${name}: runtime embedding requires named declarations without imports, export lists or defaults.`
-		);
-	for (const binding of moduleBindings(module)) {
-		const owner = owners.get(binding);
-		if (owner && owner !== name)
-			throw new Error(
-				`${name}: top-level binding "${binding}" is already declared in ${owner}. Canonical runtime modules are concatenated into one module, so module-scope names must be unique.`
-			);
-		owners.set(binding, name);
-	}
-}
+assertEmbeddable(sources);
 const target = new URL('sources.ts', directory);
 const content = await format(
 	`export const runtimeSources: Readonly<Record<string, string>> = ${JSON.stringify(sources)};\nexport const runtimeTypes = ${JSON.stringify(runtimeTypes)};\n`,

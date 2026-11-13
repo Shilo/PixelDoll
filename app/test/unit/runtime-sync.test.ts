@@ -21,7 +21,8 @@ test('runtime synchronization rejects cross-module module-scope name collisions 
 	try {
 		await mkdir(join(directory, 'scripts'));
 		await cp(join(app, 'src/lib'), join(directory, 'src/lib'), { recursive: true });
-		await cp(join(app, 'scripts/sync-runtime.mjs'), join(directory, 'scripts/sync-runtime.mjs'));
+		for (const name of ['scripts/sync-runtime.mjs', 'scripts/runtime-modules.mjs'])
+			await cp(join(app, name), join(directory, name));
 		expect(sync(directory).status).toBe(0);
 		expect(sync(directory, '--check').status).toBe(0);
 
