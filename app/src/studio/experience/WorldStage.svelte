@@ -11,6 +11,7 @@
 	import { planLineup } from './lineup.ts';
 	import { sceneArtFits, sceneCamera, zoomBox, zoomCeiling } from './zoom.ts';
 	import { sceneZoom } from './sceneZoom.ts';
+	import { frameRecorder } from './paint.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
 	const RING_GAP = 12;
@@ -352,7 +353,9 @@
 		document.addEventListener('pointercancel', secondaryUp, true);
 		document.addEventListener('click', compatibilityClick, true);
 		let ground: Ground | undefined;
-		const g = canvas.getContext('2d')!,
+		// The actors are drawn into a recording and painted only when the frame changes (paint.ts).
+		const paint = frameRecorder(canvas.getContext('2d')!),
+			g = paint.context,
 			source = document.createElement('canvas'),
 			sg = source.getContext('2d')!;
 		const reflected = document.createElement('canvas'),
@@ -360,6 +363,8 @@
 			skyContext = sky.getContext('2d')!;
 		let skyStamp = '',
 			disposed = false;
+		const restored = () => paint.invalidate();
+		canvas.addEventListener('contextrestored', restored);
 		// One cached canvas per companion facing; recomposed only when its frame, outfit or project changes.
 		const companions = new Map<
 			DirectionName,
@@ -390,6 +395,7 @@
 				canvas
 					.getContext('2d')!
 					.putImageData(new ImageData(new Uint8ClampedArray(image.data), image.w, image.h), 0, 0);
+				paint.redrawn();
 			}
 			const entry = { key, availability: a, canvas: image ? canvas : null, result };
 			companions.set(direction, entry);
@@ -416,6 +422,7 @@
 				canvas.width = Math.round(width * dpr);
 				canvas.height = Math.round(height * dpr);
 				renderKey = '';
+				paint.invalidate();
 			}
 			if (accentTheme !== document.documentElement.dataset.theme) {
 				accentTheme = document.documentElement.dataset.theme ?? '';
@@ -685,6 +692,7 @@
 						rg.fillStyle = fade;
 						rg.fillRect(0, 0, source.width, source.height);
 						rg.globalCompositeOperation = 'source-over';
+						paint.redrawn();
 					}
 				}
 				const result = imageCache,
@@ -824,6 +832,7 @@
 				previous = p;
 			}
 			if (!picks.length) updateHover();
+			paint.commit();
 			raf = requestAnimationFrame(animate);
 		};
 		raf = requestAnimationFrame(animate);
@@ -831,6 +840,7 @@
 			disposed = true;
 			experience.sceneCamera = null;
 			cancelAnimationFrame(raf);
+			canvas.removeEventListener('contextrestored', restored);
 			ground?.destroy();
 			document.removeEventListener('pointerdown', secondaryDown, true);
 			document.removeEventListener('pointerup', secondaryUp, true);

@@ -11,7 +11,7 @@ import {
 	pickItem,
 	section
 } from './immersive-helpers.ts';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Locator, type Page } from '@playwright/test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
@@ -248,8 +248,9 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 test('the startup preview notice expires after eight seconds', async ({ page }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 	const time = new Date('2026-11-02T12:00:00Z');
+	// Pause after the installed time: the installed clock runs until the pause, and pausing in its past throws (seen under load).
 	await page.clock.install({ time });
-	await page.clock.pauseAt(time);
+	await page.clock.pauseAt(new Date(time.getTime() + 1000));
 	await page.goto(dev);
 	const preview = page.getByRole('status').filter({ hasText: /Preview · v/ });
 	await expect(preview).toBeVisible();
@@ -340,18 +341,28 @@ test('top notifications fit both themes across desktop, tablet and phone orienta
 			for (const [width, height] of sizes) {
 				await page.setViewportSize({ width, height });
 				for (const tone of ['info', 'warning', 'danger'] as const) {
-					await page.evaluate(async () => {
-						const path = '/src/studio/state.svelte.ts';
-						(await import(path)).dismissToast();
-					});
-					await showNotification(
-						page,
-						tone === 'warning'
-							? 'Features and saved work may change. Export your work to keep a backup.'
-							: tone === 'danger'
-								? 'Could not save your character. Try again.'
-								: 'Saved changes',
-						{ title: tone === 'warning' ? 'Preview · v0.2.29-dev' : undefined, tone, duration: 0 }
+					// One round trip per notice: 168 notices made this test a long chain of browser calls under load.
+					await page.evaluate(
+						async ({ message, options }) => {
+							const path = '/src/studio/state.svelte.ts',
+								state = await import(path);
+							// A danger notice blocks lesser ones until dismissed.
+							state.dismissToast();
+							state.toast(message, options);
+						},
+						{
+							message:
+								tone === 'warning'
+									? 'Features and saved work may change. Export your work to keep a backup.'
+									: tone === 'danger'
+										? 'Could not save your character. Try again.'
+										: 'Saved changes',
+							options: {
+								title: tone === 'warning' ? 'Preview · v0.2.29-dev' : undefined,
+								tone,
+								duration: 0
+							}
+						}
 					);
 					const notice = page.locator('.toast');
 					await expect(notice).toBeVisible();
@@ -424,8 +435,9 @@ test('top notifications fit both themes across desktop, tablet and phone orienta
 							if (contrast < 4.5) issues.push('low text contrast');
 							return { issues, x: r.x, y: r.y, width: r.width, height: r.height, contrast };
 						});
+					let measured: Awaited<ReturnType<typeof measure>> | undefined;
 					await expect
-						.poll(async () => (await measure()).issues, {
+						.poll(async () => (measured = await measure()).issues, {
 							message: `${screen} ${theme} ${tone} ${width}x${height}`
 						})
 						.toEqual([]);
@@ -435,7 +447,7 @@ test('top notifications fit both themes across desktop, tablet and phone orienta
 						tone,
 						viewportWidth: width,
 						viewportHeight: height,
-						...(await measure())
+						...measured
 					});
 					if (tone === 'warning' && [320, 390, 844, 1440].includes(width))
 						await page.screenshot({
@@ -564,39 +576,47 @@ test('dev server: offline pauses the queue, back online resumes it, and develope
 	await expect(projectMenu.getByText('E2E dev rig', { exact: true })).toBeHidden();
 });
 
-test('studio demo: dressing, storage, export and responsive controls', async ({
-	browser,
-	context: ctx,
-	page
-}, testInfo) => {
-	const BASE = testInfo.project.use.baseURL!;
-	const unexpectedRequests: string[] = [];
-	const blockApi = async (context: import('@playwright/test').BrowserContext) => {
-		await context.route('https://api.pixellab.ai/**', async (route) => {
-			unexpectedRequests.push(
-				route.request().method() + ' ' + new URL(route.request().url()).pathname
-			);
-			await route.abort();
-		});
-	};
-	await blockApi(ctx);
-	await ctx.addInitScript(() => {
+// The demo tests run the production preview without a key. Each is independent so a slow machine costs one short test,
+// not one long chain; the guard records and refuses every paid API call and collects page errors for the final check.
+async function demoGuard(context: BrowserContext) {
+	const errors: string[] = [],
+		unexpectedRequests: string[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		unexpectedRequests.push(
+			route.request().method() + ' ' + new URL(route.request().url()).pathname
+		);
+		await route.abort();
+	});
+	await context.addInitScript(() => {
+		localStorage.setItem('pixeldoll.welcomed', '1');
 		localStorage.setItem('pixeldoll.agentKey', 'off');
-		if (!sessionStorage.getItem('init')) {
-			sessionStorage.setItem('init', '1');
-			localStorage.setItem('pixeldoll.welcomed', '1');
-		}
 	});
-	const errors: string[] = [];
-	page.on('pageerror', (e) => {
-		errors.push(e.message);
-		console.log('pageerror', e.message);
+	context.on('weberror', (e) => {
+		errors.push(e.error().message);
+		console.log('pageerror', e.error().message);
 	});
-	page.on('console', (m) => {
+	context.on('console', (m) => {
 		if (m.type() === 'error') console.log('console', m.text());
 	});
-	await openStudio(page, `${BASE}/#/`, { waitUntil: 'networkidle' });
+	return () => {
+		assert.deepEqual(errors, []);
+		assert.deepEqual(unexpectedRequests, [], 'demo tests must never call the paid API');
+	};
+}
+
+async function openDemo(page: Page) {
+	await openStudio(page, '/#/', { waitUntil: 'networkidle' });
 	await page.waitForSelector('.world-actors');
+}
+
+const step = (s: string) => console.log('ok', s);
+
+test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme survive a reload and export', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await openDemo(page);
 	// Tile names start with the item name; status words (such as missing frames) follow after a comma.
 	const pressed = (name: string) =>
 		page
@@ -611,7 +631,6 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 			.locator('.world-actors')
 			.first()
 			.evaluate((c) => (c as HTMLCanvasElement).toDataURL());
-	const step = (s: string) => console.log('ok', s);
 
 	// pause playback so the stage is comparable
 	await page.getByRole('button', { name: 'Pause', exact: true }).click();
@@ -726,7 +745,15 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	assert.ok(download.suggestedFilename().startsWith('adventurer-'), download.suggestedFilename());
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
 	await expect(page.locator('.toast').getByText(/^Downloaded/)).toBeVisible();
+	finish();
+});
 
+test('studio demo: base colors, Create size and direction pricing, stripped dev hooks and the offline banner', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await openDemo(page);
 	// ---- B15: base colors, Create options, offline banner ----
 	await equipmentMode(page, 'Colors');
 	assert.deepEqual(
@@ -772,13 +799,21 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 		false,
 		'the production build strips the queue and Studio hooks'
 	);
-	await ctx.setOffline(true);
+	await context.setOffline(true);
 	await page.locator('.offline-banner', { hasText: 'You’re offline' }).waitFor();
-	await pickItem(page, 'Wizard hat'); // everything else still works (selects the worn hat)
-	await ctx.setOffline(false);
+	await pickItem(page, 'Wizard hat'); // everything else still works
+	await context.setOffline(false);
 	await page.locator('.offline-banner').waitFor({ state: 'detached' });
 	step('offline: banner shown, back online: banner gone (queue pause checked on the dev server)');
+	finish();
+});
 
+test('studio demo: Create without a key opens Connect, Escape restores focus and Back closes a sheet', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await openDemo(page);
 	// ---- B10: sheets ----
 	// T1 P0: Create without a key -> the Connect sheet replaces it (8afef4f)
 	await page.locator('.project-btn').click();
@@ -808,9 +843,19 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	await page.locator('dialog[open]').waitFor();
 	await page.goBack();
 	await page.waitForFunction(() => !document.querySelector('dialog[open]'));
-	assert.ok(page.url().startsWith(BASE), page.url());
+	const base = test.info().project.use.baseURL!;
+	assert.ok(page.url().startsWith(base), page.url());
 	step('browser back closes the sheet, stays in the app (P2-2)');
+	finish();
+});
 
+test('studio demo: move views offer only their directions, call out items without frames and take arrow keys', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await openDemo(page);
+	await pickItem(page, 'Wizard hat'); // the hat has no north frames in the walk
 	// ---- B10: move views (T1 P1-1) ----
 	await inspectStage(page);
 	await page.locator('.canvas-bar select').selectOption('cross-punch');
@@ -842,7 +887,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	assert.equal(await page.locator('.stage-note').count(), 0);
 	step('cross punch is south only; a worn item without north frames is called out (P1-1)');
 
-	// ---- T2: arrow keys in segmented controls; dev rigs out of the character list ----
+	// ---- T2: arrow keys in segmented controls ----
 	await page.locator('.canvas-bar').getByRole('button', { name: 'Face south' }).focus();
 	await page.keyboard.press('ArrowRight');
 	assert.equal(
@@ -860,6 +905,16 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 		.getByRole('dialog', { name: 'Inspect character', exact: true })
 		.getByRole('button', { name: 'Done', exact: true })
 		.click();
+	finish();
+});
+
+test('studio demo: production hides developer rigs and their disclosure', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	// Open the Studio first so the app creates its database before the dev rig is added.
+	await openDemo(page);
 	const idb = (
 		put: {
 			id: string;
@@ -898,35 +953,19 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	await page.keyboard.press('Escape');
 	await idb(null);
 	step('production hides developer rigs and their disclosure');
+	finish();
+});
 
-	// ---- B10: other sizes (fresh contexts: own storage) ----
-	async function at(
-		viewport: { width: number; height: number },
-		fn: (page: Page) => Promise<void>
-	) {
-		const c = await browser.newContext({
-			viewport,
-			deviceScaleFactor: 2,
-			isMobile: true,
-			hasTouch: true
-		});
-		await blockApi(c);
-		await c.addInitScript(() => {
-			localStorage.setItem('pixeldoll.welcomed', '1');
-			localStorage.setItem('pixeldoll.agentKey', 'off');
-		});
-		const p = await c.newPage();
-		p.on('pageerror', (e) => errors.push(e.message));
-		await openStudio(p, `${BASE}/#/`, { waitUntil: 'networkidle' });
-		await p.waitForSelector('.world-actors');
-		await fn(p);
-		await c.close();
-	}
-	for (const [name, vp] of [
-		['phone', { width: 375, height: 812 }],
-		['landscape', { width: 812, height: 375 }]
-	] as const)
-		await at(vp, async (p) => {
+// ---- B10: other sizes ----
+for (const [name, viewport] of [
+	['phone', { width: 375, height: 812 }],
+	['landscape', { width: 812, height: 375 }]
+] as const)
+	test.describe(`studio demo ${name}`, () => {
+		test.use({ viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+		test(`${name}: Outfits, Random look and Redo stay reachable`, async ({ context, page: p }) => {
+			const finish = await demoGuard(context);
+			await openDemo(p);
 			if (await p.locator('.header-redo').isVisible())
 				await expect(p.locator('.header-redo')).toBeVisible();
 			else {
@@ -964,8 +1003,23 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 			await p.getByRole('button', { name: 'Save', exact: true }).click();
 			await p.locator('.row', { hasText: 'Phone look' }).waitFor();
 			step(`${name}: Outfits, Random look and Redo reachable (P1-2)`);
+			finish();
 		});
-	await at({ width: 768, height: 1024 }, async (p) => {
+	});
+
+test.describe('studio demo tablet', () => {
+	test.use({
+		viewport: { width: 768, height: 1024 },
+		deviceScaleFactor: 2,
+		isMobile: true,
+		hasTouch: true
+	});
+	test('tablet portrait: preview and wardrobe stay separate and nothing covers the character', async ({
+		context,
+		page: p
+	}) => {
+		const finish = await demoGuard(context);
+		await openDemo(p);
 		assert.ok(await p.locator('.slot-tiles').first().isVisible(), 'tablet: wardrobe tiles visible');
 		const box = await p.locator('.world-stage').boundingBox(),
 			rail = await p.locator('.equipment-rail').boundingBox();
@@ -979,41 +1033,34 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 		step(
 			'tablet portrait: preview and wardrobe remain separate, nothing covers the character (P1-3)'
 		);
+		finish();
 	});
+});
 
-	// ---- B17: non-agent servers never auto-connect: no badge, Connect sheet, no dev-key option ----
-	// bootstrap.ts fetches the agent key only in Vite mode "agent" (npm run dev:agent), which this offline suite never
-	// uses, so the agentKey off switch is not exercised here; it is set anyway so nothing could ever spend.
-	{
-		const c = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-		await blockApi(c);
-		await c.addInitScript(() => {
-			localStorage.setItem('pixeldoll.welcomed', '1');
-			localStorage.setItem('pixeldoll.agentKey', 'off');
-		});
-		const p = await c.newPage();
-		p.on('pageerror', (e) => errors.push(e.message));
-		await openStudio(p, `${BASE}/#/`, { waitUntil: 'networkidle' });
-		await p.waitForSelector('.world-actors');
-		await expect(p.locator('.agent-badge')).toHaveCount(0);
-		await openAccount(p);
-		await p.waitForFunction(
-			() => document.querySelector('dialog[open] h2')?.textContent === 'Connect PixelLab'
-		);
-		assert.equal(
-			await p
-				.locator('dialog[open] [data-testid=dev-key], dialog[open] button', {
-					hasText: /dev key/i
-				})
-				.count(),
-			0
-		);
-		step('non-agent server: no agent badge, Connect sheet has no dev-key option');
-		await c.close();
-	}
-
-	assert.deepEqual(errors, []);
-	assert.deepEqual(unexpectedRequests, [], 'demo tests must never call the paid API');
+// ---- B17: non-agent servers never auto-connect: no badge, Connect sheet, no dev-key option ----
+// bootstrap.ts fetches the agent key only in Vite mode "agent" (npm run dev:agent), which this offline suite never
+// uses, so the agentKey off switch is not exercised here; it is set anyway so nothing could ever spend.
+test('studio demo: a non-agent server shows no agent badge and Connect has no dev-key option', async ({
+	context,
+	page: p
+}) => {
+	const finish = await demoGuard(context);
+	await openDemo(p);
+	await expect(p.locator('.agent-badge')).toHaveCount(0);
+	await openAccount(p);
+	await p.waitForFunction(
+		() => document.querySelector('dialog[open] h2')?.textContent === 'Connect PixelLab'
+	);
+	assert.equal(
+		await p
+			.locator('dialog[open] [data-testid=dev-key], dialog[open] button', {
+				hasText: /dev key/i
+			})
+			.count(),
+		0
+	);
+	step('non-agent server: no agent badge, Connect sheet has no dev-key option');
+	finish();
 });
 
 // IndexedDB writes started while a page unloads may never finish, so an edit inside the 400 ms autosave delay must survive.

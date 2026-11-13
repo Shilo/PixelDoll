@@ -3068,7 +3068,10 @@ test.describe('Preview facing lineup', () => {
 				const g = layout(width, height, 'studio');
 				const painted = await page
 					.locator('.world-actors')
-					.evaluate((canvas: HTMLCanvasElement) => {
+					.evaluate(async (canvas: HTMLCanvasElement) => {
+						// The stage resizes its canvas in its own animation frame, which runs before this one. Without the wait, a
+						// one-facing rig (nothing else waits for a paint) could read the previous viewport's frame under load.
+						await new Promise((resolve) => requestAnimationFrame(resolve));
 						const c = canvas.getContext('2d')!,
 							data = c.getImageData(0, 0, canvas.width, canvas.height).data,
 							scale = canvas.width / innerWidth;
