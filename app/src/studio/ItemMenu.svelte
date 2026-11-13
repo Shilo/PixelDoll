@@ -22,7 +22,6 @@
 		view,
 		wear,
 		isDemo,
-		withKey,
 		openNewItem,
 		toggleTwoHanded,
 		cancelGen,
@@ -258,13 +257,11 @@
 					role="menuitem"
 					onclick={() =>
 						act(() =>
-							withKey(() =>
-								openNewItem(groupOf(entry.item.slot).id, {
-									slot: entry.item.slot,
-									prompt: entry.item.prompt || entry.item.name,
-									name: entry.item.name
-								})
-							)
+							openNewItem(groupOf(entry.item.slot).id, {
+								slot: entry.item.slot,
+								prompt: entry.item.prompt || entry.item.name,
+								name: entry.item.name
+							})
 						)}
 					><RefreshCw size={16} aria-hidden="true" />Make one for {m.name}…<small class="row-aside"
 						>Paid</small
@@ -335,9 +332,7 @@
 							role="menuitem"
 							onclick={() =>
 								act(() =>
-									withKey(() =>
-										openNewItem(groupOf(otherHand).id, { slot: otherHand, prompt: it.prompt })
-									)
+									openNewItem(groupOf(otherHand).id, { slot: otherHand, prompt: it.prompt })
 								)}
 							><CopyPlus size={16} aria-hidden="true" />Make one for the {slotLabel(
 								otherHand
@@ -353,13 +348,11 @@
 						role="menuitem"
 						onclick={() =>
 							act(() =>
-								withKey(() =>
-									openNewItem(groupOf(it.slot).id, {
-										slot: it.slot,
-										prompt: it.prompt,
-										route: it.route
-									})
-								)
+								openNewItem(groupOf(it.slot).id, {
+									slot: it.slot,
+									prompt: it.prompt,
+									route: it.route
+								})
 							)}
 						><RefreshCw size={16} aria-hidden="true" />{remakeOnly
 							? `Make one for ${m.name}…`

@@ -2382,6 +2382,26 @@ test('leaving Activity by Back cancels a waiting click, so closing the busy tab 
 	expect(posts).toEqual([]);
 });
 
+test('a tab that is not running the generations still opens New item from an item’s menu', async ({
+	page,
+	context
+}) => {
+	await editableCopy(page);
+	const second = await context.newPage();
+	await openStudio(second, '/');
+	await second.getByRole('button', { name: 'More options', exact: true }).click();
+	await expect(second.locator('#experience-options')).toContainText('Other tab');
+	await second.keyboard.press('Escape');
+	await equipmentGroup(second, 'Head');
+	await second.getByRole('button', { name: 'More options for Steel helmet', exact: true }).click();
+	// Opening the sheet spends nothing, so only its Make button waits for this tab to take over the jobs.
+	await itemMenu(second)
+		.getByRole('menuitem', { name: /^Try again…/ })
+		.click();
+	await expect(second.getByRole('dialog', { name: 'New item', exact: true })).toBeVisible();
+	await expect(second.getByRole('dialog', { name: 'Activity', exact: true })).toHaveCount(0);
+});
+
 test('Create in a second tab takes the jobs from the idle first tab at once and preserves its draft', async ({
 	page,
 	context
