@@ -580,7 +580,7 @@ test('update notices expire without hiding the menu action, survive interaction,
 			width: 20,
 			height: 20,
 			duration: '1.2s',
-			mask: expect.stringContaining('radial-gradient')
+			mask: expect.stringContaining('2.5px')
 		});
 		await page.emulateMedia({ reducedMotion: 'reduce' });
 		await expect(indicator).toHaveCSS('animation-duration', '0s');

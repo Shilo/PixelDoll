@@ -244,7 +244,7 @@
 				data-variant="quiet"
 				aria-label="Activity"
 				onclick={() => (ui.sheet = 'activity')}
-				><span class="ring spin"></span><span class="num">{active || ''}</span></button
+				><span class="bu-ring ring spin"></span><span class="num">{active || ''}</span></button
 			>{/if}
 		<FullscreenButton />
 		<button

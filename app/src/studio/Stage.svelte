@@ -128,7 +128,7 @@
 <div class="stage" bind:this={box}>
 	{#if doc.loading && !m}
 		<div class="stage-msg">
-			<span class="ring spin" aria-hidden="true"></span><span class="sr">Loading</span>
+			<span class="bu-ring ring spin" aria-hidden="true"></span><span class="sr">Loading</span>
 		</div>
 	{:else if m}
 		<div class="stage-art" style:margin-bottom="{barH}px">

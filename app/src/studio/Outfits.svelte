@@ -64,7 +64,7 @@
 							onclick={() => applyPreset(p)}
 							>{#if preview}<OutfitThumb {preview} preset={p} />{/if}<span class="row-name"
 								>{p.name}</span
-							>{#if sameOutfit(p)}<span class="badge">Current</span>{/if}</button
+							></button
 						>
 					</SavedActions>
 				</li>
@@ -91,7 +91,7 @@
 					aria-label="Outfit name"
 					autofocus
 				/>
-				<button class="bu-action btn sm primary" data-variant="primary" type="submit">Save</button>
+				<button class="bu-action btn primary" data-variant="primary" type="submit">Save</button>
 				<button
 					class="bu-action btn icon plain"
 					data-variant="quiet"

@@ -185,7 +185,7 @@
 				{#each STEPS as s, i (s.id)}
 					<li class:done={i < stepIx} class:now={i === stepIx}>
 						{#if i < stepIx}<Check size={16} />{:else if i === stepIx && !creating.error}<span
-								class="ring spin"
+								class="bu-ring ring spin"
 								aria-hidden="true"
 							></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}
 						{s.label}{#if i === stepIx && creating.progress && creating.progress.total > 1}<span

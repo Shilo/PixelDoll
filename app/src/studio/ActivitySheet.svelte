@@ -141,7 +141,7 @@
 					{#each running as r (r.id)}
 						{@const waiting = !r.jobs.some((s) => !!s.id)}
 						<li>
-							<span class="ring" class:spin={waiting} style:--p={pct(r)} aria-hidden="true"
+							<span class="bu-ring ring" class:spin={waiting} style:--p={pct(r)} aria-hidden="true"
 							></span><span class="act-main"
 								><span class="api-action"
 									><b>{nice(r)}</b><ApiPeek
@@ -184,7 +184,7 @@
 				<ul>
 					{#each queued as r (r.id)}
 						<li>
-							<span class="ring"></span><span class="act-main"
+							<span class="bu-ring ring"></span><span class="act-main"
 								><b>{nice(r)}</b><span class="muted small"
 									>{r.waitingForPlan ??
 										(Math.max(r.nextAt, $queue.capacityRetryAt) > now

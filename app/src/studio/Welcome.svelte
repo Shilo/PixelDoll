@@ -72,7 +72,7 @@
 	<main class="welcome-main">
 		<div class="hero-stage" style:width="{heroPx + 32}px" style:height="{heroPx + 32}px">
 			{#if img}<Sprite {img} {k} label="Demo character walking" />{:else}<span
-					class="ring spin"
+					class="bu-ring ring spin"
 					aria-hidden="true"
 				></span>{/if}
 		</div>
