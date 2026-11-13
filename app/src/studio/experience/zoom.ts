@@ -123,29 +123,35 @@ export interface SceneCamera {
 	/** The camera multiplier over the screen's fit (the shown scale / the fit). */
 	value: number;
 	anchor: ScenePoint;
+	offset: ScenePoint;
 	backdrop: Placement;
 }
 
-export function zoomPoint(point: ScenePoint, anchor: ScenePoint, value: number): ScenePoint {
-	if (value === 1) return { x: point.x, y: point.y };
+export function zoomPoint(
+	point: ScenePoint,
+	anchor: ScenePoint,
+	value: number,
+	offset?: ScenePoint
+): ScenePoint {
+	if (value === 1) return { x: point.x + (offset?.x ?? 0), y: point.y + (offset?.y ?? 0) };
 	return {
-		x: anchor.x + (point.x - anchor.x) * value,
-		y: anchor.y + (point.y - anchor.y) * value
+		x: anchor.x + (point.x - anchor.x) * value + (offset?.x ?? 0),
+		y: anchor.y + (point.y - anchor.y) * value + (offset?.y ?? 0)
 	};
 }
 
-export function zoomBox(box: Box, anchor: ScenePoint, value: number): Box {
-	const topLeft = zoomPoint({ x: box.l, y: box.t }, anchor, value);
-	const bottomRight = zoomPoint({ x: box.r, y: box.b }, anchor, value);
+export function zoomBox(box: Box, anchor: ScenePoint, value: number, offset?: ScenePoint): Box {
+	const topLeft = zoomPoint({ x: box.l, y: box.t }, anchor, value, offset);
+	const bottomRight = zoomPoint({ x: box.r, y: box.b }, anchor, value, offset);
 	return { l: topLeft.x, t: topLeft.y, r: bottomRight.x, b: bottomRight.y };
 }
 
 export function sceneArtFits(
 	box: Box,
-	camera: Pick<SceneCamera, 'anchor' | 'value'>,
+	camera: Pick<SceneCamera, 'anchor' | 'value'> & Partial<Pick<SceneCamera, 'offset'>>,
 	clearance: Box
 ): boolean {
-	const shown = zoomBox(box, camera.anchor, camera.value);
+	const shown = zoomBox(box, camera.anchor, camera.value, camera.offset);
 	return (
 		shown.l >= clearance.l &&
 		shown.r <= clearance.r &&
@@ -165,6 +171,7 @@ export function sceneCamera(options: {
 	plate: Pick<WorldArt, 'width' | 'height'>;
 	viewport: Box;
 	center?: ScenePoint;
+	framing?: Box;
 }): SceneCamera {
 	const { backdrop, plate, viewport } = options;
 	const plateBox = {
@@ -175,6 +182,18 @@ export function sceneCamera(options: {
 	};
 	const value = Number.isFinite(options.value) && options.value > 0 ? options.value : 1;
 	const anchor = value > 1 ? (options.center ?? options.anchor) : options.anchor;
+	const offset = { x: 0, y: 0 };
+	const { center, framing } = options;
+	if (value > 1 && center && framing) {
+		const height = 2 * (options.anchor.y - center.y);
+		const available = framing.b - framing.t;
+		if (height > 0 && available > 0 && framing.r > framing.l) {
+			const range = Math.max(0.25, available / height - 1);
+			const progress = Math.min(1, (value - 1) / range);
+			offset.x = ((framing.l + framing.r) / 2 - center.x) * progress;
+			offset.y = ((framing.t + framing.b) / 2 - center.y) * progress;
+		}
+	}
 	let minimum = 0;
 	for (const [axis, low, high] of [
 		['x', 'l', 'r'],
@@ -182,20 +201,21 @@ export function sceneCamera(options: {
 	] as const) {
 		const pivot = anchor[axis];
 		for (const [distance, margin] of [
-			[pivot - viewport[low], pivot - plateBox[low]],
-			[viewport[high] - pivot, plateBox[high] - pivot]
+			[pivot + offset[axis] - viewport[low], pivot - plateBox[low]],
+			[viewport[high] - pivot - offset[axis], plateBox[high] - pivot]
 		]) {
 			if (distance > 0) minimum = Math.max(minimum, margin > 0 ? distance / margin : 1);
 		}
 	}
 	// The finite background plate stops zooming out where it would expose an edge; past that only the characters (with
 	// their floor rings and hit regions) keep shrinking around the grounded anchor, so their feet stay on the floor.
-	const backdropMin = Math.max(Number.EPSILON, Math.min(1, minimum));
+	const backdropMin = Math.max(Number.EPSILON, value > 1 ? minimum : Math.min(1, minimum));
 	const shown = Math.max(value, backdropMin);
-	const position = zoomPoint(backdrop, anchor, shown);
+	const position = zoomPoint(backdrop, anchor, shown, offset);
 	return {
 		value,
 		anchor,
+		offset,
 		backdrop:
 			shown === 1
 				? backdrop
@@ -204,7 +224,7 @@ export function sceneCamera(options: {
 						x: position.x,
 						y: position.y,
 						scale: backdrop.scale * shown,
-						eye: anchor.y + (backdrop.eye - anchor.y) * shown
+						eye: anchor.y + (backdrop.eye - anchor.y) * shown + offset.y
 					}
 	};
 }

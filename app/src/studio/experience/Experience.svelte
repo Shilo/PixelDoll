@@ -76,7 +76,9 @@
 	});
 	const index = $derived(list.findIndex((p) => p.id === doc.id));
 	const neighbors = $derived(
-		list.length > 1
+		index < 0
+			? []
+			: list.length > 1
 			? [-1, 0, 1]
 					.filter((n) => !(list.length === 2 && n === 1))
 					.map((offset) => ({
@@ -171,6 +173,7 @@
 			value: selectionZoom.scale / selectionFit,
 			anchor: selectionFocus.ground,
 			center: selectionFocus.center,
+			framing: { ...selectionClearance, b: Math.min(selectionClearance.b, g.feet.y) },
 			backdrop: baseWorld,
 			plate: worldArt(ui.theme),
 			viewport: { l: 0, t: 0, r: g.w, b: baseWorld.coverBottom }
@@ -530,6 +533,7 @@
 				zoom={selectionCamera.value}
 				cameraX={selectionCamera.anchor.x - g.stage.l}
 				cameraRise={g.feet.y - selectionCamera.anchor.y}
+				cameraOffset={selectionCamera.offset}
 				{culledOffsets}
 				select={pick}
 			/>
