@@ -304,7 +304,7 @@ A floating bar under the character in Preview: play/pause, a native move select,
 
 ### Character stage
 
-The character is drawn on a canvas at an integer pixel scale where possible, with nearest-neighbor sampling, centered over the world floor. A faint reflection (12% opacity) is a separate rendered copy, configured only in code and currently enabled; there is no user-facing reflection control. On Characters, the selected character is large with the others smaller beside it, and its name sits below in the headline serif.
+The character is drawn on a canvas at an integer pixel scale where possible, with nearest-neighbor sampling, centered over the world floor. Every world actor has a separate faint, camera-side reflection anchored to its standing body's painted feet, independent of transparent padding and worn gear. `experience/reflection.ts` owns the shared rendering and code-only settings: floor-aware opacity of 8–16%, compressed height and standing-height fade. More overhead views shorten and weaken the reflection. All reflections sit underneath all actors; there is no user-facing reflection control. Checkerboard inspection previews remain unchanged. See [Ground reflections](docs/design/production-experience.md#ground-reflections). On Characters, the selected character is large with the others smaller beside it, and its name sits below in the headline serif.
 
 ### Icons
 

@@ -1,0 +1,8 @@
+#!/bin/sh
+# Refuses a push to main of a commit CI has not passed; app/scripts/land.mjs explains why and is how to publish.
+# Enable once per clone, with the main checkout's absolute path so every worktree runs the same hook:
+#   git config core.hooksPath "$(git rev-parse --show-toplevel)/.githooks"
+while read -r _ sha ref old; do
+	[ "$ref" = refs/heads/main ] || continue
+	node "$(dirname "$0")/../app/scripts/land.mjs" --check "$sha" "$old" || exit 1
+done

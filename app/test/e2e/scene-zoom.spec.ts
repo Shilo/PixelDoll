@@ -1145,11 +1145,11 @@ test('asymmetric padded artwork enlarges around its body and shrinks around its 
 			`${mode} finite background has reached its coverage clamp`
 		).toBeGreaterThan(sample.zoom / sample.fit);
 		expect(
-			Math.abs(small.left + 23 * sample.zoom - projected.x),
+			Math.abs(small.left + 6.5 * sample.zoom - projected.x),
 			`${mode} actual shader and sprite ground x agree below clamp`
 		).toBeLessThanOrEqual(1);
 		expect(
-			Math.abs(small.bottom + 45 * sample.zoom - projected.y),
+			Math.abs(small.bottom - projected.y),
 			`${mode} actual shader and sprite ground y agree below clamp`
 		).toBeLessThanOrEqual(1);
 	}

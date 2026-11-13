@@ -2537,6 +2537,166 @@ test.describe('Preview facing lineup', () => {
 	// The dev server serves the app's modules, so a check can give the demo character any set of directions.
 	test.use({ baseURL: `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}` });
 
+	test('standing-foot reflections point toward the camera for selection and every world actor', async ({
+		page
+	}) => {
+		await page.setViewportSize({ width: 1440, height: 900 });
+		await landing(page);
+		await page.evaluate(async () => {
+			const state = (await import(
+				String('/src/studio/state.svelte.ts')
+			)) as typeof import('../../src/studio/state.svelte.ts');
+			const { makeImg } = (await import(
+				String('/src/lib/image/png.ts')
+			)) as typeof import('../../src/lib/image/png.ts');
+			const project = state.store.project!;
+			const manifest = structuredClone(project.manifest);
+			const body = manifest.items.find((item) => item.id === manifest.rig.baseItem)!;
+			const image = makeImg(64, 64);
+			for (let row = 8; row < 52; row++)
+				for (let column = 20; column < 44; column++)
+					image.data.set([200, 90, 50, 255], (row * 64 + column) * 4);
+			const hash = 'sha256:reflection-body';
+			const clip = manifest.rig.animations[0];
+			manifest.rig.animations = [{ ...clip, cells: 1, frames: [{ cell: 0, ms: 100 }] }];
+			body.layers = [
+				{
+					id: 'main',
+					role: 'fg',
+					z: 0,
+					cells: {
+						[clip.id]: Object.fromEntries(manifest.rig.directions.map(({ id }) => [id, [hash]]))
+					}
+				}
+			];
+			manifest.items = [body];
+			manifest.rig.rest = Object.fromEntries(
+				manifest.rig.directions.map(({ id }) => [id, { image: hash, keypoints: [] }])
+			);
+			state.store.project = {
+				...project,
+				manifest,
+				images: new Map([...project.images, [hash, image]])
+			};
+			state.doc.items = {};
+			state.ui.playing = false;
+			state.doc.rev++;
+		});
+		await expect
+			.poll(() =>
+				page
+					.locator('.cast-reflection')
+					.first()
+					.evaluate((canvas: HTMLCanvasElement) => {
+						const sprite = document.querySelector<HTMLCanvasElement>(
+							'button.cast-character canvas'
+						)!;
+						const bounds = sprite.getBoundingClientRect();
+						const pixels = sprite
+							.getContext('2d')!
+							.getImageData(0, 0, sprite.width, sprite.height).data;
+						let bottom = 0;
+						for (let row = 0; row < sprite.height; row++)
+							for (let column = 0; column < sprite.width; column++)
+								if (pixels[(row * sprite.width + column) * 4 + 3]) bottom = row + 1;
+						const floor = bounds.top + (bottom * bounds.height) / sprite.height;
+						const reflection = canvas.getBoundingClientRect();
+						const alpha = canvas
+							.getContext('2d')!
+							.getImageData(0, 0, canvas.width, canvas.height).data;
+						return (
+							Math.abs(reflection.top - floor) < 1 &&
+							alpha.some((value, index) => index % 4 === 3 && value > 0)
+						);
+					})
+			)
+			.toBe(true);
+		await page.locator('.customize-action').click();
+		await expect(world(page)).toHaveAttribute('data-presentation', 'animation');
+		for (const mode of ['Preview', 'Top-down', 'Side-scroller']) {
+			await modes(page).getByRole('button', { name: mode, exact: true }).click();
+			const measured = await page.evaluate(async () => {
+				const { REFLECTION } = (await import(
+					String('/src/studio/experience/reflection.ts')
+				)) as typeof import('../../src/studio/experience/reflection.ts');
+				const frame = () =>
+					new Promise<void>((resolve) =>
+						requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+					);
+				await frame();
+				const canvas = document.querySelector<HTMLCanvasElement>('.world-actors')!;
+				const context = canvas.getContext('2d')!;
+				const on = context.getImageData(0, 0, canvas.width, canvas.height).data;
+				REFLECTION.enabled = false;
+				await frame();
+				const off = context.getImageData(0, 0, canvas.width, canvas.height).data;
+				let changed = 0,
+					above = 0,
+					alteredBody = 0,
+					bottom = 0,
+					maxAlpha = 0;
+				const bottoms = new Map<number, number>(),
+					firstReflections = new Map<number, number>();
+				const columns = new Set<number>(),
+					reflected = new Set<number>();
+				for (let row = 0; row < canvas.height; row++)
+					for (let column = 0; column < canvas.width; column++) {
+						const offset = (row * canvas.width + column) * 4;
+						if (off[offset + 3] === 255) {
+							bottom = Math.max(bottom, row + 1);
+							columns.add(column);
+							bottoms.set(column, row + 1);
+						}
+					}
+				for (let row = 0; row < canvas.height; row++)
+					for (let column = 0; column < canvas.width; column++) {
+						const offset = (row * canvas.width + column) * 4;
+						if (
+							on
+								.subarray(offset, offset + 4)
+								.every((value, channel) => value === off[offset + channel])
+						)
+							continue;
+						changed++;
+						if (row < bottom) above++;
+						if (off[offset + 3] === 255) alteredBody++;
+						if (off[offset + 3] === 0) maxAlpha = Math.max(maxAlpha, on[offset + 3]);
+						if (!firstReflections.has(column)) firstReflections.set(column, row);
+						reflected.add(column);
+					}
+				const starts = [...columns].filter((column) => !columns.has(column - 1));
+				const covered = starts.every((start) => {
+					let end = start;
+					while (columns.has(end)) end++;
+					return [...reflected].some((column) => column >= start && column < end);
+				});
+				const contacts = starts.map((start) => {
+					let end = start;
+					while (columns.has(end)) end++;
+					const actorColumns = [...columns].filter((column) => column >= start && column < end);
+					const floor = Math.max(...actorColumns.map((column) => bottoms.get(column)!));
+					const first = Math.min(
+						...actorColumns.map((column) => firstReflections.get(column) ?? Infinity)
+					);
+					return first - floor;
+				});
+				REFLECTION.enabled = true;
+				await frame();
+				return { changed, above, alteredBody, maxAlpha, covered, contacts, actors: starts.length };
+			});
+			expect(measured.changed, mode).toBeGreaterThan(0);
+			expect(measured.above, mode).toBe(0);
+			expect(measured.alteredBody, mode).toBe(0);
+			expect(measured.maxAlpha, mode).toBeLessThanOrEqual(41);
+			expect(measured.covered, mode).toBe(true);
+			for (const gap of measured.contacts) {
+				expect(gap, mode).toBeGreaterThanOrEqual(0);
+				expect(gap, mode).toBeLessThanOrEqual(1);
+			}
+			expect(measured.actors, mode).toBeGreaterThanOrEqual(mode === 'Preview' ? 2 : 1);
+		}
+	});
+
 	test('wrapped Preview controls reserve their actual height above the panel', async ({ page }) => {
 		await customize(page);
 		await pause(page);

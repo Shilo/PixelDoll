@@ -525,6 +525,8 @@
 				cameraRise={g.feet.y - selectionCamera.anchor.y}
 				cameraOffset={selectionCamera.offset}
 				{culledOffsets}
+				floorHorizon={baseWorld.eye - g.feet.y}
+				floorFocal={baseWorld.scale * worldArt(ui.theme).focal}
 				select={pick}
 			/>
 			{#if list.length}<div class="selected-caption">
