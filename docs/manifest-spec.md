@@ -773,9 +773,6 @@ are preserved; use the character root's depth for positioning among scene object
 <name>.pixeldoll.zip
   manifest.json                                   # authoritative; everything below is derived from it
   README.txt                                      # what is inside + quick start per engine
-  CREDITS.txt                                     # CSV text, one row per PixelLab call: endpoint, tool, job id, seed, date,
-                                                  #   typed and sent prompt, reported generations and USD, re-rolled
-                                                  #   (B11: not .csv, which Godot imports as a translation table)
   layers/<slot>/<item>/<layer>/<anim>.png         # ONE untrimmed PNG per layer per animation
                                                   #   rows = rig.directions (mirrored rows baked), cols = cells
   baked/<preset>/<anim>.png                       # optional composites, same grid on export.bakedCell (crowds, engines without layering)
@@ -789,7 +786,7 @@ are preserved; use the character root's depth for positioning among scene object
 ```
 
 RPG Maker zips (§6.8) instead hold only `$<name>.png` (MZ, MV, VX layout) or `<name>.png` (XP layout) per outfit at the
-root, `README.txt`, `CREDITS.txt` and the editable copy (§7): no layer sheets, `manifest.json` or baked sheets.
+root, `README.txt` and the editable copy (§7): no layer sheets, `manifest.json` or baked sheets.
 
 Why per-animation sheets: an all-animation sheet passes 4096 px quickly (8 dirs × 12 anims × 64 px [R3]); per-animation sheets are
 at most 16 × 64 = 1024 px wide and 8 × 64 = 512 px tall at the v1 limits. Frame names everywhere: **`<anim>_<dir>_<cell>`**

@@ -12,7 +12,6 @@ import {
 	seedOf,
 	toolOf
 } from '../../src/lib/store/generation.ts';
-import { creditsCsv } from '../../src/lib/export/generic.ts';
 import type { Item, Manifest, Provenance } from '../../src/lib/store/manifest.ts';
 import type { RigCtx } from '../../src/lib/items/run.ts';
 import { equipmentFixture } from './equipment-fixture.ts';
@@ -175,7 +174,7 @@ test('generation details summarize tools, prompts, settings and recorded cost fr
 	expect(generationDetails(manifest, bare).createdAt).toBeUndefined();
 });
 
-test('re-rolled attempts count toward the recorded cost and are marked in credits', async () => {
+test('re-rolled attempts count toward the recorded cost', async () => {
 	const { manifest } = await equipmentFixture();
 	const item = manifest.items.find((i) => i.id !== manifest.rig.baseItem)!;
 	item.provenance = [
@@ -187,34 +186,6 @@ test('re-rolled attempts count toward the recorded cost and are marked in credit
 	expect(costText(cost)).toBe('8 gens · $0.010');
 	expect(toolOf(item.provenance[0])).toBe('Edit animation V2');
 	expect(requestPromptOf(item.provenance[0])).toBe('hood, on green key');
-	const csv = creditsCsv(manifest as Manifest)
-		.trim()
-		.split('\n');
-	const header = csv[0].split(','),
-		rows = csv.filter((r) => r.startsWith(`"${item.id}"`));
-	expect(header).toEqual(
-		[
-			'item',
-			'name',
-			'slot',
-			'sheets',
-			'endpoint',
-			'tool',
-			'jobId',
-			'seed',
-			'createdAt',
-			'prompt',
-			'requestPrompt',
-			'generations',
-			'usd',
-			'replaced',
-			'source'
-		].map((c) => `"${c}"`)
-	);
-	expect(rows).toHaveLength(2);
-	expect(rows[0]).toContain('"Edit animation V2","a"');
-	expect(rows[0]).toContain('"hood, on green key","4","",""');
-	expect(rows[1]).toContain('"4","0.01","yes"');
 });
 
 test('details never invent a seed, a date or a cost', () => {

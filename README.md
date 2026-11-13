@@ -101,9 +101,9 @@ Set `PLAYWRIGHT_CHANNEL=msedge` for an optional installed-Edge run. That is a se
 
 The Studio's **Export** sheet groups **Engines and frameworks** separately from **Assets**, and builds one zip per selected
 target, on your device, for free. Each zip contains `README.txt` (quick start), `manifest.json` ([spec](docs/manifest-spec.md)),
-`CREDITS.txt` (CSV text with PixelLab provenance), `layers/` (one sheet per item layer and
+`layers/` (one sheet per item layer and
 move; rows = directions, columns = frames) and, optionally, `baked/` (finished characters per outfit). RPG Maker zips hold
-only their walking sheets, `README.txt`, `CREDITS.txt` and the editable copy.
+only their walking sheets, `README.txt` and the editable copy.
 
 | Target | In the zip | Import |
 |---|---|---|

@@ -721,7 +721,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({
 	step(`export ${download.suggestedFilename()} ${Math.round(bytes.length / 1024)} KB`);
 
 	// zip names (stored uncompressed in the zip headers)
-	for (const f of ['README.txt', 'CREDITS.txt', 'godot/README.txt'])
+	for (const f of ['README.txt', 'godot/README.txt'])
 		assert.ok(bytes.includes(Buffer.from(f)), `zip has ${f}`);
 	assert.ok(download.suggestedFilename().startsWith('adventurer-'), download.suggestedFilename());
 	await expect(page.locator('dialog[open]')).toHaveCount(0);

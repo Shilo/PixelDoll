@@ -2968,7 +2968,6 @@ test('export picker has accessible categories, local icons and a native GDevelop
 		expect(sheets.length).toBeGreaterThan(0);
 		expect(sheets.every((entry) => name.test(entry))).toBe(true);
 		expect(top.filter((entry) => !entry.endsWith('.png')).sort()).toEqual([
-			'CREDITS.txt',
 			'README.txt',
 			'project.json'
 		]);

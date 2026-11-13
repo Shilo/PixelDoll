@@ -11,7 +11,6 @@ import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash, DEFAULT_MOVE, type Keypoint, type Rig } from '../../src/lib/rig/rig.ts';
 import { loadProject } from '../../src/lib/store/project.ts';
 import { composeCell } from '../../src/lib/compose/compose.ts';
-import { creditsCsv } from '../../src/lib/export/generic.ts';
 import {
 	CURRENT_FORMAT,
 	type Item,
@@ -831,14 +830,6 @@ test('an exact copy references the stored images without rewriting them, and fai
 	expect(item.copiedFrom).toEqual({ id: 'rig-knight', name: 'Knight', item: 'sword' });
 	expect(item.refit).toBeUndefined();
 	expect(memory.blobs.get(blade)).toBe(kept);
-	// Credits keep the source's calls for attribution, labeled as copied so they are not counted as spent here.
-	const m = (await loadProject('rig-page')).project.manifest;
-	m.items.find((it) => it.id === item.id)!.provenance = [
-		{ endpoint: '/x', jobId: 'j1', seed: 1, createdAt: 'then', produced: [] } as never
-	];
-	expect(creditsCsv(m)).toContain(
-		'"PixelLab (https://pixellab.ai); made for Knight and copied here without generating"'
-	);
 });
 
 /** The slash drawn with its own body pose (a pixel apart from the standing body), so only a slash frame can dress it. */
