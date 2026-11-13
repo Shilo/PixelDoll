@@ -62,7 +62,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 ## Commands
 
 - Run all from app/. Add dependencies with npm install -E and commit the lockfile.
-- When the task needs app tools and app/node_modules is absent, run npm ci without asking. Do not overlap installs in the same checkout; ask before reinstalling existing dependencies.
+- When app tools need missing or stale dependencies, run npm ci without asking. Do not interrupt an active install, server, or test using that checkout’s dependencies.
 - Format only files you changed (npx prettier --write <files>); npm run check fails on unformatted files.
 - Unit tests: npm test [-- <file filter>] [-t "<name>"]
 - End-to-end tests: npm run e2e -- <spec names> [-g "<title>"] [--last-failed, which reads this checkout's last run, whoever started it]; it builds and starts its own servers. On a workstation it needs spec names (--all is the full suite) and runs one at a time per machine: when it prints "Waiting", keep waiting.
