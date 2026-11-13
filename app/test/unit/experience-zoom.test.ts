@@ -5,6 +5,7 @@ import { heroRoom, heroScale, layout, placeWorld } from '../../src/studio/experi
 import { planLineup } from '../../src/studio/experience/lineup.ts';
 import { thumbScale } from '../../src/studio/experience/thumbnails.svelte.ts';
 import {
+	fitLevel,
 	resolveZoom,
 	sceneArtFits,
 	sceneCamera,
@@ -275,7 +276,7 @@ describe('absolute zoom', () => {
 				onB = (scale: number | null) => resolveZoom(scale, b, [a], 0);
 			const levels = zoomLevels(onA(null));
 			expect(zoomLevels(onB(null)), 'the same list on both screens').toEqual(levels);
-			expect(levels).toEqual(expect.arrayContaining([a, b]));
+			expect(levels).toEqual(expect.arrayContaining([fitLevel(a), fitLevel(b)]));
 			// Reach each level on one screen, switch, and step away and back on the other.
 			for (const level of levels)
 				for (const [here, there] of [
@@ -291,18 +292,39 @@ describe('absolute zoom', () => {
 						);
 					}
 				}
-			// No step from a fit to a between-level is under 3%; whole multiples always stay, however close.
-			for (const fit of [a, b]) {
-				const at = levels.indexOf(fit);
-				for (const neighbor of [levels[at - 1], levels[at + 1]])
-					if (neighbor !== undefined && ![a, b].includes(neighbor) && !Number.isInteger(neighbor))
-						expect(Math.abs(neighbor - fit) / fit, `${fit} beside ${neighbor}`).toBeGreaterThan(
-							0.03
-						);
-			}
+			// Every whole multiple stays, steps never exceed 25%, and no two levels read the same percentage.
 			for (let whole = 1; whole <= levels.at(-1)!; whole++) expect(levels).toContain(whole);
+			for (let i = 1; i < levels.length; i++) {
+				expect(levels[i] / levels[i - 1]).toBeLessThanOrEqual(1.25 + 1e-9);
+				expect(Math.round(levels[i] * 100)).not.toBe(Math.round(levels[i - 1] * 100));
+			}
 		}
 	);
+
+	test('a fit appearing or changing after a level is chosen never removes that level', () => {
+		// Characters fits at 320% before Customize is seen; 250% is chosen; Customize then fits at 245%.
+		const before = resolveZoom(2.5, 3.2, [0], 0);
+		expect(zoomLevels(before)).toContain(2.5);
+		const after = resolveZoom(2.5, 2.45, [3.2], 0);
+		expect(zoomStep(resolveZoom(zoomStep(after, -1), 2.45, [3.2], 0), 1)).toBe(2.5);
+		expect(zoomStep(resolveZoom(zoomStep(after, 1), 2.45, [3.2], 0), -1)).toBe(2.5);
+	});
+
+	test('a chosen scale is shown as chosen, even after the fit that allowed it has grown', () => {
+		const chosen = resolveZoom(0.8, 0.9, [2], 8);
+		expect(chosen.scale).toBe(0.8);
+		expect(chosen.min).toBe(0.8);
+		expect(resolveZoom(9, 3, [], 6).scale, 'or after a ceiling it reached').toBe(9);
+	});
+
+	test('a fit within 0.5% of a ladder level is shown at it; others are shown exactly', () => {
+		expect(fitLevel(2.997)).toBe(3);
+		expect(fitLevel(6.966)).toBe(7);
+		expect(fitLevel(2.497)).toBe(2.5);
+		expect(fitLevel(3.6)).toBe(3.6);
+		expect(fitLevel(1.27)).toBe(1.27);
+		expect(resolveZoom(null, 2.997, [], 0).scale).toBe(3);
+	});
 
 	test('a chosen scale reads the same on both screens, and controls show only away from each fit', () => {
 		const ceiling = zoomCeiling(zoomCeiling(0, 3.6), 4);
@@ -333,14 +355,14 @@ describe('absolute zoom', () => {
 		expect(zoomStep(smallFit, -1), 'at the minimum, zooming out stays put').toBe(smallFit.scale);
 	});
 
-	test('bounds run from 100% (or a smaller fit) to at least twice every fit', () => {
-		expect(zoom(0.2, 3).scale).toBe(1);
-		expect(zoom(50, 3).scale).toBe(6);
-		expect(zoom(50, 3, 4).scale).toBe(8);
+	test('input stays from 100% (or a smaller fit) to at least twice every fit', () => {
+		expect(zoom(null, 3)).toMatchObject({ min: 1, max: 6 });
+		expect(zoom(null, 3, 4)).toMatchObject({ min: 1, max: 8 });
 		expect(zoom(null, 0.75)).toMatchObject({ min: 0.75, scale: 0.75 });
-		expect(zoom(0.5, 0.75).scale).toBe(0.75);
 		expect(zoomStep(zoom(1, 3), -1)).toBe(1);
 		expect(zoomStep(zoom(6, 3), 1)).toBe(6);
+		expect(zoomStep(zoom(null, 0.75), -1)).toBe(0.75);
+		expect(settleZoom(zoom(null, 3), 9)).toBe(6);
 	});
 
 	test('a pinch settles on a fit or a whole multiple within 4%, else stays exact', () => {

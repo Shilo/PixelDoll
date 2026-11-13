@@ -44,19 +44,35 @@ export interface SceneZoom {
 	zoomed: boolean;
 }
 
+/** A fit this close to a ladder level is shown at it (a sub-pixel change), so no two levels read the same percentage. */
+const LEVEL_SNAP = 0.005;
+
+/** The scale a fit is shown at: the fit, or a ladder level within 0.5% of it. */
+export function fitLevel(fit: number): number {
+	return (
+		zoomLadder(Math.ceil(fit) + 1).find((level) => Math.abs(fit - level) <= LEVEL_SNAP * level) ??
+		fit
+	);
+}
+
 /**
  * One screen's view of the shared zoom. `stored` is the chosen scale, or null for each screen's fit; `fits` are both
  * screens' latest fits (0 while unknown). Bounds run from 100% (or a smaller fit) to `ceiling`, at least twice every fit.
  */
 export function resolveZoom(
 	stored: number | null,
-	fit: number,
+	measured: number,
 	fits: readonly number[],
 	ceiling: number
 ): SceneZoom {
-	const stops = [...new Set([...fits.filter((value) => value > 0), fit])].sort((a, b) => a - b);
-	const min = Math.min(1, ...stops),
-		max = stops.reduce(zoomCeiling, ceiling);
+	const fit = fitLevel(measured);
+	const stops = [...new Set([...fits.filter((value) => value > 0).map(fitLevel), fit])].sort(
+		(a, b) => a - b
+	);
+	// A chosen scale stays in bounds even if a fit that allowed it has since grown, so it never silently changes.
+	const chosen = stored !== null && Number.isFinite(stored) && stored > 0 ? [stored] : [];
+	const min = Math.min(1, ...stops, ...chosen),
+		max = stops.reduce(zoomCeiling, Math.max(ceiling, ...chosen));
 	const scale =
 		stored === null || !Number.isFinite(stored) ? fit : Math.min(max, Math.max(min, stored));
 	return {
@@ -74,21 +90,19 @@ export function zoomCeiling(previous: number, fit: number): number {
 	return Math.max(previous, Math.ceil(2 * fit));
 }
 
-/** Between-levels this close to a fit are dropped, so a step from a fit is rarely too small to see. Whole multiples always
- *  stay, so a fit right beside one (696.6% next to 700%) keeps that small step. */
-const FIT_GAP = 0.03;
-
-/** The levels a wheel notch, key or button steps through: the ladder within the bounds plus both screens' fits. It is
- *  the same list on both screens, so stepping one way and back always retraces it, wherever a level was reached. */
+/** The levels a wheel notch, key or button steps through: the whole ladder within the bounds plus both screens' fits.
+ *  It is the same list on both screens, and a fit appearing or changing only adds a level, never removes one, so
+ *  stepping one way and back retraces it wherever a level was reached. */
 export function zoomLevels(zoom: Pick<SceneZoom, 'stops' | 'min' | 'max'>): number[] {
-	const { min, max } = zoom;
-	const fits = zoom.stops.filter((fit) => fit >= min && fit <= max);
-	const ladder = zoomLadder(max).filter(
-		(level) =>
-			level >= min &&
-			(Number.isInteger(level) || !fits.some((fit) => Math.abs(level - fit) <= FIT_GAP * fit))
-	);
-	return [...new Set([min, ...ladder, ...fits, max])].sort((a, b) => a - b);
+	const { stops, min, max } = zoom;
+	return [
+		...new Set([
+			min,
+			...zoomLadder(max).filter((level) => level >= min),
+			...stops.filter((fit) => fit >= min && fit <= max),
+			max
+		])
+	].sort((a, b) => a - b);
 }
 
 /** The next level in `direction` from the shown scale; a scale between levels (after a pinch) goes to the nearest level

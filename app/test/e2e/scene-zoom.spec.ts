@@ -1300,42 +1300,43 @@ test('Characters and Customize share one absolute zoom: the same level, label an
 		.toBeLessThanOrEqual(1.5);
 });
 
-test('a level reached on one screen retraces exactly on the other, whatever the two fits', async ({
-	page
-}) => {
-	await page.setViewportSize({ width: 1440, height: 900 });
-	await seedCharacters(page, 1);
-	const host = selection(page);
-	await resetZoom(page, host);
-	const charactersFit = (await readScene(host)).fit;
-	// Stepping away and back stores Characters' own fit as the chosen level.
-	await press(page, host, '=');
-	await press(page, host, '-');
-	expect((await readScene(host)).zoom).toBe(charactersFit);
-	await page.locator('.customize-action').click();
-	const preview = world(page);
-	await expect(preview).toBeVisible();
-	await expect.poll(async () => (await readScene(preview)).zoom).toBe(charactersFit);
-	const previewFit = (await readScene(preview)).fit;
-	expect(previewFit, 'the two screens fit differently here').not.toBe(charactersFit);
-	for (const [away, back] of [
-		['-', '='],
-		['=', '-']
-	]) {
-		await press(page, preview, away);
-		expect((await readScene(preview)).zoom).not.toBe(charactersFit);
-		await press(page, preview, back);
-		expect((await readScene(preview)).zoom, `${away} then ${back} on Customize`).toBe(
-			charactersFit
-		);
-	}
-	await page.locator('.header-back').click();
-	await expect(host).toBeVisible();
-	expect((await readScene(host)).zoom, 'back on Characters, still the same level').toBe(
-		charactersFit
-	);
-	await expectCastScale(page, charactersFit, 'back on Characters');
-});
+// 1920x1080 fits Characters at 1000% and Customize at 700%; 1024x768 at 504% and 500%.
+for (const [width, height] of [
+	[1920, 1080],
+	[1024, 768]
+])
+	test(`a level reached on one screen retraces exactly on the other at ${width}x${height}`, async ({
+		page
+	}) => {
+		await page.setViewportSize({ width, height });
+		await seedCharacters(page, 1);
+		const host = selection(page);
+		await resetZoom(page, host);
+		const charactersFit = (await readScene(host)).fit;
+		// Two steps below Characters' fit, before Customize's fit is known: Customize's fit must not remove this level.
+		await press(page, host, '-');
+		const chosen = await press(page, host, '-');
+		expect(chosen).toBeLessThan(charactersFit);
+		await page.locator('.customize-action').click();
+		const preview = world(page);
+		await expect(preview).toBeVisible();
+		await expect.poll(async () => (await readScene(preview)).zoom).toBe(chosen);
+		const previewFit = (await readScene(preview)).fit;
+		expect(previewFit, 'the two screens fit differently here').not.toBe(charactersFit);
+		for (const [away, back] of [
+			['-', '='],
+			['=', '-']
+		]) {
+			await press(page, preview, away);
+			expect((await readScene(preview)).zoom).not.toBe(chosen);
+			await press(page, preview, back);
+			expect((await readScene(preview)).zoom, `${away} then ${back} on Customize`).toBe(chosen);
+		}
+		await page.locator('.header-back').click();
+		await expect(host).toBeVisible();
+		expect((await readScene(host)).zoom, 'back on Characters, still the same level').toBe(chosen);
+		await expectCastScale(page, chosen, 'back on Characters');
+	});
 
 for (const dpr of [1.25, 2, 3])
 	test.describe(`at devicePixelRatio ${dpr}`, () => {
