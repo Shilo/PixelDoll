@@ -113,15 +113,15 @@ offers **Make one for <this character>…** (priced in **New item** before anyth
 
 A tile's icons sit in its top-left corner, up to four to a row, in this order, and each explains itself on hover:
 
-| Icon                    | Means                                        |
-| ----------------------- | -------------------------------------------- |
-| Check                   | Wearing                                      |
-| People, grey            | From another character, or copied from one   |
-| No-entry, red           | Can't be worn here (its tile dims)           |
-| Puzzle piece, amber     | Not fitted to this body                      |
-| Warning triangle, amber | Check the fit, or the item needs a look      |
-| Clapperboard, amber     | Missing frames in some moves; it hides there |
-| Crossed-out eye, grey   | Hidden by another worn item (its tile dims)  |
+| Icon                    | Means                                                                 |
+| ----------------------- | --------------------------------------------------------------------- |
+| Check                   | Wearing                                                               |
+| People, grey            | From another character, or copied from one                            |
+| No-entry, red           | Can't be worn here (its tile dims)                                    |
+| Puzzle piece, amber     | Not fitted to this body                                               |
+| Warning triangle, amber | Check the fit, the item needs a look, or it was made for another body |
+| Clapperboard, amber     | Missing frames in some moves; it hides there                          |
+| Crossed-out eye, grey   | Hidden by another worn item (its tile dims)                           |
 
 - **Same body** (an editable copy of the same character, or a re-import): no fit icon. Tapping it adds an exact
   copy and wears it, for free: "Copied <item> from <character>. No generations used." The copy is an ordinary item of

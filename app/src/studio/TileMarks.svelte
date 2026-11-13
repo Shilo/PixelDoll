@@ -2,8 +2,7 @@
 	import { Ban, Check, Clapperboard, EyeOff, Puzzle, TriangleAlert, UsersRound } from './icons.ts';
 
 	/** What a wardrobe tile's corner icons can say about an item; several can apply at once. */
-	export type MarkKind =
-		'worn' | 'shared' | 'blocked' | 'unfitted' | 'check' | 'missing' | 'hidden';
+	type MarkKind = 'worn' | 'shared' | 'blocked' | 'unfitted' | 'check' | 'missing' | 'hidden';
 	export interface Mark {
 		kind: MarkKind;
 		/** A few words, for accessible names. */
@@ -11,10 +10,10 @@
 		/** The full explanation: the icon's tooltip and its line in the ⋮ menu. */
 		text: string;
 	}
-	/** Each kind's icon and Bronze tone; `check` is the theme's worn check mark (accent) rather than a status tone. Red is
-	 *  only for the one status that stops the tile wearing the item; amber asks for a look; grey only informs. */
-	export const MARK: Record<MarkKind, { icon: typeof Check; tone: string }> = {
-		worn: { icon: Check, tone: 'check' },
+	/** Each kind's icon and Bronze tone (worn uses the theme's accent check mark instead). Red is only for the one status that
+	 *  stops the tile wearing the item; amber asks for a look; grey only informs. */
+	const MARK: Record<MarkKind, { icon: typeof Check; tone: string }> = {
+		worn: { icon: Check, tone: '' },
 		shared: { icon: UsersRound, tone: 'hidden' },
 		blocked: { icon: Ban, tone: 'danger' },
 		unfitted: { icon: Puzzle, tone: 'warning' },
@@ -34,9 +33,10 @@
 
 {#snippet glyph(mark: Mark, title?: string)}
 	{@const Icon = MARK[mark.kind].icon}
-	{#if MARK[mark.kind].tone === 'check'}<span class="bu-tile-check" {title}><Icon /></span
-		>{:else}<span class="bu-tile-status tile-status" data-tone={MARK[mark.kind].tone} {title}
-			><Icon size={14} /></span
+	{#if mark.kind === 'worn'}<span class="bu-tile-check" {title}><Icon /></span>{:else}<span
+			class="bu-tile-status tile-status"
+			data-tone={MARK[mark.kind].tone}
+			{title}><Icon size={14} /></span
 		>{/if}
 {/snippet}
 {#if list}
@@ -45,7 +45,7 @@
 			{#each marks as mark (mark.kind)}<li>{@render glyph(mark)}<span>{mark.text}</span></li>{/each}
 		</ul>{/if}
 {:else if marks.length}
-	<!-- A row in the tile's top-left corner that wraps after three icons and never grows the tile. Each icon's title
+	<!-- A row in the tile's top-left corner that wraps (four to a row, three on a narrow tile) and never grows the tile. Each icon's title
 	     explains it on hover; a click on one still reaches the tile it sits in. The words are in the tile's accessible
 	     name. -->
 	<span class="tile-marks" aria-hidden="true"

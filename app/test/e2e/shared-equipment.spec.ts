@@ -125,7 +125,7 @@ test('another character’s item on the same body is worn for free, survives rel
 	// The demo's wizard hat has no frames for some moves: an exact copy, but it hides there.
 	const hat = sharedTile(others, 'Traveling wizard hat');
 	await expect(hat).toHaveAccessibleName(
-		/^Traveling wizard hat, from Twin, missing frames in \d+ moves?$/
+		/^Traveling wizard hat, free from Twin, missing frames in \d+ moves?$/
 	);
 	await expect(hat).not.toHaveAttribute('aria-pressed');
 	await hat.click();
@@ -198,7 +198,7 @@ test('a shared item’s ⋮ explains how it fits and makes one for this characte
 	const others = await threeCharacters(page);
 	const giant = sharedTile(others, 'Giant helmet');
 	await expect(giant).toHaveAccessibleName(
-		'Giant helmet, from Giant, not fitted to this body, missing some Cross punch frames'
+		'Giant helmet, free from Giant, not fitted to this body, missing some Cross punch frames'
 	);
 	// Each icon explains itself on hover, where it came from first; the ⋮ menu says the same, in the same order, for touch too.
 	const titles = [
@@ -256,7 +256,7 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 	});
 	await expect(worn).toHaveAttribute('aria-pressed', 'true');
 	// Worn, copied and not fitted: the check, where it came from and the fit glyph, each explained on hover.
-	await expect(worn.locator('.bu-tile-check')).toHaveAttribute('title', 'Wearing');
+	await expect(worn.locator('.bu-tile-check')).toHaveAttribute('title', 'Wearing.');
 	expect(
 		await worn.locator('.tile-status').evaluateAll((el) => el.map((e) => e.getAttribute('title')))
 	).toEqual([
@@ -328,6 +328,55 @@ test('items from other characters fit a phone without horizontal overflow and it
 		expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
 	}
 	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('an item that can’t be worn here shows a red icon over dimmed art, and its tile opens its menu', async ({
+	page
+}) => {
+	const others = await threeCharacters(page);
+	// Giant's helmet drawn wider than any export allows: nothing to wear here, only a new one to make.
+	await page.evaluate(async () => {
+		const request = indexedDB.open('pixeldoll', 1);
+		const database = await new Promise<IDBDatabase>((resolve, reject) => {
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => reject(request.error);
+		});
+		const store = database.transaction('projects', 'readwrite').objectStore('projects');
+		const giant = await new Promise<{ manifest: { items: any[] } }>((resolve, reject) => {
+			const read = store.get('rig-giant');
+			read.onsuccess = () => resolve(read.result);
+			read.onerror = () => reject(read.error);
+		});
+		Object.assign(giant.manifest.items.find((it) => it.id === 'helmet_steel').layers[0], {
+			cell: { w: 300, h: 64 },
+			pivot: { x: 150, y: 64 }
+		});
+		store.put(giant, 'rig-giant');
+		await new Promise<void>((resolve, reject) => {
+			store.transaction.oncomplete = () => resolve();
+			store.transaction.onerror = store.transaction.onabort = () => reject(store.transaction.error);
+		});
+		database.close();
+	});
+	await reloadStudio(page);
+	await equipmentGroup(page, 'Head');
+	const giant = sharedTile(others, 'Giant helmet');
+	await expect(giant).toHaveAccessibleName('Giant helmet, from Giant, can’t be worn');
+	await expect(giant).toHaveAttribute('data-dim');
+	await expect(giant.locator('.tile-status[data-tone="danger"]')).toHaveAttribute(
+		'title',
+		/^It can’t be worn on Adventurer copy: /
+	);
+	await giant.click();
+	const menu = page.locator('#item-menu');
+	await expect(
+		menu.getByRole('menuitem', { name: /^Make one for Adventurer copy…/ })
+	).toBeFocused();
+	await expect(menu.getByRole('menuitem', { name: /^Wear/ })).toHaveCount(0);
+	await expect(menu.locator('.item-menu-marks li')).toHaveText([
+		'From Giant.',
+		/^It can’t be worn on Adventurer copy: /
+	]);
 });
 
 test('a copy missing frames its source item has copies them for free into the same item', async ({
@@ -544,7 +593,7 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 	await equipmentGroup(page, 'Main hand');
 	const others = page.locator('.equipment-scroll [role=group][aria-label="Main hand items"]');
 	await expect(sharedTile(others, 'Lefty sword')).toHaveAccessibleName(
-		'Lefty sword, from Lefty, check fit'
+		'Lefty sword, free from Lefty, check fit'
 	);
 	await sharedTile(others, 'Lefty sword').click();
 	await expect(page.locator('.bu-toast')).toContainText(

@@ -54,15 +54,7 @@
 	import GroupIcon from './GroupIcon.svelte';
 	import SharedThumb from './SharedThumb.svelte';
 	import ItemMenu from './ItemMenu.svelte';
-	import {
-		Ban,
-		Check,
-		CircleAlert,
-		EllipsisVertical,
-		Plus,
-		Shuffle,
-		TriangleAlert
-	} from './icons.ts';
+	import { Ban, Check, CircleAlert, EllipsisVertical, Plus, Shuffle } from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
 	let list = $state<HTMLElement>();
@@ -94,25 +86,29 @@
 			hidden: doc.items[it.slot] === it.id && hidden.has(it.slot)
 		};
 	}
+	const WORN: Mark = { kind: 'worn', label: 'Wearing', text: 'Wearing.' };
+	const unfitMark = (text: string): Mark => ({
+		kind: 'unfitted',
+		label: 'Not fitted to this body',
+		text
+	});
+	/** Moves an item has no art for here (it hides in them once worn). */
+	const missingMark = (missing: string): Mark | false =>
+		!!missing && { kind: 'missing', label: missing, text: `${missing}; it hides there.` };
 	/** Every corner icon an own item's tile shows, each with the words its tooltip and ⋮ menu give. */
 	function marksOf(it: NonNullable<typeof m>['items'][number]): Mark[] {
 		const st = statusOf(it);
 		const from = it.copiedFrom?.name;
 		return sortMarks([
-			doc.items[it.slot] === it.id &&
-				!doc.drafts[it.slot] && { kind: 'worn', label: 'Wearing', text: 'Wearing' },
+			doc.items[it.slot] === it.id && !doc.drafts[it.slot] && WORN,
 			!!from && {
 				kind: 'shared',
 				label: `Copied from ${from}`,
 				text: `Copied from ${from} for free.`
 			},
-			!!st.unfit && { kind: 'unfitted', label: 'Not fitted to this body', text: st.unfit },
+			!!st.unfit && unfitMark(st.unfit),
 			!!st.look && { kind: 'check', label: st.look, text: `${st.look}.` },
-			!!st.missing && {
-				kind: 'missing',
-				label: st.missing,
-				text: `${st.missing}; it hides there.`
-			},
+			missingMark(st.missing),
 			st.hidden && {
 				kind: 'hidden',
 				label: 'Hidden by another item',
@@ -222,28 +218,26 @@
 		return sortMarks([
 			{
 				kind: 'shared',
-				label: `From ${x.sourceName}`,
+				label: x.fit === 'remake' ? `From ${x.sourceName}` : `Free from ${x.sourceName}`,
 				text:
 					x.fit === 'remake'
 						? `From ${x.sourceName}.`
-						: `From ${x.sourceName}. Wearing it copies it here for free.`
+						: x.fit === 'copy'
+							? `From ${x.sourceName}, the same body: wearing it copies it here exactly, for free.`
+							: `From ${x.sourceName}. Wearing it copies it here for free.`
 			},
 			x.fit === 'remake' && {
 				kind: 'blocked',
 				label: 'Can’t be worn',
 				text: `It can’t be worn on ${m.name}: it has no frames for this character’s moves and views, or its art is too large to export. Make one for this character instead.`
 			},
-			x.fit === 'unfitted' && {
-				kind: 'unfitted',
-				label: 'Not fitted to this body',
-				text: unfitText(m, x.sourceName, x.notes ?? [])
-			},
+			x.fit === 'unfitted' && unfitMark(unfitText(m, x.sourceName, x.notes ?? [])),
 			x.fit === 'refit' && {
 				kind: 'check',
 				label: 'Check fit',
 				text: `Fitted to this body from ${x.sourceName}’s item for free. Check it in each move.`
 			},
-			!!missing && { kind: 'missing', label: missing, text: `${missing}; it hides there.` }
+			missingMark(missing)
 		]);
 	}
 	/** Moves the item has no art for here, worded like an own item's missing frames (it hides in them once worn). */
@@ -455,7 +449,6 @@
 							>
 							{#each s.items as it (it.id)}
 								{@const on = doc.items[it.slot] === it.id && !doc.drafts[it.slot]}
-								{@const st = statusOf(it)}
 								{@const marks = marksOf(it)}
 								<!-- The ⋮ is a sibling of the tile, never nested in it; right-click and Shift+F10 open the same menu. -->
 								<div class="tile-wrap" role="none" {@attach contextMenu(openMenu)}>
@@ -463,7 +456,7 @@
 										class="bu-tile item-tile"
 										data-selected={ui.selected === it.id || undefined}
 										data-tile={it.id}
-										data-dim={st.hidden || undefined}
+										data-dim={marks.some((x) => x.kind === 'hidden') || undefined}
 										aria-pressed={on}
 										aria-label={tileName(it.name, marks)}
 										onclick={() => wear(it.id)}
@@ -565,13 +558,12 @@
 											>
 											<span class="bu-tile-label tile-name">{x.input.name}</span>
 										</span>
-										{#if info.attention || on}<span class="tile-marks" aria-hidden="true"
-												>{#if info.attention}<span
-														class="bu-tile-status tile-status"
-														data-tone="warning"
-														title={info.text}><TriangleAlert size={14} /></span
-													>{:else}<span class="bu-tile-check"><Check /></span>{/if}</span
-											>{/if}
+										<TileMarks
+											marks={sortMarks([
+												on && WORN,
+												info.attention && { kind: 'check', label: info.text, text: info.text }
+											])}
+										/>
 									</button>
 									{#if x.phase === 'running'}<span
 											class="sr"
@@ -617,7 +609,7 @@
 									>
 										<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(key)}
 											>{#if seen.has(key)}<SharedThumb entry={x} />{/if}</span
-										><span class="bu-tile-label tile-name">{adding ? 'Adding…' : x.item.name}</span>
+										><span class="bu-tile-label tile-name">{x.item.name}</span>
 										<TileMarks {marks} />
 									</button>
 									<button
@@ -635,7 +627,7 @@
 									>
 								</div>
 							{/each}
-							{#if !count && !s.others.length}
+							{#if !count}
 								<button
 									class="bu-tile item-tile"
 									data-variant="add"
