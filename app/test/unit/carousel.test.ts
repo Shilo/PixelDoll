@@ -1,21 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import { castPose, carouselFrames } from '../../src/studio/experience/carousel.ts';
+import { heroScale, layout } from '../../src/studio/experience/geometry.ts';
 
 describe('character carousel geometry', () => {
-	it('centers one character and preserves side height and scale', () => {
-		expect(castPose(0, 1000, 320, 192)).toEqual({ x: 0, y: 0, scale: 1 });
-		expect(castPose(-1, 1000, 320, 192)).toEqual({ x: -306, y: -30, scale: 0.6 });
-		expect(castPose(1, 1000, 320, 192)).toEqual({ x: 306, y: -30, scale: 0.6 });
+	it('keeps subtly recessed companions separated and inside every responsive stage', () => {
+		for (let width = 240; width <= 3840; width += 17) {
+			for (let height = 240; height <= 2160; height += 31) {
+				const geometry = layout(width, height, 'characters');
+				const stage = geometry.stage.r - geometry.stage.l;
+				const size = 64 * heroScale(geometry, 50, 48);
+				const hero = castPose(0, stage, size);
+				const side = castPose(1, stage, size);
+				const heroSize = size * hero.scale;
+				const sideSize = size * side.scale;
+				expect(sideSize / heroSize).toBeCloseTo(0.85);
+				expect(side.y).toBeCloseTo(-heroSize * 0.0375);
+				expect(side.x - sideSize / 2 - heroSize / 2).toBeGreaterThanOrEqual(8 - 1e-8);
+				expect(side.x + sideSize / 2).toBeLessThanOrEqual(stage / 2 + 1e-8);
+			}
+		}
+	});
+	it('centers one character and keeps companions slightly smaller and higher', () => {
+		expect(castPose(0, 1000, 320)).toEqual({ x: 0, y: 0, scale: 1 });
+		expect(castPose(-1, 1000, 320)).toEqual({ x: -316, y: -12, scale: 0.85 });
+		expect(castPose(1, 1000, 320)).toEqual({ x: 316, y: -12, scale: 0.85 });
 	});
 	it('keeps the selected slot centered even when one neighbor is absent', () => {
 		for (const width of [300, 768, 1000, 1920]) {
-			expect(castPose(0, width, 320, 192).x).toBe(0);
-			expect(castPose(-1, width, 320, 192).x).toBe(-castPose(1, width, 320, 192).x);
+			expect(castPose(0, width, 320).x).toBe(0);
+			expect(castPose(-1, width, 320).x).toBe(-castPose(1, width, 320).x);
 		}
 	});
 	it('fits narrow stages without changing the artwork backing size', () => {
-		expect(castPose(0, 300, 320, 192).scale).toBe(0.45);
-		expect(castPose(1, 300, 320, 192).scale).toBe(0.28125);
+		expect(castPose(0, 300, 320).scale).toBeCloseTo(268 / 2.7 / 320);
+		expect(castPose(1, 300, 320).scale).toBeCloseTo((268 / 2.7 / 320) * 0.85);
 	});
 	it('routes wrapped actors invisibly around the edges', () => {
 		const frames = carouselFrames(

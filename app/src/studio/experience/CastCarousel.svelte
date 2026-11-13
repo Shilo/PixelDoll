@@ -11,7 +11,6 @@
 		entries,
 		context,
 		size,
-		sideSize,
 		direction,
 		name,
 		zoom = 1,
@@ -26,7 +25,6 @@
 		entries: Entry[];
 		context: string;
 		size: number;
-		sideSize: number;
 		direction: number;
 		name: string;
 		zoom?: number;
@@ -78,15 +76,7 @@
 	});
 	$effect(() => {
 		const next = entries;
-		const layout = [
-			context,
-			width,
-			height,
-			size,
-			sideSize,
-			ui.dpr,
-			prefersReducedMotion.current
-		].join('\0');
+		const layout = [context, width, height, size, ui.dpr, prefersReducedMotion.current].join('\0');
 		const forward = untrack(() => direction) || 1;
 		untrack(() => {
 			void reconcile(next, layout, forward);
@@ -146,7 +136,7 @@
 		for (const actor of actors) {
 			const node = nodes.get(actor.p.id);
 			if (!node) continue;
-			const pose = castPose(actor.offset, width, size, sideSize);
+			const pose = castPose(actor.offset, width, size);
 			if (actor.leaving) pose.x = -(actor.exitDirection ?? forward) * edge;
 			const endpoint = castTransform(pose);
 			node.style.transform = endpoint;

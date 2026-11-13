@@ -300,15 +300,10 @@ describe('finite scene camera', () => {
 	test('mobile world eye line uses the capped cast size, not its uncapped layout scale', () => {
 		const geometry = layout(390, 844, 'characters');
 		const scale = heroScale(geometry, 50, 48);
-		const pose = castPose(
-			0,
-			geometry.stage.r,
-			64 * scale,
-			64 * Math.max(1, Math.round(scale * 0.56))
-		);
+		const pose = castPose(0, geometry.stage.r, 64 * scale);
 		const hero = 50 * scale * pose.scale;
 		expect(pose.scale).toBeLessThan(1);
-		expect(hero).toBeCloseTo((50 * geometry.stage.r * 0.48) / 64);
+		expect(hero).toBeCloseTo((50 * (geometry.stage.r - 32)) / (2.7 * 64));
 		const base = placeWorld(geometry, worldArt('dark'), geometry.feet, hero);
 		expect(base.eye).toBeCloseTo(geometry.feet.y - hero * 0.86);
 	});

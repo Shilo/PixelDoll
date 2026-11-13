@@ -1,11 +1,13 @@
 export type CastPose = { x: number; y: number; scale: number };
 
-export function castPose(offset: number, width: number, size: number, sideSize: number): CastPose {
-	const hero = Math.min(size, width * 0.48);
-	const side = Math.min(sideSize, width * 0.3);
-	const gap = width * 0.05;
+const SIDE_SCALE = 0.85;
+
+export function castPose(offset: number, width: number, size: number): CastPose {
+	const gap = Math.max(8, width * 0.02);
+	const hero = Math.min(size, Math.max(0, width - 4 * gap) / (1 + 2 * SIDE_SCALE));
+	const side = hero * SIDE_SCALE;
 	const x = offset * ((hero + side) / 2 + gap);
-	return { x, y: offset ? -30 : 0, scale: (offset ? side : hero) / size };
+	return { x, y: offset ? -(hero - side) / 4 : 0, scale: (offset ? side : hero) / size };
 }
 
 export function castTransform(pose: CastPose): string {

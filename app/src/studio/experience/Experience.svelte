@@ -91,11 +91,10 @@
 	const g = $derived(layout(viewportWidth, viewportHeight, experience.screen, previewHeight));
 	// The cast is drawn from 64 px frames whose bodies stand about 50 px tall and 48 px wide.
 	const castScale = $derived(heroScale(g, 50, 48));
-	const castSize = (offset: number) =>
-		64 * (offset ? Math.max(1, Math.round(castScale * 0.56)) : castScale);
+	const castSize = $derived(64 * castScale);
 	const heroHeight = $derived(
 		experience.screen === 'characters'
-			? 50 * castScale * castPose(0, g.stage.r - g.stage.l, castSize(0), castSize(1)).scale
+			? 50 * castScale * castPose(0, g.stage.r - g.stage.l, castSize).scale
 			: experience.heroHeight || 50 * castScale
 	);
 	// The world rises with Preview's lifted feet (WorldStage), so its horizon stays on the characters' eye line.
@@ -110,8 +109,8 @@
 	const selectionArt = $derived.by(() => {
 		const width = g.stage.r - g.stage.l;
 		return neighbors.map(({ offset }) => {
-			const pose = castPose(offset, width, castSize(0), castSize(1));
-			const size = castSize(0) * pose.scale;
+			const pose = castPose(offset, width, castSize);
+			const size = castSize * pose.scale;
 			const bottom = g.feet.y + pose.y;
 			return {
 				offset,
@@ -134,8 +133,8 @@
 		stills.get(neighbors.find(({ offset }) => !offset)?.p.id ?? doc.id)
 	);
 	const selectionFocus = $derived.by(() => {
-		const size = castSize(0);
-		const pose = castPose(0, g.stage.r - g.stage.l, size, castSize(1));
+		const size = castSize;
+		const pose = castPose(0, g.stage.r - g.stage.l, size);
 		const anchors = thumbAnchors(size, selectedStill, ui.dpr);
 		const place = (point: { x: number; y: number }) => ({
 			x: (g.stage.l + g.stage.r) / 2 + pose.x + point.x * pose.scale,
@@ -146,11 +145,8 @@
 	// The selected character's fit in CSS px per art px, exactly as its thumbnail draws it: the shared zoom is absolute,
 	// and the camera multiplies this fit by the shown scale / fit.
 	const selectionFit = $derived.by(() => {
-		const size = castSize(0);
-		return (
-			thumbScale(size, selectedStill, ui.dpr) *
-			castPose(0, g.stage.r - g.stage.l, size, castSize(1)).scale
-		);
+		const size = castSize;
+		return thumbScale(size, selectedStill, ui.dpr) * castPose(0, g.stage.r - g.stage.l, size).scale;
 	});
 	const selectionZoom = $derived(sharedZoom('characters', selectionFit));
 	$effect(() => {
@@ -516,8 +512,7 @@
 			<CastCarousel
 				entries={neighbors}
 				context={list.map((project) => project.id).join('\0')}
-				size={castSize(0)}
-				sideSize={castSize(1)}
+				size={castSize}
 				direction={castDirection}
 				{name}
 				zoom={selectionCamera.value}
