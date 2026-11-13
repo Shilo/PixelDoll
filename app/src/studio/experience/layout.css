@@ -810,17 +810,6 @@
 .cast-character .sprite {
 	max-width: 100%;
 }
-.cast-reflection {
-	position: absolute;
-	top: 100%;
-	left: 0;
-	right: 0;
-	transform: scaleY(-0.35);
-	transform-origin: top;
-	opacity: 0.12;
-	mask-image: linear-gradient(transparent 20%, black);
-	pointer-events: none;
-}
 .selected-caption {
 	position: absolute;
 	z-index: 2;

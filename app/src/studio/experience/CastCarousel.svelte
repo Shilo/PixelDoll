@@ -2,7 +2,7 @@
 	import { onDestroy, tick, untrack } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import CharacterThumb from './CharacterThumb.svelte';
-	import { REFLECTION } from './config.ts';
+	import CastReflection from './CastReflection.svelte';
 	import { ui } from '../state.svelte.ts';
 	import { carouselFrames, castPose, castTransform } from './carousel.ts';
 	type Entry = { p: { id: string; name: string }; offset: number };
@@ -19,6 +19,8 @@
 		cameraRise = 0,
 		cameraOffset = { x: 0, y: 0 },
 		culledOffsets = [],
+		floorHorizon,
+		floorFocal,
 		select
 	}: {
 		entries: Entry[];
@@ -33,12 +35,16 @@
 		cameraRise?: number;
 		cameraOffset?: { x: number; y: number };
 		culledOffsets?: number[];
+		floorHorizon: number;
+		floorFocal: number;
 		select: (id: string, activate: boolean) => void;
 	} = $props();
 	let width = $state(0),
 		height = $state(0);
 	let actors = $state.raw<Actor[]>([]);
 	const nodes = new Map<string, HTMLButtonElement>();
+	const reflections = new Map<string, HTMLElement>();
+	const reflectionAnimations = new Map<string, Animation>();
 	const animations = new Map<string, Animation>();
 	let previous: Entry[] = [];
 	let geometry = '';
@@ -55,6 +61,16 @@
 	function cancel() {
 		for (const animation of animations.values()) animation.cancel();
 		animations.clear();
+		for (const animation of reflectionAnimations.values()) animation.cancel();
+		reflectionAnimations.clear();
+	}
+	function registerReflection(id: string) {
+		return (node: HTMLElement) => {
+			reflections.set(id, node);
+			return () => {
+				if (reflections.get(id) === node) reflections.delete(id);
+			};
+		};
 	}
 	onDestroy(() => {
 		generation++;
@@ -135,6 +151,11 @@
 			const endpoint = castTransform(pose);
 			node.style.transform = endpoint;
 			node.style.opacity = actor.leaving ? '0' : '1';
+			const reflection = reflections.get(actor.p.id);
+			if (reflection) {
+				reflection.style.transform = endpoint;
+				reflection.style.opacity = node.style.opacity;
+			}
 			if (!moving) continue;
 			const from = poses.get(actor.p.id) ?? {
 				transform: castTransform({ ...pose, x: forward * edge }),
@@ -154,6 +175,11 @@
 				easing: 'cubic-bezier(0.16, 1, 0.3, 1)'
 			});
 			animations.set(actor.p.id, animation);
+			if (reflection)
+				reflectionAnimations.set(
+					actor.p.id,
+					reflection.animate(frames, animation.effect!.getTiming())
+				);
 			animation.onfinish = () => {
 				if (epoch !== generation) return;
 				animations.delete(actor.p.id);
@@ -176,6 +202,16 @@
 	>
 		{#each actors as actor (actor.p.id)}
 			{@const culled = !!actor.offset && culledOffsets.includes(actor.offset)}
+			<div
+				{@attach registerReflection(actor.p.id)}
+				class="cast-reflection-actor"
+				aria-hidden="true"
+				style:visibility={culled ? 'hidden' : undefined}
+				style:width="{size}px"
+				style:margin-left="{-size / 2}px"
+			>
+				<CastReflection id={actor.p.id} {size} horizon={floorHorizon} focal={floorFocal} />
+			</div>
 			<button
 				{@attach register(actor.p.id)}
 				class="cast-character carousel-character"
@@ -196,11 +232,6 @@
 				onclick={(event) => clicked(event, actor)}
 			>
 				<CharacterThumb id={actor.p.id} name={actor.p.name} {size} />
-				{#if REFLECTION.enabled && REFLECTION.selection}
-					<span class="cast-reflection" aria-hidden="true">
-						<CharacterThumb id={actor.p.id} name={actor.p.name} {size} />
-					</span>
-				{/if}
 			</button>
 		{/each}
 	</div>
@@ -212,12 +243,20 @@
 		inset: 0;
 	}
 
-	.cast-character.carousel-character {
+	.cast-character.carousel-character,
+	.cast-reflection-actor {
 		position: absolute;
 		left: 50%;
 		bottom: 0;
 		max-width: none;
 		margin-bottom: 0;
 		transform-origin: 50% 100%;
+	}
+	button.carousel-character {
+		z-index: 1;
+	}
+	.cast-reflection-actor {
+		z-index: 0;
+		pointer-events: none;
 	}
 </style>

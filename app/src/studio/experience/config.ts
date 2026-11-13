@@ -55,16 +55,6 @@ export const WORLDS: Record<
 	}
 };
 
-// Code-only controls, intentionally absent from the user preferences.
-export const REFLECTION = {
-	enabled: true,
-	selection: true,
-	preview: true,
-	topdown: true,
-	side: true,
-	opacity: 0.12,
-	compression: 0.35
-};
 export const MOTION = {
 	speed: 300,
 	cameraResponse: 9,
