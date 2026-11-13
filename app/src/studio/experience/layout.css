@@ -916,10 +916,13 @@
 	align-items: center;
 	gap: 12px;
 	padding: 8px 12px 8px 8px;
-	min-height: 68px;
 	text-align: left;
 	border-color: var(--bu-rim);
 	background: var(--bu-tile);
+}
+:is(.character-row, .character-entry > .row, .outfits .rows > li > .row, .move-row) {
+	min-height: 74px;
+	padding-block: 4px;
 }
 .character-row > span:last-child {
 	display: flex;
