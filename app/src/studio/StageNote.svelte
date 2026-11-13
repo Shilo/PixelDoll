@@ -135,9 +135,8 @@
 				class="bu-action btn sm"
 				data-variant="outline"
 				onclick={() =>
-					withKey(() =>
-						openNewItem(groupOf(remake.slot).id, { slot: remake.slot, prompt: remake.prompt })
-					)}>{copyOnly ? `Make one for ${m?.name}` : 'Make it again…'}</button
+					openNewItem(groupOf(remake.slot).id, { slot: remake.slot, prompt: remake.prompt })}
+				>{copyOnly ? `Make one for ${m?.name}` : 'Make it again…'}</button
 			>
 		{/if}
 	</div>

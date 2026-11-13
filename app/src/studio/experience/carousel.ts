@@ -9,8 +9,10 @@ export function castPose(
 	span = 1,
 	art?: { hero: { l: number; r: number }; side: { l: number; r: number } }
 ): CastPose {
-	const gap = Math.max(8, Math.min(16, width * 0.02));
-	const hero = Math.min(size, Math.max(0, width - 4 * gap) / ((1 + 2 * SIDE_SCALE) * span));
+	const castSpan = (1 + 2 * SIDE_SCALE) * span;
+	const fitted = Math.min(size, width / (castSpan + 4 * 0.1));
+	const gap = Math.max(12, Math.min(48, fitted * 0.1));
+	const hero = Math.min(size, Math.max(0, width - 4 * gap) / castSpan);
 	const side = hero * SIDE_SCALE;
 	const reach = art
 		? (offset > 0 ? art.hero.r - art.side.l * SIDE_SCALE : art.side.r * SIDE_SCALE - art.hero.l) /

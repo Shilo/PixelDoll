@@ -16,25 +16,24 @@ describe('character carousel geometry', () => {
 					const side = castPose(1, stage, size, span);
 					const heroSize = size * hero.scale;
 					const sideSize = size * side.scale;
+					const gap = side.x - (sideSize * span) / 2 - (heroSize * span) / 2;
 					expect(sideSize / heroSize).toBeCloseTo(0.85);
 					expect(side.y).toBeCloseTo(-heroSize * 0.0375);
-					expect(side.x - (sideSize * span) / 2 - (heroSize * span) / 2).toBeGreaterThanOrEqual(
-						8 - 1e-8
-					);
-					expect(side.x + (sideSize * span) / 2).toBeLessThanOrEqual(stage / 2 + 1e-8);
+					expect(gap).toBeCloseTo(Math.max(12, Math.min(48, heroSize * 0.1)));
+					expect(side.x + (sideSize * span) / 2 + gap).toBeLessThanOrEqual(stage / 2 + 1e-8);
 				}
 			}
 		}
 	});
 	it('centers one character and keeps companions slightly smaller and higher', () => {
 		expect(castPose(0, 1000, 320)).toEqual({ x: 0, y: 0, scale: 1 });
-		expect(castPose(-1, 1000, 320)).toEqual({ x: -312, y: -12, scale: 0.85 });
-		expect(castPose(1, 1000, 320)).toEqual({ x: 312, y: -12, scale: 0.85 });
+		expect(castPose(-1, 1000, 320)).toEqual({ x: -328, y: -12, scale: 0.85 });
+		expect(castPose(1, 1000, 320)).toEqual({ x: 328, y: -12, scale: 0.85 });
 	});
 	it('uses painted silhouettes instead of transparent frame padding for closer horizontal slots', () => {
 		const full = castPose(1, 1000, 320);
 		const trimmed = castPose(1, 1000, 320, 0.6);
-		expect(trimmed.x).toBeCloseTo(193.6);
+		expect(trimmed.x).toBeCloseTo(209.6);
 		expect(trimmed.x).toBeLessThan(full.x * 0.7);
 		expect(trimmed.y).toBe(full.y);
 		expect(trimmed.scale).toBe(full.scale);
@@ -44,10 +43,10 @@ describe('character carousel geometry', () => {
 		const side = { l: -30, r: 60 };
 		const right = castPose(1, 1000, 320, 1, { hero, side });
 		const left = castPose(-1, 1000, 320, 1, { hero, side });
-		expect(right.x + side.l * right.scale - hero.r).toBeCloseTo(16);
-		expect(hero.l - (left.x + side.r * left.scale)).toBeCloseTo(16);
-		expect(right.x).toBeCloseTo(81.5);
-		expect(left.x).toBeCloseTo(-187);
+		expect(right.x + side.l * right.scale - hero.r).toBeCloseTo(32);
+		expect(hero.l - (left.x + side.r * left.scale)).toBeCloseTo(32);
+		expect(right.x).toBeCloseTo(97.5);
+		expect(left.x).toBeCloseTo(-203);
 		expect(left.y).toBe(right.y);
 	});
 	it('keeps mixed-size and asymmetrically padded bodies on the same slot feet line', () => {
@@ -90,8 +89,8 @@ describe('character carousel geometry', () => {
 		}
 	});
 	it('fits narrow stages without changing the artwork backing size', () => {
-		expect(castPose(0, 300, 320).scale).toBeCloseTo(268 / 2.7 / 320);
-		expect(castPose(1, 300, 320).scale).toBeCloseTo((268 / 2.7 / 320) * 0.85);
+		expect(castPose(0, 300, 320).scale).toBeCloseTo(252 / 2.7 / 320);
+		expect(castPose(1, 300, 320).scale).toBeCloseTo((252 / 2.7 / 320) * 0.85);
 	});
 	it('routes wrapped actors invisibly around the edges', () => {
 		const frames = carouselFrames(

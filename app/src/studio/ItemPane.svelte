@@ -511,13 +511,11 @@
 					class="bu-action btn"
 					data-variant="outline"
 					onclick={() =>
-						withKey(() =>
-							openNewItem(groupOf(it.slot).id, {
-								slot: it.slot,
-								prompt: it.prompt,
-								route: it.route
-							})
-						)}><RefreshCw size={14} />{remakeOnly ? `Make one for ${m.name}` : 'Try again'}</button
+						openNewItem(groupOf(it.slot).id, {
+							slot: it.slot,
+							prompt: it.prompt,
+							route: it.route
+						})}><RefreshCw size={14} />{remakeOnly ? `Make one for ${m.name}` : 'Try again'}</button
 				>
 			{/if}
 			{#if !isDemo()}

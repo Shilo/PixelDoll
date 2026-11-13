@@ -1045,8 +1045,8 @@ test('asymmetric padded artwork enlarges around its body and shrinks around its 
 				side.right <= paintedMain.left
 					? paintedMain.left - side.right
 					: side.left - paintedMain.right;
-			expect(gap).toBeGreaterThanOrEqual(7.9);
-			expect(gap).toBeLessThanOrEqual(16.1);
+			const expectedGap = Math.max(12, Math.min(48, main.height * (64 / 50) * 0.1));
+			expect(gap).toBeCloseTo(expectedGap, 1);
 		}
 		await shot(page, info, `selection-grounded-${target === id ? 'padded' : 'fixture'}`);
 	}
