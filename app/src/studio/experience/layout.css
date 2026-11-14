@@ -239,8 +239,8 @@
 	display: block;
 }
 :is(.sheet-layout, .phone-layout) .experience-header .view-modes .bu-action {
-	width: var(--ctl-h);
-	height: var(--ctl-h);
+	width: 44px;
+	height: 40px;
 }
 @media (max-width: 899px), (max-height: 540px) {
 	.name-facts {
@@ -379,7 +379,7 @@
 	justify-content: center;
 	flex-wrap: wrap;
 	gap: 2px;
-	min-height: calc(var(--ctl-h) + 10px);
+	min-height: 54px;
 	max-width: 100%;
 	padding: 4px 6px;
 	pointer-events: auto;
@@ -1295,7 +1295,7 @@
 .studio-app .character-sheet .character-name {
 	width: 100%;
 	max-width: none;
-	min-height: var(--ctl-h);
+	min-height: 44px;
 	font-size: 16px;
 }
 .studio-app .character-sheet .sheet-body {
@@ -1362,7 +1362,7 @@
 .studio-app .character-sheet .creator-tabs button {
 	flex: 0 0 auto;
 	font-size: 18px;
-	min-height: var(--ctl-h);
+	min-height: 44px;
 	padding-inline: 0;
 }
 .studio-app .character-sheet .editor-toolbar {
@@ -1392,14 +1392,13 @@
 .studio-app .character-sheet .facing > .help-title {
 	font-size: 14px;
 }
-/* 16 px text keeps phones from zooming. Only one-line fields get the control-height floor, so they line up with the 48 px
-   buttons beside them (Frame's Auto): textareas size themselves (.details-input, .exact-input) and switches keep their own
-   shape, which :where adds without raising specificity. */
+/* 16 px text keeps phones from zooming. One-line fields and Frame's Auto share a 44 px floor; textareas and switches
+   retain their own geometry. */
 .studio-app .character-sheet :is(input, select, textarea) {
 	font-size: 16px;
 }
 .studio-app .character-sheet :is(input:where(:not([type='checkbox'], [type='radio'])), select) {
-	min-height: var(--ctl-h);
+	min-height: 44px;
 }
 .studio-app .character-sheet .details-input {
 	min-height: 112px;
@@ -1428,7 +1427,7 @@
 .studio-app .character-sheet .direction-presets .btn {
 	white-space: normal;
 	font-size: 14px;
-	min-height: var(--ctl-h);
+	min-height: 44px;
 }
 .studio-app .character-sheet .prompt-excerpt {
 	font-size: 14px;

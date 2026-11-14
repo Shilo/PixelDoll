@@ -2862,21 +2862,21 @@ test.describe('Preview facing lineup', () => {
 							.filter((button) => button.getClientRects().length)
 							.map((button) => button.getBoundingClientRect().toJSON())
 					)) {
-					expect(box.width).toBeGreaterThanOrEqual(48);
-					expect(box.height).toBeGreaterThanOrEqual(48);
+					expect(box.width).toBeGreaterThanOrEqual(44);
+					expect(box.height).toBeGreaterThanOrEqual(44);
 				}
 			}
 		}
 		expect([...heights].some((height) => height >= 100)).toBe(true);
 		expect([...heights].some((height) => height >= 146)).toBe(true);
-		expect(heights.has(58)).toBe(true);
+		expect(heights.has(54)).toBe(true);
 		const views = page.getByRole('group', { name: 'Character view', exact: true });
 		for (const mode of ['Top-down', 'Side-scroller', 'Preview']) {
 			await views.getByRole('button', { name: mode, exact: true }).click();
 			const expected =
 				mode === 'Preview'
 					? (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!.height
-					: 58;
+					: 54;
 			await expect
 				.poll(() =>
 					page

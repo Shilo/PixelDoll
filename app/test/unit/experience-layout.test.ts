@@ -85,7 +85,7 @@ const SIZES = [
 ] as const;
 
 describe('scene geometry', () => {
-	for (const height of [58, 100, 146, 192])
+	for (const height of [54, 100, 146, 192])
 		test(`reserves a measured ${height}px playback bar without moving its bottom edge`, () => {
 			for (const [width, viewportHeight] of [
 				[500, 700],
@@ -112,7 +112,7 @@ describe('scene geometry', () => {
 	test('hides an unusable short-phone sheet rather than covering wrapped controls', () => {
 		const before = layout(320, 400, 'studio');
 		const wrapped = layout(320, 400, 'studio', 146);
-		expect(before.sheetHeight).toBe(150);
+		expect(before.sheetHeight).toBe(200);
 		expect(wrapped.sheet).toBe(true);
 		expect(wrapped.sheetHeight).toBe(0);
 		expect(wrapped.stage.r).toBe(before.stage.r);
@@ -209,9 +209,8 @@ describe('scene geometry', () => {
 				expect(g.sheetTop, at).toBeLessThanOrEqual(h);
 				expect(g.stage.r - g.stage.l, at).toBeGreaterThan(0);
 				expect(g.feet.y, at).toBeGreaterThan(g.stage.t);
-				// Short screens retain a compact scrolling sheet; normal screens keep the full panel minimum.
-				if (g.sheet)
-					expect(g.sheetHeight === 0 || g.sheetHeight >= (g.short ? 144 : 200), at).toBe(true);
+				// A sheet is tall enough to use or hidden (0) until the window grows; never a 1-199 px sliver.
+				if (g.sheet) expect(g.sheetHeight === 0 || g.sheetHeight >= 200, at).toBe(true);
 				else expect(g.sheetHeight, at).toBe(0);
 				if (screen !== 'studio') continue;
 				// The playback bar starts below the header and the phone's floating view tabs (the stage top), ends inside
@@ -222,20 +221,19 @@ describe('scene geometry', () => {
 			}
 		// A phone held sideways gets the side rail rather than a 70 px sheet.
 		expect(layout(568, 320, 'studio').sheet).toBe(false);
-		expect(layout(320, 400, 'studio').sheetHeight).toBe(150);
-		expect(layout(320, 380, 'studio').sheetHeight).toBe(0);
+		expect(layout(320, 400, 'studio').sheetHeight).toBe(200);
 		// 320×240 has no room for a usable sheet under the stage, so the panel hides.
 		expect(layout(320, 240, 'studio').sheetHeight).toBe(0);
 	});
 
-	test('the playback bar is always one row; stages under 360 px cycle facing with one button', () => {
+	test('the playback bar is always one row; stages under 300 px cycle facing with one button', () => {
 		for (const [w, h] of SIZES) {
 			const g = layout(w, h, 'studio');
-			expect(g.playbackHeight).toBe(58);
-			expect(g.cycleFacing, `${w}×${h}`).toBe(g.stage.r - g.stage.l < 360);
+			expect(g.playbackHeight).toBe(54);
+			expect(g.cycleFacing, `${w}×${h}`).toBe(g.stage.r - g.stage.l < 300);
 		}
 		expect(layout(568, 320, 'studio').cycleFacing).toBe(true);
-		expect(layout(320, 568, 'studio').cycleFacing).toBe(true);
+		expect(layout(320, 568, 'studio').cycleFacing).toBe(false);
 	});
 
 	test('Characters fills the same share of the free height on ultrawide as on 1920×1080', () => {

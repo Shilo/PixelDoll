@@ -5883,10 +5883,10 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	const status = (await hat.locator('.tile-status, .bu-tile-check').first().boundingBox())!;
 	expect(status.x).toBeCloseTo(tile.x + 7, 0);
 	expect(status.x + status.width).toBeLessThan(hit.x);
-	// The category's Random and + actions are full 48 px targets too.
+	// Category actions retain their contextual 44 px targets.
 	for (const name of ['Random head item', 'New head item']) {
 		const box = (await head.getByRole('button', { name, exact: true }).boundingBox())!;
-		expect(Math.min(box.width, box.height), name).toBeGreaterThanOrEqual(48);
+		expect(Math.min(box.width, box.height), name).toBeGreaterThanOrEqual(44);
 	}
 	// Empty and New tiles have no menu.
 	await expect(head.getByRole('button', { name: /^More options for Empty/ })).toHaveCount(0);

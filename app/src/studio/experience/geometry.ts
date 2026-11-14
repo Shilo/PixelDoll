@@ -51,11 +51,11 @@ export interface Layout {
 	toastTop: number;
 }
 
-export const PLAYBACK_HEIGHT = 58;
+export const PLAYBACK_HEIGHT = 54;
 /** The phone's floating view tab row under the header. */
-export const VIEW_TABS = 48;
-/** The side rail's first row: Customize's panel tabs, 48 px. */
-const PANEL_ROW = 48;
+export const VIEW_TABS = 40;
+/** The side rail's first row: Customize's panel tabs, 44 px. */
+const PANEL_ROW = 44;
 /** The eye line sits this share of the visible character height above the feet. */
 export const EYE = 0.86;
 
@@ -77,9 +77,9 @@ export function ringRise(
 }
 
 const GAP = 12;
-/** Stage widths below which the playback bar goes compact, then cycles facing (48 px controls need ~360 px). */
+/** Stage widths below which the playback bar goes compact, then cycles facing (Play, move, four directions need ~300 px). */
 const COMPACT_STAGE = 430,
-	CYCLE_STAGE = 360;
+	CYCLE_STAGE = 300;
 /** The shortest bottom sheet that still shows a category header and a row of tiles. */
 const MIN_SHEET = 200;
 /** Stage height the playback bar needs under the header: the feet 16 px below the stage top, 14 px above the bar,
@@ -95,11 +95,9 @@ export function layout(w: number, h: number, screen: Screen, measuredPlaybackHei
 		screen === 'studio' ? Math.max(PLAYBACK_HEIGHT, measuredPlaybackHeight) : PLAYBACK_HEIGHT;
 	const short = h <= 540,
 		phone = w <= 600;
-	const minSheet = short ? 144 : MIN_SHEET;
-	const stageFloor = STAGE_FLOOR + (short ? 48 : 0);
 	const edge = phone ? 16 : w < 1100 ? 20 : w >= 1920 ? 32 : 24;
 	const top = short || phone ? 8 : 12,
-		row = 48,
+		row = short || phone ? 44 : 48,
 		headerBottom = top + row;
 	// Desktop panels grow to a third of the window (up to 480 px) so the Wardrobe fits 3 items per row at 1280 and 4 from
 	// 1440 (ui-lab-9); the hero's scale is set by the height, so it only shifts left.
@@ -114,18 +112,18 @@ export function layout(w: number, h: number, screen: Screen, measuredPlaybackHei
 	let sheetHeight = sheet
 		? Math.round(Math.min(h - 250, Math.max(240, h * 0.45), Math.max(200, h - heroFloor)))
 		: 0;
-	if (sheet && sheetHeight < minSheet) {
+	if (sheet && sheetHeight < MIN_SHEET) {
 		// Too short for a usable sheet (a phone in landscape, a squat window): the panel moves beside the stage when a
 		// stage still fits next to it; otherwise it keeps a usable height if the stage still fits above it, else it
 		// hides until the window grows (a sliver of a sheet shows nothing usable and covers the character).
 		if (w - edge - rail - GAP >= MIN_STAGE) {
 			sheet = false;
 			sheetHeight = 0;
-		} else sheetHeight = h - headerBottom - tabs - stageFloor >= minSheet ? minSheet : 0;
+		} else sheetHeight = h - headerBottom - tabs - STAGE_FLOOR >= MIN_SHEET ? MIN_SHEET : 0;
 	}
 	if (studio && sheet && sheetHeight) {
-		const available = h - headerBottom - tabs - stageFloor - (playbackHeight - PLAYBACK_HEIGHT);
-		sheetHeight = available >= minSheet ? Math.min(sheetHeight, available) : 0;
+		const available = h - headerBottom - tabs - STAGE_FLOOR - (playbackHeight - PLAYBACK_HEIGHT);
+		sheetHeight = available >= MIN_SHEET ? Math.min(sheetHeight, available) : 0;
 	}
 	const sheetTop = h - sheetHeight;
 	const railTop = headerBottom + (short ? 4 : 12);
@@ -136,7 +134,7 @@ export function layout(w: number, h: number, screen: Screen, measuredPlaybackHei
 		compactPlayback = stageWidth <= COMPACT_STAGE,
 		cycleFacing = stageWidth < CYCLE_STAGE;
 	// A phone held sideways (short, with the floating view tabs) lowers the bar to the window edge and lets the hero
-	// fill all of the little height left under the 48 px header and tabs, so it still draws at 2 whole pixels per pixel.
+	// fill more of the little height left, so it still draws at 2 whole pixels per pixel.
 	const tight = studio && short && !sheet && tabs > 0;
 	// The bar never rises into the header or the view tabs, even in windows too short for the usual spacing.
 	const playbackTop = Math.max(
@@ -172,7 +170,7 @@ export function layout(w: number, h: number, screen: Screen, measuredPlaybackHei
 		cycleFacing,
 		listTop,
 		feet: { x: Math.round((stage.l + stage.r) / 2), y: feetY },
-		fill: tight ? 1 : studio ? 0.75 : 0.6,
+		fill: tight ? 0.9 : studio ? 0.75 : 0.6,
 		column,
 		// Spanning the width beside a short rail, a toast on Customize starts under the panel tabs so it never covers
 		// them. Characters keeps it high: lower, it would hide the selected character, the screen's hero.

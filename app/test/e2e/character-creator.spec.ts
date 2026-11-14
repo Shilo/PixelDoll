@@ -816,13 +816,31 @@ for (const viewport of [
 	{ width: 844, height: 390 },
 	{ width: 768, height: 1024 },
 	{ width: 900, height: 900 },
-	{ width: 1440, height: 900 }
+	{ width: 1440, height: 900 },
+	{ width: 1920, height: 1080 }
 ])
 	test(`creator fits ${viewport.width}×${viewport.height} without clipped controls`, async ({
 		page
 	}) => {
 		await page.setViewportSize(viewport);
 		const sheet = await open(page);
+		// Full desktop fits in one screen; narrower layouts deliberately reflow and scroll.
+		if (viewport.width === 1920) {
+			for (const theme of ['dark', 'light']) {
+				await page.evaluate(
+					(theme) => document.documentElement.setAttribute('data-theme', theme),
+					theme
+				);
+				await expect
+					.poll(() =>
+						sheet.locator('.sheet-body').evaluate((el) => ({
+							x: el.scrollWidth - el.clientWidth,
+							y: el.scrollHeight - el.clientHeight
+						}))
+					)
+					.toEqual({ x: 0, y: 0 });
+			}
+		}
 		const layout = await sheet.locator('.creator-grid').evaluate((element) => {
 			const style = getComputedStyle(element),
 				width = element.getBoundingClientRect().width;
