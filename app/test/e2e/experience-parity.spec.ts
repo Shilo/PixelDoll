@@ -168,6 +168,37 @@ test('the Characters panel keeps its Customize button on the edge margin', async
 	}
 });
 
+test('character list thumbnails and New stay left-aligned', async ({ page }) => {
+	for (const [width, height] of [
+		[1440, 900],
+		[960, 800],
+		[390, 844]
+	]) {
+		await page.setViewportSize({ width, height });
+		await landing(page);
+		for (const theme of ['dark', 'light']) {
+			await page.evaluate(
+				(value) => document.documentElement.setAttribute('data-theme', value),
+				theme
+			);
+			const rows = page.locator('.character-rows :is(.character-row, .new-character-row)');
+			await expect(rows).toHaveCount(2);
+			for (const row of await rows.all()) {
+				const geometry = await row.evaluate((node) => {
+					const style = getComputedStyle(node);
+					const bounds = node.getBoundingClientRect();
+					const thumbnail = node.firstElementChild!.getBoundingClientRect();
+					return {
+						inset: thumbnail.left - bounds.left,
+						expected: parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft)
+					};
+				});
+				expect(geometry.inset).toBeCloseTo(geometry.expected, 0);
+			}
+		}
+	}
+});
+
 test('view tabs keep equal widths and never move when switching views', async ({ page }) => {
 	for (const [width, height] of [
 		[1440, 900],
