@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PixelDoll slot workshop</title>
+    <link
+      rel="stylesheet"
+      href="../../../../app/node_modules/@shilo/bronze-ui/styles/style.css"
+    />
+    <link rel="stylesheet" href="workshop.css" />
+  </head>
+  <body>
+    <main id="workshop">
+      <header class="topbar">
+        <div>
+          <h1>Slot workshop</h1>
+          <p class="bu-muted bu-small">
+            Interactive proposal. Sample data only. No generation calls.
+          </p>
+        </div>
+        <div class="bu-actions">
+          <button class="bu-btn" id="theme">Light theme</button
+          ><button class="bu-btn" id="undo" disabled>Undo</button
+          ><button class="bu-btn" id="reset">Reset demo</button>
+        </div>
+      </header>
+      <details class="bu-details experiment-controls" open>
+        <summary>Compare design decisions</summary>
+        <div class="controls-grid">
+          <label
+            >Slot identity<select class="bu-select" id="identity">
+              <option value="key">Readable key + editable name</option>
+              <option value="name">Name is the reference</option>
+            </select></label
+          >
+          <label
+            >Hide populated slots<select class="bu-select" id="hide-policy">
+              <option value="empty">Block until empty</option>
+              <option value="collapsed">Collapse at the bottom</option>
+              <option value="drawer">One hidden-slots group</option>
+            </select></label
+          >
+          <label
+            >Built-in editing<select class="bu-select" id="preset-policy">
+              <option value="fixed">Copy to customize</option>
+              <option value="editable">Customize in place + reset</option>
+            </select></label
+          >
+          <label
+            >Underwear preset<select class="bu-select" id="underwear">
+              <option value="off">Custom slot only</option>
+              <option value="combined">One hidden Underwear slot</option>
+              <option value="split">Two hidden underwear slots</option>
+            </select></label
+          >
+        </div>
+        <p id="decision-note" class="bu-small bu-muted"></p>
+      </details>
+      <nav class="bu-tabs" role="tablist" aria-label="Workshop views">
+        <button
+          role="tab"
+          aria-controls="content"
+          id="tab-wardrobe"
+          aria-selected="false"
+          data-view="wardrobe"
+        >
+          Wardrobe</button
+        ><button
+          role="tab"
+          aria-controls="content"
+          id="tab-manage"
+          aria-selected="true"
+          data-view="manage"
+        >
+          Manage slots</button
+        ><button
+          role="tab"
+          aria-controls="content"
+          id="tab-export"
+          aria-selected="false"
+          data-view="export"
+        >
+          Export lab
+        </button>
+      </nav>
+      <div class="workspace">
+        <aside class="preview-panel">
+          <div class="section-line">
+            <h2>Adventurer</h2>
+            <span class="bu-muted bu-small">64 px</span>
+          </div>
+          <canvas
+            id="actor"
+            width="64"
+            height="64"
+            aria-label="Demo character assembled from existing fixture artwork"
+          ></canvas>
+          <label
+            >Facing<select id="facing" class="bu-select">
+              <option value="0">South</option>
+              <option value="1">East</option>
+              <option value="2">North</option>
+            </select></label
+          >
+          <p class="bu-muted bu-small">
+            Existing demo art. Preview shows front-layer order. Joint edits,
+            generation and full occlusion are not simulated.
+          </p>
+          <div id="wearing" class="bu-small"></div>
+          <details class="bu-details">
+            <summary>Try these tasks</summary>
+            <ol class="tasks">
+              <li>
+                Try hiding Back while its cape is equipped. Compare all three
+                hiding policies.
+              </li>
+              <li>
+                Create custom Neck while the built-in is hidden. Rename it and
+                inspect its API reference.
+              </li>
+              <li>
+                Copy Off hand and change its attachment. This stores an
+                unqualified experiment, not supported generation.
+              </li>
+              <li>
+                Enable Underwear and compare one slot with two. The base's baked
+                clothing stays.
+              </li>
+              <li>
+                Move slots using handles or arrow buttons. Depth stays
+                independent.
+              </li>
+            </ol>
+          </details>
+        </aside>
+        <section
+          id="content"
+          role="tabpanel"
+          tabindex="0"
+          aria-labelledby="tab-manage"
+        ></section>
+      </div>
+      <footer class="bu-muted bu-small">
+        No real characters are read or saved. Settings and downloads are design
+        examples. Reset restores sample data.
+      </footer>
+      <div id="status" role="status" aria-live="polite"></div>
+      <dialog
+        class="bu-dialog"
+        id="editor"
+        aria-labelledby="editor-title"
+      ></dialog>
+      <dialog
+        class="bu-dialog"
+        id="confirm"
+        aria-labelledby="confirm-title"
+      ></dialog>
+    </main>
+    <script src="workshop.js"></script>
+  </body>
+</html>

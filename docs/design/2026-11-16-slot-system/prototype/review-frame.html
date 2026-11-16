@@ -1,0 +1,1841 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Slot decisions</title></head><body><style>/* Owned semantic roles. Dark/light are first-class, not an inversion filter.
+   Only this file defines UI colors, shared geometry, type and material values. */
+:root {
+  color-scheme: dark;
+  --bu-canvas: #111317; --bu-surface: #202329; --bu-field: #202329;
+  --bu-text: #f2eee6; --bu-muted: #b8b5ad;
+  --bu-accent: #c9a66b; --bu-on-accent: #111317;
+  --bu-success: #84c79a; --bu-warning: #e7bc75; --bu-danger: #f2a099; --bu-info: #9bbce5;
+  --bu-shadow: 0 8px 28px rgb(0 0 0 / .18); --bu-dialog-shadow: 0 20px 64px rgb(0 0 0 / .32);
+  --bu-scrim: rgb(0 0 0 / .5);
+  --bu-font: 'Segoe UI', system-ui, sans-serif; --bu-display: Georgia, 'Times New Roman', serif;
+  --bu-mono: ui-monospace, Consolas, monospace;
+  --bu-radius-control: 8px; --bu-radius-panel: 12px; --bu-radius-dialog: 16px;
+  --bu-space-1: 4px; --bu-space-2: 8px; --bu-space-3: 12px; --bu-space-4: 16px; --bu-space-5: 20px; --bu-space-6: 24px; --bu-space-8: 32px;
+  --bu-control: 44px; --bu-text-size: 16px; --bu-small: 14px; --bu-line-height: 1.5;
+  --bu-duration: 140ms; --bu-blur: 12px;
+}
+:root[data-theme=light] {
+  color-scheme: light;
+  --bu-canvas: #eeeae2; --bu-surface: #faf7f0; --bu-field: #faf7f0;
+  --bu-text: #25282d; --bu-muted: #5e625f;
+  --bu-accent: #76562f; --bu-on-accent: #fff;
+  --bu-success: #226c43; --bu-warning: #775319; --bu-danger: #a3312f; --bu-info: #345f8e;
+  --bu-shadow: 0 8px 28px rgb(0 0 0 / .1); --bu-dialog-shadow: 0 20px 64px rgb(0 0 0 / .2);
+  --bu-scrim: rgb(0 0 0 / .34);
+}
+/* Derived roles resolve at the same scope as the scheme. */
+:root {
+  --bu-line: color-mix(in srgb, var(--bu-muted) 27%, var(--bu-surface));
+  --bu-border: color-mix(in srgb, var(--bu-muted) 80%, var(--bu-surface));
+  --bu-rim: color-mix(in srgb, var(--bu-muted) 38%, transparent);
+  --bu-hover: color-mix(in srgb, var(--bu-text) 7%, var(--bu-surface));
+  --bu-selected: color-mix(in srgb, var(--bu-accent) 13%, var(--bu-surface));
+  --bu-floating: color-mix(in srgb, var(--bu-surface) 92%, transparent);
+  --bu-focus: var(--bu-accent);
+  --bu-sheet:color-mix(in srgb,var(--bu-surface) 99%,transparent);
+  --bu-sheet-soft:color-mix(in srgb,var(--bu-surface) 86%,transparent);
+  --bu-diagram:color-mix(in srgb,var(--bu-surface) 15%,transparent);
+  --bu-gesture-track:color-mix(in srgb,var(--bu-accent) 6%,transparent);
+  --bu-gesture-track-border:color-mix(in srgb,var(--bu-accent) 50%,transparent);
+  --bu-gesture-thumb:color-mix(in srgb,var(--bu-accent) 70%,transparent);
+  --bu-action-hover:color-mix(in srgb,var(--bu-surface) 80%,transparent);
+  --bu-outline:color-mix(in srgb,var(--bu-surface) 40%,transparent);
+  --bu-row-stroke:color-mix(in srgb,var(--bu-accent) 30%,transparent);
+  --bu-row-selected:color-mix(in srgb,var(--bu-accent) 12%,transparent);
+  --bu-direction-selected:color-mix(in srgb,var(--bu-accent) 14%,transparent);
+  --bu-tile: color-mix(in srgb,var(--bu-surface) 65%,transparent);
+  --bu-reading-start: color-mix(in srgb,var(--bu-surface) 85%,transparent);
+  --bu-reading-end: color-mix(in srgb,var(--bu-surface) 88%,transparent);
+  --bu-scroll-thumb: color-mix(in srgb, var(--bu-muted) 60%, var(--bu-accent));
+  --bu-scroll-track: transparent;
+}
+:root[data-theme=light] { --bu-reading-start:color-mix(in srgb,var(--bu-surface) 90%,transparent); --bu-reading-end:color-mix(in srgb,var(--bu-surface) 92%,transparent); }
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root, :root[data-theme] { --bu-floating: var(--bu-surface); --bu-action-hover:var(--bu-hover); --bu-outline:var(--bu-surface); --bu-row-stroke:var(--bu-accent); --bu-row-selected:var(--bu-selected); --bu-direction-selected:var(--bu-selected); --bu-tile:var(--bu-surface); --bu-reading-start:var(--bu-surface); --bu-reading-end:var(--bu-surface); --bu-sheet:var(--bu-surface); --bu-sheet-soft:var(--bu-surface); --bu-diagram:var(--bu-surface); --bu-gesture-track:var(--bu-surface); --bu-gesture-thumb:var(--bu-accent); --bu-blur: 0px; --bu-rim: var(--bu-muted); --bu-border: var(--bu-muted); }
+  .bu-floating { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { :root { --bu-floating: var(--bu-surface); } }
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root, :root[data-theme] { --bu-gesture-track-border:var(--bu-accent); }
+}
+@media (prefers-reduced-motion: reduce) { :root { --bu-duration: 0ms; } :is(.bu-spinner,.bu-ring.spin) { animation: none !important; } }
+@media (forced-colors: active) {
+  :root, :root[data-theme] { --bu-gesture-track-border:CanvasText; }
+  :root, :root[data-theme] { --bu-canvas: Canvas; --bu-surface: Canvas; --bu-field: Canvas; --bu-floating: Canvas; --bu-text: CanvasText; --bu-muted: CanvasText; --bu-accent: Highlight; --bu-on-accent: HighlightText; --bu-border: ButtonText; --bu-line: GrayText; --bu-rim: CanvasText; --bu-focus: Highlight; --bu-success: CanvasText; --bu-warning: CanvasText; --bu-danger: CanvasText; --bu-info: CanvasText; --bu-selected: Canvas; --bu-hover: Canvas; --bu-sheet:Canvas; --bu-sheet-soft:Canvas; --bu-diagram:Canvas; --bu-gesture-track:Canvas; --bu-gesture-thumb:Highlight; --bu-action-hover:Canvas; --bu-outline:Canvas; --bu-row-stroke:Highlight; --bu-row-selected:Canvas; --bu-direction-selected:Canvas; --bu-tile:Canvas; --bu-reading-start:Canvas; --bu-reading-end:Canvas; }
+  .bu-floating { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  :is(.bu-btn,.bu-row,.bu-swatch)[aria-pressed=true], .bu-tabs [aria-selected=true], .bu-choice-group [aria-checked=true] { outline: 2px solid Highlight; }
+}
+
+/* Inherited into nested scrollports. Keep native width/hit testing and OS overlay behavior. */
+:root { scrollbar-color: var(--bu-scroll-thumb) var(--bu-scroll-track); scrollbar-width:auto; }
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar { width:14px; height:14px; }
+  ::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background:var(--bu-scroll-track); }
+  ::-webkit-scrollbar-thumb { background-color:var(--bu-scroll-thumb); background-clip:padding-box; border:3px solid transparent; border-radius:var(--bu-radius-control); }
+  ::-webkit-scrollbar-thumb:hover { background-color:var(--bu-accent); }
+}
+@media (forced-colors:active) { :root { scrollbar-color:auto; } }
+
+/* Portable primitive recipes. No page-specific colors or vendor selectors. */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display:none !important; }
+body { margin: 0; background: var(--bu-canvas); color: var(--bu-text); font: var(--bu-text-size)/var(--bu-line-height) var(--bu-font); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; } button:disabled { cursor: not-allowed; }
+a { color: var(--bu-accent); text-underline-offset: 4px; }
+h1,h2,h3,p { margin: 0; } h1,h2 { font-family: var(--bu-display); font-weight: 400; line-height: 1.15; }
+h1 { font-size: clamp(32px, 3vw, 48px); } h2 { font-size: 28px; } h3 { font-size: 17px; font-weight: 600; }
+svg { flex: none; width: 20px; height: 20px; stroke-width: 1.6; }
+:where(button,a,input,textarea,select,summary,[tabindex]):focus-visible { outline: 2px solid var(--bu-focus); outline-offset: 3px; }
+:where(button,input,textarea,select):disabled { opacity: .5; }
+
+/* Component recipes only. Import base.css explicitly for document defaults. */
+:is([class^="bu-"],[class*=" bu-"]),:is([class^="bu-"],[class*=" bu-"]) *{box-sizing:border-box}
+.bu-btn,.bu-action,.bu-input,.bu-unit input,.bu-color,.bu-swatch,.bu-row,.bu-select,.bu-tabs button{font:inherit;color:inherit}
+:where(.bu-btn,.bu-action,.bu-row,.bu-swatch){cursor:pointer}
+:where(.bu-focus,.bu-action,.bu-select,.bu-btn,.bu-input,.bu-unit input,.bu-check input,.bu-color,.bu-row,.bu-swatch,.bu-tabs button,.bu-details summary):focus-visible{outline:2px solid var(--bu-focus);outline-offset:var(--bu-focus-offset,3px)}
+:where(.bu-btn,.bu-input,.bu-unit input,.bu-check input):disabled{opacity:.5;cursor:not-allowed}
+:is(.bu-btn,.bu-notice,.bu-choice-group,.bu-badge,.bu-steps) svg{flex:none;width:20px;height:20px;stroke-width:1.6}
+.bu-muted { color: var(--bu-muted); } .bu-small { font-size: var(--bu-small); } .bu-number { font-variant-numeric: tabular-nums; }
+.bu-sr { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.bu-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--bu-space-2); }
+.bu-stack { display: grid; gap: var(--bu-space-4); }
+.bu-separator { margin:0; border:0; border-top:1px solid var(--bu-line); }
+/* Appearance-only actions for hosts that own control geometry. */
+.bu-action { color:inherit; background:none; border:0; border-radius:var(--bu-radius-control); }
+.bu-action:hover:not(:disabled):not([aria-disabled=true]):not(:has(> input:disabled)) { background:var(--bu-action-hover); }
+.bu-action:is(:disabled,[aria-disabled=true]) { opacity:.42; cursor:not-allowed; }
+.bu-action:is([aria-pressed=true],[aria-selected=true]) { color:var(--bu-accent); }
+.bu-action[data-variant=primary] { font-weight:600; }
+.bu-action[data-variant=primary] svg { fill:none; stroke:currentColor; }
+.bu-action:is([data-variant=outline],[data-variant=tile],[data-variant=field]) { color:var(--bu-text); }
+.bu-action[data-variant=outline] { border:1px solid var(--bu-line); background:var(--bu-outline); }
+.bu-action[data-variant=tile] { border:1px solid var(--bu-rim); background:var(--bu-tile); }
+.bu-action[data-variant=field] { border:1px solid var(--bu-border); background:var(--bu-field); }
+.bu-action:is([data-variant=outline],[data-variant=tile],[data-variant=field]):hover:not(:disabled):not([aria-disabled=true]):not(:has(> input:disabled)) { border-color:var(--bu-border); background:var(--bu-hover); }
+:is(.bu-btn,.bu-action:is([data-variant=outline],[data-variant=tile],[data-variant=field]))[aria-pressed=true] { color:var(--bu-accent); border-color:var(--bu-accent); background:var(--bu-selected); }
+.bu-action[data-variant=row] { border:1px solid transparent; }
+.bu-action[data-variant=row][aria-pressed=true] { border-color:var(--bu-row-stroke); background:var(--bu-row-selected); }
+.bu-action[data-variant=direction][aria-pressed=true] { background:var(--bu-direction-selected); }
+/* Hover feedback keeps the selected label; host retains control geometry. */
+.bu-action:is([data-variant=outline],[data-variant=tile],[data-variant=field])[aria-pressed=true]:hover:not(:disabled):not([aria-disabled=true]):not(:has(> input:disabled)) { background:var(--bu-hover); border-color:var(--bu-border); }
+
+.bu-btn { color:var(--bu-text); display: inline-flex; align-items: center; justify-content: center; gap: var(--bu-space-2); min-height: var(--bu-control); padding: 10px 16px; border: 1px solid var(--bu-border); border-radius: var(--bu-radius-control); background: var(--bu-surface); font-weight: 500; text-decoration: none; line-height: 1.25; transition: background-color var(--bu-duration); }
+.bu-btn[aria-disabled=true] { opacity:.5; cursor:not-allowed; }
+.bu-btn:hover:not(:disabled):not([aria-disabled=true]) { background: var(--bu-hover); }
+.bu-btn:active:not(:disabled):not([aria-disabled=true]) { box-shadow: inset 0 0 0 1px currentColor; }
+:is(.bu-btn,.bu-action)[data-variant=primary] { background: var(--bu-accent); color: var(--bu-on-accent); border-color: transparent; }
+:is(.bu-btn,.bu-action)[data-variant=primary]:hover:not(:disabled):not([aria-disabled=true]):not(:has(> input:disabled)) { background: var(--bu-accent); box-shadow: inset 0 0 0 2px var(--bu-on-accent); }
+.bu-btn[data-variant=quiet] { background: transparent; border-color: transparent; color: var(--bu-muted); }
+.bu-btn[data-variant=danger] { color: var(--bu-danger); border-color: var(--bu-danger); }
+.bu-btn[data-icon] { min-width: var(--bu-control); padding: 10px; }
+.bu-btn[aria-pressed=true] { box-shadow: inset 0 -2px 0 var(--bu-accent); }
+/* Compact native field appearance, without input dimensions. */
+select.bu-select:not(.bu-input) { border:1px solid var(--bu-border); border-radius:var(--bu-radius-control); background:var(--bu-field); color:var(--bu-text); }
+select.bu-select:is(:disabled,[aria-disabled=true]) { opacity:.5; cursor:not-allowed; }
+/* A labelled select inside a bounded toolbar needs no second field box. */
+select.bu-select[data-variant=quiet] { border-color:transparent; background:transparent; color:inherit; }
+select.bu-select[data-variant=quiet]:hover:not(:disabled):not([aria-disabled=true]) { background:var(--bu-action-hover); }
+/* Joined controls share one seam; host chooses widths and outer layout. */
+.bu-joined { display:flex; }
+.bu-joined > :first-child:not(:only-child) { border-top-right-radius:0; border-bottom-right-radius:0; }
+.bu-joined > :last-child:not(:only-child) { border-top-left-radius:0; border-bottom-left-radius:0; margin-left:-1px; }
+.bu-joined > :focus-visible { position:relative; z-index:1; }
+@media (max-width:380px) {
+ .bu-joined[data-stack=small] { flex-direction:column; }
+ .bu-joined[data-stack=small] > :first-child:not(:only-child) { border-radius:var(--bu-radius-control) var(--bu-radius-control) 0 0; }
+ .bu-joined[data-stack=small] > :last-child:not(:only-child) { margin-left:0; margin-top:-1px; border-radius:0 0 var(--bu-radius-control) var(--bu-radius-control); }
+}
+.bu-dialog-surface { color:var(--bu-text); background:var(--bu-surface); border:1px solid var(--bu-rim); border-radius:var(--bu-radius-dialog); box-shadow:var(--bu-dialog-shadow); }
+.bu-field { display: grid; align-content:start; gap: 6px; min-width: 0; }
+.bu-field > label { font-size: var(--bu-small); font-weight: 600; }
+.bu-input { color:var(--bu-text); width:100%; min-width:0; min-height:var(--bu-control); padding:10px 12px; border:1px solid var(--bu-border); border-radius:var(--bu-radius-control); background:var(--bu-field); }
+select:is(.bu-input,.bu-select) option:disabled { color:var(--bu-muted); opacity:.5; }
+select:is(.bu-input,.bu-select) optgroup:disabled { color:var(--bu-muted); }
+/* Native menus share the field theme without requiring document-wide resets.
+   bu-select adds only picker styling for compact, host-sized controls. */
+select:is(.bu-input,.bu-select), select:is(.bu-input,.bu-select) :is(option,optgroup) { color-scheme:inherit; }
+select:is(.bu-input,.bu-select) :is(option,optgroup) { color:var(--bu-text); background-color:var(--bu-field); }
+@supports (appearance:base-select) and selector(select::picker(select)) {
+  select:is(.bu-input,.bu-select), select:is(.bu-input,.bu-select)::picker(select) { appearance:base-select; }
+  /* base-select lays out as inline-flex; center the value when hosts set a taller fixed height. */
+  select:is(.bu-input,.bu-select) { align-items:center; }
+  select:is(.bu-input,.bu-select)::picker(select) {
+    color:var(--bu-text); background:var(--bu-field);
+    border:1px solid var(--bu-border); border-radius:var(--bu-radius-control);
+    box-shadow:var(--bu-shadow); padding:4px; max-height:min(320px,480px);
+  }
+  select:is(.bu-input,.bu-select) option { min-height:44px; padding:8px 12px; border-radius:calc(var(--bu-radius-control) / 2); font:var(--bu-text-size)/var(--bu-line-height) var(--bu-font); }
+  select:is(.bu-input,.bu-select) option:checked:not(:disabled) { color:var(--bu-accent); background:var(--bu-selected); }
+  select:is(.bu-input,.bu-select) option:not(:disabled):is(:hover,:focus) { color:var(--bu-text); background:var(--bu-hover); outline:2px solid var(--bu-focus); outline-offset:-2px; }
+}
+
+.bu-input::placeholder { color:var(--bu-muted); opacity:1; }
+textarea.bu-input { min-height:112px; resize:vertical; }
+.bu-input[aria-invalid=true] { border-color:var(--bu-danger); box-shadow:inset 3px 0 var(--bu-danger); }
+.bu-input[readonly] { border-style:dashed; }
+.bu-field > :is(p,.bu-error) { margin:0; }
+.bu-error { color:var(--bu-danger); font-size:var(--bu-small); }
+.bu-unit { color:var(--bu-text); display:flex; align-items:center; border:1px solid var(--bu-border); border-radius:var(--bu-radius-control); background:var(--bu-field); }
+.bu-unit input { width:100%; min-width:0; border:0; background:transparent; padding:10px 12px; min-height:var(--bu-control); border-radius:inherit; }
+.bu-unit span { padding-right:12px; color:var(--bu-muted); }
+.bu-unit:has([aria-invalid=true]) { border-color:var(--bu-danger); box-shadow:inset 3px 0 var(--bu-danger); }
+.bu-check { display:flex; gap:10px; align-items:center; min-height:var(--bu-control); cursor:pointer; }
+.bu-check:has(> input:disabled) { opacity:.5; cursor:not-allowed; }
+.bu-check > input:disabled { opacity:1; cursor:not-allowed; }
+.bu-check input:is([type=checkbox],[type=radio]) { width:20px; height:20px; flex:none; accent-color:var(--bu-accent); }
+.bu-check input.bu-switch { appearance:none; position:relative; width:44px; height:26px; border:1px solid var(--bu-border); border-radius:13px; background:var(--bu-surface); margin:0; cursor:pointer; }
+.bu-switch::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:var(--bu-muted); }
+.bu-check input.bu-switch:disabled { cursor:not-allowed; }
+.bu-check input.bu-switch:checked { background:var(--bu-accent); border-color:var(--bu-accent); }
+.bu-switch:checked::after { left:21px; background:var(--bu-on-accent); }
+.bu-file { width:100%; min-width:0; font-size:var(--bu-small); }
+.bu-file:disabled { opacity:.5; cursor:not-allowed; }
+.bu-file:disabled::file-selector-button { cursor:not-allowed; }
+.bu-file::file-selector-button { min-height:var(--bu-control); margin-right:12px; border:1px solid var(--bu-border); border-radius:var(--bu-radius-control); color:var(--bu-text); background:var(--bu-surface); padding:8px 12px; cursor:pointer; font:inherit; }
+.bu-tabs { display:flex; gap:20px; overflow:auto; padding:6px; }
+.bu-tabs button { color:var(--bu-muted); min-height:var(--bu-control); padding:8px 2px; border:0; border-bottom:2px solid transparent; background:none; white-space:nowrap; }
+.bu-tabs button[aria-selected=true] { color:var(--bu-accent); border-bottom-color:var(--bu-accent); font-weight:600; }
+.bu-floating { color:var(--bu-text); background:var(--bu-floating); border:1px solid var(--bu-rim); border-radius:var(--bu-radius-panel); box-shadow:var(--bu-shadow); -webkit-backdrop-filter:blur(var(--bu-blur)); backdrop-filter:blur(var(--bu-blur)); }
+.bu-notice { --tone:var(--bu-info); display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-left:3px solid var(--tone); background:var(--bu-surface); color:var(--bu-text); }
+:is(.bu-notice,.bu-toast)[data-tone=success] { --tone:var(--bu-success); } :is(.bu-notice,.bu-toast)[data-tone=warning] { --tone:var(--bu-warning); } :is(.bu-notice,.bu-toast)[data-tone=danger] { --tone:var(--bu-danger); }
+.bu-notice > :is(svg,.bu-notice-indicator) { color:var(--tone); margin-top:2px; }
+.bu-notice-indicator { flex:none; display:grid; place-items:center; width:20px; height:20px; }
+.bu-notice-content { flex:1; min-width:0; overflow-wrap:anywhere; }
+.bu-notice-content > strong { display:block; }
+.bu-notice:where([data-actionable]) { position:relative; isolation:isolate; }
+.bu-notice[data-actionable] > :is(svg,.bu-notice-indicator,.bu-notice-content) { pointer-events:none; }
+.bu-notice-activate { --bu-focus-offset:-3px; position:absolute; inset:0; z-index:-1; padding:0; border-radius:inherit; }
+.bu-notice-dismiss { position:sticky; top:0; flex:none; display:grid; place-items:center; min-width:var(--bu-control); min-height:var(--bu-control); margin:-8px -8px -8px 0; padding:8px; }
+.bu-badge { display:inline-flex; align-items:center; gap:6px; color:var(--bu-muted); font-size:var(--bu-small); }
+.bu-badge[data-tone=success] { color:var(--bu-success); } .bu-badge[data-tone=warning] { color:var(--bu-warning); } .bu-badge[data-tone=danger] { color:var(--bu-danger); }
+.bu-progress { width:100%; height:8px; border:0; border-radius:4px; overflow:hidden; accent-color:var(--bu-accent); background:var(--bu-line); }
+.bu-progress::-webkit-progress-bar { background:var(--bu-line); } .bu-progress::-webkit-progress-value { background:var(--bu-accent); } .bu-progress::-moz-progress-bar { background:var(--bu-accent); }
+.bu-spinner { width:20px; height:20px; border:2px solid var(--bu-border); border-top-color:var(--bu-accent); border-radius:50%; display:inline-block; animation:bu-spin 1s linear infinite; }
+.bu-ring { --p:0; display:inline-block; flex:none; width:20px; height:20px; border-radius:50%; background:conic-gradient(var(--bu-accent) calc(var(--p) * 1%),var(--bu-border) 0); mask:radial-gradient(farthest-side,transparent calc(100% - 3.5px),#000 calc(100% - 2.5px),#000 calc(100% - .5px),transparent 100%); }
+.bu-ring.spin { background:conic-gradient(var(--bu-accent) 30%,var(--bu-border) 0); animation:bu-spin 1.2s linear infinite; }
+@keyframes bu-spin { to { transform:rotate(360deg); } }
+.bu-steps { list-style:none; display:grid; gap:12px; padding:0; margin:0; }
+.bu-steps li { display:flex; gap:12px; align-items:center; } .bu-steps [aria-current=step] { font-weight:600; }
+.bu-choice-group { display:flex; gap:8px; flex-wrap:wrap; }
+.bu-choice-group [aria-checked=true] { color:var(--bu-accent); border-color:var(--bu-accent); background:var(--bu-selected); }
+.bu-list-item { display:flex; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid var(--bu-line); }
+.bu-list-item > span { flex:1; min-width:0; overflow-wrap:anywhere; }
+.bu-details { border-top:1px solid var(--bu-line); }
+.bu-details summary { min-height:var(--bu-control); padding:12px 0; cursor:pointer; font-weight:500; }
+.bu-details > div { padding-bottom:16px; }
+.bu-data { display:grid; grid-template-columns:minmax(80px,1fr) minmax(0,2fr); gap:10px 16px; margin:0; font-size:var(--bu-small); }
+.bu-data dt { color:var(--bu-muted); } .bu-data dd { margin:0; overflow-wrap:anywhere; }
+.bu-code { display:block; min-width:0; margin:0; color:var(--bu-text); padding:12px; background:var(--bu-canvas); border:1px solid var(--bu-line); border-radius:var(--bu-radius-control); font:13px/1.6 var(--bu-mono); white-space:pre-wrap; overflow-wrap:anywhere; }
+.bu-table { width:100%; border-collapse:collapse; font-size:var(--bu-small); text-align:left; }
+.bu-table caption { text-align:left; color:var(--bu-muted); margin-bottom:12px; }
+.bu-table th,.bu-table td { padding:12px 8px; border-bottom:1px solid var(--bu-line); overflow-wrap:anywhere; }
+.bu-table thead { color:var(--bu-muted); }
+.bu-row { color:var(--bu-text); display:flex; align-items:center; gap:12px; width:100%; min-height:76px; padding:10px 12px; border:1px solid transparent; border-radius:var(--bu-radius-control); background:transparent; text-align:left; }
+.bu-row:hover:not(:disabled):not([aria-disabled=true]) { background:var(--bu-hover); } .bu-row:is(:disabled,[aria-disabled=true]) { opacity:.42; cursor:not-allowed; } .bu-row[aria-pressed=true] { border-color:var(--bu-accent); background:var(--bu-selected); }
+.bu-row img { width:64px; height:64px; image-rendering:pixelated; object-fit:contain; }
+.bu-row .bu-row-label { flex:1; min-width:0; } .bu-row small { display:block; color:var(--bu-muted); }
+.bu-palette { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:4px; }
+.bu-swatch { width:44px; height:44px; display:grid; place-items:center; border:0; background:none; padding:6px; border-radius:50%; }
+.bu-swatch span { width:30px; height:30px; background:var(--swatch); border-radius:50%; border:1px solid var(--bu-border); }
+.bu-swatch[aria-pressed=true] span { outline:2px solid var(--bu-accent); outline-offset:3px; }
+.bu-ramp { display:flex; min-width:88px; height:32px; overflow:hidden; border:1px solid var(--bu-border); border-radius:var(--bu-radius-control); }
+.bu-ramp i { flex:1; background:var(--swatch); }
+.bu-color { width:44px; height:44px; padding:4px; border:1px solid var(--bu-border); border-radius:var(--bu-radius-control); background:var(--bu-surface); }
+.bu-dialog { width:min(560px,calc(100% - 32px)); max-width:100%; max-height:calc(800px - 32px); padding:0; border:1px solid var(--bu-rim); border-radius:var(--bu-radius-dialog); background:var(--bu-surface); color:var(--bu-text); box-shadow:var(--bu-dialog-shadow); overflow:auto; }
+.bu-dialog::backdrop { background:var(--bu-scrim); }
+.bu-dialog-head,.bu-dialog-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 24px; background:var(--bu-surface); position:sticky; z-index:1; }
+.bu-dialog-head { top:0; border-bottom:1px solid var(--bu-line); } .bu-dialog-foot { bottom:0; border-top:1px solid var(--bu-line); justify-content:flex-end; flex-wrap:wrap; }
+.bu-dialog-head h2 { margin:0; font:600 20px/1.3 var(--bu-font); } .bu-dialog-body { padding:24px; }
+.bu-popover { color:var(--bu-text); width:min(380px,calc(100vw - 24px)); max-height:calc(800px - 24px); overflow:auto; padding:16px; margin:0; }
+.bu-popover-anchor { position:fixed; inset:auto; width:max-content; max-width:calc(100vw - 16px); margin:0; padding:0; overflow:visible; border:0; background:transparent; box-shadow:none; }
+.bu-popover-anchor > .bu-popover-surface { position:relative; z-index:1; }
+.bu-popover-arrow { position:absolute; z-index:2; width:12px; height:12px; fill:var(--bu-surface); pointer-events:none; }
+.bu-popover-arrow path:last-child { fill:none; stroke:var(--bu-rim); stroke-width:1; stroke-linecap:round; stroke-linejoin:round; }
+.bu-popover-anchor[data-side=bottom] > .bu-popover-arrow { top:-8px; left:var(--bu-arrow-x); }
+.bu-popover-anchor[data-side=top] > .bu-popover-arrow { bottom:-8px; left:var(--bu-arrow-x); transform:rotate(180deg); }
+.bu-popover-anchor[data-side=right] > .bu-popover-arrow { left:-8px; top:var(--bu-arrow-y); transform:rotate(-90deg); }
+.bu-popover-anchor[data-side=left] > .bu-popover-arrow { right:-8px; top:var(--bu-arrow-y); transform:rotate(90deg); }
+.bu-popover-anchor[data-arrow-hidden] > .bu-popover-arrow { display:none; }
+.bu-help { position:relative; display:inline-flex; }
+.bu-help button { color:var(--bu-muted); }
+.bu-tooltip { position:fixed; z-index:5; box-sizing:border-box; margin:0; width:min(300px,calc(100vw - 24px)); padding:12px 16px; background:var(--bu-surface); border:1px solid var(--bu-rim); border-radius:var(--bu-radius-panel); color:var(--bu-text); box-shadow:var(--bu-shadow); font-size:var(--bu-small); }
+.bu-tooltip-anchor > .bu-tooltip { display:block; position:relative; }
+.bu-tooltip-anchor:popover-open:not([data-positioned]) { visibility:hidden; }
+.bu-toast { --tone:var(--bu-info); position:fixed; bottom:max(24px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); box-sizing:border-box; max-width:calc(100% - 32px); width:max-content; padding:12px 16px; display:flex; gap:12px; align-items:center; z-index:10; color:var(--bu-text); background:color-mix(in srgb,var(--tone) 8%,var(--bu-surface)); border:1px solid var(--bu-rim); border-inline-start:3px solid var(--tone); border-radius:var(--bu-radius-panel); box-shadow:var(--bu-shadow); font:var(--bu-small)/var(--bu-line-height) var(--bu-font); overflow-wrap:anywhere; -webkit-backdrop-filter:none; backdrop-filter:none; }
+.bu-toast > :is(svg,.bu-notice-indicator) { flex:none; width:20px; height:20px; color:var(--tone); margin-top:0; }
+.bu-toast > .bu-notice-dismiss { align-self:flex-start; }
+.bu-toast:empty { display:none; }
+@media (max-width:600px) { .bu-dialog { width:100%; max-height:720px; margin:auto 0 0; border-radius:var(--bu-radius-dialog) var(--bu-radius-dialog) 0 0; } .bu-dialog-head,.bu-dialog-foot,.bu-dialog-body { padding:16px 20px; } }
+@media (max-height:500px) and (min-width:601px) { .bu-dialog { width:min(520px,90vw); height:800px; max-height:800px; margin:0 0 0 auto; border-radius:var(--bu-radius-dialog) 0 0 var(--bu-radius-dialog); } }
+
+:where([class^="bu-"],[class*=" bu-"])[hidden]{display:none!important}
+
+@media (forced-colors:active) {
+ :is(.bu-action,.bu-input,.bu-select,.bu-dialog-surface) { border:1px solid CanvasText; }
+ .bu-action:is([aria-pressed=true],[aria-selected=true]) { outline:2px solid Highlight; }
+}
+
+/* Underlined navigation without imposing the host's spacing or target size. */
+.bu-action[data-variant=tab] { border-radius:0; border-bottom:var(--bu-tab-stroke,1px) solid transparent; }
+.bu-action[data-variant=tab]:is([aria-pressed=true],[aria-selected=true]) { border-bottom-color:var(--bu-accent); font-weight:600; }
+/* A tab that fills its row (no dead gaps between targets) wraps its content in .bu-tab-label, which carries the underline. */
+.bu-action[data-variant=tab]:has(> .bu-tab-label) { display:inline-flex; border-bottom:0; align-items:stretch; }
+.bu-tab-label { display:inline-flex; align-self:stretch; align-items:center; gap:inherit; border-bottom:var(--bu-tab-stroke,1px) solid transparent; }
+.bu-action[data-variant=tab]:is([aria-pressed=true],[aria-selected=true]) > .bu-tab-label { border-bottom-color:var(--bu-accent); }
+/* Tab text keeps its selected (bold) width at rest, so selecting a tab never resizes it or shifts its neighbors. The
+   reserved copy comes from data-text and is hidden from assistive technology. */
+.bu-tab-text { display:inline-flex; flex-direction:column; align-items:center; }
+.bu-tab-text[data-text]::after { content:attr(data-text) / ""; height:0; overflow:hidden; visibility:hidden; font-weight:600; pointer-events:none; user-select:none; }
+/* Flat swatch appearance for a host-sized color chip. The swatch is user data. */
+.bu-swatch-flat { border:3px solid transparent; border-radius:50%; background:var(--swatch); cursor:pointer; }
+.bu-swatch-flat:hover:not(:disabled):not([aria-disabled=true]) { background:var(--swatch); }
+.bu-swatch-flat[aria-pressed=true] { outline:1px solid var(--bu-accent); outline-offset:3px; }
+.bu-swatch-flat:focus-visible { outline:2px solid var(--bu-focus); outline-offset:3px; }
+.bu-swatch-flat:is(:disabled,[aria-disabled=true]) { opacity:.42; cursor:not-allowed; }
+@media (forced-colors:active) { .bu-swatch-flat { forced-color-adjust:none; border-color:ButtonText; } .bu-swatch-flat[aria-pressed=true] { outline-color:Highlight; } }
+
+/* Vertical rail tab: icon over a short label. Selection marks the label, not a box; host owns size and order. */
+.bu-action[data-variant=rail] { display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--bu-muted); border-radius:var(--bu-radius-control); text-align:center; }
+.bu-action[data-variant=rail] > svg { flex:none; width:22px; height:22px; stroke-width:1.6; color:var(--bu-text); }
+.bu-rail-label { padding-bottom:3px; border-bottom:1px solid transparent; font-size:11px; line-height:1.15; overflow-wrap:anywhere; }
+.bu-action[data-variant=rail]:hover:not(:disabled):not([aria-disabled=true]):not(:has(> input:disabled)) { background:none; }
+.bu-action[data-variant=rail]:hover:not(:disabled):not([aria-disabled=true]) > :is(svg,.bu-rail-label) { color:var(--bu-accent); }
+.bu-action[data-variant=rail]:is([aria-current]:not([aria-current=false]),[aria-pressed=true]) > :is(svg,.bu-rail-label) { color:var(--bu-accent); }
+.bu-action[data-variant=rail]:is([aria-current]:not([aria-current=false]),[aria-pressed=true]) > .bu-rail-label { font-weight:600; border-bottom-color:var(--bu-accent); }
+.bu-rail-dot { flex:none; width:4px; height:4px; margin-top:-1px; border-radius:50%; background:var(--bu-accent); opacity:0; }
+.bu-action[data-variant=rail][data-filled] > .bu-rail-dot { opacity:.9; }
+.bu-action[data-variant=rail]:is([aria-current]:not([aria-current=false]),[aria-pressed=true]) > .bu-rail-dot { opacity:0; }
+
+/* Item tile: artwork fills the space above a label on a shared bottom baseline. Host sets the tile's size. */
+.bu-tile { position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:4px; min-width:0; padding:6px 6px 9px; color:var(--bu-text); text-align:center; border:1px solid var(--bu-rim); border-radius:var(--bu-radius-control); background:var(--bu-tile); }
+.bu-tile-art { position:relative; flex:1; min-height:0; width:100%; display:grid; place-items:center; }
+.bu-tile-art > :is(img,canvas) { image-rendering:pixelated; }
+.bu-tile-label { max-width:100%; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bu-tile-check { position:absolute; top:5px; right:6px; line-height:0; color:var(--bu-accent); }
+.bu-tile-check > svg { width:14px; height:14px; }
+.bu-tile[aria-pressed=true] { color:var(--bu-accent); border-color:var(--bu-accent); background:var(--bu-selected); }
+.bu-tile[data-variant=empty] { color:var(--bu-muted); border-style:dashed; }
+.bu-tile[data-variant=empty][aria-pressed=true] { color:var(--bu-accent); border-style:solid; }
+.bu-tile[data-variant=add] { background:var(--bu-outline); }
+.bu-tile:hover:not(:disabled):not([aria-disabled=true]) { border-color:var(--bu-border); }
+.bu-tile[aria-pressed=true]:hover:not(:disabled):not([aria-disabled=true]),.bu-tile[data-variant=add]:hover:not(:disabled):not([aria-disabled=true]) { border-color:var(--bu-accent); color:var(--bu-accent); }
+.bu-tile:is(:disabled,[aria-disabled=true]) { opacity:.42; cursor:not-allowed; }
+/* Selected for viewing or details but not toggled on (aria-pressed stays the on/off state): a plain border, no accent. */
+.bu-tile[data-selected]:not([aria-pressed=true]) { border-color:var(--bu-border); }
+:where(.bu-tile){cursor:pointer;font:inherit}
+.bu-tile:focus-visible{outline:2px solid var(--bu-focus);outline-offset:var(--bu-focus-offset,3px)}
+/* Hidden by another item: dimmed art, paired with a .bu-tile-status glyph and words in the accessible name. */
+.bu-tile[data-dim] > .bu-tile-art { opacity:.45; }
+/* Status glyph inside a tile; the host positions it and puts the status words in the tile's accessible name. */
+.bu-tile-status { line-height:0; color:var(--bu-muted); pointer-events:none; }
+.bu-tile-status > svg { width:14px; height:14px; }
+.bu-tile-status[data-tone=warning] { color:var(--bu-warning); }
+.bu-tile-status[data-tone=danger] { color:var(--bu-danger); }
+.bu-tile-status[data-tone=hidden] { color:var(--bu-muted); }
+/* Always-visible item options button: a sibling of the .bu-tile button, never nested in it. Host sets size and position. */
+.bu-tile-more { display:grid; place-items:center; padding:0; color:var(--bu-muted); background:transparent; border:0; border-radius:var(--bu-radius-control); font:inherit; cursor:pointer; transition:color var(--bu-duration),background-color var(--bu-duration); }
+.bu-tile-more > svg { width:18px; height:18px; }
+.bu-tile-more:is(:hover,[aria-expanded=true]) { color:var(--bu-text); background:var(--bu-hover); }
+.bu-tile-more:focus-visible { color:var(--bu-text); background:var(--bu-hover); outline:2px solid var(--bu-focus); outline-offset:var(--bu-focus-offset,3px); }
+.bu-tile-more:disabled { opacity:.42; cursor:not-allowed; }
+/* Touch never gets less than a full control-sized target, whatever size the host draws on fine pointers. */
+@media (pointer:coarse) { .bu-tile-more { min-width:var(--bu-control); min-height:var(--bu-control); } }
+
+/* Sticky section header for one continuous list. No backing: pair it with the stickyFade behavior. */
+.bu-section-head { position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:8px; min-height:var(--bu-control); padding:4px 0 8px; color:var(--bu-text); }
+.bu-section-head > svg { flex:none; width:16px; height:16px; stroke-width:1.7; }
+.bu-section-title { flex:1; min-width:0; margin:0; font:600 var(--bu-small)/1.3 var(--bu-font); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bu-section-count { min-width:12px; color:var(--bu-muted); font-size:var(--bu-small); font-variant-numeric:tabular-nums; text-align:right; }
+.bu-section-head[data-current] > :is(svg,.bu-section-title) { color:var(--bu-accent); }
+/* Header actions (random, add) stay quiet beside the title and take the accent on hover. Host sets their size. */
+.bu-section-head > .bu-action { color:var(--bu-muted); }
+.bu-section-head > .bu-action:hover:not(:disabled):not([aria-disabled=true]) { color:var(--bu-accent); }
+/* Content passing under a sticky header fades across its lower edge (set by stickyFade). */
+.bu-section-head ~ [data-bu-fade] { -webkit-mask-image:linear-gradient(180deg,transparent calc(var(--bu-fade-y) - var(--bu-fade-in,10px)),#000 calc(var(--bu-fade-y) + var(--bu-fade-out,10px))); mask-image:linear-gradient(180deg,transparent calc(var(--bu-fade-y) - var(--bu-fade-in,10px)),#000 calc(var(--bu-fade-y) + var(--bu-fade-out,10px))); }
+/* Edge fades show only where more content exists (set by edgeFade). */
+.bu-edge-fade { --bu-fade-size:24px; -webkit-mask-image:linear-gradient(180deg,transparent,#000 var(--bu-fade-start,0px),#000 calc(100% - var(--bu-fade-end,0px)),transparent); mask-image:linear-gradient(180deg,transparent,#000 var(--bu-fade-start,0px),#000 calc(100% - var(--bu-fade-end,0px)),transparent); }
+.bu-edge-fade[data-axis=x] { -webkit-mask-image:linear-gradient(90deg,transparent,#000 var(--bu-fade-start,0px),#000 calc(100% - var(--bu-fade-end,0px)),transparent); mask-image:linear-gradient(90deg,transparent,#000 var(--bu-fade-start,0px),#000 calc(100% - var(--bu-fade-end,0px)),transparent); }
+/* A rail that scrolls by wheel and touch without a visible bar; pair with .bu-edge-fade so overflow stays evident. */
+.bu-scroll-hidden { scrollbar-width:none; overscroll-behavior:contain; }
+.bu-scroll-hidden::-webkit-scrollbar { display:none; }
+@media (forced-colors:active) {
+ .bu-section-head ~ [data-bu-fade],.bu-edge-fade { -webkit-mask-image:none; mask-image:none; }
+ .bu-tile { border:1px solid CanvasText; }
+ .bu-tile[aria-pressed=true] { outline:2px solid Highlight; outline-offset:-2px; }
+ .bu-tile[data-selected]:not([aria-pressed=true]) { outline:1px dashed Highlight; outline-offset:-2px; }
+ .bu-action[data-variant=rail]:is([aria-current]:not([aria-current=false]),[aria-pressed=true]) > .bu-rail-label { color:Highlight; border-bottom-color:Highlight; }
+ .bu-section-head[data-current] > .bu-section-title { color:Highlight; text-decoration:underline; text-underline-offset:3px; }
+ .bu-tile-more { forced-color-adjust:none; color:ButtonText; background:ButtonFace; }
+ .bu-tile-more:is(:hover,:focus-visible,[aria-expanded=true]) { color:HighlightText; background:Highlight; }
+ .bu-tile-status { forced-color-adjust:none; color:CanvasText; }
+ .bu-tile-status:is([data-tone=warning],[data-tone=danger]) { color:Highlight; }
+ .bu-tile[data-dim] { border-style:dashed; border-color:CanvasText; }
+ .bu-rail-dot { background:CanvasText; }
+}
+
+/* Top-anchored toast region centered over a host column. Host sets --bu-toast-top, --bu-toast-center and --bu-toast-room. */
+.bu-toast-region { position:fixed; z-index:40; display:grid; gap:8px; top:max(env(safe-area-inset-top),var(--bu-toast-top,16px)); left:var(--bu-toast-center,50%); transform:translateX(-50%); width:max-content; max-width:min(var(--bu-toast-max,420px),var(--bu-toast-room,calc(100vw - 32px))); max-height:var(--bu-toast-height,360px); overflow:auto; }
+.bu-toast-region > .bu-toast { position:relative; inset:auto; transform:none; width:100%; max-width:none; margin:0; }
+
+.bu-gesture-track { border-style:solid; border-color:var(--bu-gesture-track-border); border-radius:50%; background:var(--bu-gesture-track); box-shadow:none; outline:none; }
+.bu-gesture-track[data-axis=x] { border-radius:999px; }
+.bu-gesture-thumb { border-style:solid; border-color:var(--bu-accent); border-radius:50%; background:var(--bu-gesture-thumb); box-shadow:none; outline:none; }
+@media (forced-colors:active) {
+ .bu-gesture-track,.bu-gesture-thumb { forced-color-adjust:none; }
+}
+
+#workshop {
+  width: min(1280px, 100%);
+  margin-inline: auto;
+  padding: 20px;
+}
+.topbar,
+.section-line,
+.slot-heading,
+.slot-row,
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.topbar {
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.topbar h1 {
+  font-size: 30px;
+}
+.topbar p {
+  margin-top: 6px;
+}
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-block: 12px;
+}
+label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+select,
+input,
+textarea {
+  width: 100%;
+  min-width: 0;
+}
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+.experiment-controls {
+  margin-bottom: 16px;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.7fr) minmax(0, 2fr);
+  gap: 28px;
+  margin-top: 20px;
+  align-items: start;
+}
+.preview-panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.preview-panel h2,
+#content h2 {
+  font-size: 24px;
+}
+#actor {
+  width: min(100%, 256px);
+  height: auto;
+  image-rendering: pixelated;
+  justify-self: center;
+}
+#wearing {
+  display: grid;
+  gap: 4px;
+}
+#content {
+  min-width: 0;
+}
+.content-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.content-head p {
+  margin-top: 6px;
+  max-width: 65ch;
+}
+.slot-list {
+  display: grid;
+  gap: 8px;
+}
+.slot-row {
+  flex-wrap: wrap;
+  padding-block: 6px;
+}
+.slot-summary {
+  flex: 1;
+  min-width: 100px;
+  text-align: left;
+  display: grid;
+  gap: 2px;
+}
+.slot-summary strong {
+  font-weight: 600;
+}
+.slot-summary small {
+  overflow-wrap: anywhere;
+}
+.row-actions {
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.row-actions .bu-btn {
+  min-width: 44px;
+  padding-inline: 10px;
+}
+.handle {
+  touch-action: none;
+  min-width: 44px;
+  min-height: 44px;
+}
+.handle svg {
+  pointer-events: none;
+}
+.slot-row[data-dragging="true"] {
+  opacity: 0.5;
+}
+.slot-group {
+  margin-top: 22px;
+}
+.slot-group summary {
+  margin-bottom: 10px;
+}
+.catalog-section {
+  margin-bottom: 22px;
+}
+.slot-heading {
+  margin-bottom: 8px;
+}
+.item-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+.item-grid button {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 10px;
+  min-height: 108px;
+  overflow-wrap: anywhere;
+}
+.item-grid canvas {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+.empty-label {
+  padding-block: 12px;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.settings-grid .full {
+  grid-column: 1 / -1;
+}
+.editor-body {
+  display: grid;
+  gap: 16px;
+}
+.editor-body h2 {
+  font-size: 26px;
+}
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.bu-dialog {
+  width: min(620px, calc(100% - 24px));
+  max-height: min(820px, calc(800px - 24px));
+  overflow: auto;
+}
+.runtime-code {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font: 13px/1.6 var(--bu-mono);
+  background: var(--bu-field);
+  padding: 12px;
+  border-radius: var(--bu-radius-control);
+  max-height: 480px;
+  overflow: auto;
+}
+.export-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.export-section {
+  display: grid;
+  gap: 12px;
+  margin-block: 20px;
+}
+.tasks {
+  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+}
+.detail-line {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.6fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.detail-line code {
+  overflow-wrap: anywhere;
+}
+#status {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(550px, calc(100% - 32px));
+  z-index: 20;
+  pointer-events: none;
+}
+#status:empty {
+  display: none;
+}
+footer {
+  margin-top: 30px;
+}
+@media (max-width: 900px) {
+  .controls-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .workspace {
+    gap: 18px;
+    grid-template-columns: minmax(180px, 0.6fr) minmax(0, 1fr);
+  }
+  .row-actions {
+    width: 100%;
+  }
+}
+@media (max-width: 620px) {
+  #workshop {
+    padding: 12px;
+  }
+  .topbar h1 {
+    font-size: 26px;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .preview-panel {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .preview-panel .section-line,
+  .preview-panel > p,
+  .preview-panel > details {
+    grid-column: 1 / -1;
+  }
+  #actor {
+    width: 160px;
+    grid-row: span 3;
+  }
+  .preview-panel label {
+    align-self: start;
+  }
+  #wearing {
+    grid-column: 2;
+  }
+  .settings-grid,
+  .export-controls {
+    grid-template-columns: 1fr;
+  }
+  .controls-grid {
+    gap: 10px;
+  }
+  .bu-tabs {
+    width: 100%;
+  }
+  .bu-tabs button {
+    flex: 1;
+  }
+  .slot-row {
+    gap: 8px;
+  }
+  .row-actions {
+    width: auto;
+  }
+  .slot-summary {
+    min-width: 130px;
+  }
+}
+@media (max-width: 360px) {
+  .controls-grid {
+    grid-template-columns: 1fr;
+  }
+  .preview-panel {
+    grid-template-columns: 140px 1fr;
+  }
+  #actor {
+    width: 140px;
+  }
+  .row-actions {
+    width: 100%;
+  }
+}
+
+html,body{background:transparent!important}#workshop{padding:0;max-width:none;width:100%}#theme{display:none}</style>
+
+    <main id="workshop">
+      <header class="topbar">
+
+        <div class="bu-actions">
+          <button class="bu-btn" id="theme">Light theme</button
+          ><button class="bu-btn" id="undo" disabled>Undo</button
+          ><button class="bu-btn" id="reset">Reset demo</button>
+        </div>
+      </header>
+      <details class="bu-details experiment-controls" open>
+        <summary>Compare design decisions</summary>
+        <div class="controls-grid">
+          <label
+            >Slot identity<select class="bu-select" id="identity">
+              <option value="key">Readable key + editable name</option>
+              <option value="name">Name is the reference</option>
+            </select></label
+          >
+          <label
+            >Hide populated slots<select class="bu-select" id="hide-policy">
+              <option value="empty">Block until empty</option>
+              <option value="collapsed">Collapse at the bottom</option>
+              <option value="drawer">One hidden-slots group</option>
+            </select></label
+          >
+          <label
+            >Built-in editing<select class="bu-select" id="preset-policy">
+              <option value="fixed">Copy to customize</option>
+              <option value="editable">Customize in place + reset</option>
+            </select></label
+          >
+          <label
+            >Underwear preset<select class="bu-select" id="underwear">
+              <option value="off">Custom slot only</option>
+              <option value="combined">One hidden Underwear slot</option>
+              <option value="split">Two hidden underwear slots</option>
+            </select></label
+          >
+        </div>
+        <p id="decision-note" class="bu-small bu-muted"></p>
+      </details>
+      <nav class="bu-tabs" role="tablist" aria-label="Workshop views">
+        <button
+          role="tab"
+          aria-controls="content"
+          id="tab-wardrobe"
+          aria-selected="false"
+          data-view="wardrobe"
+        >
+          Wardrobe</button
+        ><button
+          role="tab"
+          aria-controls="content"
+          id="tab-manage"
+          aria-selected="true"
+          data-view="manage"
+        >
+          Manage slots</button
+        ><button
+          role="tab"
+          aria-controls="content"
+          id="tab-export"
+          aria-selected="false"
+          data-view="export"
+        >
+          Export lab
+        </button>
+      </nav>
+      <div class="workspace">
+        <aside class="preview-panel">
+          <div class="section-line">
+            <h2>Adventurer</h2>
+            <span class="bu-muted bu-small">64 px</span>
+          </div>
+          <canvas
+            id="actor"
+            width="64"
+            height="64"
+            aria-label="Demo character assembled from existing fixture artwork"
+          ></canvas>
+          <label
+            >Facing<select id="facing" class="bu-select">
+              <option value="0">South</option>
+              <option value="1">East</option>
+              <option value="2">North</option>
+            </select></label
+          >
+          <p class="bu-muted bu-small">
+            Existing demo art. Preview shows front-layer order. Joint edits,
+            generation and full occlusion are not simulated.
+          </p>
+          <div id="wearing" class="bu-small"></div>
+          <details class="bu-details">
+            <summary>Try these tasks</summary>
+            <ol class="tasks">
+              <li>
+                Try hiding Back while its cape is equipped. Compare all three
+                hiding policies.
+              </li>
+              <li>
+                Create custom Neck while the built-in is hidden. Rename it and
+                inspect its API reference.
+              </li>
+              <li>
+                Copy Off hand and change its attachment. This stores an
+                unqualified experiment, not supported generation.
+              </li>
+              <li>
+                Enable Underwear and compare one slot with two. The base's baked
+                clothing stays.
+              </li>
+              <li>
+                Move slots using handles or arrow buttons. Depth stays
+                independent.
+              </li>
+            </ol>
+          </details>
+        </aside>
+        <section
+          id="content"
+          role="tabpanel"
+          tabindex="0"
+          aria-labelledby="tab-manage"
+        ></section>
+      </div>
+      <footer class="bu-muted bu-small">
+        No real characters are read or saved. Settings and downloads are design
+        examples. Reset restores sample data.
+      </footer>
+      <div id="status" role="status" aria-live="polite"></div>
+      <dialog
+        class="bu-dialog"
+        id="editor"
+        aria-labelledby="editor-title"
+      ></dialog>
+      <dialog
+        class="bu-dialog"
+        id="confirm"
+        aria-labelledby="confirm-title"
+      ></dialog>
+    </main>
+    <script>document.documentElement.dataset.theme=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";window.SLOT_WORKSHOP_ASSETS={"body/base":"data:image/png;base64,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","head/helmet_steel":"data:image/png;base64,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","head/hat_wizard":"data:image/png;base64,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","hair/hair_brown":"data:image/png;base64,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","torso_inner/vest_leather":"data:image/png;base64,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","back/cape_red":"data:image/png;base64,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","main_hand/sword_steel":"data:image/png;base64,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"};
+(() => {
+  const root = document.querySelector("#workshop");
+  const select = (selector) => root.querySelector(selector);
+  const escape = (value) =>
+    String(value).replace(
+      /[&<>"']/g,
+      (character) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[character],
+    );
+  const slug = (name) =>
+    name
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  const grip =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="9" cy="5" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="19" r="1"/></svg>';
+  const up =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>';
+  const down =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg>';
+  const definitions = [
+    ["head", "Head", "rigid", "head", 130, null, true],
+    ["hair", "Hair", "rigid", "head", 110, 5, true],
+    ["face_acc", "Face", "rigid", "head", 120, null, true],
+    ["torso_inner", "Chest", "worn", "neck", 40, null, true],
+    ["arms", "Hands", "worn", "hand_r", 70, null, true],
+    ["legs", "Legs", "worn", "hip", 30, null, true],
+    ["feet", "Feet", "worn", "foot_r", 20, null, true],
+    ["back", "Back", "worn", "neck", 90, 4, true],
+    ["main_hand", "Main hand", "held", "hand_r", 150, 1, true],
+    ["off_hand", "Off hand", "held", "hand_l", 140, 2, true],
+    ["facial_hair", "Facial hair", "rigid", "head", 100, null, false],
+    ["torso_outer", "Outerwear", "worn", "neck", 60, null, false],
+    ["waist", "Waist", "worn", "hip", 50, null, false],
+    ["neck", "Neck", "rigid", "neck", 80, null, false],
+    ["shoulders", "Shoulders", "worn", "neck", 65, null, false],
+  ];
+  const makeSlot = (
+    [key, label, kind, anchor, z, bg, shown],
+    renderOrder = 0,
+  ) => ({
+    key,
+    stableKey: key,
+    label,
+    kind,
+    anchor,
+    z,
+    bg,
+    shown,
+    origin: key,
+    sourceProfile: key,
+    renderOrder,
+    template: "Add {{description}}. Keep the same character and pose.",
+    overrides: "[]",
+    items: [],
+    equipped: null,
+  });
+  const defaults = definitions.map(makeSlot);
+  const seedItems = [
+    ["head", "helmet_steel", "Steel helmet"],
+    ["head", "hat_wizard", "Wizard hat"],
+    ["hair", "hair_brown", "Brown hair"],
+    ["torso_inner", "vest_leather", "Leather vest"],
+    ["back", "cape_red", "Red cape"],
+    ["main_hand", "sword_steel", "Steel sword"],
+  ];
+  const initial = () => {
+    const slots = structuredClone(defaults);
+    for (const [key, id, name] of seedItems) {
+      const slot = slots.find((entry) => entry.key === key);
+      slot.items.push({ id, name, art: `${key}/${id}` });
+      slot.equipped ??= id;
+    }
+    return {
+      slots,
+      identity: "key",
+      hidePolicy: "empty",
+      presetPolicy: "fixed",
+      underwear: "off",
+      view: "manage",
+      facing: 0,
+      exportMode: "manifest",
+      calls: [],
+      outfit: {},
+    };
+  };
+  let state = initial();
+  const history = [];
+  const images = new Map();
+  let imageError = "";
+  let statusTimer;
+  let opener;
+  let drag;
+  const snapshot = () => {
+    history.push(structuredClone(state));
+    if (history.length > 40) history.shift();
+  };
+  const notify = (message) => {
+    clearTimeout(statusTimer);
+    select("#status").innerHTML = `<p class="bu-notice">${escape(message)}</p>`;
+    statusTimer = setTimeout(() => {
+      select("#status").textContent = "";
+    }, 7000);
+  };
+  const slotBy = (key) => state.slots.find((slot) => slot.key === key);
+  const options = (values, current) =>
+    values
+      .map(
+        ([value, label]) =>
+          `<option value="${escape(value)}" ${String(current) === String(value) ? "selected" : ""}>${escape(label)}</option>`,
+      )
+      .join("");
+  const button = (text, action, key, extra = "") =>
+    `<button class="bu-btn" data-action="${action}" data-key="${escape(key)}" ${extra} ${extra.includes("aria-label") ? "" : `aria-label="${escape(text)}${slotBy(key) ? ` ${escape(slotBy(key).label)} (${escape(key)})` : ""}"`}>${text}</button>`;
+  const custom = (slot) => !slot.origin;
+  const special = (slot) =>
+    ["underwear", "underwear_top", "underwear_bottom"].includes(slot.origin);
+  function remapKey(slot, next) {
+    const previous = slot.key;
+    slot.key = next;
+    if (Object.hasOwn(state.outfit, previous)) {
+      state.outfit[next] = state.outfit[previous];
+      delete state.outfit[previous];
+    }
+  }
+  function rebaseIdentity(mode) {
+    const mapping = state.slots.map((slot) => [
+      slot.key,
+      mode === "name" ? slug(slot.label) : slot.stableKey,
+    ]);
+    if (
+      mapping.some(([, key]) => !key) ||
+      new Set(mapping.map(([, key]) => key)).size !== mapping.length
+    ) {
+      notify(
+        "These names produce conflicting references. Rename duplicate labels before changing identity mode.",
+      );
+      return false;
+    }
+    const outfit = state.outfit;
+    state.outfit = Object.fromEntries(
+      mapping
+        .filter(([key]) => Object.hasOwn(outfit, key))
+        .map(([key, next]) => [next, outfit[key]]),
+    );
+    state.slots.forEach((slot, index) => {
+      slot.key = mapping[index][1];
+    });
+    state.identity = mode;
+    return true;
+  }
+  function renderRow(slot) {
+    const duplicate = state.slots.some(
+      (other) =>
+        other !== slot &&
+        other.label.toLowerCase() === slot.label.toLowerCase(),
+    );
+    const group = state.slots.filter((entry) => entry.shown === slot.shown);
+    const position = group.indexOf(slot);
+    return `<div class="slot-row" data-slot="${escape(slot.key)}">
+      <button class="bu-btn handle" data-drag="${escape(slot.key)}" aria-label="Drag ${escape(slot.label)} to reorder">${grip}</button>
+      <div class="slot-summary"><strong>${escape(slot.label)}</strong><small class="bu-muted">${slot.items.length} items${slot.equipped ? " · equipped" : ""} · ${custom(slot) ? "Custom" : "Built-in"}${special(slot) ? " · experimental" : ""}${duplicate ? ` · ${escape(slot.key)}` : ""}</small></div>
+      <div class="row-actions">${button(up, "up", slot.key, `aria-label="Move ${escape(slot.label)} up" ${position === 0 ? "disabled" : ""}`)}${button(down, "down", slot.key, `aria-label="Move ${escape(slot.label)} down" ${position === group.length - 1 ? "disabled" : ""}`)}${button(slot.shown ? (state.hidePolicy === "empty" && slot.items.length ? "Hide (empty only)" : "Hide") : "Show", "visibility", slot.key)}${button("Settings", "edit", slot.key)}</div></div>`;
+  }
+  function renderManage() {
+    const shown = state.slots.filter((slot) => slot.shown);
+    const hidden = state.slots.filter((slot) => !slot.shown);
+    return `<div class="content-head"><div><h2 id="view-title">Manage slots</h2><p class="bu-muted bu-small">Arrange the wardrobe. Moving a row never changes rendering depth.</p></div>${button("Add slot", "add", "")}</div>
+      <div class="slot-list">${shown.length ? shown.map(renderRow).join("") : '<p class="bu-muted">No slots shown. Add a custom slot or show a built-in below.</p>'}</div>
+      <details class="bu-details slot-group" open><summary>Hidden slots (${hidden.length})</summary><p class="bu-muted bu-small">Hidden from browsing. Equipment and exports stay unchanged.</p><div class="slot-list">${hidden.map(renderRow).join("")}</div></details>`;
+  }
+  function renderCatalog(slot, collapsed = false) {
+    const duplicate = state.slots.some(
+      (other) =>
+        other !== slot &&
+        other.label.toLowerCase() === slot.label.toLowerCase(),
+    );
+    const contents = `<div class="slot-heading"><h3>${escape(slot.label)}${duplicate ? ` <small>(${escape(slot.key)})</small>` : ""}</h3><div class="bu-actions">${button(slot.shown ? (state.hidePolicy === "empty" && slot.items.length ? "Hide (empty only)" : "Hide") : "Show", "visibility", slot.key)}${button("Settings", "edit", slot.key)}</div></div>
+      <div class="item-grid"><button class="bu-action" data-variant="tile" data-action="equip" data-key="${escape(slot.key)}" data-item="" aria-label="Unequip ${escape(slot.label)} (${escape(slot.key)})" aria-pressed="${!slot.equipped}">Empty</button>${slot.items.map((item) => `<button class="bu-action" data-variant="tile" data-action="equip" data-key="${escape(slot.key)}" data-item="${escape(item.id)}" aria-label="Equip ${escape(item.name)} in ${escape(slot.label)} (${escape(slot.key)})" aria-pressed="${slot.equipped === item.id}">${item.art ? `<canvas width="64" height="64" data-art="${escape(item.art)}" aria-hidden="true"></canvas>` : "<small>Sample record<br>No generated art</small>"}<span>${escape(item.name)}</span></button>`).join("")}</div>
+      <div class="bu-actions">${button("Add sample item", "sample", slot.key)}${slot.items.length ? button("Delete sample items", "clear-items", slot.key) : ""}</div>`;
+    return collapsed
+      ? `<details class="bu-details catalog-section"><summary>${escape(slot.label)} · ${slot.items.length} items${slot.equipped ? " · equipped" : ""}</summary>${contents}</details>`
+      : `<section class="catalog-section">${contents}</section>`;
+  }
+  function renderWardrobe() {
+    const hidden = state.slots.filter(
+      (slot) => !slot.shown && slot.items.length,
+    );
+    const hiddenWorn = hidden.filter((slot) => slot.equipped).length;
+    const archived =
+      state.hidePolicy === "collapsed"
+        ? hidden.map((slot) => renderCatalog(slot, true)).join("")
+        : hidden.length
+          ? `<details class="bu-details slot-group"><summary>Hidden slots · ${hidden.length} categories · ${hiddenWorn} equipped</summary><p class="bu-small bu-muted">Hidden from the wardrobe. Worn items stay equipped.</p>${hidden.map((slot) => renderCatalog(slot)).join("")}</details>`
+          : "";
+    return `<div class="content-head"><div><h2 id="view-title">Wardrobe</h2><p class="bu-muted bu-small">Try hiding a populated slot without changing the outfit.</p></div><div class="bu-actions">${button("Manage slots", "manage", "")}${button("Save sample outfit", "save-outfit", "")}${button("Wear saved outfit", "load-outfit", "")}</div></div>${
+      state.slots
+        .filter((slot) => slot.shown)
+        .map((slot) => renderCatalog(slot))
+        .join("") || "<p>No slots shown. Open Manage slots to restore them.</p>"
+    }${archived}`;
+  }
+  function descriptor() {
+    return {
+      exampleOnly: true,
+      notice:
+        "Partial design example, not a loadable production manifest. PNG files are not included.",
+      slots: state.slots.map((slot) => ({
+        id: slot.key,
+        label: slot.label,
+        z: slot.z,
+        renderOrder: slot.renderOrder,
+        ...(slot.bg === null ? {} : { bgZ: slot.bg }),
+        class: slot.kind,
+        zOverrides: JSON.parse(slot.overrides),
+      })),
+      equipment: Object.fromEntries(
+        state.slots.map((slot) => [slot.key, slot.equipped]),
+      ),
+      requiredRuntimeData: [
+        "rig cell and pivots",
+        "direction and mirroring rules",
+        "animation cells, timing and loop",
+        "item/layer sheet paths, cells and pivots",
+        "resolved hide/tuck/cut data",
+        "materials and palettes",
+      ],
+    };
+  }
+  function authoring() {
+    return {
+      exampleOnly: true,
+      wardrobe: {
+        order: state.slots.map((slot) => slot.key),
+        hidden: state.slots
+          .filter((slot) => !slot.shown)
+          .map((slot) => slot.key),
+      },
+      slotSettings: Object.fromEntries(
+        state.slots.map((slot) => [
+          slot.key,
+          {
+            factory: slot.origin,
+            sourceProfile: slot.sourceProfile,
+            anchor: slot.anchor,
+            promptTemplate: slot.template,
+          },
+        ]),
+      ),
+    };
+  }
+  function renderExport() {
+    const target = state.slots.find(custom) || slotBy("back") || state.slots[0];
+    const mode = state.exportMode;
+    const files = state.slots
+      .filter((slot) => slot.items.length)
+      .flatMap((slot) =>
+        slot.items.map(
+          (item) =>
+            `layers/${slot.key}${mode === "suffix" ? `__z${slot.z}` : ""}/${item.id}/main/walk.png`,
+        ),
+      );
+    const oldCall = state.calls.at(-1);
+    const resolves = oldCall ? !!slotBy(oldCall) : true;
+    const note =
+      mode === "manifest"
+        ? "Recommended: one manifest.json resolves rendering. The separate authoring section belongs in project.json. This fragment is not a complete runtime export."
+        : mode === "suffix"
+          ? "Comparison only: a suffix can describe one depth. It cannot encode foreground/background overrides, pivots, masks or timing. Renumbering changes file paths."
+          : "Loose PNGs only. Your game must supply an explicit order and all other playback rules. This is not equivalent to PixelDoll runtime rendering.";
+    return `<div class="content-head"><div><h2 id="view-title">Export lab</h2><p class="bu-muted bu-small">Inspect naming and metadata consequences before choosing a format.</p></div></div>
+      <div class="export-controls"><label>Ordering contract<select class="bu-select" id="export-mode">${options(
+        [
+          ["manifest", "One global manifest"],
+          ["suffix", "Depth suffix on folders"],
+          ["loose", "No metadata: loose artwork"],
+        ],
+        mode,
+      )}</select></label><div class="bu-actions">${button("Download runtime example", "download-runtime", "")}${button("Download authoring example", "download-authoring", "")}</div></div>
+      <p class="bu-notice">${escape(note)}</p><section class="export-section"><h3>Readable API reference</h3><pre class="runtime-code">doll.equip(${JSON.stringify(target.key)}, ${JSON.stringify(target.items[0]?.id || "item_key")});</pre>${button("Remember this reference", "remember-call", target.key)}${oldCall ? `<p class="bu-small">Previous reference: <code>${escape(oldCall)}</code> · ${resolves ? "slot key exists; item compatibility is not checked" : "slot key is missing after renaming or deletion"}</p>` : ""}</section>
+      <section class="export-section"><h3>Proposed file paths</h3><pre class="runtime-code">${escape((mode === "manifest" ? ["manifest.json", ...files] : files).join("\n"))}</pre></section>
+      <details class="bu-details" open><summary>Runtime descriptor fragment</summary><pre class="runtime-code">${escape(mode === "manifest" ? JSON.stringify(descriptor(), null, 2) : "Metadata omitted in this comparison. Folder enumeration supplies no guaranteed render order.")}</pre></details>
+      <details class="bu-details"><summary>Authoring settings, kept with the editable project</summary><pre class="runtime-code">${escape(JSON.stringify(authoring(), null, 2))}</pre></details>`;
+  }
+  function paint(canvas, art) {
+    const context = canvas.getContext("2d");
+    context.clearRect(0, 0, 64, 64);
+    const image = images.get(art);
+    if (image)
+      context.drawImage(image, 0, state.facing * 64, 64, 64, 0, 0, 64, 64);
+  }
+  function paintActor() {
+    const canvas = select("#actor");
+    const context = canvas.getContext("2d");
+    context.clearRect(0, 0, 64, 64);
+    const body = {
+      z: 10,
+      renderOrder: -1,
+      items: [{ id: "base", art: "body/base" }],
+      equipped: "base",
+    };
+    for (const slot of [body, ...state.slots].sort(
+      (left, right) => left.z - right.z || left.renderOrder - right.renderOrder,
+    )) {
+      const item = slot.items.find((entry) => entry.id === slot.equipped);
+      const image = item && images.get(item.art);
+      if (image)
+        context.drawImage(image, 0, state.facing * 64, 64, 64, 0, 0, 64, 64);
+    }
+    for (const tile of root.querySelectorAll("[data-art]"))
+      paint(tile, tile.dataset.art);
+  }
+  function render() {
+    const active = document.activeElement;
+    const focus = select("#content").contains(active)
+      ? {
+          id: active.id,
+          action: active.dataset.action,
+          key: active.dataset.key,
+          item: active.dataset.item,
+        }
+      : null;
+    for (const [id, value] of [
+      ["identity", state.identity],
+      ["hide-policy", state.hidePolicy],
+      ["preset-policy", state.presetPolicy],
+      ["underwear", state.underwear],
+    ])
+      select(`#${id}`).value = value;
+    for (const tab of root.querySelectorAll("[data-view]")) {
+      tab.setAttribute(
+        "aria-selected",
+        String(tab.dataset.view === state.view),
+      );
+      tab.tabIndex = tab.dataset.view === state.view ? 0 : -1;
+    }
+    select("#content").setAttribute("aria-labelledby", `tab-${state.view}`);
+    select("#undo").disabled = !history.length;
+    select("#decision-note").textContent =
+      state.identity === "key"
+        ? "Keys stay readable and unchanged after rename. In this comparison a custom label may match a hidden built-in; the manager shows both keys."
+        : "Name-only comparison: renaming rewrites local slot references and file paths. Previously exported game calls cannot be updated.";
+    select("#content").innerHTML =
+      state.view === "manage"
+        ? renderManage()
+        : state.view === "wardrobe"
+          ? renderWardrobe()
+          : renderExport();
+    select("#wearing").innerHTML = `<strong>Equipped</strong>${state.slots
+      .filter((slot) => slot.equipped)
+      .map(
+        (slot) =>
+          `<span>${escape(slot.label)}${state.slots.some((other) => other !== slot && other.label.toLowerCase() === slot.label.toLowerCase()) ? ` (${escape(slot.key)})` : ""}${slot.shown ? "" : " · organized away"}</span>`,
+      )
+      .join(
+        "",
+      )}${imageError ? `<p role="alert">${escape(imageError)}</p>` : ""}`;
+    paintActor();
+    if (focus?.action)
+      [...root.querySelectorAll("[data-action]")]
+        .find(
+          (element) =>
+            element.dataset.action === focus.action &&
+            element.dataset.key === focus.key &&
+            element.dataset.item === focus.item,
+        )
+        ?.focus({ preventScroll: true });
+    else if (focus?.id)
+      document.getElementById(focus.id)?.focus({ preventScroll: true });
+  }
+  function openEditor(key, copy = false) {
+    const source = slotBy(key);
+    const slot = source
+      ? structuredClone(source)
+      : structuredClone(defaults[3]);
+    const creating = !source || copy;
+    if (creating) {
+      slot.label = copy ? `${slot.label} copy` : "";
+      slot.key = uniqueKey(slug(slot.label));
+      slot.origin = null;
+      slot.sourceProfile = source?.sourceProfile || "torso_inner";
+      slot.items = [];
+      slot.equipped = null;
+      slot.renderOrder =
+        Math.max(...state.slots.map((entry) => entry.renderOrder)) + 1;
+    }
+    const locked = !creating && !custom(slot) && state.presetPolicy === "fixed";
+    const lock = locked ? "disabled" : "";
+    const form = select("#editor");
+    if (!form.open)
+      opener = {
+        action: document.activeElement.dataset.action,
+        key: document.activeElement.dataset.key,
+      };
+    form.innerHTML = `<form class="editor-body" id="slot-form"><h2 id="editor-title">${creating ? "Add slot" : `${escape(slot.label)} settings`}</h2>
+      ${locked ? '<p class="bu-notice">Factory settings are fixed in this comparison. Copy this slot to customize it.</p>' : ""}
+      <div class="settings-grid"><label class="full">Name<input class="bu-input" name="label" required value="${escape(slot.label)}" ${lock}></label>
+      <label class="full">${state.identity === "key" ? "API / folder key" : "Name-derived reference"}<input class="bu-input" name="key" pattern="[a-z0-9][a-z0-9_-]*" required value="${escape(slot.key)}" ${creating ? "" : "readonly"}></label>
+      ${
+        creating && !copy
+          ? `<label class="full">Start with<select class="bu-select" name="based">${options(
+              defaults.map((entry) => [entry.key, entry.label]),
+              "torso_inner",
+            )}</select></label>`
+          : ""
+      }
+      </div><details class="bu-details" ${creating ? "" : "open"}><summary>Advanced: unqualified authoring experiment</summary><p class="bu-notice">Settings below are not a promise of supported generation. A custom held slot needs the profile refactor; choosing Off hand does not prove left-hand behavior.${slot.items.length ? ` This slot has ${slot.items.length} items. Joint and behavior changes cannot retarget their existing pixels; production would need refit or lock these controls.` : ""}</p><div class="settings-grid">
+      <label>Behavior<select class="bu-select" name="kind" ${lock}>${options(
+        [
+          ["worn", "Worn"],
+          ["rigid", "Rigid"],
+          ["held", "Held"],
+        ],
+        slot.kind,
+      )}</select></label>
+      <label>Authoring joint<select class="bu-select" name="anchor" ${lock}>${options(
+        ["head", "neck", "hip", "hand_l", "hand_r", "foot_l", "foot_r"].map(
+          (value) => [value, value],
+        ),
+        slot.anchor,
+      )}</select></label>
+      <label>Foreground depth<input class="bu-input" name="z" type="number" step="1" required value="${slot.z}" ${lock}></label>
+      <label>Background depth (optional)<input class="bu-input" name="bg" type="number" step="1" value="${slot.bg ?? ""}" ${lock}></label>
+      <label class="full">Creative prompt template<textarea class="bu-input" name="template" ${lock}>${escape(slot.template)}</textarea></label>
+      <p class="bu-muted bu-small full">Use {{description}} for each item's description. Extraction instructions stay app-controlled. Prompt and joint changes apply to future authoring, not existing pixels.</p>
+      <label class="full">Contextual depth overrides (JSON)<textarea class="bu-input" name="overrides" ${lock}>${escape(slot.overrides)}</textarea></label>
+      <p class="bu-muted bu-small full">Example: [{"layer":"fg","z":95,"dir":"north"}]. No runtime bones are added. This prototype stores these settings but simulates only base foreground order.</p>
+      </div></details><p id="form-error" role="alert"></p>
+      <div class="editor-actions">${!creating ? button("Copy", "copy", key) : ""}${!creating && defaults.some((entry) => entry.key === slot.origin) && state.presetPolicy === "editable" ? button("Reset settings", "factory", key) : ""}${!creating && custom(slot) ? button("Delete slot", "delete", key) : ""}<button class="bu-btn" type="button" data-close="editor">Cancel</button><button class="bu-btn" data-variant="primary" type="submit" ${locked ? "disabled" : ""}>${creating ? "Create slot" : "Apply settings"}</button></div></form>`;
+    form
+      .querySelectorAll("button[data-action]")
+      .forEach((entry) => (entry.type = "button"));
+    const field = form.querySelector("[name=label]");
+    if (creating)
+      field.addEventListener("input", () => {
+        form.querySelector("[name=key]").value = uniqueKey(slug(field.value));
+      });
+    form.querySelector("[name=based]")?.addEventListener("change", (event) => {
+      const base = defaults.find((entry) => entry.key === event.target.value);
+      slot.sourceProfile = base.key;
+      for (const name of ["kind", "anchor", "z", "template", "overrides"])
+        form.querySelector(`[name=${name}]`).value = base[name];
+      form.querySelector("[name=bg]").value = base.bg ?? "";
+    });
+    form.querySelector("form").onsubmit = (event) => {
+      event.preventDefault();
+      const fields = new FormData(event.target);
+      const label = String(fields.get("label")).trim();
+      const nextKey =
+        state.identity === "name"
+          ? slug(label)
+          : creating
+            ? String(fields.get("key")).trim()
+            : slot.key;
+      let error = "";
+      if (!label || !nextKey || !nextKey.match(/^[a-z0-9][a-z0-9_-]*$/))
+        error =
+          "Use a name and a readable key containing lowercase letters, numbers, underscores or hyphens.";
+      if (
+        /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/i.test(nextKey) ||
+        nextKey === "body"
+      )
+        error =
+          "Choose another key; this name is reserved for files or the base body.";
+      const collision = state.slots.find(
+        (other) => other.key === nextKey && (creating || other.key !== key),
+      );
+      const labelCollision = state.slots.find(
+        (other) =>
+          other.label.toLowerCase() === label.toLowerCase() &&
+          (creating || other.key !== key),
+      );
+      if (collision)
+        error = `The reference ${nextKey} already exists, even when hidden. Show it, customize it, or choose another key.`;
+      if (labelCollision && (state.identity === "name" || labelCollision.shown))
+        error =
+          "Another shown slot uses that name. Hide it first for the same-label comparison, or choose a distinct name.";
+      let overrides;
+      try {
+        overrides = JSON.parse(String(fields.get("overrides")));
+        if (
+          !Array.isArray(overrides) ||
+          overrides.some(
+            (entry) =>
+              !["fg", "bg"].includes(entry.layer) ||
+              !Number.isFinite(entry.z) ||
+              (entry.dir &&
+                ![
+                  "south",
+                  "south-east",
+                  "east",
+                  "north-east",
+                  "north",
+                  "north-west",
+                  "west",
+                  "south-west",
+                ].includes(entry.dir)),
+          )
+        )
+          throw new Error("Invalid override");
+      } catch {
+        error =
+          "Overrides must be a JSON array with layer fg or bg, a numeric z, and an optional facing dir.";
+      }
+      const template = String(fields.get("template"));
+      if (/{{(?!description}})/.test(template))
+        error =
+          "Only {{description}} is supported. Templates contain no executable expressions.";
+      if (error) {
+        select("#form-error").textContent = error;
+        return;
+      }
+      snapshot();
+      const changed = {
+        ...slot,
+        key: nextKey,
+        stableKey: creating ? nextKey : slot.stableKey,
+        label,
+        kind: String(fields.get("kind")),
+        anchor: String(fields.get("anchor")),
+        z: Number(fields.get("z")),
+        bg: fields.get("bg") === "" ? null : Number(fields.get("bg")),
+        template,
+        overrides: JSON.stringify(overrides, null, 2),
+        shown: true,
+      };
+      if (creating) state.slots.push(changed);
+      else {
+        const current = slotBy(key);
+        remapKey(current, nextKey);
+        Object.assign(current, changed, { shown: current.shown });
+      }
+      closeEditor();
+      render();
+      notify(
+        creating
+          ? "Created sample slot. No artwork was generated."
+          : "Settings saved in this demo. Authoring changes do not alter existing pixels.",
+      );
+    };
+    if (!form.open) form.showModal();
+  }
+  function uniqueKey(candidate) {
+    if (!candidate) return "";
+    let key = candidate;
+    for (let index = 2; state.slots.some((slot) => slot.key === key); index++)
+      key = `${candidate}_${index}`;
+    return key;
+  }
+  function restoreEditorFocus() {
+    (
+      [...root.querySelectorAll("[data-action]")].find(
+        (element) =>
+          element.dataset.action === opener?.action &&
+          element.dataset.key === opener?.key,
+      ) || select("#tab-manage")
+    ).focus({ preventScroll: true });
+  }
+  select("#editor").addEventListener("close", restoreEditorFocus);
+  function closeEditor() {
+    select("#editor").close();
+  }
+  function move(key, amount) {
+    const index = state.slots.findIndex((slot) => slot.key === key);
+    const group = state.slots.filter(
+      (slot) => slot.shown === state.slots[index].shown,
+    );
+    const neighbor = group[group.indexOf(state.slots[index]) + amount];
+    if (!neighbor) return;
+    const next = state.slots.indexOf(neighbor),
+      slot = state.slots[index];
+    snapshot();
+    [state.slots[index], state.slots[next]] = [
+      state.slots[next],
+      state.slots[index],
+    ];
+    render();
+    root
+      .querySelector(
+        `[data-action="${amount < 0 ? "up" : "down"}"][data-key="${key}"]`,
+      )
+      ?.focus();
+    notify(`${slot.label} moved. Render depth unchanged.`);
+  }
+  function download(data, name) {
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+    );
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = name;
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  root.addEventListener("click", (event) => {
+    const close = event.target.closest("[data-close]");
+    if (close) {
+      select(`#${close.dataset.close}`).close();
+      return;
+    }
+    const tab = event.target.closest("[data-view]");
+    if (tab) {
+      state.view = tab.dataset.view;
+      render();
+      return;
+    }
+    const control = event.target.closest("[data-action]");
+    if (!control) return;
+    const action = control.dataset.action,
+      key = control.dataset.key,
+      slot = slotBy(key);
+    if (action === "edit") {
+      openEditor(key);
+      return;
+    }
+    if (action === "add") {
+      openEditor("");
+      return;
+    }
+    if (action === "copy") {
+      openEditor(key, true);
+      return;
+    }
+    if (action === "manage") {
+      state.view = "manage";
+      render();
+      return;
+    }
+    if (action === "up" || action === "down") {
+      move(key, action === "up" ? -1 : 1);
+      return;
+    }
+    if (action === "visibility") {
+      if (slot.shown && slot.items.length && state.hidePolicy === "empty") {
+        notify(
+          `${slot.label} has ${slot.items.length} items. This variant permits hiding only empty slots. Try another policy above.`,
+        );
+        return;
+      }
+      snapshot();
+      slot.shown = !slot.shown;
+      render();
+      notify(
+        `${slot.label} ${slot.shown ? "shown" : "hidden from browsing"}. Equipment and exports unchanged.`,
+      );
+      return;
+    }
+    if (action === "equip") {
+      snapshot();
+      slot.equipped = control.dataset.item || null;
+      render();
+      return;
+    }
+    if (action === "sample") {
+      snapshot();
+      const id = `sample_${slot.items.length + 1}`;
+      slot.items.push({ id, name: `Sample ${slot.label}` });
+      if (state.hidePolicy === "empty") slot.shown = true;
+      render();
+      notify("Added an offline sample record, not generated artwork.");
+      return;
+    }
+    if (action === "clear-items") {
+      snapshot();
+      slot.items = [];
+      slot.equipped = null;
+      delete state.outfit[key];
+      render();
+      notify(
+        "Deleted offline sample records and their outfit reference. Undo can restore them.",
+      );
+      return;
+    }
+    if (action === "remember-call") {
+      snapshot();
+      state.calls.push(key);
+      render();
+      return;
+    }
+    if (action === "download-runtime") {
+      download(descriptor(), "runtime-design-example.json");
+      return;
+    }
+    if (action === "download-authoring") {
+      download(authoring(), "authoring-design-example.json");
+      return;
+    }
+    if (action === "save-outfit") {
+      snapshot();
+      state.outfit = Object.fromEntries(
+        state.slots.map((entry) => [entry.key, entry.equipped]),
+      );
+      notify("Saved the sample outfit, including organized-away slots.");
+      return;
+    }
+    if (action === "load-outfit") {
+      if (!Object.keys(state.outfit).length) {
+        notify("Save a sample outfit first.");
+        return;
+      }
+      snapshot();
+      for (const entry of state.slots)
+        entry.equipped = state.outfit[entry.key] ?? null;
+      render();
+      notify("Sample outfit restored. Wardrobe visibility unchanged.");
+      return;
+    }
+    if (action === "factory") {
+      const base = defaults.find((entry) => entry.key === slot.origin);
+      if (!base) {
+        notify("Experimental settings have no qualified factory reset.");
+        return;
+      }
+      const nextKey = state.identity === "name" ? slug(base.label) : slot.key;
+      if (
+        state.slots.some(
+          (other) =>
+            other !== slot &&
+            (other.key === nextKey ||
+              other.label.toLowerCase() === base.label.toLowerCase()),
+        )
+      ) {
+        notify(
+          "Reset would conflict with another slot name or key. Rename that slot first.",
+        );
+        return;
+      }
+      snapshot();
+      remapKey(slot, nextKey);
+      Object.assign(slot, {
+        label: base.label,
+        kind: base.kind,
+        anchor: base.anchor,
+        z: base.z,
+        bg: base.bg,
+        template: base.template,
+        overrides: base.overrides,
+      });
+      closeEditor();
+      render();
+      notify("Restored settings. Items and wardrobe organization retained.");
+      return;
+    }
+    if (action === "delete") {
+      const dialog = select("#confirm");
+      dialog.innerHTML = `<div class="editor-body"><h2 id="confirm-title">Delete ${escape(slot.label)}?</h2><p>This removes ${slot.items.length} sample item records, the equipped selection and its saved-outfit reference. Undo can restore them.</p><div class="editor-actions"><button class="bu-btn" data-close="confirm">Cancel</button>${button("Delete slot", "confirm-delete", key)}</div></div>`;
+      dialog.showModal();
+      return;
+    }
+    if (action === "confirm-delete") {
+      snapshot();
+      state.slots = state.slots.filter((entry) => entry.key !== key);
+      delete state.outfit[key];
+      select("#confirm").close();
+      closeEditor();
+      render();
+      notify("Deleted sample slot and references. Undo is available.");
+    }
+  });
+  root.addEventListener("change", (event) => {
+    const { id, value } = event.target;
+    if (id === "export-mode") {
+      state.exportMode = value;
+      render();
+      return;
+    }
+    if (id === "facing") {
+      state.facing = Number(value);
+      paintActor();
+      return;
+    }
+    if (!["identity", "hide-policy", "preset-policy", "underwear"].includes(id))
+      return;
+    snapshot();
+    if (id === "identity" && !rebaseIdentity(value)) {
+      history.pop();
+      render();
+      return;
+    }
+    if (id === "hide-policy") {
+      state.hidePolicy = value;
+      if (value === "empty") {
+        for (const slot of state.slots)
+          if (slot.items.length) slot.shown = true;
+        notify("Empty-only policy selected. Populated slots are shown again.");
+      }
+    }
+    if (id === "preset-policy") state.presetPolicy = value;
+    if (id === "underwear") {
+      state.underwear = value;
+      const candidates =
+        value === "combined"
+          ? [["underwear", "Underwear"]]
+          : value === "split"
+            ? [
+                ["underwear_top", "Underwear top"],
+                ["underwear_bottom", "Underwear bottom"],
+              ]
+            : [];
+      const previous = state.slots.filter(special);
+      if (
+        candidates.some(([key]) =>
+          state.slots.some(
+            (slot) =>
+              !special(slot) && (slot.key === key || slot.stableKey === key),
+          ),
+        )
+      ) {
+        state = history.pop();
+        render();
+        notify(
+          "An experimental Underwear key is already used by a custom slot. Choose another custom key first.",
+        );
+        return;
+      }
+      if (previous.some((slot) => slot.items.length)) {
+        state = history.pop();
+        render();
+        notify(
+          "This comparison would remove populated experimental slots. Delete their sample items or Reset first.",
+        );
+        return;
+      }
+      state.slots = state.slots.filter((slot) => !special(slot));
+      for (const [key, label] of candidates)
+        state.slots.push(
+          makeSlot(
+            [
+              key,
+              label,
+              "worn",
+              key === "underwear_top" ? "neck" : "hip",
+              15,
+              null,
+              false,
+            ],
+            Math.max(...state.slots.map((slot) => slot.renderOrder)) + 1,
+          ),
+        );
+      notify(
+        value === "off"
+          ? "Underwear remains a custom-only experiment."
+          : "Added hidden Underwear options in Manage slots. The base already has baked underwear; this cannot remove it.",
+      );
+    }
+    render();
+  });
+  select("#theme").onclick = () => {
+    const light = document.documentElement.dataset.theme !== "light";
+    document.documentElement.dataset.theme = light ? "light" : "dark";
+    select("#theme").textContent = light ? "Dark theme" : "Light theme";
+  };
+  select("#undo").onclick = () => {
+    if (history.length) {
+      state = history.pop();
+      render();
+      notify("Restored previous sample state.");
+    }
+  };
+  select("#reset").onclick = () => {
+    snapshot();
+    state = initial();
+    render();
+    notify("Demo reset.");
+  };
+  root.addEventListener("pointerdown", (event) => {
+    const handle = event.target.closest("[data-drag]");
+    if (!handle || event.button !== 0) return;
+    drag = {
+      key: handle.dataset.drag,
+      startX: event.clientX,
+      startY: event.clientY,
+      target: handle.dataset.drag,
+      active: false,
+      handle,
+      pointer: event.pointerId,
+    };
+    handle.setPointerCapture(event.pointerId);
+  });
+  root.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    if (
+      !drag.active &&
+      Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) >
+        (event.pointerType === "touch" ? 8 : 6)
+    ) {
+      drag.active = true;
+      drag.handle.closest("[data-slot]").dataset.dragging = "true";
+    }
+    if (!drag.active) return;
+    const target = document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest("[data-slot]");
+    if (target) drag.target = target.dataset.slot;
+    if (event.clientY < 65) window.scrollBy(0, -14);
+    else if (event.clientY > window.innerHeight - 65) window.scrollBy(0, 14);
+  });
+  root.addEventListener("pointerup", () => {
+    if (!drag) return;
+    const current = drag;
+    drag = null;
+    if (
+      current.active &&
+      current.key !== current.target &&
+      slotBy(current.key).shown === slotBy(current.target).shown
+    ) {
+      snapshot();
+      const index = state.slots.findIndex((slot) => slot.key === current.key),
+        targetIndex = state.slots.findIndex(
+          (slot) => slot.key === current.target,
+        );
+      const [slot] = state.slots.splice(index, 1);
+      state.slots.splice(targetIndex, 0, slot);
+      notify(`${slot.label} reordered. Render depth unchanged.`);
+    }
+    render();
+    root
+      .querySelector(`[data-drag="${current.key}"]`)
+      ?.focus({ preventScroll: true });
+  });
+  root.addEventListener("pointercancel", () => {
+    drag = null;
+    render();
+  });
+  root.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && drag) {
+      drag = null;
+      render();
+      notify("Reordering canceled.");
+    }
+  });
+  root.addEventListener("keydown", (event) => {
+    if (
+      event.target.matches("[data-view]") &&
+      ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
+    ) {
+      event.preventDefault();
+      const tabs = [...root.querySelectorAll("[data-view]")],
+        index = tabs.indexOf(event.target);
+      const next =
+        event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? tabs.length - 1
+            : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) %
+              tabs.length;
+      tabs[next].click();
+      tabs[next].focus();
+    }
+  });
+  render();
+  const artPaths = [
+    "body/base",
+    ...seedItems.map(([key, id]) => `${key}/${id}`),
+  ];
+  Promise.all(
+    artPaths.map(
+      (path) =>
+        new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => {
+            images.set(path, image);
+            resolve();
+          };
+          image.onerror = () =>
+            reject(new Error(`Could not load demo artwork: ${path}`));
+          image.src =
+            window.SLOT_WORKSHOP_ASSETS?.[path] ||
+            `../../../../app/public/fixtures/s2/layers/${path}/main/walk.png`;
+        }),
+    ),
+  )
+    .then(paintActor)
+    .catch((error) => {
+      imageError = error.message;
+      render();
+    });
+})();
+</script>
+  </body></html>

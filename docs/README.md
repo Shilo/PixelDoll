@@ -54,6 +54,8 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Current review handoffs and research
 
+- [Modular visual-slot workshop](design/2026-11-16-slot-system/README.md): council-challenged slot inventory, identity, hiding, customization and export proposal with an isolated interactive comparison. Awaiting prototype review; no production behavior change.
+
 - [Third-party paper-doll system document and source](research/2026-11-10-paperdoll-system-review/README.md): every idea from the system's document, source and experiments compared with PixelDoll and challenged, with offline measurements: no pipeline change; posed gear fits the frozen base; the 1 px body-outline rim is an accepted known issue; a second 425-generation key test found dark mannequin shades, not the hue, cause outline loss.
 - [Third-party paper-doll workflow and chroma key color](research/2026-11-09-paperdoll-video-review/README.md): video and screenshot review of another tool's per-piece dressing workflow, each idea challenged against PixelDoll, and a live 808-generation key A/B plus offline census: keep green as the default; fixed the dark outline loss in `absorbOutline`.
 - [PixMiniMax terminal skeleton recipe review](research/pixminimax-skeleton-recipe-review-2026-11-08.md): offline script and screenshot findings, managed `end_frame` support, and the recommendation to retain frozen-body paper dolling while testing explicit captions.

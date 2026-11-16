@@ -1,0 +1,319 @@
+#workshop {
+  width: min(1280px, 100%);
+  margin-inline: auto;
+  padding: 20px;
+}
+.topbar,
+.section-line,
+.slot-heading,
+.slot-row,
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.topbar {
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.topbar h1 {
+  font-size: 30px;
+}
+.topbar p {
+  margin-top: 6px;
+}
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-block: 12px;
+}
+label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+select,
+input,
+textarea {
+  width: 100%;
+  min-width: 0;
+}
+textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+.experiment-controls {
+  margin-bottom: 16px;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.7fr) minmax(0, 2fr);
+  gap: 28px;
+  margin-top: 20px;
+  align-items: start;
+}
+.preview-panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.preview-panel h2,
+#content h2 {
+  font-size: 24px;
+}
+#actor {
+  width: min(100%, 256px);
+  height: auto;
+  image-rendering: pixelated;
+  justify-self: center;
+}
+#wearing {
+  display: grid;
+  gap: 4px;
+}
+#content {
+  min-width: 0;
+}
+.content-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.content-head p {
+  margin-top: 6px;
+  max-width: 65ch;
+}
+.slot-list {
+  display: grid;
+  gap: 8px;
+}
+.slot-row {
+  flex-wrap: wrap;
+  padding-block: 6px;
+}
+.slot-summary {
+  flex: 1;
+  min-width: 100px;
+  text-align: left;
+  display: grid;
+  gap: 2px;
+}
+.slot-summary strong {
+  font-weight: 600;
+}
+.slot-summary small {
+  overflow-wrap: anywhere;
+}
+.row-actions {
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.row-actions .bu-btn {
+  min-width: 44px;
+  padding-inline: 10px;
+}
+.handle {
+  touch-action: none;
+  min-width: 44px;
+  min-height: 44px;
+}
+.handle svg {
+  pointer-events: none;
+}
+.slot-row[data-dragging="true"] {
+  opacity: 0.5;
+}
+.slot-group {
+  margin-top: 22px;
+}
+.slot-group summary {
+  margin-bottom: 10px;
+}
+.catalog-section {
+  margin-bottom: 22px;
+}
+.slot-heading {
+  margin-bottom: 8px;
+}
+.item-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+.item-grid button {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 10px;
+  min-height: 108px;
+  overflow-wrap: anywhere;
+}
+.item-grid canvas {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+.empty-label {
+  padding-block: 12px;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.settings-grid .full {
+  grid-column: 1 / -1;
+}
+.editor-body {
+  display: grid;
+  gap: 16px;
+}
+.editor-body h2 {
+  font-size: 26px;
+}
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.bu-dialog {
+  width: min(620px, calc(100% - 24px));
+  max-height: min(820px, calc(100dvh - 24px));
+  overflow: auto;
+}
+.runtime-code {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font: 13px/1.6 var(--bu-mono);
+  background: var(--bu-field);
+  padding: 12px;
+  border-radius: var(--bu-radius-control);
+  max-height: 480px;
+  overflow: auto;
+}
+.export-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.export-section {
+  display: grid;
+  gap: 12px;
+  margin-block: 20px;
+}
+.tasks {
+  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+}
+.detail-line {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.6fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.detail-line code {
+  overflow-wrap: anywhere;
+}
+#status {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(550px, calc(100% - 32px));
+  z-index: 20;
+  pointer-events: none;
+}
+#status:empty {
+  display: none;
+}
+footer {
+  margin-top: 30px;
+}
+@media (max-width: 900px) {
+  .controls-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .workspace {
+    gap: 18px;
+    grid-template-columns: minmax(180px, 0.6fr) minmax(0, 1fr);
+  }
+  .row-actions {
+    width: 100%;
+  }
+}
+@media (max-width: 620px) {
+  #workshop {
+    padding: 12px;
+  }
+  .topbar h1 {
+    font-size: 26px;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .preview-panel {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .preview-panel .section-line,
+  .preview-panel > p,
+  .preview-panel > details {
+    grid-column: 1 / -1;
+  }
+  #actor {
+    width: 160px;
+    grid-row: span 3;
+  }
+  .preview-panel label {
+    align-self: start;
+  }
+  #wearing {
+    grid-column: 2;
+  }
+  .settings-grid,
+  .export-controls {
+    grid-template-columns: 1fr;
+  }
+  .controls-grid {
+    gap: 10px;
+  }
+  .bu-tabs {
+    width: 100%;
+  }
+  .bu-tabs button {
+    flex: 1;
+  }
+  .slot-row {
+    gap: 8px;
+  }
+  .row-actions {
+    width: auto;
+  }
+  .slot-summary {
+    min-width: 130px;
+  }
+}
+@media (max-width: 360px) {
+  .controls-grid {
+    grid-template-columns: 1fr;
+  }
+  .preview-panel {
+    grid-template-columns: 140px 1fr;
+  }
+  #actor {
+    width: 140px;
+  }
+  .row-actions {
+    width: 100%;
+  }
+}
