@@ -554,7 +554,7 @@ test('Preview resolves partial chord releases, preserves pause and clip selectio
 	await expect(world(page)).toHaveAttribute('data-facing', 'west');
 	await page.keyboard.up('a');
 	await expect(clip).toHaveValue(original);
-	await expect(page.locator('.test-mount-toggle')).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'Mount settings', exact: true })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
 	await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
 	await page.getByRole('button', { name: 'More options', exact: true }).focus();
@@ -625,7 +625,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 		};
 		await route.fulfill({ response, json: fixture });
 	});
-	await landing(page, '/?mounts');
+	await landing(page);
 	await page.keyboard.press('Enter');
 	await pause(page);
 	const toggle = page.locator('.test-mount-toggle');
@@ -825,7 +825,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await page.keyboard.press('Escape');
 	await expect(toggle).not.toHaveAttribute('data-active');
 	await expect(world(page)).not.toHaveAttribute('data-mount');
-	await landing(page, '/?mounts');
+	await landing(page);
 	await page.keyboard.press('Enter');
 	await expect(toggle).toHaveAccessibleName('Mount settings');
 	await expect(world(page)).not.toHaveAttribute('data-mount');

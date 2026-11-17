@@ -2,13 +2,7 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import { tick } from 'svelte';
-	import {
-		experience,
-		characters,
-		setMode,
-		testMountsEnabled,
-		type WorldMode
-	} from './experience/state.svelte.ts';
+	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
 	import SharePopover from './SharePopover.svelte';
 	import CharacterActions from './CharacterActions.svelte';
@@ -226,18 +220,16 @@
 		{#if experience.screen === 'characters'}
 			<NewCharacterButton />
 		{:else}
-			{#if testMountsEnabled}
-				<button
-					class="bu-action test-mount-toggle"
-					data-variant="quiet"
-					aria-label="Mount settings"
-					data-active={experience.testMount || undefined}
-					aria-expanded={mountMenuOpen}
-					title={experience.testMount ? 'Mount settings (mounted)' : 'Mount settings'}
-					popovertarget="mount-options"
-					disabled={!m}><PawPrint size={18} aria-hidden="true" /></button
-				>
-			{/if}
+			<button
+				class="bu-action test-mount-toggle"
+				data-variant="quiet"
+				aria-label="Mount settings"
+				data-active={experience.testMount || undefined}
+				aria-expanded={mountMenuOpen}
+				title={experience.testMount ? 'Mount settings (mounted)' : 'Mount settings'}
+				popovertarget="mount-options"
+				disabled={!m}><PawPrint size={18} aria-hidden="true" /></button
+			>
 			<button
 				class="bu-action header-random"
 				data-variant="quiet"
@@ -298,7 +290,7 @@
 	</div>
 </header>
 <SharePopover />
-{#if testMountsEnabled && experience.screen === 'studio'}
+{#if experience.screen === 'studio'}
 	<div
 		id="mount-options"
 		class="menu options-menu bu-popover-anchor"

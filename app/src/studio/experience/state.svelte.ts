@@ -2,8 +2,6 @@
 import { resolveZoom, type SceneCamera } from './zoom.ts';
 import type { MountLegMode } from './mountLegs.ts';
 export type WorldMode = 'preview' | 'topdown' | 'side';
-export const testMountsEnabled =
-	typeof location !== 'undefined' && new URLSearchParams(location.search).has('mounts');
 export const experience = $state({
 	screen: 'characters' as 'characters' | 'studio',
 	mode: 'preview' as WorldMode,

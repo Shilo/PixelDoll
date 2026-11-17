@@ -1,13 +1,7 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { ui, doc, view, toast, stepPreviewFrame } from '../state.svelte.ts';
-	import {
-		experience,
-		characters,
-		setMode,
-		sharedZoom,
-		testMountsEnabled
-	} from './state.svelte.ts';
+	import { experience, characters, setMode, sharedZoom } from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
 	import { MOTION, WORLDS, worldArt } from './config.ts';
 	import {
@@ -105,7 +99,7 @@
 		const p = view.project;
 		return grounding?.body ?? (p ? paintedFrame(p, {}) : null);
 	});
-	const mountVisible = $derived(testMountsEnabled && experience.testMount);
+	const mountVisible = $derived(experience.testMount);
 	const previewMount = $derived.by(() => {
 		if (experience.mode !== 'preview' || !availability) return null;
 		return mountedPresentation(resolvePreview(availability, { clip: ui.anim, direction: ui.dir }));

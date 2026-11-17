@@ -265,9 +265,9 @@
 .sheet-layout :is(.selection-import, .selection-create) {
 	display: none;
 }
-/* Phones keep Back, the name, Random look, Undo, Export, Full screen and More in the bar; Redo and Share move into More
+/* Phones keep Back, the name, Mount settings, Random look, Undo, Export, Full screen and More in the bar; Redo and Share move into More
    so the character name stays readable (Share's popover then points at More). Random look follows up to 430 px and
-   Undo up to 360 px. Full screen always stays on the bar (production-experience.md). */
+   Undo up to 430 px. Full screen always stays on the bar (production-experience.md). */
 .phone-layout:not(.selection) :is(.header-redo, .header-share) {
 	display: none !important;
 }
@@ -295,17 +295,24 @@
 	.phone-layout:not(.selection) .mobile-random {
 		display: flex !important;
 	}
-}
-@media (max-width: 360px) {
-	.phone-layout .name-line .name-text {
-		font-size: 16px;
-	}
 	.phone-layout .header-undo {
 		display: none !important;
 	}
 	.phone-layout:not(.selection) .mobile-undo {
 		display: flex !important;
-	} /* The screen title carries the bar; the brand returns from 361px. */
+	}
+}
+@media (max-width: 360px) {
+	.phone-layout .name-menu {
+		padding-inline: 0;
+	}
+	.phone-layout .name-line svg {
+		display: none;
+	}
+	.phone-layout .name-line .name-text {
+		font-size: 16px;
+	}
+	/* The screen title carries the bar; the brand returns from 361px. */
 	.brand,
 	.brand-divider {
 		display: none;

@@ -1,6 +1,6 @@
 # Try the test mount
 
-This is a free local experiment using a schematic mount. It does not generate creature art, save a mount to an outfit, or include it in exports.
+Studio includes an optional schematic mount without a URL flag. It does not generate creature art, save a mount to an outfit, or include it in exports.
 
 ## Direction behavior
 
@@ -10,7 +10,7 @@ Far is approximate: overlapping legs, wide feet and connected clothing can survi
 
 ## Try it
 
-1. Open `http://localhost:5199/?mounts` and customize a character. The agent workflow uses `npm run dev:agent`; stored artwork works without the PixelLab Docker API.
+1. Open `https://pixeldoll.app/` and customize a character. For local agent testing, use `npm run dev:agent` at `http://localhost:5199/`; stored artwork works without the PixelLab Docker API.
 2. Click the **Mount settings** paw icon in the top-right navigation bar, immediately before Random look. Turn **Show mount** on or off in its menu. The icon uses Bronze UI 0.3.7's normal accent highlight while the mount is shown, with no check badge. The switch is the authoritative state; opening the menu alone does not activate the highlight. On small phones Random look moves into More options, but the mount icon stays on the bar.
 3. In **Preview**, choose any existing move and facing. The same facing lineup now draws each neighbor with its own mount, contact and leg cutout. Selection and ordering work as before; wider mounted silhouettes can fit fewer neighbors on small screens. The toggle does not change the move. A standing pose will still have straight legs.
 4. In **Top-down** or **Side-scroller**, move normally. The mount follows the displayed facing and moves with the character. Its bob pauses while stopped. The rider uses a matching **Ride** view if stored, otherwise standing artwork, not a walking cycle.

@@ -1096,7 +1096,8 @@ test('studio demo: touch slot headers scroll before a hold and drag after arming
 	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(dropScroll);
 	await expect(page.locator('.slot-drag-preview')).not.toBeVisible();
 	await expect(page.locator('#slot-menu')).not.toBeVisible();
-	await page.locator('.header-undo').click();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.locator('#experience-options .mobile-undo').click();
 	await expect.poll(keys).toEqual(original);
 	const rail = page.locator('.slot-rail');
 	const railHair = rail.locator('[data-rail="hair"][data-sortable]');

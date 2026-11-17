@@ -29,8 +29,7 @@
 		experience,
 		customize as enterCustomize,
 		characters,
-		sharedZoom,
-		testMountsEnabled
+		sharedZoom
 	} from './state.svelte.ts';
 	import { WORLDS, worldArt } from './config.ts';
 	import { heroScale, layout, placeWorld } from './geometry.ts';
@@ -64,7 +63,7 @@
 	const canPlay = $derived(
 		(experience.presentation === 'animation' &&
 			selectedMove?.frames.some((frame) => frame.cell !== selectedMove.frames[0]?.cell)) ||
-			(testMountsEnabled && experience.testMount)
+			experience.testMount
 	);
 	const name = $derived(characterName());
 	const list = $derived(
@@ -88,7 +87,7 @@
 				: list.map((p) => ({ offset: 0, p }))
 	);
 	const MOVES_OFF = $derived(
-		testMountsEnabled && experience.testMount
+		experience.testMount
 			? 'Moves are picked in Preview. Mounted movement uses Ride when available, otherwise a standing pose.'
 			: 'Moves are picked in Preview. Here, moving plays idle or walk.'
 	);
