@@ -1,13 +1,15 @@
-// Experimental Preview-only mount host (docs/research/2026-11-16-mounts/live-trial-plan.md). The Studio acts as the
+// Experimental Studio mount host (docs/research/2026-11-16-mounts/live-trial-plan.md). The Studio acts as the
 // host scene: it draws external fixture art behind and in front of the unchanged, canonically composed rider and
 // translates the rider as a whole. Nothing here is exported, saved, or part of the paper-doll runtime.
 import { sampleTimeline } from '../../lib/runtime/timeline.js';
 import { makeImg, type Img } from '../../lib/image/png.ts';
 import type { Frame } from '../../lib/compose/compose.ts';
 import type { DirectionName, Rig } from '../../lib/store/manifest.ts';
+import { DIRECTIONS } from '../../lib/rig/rig.ts';
 import { directionLabel } from './movement.ts';
 
-export type MountId = 'narrow-saddle' | 'shell';
+export const TEST_MOUNT = 'narrow-saddle';
+export type MountId = typeof TEST_MOUNT;
 type Point = { x: number; y: number };
 
 /** One sampled mount pose: images share one size and ground point, so ground contact never bobs. */
@@ -28,26 +30,11 @@ export interface MountView {
 export type MountViewResult =
 	{ ok: true; view: MountView } | { ok: false; reason: string; missingView: boolean };
 
-interface Fixture {
-	id: MountId;
-	label: string;
-	/** Plain words for what this seat tests, shown beside the preview. */
-	detail: string;
-	/** Directions with authored art. Anything else is reported missing, never borrowed from another facing. */
-	views: readonly DirectionName[];
-	/** The fixture's own gait: body rise per frame (negative is up) and its duration. */
-	gait: readonly { dy: number; ms: number }[];
-	draw(direction: DirectionName, height: number, dy: number): Omit<MountFrame, 'ms'>;
-}
-
 // Flat schematic colors: test fixtures, deliberately not production creature art.
 const INK = [38, 34, 31, 255] as const,
 	HIDE = [138, 128, 116, 255] as const,
 	HIDE_FAR = [104, 96, 88, 255] as const,
-	TACK = [112, 70, 46, 255] as const,
-	SHELL = [96, 120, 92, 255] as const,
-	SHELL_IN = [64, 82, 62, 255] as const,
-	RIM = [150, 170, 132, 255] as const;
+	TACK = [112, 70, 46, 255] as const;
 type Color = readonly [number, number, number, number];
 
 function put(img: Img, x: number, y: number, c: Color) {
@@ -153,89 +140,168 @@ function drawSaddle(direction: DirectionName, H: number, dy: number) {
 	return { back, front, ground, seat: { x: seatX, y: bodyY - Math.max(1, r(H * 0.06)) } };
 }
 
-/** A broad shell carrier: the rider sits down into a bowl whose front wall hides the lower body. */
-function drawShell(direction: DirectionName, H: number, dy: number) {
-	const diagonal = direction === 'south-east';
-	const S = r(H * (diagonal ? 1.15 : 1.3)),
-		shellH = r(H * 0.42),
-		rimH = Math.max(3, r(H * (diagonal ? 0.12 : 0.06))),
-		leg = r(H * 0.12),
-		legW = Math.max(3, r(H / 10)),
-		pad = Math.max(2, r(H / 8));
-	const W = S + 2 * pad + r(H * 0.2),
-		Hh = leg + shellH + rimH + 4;
-	const back = makeImg(W, Hh),
-		front = makeImg(W, Hh);
-	const floor = Hh - 1,
-		ground = { x: pad + r(S / 2), y: Hh };
-	const shellX = pad,
-		rimY = floor - leg - shellH + dy;
-	// far feet and head stub behind everything
-	rect(back, shellX + r(S * 0.3), floor - leg - 1, legW, leg + 1, HIDE_FAR);
-	rect(back, shellX + r(S * 0.78), floor - leg - 1, legW, leg + 1, HIDE_FAR);
-	rect(back, shellX + S - 2, rimY + r(shellH * 0.4), r(H * 0.18), Math.max(3, r(H * 0.12)), HIDE);
-	// back wall (upper half of the rim ellipse) and the dark basin the rider sits into
-	ellipse(back, shellX, rimY - rimH, S, rimH * 2 + 1, SHELL_IN);
-	ellipse(back, shellX, rimY - rimH - 2, S, rimH * 2 + 1, SHELL, (_, py) => py < rimY - rimH + 1);
-	// front wall: the rim's near half and the hull below it
-	ellipse(front, shellX, rimY - rimH, S, rimH * 2 + 1, RIM, (_, py) => py >= rimY);
-	ellipse(front, shellX, rimY - shellH, S, shellH * 2, SHELL, (_, py) => py > rimY);
-	rect(front, shellX + r(S * 0.14), floor - leg - 1, legW, leg + 1, HIDE);
-	rect(front, shellX + r(S * 0.62), floor - leg - 1, legW, leg + 1, HIDE);
-	outline(back);
-	outline(front);
-	return { back, front, ground, seat: { x: ground.x, y: rimY + r(H * 0.04) } };
+function mirrorFrame(frame: Omit<MountFrame, 'ms'>): Omit<MountFrame, 'ms'> {
+	const mirror = (image: Img) => {
+		const result = makeImg(image.w, image.h);
+		for (let y = 0; y < image.h; y++)
+			for (let x = 0; x < image.w; x++) {
+				const offset = (y * image.w + x) * 4;
+				result.data.set(
+					image.data.subarray(offset, offset + 4),
+					(y * image.w + image.w - 1 - x) * 4
+				);
+			}
+		return result;
+	};
+	return {
+		back: mirror(frame.back),
+		front: mirror(frame.front),
+		ground: { x: frame.back.w - frame.ground.x, y: frame.ground.y },
+		seat: { x: frame.back.w - frame.seat.x, y: frame.seat.y }
+	};
 }
 
-const FIXTURES: readonly Fixture[] = [
-	{
-		id: 'narrow-saddle',
-		label: 'Open seat',
-		detail:
-			"Open seat: an open saddle, so the legs would straddle it; here they keep the selected move's pose.",
-		views: ['east', 'south-east'],
-		gait: [
-			{ dy: 0, ms: 140 },
-			{ dy: -1, ms: 140 },
-			{ dy: 0, ms: 140 },
-			{ dy: 1, ms: 140 }
-		],
-		draw: drawSaddle
-	},
-	{
-		id: 'shell',
-		label: 'Covered seat',
-		detail: "Covered seat: the enclosing front wall hides the rider's legs.",
-		views: ['east', 'south-east'],
-		gait: [
-			{ dy: 0, ms: 320 },
-			{ dy: 1, ms: 320 }
-		],
-		draw: drawShell
+function drawNorthernDiagonal(H: number, dy: number): Omit<MountFrame, 'ms'> {
+	const width = r(H * 1.2) + 8,
+		height = r(H * 1.15) + 4,
+		back = makeImg(width, height),
+		front = makeImg(width, height),
+		floor = height - 1,
+		bodyX = r(H * 0.15) + 2,
+		bodyY = floor - r(H * 0.64) + dy,
+		bodyW = r(H * 0.84),
+		bodyH = Math.max(4, r(H * 0.42)),
+		legW = Math.max(2, r(H / 16)),
+		seatX = bodyX + r(bodyW * 0.46),
+		neckX = bodyX + bodyW - r(H * 0.16),
+		neckY = bodyY - r(H * 0.35),
+		neckW = Math.max(3, r(H * 0.14));
+	for (const portion of [0.44, 0.86]) {
+		const legX = bodyX + r(bodyW * portion),
+			legTop = bodyY + r(bodyH * 0.4);
+		rect(back, legX, legTop, legW, floor - legTop - 2, HIDE_FAR);
 	}
-];
-export const MOUNTS: readonly {
-	id: MountId;
-	label: string;
-	detail: string;
-	views: readonly DirectionName[];
-}[] = FIXTURES;
+	rect(back, neckX, neckY, neckW, r(H * 0.46), HIDE_FAR);
+	rect(back, neckX, neckY, neckW + Math.max(2, r(H * 0.14)), Math.max(3, r(H * 0.1)), HIDE_FAR);
+	ellipse(back, bodyX, bodyY, bodyW, bodyH, HIDE);
+	for (const portion of [0.14, 0.66]) {
+		const legTop = bodyY + bodyH - 2;
+		rect(back, bodyX + r(bodyW * portion), legTop, legW, floor - legTop, HIDE);
+	}
+	rect(back, bodyX - 1, bodyY + r(bodyH * 0.55), Math.max(2, r(H * 0.07)), r(H * 0.25), HIDE_FAR);
+	const saddleW = Math.max(4, r(H * 0.2));
+	rect(back, seatX - r(saddleW / 2), bodyY - 1, saddleW, 3, TACK);
+	rect(front, seatX + r(saddleW / 2) - 1, bodyY - 3, 2, 4, TACK);
+	outline(back);
+	outline(front);
+	return {
+		back,
+		front,
+		ground: { x: bodyX + r(bodyW / 2), y: height },
+		seat: { x: seatX, y: bodyY - Math.max(1, r(H * 0.06)) }
+	};
+}
+
+function drawAxial(direction: 'north' | 'south', H: number, dy: number): Omit<MountFrame, 'ms'> {
+	const width = r(H * 0.7) + 8,
+		height = r(H * 1.1) + 4,
+		back = makeImg(width, height),
+		front = makeImg(width, height),
+		center = r(width / 2),
+		floor = height - 1,
+		bodyW = Math.max(5, r(H * 0.5)),
+		bodyH = Math.max(4, r(H * 0.48)),
+		bodyX = center - r(bodyW / 2),
+		bodyY = floor - r(H * 0.3) - bodyH + dy,
+		legW = Math.max(2, r(H / 16)),
+		neckW = Math.max(3, r(H * 0.16)),
+		north = direction === 'north',
+		seatY = bodyY + r(bodyH * (north ? 0.5 : 0.16));
+	for (const side of [-1, 1])
+		rect(
+			back,
+			center + side * Math.max(2, r(bodyW * 0.28)) - r(legW / 2),
+			bodyY + 2,
+			legW,
+			floor - bodyY - 4,
+			HIDE_FAR
+		);
+	const neckLayer = north ? back : front,
+		neckY = north ? bodyY - r(H * 0.25) : bodyY + r(H * 0.12);
+	rect(
+		neckLayer,
+		center - r(neckW / 2),
+		neckY,
+		neckW,
+		Math.max(4, r(H * 0.36)),
+		north ? HIDE_FAR : HIDE
+	);
+	ellipse(
+		neckLayer,
+		center - r(neckW / 2) - 1,
+		neckY - 2,
+		neckW + 2,
+		Math.max(4, r(H * 0.17)),
+		north ? HIDE_FAR : HIDE
+	);
+	if (!north) rect(back, center - 1, bodyY - r(H * 0.16), 2, r(H * 0.22), HIDE_FAR);
+	ellipse(back, bodyX, bodyY, bodyW, bodyH, HIDE);
+	for (const side of [-1, 1]) {
+		const legTop = bodyY + bodyH - 2;
+		rect(
+			back,
+			center + side * Math.max(3, r(bodyW * 0.4)) - r(legW / 2),
+			legTop,
+			legW,
+			floor - legTop,
+			HIDE
+		);
+	}
+	if (north) rect(back, center - 1, bodyY + r(bodyH * 0.65), 2, Math.max(3, r(H * 0.23)), HIDE_FAR);
+	const saddleW = Math.max(3, r(H * 0.18));
+	rect(back, center - r(saddleW / 2), seatY, saddleW, 3, TACK);
+	rect(front, center - 1, seatY + (north ? -3 : 1), 2, 3, TACK);
+	outline(back);
+	outline(front);
+	return { back, front, ground: { x: center, y: height }, seat: { x: center, y: seatY } };
+}
+
+function drawMount(direction: DirectionName, H: number, dy: number): Omit<MountFrame, 'ms'> {
+	switch (direction) {
+		case 'west':
+			return mirrorFrame(drawSaddle('east', H, dy));
+		case 'south-west':
+			return mirrorFrame(drawSaddle('south-east', H, dy));
+		case 'north-west':
+			return mirrorFrame(drawNorthernDiagonal(H, dy));
+		case 'north-east':
+			return drawNorthernDiagonal(H, dy);
+		case 'north':
+		case 'south':
+			return drawAxial(direction, H, dy);
+		case 'east':
+		case 'south-east':
+			return drawSaddle(direction, H, dy);
+	}
+}
+
+const GAIT = [0, -1, 0, 1] as const;
 
 const views = new Map<string, MountView>();
 /** Draw a fixture's view at the rider's own pixel size (never rescaled). Missing views are reported, not borrowed. */
 export function mountView(id: MountId, direction: DirectionName, height: number): MountViewResult {
-	const fixture = FIXTURES.find((f) => f.id === id);
-	if (!fixture) return { ok: false, reason: `Unknown mount fixture: ${id}`, missingView: false };
-	if (!fixture.views.includes(direction))
+	if (id !== TEST_MOUNT)
+		return { ok: false, reason: `Unknown mount fixture: ${id}`, missingView: false };
+	if (!DIRECTIONS.includes(direction))
 		return {
 			ok: false,
-			reason: `${fixture.label} has no ${directionLabel(direction)} view; mount hidden`,
+			reason: `Open saddle has no ${directionLabel(direction)} view; mount hidden`,
 			missingView: true
 		};
-	if (!Number.isFinite(height) || height < 8)
+	if (!Number.isFinite(height) || height < 8 || height > 256)
 		return {
 			ok: false,
-			reason: `${fixture.label} needs a standing height of at least 8 px`,
+			reason: 'Open saddle needs a standing height from 8 to 256 px',
 			missingView: false
 		};
 	const H = Math.round(height),
@@ -245,7 +311,7 @@ export function mountView(id: MountId, direction: DirectionName, height: number)
 		view = {
 			fixture: id,
 			direction,
-			frames: fixture.gait.map(({ dy, ms }) => ({ ...fixture.draw(direction, H, dy), ms }))
+			frames: GAIT.map((dy) => ({ ...drawMount(direction, H, dy), ms: 140 }))
 		};
 		views.set(key, view);
 	}
@@ -334,6 +400,3 @@ export function mountedFrame(body: Frame, ground: Point, view: MountView, contac
 	}
 	return { w: right - l, h: b - t, x: ground.x - l, y: ground.y - t };
 }
-
-/** Opacity of the mount's front layer in the diagnostic Show hidden parts view. Display only. */
-export const GHOST_ALPHA = 0.35;

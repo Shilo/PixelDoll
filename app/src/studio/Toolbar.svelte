@@ -2,7 +2,13 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import { tick } from 'svelte';
-	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
+	import {
+		experience,
+		characters,
+		setMode,
+		testMountsEnabled,
+		type WorldMode
+	} from './experience/state.svelte.ts';
 	import CharacterThumb from './experience/CharacterThumb.svelte';
 	import SharePopover from './SharePopover.svelte';
 	import CharacterActions from './CharacterActions.svelte';
@@ -56,7 +62,8 @@
 		Eye,
 		Layers2,
 		Mountain,
-		Grid2x2
+		Grid2x2,
+		PawPrint
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
@@ -192,6 +199,18 @@
 						></span
 					></button
 				>{/each}
+			{#if testMountsEnabled}
+				<button
+					class="bu-action test-mount-toggle"
+					data-variant="quiet"
+					aria-label="Test mount"
+					aria-pressed={experience.testMount}
+					title="Test mount. Not saved or exported. Live views use Ride when available, otherwise a standing pose."
+					disabled={!m}
+					onclick={() => (experience.testMount = !experience.testMount)}
+					><PawPrint size={18} aria-hidden="true" /></button
+				>
+			{/if}
 		</div>
 	{/if}
 	<div class="header-actions">

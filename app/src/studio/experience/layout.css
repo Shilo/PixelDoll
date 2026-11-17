@@ -201,6 +201,13 @@
 .experience-header .view-modes svg {
 	display: none;
 }
+.experience-header .test-mount-toggle svg {
+	display: block;
+}
+.view-modes .test-mount-toggle {
+	width: 44px;
+	justify-self: center;
+}
 @media (max-width: 999px) {
 	.view-modes {
 		gap: 0;
@@ -220,6 +227,7 @@
 /* Phones and sheets: a floating icon tab row under the bar. */
 :is(.sheet-layout, .phone-layout) .view-modes {
 	position: absolute;
+	grid-column: 1 / -1;
 	top: var(--header-row);
 	left: 50%;
 	transform: translateX(-50%);
@@ -229,7 +237,6 @@
 /* A phone held sideways keeps the panel beside the stage (geometry.ts): the tab row centers over the stage instead. */
 .phone-layout:not(.sheet-layout) .view-modes {
 	/* The whole header is the containing block (an absolute grid item's is its grid area otherwise). */
-	grid-column: 1 / -1;
 	left: calc((var(--stage-left) + 100vw - var(--stage-right)) / 2 - var(--edge));
 }
 :is(.sheet-layout, .phone-layout) .view-modes .view-label {

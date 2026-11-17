@@ -6,7 +6,7 @@ Tracking: [Research 2D mounts and paper-doll integration](https://github.com/use
 
 ## Recommendation
 
-**Try it yourself:** [Plain-language preview instructions](try-the-preview.md) explain the two seat shapes, supported directions and see-through inspection, without making any paid request.
+**Try it yourself:** [Plain-language preview instructions](try-the-preview.md) explain the single test-mount toggle across Preview, Top-down and Side-scroller, without making any paid request. The earlier two-seat comparison remains research evidence, not the current UI.
 
 **Branch experiment:** [Live trial plan](live-trial-plan.md) separates optional rider poses, external fixtures, conditional runtime additions and the bounded paid test. The real Studio prototype is implemented in an isolated worktree. [Trial results](live-results.md) record observed behavior and the remaining qualification gates; this is not a universal mounting claim.
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
 	ESTIMATED_HIP,
-	MOUNTS,
+	TEST_MOUNT,
 	mountView,
 	mountedFrame,
 	placeRider,
@@ -11,6 +11,8 @@ import {
 	type MountView
 } from '../../src/studio/experience/mounts.ts';
 import type { DirectionName } from '../../src/lib/store/manifest.ts';
+import { DIRECTIONS } from '../../src/lib/rig/rig.ts';
+import type { Img } from '../../src/lib/image/png.ts';
 
 const view = (id: MountId, direction: DirectionName, height = 50) => {
 	const result = mountView(id, direction, height);
@@ -22,77 +24,163 @@ const alpha = (image: { w: number; data: Uint8ClampedArray }, x: number, y: numb
 const painted = (image: { data: Uint8ClampedArray }) =>
 	image.data.some((value, i) => i % 4 === 3 && value > 0);
 
-describe('mount preview fixtures', () => {
-	test('describe both seats in plain words', () => {
-		expect(MOUNTS.map((fixture) => fixture.label)).toEqual(['Open seat', 'Covered seat']);
-		expect(MOUNTS[0].detail).toContain('legs would straddle');
-		expect(MOUNTS[1].detail).toContain('front wall hides');
+describe('mount preview fixture', () => {
+	test('exposes one open saddle and rejects the removed covered seat', () => {
+		expect(TEST_MOUNT).toBe('narrow-saddle');
+		const result = mountView('shell' as MountId, 'east', 50);
+		expect(result).toEqual({
+			ok: false,
+			reason: 'Unknown mount fixture: shell',
+			missingView: false
+		});
 	});
 
-	test('cover only their authored views and name a missing one instead of borrowing it', () => {
-		for (const fixture of MOUNTS) {
-			expect(fixture.views).toEqual(['east', 'south-east']);
-			for (const direction of ['west', 'north', 'south', 'north-east'] as const) {
-				const result = mountView(fixture.id, direction, 50);
-				expect(result.ok).toBe(false);
-				if (!result.ok) {
-					expect(result.reason).toMatch(/has no .+ view; mount hidden/);
-					expect(result.missingView).toBe(true);
-				}
-			}
+	test('declares every facing without substituting the east view', () => {
+		expect(DIRECTIONS).toHaveLength(8);
+		for (const direction of DIRECTIONS) {
+			const result = view(TEST_MOUNT, direction);
+			expect(result.fixture).toBe(TEST_MOUNT);
+			expect(result.direction).toBe(direction);
 		}
-		const short = mountView('narrow-saddle', 'east', Number.NaN);
-		expect(short.ok).toBe(false);
-		if (!short.ok) expect(short.missingView).toBe(false);
 	});
 
-	test('draw at the rider pixel size with fixed ground, painted layers and a seat above it', () => {
-		for (const fixture of MOUNTS)
-			for (const direction of fixture.views) {
-				const v = view(fixture.id, direction);
-				const [first] = v.frames;
-				for (const frame of v.frames) {
+	test('rejects nonfinite and out-of-range heights before drawing', () => {
+		for (const height of [Number.NaN, Infinity, -Infinity, -1, 0, 7.9, 256.1, Number.MAX_VALUE]) {
+			const result = mountView(TEST_MOUNT, 'east', height);
+			expect(result).toEqual({
+				ok: false,
+				reason: 'Open saddle needs a standing height from 8 to 256 px',
+				missingView: false
+			});
+		}
+	});
+
+	test('draws bounded integer geometry in all eight directions at the rider pixel size', () => {
+		for (const height of [8, 32, 50, 63, 256])
+			for (const direction of DIRECTIONS) {
+				const result = view(TEST_MOUNT, direction, height),
+					[first] = result.frames;
+				for (const frame of result.frames) {
 					expect(frame.back.w).toBe(first.back.w);
+					expect(frame.back.h).toBe(first.back.h);
+					expect(frame.front.w).toBe(first.back.w);
 					expect(frame.front.h).toBe(first.back.h);
-					// Ground contact never bobs: the gait moves the body and the seat only.
 					expect(frame.ground).toEqual(first.ground);
+					expect(frame.ground.y).toBe(frame.back.h);
 					expect(frame.seat.y).toBeLessThan(frame.ground.y);
 					expect(painted(frame.back) && painted(frame.front)).toBe(true);
-					// The ground edge is the image bottom; feet reach it, the space between them stays clear.
-					expect(frame.ground.y).toBe(frame.back.h);
+					for (const value of [
+						frame.back.w,
+						frame.back.h,
+						frame.ground.x,
+						frame.ground.y,
+						frame.seat.x,
+						frame.seat.y
+					]) {
+						expect(Number.isFinite(value) && Number.isInteger(value)).toBe(true);
+						expect(value).toBeGreaterThanOrEqual(0);
+						expect(value).toBeLessThanOrEqual(2 * height + 8);
+					}
+					expect(frame.seat.x).toBeLessThan(frame.back.w);
 					const bottom = frame.back.h - 1;
-					expect(alpha(frame.back, frame.ground.x, bottom)).toBe(0);
 					expect([...Array(frame.back.w)].some((_, x) => alpha(frame.back, x, bottom))).toBe(true);
+					if (height === 50) expect(alpha(frame.back, frame.ground.x, bottom)).toBe(0);
 				}
-				expect(new Set(v.frames.map((f) => f.seat.y)).size).toBeGreaterThan(1);
+				expect(new Set(result.frames.map((frame) => frame.seat.y)).size).toBeGreaterThan(1);
 			}
-		expect(view('shell', 'east', 64).frames[0].back.w).toBeGreaterThan(
-			view('shell', 'east', 32).frames[0].back.w
+		expect(view(TEST_MOUNT, 'east', 64).frames[0].back.w).toBeGreaterThan(
+			view(TEST_MOUNT, 'east', 32).frames[0].back.w
 		);
 	});
 
-	test('reuse the drawn view for the same size', () => {
-		expect(view('shell', 'south-east')).toBe(view('shell', 'south-east'));
+	test('mirrors every pixel and pixel-edge anchor for westward facings', () => {
+		const mirroredPixels = (image: Img) => {
+			const pixels = new Uint8ClampedArray(image.data.length);
+			for (let y = 0; y < image.h; y++)
+				for (let x = 0; x < image.w; x++) {
+					const source = (y * image.w + x) * 4;
+					pixels.set(image.data.subarray(source, source + 4), (y * image.w + image.w - 1 - x) * 4);
+				}
+			return pixels;
+		};
+		for (const [east, west] of [
+			['east', 'west'],
+			['south-east', 'south-west'],
+			['north-east', 'north-west']
+		] as const)
+			for (const height of [32, 50, 63]) {
+				const source = view(TEST_MOUNT, east, height),
+					mirrored = view(TEST_MOUNT, west, height);
+				for (const [index, frame] of source.frames.entries()) {
+					const target = mirrored.frames[index];
+					for (const layer of ['back', 'front'] as const) {
+						expect(target[layer].w).toBe(frame[layer].w);
+						expect(target[layer].h).toBe(frame[layer].h);
+						expect(target[layer].data).toEqual(mirroredPixels(frame[layer]));
+					}
+					expect(target.ground).toEqual({ x: frame.back.w - frame.ground.x, y: frame.ground.y });
+					expect(target.seat).toEqual({ x: frame.back.w - frame.seat.x, y: frame.seat.y });
+					expect(target.ms).toBe(frame.ms);
+				}
+			}
+	});
+
+	test('authors distinct front and rear silhouettes with northern heads behind the rider', () => {
+		const signature = (direction: DirectionName) => {
+			const { back, front } = view(TEST_MOUNT, direction).frames[0];
+			return JSON.stringify([back.w, back.h, Array.from(back.data), Array.from(front.data)]);
+		};
+		expect(new Set(DIRECTIONS.map(signature)).size).toBe(8);
+		for (const direction of ['north', 'north-east', 'north-west'] as const) {
+			const { back, front, seat } = view(TEST_MOUNT, direction).frames[0];
+			let headBehind = false;
+			for (let y = 0; y < seat.y - 5; y++)
+				for (let x = 0; x < back.w; x++) {
+					if (alpha(back, x, y)) headBehind = true;
+					expect(alpha(front, x, y)).toBe(0);
+				}
+			expect(headBehind).toBe(true);
+		}
+		for (const direction of DIRECTIONS) {
+			const { front, seat } = view(TEST_MOUNT, direction).frames[0];
+			let widest = 0;
+			for (let y = 0; y < front.h; y++) {
+				let width = 0;
+				for (let x = 0; x < front.w; x++) {
+					width = alpha(front, x, y) ? width + 1 : 0;
+					widest = Math.max(widest, width);
+					if (y > seat.y + 25) expect(alpha(front, x, y)).toBe(0);
+				}
+			}
+			expect(widest).toBeLessThanOrEqual(20);
+		}
+	});
+
+	test('reuses the drawn view for the same rounded size', () => {
+		expect(view(TEST_MOUNT, 'south-east')).toBe(view(TEST_MOUNT, 'south-east'));
+		expect(view(TEST_MOUNT, 'north', 49.8)).toBe(view(TEST_MOUNT, 'north', 50));
 	});
 });
 
 describe('mount seat sampling', () => {
 	test('is deterministic, loops on its own timeline and ignores the rider clock', () => {
-		const v = view('narrow-saddle', 'east');
-		const total = v.frames.reduce((sum, f) => sum + f.ms, 0);
-		const at = (ms: number) => sampleMountFrame(v, ms);
-		expect(v.frames.map((_, i) => at(i * v.frames[0].ms))).toEqual([0, 1, 2, 3]);
-		expect(at(v.frames[0].ms - 1)).toBe(0);
-		expect(at(total + 1)).toBe(at(1));
-		expect(at(-50)).toBe(0);
-		expect(at(Number.NaN)).toBe(0);
-		expect([...Array(20)].map((_, i) => at(i * 37))).toEqual(
-			[...Array(20)].map((_, i) => at(i * 37))
-		);
+		for (const direction of DIRECTIONS) {
+			const v = view(TEST_MOUNT, direction);
+			const total = v.frames.reduce((sum, f) => sum + f.ms, 0);
+			const at = (ms: number) => sampleMountFrame(v, ms);
+			expect(v.frames.map((_, i) => at(i * v.frames[0].ms))).toEqual([0, 1, 2, 3]);
+			expect(at(v.frames[0].ms - 1)).toBe(0);
+			expect(at(total + 1)).toBe(at(1));
+			expect(at(-50)).toBe(0);
+			expect(at(Number.NaN)).toBe(0);
+			expect([...Array(20)].map((_, i) => at(i * 37))).toEqual(
+				[...Array(20)].map((_, i) => at(i * 37))
+			);
+		}
 	});
 
 	test('rejects a broken gait instead of guessing a frame', () => {
-		const broken: MountView = { ...view('shell', 'east'), frames: [] };
+		const broken: MountView = { ...view(TEST_MOUNT, 'east'), frames: [] };
 		expect(() => sampleMountFrame(broken, 0)).toThrow(/invalid animation timeline/);
 	});
 });
@@ -117,38 +205,48 @@ describe('rider placement', () => {
 	});
 
 	test('translates the whole rider by whole pixels and follows the seat bob only', () => {
-		const v = view('narrow-saddle', 'east');
-		const contact = { x: 40, y: 47.5 };
-		const places = v.frames.map((f) => placeRider(ground, contact, f));
-		for (const [i, p] of places.entries()) {
-			for (const n of [p.mount.x, p.mount.y, p.rider.x, p.rider.y])
-				expect(Number.isInteger(n)).toBe(true);
-			expect(p.mount).toEqual(places[0].mount);
-			expect(p.rider.y - places[0].rider.y).toBe(v.frames[i].seat.y - v.frames[0].seat.y);
-			expect(p.rider.x).toBe(places[0].rider.x);
+		for (const direction of DIRECTIONS) {
+			const v = view(TEST_MOUNT, direction);
+			const contact = { x: 40, y: 47.5 };
+			const places = v.frames.map((f) => placeRider(ground, contact, f));
+			for (const [i, p] of places.entries()) {
+				for (const n of [p.mount.x, p.mount.y, p.rider.x, p.rider.y])
+					expect(Number.isInteger(n)).toBe(true);
+				expect(p.mount).toEqual(places[0].mount);
+				expect(p.rider.y - places[0].rider.y).toBe(v.frames[i].seat.y - v.frames[0].seat.y);
+				expect(p.rider.x).toBe(places[0].rider.x);
+			}
+			// The rider contact lands on the seat, within the half-pixel snap.
+			const [f] = v.frames,
+				[p] = places;
+			expect(Math.abs(contact.x + p.rider.x - (p.mount.x + f.seat.x))).toBeLessThanOrEqual(0.5);
+			expect(Math.abs(contact.y + p.rider.y - (p.mount.y + f.seat.y))).toBeLessThanOrEqual(0.5);
 		}
-		// The rider contact lands on the seat, within the half-pixel snap.
-		const [f] = v.frames,
-			[p] = places;
-		expect(Math.abs(contact.x + p.rider.x - (p.mount.x + f.seat.x))).toBeLessThanOrEqual(0.5);
-		expect(Math.abs(contact.y + p.rider.y - (p.mount.y + f.seat.y))).toBeLessThanOrEqual(0.5);
 	});
 
 	test('fits the mount and every bobbing rider position without moving the ground', () => {
-		const v = view('shell', 'east');
-		const body = { w: 30, h: 50, x: 15, y: 50 };
-		const contact = { x: ground.x, y: ground.y - 22 };
-		const fitted = mountedFrame(body, ground, v, contact);
-		for (const f of v.frames) {
-			const { mount, rider } = placeRider(ground, contact, f);
-			expect(ground.x - fitted.x).toBeLessThanOrEqual(
-				Math.min(mount.x, ground.x - body.x + rider.x)
-			);
-			expect(ground.y - fitted.y).toBeLessThanOrEqual(
-				Math.min(mount.y, ground.y - body.y + rider.y)
-			);
-			expect(ground.y - fitted.y + fitted.h).toBeGreaterThanOrEqual(mount.y + f.back.h);
+		for (const direction of DIRECTIONS) {
+			const v = view(TEST_MOUNT, direction);
+			const body = { w: 30, h: 50, x: 15, y: 50 };
+			const contact = { x: ground.x, y: ground.y - 22 };
+			const fitted = mountedFrame(body, ground, v, contact);
+			for (const f of v.frames) {
+				const { mount, rider } = placeRider(ground, contact, f);
+				expect(ground.x - fitted.x).toBeLessThanOrEqual(
+					Math.min(mount.x, ground.x - body.x + rider.x)
+				);
+				expect(ground.y - fitted.y).toBeLessThanOrEqual(
+					Math.min(mount.y, ground.y - body.y + rider.y)
+				);
+				expect(ground.y - fitted.y + fitted.h).toBeGreaterThanOrEqual(mount.y + f.back.h);
+				expect(ground.x - fitted.x + fitted.w).toBeGreaterThanOrEqual(
+					Math.max(mount.x + f.back.w, ground.x - body.x + rider.x + body.w)
+				);
+				expect(ground.y - fitted.y + fitted.h).toBeGreaterThanOrEqual(
+					ground.y - body.y + rider.y + body.h
+				);
+			}
+			expect(fitted.w).toBeGreaterThanOrEqual(v.frames[0].back.w);
 		}
-		expect(fitted.w).toBeGreaterThanOrEqual(v.frames[0].back.w);
 	});
 });

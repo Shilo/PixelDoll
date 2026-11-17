@@ -1,9 +1,12 @@
 /** Presentation state only. Projects, saves and paid workflows stay in Studio state. */
 import { resolveZoom, type SceneCamera } from './zoom.ts';
 export type WorldMode = 'preview' | 'topdown' | 'side';
+export const testMountsEnabled =
+	typeof location !== 'undefined' && new URLSearchParams(location.search).has('mounts');
 export const experience = $state({
 	screen: 'characters' as 'characters' | 'studio',
 	mode: 'preview' as WorldMode,
+	testMount: false,
 	presentation: 'animation' as string,
 	/** The chosen zoom in CSS px per art px, shared by all views; null shows each view's fit. */
 	sceneZoom: null as number | null,

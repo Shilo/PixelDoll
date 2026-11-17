@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
 	import { ui, doc, view, toast, stepPreviewFrame } from '../state.svelte.ts';
-	import { experience, characters, setMode, sharedZoom } from './state.svelte.ts';
+	import {
+		experience,
+		characters,
+		setMode,
+		sharedZoom,
+		testMountsEnabled
+	} from './state.svelte.ts';
 	import type { Ground, RenderOptions } from './ground.ts';
 	import { MOTION, WORLDS, worldArt } from './config.ts';
 	import {
@@ -29,14 +35,12 @@
 	import { sceneZoom } from './sceneZoom.ts';
 	import { frameRecorder } from './paint.ts';
 	import {
-		GHOST_ALPHA,
-		MOUNTS,
+		TEST_MOUNT,
 		mountView,
 		mountedFrame,
 		placeRider,
 		riderContact,
-		sampleMountFrame,
-		type MountId
+		sampleMountFrame
 	} from './mounts.ts';
 	import type { Img } from '../../lib/image/png.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
@@ -56,7 +60,6 @@
 	import JoystickView from '../../lib/input/Joystick.svelte';
 	import {
 		keyboardVector,
-		directionLabel,
 		nearestDirection,
 		integrateMovement,
 		MOVEMENT_KEYS,
@@ -64,22 +67,10 @@
 	} from './movement.ts';
 	let {
 		missing = $bindable(null),
-		playbackHeight = 0,
-		mount = null,
-		mountsEnabled = false,
-		showHidden = false,
-		mountShown = $bindable(false)
+		playbackHeight = 0
 	}: {
 		missing: { clip: string; direction: DirectionName; items: Item[] } | null;
 		playbackHeight?: number;
-		/** Experimental Preview-only mount fixture (mounts.ts); never saved or exported. */
-		mount?: MountId | null;
-		/** Whether the ?mounts preview controls are offered, so their short instructions stay visible. */
-		mountsEnabled?: boolean;
-		/** Diagnostic: draw the mount's front layer translucent. Display only. */
-		showHidden?: boolean;
-		/** Whether a mount is drawn for the displayed facing, so Preview offers its gait's Play/Pause. */
-		mountShown?: boolean;
 	} = $props();
 	let host: HTMLDivElement,
 		canvas: HTMLCanvasElement,
@@ -111,22 +102,35 @@
 		const p = view.project;
 		return grounding?.body ?? (p ? paintedFrame(p, {}) : null);
 	});
-	// Preview as a mount host: the fixture's back, the unchanged composed rider translated to its seat, then the
-	// fixture's front. Only the displayed facing is shown; a facing the fixture lacks is named, never borrowed.
-	const mountPlan = $derived.by(() => {
-		void doc.rev;
-		const a = availability,
-			project = view.project,
+	const mountVisible = $derived(testMountsEnabled && experience.testMount);
+	const previewMount = $derived.by(() => {
+		if (experience.mode !== 'preview' || !availability) return null;
+		return mountedPresentation(resolvePreview(availability, { clip: ui.anim, direction: ui.dir }));
+	});
+	const mountBounds = $derived(
+		previewMount?.view && bodyFrame
+			? mountedFrame(bodyFrame, previewMount.ground, previewMount.view, previewMount.contact)
+			: null
+	);
+	const fitFrame = $derived(mountBounds ?? bodyFrame);
+	let mountIssue = $state('');
+	function mountedPresentation(p: Presentation) {
+		const project = view.project,
 			frame = drawingFrame;
-		if (!mount || experience.mode !== 'preview' || !a || !project || !frame || !bodyFrame)
+		if (
+			!mountVisible ||
+			!project ||
+			!frame ||
+			!bodyFrame ||
+			p.kind === 'unavailable' ||
+			!p.direction ||
+			!p.clip
+		)
 			return null;
-		const p = resolvePreview(a, { clip: ui.anim, direction: ui.dir });
-		if (p.kind === 'unavailable' || !p.direction || !p.clip) return null;
 		const facing = grounding?.facings.get(p.direction);
 		const height = facing?.standingHeight ?? bodyFrame.h;
-		const result = mountView(mount, p.direction, height);
-		if (!result.ok)
-			return { view: null, reason: result.reason, missingView: result.missingView } as const;
+		const result = mountView(TEST_MOUNT, p.direction, height);
+		if (!result.ok) return { view: null, reason: result.reason } as const;
 		const ground = { x: frame.x + (facing?.x ?? 0), y: frame.y + (facing?.y ?? 0) };
 		const cell = p.kind === 'animation' ? (p.sequence?.frames[0]?.cell ?? p.cell) : p.cell;
 		const contact = riderContact(
@@ -138,56 +142,13 @@
 			ground,
 			height
 		);
-		return {
-			view: result.view,
-			reason: null,
-			missingView: false,
-			ground,
-			contact,
-			frame: mountedFrame(bodyFrame, ground, result.view, contact)
-		} as const;
-	});
-	// Scale and camera follow the bare base body only, so equipping a tall hat or a long weapon never resizes the
-	// character; a previewed mount fits the whole mounted group instead.
-	const fitFrame = $derived(mountPlan?.view ? mountPlan.frame : bodyFrame);
-	const mountFixture = $derived(mount ? (MOUNTS.find((f) => f.id === mount) ?? null) : null);
-	const mountVisible = $derived(!!mountPlan?.view);
-	// An explicit way out of an unsupported facing, offered only when the selected move really has that view.
-	const mountAlternative = $derived.by(() => {
-		if (!mountPlan || mountPlan.view || !mountPlan.missingView || !mountFixture || !availability)
-			return null;
-		for (const direction of mountFixture.views) {
-			const p = resolvePreview(availability, { clip: ui.anim, direction });
-			if (p.kind !== 'unavailable' && p.direction === direction) return direction;
-		}
-		return null;
-	});
-	// Mount notes stay visible on every layout and stay short: they qualify what the seat preview shows.
-	const seatNotes = $derived(mountsEnabled && experience.mode === 'preview');
-	const mountLead = $derived(
-		!mountFixture
-			? 'Mount preview: choose an Open seat or Covered seat in the bar below, then try moves and facings.'
-			: mountPlan?.view
-				? mountFixture.detail
-				: (mountPlan?.reason ?? '')
-	);
-	const mountContactNote = $derived(
-		mountPlan?.view
-			? mountPlan.contact.source === 'estimate'
-				? 'Seat height is estimated for this move.'
-				: 'Seat placement uses the hips and has not been reviewed.'
-			: ''
-	);
-	const mountLimitNote =
-		'Test only: no real mount, no automatic pose change, no charge, not saved or exported.';
-	$effect(() => {
-		mountShown = !!mountPlan?.view;
-	});
+		return { view: result.view, ground, contact } as const;
+	}
 	// How far any of the character's gear can reach: Preview's lineup sizes and spaces its facings by it.
 	const reach = $derived.by(() => {
 		void doc.rev;
 		const p = view.project;
-		if (mountPlan?.view) return mountPlan.frame;
+		if (mountBounds) return mountBounds;
 		return grounding?.reach ?? (p ? reachFrame(p) : null);
 	});
 	// Each facing's own reach bounds its click target.
@@ -662,17 +623,14 @@
 				backdrop,
 				plate: art,
 				viewport: { l: 0, t: 0, r: width, b: backdrop.coverBottom },
-				// A mounted group centers on its own bounds; the mount reaches well beyond the standing body.
-				center:
-					!live && mountPlan?.view
-						? {
-								x: groundedFocus.x + (mountPlan.frame.w / 2 - mountPlan.frame.x) * fit,
-								y: groundedFocus.y - (mountPlan.frame.y - mountPlan.frame.h / 2) * fit
-							}
-						: {
-								x: groundedFocus.x,
-								y: groundedFocus.y - ((bodyReference?.standingHeight ?? fitFrame?.h ?? 0) * fit) / 2
-							}
+				center: {
+					x: groundedFocus.x + (mountBounds ? (mountBounds.w / 2 - mountBounds.x) * fit : 0),
+					y:
+						groundedFocus.y -
+						(mountBounds
+							? (mountBounds.y - mountBounds.h / 2) * fit
+							: ((bodyReference?.standingHeight ?? fitFrame?.h ?? 0) * fit) / 2)
+				}
 			});
 			const drawPosition = (
 				frame: { x: number; y: number },
@@ -816,6 +774,7 @@
 				const p = live
 					? resolveLive(a, {
 							velocity,
+							riding: mountVisible,
 							previous,
 							defaultDirection:
 								experience.mode === 'side'
@@ -868,7 +827,8 @@
 						? `${result.hiddenItems.length} equipped item${result.hiddenItems.length === 1 ? '' : 's'} hidden for this view`
 						: ''
 				].filter(Boolean);
-				const mounted = live ? null : mountPlan;
+				const mounted = mountedPresentation(p);
+				mountIssue = mounted && !mounted.view ? mounted.reason : '';
 				const loadings = new Set(result?.loading ? [result.loading] : []);
 				if ((velocity.x || velocity.y) && !hasMoved) {
 					hasMoved = true;
@@ -1023,15 +983,12 @@
 								other.entry.canvas.height * scale
 							);
 					if (mounted?.view) {
-						if (ui.playing && !ui.sheet && !document.hidden) mountElapsed += dt;
+						if ((live ? !!(velocity.x || velocity.y) : ui.playing) && !ui.sheet && !document.hidden)
+							mountElapsed += dt;
 						const index = sampleMountFrame(mounted.view, mountElapsed),
 							pose = mounted.view.frames[index],
 							at = placeRider(mounted.ground, mounted.contact, pose);
-						const layer = (image: Img, alpha = 1) => {
-							if (alpha !== 1) {
-								g.save();
-								g.globalAlpha = alpha;
-							}
+						const layer = (image: Img) => {
 							g.drawImage(
 								mountCanvas(image),
 								x + at.mount.x * scale,
@@ -1039,7 +996,6 @@
 								image.w * scale,
 								image.h * scale
 							);
-							if (alpha !== 1) g.restore();
 						};
 						layer(pose.back);
 						g.drawImage(
@@ -1049,11 +1005,13 @@
 							img.w * scale,
 							img.h * scale
 						);
-						layer(pose.front, showHidden ? GHOST_ALPHA : 1);
+						layer(pose.front);
+						host.dataset.mountContact = mounted.contact.source;
 						host.dataset.mount = `${mounted.view.fixture} ${mounted.view.direction} ${index}`;
 					} else {
 						g.drawImage(source, x, y, img.w * scale, img.h * scale);
 						delete host.dataset.mount;
+						delete host.dataset.mountContact;
 					}
 					host.dataset.position = `${position.x.toFixed(2)},${position.y.toFixed(2)}`;
 					host.dataset.camera = `${camera.x.toFixed(2)},${camera.y.toFixed(2)}`;
@@ -1142,38 +1100,13 @@
 </div>
 <!-- One bottom-anchored stack: the movement hint always sits above the fallback note, whatever the note wraps to.
      In Preview it also clears the playback bar, whose top is --playback-top. -->
-{#if seatNotes || hint || note || loadingNote || rendererWarning}<div
+{#if mountIssue || hint || note || loadingNote || rendererWarning}<div
 		class="world-notes"
 		style:bottom={experience.mode === 'preview' && playbackHeight
 			? 'max(calc(var(--stage-bottom) + 16px), calc(100% - var(--playback-top) + 8px))'
 			: undefined}
 	>
-		{#if seatNotes}
-			{#if mountLead}<p class="world-hint" role="status">{mountLead}</p>{/if}
-			{#if mountFixture && mountPlan?.missingView}
-				{#if mountAlternative}
-					<button
-						class="bu-action world-note-action"
-						data-variant="quiet"
-						aria-label="Preview {directionLabel(mountAlternative)} view"
-						onclick={() => {
-							ui.dir = mountAlternative;
-							host.focus({ preventScroll: true });
-						}}>Preview {directionLabel(mountAlternative)} view</button
-					>
-				{:else}
-					<p class="world-hint">
-						This move has no {mountFixture.views.map(directionLabel).join(' or ')} view. Pick another
-						move to test this seat.
-					</p>
-				{/if}
-			{/if}
-			{#if mountContactNote}<p class="world-hint">{mountContactNote}</p>{/if}
-			{#if showHidden && mountVisible}<p class="world-hint" role="status">
-					Diagnostic: the seat's front layer is see-through, so covered parts show. Not exported.
-				</p>{/if}
-			<p class="world-hint">{mountLimitNote}</p>
-		{/if}
+		{#if mountIssue}<p class="world-hint" role="status">{mountIssue}</p>{/if}
 		{#if hint}<p class="world-hint">
 				{matchMedia('(pointer:coarse)').matches
 					? 'Drag in the world to move'
@@ -1192,9 +1125,3 @@
 	size={padSize}
 	axis={experience.mode === 'side' ? 'x' : 'xy'}
 />
-
-<style>
-	.world-note-action {
-		pointer-events: auto;
-	}
-</style>

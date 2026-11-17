@@ -108,6 +108,29 @@ function fixture(
 const moving = { x: 1, y: 1 };
 
 describe('production body presentation', () => {
+	test('mounted movement uses the matching Ride view or standing art, never the walking cycle', () => {
+		const project = fixture(['east', 'west'], ['walk', 'idle', 'ride']);
+		delete project.manifest.items[0].layers[0].cells!.ride.west;
+		const a = buildPresentation(project);
+		const east = resolveLive(a, { velocity: { x: 1, y: 0 }, riding: true });
+		expect(east).toMatchObject({ direction: 'east', clip: 'ride', moving: true, issue: null });
+		expect(livePlaybackDelta(east, { x: 0, y: 0 }, 100)).toBe(0);
+		expect(livePlaybackDelta(east, { x: 0.5, y: 0 }, 100)).toBe(50);
+		expect(
+			resolveLive(a, { velocity: { x: 0, y: 0 }, previous: east, riding: true })
+		).toMatchObject({ direction: 'east', clip: 'ride', moving: false });
+		expect(resolveLive(a, { velocity: { x: -1, y: 0 }, riding: true })).toMatchObject({
+			direction: 'west',
+			clip: 'idle',
+			moving: true,
+			issue: null
+		});
+		expect(resolveLive(a, { velocity: { x: 1, y: 0 } })).toMatchObject({
+			direction: 'east',
+			clip: 'walk'
+		});
+	});
+
 	test('intentional E/W directions retain remembered vertical facing without missing-coverage warnings', () => {
 		const a = buildPresentation(fixture(['east', 'west']));
 		const east = resolveLive(a, { velocity: moving });

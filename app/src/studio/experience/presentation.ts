@@ -367,6 +367,7 @@ export function resolveLive(
 		previous?: Presentation | null;
 		defaultDirection?: DirectionName;
 		deadZone?: number;
+		riding?: boolean;
 	}
 ): Presentation {
 	const velocity = unit(options.velocity, options.deadZone ?? 1e-6),
@@ -388,7 +389,8 @@ export function resolveLive(
 				saved
 			)
 		: (retained ?? nearestDirection(a.directions, { x: 0, y: -1 }));
-	const base = initial(a, moving ? 'walk' : 'idle', intended, moving);
+	const ridingClip = a.animations.get('ride')?.has(intended!) ? 'ride' : 'idle';
+	const base = initial(a, options.riding ? ridingClip : moving ? 'walk' : 'idle', intended, moving);
 	if (![options.velocity.x, options.velocity.y].every(Number.isFinite)) {
 		base.issue = 'Movement input is not finite';
 		base.issueKey = 'invalid-velocity';
@@ -419,7 +421,11 @@ export function resolveLive(
 				};
 		}
 	}
-	for (const clip of moving ? ['walk', 'idle', DEFAULT_MOVE] : ['idle', DEFAULT_MOVE]) {
+	for (const clip of options.riding
+		? [ridingClip, DEFAULT_MOVE]
+		: moving
+			? ['walk', 'idle', DEFAULT_MOVE]
+			: ['idle', DEFAULT_MOVE]) {
 		// Default: a new character's standing views
 		const sequences = a.animations.get(clip),
 			directions = [...(sequences?.keys() ?? [])].filter(eligible);
@@ -479,6 +485,10 @@ export function livePlaybackDelta(
 	deltaMs: number
 ): number {
 	const dt = Number.isFinite(deltaMs) ? Math.max(0, deltaMs) : 0;
+	if (presentation.requestedClip === 'ride' && presentation.clip === 'ride') {
+		const strength = Math.hypot(velocity.x, velocity.y);
+		return Number.isFinite(strength) ? dt * Math.min(1, strength) : 0;
+	}
 	if (
 		presentation.kind !== 'animation' ||
 		!presentation.moving ||
