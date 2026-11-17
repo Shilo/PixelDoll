@@ -328,14 +328,28 @@
 	}
 	const scrolled = () => (spyFrame ||= requestAnimationFrame(spy));
 	let previousOrder = '';
+	let restoreAnchor: { element: HTMLElement; top: number; key: string } | null = null;
 	$effect.pre(() => {
 		const order = own.map((slot) => slot.key).join('\0');
 		const changed = previousOrder && order !== previousOrder;
 		previousOrder = order;
+		const anchor = restoreAnchor;
+		restoreAnchor = null;
 		if (!changed || !list || untrack(() => ui.group !== reported)) return;
 		const top = list.scrollTop;
 		void tick().then(() => {
-			list?.scrollTo({ top, behavior: 'instant' });
+			if (!list) return;
+			const element = anchor?.element.isConnected
+				? anchor.element
+				: anchor &&
+					list.querySelector<HTMLElement>(`[data-slot-button="${CSS.escape(anchor.key)}"]`);
+			list.scrollTo({
+				top:
+					anchor && element
+						? list.scrollTop + element.getBoundingClientRect().top - anchor.top
+						: top,
+				behavior: 'instant'
+			});
 			spy();
 		});
 	});
@@ -419,7 +433,10 @@
 	});
 	$effect(() => {
 		void sections;
-		const last = list?.querySelector<HTMLElement>('section[data-group]:last-of-type');
+		void notShown.length;
+		const last =
+			list?.querySelector<HTMLElement>('.not-shown') ??
+			list?.querySelector<HTMLElement>('section[data-group]:last-of-type');
 		return list && last ? watchListSpacer(list, last, (height) => (spacer = height)) : undefined;
 	});
 	onMount(() => {
@@ -514,17 +531,39 @@
 		list?.querySelector<HTMLElement>('.not-shown-toggle')?.focus({ preventScroll: true });
 	}
 	async function showHidden(key: string, label: string, to?: number) {
+		const index = notShown.findIndex((slot) => slot.key === key);
+		const next = notShown[index + 1]?.key ?? notShown[index - 1]?.key;
+		const anchor = to === undefined && list?.querySelector<HTMLElement>('.not-shown-toggle');
+		if (anchor && list) {
+			list.scrollTo({ top: list.scrollTop, behavior: 'instant' });
+			restoreAnchor = { element: anchor, top: anchor.getBoundingClientRect().top, key };
+		}
 		try {
 			if (to === undefined) showSlot(key);
 			else showSlotAt(key, to);
 		} catch (e) {
+			restoreAnchor = null;
 			toast((e as Error).message);
 			return;
 		}
 		await tick();
 		const at = own.findIndex((s) => s.key === key);
 		announce = `${label} is shown at position ${at + 1} of ${own.length}.`;
-		void settle(key);
+		if (to !== undefined) void settle(key);
+		else {
+			const focus = next
+				? list?.querySelector<HTMLElement>(`[data-show-slot="${CSS.escape(next)}"]`)
+				: list?.querySelector<HTMLElement>(`[data-slot-button="${CSS.escape(key)}"]`);
+			focus?.focus({ preventScroll: true });
+		}
+	}
+	async function showNotShown() {
+		notShownOpen = true;
+		await tick();
+		const section = list?.querySelector<HTMLElement>('.not-shown');
+		if (!list || !section) return;
+		list.scrollTo({ top: section.offsetTop, behavior: 'instant' });
+		spy();
 	}
 	/** Edit a custom slot, or start a custom copy of a built-in, in the Slots sheet. */
 	function openSlotSettings(key: string) {
@@ -539,7 +578,7 @@
 
 	// Dragging (slotDrag recognizes the gesture): the target is the header boundary nearest the pointer, measured on the
 	// sections' own layout rather than where sticky headers appear, and nothing moves until the drop.
-	type DragSource = { key: string; label: string; hidden: boolean };
+	type DragSource = { key: string; label: string; hidden: boolean; rail?: boolean };
 	const EDGE = 48,
 		MAX_SPEED = 14,
 		/** How far past the first or last shown slot a drop still counts. */
@@ -553,6 +592,35 @@
 	let dragPreview = $state<HTMLElement>();
 	/** Where a drop at the pointer would land: the shown index, and the drop line's offset in the list. */
 	function dropTarget(source: DragSource): { to: number; line: number } | null {
+		if (source.rail) {
+			if (!rail) return null;
+			const box = rail.getBoundingClientRect();
+			if (
+				pointer.x < box.left ||
+				pointer.x > box.right ||
+				pointer.y < box.top ||
+				pointer.y > box.bottom
+			)
+				return null;
+			const tabs = [...rail.querySelectorAll<HTMLElement>('[data-sortable]')];
+			const fixed = rail.querySelector<HTMLElement>('[data-not-shown]')?.getBoundingClientRect();
+			if (fixed && pointer.y >= fixed.top) return null;
+			const last = tabs.at(-1)?.getBoundingClientRect();
+			if (!last || pointer.y > last.bottom + SLACK) return null;
+			const gap = tabs.findIndex((tab) => {
+				const rect = tab.getBoundingClientRect();
+				return pointer.y < rect.top + rect.height / 2;
+			});
+			const index = gap < 0 ? tabs.length : gap;
+			const from = own.findIndex((slot) => slot.key === source.key);
+			if (from < 0 || index === from || index === from + 1) return null;
+			const line =
+				(tabs[index]?.getBoundingClientRect().top ?? last.bottom) - box.top + rail.scrollTop;
+			return {
+				to: index < from ? index : index - 1,
+				line: Math.max(2, line - (index === tabs.length ? 2 : 0))
+			};
+		}
 		if (!list) return null;
 		const box = list.getBoundingClientRect(),
 			{ x, y } = pointer;
@@ -576,7 +644,7 @@
 			if (Math.abs(b - at) < Math.abs(bounds[gap] - at)) gap = i;
 		});
 		if (!last) gap = 0;
-		const line = gap ? bounds[gap] - GAP : bounds[0];
+		const line = gap ? bounds[gap] - GAP : bounds[0] + 2;
 		if (source.hidden) return { to: gap, line };
 		const from = own.findIndex((s) => s.key === source.key);
 		if (from < 0 || gap === from || gap === from + 1) return null;
@@ -584,7 +652,9 @@
 	}
 	function dragStep() {
 		if (!drag || !list) return;
-		const box = list.getBoundingClientRect(),
+		const surface = drag.source.rail ? rail : list;
+		if (!surface) return;
+		const box = surface.getBoundingClientRect(),
 			{ x, y } = pointer;
 		// Continuous edge scroll: every frame while the pointer rests near (or past) an edge over the list.
 		if (x >= box.left && x <= box.right) {
@@ -594,7 +664,7 @@
 					: y > box.bottom - EDGE
 						? MAX_SPEED * Math.min(1, (y - (box.bottom - EDGE)) / EDGE)
 						: 0;
-			if (speed) list.scrollTop += speed;
+			if (speed) surface.scrollTop += speed;
 		}
 		drag.line = dropTarget(drag.source)?.line ?? null;
 		dragFrame = requestAnimationFrame(dragStep);
@@ -614,7 +684,7 @@
 				void tick().then(() => {
 					if (drag) dragPreview?.showPopover();
 				});
-				announce = `Dragging ${source.label}. Drop it between slots in the list; Escape cancels.`;
+				announce = `Dragging ${source.label}. Drop it between slots in the ${source.rail ? 'navigation rail' : 'list'}; Escape cancels.`;
 				cancelAnimationFrame(dragFrame);
 				dragFrame = requestAnimationFrame(dragStep);
 			},
@@ -632,7 +702,15 @@
 					return;
 				}
 				if (source.hidden) void showHidden(source.key, source.label, target.to);
-				else moveTo(source.key, source.label, target.to);
+				else {
+					moveTo(source.key, source.label, target.to);
+					if (source.rail)
+						void tick().then(() =>
+							rail
+								?.querySelector<HTMLElement>(`[data-rail="${CSS.escape(source.key)}"]`)
+								?.focus({ preventScroll: true })
+						);
+				}
 			}
 		};
 	}
@@ -948,7 +1026,9 @@
 						aria-expanded={notShownOpen}
 						aria-controls="wardrobe-not-shown"
 						onclick={() => (notShownOpen = !notShownOpen)}
-						><ChevronRight size={16} aria-hidden="true" />Not shown ({notShown.length})</button
+						><ChevronRight size={16} aria-hidden="true" /><span>Not shown</span><span
+							class="bu-section-count not-shown-count">{notShown.length}</span
+						></button
 					>
 					<div id="wardrobe-not-shown" hidden={!notShownOpen}>
 						<p class="faint small not-shown-note" id="wardrobe-not-shown-note">
@@ -968,6 +1048,7 @@
 									<button
 										class="bu-action not-shown-slot"
 										aria-label="Show {c.label}"
+										data-show-slot={c.key}
 										onclick={() => void showHidden(c.key, c.label)}
 										><span class="slot-drag-icon"
 											><GroupIcon group={c.key} size={18} /><GripVertical
@@ -991,7 +1072,7 @@
 					Some items from other characters couldn’t be read.
 				</p>{/if}
 			<div class="list-spacer" style:height="{spacer}px" aria-hidden="true"></div>
-			{#if drag?.line != null}<div
+			{#if drag?.line != null && !drag.source.rail}<div
 					class="bu-separator slot-drop-line"
 					style:top="{drag.line}px"
 					aria-hidden="true"
@@ -1104,28 +1185,64 @@
 								class="bu-action slot-tab"
 								data-variant="rail"
 								data-rail={s.key}
+								data-sortable={!s.fromOthers || undefined}
+								data-armed={armed === s.key || undefined}
+								data-dragged={drag?.source.key === s.key || undefined}
 								data-filled={s.worn || undefined}
 								aria-current={ui.group === s.key ? 'true' : undefined}
 								aria-label={s.worn ? `${s.label}, equipped` : s.label}
 								tabindex={ui.group === s.key ? 0 : -1}
 								onclick={() => show(s.key)}
-								><GroupIcon group={s.key} size={22} /><span class="bu-rail-label">{s.label}</span><i
+								{@attach (node) =>
+									s.fromOthers
+										? undefined
+										: untrack(() =>
+												slotDrag(
+													node,
+													dragOptions({ key: s.key, label: s.label, hidden: false, rail: true })
+												)
+											)}
+								><span class="slot-drag-icon"
+									><GroupIcon group={s.key} size={22} /><GripVertical
+										class="slot-grip"
+										size={22}
+									/></span
+								><span class="bu-rail-label">{s.label}</span><i
 									class="bu-rail-dot"
 									aria-hidden="true"
 								></i></button
 							>
 						</li>
 					{/each}
+					{#if notShown.length}<li>
+							<button
+								class="bu-action slot-tab"
+								data-variant="rail"
+								data-not-shown
+								tabindex={sections.some((slot) => slot.key === ui.group) ? -1 : 0}
+								aria-label="Not shown, {notShown.length} slots"
+								onclick={() => void showNotShown()}
+								><EyeOff size={22} aria-hidden="true" /><span class="bu-rail-label">Not shown</span
+								></button
+							>
+						</li>{/if}
 				</ul>
+				{#if drag?.source.rail && drag.line != null}<div
+						class="bu-separator slot-drop-line"
+						style:top="{drag.line}px"
+						aria-hidden="true"
+					></div>{/if}
 			</nav>
 			<!-- Outside the scrolling tabs, so it never scrolls away. -->
-			<button
-				class="bu-action slot-tab slot-add"
-				data-variant="rail"
-				aria-haspopup="dialog"
-				onclick={addSlot}
-				><Plus size={22} aria-hidden="true" /><span class="bu-rail-label">Add slot</span></button
-			>
+			<div class="slot-rail-footer">
+				<button
+					class="bu-action slot-tab slot-add"
+					data-variant="rail"
+					aria-haspopup="dialog"
+					onclick={addSlot}
+					><Plus size={22} aria-hidden="true" /><span class="bu-rail-label">Add slot</span></button
+				>
+			</div>
 		</div>
 	</div>
 {/if}

@@ -573,10 +573,26 @@
 }
 /* The tabs scroll; Add slot below them stays put. */
 .slot-rail {
+	position: relative;
 	flex: 0 1 auto;
 	min-height: 0;
 	overflow-y: auto;
 	overflow-x: hidden;
+}
+.slot-rail-footer {
+	display: flex;
+	flex: none;
+	flex-direction: column;
+	margin-top: auto;
+}
+.slot-tab[data-sortable] {
+	cursor: grab;
+	touch-action: pan-y;
+	-webkit-touch-callout: none;
+	user-select: none;
+}
+.slot-tab[data-dragged] {
+	cursor: grabbing;
 }
 .slot-rail-list {
 	display: flex;
@@ -679,7 +695,7 @@
 	right: 6px;
 	z-index: 3;
 	height: 2px;
-	margin-top: -1px;
+	margin-top: 0;
 	pointer-events: none;
 }
 .no-slots {
@@ -693,9 +709,13 @@
 	display: flex;
 	width: 100%;
 	align-items: center;
+	justify-content: flex-start;
 	gap: 6px;
 	min-height: 44px;
 	padding: 0 10px 0 2px;
+}
+.not-shown-count {
+	margin-inline-start: auto;
 }
 .not-shown-toggle[aria-expanded='true'] > svg {
 	rotate: 90deg;

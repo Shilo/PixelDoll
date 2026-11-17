@@ -81,6 +81,20 @@ The user's hands-on review exposed a gap in the earlier acceptance tests: they a
 
 No paid requests or physical-device tests were made. Chromium touch and responsive geometry do not qualify iOS/Android hardware long-press behavior.
 
+## Visual anchoring and rail organization, November 17, 2026
+
+The follow-up corrects the distinction between a numeric scroll offset and the visual position of Not shown. Eye-button restoration now measures the disclosure before insertion and compensates its screen displacement after layout. Focus goes to the next hidden slot, or the previous one; the final restoration places and focuses its new header at the old disclosure position. The spacer measures the final Not shown block when present. A live repeated-restore check caught a 39 px clamp near the end of the list before this spacer correction; afterward all remaining restores held exactly at the same screen Y.
+
+- Council review challenged rail gesture discoverability, stale anchors, reused shared-slot controls, footer crowding and insertion-marker clipping. Rail icons reuse the existing gesture recognizer and mutation, with rail-only drop targets. Shared-only entries and the terminal Not shown shortcut are not sortable; neither Not shown nor Add slot accepts drops.
+- Pinning both shortcuts initially left essentially no browsing area in the 320 px phone sheet. The inspected screenshot changed the decision: Not shown is the final scrolling navigation entry and only Add slot is pinned. The fixed action and list share the existing bottom inset, without a theme-material override.
+- Not shown uses a full-width, left-aligned chevron and label with its count at the right. The first insertion line is inset fully inside the scrollport; the rail's last marker is also kept inside its content bounds.
+- The existing three slot workflows cover repeated eye restoration through the final hidden slot, focus, 320 px footer geometry, mouse rail reorder and footer rejection, top-marker containment, native Chromium touch rail reorder and subsequent navigation. All three passed the focused run. The light phone disclosure and dark touch-drag screenshots were inspected, along with a live dark desktop top-insertion marker and floating label in T3.
+- The first full run passed 364 tests and exposed a real keyboard regression: End activated the terminal Not shown shortcut, which then focused the disclosure and broke further rail navigation. The shortcut now retains rail focus and participates in its existing one-Tab-stop model, including a fallback Tab stop when no ordinary slot is current. The unchanged keyboard-navigation test and all three slot workflows then passed together.
+- `npm run check` passed with zero Svelte errors or warnings. `npm test` passed all 195 files and 2,681 tests, with one skipped. Theme ownership and the Impeccable layout scan passed.
+- The final `npm run e2e -- --all` rerun passed all 365 tests in 6.5 minutes, including the unchanged rail keyboard-navigation test.
+
+No paid requests were made. Physical iOS/Android touch qualification remains outside this browser-only evidence.
+
 ## Historical workshop evidence
 
 ## Corrected Body and Legs revision

@@ -133,7 +133,9 @@ unused built-ins and custom creation; blank names use Accessory. A bottom Not sh
 out to a shown position, never drag-to-hide. The separate organizer list is removed. Advanced custom behavior stays in
 its contextual editor; built-ins are copied rather than redefined. Browsing order never changes artwork. Menus provide
 non-drag movement, and ordinary touch scrolling remains available before drag arming. A floating slot label follows
-the drag; organization preserves the list's scroll offset and the rail tracks the slot actually visible afterward.
+the drag; reordering preserves the list's scroll offset and the rail tracks the slot actually visible afterward.
+Eye-button restoration instead keeps Not shown stationary, including repeated reveals. Rail icons also reorder with
+the same gesture inside the rail; a non-draggable Not shown shortcut follows all slot icons and Add slot stays pinned below.
 Focus remains visible rather than scrolling after a moved header. The Add slot sheet groups creation above unused
 built-ins, and full-width Not shown rows restore slots with eye icons. Empty-only
 hiding includes pending work, and destructive populated deletion confirms its consequences and commits atomically.

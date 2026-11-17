@@ -662,7 +662,7 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await expect.poll(scroll).toBe(originalScroll);
 	await header('underwear').click();
 	await menu.getByRole('menuitem', { name: 'Hide slot', exact: true }).click();
-	await page.getByRole('button', { name: /^Not shown \(/ }).click();
+	await page.getByRole('button', { name: /^Not shown \d+$/ }).click();
 	await expect(page.getByRole('button', { name: 'Show Underwear', exact: true })).toBeVisible();
 	await add.click();
 	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
@@ -727,17 +727,58 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await add.click();
 	await page.screenshot({ path: test.info().outputPath('add-slot-320-light.png') });
 	await addSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
-	const disclosure = page.getByRole('button', { name: /^Not shown \(/ });
-	await disclosure.scrollIntoViewIfNeeded();
-	if ((await disclosure.getAttribute('aria-expanded')) === 'false') await disclosure.click();
-	await list.evaluate((element) => {
-		element.scrollTop = element.querySelector<HTMLElement>('.not-shown')!.offsetTop;
+	const disclosure = page.getByRole('button', { name: /^Not shown \d+$/ });
+	const hiddenShortcut = page.getByRole('button', { name: 'Not shown, 6 slots', exact: true });
+	const footer = page.locator('.slot-rail-footer');
+	await expect(footer.locator('.slot-add')).toHaveCount(1);
+	await expect(page.locator('.slot-rail .slot-add')).toHaveCount(0);
+	const footerBounds = (await footer.boundingBox())!;
+	const addBounds = (await add.boundingBox())!;
+	const railBounds = (await page.locator('.slot-rail').boundingBox())!;
+	expect(footerBounds.height).toBeGreaterThan(0);
+	expect(footerBounds.y + footerBounds.height).toBeLessThanOrEqual(568);
+	expect(addBounds.x).toBeGreaterThanOrEqual(0);
+	expect(addBounds.x + addBounds.width).toBeLessThanOrEqual(320);
+	expect(addBounds.y).toBeGreaterThanOrEqual(railBounds.y + railBounds.height);
+	expect(railBounds.height).toBeGreaterThanOrEqual(52);
+	await expect(page.locator('.slot-rail-list > li').last().locator('[data-not-shown]')).toHaveCount(
+		1
+	);
+	await page.locator('.slot-rail').evaluate((element) => {
+		element.scrollTop = element.scrollHeight;
 	});
+	expect((await add.boundingBox())!.y).toBe(addBounds.y);
+	await hiddenShortcut.click();
+	await expect(disclosure).toHaveAccessibleName('Not shown 6');
+	await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+	await expect(hiddenShortcut).toBeFocused();
+	await expect(hiddenShortcut).toHaveAttribute('tabindex', '-1');
+	const disclosureY = (await disclosure.boundingBox())!.y;
+	expect(Math.abs(disclosureY - (await list.boundingBox())!.y)).toBeLessThanOrEqual(1);
 	await expect(disclosure).toHaveJSProperty(
 		'offsetWidth',
 		await list.locator('.not-shown').evaluate((element) => element.clientWidth)
 	);
 	await page.screenshot({ path: test.info().outputPath('not-shown-320-light.png') });
+	const eyes = list.locator('[data-show-slot]');
+	const hiddenCount = await eyes.count();
+	for (let remaining = hiddenCount; remaining > 0; remaining--) {
+		const restoredKey = await eyes.first().getAttribute('data-show-slot');
+		const nextKey = remaining > 1 ? await eyes.nth(1).getAttribute('data-show-slot') : null;
+		await eyes.first().click();
+		const anchor = remaining > 1 ? disclosure : header(restoredKey!);
+		if (remaining > 1) {
+			await expect(list.locator(`[data-show-slot="${nextKey}"]`)).toBeFocused();
+			await expect(disclosure).toHaveAccessibleName(`Not shown ${remaining - 1}`);
+		} else {
+			await expect(disclosure).toHaveCount(0);
+			await expect(hiddenShortcut).toHaveCount(0);
+			await expect(anchor).toBeFocused();
+		}
+		await expect
+			.poll(async () => Math.abs((await anchor.boundingBox())!.y - disclosureY))
+			.toBeLessThanOrEqual(1);
+	}
 	finish();
 });
 
@@ -770,6 +811,10 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 	await page.mouse.down();
 	await page.mouse.move(target.x + target.width / 2, target.y + 2, { steps: 6 });
 	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	const topLine = (await list.locator('.slot-drop-line').boundingBox())!;
+	const topList = (await list.boundingBox())!;
+	expect(topLine.y).toBeGreaterThanOrEqual(topList.y);
+	expect(topLine.y + topLine.height).toBeLessThanOrEqual(topList.y + topList.height);
 	await expect(page.locator('.slot-drag-preview')).toBeVisible();
 	await expect(page.locator('.slot-drag-preview')).toContainText('Hair');
 	const preview = (await page.locator('.slot-drag-preview').boundingBox())!;
@@ -790,7 +835,40 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 	await expect(page.locator('#slot-menu')).not.toBeVisible();
 	await page.locator('.header-undo').click();
 	await expect.poll(keys).toEqual(original);
-	await page.getByRole('button', { name: /^Not shown \(/ }).click();
+	const rail = page.locator('.slot-rail');
+	const railHair = rail.locator('[data-rail="hair"][data-sortable]');
+	const railHead = rail.locator('[data-rail="head"][data-sortable]');
+	const railSource = (await railHair.boundingBox())!;
+	await page.mouse.move(railSource.x + 20, railSource.y + railSource.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(railSource.x + 22, railSource.y + railSource.height / 2 + 2);
+	await page.mouse.up();
+	await expect(railHair).toHaveAttribute('aria-current', 'true');
+	expect(await keys()).toEqual(original);
+	const railTarget = (await railHead.boundingBox())!;
+	await page.mouse.move(railSource.x + 20, railSource.y + railSource.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(railTarget.x + 20, railTarget.y + 2, { steps: 6 });
+	await expect(rail.locator('.slot-drop-line')).toBeVisible();
+	await expect(list.locator('.slot-drop-line')).toHaveCount(0);
+	await page.mouse.up();
+	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	const fixedHidden = page.getByRole('button', { name: 'Not shown, 6 slots', exact: true });
+	const fixedBounds = (await page.locator('.slot-add').boundingBox())!;
+	const rejectSource = (await railHair.boundingBox())!;
+	await page.mouse.move(rejectSource.x + 20, rejectSource.y + rejectSource.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(railTarget.x + 20, railTarget.y + 2, { steps: 6 });
+	await expect(rail.locator('.slot-drop-line')).toBeVisible();
+	await page.mouse.move(fixedBounds.x + 20, fixedBounds.y + fixedBounds.height / 2, {
+		steps: 6
+	});
+	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	await page.mouse.up();
+	expect(await keys()).toEqual(original);
+	await fixedHidden.click();
 	const hidden = page.locator('.not-shown-row').filter({ hasText: 'Underwear' });
 	await hidden.scrollIntoViewIfNeeded();
 	await list.evaluate((element) => {
@@ -907,6 +985,7 @@ test('studio demo: touch slot headers scroll before a hold and drag after arming
 	await page.clock.runFor(32);
 	await expect(page.locator('.slot-drop-line')).toBeVisible();
 	await expect(page.locator('.slot-drag-preview')).toBeVisible();
+	await page.screenshot({ path: test.info().outputPath('slot-drop-top-390-dark.png') });
 	await touch('touchMove', [{ ...start, x: 386, y: top.y + 4 }]);
 	await page.clock.runFor(16);
 	const previewBounds = (await page.locator('.slot-drag-preview').boundingBox())!;
@@ -921,6 +1000,36 @@ test('studio demo: touch slot headers scroll before a hold and drag after arming
 	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
 	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(dropScroll);
 	await expect(page.locator('.slot-drag-preview')).not.toBeVisible();
+	await expect(page.locator('#slot-menu')).not.toBeVisible();
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	const rail = page.locator('.slot-rail');
+	const railHair = rail.locator('[data-rail="hair"][data-sortable]');
+	const railHead = rail.locator('[data-rail="head"][data-sortable]');
+	const railSource = (await railHair.boundingBox())!;
+	const railStart = { x: railSource.x + 15, y: railSource.y + railSource.height / 2, id: 3 };
+	await touch('touchStart', [railStart]);
+	await page.clock.runFor(300);
+	await expect(railHair).toHaveAttribute('data-armed', 'true');
+	await touch('touchMove', [{ ...railStart, y: railStart.y - 2 }]);
+	await expect(rail.locator('[data-dragged]')).toHaveCount(0);
+	const railTarget = (await railHead.boundingBox())!;
+	await touch('touchMove', [{ ...railStart, y: railTarget.y + 2 }]);
+	await expect(rail.locator('[data-dragged]')).toHaveCount(1);
+	await page.clock.runFor(32);
+	await expect(rail.locator('.slot-drop-line')).toBeVisible();
+	await expect(list.locator('.slot-drop-line')).toHaveCount(0);
+	await touch('touchEnd', []);
+	await page.clock.runFor(32);
+	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
+	await expect(page.locator('.slot-drag-preview')).not.toBeVisible();
+	const navigation = (await railHead.boundingBox())!;
+	await touch('touchStart', [
+		{ x: navigation.x + 15, y: navigation.y + navigation.height / 2, id: 4 }
+	]);
+	await touch('touchEnd', []);
+	await page.clock.runFor(32);
+	await expect(railHead).toHaveAttribute('aria-current', 'true');
 	await expect(page.locator('#slot-menu')).not.toBeVisible();
 	await session.detach();
 	finish();
