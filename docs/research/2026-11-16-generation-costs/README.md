@@ -75,6 +75,38 @@ An illustrative MVP uses one body, static idle plus walk/slash/cast/hurt/death/t
 
 The exact five-view MVP is 2,271.25 units before retries or 4,542.5 at 2x. It fits within one otherwise-unused Tier 3 allowance under that scenario, but still requires human acceptance. Restricting its weapons to four relevant clips lowers first-pass MVP costs to 1,336.65 / 2,136.25 / 3,320.65 units at three / five / eight views.
 
+## Whole-character budgets and two-view layouts
+
+A fixed, fully designed character can avoid separate item dressing and pose passes when clothing and equipment are baked into its frames. The ordinary item matrix then disappears from that character's budget. Each distinct character still needs accepted standing artwork and its own animation renders; changing an outfit or silhouette can require rebuilding those frames. Reusing compatible skeleton motion can save motion authoring without making another character's rendered artwork free. This is a smaller customization specification, not equivalent independent paper dolling.
+
+### Render-only arithmetic is not a complete character budget
+
+An eight-frame skeleton-v3 render costs **3 generation units**, with price depending on frame count rather than canvas size. A 96 px canvas therefore does not itself invalidate that eight-frame render price. Three-frame and 15-frame calls have different prices; a clip name alone does not establish a 3-unit cost.
+
+For example, `130 clips * 2 generated views * 3 units = 780 units` is correct **for those render calls only**. Similarly, `16 * 2 * 3 = 96 units` is a render subtotal, not a verified finished-character price. Both calculations assume every counted clip receives one eight-frame render per view. If idle reuses standing artwork, exclude it from moving renders; if idle is animated, include its actual frames.
+
+A complete estimate must also identify the starting-art cost, registration/import, any missing standing skeletons, motion sources or authored keypoints, output measurements, retries and dependent rework. These are workflow-specific: do not add PixelDoll's entire pipeline bill to a different tool that does not use it, and do not omit those steps when estimating PixelDoll's current route.
+
+In the current PixelDoll workflow, an eight-frame body move per generated view is estimated as:
+
+- Authored motion: `3 render + 8 * 0.1 output measurements = 3.8 units`.
+- Described motion: `3 render + 0.8 output measurements + 1 motion source + 0.8 source measurements = 5.6 units`.
+- Walk: `3 render + 0.8 output measurements + 3 motion source + 0.8 source measurements = 7.6 units`.
+
+Those totals exclude the initial character and retries. Each requested skeleton measurement costs 0.1 generation units. A per-character total cannot be verified from clip and direction counts alone; record frame counts, source reuse and the actual route first. A fixed design does not imply a fixed accepted-output cost.
+
+### Two views can provide four diagonal facings
+
+PixelDoll's Diagonal 4 preset generates NE and SE, then mirrors NW and SW. That is a valid two-generated-view workflow for a game using diagonal-facing art. It does not provide N/E/S/W cardinal artwork. The Top-down 4 preset generates N/E/S and mirrors W, requiring three independent views. Choose the game's facing layout before applying a direction multiplier. Both mirrored layouts flip asymmetric details and handedness.
+
+The earlier three/five/eight-view comparisons and summary image cover cardinal or full eight-direction scopes. The two-view diagonal layout is an additional, different projection/facing choice; it is not a two-view replacement for those scopes.
+
+### What can consume zero generation units
+
+An exact local color remap of accepted pixels can cost **zero additional PixelLab units** because it changes existing pixels without a generation request. New anatomy, patterns, proportions or silhouettes are not merely recolors and need their own art budget. Removing color variants therefore does not necessarily save generation units if those variants were already local remaps.
+
+Writing and running gameplay logic locally without PixelLab generation requests also consumes zero PixelLab units. That says nothing about development labor, other AI subscriptions, fonts or asset licenses. Keep generation-unit savings separate from total project cost.
+
 ## Rework and maintenance risks
 
 Retry rates can differ between body work, dressing and poses. For the full two-body, five-view reference, body attempts at 1.25x and dressing/poses at 1.5x give 252,690.625 units. Adding dependency rework equal to 5% or 15% of the first-pass item budget of 162,420 units gives 260,811.625 or 277,053.625 units. These are assumed rates, not measured expectations. Count dependency rebuilds in the attempt allowance or separately, never both.
@@ -110,11 +142,6 @@ The eight-frame skeleton item pose costs 3 units per clip-direction. Anchor edit
 
 The MVP uses an authored/described motion mix: body 2.25 + 33.8D, dressing 150 + 30H(D), and poses 378D. The qualification slice uses body 2.25 + 22.6D, dressing 60 + 30H(D), and poses 135D. Retain decimals before display; whole-unit values here use half-up rounding.
 
-## Sources and limits
-
-- [PixelLab plans](https://www.pixellab.ai/) and [API pricing](https://www.pixellab.ai/pixellab-api): confirm subscription terms and separate USD-credit prices before purchasing. The indexed official page supported the plan basis; the live readable plan block did not confirm checkout pricing at research time.
-- [PixelLab OpenAPI](https://api.pixellab.ai/v2/openapi.json) and [edit-animation documentation](https://www.pixellab.ai/docs/tools/edit-animation-pro): endpoint contracts and edit pricing.
-- [Body and move estimates](../../../app/src/studio/create.ts), [standing coverage](../../../app/src/studio/itemRoute.ts), [item planning](../../../app/src/lib/items/items.ts), and [pose pricing](../../../app/src/lib/rig/clips.ts): implementation basis for this snapshot.
-- [Held refits](../../../app/src/lib/equipment/refit.ts) and [accepted limits](../../known-issues.md): compatibility and quality constraints.
+## Estimate limits
 
 Inventory, eligible motions, actual frames, canvas sizes, qualified reuse, acceptance and repair time must be established for each project. Use the examples to identify exposure, then replace assumptions with evidence from a small pilot.
