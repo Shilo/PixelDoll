@@ -35,12 +35,22 @@ export function mountLegGeometry(
 		if (!mirror) break;
 		resolvedSource = mirror;
 	}
-	const sources = rig.animations.find((animation) => animation.id === clip)?.sources;
+	const animation = rig.animations.find((entry) => entry.id === clip);
+	const sources = animation?.sources;
+	const imageAt = (source: DirectionName) =>
+		base?.layers.map((layer) => layer.cells?.[clip]?.[source]?.[cell]).find(Boolean);
 	while (
 		base?.layers.length &&
 		!Object.hasOwn(sources ?? {}, resolvedSource) &&
 		!visited.has(resolvedSource)
 	) {
+		if (
+			clip === DEFAULT_MOVE &&
+			cell === 0 &&
+			animation &&
+			matchesStanding(rig, animation, resolvedSource, imageAt(resolvedSource))
+		)
+			break;
 		visited.add(resolvedSource);
 		const mirror = rig.directions.find((entry) => entry.id === resolvedSource)?.mirrorOf;
 		if (
@@ -57,9 +67,7 @@ export function mountLegGeometry(
 			break;
 		resolvedSource = mirror;
 	}
-	const baseImage = base?.layers
-		.map((layer) => layer.cells?.[clip]?.[resolvedSource]?.[cell])
-		.find(Boolean);
+	const baseImage = imageAt(resolvedSource);
 	return { resolvedSource, baseImage };
 }
 

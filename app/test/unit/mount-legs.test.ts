@@ -76,6 +76,65 @@ function rider() {
 }
 
 describe('mounted-leg experimental cutout', () => {
+	it('keeps matching direction-owned Default rest joints before mirrored source measurements', () => {
+		const rig = makeRig(),
+			image = rider(),
+			reflected = flipH(image);
+		rig.directions = [{ id: 'east', mirrorOf: 'west' }, { id: 'west' }];
+		rig.animations = [
+			{
+				id: DEFAULT_MOVE,
+				cells: 1,
+				loop: true,
+				frames: [{ cell: 0, ms: 100 }],
+				sources: {
+					west: {
+						route: 'import',
+						reference: 'sha256:west',
+						measured: [joints(0.1, 0.3)],
+						provenance: []
+					}
+				}
+			}
+		];
+		rig.rest = { east: { image: hash, keypoints: joints() } };
+		const project = {
+			manifest: {
+				rig,
+				items: [
+					{
+						id: 'body',
+						layers: [{ cells: { [DEFAULT_MOVE]: { east: [hash], west: ['sha256:west'] } } }]
+					}
+				]
+			},
+			images: new Map([
+				[hash, image],
+				['sha256:west', reflected]
+			])
+		} as unknown as Project;
+		const geometry = mountLegGeometry(project, DEFAULT_MOVE, 'east', 0);
+		expect(geometry.resolvedSource).toBe('east');
+		for (const mode of ['far', 'both'] as const) {
+			const expected = hideMountedLegs(image, rig.pivot, rig, DEFAULT_MOVE, 'east', 0, mode, {
+				resolvedSource: 'east',
+				baseImage: hash
+			});
+			const actual = hideMountedLegs(
+				image,
+				rig.pivot,
+				rig,
+				DEFAULT_MOVE,
+				'east',
+				0,
+				mode,
+				geometry
+			);
+			expect(actual.source).toBe('rest');
+			expect(actual.issue).toBeNull();
+			expect(actual.image.data).toEqual(expected.image.data);
+		}
+	});
 	it.each([
 		'different artwork',
 		'transparent cell',
