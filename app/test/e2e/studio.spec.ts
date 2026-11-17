@@ -634,9 +634,22 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	const add = page.getByRole('button', { name: 'Add slot', exact: true });
 	await expect
 		.poll(async () => {
-			const label = (await add.locator('.bu-rail-label').boundingBox())!;
-			const playback = (await page.locator('.playback-bar').boundingBox())!;
-			return Math.abs(label.y + label.height - playback.y - playback.height);
+			return add.locator('.bu-rail-label').evaluate((label) => {
+				const style = getComputedStyle(label);
+				const context = document.createElement('canvas').getContext('2d')!;
+				context.font = style.font;
+				const ink = context.measureText(label.textContent!);
+				const baseline =
+					label.getBoundingClientRect().top +
+					(parseFloat(style.lineHeight) - ink.fontBoundingBoxAscent - ink.fontBoundingBoxDescent) /
+						2 +
+					ink.fontBoundingBoxAscent;
+				return Math.abs(
+					baseline +
+						ink.actualBoundingBoxDescent -
+						document.querySelector('.playback-bar')!.getBoundingClientRect().bottom
+				);
+			});
 		})
 		.toBeLessThanOrEqual(1);
 	const addSheet = page.getByRole('dialog', { name: 'Add slot', exact: true });
@@ -760,6 +773,13 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
 	await expect(hiddenShortcut).toBeFocused();
 	await expect(hiddenShortcut).toHaveAttribute('aria-current', 'true');
+	await expect(disclosure).toHaveAttribute('data-current');
+	await expect(disclosure.locator('.bu-section-title')).toHaveCSS(
+		'color',
+		await hiddenShortcut
+			.locator('.bu-rail-label')
+			.evaluate((label) => getComputedStyle(label).color)
+	);
 	await expect(hiddenShortcut).toHaveAttribute('tabindex', '0');
 	await expect(page.locator('.slot-rail [aria-current="true"]')).toHaveCount(1);
 	await expect(page.locator('.slot-rail [tabindex="0"]')).toHaveCount(1);

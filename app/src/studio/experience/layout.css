@@ -615,6 +615,9 @@
 	justify-content: flex-end;
 	padding-bottom: 0;
 }
+.slot-add .bu-rail-label {
+	translate: 0 6px;
+}
 .slot-section {
 	padding-bottom: 16px;
 }
@@ -711,6 +714,7 @@
 }
 .not-shown-toggle {
 	display: flex;
+	text-align: left;
 	width: 100%;
 	align-items: center;
 	justify-content: flex-start;

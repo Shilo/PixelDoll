@@ -1035,14 +1035,18 @@
 			{#if notShown.length}
 				<div class="not-shown">
 					<button
-						class="bu-action not-shown-toggle"
+						class="bu-action bu-section-head not-shown-toggle"
+						data-current={notShownCurrent || undefined}
 						data-variant="quiet"
 						aria-expanded={notShownOpen}
 						aria-controls="wardrobe-not-shown"
 						onclick={() => void toggleNotShown()}
-						><EyeOff size={16} aria-hidden="true" /><span>Not shown</span><span
-							class="bu-section-count not-shown-count">{notShown.length}</span
-						><ChevronRight class="not-shown-chevron" size={16} aria-hidden="true" /></button
+						><EyeOff size={16} aria-hidden="true" /><span class="bu-section-title">Not shown</span
+						><span class="bu-section-count not-shown-count">{notShown.length}</span><ChevronRight
+							class="not-shown-chevron"
+							size={16}
+							aria-hidden="true"
+						/></button
 					>
 					<div id="wardrobe-not-shown" hidden={!notShownOpen}>
 						<p class="faint small not-shown-note" id="wardrobe-not-shown-note">

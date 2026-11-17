@@ -108,6 +108,14 @@ No paid requests were made. Physical iOS/Android touch qualification remains out
 
 Reset behavior was discussed with the council only. No global settings page, reset action, visibility reset or custom-slot deletion was implemented. No paid requests were made.
 
+## Optical footer alignment and active disclosure correction, November 17, 2026
+
+The preceding label-edge assertion measured the line box, not the visible letters. The owner's screenshot correctly showed the remaining gap. The regression now measures the text's baseline and ink descent with browser font metrics; it failed at a 5.82 px gap before the fix. A local 6 px optical offset moves only Add slot's label, leaving its button target and rail geometry unchanged. Live desktop font measurement places the ink bottom within 0.19 px of the playback panel bottom, and the rendered desktop screenshot was inspected against that edge.
+
+Not shown now uses Bronze's existing section-header and title classes with the current-state attribute, rather than only highlighting its rail shortcut. The existing workflow checks the active disclosure's title color against the active rail label. Left alignment, the EyeOff icon, count and chevron are retained. The reset proposal is tracked in Later only; no reset behavior is implemented.
+
+Fresh validation: `npm run check` passed with zero Svelte errors or warnings; `npm test` passed 2,681 tests with one skipped across 195 files; `npm run e2e -- --all` passed all 365 tests in 8.3 minutes. The focused regression passed after reproducing the original ink gap. The Svelte autofixer and theme-ownership check passed. Desktop light/dark screenshots and the automated 320 px light-mode capture were inspected. The latter confirms the active disclosure accent and unclipped Add slot label. Manual phone capture failed because T3 stopped producing screenshot frames, so this is not physical-device qualification.
+
 ## Historical workshop evidence
 
 ## Corrected Body and Legs revision
