@@ -68,7 +68,7 @@
 
 	const m = $derived(store.project?.manifest);
 	const name = $derived(characterName());
-	const mountAction = $derived(experience.testMount ? 'Dismount' : 'Mount');
+	let mountMenuOpen = $state(false);
 	const prompt = $derived(m?.items.find((it) => it.id === m.rig.baseItem)?.prompt ?? '');
 	const characterCount = $derived(store.projects.filter((p) => !p.dev).length);
 	const VIEWS = [
@@ -79,7 +79,27 @@
 	async function changeMode(mode: WorldMode) {
 		setMode(mode);
 		await tick();
+		focusWorld();
+	}
+	function focusWorld() {
 		document.querySelector<HTMLElement>('.world-stage')?.focus({ preventScroll: true });
+	}
+	function resumeWorldAfterPointer(header: HTMLElement) {
+		const clicked = async (event: MouseEvent) => {
+			const button = event.target instanceof Element ? event.target.closest('button') : null;
+			if (event.detail === 0 || !button || button.hasAttribute('popovertarget')) return;
+			await tick();
+			if (
+				experience.screen !== 'studio' ||
+				ui.sheet ||
+				document.querySelector('dialog[open], [popover]:popover-open') ||
+				(document.activeElement !== button && document.activeElement !== document.body)
+			)
+				return;
+			focusWorld();
+		};
+		header.addEventListener('click', clicked);
+		return () => header.removeEventListener('click', clicked);
 	}
 	let copyMessage = $state('');
 	async function copyPrompt() {
@@ -152,7 +172,7 @@
 	}
 </script>
 
-<header class="experience-header">
+<header class="experience-header" {@attach resumeWorldAfterPointer}>
 	<div class="header-start">
 		{#if experience.screen === 'studio'}<button
 				class="bu-action header-back"
@@ -200,26 +220,24 @@
 						></span
 					></button
 				>{/each}
-			{#if testMountsEnabled}
-				<button
-					class="bu-action test-mount-toggle"
-					data-variant="quiet"
-					aria-label={mountAction}
-					title={`${mountAction}. Test only, not saved or exported. Leg options are in More.`}
-					disabled={!m}
-					onclick={() => (experience.testMount = !experience.testMount)}
-					><PawPrint size={18} aria-hidden="true" /><span
-						class="view-label bu-tab-text"
-						data-text="Dismount">{mountAction}</span
-					></button
-				>
-			{/if}
 		</div>
 	{/if}
 	<div class="header-actions">
 		{#if experience.screen === 'characters'}
 			<NewCharacterButton />
 		{:else}
+			{#if testMountsEnabled}
+				<button
+					class="bu-action test-mount-toggle"
+					data-variant="quiet"
+					aria-label="Mount settings"
+					data-active={experience.testMount || undefined}
+					aria-expanded={mountMenuOpen}
+					title={experience.testMount ? 'Mount settings (mounted)' : 'Mount settings'}
+					popovertarget="mount-options"
+					disabled={!m}><PawPrint size={18} aria-hidden="true" /></button
+				>
+			{/if}
 			<button
 				class="bu-action header-random"
 				data-variant="quiet"
@@ -273,12 +291,64 @@
 			class="bu-action"
 			data-variant="quiet"
 			aria-label="More options"
+			title="More options"
 			data-popover-fallback="share-popover"
 			popovertarget="experience-options"><Ellipsis size={20} /></button
 		>
 	</div>
 </header>
 <SharePopover />
+{#if testMountsEnabled && experience.screen === 'studio'}
+	<div
+		id="mount-options"
+		class="menu options-menu bu-popover-anchor"
+		data-placement="bottom-end"
+		popover
+		ontoggle={(event) => {
+			mountMenuOpen = event.newState === 'open';
+			popoverFocus(event);
+		}}
+	>
+		<PopoverArrow />
+		<div class="menu-surface bu-popover-surface bu-floating">
+			<div class="menu-prompt">
+				<p class="menu-sec">Mount settings</p>
+			</div>
+			<label class="row bu-check" for="show-mount"
+				><span class="row-name">Show mount</span><input
+					id="show-mount"
+					class="bu-switch"
+					type="checkbox"
+					role="switch"
+					bind:checked={experience.testMount}
+				/></label
+			>
+			<div class="menu-prompt">
+				<label class="row" for="mount-legs"
+					><span class="row-name">Hide legs</span><select
+						id="mount-legs"
+						class="bu-input mount-leg-select"
+						bind:value={experience.mountLegs}
+						disabled={!experience.testMount}
+						aria-describedby="mount-legs-note"
+						><option value="none">None</option><option value="far">Far leg</option><option
+							value="both">Both legs</option
+						></select
+					></label
+				>
+				<p id="mount-legs-note" class="menu-prompt-text faint small">
+					{#if experience.testMount && experience.mountLegIssue}
+						{experience.mountLegIssue}
+					{:else if experience.mountLegs === 'both'}
+						Cuts below the hips. Hands may be clipped, and hanging items may disappear.
+					{:else if experience.mountLegs === 'far'}
+						An approximate cutout. May hide clothing or leave small fragments.
+					{/if}
+				</p>
+			</div>
+		</div>
+	</div>
+{/if}
 <div
 	id="experience-options"
 	class="menu options-menu bu-popover-anchor"
@@ -288,29 +358,6 @@
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
-		{#if testMountsEnabled && experience.screen === 'studio' && experience.testMount}
-			<div class="menu-prompt">
-				<p class="menu-sec">Mount</p>
-				<label class="row" for="mount-legs"
-					><span class="row-name">Hide legs</span><select
-						id="mount-legs"
-						class="bu-input mount-leg-select"
-						bind:value={experience.mountLegs}
-						aria-describedby="mount-legs-note"
-						><option value="none">None</option><option value="far">Far leg</option><option
-							value="both">Both legs</option
-						></select
-					></label
-				>
-				<p id="mount-legs-note" class="menu-prompt-text faint small">
-					Experimental cutout. May hide clothing or miss leg pixels. Not saved or exported.
-				</p>
-				{#if experience.mountLegIssue}<p class="menu-prompt-text small" role="status">
-						{experience.mountLegIssue}
-					</p>{/if}
-			</div>
-			<hr />
-		{/if}
 		<!-- Phones move lower-frequency bar actions here, so the character name keeps its room. -->
 		{#if experience.screen === 'studio'}<DemoCopyRow id={doc.id} close={closeOptions} />{/if}
 		{#if experience.screen === 'studio'}<button

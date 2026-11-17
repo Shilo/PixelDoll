@@ -1,5 +1,8 @@
 import type { Frame } from '../../lib/compose/compose.ts';
 import type { Img } from '../../lib/image/png.ts';
+import type { Project } from '../../lib/store/manifest.ts';
+import { cellImg } from '../../lib/compose/compose.ts';
+import { flipH } from '../../lib/rig/mirror.ts';
 import {
 	DEFAULT_MOVE,
 	matchesStanding,
@@ -12,6 +15,53 @@ import {
 export type MountLegMode = 'none' | 'far' | 'both';
 type Point = { x: number; y: number };
 type Leg = [Point, Point, Point];
+
+export function mountLegGeometry(
+	project: Project,
+	clip: string,
+	direction: DirectionName,
+	cell: number
+) {
+	const rig = project.manifest.rig;
+	const base = project.manifest.items.find((item) => item.id === rig.baseItem);
+	let resolvedSource = direction;
+	const visited = new Set<DirectionName>();
+	while (
+		!base?.layers.some((layer) => layer.cells?.[clip]?.[resolvedSource] !== undefined) &&
+		!visited.has(resolvedSource)
+	) {
+		visited.add(resolvedSource);
+		const mirror = rig.directions.find((entry) => entry.id === resolvedSource)?.mirrorOf;
+		if (!mirror) break;
+		resolvedSource = mirror;
+	}
+	const sources = rig.animations.find((animation) => animation.id === clip)?.sources;
+	while (
+		base?.layers.length &&
+		!Object.hasOwn(sources ?? {}, resolvedSource) &&
+		!visited.has(resolvedSource)
+	) {
+		visited.add(resolvedSource);
+		const mirror = rig.directions.find((entry) => entry.id === resolvedSource)?.mirrorOf;
+		if (
+			!mirror ||
+			!base.layers.every((layer) => {
+				const displayed = cellImg(project, layer, clip, resolvedSource, cell);
+				const source = cellImg(project, layer, clip, mirror, cell);
+				if (!displayed || !source || displayed.w !== source.w || displayed.h !== source.h)
+					return false;
+				const reflected = flipH(source);
+				return displayed.data.every((value, index) => value === reflected.data[index]);
+			})
+		)
+			break;
+		resolvedSource = mirror;
+	}
+	const baseImage = base?.layers
+		.map((layer) => layer.cells?.[clip]?.[resolvedSource]?.[cell])
+		.find(Boolean);
+	return { resolvedSource, baseImage };
+}
 
 function segmentDistance(point: Point, start: Point, end: Point): number {
 	const dx = end.x - start.x,
@@ -102,28 +152,45 @@ export function hideMountedLegs(
 		points = rig.rest?.[resolved]?.keypoints;
 		source = 'rest';
 	} else return unchanged('No per-cell mounted-leg geometry or matching standing provenance.');
+	const jointPoint = (label: string): Point | undefined => {
+		const matches = Array.isArray(points) ? points.filter((point) => point?.label === label) : [];
+		const point = matches[0];
+		if (
+			matches.length !== 1 ||
+			!point ||
+			![point.x, point.y].every((value) => Number.isFinite(value) && value >= 0 && value <= 1)
+		)
+			return;
+		const bodyX = point.x * rig.cell.w;
+		return {
+			x: offsetX + (mirrored ? rig.cell.w - 1 - bodyX : bodyX),
+			y: offsetY + point.y * rig.cell.h
+		};
+	};
 	const legs: Leg[] = [];
 	for (const side of ['LEFT', 'RIGHT']) {
-		const joints: Point[] = [];
-		for (const joint of ['HIP', 'KNEE', 'LEG']) {
-			const matches = Array.isArray(points)
-				? points.filter((point) => point?.label === side + ' ' + joint)
-				: [];
-			const point = matches[0];
-			if (
-				matches.length !== 1 ||
-				!point ||
-				![point.x, point.y].every((value) => Number.isFinite(value) && value >= 0 && value <= 1)
-			)
-				return { image, issue: 'Invalid ' + source + ' mounted-leg joints.', source };
-			const bodyX = point.x * rig.cell.w;
-			joints.push({
-				x: offsetX + (mirrored ? rig.cell.w - 1 - bodyX : bodyX),
-				y: offsetY + point.y * rig.cell.h
-			});
-		}
+		const joints = ['HIP', 'KNEE', 'LEG'].map((joint) => jointPoint(side + ' ' + joint));
+		if (joints.some((point) => !point))
+			return { image, issue: 'Invalid ' + source + ' mounted-leg joints.', source };
 		legs.push(joints as Leg);
 	}
+	const arms: [Point, Point][] = [];
+	if (mode === 'both') {
+		for (const side of ['LEFT', 'RIGHT']) {
+			const elbow = jointPoint(side + ' ELBOW'),
+				wrist = jointPoint(side + ' ARM');
+			if (!elbow || !wrist)
+				return { image, issue: 'Invalid ' + source + ' mounted-arm joints.', source };
+			arms.push([elbow, wrist]);
+		}
+	}
+	if (
+		offsetX >= image.w ||
+		offsetX + rig.cell.w <= 0 ||
+		offsetY >= image.h ||
+		offsetY + rig.cell.h <= 0
+	)
+		return { image, issue: null, source };
 	const [left, right] = legs as [Leg, Leg],
 		hipY = (left[0].y + right[0].y) / 2,
 		radius = Math.max(
@@ -133,21 +200,31 @@ export function hideMountedLegs(
 		far = resolved.endsWith('west') ? right : left,
 		near = far === left ? right : left,
 		candidates = mode === 'both' ? [...left, ...right] : far,
-		minX = Math.max(0, Math.ceil(Math.min(...candidates.map((point) => point.x)) - radius)),
-		maxX = Math.min(
-			image.w - 1,
-			Math.floor(Math.max(...candidates.map((point) => point.x)) + radius)
-		),
+		minX =
+			mode === 'both'
+				? 0
+				: Math.max(0, Math.ceil(Math.min(...candidates.map((point) => point.x)) - radius)),
+		maxX =
+			mode === 'both'
+				? image.w - 1
+				: Math.min(
+						image.w - 1,
+						Math.floor(Math.max(...candidates.map((point) => point.x)) + radius)
+					),
 		minY = Math.max(
 			0,
 			Math.floor(hipY) + 1,
 			Math.ceil(Math.min(...candidates.map((point) => point.y)) - radius)
 		),
-		maxY = Math.min(
-			image.h - 1,
-			Math.floor(Math.max(...candidates.map((point) => point.y)) + radius)
-		);
+		maxY =
+			mode === 'both'
+				? image.h - 1
+				: Math.min(
+						image.h - 1,
+						Math.floor(Math.max(...candidates.map((point) => point.y)) + radius)
+					);
 	let output: Img | undefined;
+	const removed: number[] = [];
 	for (let y = minY; y <= maxY; y++)
 		for (let x = minX; x <= maxX; x++) {
 			const index = (y * image.w + x) * 4;
@@ -160,11 +237,58 @@ export function hideMountedLegs(
 					Math.abs(candidateDistance - otherDistance) <= 1,
 				cut =
 					mode === 'both'
-						? Math.min(candidateDistance, otherDistance) <= radius
+						? !arms.some(([elbow, wrist]) => segmentDistance(point, elbow, wrist) <= radius)
 						: candidateDistance <= radius && candidateDistance < otherDistance && !ambiguous;
 			if (!cut) continue;
 			output ??= { w: image.w, h: image.h, data: new Uint8ClampedArray(image.data) };
 			output.data.fill(0, index, index + 4);
+			if (mode === 'far') removed.push(y * image.w + x);
 		}
+	if (output && removed.length) {
+		const visited = new Set<number>();
+		for (const removedPixel of removed) {
+			const removedX = removedPixel % image.w,
+				removedY = Math.floor(removedPixel / image.w);
+			for (let deltaY = -1; deltaY <= 1; deltaY++)
+				for (let deltaX = -1; deltaX <= 1; deltaX++) {
+					const seedX = removedX + deltaX,
+						seedY = removedY + deltaY;
+					if (seedX < 0 || seedX >= image.w || seedY < 0 || seedY >= image.h) continue;
+					const seed = seedY * image.w + seedX;
+					if (visited.has(seed) || !output.data[seed * 4 + 3]) continue;
+					const component = [seed];
+					visited.add(seed);
+					let fragment = true;
+					for (let cursor = 0; cursor < component.length; cursor++) {
+						const pixel = component[cursor],
+							point = { x: pixel % image.w, y: Math.floor(pixel / image.w) };
+						if (
+							point.y <= hipY ||
+							legDistance(point, far) > radius * 2 ||
+							legDistance(point, near) <= radius
+						)
+							fragment = false;
+						for (
+							let neighborY = Math.max(0, point.y - 1);
+							neighborY <= Math.min(image.h - 1, point.y + 1);
+							neighborY++
+						)
+							for (
+								let neighborX = Math.max(0, point.x - 1);
+								neighborX <= Math.min(image.w - 1, point.x + 1);
+								neighborX++
+							) {
+								const neighbor = neighborY * image.w + neighborX;
+								if (!visited.has(neighbor) && output.data[neighbor * 4 + 3]) {
+									visited.add(neighbor);
+									component.push(neighbor);
+								}
+							}
+					}
+					if (fragment)
+						for (const pixel of component) output.data.fill(0, pixel * 4, pixel * 4 + 4);
+				}
+		}
+	}
 	return { image: output ?? image, issue: null, source };
 }

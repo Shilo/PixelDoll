@@ -2,22 +2,34 @@
 
 This is a free local experiment using a schematic mount. It does not generate creature art, save a mount to an outfit, or include it in exports.
 
+## Direction behavior
+
+Far leg applies to all six side and diagonal views, including West, North-West and South-West, when the displayed frame has matching joints. Mirrored views reflect their source geometry once; independently authored western art needs its own joints. North and South intentionally keep both legs in Far mode. Both legs applies to every direction with complete hip and arm geometry. Missing or invalid geometry leaves the artwork unchanged, rather than cutting with a different pose.
+
+Far is approximate: overlapping legs, wide feet and connected clothing can survive its conservative ownership rule. Both clears below the hips except protected arm regions, so remaining pixels can be hand protection rather than a west-specific error. Neither option bends straight legs into a seated pose.
+
 ## Try it
 
 1. Open `http://localhost:5199/?mounts` and customize a character. The agent workflow uses `npm run dev:agent`; stored artwork works without the PixelLab Docker API.
-2. Click **Mount** beside Preview, Top-down and Side-scroller. It becomes **Dismount** to remove the mount. On narrow screens these actions use the paw icon and an accessible action name.
-3. In **Preview**, choose any existing move and facing. The toggle does not change that move. A standing pose will still have straight legs.
+2. Click the **Mount settings** paw icon in the top-right navigation bar, immediately before Random look. Turn **Show mount** on or off in its menu. The icon uses Bronze UI 0.3.7's normal accent highlight while the mount is shown, with no check badge. The switch is the authoritative state; opening the menu alone does not activate the highlight. On small phones Random look moves into More options, but the mount icon stays on the bar.
+3. In **Preview**, choose any existing move and facing. The same facing lineup now draws each neighbor with its own mount, contact and leg cutout. Selection and ordering work as before; wider mounted silhouettes can fit fewer neighbors on small screens. The toggle does not change the move. A standing pose will still have straight legs.
 4. In **Top-down** or **Side-scroller**, move normally. The mount follows the displayed facing and moves with the character. Its bob pauses while stopped. The rider uses a matching **Ride** view if stored, otherwise standing artwork, not a walking cycle.
 5. Switch between views with the mount on. The choice lasts until you turn it off or reload; it is not saved.
-6. With a mount on, open **More options** and try **Hide legs: None / Far leg / Both legs**. None is the unchanged baseline. The other options cut out estimated leg pixels from the displayed rider, including any overlapping equipment. They do not bend legs or recover hidden artwork. Far leg is unavailable in front/back views, where one leg is not uniquely farther away. A missing pose leaves the rider unchanged and shows why.
+6. In the paw menu, try **Hide legs: None / Far leg / Both legs**. **Far leg** is the default for side and diagonal views; front/back views keep both legs because neither is uniquely farther away. Choose Both legs explicitly if you want that comparison, or None for unchanged artwork. The cutouts include overlapping equipment and do not bend legs or recover hidden artwork. A missing pose leaves the rider unchanged and shows why in Mount settings. Click outside the menu to return to the character.
 
 The schematic has eight authored or explicitly mirrored directions. A four-direction character still shows only its own four directions. This is not proof that generated creature art works from eight camera angles.
 
 ## What to judge
 
-Watch the rider's hips, knees, boots and long clothing. The open saddle deliberately leaves these visible so bad contact and far-leg overlap are not hidden by a broad front wall. There is no automatic leg detection or reviewed rider-part mask yet.
+Watch the rider's hips, knees, boots and long clothing. The open saddle deliberately leaves these visible so bad contact and far-leg overlap are not hidden by a broad front wall. There is no reviewed rider-part mask yet.
 
-The optional cutout is an unreviewed joint-based guess, not reliable anatomical segmentation. It can miss leg fragments or remove clothing, weapons or hands that cross the guessed region. Keep None as the comparison. These choices only change this local display, never the stored rider or export. More options keeps this infrequent experiment out of the main toolbar; a new Mount panel is not justified by one unsaved prop.
+The small outlined rectangle drawn over the rider is the schematic saddle's front edge, not a selection box or a debugging overlay. Real mount art would replace this placeholder shape. No diagnostic markers are enabled by this experiment.
+
+Both legs now uses a continuous lower-body cut, not two narrow leg capsules: every composed pixel below the average hip row is removed through the canvas bottom except the protected elbow-to-wrist regions. This removes the center gap and wide toes, including pixels in padded equipment space. Hanging clothing and held items can disappear. Complete arm geometry is required so missing hands are not silently cut away. The protected hand regions can also preserve intersecting leg or item pixels; they are not semantic hand masks. Far still uses its existing bounded ownership comparison and conservative fragment cleanup. Extending Far to the bottom would erase a lower near foot in some diagonal poses.
+
+The cutout is an unreviewed joint-based guess, not reliable anatomical segmentation. It can miss leg fragments or remove clothing, weapons or hands that cross the guessed region. Keep None as the comparison. A conservative cleanup removes detached fragments touching the far-leg cut only when the whole fragment stays near that leg, below the hips and outside the near-leg region. Connected or ambiguous artwork is preserved, so some remnants can remain. These choices only change this local display, never the stored rider or export. Mount settings live together in the paw menu, not More options or a separate panel.
+
+After a pointer click on quick navigation actions such as Random look, Undo or Redo, character controls resume without another click on the stage. Keyboard activation keeps its native button focus. Open menus, selects, text fields and dialogs keep their own keys; click the stage to resume after adjusting settings.
 
 ## Travel speed
 

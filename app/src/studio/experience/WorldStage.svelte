@@ -21,7 +21,7 @@
 	import { floorRing, RING_GAP, RING_STROKE } from './floorRing.ts';
 	import { LoaderCircle } from '../icons.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
-	import { bakedFrame } from '../../lib/compose/compose.ts';
+	import { bakedFrame, unionFrame, type Frame } from '../../lib/compose/compose.ts';
 	import { paintedFrame, reachFrame, actorScale, previewBounds, framePosition } from './bounds.ts';
 	import { inspectionLineup, planLineup } from './lineup.ts';
 	import {
@@ -43,7 +43,7 @@
 		sampleMountFrame
 	} from './mounts.ts';
 	import type { Img } from '../../lib/image/png.ts';
-	import { hideMountedLegs } from './mountLegs.ts';
+	import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
 	const ringFlatness = (belowHorizon: number, worldScale: number, focal: number) =>
@@ -110,11 +110,19 @@
 		if (experience.mode !== 'preview' || !availability) return null;
 		return mountedPresentation(resolvePreview(availability, { clip: ui.anim, direction: ui.dir }));
 	});
-	const mountBounds = $derived(
-		previewMount?.view && bodyFrame
-			? mountedFrame(bodyFrame, previewMount.ground, previewMount.view, previewMount.contact)
-			: null
-	);
+	const mountBounds = $derived.by(() => {
+		if (!previewMount?.view || !bodyFrame || !availability) return null;
+		return unionFrame(
+			(lineupDirections.length ? lineupDirections : [ui.dir]).flatMap((direction) => {
+				const mounted = mountedPresentation(
+					resolvePreview(availability, { clip: ui.anim, direction })
+				);
+				return mounted?.view
+					? [mountedFrame(bodyFrame, mounted.ground, mounted.view, mounted.contact)]
+					: [];
+			})
+		);
+	});
 	const fitFrame = $derived(mountBounds ?? bodyFrame);
 	let mountIssue = $state('');
 	function mountedPresentation(p: Presentation) {
@@ -151,7 +159,7 @@
 	const reach = $derived.by(() => {
 		void doc.rev;
 		const p = view.project;
-		if (mountBounds) return mountBounds;
+		if (mountedReach.size) return unionFrame([...mountedReach.values()]);
 		return grounding?.reach ?? (p ? reachFrame(p) : null);
 	});
 	// Each facing's own reach bounds its click target.
@@ -180,12 +188,24 @@
 			})
 		);
 	});
+	const mountedReach = $derived.by(() => {
+		const bounds = new Map<DirectionName, Frame>();
+		if (!mountVisible || !availability) return bounds;
+		for (const direction of lineupDirections.length ? lineupDirections : [ui.dir]) {
+			const mounted = mountedPresentation(
+				resolvePreview(availability, { clip: ui.anim, direction })
+			);
+			const frame = facingReach.get(direction);
+			if (mounted?.view && frame)
+				bounds.set(direction, mountedFrame(frame, mounted.ground, mounted.view, mounted.contact));
+		}
+		return bounds;
+	});
 	// Facings that can stand beside the selected one: they play the same move the same way (all animated, or all
 	// still), so the lineup never shows a stand-in. A selected facing that itself falls back stands alone.
 	const lineupDirections = $derived.by(() => {
 		const a = availability;
-		// A mount preview shows the selected facing alone.
-		if (!a || mountVisible) return [];
+		if (!a) return [];
 		const selected = resolvePreview(a, { clip: ui.anim, direction: ui.dir });
 		if (selected.direction !== ui.dir || selected.kind === 'unavailable') return [];
 		return a.directions.filter((direction) => {
@@ -450,6 +470,7 @@
 				availability: unknown;
 				canvas: HTMLCanvasElement | null;
 				result: ReturnType<typeof renderPresentation>;
+				presentation: Presentation;
 			}
 		>();
 		const companion = (
@@ -474,7 +495,13 @@
 					.putImageData(new ImageData(new Uint8ClampedArray(image.data), image.w, image.h), 0, 0);
 				paint.redrawn();
 			}
-			const entry = { key, availability: a, canvas: image ? canvas : null, result };
+			const entry = {
+				key,
+				availability: a,
+				canvas: image ? canvas : null,
+				result,
+				presentation: p
+			};
 			companions.set(direction, entry);
 			return entry;
 		};
@@ -483,8 +510,15 @@
 			accentTheme = '';
 		// The mount's own clock: its gait runs on its own timeline while the rider plays the selected move.
 		let mountElapsed = 0;
-		let legKey = '';
-		let legResult: ReturnType<typeof hideMountedLegs> | null = null;
+		const legResults = new Map<
+			DirectionName,
+			{
+				key: string;
+				image: Img;
+				availability: NonNullable<typeof availability>;
+				result: ReturnType<typeof hideMountedLegs>;
+			}
+		>();
 		const mountCanvases = new WeakMap<Img, HTMLCanvasElement>();
 		const mountCanvas = (image: Img) => {
 			let c = mountCanvases.get(image);
@@ -500,6 +534,91 @@
 				mountCanvases.set(image, c);
 			}
 			return c;
+		};
+		const prepareActor = (
+			available: NonNullable<typeof availability>,
+			presentation: Presentation,
+			result: ReturnType<typeof renderPresentation>,
+			source: HTMLCanvasElement,
+			requestedCell: number
+		) => {
+			const mounted = mountedPresentation(presentation);
+			let legs: ReturnType<typeof hideMountedLegs> | null = null;
+			if (mounted?.view && result.image && presentation.clip && presentation.direction) {
+				const { clip, direction } = presentation;
+				const cells =
+					presentation.kind === 'animation'
+						? presentation.sequence!.frames.map((frame) => frame.cell)
+						: [presentation.cell];
+				const cell = cells.includes(requestedCell) ? requestedCell : cells[0];
+				const key = JSON.stringify([clip, cell, experience.mountLegs, result.frame]);
+				const cached = legResults.get(direction);
+				if (
+					cached?.key === key &&
+					cached.image === result.image &&
+					cached.availability === available
+				) {
+					legs = cached.result;
+				} else {
+					const rig = available.project.manifest.rig;
+					legs = hideMountedLegs(
+						result.image,
+						result.frame,
+						rig,
+						clip,
+						direction,
+						cell,
+						experience.mountLegs,
+						mountLegGeometry(available.project, clip, direction, cell)
+					);
+					legResults.set(direction, {
+						key,
+						image: result.image,
+						availability: available,
+						result: legs
+					});
+				}
+			}
+			return { mounted, source: legs ? mountCanvas(legs.image) : source, legs };
+		};
+		const drawActor = (
+			actor: ReturnType<typeof prepareActor>,
+			left: number,
+			top: number,
+			scale: number
+		) => {
+			const mounted = actor.mounted;
+			if (!mounted?.view) {
+				g.drawImage(
+					actor.source,
+					left,
+					top,
+					actor.source.width * scale,
+					actor.source.height * scale
+				);
+				return null;
+			}
+			const index = sampleMountFrame(mounted.view, mountElapsed);
+			const pose = mounted.view.frames[index];
+			const placement = placeRider(mounted.ground, mounted.contact, pose);
+			const layer = (image: Img) =>
+				g.drawImage(
+					mountCanvas(image),
+					left + placement.mount.x * scale,
+					top + placement.mount.y * scale,
+					image.w * scale,
+					image.h * scale
+				);
+			layer(pose.back);
+			g.drawImage(
+				actor.source,
+				left + placement.rider.x * scale,
+				top + placement.rider.y * scale,
+				actor.source.width * scale,
+				actor.source.height * scale
+			);
+			layer(pose.front);
+			return index;
 		};
 		let raf = 0,
 			last = performance.now(),
@@ -648,7 +767,12 @@
 			const horizontal = { ...clearance, t: -Infinity, b: Infinity };
 			const visibleFacings = (row?.facings ?? [ui.dir]).filter((direction) => {
 				if (direction === ui.dir || !inspecting) return true;
-				const box = shownReach.get(direction) ?? facingReach.get(direction) ?? reach ?? fitFrame;
+				const box =
+					mountedReach.get(direction) ??
+					shownReach.get(direction) ??
+					facingReach.get(direction) ??
+					reach ??
+					fitFrame;
 				if (!box) return false;
 				const reference = grounding?.facings.get(direction);
 				const pivot = {
@@ -777,6 +901,8 @@
 			}
 			// Floor warnings only concern the live views; Preview never draws the floor.
 			rendererWarning = live ? (ground?.warning ?? sceneError) : '';
+			experience.mountLegIssue = '';
+			delete host.dataset.mountLegIssue;
 			if (a) {
 				const p = live
 					? resolveLive(a, {
@@ -794,7 +920,6 @@
 				const cell = live ? (clock?.cell ?? p.cell) : p.kind === 'animation' ? view.cell : p.cell;
 				const nextKey = JSON.stringify([p.kind, p.clip, p.direction, cell, view.items, doc.rev]);
 				if (lastProject !== a || nextKey !== renderKey) {
-					legKey = '';
 					imageCache = renderPresentation(a, view.items, p, cell);
 					renderKey = nextKey;
 					lastProject = a;
@@ -837,49 +962,29 @@
 				].filter(Boolean);
 				const mounted = mountedPresentation(p);
 				mountIssue = mounted && !mounted.view ? mounted.reason : '';
-				experience.mountLegIssue = '';
+				if (mounted?.view && !ui.sheet && !document.hidden)
+					mountElapsed += live ? travelDelta(velocity, dt, travelRate) : ui.playing ? dt : 0;
 				delete host.dataset.mountLegs;
 				delete host.dataset.mountLegSource;
-				let mountedSource = source;
-				if (mounted?.view && img && result && p.clip && p.direction) {
-					const key = JSON.stringify([renderKey, experience.mountLegs]);
-					if (key !== legKey) {
-						const rig = a.project.manifest.rig;
-						const base = a.project.manifest.items.find((item) => item.id === rig.baseItem);
-						let direction = p.direction;
-						const visited = new Set<DirectionName>();
-						while (
-							!base?.layers.some((layer) => layer.cells?.[p.clip!]?.[direction] !== undefined) &&
-							!visited.has(direction)
-						) {
-							visited.add(direction);
-							const mirror = rig.directions.find((entry) => entry.id === direction)?.mirrorOf;
-							if (!mirror) break;
-							direction = mirror;
-						}
-						const baseImage = base?.layers
-							.map((layer) => layer.cells?.[p.clip!]?.[direction]?.[cell])
-							.find(Boolean);
-						legResult = hideMountedLegs(
-							img,
-							result.frame,
-							rig,
-							p.clip,
-							p.direction,
-							cell,
-							experience.mountLegs,
-							{ resolvedSource: direction, baseImage }
-						);
-						legKey = key;
-					}
-					if (legResult) {
-						experience.mountLegIssue = legResult.issue ?? '';
-						if (legResult.issue)
-							mountIssue = 'Leg cutout unavailable for this view. See More options.';
-						else host.dataset.mountLegs = experience.mountLegs;
-						if (legResult.source) host.dataset.mountLegSource = legResult.source;
-						mountedSource = mountCanvas(legResult.image);
-					}
+				const actor = result ? prepareActor(a, p, result, source, cell) : null;
+				const legResult = actor?.legs;
+				if (legResult) {
+					const axial =
+						experience.mountLegs === 'far' && (p.direction === 'north' || p.direction === 'south');
+					host.dataset.mountLegIssue = legResult.issue ?? '';
+					experience.mountLegIssue = legResult.issue
+						? axial
+							? 'Front and back views keep both legs visible.'
+							: "Leg hiding isn't available for this pose."
+						: '';
+					if (legResult.issue) {
+						if (
+							experience.mountLegs !== 'far' ||
+							(p.direction !== 'north' && p.direction !== 'south')
+						)
+							mountIssue = 'Leg hiding unavailable. Open Mount settings.';
+					} else host.dataset.mountLegs = experience.mountLegs;
+					if (legResult.source) host.dataset.mountLegSource = legResult.source;
 				}
 				const loadings = new Set(result?.loading ? [result.loading] : []);
 				if ((velocity.x || velocity.y) && !hasMoved) {
@@ -922,7 +1027,8 @@
 					picks = live
 						? []
 						: facings.map((direction) => {
-								const box = facingReach.get(direction) ?? reach ?? fit;
+								const box =
+									mountedReach.get(direction) ?? facingReach.get(direction) ?? reach ?? fit;
 								const pivot = {
 									x: frame.x + (origin(direction)?.x ?? 0),
 									y: frame.y + (origin(direction)?.y ?? 0)
@@ -953,8 +1059,23 @@
 							if (entry.result.issue) notes.push(entry.result.issue);
 							if (entry.result.loading) loadings.add(entry.result.loading);
 							const ground = origin(direction);
+							const actor = entry.canvas
+								? prepareActor(a, entry.presentation, entry.result, entry.canvas, view.cell)
+								: null;
+							if (actor?.mounted && !actor.mounted.view) notes.push(actor.mounted.reason);
+							if (
+								actor?.legs?.issue &&
+								!(
+									experience.mountLegs === 'far' &&
+									(direction === 'north' || direction === 'south')
+								)
+							) {
+								mountIssue = 'Leg hiding unavailable. Open Mount settings.';
+								experience.mountLegIssue = "Leg hiding isn't available for this pose.";
+							}
 							return {
 								entry,
+								actor,
 								ground,
 								...drawPosition(
 									{
@@ -1026,42 +1147,22 @@
 							g.restore();
 						}
 					for (const other of others)
-						if (other.entry.canvas)
-							g.drawImage(
-								other.entry.canvas,
-								other.x,
-								other.y,
-								other.entry.canvas.width * scale,
-								other.entry.canvas.height * scale
-							);
-					if (mounted?.view) {
-						if (!ui.sheet && !document.hidden)
-							mountElapsed += live ? travelDelta(velocity, dt, travelRate) : ui.playing ? dt : 0;
-						const index = sampleMountFrame(mounted.view, mountElapsed),
-							pose = mounted.view.frames[index],
-							at = placeRider(mounted.ground, mounted.contact, pose);
-						const layer = (image: Img) => {
-							g.drawImage(
-								mountCanvas(image),
-								x + at.mount.x * scale,
-								y + at.mount.y * scale,
-								image.w * scale,
-								image.h * scale
-							);
-						};
-						layer(pose.back);
-						g.drawImage(
-							mountedSource,
-							x + at.rider.x * scale,
-							y + at.rider.y * scale,
-							img.w * scale,
-							img.h * scale
-						);
-						layer(pose.front);
+						if (other.actor) drawActor(other.actor, other.x, other.y, scale);
+					const mountIndex = actor ? drawActor(actor, x, y, scale) : null;
+					host.dataset.mountedLineup = facings
+						.filter((direction) =>
+							direction === ui.dir
+								? mountIndex !== null
+								: others.some(
+										(other) =>
+											other.entry.presentation.direction === direction && other.actor?.mounted?.view
+									)
+						)
+						.join(' ');
+					if (mounted?.view && mountIndex !== null) {
 						host.dataset.mountContact = mounted.contact.source;
-						host.dataset.mount = `${mounted.view.fixture} ${mounted.view.direction} ${index}`;
+						host.dataset.mount = `${mounted.view.fixture} ${mounted.view.direction} ${mountIndex}`;
 					} else {
-						g.drawImage(source, x, y, img.w * scale, img.h * scale);
 						delete host.dataset.mount;
 						delete host.dataset.mountContact;
 					}
@@ -1082,6 +1183,7 @@
 		raf = requestAnimationFrame(animate);
 		return () => {
 			disposed = true;
+			experience.mountLegIssue = '';
 			experience.sceneCamera = null;
 			cancelAnimationFrame(raf);
 			canvas.removeEventListener('contextrestored', restored);

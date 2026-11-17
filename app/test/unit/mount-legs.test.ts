@@ -1,17 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
+import { flipH } from '../../src/lib/rig/mirror.ts';
 import { DEFAULT_MOVE, type Keypoint, type Rig, type Sha256 } from '../../src/lib/rig/rig.ts';
-import { hideMountedLegs } from '../../src/studio/experience/mountLegs.ts';
+import { hideMountedLegs, mountLegGeometry } from '../../src/studio/experience/mountLegs.ts';
+import type { Project } from '../../src/lib/store/manifest.ts';
 
 const hash: Sha256 = 'sha256:standing';
-const joints = (leftX = 0.3, rightX = 0.7): Keypoint[] =>
-	['LEFT', 'RIGHT'].flatMap((side) =>
+const joints = (leftX = 0.3, rightX = 0.7): Keypoint[] => [
+	...['LEFT', 'RIGHT'].flatMap((side) =>
 		['HIP', 'KNEE', 'LEG'].map((joint, index) => ({
 			label: side + ' ' + joint,
 			x: side === 'LEFT' ? leftX : rightX,
 			y: [0.3, 0.5, 0.8][index]
 		}))
-	);
+	),
+	...['LEFT', 'RIGHT'].flatMap((side) =>
+		['ELBOW', 'ARM'].map((joint, index) => ({
+			label: side + ' ' + joint,
+			x: side === 'LEFT' ? 0.05 : 0.95,
+			y: 0.15 + index * 0.1
+		}))
+	)
+];
 
 function makeRig(points = joints()): Rig {
 	return {
@@ -66,6 +76,239 @@ function rider() {
 }
 
 describe('mounted-leg experimental cutout', () => {
+	it.each([
+		'different artwork',
+		'transparent cell',
+		'own provenance',
+		'invalid own provenance'
+	] as const)('does not borrow eastern joints for stored west with %s', (condition) => {
+		const rig = makeRig(),
+			original = rider(),
+			mirrored = flipH(original);
+		const cells: Record<string, (Sha256 | null)[]> = {
+			east: ['sha256:source'],
+			west: ['sha256:mirrored']
+		};
+		if (condition === 'different artwork') paint(mirrored, 0, 0);
+		if (condition === 'transparent cell') cells.west = [null];
+		if (condition === 'own provenance' || condition === 'invalid own provenance')
+			rig.animations[0].sources!.west = {
+				route: 'import',
+				reference: hash,
+				measured: condition === 'own provenance' ? [joints()] : [null as unknown as Keypoint[]],
+				provenance: []
+			};
+		const project = {
+			manifest: { rig, items: [{ id: 'body', layers: [{ cells: { walk: cells } }] }] },
+			images: new Map([
+				['sha256:source', original],
+				['sha256:mirrored', mirrored]
+			])
+		} as unknown as Project;
+		expect(mountLegGeometry(project, 'walk', 'west', 0).resolvedSource).toBe('west');
+	});
+	it.each(['west', 'north-west', 'south-west'] as const)(
+		'cuts stored mirrored %s frames using their verified source for Far and Both',
+		(direction) => {
+			const sourceDirection =
+				direction === 'west' ? 'east' : direction === 'north-west' ? 'north-east' : 'south-east';
+			const rig = makeRig();
+			rig.directions = [{ id: sourceDirection }, { id: direction, mirrorOf: sourceDirection }];
+			rig.animations[0].sources = { [sourceDirection]: rig.animations[0].sources!.east! };
+			const original = rider(),
+				mirrored = flipH(original);
+			const project = {
+				manifest: {
+					rig,
+					items: [
+						{
+							id: 'body',
+							layers: [
+								{
+									cells: {
+										walk: { [sourceDirection]: ['sha256:source'], [direction]: ['sha256:mirrored'] }
+									}
+								}
+							]
+						}
+					]
+				},
+				images: new Map([
+					['sha256:source', original],
+					['sha256:mirrored', mirrored]
+				])
+			} as unknown as Project;
+			const geometry = mountLegGeometry(project, 'walk', direction, 0);
+			for (const mode of ['far', 'both'] as const) {
+				const result = hideMountedLegs(
+					mirrored,
+					rig.pivot,
+					rig,
+					'walk',
+					direction,
+					0,
+					mode,
+					geometry
+				);
+				expect(result.issue).toBeNull();
+				expect(result.image.data).toEqual(
+					flipH(hideMountedLegs(original, rig.pivot, rig, 'walk', sourceDirection, 0, mode).image)
+						.data
+				);
+				expect(result.image.data).not.toEqual(mirrored.data);
+			}
+		}
+	);
+	it('protects low forearms and hands in Both, not the hanging blade below them', () => {
+		const points = joints();
+		for (const point of points) {
+			if (point.label === 'LEFT ELBOW') {
+				point.x = 0.1;
+				point.y = 0.4;
+			}
+			if (point.label === 'LEFT ARM') {
+				point.x = 0.1;
+				point.y = 0.6;
+			}
+		}
+		const rig = makeRig(points),
+			image = paint(paint(makeImg(20, 20), 2, 12), 2, 19);
+		const result = hideMountedLegs(image, rig.pivot, rig, 'walk', 'east', 0, 'both');
+		expect(pixel(result.image, 2, 12)).toEqual(pixel(image, 2, 12));
+		expect(pixel(result.image, 2, 19)).toEqual([0, 0, 0, 0]);
+	});
+
+	it.each(['missing', 'nonfinite'])(
+		'refuses Both with %s arm geometry instead of cutting hands',
+		(failure) => {
+			const points = joints();
+			if (failure === 'missing')
+				points.splice(
+					points.findIndex((point) => point.label === 'LEFT ARM'),
+					1
+				);
+			else points.find((point) => point.label === 'LEFT ARM')!.x = NaN;
+			const rig = makeRig(points),
+				image = rider();
+			const result = hideMountedLegs(image, rig.pivot, rig, 'walk', 'east', 0, 'both');
+			expect(result.image).toBe(image);
+			expect(result.issue).toContain('mounted-arm');
+		}
+	);
+
+	it.each([
+		['east', 'west'],
+		['north-east', 'north-west'],
+		['south-east', 'south-west']
+	] as const)(
+		'mirrors the continuous Both region from %s to %s on a padded canvas',
+		(source, direction) => {
+			const rig = makeRig(),
+				image = makeImg(29, 27);
+			rig.directions = [{ id: source }, { id: direction, mirrorOf: source }];
+			rig.animations[0].sources = { [source]: rig.animations[0].sources!.east! };
+			for (let pixelY = 0; pixelY < image.h; pixelY++)
+				for (let pixelX = 0; pixelX < image.w; pixelX++) paint(image, pixelX, pixelY);
+			const frame = { x: rig.pivot.x + 4, y: rig.pivot.y + 3 };
+			const original = hideMountedLegs(image, frame, rig, 'walk', source, 0, 'both');
+			const mirrored = hideMountedLegs(
+				flipH(image),
+				{ ...frame, x: rig.pivot.x + 5 },
+				rig,
+				'walk',
+				direction,
+				0,
+				'both'
+			);
+			expect(mirrored.issue).toBeNull();
+			expect(mirrored.image).toEqual(flipH(original.image));
+			expect(pixel(original.image, 14, 26)).toEqual([0, 0, 0, 0]);
+			expect(pixel(original.image, 0, 26)).toEqual([0, 0, 0, 0]);
+		}
+	);
+
+	it('preserves a lower near foot beneath the far ankle in a diagonal view', () => {
+		const rig = makeRig(),
+			image = paint(makeImg(20, 20), 6, 19);
+		const nearAnkle = rig.animations[0].sources!.east!.measured![0].find(
+			(point) => point.label === 'RIGHT LEG'
+		)!;
+		nearAnkle.x = 0.3;
+		nearAnkle.y = 0.95;
+		rig.directions = [{ id: 'south-east' }];
+		rig.animations[0].sources = { 'south-east': rig.animations[0].sources!.east! };
+		const result = hideMountedLegs(image, rig.pivot, rig, 'walk', 'south-east', 0, 'far');
+		expect(result.issue).toBeNull();
+		expect(pixel(result.image, 6, 19)).toEqual(pixel(image, 6, 19));
+	});
+
+	it('cuts Both through the pelvis and bottom including outboard hanging artwork', () => {
+		const rig = makeRig(),
+			image = rider();
+		for (const [pixelX, pixelY] of [
+			[10, 7],
+			[10, 19],
+			[6, 19],
+			[14, 19],
+			[0, 19],
+			[19, 19]
+		])
+			paint(image, pixelX, pixelY);
+		const original = image.data.slice();
+		const result = hideMountedLegs(image, rig.pivot, rig, 'walk', 'east', 0, 'both');
+		for (const [pixelX, pixelY] of [
+			[10, 7],
+			[10, 19],
+			[6, 19],
+			[14, 19]
+		])
+			expect(pixel(result.image, pixelX, pixelY)).toEqual([0, 0, 0, 0]);
+		for (const pixelX of [0, 19]) expect(pixel(result.image, pixelX, 19)).toEqual([0, 0, 0, 0]);
+		expect(pixel(result.image, 6, 6)).toEqual(pixel(image, 6, 6));
+		expect(image.data).toEqual(original);
+	});
+
+	it.each([
+		['east', 'west'],
+		['north-east', 'north-west'],
+		['south-east', 'south-west']
+	] as const)('mirrors fragment cleanup exactly from %s to %s', (source, direction) => {
+		const rig = makeRig(),
+			image = rider();
+		rig.directions = [{ id: source }, { id: direction, mirrorOf: source }];
+		rig.animations[0].sources = { [source]: rig.animations[0].sources!.east! };
+		for (let pixelX = 0; pixelX <= 6; pixelX++) paint(image, pixelX, 16);
+		const original = hideMountedLegs(image, rig.pivot, rig, 'walk', source, 0, 'far');
+		const mirrored = hideMountedLegs(flipH(image), rig.pivot, rig, 'walk', direction, 0, 'far');
+		expect(mirrored.issue).toBeNull();
+		expect(mirrored.image).toEqual(flipH(original.image));
+	});
+
+	it('removes disconnected far-foot fragments touching the cut without clearing unrelated pixels', () => {
+		const rig = makeRig(),
+			image = rider();
+		for (let pixelX = 0; pixelX <= 6; pixelX++) paint(image, pixelX, 16);
+		paint(image, 0, 19);
+		const original = image.data.slice();
+		const result = hideMountedLegs(image, rig.pivot, rig, 'walk', 'east', 0, 'far');
+		for (let pixelX = 0; pixelX <= 6; pixelX++)
+			expect(pixel(result.image, pixelX, 16)).toEqual([0, 0, 0, 0]);
+		expect(pixel(result.image, 0, 19)).toEqual(pixel(image, 0, 19));
+		expect(pixel(result.image, 14, 16)).toEqual(pixel(image, 14, 16));
+		expect(image.data).toEqual(original);
+	});
+
+	it('preserves residual components connected to upper artwork or the near leg', () => {
+		const rig = makeRig(),
+			image = rider();
+		for (let pixelX = 0; pixelX <= 14; pixelX++) paint(image, pixelX, 16);
+		for (let pixelY = 3; pixelY <= 16; pixelY++) paint(image, 0, pixelY);
+		const result = hideMountedLegs(image, rig.pivot, rig, 'walk', 'east', 0, 'far');
+		expect(pixel(result.image, 0, 16)).toEqual(pixel(image, 0, 16));
+		expect(pixel(result.image, 10, 16)).toEqual(pixel(image, 10, 16));
+		expect(pixel(result.image, 6, 16)).toEqual([0, 0, 0, 0]);
+	});
+
 	it('cuts colored far candidates below hips, preserves near/outside pixels and source bytes', () => {
 		const rig = makeRig(),
 			image = rider(),
@@ -84,7 +327,7 @@ describe('mounted-leg experimental cutout', () => {
 		expect(rig).toEqual(savedRig);
 	});
 
-	it('uses the union for both while preserving all pixels at and above average hips', () => {
+	it('keeps both cutouts below the hips while preserving all pixels at and above them', () => {
 		const rig = makeRig(),
 			image = rider();
 		const result = hideMountedLegs(image, rig.pivot, rig, 'walk', 'east', 0, 'both');
@@ -153,7 +396,11 @@ describe('mounted-leg experimental cutout', () => {
 				image = rider(),
 				source = rig.animations[0].sources!.east!;
 			const points = joints();
-			if (kind === 'missing joint') points.pop();
+			if (kind === 'missing joint')
+				points.splice(
+					points.findIndex((point) => point.label === 'RIGHT LEG'),
+					1
+				);
 			if (kind === 'nan') points[0].x = NaN;
 			if (kind === 'infinity') points[0].y = Infinity;
 			if (kind === 'out of range') points[0].x = 1.01;
@@ -266,7 +513,7 @@ describe('mounted-leg experimental cutout', () => {
 			'both'
 		);
 		expect(pixel(exact.image, 14, 5)).toEqual([0, 0, 0, 0]);
-		expect(pixel(exact.image, 15, 5)).toEqual(pixel(narrowImage, 15, 5));
+		expect(pixel(exact.image, 15, 5)).toEqual([0, 0, 0, 0]);
 		rig.directions.push({ id: 'south-west', mirrorOf: 'west' });
 		const twice = hideMountedLegs(
 			paint(makeImg(30, 10), 6, 5),

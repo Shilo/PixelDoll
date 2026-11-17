@@ -8,7 +8,7 @@ export const experience = $state({
 	screen: 'characters' as 'characters' | 'studio',
 	mode: 'preview' as WorldMode,
 	testMount: false,
-	mountLegs: 'none' as MountLegMode,
+	mountLegs: 'far' as MountLegMode,
 	mountLegIssue: '',
 	presentation: 'animation' as string,
 	/** The chosen zoom in CSS px per art px, shared by all views; null shows each view's fit. */
