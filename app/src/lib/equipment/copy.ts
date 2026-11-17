@@ -520,10 +520,16 @@ export async function acceptCopy(
 				throw new Error(
 					`This character’s “${slotPlan.to.label ?? slotPlan.to.id}” category changed meanwhile. Nothing was added; try again.`
 				);
+			const freshPlan = copySlotPlan(
+				source.manifest,
+				rec.manifest,
+				original.slot,
+				source.manifest.name
+			);
 			// A slot only the source defines (a custom one) comes with its item, shown and with its labels, behavior and depths.
 			putItem(rec.manifest, item, [
 				...slotLadder(rec.manifest.rig),
-				...(slotPlan.add ? [slotPlan.add] : [])
+				...(freshPlan.add ? [freshPlan.add] : [])
 			]);
 			rec.manifest.materials.push(...materials);
 			rec.savedAt = new Date().toISOString();

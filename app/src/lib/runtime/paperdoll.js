@@ -172,8 +172,15 @@ export const OTHER_HAND = /** @type {Readonly<Record<string, string>>} */ ({
  * @param {Manifest} m
  * @param {Item} it
  */
-export const twoHanded = (m, it) =>
-	oppositeHands(m, it.slot).some((key) => hidesOf(m, it).includes(key));
+export const twoHanded = (m, it) => {
+	const side = handSide(m, it.slot);
+	if (!side) return false;
+	const hides = hidesOf(m, it);
+	return (
+		hides.includes(side === 'left' ? 'main_hand' : 'off_hand') ||
+		oppositeHands(m, it.slot).some((key) => hides.includes(key))
+	);
+};
 /**
  * @param {Manifest} m
  * @param {Preset['items']} items

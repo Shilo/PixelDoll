@@ -258,7 +258,7 @@ export function labelProblem(m: Pick<Manifest, 'slots'>, label: string, except?:
 
 // Words PixelDoll itself controls: the hint describes the item, never the background, keying, pose or hands.
 const PROTECTED =
-	/\b(background|chroma|green ?screen|magenta|transparent|alpha|mannequin|pose|posed|skeleton|keep every|unchanged|frame|sprite ?sheet|grid|red dot|hand marked)\b/i;
+	/\b(background|chroma|green ?screen|magenta|transparent|alpha|mannequin|pose|posed|skeleton|keep every|unchanged|frame layout|frame count|sprite ?sheet|grid layout|packed grid|red dot|hand marked)\b/i;
 export const cleanHint = (s: string) => s.replace(/\s+/g, ' ').trim();
 /** A creative hint problem, or '' when it can be used. */
 export function hintProblem(hint: string): string {
@@ -505,5 +505,10 @@ export function deleteCustom(m: Editable, key: string) {
 	if (m.items.some((it) => it.slot === key))
 		throw new Error('Remove its items before deleting the category.');
 	m.slots = m.slots.filter((s) => s.id !== key);
+	for (const item of m.items) if (item.hides) item.hides = item.hides.filter((id) => id !== key);
+	for (const slot of m.slots) {
+		if (slot.hides) slot.hides = slot.hides.filter((id) => id !== key);
+		if (slot.clips) slot.clips = slot.clips.filter((id) => id !== key);
+	}
 	for (const p of m.presets) delete p.items[key];
 }

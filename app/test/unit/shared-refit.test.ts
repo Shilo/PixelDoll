@@ -737,6 +737,20 @@ test('a same-key category with another meaning refuses the copy with an actionab
 	expect(memory.writes).toBe(0);
 });
 
+test('a duplicate category label added before the write refuses adoption', async () => {
+	await store('rig-knight', await sidearmKnight());
+	await store('rig-squire', await character({ name: 'Squire' }));
+	memory.beforeWrite = (id) => {
+		if (id !== 'rig-squire') return;
+		const record = memory.records.get(id) as { manifest: { slots: Slot[] } };
+		record.manifest.slots.push({ ...structuredClone(SIDEARM), id: 'other_sidearm' });
+	};
+	await expect(acceptCopy('rig-knight', 'sword', 'rig-squire')).rejects.toThrow(
+		'Another category is already called Sidearm.'
+	);
+	expect(memory.writes).toBe(0);
+});
+
 test('a target category deleted by another tab before the write refuses the copy', async () => {
 	const source = await sidearmKnight(),
 		target = await character({ name: 'Squire' });

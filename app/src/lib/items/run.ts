@@ -164,6 +164,17 @@ export interface RigCtx {
 	project: Project;
 }
 
+function draftContext(d: Draft, ctx: RigCtx): RigCtx {
+	const slots = ctx.rec.manifest.slots ?? [];
+	const slot = specSlot(d.spec, slots);
+	if (slots.some((entry) => entry.id === slot.id)) return ctx;
+	const manifest = { ...ctx.rec.manifest, slots: [...slots, structuredClone(slot)] };
+	return {
+		rec: { ...ctx.rec, manifest },
+		project: { ...ctx.project, manifest }
+	};
+}
+
 const seed = () => 1 + Math.floor(Math.random() * 2_000_000);
 const slug = (s: string) =>
 	s
@@ -528,6 +539,7 @@ function drop(c: CallState) {
 	drops.set(c, (drops.get(c) ?? 0) + 1);
 }
 async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
+	ctx = draftContext(d, ctx);
 	const c = d.calls[k],
 		route = d.spec.key,
 		{ rig } = ctx.rec.manifest,
@@ -699,6 +711,7 @@ export const isClean = (r: ItemResult) =>
 /** Run each batch of the player-requested plan once. Checks never authorize another paid attempt. */
 export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<ItemResult | null> {
 	h.signal?.throwIfAborted();
+	ctx = draftContext(d, ctx);
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
 	const persist = h.persist ?? (async () => {}),
@@ -927,6 +940,7 @@ export async function evaluateItem(
 	ctx: RigCtx,
 	standingPalettes?: ReadonlyMap<DirectionName, number[]>
 ): Promise<ItemResult> {
+	ctx = draftContext(d, ctx);
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
 	type Out = {
@@ -1342,7 +1356,7 @@ async function previewProject(
 	});
 	const m: Manifest = structuredClone(ctx.rec.manifest);
 	// A slot the character lacks comes in ladder order with its rig's near-hand order, as when the item is saved.
-	putItem(m, item, slotLadder(m.rig));
+	putItem(m, item, [...slotLadder(m.rig), specSlot(d.spec, m)]);
 	return { manifest: m, images: new Map([...ctx.project.images, ...images]) };
 }
 
@@ -1392,6 +1406,7 @@ export async function acceptItem(
 	ctx: RigCtx,
 	res?: ItemResult
 ): Promise<{ item: Item; cells: number }> {
+	ctx = draftContext(d, ctx);
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
 	const r = res ?? (await evaluateItem(d, ctx));
@@ -1449,7 +1464,13 @@ export async function acceptItem(
 	// would have moved it; a replaced or recolored cell means it may not, so it is refused rather than saved for another body.
 	const made = ctx.rec.manifest,
 		anims = made.rig.animations.map((a) => a.id);
-	await saveItem(d.rigId, item, images, slotLadder(made.rig), (cur) => {
+	const slot = specSlot(d.spec, made);
+	await saveItem(d.rigId, item, images, [...slotLadder(made.rig), slot], (cur) => {
+		const current = specSlot({ slot: slot.id, slotConfig: slot }, cur.manifest);
+		if (current.z !== slot.z || current.bgZ !== slot.bgZ)
+			throw new Error(
+				`${d.spec.name}: the category depth changed while this item was being kept. Nothing was saved; try again.`
+			);
 		if (cur.manifest.rig.baseHash === item.baseHash) return;
 		if (bodyCells(cur.manifest, anims) !== bodyCells(made, anims))
 			throw new Error(

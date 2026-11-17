@@ -34,6 +34,15 @@ test('a two-handed item is a hand item that hides the other hand', () => {
 	]);
 });
 
+test('two-handed remains enabled when the opposite category has no saved definition yet', () => {
+	for (const held of [greatsword, bow]) {
+		const sparse = manifest([held]);
+		sparse.slots = sparse.slots.filter((slot) => slot.id === held.slot);
+		expect(twoHanded(sparse, held)).toBe(true);
+		expect(twoHanded(sparse, { ...held, hides: [] })).toBe(false);
+	}
+});
+
 test('copied hand slots preserve two-handed conflicts under unrelated keys', () => {
 	const copiedBow = item('copied_bow', 'archery', ['main_hand']),
 		copiedShield = item('copied_shield', 'shield_extra'),

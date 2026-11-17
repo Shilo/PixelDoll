@@ -113,8 +113,7 @@ export const SLOTS: Slot[] = BUILTINS.map((slot) => {
 		label: LABELS[profile],
 		origin: profile,
 		profile,
-		wardrobeOrder: order,
-		wardrobeHidden: order < 0 || order >= 10
+		...(order >= 0 ? { wardrobeOrder: order, wardrobeHidden: order >= 10 } : {})
 	};
 });
 
@@ -172,9 +171,28 @@ export function createSlot(
 	};
 }
 
-export function specSlot(spec: { slot?: string; slotConfig?: Slot }): Slot {
+export function specSlot(spec: { slot?: string; slotConfig?: Slot }, source?: SlotSource): Slot {
 	if (!spec.slot) throw new Error('Equipment generation needs a slot.');
-	return spec.slotConfig?.id === spec.slot ? spec.slotConfig : slotOf(spec.slot);
+	const snapshot = spec.slotConfig?.id === spec.slot ? spec.slotConfig : undefined;
+	const slots: readonly Slot[] = source
+		? Array.isArray(source)
+			? source
+			: 'slots' in source
+				? (source.slots ?? [])
+				: []
+		: [];
+	const current = slots.find((slot) => slot.id === spec.slot);
+	if (
+		current &&
+		snapshot &&
+		(current.class !== snapshot.class ||
+			current.anchor !== snapshot.anchor ||
+			behaviorOf(current) !== behaviorOf(snapshot))
+	)
+		throw new Error(
+			`The equipment category ${spec.slot} now has a different behavior. Nothing was saved; restore its original category before keeping this item.`
+		);
+	return current ?? snapshot ?? slotOf(spec.slot);
 }
 
 export function handOf(slot: SlotRef): 'left' | 'right' {

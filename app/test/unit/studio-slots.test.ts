@@ -171,12 +171,16 @@ test('a copied left-hand slot keeps its hand behavior under a new key', () => {
 });
 
 test('only empty custom categories can be deleted, and outfits forget their key', () => {
-	const m = character();
+	const m = character([item('cape', 'back')]);
 	const key = addCustom(m, { label: 'Charm' }, none);
 	m.presets[0].items[key] = null;
+	m.items[0].hides = [key, 'hair'];
+	m.slots.find((slot) => slot.id === 'back')!.hides = [key];
 	deleteCustom(m, key);
 	expect(m.slots.some((s) => s.id === key)).toBe(false);
 	expect(key in m.presets[0].items).toBe(false);
+	expect(m.items.at(-1)!.hides).toEqual(['hair']);
+	expect(m.slots.find((slot) => slot.id === 'back')!.hides).toEqual([]);
 	expect(() => deleteCustom(m, 'neck')).toThrow();
 	const used = addCustom(m, { label: 'Charm' }, none);
 	m.items.push(item('pouch', used));
@@ -185,6 +189,7 @@ test('only empty custom categories can be deleted, and outfits forget their key'
 
 test('creative hints describe the item and leave protected wording to PixelDoll', () => {
 	expect(hintProblem('small and shiny, pinned to the chest')).toBe('');
+	expect(hintProblem('a picture frame pendant with a gem grid')).toBe('');
 	expect(hintProblem('on a green screen background')).toContain('PixelDoll handles');
 	expect(hintProblem('{{description}}')).toBe('Describe the item in plain words.');
 });

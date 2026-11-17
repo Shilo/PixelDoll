@@ -21,6 +21,7 @@ import {
 	DEFAULT_WARDROBE_ORDER,
 	handOf,
 	requireSlot,
+	specSlot,
 	SLOTS
 } from '../../src/lib/items/slots.ts';
 import { materialNames } from '../../src/lib/dress/dress.ts';
@@ -54,11 +55,26 @@ const skeleton = {
 	'RIGHT KNEE': { x: 36, y: 46, z: 0 }
 } satisfies Skeleton;
 
+test('draft slot snapshots restore only missing categories and never replace an incompatible reused key', () => {
+	const snapshot = createSlot('custom_helmet', 'head', 'Original');
+	const spec = { slot: snapshot.id, slotConfig: snapshot };
+	expect(specSlot(spec, [])).toBe(snapshot);
+	const current = { ...snapshot, label: 'Renamed', wardrobeHidden: true, z: 135 };
+	expect(specSlot(spec, [current])).toBe(current);
+	for (const replacement of [
+		createSlot(snapshot.id, 'off_hand'),
+		{ ...snapshot, profile: 'face_acc' as const },
+		{ ...snapshot, anchor: 'neck' as const },
+		{ ...snapshot, class: 'worn' as const }
+	])
+		expect(() => specSlot(spec, [replacement])).toThrow('different behavior');
+});
+
 test('the default Wardrobe order is separate from render order and names Body and Base', () => {
 	const slots = slotLadder(rig);
 	expect(
 		slots
-			.filter((slot) => !slot.wardrobeHidden)
+			.filter((slot) => slot.id !== 'body' && !slot.wardrobeHidden)
 			.sort((first, second) => first.wardrobeOrder! - second.wardrobeOrder!)
 			.map((slot) => slot.id)
 	).toEqual(DEFAULT_WARDROBE_ORDER.slice(0, 10));

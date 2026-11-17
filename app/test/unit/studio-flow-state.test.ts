@@ -2102,6 +2102,9 @@ describe('optional review', () => {
 			id: 'helm0',
 			name: 'New helm'
 		});
+		mocks.update.mockImplementation(async (_store, _id, update) =>
+			update({ id: 'project', manifest: structuredClone(saved) })
+		);
 		mocks.source.mockResolvedValue({
 			project: { manifest: saved, images: new Map() },
 			current: { items: { body: 'base' }, variants: {} }

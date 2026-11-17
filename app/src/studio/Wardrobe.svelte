@@ -467,18 +467,21 @@
 								Held by {s.holder.name} (two-handed).
 							</p>{/if}
 						<div class="slot-tiles" role="group" aria-label="{s.label} items">
-							<button
-								class="bu-tile item-tile"
-								data-variant="empty"
-								aria-pressed={!s.worn}
-								aria-label="Empty {lower}"
-								onclick={() => clearSlots([s.key])}
-								><span class="bu-tile-art tile-art" aria-hidden="true"><Ban size={26} /></span><span
-									class="bu-tile-label">Empty</span
-								>{#if !s.worn}<span class="tile-marks" aria-hidden="true"
-										><span class="bu-tile-check" title="Nothing worn here"><Check /></span></span
-									>{/if}</button
-							>
+							{#if !s.fromOthers}
+								<button
+									class="bu-tile item-tile"
+									data-variant="empty"
+									aria-pressed={!s.worn}
+									aria-label="Empty {lower}"
+									onclick={() => clearSlots([s.key])}
+									><span class="bu-tile-art tile-art" aria-hidden="true"><Ban size={26} /></span
+									><span class="bu-tile-label">Empty</span>{#if !s.worn}<span
+											class="tile-marks"
+											aria-hidden="true"
+											><span class="bu-tile-check" title="Nothing worn here"><Check /></span></span
+										>{/if}</button
+								>
+							{/if}
 							{#each s.items as it (it.id)}
 								{@const on = doc.items[it.slot] === it.id && !doc.drafts[it.slot]}
 								{@const marks = marksOf(it)}

@@ -672,6 +672,28 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await manager.getByRole('button', { name: 'More actions for Head', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Don’t show in Wardrobe', exact: true }).click();
 	await expect(manager.getByRole('alert')).toContainText('items');
+	await manager.getByRole('button', { name: 'Done', exact: true }).click();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Light mode', exact: true }).click();
+	await page.setViewportSize({ width: 320, height: 568 });
+	await page
+		.getByRole('navigation', { name: 'Equipment slots' })
+		.getByRole('button', { name: /^Slots/ })
+		.click();
+	await manager.getByRole('button', { name: 'More actions for Brooch', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Edit…', exact: true }).click();
+	const compactEditor = page.getByRole('dialog', { name: 'Brooch', exact: true });
+	await expect(compactEditor.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
+		'Brooch'
+	);
+	await expect(
+		compactEditor.getByRole('combobox', { name: 'Draws above', exact: true })
+	).toHaveValue('torso_outer');
+	const compactBounds = await compactEditor.boundingBox();
+	expect(compactBounds!.x).toBeGreaterThanOrEqual(0);
+	expect(compactBounds!.x + compactBounds!.width).toBeLessThanOrEqual(320);
+	await compactEditor.getByRole('button', { name: 'Save', exact: true }).click();
+	await manager.getByRole('button', { name: 'Done', exact: true }).click();
 	finish();
 });
 

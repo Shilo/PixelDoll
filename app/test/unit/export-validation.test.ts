@@ -5,6 +5,7 @@ import { exportFiles } from '../../src/lib/export/export.ts';
 import { spriteFramesTres } from '../../src/lib/export/godot.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 import { addCustom, moveCategory, shownCategories } from '../../src/studio/slots.ts';
+import { slotLadder } from '../../src/lib/items/slots.ts';
 
 function project(): Project {
 	const hash = `sha256:${'0'.repeat(64)}` as const;
@@ -277,6 +278,8 @@ test('malformed slot entries reject clearly instead of throwing', () => {
 test('Wardrobe reordering keeps every order a whole non-negative number, so the export validates', () => {
 	const p = project(),
 		none = new Set<string>();
+	p.manifest.slots = slotLadder(p.manifest.rig);
+	expect(validate(p)).toEqual([]);
 	addCustom(p.manifest, { label: 'Brooch' }, none);
 	for (const [key, to] of [
 		['brooch', 0],
