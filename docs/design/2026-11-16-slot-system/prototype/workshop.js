@@ -31,7 +31,7 @@
     ["head", "Head", "rigid", "head", 130, null, true],
     ["hair", "Hair", "rigid", "head", 110, 5, true],
     ["face_acc", "Face", "rigid", "head", 120, null, true],
-    ["torso_inner", "Chest", "worn", "neck", 40, null, true],
+    ["torso_inner", "Body", "worn", "neck", 40, null, true],
     ["arms", "Hands", "worn", "hand_r", 70, null, true],
     ["legs", "Legs", "worn", "hip", 30, null, true],
     ["feet", "Feet", "worn", "foot_r", 20, null, true],
@@ -43,6 +43,7 @@
     ["waist", "Waist", "worn", "hip", 50, null, false],
     ["neck", "Neck", "rigid", "neck", 80, null, false],
     ["shoulders", "Shoulders", "worn", "neck", 65, null, false],
+    ["underwear", "Underwear", "worn", "hip", 15, null, false],
   ];
   const makeSlot = (
     [key, label, kind, anchor, z, bg, shown],
@@ -85,8 +86,8 @@
       identity: "key",
       hidePolicy: "empty",
       presetPolicy: "fixed",
-      underwear: "off",
       view: "manage",
+      previewMode: "fixture",
       facing: 0,
       exportMode: "manifest",
       calls: [],
@@ -122,8 +123,15 @@
   const button = (text, action, key, extra = "") =>
     `<button class="bu-btn" data-action="${action}" data-key="${escape(key)}" ${extra} ${extra.includes("aria-label") ? "" : `aria-label="${escape(text)}${slotBy(key) ? ` ${escape(slotBy(key).label)} (${escape(key)})` : ""}"`}>${text}</button>`;
   const custom = (slot) => !slot.origin;
-  const special = (slot) =>
-    ["underwear", "underwear_top", "underwear_bottom"].includes(slot.origin);
+  const scope = (slot) =>
+    ({
+      torso_inner: "Upper-body clothing or a complete outfit. Draws over Legs.",
+      legs: "Separate pants, skirts or leggings. Stays independent of Body.",
+      torso_outer:
+        "One jacket, robe or full outer costume. Extra separation uses custom slots.",
+      underwear:
+        "One top, bottom or combined set. Extra separation uses custom slots. Cannot remove clothing baked into the Base.",
+    })[slot.sourceProfile] || "";
   function remapKey(slot, next) {
     const previous = slot.key;
     slot.key = next;
@@ -168,7 +176,7 @@
     const position = group.indexOf(slot);
     return `<div class="slot-row" data-slot="${escape(slot.key)}">
       <button class="bu-btn handle" data-drag="${escape(slot.key)}" aria-label="Drag ${escape(slot.label)} to reorder">${grip}</button>
-      <div class="slot-summary"><strong>${escape(slot.label)}</strong><small class="bu-muted">${slot.items.length} items${slot.equipped ? " · equipped" : ""} · ${custom(slot) ? "Custom" : "Built-in"}${special(slot) ? " · experimental" : ""}${duplicate ? ` · ${escape(slot.key)}` : ""}</small></div>
+      <div class="slot-summary"><strong>${escape(slot.label)}</strong><small class="bu-muted">${slot.items.length} items${slot.equipped ? " · equipped" : ""} · ${custom(slot) ? "Custom" : "Built-in"}${duplicate ? ` · ${escape(slot.key)}` : ""}</small>${scope(slot) ? `<small class="bu-muted">${escape(scope(slot))}</small>` : ""}</div>
       <div class="row-actions">${button(up, "up", slot.key, `aria-label="Move ${escape(slot.label)} up" ${position === 0 ? "disabled" : ""}`)}${button(down, "down", slot.key, `aria-label="Move ${escape(slot.label)} down" ${position === group.length - 1 ? "disabled" : ""}`)}${button(slot.shown ? (state.hidePolicy === "empty" && slot.items.length ? "Hide (empty only)" : "Hide") : "Show", "visibility", slot.key)}${button("Settings", "edit", slot.key)}</div></div>`;
   }
   function renderManage() {
@@ -185,7 +193,8 @@
         other.label.toLowerCase() === slot.label.toLowerCase(),
     );
     const contents = `<div class="slot-heading"><h3>${escape(slot.label)}${duplicate ? ` <small>(${escape(slot.key)})</small>` : ""}</h3><div class="bu-actions">${button(slot.shown ? (state.hidePolicy === "empty" && slot.items.length ? "Hide (empty only)" : "Hide") : "Show", "visibility", slot.key)}${button("Settings", "edit", slot.key)}</div></div>
-      <div class="item-grid"><button class="bu-action" data-variant="tile" data-action="equip" data-key="${escape(slot.key)}" data-item="" aria-label="Unequip ${escape(slot.label)} (${escape(slot.key)})" aria-pressed="${!slot.equipped}">Empty</button>${slot.items.map((item) => `<button class="bu-action" data-variant="tile" data-action="equip" data-key="${escape(slot.key)}" data-item="${escape(item.id)}" aria-label="Equip ${escape(item.name)} in ${escape(slot.label)} (${escape(slot.key)})" aria-pressed="${slot.equipped === item.id}">${item.art ? `<canvas width="64" height="64" data-art="${escape(item.art)}" aria-hidden="true"></canvas>` : "<small>Sample record<br>No generated art</small>"}<span>${escape(item.name)}</span></button>`).join("")}</div>
+      ${scope(slot) ? `<p class="bu-muted bu-small">${escape(scope(slot))}</p>` : ""}
+      <div class="item-grid"><button class="bu-action" data-variant="tile" data-action="equip" data-key="${escape(slot.key)}" data-item="" aria-label="Unequip ${escape(slot.label)} (${escape(slot.key)})" aria-pressed="${!slot.equipped}">Empty</button>${slot.items.map((item) => `<button class="bu-action" data-variant="tile" data-action="equip" data-key="${escape(slot.key)}" data-item="${escape(item.id)}" aria-label="Equip ${escape(item.name)} in ${escape(slot.label)} (${escape(slot.key)})" aria-pressed="${slot.equipped === item.id}">${item.art ? `<canvas width="64" height="64" data-art="${escape(item.art)}" aria-hidden="true"></canvas>` : `<small>${item.diagram ? "Layer diagram" : "Sample record"}<br>No generated art</small>`}<span>${escape(item.name)}</span></button>`).join("")}</div>
       <div class="bu-actions">${button("Add sample item", "sample", slot.key)}${slot.items.length ? button("Delete sample items", "clear-items", slot.key) : ""}</div>`;
     return collapsed
       ? `<details class="bu-details catalog-section"><summary>${escape(slot.label)} · ${slot.items.length} items${slot.equipped ? " · equipped" : ""}</summary>${contents}</details>`
@@ -202,7 +211,7 @@
         : hidden.length
           ? `<details class="bu-details slot-group"><summary>Hidden slots · ${hidden.length} categories · ${hiddenWorn} equipped</summary><p class="bu-small bu-muted">Hidden from the wardrobe. Worn items stay equipped.</p>${hidden.map((slot) => renderCatalog(slot)).join("")}</details>`
           : "";
-    return `<div class="content-head"><div><h2 id="view-title">Wardrobe</h2><p class="bu-muted bu-small">Try hiding a populated slot without changing the outfit.</p></div><div class="bu-actions">${button("Manage slots", "manage", "")}${button("Save sample outfit", "save-outfit", "")}${button("Wear saved outfit", "load-outfit", "")}</div></div>${
+    return `<div class="content-head"><div><h2 id="view-title">Wardrobe</h2><p class="bu-muted bu-small">One selection per slot. Body draws over Legs; equipping either never clears the other.</p></div><div class="bu-actions">${button("Manage slots", "manage", "")}${button("Save sample outfit", "save-outfit", "")}${button("Wear saved outfit", "load-outfit", "")}</div></div>${
       state.slots
         .filter((slot) => slot.shown)
         .map((slot) => renderCatalog(slot))
@@ -302,6 +311,12 @@
     const canvas = select("#actor");
     const context = canvas.getContext("2d");
     context.clearRect(0, 0, 64, 64);
+    if (state.previewMode === "diagram") {
+      paintClothingDiagram(context);
+      for (const tile of root.querySelectorAll("[data-art]"))
+        paint(tile, tile.dataset.art);
+      return;
+    }
     const body = {
       z: 10,
       renderOrder: -1,
@@ -319,6 +334,67 @@
     for (const tile of root.querySelectorAll("[data-art]"))
       paint(tile, tile.dataset.art);
   }
+  function paintClothingDiagram(context) {
+    const styles = getComputedStyle(document.documentElement);
+    const color = (token) => styles.getPropertyValue(`--bu-${token}`).trim();
+    const rectangle = (token, x, y, width, height) => {
+      context.fillStyle = color(token);
+      context.fillRect(x, y, width, height);
+    };
+    rectangle("muted", 25, 5, 14, 12);
+    rectangle("muted", 23, 19, 18, 21);
+    rectangle("muted", 18, 20, 5, 22);
+    rectangle("muted", 41, 20, 5, 22);
+    rectangle("muted", 24, 40, 7, 20);
+    rectangle("muted", 33, 40, 7, 20);
+    for (const slot of [...state.slots].sort(
+      (left, right) => left.z - right.z || left.renderOrder - right.renderOrder,
+    )) {
+      const item = slot.items.find((entry) => entry.id === slot.equipped);
+      if (!item?.diagram) continue;
+      if (item.diagram === "underwear") {
+        rectangle("success", 24, 21, 16, 7);
+        rectangle("success", 24, 34, 16, 8);
+      } else if (item.diagram === "pants") {
+        rectangle("info", 22, 34, 9, 24);
+        rectangle("info", 33, 34, 9, 24);
+      } else if (item.diagram === "shirt" || item.diagram === "outfit") {
+        rectangle("accent", 20, 19, 24, 25);
+        rectangle("accent", 17, 20, 5, 10);
+        rectangle("accent", 42, 20, 5, 10);
+        if (item.diagram === "outfit") rectangle("accent", 21, 42, 22, 14);
+      } else if (item.diagram === "coat") {
+        rectangle("warning", 18, 19, 7, 36);
+        rectangle("warning", 39, 19, 7, 36);
+        rectangle("warning", 16, 20, 4, 20);
+        rectangle("warning", 44, 20, 4, 20);
+      }
+    }
+  }
+  function loadClothingExamples() {
+    snapshot();
+    const examples = [
+      ["torso_inner", "demo_shirt", "Long shirt", "shirt"],
+      ["torso_inner", "demo_outfit", "Full outfit", "outfit"],
+      ["legs", "demo_pants", "Pants", "pants"],
+      ["torso_outer", "demo_coat", "Open coat", "coat"],
+      ["underwear", "demo_underwear", "Combined underwear", "underwear"],
+    ];
+    for (const [profile, id, name, diagram] of examples) {
+      const slot = state.slots.find((entry) => entry.origin === profile);
+      if (!slot) continue;
+      if (!slot.items.some((item) => item.id === id))
+        slot.items.push({ id, name, diagram });
+      slot.shown = true;
+      if (diagram !== "outfit") slot.equipped = id;
+    }
+    state.previewMode = "diagram";
+    state.view = "wardrobe";
+    render();
+    notify(
+      "Loaded layer diagrams and showed Outerwear and Underwear. Nothing generated. Undo restores the previous wardrobe.",
+    );
+  }
   function render() {
     const active = document.activeElement;
     const focus = select("#content").contains(active)
@@ -333,9 +409,14 @@
       ["identity", state.identity],
       ["hide-policy", state.hidePolicy],
       ["preset-policy", state.presetPolicy],
-      ["underwear", state.underwear],
+      ["preview-mode", state.previewMode],
     ])
       select(`#${id}`).value = value;
+    select("#facing").disabled = state.previewMode === "diagram";
+    select("#preview-note").textContent =
+      state.previewMode === "diagram"
+        ? "Front-view diagram, not generated artwork: Underwear (green), Legs (blue), Body (bronze), Outerwear (gold). No clipping or animation proof."
+        : "Existing fixture artwork. Diagram items are not painted here. Joint edits, generation and full occlusion are not simulated.";
     for (const tab of root.querySelectorAll("[data-view]")) {
       tab.setAttribute(
         "aria-selected",
@@ -467,7 +548,12 @@
           "Use a name and a readable key containing lowercase letters, numbers, underscores or hyphens.";
       if (
         /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/i.test(nextKey) ||
-        nextKey === "body"
+        (nextKey === "body" &&
+          !(
+            state.identity === "name" &&
+            slot.origin === "torso_inner" &&
+            !creating
+          ))
       )
         error =
           "Choose another key; this name is reserved for files or the base body.";
@@ -635,6 +721,10 @@
       render();
       return;
     }
+    if (action === "clothing-examples") {
+      loadClothingExamples();
+      return;
+    }
     if (action === "up" || action === "down") {
       move(key, action === "up" ? -1 : 1);
       return;
@@ -778,8 +868,12 @@
       paintActor();
       return;
     }
-    if (!["identity", "hide-policy", "preset-policy", "underwear"].includes(id))
+    if (id === "preview-mode") {
+      state.previewMode = value;
+      render();
       return;
+    }
+    if (!["identity", "hide-policy", "preset-policy"].includes(id)) return;
     snapshot();
     if (id === "identity" && !rebaseIdentity(value)) {
       history.pop();
@@ -795,69 +889,13 @@
       }
     }
     if (id === "preset-policy") state.presetPolicy = value;
-    if (id === "underwear") {
-      state.underwear = value;
-      const candidates =
-        value === "combined"
-          ? [["underwear", "Underwear"]]
-          : value === "split"
-            ? [
-                ["underwear_top", "Underwear top"],
-                ["underwear_bottom", "Underwear bottom"],
-              ]
-            : [];
-      const previous = state.slots.filter(special);
-      if (
-        candidates.some(([key]) =>
-          state.slots.some(
-            (slot) =>
-              !special(slot) && (slot.key === key || slot.stableKey === key),
-          ),
-        )
-      ) {
-        state = history.pop();
-        render();
-        notify(
-          "An experimental Underwear key is already used by a custom slot. Choose another custom key first.",
-        );
-        return;
-      }
-      if (previous.some((slot) => slot.items.length)) {
-        state = history.pop();
-        render();
-        notify(
-          "This comparison would remove populated experimental slots. Delete their sample items or Reset first.",
-        );
-        return;
-      }
-      state.slots = state.slots.filter((slot) => !special(slot));
-      for (const [key, label] of candidates)
-        state.slots.push(
-          makeSlot(
-            [
-              key,
-              label,
-              "worn",
-              key === "underwear_top" ? "neck" : "hip",
-              15,
-              null,
-              false,
-            ],
-            Math.max(...state.slots.map((slot) => slot.renderOrder)) + 1,
-          ),
-        );
-      notify(
-        value === "off"
-          ? "Underwear remains a custom-only experiment."
-          : "Added hidden Underwear options in Manage slots. The base already has baked underwear; this cannot remove it.",
-      );
-    }
     render();
   });
   select("#theme").onclick = () => {
     const light = document.documentElement.dataset.theme !== "light";
     document.documentElement.dataset.theme = light ? "light" : "dark";
     select("#theme").textContent = light ? "Dark theme" : "Light theme";
+    paintActor();
   };
   select("#undo").onclick = () => {
     if (history.length) {

@@ -2,6 +2,24 @@
 
 Status: workshop review in progress. This file distinguishes completed checks from proposed acceptance tests.
 
+## Corrected Body and Legs revision
+
+The user clarified and selected the clothing arrangement: Body and Legs remain separate shown slots; Body accepts upper-body or full-body artwork and draws above Legs. Outerwear and Underwear each have one hidden universal slot. Extra independently selected outer/under tops and bottoms are custom slots. The current prototype therefore starts with ten shown and six hidden, superseding the historical ten/five and Underwear comparisons below. Slot identity, built-in editing and populated hiding remain comparisons, not approved production changes.
+
+- Browser interaction checks passed for 16 built-ins, ten shown/six hidden, Body label, no split Underwear built-ins, combined underwear examples, a custom Underwear top copied from Underwear, populated hide refusal, Reset and partial runtime descriptor depths.
+- The new front-view layer diagram uses simple geometric masks, not generated clothes. A sampled overlap pixel changed from the Body color to the Legs color when Body was unequipped. Switching Body to Full outfit left Pants equipped. Reordering the Body manager row left preview pixels unchanged. These prove selection and illustrative depth only, not extraction, articulation or canonical rendering.
+- Desktop browser DOM checks at 1402x876 and small-screen checks at 320x568 found no horizontal document overflow. The Underwear settings dialog fit the small viewport. The light-theme diagram and disabled directional selector were checked through the DOM. Physical touch remains untested.
+- Embedded preview rendered at 390px in light mode with no console messages; that image was visually inspected. Desktop screenshot capture still reports that the browser is not producing screenshot frames. The original localhost 5198 server returned ERR_EMPTY_RESPONSE; the fallback browser host was unavailable. An owned localhost server on 5216 restored T3 browser interaction checks without touching other servers.
+- JavaScript syntax and theme-ownership checks passed. Source formatting and both bundles were regenerated. No production app tests, builds, engine parity checks or paid calls were run for this isolated prototype.
+
+The default layer sequence is Base, Underwear, Legs, Body, Outerwear. Wide pants may remain visible outside a dress; no selection is automatically cleared. Underwear remains usable on nude and clothed bases, but does not remove clothing baked into the Base. Full-body extraction and custom copied behaviors still require production validation.
+
+## Accessory documentation follow-up
+
+Following independent Sol and Opus reviews, the user approved optional naming with the Accessory fallback and numbered repeats. No required region picker. Default drawing position is above Body and Legs, below Outerwear, Hair and held items, with adjustable order. This supersedes the initial region-based creation proposal. It adds no built-in and preserves one selection per slot. The plan explains readable-key API and folder behavior and records the reviewers' disagreement about Hair accessory.
+
+The blank-name fallback and revised default depth are not implemented or tested. Existing Add slot and Start with controls only approximate the proposal. No prototype or production files were changed for this documentation follow-up, and no new browser, generation or engine checks were run. Future acceptance checks include blank and repeated names, case-insensitive collisions, default depth independent of Wardrobe order, clear feedback when Outerwear covers the item, and actual accessory fitting. Production implementation remains separately unapproved.
+
 ## Council composition and dissent
 
 The requested models were GPT-6.1 Sol at medium reasoning and Claude Opus 5.5 at medium effort. Independent delegated reviews examined architecture and workflows. Their findings were challenged against one another; agreement was not manufactured by treating one model's imagined internal voices as additional reviewers.

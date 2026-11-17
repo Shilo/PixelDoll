@@ -9,21 +9,25 @@ November 16, 2026. **Proposal awaiting interactive review, not an approved imple
 
 ## Starting recommendation
 
-Show Head, Hair, Face, Chest, Hands, Legs, Feet, Back, Main hand and Off hand. Keep Facial hair, Outerwear, Waist, Neck and Shoulders built in but initially hidden. This is a defensible starting design, not a measured ranking of popularity.
+Show Head, Hair, Face, Body, Hands, Legs, Feet, Back, Main hand and Off hand. Keep Facial hair, Outerwear, Underwear, Waist, Neck and Shoulders built in but initially hidden. Ten shown, six hidden. This is a design choice, not a measured ranking of popularity.
 
 Use readable permanent keys, not opaque IDs and not mutable names. Keep one existing runtime manifest rather than encoding rendering in folder suffixes. Start the workshop with fixed built-ins, copy-to-customize and only-empty hiding, matching the user's conservative preference. Compare more permissive alternatives before choosing production scope.
 
-Underwear is deliberately unresolved: the council disagrees about whether a combined hidden built-in is useful when standard bases already have baked underwear. Try none, combined and split. The demo does not generate or remove any base clothing.
+Body replaces the Chest label, not the Legs slot. Each still has one selected asset. Body accepts upper-body clothes or a complete outfit and draws above Legs. Outerwear and Underwear each have one universal slot; extra independently selectable tops or bottoms require custom slots. A nude Base makes removable underwear useful. Clothing baked into a Base cannot be removed by a wardrobe slot. The prototype does not generate or remove base clothing.
+
+Choose **Try clothing examples** to load a clearly labeled front-view layer diagram: long shirt, full outfit, pants, open coat and combined underwear. The action shows the two hidden clothing slots for testing; Reset restores their hidden defaults. Switch Body items or empty it to see that Legs stays independently selected. These rectangles test selection and depth only, not garment quality or animation.
+
+**Approved Accessory direction:** Add custom slot accepts a blank name, using Accessory, then Accessory 2, etc. No required region picker. Start above Body and Legs but below Outerwear, Hair and held items, described as **Over basic clothing**, with adjustable drawing order. It becomes a shown custom slot only when created; built-in counts stay unchanged. See the [Accessory plan](plan.md#accessory-as-a-custom-slot-starting-option). This revised creation flow is documented, not yet implemented in the demo or production.
 
 ## Run locally
 
 From the repository root:
 
 ```powershell
-python -m http.server 5198 --bind 127.0.0.1
+python -m http.server 5216 --bind 127.0.0.1
 ```
 
-Open `http://localhost:5198/docs/design/2026-11-16-slot-system/prototype/`. Dependencies already installed in `app/node_modules` supply the real Bronze UI styles; do not install another UI kit. For a portable, self-contained version, run `node docs/design/2026-11-16-slot-system/prototype/bundle.mjs` and open the generated `workshop.html`. The bundle embeds the same styles and sample PNGs and makes no network requests.
+Open `http://127.0.0.1:5216/docs/design/2026-11-16-slot-system/prototype/`. Use an available localhost port if this one is occupied. Dependencies already installed in `app/node_modules` supply the real Bronze UI styles; do not install another UI kit. For a portable, self-contained version, run `node docs/design/2026-11-16-slot-system/prototype/bundle.mjs` and open the generated `workshop.html`. The bundle embeds the same styles and sample PNGs and makes no network requests.
 
 `review-frame.html` is the generated conversation-frame edition, with transparent outer background and fixed dialog bounds for a content-sized host. It follows the host color preference rather than offering a separate theme toggle. Regenerate both HTML files whenever the source changes; do not hand-edit the bundles.
 
@@ -35,7 +39,7 @@ Open `http://localhost:5198/docs/design/2026-11-16-slot-system/prototype/`. Depe
 4. Hide Neck if necessary and create custom Neck with a different key. Try showing both. Does the key disambiguation feel understandable, or should the product forbid duplicate display labels?
 5. Move rows using handles and Move up/down. Verify that the character does not change. Try a phone-sized viewport and keyboard controls. Physical touch thresholds still need device testing.
 6. Compare fixed built-ins with customize-in-place and Reset. Try changing an anchor on a populated slot: existing art does not retarget. Is that limitation clear enough?
-7. Switch Underwear to one or two hidden slots. Decide whether this earns permanent catalog and prompt maintenance rather than being a custom use case.
+7. Show the single Underwear slot. Copy it to create a custom Underwear top, or copy Outerwear to create a custom Outerwear bottom. No split built-ins are offered. Check the names, independent selection and layer settings.
 8. Compare manifest, folder-depth suffix and loose PNG exports. Download the clearly marked example JSON. It is intentionally partial and cannot be loaded as a production PixelDoll export.
 
 ## Boundaries

@@ -19,16 +19,16 @@ Use 64 px as a discussion baseline and check 48, 64, 96 and 128 px before making
 
 Do not claim these rules establish which categories are statistically most common. No usage census was performed.
 
-## 2. Built-in catalog and exact current defaults
+## 2. Built-in catalog and prototype defaults
 
-Keep current readable keys while presenting clear labels. Cosmetic cleanup does not justify rekeying exports. `arms` means Hands in the UI; `torso_inner` means Chest. Values below come from `app/src/lib/items/items.ts` SLOTS and slotLadder, not a new layering invention.
+Keep current readable keys while presenting clear labels. Cosmetic cleanup does not justify rekeying exports. `arms` means Hands in the UI; `torso_inner` now means Body. Call the frozen character Base in user-facing equipment discussion to distinguish it from the Body slot. Existing values below come from `app/src/lib/items/items.ts` SLOTS and slotLadder. Underwear is a new prototype proposal, not an existing qualified production profile.
 
 | Label       | Permanent key | Initially | Class | Authoring anchor | Foreground z | Background z |
 | ----------- | ------------- | --------- | ----- | ---------------- | ------------ | ------------ |
 | Head        | `head`        | Shown     | rigid | head             | 130          | none         |
 | Hair        | `hair`        | Shown     | rigid | head             | 110          | 5 effective  |
 | Face        | `face_acc`    | Shown     | rigid | head             | 120          | none         |
-| Chest       | `torso_inner` | Shown     | worn  | neck             | 40           | none         |
+| Body        | `torso_inner` | Shown     | worn  | neck             | 40           | none         |
 | Hands       | `arms`        | Shown     | worn  | hand_r           | 70           | none         |
 | Legs        | `legs`        | Shown     | worn  | hip              | 30           | none         |
 | Feet        | `feet`        | Shown     | worn  | foot_r           | 20           | none         |
@@ -40,6 +40,7 @@ Keep current readable keys while presenting clear labels. Cosmetic cleanup does 
 | Waist       | `waist`       | Hidden    | worn  | hip              | 50           | none         |
 | Neck        | `neck`        | Hidden    | rigid | neck             | 80           | none         |
 | Shoulders   | `shoulders`   | Hidden    | worn  | neck             | 65           | none         |
+| Underwear   | `underwear`   | Hidden    | worn  | hip              | 15 proposed  | none         |
 
 The body is z10. Hair declares bg3 in SLOTS but the current unconditional ladder override resolves it to 5. Both held background layers become z5 for south, southeast, east, west and southwest. For original non-mirrored west, southwest and northwest, off-hand foreground becomes z155; its background is ordered above the main-hand background (6 for west/southwest and 2 for northwest). Preserve source-facing and mirroring semantics rather than flattening these into one depth.
 
@@ -49,19 +50,39 @@ Anchors available today: `head`, `neck`, `hip`, `hand_l`, `hand_r`, `foot_l`, `f
 
 ### Scope and clothing ownership
 
-Chest includes sleeves when the garment has them. Hands includes gloves, gauntlets and their forearm extent. This follows recognizable clothing choices, not a claim that arms are too small. Pants and shoes remain independently swappable as Legs and Feet. A custom Sleeves slot is legitimate if a project actually swaps sleeves separately.
+Body and Legs are separate slots and separate layers, both shown by default. Body accepts upper-body clothing, including sleeves, or a complete outfit. Legs accepts independently swappable lower clothing. Body always draws above Legs in the default clothing profile, so a long shirt overlaps pants. Equipping either never clears the other. Full-body artwork can cover a Legs selection without deleting it; pants wider than the covering garment may remain visible. This is a composition limit, not a reason to remove Legs or create a replacement system.
+
+Hands includes gloves, gauntlets and their forearm extent. Pants and shoes remain independently swappable as Legs and Feet. A custom Sleeves slot is legitimate if a project actually swaps sleeves separately. Outerwear accepts a jacket, robe or full outer costume in one selected asset. Underwear accepts a top, bottom or combined set in one selected asset. Additional independent outer/under tops or bottoms require custom slots, not more hidden built-ins. No automatic clearing or multi-selection cells are proposed.
 
 Back covers capes, backpacks and quivers as item types. Create another Back-like slot only when simultaneous independent equipment is wanted. No generic Accessory built-in: an accessory still needs a behavior and location.
 
-Custom-only initially: Ring/Finger, Earrings, Wrists/Bracelet, Hair accessory, separate Eyes/Glasses, Bag, Quiver, Tabard, Outer legs, Tail, Wings and Full outfit. Custom does not certify these assets. Wings may exceed the canvas; tails may need authored foreground/background frames; full outfits can cross current clipping bands. Broader padding, articulation or multi-region extraction requires real work, not a renamed Back profile.
+No dedicated built-ins initially: Ring/Finger, Earrings, Wrists/Bracelet, Hair accessory, separate Eyes, separate Bag/Quiver/Cape, Tabard, Sleeves, Outerwear top/bottom, Underwear top/bottom, Tail and Wings. Glasses already fit Face; bags, quivers and capes already fit Back. Use custom slots only when separate independent selection is needed. Full outfits belong in Body; a separate custom costume slot remains possible if independently needed. Custom does not certify assets: wings may exceed the canvas, tails may need foreground/background parts, and full outfits can cross current clipping bands. Broader padding, articulation or multi-region extraction requires real work, not merely a renamed profile.
 
 No built-in stat-only Ammo, Trinket, Relic, Pocket, Soul crystal, Ability or Totem. A visible charm, pouch or lantern can use a custom visual slot. Two-handed is behavior, not another equipment category.
 
-### Underwear comparison
+### Underwear and universal coverage
 
-The baseline remains ten shown and five hidden. Sol favors adding one hidden combined Underwear; Opus favors custom-only because standard new bases already bake a plain white underwear set into the frozen body. Neither position is research-proven.
+The corrected baseline is ten shown and six hidden, including one combined Underwear slot. Earlier council proposals to remove Legs, add two selection cells per category or split underwear by default do not describe the user's design and are rejected for this prototype.
 
-If adopted, start combined: `underwear`, worn, hip, provisional z15, no background. Split alternatives are `underwear_top` (neck) and `underwear_bottom` (hip), both provisional z15. These are design values, not qualified production defaults. A one-piece suit crosses torso/leg boundaries and needs an offline clipping check. Prompting underwear cannot erase the base's baked clothing; recoloring and generation must disclose this. Outerwear is not an exact semantic opposite: swimwear, pajamas and undershirts may be primary visible clothing. Avoid a broad Innerwear catch-all unless independent swapping demonstrates a need.
+Underwear uses `underwear`, worn, hip, provisional z15, no background. Body and Outerwear keep neck as their existing authoring anchor, not a literal new chest bone. The hip/pelvis starting anchor does not confine Underwear to the lower body or prove a combined set will generate correctly. All three clothing profiles need coverage-aware offline extraction checks before production supports arbitrary full-body art. Prompt templates are a design tool, not a substitute for those checks.
+
+Default clothing depth, back to front: Base z10, Underwear z15, Legs z30, Body z40, Outerwear z60. Other slots retain the table's positions. Nude bases make removable underwear useful. On a clothed Base, the slot remains usable but cannot remove baked clothing. Pajamas, swimwear and undershirts may be main clothing or underclothing depending on the intended independent selection. The category does not prescribe the garment's style or gender.
+
+### Accessory as a custom-slot starting option
+
+**User-approved direction after Sol and Opus review:** keep quick custom-slot creation. The name field has the placeholder **Accessory** and is optional. Leaving it blank creates **Accessory**, then **Accessory 2**, **Accessory 3**, using the next available name under the character's case-insensitive naming rules. Suggest a unique readable key once, such as `accessory` or `accessory_2`. This is not an eleventh shown built-in or another hidden preset. Once created, it appears as a shown custom slot. The starting catalog remains ten shown and six hidden.
+
+Do not require a region picker or template choice before creation. The generic starting behavior is worn clothing using Body's authoring anchor, with a distinct default drawing position **above Body and Legs, below Outerwear, Hair and held items**. Describe it as **Over basic clothing**. It does not share Body's exact depth and does not draw above everything. Keep drawing order adjustable. Exact numeric depth and deterministic ties must be resolved during profile implementation, independently of Wardrobe order.
+
+Optional copying from another slot can still supply its supported settings. Hands means worn glove/wrist behavior, not a held weapon; Back includes its background split. A name alone never selects different behavior. For example, typing Wings does not automatically change the drawing position or supply wing animation. Do not add specialized suggestion chips or additional built-ins for this decision.
+
+A brooch may belong above clothing, a ribbon below a hat, and a bracelet below a sleeve. The default is a starting point, not a promise of correct overlap. Outerwear can cover an accessory; the prototype should explain that through the layer setting and preview rather than silently moving it above everything. Advanced depth changes cannot repair missing front/back artwork or every directional overlap. Artwork may extend beyond its authoring region, but unrestricted generation coverage is not yet proven.
+
+One slot still selects one item. A ribbon and bracelet need separate custom slots to swap independently, or one coordinated asset. The name does not supply attachment behavior. Under the readable-key recommendation, renaming Accessory to Brooch changes its label, not `equip('accessory', item)` or the `items/accessory/` folder. Drawing rules go in the existing export manifest, not a layer suffix. Another custom slot needs a different key.
+
+Accessory is a general fallback, not a claim about the most-common missing category. Sol favored Hair accessory as a specific independent addition; Opus noted that Head already covers it unless it must swap separately alongside headgear. Both favored Accessory for unnamed creation and a position over basic clothing rather than the highest layer. Neither established category frequency. Wings remains custom, not a hidden built-in.
+
+This approves the design direction, not production implementation or new rendering capability. Custom profiles must first work consistently across generation, quality checks and exports. The workshop's Add slot and Start with controls only approximate this flow; blank-name fallback and the revised default depth have not been implemented or tested. Leave the current demo unchanged for this documentation-only update.
 
 ## 3. Identity without opaque IDs
 
@@ -190,6 +211,6 @@ Prove identity rename with a unit test: item/outfit references and export keys u
 
 ## 9. Questions to discuss after trying it
 
-Does the frozen key feel simpler than repairing names everywhere? Is a second Neck label worth ambiguity, or is customizing Neck in place clearer? Are advanced controls empowering or mostly a way to request unsupported art? Does empty-only hiding make users delete work just to organize? Does Underwear earn maintenance given baked base clothing? Should Outerwear/Waist remain immediately discoverable because they are reachable in today's grouped Chest interface?
+Does the frozen key feel simpler than repairing names everywhere? Is a second Neck label worth ambiguity, or is customizing Neck in place clearer? Are advanced controls empowering or mostly a way to request unsupported art? Does empty-only hiding make users delete work just to organize? Does the universal Body/Outerwear/Underwear description make the separate Legs choice clear? Should Outerwear/Waist remain immediately discoverable because they are reachable in today's grouped Chest interface?
 
 These are real disagreements, not council consensus disguised as implementation requirements.

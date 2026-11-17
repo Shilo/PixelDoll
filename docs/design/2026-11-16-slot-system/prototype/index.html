@@ -25,8 +25,13 @@
           ><button class="bu-btn" id="reset">Reset demo</button>
         </div>
       </header>
-      <details class="bu-details experiment-controls" open>
-        <summary>Compare design decisions</summary>
+      <p class="bu-notice">
+        Body and Legs stay separate. Clothing draws back to front: Underwear,
+        Legs, Body, Outerwear. One selected item per slot; nothing unequips
+        automatically.
+      </p>
+      <details class="bu-details experiment-controls">
+        <summary>Other decisions still being compared</summary>
         <div class="controls-grid">
           <label
             >Slot identity<select class="bu-select" id="identity">
@@ -45,13 +50,6 @@
             >Built-in editing<select class="bu-select" id="preset-policy">
               <option value="fixed">Copy to customize</option>
               <option value="editable">Customize in place + reset</option>
-            </select></label
-          >
-          <label
-            >Underwear preset<select class="bu-select" id="underwear">
-              <option value="off">Custom slot only</option>
-              <option value="combined">One hidden Underwear slot</option>
-              <option value="split">Two hidden underwear slots</option>
             </select></label
           >
         </div>
@@ -97,13 +95,22 @@
             aria-label="Demo character assembled from existing fixture artwork"
           ></canvas>
           <label
+            >Preview<select id="preview-mode" class="bu-select">
+              <option value="fixture">Existing fixture artwork</option>
+              <option value="diagram">Clothing layer diagram</option>
+            </select></label
+          >
+          <button class="bu-btn" data-action="clothing-examples">
+            Try clothing examples
+          </button>
+          <label
             >Facing<select id="facing" class="bu-select">
               <option value="0">South</option>
               <option value="1">East</option>
               <option value="2">North</option>
             </select></label
           >
-          <p class="bu-muted bu-small">
+          <p id="preview-note" class="bu-muted bu-small">
             Existing demo art. Preview shows front-layer order. Joint edits,
             generation and full occlusion are not simulated.
           </p>
@@ -124,8 +131,12 @@
                 unqualified experiment, not supported generation.
               </li>
               <li>
-                Enable Underwear and compare one slot with two. The base's baked
-                clothing stays.
+                Choose Try clothing examples. Swap Long shirt for Full outfit in
+                Body; Pants stays selected in Legs. Empty Body to reveal it.
+              </li>
+              <li>
+                Show the single Underwear or Outerwear slot. Copy one to make a
+                separate top or bottom. The Base's baked clothing stays.
               </li>
               <li>
                 Move slots using handles or arrow buttons. Depth stays
