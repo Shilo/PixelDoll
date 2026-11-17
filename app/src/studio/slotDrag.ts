@@ -1,3 +1,5 @@
+import { contextMenu as attachContextMenu } from '../lib/input/contextMenu.ts';
+
 export function slotDrag(
 	node: HTMLElement,
 	options: {
@@ -5,6 +7,7 @@ export function slotDrag(
 		move: (x: number, y: number) => void;
 		end: (commit: boolean) => void;
 		armed?: (value: boolean) => void;
+		menu?: (element: HTMLElement) => void;
 	}
 ): () => void {
 	let press: { kind: 'pointer' | 'touch'; id: number; x: number; y: number } | undefined;
@@ -129,7 +132,19 @@ export function slotDrag(
 	window.addEventListener('keydown', keyDown, true);
 	window.addEventListener('blur', cancel);
 	node.ownerDocument.addEventListener('visibilitychange', visibility);
+	const menuCleanup =
+		options.menu &&
+		attachContextMenu(
+			(element) => {
+				if (dragging) return;
+				finish(false);
+				suppressClick = true;
+				options.menu!(element);
+			},
+			() => press?.kind === 'touch' && !dragging
+		)(node);
 	return () => {
+		if (typeof menuCleanup === 'function') menuCleanup();
 		cancel();
 		node.removeEventListener('pointerdown', pointerDown);
 		node.removeEventListener('touchstart', touchStart);

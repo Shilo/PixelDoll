@@ -1,6 +1,9 @@
 import type { Attachment } from 'svelte/attachments';
 
-export function contextMenu(open: (element: HTMLElement) => void): Attachment<HTMLElement> {
+export function contextMenu(
+	open: (element: HTMLElement) => void,
+	canLongPress: () => boolean = () => true
+): Attachment<HTMLElement> {
 	return (node) => {
 		let timer: ReturnType<typeof setTimeout> | undefined;
 		let suppress = false;
@@ -15,6 +18,7 @@ export function contextMenu(open: (element: HTMLElement) => void): Attachment<HT
 			if (event.pointerType === 'mouse' || event.button !== 0 || !event.isPrimary) return;
 			origin = { x: event.clientX, y: event.clientY, id: event.pointerId };
 			timer = setTimeout(() => {
+				if (!canLongPress()) return;
 				open(node);
 				suppress = true;
 			}, 550);

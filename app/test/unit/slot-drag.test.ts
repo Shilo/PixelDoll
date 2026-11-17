@@ -95,6 +95,41 @@ test('ordinary mouse clicks and short touch taps remain available to the menu', 
 	expect(armed).not.toHaveBeenCalled();
 });
 
+test('slot context menus cancel the hold and preserve drag and scrolling tolerance', () => {
+	cleanup();
+	const menu = vi.fn();
+	cleanup = slotDrag(node, { start, move, end, armed, menu });
+	pointer('pointerdown', 20, 20, { pointerType: 'touch' });
+	touch('touchstart');
+	vi.advanceTimersByTime(550);
+	expect(menu).toHaveBeenCalledExactlyOnceWith(node);
+	expect(armed.mock.calls).toEqual([[true], [false]]);
+	touch('touchmove', 60);
+	touch('touchend');
+	expect(start).not.toHaveBeenCalled();
+	expect(click().defaultPrevented).toBe(true);
+	menu.mockClear();
+	pointer('pointerdown', 20, 20, { pointerType: 'touch' });
+	touch('touchstart');
+	vi.advanceTimersByTime(300);
+	touch('touchmove', 29);
+	vi.advanceTimersByTime(300);
+	expect(menu).not.toHaveBeenCalled();
+	touch('touchend');
+	expect(end).toHaveBeenCalledExactlyOnceWith(true);
+	menu.mockClear();
+	pointer('pointerdown', 20, 20, { pointerType: 'touch' });
+	touch('touchstart');
+	touch('touchmove', 20, 60);
+	vi.advanceTimersByTime(600);
+	expect(menu).not.toHaveBeenCalled();
+	expect(send(node, 'contextmenu').defaultPrevented).toBe(true);
+	expect(menu).toHaveBeenCalledExactlyOnceWith(node);
+	menu.mockClear();
+	send(node, 'keydown', { key: 'F10', shiftKey: true });
+	expect(menu).toHaveBeenCalledExactlyOnceWith(node);
+});
+
 test('stationary hold arms without reordering or suppressing its tap', () => {
 	touch('touchstart');
 	vi.advanceTimersByTime(300);

@@ -85,20 +85,22 @@ export function restoreTrigger(target: HTMLElement | null) {
 const placements = new WeakMap<HTMLElement, () => void>();
 const openers = new WeakMap<HTMLElement, HTMLElement>();
 export function popoverFocus(
-	event: { currentTarget: HTMLElement; newState: string },
+	event: { currentTarget: HTMLElement; newState: string; source?: Element | null },
 	focusFirst = true
 ) {
 	const menu = event.currentTarget;
 	const activated = openingTrigger();
 	const source =
-		activated?.getAttribute('popovertarget') === menu.id && visibleInViewport(activated)
-			? activated
-			: // A trigger hidden at this width (Share inside More on phones) hands its anchor to `data-popover-fallback`.
-				([
-					...document.querySelectorAll<HTMLElement>(
-						`[popovertarget="${CSS.escape(menu.id)}"], [data-popover-fallback="${CSS.escape(menu.id)}"]`
-					)
-				].find(visibleInViewport) ?? null);
+		event.source instanceof HTMLElement && visibleInViewport(event.source)
+			? event.source
+			: activated?.getAttribute('popovertarget') === menu.id && visibleInViewport(activated)
+				? activated
+				: // A trigger hidden at this width (Share inside More on phones) hands its anchor to `data-popover-fallback`.
+					([
+						...document.querySelectorAll<HTMLElement>(
+							`[popovertarget="${CSS.escape(menu.id)}"], [data-popover-fallback="${CSS.escape(menu.id)}"]`
+						)
+					].find(visibleInViewport) ?? null);
 	const opener = event.newState === 'open' ? source : (openers.get(menu) ?? source);
 	const prior = placements.get(menu);
 	prior?.();

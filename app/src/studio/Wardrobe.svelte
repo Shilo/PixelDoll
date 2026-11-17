@@ -488,6 +488,9 @@
 		slotMenuOpen = $state(false),
 		notShownOpen = $state(false);
 	const slotAt = $derived(own.findIndex((s) => s.key === slotFor));
+	const slotEntry = $derived(
+		own.find((slot) => slot.key === slotFor) ?? notShown.find((slot) => slot.key === slotFor)
+	);
 	const slotCustom = $derived(!!m && categories(m).some((c) => c.key === slotFor && c.custom));
 	/** Why a slot can't be hidden now (it holds items or attempts), or '' when it is empty. */
 	function hideBlock(key: string, label: string) {
@@ -499,9 +502,15 @@
 	const slotHideBlock = $derived(slotAt >= 0 ? hideBlock(slotFor, own[slotAt].label) : '');
 	// A slot gone from the list (hidden or deleted elsewhere, undo) closes its menu rather than act on a ghost.
 	$effect(() => {
-		if (slotMenuOpen && slotAt < 0) slotMenu?.hidePopover();
+		if (slotMenuOpen && !slotEntry) slotMenu?.hidePopover();
 	});
 	const closeSlotMenu = () => slotMenu?.hidePopover();
+	function openSlotMenu(key: string, element: HTMLElement) {
+		closeSlotMenu();
+		slotFor = key;
+		element.focus({ preventScroll: true });
+		slotMenu?.showPopover({ source: element });
+	}
 	async function settle(key: string) {
 		await tick();
 		spy();
@@ -1060,14 +1069,27 @@
 									data-dragged={drag?.source.key === c.key || undefined}
 									{@attach (node) =>
 										untrack(() =>
-											slotDrag(node, dragOptions({ key: c.key, label: c.label, hidden: true }))
+											slotDrag(node, {
+												...dragOptions({ key: c.key, label: c.label, hidden: true }),
+												menu: (element) =>
+													openSlotMenu(
+														c.key,
+														element.querySelector<HTMLButtonElement>('[data-show-slot]')!
+													)
+											})
 										)}
 								>
 									<button
 										class="bu-action not-shown-slot"
 										aria-label="Show {c.label}"
 										data-show-slot={c.key}
-										onclick={() => void showHidden(c.key, c.label)}
+										popovertarget="slot-menu"
+										aria-haspopup="menu"
+										aria-expanded={slotMenuOpen && slotFor === c.key}
+										onclick={(event) => {
+											event.preventDefault();
+											void showHidden(c.key, c.label);
+										}}
 										><span class="slot-drag-icon"
 											><GroupIcon group={c.key} size={18} /><GripVertical
 												class="slot-grip"
@@ -1117,7 +1139,7 @@
 			data-placement="bottom-start"
 			popover
 			role="menu"
-			aria-label={slotAt >= 0 ? `${own[slotAt].label} slot` : 'Slot'}
+			aria-label={slotEntry ? `${slotEntry.label} slot` : 'Slot'}
 			bind:this={slotMenu}
 			ontoggle={(e) => {
 				slotMenuOpen = e.newState === 'open';
@@ -1126,42 +1148,54 @@
 		>
 			<PopoverArrow />
 			<div class="menu-surface bu-popover-surface bu-floating">
-				{#if slotAt >= 0}
-					{@const s = own[slotAt]}
-					<button
-						class="row"
-						data-variant="quiet"
-						role="menuitem"
-						aria-disabled={slotAt === 0 || undefined}
-						onclick={() => {
-							if (slotAt === 0) return;
-							closeSlotMenu();
-							moveTo(s.key, s.label, slotAt - 1);
-						}}><ArrowUp size={16} aria-hidden="true" />Move up</button
-					>
-					<button
-						class="row"
-						data-variant="quiet"
-						role="menuitem"
-						aria-disabled={slotAt === own.length - 1 || undefined}
-						onclick={() => {
-							if (slotAt === own.length - 1) return;
-							closeSlotMenu();
-							moveTo(s.key, s.label, slotAt + 1);
-						}}><ArrowDown size={16} aria-hidden="true" />Move down</button
-					>
-					<button
-						class="row"
-						data-variant="quiet"
-						role="menuitem"
-						aria-disabled={!!slotHideBlock || undefined}
-						onclick={() => void hide(s.key, s.label)}
-						><EyeOff size={16} aria-hidden="true" /><span class="row-name"
-							>Hide slot{#if slotHideBlock}<small class="row-reason">{slotHideBlock}</small
-								>{/if}</span
-						></button
-					>
-					<hr />
+				{#if slotEntry}
+					{@const s = slotEntry}
+					{#if slotAt < 0}
+						<button
+							class="row"
+							data-variant="quiet"
+							role="menuitem"
+							onclick={() => {
+								closeSlotMenu();
+								void showHidden(s.key, s.label);
+							}}><Eye size={16} aria-hidden="true" />Show slot</button
+						>
+					{:else}
+						<button
+							class="row"
+							data-variant="quiet"
+							role="menuitem"
+							aria-disabled={slotAt === 0 || undefined}
+							onclick={() => {
+								if (slotAt === 0) return;
+								closeSlotMenu();
+								moveTo(s.key, s.label, slotAt - 1);
+							}}><ArrowUp size={16} aria-hidden="true" />Move up</button
+						>
+						<button
+							class="row"
+							data-variant="quiet"
+							role="menuitem"
+							aria-disabled={slotAt === own.length - 1 || undefined}
+							onclick={() => {
+								if (slotAt === own.length - 1) return;
+								closeSlotMenu();
+								moveTo(s.key, s.label, slotAt + 1);
+							}}><ArrowDown size={16} aria-hidden="true" />Move down</button
+						>
+						<button
+							class="row"
+							data-variant="quiet"
+							role="menuitem"
+							aria-disabled={!!slotHideBlock || undefined}
+							onclick={() => void hide(s.key, s.label)}
+							><EyeOff size={16} aria-hidden="true" /><span class="row-name"
+								>Hide slot{#if slotHideBlock}<small class="row-reason">{slotHideBlock}</small
+									>{/if}</span
+							></button
+						>
+						<hr />
+					{/if}
 					<button
 						class="row"
 						data-variant="quiet"
@@ -1203,22 +1237,28 @@
 								class="bu-action slot-tab"
 								data-variant="rail"
 								data-rail={s.key}
+								popovertarget={!s.fromOthers ? 'slot-menu' : undefined}
 								data-sortable={!s.fromOthers || undefined}
 								data-armed={armed === s.key || undefined}
 								data-dragged={drag?.source.key === s.key || undefined}
 								data-filled={s.worn || undefined}
 								aria-current={!notShownCurrent && ui.group === s.key ? 'true' : undefined}
 								aria-label={s.worn ? `${s.label}, equipped` : s.label}
+								aria-haspopup={!s.fromOthers ? 'menu' : undefined}
+								aria-expanded={!s.fromOthers ? slotMenuOpen && slotFor === s.key : undefined}
 								tabindex={!notShownCurrent && ui.group === s.key ? 0 : -1}
-								onclick={() => show(s.key)}
+								onclick={(event) => {
+									event.preventDefault();
+									show(s.key);
+								}}
 								{@attach (node) =>
 									s.fromOthers
 										? undefined
 										: untrack(() =>
-												slotDrag(
-													node,
-													dragOptions({ key: s.key, label: s.label, hidden: false, rail: true })
-												)
+												slotDrag(node, {
+													...dragOptions({ key: s.key, label: s.label, hidden: false, rail: true }),
+													menu: (element) => openSlotMenu(s.key, element)
+												})
 											)}
 								><span class="slot-drag-icon"
 									><GroupIcon group={s.key} size={22} /><GripVertical

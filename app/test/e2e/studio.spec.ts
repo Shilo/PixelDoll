@@ -890,6 +890,33 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 	const rail = page.locator('.slot-rail');
 	const railHair = rail.locator('[data-rail="hair"][data-sortable]');
 	const railHead = rail.locator('[data-rail="head"][data-sortable]');
+	await railHair.click({ button: 'right' });
+	const slotMenu = page.locator('#slot-menu');
+	await expect(slotMenu).toBeVisible();
+	await expect(slotMenu).toHaveAccessibleName('Hair slot');
+	expect(await keys()).toEqual(original);
+	const menuBounds = (await slotMenu.boundingBox())!;
+	const openerBounds = (await railHair.boundingBox())!;
+	expect(
+		Math.max(
+			menuBounds.x - openerBounds.x - openerBounds.width,
+			openerBounds.x - menuBounds.x - menuBounds.width,
+			0
+		)
+	).toBeLessThanOrEqual(16);
+	expect(
+		Math.max(
+			menuBounds.y - openerBounds.y - openerBounds.height,
+			openerBounds.y - menuBounds.y - menuBounds.height,
+			0
+		)
+	).toBeLessThanOrEqual(16);
+	await page.keyboard.press('Escape');
+	await expect(railHair).toBeFocused();
+	await page.keyboard.press('Shift+F10');
+	await expect(slotMenu).toBeVisible();
+	await expect(slotMenu).toHaveAccessibleName('Hair slot');
+	await page.keyboard.press('Escape');
 	const railSource = (await railHair.boundingBox())!;
 	await page.mouse.move(railSource.x + 20, railSource.y + railSource.height / 2);
 	await page.mouse.down();
@@ -922,6 +949,22 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 	expect(await keys()).toEqual(original);
 	await fixedHidden.click();
 	const hidden = page.locator('.not-shown-row').filter({ hasText: 'Underwear' });
+	await hidden.scrollIntoViewIfNeeded();
+	const hiddenShow = hidden.getByRole('button', { name: 'Show Underwear', exact: true });
+	await hiddenShow.click({ button: 'right' });
+	await expect(slotMenu).toBeVisible();
+	await expect(slotMenu).toHaveAccessibleName('Underwear slot');
+	await expect(slotMenu.getByRole('menuitem', { name: 'Show slot', exact: true })).toBeVisible();
+	await expect(slotMenu.getByRole('menuitem', { name: 'Make a custom copy…' })).toBeVisible();
+	await expect(slotMenu.getByRole('menuitem', { name: 'Hide slot' })).toHaveCount(0);
+	expect(await keys()).toEqual(original);
+	await page.keyboard.press('Escape');
+	await expect(hiddenShow).toBeFocused();
+	await page.keyboard.press('Shift+F10');
+	await slotMenu.getByRole('menuitem', { name: 'Show slot', exact: true }).click();
+	await expect.poll(keys).toContain('underwear');
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
 	await hidden.scrollIntoViewIfNeeded();
 	await list.evaluate((element) => {
 		const last = element.querySelector<HTMLElement>('section[data-own]:last-of-type')!;
@@ -1083,6 +1126,34 @@ test('studio demo: touch slot headers scroll before a hold and drag after arming
 	await page.clock.runFor(32);
 	await expect(railHead).toHaveAttribute('aria-current', 'true');
 	await expect(page.locator('#slot-menu')).not.toBeVisible();
+	const holdRail = (await railHead.boundingBox())!;
+	const beforeHold = await keys();
+	await touch('touchStart', [{ x: holdRail.x + 15, y: holdRail.y + 20, id: 5 }]);
+	await page.clock.runFor(550);
+	const slotMenu = page.locator('#slot-menu');
+	await expect(slotMenu).toBeVisible();
+	await expect(slotMenu).toHaveAccessibleName('Head slot');
+	await touch('touchEnd', []);
+	await page.clock.runFor(32);
+	await expect(slotMenu).toBeVisible();
+	await expect(railHead).toHaveAttribute('aria-current', 'true');
+	expect(await keys()).toEqual(beforeHold);
+	await page.keyboard.press('Escape');
+	await expect(railHead).toBeFocused();
+	await page.getByRole('button', { name: 'Not shown, 6 slots', exact: true }).click();
+	const hiddenShow = page.getByRole('button', { name: 'Show Underwear', exact: true });
+	await hiddenShow.scrollIntoViewIfNeeded();
+	const holdHidden = (await hiddenShow.boundingBox())!;
+	await touch('touchStart', [{ x: holdHidden.x + 15, y: holdHidden.y + 20, id: 6 }]);
+	await page.clock.runFor(550);
+	await expect(slotMenu).toBeVisible();
+	await expect(slotMenu).toHaveAccessibleName('Underwear slot');
+	await touch('touchEnd', []);
+	await page.clock.runFor(32);
+	await expect(slotMenu).toBeVisible();
+	expect(await keys()).toEqual(beforeHold);
+	await page.keyboard.press('Escape');
+	await expect(hiddenShow).toBeFocused();
 	await session.detach();
 	finish();
 });
