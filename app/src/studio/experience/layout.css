@@ -611,6 +611,10 @@
 .slot-tab .bu-rail-label {
 	max-width: 60px;
 }
+.slot-add {
+	justify-content: flex-end;
+	padding-bottom: 0;
+}
 .slot-section {
 	padding-bottom: 16px;
 }
@@ -717,7 +721,7 @@
 .not-shown-count {
 	margin-inline-start: auto;
 }
-.not-shown-toggle[aria-expanded='true'] > svg {
+.not-shown-toggle[aria-expanded='true'] > .not-shown-chevron {
 	rotate: 90deg;
 }
 .not-shown-note {
@@ -759,7 +763,7 @@
 	white-space: nowrap;
 }
 @media (prefers-reduced-motion: no-preference) {
-	.not-shown-toggle > svg {
+	.not-shown-chevron {
 		transition: rotate 0.15s ease-out;
 	}
 }

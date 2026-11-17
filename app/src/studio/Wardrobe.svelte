@@ -77,6 +77,7 @@
 	let list = $state<HTMLElement>();
 	let rail = $state<HTMLElement>();
 	let spacer = $state(0);
+	let notShownCurrent = $state(false);
 	// The group the list itself last reported; any other change to ui.group came from elsewhere and scrolls to it.
 	// Mount decides the first position (restore or show), so neither effect below acts on the initial values.
 	let reported = untrack(() => ui.group);
@@ -320,6 +321,8 @@
 		let current = sections[0]?.key ?? ui.group;
 		for (const el of list.querySelectorAll<HTMLElement>('[data-group]'))
 			if (el.getBoundingClientRect().top <= top) current = el.dataset.group!;
+		const notShownSection = list.querySelector<HTMLElement>('.not-shown');
+		notShownCurrent = !!notShownSection && notShownSection.getBoundingClientRect().top <= top;
 		if (current !== ui.group) {
 			reported = current;
 			ui.group = current;
@@ -356,6 +359,7 @@
 	async function show(id: string, instant = false) {
 		const section = list?.querySelector<HTMLElement>(`[data-group="${CSS.escape(id)}"]`);
 		if (!list || !section) return;
+		notShownCurrent = false;
 		reported = id;
 		ui.group = id;
 		if (instant) {
@@ -428,12 +432,13 @@
 		// Keep the current slot visible in a rail that scrolls.
 		const id = ui.group;
 		rail
-			?.querySelector(`[data-rail="${CSS.escape(id)}"]`)
+			?.querySelector(notShownCurrent ? '[data-not-shown]' : `[data-rail="${CSS.escape(id)}"]`)
 			?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 	});
 	$effect(() => {
 		void sections;
 		void notShown.length;
+		void notShownOpen;
 		const last =
 			list?.querySelector<HTMLElement>('.not-shown') ??
 			list?.querySelector<HTMLElement>('section[data-group]:last-of-type');
@@ -453,6 +458,7 @@
 				if (tile?.closest(`[data-group="${CSS.escape(group)}"]`) && reveal(ui.selected))
 					revealed = { open, key: ui.selected };
 			}
+			spy();
 		});
 		return () => {
 			cancelAnimationFrame(spyFrame);
@@ -557,12 +563,20 @@
 			focus?.focus({ preventScroll: true });
 		}
 	}
+	async function toggleNotShown() {
+		const top = list?.scrollTop;
+		notShownOpen = !notShownOpen;
+		await tick();
+		if (list && top !== undefined) list.scrollTo({ top, behavior: 'instant' });
+		spy();
+	}
 	async function showNotShown() {
 		notShownOpen = true;
 		await tick();
 		const section = list?.querySelector<HTMLElement>('.not-shown');
 		if (!list || !section) return;
 		list.scrollTo({ top: section.offsetTop, behavior: 'instant' });
+		suppressSpy = false;
 		spy();
 	}
 	/** Edit a custom slot, or start a custom copy of a built-in, in the Slots sheet. */
@@ -738,7 +752,7 @@
 				>
 					<div
 						class="bu-section-head"
-						data-current={ui.group === s.key || undefined}
+						data-current={(!notShownCurrent && ui.group === s.key) || undefined}
 						data-slot-head={!s.fromOthers || undefined}
 						data-armed={armed === s.key || undefined}
 						data-dragged={drag?.source.key === s.key || undefined}
@@ -1025,14 +1039,14 @@
 						data-variant="quiet"
 						aria-expanded={notShownOpen}
 						aria-controls="wardrobe-not-shown"
-						onclick={() => (notShownOpen = !notShownOpen)}
-						><ChevronRight size={16} aria-hidden="true" /><span>Not shown</span><span
+						onclick={() => void toggleNotShown()}
+						><EyeOff size={16} aria-hidden="true" /><span>Not shown</span><span
 							class="bu-section-count not-shown-count">{notShown.length}</span
-						></button
+						><ChevronRight class="not-shown-chevron" size={16} aria-hidden="true" /></button
 					>
 					<div id="wardrobe-not-shown" hidden={!notShownOpen}>
 						<p class="faint small not-shown-note" id="wardrobe-not-shown-note">
-							Drag a slot into the list above, or use its eye button to show it.
+							Drag a slot or tap its eye.
 						</p>
 						<ul class="not-shown-list" aria-describedby="wardrobe-not-shown-note">
 							{#each notShown as c (c.key)}
@@ -1189,9 +1203,9 @@
 								data-armed={armed === s.key || undefined}
 								data-dragged={drag?.source.key === s.key || undefined}
 								data-filled={s.worn || undefined}
-								aria-current={ui.group === s.key ? 'true' : undefined}
+								aria-current={!notShownCurrent && ui.group === s.key ? 'true' : undefined}
 								aria-label={s.worn ? `${s.label}, equipped` : s.label}
-								tabindex={ui.group === s.key ? 0 : -1}
+								tabindex={!notShownCurrent && ui.group === s.key ? 0 : -1}
 								onclick={() => show(s.key)}
 								{@attach (node) =>
 									s.fromOthers
@@ -1219,7 +1233,10 @@
 								class="bu-action slot-tab"
 								data-variant="rail"
 								data-not-shown
-								tabindex={sections.some((slot) => slot.key === ui.group) ? -1 : 0}
+								aria-current={notShownCurrent ? 'true' : undefined}
+								tabindex={notShownCurrent || !sections.some((slot) => slot.key === ui.group)
+									? 0
+									: -1}
 								aria-label="Not shown, {notShown.length} slots"
 								onclick={() => void showNotShown()}
 								><EyeOff size={22} aria-hidden="true" /><span class="bu-rail-label">Not shown</span

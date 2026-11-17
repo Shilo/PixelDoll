@@ -632,6 +632,13 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 			.evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL());
 	const before = await drawing();
 	const add = page.getByRole('button', { name: 'Add slot', exact: true });
+	await expect
+		.poll(async () => {
+			const label = (await add.locator('.bu-rail-label').boundingBox())!;
+			const playback = (await page.locator('.playback-bar').boundingBox())!;
+			return Math.abs(label.y + label.height - playback.y - playback.height);
+		})
+		.toBeLessThanOrEqual(1);
 	const addSheet = page.getByRole('dialog', { name: 'Add slot', exact: true });
 	const header = (key: string) => page.locator(`[data-slot-button="${key}"]`);
 	const menu = page.locator('#slot-menu');
@@ -752,7 +759,32 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await expect(disclosure).toHaveAccessibleName('Not shown 6');
 	await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
 	await expect(hiddenShortcut).toBeFocused();
-	await expect(hiddenShortcut).toHaveAttribute('tabindex', '-1');
+	await expect(hiddenShortcut).toHaveAttribute('aria-current', 'true');
+	await expect(hiddenShortcut).toHaveAttribute('tabindex', '0');
+	await expect(page.locator('.slot-rail [aria-current="true"]')).toHaveCount(1);
+	await expect(page.locator('.slot-rail [tabindex="0"]')).toHaveCount(1);
+	await disclosure.click();
+	await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+	await expect(hiddenShortcut).toHaveAttribute('aria-current', 'true');
+	await list.evaluate((element) => {
+		element.scrollTop = element.querySelector<HTMLElement>(
+			'section[data-own]:last-of-type'
+		)!.offsetTop;
+	});
+	await expect(hiddenShortcut).not.toHaveAttribute('aria-current', 'true');
+	await expect(page.locator('.slot-rail [data-rail][aria-current="true"]')).toHaveCount(1);
+	await list.evaluate((element) => {
+		element.scrollTop = element.querySelector<HTMLElement>('.not-shown')!.offsetTop;
+	});
+	await expect(hiddenShortcut).toHaveAttribute('aria-current', 'true');
+	await hiddenShortcut.click();
+	await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+	const note = list.locator('.not-shown-note');
+	expect(await note.evaluate((element) => element.clientHeight)).toBeLessThanOrEqual(
+		await note.evaluate((element) => Math.ceil(parseFloat(getComputedStyle(element).lineHeight)))
+	);
+	await expect(disclosure.locator('svg').first()).toHaveClass(/lucide-eye-off/);
+	await expect(disclosure.locator('svg').last()).toHaveClass(/not-shown-chevron/);
 	const disclosureY = (await disclosure.boundingBox())!.y;
 	expect(Math.abs(disclosureY - (await list.boundingBox())!.y)).toBeLessThanOrEqual(1);
 	await expect(disclosure).toHaveJSProperty(

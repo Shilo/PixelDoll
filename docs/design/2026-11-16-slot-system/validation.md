@@ -95,6 +95,19 @@ The follow-up corrects the distinction between a numeric scroll offset and the v
 
 No paid requests were made. Physical iOS/Android touch qualification remains outside this browser-only evidence.
 
+## Not shown current state and label alignment, November 17, 2026
+
+- The owner's follow-up exposed two incomplete details in the preceding delivery. Live T3 inspection confirmed that navigating to Not shown still selected the last ordinary slot, and Add slot's label ended 6 px above the playback bar's bottom despite its button ending at that edge.
+- The scroll spy now tracks Not shown as the current navigation destination without treating it as an equipment slot. Exactly one rail entry remains current and tabbable. Scrolling back to an ordinary slot restores its highlight; rail navigation retains focus. A disclosure-collapse test also exposed scroll clamping before its spacer resized. The disclosure now updates that space and preserves its offset through the layout change.
+- The disclosure uses the same EyeOff icon as its rail shortcut on the left, the count and rotating chevron on the right, and the single-line instruction "Drag a slot or tap its eye." Add slot's label, not merely its button, ends at the desktop playback bar's bottom edge. Phone spacing retains the existing panel inset.
+- The existing slot workflow first failed on the missing current state, then passed with additional scroll, collapse, single-Tab-stop, icon, one-line copy and label-edge assertions. The existing keyboard-navigation test passed unchanged. Its one-line geometry assertion uses a rounded line height because clientHeight is integer-valued.
+- Live desktop screenshot inspection confirmed the selected Not shown shortcut, new disclosure layout and aligned footer label. T3 DOM checks also confirmed current state and single-line copy in a 292 by 518 phone layout. The phone screenshot attempt failed because the browser was not producing screenshot frames; the subsequent automated 320 px light-mode capture was inspected and confirmed the selected shortcut and single-line instruction. This is not physical-device qualification.
+- `npm run check` passed with zero Svelte errors or warnings. All 195 unit files passed: 2,681 tests passed and one skipped. The Svelte autofixer found no issues; theme ownership and the Impeccable layout scan passed.
+
+- The T3 server restart interrupted the initial full browser run without a final result. After confirming no browser test process remained, `npm run e2e -- --all` was restarted and passed all 365 tests in 8.7 minutes. The passed check and unit suite were not repeated. The normal localhost server on port 5217 was restored after verifying it was no longer listening.
+
+Reset behavior was discussed with the council only. No global settings page, reset action, visibility reset or custom-slot deletion was implemented. No paid requests were made.
+
 ## Historical workshop evidence
 
 ## Corrected Body and Legs revision
