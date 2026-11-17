@@ -103,7 +103,9 @@ async function fixtureArchive() {
 		slots: [
 			{ id: 'body', z: 10, class: 'base', required: true },
 			{ id: 'hair', z: 20, class: 'rigid' },
-			{ id: 'head', z: 30, class: 'rigid' }
+			{ id: 'head', z: 30, class: 'rigid' },
+			{ id: 'weapon_extra', z: 150, class: 'held', anchor: 'hand_r', profile: 'main_hand' },
+			{ id: 'shield_extra', z: 110, class: 'held', anchor: 'hand_l', profile: 'off_hand' }
 		],
 		materials: [
 			{
@@ -150,6 +152,15 @@ async function fixtureArchive() {
 			}
 		]
 	};
+	for (const slot of ['weapon_extra', 'shield_extra']) {
+		const item = structuredClone(manifest.items.find((entry) => entry.id === 'hair'));
+		item.id = slot;
+		item.name = slot;
+		item.slot = slot;
+		item.layers[0].z = slot === 'weapon_extra' ? 150 : 110;
+		if (slot === 'weapon_extra') item.hides = ['off_hand'];
+		manifest.items.push(item);
+	}
 	const copy = structuredClone(manifest);
 	applyExportSettings(copy, {
 		engine: 'unity',

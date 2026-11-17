@@ -4,8 +4,8 @@
 import { layerFrame } from '../compose/compose.ts';
 import { cellKey, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import { stableStringify } from '../image/hash.ts';
-import { canPose, SLOTS } from '../items/items.ts';
-import type { CellKey, Item, Layer, Manifest } from '../store/manifest.ts';
+import { canPose, SLOTS, slotLadder } from '../items/items.ts';
+import type { CellKey, Item, Layer, Manifest, Slot } from '../store/manifest.ts';
 
 export interface CellMatch {
 	target: string;
@@ -52,12 +52,79 @@ export const sameGeometry = (source: Manifest, target: Manifest) =>
 	(!source.rig.template || !target.rig.template || source.rig.template === target.rig.template);
 const slotOf = (m: Manifest, id: string) =>
 	m.slots.find((s) => s.id === id) ?? SLOTS.find((s) => s.id === id);
-/** The target draws the slot like the source: same class and anchor. */
+/** Same behavior: the item needs the same attachment and generation profile, not the same label or browsing order. */
+const sameMeaning = (a: Slot, b: Slot) =>
+	a.class === b.class && a.anchor === b.anchor && (a.profile ?? a.id) === (b.profile ?? b.id);
+/** The target draws the slot like the source: same class, anchor and behavior profile. A custom slot the target lacks is
+ *  adoptable (see copySlotPlan), so it is compatible before the item is added there. */
 export const sameSlot = (source: Manifest, target: Manifest, id: string) => {
-	const slot = slotOf(target, id),
-		from = source.slots.find((s) => s.id === id);
-	return !!slot && !!from && slot.class === from.class && slot.anchor === from.anchor;
+	const from = slotOf(source, id),
+		to = slotOf(target, id);
+	return !!from && (!to || sameMeaning(from, to));
 };
+/** What a shared item needs from the target's slot list, and the definition its layers should resolve against. */
+export interface SlotCopyPlan {
+	/** The source definition the item's layer depths were made for. */
+	from: Slot;
+	/** The target definition to draw it with: the existing one, or the adopted/new ladder one. */
+	to: Slot;
+	/** The definition to insert when the target has no explicit definition of this ID yet. */
+	add?: Slot;
+}
+/** The end of a Wardrobe list, as the manager computes it, so an adopted category is shown at the end. */
+function nextWardrobeOrder(m: Pick<Manifest, 'slots' | 'rig'>): number {
+	const defaults = new Map(SLOTS.map((s) => [s.id, s.wardrobeOrder ?? 0])),
+		all = [...slotLadder(m.rig), ...m.slots];
+	return Math.max(-1, ...all.map((s) => s.wardrobeOrder ?? defaults.get(s.id) ?? SLOTS.length)) + 1;
+}
+/**
+ * The slot definition a copied item uses in the target. A custom source slot the target lacks comes with the item, keeping
+ * its label, behavior profile and depths; a built-in the target lacks uses the target's own ladder. An existing category
+ * with the same ID must mean the same thing: adopting over a different behavior would put the item in the wrong place.
+ * Throws an actionable message instead of guessing.
+ */
+export function copySlotPlan(
+	source: Manifest,
+	target: Manifest,
+	id: string,
+	sourceName = 'the source'
+): SlotCopyPlan {
+	const from = slotOf(source, id);
+	if (!from) throw new Error(`Unknown equipment slot: ${id}`);
+	const existing = target.slots.find((s) => s.id === id);
+	if (existing) {
+		if (!sameMeaning(from, existing))
+			throw new Error(
+				`This character’s “${existing.label ?? id}” category does not attach items like ${sourceName}’s “${from.label ?? id}”. Use another character, or remove the conflicting custom category first.`
+			);
+		return { from, to: existing };
+	}
+	const builtin = SLOTS.find((s) => s.id === id);
+	if (builtin) {
+		if (!sameMeaning(from, builtin))
+			throw new Error(
+				`This character’s “${builtin.label ?? id}” category does not attach items like ${sourceName}’s “${from.label ?? id}”. Choose another category or character.`
+			);
+		const ladder = slotLadder(target.rig).find((s) => s.id === id) ?? builtin;
+		return { from, to: ladder, add: ladder };
+	}
+	const adopted = structuredClone(from);
+	const label = (adopted.label ?? adopted.id).trim().toLowerCase();
+	if (
+		[...SLOTS, ...target.slots].some(
+			(slot) => slot.id !== id && (slot.label ?? slot.id).trim().toLowerCase() === label
+		)
+	)
+		throw new Error(
+			`Another category is already called ${adopted.label ?? adopted.id}. Rename the source category before copying its item.`
+		);
+	adopted.wardrobeHidden = false;
+	adopted.wardrobeOrder = nextWardrobeOrder(target);
+	return { from, to: adopted, add: adopted };
+}
+/** A target slot still matches the definition an item was prepared against (depth included, since item layers use it). */
+export const sameSlotDefinition = (a: Slot, b: Slot) =>
+	sameMeaning(a, b) && a.z === b.z && a.bgZ === b.bgZ;
 /** The item covers a cell of its character (a mirrored view through its drawn source view). */
 export const covered = (m: Manifest, item: Item, anim: string, dir: DirectionName, i: number) =>
 	[dir, m.rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir].some((d) =>

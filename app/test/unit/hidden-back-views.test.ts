@@ -1,3 +1,4 @@
+import { createSlot } from '../../src/lib/items/slots.ts';
 import { expect, test } from 'vitest';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { hiddenViews } from '../../src/lib/items/items.ts';
@@ -33,6 +34,7 @@ test('a backpack lying on the back is hidden from the front', () => {
 		north: (im) => paint(im, 27, 18, 36, 34)
 	});
 	expect([...hiddenViews(v.cells, v.keys, 'back')]).toEqual(['south']);
+	expect([...hiddenViews(v.cells, v.keys, createSlot('satchel', 'back'))]).toEqual(['south']);
 	expect([...hiddenViews(v.cells, v.keys, 'torso_outer')]).toEqual([]); // only the Back slot is attached behind
 });
 

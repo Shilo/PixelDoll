@@ -196,6 +196,26 @@ test.skipIf(!process.env.GODOT_BIN)(
 			});
 			project.manifest.presets[0].items[slot] = id;
 		}
+		for (const [id, anchor] of [
+			['weapon_extra', 'hand_r'],
+			['shield_extra', 'hand_l']
+		] as const) {
+			project.manifest.slots.push({
+				id,
+				class: 'held',
+				anchor,
+				z: 150,
+				profile: anchor === 'hand_l' ? 'off_hand' : 'main_hand'
+			});
+			project.manifest.items.push({
+				...structuredClone(project.manifest.items[0]),
+				id,
+				name: id,
+				slot: id,
+				materials: [],
+				hides: id === 'weapon_extra' ? ['off_hand'] : []
+			});
+		}
 		project.manifest.rig.directions.push({ id: 'west', mirrorOf: 'south' });
 		project.manifest.rig.directions.unshift({ id: 'east' });
 		project.manifest.rig.animations.unshift({
@@ -350,6 +370,12 @@ func run() -> void:
 	check(not doll.equip("body", ""), "Frozen-body mutation reports failure")
 	check(not doll.equip("hair", "base"), "Wrong-slot equipment reports failure")
 	check(doll.equipped.body == "base" and doll.equipped.hair == "a", "Frozen base and wrong-slot guards")
+	check(doll.equip("shield_extra", "shield_extra"), "Custom left-hand equipment loads")
+	check(doll.equip("weapon_extra", "weapon_extra"), "Custom right-hand equipment loads")
+	check(not doll.get_node("shield_extra_fg").visible, "Two-handed custom weapon hides copied off-hand slots")
+	doll.equip("weapon_extra", "")
+	check(doll.get_node("shield_extra_fg").visible, "Removing custom weapon restores copied off-hand slot")
+	doll.equip("shield_extra", "")
 	var before := JSON.stringify({"items": doll.equipped, "variants": doll.variants})
 	check(not doll.set_preset("missing"), "Unknown outfit reports failure")
 	check(not doll.set_preset(""), "An empty outfit ID must not silently clear equipment")

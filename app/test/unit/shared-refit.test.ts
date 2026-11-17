@@ -1,7 +1,7 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { acceptCopy, copyMoreFrames, freeFrames, sharedFit } from '../../src/lib/equipment/copy.ts';
-import { REFIT, refitShared } from '../../src/lib/equipment/refit.ts';
+import { REFIT, refitShared, refittable } from '../../src/lib/equipment/refit.ts';
 import { refitNotes } from '../../src/studio/model.ts';
 import { forgetFits, listShared } from '../../src/lib/equipment/shared.ts';
 import { translate } from '../../src/lib/items/items.ts';
@@ -15,7 +15,8 @@ import {
 	CURRENT_FORMAT,
 	type Item,
 	type Project,
-	type Sha256
+	type Sha256,
+	type Slot
 } from '../../src/lib/store/manifest.ts';
 import { runCase } from '../../scripts/bench.ts';
 import { expectPixels } from './pixels.ts';
@@ -23,7 +24,9 @@ import { expectPixels } from './pixels.ts';
 const memory = vi.hoisted(() => ({
 	records: new Map<string, unknown>(),
 	blobs: new Map<string, Blob>(),
-	writes: 0
+	writes: 0,
+	/** Simulates another tab changing the stored character just before the transaction runs. */
+	beforeWrite: undefined as ((id: string) => void) | undefined
 }));
 vi.mock('../../src/lib/store/db.ts', () => ({
 	get: async (_s: string, id: string) => structuredClone(memory.records.get(id)),
@@ -36,6 +39,7 @@ vi.mock('../../src/lib/store/db.ts', () => ({
 		stored?: { keys: Iterable<string>; missing: (key: string) => Error }
 	) => {
 		for (const key of stored?.keys ?? []) if (!memory.blobs.has(key)) throw stored!.missing(key);
+		memory.beforeWrite?.(id);
 		const record = fn(structuredClone(memory.records.get(id)));
 		for (const [hash, blob] of blobs) memory.blobs.set(hash, blob);
 		memory.records.set(id, structuredClone(record));
@@ -46,6 +50,7 @@ beforeEach(() => {
 	memory.records.clear();
 	memory.blobs.clear();
 	memory.writes = 0;
+	memory.beforeWrite = undefined;
 	forgetFits();
 });
 async function store(id: string, p: Project) {
@@ -273,6 +278,25 @@ const refit = (source: Project, target: Project) =>
 		if (!im) throw new Error(`missing ${h}`);
 		return im;
 	});
+const SIDEARM: Slot = {
+	id: 'sidearm',
+	label: 'Sidearm',
+	origin: 'main_hand',
+	profile: 'main_hand',
+	class: 'held',
+	anchor: 'hand_r',
+	z: 150,
+	bgZ: 1,
+	wardrobeHidden: true,
+	wardrobeOrder: 99
+};
+/** The Knight's sword in a custom right-hand slot only the source defines. */
+async function sidearmKnight() {
+	const p = await knight();
+	p.manifest.items[1].slot = SIDEARM.id;
+	p.manifest.slots.push(structuredClone(SIDEARM));
+	return p;
+}
 const cellsOf = (item: Item, images: Map<string, Img>) => {
 	const out: Record<string, Img | null> = {};
 	for (const [anim, dirs] of Object.entries(item.layers[0].cells ?? {}))
@@ -397,6 +421,28 @@ test('only held items re-fit, and never one that hides body pixels', async () =>
 	delete sword.baseCut;
 	sword.slot = 'head';
 	expect(await refit(source, target)).toBeNull();
+});
+
+test('a custom held slot re-fits from its own left-hand anchor, not a built-in slot key', async () => {
+	const source = await knight(),
+		sword = source.manifest.items[1],
+		qa = sword.qa!;
+	source.manifest.slots.push({
+		id: 'left_grip',
+		label: 'Left grip',
+		profile: 'off_hand',
+		class: 'held',
+		anchor: 'hand_l',
+		z: 140
+	});
+	sword.slot = 'left_grip';
+	qa.clips['slash/south'] = { ...qa, hand: 'l' };
+	expect(refittable(sword, source.manifest)).toBe(true);
+	// The same recorded left hand is wrong for a right-hand slot.
+	qa.clips['slash/south'] = { ...qa, hand: 'r' };
+	expect(refittable(sword, source.manifest)).toBe(false);
+	// A custom key without its source definition has no hand to fit from.
+	expect(refittable(sword)).toBe(false);
 });
 
 const withViews = async (p: Promise<Project>, directions: Rig['directions']) => {
@@ -606,6 +652,123 @@ test('a different pivot re-fits through each rig’s own pivot; a different canv
 	expect(onBody(worn(target, fit.item, fit.images!))).toEqual(placed);
 	target.manifest.rig.cell = { w: 72, h: 72 };
 	expect(await refit(source, target)).toBeNull();
+});
+
+test('a custom slot comes with its item, keeping its label, behavior and depth, and is shown', async () => {
+	const source = await sidearmKnight(),
+		target = await character({ name: 'Squire' });
+	await store('rig-knight', source);
+	await store('rig-squire', target);
+	// A category the target lacks does not hide a free exact copy from the list.
+	expect((await listShared('rig-squire', target.manifest)).items.map((x) => x.fit)).toEqual([
+		'copy'
+	]);
+	const item = (await acceptCopy('rig-knight', 'sword', 'rig-squire'))!;
+	expect(item.slot).toBe('sidearm');
+	const saved = (await loadProject('rig-squire')).project.manifest,
+		slot = saved.slots.find((s) => s.id === 'sidearm')!;
+	expect(slot).toMatchObject({
+		label: 'Sidearm',
+		profile: 'main_hand',
+		class: 'held',
+		anchor: 'hand_r',
+		z: 150,
+		bgZ: 1,
+		wardrobeHidden: false
+	});
+	expect(slot.wardrobeOrder).toBeGreaterThan(15);
+	// Its item keeps the layer depths that belong to that slot.
+	expect(saved.items.find((it) => it.id === item.id)!.layers[0].z).toBe(150);
+});
+
+test('copying cannot create two categories with the same display name', async () => {
+	const source = await sidearmKnight(),
+		target = await character({ name: 'Squire' });
+	target.manifest.slots.push({
+		id: 'belt_pouch',
+		label: 'Sidearm',
+		class: 'worn',
+		profile: 'accessory',
+		z: 55
+	});
+	await store('rig-knight', source);
+	await store('rig-squire', target);
+	await expect(acceptCopy('rig-knight', 'sword', 'rig-squire')).rejects.toThrow(
+		'Another category is already called Sidearm'
+	);
+	expect(
+		(await loadProject('rig-squire')).project.manifest.slots.some((slot) => slot.id === 'sidearm')
+	).toBe(false);
+});
+
+test('an altered target depth stays the target’s: the copied item moves with it', async () => {
+	const source = await sidearmKnight(),
+		target = await character({ name: 'Squire' });
+	target.manifest.slots.push({ ...structuredClone(SIDEARM), z: 170, wardrobeHidden: false });
+	await store('rig-knight', source);
+	await store('rig-squire', target);
+	const item = (await acceptCopy('rig-knight', 'sword', 'rig-squire'))!;
+	const saved = (await loadProject('rig-squire')).project.manifest;
+	// The target category is not overwritten; the item's front layer adopts its depth.
+	expect(saved.slots.find((s) => s.id === 'sidearm')!.z).toBe(170);
+	expect(saved.items.find((it) => it.id === item.id)!.layers[0].z).toBe(170);
+	// The source item and its own slot are unchanged.
+	expect(source.manifest.slots.find((s) => s.id === 'sidearm')!.z).toBe(150);
+	expect(source.manifest.items[1].layers[0].z).toBe(150);
+});
+
+test('a same-key category with another meaning refuses the copy with an actionable message', async () => {
+	const source = await sidearmKnight(),
+		target = await character({ name: 'Squire' });
+	// Same class, anchor and depth: only the behavior profile differs (a copied Off hand switched to the right hand).
+	target.manifest.slots.push({
+		id: 'sidearm',
+		label: 'Left sidearm',
+		profile: 'off_hand',
+		class: 'held',
+		anchor: 'hand_r',
+		z: 150
+	});
+	await store('rig-knight', source);
+	await store('rig-squire', target);
+	await expect(acceptCopy('rig-knight', 'sword', 'rig-squire')).rejects.toThrow(
+		'This character’s “Left sidearm” category does not attach items like Knight’s “Sidearm”. Use another character, or remove the conflicting custom category first.'
+	);
+	expect(memory.writes).toBe(0);
+});
+
+test('a target category deleted by another tab before the write refuses the copy', async () => {
+	const source = await sidearmKnight(),
+		target = await character({ name: 'Squire' });
+	target.manifest.slots.push({ ...structuredClone(SIDEARM), wardrobeHidden: false });
+	await store('rig-knight', source);
+	await store('rig-squire', target);
+	memory.beforeWrite = (id) => {
+		if (id !== 'rig-squire') return;
+		const record = memory.records.get(id) as { manifest: { slots: Slot[] } };
+		record.manifest.slots = record.manifest.slots.filter((s) => s.id !== 'sidearm');
+	};
+	await expect(acceptCopy('rig-knight', 'sword', 'rig-squire')).rejects.toThrow(
+		'This character’s “Sidearm” category changed meanwhile. Nothing was added; try again.'
+	);
+	expect(memory.writes).toBe(0);
+});
+
+test('a target category with changed depth before the write refuses the copy', async () => {
+	const source = await sidearmKnight(),
+		target = await character({ name: 'Squire' });
+	target.manifest.slots.push({ ...structuredClone(SIDEARM), wardrobeHidden: false });
+	await store('rig-knight', source);
+	await store('rig-squire', target);
+	memory.beforeWrite = (id) => {
+		if (id !== 'rig-squire') return;
+		const record = memory.records.get(id) as { manifest: { slots: Slot[] } };
+		record.manifest.slots.find((s) => s.id === 'sidearm')!.z = 170;
+	};
+	await expect(acceptCopy('rig-knight', 'sword', 'rig-squire')).rejects.toThrow(
+		'This character’s “Sidearm” category changed meanwhile. Nothing was added; try again.'
+	);
+	expect(memory.writes).toBe(0);
 });
 
 // ---------- real art: the bench adventurer's posed sword (walk and slash, three views) ----------
@@ -876,6 +1039,25 @@ test('an exact copy takes the frames its source item gained since, for free, int
 	// Nothing left to copy.
 	expect(await freeFrames(after.manifest)).toEqual({});
 	expect(await copyMoreFrames('rig-page', copy.id)).toBe(0);
+});
+
+test('an adopted custom slot keeps taking later frames from its source item', async () => {
+	const early = await swung(await sidearmKnight()),
+		sword = early.manifest.items[1];
+	sword.coverage = ['default/south/0'];
+	delete sword.layers[0].cells!.slash;
+	await store('rig-knight', early);
+	await store('rig-squire', await swung(await character({ name: 'Squire' })));
+	const copy = (await acceptCopy('rig-knight', 'sword', 'rig-squire'))!;
+	// The target now has the category, so source-frame lookups by the item's own slot ID still work.
+	await store('rig-knight', await swung(await sidearmKnight()));
+	const target = (await loadProject('rig-squire')).project.manifest;
+	expect(await freeFrames(target)).toEqual({ [copy.id]: 2 });
+	expect(await copyMoreFrames('rig-squire', copy.id)).toBe(2);
+	expect(
+		(await loadProject('rig-squire')).project.manifest.items.find((it) => it.id === copy.id)!
+			.coverage
+	).toEqual(['default/south/0', 'slash/south/0', 'slash/south/1']);
 });
 
 test('a re-fit never takes more frames from its source', async () => {

@@ -104,7 +104,41 @@ export function validEquipment(manifest, slot, itemId) {
  * @param {Manifest} m
  * @param {Item} it
  */
-const hidesOf = (m, it) => it.hides ?? m.slots.find((x) => x.id === it.slot)?.hides ?? [];
+export const hidesOf = (m, it) =>
+	handHides(m, it.slot, it.hides ?? m.slots.find((entry) => entry.id === it.slot)?.hides ?? []);
+/** @param {Manifest} manifest @param {string} key @returns {'left' | 'right' | undefined} */
+export function handSide(manifest, key) {
+	const slot = manifest.slots.find((entry) => entry.id === key);
+	if (slot?.class !== 'held') return undefined;
+	if (slot.anchor === 'hand_l') return 'left';
+	if (slot.anchor === 'hand_r') return 'right';
+	return key === 'off_hand' ? 'left' : key === 'main_hand' ? 'right' : undefined;
+}
+/** @param {Manifest} manifest @param {string} key @returns {string[]} */
+export function oppositeHands(manifest, key) {
+	const side = handSide(manifest, key);
+	return side
+		? manifest.slots
+				.filter((slot) => {
+					const other = handSide(manifest, slot.id);
+					return other && other !== side;
+				})
+				.map((slot) => slot.id)
+		: [];
+}
+/** Canonical hand targets also cover custom slots using that hand.
+ * @param {Manifest} manifest @param {string} key @param {string[]} hides @returns {string[]} */
+export function handHides(manifest, key, hides) {
+	if (!handSide(manifest, key)) return hides;
+	const result = new Set(hides);
+	for (const target of hides) {
+		if (target !== 'main_hand' && target !== 'off_hand') continue;
+		const side = target === 'off_hand' ? 'left' : 'right';
+		for (const slot of manifest.slots)
+			if (handSide(manifest, slot.id) === side) result.add(slot.id);
+	}
+	return [...result];
+}
 /**
  * @param {Manifest} m
  * @param {Item[]} items
@@ -139,21 +173,46 @@ export const OTHER_HAND = /** @type {Readonly<Record<string, string>>} */ ({
  * @param {Item} it
  */
 export const twoHanded = (m, it) =>
-	!!OTHER_HAND[it.slot] && hidesOf(m, it).includes(OTHER_HAND[it.slot]);
+	oppositeHands(m, it.slot).some((key) => hidesOf(m, it).includes(key));
 /**
  * @param {Manifest} m
  * @param {Preset['items']} items
  * @param {string} [keep]
- * @returns {{ items: Preset['items']; removed?: Item; by?: Item; }}
+ * @returns {{ items: Preset['items']; removed?: Item; removedItems?: Item[]; by?: Item; }}
  */
 export function settleHands(m, items, keep) {
-	/** @param {string} slot */
-	const worn = (slot) => m.items.find((i) => i.id === items[slot] && i.slot === slot);
-	const main = worn('main_hand'),
-		off = worn('off_hand');
-	if (!main || !off || (!twoHanded(m, main) && !twoHanded(m, off))) return { items };
-	const [removed, by] = keep === 'off_hand' ? [main, off] : [off, main];
-	return { items: { ...items, [removed.slot]: null }, removed, by };
+	const worn = equipped(m, items).filter((item) => handSide(m, item.slot));
+	const priority = keep && worn.some((item) => item.slot === keep) ? keep : 'main_hand';
+	const side = handSide(m, priority) ?? 'right';
+	/** @param {Item} item */
+	const rank = (item) => (item.slot === priority ? 0 : handSide(m, item.slot) === side ? 1 : 2);
+	worn.sort(
+		(left, right) =>
+			rank(left) - rank(right) ||
+			m.slots.findIndex((slot) => slot.id === left.slot) -
+				m.slots.findIndex((slot) => slot.id === right.slot)
+	);
+	const kept = /** @type {Item[]} */ ([]),
+		removedItems = /** @type {Item[]} */ ([]);
+	let by;
+	for (const item of worn) {
+		const conflict = kept.find(
+			(other) =>
+				handSide(m, other.slot) !== handSide(m, item.slot) &&
+				(twoHanded(m, other) || twoHanded(m, item))
+		);
+		if (conflict) {
+			removedItems.push(item);
+			by ??= conflict;
+		} else kept.push(item);
+	}
+	if (!removedItems.length) return { items };
+	return {
+		items: { ...items, ...Object.fromEntries(removedItems.map((item) => [item.slot, null])) },
+		removed: removedItems[0],
+		removedItems,
+		by
+	};
 }
 /**
  * @param {Manifest} m

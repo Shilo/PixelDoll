@@ -34,6 +34,28 @@ test('a two-handed item is a hand item that hides the other hand', () => {
 	]);
 });
 
+test('copied hand slots preserve two-handed conflicts under unrelated keys', () => {
+	const copiedBow = item('copied_bow', 'archery', ['main_hand']),
+		copiedShield = item('copied_shield', 'shield_extra'),
+		custom = manifest([greatsword, sword, copiedBow, copiedShield]);
+	custom.slots.push(
+		{ ...structuredClone(SLOTS.find((slot) => slot.id === 'off_hand')!), id: 'archery' },
+		{ ...structuredClone(SLOTS.find((slot) => slot.id === 'off_hand')!), id: 'shield_extra' }
+	);
+	expect(twoHanded(custom, copiedBow)).toBe(true);
+	expect([...hiddenSlots(custom, [greatsword, copiedShield])]).toContain('shield_extra');
+	expect(
+		settleHands(custom, { main_hand: 'sword', archery: 'copied_bow' }, 'archery').items
+	).toEqual({ main_hand: null, archery: 'copied_bow' });
+	expect(
+		settleHands(
+			custom,
+			{ main_hand: 'greatsword', archery: 'copied_bow', shield_extra: 'copied_shield' },
+			'main_hand'
+		).items
+	).toEqual({ main_hand: 'greatsword', archery: null, shield_extra: null });
+});
+
 test('a two-handed item and an item in the other hand are never worn together', () => {
 	// wearing the two-handed item takes the other hand's item off
 	const worn = settleHands(m, { main_hand: 'greatsword', off_hand: 'shield' }, 'main_hand');
@@ -58,6 +80,27 @@ test('a two-handed item and an item in the other hand are never worn together', 
 	const free = { main_hand: 'sword', off_hand: 'shield', head: 'hood' };
 	expect(settleHands(m, free).items).toBe(free);
 	expect(settleHands(m, { main_hand: 'greatsword' }).removed).toBeUndefined();
+});
+
+test('copied right-hand slots keep default priority regardless of item creation order', () => {
+	const copiedSword = item('copied_sword', 'weapon_extra');
+	for (const items of [
+		[bow, copiedSword],
+		[copiedSword, bow]
+	]) {
+		const custom = manifest(items);
+		custom.slots.push({
+			...structuredClone(SLOTS.find((slot) => slot.id === 'main_hand')!),
+			id: 'weapon_extra'
+		});
+		expect(settleHands(custom, { off_hand: 'bow', weapon_extra: 'copied_sword' }).items).toEqual({
+			off_hand: null,
+			weapon_extra: 'copied_sword'
+		});
+		expect(
+			settleHands(custom, { off_hand: 'bow', weapon_extra: 'copied_sword' }, 'off_hand').items
+		).toEqual({ off_hand: 'bow', weapon_extra: null });
+	}
 });
 
 test('two worn items that hide each other: the later slot stays visible, other hides are unchanged', () => {

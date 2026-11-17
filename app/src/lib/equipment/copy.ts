@@ -27,10 +27,13 @@ import {
 	assessCopy,
 	bodyOf,
 	cellId,
+	copySlotPlan,
 	covered,
+	sameSlotDefinition,
 	type CellMatch,
 	type CopyAssessment,
-	type Flip
+	type Flip,
+	type SlotCopyPlan
 } from './compatibility.ts';
 import { onTarget, refitCells, refitShared, refittable, standingMove } from './refit.ts';
 import { actionOf } from '../rig/clips.ts';
@@ -305,7 +308,7 @@ async function choose(
 ): Promise<SharedChoice> {
 	if (copy && wanted(source, item, target).every((k) => copy.includes(k)))
 		return { fit: 'copy', cells: copy };
-	const fitted = refittable(item) ? await refit() : null;
+	const fitted = refittable(item, source) ? await refit() : null;
 	if (fitted && fitted.length > (copy?.length ?? 0)) return { fit: 'refit', cells: fitted };
 	if (copy) return { fit: 'copy', cells: copy };
 	const cells = unfittedPlan(source, item, target).matches.map((m) => m.target);
@@ -397,6 +400,21 @@ export async function sharedFit(
 	);
 }
 
+/** Move a copied item's layer depths from the source slot's baseline to the target slot's. A layer's offset from its
+ *  slot's depth is kept, so a per-item front/back adjustment survives; an altered target depth therefore stays the target's
+ *  rendering decision. Throws when the item has a behind-body layer the target category cannot place. */
+function retargetDepth(item: Item, plan: SlotCopyPlan) {
+	const { from, to } = plan;
+	for (const layer of item.layers) {
+		if (layer.role === 'bg') {
+			if (to.bgZ == null)
+				throw new Error(
+					`This character’s “${to.label ?? to.id}” category has no back layer for ${item.name}. Change the category’s behavior or delete it, then try again.`
+				);
+			layer.z = layer.z - (from.bgZ ?? from.z) + to.bgZ;
+		} else layer.z = layer.z - from.z + to.z;
+	}
+}
 /** Copy an item of another saved character into `targetId` in one transaction: exact on an identical body, otherwise a free
  *  approximate fit when one exists, otherwise the item as drawn for the other body (both marked for review). Returns the new item, the copy this character already holds of it
  *  (a second tap while the first was saving), or null when it does not fit (nothing is written). Never generates anything. */
@@ -421,6 +439,14 @@ export async function acceptCopy(
 		original = source?.manifest.items.find((it) => it.id === itemId);
 	if (!source || !original) throw new Error('That character or item was removed.');
 	if (!target) throw new Error('This character was removed.');
+	// Refuse a same-ID category with another meaning before doing any work: the item cannot be renamed onto it without
+	// breaking later source-frame and re-fit lookups, which resolve by the item's own slot ID.
+	const slotPlan = copySlotPlan(
+		source.manifest,
+		target.manifest,
+		original.slot,
+		source.manifest.name
+	);
 	const variants =
 		bundled?.variants ??
 		record?.dress?.current?.variants ??
@@ -456,6 +482,7 @@ export async function acceptCopy(
 					: null;
 	if (!candidate) return null;
 	const { item, materials } = candidate;
+	retargetDepth(item, slotPlan);
 	// The paid calls were made for the first character an item was copied from. An exact copy of a re-fit keeps the re-fit's
 	// notes too: its pixels and body are identical, so they still name exactly the frames to check.
 	item.copiedFrom = original.copiedFrom ?? {
@@ -486,10 +513,17 @@ export async function acceptCopy(
 				added = held;
 				return rec;
 			}
-			// A slot only the source defines (a custom one) comes with its item.
+			// Another tab may have deleted, added or changed this category since the copy was prepared. Publishing the item
+			// then would draw it with the wrong definition (or revive a deleted one), so refuse instead.
+			const current = rec.manifest.slots.find((s) => s.id === item.slot);
+			if (current ? !sameSlotDefinition(current, slotPlan.to) : !slotPlan.add)
+				throw new Error(
+					`This character’s “${slotPlan.to.label ?? slotPlan.to.id}” category changed meanwhile. Nothing was added; try again.`
+				);
+			// A slot only the source defines (a custom one) comes with its item, shown and with its labels, behavior and depths.
 			putItem(rec.manifest, item, [
 				...slotLadder(rec.manifest.rig),
-				...source.manifest.slots.filter((s) => s.id === item.slot)
+				...(slotPlan.add ? [slotPlan.add] : [])
 			]);
 			rec.manifest.materials.push(...materials);
 			rec.savedAt = new Date().toISOString();

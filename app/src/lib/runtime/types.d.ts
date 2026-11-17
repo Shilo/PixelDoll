@@ -25,8 +25,34 @@ export interface Material {
 	defaultVariant?: string;
 }
 
+export type SlotProfile =
+	| 'body'
+	| 'feet'
+	| 'legs'
+	| 'torso_inner'
+	| 'waist'
+	| 'torso_outer'
+	| 'shoulders'
+	| 'arms'
+	| 'neck'
+	| 'back'
+	| 'facial_hair'
+	| 'hair'
+	| 'face_acc'
+	| 'head'
+	| 'off_hand'
+	| 'main_hand'
+	| 'underwear'
+	| 'accessory';
+
 export interface Slot {
 	id: string;
+	label?: string;
+	origin?: Exclude<SlotProfile, 'accessory'>;
+	profile?: SlotProfile;
+	wardrobeOrder?: number;
+	wardrobeHidden?: boolean;
+	promptTemplate?: string;
 	z: number;
 	bgZ?: number;
 	class: 'base' | 'rigid' | 'held' | 'worn';

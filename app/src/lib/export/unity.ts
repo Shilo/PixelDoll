@@ -2,7 +2,7 @@
 // unity/pixeldoll_unity.json is the manifest flattened for JsonUtility (no dictionaries).
 import type { Manifest } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
-import { layerFrame, variantCovers } from '../compose/compose.ts';
+import { handHides, hidesOf, layerFrame, variantCovers } from '../compose/compose.ts';
 import { portableAssetName } from './paths.ts';
 
 function exportId(m: Manifest): string {
@@ -45,7 +45,7 @@ export function unityJson(m: Manifest) {
 		slots: m.slots.map((s) => ({
 			id: s.id,
 			z: s.z,
-			hides: s.hides ?? [],
+			hides: handHides(m, s.id, s.hides ?? []),
 			zOverrides: (s.zOverrides ?? []).map((o) => ({
 				layer: o.layer,
 				z: o.z,
@@ -61,7 +61,7 @@ export function unityJson(m: Manifest) {
 			underAll: variantCovers(it),
 			materials: it.materials ?? [],
 			hasHides: !!it.hides,
-			hides: it.hides ?? [],
+			hides: it.hides ? hidesOf(m, it) : [],
 			layers: it.layers.map((l) => {
 				const f = layerFrame(rig, l); // oversize layers: own cell + pivot; PPU stays the base's, so world scale matches
 				return {

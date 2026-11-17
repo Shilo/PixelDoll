@@ -111,6 +111,13 @@ namespace PixelDollNativeReview
             Check(renderer("head").sprite.rect.width == 64 && Math.Abs(renderer("head").sprite.pivot.x - 32) < .0001f && renderer("hair").enabled && clock.sprite.name == frame, label + ": alternate same-slot item uses its own geometry");
             Invoke(doll, "Equip", "head", "hat"); Invoke(doll, "Sync");
             Check(renderer("head").sprite.rect.width == 96 && Math.Abs(renderer("head").sprite.pivot.x - 48) < .0001f && !renderer("hair").enabled && clock.sprite.name == frame, label + ": original same-slot item restores its own geometry");
+            Invoke(doll, "Equip", "shield_extra", "shield_extra"); Invoke(doll, "Sync");
+            Check(renderer("shield_extra").enabled, label + ": custom off-hand slot equips");
+            Invoke(doll, "Equip", "weapon_extra", "weapon_extra"); Invoke(doll, "Sync");
+            Check(!renderer("shield_extra").enabled && renderer("weapon_extra").enabled, label + ": custom two-handed weapon hides copied off-hand slot");
+            Invoke(doll, "Equip", "weapon_extra", null); Invoke(doll, "Sync");
+            Check(renderer("shield_extra").enabled, label + ": removing custom weapon restores copied off-hand slot");
+            Invoke(doll, "Equip", "shield_extra", null); Invoke(doll, "Sync");
             var original = renderer("body").sprite.texture;
             var peerInstance = UnityEngine.Object.Instantiate(prefab);
             var peer = peerInstance.GetComponents<MonoBehaviour>().First(component => component.GetType() == doll.GetType());

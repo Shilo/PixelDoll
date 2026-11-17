@@ -1088,6 +1088,64 @@ test('current PixelDoll ZIPs support one enclosing folder containing both manife
 	expect((await readCharacterZip(await zip(wrapped))).project.manifest).toEqual(project.manifest);
 });
 
+test('editable projects preserve slot metadata while the runtime manifest keeps only its label', async () => {
+	const p = await loadFixture(
+		async (path) =>
+			new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url)))
+	);
+	const slot = {
+		id: 'quiver',
+		label: 'Quiver',
+		origin: 'back' as const,
+		profile: 'back' as const,
+		wardrobeOrder: 3,
+		wardrobeHidden: true,
+		promptTemplate: 'Add {{description}}.',
+		z: 95,
+		bgZ: 4,
+		class: 'worn' as const,
+		anchor: 'neck' as const
+	};
+	p.manifest.slots.push(slot);
+	const out = await exportFiles(p, { engines: ['generic'], baked: false });
+	expect(out.errors).toEqual([]);
+	const reimported = await readCharacterZip(await zip(out.entries, { deflate: true }));
+	expect(reimported.project.manifest.slots.find((entry) => entry.id === 'quiver')).toEqual(slot);
+	const runtime = JSON.parse(
+		new TextDecoder().decode(out.entries.find((entry) => entry.name === 'manifest.json')!.data)
+	);
+	expect(runtime.slots.find((entry: { id: string }) => entry.id === 'quiver')).toEqual({
+		id: 'quiver',
+		z: 95,
+		bgZ: 4,
+		class: 'worn',
+		anchor: 'neck',
+		label: 'Quiver'
+	});
+});
+
+test('editable import rejects unsupported slot metadata with an actionable message', async () => {
+	const imported = await readCharacterZip(await zip(await pixelLabFiles()));
+	const entries = await projectEntries(imported.project);
+	const projectEntry = entries.find((entry) => entry.name === 'project.json')!;
+	const data = JSON.parse(new TextDecoder().decode(projectEntry.data));
+	data.manifest.slots.push({ id: 'quiver', z: 95, class: 'worn', profile: 'ring' });
+	projectEntry.data = enc.encode(JSON.stringify(data));
+	await expect(readCharacterZip(await zip(entries))).rejects.toThrow(
+		'behavior profile "ring" is not supported'
+	);
+});
+
+test('editable import reports malformed slot entries instead of crashing', async () => {
+	const imported = await readCharacterZip(await zip(await pixelLabFiles()));
+	const entries = await projectEntries(imported.project);
+	const projectEntry = entries.find((entry) => entry.name === 'project.json')!;
+	const data = JSON.parse(new TextDecoder().decode(projectEntry.data));
+	data.manifest.slots.push(null);
+	projectEntry.data = enc.encode(JSON.stringify(data));
+	await expect(readCharacterZip(await zip(entries))).rejects.toThrow('slot entry has no id');
+});
+
 test('editable import verifies referenced image hashes', async () => {
 	const imported = await readCharacterZip(await zip(await pixelLabFiles()));
 	const entries = await projectEntries(imported.project);

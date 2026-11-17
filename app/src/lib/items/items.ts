@@ -1,3 +1,13 @@
+import {
+	behaviorOf,
+	creativePrompt,
+	handOf,
+	requireSlot,
+	slotOf,
+	specSlot,
+	type SlotRef
+} from './slots.ts';
+export { SLOTS, slotOf, slotLadder } from './slots.ts';
 import { centroid, maskOf, simAligned } from '../image/similarity.ts';
 export { simAligned } from '../image/similarity.ts';
 // Item lab core (architecture §3.1–3.4, §4): slot ladder, call packing, prompts, per-cell extraction, gates G1–G8, fg/bg split,
@@ -102,7 +112,7 @@ export const itemRoute = {
 		rest: Keypoint[];
 		poses: Keypoint[][];
 		item: string;
-		slot: string;
+		slot: SlotRef;
 		key: Key;
 		anim: string;
 		dir: DirectionName;
@@ -111,14 +121,15 @@ export const itemRoute = {
 		pad?: number;
 		view?: Rig['view'];
 	}): Req => {
-		const held = slotOf(o.slot).class === 'held',
+		const item = creativePrompt(o.item, slotOf(o.slot)),
+			held = slotOf(o.slot).class === 'held',
 			p = o.pad ?? 0,
 			k = (s: Keypoint[]) => padKeypoints(s, o.cell, p);
 		const sent = paddedPoses(o.poses);
 		const poses = f0Last(o.slot, o.rest, sent, o.cell) ? [...sent.slice(1), sent[0]] : sent;
 		return rawClip({
 			// B7 live: "slash" drew a blade into a helmet layer although the action said "no weapon" -> say it in the looks too
-			description: `solid ${KEY_NAME[o.key]} mannequin (chroma key color) ${held ? `holding ${o.item} in the ${handOf(o.slot)} hand; ${ONE_HELD}` : `wearing ${o.item}, empty hands, no weapon`}`,
+			description: `solid ${KEY_NAME[o.key]} mannequin (chroma key color) ${held ? `holding ${item} in the ${handOf(o.slot)} hand; ${ONE_HELD}` : `wearing ${item}, empty hands, no weapon`}`,
 			// M3: a "slash" pose made the model draw a sword into a helmet layer -> unarmed unless the item is the held object
 			action: actionOf(o.anim) + (held ? '' : ', empty hands, no weapon, no effects'),
 			dir: o.dir,
@@ -287,7 +298,7 @@ export const bandMask = (r: Rect, w: number, h: number) => {
 /** S5 H3 wording: what the grid is, which cells are the reference design, one design everywhere; back items hang behind the arms. */
 export function gridPrompt(o: {
 	item: string;
-	slot: string;
+	slot: SlotRef;
 	key: Key;
 	anim: string;
 	dir: DirectionName;
@@ -297,17 +308,18 @@ export function gridPrompt(o: {
 	cols?: number;
 	parts?: { anim: string; n: number }[];
 }): string {
-	const cols = o.cols ?? GRID_COLS,
+	const item = creativePrompt(o.item, slotOf(o.slot)),
+		cols = o.cols ?? GRID_COLS,
 		rows = Math.ceil((o.n + o.refs.length) / cols),
 		color = KEY_NAME[o.key];
 	const held = slotOf(o.slot).class === 'held';
 	const instruction = held
-		? `Add the identical ${o.item} to the character's ${handOf(o.slot)} hand in every animation frame, gripped in the fist and following its arm pose; ${ONE_HELD}; no effects. `
-		: `Draw the identical ${o.item} on every animation frame, following each frame's pose${o.slot === 'back' ? '; it never wraps around or follows the arms' : ''}; empty hands, no weapon, no effects. `;
+		? `Add the identical ${item} to the character's ${handOf(o.slot)} hand in every animation frame, gripped in the fist and following its arm pose; ${ONE_HELD}; no effects. `
+		: `Draw the identical ${item} on every animation frame, following each frame's pose${behaviorOf(o.slot) === 'back' ? '; it never wraps around or follows the arms' : ''}; empty hands, no weapon, no effects. `;
 	return (
 		`This image is a sprite sheet: a ${cols}x${rows} grid of ${o.cell.w}x${o.cell.h} px frames of the same pixel art character, a solid ${color} mannequin. ` +
 		`The first ${o.n} frames (left to right, top to bottom) are ${(o.parts && o.parts.length > 1 ? o.parts : [{ anim: o.anim, n: o.n }]).map((p, i) => `${i ? 'then ' : ''}a ${p.n}-frame ${actionOf(p.anim)} animation`).join(', ')} ${facing(o.dir)}. ` +
-		`The next ${o.refs.length} frames show the reference design (${o.refs.map((d) => facing(d)).join(', ')}): ${o.item}. ` +
+		`The next ${o.refs.length} frames show the reference design (${o.refs.map((d) => facing(d)).join(', ')}): ${item}. ` +
 		`The ${color} color is intentional (a chroma key) and must stay exactly the same ${color}. ` +
 		`Every target keeps ${facing(o.dir)} throughout the animation. Match that reference's front or back features; never turn around or swap front and back details between frames. ` +
 		instruction +
@@ -319,10 +331,10 @@ export function gridPrompt(o: {
 /** S5: held items are generated on a 96 px canvas around the same pivot (64 + 2 × 16): no blade px on the border, no flips. */
 export const HELD_PAD = 16;
 /** The S5 held route: a held item posed with the skeleton (the anchor route stays on the rig cell, without held wording). */
-export const heldSkel = (slot: string, method?: Method) =>
+export const heldSkel = (slot: SlotRef, method?: Method) =>
 	method === 'skel' && slotOf(slot).class === 'held';
 /** Oversize padding of an item's layers (S5 held route only), up to the 256 px canvas cap. */
-export const padOf = (slot: string, method?: Method, cell?: { w: number; h: number }) =>
+export const padOf = (slot: SlotRef, method?: Method, cell?: { w: number; h: number }) =>
 	heldSkel(slot, method)
 		? Math.max(
 				0,
@@ -349,16 +361,23 @@ export const padKeypoints = (
 				y: +((q.y * cell.h + p) / (cell.h + 2 * p)).toFixed(4)
 			}))
 		: k;
-const handOf = (slot: string) => (slot === 'off_hand' ? 'left' : 'right');
 /** One clause for any held object in either hand: weapon words assume the object. With "nothing in the left hand" a book and
  * a mug moved to that hand in one seed; this clause showed no regression on three dress calls (2026-11-08, hand-wording-ab.md). */
 const ONE_HELD = 'exactly one held item';
 /** The dress description of an item: held wording on the S5 route at every size, including an unpadded 256 px cell (2026-11-07
  * session counter-review F3), and the plain description otherwise. */
-export const dressItem = (spec: { prompt: string; slot: string; method?: Method }) =>
-	heldSkel(spec.slot, spec.method) ? heldPhrase(spec.prompt, spec.slot) : spec.prompt;
+export const dressItem = (spec: {
+	prompt: string;
+	slot: string;
+	slotConfig?: Slot;
+	method?: Method;
+}) => {
+	const slot = specSlot(spec),
+		prompt = creativePrompt(spec.prompt, slot);
+	return heldSkel(slot, spec.method) ? heldPhrase(prompt, slot) : prompt;
+};
 /** S5 dress wording: continue the forearm ("upright" bent the arm and broke posing), one object only. */
-export const heldPhrase = (item: string, slot: string) =>
+export const heldPhrase = (item: string, slot: SlotRef) =>
 	`${item}, held naturally, the way it is normally carried, in the character's ${handOf(slot)} hand, the hand marked with a small red dot (the red dot is only a marker: paint it over with the item or the hand); ${ONE_HELD}; the arms stay exactly as they are`;
 /** The dot `heldPhrase` names. Words alone ("right hand", image sides) moved items between hands across views and a forced
  * direction drew candles upside down; a dot on the intended wrist kept 8 of 8 items in that hand with the arms unchanged
@@ -369,7 +388,7 @@ export const HAND_MARK = [230, 20, 20, 255] as const;
 export function markHand(
 	im: Img,
 	rest: Keypoint[],
-	slot: string,
+	slot: SlotRef,
 	cell: { w: number; h: number },
 	pad = 0
 ): Img {
@@ -413,7 +432,7 @@ export const poseDist = (a: Keypoint[], b: Keypoint[], cell: { w: number; h: num
 };
 /** S5: skeleton-v3 drops a held item on the FIRST output frame when that pose is ~the rest pose -> send frame 0 last. */
 export const f0Last = (
-	slot: string,
+	slot: SlotRef,
 	rest: Keypoint[],
 	poses: Keypoint[][],
 	cell: { w: number; h: number }
@@ -486,80 +505,24 @@ export const reusesStanding = (
 	return clip?.cells === 1 && (!!spec.standing || clip.sources?.[dir]?.motion === 'imported-rest');
 };
 
-/** M4/T3: a held item's bg (blade outside the body) sits above the cape's bg (z 4) in S/E/W, else the cape hides the hilt and
- * blade (T3 Ranger: 220 sword px hidden over walk S); from behind (north) the cape stays over it (bg z as built). */
-const heldBgOverCape = (): Slot['zOverrides'] =>
-	(['south', 'south-east', 'east', 'west', 'south-west'] as const).map((dir) => ({
-		layer: 'bg',
-		z: 5,
-		dir
-	})); // B15: + the front 3/4 views of 8-dir rigs
-/** Default slot ladder (architecture §4). Array order = tie-break for equal z. */
-export const SLOTS: Slot[] = [
-	{ id: 'body', z: 10, class: 'base', required: true },
-	{ id: 'feet', z: 20, class: 'worn', anchor: 'foot_r' },
-	{ id: 'legs', z: 30, class: 'worn', anchor: 'hip' },
-	{ id: 'torso_inner', z: 40, class: 'worn', anchor: 'neck' },
-	{ id: 'waist', z: 50, class: 'worn', anchor: 'hip' },
-	{ id: 'torso_outer', z: 60, class: 'worn', anchor: 'neck' },
-	{ id: 'shoulders', z: 65, class: 'worn', anchor: 'neck' },
-	{ id: 'arms', z: 70, class: 'worn', anchor: 'hand_r' },
-	{ id: 'neck', z: 80, class: 'rigid', anchor: 'neck' },
-	{ id: 'back', z: 90, bgZ: 4, class: 'worn', anchor: 'neck' },
-	{ id: 'facial_hair', z: 100, class: 'rigid', anchor: 'head' },
-	{
-		id: 'hair',
-		z: 110,
-		bgZ: 3,
-		class: 'rigid',
-		anchor: 'head',
-		zOverrides: [{ layer: 'bg', z: 5 }]
-	}, // T3: long hair lies over the cape (bg 4) in every view: 359 hair px hidden over walk E
-	{ id: 'face_acc', z: 120, class: 'rigid', anchor: 'head', band: true },
-	// B14: hair is tucked under a helmet (only what hangs below the brim shows) instead of hidden (T3: hides erased long hair);
-	// a hood or full mask checks "hide hair" (item.hides)
-	{ id: 'head', z: 130, class: 'rigid', anchor: 'head', clips: ['hair'], band: true },
-	{ id: 'off_hand', z: 140, bgZ: 2, class: 'held', anchor: 'hand_l', zOverrides: heldBgOverCape() },
-	{ id: 'main_hand', z: 150, bgZ: 1, class: 'held', anchor: 'hand_r', zOverrides: heldBgOverCape() }
-];
-export const slotOf = (id: string) => SLOTS.find((s) => s.id === id)!;
-/** Where the character's left side faces the viewer, the off hand (hand_l) is the near hand, so its layers draw over the
- * main-hand item's (front over front, and back over back where both back layers share a z). Only originally generated views:
- * a mirrored view flips its source's pixels (the main hand is near there), so it keeps the source's order. */
-const NEAR_OFF_HAND: readonly DirectionName[] = ['west', 'south-west', 'north-west'];
-/** A slot's back-layer z facing `dir`, as compose resolves whole-direction overrides (a direction's own before an undirected one). */
-const bgZAt = (slot: Slot, dir: DirectionName) => {
-	const bg = (slot.zOverrides ?? []).filter((o) => o.layer === 'bg' && !o.anim && o.cell == null);
-	return (bg.findLast((o) => o.dir === dir) ?? bg.findLast((o) => !o.dir))?.z ?? slot.bgZ ?? 0;
-};
-/** The default slot ladder for a rig (fresh copies): SLOTS plus the near-hand order of its generated left-side views. */
-export const slotLadder = (rig: Pick<Rig, 'directions'>): Slot[] =>
-	SLOTS.map((slot) => {
-		const s = structuredClone(slot);
-		if (s.id !== 'off_hand') return s;
-		const main = slotOf('main_hand');
-		for (const { id: dir } of rig.directions.filter(
-			(d) => !d.mirrorOf && NEAR_OFF_HAND.includes(d.id)
-		)) {
-			s.zOverrides = [...(s.zOverrides ?? []), { layer: 'fg', z: main.z + 5, dir }];
-			if (bgZAt(s, dir) <= bgZAt(main, dir))
-				s.zOverrides.push({ layer: 'bg', z: bgZAt(main, dir) + 1, dir });
-		}
-		return s;
-	});
 /** Add or replace an item (same id) and insert its slot in ladder order if missing. */
 export function putItem(m: Pick<Manifest, 'items' | 'slots'>, item: Item, ladder: Slot[]) {
-	m.items = [...m.items.filter((i) => i.id !== item.id), item];
-	if (!m.slots.some((s) => s.id === item.slot)) {
-		const order = (s: string) => ladder.findIndex((x) => x.id === s);
-		m.slots = [...m.slots, ladder.find((s) => s.id === item.slot)!].sort(
-			(a, b) => order(a.id) - order(b.id)
-		);
+	const slot = requireSlot([...m.slots, ...ladder], item.slot);
+	if (!m.slots.some((entry) => entry.id === item.slot)) {
+		const order = ladder.findIndex((entry) => entry.id === item.slot);
+		const before = m.slots.findIndex((entry) => {
+			const rank = ladder.findIndex((candidate) => candidate.id === entry.id);
+			return order >= 0 && rank > order;
+		});
+		m.slots = [...m.slots];
+		m.slots.splice(before < 0 ? m.slots.length : before, 0, structuredClone(slot));
 	}
+	m.items = [...m.items.filter((entry) => entry.id !== item.id), item];
 }
 
 export type Route = Key | 'none'; // 'none' = diff fallback on the real base
 export interface ItemSpec {
+	slotConfig?: Slot;
 	id: string;
 	name: string;
 	slot: string;
@@ -577,6 +540,7 @@ export function planItem(
 	rig: Rig,
 	spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'method' | 'key' | 'standing'> & {
 		slot?: string;
+		slotConfig?: Slot;
 	}
 ): { kind: CallKind; cells: string[] }[] {
 	if (spec.method !== 'skel' || spec.key === 'none')
@@ -585,7 +549,8 @@ export function planItem(
 		);
 	// B16: a 96 px held dress takes ≤ 4 frames, an 8-direction rig has 5 rest views -> later chunks carry chunk 1's dressed cell 0
 	const cap = editFrameCap(
-		Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method, rig.cell) : 0)
+		Math.max(rig.cell.w, rig.cell.h) +
+			2 * (spec.slot ? padOf(specSlot(spec), spec.method, rig.cell) : 0)
 	);
 	return [
 		...anchorChunks(spec.dirs.map(restKey), cap).map((cells) => ({
@@ -601,7 +566,7 @@ export function planItem(
 /** Keep imported artwork and avoid posing through corroborated bad estimates. Never guess replacement joints. */
 export function frozenGrid(
 	rig: Rig,
-	spec: { slot?: string; key?: Route },
+	spec: { slot?: string; slotConfig?: Slot; key?: Route },
 	cells: string[]
 ): boolean {
 	if (!importedPoseIssues(rig, { cells }).length) return false;
@@ -609,7 +574,7 @@ export function frozenGrid(
 		spec.key &&
 		spec.key !== 'none' &&
 		spec.slot &&
-		slotOf(spec.slot).class !== 'held' &&
+		specSlot(spec).class !== 'held' &&
 		gridFits(rig.cell, cells.length, 1)
 	)
 		return true;
@@ -623,10 +588,13 @@ export function frozenGrid(
  */
 function posePlan(
 	rig: Rig,
-	spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'standing'> & { slot?: string }
+	spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'standing'> & {
+		slot?: string;
+		slotConfig?: Slot;
+	}
 ): { kind: 'pose'; cells: string[] }[] {
 	const calls: { kind: 'pose'; cells: string[] }[] = [],
-		packable = !spec.slot || slotOf(spec.slot)?.class !== 'held';
+		packable = !spec.slot || specSlot(spec)?.class !== 'held';
 	const anims = rig.animations.filter((x) => spec.anims.includes(x.id)).map((x) => x.id);
 	for (const d of [...new Set(anims.flatMap((a) => spec.clipDirs?.[a] ?? spec.dirs))]) {
 		let shared: string[] | undefined;
@@ -770,7 +738,13 @@ export function itemPrompt(item: string, route: Route, cells: string[], anchor?:
 export const inputCell = (B: Img, route: Route) => (route === 'none' ? B : toChroma(B, route));
 
 /** Keypoint y-band of a slot (S2 algorithm spec §4.2); used to clip the diff fallback and to report out-of-band px. */
-export function bandOf(slot: string, s: Skeleton | undefined, h: number): Rect {
+export function bandOf(
+	slot: SlotRef,
+	s: Skeleton | undefined,
+	h: number,
+	purpose: 'extract' | 'repair' = 'extract'
+): Rect {
+	const profile = behaviorOf(slot);
 	const all = { x: 0, y: 0, w: 1e3, h };
 	const y = (l: string) => s?.[l]?.y;
 	const ys = (...l: string[]) => l.map(y).filter((v): v is number => v != null);
@@ -785,17 +759,18 @@ export function bandOf(slot: string, s: Skeleton | undefined, h: number): Rect {
 	});
 	const to = (y1: number) => ({ ...all, h: Math.ceil(y1) });
 	if (!s) return all;
-	if (['head', 'face_acc', 'facial_hair'].includes(slot) && neck != null) return to(neck + 3);
-	if (slot === 'hair' && sh.length) return to(Math.max(...sh) + 8);
+	if (['head', 'face_acc', 'facial_hair'].includes(profile) && neck != null) return to(neck + 3);
+	if (profile === 'hair' && sh.length) return to(Math.max(...sh) + 8);
 	if (
-		['torso_inner', 'torso_outer', 'shoulders', 'waist'].includes(slot) &&
+		(['shoulders', 'waist'].includes(profile) ||
+			(purpose === 'repair' && ['torso_inner', 'torso_outer', 'underwear'].includes(profile))) &&
 		neck != null &&
 		hips.length
 	)
 		return { ...all, y: Math.floor(neck - 3), h: Math.ceil(Math.max(...hips) + 6 - (neck - 3)) };
-	if (slot === 'legs' && hips.length) return from(Math.min(...hips) - 4);
-	if (slot === 'feet' && knees.length) return from(Math.min(...knees) - 3);
-	if (slot === 'back' && neck != null) return from(neck - 4);
+	if (profile === 'legs' && hips.length) return from(Math.min(...hips) - 4);
+	if (profile === 'feet' && knees.length) return from(Math.min(...knees) - 3);
+	if (profile === 'back' && neck != null) return from(neck - 4);
 	return all;
 }
 
@@ -949,7 +924,7 @@ export const CUT = { minPx: 3, maxShare: 0.04 };
 export const posedTol = (w: number, h: number, pad = 0) =>
 	Math.max(1, Math.round((Math.min(w, h) - 2 * pad) / 100));
 /** Rows (exclusive) where a worn item may hide body px: the head band (neck + 3). Held items and cells without a skeleton never cut. */
-export const cutRows = (slot: string, s: Skeleton | undefined, h: number) => {
+export const cutRows = (slot: SlotRef, s: Skeleton | undefined, h: number) => {
 	const c = slotOf(slot)?.class;
 	return c && c !== 'held' && c !== 'base' && s?.NECK != null ? bandOf('head', s, h).h : undefined;
 };
@@ -1223,7 +1198,7 @@ export function heldParts(
  */
 export function attachHeld(rig: Rig, slot: Slot, cells: CellOut[], pad = 0): number {
 	let removed = 0;
-	const wristL = slot.id === 'off_hand' ? ['LEFT ARM'] : ['RIGHT ARM'];
+	const wristL = handOf(slot) === 'left' ? ['LEFT ARM'] : ['RIGHT ARM'];
 	for (const c of cells) {
 		if (!c.posed || !c.area) continue;
 		const w = c.layer.w,
@@ -1312,7 +1287,7 @@ export function repairDropped(
 	pad = 0
 ): string[] {
 	const fixed: string[] = [],
-		wristL = slot.id === 'off_hand' ? ['LEFT ARM'] : ['RIGHT ARM'],
+		wristL = handOf(slot) === 'left' ? ['LEFT ARM'] : ['RIGHT ARM'],
 		byClip = new Map<string, CellOut[]>();
 	for (const c of cells)
 		if (c.posed) {
@@ -1357,7 +1332,7 @@ export const SMALL_SHARE = 0.05;
 export function hiddenViews(
 	cells: Pick<CellOut, 'key' | 'area' | 'base'>[],
 	keys: Partial<Record<DirectionName, Img>>,
-	slot?: string
+	slot?: SlotRef
 ): Set<string> {
 	const share = Math.max(
 		0,
@@ -1371,7 +1346,7 @@ export function hiddenViews(
 		empty = views.filter(([, K]) => !K!.data.some((v, i) => i % 4 === 3 && v)).map(([d]) => d);
 	const shown = 2 * (views.length - empty.length) >= views.length,
 		hidden = new Set(share > 0 && share < SMALL_SHARE && shown ? empty.filter(backView) : []);
-	if (slot === 'back' && shown)
+	if (slot && behaviorOf(slot) === 'back' && shown)
 		for (const d of empty.filter((x) => x.startsWith('south'))) {
 			const o = d
 				.replace('south', 'north')
@@ -2172,7 +2147,7 @@ function evaluateQa(
 			const { fg, bg } = splitFgBg(
 					c.layer,
 					c.base,
-					slot.id === 'hair' ? neckY(rig, c.key, pad) : undefined
+					behaviorOf(slot) === 'hair' ? neckY(rig, c.key, pad) : undefined
 				),
 				a = makeImg(w, h),
 				b = recompose({ base, layer: c.layer });
@@ -2759,7 +2734,7 @@ export function sharedDesignColors(layers: Img[]): ((color: number) => boolean)[
  * drawn view, or a two-view item where one smudged view would excuse the other) the single-view rule stays. A smudge in
  * every drawn view is not caught (known issue). */
 export function smudgedViews(
-	slot: string,
+	slot: SlotRef,
 	prompt: string,
 	layers: Img[]
 ): ('smudge' | 'dark' | false)[] {
@@ -2781,14 +2756,14 @@ export function smudgedViews(
 }
 /** Neutral pupils, eyebrows and eye whites are expected in tiny facial glyphs; their palette ratios cannot establish smudges. */
 export function designGraySmudges(
-	slot: string,
+	slot: SlotRef,
 	prompt: string,
 	layer: Img,
 	darkPatches = true,
 	shared?: (color: number) => boolean
 ): boolean {
 	if (GRAYISH.test(prompt)) return false;
-	if (slot === 'face_acc' && sum(maskOf(layer)) <= (32 * layer.w * layer.h) / (64 * 64))
+	if (behaviorOf(slot) === 'face_acc' && sum(maskOf(layer)) <= (32 * layer.w * layer.h) / (64 * 64))
 		return false;
 	return grayShare(layer, darkPatches, shared) > DESIGN.gray;
 }
@@ -3066,7 +3041,8 @@ export function dirGate(
 				);
 			}
 		}
-	if (slot.class === 'held' || slot.id === 'feet' || slot.id === 'legs') return result();
+	if (slot.class === 'held' || behaviorOf(slot) === 'feet' || behaviorOf(slot) === 'legs')
+		return result();
 	// soft items: the clip's best body coverage (item px on the base silhouette / base px)
 	const cover = new Map<string, number>();
 	if (!slot.band)
@@ -3138,7 +3114,7 @@ export async function buildItem(o: {
 	pending?: CellKey[];
 }): Promise<{ item: Item; images: Map<Sha256, Img> }> {
 	const { spec, rig, cells } = o,
-		slot = slotOf(spec.slot),
+		slot = specSlot(spec),
 		images = new Map<Sha256, Img>(),
 		p = o.pad ?? 0;
 	// v1.3.1 oversize layer (S5 held): own cell + pivot, aligned to the base by pivot
@@ -3175,7 +3151,11 @@ export async function buildItem(o: {
 					? [null, null]
 					: slot.bgZ != null
 						? (({ fg, bg }) => [fg, bg])(
-								splitFgBg(c.layer, c.base, slot.id === 'hair' ? neckY(rig, c.key, p) : undefined)
+								splitFgBg(
+									c.layer,
+									c.base,
+									behaviorOf(slot) === 'hair' ? neckY(rig, c.key, p) : undefined
+								)
 							)
 						: [c.layer];
 				for (const [j, l] of layers.entries())
