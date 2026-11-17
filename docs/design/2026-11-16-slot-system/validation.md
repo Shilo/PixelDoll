@@ -1,6 +1,47 @@
 # Validation and council record
 
-Status: workshop review in progress. This file distinguishes completed checks from proposed acceptance tests.
+Status: production implementation and automated validation complete on `feat/modular-equipment-slots`, authorized November 16, 2026. Visible-browser design review and physical-touch reordering remain pending. The workshop sections below are historical evidence, not current implementation status.
+
+## Production review and validation
+
+The requested Opus 5.5 medium, Sol 6.1 medium and DeepSeek V4.1 Flash low council reviewed the implementation independently. Their disagreements did not become extra controls: Studio keeps fixed built-ins, optional custom naming and one Works like setting, with no raw JSON editor or arbitrary bone picker.
+
+Concrete review findings changed the delivery:
+
+- Copied hand categories now retain side-specific drawing and two-handed replacement behavior, including deterministic default right-hand priority.
+- Shared custom equipment can adopt a missing compatible category. A reused key with different behavior, or a conflicting display name, produces an actionable error rather than silently rebinding artwork.
+- Wardrobe moves store whole non-negative positions. Moving a category no longer makes export validation fail. Known directional profile defaults remain legal when a character currently has fewer directions.
+- Settings Save validates once and creates one undo step. Changing Works like or Hand follows that profile's depth unless the user actually changes Draws above.
+- Category deletion with items is one database transaction. If validation or writing fails, none of the category, items, colors or outfit entries are removed. This destructive operation cannot be undone.
+- Slot saves merge changes against the view's starting definitions. Routine stale saves do not delete newer empty categories or resurrect deleted ones. Undo preserves categories used by item attempts.
+- Universal clothing extraction and repair masks are distinct. Body, Outerwear and Underwear accept full-height artwork; repair starts from a body-region band and follows the approved garment's hem so it does not automatically repaint the face.
+- Shared-only categories appear in Wardrobe without being added to the target until an item is copied or fitted. Blank creation needs no setup and returns focus to the name field.
+- A paid draft's frozen category definition can restore a category removed elsewhere during preparation, preview or acceptance. Incompatible reused keys and concurrent depth changes are refused before saving.
+- Two-handed status works before the opposite hand category has any items. Deleting a custom category also clears references that could otherwise hide a later category reusing its key.
+- Base has no Wardrobe metadata. Shared adoption rechecks display-name conflicts inside the write transaction, not just during its initial plan.
+- Arrow navigation focuses the Slots action without opening its dialog. Category navigation still follows focus; opening a settings dialog requires explicit activation.
+
+Completed checks so far:
+
+- Final `npm run check` passed, with zero Svelte errors or warnings.
+- Final `npm test` passed: 194 files, 2,653 tests passed and one skipped. The first full run exposed a controller test's no-op database mock; its save callback now exercises the real transaction contract, without changing the identity assertion.
+- A later full unit recheck during another workstation run hit three 20-second timeouts and one timed state expectation. Each failed test passed on its single isolated rerun without changing code or timeouts. Treat these as suspected shared-resource flakes, not a clean repeat full-suite pass.
+- Final snapshot recovery, sparse-hand classification, deletion cleanup, Base metadata and concurrent-copy regressions passed with the related targeted suite: 119 tests.
+- Final `npm run e2e -- --all` passed all 363 browser tests. The seven focused regressions also passed before the full rerun, including custom-category adoption, two-handed interaction and rail keyboard navigation.
+- Targeted profile, custom-hand, shared-copy, validation, import and Unity export tests: 191 passed.
+- Targeted garment coverage, Studio flow-state and profile tests: 163 passed after correcting repair-mask behavior and updating tests to the new permanent category keys.
+- Targeted Studio slot, dress persistence and export-validation tests after the review fixes: 44 passed.
+- The new browser flow passed: blank and repeated naming, rename, showing/hiding Underwear, keyboard reorder with retained focus, save/reload, occupied-hide refusal and unchanged rendered pixels after browsing changes. The extended case also passed at 320 by 568 in light mode, retaining settings without horizontal overflow. Its first run missed the More options menu in the test; correcting that interaction required no production change.
+- Native Godot editor import, execution and packaged PCK verification passed with copied held slots. Unity verification passed 4,412 Editor Play Mode checks and 648 GPU checks in each of Gamma and Linear. A standalone Unity player was not built.
+- Manual live T3 DOM interaction confirmed blank-name Accessory creation, an Accessory 2 placeholder on the next creation and focus returning to the name field. The browser was not producing screenshot frames, and requested viewport changes did not reach the page while T3 was hidden. This is not visual approval or phone validation.
+
+Remaining proof and limits:
+
+- The first full end-to-end run passed 356 of 362 tests. It exposed the Slots keyboard-activation bug plus stale test-only category labels and an Off hand fixture incorrectly copying a right-hand profile. The fix preserves focus assertions, uses permanent category keys and constructs the real left-hand profile. Focused reruns and the final 363-test full run passed. Final council review and snapshot-recovery regressions are complete.
+- No paid requests were made. New AI-generated underwear/accessory quality, different body proportions and all supported character sizes are not qualified by these checks. Offline synthetic frames prove mask and compositor behavior, not model output quality.
+- Physical-touch dragging and the final visual comparison in both themes still need a visible browser. Automated keyboard/viewport checks are not a substitute for a physical-touch test.
+
+## Historical workshop evidence
 
 ## Corrected Body and Legs revision
 

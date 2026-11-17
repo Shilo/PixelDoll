@@ -129,8 +129,29 @@ export interface Material {
 }
 
 // ---------- slots ----------
+export type SlotProfile =
+  | "body"
+  | "feet"
+  | "legs"
+  | "torso_inner"
+  | "waist"
+  | "torso_outer"
+  | "shoulders"
+  | "arms"
+  | "neck"
+  | "back"
+  | "facial_hair"
+  | "hair"
+  | "face_acc"
+  | "head"
+  | "off_hand"
+  | "main_hand"
+  | "underwear"
+  | "accessory";
+
 export interface Slot {
   id: string; // "head", "main_hand"
+  label?: string;
   z: number; // z of the item's main/fg layer
   bgZ?: number; // present = items in this slot are split into fg/bg layers
   class: "base" | "rigid" | "held" | "worn"; // QA (rigid headwear: anchor spread; held: grip side) and mask band
@@ -141,6 +162,11 @@ export interface Slot {
   zOverrides?: ZOverride[]; // sparse exceptions; the default off_hand adds fg above main_hand in generated
   //   (not mirrored) west, south-west and north-west views, where the left hand is near
   band?: boolean; // project only: clip extraction to the slot's keypoint y-band (held: false)
+  origin?: Exclude<SlotProfile, "accessory">; // project only: built-in behavior this category started from
+  profile?: SlotProfile; // project only: supported generation behavior, independent of id and label
+  wardrobeOrder?: number; // project only: non-negative integer browsing order, never render order
+  wardrobeHidden?: boolean; // project only: not shown in Wardrobe
+  promptTemplate?: string; // project only: optional creative hint, not extraction instructions
 }
 export interface ZOverride {
   layer: "fg" | "bg";
@@ -317,8 +343,10 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
    wins), else `layer.z`.
 9. A visible item hides every layer of each slot in `item.hides ?? slot.hides` (hidden layers are not drawn; their cells still exist).
    When two equipped items hide each other's slot, the item in the later slot (in `slots` order) stays visible and the other
-   item's `hides` do not apply, so the two never both vanish. A two-handed item is a `main_hand` or `off_hand` item that hides
-   the other hand (Studio never saves both hands worn with such an item; a runtime that equips both shows the later slot).
+   item's `hides` do not apply, so the two never both vanish. Held slots identify left or right hands through `hand_l` or
+   `hand_r`. For a held item, a canonical `off_hand` or `main_hand` hide target also covers custom held slots on that hand.
+   A two-handed item hides an opposite-hand slot. Studio clears conflicting equipment; a runtime that equips both applies
+   the same visibility rules, including the slot-order rule for mutual hiding.
 10. If any direction is mirrored, every layer cell is centered on the rig cell: `2 · (rig.pivot.x − layer.pivot.x) + layer.cell.w
 = rig.cell.w` (v1.3.1; a flip of an off-center cell would move the item).
 11. Tuck-under (B14): while an item of slot S is worn, the layers of every item in `slots[S].clips` drop their px at or above the

@@ -1,6 +1,16 @@
-# Modular visual slots: proposed contract
+# Modular visual slots: implementation contract
 
-**Status:** design proposal, November 16, 2026. Prototype approval is not implementation approval. The existing production schema and runtime remain authoritative until a scoped implementation lands.
+**Status:** implementation authorized November 16, 2026, following the workshop. The production work is on `feat/modular-equipment-slots`. The validation record distinguishes implemented behavior from unverified generation quality.
+
+## Production implementation scope
+
+The user approved implementation on a dedicated branch after reviewing the workshop. Work on `feat/modular-equipment-slots`, with regular focused commits and independent Opus 5.5 medium, Sol 6.1 medium and DeepSeek V4.1 Flash low reviews. Preserve the current Studio and Bronze appearance. The prototype's policy switches, raw JSON editors and developer badges are not production controls.
+
+Use the conservative baseline: fixed built-ins, custom copies with permanent readable keys and editable labels, only-empty hiding, per-character organization, and a separate drawing order. Accessory creation accepts a blank name without a mandatory template picker. Combine showing an existing category and creating a custom one in the same Add slot flow. Use Not shown or Show in Wardrobe for organization so it is not confused with artwork covered by another item.
+
+Implement and validate profiles before exposing custom generation. Lock attachment/behavior changes while a slot has items or pending work; renaming and Wardrobe moves never regenerate artwork. Keep creative instructions optional and separate from protected extraction wording. Built-in defaults remain resettable only through their supported organization controls; users customize behavior through a separate custom slot. Existing populated categories remain reachable regardless of initial hidden defaults.
+
+Work in separately verifiable stages: profile/data foundation, generation and export integration, then management UI and drag/keyboard interaction. Required proof includes rename reference stability, independent Wardrobe/drawing order, empty checks covering drafts/jobs, copied left-hand behavior, universal clothing bands, and canonical/native export agreement. Test the rendered interface with representative desktop and phone workflows in both themes. Offline checks come first. Ask the user before any necessary paid generation; neither a prototype nor a successful unit test establishes production art quality. Record unavailable visual checks and physical-touch limits honestly rather than promising zero issues.
 
 ## 1. What a slot means
 
@@ -19,9 +29,9 @@ Use 64 px as a discussion baseline and check 48, 64, 96 and 128 px before making
 
 Do not claim these rules establish which categories are statistically most common. No usage census was performed.
 
-## 2. Built-in catalog and prototype defaults
+## 2. Built-in catalog and production defaults
 
-Keep current readable keys while presenting clear labels. Cosmetic cleanup does not justify rekeying exports. `arms` means Hands in the UI; `torso_inner` now means Body. Call the frozen character Base in user-facing equipment discussion to distinguish it from the Body slot. Existing values below come from `app/src/lib/items/items.ts` SLOTS and slotLadder. Underwear is a new prototype proposal, not an existing qualified production profile.
+Keep current readable keys while presenting clear labels. Cosmetic cleanup does not justify rekeying exports. `arms` means Hands in the UI; `torso_inner` now means Body. Call the frozen character Base in user-facing equipment discussion to distinguish it from the Body slot. The catalog and behavior resolver now live in `app/src/lib/items/slots.ts`, re-exported by `items.ts`. Underwear is implemented as a new profile, but new AI-generated underwear quality remains unqualified.
 
 | Label       | Permanent key | Initially | Class | Authoring anchor | Foreground z | Background z |
 | ----------- | ------------- | --------- | ----- | ---------------- | ------------ | ------------ |
@@ -72,7 +82,7 @@ Default clothing depth, back to front: Base z10, Underwear z15, Legs z30, Body z
 
 **User-approved direction after Sol and Opus review:** keep quick custom-slot creation. The name field has the placeholder **Accessory** and is optional. Leaving it blank creates **Accessory**, then **Accessory 2**, **Accessory 3**, using the next available name under the character's case-insensitive naming rules. Suggest a unique readable key once, such as `accessory` or `accessory_2`. This is not an eleventh shown built-in or another hidden preset. Once created, it appears as a shown custom slot. The starting catalog remains ten shown and six hidden.
 
-Do not require a region picker or template choice before creation. The generic starting behavior is worn clothing using Body's authoring anchor, with a distinct default drawing position **above Body and Legs, below Outerwear, Hair and held items**. Describe it as **Over basic clothing**. It does not share Body's exact depth and does not draw above everything. Keep drawing order adjustable. Exact numeric depth and deterministic ties must be resolved during profile implementation, independently of Wardrobe order.
+Do not require a region picker or template choice before creation. The generic starting behavior is worn clothing using Body's authoring anchor, with a distinct default drawing position **above Body and Legs, below Outerwear, Hair and held items**. Describe it as **Over basic clothing**. Its depth is z55, above Waist z50 and below Outerwear z60. Equal depths use manifest slot order, never Wardrobe browsing order. Keep drawing order adjustable through Draws above, without exposing numeric depths.
 
 Optional copying from another slot can still supply its supported settings. Hands means worn glove/wrist behavior, not a held weapon; Back includes its background split. A name alone never selects different behavior. For example, typing Wings does not automatically change the drawing position or supply wing animation. Do not add specialized suggestion chips or additional built-ins for this decision.
 
@@ -82,7 +92,7 @@ One slot still selects one item. A ribbon and bracelet need separate custom slot
 
 Accessory is a general fallback, not a claim about the most-common missing category. Sol favored Hair accessory as a specific independent addition; Opus noted that Head already covers it unless it must swap separately alongside headgear. Both favored Accessory for unnamed creation and a position over basic clothing rather than the highest layer. Neither established category frequency. Wings remains custom, not a hidden built-in.
 
-This approves the design direction, not production implementation or new rendering capability. Custom profiles must first work consistently across generation, quality checks and exports. The workshop's Add slot and Start with controls only approximate this flow; blank-name fallback and the revised default depth have not been implemented or tested. Leave the current demo unchanged for this documentation-only update.
+Production implementation was subsequently authorized on November 16, 2026. Blank-name creation, numbered repeats and this depth default are now implemented in Studio, not just the workshop. The workshop remains a historical comparison tool. See the validation record for completed checks and remaining quality limits.
 
 ## 3. Identity without opaque IDs
 
@@ -96,7 +106,7 @@ Name-only references remove one field but add transactional rename work across i
 
 Keys must be unique across all slots, including hidden built-ins. Hiding never frees identity. Custom keys cannot take `neck` while the Neck definition exists.
 
-The recommended simple production rule is unique case-insensitive trimmed display labels per character, with an offer to Show or Customize existing Neck. The prototype also allows a custom Neck label beside a hidden built-in under another key, then permits showing both with key badges. This intentionally more permissive comparison tests the user's exact replacement scenario. It is not the settled naming policy. Duplicate labels complicate menus, exports and assistive announcements even if keys are technically sound. The prototype suggests numeric suffixes such as `neck_2`; `neck_custom` is another valid user choice, not a second required naming convention.
+Production uses unique case-insensitive trimmed display labels per character. Typing the name of a not-shown built-in offers Show instead of creating a duplicate. The prototype's hidden-label duplicate experiment is not the production policy. Duplicate labels complicate menus, exports and assistive announcements even when keys differ. Custom names produce portable readable keys once; a name without usable ASCII characters falls back to `slot`, then `slot_2`.
 
 Deleting and recreating a key deliberately rebinds that API name to a new category; the prototype allows this and reports only whether the slot key exists, not whether an old item call remains compatible. Production deletion must disclose that consequence. Permanent means unchanged during the slot's lifetime, not a claim of eternal tombstone reservation. Tombstones are not proposed for v1.
 
@@ -106,31 +116,30 @@ Normalize and validate portable keys, reject path traversal, separators, reserve
 
 Separate immutable factory definitions from per-character slot configuration, items and Wardrobe organization. Built-ins cannot be deleted; custom slots can. Reset restores a factory configuration without deleting generated items or silently changing selections. Restore organization separately from restoring behavior so users know what changes.
 
-Two approaches are deliberately available:
+The workshop compared two approaches:
 
 1. **Fixed built-ins, copy to customize:** smaller supported surface and consistent named presets. Copies need their own keys, and copy settings only, not generated items. The user must understand why there are two similar categories.
 2. **Customize in place + Reset:** avoids replacement copies and naming conflicts. Store a resolved per-character copy; a future factory update must not silently alter existing art. Built-in identity stays fixed, but its label/profile can differ. More support and validation cost.
 
-Start production conservatively with fixed built-ins unless user testing shows copy friction outweighs the benefit. The workshop exposes advanced settings on custom slots and optionally built-ins because the user asked to test that depth. Do not implement a live `like` reference that silently changes every copy when its source changes. Store origin for provenance/reset and resolved behavior for predictability.
+Production selects fixed built-ins with Make a custom copy. The workshop's in-place editing comparison is not included. Copies keep resolved settings rather than a live reference that changes when the source changes. Store origin for provenance and a separate supported behavior profile for generation.
 
-**Required refactor before production custom slots:** route every slot-ID-specific generation, anchor, hand, band, clipping, QA and runtime decision through explicit supported profile fields. Current `handOf`, held attachment, bandOf and special prompt checks do not magically work for a new ID. Copying Off hand today can incorrectly fall into right-hand logic. Test canonical and native exports together. Modular means one behavior resolver shared by consumers, not an abstract plugin framework or unbounded arbitrary bones.
+**Implemented foundation:** generation, anchor, hand, band, clipping, QA and material defaults resolve the slot's supported profile rather than guessing behavior from a custom key. A copied Off hand retains left-hand behavior. Canonical and native exports use the resolved runtime fields, not the profile name. Modular means one behavior resolver shared by consumers, not an abstract plugin framework or unbounded arbitrary bones.
 
 ## 5. Settings and their consequences
 
-| Setting                     | Ordinary or advanced       | Effect                                                                                                   |
-| --------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Label                       | Ordinary, custom initially | UI label only; key and pixels unchanged                                                                  |
-| Wardrobe order              | Ordinary                   | Browsing only, never rendering or equal-z tie order                                                      |
-| Shown/hidden                | Ordinary                   | Organization only; no unequipping or export loss                                                         |
-| Start with profile          | Creation                   | Copy supported resolved defaults, no item duplication                                                    |
-| Behavior: worn/rigid/held   | Advanced experiment        | Generation/extraction topology; existing items require refit/reprocess, not relabel                      |
-| Authoring anchor            | Advanced experiment        | Future generation/positioning hint; existing baked frames do not retarget                                |
-| Creative prompt template    | Advanced experiment        | Future generation only; insert `{{description}}`; protected extraction/hold wording stays app-controlled |
-| Foreground/background depth | Advanced                   | Changes compositing of existing layers; preview, cancel and undo required                                |
-| Direction/context overrides | Advanced prototype data    | Needed for full overlap fidelity; raw JSON is a comparison instrument, not final casual-user UX          |
-| Delete                      | Custom only                | Confirm affected assets/outfits/jobs; offer reassign or safe removal, never silent loss                  |
+| Setting                     | Ordinary or advanced       | Effect                                                                                                 |
+| --------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Label                       | Ordinary, custom initially | UI label only; key and pixels unchanged                                                                |
+| Wardrobe order              | Ordinary                   | Browsing only, never rendering or equal-z tie order                                                    |
+| Shown/hidden                | Ordinary                   | Organization only; no unequipping or export loss                                                       |
+| Start with profile          | Creation                   | Copy supported resolved defaults, no item duplication                                                  |
+| Works like and Hand         | Custom settings            | Copies a supported profile; locked while items or attempts exist                                       |
+| Creative hint               | Custom settings            | Optional plain sentence for future generation; no required placeholders or extraction instructions     |
+| Draws above                 | Custom settings            | Moves foreground drawing order, including directional front offsets; background parts stay behind Base |
+| Direction/context overrides | Stored profile data        | Preserved in generation/export; raw JSON is not a production control                                   |
+| Delete                      | Custom only                | Confirm the count; remove category, items, colors and outfit entries together, or remove nothing       |
 
-The prototype stores editable settings but does not prove every combination can generate. Anchor and behavior changes on populated slots are deliberately visible experiments; production must either lock them until empty or require explicit refit with affected-item count and paid-cost disclosure if applicable. A paid call must never be implied by moving, renaming or hiding a slot.
+The prototype's unrestricted settings do not prove every combination can generate. Production locks Works like and Hand while the category contains items or attempts. A paid call is never implied by moving, renaming, hiding or editing a category. Populated deletion cannot be undone; empty deletion and ordinary organization can. There is no item reassignment or automatic refit in this release.
 
 No arbitrary new skeleton bones in v1. New joints require tracks across moves and directions; a string is not animation data. Baked exports do not need authoring anchor names to animate equipment, but they still require pivots and offsets. A future skeletal runtime would have a different explicit contract.
 

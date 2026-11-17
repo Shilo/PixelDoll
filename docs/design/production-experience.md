@@ -126,6 +126,13 @@ Actor fitting uses a cached union of painted bounds across the body's poses and 
 
 The [direct prototype parity review](production-prototype-parity.md) corrected the first integration's typography, hierarchy, scale and creator composition. The [2026-11-11 refinement](2026-11-11-ui-refinement/ui-lab-5.html) (lab round 5, default options) replaced the identity block with the top bar's name menu, the category tabs and More menu with the continuous Wardrobe list and slot rail, and the None action with an Empty first tile. Phones keep search with New and Import above the cast list; the studio uses the bottom sheet. Native dialog content scrolls while its action footer remains accessible.
 
+The [modular slot contract](2026-11-16-slot-system/plan.md) keeps this continuous list and existing sheet/menu design.
+Slots at the end of the list and rail opens organization: show an unused built-in, reorder browsing or add a custom
+category with an optional name. Blank names use Accessory. Advanced custom behavior stays in its contextual editor;
+built-ins are copied rather than redefined. Browsing order never changes artwork. Arrow navigation focuses Slots without
+opening it; explicit activation opens the dialog. Empty-only hiding includes pending work, and destructive populated
+deletion confirms its consequences and commits atomically. The Base never appears as a removable category.
+
 `focus.ts` restores actual activation targets, including WebKit pointer behavior, and positions the menus, Share panel and API Peek inspector against their triggers with four-side collision handling and the Bronze pointer. Help tooltips use the same pointed shell with top/bottom placement. Native selects and modal sheets keep their native presentation. `appearance.js` restores the saved light/dark choice before the app initializes, including native color-scheme.
 
 ## Scene zoom

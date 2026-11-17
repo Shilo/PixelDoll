@@ -59,6 +59,12 @@ Current product decision: Body replaces the Chest label but does not replace Leg
 - Test simultaneous cape/quiver, copied left-hand behavior, directional background splits, hair/headgear masking and canvas bounds. These tests establish support, not demand.
 - Try manager tasks on actual touch hardware. Drag thresholds and hidden-category discoverability cannot be proven from source inspection.
 
+### Implementation evidence refresh
+
+Primary sources rechecked for the implementation review: [Spine slots](https://en.esotericsoftware.com/spine-slots) explicitly separates bone parentage from drawing order and allows one selected attachment per slot. Its examples show two slots on one bone drawing on opposite sides of a slot attached to another bone. This supports keeping authoring anchors, selections and draw depth separate; it does not establish PixelDoll's best default inventory.
+
+The [LPC contribution guide](https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator/blob/master/CONTRIBUTING.md) describes category definitions as data and directs contributors to existing definitions and their schema. These are useful architecture references, not evidence of category popularity or proof that AI-generated custom accessories fit. Current PixelDoll source inspection remains the authority for its supported behavior.
+
 ### Accessory design finding, not a usage measurement
 
 After independent Sol and Opus challenges, the user approved Accessory as the blank-name fallback, numbered for repeats, without a required region picker. Use a distinct starting position over Body and Legs but under Outerwear, Hair and held items. This supersedes the earlier region-picker and exact inherited-depth recommendation. Always drawing highest could put ribbons above hats or bracelets above sleeves when that is unwanted. These are design examples, not measured claims about games or demand.

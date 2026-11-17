@@ -4,6 +4,16 @@ Living document: status and decisions. Open tasks live on the [PixelDoll board](
 `docs/known-issues.md`; how things work lives in
 `docs/architecture.md`; the agent quick map is `AGENTS.md`.
 
+## Modular equipment slots (2026-11-16)
+
+Implemented on `feat/modular-equipment-slots`, not yet merged: ten initially shown categories, six initially not shown,
+and optional custom categories. Body remains separate from Legs and renders above it; Outerwear and Underwear are each
+one universal category. Blank custom names become Accessory, over basic clothing by default. Wardrobe organization does
+not change drawing order. Built-ins keep fixed behavior; custom copies use supported profiles and stable export keys.
+The [implementation contract](docs/design/2026-11-16-slot-system/plan.md) records the approved defaults and
+[validation record](docs/design/2026-11-16-slot-system/validation.md) distinguishes automated evidence from remaining
+visual, touch and new-generation quality limits. No paid generations were used for this implementation.
+
 ## Status (2026-10-22)
 
 - **Live:** public repo https://github.com/Shilo/PixelDoll (MIT), live at https://pixeldoll.app/ (D23). CI on every
