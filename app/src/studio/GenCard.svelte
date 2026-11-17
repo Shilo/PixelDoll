@@ -16,7 +16,8 @@
 	import { KEY_NAME } from '../lib/image/chroma.ts';
 	import { itemRoute } from './itemRoute.ts';
 	import Sprite from './Sprite.svelte';
-	import { groupOf, plainReason, moveLabel, unknownCostText } from './model.ts';
+	import { plainReason, moveLabel, unknownCostText } from './model.ts';
+	import { slotLabel } from './slots.ts';
 	import {
 		ui,
 		doc,
@@ -136,7 +137,7 @@
 			/>
 		</div>
 		<p class="insp-sub">
-			<span>{groupOf(g.input.slot).id}</span>
+			<span>{slotLabel(store.project?.manifest, g.input.slot)}</span>
 			{#if g.phase === 'review'}
 				{#if clean}<span class="badge clean"><CircleCheck size={12} />Clean</span>{:else}<span
 						class="badge look"><TriangleAlert size={12} />Needs a look</span

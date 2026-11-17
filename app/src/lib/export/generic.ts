@@ -1,6 +1,6 @@
 // Generic export (manifest-spec §3, §5, §6.6): validation, the exported manifest.json, _stripN strips, baked composites,
 import type { Img } from '../image/png.ts';
-import { validateRig } from '../rig/rig.ts';
+import { DIRECTIONS, validateRig } from '../rig/rig.ts';
 import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
 import { CURRENT_FORMAT } from '../store/manifest.ts';
 import { behaviorOf, SLOTS } from '../items/slots.ts';
@@ -175,10 +175,7 @@ export function validate(p: Project): string[] {
 						e.push(
 							`${slot.id}: zOverrides[${index}] depth must be a finite integer in the signed 32-bit range`
 						);
-					if (
-						override.dir !== undefined &&
-						!m.rig.directions.some((direction) => direction.id === override.dir)
-					)
+					if (override.dir !== undefined && !DIRECTIONS.includes(override.dir))
 						e.push(
 							`${slot.id}: zOverrides[${index}] has unknown direction ${String(override.dir)}`
 						);

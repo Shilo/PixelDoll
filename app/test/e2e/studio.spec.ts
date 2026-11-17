@@ -618,6 +618,63 @@ async function openDemo(page: Page) {
 
 const step = (s: string) => console.log('ok', s);
 
+test('studio demo: slots add, rename, show, hide and reorder without changing the drawing', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await openDemo(page);
+	await page.getByRole('button', { name: 'Pause', exact: true }).click();
+	const drawing = () =>
+		page
+			.locator('.world-actors')
+			.first()
+			.evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL());
+	const before = await drawing();
+	await page
+		.getByRole('navigation', { name: 'Equipment slots' })
+		.getByRole('button', { name: /^Slots/ })
+		.click();
+	const manager = page.getByRole('dialog', { name: 'Slots', exact: true });
+	await expect(manager.getByRole('button', { name: /^Reorder / })).toHaveCount(10);
+	await manager.getByRole('button', { name: 'Show Underwear', exact: true }).click();
+	await expect(manager.getByRole('button', { name: /^Reorder Underwear,/ })).toBeVisible();
+	await manager.getByRole('button', { name: 'More actions for Underwear', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Don’t show in Wardrobe', exact: true }).click();
+	await expect(manager.getByRole('button', { name: 'Show Underwear', exact: true })).toBeVisible();
+	await manager.getByRole('button', { name: 'Add', exact: true }).click();
+	await manager.getByRole('button', { name: 'Add', exact: true }).click();
+	await manager.getByRole('button', { name: 'More actions for Accessory', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Edit…', exact: true }).click();
+	const editor = page.getByRole('dialog', { name: 'Accessory', exact: true });
+	await editor.getByRole('textbox', { name: 'Name', exact: true }).fill('Brooch');
+	await editor
+		.getByRole('combobox', { name: 'Draws above', exact: true })
+		.selectOption('torso_outer');
+	await editor.getByRole('button', { name: 'Save', exact: true }).click();
+	const handle = manager.getByRole('button', { name: /^Reorder Brooch,/ });
+	await handle.focus();
+	await page.keyboard.press('Home');
+	await expect(
+		manager.getByRole('button', { name: 'Reorder Brooch, position 1 of 12', exact: true })
+	).toBeFocused();
+	await manager.getByRole('button', { name: 'Done', exact: true }).click();
+	expect(await drawing()).toBe(before);
+	await reloadStudio(page, { waitUntil: 'networkidle' });
+	await page
+		.getByRole('navigation', { name: 'Equipment slots' })
+		.getByRole('button', { name: /^Slots/ })
+		.click();
+	await expect(
+		manager.getByRole('button', { name: 'Reorder Brooch, position 1 of 12', exact: true })
+	).toBeVisible();
+	await expect(manager.getByRole('button', { name: /^Reorder Accessory 2,/ })).toBeVisible();
+	await manager.getByRole('button', { name: 'More actions for Head', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Don’t show in Wardrobe', exact: true }).click();
+	await expect(manager.getByRole('alert')).toContainText('items');
+	finish();
+});
+
 test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme survive a reload and export', async ({
 	context,
 	page

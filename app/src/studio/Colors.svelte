@@ -18,7 +18,8 @@
 			? mats.map((x) => x.label)
 			: materialNames(
 					it,
-					mats.map((x) => x.ramp)
+					mats.map((x) => x.ramp),
+					m ?? []
 				);
 	const nameOf = (id?: string) => {
 		const mat = m?.materials.find((x) => x.id === id),

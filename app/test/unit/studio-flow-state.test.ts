@@ -2858,16 +2858,16 @@ test('category Random switches to another item of that category in its own slot,
 	s.doc.variants = {};
 	s.doc.undo = [];
 	// Head holds a helmet (worn) and a wizard hat: only the hat is a choice.
-	expect(s.groupRandomChoices('Head').map((i) => i.id)).toEqual(['hat_wizard']);
-	s.randomizeGroup('Head');
+	expect(s.groupRandomChoices('head').map((i) => i.id)).toEqual(['hat_wizard']);
+	s.randomizeGroup('head');
 	expect(s.doc.items).toEqual({ body: 'base', head: 'hat_wizard', torso_inner: 'vest_leather' });
 	expect(s.ui.selected).toBe('hat_wizard');
 	expect(s.doc.undo.map((u) => u.label)).toEqual(['Random head item']);
-	// The visible category name is used: the Body group reads as Chest.
+	// The visible category name is used for the permanent torso_inner key.
 	s.doc.items = { body: 'base' };
-	s.randomizeGroup('Body');
+	s.randomizeGroup('torso_inner');
 	expect(s.doc.items).toEqual({ body: 'base', torso_inner: 'vest_leather' });
-	expect(s.doc.undo.at(-1)!.label).toBe('Random chest item');
+	expect(s.doc.undo.at(-1)!.label).toBe('Random body item');
 });
 
 test('category Random re-rolls the colors when the only item of that category is already worn', async () => {
@@ -2881,14 +2881,14 @@ test('category Random re-rolls the colors when the only item of that category is
 	s.doc.items = { body: 'base', back: 'cape_red' };
 	s.doc.variants = { cloth: 'crimson' };
 	s.doc.undo = [];
-	expect(s.groupRandomChoices('Back').map((i) => i.id)).toEqual(['cape_red']);
-	s.randomizeGroup('Back');
+	expect(s.groupRandomChoices('back').map((i) => i.id)).toEqual(['cape_red']);
+	s.randomizeGroup('back');
 	expect(s.doc.items).toEqual({ body: 'base', back: 'cape_red' });
 	expect(s.doc.variants.cloth).toBeDefined();
 	expect(s.doc.variants.cloth).not.toBe('crimson');
 	expect(s.doc.undo.map((u) => u.label)).toEqual(['Random back item']);
 	// Without colors to change, or with no items at all, there is nothing to randomize.
 	s.store.project!.manifest.materials = [];
-	expect(s.groupRandomChoices('Back')).toEqual([]);
-	expect(s.groupRandomChoices('Face')).toEqual([]);
+	expect(s.groupRandomChoices('back')).toEqual([]);
+	expect(s.groupRandomChoices('face_acc')).toEqual([]);
 });

@@ -9,11 +9,12 @@ import {
 } from '../store/project.ts';
 import { rigArtworkVersion } from '../rig/rig.ts';
 import * as db from '../store/db.ts';
-import type { Manifest, Material, Preset, Project, Sha256, ZOverride } from '../store/manifest.ts';
+import type { Manifest, Material, Preset, Project, Sha256, Slot } from '../store/manifest.ts';
 import { CURRENT_FORMAT, supportedFormat } from '../store/manifest.ts';
 import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { assetUrl } from '../assets.ts';
+import { stableStringify } from '../image/hash.ts';
 
 export interface Outfit {
 	items: Preset['items'];
@@ -24,7 +25,9 @@ export interface DressState {
 	format: typeof CURRENT_FORMAT;
 	materials: Material[];
 	presets: Preset[];
-	zOverrides: Record<string, ZOverride[]>;
+	/** The character's slot definitions in render order (array order breaks equal-depth ties): drawing depth, overrides,
+	 *  custom slots and Wardrobe organization (labels, order, Not shown). */
+	slots: Slot[];
 	hides: Record<string, string[] | null>;
 	current?: Outfit;
 	itemIds: string[];
@@ -118,10 +121,61 @@ export const dressOf = (m: Manifest, current?: Outfit): DressState => ({
 	itemIds: m.items.map((it) => it.id),
 	materials: m.materials,
 	presets: m.presets,
-	zOverrides: Object.fromEntries(m.slots.map((s) => [s.id, s.zOverrides ?? []])),
+	slots: m.slots,
 	hides: Object.fromEntries(m.items.map((it) => [it.id, it.hides ?? null])),
 	current
 });
+
+/** The snapshot's slot definitions, plus any slot it does not know that holds items (a newer fit: a snapshot never strands art).
+ *  An empty slot absent from the snapshot was deleted or not yet organized there; an empty built-in falls back to its default. */
+function mergeSlots(m: Pick<Manifest, 'slots' | 'items'>, saved: Slot[]): Slot[] {
+	const known = new Set(saved.map((s) => s.id)),
+		used = new Set(m.items.map((it) => it.slot));
+	const slots = structuredClone(saved);
+	for (const s of m.slots) {
+		if (known.has(s.id) || !used.has(s.id)) continue;
+		slots.splice(slots.findLastIndex((x) => x.z <= s.z) + 1, 0, structuredClone(s));
+	}
+	return slots;
+}
+
+/** Slot edits one view made, carried onto the latest slot definitions (a three-way merge by slot id). `base`: the definitions
+ *  the view started from; `mine`: the view's definitions now; `theirs`: the latest ones (the saved record, or this view after
+ *  other changes). A slot `mine` added or changed from `base` takes `mine`'s version and place (by depth; equal depths keep
+ *  `mine`'s order). A slot `mine` left unchanged keeps `theirs`'s version, so a stale view never overwrites a newer edit and
+ *  never brings back a slot deleted elsewhere. A slot `mine` removed is removed only when `theirs` still has `base`'s exact
+ *  version and it is not in `keep` (slots holding items or item attempts): removing it must never strand work. A slot deleted
+ *  elsewhere stays deleted even when `mine` changed it, unless it is in `keep`. */
+export function mergeSlotEdits(
+	base: readonly Slot[],
+	mine: readonly Slot[],
+	theirs: readonly Slot[],
+	keep: ReadonlySet<string> = new Set()
+): Slot[] {
+	const byId = (list: readonly Slot[]) => new Map(list.map((s) => [s.id, s])),
+		B = byId(base),
+		M = byId(mine),
+		T = byId(theirs);
+	const same = (a: Slot | undefined, b: Slot | undefined) =>
+		!!a && !!b && stableStringify(a) === stableStringify(b);
+	const edited = (id: string) => M.has(id) && !same(M.get(id), B.get(id));
+	const out = theirs
+		.filter((s) => {
+			if (M.has(s.id)) return !edited(s.id);
+			if (!B.has(s.id)) return true; // added elsewhere
+			return keep.has(s.id) || !same(s, B.get(s.id)); // removed here: kept when busy or changed elsewhere
+		})
+		.map((s) => structuredClone(s));
+	const rank = new Map(mine.map((s, i) => [s.id, i]));
+	for (const s of mine) {
+		if (!edited(s.id)) continue;
+		if (B.has(s.id) && !T.has(s.id) && !keep.has(s.id)) continue; // deleted elsewhere
+		const i = rank.get(s.id)!;
+		const at = out.findLastIndex((x) => x.z < s.z || (x.z === s.z && (rank.get(x.id) ?? -1) < i));
+		out.splice(at + 1, 0, structuredClone(s));
+	}
+	return out;
+}
 
 /** Overlay a saved dress state; item.materials are rebuilt from material owners. */
 export function applyDress(m: Manifest, d: DressState) {
@@ -134,8 +188,7 @@ export function applyDress(m: Manifest, d: DressState) {
 		...m.materials.filter((x) => current.has(x.owner) && !owners.has(x.owner))
 	];
 	m.presets = structuredClone(d.presets);
-	for (const s of m.slots)
-		if (d.zOverrides[s.id]) s.zOverrides = structuredClone(d.zOverrides[s.id]);
+	if (Array.isArray(d.slots)) m.slots = mergeSlots(m, d.slots);
 	for (const it of m.items) {
 		it.materials = m.materials.filter((x) => x.owner === it.id).map((x) => x.id);
 		const h = d.hides?.[it.id];
@@ -195,11 +248,45 @@ export async function saveSplit(
 	for (const [h, im] of split.images) rememberDecoded(h as Sha256, im);
 }
 
-/** Save. For IndexedDB projects: one atomic read-modify-write (db.update), so concurrent item writes are kept (R6 P1-5). */
-export async function saveDress(id: string, m: Manifest, current: Outfit) {
+/** How a save writes slot definitions. `base`: the definitions the saving view started from (its last open or save), so only
+ *  the slots it changed since are written (mergeSlotEdits): a routine save of a stale view changes no slot. `keep`: slots its
+ *  item attempts use, never removed. Without it the snapshot's whole list is written (a developer page's own save). */
+export interface SlotSave {
+	base: readonly Slot[];
+	keep?: Iterable<string>;
+}
+/** Save. For IndexedDB projects: one atomic read-modify-write (db.update), so concurrent item writes are kept (R6 P1-5).
+ *  Returns the slot definitions now saved, for the view to continue from. */
+export async function saveDress(
+	id: string,
+	m: Manifest,
+	current: Outfit,
+	slotSave?: SlotSave
+): Promise<Slot[]> {
 	const d = structuredClone(dressOf(m, current));
-	if (id.startsWith('fixture:'))
-		return db.put('projects', `dress-${id}`, { id: `dress-${id}`, kind: 'dress', ...d });
+	const merged = (theirs: readonly Slot[], items: readonly { slot: string }[]) =>
+		slotSave
+			? mergeSlotEdits(
+					slotSave.base,
+					d.slots,
+					theirs,
+					new Set([...items.map((it) => it.slot), ...(slotSave.keep ?? [])])
+				)
+			: d.slots;
+	if (id.startsWith('fixture:')) {
+		// The bundled demo's dress state is its own small record, read as openFixture reads it (unreadable: the bundled
+		// character this view opened). Not one transaction: the demo is a preview, and its items never change.
+		const key = `dress-${id}`,
+			prev = await db.get<DressState>('projects', key).catch(() => undefined);
+		const theirs =
+			prev?.format === CURRENT_FORMAT && Array.isArray(prev.slots)
+				? prev.slots
+				: (slotSave?.base ?? d.slots);
+		const slots = merged(theirs, m.items);
+		await db.put('projects', key, { id: key, kind: 'dress', ...d, slots });
+		return structuredClone(slots);
+	}
+	let saved: Slot[] = [];
 	await db.update<ProjectRecord>('projects', id, (rec) => {
 		if (!rec?.manifest) throw new Error(`project ${id} vanished`);
 		const manifest = rec.manifest,
@@ -225,7 +312,7 @@ export async function saveDress(id: string, m: Manifest, current: Outfit) {
 			items: { ...d.current.items, ...Object.fromEntries(newSlots) },
 			variants: { ...d.current.variants, ...extraVariants }
 		};
-		const cleaned = { ...d, materials, current };
+		const cleaned = { ...d, materials, current, slots: merged(manifest.slots, manifest.items) };
 		for (const preset of [...cleaned.presets, ...(current ? [current] : [])]) {
 			for (const slot of Object.keys(preset.items))
 				if (preset.items[slot] && !live.has(preset.items[slot]!)) preset.items[slot] = null;
@@ -234,7 +321,8 @@ export async function saveDress(id: string, m: Manifest, current: Outfit) {
 		}
 		applyDress(manifest, cleaned);
 		rec.dress = { current };
-
+		saved = structuredClone(manifest.slots);
 		return rec;
 	});
+	return saved;
 }

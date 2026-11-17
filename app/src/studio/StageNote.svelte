@@ -3,7 +3,7 @@
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import type { DirectionName, Item } from '../lib/store/manifest.ts';
 	import { extendable, itemMoveOffer, missingItemMoves } from './create.ts';
-	import { groupOf, moveLabel } from './model.ts';
+	import { moveLabel } from './model.ts';
 	import {
 		ui,
 		doc,
@@ -134,8 +134,7 @@
 			<button
 				class="bu-action btn sm"
 				data-variant="outline"
-				onclick={() =>
-					openNewItem(groupOf(remake.slot).id, { slot: remake.slot, prompt: remake.prompt })}
+				onclick={() => openNewItem(remake.slot, { slot: remake.slot, prompt: remake.prompt })}
 				>{copyOnly ? `Make one for ${m?.name}` : 'Make it again…'}</button
 			>
 		{/if}

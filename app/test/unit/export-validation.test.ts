@@ -4,6 +4,7 @@ import { exportManifest, validate } from '../../src/lib/export/generic.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { spriteFramesTres } from '../../src/lib/export/godot.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { addCustom, moveCategory, shownCategories } from '../../src/studio/slots.ts';
 
 function project(): Project {
 	const hash = `sha256:${'0'.repeat(64)}` as const;
@@ -271,4 +272,23 @@ test('malformed slot entries reject clearly instead of throwing', () => {
 		errors = validate(p);
 	}).not.toThrow();
 	expect(errors.some((error) => error.includes('slot entry has no id'))).toBe(true);
+});
+
+test('Wardrobe reordering keeps every order a whole non-negative number, so the export validates', () => {
+	const p = project(),
+		none = new Set<string>();
+	addCustom(p.manifest, { label: 'Brooch' }, none);
+	for (const [key, to] of [
+		['brooch', 0],
+		['feet', 0],
+		['head', 3],
+		['brooch', 1],
+		['feet', 0],
+		['hair', 2]
+	] as const)
+		moveCategory(p.manifest, key, to, none);
+	const shown = shownCategories(p.manifest, none);
+	expect(shown.slice(0, 3).map((c) => c.key)).toEqual(['feet', 'brooch', 'hair']);
+	expect(shown.map((c) => c.order)).toEqual(shown.map((_, i) => i));
+	expect(validate(p)).toEqual([]);
 });

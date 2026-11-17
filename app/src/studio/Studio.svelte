@@ -61,7 +61,8 @@
 		item: () => import('./ItemPane.svelte'),
 		notes: () => import('./StageNote.svelte'),
 		gen: () => import('./GenCard.svelte'),
-		details: () => import('./DetailsSheet.svelte')
+		details: () => import('./DetailsSheet.svelte'),
+		slots: () => import('./SlotsSheet.svelte')
 	};
 
 	$effect(() => {
@@ -308,6 +309,7 @@
 	{#if ui.sheet === 'delete'}<DeleteSheet />{/if}
 	{#if ui.sheet === 'details'}<Lazy load={parts.details} />{/if}
 	{#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
+	{#if ui.sheet === 'slots'}<Lazy load={parts.slots} />{/if}
 	{#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
 		<Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}
 			><Lazy load={parts.item} id={ui.selected} /></Sheet

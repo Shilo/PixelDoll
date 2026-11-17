@@ -1,3 +1,4 @@
+import { requireSlot, specSlot } from '../lib/items/slots.ts';
 // Offline explanations only. These never encode images, submit work or invent dependent payloads.
 import { routes, BASE_ANIMS, baseAnimation, type Req } from '../lib/pixellab/routes.ts';
 import {
@@ -157,11 +158,11 @@ export function createPlan(spec: CreateSpec, freshSeed = false): PeekCall[] {
 }
 
 function itemCalls(
-	spec: Pick<ItemSpec, 'prompt' | 'key' | 'slot' | 'method'>,
+	spec: Pick<ItemSpec, 'prompt' | 'key' | 'slot' | 'slotConfig' | 'method'>,
 	calls: { kind?: string; cells: string[]; seed?: number }[],
 	cell?: { w: number; h: number }
 ): PeekCall[] {
-	const pad = padOf(spec.slot, spec.method, cell);
+	const pad = padOf(specSlot(spec), spec.method, cell);
 	return calls.map((call, index) => {
 		if (call.kind === 'grid') {
 			return {
@@ -213,6 +214,7 @@ export function itemPlan(ctx: RigCtx | null, input: NewItemInput): PeekCall[] {
 			name: input.name,
 			prompt: input.prompt,
 			slot: input.slot,
+			slotConfig: structuredClone(requireSlot(ctx.rec.manifest, input.slot)),
 			key: input.key ?? pickKey(input.prompt),
 			...(input.method ? { method: input.method } : {}),
 			...standingCoverage(ctx)

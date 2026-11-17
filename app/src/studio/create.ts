@@ -1517,7 +1517,7 @@ export function moveEstimate(
 						sum +
 						(s.itemMethod === 'anchor'
 							? planGens(planAnchoredMove(m.rig, item, s.id, targets), m.rig.cell)
-							: itemPoseGens(m.rig, item, s.id, n, targets))
+							: itemPoseGens(m.rig, item, s.id, n, targets, m))
 					);
 				}, 0);
 	return { gens: body + items, body, items, frames: n, minutes: 4 + s.items.length * 3 };

@@ -1,4 +1,4 @@
-// Studio model helpers (pure, node-runnable): user-facing slot groups (D1 §4.1), item thumbnails, base prompts, wording for
+// Studio model helpers (pure, node-runnable): item thumbnails, base prompts, wording for
 // QA and costs. Frame placement lives in lib/rig/normalize.ts (one rule for M2/M3/Studio).
 import { makeImg, type Img } from '../lib/image/png.ts';
 import { composeCell, layerFrame, unionFrame } from '../lib/compose/compose.ts';
@@ -11,7 +11,7 @@ import type {
 	QaSummary,
 	UnfitNote
 } from '../lib/store/manifest.ts';
-import { GATES, isAction } from '../lib/items/items.ts';
+import { GATES, isAction, SLOTS } from '../lib/items/items.ts';
 import { coverageGaps } from '../lib/dress/dress.ts';
 import type { Rig } from '../lib/rig/rig.ts';
 
@@ -23,88 +23,6 @@ export const bodyQualityNote = (w: string) =>
 			`${clip[0].toUpperCase() + clip.slice(1)} ${direction}: `
 	);
 
-export interface Group {
-	id: string;
-	slots: string[];
-	empty: string;
-	ideas: { label: string; slot?: string }[];
-}
-/** 16 architecture slots in 9 groups; slots[0] = default slot for a new item. */
-export const GROUPS: Group[] = [
-	{
-		id: 'Head',
-		slots: ['head'],
-		empty: 'hats',
-		ideas: [
-			{ label: 'wizard hat' },
-			{ label: 'iron knight helmet' },
-			{ label: 'golden crown' },
-			{ label: 'hood' }
-		]
-	},
-	{
-		id: 'Hair',
-		slots: ['hair', 'facial_hair'],
-		empty: 'hairstyles',
-		ideas: [
-			{ label: 'long braided hair' },
-			{ label: 'short spiky hair' },
-			{ label: 'ponytail' },
-			{ label: 'full beard', slot: 'facial_hair' }
-		]
-	},
-	{
-		id: 'Face',
-		slots: ['face_acc'],
-		empty: 'face items',
-		ideas: [{ label: 'round glasses' }, { label: 'eye patch' }, { label: 'bandit mask' }]
-	},
-	{
-		id: 'Body',
-		slots: ['torso_inner', 'torso_outer', 'shoulders', 'arms', 'neck'],
-		empty: 'tops',
-		ideas: [
-			{ label: 'leather vest' },
-			{ label: 'chainmail shirt' },
-			{ label: 'blue tunic' },
-			{ label: 'steel plate armor', slot: 'torso_outer' }
-		]
-	},
-	{
-		id: 'Legs',
-		slots: ['legs', 'waist'],
-		empty: 'trousers',
-		ideas: [
-			{ label: 'brown trousers' },
-			{ label: 'plate greaves' },
-			{ label: 'leather belt', slot: 'waist' }
-		]
-	},
-	{
-		id: 'Feet',
-		slots: ['feet'],
-		empty: 'shoes',
-		ideas: [{ label: 'leather boots' }, { label: 'sandals' }, { label: 'iron sabatons' }]
-	},
-	{
-		id: 'Back',
-		slots: ['back'],
-		empty: 'capes',
-		ideas: [{ label: 'red cape' }, { label: 'travel backpack' }, { label: 'quiver of arrows' }]
-	},
-	{
-		id: 'Main hand',
-		slots: ['main_hand'],
-		empty: 'weapons',
-		ideas: [{ label: 'steel sword' }, { label: 'wooden staff' }, { label: 'battle axe' }]
-	},
-	{
-		id: 'Off hand',
-		slots: ['off_hand'],
-		empty: 'shields',
-		ideas: [{ label: 'round shield' }, { label: 'iron lantern' }, { label: 'wooden longbow' }]
-	}
-];
 const count = (n: number, one: string) => `${n} ${n === 1 ? one : one + 's'}`;
 /** A character's shape at a glance: "64 px · 4 directions · 2 moves · 6 items". */
 export const characterFacts = (m: Manifest) =>
@@ -114,29 +32,6 @@ export const characterFacts = (m: Manifest) =>
 		count(m.rig.animations.length, 'move'),
 		count(m.items.filter((i) => i.id !== m.rig.baseItem).length, 'item')
 	].join(' · ');
-/** The visible name of a category. "Body" stays the stable id; people see it as Chest. */
-export const groupLabel = (id: string) => (id === 'Body' ? 'Chest' : id);
-export const groupOf = (slot: string) => GROUPS.find((g) => g.slots.includes(slot)) ?? GROUPS[3];
-export const SLOT_LABEL: Record<string, string> = {
-	head: 'Head',
-	hair: 'Hair',
-	facial_hair: 'Facial hair',
-	face_acc: 'Face',
-	torso_inner: 'Top (inner)',
-	torso_outer: 'Top (outer)',
-	shoulders: 'Shoulders',
-	arms: 'Arms',
-	neck: 'Neck',
-	legs: 'Legs',
-	waist: 'Waist',
-	feet: 'Feet',
-	back: 'Back',
-	main_hand: 'Main hand',
-	off_hand: 'Off hand',
-	body: 'Body'
-};
-export const slotLabel = (s: string) => SLOT_LABEL[s] ?? s;
-
 /** One item alone in canonical draw order in one cell; mirrored directions flip their source. Oversize layers (v1.3.1,
  * e.g. 96 px held items) line up by pivot on the union of the item's layer frames. */
 export function itemCell(
@@ -395,7 +290,7 @@ export function plainReason(s: string): string {
 			return `The item may change hands between views; check the intended hand${where}`;
 		const expects = /slot (\S+) expects hand_([lr])$/.exec(s);
 		if (expects)
-			return `The item may be held in the wrong hand; ${slotLabel(expects[1])} expects the ${expects[2] === 'r' ? 'right' : 'left'} hand${where}`;
+			return `The item may be held in the wrong hand; ${SLOTS.find((slot) => slot.id === expects[1])?.label ?? expects[1].replaceAll('_', ' ')} expects the ${expects[2] === 'r' ? 'right' : 'left'} hand${where}`;
 		return `The item may be held in the wrong hand; check the intended hand${where}`;
 	}
 	const key =
@@ -580,12 +475,6 @@ export function selfTest() {
 			itemNameFrom('Iron Knight Helmet with a red plume') === 'Iron knight helmet' &&
 			itemNameFrom('') === '',
 		`itemNameFrom ${itemNameFrom('a straw farmer hat')}`
-	);
-	console.assert(
-		groupOf('off_hand').id === 'Off hand' &&
-			groupOf('main_hand').id === 'Main hand' &&
-			groupOf('waist').id === 'Legs',
-		'groupOf'
 	);
 	console.assert(crop(s)!.w === 1 && crop(makeImg(2, 2)) === null, 'crop');
 	console.assert(plainReason('G4 walk/south: item missing').includes('missing'), 'plainReason');

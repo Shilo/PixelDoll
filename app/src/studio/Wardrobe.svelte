@@ -9,22 +9,14 @@
 	// One continuous list of every equipment category with sticky headers, and a slot rail that follows and drives it.
 	import { onMount, tick, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { equipped, hiddenSlots, OTHER_HAND, twoHanded } from '../lib/compose/compose.ts';
+	import { equipped, handSide, hiddenSlots, twoHanded } from '../lib/compose/compose.ts';
 	import { edgeFade, scrollToTop, stickyFade } from '@shilo/bronze-ui/svelte';
-	import {
-		crop,
-		groupOf,
-		groupLabel,
-		GROUPS,
-		HEALTH_LABEL,
-		healthOf,
-		missingFramesNote,
-		unfitText
-	} from './model.ts';
+	import { crop, HEALTH_LABEL, healthOf, missingFramesNote, unfitText } from './model.ts';
 	import { itemKey } from '../lib/equipment/copy.ts';
 	import type { SharedItem } from '../lib/equipment/shared.ts';
 	import TileMarks, { sortMarks, type Mark } from './TileMarks.svelte';
-	import type { CellKey } from '../lib/store/manifest.ts';
+	import type { CellKey, Item, Manifest } from '../lib/store/manifest.ts';
+	import { categories, shownCategories, slotDef } from './slots.ts';
 	import {
 		ui,
 		doc,
@@ -42,7 +34,8 @@
 		shared,
 		sharedKey,
 		addShared,
-		removeItem
+		removeItem,
+		busySlots
 	} from './state.svelte.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -54,7 +47,7 @@
 	import GroupIcon from './GroupIcon.svelte';
 	import SharedThumb from './SharedThumb.svelte';
 	import ItemMenu from './ItemMenu.svelte';
-	import { Ban, Check, CircleAlert, EllipsisVertical, Plus, Shuffle } from './icons.ts';
+	import { Ban, Check, CircleAlert, EllipsisVertical, Plus, Settings2, Shuffle } from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
 	let list = $state<HTMLElement>();
@@ -182,35 +175,72 @@
 	const making = $derived(
 		new Set(gens.filter((x) => x.draft.rigId === doc.id).map((x) => itemKey(x.input)))
 	);
-	const sections = $derived(
-		GROUPS.map((g) => {
-			const items = m ? m.items.filter((i) => g.slots.includes(i.slot)) : [];
-			const pending = gens.filter(
-				(x) => x.draft.rigId === doc.id && g.slots.includes(x.input.slot)
-			);
+	/** The hand a category holds with, from its own definition (a built-in that holds nothing yet uses its default). */
+	const sideOf = (key: string) => {
+		const def = m && slotDef(m, key);
+		return def ? handSide({ slots: [def] } as Manifest, key) : undefined;
+	};
+	const own = $derived(
+		(m ? shownCategories(m, busySlots(m)) : []).map((c) => {
+			const key = c.key,
+				side = sideOf(key);
+			const items = m ? m.items.filter((i) => i.slot === key) : [];
+			const pending = gens.filter((x) => x.draft.rigId === doc.id && x.input.slot === key);
 			const others = shared.items.filter(
-				(x) => g.slots.includes(x.item.slot) && (x.fit !== 'remake' || !making.has(itemKey(x.item)))
+				(x) => x.item.slot === key && (x.fit !== 'remake' || !making.has(itemKey(x.item)))
 			);
 			return {
-				g,
-				label: groupLabel(g.id),
+				key,
+				label: c.label,
 				items,
 				pending,
 				others,
-				worn: items.some((i) => doc.items[i.slot] === i.id) || g.slots.some((s) => !!doc.drafts[s]),
-				choices: m ? groupRandomChoices(g.id).length : 0,
+				worn: items.some((i) => doc.items[i.slot] === i.id) || !!doc.drafts[key],
+				choices: m ? groupRandomChoices(key).length : 0,
 				// a two-handed item worn in the other hand holds this one too
-				holder: m
-					? g.slots
-							.filter((slot) => OTHER_HAND[slot])
-							.map((slot) =>
-								m.items.find((i) => i.slot === OTHER_HAND[slot] && view.items[i.slot] === i.id)
+				holder:
+					m && side
+						? m.items.find(
+								(i) =>
+									view.items[i.slot] === i.id &&
+									!!sideOf(i.slot) &&
+									sideOf(i.slot) !== side &&
+									twoHanded(m, i)
 							)
-							.find((i) => !!i && twoHanded(m, i))
-					: undefined
+						: undefined,
+				fromOthers: ''
 			};
 		})
 	);
+	/** Other characters' items in their own categories this character doesn't have: listed under the source's name, so they
+	 *  can be worn. Wearing one adds the category here (copySlotPlan); until then it is not part of this character. */
+	const fromOthers = $derived.by(() => {
+		if (!m) return [];
+		const known = new Set(categories(m).map((c) => c.key));
+		const groups: Record<string, SharedItem[]> = {};
+		for (const x of shared.items) {
+			if (known.has(x.item.slot) || x.item.slot === 'body') continue;
+			// One that can't be worn here would only offer making it, in a category this character doesn't have.
+			if (x.fit === 'remake') continue;
+			(groups[x.item.slot] ??= []).push(x);
+		}
+		return Object.entries(groups).map(([key, others]) => {
+			const names = [...new Set(others.map((x) => x.sourceName))];
+			return {
+				key,
+				label: others[0].source.slots.find((s) => s.id === key)?.label ?? key,
+				items: [] as Item[],
+				pending: [] as typeof gens,
+				others,
+				worn: false,
+				choices: 0,
+				holder: undefined as Item | undefined,
+				fromOthers: `From ${names.join(', ')}. Wearing an item adds this category to ${m.name}.`
+			};
+		});
+	});
+	const sections = $derived([...own, ...fromOthers]);
+	const notShown = $derived(m ? categories(m).length - own.length : 0);
 	/** Every corner icon another character's item shows here, each with the words its tooltip and ⋮ menu give. */
 	function sharedMarks(x: SharedItem): Mark[] {
 		if (!m) return [];
@@ -260,7 +290,7 @@
 		// A category is current once its section reaches the bottom of the sticky header.
 		const head = list.querySelector<HTMLElement>('.bu-section-head');
 		const top = list.getBoundingClientRect().top + (head?.offsetHeight ?? 0);
-		let current = GROUPS[0].id;
+		let current = sections[0]?.key ?? ui.group;
 		for (const el of list.querySelectorAll<HTMLElement>('[data-group]'))
 			if (el.getBoundingClientRect().top <= top) current = el.dataset.group!;
 		if (current !== ui.group) {
@@ -277,7 +307,7 @@
 		ui.group = id;
 		if (instant) {
 			list.scrollTop =
-				id === GROUPS[0].id
+				id === sections[0]?.key
 					? 0
 					: list.scrollTop +
 						section.getBoundingClientRect().top -
@@ -398,39 +428,41 @@
 			onscroll={scrolled}
 			{@attach stickyFade({ inside: 10, outside: 10 })}
 		>
-			{#each sections as s (s.g.id)}
-				{@const g = s.g}
+			{#each sections as s (s.key)}
 				{@const lower = s.label.toLowerCase()}
-				{@const count = s.items.length + s.pending.length}
+				{@const count = s.fromOthers ? s.others.length : s.items.length + s.pending.length}
 				<section
 					class="slot-section"
-					data-group={g.id}
-					id={sectionId(g.id)}
-					aria-labelledby="{sectionId(g.id)}-title"
+					data-group={s.key}
+					id={sectionId(s.key)}
+					aria-labelledby="{sectionId(s.key)}-title"
 				>
-					<div class="bu-section-head" data-current={ui.group === g.id || undefined}>
-						<GroupIcon group={g.id} size={16} />
-						<h3 class="bu-section-title" id="{sectionId(g.id)}-title">{s.label}</h3>
+					<div class="bu-section-head" data-current={ui.group === s.key || undefined}>
+						<GroupIcon group={s.key} size={16} />
+						<h3 class="bu-section-title" id="{sectionId(s.key)}-title">{s.label}</h3>
 						<span class="bu-section-count"
 							>{count}<span class="sr">{` ${count === 1 ? 'item' : 'items'}`}</span></span
 						>
-						<button
-							class="bu-action section-action"
-							data-variant="quiet"
-							aria-label="Random {lower} item"
-							title="Random {lower} item"
-							disabled={!s.choices}
-							onclick={() => randomizeGroup(g.id)}><Shuffle size={16} /></button
-						>
-						<button
-							class="bu-action section-action section-add"
-							data-variant="quiet"
-							aria-label="New {lower} item"
-							title="New {lower} item"
-							onclick={() => openNewItem(g.id)}><Plus size={18} /></button
-						>
+						{#if !s.fromOthers}
+							<button
+								class="bu-action section-action"
+								data-variant="quiet"
+								aria-label="Random {lower} item"
+								title="Random {lower} item"
+								disabled={!s.choices}
+								onclick={() => randomizeGroup(s.key)}><Shuffle size={16} /></button
+							>
+							<button
+								class="bu-action section-action section-add"
+								data-variant="quiet"
+								aria-label="New {lower} item"
+								title="New {lower} item"
+								onclick={() => openNewItem(s.key)}><Plus size={18} /></button
+							>
+						{/if}
 					</div>
 					<div class="section-body">
+						{#if s.fromOthers}<p class="section-note faint small">{s.fromOthers}</p>{/if}
 						{#if s.holder}<p class="section-note faint small">
 								Held by {s.holder.name} (two-handed).
 							</p>{/if}
@@ -440,7 +472,7 @@
 								data-variant="empty"
 								aria-pressed={!s.worn}
 								aria-label="Empty {lower}"
-								onclick={() => clearSlots(g.slots)}
+								onclick={() => clearSlots([s.key])}
 								><span class="bu-tile-art tile-art" aria-hidden="true"><Ban size={26} /></span><span
 									class="bu-tile-label">Empty</span
 								>{#if !s.worn}<span class="tile-marks" aria-hidden="true"
@@ -541,7 +573,7 @@
 														box={x.phase === 'running' ? 12 : 40}
 													/>
 												{:else if x.phase === 'failed'}<CircleAlert size={24} />
-												{:else if x.phase !== 'running'}<GroupIcon group={g.id} size={24} />{/if}
+												{:else if x.phase !== 'running'}<GroupIcon group={s.key} size={24} />{/if}
 											</span>
 											{#if x.phase === 'running'}<span
 													class="bu-ring ring generation-ring"
@@ -627,12 +659,12 @@
 									>
 								</div>
 							{/each}
-							{#if !count}
+							{#if !count && !s.fromOthers}
 								<button
 									class="bu-tile item-tile"
 									data-variant="add"
 									aria-label="New {lower} item"
-									onclick={() => openNewItem(g.id)}
+									onclick={() => openNewItem(s.key)}
 									><span class="bu-tile-art tile-art" aria-hidden="true"><Plus size={26} /></span
 									><span class="bu-tile-label">New</span></button
 								>
@@ -641,6 +673,14 @@
 					</div>
 				</section>
 			{/each}
+			<button
+				class="bu-action btn plain manage-slots"
+				data-variant="quiet"
+				onclick={() => (ui.sheet = 'slots')}
+				><Settings2 size={16} aria-hidden="true" />Slots{#if notShown}<span class="bu-muted small"
+						>{notShown} not shown</span
+					>{/if}</button
+			>
 			{#if shared.error}<p class="notice warn small" role="alert">{shared.error}</p>{/if}
 			{#if shared.skipped}<p class="faint small">
 					Some items from other characters couldn’t be read.
@@ -667,25 +707,50 @@
 			{@attach edgeFade({ axis: 'y', size: 24 })}
 		>
 			<ul class="slot-rail-list" data-arrows>
-				{#each sections as s (s.g.id)}
+				{#each sections as s (s.key)}
 					<li>
 						<button
 							class="bu-action slot-tab"
 							data-variant="rail"
-							data-rail={s.g.id}
+							data-rail={s.key}
 							data-filled={s.worn || undefined}
-							aria-current={ui.group === s.g.id ? 'true' : undefined}
+							aria-current={ui.group === s.key ? 'true' : undefined}
 							aria-label={s.worn ? `${s.label}, equipped` : s.label}
-							tabindex={ui.group === s.g.id ? 0 : -1}
-							onclick={() => show(s.g.id)}
-							><GroupIcon group={s.g.id} size={22} /><span class="bu-rail-label">{s.label}</span><i
+							tabindex={ui.group === s.key ? 0 : -1}
+							onclick={() => show(s.key)}
+							><GroupIcon group={s.key} size={22} /><span class="bu-rail-label">{s.label}</span><i
 								class="bu-rail-dot"
 								aria-hidden="true"
 							></i></button
 						>
 					</li>
 				{/each}
+				<li>
+					<button
+						class="bu-action slot-tab"
+						data-variant="rail"
+						aria-haspopup="dialog"
+						title="Show, hide, order and add categories"
+						tabindex={sections.some((s) => s.key === ui.group) ? -1 : 0}
+						onclick={() => (ui.sheet = 'slots')}
+						><Settings2 size={22} aria-hidden="true" /><span class="bu-rail-label">Slots</span
+						></button
+					>
+				</li>
 			</ul>
 		</nav>
 	</div>
 {/if}
+
+<style>
+	.manage-slots {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0 0 12px;
+		color: var(--text-2);
+	}
+	.manage-slots span {
+		margin-left: 4px;
+	}
+</style>

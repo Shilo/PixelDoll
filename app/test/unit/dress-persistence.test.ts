@@ -1,7 +1,7 @@
 import { expect, test, vi } from 'vitest';
-import type { Manifest } from '../../src/lib/store/manifest.ts';
-import { saveDress, saveSplit } from '../../src/lib/dress/project.ts';
-import { deleteItem, type StoredProject } from '../../src/lib/store/project.ts';
+import type { Manifest, Slot } from '../../src/lib/store/manifest.ts';
+import { mergeSlotEdits, saveDress, saveSplit } from '../../src/lib/dress/project.ts';
+import { deleteItem, deleteItems, type StoredProject } from '../../src/lib/store/project.ts';
 import { rigArtworkVersion } from '../../src/lib/rig/rig.ts';
 
 const { records } = vi.hoisted(() => ({ records: new Map<string, unknown>() }));
@@ -79,6 +79,26 @@ test('deleting equipment cleans current and saved outfits, and stale autosaves c
 	expect(saved.dress.current.items.head).toBeNull();
 	expect(saved.manifest.materials.map((mat) => mat.id)).toEqual(['base_1']);
 	expect(saved.dress.current.variants).toEqual({});
+});
+
+test('deleting several items is all or nothing: a missing item or a refused finish keeps every item', async () => {
+	const live = record();
+	live.manifest.items.push({ id: 'cap', materials: [] } as never);
+	live.manifest.presets[0].items.back = 'cap';
+	records.set(live.id, live);
+	await expect(deleteItems(live.id, ['hat', 'gone'], () => {})).rejects.toThrow('changed');
+	await expect(
+		deleteItems(live.id, ['hat', 'cap'], () => {
+			throw new Error('refused');
+		})
+	).rejects.toThrow('refused');
+	expect(records.get(live.id)).toEqual(live);
+	await deleteItems(live.id, ['hat', 'cap'], (rec) => delete rec.manifest.presets[0].items.back);
+	const saved = records.get(live.id) as ReturnType<typeof record>;
+	expect(saved.manifest.items.map((it) => it.id)).toEqual(['base']);
+	expect(saved.manifest.materials.map((mat) => mat.id)).toEqual(['base_1']);
+	expect(saved.manifest.presets[0].items).toEqual({ body: 'base', head: null });
+	expect(saved.dress.current).toEqual({ items: { head: null }, variants: {} });
 });
 
 test('region preparation cannot overwrite a newer frozen base, and metadata-only splits still persist', async () => {
@@ -170,4 +190,114 @@ test('covered items can still be deliberately unequipped and stale links to dele
 	expect(saved.manifest.materials[0].linkTo).toBeUndefined();
 	expect(saved.dress.current.items.head).toBeNull();
 	expect(saved.dress.current.variants).toEqual({});
+});
+
+test('slot definitions persist with organization, keep newer fitted slots and drop a deleted empty custom slot', async () => {
+	const live = record(),
+		snapshot = structuredClone(live.manifest);
+	live.manifest.slots.push({ id: 'old_charm', z: 55, class: 'worn', label: 'Old charm' });
+	live.manifest.slots.push({ id: 'quiver', z: 90, class: 'worn', label: 'Quiver' });
+	live.manifest.items.push({ id: 'arrows', slot: 'quiver', materials: [] } as never);
+	snapshot.slots = [
+		{
+			id: 'brooch',
+			z: 62,
+			class: 'worn',
+			label: 'Brooch',
+			wardrobeHidden: false,
+			zOverrides: [{ layer: 'fg', z: 62 }]
+		},
+		{ id: 'head', z: 130, class: 'rigid', wardrobeOrder: 4 }
+	] as never;
+	records.set(live.id, live);
+	await saveDress(live.id, snapshot as Manifest, { items: {}, variants: {} });
+	const saved = records.get(live.id) as StoredProject;
+	expect(saved.manifest.slots.map((s) => s.id)).toEqual(['brooch', 'quiver', 'head']);
+	expect(saved.manifest.slots[0]).toMatchObject({
+		label: 'Brooch',
+		zOverrides: [{ layer: 'fg', z: 62 }]
+	});
+	expect(saved.manifest.slots[2].wardrobeOrder).toBe(4);
+});
+
+const slot = (id: string, z: number, extra: Partial<Slot> = {}) =>
+	({ id, z, class: 'worn', anchor: 'neck', label: id, ...extra }) as Slot;
+const ids = (list: Slot[]) => list.map((s) => s.id);
+
+test('a stale tab’s routine save keeps a category another tab just added, even while an attempt is pending there', async () => {
+	const live = record(),
+		stale = structuredClone(live.manifest) as unknown as Manifest;
+	const base = structuredClone(stale.slots);
+	// Another tab added Brooch and started an item there: no saved item holds it yet.
+	live.manifest.slots.push(slot('brooch', 55));
+	records.set(live.id, live);
+	const saved = await saveDress(live.id, stale, { items: { head: 'hat' }, variants: {} }, { base });
+	expect(ids((records.get(live.id) as StoredProject).manifest.slots)).toEqual(['head', 'brooch']);
+	expect(ids(saved)).toEqual(['head', 'brooch']);
+});
+
+test('a stale tab never brings back an empty category deleted elsewhere, even after editing it', async () => {
+	const live = record(),
+		stale = structuredClone(live.manifest) as unknown as Manifest;
+	stale.slots.push(slot('charm', 55));
+	const base = structuredClone(stale.slots);
+	stale.slots[1].label = 'Lucky charm';
+	records.set(live.id, live); // the record no longer has Charm
+	await saveDress(live.id, stale, { items: {}, variants: {} }, { base });
+	expect(ids((records.get(live.id) as StoredProject).manifest.slots)).toEqual(['head']);
+});
+
+test('a deliberate removal is saved, but never of a category holding attempts or changed elsewhere since', async () => {
+	const start = [{ id: 'head' } as Slot, slot('charm', 55)];
+	const saveWithout = async (record_: ReturnType<typeof record>, keep: string[] = []) => {
+		records.set(record_.id, record_);
+		const mine = structuredClone(record_.manifest) as unknown as Manifest;
+		mine.slots = [{ id: 'head' } as Slot];
+		await saveDress(record_.id, mine, { items: {}, variants: {} }, { base: start, keep });
+		return ids((records.get(record_.id) as StoredProject).manifest.slots);
+	};
+	const plain = record();
+	plain.manifest.slots = structuredClone(start) as never;
+	expect(await saveWithout(plain)).toEqual(['head']);
+	const drafting = record();
+	drafting.manifest.slots = structuredClone(start) as never;
+	expect(await saveWithout(drafting, ['charm'])).toEqual(['head', 'charm']);
+	const renamed = record();
+	renamed.manifest.slots = structuredClone(start) as never;
+	(renamed.manifest.slots[1] as Slot).label = 'Renamed elsewhere';
+	expect(await saveWithout(renamed)).toEqual(['head', 'charm']);
+});
+
+test('a slot edit lands on the latest list: its own change wins, other tabs’ additions and order stay', async () => {
+	const live = record();
+	live.manifest.slots = [slot('head', 130)] as never;
+	const mine = structuredClone(live.manifest) as unknown as Manifest;
+	const base = structuredClone(mine.slots);
+	mine.slots[0].wardrobeOrder = 7;
+	mine.slots.push(slot('brooch', 62));
+	live.manifest.slots.unshift(slot('quiver', 20) as never);
+	records.set(live.id, live);
+	await saveDress(live.id, mine, { items: {}, variants: {} }, { base });
+	const saved = (records.get(live.id) as StoredProject).manifest.slots;
+	expect(ids(saved)).toEqual(['quiver', 'brooch', 'head']);
+	expect(saved.find((s) => s.id === 'head')!.wardrobeOrder).toBe(7);
+});
+
+test('undoing Add category keeps it while an attempt there is pending, and an old undo never removes newer slots', () => {
+	const head = slot('head', 130),
+		brooch = slot('brooch', 55);
+	// Undo of Add Brooch: after the step [head, brooch], back to [head]; meanwhile an item is being made in Brooch.
+	expect(ids(mergeSlotEdits([brooch, head], [head], [brooch, head], new Set(['brooch'])))).toEqual([
+		'brooch',
+		'head'
+	]);
+	expect(ids(mergeSlotEdits([brooch, head], [head], [brooch, head]))).toEqual(['head']);
+	// Undo of an older color step: its snapshot predates Quiver (another tab or a later step), which stays.
+	const quiver = slot('quiver', 90);
+	expect(ids(mergeSlotEdits([head], [head], [head, quiver]))).toEqual(['head', 'quiver']);
+	// Equal depths keep the view's order: a category set to draw directly above another stays after it.
+	const pin = slot('pin', 55);
+	expect(
+		ids(mergeSlotEdits([brooch, head], [brooch, pin, head], [slot('belt', 55), brooch, head]))
+	).toEqual(['belt', 'brooch', 'pin', 'head']);
 });

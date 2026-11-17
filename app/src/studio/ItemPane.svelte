@@ -11,10 +11,8 @@
 	import Sprite from './Sprite.svelte';
 	import {
 		HEALTH_LABEL,
-		groupOf,
 		healthOf,
 		itemPreviewFrames,
-		slotLabel,
 		plainReason,
 		moveLabel,
 		qaReasons,
@@ -22,6 +20,7 @@
 		unfitText,
 		unknownCostText
 	} from './model.ts';
+	import { isBuiltin, slotLabel } from './slots.ts';
 	import {
 		ui,
 		doc,
@@ -63,9 +62,16 @@
 	const m = $derived(store.project?.manifest);
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const it = $derived(m?.items.find((i) => i.id === id));
-	const ladder = $derived(
-		m ? (slotLadder(m.rig).find((s) => s.id === it?.slot)?.zOverrides ?? []) : []
-	);
+	// The order Reset restores: a built-in's ladder, or a custom category's chosen drawing position (slots.ts setDrawsAbove).
+	const ladder = $derived.by(() => {
+		const def = m && it ? m.slots.find((s) => s.id === it.slot) : undefined;
+		if (!m || !it) return [];
+		if (isBuiltin(it.slot))
+			return slotLadder(m.rig).find((s) => s.id === it.slot)?.zOverrides ?? [];
+		return (def?.zOverrides ?? []).filter(
+			(o) => o.layer === 'fg' && !o.dir && !o.anim && o.cell == null && o.z === def?.z
+		);
+	});
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const hiddenNow = $derived(m && it ? hiddenSlots(m, equipped(m, doc.items)).has(it.slot) : false);
 	const health = $derived(m && it ? healthOf(m, it) : 'demo');
@@ -269,11 +275,7 @@
 		<header class="insp-head">
 			<h2 class="insp-title">{it.name}</h2>
 			<p class="insp-sub">
-				<span
-					>{groupOf(it.slot).id}{groupOf(it.slot).slots.length > 1
-						? ` · ${slotLabel(it.slot)}`
-						: ''}</span
-				>
+				<span>{slotLabel(m, it.slot)}</span>
 				{#if health !== 'demo' || isDemo()}<span class="badge {health}"
 						>{#if health === 'clean'}<CircleCheck
 								size={12}
@@ -511,7 +513,7 @@
 					class="bu-action btn"
 					data-variant="outline"
 					onclick={() =>
-						openNewItem(groupOf(it.slot).id, {
+						openNewItem(it.slot, {
 							slot: it.slot,
 							prompt: it.prompt,
 							route: it.route
@@ -570,13 +572,13 @@
 					{#each others as s (s.id)}
 						{@const on = hides.includes(s.id)}
 						<button class="chip" aria-pressed={on} onclick={() => toggleHide(it.id, s.id)}
-							>{#if on}<Check size={12} strokeWidth={2.5} />{/if}{slotLabel(s.id)}</button
+							>{#if on}<Check size={12} strokeWidth={2.5} />{/if}{slotLabel(m, s.id)}</button
 						>
 					{/each}
 				</div>
 				<p class="faint small">
 					Checked items are hidden while {it.name} is worn.{#if tucks.length}{' '}Unchecked {tucks
-							.map(slotLabel)
+							.map((k) => slotLabel(m, k))
 							.join(', ')
 							.toLowerCase()} is tucked under it: only what hangs below the brim shows. Check it for hoods
 						and full masks.{/if}
