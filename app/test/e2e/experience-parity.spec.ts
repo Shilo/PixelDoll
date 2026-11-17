@@ -150,8 +150,8 @@ const world = (page: Page) => page.locator('.world-stage');
 const selection = (page: Page) => page.getByRole('application', { name: /^Character selection\./ });
 const modes = (page: Page) => page.getByRole('group', { name: 'Character view', exact: true });
 
-async function landing(page: Page) {
-	await page.goto('/');
+async function landing(page: Page, url = '/') {
+	await page.goto(url);
 	await expect(page.locator('.customize-action')).toBeEnabled();
 }
 
@@ -537,6 +537,7 @@ test('Preview resolves partial chord releases, preserves pause and clip selectio
 	await expect(world(page)).toHaveAttribute('data-facing', 'west');
 	await page.keyboard.up('a');
 	await expect(clip).toHaveValue(original);
+	await expect(page.getByRole('combobox', { name: 'Mount preview', exact: true })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
 	await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
 	await page.getByRole('button', { name: 'More options', exact: true }).focus();
@@ -576,6 +577,75 @@ test('Moves preserves paused Preview and Side-scroller enters using an authored 
 	await expect(page.getByRole('button', { name: /^(Play|Pause)$/ })).toHaveCount(0);
 	await page.getByRole('button', { name: 'Face south', exact: true }).click();
 	await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+});
+
+test('Preview mounts a test fixture around any move, labels its diagnostic view and saves nothing', async ({
+	page
+}) => {
+	await landing(page, '/?mounts');
+	await page.keyboard.press('Enter');
+	await pause(page);
+	const move = page.getByRole('combobox', { name: 'Move', exact: true });
+	const moves = await move.locator('option').count();
+	await move.selectOption('cross-punch');
+	await page.getByRole('button', { name: 'Face east', exact: true }).click();
+	const mount = page.getByRole('combobox', { name: 'Mount preview', exact: true });
+	await expect(mount).toHaveValue('');
+	await expect(world(page)).not.toHaveAttribute('data-mount');
+	// The opt-in controls explain their purpose and boundaries before anything is chosen.
+	await expect(page.locator('.world-notes')).toContainText(
+		'choose an Open seat or Covered seat in the bar below'
+	);
+	await expect(page.locator('.world-notes')).toContainText(
+		'Test only: no real mount, no automatic pose change, no charge, not saved or exported.'
+	);
+	await mount.selectOption('narrow-saddle');
+	await expect(world(page)).toHaveAttribute('data-mount', /^narrow-saddle east \d+$/);
+	await expect(page.locator('.world-notes')).toContainText(
+		'Open seat: an open saddle, so the legs would straddle it'
+	);
+	// The seat keeps the chosen move and every other move selectable.
+	await expect(move).toHaveValue('cross-punch');
+	await expect(move.locator('option')).toHaveCount(moves);
+	await mount.selectOption('shell');
+	await expect(world(page)).toHaveAttribute('data-mount', /^shell east \d+$/);
+	await expect(page.locator('.world-notes')).toContainText(
+		'Covered seat: the enclosing front wall hides'
+	);
+	const hidden = page.getByRole('button', {
+		name: 'Reveal covered parts (diagnostic)',
+		exact: true
+	});
+	await hidden.click();
+	await expect(hidden).toHaveAttribute('aria-pressed', 'true');
+	await expect(page.locator('.world-notes')).toContainText(
+		"Diagnostic: the seat's front layer is see-through, so covered parts show. Not exported."
+	);
+	// A move with an east view makes the unsupported facing actionable rather than a dead note.
+	await move.selectOption('walk');
+	await page.getByRole('button', { name: 'Face north', exact: true }).click();
+	await expect(world(page)).toHaveAttribute('data-facing', 'north');
+	await expect(world(page)).not.toHaveAttribute('data-mount');
+	await expect(page.locator('.world-notes')).toContainText(
+		'Covered seat has no North view; mount hidden'
+	);
+	await expect(page.locator('.world-notes')).not.toContainText('Diagnostic:');
+	const supported = page.getByRole('button', { name: /^Preview (East|South-East) view$/ });
+	await expect(supported).toBeVisible();
+	await supported.click();
+	await expect(world(page)).toHaveAttribute('data-facing', /^(east|south-east)$/);
+	await expect(world(page)).toHaveAttribute('data-mount', /^shell (east|south-east) \d+$/);
+	await expect(supported).toHaveCount(0);
+	const stored = await page.evaluate(() =>
+		Object.keys(localStorage).map((key) => `${key}=${localStorage.getItem(key)}`)
+	);
+	expect(stored.filter((entry) => /narrow-saddle|shell|showHidden|"mount"/.test(entry))).toEqual(
+		[]
+	);
+	await landing(page, '/?mounts');
+	await page.keyboard.press('Enter');
+	await expect(page.getByRole('combobox', { name: 'Mount preview', exact: true })).toHaveValue('');
+	await expect(world(page)).not.toHaveAttribute('data-mount');
 });
 
 test('imported move names remain readable, distinct and contained in Preview and Inspect at every screen size', async ({

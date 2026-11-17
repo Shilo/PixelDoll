@@ -43,6 +43,7 @@ import type { Key } from '../lib/image/chroma.ts';
 import type {
 	BodyPaletteRepairPlan,
 	CreateSpec,
+	KeepBodyPlan,
 	MeasurementRecoveryPlan,
 	MoveSpec,
 	Progress
@@ -2431,6 +2432,43 @@ export async function retryMoveMeasurements(
 			rigVersion: current.rigVersion
 		};
 	await startMove(projectId, next);
+}
+/** Explicit consent to save the reviewed cached body frames with their warnings. Body only and cache-only: no PixelLab
+ * request, no equipment poses; those stay separate priced choices afterward. */
+export async function keepMoveBody(projectId: string, spec: MoveSpec, reviewed: KeepBodyPlan) {
+	const pending = JSON.stringify($state.snapshot(spec));
+	const unchanged = () =>
+		!hmrReloading &&
+		!moveRunning &&
+		moving.projectId === projectId &&
+		!!moving.error &&
+		!moving.done &&
+		!spec.bodyPaletteRepair &&
+		JSON.stringify($state.snapshot(moving.spec)) === pending;
+	if (!unchanged()) throw new Error('This operation changed. Review the body frames again.');
+	const current = (await (await createFlow()).reviewMoveRecovery(projectId, spec)).keep;
+	if (
+		!unchanged() ||
+		!current ||
+		current.qaHash !== reviewed.qaHash ||
+		current.rigVersion !== reviewed.rigVersion
+	)
+		throw new Error(
+			'These body frames or their quality checks changed. Review them again. Nothing was saved.'
+		);
+	await startMove(projectId, {
+		...$state.snapshot(spec),
+		items: [],
+		reuseItemFrames: undefined,
+		itemReview: undefined,
+		measurementRecovery: {
+			id: crypto.randomUUID(),
+			recordIds: [],
+			checkHashes: [],
+			rigVersion: current.rigVersion,
+			keep: { qaHash: current.qaHash }
+		}
+	});
 }
 /** Explicit bounded color cleanup on the reviewed cached body; all paid measurements still use the changed PNGs. */
 export async function matchMoveBodyColors(

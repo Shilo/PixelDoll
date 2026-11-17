@@ -4,7 +4,14 @@ import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { readCharacterZip } from '../../src/lib/store/import.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import { attachImportedRig, rigReady, setupPlan } from '../../src/lib/rig/setup.ts';
-import { LABELS, ACTIONS, authoredPoses, fromApi, hasAll } from '../../src/lib/rig/poses.ts';
+import {
+	LABELS,
+	ACTIONS,
+	AUTHORED,
+	authoredPoses,
+	fromApi,
+	hasAll
+} from '../../src/lib/rig/poses.ts';
 import { DIRECTIONS, cellHash, type Keypoint } from '../../src/lib/rig/rig.ts';
 import { flipSkeleton } from '../../src/lib/rig/skeleton.ts';
 import { paddedPoses, poseBatches, rawClip } from '../../src/lib/rig/clips.ts';
@@ -229,6 +236,100 @@ test('authored actions are invariant to frame padding in every direction', () =>
 					expect(b[i][label].y - a[i][label].y).toBeCloseTo(48);
 				}
 		}
+});
+
+const rideRest = () => {
+	const rest = fromApi(pose(), { w: 64, h: 64 });
+	for (const [side, x] of [
+		['RIGHT', 26],
+		['LEFT', 38]
+	] as const) {
+		rest[`${side} HIP`] = { x, y: 34, z: 0 };
+		rest[`${side} KNEE`] = { x, y: 46, z: 0 };
+		rest[`${side} LEG`] = { x, y: 58, z: 0 };
+	}
+	return rest;
+};
+const length = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+	Math.hypot(a.x - b.x, a.y - b.y);
+const bend = (
+	h: { x: number; y: number },
+	k: { x: number; y: number },
+	a: { x: number; y: number }
+) =>
+	(Math.acos(
+		((h.x - k.x) * (a.x - k.x) + (h.y - k.y) * (a.y - k.y)) / (length(h, k) * length(k, a))
+	) *
+		180) /
+	Math.PI;
+
+test('ride is three equal seated frames with bent knees, stable hips and feet, and finite joints', () => {
+	const rest = rideRest(),
+		frames = authoredPoses('ride', rest, 'south', 64);
+	expect(AUTHORED).toContain('ride');
+	expect(frames).toHaveLength(3);
+	for (const f of frames)
+		for (const label of LABELS)
+			expect(Number.isFinite(f[label].x) && Number.isFinite(f[label].y)).toBe(true);
+	for (const f of frames.slice(1)) expect(f).toEqual(frames[0]);
+	for (const side of ['RIGHT', 'LEFT'] as const) {
+		expect(frames[0][`${side} HIP`]).toEqual(rest[`${side} HIP`]);
+		for (const joint of ['KNEE', 'LEG'] as const)
+			expect(frames[0][`${side} ${joint}`]).not.toEqual(rest[`${side} ${joint}`]);
+		expect(length(frames[0][`${side} HIP`], frames[0][`${side} KNEE`])).toBeCloseTo(
+			length(rest[`${side} HIP`], rest[`${side} KNEE`])
+		);
+		expect(length(frames[0][`${side} KNEE`], frames[0][`${side} LEG`])).toBeCloseTo(
+			length(rest[`${side} KNEE`], rest[`${side} LEG`])
+		);
+		const knee = bend(
+			frames[0][`${side} HIP`],
+			frames[0][`${side} KNEE`],
+			frames[0][`${side} LEG`]
+		);
+		expect(knee).toBeGreaterThan(30);
+		expect(knee).toBeLessThan(140);
+	}
+	expect(frames[0]['RIGHT KNEE'].x).toBeLessThan(frames[0]['RIGHT HIP'].x);
+	expect(frames[0]['LEFT KNEE'].x).toBeGreaterThan(frames[0]['LEFT HIP'].x);
+	expect(frames[0]['RIGHT LEG'].y).toBeCloseTo(frames[0]['LEFT LEG'].y);
+});
+
+test('ride keeps its proportions when scaled and mirrors east to west and south to north', () => {
+	const rest = rideRest(),
+		scaled = Object.fromEntries(
+			Object.entries(rest).map(([label, k]) => [label, { ...k, x: k.x * 2, y: k.y * 2 }])
+		),
+		south = authoredPoses('ride', rest, 'south', 64),
+		large = authoredPoses('ride', scaled, 'south', 128);
+	for (let i = 0; i < south.length; i++)
+		for (const label of LABELS) {
+			expect(large[i][label].x).toBeCloseTo(south[i][label].x * 2);
+			expect(large[i][label].y).toBeCloseTo(south[i][label].y * 2);
+		}
+	for (const dir of DIRECTIONS)
+		for (const f of authoredPoses('ride', rest, dir, 64))
+			for (const side of ['RIGHT', 'LEFT'] as const) {
+				const knee = bend(f[`${side} HIP`], f[`${side} KNEE`], f[`${side} LEG`]);
+				expect(knee).toBeGreaterThan(30);
+				expect(knee).toBeLessThan(140);
+			}
+	expect(authoredPoses('ride', rest, 'west', 64)).toEqual(
+		ACTIONS.ride(flipSkeleton(rest, 64), 'east').map((p) => flipSkeleton(p, 64))
+	);
+	const north = authoredPoses('ride', rest, 'north', 64);
+	for (const side of ['RIGHT', 'LEFT'] as const)
+		for (const joint of ['KNEE', 'LEG'] as const) {
+			expect(north[0][`${side} ${joint}`].x - north[0][`${side} HIP`].x).toBeCloseTo(
+				-(south[0][`${side} ${joint}`].x - south[0][`${side} HIP`].x)
+			);
+			expect(north[0][`${side} ${joint}`].y - north[0][`${side} HIP`].y).toBeCloseTo(
+				south[0][`${side} ${joint}`].y - south[0][`${side} HIP`].y
+			);
+		}
+	expect(authoredPoses('ride', rest, 'east', 64)[0]['RIGHT KNEE']).not.toEqual(
+		south[0]['RIGHT KNEE']
+	);
 });
 
 test('death keeps each leg length when the large body falls and kneels at its own floor', () => {

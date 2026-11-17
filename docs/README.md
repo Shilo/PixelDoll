@@ -83,6 +83,9 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 
 ## Research (R1–R5, 2026-10-20)
 
+- [External mounts: research and prototypes](research/2026-11-16-mounts/README.md): source comparisons, runtime ownership limits and the interactive schematic.
+- [External mounts: live trial results](research/2026-11-16-mounts/live-results.md): isolated Studio implementation, real-art baseline, paid trial and qualification gaps.
+
 - [Paper-doll generation cost risks](research/2026-11-16-generation-costs/README.md): Tier 3 examples, direction and retry tradeoffs, a smaller MVP, and a standalone summary image.
 
 | Doc                                                                                                                                                            | What                                                                                                                                                                                                                                                                                                                                                  |

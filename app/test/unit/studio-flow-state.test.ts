@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
 	moveItems: vi.fn(),
 	setup: vi.fn(),
 	recovery: vi.fn(),
+	keep: vi.fn(),
 	palette: vi.fn(),
 	match: vi.fn(),
 	load: vi.fn(),
@@ -31,7 +32,10 @@ vi.mock('../../src/studio/create.ts', () => ({
 	addMove: mocks.move,
 	reviewItemMove: mocks.moveReview,
 	moveItems: mocks.moveItems,
-	reviewMoveRecovery: async (...args: unknown[]) => ({ recovery: await mocks.recovery(...args) }),
+	reviewMoveRecovery: async (...args: unknown[]) => ({
+		recovery: await mocks.recovery(...args),
+		keep: await mocks.keep(...args)
+	}),
 	bodyPaletteRepairPlan: mocks.palette,
 	saveCopy: vi.fn()
 }));
@@ -607,6 +611,48 @@ test('joint recovery refuses a superseded pending operation and a failed durable
 	expect(mocks.move).not.toHaveBeenCalled();
 	expect(s.moving.error).toContain('Storage blocked');
 	expect(s.moving.error).toContain('Dismiss this operation before reloading');
+});
+
+test('Keep saves only the reviewed cached body with its exact seed and refuses a changed review before any work', async () => {
+	const keepPlan = {
+		qaHash: 'c'.repeat(64),
+		rigVersion: 'rig-fingerprint',
+		rawHashes: ['d'.repeat(64)],
+		directions: []
+	};
+	mocks.keep.mockResolvedValue(keepPlan);
+	mocks.move.mockResolvedValue({ warnings: ['slash/east: silhouette bottom differs'] });
+	const s = await import('../../src/studio/state.svelte.ts');
+	Object.assign(s.moving, {
+		projectId: 'project',
+		spec: structuredClone(recoverySpec),
+		error: 'The replacement still fails body-pose quality checks.',
+		done: false
+	});
+	await expect(
+		s.keepMoveBody('project', structuredClone(recoverySpec), {
+			...keepPlan,
+			qaHash: 'e'.repeat(64)
+		})
+	).rejects.toThrow('changed');
+	expect(mocks.put).not.toHaveBeenCalled();
+	expect(mocks.move).not.toHaveBeenCalled();
+	await s.keepMoveBody('project', structuredClone(recoverySpec), keepPlan);
+	expect(mocks.move).toHaveBeenCalledOnce();
+	const kept = mocks.move.mock.calls[0][1] as MoveSpec;
+	expect(kept).toMatchObject({
+		...recoverySpec,
+		items: [],
+		seed: recoverySpec.seed,
+		measurementRecovery: {
+			recordIds: [],
+			checkHashes: [],
+			rigVersion: keepPlan.rigVersion,
+			keep: { qaHash: keepPlan.qaHash }
+		}
+	});
+	expect(s.moving.done).toBe(true);
+	expect(s.moving.warnings).toEqual(['slash/east: silhouette bottom differs']);
 });
 
 const palettePlan = {

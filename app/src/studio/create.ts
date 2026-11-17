@@ -443,9 +443,13 @@ interface ClipOut {
 /** The raw skeleton-v3 body render action: the move's label, never the user's description, whose prop words were drawn
  * into the frozen body (a sword from behind; prompt-trim-ab.md); the description drives the motion request only. The
  * visible-side pose style keeps the body bare: props and effects drawn here would be baked into every frame. */
-export const bodyAction = (spec: Pick<MoveSpec, 'id' | 'poseStyle'>) =>
-	actionOf(spec.id) +
-	(spec.poseStyle === 'visible-side-v1' ? ', empty hands, no weapon, no props, no effects' : '');
+export const bodyAction = (spec: Pick<MoveSpec, 'id' | 'action' | 'poseStyle'>) =>
+	spec.action === 'ride'
+		? 'seated astride, empty hands, no mount, no animal, no saddle, no props, no effects'
+		: actionOf(spec.id) +
+			(spec.poseStyle === 'visible-side-v1'
+				? ', empty hands, no weapon, no props, no effects'
+				: '');
 async function renderClip(j: ClipJob): Promise<ClipOut> {
 	const restB64 = await b64(j.rest),
 		recs: JobRec[] = [];
@@ -501,16 +505,14 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		throw new Error(
 			`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`
 		);
-	const qa = clipQa({
-		anim: j.anim,
-		rest: j.rest,
+	const qa = bodyClipQa(
+		j.anim,
+		j.rest,
 		frames,
-		requested: j.keypoints,
+		j.keypoints,
 		measured,
-		stray: 0,
-		disconnectedPixels: frames.reduce((sum, f) => sum + bodyComponents(f).detachedPixels, 0),
-		...(j.authored ? {} : { facing: { dir: j.dir, rest: j.restKps } })
-	});
+		j.authored ? undefined : { dir: j.dir, rest: j.restKps }
+	);
 	return {
 		frames,
 		measured,
@@ -520,6 +522,65 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 	};
 }
 
+/** The body checks a generated clip is published with; a kept cached clip must reproduce them exactly. */
+const bodyClipQa = (
+	anim: string,
+	rest: Img,
+	frames: Img[],
+	requested: Keypoint[][],
+	measured: (Keypoint[] | undefined)[],
+	facing?: { dir: string; rest: Keypoint[] }
+) =>
+	clipQa({
+		anim,
+		rest,
+		frames,
+		requested,
+		measured,
+		stray: 0,
+		disconnectedPixels: frames.reduce((sum, f) => sum + bodyComponents(f).detachedPixels, 0),
+		...(facing ? { facing } : {})
+	});
+/** Numerical body checks a partial or new targeted move must pass unless the user keeps the reviewed frames. */
+const failsBodyGate = (qa: ClipQa) =>
+	qa.fails.length > 0 ||
+	qa.adherence === null ||
+	qa.adherence > RIG_GATES.adherence ||
+	qa.feetDrift > RIG_GATES.silhouetteBottomDelta ||
+	qa.paletteFit < RIG_GATES.paletteFit ||
+	qa.border > RIG_GATES.border;
+/** Binds Keep consent to the character version, the exact cached render requests, the published PNGs and their checks. */
+async function keptBodyHash(
+	rigVersion: string,
+	clips: { dir: DirectionName; rawHash: string; qa: ClipQa; frames: Img[] }[]
+): Promise<string> {
+	return sha256(
+		stableStringify({
+			rigVersion,
+			clips: await Promise.all(
+				[...clips]
+					.sort((a, b) => a.dir.localeCompare(b.dir))
+					.map(async (c) => ({
+						dir: c.dir,
+						rawHash: c.rawHash,
+						qa: c.qa,
+						frames: await Promise.all(c.frames.map((f) => cellHash(f)))
+					}))
+			)
+		})
+	);
+}
+/** Joints from a completed cached check only; undefined when none completed or its response is invalid. */
+function cachedJoints(
+	jobs: JobRec[],
+	{ input, hash }: Awaited<ReturnType<typeof measurementInput>>,
+	frame: Img
+): Keypoint[] | undefined {
+	const record = jobs.find((r) => r.requestHash === hash && r.state === 'done');
+	const points =
+		record && checkedKeypoints((record.response as { keypoints?: unknown })?.keypoints);
+	return points ? checkedKeypoints(unpadSkeleton(points, input, frame)) : undefined;
+}
 async function measurementInput(frame: Img) {
 	const input = skeletonInput(frame);
 	return {
@@ -539,13 +600,9 @@ async function paletteCandidate(
 ): Promise<{ frames: Img[]; processing?: ClipSource['processing'] }> {
 	const jobs = review?.jobs ?? queue.snapshot().jobs;
 	const measured = await Promise.all(
-		frames.map(async (frame) => {
-			const { input, hash } = await (review?.measurement(frame) ?? measurementInput(frame));
-			const record = jobs.find((r) => r.requestHash === hash && r.state === 'done');
-			const points =
-				record && checkedKeypoints((record.response as { keypoints?: unknown })?.keypoints);
-			return points ? checkedKeypoints(unpadSkeleton(points, input, frame)) : undefined;
-		})
+		frames.map(async (frame) =>
+			cachedJoints(jobs, await (review?.measurement(frame) ?? measurementInput(frame)), frame)
+		)
 	);
 	if (measured.some((k) => !hasAll(k)))
 		throw new RecoveryUnavailable(
@@ -609,9 +666,38 @@ async function motion(
 	activityScope?: string,
 	size = CELL,
 	standing?: Img
-): Promise<Keypoint[][]> {
+): Promise<{ keypoints: Keypoint[][]; record: JobRec }> {
 	const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
 	tick();
+	const frames = normalizeMotionFrames(
+		r,
+		(await imagesOf(r)).map((out) => out.img),
+		dir,
+		label,
+		expected,
+		size,
+		standing
+	);
+	const kps = await Promise.all(
+		frames.map(async (f) => {
+			const k = await joints(f, true, signal, activityScope);
+			tick();
+			return k;
+		})
+	);
+	if (kps.some((k) => !k)) throw new Error(`${label}: joints not found on every frame`);
+	return { keypoints: kps as Keypoint[][], record: r };
+}
+
+function normalizeMotionFrames(
+	r: JobRec,
+	images: Img[],
+	dir: Direction,
+	label: string,
+	expected: number,
+	size: number,
+	standing?: Img
+): Img[] {
 	const got = (r.response as SubmitResponse | undefined)?.directions;
 	if (got && !got.includes(dir))
 		throw new Error(`${label}: PixelLab dropped the direction (busy). Try again.`); // S4 truncation
@@ -623,8 +709,8 @@ async function motion(
 	// described move (9 for 8): drop it only when it is pixel-identical to the standing view, else the count fails.
 	const startKept = returned === expected + 1 && !!standing;
 	if (returned !== expected && !startKept) throw mismatch;
-	const frames = (await imagesOf(r)).map((o) => {
-		const normalized = normalize(o.img, size, size, 128, size);
+	const frames = images.map((image) => {
+		const normalized = normalize(image, size, size, 128, size);
 		if (normalized.cutPx)
 			throw new Error(
 				`${label}: motion exceeds the ${size} px frame. Increase Frame or reduce Body size before creating again.`
@@ -642,15 +728,7 @@ async function motion(
 	}
 	if (frames.some((f) => !opaqueBox(f)))
 		throw new Error(`${label}: PixelLab returned an empty motion frame`);
-	const kps = await Promise.all(
-		frames.map(async (f) => {
-			const k = await joints(f, true, signal, activityScope);
-			tick();
-			return k;
-		})
-	);
-	if (kps.some((k) => !k)) throw new Error(`${label}: joints not found on every frame`);
-	return kps as Keypoint[][];
+	return frames;
 }
 
 export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
@@ -982,6 +1060,8 @@ export interface MoveSpec {
 		recordIds: string[];
 		checkHashes: string[];
 		rigVersion: string;
+		/** Explicit consent to save reviewed cached body frames despite numerical body warnings (KeepBodyPlan.qaHash). */
+		keep?: { qaHash: string };
 	};
 	bodyPaletteRepair?: {
 		id: string;
@@ -1025,6 +1105,16 @@ function approvedMeasurementIds(intent: unknown): string[] | undefined {
 		seen.add(id);
 	}
 	approvedCheckHashes(value.checkHashes);
+	if (
+		value.keep !== undefined &&
+		(!value.keep ||
+			typeof value.keep !== 'object' ||
+			typeof value.keep.qaHash !== 'string' ||
+			!/^[a-f0-9]{64}$/.test(value.keep.qaHash) ||
+			value.recordIds.length ||
+			value.checkHashes!.length)
+	)
+		throw invalid();
 	return value.recordIds;
 }
 function checkedPaletteIntent(intent: unknown, checkHashes = true): void {
@@ -1093,6 +1183,21 @@ export interface MeasurementRecoveryPlan {
 export interface BodyPaletteRepairPlan extends MeasurementRecoveryPlan, BodyPaletteStats {
 	itemGens: number;
 }
+/** Cached body frames that passed every structural check but not the numerical body checks; saving them is the user's call. */
+export interface KeepBodyPlan {
+	qaHash: string;
+	rigVersion: string;
+	rawHashes: string[];
+	directions: { dir: DirectionName; frames: Img[]; warnings: string[] }[];
+}
+interface CachedBodyClip {
+	dir: DirectionName;
+	rawHash: string;
+	rest: Img;
+	keypoints: Keypoint[][];
+	frames: Img[];
+	facing?: { dir: string; rest: Keypoint[] };
+}
 /** An expected eligibility limit, distinct from a failed storage read or malformed PNG. */
 class RecoveryUnavailable extends Error {}
 /** Review only the selected standing views and exact cached results, never unrelated equipment sheets. */
@@ -1154,23 +1259,33 @@ type RecoveryContext = Awaited<ReturnType<typeof recoveryContext>>;
 export interface MoveRecoveryReview {
 	recovery?: MeasurementRecoveryPlan;
 	colorRepair?: BodyPaletteRepairPlan;
+	keep?: KeepBodyPlan;
 	unavailable?: string;
+}
+/** Recovery reuses completed body artwork: chosen views of a replacement, or every drawn view of a new move. */
+function recoveryScopeIssue(m: Manifest, spec: MoveSpec, allowMotion = false): string {
+	const authored =
+		!spec.itemsOnly &&
+		!spec.itemMethod &&
+		(isAuthoredAction(spec.action) || (allowMotion && !bodyMoveIssue(m, spec))) &&
+		!!spec.dirs?.length;
+	if (!authored) return 'Joint-check recovery needs the original authored body-repair settings.';
+	if (spec.replace) return '';
+	if (m.rig.animations.some((a) => a.id === spec.id))
+		return 'This move was saved since that attempt. Nothing is left to recover.';
+	return moveDirections(m, spec.dirs).length === genDirs(m).length
+		? ''
+		: 'A new move needs every independently drawn direction.';
 }
 /** One local review owns its memoized images. Reopening or executing always reads and validates fresh state. */
 export async function reviewMoveRecovery(
 	projectId: string,
 	spec: MoveSpec
 ): Promise<MoveRecoveryReview> {
-	if (
-		!spec.replace ||
-		spec.itemMethod ||
-		!spec.action ||
-		!ACTIONS[spec.action] ||
-		!spec.dirs?.length
-	)
-		return {};
+	if (spec.itemsOnly || spec.itemMethod || !spec.dirs?.length) return {};
 	const context = await recoveryContext(projectId);
 	if (await publishedMoveRecovery(context.rec, spec)) return {};
+	if (recoveryScopeIssue(context.rec.manifest, spec, true)) return {};
 	// A new review grants no consent. Reconstruct the candidate against current inputs, keeping the exact color policy.
 	const inspection = {
 		...spec,
@@ -1181,16 +1296,75 @@ export async function reviewMoveRecovery(
 		}
 	};
 	try {
-		const plan = await inspectMeasurementRecovery(context, inspection, true);
+		const candidates: CachedBodyClip[] = [],
+			plan = await inspectMeasurementRecovery(context, inspection, true, candidates);
+		if (plan.checks && !isAuthoredAction(spec.action))
+			return {
+				unavailable: 'Keeping this move requires completed cached joint checks for every frame.'
+			};
 		if (plan.checks && plan.recordIds.length) return { recovery: plan };
 		if (plan.checks) return { unavailable: 'Cached frames have no failed joint checks to retry.' };
 		if (spec.bodyPaletteRepair) return { recovery: plan };
-		const colorRepair = await inspectBodyPaletteRepair(context, inspection);
-		return colorRepair ? { colorRepair } : spec.measurementRecovery ? { recovery: plan } : {};
+		// Color matching and keeping are independent choices: a limit on one never hides the other.
+		let colorRepair: BodyPaletteRepairPlan | undefined, unavailable: string | undefined;
+		try {
+			if (isAuthoredAction(spec.action))
+				colorRepair = await inspectBodyPaletteRepair(context, inspection);
+		} catch (error) {
+			if (!(error instanceof RecoveryUnavailable)) throw error;
+			unavailable = error.message;
+		}
+		let keep: KeepBodyPlan | undefined;
+		try {
+			keep = await inspectKeptBody(context, inspection, plan, candidates);
+		} catch (error) {
+			if (!(error instanceof RecoveryUnavailable)) throw error;
+			unavailable = [unavailable, error.message].filter(Boolean).join(' ');
+		}
+		if (colorRepair || keep || unavailable) return { colorRepair, keep, unavailable };
+		return spec.measurementRecovery ? { recovery: plan } : {};
 	} catch (error) {
 		if (error instanceof RecoveryUnavailable) return { unavailable: error.message };
 		throw error;
 	}
+}
+/** API-free: recompute the exact published checks of the original render from completed cached joints. Only frames that
+ * fit, measured every joint and failed nothing structural can be kept; a clean clip needs no Keep. */
+async function inspectKeptBody(
+	context: RecoveryContext,
+	spec: MoveSpec,
+	plan: MeasurementRecoveryPlan,
+	candidates: CachedBodyClip[]
+): Promise<KeepBodyPlan | undefined> {
+	if (spec.bodyPaletteRepair || plan.checks || plan.recordIds.length) return undefined;
+	const clips = await Promise.all(
+		candidates.map(async (c) => {
+			const measured = await Promise.all(
+				c.frames.map(async (f) => cachedJoints(context.jobs, await context.measurement(f), f))
+			);
+			if (measured.some((k) => !hasAll(k)))
+				throw new RecoveryUnavailable(
+					`${directionLabel(c.dir)}: some frames have no valid measured joints, so they cannot be kept.`
+				);
+			return { ...c, qa: bodyClipQa(spec.id, c.rest, c.frames, c.keypoints, measured, c.facing) };
+		})
+	);
+	const broken = clips.find((c) => c.qa.fails.length);
+	if (broken)
+		throw new RecoveryUnavailable(
+			`${directionLabel(broken.dir)}: ${broken.qa.fails.join('; ')}. These frames cannot be kept.`
+		);
+	if (!clips.length || !clips.some((c) => failsBodyGate(c.qa))) return undefined;
+	return {
+		qaHash: await keptBodyHash(plan.rigVersion, clips),
+		rigVersion: plan.rigVersion,
+		rawHashes: plan.rawHashes,
+		directions: clips.map((c) => ({
+			dir: c.dir,
+			frames: c.frames,
+			warnings: warn(`${spec.id}/${c.dir}`, c.qa)
+		}))
+	};
 }
 /** Preview the fixed, versioned color repair against cached raw art; no body or joint request is sent. */
 export async function bodyPaletteRepairPlan(
@@ -1245,21 +1419,18 @@ export async function measurementRecoveryPlan(
 async function inspectMeasurementRecovery(
 	context: RecoveryContext,
 	spec: MoveSpec,
-	reviewOnly = false
+	reviewOnly = false,
+	candidates?: CachedBodyClip[]
 ): Promise<MeasurementRecoveryPlan> {
 	const { rec, jobs } = context;
 	const rig = rec.manifest.rig,
 		rigVersion = moveRigVersion(rec);
-	if (
-		!spec.replace ||
-		spec.itemMethod ||
-		!spec.action ||
-		!ACTIONS[spec.action] ||
-		!spec.dirs?.length
-	)
-		throw new RecoveryUnavailable(
-			'Joint-check recovery needs the original authored body-repair settings.'
-		);
+	const scopeIssue = recoveryScopeIssue(
+		rec.manifest,
+		spec,
+		(reviewOnly && !spec.bodyPaletteRepair) || !!spec.measurementRecovery?.keep
+	);
+	if (scopeIssue) throw new RecoveryUnavailable(scopeIssue);
 	const approved = reviewOnly ? undefined : approvedMeasurementIds(spec.measurementRecovery);
 	checkedPaletteIntent(spec.bodyPaletteRepair, !reviewOnly);
 	const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
@@ -1289,13 +1460,43 @@ async function inspectMeasurementRecovery(
 		if (!rest || !hasAll(rest.keypoints))
 			throw new Error(`${d}: original standing artwork or joints are missing.`);
 		const restImg = await context.read(rest.image.slice(7));
-		const keypoints = authoredPoses(
-			spec.action,
-			fromApi(rest.keypoints, rig.cell),
-			d,
-			rig.cell.w,
-			spec.poseStyle
-		).map((p) => armDepth(toApi(p, rig.cell), d));
+		let keypoints: Keypoint[][];
+		const authored = isAuthoredAction(spec.action);
+		if (authored)
+			keypoints = authoredPoses(
+				spec.action!,
+				fromApi(rest.keypoints, rig.cell),
+				d,
+				rig.cell.w,
+				spec.poseStyle
+			).map((p) => armDepth(toApi(p, rig.cell), d));
+		else {
+			const request = moveMotionRequest(rec, spec, d as Direction),
+				hash = (await requestIdentity(request)).requestHash,
+				record = jobs.find((job) => job.requestHash === hash && job.state === 'done');
+			if (!record)
+				throw new RecoveryUnavailable(
+					`${d}: the original completed motion is unavailable. No request was made.`
+				);
+			const frames = normalizeMotionFrames(
+				record,
+				(await imagesOf(record, context.read)).map((out) => out.img),
+				d as Direction,
+				`${spec.id} ${d} (motion)`,
+				moveFrames(rec.manifest, spec),
+				rig.cell.w,
+				restImg
+			);
+			const measured = await Promise.all(
+				frames.map(async (frame) => cachedJoints(jobs, await context.measurement(frame), frame))
+			);
+			if (measured.some((points) => !hasAll(points)))
+				throw new RecoveryUnavailable(
+					`${d}: the original motion has no valid completed joint checks for every frame. No request was made.`
+				);
+			keypoints = measured as Keypoint[][];
+			rawHashes.push(hash);
+		}
 		for (let attempt = 0; attempt < (spec.bodyPaletteRepair ? 1 : CLIP_ATTEMPTS); attempt++) {
 			const req = rawClip({
 				first: await context.encode(restImg),
@@ -1326,6 +1527,16 @@ async function inspectMeasurementRecovery(
 					`${d}: the cached body frames do not fit this character. No body was regenerated.`
 				);
 			const frames = normalized.map((n) => n.img);
+			// Only the first render is ever published; a later seed is a legacy attempt, never a keep candidate.
+			if (!attempt && !spec.bodyPaletteRepair)
+				candidates?.push({
+					dir: d,
+					rawHash,
+					rest: restImg,
+					keypoints,
+					frames,
+					...(authored ? {} : { facing: { dir: d, rest: rest.keypoints } })
+				});
 			const candidate = spec.bodyPaletteRepair
 				? await paletteCandidate(spec.id, d, restImg, frames, keypoints, 0, context)
 				: { frames };
@@ -1605,6 +1816,17 @@ export async function addMove(
 ): Promise<{ warnings: string[]; reviewItems?: string[] }> {
 	approvedMeasurementIds(spec.measurementRecovery);
 	checkedPaletteIntent(spec.bodyPaletteRepair);
+	// Keeping reviewed frames is free and body-only: equipment for the move is a separate, priced choice afterward.
+	if (
+		spec.measurementRecovery?.keep &&
+		(spec.items.length ||
+			spec.itemsOnly ||
+			spec.itemMethod ||
+			spec.itemReview ||
+			spec.reuseItemFrames ||
+			spec.bodyPaletteRepair)
+	)
+		throw new Error('Keeping reviewed body frames saves only the body. No request was made.');
 	const { rec } = await loadProject(projectId);
 	const assertReview = (m: Manifest) => {
 		if (
@@ -1798,6 +2020,29 @@ export async function addMove(
 	};
 }
 
+function moveMotionRequest(rec: StoredProject, spec: MoveSpec, dir: Direction): Req {
+	return routes.animateCharacter(
+		spec.action === 'walk'
+			? baseAnimation(
+					'skeleton-v3',
+					rec.character!.id,
+					BASE_ANIMS.find((animation) => animation.name === 'walk')!,
+					[dir],
+					spec.seed
+				)
+			: {
+					character_id: rec.character!.id,
+					mode: 'pixminimax',
+					action_description: `${spec.text?.trim()}, unarmed, no weapon, no props, no other people, no effects`,
+					frame_count: moveFrames(rec.manifest, spec),
+					keep_first_frame: false,
+					animation_name: spec.id,
+					directions: [dir],
+					seed: spec.seed
+				}
+	);
+}
+
 async function addBodyClip(
 	projectId: string,
 	spec: MoveSpec,
@@ -1843,28 +2088,8 @@ async function addBodyClip(
 					spec.poseStyle
 				).map((p) => armDepth(toApi(p, rig.cell), d));
 			else {
-				const req = routes.animateCharacter(
-					spec.action === 'walk'
-						? baseAnimation(
-								'skeleton-v3',
-								rec.character!.id,
-								BASE_ANIMS.find((a) => a.name === 'walk')!,
-								[d],
-								spec.seed
-							)
-						: {
-								character_id: rec.character!.id,
-								mode: 'pixminimax',
-								action_description: `${spec.text?.trim()}, unarmed, no weapon, no props, no other people, no effects`,
-								frame_count: n,
-								keep_first_frame: false,
-								animation_name: spec.id,
-								directions: [d],
-								seed: spec.seed
-							}
-				);
-				keypoints = await motion(
-					req,
+				const result = await motion(
+					moveMotionRequest(rec, spec, d),
 					d,
 					`${name} · ${spec.id} ${d} (motion)`,
 					checkedTick,
@@ -1874,7 +2099,8 @@ async function addBodyClip(
 					rig.cell.w,
 					restImg
 				);
-				extra[k] = [(await queue.enqueue(req, { signal })) as JobRec];
+				keypoints = result.keypoints;
+				extra[k] = [result.record];
 			}
 			return {
 				d,
@@ -1926,20 +2152,24 @@ async function addBodyClip(
 		sources: { ...old?.sources }
 	};
 	for (const d of affected) delete anim.sources![d];
-	if (
-		spec.dirs &&
-		clips.some(
-			({ out: { qa } }) =>
-				qa.fails.length ||
-				qa.adherence === null ||
-				qa.adherence > RIG_GATES.adherence ||
-				qa.feetDrift > RIG_GATES.silhouetteBottomDelta ||
-				qa.paletteFit < RIG_GATES.paletteFit ||
-				qa.border > RIG_GATES.border
-		)
-	)
+	const keep = spec.measurementRecovery?.keep;
+	if (keep) {
+		// Consent covers only the reviewed frames and checks, recomputed here from the cached render that was replayed.
+		const kept = clips.map((c) => ({
+			dir: c.d,
+			rawHash: c.out.recs[0]?.requestHash ?? '',
+			qa: c.out.qa,
+			frames: c.out.frames
+		}));
+		if (kept.some((c) => c.qa.fails.length) || (await keptBodyHash(version, kept)) !== keep.qaHash)
+			throw new Error(
+				'These body frames or their quality checks changed since review. Nothing was saved and no request was made. Review them again.'
+			);
+	} else if (spec.dirs && clips.some(({ out: { qa } }) => failsBodyGate(qa)))
 		throw new Error(
-			'The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.'
+			old
+				? 'The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.'
+				: 'The new move fails body-pose quality checks, so it was not saved. Review the results before trying again.'
 		);
 	const layer = baseIt.layers[0],
 		cellMap: Partial<Record<DirectionName, (Sha256 | null)[]>> = {

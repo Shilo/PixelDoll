@@ -142,6 +142,16 @@ test('described move lists each generated direction and measurement at the displ
 	expect(bodyAction({ id: 'idle' })).toBe('breathing idle');
 });
 
+test('ride body render asks for a seated rider with no mount, animal, saddle or props', () => {
+	const seated =
+		'seated astride, empty hands, no mount, no animal, no saddle, no props, no effects';
+	expect(bodyAction({ id: 'custom-ride', action: 'ride' })).toBe(seated);
+	expect(bodyAction({ id: 'custom-ride', action: 'ride', poseStyle: 'visible-side-v1' })).toBe(
+		seated
+	);
+	expect(bodyAction({ id: 'ride', action: 'wave' })).not.toBe(seated);
+});
+
 test('setup preflight prices each unique measurement and registration without inventing image data', () => {
 	const plan: SetupPlan = {
 		frames: new Map([

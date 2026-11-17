@@ -40,8 +40,10 @@
 		Play,
 		Pause,
 		Grid2x2,
-		TriangleAlert
+		TriangleAlert,
+		Eye
 	} from '../icons.ts';
+	import { MOUNTS, type MountId } from './mounts.ts';
 	import { directionInfo, directionLabel } from './movement.ts';
 	import { groupOf, moveLabel } from '../model.ts';
 	import { popoverFocus } from './focus.ts';
@@ -52,6 +54,12 @@
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
 	let playbackHeight = $state(0);
+	// Experimental mount preview, opt-in with ?mounts so the ordinary toolbar is unchanged: transient, never saved with
+	// outfits, shared or exported.
+	const mountsEnabled = new URLSearchParams(location.search).has('mounts');
+	let mount = $state<MountId | null>(null);
+	let showHidden = $state(false);
+	let mountShown = $state(false);
 	let selectionCaptionHeight = $state(0);
 	const previewHeight = $derived(experience.mode === 'preview' ? playbackHeight : 0);
 	let viewportWidth = $state(1280),
@@ -59,9 +67,11 @@
 	const m = $derived(store.project?.manifest);
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const selectedMove = $derived(m?.rig.animations.find((animation) => animation.id === ui.anim));
+	// A shown mount has its own gait, so Play/Pause stays useful even over a single-frame move.
 	const canPlay = $derived(
-		experience.presentation === 'animation' &&
-			selectedMove?.frames.some((frame) => frame.cell !== selectedMove.frames[0]?.cell)
+		(experience.presentation === 'animation' &&
+			selectedMove?.frames.some((frame) => frame.cell !== selectedMove.frames[0]?.cell)) ||
+			mountShown
 	);
 	const name = $derived(characterName());
 	const list = $derived(
@@ -637,7 +647,14 @@
 		</aside>
 	{:else}
 		<div class="experience-stage">
-			<WorldStage playbackHeight={previewHeight} bind:missing />
+			<WorldStage
+				playbackHeight={previewHeight}
+				bind:missing
+				{mount}
+				{mountsEnabled}
+				{showHidden}
+				bind:mountShown
+			/>
 		</div>
 		{#if experience.zoomFits.studio && experience.sceneZoom !== null}
 			<div class="scene-zoom-controls">
@@ -675,6 +692,32 @@
 					{#if experience.presentation !== 'animation'}<span class="small muted playback-still"
 							>{experience.presentation === 'unavailable' ? 'Unavailable' : 'Still'}</span
 						>{/if}
+					{#if mountsEnabled}<label class="playback-move"
+							><span class="sr">Mount preview</span><select
+								class="bu-select"
+								data-variant="quiet"
+								title="Test seats for this preview: no real mount, nothing charged, nothing saved or exported"
+								value={mount ?? ''}
+								onchange={(e) => {
+									const id = MOUNTS.find((f) => f.id === e.currentTarget.value)?.id ?? null;
+									mount = id;
+									if (!id) showHidden = false;
+								}}
+								><option value="">No seat</option>{#each MOUNTS as fixture (fixture.id)}<option
+										value={fixture.id}>{fixture.label}</option
+									>{/each}</select
+							></label
+						>
+						{#if mount && mountShown}
+							<button
+								class="bu-action"
+								data-variant="quiet"
+								aria-pressed={showHidden}
+								aria-label="Reveal covered parts (diagnostic)"
+								title="Reveal covered parts. Diagnostic view only, never exported"
+								onclick={() => (showHidden = !showHidden)}><Eye size={16} /></button
+							>
+						{/if}{/if}
 					<span class="playback-sep" aria-hidden="true"></span>
 					{#if g.cycleFacing}
 						<!-- Too narrow for a button per direction: one button steps through them, so the bar stays one row. -->

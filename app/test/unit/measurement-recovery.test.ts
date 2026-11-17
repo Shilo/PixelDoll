@@ -18,7 +18,7 @@ import {
 	type JobRec
 } from '../../src/lib/pixellab/queue.ts';
 import { ApiError } from '../../src/lib/pixellab/client.ts';
-import { png, routes } from '../../src/lib/pixellab/routes.ts';
+import { BASE_ANIMS, baseAnimation, png, routes } from '../../src/lib/pixellab/routes.ts';
 import { LABELS, authoredPoses, fromApi, toApi } from '../../src/lib/rig/poses.ts';
 import { repairBodyPalette } from '../../src/lib/rig/palette.ts';
 import { rawClip } from '../../src/lib/rig/clips.ts';
@@ -33,7 +33,14 @@ import * as itemRun from '../../src/lib/items/run.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 afterEach(() => vi.restoreAllMocks());
-async function fixture(palette: boolean | 'partial' | 'broad' = false) {
+async function fixture(
+	palette: boolean | 'partial' | 'broad' | 'feet' = false,
+	motionRoute?: 'text' | 'walk'
+) {
+	// 'feet' raises every generated silhouette 2 px: a warning-only body, like a seated pose, with no color drift.
+	const feet = palette === 'feet';
+	if (feet) palette = false;
+	const count = motionRoute === 'walk' ? 8 : 4;
 	const im = makeImg(64, 64);
 	for (let y = 10; y < 60; y++)
 		for (let x = 25; x < 39; x++) im.data.set([180, 140, 120, 255], (y * 64 + x) * 4);
@@ -54,17 +61,17 @@ async function fixture(palette: boolean | 'partial' | 'broad' = false) {
 		animations: [
 			{
 				id: 'idle',
-				cells: 4,
+				cells: count,
 				loop: true,
-				frames: [0, 1, 2, 3].map((cell) => ({ cell, ms: 100 })),
+				frames: Array.from({ length: count }, (_, cell) => ({ cell, ms: 100 })),
 				sources: Object.fromEntries(
 					dirs.map((d) => [
 						d,
 						{
 							route: 'skeleton-v3',
 							reference: hash,
-							keypoints: [points, points, points, points],
-							measured: [points, points, points, points],
+							keypoints: Array.from({ length: count }, () => points),
+							measured: Array.from({ length: count }, () => points),
 							motion: 'old',
 							provenance: []
 						}
@@ -98,7 +105,11 @@ async function fixture(palette: boolean | 'partial' | 'broad' = false) {
 						id: 'main',
 						role: 'fg',
 						z: 0,
-						cells: { idle: Object.fromEntries(dirs.map((d) => [d, [hash, hash, hash, hash]])) }
+						cells: {
+							idle: Object.fromEntries(
+								dirs.map((d) => [d, Array.from({ length: count }, () => hash)])
+							)
+						}
 					}
 				]
 			}
@@ -129,8 +140,9 @@ async function fixture(palette: boolean | 'partial' | 'broad' = false) {
 	);
 	const spec: MoveSpec = {
 		id: 'idle',
-		action: 'idle',
-		frames: 4,
+		action: motionRoute === 'text' ? undefined : (motionRoute ?? 'idle'),
+		...(motionRoute === 'text' ? { text: 'wave slowly' } : {}),
+		frames: count,
 		items: [],
 		seed: 23,
 		replace: true,
@@ -139,14 +151,19 @@ async function fixture(palette: boolean | 'partial' | 'broad' = false) {
 	};
 	const lostIds: string[] = [];
 	for (const [di, d] of (['east', 'west'] as const).entries()) {
-		const keypoints = authoredPoses('idle', fromApi(points, rig.cell), d, 64, spec.poseStyle).map(
-				(p) => toApi(p, rig.cell)
-			),
+		const keypoints = motionRoute
+				? Array.from({ length: count }, () => toApi(fromApi(points, rig.cell), rig.cell))
+				: authoredPoses('idle', fromApi(points, rig.cell), d, 64, spec.poseStyle).map((p) =>
+						toApi(p, rig.cell)
+					),
 			outputs = [],
 			frames = [];
-		for (let i = 0; i < 4; i++) {
+		for (let i = 0; i < count; i++) {
 			const frame = structuredClone(im);
 			frame.data[(10 * 64 + 26) * 4] = 181 + di * 4 + i;
+			if (feet)
+				for (let y = 58; y < 60; y++)
+					for (let x = 25; x < 39; x++) frame.data.set([0, 0, 0, 0], (y * 64 + x) * 4);
 			if (palette && d === 'west' && i > 0)
 				for (let j = 0; j < (palette === 'partial' ? 40 : palette === 'broad' ? 60 : 30); j++) {
 					const x = 25 + (j % 14),
@@ -188,6 +205,66 @@ async function fixture(palette: boolean | 'partial' | 'broad' = false) {
 			const fixed = repairBodyPalette(im, frames);
 			for (let i = 0; i < fixed.frames.length; i++)
 				expected.set(await sha256(await encodePngBytes(fixed.frames[i])), keypoints[i]);
+		}
+		if (motionRoute) {
+			const motionResults = [];
+			if (motionRoute === 'text') motionResults.push({ label: '0', sha: hash.slice(7) });
+			for (let index = 0; index < count; index++) {
+				const frame = structuredClone(im);
+				frame.data[(10 * 64 + 26) * 4] = 200 + di * 8 + index;
+				const bytes = await encodePngBytes(frame),
+					sha = await sha256(bytes),
+					measurement = routes.estimateSkeleton(png(await b64(frame))),
+					id = `motion-check-${d}-${index}`;
+				blobs.set(sha, new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+				motionResults.push({ label: String(motionResults.length), sha });
+				records.set(id, {
+					id,
+					label: id,
+					method: 'POST',
+					endpoint: measurement.path,
+					...(await requestIdentity(measurement)),
+					state: 'done',
+					createdAt: time++,
+					attempts: 1,
+					nextAt: 0,
+					jobs: [],
+					response: { keypoints: points },
+					gens: 0.1,
+					usd: 0
+				});
+			}
+			const request = routes.animateCharacter(
+				motionRoute === 'walk'
+					? baseAnimation('skeleton-v3', 'managed', BASE_ANIMS[1], [d], spec.seed)
+					: {
+							character_id: 'managed',
+							mode: 'pixminimax',
+							action_description: `${spec.text}, unarmed, no weapon, no props, no other people, no effects`,
+							frame_count: count,
+							keep_first_frame: false,
+							animation_name: spec.id,
+							directions: [d],
+							seed: spec.seed
+						}
+			);
+			records.set('motion-' + d, {
+				id: 'motion-' + d,
+				label: 'motion ' + d,
+				method: 'POST',
+				endpoint: request.path,
+				...(await requestIdentity(request)),
+				state: 'done',
+				createdAt: time++,
+				attempts: 1,
+				nextAt: 0,
+				jobs: [
+					{ id: 'remote-motion-' + d, status: 'completed', done: true, results: motionResults }
+				],
+				response: { directions: [d] },
+				gens: 1,
+				usd: 0
+			});
 		}
 		const raw = rawClip({
 			first: await b64(im),
@@ -430,10 +507,283 @@ test('broad color drift is an explained policy limit rather than a failed cached
 	await f.finishOriginalChecks();
 	const before = f.posts(),
 		review = await reviewMoveRecovery('rig-recover', f.spec);
-	expect(review).toEqual({
-		unavailable: 'Too much color drift for a small palette repair. Existing artwork was kept.'
-	});
+	// Color matching's limit no longer hides the free Keep choice for the warning-only frames.
+	expect(review.unavailable).toBe(
+		'Too much color drift for a small palette repair. Existing artwork was kept.'
+	);
+	expect(review.colorRepair).toBeUndefined();
+	expect(review.keep?.directions.find((d) => d.dir === 'west')?.warnings.join(' ')).toContain(
+		'palette similarity'
+	);
 	expect(f.posts()).toBe(before);
+});
+
+/** The trial shape: a brand-new authored move covering every drawn view, with no replace flag. */
+function asNewMove(record: projects.StoredProject) {
+	const rig = record.manifest.rig;
+	rig.directions = rig.directions.filter((d) => d.id === 'east' || d.id === 'west');
+	rig.animations = [];
+	for (const item of record.manifest.items)
+		for (const layer of item.layers) delete layer.cells!.idle;
+}
+const keepConsent = (spec: MoveSpec, plan: { qaHash: string; rigVersion: string }): MoveSpec => ({
+	...spec,
+	items: [],
+	measurementRecovery: {
+		id: 'keep-review',
+		recordIds: [],
+		checkHashes: [],
+		rigVersion: plan.rigVersion,
+		keep: { qaHash: plan.qaHash }
+	}
+});
+const cellsOf = (record: projects.StoredProject, item: string, dir: 'east' | 'west' | 'south') =>
+	record.manifest.items.find((i) => i.id === item)!.layers[0].cells?.idle?.[dir];
+
+test('warning-only cached body is refused, then reviewed free and kept exactly, body only, with no request', async () => {
+	const f = await fixture('feet');
+	f.addItem();
+	await f.finishOriginalChecks();
+	const posts = f.posts(),
+		before = structuredClone(f.saved());
+	await expect(addMove('rig-recover', await f.recovery())).rejects.toThrow(
+		'replacement still fails body-pose quality checks'
+	);
+	expect(f.saved()).toEqual(before);
+	const calls = f.enqueue.mock.calls.length,
+		review = await reviewMoveRecovery('rig-recover', f.spec);
+	expect(review.recovery).toBeUndefined();
+	const keep = review.keep!;
+	expect(keep.directions.map((d) => d.dir)).toEqual(['east', 'west']);
+	for (const view of keep.directions) {
+		expect(view.frames).toHaveLength(4);
+		expect(view.warnings).toEqual([
+			`idle/${view.dir}: silhouette bottom differs up to 2 px from standing reference`
+		]);
+	}
+	expect(keep.rawHashes).toEqual([
+		f.records.get('raw-east')!.requestHash,
+		f.records.get('raw-west')!.requestHash
+	]);
+	// Equipment must never ride along on a free Keep.
+	await expect(
+		addMove('rig-recover', { ...keepConsent(f.spec, keep), items: f.spec.items })
+	).rejects.toThrow('saves only the body');
+	await expect(
+		addMove('rig-recover', keepConsent(f.spec, { ...keep, qaHash: '0'.repeat(64) }))
+	).rejects.toThrow('changed since review');
+	expect(f.saved()).toEqual(before);
+	await addMove('rig-recover', keepConsent(f.spec, keep));
+	expect(f.enqueue.mock.calls).toHaveLength(calls);
+	expect(f.posts()).toBe(posts);
+	const saved = f.saved();
+	expect(saved.moveRecovery?.id).toBe('keep-review');
+	for (const view of keep.directions)
+		expect(cellsOf(saved, 'base', view.dir as 'east' | 'west')).toEqual(
+			await Promise.all(view.frames.map((frame) => cellHash(frame)))
+		);
+	// The accepted replacement hides old equipment only on the replaced views.
+	expect(cellsOf(saved, 'hat', 'east')).toBeUndefined();
+	expect(cellsOf(saved, 'hat', 'south')).toEqual(cellsOf(before, 'hat', 'south'));
+	expect((saved.rigQa as { warnings: string[] }).warnings).toContain(
+		'idle/east: silhouette bottom differs up to 2 px from standing reference'
+	);
+});
+
+test.each(['text', 'walk'] as const)(
+	'%s warning-only body replays completed motion and exact requested poses on Keep without any enqueue',
+	async (route) => {
+		const f = await fixture('feet', route);
+		await f.finishOriginalChecks();
+		const before = structuredClone(f.saved()),
+			posts = f.posts();
+		await expect(measurementRecoveryPlan('rig-recover', f.spec)).rejects.toThrow(
+			'original authored body-repair settings'
+		);
+		await expect(addMove('rig-recover', f.spec)).rejects.toThrow(
+			'replacement still fails body-pose quality checks'
+		);
+		expect(f.saved()).toEqual(before);
+		expect(f.posts()).toBe(posts);
+		const calls = f.enqueue.mock.calls.length,
+			review = await reviewMoveRecovery('rig-recover', f.spec),
+			keep = review.keep!;
+		expect(review.recovery).toBeUndefined();
+		expect(keep.directions.map((direction) => direction.dir)).toEqual(['east', 'west']);
+		expect(keep.rawHashes).toEqual([
+			f.records.get('motion-east')!.requestHash,
+			f.records.get('raw-east')!.requestHash,
+			f.records.get('motion-west')!.requestHash,
+			f.records.get('raw-west')!.requestHash
+		]);
+		await addMove('rig-recover', keepConsent(f.spec, keep));
+		expect(f.enqueue.mock.calls).toHaveLength(calls);
+		expect(f.posts()).toBe(posts);
+		const animation = f.saved().manifest.rig.animations.find((entry) => entry.id === f.spec.id)!;
+		for (const direction of keep.directions) {
+			expect(direction.frames).toHaveLength(route === 'walk' ? 8 : 4);
+			expect(direction.warnings).toContain(
+				`idle/${direction.dir}: silhouette bottom differs up to 2 px from standing reference`
+			);
+			expect(cellsOf(f.saved(), 'base', direction.dir as 'east' | 'west')).toEqual(
+				await Promise.all(direction.frames.map((frame) => cellHash(frame)))
+			);
+			expect(animation.sources![direction.dir]!.keypoints).toEqual(
+				(f.records.get('raw-' + direction.dir)!.params as { keypoints: Keypoint[][] }).keypoints
+			);
+		}
+	}
+);
+
+test.each(['text', 'walk'] as const)(
+	'%s Keep refuses stale or missing motion cache without calls or publication',
+	async (route) => {
+		const f = await fixture('feet', route);
+		await f.finishOriginalChecks();
+		const keep = (await reviewMoveRecovery('rig-recover', f.spec)).keep!,
+			before = structuredClone(f.saved()),
+			posts = f.posts();
+		await expect(
+			addMove('rig-recover', { ...keepConsent(f.spec, keep), seed: f.spec.seed + 1 })
+		).rejects.toThrow('original completed motion is unavailable');
+		const missing = f.records.get('motion-west')!;
+		f.records.delete(missing.id);
+		await f.q.sync();
+		expect((await reviewMoveRecovery('rig-recover', f.spec)).unavailable).toContain(
+			'original completed motion is unavailable'
+		);
+		await expect(addMove('rig-recover', keepConsent(f.spec, keep))).rejects.toThrow(
+			'original completed motion is unavailable'
+		);
+		expect(f.enqueue).not.toHaveBeenCalled();
+		expect(f.posts()).toBe(posts);
+		expect(f.saved()).toEqual(before);
+	}
+);
+
+test.each(['motion-check', 'body-check', 'motion-image'] as const)(
+	'described Keep refuses a missing %s and never offers paid joint recovery',
+	async (missing) => {
+		const f = await fixture('feet', 'text');
+		await f.finishOriginalChecks();
+		const keep = (await reviewMoveRecovery('rig-recover', f.spec)).keep!,
+			before = structuredClone(f.saved()),
+			posts = f.posts();
+		if (missing === 'motion-image')
+			f.blobs.delete(f.records.get('motion-west')!.jobs[0].results[1].sha);
+		else if (missing === 'motion-check') f.records.delete('motion-check-west-0');
+		else {
+			const result = f.records.get('raw-west')!.jobs[0].results[0],
+				frame = await decodePng(f.blobs.get(result.sha)!),
+				hash = (await requestIdentity(routes.estimateSkeleton(png(await b64(frame))))).requestHash;
+			for (const record of f.records.values())
+				if (record.requestHash === hash) f.records.delete(record.id);
+		}
+		await f.q.sync();
+		if (missing === 'motion-image')
+			await expect(reviewMoveRecovery('rig-recover', f.spec)).rejects.toThrow('missing in storage');
+		else {
+			const review = await reviewMoveRecovery('rig-recover', f.spec);
+			expect(review.keep).toBeUndefined();
+			expect(review.recovery).toBeUndefined();
+			expect(review.unavailable).toContain('joint checks');
+		}
+		await expect(addMove('rig-recover', keepConsent(f.spec, keep))).rejects.toThrow();
+		expect(f.enqueue).not.toHaveBeenCalled();
+		expect(f.posts()).toBe(posts);
+		expect(f.saved()).toEqual(before);
+	}
+);
+
+test('described Keep cannot enqueue motion removed after preflight', async () => {
+	const f = await fixture('feet', 'text');
+	await f.finishOriginalChecks();
+	const keep = (await reviewMoveRecovery('rig-recover', f.spec)).keep!,
+		before = structuredClone(f.saved()),
+		posts = f.posts();
+	await expect(
+		addMove('rig-recover', keepConsent(f.spec, keep), (progress) => {
+			if (progress.step === 'animate' && progress.done === 0)
+				vi.spyOn(queue, 'snapshot').mockImplementation(() => ({
+					...f.q.snapshot(),
+					jobs: f.q.snapshot().jobs.filter((record) => record.id !== 'motion-west')
+				}));
+		})
+	).rejects.toThrow('cannot generate or re-roll body artwork');
+	expect(f.enqueue).not.toHaveBeenCalled();
+	expect(f.posts()).toBe(posts);
+	expect(f.saved()).toEqual(before);
+});
+
+test('a new authored move without replace can be kept from its cached frames', async () => {
+	const f = await fixture('feet');
+	await f.finishOriginalChecks();
+	asNewMove(f.saved());
+	const spec: MoveSpec = { ...f.spec, replace: undefined };
+	const plan = await measurementRecoveryPlan('rig-recover', spec);
+	await expect(
+		addMove('rig-recover', {
+			...spec,
+			measurementRecovery: {
+				id: 'reuse',
+				recordIds: [],
+				checkHashes: plan.checkHashes,
+				rigVersion: plan.rigVersion
+			}
+		})
+	).rejects.toThrow('new move fails body-pose quality checks');
+	const calls = f.enqueue.mock.calls.length,
+		posts = f.posts(),
+		keep = (await reviewMoveRecovery('rig-recover', spec)).keep!;
+	expect(keep.directions.map((d) => d.dir)).toEqual(['east', 'west']);
+	await addMove('rig-recover', keepConsent(spec, keep));
+	expect(f.enqueue.mock.calls).toHaveLength(calls);
+	expect(f.posts()).toBe(posts);
+	expect(f.saved().manifest.rig.animations.map((a) => a.id)).toEqual(['idle']);
+	expect(cellsOf(f.saved(), 'base', 'east')).toHaveLength(4);
+});
+
+test('stale Keep consent is refused without spending or saving', async () => {
+	const f = await fixture('feet');
+	await f.finishOriginalChecks();
+	const keep = (await reviewMoveRecovery('rig-recover', f.spec)).keep!,
+		calls = f.enqueue.mock.calls.length,
+		posts = f.posts();
+	f.changeRig();
+	const before = structuredClone(f.saved());
+	await expect(addMove('rig-recover', keepConsent(f.spec, keep))).rejects.toThrow('changed');
+	expect(f.enqueue.mock.calls).toHaveLength(calls);
+	expect(f.posts()).toBe(posts);
+	expect(f.saved()).toEqual(before);
+});
+
+test('missing or malformed measurements can never be kept', async () => {
+	const f = await fixture('feet'),
+		missing = await reviewMoveRecovery('rig-recover', f.spec);
+	expect(missing.keep).toBeUndefined();
+	expect(missing.recovery?.checks).toBeGreaterThan(0);
+	await expect(
+		addMove(
+			'rig-recover',
+			keepConsent(f.spec, { qaHash: 'a'.repeat(64), rigVersion: missing.recovery!.rigVersion })
+		)
+	).rejects.toThrow('joint-check outcome changed');
+	expect(f.enqueue).not.toHaveBeenCalled();
+	await f.finishOriginalChecks();
+	const keep = (await reviewMoveRecovery('rig-recover', f.spec)).keep!;
+	for (const r of f.records.values())
+		if (r.endpoint === '/estimate-skeleton' && r.state === 'done') r.response = { keypoints: [] };
+	await f.q.sync();
+	await expect(reviewMoveRecovery('rig-recover', f.spec)).rejects.toThrow('invalid measurements');
+	const calls = f.enqueue.mock.calls.length,
+		posts = f.posts(),
+		before = structuredClone(f.saved());
+	await expect(addMove('rig-recover', keepConsent(f.spec, keep))).rejects.toThrow(
+		'invalid measurements'
+	);
+	expect(f.enqueue.mock.calls).toHaveLength(calls);
+	expect(f.posts()).toBe(posts);
+	expect(f.saved()).toEqual(before);
 });
 
 test('explicit recovery reuses both body renders, checks sequentially and publishes genuine measured output', async () => {

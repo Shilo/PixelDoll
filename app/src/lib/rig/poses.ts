@@ -149,6 +149,23 @@ export function setArm(p: Skeleton, side: 'RIGHT' | 'LEFT', a1: number, a2: numb
 	};
 	return o;
 }
+/** Hip fixed; thigh at a1, shin at a2 (deg), bone lengths kept. */
+export function setLeg(p: Skeleton, side: 'RIGHT' | 'LEFT', a1: number, a2: number): Skeleton {
+	const o = clone(p),
+		H = p[`${side} HIP`],
+		K = p[`${side} KNEE`],
+		A = p[`${side} LEG`],
+		r = (d: number) => (d * Math.PI) / 180;
+	const l1 = Math.hypot(K.x - H.x, K.y - H.y),
+		l2 = Math.hypot(A.x - K.x, A.y - K.y);
+	o[`${side} KNEE`] = { ...K, x: H.x + l1 * Math.cos(r(a1)), y: H.y + l1 * Math.sin(r(a1)) };
+	o[`${side} LEG`] = {
+		...A,
+		x: o[`${side} KNEE`].x + l2 * Math.cos(r(a2)),
+		y: o[`${side} KNEE`].y + l2 * Math.sin(r(a2))
+	};
+	return o;
+}
 export const shift = (p: Skeleton, labels: string[], dx: number, dy: number): Skeleton => {
 	const o = clone(p);
 	for (const l of labels) {
@@ -312,6 +329,33 @@ export const ACTIONS: Record<string, (rest: Skeleton, dir: string) => Skeleton[]
 						[82, 90]
 					]
 				]),
+	// seated astride without a mount: three equal frames keep the hips stable and both feet stationary across frames
+	ride: (rest, dir) => {
+		const side = dir === 'east',
+			m = backView(dir) ? (a: number) => 180 - a : (a: number) => a,
+			legs: ['RIGHT' | 'LEFT', number, number][] = side
+				? [
+						['RIGHT', 32, 108],
+						['LEFT', 24, 100]
+					]
+				: [
+						['RIGHT', 115, 50],
+						['LEFT', 65, 130]
+					],
+			arms: ['RIGHT' | 'LEFT', number, number][] = side
+				? [
+						['RIGHT', 40, 25],
+						['LEFT', 32, 20]
+					]
+				: [
+						['RIGHT', 75, 88],
+						['LEFT', 105, 92]
+					];
+		let p = clone(rest);
+		for (const [s, a1, a2] of legs) p = setLeg(p, s, m(a1), m(a2));
+		for (const [s, a1, a2] of arms) p = setArm(p, s, m(a1), m(a2));
+		return [0, 1, 2].map(() => clone(p));
+	},
 	// death, 8 frames: stagger -> kneel -> fall over (upper body rotates about the hips) -> lie still. Falls toward -x.
 	death: (rest, dir) => {
 		const floor = Math.max(rest['RIGHT LEG'].y, rest['LEFT LEG'].y);

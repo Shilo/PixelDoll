@@ -1,0 +1,2172 @@
+{
+  "summary": {
+    "frames_checked": 171,
+    "bodies": 4,
+    "cell_sizes": [64, 80, 160],
+    "identity_checks_passed": 171,
+    "mirrored_frames_checked": 45,
+    "frames_with_ambiguous_body_pixels": 73,
+    "frames_changed_by_one_pixel_joint_shift": 99,
+    "item_cells_with_mask_intersection": 104,
+    "hidden_pixel_counterexample": {
+      "identical_flattened_inputs": true,
+      "different_required_hidden_pixels": true
+    },
+    "seated_oracle": [
+      {
+        "direction": "east",
+        "guessed_vs_known_part_pixel_mismatches": 27,
+        "radius_sweep": [
+          {
+            "minimum_radius_pixels": 1.6,
+            "pixel_label_disagreements": 27
+          },
+          {
+            "minimum_radius_pixels": 2.56,
+            "pixel_label_disagreements": 0
+          },
+          {
+            "minimum_radius_pixels": 3.84,
+            "pixel_label_disagreements": 0
+          },
+          {
+            "minimum_radius_pixels": 5.12,
+            "pixel_label_disagreements": 0
+          }
+        ],
+        "all_known_near_leg_pixels_preserved": true
+      },
+      {
+        "direction": "south-east",
+        "guessed_vs_known_part_pixel_mismatches": 32,
+        "radius_sweep": [
+          {
+            "minimum_radius_pixels": 1.6,
+            "pixel_label_disagreements": 32
+          },
+          {
+            "minimum_radius_pixels": 2.56,
+            "pixel_label_disagreements": 3
+          },
+          {
+            "minimum_radius_pixels": 3.84,
+            "pixel_label_disagreements": 3
+          },
+          {
+            "minimum_radius_pixels": 5.12,
+            "pixel_label_disagreements": 3
+          }
+        ],
+        "all_known_near_leg_pixels_preserved": true
+      }
+    ]
+  },
+  "frames": [
+    {
+      "body": "A",
+      "direction": "south",
+      "frame": "rest",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "south",
+      "frame": "walk/0",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "south",
+      "frame": "walk/1",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "south",
+      "frame": "walk/2",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "south",
+      "frame": "walk/3",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "south",
+      "frame": "walk/4",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "south",
+      "frame": "walk/5",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "south",
+      "frame": "walk/6",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "south",
+      "frame": "walk/7",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "east",
+      "frame": "rest",
+      "size": 64,
+      "far_pixels": 27,
+      "ambiguous_pixels": 33,
+      "changed_by_one_pixel_joint_shift": 12,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 9,
+        "a-sword96": 6
+      }
+    },
+    {
+      "body": "A",
+      "direction": "east",
+      "frame": "walk/0",
+      "size": 64,
+      "far_pixels": 26,
+      "ambiguous_pixels": 29,
+      "changed_by_one_pixel_joint_shift": 16,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 8,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "east",
+      "frame": "walk/1",
+      "size": 64,
+      "far_pixels": 49,
+      "ambiguous_pixels": 1,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 28,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "east",
+      "frame": "walk/2",
+      "size": 64,
+      "far_pixels": 51,
+      "ambiguous_pixels": 1,
+      "changed_by_one_pixel_joint_shift": 27,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 28,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "east",
+      "frame": "walk/3",
+      "size": 64,
+      "far_pixels": 43,
+      "ambiguous_pixels": 7,
+      "changed_by_one_pixel_joint_shift": 23,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 24,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "east",
+      "frame": "walk/4",
+      "size": 64,
+      "far_pixels": 34,
+      "ambiguous_pixels": 24,
+      "changed_by_one_pixel_joint_shift": 27,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 21,
+        "a-sword96": 7
+      }
+    },
+    {
+      "body": "A",
+      "direction": "east",
+      "frame": "walk/5",
+      "size": 64,
+      "far_pixels": 49,
+      "ambiguous_pixels": 8,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 29,
+        "a-sword96": 21
+      }
+    },
+    {
+      "body": "A",
+      "direction": "east",
+      "frame": "walk/6",
+      "size": 64,
+      "far_pixels": 43,
+      "ambiguous_pixels": 7,
+      "changed_by_one_pixel_joint_shift": 23,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 24,
+        "a-sword96": 20
+      }
+    },
+    {
+      "body": "A",
+      "direction": "east",
+      "frame": "walk/7",
+      "size": 64,
+      "far_pixels": 40,
+      "ambiguous_pixels": 18,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 27,
+        "a-sword96": 13
+      }
+    },
+    {
+      "body": "A",
+      "direction": "north",
+      "frame": "rest",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "north",
+      "frame": "walk/0",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "north",
+      "frame": "walk/1",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "north",
+      "frame": "walk/2",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "north",
+      "frame": "walk/3",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "north",
+      "frame": "walk/4",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "north",
+      "frame": "walk/5",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "north",
+      "frame": "walk/6",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "A",
+      "direction": "north",
+      "frame": "walk/7",
+      "size": 64,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "a-cape": 0,
+        "a-boots": 0,
+        "a-sword96": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-east",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 83,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 37,
+        "b-cloak": 3
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-east",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 85,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 35,
+        "b-cloak": 4
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-east",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 92,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 23,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 36,
+        "b-cloak": 18
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-east",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 85,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 28,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 31,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-east",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 89,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 28,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 35,
+        "b-cloak": 6
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-east",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 72,
+      "ambiguous_pixels": 10,
+      "changed_by_one_pixel_joint_shift": 23,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 35,
+        "b-cloak": 6
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-east",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 62,
+      "ambiguous_pixels": 20,
+      "changed_by_one_pixel_joint_shift": 20,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 31,
+        "b-cloak": 3
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-east",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 59,
+      "ambiguous_pixels": 23,
+      "changed_by_one_pixel_joint_shift": 22,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 27,
+        "b-cloak": 1
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-east",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 59,
+      "ambiguous_pixels": 15,
+      "changed_by_one_pixel_joint_shift": 12,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 36,
+        "b-cloak": 6
+      }
+    },
+    {
+      "body": "B",
+      "direction": "east",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 39,
+      "ambiguous_pixels": 20,
+      "changed_by_one_pixel_joint_shift": 11,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 17,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "east",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 46,
+      "ambiguous_pixels": 21,
+      "changed_by_one_pixel_joint_shift": 23,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 2,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "east",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 66,
+      "ambiguous_pixels": 2,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 15,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "east",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 65,
+      "ambiguous_pixels": 3,
+      "changed_by_one_pixel_joint_shift": 24,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 21,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "east",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 49,
+      "ambiguous_pixels": 21,
+      "changed_by_one_pixel_joint_shift": 23,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 1,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "east",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 48,
+      "ambiguous_pixels": 29,
+      "changed_by_one_pixel_joint_shift": 28,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 15,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "east",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 56,
+      "ambiguous_pixels": 14,
+      "changed_by_one_pixel_joint_shift": 27,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 16,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "east",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 59,
+      "ambiguous_pixels": 12,
+      "changed_by_one_pixel_joint_shift": 22,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 23,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "east",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 46,
+      "ambiguous_pixels": 23,
+      "changed_by_one_pixel_joint_shift": 29,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 12,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-east",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 84,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 29,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 38,
+        "b-cloak": 76
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-east",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 78,
+      "ambiguous_pixels": 7,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 39,
+        "b-cloak": 74
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-east",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 47,
+      "ambiguous_pixels": 30,
+      "changed_by_one_pixel_joint_shift": 41,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 34,
+        "b-cloak": 47
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-east",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 57,
+      "ambiguous_pixels": 30,
+      "changed_by_one_pixel_joint_shift": 28,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 35,
+        "b-cloak": 57
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-east",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 48,
+      "ambiguous_pixels": 11,
+      "changed_by_one_pixel_joint_shift": 21,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 36,
+        "b-cloak": 48
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-east",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 90,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 29,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 41,
+        "b-cloak": 81
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-east",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 89,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 30,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 39,
+        "b-cloak": 75
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-east",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 77,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 32,
+        "b-cloak": 67
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-east",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 82,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 41,
+        "b-cloak": 77
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 0,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-west",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 84,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 38,
+        "b-cloak": 76
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-west",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 78,
+      "ambiguous_pixels": 7,
+      "changed_by_one_pixel_joint_shift": 27,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 39,
+        "b-cloak": 74
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-west",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 47,
+      "ambiguous_pixels": 30,
+      "changed_by_one_pixel_joint_shift": 18,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 34,
+        "b-cloak": 47
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-west",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 57,
+      "ambiguous_pixels": 30,
+      "changed_by_one_pixel_joint_shift": 32,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 35,
+        "b-cloak": 57
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-west",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 48,
+      "ambiguous_pixels": 11,
+      "changed_by_one_pixel_joint_shift": 13,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 36,
+        "b-cloak": 48
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-west",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 90,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 41,
+        "b-cloak": 81
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-west",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 89,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 33,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 39,
+        "b-cloak": 75
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-west",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 77,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 27,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 32,
+        "b-cloak": 67
+      }
+    },
+    {
+      "body": "B",
+      "direction": "north-west",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 82,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 28,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 41,
+        "b-cloak": 77
+      }
+    },
+    {
+      "body": "B",
+      "direction": "west",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 39,
+      "ambiguous_pixels": 20,
+      "changed_by_one_pixel_joint_shift": 24,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 17,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "west",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 46,
+      "ambiguous_pixels": 21,
+      "changed_by_one_pixel_joint_shift": 21,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 2,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "west",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 66,
+      "ambiguous_pixels": 2,
+      "changed_by_one_pixel_joint_shift": 32,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 15,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "west",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 65,
+      "ambiguous_pixels": 3,
+      "changed_by_one_pixel_joint_shift": 27,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 21,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "west",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 49,
+      "ambiguous_pixels": 21,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 1,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "west",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 48,
+      "ambiguous_pixels": 29,
+      "changed_by_one_pixel_joint_shift": 36,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 15,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "west",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 56,
+      "ambiguous_pixels": 14,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 16,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "west",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 59,
+      "ambiguous_pixels": 12,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 23,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "west",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 46,
+      "ambiguous_pixels": 23,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 12,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-west",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 83,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 37,
+        "b-cloak": 3
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-west",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 85,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 35,
+        "b-cloak": 4
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-west",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 92,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 36,
+        "b-cloak": 18
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-west",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 85,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 31,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 31,
+        "b-cloak": 0
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-west",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 89,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 35,
+        "b-cloak": 6
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-west",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 72,
+      "ambiguous_pixels": 10,
+      "changed_by_one_pixel_joint_shift": 15,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 35,
+        "b-cloak": 6
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-west",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 62,
+      "ambiguous_pixels": 20,
+      "changed_by_one_pixel_joint_shift": 30,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 31,
+        "b-cloak": 3
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-west",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 59,
+      "ambiguous_pixels": 23,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 27,
+        "b-cloak": 1
+      }
+    },
+    {
+      "body": "B",
+      "direction": "south-west",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 59,
+      "ambiguous_pixels": 15,
+      "changed_by_one_pixel_joint_shift": 24,
+      "item_pixels_affected_by_shared_mask": {
+        "b-tunic": 36,
+        "b-cloak": 6
+      }
+    },
+    {
+      "body": "C",
+      "direction": "south",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "south",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "south",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "south",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "south",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "south",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "south",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "south",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "south",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "east",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 59,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "east",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 65,
+      "ambiguous_pixels": 3,
+      "changed_by_one_pixel_joint_shift": 23,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "east",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 77,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 24,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "east",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 54,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "east",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 66,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 24,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "east",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 51,
+      "ambiguous_pixels": 10,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "east",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 50,
+      "ambiguous_pixels": 15,
+      "changed_by_one_pixel_joint_shift": 28,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "east",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 55,
+      "ambiguous_pixels": 11,
+      "changed_by_one_pixel_joint_shift": 23,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "east",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 48,
+      "ambiguous_pixels": 17,
+      "changed_by_one_pixel_joint_shift": 23,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "north",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "north",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "north",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "north",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "north",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "north",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "north",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "north",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "north",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "west",
+      "frame": "rest",
+      "size": 80,
+      "far_pixels": 59,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "west",
+      "frame": "walk/0",
+      "size": 80,
+      "far_pixels": 65,
+      "ambiguous_pixels": 3,
+      "changed_by_one_pixel_joint_shift": 27,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "west",
+      "frame": "walk/1",
+      "size": 80,
+      "far_pixels": 77,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "west",
+      "frame": "walk/2",
+      "size": 80,
+      "far_pixels": 54,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 25,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "west",
+      "frame": "walk/3",
+      "size": 80,
+      "far_pixels": 66,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 27,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "west",
+      "frame": "walk/4",
+      "size": 80,
+      "far_pixels": 51,
+      "ambiguous_pixels": 10,
+      "changed_by_one_pixel_joint_shift": 14,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "west",
+      "frame": "walk/5",
+      "size": 80,
+      "far_pixels": 50,
+      "ambiguous_pixels": 15,
+      "changed_by_one_pixel_joint_shift": 23,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "west",
+      "frame": "walk/6",
+      "size": 80,
+      "far_pixels": 55,
+      "ambiguous_pixels": 11,
+      "changed_by_one_pixel_joint_shift": 24,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "C",
+      "direction": "west",
+      "frame": "walk/7",
+      "size": 80,
+      "far_pixels": 48,
+      "ambiguous_pixels": 17,
+      "changed_by_one_pixel_joint_shift": 26,
+      "item_pixels_affected_by_shared_mask": {}
+    },
+    {
+      "body": "N",
+      "direction": "south",
+      "frame": "rest",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "south",
+      "frame": "walk/0",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "south",
+      "frame": "walk/1",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "south",
+      "frame": "walk/2",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 13,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "south",
+      "frame": "walk/3",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "south",
+      "frame": "walk/4",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "south",
+      "frame": "walk/5",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "south",
+      "frame": "walk/6",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 3,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "south",
+      "frame": "walk/7",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "east",
+      "frame": "rest",
+      "size": 160,
+      "far_pixels": 271,
+      "ambiguous_pixels": 38,
+      "changed_by_one_pixel_joint_shift": 49,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "east",
+      "frame": "walk/0",
+      "size": 160,
+      "far_pixels": 335,
+      "ambiguous_pixels": 4,
+      "changed_by_one_pixel_joint_shift": 68,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "east",
+      "frame": "walk/1",
+      "size": 160,
+      "far_pixels": 344,
+      "ambiguous_pixels": 6,
+      "changed_by_one_pixel_joint_shift": 75,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "east",
+      "frame": "walk/2",
+      "size": 160,
+      "far_pixels": 346,
+      "ambiguous_pixels": 6,
+      "changed_by_one_pixel_joint_shift": 70,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "east",
+      "frame": "walk/3",
+      "size": 160,
+      "far_pixels": 311,
+      "ambiguous_pixels": 29,
+      "changed_by_one_pixel_joint_shift": 62,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "east",
+      "frame": "walk/4",
+      "size": 160,
+      "far_pixels": 328,
+      "ambiguous_pixels": 44,
+      "changed_by_one_pixel_joint_shift": 92,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "east",
+      "frame": "walk/5",
+      "size": 160,
+      "far_pixels": 308,
+      "ambiguous_pixels": 35,
+      "changed_by_one_pixel_joint_shift": 71,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "east",
+      "frame": "walk/6",
+      "size": 160,
+      "far_pixels": 319,
+      "ambiguous_pixels": 27,
+      "changed_by_one_pixel_joint_shift": 61,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 2
+      }
+    },
+    {
+      "body": "N",
+      "direction": "east",
+      "frame": "walk/7",
+      "size": 160,
+      "far_pixels": 291,
+      "ambiguous_pixels": 42,
+      "changed_by_one_pixel_joint_shift": 79,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "north",
+      "frame": "rest",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "north",
+      "frame": "walk/0",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "north",
+      "frame": "walk/1",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "north",
+      "frame": "walk/2",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "north",
+      "frame": "walk/3",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "north",
+      "frame": "walk/4",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "north",
+      "frame": "walk/5",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "north",
+      "frame": "walk/6",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "north",
+      "frame": "walk/7",
+      "size": 160,
+      "far_pixels": 0,
+      "ambiguous_pixels": 0,
+      "changed_by_one_pixel_joint_shift": 0,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "west",
+      "frame": "rest",
+      "size": 160,
+      "far_pixels": 271,
+      "ambiguous_pixels": 38,
+      "changed_by_one_pixel_joint_shift": 49,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "west",
+      "frame": "walk/0",
+      "size": 160,
+      "far_pixels": 335,
+      "ambiguous_pixels": 4,
+      "changed_by_one_pixel_joint_shift": 72,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "west",
+      "frame": "walk/1",
+      "size": 160,
+      "far_pixels": 344,
+      "ambiguous_pixels": 6,
+      "changed_by_one_pixel_joint_shift": 73,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "west",
+      "frame": "walk/2",
+      "size": 160,
+      "far_pixels": 346,
+      "ambiguous_pixels": 6,
+      "changed_by_one_pixel_joint_shift": 69,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "west",
+      "frame": "walk/3",
+      "size": 160,
+      "far_pixels": 311,
+      "ambiguous_pixels": 29,
+      "changed_by_one_pixel_joint_shift": 63,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "west",
+      "frame": "walk/4",
+      "size": 160,
+      "far_pixels": 328,
+      "ambiguous_pixels": 44,
+      "changed_by_one_pixel_joint_shift": 90,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "west",
+      "frame": "walk/5",
+      "size": 160,
+      "far_pixels": 308,
+      "ambiguous_pixels": 35,
+      "changed_by_one_pixel_joint_shift": 74,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    },
+    {
+      "body": "N",
+      "direction": "west",
+      "frame": "walk/6",
+      "size": 160,
+      "far_pixels": 319,
+      "ambiguous_pixels": 27,
+      "changed_by_one_pixel_joint_shift": 75,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 2
+      }
+    },
+    {
+      "body": "N",
+      "direction": "west",
+      "frame": "walk/7",
+      "size": 160,
+      "far_pixels": 291,
+      "ambiguous_pixels": 42,
+      "changed_by_one_pixel_joint_shift": 60,
+      "item_pixels_affected_by_shared_mask": {
+        "n-cloak128": 0
+      }
+    }
+  ]
+}

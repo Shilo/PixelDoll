@@ -4906,38 +4906,46 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 		s.ui.sheet = 'move';
 		return replace.moveRigVersion(rec);
 	});
-	const reuse = sheet.getByRole('button', { name: 'Reuse cached frames', exact: true });
-	await expect(reuse).toBeVisible();
+	// The completed cached slash frames touch the border, so reusing them as-is would fail the body checks.
+	// The free choice is to review and keep them, never a paid retry.
+	const keep = sheet.getByRole('button', { name: 'Keep frames', exact: true });
+	await expect(keep).toBeVisible();
+	await expect(sheet.getByRole('button', { name: 'Reuse cached frames', exact: true })).toHaveCount(
+		0
+	);
 	await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toHaveCount(
 		0
 	);
+	await expect(sheet.getByRole('button', { name: 'Discard', exact: true })).toBeVisible();
 	await expect(sheet).toContainText(
-		'Reuse the completed body frames and joint results. No new body or joint requests are made.'
+		'Keep saves them as they are, body only, with no PixelLab request.'
 	);
+	await expect(sheet).toContainText('opaque pixels touch the frame border; check framing');
+	await expect(sheet.getByRole('img', { name: /frame 1$/ })).toBeVisible();
 	await expect(sheet).not.toContainText('Unknown checks may already have charged');
-	await expect(sheet).not.toContainText('Retry 0');
-	await reuse.click();
+	await keep.click();
 	await expect
 		.poll(() =>
 			page.evaluate(async () => {
 				const p = '/src/studio/state.svelte.ts',
 					s = await import(p);
-				return s.moving.spec?.measurementRecovery?.recordIds.length;
+				return s.moving.spec?.measurementRecovery?.keep?.qaHash?.length;
 			})
 		)
-		.toBe(0);
+		.toBe(64);
 	await expect(sheet).toContainText('Offline consent storage blocked');
 	const reused = await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
 		return s.moving.spec;
 	});
-	expect(reused).toMatchObject(original.spec);
+	expect(reused).toMatchObject({ ...original.spec, items: [] });
 	expect(reused.measurementRecovery).toMatchObject({
 		recordIds: [],
 		checkHashes: [],
 		rigVersion: currentRig
 	});
+	expect(reused.measurementRecovery.keep.qaHash).toMatch(/^[a-f0-9]{64}$/);
 	expect(reused.measurementRecovery.id).toMatch(/^[a-f0-9-]{36}$/);
 	expect(reused.measurementRecovery.id).not.toBe(pending.spec.measurementRecovery.id);
 	expect(reused.measurementRecovery.rigVersion).not.toBe(

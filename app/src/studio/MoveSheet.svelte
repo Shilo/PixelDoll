@@ -2,6 +2,7 @@
 	// Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
 	// re-rendered through raw skeleton-v3), plus one pose call per worn item x direction so the items follow the new clip.
 	import Sheet from './Sheet.svelte';
+	import Sprite from './Sprite.svelte';
 	import { untrack } from 'svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { movePlan } from './apiPlans.ts';
@@ -21,6 +22,7 @@
 		reviewMoveRecovery,
 		moveEstimate,
 		type BodyPaletteRepairPlan,
+		type KeepBodyPlan,
 		type MeasurementRecoveryPlan
 	} from './create.ts';
 	import {
@@ -32,6 +34,7 @@
 		settingUp,
 		startMove,
 		queueMoves,
+		keepMoveBody,
 		matchMoveBodyColors,
 		retryMoveMeasurements,
 		dismissMove,
@@ -151,6 +154,9 @@
 	let recoveryChecking = $state(false);
 	let recoveryUnavailable = $state('');
 	let colorRepair = $state<BodyPaletteRepairPlan | null>(null);
+	// Frames are decoded images: keep them raw rather than deeply proxied.
+	let keep = $state.raw<KeepBodyPlan | null>(null);
+	const keepK = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1 : 1.5))));
 	const recoveryItemGens = $derived(
 		recovery && m && moving.spec ? moveEstimate(m, moving.spec).items : 0
 	);
@@ -163,6 +169,7 @@
 		let current = true;
 		recovery = null;
 		colorRepair = null;
+		keep = null;
 		recoveryError = '';
 		recoveryUnavailable = '';
 		recoveryChecking = false;
@@ -173,6 +180,7 @@
 					if (!current) return;
 					recovery = review.recovery ?? null;
 					colorRepair = review.colorRepair ?? null;
+					keep = review.keep ?? null;
 					recoveryUnavailable = review.unavailable ?? '';
 				})
 				.catch((error: unknown) => {
@@ -197,6 +205,18 @@
 			void retryMoveMeasurements(projectId, spec, reviewed).catch((e) => {
 				recoveryError = e instanceof Error ? e.message : String(e);
 			});
+		});
+	}
+
+	// Free and local: no key is needed because a kept body makes no PixelLab request.
+	function keepBody() {
+		if (!moving.spec || !keep) return;
+		const projectId = moving.projectId,
+			spec = $state.snapshot(moving.spec),
+			reviewed = keep;
+		ui.sheet = 'move';
+		void keepMoveBody(projectId, spec, reviewed).catch((e) => {
+			recoveryError = e instanceof Error ? e.message : String(e);
 		});
 	}
 
@@ -260,7 +280,7 @@
 		>
 	{:else if progress && moving.error}
 		<button class="bu-action btn plain" data-variant="quiet" onclick={dismissMove}
-			>Start over</button
+			>{keep ? 'Discard' : 'Start over'}</button
 		>
 		<span class="api-action"
 			><ApiPeek scope="move-retry" label="Generate move again" plan={retryPlan} /><button
@@ -278,7 +298,7 @@
 						});
 						ui.sheet = 'move';
 					}, moving.spec?.itemMethod !== 'anchor')}
-				>{recovery || colorRepair || savedItemFrames || moving.spec?.reuseItemFrames
+				>{recovery || colorRepair || keep || savedItemFrames || moving.spec?.reuseItemFrames
 					? 'Generate new frames'
 					: 'Try again'}{#if retryGens}
 					<span class="cost">Est. {retryGens} gens</span>{/if}</button
@@ -301,6 +321,9 @@
 				class="bu-action btn primary"
 				data-variant="primary"
 				onclick={matchColors}>Match body colors</button
+			>{/if}
+		{#if keep}<button class="bu-action btn primary" data-variant="primary" onclick={keepBody}
+				>Keep frames</button
 			>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
 	{:else if progress}
 		<span class="foot-note">You can keep working.</span>
@@ -403,9 +426,39 @@
 			{#if recoveryUnavailable}<p class="notice small">{recoveryUnavailable}</p>{/if}
 			{#if ownQueued.length}<p class="muted small">
 					Queued next: {ownQueued.map((q) => nice(q.spec.id)).join(', ')}{moving.error
-						? '. Try again continues with them; Start over drops them.'
+						? keep
+							? '. Keep frames or Try again continues with them; Discard drops them too.'
+							: '. Try again continues with them; Start over drops them.'
 						: ''}
 				</p>{/if}
+			{#if keep && moving.spec}
+				<section class="keep-review" aria-label="Review body frames">
+					<p class="small">
+						These frames passed the structural checks but have the quality warnings below. Keep
+						saves them as they are, body only, with no PixelLab request.{#if moving.spec.items.length}
+							Equipment is not posed now; generate it for this move later as a separate, priced
+							step.{/if}{#if moving.spec.replace}
+							Equipment on the replaced views is hidden there until it is posed again.{/if}
+						Discard saves nothing; the generated images stay in Activity.
+					</p>
+					{#each keep.directions as view (view.dir)}
+						<div class="keep-view">
+							<span class="small" style="font-weight:600">{directionLabel(view.dir)}</span>
+							<div class="keep-frames">
+								{#each view.frames as frame, i (i)}<Sprite
+										img={frame}
+										k={keepK}
+										checker
+										label="{nice(moving.spec.id)} {directionLabel(view.dir)} frame {i + 1}"
+									/>{/each}
+							</div>
+							{#each view.warnings as warning (warning)}<p class="notice warn small">
+									<CircleAlert size={14} />{bodyQualityNote(warning)}
+								</p>{/each}
+						</div>
+					{/each}
+				</section>
+			{/if}
 			{#if recovery}
 				<p class="notice warn small">
 					Reuse the completed body frames and joint results.{' '}{#if recovery.checks}Retry {recovery.checks}
@@ -567,3 +620,19 @@
 		</div>
 	{/if}
 </Sheet>
+
+<style>
+	.keep-review {
+		display: grid;
+		gap: 8px;
+	}
+	.keep-view {
+		display: grid;
+		gap: 4px;
+	}
+	.keep-frames {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+</style>

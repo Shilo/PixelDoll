@@ -1,0 +1,331 @@
+<div id="mount-methods">
+  <div class="viz-controls">
+    <label class="form-label"
+      >View<select class="form-select" id="mount-view">
+        <option>E</option>
+        <option>SE</option>
+        <option>S</option>
+        <option>SW</option>
+        <option>W</option>
+        <option>NW</option>
+        <option>N</option>
+        <option>NE</option>
+      </select></label
+    >
+    <label class="form-label"
+      >Rider art<select class="form-select" id="mount-pose">
+        <option value="sit">Prepared riding pose</option>
+        <option value="stand">Standing pose</option>
+      </select></label
+    >
+    <label class="form-label"
+      >Mount shape<select class="form-select" id="mount-shape">
+        <option value="horse">Horse-like</option>
+        <option value="shell">Round shell</option>
+        <option value="narrow">Narrow saddle</option>
+      </select></label
+    >
+  </div>
+  <div class="viz-controls">
+    <label class="form-label"
+      >Width <output id="mount-width-value">100%</output
+      ><input
+        class="form-range"
+        id="mount-width"
+        type="range"
+        min="65"
+        max="145"
+        value="100"
+        step="5"
+    /></label>
+    <label class="form-label"
+      >Movement frame <output id="mount-frame-value">0</output
+      ><input
+        class="form-range"
+        id="mount-frame"
+        type="range"
+        min="0"
+        max="7"
+        value="0"
+    /></label>
+    <label class="form-check"
+      ><input class="form-check-input" id="mount-parts" type="checkbox" /><span
+        class="form-check-label"
+        >Highlight rider parts</span
+      ></label
+    >
+  </div>
+  <div class="mount-comparison">
+    <section>
+      <h3>1. Whole rider</h3>
+      <canvas
+        width="128"
+        height="112"
+        aria-label="Whole rider above mount"
+      ></canvas>
+      <div class="text-small">Far leg can sit on top.</div>
+    </section>
+    <section>
+      <h3>2. Delete far leg</h3>
+      <canvas
+        width="128"
+        height="112"
+        aria-label="Far leg permanently removed"
+      ></canvas>
+      <div class="text-small">Exposed boot disappears too.</div>
+    </section>
+    <section>
+      <h3>3. Preserve parts</h3>
+      <canvas
+        width="128"
+        height="112"
+        aria-label="Far leg behind mount, near leg in front"
+      ></canvas>
+      <div class="text-small">Current shape hides only overlap.</div>
+    </section>
+  </div>
+  <div class="text-small" id="mount-detail" aria-live="polite"></div>
+  <div class="text-small text-muted">
+    Schematic art with hand-defined part labels. Not automatic segmentation or a
+    qualified wardrobe.
+  </div>
+</div>
+<style>
+  #mount-methods {
+    display: grid;
+    gap: 16px;
+  }
+  #mount-methods .mount-comparison {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+  #mount-methods section {
+    min-width: 0;
+    display: grid;
+    gap: 8px;
+    align-content: start;
+  }
+  #mount-methods canvas {
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+  }
+  @media (max-width: 480px) {
+    #mount-methods .mount-comparison {
+      grid-template-columns: 1fr;
+    }
+    #mount-methods canvas {
+      width: min(100%, 280px);
+      justify-self: center;
+    }
+  }
+</style>
+<script>
+  (() => {
+    const root = document.getElementById("mount-methods");
+    const control = (name) => root.querySelector("#mount-" + name);
+    const canvases = Array.from(root.querySelectorAll("canvas"));
+    function buffer() {
+      const canvas = document.createElement("canvas");
+      canvas.width = 128;
+      canvas.height = 112;
+      return canvas;
+    }
+    function color(token) {
+      const sample = document.createElement("span");
+      sample.style.color = "var(" + token + ", var(--foreground))";
+      root.appendChild(sample);
+      const value = getComputedStyle(sample).color;
+      sample.remove();
+      return value;
+    }
+    function draw() {
+      const palette = {
+        mount: color("--muted-foreground"),
+        body: color("--chart-1"),
+        far: color("--chart-2"),
+        near: color("--chart-3"),
+        ink: color("--foreground"),
+        surface: color("--card"),
+        grid: color("--border"),
+      };
+      const facing = control("view").value;
+      const back = facing.includes("N");
+      const side = facing === "E" || facing === "W";
+      const diagonal = facing.length === 2;
+      const sign = facing.includes("W") ? -1 : 1;
+      const width = Number(control("width").value) / 100;
+      const phase = Number(control("frame").value);
+      const hip = 49 + [0, -1, -2, -1, 0, 1, 2, 1][phase];
+      const sit = control("pose").value === "sit";
+      const highlight = control("parts").checked;
+      const shape = control("shape").value;
+      const radiusX = Math.round(
+        (side ? 29 : diagonal ? 24 : 19) *
+          width *
+          (shape === "narrow" ? 0.68 : 1),
+      );
+      const radiusY = shape === "shell" ? 19 : shape === "narrow" ? 10 : 14;
+      const mount = buffer();
+      const neck = buffer();
+      const parts = Object.fromEntries(
+        ["far", "body", "near", "head"].map((name) => [name, buffer()]),
+      );
+      function rect(canvas, left, top, rectWidth, height, fill) {
+        const context = canvas.getContext("2d");
+        context.fillStyle = fill;
+        context.fillRect(Math.round(left), Math.round(top), rectWidth, height);
+      }
+      function limb(canvas, points, fill) {
+        for (let index = 1; index < points.length; index++) {
+          const start = points[index - 1];
+          const end = points[index];
+          const steps = Math.max(
+            Math.abs(end[0] - start[0]),
+            Math.abs(end[1] - start[1]),
+            1,
+          );
+          for (let step = 0; step <= steps; step++) {
+            rect(
+              canvas,
+              start[0] + ((end[0] - start[0]) * step) / steps - 2,
+              start[1] + ((end[1] - start[1]) * step) / steps - 2,
+              4,
+              4,
+              fill,
+            );
+          }
+        }
+      }
+      for (let row = -radiusY; row <= radiusY; row++) {
+        const extent = Math.round(
+          radiusX * Math.sqrt(1 - (row * row) / (radiusY * radiusY)),
+        );
+        rect(
+          mount,
+          64 - extent,
+          hip + 13 + row,
+          extent * 2 + 1,
+          1,
+          palette.mount,
+        );
+      }
+      for (const offset of [-1, 1]) {
+        const legX = 64 + offset * Math.round(radiusX * 0.65) - 3;
+        rect(mount, legX, hip + 19, 6, 21, palette.mount);
+        rect(
+          mount,
+          legX + offset * [0, 2, 3, 2, 0, -2, -3, -2][phase],
+          hip + 36,
+          8,
+          5,
+          palette.ink,
+        );
+      }
+      if (shape !== "shell") {
+        const neckX =
+          64 +
+          (side
+            ? sign * (radiusX - 3)
+            : diagonal
+              ? sign * Math.round(radiusX * 0.6)
+              : 0);
+        const target = back ? mount : neck;
+        rect(target, neckX - 5, hip - 2, 10, 22, palette.mount);
+        rect(target, neckX - 7, hip - 10, 14, 12, palette.mount);
+        rect(target, neckX - 5, hip - 17, 3, 8, palette.mount);
+        rect(target, neckX + 2, hip - 17, 3, 8, palette.mount);
+      }
+      const legColor = (name) => (highlight ? palette[name] : palette.body);
+      if (side || diagonal) {
+        for (const name of ["far", "near"]) {
+          const legSign = name === "far" ? -1 : 1;
+          const startX = 64 + legSign * (diagonal ? 4 : 2);
+          const kneeX = sit
+            ? 64 + sign * legSign * (diagonal ? 13 : 10)
+            : startX;
+          const ankleX = sit ? kneeX - sign * 3 : startX;
+          limb(
+            parts[name],
+            [
+              [startX, hip],
+              [kneeX, hip + 12],
+              [ankleX, hip + 29],
+            ],
+            legColor(name),
+          );
+          rect(parts[name], ankleX - 3, hip + 27, 8, 4, legColor(name));
+        }
+      } else {
+        for (const legSign of [-1, 1]) {
+          const kneeX = 64 + legSign * (sit ? 16 : 4);
+          limb(
+            parts.near,
+            [
+              [64 + legSign * 3, hip],
+              [kneeX, hip + 11],
+              [kneeX, hip + 28],
+            ],
+            legColor("near"),
+          );
+          rect(parts.near, kneeX - 3, hip + 26, 7, 4, legColor("near"));
+        }
+      }
+      rect(parts.body, 57, hip - 21, 14, 23, palette.body);
+      rect(parts.body, 55, hip - 18, 4, 16, palette.body);
+      rect(parts.body, 70, hip - 18, 4, 16, palette.body);
+      rect(parts.head, 58, hip - 36, 12, 14, palette.ink);
+      rect(parts.head, 56, hip - 39, 16, 5, palette.body);
+      if (!back)
+        rect(
+          parts.head,
+          64 + (side || diagonal ? sign * 4 : -2),
+          hip - 32,
+          2,
+          2,
+          palette.surface,
+        );
+      canvases.forEach((canvas, index) => {
+        const context = canvas.getContext("2d");
+        context.clearRect(0, 0, 128, 112);
+        rect(canvas, 10, 96, 108, 1, palette.grid);
+        const image = (layer) => context.drawImage(layer, 0, 0);
+        if (index === 2) image(parts.far);
+        image(mount);
+        if (index === 0) image(parts.far);
+        image(parts.body);
+        image(parts.near);
+        image(parts.head);
+        image(neck);
+        rect(canvas, 62, hip - 1, 5, 1, palette.ink);
+        rect(canvas, 64, hip - 3, 1, 5, palette.ink);
+      });
+      control("width-value").textContent = Math.round(width * 100) + "%";
+      control("frame-value").textContent = String(phase);
+      control("detail").textContent = !sit
+        ? "Standing: correct overlap still cannot create bent knees."
+        : !side && !diagonal
+          ? "Front/back: no far-leg split. Foreground artwork controls lap overlap."
+          : width > 1.2
+            ? "Wide mount: overlap adapts, but the unchanged rider pose can sink into the seat."
+            : "Watch the far boot: preserving parts keeps pixels outside the current mount silhouette.";
+      root.dataset.state = JSON.stringify({
+        facing,
+        pose: sit ? "sit" : "stand",
+        shape,
+        width,
+        phase,
+        highlight,
+      });
+    }
+    root
+      .querySelectorAll("input,select")
+      .forEach((element) => element.addEventListener("input", draw));
+    new MutationObserver(draw).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "style", "data-theme"],
+    });
+    draw();
+  })();
+</script>
