@@ -631,57 +631,58 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 			.first()
 			.evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL());
 	const before = await drawing();
-	await page
-		.getByRole('navigation', { name: 'Equipment slots' })
-		.getByRole('button', { name: /^Slots/ })
-		.click();
-	const manager = page.getByRole('dialog', { name: 'Slots', exact: true });
-	await expect(manager.getByRole('button', { name: /^Reorder / })).toHaveCount(10);
-	await manager.getByRole('button', { name: 'Show Underwear', exact: true }).click();
-	await expect(manager.getByRole('button', { name: /^Reorder Underwear,/ })).toBeVisible();
-	await manager.getByRole('button', { name: 'More actions for Underwear', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Don’t show in Wardrobe', exact: true }).click();
-	await expect(manager.getByRole('button', { name: 'Show Underwear', exact: true })).toBeVisible();
-	await manager.getByRole('button', { name: 'Add', exact: true }).click();
-	await manager.getByRole('button', { name: 'Add', exact: true }).click();
-	await manager.getByRole('button', { name: 'More actions for Accessory', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Edit…', exact: true }).click();
+	const add = page.getByRole('button', { name: 'Add slot', exact: true });
+	const addSheet = page.getByRole('dialog', { name: 'Add slot', exact: true });
+	const header = (key: string) => page.locator(`[data-slot-button="${key}"]`);
+	const menu = page.locator('#slot-menu');
+	const shownKeys = () =>
+		page
+			.locator('#wardrobe-list > section[data-own]')
+			.evaluateAll((all) => all.map((entry) => (entry as HTMLElement).dataset.group));
+	await expect(page.locator('#wardrobe-list > section[data-own]')).toHaveCount(10);
+	await add.click();
+	await addSheet.getByRole('button', { name: 'Show Underwear', exact: true }).click();
+	await header('underwear').click();
+	await menu.getByRole('menuitem', { name: 'Hide slot', exact: true }).click();
+	await page.getByRole('button', { name: /^Not shown \(/ }).click();
+	await expect(page.getByRole('button', { name: 'Show Underwear', exact: true })).toBeVisible();
+	await add.click();
+	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
+	await add.click();
+	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
+	await header('accessory').click();
+	await menu.getByRole('menuitem', { name: 'Edit slot…', exact: true }).click();
 	const editor = page.getByRole('dialog', { name: 'Accessory', exact: true });
 	await editor.getByRole('textbox', { name: 'Name', exact: true }).fill('Brooch');
 	await editor
 		.getByRole('combobox', { name: 'Draws above', exact: true })
 		.selectOption('torso_outer');
 	await editor.getByRole('button', { name: 'Save', exact: true }).click();
-	const handle = manager.getByRole('button', { name: /^Reorder Brooch,/ });
-	await handle.focus();
-	await page.keyboard.press('Home');
-	await expect(
-		manager.getByRole('button', { name: 'Reorder Brooch, position 1 of 12', exact: true })
-	).toBeFocused();
-	await manager.getByRole('button', { name: 'Done', exact: true }).click();
+	await header('accessory').focus();
+	await page.keyboard.press('Enter');
+	await menu.getByRole('menuitem', { name: 'Move up', exact: true }).click();
+	await expect(header('accessory')).toBeFocused();
+	const ordered = await shownKeys();
+	expect(ordered.indexOf('accessory')).toBe(9);
 	expect(await drawing()).toBe(before);
 	await reloadStudio(page, { waitUntil: 'networkidle' });
-	await page
-		.getByRole('navigation', { name: 'Equipment slots' })
-		.getByRole('button', { name: /^Slots/ })
-		.click();
-	await expect(
-		manager.getByRole('button', { name: 'Reorder Brooch, position 1 of 12', exact: true })
-	).toBeVisible();
-	await expect(manager.getByRole('button', { name: /^Reorder Accessory 2,/ })).toBeVisible();
-	await manager.getByRole('button', { name: 'More actions for Head', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Don’t show in Wardrobe', exact: true }).click();
-	await expect(manager.getByRole('alert')).toContainText('items');
-	await manager.getByRole('button', { name: 'Done', exact: true }).click();
+	expect(await shownKeys()).toEqual(ordered);
+	await expect(header('accessory')).toHaveAccessibleName('Brooch');
+	await expect(header('accessory_2')).toHaveAccessibleName('Accessory 2');
+	await equipmentGroup(page, 'Head');
+	await header('head').click();
+	await expect(menu.getByRole('menuitem', { name: /^Hide slot/ })).toHaveAttribute(
+		'aria-disabled',
+		'true'
+	);
+	await expect(menu).toContainText('items');
+	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Light mode', exact: true }).click();
 	await page.setViewportSize({ width: 320, height: 568 });
-	await page
-		.getByRole('navigation', { name: 'Equipment slots' })
-		.getByRole('button', { name: /^Slots/ })
-		.click();
-	await manager.getByRole('button', { name: 'More actions for Brooch', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Edit…', exact: true }).click();
+	await equipmentGroup(page, 'Brooch');
+	await header('accessory').click();
+	await menu.getByRole('menuitem', { name: 'Edit slot…', exact: true }).click();
 	const compactEditor = page.getByRole('dialog', { name: 'Brooch', exact: true });
 	await expect(compactEditor.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
 		'Brooch'
@@ -693,7 +694,143 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	expect(compactBounds!.x).toBeGreaterThanOrEqual(0);
 	expect(compactBounds!.x + compactBounds!.width).toBeLessThanOrEqual(320);
 	await compactEditor.getByRole('button', { name: 'Save', exact: true }).click();
-	await manager.getByRole('button', { name: 'Done', exact: true }).click();
+	finish();
+});
+
+test('studio demo: slot header dragging and not-shown restoration are tolerant and undoable', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await openDemo(page);
+	const list = page.locator('#wardrobe-list');
+	const keys = () =>
+		list
+			.locator('section[data-own]')
+			.evaluateAll((all) => all.map((entry) => (entry as HTMLElement).dataset.group));
+	const hair = page.locator('[data-slot-button="hair"]');
+	const head = page.locator('[data-slot-button="head"]');
+	const original = await keys();
+	const source = (await hair.boundingBox())!;
+	await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(source.x + source.width / 2 + 2, source.y + source.height / 2 + 2);
+	await page.mouse.up();
+	await expect(page.locator('#slot-menu')).toBeVisible();
+	expect(await keys()).toEqual(original);
+	await page.keyboard.press('Escape');
+	const target = (await head.boundingBox())!;
+	await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(target.x + target.width / 2, target.y + 2, { steps: 6 });
+	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	await page.keyboard.press('Escape');
+	await page.mouse.up();
+	expect(await keys()).toEqual(original);
+	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(target.x + target.width / 2, target.y + 2, { steps: 6 });
+	await page.mouse.up();
+	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
+	await expect(hair).toBeFocused();
+	await expect(page.locator('#slot-menu')).not.toBeVisible();
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	await page.getByRole('button', { name: /^Not shown \(/ }).click();
+	const hidden = page.locator('.not-shown-row').filter({ hasText: 'Underwear' });
+	await hidden.scrollIntoViewIfNeeded();
+	await list.evaluate((element) => {
+		const last = element.querySelector<HTMLElement>('section[data-own]:last-of-type')!;
+		element.scrollTop = last.offsetTop - 100;
+	});
+	const hiddenBox = (await hidden.boundingBox())!;
+	const drop = await list.evaluate((element) => {
+		const last = [...element.querySelectorAll<HTMLElement>('section[data-own]')].at(-1)!;
+		const box = element.getBoundingClientRect();
+		return { x: box.left + 30, y: box.top + last.offsetTop - element.scrollTop + 2 };
+	});
+	await page.mouse.move(hiddenBox.x + 24, hiddenBox.y + hiddenBox.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(drop.x, drop.y, { steps: 6 });
+	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	await page.mouse.up();
+	const restored = [...original];
+	restored.splice(restored.length - 1, 0, 'underwear');
+	await expect.poll(keys).toEqual(restored);
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	await expect(page.getByRole('button', { name: 'Show Underwear', exact: true })).toBeAttached();
+	await list.evaluate((element) => {
+		const last = [...element.querySelectorAll<HTMLElement>('section[data-own]')].at(-1)!;
+		element.scrollTop = last.offsetTop - 40;
+	});
+	const lastHeader = (await page.locator('[data-slot-button="off_hand"]').boundingBox())!;
+	const notShown = (await page.locator('.not-shown-toggle').boundingBox())!;
+	await page.mouse.move(lastHeader.x + 20, lastHeader.y + 20);
+	await page.mouse.down();
+	await page.mouse.move(notShown.x + 20, notShown.y + 8, { steps: 6 });
+	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	await page.mouse.up();
+	expect(await keys()).toEqual(original);
+	finish();
+});
+
+test('studio demo: touch slot headers scroll before a hold and drag after arming', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await page.setViewportSize({ width: 390, height: 844 });
+	await openDemo(page);
+	await page.getByRole('button', { name: 'Pause', exact: true }).click();
+	await page.clock.install();
+	const session = await context.newCDPSession(page);
+	await session.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+	const touch = (
+		type: 'touchStart' | 'touchMove' | 'touchEnd',
+		points: { x: number; y: number; id: number }[]
+	) => session.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+	const list = page.locator('#wardrobe-list');
+	const keys = () =>
+		list
+			.locator('section[data-own]')
+			.evaluateAll((all) => all.map((element) => (element as HTMLElement).dataset.group));
+	const original = await keys();
+	const head = page.locator('[data-slot-button="head"]');
+	let box = (await head.boundingBox())!;
+	const initialScroll = await list.evaluate((element) => element.scrollTop);
+	await touch('touchStart', [{ x: box.x + 15, y: box.y + box.height / 2, id: 1 }]);
+	await touch('touchMove', [{ x: box.x + 15, y: box.y - 70, id: 1 }]);
+	await touch('touchMove', [{ x: box.x + 15, y: box.y - 100, id: 1 }]);
+	await touch('touchEnd', []);
+	await page.clock.runFor(350);
+	await expect
+		.poll(() => list.evaluate((element) => element.scrollTop))
+		.toBeGreaterThan(initialScroll);
+	expect(await keys()).toEqual(original);
+	await expect(page.locator('#slot-menu')).not.toBeVisible();
+	await list.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }));
+	const hair = page.locator('[data-slot-button="hair"]');
+	box = (await hair.boundingBox())!;
+	const start = { x: box.x + 15, y: box.y + box.height / 2, id: 2 };
+	await touch('touchStart', [start]);
+	await page.clock.runFor(300);
+	await expect(
+		hair.locator('xpath=ancestor::div[contains(@class,"bu-section-head")]')
+	).toHaveAttribute('data-armed', 'true');
+	await touch('touchMove', [{ ...start, y: start.y - 2 }]);
+	await expect(list.locator('[data-dragged]')).toHaveCount(0);
+	const top = (await head.boundingBox())!;
+	await touch('touchMove', [{ ...start, y: top.y + 4 }]);
+	await expect(list.locator('[data-dragged]')).toHaveCount(1);
+	await page.clock.runFor(32);
+	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	await touch('touchEnd', []);
+	await page.clock.runFor(32);
+	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
+	await expect(page.locator('#slot-menu')).not.toBeVisible();
+	await session.detach();
 	finish();
 });
 

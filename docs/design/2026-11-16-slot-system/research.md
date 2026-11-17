@@ -74,3 +74,9 @@ Both reviewers preferred a general fallback over guessing Wings or another speci
 A name cannot supply attachment logic. Wrist accessories need worn behavior rather than held-weapon behavior. Coverage, equal-depth ordering and directional overlap still need validation. The [plan](plan.md#accessory-as-a-custom-slot-starting-option) records defaults, API/folder examples and limits. No new external research or generation was performed for this addition.
 
 No paid generation is required for this spike or prototype. Propose paid validation separately only if offline evidence cannot answer a specific generation question.
+
+### Inline organization decision, November 17, 2026
+
+The follow-up council challenged three surfaces: a separate organizer, draggable rail tabs, and interactive Wardrobe headers. The user chose the header's flexible area as both menu trigger and drag source, while keeping the rail, Random and New item. This is a product decision, not a user-study result. Add slot stays pinned under the rail; Not shown is a bottom disclosure with Show actions and drag-out restoration. Dropping into that disclosure does nothing, so moving a slot to the end cannot hide it.
+
+The council initially recommended deferring touch drag because headers are also natural scrolling surfaces. The approved implementation instead distinguishes ordinary scrolling from a stationary 300 ms hold followed by 8 px movement. Mouse and pen use 6 px movement. Menu moves remain an equivalent non-drag path. Native Chromium touch input exposed a concrete issue that simulated event-unit tests missed: replacing the touched icon when the hold armed detached the touch target and stopped subsequent movement events from reaching the window. Keeping that node mounted fixed the regression. Physical-device sensitivity and iOS long-press behavior remain unqualified.

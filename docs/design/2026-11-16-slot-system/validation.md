@@ -1,6 +1,6 @@
 # Validation and council record
 
-Status: production implementation and automated validation complete on `feat/modular-equipment-slots`, authorized November 16, 2026. Visible-browser design review and physical-touch reordering remain pending. The workshop sections below are historical evidence, not current implementation status.
+Status: production implementation on `feat/modular-equipment-slots`, authorized November 16, 2026, with the approved inline Wardrobe follow-up implemented November 17. Visible-browser review is complete for the follow-up; physical-device touch qualification remains pending. The workshop sections below are historical evidence, not current implementation status.
 
 ## Production review and validation
 
@@ -39,7 +39,32 @@ Remaining proof and limits:
 
 - The first full end-to-end run passed 356 of 362 tests. It exposed the Slots keyboard-activation bug plus stale test-only category labels and an Off hand fixture incorrectly copying a right-hand profile. The fix preserves focus assertions, uses permanent category keys and constructs the real left-hand profile. Focused reruns and the final 363-test full run passed. Final council review and snapshot-recovery regressions are complete.
 - No paid requests were made. New AI-generated underwear/accessory quality, different body proportions and all supported character sizes are not qualified by these checks. Offline synthetic frames prove mask and compositor behavior, not model output quality.
-- Physical-touch dragging and the final visual comparison in both themes still need a visible browser. Automated keyboard/viewport checks are not a substitute for a physical-touch test.
+- At this earlier snapshot, physical-touch dragging and the final visual comparison were pending. The inline follow-up below records the subsequent browser review; automated touch checks are still not a substitute for physical hardware.
+
+## Inline Wardrobe follow-up, November 17, 2026
+
+The user approved replacing the organizer list with the header's flexible area as the menu trigger and drag source. Random, New item and the navigation rail remain. Add slot stays reachable under the rail. Not shown expands at the bottom, with explicit Show buttons and drag-out restoration. Built-in behavior stays fixed, and dragging into Not shown never hides a slot. This iteration used the established council for gesture implementation, UI implementation and independent risk review, plus a final accessibility review.
+
+Concrete browser findings shaped the implementation:
+
+- The header uses a real flexible-width Bronze action, not a fixed-width overlay that could overlap Random or New. At 320 px, its measured hit width was 113 px, with separate 44 px action buttons and no overlap or document overflow.
+- Hold feedback keeps the original touched icon mounted. Replacing it detached the native touch target and prevented movement from reaching the drag handler.
+- Drag attachments remain mounted when slot data changes. Reattaching at drop time had removed click suppression before the browser's release click.
+- Escape consumes only an active slot gesture, so canceling a drag does not also leave Wardrobe. Subsequent ordinary Escape handling is unchanged.
+- Slot counts remain available as accessible descriptions, including the separating space in “2 items.”
+- Revealing a hidden slot at a chosen position is one undo step. A no-op, canceled or out-of-list drop adds none. Drawing order remains independent.
+
+Verification:
+
+- `npm run check`: zero Svelte errors or warnings, TypeScript and formatting passed.
+- `npm test`: 195 files passed, 2,681 tests passed and one skipped. The gesture helper's 27 tests also passed after the final Escape fix.
+- `npm run e2e -- --all`: 359 of 365 passed. The two slot-related failures exposed Escape propagation and count spacing, both fixed without weakening assertions. All three inline slot workflows and the affected shared-copy flow then passed together.
+- The four other full-run failures were the fallback-font creator toolbar, Tier 3 setup, Tier 1 setup and tablet-portrait joystick. Each passed on its one isolated rerun without code or timeout changes. These are suspected shared-resource flakes, not a claim of a clean repeat full-suite run.
+- The slot browser flows cover click tolerance, Escape cancellation, mouse reorder, dragging a hidden slot into position, one-step Undo, refusal of a drop over Not shown, native Chromium touch scrolling before a hold, and native touch reordering after arming. Add, rename, show, hide, keyboard menu movement, focus, reload and unchanged rendered pixels are covered too.
+- T3 screenshots were inspected at 390 by 844 dark, 1280 by 800 light, 320 by 568 light and dark, and 844 by 390 dark. The contextual menu, pinned Add slot, hidden disclosure and Add sheet were exercised. Small-screen content scrolls within the existing sheet and Wardrobe; controls remain reachable. Some initial screenshot attempts failed while T3 was hidden; a fresh owned preview tab produced the reviewed frames.
+- Theme ownership verification passed. Local changes contain layout and insertion-marker geometry; materials, hover and focus appearance use Bronze UI recipes.
+
+Limits: no physical iOS or Android device was tested, and no paid generations were made. Chromium touch input establishes event wiring and scrolling behavior, not device-specific long-press sensitivity. The existing light desktop scene can reduce contrast behind transparent secondary headings; this iteration does not change shared theme materials.
 
 ## Historical workshop evidence
 

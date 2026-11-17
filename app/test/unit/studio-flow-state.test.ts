@@ -1,6 +1,7 @@
 /// <reference types="svelte" />
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { MoveSpec, Progress } from '../../src/studio/create.ts';
+import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { readFileSync } from 'node:fs';
 import { equipmentFixture } from './equipment-fixture.ts';
 
@@ -2856,7 +2857,7 @@ test('review drafts re-checked together after a reload all keep their results', 
 test('showing a slot at a drop position is one undo step and preserves drawing order', async () => {
 	const state = await import('../../src/studio/state.svelte.ts');
 	const { shownCategories } = await import('../../src/studio/slots.ts');
-	const manifest = fixtureManifest();
+	const manifest: Manifest = fixtureManifest();
 	state.store.project = { manifest, images: new Map() };
 	state.doc.id = 'fixture:s2';
 	state.doc.items = { body: 'base' };

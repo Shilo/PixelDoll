@@ -562,9 +562,19 @@
 .color-sections {
 	flex: 1;
 }
-.slot-rail {
+.slot-rail-column {
+	display: flex;
 	flex: none;
+	flex-direction: column;
+	gap: 4px;
 	width: var(--slot-rail-width);
+	min-height: 0;
+	padding-bottom: var(--panel-bottom);
+}
+/* The tabs scroll; Add slot below them stays put. */
+.slot-rail {
+	flex: 0 1 auto;
+	min-height: 0;
 	overflow-y: auto;
 	overflow-x: hidden;
 }
@@ -573,7 +583,7 @@
 	flex-direction: column;
 	gap: 2px;
 	margin: 0;
-	padding: 0 0 var(--panel-bottom);
+	padding: 0;
 	list-style: none;
 }
 .slot-tab {
@@ -592,12 +602,117 @@
 	font-size: 14px;
 }
 .section-action {
+	position: relative;
+	z-index: 1;
 	display: grid;
 	place-items: center;
 	/* A full 44 px target; the negative block margin keeps the sticky header's height. */
 	width: 44px;
 	height: 44px;
 	margin: -6px -6px -6px -2px;
+}
+.bu-section-head[data-slot-head] > .bu-section-title {
+	overflow: visible;
+}
+.section-menu {
+	display: flex;
+	width: 100%;
+	gap: 8px;
+	min-height: 44px;
+	margin: -6px 0;
+	padding: 0;
+	font: inherit;
+	text-align: left;
+	cursor: grab;
+	-webkit-touch-callout: none;
+	user-select: none;
+}
+.section-menu-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.slot-drag-icon {
+	position: relative;
+	display: flex;
+	flex: none;
+}
+.slot-grip {
+	display: none;
+	position: absolute;
+	inset: 0;
+}
+:is([data-armed], [data-dragged]) > .slot-drag-icon > .group-icon,
+:is([data-armed], [data-dragged]) .section-menu .slot-drag-icon > .group-icon {
+	visibility: hidden;
+}
+:is([data-armed], [data-dragged]) .slot-grip {
+	display: block;
+}
+.bu-section-head:is([data-armed], [data-dragged]) .section-menu {
+	cursor: grabbing;
+}
+/* Where a dragged slot lands: between two shown slots, across the list. */
+.slot-drop-line {
+	position: absolute;
+	left: 5px;
+	right: 6px;
+	z-index: 3;
+	height: 2px;
+	margin-top: -1px;
+	pointer-events: none;
+}
+.no-slots {
+	margin: 0 0 12px;
+}
+/* Not shown: a quiet disclosure under the shown slots, with compact rows that Show or drag back into the list. */
+.not-shown {
+	margin: 0 0 12px;
+}
+.not-shown-toggle {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 44px;
+	padding: 0 10px 0 2px;
+}
+.not-shown-toggle[aria-expanded='true'] > svg {
+	rotate: 90deg;
+}
+.not-shown-note {
+	margin: 0 0 6px;
+}
+.not-shown-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.not-shown-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 44px;
+	padding-left: 4px;
+	cursor: grab;
+	-webkit-touch-callout: none;
+	user-select: none;
+}
+.not-shown-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+@media (prefers-reduced-motion: no-preference) {
+	.not-shown-toggle > svg {
+		transition: rotate 0.15s ease-out;
+	}
 }
 .section-body {
 	display: flex;

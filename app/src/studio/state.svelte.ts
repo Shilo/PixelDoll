@@ -185,6 +185,7 @@ export const ui = $state({
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
 	sheet: null as SheetId,
+	slotTarget: null as string | null,
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
 	details: '', // the character the Details sheet is for

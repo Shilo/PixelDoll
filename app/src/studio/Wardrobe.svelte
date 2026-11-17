@@ -16,7 +16,8 @@
 	import type { SharedItem } from '../lib/equipment/shared.ts';
 	import TileMarks, { sortMarks, type Mark } from './TileMarks.svelte';
 	import type { CellKey, Item, Manifest } from '../lib/store/manifest.ts';
-	import { categories, shownCategories, slotDef } from './slots.ts';
+	import { categories, isEmpty, shownCategories, slotDef, useText } from './slots.ts';
+	import { slotDrag } from './slotDrag.ts';
 	import {
 		ui,
 		doc,
@@ -35,7 +36,13 @@
 		sharedKey,
 		addShared,
 		removeItem,
-		busySlots
+		busySlots,
+		slotUseHere,
+		moveSlot,
+		hideSlot,
+		showSlot,
+		showSlotAt,
+		toast
 	} from './state.svelte.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -47,7 +54,23 @@
 	import GroupIcon from './GroupIcon.svelte';
 	import SharedThumb from './SharedThumb.svelte';
 	import ItemMenu from './ItemMenu.svelte';
-	import { Ban, Check, CircleAlert, EllipsisVertical, Plus, Settings2, Shuffle } from './icons.ts';
+	import PopoverArrow from './PopoverArrow.svelte';
+	import { popoverFocus } from './experience/focus.ts';
+	import {
+		ArrowDown,
+		ArrowUp,
+		Ban,
+		Check,
+		ChevronRight,
+		CircleAlert,
+		CopyPlus,
+		EllipsisVertical,
+		EyeOff,
+		GripVertical,
+		Pencil,
+		Plus,
+		Shuffle
+	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
 	let list = $state<HTMLElement>();
@@ -240,7 +263,10 @@
 		});
 	});
 	const sections = $derived([...own, ...fromOthers]);
-	const notShown = $derived(m ? categories(m).length - own.length : 0);
+	/** This character's slots Wardrobe doesn't show, listed under Not shown at the bottom. */
+	const notShown = $derived(
+		m ? categories(m).filter((c) => !own.some((s) => s.key === c.key)) : []
+	);
 	/** Every corner icon another character's item shows here, each with the words its tooltip and ⋮ menu give. */
 	function sharedMarks(x: SharedItem): Mark[] {
 		if (!m) return [];
@@ -417,6 +443,179 @@
 		io.observe(node);
 		return () => io.disconnect();
 	};
+
+	// ---------- slots: each header opens its slot's menu and drags to reorder; Not shown lists the rest ----------
+	let announce = $state('');
+	let slotMenu = $state<HTMLElement>();
+	let slotFor = $state(''),
+		slotMenuOpen = $state(false),
+		notShownOpen = $state(false);
+	const slotAt = $derived(own.findIndex((s) => s.key === slotFor));
+	const slotCustom = $derived(!!m && categories(m).some((c) => c.key === slotFor && c.custom));
+	/** Why a slot can't be hidden now (it holds items or attempts), or '' when it is empty. */
+	function hideBlock(key: string, label: string) {
+		const use = slotUseHere(key);
+		return isEmpty(use)
+			? ''
+			: `${label} has ${useText(use)}. Only empty slots can be hidden${use.stopped ? '; dismiss stopped attempts in Activity first' : ''}.`;
+	}
+	const slotHideBlock = $derived(slotAt >= 0 ? hideBlock(slotFor, own[slotAt].label) : '');
+	// A slot gone from the list (hidden or deleted elsewhere, undo) closes its menu rather than act on a ghost.
+	$effect(() => {
+		if (slotMenuOpen && slotAt < 0) slotMenu?.hidePopover();
+	});
+	const closeSlotMenu = () => slotMenu?.hidePopover();
+	/** After a slot changes place: bring it to the top and focus its header, where its menu reopens. */
+	async function settle(key: string) {
+		await tick();
+		await show(key, true);
+		requestAnimationFrame(() =>
+			list
+				?.querySelector<HTMLElement>(`[data-slot-button="${CSS.escape(key)}"]`)
+				?.focus({ preventScroll: true })
+		);
+	}
+	function moveTo(key: string, label: string, to: number) {
+		try {
+			moveSlot(key, to);
+		} catch (e) {
+			toast((e as Error).message);
+			return;
+		}
+		announce = `${label} moved to position ${to + 1} of ${own.length}.`;
+		void settle(key);
+	}
+	async function hide(key: string, label: string) {
+		if (hideBlock(key, label)) return;
+		closeSlotMenu();
+		const problem = await hideSlot(key).catch((e: Error) => e.message);
+		if (problem) {
+			toast(problem);
+			return;
+		}
+		announce = `${label} is not shown. It is listed under Not shown.`;
+		await tick();
+		list?.querySelector<HTMLElement>('.not-shown-toggle')?.focus({ preventScroll: true });
+	}
+	async function showHidden(key: string, label: string, to?: number) {
+		try {
+			if (to === undefined) showSlot(key);
+			else showSlotAt(key, to);
+		} catch (e) {
+			toast((e as Error).message);
+			return;
+		}
+		await tick();
+		const at = own.findIndex((s) => s.key === key);
+		announce = `${label} is shown at position ${at + 1} of ${own.length}.`;
+		void settle(key);
+	}
+	/** Edit a custom slot, or start a custom copy of a built-in, in the Slots sheet. */
+	function openSlotSettings(key: string) {
+		closeSlotMenu();
+		ui.slotTarget = key;
+		ui.sheet = 'slots';
+	}
+	function addSlot() {
+		ui.slotTarget = null;
+		ui.sheet = 'slots';
+	}
+
+	// Dragging (slotDrag recognizes the gesture): the target is the header boundary nearest the pointer, measured on the
+	// sections' own layout rather than where sticky headers appear, and nothing moves until the drop.
+	type DragSource = { key: string; label: string; hidden: boolean };
+	const EDGE = 48,
+		MAX_SPEED = 14,
+		/** How far past the first or last shown slot a drop still counts. */
+		SLACK = 24,
+		/** Half the gap between sections, where the drop line sits. */
+		GAP = 8;
+	let drag = $state<{ source: DragSource; line: number | null } | null>(null);
+	let armed = $state('');
+	let pointer = { x: 0, y: 0 },
+		dragFrame = 0;
+	/** Where a drop at the pointer would land: the shown index, and the drop line's offset in the list. */
+	function dropTarget(source: DragSource): { to: number; line: number } | null {
+		if (!list) return null;
+		const box = list.getBoundingClientRect(),
+			{ x, y } = pointer;
+		if (x < box.left || x > box.right || y < box.top || y > box.bottom) return null;
+		const at = y - box.top + list.scrollTop;
+		const excluded = list.querySelector<HTMLElement>('.not-shown');
+		if (excluded && at >= excluded.offsetTop) return null;
+		for (const section of list.querySelectorAll<HTMLElement>('section:not([data-own])'))
+			if (at >= section.offsetTop && at <= section.offsetTop + section.offsetHeight) return null;
+		const shown = [...list.querySelectorAll<HTMLElement>('section[data-own]')];
+		const bounds = shown.map((el) => el.offsetTop);
+		const last = shown.at(-1);
+		const end = last
+			? last.offsetTop + last.offsetHeight
+			: (list.querySelector<HTMLElement>('.not-shown')?.offsetTop ?? list.scrollHeight);
+		if (last) bounds.push(end);
+		else bounds.push(0);
+		if (at < bounds[0] - SLACK || at > end + SLACK) return null;
+		let gap = 0;
+		bounds.forEach((b, i) => {
+			if (Math.abs(b - at) < Math.abs(bounds[gap] - at)) gap = i;
+		});
+		if (!last) gap = 0;
+		const line = gap ? bounds[gap] - GAP : bounds[0];
+		if (source.hidden) return { to: gap, line };
+		const from = own.findIndex((s) => s.key === source.key);
+		if (from < 0 || gap === from || gap === from + 1) return null;
+		return { to: gap < from ? gap : gap - 1, line };
+	}
+	function dragStep() {
+		if (!drag || !list) return;
+		const box = list.getBoundingClientRect(),
+			{ x, y } = pointer;
+		// Continuous edge scroll: every frame while the pointer rests near (or past) an edge over the list.
+		if (x >= box.left && x <= box.right) {
+			const speed =
+				y < box.top + EDGE
+					? -MAX_SPEED * Math.min(1, (box.top + EDGE - y) / EDGE)
+					: y > box.bottom - EDGE
+						? MAX_SPEED * Math.min(1, (y - (box.bottom - EDGE)) / EDGE)
+						: 0;
+			if (speed) list.scrollTop += speed;
+		}
+		drag.line = dropTarget(drag.source)?.line ?? null;
+		dragFrame = requestAnimationFrame(dragStep);
+	}
+	function dragOptions(source: DragSource) {
+		return {
+			armed: (value: boolean) => {
+				if (value) armed = source.key;
+				else if (armed === source.key) armed = '';
+			},
+			start: () => {
+				armed = '';
+				closeSlotMenu();
+				// Stop a smooth scroll still bringing a slot to the top; the drag scrolls the list from here.
+				list?.scrollTo({ top: list.scrollTop, behavior: 'instant' });
+				drag = { source, line: null };
+				announce = `Dragging ${source.label}. Drop it between slots in the list; Escape cancels.`;
+				cancelAnimationFrame(dragFrame);
+				dragFrame = requestAnimationFrame(dragStep);
+			},
+			move: (x: number, y: number) => {
+				pointer = { x, y };
+			},
+			end: (commit: boolean) => {
+				cancelAnimationFrame(dragFrame);
+				const target = commit && drag ? dropTarget(drag.source) : null;
+				drag = null;
+				armed = '';
+				if (!target) {
+					announce = commit ? `${source.label} stays where it was.` : 'Drag canceled.';
+					return;
+				}
+				if (source.hidden) void showHidden(source.key, source.label, target.to);
+				else moveTo(source.key, source.label, target.to);
+			}
+		};
+	}
+	onMount(() => () => cancelAnimationFrame(dragFrame));
 </script>
 
 {#if m && view.project}
@@ -434,15 +633,56 @@
 				<section
 					class="slot-section"
 					data-group={s.key}
+					data-own={!s.fromOthers || undefined}
 					id={sectionId(s.key)}
 					aria-labelledby="{sectionId(s.key)}-title"
 				>
-					<div class="bu-section-head" data-current={ui.group === s.key || undefined}>
-						<GroupIcon group={s.key} size={16} />
-						<h3 class="bu-section-title" id="{sectionId(s.key)}-title">{s.label}</h3>
-						<span class="bu-section-count"
-							>{count}<span class="sr">{` ${count === 1 ? 'item' : 'items'}`}</span></span
-						>
+					<div
+						class="bu-section-head"
+						data-current={ui.group === s.key || undefined}
+						data-slot-head={!s.fromOthers || undefined}
+						data-armed={armed === s.key || undefined}
+						data-dragged={drag?.source.key === s.key || undefined}
+					>
+						{#if s.fromOthers}<GroupIcon group={s.key} size={16} />{/if}
+						<h3 class="bu-section-title" id="{sectionId(s.key)}-title" aria-label={s.label}>
+							{#if s.fromOthers}{s.label}{:else}<button
+									class="bu-action section-menu"
+									aria-label={s.label}
+									aria-describedby={`${sectionId(s.key)}-count`}
+									data-slot-button={s.key}
+									popovertarget="slot-menu"
+									aria-haspopup="menu"
+									aria-expanded={slotMenuOpen && slotFor === s.key}
+									onclick={() => {
+										// The same header toggles the menu closed; another header reopens it for its slot.
+										if (slotMenuOpen && slotFor !== s.key) closeSlotMenu();
+										slotFor = s.key;
+									}}
+									oncontextmenu={(e) => {
+										e.preventDefault();
+										if (!armed && !drag && !(slotMenuOpen && slotFor === s.key))
+											e.currentTarget.click();
+									}}
+									{@attach (node) =>
+										untrack(() =>
+											slotDrag(node, dragOptions({ key: s.key, label: s.label, hidden: false }))
+										)}
+									><span class="slot-drag-icon"
+										><GroupIcon group={s.key} size={16} /><GripVertical
+											class="slot-grip"
+											size={16}
+										/></span
+									><span class="section-menu-name">{s.label}</span><span
+										class="bu-section-count"
+										id={`${sectionId(s.key)}-count`}
+										>{count}<span class="sr">{` ${count === 1 ? 'item' : 'items'}`}</span></span
+									></button
+								>{/if}
+						</h3>
+						{#if s.fromOthers}<span class="bu-section-count"
+								>{count}<span class="sr">{` ${count === 1 ? 'item' : 'items'}`}</span></span
+							>{/if}
 						{#if !s.fromOthers}
 							<button
 								class="bu-action section-action"
@@ -676,20 +916,130 @@
 					</div>
 				</section>
 			{/each}
-			<button
-				class="bu-action btn plain manage-slots"
-				data-variant="quiet"
-				onclick={() => (ui.sheet = 'slots')}
-				><Settings2 size={16} aria-hidden="true" />Slots{#if notShown}<span class="bu-muted small"
-						>{notShown} not shown</span
-					>{/if}</button
-			>
+			{#if !own.length}<p class="faint small no-slots">
+					No slots are shown. Show one below, or add a slot.
+				</p>{/if}
+			{#if notShown.length}
+				<div class="not-shown">
+					<button
+						class="bu-action not-shown-toggle"
+						data-variant="quiet"
+						aria-expanded={notShownOpen}
+						aria-controls="wardrobe-not-shown"
+						onclick={() => (notShownOpen = !notShownOpen)}
+						><ChevronRight size={16} aria-hidden="true" />Not shown ({notShown.length})</button
+					>
+					<div id="wardrobe-not-shown" hidden={!notShownOpen}>
+						<p class="faint small not-shown-note" id="wardrobe-not-shown-note">
+							Drag a slot into the list above, or choose Show.
+						</p>
+						<ul class="not-shown-list" aria-describedby="wardrobe-not-shown-note">
+							{#each notShown as c (c.key)}
+								<li
+									class="not-shown-row"
+									data-armed={armed === c.key || undefined}
+									data-dragged={drag?.source.key === c.key || undefined}
+									{@attach (node) =>
+										untrack(() =>
+											slotDrag(node, dragOptions({ key: c.key, label: c.label, hidden: true }))
+										)}
+								>
+									<span class="slot-drag-icon"
+										><GroupIcon group={c.key} size={18} /><GripVertical
+											class="slot-grip"
+											size={18}
+										/></span
+									>
+									<span class="not-shown-name">{c.label}</span>
+									<button
+										class="bu-action btn sm"
+										data-variant="outline"
+										aria-label="Show {c.label}"
+										onclick={() => void showHidden(c.key, c.label)}>Show</button
+									>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+			{/if}
 			{#if shared.error}<p class="notice warn small" role="alert">{shared.error}</p>{/if}
 			{#if shared.skipped}<p class="faint small">
 					Some items from other characters couldn’t be read.
 				</p>{/if}
 			<div class="list-spacer" style:height="{spacer}px" aria-hidden="true"></div>
+			{#if drag?.line != null}<div
+					class="bu-separator slot-drop-line"
+					style:top="{drag.line}px"
+					aria-hidden="true"
+				></div>{/if}
 		</div>
+		<!-- One shared slot menu, anchored to the header that opened it (like the item menu). -->
+		<div
+			id="slot-menu"
+			class="menu bu-popover-anchor"
+			data-placement="bottom-start"
+			popover
+			role="menu"
+			aria-label={slotAt >= 0 ? `${own[slotAt].label} slot` : 'Slot'}
+			bind:this={slotMenu}
+			ontoggle={(e) => {
+				slotMenuOpen = e.newState === 'open';
+				popoverFocus(e);
+			}}
+		>
+			<PopoverArrow />
+			<div class="menu-surface bu-popover-surface bu-floating">
+				{#if slotAt >= 0}
+					{@const s = own[slotAt]}
+					<button
+						class="row"
+						data-variant="quiet"
+						role="menuitem"
+						aria-disabled={slotAt === 0 || undefined}
+						onclick={() => {
+							if (slotAt === 0) return;
+							closeSlotMenu();
+							moveTo(s.key, s.label, slotAt - 1);
+						}}><ArrowUp size={16} aria-hidden="true" />Move up</button
+					>
+					<button
+						class="row"
+						data-variant="quiet"
+						role="menuitem"
+						aria-disabled={slotAt === own.length - 1 || undefined}
+						onclick={() => {
+							if (slotAt === own.length - 1) return;
+							closeSlotMenu();
+							moveTo(s.key, s.label, slotAt + 1);
+						}}><ArrowDown size={16} aria-hidden="true" />Move down</button
+					>
+					<button
+						class="row"
+						data-variant="quiet"
+						role="menuitem"
+						aria-disabled={!!slotHideBlock || undefined}
+						onclick={() => void hide(s.key, s.label)}
+						><EyeOff size={16} aria-hidden="true" /><span class="row-name"
+							>Hide slot{#if slotHideBlock}<small class="row-reason">{slotHideBlock}</small
+								>{/if}</span
+						></button
+					>
+					<hr />
+					<button
+						class="row"
+						data-variant="quiet"
+						role="menuitem"
+						onclick={() => openSlotSettings(s.key)}
+						>{#if slotCustom}<Pencil size={16} aria-hidden="true" />Edit slot…{:else}<CopyPlus
+								size={16}
+								aria-hidden="true"
+							/>Make a custom copy…{/if}</button
+					>
+				{/if}
+			</div>
+		</div>
+		<p class="sr" aria-live="polite">{announce}</p>
 		<!-- Always mounted: a ⋮ click opens it in the same task, before the chosen item renders into it. -->
 		<ItemMenu
 			id={menuFor}
@@ -703,57 +1053,42 @@
 			bind:open={menuOpen}
 		/>
 		<!-- Navigation over the list's sections (not tabs): arrows move along it like the other rails (Studio.svelte). -->
-		<nav
-			class="slot-rail bu-scroll-hidden bu-edge-fade"
-			aria-label="Equipment slots"
-			bind:this={rail}
-			{@attach edgeFade({ axis: 'y', size: 24 })}
-		>
-			<ul class="slot-rail-list" data-arrows>
-				{#each sections as s (s.key)}
-					<li>
-						<button
-							class="bu-action slot-tab"
-							data-variant="rail"
-							data-rail={s.key}
-							data-filled={s.worn || undefined}
-							aria-current={ui.group === s.key ? 'true' : undefined}
-							aria-label={s.worn ? `${s.label}, equipped` : s.label}
-							tabindex={ui.group === s.key ? 0 : -1}
-							onclick={() => show(s.key)}
-							><GroupIcon group={s.key} size={22} /><span class="bu-rail-label">{s.label}</span><i
-								class="bu-rail-dot"
-								aria-hidden="true"
-							></i></button
-						>
-					</li>
-				{/each}
-				<li>
-					<button
-						class="bu-action slot-tab"
-						data-variant="rail"
-						aria-haspopup="dialog"
-						title="Show, hide, order and add categories"
-						tabindex={sections.some((s) => s.key === ui.group) ? -1 : 0}
-						onclick={() => (ui.sheet = 'slots')}
-						><Settings2 size={22} aria-hidden="true" /><span class="bu-rail-label">Slots</span
-						></button
-					>
-				</li>
-			</ul>
-		</nav>
+		<div class="slot-rail-column">
+			<nav
+				class="slot-rail bu-scroll-hidden bu-edge-fade"
+				aria-label="Equipment slots"
+				bind:this={rail}
+				{@attach edgeFade({ axis: 'y', size: 24 })}
+			>
+				<ul class="slot-rail-list" data-arrows>
+					{#each sections as s (s.key)}
+						<li>
+							<button
+								class="bu-action slot-tab"
+								data-variant="rail"
+								data-rail={s.key}
+								data-filled={s.worn || undefined}
+								aria-current={ui.group === s.key ? 'true' : undefined}
+								aria-label={s.worn ? `${s.label}, equipped` : s.label}
+								tabindex={ui.group === s.key ? 0 : -1}
+								onclick={() => show(s.key)}
+								><GroupIcon group={s.key} size={22} /><span class="bu-rail-label">{s.label}</span><i
+									class="bu-rail-dot"
+									aria-hidden="true"
+								></i></button
+							>
+						</li>
+					{/each}
+				</ul>
+			</nav>
+			<!-- Outside the scrolling tabs, so it never scrolls away. -->
+			<button
+				class="bu-action slot-tab slot-add"
+				data-variant="rail"
+				aria-haspopup="dialog"
+				onclick={addSlot}
+				><Plus size={22} aria-hidden="true" /><span class="bu-rail-label">Add slot</span></button
+			>
+		</div>
 	</div>
 {/if}
-
-<style>
-	.manage-slots {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		margin: 0 0 12px;
-		color: var(--text-2);
-	}
-	.manage-slots span {
-		margin-left: 4px;
-	}
-</style>

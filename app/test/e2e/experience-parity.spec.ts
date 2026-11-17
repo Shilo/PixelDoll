@@ -2492,7 +2492,7 @@ for (const viewport of [
 		// Beside the stage, the panel and its slot rail run to the window's bottom edge (the lists pad their own margin).
 		else {
 			expect(rail.y + rail.height).toBeCloseTo(viewport.height, 0);
-			const slots = await page.getByRole('navigation', { name: 'Equipment slots' }).boundingBox();
+			const slots = await page.locator('.slot-rail-column').boundingBox();
 			if (slots) expect(slots.y + slots.height).toBeCloseTo(viewport.height, 0);
 		}
 		const header = (await page.locator('.experience-header').boundingBox())!;
