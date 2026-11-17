@@ -216,7 +216,7 @@ function drawAxial(direction: 'north' | 'south', H: number, dy: number): Omit<Mo
 		legW = Math.max(2, r(H / 16)),
 		neckW = Math.max(3, r(H * 0.16)),
 		north = direction === 'north',
-		seatY = bodyY + r(bodyH * (north ? 0.5 : 0.16));
+		seatY = bodyY + r(bodyH * (north ? 0.4 : 0.16));
 	for (const side of [-1, 1])
 		rect(
 			back,

@@ -156,6 +156,31 @@ describe('mount preview fixture', () => {
 		}
 	});
 
+	test('keeps the north saddle and contact on the raised seat throughout the gait', () => {
+		for (const [height, seatY] of [
+			[8, 8],
+			[32, 19],
+			[38, 23],
+			[50, 29],
+			[63, 35],
+			[256, 134]
+		]) {
+			const frames = view(TEST_MOUNT, 'north', height).frames;
+			for (const [index, bob] of [0, -1, 0, 1].entries()) {
+				const frame = frames[index];
+				expect(frame.seat.y).toBe(seatY + bob);
+				expect(frame.ground).toEqual(frames[0].ground);
+				for (const [image, row] of [
+					[frame.back, frame.seat.y],
+					[frame.front, frame.seat.y - 3]
+				] as const) {
+					const offset = (row * image.w + frame.seat.x) * 4;
+					expect([...image.data.subarray(offset, offset + 4)]).toEqual([112, 70, 46, 255]);
+				}
+			}
+		}
+	});
+
 	test('reuses the drawn view for the same rounded size', () => {
 		expect(view(TEST_MOUNT, 'south-east')).toBe(view(TEST_MOUNT, 'south-east'));
 		expect(view(TEST_MOUNT, 'north', 49.8)).toBe(view(TEST_MOUNT, 'north', 50));
