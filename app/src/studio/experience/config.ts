@@ -1,5 +1,6 @@
 // Approved round-six scene art controls. UI appearance remains owned by Bronze.
 import { assetUrl } from '../../lib/assets.ts';
+import { TRAVEL } from './movement.ts';
 export type WorldTheme = 'dark' | 'light';
 export type WorldMode = 'preview' | 'topdown' | 'side';
 type RGB = readonly [number, number, number];
@@ -56,7 +57,7 @@ export const WORLDS: Record<
 };
 
 export const MOTION = {
-	speed: 300,
+	...TRAVEL,
 	cameraResponse: 9,
 	/** Touch stick sizes in CSS px; compact applies on narrow or short screens such as phones in landscape. */
 	joystick: {

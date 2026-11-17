@@ -1,9 +1,19 @@
 import type { DirectionName } from '../../lib/store/manifest.ts';
+export const TRAVEL = { walkSpeed: { topdown: 300, side: 150 }, mountedMultiplier: 1.3 };
 
 /** Ground coordinates: x points east/right; y points north/up. */
 export interface Vector {
 	x: number;
 	y: number;
+}
+export const travelSpeed = (mode: 'topdown' | 'side', mounted = false): number =>
+	TRAVEL.walkSpeed[mode] * (mounted ? TRAVEL.mountedMultiplier : 1);
+
+export function travelDelta(velocity: Vector, deltaMs: number, rate = 1): number {
+	const strength = Math.hypot(velocity.x, velocity.y);
+	return [strength, deltaMs, rate].every(Number.isFinite)
+		? Math.max(0, deltaMs) * Math.min(1, strength) * Math.max(0, rate)
+		: 0;
 }
 export interface DirectionInfo {
 	id: DirectionName;

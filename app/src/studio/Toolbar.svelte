@@ -68,6 +68,7 @@
 
 	const m = $derived(store.project?.manifest);
 	const name = $derived(characterName());
+	const mountAction = $derived(experience.testMount ? 'Dismount' : 'Mount');
 	const prompt = $derived(m?.items.find((it) => it.id === m.rig.baseItem)?.prompt ?? '');
 	const characterCount = $derived(store.projects.filter((p) => !p.dev).length);
 	const VIEWS = [
@@ -203,12 +204,14 @@
 				<button
 					class="bu-action test-mount-toggle"
 					data-variant="quiet"
-					aria-label="Test mount"
-					aria-pressed={experience.testMount}
-					title="Test mount. Not saved or exported. Live views use Ride when available, otherwise a standing pose."
+					aria-label={mountAction}
+					title={`${mountAction}. Test only, not saved or exported. Leg options are in More.`}
 					disabled={!m}
 					onclick={() => (experience.testMount = !experience.testMount)}
-					><PawPrint size={18} aria-hidden="true" /></button
+					><PawPrint size={18} aria-hidden="true" /><span
+						class="view-label bu-tab-text"
+						data-text="Dismount">{mountAction}</span
+					></button
 				>
 			{/if}
 		</div>
@@ -285,6 +288,29 @@
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
+		{#if testMountsEnabled && experience.screen === 'studio' && experience.testMount}
+			<div class="menu-prompt">
+				<p class="menu-sec">Mount</p>
+				<label class="row" for="mount-legs"
+					><span class="row-name">Hide legs</span><select
+						id="mount-legs"
+						class="bu-input mount-leg-select"
+						bind:value={experience.mountLegs}
+						aria-describedby="mount-legs-note"
+						><option value="none">None</option><option value="far">Far leg</option><option
+							value="both">Both legs</option
+						></select
+					></label
+				>
+				<p id="mount-legs-note" class="menu-prompt-text faint small">
+					Experimental cutout. May hide clothing or miss leg pixels. Not saved or exported.
+				</p>
+				{#if experience.mountLegIssue}<p class="menu-prompt-text small" role="status">
+						{experience.mountLegIssue}
+					</p>{/if}
+			</div>
+			<hr />
+		{/if}
 		<!-- Phones move lower-frequency bar actions here, so the character name keeps its room. -->
 		{#if experience.screen === 'studio'}<DemoCopyRow id={doc.id} close={closeOptions} />{/if}
 		{#if experience.screen === 'studio'}<button

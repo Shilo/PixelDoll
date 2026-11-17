@@ -537,7 +537,7 @@ test('Preview resolves partial chord releases, preserves pause and clip selectio
 	await expect(world(page)).toHaveAttribute('data-facing', 'west');
 	await page.keyboard.up('a');
 	await expect(clip).toHaveValue(original);
-	await expect(page.getByRole('button', { name: 'Test mount', exact: true })).toHaveCount(0);
+	await expect(page.locator('.test-mount-toggle')).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
 	await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
 	await page.getByRole('button', { name: 'More options', exact: true }).focus();
@@ -582,16 +582,39 @@ test('Moves preserves paused Preview and Side-scroller enters using an authored 
 test('one test-mount toggle follows facing and movement across Preview, Top-down and Side-scroller', async ({
 	page
 }) => {
+	await page.route('**/fixtures/s2/fixture.json*', async (route) => {
+		const response = await route.fetch();
+		const fixture = await response.json();
+		const animation = fixture.rig.animations.find((entry: { id: string }) => entry.id === 'walk');
+		const points = ['LEFT', 'RIGHT'].flatMap((side, index) =>
+			['HIP', 'KNEE', 'LEG'].map((joint, row) => ({
+				label: `${side} ${joint}`,
+				x: 0.4 + index * 0.2,
+				y: 0.55 + row * 0.15
+			}))
+		);
+		animation.sources = {
+			east: { measured: Array.from({ length: animation.cells }, () => points) }
+		};
+		await route.fulfill({ response, json: fixture });
+	});
 	await landing(page, '/?mounts');
 	await page.keyboard.press('Enter');
 	await pause(page);
-	const toggle = page.getByRole('button', { name: 'Test mount', exact: true });
+	const toggle = page.locator('.test-mount-toggle');
 	const move = page.getByRole('combobox', { name: 'Move', exact: true });
 	await move.selectOption('cross-punch');
 	const moves = await move.locator('option').count();
-	await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+	await expect(toggle).toHaveAccessibleName('Mount');
+	await expect(toggle.locator('.view-label')).toBeVisible();
+	const gap = await toggle.evaluate(
+		(button) =>
+			button.getBoundingClientRect().left -
+			button.previousElementSibling!.getBoundingClientRect().right
+	);
+	expect(gap).toBeCloseTo(0);
 	await toggle.click();
-	await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+	await expect(toggle).toHaveAccessibleName('Dismount');
 	for (const direction of ['south', 'east', 'north', 'west']) {
 		await page.getByRole('button', { name: 'Face ' + direction, exact: true }).click();
 		await expect(world(page)).toHaveAttribute(
@@ -601,6 +624,24 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	}
 	await expect(move).toHaveValue('cross-punch');
 	await expect(move.locator('option')).toHaveCount(moves);
+	await page.getByRole('button', { name: 'Face east', exact: true }).click();
+	await move.selectOption('walk');
+	const more = page.getByRole('button', { name: 'More options', exact: true });
+	await more.click();
+	const legs = page.getByRole('combobox', { name: 'Hide legs', exact: true });
+	await expect(legs).toHaveValue('none');
+	await legs.selectOption('far');
+	await expect(world(page)).toHaveAttribute('data-mount-legs', 'far');
+	await expect(world(page)).toHaveAttribute('data-mount-leg-source', 'measured');
+	await legs.selectOption('both');
+	await expect(world(page)).toHaveAttribute('data-mount-legs', 'both');
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Face north', exact: true }).click();
+	await expect(page.locator('.world-notes')).toContainText('Leg cutout unavailable');
+	await more.click();
+	await legs.selectOption('none');
+	await page.keyboard.press('Escape');
+	await move.selectOption('cross-punch');
 	await expect(page.locator('.world-notes')).not.toContainText('Test only');
 	await expect(page.getByRole('combobox', { name: 'Mount preview', exact: true })).toHaveCount(0);
 	await expect(
@@ -608,7 +649,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	).toHaveCount(0);
 	for (const mode of ['Top-down', 'Side-scroller']) {
 		await page.getByRole('button', { name: mode, exact: true }).click();
-		await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+		await expect(toggle).toHaveAccessibleName('Dismount');
 		await world(page).focus();
 		await page.keyboard.down('ArrowLeft');
 		await expect(world(page)).toHaveAttribute('data-mount', /^narrow-saddle west \d+$/);
@@ -622,12 +663,22 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	}
 	await page.getByRole('button', { name: 'Preview', exact: true }).click();
 	await expect(move).toHaveValue('cross-punch');
-	await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+	await expect(toggle).toHaveAccessibleName('Dismount');
 	for (const viewport of [
 		{ width: 320, height: 400 },
 		{ width: 844, height: 390 }
 	]) {
 		await page.setViewportSize(viewport);
+		await expect(toggle.locator('.view-label')).toBeHidden();
+		await expect
+			.poll(() =>
+				toggle.evaluate(
+					(button) =>
+						button.getBoundingClientRect().left -
+						button.previousElementSibling!.getBoundingClientRect().right
+				)
+			)
+			.toBeGreaterThanOrEqual(0);
 		await expect
 			.poll(() =>
 				page.evaluate(() => {
@@ -652,9 +703,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 								top = Math.min(top, y);
 								bottom = Math.max(bottom, y);
 							}
-					const controls = document
-						.querySelector('[aria-label="Test mount"]')!
-						.getBoundingClientRect();
+					const controls = document.querySelector('.test-mount-toggle')!.getBoundingClientRect();
 					const playback = document.querySelector('.playback-bar')!.getBoundingClientRect();
 					return {
 						painted: right > left && bottom > top,
@@ -689,7 +738,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(world(page)).not.toHaveAttribute('data-mount');
 	await landing(page, '/?mounts');
 	await page.keyboard.press('Enter');
-	await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+	await expect(toggle).toHaveAccessibleName('Mount');
 	await expect(world(page)).not.toHaveAttribute('data-mount');
 });
 

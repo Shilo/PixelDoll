@@ -10,6 +10,7 @@ import { EXPORT_SETTINGS_KEY } from '../../src/lib/store/export-settings.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 import { PAPERDOLL_JS } from '../../src/lib/export/phaser.ts';
 import { runtimeTypes } from '../../src/lib/runtime/sources.ts';
+import { travelSpeed } from '../../src/studio/experience/movement.ts';
 
 async function savedExport(page: Page, dev: string) {
 	await page.setViewportSize({ width: 800, height: 600 }); // Eight parallel settings runs do not need eight full-size animated worlds.
@@ -1734,7 +1735,9 @@ test('Preview, Top-down and Side-scroller always loop with global Play once both
 			await page.evaluate(() => {
 				(window as unknown as { appLoopFrames: number[] }).appLoopFrames = [];
 			});
-			await page.clock.runFor(1100);
+			await page.clock.runFor(
+				1100 * (mode === 'Side-scroller' ? travelSpeed('topdown') / travelSpeed('side') : 1)
+			);
 			const frames = await page.evaluate(
 				() => (window as unknown as { appLoopFrames: number[] }).appLoopFrames
 			);

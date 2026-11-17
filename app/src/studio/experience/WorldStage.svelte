@@ -43,6 +43,7 @@
 		sampleMountFrame
 	} from './mounts.ts';
 	import type { Img } from '../../lib/image/png.ts';
+	import { hideMountedLegs } from './mountLegs.ts';
 	// The floor ring: about a third of the body's width each way from the feet, flattened as the floor is there
 	// (rows below the horizon over the world's focal length), and kept this far above the playback bar.
 	const ringFlatness = (belowHorizon: number, worldScale: number, focal: number) =>
@@ -62,6 +63,8 @@
 		keyboardVector,
 		nearestDirection,
 		integrateMovement,
+		travelSpeed,
+		travelDelta,
 		MOVEMENT_KEYS,
 		type Vector
 	} from './movement.ts';
@@ -480,6 +483,8 @@
 			accentTheme = '';
 		// The mount's own clock: its gait runs on its own timeline while the rider plays the selected move.
 		let mountElapsed = 0;
+		let legKey = '';
+		let legResult: ReturnType<typeof hideMountedLegs> | null = null;
 		const mountCanvases = new WeakMap<Img, HTMLCanvasElement>();
 		const mountCanvas = (image: Img) => {
 			let c = mountCanvases.get(image);
@@ -694,13 +699,15 @@
 				? { x: stick.value.x, y: -stick.value.y }
 				: keyboardVector(keys, experience.mode === 'side');
 			if (ui.sheet || document.hidden) velocity = { x: 0, y: 0 };
+			const speed = travelSpeed(experience.mode === 'side' ? 'side' : 'topdown', mountVisible),
+				travelRate = speed / MOTION.walkSpeed.topdown;
 			if (live)
 				({ position, camera } = integrateMovement(
 					position,
 					camera,
 					velocity,
 					dt / 1000,
-					MOTION.speed,
+					speed,
 					MOTION.cameraResponse
 				));
 			const options: RenderOptions = {
@@ -783,10 +790,11 @@
 						})
 					: resolvePreview(a, { clip: ui.anim, direction: ui.dir });
 				experience.presentation = p.kind;
-				if (live) clock = advancePlayback(p, clock, livePlaybackDelta(p, velocity, dt));
-				const cell = live ? clock?.cell : p.kind === 'animation' ? view.cell : p.cell;
+				if (live) clock = advancePlayback(p, clock, livePlaybackDelta(p, velocity, dt, travelRate));
+				const cell = live ? (clock?.cell ?? p.cell) : p.kind === 'animation' ? view.cell : p.cell;
 				const nextKey = JSON.stringify([p.kind, p.clip, p.direction, cell, view.items, doc.rev]);
 				if (lastProject !== a || nextKey !== renderKey) {
+					legKey = '';
 					imageCache = renderPresentation(a, view.items, p, cell);
 					renderKey = nextKey;
 					lastProject = a;
@@ -829,6 +837,50 @@
 				].filter(Boolean);
 				const mounted = mountedPresentation(p);
 				mountIssue = mounted && !mounted.view ? mounted.reason : '';
+				experience.mountLegIssue = '';
+				delete host.dataset.mountLegs;
+				delete host.dataset.mountLegSource;
+				let mountedSource = source;
+				if (mounted?.view && img && result && p.clip && p.direction) {
+					const key = JSON.stringify([renderKey, experience.mountLegs]);
+					if (key !== legKey) {
+						const rig = a.project.manifest.rig;
+						const base = a.project.manifest.items.find((item) => item.id === rig.baseItem);
+						let direction = p.direction;
+						const visited = new Set<DirectionName>();
+						while (
+							!base?.layers.some((layer) => layer.cells?.[p.clip!]?.[direction] !== undefined) &&
+							!visited.has(direction)
+						) {
+							visited.add(direction);
+							const mirror = rig.directions.find((entry) => entry.id === direction)?.mirrorOf;
+							if (!mirror) break;
+							direction = mirror;
+						}
+						const baseImage = base?.layers
+							.map((layer) => layer.cells?.[p.clip!]?.[direction]?.[cell])
+							.find(Boolean);
+						legResult = hideMountedLegs(
+							img,
+							result.frame,
+							rig,
+							p.clip,
+							p.direction,
+							cell,
+							experience.mountLegs,
+							{ resolvedSource: direction, baseImage }
+						);
+						legKey = key;
+					}
+					if (legResult) {
+						experience.mountLegIssue = legResult.issue ?? '';
+						if (legResult.issue)
+							mountIssue = 'Leg cutout unavailable for this view. See More options.';
+						else host.dataset.mountLegs = experience.mountLegs;
+						if (legResult.source) host.dataset.mountLegSource = legResult.source;
+						mountedSource = mountCanvas(legResult.image);
+					}
+				}
 				const loadings = new Set(result?.loading ? [result.loading] : []);
 				if ((velocity.x || velocity.y) && !hasMoved) {
 					hasMoved = true;
@@ -983,8 +1035,8 @@
 								other.entry.canvas.height * scale
 							);
 					if (mounted?.view) {
-						if ((live ? !!(velocity.x || velocity.y) : ui.playing) && !ui.sheet && !document.hidden)
-							mountElapsed += dt;
+						if (!ui.sheet && !document.hidden)
+							mountElapsed += live ? travelDelta(velocity, dt, travelRate) : ui.playing ? dt : 0;
 						const index = sampleMountFrame(mounted.view, mountElapsed),
 							pose = mounted.view.frames[index],
 							at = placeRider(mounted.ground, mounted.contact, pose);
@@ -999,7 +1051,7 @@
 						};
 						layer(pose.back);
 						g.drawImage(
-							source,
+							mountedSource,
 							x + at.rider.x * scale,
 							y + at.rider.y * scale,
 							img.w * scale,

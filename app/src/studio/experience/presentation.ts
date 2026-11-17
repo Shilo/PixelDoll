@@ -23,6 +23,7 @@ import {
 	directionLabel,
 	dot,
 	nearestDirection,
+	travelDelta,
 	unit,
 	type Vector
 } from './movement.ts';
@@ -482,12 +483,12 @@ export interface PlaybackClock {
 export function livePlaybackDelta(
 	presentation: Presentation,
 	velocity: Vector,
-	deltaMs: number
+	deltaMs: number,
+	travelRate = 1
 ): number {
 	const dt = Number.isFinite(deltaMs) ? Math.max(0, deltaMs) : 0;
 	if (presentation.requestedClip === 'ride' && presentation.clip === 'ride') {
-		const strength = Math.hypot(velocity.x, velocity.y);
-		return Number.isFinite(strength) ? dt * Math.min(1, strength) : 0;
+		return travelDelta(velocity, dt, travelRate);
 	}
 	if (
 		presentation.kind !== 'animation' ||
@@ -496,8 +497,7 @@ export function livePlaybackDelta(
 		presentation.clip !== 'walk'
 	)
 		return dt;
-	const strength = Math.hypot(velocity.x, velocity.y);
-	return Number.isFinite(strength) ? dt * Math.min(1, strength) : 0;
+	return travelDelta(velocity, dt, travelRate);
 }
 /** Facing changes carry normalized phase. Genuine clip/source changes start once at frame zero. */
 export function advancePlayback(

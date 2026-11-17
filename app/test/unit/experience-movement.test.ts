@@ -6,29 +6,37 @@ import {
 	integrateMovement,
 	keyboardVector,
 	nearestDirection,
+	travelSpeed,
 	unit
 } from '../../src/studio/experience/movement.ts';
 
 describe('shared world movement', () => {
-	test('live worlds travel three ground tiles per second at full throw and preserve analog speed', () => {
-		for (const axis of ['xy', 'x'] as const) {
+	test('mode-relative walking and 130% mounted travel preserve analog strength', () => {
+		for (const [mode, axis, walking] of [
+			['topdown', 'xy', 300],
+			['side', 'x', 150]
+		] as const) {
 			const stick = new Joystick({ axis, travel: 40, deadZone: 8, follow: false });
 			stick.begin(1, { x: 0, y: 0 });
-			for (const strength of [0, 0.25, 0.5, 1]) {
-				const { value } = stick.move(1, { x: 8 + 32 * strength, y: 0 });
-				let position = { x: 0, y: 0 },
-					camera = { x: 0, y: 0 };
-				for (let frame = 0; frame < 60; frame++)
-					({ position, camera } = integrateMovement(
-						position,
-						camera,
-						value,
-						1 / 60,
-						MOTION.speed,
-						MOTION.cameraResponse
-					));
-				expect(position.x).toBeCloseTo(MOTION.tileSize * 3 * strength);
-				expect(position.y).toBe(0);
+			for (const mounted of [false, true]) {
+				const speed = travelSpeed(mode, mounted);
+				expect(speed).toBeCloseTo(walking * (mounted ? 1.3 : 1));
+				for (const strength of [0, 0.25, 0.5, 1]) {
+					const { value } = stick.move(1, { x: 8 + 32 * strength, y: 0 });
+					let position = { x: 0, y: 0 },
+						camera = { x: 0, y: 0 };
+					for (let frame = 0; frame < 60; frame++)
+						({ position, camera } = integrateMovement(
+							position,
+							camera,
+							value,
+							1 / 60,
+							speed,
+							MOTION.cameraResponse
+						));
+					expect(position.x).toBeCloseTo(speed * strength);
+					expect(position.y).toBe(0);
+				}
 			}
 		}
 	});

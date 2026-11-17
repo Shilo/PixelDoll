@@ -2,6 +2,8 @@
 
 Date: November 16, 2026. Status: research complete; production implementation not approved.
 
+Follow-up: the explicitly enabled `?mounts` Studio experiment now offers reversible None/Far/Both display cutouts for comparison. These are bounded joint-based guesses on a copy of the composed rider, not reviewed masks or the far-pass interleaving proposed below. None remains the default. Front/back Far and missing per-cell geometry leave the rider unchanged with an explanation. This test does not approve production segmentation, anatomy conversion, a new runtime API or exported mount behavior. See [the current guide](try-the-preview.md).
+
 Tracking: [Test skeleton-guided runtime mount occlusion](https://github.com/users/Shilo/projects/7/views/1?pane=issue&itemId=307571999).
 
 **Broader decision:** [Architecture comparison and challenged recommendation](architecture-comparison.md). Masking is one candidate, not the premise of that decision.

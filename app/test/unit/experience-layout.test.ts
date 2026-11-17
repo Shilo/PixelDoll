@@ -10,6 +10,7 @@ import {
 } from '../../src/studio/experience/geometry.ts';
 import { worldArt } from '../../src/studio/experience/config.ts';
 import { projection } from '../../src/studio/experience/ground.ts';
+import { travelSpeed } from '../../src/studio/experience/movement.ts';
 
 describe('conservative floor ring rise', () => {
 	test('uses visible standing height and rounds down only in device pixels', () => {
@@ -317,5 +318,21 @@ describe('scene geometry', () => {
 			eye
 		});
 		expect(p.horizon).toBeCloseTo(eye, 6);
+		const topdown = projection({
+			width: 1440,
+			height: 900,
+			dpr: 1,
+			theme: 'dark',
+			mode: 'topdown',
+			anchor: g.feet,
+			camera: { x: 0, y: 0 },
+			eye
+		});
+		const ratio =
+			(travelSpeed('side') * p.focal) /
+			p.depth /
+			((travelSpeed('topdown') * topdown.focal) / topdown.depth);
+		expect(ratio).toBeGreaterThan(0.8);
+		expect(ratio).toBeLessThan(1.3);
 	});
 });

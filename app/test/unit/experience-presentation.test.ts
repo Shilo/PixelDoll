@@ -313,14 +313,14 @@ describe('production body presentation', () => {
 
 	test('half-strength analog movement advances both ground travel and walking gait by half without changing full keyboard speed', () => {
 		const a = buildPresentation(fixture());
-		const sample = (velocity: { x: number; y: number }) => {
+		const sample = (velocity: { x: number; y: number }, rate = 1) => {
 			const p = resolveLive(a, { velocity });
 			let clock = advancePlayback(p, null, 0),
 				position = { x: 0, y: 0 },
 				camera = { x: 0, y: 0 };
 			for (let i = 0; i < 4; i++) {
-				({ position, camera } = integrateMovement(position, camera, velocity, 0.05, 100));
-				clock = advancePlayback(p, clock, livePlaybackDelta(p, velocity, 50));
+				({ position, camera } = integrateMovement(position, camera, velocity, 0.05, 100 * rate));
+				clock = advancePlayback(p, clock, livePlaybackDelta(p, velocity, 50, rate));
 			}
 			return { distance: Math.hypot(position.x, position.y), clock };
 		};
@@ -337,6 +337,12 @@ describe('production body presentation', () => {
 			expect(keyboard.distance).toBeCloseTo(full.distance);
 			expect(keyboard.clock.elapsedMs).toBeCloseTo(full.clock.elapsedMs);
 		}
+		const side = sample({ x: 1, y: 0 }, 0.5);
+		expect(side.distance).toBeCloseTo(full.distance * 0.5);
+		expect(side.clock.elapsedMs).toBeCloseTo(full.clock.elapsedMs * 0.5);
+		expect(
+			livePlaybackDelta(resolveLive(a, { velocity: { x: 0, y: 0 } }), { x: 0, y: 0 }, 100, 0.5)
+		).toBe(100);
 	});
 
 	test('analog changes carry walking phase while stop, resume, preview and nonlocomotion fallbacks keep their timing contracts', () => {

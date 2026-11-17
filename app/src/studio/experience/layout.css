@@ -205,8 +205,13 @@
 	display: block;
 }
 .view-modes .test-mount-toggle {
-	width: 44px;
-	justify-self: center;
+	width: auto;
+}
+.view-modes:has(.test-mount-toggle) {
+	grid-template-columns: repeat(3, minmax(44px, 1fr)) auto;
+}
+.mount-leg-select {
+	width: auto;
 }
 @media (max-width: 999px) {
 	.view-modes {
