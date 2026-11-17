@@ -62,6 +62,7 @@ export { default as Eye } from '@lucide/svelte/icons/eye';
 export { default as Layers2 } from '@lucide/svelte/icons/layers-2';
 export { default as Mountain } from '@lucide/svelte/icons/mountain';
 export { default as EllipsisVertical } from '@lucide/svelte/icons/ellipsis-vertical';
+export { default as GripVertical } from '@lucide/svelte/icons/grip-vertical';
 export { default as EyeOff } from '@lucide/svelte/icons/eye-off';
 export { default as HandGrab } from '@lucide/svelte/icons/hand-grab';
 export { default as CopyPlus } from '@lucide/svelte/icons/copy-plus';

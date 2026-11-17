@@ -1,6 +1,16 @@
-# Modular visual slots: proposed contract
+# Modular visual slots: implementation contract
 
-**Status:** design proposal, November 16, 2026. Prototype approval is not implementation approval. The existing production schema and runtime remain authoritative until a scoped implementation lands.
+**Status:** implementation authorized November 16, 2026, following the workshop. The production work is on `feat/modular-equipment-slots`. The validation record distinguishes implemented behavior from unverified generation quality.
+
+## Production implementation scope
+
+The user approved implementation on a dedicated branch after reviewing the workshop. Work on `feat/modular-equipment-slots`, with regular focused commits and independent Opus 5.5 medium, Sol 6.1 medium and DeepSeek V4.1 Flash low reviews. Preserve the current Studio and Bronze appearance. The prototype's policy switches, raw JSON editors and developer badges are not production controls.
+
+Use the conservative baseline: fixed built-ins, custom copies with permanent readable keys and editable labels, only-empty hiding, per-character organization, and a separate drawing order. Accessory creation accepts a blank name without a mandatory template picker. Combine showing an existing category and creating a custom one in the same Add slot flow. Use Not shown or Show in Wardrobe for organization so it is not confused with artwork covered by another item.
+
+Implement and validate profiles before exposing custom generation. Lock attachment/behavior changes while a slot has items or pending work; renaming and Wardrobe moves never regenerate artwork. Keep creative instructions optional and separate from protected extraction wording. Built-in defaults remain resettable only through their supported organization controls; users customize behavior through a separate custom slot. Existing populated categories remain reachable regardless of initial hidden defaults.
+
+Work in separately verifiable stages: profile/data foundation, generation and export integration, then management UI and drag/keyboard interaction. Required proof includes rename reference stability, independent Wardrobe/drawing order, empty checks covering drafts/jobs, copied left-hand behavior, universal clothing bands, and canonical/native export agreement. Test the rendered interface with representative desktop and phone workflows in both themes. Offline checks come first. Ask the user before any necessary paid generation; neither a prototype nor a successful unit test establishes production art quality. Record unavailable visual checks and physical-touch limits honestly rather than promising zero issues.
 
 ## 1. What a slot means
 
@@ -19,16 +29,16 @@ Use 64 px as a discussion baseline and check 48, 64, 96 and 128 px before making
 
 Do not claim these rules establish which categories are statistically most common. No usage census was performed.
 
-## 2. Built-in catalog and exact current defaults
+## 2. Built-in catalog and production defaults
 
-Keep current readable keys while presenting clear labels. Cosmetic cleanup does not justify rekeying exports. `arms` means Hands in the UI; `torso_inner` means Chest. Values below come from `app/src/lib/items/items.ts` SLOTS and slotLadder, not a new layering invention.
+Keep current readable keys while presenting clear labels. Cosmetic cleanup does not justify rekeying exports. `arms` means Hands in the UI; `torso_inner` now means Body. Call the frozen character Base in user-facing equipment discussion to distinguish it from the Body slot. The catalog and behavior resolver now live in `app/src/lib/items/slots.ts`, re-exported by `items.ts`. Underwear is implemented as a new profile, but new AI-generated underwear quality remains unqualified.
 
 | Label       | Permanent key | Initially | Class | Authoring anchor | Foreground z | Background z |
 | ----------- | ------------- | --------- | ----- | ---------------- | ------------ | ------------ |
 | Head        | `head`        | Shown     | rigid | head             | 130          | none         |
 | Hair        | `hair`        | Shown     | rigid | head             | 110          | 5 effective  |
 | Face        | `face_acc`    | Shown     | rigid | head             | 120          | none         |
-| Chest       | `torso_inner` | Shown     | worn  | neck             | 40           | none         |
+| Body        | `torso_inner` | Shown     | worn  | neck             | 40           | none         |
 | Hands       | `arms`        | Shown     | worn  | hand_r           | 70           | none         |
 | Legs        | `legs`        | Shown     | worn  | hip              | 30           | none         |
 | Feet        | `feet`        | Shown     | worn  | foot_r           | 20           | none         |
@@ -40,6 +50,7 @@ Keep current readable keys while presenting clear labels. Cosmetic cleanup does 
 | Waist       | `waist`       | Hidden    | worn  | hip              | 50           | none         |
 | Neck        | `neck`        | Hidden    | rigid | neck             | 80           | none         |
 | Shoulders   | `shoulders`   | Hidden    | worn  | neck             | 65           | none         |
+| Underwear   | `underwear`   | Hidden    | worn  | hip              | 15 proposed  | none         |
 
 The body is z10. Hair declares bg3 in SLOTS but the current unconditional ladder override resolves it to 5. Both held background layers become z5 for south, southeast, east, west and southwest. For original non-mirrored west, southwest and northwest, off-hand foreground becomes z155; its background is ordered above the main-hand background (6 for west/southwest and 2 for northwest). Preserve source-facing and mirroring semantics rather than flattening these into one depth.
 
@@ -49,19 +60,39 @@ Anchors available today: `head`, `neck`, `hip`, `hand_l`, `hand_r`, `foot_l`, `f
 
 ### Scope and clothing ownership
 
-Chest includes sleeves when the garment has them. Hands includes gloves, gauntlets and their forearm extent. This follows recognizable clothing choices, not a claim that arms are too small. Pants and shoes remain independently swappable as Legs and Feet. A custom Sleeves slot is legitimate if a project actually swaps sleeves separately.
+Body and Legs are separate slots and separate layers, both shown by default. Body accepts upper-body clothing, including sleeves, or a complete outfit. Legs accepts independently swappable lower clothing. Body always draws above Legs in the default clothing profile, so a long shirt overlaps pants. Equipping either never clears the other. Full-body artwork can cover a Legs selection without deleting it; pants wider than the covering garment may remain visible. This is a composition limit, not a reason to remove Legs or create a replacement system.
+
+Hands includes gloves, gauntlets and their forearm extent. Pants and shoes remain independently swappable as Legs and Feet. A custom Sleeves slot is legitimate if a project actually swaps sleeves separately. Outerwear accepts a jacket, robe or full outer costume in one selected asset. Underwear accepts a top, bottom or combined set in one selected asset. Additional independent outer/under tops or bottoms require custom slots, not more hidden built-ins. No automatic clearing or multi-selection cells are proposed.
 
 Back covers capes, backpacks and quivers as item types. Create another Back-like slot only when simultaneous independent equipment is wanted. No generic Accessory built-in: an accessory still needs a behavior and location.
 
-Custom-only initially: Ring/Finger, Earrings, Wrists/Bracelet, Hair accessory, separate Eyes/Glasses, Bag, Quiver, Tabard, Outer legs, Tail, Wings and Full outfit. Custom does not certify these assets. Wings may exceed the canvas; tails may need authored foreground/background frames; full outfits can cross current clipping bands. Broader padding, articulation or multi-region extraction requires real work, not a renamed Back profile.
+No dedicated built-ins initially: Ring/Finger, Earrings, Wrists/Bracelet, Hair accessory, separate Eyes, separate Bag/Quiver/Cape, Tabard, Sleeves, Outerwear top/bottom, Underwear top/bottom, Tail and Wings. Glasses already fit Face; bags, quivers and capes already fit Back. Use custom slots only when separate independent selection is needed. Full outfits belong in Body; a separate custom costume slot remains possible if independently needed. Custom does not certify assets: wings may exceed the canvas, tails may need foreground/background parts, and full outfits can cross current clipping bands. Broader padding, articulation or multi-region extraction requires real work, not merely a renamed profile.
 
 No built-in stat-only Ammo, Trinket, Relic, Pocket, Soul crystal, Ability or Totem. A visible charm, pouch or lantern can use a custom visual slot. Two-handed is behavior, not another equipment category.
 
-### Underwear comparison
+### Underwear and universal coverage
 
-The baseline remains ten shown and five hidden. Sol favors adding one hidden combined Underwear; Opus favors custom-only because standard new bases already bake a plain white underwear set into the frozen body. Neither position is research-proven.
+The corrected baseline is ten shown and six hidden, including one combined Underwear slot. Earlier council proposals to remove Legs, add two selection cells per category or split underwear by default do not describe the user's design and are rejected for this prototype.
 
-If adopted, start combined: `underwear`, worn, hip, provisional z15, no background. Split alternatives are `underwear_top` (neck) and `underwear_bottom` (hip), both provisional z15. These are design values, not qualified production defaults. A one-piece suit crosses torso/leg boundaries and needs an offline clipping check. Prompting underwear cannot erase the base's baked clothing; recoloring and generation must disclose this. Outerwear is not an exact semantic opposite: swimwear, pajamas and undershirts may be primary visible clothing. Avoid a broad Innerwear catch-all unless independent swapping demonstrates a need.
+Underwear uses `underwear`, worn, hip, provisional z15, no background. Body and Outerwear keep neck as their existing authoring anchor, not a literal new chest bone. The hip/pelvis starting anchor does not confine Underwear to the lower body or prove a combined set will generate correctly. All three clothing profiles need coverage-aware offline extraction checks before production supports arbitrary full-body art. Prompt templates are a design tool, not a substitute for those checks.
+
+Default clothing depth, back to front: Base z10, Underwear z15, Legs z30, Body z40, Outerwear z60. Other slots retain the table's positions. Nude bases make removable underwear useful. On a clothed Base, the slot remains usable but cannot remove baked clothing. Pajamas, swimwear and undershirts may be main clothing or underclothing depending on the intended independent selection. The category does not prescribe the garment's style or gender.
+
+### Accessory as a custom-slot starting option
+
+**User-approved direction after Sol and Opus review:** keep quick custom-slot creation. The name field has the placeholder **Accessory** and is optional. Leaving it blank creates **Accessory**, then **Accessory 2**, **Accessory 3**, using the next available name under the character's case-insensitive naming rules. Suggest a unique readable key once, such as `accessory` or `accessory_2`. This is not an eleventh shown built-in or another hidden preset. Once created, it appears as a shown custom slot. The starting catalog remains ten shown and six hidden.
+
+Do not require a region picker or template choice before creation. The generic starting behavior is worn clothing using Body's authoring anchor, with a distinct default drawing position **above Body and Legs, below Outerwear, Hair and held items**. Describe it as **Over basic clothing**. Its depth is z55, above Waist z50 and below Outerwear z60. Equal depths use manifest slot order, never Wardrobe browsing order. Keep drawing order adjustable through Draws above, without exposing numeric depths.
+
+Optional copying from another slot can still supply its supported settings. Hands means worn glove/wrist behavior, not a held weapon; Back includes its background split. A name alone never selects different behavior. For example, typing Wings does not automatically change the drawing position or supply wing animation. Do not add specialized suggestion chips or additional built-ins for this decision.
+
+A brooch may belong above clothing, a ribbon below a hat, and a bracelet below a sleeve. The default is a starting point, not a promise of correct overlap. Outerwear can cover an accessory; the prototype should explain that through the layer setting and preview rather than silently moving it above everything. Advanced depth changes cannot repair missing front/back artwork or every directional overlap. Artwork may extend beyond its authoring region, but unrestricted generation coverage is not yet proven.
+
+One slot still selects one item. A ribbon and bracelet need separate custom slots to swap independently, or one coordinated asset. The name does not supply attachment behavior. Under the readable-key recommendation, renaming Accessory to Brooch changes its label, not `equip('accessory', item)` or the `items/accessory/` folder. Drawing rules go in the existing export manifest, not a layer suffix. Another custom slot needs a different key.
+
+Accessory is a general fallback, not a claim about the most-common missing category. Sol favored Hair accessory as a specific independent addition; Opus noted that Head already covers it unless it must swap separately alongside headgear. Both favored Accessory for unnamed creation and a position over basic clothing rather than the highest layer. Neither established category frequency. Wings remains custom, not a hidden built-in.
+
+Production implementation was subsequently authorized on November 16, 2026. Blank-name creation, numbered repeats and this depth default are now implemented in Studio, not just the workshop. The workshop remains a historical comparison tool. See the validation record for completed checks and remaining quality limits.
 
 ## 3. Identity without opaque IDs
 
@@ -75,7 +106,7 @@ Name-only references remove one field but add transactional rename work across i
 
 Keys must be unique across all slots, including hidden built-ins. Hiding never frees identity. Custom keys cannot take `neck` while the Neck definition exists.
 
-The recommended simple production rule is unique case-insensitive trimmed display labels per character, with an offer to Show or Customize existing Neck. The prototype also allows a custom Neck label beside a hidden built-in under another key, then permits showing both with key badges. This intentionally more permissive comparison tests the user's exact replacement scenario. It is not the settled naming policy. Duplicate labels complicate menus, exports and assistive announcements even if keys are technically sound. The prototype suggests numeric suffixes such as `neck_2`; `neck_custom` is another valid user choice, not a second required naming convention.
+Production uses unique case-insensitive trimmed display labels per character. Typing the name of a not-shown built-in offers Show instead of creating a duplicate. The prototype's hidden-label duplicate experiment is not the production policy. Duplicate labels complicate menus, exports and assistive announcements even when keys differ. Custom names produce portable readable keys once; a name without usable ASCII characters falls back to `slot`, then `slot_2`.
 
 Deleting and recreating a key deliberately rebinds that API name to a new category; the prototype allows this and reports only whether the slot key exists, not whether an old item call remains compatible. Production deletion must disclose that consequence. Permanent means unchanged during the slot's lifetime, not a claim of eternal tombstone reservation. Tombstones are not proposed for v1.
 
@@ -85,31 +116,30 @@ Normalize and validate portable keys, reject path traversal, separators, reserve
 
 Separate immutable factory definitions from per-character slot configuration, items and Wardrobe organization. Built-ins cannot be deleted; custom slots can. Reset restores a factory configuration without deleting generated items or silently changing selections. Restore organization separately from restoring behavior so users know what changes.
 
-Two approaches are deliberately available:
+The workshop compared two approaches:
 
 1. **Fixed built-ins, copy to customize:** smaller supported surface and consistent named presets. Copies need their own keys, and copy settings only, not generated items. The user must understand why there are two similar categories.
 2. **Customize in place + Reset:** avoids replacement copies and naming conflicts. Store a resolved per-character copy; a future factory update must not silently alter existing art. Built-in identity stays fixed, but its label/profile can differ. More support and validation cost.
 
-Start production conservatively with fixed built-ins unless user testing shows copy friction outweighs the benefit. The workshop exposes advanced settings on custom slots and optionally built-ins because the user asked to test that depth. Do not implement a live `like` reference that silently changes every copy when its source changes. Store origin for provenance/reset and resolved behavior for predictability.
+Production selects fixed built-ins with Make a custom copy. The workshop's in-place editing comparison is not included. Copies keep resolved settings rather than a live reference that changes when the source changes. Store origin for provenance and a separate supported behavior profile for generation.
 
-**Required refactor before production custom slots:** route every slot-ID-specific generation, anchor, hand, band, clipping, QA and runtime decision through explicit supported profile fields. Current `handOf`, held attachment, bandOf and special prompt checks do not magically work for a new ID. Copying Off hand today can incorrectly fall into right-hand logic. Test canonical and native exports together. Modular means one behavior resolver shared by consumers, not an abstract plugin framework or unbounded arbitrary bones.
+**Implemented foundation:** generation, anchor, hand, band, clipping, QA and material defaults resolve the slot's supported profile rather than guessing behavior from a custom key. A copied Off hand retains left-hand behavior. Canonical and native exports use the resolved runtime fields, not the profile name. Modular means one behavior resolver shared by consumers, not an abstract plugin framework or unbounded arbitrary bones.
 
 ## 5. Settings and their consequences
 
-| Setting                     | Ordinary or advanced       | Effect                                                                                                   |
-| --------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Label                       | Ordinary, custom initially | UI label only; key and pixels unchanged                                                                  |
-| Wardrobe order              | Ordinary                   | Browsing only, never rendering or equal-z tie order                                                      |
-| Shown/hidden                | Ordinary                   | Organization only; no unequipping or export loss                                                         |
-| Start with profile          | Creation                   | Copy supported resolved defaults, no item duplication                                                    |
-| Behavior: worn/rigid/held   | Advanced experiment        | Generation/extraction topology; existing items require refit/reprocess, not relabel                      |
-| Authoring anchor            | Advanced experiment        | Future generation/positioning hint; existing baked frames do not retarget                                |
-| Creative prompt template    | Advanced experiment        | Future generation only; insert `{{description}}`; protected extraction/hold wording stays app-controlled |
-| Foreground/background depth | Advanced                   | Changes compositing of existing layers; preview, cancel and undo required                                |
-| Direction/context overrides | Advanced prototype data    | Needed for full overlap fidelity; raw JSON is a comparison instrument, not final casual-user UX          |
-| Delete                      | Custom only                | Confirm affected assets/outfits/jobs; offer reassign or safe removal, never silent loss                  |
+| Setting                     | Ordinary or advanced       | Effect                                                                                                 |
+| --------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Label                       | Ordinary, custom initially | UI label only; key and pixels unchanged                                                                |
+| Wardrobe order              | Ordinary                   | Browsing only, never rendering or equal-z tie order                                                    |
+| Shown/hidden                | Ordinary                   | Organization only; no unequipping or export loss                                                       |
+| Start with profile          | Creation                   | Copy supported resolved defaults, no item duplication                                                  |
+| Works like and Hand         | Custom settings            | Copies a supported profile; locked while items or attempts exist                                       |
+| Creative hint               | Custom settings            | Optional plain sentence for future generation; no required placeholders or extraction instructions     |
+| Draws above                 | Custom settings            | Moves foreground drawing order, including directional front offsets; background parts stay behind Base |
+| Direction/context overrides | Stored profile data        | Preserved in generation/export; raw JSON is not a production control                                   |
+| Delete                      | Custom only                | Confirm the count; remove category, items, colors and outfit entries together, or remove nothing       |
 
-The prototype stores editable settings but does not prove every combination can generate. Anchor and behavior changes on populated slots are deliberately visible experiments; production must either lock them until empty or require explicit refit with affected-item count and paid-cost disclosure if applicable. A paid call must never be implied by moving, renaming or hiding a slot.
+The prototype's unrestricted settings do not prove every combination can generate. Production locks Works like and Hand while the category contains items or attempts. A paid call is never implied by moving, renaming, hiding or editing a category. Populated deletion cannot be undone; empty deletion and ordinary organization can. There is no item reassignment or automatic refit in this release.
 
 No arbitrary new skeleton bones in v1. New joints require tracks across moves and directions; a string is not animation data. Baked exports do not need authoring anchor names to animate equipment, but they still require pivots and offsets. A future skeletal runtime would have a different explicit contract.
 
@@ -119,14 +149,21 @@ Visibility and order persist per character, including project save/share as appr
 
 Baseline: only empty slots can hide. Empty means no existing, draft, generating or uncertain-result item on this character. Unequipped is not empty. Saved outfits and pending jobs must not become unreachable. Unfitted shared library items do not count. Explain why hiding is blocked and provide the item count. Do not force users to delete valuable art merely to tidy a sidebar; test alternatives first.
 
-Alternatives preserve all selections and exports:
+Approved inline interaction supersedes the separate organizer list. The header's entire flexible label area, excluding Random and New item buttons, is a menu trigger and drag source. A click or tap opens contextual Move up/down, Hide, and custom Edit or built-in Make a custom copy actions. Keep the navigation rail and existing dressing actions. Built-in names, generation behavior and drawing settings stay fixed; organization remains editable.
 
-- **Collapsed bottom:** populated hidden categories move below visible categories, collapsed. Risk: many collapsed groups create another long list and obscure the order users set.
-- **One hidden group:** bottom entry shows category and equipped counts and allows restore. Stronger decluttering but lower explicitness. Equipped summary remains visible so hidden does not mean unworn.
+An always-reachable **Add slot** action at the bottom of the navigation rail opens a small sheet. Slot name, Works like and Create slot form one top group, followed by a divider and unused built-in slots. Its name is Add slot, not Add category. Blank custom names remain Accessory without explanatory placeholder instructions. The separate organizer list and its duplicate reorder controls are removed; custom settings and deletion confirmations remain contextual sheets.
 
-The manager always exposes all built-ins and custom slots, even when every Wardrobe category is hidden. Hide never becomes renderer visibility or export exclusion. For only-empty hiding, importing/fitting into a hidden category must auto-show it with feedback; jobs reserve visibility before generation begins.
+The Wardrobe ends with one full-width collapsed **Not shown** disclosure, with its chevron and label at the left and count at the right. Its compact full-row actions use an eye icon, an accessible Show name and the same Bronze hover feedback as slot headers. Show appends the slot while keeping the disclosure at its previous screen position and focusing the next available hidden slot. Revealing the last hidden slot replaces that anchor with the restored header. A row may also be dragged out into a chosen shown-list position, revealing and positioning it as one undo step. The disclosure is not a drop-to-hide target: a shown slot dragged to the end stays shown, and release over the not-shown group cancels rather than hiding it. Shared-only sections are not editable categories of this character.
 
-Use dedicated handles, not draggable expand headers. Prototype thresholds: 6 CSS px mouse, 8 touch, provisional not validated constants. Only handles suppress touch scrolling; ordinary rows remain scrollable. Pointer cancellation and Escape cancel, Move up/down gives a keyboard/non-drag path, and focus must follow the moved row. Edge autoscroll needs a continuous loop, not merely pointer-move events, in production. Touch long-press delay is unresolved; do not claim desktop emulation validates physical touch behavior.
+Own-slot rail icons also support the same tolerant drag gesture, with insertion feedback and edge scrolling within the rail only. A normal click still navigates. A non-draggable Not shown shortcut opens and navigates to the disclosure; it stays after every slot in the scrolling rail and cannot receive drops. Only Add slot is pinned below the scrolling entries, with the panel's bottom inset, so short phone sheets retain space for browsing. Menu movement remains the non-drag alternative.
+
+Mouse/pen presses become drags after 6 CSS px. Touch holds arm after 300 ms while stationary; movement exceeding 8 px before arming cancels and remains ordinary scrolling. Once armed, cancel native scrolling from the first move, even below the drag threshold; movement of 8 px begins dragging. Holding without dragging never reorders. These are initial tuning values, not user settings or proof of physical-device usability. Do not change touch-action after a touch starts or disable scrolling across the whole header.
+
+Use natural section positions, not sticky header screen positions, for insertion geometry. Show insertion feedback without collapsing or translating complete item grids. Edge autoscroll runs continuously. Escape, capture loss, cancellation, multitouch and teardown cancel without changes; successful drag release suppresses its synthetic click. The same actions work by menu and keyboard, with focus recovery and position announcements. Browsing-only changes are undoable and never spend credits.
+
+A floating slot label follows the pointer above the touch contact, without intercepting input. Reordering, adding and drag restoration preserve the list's pixel scroll offset, including the offset reached by intentional edge autoscroll. Eye-button restoration instead anchors Not shown visually, with trailing space measured from that final block to prevent clamping during repeated reveals. The rail reports the slot actually visible after layout, not the moved slot or the previous numeric index. Focus stays on the moved header when visible, otherwise on the current visible header; rail drags retain rail focus. New slots append with feedback rather than forcing navigation to the bottom. Natural scroll-range clamping still applies if content becomes shorter. Explicit rail navigation and item review continue to reveal their requested destinations.
+
+Add slot and Not shown remain reachable when every slot is hidden. Hide never becomes renderer visibility or export exclusion. Importing/fitting into a hidden slot auto-shows it with feedback; jobs reserve visibility before generation begins. Physical-touch behavior remains a separately disclosed verification limit until tested on hardware.
 
 Render order is independent: canonical depths plus overrides and deterministic tie order retained in rendering data. Do not use current Wardrobe array position or locale-dependent name sorting as the production tiebreak. The demo retains a creation ordinal independent of key, label and browsing order for its illustrative foreground preview. Its body participates at z10.
 
@@ -190,6 +227,6 @@ Prove identity rename with a unit test: item/outfit references and export keys u
 
 ## 9. Questions to discuss after trying it
 
-Does the frozen key feel simpler than repairing names everywhere? Is a second Neck label worth ambiguity, or is customizing Neck in place clearer? Are advanced controls empowering or mostly a way to request unsupported art? Does empty-only hiding make users delete work just to organize? Does Underwear earn maintenance given baked base clothing? Should Outerwear/Waist remain immediately discoverable because they are reachable in today's grouped Chest interface?
+Does the frozen key feel simpler than repairing names everywhere? Is a second Neck label worth ambiguity, or is customizing Neck in place clearer? Are advanced controls empowering or mostly a way to request unsupported art? Does empty-only hiding make users delete work just to organize? Does the universal Body/Outerwear/Underwear description make the separate Legs choice clear? Should Outerwear/Waist remain immediately discoverable because they are reachable in today's grouped Chest interface?
 
 These are real disagreements, not council consensus disguised as implementation requirements.

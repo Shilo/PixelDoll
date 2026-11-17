@@ -1,9 +1,11 @@
 import { expect, test } from 'vitest';
-import type { Project } from '../../src/lib/store/manifest.ts';
+import type { Project, Slot } from '../../src/lib/store/manifest.ts';
 import { exportManifest, validate } from '../../src/lib/export/generic.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { spriteFramesTres } from '../../src/lib/export/godot.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { addCustom, moveCategory, shownCategories } from '../../src/studio/slots.ts';
+import { slotLadder } from '../../src/lib/items/slots.ts';
 
 function project(): Project {
 	const hash = `sha256:${'0'.repeat(64)}` as const;
@@ -129,4 +131,167 @@ test('Godot resources keep distinct valid animation IDs distinct after escaping'
 	expect(new Set(ids).size).toBe(ids.length);
 	expect(tres).toContain('"name": &"walk-fast_south"');
 	expect(tres).toContain('"name": &"walk_fast_south"');
+});
+
+test('slot metadata validates and only its label reaches the runtime manifest', () => {
+	const p = project();
+	const slot: Slot = {
+		id: 'quiver',
+		z: 95,
+		bgZ: 4,
+		class: 'worn',
+		anchor: 'neck',
+		hides: ['body'],
+		clips: ['body'],
+		zOverrides: [{ layer: 'bg', z: 4, dir: 'south', anim: 'idle', cell: 0 }],
+		band: true,
+		label: 'Quiver',
+		origin: 'back',
+		profile: 'back',
+		wardrobeOrder: 3,
+		wardrobeHidden: true,
+		promptTemplate: 'Add {{description}}.'
+	};
+	p.manifest.slots.push(slot);
+	expect(validate(p)).toEqual([]);
+	const exported = exportManifest(p, { engines: ['generic'], baked: false }).manifest.slots[1];
+	expect(exported).toMatchObject({
+		id: 'quiver',
+		z: 95,
+		bgZ: 4,
+		class: 'worn',
+		anchor: 'neck',
+		hides: ['body'],
+		clips: ['body'],
+		band: true,
+		label: 'Quiver'
+	});
+	for (const authoringOnly of [
+		'origin',
+		'profile',
+		'wardrobeOrder',
+		'wardrobeHidden',
+		'promptTemplate'
+	])
+		expect(exported).not.toHaveProperty(authoringOnly);
+});
+
+test('built-in hide and clip targets remain valid without their own slot entry', () => {
+	const p = project();
+	p.manifest.slots.push({
+		id: 'head',
+		z: 130,
+		class: 'rigid',
+		anchor: 'head',
+		clips: ['hair'],
+		hides: ['facial_hair']
+	});
+	expect(validate(p)).toEqual([]);
+});
+
+test('slot keys, duplicate entries, classes and anchors are validated', () => {
+	let p = project();
+	p.manifest.slots.push({ id: 'Quiver', z: 90, class: 'worn' });
+	expect(validate(p).some((error) => error.includes('slot id "Quiver" is invalid'))).toBe(true);
+
+	p = project();
+	p.manifest.slots.push({ id: 'body', z: 90, class: 'worn' });
+	expect(validate(p).some((error) => error.includes('duplicate slot id body'))).toBe(true);
+
+	p = project();
+	p.manifest.slots.push({ id: 'head', z: 90, class: 'hat' as never, anchor: 'tail' });
+	const errors = validate(p);
+	expect(errors.some((error) => error.includes('class must be base, rigid, held or worn'))).toBe(
+		true
+	);
+	expect(errors.some((error) => error.includes('anchor "tail" is not a supported anchor'))).toBe(
+		true
+	);
+});
+
+test('slot depths, overrides and hide/clip references must be valid', () => {
+	const p = project();
+	p.manifest.slots.push({
+		id: 'quiver',
+		z: 95.5,
+		bgZ: Number.NaN,
+		class: 'worn',
+		profile: 'back',
+		zOverrides: [{ layer: 'side' as never, z: 1.5, dir: 'up' as never, anim: 'fly', cell: -1 }],
+		hides: ['missing'],
+		clips: ['missing', 'missing']
+	});
+	const errors = validate(p);
+	for (const message of [
+		'slot depth must be a finite integer',
+		'background depth must be a finite integer',
+		'zOverrides[0] layer must be fg or bg',
+		'zOverrides[0] depth must be a finite integer',
+		'zOverrides[0] has unknown direction up',
+		'zOverrides[0] has unknown move fly',
+		'zOverrides[0] cell must be a non-negative integer',
+		'hides names unknown slot missing',
+		'clips names unknown slot missing',
+		'duplicate clips entry missing'
+	])
+		expect(errors.some((error) => error.includes(message))).toBe(true);
+});
+
+test('slot authoring metadata stays within the supported catalog and types', () => {
+	const withSlot = (over: Partial<Slot>): Project => {
+		const p = project();
+		p.manifest.slots.push({ id: 'quiver', z: 95, class: 'worn', profile: 'back', ...over });
+		return p;
+	};
+	const includes = (over: Partial<Slot>, message: string) =>
+		validate(withSlot(over)).some((error) => error.includes(message));
+	expect(includes({ origin: 'ring' as never }, 'origin must name a supported built-in')).toBe(true);
+	expect(includes({ origin: 'body' }, 'only the Base slot can originate from body')).toBe(true);
+	expect(includes({ profile: 'ring' as never }, 'behavior profile "ring" is not supported')).toBe(
+		true
+	);
+	expect(includes({ profile: undefined }, 'behavior profile is missing')).toBe(true);
+	expect(includes({ profile: 'body' }, 'profile body is reserved for the Base slot')).toBe(true);
+	expect(includes({ label: 42 as never }, 'label must be text')).toBe(true);
+	expect(includes({ wardrobeOrder: -1 }, 'wardrobeOrder must be a non-negative integer')).toBe(
+		true
+	);
+	expect(includes({ wardrobeOrder: 1.5 }, 'wardrobeOrder must be a non-negative integer')).toBe(
+		true
+	);
+	expect(includes({ wardrobeHidden: 'yes' as never }, 'wardrobeHidden must be true or false')).toBe(
+		true
+	);
+	expect(includes({ promptTemplate: 7 as never }, 'promptTemplate must be text')).toBe(true);
+});
+
+test('malformed slot entries reject clearly instead of throwing', () => {
+	const p = project();
+	(p.manifest.slots as unknown[]).push(null, 7, { z: 1, class: 'worn' });
+	let errors: string[] = [];
+	expect(() => {
+		errors = validate(p);
+	}).not.toThrow();
+	expect(errors.some((error) => error.includes('slot entry has no id'))).toBe(true);
+});
+
+test('Wardrobe reordering keeps every order a whole non-negative number, so the export validates', () => {
+	const p = project(),
+		none = new Set<string>();
+	p.manifest.slots = slotLadder(p.manifest.rig);
+	expect(validate(p)).toEqual([]);
+	addCustom(p.manifest, { label: 'Brooch' }, none);
+	for (const [key, to] of [
+		['brooch', 0],
+		['feet', 0],
+		['head', 3],
+		['brooch', 1],
+		['feet', 0],
+		['hair', 2]
+	] as const)
+		moveCategory(p.manifest, key, to, none);
+	const shown = shownCategories(p.manifest, none);
+	expect(shown.slice(0, 3).map((c) => c.key)).toEqual(['feet', 'brooch', 'hair']);
+	expect(shown.map((c) => c.order)).toEqual(shown.map((_, i) => i));
+	expect(validate(p)).toEqual([]);
 });

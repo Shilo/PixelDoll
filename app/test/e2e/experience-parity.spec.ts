@@ -2652,11 +2652,11 @@ test('category Random is one named undo step and Random look stays reachable on 
 	await undo.click();
 	await expect(undo).toBeDisabled();
 	await expect(redo).toHaveAccessibleName('Redo Random head item');
-	// The demo wears its only chest item: Random keeps it and re-rolls its colors, as one named undo step.
-	const chestRandom = page.getByRole('button', { name: 'Random chest item', exact: true });
-	await expect(chestRandom).toBeEnabled();
-	await chestRandom.click();
-	await expect(undo).toHaveAccessibleName('Undo Random chest item');
+	// The demo wears its only body item: Random keeps it and re-rolls its colors, as one named undo step.
+	const bodyRandom = page.getByRole('button', { name: 'Random body item', exact: true });
+	await expect(bodyRandom).toBeEnabled();
+	await bodyRandom.click();
+	await expect(undo).toHaveAccessibleName('Undo Random body item');
 	await expect(
 		page
 			.locator('.equipment-scroll')
@@ -2745,7 +2745,7 @@ for (const viewport of [
 		// Beside the stage, the panel and its slot rail run to the window's bottom edge (the lists pad their own margin).
 		else {
 			expect(rail.y + rail.height).toBeCloseTo(viewport.height, 0);
-			const slots = await page.getByRole('navigation', { name: 'Equipment slots' }).boundingBox();
+			const slots = await page.locator('.slot-rail-column').boundingBox();
 			if (slots) expect(slots.y + slots.height).toBeCloseTo(viewport.height, 0);
 		}
 		const header = (await page.locator('.experience-header').boundingBox())!;

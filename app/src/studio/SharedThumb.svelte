@@ -3,7 +3,7 @@
 	import { untrack } from 'svelte';
 	import { sharedPreview, type SharedItem } from '../lib/equipment/shared.ts';
 	import type { Project } from '../lib/store/manifest.ts';
-	import { groupOf, thumbCell, thumbCells } from './model.ts';
+	import { thumbCell, thumbCells } from './model.ts';
 	import Thumb from './Thumb.svelte';
 	import GroupIcon from './GroupIcon.svelte';
 	let { entry }: { entry: SharedItem } = $props();
@@ -35,6 +35,6 @@
 </script>
 
 {#if project}<Thumb {project} item={entry.item} />{:else}<GroupIcon
-		group={groupOf(entry.item.slot).id}
+		group={entry.item.slot}
 		size={24}
 	/>{/if}

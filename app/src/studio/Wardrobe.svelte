@@ -9,22 +9,15 @@
 	// One continuous list of every equipment category with sticky headers, and a slot rail that follows and drives it.
 	import { onMount, tick, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { equipped, hiddenSlots, OTHER_HAND, twoHanded } from '../lib/compose/compose.ts';
+	import { equipped, handSide, hiddenSlots, twoHanded } from '../lib/compose/compose.ts';
 	import { edgeFade, scrollToTop, stickyFade } from '@shilo/bronze-ui/svelte';
-	import {
-		crop,
-		groupOf,
-		groupLabel,
-		GROUPS,
-		HEALTH_LABEL,
-		healthOf,
-		missingFramesNote,
-		unfitText
-	} from './model.ts';
+	import { crop, HEALTH_LABEL, healthOf, missingFramesNote, unfitText } from './model.ts';
 	import { itemKey } from '../lib/equipment/copy.ts';
 	import type { SharedItem } from '../lib/equipment/shared.ts';
 	import TileMarks, { sortMarks, type Mark } from './TileMarks.svelte';
-	import type { CellKey } from '../lib/store/manifest.ts';
+	import type { CellKey, Item, Manifest } from '../lib/store/manifest.ts';
+	import { categories, isEmpty, shownCategories, slotDef, useText } from './slots.ts';
+	import { slotDrag } from './slotDrag.ts';
 	import {
 		ui,
 		doc,
@@ -42,7 +35,14 @@
 		shared,
 		sharedKey,
 		addShared,
-		removeItem
+		removeItem,
+		busySlots,
+		slotUseHere,
+		moveSlot,
+		hideSlot,
+		showSlot,
+		showSlotAt,
+		toast
 	} from './state.svelte.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -54,12 +54,30 @@
 	import GroupIcon from './GroupIcon.svelte';
 	import SharedThumb from './SharedThumb.svelte';
 	import ItemMenu from './ItemMenu.svelte';
-	import { Ban, Check, CircleAlert, EllipsisVertical, Plus, Shuffle } from './icons.ts';
+	import PopoverArrow from './PopoverArrow.svelte';
+	import { popoverFocus } from './experience/focus.ts';
+	import {
+		ArrowDown,
+		ArrowUp,
+		Ban,
+		Check,
+		ChevronRight,
+		CircleAlert,
+		CopyPlus,
+		EllipsisVertical,
+		Eye,
+		EyeOff,
+		GripVertical,
+		Pencil,
+		Plus,
+		Shuffle
+	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
 	let list = $state<HTMLElement>();
 	let rail = $state<HTMLElement>();
 	let spacer = $state(0);
+	let notShownCurrent = $state(false);
 	// The group the list itself last reported; any other change to ui.group came from elsewhere and scrolls to it.
 	// Mount decides the first position (restore or show), so neither effect below acts on the initial values.
 	let reported = untrack(() => ui.group);
@@ -182,34 +200,74 @@
 	const making = $derived(
 		new Set(gens.filter((x) => x.draft.rigId === doc.id).map((x) => itemKey(x.input)))
 	);
-	const sections = $derived(
-		GROUPS.map((g) => {
-			const items = m ? m.items.filter((i) => g.slots.includes(i.slot)) : [];
-			const pending = gens.filter(
-				(x) => x.draft.rigId === doc.id && g.slots.includes(x.input.slot)
-			);
+	/** The hand a category holds with, from its own definition (a built-in that holds nothing yet uses its default). */
+	const sideOf = (key: string) => {
+		const def = m && slotDef(m, key);
+		return def ? handSide({ slots: [def] } as Manifest, key) : undefined;
+	};
+	const own = $derived(
+		(m ? shownCategories(m, busySlots(m)) : []).map((c) => {
+			const key = c.key,
+				side = sideOf(key);
+			const items = m ? m.items.filter((i) => i.slot === key) : [];
+			const pending = gens.filter((x) => x.draft.rigId === doc.id && x.input.slot === key);
 			const others = shared.items.filter(
-				(x) => g.slots.includes(x.item.slot) && (x.fit !== 'remake' || !making.has(itemKey(x.item)))
+				(x) => x.item.slot === key && (x.fit !== 'remake' || !making.has(itemKey(x.item)))
 			);
 			return {
-				g,
-				label: groupLabel(g.id),
+				key,
+				label: c.label,
 				items,
 				pending,
 				others,
-				worn: items.some((i) => doc.items[i.slot] === i.id) || g.slots.some((s) => !!doc.drafts[s]),
-				choices: m ? groupRandomChoices(g.id).length : 0,
+				worn: items.some((i) => doc.items[i.slot] === i.id) || !!doc.drafts[key],
+				choices: m ? groupRandomChoices(key).length : 0,
 				// a two-handed item worn in the other hand holds this one too
-				holder: m
-					? g.slots
-							.filter((slot) => OTHER_HAND[slot])
-							.map((slot) =>
-								m.items.find((i) => i.slot === OTHER_HAND[slot] && view.items[i.slot] === i.id)
+				holder:
+					m && side
+						? m.items.find(
+								(i) =>
+									view.items[i.slot] === i.id &&
+									!!sideOf(i.slot) &&
+									sideOf(i.slot) !== side &&
+									twoHanded(m, i)
 							)
-							.find((i) => !!i && twoHanded(m, i))
-					: undefined
+						: undefined,
+				fromOthers: ''
 			};
 		})
+	);
+	/** Other characters' items in their own categories this character doesn't have: listed under the source's name, so they
+	 *  can be worn. Wearing one adds the category here (copySlotPlan); until then it is not part of this character. */
+	const fromOthers = $derived.by(() => {
+		if (!m) return [];
+		const known = new Set(categories(m).map((c) => c.key));
+		const groups: Record<string, SharedItem[]> = {};
+		for (const x of shared.items) {
+			if (known.has(x.item.slot) || x.item.slot === 'body') continue;
+			// One that can't be worn here would only offer making it, in a category this character doesn't have.
+			if (x.fit === 'remake') continue;
+			(groups[x.item.slot] ??= []).push(x);
+		}
+		return Object.entries(groups).map(([key, others]) => {
+			const names = [...new Set(others.map((x) => x.sourceName))];
+			return {
+				key,
+				label: others[0].source.slots.find((s) => s.id === key)?.label ?? key,
+				items: [] as Item[],
+				pending: [] as typeof gens,
+				others,
+				worn: false,
+				choices: 0,
+				holder: undefined as Item | undefined,
+				fromOthers: `From ${names.join(', ')}. Wearing an item adds this category to ${m.name}.`
+			};
+		});
+	});
+	const sections = $derived([...own, ...fromOthers]);
+	/** This character's slots Wardrobe doesn't show, listed under Not shown at the bottom. */
+	const notShown = $derived(
+		m ? categories(m).filter((c) => !own.some((s) => s.key === c.key)) : []
 	);
 	/** Every corner icon another character's item shows here, each with the words its tooltip and ⋮ menu give. */
 	function sharedMarks(x: SharedItem): Mark[] {
@@ -260,9 +318,11 @@
 		// A category is current once its section reaches the bottom of the sticky header.
 		const head = list.querySelector<HTMLElement>('.bu-section-head');
 		const top = list.getBoundingClientRect().top + (head?.offsetHeight ?? 0);
-		let current = GROUPS[0].id;
+		let current = sections[0]?.key ?? ui.group;
 		for (const el of list.querySelectorAll<HTMLElement>('[data-group]'))
 			if (el.getBoundingClientRect().top <= top) current = el.dataset.group!;
+		const notShownSection = list.querySelector<HTMLElement>('.not-shown');
+		notShownCurrent = !!notShownSection && notShownSection.getBoundingClientRect().top <= top;
 		if (current !== ui.group) {
 			reported = current;
 			ui.group = current;
@@ -270,14 +330,41 @@
 		remember();
 	}
 	const scrolled = () => (spyFrame ||= requestAnimationFrame(spy));
+	let previousOrder = '';
+	let restoreAnchor: { element: HTMLElement; top: number; key: string } | null = null;
+	$effect.pre(() => {
+		const order = own.map((slot) => slot.key).join('\0');
+		const changed = previousOrder && order !== previousOrder;
+		previousOrder = order;
+		const anchor = restoreAnchor;
+		restoreAnchor = null;
+		if (!changed || !list || untrack(() => ui.group !== reported)) return;
+		const top = list.scrollTop;
+		void tick().then(() => {
+			if (!list) return;
+			const element = anchor?.element.isConnected
+				? anchor.element
+				: anchor &&
+					list.querySelector<HTMLElement>(`[data-slot-button="${CSS.escape(anchor.key)}"]`);
+			list.scrollTo({
+				top:
+					anchor && element
+						? list.scrollTop + element.getBoundingClientRect().top - anchor.top
+						: top,
+				behavior: 'instant'
+			});
+			spy();
+		});
+	});
 	async function show(id: string, instant = false) {
 		const section = list?.querySelector<HTMLElement>(`[data-group="${CSS.escape(id)}"]`);
 		if (!list || !section) return;
+		notShownCurrent = false;
 		reported = id;
 		ui.group = id;
 		if (instant) {
 			list.scrollTop =
-				id === GROUPS[0].id
+				id === sections[0]?.key
 					? 0
 					: list.scrollTop +
 						section.getBoundingClientRect().top -
@@ -345,13 +432,19 @@
 		// Keep the current slot visible in a rail that scrolls.
 		const id = ui.group;
 		rail
-			?.querySelector(`[data-rail="${CSS.escape(id)}"]`)
+			?.querySelector(notShownCurrent ? '[data-not-shown]' : `[data-rail="${CSS.escape(id)}"]`)
 			?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 	});
+	$effect(() => {
+		void sections;
+		void notShown.length;
+		void notShownOpen;
+		const last =
+			list?.querySelector<HTMLElement>('.not-shown') ??
+			list?.querySelector<HTMLElement>('section[data-group]:last-of-type');
+		return list && last ? watchListSpacer(list, last, (height) => (spacer = height)) : undefined;
+	});
 	onMount(() => {
-		// Room under the last category so tapping its slot can still bring it to the top: sized before the first scroll.
-		const last = list?.querySelector<HTMLElement>('[data-group]:last-of-type');
-		const unwatch = list && last ? watchListSpacer(list, last, (h) => (spacer = h)) : undefined;
 		const group = ui.group;
 		const open = ui.wardrobeOpenRevision;
 		void tick().then(() => {
@@ -365,9 +458,9 @@
 				if (tile?.closest(`[data-group="${CSS.escape(group)}"]`) && reveal(ui.selected))
 					revealed = { open, key: ui.selected };
 			}
+			spy();
 		});
 		return () => {
-			unwatch?.();
 			cancelAnimationFrame(spyFrame);
 		};
 	});
@@ -387,6 +480,264 @@
 		io.observe(node);
 		return () => io.disconnect();
 	};
+
+	// ---------- slots: each header opens its slot's menu and drags to reorder; Not shown lists the rest ----------
+	let announce = $state('');
+	let slotMenu = $state<HTMLElement>();
+	let slotFor = $state(''),
+		slotMenuOpen = $state(false),
+		notShownOpen = $state(false);
+	const slotAt = $derived(own.findIndex((s) => s.key === slotFor));
+	const slotEntry = $derived(
+		own.find((slot) => slot.key === slotFor) ?? notShown.find((slot) => slot.key === slotFor)
+	);
+	const slotCustom = $derived(!!m && categories(m).some((c) => c.key === slotFor && c.custom));
+	/** Why a slot can't be hidden now (it holds items or attempts), or '' when it is empty. */
+	function hideBlock(key: string, label: string) {
+		const use = slotUseHere(key);
+		return isEmpty(use)
+			? ''
+			: `${label} has ${useText(use)}. Only empty slots can be hidden${use.stopped ? '; dismiss stopped attempts in Activity first' : ''}.`;
+	}
+	const slotHideBlock = $derived(slotAt >= 0 ? hideBlock(slotFor, own[slotAt].label) : '');
+	// A slot gone from the list (hidden or deleted elsewhere, undo) closes its menu rather than act on a ghost.
+	$effect(() => {
+		if (slotMenuOpen && !slotEntry) slotMenu?.hidePopover();
+	});
+	const closeSlotMenu = () => slotMenu?.hidePopover();
+	function openSlotMenu(key: string, element: HTMLElement) {
+		closeSlotMenu();
+		slotFor = key;
+		element.focus({ preventScroll: true });
+		slotMenu?.showPopover({ source: element });
+	}
+	async function settle(key: string) {
+		await tick();
+		spy();
+		const button = list?.querySelector<HTMLElement>(`[data-slot-button="${CSS.escape(key)}"]`);
+		const box = list?.getBoundingClientRect();
+		const rect = button?.getBoundingClientRect();
+		const visible = box && rect && rect.top >= box.top && rect.bottom <= box.bottom;
+		const focus = visible
+			? button
+			: list?.querySelector<HTMLElement>(`[data-slot-button="${CSS.escape(ui.group)}"]`);
+		focus?.focus({ preventScroll: true });
+	}
+	function moveTo(key: string, label: string, to: number) {
+		try {
+			moveSlot(key, to);
+		} catch (e) {
+			toast((e as Error).message);
+			return;
+		}
+		announce = `${label} moved to position ${to + 1} of ${own.length}.`;
+		void settle(key);
+	}
+	async function hide(key: string, label: string) {
+		if (hideBlock(key, label)) return;
+		closeSlotMenu();
+		const problem = await hideSlot(key).catch((e: Error) => e.message);
+		if (problem) {
+			toast(problem);
+			return;
+		}
+		announce = `${label} is not shown. It is listed under Not shown.`;
+		await tick();
+		list?.querySelector<HTMLElement>('.not-shown-toggle')?.focus({ preventScroll: true });
+	}
+	async function showHidden(key: string, label: string, to?: number) {
+		const index = notShown.findIndex((slot) => slot.key === key);
+		const next = notShown[index + 1]?.key ?? notShown[index - 1]?.key;
+		const anchor = to === undefined && list?.querySelector<HTMLElement>('.not-shown-toggle');
+		if (anchor && list) {
+			list.scrollTo({ top: list.scrollTop, behavior: 'instant' });
+			restoreAnchor = { element: anchor, top: anchor.getBoundingClientRect().top, key };
+		}
+		try {
+			if (to === undefined) showSlot(key);
+			else showSlotAt(key, to);
+		} catch (e) {
+			restoreAnchor = null;
+			toast((e as Error).message);
+			return;
+		}
+		await tick();
+		const at = own.findIndex((s) => s.key === key);
+		announce = `${label} is shown at position ${at + 1} of ${own.length}.`;
+		if (to !== undefined) void settle(key);
+		else {
+			const focus = next
+				? list?.querySelector<HTMLElement>(`[data-show-slot="${CSS.escape(next)}"]`)
+				: list?.querySelector<HTMLElement>(`[data-slot-button="${CSS.escape(key)}"]`);
+			focus?.focus({ preventScroll: true });
+		}
+	}
+	async function toggleNotShown() {
+		const top = list?.scrollTop;
+		notShownOpen = !notShownOpen;
+		await tick();
+		if (list && top !== undefined) list.scrollTo({ top, behavior: 'instant' });
+		spy();
+	}
+	async function showNotShown() {
+		notShownOpen = true;
+		await tick();
+		const section = list?.querySelector<HTMLElement>('.not-shown');
+		if (!list || !section) return;
+		list.scrollTo({ top: section.offsetTop, behavior: 'instant' });
+		suppressSpy = false;
+		spy();
+	}
+	/** Edit a custom slot, or start a custom copy of a built-in, in the Slots sheet. */
+	function openSlotSettings(key: string) {
+		closeSlotMenu();
+		ui.slotTarget = key;
+		ui.sheet = 'slots';
+	}
+	function addSlot() {
+		ui.slotTarget = null;
+		ui.sheet = 'slots';
+	}
+
+	// Dragging (slotDrag recognizes the gesture): the target is the header boundary nearest the pointer, measured on the
+	// sections' own layout rather than where sticky headers appear, and nothing moves until the drop.
+	type DragSource = { key: string; label: string; hidden: boolean; rail?: boolean };
+	const EDGE = 48,
+		MAX_SPEED = 14,
+		/** How far past the first or last shown slot a drop still counts. */
+		SLACK = 24,
+		/** Half the gap between sections, where the drop line sits. */
+		GAP = 8;
+	let drag = $state<{ source: DragSource; line: number | null } | null>(null);
+	let armed = $state('');
+	let pointer = $state({ x: 0, y: 0 });
+	let dragFrame = 0;
+	let dragPreview = $state<HTMLElement>();
+	/** Where a drop at the pointer would land: the shown index, and the drop line's offset in the list. */
+	function dropTarget(source: DragSource): { to: number; line: number } | null {
+		if (source.rail) {
+			if (!rail) return null;
+			const box = rail.getBoundingClientRect();
+			if (
+				pointer.x < box.left ||
+				pointer.x > box.right ||
+				pointer.y < box.top ||
+				pointer.y > box.bottom
+			)
+				return null;
+			const tabs = [...rail.querySelectorAll<HTMLElement>('[data-sortable]')];
+			const fixed = rail.querySelector<HTMLElement>('[data-not-shown]')?.getBoundingClientRect();
+			if (fixed && pointer.y >= fixed.top) return null;
+			const last = tabs.at(-1)?.getBoundingClientRect();
+			if (!last || pointer.y > last.bottom + SLACK) return null;
+			const gap = tabs.findIndex((tab) => {
+				const rect = tab.getBoundingClientRect();
+				return pointer.y < rect.top + rect.height / 2;
+			});
+			const index = gap < 0 ? tabs.length : gap;
+			const from = own.findIndex((slot) => slot.key === source.key);
+			if (from < 0 || index === from || index === from + 1) return null;
+			const line =
+				(tabs[index]?.getBoundingClientRect().top ?? last.bottom) - box.top + rail.scrollTop;
+			return {
+				to: index < from ? index : index - 1,
+				line: Math.max(2, line - (index === tabs.length ? 2 : 0))
+			};
+		}
+		if (!list) return null;
+		const box = list.getBoundingClientRect(),
+			{ x, y } = pointer;
+		if (x < box.left || x > box.right || y < box.top || y > box.bottom) return null;
+		const at = y - box.top + list.scrollTop;
+		const excluded = list.querySelector<HTMLElement>('.not-shown');
+		if (excluded && at >= excluded.offsetTop) return null;
+		for (const section of list.querySelectorAll<HTMLElement>('section:not([data-own])'))
+			if (at >= section.offsetTop && at <= section.offsetTop + section.offsetHeight) return null;
+		const shown = [...list.querySelectorAll<HTMLElement>('section[data-own]')];
+		const bounds = shown.map((el) => el.offsetTop);
+		const last = shown.at(-1);
+		const end = last
+			? last.offsetTop + last.offsetHeight
+			: (list.querySelector<HTMLElement>('.not-shown')?.offsetTop ?? list.scrollHeight);
+		if (last) bounds.push(end);
+		else bounds.push(0);
+		if (at < bounds[0] - SLACK || at > end + SLACK) return null;
+		let gap = 0;
+		bounds.forEach((b, i) => {
+			if (Math.abs(b - at) < Math.abs(bounds[gap] - at)) gap = i;
+		});
+		if (!last) gap = 0;
+		const line = gap ? bounds[gap] - GAP : bounds[0] + 2;
+		if (source.hidden) return { to: gap, line };
+		const from = own.findIndex((s) => s.key === source.key);
+		if (from < 0 || gap === from || gap === from + 1) return null;
+		return { to: gap < from ? gap : gap - 1, line };
+	}
+	function dragStep() {
+		if (!drag || !list) return;
+		const surface = drag.source.rail ? rail : list;
+		if (!surface) return;
+		const box = surface.getBoundingClientRect(),
+			{ x, y } = pointer;
+		// Continuous edge scroll: every frame while the pointer rests near (or past) an edge over the list.
+		if (x >= box.left && x <= box.right) {
+			const speed =
+				y < box.top + EDGE
+					? -MAX_SPEED * Math.min(1, (box.top + EDGE - y) / EDGE)
+					: y > box.bottom - EDGE
+						? MAX_SPEED * Math.min(1, (y - (box.bottom - EDGE)) / EDGE)
+						: 0;
+			if (speed) surface.scrollTop += speed;
+		}
+		drag.line = dropTarget(drag.source)?.line ?? null;
+		dragFrame = requestAnimationFrame(dragStep);
+	}
+	function dragOptions(source: DragSource) {
+		return {
+			armed: (value: boolean) => {
+				if (value) armed = source.key;
+				else if (armed === source.key) armed = '';
+			},
+			start: () => {
+				armed = '';
+				closeSlotMenu();
+				// Stop a smooth scroll still bringing a slot to the top; the drag scrolls the list from here.
+				list?.scrollTo({ top: list.scrollTop, behavior: 'instant' });
+				drag = { source, line: null };
+				void tick().then(() => {
+					if (drag) dragPreview?.showPopover();
+				});
+				announce = `Dragging ${source.label}. Drop it between slots in the ${source.rail ? 'navigation rail' : 'list'}; Escape cancels.`;
+				cancelAnimationFrame(dragFrame);
+				dragFrame = requestAnimationFrame(dragStep);
+			},
+			move: (x: number, y: number) => {
+				pointer = { x, y };
+			},
+			end: (commit: boolean) => {
+				cancelAnimationFrame(dragFrame);
+				const target = commit && drag ? dropTarget(drag.source) : null;
+				dragPreview?.hidePopover();
+				drag = null;
+				armed = '';
+				if (!target) {
+					announce = commit ? `${source.label} stays where it was.` : 'Drag canceled.';
+					return;
+				}
+				if (source.hidden) void showHidden(source.key, source.label, target.to);
+				else {
+					moveTo(source.key, source.label, target.to);
+					if (source.rail)
+						void tick().then(() =>
+							rail
+								?.querySelector<HTMLElement>(`[data-rail="${CSS.escape(source.key)}"]`)
+								?.focus({ preventScroll: true })
+						);
+				}
+			}
+		};
+	}
+	onMount(() => () => cancelAnimationFrame(dragFrame));
 </script>
 
 {#if m && view.project}
@@ -398,55 +749,101 @@
 			onscroll={scrolled}
 			{@attach stickyFade({ inside: 10, outside: 10 })}
 		>
-			{#each sections as s (s.g.id)}
-				{@const g = s.g}
+			{#each sections as s (s.key)}
 				{@const lower = s.label.toLowerCase()}
-				{@const count = s.items.length + s.pending.length}
+				{@const count = s.fromOthers ? s.others.length : s.items.length + s.pending.length}
 				<section
 					class="slot-section"
-					data-group={g.id}
-					id={sectionId(g.id)}
-					aria-labelledby="{sectionId(g.id)}-title"
+					data-group={s.key}
+					data-own={!s.fromOthers || undefined}
+					id={sectionId(s.key)}
+					aria-labelledby="{sectionId(s.key)}-title"
 				>
-					<div class="bu-section-head" data-current={ui.group === g.id || undefined}>
-						<GroupIcon group={g.id} size={16} />
-						<h3 class="bu-section-title" id="{sectionId(g.id)}-title">{s.label}</h3>
-						<span class="bu-section-count"
-							>{count}<span class="sr">{` ${count === 1 ? 'item' : 'items'}`}</span></span
-						>
-						<button
-							class="bu-action section-action"
-							data-variant="quiet"
-							aria-label="Random {lower} item"
-							title="Random {lower} item"
-							disabled={!s.choices}
-							onclick={() => randomizeGroup(g.id)}><Shuffle size={16} /></button
-						>
-						<button
-							class="bu-action section-action section-add"
-							data-variant="quiet"
-							aria-label="New {lower} item"
-							title="New {lower} item"
-							onclick={() => openNewItem(g.id)}><Plus size={18} /></button
-						>
+					<div
+						class="bu-section-head"
+						data-current={(!notShownCurrent && ui.group === s.key) || undefined}
+						data-slot-head={!s.fromOthers || undefined}
+						data-armed={armed === s.key || undefined}
+						data-dragged={drag?.source.key === s.key || undefined}
+					>
+						{#if s.fromOthers}<GroupIcon group={s.key} size={16} />{/if}
+						<h3 class="bu-section-title" id="{sectionId(s.key)}-title" aria-label={s.label}>
+							{#if s.fromOthers}{s.label}{:else}<button
+									class="bu-action section-menu"
+									aria-label={s.label}
+									aria-describedby={`${sectionId(s.key)}-count`}
+									data-slot-button={s.key}
+									popovertarget="slot-menu"
+									aria-haspopup="menu"
+									aria-expanded={slotMenuOpen && slotFor === s.key}
+									onclick={() => {
+										// The same header toggles the menu closed; another header reopens it for its slot.
+										if (slotMenuOpen && slotFor !== s.key) closeSlotMenu();
+										slotFor = s.key;
+									}}
+									oncontextmenu={(e) => {
+										e.preventDefault();
+										if (!armed && !drag && !(slotMenuOpen && slotFor === s.key))
+											e.currentTarget.click();
+									}}
+									{@attach (node) =>
+										untrack(() =>
+											slotDrag(node, dragOptions({ key: s.key, label: s.label, hidden: false }))
+										)}
+									><span class="slot-drag-icon"
+										><GroupIcon group={s.key} size={16} /><GripVertical
+											class="slot-grip"
+											size={16}
+										/></span
+									><span class="section-menu-name">{s.label}</span><span
+										class="bu-section-count"
+										id={`${sectionId(s.key)}-count`}
+										>{count}<span class="sr">{` ${count === 1 ? 'item' : 'items'}`}</span></span
+									></button
+								>{/if}
+						</h3>
+						{#if s.fromOthers}<span class="bu-section-count"
+								>{count}<span class="sr">{` ${count === 1 ? 'item' : 'items'}`}</span></span
+							>{/if}
+						{#if !s.fromOthers}
+							<button
+								class="bu-action section-action"
+								data-variant="quiet"
+								aria-label="Random {lower} item"
+								title="Random {lower} item"
+								disabled={!s.choices}
+								onclick={() => randomizeGroup(s.key)}><Shuffle size={16} /></button
+							>
+							<button
+								class="bu-action section-action section-add"
+								data-variant="quiet"
+								aria-label="New {lower} item"
+								title="New {lower} item"
+								onclick={() => openNewItem(s.key)}><Plus size={18} /></button
+							>
+						{/if}
 					</div>
 					<div class="section-body">
+						{#if s.fromOthers}<p class="section-note faint small">{s.fromOthers}</p>{/if}
 						{#if s.holder}<p class="section-note faint small">
 								Held by {s.holder.name} (two-handed).
 							</p>{/if}
 						<div class="slot-tiles" role="group" aria-label="{s.label} items">
-							<button
-								class="bu-tile item-tile"
-								data-variant="empty"
-								aria-pressed={!s.worn}
-								aria-label="Empty {lower}"
-								onclick={() => clearSlots(g.slots)}
-								><span class="bu-tile-art tile-art" aria-hidden="true"><Ban size={26} /></span><span
-									class="bu-tile-label">Empty</span
-								>{#if !s.worn}<span class="tile-marks" aria-hidden="true"
-										><span class="bu-tile-check" title="Nothing worn here"><Check /></span></span
-									>{/if}</button
-							>
+							{#if !s.fromOthers}
+								<button
+									class="bu-tile item-tile"
+									data-variant="empty"
+									aria-pressed={!s.worn}
+									aria-label="Empty {lower}"
+									onclick={() => clearSlots([s.key])}
+									><span class="bu-tile-art tile-art" aria-hidden="true"><Ban size={26} /></span
+									><span class="bu-tile-label">Empty</span>{#if !s.worn}<span
+											class="tile-marks"
+											aria-hidden="true"
+											><span class="bu-tile-check" title="Nothing worn here"><Check /></span></span
+										>{/if}</button
+								>
+							{/if}
 							{#each s.items as it (it.id)}
 								{@const on = doc.items[it.slot] === it.id && !doc.drafts[it.slot]}
 								{@const marks = marksOf(it)}
@@ -541,7 +938,7 @@
 														box={x.phase === 'running' ? 12 : 40}
 													/>
 												{:else if x.phase === 'failed'}<CircleAlert size={24} />
-												{:else if x.phase !== 'running'}<GroupIcon group={g.id} size={24} />{/if}
+												{:else if x.phase !== 'running'}<GroupIcon group={s.key} size={24} />{/if}
 											</span>
 											{#if x.phase === 'running'}<span
 													class="bu-ring ring generation-ring"
@@ -627,12 +1024,12 @@
 									>
 								</div>
 							{/each}
-							{#if !count}
+							{#if !count && !s.fromOthers}
 								<button
 									class="bu-tile item-tile"
 									data-variant="add"
 									aria-label="New {lower} item"
-									onclick={() => openNewItem(g.id)}
+									onclick={() => openNewItem(s.key)}
 									><span class="bu-tile-art tile-art" aria-hidden="true"><Plus size={26} /></span
 									><span class="bu-tile-label">New</span></button
 								>
@@ -641,12 +1038,178 @@
 					</div>
 				</section>
 			{/each}
+			{#if !own.length}<p class="faint small no-slots">
+					No slots are shown. Show one below, or add a slot.
+				</p>{/if}
+			{#if notShown.length}
+				<div class="not-shown">
+					<button
+						class="bu-action bu-section-head not-shown-toggle"
+						data-current={notShownCurrent || undefined}
+						data-variant="quiet"
+						aria-expanded={notShownOpen}
+						aria-controls="wardrobe-not-shown"
+						onclick={() => void toggleNotShown()}
+						><EyeOff size={16} aria-hidden="true" /><span class="bu-section-title">Not shown</span
+						><span class="bu-section-count not-shown-count">{notShown.length}</span><ChevronRight
+							class="not-shown-chevron"
+							size={16}
+							aria-hidden="true"
+						/></button
+					>
+					<div id="wardrobe-not-shown" hidden={!notShownOpen}>
+						<p class="faint small not-shown-note" id="wardrobe-not-shown-note">
+							Drag a slot or tap its eye.
+						</p>
+						<ul class="not-shown-list" aria-describedby="wardrobe-not-shown-note">
+							{#each notShown as c (c.key)}
+								<li
+									class="not-shown-row"
+									data-armed={armed === c.key || undefined}
+									data-dragged={drag?.source.key === c.key || undefined}
+									{@attach (node) =>
+										untrack(() =>
+											slotDrag(node, {
+												...dragOptions({ key: c.key, label: c.label, hidden: true }),
+												menu: (element) =>
+													openSlotMenu(
+														c.key,
+														element.querySelector<HTMLButtonElement>('[data-show-slot]')!
+													)
+											})
+										)}
+								>
+									<button
+										class="bu-action not-shown-slot"
+										aria-label="Show {c.label}"
+										data-show-slot={c.key}
+										popovertarget="slot-menu"
+										aria-haspopup="menu"
+										aria-expanded={slotMenuOpen && slotFor === c.key}
+										onclick={(event) => {
+											event.preventDefault();
+											void showHidden(c.key, c.label);
+										}}
+										><span class="slot-drag-icon"
+											><GroupIcon group={c.key} size={18} /><GripVertical
+												class="slot-grip"
+												size={18}
+											/></span
+										>
+										<span class="not-shown-name">{c.label}</span><Eye
+											size={18}
+											aria-hidden="true"
+										/></button
+									>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+			{/if}
 			{#if shared.error}<p class="notice warn small" role="alert">{shared.error}</p>{/if}
 			{#if shared.skipped}<p class="faint small">
 					Some items from other characters couldn’t be read.
 				</p>{/if}
 			<div class="list-spacer" style:height="{spacer}px" aria-hidden="true"></div>
+			{#if drag?.line != null && !drag.source.rail}<div
+					class="bu-separator slot-drop-line"
+					style:top="{drag.line}px"
+					aria-hidden="true"
+				></div>{/if}
 		</div>
+		<div
+			class="bu-popover-anchor slot-drag-preview"
+			data-positioned
+			popover="manual"
+			bind:this={dragPreview}
+			style:left="{pointer.x + 16}px"
+			style:--drag-x="{pointer.x + 16}px"
+			style:top="{Math.max(8, pointer.y - 64)}px"
+			aria-hidden="true"
+		>
+			<div class="bu-popover-surface bu-floating slot-drag-label">
+				<GripVertical size={18} />{drag?.source.label}
+			</div>
+		</div>
+		<!-- One shared slot menu, anchored to the header that opened it (like the item menu). -->
+		<div
+			id="slot-menu"
+			class="menu bu-popover-anchor"
+			data-placement="bottom-start"
+			popover
+			role="menu"
+			aria-label={slotEntry ? `${slotEntry.label} slot` : 'Slot'}
+			bind:this={slotMenu}
+			ontoggle={(e) => {
+				slotMenuOpen = e.newState === 'open';
+				popoverFocus(e);
+			}}
+		>
+			<PopoverArrow />
+			<div class="menu-surface bu-popover-surface bu-floating">
+				{#if slotEntry}
+					{@const s = slotEntry}
+					{#if slotAt < 0}
+						<button
+							class="row"
+							data-variant="quiet"
+							role="menuitem"
+							onclick={() => {
+								closeSlotMenu();
+								void showHidden(s.key, s.label);
+							}}><Eye size={16} aria-hidden="true" />Show slot</button
+						>
+					{:else}
+						<button
+							class="row"
+							data-variant="quiet"
+							role="menuitem"
+							aria-disabled={slotAt === 0 || undefined}
+							onclick={() => {
+								if (slotAt === 0) return;
+								closeSlotMenu();
+								moveTo(s.key, s.label, slotAt - 1);
+							}}><ArrowUp size={16} aria-hidden="true" />Move up</button
+						>
+						<button
+							class="row"
+							data-variant="quiet"
+							role="menuitem"
+							aria-disabled={slotAt === own.length - 1 || undefined}
+							onclick={() => {
+								if (slotAt === own.length - 1) return;
+								closeSlotMenu();
+								moveTo(s.key, s.label, slotAt + 1);
+							}}><ArrowDown size={16} aria-hidden="true" />Move down</button
+						>
+						<button
+							class="row"
+							data-variant="quiet"
+							role="menuitem"
+							aria-disabled={!!slotHideBlock || undefined}
+							onclick={() => void hide(s.key, s.label)}
+							><EyeOff size={16} aria-hidden="true" /><span class="row-name"
+								>Hide slot{#if slotHideBlock}<small class="row-reason">{slotHideBlock}</small
+									>{/if}</span
+							></button
+						>
+						<hr />
+					{/if}
+					<button
+						class="row"
+						data-variant="quiet"
+						role="menuitem"
+						onclick={() => openSlotSettings(s.key)}
+						>{#if slotCustom}<Pencil size={16} aria-hidden="true" />Edit slot…{:else}<CopyPlus
+								size={16}
+								aria-hidden="true"
+							/>Make a custom copy…{/if}</button
+					>
+				{/if}
+			</div>
+		</div>
+		<p class="sr" aria-live="polite">{announce}</p>
 		<!-- Always mounted: a ⋮ click opens it in the same task, before the chosen item renders into it. -->
 		<ItemMenu
 			id={menuFor}
@@ -660,32 +1223,87 @@
 			bind:open={menuOpen}
 		/>
 		<!-- Navigation over the list's sections (not tabs): arrows move along it like the other rails (Studio.svelte). -->
-		<nav
-			class="slot-rail bu-scroll-hidden bu-edge-fade"
-			aria-label="Equipment slots"
-			bind:this={rail}
-			{@attach edgeFade({ axis: 'y', size: 24 })}
-		>
-			<ul class="slot-rail-list" data-arrows>
-				{#each sections as s (s.g.id)}
-					<li>
-						<button
-							class="bu-action slot-tab"
-							data-variant="rail"
-							data-rail={s.g.id}
-							data-filled={s.worn || undefined}
-							aria-current={ui.group === s.g.id ? 'true' : undefined}
-							aria-label={s.worn ? `${s.label}, equipped` : s.label}
-							tabindex={ui.group === s.g.id ? 0 : -1}
-							onclick={() => show(s.g.id)}
-							><GroupIcon group={s.g.id} size={22} /><span class="bu-rail-label">{s.label}</span><i
-								class="bu-rail-dot"
-								aria-hidden="true"
-							></i></button
-						>
-					</li>
-				{/each}
-			</ul>
-		</nav>
+		<div class="slot-rail-column">
+			<nav
+				class="slot-rail bu-scroll-hidden bu-edge-fade"
+				aria-label="Equipment slots"
+				bind:this={rail}
+				{@attach edgeFade({ axis: 'y', size: 24 })}
+			>
+				<ul class="slot-rail-list" data-arrows>
+					{#each sections as s (s.key)}
+						<li>
+							<button
+								class="bu-action slot-tab"
+								data-variant="rail"
+								data-rail={s.key}
+								popovertarget={!s.fromOthers ? 'slot-menu' : undefined}
+								data-sortable={!s.fromOthers || undefined}
+								data-armed={armed === s.key || undefined}
+								data-dragged={drag?.source.key === s.key || undefined}
+								data-filled={s.worn || undefined}
+								aria-current={!notShownCurrent && ui.group === s.key ? 'true' : undefined}
+								aria-label={s.worn ? `${s.label}, equipped` : s.label}
+								aria-haspopup={!s.fromOthers ? 'menu' : undefined}
+								aria-expanded={!s.fromOthers ? slotMenuOpen && slotFor === s.key : undefined}
+								tabindex={!notShownCurrent && ui.group === s.key ? 0 : -1}
+								onclick={(event) => {
+									event.preventDefault();
+									show(s.key);
+								}}
+								{@attach (node) =>
+									s.fromOthers
+										? undefined
+										: untrack(() =>
+												slotDrag(node, {
+													...dragOptions({ key: s.key, label: s.label, hidden: false, rail: true }),
+													menu: (element) => openSlotMenu(s.key, element)
+												})
+											)}
+								><span class="slot-drag-icon"
+									><GroupIcon group={s.key} size={22} /><GripVertical
+										class="slot-grip"
+										size={22}
+									/></span
+								><span class="bu-rail-label">{s.label}</span><i
+									class="bu-rail-dot"
+									aria-hidden="true"
+								></i></button
+							>
+						</li>
+					{/each}
+					{#if notShown.length}<li>
+							<button
+								class="bu-action slot-tab"
+								data-variant="rail"
+								data-not-shown
+								aria-current={notShownCurrent ? 'true' : undefined}
+								tabindex={notShownCurrent || !sections.some((slot) => slot.key === ui.group)
+									? 0
+									: -1}
+								aria-label="Not shown, {notShown.length} slots"
+								onclick={() => void showNotShown()}
+								><EyeOff size={22} aria-hidden="true" /><span class="bu-rail-label">Not shown</span
+								></button
+							>
+						</li>{/if}
+				</ul>
+				{#if drag?.source.rail && drag.line != null}<div
+						class="bu-separator slot-drop-line"
+						style:top="{drag.line}px"
+						aria-hidden="true"
+					></div>{/if}
+			</nav>
+			<!-- Outside the scrolling tabs, so it never scrolls away. -->
+			<div class="slot-rail-footer">
+				<button
+					class="bu-action slot-tab slot-add"
+					data-variant="rail"
+					aria-haspopup="dialog"
+					onclick={addSlot}
+					><Plus size={22} aria-hidden="true" /><span class="bu-rail-label">Add slot</span></button
+				>
+			</div>
+		</div>
 	</div>
 {/if}

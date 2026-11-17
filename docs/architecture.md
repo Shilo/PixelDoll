@@ -386,9 +386,17 @@ Same requests and ledger as before; only the order of the calls and what the Stu
 
 ## 5. Slots, z ladder, hides
 
+`app/src/lib/items/slots.ts` owns the built-in catalog and generation profiles. A character's `manifest.slots` stores
+its actual definitions in render tie order; Wardrobe labels, visibility and browsing order are independent metadata.
+The frozen `body` is Base, not a Wardrobe category. Body clothing keeps the key `torso_inner`, above Legs. Outerwear and
+Underwear each accept one universal garment or coordinated set; extra independent pieces require custom categories.
+Blank custom names use Accessory and default to worn/neck at z55, above basic clothing and below Outerwear.
+See the [slot implementation contract](design/2026-11-16-slot-system/plan.md) for the shown and not-shown defaults.
+
 | Slot | Class | Anchor | fg z | bg z | Default hides |
 |---|---|---|---|---|---|
 | `body` | base | — | 10 | — | — |
+| `underwear` | worn | hip | 15 | none | none |
 | `feet` | worn | foot | 20 | — | — |
 | `legs` | worn | hip | 30 | — | — |
 | `torso_inner` | worn | neck | 40 | — | — |

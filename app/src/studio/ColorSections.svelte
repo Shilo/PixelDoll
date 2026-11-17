@@ -4,7 +4,6 @@
 	import { stickyFade } from '@shilo/bronze-ui/svelte';
 	import Colors from './Colors.svelte';
 	import GroupIcon from './GroupIcon.svelte';
-	import { groupOf } from './model.ts';
 	import { watchListSpacer } from './listSpacer.ts';
 	import { ui, doc, store, randomizeColors, resetColors } from './state.svelte.ts';
 	import { PersonStanding, RotateCcw, Shuffle } from './icons.ts';
@@ -61,7 +60,7 @@
 		<section class="slot-section" data-owner={s.it.id} aria-labelledby="colors-{s.it.id}">
 			<div class="bu-section-head">
 				{#if s.base}<PersonStanding size={16} aria-hidden="true" />{:else}<GroupIcon
-						group={groupOf(s.it.slot).id}
+						group={s.it.slot}
 						size={16}
 					/>{/if}
 				<h3 class="bu-section-title" id="colors-{s.it.id}">{s.name}</h3>

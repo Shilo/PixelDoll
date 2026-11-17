@@ -1,6 +1,7 @@
 /// <reference types="svelte" />
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { MoveSpec, Progress } from '../../src/studio/create.ts';
+import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { readFileSync } from 'node:fs';
 import { equipmentFixture } from './equipment-fixture.ts';
 
@@ -2148,6 +2149,9 @@ describe('optional review', () => {
 			id: 'helm0',
 			name: 'New helm'
 		});
+		mocks.update.mockImplementation(async (_store, _id, update) =>
+			update({ id: 'project', manifest: structuredClone(saved) })
+		);
 		mocks.source.mockResolvedValue({
 			project: { manifest: saved, images: new Map() },
 			current: { items: { body: 'base' }, variants: {} }
@@ -2896,6 +2900,34 @@ test('review drafts re-checked together after a reload all keep their results', 
 	}
 });
 
+test('showing a slot at a drop position is one undo step and preserves drawing order', async () => {
+	const state = await import('../../src/studio/state.svelte.ts');
+	const { shownCategories } = await import('../../src/studio/slots.ts');
+	const manifest: Manifest = fixtureManifest();
+	state.store.project = { manifest, images: new Map() };
+	state.doc.id = 'fixture:s2';
+	state.doc.items = { body: 'base' };
+	state.doc.undo = [];
+	const order = manifest.slots.map((slot) => ({ id: slot.id, z: slot.z }));
+	expect(
+		shownCategories(manifest, state.busySlots()).some((slot) => slot.key === 'underwear')
+	).toBe(false);
+	state.showSlotAt('underwear', 1);
+	expect(shownCategories(manifest, state.busySlots())[1].key).toBe('underwear');
+	expect(state.doc.undo.map((step) => step.label)).toEqual(['Show Underwear']);
+	expect(
+		manifest.slots
+			.filter((slot) => order.some((before) => before.id === slot.id))
+			.map((slot) => ({ id: slot.id, z: slot.z }))
+	).toEqual(order);
+	state.undo();
+	expect(
+		shownCategories(state.store.project!.manifest, state.busySlots()).some(
+			(slot) => slot.key === 'underwear'
+		)
+	).toBe(false);
+});
+
 test('category Random switches to another item of that category in its own slot, as one named undo step', async () => {
 	const s = await import('../../src/studio/state.svelte.ts');
 	s.store.project = { manifest: fixtureManifest(), images: new Map() };
@@ -2904,16 +2936,16 @@ test('category Random switches to another item of that category in its own slot,
 	s.doc.variants = {};
 	s.doc.undo = [];
 	// Head holds a helmet (worn) and a wizard hat: only the hat is a choice.
-	expect(s.groupRandomChoices('Head').map((i) => i.id)).toEqual(['hat_wizard']);
-	s.randomizeGroup('Head');
+	expect(s.groupRandomChoices('head').map((i) => i.id)).toEqual(['hat_wizard']);
+	s.randomizeGroup('head');
 	expect(s.doc.items).toEqual({ body: 'base', head: 'hat_wizard', torso_inner: 'vest_leather' });
 	expect(s.ui.selected).toBe('hat_wizard');
 	expect(s.doc.undo.map((u) => u.label)).toEqual(['Random head item']);
-	// The visible category name is used: the Body group reads as Chest.
+	// The visible category name is used for the permanent torso_inner key.
 	s.doc.items = { body: 'base' };
-	s.randomizeGroup('Body');
+	s.randomizeGroup('torso_inner');
 	expect(s.doc.items).toEqual({ body: 'base', torso_inner: 'vest_leather' });
-	expect(s.doc.undo.at(-1)!.label).toBe('Random chest item');
+	expect(s.doc.undo.at(-1)!.label).toBe('Random body item');
 });
 
 test('category Random re-rolls the colors when the only item of that category is already worn', async () => {
@@ -2927,14 +2959,14 @@ test('category Random re-rolls the colors when the only item of that category is
 	s.doc.items = { body: 'base', back: 'cape_red' };
 	s.doc.variants = { cloth: 'crimson' };
 	s.doc.undo = [];
-	expect(s.groupRandomChoices('Back').map((i) => i.id)).toEqual(['cape_red']);
-	s.randomizeGroup('Back');
+	expect(s.groupRandomChoices('back').map((i) => i.id)).toEqual(['cape_red']);
+	s.randomizeGroup('back');
 	expect(s.doc.items).toEqual({ body: 'base', back: 'cape_red' });
 	expect(s.doc.variants.cloth).toBeDefined();
 	expect(s.doc.variants.cloth).not.toBe('crimson');
 	expect(s.doc.undo.map((u) => u.label)).toEqual(['Random back item']);
 	// Without colors to change, or with no items at all, there is nothing to randomize.
 	s.store.project!.manifest.materials = [];
-	expect(s.groupRandomChoices('Back')).toEqual([]);
-	expect(s.groupRandomChoices('Face')).toEqual([]);
+	expect(s.groupRandomChoices('back')).toEqual([]);
+	expect(s.groupRandomChoices('face_acc')).toEqual([]);
 });

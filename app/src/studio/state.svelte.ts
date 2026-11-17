@@ -4,6 +4,7 @@
 import {
 	applyDress,
 	dressOf,
+	mergeSlotEdits,
 	openSource,
 	openFixture,
 	saveDress,
@@ -20,8 +21,20 @@ import {
 	recolor,
 	storeVariants
 } from '../lib/dress/dress.ts';
-import { drawList, OTHER_HAND, settleHands, twoHanded } from '../lib/compose/compose.ts';
-import { deleteItem, deleteOutdated, listProjects, loadProject } from '../lib/store/project.ts';
+import {
+	drawList,
+	handSide,
+	oppositeHands,
+	settleHands,
+	twoHanded
+} from '../lib/compose/compose.ts';
+import {
+	deleteItem,
+	deleteItems,
+	deleteOutdated,
+	listProjects,
+	loadProject
+} from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import type {
 	CellKey,
@@ -30,6 +43,7 @@ import type {
 	Manifest,
 	Preset,
 	Project,
+	Slot,
 	ZOverride
 } from '../lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../lib/store/manifest.ts';
@@ -48,7 +62,26 @@ import type {
 	MoveSpec,
 	Progress
 } from './create.ts';
-import { characterFacts, GROUPS, groupLabel, groupOf, uniqueBy } from './model.ts';
+import { characterFacts, uniqueBy } from './model.ts';
+import {
+	addCustom,
+	applySettings,
+	BASE_KEY,
+	busyReason,
+	categories,
+	changesAttachment,
+	deleteCustom,
+	type DraftRef,
+	moveCategory,
+	type NewSlot,
+	setHidden,
+	type SlotSettings,
+	shownCategories,
+	slotLabel,
+	slotUse,
+	type SlotUse,
+	useText
+} from './slots.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import type { SetupSpec } from './setup.ts';
 import {
@@ -131,7 +164,8 @@ export type SheetId =
 	| 'importPixelLab'
 	| 'delete'
 	| 'details'
-	| 'setup';
+	| 'setup'
+	| 'slots';
 const sizeNow = (): Size => {
 	const w = innerWidth,
 		h = innerHeight;
@@ -148,14 +182,15 @@ export const ui = $state({
 	welcome: !lsGet(K.welcomed),
 	tab: 'wardrobe' as 'wardrobe' | 'colors' | 'outfits' | 'moves', // phone
 	colorsFocus: '', // item id whose Colors section the Colors tab scrolls to once (Recolor in item details)
-	group: 'Head',
+	group: 'head', // a Wardrobe category: its slot key
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
 	sheet: null as SheetId,
+	slotTarget: null as string | null,
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
 	details: '', // the character the Details sheet is for
-	newItem: { group: 'Head', slot: '', prompt: '', name: '' } as {
+	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		group: string;
 		slot: string;
 		prompt: string;
@@ -382,6 +417,13 @@ class Store {
 	results = $state.raw<Record<string, ItemResult | null>>({});
 }
 export const store = new Store();
+/** An undo or redo step: the dress state to go back to, and the slot definitions (JSON) right after the step, so applying
+ *  it reverts only the step's own slot changes (mergeSlotEdits) and keeps slots changed since by other steps or tabs. */
+interface UndoStep {
+	label: string;
+	snap: string;
+	from?: string;
+}
 export const doc = $state({
 	id: '',
 	loading: true,
@@ -390,8 +432,8 @@ export const doc = $state({
 	items: {} as Preset['items'],
 	variants: {} as Preset['variants'],
 	saved: '',
-	undo: [] as { label: string; snap: string }[],
-	redo: [] as { label: string; snap: string }[],
+	undo: [] as UndoStep[],
+	redo: [] as UndoStep[],
 	/** Worn drafts, slot -> draft id: shown over the outfit, never in doc.items, so autosave, undo, outfits and exports never
 	 *  see a draft. Cleared when a saved item or None takes the slot, on discard and when another character opens. */
 	drafts: {} as Record<string, string>
@@ -415,7 +457,7 @@ class View {
 			? settleHands(
 					m,
 					on,
-					Object.keys(doc.drafts).find((s) => OTHER_HAND[s])
+					Object.keys(doc.drafts).find((s) => handSide(m, s))
 				).items
 			: on;
 	});
@@ -545,6 +587,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (id === doc.id && (edits !== seen || doc.rev !== revision)) return openProject(id, keep);
 		const m = r.project.manifest;
 		const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
+		const savedSlots = structuredClone(m.slots);
 		const unsaved = takeUnsaved(id, m),
 			current = unsaved ?? pr; // replace, never merge: a reset or removal deletes keys
 		if (!quiet) {
@@ -569,6 +612,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 			doc.redo = [];
 		}
 		doc.id = id;
+		slotBase = { id, slots: savedSlots };
 		if (!m.rig.animations.some((a) => a.id === ui.anim))
 			ui.anim = (m.rig.animations.find((a) => a.id === 'walk') ?? m.rig.animations[0]).id;
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
@@ -602,8 +646,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (!quiet) {
 			ui.selected = keep?.wear ?? '';
 			ui.group = ui.selected
-				? groupOf(m.items.find((i) => i.id === ui.selected)!.slot).id
-				: GROUPS[0].id;
+				? m.items.find((i) => i.id === ui.selected)!.slot
+				: (shownCategories(m, busySlots(m))[0]?.key ?? ui.group);
 			ui.wardrobeOpenRevision++;
 		}
 		lsSet(K.last, id);
@@ -644,13 +688,23 @@ const snap = () =>
 			variants: $state.snapshot(doc.variants)
 		})
 	);
-function restore(s: string) {
-	const d = JSON.parse(s) as DressState;
-	applyDress(store.project!.manifest, d);
+const slotsNow = () => JSON.stringify(store.project!.manifest.slots);
+/** Apply an undo or redo step. A slot the step removes stays while it holds items or item attempts (an attempt's own
+ *  definition must not disappear under it), and the person is told. */
+function restore(e: UndoStep) {
+	const d = JSON.parse(e.snap) as DressState,
+		m = store.project!.manifest;
+	const keep = busySlots(m),
+		from = e.from ? (JSON.parse(e.from) as Slot[]) : m.slots,
+		removed = from.filter((s) => !d.slots.some((x) => x.id === s.id));
+	d.slots = mergeSlotEdits(from, d.slots, m.slots, keep);
+	const kept = removed.filter((s) => keep.has(s.id) && d.slots.some((x) => x.id === s.id));
+	applyDress(m, d);
 	doc.items = { ...d.current!.items };
 	doc.variants = { ...d.current!.variants };
 	bump();
 	save();
+	for (const s of kept) toast(`${slotLabel(m, s.id)} stays: it has items or items being made.`);
 }
 /** Every user edit goes through here: undo entry, apply, re-render, autosave. A two-handed item and an item in the other hand
  *  are never kept together: `keepHand` names the hand the edit is about (a whole outfit or look passes the Main hand);
@@ -662,12 +716,16 @@ export function commit(
 	o: { keepHand?: string; quiet?: boolean } = {}
 ): string | undefined {
 	if (!store.project) return;
-	doc.undo = [...doc.undo.slice(-99), { label, snap: snap() }];
+	const step = { label, snap: snap() };
 	doc.redo = [];
 	const before = { ...doc.items };
 	fn();
-	const changed = Object.keys(OTHER_HAND).filter(
-		(s) => doc.items[s] && (doc.items[s] ?? null) !== (before[s] ?? null)
+	doc.undo = [...doc.undo.slice(-99), { ...step, from: slotsNow() }];
+	const changed = Object.keys(doc.items).filter(
+		(s) =>
+			handSide(store.project!.manifest, s) &&
+			doc.items[s] &&
+			(doc.items[s] ?? null) !== (before[s] ?? null)
 	);
 	const hands = settleHands(
 		store.project.manifest,
@@ -677,9 +735,12 @@ export function commit(
 	let note: string | undefined;
 	if (hands.removed) {
 		doc.items = hands.items;
-		note = twoHanded(store.project.manifest, hands.removed)
-			? `Took off ${hands.removed.name} (two-handed)`
-			: `Took off ${hands.removed.name}: ${hands.by!.name} is two-handed`;
+		const removed = hands.removedItems ?? [hands.removed],
+			names = removed.map((it) => it.name).join(', ');
+		note =
+			removed.length === 1 && twoHanded(store.project.manifest, hands.removed)
+				? `Took off ${names} (two-handed)`
+				: `Took off ${names}: ${hands.by!.name} is two-handed`;
 		if (!o.quiet) toast(note);
 	}
 	// a saved item put on or taken off a slot replaces the draft worn there
@@ -698,16 +759,18 @@ function bump() {
 export function undo() {
 	const e = doc.undo.at(-1);
 	if (!e) return;
-	doc.redo = [...doc.redo, { label: e.label, snap: snap() }];
+	const back = snap();
 	doc.undo = doc.undo.slice(0, -1);
-	restore(e.snap);
+	restore($state.snapshot(e));
+	doc.redo = [...doc.redo, { label: e.label, snap: back, from: slotsNow() }];
 }
 export function redo() {
 	const e = doc.redo.at(-1);
 	if (!e) return;
-	doc.undo = [...doc.undo, { label: e.label, snap: snap() }];
+	const back = snap();
 	doc.redo = doc.redo.slice(0, -1);
-	restore(e.snap);
+	restore($state.snapshot(e));
+	doc.undo = [...doc.undo, { label: e.label, snap: back, from: slotsNow() }];
 }
 
 let saveT: ReturnType<typeof setTimeout> | undefined;
@@ -719,6 +782,37 @@ export async function flushSave() {
 	pendingSave = null;
 	if (pending) saving = saving.then(pending);
 	await saving;
+}
+/** The slot definitions the open character's view continues from (its open or last save): a save writes only the slot
+ *  changes made since, so a stale tab's routine save never undoes another tab's category changes. */
+let slotBase: { id: string; slots: Slot[] } | null = null;
+/** Save the dress state with the view's slot changes since slotBase, then continue from what was saved: other tabs' slot
+ *  changes come into the view, and its own changes made meanwhile stay to be saved next. */
+async function saveSlotsAndDress(id: string, m: Manifest, cur: Outfit) {
+	// The view's slots now: a save that finished after this one was scheduled may have brought in others' changes.
+	const here = doc.id === id && store.project ? store.project.manifest : m,
+		mine = structuredClone(here.slots),
+		base = slotBase?.id === id ? slotBase.slots : mine;
+	const keep = new Set(gens.filter((g) => g.draft.rigId === id).map((g) => g.input.slot));
+	if (base.some((s) => !mine.some((x) => x.id === s.id))) {
+		// A removal (an undone or deleted empty category) also spares slots that attempts saved by other tabs use. Unreadable:
+		// the category stays (and comes back into view) rather than risk leaving an attempt without its definition.
+		try {
+			for (const g of await readGens()) if (g.draft.rigId === id) keep.add(g.input.slot);
+		} catch (e) {
+			console.error('saved item attempts', e);
+			for (const s of base) keep.add(s.id);
+		}
+	}
+	const saved = await saveDress(id, { ...m, slots: mine }, cur, { base, keep });
+	if (doc.id !== id || !store.project) return;
+	const live = store.project.manifest,
+		next = mergeSlotEdits(mine, live.slots, saved, busySlots(live));
+	slotBase = { id, slots: saved };
+	if (stableStringify(next) !== stableStringify(live.slots)) {
+		live.slots = next;
+		bump();
+	}
 }
 let edits = 0,
 	savedEdits = 0;
@@ -732,7 +826,7 @@ function save() {
 	pendingSave = async () => {
 		storeVariants(m, cur.variants);
 		try {
-			await saveDress(id, m, cur);
+			await saveSlotsAndDress(id, m, cur);
 			doc.saved = new Date().toLocaleTimeString();
 			if (n === edits) {
 				savedEdits = n;
@@ -755,14 +849,16 @@ function keepUnsaved() {
 	// While another character loads, doc and store.project still describe this one, so its snapshot stays consistent.
 	if (edits === savedEdits || !doc.id || !store.project) return;
 	try {
-		lsSet(unsavedKey(doc.id), snap());
+		const base = slotBase?.id === doc.id ? slotBase.slots : undefined;
+		lsSet(unsavedKey(doc.id), JSON.stringify({ ...JSON.parse(snap()), slotBase: base }));
 	} catch (e) {
 		console.error('unsaved snapshot', e);
 	}
 }
 function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'> | null {
 	try {
-		const d = JSON.parse(lsGet(unsavedKey(id)) ?? 'null') as DressState | null;
+		const d = JSON.parse(lsGet(unsavedKey(id)) ?? 'null') as
+			(DressState & { slotBase?: Slot[] }) | null;
 		// Validate the whole shape first: applyDress changes the manifest in place, so a bad snapshot must not half-apply.
 		const obj = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v);
 		const current = d?.current;
@@ -775,11 +871,18 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 			!Array.isArray(d.itemIds) ||
 			!Array.isArray(d.materials) ||
 			!Array.isArray(d.presets) ||
-			!obj(d.zOverrides) ||
+			!Array.isArray(d.slots) ||
+			(d.slotBase != null && !Array.isArray(d.slotBase)) ||
 			(d.hides != null && !obj(d.hides))
 		)
 			return null;
-		applyDress(m, d); // keeps items added since and never revives removed ones
+		// Only the slot changes the unsaved view made are carried onto the saved ones (none without its starting point).
+		const keep = new Set([
+			...m.items.map((it) => it.slot),
+			...gens.filter((g) => g.draft.rigId === id).map((g) => g.input.slot)
+		]);
+		const slots = d.slotBase ? mergeSlotEdits(d.slotBase, d.slots, m.slots, keep) : m.slots;
+		applyDress(m, { ...d, slots }); // keeps items added since and never revives removed ones
 		// An item deleted since (another tab) is dropped rather than worn as a dangling id.
 		return {
 			items: Object.fromEntries(
@@ -992,12 +1095,11 @@ export function resetColors(matIds?: string[], label = 'Reset colors') {
 		for (const k of matIds ?? Object.keys(doc.variants)) delete doc.variants[k];
 	});
 }
-/** Items a category's Random can switch to: every item of the group except the ones worn now. */
+/** Items a category's Random can switch to: every item of the category except the one worn now. */
 export function groupRandomChoices(groupId: string) {
-	const m = store.project?.manifest,
-		g = GROUPS.find((x) => x.id === groupId);
-	if (!m || !g) return [];
-	const items = m.items.filter((i) => g.slots.includes(i.slot)),
+	const m = store.project?.manifest;
+	if (!m) return [];
+	const items = m.items.filter((i) => i.slot === groupId),
 		others = items.filter((i) => doc.items[i.slot] !== i.id);
 	if (others.length) return others;
 	// Nothing else to switch to: the worn item stays and only its colors re-roll (when it has any).
@@ -1007,9 +1109,8 @@ export function groupRandomChoices(groupId: string) {
  *  only one, just its colors re-roll. One undo step. */
 export function randomizeGroup(groupId: string) {
 	const m = store.project?.manifest,
-		g = GROUPS.find((x) => x.id === groupId),
 		choices = groupRandomChoices(groupId);
-	if (!m || !g || !choices.length) return;
+	if (!m || !choices.length) return;
 	const it = choices[Math.floor(Math.random() * choices.length)];
 	const variants = randomVariants(
 		m,
@@ -1018,8 +1119,7 @@ export function randomizeGroup(groupId: string) {
 		1,
 		doc.variants
 	);
-	commit(`Random ${groupLabel(g.id).toLowerCase()} item`, () => {
-		// A category can wear several layers (an inner and an outer top); the pick replaces only its own slot.
+	commit(`Random ${slotLabel(m, groupId).toLowerCase()} item`, () => {
 		doc.items[it.slot] = it.id;
 		Object.assign(doc.variants, variants);
 	});
@@ -1117,10 +1217,31 @@ export function toggleHide(itemId: string, slot: string) {
 		{ keepHand: it.slot }
 	);
 }
-/** A two-handed item takes both hands: it hides the other hand while worn (the same rule as a hood hiding hair). */
+/** The other hand a held slot conflicts with, as the canonical target its hides name: custom held slots on that side follow
+ *  it (runtime handHides). */
+export const otherHandOf = (m: Manifest, slot: string) => {
+	const side = handSide(m, slot);
+	return side === 'left' ? 'main_hand' : side === 'right' ? 'off_hand' : undefined;
+};
+/** A two-handed item takes both hands: it hides the other hand while worn (the same rule as a hood hiding hair). Turning it
+ *  off removes every other-hand target, so no custom held slot stays hidden. */
 export function toggleTwoHanded(itemId: string) {
-	const it = itemById(itemId);
-	if (it && OTHER_HAND[it.slot]) toggleHide(itemId, OTHER_HAND[it.slot]);
+	const m = store.project!.manifest,
+		it = itemById(itemId),
+		target = it && otherHandOf(m, it.slot);
+	if (!it || !target) return;
+	const both = twoHanded(m, it),
+		cur = it.hides ?? m.slots.find((s) => s.id === it.slot)?.hides ?? [],
+		others = new Set([target, ...oppositeHands(m, it.slot)]);
+	commit(
+		both ? 'One-handed' : 'Two-handed',
+		() => {
+			it.hides = both
+				? cur.filter((s) => !others.has(s))
+				: [...cur.filter((s) => !others.has(s)), target];
+		},
+		{ keepHand: it.slot }
+	);
 }
 
 /** Move the item's front layer one step in the draw order of the current frame (all directions, or only the current one). */
@@ -1174,6 +1295,7 @@ export async function matchItemPalette(
 		if (doc.id !== projectId || request !== openRequest || refresh !== itemPaletteRefresh) return;
 		if (doc.rev !== revision) continue;
 		store.project = fresh.project;
+		slotBase = { id: projectId, slots: structuredClone(fresh.project.manifest.slots) };
 		doc.rev++;
 		return;
 	}
@@ -1310,7 +1432,8 @@ async function addEntry(entry: SharedItem, lead = '') {
 			return;
 		}
 		await openProject(projectId, { quiet: true });
-		const note = doc.id === projectId ? wear(item.id, true) : undefined;
+		const note = doc.id === projectId ? wear(item.id, true) : undefined,
+			shown = doc.id === projectId ? revealSlot(item.slot) : '';
 		toast(
 			lead +
 				(item.unfitted
@@ -1322,7 +1445,8 @@ async function addEntry(entry: SharedItem, lead = '') {
 					: item.refit
 						? `Fitted ${item.name} from ${entry.sourceName} for free. Check it in each move.`
 						: `Copied ${item.name} from ${entry.sourceName}. No generations used.`) +
-				(note ? ` ${note}.` : ''),
+				(note ? ` ${note}.` : '') +
+				(shown ? ` ${shown}` : ''),
 			item.unfitted ? { tone: 'warning' } : undefined
 		);
 		await refreshShared();
@@ -1614,6 +1738,12 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
 		});
 		return;
 	}
+	// A hidden category is shown before its first attempt, and a new custom category is saved before generation reads it.
+	if (doc.id === projectId) {
+		const shown = revealSlot(input.slot);
+		if (shown) toast(shown);
+	}
+	await flushSave();
 	const ctx = await loadProject(projectId),
 		route = await itemFlow();
 	// Taking over another tab rehydrates drafts. Match reviewed content, not the old in-memory object.
@@ -1659,7 +1789,7 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
 	else gens.push(g);
 	const selected = ui.selected;
 	ui.selected = `gen:${g.draft.spec.id}`;
-	ui.group = groupOf(input.slot).id;
+	ui.group = input.slot;
 	try {
 		await saveGens();
 	} catch (error) {
@@ -1764,7 +1894,7 @@ export async function openGenerationReview(id: string) {
 	if (!gens.includes(g) || doc.id !== g.draft.rigId) return;
 	ui.sheet = 'gen';
 	ui.tab = 'wardrobe';
-	ui.group = groupOf(g.input.slot).id;
+	ui.group = g.input.slot;
 	ui.selected = `gen:${id}`;
 }
 export async function acceptItemIssues(projectId: string, itemId: string, reviewed: Item) {
@@ -1778,7 +1908,7 @@ async function openItemReview(projectId: string, itemId: string, anim?: string) 
 	const item = store.project?.manifest.items.find((item) => item.id === itemId);
 	if (doc.id !== projectId || !item) return;
 	ui.selected = item.id;
-	ui.group = groupOf(item.slot).id;
+	ui.group = item.slot;
 	ui.tab = 'wardrobe';
 	if (anim) {
 		ui.anim = anim;
@@ -2013,13 +2143,179 @@ export function openNewItem(
 ) {
 	ui.newItem = {
 		group,
-		slot: prefill?.slot ?? GROUPS.find((g) => g.id === group)!.slots[0],
+		slot: prefill?.slot ?? group,
 		prompt: prefill?.prompt ?? '',
 		name: prefill?.name ?? '',
 		// Trying an item again keeps the animation method it was made with.
 		...(prefill?.route === 'ea2-anchor' ? { method: 'anchor' as const } : {})
 	};
 	ui.sheet = 'newitem';
+}
+
+// ---------- Wardrobe categories (organization and custom slots: free, never generation) ----------
+/** Categories holding items or attempts on the open character: Wardrobe shows them even when Not shown. */
+export function busySlots(m = store.project?.manifest): Set<string> {
+	const out = new Set<string>();
+	if (!m) return out;
+	for (const it of m.items) out.add(it.slot);
+	for (const g of gens) if (g.draft.rigId === doc.id) out.add(g.input.slot);
+	return out;
+}
+const draftRefs = (list: readonly Gen[]): DraftRef[] =>
+	list.map((g) => ({ rigId: g.draft.rigId, slot: g.input.slot, phase: g.phase }));
+/** What a category holds by this tab's view (instant, for labels and disabled states). */
+export const slotUseHere = (key: string): SlotUse =>
+	store.project
+		? slotUse(store.project.manifest, doc.id, key, draftRefs(gens))
+		: { items: 0, making: 0, stopped: 0 };
+/** What a category holds, including attempts saved by any tab (read fresh, since another tab may run them). Rejects when
+ *  the saved attempts cannot be read: a destructive change then waits rather than guessing. */
+async function slotUseNow(key: string): Promise<SlotUse> {
+	const projectId = doc.id;
+	const saved = await readGens().catch((e: Error) => {
+		throw new Error(`Saved item attempts could not be read: ${e.message}`);
+	});
+	if (doc.id !== projectId || !store.project)
+		throw new Error('The character changed meanwhile. Try again.');
+	return slotUse(
+		store.project.manifest,
+		projectId,
+		key,
+		draftRefs(uniqueBy([...gens, ...saved], (g) => g.draft.spec.id))
+	);
+}
+type SlotEdit = Pick<Manifest, 'slots' | 'rig' | 'items' | 'presets'>;
+const trialOf = (m: Manifest): SlotEdit => ({
+	slots: structuredClone(m.slots),
+	presets: structuredClone(m.presets),
+	items: m.items,
+	rig: m.rig
+});
+/** One undoable organization step: the edit runs on copies first, so a refused edit changes nothing. No generation. */
+function organize(label: string, edit: (m: SlotEdit) => void) {
+	const m = store.project?.manifest;
+	if (!m) throw new Error('No character is open.');
+	const trial = trialOf(m);
+	edit(trial);
+	const gone = m.slots.filter((x) => !trial.slots.some((y) => y.id === x.id)).map((x) => x.id);
+	commit(label, () => {
+		m.slots = trial.slots;
+		m.presets = trial.presets;
+		for (const key of gone) {
+			delete doc.items[key];
+			delete doc.drafts[key];
+		}
+	});
+}
+/** Show a Not shown category again, at the end of the Wardrobe. Returns what to announce, or '' when already shown. No undo
+ *  step: generation and fitting call it as a side effect of putting work there. */
+export function revealSlot(key: string): string {
+	const m = store.project?.manifest;
+	if (!m || key === BASE_KEY) return '';
+	const c = categories(m).find((x) => x.key === key);
+	if (!c?.hidden) return '';
+	setHidden(m, key, false, busySlots(m));
+	bump();
+	save();
+	return `${c.label} is now shown in Wardrobe.`;
+}
+export function showSlot(key: string) {
+	const m = store.project!.manifest;
+	organize(`Show ${slotLabel(m, key)}`, (x) => setHidden(x, key, false, busySlots(m)));
+}
+export function showSlotAt(key: string, to: number) {
+	const m = store.project!.manifest;
+	organize(`Show ${slotLabel(m, key)}`, (x) => {
+		setHidden(x, key, false, busySlots(m));
+		moveCategory(x, key, to, busySlots(m));
+	});
+}
+/** Hide an empty category from Wardrobe. Returns why it cannot be hidden, or '' once hidden. */
+export async function hideSlot(key: string): Promise<string> {
+	const m = store.project!.manifest,
+		label = slotLabel(m, key);
+	const reason = busyReason(label, await slotUseNow(key), 'be hidden');
+	if (reason) return reason;
+	organize(`Hide ${label}`, (x) => setHidden(x, key, true, busySlots(m)));
+	return '';
+}
+/** Move a shown category to position `to` in Wardrobe. Drawing order never changes. */
+export function moveSlot(key: string, to: number) {
+	const m = store.project!.manifest;
+	organize(`Move ${slotLabel(m, key)}`, (x) => moveCategory(x, key, to, busySlots(m)));
+}
+/** Add a custom category (a blank name becomes the next Accessory). Returns its permanent key. */
+export function addSlot(o: NewSlot): string {
+	const m = store.project!.manifest;
+	let key = '';
+	organize('Add category', (x) => (key = addCustom(x, o, busySlots(m))));
+	return key;
+}
+/** Save a custom category's settings form: every part is checked on a copy first, attempts are read fresh once when the
+ *  attachment changes (another tab may be making an item there), and it lands as one undo step or not at all. Returns why
+ *  it was refused, or ''. */
+export async function saveSlotSettings(key: string, o: SlotSettings): Promise<string> {
+	const projectId = doc.id,
+		m = store.project!.manifest,
+		label = slotLabel(m, key),
+		definition = JSON.stringify(m.slots.find((s) => s.id === key));
+	applySettings(trialOf(m), key, o); // throws why a name, hint or order is refused, before anything changes
+	if (changesAttachment(m, key, o)) {
+		const reason = busyReason(label, await slotUseNow(key), 'change how it attaches');
+		if (reason) return reason;
+		const now = store.project?.manifest;
+		if (
+			doc.id !== projectId ||
+			!now ||
+			JSON.stringify(now.slots.find((s) => s.id === key)) !== definition
+		)
+			return `${label} changed meanwhile. Nothing was saved; review it again.`;
+	}
+	organize(`Change ${label}`, (x) => applySettings(x, key, o));
+	return '';
+}
+/** Delete a custom category. An empty one is an undoable organization step. One with saved items (exactly `items`, the count
+ *  the person confirmed) goes with them in one atomic write, rechecked against the saved record: the category, its items, their
+ *  colors and outfit entries are all deleted or nothing is. That cannot be undone. Attempts being made or stopped and new moves
+ *  for its items must finish or be dismissed first. Returns why it cannot be deleted, or ''. */
+export async function deleteSlot(key: string, items = 0): Promise<string> {
+	const projectId = doc.id,
+		request = openRequest,
+		label = slotLabel(store.project!.manifest, key);
+	await flushSave(); // the saved record now matches this view, and the checks below are the last before the write
+	if (doc.id !== projectId || request !== openRequest)
+		return 'The character changed meanwhile. Nothing was deleted.';
+	const use = await slotUseNow(key);
+	if (use.making || use.stopped) return busyReason(label, use, 'be deleted');
+	const m = store.project!.manifest,
+		owned = m.items.filter((it) => it.slot === key).map((it) => it.id);
+	if (owned.length !== items)
+		return `${label} now has ${useText({ ...use, items: owned.length }) || 'no items'}. Review it again before deleting.`;
+	if (owned.some((id) => pendingMoves(projectId, id).length))
+		return `New moves are being made for ${label} items. Wait for them or dismiss them first.`;
+	if (!owned.length) {
+		organize(`Delete ${label}`, (x) => deleteCustom(x, key));
+		if (ui.group === key) ui.group = shownCategories(m, busySlots())[0]?.key ?? 'head';
+		return '';
+	}
+	if (isDemo()) return 'Items of the bundled demo can’t be deleted.';
+	const definition = JSON.stringify(m.slots.find((s) => s.id === key));
+	try {
+		await deleteItems(projectId, owned, (rec) => {
+			if (JSON.stringify(rec.manifest.slots.find((s) => s.id === key)) !== definition)
+				throw new Error(`${label} changed meanwhile. Review it again before deleting.`);
+			if (rec.manifest.items.some((it) => it.slot === key))
+				throw new Error(`${label} has new items. Review it again before deleting.`);
+			deleteCustom(rec.manifest, key);
+			if (rec.dress?.current) delete rec.dress.current.items[key];
+		});
+	} catch (e) {
+		return `${(e as Error).message} Nothing was deleted.`;
+	}
+	toast(`Deleted ${label} and ${owned.length === 1 ? 'its item' : `its ${owned.length} items`}`);
+	// A full reopen, as after an item's Delete: undo steps may name the deleted category or items.
+	if (doc.id === projectId && request === openRequest) await openProject(projectId);
+	return '';
 }
 
 /** Progress of an item generation from the job ledger: share of calls done (+ the running calls' own progress). */

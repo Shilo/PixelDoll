@@ -37,7 +37,7 @@ const paint = (im: Img, x0: number, y0: number, x1: number, y1: number, rgb = [4
 	return im;
 };
 const robe = () => paint(makeImg(64, 64), 22, 20, 42, 61);
-const nominal = () => bandOf('torso_inner', rest, 64);
+const nominal = () => bandOf('torso_inner', rest, 64, 'repair');
 
 test('repair includes the approved full-length garment while protecting the face', () => {
 	const band = garmentBand(nominal(), robe(), rest, rest);

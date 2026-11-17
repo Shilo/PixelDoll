@@ -1,3 +1,4 @@
+import { requireSlot, specSlot } from '../lib/items/slots.ts';
 // The item-generation route the New item sheet talks to. The Studio only sees this interface (routes keep changing as
 // spikes land); swap `itemRoute` to change the backend. Today: B4's runner (lib/items/run.ts): chroma mannequin, dressed
 // keyframe posed with skeleton-v3 per clip (or anchor-cell edit-animation-v2 without joints), extraction and QA gates.
@@ -113,6 +114,7 @@ export function standingCoverage(
 const spec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> => ({
 	name: i.name,
 	slot: i.slot,
+	slotConfig: structuredClone(requireSlot(ctx.rec.manifest, i.slot)),
 	prompt: i.prompt,
 	key: i.key ?? pickKey(i.prompt),
 	...(i.method ? { method: i.method } : {}),
@@ -135,7 +137,7 @@ export const chromaEdit: ItemRoute = {
 		const s = spec(ctx, input),
 			method = itemMethod(ctx, s),
 			p = planItem(rig, { ...s, method }),
-			pad = padOf(s.slot, method, rig.cell);
+			pad = padOf(specSlot(s), method, rig.cell);
 		// held slots route to S5's 96 px oversize canvas automatically (same price: pose calls bill by frames, not canvas)
 		return {
 			calls: p.length,

@@ -2,7 +2,8 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import type { Rig } from '../../src/lib/rig/rig.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
-import { itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts';
+import { itemQa, putItem, slotOf, type CellOut } from '../../src/lib/items/items.ts';
+import { createSlot } from '../../src/lib/items/slots.ts';
 import {
 	acceptItem,
 	evaluateItem,
@@ -206,17 +207,22 @@ test('accepted keyframe design reasons are retained individually without rewriti
 	expect(saved.item.qa?.clips?.['idle/south'].status).toBe('pass');
 });
 
-test.each(['imported-rest', 'verified-standing', 'unrigged-standing'])(
+test.each(['imported-rest', 'verified-standing', 'unrigged-standing', 'removed-custom-slot'])(
 	'dressed %s cells survive a design-art warning and retain their real coverage and references',
 	async (mode) => {
 		const { draft, ctx } = fixture();
+		const unrigged = mode === 'unrigged-standing' || mode === 'removed-custom-slot';
+		if (mode === 'removed-custom-slot') {
+			draft.spec.slotConfig = createSlot('custom_helmet', 'head', 'Custom helmet');
+			draft.spec.slot = draft.spec.slotConfig.id;
+		}
 		const base = makeImg(8, 8);
 		for (let y = 2; y < 7; y++)
 			for (let x = 2; x < 6; x++) base.data.set([180, 140, 120, 255], (y * 8 + x) * 4);
 		const hash = await cellHash(base),
 			localRig = structuredClone(rig);
 		const pose = LABELS.map((label) => ({ label, x: 0.5, y: label === 'NECK' ? 0.5 : 0.25 }));
-		if (mode !== 'unrigged-standing') localRig.rest = { south: { image: hash, keypoints: pose } };
+		if (!unrigged) localRig.rest = { south: { image: hash, keypoints: pose } };
 		if (mode === 'imported-rest')
 			localRig.animations[0].sources = {
 				south: {
@@ -254,12 +260,12 @@ test.each(['imported-rest', 'verified-standing', 'unrigged-standing'])(
 		ctx.rec.manifest = manifest;
 		manifest.items[0].layers[0].cells!['still-alias'] = { south: [hash] };
 		ctx.project = { manifest, images: new Map([[hash, base]]) };
-		draft.spec.method = mode === 'unrigged-standing' ? 'anchor' : 'skel';
+		draft.spec.method = unrigged ? 'anchor' : 'skel';
 		if (mode !== 'imported-rest') draft.spec.standing = 'idle';
 		draft.spec.anims.push('still-alias');
 		draft.spec.prompt = 'crimson helmet';
-		draft.calls[0].kind = mode === 'unrigged-standing' ? 'edit' : 'dress';
-		draft.calls[0].cells = [mode === 'unrigged-standing' ? 'idle/south/0' : 'rest/south/0'];
+		draft.calls[0].kind = unrigged ? 'edit' : 'dress';
+		draft.calls[0].cells = [unrigged ? 'idle/south/0' : 'rest/south/0'];
 		const composite = toChroma(base, 'green');
 		for (let y = 0; y < 3; y++)
 			for (let x = 2; x < 6; x++)
@@ -277,18 +283,76 @@ test.each(['imported-rest', 'verified-standing', 'unrigged-standing'])(
 		});
 		vi.spyOn(db, 'getBlob').mockResolvedValue(blob);
 		const result = await evaluateItem(draft, ctx);
-		if (mode !== 'unrigged-standing') expect(result.g1.get(0)).toContain('D1 keyframe');
+		if (!unrigged) expect(result.g1.get(0)).toContain('D1 keyframe');
 		expect(hasStructuralFailure(result)).toBe(false);
 		expect(result.cells.map((c) => c.key)).toEqual(['idle/south/0', 'still-alias/south/0']);
 		expect(result.cells[0].area).toBeGreaterThan(0);
+		if (mode === 'removed-custom-slot') {
+			expect(ctx.rec.manifest.slots.map((slot) => slot.id)).toEqual(['body']);
+			expect(result.preview?.manifest.slots).toContainEqual(draft.spec.slotConfig);
+			vi.mocked(saveItem).mockImplementationOnce(async (_id, item, _images, slots, check) => {
+				check?.(ctx.rec);
+				putItem(ctx.rec.manifest, item, slots);
+			});
+		}
 		const saved = await acceptItem(draft, ctx, result);
-		if (mode !== 'unrigged-standing')
+		if (!unrigged)
 			expect(saved.item.designWarnings?.some((why) => why.startsWith('D1'))).toBe(true);
 		expect(saved.item.dressed?.south).toBe(await cellHash(composite));
 		if (mode !== 'imported-rest') expect(saved.item.standing).toBe('idle');
 		expect(saved.item.layers[0].cells!['still-alias']).toEqual(saved.item.layers[0].cells!.idle);
 		expect(draft.calls).toHaveLength(1); // both aliases reuse the one bought standing output
 		expect(saveItem).toHaveBeenCalledOnce();
+		if (mode === 'removed-custom-slot') {
+			expect(manifest.slots).toContainEqual(draft.spec.slotConfig);
+			expect(manifest.items).toContainEqual(saved.item);
+			expect(saved.item.layers[0].z).toBe(draft.spec.slotConfig!.z);
+		}
+	}
+);
+
+test.each(['missing', 'existing', 'reused-key', 'changed-depth'] as const)(
+	'keeping paid artwork handles a category that is %s when the save transaction starts',
+	async (state) => {
+		const { draft, ctx, result } = fixture();
+		const snapshot = createSlot('custom_helmet', 'head', 'Original');
+		draft.spec.slot = snapshot.id;
+		draft.spec.slotConfig = snapshot;
+		ctx.rec.manifest.slots = [structuredClone(snapshot)];
+		ctx.rec.manifest.items = [];
+		const current = structuredClone(ctx.rec);
+		current.manifest.slots =
+			state === 'missing'
+				? []
+				: [
+						state === 'reused-key'
+							? createSlot(snapshot.id, 'off_hand')
+							: {
+									...snapshot,
+									label: 'Renamed',
+									wardrobeHidden: true,
+									z: state === 'changed-depth' ? snapshot.z + 1 : snapshot.z
+								}
+					];
+		const before = structuredClone(current);
+		vi.mocked(saveItem).mockImplementationOnce(async (_id, item, _images, slots, check) => {
+			check?.(current);
+			putItem(current.manifest, item, slots);
+		});
+		if (state === 'reused-key' || state === 'changed-depth') {
+			await expect(acceptItem(draft, ctx, result)).rejects.toThrow(
+				state === 'reused-key' ? 'different behavior' : 'category depth changed'
+			);
+			expect(current).toEqual(before);
+			expect(draft.acceptedAt).toBeUndefined();
+		} else {
+			const saved = await acceptItem(draft, ctx, result);
+			expect(current.manifest.items).toEqual([saved.item]);
+			expect(current.manifest.slots).toEqual(
+				state === 'missing' ? [snapshot] : before.manifest.slots
+			);
+			expect(saved.item.layers[0].z).toBe(snapshot.z);
+		}
 	}
 );
 

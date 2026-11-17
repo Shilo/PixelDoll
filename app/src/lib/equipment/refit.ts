@@ -7,6 +7,7 @@
 import { layerFrame, type Frame } from '../compose/compose.ts';
 import type { Img } from '../image/png.ts';
 import { kpAt, observedKeypoints, poseDist, translate } from '../items/items.ts';
+import { SLOTS } from '../items/slots.ts';
 import { actionOf } from '../rig/clips.ts';
 import {
 	cellHash,
@@ -39,14 +40,20 @@ export const REFIT = {
 	/** Share of the target's frames that may fail the checks above and still be offered, marked for a look. */
 	maxFailing: 0.25
 };
-const HELD_ANCHOR: Record<string, 'LEFT' | 'RIGHT'> = { main_hand: 'RIGHT', off_hand: 'LEFT' };
+const heldAnchor = (item: Item, source?: Pick<Manifest, 'slots'>): 'LEFT' | 'RIGHT' | undefined => {
+	const slot =
+		source?.slots.find((entry) => entry.id === item.slot) ??
+		SLOTS.find((entry) => entry.id === item.slot);
+	if (slot?.class !== 'held') return undefined;
+	return slot.anchor === 'hand_l' ? 'LEFT' : slot.anchor === 'hand_r' ? 'RIGHT' : undefined;
+};
 /** A pure side view: one arm hides the other there, so its grip side is unreliable (live 2026-11-10: a sword visibly in the
  *  right hand facing east was judged left in every east move). Front, back and diagonal views show both hands. */
 const sideView = (clip: string) => /\/(east|west)$/.test(clip);
 /** The source's own checks found the item in the other hand or changing hands (G8) in a view that shows both hands: a moved
  *  copy would keep that. Item-wide verdicts mix every view, so they decide only when no move recorded its own hand. */
-const wrongHand = (item: Item) => {
-	const want = HELD_ANCHOR[item.slot] === 'RIGHT' ? 'r' : 'l',
+const wrongHand = (item: Item, side: 'LEFT' | 'RIGHT') => {
+	const want = side === 'RIGHT' ? 'r' : 'l',
 		q = item.qa;
 	if (!q) return !!item.designWarnings?.some((w) => w.includes('expects hand_'));
 	const clips = Object.entries(q.clips),
@@ -67,13 +74,17 @@ const wrongHand = (item: Item) => {
 };
 /** The item may re-fit onto other bodies: a held item in its own hand that hides nothing of its own body and was drawn for
  *  it (a re-fit is never re-fitted again: its approximations would add up). */
-export const refittable = (item: Item) =>
-	!!HELD_ANCHOR[item.slot] &&
-	!item.baseCut &&
-	!item.hides?.length &&
-	!item.refit &&
-	!item.unfitted &&
-	!wrongHand(item);
+export const refittable = (item: Item, source?: Pick<Manifest, 'slots'>) => {
+	const side = heldAnchor(item, source);
+	return (
+		!!side &&
+		!item.baseCut &&
+		!item.hides?.length &&
+		!item.refit &&
+		!item.unfitted &&
+		!wrongHand(item, side)
+	);
+};
 
 const mirrorOf = (rig: Rig, dir: DirectionName) =>
 	rig.directions.find((d) => d.id === dir)?.mirrorOf;
@@ -193,9 +204,9 @@ async function fit(
 	target: Manifest,
 	load: (hash: Sha256) => Promise<Img>
 ): Promise<Fitted | null> {
-	const side = HELD_ANCHOR[original.slot];
+	const side = heldAnchor(original, source);
 	// Hidden body px and hidden slots belong to the source's body.
-	if (!side || !refittable(original)) return null;
+	if (!side || !refittable(original, source)) return null;
 	if (
 		!sameCanvas(source, target) ||
 		!sameViews(source, target) ||

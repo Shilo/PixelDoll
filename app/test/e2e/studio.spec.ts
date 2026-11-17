@@ -618,6 +618,546 @@ async function openDemo(page: Page) {
 
 const step = (s: string) => console.log('ok', s);
 
+test('studio demo: slots add, rename, show, hide and reorder without changing the drawing', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await openDemo(page);
+	await page.getByRole('button', { name: 'Pause', exact: true }).click();
+	const drawing = () =>
+		page
+			.locator('.world-actors')
+			.first()
+			.evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL());
+	const before = await drawing();
+	const add = page.getByRole('button', { name: 'Add slot', exact: true });
+	await expect
+		.poll(async () => {
+			return add.locator('.bu-rail-label').evaluate((label) => {
+				const style = getComputedStyle(label);
+				const context = document.createElement('canvas').getContext('2d')!;
+				context.font = style.font;
+				const ink = context.measureText(label.textContent!);
+				const baseline =
+					label.getBoundingClientRect().top +
+					(parseFloat(style.lineHeight) - ink.fontBoundingBoxAscent - ink.fontBoundingBoxDescent) /
+						2 +
+					ink.fontBoundingBoxAscent;
+				return Math.abs(
+					baseline +
+						ink.actualBoundingBoxDescent -
+						document.querySelector('.playback-bar')!.getBoundingClientRect().bottom
+				);
+			});
+		})
+		.toBeLessThanOrEqual(1);
+	const addSheet = page.getByRole('dialog', { name: 'Add slot', exact: true });
+	const header = (key: string) => page.locator(`[data-slot-button="${key}"]`);
+	const menu = page.locator('#slot-menu');
+	const shownKeys = () =>
+		page
+			.locator('#wardrobe-list > section[data-own]')
+			.evaluateAll((all) => all.map((entry) => (entry as HTMLElement).dataset.group));
+	await expect(page.locator('#wardrobe-list > section[data-own]')).toHaveCount(10);
+	const list = page.locator('#wardrobe-list');
+	const scroll = () => list.evaluate((element) => element.scrollTop);
+	await header('head').click();
+	const originalScroll = await scroll();
+	await menu.getByRole('menuitem', { name: 'Move down', exact: true }).click();
+	await expect.poll(scroll).toBe(originalScroll);
+	await expect(page.locator('[data-rail="hair"]')).toHaveAttribute('aria-current', 'true');
+	await header('head').click();
+	await menu.getByRole('menuitem', { name: 'Move up', exact: true }).click();
+	await expect.poll(scroll).toBe(originalScroll);
+	await add.click();
+	const form = addSheet.getByRole('form', { name: 'Create custom slot' });
+	await expect(form.getByRole('textbox', { name: 'Slot name', exact: true })).toBeVisible();
+	const createBounds = (await form
+		.getByRole('button', { name: 'Create slot', exact: true })
+		.boundingBox())!;
+	const behaviorBounds = (await form.getByRole('combobox', { name: 'Works like' }).boundingBox())!;
+	expect(createBounds.y).toBeGreaterThan(behaviorBounds.y + behaviorBounds.height);
+	await addSheet.getByRole('button', { name: 'Show Underwear', exact: true }).click();
+	await expect.poll(scroll).toBe(originalScroll);
+	await header('underwear').click();
+	await menu.getByRole('menuitem', { name: 'Hide slot', exact: true }).click();
+	await page.getByRole('button', { name: /^Not shown \d+$/ }).click();
+	await expect(page.getByRole('button', { name: 'Show Underwear', exact: true })).toBeVisible();
+	await add.click();
+	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
+	const beforeAdd = await scroll();
+	await add.click();
+	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
+	await expect.poll(scroll).toBe(beforeAdd);
+	await header('accessory').click();
+	await menu.getByRole('menuitem', { name: 'Edit slot…', exact: true }).click();
+	const editor = page.getByRole('dialog', { name: 'Accessory', exact: true });
+	await editor.getByRole('textbox', { name: 'Name', exact: true }).fill('Brooch');
+	await editor
+		.getByRole('combobox', { name: 'Draws above', exact: true })
+		.selectOption('torso_outer');
+	await editor.getByRole('button', { name: 'Save', exact: true }).click();
+	await header('accessory').focus();
+	await page.keyboard.press('Enter');
+	await menu.getByRole('menuitem', { name: 'Move up', exact: true }).click();
+	await expect(header('accessory')).toBeFocused();
+	const ordered = await shownKeys();
+	expect(ordered.indexOf('accessory')).toBe(9);
+	expect(await drawing()).toBe(before);
+	await reloadStudio(page, { waitUntil: 'networkidle' });
+	expect(await shownKeys()).toEqual(ordered);
+	await expect(header('accessory')).toHaveAccessibleName('Brooch');
+	await expect(header('accessory_2')).toHaveAccessibleName('Accessory 2');
+	await equipmentGroup(page, 'Head');
+	await header('head').click();
+	await expect(menu.getByRole('menuitem', { name: /^Hide slot/ })).toHaveAttribute(
+		'aria-disabled',
+		'true'
+	);
+	await expect(menu).toContainText('items');
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Light mode', exact: true }).click();
+	await page.setViewportSize({ width: 320, height: 568 });
+	await equipmentGroup(page, 'Brooch');
+	await header('accessory').click();
+	await menu.getByRole('menuitem', { name: 'Edit slot…', exact: true }).click();
+	const compactEditor = page.getByRole('dialog', { name: 'Brooch', exact: true });
+	await expect(compactEditor.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
+		'Brooch'
+	);
+	await expect(
+		compactEditor.getByRole('combobox', { name: 'Draws above', exact: true })
+	).toHaveValue('torso_outer');
+	const compactBounds = await compactEditor.boundingBox();
+	expect(compactBounds!.x).toBeGreaterThanOrEqual(0);
+	expect(compactBounds!.x + compactBounds!.width).toBeLessThanOrEqual(320);
+	await compactEditor.getByRole('button', { name: 'Save', exact: true }).click();
+	const heights = await list
+		.locator('section[data-own]')
+		.evaluateAll((all) => all.map((element) => (element as HTMLElement).offsetHeight));
+	expect(new Set(heights).size).toBeGreaterThan(1);
+	for (const direction of ['Move up', 'Move down']) {
+		await header('main_hand').click();
+		const beforeMove = await scroll();
+		await menu.getByRole('menuitem', { name: direction, exact: true }).click();
+		await expect.poll(scroll).toBe(beforeMove);
+	}
+	await add.click();
+	await page.screenshot({ path: test.info().outputPath('add-slot-320-light.png') });
+	await addSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	const disclosure = page.getByRole('button', { name: /^Not shown \d+$/ });
+	const hiddenShortcut = page.getByRole('button', { name: 'Not shown, 6 slots', exact: true });
+	const footer = page.locator('.slot-rail-footer');
+	await expect(footer.locator('.slot-add')).toHaveCount(1);
+	await expect(page.locator('.slot-rail .slot-add')).toHaveCount(0);
+	const footerBounds = (await footer.boundingBox())!;
+	const addBounds = (await add.boundingBox())!;
+	const railBounds = (await page.locator('.slot-rail').boundingBox())!;
+	expect(footerBounds.height).toBeGreaterThan(0);
+	expect(footerBounds.y + footerBounds.height).toBeLessThanOrEqual(568);
+	expect(addBounds.x).toBeGreaterThanOrEqual(0);
+	expect(addBounds.x + addBounds.width).toBeLessThanOrEqual(320);
+	expect(addBounds.y).toBeGreaterThanOrEqual(railBounds.y + railBounds.height);
+	expect(railBounds.height).toBeGreaterThanOrEqual(52);
+	await expect(page.locator('.slot-rail-list > li').last().locator('[data-not-shown]')).toHaveCount(
+		1
+	);
+	await page.locator('.slot-rail').evaluate((element) => {
+		element.scrollTop = element.scrollHeight;
+	});
+	expect((await add.boundingBox())!.y).toBe(addBounds.y);
+	await hiddenShortcut.click();
+	await expect(disclosure).toHaveAccessibleName('Not shown 6');
+	await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+	await expect(hiddenShortcut).toBeFocused();
+	await expect(hiddenShortcut).toHaveAttribute('aria-current', 'true');
+	await expect(disclosure).toHaveAttribute('data-current');
+	await expect(disclosure.locator('.bu-section-title')).toHaveCSS(
+		'color',
+		await hiddenShortcut
+			.locator('.bu-rail-label')
+			.evaluate((label) => getComputedStyle(label).color)
+	);
+	await expect(hiddenShortcut).toHaveAttribute('tabindex', '0');
+	await expect(page.locator('.slot-rail [aria-current="true"]')).toHaveCount(1);
+	await expect(page.locator('.slot-rail [tabindex="0"]')).toHaveCount(1);
+	await disclosure.click();
+	await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+	await expect(hiddenShortcut).toHaveAttribute('aria-current', 'true');
+	await list.evaluate((element) => {
+		element.scrollTop = element.querySelector<HTMLElement>(
+			'section[data-own]:last-of-type'
+		)!.offsetTop;
+	});
+	await expect(hiddenShortcut).not.toHaveAttribute('aria-current', 'true');
+	await expect(page.locator('.slot-rail [data-rail][aria-current="true"]')).toHaveCount(1);
+	await list.evaluate((element) => {
+		element.scrollTop = element.querySelector<HTMLElement>('.not-shown')!.offsetTop;
+	});
+	await expect(hiddenShortcut).toHaveAttribute('aria-current', 'true');
+	await hiddenShortcut.click();
+	await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+	const note = list.locator('.not-shown-note');
+	expect(await note.evaluate((element) => element.clientHeight)).toBeLessThanOrEqual(
+		await note.evaluate((element) => Math.ceil(parseFloat(getComputedStyle(element).lineHeight)))
+	);
+	await expect(disclosure.locator('svg').first()).toHaveClass(/lucide-eye-off/);
+	await expect(disclosure.locator('svg').last()).toHaveClass(/not-shown-chevron/);
+	const disclosureY = (await disclosure.boundingBox())!.y;
+	expect(Math.abs(disclosureY - (await list.boundingBox())!.y)).toBeLessThanOrEqual(1);
+	await expect(disclosure).toHaveJSProperty(
+		'offsetWidth',
+		await list.locator('.not-shown').evaluate((element) => element.clientWidth)
+	);
+	await page.screenshot({ path: test.info().outputPath('not-shown-320-light.png') });
+	const eyes = list.locator('[data-show-slot]');
+	const hiddenCount = await eyes.count();
+	for (let remaining = hiddenCount; remaining > 0; remaining--) {
+		const restoredKey = await eyes.first().getAttribute('data-show-slot');
+		const nextKey = remaining > 1 ? await eyes.nth(1).getAttribute('data-show-slot') : null;
+		await eyes.first().click();
+		const anchor = remaining > 1 ? disclosure : header(restoredKey!);
+		if (remaining > 1) {
+			await expect(list.locator(`[data-show-slot="${nextKey}"]`)).toBeFocused();
+			await expect(disclosure).toHaveAccessibleName(`Not shown ${remaining - 1}`);
+		} else {
+			await expect(disclosure).toHaveCount(0);
+			await expect(hiddenShortcut).toHaveCount(0);
+			await expect(anchor).toBeFocused();
+		}
+		await expect
+			.poll(async () => Math.abs((await anchor.boundingBox())!.y - disclosureY))
+			.toBeLessThanOrEqual(1);
+	}
+	finish();
+});
+
+test('studio demo: slot header dragging and not-shown restoration are tolerant and undoable', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await openDemo(page);
+	await page.getByRole('button', { name: 'Pause', exact: true }).click();
+	await page.clock.install();
+	const list = page.locator('#wardrobe-list');
+	const keys = () =>
+		list
+			.locator('section[data-own]')
+			.evaluateAll((all) => all.map((entry) => (entry as HTMLElement).dataset.group));
+	const hair = page.locator('[data-slot-button="hair"]');
+	const head = page.locator('[data-slot-button="head"]');
+	const original = await keys();
+	const source = (await hair.boundingBox())!;
+	await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(source.x + source.width / 2 + 2, source.y + source.height / 2 + 2);
+	await page.mouse.up();
+	await expect(page.locator('#slot-menu')).toBeVisible();
+	expect(await keys()).toEqual(original);
+	await page.keyboard.press('Escape');
+	const target = (await head.boundingBox())!;
+	await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(target.x + target.width / 2, target.y + 2, { steps: 6 });
+	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	const topLine = (await list.locator('.slot-drop-line').boundingBox())!;
+	const topList = (await list.boundingBox())!;
+	expect(topLine.y).toBeGreaterThanOrEqual(topList.y);
+	expect(topLine.y + topLine.height).toBeLessThanOrEqual(topList.y + topList.height);
+	await expect(page.locator('.slot-drag-preview')).toBeVisible();
+	await expect(page.locator('.slot-drag-preview')).toContainText('Hair');
+	const preview = (await page.locator('.slot-drag-preview').boundingBox())!;
+	expect(Math.abs(preview.y + preview.height - target.y)).toBeLessThan(70);
+	await page.keyboard.press('Escape');
+	await page.mouse.up();
+	expect(await keys()).toEqual(original);
+	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	await expect(page.locator('.slot-drag-preview')).not.toBeVisible();
+	await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(target.x + target.width / 2, target.y + 2, { steps: 6 });
+	const dropScroll = await list.evaluate((element) => element.scrollTop);
+	await page.mouse.up();
+	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(dropScroll);
+	await expect(hair).toBeFocused();
+	await expect(page.locator('#slot-menu')).not.toBeVisible();
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	const rail = page.locator('.slot-rail');
+	const railHair = rail.locator('[data-rail="hair"][data-sortable]');
+	const railHead = rail.locator('[data-rail="head"][data-sortable]');
+	await railHair.click({ button: 'right' });
+	const slotMenu = page.locator('#slot-menu');
+	await expect(slotMenu).toBeVisible();
+	await expect(slotMenu).toHaveAccessibleName('Hair slot');
+	expect(await keys()).toEqual(original);
+	const menuBounds = (await slotMenu.boundingBox())!;
+	const openerBounds = (await railHair.boundingBox())!;
+	expect(
+		Math.max(
+			menuBounds.x - openerBounds.x - openerBounds.width,
+			openerBounds.x - menuBounds.x - menuBounds.width,
+			0
+		)
+	).toBeLessThanOrEqual(16);
+	expect(
+		Math.max(
+			menuBounds.y - openerBounds.y - openerBounds.height,
+			openerBounds.y - menuBounds.y - menuBounds.height,
+			0
+		)
+	).toBeLessThanOrEqual(16);
+	await page.keyboard.press('Escape');
+	await expect(railHair).toBeFocused();
+	await page.keyboard.press('Shift+F10');
+	await expect(slotMenu).toBeVisible();
+	await expect(slotMenu).toHaveAccessibleName('Hair slot');
+	await page.keyboard.press('Escape');
+	const railSource = (await railHair.boundingBox())!;
+	await page.mouse.move(railSource.x + 20, railSource.y + railSource.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(railSource.x + 22, railSource.y + railSource.height / 2 + 2);
+	await page.mouse.up();
+	await expect(railHair).toHaveAttribute('aria-current', 'true');
+	expect(await keys()).toEqual(original);
+	const railTarget = (await railHead.boundingBox())!;
+	await page.mouse.move(railSource.x + 20, railSource.y + railSource.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(railTarget.x + 20, railTarget.y + 2, { steps: 6 });
+	await expect(rail.locator('.slot-drop-line')).toBeVisible();
+	await expect(list.locator('.slot-drop-line')).toHaveCount(0);
+	await page.mouse.up();
+	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	const fixedHidden = page.getByRole('button', { name: 'Not shown, 6 slots', exact: true });
+	const fixedBounds = (await page.locator('.slot-add').boundingBox())!;
+	const rejectSource = (await railHair.boundingBox())!;
+	await page.mouse.move(rejectSource.x + 20, rejectSource.y + rejectSource.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(railTarget.x + 20, railTarget.y + 2, { steps: 6 });
+	await expect(rail.locator('.slot-drop-line')).toBeVisible();
+	await page.mouse.move(fixedBounds.x + 20, fixedBounds.y + fixedBounds.height / 2, {
+		steps: 6
+	});
+	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	await page.mouse.up();
+	expect(await keys()).toEqual(original);
+	await fixedHidden.click();
+	const hidden = page.locator('.not-shown-row').filter({ hasText: 'Underwear' });
+	await hidden.scrollIntoViewIfNeeded();
+	const hiddenShow = hidden.getByRole('button', { name: 'Show Underwear', exact: true });
+	await hiddenShow.click({ button: 'right' });
+	await expect(slotMenu).toBeVisible();
+	await expect(slotMenu).toHaveAccessibleName('Underwear slot');
+	await expect(slotMenu.getByRole('menuitem', { name: 'Show slot', exact: true })).toBeVisible();
+	await expect(slotMenu.getByRole('menuitem', { name: 'Make a custom copy…' })).toBeVisible();
+	await expect(slotMenu.getByRole('menuitem', { name: 'Hide slot' })).toHaveCount(0);
+	expect(await keys()).toEqual(original);
+	await page.keyboard.press('Escape');
+	await expect(hiddenShow).toBeFocused();
+	await page.keyboard.press('Shift+F10');
+	await slotMenu.getByRole('menuitem', { name: 'Show slot', exact: true }).click();
+	await expect.poll(keys).toContain('underwear');
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	await hidden.scrollIntoViewIfNeeded();
+	await list.evaluate((element) => {
+		const last = element.querySelector<HTMLElement>('section[data-own]:last-of-type')!;
+		element.scrollTop = last.offsetTop - 100;
+	});
+	const hiddenBox = (await hidden.boundingBox())!;
+	const drop = await list.evaluate((element) => {
+		const last = [...element.querySelectorAll<HTMLElement>('section[data-own]')].at(-1)!;
+		const box = element.getBoundingClientRect();
+		return { x: box.left + 30, y: box.top + last.offsetTop - element.scrollTop + 2 };
+	});
+	await page.mouse.move(hiddenBox.x + 24, hiddenBox.y + hiddenBox.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(drop.x, drop.y, { steps: 6 });
+	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	const restoreScroll = await list.evaluate((element) => element.scrollTop);
+	await page.mouse.up();
+	const restored = [...original];
+	restored.splice(restored.length - 1, 0, 'underwear');
+	await expect.poll(keys).toEqual(restored);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(restoreScroll);
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	await expect(page.getByRole('button', { name: 'Show Underwear', exact: true })).toBeAttached();
+	await list.evaluate((element) => {
+		const last = [...element.querySelectorAll<HTMLElement>('section[data-own]')].at(-1)!;
+		element.scrollTop = last.offsetTop - 40;
+	});
+	const lastHeader = (await page.locator('[data-slot-button="off_hand"]').boundingBox())!;
+	const notShown = (await page.locator('.not-shown-toggle').boundingBox())!;
+	await page.mouse.move(lastHeader.x + 20, lastHeader.y + 20);
+	await page.mouse.down();
+	await page.mouse.move(notShown.x + 20, notShown.y + 8, { steps: 6 });
+	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	await page.mouse.up();
+	expect(await keys()).toEqual(original);
+	await list.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }));
+	const startHead = (await head.boundingBox())!;
+	const listBox = (await list.boundingBox())!;
+	await page.mouse.move(startHead.x + 25, startHead.y + 20);
+	await page.mouse.down();
+	await page.mouse.move(startHead.x + 25, listBox.y + listBox.height - 12, { steps: 8 });
+	await page.clock.runFor(1000);
+	const scrolled = await list.evaluate((element) => element.scrollTop);
+	expect(scrolled).toBeGreaterThan(0);
+	const feet = await list.evaluate((element) => {
+		const section = element.querySelector<HTMLElement>('[data-group="feet"]')!;
+		return {
+			x: element.getBoundingClientRect().left + 30,
+			y: element.getBoundingClientRect().top + section.offsetTop - element.scrollTop + 2
+		};
+	});
+	await page.mouse.move(feet.x, feet.y);
+	await page.clock.runFor(16);
+	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	const beforeDistantDrop = await list.evaluate((element) => element.scrollTop);
+	await page.mouse.up();
+	const distantOrder = original.filter((key) => key !== 'head');
+	distantOrder.splice(distantOrder.indexOf('feet'), 0, 'head');
+	await expect.poll(keys).toEqual(distantOrder);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(beforeDistantDrop);
+	finish();
+});
+
+test('studio demo: touch slot headers scroll before a hold and drag after arming', async ({
+	context,
+	page
+}) => {
+	const finish = await demoGuard(context);
+	await page.setViewportSize({ width: 390, height: 844 });
+	await openDemo(page);
+	await page.getByRole('button', { name: 'Pause', exact: true }).click();
+	await page.clock.install();
+	const session = await context.newCDPSession(page);
+	await session.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+	const touch = (
+		type: 'touchStart' | 'touchMove' | 'touchEnd',
+		points: { x: number; y: number; id: number }[]
+	) => session.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+	const list = page.locator('#wardrobe-list');
+	const keys = () =>
+		list
+			.locator('section[data-own]')
+			.evaluateAll((all) => all.map((element) => (element as HTMLElement).dataset.group));
+	const original = await keys();
+	const head = page.locator('[data-slot-button="head"]');
+	let box = (await head.boundingBox())!;
+	const initialScroll = await list.evaluate((element) => element.scrollTop);
+	await touch('touchStart', [{ x: box.x + 15, y: box.y + box.height / 2, id: 1 }]);
+	await touch('touchMove', [{ x: box.x + 15, y: box.y - 70, id: 1 }]);
+	await touch('touchMove', [{ x: box.x + 15, y: box.y - 100, id: 1 }]);
+	await touch('touchEnd', []);
+	await page.clock.runFor(350);
+	await expect
+		.poll(() => list.evaluate((element) => element.scrollTop))
+		.toBeGreaterThan(initialScroll);
+	expect(await keys()).toEqual(original);
+	await expect(page.locator('#slot-menu')).not.toBeVisible();
+	await list.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }));
+	const hair = page.locator('[data-slot-button="hair"]');
+	box = (await hair.boundingBox())!;
+	const start = { x: box.x + 15, y: box.y + box.height / 2, id: 2 };
+	await touch('touchStart', [start]);
+	await page.clock.runFor(300);
+	await expect(
+		hair.locator('xpath=ancestor::div[contains(@class,"bu-section-head")]')
+	).toHaveAttribute('data-armed', 'true');
+	await touch('touchMove', [{ ...start, y: start.y - 2 }]);
+	await expect(list.locator('[data-dragged]')).toHaveCount(0);
+	const top = (await head.boundingBox())!;
+	await touch('touchMove', [{ ...start, y: top.y + 4 }]);
+	await expect(list.locator('[data-dragged]')).toHaveCount(1);
+	await page.clock.runFor(32);
+	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	await expect(page.locator('.slot-drag-preview')).toBeVisible();
+	await page.screenshot({ path: test.info().outputPath('slot-drop-top-390-dark.png') });
+	await touch('touchMove', [{ ...start, x: 386, y: top.y + 4 }]);
+	await page.clock.runFor(16);
+	const previewBounds = (await page.locator('.slot-drag-preview').boundingBox())!;
+	expect(previewBounds.x).toBeGreaterThanOrEqual(8);
+	expect(previewBounds.x + previewBounds.width).toBeLessThanOrEqual(382);
+	await page.screenshot({ path: test.info().outputPath('slot-drag-390-dark.png') });
+	await touch('touchMove', [{ ...start, y: top.y + 4 }]);
+	await page.clock.runFor(16);
+	const dropScroll = await list.evaluate((element) => element.scrollTop);
+	await touch('touchEnd', []);
+	await page.clock.runFor(32);
+	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(dropScroll);
+	await expect(page.locator('.slot-drag-preview')).not.toBeVisible();
+	await expect(page.locator('#slot-menu')).not.toBeVisible();
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	const rail = page.locator('.slot-rail');
+	const railHair = rail.locator('[data-rail="hair"][data-sortable]');
+	const railHead = rail.locator('[data-rail="head"][data-sortable]');
+	const railSource = (await railHair.boundingBox())!;
+	const railStart = { x: railSource.x + 15, y: railSource.y + railSource.height / 2, id: 3 };
+	await touch('touchStart', [railStart]);
+	await page.clock.runFor(300);
+	await expect(railHair).toHaveAttribute('data-armed', 'true');
+	await touch('touchMove', [{ ...railStart, y: railStart.y - 2 }]);
+	await expect(rail.locator('[data-dragged]')).toHaveCount(0);
+	const railTarget = (await railHead.boundingBox())!;
+	await touch('touchMove', [{ ...railStart, y: railTarget.y + 2 }]);
+	await expect(rail.locator('[data-dragged]')).toHaveCount(1);
+	await page.clock.runFor(32);
+	await expect(rail.locator('.slot-drop-line')).toBeVisible();
+	await expect(list.locator('.slot-drop-line')).toHaveCount(0);
+	await touch('touchEnd', []);
+	await page.clock.runFor(32);
+	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
+	await expect(page.locator('.slot-drag-preview')).not.toBeVisible();
+	const navigation = (await railHead.boundingBox())!;
+	await touch('touchStart', [
+		{ x: navigation.x + 15, y: navigation.y + navigation.height / 2, id: 4 }
+	]);
+	await touch('touchEnd', []);
+	await page.clock.runFor(32);
+	await expect(railHead).toHaveAttribute('aria-current', 'true');
+	await expect(page.locator('#slot-menu')).not.toBeVisible();
+	const holdRail = (await railHead.boundingBox())!;
+	const beforeHold = await keys();
+	await touch('touchStart', [{ x: holdRail.x + 15, y: holdRail.y + 20, id: 5 }]);
+	await page.clock.runFor(550);
+	const slotMenu = page.locator('#slot-menu');
+	await expect(slotMenu).toBeVisible();
+	await expect(slotMenu).toHaveAccessibleName('Head slot');
+	await touch('touchEnd', []);
+	await page.clock.runFor(32);
+	await expect(slotMenu).toBeVisible();
+	await expect(railHead).toHaveAttribute('aria-current', 'true');
+	expect(await keys()).toEqual(beforeHold);
+	await page.keyboard.press('Escape');
+	await expect(railHead).toBeFocused();
+	await page.getByRole('button', { name: 'Not shown, 6 slots', exact: true }).click();
+	const hiddenShow = page.getByRole('button', { name: 'Show Underwear', exact: true });
+	await hiddenShow.scrollIntoViewIfNeeded();
+	const holdHidden = (await hiddenShow.boundingBox())!;
+	await touch('touchStart', [{ x: holdHidden.x + 15, y: holdHidden.y + 20, id: 6 }]);
+	await page.clock.runFor(550);
+	await expect(slotMenu).toBeVisible();
+	await expect(slotMenu).toHaveAccessibleName('Underwear slot');
+	await touch('touchEnd', []);
+	await page.clock.runFor(32);
+	await expect(slotMenu).toBeVisible();
+	expect(await keys()).toEqual(beforeHold);
+	await page.keyboard.press('Escape');
+	await expect(hiddenShow).toBeFocused();
+	await session.detach();
+	finish();
+});
+
 test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme survive a reload and export', async ({
 	context,
 	page
@@ -1988,6 +2528,7 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 	await expect(tabs.locator('[tabindex="0"]')).toHaveCount(1);
 	await page.keyboard.press('End');
 	await expect(tabs.getByRole('button').last()).toBeFocused();
+	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.keyboard.press('Home');
 	await expect(tabs.getByRole('button').first()).toBeFocused();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
@@ -4443,7 +4984,7 @@ test('unsafe imported equipment prices its frozen route and unsupported held off
 		s.ui.all = false;
 		s.wear(id);
 		s.pick(id);
-		s.ui.group = 'Body';
+		s.ui.group = 'torso_inner';
 	}, fixture.itemId);
 	await inspectStage(page);
 	await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toContainText(
@@ -6100,7 +6641,7 @@ for (const width of [1280, 390])
 		const atTop = async () => {
 			await expect(list).toBeVisible();
 			await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(0);
-			await expect(page.locator('[data-rail="Head"]')).toHaveAttribute('aria-current', 'true');
+			await expect(page.locator('[data-rail="head"]')).toHaveAttribute('aria-current', 'true');
 		};
 		await atTop();
 		await equipmentGroup(page, 'Back');
@@ -6266,7 +6807,7 @@ test('Wardrobe lands on a category picked while closed and reveals tiles below t
 	// Another view (a review, a missing-frames link) picks a category while the Wardrobe is closed.
 	await page.evaluate(() => {
 		const s = (window as unknown as { __studio: { ui: { group: string; tab: string } } }).__studio;
-		s.ui.group = 'Main hand';
+		s.ui.group = 'main_hand';
 		s.ui.tab = 'wardrobe';
 	});
 	const list = page.locator('#wardrobe-list');
@@ -6343,11 +6884,9 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 			slot: 'off_hand',
 			materials: []
 		});
-		m.slots.push({
-			...structuredClone(m.slots.find((x: { id: string }) => x.id === 'main_hand')),
-			id: 'off_hand',
-			z: 140
-		});
+		const slotsPath = '/src/lib/items/slots.ts',
+			slots = await import(slotsPath);
+		m.slots.push(slots.slotLadder(m.rig).find((slot: { id: string }) => slot.id === 'off_hand'));
 		await db.put('projects', ctx.rec.id, ctx.rec);
 		await s.openProject(ctx.rec.id);
 		s.pick(sword.id);

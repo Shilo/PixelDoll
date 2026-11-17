@@ -1,3 +1,4 @@
+import { createSlot } from '../../src/lib/items/slots.ts';
 import { expect, test } from 'vitest';
 import { splitFgBg } from '../../src/lib/compose/split.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
@@ -98,58 +99,62 @@ test('neckY reads posed keypoints, falls back to the rest view for standing cell
 	expect(neckY(rig, 'default/east/0')).toBeUndefined();
 });
 
-test('buildItem applies the neck rule to hair cells and stores the moved edge in the fg layer', async () => {
-	const kp = LABELS.map((label) => ({ label, x: 0.5, y: label === 'NECK' ? 0.4 : 0.5, z: 0 }));
-	const rig = {
-		cell: { w: 10, h: 10 },
-		pivot: { x: 5, y: 10 },
-		baseItem: 'base',
-		baseHash: 'sha256:test',
-		directions: [{ id: 'south' }],
-		animations: [{ id: 'default', cells: 1, loop: true, frames: [] }],
-		rest: { south: { image: 'sha256:r', keypoints: kp } }
-	} as unknown as Rig;
-	const layer = front(),
-		base = body(),
-		mask = Uint8Array.from({ length: 100 }, (_, p) => (layer.data[p * 4 + 3] ? 1 : 0));
-	const cells: CellOut[] = [
-		{
-			key: 'default/south/0',
-			call: 0,
-			base,
-			input: base,
-			out: layer,
-			layer,
-			mask,
-			area: mask.reduce((n, v) => n + v, 0),
-			outBand: 0,
-			baseBand: 0,
-			specks: 0,
-			pinholes: 0,
-			shifted: false,
-			offset: [0, 0],
-			stray: 0,
-			posed: false
-		}
-	];
-	const { item, images } = await buildItem({
-		spec: {
-			id: 'long_hair',
-			name: 'Long hair',
-			slot: 'hair',
-			prompt: '',
-			key: 'green',
-			anims: ['default'],
-			dirs: ['south']
-		},
-		rig,
-		cells,
-		route: 'green',
-		provenance: [],
-		qa: itemQa(rig, slotOf('hair'), 'green', cells, 0).qa
-	});
-	const image = (role: string) =>
-		images.get(item.layers.find((l) => l.id === role)!.cells!.default!.south![0]!)!;
-	for (let y = 1; y <= 6; y++) expect(at(image('fg'), 2, y)).toBe(true);
-	expect(at(image('bg'), 0, 7)).toBe(true);
-});
+test.each([slotOf('hair'), createSlot('flowing_strands', 'hair')])(
+	'buildItem applies the hair neck rule to $id and stores the moved edge in the fg layer',
+	async (slot) => {
+		const kp = LABELS.map((label) => ({ label, x: 0.5, y: label === 'NECK' ? 0.4 : 0.5, z: 0 }));
+		const rig = {
+			cell: { w: 10, h: 10 },
+			pivot: { x: 5, y: 10 },
+			baseItem: 'base',
+			baseHash: 'sha256:test',
+			directions: [{ id: 'south' }],
+			animations: [{ id: 'default', cells: 1, loop: true, frames: [] }],
+			rest: { south: { image: 'sha256:r', keypoints: kp } }
+		} as unknown as Rig;
+		const layer = front(),
+			base = body(),
+			mask = Uint8Array.from({ length: 100 }, (_, p) => (layer.data[p * 4 + 3] ? 1 : 0));
+		const cells: CellOut[] = [
+			{
+				key: 'default/south/0',
+				call: 0,
+				base,
+				input: base,
+				out: layer,
+				layer,
+				mask,
+				area: mask.reduce((n, v) => n + v, 0),
+				outBand: 0,
+				baseBand: 0,
+				specks: 0,
+				pinholes: 0,
+				shifted: false,
+				offset: [0, 0],
+				stray: 0,
+				posed: false
+			}
+		];
+		const { item, images } = await buildItem({
+			spec: {
+				id: 'long_hair',
+				name: 'Long hair',
+				slot: slot.id,
+				slotConfig: slot,
+				prompt: '',
+				key: 'green',
+				anims: ['default'],
+				dirs: ['south']
+			},
+			rig,
+			cells,
+			route: 'green',
+			provenance: [],
+			qa: itemQa(rig, slot, 'green', cells, 0).qa
+		});
+		const image = (role: string) =>
+			images.get(item.layers.find((l) => l.id === role)!.cells!.default!.south![0]!)!;
+		for (let y = 1; y <= 6; y++) expect(at(image('fg'), 2, y)).toBe(true);
+		expect(at(image('bg'), 0, 7)).toBe(true);
+	}
+);

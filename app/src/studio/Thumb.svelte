@@ -1,7 +1,7 @@
 <script lang="ts">
 	// Static item-only art. Crop once per source change; CSS fits the native pixels without resize observers or playback work.
 	import type { Item, Project } from '../lib/store/manifest.ts';
-	import { crop, groupOf, thumbCell } from './model.ts';
+	import { crop, thumbCell } from './model.ts';
 	import { ui } from './state.svelte.ts';
 	import Sprite from './Sprite.svelte';
 	import GroupIcon from './GroupIcon.svelte';
@@ -26,4 +26,4 @@
 		h={im.h}
 		fitToBox
 		label={item.name}
-	/>{:else}<GroupIcon group={groupOf(item.slot).id} size={24} />{/if}
+	/>{:else}<GroupIcon group={item.slot} size={24} />{/if}

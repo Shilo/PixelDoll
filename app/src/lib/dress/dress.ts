@@ -1,3 +1,4 @@
+import { behaviorOf, requireSlot, type SlotSource } from '../items/slots.ts';
 // Dress-up model (architecture §4, §6): per-item materials, variant resolution with linkTo, recolored project view,
 // random outfits, coverage and layer outlines. Pure over Project; the M4 UI and the baked export share recolor().
 import type { Img } from '../image/png.ts';
@@ -72,6 +73,8 @@ const SLOT_WORD: Record<string, string> = {
 	legs: 'Cloth',
 	waist: 'Leather',
 	torso_inner: 'Cloth',
+	underwear: 'Cloth',
+	accessory: 'Cloth',
 	torso_outer: 'Cloth',
 	back: 'Cloth',
 	head: 'Cloth',
@@ -108,7 +111,8 @@ const wordOf = (noun: string) => WORDS.find(([re]) => re.test(noun))?.[1];
  * then the slot's usual material, then the hue word. Repeats get a number ("Cloth 2"). */
 export function materialNames(
 	it: Pick<Item, 'slot' | 'prompt' | 'name'>,
-	ramps: Hex[][]
+	ramps: Hex[][],
+	slots: SlotSource = []
 ): string[] {
 	const text = `${it.prompt} ${it.name}`.toLowerCase(),
 		hues = ramps.map(hueName),
@@ -142,7 +146,7 @@ export function materialNames(
 							? free(words.includes('Metal') ? 'Metal' : undefined)
 							: undefined) ??
 						free(words.find((w) => !used.has(w))) ??
-						free(SLOT_WORD[it.slot]) ??
+						free(SLOT_WORD[behaviorOf(requireSlot(slots, it.slot))]) ??
 						'Detail');
 		used.add(n);
 		return n;
@@ -187,10 +191,10 @@ export function deriveMaterials(
 			).filter(([, r]) => r.length);
 			const others = k[it.id] ? deriveRamps(rest, k[it.id], claimed) : autoRamps(rest, claimed);
 			ramps = [...garments.map(([, r]) => r), ...others];
-			names = [...garments.map(([n]) => n), ...materialNames(it, others)];
+			names = [...garments.map(([n]) => n), ...materialNames(it, others, m)];
 		} else {
 			ramps = k[it.id] ? deriveRamps(counts, k[it.id], claimed) : autoRamps(counts, claimed);
-			names = materialNames(it, ramps);
+			names = materialNames(it, ramps, m);
 		}
 		it.materials = ramps.map((ramp, i) => {
 			ramp.forEach((h) => claimed.add(fromHex(h)));

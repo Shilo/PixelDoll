@@ -18,6 +18,24 @@ async function manifest() {
 	return exportManifest(project, { engines: ['unity'], baked: false }).manifest;
 }
 
+test('Unity expands two-handed targets to copied hand slots', async () => {
+	const m = await manifest();
+	m.slots.push(
+		{ id: 'weapon_extra', class: 'held', anchor: 'hand_r', z: 150 },
+		{ id: 'shield_extra', class: 'held', anchor: 'hand_l', z: 110 }
+	);
+	m.items.push({
+		...structuredClone(m.items[0]),
+		id: 'custom_greatsword',
+		slot: 'weapon_extra',
+		hides: ['off_hand'],
+		materials: []
+	});
+	expect(unityJson(m).items.find((item) => item.id === 'custom_greatsword')!.hides).toContain(
+		'shield_extra'
+	);
+});
+
 test('Unity native export declares only required assemblies and isolates character types', async () => {
 	const m = await manifest();
 	const files = unityFiles(m);

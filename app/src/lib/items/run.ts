@@ -1,3 +1,4 @@
+import { handOf, requireSlot, specSlot, type SlotSource } from './slots.ts';
 // Item runner (architecture §3): drafts -> calls through the queue -> extraction + QA from the ledger -> player review or accept.
 // UI-free; ui/M3.svelte and the Studio use this. A Draft is mutated in place (pass a Svelte $state proxy to get reactivity)
 // and persisted through the `persist` hook. Everything is re-derived from the job ledger, so reloads resume.
@@ -104,7 +105,6 @@ import {
 	planItem,
 	postProcess,
 	restKey,
-	slotOf,
 	unrotate,
 	type CallKind,
 	type CellOut,
@@ -164,6 +164,17 @@ export interface RigCtx {
 	project: Project;
 }
 
+function draftContext(d: Draft, ctx: RigCtx): RigCtx {
+	const slots = ctx.rec.manifest.slots ?? [];
+	const slot = specSlot(d.spec, slots);
+	if (slots.some((entry) => entry.id === slot.id)) return ctx;
+	const manifest = { ...ctx.rec.manifest, slots: [...slots, structuredClone(slot)] };
+	return {
+		rec: { ...ctx.rec, manifest },
+		project: { ...ctx.project, manifest }
+	};
+}
+
 const seed = () => 1 + Math.floor(Math.random() * 2_000_000);
 const slug = (s: string) =>
 	s
@@ -190,6 +201,7 @@ export function newDraft(
 	while (taken.includes(id) || ctx.rec.manifest.items.some((i) => i.id === id)) id += '_2';
 	const s: ItemSpec = {
 		...spec,
+		slotConfig: structuredClone(requireSlot(ctx.rec.manifest, spec.slot)),
 		id,
 		name: spec.name || id,
 		method: spec.method ?? defaultMethod(ctx, spec)
@@ -319,7 +331,7 @@ const cutFor = (
 	restView = false
 ) => {
 	const { rig } = ctx.rec.manifest,
-		maxY = cutRows(slot, skelOf(ctx, k, restView), rig.cell.h);
+		maxY = cutRows(requireSlot(ctx.rec.manifest, slot), skelOf(ctx, k, restView), rig.cell.h);
 	if (maxY == null) return undefined;
 	if (!posed) return restView ? { maxY } : undefined; // in-place edit cells never cut on their own: untested for drift
 	const allow = cutAllow(
@@ -346,23 +358,27 @@ async function dressedKeys(ctx: RigCtx, item: Item, pad: number) {
 				base: padImg(baseCell(ctx, k, true), pad),
 				out: await img(item.dressed![d]!.slice(7)),
 				route: item.key!,
-				band: bandOf(item.slot, pad ? undefined : skelOf(ctx, k, true), H),
+				band: bandOf(
+					requireSlot(ctx.rec.manifest, item.slot),
+					pad ? undefined : skelOf(ctx, k, true),
+					H
+				),
 				cut: cutFor(ctx, item.slot, k, false, {}, true)
 			});
 		keys[d] = c.layer;
 		if (c.cut) cuts[d] = c.cut;
 		cells.push(c);
 	}
-	return { keys, cuts, hidden: hiddenViews(cells, keys, item.slot) };
+	return { keys, cuts, hidden: hiddenViews(cells, keys, requireSlot(ctx.rec.manifest, item.slot)) };
 }
 
 function standingViews(d: Draft, ctx: RigCtx, refs: { dir: DirectionName; im: Img }[]) {
 	const views: Partial<Record<DirectionName, StandingDesignView>> = {};
 	if (
 		!gridable(d.spec) ||
-		slotOf(d.spec.slot).class !== 'worn' ||
-		slotOf(d.spec.slot).bgZ != null ||
-		padOf(d.spec.slot, d.spec.method, ctx.rec.manifest.rig.cell)
+		requireSlot(ctx.rec.manifest, d.spec.slot).class !== 'worn' ||
+		requireSlot(ctx.rec.manifest, d.spec.slot).bgZ != null ||
+		padOf(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method, ctx.rec.manifest.rig.cell)
 	)
 		return views;
 	for (const { dir, im } of refs) {
@@ -386,7 +402,7 @@ export function heldRepairRadius(
 	let reach = 0;
 	for (const r of refs) {
 		const wrist = skelOf(ctx, restKey(r.dir), true)?.[
-			spec.slot === 'off_hand' ? 'LEFT ARM' : 'RIGHT ARM'
+			handOf(requireSlot(ctx.rec.manifest, spec.slot)) === 'left' ? 'LEFT ARM' : 'RIGHT ARM'
 		];
 		if (!wrist) continue;
 		const body = padImg(baseCell(ctx, restKey(r.dir), true), pad),
@@ -406,7 +422,7 @@ export function heldRepairRadius(
  *  (kept, black mask) as the reference design. Rig cell only (held items keep their oversize S5 route). */
 async function gridReq(
 	ctx: RigCtx,
-	spec: Pick<ItemSpec, 'slot' | 'prompt' | 'key'>,
+	spec: Pick<ItemSpec, 'slot' | 'slotConfig' | 'prompt' | 'key'>,
 	cells: string[],
 	refs: { dir: DirectionName; im: Img }[],
 	seed: number,
@@ -419,7 +435,7 @@ async function gridReq(
 		[anim, dir] = cells[0].split('/') as [string, DirectionName];
 	if (cells.some((k) => k.split('/')[1] !== dir))
 		throw new Error('Repair one independently drawn direction at a time.');
-	const held = slotOf(spec.slot).class === 'held';
+	const held = requireSlot(ctx.rec.manifest, spec.slot).class === 'held';
 	const radius = held ? heldRepairRadius(ctx, spec, refs, pad) : 0;
 	// Keep other views for QA; mixing front and back references can confuse the image editor.
 	refs = refs.filter((r) => r.dir === dir);
@@ -445,7 +461,7 @@ async function gridReq(
 			if (!design) throw new Error(`${direction}: no dressed garment reference for repair`);
 			return bandMask(
 				garmentBand(
-					bandOf(spec.slot, skelOf(ctx, k), h),
+					bandOf(requireSlot(ctx.rec.manifest, spec.slot), skelOf(ctx, k), h, 'repair'),
 					design,
 					skelOf(ctx, restKey(direction), true),
 					skelOf(ctx, k)
@@ -458,7 +474,10 @@ async function gridReq(
 			measured = rig.animations.find((a0) => a0.id === a)?.sources?.[d]?.measured?.[+i];
 		const observed =
 			skelOf(ctx, k) ?? (hasAll(measured) ? fromApi(measured!, rig.cell) : undefined);
-		const point = observed?.[spec.slot === 'off_hand' ? 'LEFT ARM' : 'RIGHT ARM'];
+		const point =
+			observed?.[
+				handOf(requireSlot(ctx.rec.manifest, spec.slot)) === 'left' ? 'LEFT ARM' : 'RIGHT ARM'
+			];
 		if (
 			!point ||
 			!Number.isFinite(point.x) ||
@@ -490,7 +509,7 @@ async function gridReq(
 	return routes.inpaintV3({
 		description: gridPrompt({
 			item: spec.prompt,
-			slot: spec.slot,
+			slot: requireSlot(ctx.rec.manifest, spec.slot),
 			key: spec.key as Key,
 			anim,
 			dir,
@@ -507,8 +526,8 @@ async function gridReq(
 	});
 }
 /** Can a failing pose call fall back to the grid? Worn/rigid items on a chroma key (held items stay on their S5 route). */
-const gridable = (spec: { slot: string; key?: ItemSpec['key'] }) =>
-	!!spec.key && spec.key !== 'none' && slotOf(spec.slot).class !== 'held';
+const gridable = (spec: { slot: string; slotConfig?: Slot; key?: ItemSpec['key'] }) =>
+	!!spec.key && spec.key !== 'none' && specSlot(spec).class !== 'held';
 
 const blobB64 = async (sha: string) =>
 	bytesToBase64(new Uint8Array(await (await db.getBlob(sha))!.arrayBuffer()));
@@ -520,10 +539,11 @@ function drop(c: CallState) {
 	drops.set(c, (drops.get(c) ?? 0) + 1);
 }
 async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
+	ctx = draftContext(d, ctx);
 	const c = d.calls[k],
 		route = d.spec.key,
 		{ rig } = ctx.rec.manifest,
-		pad = padOf(d.spec.slot, d.spec.method, rig.cell);
+		pad = padOf(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method, rig.cell);
 	let req;
 	if (c.kind === 'grid') {
 		// B14: the clip-direction as one inpaint-v3 grid, the dress call's keyframes as reference cells
@@ -549,7 +569,7 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 			rest,
 			poses: poses as Keypoint[][],
 			item: d.spec.prompt,
-			slot: d.spec.slot,
+			slot: requireSlot(ctx.rec.manifest, d.spec.slot),
 			key: route,
 			anim,
 			dir,
@@ -567,14 +587,19 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 			if (a?.state !== 'done') throw new Error('design call not done');
 			frames.push(await blobB64(outputsOf(a)[0].sha));
 		}
-		const mark = c.kind === 'dress' && heldSkel(d.spec.slot, d.spec.method);
+		const mark =
+			c.kind === 'dress' && heldSkel(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method);
 		for (const key of c.cells) {
 			const im = padImg(inputCell(baseCell(ctx, key, c.kind === 'dress'), route), pad),
 				rest = rig.rest?.[key.split('/')[1] as DirectionName]?.keypoints;
 			if (mark && !rest) throw new Error(`${key}: no rest pose to mark the held hand`);
 			frames.push(
 				bytesToBase64(
-					await encodePngBytes(mark ? markHand(im, rest!, d.spec.slot, rig.cell, pad) : im)
+					await encodePngBytes(
+						mark
+							? markHand(im, rest!, requireSlot(ctx.rec.manifest, d.spec.slot), rig.cell, pad)
+							: im
+					)
 				)
 			);
 		}
@@ -582,7 +607,7 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 		req = itemRoute.edit(
 			frames,
 			itemPrompt(
-				dressItem(d.spec),
+				dressItem({ ...d.spec, slotConfig: requireSlot(ctx.rec.manifest, d.spec.slot) }),
 				route,
 				c.cells,
 				c.reference?.cell ?? (anchored(k, c.kind) ? d.calls[0].cells[0] : undefined)
@@ -686,6 +711,7 @@ export const isClean = (r: ItemResult) =>
 /** Run each batch of the player-requested plan once. Checks never authorize another paid attempt. */
 export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<ItemResult | null> {
 	h.signal?.throwIfAborted();
+	ctx = draftContext(d, ctx);
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
 	const persist = h.persist ?? (async () => {}),
@@ -914,6 +940,7 @@ export async function evaluateItem(
 	ctx: RigCtx,
 	standingPalettes?: ReadonlyMap<DirectionName, number[]>
 ): Promise<ItemResult> {
+	ctx = draftContext(d, ctx);
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
 	type Out = {
@@ -930,8 +957,8 @@ export async function evaluateItem(
 		g1 = new Map<number, string>(),
 		outs: Out[] = [],
 		dressOuts: Out[] = [];
-	const pad = padOf(d.spec.slot, d.spec.method, rig.cell),
-		slot = slotOf(d.spec.slot),
+	const pad = padOf(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method, rig.cell),
+		slot = requireSlot(ctx.rec.manifest, d.spec.slot),
 		W = rig.cell.w + 2 * pad,
 		H = rig.cell.h + 2 * pad;
 	const dirOf = (key: string) => key.split('/')[1] as DirectionName;
@@ -1008,10 +1035,15 @@ export async function evaluateItem(
 		if (c.kind === 'pose') {
 			const dir = c.cells[0].split('/')[1] as DirectionName;
 			const poses = paddedPoses(c.cells.map((key) => cellKeypoints(rig, key)!));
-			o = unrotate(o, f0Last(d.spec.slot, rig.rest?.[dir]?.keypoints ?? [], poses, rig.cell)).slice(
-				0,
-				c.cells.length
-			);
+			o = unrotate(
+				o,
+				f0Last(
+					requireSlot(ctx.rec.manifest, d.spec.slot),
+					rig.rest?.[dir]?.keypoints ?? [],
+					poses,
+					rig.cell
+				)
+			).slice(0, c.cells.length);
 		}
 		for (const [i, key] of c.cells.entries()) {
 			const im = await img(o[i].sha);
@@ -1064,7 +1096,11 @@ export async function evaluateItem(
 					base: padImg(baseCell(ctx, o.key, restView), pad),
 					out: o.out,
 					route,
-					band: bandOf(d.spec.slot, pad ? undefined : skelOf(ctx, o.key, restView), H),
+					band: bandOf(
+						requireSlot(ctx.rec.manifest, d.spec.slot),
+						pad ? undefined : skelOf(ctx, o.key, restView),
+						H
+					),
 					useCc,
 					posed: o.posed,
 					clip: slot.band,
@@ -1081,10 +1117,10 @@ export async function evaluateItem(
 		keys[dressOuts[i].key.split('/')[1] as DirectionName] = c.layer;
 		if (c.cut) keyCut[dressOuts[i].key.split('/')[1] as DirectionName] = c.cut;
 	}
-	const hidden = hiddenViews(kfCells, keys, d.spec.slot),
+	const hidden = hiddenViews(kfCells, keys, requireSlot(ctx.rec.manifest, d.spec.slot)),
 		hiddenWarnings: string[] = [],
 		smudged = smudgedViews(
-			d.spec.slot,
+			requireSlot(ctx.rec.manifest, d.spec.slot),
 			d.spec.prompt,
 			kfCells.map((c) => c.layer)
 		),
@@ -1303,18 +1339,24 @@ async function previewProject(
 	pending: CellKey[]
 ): Promise<Project> {
 	const { item, images } = await buildItem({
-		spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec,
+		spec: JSON.parse(
+			JSON.stringify({ ...d.spec, slotConfig: requireSlot(ctx.rec.manifest, d.spec.slot) })
+		) as ItemSpec,
 		rig: ctx.rec.manifest.rig,
 		cells,
 		route: d.spec.key,
 		provenance: [],
 		qa: qa.qa,
-		pad: padOf(d.spec.slot, d.spec.method, ctx.rec.manifest.rig.cell),
+		pad: padOf(
+			requireSlot(ctx.rec.manifest, d.spec.slot),
+			d.spec.method,
+			ctx.rec.manifest.rig.cell
+		),
 		pending
 	});
 	const m: Manifest = structuredClone(ctx.rec.manifest);
 	// A slot the character lacks comes in ladder order with its rig's near-hand order, as when the item is saved.
-	putItem(m, item, slotLadder(m.rig));
+	putItem(m, item, [...slotLadder(m.rig), specSlot(d.spec, m)]);
 	return { manifest: m, images: new Map([...ctx.project.images, ...images]) };
 }
 
@@ -1364,6 +1406,7 @@ export async function acceptItem(
 	ctx: RigCtx,
 	res?: ItemResult
 ): Promise<{ item: Item; cells: number }> {
+	ctx = draftContext(d, ctx);
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
 	const r = res ?? (await evaluateItem(d, ctx));
@@ -1391,13 +1434,19 @@ export async function acceptItem(
 		}
 	const provenance = draftProvenance(d);
 	const { item, images } = await buildItem({
-		spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec,
+		spec: JSON.parse(
+			JSON.stringify({ ...d.spec, slotConfig: requireSlot(ctx.rec.manifest, d.spec.slot) })
+		) as ItemSpec,
 		rig: ctx.rec.manifest.rig,
 		cells: r.cells,
 		route: d.spec.key,
 		qa,
 		...(Object.keys(dressed).length ? { dressed } : {}),
-		pad: padOf(d.spec.slot, d.spec.method, ctx.rec.manifest.rig.cell),
+		pad: padOf(
+			requireSlot(ctx.rec.manifest, d.spec.slot),
+			d.spec.method,
+			ctx.rec.manifest.rig.cell
+		),
 		provenance,
 		anchorCell: d.calls.length > 1 ? d.calls[0].cells[0] : undefined
 	});
@@ -1415,7 +1464,13 @@ export async function acceptItem(
 	// would have moved it; a replaced or recolored cell means it may not, so it is refused rather than saved for another body.
 	const made = ctx.rec.manifest,
 		anims = made.rig.animations.map((a) => a.id);
-	await saveItem(d.rigId, item, images, slotLadder(made.rig), (cur) => {
+	const slot = specSlot(d.spec, made);
+	await saveItem(d.rigId, item, images, [...slotLadder(made.rig), slot], (cur) => {
+		const current = specSlot({ slot: slot.id, slotConfig: slot }, cur.manifest);
+		if (current.z !== slot.z || current.bgZ !== slot.bgZ)
+			throw new Error(
+				`${d.spec.name}: the category depth changed while this item was being kept. Nothing was saved; try again.`
+			);
 		if (cur.manifest.rig.baseHash === item.baseHash) return;
 		if (bodyCells(cur.manifest, anims) !== bodyCells(made, anims))
 			throw new Error(
@@ -1487,6 +1542,7 @@ export async function animateAnchoredItem(
 			name: item.name,
 			prompt: item.prompt,
 			slot: item.slot,
+			slotConfig: structuredClone(requireSlot(ctx.rec.manifest, item.slot)),
 			key: item.key!,
 			method: 'anchor',
 			anims: [anim],
@@ -1573,7 +1629,8 @@ export function itemPoseGens(
 	item: Item,
 	anim: string,
 	frames: number,
-	dirs: DirectionName[]
+	dirs: DirectionName[],
+	slots?: SlotSource
 ): number {
 	const cell = item.layers[0]?.cell ?? rig.cell;
 	return dirs.reduce(
@@ -1586,7 +1643,7 @@ export function itemPoseGens(
 				);
 				return (
 					n +
-					(frozenGrid(rig, item, cells)
+					(frozenGrid(rig, { ...item, slotConfig: requireSlot(slots ?? [], item.slot) }, cells)
 						? repairGridLayout(cell, cells.length, 1).gens
 						: poseGensFor(cells.length))
 				);
@@ -1635,7 +1692,7 @@ export async function poseItemClip(
 	savedOnly = false
 ): Promise<QaResult> {
 	const { rig } = ctx.rec.manifest,
-		slot = slotOf(item.slot),
+		slot = requireSlot(ctx.rec.manifest, item.slot),
 		key = item.key!,
 		pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
 	const available = rig.directions
@@ -1666,7 +1723,17 @@ export async function poseItemClip(
 				const seed = seedOf(
 					`${item.id}/${anim}/${dir}/0${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`
 				);
-				if (frozenGrid(rig, { slot: item.slot, key }, cells)) {
+				if (
+					frozenGrid(
+						rig,
+						{
+							slot: item.slot,
+							slotConfig: structuredClone(requireSlot(ctx.rec.manifest, item.slot)),
+							key
+						},
+						cells
+					)
+				) {
 					const g = await gridItemClip(
 						ctx,
 						item,
@@ -1694,7 +1761,7 @@ export async function poseItemClip(
 					rest,
 					poses,
 					item: item.prompt,
-					slot: item.slot,
+					slot: requireSlot(ctx.rec.manifest, item.slot),
 					key,
 					anim,
 					dir,
@@ -1722,10 +1789,10 @@ export async function poseItemClip(
 					throw new Error(
 						`${item.name} ${anim} ${dir}: PixelLab returned missing or malformed frames. No automatic retry was made.`
 					);
-				const outs = unrotate(outputs, f0Last(item.slot, rest, paddedPoses(poses), rig.cell)).slice(
-					0,
-					cells.length
-				);
+				const outs = unrotate(
+					outputs,
+					f0Last(requireSlot(ctx.rec.manifest, item.slot), rest, paddedPoses(poses), rig.cell)
+				).slice(0, cells.length);
 				const images = await Promise.all(outs.map((o) => img(o.sha)));
 				if (images.some((im) => im.w !== rig.cell.w + 2 * pad || im.h !== rig.cell.h + 2 * pad))
 					throw new Error(
@@ -1738,7 +1805,11 @@ export async function poseItemClip(
 						base: padImg(baseCell(ctx, c), pad),
 						out: images[i],
 						route: key,
-						band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad),
+						band: bandOf(
+							requireSlot(ctx.rec.manifest, item.slot),
+							pad ? undefined : skelOf(ctx, c),
+							rig.cell.h + 2 * pad
+						),
 						posed: true,
 						clip: slot.band,
 						held: slot.class === 'held',
@@ -1829,6 +1900,7 @@ export async function mergeClip(
 		id: item.id,
 		name: item.name,
 		slot: item.slot,
+		slotConfig: structuredClone(requireSlot(ctx.rec.manifest, item.slot)),
 		prompt: item.prompt,
 		key,
 		anims: [anim],
@@ -1979,7 +2051,12 @@ export async function gridRepairRequest(
 	);
 	return gridReq(
 		ctx,
-		{ slot: item.slot, prompt: item.prompt, key: item.key },
+		{
+			slot: item.slot,
+			slotConfig: structuredClone(requireSlot(ctx.rec.manifest, item.slot)),
+			prompt: item.prompt,
+			key: item.key
+		},
 		cells,
 		refs,
 		seed,
@@ -2003,7 +2080,7 @@ async function gridItemClip(
 	savedOnly = false
 ): Promise<{ cells: CellOut[]; prov: Provenance } | { blocked: string }> {
 	const { rig } = ctx.rec.manifest,
-		slot = slotOf(item.slot),
+		slot = requireSlot(ctx.rec.manifest, item.slot),
 		pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
 	const cells =
 			selectedCells ??
@@ -2048,7 +2125,7 @@ async function gridItemClip(
 			base: padImg(baseCell(ctx, c), pad),
 			out: cut[i],
 			route: item.key!,
-			band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), h),
+			band: bandOf(requireSlot(ctx.rec.manifest, item.slot), pad ? undefined : skelOf(ctx, c), h),
 			posed: true,
 			clip: slot.band,
 			held: slot.class === 'held',
@@ -2072,7 +2149,7 @@ export async function regridClip(
 	seedN = seed()
 ): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[] }> {
 	const { rig } = ctx.rec.manifest,
-		slot = slotOf(item.slot),
+		slot = requireSlot(ctx.rec.manifest, item.slot),
 		key = item.key!;
 	if (!item.key || !item.dressed?.[dir])
 		throw new Error(`${item.name}: no grid reference for this item`);

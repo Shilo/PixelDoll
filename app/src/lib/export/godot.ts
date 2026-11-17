@@ -208,6 +208,32 @@ func set_variant(material_id: String, variant_name: Variant = null) -> bool:
 	return true
 
 
+func _hand_side(slot_id: String) -> String:
+	var slot := _find(manifest["slots"], slot_id)
+	if slot.get("class", "") != "held":
+		return ""
+	if slot.get("anchor", "") == "hand_l":
+		return "left"
+	if slot.get("anchor", "") == "hand_r":
+		return "right"
+	return "left" if slot_id == "off_hand" else "right" if slot_id == "main_hand" else ""
+
+
+func _hides_of(it: Dictionary) -> Array:
+	var slot_id: String = it["slot"]
+	var targets: Array = it.get("hides", _find(manifest["slots"], slot_id).get("hides", [])).duplicate()
+	if _hand_side(slot_id).is_empty():
+		return targets
+	for target in targets.duplicate():
+		if target != "main_hand" and target != "off_hand":
+			continue
+		var side := "left" if target == "off_hand" else "right"
+		for slot in manifest["slots"]:
+			if _hand_side(slot["id"]) == side and not targets.has(slot["id"]):
+				targets.append(slot["id"])
+	return targets
+
+
 func _refresh() -> void:
 	_refreshing = true
 	var clock_frame := body.frame
@@ -219,7 +245,7 @@ func _refresh() -> void:
 	for slot in equipped:
 		var it := _find(manifest["items"], equipped[slot])
 		if not it.is_empty():
-			hides[slot] = it.get("hides", _find(manifest["slots"], slot).get("hides", []))
+			hides[slot] = _hides_of(it)
 	var order: Array = manifest["slots"].map(func(s): return s["id"])
 	for slot in hides:
 		# Of two worn items that hide each other's slot (two two-handed items), the later slot stays visible.

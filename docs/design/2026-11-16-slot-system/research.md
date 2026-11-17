@@ -51,10 +51,32 @@ Additional leads, not completed research: Tiny Life ClothesLayer API, Roblox Acc
 
 ## What would change the recommendation?
 
+Current product decision: Body replaces the Chest label but does not replace Legs. Both remain independently selectable and shown; Body draws above Legs. Outerwear and Underwear are single hidden universal slots, with extra independent separation handled by custom slots. This follows the user's intended small-sprite workflow, not an asserted MMO frequency measurement. Nude bases make removable underwear relevant; baked underwear is not a reason to exclude the slot. Full outfits fit Body rather than requiring a dedicated Full outfit built-in.
+
 - Measure which categories real PixelDoll users swap independently, not just how many games list them.
 - On existing fixtures, inspect 48px and 64px masks for glasses, gloves, cuffs and neckwear across directions. Tiny details can be exaggerated; do not equate low area with uselessness.
-- Offline-test one-piece swimwear against torso/leg band clipping before advertising Underwear or Full outfit presets.
+- Offline-test one-piece swimwear and full outfits against torso/leg band clipping before promising universal Body or Underwear coverage in production.
 - Test simultaneous cape/quiver, copied left-hand behavior, directional background splits, hair/headgear masking and canvas bounds. These tests establish support, not demand.
 - Try manager tasks on actual touch hardware. Drag thresholds and hidden-category discoverability cannot be proven from source inspection.
 
+### Implementation evidence refresh
+
+Primary sources rechecked for the implementation review: [Spine slots](https://en.esotericsoftware.com/spine-slots) explicitly separates bone parentage from drawing order and allows one selected attachment per slot. Its examples show two slots on one bone drawing on opposite sides of a slot attached to another bone. This supports keeping authoring anchors, selections and draw depth separate; it does not establish PixelDoll's best default inventory.
+
+The [LPC contribution guide](https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator/blob/master/CONTRIBUTING.md) describes category definitions as data and directs contributors to existing definitions and their schema. These are useful architecture references, not evidence of category popularity or proof that AI-generated custom accessories fit. Current PixelDoll source inspection remains the authority for its supported behavior.
+
+### Accessory design finding, not a usage measurement
+
+After independent Sol and Opus challenges, the user approved Accessory as the blank-name fallback, numbered for repeats, without a required region picker. Use a distinct starting position over Body and Legs but under Outerwear, Hair and held items. This supersedes the earlier region-picker and exact inherited-depth recommendation. Always drawing highest could put ribbons above hats or bracelets above sleeves when that is unwanted. These are design examples, not measured claims about games or demand.
+
+Both reviewers preferred a general fallback over guessing Wings or another specific item. Sol ranked Hair accessory as a useful independent addition; Opus argued Head already serves it unless simultaneous independent headgear is needed. Neither established the most-common missing category. No specialized suggestions or additional built-ins are approved by this decision. Outerwear hiding the default accessory is a remaining usability concern to test, not grounds to make it topmost.
+
+A name cannot supply attachment logic. Wrist accessories need worn behavior rather than held-weapon behavior. Coverage, equal-depth ordering and directional overlap still need validation. The [plan](plan.md#accessory-as-a-custom-slot-starting-option) records defaults, API/folder examples and limits. No new external research or generation was performed for this addition.
+
 No paid generation is required for this spike or prototype. Propose paid validation separately only if offline evidence cannot answer a specific generation question.
+
+### Inline organization decision, November 17, 2026
+
+The follow-up council challenged three surfaces: a separate organizer, draggable rail tabs, and interactive Wardrobe headers. The user chose the header's flexible area as both menu trigger and drag source, while keeping the rail, Random and New item. This is a product decision, not a user-study result. Add slot stays pinned under the rail; Not shown is a bottom disclosure with Show actions and drag-out restoration. Dropping into that disclosure does nothing, so moving a slot to the end cannot hide it.
+
+The council initially recommended deferring touch drag because headers are also natural scrolling surfaces. The approved implementation instead distinguishes ordinary scrolling from a stationary 300 ms hold followed by 8 px movement. Mouse and pen use 6 px movement. Menu moves remain an equivalent non-drag path. Native Chromium touch input exposed a concrete issue that simulated event-unit tests missed: replacing the touched icon when the hold armed detached the touch target and stopped subsequent movement events from reaching the window. Keeping that node mounted fixed the regression. Physical-device sensitivity and iOS long-press behavior remain unqualified.

@@ -1,8 +1,9 @@
 // Generic export (manifest-spec §3, §5, §6.6): validation, the exported manifest.json, _stripN strips, baked composites,
 import type { Img } from '../image/png.ts';
-import { validateRig } from '../rig/rig.ts';
+import { DIRECTIONS, validateRig } from '../rig/rig.ts';
 import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
 import { CURRENT_FORMAT } from '../store/manifest.ts';
+import { behaviorOf, SLOTS } from '../items/slots.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
 import { moveDirs, recolor, storeVariants, variantOf, variantRampOf } from '../dress/dress.ts';
 import { bakedFrame, layerFrame, tuckedId, variantCovers } from '../compose/compose.ts';
@@ -12,6 +13,8 @@ import { bakedSheetPath } from './paths.ts';
 
 export type OutFile = { name: string; data: string | Img | Uint8Array };
 const nativeDepth = (z: number) => Number.isInteger(z) && z >= -2147483648 && z <= 2147483647;
+const SLOT_CLASSES = new Set(['base', 'rigid', 'held', 'worn']);
+const SLOT_ANCHORS = new Set(['head', 'neck', 'hip', 'hand_l', 'hand_r', 'foot_l', 'foot_r']);
 
 /** Invariants checked before export (spec §3); export refuses on any error. Stale items are warnings, not errors. */
 /** baseCut: known moves and generated directions, one entry per cell, null or strictly increasing rig-cell indices. */
@@ -55,6 +58,7 @@ export function validate(p: Project): string[] {
 	}
 	// IDs become archive paths and engine resource names; validate them before producing either.
 	const id = /^[a-z0-9][a-z0-9_-]*$/;
+	const slotIds = new Set<string>();
 	for (const [kind, rows] of [
 		['slot', m.slots],
 		['material', m.materials],
@@ -62,11 +66,18 @@ export function validate(p: Project): string[] {
 	] as const) {
 		const ids = new Set<string>();
 		for (const row of rows) {
+			if (!row || typeof row !== 'object' || typeof row.id !== 'string') {
+				e.push(`${kind} entry has no id`);
+				continue;
+			}
 			if (!id.test(row.id)) e.push(`${kind} id "${row.id}" is invalid`);
+			else if (kind === 'slot') slotIds.add(row.id);
 			if (ids.has(row.id)) e.push(`duplicate ${kind} id ${row.id}`);
 			ids.add(row.id);
 		}
 	}
+	// Built-in keys are valid hide/clip targets even when a project has no item for them yet.
+	for (const builtin of SLOTS) slotIds.add(builtin.id);
 	const itemIds = new Set<string>();
 	for (const it of m.items) {
 		const covers = Array.isArray(it.underAll) ? it.underAll : it.under ? [it.under] : [];
@@ -137,10 +148,108 @@ export function validate(p: Project): string[] {
 			e.push(`${variant.id}: invalid clipped body variant`);
 	}
 	for (const slot of m.slots) {
-		if (!nativeDepth(slot.z) || slot.zOverrides?.some((o) => !nativeDepth(o.z)))
-			e.push(
-				`${slot.id}: slot and override depths must be finite integers in the signed 32-bit range`
-			);
+		if (!slot || typeof slot !== 'object' || typeof slot.id !== 'string') continue; // reported above
+		if (!nativeDepth(slot.z))
+			e.push(`${slot.id}: slot depth must be a finite integer in the signed 32-bit range`);
+		if (slot.bgZ !== undefined && !nativeDepth(slot.bgZ))
+			e.push(`${slot.id}: background depth must be a finite integer in the signed 32-bit range`);
+		if (!SLOT_CLASSES.has(slot.class))
+			e.push(`${slot.id}: class must be base, rigid, held or worn`);
+		if (slot.required !== undefined && typeof slot.required !== 'boolean')
+			e.push(`${slot.id}: required must be true or false`);
+		if (slot.band !== undefined && typeof slot.band !== 'boolean')
+			e.push(`${slot.id}: band must be true or false`);
+		if (slot.anchor !== undefined && !SLOT_ANCHORS.has(slot.anchor))
+			e.push(`${slot.id}: anchor ${JSON.stringify(slot.anchor)} is not a supported anchor`);
+		if (slot.zOverrides !== undefined) {
+			if (!Array.isArray(slot.zOverrides)) e.push(`${slot.id}: zOverrides must be a list`);
+			else
+				for (const [index, override] of slot.zOverrides.entries()) {
+					if (!override || typeof override !== 'object') {
+						e.push(`${slot.id}: zOverrides[${index}] must be an object`);
+						continue;
+					}
+					if (override.layer !== 'fg' && override.layer !== 'bg')
+						e.push(`${slot.id}: zOverrides[${index}] layer must be fg or bg`);
+					if (!nativeDepth(override.z))
+						e.push(
+							`${slot.id}: zOverrides[${index}] depth must be a finite integer in the signed 32-bit range`
+						);
+					if (override.dir !== undefined && !DIRECTIONS.includes(override.dir))
+						e.push(
+							`${slot.id}: zOverrides[${index}] has unknown direction ${String(override.dir)}`
+						);
+					if (
+						override.anim !== undefined &&
+						!m.rig.animations.some((animation) => animation.id === override.anim)
+					)
+						e.push(`${slot.id}: zOverrides[${index}] has unknown move ${String(override.anim)}`);
+					if (
+						override.cell !== undefined &&
+						(!Number.isInteger(override.cell) || override.cell < 0)
+					)
+						e.push(`${slot.id}: zOverrides[${index}] cell must be a non-negative integer`);
+				}
+		}
+		for (const [field, keys] of [
+			['hides', slot.hides],
+			['clips', slot.clips]
+		] as const) {
+			if (keys === undefined) continue;
+			if (!Array.isArray(keys)) {
+				e.push(`${slot.id}: ${field} must be a list`);
+				continue;
+			}
+			const seen = new Set<string>();
+			for (const key of keys) {
+				if (typeof key !== 'string' || !slotIds.has(key))
+					e.push(`${slot.id}: ${field} names unknown slot ${String(key)}`);
+				if (seen.has(key)) e.push(`${slot.id}: duplicate ${field} entry ${key}`);
+				seen.add(key);
+			}
+		}
+		if (slot.label !== undefined && typeof slot.label !== 'string')
+			e.push(`${slot.id}: label must be text`);
+		if (slot.origin !== undefined) {
+			if (typeof slot.origin !== 'string' || !SLOTS.some((builtin) => builtin.id === slot.origin))
+				e.push(`${slot.id}: origin must name a supported built-in slot profile`);
+			else if (slot.id !== 'body' && slot.origin === 'body')
+				e.push(`${slot.id}: only the Base slot can originate from body`);
+		}
+		if (slot.profile !== undefined) {
+			if (typeof slot.profile !== 'string') e.push(`${slot.id}: profile must be text`);
+			else {
+				try {
+					const resolved = behaviorOf(slot);
+					if (resolved !== 'accessory' && !SLOTS.some((builtin) => builtin.id === resolved))
+						throw new Error('unsupported');
+				} catch {
+					e.push(
+						`${slot.id}: behavior profile "${slot.profile}" is not supported; choose a built-in slot profile`
+					);
+				}
+				if (slot.profile === 'body' && slot.id !== 'body')
+					e.push(`${slot.id}: profile body is reserved for the Base slot`);
+			}
+		} else
+			try {
+				const resolved = behaviorOf(slot);
+				if (resolved !== 'accessory' && !SLOTS.some((builtin) => builtin.id === resolved))
+					throw new Error('unsupported');
+			} catch {
+				e.push(
+					`${slot.id}: behavior profile is missing; choose a built-in slot profile for a custom slot`
+				);
+			}
+		if (
+			slot.wardrobeOrder !== undefined &&
+			(!Number.isInteger(slot.wardrobeOrder) || slot.wardrobeOrder < 0)
+		)
+			e.push(`${slot.id}: wardrobeOrder must be a non-negative integer`);
+		if (slot.wardrobeHidden !== undefined && typeof slot.wardrobeHidden !== 'boolean')
+			e.push(`${slot.id}: wardrobeHidden must be true or false`);
+		if (slot.promptTemplate !== undefined && typeof slot.promptTemplate !== 'string')
+			e.push(`${slot.id}: promptTemplate must be text`);
 	}
 	const seen = new Map<string, string>(),
 		ids = new Set<string>();
@@ -263,7 +372,19 @@ export function exportManifest(
 		return ok;
 	});
 	const ids = new Set(items.map((i) => i.id));
-	const m: Manifest = structuredClone({ ...src, items, export: undefined });
+	const slots: Manifest['slots'] = src.slots.map((slot) => {
+		const exported: Manifest['slots'][number] = { id: slot.id, z: slot.z, class: slot.class };
+		if (slot.bgZ !== undefined) exported.bgZ = slot.bgZ;
+		if (slot.anchor !== undefined) exported.anchor = slot.anchor;
+		if (slot.required !== undefined) exported.required = slot.required;
+		if (slot.hides !== undefined) exported.hides = [...slot.hides];
+		if (slot.clips !== undefined) exported.clips = [...slot.clips];
+		if (slot.zOverrides !== undefined) exported.zOverrides = structuredClone(slot.zOverrides);
+		if (slot.band !== undefined) exported.band = slot.band;
+		if (slot.label !== undefined) exported.label = slot.label;
+		return exported;
+	});
+	const m: Manifest = structuredClone({ ...src, items, slots, export: undefined });
 	// Export is also a public API: do not depend on the Studio having materialized procedural swatches first.
 	storeVariants(m, {}, ...m.presets.map((pr) => pr.variants));
 	// A palette link can target a stale item. Freeze its resolved selections before dropping the excluded owner's metadata.

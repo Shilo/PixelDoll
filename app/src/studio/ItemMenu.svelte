@@ -11,8 +11,8 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { extendable } from './create.ts';
-	import { groupOf, groupLabel, slotLabel } from './model.ts';
-	import { OTHER_HAND, twoHanded } from '../lib/compose/compose.ts';
+	import { slotLabel } from './slots.ts';
+	import { twoHanded } from '../lib/compose/compose.ts';
 	import type { generationStatus } from './generationStatus.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import {
@@ -24,6 +24,7 @@
 		isDemo,
 		openNewItem,
 		toggleTwoHanded,
+		otherHandOf,
 		cancelGen,
 		openGenerationReview,
 		addShared,
@@ -90,13 +91,11 @@
 	const it = $derived(m?.items.find((i) => i.id === id));
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
-	const otherHand = $derived(it ? OTHER_HAND[it.slot] : undefined);
+	const otherHand = $derived(m && it ? otherHandOf(m, it.slot) : undefined);
 	const both = $derived(!!m && !!it && twoHanded(m, it));
 	// The header names the category; the lines below it explain each of the tile's icons.
 	const sentence = $derived(
-		it
-			? [groupLabel(groupOf(it.slot).id), both ? 'Two-handed' : ''].filter(Boolean).join(' · ')
-			: ''
+		it ? [slotLabel(m, it.slot), both ? 'Two-handed' : ''].filter(Boolean).join(' · ') : ''
 	);
 	function close() {
 		menu?.hidePopover();
@@ -232,7 +231,7 @@
 				<span class="item-menu-art" aria-hidden="true"><SharedThumb {entry} /></span>
 				<span class="item-menu-title">
 					<strong id="item-menu-name">{entry.item.name}</strong>
-					<small>{groupLabel(groupOf(entry.item.slot).id)}</small>
+					<small>{slotLabel(entry.source, entry.item.slot)}</small>
 				</span>
 			</div>
 			<TileMarks {marks} list />
@@ -257,7 +256,7 @@
 					role="menuitem"
 					onclick={() =>
 						act(() =>
-							openNewItem(groupOf(entry.item.slot).id, {
+							openNewItem(entry.item.slot, {
 								slot: entry.item.slot,
 								prompt: entry.item.prompt || entry.item.name,
 								name: entry.item.name
@@ -331,10 +330,9 @@
 							data-variant="quiet"
 							role="menuitem"
 							onclick={() =>
-								act(() =>
-									openNewItem(groupOf(otherHand).id, { slot: otherHand, prompt: it.prompt })
-								)}
+								act(() => openNewItem(otherHand, { slot: otherHand, prompt: it.prompt }))}
 							><CopyPlus size={16} aria-hidden="true" />Make one for the {slotLabel(
+								m,
 								otherHand
 							)}…<small class="row-aside">Paid</small></button
 						>
@@ -348,7 +346,7 @@
 						role="menuitem"
 						onclick={() =>
 							act(() =>
-								openNewItem(groupOf(it.slot).id, {
+								openNewItem(it.slot, {
 									slot: it.slot,
 									prompt: it.prompt,
 									route: it.route

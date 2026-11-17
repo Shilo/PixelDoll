@@ -1,5 +1,4 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-import { groupLabel } from '../../src/studio/model.ts';
 
 /** A disabled control looks the same hovered as at rest and shows the not-allowed cursor. */
 export async function noDisabledHover(page: Page, locator: Locator) {
@@ -54,27 +53,24 @@ export async function equipmentMode(page: Page, name: 'Wardrobe' | 'Colors' | 'O
 		.click();
 }
 
-export { groupLabel };
-
 /** Wardrobe is one list of every category; the slot rail brings a category's section to the top. */
 export async function equipmentGroup(page: Page, name: string) {
 	await equipmentMode(page, 'Wardrobe');
-	const label = groupLabel(name);
 	await page
 		.getByRole('navigation', { name: 'Equipment slots', exact: true })
-		.getByRole('button', { name: new RegExp(`^${label}\\b`) })
+		.getByRole('button', { name: new RegExp(`^${name}\\b`) })
 		.click();
 	await expect(section(page, name)).toBeInViewport();
 }
 
 /** A category's section in the Wardrobe list. */
 export const section = (page: Page, name: string) =>
-	page.getByRole('region', { name: groupLabel(name), exact: true });
+	page.getByRole('region', { name, exact: true });
 
 export async function newItem(page: Page, group = 'Head') {
 	await equipmentGroup(page, group);
 	await section(page, group)
-		.getByRole('button', { name: `New ${groupLabel(group).toLowerCase()} item`, exact: true })
+		.getByRole('button', { name: `New ${group.toLowerCase()} item`, exact: true })
 		.first()
 		.click();
 }

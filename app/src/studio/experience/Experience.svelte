@@ -44,7 +44,7 @@
 		TriangleAlert
 	} from '../icons.ts';
 	import { directionInfo, directionLabel } from './movement.ts';
-	import { groupOf, moveLabel } from '../model.ts';
+	import { moveLabel } from '../model.ts';
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	let search = $state('');
@@ -443,7 +443,7 @@
 	function showMissingItem(item: Item) {
 		if (!missing) return;
 		coveragePopover?.hidePopover();
-		ui.group = groupOf(item.slot).id;
+		ui.group = item.slot;
 		ui.tab = 'wardrobe';
 		ui.selected = item.id;
 		if (ui.anim !== missing.clip) {

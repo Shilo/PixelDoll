@@ -4,16 +4,29 @@
 	import { itemPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import GroupIcon from './GroupIcon.svelte';
+	import { itemNameFrom, mirroredHandsNote, namesOffHandItem } from './model.ts';
 	import {
-		GROUPS,
-		groupLabel,
-		slotLabel,
-		itemNameFrom,
-		mirroredHandsNote,
-		namesOffHandItem
-	} from './model.ts';
+		baseClothesNote,
+		categories,
+		categoryCopy,
+		profileOf,
+		shownCategories,
+		slotDef
+	} from './slots.ts';
+	import type { Manifest } from '../lib/store/manifest.ts';
+	import { untrack } from 'svelte';
+	import { handSide } from '../lib/compose/compose.ts';
 	import { itemRoute, standingCoverage } from './itemRoute.ts';
-	import { ui, doc, store, isDemo, startItem, withKey, copyDemo } from './state.svelte.ts';
+	import {
+		ui,
+		doc,
+		store,
+		isDemo,
+		startItem,
+		withKey,
+		copyDemo,
+		busySlots
+	} from './state.svelte.ts';
 	import * as db from '../lib/store/db.ts';
 	import { SWATCHES } from '../lib/dress/dress.ts';
 	import { defaultMethod, type RigCtx } from '../lib/items/run.ts';
@@ -27,19 +40,26 @@
 		!ui.newItem.prompt
 			? formDrafts.item
 			: undefined;
-	let group = $state(draft?.group ?? ui.newItem.group);
-	let slot = $state(draft?.slot ?? ui.newItem.slot);
+	const m = $derived(store.project?.manifest);
+	// Every category of this character is offered; Not shown ones sit behind More and are shown once an item starts there.
+	const all = $derived(m ? categories(m) : []);
+	const shown = $derived(m ? shownCategories(m, busySlots(m)) : []);
+	const requested = draft?.group ?? ui.newItem.group;
+	let group = $state(
+		untrack(() => (all.some((c) => c.key === requested) ? requested : (shown[0]?.key ?? 'head')))
+	);
+	let more = $state(untrack(() => !shown.some((c) => c.key === group)));
+	const offered = $derived(
+		more ? all : all.filter((c) => c.key === group || shown.some((x) => x.key === c.key))
+	);
+	// One category is one slot.
+	const slot = $derived(group);
 	let prompt = $state(draft?.prompt ?? ui.newItem.prompt);
 	let color = $state(draft?.color ?? '');
 	let name = $state(draft?.name ?? ui.newItem.name);
 	let method = $state<Method | ''>(draft?.method ?? ui.newItem.method ?? '');
 	let busy = $state(false);
-	const g = $derived(GROUPS.find((x) => x.id === group) ?? GROUPS[0]);
-	$effect(() => {
-		if (!g.slots.includes(slot)) slot = g.slots[0];
-	});
-
-	const m = $derived(store.project?.manifest);
+	const g = $derived(categoryCopy(m, group));
 	const fullPrompt = $derived(`${prompt.trim()}${color ? `, ${color} colored` : ''}`);
 	const itemName = $derived(name.trim() || itemNameFrom(prompt) || 'New item');
 	const input = $derived({
@@ -89,7 +109,17 @@
 		}
 	};
 	const OFF_HAND_HINT = 'Shields and bows usually go in the off hand.';
-	const offHandHint = $derived(group === 'Main hand' && namesOffHandItem(prompt));
+	// The hand a held category uses, from its own definition (a built-in that holds nothing yet uses its catalog default).
+	const side = $derived.by(() => {
+		const def = slotDef(m, group);
+		return def ? handSide({ slots: [def] } as Manifest, group) : undefined;
+	});
+	const offHandHint = $derived(group === 'main_hand' && namesOffHandItem(prompt));
+	const clothesNote = $derived(
+		m && profileOf(m, group) === 'underwear'
+			? baseClothesNote((rec as { character?: { looks?: string } } | null)?.character?.looks)
+			: ''
+	);
 	const handNote = $derived(m ? mirroredHandsNote(m.rig) : '');
 
 	async function make(i: typeof input, consent?: Parameters<typeof startItem>[1]) {
@@ -210,19 +240,29 @@
 			<div class="field">
 				<span class="label" id="where">Where does it go?</span>
 				<div class="chips" role="radiogroup" aria-labelledby="where">
-					{#each GROUPS as x (x.id)}
+					{#each offered as x (x.key)}
 						<button
 							class="chip"
 							role="radio"
-							aria-checked={group === x.id}
-							tabindex={group === x.id ? 0 : -1}
-							onclick={() => (group = x.id)}
-							><GroupIcon group={x.id} size={14} />{groupLabel(x.id)}</button
+							aria-checked={group === x.key}
+							tabindex={group === x.key ? 0 : -1}
+							onclick={() => (group = x.key)}><GroupIcon group={x.key} size={14} />{x.label}</button
 						>
 					{/each}
 				</div>
-				{#if group === 'Main hand' || group === 'Off hand'}<p class="faint small">
-						Main hand is the character’s right hand; Off hand is the left.
+				{#if all.length > offered.length}<button
+						class="bu-action btn plain link small more-categories"
+						data-variant="quiet"
+						onclick={() => (more = true)}>More categories</button
+					>{/if}
+				{#if !shown.some((c) => c.key === group)}<p class="faint small">
+						Not shown in Wardrobe yet. Making an item shows it.
+					</p>{/if}
+				{#if clothesNote}<p class="faint small">{clothesNote}</p>{/if}
+				{#if side}<p class="faint small">
+						{side === 'right'
+							? 'Held in the character’s right hand.'
+							: 'Held in the character’s left hand.'}
 					</p>
 					{#if handNote}<p class="faint small">
 							{handNote}
@@ -247,18 +287,12 @@
 					<Info size={16} /><span>{OFF_HAND_HINT}</span><button
 						class="bu-action btn sm"
 						data-variant="outline"
-						onclick={() => (group = 'Off hand')}>Use Off hand</button
+						onclick={() => (group = 'off_hand')}>Use Off hand</button
 					>
 				</p>{/if}
 			<div class="chips" aria-label="Ideas">
 				{#each g.ideas as idea (idea.label)}
-					<button
-						class="chip"
-						onclick={() => {
-							prompt = idea.label;
-							if (idea.slot) slot = idea.slot;
-						}}>{idea.label}</button
-					>
+					<button class="chip" onclick={() => (prompt = idea.label)}>{idea.label}</button>
 				{/each}
 			</div>
 			<div class="field">
@@ -300,16 +334,6 @@
 							placeholder={itemName}
 						/></label
 					>
-					{#if g.slots.length > 1}
-						<label class="field"
-							><span class="label small">Exact slot</span>
-							<span class="select-wrap boxed"
-								><select class="bu-select select" bind:value={slot}
-									>{#each g.slots as s (s)}<option value={s}>{slotLabel(s)}</option>{/each}</select
-								><ChevronDown size={12} /></span
-							>
-						</label>
-					{/if}
 					{#if automatic === 'skel'}
 						<label class="field"
 							><span class="label small">Animation method</span>
@@ -336,6 +360,9 @@
 </Sheet>
 
 <style>
+	.more-categories {
+		justify-self: start;
+	}
 	.copy-demo {
 		display: inline-grid;
 	}

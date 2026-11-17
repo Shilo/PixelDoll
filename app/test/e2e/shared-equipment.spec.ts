@@ -91,6 +91,54 @@ const ownTile = (page: Page) => page.locator('.bu-tile:not(.shared-tile)');
 /** Another character's item in a grid, by its name. */
 const sharedTile = (grid: Locator, name: string) => grid.locator('.shared-tile', { hasText: name });
 
+test('a shared custom category appears before adoption and stays after wearing and reload', async ({
+	page
+}) => {
+	await threeCharacters(page);
+	await page.evaluate(async () => {
+		const request = indexedDB.open('pixeldoll', 1);
+		const database = await new Promise<IDBDatabase>((resolve, reject) => {
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => reject(request.error);
+		});
+		const transaction = database.transaction('projects', 'readwrite');
+		const store = transaction.objectStore('projects');
+		const read = store.get('rig-twin');
+		read.onsuccess = () => {
+			const rec = read.result;
+			const head = rec.manifest.slots.find((slot: { id: string }) => slot.id === 'head');
+			rec.manifest.slots.push({
+				...head,
+				id: 'hair_clip',
+				label: 'Hair clip',
+				origin: 'head',
+				profile: 'head'
+			});
+			rec.manifest.items.find((item: { id: string }) => item.id === 'hat_wizard').slot =
+				'hair_clip';
+			store.put(rec, rec.id);
+		};
+		await new Promise<void>((resolve, reject) => {
+			transaction.oncomplete = () => resolve();
+			transaction.onerror = transaction.onabort = () => reject(transaction.error);
+		});
+		database.close();
+	});
+	await reloadStudio(page);
+	const grid = page.getByRole('group', { name: 'Hair clip items', exact: true });
+	await expect(grid).toContainText('Traveling wizard hat');
+	await expect(page.locator('[data-group="hair_clip"]')).toContainText('From Twin');
+	await expect(grid.getByRole('button', { name: /^Empty/ })).toHaveCount(0);
+	await sharedTile(grid, 'Traveling wizard hat').click();
+	const adopted = grid
+		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })
+		.and(ownTile(page));
+	await expect(adopted).toHaveAttribute('aria-pressed', 'true');
+	await reloadStudio(page);
+	await equipmentGroup(page, 'Hair clip');
+	await expect(adopted).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('another character’s item on the same body is worn for free, survives reload and outlives its source', async ({
 	page,
 	context

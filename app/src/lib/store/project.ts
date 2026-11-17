@@ -188,25 +188,48 @@ export async function saveItem(
 	});
 }
 
+export type DressedRecord = StoredProject & {
+	dress?: { current?: Pick<Preset, 'items' | 'variants'> };
+};
+
+/** Remove items with their materials (links to them dropped), outfit entries and color choices. The base is never removed. */
+function removeItems(rec: DressedRecord, itemIds: ReadonlySet<string>) {
+	const m = rec.manifest;
+	const materials = new Set(m.materials.filter((x) => itemIds.has(x.owner)).map((x) => x.id));
+	m.items = m.items.filter((i) => i.id === m.rig.baseItem || !itemIds.has(i.id));
+	m.materials = m.materials.filter((x) => !materials.has(x.id));
+	for (const mat of m.materials) if (mat.linkTo && materials.has(mat.linkTo)) delete mat.linkTo;
+	for (const preset of [...m.presets, ...(rec.dress?.current ? [rec.dress.current] : [])]) {
+		for (const slot of Object.keys(preset.items))
+			if (itemIds.has(preset.items[slot]!)) preset.items[slot] = null;
+		for (const material of materials) delete preset.variants[material];
+	}
+	rec.savedAt = new Date().toISOString();
+}
+
 export async function deleteItem(id: string, itemId: string): Promise<void> {
-	await db.update<StoredProject & { dress?: { current?: Pick<Preset, 'items' | 'variants'> } }>(
-		'projects',
-		id,
-		(rec) => {
-			if (!rec) throw new Error(`project ${id} not found`);
-			const m = rec.manifest;
-			if (itemId === m.rig.baseItem) return rec;
-			const materials = new Set(m.materials.filter((x) => x.owner === itemId).map((x) => x.id));
-			m.items = m.items.filter((i) => i.id !== itemId);
-			m.materials = m.materials.filter((x) => !materials.has(x.id));
-			for (const mat of m.materials) if (mat.linkTo && materials.has(mat.linkTo)) delete mat.linkTo;
-			for (const preset of [...m.presets, ...(rec.dress?.current ? [rec.dress.current] : [])]) {
-				for (const slot of Object.keys(preset.items))
-					if (preset.items[slot] === itemId) preset.items[slot] = null;
-				for (const material of materials) delete preset.variants[material];
-			}
-			rec.savedAt = new Date().toISOString();
-			return rec;
-		}
-	);
+	await db.update<DressedRecord>('projects', id, (rec) => {
+		if (!rec) throw new Error(`project ${id} not found`);
+		if (itemId !== rec.manifest.rig.baseItem) removeItems(rec, new Set([itemId]));
+		return rec;
+	});
+}
+
+/** Delete exactly these items and finish the change in one transaction: nothing is written unless every item is still saved
+ *  (and none is the base) and `finish` accepts the record, so a refusal leaves every item in place. */
+export async function deleteItems(
+	id: string,
+	itemIds: readonly string[],
+	finish: (rec: DressedRecord) => void
+): Promise<void> {
+	await db.update<DressedRecord>('projects', id, (rec) => {
+		if (!rec) throw new Error(`project ${id} not found`);
+		const m = rec.manifest,
+			saved = new Set(m.items.map((i) => i.id));
+		if (itemIds.some((i) => i === m.rig.baseItem || !saved.has(i)))
+			throw new Error('Its items changed meanwhile. Review it again before deleting.');
+		removeItems(rec, new Set(itemIds));
+		finish(rec);
+		return rec;
+	});
 }
