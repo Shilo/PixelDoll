@@ -2399,11 +2399,11 @@ test('category Random is one named undo step and Random look stays reachable on 
 	await undo.click();
 	await expect(undo).toBeDisabled();
 	await expect(redo).toHaveAccessibleName('Redo Random head item');
-	// The demo wears its only chest item: Random keeps it and re-rolls its colors, as one named undo step.
-	const chestRandom = page.getByRole('button', { name: 'Random chest item', exact: true });
-	await expect(chestRandom).toBeEnabled();
-	await chestRandom.click();
-	await expect(undo).toHaveAccessibleName('Undo Random chest item');
+	// The demo wears its only body item: Random keeps it and re-rolls its colors, as one named undo step.
+	const bodyRandom = page.getByRole('button', { name: 'Random body item', exact: true });
+	await expect(bodyRandom).toBeEnabled();
+	await bodyRandom.click();
+	await expect(undo).toHaveAccessibleName('Undo Random body item');
 	await expect(
 		page
 			.locator('.equipment-scroll')

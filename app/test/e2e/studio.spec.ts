@@ -2067,6 +2067,7 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 	await expect(tabs.locator('[tabindex="0"]')).toHaveCount(1);
 	await page.keyboard.press('End');
 	await expect(tabs.getByRole('button').last()).toBeFocused();
+	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.keyboard.press('Home');
 	await expect(tabs.getByRole('button').first()).toBeFocused();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
@@ -4522,7 +4523,7 @@ test('unsafe imported equipment prices its frozen route and unsupported held off
 		s.ui.all = false;
 		s.wear(id);
 		s.pick(id);
-		s.ui.group = 'Body';
+		s.ui.group = 'torso_inner';
 	}, fixture.itemId);
 	await inspectStage(page);
 	await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toContainText(
@@ -6171,7 +6172,7 @@ for (const width of [1280, 390])
 		const atTop = async () => {
 			await expect(list).toBeVisible();
 			await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(0);
-			await expect(page.locator('[data-rail="Head"]')).toHaveAttribute('aria-current', 'true');
+			await expect(page.locator('[data-rail="head"]')).toHaveAttribute('aria-current', 'true');
 		};
 		await atTop();
 		await equipmentGroup(page, 'Back');
@@ -6337,7 +6338,7 @@ test('Wardrobe lands on a category picked while closed and reveals tiles below t
 	// Another view (a review, a missing-frames link) picks a category while the Wardrobe is closed.
 	await page.evaluate(() => {
 		const s = (window as unknown as { __studio: { ui: { group: string; tab: string } } }).__studio;
-		s.ui.group = 'Main hand';
+		s.ui.group = 'main_hand';
 		s.ui.tab = 'wardrobe';
 	});
 	const list = page.locator('#wardrobe-list');
@@ -6414,11 +6415,9 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 			slot: 'off_hand',
 			materials: []
 		});
-		m.slots.push({
-			...structuredClone(m.slots.find((x: { id: string }) => x.id === 'main_hand')),
-			id: 'off_hand',
-			z: 140
-		});
+		const slotsPath = '/src/lib/items/slots.ts',
+			slots = await import(slotsPath);
+		m.slots.push(slots.slotLadder(m.rig).find((slot: { id: string }) => slot.id === 'off_hand'));
 		await db.put('projects', ctx.rec.id, ctx.rec);
 		await s.openProject(ctx.rec.id);
 		s.pick(sword.id);

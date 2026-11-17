@@ -222,7 +222,7 @@
 						: (before + (/Right|Down/.test(e.key) ? (enabled ? 1 : 0) : -1) + opts.length) %
 							opts.length;
 			opts[n].focus();
-			if (!menu) opts[n].click();
+			if (!menu && opts[n].getAttribute('aria-haspopup') !== 'dialog') opts[n].click();
 			return;
 		}
 		if (
