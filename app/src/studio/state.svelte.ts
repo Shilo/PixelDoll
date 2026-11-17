@@ -2221,6 +2221,14 @@ export function showSlot(key: string) {
 	const m = store.project!.manifest;
 	organize(`Show ${slotLabel(m, key)}`, (x) => setHidden(x, key, false, busySlots(m)));
 }
+export function showSlotAt(key: string, to: number) {
+	const m = store.project!.manifest;
+	organize(`Show ${slotLabel(m, key)}`, (x) => {
+		setHidden(x, key, false, busySlots(m));
+		moveCategory(x, key, to, busySlots(m));
+	});
+	ui.group = key;
+}
 /** Hide an empty category from Wardrobe. Returns why it cannot be hidden, or '' once hidden. */
 export async function hideSlot(key: string): Promise<string> {
 	const m = store.project!.manifest,

@@ -2853,6 +2853,34 @@ test('review drafts re-checked together after a reload all keep their results', 
 	}
 });
 
+test('showing a slot at a drop position is one undo step and preserves drawing order', async () => {
+	const state = await import('../../src/studio/state.svelte.ts');
+	const { shownCategories } = await import('../../src/studio/slots.ts');
+	const manifest = fixtureManifest();
+	state.store.project = { manifest, images: new Map() };
+	state.doc.id = 'fixture:s2';
+	state.doc.items = { body: 'base' };
+	state.doc.undo = [];
+	const order = manifest.slots.map((slot) => ({ id: slot.id, z: slot.z }));
+	expect(
+		shownCategories(manifest, state.busySlots()).some((slot) => slot.key === 'underwear')
+	).toBe(false);
+	state.showSlotAt('underwear', 1);
+	expect(shownCategories(manifest, state.busySlots())[1].key).toBe('underwear');
+	expect(state.doc.undo.map((step) => step.label)).toEqual(['Show Underwear']);
+	expect(
+		manifest.slots
+			.filter((slot) => order.some((before) => before.id === slot.id))
+			.map((slot) => ({ id: slot.id, z: slot.z }))
+	).toEqual(order);
+	state.undo();
+	expect(
+		shownCategories(state.store.project!.manifest, state.busySlots()).some(
+			(slot) => slot.key === 'underwear'
+		)
+	).toBe(false);
+});
+
 test('category Random switches to another item of that category in its own slot, as one named undo step', async () => {
 	const s = await import('../../src/studio/state.svelte.ts');
 	s.store.project = { manifest: fixtureManifest(), images: new Map() };
