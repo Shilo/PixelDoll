@@ -640,16 +640,36 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 			.locator('#wardrobe-list > section[data-own]')
 			.evaluateAll((all) => all.map((entry) => (entry as HTMLElement).dataset.group));
 	await expect(page.locator('#wardrobe-list > section[data-own]')).toHaveCount(10);
+	const list = page.locator('#wardrobe-list');
+	const scroll = () => list.evaluate((element) => element.scrollTop);
+	await header('head').click();
+	const originalScroll = await scroll();
+	await menu.getByRole('menuitem', { name: 'Move down', exact: true }).click();
+	await expect.poll(scroll).toBe(originalScroll);
+	await expect(page.locator('[data-rail="hair"]')).toHaveAttribute('aria-current', 'true');
+	await header('head').click();
+	await menu.getByRole('menuitem', { name: 'Move up', exact: true }).click();
+	await expect.poll(scroll).toBe(originalScroll);
 	await add.click();
+	const form = addSheet.getByRole('form', { name: 'Create custom slot' });
+	await expect(form.getByRole('textbox', { name: 'Slot name', exact: true })).toBeVisible();
+	const createBounds = (await form
+		.getByRole('button', { name: 'Create slot', exact: true })
+		.boundingBox())!;
+	const behaviorBounds = (await form.getByRole('combobox', { name: 'Works like' }).boundingBox())!;
+	expect(createBounds.y).toBeGreaterThan(behaviorBounds.y + behaviorBounds.height);
 	await addSheet.getByRole('button', { name: 'Show Underwear', exact: true }).click();
+	await expect.poll(scroll).toBe(originalScroll);
 	await header('underwear').click();
 	await menu.getByRole('menuitem', { name: 'Hide slot', exact: true }).click();
 	await page.getByRole('button', { name: /^Not shown \(/ }).click();
 	await expect(page.getByRole('button', { name: 'Show Underwear', exact: true })).toBeVisible();
 	await add.click();
 	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
+	const beforeAdd = await scroll();
 	await add.click();
 	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
+	await expect.poll(scroll).toBe(beforeAdd);
 	await header('accessory').click();
 	await menu.getByRole('menuitem', { name: 'Edit slot…', exact: true }).click();
 	const editor = page.getByRole('dialog', { name: 'Accessory', exact: true });
@@ -694,6 +714,30 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	expect(compactBounds!.x).toBeGreaterThanOrEqual(0);
 	expect(compactBounds!.x + compactBounds!.width).toBeLessThanOrEqual(320);
 	await compactEditor.getByRole('button', { name: 'Save', exact: true }).click();
+	const heights = await list
+		.locator('section[data-own]')
+		.evaluateAll((all) => all.map((element) => (element as HTMLElement).offsetHeight));
+	expect(new Set(heights).size).toBeGreaterThan(1);
+	for (const direction of ['Move up', 'Move down']) {
+		await header('main_hand').click();
+		const beforeMove = await scroll();
+		await menu.getByRole('menuitem', { name: direction, exact: true }).click();
+		await expect.poll(scroll).toBe(beforeMove);
+	}
+	await add.click();
+	await page.screenshot({ path: test.info().outputPath('add-slot-320-light.png') });
+	await addSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	const disclosure = page.getByRole('button', { name: /^Not shown \(/ });
+	await disclosure.scrollIntoViewIfNeeded();
+	if ((await disclosure.getAttribute('aria-expanded')) === 'false') await disclosure.click();
+	await list.evaluate((element) => {
+		element.scrollTop = element.querySelector<HTMLElement>('.not-shown')!.offsetTop;
+	});
+	await expect(disclosure).toHaveJSProperty(
+		'offsetWidth',
+		await list.locator('.not-shown').evaluate((element) => element.clientWidth)
+	);
+	await page.screenshot({ path: test.info().outputPath('not-shown-320-light.png') });
 	finish();
 });
 
@@ -703,6 +747,8 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 }) => {
 	const finish = await demoGuard(context);
 	await openDemo(page);
+	await page.getByRole('button', { name: 'Pause', exact: true }).click();
+	await page.clock.install();
 	const list = page.locator('#wardrobe-list');
 	const keys = () =>
 		list
@@ -724,15 +770,22 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 	await page.mouse.down();
 	await page.mouse.move(target.x + target.width / 2, target.y + 2, { steps: 6 });
 	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	await expect(page.locator('.slot-drag-preview')).toBeVisible();
+	await expect(page.locator('.slot-drag-preview')).toContainText('Hair');
+	const preview = (await page.locator('.slot-drag-preview').boundingBox())!;
+	expect(Math.abs(preview.y + preview.height - target.y)).toBeLessThan(70);
 	await page.keyboard.press('Escape');
 	await page.mouse.up();
 	expect(await keys()).toEqual(original);
 	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	await expect(page.locator('.slot-drag-preview')).not.toBeVisible();
 	await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
 	await page.mouse.down();
 	await page.mouse.move(target.x + target.width / 2, target.y + 2, { steps: 6 });
+	const dropScroll = await list.evaluate((element) => element.scrollTop);
 	await page.mouse.up();
 	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(dropScroll);
 	await expect(hair).toBeFocused();
 	await expect(page.locator('#slot-menu')).not.toBeVisible();
 	await page.locator('.header-undo').click();
@@ -754,10 +807,12 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 	await page.mouse.down();
 	await page.mouse.move(drop.x, drop.y, { steps: 6 });
 	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	const restoreScroll = await list.evaluate((element) => element.scrollTop);
 	await page.mouse.up();
 	const restored = [...original];
 	restored.splice(restored.length - 1, 0, 'underwear');
 	await expect.poll(keys).toEqual(restored);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(restoreScroll);
 	await page.locator('.header-undo').click();
 	await expect.poll(keys).toEqual(original);
 	await expect(page.getByRole('button', { name: 'Show Underwear', exact: true })).toBeAttached();
@@ -773,6 +828,31 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
 	await page.mouse.up();
 	expect(await keys()).toEqual(original);
+	await list.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }));
+	const startHead = (await head.boundingBox())!;
+	const listBox = (await list.boundingBox())!;
+	await page.mouse.move(startHead.x + 25, startHead.y + 20);
+	await page.mouse.down();
+	await page.mouse.move(startHead.x + 25, listBox.y + listBox.height - 12, { steps: 8 });
+	await page.clock.runFor(1000);
+	const scrolled = await list.evaluate((element) => element.scrollTop);
+	expect(scrolled).toBeGreaterThan(0);
+	const feet = await list.evaluate((element) => {
+		const section = element.querySelector<HTMLElement>('[data-group="feet"]')!;
+		return {
+			x: element.getBoundingClientRect().left + 30,
+			y: element.getBoundingClientRect().top + section.offsetTop - element.scrollTop + 2
+		};
+	});
+	await page.mouse.move(feet.x, feet.y);
+	await page.clock.runFor(16);
+	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	const beforeDistantDrop = await list.evaluate((element) => element.scrollTop);
+	await page.mouse.up();
+	const distantOrder = original.filter((key) => key !== 'head');
+	distantOrder.splice(distantOrder.indexOf('feet'), 0, 'head');
+	await expect.poll(keys).toEqual(distantOrder);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(beforeDistantDrop);
 	finish();
 });
 
@@ -826,9 +906,21 @@ test('studio demo: touch slot headers scroll before a hold and drag after arming
 	await expect(list.locator('[data-dragged]')).toHaveCount(1);
 	await page.clock.runFor(32);
 	await expect(page.locator('.slot-drop-line')).toBeVisible();
+	await expect(page.locator('.slot-drag-preview')).toBeVisible();
+	await touch('touchMove', [{ ...start, x: 386, y: top.y + 4 }]);
+	await page.clock.runFor(16);
+	const previewBounds = (await page.locator('.slot-drag-preview').boundingBox())!;
+	expect(previewBounds.x).toBeGreaterThanOrEqual(8);
+	expect(previewBounds.x + previewBounds.width).toBeLessThanOrEqual(382);
+	await page.screenshot({ path: test.info().outputPath('slot-drag-390-dark.png') });
+	await touch('touchMove', [{ ...start, y: top.y + 4 }]);
+	await page.clock.runFor(16);
+	const dropScroll = await list.evaluate((element) => element.scrollTop);
 	await touch('touchEnd', []);
 	await page.clock.runFor(32);
 	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
+	await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(dropScroll);
+	await expect(page.locator('.slot-drag-preview')).not.toBeVisible();
 	await expect(page.locator('#slot-menu')).not.toBeVisible();
 	await session.detach();
 	finish();

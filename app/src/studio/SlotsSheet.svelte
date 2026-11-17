@@ -16,6 +16,7 @@
 		busySlots,
 		slotUseHere,
 		showSlot,
+		toast,
 		addSlot,
 		saveSlotSettings,
 		deleteSlot
@@ -40,7 +41,7 @@
 		slotDef,
 		useText
 	} from './slots.ts';
-	import { ChevronDown, Plus, Trash, TriangleAlert } from './icons.ts';
+	import { ChevronDown, Eye, Plus, Trash, TriangleAlert } from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
 	const busy = $derived(m ? busySlots(m) : new Set<string>());
@@ -103,13 +104,15 @@
 		if (ownerHidden) return show(ownerHidden.key);
 		if (addProblem) return;
 		const label = cleanLabel(addName) || placeholder;
-		// addSlot brings the new slot to the top of Wardrobe.
-		if (attempt(() => addSlot({ label, ...(addLike ? { like: addLike } : {}) }))) close();
+		if (attempt(() => addSlot({ label, ...(addLike ? { like: addLike } : {}) }))) {
+			close();
+			toast(`${label} added at the end of Wardrobe.`);
+		}
 	}
 	function show(key: string) {
 		if (attempt(() => showSlot(key))) {
-			ui.group = key;
 			close();
+			toast(`${slotDef(m, key)?.label ?? key} shown at the end of Wardrobe.`);
 		}
 	}
 
@@ -346,42 +349,16 @@
 		{#if problem}<p class="notice warn small" role="alert">
 				<TriangleAlert size={16} /><span>{problem}</span>
 			</p>{/if}
-		{#if builtins.length && !copying}
-			<h3 class="sec-title" id="slots-builtin">Built-in</h3>
-			<ul class="slot-list" aria-labelledby="slots-builtin">
-				{#each builtins as c (c.key)}
-					{@const sub = [
-						useText(slotUseHere(c.key)),
-						c.profile === 'underwear' ? baseClothesNote(looks) : ''
-					]
-						.filter(Boolean)
-						.join(' ')}
-					<li class="slot-row">
-						<span class="row slot-name"
-							><GroupIcon group={c.key} size={18} /><span class="row-name"
-								>{c.label}{#if sub}<small class="row-reason faint">{sub}</small>{/if}</span
-							></span
-						>
-						<button
-							class="bu-action btn sm"
-							data-variant="outline"
-							aria-label="Show {c.label}"
-							onclick={() => show(c.key)}>Show</button
-						>
-					</li>
-				{/each}
-			</ul>
-		{/if}
-		<h3 class="sec-title" id="slots-custom">Custom</h3>
 		<form
 			class="form add-slot"
-			aria-labelledby="slots-custom"
+			aria-label="Create custom slot"
 			onsubmit={(e) => {
 				e.preventDefault();
 				add();
 			}}
 		>
-			<div class="inline-form">
+			<label class="field"
+				><span class="label">Slot name</span>
 				<input
 					class="bu-input input"
 					type="text"
@@ -390,22 +367,12 @@
 					{placeholder}
 					aria-label="Slot name"
 					aria-invalid={!!addProblem || undefined}
-					aria-describedby="slot-add-note"
+					aria-describedby={ownerHidden || addProblem ? 'slot-add-note' : undefined}
 				/>
-				{#if ownerHidden}<button class="bu-action btn" data-variant="outline" type="submit"
-						>Show {ownerHidden.label}</button
-					>{:else}<button
-						class="bu-action btn"
-						data-variant="outline"
-						type="submit"
-						disabled={!!addProblem}><Plus size={16} aria-hidden="true" />Create slot</button
-					>{/if}
-			</div>
-			<p class="faint small" id="slot-add-note" aria-live="polite">
-				{ownerHidden
-					? `${ownerHidden.label} already exists but isn’t shown.`
-					: addProblem || `Leave the name blank for ${placeholder}.`}
-			</p>
+			</label>
+			{#if ownerHidden || addProblem}<p class="faint small" id="slot-add-note" aria-live="polite">
+					{ownerHidden ? `${ownerHidden.label} already exists but isn’t shown.` : addProblem}
+				</p>{/if}
 			<label class="field"
 				><span class="label small">Works like</span>
 				<span class="select-wrap boxed"
@@ -416,7 +383,38 @@
 					><ChevronDown size={12} /></span
 				>
 			</label>
+			{#if ownerHidden}<button class="bu-action btn primary" type="submit"
+					>Show {ownerHidden.label}</button
+				>
+			{:else}<button class="bu-action btn primary" type="submit" disabled={!!addProblem}
+					><Plus size={16} aria-hidden="true" />Create slot</button
+				>{/if}
 		</form>
+		{#if builtins.length && !copying}
+			<hr class="bu-separator slot-divider" />
+			<h3 class="sec-title" id="slots-builtin">Built-in slots</h3>
+			<ul class="slot-list" aria-labelledby="slots-builtin">
+				{#each builtins as c (c.key)}
+					{@const sub = [
+						useText(slotUseHere(c.key)),
+						c.profile === 'underwear' ? baseClothesNote(looks) : ''
+					]
+						.filter(Boolean)
+						.join(' ')}
+					<li class="slot-row">
+						<button
+							class="bu-action slot-choice"
+							aria-label="Show {c.label}"
+							onclick={() => show(c.key)}
+						>
+							<GroupIcon group={c.key} size={18} /><span class="row-name"
+								>{c.label}{#if sub}<small class="row-reason faint">{sub}</small>{/if}</span
+							><Eye size={18} aria-hidden="true" />
+						</button>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</Sheet>
 {/if}
 
@@ -455,20 +453,25 @@
 		gap: 4px;
 		border-radius: var(--r-ctl);
 	}
-	.slot-name {
+	.slot-choice {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		width: 100%;
 		flex: 1;
 		min-width: 0;
 		min-height: 44px;
-	}
-	span.slot-name:hover {
-		background: transparent;
+		text-align: left;
 	}
 	.add-slot {
-		margin-top: 4px;
+		margin: 0;
 	}
-	.add-slot .inline-form {
-		grid-template-columns: minmax(0, 1fr) auto;
-		margin-top: 0;
+	.slot-divider {
+		width: 100%;
+		margin: 0;
+	}
+	.add-slot > button {
+		align-self: flex-start;
 	}
 	.delete-slot {
 		margin-top: 8px;

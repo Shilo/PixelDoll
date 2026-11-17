@@ -2228,7 +2228,6 @@ export function showSlotAt(key: string, to: number) {
 		setHidden(x, key, false, busySlots(m));
 		moveCategory(x, key, to, busySlots(m));
 	});
-	ui.group = key;
 }
 /** Hide an empty category from Wardrobe. Returns why it cannot be hidden, or '' once hidden. */
 export async function hideSlot(key: string): Promise<string> {
@@ -2237,7 +2236,6 @@ export async function hideSlot(key: string): Promise<string> {
 	const reason = busyReason(label, await slotUseNow(key), 'be hidden');
 	if (reason) return reason;
 	organize(`Hide ${label}`, (x) => setHidden(x, key, true, busySlots(m)));
-	if (ui.group === key) ui.group = shownCategories(m, busySlots())[0]?.key ?? 'head';
 	return '';
 }
 /** Move a shown category to position `to` in Wardrobe. Drawing order never changes. */
@@ -2250,7 +2248,6 @@ export function addSlot(o: NewSlot): string {
 	const m = store.project!.manifest;
 	let key = '';
 	organize('Add category', (x) => (key = addCustom(x, o, busySlots(m))));
-	ui.group = key;
 	return key;
 }
 /** Save a custom category's settings form: every part is checked on a copy first, attempts are read fresh once when the

@@ -132,7 +132,10 @@ dragging. Random and New item stay separate. A persistent Add slot action at the
 unused built-ins and custom creation; blank names use Accessory. A bottom Not shown disclosure offers Show and dragging
 out to a shown position, never drag-to-hide. The separate organizer list is removed. Advanced custom behavior stays in
 its contextual editor; built-ins are copied rather than redefined. Browsing order never changes artwork. Menus provide
-non-drag movement, focus follows moves, and ordinary touch scrolling remains available before drag arming. Empty-only
+non-drag movement, and ordinary touch scrolling remains available before drag arming. A floating slot label follows
+the drag; organization preserves the list's scroll offset and the rail tracks the slot actually visible afterward.
+Focus remains visible rather than scrolling after a moved header. The Add slot sheet groups creation above unused
+built-ins, and full-width Not shown rows restore slots with eye icons. Empty-only
 hiding includes pending work, and destructive populated deletion confirms its consequences and commits atomically.
 The Base never appears as a removable category. Physical-device drag usability is not established by browser emulation.
 

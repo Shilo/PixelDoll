@@ -65,6 +65,7 @@
 		CircleAlert,
 		CopyPlus,
 		EllipsisVertical,
+		Eye,
 		EyeOff,
 		GripVertical,
 		Pencil,
@@ -326,6 +327,18 @@
 		remember();
 	}
 	const scrolled = () => (spyFrame ||= requestAnimationFrame(spy));
+	let previousOrder = '';
+	$effect.pre(() => {
+		const order = own.map((slot) => slot.key).join('\0');
+		const changed = previousOrder && order !== previousOrder;
+		previousOrder = order;
+		if (!changed || !list || untrack(() => ui.group !== reported)) return;
+		const top = list.scrollTop;
+		void tick().then(() => {
+			list?.scrollTo({ top, behavior: 'instant' });
+			spy();
+		});
+	});
 	async function show(id: string, instant = false) {
 		const section = list?.querySelector<HTMLElement>(`[data-group="${CSS.escape(id)}"]`);
 		if (!list || !section) return;
@@ -404,10 +417,12 @@
 			?.querySelector(`[data-rail="${CSS.escape(id)}"]`)
 			?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 	});
+	$effect(() => {
+		void sections;
+		const last = list?.querySelector<HTMLElement>('section[data-group]:last-of-type');
+		return list && last ? watchListSpacer(list, last, (height) => (spacer = height)) : undefined;
+	});
 	onMount(() => {
-		// Room under the last category so tapping its slot can still bring it to the top: sized before the first scroll.
-		const last = list?.querySelector<HTMLElement>('[data-group]:last-of-type');
-		const unwatch = list && last ? watchListSpacer(list, last, (h) => (spacer = h)) : undefined;
 		const group = ui.group;
 		const open = ui.wardrobeOpenRevision;
 		void tick().then(() => {
@@ -423,7 +438,6 @@
 			}
 		});
 		return () => {
-			unwatch?.();
 			cancelAnimationFrame(spyFrame);
 		};
 	});
@@ -465,15 +479,17 @@
 		if (slotMenuOpen && slotAt < 0) slotMenu?.hidePopover();
 	});
 	const closeSlotMenu = () => slotMenu?.hidePopover();
-	/** After a slot changes place: bring it to the top and focus its header, where its menu reopens. */
 	async function settle(key: string) {
 		await tick();
-		await show(key, true);
-		requestAnimationFrame(() =>
-			list
-				?.querySelector<HTMLElement>(`[data-slot-button="${CSS.escape(key)}"]`)
-				?.focus({ preventScroll: true })
-		);
+		spy();
+		const button = list?.querySelector<HTMLElement>(`[data-slot-button="${CSS.escape(key)}"]`);
+		const box = list?.getBoundingClientRect();
+		const rect = button?.getBoundingClientRect();
+		const visible = box && rect && rect.top >= box.top && rect.bottom <= box.bottom;
+		const focus = visible
+			? button
+			: list?.querySelector<HTMLElement>(`[data-slot-button="${CSS.escape(ui.group)}"]`);
+		focus?.focus({ preventScroll: true });
 	}
 	function moveTo(key: string, label: string, to: number) {
 		try {
@@ -532,8 +548,9 @@
 		GAP = 8;
 	let drag = $state<{ source: DragSource; line: number | null } | null>(null);
 	let armed = $state('');
-	let pointer = { x: 0, y: 0 },
-		dragFrame = 0;
+	let pointer = $state({ x: 0, y: 0 });
+	let dragFrame = 0;
+	let dragPreview = $state<HTMLElement>();
 	/** Where a drop at the pointer would land: the shown index, and the drop line's offset in the list. */
 	function dropTarget(source: DragSource): { to: number; line: number } | null {
 		if (!list) return null;
@@ -594,6 +611,9 @@
 				// Stop a smooth scroll still bringing a slot to the top; the drag scrolls the list from here.
 				list?.scrollTo({ top: list.scrollTop, behavior: 'instant' });
 				drag = { source, line: null };
+				void tick().then(() => {
+					if (drag) dragPreview?.showPopover();
+				});
 				announce = `Dragging ${source.label}. Drop it between slots in the list; Escape cancels.`;
 				cancelAnimationFrame(dragFrame);
 				dragFrame = requestAnimationFrame(dragStep);
@@ -604,6 +624,7 @@
 			end: (commit: boolean) => {
 				cancelAnimationFrame(dragFrame);
 				const target = commit && drag ? dropTarget(drag.source) : null;
+				dragPreview?.hidePopover();
 				drag = null;
 				armed = '';
 				if (!target) {
@@ -931,7 +952,7 @@
 					>
 					<div id="wardrobe-not-shown" hidden={!notShownOpen}>
 						<p class="faint small not-shown-note" id="wardrobe-not-shown-note">
-							Drag a slot into the list above, or choose Show.
+							Drag a slot into the list above, or use its eye button to show it.
 						</p>
 						<ul class="not-shown-list" aria-describedby="wardrobe-not-shown-note">
 							{#each notShown as c (c.key)}
@@ -944,18 +965,20 @@
 											slotDrag(node, dragOptions({ key: c.key, label: c.label, hidden: true }))
 										)}
 								>
-									<span class="slot-drag-icon"
-										><GroupIcon group={c.key} size={18} /><GripVertical
-											class="slot-grip"
-											size={18}
-										/></span
-									>
-									<span class="not-shown-name">{c.label}</span>
 									<button
-										class="bu-action btn sm"
-										data-variant="outline"
+										class="bu-action not-shown-slot"
 										aria-label="Show {c.label}"
-										onclick={() => void showHidden(c.key, c.label)}>Show</button
+										onclick={() => void showHidden(c.key, c.label)}
+										><span class="slot-drag-icon"
+											><GroupIcon group={c.key} size={18} /><GripVertical
+												class="slot-grip"
+												size={18}
+											/></span
+										>
+										<span class="not-shown-name">{c.label}</span><Eye
+											size={18}
+											aria-hidden="true"
+										/></button
 									>
 								</li>
 							{/each}
@@ -973,6 +996,20 @@
 					style:top="{drag.line}px"
 					aria-hidden="true"
 				></div>{/if}
+		</div>
+		<div
+			class="bu-popover-anchor slot-drag-preview"
+			data-positioned
+			popover="manual"
+			bind:this={dragPreview}
+			style:left="{pointer.x + 16}px"
+			style:--drag-x="{pointer.x + 16}px"
+			style:top="{Math.max(8, pointer.y - 64)}px"
+			aria-hidden="true"
+		>
+			<div class="bu-popover-surface bu-floating slot-drag-label">
+				<GripVertical size={18} />{drag?.source.label}
+			</div>
 		</div>
 		<!-- One shared slot menu, anchored to the header that opened it (like the item menu). -->
 		<div

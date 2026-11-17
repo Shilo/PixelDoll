@@ -66,6 +66,21 @@ Verification:
 
 Limits: no physical iOS or Android device was tested, and no paid generations were made. Chromium touch input establishes event wiring and scrolling behavior, not device-specific long-press sensitivity. The existing light desktop scene can reduce contrast behind transparent secondary headings; this iteration does not change shared theme materials.
 
+## Drag feedback and scroll correction, November 17, 2026
+
+The user's hands-on review exposed a gap in the earlier acceptance tests: they asserted the new order but accepted forced scrolling to the moved header, which could hide its new predecessor. A live menu move reproduced the jump from 0 to 163 px. The corrected contract preserves the list's pixel offset, reports the actually visible slot in the rail, and does not choose a replacement by numeric index because sections have different heights.
+
+- A top-layer, pointer-transparent slot label follows mouse and touch drags. It stays above the touch contact and clamps horizontally at the viewport edge. Existing insertion feedback and gesture tolerance remain.
+- Reordering, Move up/down, adding and showing no longer navigate after the moved/new slot. New slots append with a toast; explicit rail navigation and item review keep their existing destination behavior. The bottom spacer follows the actual final section after each reorder.
+- Slot name, Works like and Create slot now form one group at the top of Add slot. A full-width divider separates unused built-ins. The blank-name instruction was removed. Not shown has a full-width disclosure, full-row Bronze hover/focus states and eye-icon restore actions with accessible Show names.
+- Live T3 checks covered top and middle menu moves at 320 by 568 and 390 by 844, including 272/382 px unequal-height sections. Eight moves retained their exact before/after offsets. Showing Outerwear retained 3034 px. A landscape menu move retained 0 px at 844 by 390, with no document overflow and the creation form grouped above the divider.
+- T3 screenshots of the 1280 by 800 dark Add slot form and active floating drag label were inspected. Subsequent mobile screenshot attempts failed because T3 was not producing frames; the alternate browser connection was unavailable. The passing browser tests saved the inspected `add-slot-320-light.png`, `not-shown-320-light.png` and `slot-drag-390-dark.png` artifacts: creation fields and action are grouped above a full-width divider, hidden-slot actions do not repeat Show text, and the floating label remains inside the right screen edge. These are automated captures, not a claim that the failed T3 captures succeeded.
+- The three extended slot workflows passed: adjacent and distant edge-autoscroll mouse moves, cancellation, hidden-slot restoration, refusal to hide by dragging, menu moves at unequal heights, offset preservation during creation/restoration, and native Chromium touch scrolling/dragging with an edge-clamped preview.
+- `npm run check` passed with zero Svelte errors or warnings; `npm test` passed 195 files and 2,681 tests, with one skipped. Theme ownership and the scoped Impeccable layout scan passed.
+- `npm run e2e -- --all` passed 364 of 365 tests, including all three extended slot workflows. The only failure was the phone-portrait world joystick test timing out after 90 seconds outside the slot paths. Its one isolated rerun (`npm run e2e -- experience-parity -g "world joystick on phone portrait"`) passed in 2.2 seconds without code, assertion or timeout changes. This is a suspected timing/shared-resource flake, not a clean full-suite pass.
+
+No paid requests or physical-device tests were made. Chromium touch and responsive geometry do not qualify iOS/Android hardware long-press behavior.
+
 ## Historical workshop evidence
 
 ## Corrected Body and Legs revision
