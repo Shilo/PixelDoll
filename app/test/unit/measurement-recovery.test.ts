@@ -434,6 +434,138 @@ function addUnrelatedMove(record: projects.StoredProject) {
 		layer.cells![animation.id] = structuredClone(layer.cells![original]);
 }
 
+test.each(['new', 'partial', 'mirrored', 'kept'] as const)(
+	'publishes a %s move without requiring pixels in untouched sparse or implicit views',
+	async (mode) => {
+		const f = await fixture(mode === 'kept' ? 'feet' : false);
+		await f.finishOriginalChecks();
+		const record = f.saved(),
+			rig = record.manifest.rig,
+			layer = record.manifest.items[0].layers[0];
+		addUnrelatedMove(record);
+		layer.cells!['another-move'].east = Array(4).fill(null);
+		delete layer.cells!['another-move'].north;
+		delete layer.cells!['another-move'].west;
+		if (mode === 'new') {
+			rig.directions = [{ id: 'east' }, { id: 'west' }];
+			rig.animations[0].id = 'old-idle';
+			layer.cells!['old-idle'] = layer.cells!.idle;
+			delete layer.cells!.idle;
+			f.spec.replace = false;
+		} else {
+			layer.cells!.idle.south = Array(4).fill(null);
+			if (mode === 'mirrored') {
+				rig.directions.find((direction) => direction.id === 'west')!.mirrorOf = 'east';
+				delete layer.cells!.idle.west;
+				f.spec.dirs = ['east'];
+			}
+		}
+		const before = structuredClone(record),
+			posts = f.posts();
+		const spec =
+			mode === 'kept'
+				? keepConsent(f.spec, (await reviewMoveRecovery('rig-recover', f.spec)).keep!)
+				: f.spec;
+		await addMove('rig-recover', spec);
+		const saved = f.saved(),
+			cells = saved.manifest.items[0].layers[0].cells!;
+		expect(cells['another-move']).toEqual(
+			before.manifest.items[0].layers[0].cells!['another-move']
+		);
+		expect(
+			saved.manifest.rig.animations.find((animation) => animation.id === 'another-move')
+		).toEqual(before.manifest.rig.animations.find((animation) => animation.id === 'another-move'));
+		for (const direction of ['east', 'west'] as const)
+			expect(cells[f.spec.id][direction]?.filter(Boolean)).toHaveLength(4);
+		if (mode === 'mirrored')
+			for (let cell = 0; cell < 4; cell++) {
+				const images = await Promise.all(
+					(['east', 'west'] as const).map(async (direction) => {
+						const hash = cells.idle[direction]![cell]!.slice(7);
+						const blob = f.blobs.get(hash) ?? f.put.mock.calls.find((call) => call[1] === hash)![2];
+						return decodePng(blob as Blob);
+					})
+				);
+				const [east, west] = images;
+				for (let row = 0; row < east.h; row++)
+					for (let column = 0; column < east.w; column++) {
+						const source = (row * east.w + column) * 4;
+						const reflected = (row * west.w + west.w - 1 - column) * 4;
+						expect(west.data.slice(reflected, reflected + 4)).toEqual(
+							east.data.slice(source, source + 4)
+						);
+					}
+				for (const [label, point] of Object.entries(saved.skeletons![`idle/east/${cell}`]))
+					expect(saved.skeletons![`idle/west/${cell}`][label]).toEqual({
+						...point,
+						x: rig.cell.w - point.x
+					});
+			}
+		if (mode === 'new')
+			expect(cells['old-idle']).toEqual(before.manifest.items[0].layers[0].cells!['old-idle']);
+		else {
+			expect(cells.idle.south).toEqual(before.manifest.items[0].layers[0].cells!.idle.south);
+			expect(cells.idle.north).toEqual(before.manifest.items[0].layers[0].cells!.idle.north);
+		}
+		expect(f.posts()).toBe(posts);
+	}
+);
+
+test.each(['playlist', 'anchor'] as const)(
+	'refuses invalid untouched %s structure before publishing a move',
+	async (kind) => {
+		const f = await fixture();
+		await f.finishOriginalChecks();
+		const record = f.saved();
+		addUnrelatedMove(record);
+		if (kind === 'playlist') record.manifest.rig.animations[1].frames[0].ms = 0;
+		else
+			record.manifest.rig.anchors = {
+				hand_r: { 'another-move': { south: [[1, 1]] } }
+			};
+		const before = structuredClone(record),
+			posts = f.posts();
+		await expect(addMove('rig-recover', f.spec)).rejects.toThrow(
+			kind === 'playlist' ? 'another-move: bad frame' : 'anchor hand_r another-move/south'
+		);
+		expect(f.saved()).toEqual(before);
+		expect(f.posts()).toBe(posts);
+	}
+);
+
+test('a missing cached raw frame cannot publish a partial move or buy a replacement during recovery', async () => {
+	const f = await fixture();
+	await f.finishOriginalChecks();
+	const spec = await f.recovery(),
+		before = structuredClone(f.saved()),
+		posts = f.posts();
+	f.records.get('raw-east')!.jobs[0].results.splice(1, 1);
+	await f.q.sync();
+	await expect(addMove('rig-recover', spec)).rejects.toThrow();
+	expect(f.saved()).toEqual(before);
+	expect(f.posts()).toBe(posts);
+	expect(f.enqueue).not.toHaveBeenCalled();
+});
+
+test('a rig change at the publication transaction preserves the current record without a recovery receipt', async () => {
+	const f = await fixture();
+	await f.finishOriginalChecks();
+	const spec = await f.recovery(),
+		before = structuredClone(f.saved()),
+		posts = f.posts();
+	f.update.mockImplementationOnce(async (_store, _id, change) => {
+		f.changeRig();
+		change(structuredClone(f.saved()));
+	});
+	await expect(addMove('rig-recover', spec)).rejects.toThrow(
+		'changed in another tab before the move could be saved'
+	);
+	before.manifest.rig.pivot.x++;
+	expect(f.saved()).toEqual(before);
+	expect(f.saved().moveRecovery).toBeUndefined();
+	expect(f.posts()).toBe(posts);
+});
+
 test('review is API-free and finds only exact cached raw-frame checks with honest estimates', async () => {
 	const f = await fixture(),
 		plan = await measurementRecoveryPlan('rig-recover', f.spec);

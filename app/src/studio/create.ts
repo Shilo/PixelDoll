@@ -2246,7 +2246,18 @@ async function addBodyClip(
 	frig.baseHash = await baseHashOf(frig, hashes);
 	// Unchanged clips keep their hashes. Replaced clips lose item coverage in the publication transaction below.
 	for (const it of fm.items) if (it.baseHash === oldHash) it.baseHash = frig.baseHash;
-	const errs = validateRig(frig, hashes);
+	const errs = validateRig(frig);
+	if (!errs.length)
+		errs.push(
+			...validateRig(
+				{
+					...frig,
+					animations: [anim],
+					directions: frig.directions.filter((direction) => affected.includes(direction.id))
+				},
+				hashes
+			)
+		);
 	if (errs.length) throw new Error(`rig not valid: ${errs.join('; ')}`);
 	const qa = (fresh.rigQa ?? {}) as { warnings?: string[]; clips?: Record<string, ClipQa> };
 	fresh.rigQa = {
