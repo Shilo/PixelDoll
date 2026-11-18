@@ -96,11 +96,11 @@
 						disabled={busy}
 						onchange={(event) => toggle(direction.id, event.currentTarget.checked)}
 					/>
-					<span
-						>{directionLabel(direction.id)}{#if direction.mirrorOf}<span class="muted small">
-								· Mirrors {directionLabel(direction.mirrorOf)}</span
-							>{/if}</span
-					>
+					<span>
+						{directionLabel(direction.id)}{#if direction.mirrorOf}<span class="muted small"
+								>{` · Mirrors ${directionLabel(direction.mirrorOf)}`}</span
+							>{/if}
+					</span>
 				</label>
 			{/each}
 		</div>
