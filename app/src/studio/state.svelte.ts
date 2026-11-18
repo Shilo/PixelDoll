@@ -49,6 +49,7 @@ import type {
 import { CURRENT_FORMAT } from '../lib/store/manifest.ts';
 import type { ItemPaletteRepairPlan, Draft, ItemResult } from '../lib/items/run.ts';
 import { loadDrafts } from '../lib/items/drafts.ts';
+import { insertSlotInLadder } from '../lib/items/slots.ts';
 import { app } from '../lib/app.svelte.ts';
 import { requestTier, tierDecision } from '../lib/pixellab/plans.ts';
 import type { NewItemInput } from './itemRoute.ts';
@@ -1967,7 +1968,7 @@ function withDrafts(p: Project): Project {
 			items.push(running ? it : { ...it, pending: undefined }); // only a running draft is still loading; other gaps are missing
 			for (const [h, im] of prev.images) if (!images.has(h)) images.set(h, im);
 			const slot = prev.manifest.slots.find((x) => x.id === it.slot);
-			if (slot && !slots.some((x) => x.id === slot.id)) slots.push(slot);
+			if (slot && !slots.some((x) => x.id === slot.id)) insertSlotInLadder(slots, slot);
 		} else if (running) {
 			const { spec } = g.draft;
 			items.push({

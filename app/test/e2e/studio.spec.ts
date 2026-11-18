@@ -4057,11 +4057,16 @@ test('new item progress, previews and completion survive reload without submitti
 	await standingItemCharacter(page);
 	const id = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
-			s = await import(statePath);
-		await s.startItem({ name: 'Progress fixture', slot: 'hair', prompt: 'short hair' });
+			s = await import(statePath),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(dbPath);
+		const rec = await db.get('projects', s.doc.id);
+		if (rec.manifest.slots.some((slot: { id: string }) => slot.id === 'legs'))
+			throw new Error('Expected Legs to be absent from the saved character');
+		await s.startItem({ name: 'Progress fixture', slot: 'legs', prompt: 'tactical pants' });
 		return s.gens[0].draft.spec.id;
 	});
-	await equipmentGroup(page, 'Hair');
+	await equipmentGroup(page, 'Legs');
 	await expect(page.locator('.gen')).toHaveCount(0);
 	const progress = page.getByRole('progressbar', {
 		name: 'Progress fixture progress',
@@ -4103,6 +4108,26 @@ test('new item progress, previews and completion survive reload without submitti
 			}, id)
 		)
 		.toBe(true);
+	const slotOrder = await page.evaluate(async (id) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(dbPath);
+		state.wearDraft(id);
+		const ids = (slots: { id: string }[]) => slots.map((slot) => slot.id);
+		return {
+			stage: ids(state.view.project.manifest.slots),
+			preview: ids(state.store.results[id].preview.manifest.slots),
+			saved: ids((await db.get('projects', state.doc.id)).manifest.slots)
+		};
+	}, id);
+	expect(slotOrder.saved).not.toContain('legs');
+	const expectedOrder = [...slotOrder.saved];
+	const torso = expectedOrder.indexOf('torso_inner');
+	expect(torso).toBeGreaterThanOrEqual(0);
+	expectedOrder.splice(torso, 0, 'legs');
+	expect(slotOrder.preview).toEqual(expectedOrder);
+	expect(slotOrder.stage).toEqual(slotOrder.preview);
 	// Reproduce an older stuck draft whose runner never persisted its job reference.
 	await page.evaluate(async () => {
 		const p = '/src/lib/store/db.ts',

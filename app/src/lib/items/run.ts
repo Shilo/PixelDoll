@@ -170,7 +170,8 @@ function draftContext(d: Draft, ctx: RigCtx): RigCtx {
 	const slots = ctx.rec.manifest.slots ?? [];
 	const slot = specSlot(d.spec, slots);
 	if (slots.some((entry) => entry.id === slot.id)) return ctx;
-	const manifest = { ...ctx.rec.manifest, slots: [...slots, structuredClone(slot)] };
+	const slotSnapshot = JSON.parse(JSON.stringify(slot)) as Slot;
+	const manifest = { ...ctx.rec.manifest, slots: [...slots, slotSnapshot] };
 	return {
 		rec: { ...ctx.rec, manifest },
 		project: { ...ctx.project, manifest }
@@ -716,9 +717,13 @@ export const isClean = (r: ItemResult) =>
 	r.qa?.qa.status === 'pass' && !r.g1.size && !r.qa.failCalls.size && !r.qa.warnings.length;
 
 /** Run each batch of the player-requested plan once. Checks never authorize another paid attempt. */
-export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<ItemResult | null> {
+export async function runItem(
+	d: Draft,
+	savedCtx: RigCtx,
+	h: RunHooks = {}
+): Promise<ItemResult | null> {
 	h.signal?.throwIfAborted();
-	ctx = draftContext(d, ctx);
+	const ctx = draftContext(d, savedCtx);
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
 	const persist = h.persist ?? (async () => {}),
@@ -736,7 +741,7 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
 	const evalItem = () => {
 		const r = chain.then(async () => {
 			h.signal?.throwIfAborted();
-			const x = await evaluateItem(d, ctx, h.standingPalettes);
+			const x = await evaluateItem(d, savedCtx, h.standingPalettes);
 			h.signal?.throwIfAborted();
 			h.result?.(x);
 			return x;
@@ -944,10 +949,10 @@ function extractOnce(d: Draft, sig: string, run: () => CellOut): CellOut {
 }
 export async function evaluateItem(
 	d: Draft,
-	ctx: RigCtx,
+	savedCtx: RigCtx,
 	standingPalettes?: ReadonlyMap<DirectionName, number[]>
 ): Promise<ItemResult> {
-	ctx = draftContext(d, ctx);
+	const ctx = draftContext(d, savedCtx);
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
 	type Out = {
@@ -1223,7 +1228,7 @@ export async function evaluateItem(
 		cells,
 		qa,
 		g1,
-		preview: qa ? await previewProject(d, ctx, cells, qa, pending) : null,
+		preview: qa ? await previewProject(d, savedCtx, slot, cells, qa, pending) : null,
 		...(thumbnail ? { thumbnail } : {}),
 		...(retryKey ? { retryKey } : {})
 	};
@@ -1341,29 +1346,24 @@ export function withH4(
 async function previewProject(
 	d: Draft,
 	ctx: RigCtx,
+	slot: Slot,
 	cells: CellOut[],
 	qa: QaResult,
 	pending: CellKey[]
 ): Promise<Project> {
 	const { item, images } = await buildItem({
-		spec: JSON.parse(
-			JSON.stringify({ ...d.spec, slotConfig: requireSlot(ctx.rec.manifest, d.spec.slot) })
-		) as ItemSpec,
+		spec: JSON.parse(JSON.stringify({ ...d.spec, slotConfig: slot })) as ItemSpec,
 		rig: ctx.rec.manifest.rig,
 		cells,
 		route: d.spec.key,
 		provenance: [],
 		qa: qa.qa,
-		pad: padOf(
-			requireSlot(ctx.rec.manifest, d.spec.slot),
-			d.spec.method,
-			ctx.rec.manifest.rig.cell
-		),
+		pad: padOf(slot, d.spec.method, ctx.rec.manifest.rig.cell),
 		pending
 	});
-	const m: Manifest = structuredClone(ctx.rec.manifest);
+	const m: Manifest = structuredClone({ ...ctx.rec.manifest, slots: ctx.rec.manifest.slots ?? [] });
 	// A slot the character lacks comes in ladder order with its rig's near-hand order, as when the item is saved.
-	putItem(m, item, [...slotLadder(m.rig), specSlot(d.spec, m)]);
+	putItem(m, item, [...slotLadder(m.rig), slot]);
 	return { manifest: m, images: new Map([...ctx.project.images, ...images]) };
 }
 
@@ -1410,13 +1410,13 @@ const bodyCells = (m: Manifest, anims: string[]) =>
 /** Write the item (layers + cell blobs + provenance + QA) into the rig's project record. A non-pass QA becomes "accepted". */
 export async function acceptItem(
 	d: Draft,
-	ctx: RigCtx,
+	savedCtx: RigCtx,
 	res?: ItemResult
 ): Promise<{ item: Item; cells: number }> {
-	ctx = draftContext(d, ctx);
+	const ctx = draftContext(d, savedCtx);
 	if (d.rigId !== ctx.rec.id)
 		throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
-	const r = res ?? (await evaluateItem(d, ctx));
+	const r = res ?? (await evaluateItem(d, savedCtx));
 	if (hasStructuralFailure(r))
 		throw new Error(
 			`${d.spec.id}: a batch has missing or malformed frames. Try again before keeping this item.`

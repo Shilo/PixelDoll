@@ -2,6 +2,7 @@ import {
 	behaviorOf,
 	creativePrompt,
 	handOf,
+	insertSlotInLadder,
 	requireSlot,
 	slotOf,
 	specSlot,
@@ -509,13 +510,8 @@ export const reusesStanding = (
 export function putItem(m: Pick<Manifest, 'items' | 'slots'>, item: Item, ladder: Slot[]) {
 	const slot = requireSlot([...m.slots, ...ladder], item.slot);
 	if (!m.slots.some((entry) => entry.id === item.slot)) {
-		const order = ladder.findIndex((entry) => entry.id === item.slot);
-		const before = m.slots.findIndex((entry) => {
-			const rank = ladder.findIndex((candidate) => candidate.id === entry.id);
-			return order >= 0 && rank > order;
-		});
 		m.slots = [...m.slots];
-		m.slots.splice(before < 0 ? m.slots.length : before, 0, structuredClone(slot));
+		insertSlotInLadder(m.slots, structuredClone(slot), ladder);
 	}
 	m.items = [...m.items.filter((entry) => entry.id !== item.id), item];
 }

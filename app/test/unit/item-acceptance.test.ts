@@ -207,20 +207,33 @@ test('accepted keyframe design reasons are retained individually without rewriti
 	expect(saved.item.qa?.clips?.['idle/south'].status).toBe('pass');
 });
 
-test.each(['imported-rest', 'verified-standing', 'unrigged-standing', 'removed-custom-slot'])(
+test.each([
+	'imported-rest',
+	'verified-standing',
+	'unrigged-standing',
+	'removed-custom-slot',
+	'missing-off-hand'
+])(
 	'dressed %s cells survive a design-art warning and retain their real coverage and references',
 	async (mode) => {
 		const { draft, ctx } = fixture();
-		const unrigged = mode === 'unrigged-standing' || mode === 'removed-custom-slot';
+		const missingOffHand = mode === 'missing-off-hand';
+		const unrigged =
+			mode === 'unrigged-standing' || mode === 'removed-custom-slot' || missingOffHand;
 		if (mode === 'removed-custom-slot') {
 			draft.spec.slotConfig = createSlot('custom_helmet', 'head', 'Custom helmet');
 			draft.spec.slot = draft.spec.slotConfig.id;
+		}
+		if (missingOffHand) {
+			draft.spec.slot = 'off_hand';
+			draft.spec.slotConfig = new Proxy(slotOf('off_hand'), {});
 		}
 		const base = makeImg(8, 8);
 		for (let y = 2; y < 7; y++)
 			for (let x = 2; x < 6; x++) base.data.set([180, 140, 120, 255], (y * 8 + x) * 4);
 		const hash = await cellHash(base),
 			localRig = structuredClone(rig);
+		if (missingOffHand) localRig.directions.push({ id: 'west' });
 		const pose = LABELS.map((label) => ({ label, x: 0.5, y: label === 'NECK' ? 0.5 : 0.25 }));
 		if (!unrigged) localRig.rest = { south: { image: hash, keypoints: pose } };
 		if (mode === 'imported-rest')
@@ -290,12 +303,18 @@ test.each(['imported-rest', 'verified-standing', 'unrigged-standing', 'removed-c
 		if (mode === 'removed-custom-slot') {
 			expect(ctx.rec.manifest.slots.map((slot) => slot.id)).toEqual(['body']);
 			expect(result.preview?.manifest.slots).toContainEqual(draft.spec.slotConfig);
+		}
+		if (mode === 'removed-custom-slot' || missingOffHand)
 			vi.mocked(saveItem).mockImplementationOnce(async (_id, item, _images, slots, check) => {
 				check?.(ctx.rec);
 				putItem(ctx.rec.manifest, item, slots);
 			});
-		}
 		const saved = await acceptItem(draft, ctx, result);
+		if (missingOffHand) {
+			const savedSlot = manifest.slots.find((slot) => slot.id === 'off_hand');
+			expect(savedSlot?.zOverrides).toContainEqual({ layer: 'fg', dir: 'west', z: 155 });
+			expect(result.preview?.manifest.slots).toContainEqual(savedSlot);
+		}
 		if (!unrigged)
 			expect(saved.item.designWarnings?.some((why) => why.startsWith('D1'))).toBe(true);
 		expect(saved.item.dressed?.south).toBe(await cellHash(composite));
