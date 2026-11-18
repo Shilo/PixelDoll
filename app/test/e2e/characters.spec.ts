@@ -715,6 +715,70 @@ test('device import includes sibling moves and preserves explicit selections whe
 	).toHaveText(['Default', 'Right punch']);
 });
 
+test('character directions can be configured on import and removed only after confirmation', async ({
+	page
+}) => {
+	const sprite = makeImg(48, 48);
+	sprite.data.set([180, 100, 80, 255], (30 * 48 + 20) * 4);
+	const rotation = await encodePngBytes(sprite);
+	const archive = await zip([
+		{
+			name: 'metadata.json',
+			data: new TextEncoder().encode(JSON.stringify({ name: 'Direction test hero' }))
+		},
+		...['south', 'east', 'north'].map((dir) => ({ name: `rotations/${dir}.png`, data: rotation }))
+	]);
+	await openStudio(page, '/');
+	await page.locator('.project-btn').click();
+	await page
+		.locator('#project-menu')
+		.getByRole('button', { name: 'New character', exact: true })
+		.click();
+	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	const importer = page.getByRole('dialog', { name: 'Import from device', exact: true });
+	await importer.getByLabel('Character ZIP', { exact: true }).setInputFiles({
+		name: 'directions.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from(archive)
+	});
+	await importer.getByText('Directions', { exact: true }).click();
+	const options = importer.getByRole('group', { name: 'Directions to import' });
+	await expect(options.getByRole('combobox', { name: 'West', exact: true })).toHaveValue('off');
+	await options.getByRole('combobox', { name: 'West', exact: true }).selectOption('mirror');
+	await expect(importer.getByRole('combobox', { name: 'Preview direction' })).toHaveValue('west');
+	await expect(importer.locator('.import-preview')).toContainText('4 directions');
+	await importer
+		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' })
+		.uncheck();
+	await importer.getByRole('button', { name: 'Import character', exact: true }).click();
+	await expect(importer).toBeHidden();
+	const openDirections = async () => {
+		await page.locator('.project-btn').click();
+		await page
+			.getByRole('button', { name: 'More actions for Direction test hero', exact: true })
+			.click();
+		await page.getByRole('menuitem', { name: 'Directions…', exact: true }).click();
+	};
+	await openDirections();
+	const settings = page.getByRole('dialog', { name: 'Directions', exact: true });
+	const west = settings.getByRole('checkbox', { name: 'West · Mirrors East' });
+	await expect(west).toBeChecked();
+	await west.uncheck();
+	const review = settings.getByRole('button', { name: 'Review removal' });
+	await review.click();
+	const confirmation = page.getByRole('alertdialog', { name: 'Remove direction?' });
+	await expect(confirmation).toContainText('West will be removed');
+	await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(settings).toBeVisible();
+	await review.click();
+	await confirmation.getByRole('button', { name: 'Remove permanently' }).click();
+	await expect(settings).toBeHidden();
+	await reloadStudio(page);
+	await openDirections();
+	await expect(settings.getByRole('checkbox')).toHaveCount(3);
+	await expect(west).toHaveCount(0);
+});
+
 test('browser Back respects an atomic import and closes sheets after it finishes', async ({
 	page
 }) => {

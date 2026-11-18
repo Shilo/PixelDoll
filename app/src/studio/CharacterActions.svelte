@@ -2,7 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { ui } from './state.svelte.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
-	import { Download, Info } from './icons.ts';
+	import { Compass, Download, Info } from './icons.ts';
 	import DeleteRow, { DEMO_CHARACTER_LOCKED } from './DeleteRow.svelte';
 	import RowActions from './RowActions.svelte';
 	import DemoCopyRow from './DemoCopyRow.svelte';
@@ -12,6 +12,20 @@
 <RowActions {name} {children}>
 	{#snippet actions(close)}
 		<DemoCopyRow {id} {close} />
+		{#if id.startsWith('rig-')}
+			<button
+				class="row"
+				role="menuitem"
+				onclick={() => {
+					close();
+					document
+						.querySelectorAll<HTMLElement>('[popover]:popover-open')
+						.forEach((popover) => popover.hidePopover());
+					ui.directionProject = id;
+					ui.sheet = 'directions';
+				}}><Compass size={16} />Directions…</button
+			>
+		{/if}
 		<button
 			class="row"
 			role="menuitem"

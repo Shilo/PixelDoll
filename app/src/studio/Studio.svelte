@@ -13,6 +13,7 @@
 	import Lazy from './Lazy.svelte';
 	import RenameSheet from './RenameSheet.svelte';
 	import DeleteSheet from './DeleteSheet.svelte';
+	import DirectionsSheet from './DirectionsSheet.svelte';
 	import { moveDirs } from '../lib/dress/dress.ts';
 	import {
 		ui,
@@ -302,6 +303,7 @@
 	{#if ui.sheet === 'activity'}<Lazy load={parts.activity} />{/if}
 	{#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
+	{#if ui.sheet === 'directions'}<DirectionsSheet id={ui.directionProject} />{/if}
 	{#if ui.sheet === 'importZip' || ui.sheet === 'importPixelLab'}{#key ui.sheet}<Lazy
 				load={parts[ui.sheet]}
 				source={ui.sheet === 'importZip' ? 'device' : 'pixellab'}

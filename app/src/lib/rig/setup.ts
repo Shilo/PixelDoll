@@ -78,7 +78,8 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 		if (im) rest[d] = im;
 	}
 	for (const d of rig.directions) {
-		const existing = rig.rest?.[d.id]?.image && p.images.get(rig.rest[d.id]!.image);
+		if (d.mirrorOf) continue;
+		const existing = rest[d.id];
 		const im = existing || cellImg(p, base.layers[0], a.id, d.id, 0);
 		if (!im || !opaqueBox(im))
 			throw new Error(`${a.id} has no ${d.id} standing reference. Choose a move with every view.`);
@@ -88,7 +89,7 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 				`${d.id} leaves ${top} px above the head; tall hair or hats may need a larger frame.`
 			);
 		rest[d.id] = im;
-		if (!d.mirrorOf) frames.set(await cellHash(im), im);
+		frames.set(await cellHash(im), im);
 	}
 	const registrationDirections = DIRECTIONS.every((d) => rest[d]) ? 8 : 4;
 	const required =

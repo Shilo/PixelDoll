@@ -282,6 +282,7 @@ export interface Keypoint {
 export interface RestView {
 	image: Sha256;
 	keypoints: Keypoint[];
+	registrationOnly?: true;
 }
 
 export interface ClipSource {

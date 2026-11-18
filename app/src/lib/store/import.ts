@@ -25,6 +25,7 @@ export interface CharacterImportState {
 	animations: number | null;
 }
 export interface ImportedCharacter {
+	format?: 'pixellab';
 	project: Project;
 	extra: Pick<StoredProject, 'character' | 'skeletons' | 'rigQa'>;
 	warnings: string[];
@@ -694,6 +695,7 @@ async function pixelLab(
 			presets: [{ id: 'default', name: 'Base', items: { body: 'base' }, variants: {} }]
 		};
 		return {
+			format: 'pixellab',
 			project: { manifest, images },
 			extra: {},
 			states,

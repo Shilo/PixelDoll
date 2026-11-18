@@ -3,6 +3,16 @@ import type { Manifest, Slot, SlotProfile } from '../store/manifest.ts';
 
 export type SlotSource = readonly Slot[] | Pick<Manifest, 'slots'>;
 export type SlotRef = string | Slot;
+
+export function retainSlotDirections(slots: Slot[], directions: Rig['directions']): Slot[] {
+	const allowed = new Set(directions.map(({ id }) => id));
+	return slots.map((slot) => {
+		const overrides = slot.zOverrides?.filter(({ dir }) => !dir || allowed.has(dir));
+		return overrides?.length === slot.zOverrides?.length
+			? slot
+			: { ...slot, zOverrides: overrides };
+	});
+}
 export const DEFAULT_WARDROBE_ORDER = [
 	'head',
 	'hair',

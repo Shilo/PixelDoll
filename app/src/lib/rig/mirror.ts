@@ -3,6 +3,15 @@ import { makeImg } from '../image/png.ts';
 import { flipH } from '../runtime/paperdoll.js';
 import { DIRECTIONS, type DirectionName, type RigDirection } from './rig.ts';
 
+export const PAIRS: [DirectionName, DirectionName][] = [
+	['north-west', 'north-east'],
+	['west', 'east'],
+	['south-west', 'south-east']
+];
+
+export const mirrorPartner = (dir: DirectionName) =>
+	PAIRS.find((pair) => pair.includes(dir))?.find((other) => other !== dir);
+
 export type DirMode = '4' | '8' | 'all';
 const PLANS: Record<'4' | '8', [DirectionName, DirectionName?][]> = {
 	'4': [['south'], ['east'], ['north'], ['west', 'east']],

@@ -1,5 +1,6 @@
 // IndexedDB "pixeldoll": projects (manifest JSON), blobs (sha256-keyed Blobs), jobs (queue ledger).
-import { sha256 } from '../image/hash.ts';
+import { sha256, stableStringify } from '../image/hash.ts';
+import type { StoredProject } from './project.ts';
 
 export type StoreName = 'projects' | 'blobs' | 'jobs';
 const DB = 'pixeldoll',
@@ -116,16 +117,19 @@ export function withoutCharacters(r: any, ids: Set<string>): Record<string, unkn
 	return kept.length === r[list].length ? undefined : { ...r, [list]: kept };
 }
 
-/** Delete a local character and its drafts atomically, refusing work that could later write it back. Shared blobs stay. */
-export async function deleteCharacter(id: string): Promise<void> {
-	if (!id.startsWith('rig-')) throw new Error('Only a saved local character can be deleted.');
+async function editIdleCharacter(
+	id: string,
+	action: 'delete' | 'change directions for',
+	edit: (projects: IDBObjectStore, records: any[]) => void
+): Promise<void> {
+	if (!id.startsWith('rig-')) throw new Error(`You can only ${action} a saved character.`);
 	const db = await open();
 	return new Promise((res, rej) => {
 		const t = db.transaction(['projects', 'jobs'], 'readwrite'),
 			projects = t.objectStore('projects');
 		const records = projects.getAll(),
 			jobs = t.objectStore('jobs').getAll();
-		let error: Error | undefined;
+		let error: unknown;
 		jobs.onsuccess = () => {
 			const busy = jobs.result.some((j) => ['queued', 'submitting', 'running'].includes(j.state));
 			const work = records.result.some(
@@ -136,19 +140,47 @@ export async function deleteCharacter(id: string): Promise<void> {
 					(r.id === 'studio-drafts' &&
 						r.gens?.some((g: { phase: string }) => g.phase === 'running'))
 			);
-			if (busy || work) {
-				error = new Error('Finish or dismiss pending generation work before deleting a character.');
+			try {
+				if (busy || work)
+					throw new Error(
+						`Finish or dismiss pending generation work before you ${action} a character.`
+					);
+				edit(projects, records.result);
+			} catch (failure) {
+				error = failure;
 				t.abort();
-				return;
-			}
-			projects.delete(id);
-			for (const r of records.result) {
-				const change = withoutCharacters(r, new Set([id]));
-				if (change) projects.put(change, r.id);
 			}
 		};
 		t.oncomplete = () => res();
 		t.onerror = t.onabort = () => rej(error ?? t.error);
+	});
+}
+
+/** Delete a local character and its drafts atomically, refusing work that could later write it back. Shared blobs stay. */
+export async function deleteCharacter(id: string): Promise<void> {
+	await editIdleCharacter(id, 'delete', (projects, records) => {
+		projects.delete(id);
+		for (const record of records) {
+			const change = withoutCharacters(record, new Set([id]));
+			if (change) projects.put(change, record.id);
+		}
+	});
+}
+
+export async function saveCharacterDirections(
+	original: StoredProject,
+	next: StoredProject
+): Promise<void> {
+	const { id } = original;
+	const version = stableStringify(original);
+	await editIdleCharacter(id, 'change directions for', (projects, records) => {
+		if (records.some((record) => withoutCharacters(record, new Set([id]))))
+			throw new Error('Keep or dismiss this character’s item drafts before changing directions.');
+		if (stableStringify(records.find((record) => record?.id === id)) !== version)
+			throw new Error(
+				'This character changed. Close and reopen Directions to review the latest version.'
+			);
+		projects.put(next, id);
 	});
 }
 
