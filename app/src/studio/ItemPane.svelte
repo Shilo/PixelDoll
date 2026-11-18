@@ -3,7 +3,16 @@
 	import { hiddenSlots, equipped } from '../lib/compose/compose.ts';
 	import { SLOTS, slotLadder } from '../lib/items/items.ts';
 	import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts';
-	import { extendable, missingItemMoves, itemMoveOffer } from './create.ts';
+	import {
+		extendable,
+		missingItemMoves,
+		itemMoveOffer,
+		moveMinimumTier,
+		type MoveSpec
+	} from './create.ts';
+	import { app } from '../lib/app.svelte.ts';
+	import { tierDecision } from '../lib/pixellab/plans.ts';
+	import TierNotice from './TierNotice.svelte';
 	import GenerationDetails from './GenerationDetails.svelte';
 	import { movePlan } from './apiPlans.ts';
 	import ApiPeek from './ApiPeek.svelte';
@@ -128,6 +137,12 @@
 			: null
 	);
 	const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec]) : null);
+	// Required plan tiers come from the mandatory steps of each offered spec, not from the API preview.
+	const offerTier = (offer: { specs: MoveSpec[] } | null) =>
+		m ? Math.max(0, ...(offer?.specs ?? []).map((s) => moveMinimumTier(m, s))) : 0;
+	const tierBlocked = (required: number) =>
+		tierDecision(app.balance, { required }).kind === 'required';
+	const repairTier = $derived(offerTier(repairOffer));
 	const repairBusy = $derived(
 		(!!moving.spec && !moving.done) || (!!settingUp.spec && !settingUp.done)
 	);
@@ -141,7 +156,7 @@
 		withKey(() => {
 			void startMove(projectId, spec);
 			ui.sheet = 'move';
-		});
+		}, repairTier);
 	}
 	// The character's actual missing moves, regardless of their names or when they were imported.
 	const missingMoves = $derived.by(() => {
@@ -156,19 +171,17 @@
 			missingMoves[0]
 	);
 	const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove]) : null);
+	const missingTier = $derived(offerTier(missingOffer));
 	const missingName = $derived(missingMove ? moveLabel(missingMove.id, moveIds) : '');
 	function makeMissing() {
 		if (!missingOffer?.specs.length) return;
 		const projectId = doc.id,
 			seed = 1 + Math.floor(Math.random() * 1_000_000),
 			specs = missingOffer.specs.map((s) => ({ ...$state.snapshot(s), seed }));
-		withKey(
-			() => {
-				void queueMoves(projectId, specs);
-				ui.sheet = 'move';
-			},
-			specs.some((s) => s.itemMethod !== 'anchor')
-		);
+		withKey(() => {
+			void queueMoves(projectId, specs);
+			ui.sheet = 'move';
+		}, missingTier);
 	}
 	let colorPlan = $state<ItemPaletteRepairPlan | null>(null);
 	let colorBusy = $state(false);
@@ -424,7 +437,8 @@
 					/><button
 						class="bu-action btn"
 						data-variant="outline"
-						disabled={missingOffer?.gens == null}
+						disabled={missingOffer?.gens == null || tierBlocked(missingTier)}
+						aria-describedby={tierBlocked(missingTier) ? 'item-missing-tier' : undefined}
 						onclick={makeMissing}
 						>Make for {missingName}
 						<span class="cost"
@@ -437,6 +451,11 @@
 				{#if missingOffer?.error}<p class="notice warn small" role="status">
 						{missingOffer.error}
 					</p>{/if}
+				{#if missingTier}<TierNotice
+						id="item-missing-tier"
+						minimumTier={missingTier}
+						feature="Making items for more moves"
+					/>{/if}
 				<p class="faint small">
 					Generates only this item’s missing views for the chosen move, reusing its standing design.
 					The body stays as it is. PixelLab may bill dollars; queue time varies.
@@ -452,7 +471,8 @@
 				<button
 					class="bu-action btn"
 					data-variant="outline"
-					disabled={repairBusy || repairOffer?.gens == null}
+					disabled={repairBusy || repairOffer?.gens == null || tierBlocked(repairTier)}
+					aria-describedby={tierBlocked(repairTier) ? 'item-repair-tier' : undefined}
 					onclick={repairFrames}
 					>Try new item frames <span class="cost"
 						>{repairOffer?.gens == null
@@ -463,6 +483,11 @@
 				{#if repairOffer?.error}<p class="notice warn small" role="status">
 						{repairOffer.error}
 					</p>{/if}
+				{#if repairTier}<TierNotice
+						id="item-repair-tier"
+						minimumTier={repairTier}
+						feature="Redrawing item frames"
+					/>{/if}
 				<p class="faint small">
 					Only {moveName} facing {sourceDir.replaceAll('-', ' ')} is redrawn on the frozen body.{#if sourceDir !== ui.dir}
 						Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. Hard

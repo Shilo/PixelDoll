@@ -9,11 +9,12 @@
 		ui,
 		connected,
 		clearPendingConnection,
-		pendingConnectionAllowsFree
+		pendingConnectionMinimumTier
 	} from './state.svelte.ts';
 	import { ExternalLink, KeyRound, Check } from './icons.ts';
 	import { fmtNum } from './model.ts';
-	import { accountTier, FREE_PLAN_NOTICE } from '../lib/pixellab/plans.ts';
+	import { accountTier, FREE_PLAN_NOTICE, tierDecision } from '../lib/pixellab/plans.ts';
+	import TierNotice from './TierNotice.svelte';
 
 	let key = $state('');
 	let remember = $state(false);
@@ -21,6 +22,7 @@
 	let checking = $state(false);
 	let closed = false;
 	const activityScope = crypto.randomUUID();
+	const minimumTier = pendingConnectionMinimumTier() ?? 0;
 	onDestroy(() => {
 		closed = true;
 	});
@@ -38,8 +40,9 @@
 		checking = false;
 		if (app.keyRejected) msg = 'PixelLab didn’t accept this key.';
 		else if (app.balanceError) msg = `Couldn’t reach PixelLab: ${app.balanceError}`;
-		else if (accountTier(app.balance) === 0 && !pendingConnectionAllowsFree())
+		else if (tierDecision(app.balance, { required: minimumTier }).kind === 'required')
 			clearPendingConnection();
+		else if (accountTier(app.balance) === 0 && pendingConnectionMinimumTier() === null) return;
 		else connected();
 	}
 </script>
@@ -66,6 +69,7 @@
 			>
 		</p>
 	{/if}
+	<TierNotice {minimumTier} feature="This generation" />
 	{#if app.key && !app.keyRejected && accountTier(app.balance) === 0}
 		<p class="notice warn small" role="status">{FREE_PLAN_NOTICE}</p>
 		<div class="field-row">

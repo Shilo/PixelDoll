@@ -107,3 +107,28 @@ test('explicit generation seed identifies safe automatic-unsent recovery attempt
 	);
 	expect(enqueue.mock.calls[0][1]?.attempt).toBe(456);
 });
+
+test.each([0, 1, 2])(
+	'body requests carry mandatory workflow Tier %i without an unconditional paid tier',
+	async (minimumTier) => {
+		const record = { id: 'synthetic-done', state: 'done' } as JobRec;
+		const enqueue = vi.spyOn(queue, 'enqueue').mockResolvedValue(record);
+		await parallelGeneration(
+			[
+				async (signal) =>
+					run(
+						{ method: 'POST', path: '/create-character-v3' },
+						'test',
+						'studio-base',
+						false,
+						true,
+						signal
+					)
+			],
+			undefined,
+			undefined,
+			minimumTier
+		);
+		expect(enqueue.mock.calls[0][1]?.minimumTier).toBe(minimumTier);
+	}
+);

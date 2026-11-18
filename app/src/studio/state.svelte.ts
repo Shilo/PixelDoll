@@ -50,7 +50,7 @@ import { CURRENT_FORMAT } from '../lib/store/manifest.ts';
 import type { ItemPaletteRepairPlan, Draft, ItemResult } from '../lib/items/run.ts';
 import { loadDrafts } from '../lib/items/drafts.ts';
 import { app } from '../lib/app.svelte.ts';
-import { accountTier } from '../lib/pixellab/plans.ts';
+import { requestTier, tierDecision } from '../lib/pixellab/plans.ts';
 import type { NewItemInput } from './itemRoute.ts';
 import type { Method } from '../lib/items/items.ts';
 import type { Key } from '../lib/image/chroma.ts';
@@ -212,7 +212,7 @@ export const ui = $state({
 	toastAction: null as (() => void | Promise<void>) | null,
 	waitingForTab: false // a spending action waits for the other tab that runs the jobs
 });
-let afterConnect: { run: () => void; requiresRig: boolean } | null = null;
+let afterConnect: { run: () => void; minimumTier: number } | null = null;
 let afterTakeOver: (() => void) | null = null;
 let waitingNotice: ReturnType<typeof setTimeout> | undefined;
 /** How long a click waits for an idle tab to hand over the jobs before Activity explains the wait: a handoff takes well
@@ -376,24 +376,31 @@ export function cancelWaitingForTab() {
 /** Run a spending action; without a key the Connect sheet opens first and the action runs once a key is set. In a tab
  *  that is not running the jobs, it waits for them (see follower). Wrap only the step that spends: a button that just
  *  opens a sheet which prices the work first never needs it, since that sheet's own action does. */
-export function withKey(fn: () => void, requiresRig = false) {
-	if (follower(() => withKey(fn, requiresRig))) return;
-	if (requiresRig && app.key && accountTier(app.balance) === 0) {
+function allowsTier(minimumTier: number): boolean {
+	const decision = tierDecision(app.balance, { required: minimumTier });
+	if (decision.kind === 'required') {
+		toast(`Needs PixelLab Tier ${decision.tier} or higher. No request sent.`, { tone: 'warning' });
+		return false;
+	}
+	return true;
+}
+export function withKey(fn: () => void, minimumTier = 0) {
+	if (follower(() => withKey(fn, minimumTier))) return;
+	if (app.key && !app.keyRejected && !allowsTier(minimumTier)) {
 		afterConnect = null;
-		ui.sheet = 'connect';
 		return;
 	}
 	if (app.key && !app.keyRejected) return fn();
-	afterConnect = { run: fn, requiresRig };
+	afterConnect = { run: fn, minimumTier };
 	ui.sheet = 'connect';
 }
 export function connected() {
 	const f = afterConnect;
 	afterConnect = null;
 	ui.sheet = null;
-	f?.run();
+	if (f && allowsTier(f.minimumTier)) f.run();
 }
-export const pendingConnectionAllowsFree = () => !!afterConnect && !afterConnect.requiresRig;
+export const pendingConnectionMinimumTier = () => afterConnect?.minimumTier ?? null;
 /** Closing Connect cancels its spending action, including when the balance request is still in flight. */
 export function clearPendingConnection() {
 	afterConnect = null;
@@ -1765,16 +1772,14 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
 		});
 		return;
 	}
-	if (
-		consent &&
-		(!Number.isFinite(consent.gens) ||
-			route.plan(ctx.rec.manifest.rig, ctx, input).gens !== consent.gens)
-	) {
+	const plan = route.plan(ctx.rec.manifest.rig, ctx, input);
+	if (consent && (!Number.isFinite(consent.gens) || plan.gens !== consent.gens)) {
 		toast('The attempt price changed. Review the current estimate before generating.', {
 			tone: 'warning'
 		});
 		return;
 	}
+	if (!allowsTier(plan.minimumTier)) return;
 	const taken = gens.map((g) => g.draft.spec.id); // read and claimed with no await between: concurrent starts get distinct ids
 	// The runner and the list must share a proxy so mutations persist and identity checks recognize this draft.
 	const g = $state<Gen>({
@@ -2079,7 +2084,12 @@ export async function discardGen(g: Gen): Promise<boolean> {
 	}
 }
 /** `key`: a background color measured from this attempt's colors (ItemResult.retryKey), so a collision is not repeated. */
-export function retryGen(g: Gen, reviewedGens: number, key?: Key) {
+export function retryGen(
+	g: Gen,
+	reviewedGens: number,
+	key?: Key,
+	minimumTier = requestTier({ method: 'POST', endpoint: '/edit-animation-v2', params: null })
+) {
 	const input = { ...structuredClone($state.snapshot(g.input)), ...(key ? { key } : {}) };
 	const consent = {
 		projectId: g.draft.rigId,
@@ -2101,7 +2111,8 @@ export function retryGen(g: Gen, reviewedGens: number, key?: Key) {
 						: 'This retry could not start. Existing artwork was kept.',
 					{ tone: 'danger' }
 				)
-			)
+			),
+		minimumTier
 	); // closing Connect keeps the draft
 }
 

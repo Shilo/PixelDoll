@@ -167,7 +167,7 @@ test('two-view unrigged imports extend just the chosen sparse move, reusing thei
 			)
 		);
 		expect(body.description).toContain('frame 1');
-		expect(call[1]).toMatchObject({ minimumTier: 0 });
+		expect(call[1]).toMatchObject({ minimumTier: 1 });
 	}
 	expect(ledger.billed).toBe(2);
 });

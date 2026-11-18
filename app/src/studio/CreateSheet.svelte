@@ -1,5 +1,7 @@
 <script lang="ts">
 	import Sheet from './Sheet.svelte';
+	import TierNotice from './TierNotice.svelte';
+	import { GENERATION_RECOMMENDATION } from '../lib/pixellab/plans.ts';
 	import { customize } from './experience/state.svelte.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { createPlan } from './apiPlans.ts';
@@ -61,7 +63,7 @@
 		withKey(() => {
 			formDrafts.character = { ...draft, enhanceOnConnect: target };
 			ui.sheet = 'create';
-		}, false);
+		});
 	}
 	const running = $derived(!!creating.spec && !creating.projectId && !creating.error);
 	const stepIx = $derived(STEPS.findIndex((s) => s.id === creating.progress?.step));
@@ -101,7 +103,7 @@
 			if (!createBusy()) formDrafts.character = undefined;
 			void startCreate(spec);
 			ui.sheet = 'create';
-		}, true); // refused (a resumed create runs): keep the form
+		}); // refused (a resumed create runs): keep the form
 	}
 	const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ');
 	async function open() {
@@ -220,6 +222,12 @@
 			{/if}
 		</div>
 	{:else}
+		<TierNotice
+			minimumTier={0}
+			recommendedTier={GENERATION_RECOMMENDATION.tier}
+			feature="Character generation"
+			recommendation={GENERATION_RECOMMENDATION.reason}
+		/>
 		<CharacterForm bind:draft={d} bind:busy={enhancing} onconnect={connectEnhance} />
 	{/if}
 
@@ -255,7 +263,7 @@
 								seed: 1 + Math.floor(Math.random() * 1_000_000)
 							});
 							ui.sheet = 'create';
-						}, true)}>Try again <span class="cost">{lo}–{hi} gens</span></button
+						})}>Try again <span class="cost">{lo}–{hi} gens</span></button
 				></span
 			><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
 		{:else if running}

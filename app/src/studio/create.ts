@@ -75,7 +75,15 @@ import {
 	rawClip,
 	type ClipQa
 } from '../lib/rig/clips.ts';
-import { canPose, repairGridLayout, planAnchoredMove, planGens } from '../lib/items/items.ts';
+import {
+	canPose,
+	repairGridLayout,
+	planAnchoredMove,
+	planGens,
+	itemPlanMinimumTier,
+	itemPosePlan
+} from '../lib/items/items.ts';
+import { requireSlot } from '../lib/items/slots.ts';
 import {
 	posable,
 	anchorable,
@@ -221,6 +229,7 @@ export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model'>
 // ---------- queue helpers ----------
 /** Cancel sibling continuations when one direction fails; already submitted jobs remain queue-owned. */
 const generationAttempts = new WeakMap<AbortSignal, number>();
+const generationMinimumTiers = new WeakMap<AbortSignal, number>();
 interface GenerationRecovery {
 	intent: EstimateRetryIntent;
 	rawHashes: Set<string>;
@@ -231,11 +240,13 @@ const measurementRecoveries = new WeakMap<AbortSignal, GenerationRecovery>();
 export async function parallelGeneration<T>(
 	tasks: ((signal: AbortSignal) => Promise<T>)[],
 	attempt?: number,
-	recovery?: GenerationRecovery
+	recovery?: GenerationRecovery,
+	minimumTier = 0
 ): Promise<T[]> {
 	const scope = new AbortController();
 	if (Number.isSafeInteger(attempt)) generationAttempts.set(scope.signal, attempt!);
 	if (recovery) measurementRecoveries.set(scope.signal, recovery);
+	generationMinimumTiers.set(scope.signal, minimumTier);
 	return Promise.all(
 		tasks.map(async (task) => {
 			try {
@@ -285,7 +296,7 @@ export async function run(
 		resumeSafe,
 		signal,
 		activityScope,
-		minimumTier: 1,
+		minimumTier: signal ? (generationMinimumTiers.get(signal) ?? 0) : 0,
 		attempt: signal ? generationAttempts.get(signal) : undefined,
 		...(recovery && req.path === '/estimate-skeleton' ? { estimateRetry: recovery.intent } : {})
 	});
@@ -1734,6 +1745,46 @@ export function moveEstimate(
 	return { gens: body + items, body, items, frames: n, minutes: 4 + s.items.length * 3 };
 }
 
+export function moveMinimumTier(manifest: Manifest, spec: MoveSpec): number {
+	if (spec.reuseItemFrames) return 0;
+	const existing = manifest.rig.animations.find((animation) => animation.id === spec.id),
+		redraw = spec.replace || !existing,
+		frames = redraw ? moveFrames(manifest, spec) : existing.cells,
+		rig = redraw
+			? {
+					...manifest.rig,
+					animations: manifest.rig.animations.filter((animation) => animation.id !== spec.id)
+				}
+			: manifest.rig;
+	return Math.max(
+		0,
+		...spec.items.map((id) => {
+			const item = manifest.items.find((candidate) => candidate.id === id);
+			if (!item) throw new Error('The selected equipment is no longer available.');
+			const dirs = moveDirections(manifest, spec.dirs).filter(
+				(dir) =>
+					spec.itemMethod === 'grid' || redraw || !hasCompleteCells(manifest, item, spec.id, dir)
+			);
+			const calls =
+				spec.itemMethod === 'anchor'
+					? planAnchoredMove(manifest.rig, item, spec.id, dirs)
+					: spec.itemMethod === 'grid'
+						? dirs.map((dir) => ({
+								kind: 'grid' as const,
+								cells: Array.from({ length: frames }, (_, frame) => cellKey(spec.id, dir, frame))
+							}))
+						: itemPosePlan(
+								rig,
+								{ ...item, slotConfig: requireSlot(manifest, item.slot) },
+								spec.id,
+								frames,
+								dirs
+							);
+			return itemPlanMinimumTier(calls, item.layers[0]?.cell ?? rig.cell, true);
+		})
+	);
+}
+
 /** Bind a delayed item-only click to its priced artwork. Other queued moves may update this item's unrelated clips. */
 export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 	if (!spec.itemsOnly) throw new Error('Only existing item frames can use this review.');
@@ -1895,6 +1946,12 @@ export async function addMove(
 		throw new Error('A partial repair must keep the existing frame count.');
 	const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
 	const published = await publishedMoveRecovery(rec, spec);
+	const minimumTier = moveMinimumTier(rec.manifest, spec);
+	const blocked =
+		minimumTier > 0
+			? queue.planBlocks({ method: 'POST', path: '/animate-with-skeleton-v3' }, minimumTier)
+			: null;
+	if (blocked) throw new Error(blocked);
 	const recovery =
 		intent && !published ? await measurementRecoveryPlan(projectId, spec) : undefined;
 	if (!published && (spec.replace || !existing))
@@ -2130,7 +2187,8 @@ async function addBodyClip(
 			rawHashes: new Set(recovery.rawHashes),
 			checkHashes: new Set(recovery.checkHashes),
 			tail: Promise.resolve()
-		}
+		},
+		moveMinimumTier(m, spec)
 	);
 
 	onProgress({ step: 'save', done: 0, total: 1, recIds: [] });

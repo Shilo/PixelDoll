@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PixelDoll Free-tier access proposal</title></head>
+<body>
+<style>
+#tier-review{display:grid;gap:16px;color:var(--foreground);font-family:var(--font-sans)}#tier-review *{box-sizing:border-box}
+#tier-review nav,#tier-review footer{display:flex;flex-wrap:wrap;gap:8px}#tier-review button,#tier-review textarea{font:inherit}
+#tier-review button{min-height:40px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);color:var(--foreground);background:var(--secondary)}
+#tier-review button[aria-pressed=true],#tier-review .primary{background:var(--primary);color:var(--primary-foreground)}#tier-review :focus-visible{outline:2px solid var(--ring);outline-offset:3px}#tier-review button:disabled{opacity:.65;cursor:not-allowed}
+#tier-review article{max-width:540px;width:100%;margin:auto;padding:20px;display:grid;gap:20px;border-radius:var(--radius);background:var(--card);color:var(--card-foreground)}
+#tier-review header,#tier-review .cost{display:flex;justify-content:space-between;gap:16px}#tier-review h2,#tier-review p{margin:0}#tier-review h2,#tier-review .cost strong{font-size:20px;font-weight:600}
+#tier-review .hint{color:var(--muted-foreground);font-size:13px;line-height:1.5}#tier-review .account{text-align:right}#tier-review label{display:grid;gap:8px}
+#tier-review textarea{width:100%;min-height:88px;resize:vertical;padding:12px;background:var(--background);color:var(--foreground);border:1px solid var(--border);border-radius:var(--radius);line-height:1.5}
+#tier-review aside{display:grid;gap:8px;padding:16px;border-radius:var(--radius);background:var(--warning-surface,var(--secondary));line-height:1.5}
+#tier-review .plans{justify-self:start;padding-inline:0;border:0;background:transparent;text-decoration:underline;text-underline-offset:3px}#tier-review .primary{flex:1}#tier-review #status{min-height:20px}
+@media(max-width:420px){#tier-review article{padding:16px}#tier-review header,#tier-review .cost{flex-direction:column;gap:8px}#tier-review .account{text-align:left}}
+</style>
+<div id="tier-review">
+<nav aria-label="Preview access states"><button data-state="free" aria-pressed="true">Free route, if verified</button><button data-state="tier1" aria-pressed="false">Tier 1 required</button><button data-state="tier2" aria-pressed="false">Tier 2 required</button><button data-state="failed" aria-pressed="false">Unexplained failure</button></nav>
+<article aria-labelledby="heading">
+<header><h2 id="heading">New item</h2><p class="hint account"><span id="account">PixelLab Free trial</span><br><span id="balance">27 of 40 gens left</span></p></header>
+<label>Describe your armor<textarea>A weathered steel breastplate with bronze trim</textarea></label>
+<aside role="status" aria-live="polite"><strong id="title">Tier 1 recommended for animated equipment</strong><p id="body">This makes the standing design only. Adding moves with Free-plan edits can use more gens and vary between frames.</p><button class="plans">View PixelLab plans</button></aside>
+<div class="cost"><strong id="cost">10 gens</strong><p class="hint" id="remaining">17 gens left after this generation</p></div>
+<p class="hint" id="detail">Standing views only. Add moves separately, with a new cost review.</p>
+<footer><button class="keep">Keep editing</button><button class="primary" id="generate">Make standing design · 10 gens</button></footer>
+</article><p class="hint" id="status" role="status" aria-live="polite">Interactive proposal only. No API requests or generations.</p>
+</div>
+<script>
+(()=>{
+const root=document.getElementById('tier-review');
+const states={
+free:['PixelLab Free trial','Tier 1 recommended for animated equipment','This makes the standing design only. Adding moves with Free-plan edits can use more gens and vary between frames.','10 gens','17 gens left after this generation','Standing views only. Add moves separately, with a new cost review.','Make standing design · 10 gens',false],
+tier1:['PixelLab Free trial','This animation needs PixelLab Tier 1 or higher','It uses a paid-plan animation tool. Your Free-trial generations do not make this workflow available.','No request sent','Your draft is kept','You can still use existing characters and items, recolor, preview, and export.','Generate · Needs Tier 1',true],
+tier2:['PixelLab Tier 1','This repair needs PixelLab Tier 2 or higher','The required inpainting canvas is larger than 256 pixels on one side. Tier 1 supports up to 256 pixels per side.','No request sent','Your draft is kept','No automatic resize or substitute generation. Existing artwork stays unchanged.','Repair · Needs Tier 2',true],
+failed:['PixelLab Free trial','PixelLab could not finish this item','PixelLab reported “Generation failed” without a reason. This does not confirm a plan restriction.','Reported cost: 0 gens','No automatic retry','Your draft is kept. Review the cost before trying again. Technical details remain in Activity.','Review retry cost',false]
+};
+function show(name){const state=states[name];['account','title','body','cost','remaining','detail','generate'].forEach((id,index)=>{root.querySelector('#'+id).textContent=state[index]});root.querySelector('#generate').disabled=state[7];root.querySelector('#balance').textContent=name==='tier2'?'Paid-plan example':'27 of 40 gens left';root.querySelector('#heading').textContent=name==='tier2'?'Repair item':'New item';root.querySelectorAll('[data-state]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.state===name)));root.querySelector('#status').textContent='Interactive proposal only. No API requests or generations.'}
+root.querySelectorAll('[data-state]').forEach(button=>button.addEventListener('click',()=>show(button.dataset.state)));
+root.querySelectorAll('.plans,.keep,#generate').forEach(button=>button.addEventListener('click',()=>{root.querySelector('#status').textContent='Preview only. No request sent. Your typed description is preserved.'}));
+})();
+</script>
+</body>
+</html>

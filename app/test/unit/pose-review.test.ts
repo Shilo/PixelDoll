@@ -9,14 +9,20 @@ import type { DirectionName, Keypoint, Rig } from '../../src/lib/rig/rig.ts';
 import type { Item } from '../../src/lib/store/manifest.ts';
 import {
 	itemPoseGens,
+	draftMinimumTier,
 	newDraft,
 	runItem,
 	type Draft,
 	type RigCtx
 } from '../../src/lib/items/run.ts';
-import { planGens } from '../../src/lib/items/items.ts';
+import { itemPlanMinimumTier, planGens } from '../../src/lib/items/items.ts';
 import { queue } from '../../src/lib/pixellab/queue.ts';
-import { itemMoveOffer, moveEstimate, reviewItemMove } from '../../src/studio/create.ts';
+import {
+	itemMoveOffer,
+	moveEstimate,
+	moveMinimumTier,
+	reviewItemMove
+} from '../../src/studio/create.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 
 afterEach(() => vi.restoreAllMocks());
@@ -161,6 +167,7 @@ test('new worn drafts plan and price frozen-grid dressing instead of unsafe skel
 		enqueue = vi.spyOn(queue, 'enqueue').mockRejectedValue(new Error('Unexpected paid request'));
 	for (const draft of [newDraft(ctx, spec), newDraft(ctx, { ...spec, method: undefined })]) {
 		expect(draft.calls.map((c) => c.kind)).toEqual(['dress', 'grid']);
+		expect(draftMinimumTier(draft, ctx.rec.manifest.rig)).toBe(2);
 		expect(draft.calls[1]).toMatchObject({
 			frozen: true,
 			cells: ['walking/south/0', 'walking/south/1', 'walking/south/2']
@@ -241,6 +248,15 @@ test('accepted equipment estimates the actual safe route and still refuses unsaf
 	});
 	expect(offer.itemReview!.gens).toBe(10);
 	expect(moveEstimate(ctx.rec.manifest, offer).items).toBe(10);
+	expect(moveMinimumTier(ctx.rec.manifest, offer)).toBe(1);
+	expect(moveMinimumTier(ctx.rec.manifest, { ...offer, items: [] })).toBe(0);
+	expect(moveMinimumTier(ctx.rec.manifest, { ...offer, replace: true })).toBe(0);
+	expect(moveMinimumTier(ctx.rec.manifest, { ...offer, reuseItemFrames: true })).toBe(0);
+	ctx.rec.manifest.rig.cell = { w: 128, h: 128 };
+	ctx.rec.manifest.rig.animations[0].cells = 15;
+	expect(moveMinimumTier(ctx.rec.manifest, { ...offer, frames: 15 })).toBe(2);
+	ctx.rec.manifest.rig.cell = { w: 80, h: 80 };
+	ctx.rec.manifest.rig.animations[0].cells = 3;
 	expect(() =>
 		itemPoseGens(ctx.rec.manifest.rig, { ...item, slot: 'main_hand' }, 'walking', 3, ['south'])
 	).toThrow('walking/south frame 2');
@@ -266,4 +282,18 @@ test('equipment preflight does not block independently selected clean moves', ()
 		'grid',
 		'pose'
 	]);
+});
+
+test('item workflow tiers distinguish edits, unrestricted poses and actual mandatory grid layouts', () => {
+	const ctx = context();
+	expect(draftMinimumTier(newDraft(ctx, { ...spec, method: 'anchor' }), ctx.rec.manifest.rig)).toBe(
+		1
+	);
+	const cells = ['walking/south/0', 'walking/south/1', 'walking/south/2'];
+	expect(itemPlanMinimumTier([{ kind: 'edit', cells }], { w: 64, h: 64 })).toBe(1);
+	expect(itemPlanMinimumTier([{ kind: 'dress', cells }], { w: 64, h: 64 })).toBe(1);
+	expect(itemPlanMinimumTier([{ kind: 'pose', cells }], { w: 128, h: 128 })).toBe(0);
+	expect(itemPlanMinimumTier([{ kind: 'grid', cells }], { w: 64, h: 64 })).toBe(1);
+	expect(itemPlanMinimumTier([{ kind: 'grid', cells }], { w: 80, h: 80 })).toBe(2);
+	expect(itemPlanMinimumTier([{ kind: 'grid', cells }], { w: 80, h: 80 }, true)).toBe(1);
 });

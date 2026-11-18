@@ -430,7 +430,7 @@
 					onclick={() =>
 						withKey(() => {
 							ui.sheet = 'importPixelLab';
-						}, false)}><KeyRound size={16} />Connect PixelLab to browse your characters</button
+						})}><KeyRound size={16} />Connect PixelLab to browse your characters</button
 				>
 			{:else}
 				<div class="library-head">

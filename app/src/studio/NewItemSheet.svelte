@@ -1,5 +1,8 @@
 <script lang="ts">
 	import Sheet from './Sheet.svelte';
+	import TierNotice from './TierNotice.svelte';
+	import { app } from '../lib/app.svelte.ts';
+	import { tierDecision } from '../lib/pixellab/plans.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { itemPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
@@ -87,7 +90,10 @@
 		}
 	});
 	const plan = $derived(planned.plan);
-	const canMake = $derived(!!prompt.trim() && !busy && !!plan?.calls);
+	const tierBlocked = $derived(
+		tierDecision(app.balance, { required: plan?.minimumTier ?? 0 }).kind === 'required'
+	);
+	const canMake = $derived(!!prompt.trim() && !busy && !!plan?.calls && !tierBlocked);
 	// Advanced offers a method only when this character can use both; otherwise Automatic is the only one.
 	const automatic = $derived.by(() => {
 		if (!m || !rec) return null;
@@ -158,7 +164,7 @@
 		const consent = plan
 			? { projectId: doc.id, gens: plan.gens, rig: JSON.stringify(m!.rig) }
 			: undefined;
-		withKey(() => void make(i, consent), !!plan?.minimumTier);
+		withKey(() => void make(i, consent), plan?.minimumTier ?? 0);
 	}
 	function promptKeydown(event: KeyboardEvent) {
 		if (
@@ -187,6 +193,7 @@
 			class="bu-action btn primary lg"
 			data-variant="primary"
 			disabled={!canMake}
+			aria-describedby={tierBlocked ? 'new-item-tier' : undefined}
 			onclick={go}>Make <span class="cost">Est. {plan?.gens ?? '–'} gens</span></button
 		></span
 	>
@@ -218,6 +225,11 @@
 			</button>
 		</div>
 	{:else}
+		<TierNotice
+			id="new-item-tier"
+			minimumTier={plan?.minimumTier ?? 0}
+			feature="Equipment generation"
+		/>
 		{#if rec && !rigReady(rec)}<p class="notice small">
 				<TriangleAlert size={16} /><span
 					>Set up this character to use skeleton-posed equipment, oversize weapons and new moves.</span

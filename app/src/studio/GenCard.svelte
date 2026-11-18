@@ -15,6 +15,9 @@
 	import { loadProject } from '../lib/store/project.ts';
 	import { KEY_NAME } from '../lib/image/chroma.ts';
 	import { itemRoute } from './itemRoute.ts';
+	import { app } from '../lib/app.svelte.ts';
+	import { tierDecision } from '../lib/pixellab/plans.ts';
+	import TierNotice from './TierNotice.svelte';
 	import Sprite from './Sprite.svelte';
 	import { plainReason, moveLabel, unknownCostText } from './model.ts';
 	import { slotLabel } from './slots.ts';
@@ -85,6 +88,11 @@
 			: new Set<string>()
 	);
 	let retryGens = $state<number | null>(null);
+	let retryTier = $state(0);
+	const tierNoticeId = $props.id();
+	const retryBlocked = $derived(
+		tierDecision(app.balance, { required: retryTier }).kind === 'required'
+	);
 	let retryPlan = $state<PeekCall[]>([]);
 	let retryEstimateError = $state('');
 	$effect(() => {
@@ -93,6 +101,7 @@
 		void store.project?.manifest; // Re-price when the character's coverage changes.
 		let current = true;
 		retryGens = null;
+		retryTier = 0;
 		retryPlan = [];
 		retryEstimateError = '';
 		// Try again creates a fresh item plan; old fallback calls are not the next attempt's plan.
@@ -101,6 +110,7 @@
 				const plan = itemRoute.plan(ctx.rec.manifest.rig, ctx, input);
 				if (current) {
 					retryGens = plan.gens;
+					retryTier = plan.minimumTier;
 					retryPlan = itemPlan(ctx, input);
 				}
 			})
@@ -231,8 +241,9 @@
 				/><button
 					class="bu-action btn"
 					data-variant="outline"
-					onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey)}
-					disabled={busy || retryGens === null}
+					onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
+					disabled={busy || retryGens === null || retryBlocked}
+					aria-describedby={retryBlocked ? tierNoticeId : undefined}
 					>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button
 				></span
 			>
@@ -253,7 +264,7 @@
 				? 'PixelLab declined this prompt. Try different words.'
 				: g.canceled
 					? 'Generation canceled. Already used generations are not refunded.'
-					: 'This item could not be made.'}
+					: `This item could not be made.${g.error ? ` ${g.error}` : ''}`}
 		</p>
 		<div class="actions">
 			<span class="api-action"
@@ -264,8 +275,9 @@
 				/><button
 					class="bu-action btn primary"
 					data-variant="primary"
-					onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey)}
-					disabled={busy || retryGens === null}
+					onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
+					disabled={busy || retryGens === null || retryBlocked}
+					aria-describedby={retryBlocked ? tierNoticeId : undefined}
 					>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button
 				></span
 			>
@@ -275,6 +287,11 @@
 		</div>
 	{/if}
 
+	{#if g.phase !== 'running'}<TierNotice
+			id={tierNoticeId}
+			minimumTier={retryTier}
+			feature="Generating this equipment again"
+		/>{/if}
 	{#if g.phase !== 'running' && retryEstimateError}<p class="notice bad small">
 			<CircleAlert size={14} />{retryEstimateError}
 		</p>{/if}

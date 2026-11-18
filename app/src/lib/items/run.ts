@@ -68,6 +68,8 @@ import {
 	reusesStanding,
 	anchored,
 	planGens,
+	itemPlanMinimumTier,
+	itemPosePlan,
 	slotLadder,
 	putItem,
 	gridEstimate,
@@ -220,6 +222,11 @@ export function newDraft(
 		})),
 		log: []
 	};
+}
+
+export function draftMinimumTier(draft: Draft, rig: Rig): number {
+	const pad = padOf(specSlot(draft.spec), draft.spec.method, rig.cell);
+	return itemPlanMinimumTier(draft.calls, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
 }
 
 // ---------- ledger access ----------
@@ -639,7 +646,7 @@ async function submit(d: Draft, k: number, ctx: RigCtx, signal?: AbortSignal): P
 			label,
 			tag: d.activityScope ? 'studio-move' : 'm3',
 			activityScope: d.activityScope,
-			minimumTier: d.calls.some((c) => c.kind === 'pose' || c.kind === 'grid') ? 1 : 0
+			minimumTier: draftMinimumTier(d, ctx.rec.manifest.rig)
 		})
 	).id;
 	if (drops.get(c) === dropped) c.recId = id;
@@ -1633,21 +1640,18 @@ export function itemPoseGens(
 	slots?: SlotSource
 ): number {
 	const cell = item.layers[0]?.cell ?? rig.cell;
-	return dirs.reduce(
-		(sum, dir) =>
+	return itemPosePlan(
+		rig,
+		{ ...item, slotConfig: requireSlot(slots ?? [], item.slot) },
+		anim,
+		frames,
+		dirs
+	).reduce(
+		(sum, call) =>
 			sum +
-			poseBatches(frames).reduce((n, batch) => {
-				const cells = Array.from(
-					{ length: batch.count },
-					(_, i) => `${anim}/${dir}/${batch.start + i}`
-				);
-				return (
-					n +
-					(frozenGrid(rig, { ...item, slotConfig: requireSlot(slots ?? [], item.slot) }, cells)
-						? repairGridLayout(cell, cells.length, 1).gens
-						: poseGensFor(cells.length))
-				);
-			}, 0),
+			(call.kind === 'grid'
+				? repairGridLayout(cell, call.cells.length, 1).gens
+				: poseGensFor(call.cells.length)),
 		0
 	);
 }
@@ -1706,6 +1710,17 @@ export async function poseItemClip(
 	)
 		throw new Error('Choose supported independently drawn equipment directions.');
 	const dirs = selectedDirs ?? available;
+	const minimumTier = itemPlanMinimumTier(
+		itemPosePlan(
+			rig,
+			{ ...item, slotConfig: slot },
+			anim,
+			rig.animations.find((animation) => animation.id === anim)!.cells,
+			dirs
+		),
+		item.layers[0]?.cell ?? rig.cell,
+		true
+	);
 	const keys: Partial<Record<DirectionName, Img>> = {};
 	const { keys: k0, cuts, hidden } = await dressedKeys(ctx, item, pad);
 	const bodies = referenceBodies(rig, ctx.project.images);
@@ -1776,7 +1791,7 @@ export async function poseItemClip(
 						label: `pose ${item.name} · ${anim} ${dir}`,
 						tag: 'studio-move',
 						activityScope,
-						minimumTier: 1
+						minimumTier
 					},
 					savedOnly
 				);

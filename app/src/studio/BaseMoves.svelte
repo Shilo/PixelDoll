@@ -39,7 +39,7 @@
 		withKey(() => {
 			void queueMoves(id, queued);
 			onadd();
-		}, true);
+		});
 	}
 </script>
 

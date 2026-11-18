@@ -2,7 +2,7 @@
 	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import type { DirectionName, Item } from '../lib/store/manifest.ts';
-	import { extendable, itemMoveOffer, missingItemMoves } from './create.ts';
+	import { extendable, itemMoveOffer, missingItemMoves, moveMinimumTier } from './create.ts';
 	import { moveLabel } from './model.ts';
 	import {
 		ui,
@@ -17,6 +17,9 @@
 		copyFromSource
 	} from './state.svelte.ts';
 	import { TriangleAlert } from './icons.ts';
+	import { app } from '../lib/app.svelte.ts';
+	import { tierDecision } from '../lib/pixellab/plans.ts';
+	import TierNotice from './TierNotice.svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { movePlan } from './apiPlans.ts';
 
@@ -52,6 +55,12 @@
 			: []
 	);
 	const poseOffer = $derived(m && poseSpecs.length ? itemMoveOffer(m, poseSpecs) : null);
+	const poseTier = $derived(
+		m ? Math.max(0, ...(poseOffer?.specs ?? []).map((s) => moveMinimumTier(m, s))) : 0
+	);
+	const poseBlocked = $derived(
+		tierDecision(app.balance, { required: poseTier }).kind === 'required'
+	);
 	const freeCopy = $derived(missing.find((i) => shared.free[i.id]));
 	const remake = $derived(missing.find((i) => i.prompt));
 	const copyOnly = $derived(!!m && !!remake?.copiedFrom && !extendable(m, remake.id));
@@ -70,13 +79,10 @@
 			...$state.snapshot(spec),
 			seed: 1 + Math.floor(Math.random() * 1_000_000)
 		}));
-		withKey(
-			() => {
-				void queueMoves(projectId, specs);
-				ui.sheet = 'move';
-			},
-			specs.some((s) => s.itemMethod !== 'anchor')
-		);
+		withKey(() => {
+			void queueMoves(projectId, specs);
+			ui.sheet = 'move';
+		}, poseTier);
 	}
 </script>
 
@@ -117,7 +123,8 @@
 				/><button
 					class="bu-action btn sm primary"
 					data-variant="primary"
-					disabled={(!!moving.spec && !moving.done) || !poseOffer?.specs.length}
+					disabled={(!!moving.spec && !moving.done) || !poseOffer?.specs.length || poseBlocked}
+					aria-describedby={poseBlocked ? 'stage-pose-tier' : undefined}
 					onclick={makePose}
 					>Make it <span class="cost"
 						>{poseOffer?.gens == null ? 'Unavailable' : `Est. ${poseOffer.gens} gens`}</span
@@ -125,6 +132,11 @@
 				></span
 			>
 			{#if poseOffer?.error}<span role="status">{poseOffer.error}</span>{/if}
+			{#if poseTier}<TierNotice
+					id="stage-pose-tier"
+					minimumTier={poseTier}
+					feature="Making missing equipment frames"
+				/>{/if}
 		{:else if remake?.standing && !copyOnly}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'setup')}
 				>Set up character</button

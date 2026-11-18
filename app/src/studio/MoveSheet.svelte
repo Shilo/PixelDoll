@@ -21,6 +21,8 @@
 		reservedMove,
 		reviewMoveRecovery,
 		moveEstimate,
+		moveMinimumTier,
+		type MoveSpec,
 		type BodyPaletteRepairPlan,
 		type KeepBodyPlan,
 		type MeasurementRecoveryPlan
@@ -45,6 +47,9 @@
 	import { bodyQualityNote, moveLabel } from './model.ts';
 	import { directionLabel } from './experience/movement.ts';
 	import { Check, ChevronRight, CircleAlert } from './icons.ts';
+	import { app } from '../lib/app.svelte.ts';
+	import { GENERATION_RECOMMENDATION, tierDecision } from '../lib/pixellab/plans.ts';
+	import TierNotice from './TierNotice.svelte';
 
 	const m = $derived(store.project?.manifest);
 	let rec = $state.raw<StoredProject | null>(null);
@@ -111,6 +116,29 @@
 			: null
 	);
 	const dirs = $derived(targetDirs.length);
+	const specAccess = (spec: MoveSpec | undefined) => {
+		try {
+			return { tier: m && spec ? moveMinimumTier(m, spec) : 0, error: '' };
+		} catch (error) {
+			return { tier: 0, error: error instanceof Error ? error.message : String(error) };
+		}
+	};
+	const tierBlocked = (required: number) =>
+		tierDecision(app.balance, { required }).kind === 'required';
+	const addAccess = $derived(
+		specAccess(
+			m && id && targetDirs.length && !motionIssue
+				? {
+						...motion,
+						items: chosen,
+						poseStyle: 'visible-side-v1',
+						seed: 0,
+						...(replacing ? { dirs: [...targetDirs] } : {})
+					}
+				: undefined
+		)
+	);
+	const addTier = $derived(addAccess.tier);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id);
 	// "Queue another move" shows the form over this character's running move; a new move then waits its turn
 	let adding = $state(false);
@@ -136,6 +164,20 @@
 				})
 			: []
 	);
+	const retrySpec = $derived<MoveSpec | undefined>(
+		moving.spec
+			? {
+					...moving.spec,
+					reuseItemFrames: undefined,
+					measurementRecovery: undefined,
+					bodyPaletteRepair: undefined
+				}
+			: undefined
+	);
+	const retryAccess = $derived(specAccess(retrySpec));
+	const retryTier = $derived(retryAccess.tier);
+	const recoveryAccess = $derived(specAccess(moving.spec ?? undefined));
+	const recoveryTier = $derived(recoveryAccess.tier);
 	const retryGens = $derived(
 		Math.ceil(retryPlan.reduce((sum, call) => sum + (call.generations ?? 0), 0))
 	);
@@ -205,7 +247,7 @@
 			void retryMoveMeasurements(projectId, spec, reviewed).catch((e) => {
 				recoveryError = e instanceof Error ? e.message : String(e);
 			});
-		});
+		}, recoveryTier);
 	}
 
 	// Free and local: no key is needed because a kept body makes no PixelLab request.
@@ -230,12 +272,12 @@
 			void matchMoveBodyColors(projectId, spec, reviewed).catch((e) => {
 				recoveryError = e instanceof Error ? e.message : String(e);
 			});
-		});
+		}, recoveryTier);
 	}
 
 	function go() {
 		const projectId = doc.id;
-		if (motionIssue) return;
+		if (motionIssue || addAccess.error) return;
 		const spec = {
 			...motion,
 			items: chosen,
@@ -256,7 +298,7 @@
 			adding = false;
 			void queueMoves(projectId, [spec]);
 			ui.sheet = 'move';
-		}, true);
+		}, addTier);
 	}
 	function chooseAction(next: string) {
 		action = next;
@@ -286,6 +328,8 @@
 			><ApiPeek scope="move-retry" label="Generate move again" plan={retryPlan} /><button
 				class="bu-action btn"
 				data-variant="outline"
+				disabled={!!retryAccess.error || tierBlocked(retryTier)}
+				aria-describedby={tierBlocked(retryTier) ? 'move-retry-tier' : undefined}
 				onclick={() =>
 					moving.spec &&
 					withKey(() => {
@@ -297,7 +341,7 @@
 							seed: 1 + Math.floor(Math.random() * 1_000_000)
 						});
 						ui.sheet = 'move';
-					}, moving.spec?.itemMethod !== 'anchor')}
+					}, retryTier)}
 				>{recovery || colorRepair || keep || savedItemFrames || moving.spec?.reuseItemFrames
 					? 'Generate new frames'
 					: 'Try again'}{#if retryGens}
@@ -314,12 +358,19 @@
 						reuseItemFrames: true
 					})}>Use saved frames</button
 			>{/if}
-		{#if recovery}<button class="bu-action btn primary" data-variant="primary" onclick={retryChecks}
+		{#if recovery}<button
+				class="bu-action btn primary"
+				data-variant="primary"
+				disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
+				aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
+				onclick={retryChecks}
 				>{recovery.checks ? 'Retry joint checks' : 'Reuse cached frames'}</button
 			>{/if}
 		{#if colorRepair}<button
 				class="bu-action btn primary"
 				data-variant="primary"
+				disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
+				aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
 				onclick={matchColors}>Match body colors</button
 			>{/if}
 		{#if keep}<button class="bu-action btn primary" data-variant="primary" onclick={keepBody}
@@ -355,9 +406,12 @@
 				disabled={!id ||
 					!!reservedMove(id) ||
 					!!motionIssue ||
+					!!addAccess.error ||
 					!targetDirs.length ||
 					pendingIds.includes(id) ||
-					(!!settingUp.spec && !settingUp.done)}
+					(!!settingUp.spec && !settingUp.done) ||
+					tierBlocked(addTier)}
+				aria-describedby={tierBlocked(addTier) ? 'move-action-tier' : undefined}
 				onclick={go}
 				>{busy ? 'Queue' : replacing ? 'Replace' : 'Add'}
 				{id ? nice(id) : 'move'}{replacing ? ' views' : ''}
@@ -417,7 +471,15 @@
 					</li>
 				{/each}
 			</ol>
-			{#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
+			{#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>
+				{#if retryAccess.error || recoveryAccess.error}<p class="notice warn small" role="status">
+						{retryAccess.error || recoveryAccess.error}
+					</p>{/if}
+				{#if retryTier || recoveryTier}<TierNotice
+						id="move-retry-tier"
+						minimumTier={Math.max(retryTier, recoveryTier)}
+						feature="Generating this move again"
+					/>{/if}{/if}
 			{#if savedItemFrames}<p class="muted small">
 					Use saved frames to check for completed artwork that matches this move and equipment.
 					Recovering these frames makes no PixelLab request.
@@ -572,6 +634,14 @@
 				</p>{:else if busy}<p class="faint small">
 					It waits for the move in progress, then runs by itself.
 				</p>{/if}
+			{#if addAccess.error}<p class="notice warn small" role="status">{addAccess.error}</p>{/if}
+			<TierNotice
+				id="move-action-tier"
+				minimumTier={addTier}
+				recommendedTier={GENERATION_RECOMMENDATION.tier}
+				feature="Moves for worn items"
+				recommendation={GENERATION_RECOMMENDATION.reason}
+			/>
 			{#if items.length}
 				<div class="field">
 					<span class="label">Animate these items too</span>

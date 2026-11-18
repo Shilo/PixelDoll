@@ -1460,7 +1460,7 @@ describe('move queue', () => {
 		await vi.waitFor(() => expect(records.has('studio-move')).toBe(false));
 	});
 
-	test('paid buttons that pose (requiresRig) open Connect on a plan that cannot pose and queue nothing', async () => {
+	test('restricted actions explain their numeric tier without reopening Connect or queuing work', async () => {
 		storage();
 		const { app } = (await import('../../src/lib/app.svelte.ts')) as unknown as {
 			app: { key: string; balance: unknown };
@@ -1469,9 +1469,14 @@ describe('move queue', () => {
 		app.balance = { subscription: { status: 'trial', plan: 'Free trial' } };
 		const s = await import('../../src/studio/state.svelte.ts'),
 			run = vi.fn();
-		s.withKey(run, true);
+		s.withKey(run, 1);
 		expect(run).not.toHaveBeenCalled();
-		expect(s.ui.sheet).toBe('connect');
+		expect(s.ui.sheet).not.toBe('connect');
+		expect(s.ui.toast).toContain('Tier 1');
+		app.balance = { subscription: { status: 'active', plan: 'Tier 1' } };
+		s.withKey(run, 2);
+		expect(run).not.toHaveBeenCalled();
+		expect(s.ui.toast).toContain('Tier 2');
 		s.withKey(run);
 		expect(run).toHaveBeenCalledOnce();
 	});
@@ -2053,7 +2058,7 @@ describe('optional review', () => {
 		});
 		vi.doMock('../../src/studio/itemRoute.ts', () => ({
 			itemRoute: {
-				plan: () => ({ gens: price(), calls: 1, cells: 1, minutes: 1, minimumTier: 0 }),
+				plan: () => ({ gens: price(), calls: 1, cells: 1, minutes: 1, minimumTier: 1 }),
 				draft: (
 					ctx: { rec: { id: string } },
 					input: { name: string; slot: string },
@@ -2313,6 +2318,7 @@ describe('optional review', () => {
 			await vi.waitFor(() => expect(s.gens[0]?.phase).toBe('review'));
 			const { app } = await import('../../src/lib/app.svelte.ts');
 			app.key = '';
+			await vi.waitFor(() => expect(s.ui.toast).toContain('issues to review'));
 			const original = s.gens[0];
 			s.retryGen(original, 10);
 			expect(s.ui.sheet).toBe('connect');

@@ -18,6 +18,7 @@ import {
 	itemRoute as libRoute,
 	padOf,
 	planGens,
+	itemPlanMinimumTier,
 	itemGenerationMinutes,
 	planItem,
 	type ItemSpec,
@@ -144,7 +145,10 @@ export const chromaEdit: ItemRoute = {
 			cells: p.reduce((n, c) => n + c.cells.length, 0),
 			gens: planGens(p, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad }),
 			minutes: itemGenerationMinutes(p.length),
-			minimumTier: p.some((c) => c.kind === 'pose' || c.kind === 'grid') ? 1 : 0,
+			minimumTier: itemPlanMinimumTier(p, {
+				w: rig.cell.w + 2 * pad,
+				h: rig.cell.h + 2 * pad
+			}),
 			...(pad ? { cell: rig.cell.w + 2 * pad } : {})
 		};
 	},

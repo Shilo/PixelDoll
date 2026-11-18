@@ -84,7 +84,7 @@
 			if (!setupBusy()) formDrafts.setup = undefined;
 			void startSetup(spec);
 			ui.sheet = 'setup';
-		}, true); // refused (a resumed setup runs): keep the choices
+		}); // refused (a resumed setup runs): keep the choices
 	}
 </script>
 
@@ -204,8 +204,7 @@
 					class="bu-action btn primary"
 					data-variant="primary"
 					onclick={() =>
-						settingUp.spec &&
-						withKey(() => void startSetup($state.snapshot(settingUp.spec!)), true)}
+						settingUp.spec && withKey(() => void startSetup($state.snapshot(settingUp.spec!)))}
 					>Resume setup</button
 				></span
 			>

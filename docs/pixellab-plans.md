@@ -1,50 +1,68 @@
 # PixelLab plan policy
 
-**Edit [`PLAN_JOB_LIMITS` in `app/src/lib/pixellab/plans.ts`](../app/src/lib/pixellab/plans.ts) to change account concurrency defaults.** This is the single maintained table, also linked from AGENTS.md. Do not put numeric limits in Studio components or request builders.
+Maintain endpoint restrictions and account concurrency in [`app/src/lib/pixellab/plans.ts`](../app/src/lib/pixellab/plans.ts). Components must not contain endpoint entitlement rules.
 
-| Account | Jobs at once |
-|---|---:|
-| Free / Trial (local tier 0) | 1 |
-| Tier 1 | 8 |
-| Tier 2 | 10 |
-| Tier 3 and higher | 20 |
+## Account concurrency
+
+| Account                         | Jobs at once |
+| ------------------------------- | -----------: |
+| Free / Trial (local tier 0)     |            1 |
+| Tier 1                          |            8 |
+| Tier 2                          |           10 |
+| Tier 3 and higher               |           20 |
 | Unknown / unnumbered enterprise | 3 (fallback) |
 
-The four known-plan defaults are the user's requested policy (2026-10-23), consistent with the supplied MCP plan chart for paid tiers. They are **not** numeric values returned by the API. `/balance` identifies subscription status and plan; balances are not concurrency or entitlement limits. `trial`, `none` and `expired` use the Free/Trial policy even if an old paid-plan label remains. Active numbered plans parse the full tier number (Tier 30 is Tier 3+, not Tier 3). Missing/unrecognized data remains unknown; we do not invent an enterprise entitlement or reject it as Free.
+`PLAN_JOB_LIMITS` contains maintained defaults requested on 2026-10-23, not limits returned by `/balance`. Balances are not entitlement or concurrency limits. Activity shows the effective automatic concurrency footnote. Existing shared backoff remains in effect.
 
-Activity shows one automatic, read-only footnote: **Up to 20 jobs at once.** It contains no plan explanation or editable concurrency setting. Existing shared backoff and safe retry behavior remains in effect when other tools occupy account capacity.
+`accountTier` parses complete numeric tiers, including future tiers. Trial, none and expired statuses override stale paid labels. Unrecognized and unnumbered enterprise accounts stay unknown, not Free. A successful unknown account response remains server-authoritative. The reviewed provider contract includes expiry grace and enterprise/team access, but the app does not invent grace timestamps or numeric enterprise tiers from insufficient account data.
 
-## Endpoint audit (2026-10-23)
+## Verified restriction matrix (2026-11-17)
 
-The supplied picture lists MCP tools. PixelDoll calls REST v2 directly. The live [OpenAPI](https://api.pixellab.ai/v2/openapi.json) was fetched and compared with actual request builders and call sites; the schema does not expose account concurrency limits or machine-readable per-plan entitlements. The [previous live account check](testing/img/account-capacity-live-2026-10-23.json) returned Tier 3 identity and no numeric-capacity field. It cannot prove how a Free account is enforced.
+At the owner's request, an isolated reviewer checked the provider checkout and returned only endpoint access contract facts. No provider source, paths, snippets or implementation details were shared with the coordinating agent or stored here. These facts are **verified in the reviewed checkout, not live deployment verification**. No generation request was sent for this audit.
 
-| Actual REST operation | PixelDoll use | Plan handling |
-|---|---|---|
-| `GET /balance` | Validate key and identify plan | Available without generation spending |
-| `GET /characters`, character detail/ZIP reads | Library browsing and imports | No local paid-tier block |
-| `POST /create-character-v3` | Base drawing and registration | No standalone route block; full Studio creation declares Tier 1 **before its base drawing** because the following animation needs it |
-| `POST /enhance-character-v3-prompt` | Optional prompt enhancement | No local paid-tier block; still costs generations |
-| `POST /characters/animations` | `skeleton-v3` walking/idle and `pixminimax` custom motion | Tier 1 for those engines; no blanket restriction on `v3` mode |
-| `POST /animate-with-skeleton-v3` | Render body/item poses | Tier 1 skeleton-tool policy |
-| `POST /estimate-skeleton` | Measure joints | No separately confirmed paid-tier rule; standalone estimation remains allowed; full Studio rig workflows declare their Tier 1 dependency |
-| `POST /edit-animation-v2` | Dress equipment keyframes and anchor-cell edits | No standalone paid-tier block; skeleton-based equipment declares Tier 1 before dressing, while anchor-cell editing remains available |
-| `POST /transfer-outfit-v2` | Fitted equipment rest previews | Tier 1 outfit-transfer policy from the supplied chart; REST schema does not advertise entitlement |
-| `POST /inpaint-v3` | Packed-grid fallback | Tier 1 through 256 px on each side, Tier 2 if either side exceeds 256 px |
+`ENDPOINT_MINIMUM_TIERS` intentionally lists only supported operations with known restrictions. All paths below are POSTs under `/v2`.
 
-Primary documentation cross-checks:
+| Endpoint                                                    | Minimum tier |
+| ----------------------------------------------------------- | -----------: |
+| `/edit-animation-v2`, including standing and anchored edits |            1 |
+| `/transfer-outfit-v2`                                       |            1 |
+| `/inpaint-v3`, both sides at most 256 px                    |            1 |
+| `/inpaint-v3`, either side over 256 px, up to 512 px        |            2 |
 
-- [Skeleton animation](https://www.pixellab.ai/docs/tools/animate-with-skeleton), Limitations: requires Tier 1. The supplied chart also identifies skeleton-v3 as Tier 1. The REST v3 schema itself does not advertise this restriction; this is maintained published-tool policy, not a live permission probe.
-- [API guide](https://www.pixellab.ai/pixellab-api), PixMiniMax section: requires Tier 1. Applying that engine's restriction to managed `mode: pixminimax` is a documented engine-level inference.
-- [Inpaint v3](https://www.pixellab.ai/docs/tools/inpaint-v3), Limitations: explicitly identifies REST `POST /v2/inpaint-v3`, excludes Free Trial, and specifies 256 px per side for Tier 1 / 512 for Tier 2+. This confirms the picture's size restriction is per side, not area.
-- [Transfer outfit](https://www.pixellab.ai/docs/tools/transfer-outfit-pro) describes the operation and generation cost but omits a tier rule. The Tier 1 rule comes from the supplied MCP chart; its application to REST outfit transfer is maintained tool policy, not a verified Free-account rejection.
-- [Public account schema](https://api.pixellab.ai/v2/openapi.json): status/plan/credit balances, with no numeric concurrency or entitlement endpoint. No paid generation requests were used to test entitlement rejection, and a Tier 3 key cannot validate Free-account rejection behavior.
+No subscription-tier restriction was found for these supported operations in the reviewed checkout:
 
-## Free accounts and queued work
+- Character creation: `/create-character-v3` (text and reference registration), `/create-character-pro`, `/create-character-pro-flash`.
+- Prompt enhancement: `/enhance-character-v3-prompt`.
+- Managed motion: `/characters/animations` and its `/animate-character` alias, with v3, skeleton-v3 or pixminimax modes.
+- Raw motion and measurement: `/animate-with-skeleton-v3`, `/animate-with-text-v3`, `/animate-pixminimax`, `/estimate-skeleton`.
+- Balance, character-library/detail/ZIP, job-status and Pro Flash cost reads, plus job cancellation.
 
-A valid Free/Trial key remains connected. Connect explains the unavailable tools and offers **Continue with limited access**; it is not reported as an invalid key. Free users retain library imports, local dressing/recolor/export, prompt enhancement and eligible anchor-cell editing. Buying credits does not change a subscription's tool entitlement.
+This replaces earlier local rules inferred from published extension-tool documentation, which disagreed with the reviewed REST contract for skeleton and PixMiniMax. The public [OpenAPI](https://api.pixellab.ai/v2/openapi.json) has no machine-readable entitlement matrix. An unlisted endpoint means **no known local restriction**, not guaranteed provider acceptance. Credit balance does not satisfy a paid-plan requirement.
 
-Standing-only equipment edits and anchored extensions contain only edit-animation-v2 requests and declare minimumTier: 0, including when the character already has a pose rig. New Studio character/move/rig-setup and equipment workflows with skeleton posing or grid inpainting declare `minimumTier: 1` before their first paid request. This prevents spending on an allowed first step and getting stranded at the restricted animation step. Eligible free operations use `withKey(..., false)`; actions known to need the rig tools use `withKey(..., true)`. A blocked connection discards its pending spending callback and retains the form draft; upgrading does not silently replay a previously cancelled action.
+Tier 0 requests remain subject to quotas, balance, concurrency, daily trial limits and temporary restrictions during high demand. These are separate from subscription-tier access. A completed Free animation is not evidence that its output is suitable for paper-doll equipment.
 
-The queue enforces the request/workflow policy before transport, preserves restricted jobs as queued with a clear reason, and continues allowed calls and polling of accepted jobs. Requirements are persisted with records and strengthened when a retained queued call is attached to a stricter workflow, including cross-tab updates and duplicates. Legacy Studio flow tags protect retained pre-policy base requests. Dependent workflows wait while a queue account check is pending, and after a failed initial check until an account response succeeds. Checks repeat at most once per minute while pending work exists; a plan change between checks can still be enforced by PixelLab. Fresh balance data after an upgrade makes queued work eligible again. Unknown/enterprise account responses remain server-authoritative.
+## Workflow preflight and notices
 
-Tests: `app/test/unit/plan-policy.test.ts`, existing queue-capacity tests, and `app/test/e2e/concurrency.spec.ts`. Changes to the table or access policy should update these cases and this document together.
+`requestTier` combines endpoint rules, actual inpaint dimensions and the workflow's declared minimum. Activity tags never grant or restrict access. `workflowTier` takes the maximum across mandatory requests. Item planning uses its actual grid layout; move repair layouts and item-creation layouts are deliberately different. Preflight must use the same geometry as submission, including padding and protected reference cells.
+
+Compute the requirement before the first generation request, not after charging an allowed first step. Preserve it in queue metadata and recheck every actual request before transport. Optional grid repairs do not increase an otherwise eligible workflow's minimum. Their own explicit action is priced and checked separately. Do not change packing or quality gates merely to fit a lower tier.
+
+New equipment always needs Tier 1 because its standing design uses `/edit-animation-v2`. Anchored extensions also need Tier 1. Skeleton-only posing of an already purchased item can be eligible without a paid plan; mandatory frozen-grid dressing needs Tier 1 or 2. There is no verified Free equipment-generation fallback among the allowed models. Character creation, setup and body-only moves have no known tier restriction.
+
+`TierNeed` and `tierDecision` are shared by UI and queue policy. Required takes precedence over recommended; recommendations never block or change queue requirements. A successful unknown account is not labeled Free or promised access. Missing or failed initial checks hold restricted queue requests until verification succeeds.
+
+`TierNotice.svelte` is a thin Bronze Notice wrapper near the consequential action. It reacts to account and numeric workflow requirements and contains no endpoint switches. Required notices persist and explain disabled controls. Recommendations explain a real limitation without another modal, setting or stored dismissal. The existing cost review remains the place to authorize spending. Free generation recommendations disclose trial limits rather than claiming that the same endpoint costs more on Free.
+
+`withKey` takes a numeric minimum. Missing credentials open Connect. Known insufficient accounts stay in context, with an explicit tier explanation; Connect is not a subscription paywall. A canceled or blocked pending connection does not replay a spending action after upgrading. Local dressing, recoloring, export and imports remain available.
+
+## Provider failures and spending safety
+
+Restricted requests can be accepted as background jobs and then fail. HTTP 202 does not establish entitlement. A generic failed job or reported zero usage does not establish the cause. Keep authentication, credits, content refusal, capacity, network and unexplained failures distinct from known tier requirements.
+
+The matrix is preventive, not authoritative runtime discovery. Retain provider errors and durable Activity details when a deployment differs. Do not invent an upgrade requirement from generic error text, cache inferred denials, silently retry, or switch endpoints after a potentially paid attempt. Only say "No request sent" for a local pre-submit block. Missing usage is unknown, not zero.
+
+Queue records with accepted job IDs continue polling after downgrade without resubmission. Queued restrictions can resume after a verified upgrade. Persisted historical workflow minima remain explicit restrictions until canceled; preview data receives no migration.
+
+## Offline verification
+
+Policy and workflow regression tests cover numeric tiers, recommendations, 256/257 px boundaries, mandatory later steps, activity-tag independence, anchored equipment, body-only motion, account verification and queue safety. The Free/Trial browser regression proves contextual equipment blocking without a POST; permitted prompt enhancement remains covered separately. All API responses in these tests are fixtures. Live deployment parity and new Free generation quality are not claimed.

@@ -4,6 +4,7 @@
 	import { balancePlan, cancelPlan, queuedPlan } from './apiPlans.ts';
 	import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
+	import { requestTier } from '../lib/pixellab/plans.ts';
 	import { fmtNum, unknownCostText } from './model.ts';
 	import { ui, cleanUp, toast } from './state.svelte.ts';
 	async function clear() {
@@ -225,8 +226,15 @@
 										: r.state === 'lost'
 											? 'unknown: may have run, check pixellab.ai'
 											: r.state}</span
-								></span
-							>
+								>
+								{#if r.state === 'failed' || r.state === 'lost'}
+									{#if r.error}<span class="small">{r.error}</span>{/if}
+									{#if requestTier(r) > 0}<span class="muted small">
+											Workflow requires PixelLab Tier {requestTier(r)} or higher. Check your plan and
+											balance before retrying. A failed job alone does not confirm a plan issue.
+										</span>{/if}
+								{/if}
+							</span>
 							<span class="act-meta num muted"
 								>{cost(r)}<ApiPeek
 									scope={`job-result-${r.id}`}

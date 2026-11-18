@@ -86,6 +86,7 @@ test.each([0, 1, 40])(
 		expect(calls.map((c) => c.path)).toEqual(['/edit-animation-v2']);
 		expect(calls.reduce((sum, c) => sum + c.generations!, 0)).toBe(10);
 		expect(itemRoute.plan(ctx.rec.manifest.rig, ctx, input).gens).toBe(10);
+		expect(itemRoute.plan(ctx.rec.manifest.rig, ctx, input).minimumTier).toBe(1);
 		expect(missingItemMoves(ctx.rec.manifest, 'hat').map((s) => s.id)).toEqual(
 			Array.from({ length: count }, (_, i) => `custom_action_${i}`)
 		);

@@ -63,7 +63,7 @@ import type {
 	Slot
 } from '../store/manifest.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { INPAINT_TIER_ONE_SIDE } from '../pixellab/plans.ts';
+import { INPAINT_TIER_ONE_SIDE, inpaintTier, workflowTier } from '../pixellab/plans.ts';
 import { clipOf, summaryOf } from './qa-summary.ts';
 import { missingLowerGarment } from './garment-coverage.ts';
 import { footwearWarnings } from './footwear-review.ts';
@@ -648,6 +648,50 @@ export function planGens(
 					? gridEstimate(gridCell, c.cells.length, 1).gens
 					: editGens(gridCell)),
 		0
+	);
+}
+
+export function itemPlanMinimumTier(
+	calls: { kind?: CallKind; cells: string[] }[],
+	cell: { w: number; h: number },
+	repair = false
+): number {
+	return workflowTier(
+		calls.map((call) => {
+			if (call.kind === 'grid') {
+				const layout = repair
+					? repairGridLayout(cell, call.cells.length, 1)
+					: gridEstimate(cell, call.cells.length, 1);
+				return {
+					method: 'POST' as const,
+					endpoint: '/inpaint-v3',
+					params: { inpainting_image: { size: { width: layout.w, height: layout.h } } },
+					minimumTier: inpaintTier(layout.w, layout.h)
+				};
+			}
+			return {
+				method: 'POST' as const,
+				endpoint: call.kind === 'pose' ? '/animate-with-skeleton-v3' : '/edit-animation-v2',
+				params: {}
+			};
+		})
+	);
+}
+
+export function itemPosePlan(
+	rig: Rig,
+	item: Pick<Item, 'slot' | 'key'> & { slotConfig?: Slot },
+	anim: string,
+	frames: number,
+	dirs: DirectionName[]
+): { kind: CallKind; cells: string[] }[] {
+	return dirs.flatMap((dir) =>
+		poseBatches(frames).map((batch) => {
+			const cells = Array.from({ length: batch.count }, (_, index) =>
+				cellKey(anim, dir, batch.start + index)
+			);
+			return { kind: frozenGrid(rig, item, cells) ? 'grid' : 'pose', cells };
+		})
 	);
 }
 

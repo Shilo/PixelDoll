@@ -1,4 +1,4 @@
-import { openStudio } from './immersive-helpers.ts';
+import { newItem, openStudio } from './immersive-helpers.ts';
 import { expect, test } from '@playwright/test';
 
 for (const labFirst of [true, false])
@@ -139,62 +139,46 @@ test('account capacity, two-tab leadership, busy waiting and recovery work throu
 	expect(errors).toEqual([]);
 });
 
-test('Free/Trial is a valid connection, blocked character creation never charges its first step, and allowed enhancement still works', async ({
+test('Free/Trial is a valid connection, and equipment shows Tier 1 required without sending a request', async ({
 	page,
 	context
 }) => {
-	const paid: string[] = [];
+	const posts: string[] = [];
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
 	});
 	await context.route('https://api.pixellab.ai/**', async (route) => {
-		const path = new URL(route.request().url()).pathname;
-		if (route.request().method() === 'GET') {
+		if (route.request().method() === 'GET')
 			return route.fulfill({
 				json: {
 					subscription: { status: 'trial', plan: 'Free trial', generations: 40, total: 40 },
 					credits: { usd: 100 }
 				}
 			});
-		}
-		paid.push(path);
-		if (path === '/v2/enhance-character-v3-prompt')
-			return route.fulfill({
-				json: {
-					enhanced_prompt: 'A friendly elf with freckles',
-					usage: { type: 'generations', generations: 0.05 }
-				}
-			});
+		posts.push(new URL(route.request().url()).pathname);
 		return route.abort();
 	});
-	const open = async () => {
-		await page.locator('.project-btn').click();
-		await page
-			.locator('#project-menu')
-			.getByRole('button', { name: 'New character', exact: true })
-			.click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
-		return page.getByRole('dialog', { name: 'New character', exact: true });
-	};
-	await openStudio(page, '/');
-	let sheet = await open();
-	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly elf');
-	await sheet.getByRole('button', { name: 'Create character', exact: true }).click();
+	await openStudio(page, '/#/');
+	await newItem(page, 'Head');
+	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
+	const prompt = page.getByRole('textbox', { name: 'What is it?', exact: true });
+	await prompt.fill('A red wizard hat');
+	await page.getByRole('button', { name: /^Make / }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	await connect.getByLabel('API key', { exact: true }).fill('offline-fixture-not-a-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(connect.getByRole('status')).toContainText('Your key is valid');
-	await expect(connect.getByRole('status')).toContainText('Tier 1');
-	expect(paid).toEqual([]);
+	await expect(connect.getByText('PixelLab Tier 1 required', { exact: true })).toBeVisible();
 	await connect.getByRole('button', { name: 'Continue with limited access', exact: true }).click();
-	sheet = await open();
-	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
-		'A friendly elf'
-	);
-	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
-	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toBeVisible();
-	expect(paid).toEqual(['/v2/enhance-character-v3-prompt']);
+	await expect(connect).toHaveCount(0);
+	await newItem(page, 'Head');
+	await expect(prompt).toBeVisible();
+	await expect(prompt).toHaveValue('A red wizard hat');
+	await expect(page.getByText('PixelLab Tier 1 required', { exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: /^Make / })).toBeDisabled();
+	await expect(connect).toHaveCount(0);
+	expect(posts).toEqual([]);
 });
 
 test('a Free/Trial connection resumes a permitted pending enhancement', async ({
