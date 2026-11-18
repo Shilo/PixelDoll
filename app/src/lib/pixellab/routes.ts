@@ -58,6 +58,7 @@ export interface CreateCharacterProFlash {
 	view?: CreateCharacterV3['view'];
 	template_id?: string;
 	seed?: number;
+	style_image?: SizedImage & { usage_description: string };
 }
 /** Pro draws all eight views itself (create_with_style, text only); it follows prompts more closely than V3. */
 export interface CreateCharacterPro {
@@ -67,6 +68,8 @@ export interface CreateCharacterPro {
 	template_id?: string;
 	seed?: number;
 	no_background?: boolean;
+	method?: 'create_from_concept';
+	concept_image?: B64Image;
 }
 export interface EnhanceCharacterV3Prompt {
 	description: string;

@@ -138,10 +138,12 @@ export function generationDetails(m: Manifest, it: Item): GenerationDetails {
 			settings.push({ label, value: String(value) });
 	};
 	if (it.id === m.rig.baseItem) {
-		// The first drawing call made from text: the character as created.
-		const created = prov.find((p) => CREATORS.includes(p.endpoint) && !p.params?.reference_image);
+		const created = prov.find((p) => CREATORS.includes(p.endpoint) && !p.params?.direction_images);
 		const size = created?.params?.image_size as { width?: number; height?: number } | undefined;
-		add('Body', size?.width ? `${size.width} px` : undefined);
+		const fromSprite =
+			created?.endpoint === '/create-character-v3' && created.params?.reference_image;
+		add('Body', !fromSprite && size?.width ? `${size.width} px` : undefined);
+		if (fromSprite) add('Reference', 'Starting sprite');
 		add('Frame', `${m.rig.cell.w} × ${m.rig.cell.h} px`);
 		add('Camera', m.rig.view);
 		add(

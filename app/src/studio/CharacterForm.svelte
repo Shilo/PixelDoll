@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Help from './Help.svelte';
+	import ReferenceField from './ReferenceField.svelte';
 	import SizePreview from './SizePreview.svelte';
 	import ApiPeek from './ApiPeek.svelte';
 	import { app } from '../lib/app.svelte.ts';
@@ -24,6 +25,8 @@
 		BODY_SIZES,
 		BODY_STEP,
 		bodyErrors,
+		characterReference,
+		characterReferenceIssue,
 		COMPASS,
 		DETAILS,
 		DIRECTION_LABELS,
@@ -55,10 +58,12 @@
 	let {
 		draft: d = $bindable(),
 		busy = $bindable(false),
+		referenceLoading = $bindable(false),
 		onconnect
 	}: {
 		draft: CharacterDraft;
 		busy?: boolean;
+		referenceLoading?: boolean;
 		onconnect: (target: 'details' | 'prompt') => void;
 	} = $props();
 	const scope = `enhance:${crypto.randomUUID()}`;
@@ -395,7 +400,7 @@
 		<h3>Size guide</h3>
 		<SizePreview body={d.body || 0} frame={frame || 0} />
 	</section>
-	<section class="geometry" aria-label="Character size and camera">
+	<section class="geometry" aria-label="Character size, camera, and reference">
 		<div class="creator-field">
 			<Help
 				title="Body size"
@@ -483,6 +488,16 @@
 				><option value="side">Side</option></select
 			>
 		</div>
+		<ReferenceField
+			bind:value={d.reference}
+			bind:loading={referenceLoading}
+			hint={characterReference[d.model ?? 'v3'].hint}
+			max={d.model === 'pro-flash' && d.body && !bodyError
+				? d.body
+				: characterReference[d.model ?? 'v3'].max}
+			issue={characterReferenceIssue(d.reference, d.model, frame, d.body)}
+			disabled={busy}
+		/>
 	</section>
 
 	<section class="facing" aria-label="Character directions">

@@ -1,4 +1,4 @@
-import { requireSlot, specSlot } from '../lib/items/slots.ts';
+import { specSlot } from '../lib/items/slots.ts';
 // Offline explanations only. These never encode images, submit work or invent dependent payloads.
 import { routes, BASE_ANIMS, baseAnimation, type Req } from '../lib/pixellab/routes.ts';
 import {
@@ -16,7 +16,6 @@ import {
 	proDrawGens
 } from './create.ts';
 import { poseBatches, poseCallGens } from '../lib/rig/clips.ts';
-import { pickKey } from '../lib/image/chroma.ts';
 import {
 	gridEstimate,
 	repairGridLayout,
@@ -30,7 +29,7 @@ import {
 	type ItemSpec
 } from '../lib/items/items.ts';
 import type { Draft, RigCtx } from '../lib/items/run.ts';
-import { itemMethod, standingCoverage, type NewItemInput } from './itemRoute.ts';
+import { itemMethod, newItemSpec, type NewItemInput } from './itemRoute.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import type { SetupPlan } from '../lib/rig/setup.ts';
 import type { JobRec } from '../lib/pixellab/queue.ts';
@@ -118,7 +117,12 @@ export function createPlan(spec: CreateSpec, freshSeed = false): PeekCall[] {
 		looks = creationLooks(spec);
 	const calls: PeekCall[] = [
 		{
-			...drawRequest(spec, seed),
+			...drawRequest(
+				spec.reference
+					? { ...spec, reference: { ...spec.reference, base64: '[uploaded artwork]' } }
+					: spec,
+				seed
+			),
 			label: 'Create base character',
 			generations: +(estimate(spec).gens - 0.25).toFixed(2),
 			...(freshSeed || spec.model === 'pro'
@@ -159,7 +163,7 @@ export function createPlan(spec: CreateSpec, freshSeed = false): PeekCall[] {
 
 function itemCalls(
 	spec: Pick<ItemSpec, 'prompt' | 'key' | 'slot' | 'slotConfig' | 'method'>,
-	calls: { kind?: string; cells: string[]; seed?: number }[],
+	calls: { kind?: string; cells: string[]; seed?: number; concept?: boolean }[],
 	cell?: { w: number; h: number }
 ): PeekCall[] {
 	const pad = padOf(specSlot(spec), spec.method, cell);
@@ -191,7 +195,7 @@ function itemCalls(
 				? {}
 				: {
 						body: {
-							description: itemPrompt(dressItem(spec), spec.key, call.cells, anchor),
+							description: itemPrompt(dressItem(spec), spec.key, call.cells, anchor, call.concept),
 							...(call.seed === undefined ? {} : { seed: call.seed }),
 							...(cell
 								? { image_size: { width: cell.w + 2 * pad, height: cell.h + 2 * pad } }
@@ -203,25 +207,24 @@ function itemCalls(
 				[{ kind: pose ? 'pose' : 'edit', cells: call.cells }],
 				cell && { w: cell.w + 2 * pad, h: cell.h + 2 * pad }
 			),
-			note: `Known fields only. ${pose ? 'Sends the dressed reference image, exact stored poses, appearance, action, direction and seed.' : 'Frames and image_size are prepared from this character on submission.'} ${!pose && !anchor && call.cells.length === 1 ? 'The single input is duplicated for the two-frame API minimum; only the first returned frame is used.' : ''} ${call.seed === undefined ? selectedSeed : ''} Coverage: ${call.cells.join(', ')}.`
+			note: `Known fields only. ${pose ? 'Sends the dressed reference image, exact stored poses, appearance, action, direction and seed.' : 'Frames and image_size are prepared on submission.'} ${call.concept ? 'The uploaded artwork goes first, before the character frames. Its output is not used.' : !pose && !anchor && call.cells.length === 1 ? 'The single input is duplicated for the two-frame API minimum; only the first returned frame is used.' : ''} ${call.seed === undefined ? selectedSeed : ''} Coverage: ${call.cells.join(', ')}.`
 		};
 	});
 }
 export function itemPlan(ctx: RigCtx | null, input: NewItemInput): PeekCall[] {
 	if (!ctx) return [];
 	try {
-		const spec = {
-			name: input.name,
-			prompt: input.prompt,
-			slot: input.slot,
-			slotConfig: structuredClone(requireSlot(ctx.rec.manifest, input.slot)),
-			key: input.key ?? pickKey(input.prompt),
-			...(input.method ? { method: input.method } : {}),
-			...standingCoverage(ctx)
-		};
+		const spec = newItemSpec(ctx, input);
 		const method = itemMethod(ctx, spec);
 		const calls = planItem(ctx.rec.manifest.rig, { ...spec, method });
-		return [...itemCalls({ ...spec, method }, calls, ctx.rec.manifest.rig.cell), ...lifecycle()];
+		return [
+			...itemCalls(
+				{ ...spec, method },
+				calls.map((call, index) => ({ ...call, concept: index === 0 && !!spec.reference })),
+				ctx.rec.manifest.rig.cell
+			),
+			...lifecycle()
+		];
 	} catch {
 		return [];
 	}

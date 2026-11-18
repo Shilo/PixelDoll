@@ -9,6 +9,7 @@ export const formDrafts: {
 		prompt: string;
 		color: string;
 		name: string;
+		reference?: import('../lib/image/reference.ts').PickedReference;
 		method?: import('../lib/items/items.ts').Method;
 	};
 	character?: CharacterDraft;

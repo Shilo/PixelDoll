@@ -113,6 +113,20 @@ const isKey = (C: Img, p: number, key: Key, kT: number) =>
 	keyScore(key, C.data[p * 4], C.data[p * 4 + 1], C.data[p * 4 + 2]) >= kT;
 
 export const KT = 35;
+
+export function referenceKeyCollisions(image: Img): Record<Key, number> {
+	const counts: Record<Key, number> = { green: 0, magenta: 0, blue: 0, azure: 0 };
+	for (let pixel = 0; pixel < image.w * image.h; pixel++)
+		for (const key of KEYS) if (isKey(image, pixel, key, KT)) counts[key]++;
+	return counts;
+}
+
+export function referenceKey(prompt: string, collisions: Record<Key, number>): Key {
+	const available = KEYS.filter((key) => keyAllowed(prompt, key));
+	return [...(available.length ? available : KEYS)].sort(
+		(first, second) => collisions[first] - collisions[second]
+	)[0];
+}
 /** Rim guard "dark outline" base px: mean RGB under `mean`, and either a real line (near-black, < `black`, or darker than
  * `contrast` x the brightest neighbor) or covered by a generated px that could be a mannequin redraw. A light generated px
  * (luminance >= `lightOut`) never is; on the green key a dark one is unless it lies on a straight `stroke` of dark item px

@@ -1,5 +1,10 @@
 import { DIRECTIONS, type DirectionName, type RigDirection, type Rig } from '../lib/rig/rig.ts';
 import { BASE_BODY, UNDERWEAR_BODY, isBaseBody } from './model.ts';
+import {
+	referenceSizeError,
+	type ImageReference,
+	type PickedReference
+} from '../lib/image/reference.ts';
 
 export const BODY_SIZES = [48, 64, 96, 128] as const;
 export const TRAITS = {
@@ -103,6 +108,7 @@ export const PRESETS = [
 }[];
 
 export interface CharacterDraft {
+	reference?: PickedReference;
 	name: string;
 	details: string;
 	kind: string;
@@ -127,6 +133,32 @@ export interface CharacterDraft {
 }
 /** The model that draws a new character. All end in the same V3 registration, so moves and items work the same way. */
 export type CharacterModel = 'v3' | 'pro' | 'pro-flash';
+export const characterReference = {
+	v3: {
+		max: 256,
+		hint: 'Use a front-facing sprite with a transparent background. Body size does not resize it.'
+	},
+	pro: { max: 1024, hint: 'Use a sketch or character design to guide the new sprite.' },
+	'pro-flash': { max: 256, hint: 'Use artwork to guide the new sprite’s style and appearance.' }
+} satisfies Record<CharacterModel, { max: number; hint: string }>;
+
+export function characterReferenceIssue(
+	image?: ImageReference,
+	model: CharacterModel = 'v3',
+	frame?: number,
+	body?: number
+) {
+	if (!image) return '';
+	return (
+		referenceSizeError(image, characterReference[model].max) ||
+		(model === 'pro-flash' && body && Math.max(image.width, image.height) > body
+			? 'Increase Body size to fit this reference, or choose smaller artwork.'
+			: '') ||
+		(model === 'v3' && frame && Math.max(image.width, image.height) > frame
+			? `Increase Frame to fit this reference, or choose a smaller sprite.`
+			: '')
+	);
+}
 export interface ModelLimits {
 	label: string;
 	help: string;
@@ -385,12 +417,11 @@ export function sizeErrors(
 		: [];
 }
 export function draftErrors(d: CharacterDraft): string[] {
+	const frame = d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame;
+	const referenceIssue = characterReferenceIssue(d.reference, d.model, frame, d.body);
 	return [
-		...sizeErrors(
-			d.body,
-			d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame,
-			d.model
-		),
+		...sizeErrors(d.body, frame, d.model),
+		...(referenceIssue ? [referenceIssue] : []),
 		...facingErrors(facingOf(d)),
 		...(d.seed &&
 		(!/^\d+$/.test(d.seed) ||

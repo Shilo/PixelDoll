@@ -25,6 +25,7 @@ import {
 	type SubmitResponse
 } from '../lib/pixellab/routes.ts';
 import { bytesToBase64, decodePng, type Img } from '../lib/image/png.ts';
+import type { ImageReference } from '../lib/image/reference.ts';
 import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
@@ -115,6 +116,7 @@ import {
 	MODEL_IDS,
 	OUTLINE_VALUES,
 	bodyErrors,
+	characterReferenceIssue,
 	facingErrors,
 	modelOf,
 	sizeErrors,
@@ -128,6 +130,7 @@ import { cellImg } from '../lib/compose/compose.ts';
 
 /** The form sends an exact prompt, frame, camera and explicit direction plan. */
 export interface CreateSpec {
+	reference?: ImageReference;
 	description: string;
 	name: string;
 	seed: number;
@@ -165,7 +168,7 @@ export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPromp
 export function drawRequest(
 	spec: Pick<
 		CreateSpec,
-		'description' | 'exactPrompt' | 'size' | 'view' | 'model' | 'outline' | 'detail'
+		'description' | 'exactPrompt' | 'size' | 'view' | 'model' | 'outline' | 'detail' | 'reference'
 	>,
 	seed: number | undefined
 ): Req {
@@ -176,11 +179,30 @@ export function drawRequest(
 		template_id: 'mannequin',
 		...(seed === undefined ? {} : { seed })
 	};
-	if (spec.model === 'pro') return routes.createCharacterPro({ ...common, no_background: true });
+	const reference = spec.reference;
+	if (spec.model === 'pro')
+		return routes.createCharacterPro({
+			...common,
+			no_background: true,
+			...(reference ? { method: 'create_from_concept', concept_image: png(reference.base64) } : {})
+		});
 	return spec.model === 'pro-flash'
-		? routes.createCharacterProFlash(common)
+		? routes.createCharacterProFlash({
+				...common,
+				...(reference
+					? {
+							style_image: {
+								image: png(reference.base64),
+								size: { width: reference.width, height: reference.height },
+								usage_description:
+									'Use this image as guidance for the character design and pixel art style.'
+							}
+						}
+					: {})
+			})
 		: routes.createCharacterV3({
 				...common,
+				...(reference ? { reference_image: png(reference.base64) } : {}),
 				no_background: true,
 				...(spec.outline ? { outline: spec.outline } : {}),
 				...(spec.detail ? { detail: spec.detail } : {})
@@ -212,7 +234,7 @@ export const labelViews = <T extends { label: string }>(
 		: views;
 /** Cost from measured prices: base 2 + import 0.25. Creation makes only the Default move (the standing views); idle, walk
  * and other moves are added later and priced by moveEstimate. */
-export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model'>) {
+export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model' | 'reference'>) {
 	const n = spec.directions.filter((d) => !d.mirrorOf).length;
 	// Pro Flash's first image (GET /pro-flash/cost, provisional, 2026-11-12): 5 gens to 96 px, 6 to 208 px, then 9; V3's
 	// costs 1. The eight rotations are priced alike.
@@ -220,8 +242,18 @@ export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model'>
 		const draw = proDrawGens(spec.size);
 		return { gens: draw.lo + 0.25, maxGens: +(draw.hi + 0.25 + n * EST).toFixed(2), minutes: 5 };
 	}
-	const first = spec.model !== 'pro-flash' ? 1 : spec.size <= 96 ? 5 : spec.size <= 208 ? 6 : 9;
-	const gens = +(first + 0.25 + Math.ceil((spec.size * spec.size * 8) / 65536)).toFixed(2);
+	const source = !spec.model ? spec.reference : undefined;
+	const first = source
+		? 0
+		: spec.model !== 'pro-flash'
+			? 1
+			: spec.size <= 96
+				? 5
+				: spec.size <= 208
+					? 6
+					: 9;
+	const area = source ? source.width * source.height : spec.size * spec.size;
+	const gens = +(first + 0.25 + Math.ceil((area * 8) / 65536)).toFixed(2);
 	// Missing managed rest joints may require one estimate per direction.
 	return { gens, maxGens: +(gens + n * EST).toFixed(2), minutes: 5 };
 }
@@ -849,13 +881,15 @@ export async function createCharacter(
 			: [])
 	];
 	if (errors.length) throw new Error(errors.join(' '));
+	const referenceIssue = characterReferenceIssue(spec.reference, spec.model, cell, spec.size);
+	if (referenceIssue) throw new Error(referenceIssue);
 	const creationSpec = await sha256(
 		stableStringify({ ...spec, projectId: undefined, activityScope: undefined })
 	);
 	if (await completedCreation(projectId, creationSpec)) return projectId; // completion may have committed before its UI acknowledgment
 	const looks = creationLooks(spec),
 		view = spec.view ?? 'low top-down';
-	// 1. base character, text only (8 rotations)
+	// 1. Draw the eight rotations before the shared rig registration.
 	onProgress({ step: 'draw', done: 0, total: 1, recIds: [] });
 	const base = await run(
 		drawRequest(spec, spec.seed),
@@ -876,7 +910,10 @@ export async function createCharacter(
 	for (const d of DIRECTIONS) {
 		const r = rots.find((x) => x.label === d);
 		if (!r) throw new Error(`PixelLab returned no ${d} view`);
-		const n = normalize(r.img, cell, cell);
+		const n =
+			spec.reference && !spec.model
+				? normalize(r.img, cell, cell, 128, Math.min(r.img.h, cell))
+				: normalize(r.img, cell, cell);
 		if (n.cutPx)
 			throw new Error(
 				`The ${d} view does not fit the ${cell} px frame. Increase Frame or reduce Body size before creating again.`

@@ -35,10 +35,20 @@
 	import { Check, CircleAlert, TriangleAlert } from './icons.ts';
 	let d = $state(formDrafts.character ?? newCharacterDraft());
 	let enhancing = $state(false);
+	let referenceLoading = $state(false);
 	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
 	const errors = $derived(draftErrors(d));
 	const formSpec = $derived<CreateSpec>({
 		description: d.prompt,
+		...(d.reference
+			? {
+					reference: {
+						base64: d.reference.base64,
+						width: d.reference.width,
+						height: d.reference.height
+					}
+				}
+			: {}),
 		name:
 			d.name.trim() ||
 			(d.details ? nameFrom(d.details) : d.kind !== 'Not set' ? d.kind : 'My character'),
@@ -96,7 +106,7 @@
 	const k = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1.25 : 2))));
 
 	function go() {
-		if (errors.length || enhancing) return;
+		if (errors.length || enhancing || referenceLoading) return;
 		formDrafts.character = $state.snapshot(d);
 		const spec = { ...$state.snapshot(formSpec), seed: d.seed ? Number(d.seed) : freshSeed() };
 		withKey(() => {
@@ -228,7 +238,12 @@
 			feature="Character generation"
 			recommendation={GENERATION_RECOMMENDATION.reason}
 		/>
-		<CharacterForm bind:draft={d} bind:busy={enhancing} onconnect={connectEnhance} />
+		<CharacterForm
+			bind:draft={d}
+			bind:busy={enhancing}
+			bind:referenceLoading
+			onconnect={connectEnhance}
+		/>
 	{/if}
 
 	{#snippet footer()}
@@ -285,7 +300,7 @@
 				/><button
 					class="bu-action btn primary lg"
 					data-variant="primary"
-					disabled={!!errors.length || enhancing}
+					disabled={!!errors.length || enhancing || referenceLoading}
 					onclick={go}>Create character</button
 				></span
 			>

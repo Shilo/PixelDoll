@@ -5,6 +5,7 @@ import { handOf, requireSlot, specSlot, type SlotSource } from './slots.ts';
 import { queue, requestIdentity, type JobRec } from '../pixellab/queue.ts';
 import { reportedUsage } from '../pixellab/activity.ts';
 import { base64ToBytes, binaryAlpha, bytesToBase64, decodePng, type Img } from '../image/png.ts';
+import { normalize } from '../rig/normalize.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { cellHash, rigArtworkVersion, type Sha256 } from '../rig/rig.ts';
 import {
@@ -124,6 +125,7 @@ export interface CallState {
 	kind?: CallKind;
 	frozen?: true;
 	reference?: { image: Sha256; cell: CellKey };
+	concept?: true;
 }
 export interface Draft {
 	spec: ItemSpec;
@@ -213,8 +215,9 @@ export function newDraft(
 	return {
 		spec: s,
 		rigId: ctx.rec.id,
-		calls: planItem(ctx.rec.manifest.rig, s).map((c) => ({
+		calls: planItem(ctx.rec.manifest.rig, s).map((c, index) => ({
 			...c,
+			...(index === 0 && s.reference ? { concept: true as const } : {}),
 			...(c.kind === 'grid' ? { frozen: true as const } : {}),
 			seed: seed(),
 			rerolls: 0,
@@ -258,8 +261,9 @@ const settled = (id: string, signal?: AbortSignal) =>
 	});
 const outputsOf = (r: JobRec) => [...(r.jobs[0]?.results ?? [])].sort(frameOrder);
 /** Outputs of call k in cell order (an anchored call's first output is the anchor's: dropped). */
+const hasAnchor = (k: number, c: CallState) => !!(c.reference || c.concept || anchored(k, c.kind));
 const cellOuts = (k: number, c: CallState, r: JobRec) =>
-	outputsOf(r).slice(c.reference || anchored(k, c.kind) ? 1 : 0);
+	outputsOf(r).slice(hasAnchor(k, c) ? 1 : 0);
 /** Dressed keyframe outputs of dress call k, per rest cell (the call must be done). */
 function chunkOuts(
 	calls: CallState[],
@@ -587,12 +591,21 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 		});
 	} else {
 		const frames: string[] = [];
+		const cell = { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad };
 		if (c.reference) frames.push(await blobB64(c.reference.image.slice(7)));
-		else if (anchored(k, c.kind)) {
+		else if (c.concept) {
+			if (!d.spec.reference) throw new Error('The item reference is missing.');
+			const image = await decodePng(base64ToBytes(d.spec.reference.base64));
+			const prepared = normalize(image, cell.w, cell.h, 128, cell.h);
+			if (prepared.cutPx) throw new Error('The item reference does not fit the frame.');
+			frames.push(bytesToBase64(await encodePngBytes(prepared.img)));
+		} else if (anchored(k, c.kind)) {
 			// anchor cell: the design call's dressed cell 0 (cross-call design lock, S2; B16: dress chunks too)
 			const a = recOf(d.calls[0].recId);
 			if (a?.state !== 'done') throw new Error('design call not done');
-			frames.push(await blobB64(outputsOf(a)[0].sha));
+			const dressed = cellOuts(0, d.calls[0], a)[0];
+			if (!dressed) throw new Error('The design call returned no dressed frame.');
+			frames.push(await blobB64(dressed.sha));
 		}
 		const mark =
 			c.kind === 'dress' && heldSkel(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method);
@@ -617,10 +630,11 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 				dressItem({ ...d.spec, slotConfig: requireSlot(ctx.rec.manifest, d.spec.slot) }),
 				route,
 				c.cells,
-				c.reference?.cell ?? (anchored(k, c.kind) ? d.calls[0].cells[0] : undefined)
+				c.reference?.cell ?? (anchored(k, c.kind) ? d.calls[0].cells[0] : undefined),
+				c.concept
 			),
 			c.seed,
-			{ w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad }
+			cell
 		);
 	}
 	return req;
@@ -816,6 +830,26 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
 			if (r0.state !== 'done') {
 				d.log.push(`call 1 ${r0.state}: ${r0.error ?? ''}`);
 				break;
+			}
+			if (d.calls[0].concept) {
+				const frames = outputsOf(r0);
+				const { cell } = ctx.rec.manifest.rig;
+				const pad = padOf(specSlot(d.spec), d.spec.method, cell);
+				if (
+					r0.jobs.length !== 1 ||
+					frames.length !== d.calls[0].cells.length + 1 ||
+					frames.some((frame, index) => frame.label.split('/').at(-1) !== String(index))
+				)
+					throw new Error(
+						'PixelLab returned incomplete reference or standing frames. No dependent request was sent.'
+					);
+				for (const frame of frames.slice(1)) {
+					const image = await img(frame.sha);
+					if (image.w !== cell.w + 2 * pad || image.h !== cell.h + 2 * pad)
+						throw new Error(
+							'PixelLab returned a standing frame of the wrong size. No dependent request was sent.'
+						);
+				}
 			}
 			const gates = [poseEarly(early, 0, r0)];
 			const rd = await Promise.all(
@@ -1027,7 +1061,7 @@ export async function evaluateItem(
 		const expected =
 			c.kind === 'pose'
 				? Math.max(3, c.cells.length)
-				: Math.max(EDIT_MIN_FRAMES - Number(!!c.reference || anchored(k, c.kind)), c.cells.length);
+				: Math.max(EDIT_MIN_FRAMES - Number(hasAnchor(k, c)), c.cells.length);
 		if (o.length !== expected) {
 			g1.set(k, `G1 ${o.length} outputs for ${expected} requested frames`);
 			continue;

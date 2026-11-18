@@ -522,6 +522,7 @@ export function putItem(m: Pick<Manifest, 'items' | 'slots'>, item: Item, ladder
 
 export type Route = Key | 'none'; // 'none' = diff fallback on the real base
 export interface ItemSpec {
+	reference?: ImageReference;
 	slotConfig?: Slot;
 	id: string;
 	name: string;
@@ -538,22 +539,34 @@ export interface ItemSpec {
 /** Calls of an item. skel: [dress the rest cells (chunked to the frame cap), pose clip × dir ...]; anchor: packed edit calls (planCalls). */
 export function planItem(
 	rig: Rig,
-	spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'method' | 'key' | 'standing'> & {
+	spec: Pick<
+		ItemSpec,
+		'anims' | 'dirs' | 'clipDirs' | 'method' | 'key' | 'standing' | 'reference'
+	> & {
 		slot?: string;
 		slotConfig?: Slot;
 	}
 ): { kind: CallKind; cells: string[] }[] {
+	if (spec.reference) {
+		const pad = spec.slot ? padOf(specSlot(spec), spec.method, rig.cell) : 0;
+		const width = rig.cell.w + 2 * pad;
+		const height = rig.cell.h + 2 * pad;
+		if (spec.reference.width > width || spec.reference.height > height)
+			throw new Error(`Choose a reference that fits this item’s ${width} × ${height} px frame.`);
+	}
 	if (spec.method !== 'skel' || spec.key === 'none')
-		return planCalls(rig, spec.standing ? { ...spec, anims: [spec.standing] } : spec).map(
-			(cells) => ({ kind: 'edit', cells })
-		);
+		return planCalls(
+			rig,
+			spec.standing ? { ...spec, anims: [spec.standing] } : spec,
+			!!spec.reference
+		).map((cells) => ({ kind: 'edit', cells }));
 	// B16: a 96 px held dress takes ≤ 4 frames, an 8-direction rig has 5 rest views -> later chunks carry chunk 1's dressed cell 0
 	const cap = editFrameCap(
 		Math.max(rig.cell.w, rig.cell.h) +
 			2 * (spec.slot ? padOf(specSlot(spec), spec.method, rig.cell) : 0)
 	);
 	return [
-		...anchorChunks(spec.dirs.map(restKey), cap).map((cells) => ({
+		...anchorChunks(spec.dirs.map(restKey), cap, !!spec.reference).map((cells) => ({
 			kind: 'dress' as const,
 			cells
 		})),
@@ -618,12 +631,16 @@ function posePlan(
 	return calls;
 }
 /** Split cells for a capped multi-frame call: the first call takes `cap`, later ones `cap − 1` plus the anchor cell (S2). */
-export const anchorChunks = <T>(cells: T[], cap: number): T[][] => [
-	cells.slice(0, cap),
-	...Array.from({ length: Math.ceil(Math.max(0, cells.length - cap) / (cap - 1)) }, (_, i) =>
-		cells.slice(cap + i * (cap - 1), cap + (i + 1) * (cap - 1))
-	)
-];
+export const anchorChunks = <T>(cells: T[], cap: number, reserveFirst = false): T[][] => {
+	const first = cap - Number(reserveFirst);
+	return [
+		cells.slice(0, first),
+		...Array.from(
+			{ length: Math.ceil(Math.max(0, cells.length - first) / (cap - 1)) },
+			(_, index) => cells.slice(first + index * (cap - 1), first + (index + 1) * (cap - 1))
+		)
+	];
+};
 /** Does call k lead with the anchor cell (edit-animation-v2 after the first call)? Its first output is then dropped. */
 export const anchored = (k: number, kind: CallKind = 'edit') =>
 	k > 0 && (kind === 'edit' || kind === 'dress');
@@ -767,7 +784,15 @@ export function cellsNote(cells: string[], anchor?: string): string {
 	return `Cells in order: ${ref}${groups.map(([g, n]) => `${n} cells ${g}`).join(', ')}. `;
 }
 
-export function itemPrompt(item: string, route: Route, cells: string[], anchor?: string): string {
+export function itemPrompt(
+	item: string,
+	route: Route,
+	cells: string[],
+	anchor?: string,
+	concept = false
+): string {
+	if (concept)
+		return `Frame 1 shows the reference item only. Use its design and colors for the item on the remaining frames, not its background or pose. The following instructions and cell order apply only to frames 2 onward. ${itemPrompt(item, route, cells)}`;
 	if (route !== 'none') return chromaPrompt(item, route, cellsNote(cells, anchor), !!anchor);
 	return (
 		`Add only ${item} to this pixel art character, drawn in its own colors, identical design in all frames. ` +
@@ -3788,3 +3813,4 @@ export async function selfTest() {
 		`trimToKeyframe ${gone} ${t.map((c) => c.area)}`
 	);
 }
+import type { ImageReference } from '../image/reference.ts';

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Sheet from './Sheet.svelte';
+	import ReferenceField from './ReferenceField.svelte';
 	import TierNotice from './TierNotice.svelte';
 	import { app } from '../lib/app.svelte.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
@@ -19,6 +20,7 @@
 	import type { Manifest } from '../lib/store/manifest.ts';
 	import { untrack } from 'svelte';
 	import { handSide } from '../lib/compose/compose.ts';
+	import { referenceKey } from '../lib/image/chroma.ts';
 	import { itemRoute, standingCoverage } from './itemRoute.ts';
 	import {
 		ui,
@@ -33,7 +35,7 @@
 	import * as db from '../lib/store/db.ts';
 	import { SWATCHES } from '../lib/dress/dress.ts';
 	import { defaultMethod, type RigCtx } from '../lib/items/run.ts';
-	import type { Method } from '../lib/items/items.ts';
+	import { padOf, type Method } from '../lib/items/items.ts';
 	import { rigReady } from '../lib/rig/setup.ts';
 	import { ChevronDown, ChevronRight, Info, Sparkles, TriangleAlert } from './icons.ts';
 
@@ -62,6 +64,8 @@
 	let name = $state(draft?.name ?? ui.newItem.name);
 	let method = $state<Method | ''>(draft?.method ?? ui.newItem.method ?? '');
 	let busy = $state(false);
+	let reference = $state(draft?.reference);
+	let referenceLoading = $state(false);
 	const g = $derived(categoryCopy(m, group));
 	const fullPrompt = $derived(`${prompt.trim()}${color ? `, ${color} colored` : ''}`);
 	const itemName = $derived(name.trim() || itemNameFrom(prompt) || 'New item');
@@ -69,6 +73,12 @@
 		name: itemName,
 		slot,
 		prompt: fullPrompt,
+		...(reference
+			? {
+					reference: { base64: reference.base64, width: reference.width, height: reference.height }
+				}
+			: {}),
+		...(reference?.keyCollisions ? { key: referenceKey(fullPrompt, reference.keyCollisions) } : {}),
 		...(method ? { method } : {})
 	});
 	// the project record (skeletons decide the route); pixels are not needed for the plan
@@ -93,7 +103,9 @@
 	const tierBlocked = $derived(
 		tierDecision(app.balance, { required: plan?.minimumTier ?? 0 }).kind === 'required'
 	);
-	const canMake = $derived(!!prompt.trim() && !busy && !!plan?.calls && !tierBlocked);
+	const canMake = $derived(
+		!!prompt.trim() && !busy && !referenceLoading && !!plan?.calls && !tierBlocked
+	);
 	// Advanced offers a method only when this character can use both; otherwise Automatic is the only one.
 	const automatic = $derived.by(() => {
 		if (!m || !rec) return null;
@@ -114,6 +126,11 @@
 			help: 'Edits each move’s frames directly (Edit animation V2), anchored on the standing design. An alternative when posing bends an item badly, such as a stiff cape. Later moves use the same method.'
 		}
 	};
+	const referenceMax = $derived.by(() => {
+		if (!m) return 256;
+		const pad = padOf(slotDef(m, slot) ?? slot, method || automatic || undefined, m.rig.cell);
+		return Math.min(256, Math.min(m.rig.cell.w, m.rig.cell.h) + 2 * pad);
+	});
 	const OFF_HAND_HINT = 'Shields and bows usually go in the off hand.';
 	// The hand a held category uses, from its own definition (a built-in that holds nothing yet uses its catalog default).
 	const side = $derived.by(() => {
@@ -158,6 +175,7 @@
 			prompt,
 			color,
 			name,
+			...(reference ? { reference } : {}),
 			...(method ? { method } : {})
 		};
 		const i = $state.snapshot(input);
@@ -240,9 +258,7 @@
 				>
 			</p>{/if}
 		{#if planned.error}<p class="notice warn small" role="alert">
-				<TriangleAlert size={16} /><span
-					>This character’s frames cannot use the item generator: {planned.error}</span
-				>
+				<TriangleAlert size={16} /><span>{planned.error}</span>
 			</p>{/if}
 		<div class="form">
 			<p class="muted small">
@@ -295,6 +311,14 @@
 					maxlength="300"></textarea>
 			</label>
 			<p class="faint small" id="item-submit-hint">Ctrl+Enter or Cmd+Enter to make the item.</p>
+			<ReferenceField
+				bind:value={reference}
+				bind:loading={referenceLoading}
+				max={referenceMax}
+				inspectColors
+				hint="Use artwork of the item by itself, ideally on a transparent background."
+				disabled={busy}
+			/>
 			{#if offHandHint}<p class="notice small">
 					<Info size={16} /><span>{OFF_HAND_HINT}</span><button
 						class="bu-action btn sm"
