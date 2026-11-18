@@ -1,0 +1,129 @@
+{
+  "provenance": "Manual illustrative landmarks on existing East raw Ride strip, approximate +/- 2 pixels. West is an explicit reflection, not independent artwork. Contact targets and bit are research-only annotations, not production mount metadata.",
+  "hip": {
+    "x": 32.5,
+    "y": 43.5
+  },
+  "hands": [
+    {
+      "x": 37.5,
+      "y": 39.5
+    },
+    {
+      "x": 44.5,
+      "y": 37.5
+    }
+  ],
+  "feet": [
+    {
+      "x": 33.5,
+      "y": 50.5
+    },
+    {
+      "x": 40.5,
+      "y": 48.5
+    }
+  ],
+  "measurements": [
+    {
+      "gait": 0,
+      "bounded": {
+        "angle": 0.2617993877991494,
+        "errors": [
+          11.781602824191166,
+          7.457864117655592
+        ],
+        "maximumError": 11.781602824191166
+      },
+      "unrestricted": {
+        "angle": 0.6657321769331358,
+        "errors": [
+          10.416040124501594,
+          5.3600816647669784
+        ],
+        "maximumError": 10.416040124501594
+      },
+      "boundedFootShift": 2.4627632692863224,
+      "maximumFootShift": 6.165165817342396,
+      "radialLowerBounds": [
+        10.285195030845788,
+        5.251746837595732
+      ]
+    },
+    {
+      "gait": 1,
+      "bounded": {
+        "angle": 0.2617993877991494,
+        "errors": [
+          11.781602824191166,
+          7.457864117655592
+        ],
+        "maximumError": 11.781602824191166
+      },
+      "unrestricted": {
+        "angle": 0.6657321769331358,
+        "errors": [
+          10.416040124501594,
+          5.3600816647669784
+        ],
+        "maximumError": 10.416040124501594
+      },
+      "boundedFootShift": 2.4627632692863224,
+      "maximumFootShift": 6.165165817342396,
+      "radialLowerBounds": [
+        10.285195030845788,
+        5.251746837595732
+      ]
+    },
+    {
+      "gait": 2,
+      "bounded": {
+        "angle": 0.2617993877991494,
+        "errors": [
+          11.781602824191166,
+          7.457864117655592
+        ],
+        "maximumError": 11.781602824191166
+      },
+      "unrestricted": {
+        "angle": 0.6657321769331358,
+        "errors": [
+          10.416040124501594,
+          5.3600816647669784
+        ],
+        "maximumError": 10.416040124501594
+      },
+      "boundedFootShift": 2.4627632692863224,
+      "maximumFootShift": 6.165165817342396,
+      "radialLowerBounds": [
+        10.285195030845788,
+        5.251746837595732
+      ]
+    },
+    {
+      "gait": 3,
+      "bounded": {
+        "angle": 0.2617993877991494,
+        "errors": [
+          11.781602824191166,
+          7.457864117655592
+        ],
+        "maximumError": 11.781602824191166
+      },
+      "unrestricted": {
+        "angle": 0.6657321769331358,
+        "errors": [
+          10.416040124501594,
+          5.3600816647669784
+        ],
+        "maximumError": 10.416040124501594
+      },
+      "boundedFootShift": 2.4627632692863224,
+      "maximumFootShift": 6.165165817342396,
+      "radialLowerBounds": [
+        10.285195030845788,
+        5.251746837595732
+      ]
+    }
+  ]
+}

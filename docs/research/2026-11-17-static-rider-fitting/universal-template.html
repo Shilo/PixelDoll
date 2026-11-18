@@ -1,0 +1,275 @@
+<style>
+  #universal-rider {
+    display: grid;
+    gap: 12px;
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+  #universal-rider .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  #universal-rider label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  #universal-rider .mounts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  #universal-rider figure {
+    margin: 0;
+    min-width: 0;
+  }
+  #universal-rider figcaption {
+    min-height: 3em;
+  }
+  #universal-rider svg {
+    display: block;
+    width: 100%;
+  }
+  #universal-rider .ground {
+    stroke: var(--border);
+    fill: none;
+  }
+  #universal-rider .body,
+  #universal-rider .head {
+    fill: var(--secondary);
+    stroke: var(--muted-foreground);
+    stroke-width: 0.8;
+  }
+  #universal-rider .mount-leg,
+  #universal-rider .neck {
+    stroke: var(--muted-foreground);
+    stroke-width: 5;
+    stroke-linecap: round;
+    fill: none;
+  }
+  #universal-rider .neck {
+    stroke-width: 7;
+  }
+  #universal-rider .limb,
+  #universal-rider .far-limb {
+    stroke: var(--foreground);
+    stroke-width: 3;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    fill: none;
+  }
+  #universal-rider .far-limb {
+    stroke: var(--muted-foreground);
+  }
+  #universal-rider .torso,
+  #universal-rider .rider-head {
+    fill: var(--foreground);
+    stroke: var(--foreground);
+    stroke-width: 5;
+    stroke-linecap: round;
+  }
+  #universal-rider .rider-head {
+    stroke-width: 0;
+  }
+  #universal-rider .rein {
+    stroke: var(--chart-1);
+    stroke-width: 0.8;
+    fill: none;
+  }
+  #universal-rider .saddle {
+    stroke: var(--muted-foreground);
+    stroke-width: 3;
+  }
+  #universal-rider .seat {
+    fill: var(--chart-2);
+  }
+  #universal-rider .grip {
+    fill: var(--chart-1);
+  }
+  #universal-rider .note {
+    color: var(--muted-foreground);
+  }
+  #universal-rider output {
+    font-variant-numeric: tabular-nums;
+  }
+  @media (max-width: 560px) {
+    #universal-rider .mounts {
+      grid-template-columns: 1fr;
+    }
+    #universal-rider svg {
+      max-width: 320px;
+      margin: auto;
+    }
+  }
+</style>
+<div id="universal-rider">
+  <div class="controls">
+    <label
+      >Facing
+      <select class="form-select" id="facing" aria-label="Facing">
+        <option value="east">East</option>
+        <option value="south-east">South-east</option>
+        <option value="south">South</option>
+        <option value="south-west">South-west</option>
+        <option value="west">West</option>
+        <option value="north-west">North-west</option>
+        <option value="north">North</option>
+        <option value="north-east">North-east</option>
+      </select></label
+    >
+    <label
+      >Pose
+      <select class="form-select" id="pose">
+        <option value="wide">Wider reusable candidate</option>
+        <option value="universal">Balanced reusable candidate</option>
+        <option value="custom">Balanced + broad-back override</option>
+      </select></label
+    >
+    <label
+      >Hands
+      <select class="form-select" id="busy">
+        <option value="none">Both free</option>
+        <option value="right">Right occupied</option>
+        <option value="both">Both occupied</option>
+      </select></label
+    >
+  </div>
+  <div class="controls">
+    <button class="btn" id="step" type="button">Step mount</button>
+    <button class="btn" id="play" type="button" aria-pressed="false">
+      Play mount
+    </button>
+    <output id="phase" aria-label="Mount phase">Phase 1 / 4</output>
+    <label
+      ><input class="form-check-input" id="tack" type="checkbox" checked />
+      Reins / harness lines</label
+    >
+  </div>
+  <div class="mounts" id="mounts"></div>
+  <div id="status" role="status" aria-live="polite"></div>
+  <details>
+    <summary>Stress tests and existing artwork</summary>
+    <div class="controls">
+      <label
+        >Rider
+        <select class="form-select" id="art">
+          <option value="target">Projected pose target</option>
+          <option value="saved">Existing Ride art, East / mirrored West</option>
+        </select></label
+      >
+      <label
+        >Target body size
+        <select class="form-select" id="size">
+          <option value="1">Standard</option>
+          <option value="0.75">Small, 75%</option>
+          <option value="1.25">Tall, 125%</option>
+        </select></label
+      >
+      <label
+        >Broad-back half-width
+        <input
+          class="form-range"
+          id="width"
+          type="range"
+          min="7"
+          max="20"
+          step="1"
+          value="11"
+        /><output id="width-value">11</output></label
+      >
+    </div>
+  </details>
+  <span class="note"
+    >Synthetic targets, not newly generated riding art. Existing art remains a
+    chair-sit. Colored dots: seat and grips. No application or API
+    changes.</span
+  >
+</div>
+<script>
+  (() => {
+    __MODEL__;
+    const sprite = __SPRITE__;
+    const root = document.getElementById("universal-rider");
+    const field = (name) => root.querySelector("#" + name);
+    let phase = 0;
+    let timer = null;
+    function render(announce = true) {
+      const options = {
+        facing: field("facing").value,
+        phase,
+        custom: field("pose").value === "custom",
+        wide: field("pose").value === "wide",
+        busy: field("busy").value,
+        tack: field("tack").checked,
+        broadWidth: Number(field("width").value),
+        scale: Number(field("size").value),
+        art: field("art").value,
+      };
+      const results = PROFILES.map((mount) =>
+        renderProbe({ ...options, mountId: mount.id }, sprite),
+      );
+      field("mounts").innerHTML = results
+        .map(
+          (result) =>
+            "<figure><figcaption>" +
+            result.state.mount.name +
+            "</figcaption>" +
+            result.svg +
+            '<span class="note">' +
+            result.note +
+            "</span></figure>",
+        )
+        .join("");
+      field("phase").textContent = "Phase " + (phase + 1) + " / 4";
+      field("width-value").textContent = field("width").value;
+      field("size").disabled = options.art === "saved";
+      field("pose").disabled = options.art === "saved";
+      field("busy").disabled = options.art === "saved";
+      field("tack").disabled = options.art === "saved";
+      if (announce)
+        field("status").textContent =
+          options.art === "saved"
+            ? "Unchanged saved pixels, native size, fixed hip attachment. No new leg pose or grip qualification."
+            : options.custom
+              ? "Only the broad-back pose changes. Leg bone lengths stay fixed; arms and torso stay unchanged."
+              : "Exactly the same local pose on all three mounts. Seat height and neck movement belong to each mount.";
+    }
+    function step(announce = true) {
+      phase = (phase + 1) % 4;
+      render(announce);
+    }
+    function stop() {
+      if (timer !== null) clearInterval(timer);
+      timer = null;
+      field("play").textContent = "Play mount";
+      field("play").setAttribute("aria-pressed", "false");
+    }
+    for (const name of [
+      "facing",
+      "pose",
+      "busy",
+      "tack",
+      "art",
+      "size",
+      "width",
+    ])
+      field(name).addEventListener("change", () => render());
+    field("step").addEventListener("click", () => {
+      stop();
+      step();
+    });
+    field("play").addEventListener("click", () => {
+      if (timer !== null) return stop();
+      timer = setInterval(() => step(false), 350);
+      field("play").textContent = "Pause mount";
+      field("play").setAttribute("aria-pressed", "true");
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) stop();
+    });
+    render();
+  })();
+</script>
