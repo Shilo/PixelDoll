@@ -1,0 +1,57 @@
+{
+  "calls": [
+    {
+      "name": "edit",
+      "endpoint": "/edit-animation-v2",
+      "maximumCost": 10,
+      "before": 27,
+      "submittedAt": "2026-11-18T06:39:47.159Z",
+      "http": 202,
+      "jobId": "fb50b7a1-b973-4c2e-8b0f-aacc4b2a3ebc",
+      "status": "failed",
+      "error": "Generation failed",
+      "code": 3006,
+      "usage": {
+        "type": "usd",
+        "usd": 0
+      },
+      "after": 27,
+      "finishedAt": "2026-11-18T06:39:48.083Z"
+    },
+    {
+      "name": "create",
+      "endpoint": "/create-character-v3",
+      "maximumCost": 5,
+      "before": 27,
+      "submittedAt": "2026-11-18T06:40:02.702Z",
+      "http": 200,
+      "jobId": "4129a40e-9078-4077-8913-441dd20d47b3",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 2
+      },
+      "after": 25,
+      "finishedAt": "2026-11-18T06:41:40.751Z"
+    },
+    {
+      "name": "skeleton",
+      "endpoint": "/animate-with-skeleton-v3",
+      "maximumCost": 3,
+      "before": 25,
+      "submittedAt": "2026-11-18T06:42:27.571Z",
+      "http": 200,
+      "jobId": "86e86550-29ce-4da1-83b2-ce1ca4c7d3d7",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 2
+      },
+      "after": 23,
+      "finishedAt": "2026-11-18T06:43:21.962Z"
+    }
+  ],
+  "initialBalance": 27,
+  "finalBalance": 23,
+  "observedBalanceChange": 4
+}

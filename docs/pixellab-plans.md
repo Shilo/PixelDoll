@@ -65,4 +65,10 @@ Queue records with accepted job IDs continue polling after downgrade without res
 
 ## Offline verification
 
-Policy and workflow regression tests cover numeric tiers, recommendations, 256/257 px boundaries, mandatory later steps, activity-tag independence, anchored equipment, body-only motion, account verification and queue safety. The Free/Trial browser regression proves contextual equipment blocking without a POST; permitted prompt enhancement remains covered separately. All API responses in these tests are fixtures. Live deployment parity and new Free generation quality are not claimed.
+Policy and workflow regression tests cover numeric tiers, recommendations, 256/257 px boundaries, mandatory later steps, activity-tag independence, anchored equipment, body-only motion, account verification and queue safety. The Free/Trial browser regression proves contextual equipment blocking without a POST; permitted prompt enhancement remains covered separately. All API responses in these tests are fixtures.
+
+## Bounded live verification
+
+On 2026-11-17, the owner authorized live calls after offline smoke checks. A Trial account with no USD credits successfully completed 48 px V3 character creation (2 generations) and a three-frame raw skeleton animation (2 generations). A single equipment edit reproduced HTTP 202 followed by a generic failed job, code 3006, with reported USD 0 and no observed generation-balance change. The generic failure is not an independently established tier-error signature.
+
+The balance moved from 27 to 23. No paid request was resent. Inpainting was not live-submitted, and no Free equipment/grid fallback was qualified. These sampled calls establish access for those inputs, not exhaustive deployment parity or professional animation quality. Receipts, limits, screenshot timing and reproduction safety are recorded in [the live verification report](research/2026-11-17-free-tier/README.md).

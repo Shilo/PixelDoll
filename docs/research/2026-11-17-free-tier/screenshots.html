@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Free-tier verification screenshots</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        color: var(--foreground);
+        font-family: var(--font-sans);
+        line-height: 1.5;
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      button {
+        font: inherit;
+        color: var(--foreground);
+        background: var(--secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 8px 10px;
+        min-height: 40px;
+        cursor: pointer;
+      }
+      button[aria-pressed="true"] {
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      button:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 3px;
+      }
+      h3 {
+        margin: 0 0 6px;
+        font-size: 17px;
+      }
+      p {
+        margin: 0 0 12px;
+      }
+      small,
+      .muted {
+        color: var(--muted-foreground);
+      }
+      img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: var(--radius);
+      }
+      .step[hidden] {
+        display: none;
+      }
+      .budget {
+        margin: 20px 0 8px;
+      }
+      .bar {
+        display: flex;
+        height: 18px;
+        overflow: hidden;
+        border-radius: var(--radius);
+      }
+      .remaining {
+        width: 85.185%;
+        background: var(--chart-1);
+      }
+      .used {
+        width: 14.815%;
+        background: var(--chart-2);
+      }
+      .legend {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        font-size: 13px;
+        margin: 5px 0 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <p class="muted">
+      Actual Studio screenshots with simulated account states. Live verification
+      ran separately using the real Free key. Select each step.
+    </p>
+    <nav aria-label="Notice walkthrough">
+      <button type="button" data-step="0" aria-pressed="true">1. Connect</button
+      ><button type="button" data-step="1" aria-pressed="false">
+        2. Free creation</button
+      ><button type="button" data-step="2" aria-pressed="false">
+        3. Free equipment</button
+      ><button type="button" data-step="3" aria-pressed="false">
+        4. Tier 1</button
+      ><button type="button" data-step="4" aria-pressed="false">
+        5. Tier 2</button
+      ><button type="button" data-step="5" aria-pressed="false">
+        6. Failure
+      </button>
+    </nav>
+    <section class="step" id="step-0">
+      <h3>
+        1. Connect: Free key remains valid, with limited-access explanation
+      </h3>
+      <p>
+        Shown after connecting a Free key. The key stays connected; the
+        restricted pending generation does not run.
+      </p>
+      <img
+        src="../../testing/free-tier-access/01-connect.png"
+        alt="Connect: Free key remains valid, with limited-access explanation"
+      />
+    </section>
+    <section class="step" id="step-1" hidden>
+      <h3>2. Free character creation: Tier 1 recommended, not required</h3>
+      <p>
+        Shown when a known Free account opens character creation. This is a
+        recommendation, not a block. Body-only move forms use the same policy.
+      </p>
+      <img
+        src="../../testing/free-tier-access/02-free-character.png"
+        alt="Free character creation: Tier 1 recommended, not required"
+      />
+    </section>
+    <section class="step" id="step-2" hidden>
+      <h3>
+        3. Free equipment: Tier 1 required, Make disabled before submission
+      </h3>
+      <p>
+        Shown as soon as the item plan is known. Even with the prompt filled,
+        Free cannot submit the initial equipment edit. No request is sent.
+      </p>
+      <img
+        src="../../testing/free-tier-access/03-free-equipment.png"
+        alt="Free equipment: Tier 1 required, Make disabled before submission"
+      />
+    </section>
+    <section class="step" id="step-3" hidden>
+      <h3>
+        4. Tier 1 account: restriction disappears and Make becomes available
+      </h3>
+      <p>
+        After the account satisfies the requirement, the same notice disappears.
+        The valid item action is enabled. No generation was clicked here.
+      </p>
+      <img
+        src="../../testing/free-tier-access/04-tier-one.png"
+        alt="Tier 1 account: restriction disappears and Make becomes available"
+      />
+    </section>
+    <section class="step" id="step-4" hidden>
+      <h3>
+        5. Tier 2 requirement: Tier 1 account is insufficient
+        (numeric-requirement fixture)
+      </h3>
+      <p>
+        A numeric Tier 2 requirement with a Tier 1 account. This is a
+        component-state fixture, not a live inpaint result. Actual large-grid
+        tiers come from the selected canvas geometry.
+      </p>
+      <img
+        src="../../testing/free-tier-access/05-tier-two.png"
+        alt="Tier 2 requirement: Tier 1 account is insufficient (numeric-requirement fixture)"
+      />
+    </section>
+    <section class="step" id="step-5" hidden>
+      <h3>
+        6. Activity: replay of actual live failure, cause not guessed and no
+        automatic retry
+      </h3>
+      <p>
+        Replay of the actual live failure in Activity. Provider error details
+        remain visible; a failure alone is not diagnosed as a subscription
+        problem. No automatic resend.
+      </p>
+      <img
+        src="../../testing/free-tier-access/06-failure.png"
+        alt="Activity: replay of actual live failure, cause not guessed and no automatic retry"
+      />
+    </section>
+    <div class="budget">
+      <strong>Live verification budget</strong>
+      <div
+        class="bar"
+        role="img"
+        aria-label="Started with 27 generations. Used 4. Remaining 23."
+      >
+        <span class="remaining"></span><span class="used"></span>
+      </div>
+      <div class="legend">
+        <span>23 remaining</span><span>4 used of the 27 starting balance</span>
+      </div>
+    </div>
+    <p>
+      <strong>Live outcomes:</strong> V3 character creation completed (2 gens);
+      three-frame skeleton animation completed (2 gens); equipment edit returned
+      202 then failed (balance unchanged).
+    </p>
+    <small
+      >No automatic paid-to-Free retry exists. Character and eligible skeleton
+      workflows use Free-eligible endpoints directly. New equipment and grid
+      inpainting still need the verified paid tier.</small
+    >
+    <script>
+      document.querySelectorAll("[data-step]").forEach((button) =>
+        button.addEventListener("click", () => {
+          document
+            .querySelectorAll("[data-step]")
+            .forEach((tab) =>
+              tab.setAttribute("aria-pressed", String(tab === button)),
+            );
+          document
+            .querySelectorAll(".step")
+            .forEach(
+              (step, index) =>
+                (step.hidden = String(index) !== button.dataset.step),
+            );
+        }),
+      );
+    </script>
+  </body>
+</html>
