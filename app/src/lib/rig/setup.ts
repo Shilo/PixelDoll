@@ -15,6 +15,7 @@ import { clipQa } from './clips.ts';
 import { fixedFacingLocomotion, importedPoseIssues } from './pose-review.ts';
 import { opaqueBox } from './normalize.ts';
 import { fromApi, hasAll } from './poses.ts';
+import { flipH, mirrorPartner } from './mirror.ts';
 import { flipSkeleton, type Skeleton } from './skeleton.ts';
 import type { Img } from '../image/png.ts';
 import type { Project, Provenance } from '../store/manifest.ts';
@@ -94,6 +95,21 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 	const registrationDirections = DIRECTIONS.every((d) => rest[d]) ? 8 : 4;
 	const required =
 		registrationDirections === 8 ? DIRECTIONS : (['south', 'east', 'north', 'west'] as const);
+	for (const direction of required) {
+		if (rest[direction]) continue;
+		const source = rig.directions.find(({ id }) => id === direction)?.mirrorOf;
+		if (!source || source !== mirrorPartner(direction)) continue;
+		const reference = rig.rest?.[source],
+			image = reference && p.images.get(reference.image);
+		if (
+			image &&
+			reference &&
+			!reference.registrationOnly &&
+			hasAll(reference.keypoints) &&
+			opaqueBox(image)
+		)
+			rest[direction] = flipH(image);
+	}
 	if (required.some((d) => !rest[d]))
 		throw new Error(
 			'Rig setup needs saved original standing views or all four cardinal views. Import the missing rotations first.'
