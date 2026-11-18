@@ -112,9 +112,10 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 		warnings.push(
 			`${it.name} keeps its existing frames. Make it again after setup to animate it onto future moves.`
 		);
-	const fixedRest = rig.directions.some(
-		(d) => !!rig.rest?.[d.id]?.image && p.images.has(rig.rest[d.id]!.image)
-	);
+	const fixedRest = rig.directions.some(({ id, mirrorOf }) => {
+		const reference = rig.rest?.[id];
+		return !mirrorOf && reference && !reference.registrationOnly && p.images.has(reference.image);
+	});
 	return {
 		restAnim: a.id,
 		fixedRest,

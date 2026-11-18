@@ -8,7 +8,7 @@
 	} from '../lib/rig/directions.ts';
 	import type { DirectionName } from '../lib/rig/rig.ts';
 	import * as db from '../lib/store/db.ts';
-	import type { StoredProject } from '../lib/store/project.ts';
+	import { loadProject } from '../lib/store/project.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
 	import {
 		directionEditsBlocked,
@@ -20,7 +20,8 @@
 	import { Download } from './icons.ts';
 
 	let { id }: { id: string } = $props();
-	let record = $state.raw<StoredProject>();
+	let loaded = $state.raw<Awaited<ReturnType<typeof loadProject>>>();
+	const record = $derived(loaded?.rec);
 	let excluded = $state.raw<DirectionName[]>([]);
 	let confirm = $state(false);
 	let busy = $state(false);
@@ -30,37 +31,35 @@
 	);
 	const blocked = $derived(directionEditsBlocked(id));
 	const problem = $derived(
-		record && excluded.length ? directionProblem(record.manifest, retained, 'saved') : ''
+		loaded && excluded.length ? directionProblem(loaded.project, retained, 'saved') : ''
 	);
 	const losesCardinal = $derived(excluded.some((dir) => !dir.includes('-')));
 	$effect(() => {
 		const projectId = id;
-		let active = true;
+		const controller = new AbortController();
 		void (async () => {
 			try {
 				await flushSave();
-				const saved = await db.get<StoredProject>('projects', projectId);
-				if (!saved || saved.origin !== 'studio')
+				const saved = await loadProject(projectId, controller.signal);
+				if (saved.rec.origin !== 'studio')
 					throw new Error('This saved character is no longer available.');
-				if (active) record = saved;
+				if (!controller.signal.aborted) loaded = saved;
 			} catch (failure) {
-				if (active) error = (failure as Error).message;
+				if (!controller.signal.aborted) error = (failure as Error).message;
 			}
 		})();
-		return () => {
-			active = false;
-		};
+		return () => controller.abort();
 	});
 
 	function toggle(direction: DirectionName, keep: boolean) {
 		excluded = keep ? excluded.filter((dir) => dir !== direction) : [...excluded, direction];
 	}
 	async function remove() {
-		if (!record || !excluded.length || problem || blocked || busy) return;
+		if (!loaded || !record || !excluded.length || problem || blocked || busy) return;
 		busy = true;
 		error = '';
 		try {
-			const next = await retainCharacterDirections(record, retained);
+			const next = await retainCharacterDirections(record, retained, loaded.project.images);
 			const reason = directionEditsBlocked(id);
 			if (reason) throw new Error(reason);
 			next.savedAt = new Date().toISOString();

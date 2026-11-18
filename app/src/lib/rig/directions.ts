@@ -5,6 +5,7 @@ import { retainSlotDirections } from '../items/slots.ts';
 import type { Item, Manifest, Project } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
 import { flipH, mirrorPartner } from './mirror.ts';
+import { opaqueBox } from './normalize.ts';
 import {
 	baseHashOf,
 	cellHash,
@@ -19,8 +20,10 @@ import {
 export const directionLabel = (id: DirectionName) =>
 	id[0].toUpperCase() + id.slice(1).replace('-', ' ');
 
+const visibleCells = new WeakMap<Img, boolean>();
+
 export function directionProblem(
-	manifest: Manifest,
+	{ manifest, images }: Project,
 	directions: readonly RigDirection[],
 	mode: 'import' | 'saved'
 ): string {
@@ -52,11 +55,18 @@ export function directionProblem(
 	if (empty.length)
 		return `Keep a direction with artwork for ${empty.map(({ id }) => id.replaceAll(/[-_]/g, ' ')).join(', ')}.`;
 	if (mode === 'saved') {
+		const visible = (hash: Sha256) => {
+			const image = images.get(hash);
+			if (!image) return false;
+			const cached = visibleCells.get(image);
+			if (cached !== undefined) return cached;
+			const opaque = !!opaqueBox(image);
+			visibleCells.set(image, opaque);
+			return opaque;
+		};
 		const hasArtwork = (item: Item, views: readonly RigDirection[]) =>
 			views.some((dir) =>
-				manifest.rig.animations.some((move) =>
-					hasCells(manifest, item, move.id, dir.id, { artworkOnly: true })
-				)
+				manifest.rig.animations.some((move) => hasCells(manifest, item, move.id, dir.id, visible))
 			);
 		const stranded = manifest.items.filter(
 			(item) =>
@@ -102,7 +112,7 @@ export async function configureImportedDirections(
 	project: Project,
 	directions: RigDirection[]
 ): Promise<Project> {
-	const problem = directionProblem(project.manifest, directions, 'import');
+	const problem = directionProblem(project, directions, 'import');
 	if (problem) throw new Error(problem);
 	const manifest = structuredClone(project.manifest);
 	const base = manifest.items.find(({ id }) => id === manifest.rig.baseItem)!;
@@ -151,9 +161,10 @@ export async function configureImportedDirections(
 
 export async function retainCharacterDirections(
 	record: StoredProject,
-	directions: RigDirection[]
+	directions: RigDirection[],
+	images: Project['images']
 ): Promise<StoredProject> {
-	const problem = directionProblem(record.manifest, directions, 'saved');
+	const problem = directionProblem({ manifest: record.manifest, images }, directions, 'saved');
 	if (problem) throw new Error(problem);
 	const result = structuredClone(record);
 	const { manifest } = result;

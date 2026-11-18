@@ -11,7 +11,8 @@ import type {
 	Manifest,
 	Material,
 	Preset,
-	Project
+	Project,
+	Sha256
 } from '../store/manifest.ts';
 import {
 	autoRamps,
@@ -268,14 +269,15 @@ export function hasCells(
 	it: Item | undefined,
 	anim: string,
 	dir: DirectionName,
-	{ artworkOnly = false } = {}
+	visible?: (hash: Sha256) => boolean
 ): boolean {
 	const src = m.rig.directions.find((d) => d.id === dir)?.mirrorOf;
 	if (!it) return false;
 	const rows = it.layers.map(
 		(l) => l.cells?.[anim]?.[dir] ?? (src ? l.cells?.[anim]?.[src] : undefined)
 	);
-	if (artworkOnly || it.id === m.rig.baseItem) return rows.some((row) => row?.some(Boolean));
+	if (visible) return rows.some((row) => row?.some((hash) => hash && visible(hash)));
+	if (it.id === m.rig.baseItem) return rows.some((row) => row?.some(Boolean));
 	const count = m.rig.animations.find((a) => a.id === anim)?.cells;
 	// Authored transparent equipment frames are valid (for example, glasses seen from behind). Coverage distinguishes
 	// them from null placeholders whose generation has not completed.

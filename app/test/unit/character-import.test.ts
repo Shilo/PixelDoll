@@ -194,6 +194,7 @@ test('pose registration uses the original standing views, not generated mirrors'
 	const setup = await setupPlan(configured);
 	const layer = full.project.manifest.items[0].layers[0];
 	expect(setup.registrationDirections).toBe(4);
+	expect(setup.fixedRest).toBe(false);
 	expectPixels(setup.rest.west, cellImg(full.project, layer, 'default', 'west', 0));
 	expectPixels(setup.rest.north, cellImg(full.project, layer, 'default', 'north', 0));
 	const partial = await readCharacterZip(await zip(entries.slice(0, -1)));
@@ -212,7 +213,7 @@ test('removing saved directions prunes fitted equipment but never changes retain
 	stale.baseHash = `sha256:${'0'.repeat(64)}`;
 	const original = { id: 'rig-test', savedAt: '', origin: 'studio' as const, manifest };
 	await expect(
-		retainCharacterDirections(original, [{ id: 'west', mirrorOf: 'east' }])
+		retainCharacterDirections(original, [{ id: 'west', mirrorOf: 'east' }], project.images)
 	).rejects.toThrow('Keep East');
 	const retained = manifest.rig.directions.filter(({ id }) => id !== 'west');
 	const sparse = structuredClone(original);
@@ -222,8 +223,12 @@ test('removing saved directions prunes fitted equipment but never changes retain
 			rows.west = rows.south;
 			for (const dir of retained) delete rows[dir.id];
 		}
-	await expect(retainCharacterDirections(sparse, retained)).rejects.toThrow(hat.name);
-	const { manifest: trimmed } = await retainCharacterDirections(original, retained);
+	const blank = makeImg(64, 64);
+	const blankHash = await cellHash(blank);
+	const images = new Map(project.images).set(blankHash, blank);
+	hat.layers[0].cells!.walk.south = [blankHash];
+	await expect(retainCharacterDirections(sparse, retained, images)).rejects.toThrow(hat.name);
+	const { manifest: trimmed } = await retainCharacterDirections(original, retained, project.images);
 	expect(trimmed.rig.baseHash).not.toBe(manifest.rig.baseHash);
 	expect(trimmed.rig.directions).toEqual(retained);
 	for (const item of trimmed.items) {

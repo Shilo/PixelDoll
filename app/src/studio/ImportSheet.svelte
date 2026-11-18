@@ -57,9 +57,7 @@
 	const originalDirections = $derived(prepared?.project.manifest.rig.directions ?? []);
 	const directions = $derived(directionChoices ?? originalDirections);
 	const directionError = $derived(
-		prepared && directionChoices
-			? directionProblem(prepared.project.manifest, directions, 'import')
-			: ''
+		prepared && directionChoices ? directionProblem(prepared.project, directions, 'import') : ''
 	);
 	const previewFacing = $derived(directions.find(({ id }) => id === facing) ?? directions[0]);
 	const needsSetup = $derived(
