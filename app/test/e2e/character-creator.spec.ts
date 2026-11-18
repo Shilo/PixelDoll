@@ -307,19 +307,22 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await move.getByRole('radio', { name: 'Idle', exact: true }).click();
-	await move.getByRole('button', { name: /^Add Idle/ }).click();
-	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
-	await move.getByRole('radio', { name: 'Idle', exact: true }).click();
-	await expect(move).toContainText('Idle is already queued.');
-	await expect(move.getByRole('button', { name: /^Queue Idle/ })).toBeDisabled();
+	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+	await move.getByRole('button', { name: /^Add Walk/ }).click();
+	await expect(move).not.toContainText('Queued next: Idle');
+	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
+	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+	await expect(move).toContainText('Walk is already queued.');
+	await expect(move.getByRole('button', { name: /^Queue Walk/ })).toBeDisabled();
+	await expect(move.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(0);
+	await move.getByRole('radio', { name: 'Idle', exact: true }).click();
 	await expect(move).toContainText('It waits for the move in progress, then runs by itself.');
-	await move.getByRole('button', { name: /^Queue Walk/ }).click();
-	await expect(move).toContainText('Queued next: Walk');
-	await expect(page.locator('.move-row', { hasText: 'Walk' })).toContainText('Queued');
+	await move.getByRole('button', { name: /^Queue Idle/ }).click();
+	await expect(move).toContainText('Queued next: Idle');
+	await expect(page.locator('.move-row', { hasText: 'Idle' })).toContainText('Queued');
 	held = false;
-	await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Idle', 'Walk'], {
+	await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Walk', 'Idle'], {
 		timeout: 120_000
 	});
 });
@@ -330,9 +333,14 @@ test('a failed required measurement stops the queued idle without paying for an 
 }) => {
 	test.setTimeout(120_000);
 	const api = new CharacterApi();
+	let releaseMeasurement!: () => void;
+	const measurement = new Promise<void>((resolve) => {
+		releaseMeasurement = resolve;
+	});
 	await context.route('https://*.pixellab.ai/**', async (route) => {
 		const req = route.request(),
 			body = req.postDataJSON();
+		if (new URL(req.url()).pathname === '/v2/estimate-skeleton') await measurement;
 		const response = await api.handle(req.method(), req.url(), body);
 		await fulfill(
 			route,
@@ -355,13 +363,20 @@ test('a failed required measurement stops the queued idle without paying for an 
 			(c) => c.path === '/v2/estimate-skeleton' || c.path === '/v2/animate-with-skeleton-v3'
 		)
 	).toHaveLength(0);
-	await sheet.getByRole('button', { name: /^Add idle \+ walk/ }).click();
+	await expect(sheet.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
+	await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click();
 	await equipmentMode(page, 'Moves');
-	await page
-		.locator('.move-row', { hasText: 'Failed: tap for details' })
-		.click({ timeout: 90_000 });
+	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await expect(move).toContainText(/joints (were )?not found on every frame/);
+	await move.getByRole('button', { name: /^Add Idle/ }).click();
+	try {
+		await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
+		await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+		await move.getByRole('button', { name: /^Queue Walk/ }).click();
+	} finally {
+		releaseMeasurement();
+	}
+	await expect(move).toContainText(/joints (were )?not found on every frame/, { timeout: 90_000 });
 	await expect(move).toContainText('Queued next: Walk');
 	expect(api.calls.filter((c) => c.path === '/v2/animate-with-skeleton-v3')).toHaveLength(1);
 	const saved = await page.evaluate(
@@ -1142,7 +1157,7 @@ function offlineCreation(config: CreationCase) {
 		});
 		expect(creates[1].body).toMatchObject({ n_directions: 8 });
 		expect(Object.keys(creates[1].body!.direction_images!)).toHaveLength(7);
-		// Default-first: creation makes no animation; one tap queues idle and walk with the old per-direction requests.
+		// Default-first: creation makes no animation; each move is explicitly approved afterward.
 		expect(
 			api.calls.filter(
 				(c) =>
@@ -1151,7 +1166,7 @@ function offlineCreation(config: CreationCase) {
 					c.path === '/v2/estimate-skeleton'
 			)
 		).toHaveLength(0);
-		await sheet.getByRole('button', { name: /^Add idle \+ walk/ }).click();
+		await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click();
 		await expect(page.locator('.project-btn')).toContainText('Offline creator test');
 		await page.locator('.project-btn').click();
 		await page
@@ -1162,6 +1177,13 @@ function offlineCreation(config: CreationCase) {
 		await expect(page.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
 		await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await equipmentMode(page, 'Moves');
+		const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+		for (const name of ['Idle', 'Walk']) {
+			await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+			await move.getByRole('radio', { name, exact: true }).click();
+			await move.getByRole('button', { name: new RegExp(`^Add ${name}`) }).click();
+			await move.getByRole('button', { name: 'Done', exact: true }).click({ timeout: 120_000 });
+		}
 		await expect(page.locator('.move-list .move-row')).toHaveCount(3, { timeout: 150_000 });
 		await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Idle', 'Walk']);
 		// Share lists Default once, as a move: its one standing frame is a PNG; Walk animates again.

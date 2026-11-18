@@ -61,14 +61,16 @@
 	});
 	const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null));
 	const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []));
+	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
 	// Default is the standing views themselves: nothing to generate or replace.
 	const options = $derived(
-		[
-			...new Set(['idle', 'walk', ...AUTHORED, ...(m?.rig.animations.map((a) => a.id) ?? [])])
-		].filter((a) => !reservedMove(a))
+		[...new Set(['idle', 'walk', ...AUTHORED, ...(m?.rig.animations.map((a) => a.id) ?? [])])]
+			.filter((a) => !reservedMove(a))
+			.concat('')
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
 	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
+	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? '');
 	const slug = (s: string) =>
 		s
@@ -76,9 +78,14 @@
 			.replace(/[^a-z0-9]+/g, '-')
 			.replace(/^-+|-+$/g, '')
 			.slice(0, 24);
+	const replacing = $derived(replaceSelected && have.has(action));
+	const savedMove = $derived(m?.rig.animations.find((a) => a.id === action));
 	const describingReplacement = $derived(
-		have.has(action) && action !== 'walk' && !isAuthoredAction(action)
+		replacing &&
+			((action !== 'walk' && !isAuthoredAction(action)) ||
+				Object.values(savedMove?.sources ?? {}).some((s) => s?.motion?.startsWith('pixminimax:')))
 	);
+	const describing = $derived(!action || describingReplacement);
 	// Ids allow only a-z, 0-9, - and _ (rig.ts): a description in another script gets the first free "move-N".
 	const freeMoveId = () => {
 		let n = 1;
@@ -86,12 +93,11 @@
 		return `move-${n}`;
 	};
 	const id = $derived(
-		!describingReplacement && text.trim()
-			? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) || freeMoveId()
-			: action
+		action ||
+			(text.trim() &&
+				(slug(text.trim().split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) || freeMoveId()))
 	);
 	const items = $derived(m ? posable(m) : []);
-	const replacing = $derived(have.has(id) && !reservedMove(id));
 	const availableDirs = $derived(
 		m?.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id) ?? []
 	);
@@ -99,19 +105,25 @@
 	const targetDirs = $derived(
 		replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs
 	);
-	const frames = $derived(m?.rig.animations.find((a) => a.id === id)?.cells ?? 8);
+	const frames = $derived(replacing ? (savedMove?.cells ?? 8) : 8);
 	const motion = $derived({
 		id,
-		action: text.trim() ? undefined : action,
-		text: text.trim() || undefined,
+		action: describing ? undefined : action,
+		text: describing ? text.trim() || undefined : undefined,
 		frames,
 		replace: replacing
 	});
-	const motionIssue = $derived(m && id ? bodyMoveIssue(m, motion) : '');
+	const motionIssue = $derived.by(() => {
+		if (action && replaceSelected !== have.has(action))
+			return 'This move changed while you were editing. Select it again to continue.';
+		if (!action && id && options.includes(id))
+			return `${nice(id)} is already a move option. Start the description with different words.`;
+		return m && id ? bodyMoveIssue(m, motion) : '';
+	});
 	let included = $state<string[]>(draft?.items ?? []);
 	const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id));
 	const est = $derived(
-		m && id && targetDirs.length && !motionIssue
+		m && id && targetDirs.length && !reservedMove(id) && !motionIssue && !pendingIds.includes(id)
 			? moveEstimate(m, { ...motion, items: chosen, dirs: targetDirs })
 			: null
 	);
@@ -181,7 +193,6 @@
 	const retryGens = $derived(
 		Math.ceil(retryPlan.reduce((sum, call) => sum + (call.generations ?? 0), 0))
 	);
-	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
 	const ownQueued = $derived(moving.queued.filter((q) => q.projectId === moving.projectId));
 	// another character's failed move holds every new move; only its own sheet can try it again or start over
 	const holder = $derived(
@@ -277,7 +288,7 @@
 
 	function go() {
 		const projectId = doc.id;
-		if (motionIssue || addAccess.error) return;
+		if (!est || addAccess.error) return;
 		const spec = {
 			...motion,
 			items: chosen,
@@ -288,6 +299,7 @@
 		formDrafts.move = {
 			projectId,
 			action,
+			replace: replaceSelected,
 			text,
 			items: $state.snapshot(included),
 			dirs: [...selectedDirs],
@@ -301,7 +313,10 @@
 		}, addTier);
 	}
 	function chooseAction(next: string) {
+		const replace = have.has(next);
+		if (action === next && replaceSelected === replace) return;
 		action = next;
+		replaceSelected = replace;
 		text = '';
 		const clips = (rec?.rigQa as { clips?: Record<string, { fails?: unknown[] }> } | undefined)
 			?.clips;
@@ -385,35 +400,27 @@
 			>Hide</button
 		>
 	{:else if ok}
-		<span class="foot-note"
-			>{est
-				? `About ${est.minutes} min · body ${Math.ceil(est.body)}${est.items ? ` + items ${est.items}` : ''} gens`
-				: ''}</span
-		>
-		<span class="api-action"
-			><ApiPeek
-				scope="move-add"
-				label="Add or replace move"
-				plan={movePlan(rec, {
-					...motion,
-					items: chosen,
-					poseStyle: 'visible-side-v1',
-					...(replacing ? { dirs: [...targetDirs] } : {})
-				})}
-			/><button
+		{#if est}<span class="foot-note">PixelLab may charge in dollars. Retries cost extra.</span>{/if}
+		<span class="api-action">
+			{#if est}<ApiPeek
+					scope="move-add"
+					label="Add or replace move"
+					plan={movePlan(rec, {
+						...motion,
+						items: chosen,
+						poseStyle: 'visible-side-v1',
+						...(replacing ? { dirs: [...targetDirs] } : {})
+					})}
+				/>{/if}<button
 				class="bu-action btn primary lg"
 				data-variant="primary"
-				disabled={!id ||
-					!!reservedMove(id) ||
-					!!motionIssue ||
+				disabled={!est ||
 					!!addAccess.error ||
-					!targetDirs.length ||
-					pendingIds.includes(id) ||
 					(!!settingUp.spec && !settingUp.done) ||
 					tierBlocked(addTier)}
 				aria-describedby={tierBlocked(addTier) ? 'move-action-tier' : undefined}
 				onclick={go}
-				>{busy ? 'Queue' : replacing ? 'Replace' : 'Add'}
+				>{replacing ? (busy ? 'Queue replacement:' : 'Replace') : busy ? 'Queue' : 'Add'}
 				{id ? nice(id) : 'move'}{replacing ? ' views' : ''}
 				<span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button
 			></span
@@ -577,12 +584,12 @@
 						<button
 							class="chip"
 							role="radio"
-							aria-checked={(!text.trim() || describingReplacement) && action === a}
-							tabindex={(text.trim() && !describingReplacement ? options[0] === a : action === a)
-								? 0
-								: -1}
+							aria-checked={action === a}
+							tabindex={action === a ? 0 : -1}
 							onclick={() => chooseAction(a)}
-							>{#if have.has(a)}<Check size={12} />{/if}{nice(a)}{have.has(a)
+							>{#if have.has(a)}<Check size={12} />{/if}{a ? nice(a) : 'Describe a move'}{have.has(
+								a
+							)
 								? ' · added'
 								: ''}</button
 						>
@@ -591,7 +598,7 @@
 			</div>
 			{#if replacing}
 				<div class="field">
-					<span class="label">Views to replace</span>
+					<span class="label">Directions to redraw</span>
 					{#each availableDirs as dir (dir)}<label class="check"
 							><input
 								type="checkbox"
@@ -603,28 +610,24 @@
 							/>{directionLabel(dir)}</label
 						>{/each}
 					<p class="notice warn small">
-						Only selected body views are replaced. Equipment checked below is re-posed for those
-						views; other equipment stays hidden there until remade. Other views and moves stay
-						fixed.{#if m?.rig.directions.some((d) => d.mirrorOf)}
-							Mirrored views follow their source.{/if}
+						Only checked directions are redrawn.{#if m?.rig.directions.some((d) => d.mirrorOf)}
+							Their mirrors update too.{/if}
+						Equipment not animated again is hidden in those views until remade.
 					</p>
 				</div>
-			{:else}<p class="faint small">Choose an existing move to replace selected views.</p>{/if}
-			<label class="field">
-				<span class="label"
-					>{describingReplacement ? 'Describe the replacement' : 'Or describe it'}
-					{#if !describingReplacement}<span class="faint">(optional)</span>{/if}</span
-				>
-				<input
-					class="bu-input input"
-					bind:value={text}
-					placeholder="e.g. jumping in place"
-					maxlength="120"
-				/>
-			</label>
-			{#if text.trim()}<p class="faint small">
-					The body is drawn with empty hands and no effects. Add weapons and props as items.
-				</p>{/if}
+			{/if}
+			{#if describing}<label class="field">
+					<span class="label"
+						>{describingReplacement ? 'Describe the replacement' : 'Describe the motion'}</span
+					>
+					<input
+						class="bu-input input"
+						bind:value={text}
+						placeholder="e.g. jumping in place"
+						maxlength="120"
+					/>
+				</label>
+				<p class="faint small">Describe body motion only. Add weapons and props as items.</p>{/if}
 			{#if reservedMove(id)}<p class="notice warn small">
 					<CircleAlert size={14} />{reservedMove(id)}
 				</p>{:else if motionIssue}<p class="notice warn small">
@@ -655,38 +658,34 @@
 										? [...included, it.id]
 										: included.filter((x) => x !== it.id))}
 							/>{it.name}
-							<span class="faint small">{poseGens(1, est?.frames ?? 8, dirs)} gens</span></label
-						>
+							{#if est}<span class="faint small">{poseGens(1, est.frames, dirs)} gens</span>{/if}
+						</label>
 					{/each}
-					<p class="faint small">
-						Items are left out by default to keep the initial cost down. Generate them for this move
-						later from each item’s details.
-					</p>
+					{#if !replacing}<p class="faint small">
+							Unchecked items stay hidden in this move until animated.
+						</p>{/if}
 				</div>
 			{/if}
-			<p class="faint small">
-				PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time
-				varies.
-			</p>
-			<details class="disclosure">
-				<summary><ChevronRight size={14} />Details</summary>
-				<div>
-					<p class="faint small">
-						{text.trim()
-							? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view'
-							: action === 'walk'
-								? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view'
-								: 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames ×
-						{dirs} directions{m?.rig.directions.some((d) => d.mirrorOf)
-							? ` (${m.rig.directions
-									.filter((d) => d.mirrorOf)
-									.map((d) => d.id.replaceAll('-', ' '))
-									.join(', ')} mirrored)`
-							: ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · body review notes
-						do not trigger redraws.
-					</p>
-				</div>
-			</details>
+			{#if est}<details class="disclosure">
+					<summary><ChevronRight size={14} />Details</summary>
+					<div>
+						<p class="faint small">
+							{motion.text
+								? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view'
+								: action === 'walk'
+									? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view'
+									: 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames
+							×
+							{dirs} directions{m?.rig.directions.some((d) => d.mirrorOf)
+								? ` (${m.rig.directions
+										.filter((d) => d.mirrorOf)
+										.map((d) => d.id.replaceAll('-', ' '))
+										.join(', ')} mirrored)`
+								: ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · body review notes
+							do not trigger redraws.
+						</p>
+					</div>
+				</details>{/if}
 		</div>
 	{/if}
 </Sheet>

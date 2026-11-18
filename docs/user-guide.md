@@ -30,9 +30,7 @@ A gen is one PixelLab generation from your account's monthly allowance. Creation
 | Action                                                                     | About                                                                                                           |
 | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Create a character (its standing **Default** pose)                         | about 2–5 gens                                                                                                  |
-| **Add idle + walk**, default **Top-down 8** (5 drawn views, west mirrored) | about 55 gens for the body; items are generated separately                                                      |
-| **Top-down 4** / **Diagonal 4** / **Side-scroller 2**                      | about 33 / 22 / 11 gens                                                                                         |
-| **Unique 8** (every view drawn independently)                              | about 88 gens                                                                                                   |
+| **Idle** or **Walk**, default **Top-down 8** (5 drawn views)                 | about 17 gens for Idle or 38 for Walk, without items                                                             |
 | Make an item                                                               | standing views only, about 10 gens for frames up to 80 px; larger or padded held items can require more batches |
 | Add a move                                                                 | depends on the move, views and selected items; shown before spending                                            |
 | Try again on an item                                                       | shown on the button                                                                                             |
@@ -97,9 +95,8 @@ with nothing worn instead. These are generation instructions, not a guarantee of
 Keep this tab open while PixelLab responds; you can keep dressing existing characters. After reopening, PixelDoll can resume requests with a
 known job ID and reuse saved results. If a submitted request has an unknown outcome, generation stops for review in
 **Activity**; it is never automatically sent again. **Try again** starts a new paid attempt and may incur additional charges.
-When creation is done, press **Add idle + walk** to queue both moves (the button shows the price) or **Start dressing up**
-to dress the Default pose first. **Moves → Add idle + walk** offers the same later. While a move is being added,
-**Queue another move** lines up the next one; it runs by itself when the current move finishes.
+When creation is done, press **Start dressing up** to dress the Default pose or open **Moves → Add a move** and pick
+**Idle**, **Walk**, or another move. Each move shows its own estimate before you queue it.
 **Default** is the character's standing pose: one still frame per direction, listed first in Moves and Share and
 exported like any move. "Default" can't be used as the name of another move.
 
@@ -287,20 +284,19 @@ remain unchanged. This runs locally and makes no PixelLab call; export a backup 
 
 ## Add a move
 
-Open the **Moves** tab → **Add a move**. Pick **Idle**, **Walk**, **Slash**, **Cast**, **Hurt** or **Death**, or describe your own under **Or
-describe it**, for example "jumping in place". Items you check under **Animate these items too** are made for the new move.
+Open the **Moves** tab → **Add a move**. Pick a preset such as **Idle**, **Walk**, or **Slash**, or choose **Describe a move**
+and type something like "jumping in place". Items you check under **Animate these items too** are made for the new move.
 Items are unchecked by default so you can approve the body motion before buying its equipment frames.
 Items you leave out stay hidden in that move until you make them. A worn item without frames for the current move shows
 a note on the stage with **Make it** and its price.
 
-New characters start with only **Default**; **Add idle + walk** in **Moves** adds both body moves in one tap without equipment. Moves run one at a time:
-a move you add while another is running waits as **Queued**. If a move fails, the queue waits: **Try again** continues
+**Queue another move** lets you set up the next move while one is running. Moves run one at a time. If a move fails, the queue waits: **Try again** continues
 with the queued moves, **Start over** drops them.
 
 Moves are added to your own characters (not the demo), using their existing direction policy. Older mirrored characters
 stay mirrored; the new-character setting does not rebuild their frozen artwork.
 
-To repair an existing move, choose it again in **Add a move**, then check the views to replace. Views with failed body
+To repair an existing move, select its **added** chip in **Add a move**, then check **Directions to redraw**. Views with failed body
 checks are selected initially. Other directions and moves keep their existing pixels. Selected equipment is re-posed
 only for the replaced views; other equipment stays hidden there until **Make it** fills the missing views. A replacement
 that still fails body checks keeps the previous artwork.

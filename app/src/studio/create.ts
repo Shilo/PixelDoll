@@ -1667,22 +1667,6 @@ export function missingItemMoves(
 			...(anchored ? { itemMethod: 'anchor' as const } : {})
 		}));
 }
-/** The moves creation made before Default-first (authored idle, managed walk), for a one-tap "Add idle + walk". Same request
- * shapes as creation made them (no poseStyle). Equipment is always a separately priced choice afterward. */
-export function baseMoveSpecs(
-	m: Manifest,
-	seed = 1 + Math.floor(Math.random() * 1_000_000)
-): MoveSpec[] {
-	const have = new Set(m.rig.animations.map((a) => a.id));
-	return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({
-		id: a.name,
-		action: a.name,
-		frames: a.frames,
-		items: [],
-		seed
-	}));
-}
-
 /** Frames of a move: the authored table's length, or the text frame count. */
 export const isAuthoredAction = (action?: string): action is string =>
 	!!action && Object.hasOwn(ACTIONS, action);

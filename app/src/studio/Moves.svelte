@@ -2,7 +2,6 @@
 	import Sprite from './Sprite.svelte';
 	import { moveThumbnails } from './moveThumbnails.ts';
 	import { ui, doc, store, view, isDemo, moving } from './state.svelte.ts';
-	import Lazy from './Lazy.svelte';
 	import { ChevronRight, Plus } from './icons.ts';
 	import { moveLabel } from './model.ts';
 	import SavedActions from './SavedActions.svelte';
@@ -14,10 +13,6 @@
 	const k = $derived(Math.max(1, Math.floor(ui.dpr)));
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
 	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
-	// Created characters start with Default only; the one-tap offer (and its pipeline code) loads only while idle or walk is missing.
-	const baseMissing = $derived(
-		!!m && ['idle', 'walk'].some((id) => !m!.rig.animations.some((a) => a.id === id))
-	);
 	const thumbnails = $derived.by(() => {
 		void doc.rev;
 		return view.project ? moveThumbnails(view.project, $state.snapshot(doc.items)) : null;
@@ -123,12 +118,6 @@
 				></button
 			>
 		{/each}
-		{#if !isDemo() && baseMissing}<Lazy
-				load={() => import('./BaseMoves.svelte')}
-				sheet={false}
-				projectId={doc.id}
-				manifest={m}
-			/>{/if}
 		{#if !isDemo()}<button
 				class="bu-action add-row"
 				data-variant="outline"

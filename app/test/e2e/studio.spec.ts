@@ -2467,16 +2467,25 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await move.getByRole('radio', { name: 'Cast', exact: true }).click();
-	await move.getByRole('textbox', { name: /Or describe it/ }).fill('jumping in place');
-	await move.getByRole('checkbox', { name: new RegExp(vest.name) }).uncheck();
+	const description = move.getByRole('textbox', { name: 'Describe the motion', exact: true });
+	await expect(description).toHaveCount(0);
+	await move.getByRole('radio', { name: 'Describe a move', exact: true }).click();
+	await description.fill('walk');
+	await expect(move.getByRole('button', { name: /^Add Walk/ })).toBeDisabled();
+	await expect(move.getByText('Directions to redraw')).toHaveCount(0);
+	await expect(move).toContainText('Walk is already a move option.');
+	await description.fill('jumping in place');
+	await description.press('Shift+Tab');
+	await expect(move.getByRole('radio', { name: 'Describe a move', exact: true })).toBeFocused();
+	await page.keyboard.press('Space');
+	await expect(description).toHaveValue('jumping in place');
+	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).not.toBeChecked();
+	await move.getByRole('checkbox', { name: new RegExp(vest.name) }).check();
 	await expect(move.getByRole('button', { name: /^Add Jumping in/ })).toContainText(
 		/Est\. \d+ gens/
 	);
 	await expect(
-		move.getByText(
-			'PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.',
-			{ exact: true }
-		)
+		move.getByText('PixelLab may charge in dollars. Retries cost extra.', { exact: true })
 	).toBeVisible();
 	await move.getByRole('button', { name: /^Add Jumping in/ }).click();
 	await page
@@ -2485,11 +2494,11 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
-	await expect(move.getByRole('textbox', { name: /Or describe it/ })).toHaveValue(
-		'jumping in place'
-	);
-	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).not.toBeChecked();
-	await move.getByRole('textbox', { name: /Or describe it/ }).fill('');
+	await expect(description).toHaveValue('jumping in place');
+	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toBeChecked();
+	await move.getByRole('radio', { name: 'Cast', exact: true }).click();
+	await expect(description).toHaveCount(0);
+	await expect(move.getByRole('button', { name: /^Add Cast/ })).toBeEnabled();
 	await expect(move.getByRole('radio', { name: 'Cast', exact: true })).toHaveAttribute(
 		'aria-checked',
 		'true'
@@ -4656,11 +4665,14 @@ test('a custom move replacement keeps its name and requires a supported frame co
 			db = await import(dbPath);
 		const rec = await db.get('projects', s.doc.id),
 			m = rec.manifest;
-		m.rig.animations.find((a: { id: string }) => a.id === 'walk').id = 'quiet-step';
+		const custom = m.rig.animations.find((a: { id: string }) => a.id === 'walk');
+		custom.id = 'idle';
+		for (const source of Object.values(custom.sources) as { motion?: string }[])
+			source.motion = 'pixminimax:idle, shift weight to the leading foot';
 		for (const item of m.items)
 			for (const layer of item.layers)
 				if (layer.cells?.walk) {
-					layer.cells['quiet-step'] = layer.cells.walk;
+					layer.cells.idle = layer.cells.walk;
 					delete layer.cells.walk;
 				}
 		await db.put('projects', s.doc.id, rec);
@@ -4674,8 +4686,8 @@ test('a custom move replacement keeps its name and requires a supported frame co
 		'Described moves can be generated with 4, 8 or 12 frames. This move has 6.'
 	);
 	await expect(sheet.getByRole('button', { name: /^Replace Cross punch views/ })).toBeDisabled();
-	await sheet.getByRole('radio', { name: 'Quiet step · added', exact: true }).click();
-	const replace = sheet.getByRole('button', { name: /^Replace Quiet step views/ });
+	await sheet.getByRole('radio', { name: 'Idle · added', exact: true }).click();
+	const replace = sheet.getByRole('button', { name: /^Replace Idle views/ });
 	await expect(replace).toBeDisabled();
 	await expect(sheet).toContainText('Describe this move before generating it.');
 	await sheet
