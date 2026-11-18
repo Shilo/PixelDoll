@@ -92,13 +92,8 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 		rest[d.id] = im;
 		frames.set(await cellHash(im), im);
 	}
-	const registrationDirections = DIRECTIONS.every((d) => rest[d]) ? 8 : 4;
-	const required =
-		registrationDirections === 8 ? DIRECTIONS : (['south', 'east', 'north', 'west'] as const);
-	for (const direction of required) {
-		if (rest[direction]) continue;
-		const source = rig.directions.find(({ id }) => id === direction)?.mirrorOf;
-		if (!source || source !== mirrorPartner(direction)) continue;
+	for (const { id, mirrorOf: source } of rig.directions) {
+		if (rest[id] || !source || source !== mirrorPartner(id)) continue;
 		const reference = rig.rest?.[source],
 			image = reference && p.images.get(reference.image);
 		if (
@@ -108,8 +103,11 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
 			hasAll(reference.keypoints) &&
 			opaqueBox(image)
 		)
-			rest[direction] = flipH(image);
+			rest[id] = flipH(image);
 	}
+	const registrationDirections = DIRECTIONS.every((d) => rest[d]) ? 8 : 4;
+	const required =
+		registrationDirections === 8 ? DIRECTIONS : (['south', 'east', 'north', 'west'] as const);
 	if (required.some((d) => !rest[d]))
 		throw new Error(
 			'Rig setup needs saved original standing views or all four cardinal views. Import the missing rotations first.'

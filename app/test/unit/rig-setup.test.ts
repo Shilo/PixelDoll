@@ -14,7 +14,7 @@ import {
 } from '../../src/lib/rig/poses.ts';
 import { DIRECTIONS, cellHash, type Keypoint } from '../../src/lib/rig/rig.ts';
 import { flipSkeleton } from '../../src/lib/rig/skeleton.ts';
-import { flipH } from '../../src/lib/rig/mirror.ts';
+import { flipH, planDirections } from '../../src/lib/rig/mirror.ts';
 import { paddedPoses, poseBatches, rawClip } from '../../src/lib/rig/clips.ts';
 import { itemRoute, padOf, planItem } from '../../src/lib/items/items.ts';
 import { baseCell, defaultMethod } from '../../src/lib/items/run.ts';
@@ -413,6 +413,25 @@ test('rig repair can register a missing mirrored cardinal from measured standing
 	expect(repair.rest.west).toEqual(flipH(east));
 	expect(repair.frames.size).toBe(plan.frames.size + 1);
 	expect(repair.frames.has(await cellHash(repair.rest.west!))).toBe(false);
+});
+
+test('rig repair keeps eight-view registration when measured mirrors fill the missing views', async () => {
+	const project = await source(),
+		rig = project.manifest.rig,
+		initial = await setupPlan(project),
+		east = initial.rest.east!,
+		hash = await cellHash(east);
+	rig.directions = planDirections('8', ['south', 'south-east', 'east', 'north-east', 'north']).dirs;
+	rig.rest = Object.fromEntries(
+		rig.directions
+			.filter(({ mirrorOf }) => !mirrorOf)
+			.map(({ id }) => [id, { image: hash, keypoints: pose() }])
+	);
+	const repair = await setupPlan(project);
+	expect(repair.registrationDirections).toBe(8);
+	for (const direction of ['west', 'north-west', 'south-west'] as const)
+		expect(repair.rest[direction]).toEqual(flipH(east));
+	expect(repair.frames.size).toBe(initial.frames.size);
 });
 
 test('reload-safe setup never replaces a lost or failed paid request', async () => {
