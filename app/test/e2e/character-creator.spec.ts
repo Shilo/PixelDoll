@@ -824,6 +824,32 @@ for (const viewport of [
 	}) => {
 		await page.setViewportSize(viewport);
 		const sheet = await open(page);
+		if (viewport.width === 320) {
+			const picker = sheet.locator('.reference input[type=file]');
+			const image = await page.evaluate(() => {
+				const canvas = document.createElement('canvas');
+				canvas.width = canvas.height = 32;
+				canvas.getContext('2d')!.fillRect(4, 4, 16, 16);
+				return canvas.toDataURL().split(',')[1];
+			});
+			await picker.setInputFiles({
+				name: 'sprite.png',
+				mimeType: 'image/png',
+				buffer: Buffer.from(image, 'base64')
+			});
+			const attachment = sheet.getByRole('button', { name: /Replace image.*sprite\.png/ });
+			await expect(attachment).toBeVisible();
+			const bounds = (await attachment.boundingBox())!;
+			expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width);
+			expect(bounds.height).toBeGreaterThanOrEqual(44);
+			await picker.setInputFiles({
+				name: 'broken.png',
+				mimeType: 'image/png',
+				buffer: Buffer.from('not a PNG')
+			});
+			await expect(sheet.getByText(/No reference attached/)).toBeVisible();
+			await expect(attachment).toHaveCount(0);
+		}
 		// Full desktop fits in one screen; narrower layouts deliberately reflow and scroll.
 		if (viewport.width === 1920) {
 			for (const theme of ['dark', 'light']) {
@@ -1277,6 +1303,24 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 	await sheet.locator('details.advanced > summary').click();
 	const model = sheet.getByRole('combobox', { name: 'Model', exact: true });
 	await expect(model.locator('option')).toHaveText(['Default (V3)', 'Pro', 'Pro Flash']);
+	const drop = sheet.getByRole('button', { name: 'Add image', exact: true });
+	await drop.evaluate(async (element) => {
+		const canvas = document.createElement('canvas');
+		canvas.width = canvas.height = 48;
+		canvas.getContext('2d')!.fillRect(4, 4, 16, 32);
+		const blob = await new Promise<Blob>((resolve) => canvas.toBlob((result) => resolve(result!)));
+		const dataTransfer = new DataTransfer();
+		dataTransfer.items.add(new File([blob], 'guide.png', { type: 'image/png' }));
+		element.dispatchEvent(new DragEvent('drop', { dataTransfer, bubbles: true, cancelable: true }));
+	});
+	await expect(sheet.getByRole('button', { name: /Replace image.*guide\.png/ })).toBeVisible();
+	await model.selectOption('pro');
+	await expect(sheet.getByText(/sketch or character design/)).toBeVisible();
+	await model.selectOption('pro-flash');
+	await expect(sheet.getByText(/new sprite’s style and appearance/)).toBeVisible();
+	await expect(sheet.getByRole('button', { name: /Replace image.*guide\.png/ })).toBeVisible();
+	await sheet.getByRole('button', { name: 'Remove reference', exact: true }).click();
+	await expect(drop).toBeFocused();
 	await model.selectOption('pro');
 	await expect(sheet.locator('details.advanced')).toHaveAttribute('open', '');
 	await expect(sheet.getByRole('combobox', { name: 'Outline', exact: true })).toHaveCount(0);

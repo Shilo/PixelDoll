@@ -82,6 +82,30 @@ test('Pro draws from text with a transparent background and no V3 hints', () => 
 	expect(toolOf({ endpoint: '/create-character-pro', params: {} })).toBe('Character Pro');
 });
 
+test('character references use the selected model’s documented image field and keep artwork out of the plan', async () => {
+	const reference = { width: 48, height: 64, base64: 'picked-image' };
+	const image = { type: 'base64', format: 'png', base64: reference.base64 };
+	expect(drawRequest({ ...spec, reference }, 7).body).toMatchObject({ reference_image: image });
+	expect(drawRequest({ ...spec, reference, model: 'pro' }, 7).body).toMatchObject({
+		method: 'create_from_concept',
+		concept_image: image
+	});
+	expect(drawRequest({ ...spec, size: 64, reference, model: 'pro-flash' }, 7).body).toMatchObject({
+		style_image: { image, size: { width: 48, height: 64 } }
+	});
+	expect(estimate({ ...spec, reference }).gens).toBe(1.25);
+	expect(JSON.stringify(createPlan({ ...spec, reference }))).not.toContain(reference.base64);
+	await expect(
+		createCharacter({ ...spec, frame: 64, reference: { ...reference, height: 65 } })
+	).rejects.toThrow(/Increase Frame/);
+	await expect(
+		createCharacter({ ...spec, model: 'pro', reference: { ...reference, height: 1025 } })
+	).rejects.toThrow(/1024 × 1024/);
+	await expect(createCharacter({ ...spec, model: 'pro-flash', reference })).rejects.toThrow(
+		/Increase Body size/
+	);
+});
+
 test('every model limit comes from the MODELS table, in the form and before spending', async () => {
 	expect(MODEL_IDS).toEqual(['v3', 'pro', 'pro-flash']);
 	expect(modelOf(undefined)).toBe(MODELS.v3);
@@ -229,7 +253,7 @@ test('generation details summarize tools, prompts, settings and recorded cost fr
 		}),
 		prov({
 			endpoint: '/create-character-v3',
-			params: { description: 'farmer', reference_image: { sha256: 'a' } },
+			params: { description: 'farmer', reference_image: { sha256: 'a' }, direction_images: {} },
 			createdAt: '2026-11-12T10:01:00.000Z'
 		}),
 		prov({
@@ -249,6 +273,13 @@ test('generation details summarize tools, prompts, settings and recorded cost fr
 	expect(settings).toMatchObject({ Body: '48 px', Outline: 'None', Detail: 'High', Seed: '9' });
 	expect(g.cost).toEqual({ generations: 5, usd: 0, unknown: 1, calls: 3, replaced: 0 });
 	expect(g.createdAt).toBe('2026-11-12T10:00:00.000Z');
+	base.provenance[0].params.reference_image = { sha256: 'b' };
+	base.provenance.reverse();
+	const referenceSettings = Object.fromEntries(
+		generationDetails(manifest, base).settings.map((setting) => [setting.label, setting.value])
+	);
+	expect(referenceSettings).toMatchObject({ Reference: 'Starting sprite', Seed: '9' });
+	expect(referenceSettings).not.toHaveProperty('Body');
 	// An item made before details existed, with nothing recorded, shows nothing rather than failing.
 	const bare = { ...base, id: 'x', provenance: [] } as Item;
 	expect(generationDetails(manifest, bare)).toMatchObject({

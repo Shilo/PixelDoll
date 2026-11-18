@@ -16,6 +16,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { makeImg } from '../../src/lib/image/png.ts';
+import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import './studio-thumbnails.ts';
 import './dialog-dismissal.ts';
 
@@ -1955,6 +1957,20 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	await expect(make).toBeDisabled();
 	await expect(connect).toHaveCount(0);
 	await page.setViewportSize({ width: 390, height: 844 });
+	const choose = page.waitForEvent('filechooser');
+	await item.getByRole('button', { name: 'Add image', exact: true }).click();
+	const artwork = makeImg(16, 16);
+	artwork.data.set([20, 150, 24, 255], 16 * 4 + 4);
+	await (
+		await choose
+	).setFiles({
+		name: 'hat-reference.png',
+		mimeType: 'image/png',
+		buffer: Buffer.from(await encodePngBytes(artwork))
+	});
+	await expect(
+		item.getByRole('button', { name: /Replace image.*hat-reference\.png/ })
+	).toBeVisible();
 	await prompt.fill('a leather hat');
 	await prompt.press('Enter');
 	await expect(prompt).toHaveValue('a leather hat\n');
@@ -1969,6 +1985,9 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 		await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await newItem(page, 'Head');
 		await expect(prompt).toHaveValue('a leather hat\n');
+		await expect(
+			item.getByRole('button', { name: /Replace image.*hat-reference\.png/ })
+		).toBeVisible();
 		await expect(make).toContainText(/Est\. \d+ gens/);
 	}
 });
