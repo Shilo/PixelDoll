@@ -4,6 +4,19 @@ Implemented on `feat/game-experience-rework`, 2026-10-23. This is the production
 
 ## Experience and preserved workflows
 
+Connect PixelLab and the More popover share `AffiliationNotice.svelte`: "Powered by PixelLab. Not an official app."
+Connect uses two lines; More wraps between sentences only when needed, without smaller text.
+"Not an official app." uses Bronze's `bu-muted` utility. The notice centers its icon vertically and aligns it with the
+other More menu icons. Vertical spacing sits outside the `bu-notice` so its left border follows the text height. It uses
+Bronze's transparent informational recipe without a warning tone, dismissal or live announcement. The full notice links
+to PixelLab in a new tab through the reusable `NoticeLink.svelte` presentation wrapper, with Bronze hover, pressed and
+keyboard-focus feedback, an external-link indicator and a 44px minimum touch target. The wrapper also supports warning
+tone and title/body content for plan notices without nested controls.
+Connect relies on its form gap rather than extra notice padding; More has no extra bottom padding. In Connect it appears immediately
+above the Get a key / Connect action row; in More it follows source and version. The same wording stays on one line in the
+README, website metadata and GitHub description. No notice is overlaid on the character scene, and onboarding remains a
+separate task.
+
 Context-menu gestures share the typed attachment in `app/src/lib/input/contextMenu.ts`. Apply `{@attach contextMenu(open)}` to a row or tile wrapper; the callback receives that element, while the caller owns the actual menu. The attachment owns gesture detection, release-click suppression and listener/timer cleanup. Character rows and item tiles use this same API without their own gesture handlers.
 
 Character rows in the library and character picker have a sibling ⋮ control for Download ZIP and Delete character. Right-click, Shift+F10 and touch/pen long-press open the same menu without selecting the character. Deletion remains confirmed and unavailable during pending generation work; the bundled demo cannot be deleted, so its Delete stays in place, unavailable, with the reason underneath. Delete character… and Delete item… use the danger color. Deleting a character or item and canceling a running item each confirm in one short centered alert (ConfirmDialog): a question, at most a line of consequence, Cancel (focused) and the danger action; Escape cancels it without leaving the screen behind. Item menus also offer Download ZIP. Character downloads preserve the current look and saved outfits; item downloads contain that item and its fitted base body, with current colors and an editable copy. One New character menu offers Create from scratch…, Import from device… and Import from PixelLab… from both the header and a final library row styled like an unselected character row (no border) at about half its height, a full 44 px target, with its plus in the thumbnail column and its label in the name column. Import sources open separate dialogs rather than tabs.

@@ -2,6 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import { app, setKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
 	import Sheet from './Sheet.svelte';
+	import AffiliationNotice from './AffiliationNotice.svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { balancePlan } from './apiPlans.ts';
 	import {
@@ -47,11 +48,10 @@
 	<div class="connect-hero">
 		<span class="key-badge" aria-hidden="true"><KeyRound size={22} /></span>
 		<div class="field">
-			<p style="font-weight:600">Your PixelLab key lets PixelDoll draw for you.</p>
+			<p style="font-weight:600">Generate characters and equipment with your PixelLab account.</p>
 			<ul class="facts small">
 				<li><Check size={14} />Generations come from your PixelLab account.</li>
 				<li><Check size={14} />Sent only to api.pixellab.ai.</li>
-				<li><Check size={14} />Kept in memory for this tab, unless you choose Remember.</li>
 			</ul>
 		</div>
 	</div>
@@ -116,6 +116,7 @@
 				use PixelDoll from its own address.
 			</p>{/if}
 		{#if msg}<p class="notice bad small">{msg}</p>{/if}
+		<AffiliationNotice multiline />
 		<div class="field-row">
 			<a class="small" href="https://pixellab.ai/account" target="_blank" rel="noreferrer"
 				>Get a key <ExternalLink size={12} style="display:inline" /></a

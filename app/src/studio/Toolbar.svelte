@@ -13,6 +13,7 @@
 	import PopoverArrow from './PopoverArrow.svelte';
 	import ApiPeek from './ApiPeek.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
+	import AffiliationNotice from './AffiliationNotice.svelte';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
 	import { characterFacts, fmtNum } from './model.ts';
@@ -483,6 +484,7 @@
 				class="row-aside faint small num">{__APP_COMMIT__}</span
 			><ExternalLink size={16} /></a
 		>
+		<AffiliationNotice />
 	</div>
 </div>
 

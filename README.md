@@ -3,6 +3,9 @@
 **Dress up your 2D game characters with pixel-perfect paper dolling.** Generate swappable, frame-aligned equipment layers
 with PixelLab AI and export them to any game engine. · [Open PixelDoll](https://pixeldoll.app/)
 
+> [!NOTE]
+> Powered by PixelLab. Not an official app.
+
 <p>
   <img src="docs/media/studio-dark.png" width="49%" alt="PixelDoll Studio in dark mode: the dressed demo character in the world with Preview controls below it, and the Wardrobe panel with equipment cards, a color ramp and New head item on the right">
   <img src="docs/media/outfit-slash-sheet.png" width="49%" alt="Full-outfit slash sheet: helmet, leather vest, red cape and steel longsword layered on the base, 8 frames in 4 directions">
@@ -11,7 +14,7 @@ with PixelLab AI and export them to any game engine. · [Open PixelDoll](https:/
   <img src="docs/media/godot-render-slash.png" width="49%" alt="The same slash exported and rendered in Godot 4, one sprite per layer, pixel-identical to PixelDoll's compositor">
 </p>
 
-Paper dolling for [PixelLab](https://pixellab.ai). Describe a pixel-art character, add hats, armor, hair and weapons as
+Paper dolling with [PixelLab](https://pixellab.ai). Describe a pixel-art character, add hats, armor, hair and weapons as
 **separate frame-aligned layers**, recolor them, and export sprite sheets plus a manifest for **Godot, Unity, Phaser, GDevelop** or any
 engine (PNG + JSON), or finished walking sheets for **RPG Maker**. Source artwork comes from PixelLab; PixelDoll extracts layers, cleans keyed pixels and applies exact
 color changes to turn PixelLab's one-image-per-call output into a

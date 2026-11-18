@@ -22,6 +22,24 @@ test.beforeEach(async ({ context }) => {
 	);
 });
 
+test('PixelLab notice opens PixelLab without leaving the app', async ({ page, context }) => {
+	await context.route('https://pixellab.ai/', (route) =>
+		route.fulfill({ contentType: 'text/html', body: '<title>PixelLab</title>' })
+	);
+	await openStudio(page, '/');
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	const notice = page.getByRole('link', { name: /Powered by PixelLab\. Not an official app\./ });
+	await expect(notice).toHaveAttribute('href', 'https://pixellab.ai');
+	await page.getByRole('button', { name: 'Connect PixelLab', exact: true }).click();
+	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+	const popupPromise = page.waitForEvent('popup');
+	await dialog.getByRole('link', { name: /Powered by PixelLab\. Not an official app\./ }).click();
+	const popup = await popupPromise;
+	await expect(popup).toHaveURL('https://pixellab.ai/');
+	await expect(dialog).toBeVisible();
+	await popup.close();
+});
+
 for (const remembered of [true, false]) {
 	test(`shared token: another app forgets a ${remembered ? 'remembered' : 'session-only'} connection${remembered ? '' : ' without BroadcastChannel'}`, async ({
 		page,
