@@ -2,6 +2,8 @@
 	import { Notice } from '@shilo/bronze-ui/svelte';
 	import { app } from '../lib/app.svelte.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
+	import { TriangleAlert } from './icons.ts';
+	import NoticeLink from './NoticeLink.svelte';
 
 	let {
 		minimumTier,
@@ -31,20 +33,22 @@
 	</div>
 {:else if app.key && !app.keyRejected && decision.kind !== 'ok'}
 	<div {id}>
-		<Notice
+		<NoticeLink
+			href="https://www.pixellab.ai/#pricing"
 			tone="warning"
-			title={`PixelLab Tier ${decision.tier} ${decision.kind === 'required' ? 'required' : 'recommended'}`}
+			label={`PixelLab Tier ${decision.tier} ${decision.kind}. View plans (opens in a new tab).`}
 		>
-			{#if decision.kind === 'required'}
-				{feature} needs Tier {decision.tier} or higher. Your account is
-				{decision.current === 0 ? 'Free/Trial' : `Tier ${decision.current}`}. No request sent.
-			{:else}
-				{recommendation ??
-					`${feature} is available on your plan. Tier ${decision.tier} or higher is recommended.`}
-			{/if}
-			<a href="https://www.pixellab.ai/#pricing" target="_blank" rel="noreferrer"
-				>View PixelLab plans</a
-			>
-		</Notice>
+			{#snippet indicator()}<TriangleAlert size={18} />{/snippet}
+			<strong>PixelLab Tier {decision.tier} {decision.kind}</strong>
+			<span>
+				{#if decision.kind === 'required'}
+					{feature} needs Tier {decision.tier} or higher. Your account is
+					{decision.current === 0 ? 'Free/Trial' : `Tier ${decision.current}`}. No request sent.
+				{:else}
+					{recommendation ??
+						`${feature} is available on your plan. Tier ${decision.tier} or higher is recommended.`}
+				{/if}
+			</span>
+		</NoticeLink>
 	</div>
 {/if}

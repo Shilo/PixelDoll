@@ -1,4 +1,4 @@
-import { newItem, openStudio } from './immersive-helpers.ts';
+import { newItem, openStudio, reloadStudio } from './immersive-helpers.ts';
 import { expect, test } from '@playwright/test';
 
 for (const labFirst of [true, false])
@@ -144,6 +144,10 @@ test('Free/Trial is a valid connection, and equipment shows Tier 1 required with
 	context
 }) => {
 	const posts: string[] = [];
+	let upgraded = false;
+	await context.route('https://www.pixellab.ai/**', (route) =>
+		route.fulfill({ contentType: 'text/html', body: '<title>PixelLab plans</title>' })
+	);
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
@@ -152,7 +156,12 @@ test('Free/Trial is a valid connection, and equipment shows Tier 1 required with
 		if (route.request().method() === 'GET')
 			return route.fulfill({
 				json: {
-					subscription: { status: 'trial', plan: 'Free trial', generations: 40, total: 40 },
+					subscription: {
+						status: upgraded ? 'active' : 'trial',
+						plan: upgraded ? 'Tier 1' : 'Free trial',
+						generations: 40,
+						total: 40
+					},
 					credits: { usd: 100 }
 				}
 			});
@@ -167,6 +176,7 @@ test('Free/Trial is a valid connection, and equipment shows Tier 1 required with
 	await page.getByRole('button', { name: /^Make / }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	await connect.getByLabel('API key', { exact: true }).fill('offline-fixture-not-a-key');
+	await connect.getByRole('checkbox', { name: 'Remember on this device' }).check();
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
 	await expect(connect.getByRole('status')).toContainText('Your key is valid');
 	await expect(connect.getByText('PixelLab Tier 1 required', { exact: true })).toBeVisible();
@@ -177,7 +187,26 @@ test('Free/Trial is a valid connection, and equipment shows Tier 1 required with
 	await expect(prompt).toHaveValue('A red wizard hat');
 	await expect(page.getByText('PixelLab Tier 1 required', { exact: true })).toBeVisible();
 	await expect(page.getByRole('button', { name: /^Make / })).toBeDisabled();
+	const plans = page.getByRole('link', { name: /^PixelLab Tier 1 required\. View plans/ });
+	await expect(plans).toHaveAttribute('href', 'https://www.pixellab.ai/#pricing');
+	await expect(plans).toHaveAttribute('target', '_blank');
+	await expect(plans.getByText('PixelLab Tier 1 required', { exact: true })).toBeVisible();
+	await expect(plans.locator('a, button')).toHaveCount(0);
+	await plans.focus();
+	await expect(plans).toBeFocused();
+	const openedPlans = page.waitForEvent('popup');
+	await plans.press('Enter');
+	const plansPage = await openedPlans;
+	await expect(plansPage).toHaveURL('https://www.pixellab.ai/#pricing');
+	await plansPage.close();
 	await expect(connect).toHaveCount(0);
+	upgraded = true;
+	await reloadStudio(page);
+	await newItem(page, 'Head');
+	await prompt.fill('A red wizard hat');
+	await expect(page.getByRole('button', { name: /^Make / })).toBeEnabled();
+	await expect(page.getByText('PixelLab Tier 1 required', { exact: true })).toHaveCount(0);
+	await expect(plans).toHaveCount(0);
 	expect(posts).toEqual([]);
 });
 
