@@ -718,15 +718,28 @@ test('device import includes sibling moves and preserves explicit selections whe
 test('character directions can be configured on import and removed only after confirmation', async ({
 	page
 }) => {
-	const sprite = makeImg(48, 48);
-	sprite.data.set([180, 100, 80, 255], (30 * 48 + 20) * 4);
-	const rotation = await encodePngBytes(sprite);
+	const directions = [
+		'south',
+		'south-east',
+		'east',
+		'north-east',
+		'north',
+		'north-west',
+		'south-west'
+	];
+	const rotations = await Promise.all(
+		directions.map(async (direction, index) => {
+			const sprite = makeImg(48, 48);
+			sprite.data.set([180, 100, 80, 255], (30 * 48 + 16 + index) * 4);
+			return { name: `rotations/${direction}.png`, data: await encodePngBytes(sprite) };
+		})
+	);
 	const archive = await zip([
 		{
 			name: 'metadata.json',
 			data: new TextEncoder().encode(JSON.stringify({ name: 'Direction test hero' }))
 		},
-		...['south', 'east', 'north'].map((dir) => ({ name: `rotations/${dir}.png`, data: rotation }))
+		...rotations
 	]);
 	await openStudio(page, '/');
 	await page.locator('.project-btn').click();
@@ -754,7 +767,13 @@ test('character directions can be configured on import and removed only after co
 	await westDirection.press('Space');
 	await expect(westMirror).toHaveAttribute('aria-pressed', 'true');
 	await expect(importer.getByRole('combobox', { name: 'Preview direction' })).toHaveValue('west');
-	await expect(importer.locator('.import-preview')).toContainText('4 directions');
+	await options
+		.getByRole('button', { name: 'Mirror North west from North east', exact: true })
+		.click();
+	await options
+		.getByRole('button', { name: 'Mirror South east from South west', exact: true })
+		.click();
+	await expect(importer.locator('.import-preview')).toContainText('8 directions');
 	await importer
 		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' })
 		.uncheck();
@@ -772,16 +791,29 @@ test('character directions can be configured on import and removed only after co
 	const kept = settings.getByRole('group', { name: 'Directions to keep' });
 	const west = kept.getByRole('button', { name: 'West direction · Mirrors East', exact: true });
 	const east = kept.getByRole('button', { name: 'East direction', exact: true });
+	const northWest = kept.getByRole('button', {
+		name: 'North west direction · Mirrors North east',
+		exact: true
+	});
+	const southEast = kept.getByRole('button', {
+		name: 'South east direction · Mirrors South west',
+		exact: true
+	});
+	await expect(kept.getByRole('button')).toHaveCount(8);
+	await expect(northWest).toHaveAttribute('aria-pressed', 'true');
+	await expect(southEast).toHaveAttribute('aria-pressed', 'true');
 	await expect(west).toHaveAttribute('aria-pressed', 'true');
 	const review = settings.getByRole('button', { name: 'Review removal' });
 	await east.click();
 	await expect(settings.getByRole('status')).toContainText('Keep East');
 	await expect(review).toBeDisabled();
 	await east.click();
-	await west.click();
+	await northWest.click();
+	await southEast.click();
 	await review.click();
-	const confirmation = page.getByRole('alertdialog', { name: 'Remove direction?' });
-	await expect(confirmation).toContainText('West will be removed');
+	const confirmation = page.getByRole('alertdialog', { name: 'Remove 2 directions?', exact: true });
+	await expect(confirmation).toContainText('North west');
+	await expect(confirmation).toContainText('South east');
 	await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(settings).toBeVisible();
 	await review.click();
@@ -789,8 +821,10 @@ test('character directions can be configured on import and removed only after co
 	await expect(settings).toBeHidden();
 	await reloadStudio(page);
 	await openDirections();
-	await expect(kept.getByRole('button')).toHaveCount(3);
-	await expect(west).toHaveCount(0);
+	await expect(kept.getByRole('button')).toHaveCount(6);
+	await expect(northWest).toHaveCount(0);
+	await expect(southEast).toHaveCount(0);
+	await expect(west).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('browser Back respects an atomic import and closes sheets after it finishes', async ({

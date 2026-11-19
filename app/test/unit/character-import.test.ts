@@ -9,7 +9,7 @@ import { characterId, downloadCharacter, listCharacters } from '../../src/lib/pi
 import { planItem } from '../../src/lib/items/items.ts';
 import { baseCell } from '../../src/lib/items/run.ts';
 import { coverage } from '../../src/studio/itemRoute.ts';
-import { cellHash } from '../../src/lib/rig/rig.ts';
+import { cellHash, DIRECTIONS, type DirectionName } from '../../src/lib/rig/rig.ts';
 import {
 	configureImportedDirections,
 	retainCharacterDirections
@@ -175,6 +175,59 @@ test('an import replaces a supplied mirror, preserves sparse moves and round-tri
 	expect((await readCharacterZip(await zip(exported.entries))).project.manifest).toEqual(
 		next.manifest
 	);
+});
+
+test('eight original views and every horizontal mirror preserve the intended pixels', async () => {
+	const { project } = await readCharacterZip(
+		await zip([
+			{ name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Eight views' })) },
+			...(await Promise.all(
+				DIRECTIONS.map(async (direction, index) => ({
+					name: `rotations/${direction}.png`,
+					data: await encodePngBytes(sprite(90 + 17 * index, 12 + index))
+				}))
+			))
+		])
+	);
+	const original = project.manifest.items[0].layers[0];
+	const pairs: Partial<Record<DirectionName, DirectionName>> = {
+		east: 'west',
+		west: 'east',
+		'north-east': 'north-west',
+		'north-west': 'north-east',
+		'south-east': 'south-west',
+		'south-west': 'south-east'
+	};
+	expect(project.manifest.rig.directions).toEqual(DIRECTIONS.map((id) => ({ id })));
+	for (const mirrorSide of ['east', 'west']) {
+		const selected = DIRECTIONS.map((id) => {
+			const mirrorOf = id.endsWith(mirrorSide) ? pairs[id] : undefined;
+			return mirrorOf ? { id, mirrorOf } : { id };
+		});
+		const configured = await configureImportedDirections(project, selected);
+		const record = { id, savedAt: '', origin: 'studio' as const, manifest: configured.manifest };
+		const layer = configured.manifest.items[0].layers[0];
+		for (const { id, mirrorOf } of selected) {
+			const source = cellImg(project, original, 'default', mirrorOf ?? id, 0)!;
+			expectPixels(cellImg(configured, layer, 'default', id, 0), mirrorOf ? flipH(source) : source);
+		}
+		await expect(
+			retainCharacterDirections(
+				record,
+				selected.filter(({ id }) => id !== (mirrorSide === 'east' ? 'north-west' : 'north-east')),
+				configured.images
+			)
+		).rejects.toThrow('Keep North');
+		const cardinals = selected.filter(({ id }) => !id.includes('-'));
+		const { manifest: removed } = await retainCharacterDirections(
+			record,
+			cardinals,
+			configured.images
+		);
+		expect(removed.rig.directions).toEqual(cardinals);
+		for (const { id } of cardinals)
+			expect(removed.items[0].layers[0].cells!.default[id]).toEqual(layer.cells!.default[id]);
+	}
 });
 
 test('pose registration uses the original standing views, not generated mirrors', async () => {
