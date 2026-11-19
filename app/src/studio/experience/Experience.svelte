@@ -26,6 +26,7 @@
 		openingProjectId,
 		refreshProjects,
 		characterName,
+		showStanding,
 		toast
 	} from '../state.svelte.ts';
 	import {
@@ -385,8 +386,11 @@
 					list.length &&
 					experience.screen === 'characters' &&
 					!ui.sheet
-				)
+				) {
+					// Customize opens on the standing move, also for the character already shown.
+					showStanding();
 					enterCustomize();
+				}
 			}
 			return;
 		}
