@@ -110,9 +110,12 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	page
 }) => {
 	let balanceStatus = 200;
+	let replacementReads = 0;
 	await page.route('https://api.pixellab.ai/**', (route) => {
 		expect(route.request().method()).toBe('GET');
 		expect(new URL(route.request().url()).pathname).toBe('/v2/balance');
+		if (route.request().headers().authorization === 'Bearer synthetic-replacement')
+			replacementReads++;
 		return route.fulfill({
 			status: balanceStatus,
 			json: {
@@ -141,6 +144,7 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	balanceStatus = 503;
 	await refresh.click();
 	await expect(account.getByRole('status')).toContainText('Couldn’t load usage');
+	await expect(refresh).toBeFocused();
 	await expect(account.locator('progress')).toHaveCount(0);
 	await account.getByRole('button', { name: 'Done', exact: true }).click();
 	await openMore();
@@ -159,9 +163,18 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	await expect(replace).toBeFocused();
 	await replace.click();
 	await expect(replacement.getByLabel('API key', { exact: true })).toHaveValue('');
+	balanceStatus = 401;
+	await fillKey(replacement, 'synthetic-invalid');
+	await replacement.getByRole('button', { name: 'Replace key', exact: true }).click();
+	await expect(replacement.getByRole('status')).toContainText('Current key was not changed');
+	await expect(replacement.getByLabel('API key', { exact: true })).toBeFocused();
+	expect(await page.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBe(key);
+	balanceStatus = 200;
 	await fillKey(replacement, 'synthetic-replacement');
 	await replacement.getByRole('button', { name: 'Replace key', exact: true }).click();
 	await expect(account.getByText('58% used')).toBeVisible();
+	await expect(replace).toBeFocused();
+	expect(replacementReads).toBe(1);
 	expect(await page.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBe(
 		'synthetic-replacement'
 	);
@@ -169,6 +182,7 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	await refresh.click();
 	const reconnect = page.getByRole('dialog', { name: 'Reconnect PixelLab', exact: true });
 	await expect(reconnect.getByRole('status')).toContainText('didn’t accept this key');
+	await expect(reconnect.getByLabel('API key', { exact: true })).toBeFocused();
 	await reconnect.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await openMore();
 	await page.getByRole('button', { name: 'Reconnect PixelLab', exact: true }).click();
@@ -181,6 +195,76 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	await account.getByRole('button', { name: 'Forget key', exact: true }).click();
 	await expect(connect.getByLabel('API key', { exact: true })).toBeFocused();
 	expect(await page.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBeNull();
+});
+
+test('a delayed replacement does not undo another tab’s Forget', async ({ page, context }) => {
+	await openStudio(page, '/');
+	const more = page.getByRole('button', { name: 'More options', exact: true });
+	await more.click();
+	await page.getByRole('button', { name: 'Connect PixelLab', exact: true }).click();
+	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+	await connect.getByLabel('API key', { exact: true }).fill(key);
+	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+	await expect(connect).toBeHidden();
+	let received!: () => void, release!: () => void;
+	const waiting = new Promise<void>((resolve) => (received = resolve));
+	const held = new Promise<void>((resolve) => (release = resolve));
+	await page.route('https://api.pixellab.ai/v2/balance', async (route) => {
+		received();
+		await held;
+		await route.fallback();
+	});
+	const peer = await context.newPage();
+	await peer.goto(new URL('/__auth-peer', page.url()).href);
+	await more.click();
+	await page.getByRole('button', { name: /^PixelLab usage/ }).click();
+	const account = page.getByRole('dialog', { name: 'PixelLab usage', exact: true });
+	await account.getByRole('button', { name: 'Replace key', exact: true }).click();
+	const replacement = page.getByRole('dialog', { name: 'Replace PixelLab key', exact: true });
+	await replacement.getByLabel('API key', { exact: true }).fill('synthetic-delayed');
+	await replacement.getByRole('checkbox', { name: 'Remember on this device' }).check();
+	await replacement.getByRole('button', { name: 'Replace key', exact: true }).click();
+	await waiting;
+	try {
+		expect(await peer.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBeNull();
+		await peer.evaluate(() => localStorage.setItem('pixellabAuthForget', crypto.randomUUID()));
+	} finally {
+		release();
+	}
+	await expect(page.getByRole('dialog').getByRole('status')).toHaveText(
+		'The connection changed while checking. Try again.'
+	);
+	expect(await peer.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBeNull();
+});
+
+test('Forget in Reconnect discards the action waiting for a key', async ({ page }, info) => {
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await page.evaluate(async () => {
+		const appPath = '/src/lib/app.svelte.ts';
+		const studioPath = '/src/studio/state.svelte.ts';
+		const { app } = await import(appPath);
+		const { withKey } = await import(studioPath);
+		app.key = 'synthetic-rejected';
+		app.keyRejected = true;
+		withKey(() => document.body.setAttribute('data-resumed-generation', ''), 1);
+	});
+
+	const reconnect = page.getByRole('dialog', { name: 'Reconnect PixelLab', exact: true });
+	await reconnect.getByRole('button', { name: 'Forget key', exact: true }).click();
+	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+	expect(
+		await page.evaluate(async () => {
+			const studioPath = '/src/studio/state.svelte.ts';
+			return (await import(studioPath)).pendingConnectionMinimumTier();
+		})
+	).toBeNull();
+	await connect.getByLabel('API key', { exact: true }).fill(key);
+	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+	await expect(connect).toBeHidden();
+	await expect(page.locator('[data-resumed-generation]')).toHaveCount(0);
 });
 
 for (const remembered of [true, false]) {

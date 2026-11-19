@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, tick } from 'svelte';
-	import { app, setKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
+	import { app, setKey, replaceKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
+	import { ApiError } from '../lib/pixellab/client.ts';
 	import Sheet from './Sheet.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
 	import PixelLabUsage from './PixelLabUsage.svelte';
@@ -21,6 +22,7 @@
 	let checking = $state(false);
 	let refreshing = $state(false);
 	let replacing = $state(false);
+	let replacementError = $state('');
 	let limitedAccess = $state(false);
 	let connectionFailed = $state(false);
 	let keyInput = $state<HTMLInputElement>();
@@ -28,17 +30,17 @@
 	const needsKey = $derived(!app.key || app.keyRejected);
 	const showForm = $derived(needsKey || replacing || checking || connectionFailed);
 	const title = $derived(
-		app.keyRejected
-			? 'Reconnect PixelLab'
-			: replacing
-				? 'Replace PixelLab key'
+		replacing
+			? 'Replace PixelLab key'
+			: app.keyRejected
+				? 'Reconnect PixelLab'
 				: showForm || limitedAccess
 					? 'Connect PixelLab'
 					: 'PixelLab usage'
 	);
 	let closed = false;
 	const activityScope = crypto.randomUUID();
-	const minimumTier = pendingConnectionMinimumTier() ?? 0;
+	let minimumTier = $state(pendingConnectionMinimumTier() ?? 0);
 	onDestroy(() => {
 		closed = true;
 	});
@@ -49,24 +51,52 @@
 	async function use(nextKey: string, save: boolean) {
 		checking = true;
 		connectionFailed = false;
+		replacementError = '';
 		key = '';
+		if (replacing) {
+			await confirmReplacement(nextKey, save);
+			return;
+		}
 		await setKey(nextKey, save, { activityScope, label: 'Connect PixelLab', background: false });
 		if (closed) return;
 		checking = false;
-		const wasReplacing = replacing;
-		replacing = false;
-		connectionFailed = !!app.balanceError && !app.keyRejected && !wasReplacing;
+		connectionFailed = !!app.balanceError && !app.keyRejected;
 		if (needsKey || app.balanceError) return;
 		limitedAccess =
-			!wasReplacing &&
 			accountTier(app.balance) === 0 &&
 			(pendingConnectionMinimumTier() === null ||
 				tierDecision(app.balance, { required: minimumTier }).kind === 'required');
 		if (tierDecision(app.balance, { required: minimumTier }).kind === 'required')
 			clearPendingConnection();
-		else if (!wasReplacing && !limitedAccess) connected();
+		else if (!limitedAccess) connected();
+	}
+	async function confirmReplacement(nextKey: string, save: boolean) {
+		const isCurrent = () => !closed && ui.sheet === 'connect' && replacing;
+		try {
+			const installed = await replaceKey(nextKey, save, isCurrent, {
+				activityScope,
+				label: 'Connect PixelLab',
+				background: false
+			});
+			if (!isCurrent()) return;
+			if (installed) replacing = false;
+			else {
+				if (needsKey) replacing = false;
+				replacementError = 'The connection changed while checking. Try again.';
+			}
+		} catch (error) {
+			if (!isCurrent()) return;
+			replacementError =
+				error instanceof ApiError && error.kind === 'auth'
+					? 'PixelLab didn’t accept the new key. Current key was not changed.'
+					: 'Couldn’t verify the new key. Current key was not changed.';
+		}
+		checking = false;
+		if (showForm) await focusKey();
+		else await focusReplace();
 	}
 	async function refresh() {
+		if (refreshing) return;
 		refreshing = true;
 		await refreshBalance({ activityScope, label: 'Refresh balance', background: false });
 		refreshing = false;
@@ -78,12 +108,21 @@
 	}
 	async function cancelReplace() {
 		replacing = false;
+		replacementError = '';
 		key = '';
+		if (needsKey) await focusKey();
+		else await focusReplace();
+	}
+	async function focusReplace() {
 		await tick();
 		replaceButton?.focus();
 	}
 	function forget() {
+		clearPendingConnection();
+		minimumTier = 0;
 		forgetKey();
+		replacing = false;
+		replacementError = '';
 		remember = false;
 		key = '';
 		limitedAccess = false;
@@ -107,7 +146,7 @@
 						class="bu-action btn sm"
 						data-variant="outline"
 						onclick={refresh}
-						disabled={refreshing}
+						aria-disabled={refreshing}
 					>
 						{refreshing ? 'Refreshing…' : 'Refresh'}
 					</button>
@@ -168,7 +207,9 @@
 			</div>
 		</div>
 		<TierNotice {minimumTier} feature="This generation" />
-		{#if app.keyRejected}
+		{#if replacementError}
+			<p class="notice bad small" role="status">{replacementError}</p>
+		{:else if app.keyRejected}
 			<p class="notice bad small" role="status">
 				PixelLab didn’t accept this key. Enter a new API key to reconnect.
 			</p>
@@ -179,7 +220,7 @@
 			class="form"
 			onsubmit={(e) => {
 				e.preventDefault();
-				if (key.trim()) void use(key, remember);
+				if (!checking && key.trim()) void use(key, remember);
 			}}
 		>
 			<label class="field">
