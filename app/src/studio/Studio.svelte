@@ -15,6 +15,12 @@
 	import DeleteSheet from './DeleteSheet.svelte';
 	import { moveDirs } from '../lib/dress/dress.ts';
 	import {
+		COPY_GENERATION_OFF,
+		workspaceCopy,
+		workspaceInfo
+	} from '../lib/store/workspace-mode.ts';
+	import { experience } from './experience/state.svelte.ts';
+	import {
 		ui,
 		doc,
 		store,
@@ -62,7 +68,8 @@
 		notes: () => import('./StageNote.svelte'),
 		gen: () => import('./GenCard.svelte'),
 		details: () => import('./DetailsSheet.svelte'),
-		slots: () => import('./SlotsSheet.svelte')
+		slots: () => import('./SlotsSheet.svelte'),
+		workspace: () => import('./WorkspaceSheet.svelte')
 	};
 
 	$effect(() => {
@@ -82,11 +89,42 @@
 				creating,
 				loadGens
 			};
+		if (workspaceCopy && workspaceInfo) {
+			ui.theme = workspaceInfo.view.theme;
+			ui.welcome = false;
+		}
 		const off = initUi();
-		toast(PREVIEW_NOTICE.description, PREVIEW_NOTICE);
+		if (!workspaceCopy) toast(PREVIEW_NOTICE.description, PREVIEW_NOTICE);
 		void (async () => {
 			const listed = await refreshProjects();
-			await openProject(lastProject());
+			const initial = lastProject();
+			await openProject(
+				workspaceCopy && !store.projects.some((project) => project.id === initial)
+					? 'fixture:s2'
+					: initial
+			);
+			if (workspaceCopy) {
+				const saved = workspaceInfo?.view;
+				const manifest = store.project?.manifest;
+				if (saved && manifest && doc.id === saved.project) {
+					experience.screen = saved.screen;
+					experience.mode = saved.mode;
+					ui.tab = saved.tab;
+					const move = manifest.rig.animations.find((animation) => animation.id === saved.move);
+					if (move?.frames.length) {
+						ui.anim = move.id;
+						ui.frame = saved.frame % move.frames.length;
+					}
+					if (moveDirs(manifest, ui.anim).includes(saved.direction)) ui.dir = saved.direction;
+					const item = manifest.items.find((entry) => entry.id === saved.item);
+					if (item) {
+						ui.selected = item.id;
+						ui.group = item.slot;
+					}
+				}
+				ui.playing = false;
+				return;
+			}
 			// A failed read keeps item work stopped (startItem and Clear finished wait for it); create and moves still resume.
 			await loadGens().catch((e: Error) => {
 				console.error('drafts', e);
@@ -191,7 +229,11 @@
 			(settingUp.spec && !settingUp.done && !settingUp.error ? 1 : 0)
 	);
 	$effect(() => {
-		document.title = running ? `(${running}) PixelDoll` : 'PixelDoll';
+		document.title = workspaceCopy
+			? 'Workspace copy · PixelDoll'
+			: running
+				? `(${running}) PixelDoll`
+				: 'PixelDoll';
 	});
 
 	function onkey(e: KeyboardEvent) {
@@ -280,9 +322,9 @@
 />
 
 <div class="studio-app" onclickcapture={rememberActivation}>
-	<PwaRuntime />
+	{#if !workspaceCopy}<PwaRuntime />{/if}
 	<Experience />
-	{#if offline}<div class="offline-banner" role="status">
+	{#if !workspaceCopy && offline}<div class="offline-banner" role="status">
 			<WifiOff size={14} aria-hidden="true" />You’re offline. Edit and export locally.
 		</div>{/if}
 	{#if !ui.sheet}<Toast />{/if}
@@ -295,20 +337,28 @@
 			onclose={() => (ui.sheet = null)}
 			><div class="inspection-stage"><Stage /><Lazy load={parts.notes} sheet={false} /></div></Sheet
 		>{/if}
-	{#if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}
-	{#if ui.sheet === 'create'}<Lazy load={parts.create} />{/if}
-	{#if ui.sheet === 'newitem'}<Lazy load={parts.newitem} />{/if}
+	{#if workspaceCopy && ['connect', 'importPixelLab', 'create', 'newitem', 'move', 'setup'].some((sheet) => sheet === ui.sheet)}
+		<Sheet title="Workspace copy" cancel="Done" onclose={() => (ui.sheet = null)}
+			><p>{COPY_GENERATION_OFF}</p></Sheet
+		>
+	{:else if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}
+	{#if !workspaceCopy && ui.sheet === 'create'}<Lazy load={parts.create} />{/if}
+	{#if !workspaceCopy && ui.sheet === 'newitem'}<Lazy load={parts.newitem} />{/if}
 	{#if ui.sheet === 'export'}<Lazy load={parts.export} />{/if}
-	{#if ui.sheet === 'activity'}<Lazy load={parts.activity} />{/if}
-	{#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
+	{#if ui.sheet === 'activity'}
+		{#if workspaceCopy}<Lazy load={parts.workspace} report={true} />
+		{:else}<Lazy load={parts.activity} />{/if}
+	{/if}
+	{#if ui.sheet === 'workspaceExport' && !workspaceCopy}<Lazy load={parts.workspace} />{/if}
+	{#if !workspaceCopy && ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
-	{#if ui.sheet === 'importZip' || ui.sheet === 'importPixelLab'}{#key ui.sheet}<Lazy
+	{#if ui.sheet === 'importZip' || (!workspaceCopy && ui.sheet === 'importPixelLab')}{#key ui.sheet}<Lazy
 				load={parts[ui.sheet]}
 				source={ui.sheet === 'importZip' ? 'device' : 'pixellab'}
 			/>{/key}{/if}
 	{#if ui.sheet === 'delete'}<DeleteSheet />{/if}
 	{#if ui.sheet === 'details'}<Lazy load={parts.details} />{/if}
-	{#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
+	{#if !workspaceCopy && ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
 	{#if ui.sheet === 'slots'}<Lazy load={parts.slots} />{/if}
 	{#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
 		<Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}

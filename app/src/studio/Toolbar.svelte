@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { app } from '../lib/app.svelte.ts';
+	import { workspaceCopy, workspaceUrl } from '../lib/store/workspace-mode.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import { tick } from 'svelte';
 	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
@@ -40,6 +41,7 @@
 		ExternalLink,
 		ChevronRight,
 		Download,
+		FileArchive,
 		Share2,
 		Ellipsis,
 		KeyRound,
@@ -437,21 +439,40 @@
 				></button
 			>{/if}
 		<hr />
-		<button
-			class="row bu-action"
-			data-variant="quiet"
-			onclick={() => {
-				closeOptions();
-				ui.sheet = 'connect';
-			}}
-			><KeyRound size={18} /><span class="row-name"
-				>{app.key
-					? app.keyRejected
-						? 'Key not accepted'
-						: 'PixelLab account'
-					: 'Connect PixelLab'}</span
-			></button
-		>
+		{#if !workspaceCopy}
+			<button
+				class="row bu-action"
+				data-variant="quiet"
+				onclick={() => {
+					closeOptions();
+					ui.sheet = 'workspaceExport';
+				}}><Download size={18} /><span class="row-name">Export my workspace</span></button
+			>
+			<a
+				class="row bu-action"
+				data-variant="quiet"
+				href={workspaceUrl(true)}
+				target="_blank"
+				rel="noopener"
+				onclick={closeOptions}
+				><FileArchive size={18} /><span class="row-name">Open workspace copy</span></a
+			>
+			<button
+				class="row bu-action"
+				data-variant="quiet"
+				onclick={() => {
+					closeOptions();
+					ui.sheet = 'connect';
+				}}
+				><KeyRound size={18} /><span class="row-name"
+					>{app.key
+						? app.keyRejected
+							? 'Key not accepted'
+							: 'PixelLab account'
+						: 'Connect PixelLab'}</span
+				></button
+			>
+		{/if}
 		<button
 			class="row bu-action"
 			data-variant="quiet"

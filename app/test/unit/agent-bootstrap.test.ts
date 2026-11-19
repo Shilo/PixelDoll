@@ -53,12 +53,13 @@ afterEach(() => {
 });
 
 const reply = () => response.resolve({ ok: true, text: () => body.promise } as Response);
+const launch = async () => (await import('../../src/bootstrap.ts')).launchStudio();
 const settle = async () => {
 	await new Promise<void>((resolve) => setImmediate(resolve));
 };
 
 test('an unchanged keyless agent startup connects once, without persistence', async () => {
-	await import('../../src/bootstrap.ts');
+	await launch();
 	reply();
 	body.resolve('synthetic-agent-token');
 	await settle();
@@ -69,7 +70,7 @@ for (const stage of ['response', 'body'] as const) {
 	test.each(['manual replacement', 'Forget while keyless', 'connect then Forget'])(
 		`a late agent ${stage} cannot undo %s`,
 		async (action) => {
-			await import('../../src/bootstrap.ts');
+			await launch();
 			if (stage === 'body') {
 				reply();
 				await settle();
@@ -85,7 +86,7 @@ for (const stage of ['response', 'body'] as const) {
 	);
 }
 
-test.each(['development', 'production build', 'framed', 'off', 'existing key'])(
+test.each(['development', 'production build', 'framed', 'off', 'existing key', 'workspace copy'])(
 	'agent startup is skipped for %s',
 	async (reason) => {
 		if (reason === 'development') vi.stubEnv('MODE', 'development');
@@ -93,7 +94,8 @@ test.each(['development', 'production build', 'framed', 'off', 'existing key'])(
 		if (reason === 'framed') vi.stubGlobal('window', { top: {} });
 		if (reason === 'off') vi.stubGlobal('localStorage', { getItem: () => 'off' });
 		if (reason === 'existing key') auth.key = 'synthetic-existing-token';
-		await import('../../src/bootstrap.ts');
+		if (reason === 'workspace copy') vi.stubGlobal('location', { search: '?workspace-copy' });
+		await launch();
 		expect(fetch).not.toHaveBeenCalled();
 		expect(auth.connect).not.toHaveBeenCalled();
 	}
@@ -105,7 +107,7 @@ test('unavailable optional storage still permits the memory-only connection', as
 			throw new Error('storage denied');
 		}
 	});
-	await import('../../src/bootstrap.ts');
+	await launch();
 	reply();
 	body.resolve('synthetic-agent-token');
 	await settle();
@@ -113,7 +115,7 @@ test('unavailable optional storage still permits the memory-only connection', as
 });
 
 test('a setup-error response never becomes a token', async () => {
-	await import('../../src/bootstrap.ts');
+	await launch();
 	response.resolve({ ok: false, text: () => Promise.resolve('sanitized setup error') } as Response);
 	await settle();
 	expect(auth.connect).not.toHaveBeenCalled();

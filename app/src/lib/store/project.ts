@@ -2,6 +2,7 @@
 // Cell PNGs live in `blobs` keyed by the RGBA sha256 hex (without "sha256:"). M3 adds accepted items to the same record.
 import { decodePng, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
+import { copyMissingArtwork } from './workspace-mode.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import * as db from './db.ts';
 import type { Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.ts';
@@ -145,7 +146,7 @@ export async function loadProject(
 	const images = new Map<string, Img>();
 	const add = async (h: Sha256 | null | undefined, owner: string) => {
 		signal?.throwIfAborted();
-		if (!h || images.has(h)) return;
+		if (!h || images.has(h) || copyMissingArtwork.has(h)) return;
 		const image = await decodeCell(h, owner, signal);
 		signal?.throwIfAborted();
 		images.set(h, image);

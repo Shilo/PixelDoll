@@ -1,5 +1,6 @@
 // fetch wrapper for PixelLab REST v2. The key only ever goes into the Authorization header.
 import { beginActivityCall, finishActivityCall, type ActivityContext } from './activity.ts';
+import { COPY_GENERATION_OFF, workspaceCopy } from '../store/workspace-mode.ts';
 
 // Agent dev server only: a local API server for a PIXELLAB_SECRET_DEV token (vite.config.ts). Builds keep only the public URL.
 // Node imports this module without Vite (Playwright specs, scripts/): no import.meta.env, so the chain stops before the
@@ -169,6 +170,7 @@ export async function api<T>(
 	signal?: AbortSignal,
 	context?: ActivityContext
 ): Promise<T> {
+	if (workspaceCopy) throw new Error(COPY_GENERATION_OFF);
 	if (!key) throw new ApiError(401, 'auth', 'no API key set');
 	const activityId = beginActivityCall(method, API_BASE + path, body, context);
 	let r: Response;

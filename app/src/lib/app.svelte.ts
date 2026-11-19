@@ -4,6 +4,7 @@ import type { Balance } from './pixellab/routes.ts';
 import { queue } from './pixellab/queue.ts';
 import type { ActivityContext } from './pixellab/activity.ts';
 import { SAVED_KEY, readSavedKey, watchSharedAuth } from './shared-auth.ts';
+import { COPY_GENERATION_OFF, workspaceCopy } from './store/workspace-mode.ts';
 
 const clearSavedKey = () => {
 	try {
@@ -13,7 +14,7 @@ const clearSavedKey = () => {
 
 let keyRevision = 0;
 export const getKeyRevision = () => keyRevision;
-const stored = readSavedKey();
+const stored = workspaceCopy ? '' : readSavedKey();
 export const app = $state({
 	key: stored,
 	remembered: !!stored,
@@ -22,7 +23,7 @@ export const app = $state({
 	balanceError: '',
 	balanceAt: 0
 });
-queue.setKey(stored);
+if (!workspaceCopy) queue.setKey(stored);
 // A credential-free Forget signal from another tab also clears this tab. Typed credentials are never shared (queue.ts).
 queue.subscribe(() => {
 	if (queue.key === app.key) return;
@@ -37,19 +38,22 @@ queue.subscribe(() => {
 	});
 });
 
-const sharedAuth = watchSharedAuth(
-	() => clearLocalKey(),
-	() => {
-		if (!app.remembered) return; // a session-only key remains local; future apps can read the saved key on load
-		const saved = readSavedKey();
-		if (saved === app.key) return;
-		if (!saved) clearLocalKey();
-		else app.remembered = false; // keep this account in memory; never silently run its paid work with another key
-	}
-);
-import.meta.hot?.dispose(() => sharedAuth.close());
+const sharedAuth = workspaceCopy
+	? undefined
+	: watchSharedAuth(
+			() => clearLocalKey(),
+			() => {
+				if (!app.remembered) return; // a session-only key remains local; future apps can read the saved key on load
+				const saved = readSavedKey();
+				if (saved === app.key) return;
+				if (!saved) clearLocalKey();
+				else app.remembered = false; // keep this account in memory; never silently run its paid work with another key
+			}
+		);
+import.meta.hot?.dispose(() => sharedAuth?.close());
 
 export function setKey(key: string, remember: boolean, activity?: ActivityContext) {
+	if (!sharedAuth) throw new Error(COPY_GENERATION_OFF);
 	sharedAuth.acknowledge(); // a fresh connection supersedes any already-persisted Forget notification
 	keyRevision++;
 	app.key = key.trim();
@@ -71,6 +75,7 @@ export function setKey(key: string, remember: boolean, activity?: ActivityContex
 }
 
 export function forgetKey() {
+	if (!sharedAuth) throw new Error(COPY_GENERATION_OFF);
 	clearSavedKey();
 	clearLocalKey();
 	sharedAuth.forget();

@@ -1,16 +1,378 @@
 import { enterStudio, noDisabledHover, openStudio } from './immersive-helpers.ts';
+import { createHash } from 'node:crypto';
 import { chromium, expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { unzip } from '../../src/lib/store/zip.ts';
+import { unzip, zip } from '../../src/lib/store/zip.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { readAseprite } from '../../src/lib/export/aseprite.ts';
 import { EXPORT_SETTINGS_KEY } from '../../src/lib/store/export-settings.ts';
-import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT, type Layer } from '../../src/lib/store/manifest.ts';
+import type { StoredProject } from '../../src/lib/store/project.ts';
 import { PAPERDOLL_JS } from '../../src/lib/export/phaser.ts';
 import { runtimeTypes } from '../../src/lib/runtime/sources.ts';
 import { travelSpeed } from '../../src/studio/experience/movement.ts';
+
+async function captureWorkspaceStore(page: Page, projectKeys: string[], artworkKeys: string[]) {
+	return page.evaluate(
+		async ({ projectKeys, artworkKeys }) => {
+			const dbPath = '/src/lib/store/db.ts';
+			const db = await import(dbPath);
+			return {
+				projects: await Promise.all(
+					projectKeys.map(async (key) => [key, await db.get('projects', key)])
+				),
+				artwork: await Promise.all(
+					artworkKeys.map(async (key) => {
+						const blob = (await db.get('blobs', key)) as Blob | undefined;
+						if (!blob) return [key, null];
+						const digest = new Uint8Array(
+							await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())
+						);
+						return [key, Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('')];
+					})
+				)
+			};
+		},
+		{ projectKeys, artworkKeys }
+	);
+}
+
+test('workspace ZIP round-trips saved records and artwork without touching the library or PixelLab', async ({
+	page,
+	context
+}, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	const requests: string[] = [];
+	await context.route('https://*.pixellab.ai/**', (route) => {
+		requests.push(new URL(route.request().url()).hostname);
+		return route.abort();
+	});
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.agentKey', 'off'));
+	await openStudio(page, dev);
+	const sample = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			createPath = '/src/studio/create.ts',
+			dbPath = '/src/lib/store/db.ts',
+			dressPath = '/src/lib/dress/project.ts',
+			pngPath = '/src/lib/image/pngraw.ts',
+			rigPath = '/src/lib/rig/rig.ts';
+		const state = await import(statePath),
+			{ saveCopy } = await import(createPath),
+			db = await import(dbPath),
+			{ dressOf } = await import(dressPath),
+			{ decodePngBytes, encodePngBytes } = await import(pngPath),
+			{ cellHash } = await import(rigPath);
+		const demoDress = structuredClone(dressOf(state.store.project.manifest));
+		demoDress.presets[0] = { ...demoDress.presets[0], name: 'Tester demo outfit' };
+		await db.put('projects', 'dress-fixture:s2', demoDress);
+		const id = await saveCopy(state.store.project, 'Workspace Alpha');
+		const saved = await db.get('projects', id);
+		const other = structuredClone(saved);
+		other.id = 'rig-workspace-beta';
+		other.manifest.name = 'Workspace Beta';
+		other.manifest.presets[0].name = 'Tester outfit';
+		const item = saved.manifest.items.find((entry: { id: string }) => entry.id === 'vest_leather');
+		for (const layer of item.layers) if (layer.cells?.walk) layer.cells.walk.south = [null];
+		item.coverage = item.coverage?.filter((key: string) => !key.startsWith('walk/south/'));
+		const otherItem = other.manifest.items.find((entry: { id: string }) => entry.id === item.id);
+		otherItem.dressed = { ...otherItem.dressed, south: `sha256:${'1'.repeat(64)}` };
+		const otherFrames = otherItem.layers.find((layer: Layer) => layer.cells?.walk?.south?.[0]).cells
+			.walk.south;
+		const original = await db.getBlob(otherFrames[0].slice(7));
+		const unique = await decodePngBytes(new Uint8Array(await original.arrayBuffer()));
+		const opaque = (unique.data as Uint8ClampedArray).findIndex(
+			(alpha, offset) => offset % 4 === 3 && alpha === 255
+		);
+		if (opaque < 0) throw new Error('Expected an opaque fixture pixel');
+		unique.data[opaque - 3] ^= 255;
+		const uniqueHash = await cellHash(unique);
+		await db.put(
+			'blobs',
+			uniqueHash.slice(7),
+			new Blob([await encodePngBytes(unique)], { type: 'image/png' })
+		);
+		otherFrames[0] = uniqueHash;
+		await db.put('projects', id, saved);
+		await db.put('projects', other.id, other);
+		await db.put('projects', 'studio-export-settings', {
+			engine: 'unity',
+			dressedCharacterSheets: false,
+			playOnce: ['walk']
+		});
+		await db.put('jobs', 'workspace-evidence', {
+			state: 'lost',
+			tag: 'm3',
+			endpoint: '/edit-animation-v2',
+			createdAt: Date.now(),
+			params: { secret: 'diagnostic-private-body' },
+			jobs: []
+		});
+		localStorage.setItem('pixellabApiKey', 'fake-workspace-test-key-no-network');
+		await state.refreshProjects();
+		await state.openProject(id);
+		state.ui.anim = 'walk';
+		state.ui.selected = item.id;
+		state.ui.dir = 'east';
+		state.ui.theme = 'light';
+		state.ui.playing = false;
+		return { id, otherId: other.id, item: item.id, uniqueHash: uniqueHash.slice(7) };
+	});
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Export my workspace' }).click();
+	const exportDialog = page.getByRole('dialog', { name: 'Export my workspace' });
+	await expect(
+		exportDialog.getByRole('checkbox', { name: 'Include recent errors' })
+	).not.toBeChecked();
+	await exportDialog.getByRole('checkbox', { name: 'Include recent errors' }).check();
+	const evidence = process.env.PIXELDOLL_WORKSPACE_EVIDENCE;
+	if (evidence)
+		await exportDialog.screenshot({
+			path: join(evidence, '01-export-workspace.png'),
+			animations: 'disabled'
+		});
+	await page.evaluate(async (id) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		const saved = await db.get('projects', id);
+		saved.manifest.name = localStorage.getItem('pixellabApiKey');
+		await db.put('projects', id, saved);
+	}, sample.otherId);
+	await exportDialog.getByRole('button', { name: 'Download ZIP' }).click();
+	await expect(exportDialog.getByRole('alert')).toContainText(
+		'A saved field contains the connected or remembered PixelLab key.'
+	);
+	await page.evaluate(async (id) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		const saved = await db.get('projects', id);
+		saved.manifest.name = 'Workspace Beta';
+		await db.put('projects', id, saved);
+	}, sample.otherId);
+	const waitDownload = page.waitForEvent('download');
+	await exportDialog.getByRole('button', { name: 'Download ZIP' }).click();
+	const download = await waitDownload;
+	if (evidence) await download.saveAs(join(evidence, 'tested.workspace.zip'));
+	const archive = await readFile((await download.path())!);
+	const files = await unzip(archive);
+	const indexText = new TextDecoder().decode(files.get('workspace.json'));
+	expect(indexText).not.toMatch(/fake-workspace-test-key|diagnostic-private-body/);
+	const index = JSON.parse(indexText);
+	expect(index.missing).toEqual(['1'.repeat(64)]);
+	const projectKeys = ['dress-fixture:s2', sample.id, sample.otherId, EXPORT_SETTINGS_KEY].sort();
+	const archivedProjects = new Map<string, StoredProject>(index.projects);
+	expect([...archivedProjects.keys()].sort()).toEqual(projectKeys);
+	const referenced = new Set<string>();
+	const remember = (hash: string | null | undefined) => {
+		if (hash) referenced.add(hash.replace(/^sha256:/, ''));
+	};
+	for (const id of [sample.id, sample.otherId]) {
+		const manifest = archivedProjects.get(id)!.manifest;
+		for (const pose of Object.values(manifest.rig.rest ?? {})) remember(pose?.image);
+		for (const item of manifest.items) {
+			for (const hash of Object.values(item.dressed ?? {})) remember(hash);
+			for (const layer of item.layers)
+				for (const directions of Object.values(layer.cells ?? {}))
+					for (const cells of Object.values(directions ?? {}))
+						for (const hash of cells ?? []) remember(hash);
+		}
+	}
+	const artworkKeys = [...referenced].sort();
+	expect(artworkKeys).toContain(sample.uniqueHash);
+	expect([...files.keys()].sort()).toEqual([
+		...artworkKeys.filter((hash) => !index.missing.includes(hash)).map((hash) => `blobs/${hash}`),
+		'workspace.json'
+	]);
+	const expected = await captureWorkspaceStore(page, projectKeys, artworkKeys);
+	expect(index.projects).toEqual(expected.projects);
+	expect(
+		artworkKeys.map((hash) => {
+			const bytes = files.get(`blobs/${hash}`);
+			return [hash, bytes ? createHash('sha256').update(bytes).digest('hex') : null];
+		})
+	).toEqual(expected.artwork);
+	expect(index.diagnostics.errors).toContainEqual(
+		expect.objectContaining({ tool: 'edit-animation-v2', outcome: 'lost' })
+	);
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	const waitCopy = page.waitForEvent('popup');
+	await page.getByRole('link', { name: 'Open workspace copy' }).click();
+	const copy = await waitCopy;
+	const picker = copy.getByLabel('Choose workspace ZIP');
+	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
+	expect(new URL(copy.url()).origin).toBe(new URL(page.url()).origin);
+	await expect(copy.locator('html')).toHaveAttribute('data-app', 'studio');
+	await picker.setInputFiles({
+		name: 'damaged.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from('not a ZIP')
+	});
+	await expect(copy.getByRole('alert')).toContainText('not a supported ZIP');
+	const invalidDemo = structuredClone(index);
+	invalidDemo.projects.find(([key]: [string, unknown]) => key === 'dress-fixture:s2')[1] = {
+		format: CURRENT_FORMAT
+	};
+	const invalidDemoArchive = await zip(
+		[...files].map(([name, data]) => ({
+			name,
+			data: name === 'workspace.json' ? new TextEncoder().encode(JSON.stringify(invalidDemo)) : data
+		}))
+	);
+	await picker.setInputFiles({
+		name: 'invalid-demo.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from(invalidDemoArchive)
+	});
+	await expect(copy.getByRole('alert')).toContainText('Saved demo outfit data is invalid');
+	const entries = [...files].map(([name, data]) => ({ name, data }));
+	const artwork = entries.filter(({ name }) => name.startsWith('blobs/'));
+	const asset = artwork.find(({ name }) => name === `blobs/${sample.uniqueHash}`)!;
+	const matchingSize = artwork.find(
+		({ name, data }) =>
+			name !== asset.name &&
+			Buffer.from(data.subarray(16, 24)).equals(Buffer.from(asset.data.subarray(16, 24)))
+	)!;
+	asset.data = matchingSize.data;
+	const tampered = await zip(entries);
+	await picker.setInputFiles({
+		name: 'altered.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from(tampered)
+	});
+	await expect(copy.getByRole('alert')).toContainText('does not match its saved pixel hash');
+	await page.evaluate(async ({ id, item }) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		const recipient = await db.get('projects', id);
+		recipient.manifest.name = 'Recipient existing character';
+		recipient.manifest.items.find((entry: { id: string }) => entry.id === item).name =
+			'Recipient existing item';
+		await db.put('projects', id, recipient);
+		await db.put('projects', 'studio-export-settings', {
+			engine: 'godot',
+			dressedCharacterSheets: true,
+			playOnce: []
+		});
+		localStorage.setItem('pixeldoll.theme', 'dark');
+		localStorage.setItem('pixeldoll.studio.project', 'rig-recipient-only');
+		const unrelated = structuredClone(recipient);
+		unrelated.id = 'rig-recipient-only';
+		await db.put('projects', unrelated.id, unrelated);
+	}, sample);
+	const recipientKeys = [...projectKeys, 'rig-recipient-only'];
+	const recipient = await captureWorkspaceStore(page, recipientKeys, artworkKeys);
+	await picker.setInputFiles({
+		name: download.suggestedFilename(),
+		mimeType: 'application/zip',
+		buffer: archive
+	});
+	await expect(
+		copy.getByRole('status').filter({ hasText: 'Workspace copy · PixelLab off' })
+	).toBeVisible();
+	await expect(copy.locator('html')).toHaveAttribute('data-theme', 'light');
+	expect(await captureWorkspaceStore(copy, projectKeys, artworkKeys)).toEqual(expected);
+	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
+	expect((await captureWorkspaceStore(copy, ['rig-recipient-only'], [])).projects).toEqual([
+		['rig-recipient-only', undefined]
+	]);
+	await expect
+		.poll(() =>
+			copy.evaluate(async ({ id, otherId, item }) => {
+				const dbPath = '/src/lib/store/db.ts',
+					statePath = '/src/studio/state.svelte.ts',
+					keyPath = '/src/lib/app.svelte.ts',
+					dressPath = '/src/lib/dress/dress.ts';
+				const db = await import(dbPath),
+					{ ui, doc, store } = await import(statePath),
+					{ app } = await import(keyPath);
+				const { coverageGaps } = await import(dressPath);
+				const manifest = store.project?.manifest;
+				return {
+					opened: doc.id === id && ui.anim === 'walk' && ui.selected === item && ui.dir === 'east',
+					gap:
+						manifest &&
+						coverageGaps(
+							manifest,
+							manifest.items.find((entry: { id: string }) => entry.id === item)
+						).includes('walk/south'),
+					other: (await db.get('projects', otherId))?.manifest.name,
+					hasKey: !!app.key,
+					jobs: (await db.all('jobs')).length
+				};
+			}, sample)
+		)
+		.toEqual({ opened: true, gap: true, other: 'Workspace Beta', hasKey: false, jobs: 0 });
+	await expect(
+		await copy.evaluate(async (id) => {
+			const statePath = '/src/studio/state.svelte.ts';
+			const { doc, openProject } = await import(statePath);
+			await openProject(id);
+			return doc.id;
+		}, sample.otherId)
+	).toBe(sample.otherId);
+	await copy.evaluate(async (id) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		await db.deleteCharacter(id);
+	}, sample.id);
+	const original = await page.evaluate(async (id) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		return {
+			name: (await db.get('projects', id))?.manifest.name,
+			job: (await db.get('jobs', 'workspace-evidence'))?.state,
+			keyKept: localStorage.getItem('pixellabApiKey') === 'fake-workspace-test-key-no-network',
+			theme: localStorage.getItem('pixeldoll.theme'),
+			lastProject: localStorage.getItem('pixeldoll.studio.project')
+		};
+	}, sample.id);
+	expect(original).toEqual({
+		name: 'Recipient existing character',
+		job: 'lost',
+		keyKept: true,
+		theme: 'dark',
+		lastProject: 'rig-recipient-only'
+	});
+	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
+	await copy.reload();
+	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
+	await copy.goto(new URL('/?workspace-copy', info.project.use.baseURL!).href);
+	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
+	expect(new URL(copy.url()).origin).not.toBe(new URL(page.url()).origin);
+	expect(
+		await copy
+			.locator('html')
+			.evaluate((root) => getComputedStyle(root).getPropertyValue('--bu-accent').trim())
+	).not.toBe('');
+	await expect(copy.locator('.workspace-banner')).toHaveCount(0);
+	if (evidence)
+		await copy.screenshot({
+			path: join(evidence, '02-open-workspace-copy.png'),
+			animations: 'disabled',
+			fullPage: true
+		});
+	await picker.setInputFiles({
+		name: download.suggestedFilename(),
+		mimeType: 'application/zip',
+		buffer: archive
+	});
+	await expect(copy.locator('.workspace-banner')).toBeVisible();
+	await expect(copy.locator('html')).toHaveAttribute('data-theme', 'light');
+	await expect(copy.locator('.project-btn')).toContainText('Workspace Alpha');
+	const warning = copy.locator('.world-coverage').filter({ hasText: /missing .* frames/ });
+	await expect(warning).toBeVisible();
+	const bannerBounds = (await copy.locator('.workspace-banner').boundingBox())!;
+	const warningBounds = (await warning.boundingBox())!;
+	expect(bannerBounds.y + bannerBounds.height).toBeLessThan(warningBounds.y);
+	if (evidence)
+		await copy.screenshot({
+			path: join(evidence, '03-workspace-copy-open.png'),
+			animations: 'disabled'
+		});
+	expect(requests).toEqual([]);
+});
 
 async function savedExport(page: Page, dev: string) {
 	await page.setViewportSize({ width: 800, height: 600 }); // Eight parallel settings runs do not need eight full-size animated worlds.

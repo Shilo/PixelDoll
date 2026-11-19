@@ -84,6 +84,12 @@ import {
 	useText
 } from './slots.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import {
+	COPY_GENERATION_OFF,
+	copyPreferences,
+	workspaceCopy,
+	workspaceKeys as K
+} from '../lib/store/workspace-mode.ts';
 import type { SetupSpec } from './setup.ts';
 import {
 	forgetFits,
@@ -127,6 +133,7 @@ import.meta.hot?.dispose((data) => {
 // ---------- small persistence helpers (every storage access can throw: private mode, blocked site data) ----------
 const lsGet = (k: string) => {
 	try {
+		if (workspaceCopy) return copyPreferences.get(k) ?? null;
 		return localStorage.getItem(k);
 	} catch {
 		return null;
@@ -134,16 +141,16 @@ const lsGet = (k: string) => {
 };
 const lsSet = (k: string, v: string | null) => {
 	try {
+		if (workspaceCopy) {
+			if (v == null) copyPreferences.delete(k);
+			else copyPreferences.set(k, v);
+			return;
+		}
 		if (v == null) localStorage.removeItem(k);
 		else localStorage.setItem(k, v);
 	} catch {
 		/* ignore */
 	}
-};
-const K = {
-	theme: 'pixeldoll.theme',
-	welcomed: 'pixeldoll.welcomed',
-	last: 'pixeldoll.studio.project'
 };
 export const DEMO = 'fixture:s2';
 
@@ -166,6 +173,7 @@ export type SheetId =
 	| 'delete'
 	| 'details'
 	| 'setup'
+	| 'workspaceExport'
 	| 'slots';
 const sizeNow = (): Size => {
 	const w = innerWidth,
@@ -386,6 +394,10 @@ function allowsTier(minimumTier: number): boolean {
 	return true;
 }
 export function withKey(fn: () => void, minimumTier = 0) {
+	if (workspaceCopy) {
+		toast(COPY_GENERATION_OFF);
+		return;
+	}
 	if (follower(() => withKey(fn, minimumTier))) return;
 	if (app.key && !app.keyRejected && !allowsTier(minimumTier)) {
 		afterConnect = null;
@@ -550,7 +562,7 @@ export async function refreshProjects(): Promise<boolean> {
 	// Drop unload snapshots and thumbnails of characters deleted here or in another tab (only when the listing is known to
 	// be complete).
 	if (listed) keepThumbnails(new Set(store.projects.map((p) => p.id)));
-	if (listed)
+	if (listed && !workspaceCopy)
 		try {
 			for (const k of Object.keys(localStorage))
 				if (k.startsWith(UNSAVED) && !store.projects.some((p) => k === UNSAVED + p.id))
@@ -790,6 +802,12 @@ export async function flushSave() {
 	pendingSave = null;
 	if (pending) saving = saving.then(pending);
 	await saving;
+}
+
+export async function prepareWorkspaceExport() {
+	await flushSave();
+	if (edits !== savedEdits)
+		throw new Error('The latest changes could not be saved. Save them before exporting.');
 }
 /** The slot definitions the open character's view continues from (its open or last save): a save writes only the slot
  *  changes made since, so a stale tab's routine save never undoes another tab's category changes. */

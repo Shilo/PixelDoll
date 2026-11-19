@@ -68,10 +68,11 @@ async function image(bytes: Uint8Array): Promise<Img> {
 	return decodePng(bytes);
 }
 const hasPixels = (im: Img) => !!opaqueBox(im);
-function manifestShape(m: Manifest) {
+export function manifestShape(m: Manifest) {
 	if (
 		!supportedFormat(m?.format) ||
-		!m.name?.trim() ||
+		typeof m.name !== 'string' ||
+		!m.name.trim() ||
 		!m.rig ||
 		!Array.isArray(m.items) ||
 		!Array.isArray(m.slots) ||
@@ -89,13 +90,25 @@ function manifestShape(m: Manifest) {
 		throw new Error('The character has an invalid or oversized rig.');
 	for (const a of m.rig.animations)
 		if (
+			!a ||
 			!Number.isInteger(a.cells) ||
 			a.cells < 1 ||
 			a.cells > 120 ||
 			!Array.isArray(a.frames) ||
+			a.frames.length < 1 ||
 			a.frames.length > 1000
 		)
 			throw new Error('The character has an invalid frame count.');
+	if (
+		m.items.some(
+			(item) =>
+				!item ||
+				typeof item.id !== 'string' ||
+				!Array.isArray(item.layers) ||
+				item.layers.some((layer) => !layer)
+		)
+	)
+		throw new Error('The character has an invalid item or layer.');
 	if (new Set(m.items.map((i) => i.id)).size !== m.items.length)
 		throw new Error('The character has duplicate item IDs.');
 	// Count logical cells, including repeated hash references: a tiny archive can otherwise request gigabytes of copies.

@@ -323,6 +323,17 @@ selected equipment posing. The previous body remains if any quality check still 
 
 ## Export
 
+To share your whole saved library for troubleshooting, choose **More options → Export my workspace**.
+The ZIP includes your saved characters, artwork, items, moves, outfits, and workspace settings. **Include recent errors**
+adds your PixelLab tier and a summary of failed and unfinished requests. Your key, request bodies, and unfinished drafts
+are not included. The ZIP does include artwork and saved prompts, so share it privately with someone you trust.
+
+Choose **More options → Open workspace copy** to open the ZIP in a separate tab. You can inspect or change the copy
+without changing your own library. PixelLab is off and no jobs restart. Close or reload the tab to discard the copy and
+its edits. This is not a backup restore or merge. Already-missing artwork stays missing and is listed in the copy's
+Activity. Workspace ZIPs are limited to 64 MB, 5,000 files, and additional artwork and record limits; for larger
+libraries, use individual character ZIPs. Uncommitted edits outside the current character are not included.
+
 Press **Export** (toolbar), choose an **Export format**, and download the zip. **Engines and frameworks** lists Godot, Unity,
 Phaser, GDevelop and RPG Maker; **Assets** lists Aseprite and PNG + JSON. Export is
 free and runs on your device. Check **Also export finished characters** to also get one ready-made sheet per outfit.

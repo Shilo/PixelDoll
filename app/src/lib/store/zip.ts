@@ -96,6 +96,7 @@ export async function zip(entries: ZipEntry[], { deflate = false } = {}): Promis
 }
 
 export const MAX_ZIP_BYTES = 64 * 1024 * 1024;
+export const MAX_ZIP_ENTRIES = 5000;
 const MAX_EXPANDED = 128 * 1024 * 1024;
 
 /** Read bounded, ordinary ZIPs from a device. Verify sizes, paths and CRC before trusting any entry. */
@@ -113,7 +114,7 @@ export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>>
 		v.getUint16(end + 4, true) ||
 		v.getUint16(end + 6, true) ||
 		count !== v.getUint16(end + 8, true) ||
-		count > 5000 ||
+		count > MAX_ZIP_ENTRIES ||
 		start + size > end
 	)
 		throw new Error('Split, ZIP64 or oversized archives are not supported.');

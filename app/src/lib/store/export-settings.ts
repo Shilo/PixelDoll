@@ -1,6 +1,7 @@
 import { validAnimationId } from '../rig/rig.ts';
 import { EXPORT_ENGINES, type Engine, type Manifest } from './manifest.ts';
 import * as db from './db.ts';
+import { workspaceCopy } from './workspace-mode.ts';
 
 export interface ExportSettings {
 	engine: Engine;
@@ -23,7 +24,7 @@ class InvalidAnimationNames extends Error {}
 
 /** Notifications carry no preferences. Opening or refocusing Export remains the fallback when channels are unavailable. */
 export function subscribeExportSettings(listener: () => void): () => void {
-	if (typeof BroadcastChannel === 'undefined') return () => {};
+	if (workspaceCopy || typeof BroadcastChannel === 'undefined') return () => {};
 	try {
 		const channel = new BroadcastChannel(CHANNEL);
 		channel.onmessage = () => listener();
@@ -35,7 +36,7 @@ export function subscribeExportSettings(listener: () => void): () => void {
 }
 
 function notifySettingsChanged(): void {
-	if (typeof BroadcastChannel === 'undefined') return;
+	if (workspaceCopy || typeof BroadcastChannel === 'undefined') return;
 	let channel: BroadcastChannel | undefined;
 	try {
 		channel = new BroadcastChannel(CHANNEL);
@@ -58,7 +59,7 @@ function animationName(value: string): string {
 }
 
 /** Persist canonical names only. An unreadable preference is a visible error, never a silent replacement with defaults. */
-function checkedSettings(value: unknown): ExportSettings {
+export function checkedSettings(value: unknown): ExportSettings {
 	if (typeof value !== 'object' || value === null || Array.isArray(value))
 		throw new InvalidExportSettings('Saved export settings are invalid.');
 	const stored = value as Partial<ExportSettings>;

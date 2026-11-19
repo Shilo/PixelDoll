@@ -125,6 +125,9 @@ function agentKey(envFile: string, apiBase: string | undefined): Plugin {
 // off Rolldown's chunk merging, so modules the startup shares with lazy sheets would otherwise become extra startup requests.
 // The preload helper keeps its own chunk: main.ts imports it, and importing the startup chunk would run it inside frames.
 const BOOTSTRAP = normalizePath(fileURLToPath(new URL('./src/bootstrap.ts', import.meta.url)));
+const WORKSPACE_MODE = normalizePath(
+	fileURLToPath(new URL('./src/lib/store/workspace-mode.ts', import.meta.url))
+);
 const STARTUP_UPDATE = normalizePath(
 	fileURLToPath(new URL('./src/lib/startup-update.ts', import.meta.url))
 );
@@ -211,6 +214,7 @@ export default defineConfig(({ command, mode }) => {
 				output: {
 					codeSplitting: {
 						groups: [
+							{ name: 'workspace-mode', test: (id) => id === WORKSPACE_MODE, priority: 2 },
 							{ name: 'startup-update', test: (id) => id === STARTUP_UPDATE, priority: 2 },
 							{ name: 'preload-helper', test: /vite\/preload-helper/, priority: 1 },
 							{ name: startupChunk(), debugName: 'startup' }

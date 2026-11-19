@@ -1,11 +1,16 @@
 // Do not initialize credentials, queues, or API clients inside another page's frame.
+import { workspaceCopy } from './lib/store/workspace-mode.ts';
+
 export {};
 if (window.top === window) {
 	try {
 		// Keep these imports inside the frame guard: bundlers can share their chunks with credential-bearing Studio modules.
-		if (import.meta.env.PROD && window.isSecureContext)
-			(await import('./lib/startup-update.ts')).observeStartupUpdate();
-		await import('./bootstrap.ts');
+		if (workspaceCopy) await import('./workspace-entry.ts');
+		else {
+			if (import.meta.env.PROD && window.isSecureContext)
+				(await import('./lib/startup-update.ts')).observeStartupUpdate();
+			await (await import('./bootstrap.ts')).launchStudio();
+		}
 	} catch (error) {
 		// A page keeps a failed module for its lifetime; only a new page fetches it again. Reloading stays the user's
 		// choice: startup may already have connected to saved work.

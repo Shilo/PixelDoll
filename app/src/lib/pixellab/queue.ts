@@ -43,6 +43,8 @@ import {
 	type ActivityContext
 } from './activity.ts';
 
+import { COPY_GENERATION_OFF, workspaceCopy } from '../store/workspace-mode.ts';
+
 export type RecState =
 	'queued' | 'submitting' | 'running' | 'done' | 'failed' | 'canceled' | 'lost';
 export interface Result {
@@ -428,6 +430,7 @@ export class Queue {
 	// ---- lifecycle ----
 	/** Become the leader if no other tab is, else mirror the ledger until the leader's tab closes. */
 	async connect() {
+		if (workspaceCopy) throw new Error(COPY_GENERATION_OFF);
 		this.connectedOnce = true;
 		this.disconnect();
 		const connection = new AbortController(),
@@ -719,6 +722,7 @@ export class Queue {
 	}
 	/** Forget stops connected tabs without sharing credentials. A new key belongs only to this tab. */
 	setKey(key: string, notifyForget = true) {
+		if (workspaceCopy) return;
 		this.keyRevision++;
 		if (key !== this.key) {
 			// First connection happens AFTER ledger restore for memory-only keys. Keep that restored cooldown.
@@ -882,6 +886,7 @@ export class Queue {
 			estimateRetry?: EstimateRetryIntent;
 		} = {}
 	): Promise<JobRec> {
+		if (workspaceCopy) throw new Error(COPY_GENERATION_OFF);
 		const connection = this.connection;
 		const assertConnected = () => {
 			meta.signal?.throwIfAborted(); // orchestration cancellation stops publication, never aborts a paid HTTP request
