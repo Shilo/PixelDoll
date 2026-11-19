@@ -82,6 +82,7 @@
 	},
 	"language": {
 		"label": "Dil",
+		"auto": "Otomatik ({language})",
 		"loading": "Dil yükleniyor…",
 		"failed": "Bu dil yüklenemedi. İnternete yeniden bağlanın, sayfayı yeniden yükleyin ve tekrar deneyin."
 	},

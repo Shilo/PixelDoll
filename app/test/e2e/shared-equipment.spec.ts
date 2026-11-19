@@ -332,9 +332,7 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await page.keyboard.press('Tab');
 	await expect(page.getByRole('link', { name: /^PixelLab usage/ })).toBeFocused();
 	await page.keyboard.press('Tab');
-	await expect(page.getByRole('button', { name: 'Light mode', exact: true })).toBeFocused();
-	await page.keyboard.press('Tab');
-	await expect(page.getByRole('combobox', { name: 'Language', exact: true })).toBeFocused();
+	await expect(page.getByRole('button', { name: 'Language', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect(settings).toBeFocused();
 	await page.keyboard.press('Enter');
@@ -370,6 +368,8 @@ test('a shared custom category appears before adoption and stays after wearing a
 	);
 	await expect(sharedTiles).toHaveCount(0);
 	await allCharacters.focus();
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('button', { name: 'Light mode', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect(page.getByRole('button', { name: 'Activity', exact: true })).toBeFocused();
 	await page.keyboard.press('Escape');

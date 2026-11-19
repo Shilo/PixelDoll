@@ -9,6 +9,7 @@ import {
 	setLocale,
 	t
 } from 'svelte-whisper';
+import { readonly, writable } from 'svelte/store';
 import en from '../locales/en.json';
 import { errorMessage, type Message } from './message.ts';
 import { setOfflineLocale } from './pwa.ts';
@@ -18,6 +19,12 @@ export { errorMessage } from './message.ts';
 
 let ready: Promise<void> | undefined;
 const localeKey = 'pixeldoll.locale';
+const preference = writable<string | undefined>(undefined);
+export const languagePreference = readonly(preference);
+
+export function detectedLanguage(): string {
+	return detectLocale() || 'en';
+}
 
 function storedLocale(): string | undefined {
 	try {
@@ -33,21 +40,31 @@ export function setupI18n(): Promise<void> {
 		addDictionary('en', en);
 		registerLoader(import.meta.glob(['../locales/*.json', '!../locales/en.json']));
 		const saved = storedLocale();
+		preference.set(saved);
 		ready = init({
 			fallback: 'en',
-			persistKey: workspaceCopy ? undefined : localeKey,
-			initial: workspaceCopy ? saved : undefined,
+			initial: saved,
 			detect: !saved
 		});
-		if (!workspaceCopy && import.meta.env.PROD) setOfflineLocale((saved ?? detectLocale()) || 'en');
+		if (!workspaceCopy && import.meta.env.PROD) setOfflineLocale(saved ?? detectedLanguage());
 	}
 	return ready;
 }
 
-export async function selectLanguage(id: string): Promise<boolean> {
-	const selected = await setLocale(id);
-	if (selected && !workspaceCopy && import.meta.env.PROD) setOfflineLocale(id, true);
-	return selected;
+export async function selectLanguage(override?: string): Promise<boolean> {
+	const id = override ?? detectedLanguage();
+	if (!(await setLocale(id))) return false;
+	if (!workspaceCopy) {
+		try {
+			if (override) localStorage.setItem(localeKey, override);
+			else localStorage.removeItem(localeKey);
+		} catch (error) {
+			console.warn('PixelDoll could not save the language preference:', error);
+		}
+		if (import.meta.env.PROD) setOfflineLocale(id, true);
+	}
+	preference.set(override);
+	return true;
 }
 
 export function displayMessage(value: Message | string): string {

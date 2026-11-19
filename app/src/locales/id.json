@@ -82,6 +82,7 @@
 	},
 	"language": {
 		"label": "Bahasa",
+		"auto": "Otomatis ({language})",
 		"loading": "Memuat bahasa…",
 		"failed": "Bahasa tersebut tidak dapat dimuat. Sambungkan kembali ke internet, muat ulang halaman, lalu coba lagi."
 	},

@@ -474,6 +474,16 @@
 				class={{ 'mobile-sep': !doc.id.startsWith('fixture:') }}
 			/>{/if}
 		<!-- Preferences: change how the Studio looks, its language, or what the Wardrobe shows. -->
+		<LanguagePicker />
+		<MenuDisclosure label={t('toolbar.wardrobeSettings')}>
+			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
+			{#snippet aside()}
+				{#if sharedItemsHiddenForAll() || (currentWardrobe && sharedItemsHidden(currentWardrobe.id))}
+					<span class="row-aside wardrobe-status faint small">{t('toolbar.ownItemsOnly')}</span>
+				{/if}
+			{/snippet}
+			<WardrobeVisibility current={currentWardrobe} />
+		</MenuDisclosure>
 		<button
 			class="row bu-action"
 			data-variant="quiet"
@@ -486,16 +496,6 @@
 				>{ui.theme === 'dark' ? t('toolbar.lightMode') : t('toolbar.darkMode')}</span
 			></button
 		>
-		<LanguagePicker />
-		<MenuDisclosure label={t('toolbar.wardrobeSettings')}>
-			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
-			{#snippet aside()}
-				{#if sharedItemsHiddenForAll() || (currentWardrobe && sharedItemsHidden(currentWardrobe.id))}
-					<span class="row-aside wardrobe-status faint small">{t('toolbar.ownItemsOnly')}</span>
-				{/if}
-			{/snippet}
-			<WardrobeVisibility current={currentWardrobe} />
-		</MenuDisclosure>
 		<hr />
 		<!-- Diagnostics: inspect generation activity and API requests. -->
 		<button

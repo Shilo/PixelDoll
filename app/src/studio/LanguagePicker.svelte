@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { getLocale, getLocales, localeName, t } from 'svelte-whisper';
-	import { selectLanguage } from '../lib/i18n.ts';
+	import { detectedLanguage, languagePreference, selectLanguage } from '../lib/i18n.ts';
+	import { popoverFocus } from './experience/focus.ts';
+	import { Check, ChevronRight, Languages } from './icons.ts';
+	import PopoverArrow from './PopoverArrow.svelte';
 
 	const names: Record<string, string> = {
 		en: 'English',
@@ -14,56 +17,105 @@
 		tr: 'Türkçe',
 		id: 'Bahasa Indonesia'
 	};
-	const available = new Set(getLocales());
-	const choices = [...new Set([...Object.keys(names), ...available])].filter((id) =>
-		available.has(id)
-	);
+	const nameOf = (id: string) => names[id] ?? localeName(id);
+	const alphabetical = new Intl.Collator('en');
+	const choices = getLocales()
+		.map((id) => ({ id, name: nameOf(id) }))
+		.sort((first, second) => alphabetical.compare(first.name, second.name));
+	const menuId = $props.id();
+	const valueId = `${menuId}-value`;
 	let { compact = false }: { compact?: boolean } = $props();
+	const activeLanguage = $derived(getLocale() || 'en');
+	let menu = $state<HTMLElement>();
+	let expanded = $state(false);
+	let detected = $state(detectedLanguage());
 	let pending = $state(false);
 	let failed = $state(false);
-	async function switchLanguage(event: Event) {
-		const select = event.currentTarget as HTMLSelectElement;
-		const id = select.value;
+	async function switchLanguage(id?: string) {
+		if (pending) return;
 		pending = true;
 		failed = false;
 		try {
-			failed = !(await selectLanguage(id)) && getLocale() !== id;
+			failed = !(await selectLanguage(id));
+			if (!failed) menu?.hidePopover();
 		} finally {
-			select.value = getLocale();
 			pending = false;
 		}
 	}
 </script>
 
 {#if choices.length > 1}
-	<div class="language-picker" aria-busy={pending}>
-		<label>
-			<span class:sr={compact}>{t('language.label')}</span>
-			<select class="bu-select" value={getLocale()} disabled={pending} onchange={switchLanguage}>
-				{#each choices as id (id)}
-					<option value={id} lang={id}>{names[id] ?? localeName(id)}</option>
-				{/each}
-			</select>
-		</label>
-		{#if pending || failed}
-			<p class="small" role="status">{pending ? t('language.loading') : t('language.failed')}</p>
+	<button
+		type="button"
+		class={compact ? 'bu-action btn icon plain' : 'row bu-action'}
+		data-variant="quiet"
+		aria-label={t('language.label')}
+		aria-describedby={compact ? undefined : valueId}
+		aria-controls={menuId}
+		aria-expanded={expanded}
+		popovertarget={menuId}
+	>
+		<Languages size={18} aria-hidden="true" />
+		{#if !compact}
+			<span class="row-name">{t('language.label')}</span>
+			<span id={valueId} class="faint small" lang={activeLanguage}>{nameOf(activeLanguage)}</span>
+			<ChevronRight size={16} aria-hidden="true" />
 		{/if}
+	</button>
+	<div
+		id={menuId}
+		class="menu bu-popover-anchor"
+		data-placement="bottom-end"
+		popover
+		bind:this={menu}
+		role="group"
+		aria-label={t('language.label')}
+		ontoggle={(event) => {
+			expanded = event.newState === 'open';
+			if (expanded) detected = detectedLanguage();
+			popoverFocus(event);
+		}}
+	>
+		<PopoverArrow />
+		<div class="menu-surface bu-popover-surface bu-floating">
+			<button
+				type="button"
+				class="row bu-action"
+				data-variant="quiet"
+				aria-pressed={$languagePreference === undefined}
+				aria-disabled={pending}
+				onclick={() => switchLanguage()}
+			>
+				<span class="row-name">{t('language.auto', { language: nameOf(detected) })}</span>
+				{#if $languagePreference === undefined}<Check size={16} aria-hidden="true" />{/if}
+			</button>
+			<hr />
+			{#each choices as { id, name } (id)}
+				<button
+					type="button"
+					class="row bu-action"
+					data-variant="quiet"
+					aria-pressed={$languagePreference === id}
+					aria-disabled={pending}
+					onclick={() => switchLanguage(id)}
+				>
+					<span class="row-name" lang={id}>{name}</span>
+					{#if $languagePreference === id}<Check size={16} aria-hidden="true" />{/if}
+				</button>
+			{/each}
+			<div role="status">
+				{#if pending || failed}
+					<p class="small language-status">
+						{pending ? t('language.loading') : t('language.failed')}
+					</p>
+				{/if}
+			</div>
+		</div>
 	</div>
 {/if}
 
 <style>
-	label {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-	select {
-		max-width: 100%;
-		min-height: 44px;
-	}
-	.language-picker {
-		min-width: 0;
+	.language-status {
+		margin: 6px 8px;
 	}
 </style>

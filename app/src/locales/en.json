@@ -82,6 +82,7 @@
 	},
 	"language": {
 		"label": "Language",
+		"auto": "Auto ({language})",
 		"loading": "Loading language…",
 		"failed": "Could not load that language. Reconnect and reload, then try again."
 	},

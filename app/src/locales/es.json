@@ -82,6 +82,7 @@
 	},
 	"language": {
 		"label": "Idioma",
+		"auto": "Automático ({language})",
 		"loading": "Cargando idioma…",
 		"failed": "No se pudo cargar ese idioma. Vuelve a conectarte, recarga la página e inténtalo de nuevo."
 	},

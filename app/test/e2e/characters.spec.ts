@@ -60,8 +60,15 @@ test.describe('first Studio render in French', () => {
 		await page.keyboard.press('Escape');
 		await expect(draft).toBeHidden();
 		await page.getByRole('button', { name: label, exact: true }).click();
-		await page.locator('#experience-options').getByRole('combobox').selectOption('en');
+		const frenchPicker = page.getByRole('button', { name: french.language.label, exact: true });
+		await expect(frenchPicker).toHaveAccessibleDescription('Français');
+		await frenchPicker.click();
+		const frenchMenu = page.getByRole('group', { name: french.language.label, exact: true });
+		await expect(frenchMenu.getByRole('button').first()).toHaveText('Automatique (Français)');
+		await expect(frenchMenu.getByRole('button').first()).toHaveAttribute('aria-pressed', 'true');
+		await frenchMenu.getByRole('button', { name: 'English', exact: true }).click();
 		await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Language', exact: true })).toBeFocused();
 		await page.keyboard.press('Escape');
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
 		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
@@ -74,20 +81,53 @@ test.describe('first Studio render in French', () => {
 		await page.reload();
 		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await expect(page.getByRole('combobox', { name: 'Language' })).toHaveValue('en');
+		const picker = page.getByRole('button', { name: 'Language', exact: true });
+		await expect(picker).toHaveAccessibleDescription('English');
+		await picker.focus();
+		await page.keyboard.press('Enter');
+		const menu = page.getByRole('group', { name: 'Language', exact: true });
+		await expect(menu.getByRole('button', { name: 'English', exact: true })).toHaveAttribute(
+			'aria-pressed',
+			'true'
+		);
+		const automatic = menu.getByRole('button', { name: 'Auto (Français)', exact: true });
+		await expect(automatic).toBeFocused();
+		await page.keyboard.press('Enter');
+		await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+		await expect
+			.poll(() => page.evaluate(() => localStorage.getItem('pixeldoll.locale')))
+			.toBeNull();
+		await page.reload();
+		await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
 	});
 });
 
 test.describe('first Studio render in Traditional Chinese', () => {
-	test.use({ locale: 'zh-TW' });
+	test.use({ locale: 'zh-TW', hasTouch: true });
 
 	test('falls back to English rather than Simplified Chinese', async ({ page }) => {
+		await page.setViewportSize({ width: 320, height: 640 });
 		await page.goto('/');
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-		const picker = page.getByRole('combobox', { name: 'Language' });
-		await expect(picker).toHaveValue('en');
-		await expect(picker.locator('option[value="zh-Hans"]')).toHaveText('简体中文');
+		const trigger = page.getByRole('button', { name: 'Language', exact: true });
+		await expect(trigger.getByText('English', { exact: true })).toBeVisible();
+		await trigger.tap();
+		const picker = page.getByRole('group', { name: 'Language', exact: true });
+		await expect(picker.getByRole('button').first()).toHaveText('Auto (English)');
+		await expect(picker.getByRole('button').first()).toHaveAttribute('aria-pressed', 'true');
+		await expect(picker.locator('button > [lang]')).toHaveText([
+			'Bahasa Indonesia',
+			'Deutsch',
+			'English',
+			'Español',
+			'Français',
+			'Português (Brasil)',
+			'Türkçe',
+			'한국어',
+			'日本語',
+			'简体中文'
+		]);
 	});
 });
 
