@@ -32,7 +32,7 @@
 	popovertarget={menuId}
 >
 	<Github size={18} />
-	<span class="row-name version-name">{version}</span>
+	<span class="row-name wrap-name">{version}</span>
 	<span class="build-meta faint small num">{__APP_COMMIT__}</span>
 	<ChevronRight size={16} aria-hidden="true" />
 </button>
@@ -58,7 +58,7 @@
 			target="_blank"
 			rel="noreferrer"
 		>
-			<Github size={18} /><span class="row-name">Open source code</span>
+			<Github size={18} /><span class="row-name wrap-name">Open source code</span>
 			<span class="build-meta faint small">{repositoryName}</span>
 		</a>
 		<a
@@ -82,7 +82,7 @@
 		flex: none;
 		white-space: nowrap;
 	}
-	.version-name {
+	.wrap-name {
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
