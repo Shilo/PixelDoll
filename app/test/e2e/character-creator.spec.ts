@@ -811,11 +811,14 @@ for (const viewport of [
 	{ width: 350, height: 800 },
 	{ width: 360, height: 800 },
 	{ width: 390, height: 844 },
+	{ width: 599, height: 540 },
+	{ width: 600, height: 540 },
 	{ width: 600, height: 900 },
 	{ width: 760, height: 900 },
 	{ width: 844, height: 390 },
 	{ width: 768, height: 1024 },
 	{ width: 900, height: 900 },
+	{ width: 1280, height: 500 },
 	{ width: 1440, height: 900 },
 	{ width: 1920, height: 1080 }
 ])
@@ -824,6 +827,27 @@ for (const viewport of [
 	}) => {
 		await page.setViewportSize(viewport);
 		const sheet = await open(page);
+		const drop = sheet.getByRole('button', { name: 'Add image', exact: true });
+		const guide = sheet.getByRole('heading', { name: 'Size guide', exact: true });
+		if (viewport.height <= 540 && viewport.width >= 600) {
+			await expect(guide).toBeHidden();
+			await drop.scrollIntoViewIfNeeded();
+			await expect(drop).toBeInViewport({ ratio: 1 });
+			await drop.focus();
+			const chooser = page.waitForEvent('filechooser');
+			await drop.press('Enter');
+			await (await chooser).setFiles([]);
+			await expect(drop).toBeFocused();
+		} else if (viewport.width >= 1440) {
+			const tabs = (await sheet.getByRole('tablist', { name: 'Prompt editor' }).boundingBox())!;
+			const heading = (await guide.boundingBox())!;
+			const box = (await drop.boundingBox())!;
+			expect(heading.y).toBeCloseTo(tabs.y);
+			expect(box.x + box.width).toBeLessThan(tabs.x);
+			expect(box.y).toBeGreaterThan(heading.y + heading.height);
+		} else {
+			await expect(guide).toBeVisible();
+		}
 		if (viewport.width === 320) {
 			const picker = sheet.locator('.reference input[type=file]');
 			const image = await page.evaluate(() => {
@@ -837,8 +861,9 @@ for (const viewport of [
 				mimeType: 'image/png',
 				buffer: Buffer.from(image, 'base64')
 			});
-			const attachment = sheet.getByRole('button', { name: /Replace image.*sprite\.png/ });
+			const attachment = sheet.getByRole('button', { name: 'Replace image', exact: true });
 			await expect(attachment).toBeVisible();
+			await expect(attachment).toHaveAccessibleDescription(/sprite\.png/);
 			const bounds = (await attachment.boundingBox())!;
 			expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width);
 			expect(bounds.height).toBeGreaterThanOrEqual(44);
@@ -1304,6 +1329,23 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 	const model = sheet.getByRole('combobox', { name: 'Model', exact: true });
 	await expect(model.locator('option')).toHaveText(['Default (V3)', 'Pro', 'Pro Flash']);
 	const drop = sheet.getByRole('button', { name: 'Add image', exact: true });
+	const missedDrop = await sheet.evaluate((dialog) => {
+		const dataTransfer = new DataTransfer();
+		dataTransfer.items.add(new File(['unexpected'], 'missed.png', { type: 'image/png' }));
+		return !dialog.dispatchEvent(
+			new DragEvent('drop', { dataTransfer, bubbles: true, cancelable: true })
+		);
+	});
+	expect(missedDrop).toBe(true);
+	await expect(drop).toBeVisible();
+	await drop.evaluate((element) => {
+		const dataTransfer = new DataTransfer();
+		dataTransfer.items.add(new File([], 'guide.png', { type: 'image/png' }));
+		element.dispatchEvent(
+			new DragEvent('dragover', { dataTransfer, bubbles: true, cancelable: true })
+		);
+	});
+	await expect(drop).toHaveAttribute('data-variant', 'primary');
 	await drop.evaluate(async (element) => {
 		const canvas = document.createElement('canvas');
 		canvas.width = canvas.height = 48;
@@ -1313,12 +1355,13 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 		dataTransfer.items.add(new File([blob], 'guide.png', { type: 'image/png' }));
 		element.dispatchEvent(new DragEvent('drop', { dataTransfer, bubbles: true, cancelable: true }));
 	});
-	await expect(sheet.getByRole('button', { name: /Replace image.*guide\.png/ })).toBeVisible();
+	const attachment = sheet.getByRole('button', { name: 'Replace image', exact: true });
+	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
 	await model.selectOption('pro');
 	await expect(sheet.getByText(/sketch or character design/)).toBeVisible();
 	await model.selectOption('pro-flash');
 	await expect(sheet.getByText(/new sprite’s style and appearance/)).toBeVisible();
-	await expect(sheet.getByRole('button', { name: /Replace image.*guide\.png/ })).toBeVisible();
+	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
 	await sheet.getByRole('button', { name: 'Remove reference', exact: true }).click();
 	await expect(drop).toBeFocused();
 	await model.selectOption('pro');

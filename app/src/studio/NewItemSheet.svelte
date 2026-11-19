@@ -315,6 +315,7 @@
 				bind:value={reference}
 				bind:loading={referenceLoading}
 				max={referenceMax}
+				compact
 				inspectColors
 				hint="Use artwork of the item by itself, ideally on a transparent background."
 				disabled={busy}

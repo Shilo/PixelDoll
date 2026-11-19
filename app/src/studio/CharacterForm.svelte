@@ -396,11 +396,23 @@
 		{#if message}<p class="creator-message" role="status">{message}</p>{/if}
 	</section>
 
-	<section class="creator-guide" aria-label="Size guide">
-		<h3>Size guide</h3>
-		<SizePreview body={d.body || 0} frame={frame || 0} />
+	<section class="creator-rail" aria-label="Size guide and reference">
+		<div class="creator-guide">
+			<h3>Size guide</h3>
+			<SizePreview body={d.body || 0} frame={frame || 0} />
+		</div>
+		<ReferenceField
+			bind:value={d.reference}
+			bind:loading={referenceLoading}
+			hint={characterReference[d.model ?? 'v3'].hint}
+			max={d.model === 'pro-flash' && d.body && !bodyError
+				? d.body
+				: characterReference[d.model ?? 'v3'].max}
+			issue={characterReferenceIssue(d.reference, d.model, frame, d.body)}
+			disabled={busy}
+		/>
 	</section>
-	<section class="geometry" aria-label="Character size, camera, and reference">
+	<section class="geometry" aria-label="Character size and camera">
 		<div class="creator-field">
 			<Help
 				title="Body size"
@@ -488,16 +500,6 @@
 				><option value="side">Side</option></select
 			>
 		</div>
-		<ReferenceField
-			bind:value={d.reference}
-			bind:loading={referenceLoading}
-			hint={characterReference[d.model ?? 'v3'].hint}
-			max={d.model === 'pro-flash' && d.body && !bodyError
-				? d.body
-				: characterReference[d.model ?? 'v3'].max}
-			issue={characterReferenceIssue(d.reference, d.model, frame, d.body)}
-			disabled={busy}
-		/>
 	</section>
 
 	<section class="facing" aria-label="Character directions">

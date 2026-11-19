@@ -1958,19 +1958,31 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	await expect(connect).toHaveCount(0);
 	await page.setViewportSize({ width: 390, height: 844 });
 	const choose = page.waitForEvent('filechooser');
-	await item.getByRole('button', { name: 'Add image', exact: true }).click();
+	const drop = item.getByRole('button', { name: 'Add image', exact: true });
+	await drop.click();
+	const dropHeight = (await drop.boundingBox())!.height;
+	expect(dropHeight).toBeGreaterThanOrEqual(44);
+	expect(dropHeight).toBeLessThan(80);
 	const artwork = makeImg(16, 16);
+	const filename = `${'festival-hat-revision-'.repeat(6)}reference.png`;
 	artwork.data.set([20, 150, 24, 255], 16 * 4 + 4);
 	await (
 		await choose
 	).setFiles({
-		name: 'hat-reference.png',
+		name: filename,
 		mimeType: 'image/png',
 		buffer: Buffer.from(await encodePngBytes(artwork))
 	});
-	await expect(
-		item.getByRole('button', { name: /Replace image.*hat-reference\.png/ })
-	).toBeVisible();
+	const attachment = item.getByRole('button', { name: 'Replace image', exact: true });
+	await expect(attachment).toHaveAccessibleDescription(new RegExp(filename.replace('.', '\\.')));
+	await expect(item.getByRole('status').filter({ hasText: 'Reference attached.' })).toBeAttached();
+	expect((await attachment.boundingBox())!.height).toBeCloseTo(dropHeight);
+	await expect(attachment.getByText('16 × 16 px', { exact: true })).toBeInViewport();
+	expect(
+		await attachment
+			.getByText(filename, { exact: true })
+			.evaluate((name) => name.scrollWidth > name.clientWidth)
+	).toBe(true);
 	await prompt.fill('a leather hat');
 	await prompt.press('Enter');
 	await expect(prompt).toHaveValue('a leather hat\n');
@@ -1985,11 +1997,12 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 		await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await newItem(page, 'Head');
 		await expect(prompt).toHaveValue('a leather hat\n');
-		await expect(
-			item.getByRole('button', { name: /Replace image.*hat-reference\.png/ })
-		).toBeVisible();
+		await expect(attachment).toContainText(filename);
 		await expect(make).toContainText(/Est\. \d+ gens/);
 	}
+	await page.setViewportSize({ width: 844, height: 390 });
+	await item.getByRole('button', { name: 'Remove reference', exact: true }).click();
+	await expect(drop).toBeFocused();
 });
 
 test('canceling Connect preserves generation drafts and discards the pending action', async ({

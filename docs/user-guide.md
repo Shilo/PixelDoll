@@ -80,7 +80,7 @@ Character menu → **New character…**
    variation, or enter a non-negative whole seed. The seed affects
    the drawing rather than one appearance trait, and moves added later pick their own seeds; reuse can give similar
    results but does not guarantee identical pixels.
-6. Optionally drop one image on **Reference** below Camera, or choose **Add image**. V3 starts from a front-facing sprite
+6. Optionally drop one image on **Reference** below Size guide, or choose **Add image**. V3 starts from a front-facing sprite
    that fits the Frame; Body size does not resize it. Pro draws from a sketch or design. Pro Flash uses the artwork as a
    style guide and needs it to fit the chosen Body size. Keep a text prompt in all three models.
 7. Press **Create character**. It draws your character standing in the selected directions, its **Default** pose, in a
