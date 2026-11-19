@@ -1961,7 +1961,8 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	const drop = item.getByRole('button', { name: 'Add image', exact: true });
 	await drop.click();
 	const dropHeight = (await drop.boundingBox())!.height;
-	expect(dropHeight).toBe(112);
+	expect(dropHeight).toBeGreaterThanOrEqual(44);
+	expect(dropHeight).toBeLessThan(64);
 	const artwork = makeImg(16, 16);
 	const filename = `${'festival-hat-revision-'.repeat(6)}reference.png`;
 	for (let column = 1; column < 13; column++)
@@ -1987,9 +1988,14 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	await expect(attachment.locator('image')).toHaveAttribute('width', '16');
 	await expect(attachment).toHaveAccessibleDescription(new RegExp(filename.replace('.', '\\.')));
 	await expect(item.getByRole('status').filter({ hasText: 'Reference attached.' })).toBeAttached();
-	expect((await attachment.boundingBox())!.height).toBeCloseTo(dropHeight);
+	const attachmentHeight = (await attachment.boundingBox())!.height;
+	expect(attachmentHeight).toBe(112);
 	const dimensions = attachment.getByText('16 × 16 px', { exact: true });
 	const name = attachment.getByText(filename, { exact: true });
+	const label = item.getByText('Reference (optional)', { exact: true });
+	const foreground = await name.evaluate((file) => getComputedStyle(file).color);
+	await expect(label).toHaveCSS('color', foreground);
+	await expect(label.getByText('(optional)', { exact: true })).not.toHaveCSS('color', foreground);
 	for (const width of [320, 1440]) {
 		await page.setViewportSize({ width, height: 844 });
 		const dimensionsBox = (await dimensions.boundingBox())!;
@@ -1997,7 +2003,9 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 		expect(dimensionsBox.x + dimensionsBox.width).toBeLessThan(
 			attachmentBox.x + attachmentBox.width
 		);
-		expect(dimensionsBox.y).toBeCloseTo((await name.boundingBox())!.y);
+		const nameBox = (await name.boundingBox())!;
+		expect(dimensionsBox.y).toBeGreaterThanOrEqual(nameBox.y + nameBox.height);
+		expect(dimensionsBox.x).toBeCloseTo(nameBox.x);
 		expect(await dimensions.evaluate((size) => size.scrollWidth === size.clientWidth)).toBe(true);
 		expect(await name.evaluate((file) => file.scrollWidth > file.clientWidth)).toBe(true);
 	}
@@ -2022,6 +2030,7 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	await page.setViewportSize({ width: 844, height: 390 });
 	await item.getByRole('button', { name: 'Remove reference', exact: true }).click();
 	await expect(drop).toBeFocused();
+	expect((await drop.boundingBox())!.height).toBeCloseTo(dropHeight);
 	await item.getByRole('radio', { name: 'Main hand', exact: true }).click();
 	await expect(drop).toHaveAccessibleDescription(/Max 64 × 64 px/);
 	const sword = makeImg(192, 64);
@@ -2032,7 +2041,7 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 		buffer: Buffer.from(await encodePngBytes(sword))
 	});
 	await expect(attachment).toContainText('64 × 21 px');
-	await expect(attachment).toHaveCSS('height', `${dropHeight}px`);
+	await expect(attachment).toHaveCSS('height', `${attachmentHeight}px`);
 });
 
 test('canceling Connect preserves generation drafts and discards the pending action', async ({

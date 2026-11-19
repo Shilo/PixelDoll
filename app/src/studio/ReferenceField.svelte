@@ -93,12 +93,12 @@
 
 <svelte:window ondragover={preventMissedFileDrop} ondrop={preventMissedFileDrop} />
 
-<div class={['reference', { 'side-by-side': sideBySide }]}>
-	<span class="label">Reference <span class="faint">(optional)</span></span>
+<div class={['reference', { 'side-by-side': sideBySide, attached: !!value }]}>
+	<span class="label reference-label">Reference <span class="faint">(optional)</span></span>
 	<div class="reference-row">
 		<button
 			type="button"
-			class={['drop', { attached: !!value }, empty ? 'bu-tile bu-focus' : 'bu-action']}
+			class={['drop', empty ? 'bu-tile bu-focus' : 'bu-action']}
 			bind:this={drop}
 			data-variant={empty ? 'empty' : dragging ? 'primary' : 'outline'}
 			aria-label={loading
@@ -191,11 +191,18 @@
 		gap: 0.35rem;
 		min-width: 0;
 	}
+	.reference-label {
+		color: var(--text);
+	}
 	.reference-row {
 		display: flex;
 		align-items: stretch;
 		gap: 0.35rem;
 		block-size: 112px;
+	}
+	.side-by-side:not(.attached) .reference-row {
+		block-size: auto;
+		min-block-size: 44px;
 	}
 	.drop {
 		flex: 1;
@@ -211,8 +218,11 @@
 		justify-content: flex-start;
 		gap: 10px;
 	}
-	.drop.attached {
+	.side-by-side:not(.attached) .drop {
 		padding-block: 4px;
+	}
+	.attached .drop {
+		padding: 2px 4px;
 	}
 	.drop > :global(svg) {
 		flex: none;
@@ -247,6 +257,10 @@
 		display: grid;
 		grid-template-columns: minmax(0, auto) max-content;
 		gap: 8px;
+	}
+	.side-by-side .reference-file {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 2px;
 	}
 	.dimensions {
 		white-space: nowrap;
