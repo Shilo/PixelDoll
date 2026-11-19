@@ -45,7 +45,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - Paper-doll runtime, application facades and all engine exports: read `docs/architecture/javascript-runtime.md` before editing; follow its cross-engine behavior contract, canonical-source synchronization and native parity-check workflow.
 - PixelLab plan policy (tier limits, tool access): edit `PLAN_JOB_LIMITS` in app/src/lib/pixellab/plans.ts; sources in docs/pixellab-plans.md
 - Studio UI: app/src/studio/
-- Put new or changed user-facing text in Svelte Whisper, not hardcoded strings; follow the [translation workflow](app/src/locales/TRANSLATING.md).
+- Localize new or changed user-facing text via [app/src/locales/](app/src/locales/); don’t hardcode it.
 - Dev-only pages: app/src/ui/
 - Demo fixture: app/public/fixtures/s2/
 - Chroma keys (colors, order, mannequin style, despill) were chosen by paid A/B tests; read docs/research/2026-11-09-paperdoll-video-review/chroma-key.md before changing them, and change them only after a paired live test beats them
