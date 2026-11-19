@@ -56,6 +56,8 @@ export { default as Scaling } from '@lucide/svelte/icons/scaling';
 export { default as ListPlus } from '@lucide/svelte/icons/list-plus';
 export { default as ListMinus } from '@lucide/svelte/icons/list-minus';
 export { default as Settings2 } from '@lucide/svelte/icons/settings-2';
+export { default as Shirt } from '@lucide/svelte/icons/shirt';
+export { default as Lock } from '@lucide/svelte/icons/lock';
 export { default as Ban } from '@lucide/svelte/icons/ban';
 export { default as Dices } from '@lucide/svelte/icons/dices';
 export { default as Eye } from '@lucide/svelte/icons/eye';

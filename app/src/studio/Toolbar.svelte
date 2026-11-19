@@ -11,12 +11,19 @@
 	import DeleteRow, { DEMO_CHARACTER_LOCKED } from './DeleteRow.svelte';
 	import NewCharacterButton from './NewCharacterButton.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
+	import MenuDisclosure from './MenuDisclosure.svelte';
 	import ApiPeek from './ApiPeek.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
 	import { characterFacts, fmtNum } from './model.ts';
+	import {
+		sharedItemsHidden,
+		sharedItemsHiddenForAll,
+		setSharedItemsHiddenForAll,
+		setSharedItemsHiddenForCharacter
+	} from './wardrobeVisibility.svelte.ts';
 	import {
 		ui,
 		doc,
@@ -30,6 +37,7 @@
 		randomize,
 		refreshProjects,
 		characterName,
+		toast,
 		toggleTheme,
 		isDemo
 	} from './state.svelte.ts';
@@ -58,12 +66,19 @@
 		Layers2,
 		Mountain,
 		Grid2x2,
-		PawPrint
+		PawPrint,
+		Shirt,
+		Lock
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
 	const name = $derived(characterName());
 	let mountMenuOpen = $state(false);
+	const hideSharedForAll = $derived(sharedItemsHiddenForAll());
+	function reportVisibilitySave(saved: boolean) {
+		if (!saved)
+			toast('Visibility changed, but this browser could not save it.', { tone: 'warning' });
+	}
 	const prompt = $derived(m?.items.find((it) => it.id === m.rig.baseItem)?.prompt ?? '');
 	const characterCount = $derived(store.projects.filter((p) => !p.dev).length);
 	const VIEWS = [
@@ -347,11 +362,28 @@
 	class="menu options-menu bu-popover-anchor"
 	data-placement="bottom-end"
 	popover
-	ontoggle={popoverFocus}
+	ontoggle={(event) => popoverFocus(event)}
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
-		<!-- Phones move lower-frequency bar actions here, so the character name keeps its room. -->
+		<!-- PixelLab account: keep connection and account access first at every width. -->
+		<button
+			class="row bu-action"
+			data-variant="quiet"
+			onclick={() => {
+				closeOptions();
+				ui.sheet = 'connect';
+			}}
+			><KeyRound size={18} /><span class="row-name"
+				>{app.key
+					? app.keyRejected
+						? 'Key not accepted'
+						: 'PixelLab account'
+					: 'Connect PixelLab'}</span
+			></button
+		>
+		<hr />
+		<!-- Character actions: demo editing and actions moved from the toolbar on smaller screens. -->
 		{#if experience.screen === 'studio'}<DemoCopyRow id={doc.id} close={closeOptions} />{/if}
 		{#if experience.screen === 'studio'}<button
 				class="row bu-action mobile-random"
@@ -403,7 +435,61 @@
 					ui.sheet = 'inspect';
 				}}><Grid2x2 size={18} /><span class="row-name">Inspect</span></button
 			>{/if}
-		{#if experience.screen === 'studio'}<hr class="mobile-sep" />{/if}
+		{#if experience.screen === 'studio'}<hr
+				class={{ 'mobile-sep': !doc.id.startsWith('fixture:') }}
+			/>{/if}
+		<!-- Preferences: change how the Studio looks or what the Wardrobe shows. -->
+		<button
+			class="row bu-action"
+			data-variant="quiet"
+			onclick={() => {
+				toggleTheme();
+				closeOptions();
+			}}
+			>{#if ui.theme === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}<span
+				class="row-name">{ui.theme === 'dark' ? 'Light mode' : 'Dark mode'}</span
+			></button
+		>
+		{#if experience.screen === 'studio' && m}
+			<MenuDisclosure label="Wardrobe settings" panelLabelledBy="shared-items-title">
+				{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
+				{#snippet aside()}
+					{#if sharedItemsHidden(doc.id)}
+						<span class="row-aside wardrobe-status faint small">Own items only</span>
+					{/if}
+				{/snippet}
+				<p class="menu-sec" id="shared-items-title">Hide shared items</p>
+				<label class="row bu-check"
+					><span class="row-name">All characters</span><input
+						class="bu-switch"
+						type="checkbox"
+						role="switch"
+						aria-label="Hide shared items for all characters"
+						checked={hideSharedForAll}
+						onchange={(event) =>
+							reportVisibilitySave(setSharedItemsHiddenForAll(event.currentTarget.checked))}
+					/></label
+				>
+				<label class="row bu-check"
+					><span class="row-name"
+						>This character<span class="wardrobe-character-name faint small">{name}</span></span
+					>{#if hideSharedForAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}<input
+						class="bu-switch"
+						type="checkbox"
+						role="switch"
+						aria-label={`Hide shared items for this character: ${name}${hideSharedForAll ? ' (All characters is on)' : ''}`}
+						checked={sharedItemsHidden(doc.id)}
+						disabled={hideSharedForAll}
+						onchange={(event) =>
+							reportVisibilitySave(
+								setSharedItemsHiddenForCharacter(doc.id, event.currentTarget.checked)
+							)}
+					/></label
+				>
+			</MenuDisclosure>
+		{/if}
+		<hr />
+		<!-- Diagnostics: inspect generation activity and API requests. -->
 		<button
 			class="row bu-action"
 			data-variant="quiet"
@@ -415,6 +501,8 @@
 			>{#if $queue.role === 'follower'}<span class="small">Other tab</span>{/if}</button
 		>
 		<ApiPeek scope="all" all menu />
+		<hr />
+		<!-- App info: installation, updates, source code, and build version. -->
 		{#if import.meta.env.PROD && !$pwa.installed}
 			{#if $pwa.installable || $pwa.installing}<button
 					class="row bu-action"
@@ -436,34 +524,6 @@
 				><Download size={18} /><span class="row-name">Update to v{$pwa.available.version}</span
 				></button
 			>{/if}
-		<hr />
-		<button
-			class="row bu-action"
-			data-variant="quiet"
-			onclick={() => {
-				closeOptions();
-				ui.sheet = 'connect';
-			}}
-			><KeyRound size={18} /><span class="row-name"
-				>{app.key
-					? app.keyRejected
-						? 'Key not accepted'
-						: 'PixelLab account'
-					: 'Connect PixelLab'}</span
-			></button
-		>
-		<button
-			class="row bu-action"
-			data-variant="quiet"
-			onclick={() => {
-				toggleTheme();
-				closeOptions();
-			}}
-			>{#if ui.theme === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}<span
-				class="row-name">{ui.theme === 'dark' ? 'Light mode' : 'Dark mode'}</span
-			></button
-		>
-		<hr />
 		<a
 			class="row bu-action"
 			data-variant="quiet"
@@ -484,6 +544,7 @@
 				class="row-aside faint small num">{__APP_COMMIT__}</span
 			><ExternalLink size={16} /></a
 		>
+		<!-- Attribution footer: keep this below the app links. -->
 		<AffiliationNotice />
 	</div>
 </div>
@@ -606,3 +667,16 @@
 		{/if}
 	</div>
 </div>
+
+<style>
+	.wardrobe-character-name {
+		display: block;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	@container (max-width: 300px) {
+		.wardrobe-status {
+			display: none;
+		}
+	}
+</style>
