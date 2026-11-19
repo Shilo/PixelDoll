@@ -69,7 +69,8 @@ const validFrame = (frame: Frame): boolean =>
 export function paintedFrame(
 	project: Project,
 	items: Preset['items'],
-	direction?: DirectionName
+	direction?: DirectionName,
+	timeline?: { clip: string; cells: readonly number[] }
 ): Frame {
 	const m = project.manifest;
 	const baked = bakedFrame(m),
@@ -116,6 +117,13 @@ export function paintedFrame(
 		for (const layer of item.layers) {
 			const frame = layerFrame(m.rig, layer);
 			if (!validFrame(frame)) return fallback;
+			if (direction && timeline) {
+				for (const cell of new Set(timeline.cells)) {
+					const image = cellImg(project, layer, timeline.clip, direction, cell);
+					if (image && !include(image, frame, false)) return fallback;
+				}
+				continue;
+			}
 			for (const directions of Object.values(layer.cells ?? {})) {
 				if (!directions || typeof directions !== 'object' || Array.isArray(directions))
 					return fallback;

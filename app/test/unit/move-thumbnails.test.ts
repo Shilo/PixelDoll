@@ -1,11 +1,17 @@
 import { beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { loadFixture } from '../../src/lib/compose/fixture.ts';
-import { composeCell } from '../../src/lib/compose/compose.ts';
+import { bakedFrame, composeCell } from '../../src/lib/compose/compose.ts';
 import { recolor } from '../../src/lib/dress/dress.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
-import type { Project } from '../../src/lib/store/manifest.ts';
-import { moveThumbnails } from '../../src/studio/moveThumbnails.ts';
+import type { Preset, Project } from '../../src/lib/store/manifest.ts';
+import { moveThumbnails as createMoveThumbnails } from '../../src/studio/moveThumbnails.ts';
+import { crop } from '../../src/studio/model.ts';
+import {
+	buildPresentation,
+	renderPresentation,
+	resolvePreview
+} from '../../src/studio/experience/presentation.ts';
 import { expectPixels } from './pixels.ts';
 
 vi.mock('../../src/lib/compose/compose.ts', async (importOriginal) => {
@@ -14,6 +20,8 @@ vi.mock('../../src/lib/compose/compose.ts', async (importOriginal) => {
 });
 
 let source: Project;
+const moveThumbnails = (project: Project, items: Preset['items']) =>
+	createMoveThumbnails(buildPresentation(project), items);
 beforeAll(async () => {
 	source = await loadFixture(
 		async (path) =>
@@ -39,29 +47,44 @@ test('move thumbnails lazily compose each distinct cell once across repeated loo
 	expect(images[4]).toBe(images[1]);
 	expect(images[5]).toBe(images[3]);
 	expect(preview(clip.id, 'east', 0)).not.toBe(images[0]);
-	expect(preview('another-move', 'south', 0)).not.toBe(images[0]);
+	expect(preview('cross-punch', 'south', 0)).not.toBe(images[0]);
 	expect(composeCell).toHaveBeenCalledTimes(5);
 });
 
-test('move thumbnails retain the fixed bottom-centered window without per-frame trim', () => {
-	const items = source.manifest.presets[0].items;
-	const clip = source.manifest.rig.animations[0];
-	const original = composeCell(source, items, clip.id, 'south', 0);
-	const image = moveThumbnails(source, items)(clip.id, 'south', 0);
-	expect([image.w, image.h]).toEqual([56, 56]);
-	for (let row = 0; row < 56; row++)
-		expect(image.data.slice(row * 56 * 4, (row + 1) * 56 * 4)).toEqual(
-			original.data.slice(((row + 8) * 64 + 4) * 4, ((row + 8) * 64 + 60) * 4)
-		);
-	const smaller = structuredClone(source);
-	smaller.manifest.rig.cell = { w: 48, h: 48 };
-	const untrimmed = moveThumbnails(smaller, items)(clip.id, 'south', 0);
-	expectPixels(untrimmed, composeCell(smaller, items, clip.id, 'south', 0));
+test('move thumbnails retain all visible pixels at a fixed scale without fitting to unworn gear', () => {
+	const project = structuredClone(source);
+	const items = { head: 'hat_wizard' };
+	const clip = project.manifest.rig.animations[0];
+	const unworn = project.manifest.items.find(({ id }) => id === 'sword_steel')!;
+	unworn.layers[0].cell = { w: 256, h: 256 };
+	const thumbnails = moveThumbnails(project, items);
+	const first = thumbnails(clip.id, 'south', 0)!;
+	for (const [index, { cell }] of clip.frames.entries()) {
+		const stage = composeCell(project, items, clip.id, 'south', cell, bakedFrame(project.manifest));
+		const image = thumbnails(clip.id, 'south', index)!;
+		expectPixels(crop(image)!, crop(stage)!);
+		expect([image.w, image.h]).toEqual([first.w, first.h]);
+	}
+	expect(first.h).toBeLessThan(64);
 });
 
 test('large move frames use a bounded FIFO pixel budget and oversized frames are not retained', () => {
 	const project = structuredClone(source);
-	project.manifest.rig.cell = { w: 256, h: 256 };
+	const { rig, items } = project.manifest;
+	const move = rig.animations[0];
+	move.cells = 17;
+	move.frames = Array.from({ length: move.cells }, (_, cell) => ({ cell, ms: 100 }));
+	const base = items.find((item) => item.id === rig.baseItem)!;
+	const setBodySize = (size: number) => {
+		rig.cell = { w: size, h: size };
+		const square = makeImg(size, size);
+		square.data[3] = 255;
+		square.data[square.data.length - 1] = 255;
+		const hash = 'sha256:large';
+		project.images.set(hash, square);
+		for (const layer of base.layers) layer.cells![move.id].south = Array(move.cells).fill(hash);
+	};
+	setBodySize(256);
 	const preview = moveThumbnails(project, {});
 	const clip = project.manifest.rig.animations[0].id;
 	const first = preview(clip, 'south', 0);
@@ -72,7 +95,7 @@ test('large move frames use a bounded FIFO pixel budget and oversized frames are
 	expect(preview(clip, 'south', 1)).toBe(second);
 	expect(preview(clip, 'south', 0) === first).toBe(false);
 	expect(composeCell).toHaveBeenCalledTimes(18);
-	project.manifest.rig.cell = { w: 1025, h: 1025 };
+	setBodySize(1025);
 	const oversized = moveThumbnails(project, {});
 	expect(oversized(clip, 'south', 0) === oversized(clip, 'south', 0)).toBe(false);
 });
@@ -86,16 +109,20 @@ test('a new generation reflects replacement projects, in-place slots, raw artwor
 	for (const slot of Object.keys(items)) items[slot] = null;
 	preview = moveThumbnails(project, { ...items });
 	const unequipped = preview(clip, 'south', 0);
-	expect(unequipped.data).not.toEqual(first.data);
+	expect(unequipped!.data).not.toEqual(first!.data);
 	const base = project.manifest.items.find((item) => item.id === project.manifest.rig.baseItem)!;
 	const hash = base.layers[0].cells![clip].south![0]!;
-	project.images.set(hash, makeImg(64, 64));
+	const revisedArt = makeImg(64, 64);
+	revisedArt.data.set([255, 0, 0, 255]);
+	project.images.set(hash, revisedArt);
 	preview = moveThumbnails(project, { ...items });
 	const revised = preview(clip, 'south', 0);
-	expect(revised.data).not.toEqual(unequipped.data);
+	expect(revised!.data).not.toEqual(unequipped!.data);
+	for (const item of project.manifest.items)
+		for (const layer of item.layers) layer.cell ??= project.manifest.rig.cell;
 	project.manifest.rig.cell = { w: 96, h: 96 };
 	preview = moveThumbnails(project, { ...items });
-	expect(preview(clip, 'south', 0).w).toBe(96);
+	expectPixels(preview(clip, 'south', 0)!, revised!);
 	const replaced = moveThumbnails(structuredClone(project), { ...items });
 	expect(replaced(clip, 'south', 0)).not.toBe(preview(clip, 'south', 0));
 });
@@ -123,6 +150,26 @@ test('recolored project generations do not reuse pixels from another palette', (
 	const colored = recolor(project, { skin: 'pink' });
 	const preview = moveThumbnails(colored, items);
 	const image = preview(clip, 'south', 0);
-	expect(image.data).not.toEqual(original.data);
+	expect(image!.data).not.toEqual(original!.data);
 	expect(preview(clip, 'south', 0)).toBe(image);
+});
+
+test('move thumbnails show hair when headgear lacks a later frame, matching the selected preview', () => {
+	const project = structuredClone(source);
+	const hat = project.manifest.items.find((item) => item.id === 'hat_wizard')!;
+	hat.hides = ['hair'];
+	const items = { head: hat.id, hair: 'hair_brown' };
+	const clip = 'walk';
+	const direction = 'south';
+	const row = hat.layers[0].cells![clip][direction]!;
+	row.pop();
+	const assets = buildPresentation(project);
+	const pose = resolvePreview(assets, { clip, direction });
+	const stage = renderPresentation(assets, items, pose);
+	expect(stage.hiddenItems.map((item) => item.id)).toEqual([hat.id]);
+	const thumbnail = moveThumbnails(project, items)(clip, direction, 0)!;
+	expectPixels(crop(thumbnail)!, crop(stage.image!)!);
+	expect(crop(thumbnail)!.data).not.toEqual(
+		crop(renderPresentation(assets, {}, pose).image!)!.data
+	);
 });

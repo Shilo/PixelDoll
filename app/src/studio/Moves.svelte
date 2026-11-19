@@ -5,6 +5,8 @@
 	import { ChevronRight, Plus } from './icons.ts';
 	import { moveLabel, pixelSize } from './model.ts';
 	import { characterBodySize } from './experience/bounds.ts';
+	import { buildPresentation } from './experience/presentation.ts';
+	import { croppedBacking } from './experience/thumbnails.svelte.ts';
 	import SavedActions from './SavedActions.svelte';
 	import { downloadMoveZip } from './download.svelte.ts';
 	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
@@ -12,19 +14,20 @@
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const nice = (id: string) => moveLabel(id, moveIds);
-	const k = $derived(Math.max(1, Math.floor(ui.dpr)));
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
 	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
-	const thumbnails = $derived.by(() => {
+	const assets = $derived.by(() => {
 		void doc.rev;
-		return view.project ? moveThumbnails(view.project, $state.snapshot(doc.items)) : null;
+		return view.project ? buildPresentation(view.project) : null;
 	});
+	const thumbnails = $derived(assets && moveThumbnails(assets, view.items));
 </script>
 
 <div class="colors">
 	{#if m && view.project && thumbnails}
 		<div class="move-list">
 			{#each m.rig.animations as a (a.id)}
+				{@const image = thumbnails(a.id, ui.dir, ui.frame)}
 				{@const base = m.items.find((i) => i.id === m.rig.baseItem)}
 				{@const dirs = m.rig.directions.filter(
 					(d) => !d.mirrorOf && base?.layers[0].cells?.[a.id]?.[d.id]?.some(Boolean)
@@ -51,13 +54,9 @@
 					>
 						<span class="move-thumb"
 							><Sprite
-								img={thumbnails(
-									a.id,
-									dirs[0]?.id ?? 'south',
-									a.frames[ui.frame % a.frames.length].cell
-								)}
-								{k}
-								limit={56}
+								img={image}
+								k={image ? croppedBacking(56, image, ui.dpr) : 1}
+								fitToBox={!!image && (image.w > 56 || image.h > 56)}
 								label="{nice(a.id)} preview"
 							/></span
 						>
