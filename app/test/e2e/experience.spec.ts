@@ -429,7 +429,9 @@ test('all production extra categories, native menu focus, mode controls and Tab 
 		.toBe(true);
 	// Built CSS must keep the standard blur (a minifier once kept only the -webkit- alias, letting panels show through).
 	expect(
-		await optionMenu.locator('.menu-surface').evaluate((el) => getComputedStyle(el).backdropFilter)
+		await optionMenu
+			.locator(':scope > .menu-surface')
+			.evaluate((el) => getComputedStyle(el).backdropFilter)
 	).toContain('blur');
 	await expect(
 		optionMenu.getByRole('button', { name: 'Inspect all API calls', exact: true })

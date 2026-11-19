@@ -162,6 +162,79 @@ async function showNotification(
 	);
 }
 
+test('version button opens build actions by click, keyboard, and tap', async ({ page }, info) => {
+	await page.goto('/');
+	const more = page.getByRole('button', { name: 'More options', exact: true });
+	await more.click();
+	const version = page.locator('#experience-options').getByRole('button', { name: /^Version / });
+	const actions = page.getByRole('group', { name: 'Version actions', exact: true });
+	const repository = 'https://github.com/Shilo/PixelDoll';
+	const [, label, hash] = /^(Version \d+\.\d+\.\d+-pre)\s+([a-f0-9]{7,})$/i.exec(
+		(await version.innerText()).trim()
+	)!;
+	await expect(version).toHaveAttribute('aria-expanded', 'false');
+	await version.click({ button: 'right' });
+	await expect(actions).toBeHidden();
+	await version.click();
+	await expect(actions).toBeVisible();
+	await expect(version).toHaveAttribute('aria-expanded', 'true');
+	expect(page.context().pages()).toHaveLength(1);
+	const source = actions.getByRole('link', {
+		name: 'Open source code Shilo/PixelDoll',
+		exact: true
+	});
+	const commit = actions.getByRole('link', { name: `View commit ${hash}` });
+	await expect(commit).toHaveAttribute('href', `${repository}/commit/${hash}`);
+	await page.context().route(repository, (route) => route.fulfill({ body: '' }));
+	const opened = page.waitForEvent('popup');
+	await source.click();
+	const sourcePage = await opened;
+	await expect(sourcePage).toHaveURL(repository);
+	await sourcePage.close();
+	if (await actions.isVisible()) await page.keyboard.press('Escape');
+	if (!(await version.isVisible())) await more.click();
+	await version.press('Enter');
+	await expect(source).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect(actions).toBeHidden();
+	await expect(version).toHaveAttribute('aria-expanded', 'false');
+	await expect(version).toBeFocused();
+	await version.press('Space');
+	await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+	await actions.getByRole('button', { name: 'Copy version details' }).click();
+	await expect(actions).toBeHidden();
+	await expect
+		.poll(() => page.evaluate(() => navigator.clipboard.readText()))
+		.toBe(`${label} (${hash})`);
+
+	await page.setViewportSize({ width: 320, height: 568 });
+	await version.scrollIntoViewIfNeeded();
+	await expect(version.getByText(hash, { exact: true })).toBeInViewport({ ratio: 1 });
+	await expect(version.locator('svg:not(.lucide-chevron-right)')).toBeInViewport({ ratio: 1 });
+	await expect(version.locator('svg.lucide-chevron-right')).toBeInViewport({ ratio: 1 });
+	const box = (await version.boundingBox())!;
+	const touch = await page.context().newCDPSession(page);
+	await touch.send('Input.dispatchTouchEvent', {
+		type: 'touchStart',
+		touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }]
+	});
+	await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+	await expect(actions).toBeInViewport({ ratio: 1 });
+	await expect(commit).toBeVisible();
+	await expect(source.getByText('Shilo/PixelDoll', { exact: true })).toBeInViewport({ ratio: 1 });
+	const sourceLabel = source.getByText('Open source code', { exact: true });
+	expect(await sourceLabel.evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(
+		await sourceLabel.evaluate((element) => element.clientWidth)
+	);
+	expect(page.context().pages()).toHaveLength(1);
+
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await page.goto(dev);
+	await more.click();
+	await expect(version).toHaveAccessibleName(/^Version \d+\.\d+\.\d+-dev [a-f0-9]{7,}$/i);
+});
+
 test('notifications support optional titles, keyboard dismissal and visible errors inside dialogs', async ({
 	page
 }, info) => {
