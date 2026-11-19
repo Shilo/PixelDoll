@@ -33,6 +33,14 @@ export function isGarment(c: number): boolean {
 	return v;
 }
 export const isShorts = (c: number) => (c & 1) === 1;
+/** The cell without its region marks: one body's pixels are the same however a split marked them. */
+export function withoutRegions(im: Img): Img {
+	const data = new Uint8ClampedArray(im.data);
+	for (let i = 0; i < data.length; i += 4)
+		if (data[i + 3] && isGarment((data[i] << 16) | (data[i + 1] << 8) | data[i + 2]))
+			data[i + 2] &= ~1;
+	return { w: im.w, h: im.h, data };
+}
 
 /** Hip (and neck: the body axis, so a falling body splits along itself) in pixel indices of the cell. */
 export interface BodyLine {

@@ -2,7 +2,9 @@
 // content-addressed by their RGBA hash, so manifests decide; only a view one character mirrors and the other draws needs
 // its flipped image's hash.
 import { layerFrame } from '../compose/compose.ts';
-import { cellKey, type DirectionName, type Sha256 } from '../rig/rig.ts';
+import { withoutRegions } from '../dress/regions.ts';
+import type { Img } from '../image/png.ts';
+import { cellHash, cellKey, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import { stableStringify } from '../image/hash.ts';
 import { canPose, SLOTS, slotLadder } from '../items/items.ts';
 import type { CellKey, Item, Layer, Manifest, Slot } from '../store/manifest.ts';
@@ -22,6 +24,11 @@ export interface CopyAssessment {
 }
 /** The hash of a stored image flipped horizontally. */
 export type Flip = (hash: Sha256) => Promise<Sha256>;
+/** Images for a comparison: `load` reads a stored image, or one `flip` made. */
+export interface Frames {
+	flip: Flip;
+	load: (hash: Sha256) => Promise<Img>;
+}
 
 /** A cell's content hash: stored, or its mirror source's image flipped (null = transparent or absent). */
 export async function cellId(
@@ -131,11 +138,56 @@ export const covered = (m: Manifest, item: Item, anim: string, dir: DirectionNam
 		item.coverage?.includes(cellKey(anim, d, i) as CellKey)
 	);
 
+// A body image's hash without its region marks. A hash names exact pixels, so an entry never goes stale.
+const unmarked = new Map<Sha256, Promise<Sha256>>();
+function unmarkedId(hash: Sha256, load: Frames['load']): Promise<Sha256> {
+	let id = unmarked.get(hash);
+	if (!id) {
+		if (unmarked.size >= 4096) unmarked.clear();
+		const read = load(hash).then(
+			(im) => cellHash(withoutRegions(im)),
+			(error: unknown) => {
+				// An unreadable image proves nothing: the frame compares by its stored hash, as it did before.
+				console.warn('body frame compared with its marks', hash, error);
+				if (unmarked.get(hash) === read) unmarked.delete(hash);
+				return hash;
+			}
+		);
+		unmarked.set(hash, (id = read));
+	}
+	return id;
+}
+/** One body, saved twice: the characters share a registered standing reference or a stored body frame, or (every frame
+ *  marked again) the first frame both store for a move and direction is the same without its marks. */
+async function sameOrigin(
+	source: Manifest,
+	target: Manifest,
+	load: Frames['load']
+): Promise<boolean> {
+	const frames = (m: Manifest) => bodyOf(m)?.layers[0].cells ?? {};
+	const images = (m: Manifest) => [
+		...Object.values(m.rig.rest ?? {}).map((view) => view?.image),
+		...Object.values(frames(m)).flatMap((dirs) =>
+			Object.values(dirs ?? {}).flatMap((row) => row ?? [])
+		)
+	];
+	const known = new Set(images(target));
+	if (images(source).some((hash) => !!hash && known.has(hash))) return true;
+	for (const [anim, dirs] of Object.entries(frames(target)))
+		for (const [dir, row] of Object.entries(dirs ?? {})) {
+			const theirs = frames(source)[anim]?.[dir as DirectionName]?.[0],
+				mine = row?.[0];
+			if (theirs && mine)
+				return (await unmarkedId(theirs, load)) === (await unmarkedId(mine, load));
+		}
+	return false;
+}
+
 export async function assessCopy(
 	source: Manifest,
 	item: Item,
 	target: Manifest,
-	flip: Flip
+	{ flip, load }: Frames
 ): Promise<CopyAssessment> {
 	const sb = bodyOf(source),
 		tb = bodyOf(target);
@@ -161,6 +213,13 @@ export async function assessCopy(
 			(l) => (l.cells?.[anim]?.[dir] ?? l.cells?.[anim]?.[sourceDir(dir)])?.length === cells
 		);
 	const compatible = sameGeometry(source, target) && sameSlot(source, target, item.slot);
+	// The color split writes shirt and shorts marks into the body's pixels, and writes them again with every added move
+	// (splitBase votes over all frames), so one body can be stored with different marks on two characters. Characters of one
+	// origin compare their bodies without the marks; unrelated ones read at most one frame each.
+	const related = compatible && (await sameOrigin(source, target, load));
+	const bodyId = (hash: Sha256) => (related ? unmarkedId(hash, load) : hash);
+	const sameBody = async (a: Sha256 | null, b: Sha256 | null) =>
+		!!a && !!b && (a === b || (related && (await bodyId(a)) === (await bodyId(b))));
 	const targetDirs = target.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id);
 	const matches: CellMatch[] = [],
 		clipDirs: Record<string, DirectionName[]> = {};
@@ -180,10 +239,11 @@ export async function assessCopy(
 						const hash = covers(a.id, dir, i) && (await hashAt(source, sb.layers[0], a.id, dir, i));
 						if (!hash) continue;
 						const entry = {
-							key: cellKey(a.id, dir, i),
-							signature: await signature(a.id, dir, [i])
-						};
-						out.set(hash, [...(out.get(hash) ?? []), entry]);
+								key: cellKey(a.id, dir, i),
+								signature: await signature(a.id, dir, [i])
+							},
+							id = await bodyId(hash);
+						out.set(id, [...(out.get(id) ?? []), entry]);
 					}
 				}
 				return out;
@@ -205,7 +265,9 @@ export async function assessCopy(
 				if (sa.cells !== ta.cells || !hasLayer(sa.id, dir, sa.cells)) continue;
 				if (!cells.every((i) => covers(sa.id, dir, i))) continue;
 				const same = await Promise.all(
-					cells.map(async (i) => (await hashAt(source, sb.layers[0], sa.id, dir, i)) === bodies[i])
+					cells.map(async (i) =>
+						sameBody(await hashAt(source, sb.layers[0], sa.id, dir, i), bodies[i])
+					)
 				);
 				if (same.every(Boolean))
 					possible.push({ anim: sa.id, signature: await signature(sa.id, dir, cells) });
@@ -222,7 +284,7 @@ export async function assessCopy(
 			// Different clip lengths can still share an unambiguous frozen pose (a repeated standing cell).
 			const index = await sourceIndex(dir);
 			for (const i of cells) {
-				const candidates = index.get(bodies[i]!) ?? [];
+				const candidates = index.get(await bodyId(bodies[i]!)) ?? [];
 				if (new Set(candidates.map((c) => c.signature)).size === 1)
 					matches.push({ target: cellKey(ta.id, dir, i), source: candidates[0].key });
 			}

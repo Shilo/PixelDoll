@@ -459,8 +459,9 @@ test('an exact copy keeps the hidden ear px, flipped for a target view the sourc
 			presets: [{ id: 'default', name: 'd', items: { body: 'base' }, variants: {} }]
 		}
 	};
-	const { flip, made } = flipper(async (h) => src.images.get(h)!);
-	const cand = (await prepareCopy(src.manifest, 'hood', {}, tgt.manifest, flip))!,
+	const frames = flipper(async (h) => src.images.get(h)!),
+		{ made } = frames;
+	const cand = (await prepareCopy(src.manifest, 'hood', {}, tgt.manifest, frames))!,
 		id = cand.item.id;
 	const copied: Project = {
 		manifest: { ...tgt.manifest, items: [...tgt.manifest.items, cand.item] },
