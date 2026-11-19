@@ -384,7 +384,7 @@
 			data-variant="primary"
 			disabled={moving.resolvingRepair || queue.role === 'follower'}
 			onclick={() => void resolveRepairReview(true)}
-			>{moving.repairApplied ? 'Finish review' : 'Use repair'}</button
+			>{moving.repairApplied ? 'Finish review' : 'Use repaired frames'}</button
 		>
 	{:else if progress && moving.error}
 		<button class="bu-action btn plain" data-variant="quiet" onclick={dismissMove}
@@ -542,10 +542,10 @@
 				</div>
 			</div>
 			<div class="keep-view">
-				<strong class="small">Repair frames</strong>
+				<strong class="small">Repaired frames</strong>
 				<div class="keep-frames">
 					{#each repairReview.replacement as frame, index (index)}
-						<Sprite img={frame} k={keepK} checker label={`Repair frame ${index + 1}`} />
+						<Sprite img={frame} k={keepK} checker label={`Repaired frame ${index + 1}`} />
 					{/each}
 				</div>
 			</div>

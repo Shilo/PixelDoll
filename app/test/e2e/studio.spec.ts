@@ -5256,7 +5256,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 	const before = await saved();
 	await openRepair();
 	const review = page.getByRole('dialog', { name: 'Review item repair' });
-	await expect(review.getByRole('img', { name: 'Repair frame 1', exact: true })).toBeVisible();
+	await expect(review.getByRole('img', { name: 'Repaired frame 1', exact: true })).toBeVisible();
 	await expect(review.getByRole('img', { name: 'Current frame 1', exact: true })).toBeVisible();
 	expect(await saved()).toEqual(before);
 	await review.getByRole('button', { name: 'Hide', exact: true }).click();
@@ -5268,7 +5268,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 	expect(await saved()).toEqual(before);
 	expect(posts).toEqual(['/v2/inpaint-v3']);
 	await openRepair();
-	await review.getByRole('button', { name: 'Use repair', exact: true }).click();
+	await review.getByRole('button', { name: 'Use repaired frames', exact: true }).click();
 	await page.getByRole('button', { name: 'Done', exact: true }).click();
 	const after = await saved();
 	expect(after.east).toEqual(before.east);
