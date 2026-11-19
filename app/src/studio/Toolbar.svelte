@@ -496,12 +496,15 @@
 						/></label
 					>
 					<label class="row bu-check"
-						><UserRound size={18} aria-hidden="true" /><span class="row-name">{name}</span
+						><UserRound size={18} aria-hidden="true" /><span class="row-name wardrobe-current"
+							><span class="faint small">(Current)</span><span class="wardrobe-current-name"
+								>{name}</span
+							></span
 						>{#if hideSharedForAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}<input
 							class="bu-switch"
 							type="checkbox"
 							role="switch"
-							aria-label={`Hide shared items for current character: ${name}${hideSharedForAll ? ' (All characters is on)' : ''}`}
+							aria-label={`Hide shared items for (Current) ${name}${hideSharedForAll ? ' (All characters is on)' : ''}`}
 							checked={sharedItemsHidden(doc.id)}
 							disabled={hideSharedForAll}
 							onchange={(event) =>
@@ -715,6 +718,15 @@
 </div>
 
 <style>
+	.wardrobe-current {
+		display: flex;
+		gap: 0.35em;
+	}
+	.wardrobe-current-name {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
 	@container (max-width: 300px) {
 		.wardrobe-status {
 			display: none;

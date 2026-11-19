@@ -248,7 +248,7 @@ test('a shared custom category appears before adoption and stays after wearing a
 		exact: true
 	});
 	const thisCharacter = visibility.getByRole('switch', {
-		name: /^Hide shared items for current character:/
+		name: /^Hide shared items for \(Current\)/
 	});
 	const allCharacters = visibility.getByRole('switch', {
 		name: 'Hide shared items for all characters'
@@ -293,15 +293,13 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await pickCharacter('Giant');
 	await expect(sharedTiles.first()).toBeVisible();
 	await openSettings();
-	await expect(thisCharacter).toHaveAccessibleName(
-		'Hide shared items for current character: Giant'
-	);
+	await expect(thisCharacter).toHaveAccessibleName('Hide shared items for (Current) Giant');
 	await expect(thisCharacter).not.toBeChecked();
 	await allCharacters.check();
 	await expect(thisCharacter).toBeDisabled();
 	await expect(thisCharacter).toBeChecked();
 	await expect(thisCharacter).toHaveAccessibleName(
-		'Hide shared items for current character: Giant (All characters is on)'
+		'Hide shared items for (Current) Giant (All characters is on)'
 	);
 	await expect(sharedTiles).toHaveCount(0);
 	await allCharacters.focus();
@@ -353,16 +351,31 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitem', { name: 'Rename character…', exact: true }).click();
 	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });
-	await rename.getByRole('textbox', { name: 'Name', exact: true }).fill('Traveling Adventurer');
+	const longName = 'Traveling Adventurer with an unusually long character name';
+	await rename.getByRole('textbox', { name: 'Name', exact: true }).fill(longName);
 	await rename.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(rename).toBeHidden();
+	await page.setViewportSize({ width: 390, height: 844 });
 	await openSettings();
 	await expect(thisCharacter).toBeChecked();
-	await expect(thisCharacter).toHaveAccessibleName(
-		'Hide shared items for current character: Traveling Adventurer'
+	await expect(thisCharacter).toHaveAccessibleName(`Hide shared items for (Current) ${longName}`);
+	const currentPrefix = visibility.getByText('(Current)', { exact: true });
+	await expect(currentPrefix).toBeInViewport({ ratio: 1 });
+	expect(await currentPrefix.evaluate((label) => label.scrollWidth <= label.clientWidth)).toBe(
+		true
 	);
+	expect(
+		await visibility
+			.getByText(longName, { exact: true })
+			.evaluate(
+				(label) =>
+					label.scrollWidth > label.clientWidth &&
+					getComputedStyle(label).textOverflow === 'ellipsis'
+			)
+	).toBe(true);
 	await thisCharacter.uncheck();
 	await page.keyboard.press('Escape');
+	await page.setViewportSize(desktop);
 	await equipmentGroup(page, 'Hair clip');
 	await expect(adopted).toHaveAttribute('aria-pressed', 'true');
 	await expect(sharedTiles.first()).toBeVisible();
