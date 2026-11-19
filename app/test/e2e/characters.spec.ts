@@ -2093,6 +2093,65 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	expect(errors).toEqual([]);
 });
 
+test('character deletion links to an unfinished move on another character', async ({
+	page,
+	context
+}, info) => {
+	await context.route('https://api.pixellab.ai/**', (route) => route.abort());
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await expect(page.locator('.world-actors').first()).toBeVisible();
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts';
+		const studio = await import(statePath),
+			db = await import(dbPath);
+		const pendingProject = await studio.copyDemo();
+		await studio.renameProject('Pending hero');
+		await studio.copyDemo();
+		await db.put('projects', 'studio-move', {
+			id: 'studio-move',
+			projectId: pendingProject,
+			spec: { id: 'walk', frames: 8, items: [], seed: 1 },
+			status: 'failed',
+			error: 'Offline fixture: walk did not finish.'
+		});
+	});
+	await reloadStudio(page);
+	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+	const deletion = page.getByRole('alertdialog');
+	await expect(deletion.getByRole('button', { name: 'Delete', exact: true })).toBeDisabled();
+	const pendingWork = deletion.getByRole('button', { name: 'View pending work' });
+	await expect(pendingWork).toBeVisible();
+	await pendingWork.click();
+	const activity = page.getByRole('dialog', { name: 'Activity' });
+	await expect(activity.getByText('Walk · Pending hero', { exact: true })).toBeVisible();
+	await expect(activity.getByText('Needs attention', { exact: true })).toBeVisible();
+	await activity.getByRole('button', { name: 'Open Walk · Pending hero' }).click();
+	const move = page.getByRole('dialog', { name: 'Add a move' });
+	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeVisible();
+	await move.getByRole('button', { name: 'Start over' }).click();
+	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeHidden();
+	await page.keyboard.press('Escape');
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		const studio = await import(statePath);
+		await studio.openProject(
+			studio.store.projects.find((project: { name: string }) => project.name === 'Adventurer copy')
+				.id
+		);
+	});
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
+	await deletion.getByRole('button', { name: 'Delete', exact: true }).click();
+	await expect(deletion).toBeHidden();
+	await expect(page.locator('.project-btn')).not.toContainText('Adventurer copy');
+});
+
 test('deleting a disposable character preserves another character’s pending review', async ({
 	page,
 	context

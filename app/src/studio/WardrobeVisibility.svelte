@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { LayoutTemplate, Lock, UserRound, UsersRound } from './icons.ts';
-	import { DEMO_NAME, isDemo, refreshShared, store, toast } from './state.svelte.ts';
+	import { characterName, doc, isDemo, refreshShared, store, toast } from './state.svelte.ts';
 	import {
 		demoItemsShown,
 		setDemoItemsShown,
@@ -10,12 +10,12 @@
 		sharedItemsHiddenForAll
 	} from './wardrobeVisibility.svelte.ts';
 
-	let { current }: { current?: { id: string; name: string } } = $props();
 	const headingId = $props.id();
+	const name = $derived(characterName());
 	const hideAll = $derived(sharedItemsHiddenForAll());
 	const hideDemo = $derived(hideAll || !demoItemsShown());
-	const hideCurrent = $derived(current ? sharedItemsHidden(current.id) : false);
-	const lockReason = $derived(hideAll ? ' (All characters is on)' : '');
+	const hideCurrent = $derived(sharedItemsHidden(doc.id));
+	const lockReason = $derived(hideAll ? ' (In all wardrobes is on)' : '');
 
 	function reportSave(saved: boolean) {
 		if (!saved)
@@ -27,29 +27,42 @@
 	<p class="menu-sec" id={headingId}>Hide shared items</p>
 	<label class="row bu-check">
 		<UsersRound size={18} aria-hidden="true" />
-		<span class="row-name">All characters</span>
+		<span class="row-name">In <strong>all</strong> wardrobes</span>
 		<input
 			class="bu-switch"
 			type="checkbox"
 			role="switch"
-			aria-label="Hide shared items for all characters"
+			aria-label="Hide shared items in all wardrobes"
 			checked={hideAll}
 			defaultChecked={hideAll}
 			onchange={(event) => reportSave(setSharedItemsHiddenForAll(event.currentTarget.checked))}
 		/>
 	</label>
 	<label class="row bu-check">
-		<LayoutTemplate size={18} aria-hidden="true" />
-		<span class="row-name wardrobe-character">
-			<span class="wardrobe-character-name">{DEMO_NAME}</span><span class="faint small">(Demo)</span
-			>
-		</span>
+		<UserRound size={18} aria-hidden="true" />
+		<span class="row-name">In <strong>{name}</strong>'s wardrobe</span>
 		{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
 		<input
 			class="bu-switch"
 			type="checkbox"
 			role="switch"
-			aria-label={`Hide shared items from ${DEMO_NAME} (Demo)${lockReason}`}
+			aria-label={`Hide shared items in ${name}'s wardrobe${lockReason}`}
+			checked={hideCurrent}
+			defaultChecked={hideCurrent}
+			disabled={hideAll || !doc.id}
+			onchange={(event) =>
+				reportSave(setSharedItemsHiddenForCharacter(doc.id, event.currentTarget.checked))}
+		/>
+	</label>
+	<label class="row bu-check">
+		<LayoutTemplate size={18} aria-hidden="true" />
+		<span class="row-name">From <strong>demo character</strong></span>
+		{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
+		<input
+			class="bu-switch"
+			type="checkbox"
+			role="switch"
+			aria-label={`Hide shared items from demo character${lockReason}`}
 			checked={hideDemo}
 			defaultChecked={hideDemo}
 			disabled={hideAll}
@@ -59,42 +72,10 @@
 			}}
 		/>
 	</label>
-	{#if current}
-		{@const { id, name } = current}
-		<label class="row bu-check">
-			<UserRound size={18} aria-hidden="true" />
-			<span class="row-name wardrobe-character">
-				<span class="wardrobe-character-name">{name}</span><span class="faint small">(Current)</span
-				>
-			</span>
-			{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
-			<input
-				class="bu-switch"
-				type="checkbox"
-				role="switch"
-				aria-label={`Hide shared items for ${name} (Current)${lockReason}`}
-				checked={hideCurrent}
-				defaultChecked={hideCurrent}
-				disabled={hideAll}
-				onchange={(event) =>
-					reportSave(setSharedItemsHiddenForCharacter(id, event.currentTarget.checked))}
-			/>
-		</label>
-	{/if}
 </div>
 
 <style>
-	.wardrobe-character {
-		display: flex;
-		align-items: baseline;
-		gap: 0.35em;
-	}
-	.wardrobe-character .small {
-		flex: none;
-	}
-	.wardrobe-character-name {
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
+	.row-name strong {
+		font-weight: 600;
 	}
 </style>

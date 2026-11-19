@@ -22,7 +22,7 @@
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
 	import { characterFacts, fmtNum } from './model.ts';
-	import { sharedItemsHidden, sharedItemsHiddenForAll } from './wardrobeVisibility.svelte.ts';
+	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
 	import {
 		ui,
 		doc,
@@ -74,9 +74,6 @@
 	const facts = $derived(m && characterFacts(m));
 	const name = $derived(characterName());
 	let mountMenuOpen = $state(false);
-	const currentWardrobe = $derived(
-		experience.screen === 'studio' && m && !isDemo() ? { id: doc.id, name } : undefined
-	);
 	const prompt = $derived(m?.items.find((it) => it.id === m.rig.baseItem)?.prompt ?? '');
 	const characterCount = $derived(store.projects.filter((p) => !p.dev).length);
 	const VIEWS = [
@@ -452,14 +449,14 @@
 				class="row-name">{ui.theme === 'dark' ? 'Light mode' : 'Dark mode'}</span
 			></button
 		>
-		<MenuDisclosure label="Wardrobe settings">
+		<MenuDisclosure sectionKey="more-wardrobe-settings" label="Wardrobe settings">
 			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
 			{#snippet aside()}
-				{#if sharedItemsHiddenForAll() || (currentWardrobe && sharedItemsHidden(currentWardrobe.id))}
+				{#if sharedItemsHidden(doc.id)}
 					<span class="row-aside wardrobe-status faint small">Own items only</span>
 				{/if}
 			{/snippet}
-			<WardrobeVisibility current={currentWardrobe} />
+			<WardrobeVisibility />
 		</MenuDisclosure>
 		<hr />
 		<!-- Diagnostics: inspect generation activity and API requests. -->

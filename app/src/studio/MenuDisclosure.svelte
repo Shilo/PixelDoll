@@ -1,28 +1,32 @@
+<script module lang="ts">
+	import { SvelteSet } from 'svelte/reactivity';
+
+	const expandedSections = new SvelteSet<string>();
+</script>
+
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { on } from 'svelte/events';
 	import { ChevronDown, ChevronRight } from './icons.ts';
 
 	let {
+		sectionKey,
 		label,
 		icon,
 		aside,
 		children
 	}: {
+		sectionKey: string;
 		label: string;
 		icon?: Snippet;
 		aside?: Snippet;
 		children: Snippet;
 	} = $props();
 	const panelId = $props.id();
-	let open = $state(false);
+	const open = $derived(expandedSections.has(sectionKey));
 
-	function resetOnPopoverClose(button: HTMLButtonElement) {
-		const popover = button.closest<HTMLElement>('[popover]');
-		if (!popover) return;
-		return on(popover, 'beforetoggle', (event) => {
-			if (event.target === popover && event.newState === 'closed') open = false;
-		});
+	function toggle() {
+		if (open) expandedSections.delete(sectionKey);
+		else expandedSections.add(sectionKey);
 	}
 </script>
 
@@ -32,8 +36,7 @@
 	data-variant="quiet"
 	aria-expanded={open}
 	aria-controls={panelId}
-	onclick={() => (open = !open)}
-	{@attach resetOnPopoverClose}
+	onclick={toggle}
 >
 	{@render icon?.()}
 	<span class="row-name">{label}</span>

@@ -2,6 +2,7 @@
 // item generations (drafts) and the create-character run. Pixel data lives in $state.raw (deep proxies over the manifest
 // made recolor/compose take seconds, B5); manifest edits bump doc.rev.
 import type { Snippet } from 'svelte';
+import { SvelteSet } from 'svelte/reactivity';
 import {
 	applyDress,
 	dressOf,
@@ -964,21 +965,28 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 	}
 }
 
+export const DELETE_GENERATION_BLOCK =
+	'Finish or dismiss pending generation work before deleting a character.';
+
+let characterJobsPending = $state(false),
+	characterJobsInOtherTab = $state(false);
+
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
 function characterEditBlocked(action: 'delete' | 'change directions for'): string {
 	if (doc.loading || opening) return 'Wait for the character to finish loading.';
-	if (queue.role === 'follower')
+	if (characterJobsInOtherTab)
 		return 'Manage characters in the other PixelDoll tab, or close it first.';
 	if (
-		!queue.idle() ||
+		characterJobsPending ||
 		gens.some((g) => g.phase === 'running') ||
 		settling.size ||
-		(creating.spec && !creating.projectId) ||
-		(moving.spec && !moving.done) ||
-		(settingUp.spec && !settingUp.done)
+		heldCreate() ||
+		heldMove() ||
+		moving.queued.length ||
+		heldSetup()
 	)
 		return action === 'delete'
-			? 'Finish or dismiss pending generation work before deleting a character.'
+			? DELETE_GENERATION_BLOCK
 			: 'Finish or dismiss pending generation work before changing directions.';
 	return '';
 }
@@ -1824,6 +1832,8 @@ function drive() {
 	void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
 }
 queue.subscribe((s) => {
+	characterJobsPending = !queue.idle();
+	characterJobsInOtherTab = s.role === 'follower';
 	// This tab handed the jobs to another (only ever while idle): mirror its drafts again, and resume again when it leads.
 	if (s.role === 'follower' && driving)
 		driving = takingOver = resumedHere = createResumed = moveResumed = setupResumed = false;
@@ -2167,7 +2177,7 @@ function withDrafts(p: Project): Project {
 
 // Keep it / Discard in flight for a draft: the other click is ignored (R6 P1-6: Discard during Keep it, then
 // splice(indexOf(g) = -1) removed an unrelated, still-running draft).
-const settling = new Set<string>();
+const settling = new SvelteSet<string>();
 const drop = (g: Gen) => {
 	const i = gens.findIndex((x) => x.draft.spec.id === g.draft.spec.id);
 	if (i >= 0) gens.splice(i, 1);

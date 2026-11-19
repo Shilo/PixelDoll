@@ -60,8 +60,10 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { GENERATION_RECOMMENDATION, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
+	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
 
 	const m = $derived(store.project?.manifest);
+	const hasSharedOffers = $derived(!sharedItemsHidden(doc.id) && shared.items.length > 0);
 	let rec = $state.raw<StoredProject | null>(null);
 	// Re-read after a failure: a move saves its body and finished item views before failing, and Try again is priced from them.
 	$effect(() => {
@@ -828,10 +830,10 @@
 					</p>
 				</div>
 			{/if}
-			{#if (unavailable.length || shared.items.length) && targetDirs.length}
+			{#if (unavailable.length || hasSharedOffers) && targetDirs.length}
 				<p class="faint small">
-					Only equipment fitted to every selected view can be animated here. Shared copies can still
-					be worn in views where they have frames.
+					Only equipment fitted to every selected view can be animated here.
+					{#if hasSharedOffers}Shared copies can still be worn in views where they have frames.{/if}
 				</p>
 			{/if}
 			{#if est}<details class="disclosure">
