@@ -33,6 +33,7 @@
 		ui,
 		doc,
 		store,
+		DEMO_NAME,
 		creating,
 		settingUp,
 		gens,
@@ -76,7 +77,7 @@
 		Grid2x2,
 		PawPrint,
 		Shirt,
-		Sparkles,
+		LayoutTemplate,
 		Lock,
 		UserRound,
 		UsersRound
@@ -481,7 +482,7 @@
 					{/if}
 				{/snippet}
 				<div role="group" aria-labelledby="shared-items-title">
-					<p class="menu-sec" id="shared-items-title">Hide shared items for</p>
+					<p class="menu-sec" id="shared-items-title">Hide shared items</p>
 					<label class="row bu-check"
 						><UsersRound size={18} aria-hidden="true" /><span class="row-name">All characters</span
 						><input
@@ -495,13 +496,12 @@
 						/></label
 					>
 					<label class="row bu-check"
-						><UserRound size={18} aria-hidden="true" /><span class="row-name"
-							>This character<span class="wardrobe-character-name faint small">{name}</span></span
+						><UserRound size={18} aria-hidden="true" /><span class="row-name">{name}</span
 						>{#if hideSharedForAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}<input
 							class="bu-switch"
 							type="checkbox"
 							role="switch"
-							aria-label={`Hide shared items for this character: ${name}${hideSharedForAll ? ' (All characters is on)' : ''}`}
+							aria-label={`Hide shared items for current character: ${name}${hideSharedForAll ? ' (All characters is on)' : ''}`}
 							checked={sharedItemsHidden(doc.id)}
 							disabled={hideSharedForAll}
 							onchange={(event) =>
@@ -510,23 +510,26 @@
 								)}
 						/></label
 					>
+					{#if !isDemo()}
+						<label class="row bu-check">
+							<LayoutTemplate size={18} aria-hidden="true" />
+							<span class="row-name">{DEMO_NAME} <span class="faint small">(Demo)</span></span>
+							{#if hideSharedForAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
+							<input
+								class="bu-switch"
+								type="checkbox"
+								role="switch"
+								aria-label={`Hide shared items from ${DEMO_NAME} (Demo)${hideSharedForAll ? ' (All characters is on)' : ''}`}
+								checked={hideSharedForAll || !demoItemsShown()}
+								disabled={hideSharedForAll}
+								onchange={(event) => {
+									reportVisibilitySave(setDemoItemsShown(!event.currentTarget.checked));
+									void refreshShared();
+								}}
+							/>
+						</label>
+					{/if}
 				</div>
-				{#if !isDemo()}
-					<label class="row bu-check">
-						<Sparkles size={18} aria-hidden="true" />
-						<span class="row-name">Show demo items</span>
-						<input
-							class="bu-switch"
-							type="checkbox"
-							role="switch"
-							checked={demoItemsShown()}
-							onchange={(event) => {
-								reportVisibilitySave(setDemoItemsShown(event.currentTarget.checked));
-								void refreshShared();
-							}}
-						/>
-					</label>
-				{/if}
 			</MenuDisclosure>
 		{/if}
 		<hr />
@@ -712,11 +715,6 @@
 </div>
 
 <style>
-	.wardrobe-character-name {
-		display: block;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
 	@container (max-width: 300px) {
 		.wardrobe-status {
 			display: none;

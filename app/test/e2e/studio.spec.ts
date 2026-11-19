@@ -6926,7 +6926,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await editableCopy(page);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: /^Wardrobe settings/ }).click();
-	await page.getByRole('switch', { name: 'Show demo items', exact: true }).check();
+	await page.getByRole('switch', { name: 'Hide shared items from Adventurer (Demo)' }).uncheck();
 	await page.keyboard.press('Escape');
 	await equipmentGroup(page, 'Head');
 	const head = section(page, 'Head');
