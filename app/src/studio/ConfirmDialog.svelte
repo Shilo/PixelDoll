@@ -10,6 +10,7 @@
 		cancel = 'Cancel',
 		busy = false,
 		problem = '',
+		problemAction,
 		blocked = false,
 		onconfirm,
 		oncancel,
@@ -24,6 +25,7 @@
 		busy?: boolean;
 		/** Why the action failed or cannot run now. */
 		problem?: string;
+		problemAction?: Snippet;
 		/** The action cannot run now (problem says why). */
 		blocked?: boolean;
 		onconfirm: () => void;
@@ -64,6 +66,7 @@
 	{#if problem}<p class="notice warn small" role="alert">
 			<TriangleAlert size={16} aria-hidden="true" /><span>{problem}</span>
 		</p>{/if}
+	{#if problemAction}<div class="problem-action">{@render problemAction()}</div>{/if}
 	<div class="confirm-actions">
 		<button bind:this={keep} class="bu-btn" disabled={busy} onclick={oncancel}>{cancel}</button>
 		<button class="bu-btn" data-variant="danger" disabled={busy || blocked} onclick={onconfirm}
@@ -100,6 +103,9 @@
 	.notice {
 		margin: 12px 0 0;
 		text-align: left;
+	}
+	.problem-action {
+		margin-top: 8px;
 	}
 	.confirm-actions {
 		display: grid;
