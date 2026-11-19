@@ -63,20 +63,30 @@ test('More and Activity share PixelLab usage and show credits once quota is used
 	await expect(usage).toContainText('58% used');
 	await expect(usage).toHaveAttribute('href', 'https://www.pixellab.ai/account');
 	await expect(usage).toHaveAttribute('target', '_blank');
-	await expect(usage.getByText('$3.06 additional credits left')).toBeHidden();
+	await expect(usage.getByText('$3.06 credits left')).toBeHidden();
 	await page.getByRole('button', { name: 'Activity', exact: true }).click();
 	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
 	await expect(activity.getByText('58 / 100', { exact: true })).toBeVisible();
 	await expect(activity.getByText('58% used')).toBeVisible();
-	await expect(activity.getByText('$3.06 additional credits left')).toBeVisible();
+	await expect(activity.getByText('$3.06 credits left')).toBeVisible();
+	const expectInlineCredits = async (view: typeof usage) => {
+		const percentage = view.getByText('100% used', { exact: true });
+		const credits = view.getByText('$3.06 credits left', { exact: true });
+		await expect(credits).toBeVisible();
+		const usedBox = await percentage.boundingBox();
+		const creditBox = await credits.boundingBox();
+		if (!usedBox || !creditBox) throw new Error('Expected both usage and credits to be visible');
+		expect(creditBox.y).toBe(usedBox.y);
+		expect(creditBox.x).toBeGreaterThan(usedBox.x + usedBox.width);
+	};
 	await page.setViewportSize({ width: 320, height: 650 });
 	remaining = 0;
 	await activity.getByRole('button', { name: 'Refresh balance', exact: true }).click();
-	await expect(activity.getByText('100% used')).toBeVisible();
+	await expectInlineCredits(activity);
 	await activity.getByRole('button', { name: 'Done', exact: true }).click();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(usage).toContainText('100 / 100');
-	await expect(usage).toContainText('$3.06 additional credits left');
+	await expectInlineCredits(usage);
 });
 
 for (const remembered of [true, false]) {
