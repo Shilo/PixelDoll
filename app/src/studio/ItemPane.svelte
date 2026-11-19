@@ -255,6 +255,10 @@
 	const restorable = $derived(
 		m && it && !isDemo() ? restorableViews(m, it).map((key) => key.split('/')[1]) : []
 	);
+	// The paid repair leads only when the item has something to repair in the shown view and nothing free can fix it.
+	const repairLeads = $derived(
+		!restorable.length && (health === 'look' || moveGaps.includes(sourceDir))
+	);
 	// A re-fit's checks were measured on the source body; its fit notes replace them. An unfitted copy keeps its source's pixels,
 	// so the source's findings (a grip in the wrong hand) still describe them.
 	const reasons = $derived(
@@ -521,7 +525,7 @@
 						/>
 						<button
 							class="bu-action btn"
-							data-variant={choice.id === 'repair' ? 'primary' : 'outline'}
+							data-variant={choice.id === 'repair' && repairLeads ? 'primary' : 'outline'}
 							disabled={repairBusy || choice.offer?.gens == null || tierBlocked(tier)}
 							aria-describedby={tierBlocked(tier)
 								? `item-${choice.id}-tier`
