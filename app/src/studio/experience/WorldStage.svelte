@@ -419,9 +419,47 @@
 	}
 	function stop() {
 		pendingTap = null;
+		handoff = false;
 		keys.clear();
 		release();
 		clearHover();
+	}
+	// A walk held on the keyboard continues through a pointer press on a control outside the stage (a wardrobe tile, a
+	// tab): the press takes focus, and the stage takes it back when the press ends, so the held keys and the next ones
+	// still move the character. A field, a menu or a dialog needs the keyboard itself, so the walk ends there.
+	let handoff = false;
+	const typing = (target: EventTarget | null) =>
+		target instanceof Element && !!target.closest('input, textarea, select, [contenteditable]');
+	function pressOutside(e: PointerEvent) {
+		handoff =
+			experience.mode !== 'preview' &&
+			keys.size > 0 &&
+			!ui.sheet &&
+			e.target instanceof Node &&
+			!host?.contains(e.target) &&
+			!typing(e.target);
+	}
+	function pressEnded() {
+		if (!handoff) return;
+		handoff = false;
+		// After the control's own click, which follows this event.
+		requestAnimationFrame(() => {
+			if (document.activeElement === host) return;
+			if (
+				ui.sheet ||
+				experience.mode === 'preview' ||
+				typing(document.activeElement) ||
+				document.querySelector('[popover]:popover-open')
+			)
+				keys.clear();
+			else host?.focus({ preventScroll: true });
+		});
+	}
+	/** While the press holds focus, the held movement keys repeat on that control: they stay the stage's. */
+	function heldElsewhere(e: KeyboardEvent) {
+		if (!handoff || e.target === host || !keys.has(e.key.toLowerCase())) return;
+		e.preventDefault();
+		e.stopImmediatePropagation();
 	}
 	// Non-primary touch taps do not consistently produce native clicks. Keep the
 	// first world finger's capture while a deliberate second tap operates a button.
@@ -1210,7 +1248,15 @@
 	});
 </script>
 
-<svelte:window onkeyup={keyup} onblur={stop} onresize={stop} />
+<svelte:window
+	onkeyup={keyup}
+	onblur={stop}
+	onresize={stop}
+	onpointerdowncapture={pressOutside}
+	onpointerupcapture={pressEnded}
+	onpointercancelcapture={pressEnded}
+	onkeydowncapture={heldElsewhere}
+/>
 <svelte:document onvisibilitychange={stop} />
 <!-- A focused game surface owns directional input; controls remain native outside it. -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
@@ -1251,7 +1297,9 @@
 			? t('worldStage.sideScrollerTestWorldADLeft')
 			: t('worldStage.characterTestWorldWASDArrowsOrDrag')}
 	onkeydown={key}
-	onfocusout={() => keys.clear()}
+	onfocusout={() => {
+		if (!handoff) keys.clear();
+	}}
 	onpointerdown={down}
 	onpointermove={drag}
 	onpointerup={up}
