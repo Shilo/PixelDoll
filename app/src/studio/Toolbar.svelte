@@ -15,6 +15,7 @@
 	import ApiPeek from './ApiPeek.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
+	import VersionRow from './VersionRow.svelte';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
 	import { characterFacts, fmtNum } from './model.ts';
@@ -42,12 +43,13 @@
 		isDemo
 	} from './state.svelte.ts';
 	import {
-		Github,
 		Check,
 		ChevronLeft,
-		ExternalLink,
 		ChevronRight,
 		Download,
+		MonitorDown,
+		BookOpen,
+		RefreshCw,
 		Share2,
 		Ellipsis,
 		KeyRound,
@@ -68,7 +70,9 @@
 		Grid2x2,
 		PawPrint,
 		Shirt,
-		Lock
+		Lock,
+		UserRound,
+		UsersRound
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
@@ -458,9 +462,10 @@
 						<span class="row-aside wardrobe-status faint small">Own items only</span>
 					{/if}
 				{/snippet}
-				<p class="menu-sec" id="shared-items-title">Hide shared items</p>
+				<p class="menu-sec" id="shared-items-title">Hide shared items for</p>
 				<label class="row bu-check"
-					><span class="row-name">All characters</span><input
+					><UsersRound size={18} aria-hidden="true" /><span class="row-name">All characters</span
+					><input
 						class="bu-switch"
 						type="checkbox"
 						role="switch"
@@ -471,7 +476,7 @@
 					/></label
 				>
 				<label class="row bu-check"
-					><span class="row-name"
+					><UserRound size={18} aria-hidden="true" /><span class="row-name"
 						>This character<span class="wardrobe-character-name faint small">{name}</span></span
 					>{#if hideSharedForAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}<input
 						class="bu-switch"
@@ -510,10 +515,10 @@
 					disabled={$pwa.installing}
 					onclick={() => {
 						void installApp();
-					}}><Download size={18} /><span class="row-name">Install PixelDoll</span></button
+					}}><MonitorDown size={18} /><span class="row-name">Install PixelDoll</span></button
 				>
 			{:else}<button class="row bu-action" data-variant="quiet" onclick={requestInstallHelp}
-					><Download size={18} /><span class="row-name">Installation help</span></button
+					><BookOpen size={18} /><span class="row-name">Installation help</span></button
 				>{/if}
 		{/if}
 		{#if $pwa.available}<button
@@ -521,29 +526,10 @@
 				data-variant="quiet"
 				disabled={!$pwa.ready}
 				onclick={requestUpdate}
-				><Download size={18} /><span class="row-name">Update to v{$pwa.available.version}</span
+				><RefreshCw size={18} /><span class="row-name">Update to v{$pwa.available.version}</span
 				></button
 			>{/if}
-		<a
-			class="row bu-action"
-			data-variant="quiet"
-			href="https://github.com/Shilo/PixelDoll"
-			target="_blank"
-			rel="noreferrer"
-			><Github size={18} /><span class="row-name">Source code</span><span
-				class="row-aside faint small">Shilo/PixelDoll</span
-			><ExternalLink size={16} /></a
-		>
-		<a
-			class="row bu-action"
-			data-variant="quiet"
-			href="https://github.com/Shilo/PixelDoll/commit/{__APP_COMMIT__}"
-			target="_blank"
-			rel="noreferrer"
-			><PersonStanding size={18} /><span class="row-name">Version {__APP_VERSION__}</span><span
-				class="row-aside faint small num">{__APP_COMMIT__}</span
-			><ExternalLink size={16} /></a
-		>
+		<VersionRow />
 		<!-- Attribution footer: keep this below the app links. -->
 		<AffiliationNotice />
 	</div>

@@ -6,7 +6,10 @@ Implemented on `feat/game-experience-rework`, 2026-10-23. This is the production
 
 The More menu starts with PixelLab account access in its own group, followed by character actions (demo copy and phone shortcuts), view
 preferences (appearance and Wardrobe settings), generation tools (Activity and API calls), and app information (installation,
-updates, source and version). The PixelLab affiliation notice stays last.
+updates, and version). The version button opens a popover to view source code, open the displayed commit, or copy the
+version details for support. The row uses `-pre` for prereleases, no suffix for stable builds, and `-dev` for the
+Vite dev server regardless of release status. The dev commit is the checked-out revision and does not include local edits. The PixelLab affiliation
+notice stays last.
 
 Connect PixelLab and the More popover share `AffiliationNotice.svelte`: "Powered by PixelLab. Not an official app."
 Connect uses two lines; More wraps between sentences only when needed, without smaller text.

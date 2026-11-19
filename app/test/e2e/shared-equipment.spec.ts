@@ -131,7 +131,7 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await expect(grid.getByRole('button', { name: /^Empty/ })).toHaveCount(0);
 	const more = page.getByRole('button', { name: 'More options', exact: true });
 	const settings = page.getByRole('button', { name: /^Wardrobe settings/ });
-	const visibility = page.getByRole('group', { name: 'Hide shared items', exact: true });
+	const visibility = page.getByRole('group', { name: 'Hide shared items for', exact: true });
 	const thisCharacter = visibility.getByRole('switch', {
 		name: /^Hide shared items for this character:/
 	});
@@ -163,6 +163,8 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await expect(allCharacters).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect(thisCharacter).toBeFocused();
+	await expect(allCharacters).not.toBeChecked();
+	await expect(thisCharacter).not.toBeChecked();
 	await page.keyboard.press('Space');
 	await expect(sharedTiles).toHaveCount(0);
 	await expect(grid).toHaveCount(0);
@@ -207,6 +209,8 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await page.setViewportSize({ width: 390, height: 844 });
 	await openSettings();
 	await expect(visibility.getByText('Adventurer copy', { exact: true })).toBeVisible();
+	await expect(visibility.locator('svg.lucide-users-round')).toBeInViewport({ ratio: 1 });
+	await expect(visibility.locator('svg.lucide-user-round')).toBeInViewport({ ratio: 1 });
 	await expect(allCharacters).toBeInViewport({ ratio: 1 });
 	await thisCharacter.check();
 	await allCharacters.check();
@@ -227,8 +231,17 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await page.keyboard.press('Escape');
 	await pickCharacter('Adventurer copy');
 	await expect(sharedTiles).toHaveCount(0);
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: 'Rename character…', exact: true }).click();
+	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });
+	await rename.getByRole('textbox', { name: 'Name', exact: true }).fill('Traveling Adventurer');
+	await rename.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(rename).toBeHidden();
 	await openSettings();
 	await expect(thisCharacter).toBeChecked();
+	await expect(thisCharacter).toHaveAccessibleName(
+		'Hide shared items for this character: Traveling Adventurer'
+	);
 	await thisCharacter.uncheck();
 	await page.keyboard.press('Escape');
 	await equipmentGroup(page, 'Hair clip');

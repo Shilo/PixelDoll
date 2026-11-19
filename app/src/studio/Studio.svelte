@@ -43,7 +43,7 @@
 	} from './state.svelte.ts';
 	import { lazy } from '../lib/lazy.ts';
 	import { WifiOff } from './icons.ts';
-	import { PREVIEW_NOTICE } from './previewNotice.ts';
+	import { PRE_RELEASE, PREVIEW_NOTICE } from './previewNotice.ts';
 	import Toast from './Toast.svelte';
 	import PwaRuntime from './PwaRuntime.svelte';
 
@@ -83,7 +83,7 @@
 				loadGens
 			};
 		const off = initUi();
-		toast(PREVIEW_NOTICE.description, PREVIEW_NOTICE);
+		if (PRE_RELEASE) toast(PREVIEW_NOTICE.description, PREVIEW_NOTICE);
 		void (async () => {
 			const listed = await refreshProjects();
 			await openProject(lastProject());
