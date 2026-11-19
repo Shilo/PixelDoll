@@ -135,9 +135,11 @@
 				tone={ui.toastTone}
 				indicator={ui.toastPending ? pendingIndicator : undefined}
 				live
-				onactivate={activate}
-				ondismiss={dismiss}>{ui.toast}</Notice
-			>{/if}
+				onactivate={typeof ui.toast === 'string' ? activate : undefined}
+				ondismiss={dismiss}
+			>
+				{#if typeof ui.toast === 'string'}{ui.toast}{:else}{@render ui.toast()}{/if}
+			</Notice>{/if}
 		<PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
 	</div>
 {/if}

@@ -166,7 +166,10 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 	await page.goto(dev);
 	const notice = page.locator('.toast');
-	await expect(notice.locator('strong')).toHaveText(/^Preview · v/);
+	await expect(notice.locator('.bu-notice-content > strong')).toHaveText(/^Beta version · v/);
+	await expect(notice.locator('.bu-small strong')).toHaveText(
+		'Saved characters may stop working after updates.'
+	);
 	await expect(notice.locator('[data-tone]')).toHaveAttribute('data-tone', 'warning');
 	await expect(notice).not.toContainText('—');
 	const world = page.locator('.selection-world');
@@ -259,12 +262,21 @@ test('the startup preview notice expires after eight seconds', async ({ page }, 
 	await page.clock.install({ time });
 	await page.clock.pauseAt(new Date(time.getTime() + 1000));
 	await page.goto(dev);
-	const preview = page.getByRole('status').filter({ hasText: /Preview · v/ });
+	const preview = page.getByRole('status').filter({ hasText: /Beta version · v/ });
 	await expect(preview).toBeVisible();
 	await page.clock.fastForward(7999);
 	await expect(preview).toBeVisible();
 	await page.clock.fastForward(1);
 	await expect(preview).toHaveCount(0);
+});
+
+test('the startup beta notice opens the existing export picker', async ({ page }, info) => {
+	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	await page.goto(dev);
+	const notice = page.getByRole('status').filter({ hasText: /Beta version · v/ });
+	await notice.getByRole('button', { name: 'Export sprites', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toBeVisible();
+	await expect(notice).toHaveCount(0);
 });
 
 for (const [width, height] of [
@@ -281,8 +293,10 @@ for (const [width, height] of [
 			await page.goto(dev);
 			const notice = page.locator('.toast'),
 				gesture = width < 1000 ? 'tap' : 'click';
+			await expect(notice).toBeVisible();
+			await showNotification(page, 'Dismiss this message', { duration: 0 });
 			await notice
-				.getByRole('button', { name: /^Preview · v/ })
+				.getByRole('button', { name: 'Dismiss this message', exact: true })
 				[gesture]({ position: { x: 8, y: 8 } });
 			await expect(notice).toHaveCount(0);
 			await enterStudio(page);
