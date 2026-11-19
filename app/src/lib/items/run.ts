@@ -172,7 +172,13 @@ function draftContext(d: Draft, ctx: RigCtx): RigCtx {
 	const slots = ctx.rec.manifest.slots ?? [];
 	const slot = specSlot(d.spec, slots);
 	if (slots.some((entry) => entry.id === slot.id)) return ctx;
-	const manifest = { ...ctx.rec.manifest, slots: [...slots, structuredClone(slot)] };
+	const savedSlot = {
+		...slot,
+		...(slot.hides ? { hides: [...slot.hides] } : {}),
+		...(slot.clips ? { clips: [...slot.clips] } : {}),
+		...(slot.zOverrides ? { zOverrides: slot.zOverrides.map((override) => ({ ...override })) } : {})
+	};
+	const manifest = { ...ctx.rec.manifest, slots: [...slots, savedSlot] };
 	return {
 		rec: { ...ctx.rec, manifest },
 		project: { ...ctx.project, manifest }

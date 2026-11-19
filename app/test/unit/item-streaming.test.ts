@@ -197,11 +197,13 @@ async function fixture() {
 	return { ctx, d, dressed };
 }
 
-test('extracted standing artwork supplies a thumbnail before any target animation preview exists', async () => {
+test('standing artwork in a reactive draft slot supplies a thumbnail before any target animation preview exists', async () => {
 	const { ctx, d, dressed } = await fixture(),
 		results: ItemResult[] = [];
+	ctx.rec.manifest.slots = ctx.rec.manifest.slots.filter((slot) => slot.id !== d.spec.slot);
+	d.spec.slotConfig = new Proxy({ ...slotOf(d.spec.slot), clips: new Proxy(['hair'], {}) }, {});
 	const run = runItem(d, ctx, { result: (r) => results.push(r) });
-	await vi.waitFor(() => expect(q.order).toHaveLength(1));
+	await Promise.race([run, vi.waitFor(() => expect(q.order).toHaveLength(1))]);
 	await land(q.order[0].id, [dressed, dressed]);
 	await vi.waitFor(() => expect(results.some((r) => r.thumbnail)).toBe(true));
 	const result = results.find((r) => r.thumbnail)!;
