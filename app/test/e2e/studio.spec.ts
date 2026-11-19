@@ -4561,6 +4561,26 @@ test('reload restores failed create, move and setup for review without paid subm
 		await expect(dialog.locator('.steps-list .ring.spin')).toHaveCount(0);
 		await page.keyboard.press('Escape');
 	}
+	await page.evaluate(async () => {
+		const path = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ path);
+		const record = await db.get('projects', 'studio-move');
+		await db.put('projects', 'studio-move', {
+			...record,
+			error:
+				'A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.'
+		});
+		localStorage.setItem('pixeldoll.locale', 'fr');
+	});
+	await page.reload();
+	await page.locator('.customize-action').click();
+	await expect(page.locator('.world-actors').first()).toBeVisible();
+	await page.evaluate(() => {
+		(window as unknown as { __studio: { ui: { sheet: string } } }).__studio.ui.sheet = 'move';
+	});
+	await expect(page.getByRole('dialog')).toContainText(
+		'Un lot de réparation a renvoyé des images décalées. Les lots restants ont été arrêtés et le visuel existant a été conservé.'
+	);
 	expect(posts).toEqual([]);
 });
 
@@ -6784,7 +6804,14 @@ for (const changed of ['item', 'rig'] as const)
 		);
 		const fixture = await freePaletteFixture(page),
 			pane = await selectedItemDetails(page);
-		const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ });
+		await page.evaluate(async () => {
+			const path = '/src/lib/i18n.ts',
+				i18n = await import(path);
+			await i18n.selectLanguage('fr');
+		});
+		const action = pane.getByRole('button', {
+			name: /^Harmoniser les couleurs de l’objet.*Gratuit$/
+		});
 		await expect(action).toBeVisible();
 		await page.evaluate(
 			async ({ id, changed }) => {
@@ -6801,9 +6828,10 @@ for (const changed of ['item', 'rig'] as const)
 			},
 			{ id: fixture.itemId, changed }
 		);
+		await context.setOffline(true);
 		await action.click();
 		await expect(pane).toContainText(
-			'This item or its colors changed. Review the color match again.'
+			'Cet équipement ou ses couleurs ont changé. Vérifiez de nouveau la mise en correspondance des couleurs.'
 		);
 		const saved = await page.evaluate(async (id) => {
 			const p = '/src/studio/state.svelte.ts',

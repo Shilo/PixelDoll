@@ -1,5 +1,6 @@
 {
 	"common": {
+		"loadFailed": "Sebagian PixelDoll tidak dapat dimuat. Muat ulang halaman untuk mencoba lagi.",
 		"advanced": "Lanjutan",
 		"cancel": "Batal",
 		"cannotUndo": "Tindakan ini tidak dapat diurungkan.",
@@ -2180,6 +2181,9 @@
 			"standingFrameSize": "PixelLab mengembalikan frame berdiri dengan ukuran yang salah. Tidak ada permintaan lanjutan yang dikirim.",
 			"layersMismatch": "Lapisan perlengkapan tidak cocok dengan slot perlengkapan ini. Tidak ada generasi yang diminta.",
 			"repairBatchMisaligned": "Satu kumpulan perbaikan mengembalikan frame yang tidak sejajar. Kumpulan lainnya dihentikan dan gambar yang ada tetap disimpan.",
+			"reviewChanged": "Item ini atau hasil pemeriksaannya berubah. Buka kembali sebelum menerima gambar saat ini.",
+			"paletteReviewChanged": "Item ini atau warnanya berubah. Tinjau kembali pencocokan warna.",
+			"paletteSaveChanged": "Item, tubuh, atau material berubah. Warna yang ada tetap dipertahankan. Tinjau kembali pencocokan warna.",
 			"invalidItemGridSheet": "PixelLab mengembalikan kisi item yang tidak bisa digunakan. Seharusnya hanya ada satu lembar. Gambar yang ada tetap disimpan.",
 			"invalidItemGridLayout": "PixelLab mengembalikan kisi item yang tidak bisa digunakan. Lembar memiliki tata letak frame yang salah. Gambar yang ada tetap disimpan."
 		}

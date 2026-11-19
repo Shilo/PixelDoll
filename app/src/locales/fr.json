@@ -1,5 +1,6 @@
 {
 	"common": {
+		"loadFailed": "Impossible de charger une partie de PixelDoll. Rechargez la page pour réessayer.",
 		"advanced": "Avancé",
 		"cancel": "Annuler",
 		"cannotUndo": "Cette action est irréversible.",
@@ -2279,6 +2280,9 @@
 			"standingFrameSize": "PixelLab a renvoyé une image de pose debout de mauvaise taille. Aucune demande dépendante n’a été envoyée.",
 			"layersMismatch": "Les calques de l’équipement ne correspondent pas à cet emplacement. Aucune génération n’a été demandée.",
 			"repairBatchMisaligned": "Un lot de réparation a renvoyé des images décalées. Les lots restants ont été arrêtés et le visuel existant a été conservé.",
+			"reviewChanged": "Cet équipement ou ses vérifications ont changé. Rouvrez-le avant de valider son visuel actuel.",
+			"paletteReviewChanged": "Cet équipement ou ses couleurs ont changé. Vérifiez de nouveau la mise en correspondance des couleurs.",
+			"paletteSaveChanged": "Cet équipement, le corps ou le matériau a changé. Les couleurs existantes ont été conservées. Vérifiez de nouveau la mise en correspondance.",
 			"invalidItemGridSheet": "PixelLab a renvoyé une grille d’objet inutilisable. Une seule feuille était attendue. Le visuel existant a été conservé.",
 			"invalidItemGridLayout": "PixelLab a renvoyé une grille d’objet inutilisable. La feuille a une disposition d’images incorrecte. Le visuel existant a été conservé."
 		}

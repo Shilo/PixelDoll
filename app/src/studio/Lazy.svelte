@@ -4,6 +4,7 @@
 	import type { Component } from 'svelte';
 	import { ui, toast } from './state.svelte.ts';
 	import { lazy } from '../lib/lazy.ts';
+	import { errorMessage } from '../lib/message.ts';
 	type AnyComponent = Component<any>; // each component has its own props
 	let {
 		load,
@@ -21,10 +22,10 @@
 			(m) => {
 				if (live) Loaded = m.default;
 			},
-			(e: Error) => {
+			(error: unknown) => {
 				if (!live) return;
 				if (sheet) ui.sheet = null;
-				toast(e.message, { tone: 'danger' });
+				toast(errorMessage(error), { tone: 'danger' });
 			}
 		);
 		return () => {

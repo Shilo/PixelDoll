@@ -144,7 +144,10 @@ test.each(['item', 'body', 'missing'] as const)(
 		if (change === 'item') state.record!.manifest.items[0].qa!.maxPaletteDist++;
 		if (change === 'body') state.record!.manifest.rig.baseHash = 'sha256:changed';
 		if (change === 'missing') state.record!.manifest.items.splice(0);
-		await expect(acceptItemReview('character', reviewed.id, reviewed)).rejects.toThrow('changed');
+		await expect(acceptItemReview('character', reviewed.id, reviewed)).rejects.toMatchObject({
+			message: 'This item or its checks changed. Reopen it before accepting its current artwork.',
+			translation: { key: 'itemRoute.errors.reviewChanged' }
+		});
 		expect(state.saved).toBeNull();
 		expect(state.enqueue).not.toHaveBeenCalled();
 	}
@@ -153,7 +156,10 @@ test.each(['item', 'body', 'missing'] as const)(
 test('an edit racing the atomic save cannot accept a newer set of warnings', async () => {
 	const reviewed = structuredClone(state.record!.manifest.items[0]);
 	state.changedAtSave = true;
-	await expect(acceptItemReview('character', reviewed.id, reviewed)).rejects.toThrow('changed');
+	await expect(acceptItemReview('character', reviewed.id, reviewed)).rejects.toMatchObject({
+		message: 'This item or its checks changed. Reopen it before accepting its current artwork.',
+		translation: { key: 'itemRoute.errors.reviewChanged' }
+	});
 	expect(state.saved).toBeNull();
 	expect(state.imageWrites).toBe(-1);
 	expect(state.enqueue).not.toHaveBeenCalled();

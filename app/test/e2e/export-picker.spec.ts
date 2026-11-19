@@ -3507,7 +3507,7 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	expect(apiRequests).toEqual([]);
 });
 
-test('a sheet whose code fails to load closes, says so and can be tried again', async ({
+test('a sheet whose code fails to load closes, says so in French and can be tried again', async ({
 	page,
 	context
 }, testInfo) => {
@@ -3520,12 +3520,14 @@ test('a sheet whose code fails to load closes, says so and can be tried again', 
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.locale', 'fr');
 	});
-	await openStudio(page, testInfo.project.use.baseURL! + '/#/');
-	const exportButton = page.getByRole('button', { name: 'Export', exact: true }).first();
+	await page.goto(testInfo.project.use.baseURL! + '/#/');
+	await page.locator('.customize-action').click();
+	const exportButton = page.getByRole('button', { name: 'Exporter', exact: true }).first();
 	await exportButton.click();
 	await expect(page.locator('.toast')).toHaveText(
-		'Part of PixelDoll could not load. Reload to try again.'
+		'Impossible de charger une partie de PixelDoll. Rechargez la page pour réessayer.'
 	);
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
 	const tried = fetches;

@@ -1,5 +1,6 @@
 {
 	"common": {
+		"loadFailed": "Ein Teil von PixelDoll konnte nicht geladen werden. Lade die Seite neu und versuche es erneut.",
 		"advanced": "Erweitert",
 		"cancel": "Abbrechen",
 		"cannotUndo": "Das lässt sich nicht rückgängig machen.",
@@ -2278,6 +2279,9 @@
 			"standingFrameSize": "PixelLab hat einen Standframe mit falscher Größe geliefert. Es wurde keine abhängige Anfrage gesendet.",
 			"layersMismatch": "Die Ausrüstungsebenen passen nicht zu diesem Ausrüstungsplatz. Es wurde keine Generierung angefordert.",
 			"repairBatchMisaligned": "Ein Reparaturstapel hat verschobene Frames geliefert. Die übrigen Stapel wurden gestoppt und die vorhandene Grafik bleibt erhalten.",
+			"reviewChanged": "Dieser Gegenstand oder seine Prüfungen haben sich geändert. Öffne ihn erneut, bevor du seine aktuelle Grafik akzeptierst.",
+			"paletteReviewChanged": "Dieser Gegenstand oder seine Farben haben sich geändert. Prüfe die Farbanpassung erneut.",
+			"paletteSaveChanged": "Der Gegenstand, der Körper oder das Material hat sich geändert. Die vorhandenen Farben wurden beibehalten. Prüfe die Farbanpassung erneut.",
 			"invalidItemGridSheet": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Erwartet war genau ein Sheet. Die vorhandene Grafik bleibt erhalten.",
 			"invalidItemGridLayout": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Das Sheet hat ein falsches Frame-Layout. Die vorhandene Grafik bleibt erhalten."
 		}

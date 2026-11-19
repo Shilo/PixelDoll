@@ -1,5 +1,6 @@
 {
 	"common": {
+		"loadFailed": "PixelDoll의 일부를 불러오지 못했어요. 페이지를 새로고침하고 다시 시도하세요.",
 		"advanced": "고급",
 		"cancel": "취소",
 		"cannotUndo": "되돌릴 수 없어요.",
@@ -2177,6 +2178,9 @@
 			"standingFrameSize": "PixelLab이 잘못된 크기의 서 있는 프레임을 반환했어요. 종속 요청은 전송되지 않았어요.",
 			"layersMismatch": "장비 레이어가 이 장착 슬롯과 맞지 않아요. 생성은 요청되지 않았어요.",
 			"repairBatchMisaligned": "복구 배치에서 정렬이 어긋난 프레임이 반환됐어요. 나머지 배치는 중단하고 기존 아트워크는 유지했어요.",
+			"reviewChanged": "이 아이템이나 검사 결과가 변경됐어요. 현재 아트워크를 승인하기 전에 아이템을 다시 여세요.",
+			"paletteReviewChanged": "이 아이템이나 색상이 변경됐어요. 색상 맞추기를 다시 검토하세요.",
+			"paletteSaveChanged": "아이템, 몸체 또는 재질이 변경됐어요. 기존 색상은 그대로 유지했어요. 색상 맞추기를 다시 검토하세요.",
 			"invalidItemGridSheet": "PixelLab이 사용할 수 없는 아이템 그리드를 반환했어요. 시트는 정확히 하나여야 해요. 기존 아트워크는 유지했어요.",
 			"invalidItemGridLayout": "PixelLab이 사용할 수 없는 아이템 그리드를 반환했어요. 시트의 프레임 배치가 잘못됐어요. 기존 아트워크는 유지했어요."
 		}

@@ -1,5 +1,6 @@
 {
 	"common": {
+		"loadFailed": "无法加载 PixelDoll 的部分内容。请重新加载页面后重试。",
 		"advanced": "高级",
 		"cancel": "取消",
 		"cannotUndo": "此操作无法撤销。",
@@ -2160,6 +2161,9 @@
 			"standingFrameSize": "PixelLab 返回的站立帧尺寸错误。未发送后续请求。",
 			"layersMismatch": "装备图层与此装备栏不匹配。未请求生成。",
 			"repairBatchMisaligned": "一个修复批次返回了未对齐的帧。其余批次已停止，现有图像已保留。",
+			"reviewChanged": "此装备或其检查结果已更改。请重新打开装备，再接受当前图像。",
+			"paletteReviewChanged": "此装备或其颜色已更改。请重新检查配色。",
+			"paletteSaveChanged": "装备、身体或材质已更改。现有颜色已保留。请重新检查配色。",
 			"invalidItemGridSheet": "PixelLab 返回了无法使用的装备网格。应只有一张图集。现有图像已保留。",
 			"invalidItemGridLayout": "PixelLab 返回了无法使用的装备网格。图集的帧布局错误。现有图像已保留。"
 		}

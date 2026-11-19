@@ -1,5 +1,6 @@
 {
 	"common": {
+		"loadFailed": "No se pudo cargar una parte de PixelDoll. Recarga la página para volver a intentarlo.",
 		"advanced": "Avanzado",
 		"cancel": "Cancelar",
 		"cannotUndo": "Esto no se puede deshacer.",
@@ -2281,6 +2282,9 @@
 			"standingFrameSize": "PixelLab devolvió un fotograma de pie con el tamaño incorrecto. No se envió ninguna solicitud dependiente.",
 			"layersMismatch": "Las capas del equipamiento no coinciden con esta ranura. No se solicitó ninguna generación.",
 			"repairBatchMisaligned": "Un lote de reparación devolvió fotogramas desalineados. Se detuvieron los lotes restantes y se conservaron las imágenes anteriores.",
+			"reviewChanged": "Este objeto o sus comprobaciones han cambiado. Vuelve a abrirlo antes de aceptar sus imágenes actuales.",
+			"paletteReviewChanged": "Este objeto o sus colores han cambiado. Vuelve a revisar el ajuste de colores.",
+			"paletteSaveChanged": "El objeto, el cuerpo o el material ha cambiado. Se conservaron los colores existentes. Vuelve a revisar el ajuste.",
 			"invalidItemGridSheet": "PixelLab devolvió una cuadrícula de objeto inutilizable. Se esperaba una sola hoja. Se conservaron las imágenes anteriores.",
 			"invalidItemGridLayout": "PixelLab devolvió una cuadrícula de objeto inutilizable. La hoja tiene un diseño de fotogramas incorrecto. Se conservaron las imágenes anteriores."
 		}
