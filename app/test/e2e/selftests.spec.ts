@@ -2193,7 +2193,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 	await inspect.getByRole('button', { name: 'Done', exact: true }).click();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toContainText(
-		'Saved quality or appearance flags'
+		'Some artwork needs a check'
 	);
 	await page.screenshot({ path: testInfo.outputPath('starter-pack-studio-warnings.png') });
 	expect(requests).toEqual([]);

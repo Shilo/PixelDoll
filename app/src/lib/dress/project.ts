@@ -108,13 +108,14 @@ export async function openFixture(
 
 export async function openSource(
 	id: string,
-	signal?: AbortSignal
-): Promise<{ project: Project; current?: Outfit }> {
+	signal?: AbortSignal,
+	options?: Parameters<typeof loadProject>[2]
+): Promise<{ project: Project; current?: Outfit; missingImages?: number }> {
 	signal?.throwIfAborted();
 	if (id.startsWith('fixture:')) return openFixture(id, signal);
-	const { rec, project } = await loadProject(id, signal); // B4's loader (store/project.ts)
+	const { rec, project, missingImages } = await loadProject(id, signal, options);
 	signal?.throwIfAborted();
-	return { project, current: (rec as ProjectRecord).dress?.current };
+	return { project, current: (rec as ProjectRecord).dress?.current, missingImages };
 }
 
 export const dressOf = (m: Manifest, current?: Outfit): DressState => ({

@@ -112,7 +112,7 @@ test('valid stale equipment is still excluded instead of rejecting its preset', 
 	expect(validate(p)).toEqual([]);
 	const result = exportManifest(p, { engines: ['generic'], baked: false });
 	expect(result.manifest.presets[0].items.head).toBeNull();
-	expect(result.warnings.some((warning) => warning.includes('old: stale'))).toBe(true);
+	expect(result.warnings).toContain('Base: Left out because it no longer matches the body.');
 });
 
 test('Godot resources keep distinct valid animation IDs distinct after escaping', () => {

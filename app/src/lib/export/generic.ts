@@ -366,7 +366,7 @@ export function exportManifest(
 		warnings: string[] = [];
 	const items = src.items.filter((it) => {
 		const ok = it.baseHash === src.rig.baseHash;
-		if (!ok) warnings.push(`${it.id}: stale (baseHash differs from the rig), excluded`);
+		if (!ok) warnings.push(`${it.name}: Left out because it no longer matches the body.`);
 		else if (it.unfitted)
 			warnings.push(`${it.name}: worn as drawn for another body, not fitted to this character.`);
 		return ok;
@@ -436,8 +436,7 @@ export function exportManifest(
 	for (const a of m.rig.animations) {
 		const directions = moveDirs(src, a.id);
 		Object.assign(a, { directions });
-		if (!directions.length)
-			warnings.push(`${a.id}: no base frames; playback is unavailable for this move`);
+		if (!directions.length) warnings.push(`${a.id.replace(/[_-]/g, ' ')}: No body frames to play.`);
 	}
 	m.export = {
 		exportedAt: o.exportedAt ?? new Date().toISOString(),
@@ -673,7 +672,9 @@ export function selfTest() {
 		exportedAt: 'T'
 	});
 	console.assert(
-		warnings.some((warning) => warning.includes('old: stale')) &&
+		warnings.some((warning) =>
+			warning.includes('Left out because it no longer matches the body.')
+		) &&
 			m.items.length === 1 &&
 			m.presets[0].items.head === null,
 		'stale item excluded and unequipped'

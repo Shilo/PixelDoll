@@ -264,7 +264,9 @@ test('stale exclusion preserves linked outfit palettes while removing dangling o
 	p.manifest.presets[1].variants = { old_palette: 'tint:#ff0000' };
 	const result = await exportFiles(p, opts());
 	expect(result.errors).toEqual([]);
-	expect(result.warnings).toContain('old: stale (baseHash differs from the rig), excluded');
+	expect(result.warnings).toContain(
+		`${stale.name}: Left out because it no longer matches the body.`
+	);
 	const files = new Map(result.entries.map((e) => [e.name, e.data]));
 	const m = JSON.parse(new TextDecoder().decode(files.get('manifest.json'))) as Manifest;
 	expect(m.items.map((it) => it.id)).toEqual(['base', 'sword']);
@@ -326,9 +328,7 @@ test('sparse moves remain exportable and empty moves produce an explicit playbac
 	p.manifest.items[0].layers[0].cells!.strike = {};
 	const result = await exportFiles(p, opts());
 	expect(result.errors).toEqual([]);
-	expect(result.warnings).toContain(
-		'strike: no base frames; playback is unavailable for this move'
-	);
+	expect(result.warnings).toContain('strike: No body frames to play.');
 	expect(result.entries.some((e) => e.name === 'generic/base_main/walk_south_strip2.png')).toBe(
 		true
 	);
