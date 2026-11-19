@@ -1,9 +1,13 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { app } from '../lib/app.svelte.ts';
-	import { ExternalLink, Gauge } from './icons.ts';
+	import { ChevronRight, Gauge } from './icons.ts';
 
-	let { compact = true, actions }: { compact?: boolean; actions?: Snippet } = $props();
+	let {
+		label = 'PixelLab usage',
+		compact = false,
+		actions
+	}: { label?: string; compact?: boolean; actions?: Snippet } = $props();
 	const countFormat = new Intl.NumberFormat('en-US');
 	const percentFormat = new Intl.NumberFormat('en-US', {
 		style: 'percent',
@@ -37,7 +41,7 @@
 
 <span class={['usage', { compact }]}>
 	<span class="summary">
-		<span class="label"><Gauge size={18} /><span>PixelLab usage</span></span>
+		<span class="label"><Gauge size={18} /><span>{label}</span></span>
 		{#if usage}
 			<span class="count bu-small bu-number">
 				{countFormat.format(usage.used)}<span class="bu-muted"
@@ -46,7 +50,7 @@
 			</span>
 		{/if}
 		<span class="actions">
-			{#if compact}<ExternalLink size={16} />{:else}{@render actions?.()}{/if}
+			{#if compact}<ChevronRight size={16} aria-hidden="true" />{:else}{@render actions?.()}{/if}
 		</span>
 		{#if !usage && (app.key || !compact)}
 			<span class="detail bu-small bu-muted">
@@ -101,6 +105,11 @@
 	}
 	.compact .label {
 		column-gap: var(--menu-row-gap, 8px);
+	}
+	.compact .label > span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.count,
 	.meter {

@@ -365,32 +365,26 @@
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
-		<!-- PixelLab account: keep connection and account access first at every width. -->
 		{#if !workspaceCopy}<button
 				class="row bu-action"
 				data-variant="quiet"
+				aria-haspopup="dialog"
 				onclick={() => {
 					closeOptions();
 					ui.sheet = 'connect';
 				}}
-				><KeyRound size={18} /><span class="row-name"
-					>{app.key
-						? app.keyRejected
-							? 'Key not accepted'
-							: 'PixelLab account'
-						: 'Connect PixelLab'}</span
-				></button
-			>{/if}
-		<a
-			class="row bu-action"
-			data-variant="quiet"
-			href="https://www.pixellab.ai/account"
-			target="_blank"
-			rel="noreferrer"
-		>
-			<PixelLabUsage />
-		</a>
-		<hr />
+			>
+				{#if app.key && !app.keyRejected}
+					<PixelLabUsage compact />
+				{:else}
+					<KeyRound size={18} />
+					<span class="row-name">{app.keyRejected ? 'Reconnect PixelLab' : 'Connect PixelLab'}</span
+					>
+					<ChevronRight size={16} aria-hidden="true" />
+				{/if}
+			</button>
+			<hr />
+		{/if}
 		<!-- Character actions: demo editing and actions moved from the toolbar on smaller screens. -->
 		{#if experience.screen === 'studio'}<DemoCopyRow id={doc.id} close={closeOptions} />{/if}
 		{#if experience.screen === 'studio'}<button

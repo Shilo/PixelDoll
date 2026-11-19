@@ -2545,7 +2545,10 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
 					exact: true
 				})
 				.click();
-			const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+			const dialog = page.getByRole('dialog', {
+				name: initial === 'old-only' ? 'Connect PixelLab' : 'PixelLab usage',
+				exact: true
+			});
 			if (initial === 'old-only') {
 				await expect(dialog.getByRole('button', { name: 'Forget key' })).toHaveCount(0);
 				await expect(dialog.getByLabel('API key', { exact: true })).toHaveValue('');

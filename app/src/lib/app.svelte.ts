@@ -3,7 +3,7 @@ import { api, ApiError } from './pixellab/client.ts';
 import type { Balance } from './pixellab/routes.ts';
 import { queue } from './pixellab/queue.ts';
 import type { ActivityContext } from './pixellab/activity.ts';
-import { SAVED_KEY, readSavedKey, watchSharedAuth } from './shared-auth.ts';
+import { SAVED_KEY, readForgetMarker, readSavedKey, watchSharedAuth } from './shared-auth.ts';
 import { COPY_GENERATION_OFF, workspaceCopy } from './store/workspace-mode.ts';
 
 const clearSavedKey = () => {
@@ -52,7 +52,7 @@ const sharedAuth = workspaceCopy
 		);
 import.meta.hot?.dispose(() => sharedAuth?.close());
 
-export function setKey(key: string, remember: boolean, activity?: ActivityContext) {
+function installKey(key: string, remember: boolean) {
 	if (!sharedAuth) throw new Error(COPY_GENERATION_OFF);
 	sharedAuth.acknowledge(); // a fresh connection supersedes any already-persisted Forget notification
 	keyRevision++;
@@ -60,6 +60,7 @@ export function setKey(key: string, remember: boolean, activity?: ActivityContex
 	app.keyRejected = false;
 	app.balance = null; // never show another key's balance
 	app.balanceError = '';
+	app.balanceAt = 0;
 	app.remembered = false;
 	try {
 		if (remember && app.key) {
@@ -71,7 +72,34 @@ export function setKey(key: string, remember: boolean, activity?: ActivityContex
 	}
 	sharedAuth.changed();
 	queue.setKey(app.key);
-	void refreshBalance(activity);
+}
+
+export function setKey(key: string, remember: boolean, activity?: ActivityContext) {
+	installKey(key, remember);
+	return refreshBalance(activity);
+}
+
+export async function replaceKey(
+	key: string,
+	remember: boolean,
+	isCurrent: () => boolean,
+	activity: ActivityContext
+) {
+	const candidate = key.trim();
+	const revision = keyRevision;
+	const savedKey = readSavedKey();
+	const forgetMarker = readForgetMarker();
+	const balance = await readBalance(candidate, activity);
+	if (
+		!isCurrent() ||
+		revision !== keyRevision ||
+		savedKey !== readSavedKey() ||
+		forgetMarker !== readForgetMarker()
+	)
+		return false;
+	installKey(candidate, remember);
+	applyBalance(balance, candidate);
+	return true;
 }
 
 export function forgetKey() {
@@ -93,24 +121,28 @@ function clearLocalKey() {
 	queue.setKey('', false);
 }
 
+function readBalance(key: string, activity?: ActivityContext) {
+	return api<Balance>(key, 'GET', '/balance', undefined, undefined, activity);
+}
+
+function applyBalance(balance: Balance, key: string) {
+	app.balance = balance;
+	queue.setBalance(balance, key);
+	app.balanceError = '';
+	app.balanceAt = Date.now();
+}
+
 export async function refreshBalance(activity?: ActivityContext | Event) {
 	if (!app.key) return;
 	const key = app.key,
 		revision = keyRevision;
 	try {
-		const balance = await api<Balance>(
+		const balance = await readBalance(
 			key,
-			'GET',
-			'/balance',
-			undefined,
-			undefined,
 			activity instanceof Event ? { label: 'Refresh balance', background: false } : activity
 		);
 		if (revision !== keyRevision || key !== app.key) return;
-		app.balance = balance;
-		queue.setBalance(balance, key);
-		app.balanceError = '';
-		app.balanceAt = Date.now();
+		applyBalance(balance, key);
 	} catch (e) {
 		if (revision !== keyRevision || key !== app.key) return;
 		app.balanceError = (e as Error).message;
