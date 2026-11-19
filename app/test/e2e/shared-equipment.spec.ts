@@ -453,19 +453,18 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await openSettings();
 	await expect(thisCharacter).toBeChecked();
 	await expect(thisCharacter).toHaveAccessibleName(`Hide shared items in ${longName}'s wardrobe`);
-	const currentSuffix = visibility.getByText("'s wardrobe", { exact: true });
-	await expect(currentSuffix).toBeInViewport({ ratio: 1 });
-	expect(await currentSuffix.evaluate((label) => label.scrollWidth <= label.clientWidth)).toBe(
-		true
-	);
+	const currentLabel = visibility.getByText(`In ${longName}'s wardrobe`, { exact: true });
+	await expect(currentLabel).toBeInViewport({ ratio: 1 });
 	expect(
-		await visibility
-			.getByText(longName, { exact: true })
-			.evaluate(
-				(label) =>
-					label.scrollWidth > label.clientWidth &&
-					getComputedStyle(label).textOverflow === 'ellipsis'
-			)
+		await currentLabel.evaluate((label) => {
+			const style = getComputedStyle(label);
+			return (
+				label.scrollWidth > label.clientWidth &&
+				style.overflow === 'hidden' &&
+				style.textOverflow === 'ellipsis' &&
+				style.display !== 'flex'
+			);
+		})
 	).toBe(true);
 	await thisCharacter.uncheck();
 	await page.keyboard.press('Escape');

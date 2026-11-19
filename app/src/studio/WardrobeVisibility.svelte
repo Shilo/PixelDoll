@@ -40,11 +40,7 @@
 	</label>
 	<label class="row bu-check">
 		<UserRound size={18} aria-hidden="true" />
-		<span class="row-name wardrobe-character">
-			<span>In&nbsp;</span><strong class="wardrobe-character-name">{name}</strong><span
-				>'s wardrobe</span
-			>
-		</span>
+		<span class="row-name">In <strong>{name}</strong>'s wardrobe</span>
 		{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
 		<input
 			class="bu-switch"
@@ -81,17 +77,5 @@
 <style>
 	.row-name strong {
 		font-weight: 600;
-	}
-	.wardrobe-character {
-		display: flex;
-		align-items: baseline;
-	}
-	.wardrobe-character > :not(.wardrobe-character-name) {
-		flex: none;
-	}
-	.wardrobe-character-name {
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 </style>
