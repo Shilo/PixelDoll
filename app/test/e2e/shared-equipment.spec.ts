@@ -127,9 +127,10 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	const hideInDemo = page.getByRole('switch', {
 		name: /^Hide shared items in Adventurer's wardrobe/
 	});
+	const settings = page.getByRole('button', { name: /^Wardrobe settings/ });
 	const openSettings = async () => {
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await page.getByRole('button', { name: /^Wardrobe settings/ }).click();
+		if ((await settings.getAttribute('aria-expanded')) === 'false') await settings.click();
 	};
 	await expect(savedHat).toBeVisible();
 	await expect(savedHelmet).toBeVisible();
@@ -345,7 +346,7 @@ test('a shared custom category appears before adoption and stays after wearing a
 	});
 	const openSettings = async () => {
 		await more.click();
-		await settings.click();
+		if ((await settings.getAttribute('aria-expanded')) === 'false') await settings.click();
 		await expect(settings).toHaveAttribute('aria-expanded', 'true');
 	};
 	const pickCharacter = async (name: string) => {
@@ -384,9 +385,21 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await expect(rail.locator('button[aria-current="true"]')).toHaveCount(1);
 	await page.keyboard.press('Escape');
 	await expect(more).toBeFocused();
+	await more.click();
+	await expect(settings).toHaveAttribute('aria-expanded', 'true');
+	await expect(visibility).toBeVisible();
+	await settings.click();
+	await more.click();
+	await expect(settings).toBeHidden();
+	await more.click();
+	await expect(settings).toHaveAttribute('aria-expanded', 'false');
+	await expect(visibility).toBeHidden();
+	await settings.click();
+	await page.keyboard.press('Escape');
 	await pickCharacter('Giant');
 	await expect(sharedTiles.first()).toBeVisible();
-	await openSettings();
+	await more.click();
+	await expect(settings).toHaveAttribute('aria-expanded', 'true');
 	await expect(thisCharacter).toHaveAccessibleName("Hide shared items in Giant's wardrobe");
 	await expect(thisCharacter).not.toBeChecked();
 	await allCharacters.check();
@@ -431,7 +444,10 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await reloadStudio(page);
 	await expect(sharedTiles).toHaveCount(0);
 	await pickCharacter('Giant');
-	await openSettings();
+	await more.click();
+	await expect(settings).toHaveAttribute('aria-expanded', 'false');
+	await expect(visibility).toBeHidden();
+	await settings.click();
 	await expect(allCharacters).toBeChecked();
 	await expect(thisCharacter).toBeChecked();
 	await expect(thisCharacter).toBeDisabled();

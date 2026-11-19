@@ -449,7 +449,7 @@
 				class="row-name">{ui.theme === 'dark' ? 'Light mode' : 'Dark mode'}</span
 			></button
 		>
-		<MenuDisclosure label="Wardrobe settings">
+		<MenuDisclosure sectionKey="more-wardrobe-settings" label="Wardrobe settings">
 			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
 			{#snippet aside()}
 				{#if sharedItemsHidden(doc.id)}
