@@ -1103,6 +1103,7 @@ export interface MoveSpec {
 	approvedDirs?: DirectionName[];
 	itemMethod?: 'grid' | 'anchor';
 	preferTierOneRepair?: true;
+	redrawItem?: true;
 	reuseItemFrames?: true;
 	itemReview?: { gens: number; artwork: string };
 	poseStyle?: 'visible-side-v1';
@@ -1762,6 +1763,7 @@ export function moveEstimate(
 		| 'replace'
 		| 'itemsOnly'
 		| 'preferTierOneRepair'
+		| 'redrawItem'
 	>
 ) {
 	const n = moveFrames(m, s),
@@ -1784,7 +1786,7 @@ export function moveEstimate(
 					const cell = item.layers[0]?.cell ?? m.rig.cell;
 					return (
 						sum +
-						repairGridPlan(cell, n, s.preferTierOneRepair).reduce(
+						repairGridPlan(cell, n, s.preferTierOneRepair, s.redrawItem).reduce(
 							(total, batch) => total + batch.gens,
 							0
 						) *
@@ -1832,7 +1834,8 @@ export function moveMinimumTier(manifest: Manifest, spec: MoveSpec): number {
 							...repairGridPlan(
 								item.layers[0]?.cell ?? rig.cell,
 								frames,
-								spec.preferTierOneRepair
+								spec.preferTierOneRepair,
+								spec.redrawItem
 							).map((batch) => batch.tier)
 						)
 					: 0;
@@ -1899,7 +1902,11 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 			dirs: spec.dirs,
 			items: spec.items,
 			itemMethod: spec.itemMethod,
-			preferTierOneRepair: spec.preferTierOneRepair
+			preferTierOneRepair: spec.preferTierOneRepair,
+			redrawItem: spec.redrawItem,
+			redrawSlots: spec.redrawItem
+				? items.slice(1).map((item) => requireSlot(m, item.slot))
+				: undefined
 		}
 	});
 	return { ...spec, itemReview: { gens: moveEstimate(m, spec).items, artwork } };
@@ -1957,6 +1964,10 @@ export async function addMove(
 		}
 	};
 	assertReview(rec.manifest);
+	if (spec.redrawItem && (spec.itemMethod !== 'grid' || !spec.itemReview))
+		throw new Error(
+			'Review the item redraw and its estimate before generating. No request was made.'
+		);
 	const dirs = approvedMoveDirections(rec.manifest, spec),
 		existing = rec.manifest.rig.animations.find((a) => a.id === spec.id);
 	// Saved-frame recovery only reattaches completed equipment requests, never a new or replaced body clip.
@@ -2026,7 +2037,7 @@ export async function addMove(
 	const published = await publishedMoveRecovery(rec, spec);
 	const minimumTier = moveMinimumTier(rec.manifest, spec);
 	const blocked =
-		minimumTier > 0
+		!spec.reuseItemFrames && minimumTier > 0
 			? queue.planBlocks({ method: 'POST', path: '/animate-with-skeleton-v3' }, minimumTier)
 			: null;
 	if (blocked) throw new Error(blocked);
@@ -2107,7 +2118,8 @@ export async function addMove(
 					spec.seed,
 					spec.preferTierOneRepair,
 					spec.activityScope,
-					spec.reuseItemFrames
+					spec.reuseItemFrames,
+					spec.redrawItem
 				);
 				tick();
 				if (result.review) return { warnings: [], repairReview: result.review };

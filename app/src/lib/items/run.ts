@@ -38,6 +38,8 @@ import {
 	chromaLayer,
 	keyAllowed,
 	keyFor,
+	keyMatte,
+	clearKeyMatte,
 	KEY_NAME,
 	KEYS,
 	keyScore,
@@ -58,6 +60,7 @@ import {
 	frameOrder,
 	png,
 	routes,
+	type InpaintV3,
 	type Req
 } from '../pixellab/routes.ts';
 import {
@@ -1710,6 +1713,7 @@ export class PartialMoveError extends Error {
 
 export const SAVED_FRAMES_UNAVAILABLE =
 	'Completed frames matching the current body and equipment are unavailable. No generation was requested.';
+export const INVALID_ITEM_GRID = 'PixelLab returned an unusable item grid.';
 /** Enqueue a paid request, or with `savedOnly` reattach the completed record of the identical request and never send one. */
 async function submitOrSaved(
 	req: Req,
@@ -2184,8 +2188,17 @@ async function gridItemClip(
 	selectedCells?: string[],
 	activityScope?: string,
 	savedOnly = false,
-	prepared?: { request: Req; tier: number; start: number; count: number }
-): Promise<{ cells: CellOut[]; prov: Provenance } | { blocked: string }> {
+	prepared?: {
+		request: Req;
+		maskRequest?: Req;
+		canvas?: { w: number; h: number };
+		tier: number;
+		start: number;
+		count: number;
+	}
+): Promise<
+	{ cells: CellOut[]; prov: Provenance; registrationIssue?: string } | { blocked: string }
+> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
 		pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
@@ -2202,11 +2215,11 @@ async function gridItemClip(
 	if (blocked) return { blocked };
 	const w = rig.cell.w + 2 * pad,
 		h = rig.cell.h + 2 * pad;
-	const stencils = await inpaintStencils(req.body, n, w, h);
+	const stencils = await inpaintStencils((prepared?.maskRequest ?? req).body, n, w, h);
 	const rec = await submitOrSaved(
 		req,
 		{
-			label: `grid ${item.name} · ${anim} ${dir}${prepared ? ` · frames ${prepared.start + 1}–${prepared.start + prepared.count}` : ''}`,
+			label: `${prepared?.maskRequest ? 'redraw' : 'grid'} ${item.name} · ${anim} ${dir}${prepared ? ` · frames ${prepared.start + 1}–${prepared.start + prepared.count}` : ''}`,
 			tag: 'studio-move',
 			activityScope,
 			minimumTier: prepared?.tier ?? 1
@@ -2217,19 +2230,39 @@ async function gridItemClip(
 	if (r.state !== 'done')
 		throw new Error(`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`);
 	if (outputsOf(r).length !== 1)
-		throw new Error('PixelLab returned a malformed repair grid. Existing artwork was kept.');
+		throw new Error(`${INVALID_ITEM_GRID} Expected exactly one sheet. Existing artwork was kept.`);
 	const g = await img(outputsOf(r)[0].sha),
 		size = stencils.size;
-	if (g.w !== size.width || g.h !== size.height)
+	if (g.w !== (prepared?.canvas?.w ?? size.width) || g.h !== (prepared?.canvas?.h ?? size.height))
 		throw new Error(
-			`${item.name} ${anim} ${dir}: PixelLab returned a grid with the wrong frame layout`
+			`${INVALID_ITEM_GRID} The sheet has the wrong frame layout. Existing artwork was kept.`
 		);
 	const cut = cutGrid(g, n, w, h, stencils.cols);
-	const out = cells.map((c, i) =>
-		extractCell({
+	let registrationIssue: string | undefined;
+	if (prepared?.canvas) {
+		let top = false,
+			bottom = false,
+			left = false,
+			right = false;
+		for (let x = 0; x < g.w; x++) {
+			top ||= !!g.data[x * 4 + 3];
+			bottom ||= !!g.data[((g.h - 1) * g.w + x) * 4 + 3];
+		}
+		for (let y = 0; y < g.h; y++) {
+			left ||= !!g.data[y * g.w * 4 + 3];
+			right ||= !!g.data[(y * g.w + g.w - 1) * 4 + 3];
+		}
+		if (!top || !bottom || !left || !right)
+			registrationIssue =
+				'PixelLab returned a transparent edge and may have shifted the sheet. Check that the item lines up in every frame.';
+	}
+	const out = cells.map((c, i) => {
+		const base = padImg(baseCell(ctx, c), pad);
+		if (prepared?.canvas) clearKeyMatte(cut[i], inputCell(base, item.key!), item.key!);
+		return extractCell({
 			key: c,
 			call,
-			base: padImg(baseCell(ctx, c), pad),
+			base,
 			out: cut[i],
 			route: item.key!,
 			band: bandOf(requireSlot(ctx.rec.manifest, item.slot), pad ? undefined : skelOf(ctx, c), h),
@@ -2239,10 +2272,10 @@ async function gridItemClip(
 			pad,
 			cut: cutFor(ctx, item.slot, c, true, cuts),
 			stencil: stencils.cells[i]
-		})
-	);
+		});
+	});
 	if (!prepared) postProcess(rig, slot, out, keys, pad);
-	return { cells: out, prov: toProv(r, { cells, seed, rerolls: 0, old: [] }) };
+	return { cells: out, prov: toProv(r, { cells, seed, rerolls: 0, old: [] }), registrationIssue };
 }
 /**
  * B14: redo one clip-direction of an accepted (rig-cell) item as an inpaint-v3 grid and keep it when it passes every gate
@@ -2256,7 +2289,8 @@ export async function regridClip(
 	seedN = seed(),
 	preferTierOne = false,
 	activityScope?: string,
-	savedOnly = false
+	savedOnly = false,
+	redraw = false
 ): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[]; review?: RepairReview }> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
@@ -2267,7 +2301,7 @@ export async function regridClip(
 	const { keys, cuts, hidden } = await dressedKeys(ctx, item, pad);
 	const frames = rig.animations.find((a) => a.id === anim)?.cells;
 	if (!frames) throw new Error('Choose an existing move before repairing its equipment.');
-	const batches = repairGridPlan(item.layers[0].cell ?? rig.cell, frames, preferTierOne);
+	const batches = repairGridPlan(item.layers[0].cell ?? rig.cell, frames, preferTierOne, redraw);
 	const requests = await Promise.all(
 		batches.map(async (batch) => {
 			const cells = Array.from(
@@ -2275,11 +2309,64 @@ export async function regridClip(
 				(_, index) => `${anim}/${dir}/${batch.start + index}`
 			);
 			const batchSeed = seedN + batch.start;
+			const maskRequest = await gridRepairRequest(
+				ctx,
+				item,
+				anim,
+				dir,
+				batchSeed,
+				cells,
+				batch.cols
+			);
+			if (redraw) {
+				const { inpainting_image, description } = maskRequest.body as InpaintV3;
+				const source = await decodePngBytes(base64ToBytes(inpainting_image.image.base64));
+				const data = new Uint8ClampedArray(batch.w * batch.h * 4);
+				const matte = keyMatte(key);
+				for (let y = 0; y < batch.h; y++)
+					for (let x = 0; x < batch.w; x++) {
+						const offset = (y * source.w + x) * 4;
+						data.set(
+							x < source.w && y < source.h && source.data[offset + 3]
+								? source.data.subarray(offset, offset + 4)
+								: matte,
+							(y * batch.w + x) * 4
+						);
+					}
+				const image_size = { width: batch.w, height: batch.h };
+				const reference = await img(item.dressed![dir]!.slice(7));
+				const padding =
+					source.w !== batch.w || source.h !== batch.h
+						? ` The described grid occupies the top-left ${source.w}x${source.h} px of the ${batch.w}x${batch.h} px sheet. The remaining margin is solid background; leave it empty.`
+						: '';
+				const request = routes.editImageSheet({
+					method: 'edit_with_reference',
+					description: description.replace(
+						'the transparent background unchanged.',
+						`the solid ${KEY_NAME[key]} background unchanged, including unused space. Keep the entire sheet opaque and do not crop, shift, or resize it.${padding}`
+					),
+					edit_images: [
+						{
+							...image_size,
+							image: png(bytesToBase64(await encodePngBytes({ w: batch.w, h: batch.h, data })))
+						}
+					],
+					reference_image: {
+						width: reference.w,
+						height: reference.h,
+						image: png(bytesToBase64(await encodePngBytes(reference)))
+					},
+					image_size,
+					seed: batchSeed,
+					no_background: false
+				});
+				return { ...batch, cells, seed: batchSeed, request, maskRequest, canvas: batch };
+			}
 			return {
 				...batch,
 				cells,
 				seed: batchSeed,
-				request: await gridRepairRequest(ctx, item, anim, dir, batchSeed, cells, batch.cols)
+				request: maskRequest
 			};
 		})
 	);
@@ -2289,7 +2376,8 @@ export async function regridClip(
 			if (blocked) throw new Error(blocked);
 		}
 	const cells: CellOut[] = [],
-		provenance: Provenance[] = [];
+		provenance: Provenance[] = [],
+		registrationFindings: string[] = [];
 	for (const [index, request] of requests.entries()) {
 		const result = await gridItemClip(
 			ctx,
@@ -2312,6 +2400,7 @@ export async function regridClip(
 			);
 		cells.push(...result.cells);
 		provenance.push(result.prov);
+		if (result.registrationIssue) registrationFindings.push(result.registrationIssue);
 	}
 	postProcess(rig, slot, cells, keys, pad);
 	const qa = withH4(
@@ -2333,7 +2422,7 @@ export async function regridClip(
 			}
 		}
 	const clip = await prepareClip(ctx, item, anim, [dir], cells, provenance, qa, pad);
-	if (!qa.failCalls.size) {
+	if (!redraw && !qa.failCalls.size) {
 		await publishClip(ctx.rec.id, clip);
 		return { qa, saved: true, cells };
 	}
@@ -2362,7 +2451,7 @@ export async function regridClip(
 		cells,
 		review: {
 			clip,
-			findings: [...new Set([...qa.failCalls.values()].flat())],
+			findings: [...new Set([...registrationFindings, ...[...qa.failCalls.values()].flat()])],
 			current: previews(project),
 			replacement: previews(repaired)
 		}

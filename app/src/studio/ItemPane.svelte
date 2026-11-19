@@ -138,31 +138,30 @@
 			: null
 	);
 	const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec]) : null);
-	const repairCalls = $derived(
-		m && repairOffer?.specs[0]
-			? movePlan({ manifest: m }, repairOffer.specs[0]).filter((call) => call.method === 'POST')
-			: []
+	const redrawOffer = $derived(
+		m && repairSpec
+			? itemMoveOffer(m, [{ ...repairSpec, preferTierOneRepair: undefined, redrawItem: true }])
+			: null
 	);
 	// Required plan tiers come from the mandatory steps of each offered spec, not from the API preview.
 	const offerTier = (offer: { specs: MoveSpec[] } | null) =>
 		m ? Math.max(0, ...(offer?.specs ?? []).map((s) => moveMinimumTier(m, s))) : 0;
 	const tierBlocked = (required: number) =>
 		tierDecision(app.balance, { required }).kind === 'required';
-	const repairTier = $derived(offerTier(repairOffer));
 	const repairBusy = $derived(
 		(!!moving.spec && !moving.done) || (!!settingUp.spec && !settingUp.done)
 	);
-	function repairFrames() {
-		if (!repairOffer?.specs[0]) return;
+	function repairFrames(offer: typeof repairOffer, tier: number) {
+		if (!offer?.specs[0]) return;
 		const projectId = doc.id,
 			spec = {
-				...$state.snapshot(repairOffer.specs[0]),
+				...$state.snapshot(offer.specs[0]),
 				seed: 1 + Math.floor(Math.random() * 1_000_000)
 			};
 		withKey(() => {
 			void startMove(projectId, spec);
 			ui.sheet = 'move';
-		}, repairTier);
+		}, tier);
 	}
 	// The character's actual missing moves, regardless of their names or when they were imported.
 	const missingMoves = $derived.by(() => {
@@ -474,34 +473,59 @@
 
 		{#if !isDemo() && repairSpec}
 			<div class="field">
-				<button
-					class="bu-action btn"
-					data-variant="outline"
-					disabled={repairBusy || repairOffer?.gens == null || tierBlocked(repairTier)}
-					aria-describedby={tierBlocked(repairTier) ? 'item-repair-tier' : undefined}
-					onclick={repairFrames}
-					>Try new item frames <span class="cost"
-						>{repairOffer?.gens == null
-							? 'Unavailable'
-							: `Est. ${Math.ceil(repairOffer.gens)} gens`}</span
-					></button
-				>
-				{#if repairOffer?.error}<p class="notice warn small" role="status">
-						{repairOffer.error}
-					</p>{/if}
-				{#if repairTier}<TierNotice
-						id="item-repair-tier"
-						minimumTier={repairTier}
-						feature="Redrawing item frames"
-					/>{/if}
 				<p class="faint small">
-					Only {moveName} facing {sourceDir.replaceAll('-', ' ')} is redrawn on the frozen body.{#if sourceDir !== ui.dir}
-						Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. If
-					a complete repair has visual issues, you can review it before replacing your frames.
-					{#if repairCalls.length > 1}This repair uses {repairCalls.length} PixelLab generation requests.
-					{/if}
-					PixelLab may bill dollars; queue time varies.
+					Updates this item for {moveName} facing {sourceDir.replaceAll(
+						'-',
+						' '
+					)}{#if m?.rig.directions.some((direction) => direction.mirrorOf === sourceDir)}
+						and its mirrors{/if}. The character body stays unchanged.
 				</p>
+				{#each [{ id: 'repair', label: 'Repair item', offer: repairOffer, help: 'Best when you like the design. Limits changes to the item area.' }, { id: 'redraw', label: 'Redraw item', offer: redrawOffer, help: 'May change the shape or grip. You choose whether to keep it.' }] as choice (choice.id)}
+					{@const tier = offerTier(choice.offer)}
+					{@const spec = choice.offer?.specs[0]}
+					{@const plan = m && spec ? movePlan({ manifest: m }, spec) : []}
+					{@const requests = plan.filter((call) => call.method === 'POST').length}
+					<span class="api-action">
+						<ApiPeek
+							scope={`item-${choice.id}`}
+							label={choice.label}
+							triggerLabel={`Inspect API calls for ${choice.label.toLowerCase()}`}
+							{plan}
+						/>
+						<button
+							class="bu-action btn"
+							data-variant={choice.id === 'repair' ? 'primary' : 'outline'}
+							disabled={repairBusy || choice.offer?.gens == null || tierBlocked(tier)}
+							aria-describedby={tierBlocked(tier)
+								? `item-${choice.id}-tier`
+								: `item-${choice.id}-help`}
+							onclick={() => repairFrames(choice.offer, tier)}
+							>{choice.label}
+							<span class="cost"
+								>{choice.offer?.gens == null
+									? 'Unavailable'
+									: `Est. ${Math.ceil(choice.offer.gens)} gens`}</span
+							></button
+						>
+					</span>
+					<p class="faint small" id={`item-${choice.id}-help`}>
+						{choice.help}{#if requests > 1}{` This ${choice.id} uses ${requests} PixelLab generation requests.`}{/if}
+						{#if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens < repairOffer.gens}
+							{` Saves an estimated ${Math.ceil(repairOffer.gens) - Math.ceil(redrawOffer.gens)} gens versus Repair.`}
+						{:else if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens > repairOffer.gens}
+							{` Estimated ${Math.ceil(redrawOffer.gens) - Math.ceil(repairOffer.gens)} gens more than Repair.`}
+						{/if}
+					</p>
+					{#if choice.offer?.error}<p class="notice warn small" role="status">
+							{choice.offer.error}
+						</p>{/if}
+					{#if tier}<TierNotice
+							id={`item-${choice.id}-tier`}
+							minimumTier={tier}
+							feature={choice.label}
+						/>{/if}
+				{/each}
+				<p class="faint small">PixelLab may bill dollars; queue time varies.</p>
 			</div>
 		{/if}
 

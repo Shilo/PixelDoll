@@ -20,6 +20,7 @@
 		scope,
 		plan = [],
 		label = '',
+		triggerLabel,
 		queueIds = [],
 		activityScope,
 		all = false,
@@ -28,6 +29,7 @@
 		scope: string;
 		plan?: PeekCall[];
 		label?: string;
+		triggerLabel?: string;
 		queueIds?: string[];
 		activityScope?: string;
 		all?: boolean;
@@ -224,7 +226,7 @@
 	type="button"
 	class={menu ? 'row bu-action api-peek-trigger' : 'bu-action btn icon plain api-peek-trigger'}
 	data-variant="quiet"
-	aria-label={all ? 'Inspect all API calls' : 'Inspect API calls'}
+	aria-label={triggerLabel ?? (all ? 'Inspect all API calls' : 'Inspect API calls')}
 	title="PixelLab API calls"
 	aria-expanded={open}
 	aria-controls={id}

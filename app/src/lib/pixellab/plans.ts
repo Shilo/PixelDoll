@@ -37,6 +37,7 @@ export const GENERATION_RECOMMENDATION = {
 
 export const ENDPOINT_MINIMUM_TIERS: Readonly<Record<string, number>> = {
 	'/edit-animation-v2': 1,
+	'/edit-images-v2': 1,
 	'/transfer-outfit-v2': 1,
 	'/inpaint-v3': 1
 };

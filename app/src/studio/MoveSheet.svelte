@@ -12,7 +12,12 @@
 	import type { StoredProject } from '../lib/store/project.ts';
 	import type { DirectionName } from '../lib/store/manifest.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
-	import { ITEM_MOVE_SAVE_CONFLICT, posable } from '../lib/items/run.ts';
+	import {
+		INVALID_ITEM_GRID,
+		ITEM_MOVE_SAVE_CONFLICT,
+		SAVED_FRAMES_UNAVAILABLE,
+		posable
+	} from '../lib/items/run.ts';
 	import { AUTHORED } from '../lib/rig/poses.ts';
 	import {
 		MOVE_STEPS,
@@ -185,24 +190,15 @@
 			!moving.spec.replace &&
 			(moving.spec.itemMethod === 'grid'
 				? !!moving.spec.itemReview &&
+					!moving.error.startsWith(INVALID_ITEM_GRID) &&
+					!moving.error.startsWith(SAVED_FRAMES_UNAVAILABLE) &&
 					$queue.jobs.some(
 						(job) =>
 							job.activityScope === moving.spec?.activityScope &&
-							job.endpoint === '/inpaint-v3' &&
+							job.endpoint === (moving.spec?.redrawItem ? '/edit-images-v2' : '/inpaint-v3') &&
 							job.state === 'done'
 					)
 				: !moving.spec.itemReview && moving.error.startsWith(ITEM_MOVE_SAVE_CONFLICT))
-	);
-	const retryPlan = $derived(
-		moving.error && moving.spec
-			? movePlan(rec, {
-					...moving.spec,
-					reuseItemFrames: undefined,
-					measurementRecovery: undefined,
-					bodyPaletteRepair: undefined,
-					seed: undefined
-				})
-			: []
 	);
 	const retrySpec = $derived<MoveSpec | undefined>(
 		moving.spec
@@ -215,6 +211,11 @@
 			: undefined
 	);
 	const retryAccess = $derived(specAccess(retrySpec));
+	const retryPlan = $derived(
+		moving.error && retrySpec && !retryAccess.error
+			? movePlan(rec, { ...retrySpec, seed: undefined })
+			: []
+	);
 	const retryTier = $derived(retryAccess.tier);
 	const recoveryAccess = $derived(specAccess(moving.spec ?? undefined));
 	const recoveryTier = $derived(recoveryAccess.tier);
@@ -384,7 +385,11 @@
 			data-variant="primary"
 			disabled={moving.resolvingRepair || queue.role === 'follower'}
 			onclick={() => void resolveRepairReview(true)}
-			>{moving.repairApplied ? 'Finish review' : 'Use repaired frames'}</button
+			>{moving.repairApplied
+				? 'Finish review'
+				: moving.spec?.redrawItem
+					? 'Use redrawn frames'
+					: 'Use repaired frames'}</button
 		>
 	{:else if progress && moving.error}
 		<button class="bu-action btn plain" data-variant="quiet" onclick={dismissMove}
@@ -414,7 +419,7 @@
 					<span class="cost">Est. {retryGens} gens</span>{/if}</button
 			></span
 		>
-		{#if savedItemFrames}<button
+		{#if savedItemFrames && !recoveryAccess.error}<button
 				class="bu-action btn primary"
 				data-variant="primary"
 				onclick={() =>
@@ -494,9 +499,13 @@
 
 <Sheet
 	title={repairReview
-		? 'Review item repair'
+		? moving.spec?.redrawItem
+			? 'Review item redraw'
+			: 'Review item repair'
 		: progress && moving.spec?.itemMethod === 'grid'
-			? 'Repair item frames'
+			? moving.spec?.redrawItem
+				? 'Redraw item frames'
+				: 'Repair item frames'
 			: (progress ? moving.spec?.replace : replacing)
 				? 'Replace move views'
 				: 'Add a move'}
@@ -517,47 +526,61 @@
 		</p>{/if}
 	{#if mine && adding && moving.repairReview}
 		<button class="bu-action btn" data-variant="outline" onclick={() => (adding = false)}
-			>Review item repair</button
+			>{moving.spec?.redrawItem ? 'Review item redraw' : 'Review item repair'}</button
 		>
 	{/if}
 	{#if repairReview && moving.spec}
-		<section class="keep-review" aria-label="Compare item repair frames">
+		<section class="keep-review" aria-label="Compare item frames">
 			<p>
 				{repairReview.clip.out.name} · {nice(moving.spec.id)} · {moving.spec.dirs
 					?.map(directionLabel)
 					.join(', ') ?? ''}
 			</p>
 			{#if moving.repairApplied}<p class="small" role="status">
-					The repair is already saved. Finish the review to continue.
+					The new frames are already saved. Finish the review to continue.
 				</p>{:else}<p class="small" role="status">
-					The paid repair is ready, but some frames may have visual issues. Your current artwork is
-					unchanged. Keeping it or using the repair costs nothing. Hide this panel to decide later.
+					{moving.spec.redrawItem
+						? repairReview.findings.length
+							? 'The redraw is ready, but some frames may not line up. Check the quality findings.'
+							: 'The redraw is ready to compare.'
+						: 'The paid repair is ready, but some frames may have visual issues.'} Your current artwork
+					is unchanged. Either choice costs nothing. Hide this panel to decide later.
 				</p>{/if}
-			<div class="keep-view">
-				<strong class="small">Current frames</strong>
-				<div class="keep-frames">
-					{#each repairReview.current as frame, index (index)}
-						<Sprite img={frame} k={keepK} checker label={`Current frame ${index + 1}`} />
-					{/each}
-				</div>
+			<div class="repair-pairs">
+				{#each repairReview.replacement as frame, index (index)}
+					<div class="repair-pair">
+						<span class="small">Frame {index + 1}</span>
+						<div class="repair-pair-columns">
+							{#each [{ img: repairReview.current[index], label: 'Current' }, { img: frame, label: moving.spec.redrawItem ? 'Redrawn' : 'Repaired' }] as version (version.label)}
+								<div class="keep-view">
+									<strong class="small">{version.label} frames</strong>
+									<div class="repair-sprite" style:aspect-ratio={`${frame.w} / ${frame.h}`}>
+										<Sprite
+											img={version.img}
+											k={keepK}
+											checker
+											fitToBox
+											label={`${version.label} frame ${index + 1}`}
+										/>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/each}
 			</div>
-			<div class="keep-view">
-				<strong class="small">Repaired frames</strong>
-				<div class="keep-frames">
-					{#each repairReview.replacement as frame, index (index)}
-						<Sprite img={frame} k={keepK} checker label={`Repaired frame ${index + 1}`} />
-					{/each}
-				</div>
-			</div>
-			<details>
-				<summary>Quality findings</summary>
-				<ul>
-					{#each repairReview.findings as finding (finding)}<li class="small">{finding}</li>{/each}
-				</ul>
-			</details>
+			{#if repairReview.findings.length}<details>
+					<summary>Quality findings</summary>
+					<ul>
+						{#each repairReview.findings as finding (finding)}<li class="small">
+								{finding}
+							</li>{/each}
+					</ul>
+				</details>{/if}
 			{#if moving.error}<p class="notice bad small" role="alert">{moving.error}</p>{/if}
 			{#if queue.role === 'follower'}<p class="notice small">
-					Review the repair in the tab managing your PixelDoll jobs.
+					Review the {moving.spec.redrawItem ? 'redraw' : 'repair'} in the tab managing your PixelDoll
+					jobs.
 				</p>{/if}
 			{#if moving.queued.length}<p class="muted small">
 					Finishing this review resumes your queued moves at their reviewed costs.
@@ -571,13 +594,14 @@
 					: ''}<ApiPeek
 					scope="move-progress"
 					label="Current move generation"
-					plan={moving.spec ? movePlan(rec, moving.spec) : []}
+					plan={moving.spec && !recoveryAccess.error ? movePlan(rec, moving.spec) : []}
 					activityScope={moving.spec?.activityScope}
 				/>
 			</p>
 			{#if moving.spec?.itemMethod === 'grid'}<p class="muted small">
-					Only the selected item frames are redrawn; the body stays fixed. A complete repair with
-					visual issues is held for your review.
+					The body stays fixed. {moving.spec.redrawItem
+						? 'You’ll compare the redraw before replacing any frames.'
+						: 'A complete repair with visual issues is held for your review.'}
 				</p>{/if}
 			<ol class="steps-list">
 				{#each steps as s, i (s.id)}
@@ -864,5 +888,24 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
+	}
+	.repair-pairs {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+		gap: 12px;
+	}
+	.repair-pair,
+	.repair-pair-columns {
+		display: grid;
+		gap: 6px;
+	}
+	.repair-pair-columns {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		align-items: end;
+	}
+	.repair-sprite {
+		width: 100%;
+		max-width: 192px;
+		min-width: 0;
 	}
 </style>

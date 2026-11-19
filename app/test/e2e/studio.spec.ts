@@ -5293,7 +5293,8 @@ test('partial missing gear and explicit item repair stay on the current move and
 	await sheet.getByRole('button', { name: 'Start over', exact: true }).click();
 	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await selectedItemDetails(page);
-	const repair = page.getByRole('button', { name: /^Try new item frames/ });
+	const repair = page.getByRole('button', { name: /^Repair item/ });
+	const redraw = page.getByRole('button', { name: /^Redraw item/ });
 	const simulateRepairPlan = (tier: number) =>
 		page.evaluate(async (tier) => {
 			const appPath = '/src/lib/app.svelte.ts',
@@ -5307,9 +5308,14 @@ test('partial missing gear and explicit item repair stay on the current move and
 			app.balance = balance;
 			queue.setBalance(balance, queue.key);
 		}, tier);
-	const expectRepairTiers = async (tierOneGens: number, tierTwoGens: number) => {
+	const expectRepairTiers = async (
+		tierOneGens: number,
+		tierTwoGens: number,
+		redrawGens: number
+	) => {
 		await simulateRepairPlan(0);
 		await expect(repair).toBeDisabled();
+		await expect(redraw).toBeDisabled();
 		await expect(repair).toHaveAttribute('aria-describedby', 'item-repair-tier');
 		await expect(page.locator('#item-repair-tier')).toContainText('Tier 1 required');
 		for (const [tier, gens] of [
@@ -5318,6 +5324,8 @@ test('partial missing gear and explicit item repair stay on the current move and
 		]) {
 			await simulateRepairPlan(tier);
 			await expect(repair).toBeEnabled();
+			await expect(redraw).toBeEnabled();
+			await expect(redraw).toContainText(`Est. ${redrawGens} gens`);
 			await expect(repair).toContainText(`Est. ${gens} gens`);
 			await expect(page.locator('#item-repair-tier')).toHaveCount(0);
 			const requests = page.getByText('This repair uses 3 PixelLab generation requests.', {
@@ -5327,9 +5335,9 @@ test('partial missing gear and explicit item repair stay on the current move and
 			else await expect(requests).toHaveCount(0);
 		}
 	};
-	await expectRepairTiers(10, 10);
+	await expectRepairTiers(10, 10, 10);
 	await oversizedItemFixture(page, fixture.itemId);
-	await expectRepairTiers(30, 15);
+	await expectRepairTiers(30, 15, 15);
 	await repair.click();
 	sheet = page.getByRole('dialog', { name: 'Repair item frames', exact: true });
 	await expect(sheet).toContainText('Scoped repair stopped before paid work');
@@ -5353,7 +5361,8 @@ test('paid item repair review survives reload and both decisions send no extra r
 	context
 }, info) => {
 	const posts: string[] = [];
-	const outputs = new Map<string, { type: string; base64: string }>();
+	const outputs = new Map<string, Record<string, unknown>>();
+	let plan = 'Tier 1';
 	await context.route('https://api.pixellab.ai/**', async (route) => {
 		const request = route.request(),
 			path = new URL(request.url()).pathname;
@@ -5361,7 +5370,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 			return route.fulfill({
 				json: {
 					subscription: {
-						plan: 'Tier 1',
+						plan,
 						type: 'generations',
 						status: 'active',
 						generations: 100,
@@ -5374,7 +5383,12 @@ test('paid item repair review survives reload and both decisions send no extra r
 			posts.push(path);
 			if (path === '/v2/inpaint-v3') {
 				const id = `offline-repair-review-${posts.length}`;
-				outputs.set(id, request.postDataJSON().inpainting_image.image);
+				outputs.set(id, { image: request.postDataJSON().inpainting_image.image });
+				return route.fulfill({ status: 202, json: { background_job_id: id } });
+			}
+			if (path === '/v2/edit-images-v2') {
+				const id = `offline-redraw-review-${posts.length}`;
+				outputs.set(id, { images: [request.postDataJSON().edit_images[0].image] });
 				return route.fulfill({ status: 202, json: { background_job_id: id } });
 			}
 		}
@@ -5386,7 +5400,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 					status: 'completed',
 					created_at: '',
 					usage: { type: 'generations', generations: 10 },
-					last_response: { image: outputs.get(id) }
+					last_response: outputs.get(id)
 				}
 			});
 		return route.abort();
@@ -5401,7 +5415,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
 	const { itemId } = await targetedRepairFixture(page);
-	const openRepair = async () => {
+	const openRepair = async (action = /^Repair item/) => {
 		await page.evaluate(async (id) => {
 			const path = '/src/studio/state.svelte.ts',
 				state = await import(path);
@@ -5411,7 +5425,7 @@ test('paid item repair review survives reload and both decisions send no extra r
 			state.pick(id);
 		}, itemId);
 		await selectedItemDetails(page);
-		await page.getByRole('button', { name: /^Try new item frames/ }).click();
+		await page.getByRole('button', { name: action }).click();
 	};
 	const saved = () =>
 		page.evaluate(async (id) => {
@@ -5462,6 +5476,33 @@ test('paid item repair review survives reload and both decisions send no extra r
 	expect(after.west).not.toEqual(before.west);
 	expect(after.provenance).toBe(before.provenance + 1);
 	expect(posts).toEqual(['/v2/inpaint-v3', '/v2/inpaint-v3']);
+	await page.evaluate(() => {
+		const put = IDBObjectStore.prototype.put;
+		IDBObjectStore.prototype.put = function (value, key) {
+			if (key === 'studio-move' && value.status === 'review')
+				throw new Error('Synthetic review write failure');
+			return put.call(this, value, key);
+		};
+	});
+	await openRepair(/^Redraw item/);
+	const redrawReview = page.getByRole('dialog', { name: 'Review item redraw' });
+	await expect(
+		redrawReview.getByRole('img', { name: 'Redrawn frame 1', exact: true })
+	).toBeVisible();
+	await expect(redrawReview).toContainText('its review could not be saved');
+	plan = 'Free';
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: /Failed: tap for details/ }).click();
+	await page.getByRole('button', { name: 'Use saved frames', exact: true }).click();
+	await expect(
+		redrawReview.getByRole('img', { name: 'Redrawn frame 1', exact: true })
+	).toBeVisible();
+	expect(await saved()).toEqual(after);
+	await redrawReview.getByRole('button', { name: 'Use redrawn frames', exact: true }).click();
+	await page.getByRole('button', { name: 'Done', exact: true }).click();
+	expect(await saved()).toMatchObject({ east: before.east, provenance: after.provenance + 1 });
+	expect(posts).toEqual(['/v2/inpaint-v3', '/v2/inpaint-v3', '/v2/edit-images-v2']);
 });
 
 test('unsafe imported equipment prices its frozen route and unsupported held offers stay usable', async ({
@@ -5610,7 +5651,7 @@ test('deferred item repair refuses changed artwork and price after Connect', asy
 		s.pick(id);
 	}, fixture.itemId);
 	await selectedItemDetails(page);
-	const repair = page.getByRole('button', { name: /^Try new item frames/ });
+	const repair = page.getByRole('button', { name: /^Repair item/ });
 	await expect(repair).toContainText('Est. 10 gens');
 	await repair.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });

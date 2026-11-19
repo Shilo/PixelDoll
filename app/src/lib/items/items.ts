@@ -242,9 +242,27 @@ export function repairGridLayout(
 export function repairGridPlan(
 	cell: { w: number; h: number },
 	frames: number,
-	preferTierOne = false
+	preferTierOne = false,
+	redraw = false
 ) {
 	validGrid(cell, frames, 1);
+	if (redraw) {
+		const cols = Math.ceil(Math.sqrt(frames + 1));
+		const side = cols * Math.max(cell.w, cell.h);
+		if (side < 32 || side > 512)
+			throw new Error('This facing is too large to redraw in one request. Choose Repair item.');
+		return [
+			{
+				start: 0,
+				count: frames,
+				cols,
+				w: side,
+				h: side,
+				gens: side <= 256 ? 10 : side <= 341 ? 15 : 25,
+				tier: 1
+			}
+		];
+	}
 	const capacity = (side: number) => Math.floor(side / cell.w) * Math.floor(side / cell.h) - 1;
 	const side = preferTierOne && capacity(INPAINT_TIER_ONE_SIDE) > 0 ? INPAINT_TIER_ONE_SIDE : 512;
 	const limit = capacity(side);

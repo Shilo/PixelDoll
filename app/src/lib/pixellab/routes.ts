@@ -142,6 +142,15 @@ export interface InpaintV3 {
 	seed?: number;
 	no_background?: boolean;
 }
+export interface EditImageSheet {
+	method: 'edit_with_reference';
+	description: string;
+	edit_images: [{ image: B64Image } & Size];
+	reference_image: { image: B64Image } & Size;
+	image_size: Size;
+	seed: number;
+	no_background: false;
+}
 /** edit-animation-v2 frames per call by image_size (all frames share one grid; OpenAPI): ≤64 px 16, 65–80 px 9, 81–256 px 4. */
 export const editFrameCap = (px: number) => (px <= 64 ? 16 : px <= 80 ? 9 : 4);
 export interface EditAnimationV2 {
@@ -182,6 +191,7 @@ export const routes = {
 	getCharacter: (id: string) => get(`/characters/${encodeURIComponent(id)}`),
 	estimateSkeleton: (image: B64Image) => post('/estimate-skeleton', { image }),
 	editAnimationV2: (b: EditAnimationV2) => post('/edit-animation-v2', b),
+	editImageSheet: (b: EditImageSheet) => post('/edit-images-v2', b),
 	animateWithSkeletonV3: (b: AnimateSkeletonV3) => post('/animate-with-skeleton-v3', b),
 	inpaintV3: (b: InpaintV3) => post('/inpaint-v3', b)
 };
