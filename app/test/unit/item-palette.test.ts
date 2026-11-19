@@ -399,12 +399,16 @@ test('reviewed counts or material/rig/item changes refuse before publication', a
 		plan = await itemPaletteRepairPlan('rig-test', 'sword', 'slash', 'south');
 	await expect(
 		matchItemColors('rig-test', 'sword', 'slash', 'south', { ...plan, changedPixels: 999 })
-	).rejects.toThrow('changed');
+	).rejects.toMatchObject({
+		message: 'This item or its colors changed. Review the color match again.',
+		translation: { key: 'itemRoute.errors.paletteReviewChanged' }
+	});
 	expect(f.save).not.toHaveBeenCalled();
 	f.current.manifest.materials[0].variants.custom[0] = '#abcdef';
-	await expect(matchItemColors('rig-test', 'sword', 'slash', 'south', plan)).rejects.toThrow(
-		'changed'
-	);
+	await expect(matchItemColors('rig-test', 'sword', 'slash', 'south', plan)).rejects.toMatchObject({
+		message: 'This item or its colors changed. Review the color match again.',
+		translation: { key: 'itemRoute.errors.paletteReviewChanged' }
+	});
 	expect(f.posts).not.toHaveBeenCalled();
 });
 test.each(['item', 'rig', 'material'] as const)(
@@ -417,9 +421,12 @@ test.each(['item', 'rig', 'material'] as const)(
 			else if (kind === 'rig') f.current.manifest.rig.pivot.x++;
 			else f.current.manifest.materials[0].ramp[0] = '#313131';
 		});
-		await expect(matchItemColors('rig-test', 'sword', 'slash', 'south', plan)).rejects.toThrow(
-			'Existing colors were kept'
-		);
+		await expect(
+			matchItemColors('rig-test', 'sword', 'slash', 'south', plan)
+		).rejects.toMatchObject({
+			message: 'This item, body or material changed. Existing colors were kept; review again.',
+			translation: { key: 'itemRoute.errors.paletteSaveChanged' }
+		});
 		expect(f.current.manifest.items[1].paletteRepairs).toBeUndefined();
 		expect(f.posts).not.toHaveBeenCalled();
 	}

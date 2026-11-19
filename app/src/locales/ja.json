@@ -1,5 +1,6 @@
 {
 	"common": {
+		"loadFailed": "PixelDoll の一部を読み込めませんでした。ページを再読み込みして、もう一度お試しください。",
 		"advanced": "詳細設定",
 		"cancel": "キャンセル",
 		"cannotUndo": "この操作は取り消せません。",
@@ -484,6 +485,8 @@
 		"titleItemReview": "アイテムの確認"
 	},
 	"toolbar": {
+		"help": "ヘルプ",
+		"userGuide": "ユーザーガイド",
 		"characterView": "キャラクタービュー",
 		"mountSettings": "乗り物の設定",
 		"titleMountSettingsMounted": "乗り物の設定（騎乗中）",
@@ -1186,13 +1189,7 @@
 		"untitled": "PixelDollキャラクター",
 		"error": {
 			"noArtwork": "共有できるアートワークがありません",
-			"incomplete": "{direction}向きの{move}には完全なアートワークがありません",
-			"itemsMissing": "{items}には{move}/{direction}のアートワークがありません",
-			"cannotRender": "{direction}向きの{move}を描画できません",
 			"loading": "キャラクターのアートワークを読み込み中です",
-			"select": "利用できるモーションと向きを選んでください",
-			"noFrames": "{move}にはフレームがありません",
-			"noPairs": "モーションと向きの組み合わせで、共有に必要な画像がすべて揃っているものがありません",
 			"gifTooLarge": "選択したGIFは大きすぎます",
 			"size": "利用できる画像サイズを選んでください",
 			"imageTooLarge": "選択した画像は大きすぎます。小さいサイズを選ぶか、ビューを減らしてください",
@@ -2189,6 +2186,9 @@
 			"standingFrameSize": "PixelLabから返された立ちポーズのフレームのサイズが正しくありません。依存するリクエストは送信していません。",
 			"layersMismatch": "装備のレイヤーがこの装備スロットと一致しません。生成はリクエストされていません。",
 			"repairBatchMisaligned": "修復バッチのフレームにずれが生じました。残りのバッチを停止し、既存のアートワークを残しました。",
+			"reviewChanged": "このアイテムまたはチェック結果が変わりました。現在のアートワークを承認する前に、アイテムを開き直してください。",
+			"paletteReviewChanged": "このアイテムまたはその色が変わりました。色合わせをもう一度確認してください。",
+			"paletteSaveChanged": "アイテム、ボディ、またはマテリアルが変わりました。既存の色はそのままです。色合わせをもう一度確認してください。",
 			"invalidItemGridSheet": "PixelLabから使用できないアイテムのグリッドが返されました。シートは1枚だけである必要があります。既存のアートワークは残しています。",
 			"invalidItemGridLayout": "PixelLabから使用できないアイテムのグリッドが返されました。シートのフレーム配置が正しくありません。既存のアートワークは残しています。"
 		}

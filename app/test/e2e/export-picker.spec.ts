@@ -3091,14 +3091,23 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await popover.getByRole('switch').uncheck();
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('east');
 	await popover.getByRole('combobox', { name: 'Move' }).selectOption('cross-punch');
-	await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeDisabled();
-	await expect(popover.getByRole('status')).toContainText(
-		'cross-punch facing East has no complete artwork'
-	);
+	await expect(popover.locator('.share-preview canvas')).toBeVisible();
+	await expect(popover.getByRole('status')).toContainText('cross punch East');
+	const [fallbackPng] = await Promise.all([
+		page.waitForEvent('download'),
+		popover.getByRole('button', { name: 'Download PNG' }).click()
+	]);
+	await popover.getByRole('button', { name: 'Share to…' }).click();
+	await expect
+		.poll(() =>
+			page.evaluate(() => (window as unknown as { __shared?: { name: string } }).__shared?.name)
+		)
+		.toBe(fallbackPng.suggestedFilename());
+	expect(fallbackPng.suggestedFilename()).toMatch(/-cross-punch-east\.png$/);
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('__all_directions__');
 	await expect(
 		popover.getByRole('combobox', { name: 'Direction' }).locator('option[value="east"]')
-	).toHaveAttribute('disabled', '');
+	).toBeEnabled();
 	await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeEnabled();
 
 	await page.keyboard.press('Escape');
@@ -3507,7 +3516,7 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	expect(apiRequests).toEqual([]);
 });
 
-test('a sheet whose code fails to load closes, says so and can be tried again', async ({
+test('a sheet whose code fails to load closes, says so in French and can be tried again', async ({
 	page,
 	context
 }, testInfo) => {
@@ -3520,12 +3529,14 @@ test('a sheet whose code fails to load closes, says so and can be tried again', 
 	await context.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
 		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixeldoll.locale', 'fr');
 	});
-	await openStudio(page, testInfo.project.use.baseURL! + '/#/');
-	const exportButton = page.getByRole('button', { name: 'Export', exact: true }).first();
+	await page.goto(testInfo.project.use.baseURL! + '/#/');
+	await page.locator('.customize-action').click();
+	const exportButton = page.getByRole('button', { name: 'Exporter', exact: true }).first();
 	await exportButton.click();
 	await expect(page.locator('.toast')).toHaveText(
-		'Part of PixelDoll could not load. Reload to try again.'
+		'Impossible de charger une partie de PixelDoll. Rechargez la page pour réessayer.'
 	);
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
 	const tried = fetches;

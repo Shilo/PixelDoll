@@ -1,5 +1,6 @@
 {
 	"common": {
+		"loadFailed": "PixelDoll'un bir bölümü yüklenemedi. Yeniden denemek için sayfayı yenileyin.",
 		"advanced": "Gelişmiş",
 		"cancel": "İptal edin",
 		"cannotUndo": "Bu işlem geri alınamaz.",
@@ -501,6 +502,8 @@
 		"titleItemReview": "Eşya inceleme"
 	},
 	"toolbar": {
+		"help": "Yardım",
+		"userGuide": "Kullanıcı kılavuzu",
 		"characterView": "Karakter görünümü",
 		"mountSettings": "Binek ayarları",
 		"titleMountSettingsMounted": "Binek ayarları (binek üzerinde)",
@@ -1230,13 +1233,7 @@
 		"untitled": "PixelDoll karakteri",
 		"error": {
 			"noArtwork": "Paylaşılabilecek görsel yok",
-			"incomplete": "{move} animasyonunun {direction} yönündeki görseli eksik",
-			"itemsMissing": "{items} için {move} / {direction} görselleri eksik",
-			"cannotRender": "{move} animasyonunun {direction} yönü çizilemiyor",
 			"loading": "Karakter görselleri hâlâ yükleniyor",
-			"select": "Kullanılabilir bir animasyon ve yön seçin",
-			"noFrames": "{move} animasyonunda kare yok",
-			"noPairs": "Paylaşılabilecek eksiksiz bir animasyon ve yön çifti yok",
 			"gifTooLarge": "Seçilen GIF çok büyük",
 			"size": "Kullanılabilir bir görsel boyutu seçin",
 			"imageTooLarge": "Seçilen görsel çok büyük. Daha küçük bir boyut veya daha az görünüm seçin",
@@ -2272,6 +2269,9 @@
 			"standingFrameSize": "PixelLab yanlış boyutta bir ayakta duruş karesi döndürdü. Bağımlı istek gönderilmedi.",
 			"layersMismatch": "Ekipman katmanları bu ekipman yuvasıyla eşleşmiyor. Üretim isteği gönderilmedi.",
 			"repairBatchMisaligned": "Bir onarım partisi hizasız kareler döndürdü. Kalan partiler durduruldu ve mevcut görsel korundu.",
+			"reviewChanged": "Bu öğe veya denetimleri değişti. Mevcut görseli kabul etmeden önce öğeyi yeniden açın.",
+			"paletteReviewChanged": "Bu öğe veya renkleri değişti. Renk eşlemesini yeniden inceleyin.",
+			"paletteSaveChanged": "Öğe, gövde veya malzeme değişti. Mevcut renkler korundu. Renk eşlemesini yeniden inceleyin.",
 			"invalidItemGridSheet": "PixelLab kullanılamaz bir eşya ızgarası döndürdü. Tam olarak bir sayfa bekleniyordu. Mevcut görsel korundu.",
 			"invalidItemGridLayout": "PixelLab kullanılamaz bir eşya ızgarası döndürdü. Sayfanın kare düzeni yanlış. Mevcut görsel korundu."
 		}

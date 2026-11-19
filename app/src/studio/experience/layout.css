@@ -167,6 +167,17 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
+.name-line .name-text:has(.name-opener-value) {
+	display: flex;
+}
+.name-line .name-opener-value {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.name-line .name-opener-suffix {
+	flex: none;
+}
 .name-line svg {
 	flex: none;
 	color: var(--bu-muted);
@@ -289,7 +300,11 @@
 	.phone-layout .name-line .name-text {
 		display: block;
 	}
-	.phone-layout .name-line :is(.bu-muted, .name-opener-suffix) {
+	.phone-layout .name-line .name-text:has(.name-opener-value) {
+		display: flex;
+		padding-inline-end: 16px;
+	}
+	.phone-layout .name-line .bu-muted {
 		display: block;
 		font-size: 12px;
 		padding-inline-end: 16px;
@@ -300,6 +315,9 @@
 		inset-block-end: 1px;
 		width: 12px;
 		height: 12px;
+	}
+	.phone-layout .name-line:has(.name-opener-value) svg[data-surface-chevron] {
+		inset-block-end: calc((100% - 12px) / 2);
 	}
 	.phone-layout .name-facts {
 		display: none;

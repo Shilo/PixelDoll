@@ -40,6 +40,7 @@
 		class={compact ? 'bu-action btn icon plain' : 'row bu-action'}
 		data-variant="quiet"
 		aria-label={t('language.label')}
+		title={compact ? openerLabel(t('language.label')) : undefined}
 		aria-describedby={compact ? undefined : valueId}
 		aria-controls={menuId}
 		aria-expanded={expanded}

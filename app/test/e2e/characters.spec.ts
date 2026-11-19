@@ -216,7 +216,12 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 		const state = await import(path);
 		await state.renameProject('Saved hero');
 	});
-	await page.getByRole('button', { name: 'More actions for Saved hero', exact: true }).click();
+	const savedActions = page.getByRole('button', {
+		name: 'More actions for Saved hero',
+		exact: true
+	});
+	await expect(savedActions).toHaveAttribute('title', 'More actions for Saved hero...');
+	await savedActions.click();
 	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
 	await page.keyboard.press('Escape');
 	await page
@@ -281,12 +286,30 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	);
 	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
 	const moveDetails = page.locator('.colors details').filter({ hasText: 'pivot' });
+	await expect(moveDetails.locator('summary')).not.toContainText('...');
 	await moveDetails.locator('summary').click();
 	await expect(moveDetails.getByText(/^64×64 px, pivot /)).toBeVisible();
 	await expect(moveDetails.getByText(/^\d+×\d+ px$/)).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
 	await expect(page.locator('.name-text')).toHaveText('Saved hero...');
+	const viewport = page.viewportSize()!;
+	await page.setViewportSize({ width: 320, height: 700 });
+	await expect
+		.poll(() =>
+			page.locator('.name-line').evaluate((line) => {
+				const name = line.querySelector('.name-opener-value')!.getBoundingClientRect();
+				const suffix = line.querySelector('.name-opener-suffix')!.getBoundingClientRect();
+				const chevron = line.querySelector('svg[data-surface-chevron]')!.getBoundingClientRect();
+				return (
+					Math.abs(name.top - suffix.top) < 1 &&
+					name.right <= suffix.left &&
+					suffix.right <= chevron.left
+				);
+			})
+		)
+		.toBe(true);
+	await page.setViewportSize(viewport);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
 });

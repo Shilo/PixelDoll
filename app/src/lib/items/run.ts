@@ -85,6 +85,7 @@ import {
 	g2Fails,
 	automaticRepairError,
 	localizedAutomaticRepairError,
+	repairBatchMisalignedError,
 	grayShare,
 	smudgedViews,
 	sharedDesignColors,
@@ -2200,9 +2201,7 @@ export async function acceptItemReview(
 		item.baseHash !== ctx.rec.manifest.rig.baseHash ||
 		stableStringify(item) !== expected
 	) {
-		throw new Error(
-			'This item or its checks changed. Reopen it before accepting its current artwork.'
-		);
+		throw itemReviewChangedError();
 	}
 	const accepted = { ...item, qa: { ...acceptQa(item.qa), status: 'accepted' as const } };
 	await saveItem(projectId, accepted, new Map(), [], (current) => {
@@ -2210,11 +2209,16 @@ export async function acceptItemReview(
 			rigArtworkVersion(current.manifest.rig, current.character) !== version ||
 			stableStringify(current.manifest.items.find((i) => i.id === itemId)) !== expected
 		) {
-			throw new Error(
-				'This item or its checks changed. Reopen it before accepting its current artwork.'
-			);
+			throw itemReviewChangedError();
 		}
 	});
+}
+
+function itemReviewChangedError() {
+	return new LocalizedError(
+		'This item or its checks changed. Reopen it before accepting its current artwork.',
+		'itemRoute.errors.reviewChanged'
+	);
 }
 /** Prepare a bounded frozen-frame edit without making an API call, for visible review and execution. */
 export async function gridRepairRequest(
@@ -2523,10 +2527,7 @@ export async function regridClip(
 		if ('blocked' in result)
 			throw localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);
 		if (index < requests.length - 1 && result.cells.some((cell) => cell.shifted))
-			throw new LocalizedError(
-				'A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.',
-				'itemRoute.errors.repairBatchMisaligned'
-			);
+			throw repairBatchMisalignedError();
 		cells.push(...result.cells);
 		provenance.push(result.prov);
 		if (result.registrationIssue) registrationFindings.push(result.registrationIssue);
@@ -2765,11 +2766,15 @@ export async function matchItemColors(
 ): Promise<void> {
 	const prepared = await prepareItemPalette(projectId, itemId, anim, dir);
 	if (stableStringify(prepared.plan) !== stableStringify(reviewed))
-		throw new Error('This item or its colors changed. Review the color match again.');
+		throw new LocalizedError(
+			'This item or its colors changed. Review the color match again.',
+			'itemRoute.errors.paletteReviewChanged'
+		);
 	await saveItem(projectId, prepared.next, prepared.images, [], (current) => {
 		if (paletteVersion(current, itemId) !== prepared.version)
-			throw new Error(
-				'This item, body or material changed. Existing colors were kept; review again.'
+			throw new LocalizedError(
+				'This item, body or material changed. Existing colors were kept; review again.',
+				'itemRoute.errors.paletteSaveChanged'
 			);
 	});
 }

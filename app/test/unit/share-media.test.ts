@@ -9,14 +9,13 @@ import type {
 	Project,
 	Sha256
 } from '../../src/lib/store/manifest.ts';
-import { buildPresentation } from '../../src/studio/experience/presentation.ts';
 import {
 	ALL_DIRECTIONS,
 	ALL_MOVES,
 	SHARE_SCALES,
 	buildShareMedia,
+	buildSharePresentation as buildPresentation,
 	canAnimateShare,
-	canShareDirection,
 	encodeShareMedia,
 	encodeSharePng,
 	shareDimensions,
@@ -180,8 +179,8 @@ describe('share media', () => {
 	test('Default is a dressed one-frame PNG and all selections make a deterministic contact sheet', async () => {
 		const project = fixture(),
 			a = buildPresentation(project);
-		expect(canAnimateShare(a, { head: 'hat' }, 'default', 'south')).toBe(false);
-		expect(canAnimateShare(a, { head: 'hat' }, 'walk', 'south')).toBe(true);
+		expect(canAnimateShare(a, 'default', 'south')).toBe(false);
+		expect(canAnimateShare(a, 'walk', 'south')).toBe(true);
 		const standing = buildShareMedia(a, { head: 'hat' }, 'default', 'south', true);
 		expect(standing.extension).toBe('png');
 		expect([...standing.still.data]).toEqual([60, 0, 0, 255, 90, 0, 0, 255]);
@@ -215,15 +214,15 @@ describe('share media', () => {
 		expect(delays).toEqual([7, 12]);
 	});
 
-	test('aggregate choices omit unavailable pairs, while an explicit pair never substitutes artwork', () => {
+	test('aggregate choices omit unavailable pairs and an empty selection shares a still', () => {
 		const project = fixture();
 		delete project.manifest.items[0].layers[0].cells!.walk.east;
 		const a = buildPresentation(project);
-		expect(canShareDirection(a, {}, 'walk', 'east')).toBe(false);
-		expect(canShareDirection(a, {}, ALL_MOVES, 'east')).toBe(true);
-		expect(() => buildShareMedia(a, {}, 'walk', 'east', true)).toThrow(
-			/East has no complete artwork/
-		);
+		expect(canAnimateShare(a, 'walk', 'east')).toBe(false);
+		const east = buildShareMedia(a, {}, 'walk', 'east', true);
+		expect(east.extension).toBe('png');
+		expect(east.still.data[0]).toBe(60);
+		expect(east.omitted).toEqual([{ move: 'walk', direction: 'east' }]);
 		const oneMove = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true);
 		expect(oneMove.omitted.map((pair) => [pair.move, pair.direction])).toEqual([['walk', 'east']]);
 		expect(oneMove.frames.map((frame) => [frame.image.w, frame.image.h])).toEqual([
@@ -249,22 +248,62 @@ describe('share media', () => {
 		]);
 		expect([all.still.w, all.still.h]).toEqual([8, 6]);
 		delete project.manifest.items[0].layers[0].cells!.walk.south;
-		expect(() =>
-			buildShareMedia(buildPresentation(project), {}, 'walk', ALL_DIRECTIONS, true)
-		).toThrow(/No complete move and direction pairs/);
+		const fallback = buildShareMedia(buildPresentation(project), {}, 'walk', ALL_DIRECTIONS, true);
+		expect(fallback.extension).toBe('png');
+		expect(fallback.still.data[0]).toBe(60);
+		expect(fallback.omitted).toEqual([
+			{ move: 'walk', direction: 'south' },
+			{ move: 'walk', direction: 'east' }
+		]);
 	});
 
-	test('picker availability rejects equipment missing a later animation frame', () => {
+	test('missing body images skip unrenderable moments without shifting the direction grid', () => {
+		const project = fixture();
+		project.images.delete(hash('body0'));
+		const walk = project.manifest.rig.animations[1];
+		walk.cells = 3;
+		walk.frames.push({ cell: 2, ms: 160 });
+		const views = project.manifest.items[0].layers[0].cells!.walk;
+		views.south!.push(hash('rest'));
+		views.east = [hash('body0'), hash('body0'), hash('rest')];
+		const a = buildPresentation(project);
+		expect(canAnimateShare(a, 'walk', 'east')).toBe(false);
+		expect(canAnimateShare(a, 'walk', ALL_DIRECTIONS)).toBe(true);
+		const media = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true);
+		expect(media.frames.map(({ ms }) => ms)).toEqual([120, 160]);
+		expect(media.frames.map(({ image }) => [image.data[0], image.data[24]])).toEqual([
+			[50, 0],
+			[60, 60]
+		]);
+		expect(buildShareMedia(a, {}, 'walk', 'south', false).still.data[0]).toBe(50);
+	});
+
+	test('a missing or empty move shares available artwork, or a transparent PNG when none exists', async () => {
+		const project = fixture();
+		project.manifest.rig.animations[1].frames = [];
+		const a = buildPresentation(project);
+		expect(buildShareMedia(a, {}, 'missing', 'south', true).still.data[0]).toBe(60);
+		expect(buildShareMedia(a, {}, ALL_MOVES, 'south', true).still.data[0]).toBe(60);
+		project.images.clear();
+		const empty = buildShareMedia(buildPresentation(project), {}, 'walk', 'south', true);
+		expect(empty.empty).toBe(true);
+		expect(empty.extension).toBe('png');
+		const png = await decodePngBytes(await encodeShareMedia(empty));
+		expect([...png.data]).toEqual(Array<number>(8).fill(0));
+	});
+
+	test('missing equipment on a later frame is hidden throughout the view like in the game', () => {
 		const project = fixture();
 		project.manifest.items[1].layers[0].cells!.walk.south = [hash('hat')];
 		const a = buildPresentation(project);
-		expect(canShareDirection(a, { head: 'hat' }, 'walk', 'south')).toBe(false);
-		expect(() => buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true)).toThrow(
-			/hat missing walk \/ South artwork/
-		);
+		const media = buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true);
+		expect(media.frames.map(({ image }) => [...image.data])).toEqual([
+			[40, 0, 0, 255, 0, 0, 0, 0],
+			[50, 0, 0, 255, 0, 0, 0, 0]
+		]);
 	});
 
-	test('loading worn artwork cannot silently produce a bare character, but completed draft views can be shared', () => {
+	test('pending draft views omit the item without blocking completed body or equipment artwork', () => {
 		const project = fixture(),
 			hat = project.manifest.items[1];
 		hat.status = 'draft';
@@ -272,16 +311,14 @@ describe('share media', () => {
 		delete hat.layers[0].cells!.walk.east;
 		const a = buildPresentation(project),
 			worn = { head: hat.id };
-		expect(canShareDirection(a, worn, 'walk', 'east')).toBe(false);
-		expect(canAnimateShare(a, worn, 'walk', 'east')).toBe(false);
+		expect(canAnimateShare(a, 'walk', 'east')).toBe(true);
 		for (const animate of [false, true]) {
-			expect(() => buildShareMedia(a, worn, 'walk', 'east', animate)).toThrow(/hat loading/);
+			const east = buildShareMedia(a, worn, 'walk', 'east', animate);
+			expect([...east.frames[0].image.data]).toEqual([40, 0, 0, 255, 0, 0, 0, 0]);
 			const media = buildShareMedia(a, worn, 'walk', 'south', animate);
 			expect([...media.frames[0].image.data]).toEqual([40, 0, 0, 255, 90, 0, 0, 255]);
 			const all = buildShareMedia(a, worn, 'walk', ALL_DIRECTIONS, animate);
-			expect(all.omitted).toEqual([
-				{ move: 'walk', direction: 'east', reason: 'hat loading — East' }
-			]);
+			expect(all.omitted).toEqual([]);
 		}
 	});
 
@@ -289,7 +326,7 @@ describe('share media', () => {
 		const project = fixture();
 		project.manifest.rig.animations[1].frames = [{ cell: 0, ms: 100 }];
 		const a = buildPresentation(project);
-		expect(canAnimateShare(a, {}, 'walk', ALL_DIRECTIONS)).toBe(false);
+		expect(canAnimateShare(a, 'walk', ALL_DIRECTIONS)).toBe(false);
 		expect(buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true).extension).toBe('png');
 	});
 

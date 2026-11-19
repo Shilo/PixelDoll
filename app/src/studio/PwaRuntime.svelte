@@ -39,6 +39,8 @@
 	async function show(next: 'update' | 'install') {
 		if (busy || mode) return;
 		from = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		if (next === 'install' && from?.closest('#experience-options'))
+			from = document.querySelector('[popovertarget="experience-options"]');
 		document
 			.querySelectorAll<HTMLElement>('[popover]:popover-open')
 			.forEach((el) => el.hidePopover());
@@ -46,7 +48,7 @@
 		updateUrl = '';
 		mode = next;
 		await tick();
-		if (mode !== next || (next === 'install' && $pwa.installed)) return;
+		if (mode !== next) return;
 		dialog.showModal();
 		if (next === 'update') {
 			const reason = updateBlocked();
@@ -98,9 +100,6 @@
 	async function install() {
 		if ((await installApp()) && mode === 'install') close();
 	}
-	$effect(() => {
-		if (mode === 'install' && $pwa.installed) close();
-	});
 	function validateAutomatic() {
 		assertStartupUpdate();
 		if (mode || (app.key && !app.remembered) || updateBlocked()) throw new StartupUpdateCancelled();
@@ -209,7 +208,7 @@
 						onclick={install}
 						>{openerLabel(t('pwaRuntime.installPixelDoll'))}<SurfaceChevron /></button
 					>
-				{:else}
+				{:else if !$pwa.installed}
 					<p>
 						{t('pwaRuntime.aBrowserInstallPromptIsnTAvailable')}
 					</p>

@@ -1,5 +1,6 @@
 export function openerLabel(label: string): string {
-	return label.trimEnd().replace(/(?:\.{3,}|…+)$/u, '') + '...';
+	const trimmed = label.trimEnd();
+	return trimmed.endsWith('…') ? trimmed.slice(0, -1) + '...' : openerName(trimmed);
 }
 
 export function openerName(name: string): string {

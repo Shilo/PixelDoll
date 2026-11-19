@@ -5,7 +5,6 @@
 	import Sprite from './Sprite.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { doc, store, ui, view } from './state.svelte.ts';
-	import { buildPresentation } from './experience/presentation.ts';
 	import { displayDirection } from './displayDirection.ts';
 	import { directionLabel } from '../lib/rig/directions.ts';
 	import { errorTranslation } from '../lib/message.ts';
@@ -16,8 +15,8 @@
 		ALL_MOVES,
 		SHARE_SCALES,
 		buildShareMedia,
+		buildSharePresentation,
 		canAnimateShare,
-		canShareDirection,
 		encodeShareMedia,
 		encodeSharePng,
 		shareDimensions,
@@ -56,10 +55,12 @@
 	let rememberedId = '';
 	const availability = $derived.by(() => {
 		void doc.rev;
-		return open && view.project ? buildPresentation(view.project, { loading: doc.loading }) : null;
+		return open && view.project
+			? buildSharePresentation(view.project, { loading: doc.loading })
+			: null;
 	});
 	const canAnimate = $derived(
-		availability ? canAnimateShare(availability, view.items, move, direction) : false
+		availability ? canAnimateShare(availability, move, direction) : false
 	);
 	const animate = $derived(wantedAnimate && canAnimate);
 	const planned = $derived.by(() => {
@@ -73,14 +74,6 @@
 			return { media: null, error: error as unknown };
 		}
 	});
-	const directionOptions = $derived.by(() =>
-		(availability?.directions ?? []).map((id) => {
-			return {
-				id,
-				disabled: !canShareDirection(availability!, view.items, move, id) && id !== direction
-			};
-		})
-	);
 	const previewFrames = $derived(planned.media ? sharePreviewFrames(planned.media) : []);
 	const image = $derived(previewFrames[index % previewFrames.length] ?? null);
 	const previewHeight = $derived(Math.max(72, Math.min(220, viewportHeight - 370)));
@@ -347,9 +340,7 @@
 					onchange={() => (index = 0)}
 				>
 					{#each store.project?.manifest.rig.directions ?? [] as entry (entry.id)}<option
-							value={entry.id}
-							disabled={directionOptions.find((option) => option.id === entry.id)?.disabled ??
-								false}>{displayDirection(entry.id as DirectionName)}</option
+							value={entry.id}>{displayDirection(entry.id as DirectionName)}</option
 						>{/each}
 					<option value={ALL_DIRECTIONS}>{t('stage.allDirections')}</option>
 				</select>
@@ -420,8 +411,12 @@
 		{#if planned.error !== null}<p class="share-message bu-error" role="status">
 				{shareError(planned.error)}
 			</p>{/if}
-		{#if omittedText}<p class="share-message bu-badge" data-tone="warning" role="status">
-				{omittedText}
+		{#if planned.media?.empty || omittedText}<p
+				class="share-message bu-badge"
+				data-tone="warning"
+				role="status"
+			>
+				{planned.media?.empty ? t('share.error.noArtwork') : omittedText}
 			</p>{/if}
 		{#if feedback}<p class="share-message" role="status">{feedback()}</p>{/if}
 	</div>

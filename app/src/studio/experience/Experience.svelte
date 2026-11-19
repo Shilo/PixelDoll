@@ -28,6 +28,7 @@
 		openingProjectId,
 		refreshProjects,
 		characterName,
+		showStanding,
 		toast
 	} from '../state.svelte.ts';
 	import {
@@ -379,8 +380,11 @@
 					list.length &&
 					experience.screen === 'characters' &&
 					!ui.sheet
-				)
+				) {
+					// Customize opens on the standing move, also for the character already shown.
+					showStanding();
 					enterCustomize();
+				}
 			}
 			return;
 		}
@@ -482,7 +486,9 @@
 		)
 			return;
 		if ((e.target as HTMLElement).closest('input,textarea,select,[contenteditable]')) return;
-		const popover = document.querySelector<HTMLElement>('[popover]:popover-open');
+		const popover = document.querySelector<HTMLElement>(
+			'[popover]:popover-open:not(:has([popover]:popover-open))'
+		);
 		if (popover) {
 			if (e.key === 'Backspace') {
 				popover.hidePopover();
@@ -738,13 +744,15 @@
 						><Grid2x2 size={16} /><SurfaceChevron compact /></button
 					>
 					{#if missing}
+						{@const coverageLabel = t('experience.missingEquippedFrames', {
+							count: missing.items.length,
+							n: formatNumber(missing.items.length)
+						})}
 						<button
 							class="bu-action"
 							data-variant="quiet"
-							aria-label={t('experience.missingEquippedFrames', {
-								count: missing.items.length,
-								n: formatNumber(missing.items.length)
-							})}
+							aria-label={coverageLabel}
+							title={openerLabel(coverageLabel)}
 							popovertarget="preview-coverage"
 							><TriangleAlert size={16} /><span>{formatNumber(missing.items.length)}</span
 							><SurfaceChevron compact /></button

@@ -1,5 +1,6 @@
 {
 	"common": {
+		"loadFailed": "Ein Teil von PixelDoll konnte nicht geladen werden. Lade die Seite neu und versuche es erneut.",
 		"advanced": "Erweitert",
 		"cancel": "Abbrechen",
 		"cannotUndo": "Das lässt sich nicht rückgängig machen.",
@@ -504,6 +505,8 @@
 		"titleItemReview": "Gegenstand prüfen"
 	},
 	"toolbar": {
+		"help": "Hilfe",
+		"userGuide": "Benutzerhandbuch",
 		"characterView": "Figurenansicht",
 		"mountSettings": "Reittier-Einstellungen",
 		"titleMountSettingsMounted": "Reittier-Einstellungen (aufgesessen)",
@@ -1236,13 +1239,7 @@
 		"untitled": "PixelDoll-Figur",
 		"error": {
 			"noArtwork": "Keine Grafik zum Teilen verfügbar",
-			"incomplete": "Für {move} in Blickrichtung {direction} sind die Grafiken unvollständig",
-			"itemsMissing": "Für {items} fehlen Grafiken für {move} / {direction}",
-			"cannotRender": "{move} in Blickrichtung {direction} kann nicht gerendert werden",
 			"loading": "Die Figurengrafiken werden noch geladen",
-			"select": "Wähle eine verfügbare Animation und Blickrichtung",
-			"noFrames": "{move} hat keine Frames",
-			"noPairs": "Keine vollständige Kombination aus Animation und Blickrichtung zum Teilen verfügbar",
 			"gifTooLarge": "Das ausgewählte GIF ist zu groß",
 			"size": "Wähle eine verfügbare Bildgröße",
 			"imageTooLarge": "Das ausgewählte Bild ist zu groß. Wähle eine kleinere Größe oder weniger Ansichten",
@@ -2278,6 +2275,9 @@
 			"standingFrameSize": "PixelLab hat einen Standframe mit falscher Größe geliefert. Es wurde keine abhängige Anfrage gesendet.",
 			"layersMismatch": "Die Ausrüstungsebenen passen nicht zu diesem Ausrüstungsplatz. Es wurde keine Generierung angefordert.",
 			"repairBatchMisaligned": "Ein Reparaturstapel hat verschobene Frames geliefert. Die übrigen Stapel wurden gestoppt und die vorhandene Grafik bleibt erhalten.",
+			"reviewChanged": "Dieser Gegenstand oder seine Prüfungen haben sich geändert. Öffne ihn erneut, bevor du seine aktuelle Grafik akzeptierst.",
+			"paletteReviewChanged": "Dieser Gegenstand oder seine Farben haben sich geändert. Prüfe die Farbanpassung erneut.",
+			"paletteSaveChanged": "Der Gegenstand, der Körper oder das Material hat sich geändert. Die vorhandenen Farben wurden beibehalten. Prüfe die Farbanpassung erneut.",
 			"invalidItemGridSheet": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Erwartet war genau ein Sheet. Die vorhandene Grafik bleibt erhalten.",
 			"invalidItemGridLayout": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Das Sheet hat ein falsches Frame-Layout. Die vorhandene Grafik bleibt erhalten."
 		}

@@ -1104,6 +1104,39 @@ test('resizing stops held live input without teleporting, while a view change re
 	await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00');
 });
 
+test('a held keyboard walk continues through a click on a control and ends when a menu takes the keyboard', async ({
+	page
+}) => {
+	await landing(page);
+	await page.keyboard.press('Enter');
+	await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
+	const x = async () => Number((await world(page).getAttribute('data-position'))!.split(',')[0]);
+	await page.keyboard.down('d');
+	await expect.poll(x).toBeGreaterThan(10);
+	const colors = page
+		.getByRole('tablist', { name: 'Customization panels' })
+		.getByRole('tab', { name: 'Colors', exact: true });
+	await colors.click();
+	// The click did its work, the stage has the keyboard again, and the walk goes on.
+	await expect(colors).toHaveAttribute('aria-selected', 'true');
+	await expect(world(page)).toBeFocused();
+	const walked = await x();
+	await expect.poll(x).toBeGreaterThan(walked + 10);
+	// A menu needs the keyboard itself: the walk ends there.
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await expect(world(page)).not.toBeFocused();
+	await expect
+		.poll(async () => {
+			const before = await x();
+			await page.evaluate(
+				() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+			);
+			return (await x()) - before;
+		})
+		.toBe(0);
+	await page.keyboard.up('d');
+});
+
 test('a lone character ignores wheel navigation and keyboard steps without reopening', async ({
 	page
 }, info) => {

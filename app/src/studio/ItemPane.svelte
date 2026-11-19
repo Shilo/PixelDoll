@@ -506,12 +506,12 @@
 						disabled={missingOffer?.gens == null || tierBlocked(missingTier)}
 						aria-describedby={tierBlocked(missingTier) ? 'item-missing-tier' : undefined}
 						onclick={makeMissing}
-						>{openerLabel(t('itemPane.makeFor', { move: missingName }))}
+						>{t('itemPane.makeFor', { move: missingName })}
 						<span class="cost"
 							>{missingOffer?.gens == null
 								? t('common.unavailable')
 								: t('moves.estimate', { gens: number(Math.ceil(missingOffer.gens)) })}</span
-						><SurfaceChevron /></button
+						></button
 					></span
 				>
 				{#if missingOffer?.error}<p class="notice warn small" role="status">
@@ -565,12 +565,12 @@
 								? `item-${choice.id}-tier`
 								: `item-${choice.id}-help item-repair-billing`}
 							onclick={() => repairFrames(choice.offer, tier)}
-							>{openerLabel(choice.label)}
+							>{choice.label}
 							<span class="cost"
 								>{choice.offer?.gens == null
 									? t('common.unavailable')
 									: t('moves.estimate', { gens: number(Math.ceil(choice.offer.gens)) })}</span
-							><SurfaceChevron /></button
+							></button
 						>
 					</span>
 					<p class="faint small" id={`item-${choice.id}-help`}>

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import SurfaceChevron from './SurfaceChevron.svelte';
-	import { openerLabel } from './openerLabel.ts';
+	import { openerLabel, openerName } from './openerLabel.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
@@ -141,7 +141,7 @@
 					disabled={(!!moving.spec && !moving.done) || !poseOffer?.specs.length || poseBlocked}
 					aria-describedby={poseBlocked ? 'stage-pose-tier' : undefined}
 					onclick={makePose}
-					>{openerLabel(t('stageNote.makeIt'))}
+					>{t('stageNote.makeIt')}
 					<span class="cost"
 						>{poseOffer?.gens == null
 							? t('common.unavailable')
@@ -149,7 +149,7 @@
 									count: poseOffer.gens,
 									n: formatNumber(poseOffer.gens)
 								})}</span
-					><SurfaceChevron /></button
+					></button
 				></span
 			>
 			{#if poseOffer?.error}<span role="status">{displayMessage(poseOffer.error)}</span>{/if}
@@ -168,9 +168,9 @@
 				class="bu-action btn sm"
 				data-variant="outline"
 				onclick={() => openNewItem(remake.slot, { slot: remake.slot, prompt: remake.prompt })}
-				>{openerLabel(
-					copyOnly ? t('itemMenu.makeOneForName', { name: m?.name }) : t('stageNote.makeItAgain')
-				)}<SurfaceChevron /></button
+				>{copyOnly
+					? openerName(t('itemMenu.makeOneForName', { name: m?.name }))
+					: openerLabel(t('stageNote.makeItAgain'))}<SurfaceChevron /></button
 			>
 		{/if}
 	</div>

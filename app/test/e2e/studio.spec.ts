@@ -1229,14 +1229,24 @@ test('studio demo: touch slot headers scroll before a hold and drag after arming
 	await page.clock.runFor(32);
 	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
 	await expect(page.locator('.slot-drag-preview')).not.toBeVisible();
+	const navigationScroll = await list.evaluateHandle((element) => {
+		const scroll = { ended: false };
+		element.addEventListener('scrollend', () => (scroll.ended = true), { once: true });
+		return scroll;
+	});
 	const navigation = (await railHead.boundingBox())!;
 	await touch('touchStart', [
 		{ x: navigation.x + 15, y: navigation.y + navigation.height / 2, id: 4 }
 	]);
 	await touch('touchEnd', []);
-	await page.clock.runFor(32);
 	await expect(railHead).toHaveAttribute('aria-current', 'true');
 	await expect(page.locator('#slot-menu')).not.toBeVisible();
+	await expect
+		.poll(() => navigationScroll.evaluate((scroll) => scroll.ended), {
+			message: 'Head navigation finishes scrolling before the hold'
+		})
+		.toBe(true);
+	await navigationScroll.dispose();
 	const holdRail = (await railHead.boundingBox())!;
 	const beforeHold = await keys();
 	await touch('touchStart', [{ x: holdRail.x + 15, y: holdRail.y + 20, id: 5 }]);
@@ -1831,6 +1841,8 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor();
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The copy is another character, so it opens on its standing move: pick the animated one this test watches.
+	await page.locator('.playback-move select').selectOption('walk');
 	await pickItem(page, 'Red cape');
 	let inspector = await selectedItemDetails(page);
 	async function checkFrames() {
@@ -1930,6 +1942,8 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	const setup = page.getByRole('checkbox', { name: /Set up the pose rig next/ });
 	if (await setup.count()) await setup.uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
+	await expect(page.locator('.playback-move select')).toHaveValue('default'); // a new character, standing again
+	await page.locator('.playback-move select').selectOption('walk');
 	await pickItem(page, 'Red cape');
 	inspector = await selectedItemDetails(page);
 	await expect(inspector.locator('.dir-strip canvas')).toHaveCount(8);
@@ -4551,6 +4565,26 @@ test('reload restores failed create, move and setup for review without paid subm
 		await expect(dialog.locator('.steps-list .ring.spin')).toHaveCount(0);
 		await page.keyboard.press('Escape');
 	}
+	await page.evaluate(async () => {
+		const path = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ path);
+		const record = await db.get('projects', 'studio-move');
+		await db.put('projects', 'studio-move', {
+			...record,
+			error:
+				'A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.'
+		});
+		localStorage.setItem('pixeldoll.locale', 'fr');
+	});
+	await page.reload();
+	await page.locator('.customize-action').click();
+	await expect(page.locator('.world-actors').first()).toBeVisible();
+	await page.evaluate(() => {
+		(window as unknown as { __studio: { ui: { sheet: string } } }).__studio.ui.sheet = 'move';
+	});
+	await expect(page.getByRole('dialog')).toContainText(
+		'Un lot de réparation a renvoyé des images décalées. Les lots restants ont été arrêtés et le visuel existant a été conservé.'
+	);
 	expect(posts).toEqual([]);
 });
 
@@ -5353,6 +5387,8 @@ test('partial missing gear and explicit item repair stay on the current move and
 	await inspectStage(page);
 	const make = page.locator('.stage-note').getByRole('button', { name: /^Make it/ });
 	await expect(make).toContainText('Est. 3 gens');
+	await expect(make).not.toContainText('...');
+	await expect(make.locator('[data-surface-chevron]')).toHaveCount(0);
 	await make.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await connect.getByLabel('API key', { exact: true }).fill('synthetic-partial-repair-key');
@@ -6774,7 +6810,14 @@ for (const changed of ['item', 'rig'] as const)
 		);
 		const fixture = await freePaletteFixture(page),
 			pane = await selectedItemDetails(page);
-		const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ });
+		await page.evaluate(async () => {
+			const path = '/src/lib/i18n.ts',
+				i18n = await import(path);
+			await i18n.selectLanguage('fr');
+		});
+		const action = pane.getByRole('button', {
+			name: /^Harmoniser les couleurs de l’objet.*Gratuit$/
+		});
 		await expect(action).toBeVisible();
 		await page.evaluate(
 			async ({ id, changed }) => {
@@ -6791,9 +6834,10 @@ for (const changed of ['item', 'rig'] as const)
 			},
 			{ id: fixture.itemId, changed }
 		);
+		await context.setOffline(true);
 		await action.click();
 		await expect(pane).toContainText(
-			'This item or its colors changed. Review the color match again.'
+			'Cet équipement ou ses couleurs ont changé. Vérifiez de nouveau la mise en correspondance des couleurs.'
 		);
 		const saved = await page.evaluate(async (id) => {
 			const p = '/src/studio/state.svelte.ts',

@@ -1,5 +1,6 @@
 {
 	"common": {
+		"loadFailed": "Não foi possível carregar uma parte do PixelDoll. Recarregue a página para tentar novamente.",
 		"advanced": "Avançado",
 		"cancel": "Cancelar",
 		"cannotUndo": "Não é possível desfazer essa ação.",
@@ -501,6 +502,8 @@
 		"titleItemReview": "Revisão de item"
 	},
 	"toolbar": {
+		"help": "Ajuda",
+		"userGuide": "Guia do usuário",
 		"characterView": "Vista do personagem",
 		"mountSettings": "Configurações da montaria",
 		"titleMountSettingsMounted": "Configurações da montaria (em uso)",
@@ -1244,13 +1247,7 @@
 		"untitled": "Personagem do PixelDoll",
 		"error": {
 			"noArtwork": "Não há arte disponível para compartilhar",
-			"incomplete": "{move} na direção {direction} não tem arte completa",
-			"itemsMissing": "Falta arte de {move} / {direction} para {items}",
-			"cannotRender": "Não foi possível renderizar {move} na direção {direction}",
 			"loading": "A arte do personagem ainda está carregando",
-			"select": "Selecione uma animação e uma direção disponíveis",
-			"noFrames": "{move} não tem quadros",
-			"noPairs": "Não há combinações completas de animação e direção para compartilhar",
 			"gifTooLarge": "O GIF selecionado é grande demais",
 			"size": "Selecione um tamanho de imagem disponível",
 			"imageTooLarge": "A imagem selecionada é grande demais. Escolha um tamanho menor ou menos vistas",
@@ -2292,6 +2289,9 @@
 			"standingFrameSize": "O PixelLab retornou um quadro da pose em pé com o tamanho errado. Nenhuma solicitação dependente foi enviada.",
 			"layersMismatch": "As camadas do equipamento não correspondem a este espaço. Nenhuma geração foi solicitada.",
 			"repairBatchMisaligned": "Um lote de reparo retornou quadros desalinhados. Os lotes restantes foram interrompidos e a arte existente foi mantida.",
+			"reviewChanged": "Este item ou suas verificações mudaram. Abra-o novamente antes de aceitar a arte atual.",
+			"paletteReviewChanged": "Este item ou suas cores mudaram. Revise a correspondência de cores novamente.",
+			"paletteSaveChanged": "O item, o corpo ou o material mudou. As cores existentes foram mantidas. Revise a correspondência novamente.",
 			"invalidItemGridSheet": "O PixelLab retornou uma grade de item inutilizável. Era esperada exatamente uma folha. A arte existente foi mantida.",
 			"invalidItemGridLayout": "O PixelLab retornou uma grade de item inutilizável. A folha tem o layout de quadros errado. A arte existente foi mantida."
 		}
