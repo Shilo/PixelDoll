@@ -1310,7 +1310,7 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 		assert.ok(bytes.includes(Buffer.from(f)), `zip has ${f}`);
 	assert.ok(download.suggestedFilename().startsWith('adventurer-'), download.suggestedFilename());
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
-	await expect(page.locator('.toast').getByText(/^Downloaded/)).toBeVisible();
+	await expect(page.locator('.toast').getByText('Export download started.')).toBeVisible();
 	finish();
 });
 
@@ -4572,14 +4572,11 @@ test('Export discloses saved item and body review flags without blocking analysi
 		await page.getByRole('button', { name: 'Done', exact: true }).click();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Export', exact: true });
-	const itemNotice = sheet
-		.locator('.notice.warn')
-		.filter({ hasText: 'Saved quality or appearance flags:' });
+	await expect(sheet.getByText(/Some artwork needs a check/)).toBeVisible();
+	await sheet.getByText('Export notes', { exact: true }).click();
+	const itemNotice = sheet.getByText(/^Check this artwork before using it:/);
 	for (const name of names) await expect(itemNotice).toContainText(name);
-	await expect(itemNotice).toContainText('including explicitly accepted artwork');
-	const bodyNotice = sheet
-		.locator('.notice.warn')
-		.filter({ hasText: 'Body frames failed saved checks:' });
+	const bodyNotice = sheet.getByText(/^Check body frames:/);
 	await expect(bodyNotice).toContainText('Walk facing east, Walk facing west');
 	await expect(bodyNotice).not.toContainText('Removed');
 	await expect(bodyNotice).not.toContainText('Cross punch');
@@ -4606,8 +4603,8 @@ test('Export discloses saved item and body review flags without blocking analysi
 	});
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(sheet.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled();
-	await expect(sheet.getByText(/Saved quality or appearance flags:/)).toHaveCount(0);
-	await expect(sheet.getByText(/Body frames failed saved checks:/)).toHaveCount(0);
+	await expect(sheet.getByText(/^Check this artwork before using it:/)).toHaveCount(0);
+	await expect(sheet.getByText(/^Check body frames:/)).toHaveCount(0);
 	expect(requests).toEqual([]);
 });
 
@@ -4835,19 +4832,19 @@ async function oversizedItemFixture(page: Page, itemId: string) {
 			iPath = '/src/lib/items/items.ts',
 			items = await import(iPath),
 			pngPath = '/src/lib/image/pngraw.ts',
-			png = await import(pngPath);
+			png = await import(pngPath),
+			rigPath = '/src/lib/rig/rig.ts',
+			rig = await import(rigPath);
 		const ctx = await projectModule.loadProject(s.doc.id),
 			item = ctx.rec.manifest.items.find((it: { id: string }) => it.id === id),
 			padded = new Map<string, string>();
 		const pad = async (hash: string) => {
-			if (!padded.has(hash))
-				padded.set(
-					hash,
-					'sha256:' +
-						(await db.putBlob(
-							await png.encodePngBytes(items.padImg(ctx.project.images.get(hash), 16))
-						))
-				);
+			if (!padded.has(hash)) {
+				const image = items.padImg(ctx.project.images.get(hash), 16);
+				const cell = await rig.cellHash(image);
+				await db.put('blobs', cell.slice(7), new Blob([await png.encodePngBytes(image)]));
+				padded.set(hash, cell);
+			}
 			return padded.get(hash);
 		};
 		for (const layer of item.layers) {
@@ -6143,7 +6140,9 @@ async function freePaletteFixture(page: Page) {
 			const pngPath = '/src/lib/image/png.ts',
 				png = await import(pngPath),
 				rawPath = '/src/lib/image/pngraw.ts',
-				raw = await import(rawPath);
+				raw = await import(rawPath),
+				rigPath = '/src/lib/rig/rig.ts',
+				rig = await import(rigPath);
 			const rec = await db.get('projects', s.doc.id),
 				item = rec.manifest.items.find((it: { id: string }) => it.id === id),
 				metalId = id + '-fixed-metal';
@@ -6174,7 +6173,8 @@ async function freePaletteFixture(page: Page) {
 				[3, [16, 16, 16]]
 			] as [number, number[]][])
 				image.data.set([...rgb, 255], (40 * 96 + 40 + offset) * 4);
-			const hash = 'sha256:' + (await db.putBlob(await raw.encodePngBytes(image)));
+			const hash = await rig.cellHash(image);
+			await db.put('blobs', hash.slice(7), new Blob([await raw.encodePngBytes(image)]));
 			for (const layer of item.layers)
 				layer.cells.walk.west = Array.from({ length: 8 }, () => null);
 			item.layers[0].cells.walk.west[0] = hash;

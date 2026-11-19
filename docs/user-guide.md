@@ -329,9 +329,15 @@ selected equipment posing. The previous body remains if any quality check still 
 
 Press **Export** (toolbar), choose an **Export format**, and download the zip. **Engines and frameworks** lists Godot, Unity,
 Phaser, GDevelop and RPG Maker; **Assets** lists Aseprite and PNG + JSON. Export is
-free and runs on your device. Check **Also export finished characters** to also get one ready-made sheet per outfit.
+free and runs on your device. Turn on **Include dressed character sheets** to get a ready-made sheet per outfit.
 
-Each zip has a `README.txt` with a quick start for that engine. Copy the whole folder into your project (for RPG Maker, only
+If some frames or equipment are missing, check **Export notes** for what was left out. Build warnings also appear in
+`Export notes.txt` inside the ZIP. Your saved character is unchanged.
+If the selected format cannot be built, or the export is too large, **Download artwork ZIP** saves the source PNGs
+PixelDoll can read, along with a frame list. It does not include full alignment or game settings and is not a game-ready
+export or an editable PixelDoll copy. If there is no readable artwork, there is no ZIP to download.
+
+Each format ZIP has a `README.txt` with a quick start for that engine. Copy the whole folder into your project (for RPG Maker, only
 the PNG files go into the characters folder).
 
 Godot includes a native scene, animation resources and an equipment runtime. Unity includes an Editor importer that creates

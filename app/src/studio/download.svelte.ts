@@ -8,7 +8,7 @@ import type { StoredProject } from '../lib/store/project.ts';
 import type { Project } from '../lib/store/manifest.ts';
 import { retainMoveMetadata } from '../lib/rig/moves.ts';
 import { moveLabel } from './model.ts';
-import { doc, store, readCharacter, toast } from './state.svelte.ts';
+import { doc, store, readCharacterForExport, toast } from './state.svelte.ts';
 
 /** The saved record's rig data, so the ZIP imports back as an editable character (the demo has none). */
 export const editableData = (rec: StoredProject | undefined) =>
@@ -35,7 +35,7 @@ async function source(projectId: string): Promise<{ project: Project; look: Look
 			project: store.project,
 			look: { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) }
 		};
-	const { r } = await readCharacter(projectId);
+	const r = await readCharacterForExport(projectId);
 	const outfit = r.current ?? r.project.manifest.presets[0];
 	return {
 		project: r.project,
@@ -57,8 +57,12 @@ async function zipOf(projectId: string, { project, look }: { project: Project; l
 		settings: await readExportSettings(),
 		projectData: extra
 	});
-	if (!r.zip) throw new Error(r.errors.slice(0, 3).join('; ') || 'This export is not valid.');
-	return r.zip;
+	return {
+		zip: r.zip,
+		recovery: r.kind === 'recovery',
+		hasNotes: r.warnings.length > 0,
+		problem: r.problem
+	};
 }
 
 const pending = new Set<string>();
@@ -66,18 +70,29 @@ const pending = new Set<string>();
 async function download(
 	key: string,
 	label: string,
-	build: () => Promise<{ zip: Uint8Array; filename: string }>
+	build: () => Promise<Awaited<ReturnType<typeof zipOf>> & { name: string }>
 ) {
 	if (pending.has(key)) return;
 	pending.add(key);
 	toast(`Preparing ${label}...`, { pending: true });
 	try {
-		const { zip, filename } = await build();
-		saveZip(zip, filename);
-		toast(`Downloaded ${filename}`);
+		const { zip, name, recovery, hasNotes, problem } = await build();
+		if (!zip) {
+			toast(problem ?? `Could not download ${label}.`, { tone: 'danger' });
+			return;
+		}
+		saveZip(zip, recovery ? `${name}-recovered-artwork.zip` : `${name}.pixeldoll.zip`);
+		toast(
+			recovery
+				? 'Full export unavailable. Source PNG download started.'
+				: hasNotes
+					? 'Download started. See Export notes in the ZIP.'
+					: 'Export download started.',
+			{ tone: recovery || hasNotes ? 'warning' : 'info' }
+		);
 	} catch (e) {
 		console.error('download', e);
-		toast(`Could not download ${label}: ${(e as Error).message}`, { tone: 'danger' });
+		toast(`Could not download ${label}. Try again.`, { tone: 'danger' });
 	} finally {
 		pending.delete(key);
 	}
@@ -86,8 +101,8 @@ async function download(
 export function downloadCharacterZip(projectId: string) {
 	const name = store.projects.find((p) => p.id === projectId)?.name ?? 'Character';
 	return download(`character:${projectId}`, name, async () => ({
-		zip: await zipOf(projectId, await source(projectId)),
-		filename: `${fileSlug(name)}.pixeldoll.zip`
+		...(await zipOf(projectId, await source(projectId))),
+		name: fileSlug(name)
 	}));
 }
 
@@ -101,8 +116,8 @@ export function downloadItemZip(itemId: string) {
 		const { itemProject } = await lazy(() => import('../lib/export/build.ts'));
 		const { project, look } = await source(projectId);
 		return {
-			zip: await zipOf(projectId, itemProject(project, itemId, look)),
-			filename: `${fileSlug(character)}-${fileSlug(it.name)}.pixeldoll.zip`
+			...(await zipOf(projectId, itemProject(project, itemId, look))),
+			name: `${fileSlug(character)}-${fileSlug(it.name)}`
 		};
 	});
 }
@@ -115,8 +130,8 @@ export function downloadOutfitZip(outfitId: string) {
 	return download(`outfit:${projectId}/${outfitId}`, outfit.name, async () => {
 		const { outfitProject } = await lazy(() => import('../lib/export/build.ts'));
 		return {
-			zip: await zipOf(projectId, outfitProject(project, outfitId)),
-			filename: `${fileSlug(project.manifest.name)}-${fileSlug(outfit.name)}.pixeldoll.zip`
+			...(await zipOf(projectId, outfitProject(project, outfitId))),
+			name: `${fileSlug(project.manifest.name)}-${fileSlug(outfit.name)}`
 		};
 	});
 }
@@ -131,11 +146,11 @@ export function downloadMoveZip(moveId: string) {
 		const { project, look } = await source(projectId);
 		const { moveProject } = await lazy(() => import('../lib/export/build.ts'));
 		return {
-			zip: await zipOf(projectId, {
+			...(await zipOf(projectId, {
 				project: await moveProject(project, moveId),
 				look
-			}),
-			filename: `${fileSlug(project.manifest.name)}-${fileSlug(moveId)}.pixeldoll.zip`
+			})),
+			name: `${fileSlug(project.manifest.name)}-${fileSlug(moveId)}`
 		};
 	});
 }

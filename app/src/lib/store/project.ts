@@ -135,31 +135,55 @@ async function decodeCell(h: Sha256, owner: string, signal?: AbortSignal): Promi
 /** Decode every cell referenced by the manifest's layers (and the v1.3 rest views) into Project.images. */
 export async function loadProject(
 	id: string,
-	signal?: AbortSignal
-): Promise<{ rec: StoredProject; project: Project }> {
+	signal?: AbortSignal,
+	{ allowMissingImages = false } = {}
+): Promise<{ rec: StoredProject; project: Project; missingImages?: number }> {
 	signal?.throwIfAborted();
 	const rec = await db.get<StoredProject>('projects', id);
 	signal?.throwIfAborted();
 	if (!rec) throw new Error(`project ${id} not found`);
 	if (!supportedFormat(rec.manifest?.format)) throw new Error(OUTDATED);
 	const images = new Map<string, Img>();
+	const missing = new Set<string>();
+	let damagedTrack = false;
 	const add = async (h: Sha256 | null | undefined, owner: string) => {
 		signal?.throwIfAborted();
-		if (!h || images.has(h)) return;
-		const image = await decodeCell(h, owner, signal);
+		if (!h || images.has(h) || missing.has(h)) return;
+		let image: Img;
+		try {
+			image = await decodeCell(h, owner, signal);
+		} catch (error) {
+			if (!allowMissingImages || signal?.aborted) throw error;
+			console.warn('Could not read saved artwork for export', error);
+			missing.add(h);
+			return;
+		}
 		signal?.throwIfAborted();
 		images.set(h, image);
 	};
 	for (const v of Object.values(rec.manifest.rig.rest ?? {})) await add(v?.image, 'rest view');
 	for (const it of rec.manifest.items) {
 		for (const h of Object.values(it.dressed ?? {})) await add(h, `${it.id} dressed view`);
+		if (allowMissingImages && !Array.isArray(it.layers)) {
+			damagedTrack = true;
+			continue;
+		}
 		for (const l of it.layers)
 			for (const dirs of Object.values(l.cells ?? {}))
-				for (const cells of Object.values(dirs ?? {}))
+				for (const cells of Object.values(dirs ?? {})) {
+					if (allowMissingImages && cells != null && !Array.isArray(cells)) {
+						damagedTrack = true;
+						continue;
+					}
 					for (const h of cells ?? []) await add(h, it.id);
+				}
 	}
 	signal?.throwIfAborted();
-	return { rec, project: { manifest: rec.manifest, images } };
+	return {
+		rec,
+		project: { manifest: rec.manifest, images },
+		...(missing.size || damagedTrack ? { missingImages: missing.size + Number(damagedTrack) } : {})
+	};
 }
 
 /**

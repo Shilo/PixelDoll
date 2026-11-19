@@ -19,7 +19,7 @@ export const defaultExportSettings = (): ExportSettings => ({
 });
 const CHANNEL = 'pixeldoll-export-settings';
 export class InvalidExportSettings extends Error {}
-class InvalidAnimationNames extends Error {}
+export class InvalidAnimationNames extends Error {}
 
 /** Notifications carry no preferences. Opening or refocusing Export remains the fallback when channels are unavailable. */
 export function subscribeExportSettings(listener: () => void): () => void {
@@ -172,7 +172,7 @@ export function exportAnimationCatalog(
 		} catch (error) {
 			if (!(error instanceof InvalidAnimationNames)) throw error;
 			warnings.push(
-				`${error.message} Its animation names are omitted from settings. You can still export the current character.`
+				`Some moves from ${manifest?.name ?? 'another character'} are missing from settings.`
 			);
 		}
 	}

@@ -565,14 +565,22 @@ export async function refreshProjects(): Promise<boolean> {
 	return !!listed;
 }
 
-/** A saved character as the Studio shows it, read without opening it. */
-export async function readCharacter(id: string) {
-	const r = await openSource(id);
+async function prepareCharacter(r: Awaited<ReturnType<typeof openSource>>) {
 	const manifest = r.project.manifest;
 	const base = manifest.items.find(({ id }) => id === manifest.rig.baseItem);
 	const split = base?.regions === 'shirt-shorts' ? null : await splitBase(r.project);
 	deriveMaterials(r.project); // items without materials (new items, fresh fixtures)
 	return { r, split };
+}
+
+/** A saved character as the Studio shows it, read without opening it. */
+export async function readCharacter(id: string) {
+	return prepareCharacter(await openSource(id));
+}
+
+export async function readCharacterForExport(id: string) {
+	const r = await openSource(id, undefined, { allowMissingImages: true });
+	return r.missingImages ? r : (await prepareCharacter(r)).r;
 }
 
 let openRequest = 0,

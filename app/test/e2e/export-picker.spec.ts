@@ -228,11 +228,15 @@ test('a committed earlier format and a failed latest format keep the write error
 		window.dispatchEvent(new Event('focus')); // Queue a refresh while the first completion is held.
 	}, EXPORT_SETTINGS_KEY);
 	await dialog.getByRole('radio', { name: 'Phaser', exact: true }).check();
-	await expect(dialog.getByRole('alert')).toContainText('Latest format could not save');
+	await expect(dialog.getByRole('alert')).toContainText(
+		'Could not save export settings. Try again.'
+	);
 	await releaseProjectTransaction(page);
 	await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked();
 	await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled();
-	await expect(dialog.getByRole('alert')).toContainText('Latest format could not save');
+	await expect(dialog.getByRole('alert')).toContainText(
+		'Could not save export settings. Try again.'
+	);
 });
 
 test('a stale rejected global refresh cannot block a newer successful format save', async ({
@@ -958,13 +962,16 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
 		} else await dialog.getByRole('radio', { name: label, exact: true }).check();
 		const button = dialog.getByRole('button', { name: /^Download ZIP/ });
 		if (engine === 'rpgmaker' || engine === 'rpgmakerxp') {
-			// this south-only test character cannot fill a 4-row RPG Maker sheet
-			await expect(
-				dialog.getByText(
-					'RPG Maker: characters need front, side and back views; this one has no west, east, north view.'
-				)
-			).toBeVisible();
-			await expect(button).toBeDisabled();
+			await expect(dialog.getByText(/RPG Maker needs front, side and back views/)).toBeVisible();
+			const recovery = dialog.getByRole('button', { name: 'Download artwork ZIP' });
+			await expect(recovery).toBeEnabled();
+			await expect(button).toHaveCount(0);
+			const [artwork] = await Promise.all([page.waitForEvent('download'), recovery.click()]);
+			expect(artwork.suggestedFilename()).toMatch(/-recovered-artwork\.zip$/);
+			const entries = await unzip(new Uint8Array(await readFile((await artwork.path())!)));
+			expect(entries.has('frames/1.png')).toBe(true);
+			expect(entries.has('project.json')).toBe(false);
+			await expect(dialog.getByRole('radio', { name: 'RPG Maker', exact: true })).toBeChecked();
 			continue;
 		}
 		await expect(button).toBeEnabled();
@@ -1304,7 +1311,9 @@ test('Export settings show storage failures without changing the choice or trapp
 		});
 		await input.focus();
 		await input.press('Space'); // Failed persistence immediately restores the old checkbox state.
-		await expect(dialog.getByRole('alert')).toContainText('Synthetic settings write failure');
+		await expect(dialog.getByRole('alert')).toContainText(
+			'Could not save export settings. Try again.'
+		);
 		await expect(input).toBeEnabled();
 		await expect(input).toBeFocused();
 		if (checked) await expect(input).toBeChecked();
@@ -1325,7 +1334,9 @@ test('Export settings show storage failures without changing the choice or trapp
 		};
 	});
 	await dialog.getByRole('radio', { name: 'Unity', exact: true }).click(); // The expected rollback can finish before check() verifies its opposite postcondition.
-	await expect(dialog.getByRole('alert')).toContainText('Synthetic format write failure');
+	await expect(dialog.getByRole('alert')).toContainText(
+		'Could not save export settings. Try again.'
+	);
 	await expect(originalEngine).toBeChecked();
 	await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).not.toBeChecked();
 	await expect(dialog.locator('#export-description')).toContainText('Godot:');
@@ -1380,7 +1391,9 @@ for (const corruption of ['unsupported-format', 'sparse-array'] as const)
 		}, EXPORT_SETTINGS_KEY);
 		const reset = dialog.getByRole('button', { name: 'Reset export settings', exact: true });
 		await reset.click();
-		await expect(dialog.getByRole('alert')).toContainText('Reset storage failure');
+		await expect(dialog.getByRole('alert')).toContainText(
+			'Could not save export settings. Try again.'
+		);
 		await expect(reset).toBeEnabled();
 		await reset.click();
 		await expect(reset).toHaveCount(0);
@@ -1466,7 +1479,7 @@ for (const corruption of ['null-list', 'sparse-array'] as const)
 		expect(errors).toEqual([]);
 	});
 
-test('invalid current-character names still block export and storage outages do not offer a preferences reset', async ({
+test('invalid move names still allow artwork recovery and storage outages do not offer a preferences reset', async ({
 	page
 }, info) => {
 	await savedExport(
@@ -1486,7 +1499,7 @@ test('invalid current-character names still block export and storage outages do 
 	});
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const dialog = page.getByRole('dialog');
-	await expect(dialog.getByRole('alert')).toContainText('Storage unavailable');
+	await expect(dialog.getByRole('alert')).toContainText('Could not load export settings');
 	await expect(dialog.getByRole('button', { name: 'Reset export settings' })).toHaveCount(0);
 	await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled();
 	await dialog.getByRole('button', { name: 'Close export' }).click();
@@ -1499,10 +1512,46 @@ test('invalid current-character names still block export and storage outages do 
 		s.store.project = { ...project, manifest };
 	});
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
-	await expect(dialog.getByRole('alert')).toContainText('Export settings test');
+	await expect(
+		dialog.locator('.notice.warn').filter({ hasText: 'Some moves from this character' })
+	).toBeVisible();
 	await expect(dialog.getByRole('button', { name: 'Reset export settings' })).toHaveCount(0);
-	await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled();
+	await expect(dialog.getByRole('button', { name: 'Download artwork ZIP' })).toBeEnabled();
 	await dialog.getByRole('button', { name: 'Close export' }).click();
+});
+
+test('quick download recovers working images from an unopened character with a missing image', async ({
+	page
+}, info) => {
+	await savedExport(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		const dbPath = '/src/lib/store/db.ts';
+		const { doc } = await import(statePath);
+		const db = await import(dbPath);
+		const rec = await db.get('projects', doc.id);
+		rec.manifest.rig.rest = { south: { image: `sha256:${'a'.repeat(64)}`, keypoints: [] } };
+		rec.manifest.items[0].layers[0].cells.extra = { south: {} };
+		await db.put('projects', doc.id, rec);
+	});
+	await page.reload();
+	await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
+	await page
+		.getByRole('button', { name: 'More actions for Export settings test', exact: true })
+		.click();
+	const downloaded = page.waitForEvent('download');
+	await page.getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();
+	const download = await downloaded;
+	expect(download.suggestedFilename()).toBe('export-settings-test-recovered-artwork.zip');
+	const files = await unzip(new Uint8Array(await readFile((await download.path())!)));
+	expect(files.has('project.json')).toBe(false);
+	expect(files.has('frames/1.png')).toBe(true);
+	await expect(
+		page.getByText('Full export unavailable. Source PNG download started.')
+	).toBeVisible();
 });
 
 test('reset preserves preferences already repaired elsewhere and waits for its committed transaction', async ({
