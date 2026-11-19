@@ -13,7 +13,7 @@
 		clearPendingConnection,
 		pendingConnectionMinimumTier
 	} from './state.svelte.ts';
-	import { ExternalLink, KeyRound, Check } from './icons.ts';
+	import { ExternalLink, KeyRound, Check, RefreshCw } from './icons.ts';
 	import { accountTier, FREE_PLAN_NOTICE, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 
@@ -21,6 +21,7 @@
 	let remember = $state(false);
 	let checking = $state(false);
 	let refreshing = $state(false);
+	const refreshLabel = $derived(refreshing ? 'Refreshing balance…' : 'Refresh balance');
 	let replacing = $state(false);
 	let replacementError = $state('');
 	let limitedAccess = $state(false);
@@ -143,13 +144,14 @@
 						{activityScope}
 					/>
 					<button
-						class="bu-action btn sm"
-						data-variant="outline"
+						type="button"
+						class="bu-action btn icon plain"
+						data-variant="quiet"
+						aria-label={refreshLabel}
+						title={refreshLabel}
 						onclick={refresh}
-						aria-disabled={refreshing}
+						aria-disabled={refreshing}><RefreshCw size={17} aria-hidden="true" /></button
 					>
-						{refreshing ? 'Refreshing…' : 'Refresh'}
-					</button>
 				</span>
 			{/snippet}
 		</PixelLabUsage>

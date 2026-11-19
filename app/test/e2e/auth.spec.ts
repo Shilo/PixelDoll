@@ -42,10 +42,11 @@ test('PixelLab notice opens PixelLab without leaving the app', async ({ page, co
 
 test('More keeps the original PixelLab usage meter and opens the local sheet', async ({ page }) => {
 	let remaining = 42;
+	let total = 100;
 	await page.route('https://api.pixellab.ai/v2/balance', (route) =>
 		route.fulfill({
 			json: {
-				subscription: { type: 'generations', status: 'active', generations: remaining, total: 100 },
+				subscription: { type: 'generations', status: 'active', generations: remaining, total },
 				credits: { type: 'usd', usd: 3.06 }
 			}
 		})
@@ -92,17 +93,38 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 		expect(creditBox.y).toBe(usedBox.y);
 		expect(creditBox.x).toBeGreaterThan(usedBox.x + usedBox.width);
 	};
-	await page.setViewportSize({ width: 320, height: 650 });
+	await page.setViewportSize({ width: 320, height: 568 });
 	remaining = 0;
+	total = 50_000;
 	await activity.getByRole('button', { name: 'Refresh balance', exact: true }).click();
 	await expectInlineCredits(activity);
 	await activity.getByRole('button', { name: 'Done', exact: true }).click();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await expect(usage.getByText('100 / 100', { exact: true })).toBeVisible();
-	await expect(meter).toHaveAttribute('value', '100');
+	const fullCount = usage.getByText('50,000 / 50,000', { exact: true });
+	await expect(fullCount).toBeVisible();
+	await expect(meter).toHaveAttribute('value', '50000');
+	await expect(meter).toHaveAttribute('max', '50000');
+	const label = usage.getByText('PixelLab usage', { exact: true });
+	const labelBox = await label.boundingBox();
+	const countBox = await fullCount.boundingBox();
+	const chevronBox = await usage.locator('.actions svg').boundingBox();
+	const rowBox = await usage.boundingBox();
+	if (!labelBox || !countBox || !chevronBox || !rowBox)
+		throw new Error('Expected the compact usage row and all its contents to be visible');
+	const lineHeight = await label.evaluate((element) =>
+		parseFloat(getComputedStyle(element).lineHeight)
+	);
+	expect(labelBox.height).toBeCloseTo(lineHeight, 0);
+	expect(labelBox.y + labelBox.height / 2).toBeCloseTo(countBox.y + countBox.height / 2, 0);
+	expect(chevronBox.y + chevronBox.height / 2).toBeCloseTo(countBox.y + countBox.height / 2, 0);
+	expect(labelBox.x + labelBox.width).toBeLessThan(countBox.x);
+	expect(countBox.x + countBox.width).toBeLessThan(chevronBox.x);
+	expect(chevronBox.x + chevronBox.width).toBeLessThanOrEqual(
+		Math.min(320, rowBox.x + rowBox.width)
+	);
 	await expectInlineCredits(usage);
 	await usage.click();
-	await expect(account.getByText('100 / 100', { exact: true })).toBeVisible();
+	await expect(account.getByText('50,000 / 50,000', { exact: true })).toBeVisible();
 	await expectInlineCredits(account);
 });
 
@@ -140,9 +162,11 @@ test('PixelLab usage recovers from errors, replaces a key, reconnects, and forge
 	const usage = page.getByRole('button', { name: /^PixelLab usage/ });
 	await usage.click();
 	const account = page.getByRole('dialog', { name: 'PixelLab usage', exact: true });
-	const refresh = account.getByRole('button', { name: 'Refresh', exact: true });
+	const refresh = account.getByRole('button', { name: 'Refresh balance', exact: true });
+	await expect(refresh).toHaveText('');
+	await expect(refresh.locator('svg')).toBeVisible();
 	balanceStatus = 503;
-	await refresh.click();
+	await refresh.press('Enter');
 	await expect(account.getByRole('status')).toContainText('Couldn’t load usage');
 	await expect(refresh).toBeFocused();
 	await expect(account.locator('progress')).toHaveCount(0);

@@ -106,6 +106,11 @@
 	.compact .label {
 		column-gap: var(--menu-row-gap, 8px);
 	}
+	.compact .label > span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 	.count,
 	.meter {
 		white-space: nowrap;
