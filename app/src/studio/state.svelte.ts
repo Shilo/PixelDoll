@@ -165,6 +165,7 @@ const lsSet = (k: string, v: string | null) => {
 	}
 };
 export const DEMO = 'fixture:s2';
+export const DEMO_NAME = 'Adventurer';
 
 // ---------- UI ----------
 export type Size = 'expanded' | 'medium' | 'compact' | 'landscape';
@@ -550,7 +551,7 @@ export async function refreshProjects(): Promise<boolean> {
 	store.projects = [
 		{
 			id: DEMO,
-			name: 'Adventurer (demo)',
+			name: `${DEMO_NAME} (demo)`,
 			demo: true,
 			dev: false,
 			savedAt: '',

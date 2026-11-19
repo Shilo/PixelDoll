@@ -119,7 +119,9 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	const savedHelmet = sharedTile(head, 'Giant helmet');
 	const savedHat = sharedTile(head, 'Traveling wizard hat');
 	const ownHat = head.getByRole('button', { name: /^Wizard hat(,|$)/ }).and(ownTile(page));
-	const showDemo = page.getByRole('switch', { name: 'Show demo items', exact: true });
+	const hideDemo = page.getByRole('switch', {
+		name: 'Hide shared items from Adventurer (Demo)'
+	});
 	const hideAll = page.getByRole('switch', { name: 'Hide shared items for all characters' });
 	const openSettings = async () => {
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
@@ -130,16 +132,20 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	await expect(ownHat).toBeVisible();
 	await expect(demoHelmet).toHaveCount(0);
 	await openSettings();
-	await expect(showDemo).not.toBeChecked();
-	await showDemo.check();
+	await expect(hideDemo).toBeChecked();
+	await hideDemo.uncheck();
 	await expect(demoHelmet).toBeVisible();
 	await expect(demoHelmet).toHaveAccessibleName(/free from Adventurer/i);
 	await expect(savedHelmet).toHaveCount(0);
 	await hideAll.check();
 	await expect(demoHelmet).toHaveCount(0);
 	await expect(savedHat).toHaveCount(0);
-	await expect(showDemo).toBeChecked();
+	await expect(ownHat).toBeVisible();
+	await expect(hideDemo).toBeChecked();
+	await expect(hideDemo).toBeDisabled();
 	await hideAll.uncheck();
+	await expect(hideDemo).toBeEnabled();
+	await expect(hideDemo).not.toBeChecked();
 	await expect(demoHelmet).toBeVisible();
 
 	await page.evaluate(() => sessionStorage.setItem('pause-demo-fixture', '1'));
@@ -165,8 +171,8 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	await page.evaluate(() => window.dispatchEvent(new Event('release-demo-fixture')));
 	await expect(demoHelmet).toBeVisible();
 	await openSettings();
-	await expect(showDemo).toBeChecked();
-	await showDemo.uncheck();
+	await expect(hideDemo).not.toBeChecked();
+	await hideDemo.check();
 	await expect(demoHelmet).toHaveCount(0);
 	await expect(savedHelmet).toBeVisible();
 	await expect(savedHat).toBeVisible();
@@ -178,14 +184,14 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	await expect(savedHelmet).toBeVisible();
 	await expect(demoHelmet).toHaveCount(0);
 	await openSettings();
-	await expect(showDemo).not.toBeChecked();
-	await showDemo.check();
+	await expect(hideDemo).toBeChecked();
+	await hideDemo.uncheck();
 	await page.keyboard.press('Escape');
 	await demoHelmet.click();
 	const ownedHelmet = head.getByRole('button', { name: /^Steel helmet(,|$)/ }).and(ownTile(page));
 	await expect(ownedHelmet).toHaveAttribute('aria-pressed', 'true');
 	await openSettings();
-	await showDemo.uncheck();
+	await hideDemo.check();
 	await expect(ownedHelmet).toHaveAttribute('aria-pressed', 'true');
 	await expect(savedHat).toBeVisible();
 	await page.keyboard.press('Escape');
@@ -237,9 +243,12 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await expect(grid.getByRole('button', { name: /^Empty/ })).toHaveCount(0);
 	const more = page.getByRole('button', { name: 'More options', exact: true });
 	const settings = page.getByRole('button', { name: /^Wardrobe settings/ });
-	const visibility = page.getByRole('group', { name: 'Hide shared items for', exact: true });
+	const visibility = page.getByRole('group', {
+		name: 'Hide shared items',
+		exact: true
+	});
 	const thisCharacter = visibility.getByRole('switch', {
-		name: /^Hide shared items for this character:/
+		name: /^Hide shared items for .+ \(Current\)/
 	});
 	const allCharacters = visibility.getByRole('switch', {
 		name: 'Hide shared items for all characters'
@@ -284,18 +293,16 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await pickCharacter('Giant');
 	await expect(sharedTiles.first()).toBeVisible();
 	await openSettings();
-	await expect(thisCharacter).toHaveAccessibleName('Hide shared items for this character: Giant');
+	await expect(thisCharacter).toHaveAccessibleName('Hide shared items for Giant (Current)');
 	await expect(thisCharacter).not.toBeChecked();
 	await allCharacters.check();
 	await expect(thisCharacter).toBeDisabled();
 	await expect(thisCharacter).toBeChecked();
 	await expect(thisCharacter).toHaveAccessibleName(
-		'Hide shared items for this character: Giant (All characters is on)'
+		'Hide shared items for Giant (Current) (All characters is on)'
 	);
 	await expect(sharedTiles).toHaveCount(0);
 	await allCharacters.focus();
-	await page.keyboard.press('Tab');
-	await expect(page.getByRole('switch', { name: 'Show demo items', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect(page.getByRole('button', { name: 'Activity', exact: true })).toBeFocused();
 	await page.keyboard.press('Escape');
@@ -344,16 +351,31 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitem', { name: 'Rename character…', exact: true }).click();
 	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });
-	await rename.getByRole('textbox', { name: 'Name', exact: true }).fill('Traveling Adventurer');
+	const longName = 'Traveling Adventurer with an unusually long character name';
+	await rename.getByRole('textbox', { name: 'Name', exact: true }).fill(longName);
 	await rename.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(rename).toBeHidden();
+	await page.setViewportSize({ width: 390, height: 844 });
 	await openSettings();
 	await expect(thisCharacter).toBeChecked();
-	await expect(thisCharacter).toHaveAccessibleName(
-		'Hide shared items for this character: Traveling Adventurer'
+	await expect(thisCharacter).toHaveAccessibleName(`Hide shared items for ${longName} (Current)`);
+	const currentSuffix = visibility.getByText('(Current)', { exact: true });
+	await expect(currentSuffix).toBeInViewport({ ratio: 1 });
+	expect(await currentSuffix.evaluate((label) => label.scrollWidth <= label.clientWidth)).toBe(
+		true
 	);
+	expect(
+		await visibility
+			.getByText(longName, { exact: true })
+			.evaluate(
+				(label) =>
+					label.scrollWidth > label.clientWidth &&
+					getComputedStyle(label).textOverflow === 'ellipsis'
+			)
+	).toBe(true);
 	await thisCharacter.uncheck();
 	await page.keyboard.press('Escape');
+	await page.setViewportSize(desktop);
 	await equipmentGroup(page, 'Hair clip');
 	await expect(adopted).toHaveAttribute('aria-pressed', 'true');
 	await expect(sharedTiles.first()).toBeVisible();

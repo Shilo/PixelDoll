@@ -20,6 +20,7 @@ export { default as TriangleAlert } from '@lucide/svelte/icons/triangle-alert';
 export { default as Puzzle } from '@lucide/svelte/icons/puzzle';
 export { default as LoaderCircle } from '@lucide/svelte/icons/loader-circle';
 export { default as Sparkles } from '@lucide/svelte/icons/sparkles';
+export { default as LayoutTemplate } from '@lucide/svelte/icons/layout-template';
 export { default as Palette } from '@lucide/svelte/icons/palette';
 export { default as KeyRound } from '@lucide/svelte/icons/key-round';
 export { default as Sun } from '@lucide/svelte/icons/sun';
