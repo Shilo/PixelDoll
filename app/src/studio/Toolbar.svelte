@@ -22,6 +22,8 @@
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
 	import { characterFacts, fmtNum } from './model.ts';
 	import {
+		demoItemsShown,
+		setDemoItemsShown,
 		sharedItemsHidden,
 		sharedItemsHiddenForAll,
 		setSharedItemsHiddenForAll,
@@ -39,6 +41,7 @@
 		redo,
 		randomize,
 		refreshProjects,
+		refreshShared,
 		characterName,
 		toast,
 		toggleTheme,
@@ -73,6 +76,7 @@
 		Grid2x2,
 		PawPrint,
 		Shirt,
+		Sparkles,
 		Lock,
 		UserRound,
 		UsersRound
@@ -469,42 +473,60 @@
 			></button
 		>
 		{#if experience.screen === 'studio' && m}
-			<MenuDisclosure label="Wardrobe settings" panelLabelledBy="shared-items-title">
+			<MenuDisclosure label="Wardrobe settings">
 				{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
 				{#snippet aside()}
 					{#if sharedItemsHidden(doc.id)}
 						<span class="row-aside wardrobe-status faint small">Own items only</span>
 					{/if}
 				{/snippet}
-				<p class="menu-sec" id="shared-items-title">Hide shared items for</p>
-				<label class="row bu-check"
-					><UsersRound size={18} aria-hidden="true" /><span class="row-name">All characters</span
-					><input
-						class="bu-switch"
-						type="checkbox"
-						role="switch"
-						aria-label="Hide shared items for all characters"
-						checked={hideSharedForAll}
-						onchange={(event) =>
-							reportVisibilitySave(setSharedItemsHiddenForAll(event.currentTarget.checked))}
-					/></label
-				>
-				<label class="row bu-check"
-					><UserRound size={18} aria-hidden="true" /><span class="row-name"
-						>This character<span class="wardrobe-character-name faint small">{name}</span></span
-					>{#if hideSharedForAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}<input
-						class="bu-switch"
-						type="checkbox"
-						role="switch"
-						aria-label={`Hide shared items for this character: ${name}${hideSharedForAll ? ' (All characters is on)' : ''}`}
-						checked={sharedItemsHidden(doc.id)}
-						disabled={hideSharedForAll}
-						onchange={(event) =>
-							reportVisibilitySave(
-								setSharedItemsHiddenForCharacter(doc.id, event.currentTarget.checked)
-							)}
-					/></label
-				>
+				<div role="group" aria-labelledby="shared-items-title">
+					<p class="menu-sec" id="shared-items-title">Hide shared items for</p>
+					<label class="row bu-check"
+						><UsersRound size={18} aria-hidden="true" /><span class="row-name">All characters</span
+						><input
+							class="bu-switch"
+							type="checkbox"
+							role="switch"
+							aria-label="Hide shared items for all characters"
+							checked={hideSharedForAll}
+							onchange={(event) =>
+								reportVisibilitySave(setSharedItemsHiddenForAll(event.currentTarget.checked))}
+						/></label
+					>
+					<label class="row bu-check"
+						><UserRound size={18} aria-hidden="true" /><span class="row-name"
+							>This character<span class="wardrobe-character-name faint small">{name}</span></span
+						>{#if hideSharedForAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}<input
+							class="bu-switch"
+							type="checkbox"
+							role="switch"
+							aria-label={`Hide shared items for this character: ${name}${hideSharedForAll ? ' (All characters is on)' : ''}`}
+							checked={sharedItemsHidden(doc.id)}
+							disabled={hideSharedForAll}
+							onchange={(event) =>
+								reportVisibilitySave(
+									setSharedItemsHiddenForCharacter(doc.id, event.currentTarget.checked)
+								)}
+						/></label
+					>
+				</div>
+				{#if !isDemo()}
+					<label class="row bu-check">
+						<Sparkles size={18} aria-hidden="true" />
+						<span class="row-name">Show demo items</span>
+						<input
+							class="bu-switch"
+							type="checkbox"
+							role="switch"
+							checked={demoItemsShown()}
+							onchange={(event) => {
+								reportVisibilitySave(setDemoItemsShown(event.currentTarget.checked));
+								void refreshShared();
+							}}
+						/>
+					</label>
+				{/if}
 			</MenuDisclosure>
 		{/if}
 		<hr />

@@ -100,6 +100,7 @@ import {
 	type SharedItem
 } from '../lib/equipment/shared.ts';
 import { acceptCopy, copyMoreFrames, freeFrames, itemKey } from '../lib/equipment/copy.ts';
+import { demoItemsShown } from './wardrobeVisibility.svelte.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
@@ -1415,41 +1416,60 @@ class Shared {
 export const shared = new Shared();
 export const sharedKey = (entry: SharedItem) => `shared:${entry.sourceId}/${entry.item.id}`;
 let sharedRequest = 0;
-/** Re-read the other characters' items for the open character, the demo included (it adds them to a copy of itself). */
+let sharedTarget = '';
+let savedOffers: Awaited<ReturnType<typeof listShared>> | undefined;
+/** Re-read items offered to the open character, including the bundled demo only when opted in. */
 export async function refreshShared() {
 	const request = ++sharedRequest,
 		project = store.project,
 		id = doc.id;
-	if (!project) {
+	if (!project || sharedTarget !== id) {
+		sharedTarget = id;
+		savedOffers = undefined;
 		shared.items = [];
 		shared.error = '';
 		shared.skipped = 0;
 		shared.free = {};
-		return;
+	}
+	if (!project) return;
+	const includeDemo = !id.startsWith('fixture:') && demoItemsShown();
+	if (!includeDemo && savedOffers) {
+		shared.items = savedOffers.items;
+		shared.skipped = savedOffers.skipped;
 	}
 	try {
-		const [{ items, skipped }, free] = await Promise.all([
-			(async () => {
-				// The saved characters' items still list if the demo cannot be read; it counts as unreadable.
-				const demo = id.startsWith('fixture:')
-					? []
-					: await demoSource().then(
-							(d) => [d],
-							(e) => {
-								console.warn('demo items unavailable', e);
-								return null;
-							}
-						);
-				const listed = await listShared(id, project.manifest, project.images, demo ?? []);
-				return demo ? listed : { ...listed, skipped: listed.skipped + 1 };
-			})(),
-			freeFrames(project.manifest)
+		const [saved, frames] = await Promise.all([
+			listShared(id, project.manifest, project.images),
+			freeFrames(project.manifest).then(
+				(free) => ({ free, error: '' }),
+				(error: Error) => {
+					console.error('copy frames', error);
+					return { free: {}, error: `Could not check frames for copied items: ${error.message}` };
+				}
+			)
 		]);
-		if (request !== sharedRequest) return;
-		shared.items = items;
-		shared.skipped = skipped;
-		shared.free = free;
-		shared.error = '';
+		if (request !== sharedRequest) return saved.items;
+		savedOffers = saved;
+		if (!includeDemo || !shared.items.some((item) => item.sourceId === DEMO)) {
+			shared.items = saved.items;
+			shared.skipped = saved.skipped;
+		}
+		shared.free = frames.free;
+		shared.error = frames.error;
+		if (!includeDemo) return saved.items;
+		const demo = await demoSource().catch((error) => {
+			console.warn('demo items unavailable', error);
+			return undefined;
+		});
+		if (request !== sharedRequest) return saved.items;
+		const listed = demo
+			? await listShared(id, project.manifest, project.images, [demo])
+			: { items: saved.items, skipped: saved.skipped + 1 };
+		if (request === sharedRequest) {
+			shared.items = listed.items;
+			shared.skipped = listed.skipped;
+		}
+		return listed.items;
 	} catch (e) {
 		console.error('shared', e);
 		if (request === sharedRequest)
@@ -1513,9 +1533,9 @@ async function addEntry(entry: SharedItem, lead = '') {
 		if (!item) {
 			// The listed outcome was out of date: show what the list says now before offering anything.
 			forgetFits();
-			await refreshShared();
+			const latest = await refreshShared();
 			if (doc.id !== projectId || request !== openRequest) return;
-			const now = shared.items.find((x) => sharedKey(x) === key);
+			const now = latest?.find((x) => sharedKey(x) === key);
 			if (now?.fit === 'remake') ui.selected = key;
 			else toast(`${entry.item.name} changed meanwhile. Check its tile and try again.`);
 			return;
@@ -1588,11 +1608,9 @@ export async function copyDemoAndAdd(entry: SharedItem) {
 		}
 		const request = openRequest;
 		if (doc.id !== id) return;
-		await refreshShared();
+		const latest = await refreshShared();
 		if (doc.id !== id || request !== openRequest) return;
-		const now = shared.items.find(
-			(x) => x.sourceId === entry.sourceId && x.item.id === entry.item.id
-		);
+		const now = latest?.find((x) => x.sourceId === entry.sourceId && x.item.id === entry.item.id);
 		// The copy may have been made before (the demo has one editable copy per body).
 		const saved = 'Opened your editable copy of the demo. ';
 		if (now?.fit === 'remake') {
