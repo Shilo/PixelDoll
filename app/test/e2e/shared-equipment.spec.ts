@@ -120,9 +120,10 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	const savedHat = sharedTile(head, 'Traveling wizard hat');
 	const ownHat = head.getByRole('button', { name: /^Wizard hat(,|$)/ }).and(ownTile(page));
 	const hideDemo = page.getByRole('switch', {
-		name: 'Hide shared items from Adventurer (Demo)'
+		name: /^Hide shared items from Adventurer \(Demo\)/
 	});
 	const hideAll = page.getByRole('switch', { name: 'Hide shared items for all characters' });
+	const hideCurrent = page.getByRole('switch', { name: /^Hide shared items for .+ \(Current\)/ });
 	const openSettings = async () => {
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await page.getByRole('button', { name: /^Wardrobe settings/ }).click();
@@ -194,13 +195,73 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	await hideDemo.check();
 	await expect(ownedHelmet).toHaveAttribute('aria-pressed', 'true');
 	await expect(savedHat).toBeVisible();
+	await hideCurrent.check();
 	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	await openSettings();
+	await expect(hideCurrent).toHaveCount(0);
+	await expect(hideDemo).toBeChecked();
+	await hideDemo.uncheck();
+	await hideAll.check();
+	await expect(hideDemo).toBeChecked();
+	await expect(hideDemo).toBeDisabled();
+	await page.keyboard.press('Escape');
+	await page.evaluate(() => localStorage.setItem('pixeldoll.wardrobe.hideShared:fixture:s2', '1'));
 	await page.evaluate(() => localStorage.setItem('pixeldoll.studio.project', 'fixture:s2'));
 	await reloadStudio(page);
 	await equipmentGroup(page, 'Head');
 	await expect(
 		ownTile(page).and(page.getByRole('button', { name: /^Steel helmet(,|$)/ }))
 	).toBeVisible();
+	await expect(savedHat).toHaveCount(0);
+	await openSettings();
+	await expect(hideCurrent).toHaveCount(0);
+	await expect(hideAll).toBeChecked();
+	await expect(hideDemo).toBeDisabled();
+	await hideAll.uncheck();
+	await expect(hideDemo).not.toBeChecked();
+	await expect(savedHat).toBeVisible();
+	await hideDemo.check();
+	await expect(savedHat).toBeVisible();
+	await page.keyboard.press('Escape');
+
+	await page.setViewportSize({ width: 320, height: 568 });
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	const library = page.getByRole('complementary', { name: 'Your characters' });
+	await library.locator('.new-character-row').click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
+	const creatorSettings = creator.getByRole('button', { name: 'Wardrobe settings', exact: true });
+	await creator.getByRole('textbox', { name: 'Name', exact: true }).fill('Unfinished character');
+	await creatorSettings.click();
+	await expect(
+		creator.getByRole('group', { name: 'Hide shared items', exact: true })
+	).toBeInViewport({ ratio: 1 });
+	await expect(hideCurrent).toHaveCount(0);
+	await expect(hideDemo).toBeChecked();
+	await hideDemo.uncheck();
+	await hideAll.check();
+	await expect(hideDemo).toBeDisabled();
+	await page.keyboard.press('Escape');
+	await expect(creatorSettings).toBeFocused();
+	await expect(creator.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
+		'Unfinished character'
+	);
+	await creator.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(creator).toBeHidden();
+
+	await library.getByRole('button', { name: /^Adventurer copy\b/ }).click();
+	await library.getByRole('button', { name: 'Customize Adventurer copy', exact: true }).click();
+	await reloadStudio(page);
+	await openSettings();
+	await expect(hideAll).toBeChecked();
+	await expect(hideDemo).toBeDisabled();
+	await hideAll.uncheck();
+	await expect(hideDemo).not.toBeChecked();
+	await expect(hideCurrent).toBeEnabled();
+	await expect(hideCurrent).toBeChecked();
+	await hideCurrent.uncheck();
+	await expect(savedHat).toBeVisible();
 });
 
 test('a shared custom category appears before adoption and stays after wearing and reload', async ({
@@ -278,6 +339,10 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await expect(settings).toHaveAttribute('aria-expanded', 'true');
 	await page.keyboard.press('Tab');
 	await expect(allCharacters).toBeFocused();
+	await page.keyboard.press('Tab');
+	await expect(
+		visibility.getByRole('switch', { name: /^Hide shared items from .+ \(Demo\)/ })
+	).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect(thisCharacter).toBeFocused();
 	await expect(allCharacters).not.toBeChecked();

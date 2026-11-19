@@ -1,5 +1,8 @@
 <script lang="ts">
 	import Sheet from './Sheet.svelte';
+	import WardrobeVisibility from './WardrobeVisibility.svelte';
+	import PopoverArrow from './PopoverArrow.svelte';
+	import { popoverFocus } from './experience/focus.ts';
 	import TierNotice from './TierNotice.svelte';
 	import { GENERATION_RECOMMENDATION } from '../lib/pixellab/plans.ts';
 	import { customize } from './experience/state.svelte.ts';
@@ -31,7 +34,8 @@
 		openProject,
 		withKey
 	} from './state.svelte.ts';
-	import { Check, CircleAlert, TriangleAlert } from './icons.ts';
+	import { Check, CircleAlert, Shirt, TriangleAlert } from './icons.ts';
+	const wardrobeMenuId = $props.id();
 	let d = $state(formDrafts.character ?? newCharacterDraft());
 	formDrafts.character = undefined;
 	let enhancing = $state(false);
@@ -140,6 +144,32 @@
 					maxlength="80"
 				/></label
 			>{/if}{/snippet}
+	{#snippet trailing()}
+		<button
+			class="bu-action btn creation-wardrobe"
+			data-variant="quiet"
+			aria-label="Wardrobe settings"
+			title="Wardrobe settings"
+			popovertarget={wardrobeMenuId}><Shirt size={18} aria-hidden="true" /></button
+		>
+		{#if creating.projectId && !running}
+			<button
+				class="bu-action btn plain link done"
+				data-variant="quiet"
+				onclick={() => (ui.sheet = null)}>Close</button
+			>
+		{/if}
+		<div
+			id={wardrobeMenuId}
+			class="menu options-menu bu-popover-anchor"
+			data-placement="bottom-start"
+			popover
+			ontoggle={popoverFocus}
+		>
+			<PopoverArrow />
+			<div class="menu-surface bu-popover-surface bu-floating"><WardrobeVisibility /></div>
+		</div>
+	{/snippet}
 	{#if creating.projectId}
 		<div class="create-review">
 			<ApiPeek
@@ -301,6 +331,15 @@
 </Sheet>
 
 <style>
+	:global(.studio-app .character-sheet) .btn.creation-wardrobe {
+		left: 40px;
+		right: auto;
+	}
+	@media (max-width: 760px) and (min-height: 541px), (max-height: 540px) and (min-width: 600px) {
+		:global(.studio-app .character-sheet) .btn.creation-wardrobe {
+			left: 20px;
+		}
+	}
 	.quality-notes {
 		width: 100%;
 		text-align: left;
