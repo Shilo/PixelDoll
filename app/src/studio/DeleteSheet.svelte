@@ -3,7 +3,14 @@
 	import { displayMessage, displayError, errorMessage } from '../lib/i18n.ts';
 	import type { Message } from '../lib/message.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
-	import { ui, doc, store, deletionBlocked, removeProject } from './state.svelte.ts';
+	import {
+		DELETE_GENERATION_BLOCK,
+		ui,
+		doc,
+		store,
+		deletionBlocked,
+		removeProject
+	} from './state.svelte.ts';
 	let busy = $state(false),
 		error = $state<string | Message>('');
 	const id = $derived(ui.deleting || doc.id);
@@ -30,6 +37,12 @@
 	}
 </script>
 
+{#snippet viewPending()}
+	<button class="bu-btn" onclick={() => (ui.sheet = 'activity')}
+		>{t('deleteSheet.viewPendingWork')}</button
+	>
+{/snippet}
+
 <ConfirmDialog
 	title={t('common.deleteNamed', {
 		name: store.projects.find((project) => project.id === id)?.name ?? t('deleteSheet.character')
@@ -38,6 +51,7 @@
 	busyAction={t('common.deleting')}
 	{busy}
 	problem={error ? displayMessage(error) : displayError(reason)}
+	problemAction={reason === DELETE_GENERATION_BLOCK ? viewPending : undefined}
 	blocked={!!reason}
 	oncancel={() => (ui.sheet = null)}
 	onconfirm={() => void remove()}

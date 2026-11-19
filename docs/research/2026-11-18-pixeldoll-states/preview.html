@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PixelDoll pose and move study</title>
+  <link
+    rel="stylesheet"
+    href="../../../app/node_modules/@shilo/bronze-ui/styles/tokens.css"
+  />
+  <link
+    rel="stylesheet"
+    href="../../../app/node_modules/@shilo/bronze-ui/styles/components.css"
+  />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    [hidden] {
+      display: none !important;
+    }
+    body {
+      color: var(--bu-text);
+      font: 14px var(--bu-font);
+    }
+    button,
+    select,
+    input {
+      font: inherit;
+    }
+    .studio {
+      display: grid;
+      grid-template-columns: 1fr minmax(300px, 36%);
+      align-items: start;
+      gap: 16px;
+    }
+    .stage {
+      display: grid;
+      place-items: center;
+      align-content: center;
+      min-block-size: 290px;
+      min-inline-size: 0;
+      gap: 8px;
+    }
+    .stage select {
+      max-inline-size: 100%;
+    }
+    .playback {
+      display: flex;
+      max-inline-size: 100%;
+      gap: 8px;
+    }
+    .playback select,
+    .playback button {
+      min-block-size: 44px;
+    }
+    .playback select:first-child {
+      min-inline-size: 0;
+    }
+    .panel {
+      min-inline-size: 0;
+    }
+    .tabs {
+      display: flex;
+      align-items: stretch;
+      gap: 16px;
+    }
+    .tabs button {
+      flex: 1 1 0;
+      min-inline-size: min-content;
+      min-block-size: 44px;
+      padding-inline: 4px;
+      font-size: 15px;
+    }
+    .tabs button[aria-selected="true"] {
+      font-weight: 600;
+    }
+    h2 {
+      font-size: 14px;
+      margin: 16px 0 4px;
+    }
+    .entries {
+      display: grid;
+      gap: 4px;
+    }
+    .entry {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 4px;
+    }
+    .entry [data-show] {
+      display: flex;
+      min-inline-size: 0;
+      justify-content: start;
+      align-items: center;
+      gap: 8px;
+      text-align: start;
+    }
+    .entry span:last-child {
+      min-inline-size: 0;
+      overflow-wrap: anywhere;
+    }
+    .entry small {
+      color: var(--bu-muted);
+    }
+    .sprite {
+      display: block;
+      position: relative;
+      overflow: hidden;
+      flex: none;
+      width: 40px;
+      aspect-ratio: 1;
+    }
+    .stage .sprite {
+      width: 192px;
+    }
+    .sprite img {
+      display: block;
+      position: absolute;
+      max-inline-size: none;
+      width: calc(var(--columns) * 100%);
+      left: calc(-100% * var(--cell));
+      top: calc(-100% * var(--direction));
+      image-rendering: pixelated;
+    }
+    .sprite[data-mirrored="true"] {
+      transform: scaleX(-1);
+    }
+    .action {
+      margin-block-start: 6px;
+    }
+    dialog {
+      width: min(440px, calc(100% - 24px));
+      padding: 16px;
+      color: var(--bu-text);
+      background: var(--bu-surface);
+      border: 1px solid var(--bu-rim);
+      border-radius: var(--bu-radius-dialog);
+    }
+    dialog::backdrop {
+      background: var(--bu-scrim);
+    }
+    dialog h2 {
+      margin-block-start: 0;
+      font-size: 18px;
+    }
+    label {
+      display: grid;
+      gap: 4px;
+      margin: 12px 0;
+    }
+    .actions {
+      display: flex;
+      justify-content: end;
+      gap: 8px;
+      margin-block-start: 16px;
+    }
+    .notice {
+      margin: 8px 0;
+      color: var(--bu-muted);
+    }
+    @media (max-width: 600px) {
+      .studio {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+      }
+      .stage {
+        min-block-size: 180px;
+      }
+      .stage .sprite {
+        width: 128px;
+      }
+    }
+  </style>
+  <main class="studio" aria-label="Adventurer preview and authoring">
+    <section class="stage" aria-label="Preview">
+      <span class="sprite" id="actor" aria-hidden="true"></span>
+      <div class="playback">
+        <select
+          class="bu-select"
+          id="preview"
+          aria-label="Preview pose or move"
+        ></select>
+        <select class="bu-select" id="facing" aria-label="Facing">
+          <option value="0">South</option>
+          <option value="1">East</option>
+          <option value="2">North</option>
+          <option value="3">West</option>
+        </select>
+        <button class="bu-btn" id="playback" hidden>Pause</button>
+      </div>
+      <p id="gear-notice" class="notice" role="status" hidden></p>
+    </section>
+    <section class="panel" aria-label="Character panels">
+      <nav class="tabs bu-tabs" role="tablist" aria-label="Character panels">
+        <button role="tab" disabled>Wardrobe</button
+        ><button role="tab" disabled>Colors</button
+        ><button role="tab" disabled>Outfits</button>
+        <button role="tab" id="poses-tab" aria-controls="library" hidden>
+          Poses
+        </button>
+        <button
+          role="tab"
+          id="moves-tab"
+          aria-selected="true"
+          aria-controls="library"
+        >
+          Moves
+        </button>
+      </nav>
+      <div id="library" role="tabpanel" aria-labelledby="moves-tab">
+        <section id="poses-panel" aria-labelledby="poses-heading">
+          <h2 id="poses-heading">Poses</h2>
+          <div class="entries" id="poses"></div>
+          <button class="bu-btn action" id="add-pose">Add a pose</button>
+          <button class="bu-action action" id="from-pose" hidden></button>
+        </section>
+        <section id="moves-panel" aria-labelledby="moves-heading">
+          <h2 id="moves-heading">Moves</h2>
+          <div class="entries" id="moves"></div>
+          <button class="bu-btn action" id="add-move">Add a move</button>
+        </section>
+      </div>
+      <p class="notice" role="status" id="notice"></p>
+    </section>
+  </main>
+  <dialog id="sheet" aria-labelledby="sheet-title">
+    <form method="dialog" id="form"></form>
+  </dialog>
+  <script>
+    const demo = "../../../app/public/fixtures/s2/layers/";
+    const artwork = {
+      walk: { sheet: "walk", columns: 8, first: 0, frames: 8 },
+      stand: { sheet: "walk", columns: 8, first: 0, frames: 1 },
+      guard: { sheet: "cross-punch", columns: 6, first: 2, frames: 1 },
+      dodge: { sheet: "cross-punch", columns: 6, first: 0, frames: 6 },
+    };
+    const catalog = [
+      {
+        id: "default",
+        name: "Standing",
+        type: "pose",
+        art: "stand",
+        ready: true,
+      },
+      {
+        id: "pose-guard",
+        name: "Guard",
+        type: "pose",
+        art: "guard",
+        ready: true,
+        missingGear: true,
+      },
+      { id: "walk", name: "Walk", type: "move", art: "walk" },
+      {
+        id: "low-dodge",
+        name: "Low dodge",
+        type: "move",
+        art: "dodge",
+        source: "pose-guard",
+      },
+    ];
+    const $ = (id) => document.getElementById(id);
+    const option = (label, value) => new Option(label, value);
+    const byId = (id) => catalog.find((entry) => entry.id === id);
+    const retiredNames = new Map();
+    let selected = "default";
+    let openedFrom;
+    let start = performance.now();
+    let pausedAt;
+    let nextId = 0;
+    const reducedMotion = matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const peer = new URLSearchParams(location.search).get("layout") === "peer";
+
+    function sprite(clip, host, direction = 0) {
+      const imageKey = `${clip.art}:${!!clip.missingGear}`;
+      if (host.dataset.art !== imageKey) {
+        host.dataset.art = imageKey;
+        host.style.setProperty("--columns", artwork[clip.art].columns);
+        const layers = clip.missingGear
+          ? ["body/base"]
+          : ["body/base", "head/helmet_steel"];
+        host.replaceChildren(
+          ...layers.map((layer) => {
+            const img = new Image();
+            img.alt = "";
+            img.src = `${demo}${layer}/main/${artwork[clip.art].sheet}.png`;
+            return img;
+          }),
+        );
+      }
+      host.dataset.mirrored = String(Number(direction) === 3);
+      host.style.setProperty(
+        "--direction",
+        Number(direction) === 3 ? 1 : direction,
+      );
+      host.style.setProperty("--cell", artwork[clip.art].first);
+    }
+
+    function render() {
+      $("preview").replaceChildren();
+      for (const [type, title] of [
+        ["pose", "Poses"],
+        ["move", "Moves"],
+      ]) {
+        const group = document.createElement("optgroup");
+        group.label = title;
+        const entries = catalog.filter((entry) => entry.type === type);
+        group.append(...entries.map((entry) => option(entry.name, entry.id)));
+        $("preview").append(group);
+        $(title.toLowerCase()).replaceChildren(
+          ...entries.map((entry) => {
+            const row = document.createElement("div");
+            row.className = "entry";
+            const button = document.createElement("button");
+            button.className = "bu-btn";
+            button.dataset.show = entry.id;
+            button.setAttribute("aria-pressed", String(selected === entry.id));
+            const canvas = document.createElement("span");
+            canvas.className = "sprite";
+            canvas.setAttribute("aria-hidden", "true");
+            sprite(entry, canvas);
+            const copy = document.createElement("span");
+            copy.textContent = entry.name;
+            if (
+              entry.id === "default" ||
+              entry.source ||
+              entry.ready === false
+            ) {
+              const status = document.createElement("small");
+              const source = byId(entry.source);
+              status.textContent =
+                entry.id === "default"
+                  ? "Default"
+                  : entry.ready === false
+                    ? "Preview only"
+                    : source
+                      ? `Based on ${source.name}`
+                      : `Saved source: ${retiredNames.get(entry.source) ?? "Removed pose"}`;
+              copy.append(document.createElement("br"), status);
+            }
+            button.append(canvas, copy);
+            button.onclick = () => select(entry.id, true);
+            row.append(button);
+            if (entry.id !== "default") {
+              const remove = document.createElement("button");
+              remove.className = "bu-action";
+              remove.textContent = "Remove";
+              remove.setAttribute("aria-label", `Remove ${entry.name}`);
+              remove.onclick = () => confirmRemove(entry);
+              row.append(remove);
+            }
+            return row;
+          }),
+        );
+      }
+      $("preview").value = selected;
+      previewSelection();
+    }
+
+    function previewSelection() {
+      const clip = byId(selected);
+      sprite(clip, $("actor"), $("facing").value);
+      $("playback").hidden = artwork[clip.art].frames === 1;
+      $("playback").textContent = pausedAt === undefined ? "Pause" : "Play";
+      $("gear-notice").hidden = !clip.missingGear;
+      $("gear-notice").textContent = `Helmet has no fit for ${clip.name}.`;
+      $("from-pose").hidden = !(
+        clip.type === "pose" &&
+        clip.ready &&
+        clip.id !== "default"
+      );
+      $("from-pose").textContent = `New move from ${clip.name}`;
+    }
+
+    function select(id, focusRow = false) {
+      selected = id;
+      start = performance.now();
+      pausedAt = reducedMotion ? start : undefined;
+      render();
+      if (focusRow) document.querySelector(`[data-show="${id}"]`).focus();
+    }
+
+    function open(content) {
+      openedFrom = document.activeElement;
+      $("form").onsubmit = null;
+      $("form").innerHTML = content;
+      $("sheet").showModal();
+    }
+
+    function confirmRemove(entry) {
+      const count = catalog.filter(
+        (candidate) => candidate.source === entry.id,
+      ).length;
+      const consequence =
+        entry.type === "pose" && count
+          ? `${count === 1 ? "The move based on this pose stays" : `${count} moves based on this pose stay`}, including fitted equipment. A source copy stays available for regenerating those moves.`
+          : "This removes the saved frames for this entry.";
+      open(
+        `<h2 id="sheet-title">Remove ${entry.type}?</h2><p id="remove-name"></p><p>${consequence} Removal cannot be undone.</p><div class="actions"><button class="bu-btn" value="cancel" autofocus>Cancel</button><button class="bu-btn" value="remove" id="remove">Remove</button></div>`,
+      );
+      $("remove-name").textContent = entry.name;
+      $("remove").onclick = () => {
+        if (count) retiredNames.set(entry.id, entry.name);
+        catalog.splice(catalog.indexOf(entry), 1);
+        select(selected === entry.id ? "default" : selected);
+        openedFrom = $(entry.type === "pose" ? "add-pose" : "add-move");
+        $("notice").textContent = `${entry.name} removed.`;
+      };
+    }
+
+    function openMove(sourceId = "default") {
+      const poses = catalog.filter((entry) => entry.type === "pose");
+      open(
+        `<h2 id="sheet-title">Add a move</h2><label>Name<input class="bu-input" id="name" required maxlength="60" autofocus></label><label ${poses.length === 1 ? "hidden" : ""}>Based on<select class="bu-select" id="source" aria-describedby="source-note"></select></label><p class="notice" id="source-note"></p><span class="sprite" id="source-thumb" aria-hidden="true"></span><div class="actions"><button class="bu-btn" value="cancel" formnovalidate>Cancel</button><button class="bu-btn" value="add">Add sample move</button></div>`,
+      );
+      $("source").append(
+        ...poses.map((entry) => {
+          const choice = option(
+            entry.ready ? entry.name : `${entry.name} (preview only)`,
+            entry.id,
+          );
+          choice.disabled = !entry.ready;
+          return choice;
+        }),
+      );
+      $("source").value = sourceId;
+      const notReady = poses
+        .filter((entry) => !entry.ready)
+        .map((entry) => entry.name);
+      $("source-note").textContent =
+        poses.length === 1
+          ? "Based on Standing."
+          : notReady.length
+            ? `Pose setup needed: ${notReady.join(", ")}.`
+            : "";
+      $("source-note").hidden = !$("source-note").textContent;
+      $("source").onchange = () =>
+        sprite(byId($("source").value), $("source-thumb"));
+      $("source").onchange();
+      $("form").onsubmit = (event) => {
+        if (event.submitter.value !== "add" || !$("name").value.trim()) return;
+        selectNew({ type: "move", art: "dodge", source: $("source").value });
+      };
+    }
+    $("add-move").onclick = () => openMove();
+    $("from-pose").onclick = () => openMove(selected);
+
+    $("add-pose").onclick = () => {
+      open(
+        `<h2 id="sheet-title">Add a pose</h2><label>Method<select class="bu-select" id="method"><option value="import">Import art</option><option value="generate">Generate from a pose</option></select></label><label>Name<input class="bu-input" id="name" required maxlength="60"></label><p class="notice" id="pose-hint">Review the artwork and facing coverage before saving.</p><div class="actions"><button class="bu-btn" value="cancel" formnovalidate>Cancel</button><button class="bu-btn" value="add">Add sample pose</button></div>`,
+      );
+      $("method").onchange = () => {
+        $("pose-hint").textContent =
+          $("method").value === "generate"
+            ? "Choose a source and review the estimated cost before generating."
+            : "Review the artwork and facing coverage before saving.";
+      };
+      $("form").onsubmit = (event) => {
+        if (event.submitter.value !== "add" || !$("name").value.trim()) return;
+        selectNew({
+          type: "pose",
+          art: "guard",
+          ready: $("method").value === "generate",
+          missingGear: true,
+        });
+      };
+    };
+
+    function selectNew(entry) {
+      const id = `sample-${++nextId}`;
+      catalog.push({ ...entry, id, name: $("name").value.trim() });
+      select(id);
+    }
+
+    $("sheet").onclose = () => {
+      if (openedFrom?.isConnected) openedFrom.focus();
+    };
+    $("preview").onchange = () => {
+      selected = $("preview").value;
+      start = performance.now();
+      pausedAt = reducedMotion ? start : undefined;
+      previewSelection();
+      for (const button of document.querySelectorAll("[data-show]")) {
+        button.setAttribute(
+          "aria-pressed",
+          String(button.dataset.show === selected),
+        );
+      }
+    };
+    $("facing").onchange = () =>
+      sprite(byId(selected), $("actor"), $("facing").value);
+    $("playback").onclick = () => {
+      const now = performance.now();
+      if (pausedAt === undefined) pausedAt = now;
+      else {
+        start += now - pausedAt;
+        pausedAt = undefined;
+      }
+      $("playback").textContent = pausedAt === undefined ? "Pause" : "Play";
+    };
+    if (peer) {
+      const show = (poses) => {
+        $("poses-tab").setAttribute("aria-selected", String(poses));
+        $("moves-tab").setAttribute("aria-selected", String(!poses));
+        $("library").setAttribute(
+          "aria-labelledby",
+          poses ? "poses-tab" : "moves-tab",
+        );
+        $("poses-panel").hidden = !poses;
+        $("moves-panel").hidden = poses;
+      };
+      $("poses-tab").hidden = false;
+      $("poses-tab").onclick = () => show(true);
+      $("moves-tab").onclick = () => show(false);
+      show(true);
+    }
+    render();
+    function animate(now) {
+      const art = artwork[byId(selected).art];
+      const cell =
+        Math.floor(Math.max(0, (pausedAt ?? now) - start) / 120) % art.frames;
+      $("actor").style.setProperty("--cell", art.first + cell);
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+  </script>
+</html>

@@ -177,6 +177,7 @@
 		"connect": "Conectar"
 	},
 	"deleteSheet": {
+		"viewPendingWork": "Ver trabajo pendiente",
 		"character": "personaje",
 		"demo": "La demo incluida no se puede eliminar.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Sus atuendos y cambios se eliminan de este dispositivo. Los objetos copiados a otros personajes se conservan. Esto no se puede deshacer."
@@ -246,6 +247,14 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"restoreStanding": {
+			"one": "Restaurar vista de pie",
+			"other": "Restaurar vistas de pie"
+		},
+		"restoreStandingHint": {
+			"one": "Reconstruida a partir del diseño guardado del objeto para {directions}. No se genera nada.",
+			"other": "Reconstruidas a partir de los diseños guardados del objeto para {directions}. No se genera nada."
+		},
 		"hiddenByAnotherItem": "Oculto por otro objeto",
 		"nameInEveryDirection": "{name} en todas las direcciones",
 		"labelNameFacingId": "{name} · Dirección: {id}",
@@ -538,6 +547,8 @@
 		"workspaceActions": "Acciones del espacio de trabajo"
 	},
 	"wardrobe": {
+		"notShownInMove": "No se muestra en este movimiento",
+		"notShownInMoveNote": "El objeto está equipado, pero no se muestra porque le faltan fotogramas en todas las vistas de este movimiento.",
 		"randomLowerItem": "Objeto aleatorio de {lower}",
 		"newLowerItem": "Nuevo objeto de {lower}",
 		"labelItems": "Objetos de {label}",
@@ -659,6 +670,10 @@
 		"focusWorldADOrToMove": "Enfoca el mundo · A/D o ←/→ para moverte",
 		"focusWorldWASDOrArrowKeysTo": "Enfoca el mundo · WASD o flechas para moverte",
 		"notice": {
+			"hiddenItemsInMove": {
+				"one": "{count} objeto oculto: faltan fotogramas de {move}",
+				"other": "{count} objetos ocultos: faltan fotogramas de {move}"
+			},
 			"noMoveNothing": "Aún no hay animación {move}, así que no hay nada que mostrar",
 			"noMoveStill": "Aún no hay animación {move}, así que el personaje se queda quieto",
 			"noMovePlays": "Aún no hay animación {move}, así que se reproduce {fallback}",
@@ -697,6 +712,15 @@
 		"couldNotEnterFullScreenTryAgain": "No se pudo activar la pantalla completa. Inténtalo de nuevo o usa el control de pantalla completa de tu navegador."
 	},
 	"state": {
+		"couldNotCheckNamedFrames": "No se pudieron comprobar los fotogramas de {names}: {reason}",
+		"couldNotCheckSeveralFrames": "No se pudieron comprobar los fotogramas de {names}.",
+		"copyMissingOneMove": "Faltan fotogramas en {move}; el objeto se oculta ahí.",
+		"copyMissingFrames": "Faltan fotogramas en {moves}; el objeto se oculta ahí.",
+		"restoreFailed": "No se pudo restaurar {name}: {reason}",
+		"restoreFinishFailed": "No se pudo completar la restauración de {name}: {reason}",
+		"restoredStanding": "Se restauró {name} en las direcciones {directions}. No se usaron generaciones.",
+		"restoredQualityNotes": "Hay avisos de calidad. Revísalos.",
+		"noStandingToRestore": "No quedan vistas de pie de {name} por restaurar.",
 		"characterChangedNothingDeleted": "El personaje cambió mientras tanto. No se eliminó nada.",
 		"categoryNowHasItems": {
 			"one": "{label} ahora tiene {count} objeto. Revísala de nuevo antes de eliminarla.",
@@ -1155,7 +1179,7 @@
 		"intro": "Descarga un ZIP con todos tus personajes, objetos, animaciones, atuendos y ajustes del espacio de trabajo guardados.",
 		"privacy": "El archivo incluye las imágenes y los prompts guardados, pero no tu clave de PixelLab ni los borradores sin terminar. Compártelo solo con alguien de confianza.",
 		"includeErrors": "Incluir errores recientes",
-		"includeErrorsHint": "Agrega tu nivel de PixelLab y los resultados de solicitudes recientes, sin el contenido de las solicitudes ni las credenciales de la cuenta.",
+		"includeErrorsHint": "Añade tu nivel de PixelLab, los resultados de las solicitudes recientes y mensajes de error abreviados. El filtro puede pasar por alto enlaces o credenciales. Revisa la exportación antes de compartirla.",
 		"exportedOmissions": "Espacio de trabajo exportado con omisiones. Abre la copia y revisa Actividad para ver los detalles.",
 		"exported": "Espacio de trabajo exportado.",
 		"error": {
@@ -1598,6 +1622,14 @@
 		"copyFailed": "No se pudo copiar automáticamente. Usa el campo del endpoint para copiar manualmente."
 	},
 	"activity": {
+		"pendingWork": "Trabajo pendiente",
+		"openWork": "Abrir",
+		"openWorkNamed": "Abrir {label}",
+		"inProgress": "En curso",
+		"redrawFrames": "Redibujar fotogramas del objeto",
+		"repairFrames": "Reparar fotogramas del objeto",
+		"readyToReview": "Listo para revisar",
+		"characterSetup": "Configuración del personaje",
 		"error": {
 			"jobMissing": "PixelLab ya no tiene el trabajo. Sus resultados no se guardaron y es posible que se te haya cobrado.",
 			"malformed": "PixelLab envió un resultado con formato incorrecto ({error}). Es posible que la solicitud se te haya cobrado.",
@@ -2110,6 +2142,7 @@
 		}
 	},
 	"moveSheet": {
+		"sharedCopiesCoverage": "Las copias compartidas se pueden usar en las vistas en las que tienen fotogramas.",
 		"thatCharacter": "ese personaje",
 		"recoveryCheckFailed": "No se pudieron comprobar los fotogramas en caché: {error}",
 		"retryLabel": "Volver a generar la animación",
@@ -2201,7 +2234,7 @@
 		"redrawOtherMoves": "Las demás animaciones no cambian.",
 		"equipmentWaitsForBody": "Si las comprobaciones del cuerpo detienen la animación, no se solicitan fotogramas para el equipo.",
 		"uncheckedItemsHidden": "Los objetos sin marcar siguen ocultos hasta que se animen.",
-		"fittedEquipmentOnly": "Aquí solo se puede animar el equipo adaptado a todas las vistas seleccionadas. Las copias compartidas se pueden seguir usando en las vistas donde ya tienen fotogramas.",
+		"fittedEquipmentOnly": "Aquí solo se puede animar el equipo adaptado a todas las vistas seleccionadas.",
 		"review": {
 			"redrawTitle": "Revisar el redibujado del objeto",
 			"repairTitle": "Revisar la reparación del objeto",
@@ -2336,13 +2369,16 @@
 	"sheet": { "later": "Más tarde" },
 	"toast": { "dismiss": "Descartar notificación" },
 	"sharedVisibility": {
+		"allEmphasis": "todos",
+		"demo": "Del {demo}",
+		"demoEmphasis": "personaje de demostración",
 		"heading": "Ocultar objetos compartidos",
-		"all": "Todos los personajes",
-		"hideAll": "Ocultar objetos compartidos para todos los personajes",
-		"hideDemo": "Ocultar objetos compartidos de {name} (demo)",
-		"hideCurrent": "Ocultar objetos compartidos para {name} (Actual)",
-		"current": "(Actual)",
-		"allOn": "Los objetos compartidos están ocultos para todos los personajes.",
+		"all": "En {all} los vestuarios",
+		"hideAll": "Ocultar objetos compartidos en todos los vestuarios",
+		"hideDemo": "Ocultar objetos compartidos del personaje de demostración",
+		"hideCurrent": "Ocultar objetos compartidos en el vestuario de {name}",
+		"current": "En el vestuario de {name}",
+		"allOn": "Los objetos compartidos están ocultos en todos los vestuarios.",
 		"notSaved": "Se cambió la visibilidad, pero el navegador no pudo guardarla."
 	},
 	"versionRow": {

@@ -72,7 +72,7 @@ export type PresentationNotice =
 			fallback: PresentationFallback;
 	  }
 	| { kind: 'undeclared-direction' }
-	| { kind: 'hidden-items'; count: number; move: string; direction: DirectionName }
+	| { kind: 'hidden-items'; count: number; move: string; direction?: DirectionName }
 	| { kind: 'diagnostic'; text: string };
 
 /** The canonical English of a notice, kept for diagnostics, tests and non-UI callers. */
@@ -100,7 +100,7 @@ export function noticeText(notice: PresentationNotice): string {
 		case 'undeclared-direction':
 			return 'This facing is not declared by the character';
 		case 'hidden-items':
-			return `${notice.count} ${notice.count === 1 ? 'item' : 'items'} hidden — missing ${notice.move} / ${directionLabel(notice.direction)} frames`;
+			return `${notice.count} ${notice.count === 1 ? 'item' : 'items'} hidden — missing ${notice.move}${notice.direction ? ` / ${directionLabel(notice.direction)}` : ''} frames`;
 		case 'diagnostic':
 			return notice.text;
 	}
@@ -672,14 +672,18 @@ export function renderPresentation(
 		result.frame
 	);
 	if (result.hiddenItems.length && !a.loading) {
+		// Missing in every view: naming the facing shown would read as if turning brought the items back.
+		const everywhere = result.hiddenItems.every((item) =>
+			m.rig.directions.every((d) => !a.complete(item, clip, d.id, cells))
+		);
 		result.notice = {
 			kind: 'hidden-items',
 			count: result.hiddenItems.length,
 			move: clip,
-			direction
+			direction: everywhere ? undefined : direction
 		};
 		result.issue = noticeText(result.notice);
-		result.issueKey = `items:${clip}:${direction}:${result.hiddenItems
+		result.issueKey = `items:${clip}:${everywhere ? '' : direction}:${result.hiddenItems
 			.map((item) => item.variantOf ?? item.id)
 			.sort()
 			.join(',')}`;

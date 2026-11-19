@@ -134,6 +134,45 @@ test('an identical body copies the item pixel for pixel, as an independent item 
 	expect(after).toEqual(source.manifest);
 });
 
+test('one body whose color split marked a frame differently on each character still copies that view', async () => {
+	// Adding a move marks shirt and shorts again on every stored body frame: one blue low bit per gray pixel.
+	const marked = async (name: string, blue: number) => {
+		const p = named(await equipmentFixture(), name),
+			row = p.manifest.items[0].layers[0].cells!.rest!.south!,
+			body = makeImg(64, 64);
+		p.manifest.rig.rest = { south: { image: row[0]!, keypoints: [] } };
+		body.data.set(p.images.get(row[0]!)!.data);
+		body.data.set([150, 150, blue, 255], (40 * 64 + 20) * 4);
+		row[0] = await cellHash(body);
+		p.images.set(row[0], body);
+		return p;
+	};
+	await store('rig-source', await marked('Knight', 150));
+	const target = bodyOnly(await marked('Squire', 151));
+	await store('rig-target', target);
+	expect(
+		(await listShared('rig-target', target.manifest)).items.map((x) => [x.fit, x.cells])
+	).toEqual([['copy', ['rest/south/0']]]);
+	const item = (await acceptCopy('rig-source', 'hat', 'rig-target'))!;
+	expect(item.unfitted).toBeUndefined();
+	expect(item.coverage).toEqual(['rest/south/0']);
+	// No reference and no frame in common (every frame marked again): the first frame both store decides.
+	const lone = bodyOnly(await marked('Lone', 151));
+	delete lone.manifest.rig.rest;
+	await store('rig-lone', lone);
+	expect((await acceptCopy('rig-source', 'hat', 'rig-lone'))!.unfitted).toBeUndefined();
+	// Skin that differs is another body, however small the difference.
+	const other = bodyOnly(await marked('Page', 150)),
+		row = other.manifest.items[0].layers[0].cells!.rest!.south!,
+		skin = makeImg(64, 64);
+	skin.data.set(other.images.get(row[0]!)!.data);
+	skin.data.set([180, 120, 91, 255], (50 * 64 + 20) * 4);
+	row[0] = await cellHash(skin);
+	other.images.set(row[0], skin);
+	await store('rig-other', other);
+	expect((await acceptCopy('rig-source', 'hat', 'rig-other'))!.unfitted).toBeDefined();
+});
+
 async function otherBody(name: string, pivot = { x: 32, y: 56 }) {
 	const target = named(bodyOnly(await equipmentFixture()), name),
 		body = makeImg(64, 64);
@@ -421,13 +460,14 @@ test('views both characters mirror are covered by their drawn source view', asyn
 		target = bodyOnly(await equipmentFixture());
 	for (const p of [source, target])
 		p.manifest.rig.directions = [{ id: 'south' }, { id: 'north', mirrorOf: 'south' }];
-	const { flip, made } = flipper(async (h) => source.images.get(h)!);
-	const assessment = await assessCopy(source.manifest, hatOf(source), target.manifest, flip);
+	const frames = flipper(async (h) => source.images.get(h)!),
+		{ made } = frames;
+	const assessment = await assessCopy(source.manifest, hatOf(source), target.manifest, frames);
 	expect(assessment).toMatchObject({
 		fits: true,
 		matches: [{ source: 'rest/south/0', target: 'rest/south/0' }]
 	});
-	const copy = (await prepareCopy(source.manifest, 'hat', {}, target.manifest, flip))!;
+	const copy = (await prepareCopy(source.manifest, 'hat', {}, target.manifest, frames))!;
 	expect(copy.item.layers[0].cells).toEqual(hatOf(source).layers[0].cells);
 	expect(copy.item.coverage).toEqual(['rest/south/0']);
 	expect(made.size).toBe(0); // nothing needed flipping

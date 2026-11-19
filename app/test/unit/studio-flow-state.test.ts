@@ -2628,6 +2628,30 @@ describe('optional review', () => {
 		expect(s.ui.anim).toBe('walk');
 	});
 
+	test('a character opens on its standing move, where what it wears is shown', async () => {
+		routeMock(async () => null); // only for the mocked base split
+		const standing = opened();
+		standing.project.manifest.rig.animations.push({
+			id: 'default',
+			cells: 1,
+			loop: true,
+			frames: [{ cell: 0, ms: 100 }]
+		});
+		mocks.source.mockImplementation(async (id: string) =>
+			id === 'standing' ? standing : opened()
+		);
+		const s = await import('../../src/studio/state.svelte.ts');
+		await s.openProject('standing');
+		expect(s.ui.anim).toBe('default');
+		// A move picked this session stays while the next character has it; a character without Default opens on Walk.
+		s.ui.anim = 'cross-punch';
+		await s.openProject('other');
+		expect(s.ui.anim).toBe('cross-punch');
+		s.ui.anim = '';
+		await s.openProject('another');
+		expect(s.ui.anim).toBe('walk');
+	});
+
 	test('an edit made while the open character reloads in place is kept', async () => {
 		routeMock(async () => null); // only for the mocked base split
 		const first = pending<unknown>(),

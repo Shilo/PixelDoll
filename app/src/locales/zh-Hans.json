@@ -177,6 +177,7 @@
 		"connect": "连接"
 	},
 	"deleteSheet": {
+		"viewPendingWork": "查看待处理工作",
 		"character": "角色",
 		"demo": "内置演示无法删除。",
 		"itsOutfitsAndChangesAreRemovedFrom": "其套装和更改将从此设备移除。复制到其他角色的装备会保留。此操作无法撤销。"
@@ -236,6 +237,12 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"restoreStanding": {
+			"other": "恢复站立视图"
+		},
+		"restoreStandingHint": {
+			"other": "使用此物品已保存的 {directions} 朝向设计来恢复，不会生成新画面。"
+		},
 		"hiddenByAnotherItem": "被另一件装备遮挡",
 		"nameInEveryDirection": "所有朝向的{name}",
 		"labelNameFacingId": "{name}，朝向{id}",
@@ -512,6 +519,8 @@
 		"workspaceActions": "工作区操作"
 	},
 	"wardrobe": {
+		"notShownInMove": "此动作中不显示",
+		"notShownInMoveNote": "物品已穿戴，但此动作的所有朝向都缺少帧，因此不会显示。",
 		"randomLowerItem": "随机{lower}装备",
 		"newLowerItem": "新建{lower}装备",
 		"labelItems": "{label}装备",
@@ -630,6 +639,9 @@
 		"focusWorldADOrToMove": "聚焦世界 · 使用 A/D 或 ←/→ 移动",
 		"focusWorldWASDOrArrowKeysTo": "聚焦世界 · 使用 WASD 或方向键移动",
 		"notice": {
+			"hiddenItemsInMove": {
+				"other": "已隐藏 {count} 件物品：缺少 {move} 的帧"
+			},
 			"noMoveNothing": "还没有{move}动作，因此没有可显示的内容",
 			"noMoveStill": "还没有{move}动作，因此角色保持静止",
 			"noMovePlays": "还没有{move}动作，因此改为播放{fallback}",
@@ -664,6 +676,15 @@
 		"couldNotEnterFullScreenTryAgain": "无法进入全屏。请重试或使用浏览器的全屏控制。"
 	},
 	"state": {
+		"couldNotCheckNamedFrames": "无法检查 {names} 的帧：{reason}",
+		"couldNotCheckSeveralFrames": "无法检查 {names} 的帧。",
+		"copyMissingOneMove": "{move} 缺少部分帧，物品会在这些帧中隐藏。",
+		"copyMissingFrames": "{moves} 缺少部分帧，物品会在这些帧中隐藏。",
+		"restoreFailed": "无法恢复 {name}：{reason}",
+		"restoreFinishFailed": "未能完成 {name} 的恢复：{reason}",
+		"restoredStanding": "已恢复 {name} 在 {directions} 朝向的画面。未使用生成次数。",
+		"restoredQualityNotes": "有画面质量提示，请检查。",
+		"noStandingToRestore": "{name} 已没有可恢复的站立视图。",
 		"characterChangedNothingDeleted": "角色在此期间发生了变化。未删除任何内容。",
 		"categoryNowHasItems": {
 			"other": "{label}现在有 {count} 件装备。删除前请再次检查。"
@@ -1095,7 +1116,7 @@
 		"intro": "下载一个 ZIP，包含所有已保存的角色、装备、动作、套装和工作区设置。",
 		"privacy": "文件包含图像和已保存的提示词，但不包含你的 PixelLab 密钥或未完成的草稿。请仅与你信任的人分享。",
 		"includeErrors": "包含最近错误",
-		"includeErrorsHint": "添加你的 PixelLab 套餐和最近请求结果，不包含请求正文或账户凭据。",
+		"includeErrorsHint": "包含你的 PixelLab 等级、近期请求结果和缩短后的错误信息。过滤可能遗漏链接或凭据，请在分享前检查导出的内容。",
 		"exportedOmissions": "工作区已导出，但有省略内容。请打开副本并在“活动”中查看详情。",
 		"exported": "工作区已导出。",
 		"error": {
@@ -1512,6 +1533,14 @@
 		"copyFailed": "无法自动复制。请使用端点字段手动复制。"
 	},
 	"activity": {
+		"pendingWork": "待处理工作",
+		"openWork": "打开",
+		"openWorkNamed": "打开{label}",
+		"inProgress": "进行中",
+		"redrawFrames": "重绘物品帧",
+		"repairFrames": "修复物品帧",
+		"readyToReview": "可以检查",
+		"characterSetup": "角色设置",
 		"error": {
 			"jobMissing": "PixelLab 已不再保留该任务。其结果未保存，可能已向你计费。",
 			"malformed": "PixelLab 返回了格式错误的结果（{error}）。该请求可能已向你计费。",
@@ -1999,6 +2028,7 @@
 		}
 	},
 	"moveSheet": {
+		"sharedCopiesCoverage": "共享物品的副本仍可在有帧的朝向中穿戴。",
 		"thatCharacter": "该角色",
 		"recoveryCheckFailed": "无法检查缓存帧：{error}",
 		"retryLabel": "再次生成动作",
@@ -2083,7 +2113,7 @@
 		"redrawOtherMoves": "其他动作保持不变。",
 		"equipmentWaitsForBody": "如果身体检查阻止生成动作，就不会发送装备生成请求。",
 		"uncheckedItemsHidden": "未勾选的装备会保持隐藏，直到为其生成动画。",
-		"fittedEquipmentOnly": "这里只能为适配所有选中视图的装备生成动画。共享副本仍可穿戴在已有帧的视图中。",
+		"fittedEquipmentOnly": "这里只能为适配所有选中视图的装备生成动画。",
 		"review": {
 			"redrawTitle": "审核装备重绘",
 			"repairTitle": "审核装备修复",
@@ -2214,13 +2244,16 @@
 	"sheet": { "later": "稍后" },
 	"toast": { "dismiss": "关闭通知" },
 	"sharedVisibility": {
+		"allEmphasis": "所有",
+		"demo": "来自{demo}",
+		"demoEmphasis": "演示角色",
 		"heading": "隐藏共享装备",
-		"all": "所有角色",
-		"hideAll": "为所有角色隐藏共享装备",
-		"hideDemo": "隐藏来自{name}（演示）的共享装备",
-		"hideCurrent": "为{name}（当前角色）隐藏共享装备",
-		"current": "（当前）",
-		"allOn": "共享装备已对所有角色隐藏。",
+		"all": "在{all}衣柜中",
+		"hideAll": "在所有衣柜中隐藏共享物品",
+		"hideDemo": "隐藏演示角色的共享物品",
+		"hideCurrent": "在 {name} 的衣柜中隐藏共享物品",
+		"current": "在 {name} 的衣柜中",
+		"allOn": "所有衣柜中的共享物品均已隐藏。",
 		"notSaved": "已更改显示设置，但此浏览器未能保存。"
 	},
 	"versionRow": {

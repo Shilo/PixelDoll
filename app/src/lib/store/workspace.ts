@@ -34,6 +34,7 @@ const tools = [
 	'background-jobs'
 ];
 const maxReports = 50;
+const maxMessage = 200;
 const maxRecords = 500;
 const maxPixels = 64 * 1024 * 1024;
 const tooLarge =
@@ -62,6 +63,8 @@ interface ErrorSummary {
 	outcome: (typeof outcomes)[number];
 	http?: number;
 	code?: number;
+	/** What the failed request reported, shortened and without links or tokens. */
+	message?: string;
 }
 
 interface WorkspaceIndex {
@@ -191,6 +194,37 @@ const integer = (value: unknown, min: number, max: number): number | undefined =
 		? value
 		: undefined;
 
+/** A failure's own words for the export. A failed download names its signed link and a provider can echo what it was sent,
+ *  so what is likely to carry a secret or an image is left out: data URLs, links (with a scheme or a query string),
+ *  credential headers, anything shaped like a PixelLab key (a UUID, so job ids go too) and long unbroken tokens. A filter of
+ *  free text is best effort: the export's key check still refuses the connected and remembered keys outright, and this
+ *  covers a key it does not know, such as an earlier one. */
+function diagnosticText(value: unknown): string | undefined {
+	if (typeof value !== 'string') return undefined;
+	const text = value
+		.replace(/\bdata:[^\s"']+/gi, '[data]')
+		.replace(/https?:\/\/[^\s"']+/gi, '[link]')
+		// A path or host before the "?", or query syntax after it: an ordinary question is neither.
+		.replace(/[^\s"']*[./][^\s"']*\?[^\s"']+|[^\s"']*\?[^\s"']*[=&#%][^\s"']*/g, '[link]')
+		// These two headers carry several values (a Digest's fields, each cookie): the rest of the line goes.
+		.replace(/\b(authorization|(?:set-)?cookie)\b["']?\s*[:=][^\r\n]*/gi, '$1: [removed]')
+		.replace(
+			/\b(password|secret|signature|x-api-key|api[ _-]?key|token)\b["']?\s*[:=]\s*["']?[^\s"',;]+/gi,
+			'$1: [removed]'
+		)
+		// A scheme followed by something credential-shaped, not "basic shading" or "digest mismatch".
+		.replace(
+			/\b(basic|bearer|digest|negotiate)\s+(?=[\w.+/=-]{16,}|[\w.+/=-]*[\d=+/.-])[\w.+/=-]+/gi,
+			'$1 [removed]'
+		)
+		.replace(/\b[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\b/gi, '[id]')
+		.replace(/[A-Za-z0-9+=_]{24,}/g, '[removed]')
+		.replace(/\s+/g, ' ')
+		.trim()
+		.slice(0, maxMessage);
+	return text || undefined;
+}
+
 export function recentWorkspaceErrors(jobs: unknown[], calls: readonly ApiCall[]): ErrorSummary[] {
 	const summaries: ErrorSummary[] = [];
 	for (const value of jobs) {
@@ -211,7 +245,8 @@ export function recentWorkspaceErrors(jobs: unknown[], calls: readonly ApiCall[]
 			at,
 			tool: summaryTool(job.endpoint),
 			outcome: job.state as ErrorSummary['outcome'],
-			code: integer(subjob?.errorCode, 0, 99999)
+			code: integer(subjob?.errorCode, 0, 99999),
+			message: diagnosticText(job.error || object(subjob)?.error)
 		});
 	}
 	for (const call of calls) {
@@ -221,7 +256,8 @@ export function recentWorkspaceErrors(jobs: unknown[], calls: readonly ApiCall[]
 			tool: summaryTool(call.endpoint),
 			outcome: 'failed',
 			http: integer(call.status, 100, 599),
-			code: integer(call.failedJobs?.[0]?.code ?? call.job?.code, 0, 99999)
+			code: integer(call.failedJobs?.[0]?.code ?? call.job?.code, 0, 99999),
+			message: diagnosticText(call.failedJobs?.[0]?.error || call.job?.error)
 		});
 	}
 	return summaries.sort((left, right) => right.at - left.at).slice(0, maxReports);
@@ -452,7 +488,9 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 					(!tools.includes(error.tool) && error.tool !== 'PixelLab') ||
 					!outcomes.includes(error.outcome) ||
 					(error.http !== undefined && integer(error.http, 100, 599) === undefined) ||
-					(error.code !== undefined && integer(error.code, 0, 99999) === undefined)
+					(error.code !== undefined && integer(error.code, 0, 99999) === undefined) ||
+					(error.message !== undefined &&
+						(typeof error.message !== 'string' || error.message.length > maxMessage))
 			))
 	)
 		throw new LocalizedError(

@@ -18,7 +18,12 @@ type Catalog = { [key: string]: string | Catalog };
 const readCatalog = (id: string): Catalog =>
 	JSON.parse(readFileSync(new URL(`../../src/locales/${id}.json`, import.meta.url), 'utf8'));
 const placeholders = (text: string) => new Set(text.match(/\{[^{}]+\}/g) ?? []);
-const listPlurals = new Set(['export.warnings.rpgWalkViews', 'export.error.rpgMissingViews']);
+const pluralsWithoutDisplayedCount = new Set([
+	'export.warnings.rpgWalkViews',
+	'export.error.rpgMissingViews',
+	'itemPane.restoreStanding',
+	'itemPane.restoreStandingHint'
+]);
 
 function verifyPlurals(source: Catalog, target: Catalog, categories: string[], path = '') {
 	for (const [key, value] of Object.entries(source)) {
@@ -42,7 +47,7 @@ function verifyPlurals(source: Catalog, target: Catalog, categories: string[], p
 			if (typeof equivalent !== 'string')
 				throw new Error(`${fullKey}.${category} has no source form`);
 			expect(placeholders(text), `${fullKey}.${category}`).toEqual(placeholders(equivalent));
-			if (categoryKeys.includes(category) && !listPlurals.has(fullKey))
+			if (categoryKeys.includes(category) && !pluralsWithoutDisplayedCount.has(fullKey))
 				expect(text, `${fullKey}.${category}`).toMatch(/\{(?:count|n)\}/);
 		}
 	}

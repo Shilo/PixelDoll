@@ -8,7 +8,11 @@
 	import { coverageGaps, moveDirs } from '../lib/dress/dress.ts';
 	import { hiddenSlots, equipped } from '../lib/compose/compose.ts';
 	import { SLOTS, slotLadder } from '../lib/items/items.ts';
-	import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts';
+	import {
+		itemPaletteRepairPlan,
+		restorableViews,
+		type ItemPaletteRepairPlan
+	} from '../lib/items/run.ts';
 	import {
 		extendable,
 		missingItemMoves,
@@ -57,7 +61,8 @@
 		acceptItemIssues,
 		showFrame,
 		shared,
-		copyFromSource
+		copyFromSource,
+		restoreFromDesign
 	} from './state.svelte.ts';
 	import {
 		ArrowUp,
@@ -269,6 +274,14 @@
 	// moves: only an item made for this character can.
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
 	const freeFrames = $derived(it ? (shared.free[it.id] ?? 0) : 0);
+	// Standing views this item lacks that its own saved designs can fill for free, whatever move is shown.
+	const restorable = $derived(
+		m && it && !isDemo() ? restorableViews(m, it).map((key) => key.split('/')[1]) : []
+	);
+	// The paid repair leads only when the item has something to repair in the shown view and nothing free can fix it.
+	const repairLeads = $derived(
+		!restorable.length && (health === 'look' || moveGaps.includes(sourceDir))
+	);
 	// A re-fit's checks were measured on the source body; its fit notes replace them. An unfitted copy keeps its source's pixels,
 	// so the source's findings (a grip in the wrong hand) still describe them.
 	const reasons = $derived(
@@ -428,6 +441,24 @@
 				})}{#if remakeOnly && !isDemo() && !freeFrames}
 					{t('itemPane.remakeAllMoves', { name: m.name })}{/if}
 			</p>{/if}
+		{#if restorable.length}
+			<div class="field">
+				<button
+					class="bu-action btn"
+					data-variant="primary"
+					disabled={!!shared.adding}
+					onclick={() => restoreFromDesign(it.id)}
+					>{t('itemPane.restoreStanding', { count: restorable.length })}
+					<span class="cost">{t('common.free')}</span></button
+				>
+				<p class="faint small">
+					{t('itemPane.restoreStandingHint', {
+						count: restorable.length,
+						directions: formatList(restorable.map(directionName))
+					})}
+				</p>
+			</div>
+		{/if}
 		{#if freeFrames && it.copiedFrom && !isDemo()}
 			<!-- An exact copy whose source item gained frames for this body since: copied over for free, not made again. -->
 			<div class="field">
@@ -526,7 +557,7 @@
 						/>
 						<button
 							class="bu-action btn"
-							data-variant={choice.id === 'repair' ? 'primary' : 'outline'}
+							data-variant={choice.id === 'repair' && repairLeads ? 'primary' : 'outline'}
 							disabled={repairBusy || choice.offer?.gens == null || tierBlocked(tier)}
 							aria-describedby={tierBlocked(tier)
 								? `item-${choice.id}-tier`

@@ -177,6 +177,7 @@
 		"connect": "연결"
 	},
 	"deleteSheet": {
+		"viewPendingWork": "대기 중인 작업 보기",
 		"character": "캐릭터",
 		"demo": "함께 제공되는 데모는 삭제할 수 없어요.",
 		"itsOutfitsAndChangesAreRemovedFrom": "이 캐릭터의 코디와 변경 사항이 이 기기에서 제거돼요. 다른 캐릭터로 복사한 아이템은 남아요. 되돌릴 수 없어요."
@@ -239,6 +240,12 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"restoreStanding": {
+			"other": "서 있는 모습 복구"
+		},
+		"restoreStandingHint": {
+			"other": "이 아이템에 저장된 {directions} 방향의 디자인으로 복구합니다. 새로 생성하지 않습니다."
+		},
 		"hiddenByAnotherItem": "다른 아이템에 가려짐",
 		"nameInEveryDirection": "모든 방향의 {name}",
 		"labelNameFacingId": "{id} 방향의 {name}",
@@ -517,6 +524,8 @@
 		"workspaceActions": "워크스페이스 작업"
 	},
 	"wardrobe": {
+		"notShownInMove": "이 동작에서는 표시되지 않음",
+		"notShownInMoveNote": "착용 중이지만 이 동작의 모든 방향에 프레임이 없어 표시되지 않습니다.",
 		"randomLowerItem": "무작위 {lower} 아이템",
 		"newLowerItem": "새 {lower} 아이템",
 		"labelItems": "{label} 아이템",
@@ -637,6 +646,9 @@
 		"focusWorldADOrToMove": "월드 포커스 · A/D 또는 ←/→로 이동",
 		"focusWorldWASDOrArrowKeysTo": "월드 포커스 · WASD 또는 방향키로 이동",
 		"notice": {
+			"hiddenItemsInMove": {
+				"other": "아이템 {count}개 숨김: {move} 프레임 부족"
+			},
 			"noMoveNothing": "아직 {move} 동작이 없어서 표시할 내용이 없어요",
 			"noMoveStill": "아직 {move} 동작이 없어서 캐릭터가 가만히 서 있어요",
 			"noMovePlays": "아직 {move} 동작이 없어서 대신 {fallback} 동작을 재생해요",
@@ -673,6 +685,15 @@
 		"couldNotEnterFullScreenTryAgain": "전체 화면을 시작하지 못했어요. 다시 시도하거나 브라우저의 전체 화면 컨트롤을 사용해 주세요."
 	},
 	"state": {
+		"couldNotCheckNamedFrames": "{names}의 프레임을 확인할 수 없습니다. {reason}",
+		"couldNotCheckSeveralFrames": "{names}의 프레임을 확인할 수 없습니다.",
+		"copyMissingOneMove": "{move} 동작에 프레임이 일부 없어 해당 구간에서 아이템이 숨겨집니다.",
+		"copyMissingFrames": "{moves} 동작에 프레임이 일부 없어 해당 구간에서 아이템이 숨겨집니다.",
+		"restoreFailed": "{name} 복구 실패: {reason}",
+		"restoreFinishFailed": "{name} 복구를 완료할 수 없습니다. {reason}",
+		"restoredStanding": "{directions} 방향의 {name}을 복구했습니다. 생성 횟수는 사용하지 않았습니다.",
+		"restoredQualityNotes": "품질 관련 안내가 있습니다. 확인하세요.",
+		"noStandingToRestore": "{name}에 복구할 서 있는 방향이 더 이상 없습니다.",
 		"characterChangedNothingDeleted": "그동안 캐릭터가 변경됐어요. 삭제된 항목은 없어요.",
 		"categoryNowHasItems": {
 			"other": "이제 {label} 항목에 아이템이 {count}개 있어요. 삭제하기 전에 다시 확인하세요."
@@ -1108,7 +1129,7 @@
 		"intro": "저장된 캐릭터, 아이템, 동작, 코디, 워크스페이스 설정을 모두 담은 ZIP 하나를 다운로드해요.",
 		"privacy": "파일에는 아트워크와 저장된 프롬프트가 포함되지만 PixelLab 키나 끝나지 않은 초안은 포함되지 않아요. 신뢰하는 사람에게만 공유하세요.",
 		"includeErrors": "최근 오류 포함",
-		"includeErrorsHint": "요청 본문이나 계정 자격 증명 없이 PixelLab 티어와 최근 요청 결과를 추가해요.",
+		"includeErrorsHint": "PixelLab 등급, 최근 요청 결과와 요약된 오류 메시지를 추가합니다. 링크나 인증 정보가 남을 수 있으니 공유하기 전에 내보낸 내용을 확인하세요.",
 		"exportedOmissions": "워크스페이스를 일부 제외하고 내보냈어요. 사본을 열어 활동에서 세부 정보를 확인하세요.",
 		"exported": "워크스페이스를 내보냈어요.",
 		"error": {
@@ -1525,6 +1546,14 @@
 		"copyFailed": "자동으로 복사하지 못했어요. 엔드포인트 필드를 사용해 직접 복사하세요."
 	},
 	"activity": {
+		"pendingWork": "대기 중인 작업",
+		"openWork": "열기",
+		"openWorkNamed": "{label} 열기",
+		"inProgress": "진행 중",
+		"redrawFrames": "아이템 프레임 다시 그리기",
+		"repairFrames": "아이템 프레임 복구",
+		"readyToReview": "검토 가능",
+		"characterSetup": "캐릭터 설정",
 		"error": {
 			"jobMissing": "PixelLab에 더 이상 이 작업이 없어요. 결과는 저장되지 않았고, 요금이 청구되었을 수 있어요.",
 			"malformed": "PixelLab이 잘못된 형식의 결과를 보냈어요({error}). 이 요청으로 요금이 청구되었을 수 있어요.",
@@ -2016,6 +2045,7 @@
 		}
 	},
 	"moveSheet": {
+		"sharedCopiesCoverage": "공유 복사본은 프레임이 있는 방향에서 계속 착용할 수 있습니다.",
 		"thatCharacter": "해당 캐릭터",
 		"recoveryCheckFailed": "캐시된 프레임을 확인하지 못했어요: {error}",
 		"retryLabel": "동작 다시 생성",
@@ -2100,7 +2130,7 @@
 		"redrawOtherMoves": "다른 동작은 바뀌지 않아요.",
 		"equipmentWaitsForBody": "몸체 검사로 동작 생성이 중단되면 장비 생성 요청은 보내지 않아요.",
 		"uncheckedItemsHidden": "선택하지 않은 아이템은 애니메이션을 만들 때까지 숨겨져요.",
-		"fittedEquipmentOnly": "선택한 모든 뷰에 맞는 장비만 여기서 애니메이션으로 만들 수 있어요. 공유 복사본은 프레임이 있는 뷰에서 계속 착용할 수 있어요.",
+		"fittedEquipmentOnly": "선택한 모든 뷰에 맞는 장비만 여기서 애니메이션으로 만들 수 있어요.",
 		"review": {
 			"redrawTitle": "아이템 다시 그리기 검토",
 			"repairTitle": "아이템 수정 검토",
@@ -2231,13 +2261,16 @@
 	"sheet": { "later": "나중에" },
 	"toast": { "dismiss": "알림 닫기" },
 	"sharedVisibility": {
+		"allEmphasis": "모든",
+		"demo": "{demo}의 아이템",
+		"demoEmphasis": "데모 캐릭터",
 		"heading": "공유 아이템 숨기기",
-		"all": "모든 캐릭터",
-		"hideAll": "모든 캐릭터의 공유 아이템 숨기기",
-		"hideDemo": "{name}(데모)의 공유 아이템 숨기기",
-		"hideCurrent": "현재 캐릭터 {name} 항목의 공유 아이템 숨기기",
-		"current": "(현재)",
-		"allOn": "공유 아이템은 모든 캐릭터에서 숨겨져요.",
+		"all": "{all} 옷장에서",
+		"hideAll": "모든 옷장에서 공유 아이템 숨기기",
+		"hideDemo": "데모 캐릭터의 공유 아이템 숨기기",
+		"hideCurrent": "{name}의 옷장에서 공유 아이템 숨기기",
+		"current": "{name}의 옷장에서",
+		"allOn": "모든 옷장에서 공유 아이템이 숨겨져 있습니다.",
 		"notSaved": "표시 설정을 바꿨지만 이 브라우저에 저장하지 못했어요."
 	},
 	"versionRow": {

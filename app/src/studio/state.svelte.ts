@@ -3,6 +3,7 @@
 // made recolor/compose take seconds, B5); manifest edits bump doc.rev.
 import type { Snippet } from 'svelte';
 import { errorMessage, errorText, message, LocalizedError, type Message } from '../lib/message.ts';
+import { SvelteSet } from 'svelte/reactivity';
 import {
 	applyDress,
 	dressOf,
@@ -66,7 +67,9 @@ import type {
 	MoveSpec,
 	Progress
 } from './create.ts';
-import { characterFacts, pixelSize, uniqueBy } from './model.ts';
+import { characterFacts, missingMoves, pixelSize, uniqueBy } from './model.ts';
+import { displayDirectionInSentence } from './displayDirection.ts';
+import { displayMove } from './displayMove.ts';
 import {
 	addCustom,
 	applySettings,
@@ -123,14 +126,16 @@ const itemRun = () =>
 				evaluateItem,
 				isClean,
 				matchItemColors,
-				repairAlreadyApplied
+				repairAlreadyApplied,
+				restoreStandingViews
 			}) => ({
 				acceptItemReview,
 				applyRepairReview,
 				evaluateItem,
 				isClean,
 				matchItemColors,
-				repairAlreadyApplied
+				repairAlreadyApplied,
+				restoreStandingViews
 			})
 		)
 	);
@@ -665,8 +670,14 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		}
 		doc.id = id;
 		slotBase = { id, slots: savedSlots };
+		// The standing move first: it is the one every item is made for, so what is worn shows. Walk hides each item
+		// without walk frames, which reads as lost items after a reload.
 		if (!m.rig.animations.some((a) => a.id === ui.anim))
-			ui.anim = (m.rig.animations.find((a) => a.id === 'walk') ?? m.rig.animations[0]).id;
+			ui.anim = (
+				m.rig.animations.find((a) => a.id === DEFAULT_MOVE) ??
+				m.rig.animations.find((a) => a.id === 'walk') ??
+				m.rig.animations[0]
+			).id;
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
 		if (!quiet) ui.frame = 0;
 		store.project = r.project;
@@ -970,6 +981,14 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 	}
 }
 
+export const DELETE_GENERATION_BLOCK = new LocalizedError(
+	'Finish or dismiss pending generation work before deleting a character.',
+	'state.finishBeforeCharacterRemoval'
+);
+
+let characterJobsPending = $state(false),
+	characterJobsInOtherTab = $state(false);
+
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
 function characterEditBlocked(
 	action: 'delete' | 'delete move' | 'change directions for'
@@ -979,7 +998,7 @@ function characterEditBlocked(
 			'Wait for the character to finish loading.',
 			'state.waitForCharacter'
 		);
-	if (queue.role === 'follower')
+	if (characterJobsInOtherTab)
 		return action === 'delete move'
 			? new LocalizedError(
 					'Manage moves in the other PixelDoll tab, or close it first.',
@@ -990,18 +1009,16 @@ function characterEditBlocked(
 					'state.manageCharactersInOtherTab'
 				);
 	if (
-		!queue.idle() ||
+		characterJobsPending ||
 		gens.some((g) => g.phase === 'running') ||
 		settling.size ||
-		(creating.spec && !creating.projectId) ||
-		(moving.spec && !moving.done) ||
-		(settingUp.spec && !settingUp.done)
+		heldCreate() ||
+		heldMove() ||
+		moving.queued.length ||
+		heldSetup()
 	)
 		return action === 'delete'
-			? new LocalizedError(
-					'Finish or dismiss pending generation work before deleting a character.',
-					'state.finishBeforeCharacterRemoval'
-				)
+			? DELETE_GENERATION_BLOCK
 			: action === 'delete move'
 				? new LocalizedError(
 						'Finish or dismiss pending generation work before deleting a move.',
@@ -1529,15 +1546,26 @@ export async function refreshShared() {
 		shared.skipped = savedOffers.skipped;
 	}
 	try {
+		const unchecked: string[] = [];
+		let why: Message | string | undefined;
 		const [saved] = await Promise.all([
 			listShared(id, project.manifest, project.images),
-			freeFrames(project.manifest).then(
+			freeFrames(project.manifest, (item, error) => {
+				console.error('copy frames', item.id, error);
+				unchecked.push(item.name);
+				why ??= errorMessage(error);
+			}).then(
 				(free) => {
 					if (request !== sharedRequest) return;
 					shared.free = free;
-					shared.framesError = '';
+					shared.framesError =
+						unchecked.length === 1
+							? message('state.couldNotCheckNamedFrames', { names: unchecked, reason: why })
+							: unchecked.length
+								? message('state.couldNotCheckSeveralFrames', { names: unchecked })
+								: '';
 				},
-				(error: Error) => {
+				(error: unknown) => {
 					console.error('copy frames', error);
 					if (request !== sharedRequest) return;
 					shared.free = {};
@@ -1654,6 +1682,18 @@ async function addEntry(entry: SharedItem, openedDemoCopy = false) {
 			{ name: item.name, sourceName: entry.sourceName, size: pixelSize(sourceFrame) }
 		);
 		const notices = openedDemoCopy ? [message('state.openedDemoCopy'), status] : [status];
+		if (doc.id === projectId && store.project) {
+			const manifest = store.project.manifest;
+			const gaps = missingMoves(manifest, item);
+			if (gaps.length) {
+				const ids = manifest.rig.animations.map(({ id }) => id);
+				notices.push(
+					gaps.length === 1
+						? message('state.copyMissingOneMove', { move: displayMove(gaps[0], ids) })
+						: message('state.copyMissingFrames', { moves: gaps.map((id) => displayMove(id, ids)) })
+				);
+			}
+		}
 		if (note) notices.push(note);
 		if (shown) notices.push(shown);
 		toast(notices, item.unfitted ? { tone: 'warning' } : undefined);
@@ -1694,6 +1734,59 @@ export async function copyFromSource(itemId: string) {
 			}),
 			{ tone: 'danger' }
 		);
+	} finally {
+		shared.adding = '';
+	}
+}
+
+/** Free: an item takes the standing frames it lacks from its own saved designs. Nothing is generated. */
+export async function restoreFromDesign(itemId: string) {
+	const it = itemById(itemId);
+	if (isDemo() || !it || shared.adding) return;
+	const projectId = doc.id,
+		request = openRequest;
+	shared.adding = itemId;
+	try {
+		await flushSave();
+		let views: string[] = [],
+			failed = false;
+		try {
+			views = await (await itemRun()).restoreStandingViews(projectId, itemId);
+		} catch (e) {
+			failed = true;
+			toast(message('state.restoreFailed', { name: it.name, reason: errorMessage(e) }), {
+				tone: 'danger'
+			});
+		}
+		if (doc.id !== projectId || request !== openRequest) return;
+		// After a failure too: one of several standing moves may have been saved before it.
+		if (views.length || failed) await openProject(projectId, { quiet: true });
+		if (doc.id !== projectId) return; // another character was opened meanwhile: nothing here is about it
+		if (views.length) {
+			// Show what came back: the standing move, facing the first restored view.
+			[ui.anim, ui.dir] = views[0].split('/') as [string, DirectionName];
+			// The frame is checked like any other: a design that fails a check says so instead of passing as restored.
+			const checks = itemById(itemId)?.qa?.clips,
+				flagged = views.some((key) => {
+					const status = checks?.[key.split('/').slice(0, 2).join('/')]?.status;
+					return status === 'warn' || status === 'fail';
+				});
+			const restored = message('state.restoredStanding', {
+				name: it.name,
+				directions: views.map((key) =>
+					displayDirectionInSentence(key.split('/')[1] as DirectionName)
+				)
+			});
+			toast(
+				flagged ? [restored, message('state.restoredQualityNotes')] : restored,
+				flagged ? { tone: 'warning' } : undefined
+			);
+		} else if (!failed) toast(message('state.noStandingToRestore', { name: it.name }));
+		await refreshShared();
+	} catch (e) {
+		toast(message('state.restoreFinishFailed', { name: it.name, reason: errorMessage(e) }), {
+			tone: 'danger'
+		});
 	} finally {
 		shared.adding = '';
 	}
@@ -1874,6 +1967,8 @@ function drive() {
 	void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
 }
 queue.subscribe((s) => {
+	characterJobsPending = !queue.idle();
+	characterJobsInOtherTab = s.role === 'follower';
 	// This tab handed the jobs to another (only ever while idle): mirror its drafts again, and resume again when it leads.
 	if (s.role === 'follower' && driving)
 		driving = takingOver = resumedHere = createResumed = moveResumed = setupResumed = false;
@@ -2216,7 +2311,7 @@ function withDrafts(p: Project): Project {
 
 // Keep it / Discard in flight for a draft: the other click is ignored (R6 P1-6: Discard during Keep it, then
 // splice(indexOf(g) = -1) removed an unrelated, still-running draft).
-const settling = new Set<string>();
+const settling = new SvelteSet<string>();
 const drop = (g: Gen) => {
 	const i = gens.findIndex((x) => x.draft.spec.id === g.draft.spec.id);
 	if (i >= 0) gens.splice(i, 1);

@@ -13,6 +13,8 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { equipped, handSide, hiddenSlots, twoHanded } from '../lib/compose/compose.ts';
+	import { missingFrames } from '../lib/dress/dress.ts';
+	import { experience } from './experience/state.svelte.ts';
 	import { edgeFade, scrollToTop, stickyFade } from '@shilo/bronze-ui/svelte';
 	import { crop, HEALTH_LABEL, healthOf, missingFramesNote, unfitText } from './model.ts';
 	import { itemKey } from '../lib/equipment/copy.ts';
@@ -121,7 +123,15 @@
 						)
 					: '',
 			missing: m ? displayMessage(missingFramesNote(m, it)) : '',
-			hidden: doc.items[it.slot] === it.id && hidden.has(it.slot)
+			hidden: doc.items[it.slot] === it.id && hidden.has(it.slot),
+			// Worn, but the move Preview shows has no frame of it in any view: its tile is pressed while the stage shows
+			// nothing, and a tap to bring it back would take it off.
+			unseen:
+				!!m &&
+				experience.mode === 'preview' &&
+				doc.items[it.slot] === it.id &&
+				!doc.drafts[it.slot] &&
+				m.rig.directions.every((d) => missingFrames(m, it, ui.anim, d.id).length > 0)
 		};
 	}
 	const wornMark: Mark = $derived({
@@ -159,11 +169,17 @@
 				text: t('wardrobe.statusNote', { status: st.look })
 			},
 			missingMark(st.missing),
-			st.hidden && {
-				kind: 'hidden',
-				label: t('itemPane.hiddenByAnotherItem'),
-				text: t('wardrobe.hiddenNote')
-			}
+			st.hidden
+				? {
+						kind: 'hidden',
+						label: t('itemPane.hiddenByAnotherItem'),
+						text: t('wardrobe.hiddenNote')
+					}
+				: st.unseen && {
+						kind: 'hidden',
+						label: t('wardrobe.notShownInMove'),
+						text: t('wardrobe.notShownInMoveNote')
+					}
 		]);
 	}
 	/** An accessible tile name: the item, then what its icons say (a worn tile says so with aria-pressed). */

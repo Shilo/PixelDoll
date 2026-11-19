@@ -25,7 +25,7 @@
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
 	import { characterFacts } from './model.ts';
-	import { sharedItemsHidden, sharedItemsHiddenForAll } from './wardrobeVisibility.svelte.ts';
+	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
 	import {
 		ui,
 		doc,
@@ -77,9 +77,6 @@
 	const facts = $derived(m && characterFacts(m));
 	const name = $derived(characterName());
 	let mountMenuOpen = $state(false);
-	const currentWardrobe = $derived(
-		experience.screen === 'studio' && m && !isDemo() ? { id: doc.id, name } : undefined
-	);
 	const prompt = $derived(m?.items.find((it) => it.id === m.rig.baseItem)?.prompt ?? '');
 	const characterCount = $derived(store.projects.filter((p) => !p.dev).length);
 	const VIEWS = [
@@ -470,16 +467,16 @@
 		{#if experience.screen === 'studio'}<hr
 				class={{ 'mobile-sep': !doc.id.startsWith('fixture:') }}
 			/>{/if}
-		<!-- Preferences: change how the Studio looks, its language, or what the Wardrobe shows. -->
 		<LanguagePicker />
-		<MenuDisclosure label={t('toolbar.wardrobeSettings')}>
+		<!-- Preferences: change how the Studio looks or what the Wardrobe shows. -->
+		<MenuDisclosure sectionKey="more-wardrobe-settings" label={t('toolbar.wardrobeSettings')}>
 			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
 			{#snippet aside()}
-				{#if sharedItemsHiddenForAll() || (currentWardrobe && sharedItemsHidden(currentWardrobe.id))}
+				{#if sharedItemsHidden(doc.id)}
 					<span class="row-aside wardrobe-status faint small">{t('toolbar.ownItemsOnly')}</span>
 				{/if}
 			{/snippet}
-			<WardrobeVisibility current={currentWardrobe} />
+			<WardrobeVisibility />
 		</MenuDisclosure>
 		<button
 			class="row bu-action"

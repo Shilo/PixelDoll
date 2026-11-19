@@ -11,9 +11,17 @@ import { moveLabel } from './model.ts';
 import { doc, store, readCharacterForExport, toast } from './state.svelte.ts';
 import { message } from '../lib/message.ts';
 
-/** The saved record's rig data, so the ZIP imports back as an editable character (the demo has none). */
+/** The saved record's rig data, so the ZIP imports back as an editable character (the demo has none). `build` names the app
+ *  that wrote the file, for diagnosing a report; an import never reads it. */
 export const editableData = (rec: StoredProject | undefined) =>
-	rec ? { character: rec.character, skeletons: rec.skeletons, rigQa: rec.rigQa } : undefined;
+	rec
+		? {
+				character: rec.character,
+				skeletons: rec.skeletons,
+				rigQa: rec.rigQa,
+				build: `${__APP_VERSION__} (${__APP_COMMIT__})`
+			}
+		: undefined;
 const projectData = async (projectId: string) =>
 	projectId.startsWith('fixture:')
 		? undefined

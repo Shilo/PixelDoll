@@ -291,7 +291,7 @@ export const HEALTH_LABEL: Record<Health, Message> = {
 /** Frames an item lacks in moves its body has (dress.ts coverageGaps), where it would vanish: a short warning for its
  * tile and menu. Details names the exact directions. */
 export function missingFramesNote(m: Manifest, it: Item): Message | '' {
-	const moves = [...new Set(coverageGaps(m, it).map((g) => g.split('/')[0]))];
+	const moves = missingMoves(m, it);
 	if (!moves.length) return '';
 	return moves.length === 1
 		? message('studioModel.coverage.oneMove', {
@@ -301,6 +301,10 @@ export function missingFramesNote(m: Manifest, it: Item): Message | '' {
 				)
 			})
 		: message('studioModel.coverage.severalMoves', { count: moves.length });
+}
+/** Those moves by name, for a message with room to list them. */
+export function missingMoves(m: Manifest, it: Item): string[] {
+	return [...new Set(coverageGaps(m, it).map((g) => g.split('/')[0]))];
 }
 
 /** QA gate messages in plain words (D1 §5.5). */

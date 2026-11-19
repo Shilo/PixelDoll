@@ -44,11 +44,16 @@ export function displayPresentationNotice(notice: PresentationNotice): string {
 		case 'undeclared-direction':
 			return t('worldStage.notice.undeclaredDirection');
 		case 'hidden-items':
-			return t('worldStage.notice.hiddenItems', {
-				count: notice.count,
-				move: displayMove(notice.move),
-				direction: displayDirection(notice.direction)
-			});
+			return notice.direction
+				? t('worldStage.notice.hiddenItems', {
+						count: notice.count,
+						move: displayMove(notice.move),
+						direction: displayDirection(notice.direction)
+					})
+				: t('worldStage.notice.hiddenItemsInMove', {
+						count: notice.count,
+						move: displayMove(notice.move)
+					});
 		case 'diagnostic':
 			return notice.text;
 	}

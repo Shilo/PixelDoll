@@ -1186,7 +1186,7 @@
 					host.dataset.facing = p.direction ?? '';
 					host.dataset.lineup = facings.join(' ');
 				}
-				note = notes.join(' · ');
+				note = [...new Set(notes)].join(' · '); // each facing of the lineup can report the same thing
 				loadingNote = [...loadings].join(' · ');
 				previous = p;
 			}

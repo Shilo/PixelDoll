@@ -6,11 +6,23 @@
 	import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
 	import { localizedPlanRestriction, requestTier } from '../lib/pixellab/plans.ts';
-	import { ui, cleanUp, toast } from './state.svelte.ts';
 	import { displayError, displayMessage } from '../lib/i18n.ts';
 	import { queueErrorMessage } from './generationStatus.ts';
 	import { usdText } from './displayCost.ts';
 	import { formatNumber, t } from 'svelte-whisper';
+	import { displayMove } from './displayMove.ts';
+	import {
+		ui,
+		doc,
+		store,
+		creating,
+		moving,
+		settingUp,
+		gens,
+		openProject,
+		cleanUp,
+		toast
+	} from './state.svelte.ts';
 	async function clear() {
 		let n: Awaited<ReturnType<typeof cleanUp>>;
 		try {
@@ -44,6 +56,23 @@
 		jobs.filter((r) => !['running', 'submitting', 'queued'].includes(r.state)).slice(0, 12)
 	);
 	// Job labels are persisted English records; only the generated joint-check label is display text.
+	const creatingPending = $derived(creating.spec && !creating.projectId ? creating.spec : null);
+	const movingPending = $derived(moving.spec && !moving.done ? moving.spec : null);
+	const setupPending = $derived(settingUp.spec && !settingUp.done ? settingUp.spec : null);
+	const generatingItems = $derived(gens.filter((gen) => gen.phase === 'running'));
+	const flowsPending = $derived(
+		creatingPending ||
+			movingPending ||
+			setupPending ||
+			generatingItems.length ||
+			moving.queued.length
+	);
+	const characterName = (id: string) =>
+		store.projects.find((project) => project.id === id)?.name ?? t('common.character');
+	async function openWork(sheet: 'create' | 'move' | 'setup', projectId?: string) {
+		if (projectId && doc.id !== projectId) await openProject(projectId);
+		if (ui.sheet === 'activity' && (!projectId || doc.id === projectId)) ui.sheet = sheet;
+	}
 	const nice = (r: JobRec) =>
 		/^skeleton sha256:.{8}/.test(r.label)
 			? t('activity.findingJoints')
@@ -111,6 +140,55 @@
 	onclose={() => (ui.sheet = null)}
 >
 	<div class="act-list">
+		{#if flowsPending}
+			<section class="act-group" aria-label={t('activity.pendingWork')}>
+				<span class="sec-title">{t('activity.pendingWork')}</span>
+				<ul>
+					{#if creatingPending}
+						{@render workRow(
+							`${t('newCharacterButton.newCharacter')} · ${creatingPending.name}`,
+							creating.error ? t('generation.status.needsAttention') : t('activity.inProgress'),
+							() => void openWork('create')
+						)}
+					{/if}
+					{#if movingPending}
+						{@const task = movingPending.redrawItem
+							? t('activity.redrawFrames')
+							: movingPending.itemsOnly
+								? t('activity.repairFrames')
+								: displayMove(movingPending.id)}
+						{@render workRow(
+							`${task} · ${characterName(moving.projectId)}`,
+							moving.repairReview
+								? t('activity.readyToReview')
+								: moving.error
+									? t('generation.status.needsAttention')
+									: t('activity.inProgress'),
+							() => void openWork('move', moving.projectId)
+						)}
+					{/if}
+					{#if setupPending}
+						{@render workRow(
+							`${t('activity.characterSetup')} · ${characterName(setupPending.projectId)}`,
+							settingUp.error ? t('generation.status.needsAttention') : t('activity.inProgress'),
+							() => void openWork('setup', setupPending.projectId)
+						)}
+					{/if}
+					{#each moving.queued as work (work)}
+						{@render workRow(
+							`${displayMove(work.spec.id)} · ${characterName(work.projectId)}`,
+							t('activity.waiting')
+						)}
+					{/each}
+					{#each generatingItems as gen (gen.draft.spec.id)}
+						{@render workRow(
+							`${gen.input.name} · ${characterName(gen.draft.rigId)}`,
+							t('activity.inProgress')
+						)}
+					{/each}
+				</ul>
+			</section>
+		{/if}
 		{#if ui.waitingForTab}
 			<div class="notice warn" role="status">
 				<CircleAlert size={18} />
@@ -183,7 +261,7 @@
 					>{/if}
 			</p>
 		{/if}
-		{#if !ui.waitingForTab && !running.length && !queued.length}<p class="muted">
+		{#if !ui.waitingForTab && !running.length && !queued.length && !flowsPending}<p class="muted">
 				{t('activity.nothing')}
 			</p>{/if}
 		{#if running.length}
@@ -362,7 +440,23 @@
 	</div>
 </Sheet>
 
+{#snippet workRow(label: string, status: string, open?: () => void)}
+	<li>
+		<span class="act-main"><span>{label}</span><span class="muted small">{status}</span></span>
+		{#if open}<button
+				class="bu-action btn sm"
+				data-variant="outline"
+				aria-label={t('activity.openWorkNamed', { label })}
+				disabled={doc.loading || $queue.role === 'follower'}
+				onclick={open}>{t('activity.openWork')}</button
+			>{/if}
+	</li>
+{/snippet}
+
 <style>
+	.act-main {
+		overflow-wrap: anywhere;
+	}
 	.waiting-copy {
 		display: grid;
 		gap: 4px;

@@ -177,6 +177,7 @@
 		"connect": "Connect"
 	},
 	"deleteSheet": {
+		"viewPendingWork": "View pending work",
 		"character": "character",
 		"demo": "The bundled demo cannot be deleted.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Its outfits and changes are removed from this device. Items copied to other characters stay. This can't be undone."
@@ -243,6 +244,14 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"restoreStanding": {
+			"one": "Restore standing view",
+			"other": "Restore standing views"
+		},
+		"restoreStandingHint": {
+			"one": "Rebuilt from this item’s saved {directions} design. Nothing is generated.",
+			"other": "Rebuilt from this item’s saved {directions} designs. Nothing is generated."
+		},
 		"hiddenByAnotherItem": "Hidden by another item",
 		"nameInEveryDirection": "{name} in every direction",
 		"labelNameFacingId": "{name} facing {id}",
@@ -529,6 +538,8 @@
 		"workspaceActions": "Workspace actions"
 	},
 	"wardrobe": {
+		"notShownInMove": "Not shown in this move",
+		"notShownInMoveNote": "Wearing it, but it is missing frames for this move in every view, so it is not shown.",
 		"randomLowerItem": "Random {lower} item",
 		"newLowerItem": "New {lower} item",
 		"labelItems": "{label} items",
@@ -650,6 +661,10 @@
 		"focusWorldADOrToMove": "Focus world · A/D or ←/→ to move",
 		"focusWorldWASDOrArrowKeysTo": "Focus world · WASD or arrow keys to move",
 		"notice": {
+			"hiddenItemsInMove": {
+				"one": "{count} item hidden: missing {move} frames",
+				"other": "{count} items hidden: missing {move} frames"
+			},
 			"noMoveNothing": "No {move} move yet, so there is nothing to show",
 			"noMoveStill": "No {move} move yet, so the character stands still",
 			"noMovePlays": "No {move} move yet, so it plays {fallback}",
@@ -688,6 +703,15 @@
 		"couldNotEnterFullScreenTryAgain": "Could not enter full screen. Try again or use your browser’s full screen control."
 	},
 	"state": {
+		"couldNotCheckNamedFrames": "Could not check frames for {names}: {reason}",
+		"couldNotCheckSeveralFrames": "Could not check frames for {names}.",
+		"copyMissingOneMove": "Missing some {move} frames; it hides there.",
+		"copyMissingFrames": "Missing some frames in {moves}; it hides there.",
+		"restoreFailed": "Could not restore {name}: {reason}",
+		"restoreFinishFailed": "Could not finish restoring {name}: {reason}",
+		"restoredStanding": "Restored {name} facing {directions}. No generations used.",
+		"restoredQualityNotes": "It has quality notes. Check it.",
+		"noStandingToRestore": "{name} has no standing views left to restore.",
 		"characterChangedNothingDeleted": "The character changed meanwhile. Nothing was deleted.",
 		"categoryNowHasItems": {
 			"one": "{label} now has {count} item. Review it again before deleting.",
@@ -1146,7 +1170,7 @@
 		"intro": "Download one ZIP with all your saved characters, items, moves, outfits, and workspace settings.",
 		"privacy": "The file includes artwork and saved prompts, but not your PixelLab key or unfinished drafts. Share it only with someone you trust.",
 		"includeErrors": "Include recent errors",
-		"includeErrorsHint": "Adds your PixelLab tier and recent request outcomes without request bodies or account credentials.",
+		"includeErrorsHint": "Adds your PixelLab tier, recent request outcomes, and shortened error messages. Filtering may miss links or credentials, so review the export before sharing.",
 		"exportedOmissions": "Workspace exported with omissions. Open the copy and check Activity for details.",
 		"exported": "Workspace exported.",
 		"error": {
@@ -1586,6 +1610,14 @@
 		"copyFailed": "Could not copy automatically. Use the endpoint field to copy manually."
 	},
 	"activity": {
+		"pendingWork": "Pending work",
+		"openWork": "Open",
+		"openWorkNamed": "Open {label}",
+		"inProgress": "In progress",
+		"redrawFrames": "Redraw item frames",
+		"repairFrames": "Repair item frames",
+		"readyToReview": "Ready to review",
+		"characterSetup": "Character setup",
 		"error": {
 			"jobMissing": "PixelLab no longer has the job. Its results were not saved, and it may have charged you.",
 			"malformed": "PixelLab sent a malformed result ({error}). The request may have charged you.",
@@ -2092,6 +2124,7 @@
 		}
 	},
 	"moveSheet": {
+		"sharedCopiesCoverage": "Shared copies can still be worn in views where they have frames.",
 		"thatCharacter": "that character",
 		"recoveryCheckFailed": "Could not check cached frames: {error}",
 		"retryLabel": "Generate move again",
@@ -2183,7 +2216,7 @@
 		"redrawOtherMoves": "Other moves stay unchanged.",
 		"equipmentWaitsForBody": "Equipment requests are not sent if body checks stop the move.",
 		"uncheckedItemsHidden": "Unchecked items stay hidden until animated.",
-		"fittedEquipmentOnly": "Only equipment fitted to every selected view can be animated here. Shared copies can still be worn in views where they have frames.",
+		"fittedEquipmentOnly": "Only equipment fitted to every selected view can be animated here.",
 		"review": {
 			"redrawTitle": "Review item redraw",
 			"repairTitle": "Review item repair",
@@ -2314,13 +2347,16 @@
 	"sheet": { "later": "Later" },
 	"toast": { "dismiss": "Dismiss notification" },
 	"sharedVisibility": {
+		"allEmphasis": "all",
+		"demo": "From {demo}",
+		"demoEmphasis": "demo character",
 		"heading": "Hide shared items",
-		"all": "All characters",
-		"hideAll": "Hide shared items for all characters",
-		"hideDemo": "Hide shared items from {name} (Demo)",
-		"hideCurrent": "Hide shared items for {name} (Current)",
-		"current": "(Current)",
-		"allOn": "Shared items are hidden for all characters.",
+		"all": "In {all} wardrobes",
+		"hideAll": "Hide shared items in all wardrobes",
+		"hideDemo": "Hide shared items from demo character",
+		"hideCurrent": "Hide shared items in {name}'s wardrobe",
+		"current": "In {name}'s wardrobe",
+		"allOn": "Shared items are hidden in all wardrobes.",
 		"notSaved": "Visibility changed, but this browser could not save it."
 	},
 	"versionRow": {

@@ -177,6 +177,7 @@
 		"connect": "接続"
 	},
 	"deleteSheet": {
+		"viewPendingWork": "保留中の作業を表示",
 		"character": "キャラクター",
 		"demo": "同梱のデモは削除できません。",
 		"itsOutfitsAndChangesAreRemovedFrom": "このキャラクターのコーディネートと変更内容はこのデバイスから削除されます。他のキャラクターにコピーしたアイテムは残ります。この操作は取り消せません。"
@@ -239,6 +240,12 @@
 		"runningDetail": "{status}・{prompt}"
 	},
 	"itemPane": {
+		"restoreStanding": {
+			"other": "立ち姿を復元"
+		},
+		"restoreStandingHint": {
+			"other": "このアイテムに保存された{directions}向きのデザインから復元します。生成は行いません。"
+		},
 		"hiddenByAnotherItem": "他のアイテムで隠れています",
 		"nameInEveryDirection": "全方向の{name}",
 		"labelNameFacingId": "{id}向きの{name}",
@@ -517,6 +524,8 @@
 		"workspaceActions": "ワークスペースの操作"
 	},
 	"wardrobe": {
+		"notShownInMove": "この動作では非表示",
+		"notShownInMoveNote": "装備中ですが、この動作ではどの向きにもフレームがないため表示されません。",
 		"randomLowerItem": "ランダムな{lower}",
 		"newLowerItem": "新しい{lower}",
 		"labelItems": "{label}のアイテム",
@@ -637,6 +646,9 @@
 		"focusWorldADOrToMove": "ワールドにフォーカス・A/Dまたは←/→で移動",
 		"focusWorldWASDOrArrowKeysTo": "ワールドにフォーカス・WASDまたは矢印キーで移動",
 		"notice": {
+			"hiddenItemsInMove": {
+				"other": "アイテム{count}個を非表示：{move}のフレームが不足しています"
+			},
 			"noMoveNothing": "{move}モーションがまだないため、表示できるものがありません",
 			"noMoveStill": "{move}モーションがまだないため、キャラクターは静止しています",
 			"noMovePlays": "{move}モーションがまだないため、{fallback}を再生しています",
@@ -673,6 +685,15 @@
 		"couldNotEnterFullScreenTryAgain": "全画面表示にできませんでした。もう一度試すか、ブラウザーの全画面表示の操作を使ってください。"
 	},
 	"state": {
+		"couldNotCheckNamedFrames": "{names}のフレームを確認できませんでした：{reason}",
+		"couldNotCheckSeveralFrames": "{names}のフレームを確認できませんでした。",
+		"copyMissingOneMove": "{move}のフレームが一部不足しているため、その箇所では非表示になります。",
+		"copyMissingFrames": "{moves}のフレームが一部不足しているため、その箇所では非表示になります。",
+		"restoreFailed": "{name}を復元できませんでした：{reason}",
+		"restoreFinishFailed": "{name}の復元を完了できませんでした：{reason}",
+		"restoredStanding": "{directions}向きの{name}を復元しました。生成は行っていません。",
+		"restoredQualityNotes": "品質に関する注意点があります。確認してください。",
+		"noStandingToRestore": "{name}には復元できる立ち姿が残っていません。",
 		"characterChangedNothingDeleted": "操作中にキャラクターが変更されました。何も削除していません。",
 		"categoryNowHasItems": {
 			"other": "現在、{label}にはアイテムが{count}個あります。削除する前に、もう一度内容を確認してください。"
@@ -1110,7 +1131,7 @@
 		"intro": "保存したすべてのキャラクター、アイテム、モーション、コーディネート、ワークスペースの設定を1つのZIPでダウンロードします。",
 		"privacy": "このファイルにはアートワークと保存したプロンプトが含まれますが、PixelLabのキーや未完了の下書きは含まれません。信頼できる相手とだけ共有してください。",
 		"includeErrors": "最近のエラーを含める",
-		"includeErrorsHint": "PixelLabのTierと最近のリクエストの結果を追加します。リクエストの本文やアカウントの認証情報は含まれません。",
+		"includeErrorsHint": "PixelLabのプラン、最近のリクエスト結果、短縮したエラーメッセージが含まれます。リンクや認証情報が残る場合があるため、共有する前にエクスポートの内容を確認してください。",
 		"exportedOmissions": "一部のデータを含めずにワークスペースをエクスポートしました。コピーを開き、アクティビティで詳細を確認してください。",
 		"exported": "ワークスペースをエクスポートしました。",
 		"error": {
@@ -1531,6 +1552,14 @@
 		"copyFailed": "自動でコピーできませんでした。エンドポイント欄を使って手動でコピーしてください。"
 	},
 	"activity": {
+		"pendingWork": "保留中の作業",
+		"openWork": "開く",
+		"openWorkNamed": "{label}を開く",
+		"inProgress": "進行中",
+		"redrawFrames": "アイテムのフレームを描き直す",
+		"repairFrames": "アイテムのフレームを修復",
+		"readyToReview": "確認待ち",
+		"characterSetup": "キャラクターのセットアップ",
 		"error": {
 			"jobMissing": "PixelLabにジョブが残っていません。結果は保存されていませんが、料金が発生した可能性があります。",
 			"malformed": "PixelLabから返された結果の形式が正しくありません（{error}）。リクエストの料金が発生した可能性があります。",
@@ -2026,6 +2055,7 @@
 		}
 	},
 	"moveSheet": {
+		"sharedCopiesCoverage": "共有アイテムのコピーは、フレームがある向きでは装備したまま表示できます。",
 		"thatCharacter": "そのキャラクター",
 		"recoveryCheckFailed": "キャッシュされたフレームを確認できませんでした：{error}",
 		"retryLabel": "モーションをもう一度生成",
@@ -2112,7 +2142,7 @@
 		"redrawOtherMoves": "ほかのモーションは変わりません。",
 		"equipmentWaitsForBody": "体のチェックでモーションの生成が止まった場合、装備の生成はリクエストされません。",
 		"uncheckedItemsHidden": "選んでいないアイテムは、アニメーションを作るまで非表示です。",
-		"fittedEquipmentOnly": "ここでは、選んだすべての向きに合う装備だけを動かせます。共有コピーは、フレームがある向きで引き続き装着できます。",
+		"fittedEquipmentOnly": "ここでは、選んだすべての向きに合う装備だけを動かせます。",
 		"review": {
 			"redrawTitle": "アイテムの描き直しを確認",
 			"repairTitle": "アイテムの修復を確認",
@@ -2243,13 +2273,16 @@
 	"sheet": { "later": "あとで" },
 	"toast": { "dismiss": "通知を閉じる" },
 	"sharedVisibility": {
+		"allEmphasis": "すべての",
+		"demo": "{demo}から",
+		"demoEmphasis": "デモキャラクター",
 		"heading": "共有アイテムを非表示",
-		"all": "すべてのキャラクター",
-		"hideAll": "すべてのキャラクターで共有アイテムを非表示にする",
-		"hideDemo": "{name}（デモ）の共有アイテムを非表示にする",
-		"hideCurrent": "{name}（現在のキャラクター）で共有アイテムを非表示にする",
-		"current": "（現在）",
-		"allOn": "共有アイテムはすべてのキャラクターで非表示になります。",
+		"all": "{all}ワードローブ",
+		"hideAll": "すべてのワードローブで共有アイテムを非表示にする",
+		"hideDemo": "デモキャラクターの共有アイテムを非表示にする",
+		"hideCurrent": "{name}のワードローブで共有アイテムを非表示にする",
+		"current": "{name}のワードローブ",
+		"allOn": "すべてのワードローブで共有アイテムが非表示になっています。",
 		"notSaved": "表示設定は変更されましたが、このブラウザーには保存できませんでした。"
 	},
 	"versionRow": {

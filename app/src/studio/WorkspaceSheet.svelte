@@ -110,6 +110,7 @@
 								code:
 									entry.code === undefined ? '' : t('workspace.errorLineCode', { code: entry.code })
 							})}
+							{entry.message ? ` · ${entry.message}` : ''}
 						</li>
 					{/each}
 				</ul>
@@ -150,5 +151,6 @@
 	.reports {
 		display: grid;
 		gap: 8px;
+		overflow-wrap: anywhere; /* an error's own words can be one long unbroken run */
 	}
 </style>

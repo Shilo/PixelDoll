@@ -177,6 +177,7 @@
 		"connect": "Connecter"
 	},
 	"deleteSheet": {
+		"viewPendingWork": "Voir les travaux en attente",
 		"character": "ce personnage",
 		"demo": "La démo intégrée ne peut pas être supprimée.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Ses tenues et modifications sont supprimées de cet appareil. Les objets copiés sur d’autres personnages sont conservés. Cette action est irréversible."
@@ -243,6 +244,14 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"restoreStanding": {
+			"one": "Restaurer la vue debout",
+			"other": "Restaurer les vues debout"
+		},
+		"restoreStandingHint": {
+			"one": "Vue reconstruite à partir du dessin enregistré de l’objet pour {directions}. Rien n’est généré.",
+			"other": "Vues reconstruites à partir des dessins enregistrés de l’objet pour {directions}. Rien n’est généré."
+		},
 		"hiddenByAnotherItem": "Masqué par un autre objet",
 		"nameInEveryDirection": "{name} dans toutes les directions",
 		"labelNameFacingId": "{name}, orientation {id}",
@@ -532,6 +541,8 @@
 		"workspaceActions": "Actions de l’espace de travail"
 	},
 	"wardrobe": {
+		"notShownInMove": "Non affiché dans ce mouvement",
+		"notShownInMoveNote": "L’objet est porté, mais il reste invisible car il manque des images dans toutes les vues de ce mouvement.",
 		"randomLowerItem": "Choisir un objet au hasard : {lower}",
 		"newLowerItem": "Nouvel objet : {lower}",
 		"labelItems": "Objets : {label}",
@@ -653,6 +664,10 @@
 		"focusWorldADOrToMove": "Sélectionnez la scène · A/D ou ←/→ pour vous déplacer",
 		"focusWorldWASDOrArrowKeysTo": "Sélectionnez la scène · WASD ou les flèches pour vous déplacer",
 		"notice": {
+			"hiddenItemsInMove": {
+				"one": "{count} objet masqué : images manquantes pour {move}",
+				"other": "{count} objets masqués : images manquantes pour {move}"
+			},
 			"noMoveNothing": "Pas encore d’animation {move}, il n’y a donc rien à afficher",
 			"noMoveStill": "Pas encore d’animation {move}, le personnage reste donc immobile",
 			"noMovePlays": "Pas encore d’animation {move}, l’animation « {fallback} » est donc jouée à la place",
@@ -691,6 +706,15 @@
 		"couldNotEnterFullScreenTryAgain": "Impossible de passer en plein écran. Réessayez ou utilisez la commande plein écran de votre navigateur."
 	},
 	"state": {
+		"couldNotCheckNamedFrames": "Impossible de vérifier les images de {names} : {reason}",
+		"couldNotCheckSeveralFrames": "Impossible de vérifier les images de {names}.",
+		"copyMissingOneMove": "Des images manquent pour {move} ; l’objet y reste masqué.",
+		"copyMissingFrames": "Des images manquent pour {moves} ; l’objet y reste masqué.",
+		"restoreFailed": "Impossible de restaurer {name} : {reason}",
+		"restoreFinishFailed": "Impossible de terminer la restauration de {name} : {reason}",
+		"restoredStanding": "{name} a été restauré dans les directions {directions}. Aucune génération utilisée.",
+		"restoredQualityNotes": "Des remarques de qualité sont disponibles. Vérifiez-les.",
+		"noStandingToRestore": "Il ne reste aucune vue debout de {name} à restaurer.",
 		"characterChangedNothingDeleted": "Le personnage a changé entre-temps. Rien n’a été supprimé.",
 		"categoryNowHasItems": {
 			"one": "La catégorie « {label} » contient maintenant {count} objet. Vérifiez-la de nouveau avant de la supprimer.",
@@ -1149,7 +1173,7 @@
 		"intro": "Téléchargez un seul ZIP avec tous vos personnages, objets, animations, tenues et réglages d’espace de travail enregistrés.",
 		"privacy": "Le fichier inclut les visuels et les prompts enregistrés, mais pas votre clé PixelLab ni les brouillons inachevés. Ne le partagez qu’avec une personne de confiance.",
 		"includeErrors": "Inclure les erreurs récentes",
-		"includeErrorsHint": "Ajoute le niveau de votre forfait PixelLab et le résultat des requêtes récentes, sans le corps des requêtes ni les identifiants du compte.",
+		"includeErrorsHint": "Ajoute votre niveau PixelLab, les résultats des requêtes récentes et des messages d’erreur abrégés. Le filtre peut laisser passer des liens ou des identifiants. Vérifiez l’export avant de le partager.",
 		"exportedOmissions": "L’espace de travail a été exporté, mais certains éléments manquent. Ouvrez la copie et consultez « Activité » pour en savoir plus.",
 		"exported": "Espace de travail exporté.",
 		"error": {
@@ -1592,6 +1616,14 @@
 		"copyFailed": "La copie automatique a échoué. Utilisez le champ du point d’accès pour copier manuellement."
 	},
 	"activity": {
+		"pendingWork": "Travaux en attente",
+		"openWork": "Ouvrir",
+		"openWorkNamed": "Ouvrir {label}",
+		"inProgress": "En cours",
+		"redrawFrames": "Redessiner les images de l’objet",
+		"repairFrames": "Réparer les images de l’objet",
+		"readyToReview": "Prêt pour la vérification",
+		"characterSetup": "Configuration du personnage",
 		"error": {
 			"jobMissing": "PixelLab ne trouve plus la tâche. Ses résultats n’ont pas été enregistrés et la tâche a peut-être été facturée.",
 			"malformed": "PixelLab a renvoyé un résultat au format incorrect ({error}). La requête a peut-être été facturée.",
@@ -2108,6 +2140,7 @@
 		}
 	},
 	"moveSheet": {
+		"sharedCopiesCoverage": "Les copies partagées peuvent toujours être portées dans les vues où elles ont des images.",
 		"thatCharacter": "ce personnage",
 		"recoveryCheckFailed": "Impossible de vérifier les images en cache : {error}",
 		"retryLabel": "Générer à nouveau l’animation",
@@ -2199,7 +2232,7 @@
 		"redrawOtherMoves": "Les autres animations ne changent pas.",
 		"equipmentWaitsForBody": "Si les vérifications du corps bloquent l’animation, aucune demande de génération n’est envoyée pour l’équipement.",
 		"uncheckedItemsHidden": "Les objets non cochés restent masqués tant qu’ils ne sont pas animés.",
-		"fittedEquipmentOnly": "Seul l’équipement ajusté à toutes les vues sélectionnées peut être animé ici. Les copies partagées peuvent toujours être portées dans les vues pour lesquelles elles ont des images.",
+		"fittedEquipmentOnly": "Seul l’équipement ajusté à toutes les vues sélectionnées peut être animé ici.",
 		"review": {
 			"redrawTitle": "Vérifier le redessin de l’objet",
 			"repairTitle": "Vérifier la réparation de l’objet",
@@ -2330,13 +2363,16 @@
 	"sheet": { "later": "Plus tard" },
 	"toast": { "dismiss": "Fermer la notification" },
 	"sharedVisibility": {
+		"allEmphasis": "toutes",
+		"demo": "Du {demo}",
+		"demoEmphasis": "personnage de démonstration",
 		"heading": "Masquer les objets partagés",
-		"all": "Tous les personnages",
-		"hideAll": "Masquer les objets partagés pour tous les personnages",
-		"hideDemo": "Masquer les objets partagés de {name} (Démo)",
-		"hideCurrent": "Masquer les objets partagés pour {name} (Actuel)",
-		"current": "(Actuel)",
-		"allOn": "Les objets partagés sont masqués pour tous les personnages.",
+		"all": "Dans {all} les garde-robes",
+		"hideAll": "Masquer les objets partagés dans toutes les garde-robes",
+		"hideDemo": "Masquer les objets partagés du personnage de démonstration",
+		"hideCurrent": "Masquer les objets partagés dans la garde-robe de {name}",
+		"current": "Dans la garde-robe de {name}",
+		"allOn": "Les objets partagés sont masqués dans toutes les garde-robes.",
 		"notSaved": "La visibilité a changé, mais le navigateur n’a pas pu l’enregistrer."
 	},
 	"versionRow": {

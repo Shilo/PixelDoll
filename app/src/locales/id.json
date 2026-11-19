@@ -177,6 +177,7 @@
 		"connect": "Hubungkan"
 	},
 	"deleteSheet": {
+		"viewPendingWork": "Lihat pekerjaan tertunda",
 		"character": "karakter",
 		"demo": "Demo bawaan tidak dapat dihapus.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Setelan dan perubahannya dihapus dari perangkat ini. Item yang sudah disalin ke karakter lain tetap ada. Tindakan ini tidak dapat diurungkan."
@@ -236,6 +237,12 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"restoreStanding": {
+			"other": "Pulihkan tampilan berdiri"
+		},
+		"restoreStandingHint": {
+			"other": "Dibuat kembali dari desain item yang tersimpan untuk {directions}. Tidak ada yang digenerasi."
+		},
 		"hiddenByAnotherItem": "Tertutup oleh item lain",
 		"nameInEveryDirection": "{name} dari semua arah",
 		"labelNameFacingId": "{name} menghadap {id}",
@@ -514,6 +521,8 @@
 		"workspaceActions": "Tindakan ruang kerja"
 	},
 	"wardrobe": {
+		"notShownInMove": "Tidak terlihat dalam gerakan ini",
+		"notShownInMoveNote": "Item sedang dipakai, tetapi tidak terlihat karena tidak memiliki bingkai di semua tampilan gerakan ini.",
 		"randomLowerItem": "Acak item {lower}",
 		"newLowerItem": "Item {lower} baru",
 		"labelItems": "Item {label}",
@@ -632,6 +641,9 @@
 		"focusWorldADOrToMove": "Fokuskan area dunia · Bergerak dengan A/D atau ←/→",
 		"focusWorldWASDOrArrowKeysTo": "Fokuskan area dunia · Bergerak dengan WASD atau tombol panah",
 		"notice": {
+			"hiddenItemsInMove": {
+				"other": "{count} item disembunyikan: bingkai {move} tidak lengkap"
+			},
 			"noMoveNothing": "Belum ada animasi {move}, jadi tidak ada yang ditampilkan",
 			"noMoveStill": "Belum ada animasi {move}, jadi karakter diam di tempat",
 			"noMovePlays": "Belum ada animasi {move}, jadi yang diputar adalah {fallback}",
@@ -668,6 +680,15 @@
 		"couldNotEnterFullScreenTryAgain": "Tidak dapat masuk ke layar penuh. Coba lagi atau gunakan kontrol layar penuh di browser Anda."
 	},
 	"state": {
+		"couldNotCheckNamedFrames": "Tidak dapat memeriksa bingkai {names}: {reason}",
+		"couldNotCheckSeveralFrames": "Tidak dapat memeriksa bingkai untuk {names}.",
+		"copyMissingOneMove": "Beberapa bingkai {move} hilang; item tidak terlihat dalam gerakan itu.",
+		"copyMissingFrames": "Beberapa bingkai pada {moves} hilang; item tidak terlihat dalam gerakan tersebut.",
+		"restoreFailed": "Tidak dapat memulihkan {name}: {reason}",
+		"restoreFinishFailed": "Tidak dapat menyelesaikan pemulihan {name}: {reason}",
+		"restoredStanding": "{name} dipulihkan untuk arah {directions}. Tidak ada generasi yang digunakan.",
+		"restoredQualityNotes": "Ada catatan kualitas. Periksa catatan tersebut.",
+		"noStandingToRestore": "Tidak ada lagi tampilan berdiri {name} yang perlu dipulihkan.",
 		"characterChangedNothingDeleted": "Karakter berubah sementara itu. Tidak ada yang dihapus.",
 		"categoryNowHasItems": {
 			"other": "{label} kini berisi {count} item. Tinjau lagi sebelum menghapus."
@@ -1105,7 +1126,7 @@
 		"intro": "Unduh satu ZIP berisi semua karakter, item, animasi, setelan, dan pengaturan ruang kerja yang tersimpan.",
 		"privacy": "File ini menyertakan gambar dan prompt tersimpan, tetapi tidak menyertakan kunci PixelLab atau draf yang belum selesai. Bagikan hanya kepada orang yang Anda percayai.",
 		"includeErrors": "Sertakan kesalahan terbaru",
-		"includeErrorsHint": "Menambahkan tier PixelLab Anda dan hasil permintaan terbaru, tanpa isi permintaan atau kredensial akun.",
+		"includeErrorsHint": "Menyertakan tingkat PixelLab, hasil permintaan terbaru, dan pesan galat yang dipersingkat. Filter mungkin melewatkan tautan atau kredensial. Periksa hasil ekspor sebelum membagikannya.",
 		"exportedOmissions": "Ruang kerja diekspor tanpa sebagian data. Buka salinannya dan lihat Aktivitas untuk detail.",
 		"exported": "Ruang kerja diekspor.",
 		"error": {
@@ -1528,6 +1549,14 @@
 		"copyFailed": "Tidak dapat menyalin otomatis. Gunakan kolom endpoint untuk menyalin secara manual."
 	},
 	"activity": {
+		"pendingWork": "Pekerjaan tertunda",
+		"openWork": "Buka",
+		"openWorkNamed": "Buka {label}",
+		"inProgress": "Sedang berlangsung",
+		"redrawFrames": "Gambar ulang bingkai item",
+		"repairFrames": "Perbaiki bingkai item",
+		"readyToReview": "Siap ditinjau",
+		"characterSetup": "Penyiapan karakter",
 		"error": {
 			"jobMissing": "Pekerjaan ini sudah tidak ada di PixelLab. Hasilnya tidak disimpan, dan Anda mungkin sudah dikenai biaya.",
 			"malformed": "PixelLab mengirim hasil yang formatnya rusak ({error}). Permintaan ini mungkin sudah dikenai biaya.",
@@ -2019,6 +2048,7 @@
 		}
 	},
 	"moveSheet": {
+		"sharedCopiesCoverage": "Salinan bersama tetap bisa dipakai pada tampilan yang memiliki bingkai.",
 		"thatCharacter": "karakter tersebut",
 		"recoveryCheckFailed": "Tidak dapat memeriksa frame di cache: {error}",
 		"retryLabel": "Buat ulang animasi",
@@ -2103,7 +2133,7 @@
 		"redrawOtherMoves": "Animasi lain tidak berubah.",
 		"equipmentWaitsForBody": "Jika pemeriksaan tubuh menghentikan animasi, permintaan untuk membuat frame perlengkapan tidak dikirim.",
 		"uncheckedItemsHidden": "Item yang tidak dicentang tetap tersembunyi sampai dianimasikan.",
-		"fittedEquipmentOnly": "Hanya perlengkapan yang sudah disesuaikan dengan semua tampilan terpilih yang dapat dianimasikan di sini. Salinan bersama masih bisa dipakai pada tampilan yang sudah memiliki frame.",
+		"fittedEquipmentOnly": "Hanya perlengkapan yang sudah disesuaikan dengan semua tampilan terpilih yang dapat dianimasikan di sini.",
 		"review": {
 			"redrawTitle": "Tinjau penggambaran ulang item",
 			"repairTitle": "Tinjau perbaikan item",
@@ -2234,13 +2264,16 @@
 	"sheet": { "later": "Nanti" },
 	"toast": { "dismiss": "Tutup notifikasi" },
 	"sharedVisibility": {
+		"allEmphasis": "semua",
+		"demo": "Dari {demo}",
+		"demoEmphasis": "karakter demo",
 		"heading": "Sembunyikan item bersama",
-		"all": "Semua karakter",
-		"hideAll": "Sembunyikan item bersama untuk semua karakter",
-		"hideDemo": "Sembunyikan item bersama dari {name} (Demo)",
-		"hideCurrent": "Sembunyikan item bersama untuk {name} (Saat ini)",
-		"current": "(Saat ini)",
-		"allOn": "Item bersama disembunyikan untuk semua karakter.",
+		"all": "Di {all} lemari",
+		"hideAll": "Sembunyikan item bersama di semua lemari",
+		"hideDemo": "Sembunyikan item bersama dari karakter demo",
+		"hideCurrent": "Sembunyikan item bersama di lemari {name}",
+		"current": "Di lemari {name}",
+		"allOn": "Item bersama disembunyikan di semua lemari.",
 		"notSaved": "Visibilitas berubah, tetapi browser ini tidak dapat menyimpannya."
 	},
 	"versionRow": {

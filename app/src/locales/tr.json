@@ -177,6 +177,7 @@
 		"connect": "Bağlanın"
 	},
 	"deleteSheet": {
+		"viewPendingWork": "Bekleyen işleri görüntüle",
 		"character": "karakter",
 		"demo": "Uygulamayla gelen demo silinemez.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Karakterin kıyafetleri ve değişiklikleri bu cihazdan kaldırılır. Başka karakterlere kopyalanan eşyalar kalır. Bu işlem geri alınamaz."
@@ -243,6 +244,14 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"restoreStanding": {
+			"one": "Ayakta duruş görünümünü geri yükle",
+			"other": "Ayakta duruş görünümlerini geri yükle"
+		},
+		"restoreStandingHint": {
+			"one": "Eşyanın {directions} için kayıtlı çiziminden yeniden oluşturulur. Üretim yapılmaz.",
+			"other": "Eşyanın {directions} için kayıtlı çizimlerinden yeniden oluşturulur. Üretim yapılmaz."
+		},
 		"hiddenByAnotherItem": "Başka bir eşya tarafından gizleniyor",
 		"nameInEveryDirection": "{name}, tüm yönler",
 		"labelNameFacingId": "{name}, yön: {id}",
@@ -535,6 +544,8 @@
 		"workspaceActions": "Çalışma alanı işlemleri"
 	},
 	"wardrobe": {
+		"notShownInMove": "Bu harekette görünmüyor",
+		"notShownInMoveNote": "Eşya takılı ancak bu hareketin hiçbir görünümünde kareleri olmadığı için görünmüyor.",
 		"randomLowerItem": "{lower} için rastgele eşya",
 		"newLowerItem": "{lower} için yeni eşya",
 		"labelItems": "{label} eşyaları",
@@ -656,6 +667,10 @@
 		"focusWorldADOrToMove": "Dünyaya odaklanın · A/D veya ←/→ ile hareket edin",
 		"focusWorldWASDOrArrowKeysTo": "Dünyaya odaklanın · WASD veya ok tuşlarıyla hareket edin",
 		"notice": {
+			"hiddenItemsInMove": {
+				"one": "{count} eşya gizli: {move} kareleri eksik",
+				"other": "{count} eşya gizli: {move} kareleri eksik"
+			},
 			"noMoveNothing": "Henüz {move} animasyonu yok, bu nedenle gösterilecek bir şey yok",
 			"noMoveStill": "Henüz {move} animasyonu yok, bu nedenle karakter hareketsiz duruyor",
 			"noMovePlays": "Henüz {move} animasyonu yok, bu nedenle yerine şu animasyon oynatılıyor: {fallback}",
@@ -694,6 +709,15 @@
 		"couldNotEnterFullScreenTryAgain": "Tam ekrana geçilemedi. Tekrar deneyin veya tarayıcınızın tam ekran kontrolünü kullanın."
 	},
 	"state": {
+		"couldNotCheckNamedFrames": "{names} için kareler denetlenemedi: {reason}",
+		"couldNotCheckSeveralFrames": "{names} için kareler denetlenemedi.",
+		"copyMissingOneMove": "{move} hareketinde eksik kareler var; eşya orada görünmez.",
+		"copyMissingFrames": "{moves} hareketlerinde eksik kareler var; eşya oralarda görünmez.",
+		"restoreFailed": "{name} geri yüklenemedi: {reason}",
+		"restoreFinishFailed": "{name} geri yüklenirken işlem tamamlanamadı: {reason}",
+		"restoredStanding": "{name}, {directions} yönlerine bakarken geri yüklendi. Üretim kullanılmadı.",
+		"restoredQualityNotes": "Kalite uyarıları var. Kontrol edin.",
+		"noStandingToRestore": "{name} için geri yüklenecek ayakta duruş görünümü kalmadı.",
 		"characterChangedNothingDeleted": "Karakter bu sırada değişti. Hiçbir şey silinmedi.",
 		"categoryNowHasItems": {
 			"one": "{label} kategorisinde artık {count} eşya var. Silmeden önce yeniden inceleyin.",
@@ -1149,7 +1173,7 @@
 		"intro": "Tüm kayıtlı karakterlerinizi, eşyalarınızı, animasyonlarınızı, kıyafetlerinizi ve çalışma alanı ayarlarınızı tek bir ZIP dosyasında indirin.",
 		"privacy": "Dosya görselleri ve kayıtlı istemleri içerir. PixelLab anahtarınızı veya tamamlanmamış taslakları içermez. Yalnızca güvendiğiniz kişilerle paylaşın.",
 		"includeErrors": "Yakın zamandaki hataları dahil edin",
-		"includeErrorsHint": "İstek gövdelerini veya hesap bilgilerini eklemeden PixelLab plan seviyenizi ve son isteklerin sonuçlarını ekler.",
+		"includeErrorsHint": "PixelLab seviyenizi, son isteklerin sonuçlarını ve kısaltılmış hata mesajlarını ekler. Filtre bazı bağlantıları veya kimlik bilgilerini gözden kaçırabilir. Paylaşmadan önce dışa aktarılan içeriği inceleyin.",
 		"exportedOmissions": "Çalışma alanı bazı eksiklerle dışa aktarıldı. Ayrıntılar için kopyayı açıp Etkinlik bölümüne bakın.",
 		"exported": "Çalışma alanı dışa aktarıldı.",
 		"error": {
@@ -1592,6 +1616,14 @@
 		"copyFailed": "Otomatik kopyalanamadı. Kopyalamak için uç nokta alanını kullanın."
 	},
 	"activity": {
+		"pendingWork": "Bekleyen işler",
+		"openWork": "Aç",
+		"openWorkNamed": "{label} aç",
+		"inProgress": "Sürüyor",
+		"redrawFrames": "Eşya karelerini yeniden çiz",
+		"repairFrames": "Eşya karelerini onar",
+		"readyToReview": "İncelemeye hazır",
+		"characterSetup": "Karakter kurulumu",
 		"error": {
 			"jobMissing": "Bu iş artık PixelLab sisteminde yok. Sonuçları kaydedilmedi ve ücretlendirilmiş olabilirsiniz.",
 			"malformed": "PixelLab hatalı biçimli bir sonuç gönderdi ({error}). İstek ücretlendirilmiş olabilir.",
@@ -2101,6 +2133,7 @@
 		}
 	},
 	"moveSheet": {
+		"sharedCopiesCoverage": "Paylaşılan kopyalar, kareleri olan görünümlerde kullanılabilir.",
 		"thatCharacter": "söz konusu karakter",
 		"recoveryCheckFailed": "Önbellekteki kareler kontrol edilemedi: {error}",
 		"retryLabel": "Animasyonu yeniden üretin",
@@ -2192,7 +2225,7 @@
 		"redrawOtherMoves": "Diğer animasyonlar değişmez.",
 		"equipmentWaitsForBody": "Gövde kontrolleri animasyonu durdurursa ekipman üretim isteği gönderilmez.",
 		"uncheckedItemsHidden": "Seçilmeyen eşyalar hareketlendirilene kadar gizli kalır.",
-		"fittedEquipmentOnly": "Burada yalnızca seçilen tüm görünümlere uyarlanmış ekipman hareketlendirilebilir. Paylaşılan kopyalar karelerinin bulunduğu görünümlerde giyilmeye devam edebilir.",
+		"fittedEquipmentOnly": "Burada yalnızca seçilen tüm görünümlere uyarlanmış ekipman hareketlendirilebilir.",
 		"review": {
 			"redrawTitle": "Eşyanın yeniden çizimini inceleyin",
 			"repairTitle": "Eşya onarımını inceleyin",
@@ -2323,13 +2356,16 @@
 	"sheet": { "later": "Daha sonra" },
 	"toast": { "dismiss": "Bildirimi kapatın" },
 	"sharedVisibility": {
+		"allEmphasis": "Tüm",
+		"demo": "{demo} kaynaklı",
+		"demoEmphasis": "Demo karakteri",
 		"heading": "Paylaşılan eşyaları gizle",
-		"all": "Tüm karakterler",
-		"hideAll": "Tüm karakterler için paylaşılan eşyaları gizle",
-		"hideDemo": "{name} (Demo) kaynaklı paylaşılan eşyaları gizle",
-		"hideCurrent": "{name} (Geçerli) için paylaşılan eşyaları gizle",
-		"current": "(Geçerli)",
-		"allOn": "Paylaşılan eşyalar tüm karakterlerde gizlenir.",
+		"all": "{all} gardıroplarda",
+		"hideAll": "Paylaşılan eşyaları tüm gardıroplarda gizle",
+		"hideDemo": "Demo karakterinden paylaşılan eşyaları gizle",
+		"hideCurrent": "Paylaşılan eşyaları {name} karakterinin gardırobunda gizle",
+		"current": "{name} karakterinin gardırobunda",
+		"allOn": "Paylaşılan eşyalar tüm gardıroplarda gizli.",
 		"notSaved": "Görünürlük değişti ancak tarayıcı bu ayarı kaydedemedi."
 	},
 	"versionRow": {

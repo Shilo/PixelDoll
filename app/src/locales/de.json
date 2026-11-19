@@ -177,6 +177,7 @@
 		"connect": "Verbinden"
 	},
 	"deleteSheet": {
+		"viewPendingWork": "Ausstehende Aufgaben ansehen",
 		"character": "Figur",
 		"demo": "Die mitgelieferte Demo kann nicht gelöscht werden.",
 		"itsOutfitsAndChangesAreRemovedFrom": "Die Outfits und Änderungen dieser Figur werden von diesem Gerät entfernt. Auf andere Figuren kopierte Gegenstände bleiben erhalten. Das lässt sich nicht rückgängig machen."
@@ -246,6 +247,14 @@
 		"runningDetail": "{status} · {prompt}"
 	},
 	"itemPane": {
+		"restoreStanding": {
+			"one": "Standansicht wiederherstellen",
+			"other": "Standansichten wiederherstellen"
+		},
+		"restoreStandingHint": {
+			"one": "Aus der gespeicherten Vorlage des Gegenstands für {directions} wiederhergestellt. Es wird nichts generiert.",
+			"other": "Aus den gespeicherten Vorlagen des Gegenstands für {directions} wiederhergestellt. Es wird nichts generiert."
+		},
 		"hiddenByAnotherItem": "Von einem anderen Gegenstand verdeckt",
 		"nameInEveryDirection": "{name} in allen Blickrichtungen",
 		"labelNameFacingId": "{name}, Blickrichtung: {id}",
@@ -538,6 +547,8 @@
 		"workspaceActions": "Arbeitsbereich-Aktionen"
 	},
 	"wardrobe": {
+		"notShownInMove": "In dieser Bewegung nicht sichtbar",
+		"notShownInMoveNote": "Der Gegenstand wird getragen, hat aber in keiner Ansicht dieser Bewegung Bilder und bleibt deshalb unsichtbar.",
 		"randomLowerItem": "Zufälliger Gegenstand: {lower}",
 		"newLowerItem": "Neuer Gegenstand: {lower}",
 		"labelItems": "Gegenstände: {label}",
@@ -659,6 +670,10 @@
 		"focusWorldADOrToMove": "Welt fokussieren · Bewegen mit A/D oder ←/→",
 		"focusWorldWASDOrArrowKeysTo": "Welt fokussieren · Bewegen mit WASD oder den Pfeiltasten",
 		"notice": {
+			"hiddenItemsInMove": {
+				"one": "{count} Gegenstand ausgeblendet: Bilder für {move} fehlen",
+				"other": "{count} Gegenstände ausgeblendet: Bilder für {move} fehlen"
+			},
 			"noMoveNothing": "Noch keine Animation {move}, daher gibt es nichts anzuzeigen",
 			"noMoveStill": "Noch keine Animation {move}, daher steht die Figur still",
 			"noMovePlays": "Noch keine Animation {move}, daher wird {fallback} abgespielt",
@@ -697,6 +712,15 @@
 		"couldNotEnterFullScreenTryAgain": "Das Vollbild konnte nicht geöffnet werden. Versuch es noch einmal oder verwende die Vollbildsteuerung deines Browsers."
 	},
 	"state": {
+		"couldNotCheckNamedFrames": "Bilder für {names} konnten nicht geprüft werden: {reason}",
+		"couldNotCheckSeveralFrames": "Bilder für {names} konnten nicht geprüft werden.",
+		"copyMissingOneMove": "Für {move} fehlen Bilder; der Gegenstand bleibt dort unsichtbar.",
+		"copyMissingFrames": "In {moves} fehlen Bilder; der Gegenstand bleibt dort unsichtbar.",
+		"restoreFailed": "{name} konnte nicht wiederhergestellt werden: {reason}",
+		"restoreFinishFailed": "Die Wiederherstellung von {name} konnte nicht abgeschlossen werden: {reason}",
+		"restoredStanding": "{name} wurde für {directions} wiederhergestellt. Keine Generierungen verbraucht.",
+		"restoredQualityNotes": "Es gibt Qualitätshinweise. Bitte prüfen.",
+		"noStandingToRestore": "Für {name} gibt es keine weiteren Standansichten zum Wiederherstellen.",
 		"characterChangedNothingDeleted": "Die Figur hat sich inzwischen geändert. Es wurde nichts gelöscht.",
 		"categoryNowHasItems": {
 			"one": "Die Kategorie „{label}“ enthält jetzt {count} Gegenstand. Prüfe sie erneut, bevor du sie löschst.",
@@ -1155,7 +1179,7 @@
 		"intro": "Lade ein ZIP mit allen gespeicherten Figuren, Gegenständen, Animationen, Outfits und Arbeitsbereichseinstellungen herunter.",
 		"privacy": "Die Datei enthält Grafiken und gespeicherte Prompts, aber weder deinen PixelLab-Schlüssel noch unfertige Entwürfe. Teile sie nur mit Personen, denen du vertraust.",
 		"includeErrors": "Kürzliche Fehler aufnehmen",
-		"includeErrorsHint": "Fügt deinen PixelLab-Tarif und die Ergebnisse kürzlicher Anfragen hinzu, aber keine Anfrageinhalte oder Zugangsdaten.",
+		"includeErrorsHint": "Fügt deine PixelLab-Stufe, Ergebnisse der letzten Anfragen und gekürzte Fehlermeldungen hinzu. Der Filter kann Links oder Zugangsdaten übersehen. Prüfe den Export vor dem Teilen.",
 		"exportedOmissions": "Der Arbeitsbereich wurde mit Auslassungen exportiert. Öffne die Kopie und prüfe die Details unter „Aktivität“.",
 		"exported": "Arbeitsbereich exportiert.",
 		"error": {
@@ -1598,6 +1622,14 @@
 		"copyFailed": "Automatisches Kopieren war nicht möglich. Kopiere den Endpunkt über das Feld manuell."
 	},
 	"activity": {
+		"pendingWork": "Ausstehende Aufgaben",
+		"openWork": "Öffnen",
+		"openWorkNamed": "{label} öffnen",
+		"inProgress": "In Bearbeitung",
+		"redrawFrames": "Gegenstandsbilder neu zeichnen",
+		"repairFrames": "Gegenstandsbilder reparieren",
+		"readyToReview": "Bereit zur Prüfung",
+		"characterSetup": "Figur einrichten",
 		"error": {
 			"jobMissing": "PixelLab hat den Auftrag nicht mehr. Die Ergebnisse wurden nicht gespeichert. Für den Auftrag sind möglicherweise Kosten angefallen.",
 			"malformed": "PixelLab hat ein Ergebnis in einem fehlerhaften Format gesendet ({error}). Für die Anfrage sind möglicherweise Kosten angefallen.",
@@ -2107,6 +2139,7 @@
 		}
 	},
 	"moveSheet": {
+		"sharedCopiesCoverage": "Geteilte Kopien können weiterhin in Ansichten getragen werden, für die sie Bilder haben.",
 		"thatCharacter": "diese Figur",
 		"recoveryCheckFailed": "Zwischengespeicherte Frames konnten nicht geprüft werden: {error}",
 		"retryLabel": "Animation erneut generieren",
@@ -2198,7 +2231,7 @@
 		"redrawOtherMoves": "Andere Animationen bleiben unverändert.",
 		"equipmentWaitsForBody": "Wenn die Körperprüfung die Animation stoppt, werden keine Anfragen für Ausrüstungsframes gesendet.",
 		"uncheckedItemsHidden": "Nicht ausgewählte Gegenstände bleiben verborgen, bis sie animiert werden.",
-		"fittedEquipmentOnly": "Hier kann nur Ausrüstung animiert werden, die zu allen ausgewählten Ansichten passt. Geteilte Kopien können in Ansichten mit vorhandenen Frames weiterhin getragen werden.",
+		"fittedEquipmentOnly": "Hier kann nur Ausrüstung animiert werden, die zu allen ausgewählten Ansichten passt.",
 		"review": {
 			"redrawTitle": "Neu gezeichneten Gegenstand prüfen",
 			"repairTitle": "Gegenstandsreparatur prüfen",
@@ -2329,13 +2362,16 @@
 	"sheet": { "later": "Später" },
 	"toast": { "dismiss": "Benachrichtigung schließen" },
 	"sharedVisibility": {
+		"allEmphasis": "allen",
+		"demo": "Von der {demo}",
+		"demoEmphasis": "Demofigur",
 		"heading": "Geteilte Gegenstände ausblenden",
-		"all": "Alle Figuren",
-		"hideAll": "Geteilte Gegenstände für alle Figuren ausblenden",
-		"hideDemo": "Geteilte Gegenstände von {name} (Demo) ausblenden",
-		"hideCurrent": "Geteilte Gegenstände für {name} (Aktuell) ausblenden",
-		"current": "(Aktuell)",
-		"allOn": "Geteilte Gegenstände sind für alle Figuren ausgeblendet.",
+		"all": "In {all} Garderoben",
+		"hideAll": "Geteilte Gegenstände in allen Garderoben ausblenden",
+		"hideDemo": "Geteilte Gegenstände der Demofigur ausblenden",
+		"hideCurrent": "Geteilte Gegenstände in der Garderobe von {name} ausblenden",
+		"current": "In der Garderobe von {name}",
+		"allOn": "Geteilte Gegenstände sind in allen Garderoben ausgeblendet.",
 		"notSaved": "Die Sichtbarkeit wurde geändert, konnte aber in diesem Browser nicht gespeichert werden."
 	},
 	"versionRow": {

@@ -65,8 +65,10 @@
 	import { errorText, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t } from 'svelte-whisper';
+	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
 
 	const m = $derived(store.project?.manifest);
+	const hasSharedOffers = $derived(!sharedItemsHidden(doc.id) && shared.items.length > 0);
 	let rec = $state.raw<StoredProject | null>(null);
 	// Re-read after a failure: a move saves its body and finished item views before failing, and Try again is priced from them.
 	$effect(() => {
@@ -903,9 +905,10 @@
 					</p>
 				</div>
 			{/if}
-			{#if (unavailable.length || shared.items.length) && targetDirs.length}
+			{#if (unavailable.length || hasSharedOffers) && targetDirs.length}
 				<p class="faint small">
 					{t('moveSheet.fittedEquipmentOnly')}
+					{#if hasSharedOffers}{t('moveSheet.sharedCopiesCoverage')}{/if}
 				</p>
 			{/if}
 			{#if est}<details class="disclosure">
