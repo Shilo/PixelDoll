@@ -14,6 +14,7 @@ import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { BASE_BODY, UNDERWEAR_BODY } from '../../src/studio/model.ts';
+import { paintedPixels } from '../../src/studio/experience/bounds.ts';
 const fulfill = async (route: Route, response: Response) =>
 	route.fulfill({
 		status: response.status,
@@ -1330,8 +1331,22 @@ function offlineCreation(config: CreationCase) {
 				raw.every((c) => (c.body as unknown as { direction: string }).direction === 'west')
 			).toBe(true);
 		const moveCanvas = page.locator('.move-thumb canvas').first();
-		expect(await moveCanvas.getAttribute('width')).toBe(String(config.frame));
-		expect((await moveCanvas.boundingBox())!.width).toBeLessThanOrEqual(56);
+		const thumbnail = await moveCanvas.evaluate((canvas: HTMLCanvasElement) => ({
+			w: canvas.width,
+			h: canvas.height,
+			data: Array.from(
+				canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data
+			)
+		}));
+		expect(paintedPixels({ ...thumbnail, data: new Uint8ClampedArray(thumbnail.data) })).toEqual({
+			left: 0,
+			top: 0,
+			right: thumbnail.w,
+			bottom: thumbnail.h
+		});
+		const thumbnailBox = (await moveCanvas.boundingBox())!;
+		expect(thumbnailBox.width).toBeLessThanOrEqual(56);
+		expect(thumbnailBox.height).toBeLessThanOrEqual(56);
 		await reloadStudio(page);
 		await expect(page.locator('.project-btn')).toContainText('Offline creator test');
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
