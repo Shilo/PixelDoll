@@ -27,7 +27,7 @@
 	<p class="menu-sec" id={headingId}>Hide shared items</p>
 	<label class="row bu-check">
 		<UsersRound size={18} aria-hidden="true" />
-		<span class="row-name">In all wardrobes</span>
+		<span class="row-name">In <strong>all</strong> wardrobes</span>
 		<input
 			class="bu-switch"
 			type="checkbox"
@@ -41,7 +41,7 @@
 	<label class="row bu-check">
 		<UserRound size={18} aria-hidden="true" />
 		<span class="row-name wardrobe-character">
-			<span>In&nbsp;</span><span class="wardrobe-character-name">{name}</span><span
+			<span>In&nbsp;</span><strong class="wardrobe-character-name">{name}</strong><span
 				>'s wardrobe</span
 			>
 		</span>
@@ -60,7 +60,7 @@
 	</label>
 	<label class="row bu-check">
 		<LayoutTemplate size={18} aria-hidden="true" />
-		<span class="row-name">From demo character</span>
+		<span class="row-name">From <strong>demo character</strong></span>
 		{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
 		<input
 			class="bu-switch"
@@ -79,6 +79,9 @@
 </div>
 
 <style>
+	.row-name strong {
+		font-weight: 600;
+	}
 	.wardrobe-character {
 		display: flex;
 		align-items: baseline;
