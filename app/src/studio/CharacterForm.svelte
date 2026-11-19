@@ -81,6 +81,16 @@
 	// The selected model's limits (MODELS in characterConfig.ts) decide which controls show and what they accept.
 	const model = $derived(modelOf(d.model));
 	const bodyError = $derived(bodyErrors(d.body, d.model)[0] ?? '');
+	const referenceMax = $derived(
+		Math.min(
+			characterReference[d.model ?? 'v3'].max,
+			d.model === 'pro-flash' && d.body && !bodyError
+				? d.body
+				: (d.model ?? 'v3') === 'v3' && frame && Number.isInteger(frame) && frame >= 32
+					? frame
+					: Infinity
+		)
+	);
 	const advancedNote = $derived(
 		[
 			model === MODELS.v3 ? '' : model.label,
@@ -118,6 +128,7 @@
 	});
 	const canEnhance = (target: 'details' | 'prompt') =>
 		!busy &&
+		!referenceLoading &&
 		!!(target === 'details' ? d.details : d.prompt).trim() &&
 		validBodySize(d.body) &&
 		enhanceInput().description.length <= 2000;
@@ -405,9 +416,7 @@
 			bind:value={d.reference}
 			bind:loading={referenceLoading}
 			hint={characterReference[d.model ?? 'v3'].hint}
-			max={d.model === 'pro-flash' && d.body && !bodyError
-				? d.body
-				: characterReference[d.model ?? 'v3'].max}
+			max={{ width: referenceMax, height: referenceMax }}
 			issue={characterReferenceIssue(d.reference, d.model, frame, d.body)}
 			disabled={busy}
 		/>

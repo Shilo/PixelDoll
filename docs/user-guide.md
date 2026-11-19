@@ -81,8 +81,9 @@ Character menu → **New character…**
    the drawing rather than one appearance trait, and moves added later pick their own seeds; reuse can give similar
    results but does not guarantee identical pixels.
 6. Optionally drop one image on **Reference** below Size guide, or choose **Add image**. V3 starts from a front-facing sprite
-   that fits the Frame; Body size does not resize it. Pro draws from a sketch or design. Pro Flash uses the artwork as a
-   style guide and needs it to fit the chosen Body size. Keep a text prompt in all three models.
+   sized for the Frame. Pro draws from a sketch or design. Pro Flash uses the artwork as a style guide sized for the
+   chosen Body. Uploads over the shown pixel dimensions are downscaled proportionally with a notice. Keep a text prompt
+   in all three models.
 7. Press **Create character**. It draws your character standing in the selected directions, its **Default** pose, in a
    few minutes. Idle, walk and other moves come afterward.
 
@@ -221,7 +222,7 @@ one item of each can be worn together.
    Legs).
 2. **What is it?** Describe the item, for example "leather hat", or tap an idea.
 3. To guide the design with artwork, optionally drop one image on **Reference** or choose **Add image**. Use an image of
-   the item by itself. The size limit shown is the canvas used to draw the item.
+   the item by itself. Uploads bigger than the shown canvas are downscaled proportionally with a notice.
    A reference can change the estimate if it requires an extra batch.
 4. Add an optional **Color hint**, then press **Make**.
 

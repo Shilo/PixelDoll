@@ -1973,7 +1973,12 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 		mimeType: 'image/png',
 		buffer: Buffer.from(await encodePngBytes(artwork))
 	});
-	const attachment = item.getByRole('button', { name: 'Replace image', exact: true });
+	const attachment = item.getByRole('button', {
+		name: 'Choose a different reference image',
+		exact: true
+	});
+	await expect(attachment.locator('svg')).toHaveAttribute('viewBox', '1 1 1 1');
+	await expect(attachment.locator('image')).toHaveAttribute('width', '16');
 	await expect(attachment).toHaveAccessibleDescription(new RegExp(filename.replace('.', '\\.')));
 	await expect(item.getByRole('status').filter({ hasText: 'Reference attached.' })).toBeAttached();
 	expect((await attachment.boundingBox())!.height).toBeCloseTo(dropHeight);
@@ -2003,6 +2008,17 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	await page.setViewportSize({ width: 844, height: 390 });
 	await item.getByRole('button', { name: 'Remove reference', exact: true }).click();
 	await expect(drop).toBeFocused();
+	await item.getByRole('radio', { name: 'Main hand', exact: true }).click();
+	await expect(drop).toHaveAccessibleDescription(/Max 64 × 64 px/);
+	const sword = makeImg(192, 64);
+	sword.data.fill(255);
+	await item.locator('.reference input[type=file]').setInputFiles({
+		name: 'sword.png',
+		mimeType: 'image/png',
+		buffer: Buffer.from(await encodePngBytes(sword))
+	});
+	await expect(attachment).toContainText('64 × 21 px');
+	await expect(attachment).toHaveCSS('height', `${dropHeight}px`);
 });
 
 test('canceling Connect preserves generation drafts and discards the pending action', async ({

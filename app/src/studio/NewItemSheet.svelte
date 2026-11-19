@@ -127,9 +127,12 @@
 		}
 	};
 	const referenceMax = $derived.by(() => {
-		if (!m) return 256;
+		if (!m) return { width: 256, height: 256 };
 		const pad = padOf(slotDef(m, slot) ?? slot, method || automatic || undefined, m.rig.cell);
-		return Math.min(256, Math.min(m.rig.cell.w, m.rig.cell.h) + 2 * pad);
+		return {
+			width: Math.min(256, m.rig.cell.w + 2 * pad),
+			height: Math.min(256, m.rig.cell.h + 2 * pad)
+		};
 	});
 	const OFF_HAND_HINT = 'Shields and bows usually go in the off hand.';
 	// The hand a held category uses, from its own definition (a built-in that holds nothing yet uses its catalog default).

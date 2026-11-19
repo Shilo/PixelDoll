@@ -34,6 +34,7 @@
 	} from './state.svelte.ts';
 	import { Check, CircleAlert, TriangleAlert } from './icons.ts';
 	let d = $state(formDrafts.character ?? newCharacterDraft());
+	formDrafts.character = undefined;
 	let enhancing = $state(false);
 	let referenceLoading = $state(false);
 	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
@@ -63,9 +64,6 @@
 	const est = $derived(estimate(creating.spec ?? formSpec));
 	const lo = $derived(Math.round(est.gens)),
 		hi = $derived(Math.ceil(est.maxGens / 5) * 5);
-	$effect(() => {
-		if (!creating.spec) formDrafts.character = $state.snapshot(d);
-	});
 	function connectEnhance(target: 'details' | 'prompt') {
 		const draft = $state.snapshot(d);
 		delete draft.enhanceOnConnect;
