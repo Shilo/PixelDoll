@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import Sheet from './Sheet.svelte';
+	import DirectionCompass from './DirectionCompass.svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import ApiPreview from './ApiPreview.svelte';
 	import { libraryPlan, characterZipPlan } from './apiPlans.ts';
@@ -55,6 +56,13 @@
 	let directionChoices = $state.raw<RigDirection[] | null>(null);
 	let facing = $state<DirectionName>('south');
 	const originalDirections = $derived(prepared?.project.manifest.rig.directions ?? []);
+	const originalIds = $derived(originalDirections.map(({ id }) => id));
+	const availableDirections = $derived(
+		DIRECTIONS.filter((dir) => {
+			const partner = mirrorPartner(dir);
+			return originalIds.includes(dir) || (partner && originalIds.includes(partner));
+		})
+	);
 	const directions = $derived(directionChoices ?? originalDirections);
 	const directionError = $derived(
 		prepared && directionChoices ? directionProblem(prepared.project, directions, 'import') : ''
@@ -110,7 +118,7 @@
 		);
 		return directionChoices && previewFacing.mirrorOf ? flipH(img) : img;
 	});
-	function changeDirection(id: DirectionName, value: string) {
+	function changeDirection(id: DirectionName, value: 'original' | 'mirror' | 'off') {
 		const previous = directions.filter((dir) => dir.id !== id);
 		const mirrorOf = mirrorPartner(id);
 		if (value === 'original') previous.push({ id });
@@ -122,6 +130,26 @@
 				? null
 				: previous;
 		if (value !== 'off') facing = id;
+	}
+	function toggleDirection(id: DirectionName) {
+		changeDirection(
+			id,
+			directions.some((dir) => dir.id === id)
+				? 'off'
+				: originalIds.includes(id)
+					? 'original'
+					: 'mirror'
+		);
+	}
+	function toggleMirror(id: DirectionName) {
+		changeDirection(
+			id,
+			directions.find((dir) => dir.id === id)?.mirrorOf
+				? originalIds.includes(id)
+					? 'original'
+					: 'off'
+				: 'mirror'
+		);
 	}
 	$effect(() => {
 		if (source === 'pixellab' && app.key && !listed) {
@@ -631,34 +659,20 @@
 			<details>
 				<summary>Directions</summary>
 				<p class="muted small">
-					Keep the original artwork, flip the opposite view, or leave a direction out. Mirroring
-					replaces any original artwork for that direction in this copy.
+					Use the arrows to keep or skip views. A mirror button flips the opposite view and replaces
+					any original artwork for that direction in this copy.
 				</p>
-				<div class="import-directions" role="group" aria-label="Directions to import">
-					{#each DIRECTIONS as direction (direction)}
-						{@const partner = mirrorPartner(direction)}
-						{@const original = originalDirections.some(({ id }) => id === direction)}
-						{@const canMirror = partner && originalDirections.some(({ id }) => id === partner)}
-						{@const choice = directions.find(({ id }) => id === direction)}
-						{#if original || canMirror}
-							<label class="field">
-								<span class="label">{directionLabel(direction)}</span>
-								<select
-									class="bu-input input"
-									value={choice?.mirrorOf ? 'mirror' : choice ? 'original' : 'off'}
-									disabled={busy}
-									onchange={(event) => changeDirection(direction, event.currentTarget.value)}
-								>
-									{#if original}<option value="original">Original</option>{/if}
-									{#if canMirror}<option value="mirror">Mirror {directionLabel(partner!)}</option
-										>{/if}
-									<option value="off">Don't import</option>
-								</select>
-							</label>
-						{/if}
-					{/each}
-				</div>
-				<p class="muted small" role="status">
+				<DirectionCompass
+					label="Directions to import"
+					selected={directions.map(({ id }) => id)}
+					available={availableDirections}
+					mirrorSources={originalIds}
+					mirrors={Object.fromEntries(directions.map(({ id, mirrorOf }) => [id, mirrorOf]))}
+					disabled={busy}
+					ontoggle={toggleDirection}
+					onmirror={toggleMirror}
+				/>
+				<p class="sr" role="status">
 					Preview: {previewFacing ? directionLabel(previewFacing.id) : 'No directions selected'}
 				</p>
 				{#if previewFacing && directions.length > 1}<label class="field">
@@ -711,11 +725,6 @@
 </Sheet>
 
 <style>
-	.import-directions {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
-		gap: 8px 12px;
-	}
 	:global(dialog.sheet:is(.import-browse, .import-review).center) {
 		height: calc(100dvh - 48px);
 	}

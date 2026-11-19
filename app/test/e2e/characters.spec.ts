@@ -743,8 +743,16 @@ test('character directions can be configured on import and removed only after co
 	});
 	await importer.getByText('Directions', { exact: true }).click();
 	const options = importer.getByRole('group', { name: 'Directions to import' });
-	await expect(options.getByRole('combobox', { name: 'West', exact: true })).toHaveValue('off');
-	await options.getByRole('combobox', { name: 'West', exact: true }).selectOption('mirror');
+	const westDirection = options.getByRole('button', { name: 'West direction', exact: true });
+	const westMirror = options.getByRole('button', { name: 'Mirror West from East', exact: true });
+	await expect(westDirection).toHaveAttribute('aria-pressed', 'false');
+	await westMirror.click();
+	await expect(westDirection).toHaveAttribute('aria-pressed', 'true');
+	await westMirror.click();
+	await expect(westDirection).toHaveAttribute('aria-pressed', 'false');
+	await westDirection.focus();
+	await westDirection.press('Space');
+	await expect(westMirror).toHaveAttribute('aria-pressed', 'true');
 	await expect(importer.getByRole('combobox', { name: 'Preview direction' })).toHaveValue('west');
 	await expect(importer.locator('.import-preview')).toContainText('4 directions');
 	await importer
@@ -761,10 +769,16 @@ test('character directions can be configured on import and removed only after co
 	};
 	await openDirections();
 	const settings = page.getByRole('dialog', { name: 'Directions', exact: true });
-	const west = settings.getByRole('checkbox', { name: 'West · Mirrors East' });
-	await expect(west).toBeChecked();
-	await west.uncheck();
+	const kept = settings.getByRole('group', { name: 'Directions to keep' });
+	const west = kept.getByRole('button', { name: 'West direction · Mirrors East', exact: true });
+	const east = kept.getByRole('button', { name: 'East direction', exact: true });
+	await expect(west).toHaveAttribute('aria-pressed', 'true');
 	const review = settings.getByRole('button', { name: 'Review removal' });
+	await east.click();
+	await expect(settings.getByRole('status')).toContainText('Keep East');
+	await expect(review).toBeDisabled();
+	await east.click();
+	await west.click();
 	await review.click();
 	const confirmation = page.getByRole('alertdialog', { name: 'Remove direction?' });
 	await expect(confirmation).toContainText('West will be removed');
@@ -775,7 +789,7 @@ test('character directions can be configured on import and removed only after co
 	await expect(settings).toBeHidden();
 	await reloadStudio(page);
 	await openDirections();
-	await expect(settings.getByRole('checkbox')).toHaveCount(3);
+	await expect(kept.getByRole('button')).toHaveCount(3);
 	await expect(west).toHaveCount(0);
 });
 

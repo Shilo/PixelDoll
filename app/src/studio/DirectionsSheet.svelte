@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Sheet from './Sheet.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import DirectionCompass from './DirectionCompass.svelte';
 	import {
 		directionLabel,
 		directionProblem,
@@ -51,8 +52,10 @@
 		return () => controller.abort();
 	});
 
-	function toggle(direction: DirectionName, keep: boolean) {
-		excluded = keep ? excluded.filter((dir) => dir !== direction) : [...excluded, direction];
+	function toggle(direction: DirectionName) {
+		excluded = excluded.includes(direction)
+			? excluded.filter((dir) => dir !== direction)
+			: [...excluded, direction];
 	}
 	async function remove() {
 		if (!loaded || !record || !excluded.length || problem || blocked || busy) return;
@@ -87,23 +90,16 @@
 <Sheet title="Directions" cancelDisabled={busy} onclose={() => (ui.sheet = null)}>
 	{#if record}
 		<p class="muted">Choose which directions to keep for {record.manifest.name}.</p>
-		<div class="direction-list" role="group" aria-label="Directions to keep">
-			{#each record.manifest.rig.directions as direction (direction.id)}
-				<label class="check">
-					<input
-						type="checkbox"
-						checked={!excluded.includes(direction.id)}
-						disabled={busy}
-						onchange={(event) => toggle(direction.id, event.currentTarget.checked)}
-					/>
-					<span>
-						{directionLabel(direction.id)}{#if direction.mirrorOf}<span class="muted small"
-								>{` · Mirrors ${directionLabel(direction.mirrorOf)}`}</span
-							>{/if}
-					</span>
-				</label>
-			{/each}
-		</div>
+		<DirectionCompass
+			label="Directions to keep"
+			available={record.manifest.rig.directions.map(({ id }) => id)}
+			selected={retained.map(({ id }) => id)}
+			mirrors={Object.fromEntries(
+				record.manifest.rig.directions.map(({ id, mirrorOf }) => [id, mirrorOf])
+			)}
+			disabled={busy}
+			ontoggle={toggle}
+		/>
 		{#if problem || blocked}<p class="notice warn small" role="status">{problem || blocked}</p>{/if}
 	{:else if error}<p class="notice bad small" role="alert">{error}</p>
 	{:else}<p class="muted" role="status">Loading directions…</p>{/if}
@@ -146,11 +142,3 @@
 		{#if losesCardinal}<p>RPG Maker export needs all four cardinal directions.</p>{/if}
 	</ConfirmDialog>
 {/if}
-
-<style>
-	.direction-list {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
-		gap: 4px 12px;
-	}
-</style>

@@ -3,30 +3,19 @@
 	import Help from './Help.svelte';
 	import SizePreview from './SizePreview.svelte';
 	import ApiPeek from './ApiPeek.svelte';
+	import DirectionCompass from './DirectionCompass.svelte';
 	import { app } from '../lib/app.svelte.ts';
 	import { ApiError } from '../lib/pixellab/client.ts';
 	import { enhanceCharacter } from './enhanceCharacter.ts';
 	import { routes } from '../lib/pixellab/routes.ts';
-	import {
-		ArrowUp,
-		PersonStanding,
-		Copy,
-		Check,
-		ChevronRight,
-		WandSparkles,
-		Undo2
-	} from './icons.ts';
+	import { Copy, Check, ChevronRight, WandSparkles, Undo2 } from './icons.ts';
 	import { HANDS_SWAP, KEEP_EACH_HAND } from './model.ts';
-	import MirrorViews from '@lucide/svelte/icons/triangles-centerline-dashed-vertical';
 	import {
-		ANGLES,
 		autoFrame,
 		BODY_SIZES,
 		BODY_STEP,
 		bodyErrors,
-		COMPASS,
 		DETAILS,
-		DIRECTION_LABELS,
 		draftErrors,
 		isNudeBase,
 		MODEL_IDS,
@@ -501,43 +490,14 @@
 					}}>{p.label}</button
 				>{/each}
 		</div>
-		<div class="compass" role="group" aria-label="Facing directions">
-			{#each COMPASS as dir, i (dir ?? 'center')}
-				{#if dir}
-					{@const west = dir.includes('west')}
-					{@const pair = west || dir.includes('east')}
-					<div class="direction-tile bu-joined" class:west class:east={!west && pair}>
-						{#if west}<button
-								class="mirror bu-action"
-								data-variant="field"
-								aria-label="Mirror {DIRECTION_LABELS[dir]}"
-								title="Mirror {DIRECTION_LABELS[dir]} from its eastern partner"
-								aria-pressed={!!d.mirrors[dir]}
-								onclick={() => toggleMirror(d, dir)}><MirrorViews size={15} /></button
-							>{/if}
-						<button
-							class="direction bu-action"
-							data-variant="field"
-							aria-label="{DIRECTION_LABELS[dir]} direction"
-							aria-pressed={d.selected.includes(dir)}
-							onclick={() => (announcement = toggleDirection(d, dir))}
-							><ArrowUp size={18} style="transform:rotate({ANGLES[dir]}deg)" /><span
-								>{DIRECTION_LABELS[dir]}</span
-							></button
-						>
-						{#if !west && pair}<button
-								class="mirror bu-action"
-								data-variant="field"
-								aria-label="Mirror {DIRECTION_LABELS[dir]}"
-								title="Mirror {DIRECTION_LABELS[dir]} from its western partner"
-								aria-pressed={!!d.mirrors[dir]}
-								onclick={() => toggleMirror(d, dir)}><MirrorViews size={15} /></button
-							>{/if}
-					</div>
-				{:else}<span class="compass-center" aria-hidden="true"><PersonStanding size={23} /></span
-					>{/if}
-			{/each}
-		</div>
+		<DirectionCompass
+			label="Facing directions"
+			selected={d.selected}
+			mirrors={d.mirrors}
+			shortLabels
+			ontoggle={(dir) => (announcement = toggleDirection(d, dir))}
+			onmirror={(dir) => toggleMirror(d, dir)}
+		/>
 		<span class="direction-announcement" aria-live="polite">{announcement}</span>
 		<details class="disclosure advanced" bind:open={advancedOpen}>
 			<summary
@@ -805,71 +765,10 @@
 	.direction-presets .btn:nth-child(-n + 2) {
 		grid-column: span 3;
 	}
-	.compass {
-		--mirror-width: 29px;
-		display: grid;
-		grid-template-columns: calc(56px + var(--mirror-width)) 56px calc(56px + var(--mirror-width));
-		gap: 6px;
-		width: max-content;
-		max-width: 100%;
-		margin-top: 4px;
-	}
-	.direction-tile {
-		display: flex;
-		height: 54px;
-		min-width: 0;
-	}
-	.direction,
-	.mirror {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 3px;
-		padding: 0;
-		font: inherit;
-		cursor: pointer;
-	}
-	.direction {
-		flex: 1;
-		min-width: 0;
-		flex-direction: column;
-		font-size: 10px;
-	}
-	.mirror {
-		flex: 0 0 var(--mirror-width);
-	}
 	@media (pointer: coarse) {
-		.compass {
-			--mirror-width: 44px;
-		}
 		.creator-tabs button {
 			min-height: 44px;
 		}
-	}
-	.west .direction {
-		border-top-left-radius: 0;
-		border-bottom-left-radius: 0;
-	}
-	.west .mirror {
-		border-right: 0;
-		border-top-right-radius: 0;
-		border-bottom-right-radius: 0;
-	}
-	.east .direction {
-		border-top-right-radius: 0;
-		border-bottom-right-radius: 0;
-	}
-	.east .mirror {
-		border-left: 0;
-		border-top-left-radius: 0;
-		border-bottom-left-radius: 0;
-	}
-	.compass-center {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: var(--text-3);
-		opacity: 0.55;
 	}
 	.direction-announcement {
 		position: absolute;
@@ -952,12 +851,6 @@
 		.frame-controls .btn,
 		.direction-presets .btn {
 			min-height: 44px;
-		}
-		.direction-tile {
-			height: 56px;
-		}
-		.compass {
-			--mirror-width: 44px;
 		}
 		.facing {
 			max-width: none;
