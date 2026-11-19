@@ -54,6 +54,9 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Current review handoffs and research
 
+- [PixelLab Character Creator states and animations](research/2026-11-18-character-creator-states.md) describes the website workflow, public endpoint lifecycle, and how PixelDoll currently imports and uses standing references.
+- [PixelDoll state authoring study](research/2026-11-18-pixeldoll-states/README.md) proposes reusable poses, shared playback, state-derived move generation and independent removal. It includes an interactive layout comparison and runtime probe.
+
 - [Modular visual-slot workshop](design/2026-11-16-slot-system/README.md): council-challenged slot inventory, identity, hiding, customization and export proposal with an isolated interactive comparison. Awaiting prototype review; no production behavior change.
 
 - [Third-party paper-doll system document and source](research/2026-11-10-paperdoll-system-review/README.md): every idea from the system's document, source and experiments compared with PixelDoll and challenged, with offline measurements: no pipeline change; posed gear fits the frozen base; the 1 px body-outline rim is an accepted known issue; a second 425-generation key test found dark mannequin shades, not the hue, cause outline loss.
