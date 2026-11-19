@@ -134,12 +134,9 @@ export interface CharacterDraft {
 /** The model that draws a new character. All end in the same V3 registration, so moves and items work the same way. */
 export type CharacterModel = 'v3' | 'pro' | 'pro-flash';
 export const characterReference = {
-	v3: {
-		max: 256,
-		hint: 'Use a front-facing sprite with a transparent background. Body size does not resize it.'
-	},
-	pro: { max: 1024, hint: 'Use a sketch or character design to guide the new sprite.' },
-	'pro-flash': { max: 256, hint: 'Use artwork to guide the new sprite’s style and appearance.' }
+	v3: { max: 256, hint: 'Use a front-facing sprite.' },
+	pro: { max: 1024, hint: 'Use a sketch or character design.' },
+	'pro-flash': { max: 256, hint: 'Use artwork as a style guide.' }
 } satisfies Record<CharacterModel, { max: number; hint: string }>;
 
 export function characterReferenceIssue(

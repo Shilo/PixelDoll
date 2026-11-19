@@ -1500,7 +1500,6 @@
 }
 .studio-app .character-sheet .creator-guide {
 	display: grid;
-	justify-items: start;
 	align-items: center;
 }
 .studio-app .character-sheet .creator-guide h3 {
@@ -1515,8 +1514,7 @@
 	height: auto;
 	display: flex;
 	flex-direction: column;
-	width: 200px;
-	max-width: 100%;
+	width: 100%;
 	gap: 16px;
 }
 .studio-app .character-sheet .creator-guide .preview-box {
@@ -1664,7 +1662,9 @@
 		grid-column: 1/-1;
 	}
 	.studio-app .character-sheet .creator-guide .size-guide {
-		width: 140px;
+		display: grid;
+		grid-template-columns: min(40%, 128px) minmax(0, 1fr);
+		align-items: center;
 	}
 }
 @media (max-width: 760px) and (min-height: 541px) {

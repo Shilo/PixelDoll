@@ -317,7 +317,7 @@
 				max={referenceMax}
 				compact
 				inspectColors
-				hint="Use artwork of the item by itself, ideally on a transparent background."
+				hint="Show the item by itself."
 				disabled={busy}
 			/>
 			{#if offHandHint}<p class="notice small">

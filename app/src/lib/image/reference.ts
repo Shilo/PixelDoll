@@ -1,6 +1,8 @@
 import { bytesToBase64 } from './png.ts';
 import { referenceKeyCollisions, type Key } from './chroma.ts';
 
+export const REFERENCE_MAX_MB = 8;
+
 export interface ImageReference {
 	base64: string;
 	width: number;
@@ -25,7 +27,8 @@ export async function readReference(
 ): Promise<PickedReference> {
 	if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type))
 		throw new Error('Choose a PNG, JPEG, or WebP image.');
-	if (file.size > 8 * 1024 * 1024) throw new Error('Choose an image smaller than 8 MB.');
+	if (file.size > REFERENCE_MAX_MB * 1024 * 1024)
+		throw new Error(`Choose an image no larger than ${REFERENCE_MAX_MB} MB.`);
 	const bitmap = await createImageBitmap(file).catch(() => {
 		throw new Error('This image could not be opened. Choose a different file.');
 	});

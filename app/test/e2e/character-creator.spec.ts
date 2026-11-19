@@ -434,7 +434,9 @@ test('visible size fields, auto frame, preset deselection and preview positions 
 	await expect(sheet.locator('.pixel-input > span')).toHaveText(['px', 'px']);
 	expect(calls).toEqual([]);
 	await body.fill('64.5');
-	await expect(sheet.getByRole('status')).toContainText('whole pixels');
+	await expect(sheet.getByRole('status').and(sheet.locator('.creator-validation'))).toContainText(
+		'whole pixels'
+	);
 	await expect(sheet.getByRole('button', { name: 'Create character', exact: true })).toBeDisabled();
 	await body.fill('64');
 	await frame.fill('80');
@@ -548,7 +550,9 @@ test('all direction presets, reverse mirrors and source promotion keep a valid p
 	for (const dir of ['N', 'NE', 'E', 'SE', 'S'])
 		await sheet.getByRole('button', { name: `${dir} direction`, exact: true }).click();
 	await expect(sheet.getByRole('button', { name: 'Create character', exact: true })).toBeDisabled();
-	await expect(sheet.getByRole('status')).toContainText('Choose at least one direction');
+	await expect(sheet.getByRole('status').and(sheet.locator('.creator-validation'))).toContainText(
+		'Choose at least one direction'
+	);
 });
 
 test('V3 enhance connects once, preserves settings, undo restores exactly, and failures never retry', async ({
@@ -594,7 +598,9 @@ test('V3 enhance connects once, preserves settings, undo restores exactly, and f
 	);
 	await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).fill('[fail] a dwarf');
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
-	await expect(sheet.getByRole('status')).toContainText('Your text was kept');
+	await expect(sheet.getByRole('status').and(sheet.locator('.creator-message'))).toContainText(
+		'Your text was kept'
+	);
 	await expect(sheet.getByRole('textbox', { name: 'Exact prompt', exact: true })).toHaveValue(
 		'[fail] a dwarf'
 	);
@@ -674,7 +680,9 @@ test('Appearance enhancement cannot clear selected hints with repeated clauses o
 	await sheet.getByRole('button', { name: 'Undo', exact: true }).click();
 	response = 'Kind: Orc\nBuild: Rounded';
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
-	await expect(sheet.getByRole('status')).toContainText('Your text was kept');
+	await expect(sheet.getByRole('status').and(sheet.locator('.creator-message'))).toContainText(
+		'Your text was kept'
+	);
 	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'Pointed ears'
 	);
@@ -739,7 +747,9 @@ test('late enhancement cannot overwrite edits or reopen a closed form', async ({
 	await connect(page);
 	sheet = page.getByRole('dialog', { name: 'New character', exact: true });
 	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('My newer text');
-	await expect(sheet.getByRole('status')).toContainText('Settings changed');
+	await expect(sheet.getByRole('status').and(sheet.locator('.creator-message'))).toContainText(
+		'Settings changed'
+	);
 	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'My newer text'
 	);
@@ -829,6 +839,7 @@ for (const viewport of [
 		const sheet = await open(page);
 		const drop = sheet.getByRole('button', { name: 'Add image', exact: true });
 		const guide = sheet.getByRole('heading', { name: 'Size guide', exact: true });
+		const diagram = sheet.locator('.creator-guide .preview-box');
 		if (viewport.height <= 540 && viewport.width >= 600) {
 			await expect(guide).toBeHidden();
 			await drop.scrollIntoViewIfNeeded();
@@ -842,18 +853,35 @@ for (const viewport of [
 			const tabs = (await sheet.getByRole('tablist', { name: 'Prompt editor' }).boundingBox())!;
 			const heading = (await guide.boundingBox())!;
 			const box = (await drop.boundingBox())!;
+			const preview = (await diagram.boundingBox())!;
+			const geometry = (await sheet
+				.getByRole('region', { name: 'Character size and camera' })
+				.boundingBox())!;
 			expect(heading.y).toBeCloseTo(tabs.y);
-			expect(box.x + box.width).toBeLessThan(tabs.x);
+			expect(preview.x).toBeCloseTo(box.x, 0);
+			expect(preview.width).toBeCloseTo(box.width, 0);
+			expect(preview.height).toBeCloseTo(preview.width, 0);
+			expect(tabs.x - (box.x + box.width)).toBeCloseTo(geometry.x - (tabs.x + tabs.width), 0);
 			expect(box.y).toBeGreaterThan(heading.y + heading.height);
 		} else {
 			await expect(guide).toBeVisible();
 		}
 		if (viewport.width === 320) {
+			const preview = (await diagram.boundingBox())!;
+			expect(preview.width).toBeLessThanOrEqual(128);
+			expect(preview.height).toBeCloseTo(preview.width, 0);
+			await expect(drop).toHaveAccessibleDescription(
+				'Use a front-facing sprite. Max 256 × 256 px, 8 MB.'
+			);
 			const picker = sheet.locator('.reference input[type=file]');
 			const image = await page.evaluate(() => {
 				const canvas = document.createElement('canvas');
 				canvas.width = canvas.height = 32;
-				canvas.getContext('2d')!.fillRect(4, 4, 16, 16);
+				const context = canvas.getContext('2d')!;
+				context.fillStyle = 'white';
+				context.fillRect(0, 0, 32, 32);
+				context.fillStyle = 'black';
+				context.fillRect(4, 4, 16, 16);
 				return canvas.toDataURL().split(',')[1];
 			});
 			await picker.setInputFiles({
@@ -865,6 +893,9 @@ for (const viewport of [
 			await expect(attachment).toBeVisible();
 			await expect(attachment).toHaveAccessibleDescription(/sprite\.png/);
 			const bounds = (await attachment.boundingBox())!;
+			const remove = (await sheet.getByRole('button', { name: 'Remove reference' }).boundingBox())!;
+			expect(remove.y).toBeCloseTo(bounds.y, 0);
+			expect(remove.height).toBeCloseTo(bounds.height, 0);
 			expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width);
 			expect(bounds.height).toBeGreaterThanOrEqual(44);
 			await picker.setInputFiles({
@@ -919,17 +950,16 @@ for (const viewport of [
 			scroll: element.scrollWidth
 		}));
 		expect(horizontal.scroll).toBeLessThanOrEqual(horizontal.client);
-		// Approved creator: the size readout sits under its guide image (hidden on shallow landscape).
-		const readoutFits = await sheet.locator('.size-guide').evaluate((el) => {
+		// The compact guide puts its square beside the readout, while the desktop guide stacks them.
+		const readoutFits = await sheet.locator('.size-guide').evaluate((el, compact) => {
 			if (!el.getClientRects().length) return true;
 			const image = el.querySelector('.preview-box')!.getBoundingClientRect(),
-				readout = el.querySelector('.sizes')!.getBoundingClientRect();
-			return (
-				readout.top >= image.bottom - 1 &&
-				readout.left >= image.left - 1 &&
-				readout.right <= image.right + 1
-			);
-		});
+				readout = el.querySelector('.sizes')!.getBoundingClientRect(),
+				row = el.closest('.creator-rail')!.querySelector('.reference-row')!.getBoundingClientRect();
+			return compact
+				? readout.left >= image.right && Math.abs(readout.right - row.right) < 1
+				: readout.top >= image.bottom && Math.abs(readout.right - image.right) < 1;
+		}, viewport.width <= 1000);
 		expect(readoutFits).toBe(true);
 		await expect(sheet.locator('.mirror-summary')).toHaveCount(0);
 		const autoHeight = await sheet.getByRole('button', { name: 'Auto', exact: true }).boundingBox();
@@ -1360,7 +1390,7 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 	await model.selectOption('pro');
 	await expect(sheet.getByText(/sketch or character design/)).toBeVisible();
 	await model.selectOption('pro-flash');
-	await expect(sheet.getByText(/new sprite’s style and appearance/)).toBeVisible();
+	await expect(sheet.getByText(/use artwork as a style guide/i)).toBeVisible();
 	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
 	await sheet.getByRole('button', { name: 'Remove reference', exact: true }).click();
 	await expect(drop).toBeFocused();

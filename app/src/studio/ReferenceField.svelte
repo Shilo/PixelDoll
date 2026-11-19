@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { readReference, type PickedReference } from '../lib/image/reference.ts';
+	import { REFERENCE_MAX_MB, readReference, type PickedReference } from '../lib/image/reference.ts';
 	import Upload from '@lucide/svelte/icons/upload';
 	import { X } from './icons.ts';
 
@@ -135,9 +135,7 @@
 			input.value = '';
 		}}
 	/>
-	<small class="faint" id={helpId}
-		>{hint} One PNG, JPEG, or WebP, up to {max} × {max} px and 8 MB. Sent to PixelLab when you generate.</small
-	>
+	<small class="faint" id={helpId}>{hint} Max {max} × {max} px, {REFERENCE_MAX_MB} MB.</small>
 	{#if error || issue}<small role="alert">{error || issue}</small>{/if}
 	<span class="reference-announcement" role="status">{announcement}</span>
 </div>
@@ -150,7 +148,7 @@
 	}
 	.reference-row {
 		display: flex;
-		align-items: center;
+		align-items: stretch;
 		gap: 0.35rem;
 	}
 	.drop {
