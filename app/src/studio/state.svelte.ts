@@ -2590,7 +2590,7 @@ export const moving = $state({
 	resolvingRepair: false
 });
 const MOVE_KEY = 'studio-move';
-let moveRunning = false,
+let moveRunning = $state(false),
 	moveRevision = 0;
 /** The stored move record without its queue (null: the current move is finished or dismissed). */
 let moveRecord: object | null = null,
@@ -2631,10 +2631,12 @@ export async function queueMoves(projectId: string, specs: MoveSpec[]) {
 	moving.queued = rest;
 	await startMove(next.projectId, next.spec);
 }
-/** A character's moves running or waiting in the queue; with `itemId`, only those that pose that item. */
+/** A character's moves running, publishing or queued; with `itemId`, only those that pose that item. */
 export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 	[
-		...(moving.spec && !moving.done && moving.projectId === projectId ? [moving.spec] : []),
+		...(moving.spec && (!moving.done || moveRunning) && moving.projectId === projectId
+			? [moving.spec]
+			: []),
 		...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec)
 	].filter((s) => !itemId || s.items.includes(itemId));
 export async function startMove(projectId: string, spec: MoveSpec) {

@@ -6,6 +6,7 @@ import {
 	type MoveSpec,
 	bodyAction,
 	bodyMoveIssue,
+	partialMoveFrameIssue,
 	creationLooks,
 	drawRequest,
 	estimate,
@@ -253,7 +254,8 @@ export function movePlan(
 			: m.rig;
 	const generatedDirections = moveDirections(m, spec.dirs);
 	if (bodyNeeded) {
-		if (bodyMoveIssue(m, spec)) return [];
+		if (bodyMoveIssue(m, spec) || partialMoveFrameIssue(m, spec, generatedDirections.length))
+			return [];
 		const authored = isAuthoredAction(spec.action);
 		for (const direction of generatedDirections) {
 			if (!authored) {

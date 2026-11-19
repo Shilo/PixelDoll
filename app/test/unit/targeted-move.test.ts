@@ -277,6 +277,13 @@ test('a move cannot spend on its body if selected equipment lacks a standing des
 	);
 	expect(f.enqueue).not.toHaveBeenCalled();
 });
+test('a new move cannot spend when the drawn views no longer match its approval', async () => {
+	const f = await fixture();
+	await expect(
+		f.run({ id: 'slash', action: 'slash', replace: false, dirs: undefined, approvedDirs: ['east'] })
+	).rejects.toThrow('Character directions changed.');
+	expect(f.enqueue).not.toHaveBeenCalled();
+});
 test('selected direction costs distinguish body replacement from frozen-frame equipment repair', async () => {
 	const f = await fixture(),
 		m = f.original.manifest;

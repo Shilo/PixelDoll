@@ -1063,6 +1063,7 @@ export interface MoveSpec {
 	replace?: boolean;
 	activityScope?: string;
 	dirs?: DirectionName[];
+	approvedDirs?: DirectionName[];
 	itemMethod?: 'grid' | 'anchor';
 	preferTierOneRepair?: true;
 	reuseItemFrames?: true;
@@ -1175,6 +1176,15 @@ export function moveDirections(m: Manifest, dirs?: readonly DirectionName[]): Di
 	if (!dirs.length || new Set(dirs).size !== dirs.length || dirs.some((d) => !all.includes(d)))
 		throw new Error('Choose one or more independently drawn directions for this move.');
 	return all.filter((d) => dirs.includes(d));
+}
+function approvedMoveDirections(m: Manifest, spec: MoveSpec): DirectionName[] {
+	const dirs = moveDirections(m, spec.dirs),
+		approved = spec.approvedDirs;
+	if (approved && (approved.length !== dirs.length || dirs.some((dir) => !approved.includes(dir))))
+		throw new Error(
+			'Character directions changed. Review the move’s current estimate before trying again. No generation was requested.'
+		);
+	return dirs;
 }
 interface BodyPaletteStats {
 	directions: DirectionName[];
@@ -1669,22 +1679,6 @@ export function missingItemMoves(
 			...(anchored ? { itemMethod: 'anchor' as const } : {})
 		}));
 }
-/** The moves creation made before Default-first (authored idle, managed walk), for a one-tap "Add idle + walk". Same request
- * shapes as creation made them (no poseStyle). Equipment is always a separately priced choice afterward. */
-export function baseMoveSpecs(
-	m: Manifest,
-	seed = 1 + Math.floor(Math.random() * 1_000_000)
-): MoveSpec[] {
-	const have = new Set(m.rig.animations.map((a) => a.id));
-	return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({
-		id: a.name,
-		action: a.name,
-		frames: a.frames,
-		items: [],
-		seed
-	}));
-}
-
 /** Frames of a move: the authored table's length, or the text frame count. */
 export const isAuthoredAction = (action?: string): action is string =>
 	!!action && Object.hasOwn(ACTIONS, action);
@@ -1697,6 +1691,16 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
 			? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length
 			: s.frames;
 };
+export function partialMoveFrameIssue(
+	m: Manifest,
+	spec: Pick<MoveSpec, 'id' | 'action' | 'frames'>,
+	directionCount: number
+): string {
+	const existing = m.rig.animations.find((move) => move.id === spec.id);
+	return existing && directionCount !== genDirs(m).length && existing.cells !== moveFrames(m, spec)
+		? 'A partial repair must keep the existing frame count.'
+		: '';
+}
 /** The described motion must fit both PixMiniMax and the single raw Skeleton v3 render. */
 export function bodyMoveIssue(
 	m: Manifest,
@@ -1916,7 +1920,7 @@ export async function addMove(
 		}
 	};
 	assertReview(rec.manifest);
-	const dirs = moveDirections(rec.manifest, spec.dirs),
+	const dirs = approvedMoveDirections(rec.manifest, spec),
 		existing = rec.manifest.rig.animations.find((a) => a.id === spec.id);
 	// Saved-frame recovery only reattaches completed equipment requests, never a new or replaced body clip.
 	if (
@@ -1972,12 +1976,8 @@ export async function addMove(
 	if (reservedMove(spec.id) && (spec.replace || !existing)) throw new Error(reservedMove(spec.id));
 	if (!existing && dirs.length !== genDirs(rec.manifest).length)
 		throw new Error('A new move needs every independently drawn direction.');
-	if (
-		existing &&
-		dirs.length !== genDirs(rec.manifest).length &&
-		existing.cells !== moveFrames(rec.manifest, spec)
-	)
-		throw new Error('A partial repair must keep the existing frame count.');
+	const frameIssue = partialMoveFrameIssue(rec.manifest, spec, dirs.length);
+	if (frameIssue) throw new Error(frameIssue);
 	if (!spec.itemMethod && !spec.itemsOnly && spec.items.length) {
 		const eligible = new Set(posable(rec.manifest, dirs).map((item) => item.id));
 		if (spec.items.some((id) => !eligible.has(id)))
@@ -2159,7 +2159,7 @@ async function addBodyClip(
 		throw new Error('This character changed since these joint checks were reviewed.');
 	const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
 	const receiptSpecHash = intent ? await recoverySpecHash(spec) : undefined;
-	const dirs = moveDirections(m, spec.dirs) as Direction[],
+	const dirs = approvedMoveDirections(m, spec) as Direction[],
 		affected = affectedMoveDirections(rig, dirs),
 		n = moveFrames(m, spec),
 		name = m.name;

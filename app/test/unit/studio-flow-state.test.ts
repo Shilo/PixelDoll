@@ -1402,19 +1402,23 @@ describe('move queue', () => {
 	test('a move queued while the last one finishes is started, not left waiting', async () => {
 		const records = storage(),
 			removing = pending<void>(),
-			second = pending<typeof done>();
+			second = pending<typeof done>(),
+			repair: MoveSpec = { ...idle, replace: true, dirs: ['east'] };
 		mocks.del.mockImplementationOnce(async (_store, id) => {
 			await removing.promise;
 			records.delete(id);
 		});
 		mocks.move.mockResolvedValueOnce(done).mockReturnValueOnce(second.promise);
 		const s = await import('../../src/studio/state.svelte.ts');
-		const first = s.queueMoves('project', [idle]);
-		await vi.waitFor(() => expect(mocks.del).toHaveBeenCalledOnce()); // idle is done; its record is being removed
+		const first = s.queueMoves('project', [repair]);
+		await vi.waitFor(() => expect(mocks.del).toHaveBeenCalledOnce());
+		expect(s.moving.done).toBe(true);
+		expect(s.pendingMoves('project')).toEqual([expect.objectContaining(repair)]);
 		const later = s.queueMoves('project', [walk]);
 		removing.resolve();
 		await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledTimes(2));
 		expect(mocks.move.mock.calls[1][1]).toMatchObject(walk);
+		expect(s.pendingMoves('project')).toEqual([expect.objectContaining(walk)]);
 		await later;
 		expect(records.get('studio-move')).toMatchObject({ status: 'running', spec: walk, queued: [] });
 		second.resolve(done);

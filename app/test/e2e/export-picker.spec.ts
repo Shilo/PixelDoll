@@ -857,7 +857,53 @@ test('global Export choices persist through demo reload, editable copying and ch
 		exact: true
 	});
 	await expect(dressed).toBeEnabled();
-	await dressed.uncheck();
+	const help = dialog.getByText(/^Adds PNG sprite sheets/);
+	await expect(dressed).toHaveAccessibleDescription(/^Adds PNG sprite sheets/);
+	const initiallyDressed = await dressed.isChecked();
+	await help.scrollIntoViewIfNeeded();
+	const [start, word, end] = await help.evaluate(async (element) => {
+		await Promise.all(
+			element
+				.closest('.export-page')!
+				.getAnimations()
+				.map((animation) => animation.finished)
+		);
+		const text = element.firstChild!;
+		const range = document.createRange();
+		return [0, 2, 18].map((offset) => {
+			range.setStart(text, offset);
+			range.setEnd(text, offset + 1);
+			const { x, y, width, height } = range.getBoundingClientRect();
+			return { x: x + (offset === 0 ? 1 : width / 2), y: y + height / 2 };
+		});
+	});
+	await page.mouse.move(start.x, start.y);
+	await page.mouse.down();
+	await page.mouse.move(end.x, end.y, { steps: 6 });
+	await page.mouse.up();
+	expect(await page.evaluate(() => window.getSelection()?.toString())).toMatch(/sprite/);
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	await page.evaluate(() => window.getSelection()?.removeAllRanges());
+	await page.mouse.click(word.x, word.y);
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	await page.mouse.dblclick(word.x, word.y);
+	expect(await page.evaluate(() => window.getSelection()?.toString().trim())).toBe('Adds');
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	const labelText = dialog
+		.locator('label span')
+		.getByText('Include dressed character sheets', { exact: true });
+	const labelBounds = (await labelText.boundingBox())!;
+	await page.evaluate(() => window.getSelection()?.removeAllRanges());
+	await page.mouse.move(labelBounds.x + 8, labelBounds.y + labelBounds.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(end.x, end.y, { steps: 6 });
+	await page.mouse.up();
+	expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('');
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	await labelText.click();
+	await expect(dressed).toBeChecked({ checked: !initiallyDressed });
+	if (!initiallyDressed) await labelText.click();
+	await expect(dressed).not.toBeChecked();
 	await expect(dressed).toBeEnabled();
 	await dialog.getByRole('button', { name: 'Close export' }).click();
 	await page.evaluate(() => location.reload());

@@ -1281,9 +1281,6 @@ dialog.sheet.bottom.character-sheet .sheet-foot .api-action {
 	flex: 1;
 	justify-content: flex-end;
 }
-dialog.sheet.bottom.character-sheet .sheet-foot .base-moves {
-	flex-basis: 100%;
-} /* its own row: beside the note it wraps mid-price */
 dialog.sheet.bottom.character-sheet .sheet-foot .creator-cost {
 	font-size: 11px;
 }

@@ -2,6 +2,7 @@
 	// Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
 	// re-rendered through raw skeleton-v3), plus one pose call per worn item x direction so the items follow the new clip.
 	import Sheet from './Sheet.svelte';
+	import DirectionCompass from './DirectionCompass.svelte';
 	import Sprite from './Sprite.svelte';
 	import { untrack } from 'svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -16,6 +17,7 @@
 	import {
 		MOVE_STEPS,
 		bodyMoveIssue,
+		partialMoveFrameIssue,
 		isAuthoredAction,
 		isV13,
 		reservedMove,
@@ -47,6 +49,7 @@
 		withKey
 	} from './state.svelte.ts';
 	import { bodyQualityNote, moveLabel } from './model.ts';
+	import { affectedMoveDirections } from './replaceMove.ts';
 	import { directionLabel } from './experience/movement.ts';
 	import { Check, ChevronRight, CircleAlert } from './icons.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -63,6 +66,7 @@
 	});
 	const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null));
 	const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []));
+	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
 	// Default is the standing views themselves: nothing to generate or replace.
 	const options = $derived(
 		[
@@ -71,6 +75,7 @@
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
 	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
+	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? '');
 	const slug = (s: string) =>
 		s
@@ -78,9 +83,8 @@
 			.replace(/[^a-z0-9]+/g, '-')
 			.replace(/^-+|-+$/g, '')
 			.slice(0, 24);
-	const describingReplacement = $derived(
-		have.has(action) && action !== 'walk' && !isAuthoredAction(action)
-	);
+	const replacing = $derived(replaceSelected && have.has(action));
+	const savedMove = $derived(m?.rig.animations.find((a) => a.id === action));
 	// Ids allow only a-z, 0-9, - and _ (rig.ts): a description in another script gets the first free "move-N".
 	const freeMoveId = () => {
 		let n = 1;
@@ -88,11 +92,10 @@
 		return `move-${n}`;
 	};
 	const id = $derived(
-		!describingReplacement && text.trim()
-			? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) || freeMoveId()
-			: action
+		action ||
+			(text.trim() &&
+				(slug(text.trim().split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) || freeMoveId()))
 	);
-	const replacing = $derived(have.has(id) && !reservedMove(id));
 	const availableDirs = $derived(
 		m?.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id) ?? []
 	);
@@ -100,25 +103,49 @@
 	const targetDirs = $derived(
 		replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs
 	);
+	const affectedMirrors = $derived(
+		m
+			? affectedMoveDirections(m.rig, targetDirs)
+					.filter((dir) => !targetDirs.includes(dir))
+					.map(directionLabel)
+					.join(', ')
+			: ''
+	);
+	const describingReplacement = $derived(
+		replacing &&
+			((action !== 'walk' && !isAuthoredAction(action)) ||
+				targetDirs.some((dir) => savedMove?.sources?.[dir]?.motion?.startsWith('pixminimax:')))
+	);
+	const describing = $derived(!action || describingReplacement);
 	const items = $derived(m && targetDirs.length ? posable(m, targetDirs) : []);
 	const unavailable = $derived(
 		(m?.items ?? []).filter(
 			(item) => item.slot !== 'body' && !items.some((eligible) => eligible.id === item.id)
 		)
 	);
-	const frames = $derived(m?.rig.animations.find((a) => a.id === id)?.cells ?? 8);
+	const frames = $derived(replacing ? (savedMove?.cells ?? 8) : 8);
 	const motion = $derived({
 		id,
-		action: text.trim() ? undefined : action,
-		text: text.trim() || undefined,
+		action: describing ? undefined : action,
+		text: describing ? text.trim() || undefined : undefined,
 		frames,
 		replace: replacing
 	});
-	const motionIssue = $derived(m && id ? bodyMoveIssue(m, motion) : '');
+	const motionIssue = $derived.by(() => {
+		if (action && replaceSelected !== have.has(action))
+			return 'This move changed while you were editing. Select it again to continue.';
+		if (!action && id && options.includes(id))
+			return `${nice(id)} is already a move option. Start the description with different words.`;
+		if (!m || !id) return '';
+		return (
+			bodyMoveIssue(m, motion) ||
+			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
+		);
+	});
 	let included = $state<string[]>(draft?.items ?? []);
 	const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id));
 	const est = $derived(
-		m && id && targetDirs.length && !motionIssue
+		m && id && targetDirs.length && !reservedMove(id) && !motionIssue && !pendingIds.includes(id)
 			? moveEstimate(m, { ...motion, items: chosen, dirs: targetDirs })
 			: null
 	);
@@ -194,7 +221,6 @@
 	const retryGens = $derived(
 		Math.ceil(retryPlan.reduce((sum, call) => sum + (call.generations ?? 0), 0))
 	);
-	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
 	const ownQueued = $derived(moving.queued.filter((q) => q.projectId === moving.projectId));
 	// another character's failed move holds every new move; only its own sheet can try it again or start over
 	const holder = $derived(
@@ -295,17 +321,18 @@
 
 	function go() {
 		const projectId = doc.id;
-		if (motionIssue || addAccess.error) return;
+		if (!est || addAccess.error) return;
 		const spec = {
 			...motion,
 			items: chosen,
 			poseStyle: 'visible-side-v1' as const,
 			seed: 1 + Math.floor(Math.random() * 1_000_000),
-			...(replacing ? { dirs: [...targetDirs] } : {})
+			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] })
 		};
 		formDrafts.move = {
 			projectId,
 			action,
+			replace: replaceSelected,
 			text,
 			items: $state.snapshot(included),
 			dirs: [...selectedDirs],
@@ -319,12 +346,19 @@
 		}, addTier);
 	}
 	function chooseAction(next: string) {
+		const replace = have.has(next);
+		if (action === next && replaceSelected === replace) return;
 		action = next;
+		replaceSelected = replace;
 		text = '';
 		const clips = (rec?.rigQa as { clips?: Record<string, { fails?: unknown[] }> } | undefined)
 			?.clips;
 		const flagged = availableDirs.filter((d) => clips?.[`${next}/${d}`]?.fails?.length);
 		selectedDirs = flagged.length ? flagged : [...availableDirs];
+	}
+	function describeMove(value: string) {
+		chooseAction('');
+		text = value;
 	}
 </script>
 
@@ -417,39 +451,42 @@
 			>Hide</button
 		>
 	{:else if ok}
-		<span class="foot-note"
-			>{est
-				? `About ${est.minutes} min · body ${Math.ceil(est.body)} gens${est.items ? ` + ${est.items} gens if equipment runs` : ''}`
-				: ''}</span
-		>
-		<span class="api-action"
-			><ApiPeek
-				scope="move-add"
-				label="Add or replace move"
-				plan={movePlan(rec, {
-					...motion,
-					items: chosen,
-					poseStyle: 'visible-side-v1',
-					...(replacing ? { dirs: [...targetDirs] } : {})
-				})}
-			/><button
+		{#if est}
+			<span class="foot-note move-cost-note">
+				<span
+					>About {est.minutes} min · body {Math.ceil(est.body)} gens{est.items
+						? ` + ${est.items} gens if equipment runs`
+						: ''}</span
+				>
+				<span>PixelLab may charge in dollars. Retries and fallbacks cost extra.</span>
+			</span>
+		{/if}
+		<span class="api-action move-action">
+			{#if est}<ApiPeek
+					scope="move-add"
+					label="Add or replace move"
+					plan={movePlan(rec, {
+						...motion,
+						items: chosen,
+						poseStyle: 'visible-side-v1',
+						...(replacing ? { dirs: [...targetDirs] } : {})
+					})}
+				/>{/if}<button
 				class="bu-action btn primary lg"
 				data-variant="primary"
-				disabled={!id ||
-					!!reservedMove(id) ||
-					!!motionIssue ||
+				disabled={!est ||
 					!!addAccess.error ||
-					!targetDirs.length ||
-					pendingIds.includes(id) ||
 					(!!settingUp.spec && !settingUp.done) ||
 					tierBlocked(addTier)}
 				aria-describedby={tierBlocked(addTier) ? 'move-action-tier' : undefined}
 				onclick={go}
-				>{busy ? 'Queue' : replacing ? 'Replace' : 'Add'}
-				{id ? nice(id) : 'move'}{replacing ? ' views' : ''}
-				<span class="cost">
-					Est. {est ? Math.ceil(est.gens) : '–'} gens{est?.items ? ' with equipment' : ''}
-				</span></button
+				><span
+					>{replacing ? (busy ? 'Queue replacement:' : 'Replace') : busy ? 'Queue' : 'Add'}
+					{id ? nice(id) : 'move'}{replacing ? ' views' : ''}
+					{#if est}<span class="cost">
+							Est. {Math.ceil(est.gens)} gens{est.items ? ' with equipment' : ''}
+						</span>{/if}</span
+				></button
 			></span
 		>
 	{/if}
@@ -658,18 +695,33 @@
 				onclick={() => (ui.sheet = 'setup')}>Set up character</button
 			>{/if}
 	{:else}
-		<div class="form">
+		<div class="form" class:redraw-form={replacing}>
 			<div class="field">
-				<span class="label" id="act">Move</span>
+				<label class="label" for="move-description"
+					>{replacing ? 'Describe a new move' : 'Describe the motion'}</label
+				>
+				<input
+					id="move-description"
+					class="bu-input input"
+					value={action ? '' : text}
+					oninput={(event) => describeMove(event.currentTarget.value)}
+					placeholder="e.g. jumping in place"
+					aria-describedby="move-description-hint"
+					maxlength="120"
+				/>
+				<p class="faint small" id="move-description-hint">
+					Describe body motion only. Add weapons and props as items.
+				</p>
+			</div>
+			<div class="field">
+				<span class="label" id="act">Or choose a move</span>
 				<div class="chips" role="radiogroup" aria-labelledby="act">
 					{#each options as a (a)}
 						<button
 							class="chip"
 							role="radio"
-							aria-checked={(!text.trim() || describingReplacement) && action === a}
-							tabindex={(text.trim() && !describingReplacement ? options[0] === a : action === a)
-								? 0
-								: -1}
+							aria-checked={action === a}
+							tabindex={(options.includes(action) ? action : options[0]) === a ? 0 : -1}
 							onclick={() => chooseAction(a)}
 							>{#if have.has(a)}<Check size={12} />{/if}{nice(a)}{have.has(a)
 								? ' · added'
@@ -680,40 +732,37 @@
 			</div>
 			{#if replacing}
 				<div class="field">
-					<span class="label">Views to replace</span>
-					{#each availableDirs as dir (dir)}<label class="check"
-							><input
-								type="checkbox"
-								checked={selectedDirs.includes(dir)}
-								onchange={(e) =>
-									(selectedDirs = e.currentTarget.checked
-										? [...selectedDirs, dir]
-										: selectedDirs.filter((d) => d !== dir))}
-							/>{directionLabel(dir)}</label
-						>{/each}
-					<p class="notice warn small">
-						Saving a replacement clears the old equipment frames in these views. Selected equipment
-						is animated only if the body passes its checks. Other equipment stays hidden in those
-						views until new frames are made. Other views and moves stay fixed.{#if m?.rig.directions.some((d) => d.mirrorOf)}
-							Mirrored views follow their source.{/if}
-					</p>
+					<span class="label">Directions to redraw</span>
+					<div class="redraw-directions">
+						<DirectionCompass
+							label="Directions to redraw"
+							describedBy="move-redraw-warning"
+							available={availableDirs}
+							selected={targetDirs}
+							compact
+							ontoggle={(dir) =>
+								(selectedDirs = selectedDirs.includes(dir)
+									? selectedDirs.filter((selected) => selected !== dir)
+									: [...selectedDirs, dir])}
+						/>
+						<p class="notice warn small" id="move-redraw-warning">
+							Replacing these views hides equipment until new frames are made.
+							{#if affectedMirrors}Mirrored views also change: {affectedMirrors}.{/if}
+							Other moves stay unchanged.
+						</p>
+					</div>
 				</div>
-			{:else}<p class="faint small">Choose an existing move to replace selected views.</p>{/if}
-			<label class="field">
-				<span class="label"
-					>{describingReplacement ? 'Describe the replacement' : 'Or describe it'}
-					{#if !describingReplacement}<span class="faint">(optional)</span>{/if}</span
-				>
-				<input
-					class="bu-input input"
-					bind:value={text}
-					placeholder="e.g. jumping in place"
-					maxlength="120"
-				/>
-			</label>
-			{#if text.trim()}<p class="faint small">
-					The body is drawn with empty hands and no effects. Add weapons and props as items.
-				</p>{/if}
+			{/if}
+			{#if describingReplacement}<label class="field">
+					<span class="label">Describe the replacement</span>
+					<input
+						class="bu-input input"
+						bind:value={text}
+						placeholder="e.g. jumping in place"
+						aria-describedby="move-description-hint"
+						maxlength="120"
+					/>
+				</label>{/if}
 			{#if reservedMove(id)}<p class="notice warn small">
 					<CircleAlert size={14} />{reservedMove(id)}
 				</p>{:else if motionIssue}<p class="notice warn small">
@@ -744,56 +793,65 @@
 										? [...included, it.id]
 										: included.filter((x) => x !== it.id))}
 							/>{it.name}
-							<span class="faint small">
-								{m && est
-									? moveEstimate(m, { ...motion, items: [it.id], dirs: targetDirs }).items
-									: '–'}
-								gens
-							</span></label
+							{#if m && est}<span class="faint small"
+									>{moveEstimate(m, { ...motion, items: [it.id], dirs: targetDirs }).items} gens</span
+								>{/if}</label
 						>
 					{/each}
 					<p class="faint small">
-						Items are unchecked by default. If body checks stop this move, equipment requests are
-						not sent. You can generate equipment later from each item’s details.
+						Equipment requests are not sent if body checks stop the move.
+						{#if !replacing}Unchecked items stay hidden until animated.{/if}
 					</p>
 				</div>
 			{/if}
 			{#if (unavailable.length || shared.items.length) && targetDirs.length}
 				<p class="faint small">
-					This list only shows equipment that can follow the body’s poses in every view being
-					generated. Shared copies can still be worn in views where they have frames. To animate an
-					unfitted copy, make one for this character. Other items may offer animation for existing
-					moves in their details.
+					Only equipment fitted to every selected view can be animated here. Shared copies can still
+					be worn in views where they have frames.
 				</p>
 			{/if}
-			<p class="faint small">
-				PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time
-				varies.
-			</p>
-			<details class="disclosure">
-				<summary><ChevronRight size={14} />Details</summary>
-				<div>
-					<p class="faint small">
-						{text.trim()
-							? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view'
-							: action === 'walk'
-								? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view'
-								: 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames ×
-						{dirs} directions{m?.rig.directions.some((d) => d.mirrorOf)
-							? ` (${m.rig.directions
-									.filter((d) => d.mirrorOf)
-									.map((d) => d.id.replaceAll('-', ' '))
-									.join(', ')} mirrored)`
-							: ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · body review notes
-						do not trigger redraws.
-					</p>
-				</div>
-			</details>
+			{#if est}<details class="disclosure">
+					<summary><ChevronRight size={14} />Details</summary>
+					<div>
+						<p class="faint small">
+							{motion.text
+								? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view'
+								: action === 'walk'
+									? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view'
+									: 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames
+							×
+							{dirs} directions{affectedMirrors ? ` (${affectedMirrors} mirrored)` : ''} · body ≈ {est?.body.toFixed(
+								1
+							)} gens, items {est?.items} gens · body review notes do not trigger redraws.
+						</p>
+					</div>
+				</details>{/if}
 		</div>
 	{/if}
 </Sheet>
 
 <style>
+	.redraw-form {
+		gap: 12px;
+	}
+	.redraw-directions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 12px;
+	}
+	.redraw-directions .notice {
+		flex: 1 1 125px;
+	}
+	.move-cost-note {
+		display: grid;
+		gap: 2px;
+	}
+	.move-action > .btn {
+		white-space: normal;
+		height: auto;
+		min-height: var(--ctl-h);
+	}
 	.keep-review {
 		display: grid;
 		gap: 8px;

@@ -12,7 +12,6 @@
 	import type { Project } from '../lib/store/manifest.ts';
 	import type { ClipQa } from '../lib/rig/clips.ts';
 	import { STEPS, estimate, type CreateSpec } from './create.ts';
-	import BaseMoves from './BaseMoves.svelte';
 	import CharacterForm from './CharacterForm.svelte';
 	import {
 		autoFrame,
@@ -234,11 +233,6 @@
 	{#snippet footer()}
 		{#if creating.projectId}
 			<span class="foot-note">Saved on this device.</span>
-			{#if result}<BaseMoves
-					projectId={creating.projectId}
-					manifest={result.manifest}
-					onadd={() => void open()}
-				/>{/if}
 			<button class="bu-action btn primary lg" data-variant="primary" onclick={open}
 				>Start dressing up</button
 			>

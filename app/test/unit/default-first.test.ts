@@ -1,12 +1,13 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import {
-	baseMoveSpecs,
+	bodyAction,
 	createCharacter,
 	estimate,
 	missingItemMoves,
 	moveEstimate,
 	reservedMove,
-	type CreateSpec
+	type CreateSpec,
+	type MoveSpec
 } from '../../src/studio/create.ts';
 import { movePlan } from '../../src/studio/apiPlans.ts';
 import { coverage } from '../../src/studio/itemRoute.ts';
@@ -206,7 +207,7 @@ test('creation publishes a Default-only rig that items, moves, exports and live 
 	expect(exported.entries.some((e) => e.name.includes('default'))).toBe(true);
 });
 
-test('"Add idle + walk" restores what creation used to make, at the old price', async () => {
+test('the Idle and Walk presets keep their request counts and estimates', async () => {
 	const { rec } = await create({
 		name: 'Default',
 		description: 'body',
@@ -215,11 +216,10 @@ test('"Add idle + walk" restores what creation used to make, at the old price', 
 		directions: TOP_DOWN_4,
 		projectId: 'rig-default-moves'
 	});
-	const specs = baseMoveSpecs(rec.manifest, 7);
-	expect(specs).toEqual([
-		{ id: 'idle', action: 'idle', frames: 4, items: [], seed: 7 },
-		{ id: 'walk', action: 'walk', frames: 8, items: [], seed: 7 }
-	]); // the items it is priced for
+	const specs: MoveSpec[] = [
+		{ id: 'idle', action: 'idle', frames: 8, items: [], seed: 7, poseStyle: 'visible-side-v1' },
+		{ id: 'walk', action: 'walk', frames: 8, items: [], seed: 7, poseStyle: 'visible-side-v1' }
+	];
 	// Creation + idle + walk = the pre-Default-first creation estimate (35.25 gens for Top-down 4).
 	expect(
 		estimate({ size: 48, directions: TOP_DOWN_4 }).gens +
@@ -229,19 +229,15 @@ test('"Add idle + walk" restores what creation used to make, at the old price', 
 	expect(calls.filter((c) => c.path === '/animate-with-skeleton-v3')).toHaveLength(3 * 2);
 	expect(calls.filter((c) => c.path === '/characters/animations')).toHaveLength(3);
 	expect(calls.filter((c) => c.path === '/estimate-skeleton')).toHaveLength(3 * (4 + 8 + 8));
-	// the same request shapes creation sent: no unarmed suffix (poseStyle), raw seed + 101
 	expect(
 		calls
 			.filter((c) => c.path === '/animate-with-skeleton-v3')
 			.map((c) => c.body as { action: string; seed: number })
 	).toEqual(
-		[...Array(3).fill({ action: 'breathing idle' }), ...Array(3).fill({ action: 'walking' })].map(
-			(b) => expect.objectContaining({ ...b, seed: 108 })
+		specs.flatMap((spec) =>
+			Array(3).fill(expect.objectContaining({ action: bodyAction(spec), seed: 108 }))
 		)
 	);
-	// existing moves are not offered again
-	rec.manifest.rig.animations.push({ id: 'idle', cells: 4, loop: true, frames: [] });
-	expect(baseMoveSpecs(rec.manifest).map((s) => s.id)).toEqual(['walk']);
 });
 
 test('an item saved before idle and walk existed gets items-only poses for exactly the moves it lacks', async () => {
