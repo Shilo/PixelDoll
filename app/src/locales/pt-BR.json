@@ -650,6 +650,9 @@
 		"customizationPanels": "Painéis de personalização"
 	},
 	"worldStage": {
+		"groundUnavailable": "Não é possível renderizar o chão em tempo real. A cena estática é exibida.",
+		"materialUnavailable": "O material do chão não está disponível. A cena estática é exibida.",
+		"sceneUnavailable": "A cena ao vivo não está disponível. Recarregue a página para tentar de novo.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Prévia do personagem. Use WASD ou as setas para mudar de direção. Use as teclas 1, 2 e 3 para alternar as vistas.",
 		"sideScrollerTestWorldADLeft": "Cenário de teste com rolagem lateral. Use A/D ou as setas esquerda e direita, ou arraste na horizontal para mover. Use as teclas 1, 2 e 3 para alternar as vistas.",
 		"characterTestWorldWASDArrowsOrDrag": "Cenário de teste do personagem. Use WASD ou as setas, ou arraste para mover. Use as teclas 1, 2 e 3 para alternar as vistas.",
@@ -896,7 +899,11 @@
 		},
 		"count": {
 			"directions": { "one": "{count} direção", "other": "{count} direções" },
-			"moves": { "one": "{count} animação", "other": "{count} animações" },
+			"moves": {
+				"0": "{count} animações",
+				"one": "{count} animação",
+				"other": "{count} animações"
+			},
 			"items": {
 				"0": "{count} itens",
 				"one": "{count} item",
@@ -1029,11 +1036,6 @@
 		"untitledCharacter": "Personagem sem nome",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"moves": {
-				"0": "{count} animações",
-				"one": "{count} animação",
-				"other": "{count} animações"
-			},
 			"separateItems": {
 				"0": "{count} itens separados",
 				"one": "{count} item separado",
@@ -1108,6 +1110,7 @@
 			"stateList": "A exportação do PixelLab tem uma lista inválida de estados do personagem.",
 			"stateIds": "A exportação do PixelLab tem IDs duplicados de estados do personagem.",
 			"stateFrames": "O estado “{state}” tem um layout de quadros inválido.",
+			"undeclaredAnimation": "O estado “{state}” contém um arquivo de animação ausente nos metadados: {path}.",
 			"stateAnimations": "O estado “{state}” tem uma lista de animações inválida.",
 			"moveDirections": "A animação {move} não tem direções.",
 			"moveDirection": "A animação {move}/{direction} tem uma direção incompatível.",
@@ -1779,7 +1782,6 @@
 		"frames": { "one": "{count} quadro", "other": "{count} quadros" },
 		"onlyDirection": "Só na direção {direction}",
 		"oneDirection": "Só uma",
-		"directions": "{count} direções",
 		"mirrorOf": "{direction} (espelho de {source})",
 		"failed": "Falhou: toque para ver detalhes",
 		"adding": "Adicionando… {done}/{total}",
@@ -2246,6 +2248,7 @@
 			"noStandingMove": "Não foi encontrada uma animação completa da pose em pé. Importe vistas da pose em pé ou configure o personagem com uma referência dessa pose de um único quadro antes de criar um item. Nenhuma geração foi solicitada.",
 			"skeletonUnavailable": "Poses com esqueleto não estão disponíveis para este item neste personagem. Escolha Automático.",
 			"repairGridBounds": "Esta grade de reparo precisa caber nos limites de área de desenho de 32–512 px do PixelLab. Escolha uma animação mais curta.",
+			"automaticRepairUnavailable": "O reparo automático do equipamento não está disponível. {reason} As imagens existentes foram mantidas e precisam de revisão manual.",
 			"redrawTooLarge": "Esta direção é grande demais para ser redesenhada em uma única solicitação. Escolha Reparar item.",
 			"repairGridCapacity": "O quadro do item e sua referência não cabem em uma única grade de reparo.",
 			"referenceTooLarge": "Escolha uma referência que caiba no quadro de {width} × {height} px deste item.",

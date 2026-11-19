@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { generationStatus } from '../../src/studio/generationStatus.ts';
+import { generationLogMessage, generationStatus } from '../../src/studio/generationStatus.ts';
 import type { Gen } from '../../src/studio/state.svelte.ts';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import { message, type Message } from '../../src/lib/message.ts';
@@ -82,6 +82,22 @@ test('local checks and terminal states never promise zero seconds', () => {
 	);
 	expect(status([], 0, { ...generation(), phase: 'failed', canceled: true }).text).toEqual(
 		m('canceled')
+	);
+});
+
+test('persisted automatic repair blocks localize both the failure and the plan reason', () => {
+	const raw =
+		'error: Automatic equipment repair is unavailable: Needs PixelLab Tier 1 or higher. No request sent.. Existing artwork was kept; manual review is needed.';
+	const render = (value: Message | string) => {
+		expect(value).toEqual(
+			message('itemRoute.errors.automaticRepairUnavailable', {
+				reason: message('activity.planWait.tier', { tier: 1 })
+			})
+		);
+		return 'translated repair block';
+	};
+	expect(generationLogMessage(generation(), [], raw, { ...formatters, render })).toBe(
+		'translated repair block'
 	);
 });
 

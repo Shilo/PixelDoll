@@ -19,7 +19,7 @@ import type { StoredProject } from './project.ts';
 import { unzip, type ZipEntry } from './zip.ts';
 import * as db from './db.ts';
 import type { WhisperKey, WhisperVars } from 'svelte-whisper';
-import { LocalizedError, message, type Message } from '../message.ts';
+import { LocalizedError, errorMessage, errorText, message, type Message } from '../message.ts';
 
 export interface CharacterImportState {
 	id: string;
@@ -406,7 +406,7 @@ async function pixelLab(
 				owners = new Map<string, Set<string>>();
 			const parsed = meta.states.map((state) => {
 				const moves: { name: string; dirs: Record<string, string[]> }[] = [];
-				let error: string | undefined;
+				let error: Error | undefined;
 				const own = (prefix: string) => {
 					const ids = owners.get(prefix) ?? new Set<string>();
 					ids.add(state.character.id);
@@ -474,7 +474,7 @@ async function pixelLab(
 						}
 					}
 				} catch (failure) {
-					error = (failure as Error).message;
+					error = failure instanceof Error ? failure : new Error(errorText(failure));
 				} // An unreadable sibling can still be excluded while retaining the valid state.
 				return { state, moves, error };
 			});
@@ -501,7 +501,11 @@ async function pixelLab(
 					continue;
 				}
 				const owner = parsed.find((entry) => ids.has(entry.state.character.id))!;
-				owner.error ??= `The “${owner.state.character.name}” state contains an animation file missing from its metadata: ${path}.`;
+				owner.error ??= new LocalizedError(
+					`The “${owner.state.character.name}” state contains an animation file missing from its metadata: ${path}.`,
+					'import.error.undeclaredAnimation',
+					{ state: owner.state.character.name, path }
+				);
 			}
 			states = parsed.map(({ state, moves, error }) => ({
 				id: state.character.id,
@@ -523,7 +527,7 @@ async function pixelLab(
 				throw new LocalizedError(
 					`${(failure as Error).message} Choose another standing pose or export its ZIP again.`,
 					'import.error.stateInfo',
-					{ detail: (failure as Error).message }
+					{ detail: errorMessage(failure) }
 				);
 			}
 			const groupName = meta.name ?? meta.character?.name;
@@ -579,9 +583,9 @@ async function pixelLab(
 				const entry = parsed.find((entry) => entry.state === state)!;
 				if (entry.error)
 					throw new LocalizedError(
-						`${entry.error} Uncheck that state’s moves to continue, or export its ZIP again.`,
+						`${entry.error.message} Uncheck that state’s moves to continue, or export its ZIP again.`,
 						'import.error.fixState',
-						{ detail: entry.error }
+						{ detail: errorMessage(entry.error) }
 					);
 				if (sibling && !entry.moves.length) continue;
 				if (sibling) {
@@ -591,7 +595,7 @@ async function pixelLab(
 						throw new LocalizedError(
 							`Moves from “${character.name}” have invalid size or camera metadata: ${(failure as Error).message} Uncheck that state’s moves to continue.`,
 							'import.error.stateMetadata',
-							{ state: character.name, detail: (failure as Error).message }
+							{ state: character.name, detail: errorMessage(failure) }
 						);
 					}
 				}

@@ -56,7 +56,7 @@ import { insertSlotInLadder } from '../lib/items/slots.ts';
 import { app } from '../lib/app.svelte.ts';
 import { localizedPlanRestriction, requestTier, tierDecision } from '../lib/pixellab/plans.ts';
 import type { NewItemInput } from './itemRoute.ts';
-import type { Method } from '../lib/items/items.ts';
+import { localizedAutomaticRepairError, type Method } from '../lib/items/items.ts';
 import type { Key } from '../lib/image/chroma.ts';
 import type {
 	BodyPaletteRepairPlan,
@@ -2611,7 +2611,7 @@ function restoredFlowError(record: FlowDraft<{ activityScope?: string }>, fallba
 	if (raw === STOPPED) return new LocalizedError(raw, 'generation.outcome.stopped');
 	if (raw === SETUP_STOPPED) return new LocalizedError(raw, 'generation.outcome.setupStopped');
 	if (raw === REPAIR_REVIEW_RECOVERY) return new LocalizedError(raw, 'repairReview.recover');
-	const restriction = localizedPlanRestriction(raw);
+	const restriction = localizedPlanRestriction(raw) ?? localizedAutomaticRepairError(raw);
 	if (restriction) return restriction;
 	const resume =
 		'. Generation stopped without resending. Review this request in Activity before starting again.';

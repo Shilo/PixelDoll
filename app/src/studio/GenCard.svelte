@@ -21,7 +21,7 @@
 	import { plainReasonMessage } from './model.ts';
 	import { displayMove } from './displayMove.ts';
 	import { slotLabelMessage } from './slots.ts';
-	import { displayMessage } from '../lib/i18n.ts';
+	import { displayMessage, displayNestedMessage } from '../lib/i18n.ts';
 	import {
 		generationCallOutcome,
 		generationErrorMessage,
@@ -46,7 +46,7 @@
 	import { formatNumber, t } from 'svelte-whisper';
 
 	let { g }: { g: Gen } = $props();
-	const outcomeFormatters = { render: displayMessage, formatNumber };
+	const outcomeFormatters = { render: displayNestedMessage, formatNumber };
 	const spent = $derived(gensOf(g.draft, $queue.jobs));
 	const spentUsd = $derived(usdOf(g.draft, $queue.jobs));
 	const spentUnknown = $derived(unknownCostsOf(g.draft, $queue.jobs));

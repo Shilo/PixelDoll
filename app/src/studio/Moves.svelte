@@ -71,7 +71,7 @@
 												direction: displayDirectionInSentence(dirs[0].id)
 											})
 										: t('moves.oneDirection')
-									: t('moves.directions', { count: nDirs })}</span
+									: t('export.count.directions', { count: nDirs })}</span
 							></span
 						>
 					</button>

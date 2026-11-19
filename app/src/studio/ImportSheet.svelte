@@ -523,7 +523,7 @@
 											directions: t('export.count.directions', {
 												count: ch.directions
 											}),
-											moves: t('import.count.moves', { count: ch.animation_count })
+											moves: t('export.count.moves', { count: ch.animation_count })
 										})}</span
 									></span
 								>
@@ -620,7 +620,7 @@
 			{:else}<p class="muted">
 					{t('import.previewSummary', {
 						directions: t('export.count.directions', { count: directions.length }),
-						moves: t('import.count.moves', {
+						moves: t('export.count.moves', {
 							count: prepared.project.manifest.rig.animations.length
 						}),
 						items: t('import.count.separateItems', {

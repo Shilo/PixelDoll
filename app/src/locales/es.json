@@ -648,6 +648,9 @@
 		"customizationPanels": "Paneles de personalización"
 	},
 	"worldStage": {
+		"groundUnavailable": "No se puede renderizar el suelo en tiempo real. Se muestra la escena estática.",
+		"materialUnavailable": "El material del suelo no está disponible. Se muestra la escena estática.",
+		"sceneUnavailable": "La escena en vivo no está disponible. Recarga la página para volver a intentarlo.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Vista previa del personaje. WASD o flechas cambian la orientación. Las teclas 1, 2 y 3 cambian de vista.",
 		"sideScrollerTestWorldADLeft": "Mundo de prueba de desplazamiento lateral. A/D, flechas izquierda/derecha o arrastre horizontal para moverte. Las teclas 1, 2 y 3 cambian de vista.",
 		"characterTestWorldWASDArrowsOrDrag": "Mundo de prueba del personaje. WASD, flechas o arrastre para moverte. Las teclas 1, 2 y 3 cambian de vista.",
@@ -1026,7 +1029,6 @@
 		"untitledCharacter": "Personaje sin título",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"moves": { "one": "{count} animación", "other": "{count} animaciones" },
 			"separateItems": {
 				"one": "{count} objeto separado",
 				"other": "{count} objetos separados"
@@ -1100,6 +1102,7 @@
 			"stateList": "La exportación de PixelLab tiene una lista de estados de personaje no válida.",
 			"stateIds": "La exportación de PixelLab tiene ID de estado de personaje duplicados.",
 			"stateFrames": "El estado “{state}” tiene un diseño de fotogramas no válido.",
+			"undeclaredAnimation": "El estado «{state}» contiene un archivo de animación que no figura en sus metadatos: {path}.",
 			"stateAnimations": "El estado “{state}” tiene una lista de animaciones no válida.",
 			"moveDirections": "La animación {move} no tiene direcciones de animación.",
 			"moveDirection": "La animación {move}/{direction} tiene una dirección no compatible.",
@@ -1765,7 +1768,6 @@
 		"frames": { "one": "{count} fotograma", "other": "{count} fotogramas" },
 		"onlyDirection": "Solo {direction}",
 		"oneDirection": "solo una",
-		"directions": "{count} direcciones",
 		"mirrorOf": "{direction} (reflejo de {source})",
 		"failed": "Falló: toca para ver detalles",
 		"adding": "Agregando… {done}/{total}",
@@ -2235,6 +2237,7 @@
 			"noStandingMove": "No se encontró una animación completa para la pose de pie. Importa vistas de esa pose o configura el personaje con una referencia de un solo fotograma antes de crear un objeto. No se solicitó ninguna generación.",
 			"skeletonUnavailable": "La pose con esqueleto no está disponible para este objeto en este personaje. Elige Automático.",
 			"repairGridBounds": "Esta cuadrícula de reparación debe caber en los límites de lienzo de 32–512 px de PixelLab. Elige una animación más corta.",
+			"automaticRepairUnavailable": "La reparación automática del equipamiento no está disponible. {reason} Se conservaron los gráficos existentes y hace falta una revisión manual.",
 			"redrawTooLarge": "Esta dirección es demasiado grande para redibujarla en una sola solicitud. Elige Reparar objeto.",
 			"repairGridCapacity": "El fotograma del objeto y su referencia no caben en una sola cuadrícula de reparación.",
 			"referenceTooLarge": "Elige una referencia que quepa en el fotograma de {width} × {height} px de este objeto.",

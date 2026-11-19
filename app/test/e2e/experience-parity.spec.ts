@@ -806,7 +806,9 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await legs.selectOption('none');
 	await page.keyboard.press('Escape');
 	await move.selectOption('cross-punch');
-	await expect(page.locator('.world-notes')).not.toContainText('Test only');
+	await expect(
+		page.locator('.world-notes, .preview-note').filter({ hasText: 'Test only' })
+	).toHaveCount(0);
 	await expect(page.getByRole('combobox', { name: 'Mount preview', exact: true })).toHaveCount(0);
 	await expect(
 		page.getByRole('button', { name: 'Reveal covered parts (diagnostic)', exact: true })
@@ -3574,8 +3576,18 @@ test.describe('Preview facing lineup', () => {
 			s.doc.rev++;
 		});
 		await expect(world(page)).toHaveAttribute('data-facing', 'south');
-		await expect(page.locator('.world-coverage')).toContainText('missing Walk / North frames');
-		await expect(page.locator('.world-coverage')).toContainText('missing Walk / East frames');
+		const note = page.locator('.world-coverage');
+		await expect(note).toContainText('missing Walk / North frames');
+		await expect(note).toContainText('missing Walk / East frames');
+		await expect
+			.poll(async () => {
+				const notice = await note.boundingBox();
+				const playback = await page
+					.getByRole('toolbar', { name: 'Preview controls' })
+					.boundingBox();
+				return notice !== null && playback !== null && notice.y >= playback.y + playback.height;
+			})
+			.toBe(true);
 		await page.evaluate(async () => {
 			const path = '/src/studio/state.svelte.ts',
 				s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');

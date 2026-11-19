@@ -639,6 +639,9 @@
 		"customizationPanels": "Customization panels"
 	},
 	"worldStage": {
+		"groundUnavailable": "Continuous ground rendering unavailable. Showing the static scene.",
+		"materialUnavailable": "Ground material unavailable. Showing the static scene.",
+		"sceneUnavailable": "Live scene unavailable. Reload to try again.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Character preview. WASD or arrows change facing. Keys 1, 2, 3 switch views.",
 		"sideScrollerTestWorldADLeft": "Side-scroller test world. A/D, left/right arrows or horizontal drag to move. Keys 1, 2, 3 switch views.",
 		"characterTestWorldWASDArrowsOrDrag": "Character test world. WASD, arrows or drag to move. Keys 1, 2, 3 switch views.",
@@ -1017,7 +1020,6 @@
 		"untitledCharacter": "Untitled character",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"moves": { "one": "{count} move", "other": "{count} moves" },
 			"separateItems": {
 				"one": "{count} separate item",
 				"other": "{count} separate items"
@@ -1091,6 +1093,7 @@
 			"stateList": "The PixelLab export has an invalid character state list.",
 			"stateIds": "The PixelLab export has duplicate character state IDs.",
 			"stateFrames": "The “{state}” state has an invalid frame layout.",
+			"undeclaredAnimation": "The “{state}” state contains an animation file missing from its metadata: {path}.",
 			"stateAnimations": "The “{state}” state has an invalid animation list.",
 			"moveDirections": "The {move} move has no animation directions.",
 			"moveDirection": "The {move}/{direction} animation has an unsupported direction.",
@@ -1750,7 +1753,6 @@
 		"frames": { "one": "{count} frame", "other": "{count} frames" },
 		"onlyDirection": "{direction} only",
 		"oneDirection": "one only",
-		"directions": "{count} directions",
 		"mirrorOf": "{direction} (mirror of {source})",
 		"failed": "Failed: tap for details",
 		"adding": "Adding… {done}/{total}",
@@ -2217,6 +2219,7 @@
 			"noStandingMove": "No complete standing move was found. Import standing views or set up the character with a one-frame standing reference before making an item. No generations were requested.",
 			"skeletonUnavailable": "Skeleton posing is not available for this item on this character. Choose Automatic.",
 			"repairGridBounds": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+			"automaticRepairUnavailable": "Automatic equipment repair is unavailable. {reason} Existing artwork was kept; manual review is needed.",
 			"redrawTooLarge": "This facing is too large to redraw in one request. Choose Repair item.",
 			"repairGridCapacity": "The item frame and its reference cannot fit in one repair grid.",
 			"referenceTooLarge": "Choose a reference that fits this item’s {width} × {height} px frame.",

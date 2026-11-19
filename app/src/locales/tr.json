@@ -645,6 +645,9 @@
 		"customizationPanels": "Özelleştirme panelleri"
 	},
 	"worldStage": {
+		"groundUnavailable": "Zemin gerçek zamanlı olarak çizilemiyor. Sabit sahne gösteriliyor.",
+		"materialUnavailable": "Zemin malzemesi kullanılamıyor. Sabit sahne gösteriliyor.",
+		"sceneUnavailable": "Canlı sahne kullanılamıyor. Tekrar denemek için sayfayı yenileyin.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Karakter önizlemesi. Yönü WASD veya ok tuşlarıyla değiştirin. Görünümü değiştirmek için 1, 2, 3 tuşlarını kullanın.",
 		"sideScrollerTestWorldADLeft": "Yandan kaydırmalı test dünyası. Hareket etmek için A/D veya sol/sağ ok tuşlarını kullanın ya da yatay sürükleyin. Görünümü değiştirmek için 1, 2, 3 tuşlarını kullanın.",
 		"characterTestWorldWASDArrowsOrDrag": "Karakter test dünyası. Hareket etmek için WASD veya ok tuşlarını kullanın ya da sürükleyin. Görünümü değiştirmek için 1, 2, 3 tuşlarını kullanın.",
@@ -1020,7 +1023,6 @@
 		"untitledCharacter": "Adsız karakter",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"moves": { "one": "{count} animasyon", "other": "{count} animasyon" },
 			"separateItems": {
 				"one": "{count} ayrı eşya",
 				"other": "{count} ayrı eşya"
@@ -1094,6 +1096,7 @@
 			"stateList": "PixelLab dışa aktarımındaki karakter durumları listesi geçersiz.",
 			"stateIds": "PixelLab dışa aktarımında yinelenen karakter durumu kimlikleri var.",
 			"stateFrames": "“{state}” durumunun kare düzeni geçersiz.",
+			"undeclaredAnimation": "“{state}” durumu, üst verilerinde bulunmayan bir animasyon dosyası içeriyor: {path}.",
 			"stateAnimations": "“{state}” durumunun animasyon listesi geçersiz.",
 			"moveDirections": "{move} animasyonunda hiçbir yön yok.",
 			"moveDirection": "{move}/{direction} animasyonu desteklenmeyen bir yön içeriyor.",
@@ -1759,7 +1762,6 @@
 		"frames": { "one": "{count} kare", "other": "{count} kare" },
 		"onlyDirection": "Yalnızca {direction}",
 		"oneDirection": "Yalnızca bir yön",
-		"directions": "{count} yön",
 		"mirrorOf": "{direction} ({source} yönünün aynası)",
 		"failed": "Başarısız: Ayrıntılar için dokunun",
 		"adding": "Ekleniyor… {done}/{total}",
@@ -2226,6 +2228,7 @@
 			"noStandingMove": "Eksiksiz bir ayakta duruş animasyonu bulunamadı. Eşya üretmeden önce ayakta duruş görünümlerini içe aktarın veya karakteri tek karelik ayakta duruş referansıyla hazırlayın. Üretim isteği gönderilmedi.",
 			"skeletonUnavailable": "Bu karakterde bu eşya için iskeletle pozlama kullanılamıyor. Otomatik seçeneğini seçin.",
 			"repairGridBounds": "Bu onarım ızgarası PixelLab'ın 32–512 px tuval sınırlarına sığmalı. Daha kısa bir animasyon seçin.",
+			"automaticRepairUnavailable": "Otomatik ekipman onarımı kullanılamıyor. {reason} Mevcut görseller korundu. Elle inceleme gerekiyor.",
 			"redrawTooLarge": "Bu yön tek bir istekte yeniden çizilemeyecek kadar büyük. Eşyayı onarın seçeneğini seçin.",
 			"repairGridCapacity": "Eşya karesi ve referansı tek bir onarım ızgarasına sığmıyor.",
 			"referenceTooLarge": "Bu eşyanın {width} × {height} px karesine sığan bir referans seçin.",

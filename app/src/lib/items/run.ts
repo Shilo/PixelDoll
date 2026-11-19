@@ -83,6 +83,8 @@ import {
 	bandMask,
 	cutGrid,
 	g2Fails,
+	automaticRepairError,
+	localizedAutomaticRepairError,
 	grayShare,
 	smudgedViews,
 	sharedDesignColors,
@@ -572,10 +574,7 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 		// B14: the clip-direction as one inpaint-v3 grid, the dress call's keyframes as reference cells
 		req = await gridReq(ctx, d.spec, c.cells, await dressedRefs(d), c.seed);
 		const blocked = queue.planBlocks(req, 1);
-		if (blocked)
-			throw new Error(
-				`Automatic equipment repair is unavailable: ${blocked}. Existing artwork was kept; manual review is needed.`
-			);
+		if (blocked) throw automaticRepairError(blocked);
 	} else if (c.kind === 'pose') {
 		// the direction's dressed keyframe (from the dress call) posed through the base clip's STORED keypoints
 		if (route === 'none') throw new Error('posing needs a chroma key');
@@ -1639,10 +1638,11 @@ export async function animateAnchoredItem(
 	const result = options.savedOnly
 		? await evaluateItem(draft, ctx, standingPalettes)
 		: await runItem(draft, ctx, { standingPalettes });
-	if (!result?.qa || hasStructuralFailure(result) || incompleteCoverage(draft, rig, result))
-		throw new Error(
-			draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.'
-		);
+	if (!result?.qa || hasStructuralFailure(result) || incompleteCoverage(draft, rig, result)) {
+		const detail =
+			draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.';
+		throw localizedAutomaticRepairError(detail) ?? new Error(detail);
+	}
 	let materials = ctx.rec.manifest.materials.filter(
 		(m) => m.owner === item.id && item.materials.includes(m.id)
 	);

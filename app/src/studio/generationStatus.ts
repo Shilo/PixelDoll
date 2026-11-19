@@ -1,5 +1,5 @@
 import { queueErrorParts, type JobRec, type RecState } from '../lib/pixellab/queue.ts';
-import { itemGenerationMinutes } from '../lib/items/items.ts';
+import { itemGenerationMinutes, localizedAutomaticRepairError } from '../lib/items/items.ts';
 import type { Gen } from './state.svelte.ts';
 import { message, type Message } from '../lib/message.ts';
 
@@ -51,6 +51,8 @@ export function generationLogMessage(
 		case 'Issues detected. Review the item and choose Try again or Accept as is. No automatic retry was made.':
 			return message('generation.outcome.reviewIssues');
 	}
+	const repairError = localizedAutomaticRepairError(raw);
+	if (repairError) return render(repairError.translation);
 	const outcome = generationCallOutcome(g, jobs, raw);
 	if (!outcome) return raw;
 	const { record, index } = outcome;

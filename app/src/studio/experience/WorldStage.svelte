@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from 'svelte-whisper';
+	import { t, type WhisperKey } from 'svelte-whisper';
 	import { onMount, untrack } from 'svelte';
 	import { ui, doc, view, toast, stepPreviewFrame } from '../state.svelte.ts';
 	import { experience, characters, setMode, sharedZoom } from './state.svelte.ts';
@@ -70,18 +70,19 @@
 	} from './movement.ts';
 	let {
 		missing = $bindable(null),
+		note = $bindable(''),
 		playbackHeight = 0
 	}: {
 		missing: { clip: string; direction: DirectionName; items: Item[] } | null;
+		note?: string;
 		playbackHeight?: number;
 	} = $props();
 	let host: HTMLDivElement,
 		canvas: HTMLCanvasElement,
 		floor: HTMLCanvasElement,
 		sky: HTMLCanvasElement;
-	let note = $state(''),
-		loadingNote = $state(''),
-		rendererWarning = $state('');
+	let loadingNote = $state(''),
+		rendererWarning = $state<WhisperKey | null>(null);
 	let pad: Joystick | null = null,
 		padSize = $state.raw<JoystickSize>(MOTION.joystick.regular),
 		stick = $state.raw(IDLE);
@@ -275,18 +276,18 @@
 	// The top-down and side-scroller renderer stays out of the startup bundle until a live view first opens.
 	let scene: typeof import('./ground.ts') | undefined,
 		sceneLoad: Promise<void> | undefined,
-		sceneError = '';
+		sceneError: WhisperKey | null = null;
 	$effect(() => {
 		if (experience.mode !== 'preview')
 			sceneLoad ??= import('./ground.ts').then(
 				(m) => {
 					scene = m;
-					sceneError = '';
+					sceneError = null;
 				},
 				(error) => {
 					console.error(error);
 					sceneLoad = undefined;
-					sceneError = 'Test world unavailable — reload to try again.';
+					sceneError = 'worldStage.sceneUnavailable';
 				}
 			);
 	});
@@ -911,7 +912,7 @@
 				ground.render(options);
 			}
 			// Floor warnings only concern the live views; Preview never draws the floor.
-			rendererWarning = live ? (ground?.warning ?? sceneError) : '';
+			rendererWarning = live ? (ground?.warning ?? sceneError) : null;
 			experience.mountLegIssue = '';
 			delete host.dataset.mountLegIssue;
 			if (a) {
@@ -1267,7 +1268,7 @@
 </div>
 <!-- One bottom-anchored stack: the movement hint always sits above the fallback note, whatever the note wraps to.
      In Preview it also clears the playback bar, whose top is --playback-top. -->
-{#if mountIssue || hint || note || loadingNote || rendererWarning}<div
+{#if mountIssue || hint || (experience.mode !== 'preview' && note) || loadingNote || rendererWarning}<div
 		class="world-notes"
 		style:bottom={experience.mode === 'preview' && playbackHeight
 			? 'max(calc(var(--stage-bottom) + 16px), calc(100% - var(--playback-top) + 8px))'
@@ -1282,8 +1283,10 @@
 						: t('worldStage.focusWorldWASDOrArrowKeysTo')}
 			</p>{/if}{#if loadingNote}<p class="world-coverage world-loading-items" role="status">
 				<LoaderCircle size={14} class="spin" aria-hidden="true" />{loadingNote}
-			</p>{/if}{#if note || rendererWarning}<p class="world-coverage">
-				{[rendererWarning, note].filter(Boolean).join(' · ')}
+			</p>{/if}{#if experience.mode !== 'preview' && (note || rendererWarning)}<p
+				class="world-coverage"
+			>
+				{[rendererWarning ? t(rendererWarning) : '', note].filter(Boolean).join(' · ')}
 			</p>{/if}
 	</div>{/if}
 <JoystickView

@@ -648,6 +648,9 @@
 		"customizationPanels": "Bereiche zum Anpassen"
 	},
 	"worldStage": {
+		"groundUnavailable": "Die fortlaufende Bodendarstellung ist nicht verfügbar. Die statische Szene wird angezeigt.",
+		"materialUnavailable": "Das Bodenmaterial ist nicht verfügbar. Die statische Szene wird angezeigt.",
+		"sceneUnavailable": "Die Live-Szene ist nicht verfügbar. Lade die Seite neu.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Figurenvorschau. Ändere die Blickrichtung mit WASD oder den Pfeiltasten. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
 		"sideScrollerTestWorldADLeft": "Testwelt in Seitenansicht. Bewege dich mit A/D, den Pfeiltasten links/rechts oder durch waagerechtes Ziehen. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
 		"characterTestWorldWASDArrowsOrDrag": "Figuren-Testwelt. Bewege dich mit WASD, den Pfeiltasten oder durch Ziehen. Die Tasten 1, 2 und 3 wechseln die Ansicht.",
@@ -1026,7 +1029,6 @@
 		"untitledCharacter": "Unbenannte Figur",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"moves": { "one": "{count} Animation", "other": "{count} Animationen" },
 			"separateItems": {
 				"one": "{count} separater Gegenstand",
 				"other": "{count} separate Gegenstände"
@@ -1100,6 +1102,7 @@
 			"stateList": "Der PixelLab-Export enthält eine ungültige Liste von Figurenzuständen.",
 			"stateIds": "Der PixelLab-Export enthält doppelte IDs für Figurenzustände.",
 			"stateFrames": "Der Zustand „{state}“ hat ein ungültiges Frame-Layout.",
+			"undeclaredAnimation": "Der Zustand „{state}“ enthält eine Animationsdatei, die in seinen Metadaten fehlt: {path}.",
 			"stateAnimations": "Der Zustand „{state}“ enthält eine ungültige Animationsliste.",
 			"moveDirections": "Die Animation {move} hat keine Blickrichtungen.",
 			"moveDirection": "Die Animation {move}/{direction} hat eine nicht unterstützte Blickrichtung.",
@@ -1765,7 +1768,6 @@
 		"frames": { "one": "{count} Frame", "other": "{count} Frames" },
 		"onlyDirection": "Nur {direction}",
 		"oneDirection": "Nur eine Blickrichtung",
-		"directions": "{count} Blickrichtungen",
 		"mirrorOf": "{direction} (gespiegelt aus {source})",
 		"failed": "Fehlgeschlagen: Tippe für Details",
 		"adding": "Wird hinzugefügt… {done}/{total}",
@@ -2232,6 +2234,7 @@
 			"noStandingMove": "Es wurde keine vollständige Standanimation gefunden. Importiere Standansichten oder richte die Figur mit einem einzelnen Standframe als Referenz ein, bevor du einen Gegenstand erstellst. Es wurden keine Generierungen angefordert.",
 			"skeletonUnavailable": "Posen per Skelett sind für diesen Gegenstand auf dieser Figur nicht verfügbar. Wähle „Automatisch“.",
 			"repairGridBounds": "Dieses Reparaturraster muss in die Zeichenflächengrenzen von 32–512 px von PixelLab passen. Wähle eine kürzere Animation.",
+			"automaticRepairUnavailable": "Die automatische Reparatur der Ausrüstung ist nicht verfügbar. {reason} Die vorhandenen Grafiken wurden beibehalten und müssen manuell geprüft werden.",
 			"redrawTooLarge": "Diese Blickrichtung ist zu groß, um sie in einer Anfrage neu zu zeichnen. Wähle Gegenstand reparieren.",
 			"repairGridCapacity": "Der Gegenstands-Frame und seine Referenz passen nicht in ein Reparaturraster.",
 			"referenceTooLarge": "Wähle eine Referenz, die in den {width} × {height} px großen Frame dieses Gegenstands passt.",

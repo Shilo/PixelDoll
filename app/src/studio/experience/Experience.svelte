@@ -61,6 +61,7 @@
 	let missing = $state.raw<{ clip: string; direction: DirectionName; items: Item[] } | null>(null);
 	let coveragePopover = $state<HTMLElement>();
 	let playbackHeight = $state(0);
+	let stageNote = $state('');
 	let selectionCaptionHeight = $state(0);
 	const previewHeight = $derived(experience.mode === 'preview' ? playbackHeight : 0);
 	let viewportWidth = $state(1280),
@@ -670,7 +671,7 @@
 		</aside>
 	{:else}
 		<div class="experience-stage">
-			<WorldStage playbackHeight={previewHeight} bind:missing />
+			<WorldStage playbackHeight={previewHeight} bind:missing bind:note={stageNote} />
 		</div>
 		{#if experience.zoomFits.studio && experience.sceneZoom !== null}
 			<div class="scene-zoom-controls">
@@ -678,12 +679,11 @@
 			</div>
 		{/if}
 		{#if experience.mode === 'preview' && m}
-			<div class="experience-playback">
+			<div class="experience-playback" bind:offsetHeight={playbackHeight}>
 				<div
 					class="playback-bar bu-floating"
 					role="toolbar"
 					aria-label={t('stage.previewControls')}
-					bind:offsetHeight={playbackHeight}
 				>
 					{#if canPlay}
 						<button
@@ -783,6 +783,7 @@
 						</div>
 					{/if}
 				</div>
+				{#if stageNote}<p class="world-coverage preview-note">{stageNote}</p>{/if}
 			</div>
 		{/if}
 		<aside class="equipment-rail" aria-label={t('experience.customization')}>

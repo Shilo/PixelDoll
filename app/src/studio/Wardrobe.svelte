@@ -85,7 +85,7 @@
 		Shuffle
 	} from './icons.ts';
 
-	const outcomeFormatters = { render: displayMessage, formatNumber };
+	const outcomeFormatters = { render: displayNestedMessage, formatNumber };
 	const m = $derived(store.project?.manifest);
 	const formatList = (parts: string[]) =>
 		new Intl.ListFormat(getLocale(), { type: 'unit' }).format(parts);

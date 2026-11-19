@@ -626,6 +626,9 @@
 		"customizationPanels": "꾸미기 패널"
 	},
 	"worldStage": {
+		"groundUnavailable": "바닥을 실시간으로 렌더링할 수 없어 정적 장면을 표시합니다.",
+		"materialUnavailable": "바닥 재질을 불러올 수 없어 정적 장면을 표시합니다.",
+		"sceneUnavailable": "라이브 장면을 표시할 수 없습니다. 새로고침하여 다시 시도하세요.",
 		"characterPreviewWASDOrArrowsChangeFacing": "캐릭터 미리보기. WASD 또는 방향키로 방향을 바꾸고, 숫자 1, 2, 3으로 뷰를 전환해요.",
 		"sideScrollerTestWorldADLeft": "사이드 스크롤러 테스트 월드. A/D, 좌우 방향키 또는 가로 드래그로 이동하고, 숫자 1, 2, 3으로 뷰를 전환해요.",
 		"characterTestWorldWASDArrowsOrDrag": "캐릭터 테스트 월드. WASD, 방향키 또는 드래그로 이동하고, 숫자 1, 2, 3으로 뷰를 전환해요.",
@@ -986,7 +989,6 @@
 		"untitledCharacter": "제목 없는 캐릭터",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"moves": { "other": "동작 {count}개" },
 			"separateItems": { "other": "별도 아이템 {count}개" }
 		},
 		"previousCharacterPage": "이전 캐릭터 페이지",
@@ -1057,6 +1059,7 @@
 			"stateList": "PixelLab 내보내기의 캐릭터 상태 목록이 잘못됐어요.",
 			"stateIds": "PixelLab 내보내기에 중복된 캐릭터 상태 ID가 있어요.",
 			"stateFrames": "“{state}” 상태의 프레임 레이아웃이 잘못됐어요.",
+			"undeclaredAnimation": "‘{state}’ 상태에 메타데이터에 없는 애니메이션 파일이 있습니다: {path}.",
 			"stateAnimations": "“{state}” 상태의 애니메이션 목록이 잘못됐어요.",
 			"moveDirections": "{move} 동작에 애니메이션 방향이 없어요.",
 			"moveDirection": "{move}/{direction} 애니메이션의 방향이 지원되지 않아요.",
@@ -1677,7 +1680,6 @@
 		"frames": { "other": "프레임 {count}개" },
 		"onlyDirection": "{direction} 방향만",
 		"oneDirection": "하나만",
-		"directions": "방향 {count}개",
 		"mirrorOf": "{direction}({source} 대칭)",
 		"failed": "실패: 탭해 세부 정보 보기",
 		"adding": "추가 중… {done}/{total}",
@@ -2134,6 +2136,7 @@
 			"noStandingMove": "완전한 서 있는 동작을 찾지 못했어요. 서 있는 뷰를 가져오거나, 한 프레임 서 있는 참조로 캐릭터를 설정한 뒤 아이템을 만드세요. 생성은 요청되지 않았어요.",
 			"skeletonUnavailable": "이 캐릭터의 이 아이템에는 스켈레톤 포즈를 사용할 수 없어요. 자동을 선택하세요.",
 			"repairGridBounds": "이 복구 그리드는 PixelLab의 32–512px 캔버스 범위에 맞아야 해요. 더 짧은 동작을 선택하세요.",
+			"automaticRepairUnavailable": "장비를 자동으로 복구할 수 없어요. {reason} 기존 이미지는 유지됐어요. 직접 검토해 주세요.",
 			"redrawTooLarge": "이 방향은 너무 커서 한 번의 요청으로 다시 그릴 수 없어요. 아이템 복구를 선택하세요.",
 			"repairGridCapacity": "아이템 프레임과 참조 이미지가 하나의 복구 그리드에 들어가지 않아요.",
 			"referenceTooLarge": "이 아이템의 {width} × {height}px 프레임에 들어가는 참조 이미지를 선택하세요.",

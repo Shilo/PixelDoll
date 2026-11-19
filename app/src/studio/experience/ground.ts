@@ -1,4 +1,5 @@
 import { MOTION, WORLDS, type WorldMode, type WorldTheme } from './config.ts';
+import type { WhisperKey } from 'svelte-whisper';
 import { zoomPoint, type SceneCamera } from './zoom.ts';
 
 export interface Point {
@@ -88,7 +89,7 @@ export class Ground {
 	private textures = new Map<string, WebGLTexture>();
 	private loading = new Set<string>();
 	private disposed = false;
-	private message: string | null = null;
+	private message: WhisperKey | null = null;
 	/** The options of the frame on screen. A WebGL canvas keeps showing its last frame until drawn again, so an unchanged
 	 * floor is not cleared and redrawn on every animation frame. */
 	private drawn = '';
@@ -100,13 +101,13 @@ export class Ground {
 	}
 
 	/** A static scene remains usable if continuous rendering is unavailable. */
-	get warning(): string | null {
+	get warning(): WhisperKey | null {
 		return this.message;
 	}
 
 	private contextLost = (event: Event) => {
 		event.preventDefault();
-		this.message = 'Continuous ground unavailable — showing the static scene.';
+		this.message = 'worldStage.groundUnavailable';
 	};
 	private contextRestored = () => {
 		this.release();
@@ -153,7 +154,7 @@ export class Ground {
 			this.message = null;
 		} catch {
 			this.release();
-			this.message = 'Continuous ground unavailable — showing the static scene.';
+			this.message = 'worldStage.groundUnavailable';
 		}
 	}
 
@@ -242,7 +243,7 @@ export class Ground {
 						const failed = this.textures.get(key);
 						if (failed) gl.deleteTexture(failed);
 						this.textures.delete(key);
-						this.message = 'Ground material unavailable — showing the static scene.';
+						this.message = 'worldStage.materialUnavailable';
 					});
 			}
 			return;

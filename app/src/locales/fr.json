@@ -642,6 +642,9 @@
 		"customizationPanels": "Panneaux de personnalisation"
 	},
 	"worldStage": {
+		"groundUnavailable": "Le rendu du sol en temps réel est indisponible. La scène statique est affichée.",
+		"materialUnavailable": "Le matériau du sol est indisponible. La scène statique est affichée.",
+		"sceneUnavailable": "La scène en direct est indisponible. Rechargez la page pour réessayer.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Aperçu du personnage. WASD ou les flèches changent l’orientation. Les touches 1, 2, 3 changent de vue.",
 		"sideScrollerTestWorldADLeft": "Monde de test à défilement horizontal. A/D, les flèches gauche/droite ou un glissement horizontal pour se déplacer. Les touches 1, 2, 3 changent de vue.",
 		"characterTestWorldWASDArrowsOrDrag": "Monde de test du personnage. WASD, les flèches ou un glissement pour se déplacer. Les touches 1, 2, 3 changent de vue.",
@@ -1020,7 +1023,6 @@
 		"untitledCharacter": "Personnage sans titre",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"moves": { "one": "{count} animation", "other": "{count} animations" },
 			"separateItems": {
 				"one": "{count} objet séparé",
 				"other": "{count} objets séparés"
@@ -1094,6 +1096,7 @@
 			"stateList": "L’export PixelLab a une liste d’états de personnage invalide.",
 			"stateIds": "L’export PixelLab a des ID d’états de personnage en double.",
 			"stateFrames": "L’état « {state} » a une disposition d’images invalide.",
+			"undeclaredAnimation": "L’état « {state} » contient un fichier d’animation absent de ses métadonnées : {path}.",
 			"stateAnimations": "L’état « {state} » a une liste d’animations invalide.",
 			"moveDirections": "L’animation {move} n’a aucune direction.",
 			"moveDirection": "L’animation {move}/{direction} a une direction non prise en charge.",
@@ -1763,7 +1766,6 @@
 		"frames": { "one": "{count} image", "other": "{count} images" },
 		"onlyDirection": "{direction} uniquement",
 		"oneDirection": "une seule",
-		"directions": "{count} directions",
 		"mirrorOf": "{direction} (miroir de la vue {source})",
 		"failed": "Échec : touchez pour les détails",
 		"adding": "Ajout… {done}/{total}",
@@ -2233,6 +2235,7 @@
 			"noStandingMove": "Aucune animation debout complète n’a été trouvée. Importez des vues debout ou configurez le personnage avec une référence debout d’une image avant de créer un objet. Aucune génération n’a été demandée.",
 			"skeletonUnavailable": "La mise en pose par squelette n’est pas disponible pour cet objet sur ce personnage. Choisissez Automatique.",
 			"repairGridBounds": "Cette grille de réparation doit tenir dans les limites de zone de 32–512 px de PixelLab. Choisissez une animation plus courte.",
+			"automaticRepairUnavailable": "La réparation automatique de l’équipement n’est pas disponible. {reason} Les images existantes ont été conservées et doivent être vérifiées manuellement.",
 			"redrawTooLarge": "Cette direction est trop grande pour être redessinée en une seule demande. Choisissez Réparer l’objet.",
 			"repairGridCapacity": "L’image de l’objet et sa référence ne tiennent pas dans une seule grille de réparation.",
 			"referenceTooLarge": "Choisissez une référence qui tient dans l’image de {width} × {height} px de cet objet.",

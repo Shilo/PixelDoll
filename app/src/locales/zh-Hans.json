@@ -619,6 +619,9 @@
 		"customizationPanels": "自定义面板"
 	},
 	"worldStage": {
+		"groundUnavailable": "无法实时渲染地面，正在显示静态场景。",
+		"materialUnavailable": "无法加载地面材质，正在显示静态场景。",
+		"sceneUnavailable": "实时场景不可用，请重新加载页面后再试。",
 		"characterPreviewWASDOrArrowsChangeFacing": "角色预览。使用 WASD 或方向键更改朝向。按键 1、2、3 切换视图。",
 		"sideScrollerTestWorldADLeft": "横版测试世界。使用 A/D、左右方向键或水平拖动来移动。按键 1、2、3 切换视图。",
 		"characterTestWorldWASDArrowsOrDrag": "角色测试世界。使用 WASD、方向键或拖动来移动。按键 1、2、3 切换视图。",
@@ -975,7 +978,6 @@
 		"untitledCharacter": "未命名角色",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"moves": { "other": "{count} 个动作" },
 			"separateItems": { "other": "{count} 件独立装备" }
 		},
 		"previousCharacterPage": "上一页角色",
@@ -1046,6 +1048,7 @@
 			"stateList": "PixelLab 导出的角色状态列表无效。",
 			"stateIds": "PixelLab 导出包含重复的角色状态 ID。",
 			"stateFrames": "“{state}”状态的帧布局无效。",
+			"undeclaredAnimation": "“{state}”状态包含一个未在元数据中声明的动画文件：{path}。",
 			"stateAnimations": "“{state}”状态的动画列表无效。",
 			"moveDirections": "{move}动作没有动画朝向。",
 			"moveDirection": "{move}/{direction}动画包含不支持的朝向。",
@@ -1664,7 +1667,6 @@
 		"frames": { "other": "{count} 帧" },
 		"onlyDirection": "仅{direction}",
 		"oneDirection": "仅一个",
-		"directions": "{count} 个朝向",
 		"mirrorOf": "{direction}（{source}的镜像）",
 		"failed": "失败：轻点查看详情",
 		"adding": "正在添加… {done}/{total}",
@@ -2117,6 +2119,7 @@
 			"noStandingMove": "未找到完整的站立动作。制作装备前，请导入站立视图，或用单帧站立参考设置角色。未请求生成。",
 			"skeletonUnavailable": "此装备在此角色上无法使用骨架姿态。请选择“自动”。",
 			"repairGridBounds": "此修复网格必须符合 PixelLab 的 32–512 px 画布范围。请选择更短的动作。",
+			"automaticRepairUnavailable": "无法自动修复装备。{reason}已保留现有图像，请手动检查。",
 			"redrawTooLarge": "此朝向太大，无法在一次请求中重绘。请选择修复装备。",
 			"repairGridCapacity": "装备帧及其参考图无法放入同一个修复网格。",
 			"referenceTooLarge": "请选择能放入此装备 {width} × {height} px 帧的参考图。",

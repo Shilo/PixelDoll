@@ -2104,7 +2104,7 @@ test('playable zoom keeps the fallback actor on its environment camera when the 
 		.getByRole('group', { name: 'Character view', exact: true })
 		.getByRole('button', { name: 'Top-down', exact: true })
 		.click();
-	await expect(page.locator('.world-coverage')).toContainText('Test world unavailable');
+	await expect(page.locator('.world-coverage')).toContainText('Live scene unavailable');
 	await resetZoom(page, host);
 	const base = await actorBounds(page, 255);
 	await zoomStep(page, host, 'in');

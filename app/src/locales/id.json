@@ -532,7 +532,7 @@
 		"moveUp": "Geser ke atas",
 		"moveDown": "Geser ke bawah",
 		"hideSlot": "Sembunyikan slot",
-		"editSlot": "Edit slot…",
+		"editSlot": "Ubah slot…",
 		"makeACustomCopy": "Buat salinan khusus…",
 		"equipmentSlots": "Slot perlengkapan",
 		"notShownLengthSlots": "Tersembunyi, {length} slot",
@@ -621,6 +621,9 @@
 		"customizationPanels": "Panel penyesuaian"
 	},
 	"worldStage": {
+		"groundUnavailable": "Perenderan lantai secara langsung tidak tersedia. Adegan statis ditampilkan.",
+		"materialUnavailable": "Material lantai tidak tersedia. Adegan statis ditampilkan.",
+		"sceneUnavailable": "Adegan langsung tidak tersedia. Muat ulang untuk mencoba lagi.",
 		"characterPreviewWASDOrArrowsChangeFacing": "Pratinjau karakter. Ubah arah hadap dengan WASD atau tombol panah. Beralih tampilan dengan tombol 1, 2, 3.",
 		"sideScrollerTestWorldADLeft": "Dunia uji gulir samping. Bergerak dengan A/D, panah kiri/kanan, atau seret mendatar. Beralih tampilan dengan tombol 1, 2, 3.",
 		"characterTestWorldWASDArrowsOrDrag": "Dunia uji karakter. Bergerak dengan WASD, tombol panah, atau seret. Beralih tampilan dengan tombol 1, 2, 3.",
@@ -981,7 +984,6 @@
 		"untitledCharacter": "Karakter tanpa nama",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
-			"moves": { "other": "{count} animasi" },
 			"separateItems": { "other": "{count} item terpisah" }
 		},
 		"previousCharacterPage": "Halaman karakter sebelumnya",
@@ -1052,6 +1054,7 @@
 			"stateList": "Daftar varian karakter pada ekspor PixelLab tidak valid.",
 			"stateIds": "Ada ID varian karakter yang duplikat pada ekspor PixelLab.",
 			"stateFrames": "Tata letak frame varian “{state}” tidak valid.",
+			"undeclaredAnimation": "Varian “{state}” berisi berkas animasi yang tidak tercantum dalam metadatanya: {path}.",
 			"stateAnimations": "Daftar animasi varian “{state}” tidak valid.",
 			"moveDirections": "Animasi {move} tidak memiliki arah animasi.",
 			"moveDirection": "Arah animasi {move}/{direction} tidak didukung.",
@@ -1680,7 +1683,6 @@
 		"frames": { "other": "{count} frame" },
 		"onlyDirection": "Hanya {direction}",
 		"oneDirection": "hanya satu",
-		"directions": "{count} arah",
 		"mirrorOf": "{direction} (cerminan {source})",
 		"failed": "Gagal: ketuk untuk melihat detail",
 		"adding": "Menambahkan… {done}/{total}",
@@ -2137,6 +2139,7 @@
 			"noStandingMove": "Tidak ditemukan animasi pose berdiri yang lengkap. Impor tampilan berdiri atau siapkan karakter dengan referensi berdiri satu frame sebelum membuat item. Tidak ada generasi yang diminta.",
 			"skeletonUnavailable": "Pengaturan pose dengan kerangka tidak tersedia untuk item ini pada karakter ini. Pilih Otomatis.",
 			"repairGridBounds": "Kisi perbaikan ini harus muat dalam batas kanvas 32–512 px PixelLab. Pilih animasi yang lebih pendek.",
+			"automaticRepairUnavailable": "Perbaikan perlengkapan otomatis tidak tersedia. {reason} Gambar yang ada tetap disimpan dan perlu ditinjau secara manual.",
 			"redrawTooLarge": "Arah ini terlalu besar untuk digambar ulang dalam satu permintaan. Pilih Perbaiki item.",
 			"repairGridCapacity": "Frame item dan referensinya tidak muat dalam satu kisi perbaikan.",
 			"referenceTooLarge": "Pilih referensi yang muat dalam frame {width} × {height} px item ini.",

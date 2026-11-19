@@ -626,6 +626,9 @@
 		"customizationPanels": "カスタマイズパネル"
 	},
 	"worldStage": {
+		"groundUnavailable": "地面をリアルタイムで描画できないため、静止シーンを表示しています。",
+		"materialUnavailable": "地面のマテリアルを読み込めないため、静止シーンを表示しています。",
+		"sceneUnavailable": "ライブシーンを表示できません。ページを再読み込みしてください。",
 		"characterPreviewWASDOrArrowsChangeFacing": "キャラクターのプレビュー。WASDまたは矢印キーで向きを変えます。1、2、3キーでビューを切り替えます。",
 		"sideScrollerTestWorldADLeft": "横スクロールのテストワールド。A/D、左右の矢印キー、または横方向のドラッグで移動します。1、2、3キーでビューを切り替えます。",
 		"characterTestWorldWASDArrowsOrDrag": "キャラクターのテストワールド。WASD、矢印キー、またはドラッグで移動します。1、2、3キーでビューを切り替えます。",
@@ -986,7 +989,6 @@
 		"untitledCharacter": "無題のキャラクター",
 		"libraryCounts": "{directions}・{moves}",
 		"count": {
-			"moves": { "other": "{count}個のモーション" },
 			"separateItems": { "other": "素体とは別のアイテム{count}個" }
 		},
 		"previousCharacterPage": "キャラクター一覧の前のページ",
@@ -1057,6 +1059,7 @@
 			"stateList": "PixelLabのエクスポートのキャラクターステートのリストが無効です。",
 			"stateIds": "PixelLabのエクスポートでキャラクターステートのIDが重複しています。",
 			"stateFrames": "「{state}」ステートのフレームレイアウトが無効です。",
+			"undeclaredAnimation": "「{state}」の状態に、メタデータに記載されていないアニメーションファイルがあります：{path}。",
 			"stateAnimations": "「{state}」ステートのアニメーションリストが無効です。",
 			"moveDirections": "{move}モーションにアニメーションの向きがありません。",
 			"moveDirection": "{move}/{direction}のアニメーションの向きに対応していません。",
@@ -1687,7 +1690,6 @@
 		"frames": { "other": "{count}フレーム" },
 		"onlyDirection": "{direction}のみ",
 		"oneDirection": "1方向のみ",
-		"directions": "{count}方向",
 		"mirrorOf": "{direction}（{source}を反転）",
 		"failed": "失敗：タップして詳細を表示",
 		"adding": "追加中… {done}/{total}",
@@ -2146,6 +2148,7 @@
 			"noStandingMove": "必要な向きが揃った立ちポーズのモーションが見つかりません。アイテムを作る前に、立ちポーズの画像をインポートするか、立ちポーズの参照画像1フレームを使ってキャラクターをセットアップしてください。生成リクエストは送信していません。",
 			"skeletonUnavailable": "このキャラクターのこのアイテムでは、スケルトンによるポーズ付けを利用できません。「自動」を選んでください。",
 			"repairGridBounds": "この修復グリッドはPixelLabの32～512 pxのキャンバス範囲に収める必要があります。もっと短いモーションを選んでください。",
+			"automaticRepairUnavailable": "装備を自動修復できません。{reason}既存の画像は保持されています。手動で確認してください。",
 			"redrawTooLarge": "この向きは大きすぎて1回のリクエストで描き直せません。［アイテムを修復］を選んでください。",
 			"repairGridCapacity": "アイテムのフレームと参照画像を1つの修復グリッドに収められません。",
 			"referenceTooLarge": "このアイテムの{width} × {height} pxのフレームに収まる参照画像を選んでください。",

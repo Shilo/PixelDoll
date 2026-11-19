@@ -967,9 +967,13 @@ test.each(['Idle/Variant', 'animations/Variant'])(
 			'walking'
 		]);
 		expect(selected.states?.find((state) => state.id === 'second')?.animations).toBeNull();
-		await expect(readCharacterZip(bytes, id, 'all')).rejects.toThrow(
-			'Uncheck that state’s moves to continue'
-		);
+		await expect(readCharacterZip(bytes, id, 'all')).rejects.toMatchObject({
+			message: expect.stringContaining('Uncheck that state’s moves to continue'),
+			translation: {
+				key: 'import.error.fixState',
+				vars: { detail: { key: 'import.error.undeclaredAnimation' } }
+			}
+		});
 	}
 );
 

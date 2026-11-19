@@ -64,7 +64,12 @@ import type {
 	Slot
 } from '../store/manifest.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { INPAINT_TIER_ONE_SIDE, inpaintTier, workflowTier } from '../pixellab/plans.ts';
+import {
+	INPAINT_TIER_ONE_SIDE,
+	inpaintTier,
+	localizedPlanRestriction,
+	workflowTier
+} from '../pixellab/plans.ts';
 import { clipOf, summaryOf } from './qa-summary.ts';
 import { missingLowerGarment } from './garment-coverage.ts';
 import { footwearWarnings } from './footwear-review.ts';
@@ -72,6 +77,27 @@ import { expectsWaistBand, waistBandEvidence } from './design-consistency.ts';
 import { torsoConsistency } from './torso-consistency.ts';
 import { assertImportedPoses, importedPoseIssues } from '../rig/pose-review.ts';
 import { LocalizedError } from '../message.ts';
+
+const automaticRepairPrefix = 'Automatic equipment repair is unavailable: ';
+const automaticRepairSuffix = '. Existing artwork was kept; manual review is needed.';
+
+export function automaticRepairError(
+	reason: string,
+	raw = `${automaticRepairPrefix}${reason}${automaticRepairSuffix}`
+) {
+	return new LocalizedError(raw, 'itemRoute.errors.automaticRepairUnavailable', {
+		reason: localizedPlanRestriction(reason)?.translation ?? reason
+	});
+}
+
+export function localizedAutomaticRepairError(raw: string) {
+	const detail = raw.startsWith('error: ') ? raw.slice('error: '.length) : raw;
+	if (!detail.startsWith(automaticRepairPrefix) || !detail.endsWith(automaticRepairSuffix)) return;
+	return automaticRepairError(
+		detail.slice(automaticRepairPrefix.length, -automaticRepairSuffix.length),
+		raw
+	);
+}
 
 export const ITEM_GRID_REGISTRATION_NOTICE =
 	'PixelLab returned a transparent edge and may have shifted the sheet. Check that the item lines up in every frame.';
