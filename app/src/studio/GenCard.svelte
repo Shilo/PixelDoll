@@ -2,7 +2,7 @@
 	// A generating item: progress from the ledger and its landed frames, then an optional review (round 10: a clean draft saves
 	// itself; Keep it / Try again / Discard stay available for the rest). Wear shows the draft on the character meanwhile.
 	import { bakedFrame, composeCell } from '../lib/compose/compose.ts';
-	import { queue } from '../lib/pixellab/queue.ts';
+	import { live, queue } from '../lib/pixellab/queue.ts';
 	import {
 		failsOf,
 		gensOf,
@@ -39,6 +39,20 @@
 	const spent = $derived(gensOf(g.draft, $queue.jobs));
 	const spentUsd = $derived(usdOf(g.draft, $queue.jobs));
 	const spentUnknown = $derived(unknownCostsOf(g.draft, $queue.jobs));
+	const providerFailed = $derived(
+		g.draft.calls.some((call) =>
+			$queue.jobs.some(
+				(record) =>
+					record.id === call.recId &&
+					!!record.error &&
+					g.error?.includes(record.error) &&
+					record.jobs.some((job) => job.failedAtProvider)
+			)
+		)
+	);
+	const unsettledCost = $derived(
+		draftQueueIds(g.draft).some((id) => !$queue.jobs.some((job) => job.id === id && !live(job)))
+	);
 	const res = $derived(store.results[g.draft.spec.id]);
 	const prev = $derived(res?.preview);
 	const anims = $derived(
@@ -259,13 +273,21 @@
 			</p>{/if}
 	{:else if g.phase === 'failed'}
 		<p class="notice bad small">
-			<CircleAlert size={14} />{g.error?.includes('5000') ||
+			<CircleAlert size={14} />{g.error?.match(/\b5000\b/) ||
 			g.error?.toLowerCase().includes('policy')
 				? 'PixelLab declined this prompt. Try different words.'
 				: g.canceled
 					? 'Generation canceled. Already used generations are not refunded.'
-					: `This item could not be made.${g.error ? ` ${g.error}` : ''}`}
+					: `${providerFailed ? 'PixelLab accepted the request but could not finish it.' : 'This item could not be made.'}${g.error ? ` ${g.error}` : ''}`}
 		</p>
+		{#if providerFailed && !g.canceled}
+			<p class="faint small">
+				{spentUnknown || unsettledCost
+					? 'PixelLab did not report the full cost. Check your balance before retrying.'
+					: `PixelLab reported ${+spent.toFixed(2)} gens${spentUsd ? ` + $${spentUsd.toFixed(3)}` : ''} for this attempt.`}
+				Try again starts a new paid attempt.
+			</p>
+		{/if}
 		<div class="actions">
 			<span class="api-action"
 				><ApiPeek

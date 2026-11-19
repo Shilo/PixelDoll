@@ -1490,15 +1490,16 @@ export async function acceptItem(
 }
 
 // ---------- new clips on accepted items (architecture §4.1: "adding a clip later = one pose call per item-direction") ----------
-/** Accepted skeleton-pose items that can be posed onto a new clip (dressed keyframes + key, made for this base). */
-export const posable = (m: Manifest) =>
+/** Accepted skeleton-pose items with standing designs for the requested independently drawn views. */
+export const posable = (m: Manifest, dirs: readonly DirectionName[] = []) =>
 	m.items.filter(
 		(i) =>
 			i.slot !== 'body' &&
 			i.route === 'skeleton-pose' &&
 			i.key &&
 			i.dressed &&
-			i.baseHash === m.rig.baseHash
+			i.baseHash === m.rig.baseHash &&
+			dirs.every((dir) => !!i.dressed?.[dir])
 	);
 export const anchorable = (m: Manifest) =>
 	m.items.filter(

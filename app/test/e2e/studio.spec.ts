@@ -4662,7 +4662,7 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 	expect(posts).toEqual([]);
 });
 
-test('a custom move replacement keeps its name and requires a supported frame count and description', async ({
+test('a custom move replacement keeps its name and reviews eligible equipment and costs', async ({
 	page
 }, info) => {
 	await page.addInitScript(() => {
@@ -4681,6 +4681,8 @@ test('a custom move replacement keeps its name and requires a supported frame co
 			db = await import(dbPath);
 		const rec = await db.get('projects', s.doc.id),
 			m = rec.manifest;
+		const sword = m.items.find((item: { slot: string }) => item.slot === 'main_hand');
+		sword.dressed = { east: sword.dressed.east };
 		m.rig.animations.find((a: { id: string }) => a.id === 'walk').id = 'quiet-step';
 		for (const item of m.items)
 			for (const layer of item.layers)
@@ -4708,6 +4710,18 @@ test('a custom move replacement keeps its name and requires a supported frame co
 		.fill('Step sideways and shift weight to the leading foot');
 	await expect(replace).toBeEnabled();
 	await expect(replace).toContainText('Est. 23 gens');
+	const sword = sheet.getByRole('checkbox', { name: /Steel longsword/ });
+	await expect(sword).toHaveCount(0);
+	await expect(sheet).toContainText('You can still wear shared copies.');
+	await sheet.getByRole('checkbox', { name: 'West', exact: true }).uncheck();
+	await sheet.getByRole('checkbox', { name: 'South', exact: true }).uncheck();
+	await sheet.getByRole('checkbox', { name: 'North', exact: true }).uncheck();
+	await sword.check();
+	await expect(sheet).toContainText('3 gens if equipment runs');
+	await expect(sheet).toContainText('equipment requests are not sent');
+	await sheet.getByRole('checkbox', { name: 'West', exact: true }).check();
+	await expect(sword).toHaveCount(0);
+	await expect(sheet).not.toContainText('if equipment runs');
 });
 
 async function oversizedItemFixture(page: Page, itemId: string) {

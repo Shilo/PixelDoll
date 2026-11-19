@@ -24,6 +24,7 @@ import {
 	reviewItemMove
 } from '../../src/studio/create.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { movePlan } from '../../src/studio/apiPlans.ts';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -251,6 +252,18 @@ test('accepted equipment estimates the actual safe route and still refuses unsaf
 	expect(moveMinimumTier(ctx.rec.manifest, offer)).toBe(1);
 	expect(moveMinimumTier(ctx.rec.manifest, { ...offer, items: [] })).toBe(0);
 	expect(moveMinimumTier(ctx.rec.manifest, { ...offer, replace: true })).toBe(0);
+	const replacement = {
+		...offer,
+		id: 'walking',
+		action: 'walk',
+		itemsOnly: undefined,
+		itemReview: undefined,
+		replace: true
+	};
+	expect(moveEstimate(ctx.rec.manifest, replacement).items).toBe(3);
+	expect(movePlan(ctx.rec, replacement).filter((call) => call.label?.startsWith('Robe '))).toEqual([
+		expect.objectContaining({ path: '/animate-with-skeleton-v3', generations: 3 })
+	]);
 	expect(moveMinimumTier(ctx.rec.manifest, { ...offer, reuseItemFrames: true })).toBe(0);
 	ctx.rec.manifest.rig.cell = { w: 128, h: 128 };
 	ctx.rec.manifest.rig.animations[0].cells = 15;

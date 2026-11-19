@@ -11,7 +11,8 @@
 import {
 	api as realApi,
 	ApiError,
-	errorText,
+	jobErrorCode,
+	jobFailureText,
 	isNetwork,
 	isPolicy,
 	hasJobEvidence,
@@ -65,6 +66,8 @@ export interface SubJob {
 	results: Result[];
 	error?: string;
 	policy?: boolean;
+	failedAtProvider?: true;
+	errorCode?: number;
 }
 export interface JobRec {
 	id: string;
@@ -1475,7 +1478,9 @@ export class Queue {
 			s.done = true;
 			s.usage = job.usage;
 			s.policy = isPolicy(job);
-			s.error = errorText(job);
+			s.failedAtProvider = true;
+			s.errorCode = jobErrorCode(job);
+			s.error = jobFailureText(job);
 			this.settle(r);
 		} else if (job.status === 'cancelled') {
 			s.done = true;

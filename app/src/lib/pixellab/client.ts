@@ -123,6 +123,19 @@ export function isPolicy(body: unknown): boolean {
 	return !!b && typeof b === 'object' && (b.code === 5000 || b.last_response?.code === 5000);
 }
 
+export function jobErrorCode(body: unknown): number | undefined {
+	if (isPolicy(body)) return 5000;
+	const response = body as { code?: unknown; last_response?: { code?: unknown } } | null;
+	return [response?.last_response?.code, response?.code].find(
+		(code): code is number => typeof code === 'number' && Number.isSafeInteger(code)
+	);
+}
+
+export function jobFailureText(body: unknown): string {
+	const code = jobErrorCode(body);
+	return code === undefined ? errorText(body) : `${errorText(body)} (PixelLab code ${code})`;
+}
+
 export function errorText(body: unknown): string {
 	const b = body as {
 		detail?: unknown;
