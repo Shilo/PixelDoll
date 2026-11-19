@@ -504,7 +504,9 @@ test('saved failed generation does not block either startup or manual updates wh
 			.getByRole('button', { name: /^Activity/ })
 			.click();
 		const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
-		await expect(activity).toContainText('Nothing generating.');
+		const pending = activity.getByRole('region', { name: 'Pending work' });
+		await expect(pending.getByText('New character · Saved failed character')).toBeVisible();
+		await expect(pending.getByText('Needs attention', { exact: true })).toBeVisible();
 		await activity.getByRole('button', { name: 'Done', exact: true }).click();
 
 		await stage(page, server, c);

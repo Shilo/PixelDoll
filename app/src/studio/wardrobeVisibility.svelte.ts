@@ -34,8 +34,5 @@ export const setSharedItemsHiddenForCharacter = (characterId: string, hide: bool
 	setEnabled(characterKey(characterId), hide);
 
 export function sharedItemsHidden(characterId: string) {
-	return (
-		sharedItemsHiddenForAll() ||
-		(!characterId.startsWith('fixture:') && enabled(characterKey(characterId)))
-	);
+	return sharedItemsHiddenForAll() || (!!characterId && enabled(characterKey(characterId)));
 }

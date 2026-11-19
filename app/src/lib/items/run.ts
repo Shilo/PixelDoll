@@ -7,7 +7,7 @@ import { reportedUsage } from '../pixellab/activity.ts';
 import { base64ToBytes, binaryAlpha, bytesToBase64, decodePng, type Img } from '../image/png.ts';
 import { normalize } from '../rig/normalize.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
-import { cellHash, rigArtworkVersion, type Sha256 } from '../rig/rig.ts';
+import { cellHash, cellKey, matchesStanding, rigArtworkVersion, type Sha256 } from '../rig/rig.ts';
 import {
 	itemPaletteMatcher,
 	ITEM_PALETTE_POLICY,
@@ -1950,7 +1950,9 @@ async function prepareClip(
 	cells: CellOut[],
 	prov: Provenance[],
 	q: QaResult,
-	pad: number
+	pad: number,
+	/** Frames taken from artwork an earlier call already paid for: the item's record of that call, by frame. */
+	reused?: ReadonlyMap<string, number>
 ) {
 	const { rig } = ctx.rec.manifest,
 		key = item.key!;
@@ -2006,7 +2008,7 @@ async function prepareClip(
 	);
 	const qaCells = Object.fromEntries(
 		Object.entries(q.qa.cells).map(([k, c]) => {
-			const provenance = source.get(k as keyof typeof q.qa.cells);
+			const provenance = source.get(k as keyof typeof q.qa.cells) ?? reused?.get(k);
 			if (provenance == null) throw new Error(`No source record for ${k}`);
 			return [k, { ...c, provenance }];
 		})
@@ -2051,6 +2053,105 @@ async function publishClip(
 		if (currentItem.hides === undefined) delete out.hides;
 		else out.hides = currentItem.hides;
 	});
+}
+
+/** The item's record of the paid call that drew its standing design for `dir`. */
+const designCall = (item: Item, dir: DirectionName): number | undefined => {
+	const at = item.provenance.findIndex(
+		(p) => !p.replaced && p.produced.includes(restKey(dir) as CellKey)
+	);
+	return at < 0 ? undefined : at;
+};
+/** Standing frames an item lacks although its saved design for that view is stored. A single-frame move whose body is the
+ *  registered standing view takes the design itself, as when the item was made (evaluateItem), so they need no call. A copy
+ *  can lack one: it takes only the views whose body frames matched its source. */
+export function restorableViews(m: Manifest, item: Item): CellKey[] {
+	const { rig } = m,
+		body = m.items.find((i) => i.id === rig.baseItem)?.layers[0].cells,
+		covered = new Set<string>(item.coverage);
+	if (
+		item.id === rig.baseItem ||
+		item.status !== 'accepted' ||
+		item.route !== 'skeleton-pose' ||
+		!item.key ||
+		item.baseHash !== rig.baseHash ||
+		item.refit ||
+		item.unfitted
+	)
+		return [];
+	return rig.animations.flatMap((a) =>
+		rig.directions
+			.filter(
+				(d) =>
+					!d.mirrorOf &&
+					!!item.dressed?.[d.id] &&
+					!covered.has(cellKey(a.id, d.id, 0)) &&
+					reusesStanding(rig, item, a.id, d.id) &&
+					matchesStanding(rig, a, d.id, body?.[a.id]?.[d.id]?.[0]) &&
+					designCall(item, d.id) !== undefined
+			)
+			.map((d) => cellKey(a.id, d.id, 0) as CellKey)
+	);
+}
+/** Free: rebuild those frames from the saved designs and save them with their checks. Returns the frames restored. */
+export async function restoreStandingViews(projectId: string, itemId: string): Promise<CellKey[]> {
+	const ctx = await loadProject(projectId),
+		{ rig } = ctx.rec.manifest,
+		saved = ctx.rec.manifest.items.find((i) => i.id === itemId),
+		views = saved ? restorableViews(ctx.rec.manifest, saved) : [];
+	if (!saved || !views.length) return [];
+	const slot = requireSlot(ctx.rec.manifest, saved.slot),
+		pad = ((saved.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
+	const { keys, cuts, hidden } = await dressedKeys(ctx, saved, pad),
+		bodies = referenceBodies(rig, ctx.project.images);
+	let item = saved;
+	for (const anim of new Set(views.map((k) => k.split('/')[0]))) {
+		const dirs = views
+			.filter((k) => k.split('/')[0] === anim)
+			.map((k) => k.split('/')[1] as DirectionName);
+		const cells = await Promise.all(
+			dirs.map(async (dir, k) => {
+				const c = cellKey(anim, dir, 0);
+				return extractCell({
+					key: c,
+					call: k,
+					base: padImg(baseCell(ctx, c), pad),
+					out: await img(saved.dressed![dir]!.slice(7)),
+					route: saved.key!,
+					band: bandOf(slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad),
+					posed: true,
+					clip: slot.band,
+					held: slot.class === 'held',
+					pad,
+					cut: cutFor(ctx, saved.slot, c, true, cuts)
+				});
+			})
+		);
+		postProcess(rig, slot, cells, keys, pad);
+		const q = withH4(
+			itemQa(rig, slot, saved.key!, cells, 0, GATES.keyOutsidePosed, pad, hidden),
+			slot,
+			cells,
+			keys,
+			rig,
+			bodies,
+			saved.prompt
+		);
+		const clip = await prepareClip(
+			ctx,
+			item,
+			anim,
+			dirs,
+			cells,
+			[],
+			q,
+			pad,
+			new Map(dirs.map((dir) => [cellKey(anim, dir, 0), designCall(saved, dir)!]))
+		);
+		await publishClip(projectId, clip);
+		item = clip.out;
+	}
+	return views;
 }
 
 export async function repairAlreadyApplied(projectId: string, review: RepairReview) {

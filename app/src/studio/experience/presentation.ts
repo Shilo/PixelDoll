@@ -588,8 +588,12 @@ export function renderPresentation(
 		result.frame
 	);
 	if (result.hiddenItems.length && !a.loading) {
-		result.issue = `${result.hiddenItems.length} ${result.hiddenItems.length === 1 ? 'item' : 'items'} hidden — missing ${clip} / ${directionLabel(direction)} frames`;
-		result.issueKey = `items:${clip}:${direction}:${result.hiddenItems
+		// Missing in every view: naming the facing shown would read as if turning brought the items back.
+		const everywhere = result.hiddenItems.every((item) =>
+			m.rig.directions.every((d) => !a.complete(item, clip, d.id, cells))
+		);
+		result.issue = `${result.hiddenItems.length} ${result.hiddenItems.length === 1 ? 'item' : 'items'} hidden — missing ${everywhere ? clip : `${clip} / ${directionLabel(direction)}`} frames`;
+		result.issueKey = `items:${clip}:${everywhere ? '' : direction}:${result.hiddenItems
 			.map((item) => item.variantOf ?? item.id)
 			.sort()
 			.join(',')}`;

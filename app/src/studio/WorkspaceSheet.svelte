@@ -87,7 +87,9 @@
 						<li>
 							{new Date(entry.at).toLocaleString()} · {entry.tool} · {entry.outcome}{entry.http
 								? ` · HTTP ${entry.http}`
-								: ''}{entry.code === undefined ? '' : ` · Code ${entry.code}`}
+								: ''}{entry.code === undefined ? '' : ` · Code ${entry.code}`}{entry.message
+								? ` · ${entry.message}`
+								: ''}
 						</li>
 					{/each}
 				</ul>
@@ -108,8 +110,8 @@
 			><input type="checkbox" bind:checked={includeErrors} disabled={busy} />Include recent errors</label
 		>
 		{#if includeErrors}<p class="muted small">
-				Adds your PixelLab tier and recent request outcomes without request bodies or account
-				credentials.
+				Adds your PixelLab tier, recent request outcomes and the error text they returned, shortened
+				and filtered to remove links and likely credentials.
 			</p>{/if}
 		{#if error}<p class="notice warn" role="alert">{error}</p>{/if}
 		{#snippet footer()}
@@ -132,5 +134,6 @@
 	.reports {
 		display: grid;
 		gap: 8px;
+		overflow-wrap: anywhere; /* an error's own words can be one long unbroken run */
 	}
 </style>

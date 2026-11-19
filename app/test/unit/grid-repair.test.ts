@@ -589,3 +589,63 @@ test('an out-of-cell observed wrist cannot create an empty off-canvas paid mask'
 	);
 	expect(f.enqueue).not.toHaveBeenCalled();
 });
+
+test('standing views an item lacks are rebuilt from its saved designs without a call', async () => {
+	const { restorableViews, restoreStandingViews } = await import('../../src/lib/items/run.ts');
+	const f = await fixture(),
+		m = f.current().manifest,
+		dirs = m.rig.directions.map((d) => d.id),
+		body = m.rig.rest!.south!.image,
+		joints = m.rig.rest!.south!.keypoints;
+	// A standing move whose body is the registered rest view, as an imported character has.
+	m.rig.animations.push({
+		id: 'default',
+		cells: 1,
+		loop: true,
+		frames: [],
+		sources: Object.fromEntries(
+			dirs.map((d) => [
+				d,
+				{
+					route: 'import',
+					reference: body,
+					keypoints: [joints],
+					measured: [joints],
+					motion: 'imported-rest',
+					provenance: []
+				}
+			])
+		)
+	});
+	m.items[0].layers[0].cells!.default = Object.fromEntries(dirs.map((d) => [d, [body]]));
+	for (const d of dirs) f.current().skeletons![`default/${d}/0`] = fromApi(joints, m.rig.cell);
+	const sword = m.items[1];
+	sword.coverage = [];
+	sword.provenance = [
+		{
+			endpoint: '/edit-animation-v2',
+			params: {},
+			seed: 1,
+			requestHash: `sha256:${'d'.repeat(64)}`,
+			createdAt: '2026-11-01T00:00:00.000Z',
+			produced: dirs.map((d) => `rest/${d}/0` as const)
+		}
+	];
+	const views = dirs.map((d) => `default/${d}/0`);
+	expect(restorableViews(m, sword)).toEqual(views);
+	expect(await restoreStandingViews('rig-grid', 'sword')).toEqual(views);
+	const saved = f.saved()!,
+		frames = (layer: number) => dirs.map((d) => saved.layers[layer].cells!.default![d]![0]);
+	// One design and one body in every view here: every view gets the same art, and the blade is in it.
+	expect(new Set(frames(0)).size).toBe(1);
+	expect(frames(0)[0] ?? frames(1)[0]).toMatch(/^sha256:/);
+	expect(saved.coverage).toEqual(views);
+	expect(saved.provenance).toEqual(sword.provenance);
+	const checks = saved.qa!.cells as Record<string, { provenance?: number }>;
+	expect(views.map((key) => checks[key].provenance)).toEqual([0, 0, 0, 0]);
+	expect(saved.layers[0].cells!.slash).toEqual(sword.layers[0].cells!.slash);
+	expect(f.enqueue).not.toHaveBeenCalled();
+	// Nothing is left to restore, and a copy drawn for another body never qualifies.
+	expect(await restoreStandingViews('rig-grid', 'sword')).toEqual([]);
+	expect(restorableViews(m, { ...sword, unfitted: [] })).toEqual([]);
+});

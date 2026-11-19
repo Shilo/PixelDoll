@@ -1,6 +1,13 @@
 <script lang="ts">
 	import ConfirmDialog from './ConfirmDialog.svelte';
-	import { ui, doc, store, deletionBlocked, removeProject } from './state.svelte.ts';
+	import {
+		DELETE_GENERATION_BLOCK,
+		ui,
+		doc,
+		store,
+		deletionBlocked,
+		removeProject
+	} from './state.svelte.ts';
 	let busy = $state(false),
 		error = $state('');
 	const id = $derived(ui.deleting || doc.id);
@@ -27,12 +34,17 @@
 	}
 </script>
 
+{#snippet viewPending()}
+	<button class="bu-btn" onclick={() => (ui.sheet = 'activity')}>View pending work</button>
+{/snippet}
+
 <ConfirmDialog
 	title="Delete {store.projects.find((project) => project.id === id)?.name ?? 'character'}?"
 	action="Delete"
 	busyAction="Deleting…"
 	{busy}
 	problem={error || reason}
+	problemAction={reason === DELETE_GENERATION_BLOCK ? viewPending : undefined}
 	blocked={!!reason}
 	oncancel={() => (ui.sheet = null)}
 	onconfirm={() => void remove()}

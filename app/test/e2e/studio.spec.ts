@@ -4970,6 +4970,77 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 	expect(posts).toEqual([]);
 });
 
+test('an item missing a standing view restores it from its saved design for free', async ({
+	page,
+	context
+}, info) => {
+	const posts: string[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		if (route.request().method() === 'POST') posts.push(route.request().url());
+		await route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const { itemId, itemName } = await targetedRepairFixture(page);
+	// As a free copy leaves it when one standing body frame did not match its source: every view but south.
+	const standing = (id: string) =>
+		page.evaluate(async (id) => {
+			const statePath = '/src/studio/state.svelte.ts',
+				dbPath = '/src/lib/store/db.ts',
+				s = await import(statePath),
+				db = await import(dbPath);
+			const rec = await db.get('projects', s.doc.id),
+				item = rec.manifest.items.find((it: { id: string }) => it.id === id);
+			// A view counts when it is recorded as covered and every layer stores its frame.
+			return (item.coverage as string[])
+				.filter(
+					(key) =>
+						key.startsWith('default/') &&
+						item.layers.every(
+							(layer: { cells: Record<string, Record<string, unknown[]>> }) =>
+								layer.cells.default?.[key.split('/')[1]]?.length === 1
+						)
+				)
+				.sort();
+		}, id);
+	await page.evaluate(async (itemId) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts',
+			s = await import(statePath),
+			db = await import(dbPath);
+		const rec = await db.get('projects', s.doc.id),
+			item = rec.manifest.items.find((it: { id: string }) => it.id === itemId);
+		item.coverage = item.coverage.filter((key: string) => key !== 'default/south/0');
+		for (const layer of item.layers) delete layer.cells.default.south;
+		item.provenance[0].produced = rec.manifest.rig.directions.map(
+			(d: { id: string }) => `rest/${d.id}/0`
+		);
+		await db.put('projects', s.doc.id, rec);
+		await s.openProject(s.doc.id);
+	}, itemId);
+	expect(await standing(itemId)).not.toContain('default/south/0');
+	await pickItem(page, itemName);
+	const details = await selectedItemDetails(page);
+	const restore = details.getByRole('button', { name: /^Restore standing view/ });
+	await expect(restore).toContainText('Free');
+	await expect(details).toContainText(
+		'Rebuilt from this item’s saved south design. Nothing is generated.'
+	);
+	await restore.click();
+	await expect(page.locator('.bu-toast').last()).toContainText(
+		`Restored ${itemName} facing south. No generations used.`
+	);
+	await expect(restore).toHaveCount(0);
+	expect(await standing(itemId)).toContain('default/south/0');
+	expect(posts).toEqual([]);
+});
+
 test('a custom move replacement keeps its name and reviews eligible equipment and costs', async ({
 	page
 }, info) => {
@@ -5023,6 +5094,9 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	const sword = sheet.getByRole('checkbox', { name: /Steel longsword/ });
 	await expect(sword).toHaveCount(0);
 	await expect(sheet).toContainText(
+		'Only equipment fitted to every selected view can be animated here.'
+	);
+	await expect(sheet).not.toContainText(
 		'Shared copies can still be worn in views where they have frames.'
 	);
 	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
@@ -7019,7 +7093,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await editableCopy(page);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: /^Wardrobe settings/ }).click();
-	await page.getByRole('switch', { name: 'Hide shared items from Adventurer (Demo)' }).uncheck();
+	await page.getByRole('switch', { name: 'Hide shared items from demo character' }).uncheck();
 	await page.keyboard.press('Escape');
 	await equipmentGroup(page, 'Head');
 	const head = section(page, 'Head');

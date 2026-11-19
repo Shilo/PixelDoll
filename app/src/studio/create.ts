@@ -2045,12 +2045,20 @@ export async function addMove(
 		intent && !published ? await measurementRecoveryPlan(projectId, spec) : undefined;
 	if (!published && (spec.replace || !existing))
 		await addBodyClip(projectId, spec, onProgress, recovery);
-	// Freeze durable garment-region colors before posing.
+	// Freeze durable garment-region colors before posing: this move's frames when the request draws its body (also one
+	// resumed after a reload cut it off between saving the frames and splitting them), or a body never split. Item work on a
+	// move the body already had (a repair, Make it) splits nothing, so those frames keep their pixels.
 	// saveSplit also advances an exact audit recovery receipt, so interrupted equipment work can resume safely.
 	const normalized = await loadProject(projectId),
-		split = await splitBase(normalized.project);
+		body = normalized.project.manifest.items.find(
+			(item) => item.id === normalized.project.manifest.rig.baseItem
+		),
+		split =
+			published || !spec.itemsOnly || body?.regions !== 'shirt-shorts'
+				? await splitBase(normalized.project, spec.id)
+				: null;
 	deriveMaterials(normalized.project);
-	if (split.dirty) await saveSplit(projectId, normalized.project.manifest, split);
+	if (split?.dirty) await saveSplit(projectId, normalized.project.manifest, split);
 	const fresh = await loadProject(projectId),
 		frames = fresh.rec.manifest.rig.animations.find((a) => a.id === spec.id)!.cells;
 	assertReview(fresh.rec.manifest);

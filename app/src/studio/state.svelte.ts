@@ -2,6 +2,7 @@
 // item generations (drafts) and the create-character run. Pixel data lives in $state.raw (deep proxies over the manifest
 // made recolor/compose take seconds, B5); manifest edits bump doc.rev.
 import type { Snippet } from 'svelte';
+import { SvelteSet } from 'svelte/reactivity';
 import {
 	applyDress,
 	dressOf,
@@ -65,7 +66,7 @@ import type {
 	MoveSpec,
 	Progress
 } from './create.ts';
-import { characterFacts, pixelSize, uniqueBy } from './model.ts';
+import { characterFacts, missingMoves, pixelSize, uniqueBy } from './model.ts';
 import {
 	addCustom,
 	applySettings,
@@ -121,14 +122,16 @@ const itemRun = () =>
 				evaluateItem,
 				isClean,
 				matchItemColors,
-				repairAlreadyApplied
+				repairAlreadyApplied,
+				restoreStandingViews
 			}) => ({
 				acceptItemReview,
 				applyRepairReview,
 				evaluateItem,
 				isClean,
 				matchItemColors,
-				repairAlreadyApplied
+				repairAlreadyApplied,
+				restoreStandingViews
 			})
 		)
 	);
@@ -659,8 +662,14 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		}
 		doc.id = id;
 		slotBase = { id, slots: savedSlots };
+		// The standing move first: it is the one every item is made for, so what is worn shows. Walk hides each item
+		// without walk frames, which reads as lost items after a reload.
 		if (!m.rig.animations.some((a) => a.id === ui.anim))
-			ui.anim = (m.rig.animations.find((a) => a.id === 'walk') ?? m.rig.animations[0]).id;
+			ui.anim = (
+				m.rig.animations.find((a) => a.id === DEFAULT_MOVE) ??
+				m.rig.animations.find((a) => a.id === 'walk') ??
+				m.rig.animations[0]
+			).id;
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
 		if (!quiet) ui.frame = 0;
 		store.project = r.project;
@@ -956,21 +965,28 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 	}
 }
 
+export const DELETE_GENERATION_BLOCK =
+	'Finish or dismiss pending generation work before deleting a character.';
+
+let characterJobsPending = $state(false),
+	characterJobsInOtherTab = $state(false);
+
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
 function characterEditBlocked(action: 'delete' | 'change directions for'): string {
 	if (doc.loading || opening) return 'Wait for the character to finish loading.';
-	if (queue.role === 'follower')
+	if (characterJobsInOtherTab)
 		return 'Manage characters in the other PixelDoll tab, or close it first.';
 	if (
-		!queue.idle() ||
+		characterJobsPending ||
 		gens.some((g) => g.phase === 'running') ||
 		settling.size ||
-		(creating.spec && !creating.projectId) ||
-		(moving.spec && !moving.done) ||
-		(settingUp.spec && !settingUp.done)
+		heldCreate() ||
+		heldMove() ||
+		moving.queued.length ||
+		heldSetup()
 	)
 		return action === 'delete'
-			? 'Finish or dismiss pending generation work before deleting a character.'
+			? DELETE_GENERATION_BLOCK
 			: 'Finish or dismiss pending generation work before changing directions.';
 	return '';
 }
@@ -1444,15 +1460,18 @@ export async function refreshShared() {
 		shared.skipped = savedOffers.skipped;
 	}
 	try {
+		const unchecked: string[] = [];
+		let why = '';
 		const [saved, frames] = await Promise.all([
 			listShared(id, project.manifest, project.images),
-			freeFrames(project.manifest).then(
-				(free) => ({ free, error: '' }),
-				(error: Error) => {
-					console.error('copy frames', error);
-					return { free: {}, error: `Could not check frames for copied items: ${error.message}` };
-				}
-			)
+			freeFrames(project.manifest, (item, error) => {
+				console.error('copy frames', item.id, error);
+				unchecked.push(item.name);
+				why ||= (error as Error).message;
+			}).then((free) => ({
+				free,
+				error: unchecked.length ? `Could not check frames for ${unchecked.join(', ')}: ${why}` : ''
+			}))
 		]);
 		if (request !== sharedRequest) return saved.items;
 		savedOffers = saved;
@@ -1551,6 +1570,9 @@ async function addEntry(entry: SharedItem, lead = '') {
 			shown = doc.id === projectId ? revealSlot(item.slot) : '';
 		const sourceFrame = entry.source.rig.cell;
 		const targetFrame = store.project?.manifest.rig.cell;
+		// A copy takes only the frames that fit this body: say so now, not when the item first vanishes in a move.
+		const gaps =
+			doc.id === projectId && store.project ? missingMoves(store.project.manifest, item) : [];
 		toast(
 			lead +
 				(item.unfitted
@@ -1562,6 +1584,7 @@ async function addEntry(entry: SharedItem, lead = '') {
 					: item.refit
 						? `Fitted ${item.name} from ${entry.sourceName} for free. Check it in each move.`
 						: `Copied ${item.name} from ${entry.sourceName}. No generations used.`) +
+				(gaps.length ? ` Missing some frames in ${gaps.join(', ')}; it hides there.` : '') +
 				(note ? ` ${note}.` : '') +
 				(shown ? ` ${shown}` : ''),
 			item.unfitted ? { tone: 'warning' } : undefined
@@ -1593,6 +1616,51 @@ export async function copyFromSource(itemId: string) {
 		await refreshShared();
 	} catch (e) {
 		toast(`Could not copy frames of ${it.name}: ${(e as Error).message}`, { tone: 'danger' });
+	} finally {
+		shared.adding = '';
+	}
+}
+
+/** Free: an item takes the standing frames it lacks from its own saved designs. Nothing is generated. */
+export async function restoreFromDesign(itemId: string) {
+	const it = itemById(itemId);
+	if (isDemo() || !it || shared.adding) return;
+	const projectId = doc.id,
+		request = openRequest;
+	shared.adding = itemId;
+	try {
+		await flushSave();
+		let views: string[] = [],
+			failed = false;
+		try {
+			views = await (await itemRun()).restoreStandingViews(projectId, itemId);
+		} catch (e) {
+			failed = true;
+			toast(`Could not restore ${it.name}: ${(e as Error).message}`, { tone: 'danger' });
+		}
+		if (doc.id !== projectId || request !== openRequest) return;
+		// After a failure too: one of several standing moves may have been saved before it.
+		if (views.length || failed) await openProject(projectId, { quiet: true });
+		if (doc.id !== projectId) return; // another character was opened meanwhile: nothing here is about it
+		if (views.length) {
+			// Show what came back: the standing move, facing the first restored view.
+			[ui.anim, ui.dir] = views[0].split('/') as [string, DirectionName];
+			// The frame is checked like any other: a design that fails a check says so instead of passing as restored.
+			const checks = itemById(itemId)?.qa?.clips,
+				flagged = views.some((key) => {
+					const status = checks?.[key.split('/').slice(0, 2).join('/')]?.status;
+					return status === 'warn' || status === 'fail';
+				});
+			toast(
+				`Restored ${it.name} facing ${views
+					.map((key) => key.split('/')[1].replaceAll('-', ' '))
+					.join(', ')}. No generations used.${flagged ? ' It has quality notes. Check it.' : ''}`,
+				flagged ? { tone: 'warning' } : undefined
+			);
+		} else if (!failed) toast(`${it.name} has no standing views left to restore.`);
+		await refreshShared();
+	} catch (e) {
+		toast(`Could not finish restoring ${it.name}: ${(e as Error).message}`, { tone: 'danger' });
 	} finally {
 		shared.adding = '';
 	}
@@ -1764,6 +1832,8 @@ function drive() {
 	void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
 }
 queue.subscribe((s) => {
+	characterJobsPending = !queue.idle();
+	characterJobsInOtherTab = s.role === 'follower';
 	// This tab handed the jobs to another (only ever while idle): mirror its drafts again, and resume again when it leads.
 	if (s.role === 'follower' && driving)
 		driving = takingOver = resumedHere = createResumed = moveResumed = setupResumed = false;
@@ -2107,7 +2177,7 @@ function withDrafts(p: Project): Project {
 
 // Keep it / Discard in flight for a draft: the other click is ignored (R6 P1-6: Discard during Keep it, then
 // splice(indexOf(g) = -1) removed an unrelated, still-running draft).
-const settling = new Set<string>();
+const settling = new SvelteSet<string>();
 const drop = (g: Gen) => {
 	const i = gens.findIndex((x) => x.draft.spec.id === g.draft.spec.id);
 	if (i >= 0) gens.splice(i, 1);

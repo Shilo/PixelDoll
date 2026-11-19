@@ -33,6 +33,7 @@ import {
 	type CellMatch,
 	type CopyAssessment,
 	type Flip,
+	type Frames,
 	type SlotCopyPlan
 } from './compatibility.ts';
 import { onTarget, refitCells, refitShared, refittable, standingMove } from './refit.ts';
@@ -57,9 +58,8 @@ export function itemHashes(item: Item): Sha256[] {
 	return [...refs];
 }
 
-/** Flipped hashes of stored images, keeping each flipped image for publication. */
-export function flipper(load: (hash: Sha256) => Promise<Img>): {
-	flip: Flip;
+/** Flipped hashes of stored images, keeping each flipped image for publication; `load` reads those too. */
+export function flipper(read: (hash: Sha256) => Promise<Img>): Frames & {
 	made: Map<Sha256, Img>;
 } {
 	const made = new Map<Sha256, Img>(),
@@ -67,7 +67,7 @@ export function flipper(load: (hash: Sha256) => Promise<Img>): {
 	const flip: Flip = (hash) => {
 		let flipped = memo.get(hash);
 		if (!flipped) {
-			flipped = load(hash).then(async (im) => {
+			flipped = read(hash).then(async (im) => {
 				const out = flipH(im),
 					h = await cellHash(out);
 				made.set(h, out);
@@ -77,7 +77,7 @@ export function flipper(load: (hash: Sha256) => Promise<Img>): {
 		}
 		return flipped;
 	};
-	return { flip, made };
+	return { flip, made, load: async (hash) => made.get(hash) ?? read(hash) };
 }
 
 /** The copy, or null when the bodies differ. `variants` are the source's current colors: they become the copy's defaults. */
@@ -86,12 +86,12 @@ export async function prepareCopy(
 	itemId: string,
 	variants: Preset['variants'],
 	target: Manifest,
-	flip: Flip
+	frames: Frames
 ): Promise<CopyCandidate | null> {
 	const original = source.items.find((it) => it.id === itemId);
 	if (!original || original.slot === 'body' || original.variantOf)
 		throw new Error('That item is no longer available.');
-	const assessment = await assessCopy(source, original, target, flip);
+	const assessment = await assessCopy(source, original, target, frames);
 	if (!assessment.fits) return null;
 	const { item, materials } = copyShell(
 		source,
@@ -105,7 +105,7 @@ export async function prepareCopy(
 		delete layer.sheets;
 	});
 	delete item.baseCut;
-	await putCells(source, original, target, item, assessment.matches, flip);
+	await putCells(source, original, target, item, assessment.matches, frames.flip);
 	// Standing references only fit future moves when the standing views match.
 	if (!assessment.canExtend) {
 		delete item.dressed;
@@ -394,7 +394,7 @@ export async function sharedFit(
 	target: Manifest,
 	load: (hash: Sha256) => Promise<Img>
 ): Promise<SharedChoice> {
-	const copy = await assessCopy(source, item, target, flipper(load).flip);
+	const copy = await assessCopy(source, item, target, flipper(load));
 	return choose(source, item, target, copy.fits ? copy.matches.map((m) => m.target) : null, () =>
 		refitCells(source, item, target, load)
 	);
@@ -453,8 +453,9 @@ export async function acceptCopy(
 		source.manifest.presets[0]?.variants ??
 		{};
 	const { missing, load } = stored(original, bundled?.images);
-	const { flip, made } = flipper(load);
-	const copy = await prepareCopy(source.manifest, itemId, variants, target.manifest, flip),
+	const frames = flipper(load),
+		{ flip, made } = frames;
+	const copy = await prepareCopy(source.manifest, itemId, variants, target.manifest, frames),
 		fitted: { refit?: CopyCandidate | null } = {};
 	const { fit: how } = await choose(
 		source.manifest,
@@ -574,7 +575,7 @@ const body = (m: Manifest) =>
 
 /** Cells an exact copy lacks here that its source item now covers on an identical body (moves the source gained after the
  *  copy), or null when there are none. A re-fit never takes more: its art was moved for this body, not copied. */
-async function fromSource(target: Manifest, item: Item, flip: Flip) {
+async function fromSource(target: Manifest, item: Item, frames: Frames) {
 	const from = item.copiedFrom;
 	if (!from?.item || item.refit || item.unfitted) return null;
 	const rec = await db.get<StoredProject>('projects', from.id),
@@ -589,20 +590,28 @@ async function fromSource(target: Manifest, item: Item, flip: Flip) {
 	)
 		return null;
 	const have = new Set<string>(item.coverage ?? []),
-		matches = (await assessCopy(source, original, target, flip)).matches.filter(
+		matches = (await assessCopy(source, original, target, frames)).matches.filter(
 			(m) => !have.has(m.target)
 		);
 	return matches.length ? { source, original, matches } : null;
 }
 
-/** How many frames each exact copy of `target` can take from its source for free, by item id (copies with none left out). */
-export async function freeFrames(target: Manifest): Promise<Record<string, number>> {
+/** How many frames each exact copy of `target` can take from its source for free, by item id (copies with none left out).
+ *  A copy whose check fails (an unreadable image) is reported to `failed` and left out, so the others still get theirs. */
+export async function freeFrames(
+	target: Manifest,
+	failed: (item: Item, error: unknown) => void
+): Promise<Record<string, number>> {
 	const out: Record<string, number> = {};
 	for (const item of target.items) {
 		if (item.status !== 'accepted' || !item.copiedFrom?.item || item.refit || item.unfitted)
 			continue;
-		const found = await fromSource(target, item, flipper(stored(item).load).flip);
-		if (found) out[item.id] = found.matches.length;
+		try {
+			const found = await fromSource(target, item, flipper(stored(item).load));
+			if (found) out[item.id] = found.matches.length;
+		} catch (error) {
+			failed(item, error);
+		}
 	}
 	return out;
 }
@@ -614,8 +623,9 @@ export async function copyMoreFrames(targetId: string, itemId: string): Promise<
 		item = target?.manifest.items.find((it) => it.id === itemId);
 	if (!target || !item) throw new Error('That item was removed.');
 	const { missing, load } = stored(item);
-	const { flip, made } = flipper(load);
-	const found = await fromSource(target.manifest, item, flip);
+	const frames = flipper(load),
+		{ flip, made } = frames;
+	const found = await fromSource(target.manifest, item, frames);
 	if (!found) return 0;
 	const { source, original, matches } = found,
 		next = structuredClone(item);

@@ -6,8 +6,19 @@
 	import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
 	import { requestTier } from '../lib/pixellab/plans.ts';
-	import { unknownCostText } from './model.ts';
-	import { ui, cleanUp, toast } from './state.svelte.ts';
+	import { moveLabel, unknownCostText } from './model.ts';
+	import {
+		ui,
+		doc,
+		store,
+		creating,
+		moving,
+		settingUp,
+		gens,
+		openProject,
+		cleanUp,
+		toast
+	} from './state.svelte.ts';
 	async function clear() {
 		let n: Awaited<ReturnType<typeof cleanUp>>;
 		try {
@@ -35,6 +46,23 @@
 	const done = $derived(
 		jobs.filter((r) => !['running', 'submitting', 'queued'].includes(r.state)).slice(0, 12)
 	);
+	const creatingPending = $derived(creating.spec && !creating.projectId ? creating.spec : null);
+	const movingPending = $derived(moving.spec && !moving.done ? moving.spec : null);
+	const setupPending = $derived(settingUp.spec && !settingUp.done ? settingUp.spec : null);
+	const generatingItems = $derived(gens.filter((gen) => gen.phase === 'running'));
+	const flowsPending = $derived(
+		creatingPending ||
+			movingPending ||
+			setupPending ||
+			generatingItems.length ||
+			moving.queued.length
+	);
+	const characterName = (id: string) =>
+		store.projects.find((project) => project.id === id)?.name ?? 'Character';
+	async function openWork(sheet: 'create' | 'move' | 'setup', projectId?: string) {
+		if (projectId && doc.id !== projectId) await openProject(projectId);
+		if (ui.sheet === 'activity' && (!projectId || doc.id === projectId)) ui.sheet = sheet;
+	}
 	const nice = (r: JobRec) =>
 		r.label.replace(/^M3 /, '').replace(/^skeleton sha256:.{8}.*/, 'Finding joints');
 	const pct = (r: JobRec) => {
@@ -59,6 +87,55 @@
 	onclose={() => (ui.sheet = null)}
 >
 	<div class="act-list">
+		{#if flowsPending}
+			<section class="act-group" aria-label="Pending work">
+				<span class="sec-title">Pending work</span>
+				<ul>
+					{#if creatingPending}
+						{@render workRow(
+							`New character · ${creatingPending.name}`,
+							creating.error ? 'Needs attention' : 'In progress',
+							() => void openWork('create')
+						)}
+					{/if}
+					{#if movingPending}
+						{@const task = movingPending.redrawItem
+							? 'Redraw item frames'
+							: movingPending.itemsOnly
+								? 'Repair item frames'
+								: moveLabel(movingPending.id)}
+						{@render workRow(
+							`${task} · ${characterName(moving.projectId)}`,
+							moving.repairReview
+								? 'Ready to review'
+								: moving.error
+									? 'Needs attention'
+									: 'In progress',
+							() => void openWork('move', moving.projectId)
+						)}
+					{/if}
+					{#if setupPending}
+						{@render workRow(
+							`Character setup · ${characterName(setupPending.projectId)}`,
+							settingUp.error ? 'Needs attention' : 'In progress',
+							() => void openWork('setup', setupPending.projectId)
+						)}
+					{/if}
+					{#each moving.queued as work (work)}
+						{@render workRow(
+							`${moveLabel(work.spec.id)} · ${characterName(work.projectId)}`,
+							'Waiting'
+						)}
+					{/each}
+					{#each generatingItems as gen (gen.draft.spec.id)}
+						{@render workRow(
+							`${gen.input.name} · ${characterName(gen.draft.rigId)}`,
+							'In progress'
+						)}
+					{/each}
+				</ul>
+			</section>
+		{/if}
 		{#if ui.waitingForTab}
 			<div class="notice warn" role="status">
 				<CircleAlert size={18} />
@@ -135,7 +212,7 @@
 					>{/if}
 			</p>
 		{/if}
-		{#if !ui.waitingForTab && !running.length && !queued.length}<p class="muted">
+		{#if !ui.waitingForTab && !running.length && !queued.length && !flowsPending}<p class="muted">
 				Nothing generating.
 			</p>{/if}
 		{#if running.length}
@@ -296,7 +373,23 @@
 	</div>
 </Sheet>
 
+{#snippet workRow(label: string, status: string, open?: () => void)}
+	<li>
+		<span class="act-main"><span>{label}</span><span class="muted small">{status}</span></span>
+		{#if open}<button
+				class="bu-action btn sm"
+				data-variant="outline"
+				aria-label={`Open ${label}`}
+				disabled={doc.loading || $queue.role === 'follower'}
+				onclick={open}>Open</button
+			>{/if}
+	</li>
+{/snippet}
+
 <style>
+	.act-main {
+		overflow-wrap: anywhere;
+	}
 	.waiting-copy {
 		display: grid;
 		gap: 4px;
