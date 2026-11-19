@@ -4,32 +4,41 @@
 	import { mirrorPartner } from '../lib/rig/mirror.ts';
 	import type { DirectionName } from '../lib/rig/rig.ts';
 	import { ANGLES, COMPASS, DIRECTION_LABELS, type Mirrors } from './characterConfig.ts';
-	import { ArrowUp, PersonStanding } from './icons.ts';
+	import { ArrowUp, Check, PersonStanding } from './icons.ts';
 
 	let {
 		label,
+		describedBy,
 		selected,
 		available = COMPASS,
 		mirrors = {},
 		mirrorSources = COMPASS,
 		disabled = false,
 		shortLabels = false,
+		compact = false,
 		ontoggle,
 		onmirror
 	}: {
 		label: string;
+		describedBy?: string;
 		selected: DirectionName[];
 		available?: readonly (DirectionName | null)[];
 		mirrors?: Mirrors;
 		mirrorSources?: readonly (DirectionName | null)[];
 		disabled?: boolean;
 		shortLabels?: boolean;
+		compact?: boolean;
 		ontoggle: (dir: DirectionName) => void;
 		onmirror?: (dir: DirectionName) => void;
 	} = $props();
 </script>
 
-<div class={['compass', { 'with-mirrors': !!onmirror }]} role="group" aria-label={label}>
+<div
+	class={['compass', { 'with-mirrors': !!onmirror, compact }]}
+	role="group"
+	aria-label={label}
+	aria-describedby={describedBy}
+>
 	{#each COMPASS as dir (dir ?? 'center')}
 		{#if dir && available.includes(dir)}
 			{@const west = dir.includes('west')}
@@ -70,9 +79,12 @@
 					onclick={() => ontoggle(dir)}
 				>
 					<ArrowUp size={18} style="transform:rotate({ANGLES[dir]}deg)" />
-					<span
-						>{DIRECTION_LABELS[dir]}{#if !onmirror && source}<MirrorViews size={12} />{/if}</span
-					>
+					<span>
+						{DIRECTION_LABELS[dir]}{#if compact && selected.includes(dir)}<Check
+								size={11}
+								aria-hidden="true"
+							/>{/if}{#if !onmirror && source}<MirrorViews size={12} />{/if}
+					</span>
 				</button>
 				{#if !west}{@render mirrorButton()}{/if}
 			</div>
@@ -140,6 +152,14 @@
 		.direction-tile {
 			height: 56px;
 		}
+	}
+	.compact:not(.with-mirrors) {
+		grid-template-columns: repeat(3, 44px);
+		gap: 4px;
+		margin-top: 0;
+	}
+	.compact:not(.with-mirrors) .direction-tile {
+		height: 44px;
 	}
 	.west .direction {
 		border-top-left-radius: 0;

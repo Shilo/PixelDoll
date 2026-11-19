@@ -301,7 +301,7 @@ with the queued moves, **Start over** drops them.
 Moves are added to your own characters (not the demo), using their existing direction policy. Older mirrored characters
 stay mirrored; the new-character setting does not rebuild their frozen artwork.
 
-To repair an existing move, select its **added** chip in **Add a move**, then check **Directions to redraw**. Views with failed body
+To repair an existing move, select its **added** chip in **Add a move**, then use the **Directions to redraw** compass. Views with failed body
 checks are selected initially. Other directions and moves keep their existing pixels. Selected equipment is re-posed
 only for the replaced views; other equipment stays hidden there until **Make it** fills the missing views. A replacement
 that still fails body checks keeps the previous artwork.

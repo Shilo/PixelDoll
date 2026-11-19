@@ -4834,19 +4834,22 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(sheet).toContainText(
 		'Shared copies can still be worn in views where they have frames.'
 	);
-	await sheet.getByRole('checkbox', { name: 'West', exact: true }).uncheck();
-	await sheet.getByRole('checkbox', { name: 'South', exact: true }).uncheck();
-	await sheet.getByRole('checkbox', { name: 'North', exact: true }).uncheck();
+	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
+	const west = directions.getByRole('button', { name: 'West direction', exact: true });
+	const east = directions.getByRole('button', { name: 'East direction', exact: true });
+	await west.click();
+	await directions.getByRole('button', { name: 'South direction', exact: true }).click();
+	await directions.getByRole('button', { name: 'North direction', exact: true }).click();
 	await sword.check();
 	await expect(replace).toContainText('gens with equipment');
 	await expect(sheet).toContainText('3 gens if equipment runs');
 	await expect(sheet).toContainText(
 		'Equipment requests are not sent if body checks stop the move.'
 	);
-	await sheet.getByRole('checkbox', { name: 'West', exact: true }).check();
+	await west.click();
 	await expect(sword).toHaveCount(0);
 	await expect(sheet).not.toContainText('if equipment runs');
-	await sheet.getByRole('checkbox', { name: 'East', exact: true }).uncheck();
+	await east.click();
 	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveCount(0);
 	await expect(replace).toBeDisabled();
 	await expect(replace).not.toContainText('Est.');
@@ -4854,7 +4857,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(sheet.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(
 		0
 	);
-	await sheet.getByRole('checkbox', { name: 'East', exact: true }).check();
+	await east.click();
 	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveValue(
 		'Step sideways and shift weight to the leading foot'
 	);
@@ -4942,10 +4945,20 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
 	await page.getByRole('radio', { name: 'Walk · added', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
-	await expect(sheet.getByRole('checkbox', { name: 'East', exact: true })).toBeChecked();
-	await expect(sheet.getByRole('checkbox', { name: 'West', exact: true })).toBeChecked();
-	await expect(sheet.getByRole('checkbox', { name: 'South', exact: true })).not.toBeChecked();
-	await expect(sheet.getByRole('checkbox', { name: 'North', exact: true })).not.toBeChecked();
+	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
+	const east = directions.getByRole('button', { name: 'East direction', exact: true });
+	const west = directions.getByRole('button', { name: 'West direction', exact: true });
+	await expect(directions).toHaveAccessibleDescription(/Replacing these views hides equipment/);
+	await expect(east).toHaveAttribute('aria-pressed', 'true');
+	await expect(west).toHaveAttribute('aria-pressed', 'true');
+	await expect(directions.getByRole('button', { name: 'South direction' })).toHaveAttribute(
+		'aria-pressed',
+		'false'
+	);
+	await expect(directions.getByRole('button', { name: 'North direction' })).toHaveAttribute(
+		'aria-pressed',
+		'false'
+	);
 	await expect(
 		sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })
 	).not.toBeChecked();
@@ -4953,10 +4966,10 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 22 gens'
 	);
-	await sheet.getByRole('checkbox', { name: 'East', exact: true }).uncheck();
-	await sheet.getByRole('checkbox', { name: 'West', exact: true }).uncheck();
+	await east.press('Space');
+	await west.click();
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toBeDisabled();
-	await sheet.getByRole('checkbox', { name: 'East', exact: true }).check();
+	await east.click();
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 11 gens'
 	);
@@ -4966,8 +4979,8 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		.getByRole('button', { name: 'Cancel', exact: true })
 		.click();
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
-	await expect(sheet.getByRole('checkbox', { name: 'East', exact: true })).toBeChecked();
-	await expect(sheet.getByRole('checkbox', { name: 'West', exact: true })).not.toBeChecked();
+	await expect(east).toHaveAttribute('aria-pressed', 'true');
+	await expect(west).toHaveAttribute('aria-pressed', 'false');
 	await page.evaluate(() => {
 		const original = IDBObjectStore.prototype.put;
 		IDBObjectStore.prototype.put = function (value, key) {

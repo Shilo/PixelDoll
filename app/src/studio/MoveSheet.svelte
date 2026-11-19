@@ -2,6 +2,7 @@
 	// Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
 	// re-rendered through raw skeleton-v3), plus one pose call per worn item x direction so the items follow the new clip.
 	import Sheet from './Sheet.svelte';
+	import DirectionCompass from './DirectionCompass.svelte';
 	import Sprite from './Sprite.svelte';
 	import { untrack } from 'svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -619,7 +620,7 @@
 				onclick={() => (ui.sheet = 'setup')}>Set up character</button
 			>{/if}
 	{:else}
-		<div class="form">
+		<div class="form" class:redraw-form={replacing}>
 			<div class="field">
 				<label class="label" for="move-description"
 					>{replacing ? 'Describe a new move' : 'Describe the motion'}</label
@@ -657,20 +658,23 @@
 			{#if replacing}
 				<div class="field">
 					<span class="label">Directions to redraw</span>
-					{#each availableDirs as dir (dir)}<label class="check"
-							><input
-								type="checkbox"
-								checked={selectedDirs.includes(dir)}
-								onchange={(e) =>
-									(selectedDirs = e.currentTarget.checked
-										? [...selectedDirs, dir]
-										: selectedDirs.filter((d) => d !== dir))}
-							/>{directionLabel(dir)}</label
-						>{/each}
-					<p class="notice warn small">
-						Replacing these views hides equipment until new frames are made. Mirrors follow their
-						source. Other moves stay unchanged.
-					</p>
+					<div class="redraw-directions">
+						<DirectionCompass
+							label="Directions to redraw"
+							describedBy="move-redraw-warning"
+							available={availableDirs}
+							selected={targetDirs}
+							compact
+							ontoggle={(dir) =>
+								(selectedDirs = selectedDirs.includes(dir)
+									? selectedDirs.filter((selected) => selected !== dir)
+									: [...selectedDirs, dir])}
+						/>
+						<p class="notice warn small" id="move-redraw-warning">
+							Replacing these views hides equipment until new frames are made. Mirrors follow their
+							source. Other moves stay unchanged.
+						</p>
+					</div>
 				</div>
 			{/if}
 			{#if describingReplacement}<label class="field">
@@ -755,6 +759,18 @@
 </Sheet>
 
 <style>
+	.redraw-form {
+		gap: 12px;
+	}
+	.redraw-directions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 12px;
+	}
+	.redraw-directions .notice {
+		flex: 1 1 125px;
+	}
 	.move-cost-note {
 		display: grid;
 		gap: 2px;
