@@ -12,7 +12,7 @@ import type {
 	UnfitNote
 } from '../lib/store/manifest.ts';
 import { GATES, isAction, ITEM_GRID_REGISTRATION_NOTICE, SLOTS } from '../lib/items/items.ts';
-import { coverageGaps } from '../lib/dress/dress.ts';
+import { coverageGaps, missingFrames } from '../lib/dress/dress.ts';
 import { DIRECTIONS, type Rig } from '../lib/rig/rig.ts';
 import { message, type Message } from '../lib/message.ts';
 import type { Translate, WhisperKey, WhisperVars } from 'svelte-whisper';
@@ -302,6 +302,9 @@ export function missingFramesNote(m: Manifest, it: Item): Message | '' {
 			})
 		: message('studioModel.coverage.severalMoves', { count: moves.length });
 }
+/** No view of `anim` has every frame of the item, so the stage shows none of it there (an incomplete view is hidden whole). */
+export const notShownIn = (m: Manifest, it: Item, anim: string): boolean =>
+	m.rig.directions.every((d) => missingFrames(m, it, anim, d.id).length > 0);
 /** Those moves by name, for a message with room to list them. */
 export function missingMoves(m: Manifest, it: Item): string[] {
 	return [...new Set(coverageGaps(m, it).map((g) => g.split('/')[0]))];

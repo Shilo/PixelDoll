@@ -13,10 +13,16 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { equipped, handSide, hiddenSlots, twoHanded } from '../lib/compose/compose.ts';
-	import { missingFrames } from '../lib/dress/dress.ts';
 	import { experience } from './experience/state.svelte.ts';
 	import { edgeFade, scrollToTop, stickyFade } from '@shilo/bronze-ui/svelte';
-	import { crop, HEALTH_LABEL, healthOf, missingFramesNote, unfitText } from './model.ts';
+	import {
+		crop,
+		HEALTH_LABEL,
+		healthOf,
+		missingFramesNote,
+		notShownIn,
+		unfitText
+	} from './model.ts';
 	import { itemKey } from '../lib/equipment/copy.ts';
 	import type { SharedItem } from '../lib/equipment/shared.ts';
 	import TileMarks, { sortMarks, type Mark } from './TileMarks.svelte';
@@ -131,7 +137,7 @@
 				experience.mode === 'preview' &&
 				doc.items[it.slot] === it.id &&
 				!doc.drafts[it.slot] &&
-				m.rig.directions.every((d) => missingFrames(m, it, ui.anim, d.id).length > 0)
+				notShownIn(m, it, ui.anim)
 		};
 	}
 	const wornMark: Mark = $derived({

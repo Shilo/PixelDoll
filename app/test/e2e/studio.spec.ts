@@ -1841,6 +1841,8 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor();
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+	// The copy is another character, so it opens on its standing move: pick the animated one this test watches.
+	await page.locator('.playback-move select').selectOption('walk');
 	await pickItem(page, 'Red cape');
 	let inspector = await selectedItemDetails(page);
 	async function checkFrames() {
@@ -1940,6 +1942,8 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	const setup = page.getByRole('checkbox', { name: /Set up the pose rig next/ });
 	if (await setup.count()) await setup.uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
+	await expect(page.locator('.playback-move select')).toHaveValue('default'); // a new character, standing again
+	await page.locator('.playback-move select').selectOption('walk');
 	await pickItem(page, 'Red cape');
 	inspector = await selectedItemDetails(page);
 	await expect(inspector.locator('.dir-strip canvas')).toHaveCount(8);

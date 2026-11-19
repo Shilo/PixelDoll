@@ -1203,6 +1203,46 @@ test.each(['same character', 'another character', 'another selection'])(
 		await vi.waitFor(() => expect(s.gens[0].phase).toBe('failed'));
 	}
 );
+test('putting on an item the shown move has no frames for shows it standing instead of invisible', async () => {
+	const project = await equipmentFixture(),
+		m = project.manifest,
+		body = m.items[0].layers[0],
+		hat = m.items[1];
+	// Standing and Walk bodies; the hat was made for standing only.
+	m.rig.animations = [
+		{ id: 'default', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] },
+		{ id: 'walk', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }
+	];
+	body.cells = { default: body.cells!.rest, walk: body.cells!.rest };
+	hat.layers[0].cells = { default: hat.layers[0].cells!.rest };
+	hat.coverage = ['default/south/0'];
+	const s = await import('../../src/studio/state.svelte.ts');
+	s.store.project = project;
+	s.doc.items = { body: 'base' };
+	s.ui.anim = 'walk';
+	s.wear('hat');
+	expect(s.doc.items.head).toBe('hat');
+	expect(s.ui.anim).toBe('default');
+	// Taking it off changes no move, and neither does an item the shown move can show.
+	s.ui.anim = 'walk';
+	s.wear('hat');
+	expect([s.doc.items.head, s.ui.anim]).toEqual([null, 'walk']);
+	// Top-down and Side-scroller pick the move from movement, not from this choice: wearing there changes no state.
+	const { experience } = await import('../../src/studio/experience/state.svelte.ts');
+	for (const mode of ['topdown', 'side'] as const) {
+		experience.mode = mode;
+		s.wear('hat');
+		expect([s.doc.items.head, s.ui.anim]).toEqual(['hat', 'walk']);
+		s.wear('hat');
+		expect([s.doc.items.head, s.ui.anim]).toEqual([null, 'walk']);
+	}
+	experience.mode = 'preview';
+	hat.layers[0].cells!.walk = hat.layers[0].cells!.default;
+	hat.coverage.push('walk/south/0');
+	s.wear('hat');
+	expect([s.doc.items.head, s.ui.anim]).toEqual(['hat', 'walk']);
+});
+
 const draftsSaved = () => mocks.put.mock.calls.filter(([, key]) => key === 'studio-drafts');
 
 test('saving an outfit never replaces another one, including a default name after a deletion and the reserved current id', async () => {
@@ -2643,12 +2683,17 @@ describe('optional review', () => {
 		const s = await import('../../src/studio/state.svelte.ts');
 		await s.openProject('standing');
 		expect(s.ui.anim).toBe('default');
-		// A move picked this session stays while the next character has it; a character without Default opens on Walk.
+		// Reopening the same character keeps the move being looked at.
+		s.ui.anim = 'walk';
+		await s.openProject('standing');
+		expect(s.ui.anim).toBe('walk');
+		// Another character starts standing again, whatever move the last one showed: one without Default opens on Walk.
+		mocks.source.mockImplementation(async () => standing);
+		await s.openProject('standing-too');
+		expect(s.ui.anim).toBe('default');
+		mocks.source.mockImplementation(async () => opened());
 		s.ui.anim = 'cross-punch';
 		await s.openProject('other');
-		expect(s.ui.anim).toBe('cross-punch');
-		s.ui.anim = '';
-		await s.openProject('another');
 		expect(s.ui.anim).toBe('walk');
 	});
 

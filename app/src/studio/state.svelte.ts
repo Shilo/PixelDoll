@@ -18,6 +18,7 @@ import {
 import { splitBase } from '../lib/dress/regions.ts';
 import { retainSlotDirections } from '../lib/items/slots.ts';
 import { keepThumbnails } from './experience/thumbnails.svelte.ts';
+import { experience } from './experience/state.svelte.ts';
 import {
 	deriveMaterials,
 	randomOutfit,
@@ -72,7 +73,7 @@ import type {
 	MoveSpec,
 	Progress
 } from './create.ts';
-import { characterFacts, missingMoves, pixelSize, uniqueBy } from './model.ts';
+import { characterFacts, missingMoves, notShownIn, pixelSize, uniqueBy } from './model.ts';
 import { displayDirectionInSentence } from './displayDirection.ts';
 import { displayMove } from './displayMove.ts';
 import {
@@ -673,16 +674,16 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 			doc.undo = [];
 			doc.redo = [];
 		}
-		doc.id = id;
-		slotBase = { id, slots: savedSlots };
-		// The standing move first: it is the one every item is made for, so what is worn shows. Walk hides each item
-		// without walk frames, which reads as lost items after a reload.
-		if (!m.rig.animations.some((a) => a.id === ui.anim))
+		// Another character starts on its standing move, whatever move the last one showed: it is the one every item is made
+		// for, so what is worn shows. Walk hides each item without walk frames, which reads as lost items.
+		if (id !== doc.id || !m.rig.animations.some((a) => a.id === ui.anim))
 			ui.anim = (
 				m.rig.animations.find((a) => a.id === DEFAULT_MOVE) ??
 				m.rig.animations.find((a) => a.id === 'walk') ??
 				m.rig.animations[0]
 			).id;
+		doc.id = id;
+		slotBase = { id, slots: savedSlots };
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
 		if (!quiet) ui.frame = 0;
 		store.project = r.project;
@@ -1259,12 +1260,28 @@ export async function removeProject(id = doc.id): Promise<void> {
 // ---- edits ----
 const itemById = (id: string) => store.project?.manifest.items.find((i) => i.id === id);
 /** Put an item on or take it off. Returns what came off with it (a two-handed item), shown unless `quiet`. */
+/** Preview shows the standing move, where items are made first (a character without one keeps its move). */
+export function showStanding() {
+	if (!store.project?.manifest.rig.animations.some((move) => move.id === DEFAULT_MOVE)) return;
+	ui.anim = DEFAULT_MOVE;
+	ui.frame = 0;
+}
 export function wear(id: string, quiet = false): Message | undefined {
 	const it = itemById(id);
 	if (!it) return;
 	const on = doc.items[it.slot] === id && !doc.drafts[it.slot];
 	delete doc.drafts[it.slot]; // a saved item put on or taken off replaces the draft worn in its slot
 	ui.selected = id;
+	// Put on while Preview shows a move it has no frames for: it would be worn and invisible. Its standing frames show it.
+	const m = store.project?.manifest;
+	if (
+		!on &&
+		m &&
+		experience.mode === 'preview' &&
+		notShownIn(m, it, ui.anim) &&
+		!notShownIn(m, it, DEFAULT_MOVE)
+	)
+		showStanding();
 	if (doc.items[it.slot] !== (on ? null : id))
 		return commit(
 			message(on ? 'history.takeOffItem' : 'history.wear', { name: it.name }),
