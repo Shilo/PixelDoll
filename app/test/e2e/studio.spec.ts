@@ -5030,8 +5030,6 @@ test('partial missing gear and explicit item repair stay on the current move and
 	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await selectedItemDetails(page);
 	const repair = page.getByRole('button', { name: /^Try new item frames/ });
-	await expect(repair).toContainText('Est. 10 gens'); // The bundled fixture uses actual 64 px equipment layers.
-	await oversizedItemFixture(page, fixture.itemId);
 	const simulateRepairPlan = (tier: number) =>
 		page.evaluate(async (tier) => {
 			const appPath = '/src/lib/app.svelte.ts',
@@ -5045,14 +5043,29 @@ test('partial missing gear and explicit item repair stay on the current move and
 			app.balance = balance;
 			queue.setBalance(balance, queue.key);
 		}, tier);
-	await simulateRepairPlan(0);
-	await expect(repair).toBeDisabled();
-	await expect(page.locator('#item-repair-tier')).toContainText('Tier 1 required');
-	await simulateRepairPlan(1);
-	await expect(repair).toBeEnabled();
-	await expect(repair).toContainText('Est. 30 gens');
-	await simulateRepairPlan(2);
-	await expect(repair).toContainText('Est. 15 gens');
+	const expectRepairTiers = async (tierOneGens: number, tierTwoGens: number) => {
+		await simulateRepairPlan(0);
+		await expect(repair).toBeDisabled();
+		await expect(repair).toHaveAttribute('aria-describedby', 'item-repair-tier');
+		await expect(page.locator('#item-repair-tier')).toContainText('Tier 1 required');
+		for (const [tier, gens] of [
+			[1, tierOneGens],
+			[2, tierTwoGens]
+		]) {
+			await simulateRepairPlan(tier);
+			await expect(repair).toBeEnabled();
+			await expect(repair).toContainText(`Est. ${gens} gens`);
+			await expect(page.locator('#item-repair-tier')).toHaveCount(0);
+			const requests = page.getByText('This repair uses 3 PixelLab generation requests.', {
+				exact: false
+			});
+			if (gens === 30) await expect(requests).toBeVisible();
+			else await expect(requests).toHaveCount(0);
+		}
+	};
+	await expectRepairTiers(10, 10);
+	await oversizedItemFixture(page, fixture.itemId);
+	await expectRepairTiers(30, 15);
 	await repair.click();
 	sheet = page.getByRole('dialog', { name: 'Repair item frames', exact: true });
 	await expect(sheet).toContainText('Scoped repair stopped before paid work');
@@ -5069,6 +5082,122 @@ test('partial missing gear and explicit item repair stay on the current move and
 	});
 	expect(gridScope.replace).toBeUndefined();
 	expect(posts).toEqual([]);
+});
+
+test('paid item repair review survives reload and both decisions send no extra request', async ({
+	page,
+	context
+}, info) => {
+	const posts: string[] = [];
+	const outputs = new Map<string, { type: string; base64: string }>();
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request(),
+			path = new URL(request.url()).pathname;
+		if (path === '/v2/balance')
+			return route.fulfill({
+				json: {
+					subscription: {
+						plan: 'Tier 1',
+						type: 'generations',
+						status: 'active',
+						generations: 100,
+						total: 100
+					},
+					credits: { type: 'usd', usd: 0 }
+				}
+			});
+		if (request.method() === 'POST') {
+			posts.push(path);
+			if (path === '/v2/inpaint-v3') {
+				const id = `offline-repair-review-${posts.length}`;
+				outputs.set(id, request.postDataJSON().inpainting_image.image);
+				return route.fulfill({ status: 202, json: { background_job_id: id } });
+			}
+		}
+		const id = path.split('/').at(-1)!;
+		if (outputs.has(id))
+			return route.fulfill({
+				json: {
+					id,
+					status: 'completed',
+					created_at: '',
+					usage: { type: 'generations', generations: 10 },
+					last_response: { image: outputs.get(id) }
+				}
+			});
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-repair-review-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const { itemId } = await targetedRepairFixture(page);
+	const openRepair = async () => {
+		await page.evaluate(async (id) => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			state.ui.anim = 'walk';
+			state.ui.dir = 'west';
+			state.ui.all = false;
+			state.pick(id);
+		}, itemId);
+		await selectedItemDetails(page);
+		await page.getByRole('button', { name: /^Try new item frames/ }).click();
+	};
+	const saved = () =>
+		page.evaluate(async (id) => {
+			const statePath = '/src/studio/state.svelte.ts',
+				dbPath = '/src/lib/store/db.ts';
+			const state = await import(statePath),
+				db = await import(dbPath);
+			const rec = await db.get('projects', state.doc.id);
+			const item = rec.manifest.items.find((it: { id: string }) => it.id === id);
+			return {
+				west: item.layers[0].cells.walk.west,
+				east: item.layers[0].cells.walk.east,
+				provenance: item.provenance.length
+			};
+		}, itemId);
+	await page.evaluate(async (id) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts';
+		const state = await import(statePath),
+			db = await import(dbPath);
+		const rec = await db.get('projects', state.doc.id),
+			manifest = rec.manifest;
+		const item = manifest.items.find((it: { id: string }) => it.id === id);
+		item.slot = 'torso_inner';
+		item.layers = item.layers.slice(0, 1);
+		await db.put('projects', state.doc.id, rec);
+		await state.openProject(state.doc.id);
+	}, itemId);
+	const before = await saved();
+	await openRepair();
+	const review = page.getByRole('dialog', { name: 'Review item repair' });
+	await expect(review.getByRole('img', { name: 'Repair frame 1', exact: true })).toBeVisible();
+	await expect(review.getByRole('img', { name: 'Current frame 1', exact: true })).toBeVisible();
+	expect(await saved()).toEqual(before);
+	await review.getByRole('button', { name: 'Hide', exact: true }).click();
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: /Review item repair/ }).click();
+	await review.getByRole('button', { name: 'Keep current', exact: true }).click();
+	await page.getByRole('button', { name: 'Done', exact: true }).click();
+	expect(await saved()).toEqual(before);
+	expect(posts).toEqual(['/v2/inpaint-v3']);
+	await openRepair();
+	await review.getByRole('button', { name: 'Use repair', exact: true }).click();
+	await page.getByRole('button', { name: 'Done', exact: true }).click();
+	const after = await saved();
+	expect(after.east).toEqual(before.east);
+	expect(after.west).not.toEqual(before.west);
+	expect(after.provenance).toBe(before.provenance + 1);
+	expect(posts).toEqual(['/v2/inpaint-v3', '/v2/inpaint-v3']);
 });
 
 test('unsafe imported equipment prices its frozen route and unsupported held offers stay usable', async ({

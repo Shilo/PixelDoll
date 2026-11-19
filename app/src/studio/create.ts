@@ -93,6 +93,7 @@ import {
 	poseItemClip,
 	regridClip,
 	PartialMoveError,
+	type RepairReview,
 	type RigCtx
 } from '../lib/items/run.ts';
 import { directionLabel } from './experience/movement.ts';
@@ -1889,7 +1890,7 @@ export async function addMove(
 	spec: MoveSpec,
 	onProgress: (p: Progress) => void = () => {},
 	onReviewed: () => Promise<void> = async () => {}
-): Promise<{ warnings: string[]; reviewItems?: string[] }> {
+): Promise<{ warnings: string[]; reviewItems?: string[]; repairReview?: RepairReview }> {
 	approvedMeasurementIds(spec.measurementRecovery);
 	checkedPaletteIntent(spec.bodyPaletteRepair);
 	// Keeping reviewed frames is free and body-only: equipment for the move is a separate, priced choice afterward.
@@ -1961,8 +1962,13 @@ export async function addMove(
 				'This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.'
 			);
 	} else if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
-	if (spec.itemMethod === 'grid' && !existing)
-		throw new Error('Choose an existing move before repairing its equipment.');
+	if (
+		spec.itemMethod === 'grid' &&
+		(!existing || dirs.length !== 1 || spec.items.length !== 1 || !spec.itemsOnly || spec.replace)
+	)
+		throw new Error(
+			'Choose one item and one facing of an existing move before repairing. No generation was requested.'
+		);
 	if (reservedMove(spec.id) && (spec.replace || !existing)) throw new Error(reservedMove(spec.id));
 	if (!existing && dirs.length !== genDirs(rec.manifest).length)
 		throw new Error('A new move needs every independently drawn direction.');
@@ -2067,10 +2073,7 @@ export async function addMove(
 					spec.reuseItemFrames
 				);
 				tick();
-				if (!result.saved)
-					throw new Error(
-						`${item.name} ${spec.id} ${d}: the repair still fails quality checks. Existing artwork was kept; review Activity before trying again.`
-					);
+				if (result.review) return { warnings: [], repairReview: result.review };
 			}
 		else
 			await poseItemClip(

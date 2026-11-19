@@ -104,12 +104,17 @@
 		</details>
 		{#if mine && moving.spec}
 			<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-				><span class="bu-ring ring" class:spin={!moving.error} aria-hidden="true"></span><span
-					class="move-text"
+				><span
+					class="bu-ring ring"
+					class:spin={!moving.error && !moving.repairReview}
+					aria-hidden="true"
+				></span><span class="move-text"
 					><b>{nice(moving.spec.id)}</b><span class="muted small"
-						>{moving.error
-							? 'Failed: tap for details'
-							: `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span
+						>{moving.repairReview
+							? 'Review item repair'
+							: moving.error
+								? 'Failed: tap for details'
+								: `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span
 					></span
 				></button
 			>
@@ -118,7 +123,11 @@
 			<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
 				><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
 					><b>{nice(q.spec.id)}</b><span class="muted small"
-						>{moving.error ? 'Waiting for the failed move' : 'Queued'}</span
+						>{moving.repairReview
+							? 'Waiting for repair review'
+							: moving.error
+								? 'Waiting for the failed move'
+								: 'Queued'}</span
 					></span
 				></button
 			>

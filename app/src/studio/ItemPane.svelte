@@ -139,7 +139,9 @@
 	);
 	const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec]) : null);
 	const repairCalls = $derived(
-		m && repairOffer?.specs[0] ? movePlan({ manifest: m }, repairOffer.specs[0]) : []
+		m && repairOffer?.specs[0]
+			? movePlan({ manifest: m }, repairOffer.specs[0]).filter((call) => call.method === 'POST')
+			: []
 	);
 	// Required plan tiers come from the mandatory steps of each offered spec, not from the API preview.
 	const offerTier = (offer: { specs: MoveSpec[] } | null) =>
@@ -494,10 +496,10 @@
 					/>{/if}
 				<p class="faint small">
 					Only {moveName} facing {sourceDir.replaceAll('-', ' ')} is redrawn on the frozen body.{#if sourceDir !== ui.dir}
-						Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. Hard
-					failures keep the previous frames.{#if repairCalls.length > 1}
-						This repair uses {repairCalls.length}
-						PixelLab calls and saves the facing only if the assembled frames pass quality checks.{/if}
+						Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. If
+					a complete repair has visual issues, you can review it before replacing your frames.
+					{#if repairCalls.length > 1}This repair uses {repairCalls.length} PixelLab generation requests.
+					{/if}
 					PixelLab may bill dollars; queue time varies.
 				</p>
 			</div>

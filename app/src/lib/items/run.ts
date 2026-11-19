@@ -28,7 +28,7 @@ import type {
 	Provenance,
 	Slot
 } from '../store/manifest.ts';
-import { dropCut } from '../compose/compose.ts';
+import { composeCell, dropCut } from '../compose/compose.ts';
 import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches, poseGensFor } from '../rig/clips.ts';
@@ -1897,6 +1897,23 @@ export async function mergeClip(
 	pad = 0,
 	standingMaterials?: Material[]
 ) {
+	await publishClip(
+		ctx.rec.id,
+		await prepareClip(ctx, item, anim, dirs, cells, prov, q, pad),
+		standingMaterials
+	);
+}
+
+async function prepareClip(
+	ctx: RigCtx,
+	item: Item,
+	anim: string,
+	dirs: DirectionName[],
+	cells: CellOut[],
+	prov: Provenance[],
+	q: QaResult,
+	pad: number
+) {
 	const { rig } = ctx.rec.manifest,
 		key = item.key!;
 	const version = rigArtworkVersion(rig, ctx.rec.character),
@@ -1958,8 +1975,26 @@ export async function mergeClip(
 	);
 	out.provenance = [...out.provenance, ...prov];
 	out.qa = mergeQa(item, q.qa, qaCells);
-	await saveItem(ctx.rec.id, out, built.images, slotLadder(ctx.rec.manifest.rig), (current) => {
-		const currentItem = current.manifest.items.find((i) => i.id === item.id);
+	return { out, images: built.images, originalItem, version, ladder: slotLadder(rig) };
+}
+
+type PreparedClip = Awaited<ReturnType<typeof prepareClip>>;
+export type RepairReview = {
+	clip: PreparedClip;
+	findings: string[];
+	current: Img[];
+	replacement: Img[];
+};
+
+async function publishClip(
+	projectId: string,
+	prepared: PreparedClip,
+	standingMaterials?: Material[]
+) {
+	const { images, originalItem, version, ladder } = prepared;
+	const out = structuredClone(prepared.out);
+	await saveItem(projectId, out, images, ladder, (current) => {
+		const currentItem = current.manifest.items.find((i) => i.id === out.id);
 		if (
 			!currentItem ||
 			rigArtworkVersion(current.manifest.rig, current.character) !== version ||
@@ -1970,7 +2005,7 @@ export async function mergeClip(
 		out.materials = currentItem.materials;
 		if (!out.materials.length && standingMaterials?.length) {
 			current.manifest.materials = [
-				...current.manifest.materials.filter((m) => m.owner !== item.id),
+				...current.manifest.materials.filter((m) => m.owner !== out.id),
 				...standingMaterials
 			];
 			out.materials = standingMaterials.map((m) => m.id);
@@ -1978,6 +2013,17 @@ export async function mergeClip(
 		if (currentItem.hides === undefined) delete out.hides;
 		else out.hides = currentItem.hides;
 	});
+}
+
+export async function repairAlreadyApplied(projectId: string, review: RepairReview) {
+	const { rec } = await loadProject(projectId);
+	const current = rec.manifest.items.find((item) => item.id === review.clip.out.id);
+	return !!current && clipArtwork(current) === clipArtwork(review.clip.out);
+}
+
+export async function applyRepairReview(projectId: string, review: RepairReview) {
+	if (await repairAlreadyApplied(projectId, review)) return;
+	await publishClip(projectId, review.clip);
 }
 /** Free acknowledgment of the exact artwork and warnings the player reviewed, never a new generation. */
 export async function acceptItemReview(
@@ -2054,6 +2100,9 @@ export async function gridRepairRequest(
 		})
 	)
 		throw new Error('Choose unique existing frames from this move and direction to repair.');
+	const slot = requireSlot(ctx.rec.manifest, item.slot);
+	if (item.layers.length !== (slot.bgZ == null ? 1 : 2))
+		throw new Error('Equipment layers do not match this slot. No generation was requested.');
 	const pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
 	if (
 		!Number.isInteger(pad) ||
@@ -2075,7 +2124,7 @@ export async function gridRepairRequest(
 		ctx,
 		{
 			slot: item.slot,
-			slotConfig: structuredClone(requireSlot(ctx.rec.manifest, item.slot)),
+			slotConfig: structuredClone(slot),
 			prompt: item.prompt,
 			key: item.key
 		},
@@ -2174,7 +2223,7 @@ export async function regridClip(
 	preferTierOne = false,
 	activityScope?: string,
 	savedOnly = false
-): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[] }> {
+): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[]; review?: RepairReview }> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
 		key = item.key!;
@@ -2223,7 +2272,7 @@ export async function regridClip(
 			request
 		);
 		if ('blocked' in result) throw new Error(result.blocked);
-		if (batches.length > 1 && result.cells.some((cell) => cell.shifted))
+		if (index < requests.length - 1 && result.cells.some((cell) => cell.shifted))
 			throw new Error(
 				'A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.'
 			);
@@ -2249,9 +2298,41 @@ export async function regridClip(
 				qa.qa.clips[`${anim}/${dir}`].status = 'fail';
 			}
 		}
-	const saved = !qa.failCalls.size;
-	if (saved) await mergeClip(ctx, item, anim, [dir], cells, provenance, qa, pad);
-	return { qa, saved, cells };
+	const clip = await prepareClip(ctx, item, anim, [dir], cells, provenance, qa, pad);
+	if (!qa.failCalls.size) {
+		await publishClip(ctx.rec.id, clip);
+		return { qa, saved: true, cells };
+	}
+
+	const project = ctx.project;
+	const repaired = {
+		manifest: {
+			...project.manifest,
+			items: project.manifest.items.map((entry) => (entry.id === item.id ? clip.out : entry))
+		},
+		images: new Map([...project.images, ...clip.images])
+	};
+	const frame = {
+		w: rig.cell.w + 2 * pad,
+		h: rig.cell.h + 2 * pad,
+		x: rig.pivot.x + pad,
+		y: rig.pivot.y + pad
+	};
+	const previews = (source: Project) =>
+		Array.from({ length: frames }, (_, index) =>
+			composeCell(source, { [item.slot]: item.id }, anim, dir, index, frame)
+		);
+	return {
+		qa,
+		saved: false,
+		cells,
+		review: {
+			clip,
+			findings: [...new Set([...qa.failCalls.values()].flat())],
+			current: previews(project),
+			replacement: previews(repaired)
+		}
+	};
 }
 
 /** B16 fake-API check: an 8-direction held dress never sends edit-animation-v2 more frames than its size takes, every direction

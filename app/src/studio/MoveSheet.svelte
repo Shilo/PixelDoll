@@ -40,6 +40,7 @@
 		keepMoveBody,
 		matchMoveBodyColors,
 		retryMoveMeasurements,
+		resolveRepairReview,
 		dismissMove,
 		openProject,
 		pendingMoves,
@@ -149,6 +150,7 @@
 	// "Queue another move" shows the form over this character's running move; a new move then waits its turn
 	let adding = $state(false);
 	const progress = $derived(mine && !adding);
+	const repairReview = $derived(progress ? moving.repairReview : null);
 	const busy = $derived(!!moving.spec && !moving.done);
 	const savedItemFrames = $derived(
 		!!moving.spec &&
@@ -156,7 +158,6 @@
 			!moving.spec.replace &&
 			(moving.spec.itemMethod === 'grid'
 				? !!moving.spec.itemReview &&
-					!moving.spec.reuseItemFrames &&
 					$queue.jobs.some(
 						(job) =>
 							job.activityScope === moving.spec?.activityScope &&
@@ -197,7 +198,7 @@
 	const ownQueued = $derived(moving.queued.filter((q) => q.projectId === moving.projectId));
 	// another character's failed move holds every new move; only its own sheet can try it again or start over
 	const holder = $derived(
-		!mine && moving.spec && moving.error
+		!mine && moving.spec && (moving.error || moving.repairReview)
 			? (store.projects.find((p) => p.id === moving.projectId)?.name ?? 'that character')
 			: ''
 	);
@@ -337,6 +338,20 @@
 				ui.sheet = null;
 			}}>Done</button
 		>
+	{:else if repairReview}
+		{#if !moving.repairApplied}<button
+				class="bu-action btn"
+				data-variant="outline"
+				disabled={moving.resolvingRepair || queue.role === 'follower'}
+				onclick={() => void resolveRepairReview(false)}>Keep current</button
+			>{/if}
+		<button
+			class="bu-action btn primary"
+			data-variant="primary"
+			disabled={moving.resolvingRepair || queue.role === 'follower'}
+			onclick={() => void resolveRepairReview(true)}
+			>{moving.repairApplied ? 'Finish review' : 'Use repair'}</button
+		>
 	{:else if progress && moving.error}
 		<button class="bu-action btn plain" data-variant="quiet" onclick={dismissMove}
 			>{keep ? 'Discard' : 'Start over'}</button
@@ -441,26 +456,77 @@
 {/snippet}
 
 <Sheet
-	title={progress && moving.spec?.itemMethod === 'grid'
-		? 'Repair item frames'
-		: (progress ? moving.spec?.replace : replacing)
-			? 'Replace move views'
-			: 'Add a move'}
+	title={repairReview
+		? 'Review item repair'
+		: progress && moving.spec?.itemMethod === 'grid'
+			? 'Repair item frames'
+			: (progress ? moving.spec?.replace : replacing)
+				? 'Replace move views'
+				: 'Add a move'}
 	cancel={progress && !moving.done ? 'Hide' : 'Cancel'}
 	onclose={() => (ui.sheet = null)}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
 >
 	{#if holder}<p class="notice small">
 			<CircleAlert size={14} /><span
-				>{nice(moving.spec!.id)} failed on {holder}, so new moves wait. Open it to try again or
-				start over.</span
+				>{moving.repairReview
+					? `An item repair on ${holder} is ready to review. Queued moves will wait for your choice.`
+					: `${nice(moving.spec!.id)} failed on ${holder}, so new moves wait. Open it to try again or start over.`}</span
 			><button
 				class="bu-action btn sm"
 				data-variant="outline"
 				onclick={() => void openProject(moving.projectId)}>Open {holder}</button
 			>
 		</p>{/if}
-	{#if progress}
+	{#if mine && adding && moving.repairReview}
+		<button class="bu-action btn" data-variant="outline" onclick={() => (adding = false)}
+			>Review item repair</button
+		>
+	{/if}
+	{#if repairReview && moving.spec}
+		<section class="keep-review" aria-label="Compare item repair frames">
+			<p>
+				{repairReview.clip.out.name} · {nice(moving.spec.id)} · {moving.spec.dirs
+					?.map(directionLabel)
+					.join(', ') ?? ''}
+			</p>
+			{#if moving.repairApplied}<p class="small" role="status">
+					The repair is already saved. Finish the review to continue.
+				</p>{:else}<p class="small" role="status">
+					The paid repair is ready, but some frames may have visual issues. Your current artwork is
+					unchanged. Keeping it or using the repair costs nothing. Hide this panel to decide later.
+				</p>{/if}
+			<div class="keep-view">
+				<strong class="small">Current frames</strong>
+				<div class="keep-frames">
+					{#each repairReview.current as frame, index (index)}
+						<Sprite img={frame} k={keepK} checker label={`Current frame ${index + 1}`} />
+					{/each}
+				</div>
+			</div>
+			<div class="keep-view">
+				<strong class="small">Repair frames</strong>
+				<div class="keep-frames">
+					{#each repairReview.replacement as frame, index (index)}
+						<Sprite img={frame} k={keepK} checker label={`Repair frame ${index + 1}`} />
+					{/each}
+				</div>
+			</div>
+			<details>
+				<summary>Quality findings</summary>
+				<ul>
+					{#each repairReview.findings as finding (finding)}<li class="small">{finding}</li>{/each}
+				</ul>
+			</details>
+			{#if moving.error}<p class="notice bad small" role="alert">{moving.error}</p>{/if}
+			{#if queue.role === 'follower'}<p class="notice small">
+					Review the repair in the tab managing your PixelDoll jobs.
+				</p>{/if}
+			{#if moving.queued.length}<p class="muted small">
+					Finishing this review resumes your queued moves at their reviewed costs.
+				</p>{/if}
+		</section>
+	{:else if progress}
 		<div class="form">
 			<p style="font-weight:600">
 				{nice(moving.spec!.id)}{moving.spec?.dirs
@@ -473,8 +539,8 @@
 				/>
 			</p>
 			{#if moving.spec?.itemMethod === 'grid'}<p class="muted small">
-					Only the selected item frames are redrawn; the body stays fixed. Results that fail hard
-					checks keep the previous item frames.
+					Only the selected item frames are redrawn; the body stays fixed. A complete repair with
+					visual issues is held for your review.
 				</p>{/if}
 			<ol class="steps-list">
 				{#each steps as s, i (s.id)}

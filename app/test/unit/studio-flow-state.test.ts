@@ -1,6 +1,7 @@
 /// <reference types="svelte" />
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { MoveSpec, Progress } from '../../src/studio/create.ts';
+import type { RepairReview } from '../../src/lib/items/run.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { readFileSync } from 'node:fs';
 import { equipmentFixture } from './equipment-fixture.ts';
@@ -15,6 +16,8 @@ const mocks = vi.hoisted(() => ({
 	keep: vi.fn(),
 	palette: vi.fn(),
 	match: vi.fn(),
+	applyRepair: vi.fn(),
+	repairApplied: vi.fn(),
 	load: vi.fn(),
 	source: vi.fn(),
 	put: vi.fn(),
@@ -43,7 +46,9 @@ vi.mock('../../src/studio/create.ts', () => ({
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }));
 vi.mock('../../src/lib/items/run.ts', async (original) => ({
 	...(await original<typeof import('../../src/lib/items/run.ts')>()),
-	matchItemColors: mocks.match
+	matchItemColors: mocks.match,
+	applyRepairReview: mocks.applyRepair,
+	repairAlreadyApplied: mocks.repairApplied
 }));
 vi.mock('../../src/lib/store/project.ts', async (original) => ({
 	...(await original<typeof import('../../src/lib/store/project.ts')>()),
@@ -124,6 +129,62 @@ test('canceling from a follower explains that generation has not stopped without
 	} finally {
 		queue.role = 'leader';
 	}
+});
+
+test('a failed review write leaves the paid candidate available and a cache-only recovery record', async () => {
+	const state = await import('../../src/studio/state.svelte.ts');
+	const itemReview = { gens: 10, artwork: 'reviewed' };
+	const candidate = { findings: ['visual issue'] } as RepairReview;
+	const spec: MoveSpec = {
+		id: 'walk',
+		frames: 8,
+		seed: 271,
+		items: ['coat'],
+		dirs: ['south'],
+		itemsOnly: true,
+		itemMethod: 'grid',
+		itemReview,
+		reuseItemFrames: true
+	};
+	mocks.load.mockResolvedValue({ rec: { manifest: {} } });
+	mocks.moveReview.mockReturnValue({ itemReview });
+	mocks.move.mockResolvedValue({ warnings: [], repairReview: candidate });
+	mocks.put.mockImplementation(async (_store, _key, record) => {
+		if (record.status === 'review') throw new Error('Quota exceeded');
+	});
+	await state.startMove('project', spec);
+	expect(state.moving.repairReview).toEqual(candidate);
+	expect(state.moving.error).toContain('available in this tab');
+	expect(mocks.put.mock.calls.at(-1)?.[2]).toMatchObject({
+		status: 'failed',
+		spec: { itemReview, reuseItemFrames: true },
+		error: expect.stringContaining('without another charge')
+	});
+	await state.resolveRepairReview(false);
+	expect(state.moving.done).toBe(true);
+	expect(mocks.move).toHaveBeenCalledOnce();
+	expect(mocks.applyRepair).not.toHaveBeenCalled();
+});
+
+test('a committed repair survives a failed move handoff without offering to keep the replaced frames', async () => {
+	const state = await import('../../src/studio/state.svelte.ts');
+	const candidate = { findings: ['visual issue'] } as RepairReview;
+	mocks.get.mockResolvedValue({
+		status: 'review',
+		projectId: 'project',
+		repairReview: candidate,
+		spec: { id: 'walk', items: ['coat'], itemMethod: 'grid', seed: 5, itemsOnly: true }
+	});
+	mocks.repairApplied.mockResolvedValue(true);
+	await state.resumeMove();
+	expect(state.moving.repairApplied).toBe(true);
+	await state.resolveRepairReview(false);
+	expect(state.moving.error).toContain('already saved');
+	expect(mocks.del).not.toHaveBeenCalled();
+	await state.resolveRepairReview(true);
+	expect(state.moving.done).toBe(true);
+	expect(mocks.move).not.toHaveBeenCalled();
+	expect(mocks.applyRepair).not.toHaveBeenCalled();
 });
 
 function pending<T>() {

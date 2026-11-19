@@ -345,7 +345,7 @@ export function movePlan(
 						path: '/inpaint-v3',
 						label: `${item.name} ${direction} · repair equipment`,
 						generations: batch.gens,
-						note: `${batch.w}×${batch.h}, frames ${batch.start + 1}–${batch.start + batch.count}. Uses one protected matching-direction reference. The body remains unchanged. The full facing must pass quality checks before any frames are saved.`
+						note: `${batch.w}×${batch.h}, frames ${batch.start + 1}–${batch.start + batch.count}. Uses one protected matching-direction reference. The body remains unchanged. Complete repairs with blocking visual issues are held for your review.`
 					});
 			} else
 				for (const batch of poseBatches(frames)) {
