@@ -35,6 +35,26 @@
 			onchange={(event) => reportSave(setSharedItemsHiddenForAll(event.currentTarget.checked))}
 		/>
 	</label>
+	<label class="row bu-check">
+		<LayoutTemplate size={18} aria-hidden="true" />
+		<span class="row-name wardrobe-character">
+			<span class="wardrobe-character-name">{DEMO_NAME}</span><span class="faint small">(Demo)</span
+			>
+		</span>
+		{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
+		<input
+			class="bu-switch"
+			type="checkbox"
+			role="switch"
+			aria-label={`Hide shared items from ${DEMO_NAME} (Demo)${lockReason}`}
+			checked={hideAll || !demoItemsShown()}
+			disabled={hideAll}
+			onchange={(event) => {
+				reportSave(setDemoItemsShown(!event.currentTarget.checked));
+				if (store.project && !isDemo()) void refreshShared();
+			}}
+		/>
+	</label>
 	{#if current}
 		{@const { id, name } = current}
 		<label class="row bu-check">
@@ -56,26 +76,6 @@
 			/>
 		</label>
 	{/if}
-	<label class="row bu-check">
-		<LayoutTemplate size={18} aria-hidden="true" />
-		<span class="row-name wardrobe-character">
-			<span class="wardrobe-character-name">{DEMO_NAME}</span><span class="faint small">(Demo)</span
-			>
-		</span>
-		{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
-		<input
-			class="bu-switch"
-			type="checkbox"
-			role="switch"
-			aria-label={`Hide shared items from ${DEMO_NAME} (Demo)${lockReason}`}
-			checked={hideAll || !demoItemsShown()}
-			disabled={hideAll}
-			onchange={(event) => {
-				reportSave(setDemoItemsShown(!event.currentTarget.checked));
-				if (store.project && !isDemo()) void refreshShared();
-			}}
-		/>
-	</label>
 </div>
 
 <style>

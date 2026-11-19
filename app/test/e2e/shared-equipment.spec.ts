@@ -340,6 +340,10 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await page.keyboard.press('Tab');
 	await expect(allCharacters).toBeFocused();
 	await page.keyboard.press('Tab');
+	await expect(
+		visibility.getByRole('switch', { name: /^Hide shared items from .+ \(Demo\)/ })
+	).toBeFocused();
+	await page.keyboard.press('Tab');
 	await expect(thisCharacter).toBeFocused();
 	await expect(allCharacters).not.toBeChecked();
 	await expect(thisCharacter).not.toBeChecked();
