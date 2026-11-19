@@ -209,7 +209,10 @@ test('eight original views and every horizontal mirror preserve the intended pix
 		const layer = configured.manifest.items[0].layers[0];
 		for (const { id, mirrorOf } of selected) {
 			const source = cellImg(project, original, 'default', mirrorOf ?? id, 0)!;
-			expectPixels(cellImg(configured, layer, 'default', id, 0), mirrorOf ? flipH(source) : source);
+			const expected = mirrorOf ? flipH(source) : source;
+			const hash = layer.cells?.default[id]?.[0];
+			expectPixels(hash ? configured.images.get(hash) : undefined, expected, `${id} stored`);
+			expectPixels(cellImg(configured, layer, 'default', id, 0), expected, `${id} rendered`);
 		}
 		await expect(
 			retainCharacterDirections(
