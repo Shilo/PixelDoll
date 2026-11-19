@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { t } from 'svelte-whisper';
 	import { installWorkspaceCopy } from '../lib/store/db.ts';
 	import { readWorkspace } from '../lib/store/workspace.ts';
@@ -88,8 +90,9 @@
 						? t('openWorkspace.release')
 						: t('openWorkspace.drop')}</strong
 			>
-			<span>{t('openWorkspace.orChoose')}</span>
-		</button>
+			<span>{openerLabel(t('openWorkspace.orChoose'))}</span>
+			<SurfaceChevron /></button
+		>
 		{#if error}<p class="notice warn" role="alert">{displayMessage(error)}</p>{/if}
 		<div class="actions">
 			<a class="btn bu-action" data-variant="quiet" href={workspaceUrl(false)}

@@ -1,8 +1,10 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { getLocale, getLocales, localeName, t } from 'svelte-whisper';
 	import { detectedLanguage, languagePreference, selectLanguage } from '../lib/i18n.ts';
 	import { popoverFocus } from './experience/focus.ts';
-	import { Check, ChevronRight, Languages } from './icons.ts';
+	import { Check, Languages } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
 
 	const nameOf = (id: string) => (id === 'id' ? 'Bahasa Indonesia' : localeName(id));
@@ -45,11 +47,11 @@
 	>
 		<Languages size={18} aria-hidden="true" />
 		{#if !compact}
-			<span class="row-name">{t('language.label')}</span>
+			<span class="row-name">{openerLabel(t('language.label'))}</span>
 			<span id={valueId} class="faint small" lang={activeLanguage}>{nameOf(activeLanguage)}</span>
-			<ChevronRight size={16} aria-hidden="true" />
 		{/if}
-	</button>
+		<SurfaceChevron {compact} /></button
+	>
 	<div
 		id={menuId}
 		class="menu bu-popover-anchor"

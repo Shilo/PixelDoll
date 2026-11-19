@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { t } from 'svelte-whisper';
 	import { Notice } from '@shilo/bronze-ui/svelte';
 	import { pwa, requestUpdate } from '../lib/pwa.ts';
@@ -26,18 +28,20 @@
 {#snippet pendingIndicator()}<PendingIndicator />{/snippet}
 
 {#if $pwa.available && updateNotice.visible}
+	{@const opens = $pwa.ready && !$pwa.reloading}
+	{@const title = t('toolbar.updateToVVersion', { version: $pwa.available.version })}
 	<Notice
 		class="bu-toast"
-		title={t('toolbar.updateToVVersion', { version: $pwa.available.version })}
+		title={opens ? openerLabel(title) : title}
 		tone="info"
 		indicator={$pwa.reloading || (!$pwa.ready && !$pwa.error) ? pendingIndicator : undefined}
 		live
-		onactivate={$pwa.ready && !$pwa.reloading ? requestUpdate : undefined}
+		onactivate={opens ? requestUpdate : undefined}
 		ondismiss={$pwa.reloading ? undefined : dismiss}
 	>
-		{#if $pwa.reloading}{t('pwaNotice.readyToUpdateReloading')}{:else if $pwa.ready}{t(
-				'pwaNotice.readyToUpdate'
-			)}{:else if !$pwa.error}{t('pwaNotice.downloadingUpdate')}{/if}
+		{#if $pwa.reloading}{t('pwaNotice.readyToUpdateReloading')}{:else if opens}<span
+				class="notice-opener">{t('pwaNotice.readyToUpdate')}<SurfaceChevron /></span
+			>{:else if !$pwa.error}{t('pwaNotice.downloadingUpdate')}{/if}
 		{#if $pwa.error && !$pwa.reloading}<span>{displayPwaError($pwa.error)}</span>{/if}
 	</Notice>
 {/if}

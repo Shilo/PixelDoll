@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SurfaceChevron from '../../studio/SurfaceChevron.svelte';
 	import { labQueue, reconcileResearchJobs } from './run.ts';
 	import {
 		importPilot,
@@ -221,7 +222,8 @@
 			<button
 				class="bu-btn"
 				disabled={busy || !!equipmentReceipt}
-				onclick={() => equipmentFile.click()}>Import frozen equipment diagnostic</button
+				onclick={() => equipmentFile.click()}
+				>Import frozen equipment diagnostic...<SurfaceChevron /></button
 			><button
 				class="bu-btn"
 				disabled={!connected ||

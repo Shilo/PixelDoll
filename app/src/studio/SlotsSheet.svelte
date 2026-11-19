@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { message } from '../lib/message.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
@@ -368,7 +370,10 @@
 				onclick={() => {
 					deleteProblem = '';
 					deleting = edited.key;
-				}}><Trash size={16} aria-hidden="true" />{t('slotsSheet.deleteSlot')}</button
+				}}
+				><Trash size={16} aria-hidden="true" />{openerLabel(
+					t('slotsSheet.deleteSlot')
+				)}<SurfaceChevron /></button
 			>
 		</form>
 	</Sheet>

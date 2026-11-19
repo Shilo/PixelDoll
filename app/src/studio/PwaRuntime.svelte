@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { t } from 'svelte-whisper';
 	import { onMount, tick } from 'svelte';
 	import {
@@ -204,7 +206,8 @@
 						class="bu-action"
 						data-variant="primary"
 						disabled={$pwa.installing}
-						onclick={install}>{t('pwaRuntime.installPixelDoll')}</button
+						onclick={install}
+						>{openerLabel(t('pwaRuntime.installPixelDoll'))}<SurfaceChevron /></button
 					>
 				{:else}
 					<p>
@@ -235,7 +238,7 @@
 					href={updateUrl}
 					target="_blank"
 					rel="noopener"
-					onclick={close}>{t('pwaRuntime.openUpdatedApp')}</a
+					onclick={close}>{openerLabel(t('pwaRuntime.openUpdatedApp'))}<SurfaceChevron /></a
 				>
 			{:else if error}
 				<p role="alert">{displayNestedMessage(error)}</p>
@@ -245,7 +248,8 @@
 					class="bu-action"
 					data-variant="primary"
 					disabled={!$pwa.ready}
-					onclick={updateInNewTab}>{t('pwaRuntime.updateNow')}</button
+					onclick={updateInNewTab}
+					>{openerLabel(t('pwaRuntime.updateNow'))}<SurfaceChevron /></button
 				>
 			{:else}<p role="status">
 					{$pwa.reloading

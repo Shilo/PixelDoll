@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { app } from '../lib/app.svelte.ts';
-	import { ChevronRight, Gauge } from './icons.ts';
+	import { Gauge } from './icons.ts';
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { formatNumber, formatPercent, t } from 'svelte-whisper';
 
 	let {
@@ -10,6 +12,7 @@
 		actions
 	}: { label?: string; compact?: boolean; actions?: Snippet } = $props();
 	const balance = $derived(app.keyRejected || app.balanceError ? null : app.balance);
+	const heading = $derived(label ?? t('usage.title'));
 	const usage = $derived.by(() => {
 		if (!balance?.subscription) return null;
 		const { generations: remaining, total, status } = balance.subscription;
@@ -36,14 +39,16 @@
 
 <span class={['usage', { compact }]}>
 	<span class="summary">
-		<span class="label"><Gauge size={18} /><span>{label ?? t('usage.title')}</span></span>
+		<span class="label"
+			><Gauge size={18} /><span>{compact ? openerLabel(heading) : heading}</span></span
+		>
 		{#if usage}
 			<span class="count bu-small bu-number">
 				{formatNumber(usage.used)}<span class="bu-muted">{` / ${formatNumber(usage.total)}`}</span>
 			</span>
 		{/if}
 		<span class="actions">
-			{#if compact}<ChevronRight size={16} aria-hidden="true" />{:else}{@render actions?.()}{/if}
+			{#if compact}<SurfaceChevron />{:else}{@render actions?.()}{/if}
 		</span>
 		{#if !usage && (app.key || !compact)}
 			<span class="detail bu-small bu-muted">

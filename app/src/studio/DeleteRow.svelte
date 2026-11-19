@@ -1,13 +1,22 @@
 <script lang="ts">
 	import { Trash } from './icons.ts';
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	// A destructive menu item. When `locked` gives a reason, the item stays in its place, unavailable, with the reason
 	// underneath, so people learn why it cannot be used instead of wondering where it went.
 	let {
 		label,
+		opens = false,
 		locked = '',
 		onclick,
 		class: className = ''
-	}: { label: string; locked?: string; onclick: () => void; class?: string } = $props();
+	}: {
+		label: string;
+		opens?: boolean;
+		locked?: string;
+		onclick: () => void;
+		class?: string;
+	} = $props();
 	const reason = $props.id();
 </script>
 
@@ -22,6 +31,8 @@
 		if (!locked) onclick();
 	}}
 	><Trash size={16} aria-hidden="true" /><span class="row-name"
-		>{label}{#if locked}<small class="row-reason" id={reason}>{locked}</small>{/if}</span
-	></button
+		>{opens ? openerLabel(label) : label}{#if locked}<small class="row-reason" id={reason}
+				>{locked}</small
+			>{/if}</span
+	>{#if opens}<SurfaceChevron />{/if}</button
 >

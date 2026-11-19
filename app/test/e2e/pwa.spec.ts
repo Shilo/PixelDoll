@@ -59,7 +59,7 @@ async function openUpdatedApp(page: Page, button: Locator) {
 	const context = page.context();
 	const existing = context.pages();
 	const newTab = () => context.pages().find((tab) => !existing.includes(tab));
-	const link = page.getByRole('link', { name: 'Open updated app', exact: true });
+	const link = page.getByRole('link', { name: 'Open updated app...', exact: true });
 	await button.click();
 	await expect
 		.poll(async () => !!newTab() || (await link.isVisible()), { timeout: 30_000 })
@@ -276,7 +276,7 @@ test('installed shell includes valid icons and works offline after a cold naviga
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await page
 			.locator('#experience-options')
-			.getByRole('button', { name: 'Installation help', exact: true })
+			.getByRole('button', { name: 'Installation help...', exact: true })
 			.click();
 		await expect(
 			page.getByRole('dialog', { name: 'Installation help', exact: true })
@@ -351,7 +351,7 @@ test('an offline launch needs no optional languages and retains a language used 
 		await expect(customize).not.toHaveText(english);
 		const german = await customize.innerText();
 		await page.getByRole('button', { name: 'Neue Figur', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Neu erstellen…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Neu erstellen...', exact: true }).click();
 		const creator = page.getByRole('dialog', { name: 'Neue Figur', exact: true });
 		await creator.getByRole('button', { name: 'Abbrechen', exact: true }).click();
 		await expect(creator).toBeHidden();
@@ -504,7 +504,7 @@ test('updates in an already-used tab require an explicit click, preserve its rel
 		await other.goto(server.url);
 		await expect(other.locator('.customize-action')).toBeVisible();
 		await other.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await other.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await other.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		const prompt = other.getByRole('dialog').getByRole('textbox', { name: 'Name', exact: true });
 		await prompt.fill('Do not discard this unfinished form');
 		await page.evaluate(() => {
@@ -623,7 +623,7 @@ test('update notices expire without hiding the menu action, survive interaction,
 		const notice = page.getByRole('status').filter({ hasText: 'Update to v8.9.2' });
 		await page.clock.fastForward(6000);
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		await page.keyboard.press('Escape');
 		await page.clock.fastForward(8000);
@@ -637,11 +637,11 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await expect(notice).toHaveCount(0);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		const menu = page.locator('#experience-options');
-		const update = menu.getByRole('button', { name: 'Update to v8.9.2', exact: true });
+		const update = menu.getByRole('button', { name: 'Update to v8.9.2...', exact: true });
 		await expect(update).toBeEnabled();
 		await page.keyboard.press('Escape');
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible();
 		await expect(notice).toHaveCount(0);
 		await page.keyboard.press('Escape');
@@ -663,7 +663,9 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await page.mouse.move(0, 0);
 		await page.evaluate(() => dispatchEvent(new Event('online')));
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await expect(menu.getByRole('button', { name: 'Update to v8.9.3', exact: true })).toBeEnabled();
+		await expect(
+			menu.getByRole('button', { name: 'Update to v8.9.3...', exact: true })
+		).toBeEnabled();
 		await expect(newer).toHaveCount(0);
 		await page.keyboard.press('Escape');
 		const held = server.hold(
@@ -731,7 +733,7 @@ test('update notices expire without hiding the menu action, survive interaction,
 			);
 		});
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await menu.getByRole('button', { name: 'Update to v8.9.4', exact: true }).click();
+		await menu.getByRole('button', { name: 'Update to v8.9.4...', exact: true }).click();
 		await expectLoadedBuild(page, d);
 		expect(
 			await page.evaluate(() => JSON.parse(sessionStorage.getItem('pwa-reload-notice')!))
@@ -980,7 +982,7 @@ test('a stalled outfit save releases the update dialog and leaves the old Studio
 		await expect(paused.getByRole('button', { name: 'Close', exact: true })).toBeEnabled();
 		const updated = await openUpdatedApp(
 			page,
-			paused.getByRole('button', { name: 'Update now', exact: true })
+			paused.getByRole('button', { name: 'Update now...', exact: true })
 		);
 		await expectLoadedBuild(updated, b);
 		await expectLoadedBuild(page, a);
@@ -1049,12 +1051,12 @@ for (const loading of ['stalled', 'failed'] as const) {
 			await page.getByRole('button', { name: 'More options', exact: true }).click();
 			await page
 				.locator('#experience-options')
-				.getByRole('button', { name: 'Update to v9.3.2', exact: true })
+				.getByRole('button', { name: 'Update to v9.3.2...', exact: true })
 				.click();
 			await expect(paused.getByRole('alert')).toHaveText(reason);
 			const recovery = await openUpdatedApp(
 				page,
-				paused.getByRole('button', { name: 'Update now', exact: true })
+				paused.getByRole('button', { name: 'Update now...', exact: true })
 			);
 			await expect(recovery).toHaveURL(server.url, { timeout: 30_000 });
 			await expectLoadedBuild(recovery, b);
@@ -1081,7 +1083,7 @@ test('Update now preserves the draft when verification fails and opens the verif
 	try {
 		await openInstalled(page, server.url, a);
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		const draft = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });
@@ -1089,7 +1091,7 @@ test('Update now preserves the draft when verification fails and opens the verif
 		server.deploy(b);
 		await (await discover(page, b)).click();
 		const paused = page.getByRole('dialog', { name: 'Update paused', exact: true });
-		const button = paused.getByRole('button', { name: 'Update now', exact: true });
+		const button = paused.getByRole('button', { name: 'Update now...', exact: true });
 		const asset = b.inventory.find((file) => file.path.startsWith('appearance.js?'))!.path;
 		server.failures.add('appearance.js');
 		await page.evaluate(
@@ -1135,7 +1137,7 @@ test('slow or blocked updates stay in Studio and offer a direct link to the veri
 	try {
 		await openInstalled(page, server.url, a);
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		const draft = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });
@@ -1143,7 +1145,7 @@ test('slow or blocked updates stay in Studio and offer a direct link to the veri
 		server.deploy(b);
 		await (await discover(page, b)).click();
 		const paused = page.getByRole('dialog', { name: 'Update paused', exact: true });
-		const button = paused.getByRole('button', { name: 'Update now', exact: true });
+		const button = paused.getByRole('button', { name: 'Update now...', exact: true });
 		await page.evaluate(() => {
 			window.open = (url) => {
 				document.documentElement.dataset.openedUrl = String(url);
@@ -1163,7 +1165,7 @@ test('slow or blocked updates stay in Studio and offer a direct link to the veri
 			held.release();
 		}
 		const ready = page.getByRole('dialog', { name: 'Update ready', exact: true });
-		const link = ready.getByRole('link', { name: 'Open updated app', exact: true });
+		const link = ready.getByRole('link', { name: 'Open updated app...', exact: true });
 		await expect(link).toBeFocused();
 		await expect(link).toHaveAttribute('href', server.url);
 		const popup = context.waitForEvent('page');
@@ -1252,7 +1254,7 @@ test('install help traps studio shortcuts and leaves the current view unchanged'
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await page
 			.locator('#experience-options')
-			.getByRole('button', { name: 'Installation help', exact: true })
+			.getByRole('button', { name: 'Installation help...', exact: true })
 			.click();
 		const dialog = page.getByRole('dialog', { name: 'Installation help', exact: true });
 		await expect(dialog).toBeVisible();
@@ -1291,7 +1293,7 @@ test('a missing current static cache is repaired online without clearing saved b
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await page
 			.locator('#experience-options')
-			.getByRole('button', { name: 'Installation help', exact: true })
+			.getByRole('button', { name: 'Installation help...', exact: true })
 			.click();
 		const help = page.getByRole('dialog', { name: 'Installation help', exact: true });
 		await expect(help).toContainText('Offline files are not ready yet.');
@@ -1345,7 +1347,7 @@ test('an initial worker registration failure recovers on reconnect without reloa
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await page
 			.locator('#experience-options')
-			.getByRole('button', { name: 'Installation help', exact: true })
+			.getByRole('button', { name: 'Installation help...', exact: true })
 			.click();
 		const help = page.getByRole('dialog', { name: 'Installation help', exact: true });
 		await expect(help).toContainText('Checks resume automatically when connected.');
@@ -1404,14 +1406,14 @@ test('accepting an install prompt does not report installation until the browser
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		const install = page
 			.locator('#experience-options')
-			.getByRole('button', { name: 'Install PixelDoll', exact: true });
+			.getByRole('button', { name: 'Install PixelDoll...', exact: true });
 		await install.click();
 		await expect(page.locator('html')).toHaveAttribute('data-pwa-prompted', 'yes');
 		// The native event is single-use; its disappearance does not establish that installation completed.
 		await expect(install).toHaveCount(0);
 		const help = page
 			.locator('#experience-options')
-			.getByRole('button', { name: 'Installation help', exact: true });
+			.getByRole('button', { name: 'Installation help...', exact: true });
 		await expect(help).toBeVisible();
 		await page.evaluate(() => dispatchEvent(new Event('appinstalled')));
 		await expect(install).toHaveCount(0);
@@ -1492,16 +1494,16 @@ test('an install offer captured before the module app starts remains available f
 		await expect(page.locator('#startup-message')).toHaveCount(0);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		const menu = page.locator('#experience-options');
-		await expect(menu.getByRole('button', { name: 'Installation help', exact: true })).toHaveCount(
-			0
-		);
-		await menu.getByRole('button', { name: 'Install PixelDoll', exact: true }).click();
-		await expect(page.locator('html')).toHaveAttribute('data-pwa-early-prompt', 'shown');
-		await expect(menu.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
-			0
-		);
 		await expect(
-			menu.getByRole('button', { name: 'Installation help', exact: true })
+			menu.getByRole('button', { name: 'Installation help...', exact: true })
+		).toHaveCount(0);
+		await menu.getByRole('button', { name: 'Install PixelDoll...', exact: true }).click();
+		await expect(page.locator('html')).toHaveAttribute('data-pwa-early-prompt', 'shown');
+		await expect(
+			menu.getByRole('button', { name: 'Install PixelDoll...', exact: true })
+		).toHaveCount(0);
+		await expect(
+			menu.getByRole('button', { name: 'Installation help...', exact: true })
 		).toBeVisible();
 		await expectLoadedBuild(page, release);
 	} finally {
@@ -1528,15 +1530,15 @@ test('installation help upgrades on a late native offer and preserves explicit p
 		await openInstalled(page, server.url, release);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		const menu = page.locator('#experience-options');
-		await expect(menu.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
-			0
-		);
-		await menu.getByRole('button', { name: 'Installation help', exact: true }).click();
+		await expect(
+			menu.getByRole('button', { name: 'Install PixelDoll...', exact: true })
+		).toHaveCount(0);
+		await menu.getByRole('button', { name: 'Installation help...', exact: true }).click();
 		const help = page.getByRole('dialog', { name: 'Installation help', exact: true });
 		await expect(help).toContainText('A browser install prompt isn’t available in this window.');
-		await expect(help.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
-			0
-		);
+		await expect(
+			help.getByRole('button', { name: 'Install PixelDoll...', exact: true })
+		).toHaveCount(0);
 		await page.evaluate(() => {
 			const event = new Event('beforeinstallprompt', { cancelable: true });
 			Object.assign(event, {
@@ -1547,12 +1549,12 @@ test('installation help upgrades on a late native offer and preserves explicit p
 			});
 			dispatchEvent(event);
 		});
-		await help.getByRole('button', { name: 'Install PixelDoll', exact: true }).click();
+		await help.getByRole('button', { name: 'Install PixelDoll...', exact: true }).click();
 		await expect(help.getByRole('alert')).toContainText('Native prompt rejected for this test');
 		await expect(help).toBeVisible();
-		await expect(help.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
-			0
-		);
+		await expect(
+			help.getByRole('button', { name: 'Install PixelDoll...', exact: true })
+		).toHaveCount(0);
 		await page.evaluate(() => {
 			const event = new Event('beforeinstallprompt', { cancelable: true });
 			Object.assign(event, {
@@ -1564,15 +1566,15 @@ test('installation help upgrades on a late native offer and preserves explicit p
 			dispatchEvent(event);
 		});
 		await expect(help.getByRole('alert')).toHaveCount(0);
-		await help.getByRole('button', { name: 'Install PixelDoll', exact: true }).click();
+		await help.getByRole('button', { name: 'Install PixelDoll...', exact: true }).click();
 		await expect(page.locator('html')).toHaveAttribute('data-pwa-late-prompt', 'shown');
 		await expect(help).not.toBeVisible();
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await expect(menu.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
-			0
-		);
 		await expect(
-			menu.getByRole('button', { name: 'Installation help', exact: true })
+			menu.getByRole('button', { name: 'Install PixelDoll...', exact: true })
+		).toHaveCount(0);
+		await expect(
+			menu.getByRole('button', { name: 'Installation help...', exact: true })
 		).toBeVisible();
 		await expectLoadedBuild(page, release);
 	} finally {

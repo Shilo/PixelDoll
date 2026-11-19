@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
 	import type { Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import { contextMenu } from '../lib/input/contextMenu.ts';
@@ -31,7 +32,7 @@
 		aria-label={t('experience.moreActionsFor', { name })}
 		aria-haspopup="menu"
 		aria-expanded={expanded}
-		popovertarget={menuId}><EllipsisVertical size={18} /></button
+		popovertarget={menuId}><EllipsisVertical size={18} /><SurfaceChevron compact /></button
 	>
 </div>
 <div

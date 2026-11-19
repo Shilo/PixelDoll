@@ -26,14 +26,14 @@ async function newCharacter(page: Page) {
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	await expect(page.locator('dialog[open]')).toHaveAccessibleName('New character');
 }
 
 async function expectPeekBeforePrimary(page: Page) {
 	const sheet = page.locator('dialog[open]');
 	const inspect = sheet.locator('.sheet-foot .api-peek-trigger');
-	await expect(inspect).toHaveAttribute('title', 'PixelLab API calls');
+	await expect(inspect).toHaveAttribute('title', 'PixelLab API calls...');
 	const icon = await inspect.boundingBox(),
 		primary = await sheet.locator('.sheet-foot .btn.primary').boundingBox();
 	expect(icon).not.toBeNull();

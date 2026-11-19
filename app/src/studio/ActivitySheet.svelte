@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import Sheet from './Sheet.svelte';
 	import PixelLabUsage from './PixelLabUsage.svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -221,7 +223,8 @@
 					>{:else if !ui.waitingForTab}<button
 						class="bu-action btn sm"
 						data-variant="outline"
-						onclick={() => (ui.sheet = 'connect')}>{t('connectSheet.connect')}</button
+						onclick={() => (ui.sheet = 'connect')}
+						>{openerLabel(t('connectSheet.connect'))}<SurfaceChevron /></button
 					>{/if}
 			{/snippet}
 		</PixelLabUsage>
@@ -256,7 +259,9 @@
 							class="bu-action btn sm"
 							data-variant="outline"
 							onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}
-							>{$queue.paused === 'auth' ? t('connectSheet.connect') : t('activity.resume')}</button
+							>{$queue.paused === 'auth'
+								? openerLabel(t('connectSheet.connect'))
+								: t('activity.resume')}{#if $queue.paused === 'auth'}<SurfaceChevron />{/if}</button
 						></span
 					>{/if}
 			</p>
@@ -448,7 +453,7 @@
 				data-variant="outline"
 				aria-label={t('activity.openWorkNamed', { label })}
 				disabled={doc.loading || $queue.role === 'follower'}
-				onclick={open}>{t('activity.openWork')}</button
+				onclick={open}>{openerLabel(t('activity.openWork'))}<SurfaceChevron /></button
 			>{/if}
 	</li>
 {/snippet}

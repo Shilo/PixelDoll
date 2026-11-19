@@ -1,8 +1,10 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
 	import { popoverFocus } from './experience/focus.ts';
-	import { ChevronRight, Copy, GitCommitHorizontal, Github } from './icons.ts';
+	import { Copy, GitCommitHorizontal, Github } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { PRE_RELEASE } from './previewNotice.ts';
 	import { toast } from './state.svelte.ts';
@@ -34,10 +36,11 @@
 	popovertarget={menuId}
 >
 	<Github size={18} />
-	<span class="row-name wrap-name">{t('toolbar.version', { version })}</span>
+	<span class="row-name wrap-name">{openerLabel(t('toolbar.version', { version }))}</span>
 	<span class="build-meta faint small num">{__APP_COMMIT__}</span>
-	<ChevronRight size={16} aria-hidden="true" />
-</button>
+
+	<SurfaceChevron /></button
+>
 <div
 	id={menuId}
 	class="menu bu-popover-anchor"
@@ -60,9 +63,12 @@
 			target="_blank"
 			rel="noreferrer"
 		>
-			<Github size={18} /><span class="row-name wrap-name">{t('versionRow.openSource')}</span>
+			<Github size={18} /><span class="row-name wrap-name"
+				>{openerLabel(t('versionRow.openSource'))}</span
+			>
 			<span class="build-meta faint small">{repositoryName}</span>
-		</a>
+			<SurfaceChevron /></a
+		>
 		<a
 			class="row bu-action"
 			data-variant="quiet"
@@ -70,9 +76,12 @@
 			target="_blank"
 			rel="noreferrer"
 		>
-			<GitCommitHorizontal size={18} /><span class="row-name">{t('versionRow.viewCommit')}</span>
+			<GitCommitHorizontal size={18} /><span class="row-name"
+				>{openerLabel(t('versionRow.viewCommit'))}</span
+			>
 			<span class="build-meta faint small num">{__APP_COMMIT__}</span>
-		</a>
+			<SurfaceChevron /></a
+		>
 		<button class="row bu-action" data-variant="quiet" onclick={copyVersion}>
 			<Copy size={18} /><span class="row-name">{t('versionRow.copyDetails')}</span>
 		</button>

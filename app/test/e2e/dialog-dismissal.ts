@@ -79,7 +79,9 @@ for (const [width, height, touch] of [
 							.locator('#project-menu')
 							.getByRole('button', { name: 'New character', exact: true })
 							.click();
-						await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+						await page
+							.getByRole('menuitem', { name: 'Import from device...', exact: true })
+							.click();
 					},
 					close: 'Cancel'
 				},
@@ -91,7 +93,9 @@ for (const [width, height, touch] of [
 							.locator('#project-menu')
 							.getByRole('button', { name: 'New character', exact: true })
 							.click();
-						await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+						await page
+							.getByRole('menuitem', { name: 'Create from scratch...', exact: true })
+							.click();
 					},
 					field: 'Details',
 					close: 'Cancel'

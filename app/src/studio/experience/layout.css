@@ -282,9 +282,24 @@
 		left: 8px;
 		right: 8px;
 	}
-	.phone-layout .name-text .bu-muted {
+	.phone-layout .name-line {
+		position: relative;
+		display: block;
+	}
+	.phone-layout .name-line .name-text {
+		display: block;
+	}
+	.phone-layout .name-line :is(.bu-muted, .name-opener-suffix) {
 		display: block;
 		font-size: 12px;
+		padding-inline-end: 16px;
+	}
+	.phone-layout .name-line svg[data-surface-chevron] {
+		position: absolute;
+		inset-inline-end: 0;
+		inset-block-end: 1px;
+		width: 12px;
+		height: 12px;
 	}
 	.phone-layout .name-facts {
 		display: none;
@@ -305,9 +320,6 @@
 @media (max-width: 360px) {
 	.phone-layout .name-menu {
 		padding-inline: 0;
-	}
-	.phone-layout .name-line svg {
-		display: none;
 	}
 	.phone-layout .name-line .name-text {
 		font-size: 16px;
@@ -651,6 +663,10 @@
 	height: 44px;
 	margin: -6px -6px -6px -2px;
 }
+.section-add {
+	grid-auto-flow: column;
+	justify-content: center;
+}
 .bu-section-head[data-slot-head] > .bu-section-title {
 	overflow: visible;
 }
@@ -673,6 +689,18 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+@media (max-width: 360px) {
+	.section-menu {
+		gap: 4px;
+	}
+	.section-menu > svg[data-surface-chevron] {
+		width: 12px;
+		height: 12px;
+	}
+	.bu-section-head:not([data-armed], [data-dragged]) .section-menu > .slot-drag-icon {
+		display: none;
+	}
 }
 .equipment-scroll {
 	overflow-anchor: none;
@@ -828,6 +856,15 @@
 	min-width: 0;
 	height: 25px;
 	min-height: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0;
+	padding: 0;
+}
+.tile-wrap > .tile-more > svg[data-surface-chevron] {
+	width: 10px;
+	height: 10px;
 }
 /* Cover only the top and right border gaps; the left and bottom follow the visible button. */
 .tile-wrap > .tile-more::before {
@@ -893,6 +930,20 @@
 	white-space: nowrap;
 	line-height: 1.2;
 }
+.bu-tile:has(> .tile-opener-cue) > .bu-tile-label,
+.bu-tile:has(> .tile-opener-cue) .generation-caption .tile-name {
+	max-inline-size: calc(100% - 16px);
+	margin-inline: auto;
+}
+
+.tile-opener-cue {
+	position: absolute;
+	inset-inline-end: 2px;
+	inset-block-end: 7px;
+	display: flex;
+	pointer-events: none;
+}
+
 .generation-caption {
 	position: relative;
 	flex: none;
@@ -1147,6 +1198,8 @@
 	top: 50%;
 	transform: translateY(-50%);
 	display: grid;
+	grid-auto-flow: column;
+	justify-content: center;
 	place-items: center;
 	width: 44px;
 	height: 44px;

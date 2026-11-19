@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { t, type WhisperKey } from 'svelte-whisper';
 	import { onDestroy, tick } from 'svelte';
 	import { app, setKey, replaceKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
@@ -177,7 +179,7 @@
 					data-variant="outline"
 					href="https://www.pixellab.ai/#pricing"
 					target="_blank"
-					rel="noreferrer">{t('connectSheet.viewPixelLabPlans')} <ExternalLink size={12} /></a
+					rel="noreferrer">{openerLabel(t('connectSheet.viewPixelLabPlans'))}<SurfaceChevron /></a
 				>
 				{#if limitedAccess}
 					<button class="bu-action btn sm" data-variant="outline" onclick={connected}
@@ -191,11 +193,12 @@
 				class="bu-action btn sm"
 				data-variant="outline"
 				bind:this={replaceButton}
+				aria-label={t('connectSheet.replaceKey')}
 				onclick={() => {
 					replacing = true;
 					remember = app.remembered;
 					void focusKey();
-				}}>{t('connectSheet.replaceKey')}</button
+				}}>{openerLabel(t('connectSheet.replaceKey'))}<SurfaceChevron /></button
 			>
 			<button class="bu-action btn sm" data-variant="outline" onclick={forget}
 				>{t('connectSheet.forgetKey')}</button

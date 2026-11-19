@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { t, type WhisperKey } from 'svelte-whisper';
 	import LanguagePicker from './LanguagePicker.svelte';
 	import RichMessage from './RichMessage.svelte';
@@ -90,7 +92,8 @@
 			</p>
 			<div class="hero-actions">
 				<button class="bu-action btn primary lg" data-variant="primary" onclick={create}
-					><Sparkles size={16} />{t('welcome.createYourCharacter')}</button
+					><Sparkles size={16} />{openerLabel(t('welcome.createYourCharacter'))}<SurfaceChevron
+					/></button
 				>
 				<button class="bu-action btn lg" data-variant="outline" onclick={demo}
 					>{t('welcome.tryTheDemo')}</button
@@ -101,7 +104,9 @@
 				data-variant="quiet"
 				onclick={() => {
 					ui.sheet = 'importZip';
-				}}><Download size={16} />{t('welcome.importAnExistingCharacter')}</button
+				}}
+				><Download size={16} />{openerLabel(t('welcome.importAnExistingCharacter'))}<SurfaceChevron
+				/></button
 			>
 			<p class="faint small">
 				{#snippet pixelLab()}<a href="https://pixellab.ai" target="_blank" rel="noreferrer"

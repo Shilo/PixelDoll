@@ -271,7 +271,7 @@ FetchEvent.prototype.respondWith = function (response) {
 	try {
 		await cachedApp(page, server.url, a);
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		const draft = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });
@@ -638,7 +638,7 @@ test('trusted interaction during the startup opportunity preserves an unfinished
 		await held.requested;
 		await fresh.clock.fastForward(4_000);
 		await fresh.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await fresh.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await fresh.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		const name = fresh
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });
@@ -721,7 +721,7 @@ test('an offline cached launch is interactive without waiting for an update chec
 		await page.reload();
 		await expect(page.locator('.customize-action')).toBeVisible();
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		const name = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });
@@ -820,7 +820,7 @@ test('an incomplete release cannot trigger a startup reload', async ({ page }) =
 		await expect(
 			page
 				.locator('#experience-options')
-				.getByRole('button', { name: 'Update to v11.4.2', exact: true })
+				.getByRole('button', { name: 'Update to v11.4.2...', exact: true })
 		).toBeDisabled();
 		await expect(page.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(
 			0

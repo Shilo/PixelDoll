@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { t } from 'svelte-whisper';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
@@ -208,7 +210,7 @@
 							data-variant="quiet"
 							role="menuitem"
 							onclick={() => act(() => void openGenerationReview(generation!.draft.spec.id))}
-							><Info size={16} />{t('itemMenu.reviewItem')}</button
+							><Info size={16} />{openerLabel(t('itemMenu.reviewItem'))}<SurfaceChevron /></button
 						>
 					{/if}
 					<button
@@ -216,7 +218,7 @@
 						data-variant="quiet"
 						role="menuitem"
 						onclick={() => act(() => (ui.sheet = 'activity'))}
-						><Info size={16} />{t('itemMenu.activity')}</button
+						><Info size={16} />{openerLabel(t('itemMenu.activity'))}<SurfaceChevron /></button
 					>
 					{#if generation.phase === 'running' && $queue.role !== 'follower'}
 						<button
@@ -225,7 +227,8 @@
 							data-variant="quiet"
 							role="menuitem"
 							onclick={() => ask(() => (cancelling = true))}
-							><Trash size={16} />{t('itemMenu.cancelGeneration')}</button
+							><Trash size={16} />{openerLabel(t('itemMenu.cancelGeneration'))}<SurfaceChevron
+							/></button
 						>
 					{/if}
 				</div>
@@ -275,9 +278,11 @@
 								name: entry.item.name
 							})
 						)}
-					><RefreshCw size={16} aria-hidden="true" />{t('itemMenu.remake', {
-						name: m.name
-					})}</button
+					><RefreshCw size={16} aria-hidden="true" />{openerLabel(
+						t('itemMenu.remake', {
+							name: m.name
+						})
+					)}<SurfaceChevron /></button
 				>
 			</div>
 		</div>
@@ -315,7 +320,10 @@
 						act(() => {
 							ui.selected = it.id;
 							ui.sheet = 'item';
-						})}><Info size={16} aria-hidden="true" />{t('common.detailsMenu')}</button
+						})}
+					><Info size={16} aria-hidden="true" />{openerLabel(
+						t('common.detailsMenu')
+					)}<SurfaceChevron /></button
 				>
 				{#if otherHand}
 					<!-- Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
@@ -344,9 +352,11 @@
 							role="menuitem"
 							onclick={() =>
 								act(() => openNewItem(otherHand, { slot: otherHand, prompt: it.prompt }))}
-							><CopyPlus size={16} aria-hidden="true" />{t('itemMenu.makeForSlot', {
-								slot: displayMessage(slotLabelMessage(m, otherHand))
-							})}</button
+							><CopyPlus size={16} aria-hidden="true" />{openerLabel(
+								t('itemMenu.makeForSlot', {
+									slot: displayMessage(slotLabelMessage(m, otherHand))
+								})
+							)}<SurfaceChevron /></button
 						>
 					{/if}
 				{/if}
@@ -364,9 +374,9 @@
 									route: it.route
 								})
 							)}
-						><RefreshCw size={16} aria-hidden="true" />{remakeOnly
-							? t('itemMenu.remake', { name: m.name })
-							: t('itemMenu.tryAgain')}</button
+						><RefreshCw size={16} aria-hidden="true" />{openerLabel(
+							remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.tryAgain')
+						)}<SurfaceChevron /></button
 					>
 				{/if}
 				<button
@@ -378,6 +388,7 @@
 				>
 				<hr class="bu-separator" />
 				<DeleteRow
+					opens
 					class="bu-action"
 					label={t('itemMenu.labelDeleteItem')}
 					locked={isDemo() ? t('itemMenu.demoDeleteLocked') : ''}

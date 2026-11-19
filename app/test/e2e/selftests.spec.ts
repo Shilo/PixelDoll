@@ -67,7 +67,7 @@ test('offline Motion Lab edits and roundtrips motions without requesting generat
 	await page.getByRole('button', { name: 'Save motion document' }).click();
 	const file = await (await downloading).path();
 	await page.getByRole('combobox', { name: 'Body', exact: true }).selectOption('chibi');
-	await page.getByLabel('Import motion document', { exact: true }).setInputFiles(file!);
+	await page.getByLabel('Import motion document...', { exact: true }).setInputFiles(file!);
 	await expect(page.getByRole('combobox', { name: 'Body', exact: true })).toHaveValue('c27man');
 	await page.getByRole('combobox', { name: 'KayKit control', exact: true }).selectOption('walk');
 	await expect(page.getByRole('combobox', { name: 'Preset', exact: true })).toHaveValue(
@@ -1696,7 +1696,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 	// bind the placed playback slots, and never substitute a guessed hand or root speed.
 	await starter.getByRole('combobox', { name: 'Native view', exact: true }).selectOption('north');
 	const openAuthoring = starter.getByRole('button', {
-		name: 'Open hand and foot review · Free',
+		name: 'Open hand and foot review · Free...',
 		exact: true
 	});
 	await openAuthoring.click();
@@ -2122,7 +2122,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'starter.pixeldoll.zip',
 		mimeType: 'application/zip',

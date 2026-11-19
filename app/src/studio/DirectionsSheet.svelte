@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { LocalizedError, errorMessage, message, type Message } from '../lib/message.ts';
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayError } from '../lib/i18n.ts';
@@ -132,7 +134,7 @@
 			onclick={() => {
 				error = '';
 				confirm = true;
-			}}>{t('directionsSheet.reviewRemoval')}</button
+			}}>{openerLabel(t('directionsSheet.reviewRemoval'))}<SurfaceChevron /></button
 		>
 	{/snippet}
 </Sheet>

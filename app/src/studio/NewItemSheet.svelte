@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import Sheet from './Sheet.svelte';
 	import ReferenceField from './ReferenceField.svelte';
 	import TierNotice from './TierNotice.svelte';
@@ -244,7 +246,8 @@
 			<button
 				class="bu-action btn primary"
 				data-variant="primary"
-				onclick={() => (ui.sheet = 'create')}>{t('welcome.createYourCharacter')}</button
+				onclick={() => (ui.sheet = 'create')}
+				>{openerLabel(t('welcome.createYourCharacter'))}<SurfaceChevron /></button
 			>
 			<button
 				class="bu-action btn copy-demo"
@@ -266,7 +269,8 @@
 				<TriangleAlert size={16} /><span>{t('newItem.needsSetup')}</span><button
 					class="bu-action btn small"
 					data-variant="outline"
-					onclick={() => (ui.sheet = 'setup')}>{t('setup.title')}</button
+					onclick={() => (ui.sheet = 'setup')}
+					>{openerLabel(t('setup.title'))}<SurfaceChevron /></button
 				>
 			</p>{/if}
 		{#if planned.error}<p class="notice warn small" role="alert">

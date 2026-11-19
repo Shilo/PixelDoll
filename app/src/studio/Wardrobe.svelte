@@ -1,4 +1,6 @@
 <script lang="ts" module>
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel, openerName } from './openerLabel.ts';
 	// Survives tab switches (the list unmounts) so returning to Wardrobe keeps the reader's place, for the same character
 	// and only while no other view has picked a different category meanwhile.
 	let memory: { id: string; open: number; group: string; scroll: number } | null = null;
@@ -889,13 +891,13 @@
 											class="slot-grip"
 											size={16}
 										/></span
-									><span class="section-menu-name">{s.label}</span><span
+									><span class="section-menu-name">{openerName(s.label)}</span><span
 										class="bu-section-count"
 										id={`${sectionId(s.key)}-count`}
 										><span aria-hidden="true">{formatNumber(count)}</span><span class="sr"
 											>{t('wardrobe.itemCount', { count, n: formatNumber(count) })}</span
 										></span
-									></button
+									><SurfaceChevron /></button
 								>{/if}
 						</h3>
 						{#if s.fromOthers}<span class="bu-section-count"
@@ -916,8 +918,9 @@
 								class="bu-action section-action section-add"
 								data-variant="quiet"
 								aria-label={t('wardrobe.newLowerItem', { lower })}
-								title={t('wardrobe.newLowerItem', { lower })}
-								onclick={() => openNewItem(s.key)}><Plus size={18} /></button
+								title={openerLabel(t('wardrobe.newLowerItem', { lower }))}
+								onclick={() => openNewItem(s.key)}
+								><Plus size={18} /><SurfaceChevron compact /></button
 							>
 						{/if}
 					</div>
@@ -977,13 +980,13 @@
 										aria-haspopup="menu"
 										aria-expanded={menuOpen && menuFor === it.id}
 										aria-label={t('wardrobe.moreOptionsForName', { name: it.name })}
-										title={t('wardrobe.titleOptions')}
+										title={openerLabel(t('wardrobe.titleOptions'))}
 										onclick={() => {
 											// The same ⋮ toggles the menu closed; another tile's ⋮ reopens it for that tile.
 											if (menuOpen && menuFor !== it.id)
 												document.getElementById('item-menu')?.hidePopover();
 											menuFor = it.id;
-										}}><EllipsisVertical size={18} /></button
+										}}><EllipsisVertical size={18} /><SurfaceChevron compact /></button
 									>
 								</div>
 							{/each}
@@ -1071,7 +1074,9 @@
 											<span class="generation-time bu-muted small num" aria-hidden="true"
 												>{status}</span
 											>
-											<span class="bu-tile-label tile-name">{x.input.name}</span>
+											<span class="bu-tile-label tile-name"
+												>{x.phase === 'running' ? x.input.name : openerName(x.input.name)}</span
+											>
 										</span>
 										<TileMarks
 											marks={sortMarks([
@@ -1079,7 +1084,10 @@
 												info.attention && { kind: 'check', label: status, text: status }
 											])}
 										/>
-									</button>
+										{#if x.phase !== 'running'}<span class="tile-opener-cue"
+												><SurfaceChevron compact /></span
+											>{/if}</button
+									>
 									{#if x.phase === 'running'}<span
 											class="sr"
 											role="progressbar"
@@ -1097,13 +1105,13 @@
 										popovertarget="item-menu"
 										aria-haspopup="menu"
 										aria-expanded={menuOpen && menuFor === 'gen:' + x.draft.spec.id}
-										title={t('wardrobe.titleOptions')}
+										title={openerLabel(t('wardrobe.titleOptions'))}
 										aria-label={t('wardrobe.moreOptionsForName', { name: x.input.name })}
 										onclick={() => {
 											if (menuOpen && menuFor !== 'gen:' + x.draft.spec.id)
 												document.getElementById('item-menu')?.hidePopover();
 											menuFor = 'gen:' + x.draft.spec.id;
-										}}><EllipsisVertical size={18} /></button
+										}}><EllipsisVertical size={18} /><SurfaceChevron compact /></button
 									>
 								</div>
 							{/each}
@@ -1122,13 +1130,18 @@
 										aria-label={tileName(x.item.name, marks)}
 										aria-busy={adding}
 										aria-disabled={!!shared.adding || undefined}
+										aria-haspopup={remake ? 'menu' : undefined}
+										aria-expanded={remake ? menuOpen && menuFor === key : undefined}
 										onclick={(e) =>
 											remake ? openMenu(e.currentTarget.parentElement!) : addShared(x)}
 									>
 										<span class="bu-tile-art tile-art" aria-hidden="true" {@attach lazyArt(key)}
 											>{#if seen.has(key)}<SharedThumb entry={x} />{/if}</span
-										><span class="bu-tile-label tile-name">{x.item.name}</span>
+										><span class="bu-tile-label tile-name"
+											>{remake ? openerName(x.item.name) : x.item.name}</span
+										>
 										<TileMarks {marks} />
+										{#if remake}<span class="tile-opener-cue"><SurfaceChevron compact /></span>{/if}
 									</button>
 									<button
 										class="bu-tile-more tile-more"
@@ -1136,12 +1149,12 @@
 										aria-haspopup="menu"
 										aria-expanded={menuOpen && menuFor === key}
 										aria-label={t('wardrobe.moreOptionsForName', { name: x.item.name })}
-										title={t('wardrobe.titleOptions')}
+										title={openerLabel(t('wardrobe.titleOptions'))}
 										onclick={() => {
 											if (menuOpen && menuFor !== key)
 												document.getElementById('item-menu')?.hidePopover();
 											menuFor = key;
-										}}><EllipsisVertical size={18} /></button
+										}}><EllipsisVertical size={18} /><SurfaceChevron compact /></button
 									>
 								</div>
 							{/each}
@@ -1152,7 +1165,9 @@
 									aria-label={t('wardrobe.newLowerItem', { lower })}
 									onclick={() => openNewItem(s.key)}
 									><span class="bu-tile-art tile-art" aria-hidden="true"><Plus size={26} /></span
-									><span class="bu-tile-label">{t('common.new')}</span></button
+									><span class="bu-tile-label">{openerLabel(t('common.new'))}</span><span
+										class="tile-opener-cue"><SurfaceChevron compact /></span
+									></button
 								>
 							{/if}
 						</div>
@@ -1328,11 +1343,11 @@
 						data-variant="quiet"
 						role="menuitem"
 						onclick={() => openSlotSettings(s.key)}
-						>{#if slotCustom}<Pencil size={16} aria-hidden="true" />{t(
-								'wardrobe.editSlot'
-							)}{:else}<CopyPlus size={16} aria-hidden="true" />{t(
-								'wardrobe.makeACustomCopy'
-							)}{/if}</button
+						>{#if slotCustom}<Pencil size={16} aria-hidden="true" />{openerLabel(
+								t('wardrobe.editSlot')
+							)}{:else}<CopyPlus size={16} aria-hidden="true" />{openerLabel(
+								t('wardrobe.makeACustomCopy')
+							)}{/if}<SurfaceChevron /></button
 					>
 				{/if}
 			</div>
@@ -1441,9 +1456,9 @@
 					aria-haspopup="dialog"
 					title={t('slotsSheet.titleAddSlot')}
 					onclick={addSlot}
-					><Plus size={22} aria-hidden="true" /><span class="bu-rail-label"
-						>{t('wardrobe.addSlot')}</span
-					></button
+					><span class="slot-drag-icon"
+						><Plus size={22} aria-hidden="true" /><SurfaceChevron compact /></span
+					><span class="bu-rail-label">{openerLabel(t('wardrobe.addSlot'))}</span></button
 				>
 			</div>
 		</div>

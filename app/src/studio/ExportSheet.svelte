@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { assetUrl } from '../lib/assets.ts';
 	// Export (M5): one engine at a time; the zip is built when the sheet opens so the button can name its size.
 	import Sheet from './Sheet.svelte';
@@ -27,7 +29,6 @@
 	import { displayMove } from './displayMove.ts';
 	import {
 		Check,
-		ChevronDown,
 		ChevronLeft,
 		ChevronRight,
 		Download,
@@ -601,12 +602,15 @@
 			class="bu-action btn plain link"
 			data-variant="quiet"
 			bind:this={navigation}
+			aria-label={t(settings ? 'export.sheet.back' : 'export.sheet.settings')}
 			disabled={saving}
 			onclick={navigate}
 		>
 			{#if settings}<ChevronLeft size={16} aria-hidden="true" />{t(
 					'export.sheet.back'
-				)}{:else}<Settings2 size={16} aria-hidden="true" />{t('export.sheet.settings')}{/if}
+				)}{:else}<Settings2 size={16} aria-hidden="true" />{openerLabel(
+					t('export.sheet.settings')
+				)}<SurfaceChevron />{/if}
 		</button>
 	{/snippet}
 	{#snippet trailing()}
@@ -738,11 +742,13 @@
 													<span class="version-value"
 														>{#each RPG_VERSIONS as v (v.id)}<span
 																aria-hidden="true"
-																class:hidden={v.id !== rpgVersion.id}>{t(v.value)}</span
+																class:hidden={v.id !== rpgVersion.id}
+																>{openerLabel(t(v.value))}</span
 															>{/each}</span
 													>
-													<ChevronDown size={16} aria-hidden="true" />
-												</button>
+
+													<SurfaceChevron /></button
+												>
 											</div>
 										</div>
 									{:else}

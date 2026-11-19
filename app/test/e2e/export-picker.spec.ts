@@ -2629,7 +2629,7 @@ for (const auto of [false, true])
 				[...gif]
 			);
 			expect(colors, stage).toEqual([true, true]);
-			await popover.getByRole('button', { name: 'Share to…' }).click();
+			await popover.getByRole('button', { name: 'Share to...' }).click();
 			await expect
 				.poll(
 					async () =>
@@ -2671,7 +2671,7 @@ for (const auto of [false, true])
 				}),
 				stage
 			).toBe(true);
-			await popover.getByRole('button', { name: 'Share to…' }).click();
+			await popover.getByRole('button', { name: 'Share to...' }).click();
 			await expect
 				.poll(
 					async () =>
@@ -3006,7 +3006,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 		await page.evaluate(() => (window as unknown as { __copied: number[] }).__copied)
 	);
 	expect([copied.readUInt32BE(16), copied.readUInt32BE(20)]).toEqual([192, 192]);
-	await popover.getByRole('button', { name: 'Share to…' }).click();
+	await popover.getByRole('button', { name: 'Share to...' }).click();
 	await expect
 		.poll(() =>
 			page.evaluate(
@@ -3016,7 +3016,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 		.toEqual([...scaledBytes.subarray(0, 24)]);
 	await popover.getByRole('combobox', { name: 'Size' }).selectOption('1');
 	await expect(popover.getByRole('button', { name: 'Download GIF' })).toBeEnabled();
-	await popover.getByRole('button', { name: 'Share to…' }).click();
+	await popover.getByRole('button', { name: 'Share to...' }).click();
 	await expect
 		.poll(() =>
 			page.evaluate(() => (window as unknown as { __shared?: { type: string } }).__shared?.type)
@@ -3046,7 +3046,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 			await page.evaluate(() => (window as unknown as { __copied: number[] }).__copied)
 		).equals(pngBytes)
 	).toBe(true);
-	await popover.getByRole('button', { name: 'Share to…' }).click();
+	await popover.getByRole('button', { name: 'Share to...' }).click();
 	await expect
 		.poll(() =>
 			page.evaluate(() => (window as unknown as { __shared?: { type: string } }).__shared?.type)
@@ -3123,7 +3123,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')
-		.getByRole('button', { name: 'Share', exact: true })
+		.getByRole('button', { name: 'Share...', exact: true })
 		.click();
 	await expect(popover).toBeVisible();
 	await expect(popover.getByRole('combobox', { name: 'Move' })).toHaveValue('cross-punch');
@@ -3297,7 +3297,7 @@ test('Share choices reset to the current stage when switching characters', async
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	await page
 		.getByLabel('Character ZIP', { exact: true })
 		.setInputFiles({ name: 'share-memory.zip', mimeType: 'application/zip', buffer: bytes });
