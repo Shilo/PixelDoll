@@ -888,8 +888,9 @@ for (const viewport of [
 				context.fillRect(5, 5, 16, 16);
 				return canvas.toDataURL().split(',')[1];
 			}, max);
+			const filename = `${'character-revision-'.repeat(6)}sprite.png`;
 			await picker.setInputFiles({
-				name: 'sprite.png',
+				name: filename,
 				mimeType: 'image/png',
 				buffer: Buffer.from(image, 'base64')
 			});
@@ -899,6 +900,11 @@ for (const viewport of [
 			});
 			await expect(attachment).toBeVisible();
 			await expect(attachment).toHaveAccessibleDescription(/sprite\.png/);
+			const dimensions = attachment.getByText(`${max} × ${max / 2} px`, { exact: true });
+			const name = attachment.getByText(filename, { exact: true });
+			expect((await dimensions.boundingBox())!.y).toBeCloseTo((await name.boundingBox())!.y);
+			expect(await dimensions.evaluate((size) => size.scrollWidth === size.clientWidth)).toBe(true);
+			expect(await name.evaluate((file) => file.scrollWidth > file.clientWidth)).toBe(true);
 			await expect(
 				sheet.locator('.reference > small').filter({ hasText: 'Resized from' })
 			).toHaveText(`Resized from ${max * 2} × ${max} to ${max} × ${max / 2} px.`);

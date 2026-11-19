@@ -318,7 +318,7 @@
 				bind:value={reference}
 				bind:loading={referenceLoading}
 				max={referenceMax}
-				compact
+				sideBySide
 				inspectColors
 				hint="Show the item by itself."
 				disabled={busy}

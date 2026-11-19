@@ -13,7 +13,7 @@
 		value = $bindable(),
 		loading = $bindable(false),
 		max,
-		compact = false,
+		sideBySide = false,
 		inspectColors = false,
 		hint,
 		issue = '',
@@ -22,7 +22,7 @@
 		value?: PickedReference;
 		loading?: boolean;
 		max: ReferenceSize;
-		compact?: boolean;
+		sideBySide?: boolean;
 		inspectColors?: boolean;
 		hint: string;
 		issue?: string;
@@ -93,7 +93,7 @@
 
 <svelte:window ondragover={preventMissedFileDrop} ondrop={preventMissedFileDrop} />
 
-<div class={['reference', { compact }]}>
+<div class={['reference', { 'side-by-side': sideBySide }]}>
 	<span class="label">Reference <span class="faint">(optional)</span></span>
 	<div class="reference-row">
 		<button
@@ -134,13 +134,13 @@
 					/>
 				</svg>
 			{:else}
-				<Upload size={compact ? 18 : 22} />
+				<Upload size={22} />
 			{/if}
 			<span class="reference-copy">
 				{#if value}
 					<small class="reference-file" id={fileId}>
 						<span class="filename" title={value.name}>{value.name}</span>
-						<span>{value.width} × {value.height} px</span>
+						<span class="faint dimensions">{value.width} × {value.height} px</span>
 					</small>
 				{:else}
 					<span>{loading ? 'Opening image…' : 'Add image'}</span>
@@ -197,9 +197,6 @@
 		gap: 0.35rem;
 		block-size: 112px;
 	}
-	.compact .reference-row {
-		block-size: 54px;
-	}
 	.drop {
 		flex: 1;
 		min-width: 0;
@@ -209,7 +206,7 @@
 		justify-content: center;
 		gap: 6px;
 	}
-	.compact .drop {
+	.side-by-side .drop {
 		flex-direction: row;
 		justify-content: flex-start;
 		gap: 10px;
@@ -229,7 +226,7 @@
 		overflow: hidden;
 		image-rendering: pixelated;
 	}
-	.compact .drop .reference-thumbnail {
+	.side-by-side .drop .reference-thumbnail {
 		flex: none;
 		width: auto;
 		height: 100%;
@@ -243,16 +240,16 @@
 		text-align: center;
 		pointer-events: none;
 	}
-	.compact .reference-copy {
+	.side-by-side .reference-copy {
 		text-align: left;
 	}
 	.reference-file {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-	}
-	.compact .reference-file {
 		grid-template-columns: minmax(0, auto) max-content;
 		gap: 8px;
+	}
+	.dimensions {
+		white-space: nowrap;
 	}
 	.reference-copy .filename {
 		overflow: hidden;

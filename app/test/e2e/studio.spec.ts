@@ -1961,8 +1961,7 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	const drop = item.getByRole('button', { name: 'Add image', exact: true });
 	await drop.click();
 	const dropHeight = (await drop.boundingBox())!.height;
-	expect(dropHeight).toBeGreaterThanOrEqual(44);
-	expect(dropHeight).toBeLessThan(80);
+	expect(dropHeight).toBe(112);
 	const artwork = makeImg(16, 16);
 	const filename = `${'festival-hat-revision-'.repeat(6)}reference.png`;
 	for (let column = 1; column < 13; column++)
@@ -1990,15 +1989,19 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	await expect(item.getByRole('status').filter({ hasText: 'Reference attached.' })).toBeAttached();
 	expect((await attachment.boundingBox())!.height).toBeCloseTo(dropHeight);
 	const dimensions = attachment.getByText('16 × 16 px', { exact: true });
-	await expect(dimensions).toBeInViewport();
-	const dimensionsBox = (await dimensions.boundingBox())!;
-	const attachmentBox = (await attachment.boundingBox())!;
-	expect(dimensionsBox.x + dimensionsBox.width).toBeLessThan(attachmentBox.x + attachmentBox.width);
-	expect(
-		await attachment
-			.getByText(filename, { exact: true })
-			.evaluate((name) => name.scrollWidth > name.clientWidth)
-	).toBe(true);
+	const name = attachment.getByText(filename, { exact: true });
+	for (const width of [320, 1440]) {
+		await page.setViewportSize({ width, height: 844 });
+		const dimensionsBox = (await dimensions.boundingBox())!;
+		const attachmentBox = (await attachment.boundingBox())!;
+		expect(dimensionsBox.x + dimensionsBox.width).toBeLessThan(
+			attachmentBox.x + attachmentBox.width
+		);
+		expect(dimensionsBox.y).toBeCloseTo((await name.boundingBox())!.y);
+		expect(await dimensions.evaluate((size) => size.scrollWidth === size.clientWidth)).toBe(true);
+		expect(await name.evaluate((file) => file.scrollWidth > file.clientWidth)).toBe(true);
+	}
+	await page.setViewportSize({ width: 390, height: 844 });
 	await prompt.fill('a leather hat');
 	await prompt.press('Enter');
 	await expect(prompt).toHaveValue('a leather hat\n');
