@@ -41,7 +41,7 @@
 	let copyStatus = $state('');
 	let copiedAll = $state(false);
 	let manualCopy = $state<string>();
-	let endpointCopyAttempt = 0;
+	let copyAttempt = 0;
 	let inspectionError = $state(false);
 	const actual = $derived(
 		$apiActivity.filter(
@@ -104,7 +104,6 @@
 			popoverFocus({ currentTarget: el, newState: e.newState }, false);
 			el.querySelector<HTMLButtonElement>('[aria-label="Close API calls"]')?.focus();
 		} else {
-			endpointCopyAttempt++;
 			popoverFocus({ currentTarget: el, newState: e.newState }, false);
 		}
 	}
@@ -128,8 +127,12 @@
 			return;
 		}
 	}
+	function isCurrentCopy(attempt: number) {
+		return attempt === copyAttempt && panel?.isConnected && panel.matches(':popover-open');
+	}
 	async function copy() {
-		endpointCopyAttempt++;
+		const attempt = ++copyAttempt;
+		const count = calls.length;
 		const text = recorded
 			? exportActivityJson(actual)
 			: JSON.stringify(
@@ -145,10 +148,17 @@
 					null,
 					2
 				);
+		let copied: boolean;
 		try {
 			await navigator.clipboard.writeText(text);
-			copyStatus = `Copied ${calls.length} call${calls.length === 1 ? '' : 's'}`;
+			copied = true;
 		} catch {
+			copied = false;
+		}
+		if (!isCurrentCopy(attempt)) return;
+		if (copied) {
+			copyStatus = `Copied ${count} call${count === 1 ? '' : 's'}`;
+		} else {
 			// Still usable when clipboard permissions are unavailable (including some mobile browsers).
 			const blob = new Blob([text], { type: 'application/json' }),
 				url = URL.createObjectURL(blob);
@@ -169,7 +179,7 @@
 	) {
 		const button = event.currentTarget;
 		const active = document.activeElement;
-		const attempt = ++endpointCopyAttempt;
+		const attempt = ++copyAttempt;
 		copyStatus = '';
 		manualCopy = undefined;
 		let copied: boolean;
@@ -180,8 +190,7 @@
 			copied = false;
 		}
 		await tick();
-		if (attempt !== endpointCopyAttempt || !button.isConnected || !panel.matches(':popover-open'))
-			return;
+		if (!isCurrentCopy(attempt) || !button.isConnected) return;
 		if (copied) {
 			copyStatus = `Endpoint copied: ${context}`;
 			return;
@@ -193,7 +202,7 @@
 			.closest('.peek-request')
 			?.querySelector<HTMLInputElement>('.manual-endpoint');
 		if (
-			attempt === endpointCopyAttempt &&
+			isCurrentCopy(attempt) &&
 			field?.getClientRects().length &&
 			document.activeElement === active
 		) {
@@ -230,6 +239,9 @@
 	role="dialog"
 	aria-label="API calls"
 	tabindex="-1"
+	onbeforetoggle={(event) => {
+		if (event.newState === 'closed') copyAttempt++;
+	}}
 	ontoggle={toggled}
 	onkeydown={keydown}
 >

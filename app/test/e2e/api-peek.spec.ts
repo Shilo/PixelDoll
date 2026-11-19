@@ -87,7 +87,34 @@ test('request preview follows the current character draft and copying never subm
 	// Field/value presentation stays readable without opening a raw JSON document.
 	await expect(character.locator('dl:visible').first()).toBeVisible();
 	await expect(character.locator('dt')).not.toHaveCount(0);
-	await peek(page).getByRole('button', { name: 'Copy all calls', exact: true }).click();
+	const bulkCopy = peek(page).getByRole('button', { name: 'Copy all calls', exact: true });
+	const holdBulkCopy = async () => {
+		await page.evaluate(() => {
+			const clipboard = navigator.clipboard;
+			const writeText = clipboard.writeText;
+			clipboard.writeText = async (value) => {
+				clipboard.writeText = writeText;
+				await new Promise<void>((resolve) => {
+					window.addEventListener('finish-bulk-copy', () => resolve(), { once: true });
+				});
+				await writeText.call(clipboard, value);
+			};
+		});
+		await bulkCopy.click();
+	};
+	const finishBulkCopy = () =>
+		page.evaluate(() => {
+			window.dispatchEvent(new Event('finish-bulk-copy'));
+			return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+		});
+	await holdBulkCopy();
+	await copyEndpoint.click();
+	await expect(peek(page).getByRole('status')).toHaveText(/^Endpoint copied: POST/);
+	await finishBulkCopy();
+	await expect(peek(page).getByRole('status')).toHaveText(/^Endpoint copied: POST/);
+	await expect(copyEndpoint).toBeFocused();
+	await bulkCopy.click();
+	await expect(peek(page).getByRole('status')).toHaveText(/^Copied \d+ calls$/);
 	const copied = await page.evaluate(() => sessionStorage.getItem('api-peek-copy'));
 	expect(copied).toContain('/create-character-v3');
 	expect(copied).toContain('a cheerful dwarf with freckles');
@@ -96,6 +123,7 @@ test('request preview follows the current character draft and copying never subm
 	expect(exported.total.generations).toBeGreaterThan(0);
 	await expect(peek(page).locator('footer')).toContainText('Estimated total');
 	await expect(peek(page).locator('footer')).toContainText(`${exported.calls.length} calls`);
+	await holdBulkCopy();
 	await peek(page).getByRole('button', { name: 'Close API calls', exact: true }).click();
 	await expect(peek(page)).toHaveCount(0);
 	await prompt.fill('a patient elf with silver hair');
@@ -103,6 +131,10 @@ test('request preview follows the current character draft and copying never subm
 		.locator('.sheet-foot')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
+	await expect(peek(page)).toBeVisible();
+	const reopenedStatus = await peek(page).getByRole('status').innerText();
+	await finishBulkCopy();
+	await expect(peek(page).getByRole('status')).toHaveText(reopenedStatus);
 	const updated = peek(page)
 		.locator('details')
 		.filter({ has: page.locator('summary', { hasText: '/create-character-v3' }) })
@@ -655,6 +687,10 @@ test('mirrored saved requests show their payload and updated charge without send
 		)
 	).toBe('/create-character-v3');
 	await expect(peek(page).locator('.request-endpoint code')).toBeVisible();
+	const download = page.waitForEvent('download');
+	await peek(page).getByRole('button', { name: 'Copy all calls', exact: true }).click();
+	expect((await download).suggestedFilename()).toBe('pixeldoll-calls.json');
+	await expect(peek(page).getByRole('status')).toHaveText('Saved calls as JSON');
 	await expect(peek(page)).toContainText('Saved request');
 	await expect(peek(page)).toContainText('a saved dwarf request');
 	await expect(peek(page)).toContainText(
