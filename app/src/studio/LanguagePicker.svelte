@@ -106,7 +106,9 @@
 				>
 					<span class="row-name language-option">
 						<span lang={id}>{name}</span>{#if showTranslation}
-							{' '}<span class="small bu-muted" lang={activeLanguage}>({translated})</span>
+							<span class="small bu-muted language-translation" lang={activeLanguage}
+								>{translated}</span
+							>
 						{/if}
 					</span>
 					{#if $languagePreference === id}<Check size={16} aria-hidden="true" />{/if}
@@ -125,8 +127,18 @@
 
 <style>
 	.language-option {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--menu-row-gap, 10px);
 		white-space: normal;
 		overflow-wrap: anywhere;
+	}
+	.language-option > span {
+		min-width: 0;
+	}
+	.language-translation {
+		text-align: end;
 	}
 	.language-status {
 		margin: 6px 8px;
