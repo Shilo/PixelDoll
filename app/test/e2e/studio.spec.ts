@@ -3041,9 +3041,7 @@ test('a tab that is not running the generations still opens New item from an ite
 	await equipmentGroup(second, 'Head');
 	await second.getByRole('button', { name: 'More options for Steel helmet', exact: true }).click();
 	// Opening the sheet spends nothing, so only its Make button waits for this tab to take over the jobs.
-	await itemMenu(second)
-		.getByRole('menuitem', { name: /^Try again…/ })
-		.click();
+	await itemMenu(second).getByRole('menuitem', { name: 'Try again…', exact: true }).click();
 	await expect(second.getByRole('dialog', { name: 'New item', exact: true })).toBeVisible();
 	await expect(second.getByRole('dialog', { name: 'Activity', exact: true })).toHaveCount(0);
 });
@@ -6608,6 +6606,13 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expect(items.first()).toHaveAccessibleName('Details…');
 	await expect(items.first()).toBeFocused();
 	await expect(items.last()).toHaveAccessibleName('Delete item…');
+	const iconOffsets = await items.evaluateAll((rows) =>
+		rows.map(
+			(row) =>
+				row.querySelector('svg')!.getBoundingClientRect().left - row.getBoundingClientRect().left
+		)
+	);
+	expect(iconOffsets).toEqual(Array(iconOffsets.length).fill(iconOffsets.at(-1)));
 	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
 	await page.keyboard.press('ArrowDown');
 	await expect(items.nth(1)).toBeFocused();
@@ -7066,7 +7071,7 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	const twoHanded = itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' });
 	await expect(twoHanded).not.toBeChecked();
 	await expect(
-		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Off hand… Paid' })
+		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Off hand…', exact: true })
 	).toBeVisible();
 
 	// Switching it on while worn takes the other hand's item off, says so, and Undo brings it back.
@@ -7101,11 +7106,13 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	// the Main hand.
 	await off.getByRole('button', { name: 'More options for Round shield', exact: true }).click();
 	await expect(
-		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Main hand… Paid' })
+		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Main hand…', exact: true })
 	).toBeVisible();
 	await page.keyboard.press('Escape');
 	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
-	await itemMenu(page).getByRole('menuitem', { name: 'Make one for the Off hand… Paid' }).click();
+	await itemMenu(page)
+		.getByRole('menuitem', { name: 'Make one for the Off hand…', exact: true })
+		.click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
 	await expect(sheet.getByRole('radio', { name: 'Off hand', exact: true })).toHaveAttribute(
 		'aria-checked',

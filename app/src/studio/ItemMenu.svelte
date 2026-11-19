@@ -31,6 +31,7 @@
 		type Gen
 	} from './state.svelte.ts';
 	import {
+		Check,
 		Circle,
 		Download,
 		CircleCheck,
@@ -188,7 +189,7 @@
 							data-variant="quiet"
 							role="menuitem"
 							disabled={cancelBusy}
-							onclick={cancel}>Save cancellation</button
+							onclick={cancel}><Check size={16} aria-hidden="true" />Save cancellation</button
 						>{/if}
 					{#if generation.phase !== 'running'}
 						<button
@@ -261,10 +262,7 @@
 								prompt: entry.item.prompt || entry.item.name,
 								name: entry.item.name
 							})
-						)}
-					><RefreshCw size={16} aria-hidden="true" />Make one for {m.name}…<small class="row-aside"
-						>Paid</small
-					></button
+						)}><RefreshCw size={16} aria-hidden="true" />Make one for {m.name}…</button
 				>
 			</div>
 		</div>
@@ -334,7 +332,7 @@
 							><CopyPlus size={16} aria-hidden="true" />Make one for the {slotLabel(
 								m,
 								otherHand
-							)}…<small class="row-aside">Paid</small></button
+							)}…</button
 						>
 					{/if}
 				{/if}
@@ -354,7 +352,7 @@
 							)}
 						><RefreshCw size={16} aria-hidden="true" />{remakeOnly
 							? `Make one for ${m.name}…`
-							: 'Try again…'}<small class="row-aside">Paid</small></button
+							: 'Try again…'}</button
 					>
 				{/if}
 				<button

@@ -1055,6 +1055,12 @@ dialog select option {
 .menu .row {
 	min-height: var(--ctl-h);
 }
+.item-menu .row:not(.item-menu-switch) {
+	justify-content: flex-start;
+}
+.item-menu .row :is(svg, .row-aside) {
+	flex: none;
+}
 .menu hr {
 	border: 0;
 	border-top: 1px solid var(--line);
