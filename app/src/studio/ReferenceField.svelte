@@ -200,6 +200,11 @@
 		gap: 0.35rem;
 		block-size: 112px;
 	}
+	.side-by-side .reference-row {
+		--item-reference-cap: 80px;
+		block-size: var(--item-reference-cap);
+		max-block-size: var(--item-reference-cap);
+	}
 	.side-by-side:not(.attached) .reference-row {
 		block-size: auto;
 		min-block-size: 44px;
@@ -240,6 +245,7 @@
 		flex: none;
 		width: auto;
 		height: 100%;
+		max-height: calc(var(--item-reference-cap) - 6px);
 		max-width: calc(100% - min(50%, 8rem) - 10px);
 	}
 	.reference-copy {

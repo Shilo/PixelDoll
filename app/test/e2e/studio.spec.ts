@@ -1989,7 +1989,7 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	await expect(attachment).toHaveAccessibleDescription(new RegExp(filename.replace('.', '\\.')));
 	await expect(item.getByRole('status').filter({ hasText: 'Reference attached.' })).toBeAttached();
 	const attachmentHeight = (await attachment.boundingBox())!.height;
-	expect(attachmentHeight).toBe(112);
+	expect(attachmentHeight).toBe(80);
 	const dimensions = attachment.getByText('16 × 16 px', { exact: true });
 	const name = attachment.getByText(filename, { exact: true });
 	const label = item.getByText('Reference (optional)', { exact: true });
@@ -2009,6 +2009,26 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 		expect(await dimensions.evaluate((size) => size.scrollWidth === size.clientWidth)).toBe(true);
 		expect(await name.evaluate((file) => file.scrollWidth > file.clientWidth)).toBe(true);
 	}
+	const square = makeImg(54, 53);
+	square.data.fill(255);
+	await item.locator('.reference input[type=file]').setInputFiles({
+		name: 'square.png',
+		mimeType: 'image/png',
+		buffer: Buffer.from(await encodePngBytes(square))
+	});
+	await expect(attachment).toContainText('54 × 53 px');
+	await expect(attachment).toHaveCSS('height', `${attachmentHeight}px`);
+	await expect(item.getByRole('button', { name: 'Remove reference' })).toHaveCSS(
+		'height',
+		`${attachmentHeight}px`
+	);
+	expect((await thumbnail.boundingBox())!.height).toBeLessThan(attachmentHeight);
+	await item.locator('.reference input[type=file]').setInputFiles({
+		name: filename,
+		mimeType: 'image/png',
+		buffer: Buffer.from(await encodePngBytes(artwork))
+	});
+	await expect(attachment).toContainText(filename);
 	await page.setViewportSize({ width: 390, height: 844 });
 	await prompt.fill('a leather hat');
 	await prompt.press('Enter');
