@@ -42,6 +42,7 @@ export { default as CircleAlert } from '@lucide/svelte/icons/circle-alert';
 export { default as UserRound } from '@lucide/svelte/icons/user-round';
 export { default as Grid2x2 } from '@lucide/svelte/icons/grid-2x2';
 export { default as Activity } from '@lucide/svelte/icons/activity';
+export { default as Gauge } from '@lucide/svelte/icons/gauge';
 export { default as Coins } from '@lucide/svelte/icons/coins';
 export { default as RotateCcw } from '@lucide/svelte/icons/rotate-ccw';
 export { default as WandSparkles } from '@lucide/svelte/icons/wand-sparkles';
