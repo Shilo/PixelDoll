@@ -138,6 +138,15 @@ export function requireSlot(source: SlotSource, id: string): Slot {
 	return slot;
 }
 
+export function insertSlotInLadder(slots: Slot[], slot: Slot, ladder: readonly Slot[] = SLOTS) {
+	const order = ladder.findIndex((entry) => entry.id === slot.id);
+	const before = slots.findIndex((entry) => {
+		const rank = ladder.findIndex((candidate) => candidate.id === entry.id);
+		return order >= 0 && rank > order;
+	});
+	slots.splice(before < 0 ? slots.length : before, 0, slot);
+}
+
 export function slotOf(slot: SlotRef, source: SlotSource = SLOTS): Slot {
 	return typeof slot === 'string' ? requireSlot(source, slot) : slot;
 }

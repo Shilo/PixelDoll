@@ -166,7 +166,12 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 	await page.goto(dev);
 	const notice = page.locator('.toast');
-	await expect(notice.locator('strong')).toHaveText(/^Preview · v/);
+	await expect(notice.locator('.bu-notice-content > strong')).toHaveText(
+		/^Pre-release · v\d+\.\d+\.\d+/
+	);
+	await expect(notice.locator('.bu-small strong')).toHaveText(
+		'Saved characters may stop working after updates.'
+	);
 	await expect(notice.locator('[data-tone]')).toHaveAttribute('data-tone', 'warning');
 	await expect(notice).not.toContainText('—');
 	const world = page.locator('.selection-world');
@@ -259,12 +264,21 @@ test('the startup preview notice expires after eight seconds', async ({ page }, 
 	await page.clock.install({ time });
 	await page.clock.pauseAt(new Date(time.getTime() + 1000));
 	await page.goto(dev);
-	const preview = page.getByRole('status').filter({ hasText: /Preview · v/ });
+	const preview = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
 	await expect(preview).toBeVisible();
 	await page.clock.fastForward(7999);
 	await expect(preview).toBeVisible();
 	await page.clock.fastForward(1);
 	await expect(preview).toHaveCount(0);
+});
+
+test('the startup pre-release notice opens the existing export picker', async ({ page }, info) => {
+	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	await page.goto(dev);
+	const notice = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
+	await notice.getByRole('button', { name: 'Export sprites', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toBeVisible();
+	await expect(notice).toHaveCount(0);
 });
 
 for (const [width, height] of [
@@ -281,8 +295,10 @@ for (const [width, height] of [
 			await page.goto(dev);
 			const notice = page.locator('.toast'),
 				gesture = width < 1000 ? 'tap' : 'click';
+			await expect(notice).toBeVisible();
+			await showNotification(page, 'Dismiss this message', { duration: 0 });
 			await notice
-				.getByRole('button', { name: /^Preview · v/ })
+				.getByRole('button', { name: 'Dismiss this message', exact: true })
 				[gesture]({ position: { x: 8, y: 8 } });
 			await expect(notice).toHaveCount(0);
 			await enterStudio(page);
@@ -4004,6 +4020,87 @@ test('cancel during the initial item save never starts a paid runner', async ({ 
 	expect(result.calls.every((id: string | undefined) => id === undefined)).toBe(true);
 });
 
+test('an accepted item failure shows the reported charge and saved job without a paid retry', async ({
+	page,
+	context
+}, info) => {
+	const posts: string[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request(),
+			path = new URL(request.url()).pathname;
+		if (request.method() === 'POST') posts.push(path);
+		if (path === '/v2/balance')
+			return route.fulfill({
+				json: {
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 },
+					credits: { type: 'usd', usd: 0 }
+				}
+			});
+		if (path === '/v2/edit-animation-v2')
+			return route.fulfill({ status: 202, json: { background_job_id: 'offline-dress-failure' } });
+		if (path === '/v2/background-jobs/offline-dress-failure')
+			return route.fulfill({
+				json: {
+					id: 'offline-dress-failure',
+					status: 'failed',
+					usage: { type: 'usd', usd: 0 },
+					last_response: { code: 3006, error: 'Generation failed' }
+				}
+			});
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-dress-failure-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await standingItemCharacter(page);
+	const id = await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.startItem({ name: 'Trouser fixture', slot: 'legs', prompt: 'tactical pants' });
+		return state.gens[0].draft.spec.id;
+	});
+	await expect
+		.poll(() =>
+			page.evaluate(async () => {
+				const path = '/src/lib/store/db.ts',
+					db = await import(path);
+				return (await db.get('projects', 'studio-drafts'))?.gens[0]?.phase;
+			})
+		)
+		.toBe('failed');
+	await reloadStudio(page);
+	await page.evaluate(async (id) => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.openGenerationReview(id);
+	}, id);
+	const review = page.locator('.gen');
+	await expect(review).toContainText('PixelLab accepted the request but could not finish it.');
+	await expect(review).toContainText('PixelLab reported no charge for this attempt.');
+	await expect(review).toContainText('Try again starts a new paid attempt.');
+	await review
+		.locator('header')
+		.getByRole('button', { name: 'Inspect API calls', exact: true })
+		.click();
+	const savedCall = page.locator('[aria-label="API calls"]:popover-open .peek-call');
+	await savedCall.locator(':scope > summary').click();
+	await expect(
+		savedCall.getByText(
+			'Job offline-dress-failure failed: Generation failed (PixelLab code 3006)',
+			{
+				exact: true
+			}
+		)
+	).toBeVisible();
+	expect(posts).toEqual(['/v2/edit-animation-v2']);
+});
+
 test('new item progress, previews and completion survive reload without submitting completed jobs again', async ({
 	page,
 	context
@@ -4057,11 +4154,16 @@ test('new item progress, previews and completion survive reload without submitti
 	await standingItemCharacter(page);
 	const id = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
-			s = await import(statePath);
-		await s.startItem({ name: 'Progress fixture', slot: 'hair', prompt: 'short hair' });
+			s = await import(statePath),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(dbPath);
+		const rec = await db.get('projects', s.doc.id);
+		if (rec.manifest.slots.some((slot: { id: string }) => slot.id === 'legs'))
+			throw new Error('Expected Legs to be absent from the saved character');
+		await s.startItem({ name: 'Progress fixture', slot: 'legs', prompt: 'tactical pants' });
 		return s.gens[0].draft.spec.id;
 	});
-	await equipmentGroup(page, 'Hair');
+	await equipmentGroup(page, 'Legs');
 	await expect(page.locator('.gen')).toHaveCount(0);
 	const progress = page.getByRole('progressbar', {
 		name: 'Progress fixture progress',
@@ -4103,6 +4205,26 @@ test('new item progress, previews and completion survive reload without submitti
 			}, id)
 		)
 		.toBe(true);
+	const slotOrder = await page.evaluate(async (id) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(dbPath);
+		state.wearDraft(id);
+		const ids = (slots: { id: string }[]) => slots.map((slot) => slot.id);
+		return {
+			stage: ids(state.view.project.manifest.slots),
+			preview: ids(state.store.results[id].preview.manifest.slots),
+			saved: ids((await db.get('projects', state.doc.id)).manifest.slots)
+		};
+	}, id);
+	expect(slotOrder.saved).not.toContain('legs');
+	const expectedOrder = [...slotOrder.saved];
+	const torso = expectedOrder.indexOf('torso_inner');
+	expect(torso).toBeGreaterThanOrEqual(0);
+	expectedOrder.splice(torso, 0, 'legs');
+	expect(slotOrder.preview).toEqual(expectedOrder);
+	expect(slotOrder.stage).toEqual(slotOrder.preview);
 	// Reproduce an older stuck draft whose runner never persisted its job reference.
 	await page.evaluate(async () => {
 		const p = '/src/lib/store/db.ts',
@@ -4637,7 +4759,7 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 	expect(posts).toEqual([]);
 });
 
-test('a custom move replacement keeps its name and requires a supported frame count and description', async ({
+test('a custom move replacement keeps its name and reviews eligible equipment and costs', async ({
 	page
 }, info) => {
 	await page.addInitScript(() => {
@@ -4656,6 +4778,8 @@ test('a custom move replacement keeps its name and requires a supported frame co
 			db = await import(dbPath);
 		const rec = await db.get('projects', s.doc.id),
 			m = rec.manifest;
+		const sword = m.items.find((item: { slot: string }) => item.slot === 'main_hand');
+		sword.dressed = { east: sword.dressed.east };
 		m.rig.animations.find((a: { id: string }) => a.id === 'walk').id = 'quiet-step';
 		for (const item of m.items)
 			for (const layer of item.layers)
@@ -4683,6 +4807,21 @@ test('a custom move replacement keeps its name and requires a supported frame co
 		.fill('Step sideways and shift weight to the leading foot');
 	await expect(replace).toBeEnabled();
 	await expect(replace).toContainText('Est. 23 gens');
+	const sword = sheet.getByRole('checkbox', { name: /Steel longsword/ });
+	await expect(sword).toHaveCount(0);
+	await expect(sheet).toContainText(
+		'Shared copies can still be worn in views where they have frames.'
+	);
+	await sheet.getByRole('checkbox', { name: 'West', exact: true }).uncheck();
+	await sheet.getByRole('checkbox', { name: 'South', exact: true }).uncheck();
+	await sheet.getByRole('checkbox', { name: 'North', exact: true }).uncheck();
+	await sword.check();
+	await expect(replace).toContainText('gens with equipment');
+	await expect(sheet).toContainText('3 gens if equipment runs');
+	await expect(sheet).toContainText('equipment requests are not sent');
+	await sheet.getByRole('checkbox', { name: 'West', exact: true }).check();
+	await expect(sword).toHaveCount(0);
+	await expect(sheet).not.toContainText('if equipment runs');
 });
 
 async function oversizedItemFixture(page: Page, itemId: string) {
@@ -5102,8 +5241,8 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	await targetedRepairFixture(page);
-	const original = await page.evaluate(async () => {
+	const { itemId } = await targetedRepairFixture(page);
+	const original = await page.evaluate(async (itemId) => {
 		const statePath = '/src/studio/state.svelte.ts',
 			s = await import(statePath),
 			dbPath = '/src/lib/store/db.ts',
@@ -5128,7 +5267,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 			id: 'slash',
 			action: 'slash',
 			frames: 8,
-			items: [],
+			items: [itemId],
 			seed: 421,
 			replace: true,
 			dirs: ['west'],
@@ -5225,10 +5364,11 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 			projectId: s.doc.id,
 			spec,
 			status: 'failed',
-			error: 'Joint-check outcome unknown'
+			error: 'Joint-check outcome unknown',
+			progress: { step: 'save', done: 0, total: 1, recIds: [] }
 		});
 		return { spec, projectId: s.doc.id };
-	});
+	}, itemId);
 	await reloadStudio(page);
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await page.evaluate(async () => {
@@ -5311,6 +5451,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	});
 	const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
 	await expect(sheet).toContainText('Joint-check outcome unknown');
+	await expect(sheet.getByText('Posing your items', { exact: true })).not.toHaveClass(/\bdone\b/);
 	await expect(sheet).toContainText(
 		'Could not check cached frames: Synthetic standing image storage failure'
 	);

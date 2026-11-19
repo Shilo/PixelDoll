@@ -208,7 +208,7 @@
 			{/if}
 			{#if creating.error}
 				<p class="notice bad small">
-					<CircleAlert size={14} />{creating.error.includes('5000') ||
+					<CircleAlert size={14} />{creating.error.match(/\b5000\b/) ||
 					/policy/i.test(creating.error)
 						? 'PixelLab declined this description. Try different words.'
 						: creating.error}

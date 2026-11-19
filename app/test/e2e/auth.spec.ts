@@ -40,6 +40,45 @@ test('PixelLab notice opens PixelLab without leaving the app', async ({ page, co
 	await popup.close();
 });
 
+test('More and Activity share PixelLab usage and show credits once quota is used', async ({
+	page
+}) => {
+	let remaining = 42;
+	await page.route('https://api.pixellab.ai/v2/balance', (route) =>
+		route.fulfill({
+			json: {
+				subscription: { type: 'generations', status: 'active', generations: remaining, total: 100 },
+				credits: { type: 'usd', usd: 3.06 }
+			}
+		})
+	);
+	await page.addInitScript((key) => localStorage.setItem('pixellabApiKey', key), key);
+	await openStudio(page, '/');
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	const usage = page.getByRole('link', { name: /PixelLab Usage/ });
+	const usageLabel = await usage.getByText('PixelLab Usage', { exact: true }).boundingBox();
+	const versionLabel = await page.getByText(/^Version /).boundingBox();
+	expect(usageLabel?.x).toBe(versionLabel?.x);
+	await expect(usage).toContainText('58 / 100');
+	await expect(usage).toContainText('58% used');
+	await expect(usage).toHaveAttribute('href', 'https://www.pixellab.ai/account');
+	await expect(usage).toHaveAttribute('target', '_blank');
+	await expect(usage.getByText('$3.06 additional credits left')).toBeHidden();
+	await page.getByRole('button', { name: 'Activity', exact: true }).click();
+	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
+	await expect(activity.getByText('58 / 100', { exact: true })).toBeVisible();
+	await expect(activity.getByText('58% used')).toBeVisible();
+	await expect(activity.getByText('$3.06 additional credits left')).toBeVisible();
+	await page.setViewportSize({ width: 320, height: 650 });
+	remaining = 0;
+	await activity.getByRole('button', { name: 'Refresh balance', exact: true }).click();
+	await expect(activity.getByText('100% used')).toBeVisible();
+	await activity.getByRole('button', { name: 'Done', exact: true }).click();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await expect(usage).toContainText('100 / 100');
+	await expect(usage).toContainText('$3.06 additional credits left');
+});
+
 for (const remembered of [true, false]) {
 	test(`shared token: another app forgets a ${remembered ? 'remembered' : 'session-only'} connection${remembered ? '' : ' without BroadcastChannel'}`, async ({
 		page,

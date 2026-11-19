@@ -246,7 +246,10 @@ export function movePlan(
 			spec.itemMethod !== 'grid' &&
 			(spec.replace || !m.rig.animations.some((a) => a.id === spec.id)),
 		calls: PeekCall[] = [],
-		frames = moveFrames(m, spec);
+		frames = moveFrames(m, spec),
+		poseRig = bodyNeeded
+			? { ...m.rig, animations: m.rig.animations.filter((animation) => animation.id !== spec.id) }
+			: m.rig;
 	const generatedDirections = moveDirections(m, spec.dirs);
 	if (bodyNeeded) {
 		if (bodyMoveIssue(m, spec)) return [];
@@ -344,7 +347,7 @@ export function movePlan(
 						{ length: batch.count },
 						(_, i) => `${spec.id}/${direction}/${batch.start + i}`
 					);
-					const grid = frozenGrid(m.rig, item, cells);
+					const grid = frozenGrid(poseRig, item, cells);
 					calls.push({
 						method: 'POST',
 						path: grid ? '/inpaint-v3' : '/animate-with-skeleton-v3',

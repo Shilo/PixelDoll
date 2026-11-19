@@ -1,6 +1,7 @@
 // Studio state: UI (size class, theme, tabs, sheets, playback), the open project + outfit with undo/redo and autosave,
 // item generations (drafts) and the create-character run. Pixel data lives in $state.raw (deep proxies over the manifest
 // made recolor/compose take seconds, B5); manifest edits bump doc.rev.
+import type { Snippet } from 'svelte';
 import {
 	applyDress,
 	dressOf,
@@ -50,6 +51,7 @@ import type {
 import { CURRENT_FORMAT } from '../lib/store/manifest.ts';
 import type { ItemPaletteRepairPlan, Draft, ItemResult } from '../lib/items/run.ts';
 import { loadDrafts } from '../lib/items/drafts.ts';
+import { insertSlotInLadder } from '../lib/items/slots.ts';
 import { app } from '../lib/app.svelte.ts';
 import { requestTier, tierDecision } from '../lib/pixellab/plans.ts';
 import type { NewItemInput } from './itemRoute.ts';
@@ -207,7 +209,7 @@ export const ui = $state({
 	frame: 0,
 	zoom: 0, // device px per sprite px; 0 = fit
 	bg: 'checker' as 'checker' | 'solid',
-	toast: '',
+	toast: '' as string | Snippet,
 	toastTitle: '',
 	toastPending: false,
 	toastTone: 'info' as 'info' | 'success' | 'warning' | 'danger',
@@ -329,7 +331,7 @@ export function resumeToast(reason: 'pointer' | 'focus') {
 	if (!toastT) armToast();
 }
 /** A zero duration keeps the message until dismissed or replaced. Return false when an unresolved error takes priority. */
-export function toast(s: string, options: number | ToastOptions = 4000) {
+export function toast(s: string | Snippet, options: number | ToastOptions = 4000) {
 	const o: ToastOptions = typeof options === 'number' ? { duration: options } : options;
 	if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
 	stopToastTimer();
@@ -1997,7 +1999,7 @@ function withDrafts(p: Project): Project {
 			items.push(running ? it : { ...it, pending: undefined }); // only a running draft is still loading; other gaps are missing
 			for (const [h, im] of prev.images) if (!images.has(h)) images.set(h, im);
 			const slot = prev.manifest.slots.find((x) => x.id === it.slot);
-			if (slot && !slots.some((x) => x.id === slot.id)) slots.push(slot);
+			if (slot && !slots.some((x) => x.id === slot.id)) insertSlotInLadder(slots, slot);
 		} else if (running) {
 			const { spec } = g.draft;
 			items.push({

@@ -4,6 +4,7 @@
 	import './experience/theme.css';
 	import './experience/layout.css';
 	import { rememberActivation } from './experience/focus.ts';
+	import { experience } from './experience/state.svelte.ts';
 	import Experience from './experience/Experience.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
@@ -30,6 +31,7 @@
 		lastProject,
 		loadGens,
 		toast,
+		dismissToast,
 		resumeCreate,
 		resumeMove,
 		resumeSetup,
@@ -70,6 +72,9 @@
 		if (ui.sheet === 'gen' && (!genOf(ui.selected) || genOf(ui.selected)?.phase === 'running'))
 			ui.sheet = null;
 	});
+	$effect(() => {
+		if (experience.screen === 'studio' && ui.toast === previewNoticeDetails) untrack(dismissToast);
+	});
 
 	// once on mount (an $effect would re-run on every state it reads, e.g. the theme)
 	onMount(() => {
@@ -84,7 +89,7 @@
 				loadGens
 			};
 		const off = initUi();
-		toast(PREVIEW_NOTICE.description, PREVIEW_NOTICE);
+		toast(previewNoticeDetails, PREVIEW_NOTICE);
 		void (async () => {
 			const listed = await refreshProjects();
 			await openProject(lastProject());
@@ -273,6 +278,23 @@
 	const offline = $derived(!online || $queue.paused === 'offline');
 </script>
 
+{#snippet previewNoticeDetails()}
+	<div><strong class="preview-risk">{PREVIEW_NOTICE.risk}</strong></div>
+	{PREVIEW_NOTICE.description}
+	{#if store.project}
+		<button
+			class="bu-action btn sm preview-export"
+			data-variant="outline"
+			aria-label="Export sprites"
+			aria-haspopup="dialog"
+			onclick={() => {
+				dismissToast();
+				ui.sheet = 'export';
+			}}>Export</button
+		>
+	{/if}
+{/snippet}
+
 <svelte:window
 	onkeydown={onkey}
 	onpopstate={onpop}
@@ -323,3 +345,14 @@
 		>
 	{/if}
 </div>
+
+<style>
+	.preview-risk {
+		font-weight: 600;
+		text-wrap: pretty;
+	}
+	.preview-export {
+		display: block;
+		margin-top: 6px;
+	}
+</style>

@@ -101,6 +101,7 @@
 {#if updateNotice.visible || (ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet))}
 	<div
 		class="toast bu-toast-region"
+		class:toast-controls-only={typeof ui.toast === 'function' && !updateNotice.visible}
 		data-placement="top"
 		style:--bu-toast-top="{place.top}px"
 		style:--bu-toast-center="{place.center}px"
@@ -135,9 +136,22 @@
 				tone={ui.toastTone}
 				indicator={ui.toastPending ? pendingIndicator : undefined}
 				live
-				onactivate={activate}
-				ondismiss={dismiss}>{ui.toast}</Notice
-			>{/if}
+				onactivate={typeof ui.toast === 'string' ? activate : undefined}
+				ondismiss={dismiss}
+			>
+				{#if typeof ui.toast === 'string'}{ui.toast}{:else}{@render ui.toast()}{/if}
+			</Notice>{/if}
 		<PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
 	</div>
 {/if}
+
+<style>
+	@media (pointer: coarse) {
+		.toast-controls-only {
+			pointer-events: none;
+		}
+		.toast-controls-only :global(button) {
+			pointer-events: auto;
+		}
+	}
+</style>

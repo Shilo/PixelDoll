@@ -1158,8 +1158,8 @@ async function publishedMoveRecovery(rec: StoredProject, spec: MoveSpec): Promis
 }
 export const MOVE_STEPS = [
 	{ id: 'animate', label: 'Animating the body' },
-	{ id: 'items', label: 'Posing your items' },
-	{ id: 'save', label: 'Saving' }
+	{ id: 'save', label: 'Checking and saving the body' },
+	{ id: 'items', label: 'Posing your items' }
 ];
 export const isV13 = rigReady;
 /** Why a move can't take this id: Default is every character's standing views, never generated or replaced. */
@@ -1715,6 +1715,9 @@ export function moveEstimate(
 ) {
 	const n = moveFrames(m, s),
 		dirs = moveDirections(m, s.dirs).length,
+		poseRig = s.replace
+			? { ...m.rig, animations: m.rig.animations.filter((animation) => animation.id !== s.id) }
+			: m.rig,
 		body =
 			(s.itemsOnly || s.itemMethod === 'grid') && !s.replace
 				? 0
@@ -1739,7 +1742,7 @@ export function moveEstimate(
 						sum +
 						(s.itemMethod === 'anchor'
 							? planGens(planAnchoredMove(m.rig, item, s.id, targets), m.rig.cell)
-							: itemPoseGens(m.rig, item, s.id, n, targets, m))
+							: itemPoseGens(poseRig, item, s.id, n, targets, m))
 					);
 				}, 0);
 	return { gens: body + items, body, items, frames: n, minutes: 4 + s.items.length * 3 };
@@ -1944,6 +1947,13 @@ export async function addMove(
 		existing.cells !== moveFrames(rec.manifest, spec)
 	)
 		throw new Error('A partial repair must keep the existing frame count.');
+	if (!spec.itemMethod && !spec.itemsOnly && spec.items.length) {
+		const eligible = new Set(posable(rec.manifest, dirs).map((item) => item.id));
+		if (spec.items.some((id) => !eligible.has(id)))
+			throw new Error(
+				'Selected equipment no longer has standing designs for all selected views. Review the equipment selection before trying again. No generation was requested.'
+			);
+	}
 	const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
 	const published = await publishedMoveRecovery(rec, spec);
 	const minimumTier = moveMinimumTier(rec.manifest, spec);
@@ -1987,23 +1997,19 @@ export async function addMove(
 				'The item frames changed before generation. Reopen the item to review them again.'
 			);
 	};
-	const plans = spec.items.flatMap((id) => {
+	const plans = spec.items.map((id) => {
 		const it = fresh.rec.manifest.items.find((i) => i.id === id);
-		return it
-			? [
-					{
-						id,
-						dirs: dirs.filter(
-							(d) =>
-								spec.itemMethod === 'grid' || !hasCompleteCells(fresh.rec.manifest, it, spec.id, d)
-						)
-					}
-				]
-			: [];
+		if (!it) throw new Error('This item changed or was removed while the move was being prepared.');
+		return {
+			id,
+			dirs: dirs.filter(
+				(d) => spec.itemMethod === 'grid' || !hasCompleteCells(fresh.rec.manifest, it, spec.id, d)
+			)
+		};
 	});
 	const itemTotal = plans.reduce((n, p) => n + p.dirs.length, 0);
 	let posed = 0;
-	onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
+	if (itemTotal) onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
 	const tick = () =>
 		onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] });
 	for (const plan of plans) {

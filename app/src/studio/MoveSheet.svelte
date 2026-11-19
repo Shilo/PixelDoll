@@ -11,7 +11,7 @@
 	import type { StoredProject } from '../lib/store/project.ts';
 	import type { DirectionName } from '../lib/store/manifest.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
-	import { ITEM_MOVE_SAVE_CONFLICT, posable, poseGens } from '../lib/items/run.ts';
+	import { ITEM_MOVE_SAVE_CONFLICT, posable } from '../lib/items/run.ts';
 	import { AUTHORED } from '../lib/rig/poses.ts';
 	import {
 		MOVE_STEPS,
@@ -33,6 +33,7 @@
 		store,
 		isDemo,
 		moving,
+		shared,
 		settingUp,
 		startMove,
 		queueMoves,
@@ -90,7 +91,6 @@
 			? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) || freeMoveId()
 			: action
 	);
-	const items = $derived(m ? posable(m) : []);
 	const replacing = $derived(have.has(id) && !reservedMove(id));
 	const availableDirs = $derived(
 		m?.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id) ?? []
@@ -98,6 +98,12 @@
 	let selectedDirs = $state<DirectionName[]>(draft?.dirs ?? untrack(() => [...availableDirs]));
 	const targetDirs = $derived(
 		replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs
+	);
+	const items = $derived(m && targetDirs.length ? posable(m, targetDirs) : []);
+	const unavailable = $derived(
+		(m?.items ?? []).filter(
+			(item) => item.slot !== 'body' && !items.some((eligible) => eligible.id === item.id)
+		)
 	);
 	const frames = $derived(m?.rig.animations.find((a) => a.id === id)?.cells ?? 8);
 	const motion = $derived({
@@ -189,7 +195,12 @@
 			? (store.projects.find((p) => p.id === moving.projectId)?.name ?? 'that character')
 			: ''
 	);
-	const stepIx = $derived(MOVE_STEPS.findIndex((s) => s.id === moving.progress?.step));
+	const steps = $derived(
+		MOVE_STEPS.filter((step) =>
+			step.id === 'items' ? !!moving.spec?.items.length : !moving.spec?.itemsOnly
+		)
+	);
+	const stepIx = $derived(steps.findIndex((step) => step.id === moving.progress?.step));
 	const nice = (s: string) => moveLabel(s, options);
 	let recovery = $state<MeasurementRecoveryPlan | null>(null);
 	let recoveryError = $state('');
@@ -387,7 +398,7 @@
 	{:else if ok}
 		<span class="foot-note"
 			>{est
-				? `About ${est.minutes} min · body ${Math.ceil(est.body)}${est.items ? ` + items ${est.items}` : ''} gens`
+				? `About ${est.minutes} min · body ${Math.ceil(est.body)} gens${est.items ? ` + ${est.items} gens if equipment runs` : ''}`
 				: ''}</span
 		>
 		<span class="api-action"
@@ -415,7 +426,9 @@
 				onclick={go}
 				>{busy ? 'Queue' : replacing ? 'Replace' : 'Add'}
 				{id ? nice(id) : 'move'}{replacing ? ' views' : ''}
-				<span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button
+				<span class="cost">
+					Est. {est ? Math.ceil(est.gens) : '–'} gens{est?.items ? ' with equipment' : ''}
+				</span></button
 			></span
 		>
 	{/if}
@@ -458,7 +471,7 @@
 					checks keep the previous item frames.
 				</p>{/if}
 			<ol class="steps-list">
-				{#each MOVE_STEPS as s, i (s.id)}
+				{#each steps as s, i (s.id)}
 					{@const done = moving.done || i < stepIx}
 					<li class:done class:now={!moving.done && i === stepIx}>
 						{#if done}<Check size={16} />{:else if i === stepIx && !moving.error}<span
@@ -497,12 +510,16 @@
 				<section class="keep-review" aria-label="Review body frames">
 					<p class="small">
 						These frames passed the structural checks but have the quality warnings below. Keep
-						saves them as they are, body only, with no PixelLab request.{#if moving.spec.items.length}
-							Equipment is not posed now; generate it for this move later as a separate, priced
-							step.{/if}{#if moving.spec.replace}
-							Equipment on the replaced views is hidden there until it is posed again.{/if}
-						Discard saves nothing; the generated images stay in Activity.
+						saves them as they are, body only, with no PixelLab request. Discard saves nothing; the
+						generated images stay in Activity.
 					</p>
+					{#if moving.spec.items.length}<p class="small">
+							PixelLab was not asked to animate the selected items. Generate their frames later as a
+							separate, priced step.
+						</p>{/if}
+					{#if moving.spec.replace}<p class="small">
+							Keeping these views hides their old equipment frames until you make new ones.
+						</p>{/if}
 					{#each keep.directions as view (view.dir)}
 						<div class="keep-view">
 							<span class="small" style="font-weight:600">{directionLabel(view.dir)}</span>
@@ -603,9 +620,9 @@
 							/>{directionLabel(dir)}</label
 						>{/each}
 					<p class="notice warn small">
-						Only selected body views are replaced. Equipment checked below is re-posed for those
-						views; other equipment stays hidden there until remade. Other views and moves stay
-						fixed.{#if m?.rig.directions.some((d) => d.mirrorOf)}
+						Saving a replacement clears the old equipment frames in these views. Selected equipment
+						is animated only if the body passes its checks. Other equipment stays hidden in those
+						views until new frames are made. Other views and moves stay fixed.{#if m?.rig.directions.some((d) => d.mirrorOf)}
 							Mirrored views follow their source.{/if}
 					</p>
 				</div>
@@ -655,14 +672,27 @@
 										? [...included, it.id]
 										: included.filter((x) => x !== it.id))}
 							/>{it.name}
-							<span class="faint small">{poseGens(1, est?.frames ?? 8, dirs)} gens</span></label
+							<span class="faint small">
+								{m && est
+									? moveEstimate(m, { ...motion, items: [it.id], dirs: targetDirs }).items
+									: '–'}
+								gens
+							</span></label
 						>
 					{/each}
 					<p class="faint small">
-						Items are left out by default to keep the initial cost down. Generate them for this move
-						later from each item’s details.
+						Items are unchecked by default. If body checks stop this move, equipment requests are
+						not sent. You can generate equipment later from each item’s details.
 					</p>
 				</div>
+			{/if}
+			{#if (unavailable.length || shared.items.length) && targetDirs.length}
+				<p class="faint small">
+					This list only shows equipment that can follow the body’s poses in every view being
+					generated. Shared copies can still be worn in views where they have frames. To animate an
+					unfitted copy, make one for this character. Other items may offer animation for existing
+					moves in their details.
+				</p>
 			{/if}
 			<p class="faint small">
 				PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time

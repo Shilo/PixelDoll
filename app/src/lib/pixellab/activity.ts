@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { API_BASE, errorText, isPolicy, paidRequestRejected } from './client.ts';
+import { API_BASE, isPolicy, jobErrorCode, jobFailureText, paidRequestRejected } from './client.ts';
 
 export interface ActivityContext {
 	label?: string;
@@ -33,7 +33,8 @@ export interface ApiCall extends ActivityContext {
 	costSource: 'free' | 'reported' | 'unknown';
 	usagePending: boolean;
 	/** PixelLab's terminal job state, kept on the poll that reported it so a failure can be diagnosed from the export. */
-	job?: { status: string; error?: string; policy?: true };
+	job?: { status: string; error?: string; code?: number; policy?: true };
+	failedJobs?: (NonNullable<ApiCall['job']> & { id: string })[];
 }
 
 // Request bodies stay in memory only. No headers, credentials or response text enter this store, except a terminal job's
@@ -260,14 +261,21 @@ export function finishActivityCall(
 		const jobId = decodeURIComponent(call.endpoint.split('/').pop()!.split('?')[0]);
 		const policy = isPolicy(data),
 			terminal = ['completed', 'failed', 'cancelled'].includes(String(data.status));
-		if (terminal || policy)
+		if (terminal || policy) {
+			const code = jobErrorCode(data);
 			update(id, {
 				job: {
 					status: String(data.status ?? 'failed'),
-					...(data.status === 'completed' && !policy ? {} : { error: errorText(data) }),
+					...(data.status === 'completed' && !policy
+						? {}
+						: {
+								error: jobFailureText(data),
+								...(code === undefined ? {} : { code })
+							}),
 					...(policy ? { policy: true as const } : {})
 				}
 			});
+		}
 		const owner = jobs.get(jobId);
 		if (owner) {
 			// A policy refusal ends the job as in the queue ledger, so its usage is final too.
@@ -286,7 +294,16 @@ export interface RestoredActivityRequest extends ActivityContext {
 	body: unknown;
 	startedAt: number;
 	state: ApiCall['state'];
-	jobs: { id: string; done: boolean; usage?: unknown }[];
+	jobs: {
+		id: string;
+		done: boolean;
+		usage?: unknown;
+		status?: string;
+		error?: string;
+		errorCode?: number;
+		policy?: boolean;
+		failedAtProvider?: true;
+	}[];
 	usage?: unknown;
 	bodyUnavailable?: boolean;
 }
@@ -318,7 +335,18 @@ export function restoreActivityRequest(request: RestoredActivityRequest): string
 		costPartial: false,
 		cost: usage ?? (free ? { generations: 0, usd: 0 } : { generations: null, usd: null }),
 		costSource: usage ? 'reported' : free ? 'free' : 'unknown',
-		usagePending: request.jobs.some((job) => !job.done)
+		usagePending: request.jobs.some((job) => !job.done),
+		failedJobs: request.jobs.some((job) => job.failedAtProvider)
+			? request.jobs
+					.filter((job) => job.failedAtProvider)
+					.map((job) => ({
+						id: job.id,
+						status: job.status ?? 'failed',
+						error: job.error,
+						code: job.errorCode,
+						...(job.policy ? { policy: true as const } : {})
+					}))
+			: undefined
 	});
 	for (const job of request.jobs)
 		jobs.set(job.id, { callId: id, terminal: job.done, usage: usageOf(job.usage) });
