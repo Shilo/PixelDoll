@@ -37,6 +37,11 @@ const maxRecords = 500;
 const maxPixels = 64 * 1024 * 1024;
 const tooLarge =
 	'This workspace exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.';
+class WorkspaceLimitError extends Error {
+	constructor() {
+		super(tooLarge);
+	}
+}
 
 export interface WorkspaceView {
 	project: string;
@@ -64,12 +69,13 @@ interface WorkspaceIndex {
 	view: WorkspaceView;
 	projects: [string, unknown][];
 	missing: string[];
+	omitted?: { characters: number; demoOutfit: boolean; exportSettings: boolean };
 	diagnostics?: { tier: number | null; errors: ErrorSummary[] };
 }
 
 export type WorkspaceArchive = Pick<
 	WorkspaceIndex,
-	'build' | 'view' | 'missing' | 'diagnostics'
+	'build' | 'view' | 'missing' | 'diagnostics' | 'omitted'
 > & {
 	projects: Map<string, unknown>;
 	blobs: Map<string, Blob>;
@@ -81,7 +87,7 @@ const object = (value: unknown): Record<string, unknown> | undefined =>
 		: undefined;
 
 const selects = (key: string, value: unknown) => {
-	if (key === demoDress || key === EXPORT_SETTINGS_KEY) return !!object(value);
+	if (key === demoDress || key === EXPORT_SETTINGS_KEY) return true;
 	const record = value as Partial<StoredProject> | undefined;
 	return key.startsWith('rig-') && record?.origin === 'studio';
 };
@@ -113,33 +119,44 @@ function checkDemoDress(value: unknown) {
 		}) ||
 		!Array.isArray(dress.presets) ||
 		!dress.presets.every(outfit) ||
-		!Array.isArray(dress.slots) ||
-		!dress.slots.every((value) => typeof object(value)?.id === 'string') ||
-		!object(dress.hides) ||
-		!Object.values(object(dress.hides)!).every((value) => value === null || labels(value)) ||
+		(dress.slots !== undefined &&
+			(!Array.isArray(dress.slots) ||
+				!dress.slots.every((value) => typeof object(value)?.id === 'string'))) ||
+		(dress.hides !== undefined &&
+			(!object(dress.hides) ||
+				!Object.values(object(dress.hides)!).every((value) => value === null || labels(value)))) ||
 		(dress.current !== undefined && !outfit(dress.current))
 	)
 		throw new Error('Saved demo outfit data is invalid.');
 }
 
-function artworkReferences(projects: Map<string, unknown>) {
+function recoverRecords(
+	projects: Map<string, unknown>,
+	omitted: NonNullable<WorkspaceIndex['omitted']>
+) {
 	const found = new Map<string, FrameSize | undefined>();
-	const add = (value: unknown, frame?: FrameSize) => {
-		if (value == null) return;
-		const hash = typeof value === 'string' && hashPattern.exec(value)?.[1];
-		if (!hash) throw new Error('This workspace has an invalid artwork reference.');
-		const previous = found.get(hash);
-		if (previous && frame && (previous.w !== frame.w || previous.h !== frame.h))
-			throw new Error('This workspace has conflicting artwork dimensions.');
-		found.set(hash, frame ?? previous);
-	};
 	for (const [key, value] of projects) {
-		if (key === EXPORT_SETTINGS_KEY) checkedSettings(value);
-		if (key === demoDress) checkDemoDress(value);
-		if (!key.startsWith('rig-')) continue;
-		const { id, manifest } = value as StoredProject;
+		const local = new Map<string, FrameSize | undefined>();
+		const add = (value: unknown, frame?: FrameSize) => {
+			if (value == null) return;
+			const hash = typeof value === 'string' && hashPattern.exec(value)?.[1];
+			if (!hash) throw new Error('This workspace has an invalid artwork reference.');
+			const previous = local.get(hash) ?? found.get(hash);
+			if (previous && frame && (previous.w !== frame.w || previous.h !== frame.h))
+				throw new Error('This workspace has conflicting artwork dimensions.');
+			local.set(hash, frame ?? previous);
+		};
 		try {
-			if (id !== key || !supportedFormat(manifest?.format))
+			if (key === EXPORT_SETTINGS_KEY) {
+				checkedSettings(value);
+				continue;
+			}
+			if (key === demoDress) {
+				checkDemoDress(value);
+				continue;
+			}
+			const { id, manifest } = value as StoredProject;
+			if (!selects(key, value) || id !== key || !supportedFormat(manifest?.format))
 				throw new Error('Unsupported character record.');
 			manifestShape(manifest);
 			for (const pose of Object.values(manifest.rig.rest ?? {}))
@@ -153,12 +170,12 @@ function artworkReferences(projects: Map<string, unknown>) {
 							for (const hash of cells ?? []) add(hash, frame);
 				}
 			}
-		} catch (cause) {
-			const name = typeof manifest?.name === 'string' ? manifest.name.slice(0, 100) : key;
-			throw new Error(
-				`Saved character “${name}” has invalid character data or artwork references.`,
-				{ cause }
-			);
+			for (const [hash, frame] of local) found.set(hash, frame);
+		} catch {
+			projects.delete(key);
+			if (key === demoDress) omitted.demoOutfit = true;
+			else if (key === EXPORT_SETTINGS_KEY) omitted.exportSettings = true;
+			else omitted.characters++;
 		}
 	}
 	return found;
@@ -214,7 +231,16 @@ export async function exportWorkspace(
 	diagnostics: { tier: number | null; calls: readonly ApiCall[] } | undefined,
 	keys: readonly string[]
 ) {
-	const snapshot = await readWorkspaceSnapshot(selects, artworkReferences, !!diagnostics);
+	const omitted = { characters: 0, demoOutfit: false, exportSettings: false };
+	let references = new Map<string, FrameSize | undefined>();
+	const snapshot = await readWorkspaceSnapshot(
+		selects,
+		(projects) => {
+			references = recoverRecords(projects, omitted);
+			return references;
+		},
+		!!diagnostics
+	);
 	const { blobs, projects } = snapshot;
 	if (projects.size > maxRecords) throw new Error(tooLarge);
 	for (const value of projects.values()) {
@@ -222,13 +248,29 @@ export async function exportWorkspace(
 		delete record.creationSpec;
 		delete record.moveRecovery;
 	}
-	const references = artworkReferences(projects);
+	const artwork: { name: string; data: Uint8Array }[] = [];
+	let pixels = 0,
+		artworkBytes = 0;
+	for (const [hash, blob] of blobs) {
+		if (blob.size > MAX_ZIP_BYTES) throw new WorkspaceLimitError();
+		const bytes = new Uint8Array(await blob.arrayBuffer());
+		const verified = await recoverArtwork(bytes, hash, maxPixels - pixels, references.get(hash));
+		if (verified === undefined) blobs.delete(hash);
+		else {
+			pixels += verified;
+			artworkBytes += bytes.length;
+			if (artworkBytes > MAX_ZIP_BYTES || artwork.length + 2 > MAX_ZIP_ENTRIES)
+				throw new WorkspaceLimitError();
+			artwork.push({ name: `blobs/${hash}`, data: bytes });
+		}
+	}
 	const index: WorkspaceIndex = {
 		format,
 		build: `${__APP_VERSION__} (${__APP_COMMIT__})`,
 		view,
 		projects: [...projects],
 		missing: [...references.keys()].filter((hash) => !blobs.has(hash)),
+		...(Object.values(omitted).some(Boolean) && { omitted }),
 		...(diagnostics && {
 			diagnostics: {
 				tier: diagnostics.tier,
@@ -246,22 +288,25 @@ export async function exportWorkspace(
 			'A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.'
 		);
 	const data = new TextEncoder().encode(json);
-	if (
-		index.missing.length > MAX_ZIP_ENTRIES ||
-		blobs.size + 1 > MAX_ZIP_ENTRIES ||
-		data.length + [...blobs.values()].reduce((sum, blob) => sum + blob.size, 0) > MAX_ZIP_BYTES
-	)
+	if (index.missing.length > MAX_ZIP_ENTRIES || data.length + artworkBytes > MAX_ZIP_BYTES)
 		throw new Error(tooLarge);
-	const entries = [{ name: indexPath, data }];
-	let pixels = 0;
-	for (const [hash, blob] of blobs) {
-		const bytes = new Uint8Array(await blob.arrayBuffer());
-		pixels += await verifyArtwork(bytes, hash, maxPixels - pixels, references.get(hash));
-		entries.push({ name: `blobs/${hash}`, data: bytes });
-	}
-	const packed = await zip(entries);
+	const packed = await zip([{ name: indexPath, data }, ...artwork]);
 	if (packed.length > MAX_ZIP_BYTES) throw new Error(tooLarge);
-	return packed;
+	return { bytes: packed, hasOmissions: !!index.omitted || !!index.missing.length };
+}
+
+async function recoverArtwork(
+	data: Uint8Array,
+	hash: string,
+	remaining: number,
+	frame?: FrameSize
+) {
+	try {
+		return await verifyArtwork(data, hash, remaining, frame);
+	} catch (error) {
+		if (error instanceof WorkspaceLimitError) throw error;
+		return undefined;
+	}
 }
 
 async function verifyArtwork(
@@ -276,7 +321,7 @@ async function verifyArtwork(
 	if (frame && (size.w !== frame.w || size.h !== frame.h))
 		throw new Error('Workspace artwork does not match its saved frame dimensions.');
 	const pixels = size.w * size.h;
-	if (pixels > remaining) throw new Error(tooLarge);
+	if (pixels > remaining) throw new WorkspaceLimitError();
 	let actual: string;
 	try {
 		actual = await cellHash(await decodePngBytes(data));
@@ -292,13 +337,18 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 	const files = await unzip(bytes);
 	const json = files.get(indexPath);
 	if (!json) throw new Error('Choose a ZIP made with Export my workspace, not a character ZIP.');
-	const index = JSON.parse(
-		new TextDecoder('utf-8', { fatal: true }).decode(json),
-		(key, value: unknown) => {
-			if (key === '__proto__') throw new Error('This workspace contains an unsafe property.');
-			return value;
-		}
-	) as WorkspaceIndex | null;
+	let index: WorkspaceIndex | null;
+	try {
+		index = JSON.parse(
+			new TextDecoder('utf-8', { fatal: true }).decode(json),
+			(key, value: unknown) => {
+				if (key === '__proto__') throw new Error('Unsafe property');
+				return value;
+			}
+		);
+	} catch (cause) {
+		throw new Error('This workspace index is invalid.', { cause });
+	}
 	if (index?.format !== format) throw new Error('This workspace file version is not supported.');
 	const { build, view, missing, diagnostics } = index;
 	if (
@@ -317,7 +367,12 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 		!Array.isArray(index.projects) ||
 		index.projects.length > maxRecords ||
 		!Array.isArray(missing) ||
-		missing.length > MAX_ZIP_ENTRIES
+		missing.length > MAX_ZIP_ENTRIES ||
+		(index.omitted !== undefined &&
+			(!index.omitted ||
+				integer(index.omitted.characters, 0, maxRecords) === undefined ||
+				typeof index.omitted.demoOutfit !== 'boolean' ||
+				typeof index.omitted.exportSettings !== 'boolean'))
 	)
 		throw new Error('This workspace index is invalid.');
 	const projects = new Map<string, unknown>();
@@ -326,17 +381,25 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 			!Array.isArray(row) ||
 			row.length !== 2 ||
 			typeof row[0] !== 'string' ||
-			!selects(row[0], row[1]) ||
+			(row[0] !== demoDress && row[0] !== EXPORT_SETTINGS_KEY && !row[0].startsWith('rig-')) ||
 			projects.has(row[0])
 		)
 			throw new Error('This workspace contains an unsupported or duplicate saved record.');
 		projects.set(...row);
 	}
-	const references = artworkReferences(projects);
+	const omitted = { characters: 0, demoOutfit: false, exportSettings: false, ...index.omitted };
+	const previousOmissions = omitted.characters;
+	const references = recoverRecords(projects, omitted);
+	const skippedCharacter = omitted.characters > previousOmissions;
 	const absent = new Set(missing);
 	if (
 		absent.size !== missing.length ||
-		missing.some((hash) => typeof hash !== 'string' || !references.has(hash))
+		missing.some(
+			(hash) =>
+				typeof hash !== 'string' ||
+				!/^[a-f0-9]{64}$/.test(hash) ||
+				(!skippedCharacter && !references.has(hash))
+		)
 	)
 		throw new Error('This workspace has an invalid list of missing files.');
 	const blobs = new Map<string, Blob>();
@@ -344,13 +407,15 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 	for (const [path, data] of files) {
 		if (path === indexPath) continue;
 		const hash = /^blobs\/([a-f0-9]{64})$/.exec(path)?.[1];
-		if (!hash || !references.has(hash) || absent.has(hash))
+		if (!hash || (!skippedCharacter && !references.has(hash)) || absent.has(hash))
 			throw new Error('This workspace contains an unexpected file.');
-		pixels += await verifyArtwork(data, hash, maxPixels - pixels, references.get(hash));
-		blobs.set(hash, new Blob([data as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+		if (!references.has(hash)) continue;
+		const verified = await recoverArtwork(data, hash, maxPixels - pixels, references.get(hash));
+		if (verified !== undefined) {
+			pixels += verified;
+			blobs.set(hash, new Blob([data as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+		}
 	}
-	if (references.size !== absent.size + blobs.size)
-		throw new Error('Artwork is missing from this workspace ZIP.');
 	if (
 		diagnostics &&
 		(!Array.isArray(diagnostics.errors) ||
@@ -367,5 +432,13 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 			))
 	)
 		throw new Error('This workspace has invalid recent errors.');
-	return { build, view, missing, diagnostics, projects, blobs };
+	return {
+		build,
+		view,
+		diagnostics,
+		projects,
+		blobs,
+		missing: [...references.keys()].filter((hash) => !blobs.has(hash)),
+		omitted: Object.values(omitted).some(Boolean) ? omitted : undefined
+	};
 }
