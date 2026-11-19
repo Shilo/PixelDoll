@@ -149,6 +149,33 @@ let checkAgain = false;
 let stopped = true;
 let base: URL;
 let registerWorker: (() => Promise<void>) | undefined;
+let offlineLocale = 'en';
+
+export function setOfflineLocale(locale: string) {
+	if (!locale || locale === offlineLocale) return;
+	offlineLocale = locale;
+	cacheActiveLocale();
+}
+
+function cacheLocale(worker: ServiceWorker | null | undefined) {
+	if (
+		stopped ||
+		!navigator.onLine ||
+		offlineLocale === 'en' ||
+		(worker?.state !== 'activated' && worker?.state !== 'installed')
+	)
+		return;
+	try {
+		worker.postMessage({ type: 'CACHE_LOCALE', locale: offlineLocale });
+	} catch (error) {
+		console.warn('PixelDoll could not request an offline language:', error);
+	}
+}
+
+function cacheActiveLocale() {
+	cacheLocale(registration?.active);
+	cacheLocale(registration?.waiting);
+}
 
 async function inspectWorker() {
 	if (!registration || stopped) return;
@@ -174,6 +201,7 @@ async function inspectWorker() {
 		if (check.ready !== true)
 			throw new LocalizedError('The downloaded app is incomplete.', 'pwa.downloadIncomplete');
 		if (release.build === __APP_BUILD__) pwa.update((s) => ({ ...s, offlineReady: true }));
+		if (worker === preferred()) cacheLocale(worker);
 	} catch (e) {
 		if (!relevant()) return;
 		pwa.update((s) => ({
@@ -314,6 +342,10 @@ export function startPwa() {
 	const wake = () => {
 		if (document.visibilityState === 'visible') void checkForUpdate();
 	};
+	const reconnect = () => {
+		cacheActiveLocale();
+		wake();
+	};
 	const onController = () => {
 		void inspectWorker().catch((e) => pwa.update((s) => ({ ...s, error: errorMessage(e) })));
 	};
@@ -336,7 +368,7 @@ export function startPwa() {
 			installError: message('pwa.installUnavailable')
 		}));
 	addEventListener('focus', wake);
-	addEventListener('online', wake);
+	addEventListener('online', reconnect);
 	addEventListener('pageshow', wake);
 	document.addEventListener('visibilitychange', wake);
 	navigator.serviceWorker.addEventListener('controllerchange', onController);
@@ -356,6 +388,7 @@ export function startPwa() {
 				});
 		if (stopped) return;
 		registration = r;
+		cacheActiveLocale();
 		r.addEventListener('updatefound', watch);
 		watch();
 	};
@@ -368,7 +401,7 @@ export function startPwa() {
 		registration?.removeEventListener('updatefound', watch);
 		stopInstall?.();
 		removeEventListener('focus', wake);
-		removeEventListener('online', wake);
+		removeEventListener('online', reconnect);
 		removeEventListener('pageshow', wake);
 		document.removeEventListener('visibilitychange', wake);
 		navigator.serviceWorker.removeEventListener('controllerchange', onController);

@@ -6,8 +6,11 @@ const META = `pixeldoll-meta:${SCOPE}`;
 const ACTIVE = new URL('.pwa-meta/active', SCOPE).href;
 const PENDING = new URL('.pwa-meta/pending/', SCOPE).href;
 const METADATA_LOCK = `pixeldoll-cache-metadata:${SCOPE}`;
-const FILE_URLS = FILES.map((file) => ({ url: new URL(file.path, SCOPE).href, hash: file.hash }));
+const FILE_URLS = FILES.map((file) => ({ ...file, url: new URL(file.path, SCOPE).href }));
 const CURRENT_FILES = new Map(FILE_URLS.map((file) => [file.url, file]));
+const REQUIRED_FILES = FILE_URLS.filter((file) => !file.locale);
+const LOCALES = new Map(FILE_URLS.filter((file) => file.locale).map((file) => [file.locale, file]));
+const localeDownloads = new Map();
 const INDEX = new URL(`index.html?pd-build=${encodeURIComponent(RELEASE.build)}`, SCOPE).href;
 
 const leaseUrl = (id) => new URL(`.pwa-meta/client/${encodeURIComponent(id)}`, SCOPE).href;
@@ -118,22 +121,62 @@ async function currentResponse(file, repair = true) {
 	if (stored) return stored();
 	if (!repair) throw new Error('The downloaded update is incomplete. Reconnect and try again.');
 	// A public URL can now belong to a later deployment. Only this worker's exact bytes can repair its release.
+	if (!file.locale) return (await download(file, cache))();
+	if (!localeDownloads.has(file.url)) {
+		localeDownloads.set(
+			file.url,
+			loadLocale(file, cache).finally(() => localeDownloads.delete(file.url))
+		);
+	}
+	return (await localeDownloads.get(file.url))();
+}
+
+async function loadLocale(file, cache) {
+	for (const name of await caches.keys()) {
+		if (!name.startsWith(PREFIX) || name === CACHE) continue;
+		const stored = await verified(await (await caches.open(name)).match(file.url), file);
+		if (stored) {
+			await saveDownload(file, cache, stored);
+			return stored;
+		}
+	}
+	return download(file, cache);
+}
+
+async function download(file, cache, installationSignal) {
+	const signal = installationSignal
+		? AbortSignal.any([installationSignal, AbortSignal.timeout(120_000)])
+		: AbortSignal.timeout(20_000);
 	const downloaded = await verified(
 		await fetch(file.url, {
 			cache: 'no-store',
 			credentials: 'omit',
 			redirect: 'error',
-			signal: AbortSignal.timeout(20_000)
+			signal
 		}),
 		file
 	);
-	if (!downloaded) throw new Error('The downloaded update is incomplete. Reconnect and try again.');
-	await cache.put(file.url, downloaded());
-	return downloaded();
+	if (!downloaded)
+		throw new Error(
+			installationSignal
+				? 'PWA release bytes did not match this build'
+				: 'The downloaded update is incomplete. Reconnect and try again.'
+		);
+	await saveDownload(file, cache, downloaded);
+	return downloaded;
+}
+
+async function saveDownload(file, cache, downloaded) {
+	try {
+		await cache.put(file.url, downloaded());
+	} catch (error) {
+		if (!file.locale) throw error;
+		console.warn('PixelDoll could not save a language for offline use:', error);
+	}
 }
 
 async function verify(repair = true) {
-	for (const file of FILE_URLS) {
+	for (const file of REQUIRED_FILES) {
 		await currentResponse(file, repair);
 	}
 	return true;
@@ -143,26 +186,32 @@ self.addEventListener('install', (event) => {
 	event.waitUntil(
 		(async () => {
 			const cache = await caches.open(CACHE);
+			const cancel = new AbortController();
+			const installSignal = AbortSignal.any([cancel.signal, AbortSignal.timeout(180_000)]);
+			const required = REQUIRED_FILES.values();
+			let failure;
 			try {
 				// A failed deployment or a CDN serving mixed releases must never replace the last complete offline app.
-				const results = await Promise.allSettled(
-					FILE_URLS.map(async (file) => {
-						const response = await verified(
-							await fetch(file.url, {
-								cache: 'no-store',
-								credentials: 'omit',
-								redirect: 'error',
-								signal: AbortSignal.timeout(20_000)
-							}),
-							file
-						);
-						if (!response) throw new Error('PWA release bytes did not match this build');
-						await cache.put(file.url, response());
+				await Promise.all(
+					Array.from({ length: 4 }, async () => {
+						for (const file of required) {
+							if (installSignal.aborted) return;
+							try {
+								await download(file, cache, installSignal);
+							} catch (error) {
+								if (!installSignal.aborted) {
+									failure = error;
+									cancel.abort();
+								}
+								return;
+							}
+						}
 					})
 				);
-				const failure = results.find((result) => result.status === 'rejected');
-				if (failure) throw failure.reason;
+				if (cancel.signal.aborted) throw failure;
+				installSignal.throwIfAborted();
 				await verify(false);
+				installSignal.throwIfAborted();
 			} catch (error) {
 				await caches.delete(CACHE);
 				throw error;
@@ -187,9 +236,19 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('message', (event) => {
+	const message = event.data;
+	if (message?.type === 'CACHE_LOCALE') {
+		const file = LOCALES.get(message.locale);
+		if (file && event.source?.url?.startsWith(SCOPE))
+			event.waitUntil(
+				currentResponse(file).catch((error) => {
+					console.warn('PixelDoll could not prepare a language for offline use:', error);
+				})
+			);
+		return;
+	}
 	const port = event.ports[0];
 	if (!port) return;
-	const message = event.data;
 	event.waitUntil(
 		(async () => {
 			try {

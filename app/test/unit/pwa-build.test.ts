@@ -28,6 +28,16 @@ const files = [...bytes].map(([path, body]) => ({
 }));
 const workerSource = readFileSync(new URL('../../pwa-worker.js', import.meta.url), 'utf8');
 
+function deferred<Value>() {
+	let resolve!: (value: Value) => void;
+	let reject!: (error: Error) => void;
+	const promise = new Promise<Value>((accept, refuse) => {
+		resolve = accept;
+		reject = refuse;
+	});
+	return { promise, resolve, reject };
+}
+
 interface WindowClient {
 	id: string;
 	url: string;
@@ -42,7 +52,8 @@ function worker(
 	cacheData = new Map<string, Map<string, Response>>(),
 	workerRelease = release,
 	workerBytes = bytes,
-	locksSupported = true
+	locksSupported = true,
+	locales = new Map<string, string>()
 ) {
 	if (!sharedLocks.has(cacheData)) {
 		const tails = new Map<string, Promise<unknown>>();
@@ -66,6 +77,7 @@ function worker(
 	let windows: WindowClient[] = [{ id: 'current-client', url: scope }];
 	let broken = false;
 	let offline = false;
+	let intercept: ((options: RequestInit) => Promise<Response>) | undefined;
 	const skipWaiting = vi.fn(async () => {});
 	const update = vi.fn(async () => {
 		if (offline) throw new TypeError('Offline');
@@ -104,7 +116,8 @@ function worker(
 	};
 	const inventory = [...workerBytes].map(([path, body]) => ({
 		path,
-		hash: createHash('sha256').update(body).digest('hex')
+		hash: createHash('sha256').update(body).digest('hex'),
+		locale: locales.get(path)
 	}));
 	runInNewContext(
 		`const RELEASE=${JSON.stringify(workerRelease)};const FILES=${JSON.stringify(inventory)};\n${workerSource}`,
@@ -122,6 +135,7 @@ function worker(
 			URL,
 			Request,
 			Response,
+			AbortController,
 			AbortSignal,
 			MessageChannel,
 			setTimeout,
@@ -129,6 +143,7 @@ function worker(
 			fetch: async (input: string | Request, options: RequestInit = {}) => {
 				const url = typeof input === 'string' ? input : input.url;
 				fetched.push({ url, options });
+				if (intercept) return intercept(options);
 				if (offline) throw new TypeError('Offline');
 				return new Response(
 					broken
@@ -186,6 +201,9 @@ function worker(
 		update,
 		attachCandidate,
 		setRegistrationState,
+		interceptNetwork: (handler: typeof intercept) => {
+			intercept = handler;
+		},
 		setWindows: (clients: WindowClient[]) => {
 			windows = clients;
 		},
@@ -253,6 +271,65 @@ describe('PWA release construction', () => {
 });
 
 describe('PWA worker release safety', () => {
+	it('ignores optional catalogs for readiness, verifies them on demand, and retains only good bytes', async () => {
+		const path = 'assets/fr-language.js';
+		const url = scope + path;
+		const body = 'export default "French"';
+		const app = worker(
+			undefined,
+			release,
+			new Map([...bytes, [path, body]]),
+			true,
+			new Map([[path, 'fr']])
+		);
+		await app.event('install');
+		expect(app.fetched.map(({ url }) => url)).not.toContain(url);
+		expect(await app.message({ type: 'VERIFY', build: release.build })).toMatchObject({
+			ready: true
+		});
+		expect(app.fetched.map(({ url }) => url)).not.toContain(url);
+		await app.event('message', {
+			data: { type: 'CACHE_LOCALE', locale: 'fr' },
+			source: { url: 'https://other.test/' }
+		});
+		expect(app.fetched.map(({ url }) => url)).not.toContain(url);
+		const getLocale = () => app.event('fetch', { request: { url, method: 'GET' } });
+		const cache = await app.caches.open(prefix + release.build);
+		await cache.put(url, new Response('bad cached bytes'));
+		expect(await (await getLocale())!.text()).toBe(body);
+		app.goOffline();
+		expect(await (await getLocale())!.text()).toBe(body);
+		await cache.put(url, new Response('bad cached bytes'));
+		expect((await getLocale())!.status).toBe(503);
+		expect(await app.message({ type: 'ACTIVATE', build: release.build })).toMatchObject({
+			ready: true
+		});
+	});
+
+	it('promotes matching locale bytes from a retained release, even offline', async () => {
+		const path = 'assets/fr-language.js';
+		const url = scope + path;
+		const body = 'export default "French"';
+		const app = worker(
+			undefined,
+			release,
+			new Map([...bytes, [path, body]]),
+			true,
+			new Map([[path, 'fr']])
+		);
+		await app.event('install');
+		const old = await app.caches.open(prefix + 'build-a');
+		await old.put(url, new Response('wrong catalog'));
+		app.goOffline();
+		const getLocale = () => app.event('fetch', { request: { url, method: 'GET' } });
+		expect((await getLocale())!.status).toBe(503);
+		await old.put(url, new Response(body));
+		const count = app.fetched.length;
+		expect(await (await getLocale())!.text()).toBe(body);
+		expect(app.fetched).toHaveLength(count);
+		const current = await app.caches.open(prefix + release.build);
+		expect(await (await current.match(url))!.text()).toBe(body);
+	});
 	it('stages a complete verified release without activation and rechecks every byte before explicit activation', async () => {
 		const app = worker();
 		await app.event('install');
@@ -423,6 +500,38 @@ describe('PWA worker release safety', () => {
 			'PWA release bytes did not match this build'
 		);
 		expect(await app.caches.keys()).toEqual([prefix + 'build-a', 'another-app']);
+	});
+
+	it('starts only four transfers, aborts peers on failure, and drains them before deleting the candidate', async () => {
+		const app = worker(undefined, release, new Map([...bytes, ['fourth', '4'], ['queued', '5']]));
+		await app.caches.open(prefix + 'build-a');
+		const started = deferred<void>();
+		const fail = deferred<Response>();
+		const aborted = deferred<void>();
+		const drain = deferred<void>();
+		let abortCount = 0;
+		app.interceptNetwork(async ({ signal }) => {
+			if (app.fetched.length === 1) return fail.promise;
+			const onAbort = deferred<void>();
+			signal!.addEventListener('abort', () => {
+				if (++abortCount === 3) aborted.resolve();
+				onAbort.resolve();
+			});
+			if (app.fetched.length === 4) started.resolve();
+			await onAbort.promise;
+			await drain.promise;
+			throw signal!.reason;
+		});
+		const installing = app.event('install');
+		const rejected = expect(installing).rejects.toThrow('transfer failed');
+		await started.promise;
+		fail.reject(new Error('transfer failed'));
+		await aborted.promise;
+		expect(app.cacheData.has(prefix + release.build)).toBe(true);
+		expect(app.fetched).toHaveLength(4);
+		drain.resolve();
+		await rejected;
+		expect(await app.caches.keys()).toEqual([prefix + 'build-a']);
 	});
 
 	it('serves exact old public URLs after activation without borrowing the new release or another app cache', async () => {

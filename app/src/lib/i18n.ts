@@ -1,14 +1,17 @@
 import {
 	addDictionary,
+	detectLocale,
 	formatDate,
 	getLocale,
 	getLocales,
 	init,
+	locale,
 	registerLoader,
 	t
 } from 'svelte-whisper';
 import en from '../locales/en.json';
 import { errorMessage, type Message } from './message.ts';
+import { setOfflineLocale } from './pwa.ts';
 import { workspaceCopy } from './store/workspace-mode.ts';
 
 export { errorMessage } from './message.ts';
@@ -16,8 +19,7 @@ export { errorMessage } from './message.ts';
 let ready: Promise<void> | undefined;
 const localeKey = 'pixeldoll.locale';
 
-function copyLocale(): string | undefined {
-	if (!workspaceCopy) return;
+function storedLocale(): string | undefined {
 	try {
 		const saved = localStorage.getItem(localeKey);
 		if (saved && getLocales().includes(saved)) return saved;
@@ -30,13 +32,22 @@ export function setupI18n(): Promise<void> {
 	if (!ready) {
 		addDictionary('en', en);
 		registerLoader(import.meta.glob(['../locales/*.json', '!../locales/en.json']));
-		const initial = copyLocale();
+		const saved = storedLocale();
 		ready = init({
 			fallback: 'en',
 			persistKey: workspaceCopy ? undefined : localeKey,
-			initial,
-			detect: !initial
+			initial: workspaceCopy ? saved : undefined,
+			detect: !saved
 		});
+		if (!workspaceCopy && import.meta.env.PROD) {
+			setOfflineLocale(saved ?? detectLocale() ?? 'en');
+			let applied: string | undefined;
+			locale.subscribe((active) => {
+				if (active !== 'en' || storedLocale() === 'en' || (applied && applied !== 'en'))
+					setOfflineLocale(active);
+				applied = active;
+			});
+		}
 	}
 	return ready;
 }

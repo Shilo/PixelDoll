@@ -299,7 +299,7 @@ test('installed shell includes valid icons and works offline after a cold naviga
 	}
 });
 
-test('a returning user can switch to an unvisited language while offline and reload it', async ({
+test('an offline launch needs no optional languages and retains a language used online', async ({
 	page,
 	context
 }) => {
@@ -307,19 +307,82 @@ test('a returning user can switch to an unvisited language while offline and rel
 	const server = await pwaServer(release);
 	try {
 		await openInstalled(page, server.url, release);
+		const optional = release.inventory.filter(({ locale }) => locale);
+		expect(optional.map(({ locale }) => locale).sort()).toEqual([
+			'de',
+			'es',
+			'fr',
+			'id',
+			'ja',
+			'ko',
+			'pt-BR',
+			'tr',
+			'zh-Hans'
+		]);
+		for (const file of optional) expect(server.requests).not.toContain(server.scope + file.path);
 		const customize = page.locator('.customize-action');
 		const english = await customize.innerText();
-		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await context.setOffline(true);
-		await page.getByRole('combobox', { name: 'Language' }).selectOption('de');
+		await page.evaluate(() => localStorage.setItem('pixeldoll.locale', 'de'));
+		await page.reload();
+		await expect(customize).toHaveText(english);
+		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+		expect(await page.evaluate(() => localStorage.getItem('pixeldoll.locale'))).toBe('de');
+		await context.setOffline(false);
+		const germanPath = optional.find((file) => file.locale === 'de')!.path;
+		await expect
+			.poll(() =>
+				page.evaluate(
+					async (path) => !!(await caches.match(new URL(path, location.href))),
+					germanPath
+				)
+			)
+			.toBe(true);
+		await page.reload();
 		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
 		await expect(customize).not.toHaveText(english);
 		const german = await customize.innerText();
+		await context.setOffline(true);
 		await page.reload();
 		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
 		await expect(customize).toHaveText(german);
 	} finally {
 		await context.setOffline(false);
+		await server.close();
+	}
+});
+
+test('an uncontrolled first visit saves the detected language for this release and the next', async ({
+	page,
+	context
+}) => {
+	const first = await testRelease('locale-first', '8.0.1');
+	const next = await testRelease('locale-next', '8.0.2');
+	const server = await pwaServer(first);
+	await context.addInitScript(() =>
+		Object.defineProperty(navigator, 'languages', { value: ['de-DE'] })
+	);
+	const cached = (release: TestRelease) =>
+		page.evaluate(
+			async ({ build, path }) => {
+				const cache = await caches.open(`pixeldoll-static:${location.href}:${build}`);
+				return !!(await cache.match(new URL(path, location.href)));
+			},
+			{
+				build: release.release.build,
+				path: release.inventory.find((file) => file.locale === 'de')!.path
+			}
+		);
+	try {
+		await page.goto(server.url);
+		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+		expect(await page.evaluate(() => navigator.serviceWorker.controller)).toBeNull();
+		await expect.poll(() => cached(first)).toBe(true);
+		await page.keyboard.press('Shift');
+		server.deploy(next);
+		await page.evaluate(() => dispatchEvent(new Event('online')));
+		await expect.poll(() => cached(next)).toBe(true);
+	} finally {
 		await server.close();
 	}
 });
@@ -1219,7 +1282,9 @@ test('a missing current static cache is repaired online without clearing saved b
 					page.evaluate(
 						async (urls) =>
 							(await Promise.all(urls.map((url) => caches.match(url)))).every(Boolean),
-						release.inventory.map((file) => new URL(file.path, server.url).href)
+						release.inventory
+							.filter((file) => !file.locale)
+							.map((file) => new URL(file.path, server.url).href)
 					),
 				{ timeout: 30_000 }
 			)

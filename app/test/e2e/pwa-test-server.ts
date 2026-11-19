@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { createServer, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { revisionPath, type PwaRelease } from '../../pwa-build.ts';
+import { revisionPath, type PwaFile, type PwaRelease } from '../../pwa-build.ts';
 import { distDir } from '../../dist-dir.ts';
 
 const DIST = new URL(`../../${distDir()}/`, import.meta.url);
@@ -22,7 +22,7 @@ const TYPES: Record<string, string> = {
 export interface TestRelease {
 	release: PwaRelease;
 	files: Map<string, Buffer>;
-	inventory: { path: string; hash: string }[];
+	inventory: PwaFile[];
 }
 
 /** Real production bytes with independent chunk URLs and release identities, without rebuilding the app per test. */
@@ -32,6 +32,9 @@ export async function testRelease(
 	transform?: (files: Map<string, Buffer>) => void
 ): Promise<TestRelease> {
 	const original = JSON.parse(await readFile(new URL('release.json', DIST), 'utf8')) as PwaRelease;
+	const manifest = /^const FILES = (.*);$/m.exec(await readFile(new URL('sw.js', DIST), 'utf8'));
+	if (!manifest) throw new Error('The production worker is missing its offline inventory');
+	const originalInventory = JSON.parse(manifest[1]!) as PwaFile[];
 	const release = { ...original, build: `pwa-test-${label}-${randomUUID()}`, version };
 	const source = new Map<string, Buffer>();
 	async function walk(directory: URL, prefix = ''): Promise<void> {
@@ -68,9 +71,15 @@ export async function testRelease(
 		files.set(target, content);
 	}
 	transform?.(files);
+	const locales = new Map(
+		originalInventory
+			.filter((file) => file.locale)
+			.map(({ path, locale }) => ['assets/' + renamed.get(path.slice('assets/'.length)), locale])
+	);
 	const inventory = [...files].map(([path, bytes]) => ({
 		path: revisionPath(path, release.build),
-		hash: createHash('sha256').update(bytes).digest('hex')
+		hash: createHash('sha256').update(bytes).digest('hex'),
+		...(locales.has(path) ? { locale: locales.get(path) } : {})
 	}));
 	const worker = await readFile(new URL('../../pwa-worker.js', import.meta.url), 'utf8');
 	files.set(

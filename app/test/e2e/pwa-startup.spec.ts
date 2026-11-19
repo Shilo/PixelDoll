@@ -122,7 +122,11 @@ async function stage(
 		.toBe(release.release.build);
 }
 
-async function verifyFiles(page: Page, release: TestRelease, inventory = release.inventory) {
+async function verifyFiles(
+	page: Page,
+	release: TestRelease,
+	inventory = release.inventory.filter((file) => !file.locale)
+) {
 	const actual = await page.evaluate(
 		async ({ base, inventory }) =>
 			await Promise.all(

@@ -11,6 +11,7 @@ export interface PwaRelease {
 export interface PwaFile {
 	path: string;
 	hash: string;
+	locale?: string;
 }
 
 /** Public URLs need a release identity too: unlike Vite chunks their names do not contain a content hash. */
@@ -28,8 +29,8 @@ export function revisionHtml(html: string, build: string) {
 		.replace('</head>', `<script src="./${revisionPath('install.js', build)}"></script>\n</head>`);
 }
 
-/** Runs after public files and every lazy chunk have been written, so the offline release is a complete closure. */
-export function emitPwa(outDir: string, release: PwaRelease) {
+/** Keep lazy locale bytes in the release inventory without making them prerequisites for offline use. */
+export function emitPwa(outDir: string, release: PwaRelease, locales = new Map<string, string>()) {
 	const manifestPath = join(outDir, 'manifest.webmanifest');
 	const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { icons: { src: string }[] };
 	for (const icon of manifest.icons)
@@ -43,9 +44,11 @@ export function emitPwa(outDir: string, release: PwaRelease) {
 				absolute = join(directory, name);
 			if (statSync(absolute).isDirectory()) walk(absolute, path + '/');
 			else if (path !== 'sw.js' && path !== 'release.json') {
+				const locale = locales.get(path);
 				files.push({
 					path: revisionPath(path, release.build),
-					hash: createHash('sha256').update(readFileSync(absolute)).digest('hex')
+					hash: createHash('sha256').update(readFileSync(absolute)).digest('hex'),
+					...(locale ? { locale } : {})
 				});
 			}
 		}
@@ -72,8 +75,24 @@ export function pwaBuild(release: PwaRelease): Plugin {
 			outDir = resolve(config.root, config.build.outDir);
 		},
 		transformIndexHtml: { order: 'post', handler: (html) => revisionHtml(html, release.build) },
-		writeBundle: () => {
-			emitPwa(outDir, release);
+		writeBundle: (_, bundle) => {
+			const chunks = Object.values(bundle).filter((entry) => entry.type === 'chunk');
+			const imported = new Set(chunks.flatMap((chunk) => chunk.imports));
+			const locales = new Map<string, string>();
+			for (const chunk of chunks) {
+				if (
+					!chunk.isDynamicEntry ||
+					chunk.isEntry ||
+					imported.has(chunk.fileName) ||
+					chunk.imports.length ||
+					chunk.dynamicImports.length ||
+					chunk.moduleIds.length !== 1
+				)
+					continue;
+				const locale = /[\\/]src[\\/]locales[\\/]([\w-]+)\.json$/.exec(chunk.moduleIds[0]!)?.[1];
+				if (locale && locale !== 'en') locales.set(chunk.fileName, locale);
+			}
+			emitPwa(outDir, release, locales);
 		}
 	};
 }
