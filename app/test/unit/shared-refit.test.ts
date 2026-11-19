@@ -14,6 +14,7 @@ import { composeCell } from '../../src/lib/compose/compose.ts';
 import {
 	CURRENT_FORMAT,
 	type Item,
+	type Manifest,
 	type Project,
 	type Sha256,
 	type Slot
@@ -1022,6 +1023,11 @@ async function swung(p: Project) {
 	p.manifest.items[0].layers[0].cells!.slash!.south = [h, h];
 	return p;
 }
+/** No check may fail in these cases. */
+const free = (m: Manifest) =>
+	freeFrames(m, (_item, error) => {
+		throw error;
+	});
 test('an exact copy takes the frames its source item gained since, for free, into the same item', async () => {
 	// Copied while the Knight's sword had only its standing frame.
 	const early = await swung(await knight()),
@@ -1033,13 +1039,27 @@ test('an exact copy takes the frames its source item gained since, for free, int
 	const copy = (await acceptCopy('rig-knight', 'sword', 'rig-page'))!;
 	expect(copy.coverage).toEqual(['default/south/0']);
 	const page = () => loadProject('rig-page').then((p) => p.project);
-	expect(await freeFrames((await page()).manifest)).toEqual({});
+	expect(await free((await page()).manifest)).toEqual({});
 	expect(await copyMoreFrames('rig-page', copy.id)).toBe(0);
 	// The Knight's sword gains the slash.
 	const later = await swung(await knight());
 	await store('rig-knight', later);
 	const before = (await page()).manifest;
-	expect(await freeFrames(before)).toEqual({ [copy.id]: 2 });
+	expect(await free(before)).toEqual({ [copy.id]: 2 });
+	// A copy whose source cannot be read is reported and left out: the others still get their frames.
+	const broken = structuredClone(before);
+	broken.items.push({
+		...structuredClone(broken.items.find((it) => it.id === copy.id)!),
+		id: 'other',
+		copiedFrom: { id: 'rig-broken', name: 'Broken', item: 'sword' }
+	});
+	memory.records.set('rig-broken', {
+		id: 'rig-broken',
+		manifest: { items: [{ id: 'sword', status: 'accepted' }] }
+	});
+	const unchecked: string[] = [];
+	expect(await freeFrames(broken, (item) => unchecked.push(item.id))).toEqual({ [copy.id]: 2 });
+	expect(unchecked).toEqual(['other']);
 	expect(await copyMoreFrames('rig-page', copy.id)).toBe(2);
 	const after = await page(),
 		item = after.manifest.items.find((it) => it.id === copy.id)!;
@@ -1051,7 +1071,7 @@ test('an exact copy takes the frames its source item gained since, for free, int
 	expect(after.manifest.materials).toEqual(before.materials);
 	expect(item.qa?.clips['slash/south']).toBeDefined();
 	// Nothing left to copy.
-	expect(await freeFrames(after.manifest)).toEqual({});
+	expect(await free(after.manifest)).toEqual({});
 	expect(await copyMoreFrames('rig-page', copy.id)).toBe(0);
 });
 
@@ -1066,7 +1086,7 @@ test('an adopted custom slot keeps taking later frames from its source item', as
 	// The target now has the category, so source-frame lookups by the item's own slot ID still work.
 	await store('rig-knight', await swung(await sidearmKnight()));
 	const target = (await loadProject('rig-squire')).project.manifest;
-	expect(await freeFrames(target)).toEqual({ [copy.id]: 2 });
+	expect(await free(target)).toEqual({ [copy.id]: 2 });
 	expect(await copyMoreFrames('rig-squire', copy.id)).toBe(2);
 	expect(
 		(await loadProject('rig-squire')).project.manifest.items.find((it) => it.id === copy.id)!
@@ -1083,6 +1103,6 @@ test('a re-fit never takes more frames from its source', async () => {
 	const fitted = (await acceptCopy('rig-knight', 'sword', 'rig-squire'))!;
 	expect(fitted.refit).toEqual([]);
 	await store('rig-knight', await knight());
-	expect(await freeFrames((await loadProject('rig-squire')).project.manifest)).toEqual({});
+	expect(await free((await loadProject('rig-squire')).project.manifest)).toEqual({});
 	expect(await copyMoreFrames('rig-squire', fitted.id)).toBe(0);
 });

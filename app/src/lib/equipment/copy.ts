@@ -596,14 +596,22 @@ async function fromSource(target: Manifest, item: Item, frames: Frames) {
 	return matches.length ? { source, original, matches } : null;
 }
 
-/** How many frames each exact copy of `target` can take from its source for free, by item id (copies with none left out). */
-export async function freeFrames(target: Manifest): Promise<Record<string, number>> {
+/** How many frames each exact copy of `target` can take from its source for free, by item id (copies with none left out).
+ *  A copy whose check fails (an unreadable image) is reported to `failed` and left out, so the others still get theirs. */
+export async function freeFrames(
+	target: Manifest,
+	failed: (item: Item, error: unknown) => void
+): Promise<Record<string, number>> {
 	const out: Record<string, number> = {};
 	for (const item of target.items) {
 		if (item.status !== 'accepted' || !item.copiedFrom?.item || item.refit || item.unfitted)
 			continue;
-		const found = await fromSource(target, item, flipper(stored(item).load));
-		if (found) out[item.id] = found.matches.length;
+		try {
+			const found = await fromSource(target, item, flipper(stored(item).load));
+			if (found) out[item.id] = found.matches.length;
+		} catch (error) {
+			failed(item, error);
+		}
 	}
 	return out;
 }

@@ -150,12 +150,15 @@ function fitLine(im: Img, line: BodyLine, votes: Map<number, [number, number]>):
  * rig-wide color votes, fitLine), mark the base `regions: 'shirt-shorts'`, move baseHash (and the items made for the old
  * base) when pixels changed, and drop the base's materials when they predate the split so deriveMaterials makes Shirt /
  * Shorts / Skin. `images`: the new cell images; `dirty`: something to persist (saveSplit). Idempotent: the votes come from
- * the anchor lines, which do not see the region bit.
+ * the anchor lines, which do not see the region bit. `only`: a move just added to a body that is already split. Every frame
+ * still votes, but only that move's frames are written: the votes change with every move, and a frame that items and other
+ * characters' copies were matched against must keep its pixels.
  */
 const SPLITS_KEPT = 32; // characters; past it the least recently opened are split again when opened
 const splits = new Map<string, Sha256[]>();
 export async function splitBase(
-	p: Project
+	p: Project,
+	only?: string
 ): Promise<{ changed: number; dirty: boolean; oldHash: Sha256; images: Map<Sha256, Img> }> {
 	const m = p.manifest,
 		rig = m.rig,
@@ -164,14 +167,15 @@ export async function splitBase(
 	const images = new Map<Sha256, Img>();
 	let changed = 0;
 	if (!base) return { changed, dirty: false, oldHash, images };
-	const jobs: { cells: (Sha256 | null)[]; i: number; im: Img; line: BodyLine }[] = [];
+	const kept = base.regions === 'shirt-shorts' ? only : undefined;
+	const jobs: { anim: string; cells: (Sha256 | null)[]; i: number; im: Img; line: BodyLine }[] = [];
 	for (const l of base.layers)
 		for (const [anim, dirs] of Object.entries(l.cells ?? {}))
 			for (const [dir, cells] of Object.entries(dirs ?? {}) as [DirectionName, (Sha256 | null)[]][])
 				for (const [i, h] of cells.entries()) {
 					const im = h && p.images.get(h),
 						line = im && lineAt(p, anim, dir, i, im);
-					if (im && line) jobs.push({ cells, i, im, line });
+					if (im && line) jobs.push({ anim, cells, i, im, line });
 				}
 	// The split follows from the cells and their lines alone, so reopening a character reuses it instead of redoing the
 	// pixel work (the demo, rebuilt unsplit on every open, included).
@@ -201,10 +205,10 @@ export async function splitBase(
 		if (splits.size <= SPLITS_KEPT) break;
 		splits.delete(n);
 	}
-	for (const [n, { cells, i }] of jobs.entries()) {
+	for (const [n, { anim, cells, i }] of jobs.entries()) {
 		const k = outputHashes![n],
 			out = outs![n]!;
-		if (k === cells[i]) continue;
+		if (k === cells[i] || (kept !== undefined && anim !== kept)) continue;
 		p.images.set(k, out);
 		images.set(k, out);
 		cells[i] = k;

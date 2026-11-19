@@ -445,6 +445,8 @@ describe('synchronized production equipment', () => {
 		const first = renderPresentation(a, { head: 'hat' }, walk, 0),
 			second = renderPresentation(a, { head: 'hat' }, walk, 1);
 		expect(first.hiddenItems.map((item) => item.id)).toEqual(['hat']);
+		// Incomplete in every view this character has: no facing is named, since turning would not bring it back.
+		expect(first.issue).toBe('1 item hidden — missing walk frames');
 		expect(first.image?.data[7]).toBe(0);
 		expect(first.issueKey).toBe(second.issueKey);
 		expect(
@@ -554,5 +556,6 @@ describe('synchronized production equipment', () => {
 			);
 		expect(east.loading).toBeNull();
 		expect(east.hiddenItems.map((item) => item.id)).toEqual(['sword']);
+		expect(east.issue).toBe('1 item hidden — missing walk / East frames'); // south has it
 	});
 });

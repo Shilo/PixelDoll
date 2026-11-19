@@ -491,6 +491,10 @@ test('another character’s item on the same body is worn for free, survives rel
 	await expect(page.locator('.bu-toast')).toContainText(
 		'Copied Traveling wizard hat from Twin. No generations used.'
 	);
+	// The toast names the moves it will vanish in, before the player first sees it vanish.
+	await expect(page.locator('.bu-toast')).toContainText(
+		/Missing some frames in .+; it hides there\./
+	);
 	const own = page
 		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
 		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })
@@ -781,6 +785,20 @@ test('a copy missing frames its source item has copies them for free into the sa
 	expect(dropped).toBeGreaterThan(0);
 	await reloadStudio(page);
 	await equipmentGroup(page, 'Head');
+	// The Studio opens on the standing move, where the worn hat shows. Walk has no frame of it now: its tile stays
+	// pressed and says the stage is not showing it.
+	const worn = page
+		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
+		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })
+		.and(ownTile(page));
+	const move = page.locator('.playback-move select');
+	await expect(move).toHaveValue('default');
+	await expect(worn).toHaveAttribute('aria-pressed', 'true');
+	await expect(worn).not.toHaveAccessibleName(/not shown in this move/);
+	await move.selectOption('walk');
+	await expect(worn).toHaveAccessibleName(/not shown in this move/);
+	await expect(worn).toHaveAttribute('data-dim');
+	await move.selectOption('default');
 	await page
 		.locator('.equipment-scroll [role=group][aria-label="Head items"]')
 		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })

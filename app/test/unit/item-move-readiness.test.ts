@@ -4,7 +4,7 @@ import type { RigCtx } from '../../src/lib/items/run.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { addMove, itemMoveOffer, type MoveSpec } from '../../src/studio/create.ts';
 
-const state = vi.hoisted(() => ({ ctx: null as RigCtx | null, pose: vi.fn() }));
+const state = vi.hoisted(() => ({ ctx: null as RigCtx | null, pose: vi.fn(), split: vi.fn() }));
 vi.mock('../../src/lib/store/project.ts', async (original) => ({
 	...(await original<typeof import('../../src/lib/store/project.ts')>()),
 	loadProject: async () => state.ctx!
@@ -15,10 +15,13 @@ vi.mock('../../src/lib/items/run.ts', async (original) => ({
 }));
 vi.mock('../../src/lib/dress/regions.ts', async (original) => ({
 	...(await original<typeof import('../../src/lib/dress/regions.ts')>()),
-	splitBase: async () => ({ dirty: false })
+	splitBase: (...args: unknown[]) => state.split(...args)
 }));
 
-beforeEach(() => state.pose.mockReset().mockResolvedValue(undefined));
+beforeEach(() => {
+	state.pose.mockReset().mockResolvedValue(undefined);
+	state.split.mockReset().mockResolvedValue({ dirty: false });
+});
 async function fixture() {
 	const project = await equipmentFixture(),
 		m = project.manifest,
@@ -86,6 +89,21 @@ test('a priced existing item move executes without joints on unrelated moves or 
 	});
 	expect(state.pose).toHaveBeenCalledOnce();
 	expect(state.pose.mock.calls[0][2]).toBe('valid_custom');
+	// A body never split is split before posing; once split, item work on a move it already has rewrites no body frame.
+	expect(state.split).toHaveBeenCalledOnce();
+	state.split.mockClear();
+	manifest.items[0].regions = 'shirt-shorts';
+	await addMove('rig-scoped-readiness', offer.specs[0]);
+	expect(state.split).not.toHaveBeenCalled();
+	// A move request resumed after its body frames were saved (a reload cut it off before the split) still splits them.
+	state.ctx!.rec.character = { id: 'managed', looks: 'a body' };
+	manifest.rig.animations = manifest.rig.animations.filter(
+		(move) => move.id !== 'unrelated_missing_joints'
+	);
+	delete manifest.items[0].layers[0].cells!.unrelated_missing_joints;
+	await addMove('rig-scoped-readiness', { ...spec, itemsOnly: undefined });
+	expect(state.split).toHaveBeenCalledOnce();
+	expect(state.split.mock.calls[0][1]).toBe('valid_custom');
 });
 
 test('invalid joints on the selected move stop before generation', async () => {
