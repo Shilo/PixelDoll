@@ -6,6 +6,7 @@ import {
 	type MoveSpec,
 	bodyAction,
 	bodyMoveIssue,
+	partialMoveFrameIssue,
 	creationLooks,
 	drawRequest,
 	estimate,
@@ -19,6 +20,7 @@ import { poseBatches, poseCallGens } from '../lib/rig/clips.ts';
 import {
 	gridEstimate,
 	repairGridLayout,
+	repairGridPlan,
 	frozenGrid,
 	planItem,
 	planAnchoredMove,
@@ -249,10 +251,14 @@ export function movePlan(
 			spec.itemMethod !== 'grid' &&
 			(spec.replace || !m.rig.animations.some((a) => a.id === spec.id)),
 		calls: PeekCall[] = [],
-		frames = moveFrames(m, spec);
+		frames = moveFrames(m, spec),
+		poseRig = bodyNeeded
+			? { ...m.rig, animations: m.rig.animations.filter((animation) => animation.id !== spec.id) }
+			: m.rig;
 	const generatedDirections = moveDirections(m, spec.dirs);
 	if (bodyNeeded) {
-		if (bodyMoveIssue(m, spec)) return [];
+		if (bodyMoveIssue(m, spec) || partialMoveFrameIssue(m, spec, generatedDirections.length))
+			return [];
 		const authored = isAuthoredAction(spec.action);
 		for (const direction of generatedDirections) {
 			if (!authored) {
@@ -334,20 +340,25 @@ export function movePlan(
 		}
 		for (const direction of missingDirs) {
 			if (spec.itemMethod === 'grid') {
-				calls.push({
-					method: 'POST',
-					path: '/inpaint-v3',
-					label: `${item.name} ${direction} · repair equipment`,
-					generations: repairGridLayout(item.layers[0]?.cell ?? m.rig.cell, frames, 1).gens,
-					note: 'Edits only selected equipment frames with one protected matching-direction reference. The body remains unchanged; results are retained only when quality improves.'
-				});
+				for (const batch of repairGridPlan(
+					item.layers[0]?.cell ?? m.rig.cell,
+					frames,
+					spec.preferTierOneRepair
+				))
+					calls.push({
+						method: 'POST',
+						path: '/inpaint-v3',
+						label: `${item.name} ${direction} · repair equipment`,
+						generations: batch.gens,
+						note: `${batch.w}×${batch.h}, frames ${batch.start + 1}–${batch.start + batch.count}. Uses one protected matching-direction reference. The body remains unchanged. Complete repairs with blocking visual issues are held for your review.`
+					});
 			} else
 				for (const batch of poseBatches(frames)) {
 					const cells = Array.from(
 						{ length: batch.count },
 						(_, i) => `${spec.id}/${direction}/${batch.start + i}`
 					);
-					const grid = frozenGrid(m.rig, item, cells);
+					const grid = frozenGrid(poseRig, item, cells);
 					calls.push({
 						method: 'POST',
 						path: grid ? '/inpaint-v3' : '/animate-with-skeleton-v3',

@@ -13,6 +13,10 @@ let eligible = false,
 let marker = '';
 let cancel = () => {};
 
+export function cancelStartupUpdate() {
+	cancel();
+}
+
 /** Called before bootstrap, so input cannot slip between rendering and attaching Studio's listeners. */
 export function observeStartupUpdate() {
 	const navigation = performance.getEntriesByType('navigation')[0] as

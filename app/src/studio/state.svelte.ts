@@ -1,6 +1,7 @@
 // Studio state: UI (size class, theme, tabs, sheets, playback), the open project + outfit with undo/redo and autosave,
 // item generations (drafts) and the create-character run. Pixel data lives in $state.raw (deep proxies over the manifest
 // made recolor/compose take seconds, B5); manifest edits bump doc.rev.
+import type { Snippet } from 'svelte';
 import {
 	applyDress,
 	dressOf,
@@ -13,6 +14,7 @@ import {
 	type Outfit
 } from '../lib/dress/project.ts';
 import { splitBase } from '../lib/dress/regions.ts';
+import { retainSlotDirections } from '../lib/items/slots.ts';
 import { keepThumbnails } from './experience/thumbnails.svelte.ts';
 import {
 	deriveMaterials,
@@ -47,8 +49,9 @@ import type {
 	ZOverride
 } from '../lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../lib/store/manifest.ts';
-import type { ItemPaletteRepairPlan, Draft, ItemResult } from '../lib/items/run.ts';
+import type { ItemPaletteRepairPlan, Draft, ItemResult, RepairReview } from '../lib/items/run.ts';
 import { loadDrafts } from '../lib/items/drafts.ts';
+import { insertSlotInLadder } from '../lib/items/slots.ts';
 import { app } from '../lib/app.svelte.ts';
 import { requestTier, tierDecision } from '../lib/pixellab/plans.ts';
 import type { NewItemInput } from './itemRoute.ts';
@@ -83,6 +86,12 @@ import {
 	useText
 } from './slots.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import {
+	COPY_GENERATION_OFF,
+	copyPreferences,
+	workspaceCopy,
+	workspaceKeys as K
+} from '../lib/store/workspace-mode.ts';
 import type { SetupSpec } from './setup.ts';
 import {
 	forgetFits,
@@ -104,11 +113,20 @@ const itemFlow = async () => (await lazy(() => import('./itemRoute.ts'))).itemRo
 const itemRun = () =>
 	lazy(() =>
 		import('../lib/items/run.ts').then(
-			({ acceptItemReview, evaluateItem, isClean, matchItemColors }) => ({
+			({
 				acceptItemReview,
+				applyRepairReview,
 				evaluateItem,
 				isClean,
-				matchItemColors
+				matchItemColors,
+				repairAlreadyApplied
+			}) => ({
+				acceptItemReview,
+				applyRepairReview,
+				evaluateItem,
+				isClean,
+				matchItemColors,
+				repairAlreadyApplied
 			})
 		)
 	);
@@ -126,6 +144,7 @@ import.meta.hot?.dispose((data) => {
 // ---------- small persistence helpers (every storage access can throw: private mode, blocked site data) ----------
 const lsGet = (k: string) => {
 	try {
+		if (workspaceCopy) return copyPreferences.get(k) ?? null;
 		return localStorage.getItem(k);
 	} catch {
 		return null;
@@ -133,16 +152,16 @@ const lsGet = (k: string) => {
 };
 const lsSet = (k: string, v: string | null) => {
 	try {
+		if (workspaceCopy) {
+			if (v == null) copyPreferences.delete(k);
+			else copyPreferences.set(k, v);
+			return;
+		}
 		if (v == null) localStorage.removeItem(k);
 		else localStorage.setItem(k, v);
 	} catch {
 		/* ignore */
 	}
-};
-const K = {
-	theme: 'pixeldoll.theme',
-	welcomed: 'pixeldoll.welcomed',
-	last: 'pixeldoll.studio.project'
 };
 export const DEMO = 'fixture:s2';
 
@@ -160,11 +179,13 @@ export type SheetId =
 	| 'gen'
 	| 'move'
 	| 'rename'
+	| 'directions'
 	| 'importZip'
 	| 'importPixelLab'
 	| 'delete'
 	| 'details'
 	| 'setup'
+	| 'workspaceExport'
 	| 'slots';
 const sizeNow = (): Size => {
 	const w = innerWidth,
@@ -189,6 +210,7 @@ export const ui = $state({
 	slotTarget: null as string | null,
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
+	directionProject: '',
 	details: '', // the character the Details sheet is for
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		group: string;
@@ -204,7 +226,7 @@ export const ui = $state({
 	frame: 0,
 	zoom: 0, // device px per sprite px; 0 = fit
 	bg: 'checker' as 'checker' | 'solid',
-	toast: '',
+	toast: '' as string | Snippet,
 	toastTitle: '',
 	toastPending: false,
 	toastTone: 'info' as 'info' | 'success' | 'warning' | 'danger',
@@ -326,7 +348,7 @@ export function resumeToast(reason: 'pointer' | 'focus') {
 	if (!toastT) armToast();
 }
 /** A zero duration keeps the message until dismissed or replaced. Return false when an unresolved error takes priority. */
-export function toast(s: string, options: number | ToastOptions = 4000) {
+export function toast(s: string | Snippet, options: number | ToastOptions = 4000) {
 	const o: ToastOptions = typeof options === 'number' ? { duration: options } : options;
 	if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
 	stopToastTimer();
@@ -385,6 +407,10 @@ function allowsTier(minimumTier: number): boolean {
 	return true;
 }
 export function withKey(fn: () => void, minimumTier = 0) {
+	if (workspaceCopy) {
+		toast(COPY_GENERATION_OFF);
+		return;
+	}
 	if (follower(() => withKey(fn, minimumTier))) return;
 	if (app.key && !app.keyRejected && !allowsTier(minimumTier)) {
 		afterConnect = null;
@@ -549,7 +575,7 @@ export async function refreshProjects(): Promise<boolean> {
 	// Drop unload snapshots and thumbnails of characters deleted here or in another tab (only when the listing is known to
 	// be complete).
 	if (listed) keepThumbnails(new Set(store.projects.map((p) => p.id)));
-	if (listed)
+	if (listed && !workspaceCopy)
 		try {
 			for (const k of Object.keys(localStorage))
 				if (k.startsWith(UNSAVED) && !store.projects.some((p) => k === UNSAVED + p.id))
@@ -560,12 +586,22 @@ export async function refreshProjects(): Promise<boolean> {
 	return !!listed;
 }
 
-/** A saved character as the Studio shows it, read without opening it. */
-export async function readCharacter(id: string) {
-	const r = await openSource(id);
-	const split = await splitBase(r.project); // B15: shirt / shorts color regions on the base (idempotent; fixtures in memory)
+async function prepareCharacter(r: Awaited<ReturnType<typeof openSource>>) {
+	const manifest = r.project.manifest;
+	const base = manifest.items.find(({ id }) => id === manifest.rig.baseItem);
+	const split = base?.regions === 'shirt-shorts' ? null : await splitBase(r.project);
 	deriveMaterials(r.project); // items without materials (new items, fresh fixtures)
 	return { r, split };
+}
+
+/** A saved character as the Studio shows it, read without opening it. */
+export async function readCharacter(id: string) {
+	return prepareCharacter(await openSource(id));
+}
+
+export async function readCharacterForExport(id: string) {
+	const r = await openSource(id, undefined, { allowMissingImages: true });
+	return r.missingImages ? r : (await prepareCharacter(r)).r;
 }
 
 let openRequest = 0,
@@ -586,7 +622,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 	try {
 		const { r, split } = await readCharacter(id);
 		if (request !== openRequest) return;
-		if (split.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
+		if (split?.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
 		if (request !== openRequest) return;
 		await flushSave(); // an edit made to the previous character while this one loaded lands before it is replaced
 		if (request !== openRequest) return;
@@ -687,6 +723,13 @@ export const lastProject = () => lsGet(K.last) ?? DEMO;
  *  cancel the open of the newly picked one. */
 const viewing = (id: string) => doc.id === id && (!opening || opening === id);
 
+export async function refreshCharacterDirections(id: string): Promise<boolean> {
+	const reload = viewing(id);
+	if (reload) await openProject(id, { quiet: true });
+	const listed = await refreshProjects();
+	return listed && (!reload || doc.id === id || !!opening);
+}
+
 // ---- undo/redo: snapshots of the dress state (outfit, colors, presets, layer order, hides) ----
 const snap = () =>
 	JSON.stringify(
@@ -704,7 +747,7 @@ function restore(e: UndoStep) {
 	const keep = busySlots(m),
 		from = e.from ? (JSON.parse(e.from) as Slot[]) : m.slots,
 		removed = from.filter((s) => !d.slots.some((x) => x.id === s.id));
-	d.slots = mergeSlotEdits(from, d.slots, m.slots, keep);
+	d.slots = retainSlotDirections(mergeSlotEdits(from, d.slots, m.slots, keep), m.rig.directions);
 	const kept = removed.filter((s) => keep.has(s.id) && d.slots.some((x) => x.id === s.id));
 	applyDress(m, d);
 	doc.items = { ...d.current!.items };
@@ -789,6 +832,12 @@ export async function flushSave() {
 	pendingSave = null;
 	if (pending) saving = saving.then(pending);
 	await saving;
+}
+
+export async function prepareWorkspaceExport() {
+	await flushSave();
+	if (edits !== savedEdits)
+		throw new Error('The latest changes could not be saved. Save them before exporting.');
 }
 /** The slot definitions the open character's view continues from (its open or last save): a save writes only the slot
  *  changes made since, so a stale tab's routine save never undoes another tab's category changes. */
@@ -905,8 +954,7 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 }
 
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
-export function deletionBlocked(id = doc.id): string {
-	if (id.startsWith('fixture:')) return 'The bundled demo cannot be deleted.';
+function characterEditBlocked(action: 'delete' | 'change directions for'): string {
 	if (doc.loading || opening) return 'Wait for the character to finish loading.';
 	if (queue.role === 'follower')
 		return 'Manage characters in the other PixelDoll tab, or close it first.';
@@ -918,8 +966,27 @@ export function deletionBlocked(id = doc.id): string {
 		(moving.spec && !moving.done) ||
 		(settingUp.spec && !settingUp.done)
 	)
-		return 'Finish or dismiss pending generation work before deleting a character.';
+		return action === 'delete'
+			? 'Finish or dismiss pending generation work before deleting a character.'
+			: 'Finish or dismiss pending generation work before changing directions.';
 	return '';
+}
+
+export function deletionBlocked(id = doc.id): string {
+	return id.startsWith('fixture:')
+		? 'The bundled demo cannot be deleted.'
+		: characterEditBlocked('delete');
+}
+
+export function directionEditsBlocked(id: string): string {
+	if (!id.startsWith('rig-')) return 'Only saved characters can be edited.';
+	return (
+		characterEditBlocked('change directions for') ||
+		(!generationSettled() ? 'Wait for the current generation work to finish.' : '') ||
+		(gens.some((gen) => gen.draft.rigId === id)
+			? 'Keep or dismiss this character’s item drafts before changing directions.'
+			: '')
+	);
 }
 function generationSettled() {
 	return (
@@ -963,7 +1030,8 @@ export function updateBlocked(): string {
 	if (
 		!generationSettled() ||
 		(heldCreate() && !creating.error) ||
-		(heldMove() && !moving.error) ||
+		(heldMove() && !moving.error && !moving.repairReview) ||
+		moving.resolvingRepair ||
 		(moving.queued.length && !heldMove()) ||
 		(heldSetup() && !settingUp.error)
 	)
@@ -986,8 +1054,14 @@ async function verifyHaltedFlows() {
 				value: stableStringify({
 					spec: flow.spec,
 					progress: flow.progress,
-					error: flow.error,
-					...(key === MOVE_KEY ? { projectId: moving.projectId, queued: moving.queued } : {})
+					error: key === MOVE_KEY && moving.repairReview ? '' : flow.error,
+					...(key === MOVE_KEY
+						? {
+								projectId: moving.projectId,
+								queued: moving.queued,
+								repairReview: !!moving.repairReview
+							}
+						: {})
 				})
 			}));
 	const before = snapshots();
@@ -995,7 +1069,11 @@ async function verifyHaltedFlows() {
 	const verified = await Promise.all(
 		before.map(async ({ key, value, fallback }) => {
 			const record = await db.get<
-				FlowDraft<unknown> & { projectId?: string; queued?: QueuedMove[] }
+				FlowDraft<unknown> & {
+					projectId?: string;
+					queued?: QueuedMove[];
+					repairReview?: RepairReview;
+				}
 			>('projects', key);
 			return (
 				record?.spec &&
@@ -1004,9 +1082,13 @@ async function verifyHaltedFlows() {
 					stableStringify({
 						spec: record.spec,
 						progress: record.progress ?? null,
-						error: record.error || fallback,
+						error: record.error || (record.status === 'review' ? '' : fallback),
 						...(key === MOVE_KEY
-							? { projectId: record.projectId, queued: record.queued ?? [] }
+							? {
+									projectId: record.projectId,
+									queued: record.queued ?? [],
+									repairReview: !!record.repairReview
+								}
 							: {})
 					})
 			);
@@ -1575,7 +1657,7 @@ export const REQUEST_TEXT = 5; // 5: repair grids pack into the cheapest layout 
 const STOPPED = 'Generation stopped. Review Activity before trying again.';
 const SETUP_STOPPED = 'Setup stopped. Review Activity before trying again.';
 const halted = (r: { status?: string; requestText?: number }) =>
-	r.status === 'failed' || r.requestText !== REQUEST_TEXT;
+	r.status === 'failed' || r.status === 'review' || r.requestText !== REQUEST_TEXT;
 export interface Gen {
 	draft: Draft;
 	input: NewItemInput;
@@ -1967,7 +2049,7 @@ function withDrafts(p: Project): Project {
 			items.push(running ? it : { ...it, pending: undefined }); // only a running draft is still loading; other gaps are missing
 			for (const [h, im] of prev.images) if (!images.has(h)) images.set(h, im);
 			const slot = prev.manifest.slots.find((x) => x.id === it.slot);
-			if (slot && !slots.some((x) => x.id === slot.id)) slots.push(slot);
+			if (slot && !slots.some((x) => x.id === slot.id)) insertSlotInLadder(slots, slot);
 		} else if (running) {
 			const { spec } = g.draft;
 			items.push({
@@ -2352,7 +2434,7 @@ export function genProgress(g: Gen, jobs: JobRec[]): { pct: number } {
 // pipeline never ran, so the saved run stays running for a reload to resume.
 interface FlowDraft<S> {
 	spec: S;
-	status?: 'running' | 'failed';
+	status?: 'running' | 'failed' | 'review';
 	error?: string;
 	progress?: Progress | null;
 	requestText?: number;
@@ -2502,10 +2584,13 @@ export const moving = $state({
 	error: '',
 	done: false,
 	warnings: [] as string[],
-	queued: [] as QueuedMove[]
+	queued: [] as QueuedMove[],
+	repairReview: null as RepairReview | null,
+	repairApplied: false,
+	resolvingRepair: false
 });
 const MOVE_KEY = 'studio-move';
-let moveRunning = false,
+let moveRunning = $state(false),
 	moveRevision = 0;
 /** The stored move record without its queue (null: the current move is finished or dismissed). */
 let moveRecord: object | null = null,
@@ -2546,14 +2631,20 @@ export async function queueMoves(projectId: string, specs: MoveSpec[]) {
 	moving.queued = rest;
 	await startMove(next.projectId, next.spec);
 }
-/** A character's moves running or waiting in the queue; with `itemId`, only those that pose that item. */
+/** A character's moves running, publishing or queued; with `itemId`, only those that pose that item. */
 export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 	[
-		...(moving.spec && !moving.done && moving.projectId === projectId ? [moving.spec] : []),
+		...(moving.spec && (!moving.done || moveRunning) && moving.projectId === projectId
+			? [moving.spec]
+			: []),
 		...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec)
 	].filter((s) => !itemId || s.items.includes(itemId));
 export async function startMove(projectId: string, spec: MoveSpec) {
 	if (hmrReloading) return;
+	if (moving.repairReview) {
+		toast('Open Moves to decide whether to use the finished repair first.', { tone: 'warning' });
+		return;
+	}
 	if (spec.reuseItemFrames && queue.role === 'follower') {
 		toast('Use saved frames in the tab that is managing your PixelDoll jobs.', { tone: 'warning' });
 		return;
@@ -2623,6 +2714,45 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 				})
 			: await flow.addMove(projectId, spec, progress);
 		if (!current()) return;
+		if (result.repairReview) {
+			const progress = $state.snapshot(moving.progress);
+			try {
+				await storeMove({
+					id: MOVE_KEY,
+					spec,
+					projectId,
+					status: 'review',
+					requestText: REQUEST_TEXT,
+					progress,
+					repairReview: result.repairReview
+				});
+			} catch {
+				const message =
+					'The repair is available in this tab, but its review could not be saved. Decide before closing or reloading.';
+				const fallback = await persistFlowFailure(
+					MOVE_KEY,
+					{ spec, projectId, progress },
+					new Error(
+						'The review could not be saved. Use saved frames to recover it without another charge.'
+					),
+					storeMove
+				);
+				if (current())
+					moving.error = fallback.includes('Could not save this failure')
+						? `${message} Recovery after reload is not guaranteed.`
+						: message;
+			}
+			if (!current()) return;
+			moving.repairReview = result.repairReview;
+			if (ui.sheet !== 'move')
+				toast('Your paid repair is ready to review. The current frames are unchanged.', {
+					tone: 'warning',
+					action: () => {
+						ui.sheet = 'move';
+					}
+				});
+			return;
+		}
 		moving.warnings = result.warnings;
 		moving.done = true;
 		await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
@@ -2829,22 +2959,79 @@ export async function resumeMove() {
 	if (hmrReloading || moveResumed || queue.role === 'follower') return;
 	moveResumed = true;
 	const r = await db
-		.get<FlowDraft<MoveSpec> & { projectId: string; queued?: QueuedMove[] }>('projects', MOVE_KEY)
+		.get<
+			FlowDraft<MoveSpec> & {
+				projectId: string;
+				queued?: QueuedMove[];
+				repairReview?: RepairReview;
+			}
+		>('projects', MOVE_KEY)
 		.catch(() => undefined);
 	if (!r?.spec || (moving.spec && !moving.done)) return;
 	const { queued, ...record } = r;
 	moving.queued = queued ?? [];
 	moveRecord = record; // a halted move keeps its stored record while moves are queued behind it
+	let applied = false,
+		repairError = '';
+	if (r.repairReview) {
+		try {
+			applied = await (await itemRun()).repairAlreadyApplied(r.projectId, r.repairReview);
+		} catch (error) {
+			repairError = error instanceof Error ? error.message : String(error);
+		}
+	}
 	if (halted(r))
 		Object.assign(moving, {
 			spec: r.spec,
 			projectId: r.projectId,
 			progress: r.progress ?? null,
-			error: r.error || STOPPED,
+			error: r.error || (r.repairReview ? repairError : STOPPED),
+			repairReview: r.repairReview ?? null,
+			repairApplied: applied,
 			done: false,
 			warnings: []
 		});
 	else void startMove(r.projectId, r.spec);
+}
+
+export async function resolveRepairReview(useRepair: boolean) {
+	if (moveRunning || !moving.repairReview || queue.role === 'follower') return;
+	const projectId = moving.projectId,
+		review = $state.snapshot(moving.repairReview),
+		record = moveRecord;
+	moveRunning = moving.resolvingRepair = true;
+	moving.error = '';
+	try {
+		const run = await itemRun();
+		if (useRepair) {
+			if (!moving.repairApplied) await run.applyRepairReview(projectId, review);
+			moving.repairApplied = true;
+		} else if (await run.repairAlreadyApplied(projectId, review)) {
+			moving.repairApplied = true;
+			throw new Error('The repair is already saved. Finish the review to continue.');
+		}
+		try {
+			await storeMove(null);
+		} catch (error) {
+			moveRecord = record;
+			throw error;
+		}
+		moving.repairReview = null;
+		moving.repairApplied = false;
+		moving.done = true;
+		if (useRepair && viewing(projectId)) await openProject(projectId, { quiet: true });
+		toast(useRepair ? 'Repair saved.' : 'Current item frames kept.');
+	} catch (error) {
+		moving.error = error instanceof Error ? error.message : String(error);
+		toast(moving.error, { tone: 'danger' });
+	} finally {
+		moveRunning = moving.resolvingRepair = false;
+	}
+	if (moving.done && moving.queued.length) {
+		const [next, ...rest] = moving.queued;
+		moving.queued = rest;
+		await startMove(next.projectId, next.spec);
+	}
 }
 /** Drops the failed or finished move and the moves queued for the same character; other characters' queued moves go on. */
 export async function dismissMove() {
@@ -2858,6 +3045,8 @@ export async function dismissMove() {
 		error: '',
 		done: false,
 		warnings: [],
+		repairReview: null,
+		repairApplied: false,
 		queued: others
 	});
 	await storeMove(null);

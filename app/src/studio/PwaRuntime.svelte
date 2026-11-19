@@ -109,18 +109,24 @@
 		)
 			return;
 		if (!claimStartupUpdate()) return;
+		let committed = false;
 		void applyUpdate(prepareForUpdate, {
 			validate: validateAutomatic,
 			beforeReload: () => {
 				validateAutomatic();
 				markStartupUpdateReload();
+				dialog.showModal();
+				mode = 'update';
+				busy = true;
+				committed = true;
 			}
-		}).catch((error) => {
-			if (!(error instanceof StartupUpdateCancelled))
-				pwa.update((s) => ({
-					...s,
-					error: `Automatic update paused: ${(error as Error).message}`
-				}));
+		}).catch((cause) => {
+			if (cause instanceof StartupUpdateCancelled) return;
+			const message = (cause as Error).message;
+			if (committed) {
+				error = message;
+				busy = false;
+			} else pwa.update((s) => ({ ...s, error: `Automatic update paused: ${message}` }));
 		});
 	});
 	onMount(() => {

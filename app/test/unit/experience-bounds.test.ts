@@ -141,6 +141,12 @@ describe('Preview body grounding', () => {
 			y: -6,
 			standingHeight: 42
 		});
+		project.manifest.rig.rest.west.registrationOnly = true;
+		expect(previewBounds(project).facings.get('west')).toMatchObject({
+			x: -14,
+			y: -8,
+			standingHeight: 40
+		});
 	});
 
 	test('falls back to loaded body poses when the rest image is missing or transparent', () => {

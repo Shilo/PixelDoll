@@ -13,6 +13,7 @@
 	import { listProjects, type StoredProject } from '../lib/store/project.ts';
 	import {
 		exportAnimationCatalog,
+		InvalidAnimationNames,
 		InvalidExportSettings,
 		readExportSettings,
 		resetInvalidExportSettings,
@@ -155,23 +156,32 @@
 		zip: Uint8Array | null;
 		files: string[];
 		warnings: string[];
-		errors: string[];
+		kind: 'requested' | 'recovery' | 'failed';
+		problem?: string;
+		details?: string[];
+		retryable?: boolean;
 		rigIssues: string[];
 	} | null>(null);
 	let busy = $state(false);
+	let attempt = $state(0);
 	const m = $derived(store.project?.manifest);
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const nice = (id: string) => moveLabel(id, moveIds);
 	const baked = $derived(preferences?.dressedCharacterSheets ?? true);
-	const catalog = $derived(
-		preferences && ready
-			? exportAnimationCatalog(
-					m,
-					savedProjects.filter((p) => p.id !== doc.id).map((p) => p.manifest),
-					preferences
-				)
-			: { names: [], warnings: [] }
-	);
+	const catalog = $derived.by(() => {
+		if (!preferences || !ready) return { names: [], warnings: [] };
+		const others = savedProjects.filter((p) => p.id !== doc.id).map((p) => p.manifest);
+		try {
+			return exportAnimationCatalog(m, others, preferences);
+		} catch (error) {
+			if (!(error instanceof InvalidAnimationNames)) throw error;
+			const catalog = exportAnimationCatalog(undefined, others, preferences);
+			return {
+				...catalog,
+				warnings: ['Some moves from this character are missing from settings.', ...catalog.warnings]
+			};
+		}
+	});
 	const names = $derived(catalog.names);
 	const once = $derived(preferences?.playOnce ?? []);
 	const playbackSummary = $derived(
@@ -225,12 +235,6 @@
 					void refresh();
 					return;
 				}
-				// Current-character errors block its export; unrelated damaged catalogs produce warnings only.
-				exportAnimationCatalog(
-					store.project?.manifest,
-					projects.filter((p) => p.id !== openedId).map((p) => p.manifest),
-					saved
-				);
 				if (stableStringify(preferences) !== stableStringify(saved)) preferences = saved;
 				savedProjects = projects;
 				ready = true;
@@ -248,7 +252,10 @@
 				}
 				ready = false;
 				invalidPreferences = error instanceof InvalidExportSettings;
-				loadError = `Could not load export settings: ${error instanceof Error ? error.message : String(error)}`;
+				console.warn('Could not load export settings', error);
+				loadError = invalidPreferences
+					? 'Saved export settings could not be read.'
+					: 'Could not load export settings. Try reopening Export.';
 			} finally {
 				if (active && current === request) refreshing = false;
 			}
@@ -314,8 +321,8 @@
 			if (sequence === writeSequence) saveError = '';
 		} catch (e) {
 			if (input && input.type !== 'radio') input.checked = !checked;
-			if (sequence === writeSequence)
-				saveError = `Could not save export settings: ${e instanceof Error ? e.message : String(e)}`;
+			console.warn('Could not save export settings', e);
+			if (sequence === writeSequence) saveError = 'Could not save export settings. Try again.';
 		} finally {
 			pendingWrites--;
 			if (!saving) {
@@ -374,6 +381,7 @@
 	});
 
 	$effect(() => {
+		void attempt;
 		const e = engine,
 			b = baked,
 			p = store.project;
@@ -419,7 +427,10 @@
 					zip: r.zip,
 					files: r.entries.map((x) => x.name),
 					warnings: r.warnings,
-					errors: r.errors,
+					kind: r.kind,
+					problem: r.problem,
+					details: r.kind !== 'requested' ? r.errors : undefined,
+					retryable: r.kind === 'failed' && r.retryable,
 					rigIssues: r.rigIssues
 				};
 				busy = false;
@@ -431,7 +442,9 @@
 					zip: null,
 					files: [],
 					warnings: [],
-					errors: [`Could not prepare this export: ${e instanceof Error ? e.message : String(e)}`],
+					kind: 'failed',
+					problem: 'Could not prepare this export.',
+					retryable: true,
 					rigIssues: []
 				};
 				busy = false;
@@ -441,25 +454,57 @@
 		};
 	});
 	const n = (k: number, w: string) => `${k} ${w}${k === 1 ? '' : 's'}`;
-	const kb = $derived(result?.zip ? Math.max(1, Math.round(result.zip.length / 1024)) : 0);
+	const kb = $derived(result?.zip ? Math.max(1, Math.round(result.zip.length / 1024)) : null);
+	const pendingExport = $derived((busy && ready) || saving || refreshing);
+	const hasNotes = $derived(
+		!!(reviewItems.length || gaps.length || result?.warnings.length || result?.rigIssues.length)
+	);
 	function download() {
 		if (!result?.zip || !m || busy || saving || refreshing || !ready) return;
-		const filename = `${fileSlug(store.projects.find((p) => p.id === doc.id)?.name ?? m.name)}-${engine}.pixeldoll.zip`;
+		const name = fileSlug(store.projects.find((p) => p.id === doc.id)?.name ?? m.name);
+		const filename =
+			result.kind === 'recovery'
+				? `${name}-recovered-artwork.zip`
+				: `${name}-${engine}.pixeldoll.zip`;
 		saveZip(result.zip, filename);
-		toast(`Downloaded ${filename}`); // T1 P3: confirm, and get out of the way
-		ui.sheet = null;
+		toast(result.kind === 'recovery' ? 'Artwork download started.' : 'Export download started.');
+		if (result.kind === 'requested') ui.sheet = null;
 	}
 </script>
 
 {#snippet exportFooter()}
-	<span class="foot-note">Free · includes an editable copy</span>
-	<button
-		class="bu-action btn primary lg"
-		data-variant="primary"
-		onclick={download}
-		disabled={busy || saving || refreshing || !ready || !result?.zip}
-		><Download size={16} />{busy || refreshing ? 'Preparing…' : `Download ZIP · ${kb} KB`}</button
+	<span class="foot-note"
+		>{pendingExport
+			? saving
+				? 'Saving settings…'
+				: ''
+			: !ready
+				? 'Export unavailable'
+				: result?.kind === 'recovery'
+					? 'Source PNGs only'
+					: result?.kind === 'failed'
+						? 'No ZIP available'
+						: hasNotes
+							? 'Ready · see export notes'
+							: 'Free · includes an editable copy'}</span
 	>
+	{#if ready && !pendingExport && result?.kind === 'failed' && result.retryable}
+		<button class="bu-action btn primary lg" data-variant="primary" onclick={() => attempt++}
+			>Try again</button
+		>
+	{:else}<button
+			class="bu-action btn primary lg"
+			data-variant="primary"
+			onclick={download}
+			disabled={pendingExport || !ready || !result?.zip}
+			><Download size={16} aria-hidden="true" />{(ready && busy) || refreshing
+				? 'Preparing…'
+				: !pendingExport && result?.kind === 'recovery'
+					? 'Download artwork ZIP'
+					: kb && !pendingExport
+						? `Download ZIP · ${kb} KB`
+						: 'Download ZIP'}</button
+		>{/if}
 {/snippet}
 
 <Sheet
@@ -539,24 +584,24 @@
 					</div>
 				</fieldset>
 				<hr class="bu-separator export-divider" />
-				<label class="check export-dressed">
-					<input
-						type="checkbox"
-						checked={baked}
-						disabled={saving || !ready}
-						aria-label={DRESSED_SHEETS}
-						aria-describedby="export-dressed-description"
-						onchange={(e) =>
-							changeSetting(e.currentTarget, { dressedCharacterSheets: e.currentTarget.checked })}
-					/>
-					<span
-						><span>{DRESSED_SHEETS}</span><span class="muted small" id="export-dressed-description"
-							>Adds PNG sprite sheets of your current look and each saved outfit, with the body and
-							equipped items combined. Separate layers are always included, except in RPG Maker
-							sheets, which are always combined.</span
-						></span
-					>
-				</label>
+				<div class="export-dressed">
+					<label class="check">
+						<input
+							type="checkbox"
+							checked={baked}
+							disabled={saving || !ready}
+							aria-describedby="export-dressed-description"
+							onchange={(e) =>
+								changeSetting(e.currentTarget, { dressedCharacterSheets: e.currentTarget.checked })}
+						/>
+						<span>{DRESSED_SHEETS}</span>
+					</label>
+					<p class="muted small" id="export-dressed-description">
+						Adds PNG sprite sheets of your current look and each saved outfit, with the body and
+						equipped items combined. Separate layers are always included, except in RPG Maker
+						sheets, which are always combined.
+					</p>
+				</div>
 			{:else}
 				<fieldset class="export-picker" aria-label="Export format">
 					{#each GROUPS as group (group.id)}
@@ -667,7 +712,22 @@
 						<strong>{selected.name}:</strong>
 						{selected.detail}
 					</p>{/if}
-				{#if m}
+				{#if ready && !pendingExport && (result?.kind === 'recovery' || result?.kind === 'failed')}
+					<p
+						class="notice {result.kind === 'recovery' ? 'warn' : 'bad'} small"
+						role={result.kind === 'recovery' ? 'status' : 'alert'}
+					>
+						<TriangleAlert size={14} aria-hidden="true" />
+						<span
+							>{result.problem}
+							{result.kind === 'recovery'
+								? 'You can download the source PNGs instead.'
+								: 'No ZIP is ready to download.'}
+							{result.warnings.join(' ')}</span
+						>
+					</p>
+				{/if}
+				{#if m && result?.kind === 'requested'}
 					{#if rpg}<p class="muted">
 							Includes a walking sheet for {m.presets.filter((x) => x.id !== 'current').length
 								? `your current look and ${n(m.presets.filter((x) => x.id !== 'current').length, 'saved outfit')}`
@@ -681,54 +741,71 @@
 								? `${n(m.presets.filter((x) => x.id !== 'current').length, 'outfit')} + your current look`
 								: 'your current look'}, each item on its own layer sheet.
 						</p>{/if}
-					{#if reviewItems.length}<p class="notice warn small">
-							<TriangleAlert size={14} /><span
-								>Saved quality or appearance flags: {reviewItems.join(', ')}. Review the flagged
-								moves and directions before using these sprites. Export remains available, including
-								explicitly accepted artwork.</span
+					{#if reviewItems.length || result.rigIssues.length}
+						<p class="notice warn small">
+							<TriangleAlert size={14} aria-hidden="true" /><span
+								>Some artwork needs a check. See Export notes before using it.</span
 							>
-						</p>{/if}
-					{#if result?.rigIssues.length}<p class="notice warn small">
-							<TriangleAlert size={14} /><span
-								>Body frames failed saved checks: {result.rigIssues.join(', ')}. Inspect these moves
-								before using the exported sprites.</span
-							>
-						</p>{/if}
-					{#if gaps.length}<p class="notice small">
-							<TriangleAlert size={14} /><span
-								>{gaps.join(' · ')}. Those frames stay empty in the sheets{rpg
-									? ''
-									: '; manifest.json lists the directions of each move'}.</span
-							>
-						</p>{/if}
+						</p>
+					{/if}
+					{#if hasNotes}
+						<details class="disclosure">
+							<summary><ChevronRight size={14} />Export notes</summary>
+							<div class="small">
+								{#if reviewItems.length}<p>
+										Check this artwork before using it: {reviewItems.join(', ')}.
+									</p>{/if}
+								{#if result.rigIssues.length}<p>
+										Check body frames: {result.rigIssues.join(', ')}.
+									</p>{/if}
+								{#if result.warnings.length}<ul>
+										{#each result.warnings as warning}<li>{warning}</li>{/each}
+									</ul>{/if}
+								{#if gaps.length}
+									<p>
+										{rpg
+											? 'Some artwork is missing from the walking sheets.'
+											: 'Missing frames are left empty.'}
+									</p>
+									<ul>
+										{#each gaps as gap}<li>{gap}</li>{/each}
+									</ul>
+								{/if}
+							</div>
+						</details>
+					{/if}
 				{/if}
-				{#if result?.errors.length}
-					{#each result.errors as e (e)}<p class="notice bad small">
-							<TriangleAlert size={14} />{e}
-						</p>{/each}
+				{#if ready && !pendingExport && result?.details?.length}
+					<details class="disclosure">
+						<summary><ChevronRight size={14} />Technical details</summary>
+						<div class="small">
+							<ul>
+								{#each result.details as detail}<li>{detail}</li>{/each}
+							</ul>
+						</div>
+					</details>
 				{/if}
-				{#each result?.warnings ?? [] as w (w)}<p class="notice warn small">
-						<TriangleAlert size={14} />{w}
-					</p>{/each}
-				<hr class="bu-separator export-divider" />
-				<section aria-labelledby="export-settings-summary">
-					<h3 class="label" id="export-settings-summary">Current settings</h3>
-					<dl class="export-summary small">
-						{#if !rpg}<dt>{PLAY_ONCE}</dt>
-							<dd>{ready ? playbackSummary : refreshing ? 'Loading…' : 'Unavailable'}</dd>{/if}
-						<dt>{DRESSED_SHEETS}</dt>
-						<dd>{ready ? outfitSummary : refreshing ? 'Loading…' : 'Unavailable'}</dd>
-					</dl>
-				</section>
-				<details class="disclosure">
-					<summary><ChevronRight size={14} />Files included</summary>
-					<div>
-						{#if result}<p class="faint small">{result.files.length} files:</p>
-							<pre
-								class="mono faint"
-								style="max-height:160px;overflow:auto;margin:0">{result.files.join('\n')}</pre>{/if}
-					</div>
-				</details>
+				{#if result?.kind !== 'recovery'}<hr class="bu-separator export-divider" />
+					<section aria-labelledby="export-settings-summary">
+						<h3 class="label" id="export-settings-summary">Current settings</h3>
+						<dl class="export-summary small">
+							{#if !rpg}<dt>{PLAY_ONCE}</dt>
+								<dd>{ready ? playbackSummary : refreshing ? 'Loading…' : 'Unavailable'}</dd>{/if}
+							<dt>{DRESSED_SHEETS}</dt>
+							<dd>{ready ? outfitSummary : refreshing ? 'Loading…' : 'Unavailable'}</dd>
+						</dl>
+					</section>{/if}
+				{#if result?.zip}<details class="disclosure">
+						<summary><ChevronRight size={14} />Files included</summary>
+						<div>
+							{#if result}<p class="faint small">{result.files.length} files:</p>
+								<pre
+									class="mono faint"
+									style="max-height:160px;overflow:auto;margin:0">{result.files.join(
+										'\n'
+									)}</pre>{/if}
+						</div>
+					</details>{/if}
 			{/if}
 		</div>
 	{/key}
@@ -802,19 +879,15 @@
 	.export-move input {
 		flex: none;
 	}
-	.export-dressed {
-		align-items: flex-start;
+	.export-dressed .check {
 		gap: 10px;
 	}
 	.export-dressed input {
 		flex: none;
-		margin-top: 3px;
 	}
-	.export-dressed > span {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		min-width: 0;
+	.export-dressed p {
+		margin: 4px 0 0;
+		padding-inline-start: 26px;
 	}
 	.export-divider {
 		width: 100%;

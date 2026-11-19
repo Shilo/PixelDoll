@@ -11,7 +11,8 @@
 import {
 	api as realApi,
 	ApiError,
-	errorText,
+	jobErrorCode,
+	jobFailureText,
 	isNetwork,
 	isPolicy,
 	hasJobEvidence,
@@ -42,6 +43,8 @@ import {
 	type ActivityContext
 } from './activity.ts';
 
+import { COPY_GENERATION_OFF, workspaceCopy } from '../store/workspace-mode.ts';
+
 export type RecState =
 	'queued' | 'submitting' | 'running' | 'done' | 'failed' | 'canceled' | 'lost';
 export interface Result {
@@ -65,6 +68,8 @@ export interface SubJob {
 	results: Result[];
 	error?: string;
 	policy?: boolean;
+	failedAtProvider?: true;
+	errorCode?: number;
 }
 export interface JobRec {
 	id: string;
@@ -425,6 +430,7 @@ export class Queue {
 	// ---- lifecycle ----
 	/** Become the leader if no other tab is, else mirror the ledger until the leader's tab closes. */
 	async connect() {
+		if (workspaceCopy) throw new Error(COPY_GENERATION_OFF);
 		this.connectedOnce = true;
 		this.disconnect();
 		const connection = new AbortController(),
@@ -716,6 +722,7 @@ export class Queue {
 	}
 	/** Forget stops connected tabs without sharing credentials. A new key belongs only to this tab. */
 	setKey(key: string, notifyForget = true) {
+		if (workspaceCopy) return;
 		this.keyRevision++;
 		if (key !== this.key) {
 			// First connection happens AFTER ledger restore for memory-only keys. Keep that restored cooldown.
@@ -879,6 +886,7 @@ export class Queue {
 			estimateRetry?: EstimateRetryIntent;
 		} = {}
 	): Promise<JobRec> {
+		if (workspaceCopy) throw new Error(COPY_GENERATION_OFF);
 		const connection = this.connection;
 		const assertConnected = () => {
 			meta.signal?.throwIfAborted(); // orchestration cancellation stops publication, never aborts a paid HTTP request
@@ -1475,7 +1483,9 @@ export class Queue {
 			s.done = true;
 			s.usage = job.usage;
 			s.policy = isPolicy(job);
-			s.error = errorText(job);
+			s.failedAtProvider = true;
+			s.errorCode = jobErrorCode(job);
+			s.error = jobFailureText(job);
 			this.settle(r);
 		} else if (job.status === 'cancelled') {
 			s.done = true;

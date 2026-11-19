@@ -200,13 +200,14 @@ async function fixture() {
 test('standing artwork in a reactive draft slot supplies a thumbnail before any target animation preview exists', async () => {
 	const { ctx, d, dressed } = await fixture(),
 		results: ItemResult[] = [];
-	ctx.rec.manifest.slots = ctx.rec.manifest.slots.filter((slot) => slot.id !== d.spec.slot);
 	const slot = {
 		...slotOf(d.spec.slot),
+		id: 'custom_armor',
 		hides: ['torso_inner'],
 		clips: ['neck'],
 		zOverrides: [{ layer: 'bg' as const, z: 4 }]
 	};
+	d.spec.slot = slot.id;
 	d.spec.slotConfig = new Proxy(
 		{
 			...slot,

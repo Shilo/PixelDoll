@@ -405,6 +405,11 @@ async function fixture(
 			const it = structuredClone(saved.manifest.items[0]);
 			it.id = 'hat';
 			it.slot = 'head';
+			it.route = 'skeleton-pose';
+			it.key = 'green';
+			it.dressed = Object.fromEntries(
+				Object.entries(saved.manifest.rig.rest!).map(([dir, view]) => [dir, view.image])
+			);
 			saved.manifest.items.push(it);
 			spec.items = ['hat'];
 		},

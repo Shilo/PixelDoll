@@ -1,16 +1,398 @@
 import { enterStudio, noDisabledHover, openStudio } from './immersive-helpers.ts';
+import { createHash } from 'node:crypto';
 import { chromium, expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { unzip } from '../../src/lib/store/zip.ts';
+import { unzip, zip } from '../../src/lib/store/zip.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { readAseprite } from '../../src/lib/export/aseprite.ts';
 import { EXPORT_SETTINGS_KEY } from '../../src/lib/store/export-settings.ts';
-import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT, type Layer } from '../../src/lib/store/manifest.ts';
+import type { StoredProject } from '../../src/lib/store/project.ts';
 import { PAPERDOLL_JS } from '../../src/lib/export/phaser.ts';
 import { runtimeTypes } from '../../src/lib/runtime/sources.ts';
 import { travelSpeed } from '../../src/studio/experience/movement.ts';
+
+async function captureWorkspaceStore(page: Page, projectKeys: string[], artworkKeys: string[]) {
+	return page.evaluate(
+		async ({ projectKeys, artworkKeys }) => {
+			const dbPath = '/src/lib/store/db.ts';
+			const db = await import(dbPath);
+			return {
+				projects: await Promise.all(
+					projectKeys.map(async (key) => [key, await db.get('projects', key)])
+				),
+				artwork: await Promise.all(
+					artworkKeys.map(async (key) => {
+						const blob = (await db.get('blobs', key)) as Blob | undefined;
+						if (!blob) return [key, null];
+						const digest = new Uint8Array(
+							await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())
+						);
+						return [key, Array.from(digest, (byte) => byte.toString(16).padStart(2, '0')).join('')];
+					})
+				)
+			};
+		},
+		{ projectKeys, artworkKeys }
+	);
+}
+
+test('workspace ZIP round-trips saved records and artwork without touching the library or PixelLab', async ({
+	page,
+	context
+}, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	const requests: string[] = [];
+	await context.route('https://*.pixellab.ai/**', (route) => {
+		requests.push(new URL(route.request().url()).hostname);
+		return route.abort();
+	});
+	await page.addInitScript(() => localStorage.setItem('pixeldoll.agentKey', 'off'));
+	await openStudio(page, dev);
+	const sample = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			createPath = '/src/studio/create.ts',
+			dbPath = '/src/lib/store/db.ts',
+			dressPath = '/src/lib/dress/project.ts',
+			pngPath = '/src/lib/image/pngraw.ts',
+			rigPath = '/src/lib/rig/rig.ts';
+		const state = await import(statePath),
+			{ saveCopy } = await import(createPath),
+			db = await import(dbPath),
+			{ dressOf } = await import(dressPath),
+			{ decodePngBytes, encodePngBytes } = await import(pngPath),
+			{ cellHash } = await import(rigPath);
+		const demoDress = structuredClone(dressOf(state.store.project.manifest));
+		demoDress.presets[0] = { ...demoDress.presets[0], name: 'Tester demo outfit' };
+		const { slots: _slots, ...demoWithoutSlots } = demoDress;
+		await db.put('projects', 'dress-fixture:s2', demoWithoutSlots);
+		const id = await saveCopy(state.store.project, 'Workspace Alpha');
+		const saved = await db.get('projects', id);
+		const other = structuredClone(saved);
+		other.id = 'rig-workspace-beta';
+		other.manifest.name = 'Workspace Beta';
+		other.manifest.presets[0].name = 'Tester outfit';
+		const item = saved.manifest.items.find((entry: { id: string }) => entry.id === 'vest_leather');
+		for (const layer of item.layers) if (layer.cells?.walk) layer.cells.walk.south = [null];
+		item.coverage = item.coverage?.filter((key: string) => !key.startsWith('walk/south/'));
+		const otherItem = other.manifest.items.find((entry: { id: string }) => entry.id === item.id);
+		otherItem.dressed = { ...otherItem.dressed, south: `sha256:${'1'.repeat(64)}` };
+		const otherFrames = otherItem.layers.find((layer: Layer) => layer.cells?.walk?.south?.[0]).cells
+			.walk.south;
+		const original = await db.getBlob(otherFrames[0].slice(7));
+		const unique = await decodePngBytes(new Uint8Array(await original.arrayBuffer()));
+		const opaque = (unique.data as Uint8ClampedArray).findIndex(
+			(alpha, offset) => offset % 4 === 3 && alpha === 255
+		);
+		if (opaque < 0) throw new Error('Expected an opaque fixture pixel');
+		unique.data[opaque - 3] ^= 255;
+		const uniqueHash = await cellHash(unique);
+		await db.put(
+			'blobs',
+			uniqueHash.slice(7),
+			new Blob([await encodePngBytes(unique)], { type: 'image/png' })
+		);
+		otherFrames[0] = uniqueHash;
+		await db.put('projects', id, saved);
+		await db.put('projects', other.id, other);
+		await db.put('projects', 'studio-export-settings', {
+			engine: 'unity',
+			dressedCharacterSheets: false,
+			playOnce: ['walk']
+		});
+		await db.put('jobs', 'workspace-evidence', {
+			state: 'lost',
+			tag: 'm3',
+			endpoint: '/edit-animation-v2',
+			createdAt: Date.now(),
+			params: { secret: 'diagnostic-private-body' },
+			jobs: []
+		});
+		localStorage.setItem('pixellabApiKey', 'fake-workspace-test-key-no-network');
+		await state.refreshProjects();
+		await state.openProject(id);
+		state.ui.anim = 'walk';
+		state.ui.selected = item.id;
+		state.ui.dir = 'east';
+		state.ui.theme = 'light';
+		state.ui.playing = false;
+		await db.put('projects', 'rig-damaged', {
+			id: 'rig-damaged',
+			origin: 'studio',
+			manifest: null
+		});
+		return { id, otherId: other.id, item: item.id, uniqueHash: uniqueHash.slice(7) };
+	});
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Export my workspace' }).click();
+	const exportDialog = page.getByRole('dialog', { name: 'Export my workspace' });
+	await expect(
+		exportDialog.getByRole('checkbox', { name: 'Include recent errors' })
+	).not.toBeChecked();
+	await exportDialog.getByRole('checkbox', { name: 'Include recent errors' }).check();
+	const evidence = process.env.PIXELDOLL_WORKSPACE_EVIDENCE;
+	if (evidence)
+		await exportDialog.screenshot({
+			path: join(evidence, '01-export-workspace.png'),
+			animations: 'disabled'
+		});
+	await page.evaluate(async (id) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		const saved = await db.get('projects', id);
+		saved.manifest.name = localStorage.getItem('pixellabApiKey');
+		await db.put('projects', id, saved);
+	}, sample.otherId);
+	await exportDialog.getByRole('button', { name: 'Download ZIP' }).click();
+	await expect(exportDialog.getByRole('alert')).toContainText(
+		'A saved field contains the connected or remembered PixelLab key.'
+	);
+	await page.evaluate(async (id) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		const saved = await db.get('projects', id);
+		saved.manifest.name = 'Workspace Beta';
+		await db.put('projects', id, saved);
+	}, sample.otherId);
+	const waitDownload = page.waitForEvent('download');
+	await exportDialog.getByRole('button', { name: 'Download ZIP' }).click();
+	const download = await waitDownload;
+	if (evidence) await download.saveAs(join(evidence, 'tested.workspace.zip'));
+	const archive = await readFile((await download.path())!);
+	const files = await unzip(archive);
+	const indexText = new TextDecoder().decode(files.get('workspace.json'));
+	expect(indexText).not.toMatch(/fake-workspace-test-key|diagnostic-private-body/);
+	const index = JSON.parse(indexText);
+	expect(index.missing).toEqual(['1'.repeat(64)]);
+	expect(index.omitted).toEqual({ characters: 1, demoOutfit: false, exportSettings: false });
+	const projectKeys = ['dress-fixture:s2', sample.id, sample.otherId, EXPORT_SETTINGS_KEY].sort();
+	const archivedProjects = new Map<string, StoredProject>(index.projects);
+	expect([...archivedProjects.keys()].sort()).toEqual(projectKeys);
+	const referenced = new Set<string>();
+	const remember = (hash: string | null | undefined) => {
+		if (hash) referenced.add(hash.replace(/^sha256:/, ''));
+	};
+	for (const id of [sample.id, sample.otherId]) {
+		const manifest = archivedProjects.get(id)!.manifest;
+		for (const pose of Object.values(manifest.rig.rest ?? {})) remember(pose?.image);
+		for (const item of manifest.items) {
+			for (const hash of Object.values(item.dressed ?? {})) remember(hash);
+			for (const layer of item.layers)
+				for (const directions of Object.values(layer.cells ?? {}))
+					for (const cells of Object.values(directions ?? {}))
+						for (const hash of cells ?? []) remember(hash);
+		}
+	}
+	const artworkKeys = [...referenced].sort();
+	expect(artworkKeys).toContain(sample.uniqueHash);
+	expect([...files.keys()].sort()).toEqual([
+		...artworkKeys.filter((hash) => !index.missing.includes(hash)).map((hash) => `blobs/${hash}`),
+		'workspace.json'
+	]);
+	const expected = await captureWorkspaceStore(page, projectKeys, artworkKeys);
+	expect(index.projects).toEqual(expected.projects);
+	expect(
+		artworkKeys.map((hash) => {
+			const bytes = files.get(`blobs/${hash}`);
+			return [hash, bytes ? createHash('sha256').update(bytes).digest('hex') : null];
+		})
+	).toEqual(expected.artwork);
+	expect(index.diagnostics.errors).toContainEqual(
+		expect.objectContaining({ tool: 'edit-animation-v2', outcome: 'lost' })
+	);
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	const waitCopy = page.waitForEvent('popup');
+	await page.getByRole('link', { name: 'Open workspace copy' }).click();
+	const copy = await waitCopy;
+	const picker = copy.getByLabel('Choose workspace ZIP');
+	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
+	expect(new URL(copy.url()).origin).toBe(new URL(page.url()).origin);
+	expect(new URL(copy.url()).search).toBe('?workspace-copy');
+	await expect(copy.locator('html')).toHaveAttribute('data-app', 'studio');
+	await picker.setInputFiles({
+		name: 'damaged.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from('not a ZIP')
+	});
+	await expect(copy.getByRole('alert')).toContainText('not a supported ZIP');
+	const invalidDemo = structuredClone(index);
+	invalidDemo.projects.find(([key]: [string, unknown]) => key === 'dress-fixture:s2')[1] = {
+		format: CURRENT_FORMAT
+	};
+	const entries = [...files].map(([name, data]) => ({
+		name,
+		data: name === 'workspace.json' ? new TextEncoder().encode(JSON.stringify(invalidDemo)) : data
+	}));
+	const artwork = entries.filter(({ name }) => name.startsWith('blobs/'));
+	const asset = artwork.find(({ name }) => name === `blobs/${sample.uniqueHash}`)!;
+	const matchingSize = artwork.find(
+		({ name, data }) =>
+			name !== asset.name &&
+			Buffer.from(data.subarray(16, 24)).equals(Buffer.from(asset.data.subarray(16, 24)))
+	)!;
+	asset.data = matchingSize.data;
+	const tampered = await zip(entries);
+	await page.evaluate(async ({ id, item }) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		const recipient = await db.get('projects', id);
+		recipient.manifest.name = 'Recipient existing character';
+		recipient.manifest.items.find((entry: { id: string }) => entry.id === item).name =
+			'Recipient existing item';
+		await db.put('projects', id, recipient);
+		await db.put('projects', 'studio-export-settings', {
+			engine: 'godot',
+			dressedCharacterSheets: true,
+			playOnce: []
+		});
+		localStorage.setItem('pixeldoll.theme', 'dark');
+		localStorage.setItem('pixeldoll.studio.project', 'rig-recipient-only');
+		const unrelated = structuredClone(recipient);
+		unrelated.id = 'rig-recipient-only';
+		await db.put('projects', unrelated.id, unrelated);
+	}, sample);
+	const recipientKeys = [...projectKeys, 'rig-recipient-only', 'rig-damaged'];
+	const recipient = await captureWorkspaceStore(page, recipientKeys, artworkKeys);
+	const chooseZip = copy.waitForEvent('filechooser');
+	await copy.getByRole('button', { name: /Drop a workspace ZIP here/ }).click();
+	await (
+		await chooseZip
+	).setFiles({
+		name: download.suggestedFilename(),
+		mimeType: 'application/zip',
+		buffer: archive
+	});
+	await expect(
+		copy.getByRole('status').filter({ hasText: 'Workspace copy · PixelLab off' })
+	).toBeVisible();
+	await expect(copy.locator('html')).toHaveAttribute('data-theme', 'light');
+	expect(await captureWorkspaceStore(copy, projectKeys, artworkKeys)).toEqual(expected);
+	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
+	expect((await captureWorkspaceStore(copy, ['rig-recipient-only'], [])).projects).toEqual([
+		['rig-recipient-only', undefined]
+	]);
+	await expect
+		.poll(() =>
+			copy.evaluate(async ({ id, otherId, item }) => {
+				const dbPath = '/src/lib/store/db.ts',
+					statePath = '/src/studio/state.svelte.ts',
+					keyPath = '/src/lib/app.svelte.ts',
+					dressPath = '/src/lib/dress/dress.ts';
+				const db = await import(dbPath),
+					{ ui, doc, store } = await import(statePath),
+					{ app } = await import(keyPath);
+				const { coverageGaps } = await import(dressPath);
+				const manifest = store.project?.manifest;
+				return {
+					opened: doc.id === id && ui.anim === 'walk' && ui.selected === item && ui.dir === 'east',
+					gap:
+						manifest &&
+						coverageGaps(
+							manifest,
+							manifest.items.find((entry: { id: string }) => entry.id === item)
+						).includes('walk/south'),
+					other: (await db.get('projects', otherId))?.manifest.name,
+					hasKey: !!app.key,
+					jobs: (await db.all('jobs')).length
+				};
+			}, sample)
+		)
+		.toEqual({ opened: true, gap: true, other: 'Workspace Beta', hasKey: false, jobs: 0 });
+	await expect(
+		await copy.evaluate(async (id) => {
+			const statePath = '/src/studio/state.svelte.ts';
+			const { doc, openProject } = await import(statePath);
+			await openProject(id);
+			return doc.id;
+		}, sample.otherId)
+	).toBe(sample.otherId);
+	await copy.evaluate(async (id) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		await db.deleteCharacter(id);
+	}, sample.id);
+	const original = await page.evaluate(async (id) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		return {
+			name: (await db.get('projects', id))?.manifest.name,
+			job: (await db.get('jobs', 'workspace-evidence'))?.state,
+			keyKept: localStorage.getItem('pixellabApiKey') === 'fake-workspace-test-key-no-network',
+			theme: localStorage.getItem('pixeldoll.theme'),
+			lastProject: localStorage.getItem('pixeldoll.studio.project')
+		};
+	}, sample.id);
+	expect(original).toEqual({
+		name: 'Recipient existing character',
+		job: 'lost',
+		keyKept: true,
+		theme: 'dark',
+		lastProject: 'rig-recipient-only'
+	});
+	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
+	await copy.reload();
+	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
+	await copy.goto(new URL('/?workspace-copy=', page.url()).href);
+	const dropZone = copy.getByRole('button', { name: /Drop a workspace ZIP here/ });
+	await dropZone.evaluate((zone, encoded) => {
+		const transfer = new DataTransfer();
+		transfer.items.add(
+			new File(
+				[Uint8Array.from(atob(encoded), (byte) => byte.charCodeAt(0))],
+				'partial.workspace.zip'
+			)
+		);
+		zone.dispatchEvent(
+			new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true })
+		);
+	}, Buffer.from(tampered).toString('base64'));
+	await expect(copy.locator('.workspace-banner')).toBeVisible();
+	const recovered = await captureWorkspaceStore(copy, projectKeys, artworkKeys);
+	expect(recovered.projects).toEqual(
+		expected.projects.map(([key, record]) => [key, key === 'dress-fixture:s2' ? undefined : record])
+	);
+	expect(recovered.artwork).toEqual(
+		expected.artwork.map(([hash, digest]) => [hash, hash === sample.uniqueHash ? null : digest])
+	);
+	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
+	await copy.goto(new URL('/?workspace-copy', info.project.use.baseURL!).href);
+	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
+	expect(new URL(copy.url()).origin).not.toBe(new URL(page.url()).origin);
+	expect(
+		await copy
+			.locator('html')
+			.evaluate((root) => getComputedStyle(root).getPropertyValue('--bu-accent').trim())
+	).not.toBe('');
+	await expect(copy.locator('.workspace-banner')).toHaveCount(0);
+	if (evidence)
+		await copy.screenshot({
+			path: join(evidence, '02-open-workspace-copy.png'),
+			animations: 'disabled',
+			fullPage: true
+		});
+	await picker.setInputFiles({
+		name: download.suggestedFilename(),
+		mimeType: 'application/zip',
+		buffer: archive
+	});
+	await expect(copy.locator('.workspace-banner')).toBeVisible();
+	await expect(copy.locator('html')).toHaveAttribute('data-theme', 'light');
+	await expect(copy.locator('.project-btn')).toContainText('Workspace Alpha');
+	const warning = copy.locator('.world-coverage').filter({ hasText: /missing .* frames/ });
+	await expect(warning).toBeVisible();
+	const bannerBounds = (await copy.locator('.workspace-banner').boundingBox())!;
+	const warningBounds = (await warning.boundingBox())!;
+	expect(bannerBounds.y + bannerBounds.height).toBeLessThan(warningBounds.y);
+	if (evidence)
+		await copy.screenshot({
+			path: join(evidence, '03-workspace-copy-open.png'),
+			animations: 'disabled'
+		});
+	expect(requests).toEqual([]);
+});
 
 async function savedExport(page: Page, dev: string) {
 	await page.setViewportSize({ width: 800, height: 600 }); // Eight parallel settings runs do not need eight full-size animated worlds.
@@ -228,11 +610,15 @@ test('a committed earlier format and a failed latest format keep the write error
 		window.dispatchEvent(new Event('focus')); // Queue a refresh while the first completion is held.
 	}, EXPORT_SETTINGS_KEY);
 	await dialog.getByRole('radio', { name: 'Phaser', exact: true }).check();
-	await expect(dialog.getByRole('alert')).toContainText('Latest format could not save');
+	await expect(dialog.getByRole('alert')).toContainText(
+		'Could not save export settings. Try again.'
+	);
 	await releaseProjectTransaction(page);
 	await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked();
 	await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled();
-	await expect(dialog.getByRole('alert')).toContainText('Latest format could not save');
+	await expect(dialog.getByRole('alert')).toContainText(
+		'Could not save export settings. Try again.'
+	);
 });
 
 test('a stale rejected global refresh cannot block a newer successful format save', async ({
@@ -471,7 +857,53 @@ test('global Export choices persist through demo reload, editable copying and ch
 		exact: true
 	});
 	await expect(dressed).toBeEnabled();
-	await dressed.uncheck();
+	const help = dialog.getByText(/^Adds PNG sprite sheets/);
+	await expect(dressed).toHaveAccessibleDescription(/^Adds PNG sprite sheets/);
+	const initiallyDressed = await dressed.isChecked();
+	await help.scrollIntoViewIfNeeded();
+	const [start, word, end] = await help.evaluate(async (element) => {
+		await Promise.all(
+			element
+				.closest('.export-page')!
+				.getAnimations()
+				.map((animation) => animation.finished)
+		);
+		const text = element.firstChild!;
+		const range = document.createRange();
+		return [0, 2, 18].map((offset) => {
+			range.setStart(text, offset);
+			range.setEnd(text, offset + 1);
+			const { x, y, width, height } = range.getBoundingClientRect();
+			return { x: x + (offset === 0 ? 1 : width / 2), y: y + height / 2 };
+		});
+	});
+	await page.mouse.move(start.x, start.y);
+	await page.mouse.down();
+	await page.mouse.move(end.x, end.y, { steps: 6 });
+	await page.mouse.up();
+	expect(await page.evaluate(() => window.getSelection()?.toString())).toMatch(/sprite/);
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	await page.evaluate(() => window.getSelection()?.removeAllRanges());
+	await page.mouse.click(word.x, word.y);
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	await page.mouse.dblclick(word.x, word.y);
+	expect(await page.evaluate(() => window.getSelection()?.toString().trim())).toBe('Adds');
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	const labelText = dialog
+		.locator('label span')
+		.getByText('Include dressed character sheets', { exact: true });
+	const labelBounds = (await labelText.boundingBox())!;
+	await page.evaluate(() => window.getSelection()?.removeAllRanges());
+	await page.mouse.move(labelBounds.x + 8, labelBounds.y + labelBounds.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(end.x, end.y, { steps: 6 });
+	await page.mouse.up();
+	expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('');
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	await labelText.click();
+	await expect(dressed).toBeChecked({ checked: !initiallyDressed });
+	if (!initiallyDressed) await labelText.click();
+	await expect(dressed).not.toBeChecked();
 	await expect(dressed).toBeEnabled();
 	await dialog.getByRole('button', { name: 'Close export' }).click();
 	await page.evaluate(() => location.reload());
@@ -958,13 +1390,16 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
 		} else await dialog.getByRole('radio', { name: label, exact: true }).check();
 		const button = dialog.getByRole('button', { name: /^Download ZIP/ });
 		if (engine === 'rpgmaker' || engine === 'rpgmakerxp') {
-			// this south-only test character cannot fill a 4-row RPG Maker sheet
-			await expect(
-				dialog.getByText(
-					'RPG Maker: characters need front, side and back views; this one has no west, east, north view.'
-				)
-			).toBeVisible();
-			await expect(button).toBeDisabled();
+			await expect(dialog.getByText(/RPG Maker needs front, side and back views/)).toBeVisible();
+			const recovery = dialog.getByRole('button', { name: 'Download artwork ZIP' });
+			await expect(recovery).toBeEnabled();
+			await expect(button).toHaveCount(0);
+			const [artwork] = await Promise.all([page.waitForEvent('download'), recovery.click()]);
+			expect(artwork.suggestedFilename()).toMatch(/-recovered-artwork\.zip$/);
+			const entries = await unzip(new Uint8Array(await readFile((await artwork.path())!)));
+			expect(entries.has('frames/1.png')).toBe(true);
+			expect(entries.has('project.json')).toBe(false);
+			await expect(dialog.getByRole('radio', { name: 'RPG Maker', exact: true })).toBeChecked();
 			continue;
 		}
 		await expect(button).toBeEnabled();
@@ -1304,7 +1739,9 @@ test('Export settings show storage failures without changing the choice or trapp
 		});
 		await input.focus();
 		await input.press('Space'); // Failed persistence immediately restores the old checkbox state.
-		await expect(dialog.getByRole('alert')).toContainText('Synthetic settings write failure');
+		await expect(dialog.getByRole('alert')).toContainText(
+			'Could not save export settings. Try again.'
+		);
 		await expect(input).toBeEnabled();
 		await expect(input).toBeFocused();
 		if (checked) await expect(input).toBeChecked();
@@ -1325,7 +1762,9 @@ test('Export settings show storage failures without changing the choice or trapp
 		};
 	});
 	await dialog.getByRole('radio', { name: 'Unity', exact: true }).click(); // The expected rollback can finish before check() verifies its opposite postcondition.
-	await expect(dialog.getByRole('alert')).toContainText('Synthetic format write failure');
+	await expect(dialog.getByRole('alert')).toContainText(
+		'Could not save export settings. Try again.'
+	);
 	await expect(originalEngine).toBeChecked();
 	await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).not.toBeChecked();
 	await expect(dialog.locator('#export-description')).toContainText('Godot:');
@@ -1380,7 +1819,9 @@ for (const corruption of ['unsupported-format', 'sparse-array'] as const)
 		}, EXPORT_SETTINGS_KEY);
 		const reset = dialog.getByRole('button', { name: 'Reset export settings', exact: true });
 		await reset.click();
-		await expect(dialog.getByRole('alert')).toContainText('Reset storage failure');
+		await expect(dialog.getByRole('alert')).toContainText(
+			'Could not save export settings. Try again.'
+		);
 		await expect(reset).toBeEnabled();
 		await reset.click();
 		await expect(reset).toHaveCount(0);
@@ -1466,7 +1907,7 @@ for (const corruption of ['null-list', 'sparse-array'] as const)
 		expect(errors).toEqual([]);
 	});
 
-test('invalid current-character names still block export and storage outages do not offer a preferences reset', async ({
+test('invalid move names still allow artwork recovery and storage outages do not offer a preferences reset', async ({
 	page
 }, info) => {
 	await savedExport(
@@ -1486,7 +1927,7 @@ test('invalid current-character names still block export and storage outages do 
 	});
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const dialog = page.getByRole('dialog');
-	await expect(dialog.getByRole('alert')).toContainText('Storage unavailable');
+	await expect(dialog.getByRole('alert')).toContainText('Could not load export settings');
 	await expect(dialog.getByRole('button', { name: 'Reset export settings' })).toHaveCount(0);
 	await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled();
 	await dialog.getByRole('button', { name: 'Close export' }).click();
@@ -1499,10 +1940,46 @@ test('invalid current-character names still block export and storage outages do 
 		s.store.project = { ...project, manifest };
 	});
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
-	await expect(dialog.getByRole('alert')).toContainText('Export settings test');
+	await expect(
+		dialog.locator('.notice.warn').filter({ hasText: 'Some moves from this character' })
+	).toBeVisible();
 	await expect(dialog.getByRole('button', { name: 'Reset export settings' })).toHaveCount(0);
-	await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled();
+	await expect(dialog.getByRole('button', { name: 'Download artwork ZIP' })).toBeEnabled();
 	await dialog.getByRole('button', { name: 'Close export' }).click();
+});
+
+test('quick download recovers working images from an unopened character with a missing image', async ({
+	page
+}, info) => {
+	await savedExport(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		const dbPath = '/src/lib/store/db.ts';
+		const { doc } = await import(statePath);
+		const db = await import(dbPath);
+		const rec = await db.get('projects', doc.id);
+		rec.manifest.rig.rest = { south: { image: `sha256:${'a'.repeat(64)}`, keypoints: [] } };
+		rec.manifest.items[0].layers[0].cells.extra = { south: {} };
+		await db.put('projects', doc.id, rec);
+	});
+	await page.reload();
+	await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click();
+	await page
+		.getByRole('button', { name: 'More actions for Export settings test', exact: true })
+		.click();
+	const downloaded = page.waitForEvent('download');
+	await page.getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();
+	const download = await downloaded;
+	expect(download.suggestedFilename()).toBe('export-settings-test-recovered-artwork.zip');
+	const files = await unzip(new Uint8Array(await readFile((await download.path())!)));
+	expect(files.has('project.json')).toBe(false);
+	expect(files.has('frames/1.png')).toBe(true);
+	await expect(
+		page.getByText('Full export unavailable. Source PNG download started.')
+	).toBeVisible();
 });
 
 test('reset preserves preferences already repaired elsewhere and waits for its committed transaction', async ({

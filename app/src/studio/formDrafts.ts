@@ -17,6 +17,7 @@ export const formDrafts: {
 	move?: {
 		projectId: string;
 		action: string;
+		replace: boolean;
 		text: string;
 		items: string[];
 		dirs?: import('../lib/store/manifest.ts').DirectionName[];

@@ -168,7 +168,12 @@ test('notifications support optional titles, keyboard dismissal and visible erro
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 	await page.goto(dev);
 	const notice = page.locator('.toast');
-	await expect(notice.locator('strong')).toHaveText(/^Preview · v/);
+	await expect(notice.locator('.bu-notice-content > strong')).toHaveText(
+		/^Pre-release · v\d+\.\d+\.\d+/
+	);
+	await expect(notice.locator('.bu-small strong')).toHaveText(
+		'Saved characters may stop working after updates.'
+	);
 	await expect(notice.locator('[data-tone]')).toHaveAttribute('data-tone', 'warning');
 	await expect(notice).not.toContainText('—');
 	const world = page.locator('.selection-world');
@@ -261,12 +266,21 @@ test('the startup preview notice expires after eight seconds', async ({ page }, 
 	await page.clock.install({ time });
 	await page.clock.pauseAt(new Date(time.getTime() + 1000));
 	await page.goto(dev);
-	const preview = page.getByRole('status').filter({ hasText: /Preview · v/ });
+	const preview = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
 	await expect(preview).toBeVisible();
 	await page.clock.fastForward(7999);
 	await expect(preview).toBeVisible();
 	await page.clock.fastForward(1);
 	await expect(preview).toHaveCount(0);
+});
+
+test('the startup pre-release notice opens the existing export picker', async ({ page }, info) => {
+	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	await page.goto(dev);
+	const notice = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
+	await notice.getByRole('button', { name: 'Export sprites', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toBeVisible();
+	await expect(notice).toHaveCount(0);
 });
 
 for (const [width, height] of [
@@ -283,8 +297,10 @@ for (const [width, height] of [
 			await page.goto(dev);
 			const notice = page.locator('.toast'),
 				gesture = width < 1000 ? 'tap' : 'click';
+			await expect(notice).toBeVisible();
+			await showNotification(page, 'Dismiss this message', { duration: 0 });
 			await notice
-				.getByRole('button', { name: /^Preview · v/ })
+				.getByRole('button', { name: 'Dismiss this message', exact: true })
 				[gesture]({ position: { x: 8, y: 8 } });
 			await expect(notice).toHaveCount(0);
 			await enterStudio(page);
@@ -1296,7 +1312,7 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 		assert.ok(bytes.includes(Buffer.from(f)), `zip has ${f}`);
 	assert.ok(download.suggestedFilename().startsWith('adventurer-'), download.suggestedFilename());
 	await expect(page.locator('dialog[open]')).toHaveCount(0);
-	await expect(page.locator('.toast').getByText(/^Downloaded/)).toBeVisible();
+	await expect(page.locator('.toast').getByText('Export download started.')).toBeVisible();
 	finish();
 });
 
@@ -2556,18 +2572,42 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
-	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await move.getByRole('radio', { name: 'Cast', exact: true }).click();
-	await move.getByRole('textbox', { name: /Or describe it/ }).fill('jumping in place');
-	await move.getByRole('checkbox', { name: new RegExp(vest.name) }).uncheck();
+	await expect(page.getByRole('dialog', { name: 'Add a move', exact: true })).toBeVisible();
+	const move = page.getByRole('dialog', { name: /^(Add a move|Replace move views)$/ });
+	const description = move.getByRole('textbox', { name: /^Describe (the motion|a new move)$/ });
+	const choices = move.getByRole('radiogroup', { name: 'Or choose a move' });
+	const cast = choices.getByRole('radio', { name: 'Cast', exact: true });
+	await expect(description).toBeVisible();
+	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(1);
+	await cast.click();
+	await description.focus();
+	await expect(cast).toBeChecked();
+	await description.fill('walk');
+	await expect(move.getByRole('button', { name: /^Add Walk/ })).toBeDisabled();
+	await expect(move.getByText('Directions to redraw')).toHaveCount(0);
+	await expect(move).toContainText('Walk is already a move option.');
+	await description.fill('jumping in place');
+	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
+	await description.press('Tab');
+	await expect(choices.getByRole('radio').first()).toBeFocused();
+	await expect(description).toHaveValue('jumping in place');
+	await page.keyboard.press('ArrowRight');
+	await expect(choices.getByRole('radio').nth(1)).toBeChecked();
+	await expect(description).toHaveValue('');
+	await description.fill('jumping in place');
+	await description.clear();
+	await expect(move.getByRole('button', { name: /^Add move/ })).toBeDisabled();
+	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
+	await description.fill('jumping in place');
+	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).not.toBeChecked();
+	await move.getByRole('checkbox', { name: new RegExp(vest.name) }).check();
 	await expect(move.getByRole('button', { name: /^Add Jumping in/ })).toContainText(
 		/Est\. \d+ gens/
 	);
 	await expect(
-		move.getByText(
-			'PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.',
-			{ exact: true }
-		)
+		move.getByText('PixelLab may charge in dollars. Retries and fallbacks cost extra.', {
+			exact: true
+		})
 	).toBeVisible();
 	await move.getByRole('button', { name: /^Add Jumping in/ }).click();
 	await page
@@ -2576,15 +2616,14 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
-	await expect(move.getByRole('textbox', { name: /Or describe it/ })).toHaveValue(
-		'jumping in place'
-	);
-	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).not.toBeChecked();
-	await move.getByRole('textbox', { name: /Or describe it/ }).fill('');
-	await expect(move.getByRole('radio', { name: 'Cast', exact: true })).toHaveAttribute(
-		'aria-checked',
-		'true'
-	);
+	await expect(description).toHaveValue('jumping in place');
+	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toBeChecked();
+	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
+	await cast.click();
+	await expect(description).toBeEnabled();
+	await expect(description).toHaveValue('');
+	await expect(move.getByRole('button', { name: /^Add Cast/ })).toBeEnabled();
+	await expect(cast).toBeChecked();
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.locator('.project-btn').click();
@@ -4095,6 +4134,87 @@ test('cancel during the initial item save never starts a paid runner', async ({ 
 	expect(result.calls.every((id: string | undefined) => id === undefined)).toBe(true);
 });
 
+test('an accepted item failure shows the reported charge and saved job without a paid retry', async ({
+	page,
+	context
+}, info) => {
+	const posts: string[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request(),
+			path = new URL(request.url()).pathname;
+		if (request.method() === 'POST') posts.push(path);
+		if (path === '/v2/balance')
+			return route.fulfill({
+				json: {
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 },
+					credits: { type: 'usd', usd: 0 }
+				}
+			});
+		if (path === '/v2/edit-animation-v2')
+			return route.fulfill({ status: 202, json: { background_job_id: 'offline-dress-failure' } });
+		if (path === '/v2/background-jobs/offline-dress-failure')
+			return route.fulfill({
+				json: {
+					id: 'offline-dress-failure',
+					status: 'failed',
+					usage: { type: 'usd', usd: 0 },
+					last_response: { code: 3006, error: 'Generation failed' }
+				}
+			});
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-dress-failure-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await standingItemCharacter(page);
+	const id = await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.startItem({ name: 'Trouser fixture', slot: 'legs', prompt: 'tactical pants' });
+		return state.gens[0].draft.spec.id;
+	});
+	await expect
+		.poll(() =>
+			page.evaluate(async () => {
+				const path = '/src/lib/store/db.ts',
+					db = await import(path);
+				return (await db.get('projects', 'studio-drafts'))?.gens[0]?.phase;
+			})
+		)
+		.toBe('failed');
+	await reloadStudio(page);
+	await page.evaluate(async (id) => {
+		const path = '/src/studio/state.svelte.ts',
+			state = await import(path);
+		await state.openGenerationReview(id);
+	}, id);
+	const review = page.locator('.gen');
+	await expect(review).toContainText('PixelLab accepted the request but could not finish it.');
+	await expect(review).toContainText('PixelLab reported no charge for this attempt.');
+	await expect(review).toContainText('Try again starts a new paid attempt.');
+	await review
+		.locator('header')
+		.getByRole('button', { name: 'Inspect API calls', exact: true })
+		.click();
+	const savedCall = page.locator('[aria-label="API calls"]:popover-open .peek-call');
+	await savedCall.locator(':scope > summary').click();
+	await expect(
+		savedCall.getByText(
+			'Job offline-dress-failure failed: Generation failed (PixelLab code 3006)',
+			{
+				exact: true
+			}
+		)
+	).toBeVisible();
+	expect(posts).toEqual(['/v2/edit-animation-v2']);
+});
+
 test('new item progress, previews and completion survive reload without submitting completed jobs again', async ({
 	page,
 	context
@@ -4148,11 +4268,16 @@ test('new item progress, previews and completion survive reload without submitti
 	await standingItemCharacter(page);
 	const id = await page.evaluate(async () => {
 		const statePath = '/src/studio/state.svelte.ts',
-			s = await import(statePath);
-		await s.startItem({ name: 'Progress fixture', slot: 'hair', prompt: 'short hair' });
+			s = await import(statePath),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(dbPath);
+		const rec = await db.get('projects', s.doc.id);
+		if (rec.manifest.slots.some((slot: { id: string }) => slot.id === 'legs'))
+			throw new Error('Expected Legs to be absent from the saved character');
+		await s.startItem({ name: 'Progress fixture', slot: 'legs', prompt: 'tactical pants' });
 		return s.gens[0].draft.spec.id;
 	});
-	await equipmentGroup(page, 'Hair');
+	await equipmentGroup(page, 'Legs');
 	await expect(page.locator('.gen')).toHaveCount(0);
 	const progress = page.getByRole('progressbar', {
 		name: 'Progress fixture progress',
@@ -4194,6 +4319,26 @@ test('new item progress, previews and completion survive reload without submitti
 			}, id)
 		)
 		.toBe(true);
+	const slotOrder = await page.evaluate(async (id) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(statePath),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(dbPath);
+		state.wearDraft(id);
+		const ids = (slots: { id: string }[]) => slots.map((slot) => slot.id);
+		return {
+			stage: ids(state.view.project.manifest.slots),
+			preview: ids(state.store.results[id].preview.manifest.slots),
+			saved: ids((await db.get('projects', state.doc.id)).manifest.slots)
+		};
+	}, id);
+	expect(slotOrder.saved).not.toContain('legs');
+	const expectedOrder = [...slotOrder.saved];
+	const torso = expectedOrder.indexOf('torso_inner');
+	expect(torso).toBeGreaterThanOrEqual(0);
+	expectedOrder.splice(torso, 0, 'legs');
+	expect(slotOrder.preview).toEqual(expectedOrder);
+	expect(slotOrder.stage).toEqual(slotOrder.preview);
 	// Reproduce an older stuck draft whose runner never persisted its job reference.
 	await page.evaluate(async () => {
 		const p = '/src/lib/store/db.ts',
@@ -4541,14 +4686,11 @@ test('Export discloses saved item and body review flags without blocking analysi
 		await page.getByRole('button', { name: 'Done', exact: true }).click();
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Export', exact: true });
-	const itemNotice = sheet
-		.locator('.notice.warn')
-		.filter({ hasText: 'Saved quality or appearance flags:' });
+	await expect(sheet.getByText(/Some artwork needs a check/)).toBeVisible();
+	await sheet.getByText('Export notes', { exact: true }).click();
+	const itemNotice = sheet.getByText(/^Check this artwork before using it:/);
 	for (const name of names) await expect(itemNotice).toContainText(name);
-	await expect(itemNotice).toContainText('including explicitly accepted artwork');
-	const bodyNotice = sheet
-		.locator('.notice.warn')
-		.filter({ hasText: 'Body frames failed saved checks:' });
+	const bodyNotice = sheet.getByText(/^Check body frames:/);
 	await expect(bodyNotice).toContainText('Walk facing east, Walk facing west');
 	await expect(bodyNotice).not.toContainText('Removed');
 	await expect(bodyNotice).not.toContainText('Cross punch');
@@ -4575,14 +4717,14 @@ test('Export discloses saved item and body review flags without blocking analysi
 	});
 	await page.getByRole('button', { name: 'Export', exact: true }).click();
 	await expect(sheet.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled();
-	await expect(sheet.getByText(/Saved quality or appearance flags:/)).toHaveCount(0);
-	await expect(sheet.getByText(/Body frames failed saved checks:/)).toHaveCount(0);
+	await expect(sheet.getByText(/^Check this artwork before using it:/)).toHaveCount(0);
+	await expect(sheet.getByText(/^Check body frames:/)).toHaveCount(0);
 	expect(requests).toEqual([]);
 });
 
-async function targetedRepairFixture(page: Page) {
+async function targetedRepairFixture(page: Page, keepMirrors = false) {
 	await page.locator('.world-actors').first().waitFor();
-	return page.evaluate(async () => {
+	return page.evaluate(async (keepMirrors) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path),
 			dbPath = '/src/lib/store/db.ts',
@@ -4593,7 +4735,8 @@ async function targetedRepairFixture(page: Page) {
 		const rec = await db.get('projects', s.doc.id),
 			m = rec.manifest,
 			base = m.items.find((it: { id: string }) => it.id === m.rig.baseItem);
-		m.rig.directions = m.rig.directions.map((d: { id: string }) => ({ id: d.id }));
+		if (!keepMirrors)
+			m.rig.directions = m.rig.directions.map((d: { id: string }) => ({ id: d.id }));
 		for (const it of m.items) {
 			for (const layer of it.layers)
 				for (const dirs of Object.values(layer.cells ?? {}) as any[])
@@ -4660,7 +4803,7 @@ async function targetedRepairFixture(page: Page) {
 		await db.put('projects', s.doc.id, rec);
 		await s.openProject(s.doc.id);
 		return { itemId: sword.id, itemName: sword.name };
-	});
+	}, keepMirrors);
 }
 
 test('failed anchored moves offer cache-only recovery without an API key or a new request', async ({
@@ -4728,7 +4871,7 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 	expect(posts).toEqual([]);
 });
 
-test('a custom move replacement keeps its name and requires a supported frame count and description', async ({
+test('a custom move replacement keeps its name and reviews eligible equipment and costs', async ({
 	page
 }, info) => {
 	await page.addInitScript(() => {
@@ -4747,11 +4890,15 @@ test('a custom move replacement keeps its name and requires a supported frame co
 			db = await import(dbPath);
 		const rec = await db.get('projects', s.doc.id),
 			m = rec.manifest;
-		m.rig.animations.find((a: { id: string }) => a.id === 'walk').id = 'quiet-step';
+		const sword = m.items.find((item: { slot: string }) => item.slot === 'main_hand');
+		sword.dressed = { east: sword.dressed.east };
+		const custom = m.rig.animations.find((a: { id: string }) => a.id === 'walk');
+		custom.id = 'idle';
+		custom.sources.east.motion = 'pixminimax:idle, shift weight to the leading foot';
 		for (const item of m.items)
 			for (const layer of item.layers)
 				if (layer.cells?.walk) {
-					layer.cells['quiet-step'] = layer.cells.walk;
+					layer.cells.idle = layer.cells.walk;
 					delete layer.cells.walk;
 				}
 		await db.put('projects', s.doc.id, rec);
@@ -4765,8 +4912,8 @@ test('a custom move replacement keeps its name and requires a supported frame co
 		'Described moves can be generated with 4, 8 or 12 frames. This move has 6.'
 	);
 	await expect(sheet.getByRole('button', { name: /^Replace Cross punch views/ })).toBeDisabled();
-	await sheet.getByRole('radio', { name: 'Quiet step · added', exact: true }).click();
-	const replace = sheet.getByRole('button', { name: /^Replace Quiet step views/ });
+	await sheet.getByRole('radio', { name: 'Idle · added', exact: true }).click();
+	const replace = sheet.getByRole('button', { name: /^Replace Idle views/ });
 	await expect(replace).toBeDisabled();
 	await expect(sheet).toContainText('Describe this move before generating it.');
 	await sheet
@@ -4774,6 +4921,44 @@ test('a custom move replacement keeps its name and requires a supported frame co
 		.fill('Step sideways and shift weight to the leading foot');
 	await expect(replace).toBeEnabled();
 	await expect(replace).toContainText('Est. 23 gens');
+	const sword = sheet.getByRole('checkbox', { name: /Steel longsword/ });
+	await expect(sword).toHaveCount(0);
+	await expect(sheet).toContainText(
+		'Shared copies can still be worn in views where they have frames.'
+	);
+	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
+	const west = directions.getByRole('button', { name: 'West direction', exact: true });
+	const east = directions.getByRole('button', { name: 'East direction', exact: true });
+	await west.click();
+	await directions.getByRole('button', { name: 'South direction', exact: true }).click();
+	await directions.getByRole('button', { name: 'North direction', exact: true }).click();
+	await sword.check();
+	await expect(replace).toContainText('gens with equipment');
+	await expect(sheet).toContainText('3 gens if equipment runs');
+	await expect(sheet).toContainText(
+		'Equipment requests are not sent if body checks stop the move.'
+	);
+	await west.click();
+	await expect(sword).toHaveCount(0);
+	await expect(sheet).not.toContainText('if equipment runs');
+	await east.click();
+	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveCount(0);
+	await expect(replace).toBeDisabled();
+	await expect(replace).not.toContainText('Est.');
+	await expect(sheet).toContainText('A partial repair must keep the existing frame count.');
+	await expect(sheet.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(
+		0
+	);
+	await east.click();
+	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveValue(
+		'Step sideways and shift weight to the leading foot'
+	);
+	const custom = sheet.getByRole('textbox', { name: 'Describe a new move', exact: true });
+	await expect(custom).toHaveValue('');
+	await custom.fill('jumping in place');
+	const add = page.getByRole('dialog', { name: 'Add a move', exact: true });
+	await expect(add.getByRole('button', { name: /^Add Jumping in/ })).toBeEnabled();
+	await expect(add.getByText('Directions to redraw')).toHaveCount(0);
 });
 
 async function oversizedItemFixture(page: Page, itemId: string) {
@@ -4787,19 +4972,19 @@ async function oversizedItemFixture(page: Page, itemId: string) {
 			iPath = '/src/lib/items/items.ts',
 			items = await import(iPath),
 			pngPath = '/src/lib/image/pngraw.ts',
-			png = await import(pngPath);
+			png = await import(pngPath),
+			rigPath = '/src/lib/rig/rig.ts',
+			rig = await import(rigPath);
 		const ctx = await projectModule.loadProject(s.doc.id),
 			item = ctx.rec.manifest.items.find((it: { id: string }) => it.id === id),
 			padded = new Map<string, string>();
 		const pad = async (hash: string) => {
-			if (!padded.has(hash))
-				padded.set(
-					hash,
-					'sha256:' +
-						(await db.putBlob(
-							await png.encodePngBytes(items.padImg(ctx.project.images.get(hash), 16))
-						))
-				);
+			if (!padded.has(hash)) {
+				const image = items.padImg(ctx.project.images.get(hash), 16);
+				const cell = await rig.cellHash(image);
+				await db.put('blobs', cell.slice(7), new Blob([await png.encodePngBytes(image)]));
+				padded.set(hash, cell);
+			}
 			return padded.get(hash);
 		};
 		for (const layer of item.layers) {
@@ -4852,10 +5037,20 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
 	await page.getByRole('radio', { name: 'Walk · added', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
-	await expect(sheet.getByRole('checkbox', { name: 'East', exact: true })).toBeChecked();
-	await expect(sheet.getByRole('checkbox', { name: 'West', exact: true })).toBeChecked();
-	await expect(sheet.getByRole('checkbox', { name: 'South', exact: true })).not.toBeChecked();
-	await expect(sheet.getByRole('checkbox', { name: 'North', exact: true })).not.toBeChecked();
+	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
+	const east = directions.getByRole('button', { name: 'East direction', exact: true });
+	const west = directions.getByRole('button', { name: 'West direction', exact: true });
+	await expect(directions).toHaveAccessibleDescription(/Replacing these views hides equipment/);
+	await expect(east).toHaveAttribute('aria-pressed', 'true');
+	await expect(west).toHaveAttribute('aria-pressed', 'true');
+	await expect(directions.getByRole('button', { name: 'South direction' })).toHaveAttribute(
+		'aria-pressed',
+		'false'
+	);
+	await expect(directions.getByRole('button', { name: 'North direction' })).toHaveAttribute(
+		'aria-pressed',
+		'false'
+	);
 	await expect(
 		sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })
 	).not.toBeChecked();
@@ -4863,10 +5058,10 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 22 gens'
 	);
-	await sheet.getByRole('checkbox', { name: 'East', exact: true }).uncheck();
-	await sheet.getByRole('checkbox', { name: 'West', exact: true }).uncheck();
+	await east.press('Space');
+	await west.click();
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toBeDisabled();
-	await sheet.getByRole('checkbox', { name: 'East', exact: true }).check();
+	await east.click();
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 11 gens'
 	);
@@ -4876,8 +5071,8 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		.getByRole('button', { name: 'Cancel', exact: true })
 		.click();
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
-	await expect(sheet.getByRole('checkbox', { name: 'East', exact: true })).toBeChecked();
-	await expect(sheet.getByRole('checkbox', { name: 'West', exact: true })).not.toBeChecked();
+	await expect(east).toHaveAttribute('aria-pressed', 'true');
+	await expect(west).toHaveAttribute('aria-pressed', 'false');
 	await page.evaluate(() => {
 		const original = IDBObjectStore.prototype.put;
 		IDBObjectStore.prototype.put = function (value, key) {
@@ -4905,6 +5100,24 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	});
 	expect(posts).toEqual([]);
 	expect(errors).toEqual([]);
+});
+
+test('targeted move replacement names mirrored effects without offering a separate redraw', async ({
+	page
+}, info) => {
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page, true);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+	await page.getByRole('radio', { name: 'Walk · added', exact: true }).click();
+	const directions = page.getByRole('group', { name: 'Directions to redraw' });
+	await expect(directions.getByRole('button', { name: /West direction/ })).toHaveCount(0);
+	await expect(directions).toHaveAccessibleDescription(/Mirrored views also change: West/);
+	await directions.getByRole('button', { name: 'East direction', exact: true }).click();
+	await expect(directions).not.toHaveAccessibleDescription(/Mirrored views also change/);
 });
 
 test('partial missing gear and explicit item repair stay on the current move and view', async ({
@@ -4985,9 +5198,42 @@ test('partial missing gear and explicit item repair stay on the current move and
 	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await selectedItemDetails(page);
 	const repair = page.getByRole('button', { name: /^Try new item frames/ });
-	await expect(repair).toContainText('Est. 10 gens'); // The bundled fixture uses actual 64 px equipment layers.
+	const simulateRepairPlan = (tier: number) =>
+		page.evaluate(async (tier) => {
+			const appPath = '/src/lib/app.svelte.ts',
+				queuePath = '/src/lib/pixellab/queue.ts';
+			const { app } = await import(appPath),
+				{ queue } = await import(queuePath);
+			const balance = {
+				...app.balance,
+				subscription: { ...app.balance.subscription, plan: `Tier ${tier}`, status: 'active' }
+			};
+			app.balance = balance;
+			queue.setBalance(balance, queue.key);
+		}, tier);
+	const expectRepairTiers = async (tierOneGens: number, tierTwoGens: number) => {
+		await simulateRepairPlan(0);
+		await expect(repair).toBeDisabled();
+		await expect(repair).toHaveAttribute('aria-describedby', 'item-repair-tier');
+		await expect(page.locator('#item-repair-tier')).toContainText('Tier 1 required');
+		for (const [tier, gens] of [
+			[1, tierOneGens],
+			[2, tierTwoGens]
+		]) {
+			await simulateRepairPlan(tier);
+			await expect(repair).toBeEnabled();
+			await expect(repair).toContainText(`Est. ${gens} gens`);
+			await expect(page.locator('#item-repair-tier')).toHaveCount(0);
+			const requests = page.getByText('This repair uses 3 PixelLab generation requests.', {
+				exact: false
+			});
+			if (gens === 30) await expect(requests).toBeVisible();
+			else await expect(requests).toHaveCount(0);
+		}
+	};
+	await expectRepairTiers(10, 10);
 	await oversizedItemFixture(page, fixture.itemId);
-	await expect(repair).toContainText('Est. 15 gens');
+	await expectRepairTiers(30, 15);
 	await repair.click();
 	sheet = page.getByRole('dialog', { name: 'Repair item frames', exact: true });
 	await expect(sheet).toContainText('Scoped repair stopped before paid work');
@@ -5004,6 +5250,122 @@ test('partial missing gear and explicit item repair stay on the current move and
 	});
 	expect(gridScope.replace).toBeUndefined();
 	expect(posts).toEqual([]);
+});
+
+test('paid item repair review survives reload and both decisions send no extra request', async ({
+	page,
+	context
+}, info) => {
+	const posts: string[] = [];
+	const outputs = new Map<string, { type: string; base64: string }>();
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request(),
+			path = new URL(request.url()).pathname;
+		if (path === '/v2/balance')
+			return route.fulfill({
+				json: {
+					subscription: {
+						plan: 'Tier 1',
+						type: 'generations',
+						status: 'active',
+						generations: 100,
+						total: 100
+					},
+					credits: { type: 'usd', usd: 0 }
+				}
+			});
+		if (request.method() === 'POST') {
+			posts.push(path);
+			if (path === '/v2/inpaint-v3') {
+				const id = `offline-repair-review-${posts.length}`;
+				outputs.set(id, request.postDataJSON().inpainting_image.image);
+				return route.fulfill({ status: 202, json: { background_job_id: id } });
+			}
+		}
+		const id = path.split('/').at(-1)!;
+		if (outputs.has(id))
+			return route.fulfill({
+				json: {
+					id,
+					status: 'completed',
+					created_at: '',
+					usage: { type: 'generations', generations: 10 },
+					last_response: { image: outputs.get(id) }
+				}
+			});
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-repair-review-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	const { itemId } = await targetedRepairFixture(page);
+	const openRepair = async () => {
+		await page.evaluate(async (id) => {
+			const path = '/src/studio/state.svelte.ts',
+				state = await import(path);
+			state.ui.anim = 'walk';
+			state.ui.dir = 'west';
+			state.ui.all = false;
+			state.pick(id);
+		}, itemId);
+		await selectedItemDetails(page);
+		await page.getByRole('button', { name: /^Try new item frames/ }).click();
+	};
+	const saved = () =>
+		page.evaluate(async (id) => {
+			const statePath = '/src/studio/state.svelte.ts',
+				dbPath = '/src/lib/store/db.ts';
+			const state = await import(statePath),
+				db = await import(dbPath);
+			const rec = await db.get('projects', state.doc.id);
+			const item = rec.manifest.items.find((it: { id: string }) => it.id === id);
+			return {
+				west: item.layers[0].cells.walk.west,
+				east: item.layers[0].cells.walk.east,
+				provenance: item.provenance.length
+			};
+		}, itemId);
+	await page.evaluate(async (id) => {
+		const statePath = '/src/studio/state.svelte.ts',
+			dbPath = '/src/lib/store/db.ts';
+		const state = await import(statePath),
+			db = await import(dbPath);
+		const rec = await db.get('projects', state.doc.id),
+			manifest = rec.manifest;
+		const item = manifest.items.find((it: { id: string }) => it.id === id);
+		item.slot = 'torso_inner';
+		item.layers = item.layers.slice(0, 1);
+		await db.put('projects', state.doc.id, rec);
+		await state.openProject(state.doc.id);
+	}, itemId);
+	const before = await saved();
+	await openRepair();
+	const review = page.getByRole('dialog', { name: 'Review item repair' });
+	await expect(review.getByRole('img', { name: 'Repaired frame 1', exact: true })).toBeVisible();
+	await expect(review.getByRole('img', { name: 'Current frame 1', exact: true })).toBeVisible();
+	expect(await saved()).toEqual(before);
+	await review.getByRole('button', { name: 'Hide', exact: true }).click();
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: /Review item repair/ }).click();
+	await review.getByRole('button', { name: 'Keep current', exact: true }).click();
+	await page.getByRole('button', { name: 'Done', exact: true }).click();
+	expect(await saved()).toEqual(before);
+	expect(posts).toEqual(['/v2/inpaint-v3']);
+	await openRepair();
+	await review.getByRole('button', { name: 'Use repaired frames', exact: true }).click();
+	await page.getByRole('button', { name: 'Done', exact: true }).click();
+	const after = await saved();
+	expect(after.east).toEqual(before.east);
+	expect(after.west).not.toEqual(before.west);
+	expect(after.provenance).toBe(before.provenance + 1);
+	expect(posts).toEqual(['/v2/inpaint-v3', '/v2/inpaint-v3']);
 });
 
 test('unsafe imported equipment prices its frozen route and unsupported held offers stay usable', async ({
@@ -5193,8 +5555,8 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	await targetedRepairFixture(page);
-	const original = await page.evaluate(async () => {
+	const { itemId } = await targetedRepairFixture(page);
+	const original = await page.evaluate(async (itemId) => {
 		const statePath = '/src/studio/state.svelte.ts',
 			s = await import(statePath),
 			dbPath = '/src/lib/store/db.ts',
@@ -5219,7 +5581,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 			id: 'slash',
 			action: 'slash',
 			frames: 8,
-			items: [],
+			items: [itemId],
 			seed: 421,
 			replace: true,
 			dirs: ['west'],
@@ -5316,10 +5678,11 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 			projectId: s.doc.id,
 			spec,
 			status: 'failed',
-			error: 'Joint-check outcome unknown'
+			error: 'Joint-check outcome unknown',
+			progress: { step: 'save', done: 0, total: 1, recIds: [] }
 		});
 		return { spec, projectId: s.doc.id };
-	});
+	}, itemId);
 	await reloadStudio(page);
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await page.evaluate(async () => {
@@ -5402,6 +5765,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	});
 	const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
 	await expect(sheet).toContainText('Joint-check outcome unknown');
+	await expect(sheet.getByText('Posing your items', { exact: true })).not.toHaveClass(/\bdone\b/);
 	await expect(sheet).toContainText(
 		'Could not check cached frames: Synthetic standing image storage failure'
 	);
@@ -6093,7 +6457,9 @@ async function freePaletteFixture(page: Page) {
 			const pngPath = '/src/lib/image/png.ts',
 				png = await import(pngPath),
 				rawPath = '/src/lib/image/pngraw.ts',
-				raw = await import(rawPath);
+				raw = await import(rawPath),
+				rigPath = '/src/lib/rig/rig.ts',
+				rig = await import(rigPath);
 			const rec = await db.get('projects', s.doc.id),
 				item = rec.manifest.items.find((it: { id: string }) => it.id === id),
 				metalId = id + '-fixed-metal';
@@ -6124,7 +6490,8 @@ async function freePaletteFixture(page: Page) {
 				[3, [16, 16, 16]]
 			] as [number, number[]][])
 				image.data.set([...rgb, 255], (40 * 96 + 40 + offset) * 4);
-			const hash = 'sha256:' + (await db.putBlob(await raw.encodePngBytes(image)));
+			const hash = await rig.cellHash(image);
+			await db.put('blobs', hash.slice(7), new Blob([await raw.encodePngBytes(image)]));
 			for (const layer of item.layers)
 				layer.cells.walk.west = Array.from({ length: 8 }, () => null);
 			item.layers[0].cells.walk.west[0] = hash;

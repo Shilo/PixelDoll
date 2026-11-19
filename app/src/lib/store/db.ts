@@ -1,12 +1,21 @@
 // IndexedDB "pixeldoll": projects (manifest JSON), blobs (sha256-keyed Blobs), jobs (queue ledger).
-import { sha256 } from '../image/hash.ts';
+import { sha256, stableStringify } from '../image/hash.ts';
+import type { StoredProject } from './project.ts';
+import { COPY_GENERATION_OFF, workspaceCopy } from './workspace-mode.ts';
 
 export type StoreName = 'projects' | 'blobs' | 'jobs';
 const DB = 'pixeldoll',
 	VERSION = 1;
 
 let dbp: Promise<IDBDatabase> | null = null;
+let copy: Record<StoreName, Map<string, unknown>> | undefined;
+export function installWorkspaceCopy(projects: Map<string, unknown>, blobs: Map<string, Blob>) {
+	if (!workspaceCopy || copy) throw new Error('Open a workspace copy in a separate tab.');
+	copy = { projects, blobs, jobs: new Map() };
+}
+
 function open(): Promise<IDBDatabase> {
+	if (workspaceCopy) throw new Error('This operation is not available in a workspace copy.');
 	return (dbp ??= new Promise((res, rej) => {
 		const r = indexedDB.open(DB, VERSION);
 		r.onupgradeneeded = () => {
@@ -38,13 +47,71 @@ async function tx<T>(
 	});
 }
 
-export const get = <T>(s: StoreName, key: string) =>
-	tx<T | undefined>(s, 'readonly', (o) => o.get(key));
-export const put = (s: StoreName, key: string, value: unknown) =>
-	tx(s, 'readwrite', (o) => o.put(value, key)).then(() => undefined);
-export const del = (s: StoreName, key: string) => tx(s, 'readwrite', (o) => o.delete(key));
-export const all = <T>(s: StoreName) => tx<T[]>(s, 'readonly', (o) => o.getAll());
-export const clear = (s: StoreName) => tx(s, 'readwrite', (o) => o.clear());
+export const get = async <T>(s: StoreName, key: string) =>
+	copy
+		? (structuredClone(copy[s].get(key)) as T | undefined)
+		: tx<T | undefined>(s, 'readonly', (o) => o.get(key));
+export const put = async (s: StoreName, key: string, value: unknown) => {
+	if (copy) {
+		if (s === 'jobs') throw new Error(COPY_GENERATION_OFF);
+		copy[s].set(key, structuredClone(value));
+	} else await tx(s, 'readwrite', (o) => o.put(value, key));
+};
+export const del = async (s: StoreName, key: string) => {
+	if (copy) copy[s].delete(key);
+	else await tx(s, 'readwrite', (o) => o.delete(key));
+};
+export const all = async <T>(s: StoreName) =>
+	copy
+		? (structuredClone([...copy[s].values()]) as T[])
+		: tx<T[]>(s, 'readonly', (o) => o.getAll());
+export const clear = async (s: StoreName) => {
+	if (copy) copy[s].clear();
+	else await tx(s, 'readwrite', (o) => o.clear());
+};
+
+export async function readWorkspaceSnapshot(
+	select: (key: string, value: unknown) => boolean,
+	references: (records: Map<string, unknown>) => ReadonlyMap<string, unknown>,
+	includeErrors: boolean
+) {
+	const db = await open();
+	return new Promise<{ projects: Map<string, unknown>; blobs: Map<string, Blob>; jobs: unknown[] }>(
+		(resolve, reject) => {
+			const stores: StoreName[] = ['projects', 'blobs'];
+			if (includeErrors) stores.push('jobs');
+			const transaction = db.transaction(stores, 'readonly');
+			const projects = new Map<string, unknown>();
+			const blobs = new Map<string, Blob>();
+			const jobs = includeErrors ? transaction.objectStore('jobs').getAll() : undefined;
+			const cursor = transaction.objectStore('projects').openCursor();
+			let error: unknown;
+			cursor.onsuccess = () => {
+				try {
+					const row = cursor.result;
+					if (row) {
+						if (typeof row.key === 'string' && select(row.key, row.value))
+							projects.set(row.key, row.value);
+						row.continue();
+					} else {
+						const images = transaction.objectStore('blobs');
+						for (const hash of references(projects).keys()) {
+							const image = images.get(hash);
+							image.onsuccess = () => {
+								if (image.result instanceof Blob) blobs.set(hash, image.result);
+							};
+						}
+					}
+				} catch (cause) {
+					error = cause;
+					transaction.abort();
+				}
+			};
+			transaction.oncomplete = () => resolve({ projects, blobs, jobs: jobs?.result ?? [] });
+			transaction.onerror = transaction.onabort = () => reject(error ?? transaction.error);
+		}
+	);
+}
 
 /** Encoding happens before this transaction, so garbage collection cannot sweep an import's partial blob writes. */
 export async function putCharacter(
@@ -52,6 +119,13 @@ export async function putCharacter(
 	record: unknown,
 	blobs: Map<string, Blob>
 ): Promise<void> {
+	if (copy) {
+		if (copy.projects.has(id)) throw new Error('This character already exists.');
+		const saved = structuredClone(record);
+		for (const [hash, blob] of blobs) copy.blobs.set(hash, blob);
+		copy.projects.set(id, saved);
+		return;
+	}
 	const db = await open();
 	return new Promise((res, rej) => {
 		const t = db.transaction(['projects', 'blobs'], 'readwrite');
@@ -71,6 +145,13 @@ export async function updateCharacter<T>(
 	fn: (record: T | undefined) => T,
 	stored?: { keys: Iterable<string>; missing: (key: string) => Error }
 ): Promise<void> {
+	if (copy) {
+		for (const key of stored?.keys ?? []) if (!copy.blobs.has(key)) throw stored!.missing(key);
+		const saved = structuredClone(fn(structuredClone(copy.projects.get(id)) as T | undefined));
+		for (const [hash, blob] of blobs) copy.blobs.set(hash, blob);
+		copy.projects.set(id, saved);
+		return;
+	}
 	const db = await open();
 	return new Promise((res, rej) => {
 		const t = db.transaction(['projects', 'blobs'], 'readwrite'),
@@ -116,16 +197,34 @@ export function withoutCharacters(r: any, ids: Set<string>): Record<string, unkn
 	return kept.length === r[list].length ? undefined : { ...r, [list]: kept };
 }
 
-/** Delete a local character and its drafts atomically, refusing work that could later write it back. Shared blobs stay. */
-export async function deleteCharacter(id: string): Promise<void> {
-	if (!id.startsWith('rig-')) throw new Error('Only a saved local character can be deleted.');
+async function editIdleCharacter(
+	id: string,
+	action: 'delete' | 'change directions for',
+	edit: (
+		projects: { delete(key: string): void; put(value: unknown, key: string): void },
+		records: any[]
+	) => void
+): Promise<void> {
+	if (!id.startsWith('rig-')) throw new Error(`You can only ${action} a saved character.`);
+	if (copy) {
+		const projects = new Map(copy.projects);
+		edit(
+			{
+				delete: (key) => projects.delete(key),
+				put: (value, key) => projects.set(key, structuredClone(value))
+			},
+			[...projects.values()]
+		);
+		copy.projects = projects;
+		return;
+	}
 	const db = await open();
 	return new Promise((res, rej) => {
 		const t = db.transaction(['projects', 'jobs'], 'readwrite'),
 			projects = t.objectStore('projects');
 		const records = projects.getAll(),
 			jobs = t.objectStore('jobs').getAll();
-		let error: Error | undefined;
+		let error: unknown;
 		jobs.onsuccess = () => {
 			const busy = jobs.result.some((j) => ['queued', 'submitting', 'running'].includes(j.state));
 			const work = records.result.some(
@@ -136,19 +235,47 @@ export async function deleteCharacter(id: string): Promise<void> {
 					(r.id === 'studio-drafts' &&
 						r.gens?.some((g: { phase: string }) => g.phase === 'running'))
 			);
-			if (busy || work) {
-				error = new Error('Finish or dismiss pending generation work before deleting a character.');
+			try {
+				if (busy || work)
+					throw new Error(
+						`Finish or dismiss pending generation work before you ${action} a character.`
+					);
+				edit(projects, records.result);
+			} catch (failure) {
+				error = failure;
 				t.abort();
-				return;
-			}
-			projects.delete(id);
-			for (const r of records.result) {
-				const change = withoutCharacters(r, new Set([id]));
-				if (change) projects.put(change, r.id);
 			}
 		};
 		t.oncomplete = () => res();
 		t.onerror = t.onabort = () => rej(error ?? t.error);
+	});
+}
+
+/** Delete a local character and its drafts atomically, refusing work that could later write it back. Shared blobs stay. */
+export async function deleteCharacter(id: string): Promise<void> {
+	await editIdleCharacter(id, 'delete', (projects, records) => {
+		projects.delete(id);
+		for (const record of records) {
+			const change = withoutCharacters(record, new Set([id]));
+			if (change) projects.put(change, record.id);
+		}
+	});
+}
+
+export async function saveCharacterDirections(
+	original: StoredProject,
+	next: StoredProject
+): Promise<void> {
+	const { id } = original;
+	const version = stableStringify(original);
+	await editIdleCharacter(id, 'change directions for', (projects, records) => {
+		if (records.some((record) => withoutCharacters(record, new Set([id]))))
+			throw new Error('Keep or dismiss this character’s item drafts before changing directions.');
+		if (stableStringify(records.find((record) => record?.id === id)) !== version)
+			throw new Error(
+				'This character changed. Close and reopen Directions to review the latest version.'
+			);
+		projects.put(next, id);
 	});
 }
 
@@ -160,6 +287,12 @@ export async function update<T>(
 	key: string,
 	fn: (v: T | undefined) => T
 ): Promise<T> {
+	if (copy) {
+		if (s === 'jobs') throw new Error(COPY_GENERATION_OFF);
+		const result = fn(structuredClone(copy[s].get(key)) as T | undefined);
+		copy[s].set(key, structuredClone(result));
+		return result;
+	}
 	const db = await open();
 	return new Promise((res, rej) => {
 		const t = db.transaction(s, 'readwrite'),
@@ -211,6 +344,7 @@ export async function claimJob<T extends { id: string }>(
  * ponytail: conservative deep string scan (a requestHash can keep a blob alive; harmless). Callers run it only while this tab
  * is idle, because writers put cell blobs one transaction before the record that references them. */
 export async function gcBlobs(): Promise<number> {
+	if (copy) return 0;
 	const db = await open();
 	return new Promise((res, rej) => {
 		const t = db.transaction(['projects', 'jobs', 'blobs'], 'readwrite');
@@ -251,7 +385,7 @@ export const getBlob = (key: string) => get<Blob>('blobs', key);
 
 let persistAsked = false;
 export function askPersist() {
-	if (persistAsked) return;
+	if (persistAsked || workspaceCopy) return;
 	persistAsked = true;
 	navigator.storage?.persist?.().catch(() => {});
 }

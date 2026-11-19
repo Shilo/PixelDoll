@@ -265,6 +265,25 @@ test('invalid subset, new partial move and changed partial frame count are rejec
 		vi.restoreAllMocks();
 	}
 });
+test('a move cannot spend on its body if selected equipment lacks a standing design for a target view', async () => {
+	const f = await fixture(),
+		manifest = f.saved().manifest,
+		item = manifest.items[1];
+	item.key = 'green';
+	item.route = 'skeleton-pose';
+	item.dressed = { south: manifest.rig.rest!.south!.image };
+	await expect(f.run({ items: [item.id], dirs: ['south', 'west'] })).rejects.toThrow(
+		'No generation was requested.'
+	);
+	expect(f.enqueue).not.toHaveBeenCalled();
+});
+test('a new move cannot spend when the drawn views no longer match its approval', async () => {
+	const f = await fixture();
+	await expect(
+		f.run({ id: 'slash', action: 'slash', replace: false, dirs: undefined, approvedDirs: ['east'] })
+	).rejects.toThrow('Character directions changed.');
+	expect(f.enqueue).not.toHaveBeenCalled();
+});
 test('selected direction costs distinguish body replacement from frozen-frame equipment repair', async () => {
 	const f = await fixture(),
 		m = f.original.manifest;

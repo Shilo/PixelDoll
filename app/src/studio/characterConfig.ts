@@ -1,4 +1,6 @@
 import { DIRECTIONS, type DirectionName, type RigDirection, type Rig } from '../lib/rig/rig.ts';
+import { mirrorPartner } from '../lib/rig/mirror.ts';
+export { PAIRS } from '../lib/rig/mirror.ts';
 import { BASE_BODY, UNDERWEAR_BODY, isBaseBody } from './model.ts';
 import {
 	referenceSizeError,
@@ -32,11 +34,6 @@ export const TRAITS = {
 export type Trait = keyof typeof TRAITS;
 export const TRAIT_KEYS = Object.keys(TRAITS) as Trait[];
 export const UNSET = 'Not set';
-export const PAIRS: [DirectionName, DirectionName][] = [
-	['north-west', 'north-east'],
-	['west', 'east'],
-	['south-west', 'south-east']
-];
 export const DIRECTION_LABELS: Record<DirectionName, string> = {
 	north: 'N',
 	'north-east': 'NE',
@@ -354,7 +351,7 @@ export function toggleMirror(
 	d: Pick<CharacterDraft, 'selected' | 'mirrors'>,
 	dir: DirectionName
 ): void {
-	const other = PAIRS.find((p) => p.includes(dir))?.find((v) => v !== dir);
+	const other = mirrorPartner(dir);
 	if (!other) return;
 	if (d.mirrors[dir]) {
 		delete d.mirrors[dir];
@@ -380,8 +377,7 @@ export function facingErrors(dirs: RigDirection[]): string[] {
 		if (!DIRECTIONS.includes(d.id)) errors.push('Unknown direction.');
 		if (
 			d.mirrorOf &&
-			(!PAIRS.some((p) => p.includes(d.id) && p.includes(d.mirrorOf!) && d.id !== d.mirrorOf) ||
-				!dirs.some((s) => s.id === d.mirrorOf && !s.mirrorOf))
+			(mirrorPartner(d.id) !== d.mirrorOf || !dirs.some((s) => s.id === d.mirrorOf && !s.mirrorOf))
 		)
 			errors.push(`Invalid mirror source for ${d.id}.`);
 	}

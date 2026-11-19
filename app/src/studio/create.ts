@@ -78,7 +78,7 @@ import {
 } from '../lib/rig/clips.ts';
 import {
 	canPose,
-	repairGridLayout,
+	repairGridPlan,
 	planAnchoredMove,
 	planGens,
 	itemPlanMinimumTier,
@@ -94,6 +94,7 @@ import {
 	poseItemClip,
 	regridClip,
 	PartialMoveError,
+	type RepairReview,
 	type RigCtx
 } from '../lib/items/run.ts';
 import { directionLabel } from './experience/movement.ts';
@@ -1099,7 +1100,9 @@ export interface MoveSpec {
 	replace?: boolean;
 	activityScope?: string;
 	dirs?: DirectionName[];
+	approvedDirs?: DirectionName[];
 	itemMethod?: 'grid' | 'anchor';
+	preferTierOneRepair?: true;
 	reuseItemFrames?: true;
 	itemReview?: { gens: number; artwork: string };
 	poseStyle?: 'visible-side-v1';
@@ -1195,8 +1198,8 @@ async function publishedMoveRecovery(rec: StoredProject, spec: MoveSpec): Promis
 }
 export const MOVE_STEPS = [
 	{ id: 'animate', label: 'Animating the body' },
-	{ id: 'items', label: 'Posing your items' },
-	{ id: 'save', label: 'Saving' }
+	{ id: 'save', label: 'Checking and saving the body' },
+	{ id: 'items', label: 'Posing your items' }
 ];
 export const isV13 = rigReady;
 /** Why a move can't take this id: Default is every character's standing views, never generated or replaced. */
@@ -1210,6 +1213,15 @@ export function moveDirections(m: Manifest, dirs?: readonly DirectionName[]): Di
 	if (!dirs.length || new Set(dirs).size !== dirs.length || dirs.some((d) => !all.includes(d)))
 		throw new Error('Choose one or more independently drawn directions for this move.');
 	return all.filter((d) => dirs.includes(d));
+}
+function approvedMoveDirections(m: Manifest, spec: MoveSpec): DirectionName[] {
+	const dirs = moveDirections(m, spec.dirs),
+		approved = spec.approvedDirs;
+	if (approved && (approved.length !== dirs.length || dirs.some((dir) => !approved.includes(dir))))
+		throw new Error(
+			'Character directions changed. Review the move’s current estimate before trying again. No generation was requested.'
+		);
+	return dirs;
 }
 interface BodyPaletteStats {
 	directions: DirectionName[];
@@ -1704,22 +1716,6 @@ export function missingItemMoves(
 			...(anchored ? { itemMethod: 'anchor' as const } : {})
 		}));
 }
-/** The moves creation made before Default-first (authored idle, managed walk), for a one-tap "Add idle + walk". Same request
- * shapes as creation made them (no poseStyle). Equipment is always a separately priced choice afterward. */
-export function baseMoveSpecs(
-	m: Manifest,
-	seed = 1 + Math.floor(Math.random() * 1_000_000)
-): MoveSpec[] {
-	const have = new Set(m.rig.animations.map((a) => a.id));
-	return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({
-		id: a.name,
-		action: a.name,
-		frames: a.frames,
-		items: [],
-		seed
-	}));
-}
-
 /** Frames of a move: the authored table's length, or the text frame count. */
 export const isAuthoredAction = (action?: string): action is string =>
 	!!action && Object.hasOwn(ACTIONS, action);
@@ -1732,6 +1728,16 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
 			? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length
 			: s.frames;
 };
+export function partialMoveFrameIssue(
+	m: Manifest,
+	spec: Pick<MoveSpec, 'id' | 'action' | 'frames'>,
+	directionCount: number
+): string {
+	const existing = m.rig.animations.find((move) => move.id === spec.id);
+	return existing && directionCount !== genDirs(m).length && existing.cells !== moveFrames(m, spec)
+		? 'A partial repair must keep the existing frame count.'
+		: '';
+}
 /** The described motion must fit both PixMiniMax and the single raw Skeleton v3 render. */
 export function bodyMoveIssue(
 	m: Manifest,
@@ -1747,11 +1753,22 @@ export function moveEstimate(
 	m: Manifest,
 	s: Pick<
 		MoveSpec,
-		'id' | 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace' | 'itemsOnly'
+		| 'id'
+		| 'action'
+		| 'frames'
+		| 'items'
+		| 'dirs'
+		| 'itemMethod'
+		| 'replace'
+		| 'itemsOnly'
+		| 'preferTierOneRepair'
 	>
 ) {
 	const n = moveFrames(m, s),
 		dirs = moveDirections(m, s.dirs).length,
+		poseRig = s.replace
+			? { ...m.rig, animations: m.rig.animations.filter((animation) => animation.id !== s.id) }
+			: m.rig,
 		body =
 			(s.itemsOnly || s.itemMethod === 'grid') && !s.replace
 				? 0
@@ -1765,7 +1782,14 @@ export function moveEstimate(
 					const item = m.items.find((i) => i.id === id);
 					if (!item) throw new Error('The selected equipment is no longer available.');
 					const cell = item.layers[0]?.cell ?? m.rig.cell;
-					return sum + repairGridLayout(cell, n, 1).gens * dirs;
+					return (
+						sum +
+						repairGridPlan(cell, n, s.preferTierOneRepair).reduce(
+							(total, batch) => total + batch.gens,
+							0
+						) *
+							dirs
+					);
 				}, 0)
 			: s.items.reduce((sum, id) => {
 					const item = m.items.find((i) => i.id === id)!;
@@ -1776,7 +1800,7 @@ export function moveEstimate(
 						sum +
 						(s.itemMethod === 'anchor'
 							? planGens(planAnchoredMove(m.rig, item, s.id, targets), m.rig.cell)
-							: itemPoseGens(m.rig, item, s.id, n, targets, m))
+							: itemPoseGens(poseRig, item, s.id, n, targets, m))
 					);
 				}, 0);
 	return { gens: body + items, body, items, frames: n, minutes: 4 + s.items.length * 3 };
@@ -1802,21 +1826,26 @@ export function moveMinimumTier(manifest: Manifest, spec: MoveSpec): number {
 				(dir) =>
 					spec.itemMethod === 'grid' || redraw || !hasCompleteCells(manifest, item, spec.id, dir)
 			);
+			if (spec.itemMethod === 'grid')
+				return dirs.length
+					? Math.max(
+							...repairGridPlan(
+								item.layers[0]?.cell ?? rig.cell,
+								frames,
+								spec.preferTierOneRepair
+							).map((batch) => batch.tier)
+						)
+					: 0;
 			const calls =
 				spec.itemMethod === 'anchor'
 					? planAnchoredMove(manifest.rig, item, spec.id, dirs)
-					: spec.itemMethod === 'grid'
-						? dirs.map((dir) => ({
-								kind: 'grid' as const,
-								cells: Array.from({ length: frames }, (_, frame) => cellKey(spec.id, dir, frame))
-							}))
-						: itemPosePlan(
-								rig,
-								{ ...item, slotConfig: requireSlot(manifest, item.slot) },
-								spec.id,
-								frames,
-								dirs
-							);
+					: itemPosePlan(
+							rig,
+							{ ...item, slotConfig: requireSlot(manifest, item.slot) },
+							spec.id,
+							frames,
+							dirs
+						);
 			return itemPlanMinimumTier(calls, item.layers[0]?.cell ?? rig.cell, true);
 		})
 	);
@@ -1869,7 +1898,8 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 			frames: spec.frames,
 			dirs: spec.dirs,
 			items: spec.items,
-			itemMethod: spec.itemMethod
+			itemMethod: spec.itemMethod,
+			preferTierOneRepair: spec.preferTierOneRepair
 		}
 	});
 	return { ...spec, itemReview: { gens: moveEstimate(m, spec).items, artwork } };
@@ -1901,7 +1931,7 @@ export async function addMove(
 	spec: MoveSpec,
 	onProgress: (p: Progress) => void = () => {},
 	onReviewed: () => Promise<void> = async () => {}
-): Promise<{ warnings: string[]; reviewItems?: string[] }> {
+): Promise<{ warnings: string[]; reviewItems?: string[]; repairReview?: RepairReview }> {
 	approvedMeasurementIds(spec.measurementRecovery);
 	checkedPaletteIntent(spec.bodyPaletteRepair);
 	// Keeping reviewed frames is free and body-only: equipment for the move is a separate, priced choice afterward.
@@ -1927,12 +1957,15 @@ export async function addMove(
 		}
 	};
 	assertReview(rec.manifest);
-	const dirs = moveDirections(rec.manifest, spec.dirs),
+	const dirs = approvedMoveDirections(rec.manifest, spec),
 		existing = rec.manifest.rig.animations.find((a) => a.id === spec.id);
-	// Saved-frame recovery only reattaches completed equipment requests: never a body clip, a replace or a grid repair.
+	// Saved-frame recovery only reattaches completed equipment requests, never a new or replaced body clip.
 	if (
 		spec.reuseItemFrames &&
-		(spec.itemMethod === 'grid' || !spec.itemsOnly || !existing || spec.replace)
+		((spec.itemMethod === 'grid' && !spec.itemReview) ||
+			!spec.itemsOnly ||
+			!existing ||
+			spec.replace)
 	)
 		throw new Error(
 			'Saved equipment recovery needs an existing move and its equipment only. No generation was requested.'
@@ -1970,17 +2003,25 @@ export async function addMove(
 				'This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.'
 			);
 	} else if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
-	if (spec.itemMethod === 'grid' && !existing)
-		throw new Error('Choose an existing move before repairing its equipment.');
+	if (
+		spec.itemMethod === 'grid' &&
+		(!existing || dirs.length !== 1 || spec.items.length !== 1 || !spec.itemsOnly || spec.replace)
+	)
+		throw new Error(
+			'Choose one item and one facing of an existing move before repairing. No generation was requested.'
+		);
 	if (reservedMove(spec.id) && (spec.replace || !existing)) throw new Error(reservedMove(spec.id));
 	if (!existing && dirs.length !== genDirs(rec.manifest).length)
 		throw new Error('A new move needs every independently drawn direction.');
-	if (
-		existing &&
-		dirs.length !== genDirs(rec.manifest).length &&
-		existing.cells !== moveFrames(rec.manifest, spec)
-	)
-		throw new Error('A partial repair must keep the existing frame count.');
+	const frameIssue = partialMoveFrameIssue(rec.manifest, spec, dirs.length);
+	if (frameIssue) throw new Error(frameIssue);
+	if (!spec.itemMethod && !spec.itemsOnly && spec.items.length) {
+		const eligible = new Set(posable(rec.manifest, dirs).map((item) => item.id));
+		if (spec.items.some((id) => !eligible.has(id)))
+			throw new Error(
+				'Selected equipment no longer has standing designs for all selected views. Review the equipment selection before trying again. No generation was requested.'
+			);
+	}
 	const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
 	const published = await publishedMoveRecovery(rec, spec);
 	const minimumTier = moveMinimumTier(rec.manifest, spec);
@@ -2002,7 +2043,7 @@ export async function addMove(
 	const fresh = await loadProject(projectId),
 		frames = fresh.rec.manifest.rig.animations.find((a) => a.id === spec.id)!.cells;
 	assertReview(fresh.rec.manifest);
-	if (spec.itemReview) {
+	if (spec.itemReview && spec.itemMethod !== 'grid') {
 		const reviewed = spec.itemReview;
 		delete spec.itemReview;
 		try {
@@ -2024,23 +2065,19 @@ export async function addMove(
 				'The item frames changed before generation. Reopen the item to review them again.'
 			);
 	};
-	const plans = spec.items.flatMap((id) => {
+	const plans = spec.items.map((id) => {
 		const it = fresh.rec.manifest.items.find((i) => i.id === id);
-		return it
-			? [
-					{
-						id,
-						dirs: dirs.filter(
-							(d) =>
-								spec.itemMethod === 'grid' || !hasCompleteCells(fresh.rec.manifest, it, spec.id, d)
-						)
-					}
-				]
-			: [];
+		if (!it) throw new Error('This item changed or was removed while the move was being prepared.');
+		return {
+			id,
+			dirs: dirs.filter(
+				(d) => spec.itemMethod === 'grid' || !hasCompleteCells(fresh.rec.manifest, it, spec.id, d)
+			)
+		};
 	});
 	const itemTotal = plans.reduce((n, p) => n + p.dirs.length, 0);
 	let posed = 0;
-	onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
+	if (itemTotal) onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
 	const tick = () =>
 		onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] });
 	for (const plan of plans) {
@@ -2062,12 +2099,18 @@ export async function addMove(
 				if (!item)
 					throw new Error('This item changed or was removed while the move was being prepared.');
 				assertArtwork(current.rec.manifest, plan.id, [d]);
-				const result = await regridClip(current, item, spec.id, d, spec.seed);
+				const result = await regridClip(
+					current,
+					item,
+					spec.id,
+					d,
+					spec.seed,
+					spec.preferTierOneRepair,
+					spec.activityScope,
+					spec.reuseItemFrames
+				);
 				tick();
-				if (!result.saved)
-					throw new Error(
-						`${item.name} ${spec.id} ${d}: the repair still fails quality checks. Existing artwork was kept; review Activity before trying again.`
-					);
+				if (result.review) return { warnings: [], repairReview: result.review };
 			}
 		else
 			await poseItemClip(
@@ -2153,7 +2196,7 @@ async function addBodyClip(
 		throw new Error('This character changed since these joint checks were reviewed.');
 	const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
 	const receiptSpecHash = intent ? await recoverySpecHash(spec) : undefined;
-	const dirs = moveDirections(m, spec.dirs) as Direction[],
+	const dirs = approvedMoveDirections(m, spec) as Direction[],
 		affected = affectedMoveDirections(rig, dirs),
 		n = moveFrames(m, spec),
 		name = m.name;

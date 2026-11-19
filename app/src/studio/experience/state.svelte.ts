@@ -1,4 +1,5 @@
 /** Presentation state only. Projects, saves and paid workflows stay in Studio state. */
+import { cancelStartupUpdate } from '../../lib/startup-update.ts';
 import { resolveZoom, type SceneCamera } from './zoom.ts';
 import type { MountLegMode } from './mountLegs.ts';
 export type WorldMode = 'preview' | 'topdown' | 'side';
@@ -39,5 +40,6 @@ export function characters() {
 	experience.screen = 'characters';
 }
 export function setMode(mode: WorldMode) {
+	if (mode !== 'preview') cancelStartupUpdate();
 	experience.mode = mode;
 }

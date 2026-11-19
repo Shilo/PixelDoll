@@ -68,11 +68,53 @@ test('request preview follows the current character draft and copying never subm
 		.first();
 	await expect(character.locator(':scope > summary')).toContainText('POST');
 	await character.locator(':scope > summary').click();
+	const endpoint = character.locator('code').getByText('/create-character-v3', { exact: true });
+	await expect(endpoint).toBeVisible();
+	await endpoint.dblclick({ position: { x: 18, y: 7 } });
+	expect(await page.evaluate(() => window.getSelection()?.toString())).toContain('create');
+	const copyEndpoint = character.getByRole('button', {
+		name: /^Copy endpoint POST \/create-character-v3/
+	});
+	await character.locator(':scope > summary').focus();
+	await page.keyboard.press('Tab');
+	await expect(copyEndpoint).toBeFocused();
+	await page.keyboard.press('Enter');
+	await expect(peek(page).getByRole('status')).toHaveText(/^Endpoint copied: POST/);
+	expect(await page.evaluate(() => sessionStorage.getItem('api-peek-copy'))).toBe(
+		'/create-character-v3'
+	);
 	await expect(character).toContainText('a cheerful dwarf with freckles');
 	// Field/value presentation stays readable without opening a raw JSON document.
 	await expect(character.locator('dl:visible').first()).toBeVisible();
 	await expect(character.locator('dt')).not.toHaveCount(0);
-	await peek(page).getByRole('button', { name: 'Copy all calls', exact: true }).click();
+	const bulkCopy = peek(page).getByRole('button', { name: 'Copy all calls', exact: true });
+	const holdBulkCopy = async () => {
+		await page.evaluate(() => {
+			const clipboard = navigator.clipboard;
+			const writeText = clipboard.writeText;
+			clipboard.writeText = async (value) => {
+				clipboard.writeText = writeText;
+				await new Promise<void>((resolve) => {
+					window.addEventListener('finish-bulk-copy', () => resolve(), { once: true });
+				});
+				await writeText.call(clipboard, value);
+			};
+		});
+		await bulkCopy.click();
+	};
+	const finishBulkCopy = () =>
+		page.evaluate(() => {
+			window.dispatchEvent(new Event('finish-bulk-copy'));
+			return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+		});
+	await holdBulkCopy();
+	await copyEndpoint.click();
+	await expect(peek(page).getByRole('status')).toHaveText(/^Endpoint copied: POST/);
+	await finishBulkCopy();
+	await expect(peek(page).getByRole('status')).toHaveText(/^Endpoint copied: POST/);
+	await expect(copyEndpoint).toBeFocused();
+	await bulkCopy.click();
+	await expect(peek(page).getByRole('status')).toHaveText(/^Copied \d+ calls$/);
 	const copied = await page.evaluate(() => sessionStorage.getItem('api-peek-copy'));
 	expect(copied).toContain('/create-character-v3');
 	expect(copied).toContain('a cheerful dwarf with freckles');
@@ -81,6 +123,7 @@ test('request preview follows the current character draft and copying never subm
 	expect(exported.total.generations).toBeGreaterThan(0);
 	await expect(peek(page).locator('footer')).toContainText('Estimated total');
 	await expect(peek(page).locator('footer')).toContainText(`${exported.calls.length} calls`);
+	await holdBulkCopy();
 	await peek(page).getByRole('button', { name: 'Close API calls', exact: true }).click();
 	await expect(peek(page)).toHaveCount(0);
 	await prompt.fill('a patient elf with silver hair');
@@ -88,6 +131,10 @@ test('request preview follows the current character draft and copying never subm
 		.locator('.sheet-foot')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
+	await expect(peek(page)).toBeVisible();
+	const reopenedStatus = await peek(page).getByRole('status').innerText();
+	await finishBulkCopy();
+	await expect(peek(page).getByRole('status')).toHaveText(reopenedStatus);
 	const updated = peek(page)
 		.locator('details')
 		.filter({ has: page.locator('summary', { hasText: '/create-character-v3' }) })
@@ -117,7 +164,7 @@ test('a failed or policy-refused job shows its final status and error in the pee
 				json: {
 					id: 'stalled-job',
 					status: 'failed',
-					last_response: { error: 'Generation timed out' }
+					last_response: { code: 3006, error: 'Generation failed' }
 				}
 			});
 		if (path === '/v2/background-jobs/refused-job')
@@ -167,7 +214,7 @@ test('a failed or policy-refused job shows its final status and error in the pee
 	await page.getByRole('button', { name: 'Inspect all API calls', exact: true }).click();
 	await peek(page).getByRole('button', { name: 'Show background calls', exact: true }).click();
 	for (const [job, text] of [
-		['stalled-job', 'Job failed: Generation timed out'],
+		['stalled-job', 'Job failed: Generation failed (PixelLab code 3006)'],
 		['refused-job', 'Job refused by content policy: Request rejected by content filter']
 	]) {
 		const poll = peek(page)
@@ -185,11 +232,16 @@ test('a failed or policy-refused job shows its final status and error in the pee
 	).toEqual([
 		{
 			endpoint: '/background-jobs/stalled-job',
-			job: { status: 'failed', error: 'Generation timed out' }
+			job: { status: 'failed', error: 'Generation failed (PixelLab code 3006)', code: 3006 }
 		},
 		{
 			endpoint: '/background-jobs/refused-job',
-			job: { status: 'failed', error: 'Request rejected by content filter', policy: true }
+			job: {
+				status: 'failed',
+				error: 'Request rejected by content filter (PixelLab code 5000)',
+				code: 5000,
+				policy: true
+			}
 		}
 	]);
 });
@@ -586,6 +638,16 @@ test('mirrored saved requests show their payload and updated charge without send
 					done: true,
 					results: [],
 					usage: { type: 'generations', generations: 2 }
+				},
+				{
+					id: 'mirrored-failed-job',
+					status: 'failed',
+					done: true,
+					results: [],
+					failedAtProvider: true,
+					errorCode: 3006,
+					error: 'Generation failed (PixelLab code 3006)',
+					usage: { type: 'generations', generations: 0 }
 				}
 			]
 		});
@@ -598,8 +660,42 @@ test('mirrored saved requests show their payload and updated charge without send
 	await expect(peek(page).locator('.peek-call')).toHaveCount(1);
 	await expect(peek(page).locator('footer')).toContainText('2 gens');
 	await peek(page).locator('.peek-call > summary').click();
+	const endpoint = peek(page).getByRole('button', {
+		name: /^Copy endpoint POST \/create-character-v3/
+	});
+	await endpoint.click();
+	await expect(peek(page).getByRole('status')).toHaveText(/^Endpoint copied: POST/);
+	expect(await page.evaluate(() => sessionStorage.getItem('api-peek-copy'))).toBe(
+		'/create-character-v3'
+	);
+	await page.evaluate(() => {
+		navigator.clipboard.writeText = async () => {
+			throw new DOMException('Clipboard unavailable', 'NotAllowedError');
+		};
+	});
+	await endpoint.press('Space');
+	await expect(peek(page).getByRole('status')).toHaveText(
+		'Could not copy automatically. Use the endpoint field to copy manually.'
+	);
+	const manual = peek(page).getByRole('textbox', { name: 'Endpoint for manual copy' });
+	await expect(manual).toBeFocused();
+	await expect(manual).toHaveAttribute('readonly', '');
+	await expect(manual).toHaveValue('/create-character-v3');
+	expect(
+		await manual.evaluate((field: HTMLInputElement) =>
+			field.value.slice(field.selectionStart!, field.selectionEnd!)
+		)
+	).toBe('/create-character-v3');
+	await expect(peek(page).locator('.request-endpoint code')).toBeVisible();
+	const download = page.waitForEvent('download');
+	await peek(page).getByRole('button', { name: 'Copy all calls', exact: true }).click();
+	expect((await download).suggestedFilename()).toBe('pixeldoll-calls.json');
+	await expect(peek(page).getByRole('status')).toHaveText('Saved calls as JSON');
 	await expect(peek(page)).toContainText('Saved request');
 	await expect(peek(page)).toContainText('a saved dwarf request');
+	await expect(peek(page)).toContainText(
+		'Job mirrored-failed-job failed: Generation failed (PixelLab code 3006)'
+	);
 	await page.evaluate(async () => {
 		const dbPath = '/src/lib/store/db.ts',
 			queuePath = '/src/lib/pixellab/queue.ts';
@@ -861,6 +957,23 @@ test('attached phone peeks stay above their sheet and dismiss without losing the
 	await expect(peek(page)).toBeVisible();
 	await expect(peek(page)).toHaveAttribute('data-positioned', '');
 	await expect(peek(page).locator('.bu-popover-arrow')).toBeVisible();
+	const firstCall = peek(page).locator('.peek-call').first();
+	await firstCall.locator(':scope > summary').click();
+	const copyEndpoint = firstCall.getByRole('button', { name: /^Copy endpoint / });
+	await copyEndpoint.scrollIntoViewIfNeeded();
+	const target = (await copyEndpoint.boundingBox())!;
+	expect(target.width).toBeGreaterThanOrEqual(44);
+	expect(target.height).toBeGreaterThanOrEqual(44);
+	const touch = await context.newCDPSession(page);
+	await touch.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+	await touch.send('Input.dispatchTouchEvent', {
+		type: 'touchStart',
+		touchPoints: [{ x: target.x + target.width / 2, y: target.y + target.height / 2 }]
+	});
+	await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+	await expect(peek(page).getByRole('status')).toHaveText(/^Endpoint copied:/);
+	await touch.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+	await touch.detach();
 	// A nonmodal native popover belongs to the sheet's top layer; no nested native dialog.
 	await expect(page.locator('dialog[open]')).toHaveCount(1);
 	expect(await peek(page).evaluate((element) => element.closest('dialog')?.open)).toBe(true);
@@ -901,7 +1014,11 @@ test('attached phone peeks stay above their sheet and dismiss without losing the
 	await expect(prompt).toHaveValue('a tiny woodland ranger');
 	await inspect.click();
 	await expect(peek(page)).toBeVisible();
-	await peek(page).locator('button:not([disabled]), summary, [tabindex="0"]').last().focus();
+	const lastControl = peek(page)
+		.locator(':is(button:not([disabled]), summary, [tabindex="0"]):visible')
+		.last();
+	await lastControl.focus();
+	await expect(lastControl).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect
 		.poll(() => peek(page).evaluate((element) => element.contains(document.activeElement)))

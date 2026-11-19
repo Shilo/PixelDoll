@@ -1,5 +1,10 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { gridRepairRequest, regridClip, type RigCtx } from '../../src/lib/items/run.ts';
+import {
+	applyRepairReview,
+	gridRepairRequest,
+	regridClip,
+	type RigCtx
+} from '../../src/lib/items/run.ts';
 import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts';
 import * as db from '../../src/lib/store/db.ts';
 import * as store from '../../src/lib/store/project.ts';
@@ -155,25 +160,39 @@ async function fixture(mode = 'pass', pad = 16, bladeEnd = 52) {
 	};
 	let current = structuredClone(ctx.rec),
 		saved: Item | undefined;
+	vi.spyOn(store, 'loadProject').mockImplementation(async () => ({ ...ctx, rec: current }));
 	vi.spyOn(db, 'getBlob').mockImplementation(async (hash) => blobs.get(hash));
 	const save = vi
 		.spyOn(store, 'saveItem')
 		.mockImplementation(async (_id, next, _images, _slots, check) => {
 			check?.(current);
 			saved = next;
+			current.manifest.items = current.manifest.items.map((entry) =>
+				entry.id === next.id ? next : entry
+			);
 		});
 	const enqueue = vi.spyOn(queue, 'enqueue').mockImplementation(async (req) => {
-		if (mode === 'lost') return { state: 'lost', error: 'unknown test response' } as JobRec;
-		const raw = (req.body as { inpainting_image: { image: { base64: string } } }).inpainting_image
-			.image.base64;
+		if (mode === 'lost' || (mode === 'lost-second' && enqueue.mock.calls.length === 2))
+			return { state: 'lost', error: 'unknown test response' } as JobRec;
+		const body = req.body as {
+			description: string;
+			inpainting_image: { image: { base64: string } };
+		};
+		const raw = body.inpainting_image.image.base64;
 		const grid = mode === 'geometry' ? makeImg(256, 192) : await decodePngBytes(base64ToBytes(raw));
 		const cols = grid.w / side;
-		for (let i = 0; i < 8 && mode !== 'geometry'; i++) {
+		const targets = Number(/The first (\d+) frames/.exec(body.description)?.[1]);
+		for (let i = 0; i < targets && mode !== 'geometry'; i++) {
 			const ox = (i % cols) * side,
 				oy = Math.floor(i / cols) * side;
 			for (let y = mode === 'outside-mask' ? 0 : 9 + pad; y < 31 + pad; y++)
 				for (let x = 23 + pad; x < 26 + pad; x++)
-					grid.data.set([180, 180, 190, 255], ((oy + y) * grid.w + ox + x) * 4);
+					grid.data.set(
+						mode === 'palette-second' && enqueue.mock.calls.length === 2
+							? [220, 20, 170, 255]
+							: [180, 180, 190, 255],
+						((oy + y) * grid.w + ox + x) * 4
+					);
 			if (mode === 'fail')
 				for (let y = 35; y < 50; y++)
 					for (let x = 45; x < 51; x++)
@@ -263,6 +282,56 @@ test('successful fixed-frame repair retains96px pivot, other directions and idle
 	expect(f.ctx.rec.manifest.rig).toEqual(f.current().manifest.rig);
 });
 
+test('Tier 1 splits a 96px facing and saves eight ordered frames once with per-batch provenance', async () => {
+	const f = await fixture();
+	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
+	expect(result.saved).toBe(true);
+	expect(f.save).toHaveBeenCalledTimes(1);
+	expect(f.enqueue).toHaveBeenCalledTimes(3);
+	for (const [request] of f.enqueue.mock.calls) {
+		const { size } = (
+			request.body as { inpainting_image: { size: { width: number; height: number } } }
+		).inpainting_image;
+		expect(Math.max(size.width, size.height)).toBeLessThanOrEqual(256);
+	}
+	expect(f.saved()?.provenance.map((record) => record.produced.length)).toEqual([3, 3, 2]);
+	expect(result.cells.map((cell) => cell.key)).toEqual(
+		Array.from({ length: 8 }, (_, index) => `slash/west/${index}`)
+	);
+});
+
+test('Tier 1 stops after an unknown second batch without publishing or resending', async () => {
+	const f = await fixture('lost-second');
+	await expect(regridClip(f.ctx, f.item, 'slash', 'west', 123, true)).rejects.toThrow(
+		'unknown test response'
+	);
+	expect(f.enqueue).toHaveBeenCalledTimes(2);
+	expect(f.save).not.toHaveBeenCalled();
+});
+
+test('Tier 1 does not publish a facing with a visibly different batch palette', async () => {
+	const f = await fixture('palette-second');
+	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
+	expect(result.saved).toBe(false);
+	expect(result.qa.failCalls.get(1)).toEqual(
+		expect.arrayContaining([expect.stringMatching(/^G6 /)])
+	);
+	expect(f.save).not.toHaveBeenCalled();
+	expect(result.review?.findings).toEqual(expect.arrayContaining([expect.stringMatching(/^G6 /)]));
+	expect(result.review?.clip.out.provenance.map((record) => record.produced.length)).toEqual([
+		3, 3, 2
+	]);
+});
+
+test('cache-only repair with missing results does not enqueue or change the item', async () => {
+	const f = await fixture();
+	await expect(
+		regridClip(f.ctx, f.item, 'slash', 'west', 123, true, undefined, true)
+	).rejects.toThrow('No generation was requested');
+	expect(f.enqueue).not.toHaveBeenCalled();
+	expect(f.save).not.toHaveBeenCalled();
+});
+
 test('compact repair submits, masks and decodes the same three-column layout', async () => {
 	const f = await fixture('pass', 8),
 		result = await regridClip(f.ctx, f.item, 'slash', 'west', 123);
@@ -308,13 +377,36 @@ test('a production grid repair clips connected provider spill to its submitted m
 	}
 	expect(f.enqueue).toHaveBeenCalledOnce();
 });
-test('failed quality keeps old pixels and never calls publication', async () => {
+test('flagged repair preserves old artwork until the saved candidate is applied with no new job', async () => {
 	const f = await fixture('fail'),
 		before = structuredClone(f.item),
 		r = await regridClip(f.ctx, f.item, 'slash', 'west', 123);
 	expect(r.saved).toBe(false);
 	expect(f.save).not.toHaveBeenCalled();
 	expect(f.item).toEqual(before);
+	expect(r.review?.current).toHaveLength(8);
+	expect(r.review?.replacement).toHaveLength(8);
+	expect(r.review?.replacement).not.toEqual(r.review?.current);
+	const review = structuredClone(r.review!);
+	const stored = f.current().manifest.items.find((item) => item.id === f.item.id)!;
+	stored.materials = ['edited while reviewing'];
+	stored.hides = ['back'];
+	await applyRepairReview(f.ctx.rec.id, review);
+	await applyRepairReview(f.ctx.rec.id, review);
+	expect(f.enqueue).toHaveBeenCalledOnce();
+	expect(f.save).toHaveBeenCalledOnce();
+	expect(f.saved()?.materials).toEqual(stored.materials);
+	expect(f.saved()?.hides).toEqual(stored.hides);
+	expect(f.saved()?.layers[0].cells?.slash?.east).toEqual(before.layers[0].cells?.slash?.east);
+	expect(f.saved()?.qa?.clips['slash/west']?.status).toBe('fail');
+});
+test('applying a reviewed repair cannot overwrite an item edited since generation', async () => {
+	const f = await fixture('fail');
+	const { review } = await regridClip(f.ctx, f.item, 'slash', 'west', 123);
+	f.current().manifest.items.find((item) => item.id === f.item.id)!.name = 'Newer item';
+	await expect(applyRepairReview(f.ctx.rec.id, review!)).rejects.toThrow('changed while');
+	expect(f.saved()).toBeUndefined();
+	expect(f.enqueue).toHaveBeenCalledOnce();
 });
 test.each(['geometry', 'lost'] as const)(
 	'invalid or unknown %s output cannot publish',

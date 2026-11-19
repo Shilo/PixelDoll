@@ -36,6 +36,7 @@ export interface Keypoint {
 export interface RestView {
 	image: Sha256;
 	keypoints: Keypoint[];
+	registrationOnly?: true;
 }
 /** How one clip-direction was made. Stored, never regenerated (PixelLab is not bit-repeatable). */
 export interface ClipSource {

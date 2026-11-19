@@ -3,10 +3,19 @@
 import { exportZip } from './export.ts';
 import { storeVariants, variantOf } from '../dress/dress.ts';
 import { itemHashes } from '../equipment/copy.ts';
+import { SLOTS } from '../items/slots.ts';
 import { retainMoves } from '../rig/moves.ts';
-import { DEFAULT_MOVE } from '../rig/rig.ts';
+import { cellHash, DEFAULT_MOVE } from '../rig/rig.ts';
+import { validEquipment } from '../runtime/paperdoll.js';
+import { leaveEmptyFrames, recoverArtwork } from './recovery.ts';
 import { applyExportSettings, type ExportSettings } from '../store/export-settings.ts';
-import type { ImportedCharacter } from '../store/import.ts';
+import {
+	fitsEditableImage,
+	hashPattern,
+	hasVisibleBase,
+	manifestShape,
+	type ImportedCharacter
+} from '../store/import.ts';
 import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
 
 export type Look = Pick<Preset, 'items' | 'variants'> & Partial<Pick<Preset, 'id' | 'name'>>;
@@ -40,8 +49,7 @@ export function outfitProject(
 	return { ...selected, look: { ...saved, ...selected.look } };
 }
 
-/** The export in one format: the look given (the current outfit) first, then the saved outfits. */
-export function buildExport(
+async function requestedExport(
 	p: Project,
 	o: {
 		engine: Engine;
@@ -62,12 +70,137 @@ export function buildExport(
 		...p.manifest.presets.filter((x) => x.id !== 'current' && x.id !== current.id)
 	];
 	const manifest = structuredClone({ ...p.manifest, presets }) as Manifest;
+	const warnings = new Set<string>();
+	for (const preset of manifest.presets) {
+		const omitted: string[] = [];
+		for (const [slot, item] of Object.entries(preset.items)) {
+			if (slot === 'body' || validEquipment(manifest, slot, item)) continue;
+			delete preset.items[slot];
+			if (item != null)
+				omitted.push(
+					manifest.slots.find((entry) => entry.id === slot)?.label ??
+						SLOTS.find((entry) => entry.id === slot)?.label ??
+						slot.replace(/[_-]/g, ' ')
+				);
+		}
+		if (omitted.length)
+			warnings.add(`${preset.name}: Missing equipment was left out (${omitted.join(', ')}).`);
+	}
 	applyExportSettings(manifest, o.settings);
 	storeVariants(manifest, ...presets.map((x) => x.variants));
+	for (const warning of leaveEmptyFrames({ manifest, images: p.images })) warnings.add(warning);
+	const blocked = (problem: string, errors: string[] = []) => ({
+		zip: null,
+		entries: [],
+		warnings: [...warnings],
+		errors,
+		problem
+	});
+	try {
+		manifestShape(manifest);
+	} catch (error) {
+		return blocked('This character does not fit the export limits.', [String(error)]);
+	}
+	if (!hasVisibleBase({ manifest, images: p.images }))
+		return blocked('The body has no visible frames.');
+	const images: Project['images'] = new Map();
+	const missing = new Set<string>();
+	async function include(hash: string) {
+		if (images.has(hash)) return true;
+		if (missing.has(hash)) return false;
+		const image = p.images.get(hash);
+		if (
+			!image ||
+			!hashPattern.test(hash) ||
+			!fitsEditableImage(image) ||
+			(await cellHash(image)) !== hash
+		) {
+			missing.add(hash);
+			return false;
+		}
+		images.set(hash, image);
+		return true;
+	}
+	for (const view of Object.keys(manifest.rig.rest ?? {}) as (keyof NonNullable<
+		Manifest['rig']['rest']
+	>)[]) {
+		const rest = manifest.rig.rest?.[view];
+		if (rest && !(await include(rest.image))) {
+			delete manifest.rig.rest![view];
+			warnings.add('Missing body reference images were left out of the editable copy.');
+		}
+	}
+	for (const item of manifest.items) {
+		for (const facing of Object.keys(item.dressed ?? {}) as (keyof NonNullable<
+			Item['dressed']
+		>)[]) {
+			const hash = item.dressed?.[facing];
+			if (hash && !(await include(hash))) {
+				delete item.dressed![facing];
+				warnings.add(`${item.name}: Missing reference images were left out of the editable copy.`);
+			}
+		}
+		for (const hash of itemHashes(item))
+			if (!(await include(hash))) return blocked('Some saved images are damaged.');
+	}
 	return exportZip(
-		{ manifest, images: p.images },
-		{ engines: [o.engine], baked: o.baked, projectData: o.projectData }
+		{ manifest, images },
+		{
+			engines: [o.engine],
+			baked: o.baked,
+			projectData: o.projectData
+		},
+		[...warnings]
 	);
+}
+
+export async function buildExport(
+	project: Project,
+	options: Parameters<typeof requestedExport>[1]
+) {
+	let problem = 'Could not build this export.';
+	let errors: string[] = [];
+	let retryable = false;
+	try {
+		const result = await requestedExport(project, options);
+		if (result.zip) return { ...result, kind: 'requested' as const };
+		problem = result.problem ?? problem;
+		errors = result.errors;
+	} catch (error) {
+		console.error('Could not build export', error);
+		retryable = true;
+	}
+	try {
+		const recovery = await recoverArtwork(project, problem);
+		if (recovery)
+			return {
+				kind: 'recovery' as const,
+				...recovery,
+				problem,
+				errors,
+				warnings: recovery.skipped ? ['Some source images could not be included.'] : []
+			};
+		return {
+			kind: 'failed' as const,
+			zip: null,
+			entries: [],
+			problem,
+			errors,
+			warnings: [],
+			retryable
+		};
+	} catch (error) {
+		console.error('Could not build recovery ZIP', error);
+		return {
+			kind: 'failed' as const,
+			zip: null,
+			entries: [],
+			problem: 'The artwork ZIP could not be prepared.',
+			errors,
+			warnings: [],
+			retryable: true
+		};
+	}
 }
 
 const covers = (it: Item) =>

@@ -52,7 +52,7 @@ sequence + the route** that produced it. Generation is **not bit-repeatable** (s
 | Rest views | The padded drawn rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe. | [S3] |
 | Directions | New forms default to the **Top-down 8** preset: five drawn views plus western flips. Other presets (Top-down 4, Diagonal 4, Side-scroller 2, Unique 8) and per-direction mirror toggles choose which views are drawn; Unique 8 preserves original western rotations. The initial text-only v3 request retains default eight rotations; the reference import registers all eight original views (`n_directions: 8`). An in-flight creation saved before explicit direction plans is not resumed. `rig.directions[].mirrorOf` is canonical; independent rows have no mirror link. Western authored actions use the actual western rest pose and retain anatomical joint labels. | [M2, S3, B15, professional audit] |
 | Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalized 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |
-| Clips | New Studio characters start with **`default`** only: one standing frame per direction (the rest view, source `imported-rest`) [D26]. **Add idle + walk** queues `idle` (4) and `walk` (8); add moves such as `slash` (8), `hurt` (6), `run`, `cast` or `death` the same way. Older rigs were created with idle and walk. Playlist `frames[{cell, ms}]`. | [S3, S4, Studio create] |
+| Clips | New Studio characters start with **`default`** only: one standing frame per direction (the rest view, source `imported-rest`) [D26]. **Add a move** generates one preset or described move at a time, including `idle` (4) and `walk` (8). Older rigs were created with idle and walk. Playlist `frames[{cell, ms}]`. | [S3, S4, Studio create] |
 | Pivot | Integer, top-left origin, pixel-edge coords: `x = w/2`, `y` = feet line of `idle/south/0`, else the first move's south cell (`default/south/0`, the standing south view, on new characters; moves added later keep it). Lunges and death may leave it (QA tolerance per clip). | [M2, S4] |
 | Frozen frame | Binary alpha; every component kept and detached ones reported for review (skeleton-v3 adds detached motion-smear FX on 7/15 clips; §3.2); SHA-256 per cell; `baseHash` over all cells. | [S3] |
 
@@ -99,10 +99,8 @@ or estimate calls run at creation: about 2.25 gens up to a 90 px body (3.25 up t
 the creator as soon as the draw is normalized (`onViews`). The animation workflow and every PixelLab request body are
 unchanged: skeleton-v3 is deferred for replacement ([review §15–§17](research/generation-pipeline-review-2026-10-25.md)).
 
-- **Add idle + walk** (creator result and Moves; `BaseMoves.svelte`, `baseMoveSpecs`) queues the missing base moves for the
-  body only (`items: []`, as the progressive equipment decision in PLAN requires), one random seed, and the request shapes
-  creation used to send (authored idle, managed walk → estimates → raw render), so it costs what creation used to spend
-  (≈ 11 gens per drawn direction). Each item extends to these moves through its own priced offer.
+- **Add a move** (`MoveSheet.svelte`) prices one move before queuing it. Idle uses authored keypoints and Walk uses
+  managed motion; both render against the standing body. Equipment is unchecked by default and can be generated later.
 - **Move queue** (`queueMoves` in `state.svelte.ts`): moves run one at a time, FIFO, through the unchanged `addMove`; Add a
   move queues behind a running move ("Queue another move") and never queues the same move twice. The
   queue is persisted with the running move's record (`studio-move`), and the next move replaces that record in one write.
