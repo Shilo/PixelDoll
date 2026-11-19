@@ -49,6 +49,7 @@
 	} from './state.svelte.ts';
 	import {
 		Check,
+		Archive,
 		ChevronLeft,
 		ChevronRight,
 		Download,
@@ -545,23 +546,41 @@
 		<hr />
 		{#if !workspaceCopy}
 			<!-- Workspace: export or open a copy independently of the active character. -->
-			<button
-				class="row bu-action"
-				data-variant="quiet"
-				onclick={() => {
-					closeOptions();
-					ui.sheet = 'workspaceExport';
-				}}><Download size={18} /><span class="row-name">Export my workspace</span></button
+			<button class="row bu-action" data-variant="quiet" popovertarget="workspace-options">
+				<Archive size={18} />
+				<span class="row-name">Workspace...</span>
+				<ChevronRight size={16} aria-hidden="true" />
+			</button>
+			<div
+				id="workspace-options"
+				class="menu bu-popover-anchor"
+				data-placement="bottom-end"
+				popover
+				role="group"
+				aria-label="Workspace actions"
+				ontoggle={(event) => popoverFocus(event)}
 			>
-			<a
-				class="row bu-action"
-				data-variant="quiet"
-				href={workspaceUrl(true)}
-				target="_blank"
-				rel="noopener"
-				onclick={closeOptions}
-				><FileArchive size={18} /><span class="row-name">Open workspace copy</span></a
-			>
+				<PopoverArrow />
+				<div class="menu-surface bu-popover-surface bu-floating">
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						onclick={() => {
+							closeOptions();
+							ui.sheet = 'workspaceExport';
+						}}><Download size={18} /><span class="row-name">Export my workspace</span></button
+					>
+					<a
+						class="row bu-action"
+						data-variant="quiet"
+						href={workspaceUrl(true)}
+						target="_blank"
+						rel="noopener"
+						onclick={closeOptions}
+						><FileArchive size={18} /><span class="row-name">Open workspace copy</span></a
+					>
+				</div>
+			</div>
 			<hr />
 		{/if}
 		<!-- App info: installation, updates, source code, and build version. -->

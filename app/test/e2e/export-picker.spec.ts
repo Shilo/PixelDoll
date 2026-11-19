@@ -127,7 +127,18 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 		return { id, otherId: other.id, item: item.id, uniqueHash: uniqueHash.slice(7) };
 	});
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Export my workspace' }).click();
+	const workspace = page.getByRole('button', { name: 'Workspace...', exact: true });
+	const workspaceActions = page.getByRole('group', { name: 'Workspace actions' });
+	const exportWorkspace = workspaceActions.getByRole('button', { name: 'Export my workspace' });
+	await expect(page.getByRole('button', { name: 'Export my workspace' })).toBeHidden();
+	await expect(page.getByRole('link', { name: 'Open workspace copy' })).toBeHidden();
+	await workspace.press('Enter');
+	await expect(exportWorkspace).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect(workspaceActions).toBeHidden();
+	await expect(workspace).toBeFocused();
+	await workspace.press('Enter');
+	await exportWorkspace.click();
 	const exportDialog = page.getByRole('dialog', { name: 'Export my workspace' });
 	await expect(
 		exportDialog.getByRole('checkbox', { name: 'Include recent errors' })
@@ -204,8 +215,9 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 		expect.objectContaining({ tool: 'edit-animation-v2', outcome: 'lost' })
 	);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await workspace.click();
 	const waitCopy = page.waitForEvent('popup');
-	await page.getByRole('link', { name: 'Open workspace copy' }).click();
+	await workspaceActions.getByRole('link', { name: 'Open workspace copy' }).click();
 	const copy = await waitCopy;
 	const picker = copy.getByLabel('Choose workspace ZIP');
 	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();

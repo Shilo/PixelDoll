@@ -336,12 +336,12 @@ selected equipment posing. The previous body remains if any quality check still 
 
 ## Export
 
-To share your whole saved library for troubleshooting, choose **More options → Export my workspace**.
+To share your whole saved library for troubleshooting, choose **More options → Workspace... → Export my workspace**.
 The ZIP includes your saved characters, artwork, items, moves, outfits, and workspace settings. **Include recent errors**
 adds your PixelLab tier and a summary of failed and unfinished requests. Your key, request bodies, and unfinished drafts
 are not included. The ZIP does include artwork and saved prompts, so share it privately with someone you trust.
 
-Choose **More options → Open workspace copy**, then drop the ZIP in the box or click the box to choose it. The
+Choose **More options → Workspace... → Open workspace copy**, then drop the ZIP in the box or click the box to choose it. The
 `?workspace-copy` address opens a separate, temporary copy. You can inspect or change the copy
 without changing your own library. PixelLab is off and no jobs restart. Close or reload the tab to discard the copy and
 its edits. This is not a backup restore or merge. Export and open keep usable records and artwork when some data is
