@@ -98,7 +98,7 @@
 	<div class="reference-row">
 		<button
 			type="button"
-			class={['drop', empty ? 'bu-tile bu-focus' : 'bu-action']}
+			class={['drop', { attached: !!value }, empty ? 'bu-tile bu-focus' : 'bu-action']}
 			bind:this={drop}
 			data-variant={empty ? 'empty' : dragging ? 'primary' : 'outline'}
 			aria-label={loading
@@ -214,19 +214,26 @@
 		justify-content: flex-start;
 		gap: 10px;
 	}
+	.drop.attached {
+		padding-block: 4px;
+	}
 	.drop > :global(svg) {
 		flex: none;
 		pointer-events: none;
 	}
 	.drop .reference-thumbnail {
-		width: 40px;
-		height: 40px;
+		flex: 1;
+		width: 100%;
+		height: 0;
+		min-height: 0;
 		overflow: hidden;
 		image-rendering: pixelated;
 	}
 	.compact .drop .reference-thumbnail {
-		width: 32px;
-		height: 32px;
+		flex: none;
+		width: auto;
+		height: 100%;
+		max-width: calc(100% - min(50%, 8rem) - 10px);
 	}
 	.reference-copy {
 		display: grid;

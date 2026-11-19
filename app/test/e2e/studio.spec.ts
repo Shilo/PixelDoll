@@ -1965,7 +1965,8 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	expect(dropHeight).toBeLessThan(80);
 	const artwork = makeImg(16, 16);
 	const filename = `${'festival-hat-revision-'.repeat(6)}reference.png`;
-	artwork.data.set([20, 150, 24, 255], 16 * 4 + 4);
+	for (let column = 1; column < 13; column++)
+		artwork.data.set([20, 150, 24, 255], (16 + column) * 4);
 	await (
 		await choose
 	).setFiles({
@@ -1977,12 +1978,22 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 		name: 'Choose a different reference image',
 		exact: true
 	});
-	await expect(attachment.locator('svg')).toHaveAttribute('viewBox', '1 1 1 1');
+	const thumbnail = attachment.locator('svg');
+	await expect(thumbnail).toHaveAttribute('viewBox', '1 1 12 1');
+	expect(
+		await thumbnail.evaluate(
+			(svg: SVGSVGElement) => svg.viewBox.baseVal.width * svg.getScreenCTM()!.a
+		)
+	).toBeGreaterThan(dropHeight);
 	await expect(attachment.locator('image')).toHaveAttribute('width', '16');
 	await expect(attachment).toHaveAccessibleDescription(new RegExp(filename.replace('.', '\\.')));
 	await expect(item.getByRole('status').filter({ hasText: 'Reference attached.' })).toBeAttached();
 	expect((await attachment.boundingBox())!.height).toBeCloseTo(dropHeight);
-	await expect(attachment.getByText('16 × 16 px', { exact: true })).toBeInViewport();
+	const dimensions = attachment.getByText('16 × 16 px', { exact: true });
+	await expect(dimensions).toBeInViewport();
+	const dimensionsBox = (await dimensions.boundingBox())!;
+	const attachmentBox = (await attachment.boundingBox())!;
+	expect(dimensionsBox.x + dimensionsBox.width).toBeLessThan(attachmentBox.x + attachmentBox.width);
 	expect(
 		await attachment
 			.getByText(filename, { exact: true })
