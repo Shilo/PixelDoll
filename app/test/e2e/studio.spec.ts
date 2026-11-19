@@ -5023,6 +5023,9 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	const sword = sheet.getByRole('checkbox', { name: /Steel longsword/ });
 	await expect(sword).toHaveCount(0);
 	await expect(sheet).toContainText(
+		'Only equipment fitted to every selected view can be animated here.'
+	);
+	await expect(sheet).not.toContainText(
 		'Shared copies can still be worn in views where they have frames.'
 	);
 	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
