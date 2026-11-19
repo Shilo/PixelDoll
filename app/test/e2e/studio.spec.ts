@@ -3139,9 +3139,11 @@ async function busyFirstTab(
 		.fill('a cheerful copper clockwork scout');
 	await create.getByRole('button', { name: /^Create/ }).click();
 	const activity = second.getByRole('dialog', { name: 'Activity', exact: true });
-	await expect(activity).toContainText(
-		'Close that tab and it starts here, or press Done to cancel.'
-	);
+	const notice = activity.locator('.act-list > :first-child');
+	await expect(notice.getByRole('heading', { name: 'Waiting for another tab' })).toBeVisible();
+	await expect(notice).toContainText('Keep Activity open');
+	await expect(activity.getByText('Nothing generating.', { exact: true })).toHaveCount(0);
+	await expect(activity.getByRole('button', { name: 'Cancel request', exact: true })).toBeVisible();
 	return { second, activity };
 }
 
@@ -3172,29 +3174,33 @@ test('a click waiting on a busy first tab continues as soon as that tab is idle,
 	expect(posts).toEqual([]);
 });
 
-test('leaving Activity by Back cancels a waiting click, so closing the busy tab later starts nothing', async ({
-	page,
-	context
-}) => {
-	const posts: string[] = [];
-	const { second, activity } = await busyFirstTab(page, context, posts);
-	await second.goBack();
-	await expect(activity).toHaveCount(0);
-	await second.getByRole('button', { name: 'More options', exact: true }).click();
-	await second
-		.locator('#experience-options')
-		.getByRole('button', { name: /Activity/ })
-		.click();
-	await expect(activity).toBeVisible();
-	await expect(activity).not.toContainText('Close that tab and it starts here');
-	await page.close(); // with Activity open again, as a user who only looks
-	await expect(activity).not.toContainText('Running in another tab', { timeout: 15000 });
-	await second.waitForTimeout(1000); // the takeover has resumed; nothing waits to run
-	await expect(second.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toHaveCount(
-		0
-	);
-	expect(posts).toEqual([]);
-});
+for (const dismissal of ['Back', 'Cancel request'] as const) {
+	test(`leaving Activity by ${dismissal} cancels a waiting click, so closing the busy tab later starts nothing`, async ({
+		page,
+		context
+	}) => {
+		const posts: string[] = [];
+		const { second, activity } = await busyFirstTab(page, context, posts);
+		if (dismissal === 'Back') await second.goBack();
+		else await activity.getByRole('button', { name: dismissal, exact: true }).click();
+		await expect(activity).toHaveCount(0);
+		await second.getByRole('button', { name: 'More options', exact: true }).click();
+		await second
+			.locator('#experience-options')
+			.getByRole('button', { name: /Activity/ })
+			.click();
+		await expect(activity).toBeVisible();
+		await expect(activity.getByRole('heading', { name: 'Waiting for another tab' })).toHaveCount(0);
+		await expect(activity.getByRole('button', { name: 'Done', exact: true })).toBeVisible();
+		await page.close(); // with Activity open again, as a user who only looks
+		await expect(activity).not.toContainText('Running in another tab', { timeout: 15000 });
+		await second.waitForTimeout(1000); // the takeover has resumed; nothing waits to run
+		await expect(second.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toHaveCount(
+			0
+		);
+		expect(posts).toEqual([]);
+	});
+}
 
 test('a tab that is not running the generations still opens New item from an item’s menu', async ({
 	page,
