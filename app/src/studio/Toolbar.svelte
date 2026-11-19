@@ -496,15 +496,15 @@
 						/></label
 					>
 					<label class="row bu-check"
-						><UserRound size={18} aria-hidden="true" /><span class="row-name wardrobe-current"
-							><span class="faint small">(Current)</span><span class="wardrobe-current-name"
-								>{name}</span
+						><UserRound size={18} aria-hidden="true" /><span class="row-name wardrobe-character"
+							><span class="wardrobe-character-name">{name}</span><span class="faint small"
+								>(Current)</span
 							></span
 						>{#if hideSharedForAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}<input
 							class="bu-switch"
 							type="checkbox"
 							role="switch"
-							aria-label={`Hide shared items for (Current) ${name}${hideSharedForAll ? ' (All characters is on)' : ''}`}
+							aria-label={`Hide shared items for ${name} (Current)${hideSharedForAll ? ' (All characters is on)' : ''}`}
 							checked={sharedItemsHidden(doc.id)}
 							disabled={hideSharedForAll}
 							onchange={(event) =>
@@ -516,7 +516,11 @@
 					{#if !isDemo()}
 						<label class="row bu-check">
 							<LayoutTemplate size={18} aria-hidden="true" />
-							<span class="row-name">{DEMO_NAME} <span class="faint small">(Demo)</span></span>
+							<span class="row-name wardrobe-character">
+								<span class="wardrobe-character-name">{DEMO_NAME}</span><span class="faint small"
+									>(Demo)</span
+								>
+							</span>
 							{#if hideSharedForAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
 							<input
 								class="bu-switch"
@@ -718,11 +722,15 @@
 </div>
 
 <style>
-	.wardrobe-current {
+	.wardrobe-character {
 		display: flex;
+		align-items: baseline;
 		gap: 0.35em;
 	}
-	.wardrobe-current-name {
+	.wardrobe-character .small {
+		flex: none;
+	}
+	.wardrobe-character-name {
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;

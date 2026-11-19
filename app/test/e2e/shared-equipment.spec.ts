@@ -248,7 +248,7 @@ test('a shared custom category appears before adoption and stays after wearing a
 		exact: true
 	});
 	const thisCharacter = visibility.getByRole('switch', {
-		name: /^Hide shared items for \(Current\)/
+		name: /^Hide shared items for .+ \(Current\)/
 	});
 	const allCharacters = visibility.getByRole('switch', {
 		name: 'Hide shared items for all characters'
@@ -293,13 +293,13 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await pickCharacter('Giant');
 	await expect(sharedTiles.first()).toBeVisible();
 	await openSettings();
-	await expect(thisCharacter).toHaveAccessibleName('Hide shared items for (Current) Giant');
+	await expect(thisCharacter).toHaveAccessibleName('Hide shared items for Giant (Current)');
 	await expect(thisCharacter).not.toBeChecked();
 	await allCharacters.check();
 	await expect(thisCharacter).toBeDisabled();
 	await expect(thisCharacter).toBeChecked();
 	await expect(thisCharacter).toHaveAccessibleName(
-		'Hide shared items for (Current) Giant (All characters is on)'
+		'Hide shared items for Giant (Current) (All characters is on)'
 	);
 	await expect(sharedTiles).toHaveCount(0);
 	await allCharacters.focus();
@@ -358,10 +358,10 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await page.setViewportSize({ width: 390, height: 844 });
 	await openSettings();
 	await expect(thisCharacter).toBeChecked();
-	await expect(thisCharacter).toHaveAccessibleName(`Hide shared items for (Current) ${longName}`);
-	const currentPrefix = visibility.getByText('(Current)', { exact: true });
-	await expect(currentPrefix).toBeInViewport({ ratio: 1 });
-	expect(await currentPrefix.evaluate((label) => label.scrollWidth <= label.clientWidth)).toBe(
+	await expect(thisCharacter).toHaveAccessibleName(`Hide shared items for ${longName} (Current)`);
+	const currentSuffix = visibility.getByText('(Current)', { exact: true });
+	await expect(currentSuffix).toBeInViewport({ ratio: 1 });
+	expect(await currentSuffix.evaluate((label) => label.scrollWidth <= label.clientWidth)).toBe(
 		true
 	);
 	expect(
