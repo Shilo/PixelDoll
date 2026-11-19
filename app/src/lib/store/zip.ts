@@ -98,7 +98,6 @@ export async function zip(entries: ZipEntry[], { deflate = false } = {}): Promis
 export const MAX_ZIP_BYTES = 64 * 1024 * 1024;
 export const MAX_ZIP_ENTRIES = 5000;
 const MAX_EXPANDED = 128 * 1024 * 1024;
-export const MAX_ZIP_ENTRIES = 5000;
 
 export function fitsEditableZip(entries: readonly ZipEntry[]): boolean {
 	let total = 0;
