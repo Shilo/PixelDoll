@@ -185,7 +185,7 @@ export function framePosition(
 	};
 }
 
-export function standingFrame(project: Project, direction: DirectionName, body?: Frame): Frame {
+function measuredStandingFrame(project: Project, direction: DirectionName): Frame | null {
 	const rig = project.manifest.rig;
 	const mirror = rig.directions.find((entry) => entry.id === direction)?.mirrorOf;
 	const authored = rig.rest?.[direction];
@@ -204,7 +204,30 @@ export function standingFrame(project: Project, direction: DirectionName, body?:
 				x: rig.pivot.x - (flip ? rig.cell.w - pixels.right : pixels.left),
 				y: rig.pivot.y - pixels.top
 			}
-		: (body ?? paintedFrame(project, {}, direction));
+		: null;
+}
+
+export function standingFrame(project: Project, direction: DirectionName, body?: Frame): Frame {
+	return measuredStandingFrame(project, direction) ?? body ?? paintedFrame(project, {}, direction);
+}
+
+export function characterBodySize(project: Project): { w: number; h: number } | null {
+	const { rig, items } = project.manifest;
+	const base = items.find(({ id }) => id === rig.baseItem)?.layers[0];
+	const directions = rig.directions.map(({ id }) => id);
+	for (const direction of new Set<DirectionName>(['south', ...directions])) {
+		const standing = measuredStandingFrame(project, direction);
+		if (standing) return { w: standing.w, h: standing.h };
+		if (!base) continue;
+		for (const animation of rig.animations) {
+			for (const { cell } of animation.frames) {
+				const image = cellImg(project, base, animation.id, direction, cell);
+				const bounds = image && paintedPixels(image);
+				if (bounds) return { w: bounds.right - bounds.left, h: bounds.bottom - bounds.top };
+			}
+		}
+	}
+	return null;
 }
 
 export function previewBounds(project: Project) {

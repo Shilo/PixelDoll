@@ -3,11 +3,13 @@
 	import { moveThumbnails } from './moveThumbnails.ts';
 	import { ui, doc, store, view, isDemo, moving } from './state.svelte.ts';
 	import { ChevronRight, Plus } from './icons.ts';
-	import { moveLabel } from './model.ts';
+	import { moveLabel, pixelSize } from './model.ts';
+	import { characterBodySize } from './experience/bounds.ts';
 	import SavedActions from './SavedActions.svelte';
 	import { downloadMoveZip } from './download.svelte.ts';
 	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
 	const m = $derived(store.project?.manifest);
+	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	const nice = (id: string) => moveLabel(id, moveIds);
 	const k = $derived(Math.max(1, Math.floor(ui.dpr)));
@@ -75,6 +77,12 @@
 			<summary><ChevronRight size={14} />Details</summary>
 			<div>
 				<dl class="kv">
+					{#if bodySize}
+						<dt>Body</dt>
+						<dd>{pixelSize(bodySize)}</dd>
+					{/if}
+					<dt>Frame</dt>
+					<dd>{pixelSize(m.rig.cell)}, pivot {m.rig.pivot.x},{m.rig.pivot.y}</dd>
 					{#each m.rig.animations as a (a.id)}
 						{@const src = Object.values(a.sources ?? {})[0]}
 						<dt>{nice(a.id)}</dt>
@@ -86,8 +94,6 @@
 									: ''}
 						</dd>
 					{/each}
-					<dt>Cell</dt>
-					<dd>{m.rig.cell.w}×{m.rig.cell.h}, pivot {m.rig.pivot.x},{m.rig.pivot.y}</dd>
 					<dt>Directions</dt>
 					<dd>
 						{m.rig.directions

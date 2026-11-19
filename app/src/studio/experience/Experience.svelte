@@ -43,7 +43,7 @@
 		TriangleAlert
 	} from '../icons.ts';
 	import { directionInfo, directionLabel } from './movement.ts';
-	import { moveLabel } from '../model.ts';
+	import { moveLabel, pixelSize } from '../model.ts';
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { workspaceCopy } from '../../lib/store/workspace-mode.ts';
@@ -617,7 +617,8 @@
 			</div>
 			<div class="character-rows">
 				{#each list as p (p.id)}
-					{@const facts = p.facts ?? stills.get(p.id)?.facts}
+					{@const still = stills.get(p.id)}
+					{@const facts = p.facts ?? still?.facts}
 					<CharacterActions id={p.id} name={p.name}>
 						<button
 							class="bu-action character-row"
@@ -625,9 +626,13 @@
 							aria-pressed={p.id === doc.id}
 							onclick={() => pick(p.id)}
 							><CharacterThumb id={p.id} name={p.name} trim /><span
-								><strong><CharacterName id={p.id} name={p.name} /></strong>{#if facts}<small
-										>{facts}</small
-									>{/if}</span
+								><strong><CharacterName id={p.id} name={p.name} /></strong>{#if facts}
+									<small class="character-sizes">
+										{#if still?.bodySize}<span>Body {pixelSize(still.bodySize)}</span>{/if}
+										<span>{still?.bodySize ? '· ' : ''}Frame {facts.frame}</span>
+									</small>
+									<small class="character-counts">{facts.counts}</small>
+								{/if}</span
 							></button
 						>
 					</CharacterActions>
@@ -788,6 +793,15 @@
 </div>
 
 <style>
+	.character-row:has(.character-sizes) > span:last-child {
+		line-height: 1.1;
+	}
+	.character-row > span > .character-sizes {
+		display: flex;
+		flex-wrap: wrap;
+		flex-shrink: 0;
+		column-gap: 4px;
+	}
 	.workspace-banner {
 		position: absolute;
 		z-index: 6;

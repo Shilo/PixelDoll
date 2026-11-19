@@ -230,7 +230,7 @@ test('the Characters panel keeps its Customize button on the edge margin', async
 	}
 });
 
-test('character list thumbnails and New stay left-aligned', async ({ page }) => {
+test('character list thumbnails and New stay left-aligned and sizes fit', async ({ page }) => {
 	for (const [width, height] of [
 		[1440, 900],
 		[960, 800],
@@ -245,6 +245,23 @@ test('character list thumbnails and New stay left-aligned', async ({ page }) => 
 			);
 			const rows = page.locator('.character-rows :is(.character-row, .new-character-row)');
 			await expect(rows).toHaveCount(2);
+			const sizes = rows.first().locator('.character-sizes');
+			await expect(sizes.locator('span')).toHaveText([/^Body \d+×\d+ px$/, '· Frame 64×64 px']);
+			const overflow = await sizes.evaluate((node) => {
+				const bounds = node.getBoundingClientRect();
+				const column = node.parentElement!.getBoundingClientRect();
+				return [...node.children].map((label) => {
+					const rect = label.getBoundingClientRect();
+					return {
+						right: Math.max(0, rect.right - bounds.right),
+						bottom: Math.max(0, rect.bottom - Math.min(bounds.bottom, column.bottom))
+					};
+				});
+			});
+			expect(overflow, `${width}×${height} ${theme}`).toEqual([
+				{ right: 0, bottom: 0 },
+				{ right: 0, bottom: 0 }
+			]);
 			for (const row of await rows.all()) {
 				const geometry = await row.evaluate((node) => {
 					const style = getComputedStyle(node);

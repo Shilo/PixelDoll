@@ -25,13 +25,15 @@ export const bodyQualityNote = (w: string) =>
 
 const count = (n: number, one: string) => `${n} ${n === 1 ? one : one + 's'}`;
 /** A character's shape at a glance: "64 px · 4 directions · 2 moves · 6 items". */
-export const characterFacts = (m: Manifest) =>
-	[
-		`${m.rig.cell.w} px`,
+export const pixelSize = ({ w, h }: { w: number; h: number }) => `${w}×${h} px`;
+export const characterFacts = (m: Manifest) => ({
+	frame: pixelSize(m.rig.cell),
+	counts: [
 		count(m.rig.directions.length, 'direction'),
 		count(m.rig.animations.length, 'move'),
 		count(m.items.filter((i) => i.id !== m.rig.baseItem).length, 'item')
-	].join(' · ');
+	].join(' · ')
+});
 /** One item alone in canonical draw order in one cell; mirrored directions flip their source. Oversize layers (v1.3.1,
  * e.g. 96 px held items) line up by pivot on the union of the item's layer frames. */
 export function itemCell(

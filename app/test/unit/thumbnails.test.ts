@@ -26,11 +26,13 @@ test('selected thumbnails share composition and cropping until their outfit or a
 	const crop = croppedThumbnail(first.image!);
 	expect(characterStill(project, { ...items }, 1)).toBe(first);
 	expect(croppedThumbnail(characterStill(project, items, 1).image!)).toBe(crop);
-	expect(first.facts).toBe('64 px · 4 directions · 2 moves · 6 items');
+	expect(first.facts).toEqual({ frame: '64×64 px', counts: '4 directions · 2 moves · 6 items' });
+	expect(first.bodySize).not.toBeNull();
 	const unequipped = Object.fromEntries(Object.keys(items).map((slot) => [slot, null]));
 	const changed = characterStill(project, unequipped, 1);
 	expect(changed).not.toBe(first);
 	expect(changed.image?.data).not.toEqual(first.image?.data);
+	expect(changed.bodySize).toEqual(first.bodySize);
 	expect(characterStill(project, unequipped, 1)).toBe(changed);
 	const revised = characterStill(project, unequipped, 2);
 	expect(revised).not.toBe(changed);
@@ -61,7 +63,14 @@ test('character list crops are shared per still image and preserve all visible p
 
 test('a complete listing drops the thumbnails of characters no longer listed', () => {
 	const frame = { x: 0, y: 0, w: 64, h: 64 };
-	const still = { look: '', image: null, frame, body: frame, facts: '' };
+	const still = {
+		look: '',
+		image: null,
+		frame,
+		body: frame,
+		bodySize: null,
+		facts: { frame: '', counts: '' }
+	};
 	stills.set('rig-kept', still);
 	stills.set('rig-deleted', still);
 	newest.set('rig-deleted', { look: '', reading: true }); // a read still running for it
