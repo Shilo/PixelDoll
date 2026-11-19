@@ -505,6 +505,8 @@
 		"titleItemReview": "Revisión del objeto"
 	},
 	"toolbar": {
+		"help": "Ayuda",
+		"userGuide": "Guía de usuario",
 		"characterView": "Vista del personaje",
 		"mountSettings": "Ajustes de montura",
 		"titleMountSettingsMounted": "Ajustes de montura (montado)",

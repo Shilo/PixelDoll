@@ -499,6 +499,8 @@
 		"titleItemReview": "Item review"
 	},
 	"toolbar": {
+		"help": "Help",
+		"userGuide": "User guide",
 		"characterView": "Character view",
 		"mountSettings": "Mount settings",
 		"titleMountSettingsMounted": "Mount settings (mounted)",

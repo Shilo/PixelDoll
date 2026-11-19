@@ -492,7 +492,9 @@
 		)
 			return;
 		if ((e.target as HTMLElement).closest('input,textarea,select,[contenteditable]')) return;
-		const popover = document.querySelector<HTMLElement>('[popover]:popover-open');
+		const popover = document.querySelector<HTMLElement>(
+			'[popover]:popover-open:not(:has([popover]:popover-open))'
+		);
 		if (popover) {
 			if (e.key === 'Backspace') {
 				popover.hidePopover();

@@ -274,8 +274,9 @@ test('installed shell includes valid icons and works offline after a cold naviga
 			.getByRole('button', { name: 'Close export', exact: true })
 			.click();
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await page.getByRole('button', { name: 'Help', exact: true }).click();
 		await page
-			.locator('#experience-options')
+			.locator('#help-options')
 			.getByRole('button', { name: 'Installation help', exact: true })
 			.click();
 		await expect(
@@ -1249,9 +1250,18 @@ test('install help traps studio shortcuts and leaves the current view unchanged'
 		);
 		await openInstalled(page, server.url, release);
 		await enterStudio(page);
-		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		const more = page.getByRole('button', { name: 'More options', exact: true });
+		await more.click();
+		const helpMenu = page.getByRole('button', { name: 'Help', exact: true });
+		await helpMenu.click();
+		const submenu = page.locator('#help-options');
+		await expect(submenu).toBeVisible();
+		await page.keyboard.press('Backspace');
+		await expect(submenu).not.toBeVisible();
+		await expect(helpMenu).toBeFocused();
+		await helpMenu.click();
 		await page
-			.locator('#experience-options')
+			.locator('#help-options')
 			.getByRole('button', { name: 'Installation help', exact: true })
 			.click();
 		const dialog = page.getByRole('dialog', { name: 'Installation help', exact: true });
@@ -1261,6 +1271,7 @@ test('install help traps studio shortcuts and leaves the current view unchanged'
 		await expect(page.locator('.experience-stage')).toBeVisible();
 		await page.keyboard.press('Escape');
 		await expect(dialog).not.toBeVisible();
+		await expect(more).toBeFocused();
 		await expect(page.locator('.experience-stage')).toBeVisible();
 		await expectLoadedBuild(page, release);
 	} finally {
@@ -1289,8 +1300,9 @@ test('a missing current static cache is repaired online without clearing saved b
 			window.dispatchEvent(new Event('online'));
 		}, release.release.build);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await page.getByRole('button', { name: 'Help', exact: true }).click();
 		await page
-			.locator('#experience-options')
+			.locator('#help-options')
 			.getByRole('button', { name: 'Installation help', exact: true })
 			.click();
 		const help = page.getByRole('dialog', { name: 'Installation help', exact: true });
@@ -1343,8 +1355,9 @@ test('an initial worker registration failure recovers on reconnect without reloa
 			.poll(() => server.requests.some((path) => path.split('?')[0]!.endsWith('/sw.js')))
 			.toBe(true);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await page.getByRole('button', { name: 'Help', exact: true }).click();
 		await page
-			.locator('#experience-options')
+			.locator('#help-options')
 			.getByRole('button', { name: 'Installation help', exact: true })
 			.click();
 		const help = page.getByRole('dialog', { name: 'Installation help', exact: true });
@@ -1409,13 +1422,20 @@ test('accepting an install prompt does not report installation until the browser
 		await expect(page.locator('html')).toHaveAttribute('data-pwa-prompted', 'yes');
 		// The native event is single-use; its disappearance does not establish that installation completed.
 		await expect(install).toHaveCount(0);
-		const help = page
-			.locator('#experience-options')
-			.getByRole('button', { name: 'Installation help', exact: true });
-		await expect(help).toBeVisible();
+		const helpMenu = page.getByRole('button', { name: 'Help', exact: true });
+		await helpMenu.click();
+		await page.getByRole('button', { name: 'Installation help', exact: true }).click();
+		const help = page.getByRole('dialog', { name: 'Installation help', exact: true });
+		const noPrompt = 'A browser install prompt isn’t available in this window.';
+		await expect(help).toContainText(noPrompt);
 		await page.evaluate(() => dispatchEvent(new Event('appinstalled')));
 		await expect(install).toHaveCount(0);
-		await expect(help).toHaveCount(0);
+		await expect(help).not.toContainText(noPrompt);
+		await expect(help).toContainText('The app is ready to open offline in English.');
+		await help.getByRole('button', { name: 'Close', exact: true }).click();
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await expect(helpMenu).toBeVisible();
+		await expect(install).toHaveCount(0);
 		// A new native offer is evidence that reinstalling is available, including after uninstall in this open window.
 		await page.evaluate(() => {
 			const event = new Event('beforeinstallprompt', { cancelable: true });
@@ -1431,7 +1451,7 @@ test('accepting an install prompt does not report installation until the browser
 		await install.click();
 		await expect(page.locator('html')).toHaveAttribute('data-pwa-reinstall', 'shown');
 		await expect(install).toHaveCount(0);
-		await expect(help).toBeVisible();
+		await expect(helpMenu).toBeVisible();
 		await expectLoadedBuild(page, release);
 	} finally {
 		await server.close();
@@ -1500,9 +1520,7 @@ test('an install offer captured before the module app starts remains available f
 		await expect(menu.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
 			0
 		);
-		await expect(
-			menu.getByRole('button', { name: 'Installation help', exact: true })
-		).toBeVisible();
+		await expect(menu.getByRole('button', { name: 'Help', exact: true })).toBeVisible();
 		await expectLoadedBuild(page, release);
 	} finally {
 		releaseModules();
@@ -1531,7 +1549,16 @@ test('installation help upgrades on a late native offer and preserves explicit p
 		await expect(menu.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
 			0
 		);
-		await menu.getByRole('button', { name: 'Installation help', exact: true }).click();
+		await expect(menu.getByRole('button', { name: 'Installation help', exact: true })).toHaveCount(
+			0
+		);
+		await menu.getByRole('button', { name: 'Help', exact: true }).click();
+		const helpMenu = page.locator('#help-options');
+		await expect(helpMenu.getByRole('link', { name: 'User guide', exact: true })).toHaveAttribute(
+			'href',
+			'https://github.com/Shilo/PixelDoll/blob/main/docs/user-guide.md'
+		);
+		await helpMenu.getByRole('button', { name: 'Installation help', exact: true }).click();
 		const help = page.getByRole('dialog', { name: 'Installation help', exact: true });
 		await expect(help).toContainText('A browser install prompt isn’t available in this window.');
 		await expect(help.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
@@ -1571,9 +1598,7 @@ test('installation help upgrades on a late native offer and preserves explicit p
 		await expect(menu.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
 			0
 		);
-		await expect(
-			menu.getByRole('button', { name: 'Installation help', exact: true })
-		).toBeVisible();
+		await expect(menu.getByRole('button', { name: 'Help', exact: true })).toBeVisible();
 		await expectLoadedBuild(page, release);
 	} finally {
 		await server.close();

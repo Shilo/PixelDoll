@@ -505,6 +505,8 @@
 		"titleItemReview": "Gegenstand prüfen"
 	},
 	"toolbar": {
+		"help": "Hilfe",
+		"userGuide": "Benutzerhandbuch",
 		"characterView": "Figurenansicht",
 		"mountSettings": "Reittier-Einstellungen",
 		"titleMountSettingsMounted": "Reittier-Einstellungen (aufgesessen)",

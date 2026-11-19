@@ -50,6 +50,7 @@
 		FileArchive,
 		MonitorDown,
 		BookOpen,
+		CircleHelp,
 		RefreshCw,
 		Share2,
 		Ellipsis,
@@ -547,21 +548,17 @@
 			<hr />
 		{/if}
 		<!-- App info: installation, updates, source code, and build version. -->
-		{#if import.meta.env.PROD && !$pwa.installed}
-			{#if $pwa.installable || $pwa.installing}<button
-					class="row bu-action"
-					data-variant="quiet"
-					disabled={$pwa.installing}
-					onclick={() => {
-						void installApp();
-					}}
-					><MonitorDown size={18} /><span class="row-name">{t('pwaRuntime.installPixelDoll')}</span
-					></button
-				>
-			{:else}<button class="row bu-action" data-variant="quiet" onclick={requestInstallHelp}
-					><BookOpen size={18} /><span class="row-name">{t('pwaRuntime.installationHelp')}</span
-					></button
-				>{/if}
+		{#if import.meta.env.PROD && !$pwa.installed && ($pwa.installable || $pwa.installing)}
+			<button
+				class="row bu-action"
+				data-variant="quiet"
+				disabled={$pwa.installing}
+				onclick={() => {
+					void installApp();
+				}}
+				><MonitorDown size={18} /><span class="row-name">{t('pwaRuntime.installPixelDoll')}</span
+				></button
+			>
 		{/if}
 		{#if $pwa.available}<button
 				class="row bu-action"
@@ -572,6 +569,42 @@
 					>{t('toolbar.updateToVVersion', { version: $pwa.available.version })}</span
 				></button
 			>{/if}
+		{#if import.meta.env.PROD}
+			<button class="row bu-action" data-variant="quiet" popovertarget="help-options">
+				<CircleHelp size={18} aria-hidden="true" />
+				<span class="row-name">{t('toolbar.help')}</span>
+				<ChevronRight size={16} aria-hidden="true" />
+			</button>
+			<div
+				id="help-options"
+				class="menu bu-popover-anchor"
+				data-placement="bottom-end"
+				popover
+				role="group"
+				aria-label={t('toolbar.help')}
+				ontoggle={(event) => popoverFocus(event)}
+			>
+				<PopoverArrow />
+				<div class="menu-surface bu-popover-surface bu-floating">
+					<a
+						class="row bu-action"
+						data-variant="quiet"
+						href="https://github.com/Shilo/PixelDoll/blob/main/docs/user-guide.md"
+						target="_blank"
+						rel="noopener"
+						onclick={closeOptions}
+						><BookOpen size={18} /><span class="row-name">{t('toolbar.userGuide')}</span></a
+					>
+					{#if !workspaceCopy}
+						<button class="row bu-action" data-variant="quiet" onclick={requestInstallHelp}>
+							<MonitorDown size={18} /><span class="row-name"
+								>{t('pwaRuntime.installationHelp')}</span
+							>
+						</button>
+					{/if}
+				</div>
+			</div>
+		{/if}
 		<VersionRow />
 		<!-- Attribution footer: keep this below the app links. -->
 		<AffiliationNotice />

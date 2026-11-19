@@ -480,6 +480,8 @@
 		"titleItemReview": "装备检查"
 	},
 	"toolbar": {
+		"help": "帮助",
+		"userGuide": "用户指南",
 		"characterView": "角色视图",
 		"mountSettings": "坐骑设置",
 		"titleMountSettingsMounted": "坐骑设置（已骑乘）",

@@ -502,6 +502,8 @@
 		"titleItemReview": "Eşya inceleme"
 	},
 	"toolbar": {
+		"help": "Yardım",
+		"userGuide": "Kullanıcı kılavuzu",
 		"characterView": "Karakter görünümü",
 		"mountSettings": "Binek ayarları",
 		"titleMountSettingsMounted": "Binek ayarları (binek üzerinde)",

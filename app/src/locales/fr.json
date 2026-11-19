@@ -502,6 +502,8 @@
 		"titleItemReview": "Vérification de l’objet"
 	},
 	"toolbar": {
+		"help": "Aide",
+		"userGuide": "Guide d’utilisation",
 		"characterView": "Vue du personnage",
 		"mountSettings": "Réglages de la monture",
 		"titleMountSettingsMounted": "Réglages de la monture (affichée)",

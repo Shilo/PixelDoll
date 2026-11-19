@@ -8,6 +8,7 @@ export { default as Pause } from '@lucide/svelte/icons/pause';
 export { default as Download } from '@lucide/svelte/icons/download';
 export { default as MonitorDown } from '@lucide/svelte/icons/monitor-down';
 export { default as BookOpen } from '@lucide/svelte/icons/book-open';
+export { default as CircleHelp } from '@lucide/svelte/icons/circle-question-mark';
 export { default as Archive } from '@lucide/svelte/icons/archive';
 export { default as FileArchive } from '@lucide/svelte/icons/file-archive';
 export { default as Share2 } from '@lucide/svelte/icons/share-2';

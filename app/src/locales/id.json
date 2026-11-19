@@ -482,6 +482,8 @@
 		"titleItemReview": "Tinjau item"
 	},
 	"toolbar": {
+		"help": "Bantuan",
+		"userGuide": "Panduan pengguna",
 		"characterView": "Tampilan karakter",
 		"mountSettings": "Pengaturan tunggangan",
 		"titleMountSettingsMounted": "Pengaturan tunggangan (sedang menunggang)",

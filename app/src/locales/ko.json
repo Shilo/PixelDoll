@@ -485,6 +485,8 @@
 		"titleItemReview": "아이템 검토"
 	},
 	"toolbar": {
+		"help": "도움말",
+		"userGuide": "사용자 가이드",
 		"characterView": "캐릭터 보기",
 		"mountSettings": "탈것 설정",
 		"titleMountSettingsMounted": "탈것 설정(탑승 중)",

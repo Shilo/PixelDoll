@@ -502,6 +502,8 @@
 		"titleItemReview": "Revisão de item"
 	},
 	"toolbar": {
+		"help": "Ajuda",
+		"userGuide": "Guia do usuário",
 		"characterView": "Vista do personagem",
 		"mountSettings": "Configurações da montaria",
 		"titleMountSettingsMounted": "Configurações da montaria (em uso)",

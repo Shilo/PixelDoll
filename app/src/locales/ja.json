@@ -485,6 +485,8 @@
 		"titleItemReview": "アイテムの確認"
 	},
 	"toolbar": {
+		"help": "ヘルプ",
+		"userGuide": "ユーザーガイド",
 		"characterView": "キャラクタービュー",
 		"mountSettings": "乗り物の設定",
 		"titleMountSettingsMounted": "乗り物の設定（騎乗中）",
