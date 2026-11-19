@@ -67,7 +67,8 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 			{ cellHash } = await import(rigPath);
 		const demoDress = structuredClone(dressOf(state.store.project.manifest));
 		demoDress.presets[0] = { ...demoDress.presets[0], name: 'Tester demo outfit' };
-		await db.put('projects', 'dress-fixture:s2', demoDress);
+		const { slots: _slots, ...demoWithoutSlots } = demoDress;
+		await db.put('projects', 'dress-fixture:s2', demoWithoutSlots);
 		const id = await saveCopy(state.store.project, 'Workspace Alpha');
 		const saved = await db.get('projects', id);
 		const other = structuredClone(saved);
@@ -118,6 +119,11 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 		state.ui.dir = 'east';
 		state.ui.theme = 'light';
 		state.ui.playing = false;
+		await db.put('projects', 'rig-damaged', {
+			id: 'rig-damaged',
+			origin: 'studio',
+			manifest: null
+		});
 		return { id, otherId: other.id, item: item.id, uniqueHash: uniqueHash.slice(7) };
 	});
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
@@ -161,6 +167,7 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 	expect(indexText).not.toMatch(/fake-workspace-test-key|diagnostic-private-body/);
 	const index = JSON.parse(indexText);
 	expect(index.missing).toEqual(['1'.repeat(64)]);
+	expect(index.omitted).toEqual({ characters: 1, demoOutfit: false, exportSettings: false });
 	const projectKeys = ['dress-fixture:s2', sample.id, sample.otherId, EXPORT_SETTINGS_KEY].sort();
 	const archivedProjects = new Map<string, StoredProject>(index.projects);
 	expect([...archivedProjects.keys()].sort()).toEqual(projectKeys);
@@ -203,6 +210,7 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 	const picker = copy.getByLabel('Choose workspace ZIP');
 	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
 	expect(new URL(copy.url()).origin).toBe(new URL(page.url()).origin);
+	expect(new URL(copy.url()).search).toBe('?workspace-copy');
 	await expect(copy.locator('html')).toHaveAttribute('data-app', 'studio');
 	await picker.setInputFiles({
 		name: 'damaged.zip',
@@ -214,19 +222,10 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 	invalidDemo.projects.find(([key]: [string, unknown]) => key === 'dress-fixture:s2')[1] = {
 		format: CURRENT_FORMAT
 	};
-	const invalidDemoArchive = await zip(
-		[...files].map(([name, data]) => ({
-			name,
-			data: name === 'workspace.json' ? new TextEncoder().encode(JSON.stringify(invalidDemo)) : data
-		}))
-	);
-	await picker.setInputFiles({
-		name: 'invalid-demo.zip',
-		mimeType: 'application/zip',
-		buffer: Buffer.from(invalidDemoArchive)
-	});
-	await expect(copy.getByRole('alert')).toContainText('Saved demo outfit data is invalid');
-	const entries = [...files].map(([name, data]) => ({ name, data }));
+	const entries = [...files].map(([name, data]) => ({
+		name,
+		data: name === 'workspace.json' ? new TextEncoder().encode(JSON.stringify(invalidDemo)) : data
+	}));
 	const artwork = entries.filter(({ name }) => name.startsWith('blobs/'));
 	const asset = artwork.find(({ name }) => name === `blobs/${sample.uniqueHash}`)!;
 	const matchingSize = artwork.find(
@@ -236,12 +235,6 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 	)!;
 	asset.data = matchingSize.data;
 	const tampered = await zip(entries);
-	await picker.setInputFiles({
-		name: 'altered.zip',
-		mimeType: 'application/zip',
-		buffer: Buffer.from(tampered)
-	});
-	await expect(copy.getByRole('alert')).toContainText('does not match its saved pixel hash');
 	await page.evaluate(async ({ id, item }) => {
 		const dbPath = '/src/lib/store/db.ts';
 		const db = await import(dbPath);
@@ -261,9 +254,13 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 		unrelated.id = 'rig-recipient-only';
 		await db.put('projects', unrelated.id, unrelated);
 	}, sample);
-	const recipientKeys = [...projectKeys, 'rig-recipient-only'];
+	const recipientKeys = [...projectKeys, 'rig-recipient-only', 'rig-damaged'];
 	const recipient = await captureWorkspaceStore(page, recipientKeys, artworkKeys);
-	await picker.setInputFiles({
+	const chooseZip = copy.waitForEvent('filechooser');
+	await copy.getByRole('button', { name: /Drop a workspace ZIP here/ }).click();
+	await (
+		await chooseZip
+	).setFiles({
 		name: download.suggestedFilename(),
 		mimeType: 'application/zip',
 		buffer: archive
@@ -338,6 +335,29 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
 	await copy.reload();
 	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
+	await copy.goto(new URL('/?workspace-copy=', page.url()).href);
+	const dropZone = copy.getByRole('button', { name: /Drop a workspace ZIP here/ });
+	await dropZone.evaluate((zone, encoded) => {
+		const transfer = new DataTransfer();
+		transfer.items.add(
+			new File(
+				[Uint8Array.from(atob(encoded), (byte) => byte.charCodeAt(0))],
+				'partial.workspace.zip'
+			)
+		);
+		zone.dispatchEvent(
+			new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true })
+		);
+	}, Buffer.from(tampered).toString('base64'));
+	await expect(copy.locator('.workspace-banner')).toBeVisible();
+	const recovered = await captureWorkspaceStore(copy, projectKeys, artworkKeys);
+	expect(recovered.projects).toEqual(
+		expected.projects.map(([key, record]) => [key, key === 'dress-fixture:s2' ? undefined : record])
+	);
+	expect(recovered.artwork).toEqual(
+		expected.artwork.map(([hash, digest]) => [hash, hash === sample.uniqueHash ? null : digest])
+	);
+	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
 	await copy.goto(new URL('/?workspace-copy', info.project.use.baseURL!).href);
 	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
 	expect(new URL(copy.url()).origin).not.toBe(new URL(page.url()).origin);

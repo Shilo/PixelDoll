@@ -332,10 +332,12 @@ The ZIP includes your saved characters, artwork, items, moves, outfits, and work
 adds your PixelLab tier and a summary of failed and unfinished requests. Your key, request bodies, and unfinished drafts
 are not included. The ZIP does include artwork and saved prompts, so share it privately with someone you trust.
 
-Choose **More options → Open workspace copy** to open the ZIP in a separate tab. You can inspect or change the copy
+Choose **More options → Open workspace copy**, then drop the ZIP in the box or click the box to choose it. The
+`?workspace-copy` address opens a separate, temporary copy. You can inspect or change the copy
 without changing your own library. PixelLab is off and no jobs restart. Close or reload the tab to discard the copy and
-its edits. This is not a backup restore or merge. Already-missing artwork stays missing and is listed in the copy's
-Activity. Workspace ZIPs are limited to 64 MB, 5,000 files, and additional artwork and record limits; for larger
+its edits. This is not a backup restore or merge. Export and open keep usable records and artwork when some data is
+damaged. The copy's Activity reports skipped records and missing artwork. Unreadable or unsupported ZIPs cannot be
+opened. Workspace ZIPs are limited to 64 MB, 5,000 files, and additional artwork and record limits; for larger
 libraries, use individual character ZIPs. Uncommitted edits outside the current character are not included.
 
 Press **Export** (toolbar), choose an **Export format**, and download the zip. **Engines and frameworks** lists Godot, Unity,

@@ -6,8 +6,8 @@ export const COPY_GENERATION_OFF = 'PixelLab is off in workspace copies.';
 export function workspaceUrl(copy: boolean): string {
 	const url = new URL(location.href);
 	url.hash = '';
-	if (copy) url.searchParams.set('workspace-copy', '');
-	else url.searchParams.delete('workspace-copy');
+	url.searchParams.delete('workspace-copy');
+	if (copy) url.search += `${url.search ? '&' : '?'}workspace-copy`;
 	return url.href;
 }
 
