@@ -14,6 +14,7 @@ import {
 } from '../../src/lib/rig/poses.ts';
 import { DIRECTIONS, cellHash, type Keypoint } from '../../src/lib/rig/rig.ts';
 import { flipSkeleton } from '../../src/lib/rig/skeleton.ts';
+import { flipH, planDirections } from '../../src/lib/rig/mirror.ts';
 import { paddedPoses, poseBatches, rawClip } from '../../src/lib/rig/clips.ts';
 import { itemRoute, padOf, planItem } from '../../src/lib/items/items.ts';
 import { baseCell, defaultMethod } from '../../src/lib/items/run.ts';
@@ -391,6 +392,46 @@ test('repair keeps saved reference pixels and declares them fixed for compatible
 	const repair = await setupPlan(p, 'blink');
 	expect(repair.fixedRest).toBe(true);
 	expect(repair.rest.south).toEqual(changed);
+});
+
+test('rig repair can register a missing mirrored cardinal from measured standing artwork', async () => {
+	const project = await source(),
+		rig = project.manifest.rig,
+		plan = await setupPlan(project),
+		east = structuredClone(plan.rest.east!);
+	east.data[(10 * east.w + 25) * 4] = 99;
+	const hash = await cellHash(east);
+	project.images.set(hash, east);
+	rig.directions = rig.directions.map((direction) =>
+		direction.id === 'west' ? { ...direction, mirrorOf: 'east' } : direction
+	);
+	rig.rest = { east: { image: hash, keypoints: pose(), registrationOnly: true } };
+	await expect(setupPlan(project)).rejects.toThrow('cardinal views');
+	delete rig.rest.east!.registrationOnly;
+	const repair = await setupPlan(project, 'default');
+	expect(repair.registrationDirections).toBe(4);
+	expect(repair.rest.west).toEqual(flipH(east));
+	expect(repair.frames.size).toBe(plan.frames.size + 1);
+	expect(repair.frames.has(await cellHash(repair.rest.west!))).toBe(false);
+});
+
+test('rig repair keeps eight-view registration when measured mirrors fill the missing views', async () => {
+	const project = await source(),
+		rig = project.manifest.rig,
+		initial = await setupPlan(project),
+		east = initial.rest.east!,
+		hash = await cellHash(east);
+	rig.directions = planDirections('8', ['south', 'south-east', 'east', 'north-east', 'north']).dirs;
+	rig.rest = Object.fromEntries(
+		rig.directions
+			.filter(({ mirrorOf }) => !mirrorOf)
+			.map(({ id }) => [id, { image: hash, keypoints: pose() }])
+	);
+	const repair = await setupPlan(project);
+	expect(repair.registrationDirections).toBe(8);
+	for (const direction of ['west', 'north-west', 'south-west'] as const)
+		expect(repair.rest[direction]).toEqual(flipH(east));
+	expect(repair.frames.size).toBe(initial.frames.size);
 });
 
 test('reload-safe setup never replaces a lost or failed paid request', async () => {

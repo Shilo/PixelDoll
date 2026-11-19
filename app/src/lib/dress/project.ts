@@ -15,6 +15,7 @@ import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { assetUrl } from '../assets.ts';
 import { stableStringify } from '../image/hash.ts';
+import { retainSlotDirections } from '../items/slots.ts';
 
 export interface Outfit {
 	items: Preset['items'];
@@ -107,13 +108,14 @@ export async function openFixture(
 
 export async function openSource(
 	id: string,
-	signal?: AbortSignal
-): Promise<{ project: Project; current?: Outfit }> {
+	signal?: AbortSignal,
+	options?: Parameters<typeof loadProject>[2]
+): Promise<{ project: Project; current?: Outfit; missingImages?: number }> {
 	signal?.throwIfAborted();
 	if (id.startsWith('fixture:')) return openFixture(id, signal);
-	const { rec, project } = await loadProject(id, signal); // B4's loader (store/project.ts)
+	const { rec, project, missingImages } = await loadProject(id, signal, options);
 	signal?.throwIfAborted();
-	return { project, current: (rec as ProjectRecord).dress?.current };
+	return { project, current: (rec as ProjectRecord).dress?.current, missingImages };
 }
 
 export const dressOf = (m: Manifest, current?: Outfit): DressState => ({
@@ -312,7 +314,11 @@ export async function saveDress(
 			items: { ...d.current.items, ...Object.fromEntries(newSlots) },
 			variants: { ...d.current.variants, ...extraVariants }
 		};
-		const cleaned = { ...d, materials, current, slots: merged(manifest.slots, manifest.items) };
+		const slots = retainSlotDirections(
+			merged(manifest.slots, manifest.items),
+			manifest.rig.directions
+		);
+		const cleaned = { ...d, materials, current, slots };
 		for (const preset of [...cleaned.presets, ...(current ? [current] : [])]) {
 			for (const slot of Object.keys(preset.items))
 				if (preset.items[slot] && !live.has(preset.items[slot]!)) preset.items[slot] = null;

@@ -2,7 +2,7 @@
 import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import type { Engine, Project } from '../store/manifest.ts';
-import { zip, type ZipEntry } from '../store/zip.ts';
+import { fitsEditableZip, MAX_ZIP_BYTES, zip, type ZipEntry } from '../store/zip.ts';
 import {
 	bodyCutVariantCount,
 	bodyCutVariantLimit,
@@ -17,7 +17,7 @@ import { phaserFiles } from './phaser.ts';
 import { unityFiles } from './unity.ts';
 import { gdevelopFiles } from './gdevelop.ts';
 import { rpgMakerFiles } from './rpgmaker.ts';
-import { projectEntries, type ImportedCharacter } from '../store/import.ts';
+import { checkArchivePixels, projectEntries, type ImportedCharacter } from '../store/import.ts';
 import { reservedPathSegment } from './paths.ts';
 
 export interface ExportOptions {
@@ -31,6 +31,7 @@ export interface ExportResult {
 	entries: ZipEntry[];
 	warnings: string[];
 	errors: string[];
+	problem?: string;
 }
 
 export async function exportFiles(src: Project, o: ExportOptions): Promise<ExportResult> {
@@ -70,7 +71,8 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		return {
 			entries: [],
 			warnings: [],
-			errors: ['The base body is stale; freeze a matching base before exporting.']
+			errors: ['The base body is stale; freeze a matching base before exporting.'],
+			problem: 'The body frames no longer match this character.'
 		};
 	const p = await withTuckVariants(src); // B14: hair under a helmet ships as a baked "<hair>~<helmet>" item; engines swap to it
 	const errors = validate(p);
@@ -89,7 +91,8 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		return {
 			entries: [],
 			warnings: [],
-			errors: ['The base body has no visible animation frames to export.']
+			errors: ['The base body has no visible animation frames to export.'],
+			problem: 'The body has no visible frames.'
 		};
 	}
 	const { manifest: m, warnings } = exportManifest(p, o);
@@ -120,7 +123,12 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			files.push(...godotFiles(m));
 		} catch (error) {
 			if (!(error instanceof Error) || !error.message.startsWith('Godot: ')) throw error;
-			return { entries: [], warnings, errors: [error.message] };
+			return {
+				entries: [],
+				warnings,
+				errors: [error.message],
+				problem: 'Godot could not use these sprite sheets.'
+			};
 		}
 	}
 	if (o.engines.includes('phaser')) files.push(...phaserFiles(m));
@@ -130,7 +138,12 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			files.push(...gdevelopFiles(m, sheets));
 		} catch (error) {
 			if (!(error instanceof Error) || !error.message.startsWith('GDevelop: ')) throw error;
-			return { entries: [], warnings, errors: [error.message] };
+			return {
+				entries: [],
+				warnings,
+				errors: [error.message],
+				problem: 'GDevelop could not use these sprite sheets.'
+			};
 		}
 	}
 	if (rpg) {
@@ -140,7 +153,12 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			warnings.push(...r.warnings);
 		} catch (error) {
 			if (!(error instanceof Error) || !error.message.startsWith('RPG Maker: ')) throw error;
-			return { entries: [], warnings, errors: [error.message] };
+			return {
+				entries: [],
+				warnings,
+				errors: [error.message],
+				problem: 'RPG Maker needs front, side and back views.'
+			};
 		}
 	}
 	if (o.engines.includes('aseprite')) {
@@ -148,7 +166,12 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			files.push(...(await asepriteFiles(m, sheets)));
 		} catch (error) {
 			if (!(error instanceof Error) || !error.message.startsWith('Aseprite ')) throw error;
-			return { entries: [], warnings, errors: [error.message] };
+			return {
+				entries: [],
+				warnings,
+				errors: [error.message],
+				problem: 'The animation does not fit the Aseprite format.'
+			};
 		}
 	}
 	const projectFiles = await projectEntries(src, o.projectData);
@@ -165,7 +188,8 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 		if (names.has(name)) errors.push(`Duplicate export path: ${name}`);
 		names.add(name);
 	}
-	if (errors.length) return { entries: [], warnings, errors };
+	if (errors.length)
+		return { entries: [], warnings, errors, problem: 'Some file names cannot be packaged safely.' };
 	const enc = new TextEncoder();
 	const entries = await Promise.all(
 		files.map(async (f: OutFile) => ({
@@ -182,7 +206,36 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 	return { entries, warnings, errors };
 }
 
-export async function exportZip(p: Project, o: ExportOptions) {
+export async function exportZip(p: Project, o: ExportOptions, notes?: string[]) {
 	const r = await exportFiles(p, o);
-	return { ...r, zip: r.errors.length ? null : await zip(r.entries, { deflate: true }) };
+	if (r.errors.length) return { ...r, zip: null };
+	const warnings = [...new Set([...(notes ?? []), ...r.warnings])];
+	if (notes && warnings.length)
+		r.entries.push({
+			name: 'Export notes.txt',
+			data: new TextEncoder().encode(warnings.join('\n'))
+		});
+	const oversized = () => ({
+		entries: [],
+		warnings,
+		zip: null,
+		problem: 'This export is too large.',
+		errors: ['The archive exceeds PixelDoll’s size limits.']
+	});
+	if (!fitsEditableZip(r.entries)) return oversized();
+	try {
+		checkArchivePixels(
+			r.entries.filter(({ name }) => name.startsWith('cells/')).map(({ data }) => data)
+		);
+	} catch {
+		return oversized();
+	}
+	let bytes: Uint8Array;
+	try {
+		bytes = await zip(r.entries, { deflate: true });
+	} catch (error) {
+		console.warn('Could not compress export; saving without ZIP compression', error);
+		bytes = await zip(r.entries);
+	}
+	return bytes.length <= MAX_ZIP_BYTES ? { ...r, warnings, zip: bytes } : oversized();
 }

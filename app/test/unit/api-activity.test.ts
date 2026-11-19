@@ -138,7 +138,7 @@ test('the poll that reports a terminal job keeps its status and error for the ex
 	const failed = beginActivityCall('GET', '/background-jobs/stockings');
 	finishActivityCall(failed, 200, true, {
 		status: 'failed',
-		last_response: { error: 'worker timed out' }
+		last_response: { code: 3006, error: 'Generation failed' }
 	});
 	const refused = beginActivityCall('GET', '/background-jobs/other');
 	finishActivityCall(refused, 200, true, {
@@ -150,8 +150,8 @@ test('the poll that reports a terminal job keeps its status and error for the ex
 	expect(calls.map((call) => call.job)).toEqual([
 		undefined,
 		undefined,
-		{ status: 'failed', error: 'worker timed out' },
-		{ status: 'failed', error: 'content policy', policy: true },
+		{ status: 'failed', error: 'Generation failed (PixelLab code 3006)', code: 3006 },
+		{ status: 'failed', error: 'content policy (PixelLab code 5000)', code: 5000, policy: true },
 		{ status: 'completed' }
 	]);
 });
@@ -178,6 +178,25 @@ test('restored queue jobs receive their final cost without inventing a new submi
 		cost: { generations: 2, usd: 0 }
 	});
 	expect(snapshot().filter((call) => call.method === 'POST')).toHaveLength(1);
+	restoreActivityRequest({
+		...input,
+		state: 'completed',
+		jobs: [
+			{
+				id: 'old-job',
+				done: true,
+				status: 'failed',
+				failedAtProvider: true,
+				error: 'Generation failed (PixelLab code 3006)',
+				errorCode: 3006,
+				usage: { type: 'usd', usd: 0 }
+			}
+		]
+	});
+	expect(snapshot().filter((call) => call.method === 'POST')).toHaveLength(1);
+	expect(JSON.parse(exportActivityJson()).calls[0].failedJobs).toEqual([
+		{ id: 'old-job', status: 'failed', error: 'Generation failed (PixelLab code 3006)', code: 3006 }
+	]);
 });
 
 test('polling retention never evicts a pending generation or loses its final usage', () => {

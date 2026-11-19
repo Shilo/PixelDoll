@@ -5,13 +5,16 @@ import {
 	moveProject,
 	buildExport
 } from '../../src/lib/export/build.ts';
+import { recoverArtwork } from '../../src/lib/export/recovery.ts';
 import { retainMoves, retainMoveMetadata } from '../../src/lib/rig/moves.ts';
 import { variantOf } from '../../src/lib/dress/dress.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
+import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { baseHashOf, cellHash } from '../../src/lib/rig/rig.ts';
 import { defaultExportSettings } from '../../src/lib/store/export-settings.ts';
 import { readCharacterZip } from '../../src/lib/store/import.ts';
 import { CURRENT_FORMAT, type Project } from '../../src/lib/store/manifest.ts';
+import { unzip } from '../../src/lib/store/zip.ts';
 
 async function project(): Promise<Project> {
 	const image = makeImg(32, 32);
@@ -122,6 +125,143 @@ test('outfit ZIP uses only the selected saved look without changing the live cha
 	expect(imported.project.manifest.presets[0].variants.hair_tone).toBe('gold');
 	expect(source.manifest).toEqual(before);
 	expect(() => outfitProject(source, 'gone')).toThrow('no longer available');
+});
+
+test('unavailable outfit equipment does not block character ZIPs or change the saved outfits', async () => {
+	const source = await project();
+	source.manifest.presets = [
+		{
+			id: 'wizard',
+			name: 'Wizard',
+			items: { body: 'base', facial_hair: null, head: 'hat' },
+			variants: {}
+		}
+	];
+	const look = { items: { hair: 'hair', head: 'missing' }, variants: { hair_tone: 'gold' } };
+	const before = structuredClone({ manifest: source.manifest, look });
+	for (const engine of ['generic', 'godot'] as const) {
+		const result = await buildExport(source, {
+			engine,
+			baked: true,
+			look,
+			settings: defaultExportSettings()
+		});
+		expect(result.errors).toEqual([]);
+		expect(result.warnings).toContain('Current look: Missing equipment was left out (Head).');
+		const imported = await readCharacterZip(result.zip!);
+		expect(imported.project.manifest.presets).toMatchObject([
+			{ id: 'current', items: { hair: 'hair' }, variants: { hair_tone: 'gold' } },
+			{ id: 'wizard', items: { body: 'base', head: 'hat' } }
+		]);
+		expect(imported.project.manifest.presets[0].items).not.toHaveProperty('head');
+		expect(imported.project.manifest.presets[1].items).not.toHaveProperty('facial_hair');
+		expect({ manifest: source.manifest, look }).toEqual(before);
+	}
+});
+
+const exportOptions = {
+	look: { items: {}, variants: {} },
+	settings: defaultExportSettings(),
+	baked: true
+};
+
+test.each([
+	'generic',
+	'godot',
+	'unity',
+	'phaser',
+	'gdevelop',
+	'aseprite',
+	'rpgmaker',
+	'rpgmakerxp'
+] as const)('%s recovers surviving artwork when the body no longer matches', async (engine) => {
+	const source = await project();
+	const missing = `sha256:${'a'.repeat(64)}` as const;
+	source.manifest.rig.rest = { south: { image: missing, keypoints: [] } };
+	source.manifest.items[1].dressed = { south: missing };
+	source.manifest.items[0].baseHash = missing;
+	const result = await buildExport(source, { ...exportOptions, engine });
+	expect(result.kind).toBe('recovery');
+	expect(result.problem).toBe('The body frames no longer match this character.');
+	expect(result.warnings).toEqual(['Some source images could not be included.']);
+	expect([...(await unzip(result.zip!)).keys()]).toEqual([
+		'README.txt',
+		'frames.json',
+		'frames/1.png'
+	]);
+	expect(source.manifest.rig.rest.south?.image).toBe(missing);
+});
+
+test('recovery counts repeated frame references toward its ZIP limit', async () => {
+	const source = await project();
+	const cells = source.manifest.items[0].layers[0].cells!.idle!.south!;
+	cells.push(...Array.from({ length: 200 }, () => cells[0]));
+	const result = await recoverArtwork(source, 'Could not export.', 1600);
+	expect(result?.skipped).toBe(true);
+	expect(result?.zip.length).toBeLessThanOrEqual(1600);
+	const files = await unzip(result!.zip);
+	const tracks = JSON.parse(new TextDecoder().decode(files.get('frames.json')));
+	expect(tracks[0].frameCount).toBe(cells.length);
+	expect(tracks[0].images.length).toBeGreaterThan(0);
+	expect(tracks[0].images.length).toBeLessThan(cells.length);
+	expect([...files.keys()]).toEqual(['README.txt', 'frames.json', 'frames/1.png']);
+});
+
+test('no ZIP is offered when none of the recorded images can be read', async () => {
+	const source = await project();
+	source.images.clear();
+	const result = await buildExport(source, { ...exportOptions, engine: 'generic' });
+	expect(result).toMatchObject({ kind: 'failed', zip: null, retryable: false });
+});
+
+test('a visible foreground exports and imports even when the first body layer is empty', async () => {
+	const source = await project();
+	const body = source.manifest.items[0];
+	const layer = body.layers[0];
+	body.layers = [
+		{ ...layer, id: 'bg', role: 'bg', cells: { idle: { south: [null] } } },
+		{ ...layer, id: 'fg' }
+	];
+	const result = await buildExport(source, { ...exportOptions, engine: 'generic' });
+	expect(result.kind).toBe('requested');
+	const imported = await readCharacterZip(result.zip!);
+	expect(imported.project.manifest.items[0].layers).toEqual(body.layers);
+});
+
+test.each(['rpgmaker', 'rpgmakerxp'] as const)(
+	'%s offers source artwork instead of pretending to make a walking sheet',
+	async (engine) => {
+		const source = await project();
+		const result = await buildExport(source, { ...exportOptions, engine });
+		expect(result.kind).toBe('recovery');
+		const files = await unzip(result.zip!);
+		expect([...files.keys()]).toEqual(['README.txt', 'frames.json', 'frames/1.png']);
+		const image = await decodePngBytes(files.get('frames/1.png')!);
+		expect(image).toEqual([...source.images.values()][0]);
+		expect(new TextDecoder().decode(files.get('README.txt'))).toContain('not a game-ready export');
+	}
+);
+
+test('a missing equipment frame is left empty without losing the rest of the export', async () => {
+	const source = await project();
+	const cells = source.manifest.items[1].layers[0].cells!.idle!.south!;
+	const missing = `sha256:${'a'.repeat(64)}` as const;
+	cells[0] = missing;
+	source.manifest.rig.rest = { north: { image: missing, keypoints: [] } };
+	source.manifest.items[1].dressed = { south: missing };
+	const result = await buildExport(source, { ...exportOptions, engine: 'generic' });
+	expect(result.kind).toBe('requested');
+	expect(result.warnings).toContain('hair: 1 frame was left empty.');
+	const imported = await readCharacterZip(result.zip!);
+	expect(imported.project.manifest.items[1].layers[0].cells!.idle!.south).toEqual([null]);
+	expect(imported.project.manifest.rig.rest).toEqual({});
+	expect(imported.project.manifest.items[1].dressed).toEqual({});
+	const notes = new TextDecoder().decode((await unzip(result.zip!)).get('Export notes.txt'));
+	expect(notes).toContain('Missing body reference images');
+	expect(notes).toContain('hair: Missing reference images');
+	expect(cells[0]).toBe(missing);
+	expect(source.manifest.rig.rest.north?.image).toBe(missing);
+	expect(source.manifest.items[1].dressed.south).toBe(missing);
 });
 
 test('move ZIP and deletion filtering retain only matching tracks and leave the source intact', async () => {

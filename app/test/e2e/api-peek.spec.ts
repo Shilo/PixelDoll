@@ -117,7 +117,7 @@ test('a failed or policy-refused job shows its final status and error in the pee
 				json: {
 					id: 'stalled-job',
 					status: 'failed',
-					last_response: { error: 'Generation timed out' }
+					last_response: { code: 3006, error: 'Generation failed' }
 				}
 			});
 		if (path === '/v2/background-jobs/refused-job')
@@ -167,7 +167,7 @@ test('a failed or policy-refused job shows its final status and error in the pee
 	await page.getByRole('button', { name: 'Inspect all API calls', exact: true }).click();
 	await peek(page).getByRole('button', { name: 'Show background calls', exact: true }).click();
 	for (const [job, text] of [
-		['stalled-job', 'Job failed: Generation timed out'],
+		['stalled-job', 'Job failed: Generation failed (PixelLab code 3006)'],
 		['refused-job', 'Job refused by content policy: Request rejected by content filter']
 	]) {
 		const poll = peek(page)
@@ -185,11 +185,16 @@ test('a failed or policy-refused job shows its final status and error in the pee
 	).toEqual([
 		{
 			endpoint: '/background-jobs/stalled-job',
-			job: { status: 'failed', error: 'Generation timed out' }
+			job: { status: 'failed', error: 'Generation failed (PixelLab code 3006)', code: 3006 }
 		},
 		{
 			endpoint: '/background-jobs/refused-job',
-			job: { status: 'failed', error: 'Request rejected by content filter', policy: true }
+			job: {
+				status: 'failed',
+				error: 'Request rejected by content filter (PixelLab code 5000)',
+				code: 5000,
+				policy: true
+			}
 		}
 	]);
 });
@@ -586,6 +591,16 @@ test('mirrored saved requests show their payload and updated charge without send
 					done: true,
 					results: [],
 					usage: { type: 'generations', generations: 2 }
+				},
+				{
+					id: 'mirrored-failed-job',
+					status: 'failed',
+					done: true,
+					results: [],
+					failedAtProvider: true,
+					errorCode: 3006,
+					error: 'Generation failed (PixelLab code 3006)',
+					usage: { type: 'generations', generations: 0 }
 				}
 			]
 		});
@@ -600,6 +615,9 @@ test('mirrored saved requests show their payload and updated charge without send
 	await peek(page).locator('.peek-call > summary').click();
 	await expect(peek(page)).toContainText('Saved request');
 	await expect(peek(page)).toContainText('a saved dwarf request');
+	await expect(peek(page)).toContainText(
+		'Job mirrored-failed-job failed: Generation failed (PixelLab code 3006)'
+	);
 	await page.evaluate(async () => {
 		const dbPath = '/src/lib/store/db.ts',
 			queuePath = '/src/lib/pixellab/queue.ts';

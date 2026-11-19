@@ -8,6 +8,66 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
+test.each([true, false])(
+	'a PixelLab job that fails after acceptance retains its code and known billing=%s without resubmitting',
+	async (reported) => {
+		const records = new Map<string, JobRec>();
+		const requests: string[] = [];
+		let now = 1000;
+		const make = () => {
+			const queue = new Queue({
+				locks: null,
+				online: () => true,
+				now: () => now,
+				put: async (id, record) => void records.set(id, structuredClone(record)),
+				get: async (id) => records.get(id),
+				all: async () => [...records.values()].map((record) => structuredClone(record)),
+				api: async <T>(_key: string, method: string, path: string) => {
+					if (path === '/balance') return accountBalance as T;
+					requests.push(`${method} ${path}`);
+					return (
+						method === 'POST'
+							? { background_job_id: 'standing-job' }
+							: {
+									status: 'failed',
+									last_response: { code: 3006, error: 'Generation failed' },
+									...(reported ? { usage: { type: 'usd', usd: 0 } } : {})
+								}
+					) as T;
+				}
+			});
+			queue.setKey('synthetic-key');
+			return queue;
+		};
+		const queue = make();
+		const record = await queue.enqueue({
+			method: 'POST',
+			path: '/edit-animation-v2',
+			body: { seed: 123 }
+		});
+		await queue.tick();
+		now += 60000;
+		await queue.tick();
+		const restored = make();
+		await restored.load();
+		now += 60000;
+		await restored.tick();
+		expect(records.get(record.id)).toMatchObject({
+			state: 'failed',
+			error: 'Generation failed (PixelLab code 3006)',
+			gens: 0,
+			usd: 0
+		});
+		expect(records.get(record.id)?.costUnknown).toBe(reported ? undefined : true);
+		expect(records.get(record.id)?.jobs[0]).toMatchObject({
+			failedAtProvider: true,
+			errorCode: 3006,
+			policy: false
+		});
+		expect(requests).toEqual(['POST /edit-animation-v2', 'GET /background-jobs/standing-job']);
+	}
+);
+
 function incompleteResponse(status: number) {
 	const response = new Response('{}', { status });
 	vi.spyOn(response, 'text').mockRejectedValue(

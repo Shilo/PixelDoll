@@ -3,6 +3,16 @@ import type { Manifest, Slot, SlotProfile } from '../store/manifest.ts';
 
 export type SlotSource = readonly Slot[] | Pick<Manifest, 'slots'>;
 export type SlotRef = string | Slot;
+
+export function retainSlotDirections(slots: Slot[], directions: Rig['directions']): Slot[] {
+	const allowed = new Set(directions.map(({ id }) => id));
+	return slots.map((slot) => {
+		const overrides = slot.zOverrides?.filter(({ dir }) => !dir || allowed.has(dir));
+		return overrides?.length === slot.zOverrides?.length
+			? slot
+			: { ...slot, zOverrides: overrides };
+	});
+}
 export const DEFAULT_WARDROBE_ORDER = [
 	'head',
 	'hair',
@@ -126,6 +136,15 @@ export function requireSlot(source: SlotSource, id: string): Slot {
 	const slot = slots.find((entry) => entry.id === id) ?? SLOTS.find((entry) => entry.id === id);
 	if (!slot) throw new Error(`Unknown equipment slot: ${id}`);
 	return slot;
+}
+
+export function insertSlotInLadder(slots: Slot[], slot: Slot, ladder: readonly Slot[] = SLOTS) {
+	const order = ladder.findIndex((entry) => entry.id === slot.id);
+	const before = slots.findIndex((entry) => {
+		const rank = ladder.findIndex((candidate) => candidate.id === entry.id);
+		return order >= 0 && rank > order;
+	});
+	slots.splice(before < 0 ? slots.length : before, 0, slot);
 }
 
 export function slotOf(slot: SlotRef, source: SlotSource = SLOTS): Slot {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Component } from 'svelte';
 	import Studio from './studio/Studio.svelte';
+	import { workspaceCopy } from './lib/store/workspace-mode.ts';
 
 	// Dev-only harness pages (M1, M3-M5, #/selftest; some spend credits). Behind import.meta.env.DEV, so `vite build` drops them.
 	type Page = () => Promise<{ default: Component }>;
@@ -25,7 +26,7 @@
 	});
 </script>
 
-{#if !import.meta.env.DEV || route === '/' || route === ''}
+{#if workspaceCopy || !import.meta.env.DEV || route === '/' || route === ''}
 	<Studio />
 {:else}
 	{#await Promise.all([pages.bar(), (pages[route] ?? pages.home)()]) then [bar, page]}

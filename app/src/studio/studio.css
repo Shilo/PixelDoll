@@ -709,11 +709,6 @@ dialog select option {
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
-.balance {
-	gap: 6px;
-	padding: 0 8px;
-	color: var(--text-2);
-}
 .main {
 	flex: 1;
 	display: flex;

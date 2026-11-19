@@ -46,6 +46,7 @@
 	import { moveLabel } from '../model.ts';
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
+	import { workspaceCopy } from '../../lib/store/workspace-mode.ts';
 	let search = $state('');
 	let castDirection = $state(1);
 	let selection = $state<HTMLDivElement>();
@@ -520,6 +521,9 @@
 	<div class="scene-backdrop" aria-hidden="true"></div>
 	<div class="scene-reading" aria-hidden="true"></div>
 	<Toolbar />
+	{#if workspaceCopy}<div class="workspace-banner bu-floating" role="status">
+			Workspace copy · PixelLab off
+		</div>{/if}
 	{#if experience.screen === 'characters'}
 		<!-- Keyboard focus on this game region scopes selection shortcuts. -->
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
@@ -782,3 +786,15 @@
 	{/if}
 	{#if doc.error}<p class="experience-error" role="alert">{doc.error}</p>{/if}
 </div>
+
+<style>
+	.workspace-banner {
+		position: absolute;
+		z-index: 6;
+		top: calc(var(--stage-top) + 8px);
+		right: calc(var(--stage-right) + var(--edge));
+		padding: 4px 10px;
+		font-size: var(--fs-sm);
+		pointer-events: none;
+	}
+</style>

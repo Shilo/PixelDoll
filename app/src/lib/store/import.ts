@@ -25,6 +25,7 @@ export interface CharacterImportState {
 	animations: number | null;
 }
 export interface ImportedCharacter {
+	format?: 'pixellab';
 	project: Project;
 	extra: Pick<StoredProject, 'character' | 'skeletons' | 'rigQa'>;
 	warnings: string[];
@@ -41,7 +42,7 @@ export class CharacterImportError extends Error {
 	}
 }
 const text = new TextDecoder();
-const hashPattern = /^sha256:[0-9a-f]{64}$/;
+export const hashPattern = /^sha256:[0-9a-f]{64}$/;
 const required = (files: Map<string, Uint8Array>, path: string) => {
 	const b = files.get(path);
 	if (!b) throw new Error(`Missing file: ${path}`);
@@ -54,24 +55,21 @@ const json = (files: Map<string, Uint8Array>, path: string): unknown => {
 		throw new Error(`Could not read ${path}.`);
 	}
 };
+export const fitsEditableImage = ({ w, h }: { w: number; h: number }) =>
+	w >= 1 && h >= 1 && w <= 8192 && h <= 8192 && w * h <= 8_388_608;
+
 async function image(bytes: Uint8Array): Promise<Img> {
 	const size = pngSize(bytes);
-	if (
-		!size ||
-		size.w < 1 ||
-		size.h < 1 ||
-		size.w > 8192 ||
-		size.h > 8192 ||
-		size.w * size.h > 8_388_608
-	)
+	if (!size || !fitsEditableImage(size))
 		throw new Error('An image is not a PNG or exceeds the import size limit.');
 	return decodePng(bytes);
 }
 const hasPixels = (im: Img) => !!opaqueBox(im);
-function manifestShape(m: Manifest) {
+export function manifestShape(m: Manifest) {
 	if (
 		!supportedFormat(m?.format) ||
-		!m.name?.trim() ||
+		typeof m.name !== 'string' ||
+		!m.name.trim() ||
 		!m.rig ||
 		!Array.isArray(m.items) ||
 		!Array.isArray(m.slots) ||
@@ -89,13 +87,25 @@ function manifestShape(m: Manifest) {
 		throw new Error('The character has an invalid or oversized rig.');
 	for (const a of m.rig.animations)
 		if (
+			!a ||
 			!Number.isInteger(a.cells) ||
 			a.cells < 1 ||
 			a.cells > 120 ||
 			!Array.isArray(a.frames) ||
+			a.frames.length < 1 ||
 			a.frames.length > 1000
 		)
 			throw new Error('The character has an invalid frame count.');
+	if (
+		m.items.some(
+			(item) =>
+				!item ||
+				typeof item.id !== 'string' ||
+				!Array.isArray(item.layers) ||
+				item.layers.some((layer) => !layer)
+		)
+	)
+		throw new Error('The character has an invalid item or layer.');
 	if (new Set(m.items.map((i) => i.id)).size !== m.items.length)
 		throw new Error('The character has duplicate item IDs.');
 	// Count logical cells, including repeated hash references: a tiny archive can otherwise request gigabytes of copies.
@@ -165,8 +175,24 @@ export async function readCharacterZip(
 		}
 	}
 	let result: ImportedCharacter;
+	if (files.has('project.json')) result = await editable(files);
+	else if (files.has('metadata.json')) {
+		checkArchivePixels(files.values());
+		result = await pixelLab(files, stateId, animationStateIds);
+	} else
+		throw new Error(
+			'This ZIP needs PixelLab metadata.json or a PixelDoll project.json. Arbitrary PNG folders and spritesheet ZIPs need a direction and frame layout; they are not supported yet.'
+		);
+	const errors = validate(result.project);
+	if (errors.length)
+		throw new Error(`The character is not compatible: ${errors.slice(0, 3).join('; ')}`);
+	if (!hasVisibleBase(result.project)) throw new Error('The character has no visible base frames.');
+	return result;
+}
+
+export function checkArchivePixels(files: Iterable<Uint8Array>) {
 	let decodedPixels = 0;
-	for (const bytes of files.values()) {
+	for (const bytes of files) {
 		const size = pngSize(bytes);
 		if (size) decodedPixels += size.w * size.h;
 		if (decodedPixels > 64 * 1024 * 1024)
@@ -174,28 +200,20 @@ export async function readCharacterZip(
 				'This archive contains too many image pixels. Export a smaller character or fewer moves.'
 			);
 	}
-	if (files.has('project.json')) result = await editable(files);
-	else if (files.has('metadata.json')) result = await pixelLab(files, stateId, animationStateIds);
-	else
-		throw new Error(
-			'This ZIP needs PixelLab metadata.json or a PixelDoll project.json. Arbitrary PNG folders and spritesheet ZIPs need a direction and frame layout; they are not supported yet.'
-		);
-	const errors = validate(result.project);
-	if (errors.length)
-		throw new Error(`The character is not compatible: ${errors.slice(0, 3).join('; ')}`);
-	const { manifest: m } = result.project;
-	const base = m.items.find((i) => i.id === m.rig.baseItem)!;
-	if (
-		!m.rig.animations.some((a) =>
+}
+
+export function hasVisibleBase(project: Project) {
+	const { manifest: m } = project;
+	const base = m.items.find((i) => i.id === m.rig.baseItem);
+	return !!base?.layers.some((layer) =>
+		m.rig.animations.some((a) =>
 			m.rig.directions.some((d) =>
-				Array.from({ length: a.cells }, (_, c) =>
-					cellImg(result.project, base.layers[0], a.id, d.id, c)
-				).some((im) => im && hasPixels(im))
+				Array.from({ length: a.cells }, (_, c) => cellImg(project, layer, a.id, d.id, c)).some(
+					(im) => im && hasPixels(im)
+				)
 			)
 		)
-	)
-		throw new Error('The character has no visible base frames.');
-	return result;
+	);
 }
 
 async function editable(files: Map<string, Uint8Array>): Promise<ImportedCharacter> {
@@ -215,10 +233,15 @@ async function editable(files: Map<string, Uint8Array>): Promise<ImportedCharact
 				for (const cells of Object.values(dirs)) for (const h of cells ?? []) if (h) refs.add(h);
 	}
 	for (const r of Object.values(m.rig.rest ?? {})) if (r) refs.add(r.image);
-	const images = new Map<string, Img>();
+	const cells = new Map<string, Uint8Array>();
 	for (const h of refs) {
 		if (!hashPattern.test(h)) throw new Error('The project contains an invalid image hash.');
-		const im = await image(required(files, `cells/${h.slice(7)}.png`));
+		cells.set(h, required(files, `cells/${h.slice(7)}.png`));
+	}
+	checkArchivePixels(cells.values());
+	const images = new Map<string, Img>();
+	for (const [h, bytes] of cells) {
+		const im = await image(bytes);
 		if ((await cellHash(im)) !== h)
 			throw new Error('A project image does not match its stored hash.');
 		images.set(h, im);
@@ -694,6 +717,7 @@ async function pixelLab(
 			presets: [{ id: 'default', name: 'Base', items: { body: 'base' }, variants: {} }]
 		};
 		return {
+			format: 'pixellab',
 			project: { manifest, images },
 			extra: {},
 			states,

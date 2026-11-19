@@ -37,6 +37,7 @@ function record() {
 			slots: [{ id: 'head' }],
 			rig: {
 				baseItem: 'base',
+				directions: [{ id: 'south' }],
 				animations: [{ id: 'idle', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }]
 			},
 			presets: [{ id: 'look', items: { body: 'base', head: 'hat' }, variants: { hat_1: 'gold' } }]
@@ -245,6 +246,21 @@ test('a stale tab never brings back an empty category deleted elsewhere, even af
 	records.set(live.id, live); // the record no longer has Charm
 	await saveDress(live.id, stale, { items: {}, variants: {} }, { base });
 	expect(ids((records.get(live.id) as StoredProject).manifest.slots)).toEqual(['head']);
+});
+
+test('a stale slot edit cannot restore overrides for a removed facing', async () => {
+	const live = record();
+	const stale = structuredClone(live.manifest);
+	stale.rig.directions.push({ id: 'west' });
+	const base = structuredClone(stale.slots);
+	stale.slots[0].zOverrides = [
+		{ layer: 'fg', dir: 'west', z: 12 },
+		{ layer: 'fg', dir: 'south', z: 13 },
+		{ layer: 'bg', z: 4 }
+	];
+	records.set(live.id, live);
+	const saved = await saveDress(live.id, stale, { items: {}, variants: {} }, { base });
+	expect(saved[0].zOverrides).toEqual(stale.slots[0].zOverrides.slice(1));
 });
 
 test('a deliberate removal is saved, but never of a category holding attempts or changed elsewhere since', async () => {

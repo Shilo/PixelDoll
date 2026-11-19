@@ -180,9 +180,13 @@ Arbitrary PNG folders, unrelated JSON formats, standalone spritesheets and custo
 
 **Cancel** closes the import before saving, including while a ZIP downloads or is being prepared. Pending reads are aborted where possible; late results cannot open a preview. Once **Import character** starts saving the local copy, Cancel is visibly disabled until that save finishes.
 
-Artwork keeps its original pixels and directions on a shared square canvas, at least 64 px and up to 256 px. Larger transparent padding can be cropped only when no visible pixels are lost; artwork is never rescaled. Existing clothes and hair in a PixelLab character are part of its base and cannot be removed as separate items. Standalone PNGs are not supported because they do not describe the direction and animation layout.
+PixelLab imports keep every supplied direction by default. Open **Directions** in the import review and use the compass arrows to keep or skip views. Use the attached mirror buttons to flip the opposite view. Mirroring replaces that direction's artwork in this local copy, including in moves. Editable PixelDoll backups restore their saved directions and mirror settings as-is.
+
+Artwork uses a shared square canvas, at least 64 px and up to 256 px. Larger transparent padding can be cropped only when no visible pixels are lost; artwork is never rescaled. Existing clothes and hair in a PixelLab character are part of its base and cannot be removed as separate items. Standalone PNGs are not supported because they do not describe the direction and animation layout.
 
 If a move has different frame counts by direction, those direction groups appear as separate moves so no frames are dropped or repeated. Missing directions stay unavailable. PixelLab ZIPs do not provide playback speed, so imported animation frames default to 100 ms. Move names display spaces instead of underscores or hyphens; distinct moves remain separate even when their readable names match.
+
+For a saved character, open its menu and choose **Directions…**. Turn off views on the compass, then choose **Review removal** to see what will be deleted. You can download a backup before confirming. This removes playable views from all moves and equipment, but keeps any original standing references needed for pose setup. Keep artwork for each move and item, and keep the original partner for any mirror you keep. This does not generate new views or replace artwork on saved characters.
 
 Leave **Set up the pose rig next** checked to prepare imported artwork for the same equipment and move pipeline used by created characters. You can also choose character menu → **Set up character…** later. Review the existing appearance and standing reference, then check the estimated price before starting. Setup finds joints on every unique body frame (0.1 gen each) and connects the supplied standing views to your current PixelLab account (0.25 gen). It keeps existing pixels, layers, colors and outfits intact. Saved standing views stay fixed to preserve existing equipment alignment.
 
@@ -320,11 +324,30 @@ selected equipment posing. The previous body remains if any quality check still 
 
 ## Export
 
+To share your whole saved library for troubleshooting, choose **More options → Export my workspace**.
+The ZIP includes your saved characters, artwork, items, moves, outfits, and workspace settings. **Include recent errors**
+adds your PixelLab tier and a summary of failed and unfinished requests. Your key, request bodies, and unfinished drafts
+are not included. The ZIP does include artwork and saved prompts, so share it privately with someone you trust.
+
+Choose **More options → Open workspace copy**, then drop the ZIP in the box or click the box to choose it. The
+`?workspace-copy` address opens a separate, temporary copy. You can inspect or change the copy
+without changing your own library. PixelLab is off and no jobs restart. Close or reload the tab to discard the copy and
+its edits. This is not a backup restore or merge. Export and open keep usable records and artwork when some data is
+damaged. The copy's Activity reports skipped records and missing artwork. Unreadable or unsupported ZIPs cannot be
+opened. Workspace ZIPs are limited to 64 MB, 5,000 files, and additional artwork and record limits; for larger
+libraries, use individual character ZIPs. Uncommitted edits outside the current character are not included.
+
 Press **Export** (toolbar), choose an **Export format**, and download the zip. **Engines and frameworks** lists Godot, Unity,
 Phaser, GDevelop and RPG Maker; **Assets** lists Aseprite and PNG + JSON. Export is
-free and runs on your device. Check **Also export finished characters** to also get one ready-made sheet per outfit.
+free and runs on your device. Turn on **Include dressed character sheets** to get a ready-made sheet per outfit.
 
-Each zip has a `README.txt` with a quick start for that engine. Copy the whole folder into your project (for RPG Maker, only
+If some frames or equipment are missing, check **Export notes** for what was left out. Build warnings also appear in
+`Export notes.txt` inside the ZIP. Your saved character is unchanged.
+If the selected format cannot be built, or the export is too large, **Download artwork ZIP** saves the source PNGs
+PixelDoll can read, along with a frame list. It does not include full alignment or game settings and is not a game-ready
+export or an editable PixelDoll copy. If there is no readable artwork, there is no ZIP to download.
+
+Each format ZIP has a `README.txt` with a quick start for that engine. Copy the whole folder into your project (for RPG Maker, only
 the PNG files go into the characters folder).
 
 Godot includes a native scene, animation resources and an equipment runtime. Unity includes an Editor importer that creates

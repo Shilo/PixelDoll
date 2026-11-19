@@ -1,6 +1,7 @@
 // Studio state: UI (size class, theme, tabs, sheets, playback), the open project + outfit with undo/redo and autosave,
 // item generations (drafts) and the create-character run. Pixel data lives in $state.raw (deep proxies over the manifest
 // made recolor/compose take seconds, B5); manifest edits bump doc.rev.
+import type { Snippet } from 'svelte';
 import {
 	applyDress,
 	dressOf,
@@ -13,6 +14,7 @@ import {
 	type Outfit
 } from '../lib/dress/project.ts';
 import { splitBase } from '../lib/dress/regions.ts';
+import { retainSlotDirections } from '../lib/items/slots.ts';
 import { keepThumbnails } from './experience/thumbnails.svelte.ts';
 import {
 	deriveMaterials,
@@ -49,6 +51,7 @@ import type {
 import { CURRENT_FORMAT } from '../lib/store/manifest.ts';
 import type { ItemPaletteRepairPlan, Draft, ItemResult } from '../lib/items/run.ts';
 import { loadDrafts } from '../lib/items/drafts.ts';
+import { insertSlotInLadder } from '../lib/items/slots.ts';
 import { app } from '../lib/app.svelte.ts';
 import { requestTier, tierDecision } from '../lib/pixellab/plans.ts';
 import type { NewItemInput } from './itemRoute.ts';
@@ -83,6 +86,12 @@ import {
 	useText
 } from './slots.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import {
+	COPY_GENERATION_OFF,
+	copyPreferences,
+	workspaceCopy,
+	workspaceKeys as K
+} from '../lib/store/workspace-mode.ts';
 import type { SetupSpec } from './setup.ts';
 import {
 	forgetFits,
@@ -126,6 +135,7 @@ import.meta.hot?.dispose((data) => {
 // ---------- small persistence helpers (every storage access can throw: private mode, blocked site data) ----------
 const lsGet = (k: string) => {
 	try {
+		if (workspaceCopy) return copyPreferences.get(k) ?? null;
 		return localStorage.getItem(k);
 	} catch {
 		return null;
@@ -133,16 +143,16 @@ const lsGet = (k: string) => {
 };
 const lsSet = (k: string, v: string | null) => {
 	try {
+		if (workspaceCopy) {
+			if (v == null) copyPreferences.delete(k);
+			else copyPreferences.set(k, v);
+			return;
+		}
 		if (v == null) localStorage.removeItem(k);
 		else localStorage.setItem(k, v);
 	} catch {
 		/* ignore */
 	}
-};
-const K = {
-	theme: 'pixeldoll.theme',
-	welcomed: 'pixeldoll.welcomed',
-	last: 'pixeldoll.studio.project'
 };
 export const DEMO = 'fixture:s2';
 
@@ -160,11 +170,13 @@ export type SheetId =
 	| 'gen'
 	| 'move'
 	| 'rename'
+	| 'directions'
 	| 'importZip'
 	| 'importPixelLab'
 	| 'delete'
 	| 'details'
 	| 'setup'
+	| 'workspaceExport'
 	| 'slots';
 const sizeNow = (): Size => {
 	const w = innerWidth,
@@ -189,6 +201,7 @@ export const ui = $state({
 	slotTarget: null as string | null,
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
+	directionProject: '',
 	details: '', // the character the Details sheet is for
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		group: string;
@@ -204,7 +217,7 @@ export const ui = $state({
 	frame: 0,
 	zoom: 0, // device px per sprite px; 0 = fit
 	bg: 'checker' as 'checker' | 'solid',
-	toast: '',
+	toast: '' as string | Snippet,
 	toastTitle: '',
 	toastPending: false,
 	toastTone: 'info' as 'info' | 'success' | 'warning' | 'danger',
@@ -326,7 +339,7 @@ export function resumeToast(reason: 'pointer' | 'focus') {
 	if (!toastT) armToast();
 }
 /** A zero duration keeps the message until dismissed or replaced. Return false when an unresolved error takes priority. */
-export function toast(s: string, options: number | ToastOptions = 4000) {
+export function toast(s: string | Snippet, options: number | ToastOptions = 4000) {
 	const o: ToastOptions = typeof options === 'number' ? { duration: options } : options;
 	if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
 	stopToastTimer();
@@ -385,6 +398,10 @@ function allowsTier(minimumTier: number): boolean {
 	return true;
 }
 export function withKey(fn: () => void, minimumTier = 0) {
+	if (workspaceCopy) {
+		toast(COPY_GENERATION_OFF);
+		return;
+	}
 	if (follower(() => withKey(fn, minimumTier))) return;
 	if (app.key && !app.keyRejected && !allowsTier(minimumTier)) {
 		afterConnect = null;
@@ -549,7 +566,7 @@ export async function refreshProjects(): Promise<boolean> {
 	// Drop unload snapshots and thumbnails of characters deleted here or in another tab (only when the listing is known to
 	// be complete).
 	if (listed) keepThumbnails(new Set(store.projects.map((p) => p.id)));
-	if (listed)
+	if (listed && !workspaceCopy)
 		try {
 			for (const k of Object.keys(localStorage))
 				if (k.startsWith(UNSAVED) && !store.projects.some((p) => k === UNSAVED + p.id))
@@ -560,12 +577,22 @@ export async function refreshProjects(): Promise<boolean> {
 	return !!listed;
 }
 
-/** A saved character as the Studio shows it, read without opening it. */
-export async function readCharacter(id: string) {
-	const r = await openSource(id);
-	const split = await splitBase(r.project); // B15: shirt / shorts color regions on the base (idempotent; fixtures in memory)
+async function prepareCharacter(r: Awaited<ReturnType<typeof openSource>>) {
+	const manifest = r.project.manifest;
+	const base = manifest.items.find(({ id }) => id === manifest.rig.baseItem);
+	const split = base?.regions === 'shirt-shorts' ? null : await splitBase(r.project);
 	deriveMaterials(r.project); // items without materials (new items, fresh fixtures)
 	return { r, split };
+}
+
+/** A saved character as the Studio shows it, read without opening it. */
+export async function readCharacter(id: string) {
+	return prepareCharacter(await openSource(id));
+}
+
+export async function readCharacterForExport(id: string) {
+	const r = await openSource(id, undefined, { allowMissingImages: true });
+	return r.missingImages ? r : (await prepareCharacter(r)).r;
 }
 
 let openRequest = 0,
@@ -586,7 +613,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 	try {
 		const { r, split } = await readCharacter(id);
 		if (request !== openRequest) return;
-		if (split.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
+		if (split?.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
 		if (request !== openRequest) return;
 		await flushSave(); // an edit made to the previous character while this one loaded lands before it is replaced
 		if (request !== openRequest) return;
@@ -687,6 +714,13 @@ export const lastProject = () => lsGet(K.last) ?? DEMO;
  *  cancel the open of the newly picked one. */
 const viewing = (id: string) => doc.id === id && (!opening || opening === id);
 
+export async function refreshCharacterDirections(id: string): Promise<boolean> {
+	const reload = viewing(id);
+	if (reload) await openProject(id, { quiet: true });
+	const listed = await refreshProjects();
+	return listed && (!reload || doc.id === id || !!opening);
+}
+
 // ---- undo/redo: snapshots of the dress state (outfit, colors, presets, layer order, hides) ----
 const snap = () =>
 	JSON.stringify(
@@ -704,7 +738,7 @@ function restore(e: UndoStep) {
 	const keep = busySlots(m),
 		from = e.from ? (JSON.parse(e.from) as Slot[]) : m.slots,
 		removed = from.filter((s) => !d.slots.some((x) => x.id === s.id));
-	d.slots = mergeSlotEdits(from, d.slots, m.slots, keep);
+	d.slots = retainSlotDirections(mergeSlotEdits(from, d.slots, m.slots, keep), m.rig.directions);
 	const kept = removed.filter((s) => keep.has(s.id) && d.slots.some((x) => x.id === s.id));
 	applyDress(m, d);
 	doc.items = { ...d.current!.items };
@@ -789,6 +823,12 @@ export async function flushSave() {
 	pendingSave = null;
 	if (pending) saving = saving.then(pending);
 	await saving;
+}
+
+export async function prepareWorkspaceExport() {
+	await flushSave();
+	if (edits !== savedEdits)
+		throw new Error('The latest changes could not be saved. Save them before exporting.');
 }
 /** The slot definitions the open character's view continues from (its open or last save): a save writes only the slot
  *  changes made since, so a stale tab's routine save never undoes another tab's category changes. */
@@ -905,8 +945,7 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 }
 
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
-export function deletionBlocked(id = doc.id): string {
-	if (id.startsWith('fixture:')) return 'The bundled demo cannot be deleted.';
+function characterEditBlocked(action: 'delete' | 'change directions for'): string {
 	if (doc.loading || opening) return 'Wait for the character to finish loading.';
 	if (queue.role === 'follower')
 		return 'Manage characters in the other PixelDoll tab, or close it first.';
@@ -918,8 +957,27 @@ export function deletionBlocked(id = doc.id): string {
 		(moving.spec && !moving.done) ||
 		(settingUp.spec && !settingUp.done)
 	)
-		return 'Finish or dismiss pending generation work before deleting a character.';
+		return action === 'delete'
+			? 'Finish or dismiss pending generation work before deleting a character.'
+			: 'Finish or dismiss pending generation work before changing directions.';
 	return '';
+}
+
+export function deletionBlocked(id = doc.id): string {
+	return id.startsWith('fixture:')
+		? 'The bundled demo cannot be deleted.'
+		: characterEditBlocked('delete');
+}
+
+export function directionEditsBlocked(id: string): string {
+	if (!id.startsWith('rig-')) return 'Only saved characters can be edited.';
+	return (
+		characterEditBlocked('change directions for') ||
+		(!generationSettled() ? 'Wait for the current generation work to finish.' : '') ||
+		(gens.some((gen) => gen.draft.rigId === id)
+			? 'Keep or dismiss this character’s item drafts before changing directions.'
+			: '')
+	);
 }
 function generationSettled() {
 	return (
@@ -1967,7 +2025,7 @@ function withDrafts(p: Project): Project {
 			items.push(running ? it : { ...it, pending: undefined }); // only a running draft is still loading; other gaps are missing
 			for (const [h, im] of prev.images) if (!images.has(h)) images.set(h, im);
 			const slot = prev.manifest.slots.find((x) => x.id === it.slot);
-			if (slot && !slots.some((x) => x.id === slot.id)) slots.push(slot);
+			if (slot && !slots.some((x) => x.id === slot.id)) insertSlotInLadder(slots, slot);
 		} else if (running) {
 			const { spec } = g.draft;
 			items.push({

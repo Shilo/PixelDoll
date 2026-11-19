@@ -1,7 +1,7 @@
 import { expect, test, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { loadFixture } from '../../src/lib/compose/fixture.ts';
-import { cellImg } from '../../src/lib/compose/compose.ts';
+import { cellImg, composeCell } from '../../src/lib/compose/compose.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
@@ -9,7 +9,13 @@ import { characterId, downloadCharacter, listCharacters } from '../../src/lib/pi
 import { planItem } from '../../src/lib/items/items.ts';
 import { baseCell } from '../../src/lib/items/run.ts';
 import { coverage } from '../../src/studio/itemRoute.ts';
-import { cellHash } from '../../src/lib/rig/rig.ts';
+import { cellHash, DIRECTIONS, type DirectionName } from '../../src/lib/rig/rig.ts';
+import {
+	configureImportedDirections,
+	retainCharacterDirections
+} from '../../src/lib/rig/directions.ts';
+import { flipH } from '../../src/lib/rig/mirror.ts';
+import { setupPlan } from '../../src/lib/rig/setup.ts';
 import { expectPixels } from './pixels.ts';
 import {
 	CharacterImportError,
@@ -140,6 +146,163 @@ test('current PixelLab multi-state ZIP preserves independent directions and spar
 	expect(m.rig.rest).toBeUndefined();
 	expect((await readCharacterZip(bytes, 'second')).project.manifest.rig.animations).toHaveLength(1);
 	await expect(readCharacterZip(bytes, 'missing')).rejects.toThrow('selected character state');
+});
+
+test('an import replaces a supplied mirror, preserves sparse moves and round-trips the selected artwork', async () => {
+	const { project } = await readCharacterZip(await zip(await pixelLabFiles()), id);
+	const source = project.manifest.items[0].layers[0];
+	const next = await configureImportedDirections(project, [
+		{ id: 'south' },
+		{ id: 'east' },
+		{ id: 'west', mirrorOf: 'east' }
+	]);
+	const base = next.manifest.items[0].layers[0];
+	expect(base.cells!.default.west![0]).not.toBe(source.cells!.default.west![0]);
+	expect(next.manifest.rig.rest?.west?.image).toBe(source.cells!.default.west![0]);
+	expect(next.manifest.rig.pivot).toEqual(project.manifest.rig.pivot);
+	expectPixels(
+		cellImg(next, base, 'default', 'west', 0),
+		flipH(cellImg(project, source, 'default', 'east', 0)!)
+	);
+	expectPixels(
+		cellImg(next, base, 'default', 'east', 0),
+		cellImg(project, source, 'default', 'east', 0)
+	);
+	expect(cellImg(next, base, 'walking', 'west', 0)).toBeNull();
+	await expect(configureImportedDirections(project, [{ id: 'east' }])).rejects.toThrow('walking');
+	const exported = await exportFiles(next, { engines: ['generic'], baked: false });
+	expect(exported.errors).toEqual([]);
+	expect((await readCharacterZip(await zip(exported.entries))).project.manifest).toEqual(
+		next.manifest
+	);
+});
+
+test('eight original views and every horizontal mirror preserve the intended pixels', async () => {
+	const { project } = await readCharacterZip(
+		await zip([
+			{ name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Eight views' })) },
+			...(await Promise.all(
+				DIRECTIONS.map(async (direction, index) => ({
+					name: `rotations/${direction}.png`,
+					data: await encodePngBytes(sprite(90 + 17 * index, 12 + index))
+				}))
+			))
+		])
+	);
+	const original = project.manifest.items[0].layers[0];
+	const pairs: Partial<Record<DirectionName, DirectionName>> = {
+		east: 'west',
+		west: 'east',
+		'north-east': 'north-west',
+		'north-west': 'north-east',
+		'south-east': 'south-west',
+		'south-west': 'south-east'
+	};
+	expect(project.manifest.rig.directions).toEqual(DIRECTIONS.map((id) => ({ id })));
+	for (const mirrorSide of ['east', 'west']) {
+		const selected = DIRECTIONS.map((id) => {
+			const mirrorOf = id.endsWith(mirrorSide) ? pairs[id] : undefined;
+			return mirrorOf ? { id, mirrorOf } : { id };
+		});
+		const configured = await configureImportedDirections(project, selected);
+		const record = { id, savedAt: '', origin: 'studio' as const, manifest: configured.manifest };
+		const layer = configured.manifest.items[0].layers[0];
+		for (const { id, mirrorOf } of selected) {
+			const source = cellImg(project, original, 'default', mirrorOf ?? id, 0)!;
+			const expected = mirrorOf ? flipH(source) : source;
+			const hash = layer.cells?.default[id]?.[0];
+			expectPixels(hash ? configured.images.get(hash) : undefined, expected, `${id} stored`);
+			expectPixels(cellImg(configured, layer, 'default', id, 0), expected, `${id} rendered`);
+		}
+		await expect(
+			retainCharacterDirections(
+				record,
+				selected.filter(({ id }) => id !== (mirrorSide === 'east' ? 'north-west' : 'north-east')),
+				configured.images
+			)
+		).rejects.toThrow('Keep North');
+		const cardinals = selected.filter(({ id }) => !id.includes('-'));
+		const { manifest: removed } = await retainCharacterDirections(
+			record,
+			cardinals,
+			configured.images
+		);
+		expect(removed.rig.directions).toEqual(cardinals);
+		for (const { id } of cardinals)
+			expect(removed.items[0].layers[0].cells!.default[id]).toEqual(layer.cells!.default[id]);
+	}
+});
+
+test('pose registration uses the original standing views, not generated mirrors', async () => {
+	const entries = [
+		{ name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Test hero' })) },
+		...(await Promise.all(
+			['south', 'east', 'north', 'west'].map(async (dir, index) => ({
+				name: `rotations/${dir}.png`,
+				data: await encodePngBytes(sprite(100 + index * 20))
+			}))
+		))
+	];
+	const directions = [{ id: 'south' }, { id: 'east' }, { id: 'west', mirrorOf: 'east' }] as const;
+	const full = await readCharacterZip(await zip(entries));
+	expect(full.format).toBe('pixellab');
+	const configured = await configureImportedDirections(full.project, [...directions]);
+	const setup = await setupPlan(configured);
+	const layer = full.project.manifest.items[0].layers[0];
+	expect(setup.registrationDirections).toBe(4);
+	expect(setup.fixedRest).toBe(false);
+	expectPixels(setup.rest.west, cellImg(full.project, layer, 'default', 'west', 0));
+	expectPixels(setup.rest.north, cellImg(full.project, layer, 'default', 'north', 0));
+	const partial = await readCharacterZip(await zip(entries.slice(0, -1)));
+	await expect(
+		setupPlan(await configureImportedDirections(partial.project, [...directions]))
+	).rejects.toThrow('Import the missing rotations');
+});
+
+test('removing saved directions prunes fitted equipment but never changes retained pixels or rehabilitates stale fits', async () => {
+	const project = await loadFixture(
+		async (path) =>
+			new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url)))
+	);
+	const { manifest } = project;
+	const stale = manifest.items.find((item) => item.id === 'hat_wizard')!;
+	stale.baseHash = `sha256:${'0'.repeat(64)}`;
+	const original = { id: 'rig-test', savedAt: '', origin: 'studio' as const, manifest };
+	await expect(
+		retainCharacterDirections(original, [{ id: 'west', mirrorOf: 'east' }], project.images)
+	).rejects.toThrow('Keep East');
+	const retained = manifest.rig.directions.filter(({ id }) => id !== 'west');
+	const sparse = structuredClone(original);
+	const hat = sparse.manifest.items.find(({ id }) => id === stale.id)!;
+	for (const layer of hat.layers)
+		for (const rows of Object.values(layer.cells ?? {})) {
+			rows.west = rows.south;
+			for (const dir of retained) delete rows[dir.id];
+		}
+	const blank = makeImg(64, 64);
+	const blankHash = await cellHash(blank);
+	const images = new Map(project.images).set(blankHash, blank);
+	hat.layers[0].cells!.walk.south = [blankHash];
+	await expect(retainCharacterDirections(sparse, retained, images)).rejects.toThrow(hat.name);
+	const { manifest: trimmed } = await retainCharacterDirections(original, retained, project.images);
+	expect(trimmed.rig.baseHash).not.toBe(manifest.rig.baseHash);
+	expect(trimmed.rig.directions).toEqual(retained);
+	for (const item of trimmed.items) {
+		for (const layer of item.layers)
+			for (const row of Object.values(layer.cells ?? {})) expect(row.west).toBeUndefined();
+		expect(item.coverage?.some((key) => key.includes('/west/'))).not.toBe(true);
+		const before = manifest.items.find(({ id }) => id === item.id)!;
+		expect(item.baseHash).toBe(
+			before.baseHash === manifest.rig.baseHash ? trimmed.rig.baseHash : before.baseHash
+		);
+	}
+	const next = { manifest: trimmed, images: project.images };
+	for (const direction of retained)
+		expectPixels(
+			composeCell(next, trimmed.presets[0].items, 'walk', direction.id, 0),
+			composeCell(project, manifest.presets[0].items, 'walk', direction.id, 0)
+		);
+	expect((await exportFiles(next, { engines: ['generic'], baked: false })).errors).toEqual([]);
 });
 
 test('the rotations are the Default move; a ZIP animation named default steps aside', async () => {
