@@ -1227,6 +1227,16 @@ test('putting on an item the shown move has no frames for shows it standing inst
 	s.ui.anim = 'walk';
 	s.wear('hat');
 	expect([s.doc.items.head, s.ui.anim]).toEqual([null, 'walk']);
+	// Top-down and Side-scroller pick the move from movement, not from this choice: wearing there changes no state.
+	const { experience } = await import('../../src/studio/experience/state.svelte.ts');
+	for (const mode of ['topdown', 'side'] as const) {
+		experience.mode = mode;
+		s.wear('hat');
+		expect([s.doc.items.head, s.ui.anim]).toEqual(['hat', 'walk']);
+		s.wear('hat');
+		expect([s.doc.items.head, s.ui.anim]).toEqual([null, 'walk']);
+	}
+	experience.mode = 'preview';
 	hat.layers[0].cells!.walk = hat.layers[0].cells!.default;
 	hat.coverage.push('walk/south/0');
 	s.wear('hat');
