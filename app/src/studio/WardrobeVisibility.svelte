@@ -13,6 +13,8 @@
 	let { current }: { current?: { id: string; name: string } } = $props();
 	const headingId = $props.id();
 	const hideAll = $derived(sharedItemsHiddenForAll());
+	const hideDemo = $derived(hideAll || !demoItemsShown());
+	const hideCurrent = $derived(current ? sharedItemsHidden(current.id) : false);
 	const lockReason = $derived(hideAll ? ' (All characters is on)' : '');
 
 	function reportSave(saved: boolean) {
@@ -32,6 +34,7 @@
 			role="switch"
 			aria-label="Hide shared items for all characters"
 			checked={hideAll}
+			defaultChecked={hideAll}
 			onchange={(event) => reportSave(setSharedItemsHiddenForAll(event.currentTarget.checked))}
 		/>
 	</label>
@@ -47,7 +50,8 @@
 			type="checkbox"
 			role="switch"
 			aria-label={`Hide shared items from ${DEMO_NAME} (Demo)${lockReason}`}
-			checked={hideAll || !demoItemsShown()}
+			checked={hideDemo}
+			defaultChecked={hideDemo}
 			disabled={hideAll}
 			onchange={(event) => {
 				reportSave(setDemoItemsShown(!event.currentTarget.checked));
@@ -69,7 +73,8 @@
 				type="checkbox"
 				role="switch"
 				aria-label={`Hide shared items for ${name} (Current)${lockReason}`}
-				checked={sharedItemsHidden(id)}
+				checked={hideCurrent}
+				defaultChecked={hideCurrent}
 				disabled={hideAll}
 				onchange={(event) =>
 					reportSave(setSharedItemsHiddenForCharacter(id, event.currentTarget.checked))}
