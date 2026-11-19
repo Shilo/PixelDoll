@@ -47,7 +47,9 @@ request may still have run or charged. Estimates are not spending caps.
 
 Press the **code brackets** icon beside a PixelLab action to peek at its requests without running it. Before generation,
 the list shows estimated costs and the fields already known; dependent images and poses become available when prepared.
-Expand a call for readable fields, with nested objects and lists you can open individually.
+Expand a call to select its endpoint or use **Copy endpoint**. If clipboard access is blocked, the inspector shows
+a read-only field for manual copying. The expanded view also shows readable fields, with nested objects and lists you
+can open individually.
 
 The **API calls** action in **More options** shows recorded calls, including automatic generation and quality repairs. Each call shows
 its cost, with a total below. Pending or unreported charges are marked explicitly; dollar charges stay separate from gens.
