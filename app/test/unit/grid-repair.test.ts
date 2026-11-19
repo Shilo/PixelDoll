@@ -163,17 +163,27 @@ async function fixture(mode = 'pass', pad = 16, bladeEnd = 52) {
 			saved = next;
 		});
 	const enqueue = vi.spyOn(queue, 'enqueue').mockImplementation(async (req) => {
-		if (mode === 'lost') return { state: 'lost', error: 'unknown test response' } as JobRec;
-		const raw = (req.body as { inpainting_image: { image: { base64: string } } }).inpainting_image
-			.image.base64;
+		if (mode === 'lost' || (mode === 'lost-second' && enqueue.mock.calls.length === 2))
+			return { state: 'lost', error: 'unknown test response' } as JobRec;
+		const body = req.body as {
+			description: string;
+			inpainting_image: { image: { base64: string } };
+		};
+		const raw = body.inpainting_image.image.base64;
 		const grid = mode === 'geometry' ? makeImg(256, 192) : await decodePngBytes(base64ToBytes(raw));
 		const cols = grid.w / side;
-		for (let i = 0; i < 8 && mode !== 'geometry'; i++) {
+		const targets = Number(/The first (\d+) frames/.exec(body.description)?.[1]);
+		for (let i = 0; i < targets && mode !== 'geometry'; i++) {
 			const ox = (i % cols) * side,
 				oy = Math.floor(i / cols) * side;
 			for (let y = mode === 'outside-mask' ? 0 : 9 + pad; y < 31 + pad; y++)
 				for (let x = 23 + pad; x < 26 + pad; x++)
-					grid.data.set([180, 180, 190, 255], ((oy + y) * grid.w + ox + x) * 4);
+					grid.data.set(
+						mode === 'palette-second' && enqueue.mock.calls.length === 2
+							? [220, 20, 170, 255]
+							: [180, 180, 190, 255],
+						((oy + y) * grid.w + ox + x) * 4
+					);
 			if (mode === 'fail')
 				for (let y = 35; y < 50; y++)
 					for (let x = 45; x < 51; x++)
@@ -261,6 +271,52 @@ test('successful fixed-frame repair retains96px pivot, other directions and idle
 	expect(item.layers[0].cells!.slash!.west).toHaveLength(8);
 	expect(item.provenance.at(-1)?.endpoint).toBe('/inpaint-v3');
 	expect(f.ctx.rec.manifest.rig).toEqual(f.current().manifest.rig);
+});
+
+test('Tier 1 splits a 96px facing and saves eight ordered frames once with per-batch provenance', async () => {
+	const f = await fixture();
+	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
+	expect(result.saved).toBe(true);
+	expect(f.save).toHaveBeenCalledTimes(1);
+	expect(f.enqueue).toHaveBeenCalledTimes(3);
+	for (const [request] of f.enqueue.mock.calls) {
+		const { size } = (
+			request.body as { inpainting_image: { size: { width: number; height: number } } }
+		).inpainting_image;
+		expect(Math.max(size.width, size.height)).toBeLessThanOrEqual(256);
+	}
+	expect(f.saved()?.provenance.map((record) => record.produced.length)).toEqual([3, 3, 2]);
+	expect(result.cells.map((cell) => cell.key)).toEqual(
+		Array.from({ length: 8 }, (_, index) => `slash/west/${index}`)
+	);
+});
+
+test('Tier 1 stops after an unknown second batch without publishing or resending', async () => {
+	const f = await fixture('lost-second');
+	await expect(regridClip(f.ctx, f.item, 'slash', 'west', 123, true)).rejects.toThrow(
+		'unknown test response'
+	);
+	expect(f.enqueue).toHaveBeenCalledTimes(2);
+	expect(f.save).not.toHaveBeenCalled();
+});
+
+test('Tier 1 does not publish a facing with a visibly different batch palette', async () => {
+	const f = await fixture('palette-second');
+	const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123, true);
+	expect(result.saved).toBe(false);
+	expect(result.qa.failCalls.get(1)).toEqual(
+		expect.arrayContaining([expect.stringMatching(/^G6 /)])
+	);
+	expect(f.save).not.toHaveBeenCalled();
+});
+
+test('cache-only repair with missing results does not enqueue or change the item', async () => {
+	const f = await fixture();
+	await expect(
+		regridClip(f.ctx, f.item, 'slash', 'west', 123, true, undefined, true)
+	).rejects.toThrow('No generation was requested');
+	expect(f.enqueue).not.toHaveBeenCalled();
+	expect(f.save).not.toHaveBeenCalled();
 });
 
 test('compact repair submits, masks and decodes the same three-column layout', async () => {

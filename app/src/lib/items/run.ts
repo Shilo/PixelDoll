@@ -74,6 +74,7 @@ import {
 	putItem,
 	gridEstimate,
 	repairGridLayout,
+	repairGridPlan,
 	bandMask,
 	cutGrid,
 	g2Fails,
@@ -435,7 +436,8 @@ async function gridReq(
 	refs: { dir: DirectionName; im: Img }[],
 	seed: number,
 	pad = 0,
-	repair = false
+	repair = false,
+	repairCols?: number
 ): Promise<Req> {
 	const { rig } = ctx.rec.manifest,
 		w = rig.cell.w + 2 * pad,
@@ -450,9 +452,12 @@ async function gridReq(
 	if (refs.length !== 1)
 		throw new Error(`${dir}: repair needs exactly one matching dressed reference`);
 	const cell = { w, h };
-	const layout = repair
-		? repairGridLayout(cell, cells.length, refs.length)
-		: gridEstimate(cell, cells.length, refs.length);
+	const layout =
+		repairCols !== undefined
+			? gridEstimate(cell, cells.length, refs.length, repairCols)
+			: repair
+				? repairGridLayout(cell, cells.length, refs.length)
+				: gridEstimate(cell, cells.length, refs.length);
 	const cols = layout.w / w;
 	if (refs.some((r) => r.im.w !== w || r.im.h !== h))
 		throw new Error('Equipment reference dimensions do not match its repair canvas.');
@@ -2016,7 +2021,8 @@ export async function gridRepairRequest(
 	anim: string,
 	dir: DirectionName,
 	seed: number,
-	selectedCells?: string[]
+	selectedCells?: string[],
+	repairCols?: number
 ): Promise<Req> {
 	const { rig } = ctx.rec.manifest;
 	if (
@@ -2077,7 +2083,8 @@ export async function gridRepairRequest(
 		refs,
 		seed,
 		pad,
-		true
+		true,
+		repairCols
 	);
 }
 /** One clip-direction edited on its own canvas; body frames remain frozen and reference cells are protected. A grid the account's
@@ -2093,7 +2100,8 @@ async function gridItemClip(
 	seed: number,
 	selectedCells?: string[],
 	activityScope?: string,
-	savedOnly = false
+	savedOnly = false,
+	prepared?: { request: Req; tier: number; start: number; count: number }
 ): Promise<{ cells: CellOut[]; prov: Provenance } | { blocked: string }> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
@@ -2106,7 +2114,7 @@ async function gridItemClip(
 			),
 		n = cells.length;
 	// Reattaching a finished grid needs no plan check: nothing is sent.
-	const req = await gridRepairRequest(ctx, item, anim, dir, seed, cells),
+	const req = prepared?.request ?? (await gridRepairRequest(ctx, item, anim, dir, seed, cells)),
 		blocked = savedOnly ? null : queue.planBlocks(req, 1);
 	if (blocked) return { blocked };
 	const w = rig.cell.w + 2 * pad,
@@ -2115,10 +2123,10 @@ async function gridItemClip(
 	const rec = await submitOrSaved(
 		req,
 		{
-			label: `grid ${item.name} · ${anim} ${dir}`,
+			label: `grid ${item.name} · ${anim} ${dir}${prepared ? ` · frames ${prepared.start + 1}–${prepared.start + prepared.count}` : ''}`,
 			tag: 'studio-move',
 			activityScope,
-			minimumTier: 1
+			minimumTier: prepared?.tier ?? 1
 		},
 		savedOnly
 	);
@@ -2150,7 +2158,7 @@ async function gridItemClip(
 			stencil: stencils.cells[i]
 		})
 	);
-	postProcess(rig, slot, out, keys, pad);
+	if (!prepared) postProcess(rig, slot, out, keys, pad);
 	return { cells: out, prov: toProv(r, { cells, seed, rerolls: 0, old: [] }) };
 }
 /**
@@ -2162,7 +2170,10 @@ export async function regridClip(
 	item: Item,
 	anim: string,
 	dir: DirectionName,
-	seedN = seed()
+	seedN = seed(),
+	preferTierOne = false,
+	activityScope?: string,
+	savedOnly = false
 ): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[] }> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
@@ -2171,20 +2182,76 @@ export async function regridClip(
 		throw new Error(`${item.name}: no grid reference for this item`);
 	const pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
 	const { keys, cuts, hidden } = await dressedKeys(ctx, item, pad);
-	const g = await gridItemClip(ctx, item, anim, dir, 0, keys, cuts, seedN);
-	if ('blocked' in g) throw new Error(g.blocked);
+	const frames = rig.animations.find((a) => a.id === anim)?.cells;
+	if (!frames) throw new Error('Choose an existing move before repairing its equipment.');
+	const batches = repairGridPlan(item.layers[0].cell ?? rig.cell, frames, preferTierOne);
+	const requests = await Promise.all(
+		batches.map(async (batch) => {
+			const cells = Array.from(
+				{ length: batch.count },
+				(_, index) => `${anim}/${dir}/${batch.start + index}`
+			);
+			const batchSeed = seedN + batch.start;
+			return {
+				...batch,
+				cells,
+				seed: batchSeed,
+				request: await gridRepairRequest(ctx, item, anim, dir, batchSeed, cells, batch.cols)
+			};
+		})
+	);
+	if (!savedOnly)
+		for (const batch of requests) {
+			const blocked = queue.planBlocks(batch.request, batch.tier);
+			if (blocked) throw new Error(blocked);
+		}
+	const cells: CellOut[] = [],
+		provenance: Provenance[] = [];
+	for (const [index, request] of requests.entries()) {
+		const result = await gridItemClip(
+			ctx,
+			item,
+			anim,
+			dir,
+			index,
+			keys,
+			cuts,
+			request.seed,
+			request.cells,
+			activityScope,
+			savedOnly,
+			request
+		);
+		if ('blocked' in result) throw new Error(result.blocked);
+		if (batches.length > 1 && result.cells.some((cell) => cell.shifted))
+			throw new Error(
+				'A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.'
+			);
+		cells.push(...result.cells);
+		provenance.push(result.prov);
+	}
+	postProcess(rig, slot, cells, keys, pad);
 	const qa = withH4(
-		itemQa(rig, slot, key, g.cells, 0, GATES.keyOutsidePosed, pad, hidden),
+		itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed, pad, hidden),
 		slot,
-		g.cells,
+		cells,
 		keys,
 		rig,
 		referenceBodies(rig, ctx.project.images),
 		item.prompt
 	);
+	if (batches.length > 1)
+		for (const [batch, findings] of qa.softCalls) {
+			const palette = findings.filter((finding) => finding.startsWith('G6 '));
+			if (palette.length) {
+				qa.failCalls.set(batch, [...(qa.failCalls.get(batch) ?? []), ...palette]);
+				qa.qa.status = 'fail';
+				qa.qa.clips[`${anim}/${dir}`].status = 'fail';
+			}
+		}
 	const saved = !qa.failCalls.size;
-	if (saved) await mergeClip(ctx, item, anim, [dir], g.cells, [g.prov], qa, pad);
-	return { qa, saved, cells: g.cells };
+	if (saved) await mergeClip(ctx, item, anim, [dir], cells, provenance, qa, pad);
+	return { qa, saved, cells };
 }
 
 /** B16 fake-API check: an 8-direction held dress never sends edit-animation-v2 more frames than its size takes, every direction

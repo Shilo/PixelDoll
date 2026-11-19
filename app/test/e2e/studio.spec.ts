@@ -5077,6 +5077,26 @@ test('partial missing gear and explicit item repair stay on the current move and
 	const repair = page.getByRole('button', { name: /^Try new item frames/ });
 	await expect(repair).toContainText('Est. 10 gens'); // The bundled fixture uses actual 64 px equipment layers.
 	await oversizedItemFixture(page, fixture.itemId);
+	const simulateRepairPlan = (tier: number) =>
+		page.evaluate(async (tier) => {
+			const appPath = '/src/lib/app.svelte.ts',
+				queuePath = '/src/lib/pixellab/queue.ts';
+			const { app } = await import(appPath),
+				{ queue } = await import(queuePath);
+			const balance = {
+				...app.balance,
+				subscription: { ...app.balance.subscription, plan: `Tier ${tier}`, status: 'active' }
+			};
+			app.balance = balance;
+			queue.setBalance(balance, queue.key);
+		}, tier);
+	await simulateRepairPlan(0);
+	await expect(repair).toBeDisabled();
+	await expect(page.locator('#item-repair-tier')).toContainText('Tier 1 required');
+	await simulateRepairPlan(1);
+	await expect(repair).toBeEnabled();
+	await expect(repair).toContainText('Est. 30 gens');
+	await simulateRepairPlan(2);
 	await expect(repair).toContainText('Est. 15 gens');
 	await repair.click();
 	sheet = page.getByRole('dialog', { name: 'Repair item frames', exact: true });

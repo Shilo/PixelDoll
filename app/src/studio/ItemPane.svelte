@@ -11,7 +11,7 @@
 		type MoveSpec
 	} from './create.ts';
 	import { app } from '../lib/app.svelte.ts';
-	import { tierDecision } from '../lib/pixellab/plans.ts';
+	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 	import GenerationDetails from './GenerationDetails.svelte';
 	import { movePlan } from './apiPlans.ts';
@@ -131,12 +131,16 @@
 					items: [it.id],
 					dirs: [sourceDir],
 					itemMethod: 'grid' as const,
+					preferTierOneRepair: (accountTier(app.balance) ?? 1) < 2 ? (true as const) : undefined,
 					itemsOnly: true as const,
 					seed: 0
 				}
 			: null
 	);
 	const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec]) : null);
+	const repairCalls = $derived(
+		m && repairOffer?.specs[0] ? movePlan({ manifest: m }, repairOffer.specs[0]) : []
+	);
 	// Required plan tiers come from the mandatory steps of each offered spec, not from the API preview.
 	const offerTier = (offer: { specs: MoveSpec[] } | null) =>
 		m ? Math.max(0, ...(offer?.specs ?? []).map((s) => moveMinimumTier(m, s))) : 0;
@@ -491,7 +495,10 @@
 				<p class="faint small">
 					Only {moveName} facing {sourceDir.replaceAll('-', ' ')} is redrawn on the frozen body.{#if sourceDir !== ui.dir}
 						Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. Hard
-					failures keep the previous frames. PixelLab may bill dollars; queue time varies.
+					failures keep the previous frames.{#if repairCalls.length > 1}
+						This repair uses {repairCalls.length}
+						PixelLab calls and saves the facing only if the assembled frames pass quality checks.{/if}
+					PixelLab may bill dollars; queue time varies.
 				</p>
 			</div>
 		{/if}

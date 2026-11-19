@@ -77,7 +77,7 @@ import {
 } from '../lib/rig/clips.ts';
 import {
 	canPose,
-	repairGridLayout,
+	repairGridPlan,
 	planAnchoredMove,
 	planGens,
 	itemPlanMinimumTier,
@@ -1063,6 +1063,7 @@ export interface MoveSpec {
 	activityScope?: string;
 	dirs?: DirectionName[];
 	itemMethod?: 'grid' | 'anchor';
+	preferTierOneRepair?: true;
 	reuseItemFrames?: true;
 	itemReview?: { gens: number; artwork: string };
 	poseStyle?: 'visible-side-v1';
@@ -1704,7 +1705,15 @@ export function moveEstimate(
 	m: Manifest,
 	s: Pick<
 		MoveSpec,
-		'id' | 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace' | 'itemsOnly'
+		| 'id'
+		| 'action'
+		| 'frames'
+		| 'items'
+		| 'dirs'
+		| 'itemMethod'
+		| 'replace'
+		| 'itemsOnly'
+		| 'preferTierOneRepair'
 	>
 ) {
 	const n = moveFrames(m, s),
@@ -1725,7 +1734,14 @@ export function moveEstimate(
 					const item = m.items.find((i) => i.id === id);
 					if (!item) throw new Error('The selected equipment is no longer available.');
 					const cell = item.layers[0]?.cell ?? m.rig.cell;
-					return sum + repairGridLayout(cell, n, 1).gens * dirs;
+					return (
+						sum +
+						repairGridPlan(cell, n, s.preferTierOneRepair).reduce(
+							(total, batch) => total + batch.gens,
+							0
+						) *
+							dirs
+					);
 				}, 0)
 			: s.items.reduce((sum, id) => {
 					const item = m.items.find((i) => i.id === id)!;
@@ -1762,21 +1778,26 @@ export function moveMinimumTier(manifest: Manifest, spec: MoveSpec): number {
 				(dir) =>
 					spec.itemMethod === 'grid' || redraw || !hasCompleteCells(manifest, item, spec.id, dir)
 			);
+			if (spec.itemMethod === 'grid')
+				return dirs.length
+					? Math.max(
+							...repairGridPlan(
+								item.layers[0]?.cell ?? rig.cell,
+								frames,
+								spec.preferTierOneRepair
+							).map((batch) => batch.tier)
+						)
+					: 0;
 			const calls =
 				spec.itemMethod === 'anchor'
 					? planAnchoredMove(manifest.rig, item, spec.id, dirs)
-					: spec.itemMethod === 'grid'
-						? dirs.map((dir) => ({
-								kind: 'grid' as const,
-								cells: Array.from({ length: frames }, (_, frame) => cellKey(spec.id, dir, frame))
-							}))
-						: itemPosePlan(
-								rig,
-								{ ...item, slotConfig: requireSlot(manifest, item.slot) },
-								spec.id,
-								frames,
-								dirs
-							);
+					: itemPosePlan(
+							rig,
+							{ ...item, slotConfig: requireSlot(manifest, item.slot) },
+							spec.id,
+							frames,
+							dirs
+						);
 			return itemPlanMinimumTier(calls, item.layers[0]?.cell ?? rig.cell, true);
 		})
 	);
@@ -1829,7 +1850,8 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 			frames: spec.frames,
 			dirs: spec.dirs,
 			items: spec.items,
-			itemMethod: spec.itemMethod
+			itemMethod: spec.itemMethod,
+			preferTierOneRepair: spec.preferTierOneRepair
 		}
 	});
 	return { ...spec, itemReview: { gens: moveEstimate(m, spec).items, artwork } };
@@ -1889,10 +1911,13 @@ export async function addMove(
 	assertReview(rec.manifest);
 	const dirs = moveDirections(rec.manifest, spec.dirs),
 		existing = rec.manifest.rig.animations.find((a) => a.id === spec.id);
-	// Saved-frame recovery only reattaches completed equipment requests: never a body clip, a replace or a grid repair.
+	// Saved-frame recovery only reattaches completed equipment requests, never a new or replaced body clip.
 	if (
 		spec.reuseItemFrames &&
-		(spec.itemMethod === 'grid' || !spec.itemsOnly || !existing || spec.replace)
+		((spec.itemMethod === 'grid' && !spec.itemReview) ||
+			!spec.itemsOnly ||
+			!existing ||
+			spec.replace)
 	)
 		throw new Error(
 			'Saved equipment recovery needs an existing move and its equipment only. No generation was requested.'
@@ -1965,7 +1990,7 @@ export async function addMove(
 	const fresh = await loadProject(projectId),
 		frames = fresh.rec.manifest.rig.animations.find((a) => a.id === spec.id)!.cells;
 	assertReview(fresh.rec.manifest);
-	if (spec.itemReview) {
+	if (spec.itemReview && spec.itemMethod !== 'grid') {
 		const reviewed = spec.itemReview;
 		delete spec.itemReview;
 		try {
@@ -2021,7 +2046,16 @@ export async function addMove(
 				if (!item)
 					throw new Error('This item changed or was removed while the move was being prepared.');
 				assertArtwork(current.rec.manifest, plan.id, [d]);
-				const result = await regridClip(current, item, spec.id, d, spec.seed);
+				const result = await regridClip(
+					current,
+					item,
+					spec.id,
+					d,
+					spec.seed,
+					spec.preferTierOneRepair,
+					spec.activityScope,
+					spec.reuseItemFrames
+				);
 				tick();
 				if (!result.saved)
 					throw new Error(
