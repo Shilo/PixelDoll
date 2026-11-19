@@ -155,6 +155,70 @@ async function landing(page: Page, url = '/') {
 	await expect(page.locator('.customize-action')).toBeEnabled();
 }
 
+test('rapid clicks operate controls without selecting their labels', async ({ page }) => {
+	await landing(page);
+	await page.locator('.customize-action').click();
+	const selected = () => page.evaluate(() => window.getSelection()?.toString());
+	const wardrobe = page.getByRole('tab', { name: 'Wardrobe', exact: true });
+	await expect(wardrobe).toHaveCSS('user-select', 'none');
+	await wardrobe.getByText('Wardrobe', { exact: true }).dblclick();
+	await expect(wardrobe).toHaveAttribute('aria-selected', 'true');
+	expect(await selected()).toBe('');
+
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Connect PixelLab', exact: true }).click();
+	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+	const remember = dialog.getByRole('checkbox', { name: 'Remember on this device' });
+	const label = dialog.getByText('Remember on this device', { exact: true });
+	const initial = await remember.isChecked();
+	await remember.evaluate((control: HTMLInputElement) => {
+		let changes = 0;
+		control.addEventListener('change', () => (control.dataset.testChanges = String(++changes)));
+	});
+	await label.dblclick();
+	expect(await selected()).toBe('');
+	await expect(remember).toHaveAttribute('data-test-changes', '2');
+	await expect(remember).toBeChecked({ checked: initial });
+	await label.click();
+	await expect(remember).toBeChecked({ checked: !initial });
+	await remember.press('Space');
+	await expect(remember).toBeChecked({ checked: initial });
+
+	await dialog.getByText('API key', { exact: true }).dblclick({ position: { x: 12, y: 8 } });
+	expect(await selected()).toMatch(/API|key/);
+	const key = dialog.getByLabel('API key', { exact: true });
+	await key.fill('synthetic-key');
+	await key.press('ControlOrMeta+a');
+	expect(
+		await key.evaluate((input: HTMLInputElement) => [input.selectionStart, input.selectionEnd])
+	).toEqual([0, 'synthetic-key'.length]);
+	const notice = dialog.getByRole('link', { name: /Powered by PixelLab/ });
+	await expect(notice).toBeVisible();
+	await expect(notice).not.toHaveCSS('user-select', 'none');
+	await page.keyboard.press('Escape');
+
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	const exportDialog = page.getByRole('dialog', { name: 'Export', exact: true });
+	const godotLabel = exportDialog
+		.getByRole('group', { name: 'Export format', exact: true })
+		.getByText('Godot', { exact: true });
+	await godotLabel.dblclick();
+	await expect(exportDialog.getByRole('radio', { name: 'Godot', exact: true })).toBeChecked();
+	expect(await selected()).toBe('');
+	const files = exportDialog.locator('details', { hasText: 'Files included' });
+	const summary = files.locator('summary');
+	await expect(summary).toHaveCSS('user-select', 'none');
+	await summary.dblclick({ position: { x: 30, y: 12 } });
+	await expect(files).not.toHaveAttribute('open');
+	expect(await selected()).toBe('');
+	await summary.press('Enter');
+	await expect(files).toHaveAttribute('open', '');
+	const names = files.locator('pre');
+	await expect(names).toBeVisible();
+	await names.dblclick({ position: { x: 12, y: 8 } });
+	expect((await selected())?.trim()).toBeTruthy();
+});
+
 test('the Characters panel keeps its Customize button on the edge margin', async ({ page }) => {
 	for (const [width, height] of [
 		[1440, 900],
@@ -168,7 +232,7 @@ test('the Characters panel keeps its Customize button on the edge margin', async
 	}
 });
 
-test('character list thumbnails and New stay left-aligned', async ({ page }) => {
+test('character list thumbnails and New stay left-aligned and sizes fit', async ({ page }) => {
 	for (const [width, height] of [
 		[1440, 900],
 		[960, 800],
@@ -183,6 +247,23 @@ test('character list thumbnails and New stay left-aligned', async ({ page }) => 
 			);
 			const rows = page.locator('.character-rows :is(.character-row, .new-character-row)');
 			await expect(rows).toHaveCount(2);
+			const sizes = rows.first().locator('.character-sizes');
+			await expect(sizes.locator('span')).toHaveText([/^Body \d+×\d+ px$/, '· Frame 64×64 px']);
+			const overflow = await sizes.evaluate((node) => {
+				const bounds = node.getBoundingClientRect();
+				const column = node.parentElement!.getBoundingClientRect();
+				return [...node.children].map((label) => {
+					const rect = label.getBoundingClientRect();
+					return {
+						right: Math.max(0, rect.right - bounds.right),
+						bottom: Math.max(0, rect.bottom - Math.min(bounds.bottom, column.bottom))
+					};
+				});
+			});
+			expect(overflow, `${width}×${height} ${theme}`).toEqual([
+				{ right: 0, bottom: 0 },
+				{ right: 0, bottom: 0 }
+			]);
 			for (const row of await rows.all()) {
 				const geometry = await row.evaluate((node) => {
 					const style = getComputedStyle(node);
@@ -646,6 +727,7 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 	await expect(shown).not.toBeChecked();
 	await expect(world(page)).not.toHaveAttribute('data-mount');
+	await expect(mountMenu.locator('label[for="mount-legs"]')).toHaveCSS('user-select', 'none');
 	await shown.check();
 	await expect
 		.poll(() => toggle.evaluate((element) => getComputedStyle(element).color))

@@ -10,9 +10,11 @@ import { CharacterApi } from '../fixtures/character-api.ts';
 import { readFile } from 'node:fs/promises';
 import { unzip } from '../../src/lib/store/zip.ts';
 import { flipH } from '../../src/lib/rig/mirror.ts';
-import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
+import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
+import { makeImg } from '../../src/lib/image/png.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { BASE_BODY, UNDERWEAR_BODY } from '../../src/studio/model.ts';
+import { paintedPixels } from '../../src/studio/experience/bounds.ts';
 const fulfill = async (route: Route, response: Response) =>
 	route.fulfill({
 		status: response.status,
@@ -31,8 +33,8 @@ test.beforeEach(async ({ context }) => {
 	});
 	await context.route('https://*.pixellab.ai/**', (route) => route.abort()); // stay offline by default; a test's own route overrides this
 });
-async function open(page: Page) {
-	await openStudio(page, '/');
+async function open(page: Page, navigate = true) {
+	if (navigate) await openStudio(page, '/');
 	await page.locator('.project-btn').click();
 	await page
 		.locator('#project-menu')
@@ -307,19 +309,22 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await move.getByRole('radio', { name: 'Idle', exact: true }).click();
-	await move.getByRole('button', { name: /^Add Idle/ }).click();
-	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
-	await move.getByRole('radio', { name: 'Idle', exact: true }).click();
-	await expect(move).toContainText('Idle is already queued.');
-	await expect(move.getByRole('button', { name: /^Queue Idle/ })).toBeDisabled();
+	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+	await move.getByRole('button', { name: /^Add Walk/ }).click();
+	await expect(move).not.toContainText('Queued next: Idle');
+	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
+	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+	await expect(move).toContainText('Walk is already queued.');
+	await expect(move.getByRole('button', { name: /^Queue Walk/ })).toBeDisabled();
+	await expect(move.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(0);
+	await move.getByRole('radio', { name: 'Idle', exact: true }).click();
 	await expect(move).toContainText('It waits for the move in progress, then runs by itself.');
-	await move.getByRole('button', { name: /^Queue Walk/ }).click();
-	await expect(move).toContainText('Queued next: Walk');
-	await expect(page.locator('.move-row', { hasText: 'Walk' })).toContainText('Queued');
+	await move.getByRole('button', { name: /^Queue Idle/ }).click();
+	await expect(move).toContainText('Queued next: Idle');
+	await expect(page.locator('.move-row', { hasText: 'Idle' })).toContainText('Queued');
 	held = false;
-	await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Idle', 'Walk'], {
+	await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Walk', 'Idle'], {
 		timeout: 120_000
 	});
 });
@@ -330,9 +335,14 @@ test('a failed required measurement stops the queued idle without paying for an 
 }) => {
 	test.setTimeout(120_000);
 	const api = new CharacterApi();
+	let releaseMeasurement!: () => void;
+	const measurement = new Promise<void>((resolve) => {
+		releaseMeasurement = resolve;
+	});
 	await context.route('https://*.pixellab.ai/**', async (route) => {
 		const req = route.request(),
 			body = req.postDataJSON();
+		if (new URL(req.url()).pathname === '/v2/estimate-skeleton') await measurement;
 		const response = await api.handle(req.method(), req.url(), body);
 		await fulfill(
 			route,
@@ -355,13 +365,20 @@ test('a failed required measurement stops the queued idle without paying for an 
 			(c) => c.path === '/v2/estimate-skeleton' || c.path === '/v2/animate-with-skeleton-v3'
 		)
 	).toHaveLength(0);
-	await sheet.getByRole('button', { name: /^Add idle \+ walk/ }).click();
+	await expect(sheet.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
+	await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click();
 	await equipmentMode(page, 'Moves');
-	await page
-		.locator('.move-row', { hasText: 'Failed: tap for details' })
-		.click({ timeout: 90_000 });
+	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await expect(move).toContainText(/joints (were )?not found on every frame/);
+	await move.getByRole('button', { name: /^Add Idle/ }).click();
+	try {
+		await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
+		await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+		await move.getByRole('button', { name: /^Queue Walk/ }).click();
+	} finally {
+		releaseMeasurement();
+	}
+	await expect(move).toContainText(/joints (were )?not found on every frame/, { timeout: 90_000 });
 	await expect(move).toContainText('Queued next: Walk');
 	expect(api.calls.filter((c) => c.path === '/v2/animate-with-skeleton-v3')).toHaveLength(1);
 	const saved = await page.evaluate(
@@ -434,7 +451,9 @@ test('visible size fields, auto frame, preset deselection and preview positions 
 	await expect(sheet.locator('.pixel-input > span')).toHaveText(['px', 'px']);
 	expect(calls).toEqual([]);
 	await body.fill('64.5');
-	await expect(sheet.getByRole('status')).toContainText('whole pixels');
+	await expect(sheet.getByRole('status').and(sheet.locator('.creator-validation'))).toContainText(
+		'whole pixels'
+	);
 	await expect(sheet.getByRole('button', { name: 'Create character', exact: true })).toBeDisabled();
 	await body.fill('64');
 	await frame.fill('80');
@@ -548,7 +567,9 @@ test('all direction presets, reverse mirrors and source promotion keep a valid p
 	for (const dir of ['N', 'NE', 'E', 'SE', 'S'])
 		await sheet.getByRole('button', { name: `${dir} direction`, exact: true }).click();
 	await expect(sheet.getByRole('button', { name: 'Create character', exact: true })).toBeDisabled();
-	await expect(sheet.getByRole('status')).toContainText('Choose at least one direction');
+	await expect(sheet.getByRole('status').and(sheet.locator('.creator-validation'))).toContainText(
+		'Choose at least one direction'
+	);
 });
 
 test('V3 enhance connects once, preserves settings, undo restores exactly, and failures never retry', async ({
@@ -594,7 +615,9 @@ test('V3 enhance connects once, preserves settings, undo restores exactly, and f
 	);
 	await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).fill('[fail] a dwarf');
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
-	await expect(sheet.getByRole('status')).toContainText('Your text was kept');
+	await expect(sheet.getByRole('status').and(sheet.locator('.creator-message'))).toContainText(
+		'Your text was kept'
+	);
 	await expect(sheet.getByRole('textbox', { name: 'Exact prompt', exact: true })).toHaveValue(
 		'[fail] a dwarf'
 	);
@@ -674,7 +697,9 @@ test('Appearance enhancement cannot clear selected hints with repeated clauses o
 	await sheet.getByRole('button', { name: 'Undo', exact: true }).click();
 	response = 'Kind: Orc\nBuild: Rounded';
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
-	await expect(sheet.getByRole('status')).toContainText('Your text was kept');
+	await expect(sheet.getByRole('status').and(sheet.locator('.creator-message'))).toContainText(
+		'Your text was kept'
+	);
 	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'Pointed ears'
 	);
@@ -739,7 +764,9 @@ test('late enhancement cannot overwrite edits or reopen a closed form', async ({
 	await connect(page);
 	sheet = page.getByRole('dialog', { name: 'New character', exact: true });
 	await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('My newer text');
-	await expect(sheet.getByRole('status')).toContainText('Settings changed');
+	await expect(sheet.getByRole('status').and(sheet.locator('.creator-message'))).toContainText(
+		'Settings changed'
+	);
 	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'My newer text'
 	);
@@ -811,11 +838,14 @@ for (const viewport of [
 	{ width: 350, height: 800 },
 	{ width: 360, height: 800 },
 	{ width: 390, height: 844 },
+	{ width: 599, height: 540 },
+	{ width: 600, height: 540 },
 	{ width: 600, height: 900 },
 	{ width: 760, height: 900 },
 	{ width: 844, height: 390 },
 	{ width: 768, height: 1024 },
 	{ width: 900, height: 900 },
+	{ width: 1280, height: 500 },
 	{ width: 1440, height: 900 },
 	{ width: 1920, height: 1080 }
 ])
@@ -824,6 +854,116 @@ for (const viewport of [
 	}) => {
 		await page.setViewportSize(viewport);
 		const sheet = await open(page);
+		const drop = sheet.getByRole('button', { name: 'Add image', exact: true });
+		const guide = sheet.getByRole('heading', { name: 'Size guide', exact: true });
+		const diagram = sheet.locator('.creator-guide .preview-box');
+		if (viewport.height <= 540 && viewport.width >= 600) {
+			await expect(guide).toBeHidden();
+			await drop.scrollIntoViewIfNeeded();
+			await expect(drop).toBeInViewport({ ratio: 1 });
+			await drop.focus();
+			const chooser = page.waitForEvent('filechooser');
+			await drop.press('Enter');
+			await (await chooser).setFiles([]);
+			await expect(drop).toBeFocused();
+		} else if (viewport.width >= 1440) {
+			const tabs = (await sheet.getByRole('tablist', { name: 'Prompt editor' }).boundingBox())!;
+			const heading = (await guide.boundingBox())!;
+			const box = (await drop.boundingBox())!;
+			const preview = (await diagram.boundingBox())!;
+			const geometry = (await sheet
+				.getByRole('region', { name: 'Character size and camera' })
+				.boundingBox())!;
+			expect(heading.y).toBeCloseTo(tabs.y);
+			expect(preview.x).toBeCloseTo(box.x, 0);
+			expect(preview.width).toBeCloseTo(box.width, 0);
+			expect(preview.height).toBeCloseTo(preview.width, 0);
+			expect(tabs.x - (box.x + box.width)).toBeCloseTo(geometry.x - (tabs.x + tabs.width), 0);
+			expect(box.y).toBeGreaterThan(heading.y + heading.height);
+		} else {
+			await expect(guide).toBeVisible();
+		}
+		if (viewport.width === 320) {
+			const preview = (await diagram.boundingBox())!;
+			expect(preview.width).toBeLessThanOrEqual(128);
+			expect(preview.height).toBeCloseTo(preview.width, 0);
+			const max = Number(await sheet.getByRole('spinbutton', { name: 'Frame size' }).inputValue());
+			await expect(drop).toHaveAccessibleDescription(
+				`Use a front-facing sprite. Max ${max} × ${max} px, 8 MB.`
+			);
+			const emptyHeight = (await drop.boundingBox())!.height;
+			const picker = sheet.locator('.reference input[type=file]');
+			const image = await page.evaluate((max) => {
+				const canvas = document.createElement('canvas');
+				canvas.width = max * 2;
+				canvas.height = max;
+				const context = canvas.getContext('2d')!;
+				context.fillStyle = 'white';
+				context.fillRect(0, 0, canvas.width, canvas.height);
+				context.fillStyle = 'black';
+				context.fillRect(5, 5, 16, 16);
+				return canvas.toDataURL().split(',')[1];
+			}, max);
+			const filename = `${'character-revision-'.repeat(6)}sprite.png`;
+			await picker.setInputFiles({
+				name: filename,
+				mimeType: 'image/png',
+				buffer: Buffer.from(image, 'base64')
+			});
+			const attachment = sheet.getByRole('button', {
+				name: 'Choose a different reference image',
+				exact: true
+			});
+			await expect(attachment).toBeVisible();
+			await expect(attachment).toHaveAccessibleDescription(/sprite\.png/);
+			const dimensions = attachment.getByText(`${max} × ${max / 2} px`, { exact: true });
+			const name = attachment.getByText(filename, { exact: true });
+			expect((await dimensions.boundingBox())!.y).toBeCloseTo((await name.boundingBox())!.y);
+			expect(await dimensions.evaluate((size) => size.scrollWidth === size.clientWidth)).toBe(true);
+			expect(await name.evaluate((file) => file.scrollWidth > file.clientWidth)).toBe(true);
+			await expect(
+				sheet.locator('.reference > small').filter({ hasText: 'Resized from' })
+			).toHaveText(`Resized from ${max * 2} × ${max} to ${max} × ${max / 2} px.`);
+			const source = (await attachment.locator('image').getAttribute('href'))!;
+			const prepared = await decodePngBytes(Buffer.from(source.split(',')[1], 'base64'));
+			expect([prepared.w, prepared.h]).toEqual([max, max / 2]);
+			expect(prepared.data.every((value) => value === 0 || value === 255)).toBe(true);
+			const browserSession = await page.context().newCDPSession(page);
+			await browserSession.send('Page.setInterceptFileChooserDialog', {
+				enabled: true,
+				cancel: true
+			});
+			await picker.evaluate((input) =>
+				input.addEventListener(
+					'cancel',
+					(event) => {
+						if (event.isTrusted) input.setAttribute('data-browser-cancelled', 'true');
+					},
+					{ once: true }
+				)
+			);
+			await attachment.click();
+			await expect(picker).toHaveAttribute('data-browser-cancelled', 'true');
+			await browserSession.send('Page.setInterceptFileChooserDialog', { enabled: false });
+			await browserSession.detach();
+			await expect(sheet).toBeVisible();
+			await expect(attachment).toBeFocused();
+			await expect(attachment).toHaveAccessibleDescription(/sprite\.png/);
+			const bounds = (await attachment.boundingBox())!;
+			const remove = (await sheet.getByRole('button', { name: 'Remove reference' }).boundingBox())!;
+			expect(remove.y).toBeCloseTo(bounds.y, 0);
+			expect(remove.height).toBeCloseTo(bounds.height, 0);
+			expect(bounds.height).toBeCloseTo(emptyHeight, 0);
+			expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width);
+			expect(bounds.height).toBeGreaterThanOrEqual(44);
+			await picker.setInputFiles({
+				name: 'broken.png',
+				mimeType: 'image/png',
+				buffer: Buffer.from('not a PNG')
+			});
+			await expect(sheet.getByText(/No reference attached/)).toBeVisible();
+			await expect(attachment).toHaveCount(0);
+		}
 		// Full desktop fits in one screen; narrower layouts deliberately reflow and scroll.
 		if (viewport.width === 1920) {
 			for (const theme of ['dark', 'light']) {
@@ -868,17 +1008,16 @@ for (const viewport of [
 			scroll: element.scrollWidth
 		}));
 		expect(horizontal.scroll).toBeLessThanOrEqual(horizontal.client);
-		// Approved creator: the size readout sits under its guide image (hidden on shallow landscape).
-		const readoutFits = await sheet.locator('.size-guide').evaluate((el) => {
+		// The compact guide puts its square beside the readout, while the desktop guide stacks them.
+		const readoutFits = await sheet.locator('.size-guide').evaluate((el, compact) => {
 			if (!el.getClientRects().length) return true;
 			const image = el.querySelector('.preview-box')!.getBoundingClientRect(),
-				readout = el.querySelector('.sizes')!.getBoundingClientRect();
-			return (
-				readout.top >= image.bottom - 1 &&
-				readout.left >= image.left - 1 &&
-				readout.right <= image.right + 1
-			);
-		});
+				readout = el.querySelector('.sizes')!.getBoundingClientRect(),
+				row = el.closest('.creator-rail')!.querySelector('.reference-row')!.getBoundingClientRect();
+			return compact
+				? readout.left >= image.right && Math.abs(readout.right - row.right) < 1
+				: readout.top >= image.bottom && Math.abs(readout.right - image.right) < 1;
+		}, viewport.width <= 1000);
 		expect(readoutFits).toBe(true);
 		await expect(sheet.locator('.mirror-summary')).toHaveCount(0);
 		const autoHeight = await sheet.getByRole('button', { name: 'Auto', exact: true }).boundingBox();
@@ -1142,7 +1281,7 @@ function offlineCreation(config: CreationCase) {
 		});
 		expect(creates[1].body).toMatchObject({ n_directions: 8 });
 		expect(Object.keys(creates[1].body!.direction_images!)).toHaveLength(7);
-		// Default-first: creation makes no animation; one tap queues idle and walk with the old per-direction requests.
+		// Default-first: creation makes no animation; each move is explicitly approved afterward.
 		expect(
 			api.calls.filter(
 				(c) =>
@@ -1151,7 +1290,7 @@ function offlineCreation(config: CreationCase) {
 					c.path === '/v2/estimate-skeleton'
 			)
 		).toHaveLength(0);
-		await sheet.getByRole('button', { name: /^Add idle \+ walk/ }).click();
+		await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click();
 		await expect(page.locator('.project-btn')).toContainText('Offline creator test');
 		await page.locator('.project-btn').click();
 		await page
@@ -1162,6 +1301,13 @@ function offlineCreation(config: CreationCase) {
 		await expect(page.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
 		await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await equipmentMode(page, 'Moves');
+		const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+		for (const name of ['Idle', 'Walk']) {
+			await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+			await move.getByRole('radio', { name, exact: true }).click();
+			await move.getByRole('button', { name: new RegExp(`^Add ${name}`) }).click();
+			await move.getByRole('button', { name: 'Done', exact: true }).click({ timeout: 120_000 });
+		}
 		await expect(page.locator('.move-list .move-row')).toHaveCount(3, { timeout: 150_000 });
 		await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Idle', 'Walk']);
 		// Share lists Default once, as a move: its one standing frame is a PNG; Walk animates again.
@@ -1185,8 +1331,22 @@ function offlineCreation(config: CreationCase) {
 				raw.every((c) => (c.body as unknown as { direction: string }).direction === 'west')
 			).toBe(true);
 		const moveCanvas = page.locator('.move-thumb canvas').first();
-		expect(await moveCanvas.getAttribute('width')).toBe(String(config.frame));
-		expect((await moveCanvas.boundingBox())!.width).toBeLessThanOrEqual(56);
+		const thumbnail = await moveCanvas.evaluate((canvas: HTMLCanvasElement) => ({
+			w: canvas.width,
+			h: canvas.height,
+			data: Array.from(
+				canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data
+			)
+		}));
+		expect(paintedPixels({ ...thumbnail, data: new Uint8ClampedArray(thumbnail.data) })).toEqual({
+			left: 0,
+			top: 0,
+			right: thumbnail.w,
+			bottom: thumbnail.h
+		});
+		const thumbnailBox = (await moveCanvas.boundingBox())!;
+		expect(thumbnailBox.width).toBeLessThanOrEqual(56);
+		expect(thumbnailBox.height).toBeLessThanOrEqual(56);
 		await reloadStudio(page);
 		await expect(page.locator('.project-btn')).toContainText('Offline creator test');
 		await page.getByRole('button', { name: 'Export', exact: true }).click();
@@ -1277,6 +1437,47 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 	await sheet.locator('details.advanced > summary').click();
 	const model = sheet.getByRole('combobox', { name: 'Model', exact: true });
 	await expect(model.locator('option')).toHaveText(['Default (V3)', 'Pro', 'Pro Flash']);
+	const drop = sheet.getByRole('button', { name: 'Add image', exact: true });
+	const missedDrop = await sheet.evaluate((dialog) => {
+		const dataTransfer = new DataTransfer();
+		dataTransfer.items.add(new File(['unexpected'], 'missed.png', { type: 'image/png' }));
+		return !dialog.dispatchEvent(
+			new DragEvent('drop', { dataTransfer, bubbles: true, cancelable: true })
+		);
+	});
+	expect(missedDrop).toBe(true);
+	await expect(drop).toBeVisible();
+	await drop.evaluate((element) => {
+		const dataTransfer = new DataTransfer();
+		dataTransfer.items.add(new File([], 'guide.png', { type: 'image/png' }));
+		element.dispatchEvent(
+			new DragEvent('dragover', { dataTransfer, bubbles: true, cancelable: true })
+		);
+	});
+	await expect(drop).toHaveAttribute('data-variant', 'primary');
+	await drop.evaluate(async (element) => {
+		const canvas = document.createElement('canvas');
+		canvas.width = 160;
+		canvas.height = 96;
+		canvas.getContext('2d')!.fillRect(8, 8, 32, 64);
+		const blob = await new Promise<Blob>((resolve) => canvas.toBlob((result) => resolve(result!)));
+		const dataTransfer = new DataTransfer();
+		dataTransfer.items.add(new File([blob], 'guide.png', { type: 'image/png' }));
+		element.dispatchEvent(new DragEvent('drop', { dataTransfer, bubbles: true, cancelable: true }));
+	});
+	const attachment = sheet.getByRole('button', {
+		name: 'Choose a different reference image',
+		exact: true
+	});
+	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
+	await expect(attachment).toContainText('80 × 48 px');
+	await model.selectOption('pro');
+	await expect(sheet.getByText(/sketch or character design/)).toBeVisible();
+	await model.selectOption('pro-flash');
+	await expect(sheet.getByText(/use artwork as a style guide/i)).toBeVisible();
+	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
+	await sheet.getByRole('button', { name: 'Remove reference', exact: true }).click();
+	await expect(drop).toBeFocused();
 	await model.selectOption('pro');
 	await expect(sheet.locator('details.advanced')).toHaveAttribute('open', '');
 	await expect(sheet.getByRole('combobox', { name: 'Outline', exact: true })).toHaveCount(0);
@@ -1321,4 +1522,48 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 	await expect(sheet.locator('.nude-field')).toContainText('White underwear');
 	await nude.check();
 	await expect(sheet.locator('.nude-field')).toContainText('Nothing worn');
+	await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill('Discard me');
+	const details = sheet.getByRole('textbox', { name: 'Details', exact: true });
+	await details.fill('Discard these details');
+	const enhance = sheet.getByRole('button', { name: 'Enhance', exact: true });
+	await expect(enhance).toBeEnabled();
+	await page.evaluate(() => {
+		const decode = window.createImageBitmap;
+		window.createImageBitmap = async (source) => {
+			window.createImageBitmap = decode;
+			await new Promise<void>((resolve) =>
+				document.addEventListener('release-reference-decode', () => resolve(), { once: true })
+			);
+			return decode(source);
+		};
+	});
+	const sprite = makeImg(320, 48);
+	sprite.data[3] = 255;
+	await sheet.locator('.reference input[type=file]').setInputFiles({
+		name: 'fresh-draft.png',
+		mimeType: 'image/png',
+		buffer: Buffer.from(await encodePngBytes(sprite))
+	});
+	await expect(sheet.getByRole('button', { name: 'Opening image', exact: true })).toBeVisible();
+	await expect(enhance).toBeDisabled();
+	await model.selectOption('pro');
+	await page.evaluate(() => document.dispatchEvent(new Event('release-reference-decode')));
+	await expect(attachment).toContainText('320 × 48 px');
+	await expect(sheet.locator('.reference > small').filter({ hasText: 'Resized from' })).toHaveCount(
+		0
+	);
+	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await open(page, false);
+	await expect(drop).toBeVisible();
+	await expect(sheet.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('');
+	await expect(details).toHaveValue('');
+	await expect(body).toHaveValue('64');
+	await expect(nude).not.toBeChecked();
+	await drop.evaluate((element) => {
+		const dataTransfer = new DataTransfer();
+		const bytes = new Uint8Array(8 * 1024 * 1024 + 1);
+		dataTransfer.items.add(new File([bytes], 'too-large.png', { type: 'image/png' }));
+		element.dispatchEvent(new DragEvent('drop', { dataTransfer, bubbles: true, cancelable: true }));
+	});
+	await expect(sheet.getByRole('alert')).toContainText('no larger than 8 MB');
 });

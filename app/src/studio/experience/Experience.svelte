@@ -51,6 +51,7 @@
 		displayDirectionShort
 	} from '../displayDirection.ts';
 	import { displayMove } from '../displayMove.ts';
+	import { pixelSize } from '../model.ts';
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { workspaceCopy } from '../../lib/store/workspace-mode.ts';
@@ -624,7 +625,8 @@
 			</div>
 			<div class="character-rows">
 				{#each list as p (p.id)}
-					{@const facts = p.facts ?? stills.get(p.id)?.facts}
+					{@const still = stills.get(p.id)}
+					{@const facts = p.facts ?? still?.facts}
 					<CharacterActions id={p.id} name={p.name}>
 						<button
 							class="bu-action character-row"
@@ -632,11 +634,23 @@
 							aria-pressed={p.id === doc.id}
 							onclick={() => pick(p.id)}
 							><CharacterThumb id={p.id} name={p.name} trim /><span
-								><strong><CharacterName id={p.id} name={p.name} /></strong>{#if facts}<small
-										>{#each facts as fact, index}<span class="character-fact"
+								><strong><CharacterName id={p.id} name={p.name} /></strong>{#if facts}
+									<small class="character-sizes">
+										{#if still?.bodySize}<span
+												>{t('sizePreview.body', { measure: pixelSize(still.bodySize) })}</span
+											>{/if}
+										<span
+											>{still?.bodySize ? '· ' : ''}{t('sizePreview.frame', {
+												measure: facts.frame
+											})}</span
+										>
+									</small>
+									<small class="character-counts"
+										>{#each facts.counts as fact, index}<span class="character-fact"
 												>{index ? ' · ' : ''}{displayMessage(fact)}</span
 											>{/each}</small
-									>{/if}</span
+									>
+								{/if}</span
 							></button
 						>
 					</CharacterActions>
@@ -802,6 +816,15 @@
 </div>
 
 <style>
+	.character-row:has(.character-sizes) > span:last-child {
+		line-height: 1.1;
+	}
+	.character-row > span > .character-sizes {
+		display: flex;
+		flex-wrap: wrap;
+		flex-shrink: 0;
+		column-gap: 4px;
+	}
 	.workspace-banner {
 		position: absolute;
 		z-index: 6;

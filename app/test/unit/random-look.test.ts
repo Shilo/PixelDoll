@@ -31,10 +31,11 @@ describe('randomVariants', () => {
 });
 
 describe('characterFacts', () => {
-	test('counts the character’s size, directions, moves and non-base items for singular, plural and zero', () => {
+	test('reports both frame dimensions and localizes singular, plural and zero counts', () => {
 		const m = fixture();
-		expect(characterFacts(m)).toEqual([
-			{ key: 'studioModel.facts.pixels', vars: { count: 64 } },
+		m.rig.cell = { w: 64, h: 48 };
+		expect(characterFacts(m).frame).toBe('64×48 px');
+		expect(characterFacts(m).counts).toEqual([
 			{ key: 'export.count.directions', vars: { count: 4 } },
 			{ key: 'export.count.moves', vars: { count: 2 } },
 			{ key: 'export.count.items', vars: { count: 6 } }
@@ -42,15 +43,13 @@ describe('characterFacts', () => {
 		m.rig.directions = m.rig.directions.slice(0, 1);
 		m.rig.animations = m.rig.animations.slice(0, 1);
 		m.items = m.items.filter((i) => i.id === m.rig.baseItem || i.id === 'cape_red');
-		expect(characterFacts(m)).toEqual([
-			{ key: 'studioModel.facts.pixels', vars: { count: 64 } },
+		expect(characterFacts(m).counts).toEqual([
 			{ key: 'export.count.directions', vars: { count: 1 } },
 			{ key: 'export.count.moves', vars: { count: 1 } },
 			{ key: 'export.count.items', vars: { count: 1 } }
 		]);
 		m.items = m.items.filter((i) => i.id === m.rig.baseItem);
-		expect(characterFacts(m)).toEqual([
-			{ key: 'studioModel.facts.pixels', vars: { count: 64 } },
+		expect(characterFacts(m).counts).toEqual([
 			{ key: 'export.count.directions', vars: { count: 1 } },
 			{ key: 'export.count.moves', vars: { count: 1 } },
 			{ key: 'export.count.items', vars: { count: 0 } }

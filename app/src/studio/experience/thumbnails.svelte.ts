@@ -6,7 +6,7 @@ import { crop, characterFacts } from '../model.ts';
 import { stableStringify } from '../../lib/image/hash.ts';
 import type { Preset, Project } from '../../lib/store/manifest.ts';
 import { buildPresentation, southStill, renderPresentation } from './presentation.ts';
-import { standingFrame, paintedPixels } from './bounds.ts';
+import { characterBodySize, standingFrame, paintedPixels } from './bounds.ts';
 
 const cropped = new WeakMap<Img, Img | null>();
 
@@ -23,6 +23,7 @@ type CharacterStill = {
 	image: Img | null;
 	frame: Frame;
 	body: Frame;
+	bodySize: ReturnType<typeof characterBodySize>;
 	facts: ReturnType<typeof characterFacts>;
 };
 const rendered = new WeakMap<Project, { key: string; still: CharacterStill }>();
@@ -42,6 +43,7 @@ export function characterStill(
 		image,
 		frame,
 		body: standingFrame(project, pose.direction ?? 'south'),
+		bodySize: characterBodySize(project),
 		facts: characterFacts(project.manifest)
 	};
 	rendered.set(project, { key, still });

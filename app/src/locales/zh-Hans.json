@@ -40,7 +40,9 @@
 		"undo": "撤销",
 		"wear": "穿戴",
 		"zoomIn": "放大",
-		"zoomOut": "缩小"
+		"zoomOut": "缩小",
+		"randomLook": "随机外观",
+		"none": "无"
 	},
 	"pwa": {
 		"invalidRelease": "更新说明无效。",
@@ -209,7 +211,6 @@
 		"cancelFromTheTabThatIsGenerating": "请在生成此装备的标签页中取消。",
 		"wearInACopyOfTheDemo": "在演示副本中穿戴",
 		"makeOneForName": "为{name}制作一件",
-		"paid": "付费",
 		"wearName": "穿戴{name}",
 		"titleWearingTakeOff": "已穿戴（脱下）",
 		"twoHanded": "双手",
@@ -282,10 +283,6 @@
 		},
 		"makeFor": "为{move}制作",
 		"makingMoreMoves": "正在为更多动作制作装备",
-		"redrawingFrames": "正在重绘装备帧",
-		"tryNewFrames": "尝试新的装备帧",
-		"repairNote": "只会在冻结的身体上重绘朝向{direction}的{move}。",
-		"repairLimits": "其他视图、动作和已保存的设计保持不变。严重失败时保留之前的帧。PixelLab 可能按美元计费；排队时间不定。",
 		"colorMatchNote": {
 			"other": "将朝向{direction}的 {n} 个已保存{move}帧中的 {pixels} 匹配到装备现有的调色板。"
 		},
@@ -308,7 +305,30 @@
 		"areaStats": "最小为中位数的 {ratio} · CV {cv}",
 		"handedness": { "ok": "正常", "switched": "已换手" },
 		"minimum": "{value}（≥ {threshold}）",
-		"maximum": "{value}（≤ {threshold}）"
+		"maximum": "{value}（≤ {threshold}）",
+		"updateNote": "更新此装备在{move}中朝向{direction}的帧。角色身体保持不变。",
+		"updateNoteMirrors": "更新此装备在{move}中朝向{direction}及其镜像朝向的帧。角色身体保持不变。",
+		"repairItem": "修复装备",
+		"redrawItem": "重绘装备",
+		"repairFeature": "修复装备",
+		"redrawFeature": "重绘装备",
+		"inspectRepair": "检查修复装备的 API 调用",
+		"inspectRedraw": "检查重绘装备的 API 调用",
+		"repairHelp": "适合在你喜欢当前设计时使用。只修改装备所在区域。",
+		"redrawHelp": "可能改变形状或握持方式。是否保留由你决定。",
+		"repairRequests": {
+			"other": "此次修复会使用 {n} 次 PixelLab 生成请求。"
+		},
+		"redrawRequests": {
+			"other": "此次重绘会使用 {n} 次 PixelLab 生成请求。"
+		},
+		"redrawSaves": {
+			"other": "预计比修复少 {n} 次生成。"
+		},
+		"redrawCostsMore": {
+			"other": "预计比修复多 {n} 次生成。"
+		},
+		"billingNote": "这些估算比较的是生成次数，不是美元价格。PixelLab 可能按美元计费，排队时间可能不同。"
 	},
 	"newCharacterButton": {
 		"newCharacter": "新建角色",
@@ -448,14 +468,12 @@
 		"characterView": "角色视图",
 		"mountSettings": "坐骑设置",
 		"titleMountSettingsMounted": "坐骑设置（已骑乘）",
-		"randomLook": "随机外观",
 		"titleRandomLookItemsAndColors": "随机外观（装备和颜色）",
 		"shareCharacter": "分享角色",
 		"export": "导出",
 		"moreOptions": "更多选项",
 		"showMount": "显示坐骑",
 		"hideLegs": "隐藏腿部",
-		"none": "无",
 		"farLeg": "远侧腿",
 		"bothLegs": "双腿",
 		"cutsBelowTheHipsHandsMayBe": "从髋部以下裁切。手部可能被裁掉，垂挂的装备可能消失。",
@@ -466,7 +484,6 @@
 		"pixelLabAccount": "PixelLab 账户",
 		"lightMode": "浅色模式",
 		"darkMode": "深色模式",
-		"sourceCode": "源代码",
 		"viewPreview": "预览",
 		"viewTopDown": "俯视",
 		"viewSide": "横版",
@@ -482,7 +499,11 @@
 		"rename": "重命名…",
 		"setUpCharacter": "设置角色…",
 		"connectPixelLab2": "连接 PixelLab…",
-		"characterSelection": "角色选择"
+		"characterSelection": "角色选择",
+		"wardrobeSettings": "衣橱设置",
+		"ownItemsOnly": "仅自己的装备",
+		"workspace": "工作区…",
+		"workspaceActions": "工作区操作"
 	},
 	"wardrobe": {
 		"randomLowerItem": "随机{lower}装备",
@@ -681,7 +702,7 @@
 		"tookOffTwoHanded": "已脱下{names}（双手）",
 		"tookOffForTwoHanded": "已脱下{names}：{name}是双手装备",
 		"wearingUnfitted": "正在按为{sourceName}绘制的样子穿戴{name}。它可能无法与此身体对齐。未消耗生成次数。",
-		"wearingUnfittedAtSize": "正在按为{sourceName}绘制的样子、以原始 {size} px 尺寸穿戴{name}。它可能无法与此身体对齐。未消耗生成次数。",
+		"wearingUnfittedAtSize": "正在按为{sourceName}绘制的样子穿戴{name}，帧尺寸仍为原始的 {size}。它可能无法与此身体对齐。未消耗生成次数。",
 		"fittedItem": "已免费从{sourceName}适配{name}。请在每个动作中检查。",
 		"copiedSharedItem": "已从{sourceName}复制{name}。未消耗生成次数。",
 		"copiedMoreFrames": {
@@ -720,7 +741,9 @@
 		"thisOperationChangedReviewTheBodyColors": "此操作已更改。请再次检查身体颜色。",
 		"theBodyColorCorrectionsChangedReviewTheir": "身体颜色校正已更改。请再次检查其费用。",
 		"anotherRigSetupIsStillRunningSo": "另一个绑定设置仍在运行，因此此设置未开始。你的选择已保留。",
-		"characterReadyForSkeletonPosedItemsAnd": "角色已可用于骨架姿态装备和新动作"
+		"characterReadyForSkeletonPosedItemsAnd": "角色已可用于骨架姿态装备和新动作",
+		"couldNotCheckCopiedFrames": "无法检查已复制装备的帧：{reason}",
+		"couldNotReadSharedItems": "无法读取其他角色的装备：{reason}"
 	},
 	"history": {
 		"wear": "穿戴{name}",
@@ -729,7 +752,6 @@
 		"changeColor": "颜色更改",
 		"resetColors": "重置颜色",
 		"randomItem": "随机{name}装备",
-		"randomLook": "随机外观",
 		"saveOutfit": "保存套装",
 		"deleteOutfit": "删除套装",
 		"show": "显示{name}",
@@ -818,7 +840,9 @@
 			"xpTitle": "XP 和 Pokémon Essentials",
 			"xpSub": "4 × 4 布局 · Name.png"
 		},
-		"playback": { "none": "无", "all": "全部" },
+		"playback": {
+			"all": "全部"
+		},
 		"outfits": {
 			"none": "无",
 			"saved": "当前外观 + 已保存套装",
@@ -1139,7 +1163,6 @@
 	"studioModel": {
 		"itemQualityReview": "{name}：装备质量检查需要复核。未启动付费重试。",
 		"bodyQuality": "{move} {direction}：{reason}",
-		"facts": { "pixels": "{count} px" },
 		"health": {
 			"clean": "良好",
 			"accepted": "已接受",
@@ -1183,7 +1206,8 @@
 				"other": "手持装备被粘贴在 {count} 个{move}帧上（{direction}）；请检查它是否会动"
 			},
 			"noRepairGrid": "{move}（{direction}）没有修复网格：{reason}；已保留最佳尝试",
-			"heldLoop": "动作循环时，手持装备会改变形状或角度"
+			"heldLoop": "动作循环时，手持装备会改变形状或角度",
+			"registrationShift": "PixelLab 返回了透明边缘，可能移动了图集。请检查装备在每一帧中是否对齐。"
 		},
 		"anotherCharacter": "另一个角色",
 		"unfit": {
@@ -1300,7 +1324,7 @@
 		"notConnected": "未连接",
 		"unavailable": "用量不可用",
 		"checking": "正在检查用量…",
-		"credits": "剩余 {credits} 个额外点数"
+		"credits": "剩余点数 {credits}"
 	},
 	"generation": {
 		"outcome": {
@@ -1436,7 +1460,7 @@
 			"editPacked": "编辑打包帧",
 			"actionFrames": { "other": "{action} · {count} 帧" },
 			"itemPoseNote": "仅已知字段。发送已换装的参考图像、精确存储的姿势、外观、动作、朝向和种子。",
-			"itemEditNote": "仅已知字段。提交时会根据此角色准备帧和 image_size。",
+			"itemEditNote": "仅已知字段。提交时会准备帧和 image_size。",
 			"singleInput": "单一输入会因 API 最少两帧的要求而重复；仅使用返回的第一帧。",
 			"coverage": "覆盖范围：{cells}。",
 			"createMotion": "创建运动 · {direction}",
@@ -1451,7 +1475,6 @@
 			"itemCells": "{item} · {cells}",
 			"anchorNote": "仅编辑冻结的装备帧，以已保存的站立设计作为第一个参考帧。其返回的参考会被丢弃。覆盖范围：{cells}。无身体或骨架请求。每个计划批次只运行一次；付费重试需要另一次请求。",
 			"repairEquipment": "{item} {direction} · 修复装备",
-			"repairEquipmentNote": "仅使用一个受保护的匹配朝向参考来编辑所选装备帧。身体保持不变；仅在质量改善时保留结果。",
 			"framesRange": "{item} {direction} · 第 {from}–{to} 帧",
 			"gridBatchNote": "为冻结的身体帧换装，而不是跟随可疑的导入关节。受保护的站立参考和服装蒙版会保留设计。每个计划批次一次尝试；任何付费重试都需要你的操作。",
 			"poseBatchNote": "发送此装备的已换装参考、存储的基础静止关键点和所选动作姿势、外观、动作、朝向和种子。每个计划批次一次尝试；任何付费重试或修复都需要你的操作。",
@@ -1462,8 +1485,19 @@
 			"stopSubmitted": "停止已提交的生成",
 			"stopSubmittedNote": "如果任务已经完成，取消可能失败；费用可能已经产生。",
 			"resumeNote": "继续后，此等待中的请求可在符合条件时提交。此处显示的图像引用存储在本地；实际发送的是原始图像数据。",
-			"pollNote": "继续检查此已提交的任务。"
-		}
+			"pollNote": "继续检查此已提交的任务。",
+			"conceptNote": "上传的图片排在最前，位于角色帧之前。其输出不会被使用。",
+			"redrawEquipment": "{item} {direction} · 重绘装备",
+			"redrawEquipmentNote": "{width}×{height}，帧 {from}–{to}。发送未加蒙版的图集和匹配的参考。PixelDoll 会限制保留的内容，并在替换你的帧之前始终询问。PixelDoll 需要 Tier 1。如果以美元计费，最低为 {minimum}；实际费用可能更高。",
+			"gridRepairNote": "{width}×{height}，帧 {from}–{to}。仅使用一个受保护的匹配朝向参考。身体保持不变。带有阻塞性视觉问题的完整修复会保留供你检查。"
+		},
+		"copyEndpointTitle": "复制端点",
+		"manualCopyLabel": "用于手动复制的端点",
+		"copyEndpointLabel": "复制端点 {method} {endpoint}",
+		"copyEndpointLabelContext": "复制端点 {method} {endpoint}，{label}",
+		"endpointCopiedLabel": "已复制端点：{method}，{label}",
+		"endpointCopiedCall": "已复制端点：{method}，第 {number} 个调用",
+		"copyFailed": "无法自动复制。请使用端点字段手动复制。"
 	},
 	"activity": {
 		"error": {
@@ -1501,7 +1535,6 @@
 		"resume": "继续",
 		"capacity": { "other": "一次最多 {count} 个任务。" },
 		"busy": "PixelLab 正忙，可能是在另一个应用中。将在 {seconds} 秒后重试。你的任务会保持排队。",
-		"waitingForTab": "PixelDoll 正在另一个标签页中运行任务，因此此标签页暂时无法启动你的任务。关闭该标签页后就会在此处启动，或按“完成”取消。",
 		"follower": "正在另一个标签页中运行。密钥会保留在你连接的那个标签页中。请在当前活动的队列标签页中连接 PixelLab，或关闭它以在此处运行任务。",
 		"pausedAuth": "PixelLab 未接受密钥。任务会等待你重新连接。",
 		"pausedOffline": "你处于离线状态。排队的工作会等待；已提交的任务可能完成。重新连接后可继续已知任务。",
@@ -1529,7 +1562,10 @@
 			"checking": "正在启动此工作流前检查 PixelLab 套餐。",
 			"verifying": "正在等待验证你的 PixelLab 套餐。会自动重试。",
 			"tier": "需要 PixelLab Tier {tier} 或更高套餐。未发送请求。"
-		}
+		},
+		"cancelRequest": "取消请求",
+		"waitingTitle": "正在等待另一个标签页",
+		"waitingBody": "你的生成尚未开始。请保持“活动”打开，另一个标签页就绪后 PixelDoll 会在这里继续。"
 	},
 	"genCard": {
 		"retryKey": "重试会使用从本设计颜色测得的{color}背景",
@@ -1596,7 +1632,9 @@
 			"detail": "细节",
 			"seed": "种子",
 			"method": "方法",
-			"colorKey": "色键"
+			"colorKey": "色键",
+			"reference": "参考",
+			"startingSprite": "起始精灵图"
 		},
 		"method": {
 			"skeletonPose": "骨架姿态",
@@ -1618,15 +1656,15 @@
 		"onlyDirection": "仅{direction}",
 		"oneDirection": "仅一个",
 		"directions": "{count} 个朝向",
-		"cell": "单元格",
-		"cellSize": "{w}×{h}，枢轴点 {x},{y}",
 		"mirrorOf": "{direction}（{source}的镜像）",
 		"failed": "失败：轻点查看详情",
 		"adding": "正在添加… {done}/{total}",
 		"waitingForFailed": "正在等待失败的动作",
 		"add": "添加动作",
-		"addBase": "添加{moves}",
-		"estimate": "预计 {gens} 次生成"
+		"estimate": "预计 {gens} 次生成",
+		"bodySize": "{w}×{h} 像素",
+		"frameSize": "{w}×{h} 像素，枢轴点 {x},{y}",
+		"waitingForRepairReview": "等待检查装备帧"
 	},
 	"setup": {
 		"warnings": {
@@ -1705,7 +1743,6 @@
 			"anchoredEquipmentGenerationRequires": "锚定装备生成需要现有动作及其已保存的站立装备。未请求生成。",
 			"moveItemMissingStored": "此动作或装备缺少已存储的关节或站立参考。生成装备前请先设置其姿势。未请求生成。",
 			"setUpRigFirst": "添加动作前，请先设置此角色的姿势绑定结构。",
-			"chooseExistingMoveRepairing": "修复装备前，请先选择一个现有动作。",
 			"newMoveNeedsEvery": "新动作需要每个独立绘制的朝向。",
 			"partialRepairMustKeep": "部分修复必须保持现有帧数。",
 			"selectedEquipmentLongerStanding": "所选装备不再为所有所选视图提供站立设计。重试前请检查装备选择。未请求生成。",
@@ -1745,7 +1782,6 @@
 			"originalCompletedBodyRender": "{direction}：原始已完成身体渲染不可用。未重新生成身体。",
 			"cachedBodyRenderIncomplete": "{direction}：缓存的身体渲染不完整。",
 			"cachedBodyFramesDo": "{direction}：缓存的身体帧不符合此角色。未重新生成身体。",
-			"repairStillFailsQuality": "{name} {id} {direction}：修复仍未通过质量检查。现有图像已保留；再次尝试前请查看“活动”。",
 			"demoStandingBodyFacing": "演示没有朝向{id}的站立身体。",
 			"requestStopped": "{label}：{state}{error}",
 			"requestStoppedResume": "{label}：{state}{error}。生成已停止，未重新发送。再次开始前请在“活动”中查看此请求。",
@@ -1768,7 +1804,13 @@
 			"partialSavedNewFrames": "{reason} 已保存完成的视图（{views}）；“生成新帧”只会请求缺失的帧。",
 			"partialSavedRetry": "{reason} 已保存完成的视图（{views}）；“重试”只会请求缺失的帧。",
 			"replacementFailsQa": "替换仍未通过身体姿势质量检查。现有朝向已保留。重试前请查看结果。",
-			"newMoveFailsQa": "新动作未通过身体姿势质量检查，因此未保存。重试前请查看结果。"
+			"newMoveFailsQa": "新动作未通过身体姿势质量检查，因此未保存。重试前请查看结果。",
+			"moveDirectionsChanged": "角色的朝向已更改。请先查看此动作的最新费用预估，再重试。未发送生成请求。",
+			"reviewItemRedrawFirst": "生成前请先查看装备重绘的设置和费用预估。未发送请求。",
+			"chooseRepairTarget": "修复前，请选择一件装备和现有动作中的一个朝向。未发送生成请求。",
+			"describedFramesBlocked": "描述的动作可以用 4、8 或 12 帧生成。此动作有 {frames} 帧。 未发出生成请求。",
+			"describeMoveBlocked": "生成前请先描述此动作。 未发出生成请求。",
+			"chooseExistingMoveRepairing": "修复装备前，请先选择一个现有动作。"
 		},
 		"steps": {
 			"draw": "正在绘制你的角色",
@@ -1912,6 +1954,15 @@
 				"noAnswer": "PixelLab 未给出明确答复。你的文本已保留。",
 				"failedApi": "PixelLab 无法增强此文本。你的文本已保留。",
 				"failed": "增强失败。你的文本已保留。"
+			},
+			"sizeGuideReference": "尺寸指南和参考图",
+			"reference": {
+				"frontFacing": "使用正面朝向的精灵图。",
+				"concept": "使用草图或角色设计图。",
+				"style": "使用美术图作为风格参考。",
+				"tooLarge": "请选择不超过 {max} × {max} 像素的参考图。",
+				"increaseBody": "增大身体尺寸以容纳此参考图，或选择更小的图像。",
+				"increaseFrame": "增大帧尺寸以容纳此参考图，或选择更小的精灵图。"
 			}
 		},
 		"sheet": {
@@ -1956,15 +2007,14 @@
 			"add": "添加{move}",
 			"replaceViews": "替换{move}视图",
 			"queue": "将{move}加入队列",
-			"queueViews": "将{move}视图加入队列",
-			"move": "动作"
+			"move": "动作",
+			"queueReplacement": "将 {move} 的视图替换加入队列"
 		},
 		"titleRepair": "修复装备帧",
 		"titleReplace": "替换动作视图",
 		"heldBy": "{move}在{character}上失败，因此新动作会等待。请打开它重试或重新开始。",
 		"open": "打开{character}",
 		"progressLabel": "当前动作生成",
-		"repairNote": "只会重绘所选的装备帧；身体保持固定。未通过硬性检查的结果会保留之前的装备帧。",
 		"retryFeature": "再次生成此动作",
 		"savedFramesNote": "使用已保存的帧检查是否有与此动作和装备匹配的已完成图像。恢复这些帧不会发出 PixelLab 请求。",
 		"checkingCached": "正在检查缓存帧…",
@@ -1995,21 +2045,12 @@
 		"demo": "动作会添加到你的角色上。",
 		"needsSetup": "设置此角色的姿势绑定结构以添加动作。现有图像和图层会保持对齐。",
 		"added": "{move} · 已添加",
-		"viewsToReplace": "要替换的视图",
-		"replaceNote": "保存替换会清除这些视图中的旧装备帧。只有当身体通过检查时，所选装备才会制作动画。其他装备会在这些视图中保持隐藏，直到制作新的帧。其他视图和动作保持不变。",
-		"replaceNoteMirrored": "保存替换会清除这些视图中的旧装备帧。只有当身体通过检查时，所选装备才会制作动画。其他装备会在这些视图中保持隐藏，直到制作新的帧。其他视图和动作保持不变。镜像视图会跟随其来源。",
-		"chooseToReplace": "请选择一个现有动作来替换所选视图。",
 		"describeReplacement": "描述替换内容",
-		"describe": "或描述它",
 		"describePlaceholder": "例如：原地跳跃",
-		"emptyHands": "身体绘制为双手为空且没有特效。请将武器和道具添加为装备。",
 		"alreadyQueued": "{move}已排队。",
 		"waitsForCurrent": "它会等待正在进行的动作，然后自行运行。",
 		"addFeature": "已穿戴装备的动作",
 		"animateItems": "同时为这些装备制作动画",
-		"itemsNote": "装备默认不勾选。如果身体检查阻止了此动作，则不会发送装备请求。你可以稍后从每件装备的详情中生成装备。",
-		"listNote": "此列表只显示能在正在生成的每个视图中跟随身体姿势的装备。共享副本仍可在具有帧的视图中穿戴。要为未适配的副本制作动画，请为此角色制作一件。其他装备可能会在其详情中为现有动作提供动画选项。",
-		"billing": "PixelLab 可能对部分调用按美元计费。重试和回退需要额外费用；排队时间不定。",
 		"pipeline": {
 			"described": "pixminimax 运动（徒手、无道具、无特效）→ 关节 → 在静止视图上运行原始 skeleton-v3",
 			"walk": "行走 skeleton-v3 运动 → 关节 → 在静止视图上运行原始 skeleton-v3",
@@ -2017,12 +2058,68 @@
 			"grid": "{frames} 帧 × {dirs} 个朝向",
 			"gridMirrored": "{frames} 帧 × {dirs} 个朝向（{mirrored} 个镜像）",
 			"cost": "身体约 {body} 次生成，装备 {items} 次生成 · 身体检查说明不会触发重绘。"
+		},
+		"changedDuringEdit": "编辑期间此动作已更改。请重新选择它以继续。",
+		"duplicateOption": "{move} 已在动作选项中。请用其他词语开头。",
+		"costNotice": "PixelLab 可能以美元收费。重试和备用方案会产生额外费用。",
+		"describeNew": "描述新动作",
+		"describeMotion": "描述动作",
+		"motionOnly": "只描述身体动作。武器和道具请通过装备添加。",
+		"orChoose": "或选择一个动作",
+		"redrawDirections": "要重绘的朝向",
+		"redrawHidesEquipment": "替换这些视图后，装备会隐藏，直到生成新帧。",
+		"redrawMirrors": "镜像视图也会变更：{directions}。",
+		"redrawOtherMoves": "其他动作保持不变。",
+		"equipmentWaitsForBody": "如果身体检查阻止生成动作，就不会发送装备生成请求。",
+		"uncheckedItemsHidden": "未勾选的装备会保持隐藏，直到为其生成动画。",
+		"fittedEquipmentOnly": "这里只能为适配所有选中视图的装备生成动画。共享副本仍可穿戴在已有帧的视图中。",
+		"review": {
+			"redrawTitle": "审核装备重绘",
+			"repairTitle": "审核装备修复",
+			"redrawProgress": "重绘装备帧",
+			"keepCurrent": "保留当前帧",
+			"finish": "完成审核",
+			"useRedrawn": "使用重绘后的帧",
+			"useRepaired": "使用修复后的帧",
+			"heldBy": "{character} 的装备帧已可检查。排队中的动作将等待你的选择。",
+			"compare": "对比装备帧",
+			"saved": "新帧已保存。请完成审核以继续。",
+			"redrawIssues": "重绘已完成，但部分帧可能未对齐。请查看质量检查结果。",
+			"redrawReady": "重绘结果已可对比。",
+			"repairIssues": "付费修复已完成，但部分帧可能存在视觉问题。",
+			"noCost": "当前图像未更改。两种选择都不会产生费用。你可以隐藏此面板，稍后再决定。",
+			"frame": "第 {number} 帧",
+			"currentFrames": "当前帧",
+			"redrawnFrames": "重绘后的帧",
+			"repairedFrames": "修复后的帧",
+			"findings": "质量检查结果",
+			"redrawInManagingTab": "请在管理 PixelDoll 任务的标签页中审核重绘结果。",
+			"repairInManagingTab": "请在管理 PixelDoll 任务的标签页中审核修复结果。",
+			"resumesQueue": "完成审核后，队列中的动作会按你已确认的费用继续运行。",
+			"redrawNote": "身体保持不变。替换帧之前，你可以对比重绘结果。",
+			"repairNote": "身体保持不变。如果修复完成后仍有视觉问题，结果会等待你审核。",
+			"currentFrame": "当前第 {number} 帧",
+			"redrawnFrame": "重绘后的第 {number} 帧",
+			"repairedFrame": "修复后的第 {number} 帧"
 		}
 	},
 	"itemRoute": {
 		"errors": {
 			"noStandingMove": "未找到完整的站立动作。制作装备前，请导入站立视图，或用单帧站立参考设置角色。未请求生成。",
-			"skeletonUnavailable": "此装备在此角色上无法使用骨架姿态。请选择“自动”。"
+			"skeletonUnavailable": "此装备在此角色上无法使用骨架姿态。请选择“自动”。",
+			"repairGridBounds": "此修复网格必须符合 PixelLab 的 32–512 px 画布范围。请选择更短的动作。",
+			"redrawTooLarge": "此朝向太大，无法在一次请求中重绘。请选择修复装备。",
+			"repairGridCapacity": "装备帧及其参考图无法放入同一个修复网格。",
+			"referenceTooLarge": "请选择能放入此装备 {width} × {height} px 帧的参考图。",
+			"referenceMissing": "缺少装备参考图。",
+			"referenceNoFit": "装备参考图无法放入此帧。",
+			"designFrameMissing": "设计调用未返回已穿戴帧。",
+			"incompleteReferenceFrames": "PixelLab 返回的参考帧或站立帧不完整。未发送后续请求。",
+			"standingFrameSize": "PixelLab 返回的站立帧尺寸错误。未发送后续请求。",
+			"layersMismatch": "装备图层与此装备栏不匹配。未请求生成。",
+			"repairBatchMisaligned": "一个修复批次返回了未对齐的帧。其余批次已停止，现有图像已保留。",
+			"invalidItemGridSheet": "PixelLab 返回了无法使用的装备网格。应只有一张图集。现有图像已保留。",
+			"invalidItemGridLayout": "PixelLab 返回了无法使用的装备网格。图集的帧布局错误。现有图像已保留。"
 		}
 	},
 	"newItem": {
@@ -2042,7 +2139,6 @@
 		"copyDemo": "复制演示身体",
 		"feature": "装备生成",
 		"needsSetup": "设置此角色以使用骨架姿态装备、超尺寸武器和新动作。",
-		"planError": "此角色的帧无法使用装备生成器：{error}",
 		"standingFirst": "请先制作站立设计。满意后，可从其详情中为单个动作生成此装备。",
 		"where": "放在哪里？",
 		"moreCategories": "更多类别",
@@ -2077,7 +2173,8 @@
 			"ash": "灰烬",
 			"ink": "墨黑"
 		},
-		"routeLabel": "色键人偶 + 骨架姿态关键帧 / edit-animation-v2"
+		"routeLabel": "色键人偶 + 骨架姿态关键帧 / edit-animation-v2",
+		"referenceHint": "只展示装备本身。"
 	},
 	"workspaceCopy": {
 		"title": "打开工作区副本",
@@ -2103,5 +2200,56 @@
 		"frameMeasure": "{size} × {size} px"
 	},
 	"sheet": { "later": "稍后" },
-	"toast": { "dismiss": "关闭通知" }
+	"toast": { "dismiss": "关闭通知" },
+	"sharedVisibility": {
+		"heading": "隐藏共享装备",
+		"all": "所有角色",
+		"hideAll": "为所有角色隐藏共享装备",
+		"hideDemo": "隐藏来自{name}（演示）的共享装备",
+		"hideCurrent": "为{name}（当前角色）隐藏共享装备",
+		"current": "（当前）",
+		"allOn": "共享装备已对所有角色隐藏。",
+		"notSaved": "已更改显示设置，但此浏览器未能保存。"
+	},
+	"versionRow": {
+		"actions": "版本操作",
+		"openSource": "打开源代码",
+		"viewCommit": "查看提交",
+		"copyDetails": "复制版本详情",
+		"copied": "已复制版本",
+		"copyFailed": "无法复制版本详情。"
+	},
+	"repairReview": {
+		"finishFirst": "请先打开“动作”，决定是否使用已完成的修复。",
+		"recover": "无法保存审核。请使用已保存的帧恢复审核，不会再次收费。",
+		"unsaved": "修复结果可在此标签页查看，但无法保存审核。请在关闭或重新加载前作出决定。",
+		"unsavedMayNotRecover": "{notice} 无法保证重新加载后可以恢复。",
+		"ready": "装备的付费结果已可审核。当前帧未更改。",
+		"alreadySaved": "修复已保存。请完成审核后继续。",
+		"saved": "新帧已保存。",
+		"kept": "已保留装备的当前帧。"
+	},
+	"referenceField": {
+		"label": "参考图像",
+		"addImage": "添加图像",
+		"chooseDifferent": "选择其他参考图像",
+		"opening": "正在打开图像…",
+		"openingLabel": "正在打开图像",
+		"dropHint": "拖放到此处或选择文件",
+		"remove": "移除参考图像",
+		"attached": "参考图像已添加。",
+		"removed": "参考图像已移除。",
+		"oneAtATime": "请一次选择一张图像。",
+		"unreadable": "无法打开此图像。",
+		"error": "未添加参考图像。{reason}",
+		"resized": "已从 {fromWidth} × {fromHeight} 调整为 {width} × {height} px。",
+		"limits": "最大 {width} × {height} px，{mb} MB。"
+	},
+	"reference": {
+		"unsupported": "请选择 PNG、JPEG 或 WebP 图像。",
+		"tooLarge": "请选择不超过 {mb} MB 的图像。",
+		"unreadable": "无法打开此图像。请选择其他文件。",
+		"noArtworkResized": "调整大小后没有可见画面。请选择其他图像。",
+		"noArtwork": "此图像没有可见画面。请选择其他文件。"
+	}
 }

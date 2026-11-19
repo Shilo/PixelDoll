@@ -17,7 +17,7 @@
 		type MoveSpec
 	} from './create.ts';
 	import { app } from '../lib/app.svelte.ts';
-	import { tierDecision } from '../lib/pixellab/plans.ts';
+	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 	import GenerationDetails from './GenerationDetails.svelte';
 	import { movePlan } from './apiPlans.ts';
@@ -149,32 +149,37 @@
 					items: [it.id],
 					dirs: [sourceDir],
 					itemMethod: 'grid' as const,
+					preferTierOneRepair: (accountTier(app.balance) ?? 1) < 2 ? (true as const) : undefined,
 					itemsOnly: true as const,
 					seed: 0
 				}
 			: null
 	);
 	const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec]) : null);
+	const redrawOffer = $derived(
+		m && repairSpec
+			? itemMoveOffer(m, [{ ...repairSpec, preferTierOneRepair: undefined, redrawItem: true }])
+			: null
+	);
 	// Required plan tiers come from the mandatory steps of each offered spec, not from the API preview.
 	const offerTier = (offer: { specs: MoveSpec[] } | null) =>
 		m ? Math.max(0, ...(offer?.specs ?? []).map((s) => moveMinimumTier(m, s))) : 0;
 	const tierBlocked = (required: number) =>
 		tierDecision(app.balance, { required }).kind === 'required';
-	const repairTier = $derived(offerTier(repairOffer));
 	const repairBusy = $derived(
 		(!!moving.spec && !moving.done) || (!!settingUp.spec && !settingUp.done)
 	);
-	function repairFrames() {
-		if (!repairOffer?.specs[0]) return;
+	function repairFrames(offer: typeof repairOffer, tier: number) {
+		if (!offer?.specs[0]) return;
 		const projectId = doc.id,
 			spec = {
-				...$state.snapshot(repairOffer.specs[0]),
+				...$state.snapshot(offer.specs[0]),
 				seed: 1 + Math.floor(Math.random() * 1_000_000)
 			};
 		withKey(() => {
 			void startMove(projectId, spec);
 			ui.sheet = 'move';
-		}, repairTier);
+		}, tier);
 	}
 	// The character's actual missing moves, regardless of their names or when they were imported.
 	const missingMoves = $derived.by(() => {
@@ -495,36 +500,70 @@
 
 		{#if !isDemo() && repairSpec}
 			<div class="field">
-				<button
-					class="bu-action btn"
-					data-variant="outline"
-					disabled={repairBusy || repairOffer?.gens == null || tierBlocked(repairTier)}
-					aria-describedby={tierBlocked(repairTier) ? 'item-repair-tier' : undefined}
-					onclick={repairFrames}
-					>{t('itemPane.tryNewFrames')}
-					<span class="cost"
-						>{repairOffer?.gens == null
-							? t('common.unavailable')
-							: t('moves.estimate', { gens: number(Math.ceil(repairOffer.gens)) })}</span
-					></button
-				>
-				{#if repairOffer?.error}<p class="notice warn small" role="status">
-						{displayMessage(repairOffer.error)}
-					</p>{/if}
-				{#if repairTier}<TierNotice
-						id="item-repair-tier"
-						minimumTier={repairTier}
-						feature={t('itemPane.redrawingFrames')}
-					/>{/if}
 				<p class="faint small">
-					{t('itemPane.repairNote', {
-						move: moveName,
-						direction:
-							getLocale() === 'en' ? sourceDir.replaceAll('-', ' ') : directionName(sourceDir)
-					})}
-					{#if sourceDir !== ui.dir}{t('itemPane.itsMirroredViewsUpdateToo')}{/if}
-					{t('itemPane.repairLimits')}
+					{t(
+						m?.rig.directions.some((direction) => direction.mirrorOf === sourceDir)
+							? 'itemPane.updateNoteMirrors'
+							: 'itemPane.updateNote',
+						{
+							move: moveName,
+							direction:
+								getLocale() === 'en' ? sourceDir.replaceAll('-', ' ') : directionName(sourceDir)
+						}
+					)}
 				</p>
+				{#each [{ id: 'repair', label: t('itemPane.repairItem'), trigger: t('itemPane.inspectRepair'), feature: t('itemPane.repairFeature'), offer: repairOffer, help: t('itemPane.repairHelp') }, { id: 'redraw', label: t('itemPane.redrawItem'), trigger: t('itemPane.inspectRedraw'), feature: t('itemPane.redrawFeature'), offer: redrawOffer, help: t('itemPane.redrawHelp') }] as choice (choice.id)}
+					{@const tier = offerTier(choice.offer)}
+					{@const spec = choice.offer?.specs[0]}
+					{@const plan = m && spec ? movePlan({ manifest: m }, spec) : []}
+					{@const requests = plan.filter((call) => call.method === 'POST').length}
+					<span class="api-action">
+						<ApiPeek
+							scope={`item-${choice.id}`}
+							label={choice.label}
+							triggerLabel={choice.trigger}
+							{plan}
+						/>
+						<button
+							class="bu-action btn"
+							data-variant={choice.id === 'repair' ? 'primary' : 'outline'}
+							disabled={repairBusy || choice.offer?.gens == null || tierBlocked(tier)}
+							aria-describedby={tierBlocked(tier)
+								? `item-${choice.id}-tier`
+								: `item-${choice.id}-help item-repair-billing`}
+							onclick={() => repairFrames(choice.offer, tier)}
+							>{choice.label}
+							<span class="cost"
+								>{choice.offer?.gens == null
+									? t('common.unavailable')
+									: t('moves.estimate', { gens: number(Math.ceil(choice.offer.gens)) })}</span
+							></button
+						>
+					</span>
+					<p class="faint small" id={`item-${choice.id}-help`}>
+						{choice.help}{#if requests > 1}
+							{t(choice.id === 'repair' ? 'itemPane.repairRequests' : 'itemPane.redrawRequests', {
+								count: requests,
+								n: number(requests)
+							})}{/if}
+						{#if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens < repairOffer.gens}
+							{@const saved = Math.ceil(repairOffer.gens) - Math.ceil(redrawOffer.gens)}
+							{t('itemPane.redrawSaves', { count: saved, n: number(saved) })}
+						{:else if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens > repairOffer.gens}
+							{@const extra = Math.ceil(redrawOffer.gens) - Math.ceil(repairOffer.gens)}
+							{t('itemPane.redrawCostsMore', { count: extra, n: number(extra) })}
+						{/if}
+					</p>
+					{#if choice.offer?.error}<p class="notice warn small" role="status">
+							{displayMessage(choice.offer.error)}
+						</p>{/if}
+					{#if tier}<TierNotice
+							id={`item-${choice.id}-tier`}
+							minimumTier={tier}
+							feature={choice.feature}
+						/>{/if}
+				{/each}
+				<p class="faint small" id="item-repair-billing">{t('itemPane.billingNote')}</p>
 			</div>
 		{/if}
 

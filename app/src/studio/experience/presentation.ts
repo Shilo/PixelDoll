@@ -531,9 +531,9 @@ export function resolveLive(
 
 /** Exact south still for current-outfit thumbnails; never labels another facing as south. */
 export function southStill(a: PresentationAvailability): Presentation {
-	const base = initial(a, 'idle', 'south');
-	// Use an actual aligned clip cell for outfit thumbnails before an unequipped original.
+	const base = initial(a, DEFAULT_MOVE, 'south');
 	const sequence =
+		a.animations.get(DEFAULT_MOVE)?.get('south') ??
 		a.animations.get('idle')?.get('south') ??
 		[...a.animations.values()].map((dirs) => dirs.get('south')).find(Boolean);
 	if (sequence)
@@ -613,7 +613,8 @@ export function renderPresentation(
 	a: PresentationAvailability,
 	items: Preset['items'],
 	presentation: Presentation,
-	cell = presentation.cell
+	cell = presentation.cell,
+	fitFrame?: (items: Preset['items'], cells: readonly number[]) => Frame
 ): RenderedPresentation {
 	const p = a.project,
 		m = p.manifest,
@@ -661,13 +662,14 @@ export function renderPresentation(
 		loading
 			.map((entry) => `${entry.name} loading — ${entry.directions.map(directionLabel).join(', ')}`)
 			.join(' · ') || null;
+	result.frame = fitFrame?.(filtered, cells) ?? frame;
 	result.image = composeCell(
 		p,
 		filtered,
 		clip,
 		direction,
 		cells.includes(cell) ? cell : cells[0],
-		frame
+		result.frame
 	);
 	if (result.hiddenItems.length && !a.loading) {
 		result.notice = {

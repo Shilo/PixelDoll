@@ -21,3 +21,14 @@ h2 {
 code {
 	font-family: ui-monospace, Consolas, monospace;
 }
+
+:where(html[data-app='studio'])
+	:where(
+		button,
+		summary,
+		label:has(input:is([type='checkbox'], [type='radio'])),
+		label.row:has(> select)
+	) {
+	-webkit-user-select: none;
+	user-select: none;
+}

@@ -100,7 +100,7 @@
 
 <Sheet
 	title={t('setup.title')}
-	cancel={active ? 'Hide' : 'Later'}
+	cancel={active ? 'common.hide' : 'sheet.later'}
 	onclose={() => (ui.sheet = null)}
 >
 	{#if mine && settingUp.spec}

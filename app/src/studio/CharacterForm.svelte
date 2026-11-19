@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Help from './Help.svelte';
+	import ReferenceField from './ReferenceField.svelte';
 	import SizePreview from './SizePreview.svelte';
 	import ApiPeek from './ApiPeek.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
@@ -18,6 +19,8 @@
 		BODY_SIZES,
 		BODY_STEP,
 		bodyErrors,
+		characterReference,
+		characterReferenceIssue,
 		DETAILS,
 		draftErrors,
 		isNudeBase,
@@ -48,10 +51,12 @@
 	let {
 		draft: d = $bindable(),
 		busy = $bindable(false),
+		referenceLoading = $bindable(false),
 		onconnect
 	}: {
 		draft: CharacterDraft;
 		busy?: boolean;
+		referenceLoading?: boolean;
 		onconnect: (target: 'details' | 'prompt') => void;
 	} = $props();
 	const scope = `enhance:${crypto.randomUUID()}`;
@@ -128,6 +133,16 @@
 	const model = $derived(modelOf(d.model));
 	const bodyErrorValue = $derived(bodyErrors(d.body, d.model)[0]);
 	const bodyError = $derived(bodyErrorValue ? displayError(bodyErrorValue) : '');
+	const referenceMax = $derived(
+		Math.min(
+			characterReference[modelId].max,
+			modelId === 'pro-flash' && d.body && !bodyError
+				? d.body
+				: modelId === 'v3' && frame && Number.isInteger(frame) && frame >= 32
+					? frame
+					: Infinity
+		)
+	);
 	const advancedNote = $derived(
 		[
 			model === MODELS.v3 ? '' : t(MODEL_TEXT[modelId].label),
@@ -179,6 +194,7 @@
 	});
 	const canEnhance = (target: 'details' | 'prompt') =>
 		!busy &&
+		!referenceLoading &&
 		!!(target === 'details' ? d.details : d.prompt).trim() &&
 		validBodySize(d.body) &&
 		enhanceInput().description.length <= 2000;
@@ -481,9 +497,19 @@
 		{#if message}<p class="creator-message" role="status">{displayMessage(message)}</p>{/if}
 	</section>
 
-	<section class="creator-guide" aria-label={t('create.form.sizeGuide')}>
-		<h3>{t('create.form.sizeGuide')}</h3>
-		<SizePreview body={d.body || 0} frame={frame || 0} />
+	<section class="creator-rail" aria-label={t('create.form.sizeGuideReference')}>
+		<div class="creator-guide">
+			<h3>{t('create.form.sizeGuide')}</h3>
+			<SizePreview body={d.body || 0} frame={frame || 0} />
+		</div>
+		<ReferenceField
+			bind:value={d.reference}
+			bind:loading={referenceLoading}
+			hint={t(characterReference[modelId].hint)}
+			max={{ width: referenceMax, height: referenceMax }}
+			issue={displayError(characterReferenceIssue(d.reference, d.model, frame, d.body) ?? '')}
+			disabled={busy}
+		/>
 	</section>
 	<section class="geometry" aria-label={t('create.form.geometrySection')}>
 		<div class="creator-field">

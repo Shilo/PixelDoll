@@ -41,20 +41,7 @@
 		<span class="actions">
 			{#if compact}<ExternalLink size={16} />{:else}{@render actions?.()}{/if}
 		</span>
-		{#if usage}
-			<span class="meter">
-				<progress class="bu-progress" value={usage.used} max={usage.total} aria-hidden="true"
-				></progress>
-				<span class="bu-small bu-muted bu-number">
-					{t('usage.used', {
-						percent: formatPercent(
-							usage.exhausted ? 1 : Math.min(0.999, usage.used / usage.total),
-							1
-						)
-					})}
-				</span>
-			</span>
-		{:else if app.key || !compact}
+		{#if !usage && (app.key || !compact)}
 			<span class="detail bu-small bu-muted">
 				{!app.key
 					? t('usage.notConnected')
@@ -63,10 +50,25 @@
 						: t('usage.checking')}
 			</span>
 		{/if}
-		{#if credits !== null}
-			<span class="detail credits bu-small bu-muted bu-number"
-				>{t('usage.credits', { credits })}</span
-			>
+		{#if usage || credits !== null}
+			<span class="meter">
+				{#if usage}
+					<progress class="bu-progress" value={usage.used} max={usage.total} aria-hidden="true"
+					></progress>
+					<span class="bu-small bu-muted bu-number">
+						{t('usage.used', {
+							percent: formatPercent(
+								usage.exhausted ? 1 : Math.min(0.999, usage.used / usage.total),
+								1
+							)
+						})}
+					</span>
+				{/if}
+				{#if credits !== null}
+					{#if usage}<span class="bu-small bu-muted" aria-hidden="true">·</span>{/if}
+					<span class="credits bu-small bu-muted bu-number">{t('usage.credits', { credits })}</span>
+				{/if}
+			</span>
 		{/if}
 	</span>
 </span>
@@ -114,13 +116,12 @@
 		grid-column: 1 / -1;
 	}
 	.credits {
-		text-align: end;
+		margin-inline-start: auto;
 	}
 	.meter progress {
 		flex: 1;
 		min-width: 0;
 	}
-	.usage:not(.compact) .meter,
 	.usage:not(.compact) .detail {
 		margin-inline-start: 26px;
 	}

@@ -1,4 +1,5 @@
 import type { Balance, Req } from './routes.ts';
+import { LocalizedError } from '../message.ts';
 
 // EDIT ACCOUNT LIMITS HERE. Agent entry point: AGENTS.md → PixelLab plan policy.
 // These are maintained plan defaults, NOT numeric limits returned by /balance.
@@ -37,6 +38,7 @@ export const GENERATION_RECOMMENDATION = {
 
 export const ENDPOINT_MINIMUM_TIERS: Readonly<Record<string, number>> = {
 	'/edit-animation-v2': 1,
+	'/edit-images-v2': 1,
 	'/transfer-outfit-v2': 1,
 	'/inpaint-v3': 1
 };
@@ -96,4 +98,11 @@ export function planRestriction(
 	return decision.kind === 'required'
 		? `Needs PixelLab Tier ${decision.tier} or higher. No request sent.`
 		: null;
+}
+
+export function localizedPlanRestriction(raw: string): LocalizedError | undefined {
+	const match = /^Needs PixelLab Tier (\d+) or higher\. No request sent\.$/.exec(raw);
+	return match
+		? new LocalizedError(raw, 'activity.planWait.tier', { tier: Number(match[1]) })
+		: undefined;
 }

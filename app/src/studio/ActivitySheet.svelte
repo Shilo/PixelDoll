@@ -5,7 +5,7 @@
 	import { balancePlan, cancelPlan, queuedPlan } from './apiPlans.ts';
 	import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
-	import { requestTier } from '../lib/pixellab/plans.ts';
+	import { localizedPlanRestriction, requestTier } from '../lib/pixellab/plans.ts';
 	import { ui, cleanUp, toast } from './state.svelte.ts';
 	import { displayError, displayMessage } from '../lib/i18n.ts';
 	import { queueErrorMessage } from './generationStatus.ts';
@@ -69,8 +69,8 @@
 			return t('activity.planWait.checking');
 		if (raw === 'Waiting to verify your PixelLab plan. Retrying automatically.')
 			return t('activity.planWait.verifying');
-		const tier = /^Needs PixelLab Tier (\d+) or higher\. No request sent\.$/.exec(raw);
-		return tier ? t('activity.planWait.tier', { tier: formatNumber(Number(tier[1])) }) : raw;
+		const restriction = localizedPlanRestriction(raw);
+		return restriction ? displayError(restriction) : raw;
 	};
 	const pct = (r: JobRec) => {
 		const ps = r.jobs.map((s) => (s.done ? 1 : Math.min(1, s.progress ?? 0)));
@@ -105,8 +105,21 @@
 	);
 </script>
 
-<Sheet title={t('activity.title')} cancel="Done" onclose={() => (ui.sheet = null)}>
+<Sheet
+	title={t('activity.title')}
+	cancel={ui.waitingForTab ? 'activity.cancelRequest' : 'common.done'}
+	onclose={() => (ui.sheet = null)}
+>
 	<div class="act-list">
+		{#if ui.waitingForTab}
+			<div class="notice warn" role="status">
+				<CircleAlert size={18} />
+				<div class="waiting-copy">
+					<h3>{t('activity.waitingTitle')}</h3>
+					<p>{t('activity.waitingBody')}</p>
+				</div>
+			</div>
+		{/if}
 		<PixelLabUsage compact={false}>
 			{#snippet actions()}
 				{#if app.key}<span class="api-action"
@@ -127,7 +140,7 @@
 									background: false
 								})}><RefreshCw size={14} /></button
 						></span
-					>{:else}<button
+					>{:else if !ui.waitingForTab}<button
 						class="bu-action btn sm"
 						data-variant="outline"
 						onclick={() => (ui.sheet = 'connect')}>{t('connectSheet.connect')}</button
@@ -144,11 +157,7 @@
 				})}
 			</p>
 		{/if}
-		{#if $queue.role === 'follower' && ui.waitingForTab}
-			<p class="notice small">
-				<CircleAlert size={14} />{t('activity.waitingForTab')}
-			</p>
-		{:else if $queue.role === 'follower'}
+		{#if $queue.role === 'follower' && !ui.waitingForTab}
 			<p class="notice small">
 				<CircleAlert size={14} />{t('activity.follower')}
 			</p>
@@ -174,7 +183,9 @@
 					>{/if}
 			</p>
 		{/if}
-		{#if !running.length && !queued.length}<p class="muted">{t('activity.nothing')}</p>{/if}
+		{#if !ui.waitingForTab && !running.length && !queued.length}<p class="muted">
+				{t('activity.nothing')}
+			</p>{/if}
 		{#if running.length}
 			<section class="act-group">
 				<span class="sec-title">{t('activity.generating')}</span>
@@ -350,3 +361,13 @@
 		</details>
 	</div>
 </Sheet>
+
+<style>
+	.waiting-copy {
+		display: grid;
+		gap: 4px;
+	}
+	.waiting-copy h3 {
+		font-size: var(--fs-md);
+	}
+</style>

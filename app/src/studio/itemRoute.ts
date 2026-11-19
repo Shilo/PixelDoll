@@ -3,6 +3,7 @@ import { requireSlot, specSlot } from '../lib/items/slots.ts';
 // spikes land); swap `itemRoute` to change the backend. Today: B4's runner (lib/items/run.ts): chroma mannequin, dressed
 // keyframe posed with skeleton-v3 per clip (or anchor-cell edit-animation-v2 without joints), extraction and QA gates.
 import { pickKey, type Key } from '../lib/image/chroma.ts';
+import type { ImageReference } from '../lib/image/reference.ts';
 import {
 	acceptItem,
 	defaultMethod,
@@ -29,6 +30,7 @@ import { DEFAULT_MOVE, matchesStanding } from '../lib/rig/rig.ts';
 import { LocalizedError } from '../lib/message.ts';
 
 export interface NewItemInput {
+	reference?: ImageReference;
 	name: string;
 	slot: string;
 	prompt: string;
@@ -114,11 +116,12 @@ export function standingCoverage(
 		standing: standing.id
 	};
 }
-const spec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> => ({
+export const newItemSpec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> => ({
 	name: i.name,
 	slot: i.slot,
 	slotConfig: structuredClone(requireSlot(ctx.rec.manifest, i.slot)),
 	prompt: i.prompt,
+	...(i.reference ? { reference: i.reference } : {}),
 	key: i.key ?? pickKey(i.prompt),
 	...(i.method ? { method: i.method } : {}),
 	...standingCoverage(ctx)
@@ -138,7 +141,7 @@ export function itemMethod(ctx: RigCtx, s: Omit<ItemSpec, 'id'>): Method {
 export const chromaEdit: ItemRoute = {
 	label: `chroma mannequin + ${libRoute.name}`,
 	plan(rig, ctx, input) {
-		const s = spec(ctx, input),
+		const s = newItemSpec(ctx, input),
 			method = itemMethod(ctx, s),
 			p = planItem(rig, { ...s, method }),
 			pad = padOf(specSlot(s), method, rig.cell);
@@ -156,7 +159,7 @@ export const chromaEdit: ItemRoute = {
 		};
 	},
 	draft: (ctx, input, taken) => {
-		const s = spec(ctx, input);
+		const s = newItemSpec(ctx, input);
 		return newDraft(ctx, { ...s, method: itemMethod(ctx, s) }, taken);
 	},
 	run: (d, ctx, hooks) => runItem(d, ctx, hooks),

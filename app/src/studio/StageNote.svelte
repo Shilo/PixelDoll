@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
+	import { displayMessage } from '../lib/i18n.ts';
 	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import type { DirectionName, Item } from '../lib/store/manifest.ts';
@@ -147,7 +148,7 @@
 					></button
 				></span
 			>
-			{#if poseOffer?.error}<span role="status">{poseOffer.error}</span>{/if}
+			{#if poseOffer?.error}<span role="status">{displayMessage(poseOffer.error)}</span>{/if}
 			{#if poseTier}<TierNotice
 					id="stage-pose-tier"
 					minimumTier={poseTier}

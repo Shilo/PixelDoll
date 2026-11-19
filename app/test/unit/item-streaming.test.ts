@@ -1,14 +1,14 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import type { Req } from '../../src/lib/pixellab/routes.ts';
-import { makeImg, type Img } from '../../src/lib/image/png.ts';
+import { bytesToBase64, makeImg, type Img } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { sha256 } from '../../src/lib/image/hash.ts';
-import { toChroma } from '../../src/lib/image/chroma.ts';
+import { referenceKey, referenceKeyCollisions, toChroma } from '../../src/lib/image/chroma.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { cellHash, type DirectionName } from '../../src/lib/rig/rig.ts';
 import * as db from '../../src/lib/store/db.ts';
-import { itemQa, padImg, slotOf, type CellOut } from '../../src/lib/items/items.ts';
+import { anchorChunks, itemQa, padImg, slotOf, type CellOut } from '../../src/lib/items/items.ts';
 import {
 	rerollCall,
 	runItem,
@@ -64,6 +64,7 @@ vi.mock('../../src/lib/pixellab/queue.ts', () => {
 				return rec;
 			}),
 			planBlocks: vi.fn(() => q.blocked),
+			observeScope: vi.fn(),
 			emit
 		}
 	};
@@ -79,7 +80,7 @@ beforeEach(() => {
 	vi.mocked(queue.planBlocks).mockClear();
 	vi.spyOn(db, 'getBlob').mockImplementation(async (sha) => blobs.get(sha));
 });
-async function land(id: string, outs: Img[]) {
+async function land(id: string, outs: Img[], extraJob = false) {
 	const results = await Promise.all(
 		outs.map(async (im, i) => {
 			const bytes = await encodePngBytes(im),
@@ -90,7 +91,10 @@ async function land(id: string, outs: Img[]) {
 	);
 	Object.assign(q.recs.get(id)!, {
 		state: 'done',
-		jobs: [{ id: `${id}-job`, status: 'completed', done: true, results }]
+		jobs: [
+			{ id: `${id}-job`, status: 'completed', done: true, results },
+			...(extraJob ? [{ id: `${id}-extra`, status: 'completed', done: true, results }] : [])
+		]
 	});
 	(queue as unknown as { emit: () => void }).emit();
 }
@@ -193,11 +197,28 @@ async function fixture() {
 	return { ctx, d, dressed };
 }
 
-test('extracted standing artwork supplies a thumbnail before any target animation preview exists', async () => {
+test('standing artwork in a reactive draft slot supplies a thumbnail before any target animation preview exists', async () => {
 	const { ctx, d, dressed } = await fixture(),
 		results: ItemResult[] = [];
+	const slot = {
+		...slotOf(d.spec.slot),
+		id: 'custom_armor',
+		hides: ['torso_inner'],
+		clips: ['neck'],
+		zOverrides: [{ layer: 'bg' as const, z: 4 }]
+	};
+	d.spec.slot = slot.id;
+	d.spec.slotConfig = new Proxy(
+		{
+			...slot,
+			hides: new Proxy(slot.hides, {}),
+			clips: new Proxy(slot.clips, {}),
+			zOverrides: new Proxy([new Proxy(slot.zOverrides[0], {})], {})
+		},
+		{}
+	);
 	const run = runItem(d, ctx, { result: (r) => results.push(r) });
-	await vi.waitFor(() => expect(q.order).toHaveLength(1));
+	await Promise.race([run, vi.waitFor(() => expect(q.order).toHaveLength(1))]);
 	await land(q.order[0].id, [dressed, dressed]);
 	await vi.waitFor(() => expect(results.some((r) => r.thumbnail)).toBe(true));
 	const result = results.find((r) => r.thumbnail)!;
@@ -214,8 +235,65 @@ test('extracted standing artwork supplies a thumbnail before any target animatio
 	);
 	for (const pose of q.order.filter((o) => o.path === '/animate-with-skeleton-v3'))
 		await land(pose.id, Array(4).fill(dressed));
-	await run;
+	const completed = await run;
+	expect(completed?.cells).toHaveLength(8);
+	expect(completed?.preview?.manifest.slots.find((entry) => entry.id === slot.id)).toEqual(slot);
 });
+
+test('an item reference reserves the first frame and later batches reuse the first dressed body, not the concept output', async () => {
+	const { ctx, d, dressed } = await fixture();
+	const concept = makeImg(16, 16);
+	concept.data.set([18, 190, 30, 255], 4 * 16 * 6);
+	const conflicts = referenceKeyCollisions(concept);
+	expect(conflicts.green).toBe(1);
+	expect(referenceKey('a hat', conflicts)).toBe('magenta');
+	const base64 = bytesToBase64(await encodePngBytes(concept));
+	d.spec.reference = { width: 16, height: 16, base64 };
+	d.calls[0].concept = true;
+	expect(anchorChunks(['south', 'east', 'north', 'west'], 4, true)).toEqual([
+		['south', 'east', 'north'],
+		['west']
+	]);
+	const controller = new AbortController();
+	const run = runItem(d, ctx, { signal: controller.signal });
+	await vi.waitFor(() => expect(q.order).toHaveLength(1));
+	const first = q.recs.get(q.order[0].id)!.params as {
+		frames: { image: { base64: string } }[];
+		description: string;
+	};
+	expect(first.frames).toHaveLength(2);
+	expect(first.frames[0].image.base64).toBe(base64);
+	expect(first.description).toContain('Frame 1 shows the reference item only.');
+	await land(q.order[0].id, [concept, dressed]);
+	await vi.waitFor(() => expect(q.order).toHaveLength(2));
+	const next = q.recs.get(q.order[1].id)!.params as typeof first;
+	expect(next.frames[0].image.base64).toBe(bytesToBase64(await encodePngBytes(dressed)));
+	controller.abort();
+	await expect(run).resolves.toBeNull();
+});
+
+test.each(['missing output', 'extra job'])(
+	'%s stops dependent generation without a retry',
+	async (failure) => {
+		const { ctx, d, dressed } = await fixture();
+		d.spec.reference = {
+			width: 16,
+			height: 16,
+			base64: bytesToBase64(await encodePngBytes(dressed))
+		};
+		d.calls[0].concept = true;
+		const run = runItem(d, ctx);
+		await vi.waitFor(() => expect(q.order).toHaveLength(1));
+		await land(
+			q.order[0].id,
+			failure === 'extra job' ? [dressed, dressed] : [dressed],
+			failure === 'extra job'
+		);
+		await expect(run).resolves.toBeNull();
+		expect(q.order).toHaveLength(1);
+		expect(d.log.join(' ')).toContain('No dependent request was sent.');
+	}
+);
 
 test('a completed standing view supplies an item-only thumbnail while other directions are still generating', async () => {
 	const { ctx, d, dressed } = await fixture(),

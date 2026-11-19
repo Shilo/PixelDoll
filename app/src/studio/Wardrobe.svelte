@@ -29,6 +29,7 @@
 	} from './slots.ts';
 	import { slotDrag } from './slotDrag.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
+	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
 	import {
 		ui,
 		doc,
@@ -205,7 +206,9 @@
 		});
 	}
 	const menuItem = $derived(m?.items.find((i) => i.id === menuFor));
-	const menuShared = $derived(shared.items.find((x) => sharedKey(x) === menuFor));
+	const sharedHidden = $derived(sharedItemsHidden(doc.id));
+	const visibleShared = $derived(sharedHidden ? [] : shared.items);
+	const menuShared = $derived(visibleShared.find((x) => sharedKey(x) === menuFor));
 	const menuGeneration = $derived(genOf(menuFor));
 	// A menu whose generation or shared item is gone (finished, or added from another tab) closes rather than stay empty.
 	$effect(() => {
@@ -244,7 +247,7 @@
 				side = sideOf(key);
 			const items = m ? m.items.filter((i) => i.slot === key) : [];
 			const pending = gens.filter((x) => x.draft.rigId === doc.id && x.input.slot === key);
-			const others = shared.items.filter(
+			const others = visibleShared.filter(
 				(x) => x.item.slot === key && (x.fit !== 'remake' || !making.has(itemKey(x.item)))
 			);
 			return {
@@ -276,7 +279,7 @@
 		if (!m) return [];
 		const known = new Set(categories(m).map((c) => c.key));
 		const groups: Record<string, SharedItem[]> = {};
-		for (const x of shared.items) {
+		for (const x of visibleShared) {
 			if (known.has(x.item.slot) || x.item.slot === 'body') continue;
 			// One that can't be worn here would only offer making it, in a category this character doesn't have.
 			if (x.fit === 'remake') continue;
@@ -479,6 +482,11 @@
 		void sections;
 		void notShown.length;
 		void notShownOpen;
+		if (list && !untrack(() => sections.some((slot) => slot.key === ui.group))) {
+			if (suppressSpy) list.scrollTo({ top: list.scrollTop, behavior: 'instant' });
+			suppressSpy = false;
+			scrolled();
+		}
 		const last =
 			list?.querySelector<HTMLElement>('.not-shown') ??
 			list?.querySelector<HTMLElement>('section[data-group]:last-of-type');
@@ -1202,8 +1210,13 @@
 					</div>
 				</div>
 			{/if}
-			{#if shared.error}<p class="notice warn small" role="alert">{shared.error}</p>{/if}
-			{#if shared.skipped}<p class="faint small">
+			{#if shared.framesError}<p class="notice warn small" role="alert">
+					{displayNestedMessage(shared.framesError)}
+				</p>{/if}
+			{#if !sharedHidden && shared.error}<p class="notice warn small" role="alert">
+					{displayNestedMessage(shared.error)}
+				</p>{/if}
+			{#if !sharedHidden && shared.skipped}<p class="faint small">
 					{t('wardrobe.someItemsFromOtherCharactersCouldnT')}
 				</p>{/if}
 			<div class="list-spacer" style:height="{spacer}px" aria-hidden="true"></div>

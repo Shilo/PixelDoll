@@ -54,7 +54,9 @@ test.describe('first Studio render in French', () => {
 			.getByRole('menuitem', { name: french.newCharacterButton.createFromScratch, exact: true })
 			.click();
 		const draft = page.getByRole('dialog', { name: french.create.sheet.title, exact: true });
-		await draft.getByRole('textbox', { name: french.common.name, exact: true }).fill('Draft hero');
+		const name = draft.getByRole('textbox', { name: french.common.name, exact: true });
+		await name.fill('Draft hero');
+		await expect(name).toHaveValue('Draft hero');
 		await page.keyboard.press('Escape');
 		await expect(draft).toBeHidden();
 		await page.getByRole('button', { name: label, exact: true }).click();
@@ -68,7 +70,7 @@ test.describe('first Studio render in French', () => {
 				name: 'Name',
 				exact: true
 			})
-		).toHaveValue('Draft hero');
+		).toHaveValue('');
 		await page.reload();
 		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
@@ -163,8 +165,11 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await page.reload();
 	const rows = page.locator('.cast-library .character-row');
 	await expect(rows.filter({ hasText: 'Saved hero' })).toHaveAttribute('aria-pressed', 'true');
-	await expect(rows.filter({ hasText: 'Adventurer' }).locator('small')).toHaveText(
-		'64 px · 4 directions · 2 moves · 6 items'
+	await expect(
+		rows.filter({ hasText: 'Adventurer' }).locator('.character-sizes > span')
+	).toHaveText([/^Body \d+×\d+ px$/, '· Frame 64×64 px']);
+	await expect(rows.filter({ hasText: 'Adventurer' }).locator('.character-counts')).toHaveText(
+		'4 directions · 2 moves · 6 items'
 	);
 	await expect(rows.filter({ hasText: 'Adventurer' })).toHaveAttribute('aria-pressed', 'false');
 	await expect
@@ -195,12 +200,20 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(page.locator('.customize-action')).toHaveAttribute('aria-busy', 'false');
 	await page.reload();
 	await expect(rows.filter({ hasText: 'Adventurer' })).toHaveAttribute('aria-pressed', 'true');
-	await expect(rows.locator('small')).toHaveText([
-		'64 px · 4 directions · 2 moves · 6 items',
-		'64 px · 4 directions · 3 moves · 6 items'
+	await expect(rows.locator('.character-counts')).toHaveText([
+		'4 directions · 2 moves · 6 items',
+		'4 directions · 3 moves · 6 items'
 	]);
 	await page.locator('.customize-action').click();
 	await expect(page.locator('.name-text')).toHaveText('Adventurer (Demo)');
+	await expect(page.locator('.name-facts')).toHaveText(
+		'Frame 64×64 px · 4 directions · 2 moves · 6 items'
+	);
+	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
+	const moveDetails = page.locator('.colors details').filter({ hasText: 'pivot' });
+	await moveDetails.locator('summary').click();
+	await expect(moveDetails.getByText(/^64×64 px, pivot /)).toBeVisible();
+	await expect(moveDetails.getByText(/^\d+×\d+ px$/)).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
 	await expect(page.locator('.name-text')).toHaveText('Saved hero');
@@ -885,7 +898,14 @@ test('character directions can be configured on import and removed only after co
 		await page
 			.getByRole('button', { name: 'More actions for Direction test hero', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Directions…', exact: true }).click();
+		const menu = page.getByRole('menu', { name: 'Actions for Direction test hero', exact: true });
+		await expect(menu.getByRole('menuitem')).toHaveText([
+			'Details…',
+			'Directions…',
+			'Download ZIP',
+			'Delete character…'
+		]);
+		await menu.getByRole('menuitem', { name: 'Directions…', exact: true }).click();
 	};
 	await openDirections();
 	const settings = page.getByRole('dialog', { name: 'Directions', exact: true });
@@ -1735,12 +1755,16 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	await expect(page.locator('.project-btn')).toContainText('Imported one');
 	await importCopy('Imported two');
 	await page.locator('.project-btn').click();
-	await expect(
-		page.getByRole('menuitemradio', { name: 'Imported one', exact: true })
-	).toBeVisible();
-	await expect(
-		page.getByRole('menuitemradio', { name: 'Imported two', exact: true })
-	).toBeVisible();
+	const otherCharacter = page.getByRole('menuitemradio', { name: 'Imported one', exact: true });
+	const currentCharacter = page.getByRole('menuitemradio', { name: 'Imported two', exact: true });
+	await expect(otherCharacter).not.toBeChecked();
+	await expect(currentCharacter).toBeChecked();
+	await expect(currentCharacter).not.toHaveCSS(
+		'background-color',
+		await otherCharacter.evaluate((row) => getComputedStyle(row).backgroundColor)
+	);
+	await expect(currentCharacter.locator(':scope > svg')).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'More actions for Imported two' })).toBeVisible();
 	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
 	await expect(page.getByRole('alertdialog')).toContainText('Imported two');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();

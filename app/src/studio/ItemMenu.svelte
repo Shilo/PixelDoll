@@ -34,6 +34,7 @@
 		type Gen
 	} from './state.svelte.ts';
 	import {
+		Check,
 		Circle,
 		Download,
 		CircleCheck,
@@ -196,7 +197,10 @@
 							data-variant="quiet"
 							role="menuitem"
 							disabled={cancelBusy}
-							onclick={cancel}>{t('generation.status.saveCancellation')}</button
+							onclick={cancel}
+							><Check size={16} aria-hidden="true" />{t(
+								'generation.status.saveCancellation'
+							)}</button
 						>{/if}
 					{#if generation.phase !== 'running'}
 						<button
@@ -271,9 +275,9 @@
 								name: entry.item.name
 							})
 						)}
-					><RefreshCw size={16} aria-hidden="true" />{t('itemMenu.remake', { name: m.name })}<small
-						class="row-aside">{t('itemMenu.paid')}</small
-					></button
+					><RefreshCw size={16} aria-hidden="true" />{t('itemMenu.remake', {
+						name: m.name
+					})}</button
 				>
 			</div>
 		</div>
@@ -342,7 +346,7 @@
 								act(() => openNewItem(otherHand, { slot: otherHand, prompt: it.prompt }))}
 							><CopyPlus size={16} aria-hidden="true" />{t('itemMenu.makeForSlot', {
 								slot: displayMessage(slotLabelMessage(m, otherHand))
-							})}<small class="row-aside">{t('itemMenu.paid')}</small></button
+							})}</button
 						>
 					{/if}
 				{/if}
@@ -362,7 +366,7 @@
 							)}
 						><RefreshCw size={16} aria-hidden="true" />{remakeOnly
 							? t('itemMenu.remake', { name: m.name })
-							: t('itemMenu.tryAgain')}<small class="row-aside">{t('itemMenu.paid')}</small></button
+							: t('itemMenu.tryAgain')}</button
 					>
 				{/if}
 				<button

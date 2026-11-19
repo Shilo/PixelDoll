@@ -175,15 +175,25 @@ export function generationDetails(m: Manifest, it: Item): GenerationDetails {
 			});
 	};
 	if (it.id === m.rig.baseItem) {
-		// The first drawing call made from text: the character as created.
-		const created = prov.find((p) => CREATORS.includes(p.endpoint) && !p.params?.reference_image);
+		const created = prov.find((p) => CREATORS.includes(p.endpoint) && !p.params?.direction_images);
 		const size = created?.params?.image_size as { width?: number; height?: number } | undefined;
+		const fromSprite =
+			created?.endpoint === '/create-character-v3' && created.params?.reference_image;
 		add(
 			'Body',
-			size?.width ? `${size.width} px` : undefined,
+			!fromSprite && size?.width ? `${size.width} px` : undefined,
 			message('generationDetails.settings.body'),
-			size?.width ? message('generationDetails.settings.bodyPx', { width: size.width }) : undefined
+			!fromSprite && size?.width
+				? message('generationDetails.settings.bodyPx', { width: size.width })
+				: undefined
 		);
+		if (fromSprite)
+			add(
+				'Reference',
+				'Starting sprite',
+				message('generationDetails.settings.reference'),
+				message('generationDetails.settings.startingSprite')
+			);
 		add(
 			'Frame',
 			`${m.rig.cell.w} × ${m.rig.cell.h} px`,

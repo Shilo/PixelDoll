@@ -17,7 +17,7 @@ import {
 	type Mirrors,
 	type Trait
 } from '../../src/studio/characterConfig.ts';
-import { baseMoveSpecs, createCharacter, type CreateSpec } from '../../src/studio/create.ts';
+import { createCharacter, type CreateSpec } from '../../src/studio/create.ts';
 import { createPlan, movePlan } from '../../src/studio/apiPlans.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { UNDERWEAR_BODY } from '../../src/studio/model.ts';
@@ -66,7 +66,6 @@ const specOf = (plan: Facing): CreateSpec => ({
 	exactPrompt: true,
 	directions: facingOf(plan)
 });
-/** Creation makes only the Default move; idle and walk come from "Add idle + walk" on the created rig (same directions, camera and seed). */
 function basePlan(spec: CreateSpec) {
 	const manifest = {
 		rig: {
@@ -77,8 +76,18 @@ function basePlan(spec: CreateSpec) {
 		},
 		items: []
 	} as unknown as Manifest;
-	return baseMoveSpecs(manifest, spec.seed).flatMap((move) =>
-		movePlan({ manifest, character: { id: 'managed', looks: 'looks' } }, move)
+	return ['idle', 'walk'].flatMap((action) =>
+		movePlan(
+			{ manifest, character: { id: 'managed', looks: 'looks' } },
+			{
+				id: action,
+				action,
+				frames: action === 'idle' ? 4 : 8,
+				items: [],
+				seed: spec.seed,
+				poseStyle: 'visible-side-v1'
+			}
+		)
 	);
 }
 

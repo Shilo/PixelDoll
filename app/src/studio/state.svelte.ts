@@ -50,11 +50,11 @@ import type {
 	ZOverride
 } from '../lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../lib/store/manifest.ts';
-import type { ItemPaletteRepairPlan, Draft, ItemResult } from '../lib/items/run.ts';
+import type { ItemPaletteRepairPlan, Draft, ItemResult, RepairReview } from '../lib/items/run.ts';
 import { loadDrafts } from '../lib/items/drafts.ts';
 import { insertSlotInLadder } from '../lib/items/slots.ts';
 import { app } from '../lib/app.svelte.ts';
-import { requestTier, tierDecision } from '../lib/pixellab/plans.ts';
+import { localizedPlanRestriction, requestTier, tierDecision } from '../lib/pixellab/plans.ts';
 import type { NewItemInput } from './itemRoute.ts';
 import type { Method } from '../lib/items/items.ts';
 import type { Key } from '../lib/image/chroma.ts';
@@ -66,7 +66,7 @@ import type {
 	MoveSpec,
 	Progress
 } from './create.ts';
-import { characterFacts, uniqueBy } from './model.ts';
+import { characterFacts, pixelSize, uniqueBy } from './model.ts';
 import {
 	addCustom,
 	applySettings,
@@ -102,6 +102,7 @@ import {
 	type SharedItem
 } from '../lib/equipment/shared.ts';
 import { acceptCopy, copyMoreFrames, freeFrames, itemKey } from '../lib/equipment/copy.ts';
+import { demoItemsShown } from './wardrobeVisibility.svelte.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
@@ -115,11 +116,20 @@ const itemFlow = async () => (await lazy(() => import('./itemRoute.ts'))).itemRo
 const itemRun = () =>
 	lazy(() =>
 		import('../lib/items/run.ts').then(
-			({ acceptItemReview, evaluateItem, isClean, matchItemColors }) => ({
+			({
 				acceptItemReview,
+				applyRepairReview,
 				evaluateItem,
 				isClean,
-				matchItemColors
+				matchItemColors,
+				repairAlreadyApplied
+			}) => ({
+				acceptItemReview,
+				applyRepairReview,
+				evaluateItem,
+				isClean,
+				matchItemColors,
+				repairAlreadyApplied
 			})
 		)
 	);
@@ -157,6 +167,7 @@ const lsSet = (k: string, v: string | null) => {
 	}
 };
 export const DEMO = 'fixture:s2';
+export const DEMO_NAME = 'Adventurer';
 
 // ---------- UI ----------
 export type Size = 'expanded' | 'medium' | 'compact' | 'landscape';
@@ -546,7 +557,7 @@ export async function refreshProjects(): Promise<boolean> {
 	store.projects = [
 		{
 			id: DEMO,
-			name: 'Adventurer (demo)',
+			name: `${DEMO_NAME} (demo)`,
 			demo: true,
 			dev: false,
 			savedAt: '',
@@ -1090,7 +1101,8 @@ function updateBlocker(): LocalizedError | undefined {
 	if (
 		!generationSettled() ||
 		(heldCreate() && !creating.error) ||
-		(heldMove() && !moving.error) ||
+		(heldMove() && !moving.error && !moving.repairReview) ||
+		moving.resolvingRepair ||
 		(moving.queued.length && !heldMove()) ||
 		(heldSetup() && !settingUp.error)
 	)
@@ -1118,8 +1130,19 @@ async function verifyHaltedFlows() {
 				value: stableStringify({
 					spec: flow.spec,
 					progress: flow.progress,
-					error: flow.error ? errorText(flow.error) : flow.error,
-					...(key === MOVE_KEY ? { projectId: moving.projectId, queued: moving.queued } : {})
+					error:
+						key === MOVE_KEY && moving.repairReview
+							? ''
+							: flow.error
+								? errorText(flow.error)
+								: flow.error,
+					...(key === MOVE_KEY
+						? {
+								projectId: moving.projectId,
+								queued: moving.queued,
+								repairReview: !!moving.repairReview
+							}
+						: {})
 				})
 			}));
 	const before = snapshots();
@@ -1127,7 +1150,11 @@ async function verifyHaltedFlows() {
 	const verified = await Promise.all(
 		before.map(async ({ key, value, fallback }) => {
 			const record = await db.get<
-				FlowDraft<unknown> & { projectId?: string; queued?: QueuedMove[] }
+				FlowDraft<unknown> & {
+					projectId?: string;
+					queued?: QueuedMove[];
+					repairReview?: RepairReview;
+				}
 			>('projects', key);
 			return (
 				record?.spec &&
@@ -1136,9 +1163,13 @@ async function verifyHaltedFlows() {
 					stableStringify({
 						spec: record.spec,
 						progress: record.progress ?? null,
-						error: record.error || fallback,
+						error: record.error || (record.status === 'review' ? '' : fallback),
 						...(key === MOVE_KEY
-							? { projectId: record.projectId, queued: record.queued ?? [] }
+							? {
+									projectId: record.projectId,
+									queued: record.queued ?? [],
+									repairReview: !!record.repairReview
+								}
 							: {})
 					})
 			);
@@ -1292,7 +1323,7 @@ export function characterName() {
 export function randomize() {
 	const r = randomOutfit(store.project!.manifest);
 	commit(
-		message('history.randomLook'),
+		message('common.randomLook'),
 		() => {
 			doc.items = { ...r.items, body: store.project!.manifest.rig.baseItem };
 			doc.variants = r.variants;
@@ -1460,7 +1491,8 @@ class Shared {
 	items = $state.raw<SharedItem[]>([]);
 	adding = $state('');
 	/** A failed read shows in the wardrobe where the items would be, without displacing startup notices. */
-	error = $state('');
+	error = $state<Message | ''>('');
+	framesError = $state<Message | ''>('');
 	/** Items left out because their images could not be read (each logged). */
 	skipped = $state(0);
 	/** Frames each exact copy of the open character can take from its source for free, by item id. */
@@ -1469,45 +1501,72 @@ class Shared {
 export const shared = new Shared();
 export const sharedKey = (entry: SharedItem) => `shared:${entry.sourceId}/${entry.item.id}`;
 let sharedRequest = 0;
-/** Re-read the other characters' items for the open character, the demo included (it adds them to a copy of itself). */
+let sharedTarget = '';
+let savedOffers: Awaited<ReturnType<typeof listShared>> | undefined;
+/** Re-read items offered to the open character, including the bundled demo only when opted in. */
 export async function refreshShared() {
 	const request = ++sharedRequest,
 		project = store.project,
 		id = doc.id;
-	if (!project) {
+	if (!project || sharedTarget !== id) {
+		sharedTarget = id;
+		savedOffers = undefined;
 		shared.items = [];
 		shared.error = '';
+		shared.framesError = '';
 		shared.skipped = 0;
 		shared.free = {};
-		return;
+	}
+	if (!project) return;
+	const includeDemo = !id.startsWith('fixture:') && demoItemsShown();
+	if (!includeDemo && savedOffers) {
+		shared.items = savedOffers.items;
+		shared.skipped = savedOffers.skipped;
 	}
 	try {
-		const [{ items, skipped }, free] = await Promise.all([
-			(async () => {
-				// The saved characters' items still list if the demo cannot be read; it counts as unreadable.
-				const demo = id.startsWith('fixture:')
-					? []
-					: await demoSource().then(
-							(d) => [d],
-							(e) => {
-								console.warn('demo items unavailable', e);
-								return null;
-							}
-						);
-				const listed = await listShared(id, project.manifest, project.images, demo ?? []);
-				return demo ? listed : { ...listed, skipped: listed.skipped + 1 };
-			})(),
-			freeFrames(project.manifest)
+		const [saved] = await Promise.all([
+			listShared(id, project.manifest, project.images),
+			freeFrames(project.manifest).then(
+				(free) => {
+					if (request !== sharedRequest) return;
+					shared.free = free;
+					shared.framesError = '';
+				},
+				(error: Error) => {
+					console.error('copy frames', error);
+					if (request !== sharedRequest) return;
+					shared.free = {};
+					shared.framesError = message('state.couldNotCheckCopiedFrames', {
+						reason: errorMessage(error)
+					});
+				}
+			)
 		]);
-		if (request !== sharedRequest) return;
-		shared.items = items;
-		shared.skipped = skipped;
-		shared.free = free;
+		if (request !== sharedRequest) return saved.items;
+		savedOffers = saved;
+		if (!includeDemo || !shared.items.some((item) => item.sourceId === DEMO)) {
+			shared.items = saved.items;
+			shared.skipped = saved.skipped;
+		}
 		shared.error = '';
+		if (!includeDemo) return saved.items;
+		const demo = await demoSource().catch((error) => {
+			console.warn('demo items unavailable', error);
+			return undefined;
+		});
+		if (request !== sharedRequest) return saved.items;
+		const listed = demo
+			? await listShared(id, project.manifest, project.images, [demo])
+			: { items: saved.items, skipped: saved.skipped + 1 };
+		if (request === sharedRequest) {
+			shared.items = listed.items;
+			shared.skipped = listed.skipped;
+		}
+		return listed.items;
 	} catch (e) {
 		console.error('shared', e);
 		if (request === sharedRequest)
-			shared.error = `Could not read items from your other characters: ${(e as Error).message}`;
+			shared.error = message('state.couldNotReadSharedItems', { reason: errorMessage(e) });
 	}
 }
 /** The bundled demo, offered as a source to the saved characters with its current colors (its images are not stored). */
@@ -1567,9 +1626,9 @@ async function addEntry(entry: SharedItem, openedDemoCopy = false) {
 		if (!item) {
 			// The listed outcome was out of date: show what the list says now before offering anything.
 			forgetFits();
-			await refreshShared();
+			const latest = await refreshShared();
 			if (doc.id !== projectId || request !== openRequest) return;
-			const now = shared.items.find((x) => sharedKey(x) === key);
+			const now = latest?.find((x) => sharedKey(x) === key);
 			if (now?.fit === 'remake') ui.selected = key;
 			else toast(message('state.nameChangedMeanwhileCheckItsTileAnd', { name: entry.item.name }));
 			return;
@@ -1577,16 +1636,17 @@ async function addEntry(entry: SharedItem, openedDemoCopy = false) {
 		await openProject(projectId, { quiet: true });
 		const note = doc.id === projectId ? wear(item.id, true) : undefined,
 			shown = doc.id === projectId ? revealSlot(item.slot) : undefined;
-		const size = entry.source.rig.cell.w;
+		const sourceFrame = entry.source.rig.cell;
+		const targetFrame = store.project?.manifest.rig.cell;
 		const status = message(
 			item.unfitted
-				? size === store.project?.manifest.rig.cell.w
+				? sourceFrame.w === targetFrame?.w && sourceFrame.h === targetFrame.h
 					? 'state.wearingUnfitted'
 					: 'state.wearingUnfittedAtSize'
 				: item.refit
 					? 'state.fittedItem'
 					: 'state.copiedSharedItem',
-			{ name: item.name, sourceName: entry.sourceName, size }
+			{ name: item.name, sourceName: entry.sourceName, size: pixelSize(sourceFrame) }
 		);
 		const notices = openedDemoCopy ? [message('state.openedDemoCopy'), status] : [status];
 		if (note) notices.push(note);
@@ -1652,11 +1712,9 @@ export async function copyDemoAndAdd(entry: SharedItem) {
 		}
 		const request = openRequest;
 		if (doc.id !== id) return;
-		await refreshShared();
+		const latest = await refreshShared();
 		if (doc.id !== id || request !== openRequest) return;
-		const now = shared.items.find(
-			(x) => x.sourceId === entry.sourceId && x.item.id === entry.item.id
-		);
+		const now = latest?.find((x) => x.sourceId === entry.sourceId && x.item.id === entry.item.id);
 		// The copy may have been made before (the demo has one editable copy per body).
 		if (now?.fit === 'remake') {
 			ui.selected = sharedKey(now);
@@ -1727,8 +1785,10 @@ export function pick(id: string) {
 export const REQUEST_TEXT = 5; // 5: repair grids pack into the cheapest layout (2026-11-07)
 const STOPPED = GENERATION_STOPPED;
 const SETUP_STOPPED = 'Setup stopped. Review Activity before trying again.';
+const REPAIR_REVIEW_RECOVERY =
+	'The review could not be saved. Use saved frames to recover it without another charge.';
 const halted = (r: { status?: string; requestText?: number }) =>
-	r.status === 'failed' || r.requestText !== REQUEST_TEXT;
+	r.status === 'failed' || r.status === 'review' || r.requestText !== REQUEST_TEXT;
 export interface Gen {
 	draft: Draft;
 	input: NewItemInput;
@@ -2536,7 +2596,7 @@ export function genProgress(g: Gen, jobs: JobRec[]): { pct: number } {
 // pipeline never ran, so the saved run stays running for a reload to resume.
 interface FlowDraft<S> {
 	spec: S;
-	status?: 'running' | 'failed';
+	status?: 'running' | 'failed' | 'review';
 	error?: string;
 	progress?: Progress | null;
 	requestText?: number;
@@ -2545,6 +2605,9 @@ function restoredFlowError(record: FlowDraft<{ activityScope?: string }>, fallba
 	const raw = record.error || fallback;
 	if (raw === STOPPED) return new LocalizedError(raw, 'generation.outcome.stopped');
 	if (raw === SETUP_STOPPED) return new LocalizedError(raw, 'generation.outcome.setupStopped');
+	if (raw === REPAIR_REVIEW_RECOVERY) return new LocalizedError(raw, 'repairReview.recover');
+	const restriction = localizedPlanRestriction(raw);
+	if (restriction) return restriction;
 	const resume =
 		'. Generation stopped without resending. Review this request in Activity before starting again.';
 	for (const job of queue.snapshot().jobs) {
@@ -2712,10 +2775,13 @@ export const moving = $state({
 	error: '' as string | LocalizedError,
 	done: false,
 	warnings: [] as string[],
-	queued: [] as QueuedMove[]
+	queued: [] as QueuedMove[],
+	repairReview: null as RepairReview | null,
+	repairApplied: false,
+	resolvingRepair: false
 });
 const MOVE_KEY = 'studio-move';
-let moveRunning = false,
+let moveRunning = $state(false),
 	moveRevision = 0;
 /** The stored move record without its queue (null: the current move is finished or dismissed). */
 let moveRecord: object | null = null,
@@ -2756,14 +2822,20 @@ export async function queueMoves(projectId: string, specs: MoveSpec[]) {
 	moving.queued = rest;
 	await startMove(next.projectId, next.spec);
 }
-/** A character's moves running or waiting in the queue; with `itemId`, only those that pose that item. */
+/** A character's moves running, publishing or queued; with `itemId`, only those that pose that item. */
 export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 	[
-		...(moving.spec && !moving.done && moving.projectId === projectId ? [moving.spec] : []),
+		...(moving.spec && (!moving.done || moveRunning) && moving.projectId === projectId
+			? [moving.spec]
+			: []),
 		...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec)
 	].filter((s) => !itemId || s.items.includes(itemId));
 export async function startMove(projectId: string, spec: MoveSpec) {
 	if (hmrReloading) return;
+	if (moving.repairReview) {
+		toast(message('repairReview.finishFirst'), { tone: 'warning' });
+		return;
+	}
 	if (spec.reuseItemFrames && queue.role === 'follower') {
 		toast(message('state.useSavedFramesInTheTabThat'), { tone: 'warning' });
 		return;
@@ -2831,6 +2903,49 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 				})
 			: await flow.addMove(projectId, spec, progress);
 		if (!current()) return;
+		if (result.repairReview) {
+			const progress = $state.snapshot(moving.progress);
+			try {
+				await storeMove({
+					id: MOVE_KEY,
+					spec,
+					projectId,
+					status: 'review',
+					requestText: REQUEST_TEXT,
+					progress,
+					repairReview: result.repairReview
+				});
+			} catch {
+				const unsaved =
+					'The repair is available in this tab, but its review could not be saved. Decide before closing or reloading.';
+				const fallback = await persistFlowFailure(
+					MOVE_KEY,
+					{ spec, projectId, progress },
+					new LocalizedError(REPAIR_REVIEW_RECOVERY, 'repairReview.recover'),
+					storeMove
+				);
+				if (current())
+					moving.error =
+						fallback instanceof LocalizedError &&
+						fallback.translation.key === 'state.couldNotSaveFlowFailure'
+							? new LocalizedError(
+									`${unsaved} Recovery after reload is not guaranteed.`,
+									'repairReview.unsavedMayNotRecover',
+									{ notice: message('repairReview.unsaved') }
+								)
+							: new LocalizedError(unsaved, 'repairReview.unsaved');
+			}
+			if (!current()) return;
+			moving.repairReview = result.repairReview;
+			if (ui.sheet !== 'move')
+				toast(message('repairReview.ready'), {
+					tone: 'warning',
+					action: () => {
+						ui.sheet = 'move';
+					}
+				});
+			return;
+		}
 		moving.warnings = result.warnings;
 		moving.done = true;
 		await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
@@ -3067,22 +3182,82 @@ export async function resumeMove() {
 	if (hmrReloading || moveResumed || queue.role === 'follower') return;
 	moveResumed = true;
 	const r = await db
-		.get<FlowDraft<MoveSpec> & { projectId: string; queued?: QueuedMove[] }>('projects', MOVE_KEY)
+		.get<
+			FlowDraft<MoveSpec> & {
+				projectId: string;
+				queued?: QueuedMove[];
+				repairReview?: RepairReview;
+			}
+		>('projects', MOVE_KEY)
 		.catch(() => undefined);
 	if (!r?.spec || (moving.spec && !moving.done)) return;
 	const { queued, ...record } = r;
 	moving.queued = queued ?? [];
 	moveRecord = record; // a halted move keeps its stored record while moves are queued behind it
+	let applied = false,
+		repairError: string | LocalizedError = '';
+	if (r.repairReview) {
+		try {
+			applied = await (await itemRun()).repairAlreadyApplied(r.projectId, r.repairReview);
+		} catch (error) {
+			repairError = error instanceof LocalizedError ? error : errorText(error);
+		}
+	}
 	if (halted(r))
 		Object.assign(moving, {
 			spec: r.spec,
 			projectId: r.projectId,
 			progress: r.progress ?? null,
-			error: restoredFlowError(r, STOPPED),
+			error: r.repairReview && !r.error ? repairError : restoredFlowError(r, STOPPED),
+			repairReview: r.repairReview ?? null,
+			repairApplied: applied,
 			done: false,
 			warnings: []
 		});
 	else void startMove(r.projectId, r.spec);
+}
+
+export async function resolveRepairReview(useRepair: boolean) {
+	if (moveRunning || !moving.repairReview || queue.role === 'follower') return;
+	const projectId = moving.projectId,
+		review = $state.snapshot(moving.repairReview),
+		record = moveRecord;
+	moveRunning = moving.resolvingRepair = true;
+	moving.error = '';
+	try {
+		const run = await itemRun();
+		if (useRepair) {
+			if (!moving.repairApplied) await run.applyRepairReview(projectId, review);
+			moving.repairApplied = true;
+		} else if (await run.repairAlreadyApplied(projectId, review)) {
+			moving.repairApplied = true;
+			throw new LocalizedError(
+				'The repair is already saved. Finish the review to continue.',
+				'repairReview.alreadySaved'
+			);
+		}
+		try {
+			await storeMove(null);
+		} catch (error) {
+			moveRecord = record;
+			throw error;
+		}
+		moving.repairReview = null;
+		moving.repairApplied = false;
+		moving.done = true;
+		if (useRepair && viewing(projectId)) await openProject(projectId, { quiet: true });
+		toast(useRepair ? message('repairReview.saved') : message('repairReview.kept'));
+	} catch (error) {
+		moving.error = error instanceof LocalizedError ? error : errorText(error);
+		toast(errorMessage(error), { tone: 'danger' });
+	} finally {
+		moveRunning = moving.resolvingRepair = false;
+	}
+	if (moving.done && moving.queued.length) {
+		const [next, ...rest] = moving.queued;
+		moving.queued = rest;
+		await startMove(next.projectId, next.spec);
+	}
 }
 /** Drops the failed or finished move and the moves queued for the same character; other characters' queued moves go on. */
 export async function dismissMove() {
@@ -3096,6 +3271,8 @@ export async function dismissMove() {
 		error: '',
 		done: false,
 		warnings: [],
+		repairReview: null,
+		repairApplied: false,
 		queued: others
 	});
 	await storeMove(null);

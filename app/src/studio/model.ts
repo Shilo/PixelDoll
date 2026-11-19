@@ -11,7 +11,7 @@ import type {
 	QaSummary,
 	UnfitNote
 } from '../lib/store/manifest.ts';
-import { GATES, isAction, SLOTS } from '../lib/items/items.ts';
+import { GATES, isAction, ITEM_GRID_REGISTRATION_NOTICE, SLOTS } from '../lib/items/items.ts';
 import { coverageGaps } from '../lib/dress/dress.ts';
 import { DIRECTIONS, type Rig } from '../lib/rig/rig.ts';
 import { message, type Message } from '../lib/message.ts';
@@ -66,16 +66,17 @@ export function setupWarningNote(
 }
 
 /** A character's shape at a glance: "64 px · 4 directions · 2 moves · 6 items". */
-export function characterFacts(m: Manifest): Message[] {
-	return [
-		message('studioModel.facts.pixels', { count: m.rig.cell.w }),
+export const pixelSize = ({ w, h }: { w: number; h: number }) => `${w}×${h} px`;
+export const characterFacts = (m: Manifest): { frame: string; counts: Message[] } => ({
+	frame: pixelSize(m.rig.cell),
+	counts: [
 		message('export.count.directions', { count: m.rig.directions.length }),
 		message('export.count.moves', { count: m.rig.animations.length }),
 		message('export.count.items', {
 			count: m.items.filter((item) => item.id !== m.rig.baseItem).length
 		})
-	];
-}
+	]
+});
 /** One item alone in canonical draw order in one cell; mirrored directions flip their source. Oversize layers (v1.3.1,
  * e.g. 96 px held items) line up by pivot on the union of the item's layer frames. */
 export function itemCell(
@@ -311,6 +312,7 @@ function describeReason(s: string): { text: string; translation: Message | strin
 	// Per-move checks prefix a whole-item message with its move ("default/east: G8 ..."): translate the message itself.
 	const scoped = /^[^ :/]+\/[^ :/]+: ([A-Z]\d+ .*)$/.exec(s);
 	if (scoped) return describeReason(scoped[1]);
+	if (s === ITEM_GRID_REGISTRATION_NOTICE) return say(s, 'studioModel.qa.registrationShift');
 	if (s.startsWith('D2 '))
 		return say(
 			'The requested waist band differs between standing views',

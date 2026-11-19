@@ -2,6 +2,7 @@
 	// Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
 	// re-rendered through raw skeleton-v3), plus one pose call per worn item x direction so the items follow the new clip.
 	import Sheet from './Sheet.svelte';
+	import DirectionCompass from './DirectionCompass.svelte';
 	import Sprite from './Sprite.svelte';
 	import { untrack } from 'svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -11,11 +12,17 @@
 	import type { StoredProject } from '../lib/store/project.ts';
 	import type { DirectionName } from '../lib/store/manifest.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
-	import { ITEM_MOVE_SAVE_CONFLICT, posable } from '../lib/items/run.ts';
+	import {
+		INVALID_ITEM_GRID,
+		ITEM_MOVE_SAVE_CONFLICT,
+		SAVED_FRAMES_UNAVAILABLE,
+		posable
+	} from '../lib/items/run.ts';
 	import { AUTHORED } from '../lib/rig/poses.ts';
 	import {
 		MOVE_STEPS,
 		bodyMoveIssue,
+		partialMoveFrameIssue,
 		isAuthoredAction,
 		isV13,
 		reservedMove,
@@ -40,14 +47,16 @@
 		keepMoveBody,
 		matchMoveBodyColors,
 		retryMoveMeasurements,
+		resolveRepairReview,
 		dismissMove,
 		openProject,
 		pendingMoves,
 		withKey
 	} from './state.svelte.ts';
-	import { bodyQualityNote } from './model.ts';
+	import { bodyQualityNote, plainReasonMessage } from './model.ts';
 	import { displayMove } from './displayMove.ts';
-	import { directionLabel } from './experience/movement.ts';
+	import { affectedMoveDirections } from './replaceMove.ts';
+	import { displayDirection as directionLabel } from './displayDirection.ts';
 	import { Check, ChevronRight, CircleAlert } from './icons.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { GENERATION_RECOMMENDATION, tierDecision } from '../lib/pixellab/plans.ts';
@@ -67,6 +76,7 @@
 	});
 	const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null));
 	const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []));
+	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
 	// Default is the standing views themselves: nothing to generate or replace.
 	const options = $derived(
 		[
@@ -75,6 +85,7 @@
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
 	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
+	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? '');
 	const slug = (s: string) =>
 		s
@@ -82,9 +93,8 @@
 			.replace(/[^a-z0-9]+/g, '-')
 			.replace(/^-+|-+$/g, '')
 			.slice(0, 24);
-	const describingReplacement = $derived(
-		have.has(action) && action !== 'walk' && !isAuthoredAction(action)
-	);
+	const replacing = $derived(replaceSelected && have.has(action));
+	const savedMove = $derived(m?.rig.animations.find((a) => a.id === action));
 	// Ids allow only a-z, 0-9, - and _ (rig.ts): a description in another script gets the first free "move-N".
 	const freeMoveId = () => {
 		let n = 1;
@@ -92,11 +102,10 @@
 		return `move-${n}`;
 	};
 	const id = $derived(
-		!describingReplacement && text.trim()
-			? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) || freeMoveId()
-			: action
+		action ||
+			(text.trim() &&
+				(slug(text.trim().split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) || freeMoveId()))
 	);
-	const replacing = $derived(have.has(id) && !reservedMove(id));
 	const availableDirs = $derived(
 		m?.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id) ?? []
 	);
@@ -104,25 +113,48 @@
 	const targetDirs = $derived(
 		replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs
 	);
+	const affectedMirrors = $derived(
+		m
+			? affectedMoveDirections(m.rig, targetDirs)
+					.filter((dir) => !targetDirs.includes(dir))
+					.map(directionLabel)
+					.join(', ')
+			: ''
+	);
+	const describingReplacement = $derived(
+		replacing &&
+			((action !== 'walk' && !isAuthoredAction(action)) ||
+				targetDirs.some((dir) => savedMove?.sources?.[dir]?.motion?.startsWith('pixminimax:')))
+	);
+	const describing = $derived(!action || describingReplacement);
 	const items = $derived(m && targetDirs.length ? posable(m, targetDirs) : []);
 	const unavailable = $derived(
 		(m?.items ?? []).filter(
 			(item) => item.slot !== 'body' && !items.some((eligible) => eligible.id === item.id)
 		)
 	);
-	const frames = $derived(m?.rig.animations.find((a) => a.id === id)?.cells ?? 8);
+	const frames = $derived(replacing ? (savedMove?.cells ?? 8) : 8);
 	const motion = $derived({
 		id,
-		action: text.trim() ? undefined : action,
-		text: text.trim() || undefined,
+		action: describing ? undefined : action,
+		text: describing ? text.trim() || undefined : undefined,
 		frames,
 		replace: replacing
 	});
-	const motionIssue = $derived(m && id ? bodyMoveIssue(m, motion) : undefined);
+	const motionIssue = $derived.by(() => {
+		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
+		if (!action && id && options.includes(id))
+			return t('moveSheet.duplicateOption', { move: nice(id) });
+		if (!m || !id) return '';
+		return (
+			bodyMoveIssue(m, motion) ||
+			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
+		);
+	});
 	let included = $state<string[]>(draft?.items ?? []);
 	const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id));
 	const est = $derived(
-		m && id && targetDirs.length && !motionIssue
+		m && id && targetDirs.length && !reservedMove(id) && !motionIssue && !pendingIds.includes(id)
 			? moveEstimate(m, { ...motion, items: chosen, dirs: targetDirs })
 			: null
 	);
@@ -154,26 +186,23 @@
 	// "Queue another move" shows the form over this character's running move; a new move then waits its turn
 	let adding = $state(false);
 	const progress = $derived(mine && !adding);
+	const repairReview = $derived(progress ? moving.repairReview : null);
 	const busy = $derived(!!moving.spec && !moving.done);
-	// A save conflict leaves the paid frames in Activity: anchored and skeleton item moves can reattach them for free.
 	const savedItemFrames = $derived(
 		!!moving.spec &&
-			moving.spec.itemMethod !== 'grid' &&
 			!!moving.spec.itemsOnly &&
 			!moving.spec.replace &&
-			!moving.spec.itemReview &&
-			errorText(moving.error).startsWith(ITEM_MOVE_SAVE_CONFLICT)
-	);
-	const retryPlan = $derived(
-		moving.error && moving.spec
-			? movePlan(rec, {
-					...moving.spec,
-					reuseItemFrames: undefined,
-					measurementRecovery: undefined,
-					bodyPaletteRepair: undefined,
-					seed: undefined
-				})
-			: []
+			(moving.spec.itemMethod === 'grid'
+				? !!moving.spec.itemReview &&
+					!errorText(moving.error).startsWith(INVALID_ITEM_GRID) &&
+					!errorText(moving.error).startsWith(SAVED_FRAMES_UNAVAILABLE) &&
+					$queue.jobs.some(
+						(job) =>
+							job.activityScope === moving.spec?.activityScope &&
+							job.endpoint === (moving.spec?.redrawItem ? '/edit-images-v2' : '/inpaint-v3') &&
+							job.state === 'done'
+					)
+				: !moving.spec.itemReview && errorText(moving.error).startsWith(ITEM_MOVE_SAVE_CONFLICT))
 	);
 	const retrySpec = $derived<MoveSpec | undefined>(
 		moving.spec
@@ -186,17 +215,21 @@
 			: undefined
 	);
 	const retryAccess = $derived(specAccess(retrySpec));
+	const retryPlan = $derived(
+		moving.error && retrySpec && !retryAccess.error
+			? movePlan(rec, { ...retrySpec, seed: undefined })
+			: []
+	);
 	const retryTier = $derived(retryAccess.tier);
 	const recoveryAccess = $derived(specAccess(moving.spec ?? undefined));
 	const recoveryTier = $derived(recoveryAccess.tier);
 	const retryGens = $derived(
 		Math.ceil(retryPlan.reduce((sum, call) => sum + (call.generations ?? 0), 0))
 	);
-	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
 	const ownQueued = $derived(moving.queued.filter((q) => q.projectId === moving.projectId));
 	// another character's failed move holds every new move; only its own sheet can try it again or start over
 	const holder = $derived(
-		!mine && moving.spec && moving.error
+		!mine && moving.spec && (moving.error || moving.repairReview)
 			? (store.projects.find((p) => p.id === moving.projectId)?.name ??
 					t('moveSheet.thatCharacter'))
 			: ''
@@ -305,17 +338,18 @@
 
 	function go() {
 		const projectId = doc.id;
-		if (motionIssue || addAccess.error) return;
+		if (!est || addAccess.error) return;
 		const spec = {
 			...motion,
 			items: chosen,
 			poseStyle: 'visible-side-v1' as const,
 			seed: 1 + Math.floor(Math.random() * 1_000_000),
-			...(replacing ? { dirs: [...targetDirs] } : {})
+			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] })
 		};
 		formDrafts.move = {
 			projectId,
 			action,
+			replace: replaceSelected,
 			text,
 			items: $state.snapshot(included),
 			dirs: [...selectedDirs],
@@ -329,12 +363,19 @@
 		}, addTier);
 	}
 	function chooseAction(next: string) {
+		const replace = have.has(next);
+		if (action === next && replaceSelected === replace) return;
 		action = next;
+		replaceSelected = replace;
 		text = '';
 		const clips = (rec?.rigQa as { clips?: Record<string, { fails?: unknown[] }> } | undefined)
 			?.clips;
 		const flagged = availableDirs.filter((d) => clips?.[`${next}/${d}`]?.fails?.length);
 		selectedDirs = flagged.length ? flagged : [...availableDirs];
+	}
+	function describeMove(value: string) {
+		chooseAction('');
+		text = value;
 	}
 </script>
 
@@ -347,6 +388,24 @@
 				void dismissMove();
 				ui.sheet = null;
 			}}>{t('common.done')}</button
+		>
+	{:else if repairReview}
+		{#if !moving.repairApplied}<button
+				class="bu-action btn"
+				data-variant="outline"
+				disabled={moving.resolvingRepair || queue.role === 'follower'}
+				onclick={() => void resolveRepairReview(false)}>{t('moveSheet.review.keepCurrent')}</button
+			>{/if}
+		<button
+			class="bu-action btn primary"
+			data-variant="primary"
+			disabled={moving.resolvingRepair || queue.role === 'follower'}
+			onclick={() => void resolveRepairReview(true)}
+			>{moving.repairApplied
+				? t('moveSheet.review.finish')
+				: moving.spec?.redrawItem
+					? t('moveSheet.review.useRedrawn')
+					: t('moveSheet.review.useRepaired')}</button
 		>
 	{:else if progress && moving.error}
 		<button class="bu-action btn plain" data-variant="quiet" onclick={dismissMove}
@@ -377,7 +436,7 @@
 					>{/if}</button
 			></span
 		>
-		{#if savedItemFrames}<button
+		{#if savedItemFrames && !recoveryAccess.error}<button
 				class="bu-action btn primary"
 				data-variant="primary"
 				onclick={() =>
@@ -414,76 +473,85 @@
 			>{t('common.hide')}</button
 		>
 	{:else if ok}
-		<span class="foot-note"
-			>{est
-				? est.items
-					? t('moveSheet.footEstimateItems', {
-							minutes: formatNumber(est.minutes),
-							body: formatNumber(Math.ceil(est.body)),
-							items: formatNumber(est.items)
-						})
-					: t('moveSheet.footEstimate', {
-							minutes: formatNumber(est.minutes),
-							body: formatNumber(Math.ceil(est.body))
-						})
-				: ''}</span
-		>
-		<span class="api-action"
-			><ApiPeek
-				scope="move-add"
-				label={t('moveSheet.addLabel')}
-				plan={movePlan(rec, {
-					...motion,
-					items: chosen,
-					poseStyle: 'visible-side-v1',
-					...(replacing ? { dirs: [...targetDirs] } : {})
-				})}
-			/><button
+		{#if est}
+			<span class="foot-note move-cost-note">
+				<span>
+					{est.items
+						? t('moveSheet.footEstimateItems', {
+								minutes: formatNumber(est.minutes),
+								body: formatNumber(Math.ceil(est.body)),
+								items: formatNumber(est.items)
+							})
+						: t('moveSheet.footEstimate', {
+								minutes: formatNumber(est.minutes),
+								body: formatNumber(Math.ceil(est.body))
+							})}
+				</span>
+				<span>{t('moveSheet.costNotice')}</span>
+			</span>
+		{/if}
+		<span class="api-action move-action">
+			{#if est}<ApiPeek
+					scope="move-add"
+					label={t('moveSheet.addLabel')}
+					plan={movePlan(rec, {
+						...motion,
+						items: chosen,
+						poseStyle: 'visible-side-v1',
+						...(replacing ? { dirs: [...targetDirs] } : {})
+					})}
+				/>{/if}<button
 				class="bu-action btn primary lg"
 				data-variant="primary"
-				disabled={!id ||
-					!!reservedMove(id) ||
-					!!motionIssue ||
+				disabled={!est ||
 					!!addAccess.error ||
-					!targetDirs.length ||
-					pendingIds.includes(id) ||
 					(!!settingUp.spec && !settingUp.done) ||
 					tierBlocked(addTier)}
 				aria-describedby={tierBlocked(addTier) ? 'move-action-tier' : undefined}
 				onclick={go}
-				>{t(
-					busy
-						? replacing
-							? 'moveSheet.submit.queueViews'
-							: 'moveSheet.submit.queue'
-						: replacing
-							? 'moveSheet.submit.replaceViews'
-							: 'moveSheet.submit.add',
-					{ move: id ? nice(id) : t('moveSheet.submit.move') }
-				)}
-				<span class="cost">
-					{t(est?.items ? 'moveSheet.estimateWithItems' : 'moves.estimate', {
-						gens: est ? formatNumber(Math.ceil(est.gens)) : '–'
-					})}
-				</span></button
+				><span>
+					{t(
+						busy
+							? replacing
+								? 'moveSheet.submit.queueReplacement'
+								: 'moveSheet.submit.queue'
+							: replacing
+								? 'moveSheet.submit.replaceViews'
+								: 'moveSheet.submit.add',
+						{ move: id ? nice(id) : t('moveSheet.submit.move') }
+					)}
+					{#if est}<span class="cost">
+							{t(est.items ? 'moveSheet.estimateWithItems' : 'moves.estimate', {
+								gens: formatNumber(Math.ceil(est.gens))
+							})}
+						</span>{/if}</span
+				></button
 			></span
 		>
 	{/if}
 {/snippet}
 
 <Sheet
-	title={progress && moving.spec?.itemMethod === 'grid'
-		? t('moveSheet.titleRepair')
-		: (progress ? moving.spec?.replace : replacing)
-			? t('moveSheet.titleReplace')
-			: t('moves.add')}
-	cancel={progress && !moving.done ? 'Hide' : 'Cancel'}
+	title={repairReview
+		? moving.spec?.redrawItem
+			? t('moveSheet.review.redrawTitle')
+			: t('moveSheet.review.repairTitle')
+		: progress && moving.spec?.itemMethod === 'grid'
+			? moving.spec?.redrawItem
+				? t('moveSheet.review.redrawProgress')
+				: t('moveSheet.titleRepair')
+			: (progress ? moving.spec?.replace : replacing)
+				? t('moveSheet.titleReplace')
+				: t('moves.add')}
+	cancel={progress && !moving.done ? 'common.hide' : 'common.cancel'}
 	onclose={() => (ui.sheet = null)}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
 >
 	{#if holder}<p class="notice small">
 			<CircleAlert size={14} /><span
-				>{t('moveSheet.heldBy', { move: nice(moving.spec!.id), character: holder })}</span
+				>{moving.repairReview
+					? t('moveSheet.review.heldBy', { character: holder })
+					: t('moveSheet.heldBy', { move: nice(moving.spec!.id), character: holder })}</span
 			><button
 				class="bu-action btn sm"
 				data-variant="outline"
@@ -491,7 +559,76 @@
 				>{t('moveSheet.open', { character: holder })}</button
 			>
 		</p>{/if}
-	{#if progress}
+	{#if mine && adding && moving.repairReview}
+		<button class="bu-action btn" data-variant="outline" onclick={() => (adding = false)}
+			>{moving.spec?.redrawItem
+				? t('moveSheet.review.redrawTitle')
+				: t('moveSheet.review.repairTitle')}</button
+		>
+	{/if}
+	{#if repairReview && moving.spec}
+		<section class="keep-review" aria-label={t('moveSheet.review.compare')}>
+			<p>
+				{repairReview.clip.out.name} · {nice(moving.spec.id)} · {moving.spec.dirs
+					?.map(directionLabel)
+					.join(', ') ?? ''}
+			</p>
+			{#if moving.repairApplied}<p class="small" role="status">
+					{t('moveSheet.review.saved')}
+				</p>{:else}<p class="small" role="status">
+					{moving.spec.redrawItem
+						? repairReview.findings.length
+							? t('moveSheet.review.redrawIssues')
+							: t('moveSheet.review.redrawReady')
+						: t('moveSheet.review.repairIssues')}
+					{t('moveSheet.review.noCost')}
+				</p>{/if}
+			<div class="repair-pairs">
+				{#each repairReview.replacement as frame, index (index)}
+					<div class="repair-pair">
+						<span class="small"
+							>{t('moveSheet.review.frame', { number: formatNumber(index + 1) })}</span
+						>
+						<div class="repair-pair-columns">
+							{#each [{ img: repairReview.current[index], label: t('moveSheet.review.currentFrames'), frameLabel: t( 'moveSheet.review.currentFrame', { number: formatNumber(index + 1) } ) }, { img: frame, label: moving.spec.redrawItem ? t('moveSheet.review.redrawnFrames') : t('moveSheet.review.repairedFrames'), frameLabel: t( moving.spec.redrawItem ? 'moveSheet.review.redrawnFrame' : 'moveSheet.review.repairedFrame', { number: formatNumber(index + 1) } ) }] as version (version.label)}
+								<div class="keep-view">
+									<strong class="small">{version.label}</strong>
+									<div class="repair-sprite" style:aspect-ratio={`${frame.w} / ${frame.h}`}>
+										<Sprite
+											img={version.img}
+											k={keepK}
+											checker
+											fitToBox
+											label={version.frameLabel}
+										/>
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/each}
+			</div>
+			{#if repairReview.findings.length}<details>
+					<summary>{t('moveSheet.review.findings')}</summary>
+					<ul>
+						{#each repairReview.findings as finding (finding)}<li class="small">
+								{displayMessage(plainReasonMessage(finding))}
+							</li>{/each}
+					</ul>
+				</details>{/if}
+			{#if moving.error}<p class="notice bad small" role="alert">
+					{displayError(moving.error)}
+				</p>{/if}
+			{#if queue.role === 'follower'}<p class="notice small">
+					{moving.spec.redrawItem
+						? t('moveSheet.review.redrawInManagingTab')
+						: t('moveSheet.review.repairInManagingTab')}
+				</p>{/if}
+			{#if moving.queued.length}<p class="muted small">
+					{t('moveSheet.review.resumesQueue')}
+				</p>{/if}
+		</section>
+	{:else if progress}
 		<div class="form">
 			<p style="font-weight:600">
 				{nice(moving.spec!.id)}{moving.spec?.dirs
@@ -499,12 +636,14 @@
 					: ''}<ApiPeek
 					scope="move-progress"
 					label={t('moveSheet.progressLabel')}
-					plan={moving.spec ? movePlan(rec, moving.spec) : []}
+					plan={moving.spec && !recoveryAccess.error ? movePlan(rec, moving.spec) : []}
 					activityScope={moving.spec?.activityScope}
 				/>
 			</p>
 			{#if moving.spec?.itemMethod === 'grid'}<p class="muted small">
-					{t('moveSheet.repairNote')}
+					{moving.spec.redrawItem
+						? t('moveSheet.review.redrawNote')
+						: t('moveSheet.review.repairNote')}
 				</p>{/if}
 			<ol class="steps-list">
 				{#each steps as s, i (s.id)}
@@ -649,18 +788,33 @@
 				onclick={() => (ui.sheet = 'setup')}>{t('setup.title')}</button
 			>{/if}
 	{:else}
-		<div class="form">
+		<div class="form" class:redraw-form={replacing}>
 			<div class="field">
-				<span class="label" id="act">{t('common.move')}</span>
+				<label class="label" for="move-description"
+					>{replacing ? t('moveSheet.describeNew') : t('moveSheet.describeMotion')}</label
+				>
+				<input
+					id="move-description"
+					class="bu-input input"
+					value={action ? '' : text}
+					oninput={(event) => describeMove(event.currentTarget.value)}
+					placeholder={t('moveSheet.describePlaceholder')}
+					aria-describedby="move-description-hint"
+					maxlength="120"
+				/>
+				<p class="faint small" id="move-description-hint">
+					{t('moveSheet.motionOnly')}
+				</p>
+			</div>
+			<div class="field">
+				<span class="label" id="act">{t('moveSheet.orChoose')}</span>
 				<div class="chips" role="radiogroup" aria-labelledby="act">
 					{#each options as a (a)}
 						<button
 							class="chip"
 							role="radio"
-							aria-checked={(!text.trim() || describingReplacement) && action === a}
-							tabindex={(text.trim() && !describingReplacement ? options[0] === a : action === a)
-								? 0
-								: -1}
+							aria-checked={action === a}
+							tabindex={(options.includes(action) ? action : options[0]) === a ? 0 : -1}
 							onclick={() => chooseAction(a)}
 							>{#if have.has(a)}<Check size={12} />{/if}{have.has(a)
 								? t('moveSheet.added', { move: nice(a) })
@@ -671,39 +825,39 @@
 			</div>
 			{#if replacing}
 				<div class="field">
-					<span class="label">{t('moveSheet.viewsToReplace')}</span>
-					{#each availableDirs as dir (dir)}<label class="check"
-							><input
-								type="checkbox"
-								checked={selectedDirs.includes(dir)}
-								onchange={(e) =>
-									(selectedDirs = e.currentTarget.checked
-										? [...selectedDirs, dir]
-										: selectedDirs.filter((d) => d !== dir))}
-							/>{directionLabel(dir)}</label
-						>{/each}
-					<p class="notice warn small">
-						{m?.rig.directions.some((d) => d.mirrorOf)
-							? t('moveSheet.replaceNoteMirrored')
-							: t('moveSheet.replaceNote')}
-					</p>
+					<span class="label">{t('moveSheet.redrawDirections')}</span>
+					<div class="redraw-directions">
+						<DirectionCompass
+							label={t('moveSheet.redrawDirections')}
+							describedBy="move-redraw-warning"
+							available={availableDirs}
+							selected={targetDirs}
+							compact
+							ontoggle={(dir) =>
+								(selectedDirs = selectedDirs.includes(dir)
+									? selectedDirs.filter((selected) => selected !== dir)
+									: [...selectedDirs, dir])}
+						/>
+						<p class="notice warn small" id="move-redraw-warning">
+							{t('moveSheet.redrawHidesEquipment')}
+							{#if affectedMirrors}{t('moveSheet.redrawMirrors', {
+									directions: affectedMirrors
+								})}{/if}
+							{t('moveSheet.redrawOtherMoves')}
+						</p>
+					</div>
 				</div>
-			{:else}<p class="faint small">{t('moveSheet.chooseToReplace')}</p>{/if}
-			<label class="field">
-				<span class="label"
-					>{describingReplacement ? t('moveSheet.describeReplacement') : t('moveSheet.describe')}
-					{#if !describingReplacement}<span class="faint">{t('common.optional')}</span>{/if}</span
-				>
-				<input
-					class="bu-input input"
-					bind:value={text}
-					placeholder={t('moveSheet.describePlaceholder')}
-					maxlength="120"
-				/>
-			</label>
-			{#if text.trim()}<p class="faint small">
-					{t('moveSheet.emptyHands')}
-				</p>{/if}
+			{/if}
+			{#if describingReplacement}<label class="field">
+					<span class="label">{t('moveSheet.describeReplacement')}</span>
+					<input
+						class="bu-input input"
+						bind:value={text}
+						placeholder={t('moveSheet.describePlaceholder')}
+						aria-describedby="move-description-hint"
+						maxlength="120"
+					/>
+				</label>{/if}
 			{#if reservedMove(id)}<p class="notice warn small">
 					<CircleAlert size={14} />{displayError(reservedMove(id))}
 				</p>{:else if motionIssue}<p class="notice warn small">
@@ -734,64 +888,74 @@
 										? [...included, it.id]
 										: included.filter((x) => x !== it.id))}
 							/>{it.name}
-							<span class="faint small">
-								{t('generationDetails.gens', {
-									value:
-										m && est
-											? formatNumber(
-													moveEstimate(m, { ...motion, items: [it.id], dirs: targetDirs }).items
-												)
-											: '–'
-								})}
-							</span></label
+							{#if m && est}<span class="faint small"
+									>{t('generationDetails.gens', {
+										value: formatNumber(
+											moveEstimate(m, { ...motion, items: [it.id], dirs: targetDirs }).items
+										)
+									})}</span
+								>{/if}</label
 						>
 					{/each}
 					<p class="faint small">
-						{t('moveSheet.itemsNote')}
+						{t('moveSheet.equipmentWaitsForBody')}
+						{#if !replacing}{t('moveSheet.uncheckedItemsHidden')}{/if}
 					</p>
 				</div>
 			{/if}
 			{#if (unavailable.length || shared.items.length) && targetDirs.length}
 				<p class="faint small">
-					{t('moveSheet.listNote')}
+					{t('moveSheet.fittedEquipmentOnly')}
 				</p>
 			{/if}
-			<p class="faint small">
-				{t('moveSheet.billing')}
-			</p>
-			<details class="disclosure">
-				<summary><ChevronRight size={14} />{t('common.details')}</summary>
-				<div>
-					<p class="faint small">
-						{[
-							text.trim()
-								? t('moveSheet.pipeline.described')
-								: action === 'walk'
-									? t('moveSheet.pipeline.walk')
-									: t('moveSheet.pipeline.authored'),
-							m?.rig.directions.some((d) => d.mirrorOf)
-								? t('moveSheet.pipeline.gridMirrored', {
-										frames: est?.frames ?? '',
-										dirs,
-										mirrored: m.rig.directions
-											.filter((d) => d.mirrorOf)
-											.map((d) => d.id.replaceAll('-', ' '))
-											.join(', ')
-									})
-								: t('moveSheet.pipeline.grid', { frames: est?.frames ?? '', dirs }),
-							t('moveSheet.pipeline.cost', {
-								body: est ? decimal(est.body) : '',
-								items: est?.items ?? ''
-							})
-						].join(' · ')}
-					</p>
-				</div>
-			</details>
+			{#if est}<details class="disclosure">
+					<summary><ChevronRight size={14} />{t('common.details')}</summary>
+					<div>
+						<p class="faint small">
+							{[
+								motion.text
+									? t('moveSheet.pipeline.described')
+									: action === 'walk'
+										? t('moveSheet.pipeline.walk')
+										: t('moveSheet.pipeline.authored'),
+								affectedMirrors
+									? t('moveSheet.pipeline.gridMirrored', {
+											frames: est.frames,
+											dirs,
+											mirrored: affectedMirrors
+										})
+									: t('moveSheet.pipeline.grid', { frames: est.frames, dirs }),
+								t('moveSheet.pipeline.cost', { body: decimal(est.body), items: est.items })
+							].join(' · ')}
+						</p>
+					</div>
+				</details>{/if}
 		</div>
 	{/if}
 </Sheet>
 
 <style>
+	.redraw-form {
+		gap: 12px;
+	}
+	.redraw-directions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 12px;
+	}
+	.redraw-directions .notice {
+		flex: 1 1 125px;
+	}
+	.move-cost-note {
+		display: grid;
+		gap: 2px;
+	}
+	.move-action > .btn {
+		white-space: normal;
+		height: auto;
+		min-height: var(--ctl-h);
+	}
 	.keep-review {
 		display: grid;
 		gap: 8px;
@@ -804,5 +968,24 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
+	}
+	.repair-pairs {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+		gap: 12px;
+	}
+	.repair-pair,
+	.repair-pair-columns {
+		display: grid;
+		gap: 6px;
+	}
+	.repair-pair-columns {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		align-items: end;
+	}
+	.repair-sprite {
+		width: 100%;
+		max-width: 192px;
+		min-width: 0;
 	}
 </style>

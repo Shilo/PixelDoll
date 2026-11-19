@@ -49,7 +49,7 @@
 	} from './state.svelte.ts';
 	import { lazy } from '../lib/lazy.ts';
 	import { WifiOff } from './icons.ts';
-	import { PREVIEW_NOTICE } from './previewNotice.ts';
+	import { PRE_RELEASE, PREVIEW_NOTICE } from './previewNotice.ts';
 	import Toast from './Toast.svelte';
 	import PwaRuntime from './PwaRuntime.svelte';
 
@@ -97,7 +97,7 @@
 			ui.welcome = false;
 		}
 		const off = initUi();
-		if (!workspaceCopy) toast(previewNoticeDetails, PREVIEW_NOTICE);
+		if (PRE_RELEASE && !workspaceCopy) toast(previewNoticeDetails, PREVIEW_NOTICE);
 		void (async () => {
 			const listed = await refreshProjects();
 			const initial = lastProject();
@@ -320,18 +320,17 @@
 {#snippet previewNoticeDetails()}
 	<div><strong class="preview-risk">{t('studio.previewRisk')}</strong></div>
 	{t('studio.previewBackupDescription')}
-	{#if store.project}
-		<button
-			class="bu-action btn sm preview-export"
-			data-variant="outline"
-			aria-label={t('studio.exportSprites')}
-			aria-haspopup="dialog"
-			onclick={() => {
-				dismissToast();
-				ui.sheet = 'export';
-			}}>{t('toolbar.export')}</button
-		>
-	{/if}
+	<button
+		class="bu-action btn sm preview-export"
+		data-variant="outline"
+		aria-label={t('studio.exportSprites')}
+		aria-haspopup="dialog"
+		disabled={!store.project}
+		onclick={() => {
+			dismissToast();
+			ui.sheet = 'export';
+		}}>{t('toolbar.export')}</button
+	>
 {/snippet}
 
 <svelte:window
@@ -351,15 +350,17 @@
 
 	{#if ui.sheet === 'inspect'}<Sheet
 			title={t('studio.titleInspectCharacter')}
-			cancel="Done"
+			cancel="common.done"
 			className="inspection-sheet"
 			wide
 			onclose={() => (ui.sheet = null)}
 			><div class="inspection-stage"><Stage /><Lazy load={parts.notes} sheet={false} /></div></Sheet
 		>{/if}
 	{#if workspaceCopy && ['connect', 'importPixelLab', 'create', 'newitem', 'move', 'setup'].some((sheet) => sheet === ui.sheet)}
-		<Sheet title={t('studio.titleWorkspaceCopy')} cancel="Done" onclose={() => (ui.sheet = null)}
-			><p>{t('workspaceCopy.generationOff')}</p></Sheet
+		<Sheet
+			title={t('studio.titleWorkspaceCopy')}
+			cancel="common.done"
+			onclose={() => (ui.sheet = null)}><p>{t('workspaceCopy.generationOff')}</p></Sheet
 		>
 	{:else if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}
 	{#if !workspaceCopy && ui.sheet === 'create'}<Lazy load={parts.create} />{/if}
@@ -382,13 +383,15 @@
 	{#if !workspaceCopy && ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
 	{#if ui.sheet === 'slots'}<Lazy load={parts.slots} />{/if}
 	{#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
-		<Sheet title={t('studio.titleItem')} cancel="Done" onclose={() => (ui.sheet = null)}
+		<Sheet title={t('studio.titleItem')} cancel="common.done" onclose={() => (ui.sheet = null)}
 			><Lazy load={parts.item} id={ui.selected} /></Sheet
 		>
 	{/if}
 	{#if ui.sheet === 'gen' && genOf(ui.selected)}
-		<Sheet title={t('studio.titleItemReview')} cancel="Done" onclose={() => (ui.sheet = null)}
-			><Lazy load={parts.gen} g={genOf(ui.selected)!} /></Sheet
+		<Sheet
+			title={t('studio.titleItemReview')}
+			cancel="common.done"
+			onclose={() => (ui.sheet = null)}><Lazy load={parts.gen} g={genOf(ui.selected)!} /></Sheet
 		>
 	{/if}
 </div>

@@ -2,7 +2,7 @@
 
 Date: November 16, 2026. Status: Studio baseline implemented on the isolated experiment branch. See [trial results](live-results.md) for observed behavior, spending and open gates. Not a production API commitment.
 
-Tracking: [Qualify external mounting in Studio and engine exports](https://github.com/users/Shilo/projects/7/views/1?pane=issue&itemId=307653465).
+Tracking: [Original experiment planning](https://github.com/users/Shilo/projects/7/views/1?pane=issue&itemId=307642811) and [Studio and engine-export qualification](https://github.com/users/Shilo/projects/7/views/1?pane=issue&itemId=307653465).
 
 ## Decision in plain language
 
@@ -12,7 +12,7 @@ Different mount families must be allowed as assets, not restricted to a horse-sp
 
 ## Branch and isolation
 
-The original branch reference was `experiment/runtime-mounts`. Implementation now runs in an isolated T3 worktree on `experiment/runtime-mounts-live`, based on local commit `5a57f419`. Only this task's research was copied from the original checkout; unrelated design changes were left there. The user subsequently authorized a local commit after council review and testing. No push is authorized.
+The original plan named `experiment/runtime-mounts`. The Studio experiment was implemented separately on `experiment/runtime-mounts-live`, starting from `5a57f419`. See the [trial results](live-results.md) for what shipped in Studio and what remains unqualified.
 
 ## Three responsibilities
 

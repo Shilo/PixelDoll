@@ -25,6 +25,7 @@ import {
 	type SubmitResponse
 } from '../lib/pixellab/routes.ts';
 import { bytesToBase64, decodePng, type Img } from '../lib/image/png.ts';
+import type { ImageReference } from '../lib/image/reference.ts';
 import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
@@ -77,7 +78,7 @@ import {
 } from '../lib/rig/clips.ts';
 import {
 	canPose,
-	repairGridLayout,
+	repairGridPlan,
 	planAnchoredMove,
 	planGens,
 	itemPlanMinimumTier,
@@ -93,6 +94,7 @@ import {
 	poseItemClip,
 	regridClip,
 	PartialMoveError,
+	type RepairReview,
 	type RigCtx
 } from '../lib/items/run.ts';
 import { directionLabel } from './experience/movement.ts';
@@ -115,6 +117,7 @@ import {
 	MODEL_IDS,
 	OUTLINE_VALUES,
 	bodyErrors,
+	characterReferenceIssue,
 	facingErrors,
 	modelOf,
 	sizeErrors,
@@ -125,12 +128,14 @@ import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, hasCompleteCells } from '../lib/dress/dress.ts';
 import { saveSplit } from '../lib/dress/project.ts';
 import { cellImg } from '../lib/compose/compose.ts';
-import { LocalizedError, message, type Message } from '../lib/message.ts';
+import { errorMessage, LocalizedError, message, type Message } from '../lib/message.ts';
+import { localizedPlanRestriction } from '../lib/pixellab/plans.ts';
 import { activityStateMessage } from './generationStatus.ts';
 import type { WhisperKey } from 'svelte-whisper';
 
 /** The form sends an exact prompt, frame, camera and explicit direction plan. */
 export interface CreateSpec {
+	reference?: ImageReference;
 	description: string;
 	name: string;
 	seed: number;
@@ -168,7 +173,7 @@ export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPromp
 export function drawRequest(
 	spec: Pick<
 		CreateSpec,
-		'description' | 'exactPrompt' | 'size' | 'view' | 'model' | 'outline' | 'detail'
+		'description' | 'exactPrompt' | 'size' | 'view' | 'model' | 'outline' | 'detail' | 'reference'
 	>,
 	seed: number | undefined
 ): Req {
@@ -179,11 +184,30 @@ export function drawRequest(
 		template_id: 'mannequin',
 		...(seed === undefined ? {} : { seed })
 	};
-	if (spec.model === 'pro') return routes.createCharacterPro({ ...common, no_background: true });
+	const reference = spec.reference;
+	if (spec.model === 'pro')
+		return routes.createCharacterPro({
+			...common,
+			no_background: true,
+			...(reference ? { method: 'create_from_concept', concept_image: png(reference.base64) } : {})
+		});
 	return spec.model === 'pro-flash'
-		? routes.createCharacterProFlash(common)
+		? routes.createCharacterProFlash({
+				...common,
+				...(reference
+					? {
+							style_image: {
+								image: png(reference.base64),
+								size: { width: reference.width, height: reference.height },
+								usage_description:
+									'Use this image as guidance for the character design and pixel art style.'
+							}
+						}
+					: {})
+			})
 		: routes.createCharacterV3({
 				...common,
+				...(reference ? { reference_image: png(reference.base64) } : {}),
 				no_background: true,
 				...(spec.outline ? { outline: spec.outline } : {}),
 				...(spec.detail ? { detail: spec.detail } : {})
@@ -215,7 +239,7 @@ export const labelViews = <T extends { label: string }>(
 		: views;
 /** Cost from measured prices: base 2 + import 0.25. Creation makes only the Default move (the standing views); idle, walk
  * and other moves are added later and priced by moveEstimate. */
-export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model'>) {
+export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model' | 'reference'>) {
 	const n = spec.directions.filter((d) => !d.mirrorOf).length;
 	// Pro Flash's first image (GET /pro-flash/cost, provisional, 2026-11-12): 5 gens to 96 px, 6 to 208 px, then 9; V3's
 	// costs 1. The eight rotations are priced alike.
@@ -223,8 +247,18 @@ export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model'>
 		const draw = proDrawGens(spec.size);
 		return { gens: draw.lo + 0.25, maxGens: +(draw.hi + 0.25 + n * EST).toFixed(2), minutes: 5 };
 	}
-	const first = spec.model !== 'pro-flash' ? 1 : spec.size <= 96 ? 5 : spec.size <= 208 ? 6 : 9;
-	const gens = +(first + 0.25 + Math.ceil((spec.size * spec.size * 8) / 65536)).toFixed(2);
+	const source = !spec.model ? spec.reference : undefined;
+	const first = source
+		? 0
+		: spec.model !== 'pro-flash'
+			? 1
+			: spec.size <= 96
+				? 5
+				: spec.size <= 208
+					? 6
+					: 9;
+	const area = source ? source.width * source.height : spec.size * spec.size;
+	const gens = +(first + 0.25 + Math.ceil((area * 8) / 65536)).toFixed(2);
 	// Missing managed rest joints may require one estimate per direction.
 	return { gens, maxGens: +(gens + n * EST).toFixed(2), minutes: 5 };
 }
@@ -923,13 +957,15 @@ export async function createCharacter(
 			errors[0].translation.key,
 			errors[0].translation.vars
 		);
+	const referenceIssue = characterReferenceIssue(spec.reference, spec.model, cell, spec.size);
+	if (referenceIssue) throw referenceIssue;
 	const creationSpec = await sha256(
 		stableStringify({ ...spec, projectId: undefined, activityScope: undefined })
 	);
 	if (await completedCreation(projectId, creationSpec)) return projectId; // completion may have committed before its UI acknowledgment
 	const looks = creationLooks(spec),
 		view = spec.view ?? 'low top-down';
-	// 1. base character, text only (8 rotations)
+	// 1. Draw the eight rotations before the shared rig registration.
 	onProgress({ step: 'draw', done: 0, total: 1, recIds: [] });
 	const base = await run(
 		drawRequest(spec, spec.seed),
@@ -955,7 +991,10 @@ export async function createCharacter(
 				'create.errors.pixellabReturnedView',
 				{ direction: d }
 			);
-		const n = normalize(r.img, cell, cell);
+		const n =
+			spec.reference && !spec.model
+				? normalize(r.img, cell, cell, 128, Math.min(r.img.h, cell))
+				: normalize(r.img, cell, cell);
 		if (n.cutPx)
 			throw new LocalizedError(
 				`The ${d} view does not fit the ${cell} px frame. Increase Frame or reduce Body size before creating again.`,
@@ -1162,7 +1201,10 @@ export interface MoveSpec {
 	replace?: boolean;
 	activityScope?: string;
 	dirs?: DirectionName[];
+	approvedDirs?: DirectionName[];
 	itemMethod?: 'grid' | 'anchor';
+	preferTierOneRepair?: true;
+	redrawItem?: true;
 	reuseItemFrames?: true;
 	itemReview?: { gens: number; artwork: string };
 	poseStyle?: 'visible-side-v1';
@@ -1292,6 +1334,16 @@ export function moveDirections(m: Manifest, dirs?: readonly DirectionName[]): Di
 			'create.errors.chooseOneMoreIndependently'
 		);
 	return all.filter((d) => dirs.includes(d));
+}
+function approvedMoveDirections(m: Manifest, spec: MoveSpec): DirectionName[] {
+	const dirs = moveDirections(m, spec.dirs),
+		approved = spec.approvedDirs;
+	if (approved && (approved.length !== dirs.length || dirs.some((dir) => !approved.includes(dir))))
+		throw new LocalizedError(
+			'Character directions changed. Review the move’s current estimate before trying again. No generation was requested.',
+			'create.errors.moveDirectionsChanged'
+		);
+	return dirs;
 }
 interface BodyPaletteStats {
 	directions: DirectionName[];
@@ -1870,22 +1922,6 @@ export function missingItemMoves(
 			...(anchored ? { itemMethod: 'anchor' as const } : {})
 		}));
 }
-/** The moves creation made before Default-first (authored idle, managed walk), for a one-tap "Add idle + walk". Same request
- * shapes as creation made them (no poseStyle). Equipment is always a separately priced choice afterward. */
-export function baseMoveSpecs(
-	m: Manifest,
-	seed = 1 + Math.floor(Math.random() * 1_000_000)
-): MoveSpec[] {
-	const have = new Set(m.rig.animations.map((a) => a.id));
-	return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({
-		id: a.name,
-		action: a.name,
-		frames: a.frames,
-		items: [],
-		seed
-	}));
-}
-
 /** Frames of a move: the authored table's length, or the text frame count. */
 export const isAuthoredAction = (action?: string): action is string =>
 	!!action && Object.hasOwn(ACTIONS, action);
@@ -1898,28 +1934,55 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
 			? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length
 			: s.frames;
 };
+export function partialMoveFrameIssue(
+	m: Manifest,
+	spec: Pick<MoveSpec, 'id' | 'action' | 'frames'>,
+	directionCount: number
+): LocalizedError | undefined {
+	const existing = m.rig.animations.find((move) => move.id === spec.id);
+	return existing && directionCount !== genDirs(m).length && existing.cells !== moveFrames(m, spec)
+		? new LocalizedError(
+				'A partial repair must keep the existing frame count.',
+				'create.errors.partialRepairMustKeep'
+			)
+		: undefined;
+}
 /** The described motion must fit both PixMiniMax and the single raw Skeleton v3 render. */
 export function bodyMoveIssue(
 	m: Manifest,
-	s: Pick<MoveSpec, 'action' | 'text' | 'frames'>
+	s: Pick<MoveSpec, 'action' | 'text' | 'frames'>,
+	blocked = false
 ): LocalizedError | undefined {
 	if (s.action === 'walk' || isAuthoredAction(s.action)) return undefined;
 	const frames = moveFrames(m, s);
+	const suffix = blocked ? ' No generation was requested.' : '';
 	if (![4, 8, 12].includes(frames))
 		return new LocalizedError(
-			`Described moves can be generated with 4, 8 or 12 frames. This move has ${frames}.`,
-			'create.errors.describedFrames',
+			`Described moves can be generated with 4, 8 or 12 frames. This move has ${frames}.${suffix}`,
+			blocked ? 'create.errors.describedFramesBlocked' : 'create.errors.describedFrames',
 			{ frames }
 		);
 	return s.text?.trim()
 		? undefined
-		: new LocalizedError('Describe this move before generating it.', 'create.errors.describeMove');
+		: new LocalizedError(
+				`Describe this move before generating it.${suffix}`,
+				blocked ? 'create.errors.describeMoveBlocked' : 'create.errors.describeMove'
+			);
 }
 export function moveEstimate(
 	m: Manifest,
 	s: Pick<
 		MoveSpec,
-		'id' | 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace' | 'itemsOnly'
+		| 'id'
+		| 'action'
+		| 'frames'
+		| 'items'
+		| 'dirs'
+		| 'itemMethod'
+		| 'replace'
+		| 'itemsOnly'
+		| 'preferTierOneRepair'
+		| 'redrawItem'
 	>
 ) {
 	const n = moveFrames(m, s),
@@ -1944,7 +2007,14 @@ export function moveEstimate(
 							'create.errors.selectedEquipmentLongerAvailable'
 						);
 					const cell = item.layers[0]?.cell ?? m.rig.cell;
-					return sum + repairGridLayout(cell, n, 1).gens * dirs;
+					return (
+						sum +
+						repairGridPlan(cell, n, s.preferTierOneRepair, s.redrawItem).reduce(
+							(total, batch) => total + batch.gens,
+							0
+						) *
+							dirs
+					);
 				}, 0)
 			: s.items.reduce((sum, id) => {
 					const item = m.items.find((i) => i.id === id)!;
@@ -1985,21 +2055,27 @@ export function moveMinimumTier(manifest: Manifest, spec: MoveSpec): number {
 				(dir) =>
 					spec.itemMethod === 'grid' || redraw || !hasCompleteCells(manifest, item, spec.id, dir)
 			);
+			if (spec.itemMethod === 'grid')
+				return dirs.length
+					? Math.max(
+							...repairGridPlan(
+								item.layers[0]?.cell ?? rig.cell,
+								frames,
+								spec.preferTierOneRepair,
+								spec.redrawItem
+							).map((batch) => batch.tier)
+						)
+					: 0;
 			const calls =
 				spec.itemMethod === 'anchor'
 					? planAnchoredMove(manifest.rig, item, spec.id, dirs)
-					: spec.itemMethod === 'grid'
-						? dirs.map((dir) => ({
-								kind: 'grid' as const,
-								cells: Array.from({ length: frames }, (_, frame) => cellKey(spec.id, dir, frame))
-							}))
-						: itemPosePlan(
-								rig,
-								{ ...item, slotConfig: requireSlot(manifest, item.slot) },
-								spec.id,
-								frames,
-								dirs
-							);
+					: itemPosePlan(
+							rig,
+							{ ...item, slotConfig: requireSlot(manifest, item.slot) },
+							spec.id,
+							frames,
+							dirs
+						);
 			return itemPlanMinimumTier(calls, item.layers[0]?.cell ?? rig.cell, true);
 		})
 	);
@@ -2061,7 +2137,12 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 			frames: spec.frames,
 			dirs: spec.dirs,
 			items: spec.items,
-			itemMethod: spec.itemMethod
+			itemMethod: spec.itemMethod,
+			preferTierOneRepair: spec.preferTierOneRepair,
+			redrawItem: spec.redrawItem,
+			redrawSlots: spec.redrawItem
+				? items.slice(1).map((item) => requireSlot(m, item.slot))
+				: undefined
 		}
 	});
 	return { ...spec, itemReview: { gens: moveEstimate(m, spec).items, artwork } };
@@ -2071,7 +2152,7 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 export function itemMoveOffer(
 	m: Manifest,
 	specs: MoveSpec[]
-): { specs: MoveSpec[]; gens: number | null; error: string } {
+): { specs: MoveSpec[]; gens: number | null; error: Message | string } {
 	try {
 		const reviewed = specs.map((spec) => reviewItemMove(m, spec));
 		return {
@@ -2080,7 +2161,7 @@ export function itemMoveOffer(
 			error: ''
 		};
 	} catch (error) {
-		return { specs: [], gens: null, error: error instanceof Error ? error.message : String(error) };
+		return { specs: [], gens: null, error: errorMessage(error) };
 	}
 }
 
@@ -2093,7 +2174,7 @@ export async function addMove(
 	spec: MoveSpec,
 	onProgress: (p: Progress) => void = () => {},
 	onReviewed: () => Promise<void> = async () => {}
-): Promise<{ warnings: string[]; reviewItems?: string[] }> {
+): Promise<{ warnings: string[]; reviewItems?: string[]; repairReview?: RepairReview }> {
 	approvedMeasurementIds(spec.measurementRecovery);
 	checkedPaletteIntent(spec.bodyPaletteRepair);
 	// Keeping reviewed frames is free and body-only: equipment for the move is a separate, priced choice afterward.
@@ -2123,12 +2204,20 @@ export async function addMove(
 		}
 	};
 	assertReview(rec.manifest);
-	const dirs = moveDirections(rec.manifest, spec.dirs),
+	if (spec.redrawItem && (spec.itemMethod !== 'grid' || !spec.itemReview))
+		throw new LocalizedError(
+			'Review the item redraw and its estimate before generating. No request was made.',
+			'create.errors.reviewItemRedrawFirst'
+		);
+	const dirs = approvedMoveDirections(rec.manifest, spec),
 		existing = rec.manifest.rig.animations.find((a) => a.id === spec.id);
-	// Saved-frame recovery only reattaches completed equipment requests: never a body clip, a replace or a grid repair.
+	// Saved-frame recovery only reattaches completed equipment requests, never a new or replaced body clip.
 	if (
 		spec.reuseItemFrames &&
-		(spec.itemMethod === 'grid' || !spec.itemsOnly || !existing || spec.replace)
+		((spec.itemMethod === 'grid' && !spec.itemReview) ||
+			!spec.itemsOnly ||
+			!existing ||
+			spec.replace)
 	)
 		throw new LocalizedError(
 			'Saved equipment recovery needs an existing move and its equipment only. No generation was requested.',
@@ -2173,10 +2262,13 @@ export async function addMove(
 			'Set up this character’s pose rig before adding moves.',
 			'create.errors.setUpRigFirst'
 		);
-	if (spec.itemMethod === 'grid' && !existing)
+	if (
+		spec.itemMethod === 'grid' &&
+		(!existing || dirs.length !== 1 || spec.items.length !== 1 || !spec.itemsOnly || spec.replace)
+	)
 		throw new LocalizedError(
-			'Choose an existing move before repairing its equipment.',
-			'create.errors.chooseExistingMoveRepairing'
+			'Choose one item and one facing of an existing move before repairing. No generation was requested.',
+			'create.errors.chooseRepairTarget'
 		);
 	const reserved = reservedMove(spec.id);
 	if (reserved && (spec.replace || !existing)) throw reserved;
@@ -2185,15 +2277,8 @@ export async function addMove(
 			'A new move needs every independently drawn direction.',
 			'create.errors.newMoveNeedsEvery'
 		);
-	if (
-		existing &&
-		dirs.length !== genDirs(rec.manifest).length &&
-		existing.cells !== moveFrames(rec.manifest, spec)
-	)
-		throw new LocalizedError(
-			'A partial repair must keep the existing frame count.',
-			'create.errors.partialRepairMustKeep'
-		);
+	const frameIssue = partialMoveFrameIssue(rec.manifest, spec, dirs.length);
+	if (frameIssue) throw frameIssue;
 	if (!spec.itemMethod && !spec.itemsOnly && spec.items.length) {
 		const eligible = new Set(posable(rec.manifest, dirs).map((item) => item.id));
 		if (spec.items.some((id) => !eligible.has(id)))
@@ -2206,10 +2291,10 @@ export async function addMove(
 	const published = await publishedMoveRecovery(rec, spec);
 	const minimumTier = moveMinimumTier(rec.manifest, spec);
 	const blocked =
-		minimumTier > 0
+		!spec.reuseItemFrames && minimumTier > 0
 			? queue.planBlocks({ method: 'POST', path: '/animate-with-skeleton-v3' }, minimumTier)
 			: null;
-	if (blocked) throw new Error(blocked);
+	if (blocked) throw localizedPlanRestriction(blocked) ?? new Error(blocked);
 	const recovery =
 		intent && !published ? await measurementRecoveryPlan(projectId, spec) : undefined;
 	if (!published && (spec.replace || !existing))
@@ -2223,7 +2308,7 @@ export async function addMove(
 	const fresh = await loadProject(projectId),
 		frames = fresh.rec.manifest.rig.animations.find((a) => a.id === spec.id)!.cells;
 	assertReview(fresh.rec.manifest);
-	if (spec.itemReview) {
+	if (spec.itemReview && spec.itemMethod !== 'grid') {
 		const reviewed = spec.itemReview;
 		delete spec.itemReview;
 		try {
@@ -2291,14 +2376,19 @@ export async function addMove(
 						'create.errors.itemChangedWasRemoved'
 					);
 				assertArtwork(current.rec.manifest, plan.id, [d]);
-				const result = await regridClip(current, item, spec.id, d, spec.seed);
+				const result = await regridClip(
+					current,
+					item,
+					spec.id,
+					d,
+					spec.seed,
+					spec.preferTierOneRepair,
+					spec.activityScope,
+					spec.reuseItemFrames,
+					spec.redrawItem
+				);
 				tick();
-				if (!result.saved)
-					throw new LocalizedError(
-						`${item.name} ${spec.id} ${d}: the repair still fails quality checks. Existing artwork was kept; review Activity before trying again.`,
-						'create.errors.repairStillFailsQuality',
-						{ name: item.name, id: spec.id, direction: d }
-					);
+				if (result.review) return { warnings: [], repairReview: result.review };
 			}
 		else
 			await poseItemClip(
@@ -2383,13 +2473,8 @@ async function addBodyClip(
 	const { rec, project } = await loadProject(projectId),
 		m = rec.manifest,
 		rig = m.rig;
-	const issue = bodyMoveIssue(m, spec);
-	if (issue)
-		throw new LocalizedError(
-			`${issue.message} No generation was requested.`,
-			`${issue.translation.key}Blocked` as WhisperKey,
-			issue.translation.vars
-		);
+	const issue = bodyMoveIssue(m, spec, true);
+	if (issue) throw issue;
 	const version = moveRigVersion(rec);
 	if (recovery && recovery.rigVersion !== version)
 		throw new LocalizedError(
@@ -2398,7 +2483,7 @@ async function addBodyClip(
 		);
 	const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
 	const receiptSpecHash = intent ? await recoverySpecHash(spec) : undefined;
-	const dirs = moveDirections(m, spec.dirs) as Direction[],
+	const dirs = approvedMoveDirections(m, spec) as Direction[],
 		affected = affectedMoveDirections(rig, dirs),
 		n = moveFrames(m, spec),
 		name = m.name;

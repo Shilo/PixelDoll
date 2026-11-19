@@ -7,6 +7,7 @@ import {
 	section
 } from './immersive-helpers.ts';
 import { test, expect, type Locator, type Page } from '@playwright/test';
+import type { Preset } from '../../src/lib/store/manifest.ts';
 
 test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
@@ -20,14 +21,14 @@ test.beforeEach(async ({ context }) => {
  *  wizard hat, "Stout" (a different body on the same canvas: its pivot moved) with a stout helmet, and "Giant" (no move in
  *  common: every move renamed, so its helmet can only show its standing pose) with a giant helmet. Then reopens the copy and
  *  returns its Head grid, where the other characters' items are the `.shared-tile`s after its own (each has a ⋮ beside it). */
-async function threeCharacters(page: Page) {
+async function threeCharacters(page: Page, leaveDemoHelmet = false) {
 	await openStudio(page, '/');
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
 	await page.keyboard.press('Escape');
 	await expect(page.getByRole('dialog')).toHaveCount(0);
-	await page.evaluate(async () => {
+	await page.evaluate(async (leaveDemoHelmet) => {
 		const request = indexedDB.open('pixeldoll', 1);
 		const database = await new Promise<IDBDatabase>((resolve, reject) => {
 			request.onsuccess = () => resolve(request.result);
@@ -37,7 +38,13 @@ async function threeCharacters(page: Page) {
 		const all = await new Promise<
 			{
 				id: string;
-				manifest?: { name: string; rig: { pivot: { x: number }; view?: string }; items: any[] };
+				manifest?: {
+					name: string;
+					rig: { pivot: { x: number }; view?: string };
+					items: any[];
+					presets: Preset[];
+				};
+				dress?: { current?: Pick<Preset, 'items' | 'variants'> };
 			}[]
 		>((resolve, reject) => {
 			const read = store.getAll();
@@ -69,18 +76,33 @@ async function threeCharacters(page: Page) {
 		}
 		const stout = clone('rig-stout', 'Stout', 'helmet_steel', 'Stout helmet', 'a stout helmet');
 		stout.manifest!.rig.pivot.x += 1;
-		for (const rec of [
-			clone('rig-twin', 'Twin', 'hat_wizard', 'Traveling wizard hat', 'a traveling wizard hat'),
-			stout,
-			giant
-		])
-			store.put(rec, rec.id);
+		const twin = clone(
+			'rig-twin',
+			'Twin',
+			'hat_wizard',
+			'Traveling wizard hat',
+			'a traveling wizard hat'
+		);
+		if (leaveDemoHelmet) {
+			const fallback = giant.manifest!.items.find((item) => item.id === 'helmet_steel');
+			fallback.prompt = copy.manifest!.items.find((item) => item.id === 'helmet_steel').prompt;
+			fallback.unfitted = [];
+			for (const record of [copy, twin]) {
+				const manifest = record.manifest!;
+				manifest.items = manifest.items.filter((item) => item.id !== 'helmet_steel');
+				for (const outfit of [...manifest.presets, record.dress?.current]) {
+					if (outfit?.items.head === 'helmet_steel') outfit.items.head = null;
+				}
+			}
+			store.put(copy, copy.id);
+		}
+		for (const rec of [twin, stout, giant]) store.put(rec, rec.id);
 		await new Promise<void>((resolve, reject) => {
 			store.transaction.oncomplete = () => resolve();
 			store.transaction.onerror = store.transaction.onabort = () => reject(store.transaction.error);
 		});
 		database.close();
-	});
+	}, leaveDemoHelmet);
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
 	await equipmentGroup(page, 'Head');
@@ -90,6 +112,157 @@ async function threeCharacters(page: Page) {
 const ownTile = (page: Page) => page.locator('.bu-tile:not(.shared-tile)');
 /** Another character's item in a grid, by its name. */
 const sharedTile = (grid: Locator, name: string) => grid.locator('.shared-tile', { hasText: name });
+
+test('demo offers are opt-in and both visibility choices survive reload', async ({ page }) => {
+	const head = await threeCharacters(page, true);
+	const demoHelmet = sharedTile(head, 'Steel helmet');
+	const savedHelmet = sharedTile(head, 'Giant helmet');
+	const savedHat = sharedTile(head, 'Traveling wizard hat');
+	const ownHat = head.getByRole('button', { name: /^Wizard hat(,|$)/ }).and(ownTile(page));
+	const hideDemo = page.getByRole('switch', {
+		name: /^Hide shared items from Adventurer \(Demo\)/
+	});
+	const hideAll = page.getByRole('switch', { name: 'Hide shared items for all characters' });
+	const hideCurrent = page.getByRole('switch', { name: /^Hide shared items for .+ \(Current\)/ });
+	const openSettings = async () => {
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await page.getByRole('button', { name: /^Wardrobe settings/ }).click();
+	};
+	await expect(savedHat).toBeVisible();
+	await expect(savedHelmet).toBeVisible();
+	await expect(ownHat).toBeVisible();
+	await expect(demoHelmet).toHaveCount(0);
+	await openSettings();
+	await expect(hideDemo).toBeChecked();
+	await hideDemo.uncheck();
+	await expect(demoHelmet).toBeVisible();
+	await expect(demoHelmet).toHaveAccessibleName(/free from Adventurer/i);
+	await expect(savedHelmet).toHaveCount(0);
+	await hideAll.check();
+	await expect(demoHelmet).toHaveCount(0);
+	await expect(savedHat).toHaveCount(0);
+	await expect(ownHat).toBeVisible();
+	await expect(hideDemo).toBeChecked();
+	await expect(hideDemo).toBeDisabled();
+	await hideAll.uncheck();
+	await expect(hideDemo).toBeEnabled();
+	await expect(hideDemo).not.toBeChecked();
+	await expect(demoHelmet).toBeVisible();
+
+	await page.evaluate(() => sessionStorage.setItem('pause-demo-fixture', '1'));
+	await page.addInitScript(() => {
+		if (!sessionStorage.getItem('pause-demo-fixture')) return;
+		sessionStorage.removeItem('pause-demo-fixture');
+		const release = new Promise<void>((resolve) => {
+			window.addEventListener('release-demo-fixture', () => resolve(), { once: true });
+		});
+		const fetchNormally = window.fetch;
+		window.fetch = async (...args) => {
+			if (new URL(String(args[0]), location.href).pathname.endsWith('/fixtures/s2/fixture.json')) {
+				document.documentElement.setAttribute('data-demo-fixture-paused', '');
+				await release;
+			}
+			return fetchNormally(...args);
+		};
+	});
+	await reloadStudio(page);
+	await expect(page.locator('html[data-demo-fixture-paused]')).toHaveCount(1);
+	await expect(savedHelmet).toBeVisible();
+	await expect(demoHelmet).toHaveCount(0);
+	await page.evaluate(() => window.dispatchEvent(new Event('release-demo-fixture')));
+	await expect(demoHelmet).toBeVisible();
+	await openSettings();
+	await expect(hideDemo).not.toBeChecked();
+	await hideDemo.check();
+	await expect(demoHelmet).toHaveCount(0);
+	await expect(savedHelmet).toBeVisible();
+	await expect(savedHat).toBeVisible();
+	await expect(ownHat).toBeVisible();
+
+	await reloadStudio(page);
+	await equipmentGroup(page, 'Head');
+	await expect(savedHat).toBeVisible();
+	await expect(savedHelmet).toBeVisible();
+	await expect(demoHelmet).toHaveCount(0);
+	await openSettings();
+	await expect(hideDemo).toBeChecked();
+	await hideDemo.uncheck();
+	await page.keyboard.press('Escape');
+	await demoHelmet.click();
+	const ownedHelmet = head.getByRole('button', { name: /^Steel helmet(,|$)/ }).and(ownTile(page));
+	await expect(ownedHelmet).toHaveAttribute('aria-pressed', 'true');
+	await openSettings();
+	await hideDemo.check();
+	await expect(ownedHelmet).toHaveAttribute('aria-pressed', 'true');
+	await expect(savedHat).toBeVisible();
+	await hideCurrent.check();
+	await page.keyboard.press('Escape');
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	await openSettings();
+	await expect(hideCurrent).toHaveCount(0);
+	await expect(hideDemo).toBeChecked();
+	await hideDemo.uncheck();
+	await hideAll.check();
+	await expect(hideDemo).toBeChecked();
+	await expect(hideDemo).toBeDisabled();
+	await page.keyboard.press('Escape');
+	await page.evaluate(() => localStorage.setItem('pixeldoll.wardrobe.hideShared:fixture:s2', '1'));
+	await page.evaluate(() => localStorage.setItem('pixeldoll.studio.project', 'fixture:s2'));
+	await reloadStudio(page);
+	await equipmentGroup(page, 'Head');
+	await expect(
+		ownTile(page).and(page.getByRole('button', { name: /^Steel helmet(,|$)/ }))
+	).toBeVisible();
+	await expect(savedHat).toHaveCount(0);
+	await openSettings();
+	await expect(hideCurrent).toHaveCount(0);
+	await expect(hideAll).toBeChecked();
+	await expect(hideDemo).toBeDisabled();
+	await hideAll.uncheck();
+	await expect(hideDemo).not.toBeChecked();
+	await expect(savedHat).toBeVisible();
+	await hideDemo.check();
+	await expect(savedHat).toBeVisible();
+	await page.keyboard.press('Escape');
+
+	await page.setViewportSize({ width: 320, height: 568 });
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	const library = page.getByRole('complementary', { name: 'Your characters' });
+	await library.locator('.new-character-row').click();
+	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
+	const creatorSettings = creator.getByRole('button', { name: 'Wardrobe settings', exact: true });
+	await creator.getByRole('textbox', { name: 'Name', exact: true }).fill('Unfinished character');
+	await creatorSettings.click();
+	await expect(
+		creator.getByRole('group', { name: 'Hide shared items', exact: true })
+	).toBeInViewport({ ratio: 1 });
+	await expect(hideCurrent).toHaveCount(0);
+	await expect(hideDemo).toBeChecked();
+	await hideDemo.uncheck();
+	await hideAll.check();
+	await expect(hideDemo).toBeDisabled();
+	await page.keyboard.press('Escape');
+	await expect(creatorSettings).toBeFocused();
+	await expect(creator.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
+		'Unfinished character'
+	);
+	await creator.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(creator).toBeHidden();
+
+	await library.getByRole('button', { name: /^Adventurer copy\b/ }).click();
+	await library.getByRole('button', { name: 'Customize Adventurer copy', exact: true }).click();
+	await reloadStudio(page);
+	await openSettings();
+	await expect(hideAll).toBeChecked();
+	await expect(hideDemo).toBeDisabled();
+	await hideAll.uncheck();
+	await expect(hideDemo).not.toBeChecked();
+	await expect(hideCurrent).toBeEnabled();
+	await expect(hideCurrent).toBeChecked();
+	await hideCurrent.uncheck();
+	await expect(savedHat).toBeVisible();
+});
 
 test('a shared custom category appears before adoption and stays after wearing and reload', async ({
 	page
@@ -129,14 +302,156 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await expect(grid).toContainText('Traveling wizard hat');
 	await expect(page.locator('[data-group="hair_clip"]')).toContainText('From Twin');
 	await expect(grid.getByRole('button', { name: /^Empty/ })).toHaveCount(0);
+	const more = page.getByRole('button', { name: 'More options', exact: true });
+	const settings = page.getByRole('button', { name: /^Wardrobe settings/ });
+	const visibility = page.getByRole('group', {
+		name: 'Hide shared items',
+		exact: true
+	});
+	const thisCharacter = visibility.getByRole('switch', {
+		name: /^Hide shared items for .+ \(Current\)/
+	});
+	const allCharacters = visibility.getByRole('switch', {
+		name: 'Hide shared items for all characters'
+	});
+	const openSettings = async () => {
+		await more.click();
+		await settings.click();
+		await expect(settings).toHaveAttribute('aria-expanded', 'true');
+	};
+	const pickCharacter = async (name: string) => {
+		await page.locator('.project-btn').click();
+		await page.getByRole('menuitemradio', { name, exact: true }).click();
+		await expect(page.locator('.project-btn')).toContainText(name);
+	};
+	const sharedTiles = page.locator('#wardrobe-list .shared-tile');
+	const rail = page.getByRole('navigation', { name: 'Equipment slots' });
+	await equipmentGroup(page, 'Hair clip');
+	await more.click();
+	await expect(page.getByRole('button', { name: 'Connect PixelLab', exact: true })).toBeFocused();
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('link', { name: /^PixelLab usage/ })).toBeFocused();
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('button', { name: 'Light mode', exact: true })).toBeFocused();
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('combobox', { name: 'Language', exact: true })).toBeFocused();
+	await page.keyboard.press('Tab');
+	await expect(settings).toBeFocused();
+	await page.keyboard.press('Enter');
+	await expect(settings).toHaveAttribute('aria-expanded', 'true');
+	await page.keyboard.press('Tab');
+	await expect(allCharacters).toBeFocused();
+	await page.keyboard.press('Tab');
+	await expect(
+		visibility.getByRole('switch', { name: /^Hide shared items from .+ \(Demo\)/ })
+	).toBeFocused();
+	await page.keyboard.press('Tab');
+	await expect(thisCharacter).toBeFocused();
+	await expect(allCharacters).not.toBeChecked();
+	await expect(thisCharacter).not.toBeChecked();
+	await page.keyboard.press('Space');
+	await expect(sharedTiles).toHaveCount(0);
+	await expect(grid).toHaveCount(0);
+	await expect(rail.getByRole('button', { name: /^Hair clip\b/ })).toHaveCount(0);
+	await expect(rail.locator('button[tabindex="0"]')).toHaveCount(1);
+	await expect(rail.locator('button[aria-current="true"]')).toHaveCount(1);
+	await page.keyboard.press('Escape');
+	await expect(more).toBeFocused();
+	await pickCharacter('Giant');
+	await expect(sharedTiles.first()).toBeVisible();
+	await openSettings();
+	await expect(thisCharacter).toHaveAccessibleName('Hide shared items for Giant (Current)');
+	await expect(thisCharacter).not.toBeChecked();
+	await allCharacters.check();
+	await expect(thisCharacter).toBeDisabled();
+	await expect(thisCharacter).toBeChecked();
+	await expect(thisCharacter).toHaveAccessibleDescription(
+		'Shared items are hidden for all characters.'
+	);
+	await expect(sharedTiles).toHaveCount(0);
+	await allCharacters.focus();
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('button', { name: 'Activity', exact: true })).toBeFocused();
+	await page.keyboard.press('Escape');
+	await pickCharacter('Stout');
+	await expect(sharedTiles).toHaveCount(0);
+	await pickCharacter('Adventurer copy');
+	await expect(sharedTiles).toHaveCount(0);
+	await openSettings();
+	await allCharacters.uncheck();
+	await expect(thisCharacter).toBeChecked();
+	await expect(grid).toHaveCount(0);
+	await thisCharacter.uncheck();
+	await expect(grid).toContainText('Traveling wizard hat');
+	await page.keyboard.press('Escape');
 	await sharedTile(grid, 'Traveling wizard hat').click();
 	const adopted = grid
 		.getByRole('button', { name: /^Traveling wizard hat(,|$)/ })
 		.and(ownTile(page));
 	await expect(adopted).toHaveAttribute('aria-pressed', 'true');
+	const desktop = page.viewportSize()!;
+	await page.setViewportSize({ width: 390, height: 844 });
+	await openSettings();
+	await expect(visibility.getByText('Adventurer copy', { exact: true })).toBeVisible();
+	await expect(visibility.locator('svg.lucide-users-round')).toBeInViewport({ ratio: 1 });
+	await expect(visibility.locator('svg.lucide-user-round')).toBeInViewport({ ratio: 1 });
+	await expect(allCharacters).toBeInViewport({ ratio: 1 });
+	await thisCharacter.check();
+	await allCharacters.check();
+	await expect(sharedTiles).toHaveCount(0);
+	await expect(adopted).toHaveAttribute('aria-pressed', 'true');
+	await page.setViewportSize(desktop);
 	await reloadStudio(page);
+	await expect(sharedTiles).toHaveCount(0);
+	await pickCharacter('Giant');
+	await openSettings();
+	await expect(allCharacters).toBeChecked();
+	await expect(thisCharacter).toBeChecked();
+	await expect(thisCharacter).toBeDisabled();
+	await allCharacters.uncheck();
+	await expect(thisCharacter).toBeEnabled();
+	await expect(thisCharacter).not.toBeChecked();
+	await expect(sharedTiles.first()).toBeVisible();
+	await page.keyboard.press('Escape');
+	await pickCharacter('Adventurer copy');
+	await expect(sharedTiles).toHaveCount(0);
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: 'Rename character…', exact: true }).click();
+	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });
+	const longName = 'Traveling Adventurer with an unusually long character name';
+	await rename.getByRole('textbox', { name: 'Name', exact: true }).fill(longName);
+	await rename.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(rename).toBeHidden();
+	await page.setViewportSize({ width: 390, height: 844 });
+	await openSettings();
+	await expect(thisCharacter).toBeChecked();
+	await expect(thisCharacter).toHaveAccessibleName(`Hide shared items for ${longName} (Current)`);
+	const currentSuffix = visibility.getByText('(Current)', { exact: true });
+	await expect(currentSuffix).toBeInViewport({ ratio: 1 });
+	expect(await currentSuffix.evaluate((label) => label.scrollWidth <= label.clientWidth)).toBe(
+		true
+	);
+	expect(
+		await visibility
+			.getByText(longName, { exact: true })
+			.evaluate(
+				(label) =>
+					label.scrollWidth > label.clientWidth &&
+					getComputedStyle(label).textOverflow === 'ellipsis'
+			)
+	).toBe(true);
+	await thisCharacter.uncheck();
+	await page.keyboard.press('Escape');
+	await page.setViewportSize(desktop);
 	await equipmentGroup(page, 'Hair clip');
 	await expect(adopted).toHaveAttribute('aria-pressed', 'true');
+	await expect(sharedTiles.first()).toBeVisible();
+	await reloadStudio(page);
+	await expect(sharedTiles.first()).toBeVisible();
+	await openSettings();
+	await expect(allCharacters).not.toBeChecked();
+	await expect(thisCharacter).toBeEnabled();
+	await expect(thisCharacter).not.toBeChecked();
 });
 
 test('another character’s item on the same body is worn for free, survives reload and outlives its source', async ({

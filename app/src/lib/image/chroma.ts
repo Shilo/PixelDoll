@@ -65,6 +65,23 @@ const HUES: Record<Key, RegExp> = {
 };
 /** May this key be used for an item? A key must stay far from the item hue (magenta failed on a red cape, gray on steel [S2]). */
 export const keyAllowed = (prompt: string, k: Key) => !HUES[k].test(prompt);
+export const keyMatte = (key: Key) => [...RAMP[key](1), 255];
+
+export function clearKeyMatte(image: Img, source: Img, key: Key) {
+	const [red, green, blue] = keyMatte(key);
+	const nearMatte = (data: Img['data'], offset: number) =>
+		Math.abs(data[offset] - red) <= 12 &&
+		Math.abs(data[offset + 1] - green) <= 12 &&
+		Math.abs(data[offset + 2] - blue) <= 12;
+	for (let offset = 0; offset < image.data.length; offset += 4) {
+		if (
+			nearMatte(image.data, offset) &&
+			!(source.data[offset + 3] && nearMatte(source.data, offset))
+		)
+			image.data[offset + 3] = 0;
+	}
+}
+
 /**
  * Green unless the item's color words collide with green (S2 rule), then magenta, then blue (green + pink: magenta keyed out the
  * pink on every frame), then azure (green + purple: magenta removed the purple stripes while every gate passed). When all four
@@ -113,6 +130,20 @@ const isKey = (C: Img, p: number, key: Key, kT: number) =>
 	keyScore(key, C.data[p * 4], C.data[p * 4 + 1], C.data[p * 4 + 2]) >= kT;
 
 export const KT = 35;
+
+export function referenceKeyCollisions(image: Img): Record<Key, number> {
+	const counts: Record<Key, number> = { green: 0, magenta: 0, blue: 0, azure: 0 };
+	for (let pixel = 0; pixel < image.w * image.h; pixel++)
+		for (const key of KEYS) if (isKey(image, pixel, key, KT)) counts[key]++;
+	return counts;
+}
+
+export function referenceKey(prompt: string, collisions: Record<Key, number>): Key {
+	const available = KEYS.filter((key) => keyAllowed(prompt, key));
+	return [...(available.length ? available : KEYS)].sort(
+		(first, second) => collisions[first] - collisions[second]
+	)[0];
+}
 /** Rim guard "dark outline" base px: mean RGB under `mean`, and either a real line (near-black, < `black`, or darker than
  * `contrast` x the brightest neighbor) or covered by a generated px that could be a mannequin redraw. A light generated px
  * (luminance >= `lightOut`) never is; on the green key a dark one is unless it lies on a straight `stroke` of dark item px

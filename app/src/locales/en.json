@@ -40,7 +40,9 @@
 		"undo": "Undo",
 		"wear": "Wear",
 		"zoomIn": "Zoom in",
-		"zoomOut": "Zoom out"
+		"zoomOut": "Zoom out",
+		"randomLook": "Random look",
+		"none": "None"
 	},
 	"pwa": {
 		"invalidRelease": "The update description is invalid.",
@@ -216,7 +218,6 @@
 		"cancelFromTheTabThatIsGenerating": "Cancel from the tab that is generating this item.",
 		"wearInACopyOfTheDemo": "Wear in a copy of the demo",
 		"makeOneForName": "Make one for {name}",
-		"paid": "Paid",
 		"wearName": "Wear {name}",
 		"titleWearingTakeOff": "Wearing (take off)",
 		"twoHanded": "Two-handed",
@@ -290,10 +291,6 @@
 		},
 		"makeFor": "Make for {move}",
 		"makingMoreMoves": "Making items for more moves",
-		"redrawingFrames": "Redrawing item frames",
-		"tryNewFrames": "Try new item frames",
-		"repairNote": "Only {move} facing {direction} is redrawn on the frozen body.",
-		"repairLimits": "Other views, moves and the saved design stay fixed. Hard failures keep the previous frames. PixelLab may bill dollars; queue time varies.",
 		"colorMatchNote": {
 			"one": "Match {pixels} in {n} saved {move} frame facing {direction} to the item’s existing color palette.",
 			"other": "Match {pixels} in {n} saved {move} frames facing {direction} to the item’s existing color palette."
@@ -320,7 +317,34 @@
 		"areaStats": "min {ratio} of median · CV {cv}",
 		"handedness": { "ok": "ok", "switched": "switched" },
 		"minimum": "{value} (≥ {threshold})",
-		"maximum": "{value} (≤ {threshold})"
+		"maximum": "{value} (≤ {threshold})",
+		"updateNote": "Updates this item for {move} facing {direction}. The character body stays unchanged.",
+		"updateNoteMirrors": "Updates this item for {move} facing {direction} and its mirrors. The character body stays unchanged.",
+		"repairItem": "Repair item",
+		"redrawItem": "Redraw item",
+		"repairFeature": "Repair item",
+		"redrawFeature": "Redraw item",
+		"inspectRepair": "Inspect API calls for repair item",
+		"inspectRedraw": "Inspect API calls for redraw item",
+		"repairHelp": "Best when you like the design. Limits changes to the item area.",
+		"redrawHelp": "May change the shape or grip. You choose whether to keep it.",
+		"repairRequests": {
+			"one": "This repair uses {n} PixelLab generation request.",
+			"other": "This repair uses {n} PixelLab generation requests."
+		},
+		"redrawRequests": {
+			"one": "This redraw uses {n} PixelLab generation request.",
+			"other": "This redraw uses {n} PixelLab generation requests."
+		},
+		"redrawSaves": {
+			"one": "{n} fewer estimated generation than Repair.",
+			"other": "{n} fewer estimated generations than Repair."
+		},
+		"redrawCostsMore": {
+			"one": "{n} more estimated generation than Repair.",
+			"other": "{n} more estimated generations than Repair."
+		},
+		"billingNote": "Estimates compare generations, not dollar prices. PixelLab may bill dollars, and queue time may vary."
 	},
 	"newCharacterButton": {
 		"newCharacter": "New character",
@@ -461,14 +485,12 @@
 		"characterView": "Character view",
 		"mountSettings": "Mount settings",
 		"titleMountSettingsMounted": "Mount settings (mounted)",
-		"randomLook": "Random look",
 		"titleRandomLookItemsAndColors": "Random look (items and colors)",
 		"shareCharacter": "Share character",
 		"export": "Export",
 		"moreOptions": "More options",
 		"showMount": "Show mount",
 		"hideLegs": "Hide legs",
-		"none": "None",
 		"farLeg": "Far leg",
 		"bothLegs": "Both legs",
 		"cutsBelowTheHipsHandsMayBe": "Cuts below the hips. Hands may be clipped, and hanging items may disappear.",
@@ -479,7 +501,6 @@
 		"pixelLabAccount": "PixelLab account",
 		"lightMode": "Light mode",
 		"darkMode": "Dark mode",
-		"sourceCode": "Source code",
 		"viewPreview": "Preview",
 		"viewTopDown": "Top-down",
 		"viewSide": "Side-scroller",
@@ -495,7 +516,11 @@
 		"rename": "Rename…",
 		"setUpCharacter": "Set up character…",
 		"connectPixelLab2": "Connect PixelLab…",
-		"characterSelection": "Character selection"
+		"characterSelection": "Character selection",
+		"wardrobeSettings": "Wardrobe settings",
+		"ownItemsOnly": "Own items only",
+		"workspace": "Workspace...",
+		"workspaceActions": "Workspace actions"
 	},
 	"wardrobe": {
 		"randomLowerItem": "Random {lower} item",
@@ -702,7 +727,7 @@
 		"tookOffTwoHanded": "Took off {names} (two-handed)",
 		"tookOffForTwoHanded": "Took off {names}: {name} is two-handed",
 		"wearingUnfitted": "Wearing {name} as drawn for {sourceName}. It may not line up with this body. No generations used.",
-		"wearingUnfittedAtSize": "Wearing {name} as drawn for {sourceName} at its own {size} px size. It may not line up with this body. No generations used.",
+		"wearingUnfittedAtSize": "Wearing {name} as drawn for {sourceName} at its original {size} frame size. It may not line up with this body. No generations used.",
 		"fittedItem": "Fitted {name} from {sourceName} for free. Check it in each move.",
 		"copiedSharedItem": "Copied {name} from {sourceName}. No generations used.",
 		"copiedMoreFrames": {
@@ -745,7 +770,9 @@
 		"thisOperationChangedReviewTheBodyColors": "This operation changed. Review the body colors again.",
 		"theBodyColorCorrectionsChangedReviewTheir": "The body color corrections changed. Review their cost again.",
 		"anotherRigSetupIsStillRunningSo": "Another rig setup is still running, so this one did not start. Your choices are kept.",
-		"characterReadyForSkeletonPosedItemsAnd": "Character ready for skeleton-posed items and new moves"
+		"characterReadyForSkeletonPosedItemsAnd": "Character ready for skeleton-posed items and new moves",
+		"couldNotCheckCopiedFrames": "Could not check frames for copied items: {reason}",
+		"couldNotReadSharedItems": "Could not read items from your other characters: {reason}"
 	},
 	"history": {
 		"wear": "Wear {name}",
@@ -754,7 +781,6 @@
 		"changeColor": "Color change",
 		"resetColors": "Reset colors",
 		"randomItem": "Random {name} item",
-		"randomLook": "Random look",
 		"saveOutfit": "Save outfit",
 		"deleteOutfit": "Delete outfit",
 		"show": "Show {name}",
@@ -843,7 +869,9 @@
 			"xpTitle": "XP and Pokémon Essentials",
 			"xpSub": "4 × 4 layout · Name.png"
 		},
-		"playback": { "none": "None", "all": "All" },
+		"playback": {
+			"all": "All"
+		},
 		"outfits": {
 			"none": "None",
 			"saved": "Current look + saved outfits",
@@ -1190,7 +1218,6 @@
 	"studioModel": {
 		"itemQualityReview": "{name}: item quality checks need review. No paid retry was started.",
 		"bodyQuality": "{move} {direction}: {reason}",
-		"facts": { "pixels": "{count} px" },
 		"health": {
 			"clean": "Clean",
 			"accepted": "Accepted",
@@ -1235,7 +1262,8 @@
 				"other": "Held item pasted on {count} {move} frames ({direction}); check that it moves"
 			},
 			"noRepairGrid": "No repair grid for {move} ({direction}): {reason}; the best try was kept",
-			"heldLoop": "The held item changes shape or angle when a move loops"
+			"heldLoop": "The held item changes shape or angle when a move loops",
+			"registrationShift": "PixelLab returned a transparent edge and may have shifted the sheet. Check that the item lines up in every frame."
 		},
 		"anotherCharacter": "another character",
 		"unfit": {
@@ -1356,12 +1384,12 @@
 		"recommended": "{feature} is available on your plan. Tier {tier} or higher is recommended."
 	},
 	"usage": {
-		"title": "PixelLab Usage",
+		"title": "PixelLab usage",
 		"used": "{percent} used",
 		"notConnected": "Not connected",
 		"unavailable": "Usage unavailable",
 		"checking": "Checking usage…",
-		"credits": "{credits} additional credits left"
+		"credits": "{credits} credits left"
 	},
 	"generation": {
 		"outcome": {
@@ -1506,7 +1534,7 @@
 				"other": "{action} · {count} frames"
 			},
 			"itemPoseNote": "Known fields only. Sends the dressed reference image, exact stored poses, appearance, action, direction and seed.",
-			"itemEditNote": "Known fields only. Frames and image_size are prepared from this character on submission.",
+			"itemEditNote": "Known fields only. Frames and image_size are prepared on submission.",
 			"singleInput": "The single input is duplicated for the two-frame API minimum; only the first returned frame is used.",
 			"coverage": "Coverage: {cells}.",
 			"createMotion": "Create motion · {direction}",
@@ -1521,7 +1549,6 @@
 			"itemCells": "{item} · {cells}",
 			"anchorNote": "Edits only frozen equipment frames, with the saved standing design as the first reference frame. Its returned reference is discarded. Coverage: {cells}. No body or skeleton requests. Each planned batch runs once; paid retries need another request.",
 			"repairEquipment": "{item} {direction} · repair equipment",
-			"repairEquipmentNote": "Edits only selected equipment frames with one protected matching-direction reference. The body remains unchanged; results are retained only when quality improves.",
 			"framesRange": "{item} {direction} · frames {from}–{to}",
 			"gridBatchNote": "Dresses the frozen body frames instead of following suspicious imported joints. Protected standing references and garment masks preserve the design. One attempt per planned batch; any paid retry requires your action.",
 			"poseBatchNote": "Sends this item’s dressed reference, stored base rest keypoints and selected move poses, appearance, action, direction and seed. One attempt per planned batch; any paid retry or repair requires your action.",
@@ -1532,8 +1559,19 @@
 			"stopSubmitted": "Stop submitted generation",
 			"stopSubmittedNote": "Cancellation can fail if the job has already finished; charges may already apply.",
 			"resumeNote": "Resuming permits this waiting request to submit when eligible. Image references shown here are stored locally; the original image data is sent.",
-			"pollNote": "Continues checking this submitted job."
-		}
+			"pollNote": "Continues checking this submitted job.",
+			"conceptNote": "The uploaded artwork goes first, before the character frames. Its output is not used.",
+			"redrawEquipment": "{item} {direction} · redraw equipment",
+			"redrawEquipmentNote": "{width}×{height}, frames {from}–{to}. Sends an unmasked sheet with a matching reference. PixelDoll limits what it keeps and always asks before replacing your frames. PixelDoll requires Tier 1. If billed in dollars, the minimum is {minimum}; the actual charge may be higher.",
+			"gridRepairNote": "{width}×{height}, frames {from}–{to}. Uses one protected matching-direction reference. The body remains unchanged. Complete repairs with blocking visual issues are held for your review."
+		},
+		"copyEndpointTitle": "Copy endpoint",
+		"manualCopyLabel": "Endpoint for manual copy",
+		"copyEndpointLabel": "Copy endpoint {method} {endpoint}",
+		"copyEndpointLabelContext": "Copy endpoint {method} {endpoint}, {label}",
+		"endpointCopiedLabel": "Endpoint copied: {method}, {label}",
+		"endpointCopiedCall": "Endpoint copied: {method}, call {number}",
+		"copyFailed": "Could not copy automatically. Use the endpoint field to copy manually."
 	},
 	"activity": {
 		"error": {
@@ -1580,7 +1618,6 @@
 			"other": "Up to {count} jobs at once."
 		},
 		"busy": "PixelLab is busy, possibly in another app. Waiting {seconds} s before trying again. Your jobs stay queued.",
-		"waitingForTab": "PixelDoll is running jobs in another tab, so this tab can’t start yours yet. Close that tab and it starts here, or press Done to cancel.",
 		"follower": "Running in another tab. Keys stay in the tab where you connect. Connect PixelLab in the active queue tab, or close it to run jobs here.",
 		"pausedAuth": "PixelLab didn’t accept the key. Jobs wait until you connect again.",
 		"pausedOffline": "You’re offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs.",
@@ -1608,7 +1645,10 @@
 			"checking": "Checking PixelLab plan before starting this workflow.",
 			"verifying": "Waiting to verify your PixelLab plan. Retrying automatically.",
 			"tier": "Needs PixelLab Tier {tier} or higher. No request sent."
-		}
+		},
+		"cancelRequest": "Cancel request",
+		"waitingTitle": "Waiting for another tab",
+		"waitingBody": "Your generation hasn’t started. Keep Activity open and PixelDoll will continue here when the other tab is ready."
 	},
 	"genCard": {
 		"retryKey": "Try again uses a {color} background, measured from this design's colors",
@@ -1678,7 +1718,9 @@
 			"detail": "Detail",
 			"seed": "Seed",
 			"method": "Method",
-			"colorKey": "Color key"
+			"colorKey": "Color key",
+			"reference": "Reference",
+			"startingSprite": "Starting sprite"
 		},
 		"method": {
 			"skeletonPose": "Skeleton posing",
@@ -1700,15 +1742,15 @@
 		"onlyDirection": "{direction} only",
 		"oneDirection": "one only",
 		"directions": "{count} directions",
-		"cell": "Cell",
-		"cellSize": "{w}×{h}, pivot {x},{y}",
 		"mirrorOf": "{direction} (mirror of {source})",
 		"failed": "Failed: tap for details",
 		"adding": "Adding… {done}/{total}",
 		"waitingForFailed": "Waiting for the failed move",
 		"add": "Add a move",
-		"addBase": "Add {moves}",
-		"estimate": "Est. {gens} gens"
+		"estimate": "Est. {gens} gens",
+		"bodySize": "{w}×{h} px",
+		"frameSize": "{w}×{h} px, pivot {x},{y}",
+		"waitingForRepairReview": "Waiting for item frame review"
 	},
 	"setup": {
 		"warnings": {
@@ -1787,7 +1829,6 @@
 			"anchoredEquipmentGenerationRequires": "Anchored equipment generation requires an existing move and its saved standing items. No generation was requested.",
 			"moveItemMissingStored": "This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.",
 			"setUpRigFirst": "Set up this character’s pose rig before adding moves.",
-			"chooseExistingMoveRepairing": "Choose an existing move before repairing its equipment.",
 			"newMoveNeedsEvery": "A new move needs every independently drawn direction.",
 			"partialRepairMustKeep": "A partial repair must keep the existing frame count.",
 			"selectedEquipmentLongerStanding": "Selected equipment no longer has standing designs for all selected views. Review the equipment selection before trying again. No generation was requested.",
@@ -1827,7 +1868,6 @@
 			"originalCompletedBodyRender": "{direction}: the original completed body render is unavailable. No body was regenerated.",
 			"cachedBodyRenderIncomplete": "{direction}: the cached body render is incomplete.",
 			"cachedBodyFramesDo": "{direction}: the cached body frames do not fit this character. No body was regenerated.",
-			"repairStillFailsQuality": "{name} {id} {direction}: the repair still fails quality checks. Existing artwork was kept; review Activity before trying again.",
 			"demoStandingBodyFacing": "The demo has no standing body facing {id}.",
 			"requestStopped": "{label}: {state}{error}",
 			"requestStoppedResume": "{label}: {state}{error}. Generation stopped without resending. Review this request in Activity before starting again.",
@@ -1850,7 +1890,13 @@
 			"partialSavedNewFrames": "{reason} The finished views were saved ({views}); Generate new frames requests only the missing ones.",
 			"partialSavedRetry": "{reason} The finished views were saved ({views}); Try again requests only the missing ones.",
 			"replacementFailsQa": "The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.",
-			"newMoveFailsQa": "The new move fails body-pose quality checks, so it was not saved. Review the results before trying again."
+			"newMoveFailsQa": "The new move fails body-pose quality checks, so it was not saved. Review the results before trying again.",
+			"moveDirectionsChanged": "Character directions changed. Review the move’s current estimate before trying again. No generation was requested.",
+			"reviewItemRedrawFirst": "Review the item redraw and its estimate before generating. No request was made.",
+			"chooseRepairTarget": "Choose one item and one facing of an existing move before repairing. No generation was requested.",
+			"describedFramesBlocked": "Described moves can be generated with 4, 8 or 12 frames. This move has {frames}. No generation was requested.",
+			"describeMoveBlocked": "Describe this move before generating it. No generation was requested.",
+			"chooseExistingMoveRepairing": "Choose an existing move before repairing its equipment."
 		},
 		"steps": {
 			"draw": "Drawing your character",
@@ -1998,6 +2044,15 @@
 				"noAnswer": "No clear answer from PixelLab. Your text was kept.",
 				"failedApi": "PixelLab could not enhance this text. Your text was kept.",
 				"failed": "Enhancement failed. Your text was kept."
+			},
+			"sizeGuideReference": "Size guide and reference",
+			"reference": {
+				"frontFacing": "Use a front-facing sprite.",
+				"concept": "Use a sketch or character design.",
+				"style": "Use artwork as a style guide.",
+				"tooLarge": "Choose a reference no larger than {max} × {max} px.",
+				"increaseBody": "Increase Body size to fit this reference, or choose smaller artwork.",
+				"increaseFrame": "Increase Frame to fit this reference, or choose a smaller sprite."
 			}
 		},
 		"sheet": {
@@ -2045,15 +2100,14 @@
 			"add": "Add {move}",
 			"replaceViews": "Replace {move} views",
 			"queue": "Queue {move}",
-			"queueViews": "Queue {move} views",
-			"move": "move"
+			"move": "move",
+			"queueReplacement": "Queue replacement: {move} views"
 		},
 		"titleRepair": "Repair item frames",
 		"titleReplace": "Replace move views",
 		"heldBy": "{move} failed on {character}, so new moves wait. Open it to try again or start over.",
 		"open": "Open {character}",
 		"progressLabel": "Current move generation",
-		"repairNote": "Only the selected item frames are redrawn; the body stays fixed. Results that fail hard checks keep the previous item frames.",
 		"retryFeature": "Generating this move again",
 		"savedFramesNote": "Use saved frames to check for completed artwork that matches this move and equipment. Recovering these frames makes no PixelLab request.",
 		"checkingCached": "Checking cached frames…",
@@ -2091,21 +2145,12 @@
 		"demo": "Moves are added to your own character.",
 		"needsSetup": "Set up this character’s pose rig to add moves. Your existing artwork and layers stay aligned.",
 		"added": "{move} · added",
-		"viewsToReplace": "Views to replace",
-		"replaceNote": "Saving a replacement clears the old equipment frames in these views. Selected equipment is animated only if the body passes its checks. Other equipment stays hidden in those views until new frames are made. Other views and moves stay fixed.",
-		"replaceNoteMirrored": "Saving a replacement clears the old equipment frames in these views. Selected equipment is animated only if the body passes its checks. Other equipment stays hidden in those views until new frames are made. Other views and moves stay fixed. Mirrored views follow their source.",
-		"chooseToReplace": "Choose an existing move to replace selected views.",
 		"describeReplacement": "Describe the replacement",
-		"describe": "Or describe it",
 		"describePlaceholder": "e.g. jumping in place",
-		"emptyHands": "The body is drawn with empty hands and no effects. Add weapons and props as items.",
 		"alreadyQueued": "{move} is already queued.",
 		"waitsForCurrent": "It waits for the move in progress, then runs by itself.",
 		"addFeature": "Moves for worn items",
 		"animateItems": "Animate these items too",
-		"itemsNote": "Items are unchecked by default. If body checks stop this move, equipment requests are not sent. You can generate equipment later from each item’s details.",
-		"listNote": "This list only shows equipment that can follow the body’s poses in every view being generated. Shared copies can still be worn in views where they have frames. To animate an unfitted copy, make one for this character. Other items may offer animation for existing moves in their details.",
-		"billing": "PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.",
 		"pipeline": {
 			"described": "pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view",
 			"walk": "walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view",
@@ -2113,12 +2158,68 @@
 			"grid": "{frames} frames × {dirs} directions",
 			"gridMirrored": "{frames} frames × {dirs} directions ({mirrored} mirrored)",
 			"cost": "body ≈ {body} gens, items {items} gens · body review notes do not trigger redraws."
+		},
+		"changedDuringEdit": "This move changed while you were editing. Select it again to continue.",
+		"duplicateOption": "{move} is already a move option. Start the description with different words.",
+		"costNotice": "PixelLab may charge in dollars. Retries and fallbacks cost extra.",
+		"describeNew": "Describe a new move",
+		"describeMotion": "Describe the motion",
+		"motionOnly": "Describe body motion only. Add weapons and props as items.",
+		"orChoose": "Or choose a move",
+		"redrawDirections": "Directions to redraw",
+		"redrawHidesEquipment": "Replacing these views hides equipment until new frames are made.",
+		"redrawMirrors": "Mirrored views also change: {directions}.",
+		"redrawOtherMoves": "Other moves stay unchanged.",
+		"equipmentWaitsForBody": "Equipment requests are not sent if body checks stop the move.",
+		"uncheckedItemsHidden": "Unchecked items stay hidden until animated.",
+		"fittedEquipmentOnly": "Only equipment fitted to every selected view can be animated here. Shared copies can still be worn in views where they have frames.",
+		"review": {
+			"redrawTitle": "Review item redraw",
+			"repairTitle": "Review item repair",
+			"redrawProgress": "Redraw item frames",
+			"keepCurrent": "Keep current",
+			"finish": "Finish review",
+			"useRedrawn": "Use redrawn frames",
+			"useRepaired": "Use repaired frames",
+			"heldBy": "An item frame review on {character} is ready. Queued moves will wait for your choice.",
+			"compare": "Compare item frames",
+			"saved": "The new frames are already saved. Finish the review to continue.",
+			"redrawIssues": "The redraw is ready, but some frames may not line up. Check the quality findings.",
+			"redrawReady": "The redraw is ready to compare.",
+			"repairIssues": "The paid repair is ready, but some frames may have visual issues.",
+			"noCost": "Your current artwork is unchanged. Either choice costs nothing. Hide this panel to decide later.",
+			"frame": "Frame {number}",
+			"currentFrames": "Current frames",
+			"redrawnFrames": "Redrawn frames",
+			"repairedFrames": "Repaired frames",
+			"findings": "Quality findings",
+			"redrawInManagingTab": "Review the redraw in the tab managing your PixelDoll jobs.",
+			"repairInManagingTab": "Review the repair in the tab managing your PixelDoll jobs.",
+			"resumesQueue": "Finishing this review resumes your queued moves at their reviewed costs.",
+			"redrawNote": "The body stays fixed. You’ll compare the redraw before replacing any frames.",
+			"repairNote": "The body stays fixed. A complete repair with visual issues is held for your review.",
+			"currentFrame": "Current frame {number}",
+			"redrawnFrame": "Redrawn frame {number}",
+			"repairedFrame": "Repaired frame {number}"
 		}
 	},
 	"itemRoute": {
 		"errors": {
 			"noStandingMove": "No complete standing move was found. Import standing views or set up the character with a one-frame standing reference before making an item. No generations were requested.",
-			"skeletonUnavailable": "Skeleton posing is not available for this item on this character. Choose Automatic."
+			"skeletonUnavailable": "Skeleton posing is not available for this item on this character. Choose Automatic.",
+			"repairGridBounds": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+			"redrawTooLarge": "This facing is too large to redraw in one request. Choose Repair item.",
+			"repairGridCapacity": "The item frame and its reference cannot fit in one repair grid.",
+			"referenceTooLarge": "Choose a reference that fits this item’s {width} × {height} px frame.",
+			"referenceMissing": "The item reference is missing.",
+			"referenceNoFit": "The item reference does not fit the frame.",
+			"designFrameMissing": "The design call returned no dressed frame.",
+			"incompleteReferenceFrames": "PixelLab returned incomplete reference or standing frames. No dependent request was sent.",
+			"standingFrameSize": "PixelLab returned a standing frame of the wrong size. No dependent request was sent.",
+			"layersMismatch": "Equipment layers do not match this slot. No generation was requested.",
+			"repairBatchMisaligned": "A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.",
+			"invalidItemGridSheet": "PixelLab returned an unusable item grid. Expected exactly one sheet. Existing artwork was kept.",
+			"invalidItemGridLayout": "PixelLab returned an unusable item grid. The sheet has the wrong frame layout. Existing artwork was kept."
 		}
 	},
 	"newItem": {
@@ -2138,7 +2239,6 @@
 		"copyDemo": "Copy the demo body",
 		"feature": "Equipment generation",
 		"needsSetup": "Set up this character to use skeleton-posed equipment, oversize weapons and new moves.",
-		"planError": "This character’s frames cannot use the item generator: {error}",
 		"standingFirst": "Make the standing design first. Generate this item for individual moves from its details after you like the result.",
 		"where": "Where does it go?",
 		"moreCategories": "More categories",
@@ -2173,7 +2273,8 @@
 			"ash": "ash",
 			"ink": "ink"
 		},
-		"routeLabel": "chroma mannequin + skeleton-posed keyframe / edit-animation-v2"
+		"routeLabel": "chroma mannequin + skeleton-posed keyframe / edit-animation-v2",
+		"referenceHint": "Show the item by itself."
 	},
 	"workspaceCopy": {
 		"title": "Open workspace copy",
@@ -2199,5 +2300,56 @@
 		"frameMeasure": "{size} × {size} px"
 	},
 	"sheet": { "later": "Later" },
-	"toast": { "dismiss": "Dismiss notification" }
+	"toast": { "dismiss": "Dismiss notification" },
+	"sharedVisibility": {
+		"heading": "Hide shared items",
+		"all": "All characters",
+		"hideAll": "Hide shared items for all characters",
+		"hideDemo": "Hide shared items from {name} (Demo)",
+		"hideCurrent": "Hide shared items for {name} (Current)",
+		"current": "(Current)",
+		"allOn": "Shared items are hidden for all characters.",
+		"notSaved": "Visibility changed, but this browser could not save it."
+	},
+	"versionRow": {
+		"actions": "Version actions",
+		"openSource": "Open source code",
+		"viewCommit": "View commit",
+		"copyDetails": "Copy version details",
+		"copied": "Version copied",
+		"copyFailed": "Could not copy version details."
+	},
+	"repairReview": {
+		"finishFirst": "Open Moves to decide whether to use the finished repair first.",
+		"recover": "The review could not be saved. Use saved frames to recover it without another charge.",
+		"unsaved": "The repair is available in this tab, but its review could not be saved. Decide before closing or reloading.",
+		"unsavedMayNotRecover": "{notice} Recovery after reload is not guaranteed.",
+		"ready": "Your paid item result is ready to review. The current frames are unchanged.",
+		"alreadySaved": "The repair is already saved. Finish the review to continue.",
+		"saved": "New frames saved.",
+		"kept": "Current item frames kept."
+	},
+	"referenceField": {
+		"label": "Reference",
+		"addImage": "Add image",
+		"chooseDifferent": "Choose a different reference image",
+		"opening": "Opening image…",
+		"openingLabel": "Opening image",
+		"dropHint": "Drop here or browse",
+		"remove": "Remove reference",
+		"attached": "Reference attached.",
+		"removed": "Reference removed.",
+		"oneAtATime": "Choose one image at a time.",
+		"unreadable": "This image could not be opened.",
+		"error": "No reference attached. {reason}",
+		"resized": "Resized from {fromWidth} × {fromHeight} to {width} × {height} px.",
+		"limits": "Max {width} × {height} px, {mb} MB."
+	},
+	"reference": {
+		"unsupported": "Choose a PNG, JPEG, or WebP image.",
+		"tooLarge": "Choose an image no larger than {mb} MB.",
+		"unreadable": "This image could not be opened. Choose a different file.",
+		"noArtworkResized": "No visible artwork remains after resizing. Choose a different image.",
+		"noArtwork": "This image has no visible artwork. Choose a different file."
+	}
 }

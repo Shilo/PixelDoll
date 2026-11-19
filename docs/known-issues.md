@@ -22,8 +22,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 ## PixelLab credits and API
 
 - **Credits are real money.** Query the balance before paid work. Creating a character costs about 2–5 gens up to a
-  128 px body (the Default standing views only); **Add idle + walk** then costs about 11 gens per drawn view before items and retries (55 on
-  the default Top-down 8, 33 on Top-down 4, 88 on Unique 8). Item and move estimates depend on route and coverage. Some calls bill dollars; estimates are not caps. Lost responses may have run or charged and are never
+  128 px body (the Default standing views only). **Add a move** estimates Idle and Walk separately, at about 3.4 and
+  7.6 gens per drawn view before items and retries. Item and move estimates depend on route and coverage. Some calls bill dollars; estimates are not caps. Lost responses may have run or charged and are never
   auto-resent.
 - **Unknown paid outcomes.** Three Cast body joint-measurement outcomes remain unknown and cannot be reconciled (the
   synchronous endpoint returned no job IDs to query); do not infer their charges from
@@ -134,11 +134,10 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   drawn ([prompt trim A/B](research/2026-11-07-paperdoll-cycle/prompt-trim-ab.md)).
 - **Default-only characters (round 10, D26).** All standing views arrive together, because PixelLab draws every rotation
   in one job; the creator cannot show them one by one. The pivot comes from the standing south view (`default/south/0`),
-  not from the first idle frame as on older characters, and moves added later keep it. **Add idle + walk** picks a new
-  random seed on every tap; the character's seed no longer reaches its moves, so an earlier attempt cannot be reproduced.
+  not from the first idle frame as on older characters, and moves added later keep it. Each move gets a new random
+  seed; the character's seed no longer reaches its moves, so an earlier attempt cannot be reproduced.
 - **Items made before idle and walk exist** (a Default-only character) have no frames for those moves until the user taps
-  the item's priced **Make for Idle + Walk** offer; nothing is posed automatically. **Add idle + walk** adds body moves only;
-  each item keeps its own priced offer for the new moves.
+  the item's priced offer for each move. **Add a move** leaves equipment unchecked by default.
 - **Small held objects can vanish behind the body in the back view.** Held items are no longer forced to point down: a red
   dot on the intended wrist picks the hand and the item's own description decides how it is held (a candle stays upright).
   A small object carried in front of the body can then be hidden in the standing back view, and the back-view moves may

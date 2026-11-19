@@ -7,13 +7,6 @@
 	import Toast from './Toast.svelte';
 	import { backdropDismiss } from './backdropDismiss.ts';
 	import { t, type WhisperKey } from 'svelte-whisper';
-	const closeLabels = {
-		Cancel: 'common.cancel',
-		Close: 'common.close',
-		Done: 'common.done',
-		Hide: 'common.hide',
-		Later: 'sheet.later'
-	} as const satisfies Record<string, WhisperKey>;
 	let {
 		title,
 		children,
@@ -22,7 +15,7 @@
 		leading,
 		trailing,
 		onclose,
-		cancel = 'Cancel',
+		cancel = 'common.cancel',
 		cancelDisabled = false,
 		wide = false,
 		className = ''
@@ -34,7 +27,7 @@
 		leading?: Snippet;
 		trailing?: Snippet;
 		onclose: () => void;
-		cancel?: keyof typeof closeLabels;
+		cancel?: WhisperKey;
 		cancelDisabled?: boolean;
 		wide?: boolean;
 		className?: string;
@@ -67,7 +60,7 @@
 		};
 	});
 	// HIG: Done/Close confirm and sit trailing; Cancel/Hide sit leading
-	const cancelTrailing = $derived(cancel === 'Done' || cancel === 'Close');
+	const cancelTrailing = $derived(cancel === 'common.done' || cancel === 'common.close');
 	const kind = $derived(
 		ui.size === 'compact' ? 'bottom' : ui.size === 'landscape' ? 'side' : 'center'
 	);
@@ -96,7 +89,7 @@
 				class="bu-action btn plain link"
 				data-variant="quiet"
 				disabled={cancelDisabled}
-				onclick={onclose}>{t(closeLabels[cancel])}</button
+				onclick={onclose}>{t(cancel)}</button
 			>{/if}
 		<div class="sheet-heading">
 			<h2 id="sheet-title" class="sheet-title">{title}</h2>
@@ -106,7 +99,7 @@
 				class="bu-action btn plain link done"
 				data-variant="quiet"
 				disabled={cancelDisabled}
-				onclick={onclose}>{t(closeLabels[cancel])}</button
+				onclick={onclose}>{t(cancel)}</button
 			>{:else}<span></span>{/if}
 	</header>
 	<div class="sheet-body">{@render children()}</div>

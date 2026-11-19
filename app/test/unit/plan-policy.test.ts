@@ -2,6 +2,7 @@ import { expect, test, vi } from 'vitest';
 import {
 	accountTier,
 	PLAN_JOB_LIMITS,
+	localizedPlanRestriction,
 	planRestriction,
 	requestTier,
 	tierDecision,
@@ -14,6 +15,22 @@ import type { Balance } from '../../src/lib/pixellab/routes.ts';
 const balance = (plan: string | null, status = 'active'): Balance => ({
 	credits: { type: 'usd', usd: 100 },
 	subscription: { type: 'generations', status, plan, generations: 1000, total: 10000 }
+});
+
+test('plan restrictions keep canonical text while exposing a display message', () => {
+	const raw = 'Needs PixelLab Tier 2 or higher. No request sent.';
+	const restriction = planRestriction(balance('Free'), {
+		method: 'POST',
+		endpoint: '/edit-images-v2',
+		params: null,
+		minimumTier: 2
+	});
+	expect(restriction).toBe(raw);
+	expect(localizedPlanRestriction(raw)).toMatchObject({
+		message: raw,
+		translation: { key: 'activity.planWait.tier', vars: { tier: 2 } }
+	});
+	expect(localizedPlanRestriction('Provider error: Tier 2 required')).toBeUndefined();
 });
 function deferred<T>() {
 	let resolve!: (value: T) => void;

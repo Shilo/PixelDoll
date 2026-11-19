@@ -40,7 +40,9 @@
 		"undo": "Rückgängig",
 		"wear": "Anlegen",
 		"zoomIn": "Vergrößern",
-		"zoomOut": "Verkleinern"
+		"zoomOut": "Verkleinern",
+		"randomLook": "Zufallslook",
+		"none": "Keine"
 	},
 	"pwa": {
 		"invalidRelease": "Die Updatebeschreibung ist ungültig.",
@@ -219,7 +221,6 @@
 		"cancelFromTheTabThatIsGenerating": "Brich die Generierung in dem Tab ab, in dem sie läuft.",
 		"wearInACopyOfTheDemo": "In einer Demo-Kopie anlegen",
 		"makeOneForName": "Für {name} erstellen",
-		"paid": "Kostenpflichtig",
 		"wearName": "{name} anlegen",
 		"titleWearingTakeOff": "Angelegt (ablegen)",
 		"twoHanded": "Zweihändig",
@@ -293,10 +294,6 @@
 		},
 		"makeFor": "Für {move} erstellen",
 		"makingMoreMoves": "Gegenstände werden für weitere Animationen erstellt",
-		"redrawingFrames": "Gegenstandsframes werden neu gezeichnet",
-		"tryNewFrames": "Neue Gegenstandsframes versuchen",
-		"repairNote": "Nur die Gegenstandsframes für {move} in Blickrichtung {direction} werden auf dem unveränderten Grundkörper neu gezeichnet.",
-		"repairLimits": "Andere Ansichten, Animationen und das gespeicherte Design bleiben unverändert. Bei einem schwerwiegenden Fehler bleiben die bisherigen Frames erhalten. PixelLab kann Kosten in US-Dollar berechnen. Die Wartezeit kann variieren.",
 		"colorMatchNote": {
 			"one": "Gleicht {pixels} an die bestehende Palette des Gegenstands an. Betroffen: {n} gespeicherter Frame in {move}, Blickrichtung {direction}.",
 			"other": "Gleicht {pixels} an die bestehende Palette des Gegenstands an. Betroffen: {n} gespeicherte Frames in {move}, Blickrichtung {direction}."
@@ -323,7 +320,34 @@
 		"areaStats": "mind. {ratio} des Medians · VK {cv}",
 		"handedness": { "ok": "ok", "switched": "vertauscht" },
 		"minimum": "{value} (≥ {threshold})",
-		"maximum": "{value} (≤ {threshold})"
+		"maximum": "{value} (≤ {threshold})",
+		"updateNote": "Aktualisiert diesen Gegenstand für {move} in Blickrichtung {direction}. Der Körper der Figur bleibt unverändert.",
+		"updateNoteMirrors": "Aktualisiert diesen Gegenstand für {move} in Blickrichtung {direction} und in den gespiegelten Ansichten. Der Körper der Figur bleibt unverändert.",
+		"repairItem": "Gegenstand reparieren",
+		"redrawItem": "Gegenstand neu zeichnen",
+		"repairFeature": "die Gegenstandsreparatur",
+		"redrawFeature": "das Neuzeichnen des Gegenstands",
+		"inspectRepair": "API-Aufrufe für die Gegenstandsreparatur prüfen",
+		"inspectRedraw": "API-Aufrufe für das Neuzeichnen des Gegenstands prüfen",
+		"repairHelp": "Ideal, wenn dir das Design gefällt. Änderungen bleiben auf den Bereich des Gegenstands beschränkt.",
+		"redrawHelp": "Form oder Griff können sich ändern. Du entscheidest, ob du das Ergebnis behältst.",
+		"repairRequests": {
+			"one": "Diese Reparatur nutzt {n} PixelLab-Generierungsanfrage.",
+			"other": "Diese Reparatur nutzt {n} PixelLab-Generierungsanfragen."
+		},
+		"redrawRequests": {
+			"one": "Das Neuzeichnen nutzt {n} PixelLab-Generierungsanfrage.",
+			"other": "Das Neuzeichnen nutzt {n} PixelLab-Generierungsanfragen."
+		},
+		"redrawSaves": {
+			"one": "{n} geschätzte Generierung weniger als bei der Reparatur.",
+			"other": "{n} geschätzte Generierungen weniger als bei der Reparatur."
+		},
+		"redrawCostsMore": {
+			"one": "{n} geschätzte Generierung mehr als bei der Reparatur.",
+			"other": "{n} geschätzte Generierungen mehr als bei der Reparatur."
+		},
+		"billingNote": "Die Schätzungen vergleichen Generierungen, nicht Dollarpreise. PixelLab kann US-Dollar berechnen, und die Wartezeit kann variieren."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Neue Figur",
@@ -467,14 +491,12 @@
 		"characterView": "Figurenansicht",
 		"mountSettings": "Reittier-Einstellungen",
 		"titleMountSettingsMounted": "Reittier-Einstellungen (aufgesessen)",
-		"randomLook": "Zufallslook",
 		"titleRandomLookItemsAndColors": "Zufallslook (Gegenstände und Farben)",
 		"shareCharacter": "Figur teilen",
 		"export": "Exportieren",
 		"moreOptions": "Weitere Optionen",
 		"showMount": "Reittier anzeigen",
 		"hideLegs": "Beine ausblenden",
-		"none": "Keine",
 		"farLeg": "Hinteres Bein",
 		"bothLegs": "Beide Beine",
 		"cutsBelowTheHipsHandsMayBe": "Schneidet unterhalb der Hüfte ab. Hände können angeschnitten sein und herabhängende Gegenstände können verschwinden.",
@@ -485,7 +507,6 @@
 		"pixelLabAccount": "PixelLab-Konto",
 		"lightMode": "Heller Modus",
 		"darkMode": "Dunkler Modus",
-		"sourceCode": "Quellcode",
 		"viewPreview": "Vorschau",
 		"viewTopDown": "Draufsicht",
 		"viewSide": "Seitenansicht",
@@ -504,7 +525,11 @@
 		"rename": "Umbenennen…",
 		"setUpCharacter": "Figur einrichten…",
 		"connectPixelLab2": "PixelLab verbinden…",
-		"characterSelection": "Figurenauswahl"
+		"characterSelection": "Figurenauswahl",
+		"wardrobeSettings": "Garderoben-Einstellungen",
+		"ownItemsOnly": "Nur eigene Gegenstände",
+		"workspace": "Arbeitsbereich…",
+		"workspaceActions": "Arbeitsbereich-Aktionen"
 	},
 	"wardrobe": {
 		"randomLowerItem": "Zufälliger Gegenstand: {lower}",
@@ -711,7 +736,7 @@
 		"tookOffTwoHanded": "{names} abgelegt (zweihändig)",
 		"tookOffForTwoHanded": "{names} abgelegt: {name} ist zweihändig",
 		"wearingUnfitted": "{name} ist so angelegt, wie der Gegenstand für {sourceName} gezeichnet wurde. Er passt möglicherweise nicht genau auf diesen Grundkörper. Dafür wurden keine Generierungen verbraucht.",
-		"wearingUnfittedAtSize": "{name} ist wie für {sourceName} gezeichnet und in seiner Originalgröße von {size} px angelegt. Der Gegenstand passt möglicherweise nicht genau auf diesen Grundkörper. Dafür wurden keine Generierungen verbraucht.",
+		"wearingUnfittedAtSize": "{name} ist wie für {sourceName} gezeichnet in der ursprünglichen Framegröße ({size}) angelegt. Der Gegenstand passt möglicherweise nicht genau auf diesen Grundkörper. Dafür wurden keine Generierungen verbraucht.",
 		"fittedItem": "{name} von {sourceName} kostenlos angepasst. Prüfe die Passform in jeder Animation.",
 		"copiedSharedItem": "{name} von {sourceName} kopiert. Dafür wurden keine Generierungen verbraucht.",
 		"copiedMoreFrames": {
@@ -754,7 +779,9 @@
 		"thisOperationChangedReviewTheBodyColors": "Der Vorgang hat sich geändert. Prüfe die Farben des Grundkörpers erneut.",
 		"theBodyColorCorrectionsChangedReviewTheir": "Die Farbkorrekturen am Grundkörper haben sich geändert. Prüfe ihre Kosten erneut.",
 		"anotherRigSetupIsStillRunningSo": "Ein anderes Rig wird noch eingerichtet. Diese Einrichtung wurde deshalb nicht gestartet. Deine Auswahl bleibt erhalten.",
-		"characterReadyForSkeletonPosedItemsAnd": "Die Figur ist bereit für per Skelett animierte Gegenstände und neue Animationen"
+		"characterReadyForSkeletonPosedItemsAnd": "Die Figur ist bereit für per Skelett animierte Gegenstände und neue Animationen",
+		"couldNotCheckCopiedFrames": "Die Frames kopierter Gegenstände konnten nicht geprüft werden: {reason}",
+		"couldNotReadSharedItems": "Gegenstände deiner anderen Figuren konnten nicht gelesen werden: {reason}"
 	},
 	"history": {
 		"wear": "{name} anlegen",
@@ -763,7 +790,6 @@
 		"changeColor": "Farbänderung",
 		"resetColors": "Farben zurücksetzen",
 		"randomItem": "Zufälliger Gegenstand: {name}",
-		"randomLook": "Zufallslook",
 		"saveOutfit": "Outfit speichern",
 		"deleteOutfit": "Outfit löschen",
 		"show": "{name} einblenden",
@@ -852,7 +878,9 @@
 			"xpTitle": "XP und Pokémon Essentials",
 			"xpSub": "4 × 4 Raster · Name.png"
 		},
-		"playback": { "none": "Keine", "all": "Alle" },
+		"playback": {
+			"all": "Alle"
+		},
 		"outfits": {
 			"none": "Keine",
 			"saved": "Aktueller Look + gespeicherte Outfits",
@@ -1199,7 +1227,6 @@
 	"studioModel": {
 		"itemQualityReview": "{name}: Prüfe die Ergebnisse der Qualitätskontrolle für diesen Gegenstand. Es wurde kein kostenpflichtiger Neuversuch gestartet.",
 		"bodyQuality": "{move} {direction}: {reason}",
-		"facts": { "pixels": "{count} px" },
 		"health": {
 			"clean": "In Ordnung",
 			"accepted": "Akzeptiert",
@@ -1244,7 +1271,8 @@
 				"other": "Der gehaltene Gegenstand wurde auf {count} Frames von {move} eingefügt ({direction}). Prüfe, ob er sich mitbewegt"
 			},
 			"noRepairGrid": "Kein Reparaturraster für {move} ({direction}): {reason}. Der beste Versuch wurde behalten",
-			"heldLoop": "Form oder Winkel des gehaltenen Gegenstands ändern sich am Übergang der Animationsschleife"
+			"heldLoop": "Form oder Winkel des gehaltenen Gegenstands ändern sich am Übergang der Animationsschleife",
+			"registrationShift": "PixelLab hat einen transparenten Rand geliefert und das Sheet möglicherweise verschoben. Prüfe, ob der Gegenstand in jedem Frame ausgerichtet ist."
 		},
 		"anotherCharacter": "eine andere Figur",
 		"unfit": {
@@ -1370,7 +1398,7 @@
 		"notConnected": "Nicht verbunden",
 		"unavailable": "Nutzungsdaten nicht verfügbar",
 		"checking": "Nutzung wird geprüft…",
-		"credits": "Noch {credits} zusätzliche Credits"
+		"credits": "Noch {credits} an Credits"
 	},
 	"generation": {
 		"outcome": {
@@ -1518,7 +1546,7 @@
 				"other": "{action} · {count} Frames"
 			},
 			"itemPoseNote": "Nur bekannte Felder. Sendet das ausgerüstete Referenzbild, die exakten gespeicherten Posen, Aussehen, Aktion, Blickrichtung und Seed.",
-			"itemEditNote": "Nur bekannte Felder. frames und image_size werden beim Senden anhand dieser Figur vorbereitet.",
+			"itemEditNote": "Nur bekannte Felder. Frames und image_size werden beim Senden vorbereitet.",
 			"singleInput": "Für das API-Minimum von zwei Frames wird die einzelne Eingabe dupliziert. Nur der erste zurückgegebene Frame wird verwendet.",
 			"coverage": "Abdeckung: {cells}.",
 			"createMotion": "Bewegung erstellen · {direction}",
@@ -1533,7 +1561,6 @@
 			"itemCells": "{item} · {cells}",
 			"anchorNote": "Bearbeitet nur fixierte Ausrüstungsframes, mit dem gespeicherten Design aus der Standpose als erstem Referenzframe. Die zurückgegebene Referenz wird verworfen. Abdeckung: {cells}. Keine Anfragen für Grundkörper oder Skelett. Jeder geplante Stapel läuft einmal. Kostenpflichtige Neuversuche erfordern eine weitere Anfrage.",
 			"repairEquipment": "{item} {direction} · Ausrüstung reparieren",
-			"repairEquipmentNote": "Bearbeitet nur ausgewählte Ausrüstungsframes mit einer geschützten Referenz derselben Blickrichtung. Der Grundkörper bleibt unverändert. Ergebnisse werden nur bei einer Qualitätsverbesserung behalten.",
 			"framesRange": "{item} {direction} · Frames {from}–{to}",
 			"gridBatchNote": "Stattet die fixierten Grundkörperframes aus, statt auffällige importierte Gelenke zu verwenden. Geschützte Standreferenzen und Kleidungsmasken erhalten das Design. Ein Versuch pro geplantem Stapel. Kostenpflichtige Neuversuche erfordern dein Zutun.",
 			"poseBatchNote": "Sendet die ausgerüstete Referenz dieses Gegenstands, gespeicherte Gelenkpunkte der Ruhepose des Grundkörpers, ausgewählte Animationsposen, Aussehen, Aktion, Blickrichtung und Seed. Ein Versuch pro geplantem Stapel. Kostenpflichtige Neuversuche und Reparaturen erfordern dein Zutun.",
@@ -1544,8 +1571,19 @@
 			"stopSubmitted": "Gesendete Generierung stoppen",
 			"stopSubmittedNote": "Der Abbruch kann fehlschlagen, wenn der Auftrag bereits abgeschlossen ist. Es können bereits Kosten angefallen sein.",
 			"resumeNote": "Beim Fortsetzen wird diese wartende Anfrage gesendet, sobald die Voraussetzungen erfüllt sind. Die hier angezeigten Bildreferenzen sind lokal gespeichert. Gesendet werden die Originalbilddaten.",
-			"pollNote": "Fragt den Status dieses gesendeten Auftrags weiter ab."
-		}
+			"pollNote": "Fragt den Status dieses gesendeten Auftrags weiter ab.",
+			"conceptNote": "Die hochgeladene Vorlage kommt zuerst, vor den Frames der Figur. Ihre Ausgabe wird nicht verwendet.",
+			"redrawEquipment": "{item} {direction} · Ausrüstung neu zeichnen",
+			"redrawEquipmentNote": "{width}×{height}, Frames {from}–{to}. Sendet ein ungemaskertes Sheet mit einer passenden Referenz. PixelDoll begrenzt, was übernommen wird, und fragt immer, bevor deine Frames ersetzt werden. PixelDoll benötigt Tier 1. Bei Abrechnung in Dollar beträgt das Minimum {minimum}; die tatsächliche Belastung kann höher sein.",
+			"gridRepairNote": "{width}×{height}, Frames {from}–{to}. Nutzt eine geschützte Referenz derselben Blickrichtung. Der Grundkörper bleibt unverändert. Vollständige Reparaturen mit blockierenden visuellen Problemen werden dir zur Prüfung vorgelegt."
+		},
+		"copyEndpointTitle": "Endpunkt kopieren",
+		"manualCopyLabel": "Endpunkt zum manuellen Kopieren",
+		"copyEndpointLabel": "Endpunkt {method} {endpoint} kopieren",
+		"copyEndpointLabelContext": "Endpunkt {method} {endpoint}, {label} kopieren",
+		"endpointCopiedLabel": "Endpunkt kopiert: {method}, {label}",
+		"endpointCopiedCall": "Endpunkt kopiert: {method}, Aufruf {number}",
+		"copyFailed": "Automatisches Kopieren war nicht möglich. Kopiere den Endpunkt über das Feld manuell."
 	},
 	"activity": {
 		"error": {
@@ -1592,7 +1630,6 @@
 			"other": "Bis zu {count} Aufträge gleichzeitig."
 		},
 		"busy": "PixelLab ist ausgelastet, möglicherweise in einer anderen App. Erneuter Versuch in {seconds} s. Deine Aufträge bleiben in der Warteschlange.",
-		"waitingForTab": "PixelDoll führt in einem anderen Tab Aufträge aus. Dieser Tab kann deine Aufträge noch nicht starten. Schließe den anderen Tab, damit sie hier starten, oder wähle „Fertig“, um abzubrechen.",
 		"follower": "Aufträge laufen in einem anderen Tab. Schlüssel bleiben in dem Tab, in dem du PixelLab verbindest. Verbinde PixelLab im Tab mit der aktiven Warteschlange oder schließe ihn, damit die Aufträge hier laufen.",
 		"pausedAuth": "PixelLab hat den Schlüssel nicht akzeptiert. Die Aufträge warten, bis du dich erneut verbindest.",
 		"pausedOffline": "Du bist offline. Aufträge in der Warteschlange warten; bereits gesendete können fertig werden. Stelle die Verbindung wieder her, um bekannte Aufträge fortzusetzen.",
@@ -1620,7 +1657,10 @@
 			"checking": "Der PixelLab-Tarif wird vor dem Start dieses Ablaufs geprüft.",
 			"verifying": "Wartet auf Bestätigung deines PixelLab-Tarifs. Die Prüfung wird automatisch wiederholt.",
 			"tier": "Benötigt mindestens PixelLab Tier {tier}. Es wurde keine Anfrage gesendet."
-		}
+		},
+		"cancelRequest": "Anfrage abbrechen",
+		"waitingTitle": "Warten auf einen anderen Tab",
+		"waitingBody": "Deine Generierung hat noch nicht begonnen. Lass Aktivität geöffnet; PixelDoll macht hier weiter, sobald der andere Tab bereit ist."
 	},
 	"genCard": {
 		"retryKey": "Beim neuen Versuch wird die Hintergrundfarbe {color} verwendet. Sie wurde anhand der Farben dieses Designs bestimmt",
@@ -1693,7 +1733,9 @@
 			"detail": "Detailgrad",
 			"seed": "Seed",
 			"method": "Methode",
-			"colorKey": "Key-Farbe"
+			"colorKey": "Key-Farbe",
+			"reference": "Referenz",
+			"startingSprite": "Start-Sprite"
 		},
 		"method": {
 			"skeletonPose": "Posen per Skelett",
@@ -1715,15 +1757,15 @@
 		"onlyDirection": "Nur {direction}",
 		"oneDirection": "Nur eine Blickrichtung",
 		"directions": "{count} Blickrichtungen",
-		"cell": "Zelle",
-		"cellSize": "{w}×{h}, Drehpunkt {x},{y}",
 		"mirrorOf": "{direction} (gespiegelt aus {source})",
 		"failed": "Fehlgeschlagen: Tippe für Details",
 		"adding": "Wird hinzugefügt… {done}/{total}",
 		"waitingForFailed": "Wartet auf die fehlgeschlagene Animation",
 		"add": "Animation hinzufügen",
-		"addBase": "{moves} hinzufügen",
-		"estimate": "Ca. {gens} Generierungen"
+		"estimate": "Ca. {gens} Generierungen",
+		"bodySize": "{w}×{h} px",
+		"frameSize": "{w}×{h} px, Drehpunkt {x},{y}",
+		"waitingForRepairReview": "Warten auf die Prüfung der Gegenstandsframes"
 	},
 	"setup": {
 		"warnings": {
@@ -1802,7 +1844,6 @@
 			"anchoredEquipmentGenerationRequires": "Zum Generieren verankerter Ausrüstung brauchst du eine vorhandene Animation und ihre gespeicherten Gegenstände aus der Standpose. Es wurde keine Generierung angefordert.",
 			"moveItemMissingStored": "Für diese Animation oder diesen Gegenstand fehlen gespeicherte Gelenkpunkte oder Standreferenzen. Richte die Posen ein, bevor du Ausrüstung generierst. Es wurde keine Generierung angefordert.",
 			"setUpRigFirst": "Richte das Posen-Rig dieser Figur ein, bevor du Animationen hinzufügst.",
-			"chooseExistingMoveRepairing": "Wähle eine vorhandene Animation, bevor du ihre Ausrüstung reparierst.",
 			"newMoveNeedsEvery": "Eine neue Animation braucht alle eigenständig gezeichneten Blickrichtungen.",
 			"partialRepairMustKeep": "Bei einer Teilreparatur muss die Anzahl der Frames unverändert bleiben.",
 			"selectedEquipmentLongerStanding": "Für die gewählte Ausrüstung fehlen jetzt Standdesigns in einigen gewählten Ansichten. Prüfe die Ausrüstungsauswahl erneut, bevor du es noch einmal versuchst. Es wurde keine Generierung angefordert.",
@@ -1842,7 +1883,6 @@
 			"originalCompletedBodyRender": "{direction}: Das ursprünglich fertiggestellte Grundkörper-Rendering ist nicht verfügbar. Der Grundkörper wurde nicht neu generiert.",
 			"cachedBodyRenderIncomplete": "{direction}: Das zwischengespeicherte Grundkörper-Rendering ist unvollständig.",
 			"cachedBodyFramesDo": "{direction}: Die zwischengespeicherten Grundkörperframes passen nicht zu dieser Figur. Der Grundkörper wurde nicht neu generiert.",
-			"repairStillFailsQuality": "{name} {id} {direction}: Die reparierte Grafik besteht die Qualitätsprüfungen weiterhin nicht. Die vorhandene Grafik bleibt erhalten. Prüfe „Aktivität“ vor einem neuen Versuch.",
 			"demoStandingBodyFacing": "Für die Demo fehlt die Standpose in Blickrichtung {id}.",
 			"requestStopped": "{label}: {state}{error}",
 			"requestStoppedResume": "{label}: {state}{error}. Die Generierung wurde gestoppt, ohne die Anfrage erneut zu senden. Prüfe diese Anfrage unter „Aktivität“, bevor du neu startest.",
@@ -1865,7 +1905,13 @@
 			"partialSavedNewFrames": "{reason} Die fertigen Ansichten wurden gespeichert ({views}). „Neue Frames generieren“ fordert nur fehlende Frames an.",
 			"partialSavedRetry": "{reason} Die fertigen Ansichten wurden gespeichert ({views}). „Erneut versuchen“ fordert nur fehlende Frames an.",
 			"replacementFailsQa": "Der Ersatz besteht die Qualitätsprüfungen für die Grundkörperposen weiterhin nicht. Vorhandene Blickrichtungen bleiben erhalten. Prüfe die Ergebnisse vor einem neuen Versuch.",
-			"newMoveFailsQa": "Die neue Animation besteht die Qualitätsprüfungen für die Grundkörperposen nicht und wurde daher nicht gespeichert. Prüfe die Ergebnisse vor einem neuen Versuch."
+			"newMoveFailsQa": "Die neue Animation besteht die Qualitätsprüfungen für die Grundkörperposen nicht und wurde daher nicht gespeichert. Prüfe die Ergebnisse vor einem neuen Versuch.",
+			"moveDirectionsChanged": "Die Blickrichtungen des Charakters haben sich geändert. Prüfe die aktuelle Schätzung für die Animation, bevor du es erneut versuchst. Es wurde keine Generierung angefordert.",
+			"reviewItemRedrawFirst": "Prüfe das Neuzeichnen des Gegenstands und die Schätzung vor der Generierung. Es wurde keine Anfrage gesendet.",
+			"chooseRepairTarget": "Wähle vor der Reparatur einen Gegenstand und eine Blickrichtung einer vorhandenen Animation. Es wurde keine Generierung angefordert.",
+			"describedFramesBlocked": "Beschriebene Animationen können mit 4, 8 oder 12 Frames generiert werden. Diese Animation hat {frames}. Es wurde keine Generierung angefordert.",
+			"describeMoveBlocked": "Beschreibe diese Animation, bevor du sie generierst. Es wurde keine Generierung angefordert.",
+			"chooseExistingMoveRepairing": "Wähle eine vorhandene Animation, bevor du ihre Ausrüstung reparierst."
 		},
 		"steps": {
 			"draw": "Deine Figur wird gezeichnet",
@@ -2013,6 +2059,15 @@
 				"noAnswer": "Keine eindeutige Antwort von PixelLab. Dein Text bleibt erhalten.",
 				"failedApi": "PixelLab konnte diesen Text nicht verbessern. Dein Text bleibt erhalten.",
 				"failed": "Der Text konnte nicht verbessert werden. Dein Text bleibt erhalten."
+			},
+			"sizeGuideReference": "Größenhilfe und Referenzbild",
+			"reference": {
+				"frontFacing": "Nutze ein Sprite in Vorderansicht.",
+				"concept": "Nutze eine Skizze oder einen Charakterentwurf.",
+				"style": "Nutze eine Illustration als Stilvorlage.",
+				"tooLarge": "Wähle ein Referenzbild mit höchstens {max} × {max} px.",
+				"increaseBody": "Vergrößere den Körper, damit das Referenzbild hineinpasst, oder wähle ein kleineres Bild.",
+				"increaseFrame": "Vergrößere den Frame, damit das Referenzbild hineinpasst, oder wähle ein kleineres Sprite."
 			}
 		},
 		"sheet": {
@@ -2060,15 +2115,14 @@
 			"add": "{move} hinzufügen",
 			"replaceViews": "Ansichten für {move} ersetzen",
 			"queue": "{move} vormerken",
-			"queueViews": "Ansichten für {move} vormerken",
-			"move": "Animation"
+			"move": "Animation",
+			"queueReplacement": "Ansichten für {move} zum Ersetzen einreihen"
 		},
 		"titleRepair": "Gegenstandsframes reparieren",
 		"titleReplace": "Animationsansichten ersetzen",
 		"heldBy": "{move} ist bei {character} fehlgeschlagen. Neue Animationen warten. Öffne die fehlgeschlagene Animation, um es erneut zu versuchen oder von vorn zu beginnen.",
 		"open": "{character} öffnen",
 		"progressLabel": "Laufende Animationsgenerierung",
-		"repairNote": "Nur die ausgewählten Gegenstandsframes werden neu gezeichnet. Der Grundkörper bleibt unverändert. Wenn ein Ergebnis eine zwingende Prüfung nicht besteht, bleiben die bisherigen Gegenstandsframes erhalten.",
 		"retryFeature": "Diese Animation neu generieren",
 		"savedFramesNote": "Mit „Gespeicherte Frames verwenden“ suchst du nach fertigen Grafiken, die zu dieser Animation und Ausrüstung passen. Bei der Wiederherstellung dieser Frames wird keine Anfrage an PixelLab gesendet.",
 		"checkingCached": "Zwischengespeicherte Frames werden geprüft…",
@@ -2106,21 +2160,12 @@
 		"demo": "Animationen werden deiner eigenen Figur hinzugefügt.",
 		"needsSetup": "Richte das Posen-Rig dieser Figur ein, um Animationen hinzuzufügen. Vorhandene Grafiken und Ebenen passen weiterhin zusammen.",
 		"added": "{move} · hinzugefügt",
-		"viewsToReplace": "Zu ersetzende Ansichten",
-		"replaceNote": "Beim Speichern des Ersatzes werden die alten Ausrüstungsframes dieser Ansichten gelöscht. Die ausgewählte Ausrüstung wird nur animiert, wenn der Grundkörper die Prüfungen besteht. Andere Ausrüstung bleibt in diesen Ansichten ausgeblendet, bis neue Frames erstellt werden. Andere Ansichten und Animationen bleiben unverändert.",
-		"replaceNoteMirrored": "Beim Speichern des Ersatzes werden die alten Ausrüstungsframes dieser Ansichten gelöscht. Die ausgewählte Ausrüstung wird nur animiert, wenn der Grundkörper die Prüfungen besteht. Andere Ausrüstung bleibt in diesen Ansichten ausgeblendet, bis neue Frames erstellt werden. Andere Ansichten und Animationen bleiben unverändert. Gespiegelte Ansichten folgen ihrer Vorlage.",
-		"chooseToReplace": "Wähle eine vorhandene Animation, um ausgewählte Ansichten zu ersetzen.",
 		"describeReplacement": "Beschreibe den Ersatz",
-		"describe": "Oder beschreibe die Animation",
 		"describePlaceholder": "z. B. auf der Stelle springen",
-		"emptyHands": "Der Grundkörper wird mit leeren Händen und ohne Effekte gezeichnet. Füge Waffen und Requisiten als Gegenstände hinzu.",
 		"alreadyQueued": "{move} ist bereits vorgemerkt.",
 		"waitsForCurrent": "Die Animation wartet auf die laufende Animation und startet danach automatisch.",
 		"addFeature": "Animationen für angelegte Gegenstände",
 		"animateItems": "Diese Gegenstände mit animieren",
-		"itemsNote": "Standardmäßig ist kein Gegenstand ausgewählt. Wenn die Grundkörperprüfung die Animation stoppt, werden keine Ausrüstungsanfragen gesendet. Du kannst die Ausrüstung später über die Details des jeweiligen Gegenstands generieren.",
-		"listNote": "Diese Liste zeigt nur Ausrüstung, die den Posen des Grundkörpers in allen zu generierenden Ansichten folgen kann. Geteilte Kopien kannst du weiterhin in Ansichten anlegen, für die sie Frames haben. Erstelle eine nicht angepasste Kopie für diese Figur neu, um sie zu animieren. Bei anderen Gegenständen kannst du eventuell in den Details vorhandene Animationen ergänzen.",
-		"billing": "PixelLab kann manche Aufrufe in US-Dollar abrechnen. Neuversuche und Ersatzverfahren kosten extra. Die Wartezeit kann variieren.",
 		"pipeline": {
 			"described": "pixminimax-Bewegung (unbewaffnet, keine Requisiten oder Effekte) → Gelenke → skeleton-v3 ohne Nachbearbeitung auf der Ruheansicht",
 			"walk": "Gehbewegung per skeleton-v3 → Gelenke → skeleton-v3 ohne Nachbearbeitung auf der Ruheansicht",
@@ -2128,12 +2173,68 @@
 			"grid": "{frames} Frames × {dirs} Blickrichtungen",
 			"gridMirrored": "{frames} Frames × {dirs} Blickrichtungen ({mirrored} gespiegelt)",
 			"cost": "Grundkörper ≈ {body} Generierungen, Gegenstände: {items} Generierungen · Hinweise bei der Prüfung des Grundkörpers lösen kein Neuzeichnen aus."
+		},
+		"changedDuringEdit": "Diese Animation hat sich während der Bearbeitung geändert. Wähle sie erneut aus, um fortzufahren.",
+		"duplicateOption": "{move} steht bereits zur Auswahl. Beginne die Beschreibung mit anderen Wörtern.",
+		"costNotice": "PixelLab kann in US-Dollar abrechnen. Erneute Versuche und Ausweichverfahren kosten extra.",
+		"describeNew": "Beschreibe eine neue Animation",
+		"describeMotion": "Beschreibe die Bewegung",
+		"motionOnly": "Beschreibe nur die Körperbewegung. Füge Waffen und Requisiten als Gegenstände hinzu.",
+		"orChoose": "Oder wähle eine Animation",
+		"redrawDirections": "Blickrichtungen zum Neuzeichnen",
+		"redrawHidesEquipment": "Wenn du diese Ansichten ersetzt, bleibt die Ausrüstung verborgen, bis neue Frames erstellt sind.",
+		"redrawMirrors": "Auch die gespiegelten Ansichten ändern sich: {directions}.",
+		"redrawOtherMoves": "Andere Animationen bleiben unverändert.",
+		"equipmentWaitsForBody": "Wenn die Körperprüfung die Animation stoppt, werden keine Anfragen für Ausrüstungsframes gesendet.",
+		"uncheckedItemsHidden": "Nicht ausgewählte Gegenstände bleiben verborgen, bis sie animiert werden.",
+		"fittedEquipmentOnly": "Hier kann nur Ausrüstung animiert werden, die zu allen ausgewählten Ansichten passt. Geteilte Kopien können in Ansichten mit vorhandenen Frames weiterhin getragen werden.",
+		"review": {
+			"redrawTitle": "Neu gezeichneten Gegenstand prüfen",
+			"repairTitle": "Gegenstandsreparatur prüfen",
+			"redrawProgress": "Gegenstandsframes neu zeichnen",
+			"keepCurrent": "Aktuelle Frames behalten",
+			"finish": "Prüfung abschließen",
+			"useRedrawn": "Neu gezeichnete Frames verwenden",
+			"useRepaired": "Reparierte Frames verwenden",
+			"heldBy": "Die Frames eines Gegenstands für {character} können geprüft werden. Animationen in der Warteschlange warten auf deine Entscheidung.",
+			"compare": "Gegenstandsframes vergleichen",
+			"saved": "Die neuen Frames sind bereits gespeichert. Schließe die Prüfung ab, um fortzufahren.",
+			"redrawIssues": "Die neu gezeichneten Frames sind fertig, aber einige könnten nicht richtig ausgerichtet sein. Sieh dir die Ergebnisse der Qualitätsprüfung an.",
+			"redrawReady": "Die neu gezeichneten Frames sind zum Vergleich bereit.",
+			"repairIssues": "Die kostenpflichtige Reparatur ist fertig, aber einige Frames könnten Darstellungsfehler haben.",
+			"noCost": "Deine bisherigen Bilder bleiben unverändert. Beide Entscheidungen sind kostenlos. Blende dieses Fenster aus, um später zu entscheiden.",
+			"frame": "Frame {number}",
+			"currentFrames": "Aktuelle Frames",
+			"redrawnFrames": "Neu gezeichnete Frames",
+			"repairedFrames": "Reparierte Frames",
+			"findings": "Ergebnisse der Qualitätsprüfung",
+			"redrawInManagingTab": "Prüfe die neu gezeichneten Frames in dem Tab, der deine PixelDoll-Aufträge verwaltet.",
+			"repairInManagingTab": "Prüfe die Reparatur in dem Tab, der deine PixelDoll-Aufträge verwaltet.",
+			"resumesQueue": "Wenn du die Prüfung abschließt, werden die Animationen in der Warteschlange zu den bereits geprüften Kosten fortgesetzt.",
+			"redrawNote": "Der Körper bleibt unverändert. Du vergleichst die neu gezeichneten Frames, bevor du welche ersetzt.",
+			"repairNote": "Der Körper bleibt unverändert. Eine abgeschlossene Reparatur mit Darstellungsfehlern bleibt zur Prüfung zurückgestellt.",
+			"currentFrame": "Aktueller Frame {number}",
+			"redrawnFrame": "Neu gezeichneter Frame {number}",
+			"repairedFrame": "Reparierter Frame {number}"
 		}
 	},
 	"itemRoute": {
 		"errors": {
 			"noStandingMove": "Es wurde keine vollständige Standanimation gefunden. Importiere Standansichten oder richte die Figur mit einem einzelnen Standframe als Referenz ein, bevor du einen Gegenstand erstellst. Es wurden keine Generierungen angefordert.",
-			"skeletonUnavailable": "Posen per Skelett sind für diesen Gegenstand auf dieser Figur nicht verfügbar. Wähle „Automatisch“."
+			"skeletonUnavailable": "Posen per Skelett sind für diesen Gegenstand auf dieser Figur nicht verfügbar. Wähle „Automatisch“.",
+			"repairGridBounds": "Dieses Reparaturraster muss in die Zeichenflächengrenzen von 32–512 px von PixelLab passen. Wähle eine kürzere Animation.",
+			"redrawTooLarge": "Diese Blickrichtung ist zu groß, um sie in einer Anfrage neu zu zeichnen. Wähle Gegenstand reparieren.",
+			"repairGridCapacity": "Der Gegenstands-Frame und seine Referenz passen nicht in ein Reparaturraster.",
+			"referenceTooLarge": "Wähle eine Referenz, die in den {width} × {height} px großen Frame dieses Gegenstands passt.",
+			"referenceMissing": "Die Gegenstandsreferenz fehlt.",
+			"referenceNoFit": "Die Gegenstandsreferenz passt nicht in den Frame.",
+			"designFrameMissing": "Der Design-Aufruf hat keinen Frame mit angelegtem Gegenstand geliefert.",
+			"incompleteReferenceFrames": "PixelLab hat unvollständige Referenz- oder Standframes geliefert. Es wurde keine abhängige Anfrage gesendet.",
+			"standingFrameSize": "PixelLab hat einen Standframe mit falscher Größe geliefert. Es wurde keine abhängige Anfrage gesendet.",
+			"layersMismatch": "Die Ausrüstungsebenen passen nicht zu diesem Ausrüstungsplatz. Es wurde keine Generierung angefordert.",
+			"repairBatchMisaligned": "Ein Reparaturstapel hat verschobene Frames geliefert. Die übrigen Stapel wurden gestoppt und die vorhandene Grafik bleibt erhalten.",
+			"invalidItemGridSheet": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Erwartet war genau ein Sheet. Die vorhandene Grafik bleibt erhalten.",
+			"invalidItemGridLayout": "PixelLab hat ein unbrauchbares Gegenstandsraster geliefert. Das Sheet hat ein falsches Frame-Layout. Die vorhandene Grafik bleibt erhalten."
 		}
 	},
 	"newItem": {
@@ -2153,7 +2254,6 @@
 		"copyDemo": "Demo-Grundkörper kopieren",
 		"feature": "Ausrüstung generieren",
 		"needsSetup": "Richte diese Figur ein, um Ausrüstung per Skelett zu animieren, übergroße Waffen zu verwenden und neue Animationen hinzuzufügen.",
-		"planError": "Mit den Frames dieser Figur lässt sich der Gegenstandsgenerator nicht nutzen: {error}",
 		"standingFirst": "Erstelle zuerst das Design der Standpose. Wenn dir das Ergebnis gefällt, generiere den Gegenstand in seinen Details für einzelne Animationen.",
 		"where": "Wohin gehört er?",
 		"moreCategories": "Weitere Kategorien",
@@ -2188,7 +2288,8 @@
 			"ash": "Aschgrau",
 			"ink": "Tintenschwarz"
 		},
-		"routeLabel": "Chroma-Key-Figur + Keyframe mit Skelettpose / edit-animation-v2"
+		"routeLabel": "Chroma-Key-Figur + Keyframe mit Skelettpose / edit-animation-v2",
+		"referenceHint": "Zeige nur den Gegenstand."
 	},
 	"workspaceCopy": {
 		"title": "Arbeitsbereichskopie öffnen",
@@ -2214,5 +2315,56 @@
 		"frameMeasure": "{size} × {size} px"
 	},
 	"sheet": { "later": "Später" },
-	"toast": { "dismiss": "Benachrichtigung schließen" }
+	"toast": { "dismiss": "Benachrichtigung schließen" },
+	"sharedVisibility": {
+		"heading": "Geteilte Gegenstände ausblenden",
+		"all": "Alle Figuren",
+		"hideAll": "Geteilte Gegenstände für alle Figuren ausblenden",
+		"hideDemo": "Geteilte Gegenstände von {name} (Demo) ausblenden",
+		"hideCurrent": "Geteilte Gegenstände für {name} (Aktuell) ausblenden",
+		"current": "(Aktuell)",
+		"allOn": "Geteilte Gegenstände sind für alle Figuren ausgeblendet.",
+		"notSaved": "Die Sichtbarkeit wurde geändert, konnte aber in diesem Browser nicht gespeichert werden."
+	},
+	"versionRow": {
+		"actions": "Versionsaktionen",
+		"openSource": "Quellcode öffnen",
+		"viewCommit": "Commit ansehen",
+		"copyDetails": "Versionsdetails kopieren",
+		"copied": "Version kopiert",
+		"copyFailed": "Versionsdetails konnten nicht kopiert werden."
+	},
+	"repairReview": {
+		"finishFirst": "Öffne zuerst die Bewegungen und entscheide, ob du die fertige Reparatur verwenden möchtest.",
+		"recover": "Die Überprüfung konnte nicht gespeichert werden. Verwende die gespeicherten Frames, um sie ohne weitere Kosten wiederherzustellen.",
+		"unsaved": "Die Reparatur ist in diesem Tab verfügbar, aber die Überprüfung konnte nicht gespeichert werden. Entscheide vor dem Schließen oder Neuladen.",
+		"unsavedMayNotRecover": "{notice} Eine Wiederherstellung nach dem Neuladen ist nicht garantiert.",
+		"ready": "Dein kostenpflichtiges Ergebnis für den Gegenstand ist jetzt bereit zur Prüfung. Die aktuellen Frames sind unverändert.",
+		"alreadySaved": "Die Reparatur ist bereits gespeichert. Schließe die Überprüfung ab, um fortzufahren.",
+		"saved": "Neue Frames gespeichert.",
+		"kept": "Die aktuellen Frames des Gegenstands wurden beibehalten."
+	},
+	"referenceField": {
+		"label": "Referenz",
+		"addImage": "Bild hinzufügen",
+		"chooseDifferent": "Anderes Referenzbild wählen",
+		"opening": "Bild wird geöffnet…",
+		"openingLabel": "Bild wird geöffnet",
+		"dropHint": "Hier ablegen oder Datei auswählen",
+		"remove": "Referenz entfernen",
+		"attached": "Referenz angehängt.",
+		"removed": "Referenz entfernt.",
+		"oneAtATime": "Wähle jeweils nur ein Bild.",
+		"unreadable": "Dieses Bild konnte nicht geöffnet werden.",
+		"error": "Keine Referenz angehängt. {reason}",
+		"resized": "Von {fromWidth} × {fromHeight} auf {width} × {height} px verkleinert.",
+		"limits": "Max. {width} × {height} px, {mb} MB."
+	},
+	"reference": {
+		"unsupported": "Wähle ein Bild im PNG-, JPEG- oder WebP-Format.",
+		"tooLarge": "Wähle ein Bild mit höchstens {mb} MB.",
+		"unreadable": "Dieses Bild konnte nicht geöffnet werden. Wähle eine andere Datei.",
+		"noArtworkResized": "Nach der Größenänderung ist keine sichtbare Grafik übrig. Wähle ein anderes Bild.",
+		"noArtwork": "Dieses Bild enthält keine sichtbare Grafik. Wähle eine andere Datei."
+	}
 }

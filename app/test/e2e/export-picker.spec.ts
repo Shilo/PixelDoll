@@ -127,7 +127,18 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 		return { id, otherId: other.id, item: item.id, uniqueHash: uniqueHash.slice(7) };
 	});
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Export my workspace' }).click();
+	const workspace = page.getByRole('button', { name: 'Workspace...', exact: true });
+	const workspaceActions = page.getByRole('group', { name: 'Workspace actions' });
+	const exportWorkspace = workspaceActions.getByRole('button', { name: 'Export my workspace' });
+	await expect(page.getByRole('button', { name: 'Export my workspace' })).toBeHidden();
+	await expect(page.getByRole('link', { name: 'Open workspace copy' })).toBeHidden();
+	await workspace.press('Enter');
+	await expect(exportWorkspace).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect(workspaceActions).toBeHidden();
+	await expect(workspace).toBeFocused();
+	await workspace.press('Enter');
+	await exportWorkspace.click();
 	const exportDialog = page.getByRole('dialog', { name: 'Export my workspace' });
 	await expect(
 		exportDialog.getByRole('checkbox', { name: 'Include recent errors' })
@@ -204,8 +215,9 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 		expect.objectContaining({ tool: 'edit-animation-v2', outcome: 'lost' })
 	);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await workspace.click();
 	const waitCopy = page.waitForEvent('popup');
-	await page.getByRole('link', { name: 'Open workspace copy' }).click();
+	await workspaceActions.getByRole('link', { name: 'Open workspace copy' }).click();
 	const copy = await waitCopy;
 	const picker = copy.getByLabel('Choose workspace ZIP');
 	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
@@ -858,7 +870,53 @@ test('global Export choices persist through demo reload, editable copying and ch
 		exact: true
 	});
 	await expect(dressed).toBeEnabled();
-	await dressed.uncheck();
+	const help = dialog.getByText(/^Adds PNG sprite sheets/);
+	await expect(dressed).toHaveAccessibleDescription(/^Adds PNG sprite sheets/);
+	const initiallyDressed = await dressed.isChecked();
+	await help.scrollIntoViewIfNeeded();
+	const [start, word, end] = await help.evaluate(async (element) => {
+		await Promise.all(
+			element
+				.closest('.export-page')!
+				.getAnimations()
+				.map((animation) => animation.finished)
+		);
+		const text = element.firstChild!;
+		const range = document.createRange();
+		return [0, 2, 18].map((offset) => {
+			range.setStart(text, offset);
+			range.setEnd(text, offset + 1);
+			const { x, y, width, height } = range.getBoundingClientRect();
+			return { x: x + (offset === 0 ? 1 : width / 2), y: y + height / 2 };
+		});
+	});
+	await page.mouse.move(start.x, start.y);
+	await page.mouse.down();
+	await page.mouse.move(end.x, end.y, { steps: 6 });
+	await page.mouse.up();
+	expect(await page.evaluate(() => window.getSelection()?.toString())).toMatch(/sprite/);
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	await page.evaluate(() => window.getSelection()?.removeAllRanges());
+	await page.mouse.click(word.x, word.y);
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	await page.mouse.dblclick(word.x, word.y);
+	expect(await page.evaluate(() => window.getSelection()?.toString().trim())).toBe('Adds');
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	const labelText = dialog
+		.locator('label span')
+		.getByText('Include dressed character sheets', { exact: true });
+	const labelBounds = (await labelText.boundingBox())!;
+	await page.evaluate(() => window.getSelection()?.removeAllRanges());
+	await page.mouse.move(labelBounds.x + 8, labelBounds.y + labelBounds.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(end.x, end.y, { steps: 6 });
+	await page.mouse.up();
+	expect(await page.evaluate(() => window.getSelection()?.toString())).toBe('');
+	await expect(dressed).toBeChecked({ checked: initiallyDressed });
+	await labelText.click();
+	await expect(dressed).toBeChecked({ checked: !initiallyDressed });
+	if (!initiallyDressed) await labelText.click();
+	await expect(dressed).not.toBeChecked();
 	await expect(dressed).toBeEnabled();
 	await dialog.getByRole('button', { name: 'Close export' }).click();
 	await page.evaluate(() => location.reload());

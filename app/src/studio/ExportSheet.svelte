@@ -194,7 +194,7 @@
 	const once = $derived(preferences?.playOnce ?? []);
 	const playbackSummary = $derived(
 		!once.length
-			? t('export.playback.none')
+			? t('common.none')
 			: once.length === names.length
 				? t('export.playback.all')
 				: once.map(animationLabel).join(', ')
@@ -669,22 +669,22 @@
 					</div>
 				</fieldset>
 				<hr class="bu-separator export-divider" />
-				<label class="check export-dressed">
-					<input
-						type="checkbox"
-						checked={baked}
-						disabled={saving || !ready}
-						aria-label={DRESSED_SHEETS}
-						aria-describedby="export-dressed-description"
-						onchange={(e) =>
-							changeSetting(e.currentTarget, { dressedCharacterSheets: e.currentTarget.checked })}
-					/>
-					<span
-						><span>{DRESSED_SHEETS}</span><span class="muted small" id="export-dressed-description"
-							>{t('export.settings.dressedHint')}</span
-						></span
-					>
-				</label>
+				<div class="export-dressed">
+					<label class="check">
+						<input
+							type="checkbox"
+							checked={baked}
+							disabled={saving || !ready}
+							aria-describedby="export-dressed-description"
+							onchange={(e) =>
+								changeSetting(e.currentTarget, { dressedCharacterSheets: e.currentTarget.checked })}
+						/>
+						<span>{DRESSED_SHEETS}</span>
+					</label>
+					<p class="muted small" id="export-dressed-description">
+						{t('export.settings.dressedHint')}
+					</p>
+				</div>
 			{:else}
 				<fieldset class="export-picker" aria-label={t('export.settings.format')}>
 					{#each GROUPS as group (group.id)}
@@ -1000,19 +1000,15 @@
 	.export-move input {
 		flex: none;
 	}
-	.export-dressed {
-		align-items: flex-start;
+	.export-dressed .check {
 		gap: 10px;
 	}
 	.export-dressed input {
 		flex: none;
-		margin-top: 3px;
 	}
-	.export-dressed > span {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		min-width: 0;
+	.export-dressed p {
+		margin: 4px 0 0;
+		padding-inline-start: 26px;
 	}
 	.export-divider {
 		width: 100%;

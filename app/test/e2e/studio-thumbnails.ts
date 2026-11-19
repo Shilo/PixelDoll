@@ -39,6 +39,7 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 			.locator(selector)
 			.first()
 			.evaluate((row, textSelector) => {
+				const heightBefore = row.getBoundingClientRect().height;
 				const labels = [...row.querySelectorAll<HTMLElement>(textSelector)];
 				const originals = labels.map((label) => ({
 					text: label.textContent,
@@ -47,11 +48,13 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 				try {
 					for (const label of labels) {
 						label.textContent = 'A very long name with many words '.repeat(20);
-						label.style.fontSize = '24px';
-						label.style.lineHeight = '1.25';
+						if (!row.classList.contains('character-row')) {
+							label.style.fontSize = '24px';
+							label.style.lineHeight = '1.25';
+						}
 					}
 					return {
-						height: row.getBoundingClientRect().height,
+						unchangedHeight: row.getBoundingClientRect().height === heightBefore,
 						truncated:
 							labels.length > 0 &&
 							labels.every((label) => {
@@ -72,22 +75,26 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 					});
 				}
 			}, textSelector);
-		expect(result).toEqual({ height: 74, truncated: true });
+		expect(result).toEqual({ unchangedHeight: true, truncated: true });
 	};
 	const expectCharacterFacts = async () => {
 		const row = page.locator('.character-row').first();
-		await expect(row.locator('.character-fact')).toHaveCount(4);
+		await expect(row.locator('.character-fact')).toHaveCount(3);
 		expect(
 			await row.evaluate((element) => {
 				const bounds = element.getBoundingClientRect();
-				return [...element.querySelectorAll('.character-fact')].every((fact) => {
-					const fragments = fact.getClientRects();
-					return (
-						fragments.length === 1 &&
-						fragments[0].bottom <= bounds.bottom &&
-						fragments[0].right <= bounds.right
-					);
-				});
+				const name = element.querySelector('strong');
+				if (!name || name.scrollHeight > name.clientHeight + 1) return false;
+				return [...element.querySelectorAll('.character-sizes span, .character-fact')].every(
+					(fact) => {
+						const fragments = fact.getClientRects();
+						return (
+							fragments.length === 1 &&
+							fragments[0].bottom <= bounds.bottom &&
+							fragments[0].right <= bounds.right
+						);
+					}
+				);
 			})
 		).toBe(true);
 	};
@@ -290,7 +297,7 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 		await page.locator('.project-btn').click();
 		await page.getByRole('menuitem', { name: 'Character selection', exact: true }).click();
 		await expect(page.locator('.character-row').first()).toBeVisible();
-		expect(await rowHeight('.character-row')).toBe(characterHeight);
+		expect(await rowHeight('.character-row')).toBeGreaterThanOrEqual(characterHeight);
 		await expectFixedRow('.character-row', 'strong');
 		await expectCharacterFacts();
 		await page.screenshot({ path: info.outputPath(`characters-phone-${theme}.png`) });

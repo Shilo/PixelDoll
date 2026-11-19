@@ -5,6 +5,7 @@
 		activityRetention,
 		activityTotals,
 		exportActivityJson,
+		sanitizeActivityUrl,
 		sanitizeActivityValue,
 		type ApiCall
 	} from '../lib/pixellab/activity.ts';
@@ -24,6 +25,7 @@
 		scope,
 		plan = [],
 		label = '',
+		triggerLabel,
 		queueIds = [],
 		activityScope,
 		all = false,
@@ -32,6 +34,7 @@
 		scope: string;
 		plan?: PeekCall[];
 		label?: string;
+		triggerLabel?: string;
 		queueIds?: string[];
 		activityScope?: string;
 		all?: boolean;
@@ -42,7 +45,10 @@
 	let opener: HTMLButtonElement;
 	let open = $state(false);
 	let backgrounds = $state(false);
-	let copied = $state<Message>();
+	let copyStatus = $state<Message | string>('');
+	let copiedAll = $state(false);
+	let manualCopy = $state<string>();
+	let copyAttempt = 0;
 	let inspectionError = $state(false);
 	const actual = $derived(
 		$apiActivity.filter(
@@ -74,6 +80,11 @@
 	const labelText = (c: ApiCall | PeekCall): string =>
 		('state' in c ? undefined : planDisplay(c)?.label?.(planFormatters)) ?? c.label ?? '';
 	const noteText = (c: PeekCall): string => planDisplay(c)?.note?.(planFormatters) ?? c.note ?? '';
+	function safePlannedPath(path: string) {
+		return /^https?:\/\//i.test(path) || (path.startsWith('/') && /[?#]/.test(path))
+			? sanitizeActivityUrl(path)
+			: path;
+	}
 	function price(c: ApiCall | PeekCall): string {
 		if ('cost' in c) {
 			if (c.costSource === 'free') return t('common.free');
@@ -96,7 +107,9 @@
 		const el = e.currentTarget;
 		open = e.newState === 'open';
 		if (open) {
-			copied = undefined;
+			copyStatus = '';
+			copiedAll = false;
+			manualCopy = undefined;
 			inspectionError = false;
 			await tick();
 			if (!el.isConnected) return;
@@ -127,7 +140,12 @@
 			return;
 		}
 	}
+	function isCurrentCopy(attempt: number) {
+		return attempt === copyAttempt && panel?.isConnected && panel.matches(':popover-open');
+	}
 	async function copy() {
+		const attempt = ++copyAttempt;
+		const count = calls.length;
 		const text = recorded
 			? exportActivityJson(actual)
 			: JSON.stringify(
@@ -136,15 +154,24 @@
 						scope,
 						costBasis: 'estimated',
 						total: { generations: knownEstimate, unknown: unknownEstimate },
-						calls: sanitizeActivityValue(plan)
+						calls: sanitizeActivityValue(
+							plan.map((call) => ({ ...call, path: safePlannedPath(call.path) }))
+						)
 					},
 					null,
 					2
 				);
+		let copied: boolean;
 		try {
 			await navigator.clipboard.writeText(text);
-			copied = message('apiPeek.copied', { count: calls.length });
+			copied = true;
 		} catch {
+			copied = false;
+		}
+		if (!isCurrentCopy(attempt)) return;
+		if (copied) {
+			copyStatus = message('apiPeek.copied', { count });
+		} else {
 			// Still usable when clipboard permissions are unavailable (including some mobile browsers).
 			const blob = new Blob([text], { type: 'application/json' }),
 				url = URL.createObjectURL(blob);
@@ -153,7 +180,47 @@
 			a.download = 'pixeldoll-calls.json';
 			a.click();
 			setTimeout(() => URL.revokeObjectURL(url), 1000);
-			copied = message('apiPeek.savedJson');
+			copyStatus = message('apiPeek.savedJson');
+		}
+		copiedAll = true;
+	}
+	async function copyEndpoint(
+		event: MouseEvent & { currentTarget: HTMLButtonElement },
+		key: string,
+		endpoint: string,
+		status: Message
+	) {
+		const button = event.currentTarget;
+		const active = document.activeElement;
+		const attempt = ++copyAttempt;
+		copyStatus = '';
+		manualCopy = undefined;
+		let copied: boolean;
+		try {
+			await navigator.clipboard.writeText(endpoint);
+			copied = true;
+		} catch {
+			copied = false;
+		}
+		await tick();
+		if (!isCurrentCopy(attempt) || !button.isConnected) return;
+		if (copied) {
+			copyStatus = status;
+			return;
+		}
+		copyStatus = message('apiPeek.copyFailed');
+		manualCopy = key;
+		await tick();
+		const field = button
+			.closest('.peek-request')
+			?.querySelector<HTMLInputElement>('.manual-endpoint');
+		if (
+			isCurrentCopy(attempt) &&
+			field?.getClientRects().length &&
+			document.activeElement === active
+		) {
+			field.focus();
+			field.select();
 		}
 	}
 </script>
@@ -173,7 +240,7 @@
 	type="button"
 	class={menu ? 'row bu-action api-peek-trigger' : 'bu-action btn icon plain api-peek-trigger'}
 	data-variant="quiet"
-	aria-label={all ? t('apiPeek.inspectAll') : t('apiPeek.inspect')}
+	aria-label={triggerLabel ?? (all ? t('apiPeek.inspectAll') : t('apiPeek.inspect'))}
 	title={t('apiPeek.triggerTitle')}
 	aria-expanded={open}
 	aria-controls={id}
@@ -189,6 +256,9 @@
 	role="dialog"
 	aria-label={t('apiPeek.title')}
 	tabindex="-1"
+	onbeforetoggle={(event) => {
+		if (event.newState === 'closed') copyAttempt++;
+	}}
 	ontoggle={toggled}
 	onkeydown={keydown}
 >
@@ -197,12 +267,18 @@
 		{#if open}
 			<header class="peek-head">
 				<div class="peek-heading">
-					<strong>{t('apiPeek.title')}</strong><span class="peek-sub" role="status"
-						>{(copied ? displayMessage(copied) : '') ||
+					<strong>{t('apiPeek.title')}</strong><span
+						class="peek-sub"
+						class:copy-feedback={copyStatus}
+						role="status"
+						>{(copyStatus ? displayMessage(copyStatus) : '') ||
 							(inspectionError ? t('apiPeek.inspectionError') : '') ||
 							label ||
 							(all ? t('apiPeek.recent') : t('apiPeek.thisAction'))}</span
 					>
+					{#if inspectionError && copyStatus}<span class="peek-sub"
+							>{t('apiPeek.inspectionError')}</span
+						>{/if}
 				</div>
 				<button
 					type="button"
@@ -212,7 +288,7 @@
 					title={t('apiPeek.copyAllTitle')}
 					disabled={!calls.length}
 					onclick={copy}
-					>{#if copied}<Check size={16} />{:else}<Copy size={16} />{/if}</button
+					>{#if copiedAll}<Check size={16} />{:else}<Copy size={16} />{/if}</button
 				>
 				<button
 					type="button"
@@ -240,17 +316,51 @@
 			</header>
 			<div class="peek-list">
 				{#each visible as c, i ('id' in c ? c.id : `${scope}:${i}:${c.path}`)}
+					{@const key = 'id' in c ? c.id : `${scope}:${i}:${c.path}`}
+					{@const endpoint = 'endpoint' in c ? c.endpoint : safePlannedPath(c.path)}
+					{@const copiedStatus = c.label
+						? message('apiPeek.endpointCopiedLabel', {
+								method: c.method,
+								label: labelText(c)
+							})
+						: message('apiPeek.endpointCopiedCall', {
+								method: c.method,
+								number: formatNumber(i + 1)
+							})}
+					{@const copyLabel = c.label
+						? t('apiPeek.copyEndpointLabelContext', {
+								method: c.method,
+								endpoint,
+								label: c.label
+							})
+						: t('apiPeek.copyEndpointLabel', { method: c.method, endpoint })}
 					<details class="peek-call">
 						<summary
 							><ChevronRight size={13} /><span class="call-name"
 								><span class="call-route"
-									><span class="call-method">{c.method}</span><span
-										>{'endpoint' in c ? c.endpoint : c.path}</span
-									></span
+									><span class="call-method">{c.method}</span><span>{endpoint}</span></span
 								>{#if c.label}<span class="call-context">{labelText(c)}</span>{/if}</span
 							><span class="call-price">{price(c)}</span></summary
 						>
 						<div class="peek-request">
+							<div class="request-endpoint">
+								<code>{endpoint}</code>
+								<button
+									type="button"
+									class="bu-action btn icon plain"
+									data-variant="quiet"
+									aria-label={copyLabel}
+									title={t('apiPeek.copyEndpointTitle')}
+									onclick={(event) => copyEndpoint(event, key, endpoint, copiedStatus)}
+									><Copy size={14} /></button
+								>
+							</div>
+							{#if manualCopy === key}<input
+									class="bu-input input manual-endpoint"
+									aria-label={t('apiPeek.manualCopyLabel')}
+									value={endpoint}
+									readonly
+								/>{/if}
 							{#if 'state' in c}<p class="request-status">
 									{[
 										c.restored
@@ -384,6 +494,10 @@
 		text-overflow: ellipsis;
 		overflow: hidden;
 	}
+	.copy-feedback {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
 	.peek-list {
 		overflow: auto;
 		overscroll-behavior: contain;
@@ -457,6 +571,21 @@
 		padding: 0 14px 12px 32px;
 		font-size: 11.5px;
 	}
+	.request-endpoint {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		margin-bottom: 4px;
+	}
+	.request-endpoint code {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+	.manual-endpoint {
+		width: 100%;
+		min-width: 0;
+		margin-bottom: 8px;
+	}
 	.request-status {
 		color: var(--text-3);
 		font-size: 11px;
@@ -501,7 +630,8 @@
 		margin-top: 3px;
 	}
 	@media (max-width: 599px), (max-height: 499px) {
-		.peek-head .btn {
+		.peek-head .btn,
+		.request-endpoint .btn {
 			min-height: 44px;
 			min-width: 44px;
 		}

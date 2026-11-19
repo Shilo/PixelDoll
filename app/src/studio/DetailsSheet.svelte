@@ -52,7 +52,11 @@
 	});
 </script>
 
-<Sheet title={t('detailsSheet.title', { name })} cancel="Done" onclose={() => (ui.sheet = null)}>
+<Sheet
+	title={t('detailsSheet.title', { name })}
+	cancel="common.done"
+	onclose={() => (ui.sheet = null)}
+>
 	{#if error}<p class="notice bad small" role="alert">{displayMessage(error)}</p>
 	{:else if m && base}<GenerationDetails {m} it={base} {extra} />
 	{:else if m}<p class="faint small">{t('detailsSheet.noGenerationDetailsWereSavedForThis')}</p>

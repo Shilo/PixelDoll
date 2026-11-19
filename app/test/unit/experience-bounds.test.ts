@@ -3,6 +3,7 @@ import { bakedFrame } from '../../src/lib/compose/compose.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import type { Item, Layer, Project, Sha256 } from '../../src/lib/store/manifest.ts';
 import {
+	characterBodySize,
 	paintedFrame,
 	reachFrame,
 	previewBounds,
@@ -78,6 +79,22 @@ function weapon(project: Project, image: Img, hash: Sha256 = 'sha256:weapon'): I
 	project.manifest.items.push(result);
 	return result;
 }
+
+test('body dimensions prefer south, fall back to an available pose and omit blank artwork', () => {
+	const project = fixture();
+	const { rig, items } = project.manifest;
+	rig.directions = [{ id: 'east' }, { id: 'south' }];
+	rig.rest = { south: { image: bodyHash, keypoints: [] } };
+	rig.animations = [{ id: 'walk', cells: 2, loop: true, frames: [{ cell: 1, ms: 100 }] }];
+	items[0].layers[0].cells = { walk: { east: [null, 'sha256:east'] } };
+	project.images.set('sha256:east', rectangle(64, 64, 12, 5, 10, 34));
+	expect(characterBodySize(project)).toEqual({ w: 24, h: 48 });
+	rig.directions.pop();
+	delete rig.rest.south;
+	expect(characterBodySize(project)).toEqual({ w: 10, h: 34 });
+	project.images.set('sha256:east', makeImg(64, 64));
+	expect(characterBodySize(project)).toBeNull();
+});
 
 describe('Preview body grounding', () => {
 	for (const size of [64, 128])

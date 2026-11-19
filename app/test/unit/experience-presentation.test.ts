@@ -489,6 +489,19 @@ describe('synchronized production equipment', () => {
 		expect(bare.image?.data[(1 * 4 + 3) * 4]).toBe(0);
 	});
 
+	test('portrait thumbnails prefer the dressed Default pose over Idle and fall back when Default is missing', () => {
+		const project = fixture(['south'], ['walk', 'idle', 'default']);
+		const hat = project.manifest.items[1];
+		hat.layers[0].cells!.default = { south: [gearHash, gearHash] };
+		hat.coverage = ['default/south/0', 'default/south/1'];
+		const assets = buildPresentation(project);
+		const portrait = southStill(assets);
+		expect(portrait).toMatchObject({ kind: 'still', clip: 'default', direction: 'south', cell: 0 });
+		expect(renderPresentation(assets, { head: 'hat' }, portrait).image?.data[4]).toBe(90);
+		delete project.manifest.items[0].layers[0].cells!.default;
+		expect(southStill(buildPresentation(project)).clip).toBe('idle');
+	});
+
 	test('a worn draft still generating a view shows as loading, never as a hidden or transparent item', () => {
 		const project = fixture(['south', 'east', 'west'], ['walk']);
 		project.manifest.rig.directions = [

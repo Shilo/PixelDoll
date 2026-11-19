@@ -1,5 +1,8 @@
 <script lang="ts">
 	import Sheet from './Sheet.svelte';
+	import WardrobeVisibility from './WardrobeVisibility.svelte';
+	import PopoverArrow from './PopoverArrow.svelte';
+	import { popoverFocus } from './experience/focus.ts';
 	import TierNotice from './TierNotice.svelte';
 	import { GENERATION_RECOMMENDATION } from '../lib/pixellab/plans.ts';
 	import { customize } from './experience/state.svelte.ts';
@@ -12,7 +15,6 @@
 	import type { Project } from '../lib/store/manifest.ts';
 	import type { ClipQa } from '../lib/rig/clips.ts';
 	import { STEPS, estimate, type CreateSpec } from './create.ts';
-	import BaseMoves from './BaseMoves.svelte';
 	import CharacterForm from './CharacterForm.svelte';
 	import {
 		autoFrame,
@@ -32,18 +34,31 @@
 		openProject,
 		withKey
 	} from './state.svelte.ts';
-	import { Check, CircleAlert, TriangleAlert } from './icons.ts';
+	import { Check, CircleAlert, Shirt, TriangleAlert } from './icons.ts';
 	import { displayDirection, displayDirectionInSentence } from './displayDirection.ts';
+	import { displayMove } from './displayMove.ts';
 	import { displayError, displayMessage } from '../lib/i18n.ts';
 	import { errorText } from '../lib/message.ts';
-	import { formatNumber, t } from 'svelte-whisper';
+	import { formatNumber, getLocale, t } from 'svelte-whisper';
+	const wardrobeMenuId = $props.id();
 	const policyDecline = /\b5000\b|policy/i;
 	let d = $state(formDrafts.character ?? newCharacterDraft());
+	formDrafts.character = undefined;
 	let enhancing = $state(false);
+	let referenceLoading = $state(false);
 	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
 	const errors = $derived(draftErrors(d));
 	const formSpec = $derived<CreateSpec>({
 		description: d.prompt,
+		...(d.reference
+			? {
+					reference: {
+						base64: d.reference.base64,
+						width: d.reference.width,
+						height: d.reference.height
+					}
+				}
+			: {}),
 		name:
 			d.name.trim() ||
 			(d.details ? nameFrom(d.details) : d.kind !== 'Not set' ? d.kind : 'My character'),
@@ -58,9 +73,6 @@
 	const est = $derived(estimate(creating.spec ?? formSpec));
 	const lo = $derived(Math.round(est.gens)),
 		hi = $derived(Math.ceil(est.maxGens / 5) * 5);
-	$effect(() => {
-		if (!creating.spec) formDrafts.character = $state.snapshot(d);
-	});
 	function connectEnhance(target: 'details' | 'prompt') {
 		const draft = $state.snapshot(d);
 		delete draft.enhanceOnConnect;
@@ -101,7 +113,7 @@
 	const k = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1.25 : 2))));
 
 	function go() {
-		if (errors.length || enhancing) return;
+		if (errors.length || enhancing || referenceLoading) return;
 		formDrafts.character = $state.snapshot(d);
 		const spec = { ...$state.snapshot(formSpec), seed: d.seed ? Number(d.seed) : freshSeed() };
 		withKey(() => {
@@ -125,7 +137,7 @@
 
 <Sheet
 	title={t('create.sheet.title')}
-	cancel={running ? 'Hide' : creating.projectId ? 'Close' : 'Cancel'}
+	cancel={running ? 'common.hide' : creating.projectId ? 'common.close' : 'common.cancel'}
 	onclose={() => (ui.sheet = null)}
 	className="character-sheet"
 	wide
@@ -140,6 +152,32 @@
 					maxlength="80"
 				/></label
 			>{/if}{/snippet}
+	{#snippet trailing()}
+		<button
+			class="bu-action btn creation-wardrobe"
+			data-variant="quiet"
+			aria-label={t('toolbar.wardrobeSettings')}
+			title={t('toolbar.wardrobeSettings')}
+			popovertarget={wardrobeMenuId}><Shirt size={18} aria-hidden="true" /></button
+		>
+		{#if creating.projectId && !running}
+			<button
+				class="bu-action btn plain link done"
+				data-variant="quiet"
+				onclick={() => (ui.sheet = null)}>{t('common.close')}</button
+			>
+		{/if}
+		<div
+			id={wardrobeMenuId}
+			class="menu options-menu bu-popover-anchor"
+			data-placement="bottom-start"
+			popover
+			ontoggle={popoverFocus}
+		>
+			<PopoverArrow />
+			<div class="menu-surface bu-popover-surface bu-floating"><WardrobeVisibility /></div>
+		</div>
+	{/snippet}
 	{#if creating.projectId}
 		<div class="create-review">
 			<ApiPeek
@@ -166,7 +204,7 @@
 								checker
 								label={t('create.sheet.resultFrame', {
 									name: creating.spec?.name ?? '',
-									move: a.id,
+									move: getLocale() === 'en' ? a.id : displayMove(a.id),
 									direction: displayDirectionInSentence(d.id)
 								})}
 							/>{displayDirection(d.id)}
@@ -244,17 +282,17 @@
 			feature={t('create.sheet.feature')}
 			recommendation={GENERATION_RECOMMENDATION.reason}
 		/>
-		<CharacterForm bind:draft={d} bind:busy={enhancing} onconnect={connectEnhance} />
+		<CharacterForm
+			bind:draft={d}
+			bind:busy={enhancing}
+			bind:referenceLoading
+			onconnect={connectEnhance}
+		/>
 	{/if}
 
 	{#snippet footer()}
 		{#if creating.projectId}
 			<span class="foot-note">{t('create.sheet.saved')}</span>
-			{#if result}<BaseMoves
-					projectId={creating.projectId}
-					manifest={result.manifest}
-					onadd={() => void open()}
-				/>{/if}
 			<button class="bu-action btn primary lg" data-variant="primary" onclick={open}
 				>{t('create.sheet.startDressing')}</button
 			>
@@ -297,7 +335,7 @@
 				/><button
 					class="bu-action btn primary lg"
 					data-variant="primary"
-					disabled={!!errors.length || enhancing}
+					disabled={!!errors.length || enhancing || referenceLoading}
 					onclick={go}>{t('create.sheet.create')}</button
 				></span
 			>
@@ -306,6 +344,15 @@
 </Sheet>
 
 <style>
+	:global(.studio-app .character-sheet) .btn.creation-wardrobe {
+		left: 40px;
+		right: auto;
+	}
+	@media (max-width: 760px) and (min-height: 541px), (max-height: 540px) and (min-width: 600px) {
+		:global(.studio-app .character-sheet) .btn.creation-wardrobe {
+			left: 20px;
+		}
+	}
 	.quality-notes {
 		width: 100%;
 		text-align: left;

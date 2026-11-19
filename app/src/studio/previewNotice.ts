@@ -1,5 +1,6 @@
-// Remove this module and its Studio import/call when PixelDoll leaves preview.
 import { message } from '../lib/message.ts';
+
+export const PRE_RELEASE = true;
 
 export const PREVIEW_NOTICE = {
 	title: message('studio.previewTitle', { version: __APP_VERSION__ }),

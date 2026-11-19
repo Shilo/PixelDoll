@@ -40,7 +40,9 @@
 		"undo": "Geri alın",
 		"wear": "Giydirin",
 		"zoomIn": "Yakınlaştırın",
-		"zoomOut": "Uzaklaştırın"
+		"zoomOut": "Uzaklaştırın",
+		"randomLook": "Rastgele görünüm",
+		"none": "Hiçbiri"
 	},
 	"pwa": {
 		"invalidRelease": "Güncelleme açıklaması geçersiz.",
@@ -216,7 +218,6 @@
 		"cancelFromTheTabThatIsGenerating": "İptal işlemini bu eşyayı üreten sekmeden yapın.",
 		"wearInACopyOfTheDemo": "Demonun kopyasında giydirin",
 		"makeOneForName": "{name} için bir tane üretin",
-		"paid": "Ücretli",
 		"wearName": "Şu eşyayı giydirin: {name}",
 		"titleWearingTakeOff": "Giyili (çıkarın)",
 		"twoHanded": "Çift elli",
@@ -290,10 +291,6 @@
 		},
 		"makeFor": "{move} için üretin",
 		"makingMoreMoves": "Eşya başka animasyonlar için hazırlanıyor",
-		"redrawingFrames": "Eşya kareleri yeniden çiziliyor",
-		"tryNewFrames": "Yeni eşya kareleri deneyin",
-		"repairNote": "Sabit gövde üzerinde yalnızca {move} animasyonunun {direction} yönündeki görünümü yeniden çizilir.",
-		"repairLimits": "Diğer görünümler, animasyonlar ve kayıtlı tasarım değişmez. Ciddi hata durumunda önceki kareler korunur. PixelLab dolar cinsinden ücret alabilir; bekleme süresi değişir.",
 		"colorMatchNote": {
 			"one": "{move} animasyonunun {direction} yönünde kayıtlı {n} karedeki şu pikselleri eşyanın mevcut paletiyle eşleştirin: {pixels}.",
 			"other": "{move} animasyonunun {direction} yönünde kayıtlı {n} karedeki şu pikselleri eşyanın mevcut paletiyle eşleştirin: {pixels}."
@@ -320,7 +317,34 @@
 		"areaStats": "En az medyanın {ratio} kadarı · CV {cv}",
 		"handedness": { "ok": "uygun", "switched": "el değişmiş" },
 		"minimum": "{value} (≥ {threshold})",
-		"maximum": "{value} (≤ {threshold})"
+		"maximum": "{value} (≤ {threshold})",
+		"updateNote": "Bu eşyayı {move} animasyonunun {direction} yönü için günceller. Karakterin gövdesi değişmez.",
+		"updateNoteMirrors": "Bu eşyayı {move} animasyonunun {direction} yönü ve aynalanmış yönleri için günceller. Karakterin gövdesi değişmez.",
+		"repairItem": "Eşyayı onarın",
+		"redrawItem": "Eşyayı yeniden çizin",
+		"repairFeature": "Eşya onarımı",
+		"redrawFeature": "Eşyayı yeniden çizme",
+		"inspectRepair": "Eşya onarımı için API çağrılarını inceleyin",
+		"inspectRedraw": "Eşyayı yeniden çizmek için API çağrılarını inceleyin",
+		"repairHelp": "Tasarımı beğendiyseniz en iyi seçenektir. Değişiklikleri eşyanın alanıyla sınırlar.",
+		"redrawHelp": "Şekil veya tutuş değişebilir. Saklayıp saklamayacağınıza siz karar verirsiniz.",
+		"repairRequests": {
+			"one": "Bu onarım {n} PixelLab üretim isteği kullanır.",
+			"other": "Bu onarım {n} PixelLab üretim isteği kullanır."
+		},
+		"redrawRequests": {
+			"one": "Bu yeniden çizim {n} PixelLab üretim isteği kullanır.",
+			"other": "Bu yeniden çizim {n} PixelLab üretim isteği kullanır."
+		},
+		"redrawSaves": {
+			"one": "Onarıma göre tahmini {n} üretim hakkı daha az.",
+			"other": "Onarıma göre tahmini {n} üretim hakkı daha az."
+		},
+		"redrawCostsMore": {
+			"one": "Onarıma göre tahmini {n} üretim hakkı daha fazla.",
+			"other": "Onarıma göre tahmini {n} üretim hakkı daha fazla."
+		},
+		"billingNote": "Tahminler üretim sayısını karşılaştırır, dolar fiyatlarını değil. PixelLab dolar cinsinden ücret alabilir ve bekleme süresi değişebilir."
 	},
 	"newCharacterButton": {
 		"newCharacter": "Yeni karakter",
@@ -464,14 +488,12 @@
 		"characterView": "Karakter görünümü",
 		"mountSettings": "Binek ayarları",
 		"titleMountSettingsMounted": "Binek ayarları (binek üzerinde)",
-		"randomLook": "Rastgele görünüm",
 		"titleRandomLookItemsAndColors": "Rastgele görünüm (eşya ve renkler)",
 		"shareCharacter": "Karakteri paylaşın",
 		"export": "Dışa aktarın",
 		"moreOptions": "Diğer seçenekler",
 		"showMount": "Bineği gösterin",
 		"hideLegs": "Bacakları gizleyin",
-		"none": "Hiçbiri",
 		"farLeg": "Uzaktaki bacak",
 		"bothLegs": "İki bacak da",
 		"cutsBelowTheHipsHandsMayBe": "Kalçanın altını keser. Eller kesilebilir, sarkan eşyalar kaybolabilir.",
@@ -482,7 +504,6 @@
 		"pixelLabAccount": "PixelLab hesabı",
 		"lightMode": "Açık mod",
 		"darkMode": "Koyu mod",
-		"sourceCode": "Kaynak kodu",
 		"viewPreview": "Önizleme",
 		"viewTopDown": "Üstten görünüm",
 		"viewSide": "Yandan kaydırmalı",
@@ -501,7 +522,11 @@
 		"rename": "Yeniden adlandırın…",
 		"setUpCharacter": "Karakteri hazırlayın…",
 		"connectPixelLab2": "PixelLab hesabını bağlayın…",
-		"characterSelection": "Karakter seçimi"
+		"characterSelection": "Karakter seçimi",
+		"wardrobeSettings": "Gardırop ayarları",
+		"ownItemsOnly": "Yalnızca kendi eşyaları",
+		"workspace": "Çalışma alanı…",
+		"workspaceActions": "Çalışma alanı işlemleri"
 	},
 	"wardrobe": {
 		"randomLowerItem": "{lower} için rastgele eşya",
@@ -708,7 +733,7 @@
 		"tookOffTwoHanded": "{names} çıkarıldı (çift elli)",
 		"tookOffForTwoHanded": "{names} çıkarıldı: {name} çift elli",
 		"wearingUnfitted": "{name}, {sourceName} karakteri için çizildiği haliyle giydirildi. Bu gövdeye tam oturmayabilir. Üretim hakkı kullanılmadı.",
-		"wearingUnfittedAtSize": "{name}, {sourceName} karakteri için çizildiği haliyle, özgün {size} px boyutunda giydirildi. Bu gövdeye tam oturmayabilir. Üretim hakkı kullanılmadı.",
+		"wearingUnfittedAtSize": "{name}, {sourceName} karakteri için çizildiği haliyle, özgün {size} kare boyutunda kuşanıldı. Bu gövdeye tam oturmayabilir. Üretim hakkı kullanılmadı.",
 		"fittedItem": "{sourceName} karakterindeki {name} ücretsiz uyarlandı. Her animasyonda kontrol edin.",
 		"copiedSharedItem": "{name}, {sourceName} karakterinden kopyalandı. Üretim hakkı kullanılmadı.",
 		"copiedMoreFrames": {
@@ -751,7 +776,9 @@
 		"thisOperationChangedReviewTheBodyColors": "Bu işlem değişti. Gövde renklerini yeniden inceleyin.",
 		"theBodyColorCorrectionsChangedReviewTheir": "Gövde rengi düzeltmeleri değişti. Ücretlerini yeniden inceleyin.",
 		"anotherRigSetupIsStillRunningSo": "Başka bir rig kurulumu devam ettiğinden bu kurulum başlatılmadı. Seçimleriniz korundu.",
-		"characterReadyForSkeletonPosedItemsAnd": "Karakter, iskelete göre pozlanan eşyalar ve yeni animasyonlar için hazır"
+		"characterReadyForSkeletonPosedItemsAnd": "Karakter, iskelete göre pozlanan eşyalar ve yeni animasyonlar için hazır",
+		"couldNotCheckCopiedFrames": "Kopyalanan eşyaların kareleri kontrol edilemedi: {reason}",
+		"couldNotReadSharedItems": "Diğer karakterlerinizin eşyaları okunamadı: {reason}"
 	},
 	"history": {
 		"wear": "Giydirme: {name}",
@@ -760,7 +787,6 @@
 		"changeColor": "Renk değişikliği",
 		"resetColors": "Renkleri sıfırlama",
 		"randomItem": "{name} için rastgele eşya",
-		"randomLook": "Rastgele görünüm",
 		"saveOutfit": "Kıyafet kaydetme",
 		"deleteOutfit": "Kıyafet silme",
 		"show": "Gösterme: {name}",
@@ -849,7 +875,9 @@
 			"xpTitle": "XP ve Pokémon Essentials",
 			"xpSub": "4 × 4 düzen · Name.png"
 		},
-		"playback": { "none": "Hiçbiri", "all": "Tümü" },
+		"playback": {
+			"all": "Tümü"
+		},
 		"outfits": {
 			"none": "Hiçbiri",
 			"saved": "Mevcut görünüm + kayıtlı kıyafetler",
@@ -1193,7 +1221,6 @@
 	"studioModel": {
 		"itemQualityReview": "{name}: Eşya kalite kontrollerinin incelenmesi gerekiyor. Ücretli yeniden deneme başlatılmadı.",
 		"bodyQuality": "{move} {direction}: {reason}",
-		"facts": { "pixels": "{count} px" },
 		"health": {
 			"clean": "Sorunsuz",
 			"accepted": "Kabul edildi",
@@ -1238,7 +1265,8 @@
 				"other": "{move} animasyonunda {count} kareye eldeki eşya yapıştırıldı ({direction}); hareket ettiğini kontrol edin"
 			},
 			"noRepairGrid": "{move} ({direction}) için onarım ızgarası yok: {reason}; en iyi deneme korundu",
-			"heldLoop": "Animasyon döngüye girdiğinde eldeki eşyanın şekli veya açısı değişiyor"
+			"heldLoop": "Animasyon döngüye girdiğinde eldeki eşyanın şekli veya açısı değişiyor",
+			"registrationShift": "PixelLab saydam bir kenar döndürdü ve sayfayı kaydırmış olabilir. Eşyanın her karede hizalandığını kontrol edin."
 		},
 		"anotherCharacter": "başka bir karakter",
 		"unfit": {
@@ -1364,7 +1392,7 @@
 		"notConnected": "Bağlı değil",
 		"unavailable": "Kullanım bilgisi alınamadı",
 		"checking": "Kullanım kontrol ediliyor…",
-		"credits": "{credits} ek kredi kaldı"
+		"credits": "Kalan kredi: {credits}"
 	},
 	"generation": {
 		"outcome": {
@@ -1512,7 +1540,7 @@
 				"other": "{action} · {count} kare"
 			},
 			"itemPoseNote": "Yalnızca bilinen alanlar. Giydirilmiş referans görselini, kayıtlı pozları olduğu gibi, görünümü, eylemi, yönü ve seed değerini gönderir.",
-			"itemEditNote": "Yalnızca bilinen alanlar. İstek gönderilirken kareler ve image_size bu karakterden hazırlanır.",
+			"itemEditNote": "Yalnızca bilinen alanlar. Kareler ve image_size gönderim sırasında hazırlanır.",
 			"singleInput": "İki karelik API alt sınırı için tek girdi çoğaltılır. Dönen karelerden yalnızca ilki kullanılır.",
 			"coverage": "Kapsam: {cells}.",
 			"createMotion": "Hareket oluşturun · {direction}",
@@ -1527,7 +1555,6 @@
 			"itemCells": "{item} · {cells}",
 			"anchorNote": "Kayıtlı ayakta duruş tasarımını ilk referans karesi olarak kullanır ve yalnızca sabit ekipman karelerini düzenler. Dönen referans karesi atılır. Kapsam: {cells}. Gövde veya iskelet isteği gönderilmez. Planlanan her parti bir kez çalışır; ücretli yeniden denemeler ayrı istek gerektirir.",
 			"repairEquipment": "{item} {direction} · Ekipmanı onarın",
-			"repairEquipmentNote": "Aynı yönden korumalı bir referansla yalnızca seçilen ekipman karelerini düzenler. Gövde değişmez; sonuçlar yalnızca kalite artarsa korunur.",
 			"framesRange": "{item} {direction} · {from}–{to} arası kareler",
 			"gridBatchNote": "İçe aktarılan şüpheli eklemleri takip etmek yerine sabit gövde karelerini giydirir. Korumalı ayakta duruş referansları ve giysi maskeleri tasarımı korur. Planlanan her parti bir kez denenir; ücretli yeniden deneme için sizin işlem yapmanız gerekir.",
 			"poseBatchNote": "Bu eşyanın giydirilmiş referansını, temel gövdenin kayıtlı dinlenme pozu anahtar noktalarını, seçili animasyon pozlarını, görünümü, eylemi, yönü ve seed değerini gönderir. Planlanan her parti bir kez denenir; ücretli yeniden deneme veya onarım için sizin işlem yapmanız gerekir.",
@@ -1538,8 +1565,19 @@
 			"stopSubmitted": "Gönderilmiş üretimi durdurun",
 			"stopSubmittedNote": "İş zaten tamamlandıysa iptal başarısız olabilir; ücret alınmış olabilir.",
 			"resumeNote": "Devam ettiğinizde bekleyen istek, koşullar sağlanınca gönderilebilir. Burada gösterilen görsel referansları yerelde saklanır; özgün görsel verileri gönderilir.",
-			"pollNote": "Gönderilmiş bu işin durumunu kontrol etmeye devam eder."
-		}
+			"pollNote": "Gönderilmiş bu işin durumunu kontrol etmeye devam eder.",
+			"conceptNote": "Yüklenen görsel karakter karelerinden önce gönderilir. Çıktısı kullanılmaz.",
+			"redrawEquipment": "{item} {direction} · ekipmanı yeniden çiz",
+			"redrawEquipmentNote": "{width}×{height}, kareler {from}–{to}. Maskesiz bir sayfa ve eşleşen bir referans gönderir. PixelDoll neyi tutacağını sınırlar ve karelerinizi değiştirmeden önce her zaman sorar. PixelDoll için Tier 1 gerekir. Dolar olarak faturalanırsa minimum {minimum} olur; gerçek ücret daha yüksek olabilir.",
+			"gridRepairNote": "{width}×{height}, kareler {from}–{to}. Aynı yönden korumalı bir referans kullanır. Gövde değişmez. Görsel olarak engelleyici sorunları olan tamamlanmış onarımlar incelenmeniz için tutulur."
+		},
+		"copyEndpointTitle": "Uç noktayı kopyala",
+		"manualCopyLabel": "Elle kopyalamak için uç nokta",
+		"copyEndpointLabel": "Uç noktayı kopyala: {method} {endpoint}",
+		"copyEndpointLabelContext": "Uç noktayı kopyala: {method} {endpoint}, {label}",
+		"endpointCopiedLabel": "Uç nokta kopyalandı: {method}, {label}",
+		"endpointCopiedCall": "Uç nokta kopyalandı: {method}, çağrı {number}",
+		"copyFailed": "Otomatik kopyalanamadı. Kopyalamak için uç nokta alanını kullanın."
 	},
 	"activity": {
 		"error": {
@@ -1586,7 +1624,6 @@
 			"other": "Aynı anda en fazla {count} iş."
 		},
 		"busy": "PixelLab meşgul; başka bir uygulamada kullanılıyor olabilir. Tekrar denemeden önce {seconds} sn bekleniyor. İşleriniz kuyrukta kalır.",
-		"waitingForTab": "PixelDoll başka bir sekmede çalışıyor; bu sekme işinizi henüz başlatamaz. O sekmeyi kapatırsanız iş burada başlar. İptal etmek için Bitti düğmesine basın.",
 		"follower": "Başka bir sekmede çalışıyor. Anahtarlar bağlandığınız sekmede kalır. PixelLab hesabınızı kuyruğun çalıştığı sekmede bağlayın veya işleri burada çalıştırmak için o sekmeyi kapatın.",
 		"pausedAuth": "PixelLab anahtarı kabul etmedi. Yeniden bağlanana kadar işler bekler.",
 		"pausedOffline": "Çevrimdışısınız. Kuyruktaki işler bekler, gönderilmiş işler tamamlanabilir. Bilinen işlere devam etmek için yeniden bağlanın.",
@@ -1614,7 +1651,10 @@
 			"checking": "Bu iş akışını başlatmadan önce PixelLab planı kontrol ediliyor.",
 			"verifying": "PixelLab planının doğrulanması bekleniyor. Otomatik olarak yeniden deneniyor.",
 			"tier": "PixelLab Tier {tier} veya üzeri gerekir. İstek gönderilmedi."
-		}
+		},
+		"cancelRequest": "İsteği iptal et",
+		"waitingTitle": "Başka bir sekme bekleniyor",
+		"waitingBody": "Üretiminiz henüz başlamadı. Etkinlik’i açık tutun; diğer sekme hazır olduğunda PixelDoll burada devam eder."
 	},
 	"genCard": {
 		"retryKey": "Yeniden deneme, tasarımın renklerine göre belirlenen {color} bir arka plan kullanır",
@@ -1687,7 +1727,9 @@
 			"detail": "Ayrıntı",
 			"seed": "Seed",
 			"method": "Yöntem",
-			"colorKey": "Renk anahtarı"
+			"colorKey": "Renk anahtarı",
+			"reference": "Referans",
+			"startingSprite": "Başlangıç sprite’ı"
 		},
 		"method": {
 			"skeletonPose": "İskeletle pozlama",
@@ -1709,15 +1751,15 @@
 		"onlyDirection": "Yalnızca {direction}",
 		"oneDirection": "Yalnızca bir yön",
 		"directions": "{count} yön",
-		"cell": "Hücre",
-		"cellSize": "{w}×{h}, pivot noktası {x},{y}",
 		"mirrorOf": "{direction} ({source} yönünün aynası)",
 		"failed": "Başarısız: Ayrıntılar için dokunun",
 		"adding": "Ekleniyor… {done}/{total}",
 		"waitingForFailed": "Başarısız animasyon bekleniyor",
 		"add": "Animasyon ekleyin",
-		"addBase": "Ekleyin: {moves}",
-		"estimate": "Tahmini {gens} üretim hakkı"
+		"estimate": "Tahmini {gens} üretim hakkı",
+		"bodySize": "{w}×{h} piksel",
+		"frameSize": "{w}×{h} piksel, pivot noktası {x},{y}",
+		"waitingForRepairReview": "Eşya karelerinin incelenmesi bekleniyor"
 	},
 	"setup": {
 		"warnings": {
@@ -1796,7 +1838,6 @@
 			"anchoredEquipmentGenerationRequires": "Referansa dayalı ekipman üretimi için mevcut bir animasyon ve kayıtlı ayakta duruş eşyaları gerekir. Üretim isteği gönderilmedi.",
 			"moveItemMissingStored": "Bu animasyonun veya eşyanın kayıtlı eklemleri ya da ayakta duruş referansları eksik. Ekipman üretmeden önce pozlarını kurun. Üretim isteği gönderilmedi.",
 			"setUpRigFirst": "Animasyon eklemeden önce bu karakterin poz rig'ini kurun.",
-			"chooseExistingMoveRepairing": "Ekipmanını onarmadan önce mevcut bir animasyon seçin.",
 			"newMoveNeedsEvery": "Yeni bir animasyon için bağımsız çizilen tüm yönler gerekir.",
 			"partialRepairMustKeep": "Kısmi onarımda mevcut kare sayısı korunmalıdır.",
 			"selectedEquipmentLongerStanding": "Seçilen ekipmanın artık seçili görünümlerin tamamı için ayakta duruş tasarımı yok. Tekrar denemeden önce ekipman seçimini inceleyin. Üretim isteği gönderilmedi.",
@@ -1836,7 +1877,6 @@
 			"originalCompletedBodyRender": "{direction}: Özgün ve tamamlanmış gövde çizimi kullanılamıyor. Gövde yeniden üretilmedi.",
 			"cachedBodyRenderIncomplete": "{direction}: Önbellekteki gövde çizimi eksik.",
 			"cachedBodyFramesDo": "{direction}: Önbellekteki gövde kareleri bu karaktere uymuyor. Gövde yeniden üretilmedi.",
-			"repairStillFailsQuality": "{name} {id} {direction}: Onarım hâlâ kalite kontrollerini geçemiyor. Mevcut görsel korundu; tekrar denemeden önce Etkinlik bölümünü inceleyin.",
 			"demoStandingBodyFacing": "Demonun {id} yönünde ayakta duran gövdesi yok.",
 			"requestStopped": "{label}: {state}{error}",
 			"requestStoppedResume": "{label}: {state}{error}. Üretim, istek yeniden gönderilmeden durdu. Yeniden başlamadan önce bu isteği Etkinlik bölümünde inceleyin.",
@@ -1859,7 +1899,13 @@
 			"partialSavedNewFrames": "{reason} Tamamlanan görünümler kaydedildi ({views}). Yeni kareler üretin seçeneği yalnızca eksik kareleri ister.",
 			"partialSavedRetry": "{reason} Tamamlanan görünümler kaydedildi ({views}). Tekrar deneyin seçeneği yalnızca eksik kareleri ister.",
 			"replacementFailsQa": "Yeni kareler hâlâ gövde pozu kalite kontrollerini geçemiyor. Mevcut yönler korundu. Tekrar denemeden önce sonuçları inceleyin.",
-			"newMoveFailsQa": "Yeni animasyon gövde pozu kalite kontrollerini geçemediği için kaydedilmedi. Tekrar denemeden önce sonuçları inceleyin."
+			"newMoveFailsQa": "Yeni animasyon gövde pozu kalite kontrollerini geçemediği için kaydedilmedi. Tekrar denemeden önce sonuçları inceleyin.",
+			"moveDirectionsChanged": "Karakterin yönleri değişti. Yeniden denemeden önce animasyonun güncel tahminini inceleyin. Üretim isteği gönderilmedi.",
+			"reviewItemRedrawFirst": "Üretmeden önce eşyanın yeniden çizimini ve tahminini inceleyin. İstek gönderilmedi.",
+			"chooseRepairTarget": "Onarmadan önce bir eşya ve mevcut bir animasyondan bir yön seçin. Üretim isteği gönderilmedi.",
+			"describedFramesBlocked": "Tarifle üretilen animasyonlar 4, 8 veya 12 kare olabilir. Bu animasyonun {frames} karesi var. Üretim isteği gönderilmedi.",
+			"describeMoveBlocked": "Bu animasyonu üretmeden önce tarif edin. Üretim isteği gönderilmedi.",
+			"chooseExistingMoveRepairing": "Ekipmanını onarmadan önce mevcut bir animasyon seçin."
 		},
 		"steps": {
 			"draw": "Karakteriniz çiziliyor",
@@ -2007,6 +2053,15 @@
 				"noAnswer": "PixelLab net bir yanıt vermedi. Metniniz korundu.",
 				"failedApi": "PixelLab bu metni geliştiremedi. Metniniz korundu.",
 				"failed": "Geliştirme başarısız oldu. Metniniz korundu."
+			},
+			"sizeGuideReference": "Boyut kılavuzu ve referans",
+			"reference": {
+				"frontFacing": "Öne bakan bir sprite kullanın.",
+				"concept": "Bir eskiz veya karakter tasarımı kullanın.",
+				"style": "Stil örneği olarak bir görsel kullanın.",
+				"tooLarge": "En fazla {max} × {max} piksel boyutunda bir referans seçin.",
+				"increaseBody": "Bu referansın sığması için gövde boyutunu artırın veya daha küçük bir görsel seçin.",
+				"increaseFrame": "Bu referansın sığması için kare boyutunu artırın veya daha küçük bir sprite seçin."
 			}
 		},
 		"sheet": {
@@ -2054,15 +2109,14 @@
 			"add": "{move} animasyonunu ekleyin",
 			"replaceViews": "{move} animasyonunun görünümlerini değiştirin",
 			"queue": "{move} animasyonunu kuyruğa alın",
-			"queueViews": "{move} animasyonunun görünümlerini kuyruğa alın",
-			"move": "animasyon"
+			"move": "animasyon",
+			"queueReplacement": "Görünüm değiştirmeyi sıraya al: {move}"
 		},
 		"titleRepair": "Eşya karelerini onarın",
 		"titleReplace": "Animasyon görünümlerini değiştirin",
 		"heldBy": "{move} animasyonu {character} karakterinde başarısız oldu, bu yüzden yeni animasyonlar bekliyor. Tekrar denemek veya baştan başlamak için açın.",
 		"open": "Şu karakteri açın: {character}",
 		"progressLabel": "Devam eden animasyon üretimi",
-		"repairNote": "Yalnızca seçili eşya kareleri yeniden çizilir; gövde sabit kalır. Kritik kontrolleri geçemeyen sonuçların yerine önceki eşya kareleri korunur.",
 		"retryFeature": "Bu animasyonu yeniden üretme",
 		"savedFramesNote": "Bu animasyona ve ekipmana uyan tamamlanmış görselleri aramak için Kayıtlı kareleri kullanın seçeneğini seçin. Bu kareler kurtarılırken PixelLab hizmetine istek gönderilmez.",
 		"checkingCached": "Önbellekteki kareler kontrol ediliyor…",
@@ -2100,21 +2154,12 @@
 		"demo": "Animasyonlar kendi karakterinize eklenir.",
 		"needsSetup": "Animasyon eklemek için bu karakterin poz rig'ini kurun. Mevcut görselleriniz ve katmanlarınız hizalı kalır.",
 		"added": "{move} · eklendi",
-		"viewsToReplace": "Değiştirilecek görünümler",
-		"replaceNote": "Yeni görünümler kaydedildiğinde bu yönlerin eski ekipman kareleri silinir. Seçili ekipman yalnızca gövde kontrolleri geçerse canlandırılır. Diğer ekipmanlar yeni kareler üretilene kadar bu yönlerde gizli kalır. Diğer görünümler ve animasyonlar değişmez.",
-		"replaceNoteMirrored": "Yeni görünümler kaydedildiğinde bu yönlerin eski ekipman kareleri silinir. Seçili ekipman yalnızca gövde kontrolleri geçerse canlandırılır. Diğer ekipmanlar yeni kareler üretilene kadar bu yönlerde gizli kalır. Diğer görünümler ve animasyonlar değişmez. Aynalanmış görünümler kaynak yöne göre güncellenir.",
-		"chooseToReplace": "Seçili görünümleri değiştirmek için mevcut bir animasyon seçin.",
 		"describeReplacement": "Yeni görünümü tarif edin",
-		"describe": "Ya da kendiniz tarif edin",
 		"describePlaceholder": "Örn. yerinde zıplama",
-		"emptyHands": "Gövde boş ellerle ve efektsiz çizilir. Silahları ve aksesuarları eşya olarak ekleyin.",
 		"alreadyQueued": "{move} zaten kuyrukta.",
 		"waitsForCurrent": "Süren animasyon tamamlanınca kendiliğinden başlar.",
 		"addFeature": "Giyili eşyalar için animasyonlar",
 		"animateItems": "Bu eşyaları da canlandırın",
-		"itemsNote": "Varsayılan olarak hiçbir eşya seçili değildir. Gövde kontrolleri bu animasyonu durdurursa ekipman istekleri gönderilmez. Ekipmanı daha sonra her eşyanın ayrıntılarından üretebilirsiniz.",
-		"listNote": "Bu listede yalnızca üretilen tüm görünümlerde gövdenin pozlarını takip edebilen ekipman gösterilir. Paylaşılan kopyalar, kareleri olan görünümlerde yine giydirilebilir. Uyarlanmamış bir kopyayı canlandırmak için bu karaktere özel bir tane üretin. Diğer eşyaların ayrıntılarında mevcut animasyonlar için kare üretme seçeneği olabilir.",
-		"billing": "PixelLab bazı çağrıları dolar cinsinden ücretlendirebilir. Yeniden denemeler ve alternatif işlemler ek ücrete tabidir; bekleme süresi değişir.",
 		"pipeline": {
 			"described": "pixminimax hareketi (silahsız, aksesuarsız, efektsiz) → eklemler → dinlenme görünümünde ham skeleton-v3",
 			"walk": "skeleton-v3 yürüme hareketi → eklemler → dinlenme görünümünde ham skeleton-v3",
@@ -2122,12 +2167,68 @@
 			"grid": "{frames} kare × {dirs} yön",
 			"gridMirrored": "{frames} kare × {dirs} yön ({mirrored} aynalanmış)",
 			"cost": "gövde ≈ {body} üretim hakkı, eşyalar {items} üretim hakkı · Gövde inceleme notları yeniden çizim başlatmaz."
+		},
+		"changedDuringEdit": "Bu animasyon siz düzenlerken değişti. Devam etmek için yeniden seçin.",
+		"duplicateOption": "Bu animasyon zaten seçenekler arasında: {move}. Açıklamaya başka sözcüklerle başlayın.",
+		"costNotice": "PixelLab dolar üzerinden ücret alabilir. Yeniden denemeler ve alternatif yöntemler ek ücrete tabidir.",
+		"describeNew": "Yeni bir animasyon tarif edin",
+		"describeMotion": "Hareketi tarif edin",
+		"motionOnly": "Yalnızca gövdenin hareketini tarif edin. Silah ve aksesuarları eşya olarak ekleyin.",
+		"orChoose": "Veya bir animasyon seçin",
+		"redrawDirections": "Yeniden çizilecek yönler",
+		"redrawHidesEquipment": "Bu görünümler değiştirildiğinde, yeni kareler oluşturulana kadar ekipman gizlenir.",
+		"redrawMirrors": "Aynalanan görünümler de değişir: {directions}.",
+		"redrawOtherMoves": "Diğer animasyonlar değişmez.",
+		"equipmentWaitsForBody": "Gövde kontrolleri animasyonu durdurursa ekipman üretim isteği gönderilmez.",
+		"uncheckedItemsHidden": "Seçilmeyen eşyalar hareketlendirilene kadar gizli kalır.",
+		"fittedEquipmentOnly": "Burada yalnızca seçilen tüm görünümlere uyarlanmış ekipman hareketlendirilebilir. Paylaşılan kopyalar karelerinin bulunduğu görünümlerde giyilmeye devam edebilir.",
+		"review": {
+			"redrawTitle": "Eşyanın yeniden çizimini inceleyin",
+			"repairTitle": "Eşya onarımını inceleyin",
+			"redrawProgress": "Eşya karelerini yeniden çizin",
+			"keepCurrent": "Geçerli kareleri koruyun",
+			"finish": "İncelemeyi bitirin",
+			"useRedrawn": "Yeniden çizilen kareleri kullanın",
+			"useRepaired": "Onarılan kareleri kullanın",
+			"heldBy": "{character} için bir eşyanın kareleri incelemeye hazır. Sıradaki hareketler seçimini bekleyecek.",
+			"compare": "Eşya karelerini karşılaştırın",
+			"saved": "Yeni kareler kaydedildi. Devam etmek için incelemeyi bitirin.",
+			"redrawIssues": "Yeniden çizim hazır ancak bazı kareler hizalanmamış olabilir. Kalite bulgularını inceleyin.",
+			"redrawReady": "Yeniden çizim karşılaştırmaya hazır.",
+			"repairIssues": "Ücretli onarım hazır ancak bazı karelerde görsel sorunlar olabilir.",
+			"noCost": "Geçerli görseller değişmedi. İki seçenek de ücretsiz. Daha sonra karar vermek için bu paneli gizleyin.",
+			"frame": "Kare {number}",
+			"currentFrames": "Geçerli kareler",
+			"redrawnFrames": "Yeniden çizilen kareler",
+			"repairedFrames": "Onarılan kareler",
+			"findings": "Kalite bulguları",
+			"redrawInManagingTab": "Yeniden çizimi PixelDoll işlerinizi yöneten sekmede inceleyin.",
+			"repairInManagingTab": "Onarımı PixelDoll işlerinizi yöneten sekmede inceleyin.",
+			"resumesQueue": "Bu incelemeyi bitirdiğinizde, sıradaki animasyonlar daha önce incelediğiniz maliyetlerle devam eder.",
+			"redrawNote": "Gövde değişmez. Herhangi bir kareyi değiştirmeden önce yeniden çizimi karşılaştırırsınız.",
+			"repairNote": "Gövde değişmez. Tamamlanan onarımda görsel sorun varsa sonuç incelemeniz için bekletilir.",
+			"currentFrame": "Geçerli kare {number}",
+			"redrawnFrame": "Yeniden çizilen kare {number}",
+			"repairedFrame": "Onarılan kare {number}"
 		}
 	},
 	"itemRoute": {
 		"errors": {
 			"noStandingMove": "Eksiksiz bir ayakta duruş animasyonu bulunamadı. Eşya üretmeden önce ayakta duruş görünümlerini içe aktarın veya karakteri tek karelik ayakta duruş referansıyla hazırlayın. Üretim isteği gönderilmedi.",
-			"skeletonUnavailable": "Bu karakterde bu eşya için iskeletle pozlama kullanılamıyor. Otomatik seçeneğini seçin."
+			"skeletonUnavailable": "Bu karakterde bu eşya için iskeletle pozlama kullanılamıyor. Otomatik seçeneğini seçin.",
+			"repairGridBounds": "Bu onarım ızgarası PixelLab'ın 32–512 px tuval sınırlarına sığmalı. Daha kısa bir animasyon seçin.",
+			"redrawTooLarge": "Bu yön tek bir istekte yeniden çizilemeyecek kadar büyük. Eşyayı onarın seçeneğini seçin.",
+			"repairGridCapacity": "Eşya karesi ve referansı tek bir onarım ızgarasına sığmıyor.",
+			"referenceTooLarge": "Bu eşyanın {width} × {height} px karesine sığan bir referans seçin.",
+			"referenceMissing": "Eşya referansı eksik.",
+			"referenceNoFit": "Eşya referansı kareye sığmıyor.",
+			"designFrameMissing": "Tasarım çağrısı, eşyanın giydirildiği bir kare döndürmedi.",
+			"incompleteReferenceFrames": "PixelLab eksik referans veya ayakta duruş kareleri döndürdü. Bağımlı istek gönderilmedi.",
+			"standingFrameSize": "PixelLab yanlış boyutta bir ayakta duruş karesi döndürdü. Bağımlı istek gönderilmedi.",
+			"layersMismatch": "Ekipman katmanları bu ekipman yuvasıyla eşleşmiyor. Üretim isteği gönderilmedi.",
+			"repairBatchMisaligned": "Bir onarım partisi hizasız kareler döndürdü. Kalan partiler durduruldu ve mevcut görsel korundu.",
+			"invalidItemGridSheet": "PixelLab kullanılamaz bir eşya ızgarası döndürdü. Tam olarak bir sayfa bekleniyordu. Mevcut görsel korundu.",
+			"invalidItemGridLayout": "PixelLab kullanılamaz bir eşya ızgarası döndürdü. Sayfanın kare düzeni yanlış. Mevcut görsel korundu."
 		}
 	},
 	"newItem": {
@@ -2147,7 +2248,6 @@
 		"copyDemo": "Demo gövdesini kopyalayın",
 		"feature": "Ekipman üretimi",
 		"needsSetup": "İskelete göre pozlanan ekipman, büyük boy silahlar ve yeni animasyonlar kullanmak için bu karakteri hazırlayın.",
-		"planError": "Bu karakterin kareleri eşya üreticiyle kullanılamıyor: {error}",
 		"standingFirst": "Önce ayakta duruş tasarımını üretin. Sonucu beğendiğinizde eşya ayrıntılarından her animasyon için ayrı kare üretebilirsiniz.",
 		"where": "Nereye takılır?",
 		"moreCategories": "Diğer kategoriler",
@@ -2182,7 +2282,8 @@
 			"ash": "kül grisi",
 			"ink": "mürekkep siyahı"
 		},
-		"routeLabel": "renk anahtarlı manken + iskeletle pozlanan anahtar kare / edit-animation-v2"
+		"routeLabel": "renk anahtarlı manken + iskeletle pozlanan anahtar kare / edit-animation-v2",
+		"referenceHint": "Yalnızca eşyayı gösterin."
 	},
 	"workspaceCopy": {
 		"title": "Çalışma alanı kopyasını açın",
@@ -2208,5 +2309,56 @@
 		"frameMeasure": "{size} × {size} px"
 	},
 	"sheet": { "later": "Daha sonra" },
-	"toast": { "dismiss": "Bildirimi kapatın" }
+	"toast": { "dismiss": "Bildirimi kapatın" },
+	"sharedVisibility": {
+		"heading": "Paylaşılan eşyaları gizle",
+		"all": "Tüm karakterler",
+		"hideAll": "Tüm karakterler için paylaşılan eşyaları gizle",
+		"hideDemo": "{name} (Demo) kaynaklı paylaşılan eşyaları gizle",
+		"hideCurrent": "{name} (Geçerli) için paylaşılan eşyaları gizle",
+		"current": "(Geçerli)",
+		"allOn": "Paylaşılan eşyalar tüm karakterlerde gizlenir.",
+		"notSaved": "Görünürlük değişti ancak tarayıcı bu ayarı kaydedemedi."
+	},
+	"versionRow": {
+		"actions": "Sürüm işlemleri",
+		"openSource": "Kaynak kodunu aç",
+		"viewCommit": "Commit’i görüntüle",
+		"copyDetails": "Sürüm ayrıntılarını kopyala",
+		"copied": "Sürüm kopyalandı",
+		"copyFailed": "Sürüm ayrıntıları kopyalanamadı."
+	},
+	"repairReview": {
+		"finishFirst": "Tamamlanan onarımı kullanıp kullanmayacağınıza önce Hareketler bölümünde karar verin.",
+		"recover": "İnceleme kaydedilemedi. Ek ücret ödemeden geri yüklemek için kayıtlı kareleri kullanın.",
+		"unsaved": "Onarım bu sekmede kullanılabilir, ancak inceleme kaydedilemedi. Kapatmadan veya yeniden yüklemeden önce karar verin.",
+		"unsavedMayNotRecover": "{notice} Yeniden yükledikten sonra kurtarma garanti değildir.",
+		"ready": "Eşyanın ücretli sonucu incelemeye hazır. Mevcut kareler değişmedi.",
+		"alreadySaved": "Onarım zaten kaydedildi. Devam etmek için incelemeyi tamamlayın.",
+		"saved": "Yeni kareler kaydedildi.",
+		"kept": "Eşyanın mevcut kareleri korundu."
+	},
+	"referenceField": {
+		"label": "Referans görseli",
+		"addImage": "Görsel ekleyin",
+		"chooseDifferent": "Farklı bir referans görseli seçin",
+		"opening": "Görsel açılıyor…",
+		"openingLabel": "Görsel açılıyor",
+		"dropHint": "Buraya bırakın veya dosya seçin",
+		"remove": "Referans görselini kaldırın",
+		"attached": "Referans görseli eklendi.",
+		"removed": "Referans görseli kaldırıldı.",
+		"oneAtATime": "Aynı anda tek bir görsel seçin.",
+		"unreadable": "Bu görsel açılamadı.",
+		"error": "Referans görseli eklenmedi. {reason}",
+		"resized": "{fromWidth} × {fromHeight} boyutundan {width} × {height} px boyutuna küçültüldü.",
+		"limits": "En fazla {width} × {height} px, {mb} MB."
+	},
+	"reference": {
+		"unsupported": "PNG, JPEG veya WebP görseli seçin.",
+		"tooLarge": "En fazla {mb} MB boyutunda bir görsel seçin.",
+		"unreadable": "Bu görsel açılamadı. Farklı bir dosya seçin.",
+		"noArtworkResized": "Küçültmeden sonra görünür bir çizim kalmadı. Farklı bir görsel seçin.",
+		"noArtwork": "Bu görselde görünür bir çizim yok. Farklı bir dosya seçin."
+	}
 }

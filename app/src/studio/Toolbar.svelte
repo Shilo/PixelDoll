@@ -15,13 +15,17 @@
 	import DeleteRow from './DeleteRow.svelte';
 	import NewCharacterButton from './NewCharacterButton.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
+	import MenuDisclosure from './MenuDisclosure.svelte';
+	import WardrobeVisibility from './WardrobeVisibility.svelte';
 	import ApiPeek from './ApiPeek.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
 	import PixelLabUsage from './PixelLabUsage.svelte';
+	import VersionRow from './VersionRow.svelte';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
 	import { characterFacts } from './model.ts';
+	import { sharedItemsHidden, sharedItemsHiddenForAll } from './wardrobeVisibility.svelte.ts';
 	import {
 		ui,
 		doc,
@@ -39,13 +43,14 @@
 		isDemo
 	} from './state.svelte.ts';
 	import {
-		Github,
-		Check,
+		Archive,
 		ChevronLeft,
-		ExternalLink,
 		ChevronRight,
 		Download,
 		FileArchive,
+		MonitorDown,
+		BookOpen,
+		RefreshCw,
 		Share2,
 		Ellipsis,
 		KeyRound,
@@ -64,12 +69,17 @@
 		Layers2,
 		Mountain,
 		Grid2x2,
-		PawPrint
+		PawPrint,
+		Shirt
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
+	const facts = $derived(m && characterFacts(m));
 	const name = $derived(characterName());
 	let mountMenuOpen = $state(false);
+	const currentWardrobe = $derived(
+		experience.screen === 'studio' && m && !isDemo() ? { id: doc.id, name } : undefined
+	);
 	const prompt = $derived(m?.items.find((it) => it.id === m.rig.baseItem)?.prompt ?? '');
 	const characterCount = $derived(store.projects.filter((p) => !p.dev).length);
 	const VIEWS = [
@@ -204,7 +214,10 @@
 				><span class="name-line"
 					><span class="name-text"><CharacterName id={doc.id} {name} /></span>
 					<ChevronDown size={16} /></span
-				>{#if m}<span class="name-facts">{characterFacts(m).map(displayMessage).join(' · ')}</span
+				>{#if facts}<span class="name-facts"
+						>{t('sizePreview.frame', { measure: facts.frame })} · {facts.counts
+							.map(displayMessage)
+							.join(' · ')}</span
 					>{/if}</button
 			>{:else}<span class="brand"><PersonStanding size={20} />PixelDoll</span><span
 				class="brand-divider"
@@ -266,7 +279,7 @@
 			<button
 				class="bu-action header-random"
 				data-variant="quiet"
-				aria-label={t('toolbar.randomLook')}
+				aria-label={t('common.randomLook')}
 				title={t('toolbar.titleRandomLookItemsAndColors')}
 				disabled={!m}
 				onclick={randomize}><Dices size={18} /></button
@@ -356,7 +369,7 @@
 						bind:value={experience.mountLegs}
 						disabled={!experience.testMount}
 						aria-describedby="mount-legs-note"
-						><option value="none">{t('toolbar.none')}</option><option value="far"
+						><option value="none">{t('common.none')}</option><option value="far"
 							>{t('toolbar.farLeg')}</option
 						><option value="both">{t('toolbar.bothLegs')}</option></select
 					></label
@@ -379,11 +392,37 @@
 	class="menu options-menu bu-popover-anchor"
 	data-placement="bottom-end"
 	popover
-	ontoggle={popoverFocus}
+	ontoggle={(event) => popoverFocus(event)}
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
-		<!-- Phones move lower-frequency bar actions here, so the character name keeps its room. -->
+		<!-- PixelLab account: keep connection and account access first at every width. -->
+		{#if !workspaceCopy}<button
+				class="row bu-action"
+				data-variant="quiet"
+				onclick={() => {
+					closeOptions();
+					ui.sheet = 'connect';
+				}}
+				><KeyRound size={18} /><span class="row-name"
+					>{app.key
+						? app.keyRejected
+							? t('toolbar.keyNotAccepted')
+							: t('toolbar.pixelLabAccount')
+						: t('connectSheet.titleConnectPixelLab')}</span
+				></button
+			>{/if}
+		<a
+			class="row bu-action"
+			data-variant="quiet"
+			href="https://www.pixellab.ai/account"
+			target="_blank"
+			rel="noreferrer"
+		>
+			<PixelLabUsage />
+		</a>
+		<hr />
+		<!-- Character actions: demo editing and actions moved from the toolbar on smaller screens. -->
 		{#if experience.screen === 'studio'}<DemoCopyRow id={doc.id} close={closeOptions} />{/if}
 		{#if experience.screen === 'studio'}<button
 				class="row bu-action mobile-random"
@@ -392,7 +431,7 @@
 				onclick={() => {
 					closeOptions();
 					randomize();
-				}}><Dices size={18} /><span class="row-name">{t('toolbar.randomLook')}</span></button
+				}}><Dices size={18} /><span class="row-name">{t('common.randomLook')}</span></button
 			>{/if}
 		{#if experience.screen === 'studio'}<button
 				class="row bu-action mobile-undo"
@@ -431,79 +470,10 @@
 					ui.sheet = 'inspect';
 				}}><Grid2x2 size={18} /><span class="row-name">{t('experience.inspect')}</span></button
 			>{/if}
-		{#if experience.screen === 'studio'}<hr class="mobile-sep" />{/if}
-		<button
-			class="row bu-action"
-			data-variant="quiet"
-			onclick={() => {
-				closeOptions();
-				ui.sheet = 'activity';
-			}}
-			><Activity size={18} /><span class="row-name">{t('activity.title')}</span
-			>{#if $queue.role === 'follower'}<span class="small">{t('toolbar.otherTab')}</span
-				>{/if}</button
-		>
-		<ApiPeek scope="all" all menu />
-		{#if import.meta.env.PROD && !$pwa.installed}
-			{#if $pwa.installable || $pwa.installing}<button
-					class="row bu-action"
-					data-variant="quiet"
-					disabled={$pwa.installing}
-					onclick={() => {
-						void installApp();
-					}}
-					><Download size={18} /><span class="row-name">{t('pwaRuntime.installPixelDoll')}</span
-					></button
-				>
-			{:else}<button class="row bu-action" data-variant="quiet" onclick={requestInstallHelp}
-					><Download size={18} /><span class="row-name">{t('pwaRuntime.installationHelp')}</span
-					></button
-				>{/if}
-		{/if}
-		{#if $pwa.available}<button
-				class="row bu-action"
-				data-variant="quiet"
-				disabled={!$pwa.ready}
-				onclick={requestUpdate}
-				><Download size={18} /><span class="row-name"
-					>{t('toolbar.updateToVVersion', { version: $pwa.available.version })}</span
-				></button
-			>{/if}
-		<hr />
-		{#if !workspaceCopy}
-			<button
-				class="row bu-action"
-				data-variant="quiet"
-				onclick={() => {
-					closeOptions();
-					ui.sheet = 'workspaceExport';
-				}}><Download size={18} /><span class="row-name">{t('workspace.exportTitle')}</span></button
-			>
-			<a
-				class="row bu-action"
-				data-variant="quiet"
-				href={workspaceUrl(true)}
-				target="_blank"
-				rel="noopener"
-				onclick={closeOptions}
-				><FileArchive size={18} /><span class="row-name">{t('workspaceCopy.title')}</span></a
-			>
-			<button
-				class="row bu-action"
-				data-variant="quiet"
-				onclick={() => {
-					closeOptions();
-					ui.sheet = 'connect';
-				}}
-				><KeyRound size={18} /><span class="row-name"
-					>{app.key
-						? app.keyRejected
-							? t('toolbar.keyNotAccepted')
-							: t('toolbar.pixelLabAccount')
-						: t('connectSheet.titleConnectPixelLab')}</span
-				></button
-			>
-		{/if}
+		{#if experience.screen === 'studio'}<hr
+				class={{ 'mobile-sep': !doc.id.startsWith('fixture:') }}
+			/>{/if}
+		<!-- Preferences: change how the Studio looks, its language, or what the Wardrobe shows. -->
 		<button
 			class="row bu-action"
 			data-variant="quiet"
@@ -517,38 +487,99 @@
 			></button
 		>
 		<LanguagePicker />
+		<MenuDisclosure label={t('toolbar.wardrobeSettings')}>
+			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
+			{#snippet aside()}
+				{#if sharedItemsHiddenForAll() || (currentWardrobe && sharedItemsHidden(currentWardrobe.id))}
+					<span class="row-aside wardrobe-status faint small">{t('toolbar.ownItemsOnly')}</span>
+				{/if}
+			{/snippet}
+			<WardrobeVisibility current={currentWardrobe} />
+		</MenuDisclosure>
 		<hr />
-		<a
+		<!-- Diagnostics: inspect generation activity and API requests. -->
+		<button
 			class="row bu-action"
 			data-variant="quiet"
-			href="https://github.com/Shilo/PixelDoll"
-			target="_blank"
-			rel="noreferrer"
-			><Github size={18} /><span class="row-name">{t('toolbar.sourceCode')}</span><span
-				class="row-aside faint small"
-				translate="no">Shilo/PixelDoll</span
-			><ExternalLink size={16} /></a
+			onclick={() => {
+				closeOptions();
+				ui.sheet = 'activity';
+			}}
+			><Activity size={18} /><span class="row-name">{t('activity.title')}</span
+			>{#if $queue.role === 'follower'}<span class="small">{t('toolbar.otherTab')}</span
+				>{/if}</button
 		>
-		<a
-			class="row bu-action"
-			data-variant="quiet"
-			href="https://github.com/Shilo/PixelDoll/commit/{__APP_COMMIT__}"
-			target="_blank"
-			rel="noreferrer"
-			><PersonStanding size={18} /><span class="row-name"
-				>{t('toolbar.version', { version: __APP_VERSION__ })}</span
-			><span class="row-aside faint small num">{__APP_COMMIT__}</span><ExternalLink size={16} /></a
-		>
+		<ApiPeek scope="all" all menu />
 		<hr />
-		<a
-			class="row bu-action"
-			data-variant="quiet"
-			href="https://www.pixellab.ai/account"
-			target="_blank"
-			rel="noreferrer"
-		>
-			<PixelLabUsage />
-		</a>
+		{#if !workspaceCopy}
+			<!-- Workspace: export or open a copy independently of the active character. -->
+			<button class="row bu-action" data-variant="quiet" popovertarget="workspace-options">
+				<Archive size={18} />
+				<span class="row-name">{t('toolbar.workspace')}</span>
+				<ChevronRight size={16} aria-hidden="true" />
+			</button>
+			<div
+				id="workspace-options"
+				class="menu bu-popover-anchor"
+				data-placement="bottom-end"
+				popover
+				role="group"
+				aria-label={t('toolbar.workspaceActions')}
+				ontoggle={(event) => popoverFocus(event)}
+			>
+				<PopoverArrow />
+				<div class="menu-surface bu-popover-surface bu-floating">
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						onclick={() => {
+							closeOptions();
+							ui.sheet = 'workspaceExport';
+						}}
+						><Download size={18} /><span class="row-name">{t('workspace.exportTitle')}</span
+						></button
+					>
+					<a
+						class="row bu-action"
+						data-variant="quiet"
+						href={workspaceUrl(true)}
+						target="_blank"
+						rel="noopener"
+						onclick={closeOptions}
+						><FileArchive size={18} /><span class="row-name">{t('workspaceCopy.title')}</span></a
+					>
+				</div>
+			</div>
+			<hr />
+		{/if}
+		<!-- App info: installation, updates, source code, and build version. -->
+		{#if import.meta.env.PROD && !$pwa.installed}
+			{#if $pwa.installable || $pwa.installing}<button
+					class="row bu-action"
+					data-variant="quiet"
+					disabled={$pwa.installing}
+					onclick={() => {
+						void installApp();
+					}}
+					><MonitorDown size={18} /><span class="row-name">{t('pwaRuntime.installPixelDoll')}</span
+					></button
+				>
+			{:else}<button class="row bu-action" data-variant="quiet" onclick={requestInstallHelp}
+					><BookOpen size={18} /><span class="row-name">{t('pwaRuntime.installationHelp')}</span
+					></button
+				>{/if}
+		{/if}
+		{#if $pwa.available}<button
+				class="row bu-action"
+				data-variant="quiet"
+				disabled={!$pwa.ready}
+				onclick={requestUpdate}
+				><RefreshCw size={18} /><span class="row-name"
+					>{t('toolbar.updateToVVersion', { version: $pwa.available.version })}</span
+				></button
+			>{/if}
+		<VersionRow />
+		<!-- Attribution footer: keep this below the app links. -->
 		<AffiliationNotice />
 	</div>
 </div>
@@ -582,7 +613,8 @@
 		{#snippet proj(p: (typeof store.projects)[number])}
 			<CharacterActions id={p.id} name={p.name}>
 				<button
-					class="row"
+					class="row bu-action"
+					data-variant="row"
 					role="menuitemradio"
 					aria-checked={p.id === doc.id}
 					aria-label={p.name}
@@ -590,11 +622,13 @@
 				>
 					<CharacterThumb id={p.id} name={p.name} size={48} /><span class="row-name"
 						><CharacterName id={p.id} name={p.name} /></span
-					>{#if p.id === doc.id}<Check size={14} />{/if}
+					>
 				</button>
 			</CharacterActions>
 		{/snippet}
-		{#each store.projects.filter((p) => !p.dev) as p (p.id)}{@render proj(p)}{/each}
+		<div class="bu-choice-group project-choices">
+			{#each store.projects.filter((p) => !p.dev) as p (p.id)}{@render proj(p)}{/each}
+		</div>
 		<NewCharacterButton row />
 		{#if !isDemo()}<button
 				class="row"
@@ -670,8 +704,21 @@
 						class="faint small num">{devRigs.length}</span
 					></summary
 				>
-				{#each devRigs as p (p.id)}{@render proj(p)}{/each}
+				<div class="bu-choice-group project-choices">
+					{#each devRigs as p (p.id)}{@render proj(p)}{/each}
+				</div>
 			</details>
 		{/if}
 	</div>
 </div>
+
+<style>
+	.project-choices {
+		gap: 0;
+	}
+	@container (max-width: 300px) {
+		.wardrobe-status {
+			display: none;
+		}
+	}
+</style>
