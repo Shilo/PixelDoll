@@ -91,6 +91,11 @@
 			</button>
 			<hr />
 			{#each choices as { id, name } (id)}
+				{@const translated = localeName(id, activeLanguage)}
+				{@const showTranslation =
+					id !== activeLanguage &&
+					translated !== id &&
+					translated.toLocaleLowerCase(activeLanguage) !== name.toLocaleLowerCase(activeLanguage)}
 				<button
 					type="button"
 					class="row bu-action"
@@ -99,7 +104,11 @@
 					aria-disabled={pending}
 					onclick={() => switchLanguage(id)}
 				>
-					<span class="row-name" lang={id}>{name}</span>
+					<span class="row-name language-option">
+						<span lang={id}>{name}</span>{#if showTranslation}
+							{' '}<span class="small bu-muted" lang={activeLanguage}>({translated})</span>
+						{/if}
+					</span>
 					{#if $languagePreference === id}<Check size={16} aria-hidden="true" />{/if}
 				</button>
 			{/each}
@@ -115,6 +124,10 @@
 {/if}
 
 <style>
+	.language-option {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
 	.language-status {
 		margin: 6px 8px;
 	}

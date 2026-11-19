@@ -331,7 +331,7 @@ test('an offline launch needs no optional languages and retains a language used 
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await page.getByRole('button', { name: 'Language', exact: true }).click();
 		const languageMenu = page.getByRole('group', { name: 'Language', exact: true });
-		await languageMenu.getByRole('button', { name: 'Français', exact: true }).click();
+		await languageMenu.getByRole('button', { name: 'Français (French)', exact: true }).click();
 		await expect(languageMenu.getByRole('status')).toHaveText(
 			'Could not load that language. Reconnect and reload, then try again.'
 		);

@@ -66,7 +66,10 @@ test.describe('first Studio render in French', () => {
 		const frenchMenu = page.getByRole('group', { name: french.language.label, exact: true });
 		await expect(frenchMenu.getByRole('button').first()).toHaveText('Automatique (Français)');
 		await expect(frenchMenu.getByRole('button').first()).toHaveAttribute('aria-pressed', 'true');
-		await frenchMenu.getByRole('button', { name: 'English', exact: true }).click();
+		await expect(
+			frenchMenu.getByRole('button', { name: 'Deutsch (allemand)', exact: true })
+		).toBeVisible();
+		await frenchMenu.getByRole('button', { name: 'English (anglais)', exact: true }).click();
 		await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Language', exact: true })).toBeFocused();
 		await page.keyboard.press('Escape');
@@ -86,6 +89,7 @@ test.describe('first Studio render in French', () => {
 		await picker.focus();
 		await page.keyboard.press('Enter');
 		const menu = page.getByRole('group', { name: 'Language', exact: true });
+		await expect(menu.getByRole('button', { name: 'Deutsch (German)', exact: true })).toBeVisible();
 		await expect(menu.getByRole('button', { name: 'English', exact: true })).toHaveAttribute(
 			'aria-pressed',
 			'true'
@@ -116,7 +120,7 @@ test.describe('first Studio render in Traditional Chinese', () => {
 		const picker = page.getByRole('group', { name: 'Language', exact: true });
 		await expect(picker.getByRole('button').first()).toHaveText('Auto (English)');
 		await expect(picker.getByRole('button').first()).toHaveAttribute('aria-pressed', 'true');
-		await expect(picker.locator('button > [lang]')).toHaveText([
+		await expect(picker.locator('.language-option > [lang]:first-child')).toHaveText([
 			'Bahasa Indonesia',
 			'Deutsch',
 			'English',
