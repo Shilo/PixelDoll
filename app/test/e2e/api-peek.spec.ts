@@ -591,6 +591,16 @@ test('mirrored saved requests show their payload and updated charge without send
 					done: true,
 					results: [],
 					usage: { type: 'generations', generations: 2 }
+				},
+				{
+					id: 'mirrored-failed-job',
+					status: 'failed',
+					done: true,
+					results: [],
+					failedAtProvider: true,
+					errorCode: 3006,
+					error: 'Generation failed (PixelLab code 3006)',
+					usage: { type: 'generations', generations: 0 }
 				}
 			]
 		});
@@ -605,6 +615,9 @@ test('mirrored saved requests show their payload and updated charge without send
 	await peek(page).locator('.peek-call > summary').click();
 	await expect(peek(page)).toContainText('Saved request');
 	await expect(peek(page)).toContainText('a saved dwarf request');
+	await expect(peek(page)).toContainText(
+		'Job mirrored-failed-job failed: Generation failed (PixelLab code 3006)'
+	);
 	await page.evaluate(async () => {
 		const dbPath = '/src/lib/store/db.ts',
 			queuePath = '/src/lib/pixellab/queue.ts';

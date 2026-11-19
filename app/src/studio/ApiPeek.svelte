@@ -147,6 +147,13 @@
 	}
 </script>
 
+{#snippet jobStatus(job: NonNullable<ApiCall['job']>, id?: string)}
+	<p class="request-status">
+		Job{id ? ` ${id}` : ''}
+		{job.policy ? 'refused by content policy' : job.status}{job.error ? `: ${job.error}` : ''}
+	</p>
+{/snippet}
+
 <button
 	bind:this={opener}
 	type="button"
@@ -241,11 +248,12 @@
 								</p>{:else}<p class="request-status">
 									Planned · Estimate{c.background ? ' · Background' : ''}
 								</p>{/if}
-							{#if 'job' in c && c.job}<p class="request-status">
-									Job {c.job.policy ? 'refused by content policy' : c.job.status}{c.job.error
-										? `: ${c.job.error}`
-										: ''}
-								</p>{/if}
+							{#if 'job' in c && c.job}{@render jobStatus(c.job)}{/if}
+							{#if 'failedJobs' in c}
+								{#each c.failedJobs ?? [] as job (job.id)}
+									{@render jobStatus(job, job.id)}
+								{/each}
+							{/if}
 							{#if 'bodyUnavailable' in c && c.bodyUnavailable}<p class="request-status">
 									Some saved image inputs are no longer available. Copy includes stored references.
 								</p>{/if}

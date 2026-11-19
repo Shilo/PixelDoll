@@ -1158,8 +1158,8 @@ async function publishedMoveRecovery(rec: StoredProject, spec: MoveSpec): Promis
 }
 export const MOVE_STEPS = [
 	{ id: 'animate', label: 'Animating the body' },
-	{ id: 'items', label: 'Posing your items' },
-	{ id: 'save', label: 'Saving' }
+	{ id: 'save', label: 'Checking and saving the body' },
+	{ id: 'items', label: 'Posing your items' }
 ];
 export const isV13 = rigReady;
 /** Why a move can't take this id: Default is every character's standing views, never generated or replaced. */
@@ -2009,7 +2009,7 @@ export async function addMove(
 	});
 	const itemTotal = plans.reduce((n, p) => n + p.dirs.length, 0);
 	let posed = 0;
-	onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
+	if (itemTotal) onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
 	const tick = () =>
 		onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] });
 	for (const plan of plans) {
