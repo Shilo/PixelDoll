@@ -31,14 +31,18 @@ describe('randomVariants', () => {
 });
 
 describe('characterFacts', () => {
-	test('counts the character’s size, directions, moves and items with singular and plural words', () => {
+	test('reports both frame dimensions and pluralizes character counts', () => {
 		const m = fixture();
-		expect(characterFacts(m)).toBe('64 px · 4 directions · 2 moves · 6 items');
+		m.rig.cell = { w: 64, h: 48 };
+		expect(characterFacts(m)).toEqual({
+			frame: '64×48 px',
+			counts: '4 directions · 2 moves · 6 items'
+		});
 		m.rig.directions = m.rig.directions.slice(0, 1);
 		m.rig.animations = m.rig.animations.slice(0, 1);
 		m.items = m.items.filter((i) => i.id === m.rig.baseItem || i.id === 'cape_red');
-		expect(characterFacts(m)).toBe('64 px · 1 direction · 1 move · 1 item');
+		expect(characterFacts(m).counts).toBe('1 direction · 1 move · 1 item');
 		m.items = m.items.filter((i) => i.id === m.rig.baseItem);
-		expect(characterFacts(m)).toBe('64 px · 1 direction · 1 move · 0 items');
+		expect(characterFacts(m).counts).toBe('1 direction · 1 move · 0 items');
 	});
 });

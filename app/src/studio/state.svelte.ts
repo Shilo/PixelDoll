@@ -65,7 +65,7 @@ import type {
 	MoveSpec,
 	Progress
 } from './create.ts';
-import { characterFacts, uniqueBy } from './model.ts';
+import { characterFacts, pixelSize, uniqueBy } from './model.ts';
 import {
 	addCustom,
 	applySettings,
@@ -442,7 +442,7 @@ export interface ProjectRef {
 	/** Changes whenever the saved look does (body, items or outfit), so a character's thumbnail redraws only then. */
 	look: string;
 	/** Shape at a glance for saved characters; the demo's comes from its open manifest. */
-	facts?: string;
+	facts?: ReturnType<typeof characterFacts>;
 }
 class Store {
 	project = $state.raw<Project | null>(null);
@@ -1523,13 +1523,15 @@ async function addEntry(entry: SharedItem, lead = '') {
 		await openProject(projectId, { quiet: true });
 		const note = doc.id === projectId ? wear(item.id, true) : undefined,
 			shown = doc.id === projectId ? revealSlot(item.slot) : '';
+		const sourceFrame = entry.source.rig.cell;
+		const targetFrame = store.project?.manifest.rig.cell;
 		toast(
 			lead +
 				(item.unfitted
 					? `Wearing ${item.name} as drawn for ${entry.sourceName}${
-							entry.source.rig.cell.w === store.project?.manifest.rig.cell.w
+							sourceFrame.w === targetFrame?.w && sourceFrame.h === targetFrame.h
 								? ''
-								: ` at its own ${entry.source.rig.cell.w} px size`
+								: ` at its original ${pixelSize(sourceFrame)} frame size`
 						}. It may not line up with this body. No generations used.`
 					: item.refit
 						? `Fitted ${item.name} from ${entry.sourceName} for free. Check it in each move.`

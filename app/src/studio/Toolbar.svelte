@@ -79,6 +79,7 @@
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
+	const facts = $derived(m && characterFacts(m));
 	const name = $derived(characterName());
 	let mountMenuOpen = $state(false);
 	const hideSharedForAll = $derived(sharedItemsHiddenForAll());
@@ -207,7 +208,8 @@
 				><span class="name-line"
 					><span class="name-text"><CharacterName id={doc.id} {name} /></span>
 					<ChevronDown size={16} /></span
-				>{#if m}<span class="name-facts">{characterFacts(m)}</span>{/if}</button
+				>{#if facts}<span class="name-facts">Frame {facts.frame} · {facts.counts}</span
+					>{/if}</button
 			>{:else}<span class="brand"><PersonStanding size={20} />PixelDoll</span><span
 				class="brand-divider"
 				aria-hidden="true"

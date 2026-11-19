@@ -74,7 +74,7 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 			}, textSelector);
 		expect(result).toEqual({ height: 74, truncated: true });
 	};
-	await expectFixedRow('.character-row', 'strong, small');
+	await expectFixedRow('.character-row', 'strong, .character-counts');
 	await page.screenshot({ path: info.outputPath('characters-desktop-dark.png') });
 	await page.locator('.project-btn').click();
 	await expect(page.locator('.menu:popover-open .character-entry > .row').first()).toBeVisible();
@@ -273,7 +273,7 @@ test('move and outfit thumbnails load only with their tab and preserve saved col
 		await page.getByRole('menuitem', { name: 'Character selection', exact: true }).click();
 		await expect(page.locator('.character-row').first()).toBeVisible();
 		expect(await rowHeight('.character-row')).toBe(characterHeight);
-		await expectFixedRow('.character-row', 'strong, small');
+		await expectFixedRow('.character-row', 'strong, .character-counts');
 		await page.screenshot({ path: info.outputPath(`characters-phone-${theme}.png`) });
 		await enterStudio(page);
 		await equipmentMode(page, 'Moves');
