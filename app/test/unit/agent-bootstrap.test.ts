@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 const auth = vi.hoisted(() => ({ key: '', revision: 0, connect: vi.fn() }));
 vi.mock('svelte', () => ({ mount: vi.fn() }));
 vi.mock('../../src/App.svelte', () => ({ default: {} }));
+vi.mock('../../src/lib/i18n.ts', () => ({ setupI18n: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../../src/lib/app.svelte.ts', () => ({
 	app: {
 		get key() {

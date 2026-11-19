@@ -22,6 +22,7 @@ export default defineConfig({
 		]
 	],
 	use: {
+		locale: 'en-US',
 		baseURL,
 		viewport: { width: 1440, height: 900 },
 		acceptDownloads: true,

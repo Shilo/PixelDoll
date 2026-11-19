@@ -1,12 +1,12 @@
 <script lang="ts">
+	import { LocalizedError, errorMessage, message, type Message } from '../lib/message.ts';
+	import { formatNumber, t } from 'svelte-whisper';
+	import { displayError } from '../lib/i18n.ts';
 	import Sheet from './Sheet.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
-	import {
-		directionLabel,
-		directionProblem,
-		retainCharacterDirections
-	} from '../lib/rig/directions.ts';
+	import { directionProblemError, retainCharacterDirections } from '../lib/rig/directions.ts';
+	import { displayDirectionList, displayDirectionProblem } from './displayDirectionProblem.ts';
 	import type { DirectionName } from '../lib/rig/rig.ts';
 	import * as db from '../lib/store/db.ts';
 	import { loadProject } from '../lib/store/project.ts';
@@ -26,13 +26,13 @@
 	let excluded = $state.raw<DirectionName[]>([]);
 	let confirm = $state(false);
 	let busy = $state(false);
-	let error = $state('');
+	let error = $state<string | Message>('');
 	const retained = $derived(
 		record?.manifest.rig.directions.filter(({ id }) => !excluded.includes(id)) ?? []
 	);
 	const blocked = $derived(directionEditsBlocked(id));
 	const problem = $derived(
-		loaded && excluded.length ? directionProblem(loaded.project, retained, 'saved') : ''
+		loaded && excluded.length ? directionProblemError(loaded.project, retained, 'saved') : undefined
 	);
 	const losesCardinal = $derived(excluded.some((dir) => !dir.includes('-')));
 	$effect(() => {
@@ -43,10 +43,13 @@
 				await flushSave();
 				const saved = await loadProject(projectId, controller.signal);
 				if (saved.rec.origin !== 'studio')
-					throw new Error('This saved character is no longer available.');
+					throw new LocalizedError(
+						'This saved character is no longer available.',
+						'directionsSheet.characterUnavailable'
+					);
 				if (!controller.signal.aborted) loaded = saved;
 			} catch (failure) {
-				if (!controller.signal.aborted) error = (failure as Error).message;
+				if (!controller.signal.aborted) error = errorMessage(failure);
 			}
 		})();
 		return () => controller.abort();
@@ -64,21 +67,26 @@
 		try {
 			const next = await retainCharacterDirections(record, retained, loaded.project.images);
 			const reason = directionEditsBlocked(id);
-			if (reason) throw new Error(reason);
+			if (reason) throw reason;
 			next.savedAt = new Date().toISOString();
 			await db.saveCharacterDirections(record, next);
 		} catch (failure) {
-			error = (failure as Error).message;
+			error = errorMessage(failure);
 			busy = false;
 			return;
 		}
 		try {
 			if (await refreshCharacterDirections(id))
-				toast(`Removed ${excluded.length} ${excluded.length === 1 ? 'direction' : 'directions'}`);
-			else toast('Directions were saved. Reload to refresh the character.', { tone: 'warning' });
+				toast(message('directionsSheet.removed', { count: excluded.length }));
+			else
+				toast(message('directionsSheet.directionsWereSavedReloadToRefreshThe'), {
+					tone: 'warning'
+				});
 		} catch (failure) {
 			toast(
-				`Directions were saved. Reload to refresh the character: ${(failure as Error).message}`,
+				message('directionsSheet.directionsWereSavedReloadToRefreshThe2', {
+					reason: errorMessage(failure)
+				}),
 				{ tone: 'warning' }
 			);
 		} finally {
@@ -87,11 +95,13 @@
 	}
 </script>
 
-<Sheet title="Directions" cancelDisabled={busy} onclose={() => (ui.sheet = null)}>
+<Sheet title={t('common.directions')} cancelDisabled={busy} onclose={() => (ui.sheet = null)}>
 	{#if record}
-		<p class="muted">Choose which directions to keep for {record.manifest.name}.</p>
+		<p class="muted">
+			{t('directionsSheet.chooseWhichDirectionsToKeepForName', { name: record.manifest.name })}.
+		</p>
 		<DirectionCompass
-			label="Directions to keep"
+			label={t('directionsSheet.labelDirectionsToKeep')}
 			available={record.manifest.rig.directions.map(({ id }) => id)}
 			selected={retained.map(({ id }) => id)}
 			mirrors={Object.fromEntries(
@@ -100,16 +110,19 @@
 			disabled={busy}
 			ontoggle={toggle}
 		/>
-		{#if problem || blocked}<p class="notice warn small" role="status">{problem || blocked}</p>{/if}
-	{:else if error}<p class="notice bad small" role="alert">{error}</p>
-	{:else}<p class="muted" role="status">Loading directions…</p>{/if}
+		{#if problem || blocked}<p class="notice warn small" role="status">
+				{problem ? displayDirectionProblem(problem.translation) : displayError(blocked)}
+			</p>{/if}
+	{:else if error}<p class="notice bad small" role="alert">{displayDirectionProblem(error)}</p>
+	{:else}<p class="muted" role="status">{t('directionsSheet.loadingDirections')}</p>{/if}
 	{#snippet footer()}
 		{#if record}
 			<button
 				class="bu-action btn plain"
 				data-variant="quiet"
 				disabled={busy}
-				onclick={() => void downloadCharacterZip(id)}><Download size={16} />Download backup</button
+				onclick={() => void downloadCharacterZip(id)}
+				><Download size={16} />{t('directionsSheet.downloadBackup')}</button
 			>
 		{/if}
 		<button
@@ -119,26 +132,28 @@
 			onclick={() => {
 				error = '';
 				confirm = true;
-			}}>Review removal</button
+			}}>{t('directionsSheet.reviewRemoval')}</button
 		>
 	{/snippet}
 </Sheet>
 
 {#if confirm}
 	<ConfirmDialog
-		title="Remove {excluded.length === 1 ? 'direction' : `${excluded.length} directions`}?"
-		action="Remove permanently"
-		busyAction="Removing…"
+		title={t('directionsSheet.removeTitle', {
+			count: excluded.length,
+			n: formatNumber(excluded.length)
+		})}
+		action={t('directionsSheet.removePermanently')}
+		busyAction={t('directionsSheet.removing')}
 		{busy}
-		problem={error || blocked}
+		problem={error ? displayDirectionProblem(error) : displayError(blocked)}
 		blocked={!!blocked}
 		oncancel={() => (confirm = false)}
 		onconfirm={() => void remove()}
 	>
 		<p>
-			{excluded.map(directionLabel).join(', ')} will be removed from this character’s moves and equipment.
-			The other directions stay unchanged. This can’t be undone.
+			{t('directionsSheet.confirmRemoval', { directions: displayDirectionList(excluded) })}
 		</p>
-		{#if losesCardinal}<p>RPG Maker export needs all four cardinal directions.</p>{/if}
+		{#if losesCardinal}<p>{t('directionsSheet.rPGMakerExportNeedsAllFourCardinal')}</p>{/if}
 	</ConfirmDialog>
 {/if}

@@ -8,6 +8,7 @@ import {
 	type PresentationAvailability
 } from './experience/presentation.ts';
 import { directionLabel } from './experience/movement.ts';
+import { LocalizedError } from '../lib/message.ts';
 
 export const ALL_MOVES = '__all_moves__';
 export const ALL_DIRECTIONS = '__all_directions__';
@@ -67,7 +68,8 @@ export function sharePreviewFrames(media: ShareMedia): Img[] {
 
 function tile(images: (Img | null)[], columns: number, gap = 0): Img {
 	const available = images.filter((image): image is Img => !!image);
-	if (!available.length) throw new Error('No artwork is available to share');
+	if (!available.length)
+		throw new LocalizedError('No artwork is available to share', 'share.error.noArtwork');
 	const w = Math.max(...available.map((image) => image.w)),
 		h = Math.max(...available.map((image) => image.h));
 	const rows = Math.ceil(images.length / columns);
@@ -100,7 +102,11 @@ function rendered(
 ): Img {
 	const sequence = a.animations.get(move)?.get(direction);
 	if (!sequence)
-		throw new Error(`${move} facing ${directionLabel(direction)} has no complete artwork`);
+		throw new LocalizedError(
+			`${move} facing ${directionLabel(direction)} has no complete artwork`,
+			'share.error.incomplete',
+			{ move, direction }
+		);
 	const presentation: Presentation = {
 		kind: 'animation',
 		moving: false,
@@ -117,11 +123,17 @@ function rendered(
 	const result = renderPresentation(a, items, presentation, cell);
 	if (result.loading) throw new Error(result.loading);
 	if (result.hiddenItems.length)
-		throw new Error(
-			`${result.hiddenItems.map((item) => item.name).join(', ')} missing ${move} / ${directionLabel(direction)} artwork`
+		throw new LocalizedError(
+			`${result.hiddenItems.map((item) => item.name).join(', ')} missing ${move} / ${directionLabel(direction)} artwork`,
+			'share.error.itemsMissing',
+			{ items: result.hiddenItems.map((item) => item.name).join(', '), move, direction }
 		);
 	if (!result.image)
-		throw new Error(`${move} facing ${directionLabel(direction)} cannot be rendered`);
+		throw new LocalizedError(
+			`${move} facing ${directionLabel(direction)} cannot be rendered`,
+			'share.error.cannotRender',
+			{ move, direction }
+		);
 	return result.image;
 }
 const selectedMoves = (a: PresentationAvailability, move: string) =>
@@ -175,13 +187,14 @@ export function buildShareMedia(
 	direction: string,
 	animate: boolean
 ): ShareMedia {
-	if (a.loading) throw new Error('Character artwork is still loading');
+	if (a.loading)
+		throw new LocalizedError('Character artwork is still loading', 'share.error.loading');
 	if (a.metadataIssues.length) throw new Error(a.metadataIssues[0]);
 	const moves = selectedMoves(a, move);
 	const directions =
 		direction === ALL_DIRECTIONS ? a.directions : a.directions.filter((id) => id === direction);
 	if (!directions.length || !moves.length)
-		throw new Error('Select an available move and direction');
+		throw new LocalizedError('Select an available move and direction', 'share.error.select');
 	const omitted: ShareMedia['omitted'] = [];
 	const entries: {
 		move: string;
@@ -192,7 +205,10 @@ export function buildShareMedia(
 		const timeline = a.project.manifest.rig.animations.find(
 			(animation) => animation.id === selectedMove
 		)?.frames;
-		if (!timeline?.length) throw new Error(`${selectedMove} has no frames`);
+		if (!timeline?.length)
+			throw new LocalizedError(`${selectedMove} has no frames`, 'share.error.noFrames', {
+				move: selectedMove
+			});
 		const views = new Map<DirectionName, Img[]>();
 		for (const id of directions) {
 			try {
@@ -210,7 +226,10 @@ export function buildShareMedia(
 		if (views.size) entries.push({ move: selectedMove, timeline, views });
 	}
 	if (!entries.length)
-		throw new Error('No complete move and direction pairs are available to share');
+		throw new LocalizedError(
+			'No complete move and direction pairs are available to share',
+			'share.error.noPairs'
+		);
 	const layoutDirections = directions.filter((id) => entries.some((entry) => entry.views.has(id)));
 	const columns =
 		layoutDirections.length <= 4 ? layoutDirections.length : layoutDirections.length <= 6 ? 3 : 4;
@@ -236,7 +255,7 @@ export function buildShareMedia(
 			}
 	const animated = animate && frames.length > 1;
 	if (animated && (frames[0].image.w > 65535 || frames[0].image.h > 65535))
-		throw new Error('Selected GIF is too large');
+		throw new LocalizedError('Selected GIF is too large', 'share.error.gifTooLarge');
 	return {
 		frames: animated ? frames : [{ image: still, ms: 1000 }],
 		still,
@@ -284,12 +303,15 @@ export function shareDimensions(media: ShareMedia, scale = 1): { w: number; h: n
 
 function scaled(image: Img, scale: number): Img {
 	if (!SHARE_SCALES.some((value) => value === scale))
-		throw new Error('Select an available image size');
+		throw new LocalizedError('Select an available image size', 'share.error.size');
 	const w = image.w * scale,
 		h = image.h * scale;
 	// Bound the working raster, PNG scanlines and GIF palette buffers on small devices.
 	if (w * h > 16_777_216)
-		throw new Error('Selected image is too large. Choose a smaller size or fewer views');
+		throw new LocalizedError(
+			'Selected image is too large. Choose a smaller size or fewer views',
+			'share.error.imageTooLarge'
+		);
 	if (scale === 1) return image;
 	const data = new Uint8ClampedArray(w * h * 4);
 	for (let y = 0; y < image.h; y++) {
@@ -320,8 +342,9 @@ export async function encodeShareMedia(
 		signal?.throwIfAborted();
 		const frame = scaled(image, scale);
 		if (frame.w > 65535 || frame.h > 65535)
-			throw new Error(
-				'Selected GIF dimensions are too large. Choose a smaller size or fewer views'
+			throw new LocalizedError(
+				'Selected GIF dimensions are too large. Choose a smaller size or fewer views',
+				'share.error.gifDimensions'
 			);
 		const { colors, indices } = paletteFor(frame);
 		// Shared previews repeat continuously regardless of exported playback metadata.

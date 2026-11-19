@@ -2,13 +2,16 @@
 	// How a character or item was made: the prompt first, then cost and settings; the exact requests one level deeper.
 	import type { Item, Manifest } from '../lib/store/manifest.ts';
 	import {
-		costText,
+		cameraMessage,
 		generationDetails,
 		seedOf,
 		toolOf,
 		requestPromptOf
 	} from '../lib/store/generation.ts';
 	import { Check, ChevronRight, Copy } from './icons.ts';
+	import { formatNumber, getLocale, t } from 'svelte-whisper';
+	import { displayDate, displayMessage } from '../lib/i18n.ts';
+	import { displayCost, usdText } from './displayCost.ts';
 
 	let {
 		m,
@@ -18,13 +21,49 @@
 	const g = $derived(generationDetails(m, it));
 	const prov = $derived(it.provenance ?? []);
 	let copied = $state<'prompt' | 'json' | null>(null),
-		message = $state('');
+		copyFailed = $state(false);
 	const when = (iso: string) => {
 		const d = new Date(iso);
 		return Number.isNaN(d.getTime())
 			? iso
-			: d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+			: displayDate(d, { dateStyle: 'medium', timeStyle: 'short' });
 	};
+	const usd = usdText;
+	const settingValue = (setting: (typeof g.settings)[number]) => {
+		if (
+			setting.labelMessage?.key === 'generationDetails.settings.camera' &&
+			m.rig.view &&
+			getLocale() !== 'en'
+		) {
+			const camera = cameraMessage(m.rig.view);
+			if (camera) return displayMessage(camera);
+		}
+		if (!setting.valueMessage) return setting.value;
+		const { key, vars } = setting.valueMessage;
+		if (!vars || Array.isArray(vars)) return t(key, vars);
+		const formatted = Object.fromEntries(
+			Object.entries(vars).map(([name, value]) => [
+				name,
+				typeof value === 'number' ? formatNumber(value) : value
+			])
+		);
+		return t(key, formatted);
+	};
+	const costText = $derived(displayCost(g.cost));
+	const cost = $derived.by(() => {
+		const base = [
+			costText || t('common.notRecorded'),
+			g.cost.calls ? t('apiPeek.calls', { count: g.cost.calls }) : ''
+		]
+			.filter(Boolean)
+			.join(' · ');
+		const rerolled = g.cost.replaced
+			? t('generationDetails.costRerolled', { cost: base, count: g.cost.replaced })
+			: base;
+		return it.copiedFrom
+			? `${rerolled} · ${t('generationDetails.copiedFrom', { name: it.copiedFrom.name })}`
+			: rerolled;
+	});
 	async function copy(what: 'prompt' | 'json') {
 		const text =
 			what === 'prompt'
@@ -45,9 +84,9 @@
 		try {
 			await navigator.clipboard.writeText(text);
 			copied = what;
-			message = '';
+			copyFailed = false;
 		} catch {
-			message = 'Copy is unavailable here.';
+			copyFailed = true;
 		}
 	}
 </script>
@@ -59,38 +98,46 @@
 			<button
 				class="bu-action btn icon"
 				data-variant="outline"
-				aria-label="Copy prompt"
-				title="Copy prompt"
+				aria-label={t('toolbar.copyPrompt')}
+				title={t('toolbar.copyPrompt')}
 				onclick={() => copy('prompt')}
 				>{#if copied === 'prompt'}<Check size={14} />{:else}<Copy size={14} />{/if}</button
 			>
 		</div>
 	{/if}
 	<dl class="kv">
-		{#if g.tools.length}<dt>Made with</dt>
+		{#if g.tools.length}<dt>{t('generationDetails.madeWith')}</dt>
 			<dd>
-				{g.tools.map((t) => (t.calls > 1 ? `${t.name} ×${t.calls}` : t.name)).join(' · ')}
+				{g.tools
+					.map((tool) =>
+						tool.calls > 1
+							? t('generationDetails.toolCalls', {
+									name: tool.name,
+									count: formatNumber(tool.calls)
+								})
+							: tool.name
+					)
+					.join(' · ')}
 			</dd>{/if}
-		{#each g.settings as s (s.label)}<dt>{s.label}</dt>
-			<dd>{s.value}</dd>{/each}
-		<dt>Cost</dt>
+		{#each g.settings as s (s.label)}<dt>
+				{s.labelMessage ? displayMessage(s.labelMessage) : s.label}
+			</dt>
+			<dd>{settingValue(s)}</dd>{/each}
+		<dt>{t('common.cost')}</dt>
 		<dd>
-			{costText(g.cost) || 'Not recorded'}{g.cost.calls
-				? ` · ${g.cost.calls} ${g.cost.calls === 1 ? 'call' : 'calls'}`
-				: ''}{g.cost.replaced ? ` (${g.cost.replaced} re-rolled)` : ''}{it.copiedFrom
-				? ` · paid once for ${it.copiedFrom.name}; copied here for free`
-				: ''}
+			{cost}
 		</dd>
 		{#each extra as s (s.label)}<dt>{s.label}</dt>
 			<dd>{s.value}</dd>{/each}
-		{#if g.createdAt}<dt>Created</dt>
+		{#if g.createdAt}<dt>{t('generationDetails.created')}</dt>
 			<dd>{when(g.createdAt)}</dd>{/if}
 	</dl>
 	{#if g.requestPrompts.length}
 		<details class="disclosure">
 			<summary
-				><ChevronRight size={14} />Sent to PixelLab ({g.requestPrompts.length}
-				{g.requestPrompts.length === 1 ? 'prompt' : 'prompts'})</summary
+				><ChevronRight size={14} />{t('generationDetails.sent', {
+					count: g.requestPrompts.length
+				})}</summary
 			>
 			<div>
 				{#each g.requestPrompts as text, i (i)}<p class="sent small">{text}</p>{/each}
@@ -99,23 +146,37 @@
 	{/if}
 	{#if prov.length}
 		<details class="disclosure">
-			<summary><ChevronRight size={14} />API calls ({prov.length})</summary>
+			<summary
+				><ChevronRight size={14} />{t('generationDetails.apiCalls', {
+					count: prov.length
+				})}</summary
+			>
 			<div>
 				<ol class="calls small">
 					{#each prov as p, i (i)}
 						<li>
 							<span class="call-head"
 								><span class="mono">{p.endpoint}</span>{#if p.replaced}<span class="faint">
-										· re-rolled</span
+										· {t('generationDetails.rerolled')}</span
 									>{/if}</span
 							>
 							<span class="faint"
-								>{toolOf(p)}{seedOf(p) === undefined ? '' : ` · seed ${seedOf(p)}`}{p.usage
-									?.generations
-									? ` · ${+p.usage.generations.toFixed(2)} gens`
-									: ''}{p.usage?.usd ? ` · $${p.usage.usd.toFixed(3)}` : ''}{p.usage
-									? ''
-									: ' · cost unknown'} · {when(p.createdAt)}</span
+								>{[
+									toolOf(p),
+									seedOf(p) === undefined
+										? ''
+										: t('generationDetails.seed', { seed: formatNumber(seedOf(p)!) }),
+									p.usage?.generations
+										? t('generationDetails.gens', {
+												value: formatNumber(p.usage.generations, { maximumFractionDigits: 2 })
+											})
+										: '',
+									p.usage?.usd ? usd(p.usage.usd) : '',
+									p.usage ? '' : t('generationDetails.costUnknown'),
+									when(p.createdAt)
+								]
+									.filter(Boolean)
+									.join(' · ')}</span
 							>
 							{#if requestPromptOf(p) && requestPromptOf(p) !== (i ? requestPromptOf(prov[i - 1]) : '')}<span
 									class="faint call-prompt">{requestPromptOf(p)}</span
@@ -128,9 +189,13 @@
 	{/if}
 	<div class="actions">
 		<button class="bu-action btn small" data-variant="outline" onclick={() => copy('json')}
-			>{#if copied === 'json'}<Check size={14} />{:else}<Copy size={14} />{/if}Copy as JSON</button
+			>{#if copied === 'json'}<Check size={14} />{:else}<Copy size={14} />{/if}{t(
+				'generationDetails.copyJson'
+			)}</button
 		>
-		{#if message}<span class="faint small" role="status">{message}</span>{/if}
+		{#if copyFailed}<span class="faint small" role="status"
+				>{t('generationDetails.copyUnavailable')}</span
+			>{/if}
 	</div>
 </div>
 

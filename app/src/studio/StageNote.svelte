@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
 	import { missingAt, moveDirs } from '../lib/dress/dress.ts';
 	import type { DirectionName, Item } from '../lib/store/manifest.ts';
 	import { extendable, itemMoveOffer, missingItemMoves, moveMinimumTier } from './create.ts';
-	import { moveLabel } from './model.ts';
+	import { displayMove } from './displayMove.ts';
+	import { displayDirectionInSentence } from './displayDirection.ts';
 	import {
 		ui,
 		doc,
@@ -31,7 +33,12 @@
 		if (!m || !anim) return [];
 		return [...new Set(views.flatMap((d) => missingAt(m, doc.items, anim.id, d)))];
 	});
-	const move = $derived(anim ? moveLabel(anim.id, moveIds) : '');
+	const move = $derived(anim ? displayMove(anim.id, moveIds) : '');
+	const names = $derived(
+		new Intl.ListFormat(getLocale(), { type: 'conjunction' }).format(
+			missing.map((item) => item.name)
+		)
+	);
 	// A partial replacement may leave other directions intact; only missing views need paid posing.
 	function missingDirs(item: Item): DirectionName[] {
 		if (!m || !anim) return [];
@@ -90,18 +97,20 @@
 	<div class="stage-note" role="status">
 		<TriangleAlert size={14} />
 		<span
-			>{missing.map((i) => i.name).join(', ')}
-			{missing.length > 1 ? 'are' : 'is'} missing frames for {move}{ui.all
-				? ''
-				: ` facing ${ui.dir}`}</span
+			>{t(ui.all ? 'stageNote.missingFrames' : 'stageNote.missingFrameViews', {
+				names,
+				count: missing.length,
+				move,
+				direction: displayDirectionInSentence(ui.dir)
+			})}</span
 		>
 		{#if busy}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'move')}
-				><span class="bu-ring ring spin" aria-hidden="true"></span>Making…</button
+				><span class="bu-ring ring spin" aria-hidden="true"></span>{t('stageNote.making')}</button
 			>
 		{:else if isDemo()}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'create')}
-				>Make your own</button
+				>{t('stageNote.makeYourOwn')}</button
 			>
 		{:else if freeCopy?.copiedFrom}
 			<!-- An exact copy whose source item gained these frames since: copied over for free, not made again. -->
@@ -110,13 +119,14 @@
 				data-variant="primary"
 				disabled={!!shared.adding}
 				onclick={() => copyFromSource(freeCopy.id)}
-				>Copy from {freeCopy.copiedFrom.name} <span class="cost">Free</span></button
+				>{t('itemPane.copyFrom', { name: freeCopy.copiedFrom.name })}
+				<span class="cost">{t('common.free')}</span></button
 			>
 		{:else if poseSpecs.length === missing.length}
 			<span class="api-action"
 				><ApiPeek
 					scope="equipment-missing-move"
-					label="Make missing equipment frames"
+					label={t('stageNote.labelMakeMissingEquipmentFrames')}
 					plan={m
 						? (poseOffer?.specs ?? []).flatMap((spec) => movePlan({ manifest: m }, spec))
 						: []}
@@ -126,8 +136,14 @@
 					disabled={(!!moving.spec && !moving.done) || !poseOffer?.specs.length || poseBlocked}
 					aria-describedby={poseBlocked ? 'stage-pose-tier' : undefined}
 					onclick={makePose}
-					>Make it <span class="cost"
-						>{poseOffer?.gens == null ? 'Unavailable' : `Est. ${poseOffer.gens} gens`}</span
+					>{t('stageNote.makeIt')}
+					<span class="cost"
+						>{poseOffer?.gens == null
+							? t('common.unavailable')
+							: t('stageNote.estimate', {
+									count: poseOffer.gens,
+									n: formatNumber(poseOffer.gens)
+								})}</span
 					></button
 				></span
 			>
@@ -135,11 +151,11 @@
 			{#if poseTier}<TierNotice
 					id="stage-pose-tier"
 					minimumTier={poseTier}
-					feature="Making missing equipment frames"
+					feature={t('stageNote.makingMissingFrames')}
 				/>{/if}
 		{:else if remake?.standing && !copyOnly}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'setup')}
-				>Set up character</button
+				>{t('setup.title')}</button
 			>
 		{:else if remake}
 			<!-- A copy without its own standing design cannot be posed onto more moves: make one for this character. -->
@@ -147,7 +163,9 @@
 				class="bu-action btn sm"
 				data-variant="outline"
 				onclick={() => openNewItem(remake.slot, { slot: remake.slot, prompt: remake.prompt })}
-				>{copyOnly ? `Make one for ${m?.name}` : 'Make it again…'}</button
+				>{copyOnly
+					? t('itemMenu.makeOneForName', { name: m?.name })
+					: t('stageNote.makeItAgain')}</button
 			>
 		{/if}
 	</div>

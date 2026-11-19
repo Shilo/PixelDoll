@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { Notice } from '@shilo/bronze-ui/svelte';
 	import { onDestroy } from 'svelte';
+	import { displayNestedMessage } from './nestedMessage.ts';
+	import { t } from 'svelte-whisper';
 	import { ui, activateToast, dismissToast, pauseToast, resumeToast } from './state.svelte.ts';
 	import { experience } from './experience/state.svelte.ts';
 	import { layout } from './experience/geometry.ts';
@@ -10,6 +12,13 @@
 	import PendingIndicator from './PendingIndicator.svelte';
 
 	let host = $state<HTMLDivElement>();
+	$effect(() => {
+		void ui.toast;
+		void updateNotice.visible;
+		const label = t('toast.dismiss');
+		for (const button of host?.querySelectorAll('.bu-notice-dismiss') ?? [])
+			button.setAttribute('aria-label', label);
+	});
 	let focusFrom: HTMLElement | null = null;
 	let hovered = $state(false),
 		focused = $state(false),
@@ -132,14 +141,16 @@
 	>
 		{#if ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet)}<Notice
 				class="bu-toast"
-				title={ui.toastTitle || undefined}
+				title={ui.toastTitle ? displayNestedMessage(ui.toastTitle) : undefined}
 				tone={ui.toastTone}
 				indicator={ui.toastPending ? pendingIndicator : undefined}
 				live
-				onactivate={typeof ui.toast === 'string' ? activate : undefined}
+				onactivate={typeof ui.toast !== 'function' ? activate : undefined}
 				ondismiss={dismiss}
 			>
-				{#if typeof ui.toast === 'string'}{ui.toast}{:else}{@render ui.toast()}{/if}
+				{#if typeof ui.toast === 'function'}{@render ui.toast()}{:else if Array.isArray(ui.toast)}{ui.toast
+						.map(displayNestedMessage)
+						.join(' ')}{:else}{displayNestedMessage(ui.toast)}{/if}
 			</Notice>{/if}
 		<PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
 	</div>

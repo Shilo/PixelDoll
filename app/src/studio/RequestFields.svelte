@@ -1,6 +1,7 @@
 <script lang="ts">
 	import RequestFields from './RequestFields.svelte';
 	import { ChevronRight, Image } from './icons.ts';
+	import { formatNumber, t } from 'svelte-whisper';
 
 	let { value, path = '', depth = 0 }: { value: unknown; path?: string; depth?: number } = $props();
 	const entries: [string, unknown][] = $derived(
@@ -8,22 +9,23 @@
 	);
 	const title = (key: string) =>
 		/^\d+$/.test(key)
-			? `Item ${+key + 1}`
+			? t('apiPeek.fields.item', { number: formatNumber(+key + 1) })
 			: key.replace(/[_-]/g, ' ').replace(/^./, (s) => s.toUpperCase());
 	const scalar = (v: unknown) =>
 		v === null
-			? 'None'
+			? t('apiPeek.fields.none')
 			: v === undefined
-				? 'Not provided'
+				? t('apiPeek.fields.notProvided')
 				: typeof v === 'boolean'
 					? v
-						? 'Yes'
-						: 'No'
+						? t('apiPeek.fields.yes')
+						: t('apiPeek.fields.no')
 					: String(v);
 	const group = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object';
 	const image = (v: unknown): v is { type: string; base64: string; format?: string } =>
 		group(v) && v.type === 'base64' && typeof v.base64 === 'string';
-	const size = (v: { base64: string }) => `${Math.ceil((v.base64.length * 0.75) / 1024)} KB`;
+	const size = (v: { base64: string }) =>
+		t('apiPeek.fields.kb', { size: formatNumber(Math.ceil((v.base64.length * 0.75) / 1024)) });
 </script>
 
 <div class="request-fields" style:--depth={Math.min(depth, 4)}>
@@ -33,9 +35,10 @@
 			<dl class="request-field" title={fieldPath}>
 				<dt class="request-key">{title(key)}</dt>
 				<dd class="request-value image-value">
-					<Image size={14} aria-hidden="true" />{v.format?.toUpperCase() ?? 'Image'} · {size(
-						v
-					)}<span class="faint">Included in copy</span>
+					<Image size={14} aria-hidden="true" />{v.format?.toUpperCase() ??
+						t('apiPeek.fields.image')} · {size(v)}<span class="faint"
+						>{t('apiPeek.fields.inCopy')}</span
+					>
 				</dd>
 			</dl>
 		{:else if group(v)}
@@ -43,7 +46,9 @@
 				<summary title={fieldPath}
 					><span class="request-key"><ChevronRight size={12} />{title(key)}</span><span
 						class="request-value faint"
-						>{Array.isArray(v) ? `${v.length} items` : `${Object.keys(v).length} fields`}</span
+						>{Array.isArray(v)
+							? t('apiPeek.fields.items', { count: formatNumber(v.length) })
+							: t('apiPeek.fields.fields', { count: formatNumber(Object.keys(v).length) })}</span
 					></summary
 				>
 				<RequestFields value={v} path={fieldPath} depth={depth + 1} />
@@ -64,7 +69,7 @@
 			</dl>
 		{/if}
 	{/each}
-	{#if entries.length === 0}<p class="faint small">No fields</p>{/if}
+	{#if entries.length === 0}<p class="faint small">{t('apiPeek.fields.empty')}</p>{/if}
 </div>
 
 <style>

@@ -308,6 +308,6 @@ test('an item saved before idle and walk existed gets items-only poses for exact
 });
 
 test('Default is a reserved move name', () => {
-	expect(reservedMove('default')).toMatch(/Default is the standing pose/);
-	expect(reservedMove('dance')).toBe('');
+	expect(reservedMove('default')?.message).toMatch(/Default is the standing pose/);
+	expect(reservedMove('dance')).toBeUndefined();
 });

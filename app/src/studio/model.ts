@@ -13,25 +13,69 @@ import type {
 } from '../lib/store/manifest.ts';
 import { GATES, isAction, SLOTS } from '../lib/items/items.ts';
 import { coverageGaps } from '../lib/dress/dress.ts';
-import type { Rig } from '../lib/rig/rig.ts';
+import { DIRECTIONS, type Rig } from '../lib/rig/rig.ts';
+import { message, type Message } from '../lib/message.ts';
+import type { Translate, WhisperKey, WhisperVars } from 'svelte-whisper';
 
 /** A body-QA note with a readable clip and direction prefix ("walk/west: ..." -> "Walk west: ..."). */
-export const bodyQualityNote = (w: string) =>
-	w.replace(
-		/^([^/]+)\/([^:]+): /,
-		(_, clip: string, direction: string) =>
-			`${clip[0].toUpperCase() + clip.slice(1)} ${direction}: `
+export function bodyQualityNote(
+	warning: string,
+	translate?: Translate,
+	displayDirection: (direction: DirectionName) => string = (direction) => direction
+): string {
+	// The item-review note of a new move (create.ts): checked first, since an item name may contain a slash.
+	const review = /^(.+): item quality checks need review\. No paid retry was started\.$/.exec(
+		warning
 	);
+	if (review) return copy(translate)(warning, 'studioModel.itemQualityReview', { name: review[1] });
+	const scoped = /^([^/]+)\/([^:]+): ([\s\S]*)$/.exec(warning);
+	if (!scoped) return warning;
+	const [, clip, rawDirection, reason] = scoped;
+	const move = clip[0].toUpperCase() + clip.slice(1);
+	const knownDirection = DIRECTIONS.find((direction) => direction === rawDirection);
+	const direction = knownDirection ? displayDirection(knownDirection) : rawDirection;
+	return copy(translate)(`${move} ${direction}: ${reason}`, 'studioModel.bodyQuality', {
+		move,
+		direction,
+		reason
+	});
+}
 
-const count = (n: number, one: string) => `${n} ${n === 1 ? one : one + 's'}`;
+/** A rig setup warning (lib/rig/setup.ts) in the active language; clip-scoped observations read like body quality notes. */
+export function setupWarningNote(
+	warning: string,
+	translate?: Translate,
+	displayDirection: (direction: DirectionName) => string = (direction) => direction
+): string {
+	const headroom =
+		/^(\S+) leaves (\d+) px above the head; tall hair or hats may need a larger frame\.$/.exec(
+			warning
+		);
+	const known = headroom && DIRECTIONS.find((direction) => direction === headroom[1]);
+	if (headroom && known)
+		return copy(translate)(warning, 'setup.warnings.headroom', {
+			direction: displayDirection(known),
+			count: Number(headroom[2])
+		});
+	const kept =
+		/^(.+) keeps its existing frames\. Make it again after setup to animate it onto future moves\.$/.exec(
+			warning
+		);
+	if (kept) return copy(translate)(warning, 'setup.warnings.keptFrames', { name: kept[1] });
+	return bodyQualityNote(warning, translate, displayDirection);
+}
+
 /** A character's shape at a glance: "64 px · 4 directions · 2 moves · 6 items". */
-export const characterFacts = (m: Manifest) =>
-	[
-		`${m.rig.cell.w} px`,
-		count(m.rig.directions.length, 'direction'),
-		count(m.rig.animations.length, 'move'),
-		count(m.items.filter((i) => i.id !== m.rig.baseItem).length, 'item')
-	].join(' · ');
+export function characterFacts(m: Manifest): Message[] {
+	return [
+		message('studioModel.facts.pixels', { count: m.rig.cell.w }),
+		message('export.count.directions', { count: m.rig.directions.length }),
+		message('export.count.moves', { count: m.rig.animations.length }),
+		message('export.count.items', {
+			count: m.items.filter((item) => item.id !== m.rig.baseItem).length
+		})
+	];
+}
 /** One item alone in canonical draw order in one cell; mirrored directions flip their source. Oversize layers (v1.3.1,
  * e.g. 96 px held items) line up by pivot on the union of the item's layer frames. */
 export function itemCell(
@@ -234,95 +278,199 @@ export function healthOf(m: Manifest, it: Item): Health {
 	if (!it.qa) return 'demo';
 	return it.qa.status === 'pass' ? 'clean' : 'look';
 }
-export const HEALTH_LABEL: Record<Health, string> = {
-	clean: 'Clean',
-	accepted: 'Accepted',
-	look: 'Needs a look',
-	unfitted: 'Not fitted',
-	stale: 'Made for another body',
-	demo: 'Demo'
+export const HEALTH_LABEL: Record<Health, Message> = {
+	clean: message('studioModel.health.clean'),
+	accepted: message('studioModel.health.accepted'),
+	look: message('studioModel.health.look'),
+	unfitted: message('studioModel.health.unfitted'),
+	stale: message('studioModel.health.stale'),
+	demo: message('studioModel.health.demo')
 };
 
 /** Frames an item lacks in moves its body has (dress.ts coverageGaps), where it would vanish: a short warning for its
  * tile and menu. Details names the exact directions. */
-export function missingFramesNote(m: Manifest, it: Item): string {
+export function missingFramesNote(m: Manifest, it: Item): Message | '' {
 	const moves = [...new Set(coverageGaps(m, it).map((g) => g.split('/')[0]))];
 	if (!moves.length) return '';
 	return moves.length === 1
-		? `Missing some ${moveLabel(
-				moves[0],
-				m.rig.animations.map((a) => a.id)
-			)} frames`
-		: `Missing frames in ${moves.length} moves`;
+		? message('studioModel.coverage.oneMove', {
+				move: moveLabel(
+					moves[0],
+					m.rig.animations.map((animation) => animation.id)
+				)
+			})
+		: message('studioModel.coverage.severalMoves', { count: moves.length });
 }
 
 /** QA gate messages in plain words (D1 §5.5). */
-export function plainReason(s: string): string {
+function describeReason(s: string): { text: string; translation: Message | string } {
+	const say = (text: string, key: WhisperKey, vars?: WhisperVars) => ({
+		text,
+		translation: message(key, vars)
+	});
 	// Per-move checks prefix a whole-item message with its move ("default/east: G8 ..."): translate the message itself.
 	const scoped = /^[^ :/]+\/[^ :/]+: ([A-Z]\d+ .*)$/.exec(s);
-	if (scoped) return plainReason(scoped[1]);
-	if (s.startsWith('D2 ')) return 'The requested waist band differs between standing views';
+	if (scoped) return describeReason(scoped[1]);
+	if (s.startsWith('D2 '))
+		return say(
+			'The requested waist band differs between standing views',
+			'studioModel.qa.standingWaist'
+		);
 	if (s.startsWith('G13 '))
-		return 'The waist band differs from the standing design; inspect the clothing';
-	if (s.startsWith('G14 ')) return 'Some frames resemble the opposite view; inspect the torso';
-	if (s.startsWith('G15 ')) return 'A detail of the design is missing or recolored in some frames';
-	if (s.startsWith('G16')) return "Check the item's size and angle as it moves";
+		return say(
+			'The waist band differs from the standing design; inspect the clothing',
+			'studioModel.qa.waist'
+		);
+	if (s.startsWith('G14 '))
+		return say(
+			'Some frames resemble the opposite view; inspect the torso',
+			'studioModel.qa.facing'
+		);
+	if (s.startsWith('G15 '))
+		return say(
+			'A detail of the design is missing or recolored in some frames',
+			'studioModel.qa.detail'
+		);
+	if (s.startsWith('G16'))
+		return say("Check the item's size and angle as it moves", 'studioModel.qa.motion');
 	if (s.startsWith('G11 '))
-		return 'Some lower clothing is missing compared with the standing design';
-	if (s.startsWith('G12 ')) return 'Footwear differs from the standing design; inspect the feet';
-	if (s.startsWith('G2') || s.startsWith('G3')) return 'Some body pixels were changed by the model';
-	if (s.startsWith('G4')) return 'The item is missing in some frames';
-	if (s.startsWith('G5')) return 'The item changes size between frames';
-	if (s.startsWith('G6')) return 'Colors drift between directions';
-	if (s.startsWith('G7')) return 'The item touches the frame edge (may be cut off)';
+		return say(
+			'Some lower clothing is missing compared with the standing design',
+			'studioModel.qa.lowerClothing'
+		);
+	if (s.startsWith('G12 '))
+		return say(
+			'Footwear differs from the standing design; inspect the feet',
+			'studioModel.qa.footwear'
+		);
+	if (s.startsWith('G2') || s.startsWith('G3'))
+		return say('Some body pixels were changed by the model', 'studioModel.qa.bodyPixels');
+	if (s.startsWith('G4'))
+		return say('The item is missing in some frames', 'studioModel.qa.missing');
+	if (s.startsWith('G5')) return say('The item changes size between frames', 'studioModel.qa.size');
+	if (s.startsWith('G6')) return say('Colors drift between directions', 'studioModel.qa.colors');
+	if (s.startsWith('G7'))
+		return say('The item touches the frame edge (may be cut off)', 'studioModel.qa.edge');
 	if (s.startsWith('G8')) {
 		const clip = /^G8 ([^ :]+\/[^ :]+):/.exec(s)?.[1];
 		const where = clip ? ` (${clip.replaceAll('/', ', ').replaceAll('-', ' ')})` : '';
 		if (s.includes('hand positions are missing'))
-			return `Hand positions are unavailable; set up the pose rig and check this view${where}`;
+			return say(
+				`Hand positions are unavailable; set up the pose rig and check this view${where}`,
+				'studioModel.qa.handPositions',
+				{ where }
+			);
 		if (s.includes('handedness not checked'))
-			return `Handedness could not be confirmed; inspect the intended hand${where}`;
+			return say(
+				`Handedness could not be confirmed; inspect the intended hand${where}`,
+				'studioModel.qa.handUnknown',
+				{ where }
+			);
 		if (s.includes('grip side is unclear'))
-			return `The grip side is unclear; check the intended hand${where}`;
+			return say(
+				`The grip side is unclear; check the intended hand${where}`,
+				'studioModel.qa.gripSide',
+				{ where }
+			);
 		if (s.includes('from both hands') || s.includes('grip contact not confirmed'))
-			return `The grip could not be confirmed; inspect the item at the hand${where}`;
+			return say(
+				`The grip could not be confirmed; inspect the item at the hand${where}`,
+				'studioModel.qa.gripUnknown',
+				{ where }
+			);
 		if (s.includes('other clips') || s === 'G8')
-			return `The item may change hands between views; check the intended hand${where}`;
+			return say(
+				`The item may change hands between views; check the intended hand${where}`,
+				'studioModel.qa.handSwitches',
+				{ where }
+			);
 		const expects = /slot (\S+) expects hand_([lr])$/.exec(s);
-		if (expects)
-			return `The item may be held in the wrong hand; ${SLOTS.find((slot) => slot.id === expects[1])?.label ?? expects[1].replaceAll('_', ' ')} expects the ${expects[2] === 'r' ? 'right' : 'left'} hand${where}`;
-		return `The item may be held in the wrong hand; check the intended hand${where}`;
+		if (expects) {
+			const slot =
+				SLOTS.find((slot) => slot.id === expects[1])?.label ?? expects[1].replaceAll('_', ' ');
+			const right = expects[2] === 'r';
+			return say(
+				`The item may be held in the wrong hand; ${slot} expects the ${right ? 'right' : 'left'} hand${where}`,
+				right ? 'studioModel.qa.wrongRightHand' : 'studioModel.qa.wrongLeftHand',
+				{ slot, where }
+			);
+		}
+		return say(
+			`The item may be held in the wrong hand; check the intended hand${where}`,
+			'studioModel.qa.wrongHand',
+			{ where }
+		);
 	}
 	const key =
 		/^K1 keyframe [^:]+: \d+ % of the item's colors lean toward the (.+) background, so parts may be missing$/.exec(
 			s
 		);
 	if (key)
-		return `Some of the item's colors are close to the ${key[1]} background, so parts may be missing`;
+		return say(
+			`Some of the item's colors are close to the ${key[1]} background, so parts may be missing`,
+			'studioModel.qa.keyColor',
+			{ color: key[1] }
+		);
 	if (s.startsWith('G9') && s.includes('keeps its own angle'))
-		return 'The held item hangs or sways instead of turning with the hand; check that it should';
-	if (s.startsWith('G1')) return 'PixelLab returned an unexpected image';
+		return say(
+			'The held item hangs or sways instead of turning with the hand; check that it should',
+			'studioModel.qa.heldHang'
+		);
+	if (s.startsWith('G1'))
+		return say('PixelLab returned an unexpected image', 'studioModel.qa.unexpectedImage');
 	if (s.startsWith('H4'))
-		return 'Some frames do not look like the design (e.g. a cape wrapped around an arm)';
+		return say(
+			'Some frames do not look like the design (e.g. a cape wrapped around an arm)',
+			'studioModel.qa.design'
+		);
 	if (s.startsWith('D1') && s.includes('dark patch'))
-		return 'A dark patch is not seen in the other views; check that it is part of the design';
-	if (s.startsWith('D1')) return 'The design has gray smudges';
+		return say(
+			'A dark patch is not seen in the other views; check that it is part of the design',
+			'studioModel.qa.darkPatch'
+		);
+	if (s.startsWith('D1')) return say('The design has gray smudges', 'studioModel.qa.smudges');
 	const pasted = /^R1 ([^/]+)\/([^:]+): dressed item pasted on (\d+)/.exec(s);
-	if (pasted)
-		return `Held item pasted on ${pasted[3]} ${pasted[1].replaceAll('-', ' ')} ${pasted[3] === '1' ? 'frame' : 'frames'} (${pasted[2].replaceAll('-', ' ')}); check that it moves`;
+	if (pasted) {
+		const move = pasted[1].replaceAll('-', ' '),
+			direction = pasted[2].replaceAll('-', ' ');
+		return say(
+			`Held item pasted on ${pasted[3]} ${move} ${pasted[3] === '1' ? 'frame' : 'frames'} (${direction}); check that it moves`,
+			'studioModel.qa.heldPasted',
+			{ count: Number(pasted[3]), move, direction }
+		);
+	}
 	const noGrid =
 		/^([^/]+)\/([^:]+): no inpaint-v3 repair grid \((.+)\); kept the best pose roll/.exec(s);
-	if (noGrid)
-		return `No repair grid for ${noGrid[1].replaceAll('-', ' ')} (${noGrid[2].replaceAll('-', ' ')}): ${noGrid[3]}; the best try was kept`;
-	return s;
+	if (noGrid) {
+		const move = noGrid[1].replaceAll('-', ' '),
+			direction = noGrid[2].replaceAll('-', ' '),
+			reason = noGrid[3];
+		return say(
+			`No repair grid for ${move} (${direction}): ${reason}; the best try was kept`,
+			'studioModel.qa.noRepairGrid',
+			{ move, direction, reason }
+		);
+	}
+	if (s === 'The held item changes shape or angle when a move loops')
+		return say(s, 'studioModel.qa.heldLoop');
+	if (s === 'The held item hangs or sways instead of turning with the hand; check that it should')
+		return say(s, 'studioModel.qa.heldHang');
+	return { text: s, translation: s };
 }
+
+export const plainReason = (raw: string): string => describeReason(raw).text;
+export const plainReasonMessage = (raw: string): Message | string =>
+	describeReason(raw).translation;
+
+const copy = (translate?: Translate) => (text: string, key: WhisperKey, vars?: WhisperVars) =>
+	translate ? translate(key, vars) : text;
 
 /**
  * Review reasons for a saved item. Saved QA keeps numbers, not messages, so numeric gates are named only for parts that did
  * not pass, at the limit that part was gated with: skeleton items and posed frames allow more key outside the body than
  * other dressed views, and actions skip the size check. A passing part never lists a reason.
  */
-export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig): string[] {
+function qaReasonCodes(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig): string[] {
 	const r: string[] = [];
 	if (q.missingLowerFrames) r.push('G11 lower-garment coverage');
 	if (q.footwearReviewFrames) r.push('G12 footwear coverage');
@@ -332,8 +480,8 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
 	if (q.heldLoopReviewClips) r.push('The held item changes shape or angle when a move loops');
 	if (q.heldHangReviewClips)
 		r.push('The held item hangs or sways instead of turning with the hand; check that it should');
-	if (q.motionReviewClips) r.push(plainReason('G16'));
-	if (q.unmeasured) return [...new Set(r.map(plainReason))];
+	if (q.motionReviewClips) r.push('G16');
+	if (q.unmeasured) return r;
 	// Skeleton-posed drafts gate every cell, standing views included, at the posed limit (run.ts kOut); older routes by cell.
 	const posed = (clip: string | null) =>
 		skeleton ||
@@ -364,59 +512,119 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
 		if (q.grip?.none) r.push('G8 grip contact not confirmed');
 		if (!Object.keys(q.clips).length && !q.handedness) r.push('G8 handedness not checked');
 	}
-	return [...new Set(r.map(plainReason))];
+	return r;
+}
+
+export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig): string[] {
+	return [...new Set(qaReasonCodes(q, held, skeleton, rig).map(plainReason))];
+}
+
+export function qaReasonMessages(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig) {
+	return uniqueBy(
+		qaReasonCodes(q, held, skeleton, rig).map(describeReason),
+		(reason) => reason.text
+	).map((reason) => reason.translation);
 }
 
 /** Why an item worn as drawn for another body may not line up here, in one plain sentence. `from` names that character and
  *  `notes` say what was approximated (an unfitted item's own notes, or a shared entry's plan). */
-export function unfitText(m: Manifest, from: string, notes: unknown): string {
+export function unfitText(
+	m: Manifest,
+	from: string,
+	notes: unknown,
+	translate?: Translate
+): string {
 	// A copy saved by the release before notes were recorded holds `true`: it reads as one without notes.
 	const list: readonly UnfitNote[] = Array.isArray(notes) ? notes : [],
 		ids = m.rig.animations.map((a) => a.id),
 		move = (id = '') => moveLabel(id, ids),
-		parts = list.map((n) =>
-			n.how === 'retimed'
-				? `${move(n.anim)} spread from ${n.from} frames`
-				: n.how === 'similar'
-					? `${move(n.anim)} uses ${move(n.from)}`
-					: n.how === 'standing'
-						? `${move(n.anim)} uses the first ${move(n.from)} frame`
-						: `drawn at ${n.from} px`
-		);
-	return `Drawn for ${from}’s body, so it may float, clip or leave gaps.${
-		parts.length ? ` ${parts.join('; ').replace(/^./, (c) => c.toUpperCase())}.` : ''
-	}`;
+		say = copy(translate);
+	const parts = list.map((note, index) => {
+		const target = move(note.anim);
+		if (note.how === 'retimed')
+			return say(`${target} spread from ${note.from} frames`, 'studioModel.unfit.retimed', {
+				move: target,
+				count: Number(note.from)
+			});
+		if (note.how === 'similar' || note.how === 'standing') {
+			const source = move(note.from);
+			return note.how === 'similar'
+				? say(`${target} uses ${source}`, 'studioModel.unfit.similar', { move: target, source })
+				: say(`${target} uses the first ${source} frame`, 'studioModel.unfit.standing', {
+						move: target,
+						source
+					});
+		}
+		return index === 0
+			? say(`Drawn at ${note.from} px`, 'studioModel.unfit.sizeFirst', { size: note.from })
+			: say(`drawn at ${note.from} px`, 'studioModel.unfit.size', { size: note.from });
+	});
+	const lead = say(
+		`Drawn for ${from}’s body, so it may float, clip or leave gaps.`,
+		'studioModel.unfit.lead',
+		{ from }
+	);
+	if (!parts.length) return lead;
+	const details = parts.join('; ');
+	return say(
+		`${lead} ${details.replace(/^./, (char) => char.toUpperCase())}.`,
+		'studioModel.unfit.withDetails',
+		{ lead, details }
+	);
 }
 
 /** Where to look at a free re-fit of another character's item, in plain words: one line per move and direction whose
  *  frames failed a check, with its first such frame to show, and one per view whose source design has a finding. */
 export function refitNotes(
 	m: Manifest,
-	it: Item
+	it: Item,
+	translate?: Translate,
+	format?: {
+		direction: (id: DirectionName) => string;
+		list: (parts: (string | number)[]) => string;
+	}
 ): { text: string; anim: string; dir: DirectionName; frame: number }[] {
-	const from = it.copiedFrom?.name ?? 'another character',
+	const say = copy(translate),
+		from = it.copiedFrom?.name ?? say('another character', 'studioModel.anotherCharacter'),
 		ids = m.rig.animations.map((a) => a.id);
 	const check = {
-		angle: `the forearm points another way than on ${from}`,
-		body: 'the grip may float off the body',
-		hidden: `${from}’s body hid part of the item there`,
-		smudge: `${from}’s design has gray smudges in this view`,
-		dark: `${from}’s design has a dark patch the other views lack`
+		angle: say(`the forearm points another way than on ${from}`, 'studioModel.refit.angle', {
+			from
+		}),
+		body: say('the grip may float off the body', 'studioModel.refit.body'),
+		hidden: say(`${from}’s body hid part of the item there`, 'studioModel.refit.hidden', { from }),
+		smudge: say(`${from}’s design has gray smudges in this view`, 'studioModel.refit.smudge', {
+			from
+		}),
+		dark: say(`${from}’s design has a dark patch the other views lack`, 'studioModel.refit.dark', {
+			from
+		})
 	};
-	const list = (xs: (string | number)[]) =>
-		xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : `${xs[0]}`;
+	const list =
+		format?.list ??
+		((parts: (string | number)[]) =>
+			parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : `${parts[0]}`);
 	return (it.refit ?? []).map((n) => {
-		const view = n.dir.replaceAll('-', ' '),
-			facing = `facing ${view}`,
+		const direction = format?.direction(n.dir) ?? n.dir.replaceAll('-', ' '),
 			move = moveLabel(n.anim, ids);
 		// A design finding covers its whole view; a one-frame move has no frame to name.
-		const where = n.checks.every((c) => c === 'smudge' || c === 'dark')
-			? `Facing ${view}`
-			: m.rig.animations.find((a) => a.id === n.anim)?.cells === 1
-				? `${move} ${facing}`
-				: `${move} ${facing}, ${n.frames.length > 1 ? 'frames' : 'frame'} ${list(n.frames.map((f) => f + 1))}`;
+		let where: string;
+		if (n.checks.every((c) => c === 'smudge' || c === 'dark'))
+			where = say(`Facing ${direction}`, 'studioModel.refit.view', { direction });
+		else if (m.rig.animations.find((a) => a.id === n.anim)?.cells === 1)
+			where = say(`${move} facing ${direction}`, 'export.notes.rigIssue', { move, direction });
+		else {
+			const count = n.frames.length,
+				frames = list(n.frames.map((f) => f + 1));
+			where = say(
+				`${move} facing ${direction}, ${count > 1 ? 'frames' : 'frame'} ${frames}`,
+				'studioModel.refit.frames',
+				{ move, direction, count, n: frames }
+			);
+		}
+		const reasons = list(n.checks.map((c) => check[c]));
 		return {
-			text: `${where}: ${list(n.checks.map((c) => check[c]))}.`,
+			text: say(`${where}: ${reasons}.`, 'studioModel.refit.note', { where, reasons }),
 			anim: n.anim,
 			dir: n.dir,
 			frame: Math.min(...n.frames)
@@ -428,23 +636,33 @@ export function refitNotes(
 export const HANDS_SWAP = 'so hands swap there';
 export const KEEP_EACH_HAND = 'Characters made with Unique 8 keep each hand.';
 /** One line for the hand groups when the character has mirrored views, naming them in plain words; '' when it has none. */
-export function mirroredHandsNote(rig: Pick<Rig, 'directions'>): string {
+export function mirroredHandsNote(
+	rig: Pick<Rig, 'directions'>,
+	translate?: Translate,
+	direction = (id: DirectionName) => id.replaceAll('-', ' '),
+	formatList = (parts: string[]) =>
+		parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0]
+): string {
 	const views = rig.directions.filter((d) => d.mirrorOf).map((d) => d.id);
 	if (!views.length) return '';
+	const say = copy(translate);
 	const side = views.find((d) => !d.includes('-'));
 	const words =
 		side && views.length === 3 && views.every((d) => d.endsWith(side))
-			? `${side} and the ${side} diagonals`
-			: views.length > 1
-				? `${views.slice(0, -1).join(', ')} and ${views.at(-1)}`.replaceAll('-', ' ')
-				: views[0].replaceAll('-', ' ');
-	return `Facing ${words}, this character is mirrored, ${HANDS_SWAP}. ${KEEP_EACH_HAND}`;
+			? say(`${side} and the ${side} diagonals`, 'studioModel.mirror.diagonals', {
+					side: direction(side)
+				})
+			: formatList(views.map(direction));
+	return say(
+		`Facing ${words}, this character is mirrored, ${HANDS_SWAP}. ${KEEP_EACH_HAND}`,
+		'studioModel.mirror.hands',
+		{ directions: words }
+	);
 }
 
 export const fmtGens = (n: number) => `${Math.round(n * 10) / 10} gens`;
 /** Appended to a reported spend: calls PixelLab did not price are unknown, never $0. */
 export const unknownCostText = (calls = 0) => (calls ? ` + ${calls} unknown` : '');
-export const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US');
 export const fmtTime = (s: number) =>
 	s >= 90 ? `${Math.round(s / 60)} min` : `${Math.max(5, Math.round(s / 5) * 5)} s`;
 

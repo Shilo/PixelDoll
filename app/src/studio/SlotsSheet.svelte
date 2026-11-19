@@ -1,4 +1,8 @@
 <script lang="ts">
+	import { message } from '../lib/message.ts';
+	import { formatNumber, getLocale, t } from 'svelte-whisper';
+	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
+	import type { Message } from '../lib/message.ts';
 	// Slots: Add slot (show a built-in Wardrobe doesn't show, or create a custom slot) and a custom slot's settings. Order,
 	// hiding and showing happen in Wardrobe itself. Nothing here generates, unequips or changes exports except a custom
 	// slot's own drawing order, and every change is one undo step except deleting a slot together with its items.
@@ -28,7 +32,8 @@
 		MAX_HINT,
 		MAX_LABEL,
 		baseClothesNote,
-		busyReason,
+		behaviorLabelMessage,
+		slotBusyMessage,
 		categories,
 		cleanLabel,
 		drawingOrder,
@@ -39,8 +44,11 @@
 		nextLabel,
 		shownCategories,
 		slotDef,
-		useText
+		slotLabelMessage,
+		slotUseMessages,
+		type SlotUse
 	} from './slots.ts';
+	import { displayNestedMessage } from './nestedMessage.ts';
 	import { ChevronDown, Eye, Plus, Trash, TriangleAlert } from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
@@ -71,7 +79,22 @@
 				.then((r) => (looks = r?.character?.looks));
 	});
 
-	let problem = $state('');
+	let problem = $state<Message | string>('');
+	const labelOf = (key: string) => displayMessage(slotLabelMessage(m, key));
+	const useLabel = (use: SlotUse) =>
+		new Intl.ListFormat(getLocale(), { type: 'conjunction' }).format(
+			slotUseMessages(use).map(displayMessage)
+		);
+	const busyLabel = (label: string, use: SlotUse, action: 'delete' | 'reattach') =>
+		displayMessage(
+			slotBusyMessage(
+				label,
+				use,
+				action,
+				useLabel(use),
+				use.stopped ? t('studioSlots.busy.dismissStopped') : ''
+			)
+		);
 
 	// ---------- adding ----------
 	let addName = $state('');
@@ -96,7 +119,7 @@
 			fn();
 			return true;
 		} catch (e) {
-			problem = (e as Error).message;
+			problem = errorMessage(e);
 			return false;
 		}
 	}
@@ -106,13 +129,13 @@
 		const label = cleanLabel(addName) || placeholder;
 		if (attempt(() => addSlot({ label, ...(addLike ? { like: addLike } : {}) }))) {
 			close();
-			toast(`${label} added at the end of Wardrobe.`);
+			toast(message('slotsSheet.labelAddedAtTheEndOfWardrobe', { label }));
 		}
 	}
 	function show(key: string) {
 		if (attempt(() => showSlot(key))) {
 			close();
-			toast(`${slotDef(m, key)?.label ?? key} shown at the end of Wardrobe.`);
+			toast(message('slotsSheet.valueShownAtTheEndOfWardrobe', { value: labelOf(key) }));
 		}
 	}
 
@@ -120,13 +143,13 @@
 	let form = $state({ name: '', behavior: '' as SlotProfile, hand: 'right', above: '', hint: '' });
 	/** Draws above as the editor opened: only a changed choice is saved, so a new behavior or hand keeps its own depth. */
 	let startAbove = '';
-	let formError = $state('');
+	let formError = $state<Message | string>('');
 	const edited = $derived(
 		m && target ? categories(m).find((c) => c.key === target && c.custom) : undefined
 	);
 	const editedDef = $derived(m && edited ? slotDef(m, edited.key) : undefined);
 	const locked = $derived(
-		edited ? busyReason(edited.label, slotUseHere(edited.key), 'change how it attaches') : ''
+		edited ? busyLabel(labelOf(edited.key), slotUseHere(edited.key), 'reattach') : ''
 	);
 	const order = $derived(m && edited ? drawingOrder(m).filter((x) => x.key !== edited.key) : []);
 	/** The behavior's own definition: the edited slot for its current behavior, else the built-in it copies. */
@@ -183,10 +206,13 @@
 				...(form.above !== startAbove ? { above: form.above } : {}),
 				hint: form.hint
 			});
-			if (reason) throw new Error(reason);
+			if (reason) {
+				formError = reason;
+				return;
+			}
 			close();
 		} catch (e) {
-			formError = (e as Error).message;
+			formError = errorMessage(e);
 		} finally {
 			saving = false;
 		}
@@ -195,16 +221,16 @@
 	// ---------- deleting a custom slot ----------
 	let deleting = $state(''),
 		deleteBusy = $state(false),
-		deleteProblem = $state('');
-	const deletingLabel = $derived(m && deleting ? (slotDef(m, deleting)?.label ?? deleting) : '');
+		deleteProblem = $state<Message | string>('');
+	const deletingLabel = $derived(m && deleting ? labelOf(deleting) : '');
 	// Saved items may go with it (confirmed by count); attempts being made or stopped must be settled first.
 	const deleteUse = $derived(
 		deleting ? slotUseHere(deleting) : { items: 0, making: 0, stopped: 0 }
 	);
 	const deleteReason = $derived(
 		deleting
-			? busyReason(deletingLabel, { ...deleteUse, items: 0 }, 'be deleted') ||
-					(deleteUse.items && isDemo() ? 'Items of the bundled demo can’t be deleted.' : '')
+			? busyLabel(deletingLabel, { ...deleteUse, items: 0 }, 'delete') ||
+					(deleteUse.items && isDemo() ? t('slotsSheet.demoDeleteLocked') : '')
 			: ''
 	);
 	async function remove() {
@@ -218,7 +244,7 @@
 				close();
 			}
 		} catch (e) {
-			deleteProblem = (e as Error).message;
+			deleteProblem = errorMessage(e);
 		} finally {
 			deleteBusy = false;
 		}
@@ -230,17 +256,17 @@
 </script>
 
 {#snippet editFoot()}
-	<span class="foot-note">Free: never regenerates items already made.</span>
+	<span class="foot-note">{t('slotsSheet.freeNeverRegeneratesItemsAlreadyMade')}</span>
 	<button
 		class="bu-action btn primary"
 		data-variant="primary"
 		disabled={!!nameProblem || !!hintError || saving}
-		onclick={() => void save()}>Save</button
+		onclick={() => void save()}>{t('common.save')}</button
 	>
 {/snippet}
 
 {#if edited && editedDef}
-	<Sheet title={edited.label} onclose={close} footer={editFoot} cancelDisabled={saving}>
+	<Sheet title={labelOf(edited.key)} onclose={close} footer={editFoot} cancelDisabled={saving}>
 		<form
 			class="form"
 			onsubmit={(e) => {
@@ -249,7 +275,7 @@
 			}}
 		>
 			<label class="field"
-				><span class="label">Name</span><input
+				><span class="label">{t('common.name')}</span><input
 					class="bu-input input"
 					type="text"
 					bind:value={form.name}
@@ -259,25 +285,24 @@
 				/></label
 			>
 			<p class="faint small" id="slot-name-note">
-				{nameProblem || `Renaming keeps its items, outfits and export name (${edited.key}).`}
+				{nameProblem ? displayError(nameProblem) : t('slotsSheet.renameNote', { slot: edited.key })}
 			</p>
 			<label class="field"
-				><span class="label">Draws above</span>
+				><span class="label">{t('slotsSheet.drawsAbove')}</span>
 				<span class="select-wrap boxed"
 					><select class="bu-select select" bind:value={form.above}
-						>{#each order as x (x.key)}<option value={x.key}>{x.label}</option>{/each}</select
+						>{#each order as x (x.key)}<option value={x.key}>{labelOf(x.key)}</option
+							>{/each}</select
 					><ChevronDown size={12} /></span
 				>
 			</label>
 			<p class="faint small">
-				The front of its items, including ones already made, draws over {order.find(
-					(x) => x.key === form.above
-				)?.label ?? 'Base'} and under the next slot. Side-specific order, like a near hand, moves with
-				it.{editedDef.bgZ != null ? ' Parts drawn behind the body stay behind it.' : ''} New items start
-				here too. Undo puts it back.
+				{t('slotsSheet.drawOrder', { slot: labelOf(form.above || 'body') })}
+				{#if editedDef.bgZ != null}{t('slotsSheet.behindBody')}{/if}
+				{t('slotsSheet.drawOrderUndo')}
 			</p>
 			<label class="field"
-				><span class="label">Works like</span>
+				><span class="label">{t('slotsSheet.worksLike')}</span>
 				<span class="select-wrap boxed"
 					><select
 						class="bu-select select"
@@ -288,20 +313,20 @@
 						}}
 						disabled={!!locked}
 						aria-describedby="slot-behavior-note"
-						>{#each BEHAVIORS as b (b.profile)}<option value={b.profile}>{b.label}</option
+						>{#each BEHAVIORS as b (b.profile)}<option value={b.profile}
+								>{displayMessage(behaviorLabelMessage(b.profile, labelOf(b.profile)))}</option
 							>{/each}</select
 					><ChevronDown size={12} /></span
 				>
 			</label>
 			<p class="faint small" id="slot-behavior-note">
-				{locked ||
-					'How new items attach and where they start drawing. Copies settings, never items.'}
+				{locked || t('slotsSheet.behaviorNote')}
 			</p>
 			{#if heldChoice}
 				<div class="field">
-					<span class="label" id="slot-hand">Hand</span>
+					<span class="label" id="slot-hand">{t('slotsSheet.hand')}</span>
 					<div class="seg" role="radiogroup" aria-labelledby="slot-hand">
-						{#each [['right', 'Right'], ['left', 'Left']] as [value, text] (value)}
+						{#each ['right', 'left'] as value (value)}
 							<button
 								type="button"
 								role="radio"
@@ -311,28 +336,31 @@
 									if (locked) return;
 									form.hand = value;
 									followDepth();
-								}}>{text}</button
+								}}>{value === 'right' ? t('slotsSheet.right') : t('slotsSheet.left')}</button
+							>
 							>
 						{/each}
 					</div>
 				</div>
 			{/if}
 			<label class="field"
-				><span class="label">Creative hint <span class="faint">(optional)</span></span><textarea
+				><span class="label"
+					>{t('slotsSheet.creativeHint')}
+					<span class="faint">{t('common.optional')}</span></span
+				><textarea
 					class="bu-input input"
 					rows="2"
 					bind:value={form.hint}
 					maxlength={MAX_HINT}
-					placeholder="e.g. small and shiny, pinned to the chest"
+					placeholder={t('slotsSheet.placeholderEGSmallAndShinyPinned')}
 					aria-invalid={!!hintError || undefined}
 					aria-describedby="slot-hint-note"></textarea></label
 			>
 			<p class="faint small" id="slot-hint-note">
-				{hintError ||
-					'Added to each new item’s description here. Items already made stay as they are.'}
+				{hintError ? displayError(hintError) : t('slotsSheet.hintNote')}
 			</p>
 			{#if formError}<p class="notice bad small" role="alert">
-					<TriangleAlert size={16} /><span>{formError}</span>
+					<TriangleAlert size={16} /><span>{displayMessage(formError)}</span>
 				</p>{/if}
 			<button
 				type="button"
@@ -340,75 +368,77 @@
 				onclick={() => {
 					deleteProblem = '';
 					deleting = edited.key;
-				}}><Trash size={16} aria-hidden="true" />Delete slot…</button
+				}}><Trash size={16} aria-hidden="true" />{t('slotsSheet.deleteSlot')}</button
 			>
 		</form>
 	</Sheet>
 {:else}
-	<Sheet title="Add slot" onclose={close}>
+	<Sheet title={t('slotsSheet.titleAddSlot')} onclose={close}>
 		{#if problem}<p class="notice warn small" role="alert">
-				<TriangleAlert size={16} /><span>{problem}</span>
+				<TriangleAlert size={16} /><span>{displayMessage(problem)}</span>
 			</p>{/if}
 		<form
 			class="form add-slot"
-			aria-label="Create custom slot"
+			aria-label={t('slotsSheet.createCustomSlot')}
 			onsubmit={(e) => {
 				e.preventDefault();
 				add();
 			}}
 		>
 			<label class="field"
-				><span class="label">Slot name</span>
+				><span class="label">{t('slotsSheet.slotName')}</span>
 				<input
 					class="bu-input input"
 					type="text"
 					bind:value={addName}
 					maxlength={MAX_LABEL}
 					{placeholder}
-					aria-label="Slot name"
+					aria-label={t('slotsSheet.slotName')}
 					aria-invalid={!!addProblem || undefined}
 					aria-describedby={ownerHidden || addProblem ? 'slot-add-note' : undefined}
 				/>
 			</label>
 			{#if ownerHidden || addProblem}<p class="faint small" id="slot-add-note" aria-live="polite">
-					{ownerHidden ? `${ownerHidden.label} already exists but isn’t shown.` : addProblem}
+					{ownerHidden
+						? t('slotsSheet.alreadyHidden', { label: labelOf(ownerHidden.key) })
+						: displayError(addProblem)}
 				</p>{/if}
 			<label class="field"
-				><span class="label small">Works like</span>
+				><span class="label small">{t('slotsSheet.worksLike')}</span>
 				<span class="select-wrap boxed"
 					><select class="bu-select select" bind:value={addLike}
-						><option value="">Over basic clothing</option>{#each likeOptions as c (c.key)}<option
-								value={c.key}>{c.label}</option
+						><option value="">{t('slotsSheet.overBasicClothing')}</option
+						>{#each likeOptions as c (c.key)}<option value={c.key}>{labelOf(c.key)}</option
 							>{/each}</select
 					><ChevronDown size={12} /></span
 				>
 			</label>
 			{#if ownerHidden}<button class="bu-action btn primary" type="submit"
-					>Show {ownerHidden.label}</button
+					>{t('slotsSheet.showLabel', { label: labelOf(ownerHidden.key) })}</button
 				>
 			{:else}<button class="bu-action btn primary" type="submit" disabled={!!addProblem}
-					><Plus size={16} aria-hidden="true" />Create slot</button
+					><Plus size={16} aria-hidden="true" />{t('slotsSheet.createSlot')}</button
 				>{/if}
 		</form>
 		{#if builtins.length && !copying}
 			<hr class="bu-separator slot-divider" />
-			<h3 class="sec-title" id="slots-builtin">Built-in slots</h3>
+			<h3 class="sec-title" id="slots-builtin">{t('slotsSheet.builtInSlots')}</h3>
 			<ul class="slot-list" aria-labelledby="slots-builtin">
 				{#each builtins as c (c.key)}
 					{@const sub = [
-						useText(slotUseHere(c.key)),
-						c.profile === 'underwear' ? baseClothesNote(looks) : ''
+						useLabel(slotUseHere(c.key)),
+						c.profile === 'underwear' ? displayMessage(baseClothesNote(looks)) : ''
 					]
 						.filter(Boolean)
 						.join(' ')}
 					<li class="slot-row">
 						<button
 							class="bu-action slot-choice"
-							aria-label="Show {c.label}"
+							aria-label={t('slotsSheet.showLabel', { label: labelOf(c.key) })}
 							onclick={() => show(c.key)}
 						>
 							<GroupIcon group={c.key} size={18} /><span class="row-name"
-								>{c.label}{#if sub}<small class="row-reason faint">{sub}</small>{/if}</span
+								>{labelOf(c.key)}{#if sub}<small class="row-reason faint">{sub}</small>{/if}</span
 							><Eye size={18} aria-hidden="true" />
 						</button>
 					</li>
@@ -421,19 +451,24 @@
 {#if deleting}
 	<ConfirmDialog
 		title={deleteUse.items
-			? `Delete ${deletingLabel} and its ${deleteUse.items === 1 ? 'item' : `${deleteUse.items} items`}?`
-			: `Delete ${deletingLabel}?`}
-		action="Delete"
-		busyAction="Deleting…"
+			? t('slotsSheet.deleteWithItems', {
+					label: deletingLabel,
+					count: deleteUse.items,
+					n: formatNumber(deleteUse.items, { useGrouping: false })
+				})
+			: t('slotsSheet.deleteTitle', { label: deletingLabel })}
+		action={t('common.delete')}
+		busyAction={t('common.deleting')}
 		busy={deleteBusy}
-		problem={deleteProblem || deleteReason}
+		problem={displayNestedMessage(deleteProblem || deleteReason)}
 		blocked={!!deleteReason}
 		oncancel={() => (deleting = '')}
 		onconfirm={() => void remove()}
 		><p>
-			{#if deleteUse.items}The slot and its items are deleted from this device together, and outfits
-				stop wearing them. That can’t be undone.{:else}Undo brings it back.{/if}
-			Exports will no longer include its slot “{deleting}”, so game code that names it must change.
+			{#if deleteUse.items}{t('slotsSheet.theSlotAndItsItemsAreDeleted')}{:else}{t(
+					'slotsSheet.undoBringsItBack'
+				)}{/if}
+			{t('slotsSheet.deleteExportNote', { slot: deleting })}
 		</p></ConfirmDialog
 	>
 {/if}

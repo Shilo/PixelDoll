@@ -2,6 +2,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { equipmentFixture } from './equipment-fixture.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import { moveDeletionBlocked, removeMove } from '../../src/studio/moveActions.svelte.ts';
+import { errorText, LocalizedError } from '../../src/lib/message.ts';
 import {
 	doc,
 	store,
@@ -67,20 +68,20 @@ test('removing a move saves rebased tracks and metadata, then reloads the select
 
 test('move deletion protects the final move, demo, dependent standing designs, and paid drafts', async () => {
 	store.project!.manifest.rig.animations = store.project!.manifest.rig.animations.slice(0, 1);
-	expect(moveDeletionBlocked('rest')).toMatch('at least one move');
+	expect(errorText(moveDeletionBlocked('rest'))).toMatch('at least one move');
 	store.project!.manifest.rig.animations.push({
 		...store.project!.manifest.rig.animations[0],
 		id: 'walk'
 	});
 	doc.id = 'fixture:s2';
-	expect(moveDeletionBlocked('walk')).toMatch('Demo moves');
+	expect(errorText(moveDeletionBlocked('walk'))).toMatch('Demo moves');
 	doc.id = 'project';
 	store.project!.manifest.items[1].standing = 'walk';
-	expect(moveDeletionBlocked('walk')).toMatch('standing move');
+	expect(errorText(moveDeletionBlocked('walk'))).toMatch('standing move');
 	delete store.project!.manifest.items[1].standing;
 	store.project!.manifest.items[1].route = 'ea2-anchor';
 	store.project!.manifest.items[1].anchorCell = 'walk/south/0';
-	expect(moveDeletionBlocked('walk')).toMatch('standing move');
+	expect(errorText(moveDeletionBlocked('walk'))).toMatch('standing move');
 	delete store.project!.manifest.items[1].anchorCell;
 	gens.push({ phase: 'review', draft: { rigId: 'project' } } as (typeof gens)[number]);
 	await expect(removeMove('walk')).rejects.toThrow('item drafts');
@@ -92,14 +93,16 @@ test('move deletion preserves Default even before any items need its standing re
 		...store.project!.manifest.rig.animations[0],
 		id: 'default'
 	});
-	expect(moveDeletionBlocked('default')).toMatch('standing views');
+	expect(errorText(moveDeletionBlocked('default'))).toMatch('standing views');
 	await expect(removeMove('default')).rejects.toThrow('standing views');
 	expect(db.update).not.toHaveBeenCalled();
 });
 
 test('move deletion rechecks blockers and refuses concurrent record edits without overwriting them', async () => {
 	vi.mocked(flushSave).mockImplementationOnce(async () => {
-		vi.mocked(deletionBlocked).mockReturnValue('Pending generation work');
+		vi.mocked(deletionBlocked).mockReturnValue(
+			new LocalizedError('Pending generation work', 'state.finishBeforeMoveRemoval')
+		);
 	});
 	await expect(removeMove('walk')).rejects.toThrow('Pending generation work');
 	expect(record.manifest.rig.animations).toHaveLength(2);

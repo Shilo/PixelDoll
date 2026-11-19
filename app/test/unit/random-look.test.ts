@@ -31,14 +31,29 @@ describe('randomVariants', () => {
 });
 
 describe('characterFacts', () => {
-	test('counts the character’s size, directions, moves and items with singular and plural words', () => {
+	test('counts the character’s size, directions, moves and non-base items for singular, plural and zero', () => {
 		const m = fixture();
-		expect(characterFacts(m)).toBe('64 px · 4 directions · 2 moves · 6 items');
+		expect(characterFacts(m)).toEqual([
+			{ key: 'studioModel.facts.pixels', vars: { count: 64 } },
+			{ key: 'export.count.directions', vars: { count: 4 } },
+			{ key: 'export.count.moves', vars: { count: 2 } },
+			{ key: 'export.count.items', vars: { count: 6 } }
+		]);
 		m.rig.directions = m.rig.directions.slice(0, 1);
 		m.rig.animations = m.rig.animations.slice(0, 1);
 		m.items = m.items.filter((i) => i.id === m.rig.baseItem || i.id === 'cape_red');
-		expect(characterFacts(m)).toBe('64 px · 1 direction · 1 move · 1 item');
+		expect(characterFacts(m)).toEqual([
+			{ key: 'studioModel.facts.pixels', vars: { count: 64 } },
+			{ key: 'export.count.directions', vars: { count: 1 } },
+			{ key: 'export.count.moves', vars: { count: 1 } },
+			{ key: 'export.count.items', vars: { count: 1 } }
+		]);
 		m.items = m.items.filter((i) => i.id === m.rig.baseItem);
-		expect(characterFacts(m)).toBe('64 px · 1 direction · 1 move · 0 items');
+		expect(characterFacts(m)).toEqual([
+			{ key: 'studioModel.facts.pixels', vars: { count: 64 } },
+			{ key: 'export.count.directions', vars: { count: 1 } },
+			{ key: 'export.count.moves', vars: { count: 1 } },
+			{ key: 'export.count.items', vars: { count: 0 } }
+		]);
 	});
 });

@@ -1,4 +1,5 @@
 import { validAnimationId } from '../rig/rig.ts';
+import { message, type Message } from '../message.ts';
 import { EXPORT_ENGINES, type Engine, type Manifest } from './manifest.ts';
 import * as db from './db.ts';
 import { workspaceCopy } from './workspace-mode.ts';
@@ -164,9 +165,10 @@ export function exportAnimationCatalog(
 	current: Manifest | undefined,
 	others: readonly Manifest[],
 	settings: ExportSettings
-): { names: string[]; warnings: string[] } {
+): { names: string[]; warnings: string[]; warningMessages: Message[] } {
 	const names = new Set(animationNames(current ? [current] : [], settings)),
-		warnings: string[] = [];
+		warnings: string[] = [],
+		warningMessages: Message[] = [];
 	for (const manifest of others) {
 		try {
 			for (const name of animationNames([manifest], settings)) names.add(name);
@@ -175,7 +177,12 @@ export function exportAnimationCatalog(
 			warnings.push(
 				`Some moves from ${manifest?.name ?? 'another character'} are missing from settings.`
 			);
+			warningMessages.push(
+				manifest?.name == null
+					? message('export.warnings.missingOtherMoves')
+					: message('export.warnings.missingNamedMoves', { name: manifest.name })
+			);
 		}
 	}
-	return { names: [...names].sort(), warnings };
+	return { names: [...names].sort(), warnings, warningMessages };
 }

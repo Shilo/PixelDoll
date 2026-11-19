@@ -278,12 +278,15 @@ describe('native install action state', () => {
 		failed.prompt.mockRejectedValue(new Error('Browser rejected the prompt'));
 		app.window.dispatchEvent(failed);
 		expect(await app.client.installApp()).toBe(false);
-		expect(get(app.client.pwa).installError).toContain('Browser rejected the prompt');
-		expect(get(app.client.pwa).error).not.toContain('Browser rejected the prompt');
 		expect(get(app.client.pwa)).toMatchObject({
 			installed: false,
 			installing: false,
-			installable: false
+			installable: false,
+			installError: {
+				key: 'pwa.installFailed',
+				vars: { reason: 'Browser rejected the prompt' }
+			},
+			error: ''
 		});
 		expect(help).toHaveBeenCalledOnce();
 		app.window.dispatchEvent(installEvent('dismissed'));

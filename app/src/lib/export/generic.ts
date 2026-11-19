@@ -10,6 +10,7 @@ import { bakedFrame, layerFrame, tuckedId, variantCovers } from '../compose/comp
 import { validPaletteRepairs } from '../dress/item-palette.ts';
 import { resolvePreset } from '../runtime/paperdoll.js';
 import { bakedSheetPath } from './paths.ts';
+import { message, type Message } from '../message.ts';
 
 export type OutFile = { name: string; data: string | Img | Uint8Array };
 const nativeDepth = (z: number) => Number.isInteger(z) && z >= -2147483648 && z <= 2147483647;
@@ -361,14 +362,26 @@ export interface ManifestOptions {
 export function exportManifest(
 	p: Project,
 	o: ManifestOptions
-): { manifest: Manifest; warnings: string[] } {
+): { manifest: Manifest; warnings: string[]; warningMessages: Map<string, Message> } {
 	const src = p.manifest,
-		warnings: string[] = [];
+		warnings: string[] = [],
+		warningMessages = new Map<string, Message>();
+	const note = (text: string, display: Message) => {
+		warnings.push(text);
+		warningMessages.set(text, display);
+	};
 	const items = src.items.filter((it) => {
 		const ok = it.baseHash === src.rig.baseHash;
-		if (!ok) warnings.push(`${it.name}: Left out because it no longer matches the body.`);
+		if (!ok)
+			note(
+				`${it.name}: Left out because it no longer matches the body.`,
+				message('export.warnings.staleItem', { item: it.name })
+			);
 		else if (it.unfitted)
-			warnings.push(`${it.name}: worn as drawn for another body, not fitted to this character.`);
+			note(
+				`${it.name}: worn as drawn for another body, not fitted to this character.`,
+				message('export.warnings.unfittedItem', { item: it.name })
+			);
 		return ok;
 	});
 	const ids = new Set(items.map((i) => i.id));
@@ -436,7 +449,13 @@ export function exportManifest(
 	for (const a of m.rig.animations) {
 		const directions = moveDirs(src, a.id);
 		Object.assign(a, { directions });
-		if (!directions.length) warnings.push(`${a.id.replace(/[_-]/g, ' ')}: No body frames to play.`);
+		if (!directions.length) {
+			const move = a.id.replace(/[_-]/g, ' ');
+			note(
+				`${move}: No body frames to play.`,
+				message('export.warnings.noBodyFrames', { move: { move: a.id } })
+			);
+		}
 	}
 	m.export = {
 		exportedAt: o.exportedAt ?? new Date().toISOString(),
@@ -451,7 +470,7 @@ export function exportManifest(
 				}))(bakedFrame(m))
 			: {})
 	};
-	return { manifest: m, warnings };
+	return { manifest: m, warnings, warningMessages };
 }
 
 const ENGINE_START: Record<string, string> = {

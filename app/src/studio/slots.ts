@@ -6,6 +6,8 @@ import type { Manifest, Slot, SlotProfile, ZOverride } from '../lib/store/manife
 import { createSlot, DEFAULT_WARDROBE_ORDER, SLOTS, slotLadder } from '../lib/items/slots.ts';
 import { reservedPathSegment } from '../lib/export/paths.ts';
 import { BASE_CLOTHES, UNDERWEAR_CLOTHES } from './model.ts';
+import { LocalizedError, message, type Message } from '../lib/message.ts';
+import type { WhisperKey } from 'svelte-whisper';
 
 /** The frozen character: never a Wardrobe category. */
 export const BASE_KEY = 'body';
@@ -25,79 +27,144 @@ export interface Category {
 }
 
 /** Category copy by behavior profile, so a custom copy inherits its source's icon and examples. */
-const COPY: Record<Exclude<SlotProfile, 'body'>, { icon: string; ideas: { label: string }[] }> = {
+const COPY: Record<
+	Exclude<SlotProfile, 'body'>,
+	{ icon: string; ideas: { label: string; caption: WhisperKey }[] }
+> = {
 	head: {
 		icon: 'head',
 		ideas: [
-			{ label: 'wizard hat' },
-			{ label: 'iron knight helmet' },
-			{ label: 'golden crown' },
-			{ label: 'hood' }
+			{ label: 'wizard hat', caption: 'studioSlots.ideas.head.0' },
+			{ label: 'iron knight helmet', caption: 'studioSlots.ideas.head.1' },
+			{ label: 'golden crown', caption: 'studioSlots.ideas.head.2' },
+			{ label: 'hood', caption: 'studioSlots.ideas.head.3' }
 		]
 	},
 	hair: {
 		icon: 'hair',
-		ideas: [{ label: 'long braided hair' }, { label: 'short spiky hair' }, { label: 'ponytail' }]
+		ideas: [
+			{ label: 'long braided hair', caption: 'studioSlots.ideas.hair.0' },
+			{ label: 'short spiky hair', caption: 'studioSlots.ideas.hair.1' },
+			{ label: 'ponytail', caption: 'studioSlots.ideas.hair.2' }
+		]
 	},
 	face_acc: {
 		icon: 'face',
-		ideas: [{ label: 'round glasses' }, { label: 'eye patch' }, { label: 'bandit mask' }]
+		ideas: [
+			{ label: 'round glasses', caption: 'studioSlots.ideas.face_acc.0' },
+			{ label: 'eye patch', caption: 'studioSlots.ideas.face_acc.1' },
+			{ label: 'bandit mask', caption: 'studioSlots.ideas.face_acc.2' }
+		]
 	},
 	torso_inner: {
 		icon: 'body',
-		ideas: [{ label: 'leather vest' }, { label: 'chainmail shirt' }, { label: 'blue tunic' }]
+		ideas: [
+			{ label: 'leather vest', caption: 'studioSlots.ideas.torso_inner.0' },
+			{ label: 'chainmail shirt', caption: 'studioSlots.ideas.torso_inner.1' },
+			{ label: 'blue tunic', caption: 'studioSlots.ideas.torso_inner.2' }
+		]
 	},
 	arms: {
 		icon: 'hands',
-		ideas: [{ label: 'leather gloves' }, { label: 'iron gauntlets' }, { label: 'cloth wraps' }]
+		ideas: [
+			{ label: 'leather gloves', caption: 'studioSlots.ideas.arms.0' },
+			{ label: 'iron gauntlets', caption: 'studioSlots.ideas.arms.1' },
+			{ label: 'cloth wraps', caption: 'studioSlots.ideas.arms.2' }
+		]
 	},
 	legs: {
 		icon: 'legs',
-		ideas: [{ label: 'brown trousers' }, { label: 'plate greaves' }, { label: 'pleated skirt' }]
+		ideas: [
+			{ label: 'brown trousers', caption: 'studioSlots.ideas.legs.0' },
+			{ label: 'plate greaves', caption: 'studioSlots.ideas.legs.1' },
+			{ label: 'pleated skirt', caption: 'studioSlots.ideas.legs.2' }
+		]
 	},
 	feet: {
 		icon: 'feet',
-		ideas: [{ label: 'leather boots' }, { label: 'sandals' }, { label: 'iron sabatons' }]
+		ideas: [
+			{ label: 'leather boots', caption: 'studioSlots.ideas.feet.0' },
+			{ label: 'sandals', caption: 'studioSlots.ideas.feet.1' },
+			{ label: 'iron sabatons', caption: 'studioSlots.ideas.feet.2' }
+		]
 	},
 	back: {
 		icon: 'back',
-		ideas: [{ label: 'red cape' }, { label: 'travel backpack' }, { label: 'quiver of arrows' }]
+		ideas: [
+			{ label: 'red cape', caption: 'studioSlots.ideas.back.0' },
+			{ label: 'travel backpack', caption: 'studioSlots.ideas.back.1' },
+			{ label: 'quiver of arrows', caption: 'studioSlots.ideas.back.2' }
+		]
 	},
 	main_hand: {
 		icon: 'main_hand',
-		ideas: [{ label: 'steel sword' }, { label: 'wooden staff' }, { label: 'battle axe' }]
+		ideas: [
+			{ label: 'steel sword', caption: 'studioSlots.ideas.main_hand.0' },
+			{ label: 'wooden staff', caption: 'studioSlots.ideas.main_hand.1' },
+			{ label: 'battle axe', caption: 'studioSlots.ideas.main_hand.2' }
+		]
 	},
 	off_hand: {
 		icon: 'off_hand',
-		ideas: [{ label: 'round shield' }, { label: 'iron lantern' }, { label: 'wooden longbow' }]
+		ideas: [
+			{ label: 'round shield', caption: 'studioSlots.ideas.off_hand.0' },
+			{ label: 'iron lantern', caption: 'studioSlots.ideas.off_hand.1' },
+			{ label: 'wooden longbow', caption: 'studioSlots.ideas.off_hand.2' }
+		]
 	},
 	facial_hair: {
 		icon: 'hair',
-		ideas: [{ label: 'full beard' }, { label: 'handlebar mustache' }, { label: 'goatee' }]
+		ideas: [
+			{ label: 'full beard', caption: 'studioSlots.ideas.facial_hair.0' },
+			{ label: 'handlebar mustache', caption: 'studioSlots.ideas.facial_hair.1' },
+			{ label: 'goatee', caption: 'studioSlots.ideas.facial_hair.2' }
+		]
 	},
 	torso_outer: {
 		icon: 'body',
-		ideas: [{ label: 'steel plate armor' }, { label: 'hooded robe' }, { label: 'long coat' }]
+		ideas: [
+			{ label: 'steel plate armor', caption: 'studioSlots.ideas.torso_outer.0' },
+			{ label: 'hooded robe', caption: 'studioSlots.ideas.torso_outer.1' },
+			{ label: 'long coat', caption: 'studioSlots.ideas.torso_outer.2' }
+		]
 	},
 	underwear: {
 		icon: 'legs',
-		ideas: [{ label: 'plain white underwear set' }, { label: 'striped swimsuit' }]
+		ideas: [
+			{ label: 'plain white underwear set', caption: 'studioSlots.ideas.underwear.0' },
+			{ label: 'striped swimsuit', caption: 'studioSlots.ideas.underwear.1' }
+		]
 	},
 	waist: {
 		icon: 'legs',
-		ideas: [{ label: 'leather belt' }, { label: 'red sash' }, { label: 'belt pouch' }]
+		ideas: [
+			{ label: 'leather belt', caption: 'studioSlots.ideas.waist.0' },
+			{ label: 'red sash', caption: 'studioSlots.ideas.waist.1' },
+			{ label: 'belt pouch', caption: 'studioSlots.ideas.waist.2' }
+		]
 	},
 	neck: {
 		icon: 'body',
-		ideas: [{ label: 'gold amulet' }, { label: 'wool scarf' }, { label: 'bead necklace' }]
+		ideas: [
+			{ label: 'gold amulet', caption: 'studioSlots.ideas.neck.0' },
+			{ label: 'wool scarf', caption: 'studioSlots.ideas.neck.1' },
+			{ label: 'bead necklace', caption: 'studioSlots.ideas.neck.2' }
+		]
 	},
 	shoulders: {
 		icon: 'body',
-		ideas: [{ label: 'steel pauldrons' }, { label: 'fur mantle' }]
+		ideas: [
+			{ label: 'steel pauldrons', caption: 'studioSlots.ideas.shoulders.0' },
+			{ label: 'fur mantle', caption: 'studioSlots.ideas.shoulders.1' }
+		]
 	},
 	accessory: {
 		icon: 'accessory',
-		ideas: [{ label: 'brass brooch' }, { label: 'ribbon bow' }, { label: 'charm pouch' }]
+		ideas: [
+			{ label: 'brass brooch', caption: 'studioSlots.ideas.accessory.0' },
+			{ label: 'ribbon bow', caption: 'studioSlots.ideas.accessory.1' },
+			{ label: 'charm pouch', caption: 'studioSlots.ideas.accessory.2' }
+		]
 	}
 };
 
@@ -117,13 +184,52 @@ export function slotLabel(m: Pick<Manifest, 'slots'> | undefined, key: string): 
 	if (key === BASE_KEY) return BASE_LABEL;
 	return slotDef(m, key)?.label ?? BUILTIN.get(key)?.label ?? key;
 }
+
+const slotLabelKeys = {
+	body: 'studioSlots.labels.base',
+	head: 'studioSlots.labels.head',
+	hair: 'studioSlots.labels.hair',
+	face_acc: 'studioSlots.labels.face',
+	torso_inner: 'studioSlots.labels.body',
+	arms: 'itemPane.hands',
+	legs: 'studioSlots.labels.legs',
+	feet: 'studioSlots.labels.feet',
+	back: 'studioSlots.labels.back',
+	main_hand: 'studioSlots.labels.mainHand',
+	off_hand: 'studioSlots.labels.offHand',
+	facial_hair: 'studioSlots.labels.facialHair',
+	torso_outer: 'studioSlots.labels.outerwear',
+	underwear: 'studioSlots.labels.underwear',
+	waist: 'studioSlots.labels.waist',
+	neck: 'studioSlots.labels.neck',
+	shoulders: 'studioSlots.labels.shoulders',
+	accessory: 'studioSlots.labels.accessory'
+} as const satisfies Record<SlotProfile, WhisperKey>;
+
+export function slotLabelMessage(
+	m: Pick<Manifest, 'slots'> | undefined,
+	key: string
+): Message | string {
+	const label = slotLabel(m, key);
+	if (key === BASE_KEY || BUILTIN.get(key)?.label === label)
+		return message(slotLabelKeys[key as SlotProfile]);
+	return label;
+}
 export const iconOf = (m: Pick<Manifest, 'slots'> | undefined, key: string) => {
 	const p = profileOf(m, key);
 	return p === 'body' ? 'body' : COPY[p].icon;
 };
 export const categoryCopy = (m: Pick<Manifest, 'slots'> | undefined, key: string) => {
 	const p = profileOf(m, key);
-	return COPY[p === 'body' ? 'accessory' : p];
+	const profile = p === 'body' ? 'accessory' : p;
+	const { icon, ideas } = COPY[profile];
+	return {
+		icon,
+		ideas: ideas.map(({ label, caption }) => ({
+			label,
+			caption: message(caption)
+		}))
+	};
 };
 
 const defaultOrder = (key: string) => {
@@ -199,12 +305,35 @@ export function useText(u: SlotUse): string {
 		? (parts[0] ?? '')
 		: `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
 }
+
+export function slotUseMessages(use: SlotUse): Message[] {
+	const parts: Message[] = [];
+	if (use.items) parts.push(message('export.count.items', { count: use.items }));
+	if (use.making) parts.push(message('studioSlots.use.making', { count: use.making }));
+	if (use.stopped) parts.push(message('studioSlots.use.stopped', { count: use.stopped }));
+	return parts;
+}
 /** Why a category cannot be hidden, deleted or change behavior now, or '' when it is empty. */
 export function busyReason(label: string, u: SlotUse, action: string): string {
 	if (isEmpty(u)) return '';
 	return `${label} has ${useText(u)}. Only an empty category can ${action}${u.stopped ? '; dismiss stopped attempts in Activity first' : ''}.`;
 }
 
+export function slotBusyMessage(
+	label: string,
+	use: SlotUse,
+	action: 'hide' | 'delete' | 'reattach' | 'hideWardrobe',
+	items: string,
+	stopped: string
+): Message | '' {
+	const keys = {
+		hide: 'studioSlots.busy.hide',
+		delete: 'studioSlots.busy.delete',
+		reattach: 'studioSlots.busy.reattach',
+		hideWardrobe: 'studioSlots.busy.hideWardrobe'
+	} as const;
+	return isEmpty(use) ? '' : message(keys[action], { label, items, stopped });
+}
 // ---------- names and keys ----------
 export const cleanLabel = (s: string) => s.normalize('NFC').replace(/\s+/g, ' ').trim();
 const fold = (s: string) => cleanLabel(s).toLowerCase();
@@ -247,39 +376,53 @@ export function keyFor(m: Pick<Manifest, 'slots'>, label: string): string {
 	}
 }
 /** A label problem, or '' when it can be used. */
-export function labelProblem(m: Pick<Manifest, 'slots'>, label: string, except?: string): string {
+export function labelProblem(m: Pick<Manifest, 'slots'>, label: string, except?: string) {
 	const clean = cleanLabel(label);
-	if (!clean) return 'Enter a name.';
-	if (clean.length > MAX_LABEL) return `Use at most ${MAX_LABEL} characters.`;
+	if (!clean) return new LocalizedError('Enter a name.', 'studioSlots.enterName');
+	if (clean.length > MAX_LABEL) return tooLong(MAX_LABEL);
 	const owner = labelOwner(m, clean, except);
-	if (owner) return `${owner.label} already exists.`;
-	return '';
+	if (owner)
+		return new LocalizedError(`${owner.label} already exists.`, 'studioSlots.nameExists', {
+			name: owner.label
+		});
+	return null;
 }
+
+const tooLong = (count: number) =>
+	new LocalizedError(`Use at most ${count} characters.`, 'studioSlots.tooLong', { count });
 
 // Words PixelDoll itself controls: the hint describes the item, never the background, keying, pose or hands.
 const PROTECTED =
 	/\b(background|chroma|green ?screen|magenta|transparent|alpha|mannequin|pose|posed|skeleton|keep every|unchanged|frame layout|frame count|sprite ?sheet|grid layout|packed grid|red dot|hand marked)\b/i;
 export const cleanHint = (s: string) => s.replace(/\s+/g, ' ').trim();
 /** A creative hint problem, or '' when it can be used. */
-export function hintProblem(hint: string): string {
+export function hintProblem(hint: string) {
 	const clean = cleanHint(hint);
-	if (clean.length > MAX_HINT) return `Use at most ${MAX_HINT} characters.`;
-	if (/[{}<>]/.test(clean)) return 'Describe the item in plain words.';
+	if (clean.length > MAX_HINT) return tooLong(MAX_HINT);
+	if (/[{}<>]/.test(clean))
+		return new LocalizedError('Describe the item in plain words.', 'studioSlots.plainHint');
 	const word = clean.match(PROTECTED)?.[0];
-	if (word) return `PixelDoll handles “${word}” itself. Describe only the item.`;
-	return '';
+	if (word)
+		return new LocalizedError(
+			`PixelDoll handles “${word}” itself. Describe only the item.`,
+			'studioSlots.protectedHint',
+			{ word }
+		);
+	return null;
 }
 
 /** What a character's frozen body wears, from its stored looks text: a nude body makes removable underwear useful. */
-export function baseClothesNote(looks: string | undefined): string {
+export function baseClothesNote(looks: string | undefined): Message | '' {
 	if (looks?.includes(BASE_CLOTHES)) return '';
-	if (looks?.includes(UNDERWEAR_CLOTHES))
-		return 'This character’s body was drawn in underwear. Underwear items draw over it but can’t remove it.';
-	return 'If this character’s body was drawn wearing clothes, Underwear items draw over them but can’t remove them.';
+	if (looks?.includes(UNDERWEAR_CLOTHES)) return message('studioSlots.baseUnderwear');
+	return message('studioSlots.baseClothes');
 }
 
 // ---------- edits (in place on the open manifest; the Studio wraps each in one undo step) ----------
 type Editable = Pick<Manifest, 'slots' | 'rig' | 'items' | 'presets'>;
+
+const unknownSlot = (slot: string) =>
+	new LocalizedError(`Unknown equipment slot: ${slot}`, 'studioSlots.errors.unknownSlot', { slot });
 
 /** Insert a definition by z, after any slot with the same z, so an existing draw order never changes. */
 function insertByZ(m: Pick<Manifest, 'slots'>, slot: Slot) {
@@ -289,7 +432,7 @@ function insertByZ(m: Pick<Manifest, 'slots'>, slot: Slot) {
 /** A category's settings as this character resolves them (a built-in's ladder copy includes its per-rig hand order). */
 function resolved(m: Editable, key: string): Slot {
 	const s = m.slots.find((x) => x.id === key) ?? slotLadder(m.rig).find((x) => x.id === key);
-	if (!s || key === BASE_KEY) throw new Error(`Unknown equipment slot: ${key}`);
+	if (!s || key === BASE_KEY) throw unknownSlot(key);
 	return structuredClone(s);
 }
 /** The character's own definition of a built-in, created from the rig's ladder on first organization. */
@@ -297,7 +440,7 @@ function own(m: Editable, key: string): Slot {
 	const found = m.slots.find((s) => s.id === key);
 	if (found) return found;
 	const fresh = slotLadder(m.rig).find((s) => s.id === key);
-	if (!fresh) throw new Error(`Unknown equipment slot: ${key}`);
+	if (!fresh) throw unknownSlot(key);
 	insertByZ(m, fresh);
 	return fresh;
 }
@@ -305,7 +448,11 @@ const shownEnd = (m: Pick<Manifest, 'slots'>, busy: ReadonlySet<string>) =>
 	Math.max(-1, ...shownCategories(m, busy).map((c) => c.order)) + 1;
 
 export function setHidden(m: Editable, key: string, hidden: boolean, busy: ReadonlySet<string>) {
-	if (key === BASE_KEY) throw new Error('Base is always part of the character.');
+	if (key === BASE_KEY)
+		throw new LocalizedError(
+			'Base is always part of the character.',
+			'studioSlots.errors.baseAlwaysShown'
+		);
 	const wasShown = shownCategories(m, busy).some((c) => c.key === key),
 		end = shownEnd(m, busy);
 	const s = own(m, key);
@@ -336,7 +483,7 @@ export interface NewSlot {
 export function addCustom(m: Editable, o: NewSlot, busy: ReadonlySet<string>): string {
 	const label = cleanLabel(o.label ?? '') || nextLabel(m);
 	const problem = labelProblem(m, label);
-	if (problem) throw new Error(problem);
+	if (problem) throw problem;
 	const key = keyFor(m, label);
 	const source = o.like ? resolved(m, o.like) : 'accessory';
 	const slot = createSlot(key, source, label);
@@ -349,16 +496,21 @@ export function addCustom(m: Editable, o: NewSlot, busy: ReadonlySet<string>): s
 }
 export function renameCustom(m: Editable, key: string, label: string) {
 	const s = m.slots.find((x) => x.id === key);
-	if (!s || isBuiltin(key) || key === BASE_KEY) throw new Error('Built-in names stay fixed.');
+	if (!s || isBuiltin(key) || key === BASE_KEY)
+		throw new LocalizedError('Built-in names stay fixed.', 'studioSlots.errors.fixedName');
 	const problem = labelProblem(m, label, key);
-	if (problem) throw new Error(problem);
+	if (problem) throw problem;
 	s.label = cleanLabel(label);
 }
 export function setHint(m: Editable, key: string, hint: string) {
 	const s = m.slots.find((x) => x.id === key);
-	if (!s || isBuiltin(key)) throw new Error('Only custom categories take a creative hint.');
+	if (!s || isBuiltin(key))
+		throw new LocalizedError(
+			'Only custom categories take a creative hint.',
+			'studioSlots.errors.fixedHint'
+		);
 	const problem = hintProblem(hint);
-	if (problem) throw new Error(problem);
+	if (problem) throw problem;
 	const clean = cleanHint(hint);
 	if (clean) s.promptTemplate = clean;
 	else delete s.promptTemplate;
@@ -371,6 +523,12 @@ export const BEHAVIORS: { profile: Exclude<SlotProfile, 'body'>; label: string }
 		label: `Like ${BUILTIN.get(k)!.label ?? k}`
 	}))
 ];
+
+export function behaviorLabelMessage(profile: Exclude<SlotProfile, 'body'>, slot: string): Message {
+	return profile === 'accessory'
+		? message('slotsSheet.overBasicClothing')
+		: message('studioSlots.likeSlot', { slot });
+}
 /** Replace a custom category's attachment settings with `src`'s, keeping its name, organization and hint. */
 function rebuild(
 	m: Editable,
@@ -396,7 +554,10 @@ function rebuild(
 /** Change what a custom category generates and how it attaches. Callers check it is empty first: baked frames never move. */
 export function setBehavior(m: Editable, key: string, profile: Exclude<SlotProfile, 'body'>) {
 	if (!m.slots.some((x) => x.id === key) || isBuiltin(key))
-		throw new Error('Built-in behavior stays fixed; add a custom copy.');
+		throw new LocalizedError(
+			'Built-in behavior stays fixed; add a custom copy.',
+			'studioSlots.errors.fixedBehavior'
+		);
 	rebuild(m, key, profile === 'accessory' ? 'accessory' : resolved(m, profile));
 }
 const sideOf = (s: Slot) => (s.anchor === 'hand_l' ? 'left' : 'right');
@@ -406,7 +567,10 @@ const sideOf = (s: Slot) => (s.anchor === 'hand_l' ? 'left' : 'right');
 export function setHand(m: Editable, key: string, side: 'left' | 'right') {
 	const s = m.slots.find((x) => x.id === key);
 	if (!s || isBuiltin(key) || s.class !== 'held')
-		throw new Error('Only held custom categories choose a hand.');
+		throw new LocalizedError(
+			'Only held custom categories choose a hand.',
+			'studioSlots.errors.fixedHand'
+		);
 	if (sideOf(s) === side) return;
 	rebuild(m, key, resolved(m, side === 'left' ? 'off_hand' : 'main_hand'), {
 		profile: s.profile,
@@ -441,10 +605,13 @@ export function drawsAbove(m: Pick<Manifest, 'slots'>, key: string): string {
 export function setDrawsAbove(m: Editable, key: string, above: string) {
 	const at = m.slots.findIndex((x) => x.id === key);
 	if (at < 0 || isBuiltin(key) || key === above)
-		throw new Error('Built-in drawing order stays fixed.');
+		throw new LocalizedError(
+			'Built-in drawing order stays fixed.',
+			'studioSlots.errors.fixedDrawOrder'
+		);
 	const s = m.slots[at],
 		base = slotDef(m, above);
-	if (!base) throw new Error(`Unknown equipment slot: ${above}`);
+	if (!base) throw unknownSlot(above);
 	const others = drawingOrder(m).filter((x) => x.key !== key);
 	const higher = others.filter((x) => x.z > base.z).map((x) => x.z);
 	const next = higher.length ? Math.min(...higher) : base.z + 20;
@@ -490,7 +657,10 @@ export function changesAttachment(
 export function applySettings(m: Editable, key: string, o: SlotSettings) {
 	const s = m.slots.find((x) => x.id === key);
 	if (!s || isBuiltin(key) || key === BASE_KEY)
-		throw new Error('Built-in categories can only be shown, hidden or moved.');
+		throw new LocalizedError(
+			'Built-in categories can only be shown, hidden or moved.',
+			'studioSlots.errors.fixedSettings'
+		);
 	if (cleanLabel(o.label) !== s.label) renameCustom(m, key, o.label);
 	if (o.profile !== (s.profile ?? 'accessory')) setBehavior(m, key, o.profile);
 	const now = m.slots.find((x) => x.id === key)!;
@@ -501,9 +671,15 @@ export function applySettings(m: Editable, key: string, o: SlotSettings) {
 /** Remove an empty custom category and outfit entries naming it. Callers check it is empty first. */
 export function deleteCustom(m: Editable, key: string) {
 	if (isBuiltin(key) || key === BASE_KEY)
-		throw new Error('Built-in categories can only be hidden.');
+		throw new LocalizedError(
+			'Built-in categories can only be hidden.',
+			'studioSlots.errors.fixedRemoval'
+		);
 	if (m.items.some((it) => it.slot === key))
-		throw new Error('Remove its items before deleting the category.');
+		throw new LocalizedError(
+			'Remove its items before deleting the category.',
+			'studioSlots.errors.nonemptyRemoval'
+		);
 	m.slots = m.slots.filter((s) => s.id !== key);
 	for (const item of m.items) if (item.hides) item.hides = item.hides.filter((id) => id !== key);
 	for (const slot of m.slots) {

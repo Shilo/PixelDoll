@@ -1,10 +1,16 @@
 <script lang="ts">
+	import { formatNumber, getLocale, t } from 'svelte-whisper';
+	import {
+		displayDirection,
+		displayDirectionInSentence,
+		displayDirectionShort
+	} from './displayDirection.ts';
 	import { bakedFrame, composeCell } from '../lib/compose/compose.ts';
 	import type { DirectionName } from '../lib/store/manifest.ts';
 	import Sprite from './Sprite.svelte';
 	import { ui, doc, store, view, stepPreviewFrame } from './state.svelte.ts';
 	import { moveDirs } from '../lib/dress/dress.ts';
-	import { moveLabel } from './model.ts';
+	import { displayMove } from './displayMove.ts';
 	import {
 		ChevronDown,
 		ChevronLeft,
@@ -127,7 +133,9 @@
 		)
 	);
 	const k = $derived(Math.max(1, Math.min(fit, ui.zoom || fit)));
-	const zoomLabel = $derived(`${+(k / ui.dpr).toFixed(1)}×`);
+	const zoomLabel = $derived(
+		`${formatNumber(k / ui.dpr, { maximumFractionDigits: 1, useGrouping: false })}×`
+	);
 	const step = $derived(Math.max(1, Math.round(ui.dpr)));
 
 	const wearing = $derived(
@@ -137,9 +145,23 @@
 					.map((it) => it.name)
 			: []
 	);
-	const name = (d: DirectionName) => d[0].toUpperCase() + d.slice(1);
-	const label = (d: DirectionName) =>
-		`${store.projects.find((p) => p.id === doc.id)?.name.replace(/ \(demo\)$/, '') ?? m?.name ?? 'Character'}, ${moveLabel(ui.anim, moveIds)}, facing ${d}${wearing.length ? `, wearing ${wearing.join(', ')}` : ''}`;
+	const label = (direction: DirectionName) => {
+		const name =
+			store.projects.find((project) => project.id === doc.id)?.name.replace(/ \(demo\)$/, '') ??
+			m?.name ??
+			t('common.character');
+		const move = displayMove(ui.anim, moveIds);
+		const facing = displayDirectionInSentence(direction);
+		const locale = getLocale();
+		return wearing.length
+			? t('stage.characterWearing', {
+					name,
+					move,
+					facing,
+					items: locale === 'en' ? wearing.join(', ') : new Intl.ListFormat(locale).format(wearing)
+				})
+			: t('stage.characterFacing', { name, move, facing });
+	};
 	const cellImg = (d: DirectionName) =>
 		view.project && view.anim
 			? composeCell(view.project, view.items, ui.anim, d, view.cell, frame)
@@ -153,7 +175,9 @@
 >
 	{#if doc.loading && !m}
 		<div class="stage-msg">
-			<span class="bu-ring ring spin" aria-hidden="true"></span><span class="sr">Loading</span>
+			<span class="bu-ring ring spin" aria-hidden="true"></span><span class="sr"
+				>{t('stage.loading')}</span
+			>
 		</div>
 	{:else if m}
 		<div class="stage-art" style:margin-bottom="{barH}px">
@@ -170,7 +194,7 @@
 										ui.dir = d.id;
 										ui.all = false;
 									}}
-									aria-label="Show {d.id} only"
+									aria-label={t('stage.showIdOnly', { id: displayDirectionInSentence(d.id) })}
 								>
 									<Sprite
 										img={cellImg(d.id)}
@@ -181,7 +205,11 @@
 										label={label(d.id)}
 									/>
 								</button>
-								<figcaption>{name(d.id)}{d.mirrorOf ? ' (mirrored)' : ''}</figcaption>
+								<figcaption>
+									{d.mirrorOf
+										? t('stage.mirroredDirection', { direction: displayDirection(d.id) })
+										: displayDirection(d.id)}
+								</figcaption>
 							</figure>
 						{:else}
 							<div aria-hidden="true"></div>
@@ -205,13 +233,13 @@
 			bind:this={bar}
 			data-wrapped={wrapped || undefined}
 			role="toolbar"
-			aria-label="Preview controls"
+			aria-label={t('stage.previewControls')}
 		>
 			<button
 				class="bu-action btn icon plain"
 				data-variant="quiet"
-				aria-label={ui.playing ? 'Pause' : 'Play'}
-				title="Play / pause (Space)"
+				aria-label={ui.playing ? t('common.pause') : t('common.play')}
+				title={t('stage.titlePlayPauseSpace')}
 				onclick={() => (ui.playing = !ui.playing)}
 			>
 				{#if ui.playing}<Pause size={16} />{:else}<Play size={16} />{/if}
@@ -219,33 +247,35 @@
 			<button
 				class="bu-action btn icon plain"
 				data-variant="quiet"
-				aria-label="Previous frame"
-				title="Previous frame (,)"
+				aria-label={t('stage.previousFrame')}
+				title={t('stage.titlePreviousFrame')}
 				disabled={(view.anim?.frames.length ?? 0) < 2}
 				onclick={() => stepPreviewFrame(-1)}><ChevronLeft size={16} /></button
 			>
 			<span class="small muted"
-				>Frame {view.anim ? (ui.frame % view.anim.frames.length) + 1 : 0} of {view.anim?.frames
-					.length ?? 0}</span
+				>{t('stage.framePosition', {
+					frame: formatNumber(view.anim ? (ui.frame % view.anim.frames.length) + 1 : 0),
+					total: formatNumber(view.anim?.frames.length ?? 0)
+				})}</span
 			>
 			<button
 				class="bu-action btn icon plain"
 				data-variant="quiet"
-				aria-label="Next frame"
-				title="Next frame (.)"
+				aria-label={t('stage.nextFrame')}
+				title={t('stage.titleNextFrame')}
 				disabled={(view.anim?.frames.length ?? 0) < 2}
 				onclick={() => stepPreviewFrame(1)}><ChevronRight size={16} /></button
 			>
 			<label class="select-wrap move-select">
-				<span class="sr">Move</span>
+				<span class="sr">{t('common.move')}</span>
 				<select
 					class="bu-select select"
-					title={moveLabel(ui.anim, moveIds)}
+					title={displayMove(ui.anim, moveIds)}
 					bind:value={ui.anim}
 					onchange={() => (ui.frame = 0)}
 				>
 					{#each m.rig.animations as a (a.id)}<option value={a.id}
-							>{moveLabel(a.id, moveIds)}</option
+							>{displayMove(a.id, moveIds)}</option
 						>{/each}
 				</select>
 				<ChevronDown size={12} />
@@ -254,7 +284,7 @@
 			{#if phone}
 				<!-- Available space, not direction count, determines the compact control. -->
 				<label class="select-wrap">
-					<span class="sr">Direction</span>
+					<span class="sr">{t('common.direction')}</span>
 					<select
 						class="bu-select select dir-select"
 						value={ui.dir}
@@ -264,29 +294,28 @@
 						}}
 					>
 						{#each allDirs as d (d.id)}<option value={d.id} disabled={!made.includes(d.id)}
-								>{name(d.id)}</option
+								>{displayDirection(d.id)}</option
 							>{/each}
 					</select>
 					<ChevronDown size={12} />
 				</label>
 			{:else}
-				<div class="seg" role="group" aria-label="Direction">
+				<div class="seg" role="group" aria-label={t('common.direction')}>
 					{#each allDirs as d, i (d.id)}
 						<button
 							aria-pressed={!ui.all && ui.dir === d.id}
-							aria-label="Face {d.id}"
+							aria-label={t('stage.faceId', { id: displayDirectionInSentence(d.id) })}
 							disabled={!made.includes(d.id)}
 							title={made.includes(d.id)
-								? `Face ${d.id} (${i + 1})`
-								: `This move has no ${d.id} view`}
+								? t('stage.faceShortcut', {
+										direction: displayDirectionInSentence(d.id),
+										shortcut: i + 1
+									})
+								: t('stage.directionUnavailable', { direction: displayDirectionInSentence(d.id) })}
 							onclick={() => {
 								ui.all = false;
 								ui.dir = d.id;
-							}}
-							>{d.id
-								.split('-')
-								.map((x) => x[0].toUpperCase())
-								.join('')}</button
+							}}>{displayDirectionShort(d.id)}</button
 						>
 					{/each}
 				</div>
@@ -295,8 +324,9 @@
 				class="bu-action btn icon plain"
 				data-variant="quiet"
 				aria-pressed={ui.all}
-				aria-label="All directions"
-				title="All directions (0)"
+				aria-label={t('stage.allDirections')}
+				data-all-directions
+				title={t('stage.titleAllDirections0')}
 				onclick={() => (ui.all = !ui.all)}><Grid2x2 size={16} /></button
 			>
 			{#if !phone}
@@ -304,23 +334,23 @@
 				<button
 					class="bu-action btn icon plain"
 					data-variant="quiet"
-					aria-label="Zoom out"
-					title="Zoom out (−)"
+					aria-label={t('common.zoomOut')}
+					title={t('stage.titleZoomOut')}
 					disabled={k <= 1}
 					onclick={() => (ui.zoom = Math.max(1, k - step))}><Minus size={14} /></button
 				>
 				<button
 					class="bu-action btn plain sm zoom-val num"
 					data-variant="quiet"
-					title="Fit"
-					aria-label="Zoom {zoomLabel}, click to fit"
+					title={t('stage.titleFit')}
+					aria-label={t('stage.zoomZoomLabelClickToFit', { zoomLabel })}
 					onclick={() => (ui.zoom = 0)}>{zoomLabel}</button
 				>
 				<button
 					class="bu-action btn icon plain"
 					data-variant="quiet"
-					aria-label="Zoom in"
-					title="Zoom in (+)"
+					aria-label={t('common.zoomIn')}
+					title={t('stage.titleZoomIn')}
 					disabled={k >= fit}
 					onclick={() => (ui.zoom = Math.min(fit, k + step))}><Plus size={14} /></button
 				>
@@ -328,8 +358,8 @@
 					class="bu-action btn icon plain"
 					data-variant="quiet"
 					aria-pressed={ui.bg === 'solid'}
-					aria-label="Background: {ui.bg}"
-					title="Background (checker / plain)"
+					aria-label={t(ui.bg === 'solid' ? 'stage.backgroundSolid' : 'stage.backgroundChecker')}
+					title={t('stage.titleBackgroundCheckerPlain')}
 					onclick={() => (ui.bg = ui.bg === 'checker' ? 'solid' : 'checker')}
 					><Image size={16} /></button
 				>
@@ -368,7 +398,7 @@
 		white-space: normal;
 		overflow-wrap: anywhere;
 	}
-	.canvas-bar [aria-label='All directions'] {
+	.canvas-bar [data-all-directions] {
 		display: inline-flex;
 	}
 	.canvas-bar .select.dir-select {

@@ -4,6 +4,7 @@
 	import { tierDecision } from '../lib/pixellab/plans.ts';
 	import { TriangleAlert } from './icons.ts';
 	import NoticeLink from './NoticeLink.svelte';
+	import { t } from 'svelte-whisper';
 
 	let {
 		minimumTier,
@@ -25,10 +26,11 @@
 
 {#if app.key && !app.keyRejected && !app.balance && minimumTier > 0}
 	<div {id}>
-		<Notice tone="info" title={app.balanceError ? 'Plan not verified' : 'Checking PixelLab plan'}>
-			{app.balanceError
-				? 'Your plan could not be verified. Restricted requests wait until the account check succeeds.'
-				: 'PixelDoll checks your plan before submitting this action.'}
+		<Notice
+			tone="info"
+			title={app.balanceError ? t('tierNotice.unverifiedTitle') : t('tierNotice.checkingTitle')}
+		>
+			{app.balanceError ? t('tierNotice.unverified') : t('tierNotice.checking')}
 		</Notice>
 	</div>
 {:else if app.key && !app.keyRejected && decision.kind !== 'ok'}
@@ -36,17 +38,27 @@
 		<NoticeLink
 			href="https://www.pixellab.ai/#pricing"
 			tone="warning"
-			label={`PixelLab Tier ${decision.tier} ${decision.kind}. View plans (opens in a new tab).`}
+			label={decision.kind === 'required'
+				? t('tierNotice.requiredLink', { tier: decision.tier })
+				: t('tierNotice.recommendedLink', { tier: decision.tier })}
 		>
 			{#snippet indicator()}<TriangleAlert size={18} />{/snippet}
-			<strong>PixelLab Tier {decision.tier} {decision.kind}</strong>
+			<strong
+				>{decision.kind === 'required'
+					? t('tierNotice.requiredTitle', { tier: decision.tier })
+					: t('tierNotice.recommendedTitle', { tier: decision.tier })}</strong
+			>
 			<span>
 				{#if decision.kind === 'required'}
-					{feature} needs Tier {decision.tier} or higher. Your account is
-					{decision.current === 0 ? 'Free/Trial' : `Tier ${decision.current}`}. No request sent.
+					{decision.current === 0
+						? t('tierNotice.requiredFree', { feature, tier: decision.tier })
+						: t('tierNotice.required', {
+								feature,
+								tier: decision.tier,
+								current: decision.current
+							})}
 				{:else}
-					{recommendation ??
-						`${feature} is available on your plan. Tier ${decision.tier} or higher is recommended.`}
+					{recommendation ?? t('tierNotice.recommended', { feature, tier: decision.tier })}
 				{/if}
 			</span>
 		</NoticeLink>

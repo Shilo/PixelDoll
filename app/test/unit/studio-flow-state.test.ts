@@ -2,6 +2,8 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { MoveSpec, Progress } from '../../src/studio/create.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
+import type { Balance } from '../../src/lib/pixellab/routes.ts';
+import { message } from '../../src/lib/message.ts';
 import { readFileSync } from 'node:fs';
 import { equipmentFixture } from './equipment-fixture.ts';
 
@@ -28,6 +30,7 @@ const mocks = vi.hoisted(() => ({
 	cancelScoped: vi.fn(),
 	observe: vi.fn()
 }));
+const mockAccount = vi.hoisted(() => ({ key: '', balance: null as Balance | null }));
 vi.mock('../../src/studio/create.ts', () => ({
 	createCharacter: mocks.create,
 	addMove: mocks.move,
@@ -63,10 +66,11 @@ vi.mock('../../src/lib/store/db.ts', async (original) => ({
 	update: mocks.update,
 	all: mocks.all
 }));
-vi.mock('../../src/lib/app.svelte.ts', () => ({ app: { key: '' } }));
+vi.mock('../../src/lib/app.svelte.ts', () => ({ app: mockAccount }));
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({
 	queue: {
 		role: 'leader',
+		snapshot: () => ({ jobs: [] }),
 		subscribe: mocks.subscribe,
 		requestHandoff: mocks.handoff,
 		idle: () => true,
@@ -96,6 +100,8 @@ beforeAll(async () => {
 beforeEach(() => {
 	vi.resetModules();
 	Object.values(mocks).forEach((m) => m.mockReset());
+	mockAccount.key = '';
+	mockAccount.balance = null;
 	mocks.put.mockResolvedValue(undefined);
 	mocks.get.mockResolvedValue(undefined);
 	mocks.del.mockResolvedValue(undefined);
@@ -274,7 +280,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 		// a failed move holds the queue while its sheet is closed, so it says so
 		if (kind === 'move')
 			expect(first.ui).toMatchObject({
-				toast: expect.stringMatching(/ failed\. Open Moves to try again or start over\.$/),
+				toast: message('state.moveNameFailedOpenMovesToTryAgain', { moveName: 'Cast' }),
 				toastTone: 'danger'
 			});
 		mocks[kind].mockClear();
@@ -328,7 +334,12 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 		const s = await import('../../src/studio/state.svelte.ts');
 		await resume(s);
 		expect(mocks[kind]).not.toHaveBeenCalled();
-		expect(stateOf(s).error).toMatch(/stopped\. Review Activity before trying again\./);
+		expect(stateOf(s).error).toMatchObject({
+			message: `${kind === 'setup' ? 'Setup' : 'Generation'} stopped. Review Activity before trying again.`,
+			translation: message(
+				kind === 'setup' ? 'generation.outcome.setupStopped' : 'generation.outcome.stopped'
+			)
+		});
 		s.doc.loading = false;
 		s.startupResumed();
 		await expect(s.prepareForUpdate()).resolves.toBeUndefined();
@@ -336,7 +347,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 
 	test.each(['Original failure', ''])(
 		`${kind} reports failed-marker storage errors, freezes late progress, and releases its guard (%s)`,
-		async (message) => {
+		async (originalFailure) => {
 			const saved = pending<void>();
 			let callback!: (p: Progress) => void;
 			mocks.put.mockImplementation((_store, _id, record) =>
@@ -345,18 +356,19 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 			mocks[kind].mockImplementationOnce((...args: unknown[]) => {
 				callback = progressOf(kind, args);
 				callback(progress('animate', 4));
-				throw new Error(message);
+				throw new Error(originalFailure);
 			});
 			const s = await import('../../src/studio/state.svelte.ts');
 			const running = start(s);
 			await vi.waitFor(() => expect(mocks.put).toHaveBeenCalledTimes(2));
-			expect(stateOf(s).error).toBe(message);
+			expect(stateOf(s).error).toBe(originalFailure);
 			callback(progress('animate', 47));
 			expect(stateOf(s).progress).toEqual(progress('animate', 4));
 			saved.reject(new Error('Storage unavailable'));
 			await running;
-			expect(stateOf(s).error).toContain(message);
-			expect(stateOf(s).error).toContain('Dismiss this operation before reloading');
+			expect(stateOf(s).error).toMatchObject({
+				translation: message('state.couldNotSaveFlowFailure', { error: originalFailure })
+			});
 			s.doc.loading = false;
 			s.startupResumed();
 			await expect(s.prepareForUpdate()).rejects.toThrow('could not confirm');
@@ -610,8 +622,9 @@ test('joint recovery refuses a superseded pending operation and a failed durable
 	mocks.put.mockRejectedValue(new Error('Storage blocked'));
 	await s.retryMoveMeasurements('project', structuredClone(recoverySpec), recoveryPlan);
 	expect(mocks.move).not.toHaveBeenCalled();
-	expect(s.moving.error).toContain('Storage blocked');
-	expect(s.moving.error).toContain('Dismiss this operation before reloading');
+	expect(s.moving.error).toMatchObject({
+		translation: message('state.couldNotSaveFlowFailure', { error: 'Storage blocked' })
+	});
 });
 
 test('Keep saves only the reviewed cached body with its exact seed and refuses a changed review before any work', async () => {
@@ -935,7 +948,9 @@ test('body color consent storage failure cannot start paid work', async () => {
 	});
 	await s.matchMoveBodyColors('project', structuredClone(paletteSpec), palettePlan);
 	expect(mocks.move).not.toHaveBeenCalled();
-	expect(s.moving.error).toContain('Consent storage blocked');
+	expect(s.moving.error).toMatchObject({
+		translation: message('state.couldNotSaveFlowFailure', { error: 'Consent storage blocked' })
+	});
 });
 
 const itemColorPlan = {
@@ -1206,7 +1221,9 @@ test('a failed read of the stored drafts is reported and a new item cannot overw
 	await s.startItem({ name: 'Hat', slot: 'head', prompt: 'a hat' });
 	expect(s.gens).toHaveLength(0);
 	expect(draftsSaved()).toHaveLength(0);
-	expect(s.ui.toast).toMatch(/Saved item drafts could not be read: read failed/);
+	expect(s.ui.toast).toEqual(
+		message('state.savedItemDraftsCouldNotBeRead', { reason: 'read failed' })
+	);
 	await expect(s.cleanUp(60_000, false)).rejects.toThrow('read failed');
 	expect(mocks.clear).not.toHaveBeenCalled();
 });
@@ -1218,7 +1235,9 @@ test('a character that cannot open says why before the demo replaces it', async 
 	const s = await import('../../src/studio/state.svelte.ts');
 	vi.spyOn(console, 'error').mockImplementation(() => {});
 	await s.openProject('rig-broken');
-	expect(s.ui.toast).toBe('Could not open that character: broken record');
+	expect(s.ui.toast).toEqual(
+		message('state.couldNotOpenThatCharacterError', { error: 'broken record' })
+	);
 });
 
 test('an unreadable character list is reported instead of showing only the demo silently', async () => {
@@ -1227,7 +1246,9 @@ test('an unreadable character list is reported instead of showing only the demo 
 	mocks.all.mockRejectedValue(new Error('storage unavailable'));
 	await s.refreshProjects(); // listing throws
 	expect(s.store.projects.map((p) => p.id)).toEqual([s.DEMO]);
-	expect(s.ui.toast).toMatch(/^Could not read your saved characters: /);
+	expect(s.ui.toast).toEqual(
+		message('state.couldNotReadYourSavedCharactersReason', { reason: 'storage unavailable' })
+	);
 });
 
 describe('move queue', () => {
@@ -1462,21 +1483,28 @@ describe('move queue', () => {
 
 	test('restricted actions explain their numeric tier without reopening Connect or queuing work', async () => {
 		storage();
-		const { app } = (await import('../../src/lib/app.svelte.ts')) as unknown as {
-			app: { key: string; balance: unknown };
-		};
+		const { app } = await import('../../src/lib/app.svelte.ts');
 		app.key = 'test-key';
-		app.balance = { subscription: { status: 'trial', plan: 'Free trial' } };
+		app.balance = {
+			credits: { type: 'usd', usd: 0 },
+			subscription: {
+				type: 'generations',
+				status: 'trial',
+				plan: 'Free trial',
+				generations: 0,
+				total: 0
+			}
+		};
 		const s = await import('../../src/studio/state.svelte.ts'),
 			run = vi.fn();
 		s.withKey(run, 1);
 		expect(run).not.toHaveBeenCalled();
 		expect(s.ui.sheet).not.toBe('connect');
-		expect(s.ui.toast).toContain('Tier 1');
-		app.balance = { subscription: { status: 'active', plan: 'Tier 1' } };
+		expect(s.ui.toast).toEqual(message('activity.planWait.tier', { tier: 1 }));
+		app.balance.subscription = { ...app.balance.subscription, status: 'active', plan: 'Tier 1' };
 		s.withKey(run, 2);
 		expect(run).not.toHaveBeenCalled();
-		expect(s.ui.toast).toContain('Tier 2');
+		expect(s.ui.toast).toEqual(message('activity.planWait.tier', { tier: 2 }));
 		s.withKey(run);
 		expect(run).toHaveBeenCalledOnce();
 	});
@@ -1720,7 +1748,7 @@ describe('move queue', () => {
 			expect(mocks.create.mock.calls.map((c) => c[0].name)).toEqual(['A']);
 			expect([s.createBusy(), s.ui.toast]).toEqual([
 				true,
-				'Another character is still being created, so yours did not start. Your details are kept.'
+				message('state.anotherCharacterIsStillBeingCreatedSo')
 			]);
 		} finally {
 			queue.role = 'leader';
@@ -2165,19 +2193,22 @@ describe('optional review', () => {
 		s.store.project = { manifest, images: new Map() };
 		s.doc.id = 'project';
 		s.doc.items = { body: 'base', head: 'hat_wizard' };
-		s.doc.undo = [{ label: 'Earlier edit', snap: '{}' }];
+		const earlierEdit = { key: 'history.changeColor' } as const;
+		s.doc.undo = [{ label: earlierEdit, snap: '{}' }];
 		s.ui.anim = 'walk';
 		s.ui.frame = 3;
 		await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' });
 		s.wearDraft('helm0');
 		done.resolve(clean);
-		await vi.waitFor(() => expect(s.ui.toast).toBe('New helm saved'));
+		await vi.waitFor(() =>
+			expect(s.ui.toast).toEqual(message('state.nameSaved', { name: 'New helm' }))
+		);
 		expect(accept).toHaveBeenCalledOnce();
 		expect(s.gens).toHaveLength(0);
 		expect(s.doc.items.head).toBe('helm0');
 		expect(s.doc.drafts).toEqual({});
 		expect(s.store.project!.manifest).toBe(saved);
-		expect(s.doc.undo.map((u) => u.label)).toEqual(['Earlier edit']);
+		expect(s.doc.undo.map((u) => u.label)).toEqual([earlierEdit]);
 		expect(s.ui).toMatchObject({ selected: 'helm0', frame: 3 });
 	});
 
@@ -2191,7 +2222,9 @@ describe('optional review', () => {
 		const s = await import('../../src/studio/state.svelte.ts');
 		s.doc.id = 'project';
 		await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' });
-		await vi.waitFor(() => expect(s.ui.toast).toBe('New helm saved'));
+		await vi.waitFor(() =>
+			expect(s.ui.toast).toEqual(message('state.nameSaved', { name: 'New helm' }))
+		);
 		expect(mocks.move).not.toHaveBeenCalled();
 		expect(s.moving.queued).toEqual([]);
 	});
@@ -2209,7 +2242,7 @@ describe('optional review', () => {
 		s.doc.id = 'project';
 		await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' });
 		await vi.waitFor(() =>
-			expect(s.ui.toast).toBe('New helm has issues to review. No paid retry was started.')
+			expect(s.ui.toast).toEqual(message('state.nameHasIssuesToReviewNoPaid', { name: 'New helm' }))
 		);
 		expect(s.gens.map((g) => g.phase)).toEqual(['review']);
 		expect(accept).not.toHaveBeenCalled();
@@ -2318,7 +2351,11 @@ describe('optional review', () => {
 			await vi.waitFor(() => expect(s.gens[0]?.phase).toBe('review'));
 			const { app } = await import('../../src/lib/app.svelte.ts');
 			app.key = '';
-			await vi.waitFor(() => expect(s.ui.toast).toContain('issues to review'));
+			await vi.waitFor(() =>
+				expect(s.ui.toast).toEqual(
+					message('state.nameHasIssuesToReviewNoPaid', { name: 'New helm' })
+				)
+			);
 			const original = s.gens[0];
 			s.retryGen(original, 10);
 			expect(s.ui.sheet).toBe('connect');
@@ -2328,7 +2365,15 @@ describe('optional review', () => {
 			if (changed === 'input') original.input.prompt = 'different hat';
 			if (changed === 'draft') original.draft.log.push('Artwork changed in another tab');
 			s.connected();
-			await vi.waitFor(() => expect(s.ui.toast).toMatch(/changed.*[Rr]e(view|open)/));
+			await vi.waitFor(() =>
+				expect(s.ui.toast).toEqual(
+					message(
+						changed === 'price'
+							? 'state.theAttemptPriceChangedReviewTheCurrent'
+							: 'state.thisCharacterOrItemChangedReopenIt'
+					)
+				)
+			);
 			expect(run).toHaveBeenCalledOnce();
 			expect(accept).not.toHaveBeenCalled();
 			expect(s.gens).toEqual([original]);
@@ -2368,7 +2413,9 @@ describe('optional review', () => {
 				queue.role = 'leader';
 				mocks.subscribe.mock.calls.at(-1)![0]({ role: 'leader' });
 				if (changed) {
-					await vi.waitFor(() => expect(s.ui.toast).toMatch(/changed.*[Rr]eopen/));
+					await vi.waitFor(() =>
+						expect(s.ui.toast).toEqual(message('state.thisCharacterOrItemChangedReopenIt'))
+					);
 					expect(run).not.toHaveBeenCalled();
 					expect(s.gens[0]).not.toBe(original);
 					expect(s.gens[0].draft.log).toEqual(saved.draft.log);
@@ -2439,7 +2486,9 @@ describe('optional review', () => {
 		await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' });
 		const opening = s.openProject('other'); // the user picks another character while the draft finishes
 		done.resolve(clean);
-		await vi.waitFor(() => expect(s.ui.toast).toBe('New helm saved'));
+		await vi.waitFor(() =>
+			expect(s.ui.toast).toEqual(message('state.nameSaved', { name: 'New helm' }))
+		);
 		expect(accept).toHaveBeenCalledOnce();
 		other.resolve(opened());
 		await opening;
@@ -2766,7 +2815,22 @@ test.each(['artwork', 'price', 'unchanged'] as const)(
 					.at(-1)![2].spec
 			).not.toHaveProperty('itemReview');
 		} else {
-			await vi.waitFor(() => expect(s.moving.error).toContain('review its current estimate'));
+			await vi.waitFor(() =>
+				expect(s.moving.error).toMatchObject({
+					translation: message('create.errors.characterItemPriceChanged')
+				})
+			);
+			await vi.waitFor(() =>
+				expect(mocks.put).toHaveBeenCalledWith(
+					'projects',
+					'studio-move',
+					expect.objectContaining({
+						status: 'failed',
+						error:
+							'This character, item or price changed. Reopen the item and review its current estimate before generating. No paid request was made.'
+					})
+				)
+			);
 			expect(mocks.move).not.toHaveBeenCalled();
 			expect(s.moving.queued).toEqual([]);
 		}
@@ -2920,7 +2984,9 @@ test('showing a slot at a drop position is one undo step and preserves drawing o
 	).toBe(false);
 	state.showSlotAt('underwear', 1);
 	expect(shownCategories(manifest, state.busySlots())[1].key).toBe('underwear');
-	expect(state.doc.undo.map((step) => step.label)).toEqual(['Show Underwear']);
+	expect(state.doc.undo.map((step) => step.label)).toEqual([
+		message('history.show', { name: 'Underwear' })
+	]);
 	expect(
 		manifest.slots
 			.filter((slot) => order.some((before) => before.id === slot.id))
@@ -2946,12 +3012,12 @@ test('category Random switches to another item of that category in its own slot,
 	s.randomizeGroup('head');
 	expect(s.doc.items).toEqual({ body: 'base', head: 'hat_wizard', torso_inner: 'vest_leather' });
 	expect(s.ui.selected).toBe('hat_wizard');
-	expect(s.doc.undo.map((u) => u.label)).toEqual(['Random head item']);
+	expect(s.doc.undo.map((u) => u.label)).toEqual([message('history.randomItem', { name: 'head' })]);
 	// The visible category name is used for the permanent torso_inner key.
 	s.doc.items = { body: 'base' };
 	s.randomizeGroup('torso_inner');
 	expect(s.doc.items).toEqual({ body: 'base', torso_inner: 'vest_leather' });
-	expect(s.doc.undo.at(-1)!.label).toBe('Random body item');
+	expect(s.doc.undo.at(-1)!.label).toEqual(message('history.randomItem', { name: 'body' }));
 });
 
 test('category Random re-rolls the colors when the only item of that category is already worn', async () => {
@@ -2970,7 +3036,7 @@ test('category Random re-rolls the colors when the only item of that category is
 	expect(s.doc.items).toEqual({ body: 'base', back: 'cape_red' });
 	expect(s.doc.variants.cloth).toBeDefined();
 	expect(s.doc.variants.cloth).not.toBe('crimson');
-	expect(s.doc.undo.map((u) => u.label)).toEqual(['Random back item']);
+	expect(s.doc.undo.map((u) => u.label)).toEqual([message('history.randomItem', { name: 'back' })]);
 	// Without colors to change, or with no items at all, there is nothing to randomize.
 	s.store.project!.manifest.materials = [];
 	expect(s.groupRandomChoices('back')).toEqual([]);

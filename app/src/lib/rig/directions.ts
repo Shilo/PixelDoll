@@ -2,6 +2,7 @@ import { hasCells } from '../dress/dress.ts';
 import type { Img } from '../image/png.ts';
 import { retainItemQa } from '../items/qa-summary.ts';
 import { retainSlotDirections } from '../items/slots.ts';
+import { LocalizedError } from '../message.ts';
 import type { Item, Manifest, Project } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
 import { flipH, mirrorPartner } from './mirror.ts';
@@ -23,27 +24,43 @@ export const directionLabel = (id: DirectionName) =>
 const visibleCells = new WeakMap<Img, boolean>();
 
 export function directionProblem(
-	{ manifest, images }: Project,
+	project: Project,
 	directions: readonly RigDirection[],
 	mode: 'import' | 'saved'
 ): string {
-	if (!directions.length) return 'Keep at least one direction.';
+	return directionProblemError(project, directions, mode)?.message ?? '';
+}
+
+export function directionProblemError(
+	{ manifest, images }: Project,
+	directions: readonly RigDirection[],
+	mode: 'import' | 'saved'
+): LocalizedError | undefined {
+	if (!directions.length)
+		return new LocalizedError('Keep at least one direction.', 'directionProblem.keepOne');
 	const original = new Map(manifest.rig.directions.map((dir) => [dir.id, dir]));
 	if (new Set(directions.map(({ id }) => id)).size !== directions.length)
-		return 'A direction can only be used once.';
+		return new LocalizedError('A direction can only be used once.', 'directionProblem.duplicate');
 	for (const { id, mirrorOf } of directions) {
 		if (
 			!DIRECTIONS.includes(id) ||
 			(mode === 'saved' && (!original.has(id) || original.get(id)?.mirrorOf !== mirrorOf)) ||
 			(mode === 'import' && !mirrorOf && !original.has(id))
 		)
-			return 'That direction is not available for this character.';
+			return new LocalizedError(
+				'That direction is not available for this character.',
+				'directionProblem.unavailable'
+			);
 		if (
 			mirrorOf &&
 			((mode === 'import' && mirrorPartner(id) !== mirrorOf) ||
 				!directions.some((source) => source.id === mirrorOf && !source.mirrorOf))
 		)
-			return `Keep ${directionLabel(mirrorOf)} or turn off its ${directionLabel(id)} mirror.`;
+			return new LocalizedError(
+				`Keep ${directionLabel(mirrorOf)} or turn off its ${directionLabel(id)} mirror.`,
+				'directionProblem.mirrorSource',
+				{ source: mirrorOf, mirror: id }
+			);
 	}
 	const base = manifest.items.find(({ id }) => id === manifest.rig.baseItem);
 	const empty = manifest.rig.animations.filter(
@@ -53,7 +70,11 @@ export function directionProblem(
 			)
 	);
 	if (empty.length)
-		return `Keep a direction with artwork for ${empty.map(({ id }) => id.replaceAll(/[-_]/g, ' ')).join(', ')}.`;
+		return new LocalizedError(
+			`Keep a direction with artwork for ${empty.map(({ id }) => id.replaceAll(/[-_]/g, ' ')).join(', ')}.`,
+			'directionProblem.moveArtwork',
+			{ moves: empty.map(({ id }) => id), moveIds: manifest.rig.animations.map(({ id }) => id) }
+		);
 	if (mode === 'saved') {
 		const visible = (hash: Sha256) => {
 			const image = images.get(hash);
@@ -73,9 +94,13 @@ export function directionProblem(
 				item !== base && !hasArtwork(item, directions) && hasArtwork(item, manifest.rig.directions)
 		);
 		if (stranded.length)
-			return `Keep a direction with artwork for ${stranded.map(({ name }) => name).join(', ')} or remove that equipment first.`;
+			return new LocalizedError(
+				`Keep a direction with artwork for ${stranded.map(({ name }) => name).join(', ')} or remove that equipment first.`,
+				'directionProblem.equipmentArtwork',
+				{ items: stranded.map(({ name }) => name) }
+			);
 	}
-	return '';
+	return undefined;
 }
 
 function pruneDirections<T>(
@@ -112,8 +137,8 @@ export async function configureImportedDirections(
 	project: Project,
 	directions: RigDirection[]
 ): Promise<Project> {
-	const problem = directionProblem(project, directions, 'import');
-	if (problem) throw new Error(problem);
+	const problem = directionProblemError(project, directions, 'import');
+	if (problem) throw problem;
 	const manifest = structuredClone(project.manifest);
 	const base = manifest.items.find(({ id }) => id === manifest.rig.baseItem)!;
 	if (
@@ -164,8 +189,8 @@ export async function retainCharacterDirections(
 	directions: RigDirection[],
 	images: Project['images']
 ): Promise<StoredProject> {
-	const problem = directionProblem({ manifest: record.manifest, images }, directions, 'saved');
-	if (problem) throw new Error(problem);
+	const problem = directionProblemError({ manifest: record.manifest, images }, directions, 'saved');
+	if (problem) throw problem;
 	const result = structuredClone(record);
 	const { manifest } = result;
 	const { rig } = manifest;

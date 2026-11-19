@@ -1,30 +1,35 @@
 <script lang="ts">
+	import { formatNumber, t } from 'svelte-whisper';
 	// Character ⋮ > Details: how the character was made and what it has cost, read from its saved provenance.
 	import Sheet from './Sheet.svelte';
 	import GenerationDetails from './GenerationDetails.svelte';
 	import { ui, doc, store } from './state.svelte.ts';
 	import * as db from '../lib/store/db.ts';
 	import { openSource } from '../lib/dress/project.ts';
-	import { costText, recordedCost } from '../lib/store/generation.ts';
+	import { recordedCost } from '../lib/store/generation.ts';
+	import { displayCost } from './displayCost.ts';
+	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { LocalizedError, type Message } from '../lib/message.ts';
 	import type { Manifest } from '../lib/store/manifest.ts';
 	import type { StoredProject } from '../lib/store/project.ts';
 
 	const id = ui.details || doc.id;
-	const name = store.projects.find((p) => p.id === id)?.name ?? 'Character';
+	const name = $derived(store.projects.find((p) => p.id === id)?.name ?? t('common.character'));
 	let m = $state.raw<Manifest | null>(null),
-		error = $state('');
+		error = $state<Message | string>('');
 	async function manifestOf(): Promise<Manifest> {
 		if (id === doc.id && store.project && !doc.loading) return store.project.manifest;
 		if (!id.startsWith('fixture:')) {
 			const rec = await db.get<StoredProject>('projects', id);
-			if (!rec) throw new Error('This character is no longer saved.');
+			if (!rec)
+				throw new LocalizedError('This character is no longer saved.', 'detailsSheet.notSaved');
 			return rec.manifest;
 		}
 		return (await openSource(id)).project.manifest;
 	}
 	manifestOf().then(
 		(x) => (m = x),
-		(e: unknown) => (error = e instanceof Error ? e.message : String(e))
+		(e: unknown) => (error = errorMessage(e))
 	);
 	const base = $derived(m?.items.find((i) => i.id === m!.rig.baseItem));
 	// Items copied from another character were paid for there; counting them here would count them twice.
@@ -36,16 +41,20 @@
 		const all = recordedCost([...(base?.provenance ?? []), ...items.flatMap((i) => i.provenance)]);
 		return [
 			{
-				label: 'With items',
-				value: `${costText(all) || 'Not recorded'} · ${items.length} ${items.length === 1 ? 'item' : 'items'}`
+				label: t('detailsSheet.withItems'),
+				value: t('detailsSheet.itemCost', {
+					cost: displayCost(all) || t('common.notRecorded'),
+					count: items.length,
+					n: formatNumber(items.length)
+				})
 			}
 		];
 	});
 </script>
 
-<Sheet title={`${name} details`} cancel="Done" onclose={() => (ui.sheet = null)}>
-	{#if error}<p class="notice bad small" role="alert">{error}</p>
+<Sheet title={t('detailsSheet.title', { name })} cancel="Done" onclose={() => (ui.sheet = null)}>
+	{#if error}<p class="notice bad small" role="alert">{displayMessage(error)}</p>
 	{:else if m && base}<GenerationDetails {m} it={base} {extra} />
-	{:else if m}<p class="faint small">No generation details were saved for this character.</p>
-	{:else}<p class="faint small" role="status">Loading…</p>{/if}
+	{:else if m}<p class="faint small">{t('detailsSheet.noGenerationDetailsWereSavedForThis')}</p>
+	{:else}<p class="faint small" role="status">{t('common.loading')}</p>{/if}
 </Sheet>

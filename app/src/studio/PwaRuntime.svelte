@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
 	import { onMount, tick } from 'svelte';
 	import {
 		pwa,
@@ -8,6 +9,10 @@
 		prepareUpdateInNewTab,
 		installApp
 	} from '../lib/pwa.ts';
+	import { errorMessage } from '../lib/i18n.ts';
+	import { displayPwaError } from './pwaText.ts';
+	import { displayNestedMessage } from './nestedMessage.ts';
+	import { message, type Message } from '../lib/message.ts';
 	import { prepareForUpdate, updateBlocked } from './state.svelte.ts';
 	import { restoreTrigger } from './experience/focus.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -22,7 +27,7 @@
 	let dialog: HTMLDialogElement;
 	let mode = $state<'update' | 'install' | null>(null);
 	let busy = $state(false),
-		error = $state('');
+		error = $state<Message | string>('');
 	let updateUrl = $state(''),
 		updateLink = $state<HTMLAnchorElement>();
 	let from: HTMLElement | null = null;
@@ -48,14 +53,14 @@
 				return;
 			}
 			if (!$pwa.ready) {
-				error = 'The update is still downloading. Reconnect and try again when it is ready.';
+				error = message('pwaRuntime.stillDownloading');
 				return;
 			}
 			busy = true;
 			try {
 				await applyUpdate(prepareForUpdate);
 			} catch (e) {
-				error = (e as Error).message;
+				error = errorMessage(e);
 				busy = false;
 			}
 		}
@@ -84,7 +89,7 @@
 				updateLink?.focus();
 			}
 		} catch (e) {
-			error = (e as Error).message;
+			error = errorMessage(e);
 			busy = false;
 		}
 	}
@@ -122,11 +127,15 @@
 			}
 		}).catch((cause) => {
 			if (cause instanceof StartupUpdateCancelled) return;
-			const message = (cause as Error).message;
+			const reason = errorMessage(cause);
 			if (committed) {
-				error = message;
+				error = reason;
 				busy = false;
-			} else pwa.update((s) => ({ ...s, error: `Automatic update paused: ${message}` }));
+			} else
+				pwa.update((s) => ({
+					...s,
+					error: message('pwaRuntime.automaticPaused', { reason })
+				}));
 		});
 	});
 	onMount(() => {
@@ -175,53 +184,50 @@
 			<span></span>
 			<h2 id="pwa-dialog-title" class="sheet-title">
 				{mode === 'install'
-					? 'Installation help'
+					? t('pwaRuntime.installationHelp')
 					: busy
-						? 'Updating PixelDoll'
+						? t('pwaRuntime.updatingPixelDoll')
 						: updateUrl
-							? 'Update ready'
-							: 'Update paused'}
+							? t('pwaRuntime.updateReady')
+							: t('pwaRuntime.updatePaused')}
 			</h2>
-			<button class="bu-action" data-variant="quiet" disabled={busy} onclick={close}>Close</button>
+			<button class="bu-action" data-variant="quiet" disabled={busy} onclick={close}
+				>{t('common.close')}</button
+			>
 		</header>
 		<div class="sheet-body" id="pwa-dialog-description">
 			{#if mode === 'install'}
-				{#if $pwa.installError}<p role="alert">{$pwa.installError}</p>{/if}
+				{#if $pwa.installError}<p role="alert">{displayNestedMessage($pwa.installError)}</p>{/if}
 				{#if $pwa.installable || $pwa.installing}
-					<p>Your browser is ready to install PixelDoll on this device.</p>
+					<p>{t('pwaRuntime.yourBrowserIsReadyToInstallPixelDoll')}</p>
 					<button
 						class="bu-action"
 						data-variant="primary"
 						disabled={$pwa.installing}
-						onclick={install}>Install PixelDoll</button
+						onclick={install}>{t('pwaRuntime.installPixelDoll')}</button
 					>
 				{:else}
 					<p>
-						A browser install prompt isn’t available in this window. If PixelDoll is already
-						installed, open it from your apps.
+						{t('pwaRuntime.aBrowserInstallPromptIsnTAvailable')}
 					</p>
 					{#if ios}<p>
-							On iPhone or iPad, open PixelDoll in Safari, tap Share, then Add to Home Screen and
-							Open as Web App if offered.
+							{t('pwaRuntime.onIPhoneOrIPadOpenPixelDollIn')}
 						</p>
 					{:else}<p>
-							If your browser offers Install app, Add to Dock, or Add to Home Screen, use that
-							command. You can also open PixelDoll in a browser that supports installation.
+							{t('pwaRuntime.ifYourBrowserOffersInstallAppAdd')}
 						</p>{/if}
 				{/if}
 				<p>
-					Saved characters, dressing, recoloring, device import, and export work offline after the
-					app files finish downloading. PixelLab generation, account information, and its library
-					need a connection.
+					{t('pwaRuntime.savedCharactersDressingRecoloringDeviceImportAnd')}
 				</p>
 				<p role="status">
 					{$pwa.offlineReady
-						? 'App files are ready for offline launches.'
-						: 'Offline files are not ready yet. Keep PixelDoll open while connected.'}
+						? t('pwaRuntime.appFilesAreReadyForOfflineLaunches')
+						: t('pwaRuntime.offlineFilesAreNotReadyYetKeep')}
 				</p>
-				{#if $pwa.error}<p role="status">{$pwa.error}</p>{/if}
+				{#if $pwa.error}<p role="status">{displayPwaError($pwa.error)}</p>{/if}
 			{:else if updateUrl}
-				<p role="status">Open the updated app in a new tab to keep your work open here.</p>
+				<p role="status">{t('pwaRuntime.openTheUpdatedAppInANew')}</p>
 				<a
 					bind:this={updateLink}
 					class="bu-action"
@@ -229,22 +235,22 @@
 					href={updateUrl}
 					target="_blank"
 					rel="noopener"
-					onclick={close}>Open updated app</a
+					onclick={close}>{t('pwaRuntime.openUpdatedApp')}</a
 				>
 			{:else if error}
-				<p role="alert">{error}</p>
-				<p>Update now opens the verified version in a new tab and keeps your work open here.</p>
+				<p role="alert">{displayNestedMessage(error)}</p>
+				<p>{t('pwaRuntime.updateNowOpensTheVerifiedVersionIn')}</p>
 				<button
 					type="button"
 					class="bu-action"
 					data-variant="primary"
 					disabled={!$pwa.ready}
-					onclick={updateInNewTab}>Update now</button
+					onclick={updateInNewTab}>{t('pwaRuntime.updateNow')}</button
 				>
 			{:else}<p role="status">
 					{$pwa.reloading
-						? 'Ready to update. Reloading...'
-						: 'Preparing the update. Keep this tab open.'}
+						? t('pwaNotice.readyToUpdateReloading')
+						: t('pwaRuntime.preparingTheUpdateKeepThisTabOpen')}
 				</p>{/if}
 		</div>
 	{/if}

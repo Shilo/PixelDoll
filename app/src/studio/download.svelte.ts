@@ -9,6 +9,7 @@ import type { Project } from '../lib/store/manifest.ts';
 import { retainMoveMetadata } from '../lib/rig/moves.ts';
 import { moveLabel } from './model.ts';
 import { doc, store, readCharacterForExport, toast } from './state.svelte.ts';
+import { message } from '../lib/message.ts';
 
 /** The saved record's rig data, so the ZIP imports back as an editable character (the demo has none). */
 export const editableData = (rec: StoredProject | undefined) =>
@@ -61,7 +62,7 @@ async function zipOf(projectId: string, { project, look }: { project: Project; l
 		zip: r.zip,
 		recovery: r.kind === 'recovery',
 		hasNotes: r.warnings.length > 0,
-		problem: r.problem
+		problem: r.problemMessage ?? r.problem
 	};
 }
 
@@ -74,25 +75,25 @@ async function download(
 ) {
 	if (pending.has(key)) return;
 	pending.add(key);
-	toast(`Preparing ${label}...`, { pending: true });
+	toast(message('download.preparing', { label }), { pending: true });
 	try {
 		const { zip, name, recovery, hasNotes, problem } = await build();
 		if (!zip) {
-			toast(problem ?? `Could not download ${label}.`, { tone: 'danger' });
+			toast(problem ?? message('download.failed', { label }), { tone: 'danger' });
 			return;
 		}
 		saveZip(zip, recovery ? `${name}-recovered-artwork.zip` : `${name}.pixeldoll.zip`);
 		toast(
 			recovery
-				? 'Full export unavailable. Source PNG download started.'
+				? message('download.recoveryStarted')
 				: hasNotes
-					? 'Download started. See Export notes in the ZIP.'
-					: 'Export download started.',
+					? message('download.startedNotes')
+					: message('download.started'),
 			{ tone: recovery || hasNotes ? 'warning' : 'info' }
 		);
 	} catch (e) {
 		console.error('download', e);
-		toast(`Could not download ${label}. Try again.`, { tone: 'danger' });
+		toast(message('download.failedRetry', { label }), { tone: 'danger' });
 	} finally {
 		pending.delete(key);
 	}

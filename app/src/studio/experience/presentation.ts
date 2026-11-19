@@ -44,11 +44,77 @@ export interface Presentation {
 	clip: string | null;
 	cell: number;
 	sequence?: BodySequence;
+	/** Canonical English diagnostic; people see `notice` worded in their language. */
 	issue: string | null;
+	/** Present whenever `issue` is. */
+	notice?: PresentationNotice;
 	/** Stable coverage identity: exclude the changing fallback direction and playback frame. */
 	issueKey: string | null;
 	loading: boolean;
 }
+/** What the actor shows instead of a missing view. */
+export type PresentationFallback =
+	| { kind: 'nothing' }
+	| { kind: 'still' }
+	| { kind: 'move'; move: string }
+	| { kind: 'direction'; direction: DirectionName };
+/** Typed so the UI words each notice as a whole sentence in the active language; `diagnostic` stays raw technical text. */
+export type PresentationNotice =
+	| {
+			kind: 'missing-move';
+			move: string;
+			fallback: Exclude<PresentationFallback, { kind: 'direction' }>;
+	  }
+	| {
+			kind: 'missing-direction';
+			move: string;
+			direction: DirectionName;
+			fallback: PresentationFallback;
+	  }
+	| { kind: 'undeclared-direction' }
+	| { kind: 'hidden-items'; count: number; move: string; direction: DirectionName }
+	| { kind: 'diagnostic'; text: string };
+
+/** The canonical English of a notice, kept for diagnostics, tests and non-UI callers. */
+export function noticeText(notice: PresentationNotice): string {
+	switch (notice.kind) {
+		case 'missing-move':
+		case 'missing-direction': {
+			// Plain words for people, not diagnostics: what is missing, then what they see instead.
+			const move = moveLabel(notice.move);
+			const missing =
+				notice.kind === 'missing-move'
+					? `No ${move} move yet`
+					: `${move} has no ${directionLabel(notice.direction).toLowerCase()} frames yet`;
+			const fallback = notice.fallback;
+			const showing =
+				fallback.kind === 'nothing'
+					? 'so there is nothing to show'
+					: fallback.kind === 'still'
+						? 'so the character stands still'
+						: fallback.kind === 'move'
+							? `so it plays ${moveLabel(fallback.move)}`
+							: `so it faces ${directionLabel(fallback.direction).toLowerCase()}`;
+			return `${missing}, ${showing}`;
+		}
+		case 'undeclared-direction':
+			return 'This facing is not declared by the character';
+		case 'hidden-items':
+			return `${notice.count} ${notice.count === 1 ? 'item' : 'items'} hidden — missing ${notice.move} / ${directionLabel(notice.direction)} frames`;
+		case 'diagnostic':
+			return notice.text;
+	}
+}
+const withNotice = <T extends object>(
+	result: T,
+	notice: PresentationNotice,
+	issueKey: string
+): T & { issue: string; notice: PresentationNotice; issueKey: string } => ({
+	...result,
+	issue: noticeText(notice),
+	notice,
+	issueKey
+});
 export interface PresentationAvailability {
 	project: Project;
 	directions: DirectionName[];
@@ -315,7 +381,7 @@ function withIssue(a: PresentationAvailability, result: Presentation): Presentat
 	if (a.loading) return result;
 	if (result.issue) return result;
 	if (a.metadataIssues.length)
-		return { ...result, issue: a.metadataIssues[0], issueKey: 'metadata' };
+		return withNotice(result, { kind: 'diagnostic', text: a.metadataIssues[0] }, 'metadata');
 	if (
 		result.kind === 'animation' &&
 		result.clip === result.requestedClip &&
@@ -324,24 +390,27 @@ function withIssue(a: PresentationAvailability, result: Presentation): Presentat
 		return result;
 	const wholeClip = !a.animations.get(result.requestedClip)?.size;
 	if (wholeClip && result.clip === DEFAULT_MOVE) return result; // a new character stands in its Default pose until idle/walk are added
-	// Plain words for people, not diagnostics: what is missing, then what they see instead.
-	const move = moveLabel(result.requestedClip);
-	const missing = wholeClip
-		? `No ${move} move yet`
-		: `${move} has no ${directionLabel(result.intendedDirection ?? '').toLowerCase()} frames yet`;
-	const showing =
+	const move = result.requestedClip,
+		issueKey = `${move}:${wholeClip ? 'all' : result.intendedDirection}`;
+	const fallback: PresentationFallback =
 		result.kind === 'unavailable'
-			? 'so there is nothing to show'
+			? { kind: 'nothing' }
 			: result.kind !== 'animation'
-				? 'so the character stands still'
-				: result.clip !== result.requestedClip
-					? `so it plays ${moveLabel(result.clip!)}`
-					: `so it faces ${directionLabel(result.direction!).toLowerCase()}`;
-	return {
-		...result,
-		issue: `${missing}, ${showing}`,
-		issueKey: `${result.requestedClip}:${wholeClip ? 'all' : result.intendedDirection}`
-	};
+				? { kind: 'still' }
+				: result.clip !== move
+					? { kind: 'move', move: result.clip! }
+					: { kind: 'direction', direction: result.direction! };
+	const intended = result.intendedDirection;
+	// Only a clip with frames can face elsewhere, and a character with no directions already has a metadata issue.
+	const notice: PresentationNotice =
+		!wholeClip && intended
+			? { kind: 'missing-direction', move, direction: intended, fallback }
+			: {
+					kind: 'missing-move',
+					move,
+					fallback: fallback.kind === 'direction' ? { kind: 'still' } : fallback
+				};
+	return withNotice(result, notice, issueKey);
 }
 
 /** Preview never changes the selected clip, declared direction, or animation availability to hide a gap. */
@@ -351,11 +420,9 @@ export function resolvePreview(
 ): Presentation {
 	const base = initial(a, options.clip, options.direction);
 	if (!a.directions.includes(options.direction))
-		return {
-			...base,
-			issue: a.loading ? null : 'This facing is not declared by the character',
-			issueKey: a.loading ? null : 'undeclared-direction'
-		};
+		return a.loading
+			? base
+			: withNotice(base, { kind: 'undeclared-direction' }, 'undeclared-direction');
 	const sequence = a.animations.get(options.clip)?.get(options.direction);
 	return withIssue(a, sequence ? animated(base, sequence) : still(a, base, options.direction));
 }
@@ -391,11 +458,19 @@ export function resolveLive(
 			)
 		: (retained ?? nearestDirection(a.directions, { x: 0, y: -1 }));
 	const ridingClip = a.animations.get('ride')?.has(intended!) ? 'ride' : 'idle';
-	const base = initial(a, options.riding ? ridingClip : moving ? 'walk' : 'idle', intended, moving);
-	if (![options.velocity.x, options.velocity.y].every(Number.isFinite)) {
-		base.issue = 'Movement input is not finite';
-		base.issueKey = 'invalid-velocity';
-	}
+	const start = initial(
+		a,
+		options.riding ? ridingClip : moving ? 'walk' : 'idle',
+		intended,
+		moving
+	);
+	const base = [options.velocity.x, options.velocity.y].every(Number.isFinite)
+		? start
+		: withNotice(
+				start,
+				{ kind: 'diagnostic', text: 'Movement input is not finite' },
+				'invalid-velocity'
+			);
 	const facing = directionInfo(intended ?? '')?.vector ?? { x: 0, y: -1 },
 		desired = moving ? velocity : facing;
 	const eligible = (direction: DirectionName) =>
@@ -521,14 +596,17 @@ export function advancePlayback(
 	return { key, elapsedMs, duration: sequence.duration, cell };
 }
 
-/** loading: worn drafts still generating this view ("Sword loading — East, North"), shown instead of hiding them as missing. */
+/** loading: worn drafts still generating this view ("Sword loading — East, North"), shown instead of hiding them as missing;
+ *  loadingItems holds the same facts for the UI to word. issue is canonical English; notice is present whenever it is. */
 export interface RenderedPresentation {
 	image: Img | null;
 	frame: Frame;
 	hiddenItems: Item[];
 	issue: string | null;
+	notice?: PresentationNotice;
 	issueKey: string | null;
 	loading: string | null;
+	loadingItems: { name: string; directions: DirectionName[] }[];
 }
 /** Consume the production recolored project and current outfit map (DressState.current.items). */
 export function renderPresentation(
@@ -546,7 +624,8 @@ export function renderPresentation(
 		hiddenItems: [],
 		issue: null,
 		issueKey: null,
-		loading: null
+		loading: null,
+		loadingItems: []
 	};
 	if (presentation.kind === 'unavailable' || !presentation.direction) return result;
 	const direction = presentation.direction,
@@ -559,7 +638,7 @@ export function renderPresentation(
 		hidden = hiddenSlots(m, on),
 		worn = shownItems(m, on);
 	const filtered = { ...items },
-		loading: string[] = [],
+		loading = result.loadingItems,
 		mirrored = m.rig.directions.find((d) => d.id === direction)?.mirrorOf;
 	for (const item of worn) {
 		if (item.id === m.rig.baseItem) continue;
@@ -568,15 +647,20 @@ export function renderPresentation(
 			// a generating draft's cells are on their way, not missing
 			const pending = [
 				...new Set(
-					(item.pending ?? []).filter((k) => k.startsWith(`${clip}/`)).map((k) => k.split('/')[1])
+					(item.pending ?? [])
+						.filter((k) => k.startsWith(`${clip}/`))
+						.map((k) => k.split('/')[1] as DirectionName)
 				)
 			];
 			if (pending.includes(direction) || (mirrored && pending.includes(mirrored)))
-				loading.push(`${item.name} loading — ${pending.map(directionLabel).join(', ')}`);
+				loading.push({ name: item.name, directions: pending });
 			else if (!hidden.has(item.slot)) result.hiddenItems.push(item);
 		}
 	}
-	result.loading = loading.join(' · ') || null;
+	result.loading =
+		loading
+			.map((entry) => `${entry.name} loading — ${entry.directions.map(directionLabel).join(', ')}`)
+			.join(' · ') || null;
 	result.image = composeCell(
 		p,
 		filtered,
@@ -586,7 +670,13 @@ export function renderPresentation(
 		frame
 	);
 	if (result.hiddenItems.length && !a.loading) {
-		result.issue = `${result.hiddenItems.length} ${result.hiddenItems.length === 1 ? 'item' : 'items'} hidden — missing ${clip} / ${directionLabel(direction)} frames`;
+		result.notice = {
+			kind: 'hidden-items',
+			count: result.hiddenItems.length,
+			move: clip,
+			direction
+		};
+		result.issue = noticeText(result.notice);
 		result.issueKey = `items:${clip}:${direction}:${result.hiddenItems
 			.map((item) => item.variantOf ?? item.id)
 			.sort()

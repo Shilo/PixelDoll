@@ -6,6 +6,14 @@
 	import { ui } from './state.svelte.ts';
 	import Toast from './Toast.svelte';
 	import { backdropDismiss } from './backdropDismiss.ts';
+	import { t, type WhisperKey } from 'svelte-whisper';
+	const closeLabels = {
+		Cancel: 'common.cancel',
+		Close: 'common.close',
+		Done: 'common.done',
+		Hide: 'common.hide',
+		Later: 'sheet.later'
+	} as const satisfies Record<string, WhisperKey>;
 	let {
 		title,
 		children,
@@ -26,7 +34,7 @@
 		leading?: Snippet;
 		trailing?: Snippet;
 		onclose: () => void;
-		cancel?: string;
+		cancel?: keyof typeof closeLabels;
 		cancelDisabled?: boolean;
 		wide?: boolean;
 		className?: string;
@@ -88,7 +96,7 @@
 				class="bu-action btn plain link"
 				data-variant="quiet"
 				disabled={cancelDisabled}
-				onclick={onclose}>{cancel}</button
+				onclick={onclose}>{t(closeLabels[cancel])}</button
 			>{/if}
 		<div class="sheet-heading">
 			<h2 id="sheet-title" class="sheet-title">{title}</h2>
@@ -98,7 +106,7 @@
 				class="bu-action btn plain link done"
 				data-variant="quiet"
 				disabled={cancelDisabled}
-				onclick={onclose}>{cancel}</button
+				onclick={onclose}>{t(closeLabels[cancel])}</button
 			>{:else}<span></span>{/if}
 	</header>
 	<div class="sheet-body">{@render children()}</div>

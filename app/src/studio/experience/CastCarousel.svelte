@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, tick, untrack } from 'svelte';
 	import { prefersReducedMotion } from 'svelte/motion';
+	import { t } from 'svelte-whisper';
 	import CharacterThumb from './CharacterThumb.svelte';
 	import CastReflection from './CastReflection.svelte';
 	import SelectionRing from './SelectionRing.svelte';
@@ -262,7 +263,9 @@
 				inert={actor.leaving || culled}
 				aria-hidden={actor.leaving || culled ? 'true' : undefined}
 				style:visibility={culled ? 'hidden' : undefined}
-				aria-label={actor.offset ? `Select ${actor.p.name}` : `Customize ${name}`}
+				aria-label={actor.offset
+					? t('experience.selectName', { name: actor.p.name })
+					: t('experience.customizeName', { name })}
 				style:width="{art.r - art.l}px"
 				style:height="{Math.max(0, -art.t)}px"
 				style:margin-left="{art.l}px"

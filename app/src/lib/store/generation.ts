@@ -1,6 +1,7 @@
 // How a character or item was generated, read from its provenance (what was actually sent and billed) and its rig. Nothing
 // here is stored separately: older records show whatever their provenance holds, and absent values are left out.
 import type { Item, Manifest, Provenance } from './manifest.ts';
+import { message, type Message } from '../message.ts';
 
 const TOOLS: Record<string, string> = {
 	'/create-character-v3': 'Character V3',
@@ -98,7 +99,13 @@ export interface GenerationDetails {
 	requestPrompts: string[];
 	/** Distinct models and tools, in call order, with their call counts. */
 	tools: { name: string; calls: number }[];
-	settings: { label: string; value: string }[];
+	/** `label` and `value` stay the English copy source; the messages are for display only. */
+	settings: {
+		label: string;
+		value: string;
+		labelMessage?: Message;
+		valueMessage?: Message;
+	}[];
 	cost: RecordedCost;
 	createdAt?: string;
 }
@@ -119,7 +126,32 @@ const ROUTES: Record<NonNullable<Item['route']>, string> = {
 	'ea2-anchor': 'Frame editing',
 	diff: 'Difference extraction'
 };
+const ROUTE_KEYS: Record<NonNullable<Item['route']>, Message> = {
+	'skeleton-pose': message('generationDetails.method.skeletonPose'),
+	'inpaint-grid': message('generationDetails.method.inpaintGrid'),
+	'ea2-anchor': message('generationDetails.method.frameEditing'),
+	diff: message('generationDetails.method.differenceExtraction')
+};
 export const routeName = (route: Item['route']) => (route ? ROUTES[route] : '');
+const OUTLINE_KEYS: Record<string, Message> = {
+	Black: message('generationDetails.outline.black'),
+	Colored: message('generationDetails.outline.colored'),
+	Selective: message('generationDetails.outline.selective'),
+	None: message('generationDetails.outline.none')
+};
+const DETAIL_KEYS: Record<string, Message> = {
+	Low: message('generationDetails.detail.low'),
+	Medium: message('generationDetails.detail.medium'),
+	High: message('generationDetails.detail.high')
+};
+const CAMERA_KEYS = {
+	'low top-down': message('create.form.cameras.low'),
+	'high top-down': message('create.form.cameras.high'),
+	side: message('create.form.cameras.side')
+} satisfies Record<NonNullable<Manifest['rig']['view']>, Message>;
+
+export const cameraMessage = (view: NonNullable<Manifest['rig']['view']>): Message | undefined =>
+	Object.hasOwn(CAMERA_KEYS, view) ? CAMERA_KEYS[view] : undefined;
 
 const CREATORS = ['/create-character-v3', '/create-character-pro', '/create-character-pro-flash'];
 /** The summary for one item; the base body describes the character's creation. */
@@ -133,33 +165,71 @@ export function generationDetails(m: Manifest, it: Item): GenerationDetails {
 		else tools.push({ name, calls: 1 });
 	}
 	const settings: GenerationDetails['settings'] = [];
-	const add = (label: string, value: unknown) => {
+	const add = (label: string, value: unknown, labelMessage: Message, valueMessage?: Message) => {
 		if (value !== undefined && value !== null && value !== '')
-			settings.push({ label, value: String(value) });
+			settings.push({
+				label,
+				value: String(value),
+				labelMessage,
+				...(valueMessage ? { valueMessage } : {})
+			});
 	};
 	if (it.id === m.rig.baseItem) {
 		// The first drawing call made from text: the character as created.
 		const created = prov.find((p) => CREATORS.includes(p.endpoint) && !p.params?.reference_image);
 		const size = created?.params?.image_size as { width?: number; height?: number } | undefined;
-		add('Body', size?.width ? `${size.width} px` : undefined);
-		add('Frame', `${m.rig.cell.w} × ${m.rig.cell.h} px`);
-		add('Camera', m.rig.view);
+		add(
+			'Body',
+			size?.width ? `${size.width} px` : undefined,
+			message('generationDetails.settings.body'),
+			size?.width ? message('generationDetails.settings.bodyPx', { width: size.width }) : undefined
+		);
+		add(
+			'Frame',
+			`${m.rig.cell.w} × ${m.rig.cell.h} px`,
+			message('generationDetails.settings.frame'),
+			message('share.resolution', {
+				width: m.rig.cell.w,
+				height: m.rig.cell.h
+			})
+		);
+		add('Camera', m.rig.view, message('generationDetails.settings.camera'));
 		add(
 			'Facings',
 			m.rig.directions
 				.map((d) => (d.mirrorOf ? `${FACINGS[d.id]} (mirrored)` : FACINGS[d.id]))
-				.join(', ')
+				.join(', '),
+			message('generationDetails.settings.facings')
 		);
 		const outline = created?.params?.outline,
-			detail = created?.params?.detail;
-		if (typeof outline === 'string') add('Outline', OUTLINES[outline] ?? outline);
-		if (typeof detail === 'string') add('Detail', DETAILS[detail] ?? detail);
-		add('Seed', created && seedOf(created));
+			detail = created?.params?.detail,
+			outlineText = typeof outline === 'string' ? (OUTLINES[outline] ?? outline) : undefined,
+			detailText = typeof detail === 'string' ? (DETAILS[detail] ?? detail) : undefined;
+		if (outlineText)
+			add(
+				'Outline',
+				outlineText,
+				message('generationDetails.settings.outline'),
+				OUTLINE_KEYS[outlineText]
+			);
+		if (detailText)
+			add(
+				'Detail',
+				detailText,
+				message('generationDetails.settings.detail'),
+				DETAIL_KEYS[detailText]
+			);
+		add('Seed', created && seedOf(created), message('generationDetails.settings.seed'));
 	} else {
-		add('Method', routeName(it.route));
-		add('Color key', it.key);
+		add(
+			'Method',
+			routeName(it.route),
+			message('generationDetails.settings.method'),
+			it.route ? ROUTE_KEYS[it.route] : undefined
+		);
+		add('Color key', it.key, message('generationDetails.settings.colorKey'));
 		const first = prov.find((p) => !p.replaced);
-		add('Seed', first && seedOf(first));
+		add('Seed', first && seedOf(first), message('generationDetails.settings.seed'));
 	}
 	const times = prov
 		.map((p) => Date.parse(p.createdAt))

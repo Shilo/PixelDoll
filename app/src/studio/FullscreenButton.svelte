@@ -1,12 +1,16 @@
 <script lang="ts">
+	import { message } from '../lib/message.ts';
 	import { onMount } from 'svelte';
+	import { t } from 'svelte-whisper';
 	import { Maximize, Minimize } from './icons.ts';
 	import { toast } from './state.svelte.ts';
 
 	let available = $state(false);
 	let active = $state(false);
 	let pending = $state(false);
-	const label = $derived(active ? 'Exit full screen' : 'Enter full screen');
+	const label = $derived(
+		active ? t('fullscreenButton.exitFullScreen') : t('fullscreenButton.enterFullScreen')
+	);
 
 	onMount(() => {
 		const display = matchMedia('(display-mode: fullscreen)');
@@ -40,8 +44,8 @@
 		} catch {
 			toast(
 				exiting
-					? 'Could not exit full screen. Try your browser’s full screen control.'
-					: 'Could not enter full screen. Try again or use your browser’s full screen control.',
+					? message('fullscreenButton.couldNotExitFullScreenTryYour')
+					: message('fullscreenButton.couldNotEnterFullScreenTryAgain'),
 				{ tone: 'danger' }
 			);
 		} finally {

@@ -10,6 +10,7 @@ import { manifestShape } from './import.ts';
 import { supportedFormat } from './manifest.ts';
 import type { StoredProject } from './project.ts';
 import { MAX_ZIP_BYTES, MAX_ZIP_ENTRIES, unzip, zip } from './zip.ts';
+import { LocalizedError } from '../message.ts';
 
 const format = 'pixeldoll-workspace/1';
 const indexPath = 'workspace.json';
@@ -37,9 +38,9 @@ const maxRecords = 500;
 const maxPixels = 64 * 1024 * 1024;
 const tooLarge =
 	'This workspace exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.';
-class WorkspaceLimitError extends Error {
+class WorkspaceLimitError extends LocalizedError {
 	constructor() {
-		super(tooLarge);
+		super(tooLarge, 'workspace.error.tooLarge');
 	}
 }
 
@@ -242,7 +243,7 @@ export async function exportWorkspace(
 		!!diagnostics
 	);
 	const { blobs, projects } = snapshot;
-	if (projects.size > maxRecords) throw new Error(tooLarge);
+	if (projects.size > maxRecords) throw new LocalizedError(tooLarge, 'workspace.error.tooLarge');
 	for (const value of projects.values()) {
 		const record = value as Partial<StoredProject>;
 		delete record.creationSpec;
@@ -284,14 +285,15 @@ export async function exportWorkspace(
 			(key) => key && (json.includes(key) || json.includes(JSON.stringify(key).slice(1, -1)))
 		)
 	)
-		throw new Error(
-			'A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.'
+		throw new LocalizedError(
+			'A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.',
+			'workspace.error.containsKey'
 		);
 	const data = new TextEncoder().encode(json);
 	if (index.missing.length > MAX_ZIP_ENTRIES || data.length + artworkBytes > MAX_ZIP_BYTES)
-		throw new Error(tooLarge);
+		throw new LocalizedError(tooLarge, 'workspace.error.tooLarge');
 	const packed = await zip([{ name: indexPath, data }, ...artwork]);
-	if (packed.length > MAX_ZIP_BYTES) throw new Error(tooLarge);
+	if (packed.length > MAX_ZIP_BYTES) throw new LocalizedError(tooLarge, 'workspace.error.tooLarge');
 	return { bytes: packed, hasOmissions: !!index.omitted || !!index.missing.length };
 }
 
@@ -336,7 +338,11 @@ async function verifyArtwork(
 export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive> {
 	const files = await unzip(bytes);
 	const json = files.get(indexPath);
-	if (!json) throw new Error('Choose a ZIP made with Export my workspace, not a character ZIP.');
+	if (!json)
+		throw new LocalizedError(
+			'Choose a ZIP made with Export my workspace, not a character ZIP.',
+			'workspace.error.notWorkspace'
+		);
 	let index: WorkspaceIndex | null;
 	try {
 		index = JSON.parse(
@@ -347,9 +353,18 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 			}
 		);
 	} catch (cause) {
-		throw new Error('This workspace index is invalid.', { cause });
+		const error = new LocalizedError(
+			'This workspace index is invalid.',
+			'workspace.error.invalidIndex'
+		);
+		error.cause = cause;
+		throw error;
 	}
-	if (index?.format !== format) throw new Error('This workspace file version is not supported.');
+	if (index?.format !== format)
+		throw new LocalizedError(
+			'This workspace file version is not supported.',
+			'workspace.error.unsupportedVersion'
+		);
 	const { build, view, missing, diagnostics } = index;
 	if (
 		typeof build !== 'string' ||
@@ -374,7 +389,7 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 				typeof index.omitted.demoOutfit !== 'boolean' ||
 				typeof index.omitted.exportSettings !== 'boolean'))
 	)
-		throw new Error('This workspace index is invalid.');
+		throw new LocalizedError('This workspace index is invalid.', 'workspace.error.invalidIndex');
 	const projects = new Map<string, unknown>();
 	for (const row of index.projects) {
 		if (
@@ -384,7 +399,10 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 			(row[0] !== demoDress && row[0] !== EXPORT_SETTINGS_KEY && !row[0].startsWith('rig-')) ||
 			projects.has(row[0])
 		)
-			throw new Error('This workspace contains an unsupported or duplicate saved record.');
+			throw new LocalizedError(
+				'This workspace contains an unsupported or duplicate saved record.',
+				'workspace.error.duplicateRecord'
+			);
 		projects.set(...row);
 	}
 	const omitted = { characters: 0, demoOutfit: false, exportSettings: false, ...index.omitted };
@@ -401,14 +419,20 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 				(!skippedCharacter && !references.has(hash))
 		)
 	)
-		throw new Error('This workspace has an invalid list of missing files.');
+		throw new LocalizedError(
+			'This workspace has an invalid list of missing files.',
+			'workspace.error.missingFiles'
+		);
 	const blobs = new Map<string, Blob>();
 	let pixels = 0;
 	for (const [path, data] of files) {
 		if (path === indexPath) continue;
 		const hash = /^blobs\/([a-f0-9]{64})$/.exec(path)?.[1];
 		if (!hash || (!skippedCharacter && !references.has(hash)) || absent.has(hash))
-			throw new Error('This workspace contains an unexpected file.');
+			throw new LocalizedError(
+				'This workspace contains an unexpected file.',
+				'workspace.error.unexpectedFile'
+			);
 		if (!references.has(hash)) continue;
 		const verified = await recoverArtwork(data, hash, maxPixels - pixels, references.get(hash));
 		if (verified !== undefined) {
@@ -431,7 +455,10 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 					(error.code !== undefined && integer(error.code, 0, 99999) === undefined)
 			))
 	)
-		throw new Error('This workspace has invalid recent errors.');
+		throw new LocalizedError(
+			'This workspace has invalid recent errors.',
+			'workspace.error.invalidDiagnostics'
+		);
 	return {
 		build,
 		view,

@@ -1,5 +1,7 @@
 // Minimal zip writer/reader: store (0) and deflate (8, via native CompressionStream 'deflate-raw'). No zip64, no encryption.
 
+import { LocalizedError } from '../message.ts';
+
 export interface ZipEntry {
 	name: string;
 	data: Uint8Array;
@@ -112,12 +114,13 @@ export function fitsEditableZip(entries: readonly ZipEntry[]): boolean {
 
 /** Read bounded, ordinary ZIPs from a device. Verify sizes, paths and CRC before trusting any entry. */
 export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>> {
-	if (bytes.length > MAX_ZIP_BYTES) throw new Error('Choose a ZIP smaller than 64 MB.');
+	if (bytes.length > MAX_ZIP_BYTES)
+		throw new LocalizedError('Choose a ZIP smaller than 64 MB.', 'zip.tooLarge');
 	const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 	let end = bytes.length - 22;
 	while (end >= Math.max(0, bytes.length - 65557) && v.getUint32(end, true) !== 0x06054b50) end--;
 	if (end < Math.max(0, bytes.length - 65557))
-		throw new Error('This file is not a supported ZIP archive.');
+		throw new LocalizedError('This file is not a supported ZIP archive.', 'zip.unsupported');
 	const count = v.getUint16(end + 10, true),
 		start = v.getUint32(end + 16, true),
 		size = v.getUint32(end + 12, true);
@@ -128,13 +131,16 @@ export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>>
 		count > MAX_ZIP_ENTRIES ||
 		start + size > end
 	)
-		throw new Error('Split, ZIP64 or oversized archives are not supported.');
+		throw new LocalizedError(
+			'Split, ZIP64 or oversized archives are not supported.',
+			'zip.unsupportedArchive'
+		);
 	const files = new Map<string, Uint8Array>();
 	let at = start,
 		total = 0;
 	for (let i = 0; i < count; i++) {
 		if (at + 46 > start + size || v.getUint32(at, true) !== 0x02014b50)
-			throw new Error('The ZIP directory is damaged.');
+			throw new LocalizedError('The ZIP directory is damaged.', 'zip.directoryDamaged');
 		const flags = v.getUint16(at + 8, true),
 			method = v.getUint16(at + 10, true),
 			crc = v.getUint32(at + 16, true);
@@ -146,13 +152,16 @@ export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>>
 			local = v.getUint32(at + 42, true);
 		total += unpacked;
 		if (total > MAX_EXPANDED || unpacked > MAX_ZIP_BYTES || flags & 1 || ![0, 8].includes(method))
-			throw new Error('This ZIP is too large, encrypted, or uses unsupported compression.');
+			throw new LocalizedError(
+				'This ZIP is too large, encrypted, or uses unsupported compression.',
+				'zip.unsupportedCompression'
+			);
 		if (
 			at + 46 + len + extra + comment > start + size ||
 			local + 30 > start ||
 			v.getUint32(local, true) !== 0x04034b50
 		)
-			throw new Error('The ZIP headers are damaged.');
+			throw new LocalizedError('The ZIP headers are damaged.', 'zip.headersDamaged');
 		const name = new TextDecoder('utf-8', { fatal: true }).decode(
 			bytes.subarray(at + 46, at + 46 + len)
 		);
@@ -163,9 +172,10 @@ export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>>
 			name.includes(':') ||
 			name.split('/').some((s) => s === '..' || s === '.')
 		)
-			throw new Error('This ZIP contains an unsafe file path.');
+			throw new LocalizedError('This ZIP contains an unsafe file path.', 'zip.unsafePath');
 		const body = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true);
-		if (body + packed > start) throw new Error('The ZIP file data is damaged.');
+		if (body + packed > start)
+			throw new LocalizedError('The ZIP file data is damaged.', 'zip.dataDamaged');
 		const raw = bytes.subarray(body, body + packed);
 		let data: Uint8Array;
 		if (method === 0) data = raw;
@@ -181,7 +191,8 @@ export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>>
 					const r = await reader.read();
 					if (r.done) break;
 					n += r.value.length;
-					if (n > unpacked) throw new Error('The ZIP expands beyond its declared size.');
+					if (n > unpacked)
+						throw new LocalizedError('The ZIP expands beyond its declared size.', 'zip.expansion');
 					chunks.push(r.value);
 				}
 			} finally {
@@ -195,14 +206,16 @@ export async function unzip(bytes: Uint8Array): Promise<Map<string, Uint8Array>>
 			}
 		}
 		if (data.length !== unpacked || crc32(data) !== crc)
-			throw new Error(`The ZIP entry ${name} is damaged.`);
+			throw new LocalizedError(`The ZIP entry ${name} is damaged.`, 'zip.entryDamaged', { name });
 		if (!name.endsWith('/')) {
-			if (files.has(name)) throw new Error(`Duplicate ZIP entry: ${name}`);
+			if (files.has(name))
+				throw new LocalizedError(`Duplicate ZIP entry: ${name}`, 'zip.entryDuplicate', { name });
 			files.set(name, data);
 		}
 		at += 46 + len + extra + comment;
 	}
-	if (at !== start + size) throw new Error('The ZIP directory size is incorrect.');
+	if (at !== start + size)
+		throw new LocalizedError('The ZIP directory size is incorrect.', 'zip.directorySize');
 	return files;
 }
 

@@ -1,21 +1,33 @@
 <script lang="ts">
 	import { get } from 'svelte/store';
+	import { t } from 'svelte-whisper';
+	import type { WhisperKey } from 'svelte-whisper';
 	import { app } from '../lib/app.svelte.ts';
 	import { apiActivity } from '../lib/pixellab/activity.ts';
 	import { accountTier } from '../lib/pixellab/plans.ts';
 	import { readSavedKey } from '../lib/shared-auth.ts';
 	import { exportWorkspace, type WorkspaceView } from '../lib/store/workspace.ts';
 	import { workspaceInfo } from '../lib/store/workspace-mode.ts';
+	import { displayDate, displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { message, type Message } from '../lib/message.ts';
 	import { doc, prepareWorkspaceExport, toast, ui } from './state.svelte.ts';
 	import { experience } from './experience/state.svelte.ts';
 	import { saveZip } from './download.svelte.ts';
 	import { Download } from './icons.ts';
 	import Sheet from './Sheet.svelte';
 
+	const OUTCOMES = {
+		failed: 'activity.state.failed',
+		lost: 'activity.state.lost',
+		running: 'activity.state.running',
+		queued: 'activity.state.queued',
+		submitting: 'activity.state.submitting'
+	} satisfies Record<string, WhisperKey>;
+
 	let { report = false }: { report?: boolean } = $props();
 	let includeErrors = $state(false);
 	let busy = $state(false);
-	let error = $state('');
+	let error = $state<Message | string>('');
 	const close = () => (ui.sheet = null);
 
 	async function download() {
@@ -42,13 +54,10 @@
 			);
 			saveZip(bytes, `pixeldoll-${new Date().toISOString().slice(0, 10)}.workspace.zip`);
 			close();
-			if (hasOmissions)
-				toast('Workspace exported with omissions. Open the copy and check Activity for details.', {
-					tone: 'warning'
-				});
-			else toast('Workspace exported.', { tone: 'success' });
+			if (hasOmissions) toast(message('workspace.exportedOmissions'), { tone: 'warning' });
+			else toast(message('workspace.exported'), { tone: 'success' });
 		} catch (cause) {
-			error = (cause as Error).message;
+			error = errorMessage(cause);
 		} finally {
 			busy = false;
 		}
@@ -56,68 +65,77 @@
 </script>
 
 {#if report}
-	<Sheet title="Workspace activity" cancel="Done" onclose={close}>
-		<p class="muted">
-			Saved with the workspace from PixelDoll {workspaceInfo?.build}. PixelLab is off and nothing
-			will restart.
-		</p>
+	<Sheet title={t('workspace.activityTitle')} cancel="Done" onclose={close}>
+		<p class="muted">{t('workspace.activityIntro', { build: workspaceInfo?.build ?? '' })}</p>
 		{#if workspaceInfo?.missing.length}
 			<p class="notice warn">
-				{workspaceInfo.missing.length} artwork files were missing or unreadable.
+				{t('workspace.missing', { count: workspaceInfo.missing.length })}
 			</p>
 		{/if}
 		{#if workspaceInfo?.omitted}
 			<ul class="notice warn">
 				{#if workspaceInfo.omitted.characters}
-					<li>Saved characters skipped: {workspaceInfo.omitted.characters}.</li>
+					<li>{t('workspace.skippedCharacters', { count: workspaceInfo.omitted.characters })}</li>
 				{/if}
 				{#if workspaceInfo.omitted.demoOutfit}<li>
-						The demo uses its default outfit settings.
+						{t('workspace.demoOutfit')}
 					</li>{/if}
 				{#if workspaceInfo.omitted.exportSettings}<li>
-						The copy uses default export settings.
+						{t('workspace.exportSettings')}
 					</li>{/if}
 			</ul>
 		{/if}
 		{#if workspaceInfo?.diagnostics}
-			<p>PixelLab tier: {workspaceInfo.diagnostics.tier ?? 'Not recorded'}</p>
+			<p>
+				{t('workspace.tier', {
+					tier: workspaceInfo.diagnostics.tier ?? t('common.notRecorded')
+				})}
+			</p>
 			{#if workspaceInfo.diagnostics.errors.length}
 				<ul class="reports">
 					{#each workspaceInfo.diagnostics.errors as entry, index (index)}
 						<li>
-							{new Date(entry.at).toLocaleString()} · {entry.tool} · {entry.outcome}{entry.http
-								? ` · HTTP ${entry.http}`
-								: ''}{entry.code === undefined ? '' : ` · Code ${entry.code}`}
+							{t('workspace.errorLine', {
+								date: displayDate(entry.at, {
+									year: 'numeric',
+									month: '2-digit',
+									day: '2-digit',
+									hour: 'numeric',
+									minute: '2-digit',
+									second: '2-digit'
+								}),
+								tool: entry.tool,
+								outcome: t(OUTCOMES[entry.outcome]),
+								http: entry.http ? t('workspace.errorLineHttp', { status: entry.http }) : '',
+								code:
+									entry.code === undefined ? '' : t('workspace.errorLineCode', { code: entry.code })
+							})}
 						</li>
 					{/each}
 				</ul>
-			{:else}<p>No recent errors or unfinished jobs were recorded.</p>{/if}
-		{:else}<p>Recent errors were not included.</p>{/if}
+			{:else}<p>{t('workspace.noErrors')}</p>{/if}
+		{:else}<p>{t('workspace.noRecent')}</p>{/if}
 	</Sheet>
 {:else}
-	<Sheet title="Export my workspace" onclose={close} cancelDisabled={busy}>
-		<p>
-			Download one ZIP with all your saved characters, items, moves, outfits, and workspace
-			settings.
-		</p>
-		<p class="muted">
-			The file includes artwork and saved prompts, but not your PixelLab key or unfinished drafts.
-			Share it only with someone you trust.
-		</p>
+	<Sheet title={t('workspace.exportTitle')} onclose={close} cancelDisabled={busy}>
+		<p>{t('workspace.intro')}</p>
+		<p class="muted">{t('workspace.privacy')}</p>
 		<label class="check"
-			><input type="checkbox" bind:checked={includeErrors} disabled={busy} />Include recent errors</label
+			><input type="checkbox" bind:checked={includeErrors} disabled={busy} />{t(
+				'workspace.includeErrors'
+			)}</label
 		>
 		{#if includeErrors}<p class="muted small">
-				Adds your PixelLab tier and recent request outcomes without request bodies or account
-				credentials.
+				{t('workspace.includeErrorsHint')}
 			</p>{/if}
-		{#if error}<p class="notice warn" role="alert">{error}</p>{/if}
+		{#if error}<p class="notice warn" role="alert">{displayMessage(error)}</p>{/if}
 		{#snippet footer()}
 			<button
 				class="btn primary bu-action"
 				data-variant="primary"
 				disabled={busy}
-				onclick={download}><Download size={16} />{busy ? 'Preparing…' : 'Download ZIP'}</button
+				onclick={download}
+				><Download size={16} />{busy ? t('common.preparing') : t('common.downloadZip')}</button
 			>
 		{/snippet}
 	</Sheet>

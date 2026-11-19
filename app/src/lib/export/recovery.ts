@@ -3,6 +3,7 @@ import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import type { Layer, Project } from '../store/manifest.ts';
 import { MAX_ZIP_BYTES, MAX_ZIP_ENTRIES, zip, type ZipEntry } from '../store/zip.ts';
+import { message, type Message } from '../message.ts';
 
 function* tracks(layer: Layer, onInvalid?: () => void) {
 	for (const [move, dirs] of Object.entries(layer?.cells ?? {}))
@@ -17,7 +18,11 @@ const usableImage = (image: Img | undefined): image is Img =>
 	image.data instanceof Uint8ClampedArray &&
 	image.data.length === image.w * image.h * 4;
 
-export function leaveEmptyFrames({ manifest, images }: Project): string[] {
+/** English notes for the ZIP; `messages` receives each note's display message. */
+export function leaveEmptyFrames(
+	{ manifest, images }: Project,
+	messages?: Map<string, Message>
+): string[] {
 	const warnings: string[] = [];
 	for (const item of manifest.items) {
 		let count = 0;
@@ -32,10 +37,11 @@ export function leaveEmptyFrames({ manifest, images }: Project): string[] {
 					count++;
 				}
 		}
-		if (count)
-			warnings.push(
-				`${item.name}: ${count === 1 ? '1 frame was' : `${count} frames were`} left empty.`
-			);
+		if (count) {
+			const text = `${item.name}: ${count === 1 ? '1 frame was' : `${count} frames were`} left empty.`;
+			warnings.push(text);
+			messages?.set(text, message('export.warnings.emptyFrames', { item: item.name, count }));
+		}
 	}
 	return warnings;
 }

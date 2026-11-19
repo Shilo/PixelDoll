@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { message } from '../lib/message.ts';
+	import { t } from 'svelte-whisper';
 	import './studio.css';
 	import './share.css';
 	import './experience/theme.css';
@@ -15,11 +17,7 @@
 	import DeleteSheet from './DeleteSheet.svelte';
 	import DirectionsSheet from './DirectionsSheet.svelte';
 	import { moveDirs } from '../lib/dress/dress.ts';
-	import {
-		COPY_GENERATION_OFF,
-		workspaceCopy,
-		workspaceInfo
-	} from '../lib/store/workspace-mode.ts';
+	import { workspaceCopy, workspaceInfo } from '../lib/store/workspace-mode.ts';
 	import { experience } from './experience/state.svelte.ts';
 	import {
 		ui,
@@ -133,7 +131,7 @@
 			// A failed read keeps item work stopped (startItem and Clear finished wait for it); create and moves still resume.
 			await loadGens().catch((e: Error) => {
 				console.error('drafts', e);
-				toast(`Saved item drafts could not be read: ${e.message}. Reload to try again.`, {
+				toast(message('state.savedItemDraftsCouldNotBeRead', { reason: e.message }), {
 					tone: 'danger'
 				});
 			});
@@ -235,7 +233,7 @@
 	);
 	$effect(() => {
 		document.title = workspaceCopy
-			? 'Workspace copy · PixelDoll'
+			? t('studio.workspaceCopyTabTitle')
 			: running
 				? `(${running}) PixelDoll`
 				: 'PixelDoll';
@@ -320,18 +318,18 @@
 </script>
 
 {#snippet previewNoticeDetails()}
-	<div><strong class="preview-risk">{PREVIEW_NOTICE.risk}</strong></div>
-	{PREVIEW_NOTICE.description}
+	<div><strong class="preview-risk">{t('studio.previewRisk')}</strong></div>
+	{t('studio.previewBackupDescription')}
 	{#if store.project}
 		<button
 			class="bu-action btn sm preview-export"
 			data-variant="outline"
-			aria-label="Export sprites"
+			aria-label={t('studio.exportSprites')}
 			aria-haspopup="dialog"
 			onclick={() => {
 				dismissToast();
 				ui.sheet = 'export';
-			}}>Export</button
+			}}>{t('toolbar.export')}</button
 		>
 	{/if}
 {/snippet}
@@ -347,12 +345,12 @@
 	{#if !workspaceCopy}<PwaRuntime />{/if}
 	<Experience />
 	{#if !workspaceCopy && offline}<div class="offline-banner" role="status">
-			<WifiOff size={14} aria-hidden="true" />You’re offline. Edit and export locally.
+			<WifiOff size={14} aria-hidden="true" />{t('studio.youReOfflineEditAndExportLocally')}
 		</div>{/if}
 	{#if !ui.sheet}<Toast />{/if}
 
 	{#if ui.sheet === 'inspect'}<Sheet
-			title="Inspect character"
+			title={t('studio.titleInspectCharacter')}
 			cancel="Done"
 			className="inspection-sheet"
 			wide
@@ -360,8 +358,8 @@
 			><div class="inspection-stage"><Stage /><Lazy load={parts.notes} sheet={false} /></div></Sheet
 		>{/if}
 	{#if workspaceCopy && ['connect', 'importPixelLab', 'create', 'newitem', 'move', 'setup'].some((sheet) => sheet === ui.sheet)}
-		<Sheet title="Workspace copy" cancel="Done" onclose={() => (ui.sheet = null)}
-			><p>{COPY_GENERATION_OFF}</p></Sheet
+		<Sheet title={t('studio.titleWorkspaceCopy')} cancel="Done" onclose={() => (ui.sheet = null)}
+			><p>{t('workspaceCopy.generationOff')}</p></Sheet
 		>
 	{:else if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}
 	{#if !workspaceCopy && ui.sheet === 'create'}<Lazy load={parts.create} />{/if}
@@ -384,12 +382,12 @@
 	{#if !workspaceCopy && ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
 	{#if ui.sheet === 'slots'}<Lazy load={parts.slots} />{/if}
 	{#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
-		<Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}
+		<Sheet title={t('studio.titleItem')} cancel="Done" onclose={() => (ui.sheet = null)}
 			><Lazy load={parts.item} id={ui.selected} /></Sheet
 		>
 	{/if}
 	{#if ui.sheet === 'gen' && genOf(ui.selected)}
-		<Sheet title="Item review" cancel="Done" onclose={() => (ui.sheet = null)}
+		<Sheet title={t('studio.titleItemReview')} cancel="Done" onclose={() => (ui.sheet = null)}
 			><Lazy load={parts.gen} g={genOf(ui.selected)!} /></Sheet
 		>
 	{/if}

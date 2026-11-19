@@ -9,6 +9,7 @@ import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import type { Provenance } from '../lib/store/manifest.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
+import { LocalizedError, message } from '../lib/message.ts';
 
 export interface SetupSpec {
 	projectId: string;
@@ -19,9 +20,9 @@ export interface SetupSpec {
 	activityScope?: string;
 }
 export const SETUP_STEPS = [
-	{ id: 'joints', label: 'Finding joints on every frame' },
-	{ id: 'register', label: 'Connecting the standing views' },
-	{ id: 'check', label: 'Checking alignment and saving' }
+	{ id: 'joints', label: message('setup.steps.joints') },
+	{ id: 'register', label: message('setup.steps.register') },
+	{ id: 'check', label: message('setup.steps.check') }
 ];
 
 export async function setupCharacter(
@@ -30,15 +31,23 @@ export async function setupCharacter(
 ): Promise<void> {
 	const { rec, project } = await loadProject(spec.projectId);
 	if (rec.manifest.rig.baseHash !== spec.baseHash)
-		throw new Error(
-			'The body changed since setup started. Start setup again for the current frames.'
+		throw new LocalizedError(
+			'The body changed since setup started. Start setup again for the current frames.',
+			'setup.errors.bodyChanged'
 		);
-	if (!spec.looks.trim()) throw new Error('Describe the character’s existing appearance first.');
+	if (!spec.looks.trim())
+		throw new LocalizedError(
+			'Describe the character’s existing appearance first.',
+			'setup.errors.looksRequired'
+		);
 	const plan = await setupPlan(project, spec.restAnim),
 		measured = new Map<string, Keypoint[]>(),
 		provenance: Provenance[] = [];
 	if (!plan.frames.size)
-		throw new Error('No body frames are available for rig setup. Existing artwork is unchanged.');
+		throw new LocalizedError(
+			'No body frames are available for rig setup. Existing artwork is unchanged.',
+			'setup.errors.noFrames'
+		);
 	let done = 0;
 	progress({ step: 'joints', done, total: plan.frames.size, recIds: [] });
 	const frames = [...plan.frames],
@@ -57,8 +66,9 @@ export async function setupCharacter(
 					try {
 						const k = await joints(im, true, undefined, spec.activityScope);
 						if (!k)
-							throw new Error(
-								'PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.'
+							throw new LocalizedError(
+								'PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.',
+								'setup.errors.jointsMissing'
 							);
 						if (failure) return;
 						const request = routes.estimateSkeleton(png(await b64(skeletonInput(im).image)));
@@ -115,8 +125,9 @@ export async function setupCharacter(
 	);
 	const id = (managed.response as { character_id?: string })?.character_id;
 	if (!id)
-		throw new Error(
-			'PixelLab did not return a managed character ID. Existing artwork is unchanged.'
+		throw new LocalizedError(
+			'PixelLab did not return a managed character ID. Existing artwork is unchanged.',
+			'setup.errors.noCharacterId'
 		);
 	provenance.push(provOf(managed));
 	progress({ step: 'check', done: 0, total: 1, recIds: [] });
@@ -130,7 +141,10 @@ export async function setupCharacter(
 		if (rest) {
 			const im = result.images.get(rest.image)!;
 			if ((await cellHash(im)) !== rest.image)
-				throw new Error('A standing reference changed during setup.');
+				throw new LocalizedError(
+					'A standing reference changed during setup.',
+					'setup.errors.referenceChanged'
+				);
 			blobs.set(
 				rest.image.slice(7),
 				new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
@@ -138,7 +152,10 @@ export async function setupCharacter(
 		}
 	await db.updateCharacter(spec.projectId, blobs, (current: StoredProject | undefined) => {
 		if (!current || current.manifest.rig.baseHash !== spec.baseHash)
-			throw new Error('The character changed during setup. Its current work has been kept.');
+			throw new LocalizedError(
+				'The character changed during setup. Its current work has been kept.',
+				'setup.errors.characterChanged'
+			);
 		retainPlaybackChoices(result.manifest.rig, current.manifest.rig);
 		current.manifest.rig = result.manifest.rig;
 		current.manifest.items.find((i) => i.id === current.manifest.rig.baseItem)!.provenance =

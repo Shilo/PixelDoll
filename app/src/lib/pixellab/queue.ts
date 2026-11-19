@@ -44,6 +44,7 @@ import {
 } from './activity.ts';
 
 import { COPY_GENERATION_OFF, workspaceCopy } from '../store/workspace-mode.ts';
+import { message, type Message } from '../message.ts';
 
 export type RecState =
 	'queued' | 'submitting' | 'running' | 'done' | 'failed' | 'canceled' | 'lost';
@@ -100,6 +101,66 @@ export interface JobRec {
 	usd: number;
 	costUnknown?: true; // settled without a usage report for every job: the cost is unknown, never $0
 }
+export function queueErrorParts(record: JobRec): (Message | string)[] {
+	const raw = record.error;
+	if (!raw) return [];
+	const failed = record.jobs.filter((job) => job.error);
+	if (failed.length && raw === failed.map((job) => job.error).join(' | '))
+		return failed.map((job) => {
+			const error = job.error!;
+			if (job.failedAtProvider) return error;
+			if (job.done && job.status === 'lost') return message('activity.error.jobMissing');
+			if (job.done && job.status === 'failed') {
+				const malformed =
+					/^PixelLab sent a malformed result \(([\s\S]*)\); the cost may be spent$/.exec(error);
+				if (malformed) return message('activity.error.malformed', { error: malformed[1] });
+				const urls = job.pendingUrls?.map(({ url }) => url).join(' ');
+				const suffix = `. Download manually: ${urls}`;
+				const prefix = `result download failed ${job.tries}x: `;
+				if (urls && job.tries && error.startsWith(prefix) && error.endsWith(suffix))
+					return message('activity.error.download', {
+						count: job.tries,
+						error: error.slice(prefix.length, -suffix.length),
+						urls
+					});
+			}
+			return error;
+		});
+	if (record.state === 'lost') {
+		if (
+			raw ===
+			'page closed during submit; the job may have run (check pixellab.ai). Not resubmitted.'
+		)
+			return [message('activity.error.closedDuringSubmit')];
+		const evidence =
+			/^PixelLab returned job evidence with an error \(([\s\S]*)\)\. The request may have run and been charged; not resent\.$/.exec(
+				raw
+			);
+		if (evidence) return [message('activity.error.jobEvidence', { error: evidence[1] })];
+		const unclear =
+			/^no clear answer from PixelLab \(([\s\S]*)\)\. The job may have run and been charged \(check pixellab\.ai\); not resent\.$/.exec(
+				raw
+			);
+		if (unclear) return [message('activity.error.unclearAnswer', { error: unclear[1] })];
+	}
+	if (record.state === 'failed' && record.requestStarted === false) {
+		if (raw === 'page closed before request preparation finished; nothing was sent.')
+			return [message('activity.error.closedBeforeSend')];
+		if (raw === 'request could not be saved; nothing was sent')
+			return [message('activity.error.notSaved')];
+		const missing = /^input image (\S+) missing from storage; nothing was sent$/.exec(raw);
+		if (missing && record.inputs.some((hash) => hash.slice(0, 12) === missing[1]))
+			return [message('activity.error.missingInput', { hash: missing[1] })];
+	}
+	if (record.state === 'canceled') {
+		if (raw === 'Request stopped before sending. No API request was made.')
+			return [message('activity.error.stoppedBeforeSend')];
+		const duplicate = /^duplicate of (\S+) \(sent from two tabs\)$/.exec(raw);
+		if (duplicate) return [message('activity.error.duplicate', { id: duplicate[1] })];
+	}
+	return [raw];
+}
+
 export type Role = 'solo' | 'leader' | 'follower';
 export interface QueueSnapshot {
 	jobs: JobRec[];

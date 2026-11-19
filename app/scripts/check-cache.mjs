@@ -14,7 +14,8 @@ for (const name of [
 	'prettier.config.js',
 	'.prettierignore',
 	'tsconfig.json',
-	'tsconfig.app.json'
+	'tsconfig.app.json',
+	'src/locales/en.json'
 ])
 	hash.update(readFileSync(new URL(name, app)));
 const inputs = hash.digest('hex');

@@ -299,6 +299,31 @@ test('installed shell includes valid icons and works offline after a cold naviga
 	}
 });
 
+test('a returning user can switch to an unvisited language while offline and reload it', async ({
+	page,
+	context
+}) => {
+	const release = await testRelease('offline-language', '8.0.2');
+	const server = await pwaServer(release);
+	try {
+		await openInstalled(page, server.url, release);
+		const customize = page.locator('.customize-action');
+		const english = await customize.innerText();
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await context.setOffline(true);
+		await page.getByRole('combobox', { name: 'Language' }).selectOption('de');
+		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+		await expect(customize).not.toHaveText(english);
+		const german = await customize.innerText();
+		await page.reload();
+		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+		await expect(customize).toHaveText(german);
+	} finally {
+		await context.setOffline(false);
+		await server.close();
+	}
+});
+
 test('the offline status stays compact and leaves the character and controls visible', async ({
 	page,
 	context

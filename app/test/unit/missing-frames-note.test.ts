@@ -10,7 +10,10 @@ test('missing frames read as one short warning for the tile and menu', async () 
 	);
 	const notes = Object.fromEntries(m.items.map((it) => [it.id, missingFramesNote(m, it)]));
 	// The demo's wizard hat has no north walk and no (south-only) cross punch; every other item is complete.
-	expect(notes.hat_wizard).toBe('Missing frames in 2 moves');
+	expect(notes.hat_wizard).toEqual({
+		key: 'studioModel.coverage.severalMoves',
+		vars: { count: 2 }
+	});
 	expect(Object.values(notes).filter(Boolean)).toHaveLength(1);
 	// With only its Walk move left, the note names that move.
 	const walkOnly = {
@@ -22,5 +25,5 @@ test('missing frames read as one short warning for the tile and menu', async () 
 			walkOnly,
 			m.items.find((i) => i.id === 'hat_wizard')!
 		)
-	).toBe('Missing some Walk frames');
+	).toEqual({ key: 'studioModel.coverage.oneMove', vars: { move: 'Walk' } });
 });

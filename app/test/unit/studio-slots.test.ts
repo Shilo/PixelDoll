@@ -8,6 +8,7 @@ import {
 	applySettings,
 	busyReason,
 	changesAttachment,
+	categoryCopy,
 	categories,
 	deleteCustom,
 	drawsAbove,
@@ -21,6 +22,7 @@ import {
 	setHidden,
 	shownCategories,
 	slotLabel,
+	slotLabelMessage,
 	slotUse
 } from '../../src/studio/slots.ts';
 
@@ -62,6 +64,12 @@ test('every built-in is its own category: ten shown, six not shown, Base exclude
 	expect(categories(m).some((c) => c.key === 'body')).toBe(false);
 	expect(slotLabel(m, 'torso_inner')).toBe('Body');
 	expect(slotLabel(m, 'body')).toBe('Base');
+	expect(slotLabelMessage(m, 'torso_inner')).toMatchObject({ key: 'studioSlots.labels.body' });
+	expect(slotLabelMessage(m, 'body')).toMatchObject({ key: 'studioSlots.labels.base' });
+	expect(categoryCopy(m, 'head').ideas[1]).toMatchObject({
+		label: 'iron knight helmet',
+		caption: { key: 'studioSlots.ideas.head.1' }
+	});
 });
 
 test('a hidden category holding items or attempts stays in Wardrobe', () => {
@@ -85,8 +93,11 @@ test('blank names become Accessory, then the next free number, with permanent po
 	expect(keyFor(m, '2nd ring')).toBe('slot_2nd_ring');
 	// Hidden built-ins keep their keys and names.
 	expect(keyFor(m, 'Neck')).toBe('neck_2');
-	expect(labelProblem(m, ' neck ')).toBe('Neck already exists.');
-	expect(labelProblem(m, 'base')).toBe('Base already exists.');
+	expect(labelProblem(m, ' neck ')).toMatchObject({
+		message: 'Neck already exists.',
+		translation: { key: 'studioSlots.nameExists', vars: { name: 'Neck' } }
+	});
+	expect(labelProblem(m, 'base')?.message).toBe('Base already exists.');
 	expect(() => addCustom(m, { label: 'ACCESSORY' }, none)).toThrow('already exists');
 });
 
@@ -97,6 +108,7 @@ test('renaming changes only the label: the key, items and outfits keep their ref
 	m.presets[0].items[key] = 'arrows';
 	renameCustom(m, key, 'Arrows');
 	expect(slotLabel(m, key)).toBe('Arrows');
+	expect(slotLabelMessage(m, key)).toBe('Arrows');
 	expect(key).toBe('quiver');
 	expect(m.items[0].slot).toBe('quiver');
 	expect(m.presets[0].items.quiver).toBe('arrows');
@@ -188,10 +200,13 @@ test('only empty custom categories can be deleted, and outfits forget their key'
 });
 
 test('creative hints describe the item and leave protected wording to PixelDoll', () => {
-	expect(hintProblem('small and shiny, pinned to the chest')).toBe('');
-	expect(hintProblem('a picture frame pendant with a gem grid')).toBe('');
-	expect(hintProblem('on a green screen background')).toContain('PixelDoll handles');
-	expect(hintProblem('{{description}}')).toBe('Describe the item in plain words.');
+	expect(hintProblem('small and shiny, pinned to the chest')).toBeNull();
+	expect(hintProblem('a picture frame pendant with a gem grid')).toBeNull();
+	expect(hintProblem('on a green screen background')).toMatchObject({
+		message: 'PixelDoll handles “green screen” itself. Describe only the item.',
+		translation: { key: 'studioSlots.protectedHint', vars: { word: 'green screen' } }
+	});
+	expect(hintProblem('{{description}}')?.message).toBe('Describe the item in plain words.');
 });
 
 test('Draws above moves the drawn pixels of items already made, not only the setting', () => {

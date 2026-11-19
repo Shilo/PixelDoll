@@ -24,7 +24,7 @@
 	} from '../lib/store/export-settings.ts';
 	import type { DirectionName, Engine } from '../lib/store/manifest.ts';
 	import { ui, doc, store, toast, isDemo } from './state.svelte.ts';
-	import { moveLabel } from './model.ts';
+	import { displayMove } from './displayMove.ts';
 	import {
 		Check,
 		ChevronDown,
@@ -37,95 +37,100 @@
 	} from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { popoverFocus } from './experience/focus.ts';
+	import { getLocale, t } from 'svelte-whisper';
+	import type { WhisperKey } from 'svelte-whisper';
+	import { displayMessage } from '../lib/i18n.ts';
+	import { message, type Message } from '../lib/message.ts';
+	import type { NoteTerm } from '../lib/export/export.ts';
+	import { displayDirectionInSentence } from './displayDirection.ts';
+	import { slotLabelMessage } from './slots.ts';
+	import RichMessage from './RichMessage.svelte';
 
-	type Target = { id: Engine; name: string; sub: string; detail: string };
+	type Target = { id: Engine; name: string; sub: WhisperKey; detail: WhisperKey };
 	// One RPG Maker card split in two: its body only selects (Standard, or the version already chosen), and its version button
 	// selects and opens the version menu. The version is the stored engine id (rpgmaker or rpgmakerxp), so it persists like any
 	// format. Selecting never opens the menu by itself, so arrow keys across the cards stay plain radio behavior.
 	const RPG_XP = {
 		id: 'rpgmakerxp',
 		name: 'RPG Maker',
-		sub: 'Walking sheets',
-		detail:
-			'A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views.'
+		sub: 'export.target.rpgmaker.sub',
+		detail: 'export.target.rpgmakerxp.detail'
 	} satisfies Target;
 	const RPG_VERSIONS = [
 		{
 			id: 'rpgmaker',
-			value: 'Standard',
-			title: 'Standard: MZ, MV, VX Ace, VX',
-			sub: '3 × 4 layout · $Name.png'
+			value: 'export.version.standard',
+			title: 'export.version.standardTitle',
+			sub: 'export.version.standardSub'
 		},
 		{
 			id: 'rpgmakerxp',
-			value: 'XP',
-			title: 'XP and Pokémon Essentials',
-			sub: '4 × 4 layout · Name.png'
+			value: 'export.version.xp',
+			title: 'export.version.xpTitle',
+			sub: 'export.version.xpSub'
 		}
-	] as const satisfies readonly { id: Engine; value: string; title: string; sub: string }[];
+	] as const satisfies readonly {
+		id: Engine;
+		value: WhisperKey;
+		title: WhisperKey;
+		sub: WhisperKey;
+	}[];
 	const cardOf = (id: Engine): Engine => (id === 'rpgmakerxp' ? 'rpgmaker' : id);
 	const rpgVersion = $derived(RPG_VERSIONS.find((v) => v.id === engine) ?? RPG_VERSIONS[0]);
 	let versionMenu = $state<HTMLElement>();
 	// Product order for this layered 2D workflow; asset formats are useful across engines.
-	const GROUPS: { id: string; name: string; targets: Target[] }[] = [
+	const GROUPS: { id: string; name: WhisperKey; targets: Target[] }[] = [
 		{
 			id: 'engines',
-			name: 'Engines and frameworks',
+			name: 'export.group.engines',
 			targets: [
 				{
 					id: 'godot',
 					name: 'Godot',
-					sub: 'Scene + runtime',
-					detail:
-						'Godot 4 scene and animation resources with synchronized equipment and outfit controls.'
+					sub: 'export.target.godot.sub',
+					detail: 'export.target.godot.detail'
 				},
 				{
 					id: 'unity',
 					name: 'Unity',
-					sub: 'Prefab importer',
-					detail:
-						'Unity Editor importer creates a layered prefab and animation assets. Requires the 2D Sprite package.'
+					sub: 'export.target.unity.sub',
+					detail: 'export.target.unity.detail'
 				},
 				{
 					id: 'phaser',
 					name: 'Phaser',
-					sub: 'Atlas + runtime',
-					detail:
-						'Phaser 3 / 4 atlases and a Container runtime for equipment, colors and synchronized playback.'
+					sub: 'export.target.phaser.sub',
+					detail: 'export.target.phaser.detail'
 				},
 				{
 					id: 'gdevelop',
 					name: 'GDevelop',
-					sub: 'Editable project',
-					detail:
-						'Editable GDevelop project with Sprite layers, synchronized playback and equipment controls. Preview it or copy the objects and event into your game.'
+					sub: 'export.target.gdevelop.sub',
+					detail: 'export.target.gdevelop.detail'
 				},
 				{
 					id: 'rpgmaker',
 					name: 'RPG Maker',
-					sub: 'Walking sheets',
-					detail:
-						'A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views.'
+					sub: 'export.target.rpgmaker.sub',
+					detail: 'export.target.rpgmaker.detail'
 				}
 			]
 		},
 		{
 			id: 'assets',
-			name: 'Assets',
+			name: 'export.group.assets',
 			targets: [
 				{
 					id: 'aseprite',
 					name: 'Aseprite',
-					sub: 'Editable layers',
-					detail:
-						'One layered .aseprite animation with tags, timing, pivot and your current look. Open in Aseprite 1.3 or later.'
+					sub: 'export.target.aseprite.sub',
+					detail: 'export.target.aseprite.detail'
 				},
 				{
 					id: 'generic',
 					name: 'PNG + JSON',
-					sub: 'Custom integration',
-					detail:
-						'Layer sheets and strips with timing, pivots, equipment and palette data. Your engine needs code to read these rules.'
+					sub: 'export.target.generic.sub',
+					detail: 'export.target.generic.detail'
 				}
 			]
 		}
@@ -147,8 +152,8 @@
 		refreshPreferences = async () => {};
 	let refreshing = $state(true);
 	let ready = $state(false);
-	let saveError = $state('');
-	let loadError = $state('');
+	let saveError = $state<Message | null>(null);
+	let loadError = $state<Message | null>(null);
 	let invalidPreferences = $state(false);
 	let content = $state<HTMLDivElement>();
 	let navigation: HTMLButtonElement;
@@ -156,20 +161,23 @@
 		zip: Uint8Array | null;
 		files: string[];
 		warnings: string[];
+		warningMessages?: Map<string, Message>;
 		kind: 'requested' | 'recovery' | 'failed';
 		problem?: string;
+		problemMessage?: Message;
 		details?: string[];
+		detailMessages?: (Message | undefined)[];
+		requestedWarnings?: (Message | string)[];
 		retryable?: boolean;
-		rigIssues: string[];
+		rigIssues: Message[];
 	} | null>(null);
 	let busy = $state(false);
 	let attempt = $state(0);
 	const m = $derived(store.project?.manifest);
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
-	const nice = (id: string) => moveLabel(id, moveIds);
 	const baked = $derived(preferences?.dressedCharacterSheets ?? true);
 	const catalog = $derived.by(() => {
-		if (!preferences || !ready) return { names: [], warnings: [] };
+		if (!preferences || !ready) return { names: [], warningMessages: [] };
 		const others = savedProjects.filter((p) => p.id !== doc.id).map((p) => p.manifest);
 		try {
 			return exportAnimationCatalog(m, others, preferences);
@@ -178,7 +186,7 @@
 			const catalog = exportAnimationCatalog(undefined, others, preferences);
 			return {
 				...catalog,
-				warnings: ['Some moves from this character are missing from settings.', ...catalog.warnings]
+				warningMessages: [message('export.warnings.missingMoves'), ...catalog.warningMessages]
 			};
 		}
 	});
@@ -186,16 +194,20 @@
 	const once = $derived(preferences?.playOnce ?? []);
 	const playbackSummary = $derived(
 		!once.length
-			? 'None'
+			? t('export.playback.none')
 			: once.length === names.length
-				? 'All'
+				? t('export.playback.all')
 				: once.map(animationLabel).join(', ')
 	);
 	const outfits = $derived(m?.presets.filter((p) => p.id !== 'current') ?? []);
 	// RPG Maker sheets are always dressed composites, whatever the setting says
 	const rpg = $derived(engine === 'rpgmaker' || engine === 'rpgmakerxp');
 	const outfitSummary = $derived(
-		!baked && !rpg ? 'None' : outfits.length ? 'Current look + saved outfits' : 'Current look'
+		!baked && !rpg
+			? t('export.outfits.none')
+			: outfits.length
+				? t('export.outfits.saved')
+				: t('export.outfits.current')
 	);
 	const items = $derived(m ? m.items.filter((i) => i.slot !== 'body') : []);
 	const reviewItems = $derived(
@@ -205,10 +217,44 @@
 					.map((i) => i.name)
 			: []
 	);
-	const PLAY_ONCE = 'Play animation once';
-	const DRESSED_SHEETS = 'Include dressed character sheets';
+	const PLAY_ONCE = $derived(t('export.settings.playOnce'));
+	const DRESSED_SHEETS = $derived(t('export.settings.dressed'));
 	function animationLabel(id: string): string {
-		return moveLabel(id, names);
+		return displayMove(id, names);
+	}
+	// Notes keep raw terms until shown, so lists, directions, slots and nested messages follow a language switch.
+	function noteValue(value: unknown): unknown {
+		if (Array.isArray(value))
+			// A comma list in each language ("a, b" in English), as these notes read before localization
+			return new Intl.ListFormat(getLocale() || 'en', { type: 'unit', style: 'short' }).format(
+				value.map((entry) => String(noteValue(entry)))
+			);
+		if (typeof value !== 'object' || value === null) return value;
+		if ('direction' in value)
+			return displayDirectionInSentence(
+				(value as Extract<NoteTerm, { direction: unknown }>).direction
+			);
+		if ('slot' in value)
+			return displayMessage(
+				slotLabelMessage(m, (value as Extract<NoteTerm, { slot: unknown }>).slot)
+			);
+		if ('move' in value)
+			return displayMove((value as Extract<NoteTerm, { move: unknown }>).move, moveIds);
+		if ('key' in value) return displayNote(value as Message);
+		return value;
+	}
+	function displayNote(note: Message): string {
+		const vars = note.vars;
+		return t(
+			note.key,
+			vars && !Array.isArray(vars)
+				? Object.fromEntries(Object.entries(vars).map(([name, value]) => [name, noteValue(value)]))
+				: vars
+		);
+	}
+	function displayWarning(warning: string): string {
+		const translated = result?.warningMessages?.get(warning);
+		return translated ? displayNote(translated) : warning;
 	}
 	$effect(() => {
 		const openedId = doc.id;
@@ -238,7 +284,7 @@
 				if (stableStringify(preferences) !== stableStringify(saved)) preferences = saved;
 				savedProjects = projects;
 				ready = true;
-				loadError = '';
+				loadError = null;
 				invalidPreferences = false;
 			} catch (error) {
 				if (!active || current !== request) return;
@@ -254,8 +300,8 @@
 				invalidPreferences = error instanceof InvalidExportSettings;
 				console.warn('Could not load export settings', error);
 				loadError = invalidPreferences
-					? 'Saved export settings could not be read.'
-					: 'Could not load export settings. Try reopening Export.';
+					? message('export.settings.loadInvalid')
+					: message('export.settings.loadFailed');
 			} finally {
 				if (active && current === request) refreshing = false;
 			}
@@ -311,18 +357,18 @@
 			sequence = ++writeSequence;
 		pendingWrites++;
 		if (optimisticEngine) formatChoice = optimisticEngine;
-		saveError = '';
+		saveError = null;
 		try {
 			const saved = await commit();
 			if (sequence > publishedSequence) {
 				preferences = saved;
 				publishedSequence = sequence;
 			}
-			if (sequence === writeSequence) saveError = '';
+			if (sequence === writeSequence) saveError = null;
 		} catch (e) {
 			if (input && input.type !== 'radio') input.checked = !checked;
 			console.warn('Could not save export settings', e);
-			if (sequence === writeSequence) saveError = 'Could not save export settings. Try again.';
+			if (sequence === writeSequence) saveError = message('export.settings.saveFailed');
 		} finally {
 			pendingWrites--;
 			if (!saving) {
@@ -347,8 +393,12 @@
 	// RPG Maker sheets use only the standing view and the walk, and their export warns about walk views itself
 	const gaps = $derived.by(() => {
 		if (!m) return [];
-		const out: string[] = [],
+		const out: Message[] = [],
 			walk = rpg ? walkMove(m.rig)?.id : undefined;
+		const facing = (key: string) => {
+			const [move, direction] = key.split('/') as [string, DirectionName];
+			return message('export.notes.rigIssue', { move: { move }, direction: { direction } });
+		};
 		const used = (key: string) => {
 			const [move, dir] = key.split('/');
 			return (
@@ -359,23 +409,36 @@
 			for (const a of m.rig.animations) {
 				const d = moveDirs(m, a.id);
 				if (d.length < m.rig.directions.length)
-					out.push(`${nice(a.id)} has ${d.join(' and ')} only`);
+					out.push(
+						message('export.gaps.dirs', {
+							move: { move: a.id },
+							directions: d.map((direction): NoteTerm => ({ direction }))
+						})
+					);
 			}
 		// RPG Maker draws only the outfits it exports (current look and saved outfits), so an item none of them wears is not in a sheet
 		const worn = new Set(
 			[doc.items, ...outfits.map((x) => x.items)].flatMap((o) => Object.values(o))
 		);
 		for (const it of rpg ? items.filter((i) => worn.has(i.id)) : items) {
-			const view = (x: string) => x.replace('-', ' ').replace('/', ' '),
-				whole: string[] = [];
+			const whole: string[] = [];
 			for (const g of coverageGaps(m, it).filter(used)) {
 				const [move, dir] = g.split('/') as [string, DirectionName],
 					count = m.rig.animations.find((a) => a.id === move)!.cells,
 					missed = missingFrames(m, it, move, dir).length;
 				if (missed === count) whole.push(g);
-				else out.push(`${it.name} is missing ${missed} of ${count} ${view(g)} frames`);
+				else
+					out.push(
+						message('export.gaps.missingFacing', {
+							item: it.name,
+							missing: missed,
+							count,
+							view: facing(g)
+						})
+					);
 			}
-			if (whole.length) out.push(`${it.name} has no ${whole.map(view).join(', ')} frames`);
+			if (whole.length)
+				out.push(message('export.gaps.noFrames', { item: it.name, views: whole.map(facing) }));
 		}
 		return out;
 	});
@@ -408,7 +471,10 @@
 				})
 				.map(([clip]) => {
 					const [anim, dir] = clip.split('/');
-					return `${nice(anim)} facing ${dir.replaceAll('-', ' ')}`;
+					return message('export.notes.rigIssue', {
+						move: { move: anim },
+						direction: { direction: dir as DirectionName }
+					});
 				});
 			return {
 				...(await buildExport(p, {
@@ -427,9 +493,18 @@
 					zip: r.zip,
 					files: r.entries.map((x) => x.name),
 					warnings: r.warnings,
+					warningMessages: r.kind === 'failed' ? undefined : r.warningMessages,
 					kind: r.kind,
 					problem: r.problem,
+					problemMessage: r.problemMessage,
 					details: r.kind !== 'requested' ? r.errors : undefined,
+					detailMessages: r.kind !== 'requested' ? r.errorMessages : undefined,
+					requestedWarnings:
+						r.kind === 'recovery'
+							? r.requestedWarnings.map(
+									(warning) => r.requestedWarningMessages?.get(warning) ?? warning
+								)
+							: undefined,
 					retryable: r.kind === 'failed' && r.retryable,
 					rigIssues: r.rigIssues
 				};
@@ -444,6 +519,7 @@
 					warnings: [],
 					kind: 'failed',
 					problem: 'Could not prepare this export.',
+					problemMessage: message('export.problem.prepareFailed'),
 					retryable: true,
 					rigIssues: []
 				};
@@ -453,11 +529,13 @@
 			stale = true;
 		};
 	});
-	const n = (k: number, w: string) => `${k} ${w}${k === 1 ? '' : 's'}`;
 	const kb = $derived(result?.zip ? Math.max(1, Math.round(result.zip.length / 1024)) : null);
 	const pendingExport = $derived((busy && ready) || saving || refreshing);
 	const hasNotes = $derived(
 		!!(reviewItems.length || gaps.length || result?.warnings.length || result?.rigIssues.length)
+	);
+	const problem = $derived(
+		result ? (result.problemMessage ? displayMessage(result.problemMessage) : result.problem) : ''
 	);
 	function download() {
 		if (!result?.zip || !m || busy || saving || refreshing || !ready) return;
@@ -467,7 +545,11 @@
 				? `${name}-recovered-artwork.zip`
 				: `${name}-${engine}.pixeldoll.zip`;
 		saveZip(result.zip, filename);
-		toast(result.kind === 'recovery' ? 'Artwork download started.' : 'Export download started.');
+		toast(
+			result.kind === 'recovery'
+				? message('export.toast.artworkStarted')
+				: message('download.started')
+		);
 		if (result.kind === 'requested') ui.sheet = null;
 	}
 </script>
@@ -476,21 +558,21 @@
 	<span class="foot-note"
 		>{pendingExport
 			? saving
-				? 'Saving settings…'
+				? t('export.sheet.saving')
 				: ''
 			: !ready
-				? 'Export unavailable'
+				? t('export.sheet.unavailable')
 				: result?.kind === 'recovery'
-					? 'Source PNGs only'
+					? t('export.sheet.sourceOnly')
 					: result?.kind === 'failed'
-						? 'No ZIP available'
+						? t('export.sheet.noZip')
 						: hasNotes
-							? 'Ready · see export notes'
-							: 'Free · includes an editable copy'}</span
+							? t('export.sheet.readyNotes')
+							: t('export.sheet.free')}</span
 	>
 	{#if ready && !pendingExport && result?.kind === 'failed' && result.retryable}
 		<button class="bu-action btn primary lg" data-variant="primary" onclick={() => attempt++}
-			>Try again</button
+			>{t('common.tryAgain')}</button
 		>
 	{:else}<button
 			class="bu-action btn primary lg"
@@ -498,17 +580,17 @@
 			onclick={download}
 			disabled={pendingExport || !ready || !result?.zip}
 			><Download size={16} aria-hidden="true" />{(ready && busy) || refreshing
-				? 'Preparing…'
+				? t('common.preparing')
 				: !pendingExport && result?.kind === 'recovery'
-					? 'Download artwork ZIP'
+					? t('export.sheet.downloadArtwork')
 					: kb && !pendingExport
-						? `Download ZIP · ${kb} KB`
-						: 'Download ZIP'}</button
+						? t('export.sheet.downloadSize', { size: kb })
+						: t('common.downloadZip')}</button
 		>{/if}
 {/snippet}
 
 <Sheet
-	title={settings ? 'Export settings' : 'Export'}
+	title={settings ? t('export.sheet.settingsTitle') : t('export.sheet.title')}
 	className="export-sheet"
 	onclose={() => (ui.sheet = null)}
 	cancelDisabled={saving}
@@ -522,17 +604,16 @@
 			disabled={saving}
 			onclick={navigate}
 		>
-			{#if settings}<ChevronLeft size={16} aria-hidden="true" />Back{:else}<Settings2
-					size={16}
-					aria-hidden="true"
-				/>Settings{/if}
+			{#if settings}<ChevronLeft size={16} aria-hidden="true" />{t(
+					'export.sheet.back'
+				)}{:else}<Settings2 size={16} aria-hidden="true" />{t('export.sheet.settings')}{/if}
 		</button>
 	{/snippet}
 	{#snippet trailing()}
 		<button
 			class="bu-action btn plain link done"
 			data-variant="quiet"
-			aria-label="Close export"
+			aria-label={t('export.sheet.close')}
 			disabled={saving}
 			onclick={() => (ui.sheet = null)}><X size={18} aria-hidden="true" /></button
 		>
@@ -540,27 +621,31 @@
 	{#key settings}
 		<div class="export-page" class:settings-page={settings} bind:this={content}>
 			{#if loadError || saveError}<p class="notice bad small" role="alert">
-					<TriangleAlert size={14} />{saveError || loadError}
+					<TriangleAlert size={14} />{saveError
+						? displayMessage(saveError)
+						: loadError
+							? displayMessage(loadError)
+							: ''}
 				</p>{/if}
 			{#if invalidPreferences}
 				<p class="muted small">
-					Reset only Export preferences to their defaults. Your characters and outfits are kept.
+					{t('export.settings.resetHint')}
 				</p>
 				<button class="bu-action btn" onclick={resetSettings} disabled={saving || refreshing}
-					>Reset export settings</button
+					>{t('export.settings.reset')}</button
 				>
 			{/if}
 			{#if !ready && refreshing}<p class="muted small" role="status">
-					Loading export settings…
+					{t('export.settings.loading')}
 				</p>{/if}
-			{#each catalog.warnings as warning}<p class="notice warn small">
-					<TriangleAlert size={14} />{warning}
+			{#each catalog.warningMessages as warning}<p class="notice warn small">
+					<TriangleAlert size={14} />{displayMessage(warning)}
 				</p>{/each}
 			{#if settings}
 				<fieldset class="export-playback" aria-describedby="export-playback-description">
 					<legend class="label">{PLAY_ONCE}</legend>
 					<p class="muted small" id="export-playback-description">
-						Selected animation names play once across all character exports.
+						{t('export.settings.playOnceHint')}
 					</p>
 					<div class="export-moves">
 						{#each names as name (name)}
@@ -596,17 +681,15 @@
 					/>
 					<span
 						><span>{DRESSED_SHEETS}</span><span class="muted small" id="export-dressed-description"
-							>Adds PNG sprite sheets of your current look and each saved outfit, with the body and
-							equipped items combined. Separate layers are always included, except in RPG Maker
-							sheets, which are always combined.</span
+							>{t('export.settings.dressedHint')}</span
 						></span
 					>
 				</label>
 			{:else}
-				<fieldset class="export-picker" aria-label="Export format">
+				<fieldset class="export-picker" aria-label={t('export.settings.format')}>
 					{#each GROUPS as group (group.id)}
 						<section aria-labelledby={`export-${group.id}`}>
-							<h3 class="label" id={`export-${group.id}`}>{group.name}</h3>
+							<h3 class="label" id={`export-${group.id}`}>{t(group.name)}</h3>
 							<div class="export-targets">
 								{#each group.targets as e (e.id)}
 									{#snippet target()}
@@ -618,7 +701,7 @@
 											></span>
 											<span class="target-label"
 												><span class="engine-name">{e.name}</span><span class="engine-sub"
-													>{e.sub}</span
+													>{t(e.sub)}</span
 												></span
 											>
 											<input
@@ -645,7 +728,9 @@
 													popovertarget="rpg-version-menu"
 													aria-haspopup="menu"
 													disabled={!ready}
-													aria-label={`RPG Maker version: ${rpgVersion.title}`}
+													aria-label={t('export.settings.versionLabel', {
+														version: t(rpgVersion.title)
+													})}
 													onclick={() => {
 														if (!rpg) chooseEngine(rpgVersion.id);
 													}}
@@ -653,7 +738,7 @@
 													<span class="version-value"
 														>{#each RPG_VERSIONS as v (v.id)}<span
 																aria-hidden="true"
-																class:hidden={v.id !== rpgVersion.id}>{v.value}</span
+																class:hidden={v.id !== rpgVersion.id}>{t(v.value)}</span
 															>{/each}</span
 													>
 													<ChevronDown size={16} aria-hidden="true" />
@@ -674,13 +759,13 @@
 					data-placement="bottom-end"
 					popover
 					role="menu"
-					aria-label="RPG Maker version"
+					aria-label={t('export.settings.versionMenu')}
 					bind:this={versionMenu}
 					ontoggle={popoverFocus}
 				>
 					<PopoverArrow />
 					<div class="menu-surface bu-popover-surface bu-floating">
-						<p class="menu-sec">Version</p>
+						<p class="menu-sec">{t('export.settings.version')}</p>
 						{#each RPG_VERSIONS as v (v.id)}
 							<button
 								type="button"
@@ -696,8 +781,8 @@
 									>{#if engine === v.id}<Check size={16} />{/if}</span
 								>
 								<span class="version-text"
-									><span class="version-title">{v.title}</span><span class="version-sub"
-										>{v.sub}</span
+									><span class="version-title">{t(v.title)}</span><span class="version-sub"
+										>{t(v.sub)}</span
 									></span
 								>
 							</button>
@@ -709,8 +794,12 @@
 						id="export-description"
 						aria-live="polite"
 					>
-						<strong>{selected.name}:</strong>
-						{selected.detail}
+						{#snippet engineName()}<strong>{selected?.name}</strong>{/snippet}
+						<RichMessage
+							key="export.sheet.description"
+							vars={{ detail: t(selected.detail) }}
+							slots={{ name: engineName }}
+						/>
 					</p>{/if}
 				{#if ready && !pendingExport && (result?.kind === 'recovery' || result?.kind === 'failed')}
 					<p
@@ -719,86 +808,118 @@
 					>
 						<TriangleAlert size={14} aria-hidden="true" />
 						<span
-							>{result.problem}
+							>{problem}
 							{result.kind === 'recovery'
-								? 'You can download the source PNGs instead.'
-								: 'No ZIP is ready to download.'}
-							{result.warnings.join(' ')}</span
+								? t('export.recovery.canDownloadSources')
+								: t('export.failure.noZip')}
+							{result.warnings.map(displayWarning).join(' ')}</span
 						>
 					</p>
 				{/if}
 				{#if m && result?.kind === 'requested'}
 					{#if rpg}<p class="muted">
-							Includes a walking sheet for {m.presets.filter((x) => x.id !== 'current').length
-								? `your current look and ${n(m.presets.filter((x) => x.id !== 'current').length, 'saved outfit')}`
-								: 'your current look'}.
+							{m.presets.filter((x) => x.id !== 'current').length
+								? t('export.summary.rpgOutfits', {
+										count: m.presets.filter((x) => x.id !== 'current').length
+									})
+								: t('export.summary.rpgCurrent')}
 						</p>{:else}
 						<p class="muted">
-							Includes {n(m.rig.directions.length, 'direction')} · {n(
-								m.rig.animations.length,
-								'move'
-							)} · {n(items.length, 'item')} · {m.presets.filter((x) => x.id !== 'current').length
-								? `${n(m.presets.filter((x) => x.id !== 'current').length, 'outfit')} + your current look`
-								: 'your current look'}, each item on its own layer sheet.
+							{t(
+								m.presets.filter((x) => x.id !== 'current').length
+									? 'export.summary.sheetsOutfits'
+									: 'export.summary.sheetsCurrent',
+								{
+									directions: t('export.count.directions', {
+										count: m.rig.directions.length
+									}),
+									moves: t('export.count.moves', { count: m.rig.animations.length }),
+									items: t('export.count.items', { count: items.length }),
+									outfits: t('export.count.outfits', {
+										count: m.presets.filter((x) => x.id !== 'current').length
+									})
+								}
+							)}
 						</p>{/if}
 					{#if reviewItems.length || result.rigIssues.length}
 						<p class="notice warn small">
 							<TriangleAlert size={14} aria-hidden="true" /><span
-								>Some artwork needs a check. See Export notes before using it.</span
+								>{t('export.notes.artworkWarning')}</span
 							>
 						</p>
 					{/if}
 					{#if hasNotes}
 						<details class="disclosure">
-							<summary><ChevronRight size={14} />Export notes</summary>
+							<summary><ChevronRight size={14} />{t('export.notes.title')}</summary>
 							<div class="small">
 								{#if reviewItems.length}<p>
-										Check this artwork before using it: {reviewItems.join(', ')}.
+										{displayNote(message('export.notes.checkArtwork', { names: reviewItems }))}
 									</p>{/if}
 								{#if result.rigIssues.length}<p>
-										Check body frames: {result.rigIssues.join(', ')}.
+										{displayNote(message('export.notes.checkBody', { names: result.rigIssues }))}
 									</p>{/if}
 								{#if result.warnings.length}<ul>
-										{#each result.warnings as warning}<li>{warning}</li>{/each}
+										{#each result.warnings as warning}<li>{displayWarning(warning)}</li>{/each}
 									</ul>{/if}
 								{#if gaps.length}
 									<p>
-										{rpg
-											? 'Some artwork is missing from the walking sheets.'
-											: 'Missing frames are left empty.'}
+										{rpg ? t('export.notes.missingRpg') : t('export.notes.missingEmpty')}
 									</p>
 									<ul>
-										{#each gaps as gap}<li>{gap}</li>{/each}
+										{#each gaps as gap}<li>{displayNote(gap)}</li>{/each}
 									</ul>
 								{/if}
 							</div>
 						</details>
 					{/if}
 				{/if}
-				{#if ready && !pendingExport && result?.details?.length}
+				{#if ready && !pendingExport && (result?.details?.length || result?.requestedWarnings?.length)}
 					<details class="disclosure">
-						<summary><ChevronRight size={14} />Technical details</summary>
+						<summary><ChevronRight size={14} />{t('export.notes.technical')}</summary>
 						<div class="small">
-							<ul>
-								{#each result.details as detail}<li>{detail}</li>{/each}
-							</ul>
+							{#if result.details?.length}<ul>
+									{#each result.details as detail, index (index)}
+										{@const translated = result.detailMessages?.[index]}
+										<li>{translated ? displayNote(translated) : detail}</li>
+									{/each}
+								</ul>{/if}
+							{#if result.requestedWarnings?.length}
+								<p>{t('export.recovery.requestedWarnings')}</p>
+								<ul>
+									{#each result.requestedWarnings as warning}<li>
+											{typeof warning === 'string' ? warning : displayNote(warning)}
+										</li>{/each}
+								</ul>
+							{/if}
 						</div>
 					</details>
 				{/if}
 				{#if result?.kind !== 'recovery'}<hr class="bu-separator export-divider" />
 					<section aria-labelledby="export-settings-summary">
-						<h3 class="label" id="export-settings-summary">Current settings</h3>
+						<h3 class="label" id="export-settings-summary">
+							{t('export.notes.currentSettings')}
+						</h3>
 						<dl class="export-summary small">
 							{#if !rpg}<dt>{PLAY_ONCE}</dt>
-								<dd>{ready ? playbackSummary : refreshing ? 'Loading…' : 'Unavailable'}</dd>{/if}
+								<dd>
+									{ready
+										? playbackSummary
+										: refreshing
+											? t('common.loading')
+											: t('common.unavailable')}
+								</dd>{/if}
 							<dt>{DRESSED_SHEETS}</dt>
-							<dd>{ready ? outfitSummary : refreshing ? 'Loading…' : 'Unavailable'}</dd>
+							<dd>
+								{ready ? outfitSummary : refreshing ? t('common.loading') : t('common.unavailable')}
+							</dd>
 						</dl>
 					</section>{/if}
 				{#if result?.zip}<details class="disclosure">
-						<summary><ChevronRight size={14} />Files included</summary>
+						<summary><ChevronRight size={14} />{t('export.notes.files')}</summary>
 						<div>
-							{#if result}<p class="faint small">{result.files.length} files:</p>
+							{#if result}<p class="faint small">
+									{t('export.notes.fileCount', { count: result.files.length })}
+								</p>
 								<pre
 									class="mono faint"
 									style="max-height:160px;overflow:auto;margin:0">{result.files.join(

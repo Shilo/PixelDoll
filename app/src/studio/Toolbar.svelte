@@ -1,4 +1,7 @@
 <script lang="ts">
+	import LanguagePicker from './LanguagePicker.svelte';
+	import { formatNumber, t } from 'svelte-whisper';
+	import { displayMessage } from '../lib/i18n.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { workspaceCopy, workspaceUrl } from '../lib/store/workspace-mode.ts';
 	import { popoverFocus } from './experience/focus.ts';
@@ -9,7 +12,7 @@
 	import CharacterActions from './CharacterActions.svelte';
 	import CharacterName from './CharacterName.svelte';
 	import DemoCopyRow from './DemoCopyRow.svelte';
-	import DeleteRow, { DEMO_CHARACTER_LOCKED } from './DeleteRow.svelte';
+	import DeleteRow from './DeleteRow.svelte';
 	import NewCharacterButton from './NewCharacterButton.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import ApiPeek from './ApiPeek.svelte';
@@ -18,7 +21,7 @@
 	import PixelLabUsage from './PixelLabUsage.svelte';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
-	import { characterFacts, fmtNum } from './model.ts';
+	import { characterFacts } from './model.ts';
 	import {
 		ui,
 		doc,
@@ -70,9 +73,9 @@
 	const prompt = $derived(m?.items.find((it) => it.id === m.rig.baseItem)?.prompt ?? '');
 	const characterCount = $derived(store.projects.filter((p) => !p.dev).length);
 	const VIEWS = [
-		['preview', 'Preview', Eye],
-		['topdown', 'Top-down', Layers2],
-		['side', 'Side-scroller', Mountain]
+		['preview', 'toolbar.viewPreview', Eye],
+		['topdown', 'toolbar.viewTopDown', Layers2],
+		['side', 'toolbar.viewSide', Mountain]
 	] as const;
 	async function changeMode(mode: WorldMode) {
 		setMode(mode);
@@ -99,13 +102,20 @@
 		header.addEventListener('click', clicked);
 		return () => header.removeEventListener('click', clicked);
 	}
-	let copyMessage = $state('');
+	let copyFeedback = $state<'copied' | 'failed' | null>(null);
+	const copyMessage = $derived(
+		copyFeedback === 'copied'
+			? t('toolbar.copiedPrompt')
+			: copyFeedback === 'failed'
+				? t('toolbar.selectPromptToCopy')
+				: t('toolbar.copyPrompt')
+	);
 	async function copyPrompt() {
 		try {
 			await navigator.clipboard.writeText(prompt);
-			copyMessage = 'Copied';
+			copyFeedback = 'copied';
 		} catch {
-			copyMessage = 'Select the prompt to copy it';
+			copyFeedback = 'failed';
 		}
 	}
 	const devRigs = $derived(import.meta.env.DEV ? store.projects.filter((p) => p.dev) : []);
@@ -118,6 +128,12 @@
 	);
 	const undoLabel = $derived(doc.undo.at(-1)?.label);
 	const redoLabel = $derived(doc.redo.at(-1)?.label);
+	const undoText = $derived(
+		undoLabel && t('toolbar.undoAction', { action: displayMessage(undoLabel) })
+	);
+	const redoText = $derived(
+		redoLabel && t('toolbar.redoAction', { action: displayMessage(redoLabel) })
+	);
 	let menu: HTMLElement;
 	const close = () => menu?.hidePopover?.();
 	const pick = (id: string) => {
@@ -175,8 +191,8 @@
 		{#if experience.screen === 'studio'}<button
 				class="bu-action header-back"
 				data-variant="quiet"
-				aria-label="Characters"
-				title="Characters"
+				aria-label={t('common.characters')}
+				title={t('common.characters')}
 				onclick={characters}><ChevronLeft size={20} /></button
 			><!-- The page heading sits beside the menu button: a heading is not allowed inside a button. -->
 			<h1 class="sr">{name}</h1>
@@ -188,22 +204,33 @@
 				><span class="name-line"
 					><span class="name-text"><CharacterName id={doc.id} {name} /></span>
 					<ChevronDown size={16} /></span
-				>{#if m}<span class="name-facts">{characterFacts(m)}</span>{/if}</button
+				>{#if m}<span class="name-facts">{characterFacts(m).map(displayMessage).join(' · ')}</span
+					>{/if}</button
 			>{:else}<span class="brand"><PersonStanding size={20} />PixelDoll</span><span
 				class="brand-divider"
 				aria-hidden="true"
 			></span>
-			<h1 class="screen-title">Characters</h1>
+			<h1 class="screen-title">{t('common.characters')}</h1>
 			<span class="screen-count num"
-				>{characterCount}<span class="sr"
-					>{` ${characterCount === 1 ? 'character' : 'characters'}`}</span
+				><span aria-hidden="true">{formatNumber(characterCount)}</span><span class="sr"
+					>{t('toolbar.characterCount', {
+						count: characterCount,
+						n: formatNumber(characterCount)
+					})}</span
 				></span
 			>{/if}
 	</div>
 	{#if experience.screen === 'studio'}
 		<!-- A view switch over one stage, not tabs with panels: pressed toggle buttons. -->
-		<div class="view-modes" role="group" aria-label="Character view" {@attach centerOnStage}>
-			{#each VIEWS as [id, label, Icon] (id)}<button
+		<div
+			class="view-modes"
+			role="group"
+			aria-label={t('toolbar.characterView')}
+			{@attach centerOnStage}
+		>
+			{#each VIEWS as [id, labelKey, Icon] (id)}
+				{@const label = t(labelKey)}
+				<button
 					class="bu-action"
 					data-variant="tab"
 					aria-pressed={experience.mode === id}
@@ -227,58 +254,60 @@
 			<button
 				class="bu-action test-mount-toggle"
 				data-variant="quiet"
-				aria-label="Mount settings"
+				aria-label={t('toolbar.mountSettings')}
 				data-active={experience.testMount || undefined}
 				aria-expanded={mountMenuOpen}
-				title={experience.testMount ? 'Mount settings (mounted)' : 'Mount settings'}
+				title={experience.testMount
+					? t('toolbar.titleMountSettingsMounted')
+					: t('toolbar.mountSettings')}
 				popovertarget="mount-options"
 				disabled={!m}><PawPrint size={18} aria-hidden="true" /></button
 			>
 			<button
 				class="bu-action header-random"
 				data-variant="quiet"
-				aria-label="Random look"
-				title="Random look (items and colors)"
+				aria-label={t('toolbar.randomLook')}
+				title={t('toolbar.titleRandomLookItemsAndColors')}
 				disabled={!m}
 				onclick={randomize}><Dices size={18} /></button
 			>
 			<button
 				class="bu-action header-undo"
 				data-variant="quiet"
-				aria-label={undoLabel ? 'Undo ' + undoLabel : 'Undo'}
-				title={undoLabel ? 'Undo ' + undoLabel : 'Undo'}
+				aria-label={undoText ?? t('common.undo')}
+				title={undoText ?? t('common.undo')}
 				disabled={!undoLabel}
 				onclick={undo}><Undo2 size={18} /></button
 			>
 			<button
 				class="bu-action header-redo"
 				data-variant="quiet"
-				aria-label={redoLabel ? 'Redo ' + redoLabel : 'Redo'}
-				title={redoLabel ? 'Redo ' + redoLabel : 'Redo'}
+				aria-label={redoText ?? t('common.redo')}
+				title={redoText ?? t('common.redo')}
 				disabled={!redoLabel}
 				onclick={redo}><Redo2 size={18} /></button
 			>
 			<button
 				class="bu-action header-share"
 				data-variant="outline"
-				aria-label="Share character"
-				title="Share"
+				aria-label={t('toolbar.shareCharacter')}
+				title={t('common.share')}
 				popovertarget="share-popover"
-				disabled={!m}><Share2 size={16} /><span>Share</span></button
+				disabled={!m}><Share2 size={16} /><span>{t('common.share')}</span></button
 			>
 			<button
 				class="bu-action header-export"
 				data-variant="outline"
-				aria-label="Export"
-				title="Export"
+				aria-label={t('toolbar.export')}
+				title={t('toolbar.export')}
 				onclick={() => (ui.sheet = 'export')}
-				disabled={!m}><Download size={16} /><span>Export</span></button
+				disabled={!m}><Download size={16} /><span>{t('toolbar.export')}</span></button
 			>
 		{/if}
 		{#if busy}<button
 				class="bu-action"
 				data-variant="quiet"
-				aria-label="Activity"
+				aria-label={t('activity.title')}
 				onclick={() => (ui.sheet = 'activity')}
 				><span class="bu-ring ring spin"></span><span class="num">{active || ''}</span></button
 			>{/if}
@@ -286,8 +315,8 @@
 		<button
 			class="bu-action"
 			data-variant="quiet"
-			aria-label="More options"
-			title="More options"
+			aria-label={t('toolbar.moreOptions')}
+			title={t('toolbar.moreOptions')}
 			data-popover-fallback="share-popover"
 			popovertarget="experience-options"><Ellipsis size={20} /></button
 		>
@@ -308,10 +337,10 @@
 		<PopoverArrow />
 		<div class="menu-surface bu-popover-surface bu-floating">
 			<div class="menu-prompt">
-				<p class="menu-sec">Mount settings</p>
+				<p class="menu-sec">{t('toolbar.mountSettings')}</p>
 			</div>
 			<label class="row bu-check" for="show-mount"
-				><span class="row-name">Show mount</span><input
+				><span class="row-name">{t('toolbar.showMount')}</span><input
 					id="show-mount"
 					class="bu-switch"
 					type="checkbox"
@@ -321,24 +350,24 @@
 			>
 			<div class="menu-prompt">
 				<label class="row" for="mount-legs"
-					><span class="row-name">Hide legs</span><select
+					><span class="row-name">{t('toolbar.hideLegs')}</span><select
 						id="mount-legs"
 						class="bu-input mount-leg-select"
 						bind:value={experience.mountLegs}
 						disabled={!experience.testMount}
 						aria-describedby="mount-legs-note"
-						><option value="none">None</option><option value="far">Far leg</option><option
-							value="both">Both legs</option
-						></select
+						><option value="none">{t('toolbar.none')}</option><option value="far"
+							>{t('toolbar.farLeg')}</option
+						><option value="both">{t('toolbar.bothLegs')}</option></select
 					></label
 				>
 				<p id="mount-legs-note" class="menu-prompt-text faint small">
 					{#if experience.testMount && experience.mountLegIssue}
 						{experience.mountLegIssue}
 					{:else if experience.mountLegs === 'both'}
-						Cuts below the hips. Hands may be clipped, and hanging items may disappear.
+						{t('toolbar.cutsBelowTheHipsHandsMayBe')}
 					{:else if experience.mountLegs === 'far'}
-						An approximate cutout. May hide clothing or leave small fragments.
+						{t('toolbar.anApproximateCutoutMayHideClothingOr')}
 					{/if}
 				</p>
 			</div>
@@ -363,7 +392,7 @@
 				onclick={() => {
 					closeOptions();
 					randomize();
-				}}><Dices size={18} /><span class="row-name">Random look</span></button
+				}}><Dices size={18} /><span class="row-name">{t('toolbar.randomLook')}</span></button
 			>{/if}
 		{#if experience.screen === 'studio'}<button
 				class="row bu-action mobile-undo"
@@ -372,9 +401,7 @@
 				onclick={() => {
 					closeOptions();
 					undo();
-				}}
-				><Undo2 size={18} /><span class="row-name">{undoLabel ? 'Undo ' + undoLabel : 'Undo'}</span
-				></button
+				}}><Undo2 size={18} /><span class="row-name">{undoText ?? t('common.undo')}</span></button
 			>{/if}
 		{#if experience.screen === 'studio'}<button
 				class="row bu-action mobile-redo"
@@ -383,9 +410,7 @@
 				onclick={() => {
 					closeOptions();
 					redo();
-				}}
-				><Redo2 size={18} /><span class="row-name">{redoLabel ? 'Redo ' + redoLabel : 'Redo'}</span
-				></button
+				}}><Redo2 size={18} /><span class="row-name">{redoText ?? t('common.redo')}</span></button
 			>{/if}
 		{#if experience.screen === 'studio'}<button
 				class="row bu-action mobile-share"
@@ -394,7 +419,7 @@
 				onclick={() => {
 					closeOptions();
 					document.getElementById('share-popover')?.showPopover();
-				}}><Share2 size={18} /><span class="row-name">Share</span></button
+				}}><Share2 size={18} /><span class="row-name">{t('common.share')}</span></button
 			>{/if}
 		<!-- Narrow phones move Inspect here from the playback bar so its controls keep full-size targets. -->
 		{#if experience.screen === 'studio' && experience.mode === 'preview'}<button
@@ -404,7 +429,7 @@
 				onclick={() => {
 					closeOptions();
 					ui.sheet = 'inspect';
-				}}><Grid2x2 size={18} /><span class="row-name">Inspect</span></button
+				}}><Grid2x2 size={18} /><span class="row-name">{t('experience.inspect')}</span></button
 			>{/if}
 		{#if experience.screen === 'studio'}<hr class="mobile-sep" />{/if}
 		<button
@@ -414,8 +439,9 @@
 				closeOptions();
 				ui.sheet = 'activity';
 			}}
-			><Activity size={18} /><span class="row-name">Activity</span
-			>{#if $queue.role === 'follower'}<span class="small">Other tab</span>{/if}</button
+			><Activity size={18} /><span class="row-name">{t('activity.title')}</span
+			>{#if $queue.role === 'follower'}<span class="small">{t('toolbar.otherTab')}</span
+				>{/if}</button
 		>
 		<ApiPeek scope="all" all menu />
 		{#if import.meta.env.PROD && !$pwa.installed}
@@ -425,10 +451,13 @@
 					disabled={$pwa.installing}
 					onclick={() => {
 						void installApp();
-					}}><Download size={18} /><span class="row-name">Install PixelDoll</span></button
+					}}
+					><Download size={18} /><span class="row-name">{t('pwaRuntime.installPixelDoll')}</span
+					></button
 				>
 			{:else}<button class="row bu-action" data-variant="quiet" onclick={requestInstallHelp}
-					><Download size={18} /><span class="row-name">Installation help</span></button
+					><Download size={18} /><span class="row-name">{t('pwaRuntime.installationHelp')}</span
+					></button
 				>{/if}
 		{/if}
 		{#if $pwa.available}<button
@@ -436,7 +465,8 @@
 				data-variant="quiet"
 				disabled={!$pwa.ready}
 				onclick={requestUpdate}
-				><Download size={18} /><span class="row-name">Update to v{$pwa.available.version}</span
+				><Download size={18} /><span class="row-name"
+					>{t('toolbar.updateToVVersion', { version: $pwa.available.version })}</span
 				></button
 			>{/if}
 		<hr />
@@ -447,7 +477,7 @@
 				onclick={() => {
 					closeOptions();
 					ui.sheet = 'workspaceExport';
-				}}><Download size={18} /><span class="row-name">Export my workspace</span></button
+				}}><Download size={18} /><span class="row-name">{t('workspace.exportTitle')}</span></button
 			>
 			<a
 				class="row bu-action"
@@ -456,7 +486,7 @@
 				target="_blank"
 				rel="noopener"
 				onclick={closeOptions}
-				><FileArchive size={18} /><span class="row-name">Open workspace copy</span></a
+				><FileArchive size={18} /><span class="row-name">{t('workspaceCopy.title')}</span></a
 			>
 			<button
 				class="row bu-action"
@@ -468,9 +498,9 @@
 				><KeyRound size={18} /><span class="row-name"
 					>{app.key
 						? app.keyRejected
-							? 'Key not accepted'
-							: 'PixelLab account'
-						: 'Connect PixelLab'}</span
+							? t('toolbar.keyNotAccepted')
+							: t('toolbar.pixelLabAccount')
+						: t('connectSheet.titleConnectPixelLab')}</span
 				></button
 			>
 		{/if}
@@ -482,9 +512,11 @@
 				closeOptions();
 			}}
 			>{#if ui.theme === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}<span
-				class="row-name">{ui.theme === 'dark' ? 'Light mode' : 'Dark mode'}</span
+				class="row-name"
+				>{ui.theme === 'dark' ? t('toolbar.lightMode') : t('toolbar.darkMode')}</span
 			></button
 		>
+		<LanguagePicker />
 		<hr />
 		<a
 			class="row bu-action"
@@ -492,8 +524,9 @@
 			href="https://github.com/Shilo/PixelDoll"
 			target="_blank"
 			rel="noreferrer"
-			><Github size={18} /><span class="row-name">Source code</span><span
-				class="row-aside faint small">Shilo/PixelDoll</span
+			><Github size={18} /><span class="row-name">{t('toolbar.sourceCode')}</span><span
+				class="row-aside faint small"
+				translate="no">Shilo/PixelDoll</span
 			><ExternalLink size={16} /></a
 		>
 		<a
@@ -502,9 +535,9 @@
 			href="https://github.com/Shilo/PixelDoll/commit/{__APP_COMMIT__}"
 			target="_blank"
 			rel="noreferrer"
-			><PersonStanding size={18} /><span class="row-name">Version {__APP_VERSION__}</span><span
-				class="row-aside faint small num">{__APP_COMMIT__}</span
-			><ExternalLink size={16} /></a
+			><PersonStanding size={18} /><span class="row-name"
+				>{t('toolbar.version', { version: __APP_VERSION__ })}</span
+			><span class="row-aside faint small num">{__APP_COMMIT__}</span><ExternalLink size={16} /></a
 		>
 		<hr />
 		<a
@@ -527,9 +560,9 @@
 	popover
 	bind:this={menu}
 	role="menu"
-	aria-label="Characters"
+	aria-label={t('common.characters')}
 	ontoggle={(e) => {
-		copyMessage = '';
+		copyFeedback = null;
 		popoverFocus(e);
 	}}
 >
@@ -537,19 +570,15 @@
 	<div class="menu-surface bu-popover-surface bu-floating">
 		{#if experience.screen === 'studio' && prompt}
 			<div class="menu-prompt">
-				<p class="menu-sec">Prompt</p>
+				<p class="menu-sec">{t('common.prompt')}</p>
 				<p class="menu-prompt-text">{prompt}</p>
-				<button
-					class="row"
-					role="menuitem"
-					aria-label={copyMessage || 'Copy prompt'}
-					onclick={copyPrompt}
-					><Copy size={16} /><span class="row-name">{copyMessage || 'Copy prompt'}</span></button
+				<button class="row" role="menuitem" aria-label={copyMessage} onclick={copyPrompt}
+					><Copy size={16} /><span class="row-name">{copyMessage}</span></button
 				>
 			</div>
 			<hr />
 		{/if}
-		<p class="menu-sec">Characters</p>
+		<p class="menu-sec">{t('common.characters')}</p>
 		{#snippet proj(p: (typeof store.projects)[number])}
 			<CharacterActions id={p.id} name={p.name}>
 				<button
@@ -570,20 +599,21 @@
 		{#if !isDemo()}<button
 				class="row"
 				role="menuitem"
-				aria-label="Rename character…"
+				aria-label={t('toolbar.renameCharacter')}
 				onclick={() => sheet('rename')}
-				><Pencil size={16} /><span class="row-name">Rename…</span></button
+				><Pencil size={16} /><span class="row-name">{t('toolbar.rename')}</span></button
 			>{/if}
 		{#if !isDemo()}<button
 				class="row"
 				role="menuitem"
-				aria-label="Set up character…"
+				aria-label={t('toolbar.setUpCharacter')}
 				onclick={() => sheet('setup')}
-				><PersonStanding size={16} /><span class="row-name">Set up character…</span></button
+				><PersonStanding size={16} /><span class="row-name">{t('toolbar.setUpCharacter')}</span
+				></button
 			>{/if}
 		<DeleteRow
-			label="Delete character…"
-			locked={isDemo() ? DEMO_CHARACTER_LOCKED : ''}
+			label={t('characterActions.labelDeleteCharacter')}
+			locked={isDemo() ? t('characterActions.demoDeleteLocked') : ''}
 			onclick={() => {
 				ui.deleting = doc.id;
 				sheet('delete');
@@ -593,28 +623,35 @@
 		<button
 			class="row"
 			role="menuitem"
-			aria-label={app.key ? 'PixelLab account' : 'Connect PixelLab…'}
+			aria-label={app.key ? t('toolbar.pixelLabAccount') : t('toolbar.connectPixelLab2')}
 			onclick={() => sheet('connect')}
 			><KeyRound size={16} /><span class="row-name"
-				>{app.key ? 'PixelLab account' : 'Connect PixelLab…'}</span
+				>{app.key ? t('toolbar.pixelLabAccount') : t('toolbar.connectPixelLab2')}</span
 			>
 			{#if app.balance}<span class="faint small num"
-					>{fmtNum(app.balance.subscription.generations)} gens</span
-				>{/if}</button
-		>
-		<button class="row" role="menuitem" aria-label="Activity" onclick={() => sheet('activity')}
-			><Activity size={16} /><span class="row-name">Activity</span>{#if active}<span
-					class="badge accent">{active}</span
+					>{t('toolbar.generationsRemaining', {
+						count: Math.round(app.balance.subscription.generations),
+						n: formatNumber(Math.round(app.balance.subscription.generations))
+					})}</span
 				>{/if}</button
 		>
 		<button
 			class="row"
 			role="menuitem"
-			aria-label="Character selection"
+			aria-label={t('activity.title')}
+			onclick={() => sheet('activity')}
+			><Activity size={16} /><span class="row-name">{t('activity.title')}</span>{#if active}<span
+					class="badge accent">{formatNumber(active)}</span
+				>{/if}</button
+		>
+		<button
+			class="row"
+			role="menuitem"
+			aria-label={t('toolbar.characterSelection')}
 			onclick={() => {
 				close();
 				characters();
-			}}><House size={16} /><span class="row-name">Character selection</span></button
+			}}><House size={16} /><span class="row-name">{t('toolbar.characterSelection')}</span></button
 		>
 		{#if import.meta.env.DEV}<a
 				class="row"

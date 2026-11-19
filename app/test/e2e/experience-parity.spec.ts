@@ -3492,8 +3492,8 @@ test.describe('Preview facing lineup', () => {
 			s.doc.rev++;
 		});
 		await expect(world(page)).toHaveAttribute('data-facing', 'south');
-		await expect(page.locator('.world-coverage')).toContainText('missing walk / North frames');
-		await expect(page.locator('.world-coverage')).toContainText('missing walk / East frames');
+		await expect(page.locator('.world-coverage')).toContainText('missing Walk / North frames');
+		await expect(page.locator('.world-coverage')).toContainText('missing Walk / East frames');
 		await page.evaluate(async () => {
 			const path = '/src/studio/state.svelte.ts',
 				s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
@@ -3502,7 +3502,7 @@ test.describe('Preview facing lineup', () => {
 		});
 		await expect(page.locator('.world-loading-items')).toContainText('Lineup hat loading');
 		await expect(page.locator('.world-loading-items')).toContainText('North, East');
-		await expect(page.locator('.world-coverage').filter({ hasText: 'missing walk' })).toHaveCount(
+		await expect(page.locator('.world-coverage').filter({ hasText: 'missing Walk' })).toHaveCount(
 			0
 		);
 	});

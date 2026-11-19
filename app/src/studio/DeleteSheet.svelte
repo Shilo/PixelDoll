@@ -1,8 +1,11 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
+	import { displayMessage, displayError, errorMessage } from '../lib/i18n.ts';
+	import type { Message } from '../lib/message.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { ui, doc, store, deletionBlocked, removeProject } from './state.svelte.ts';
 	let busy = $state(false),
-		error = $state('');
+		error = $state<string | Message>('');
 	const id = $derived(ui.deleting || doc.id);
 	const reason = $derived(deletionBlocked(id));
 	// Like a sheet, a deletion in progress holds browser Back and app updates until it settles.
@@ -20,7 +23,7 @@
 			await removeProject(id);
 			ui.sheet = null;
 		} catch (e) {
-			error = (e as Error).message;
+			error = errorMessage(e);
 		} finally {
 			busy = false;
 		}
@@ -28,16 +31,17 @@
 </script>
 
 <ConfirmDialog
-	title="Delete {store.projects.find((project) => project.id === id)?.name ?? 'character'}?"
-	action="Delete"
-	busyAction="Deleting…"
+	title={t('common.deleteNamed', {
+		name: store.projects.find((project) => project.id === id)?.name ?? t('deleteSheet.character')
+	})}
+	action={t('common.delete')}
+	busyAction={t('common.deleting')}
 	{busy}
-	problem={error || reason}
+	problem={error ? displayMessage(error) : displayError(reason)}
 	blocked={!!reason}
 	oncancel={() => (ui.sheet = null)}
 	onconfirm={() => void remove()}
 	><p>
-		Its outfits and changes are removed from this device. Items copied to other characters stay.
-		This can't be undone.
+		{t('deleteSheet.itsOutfitsAndChangesAreRemovedFrom')}
 	</p></ConfirmDialog
 >

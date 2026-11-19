@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { formatNumber, t } from 'svelte-whisper';
+	import { message, type Message } from '../lib/message.ts';
+	import { displayMessage } from '../lib/i18n.ts';
 	import { onDestroy } from 'svelte';
 	import { app, setKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
 	import Sheet from './Sheet.svelte';
@@ -12,13 +15,12 @@
 		pendingConnectionMinimumTier
 	} from './state.svelte.ts';
 	import { ExternalLink, KeyRound, Check } from './icons.ts';
-	import { fmtNum } from './model.ts';
-	import { accountTier, FREE_PLAN_NOTICE, tierDecision } from '../lib/pixellab/plans.ts';
+	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 
 	let key = $state('');
 	let remember = $state(false);
-	let msg = $state('');
+	let msg = $state<Message | null>(null);
 	let checking = $state(false);
 	let closed = false;
 	const activityScope = crypto.randomUUID();
@@ -32,14 +34,15 @@
 		location.pathname.split('/').filter(Boolean).length > 0;
 	async function use(k: string, rem: boolean) {
 		checking = true;
-		msg = '';
+		msg = null;
 		setKey(k, rem, { activityScope, label: 'Connect PixelLab', background: false });
 		key = '';
 		await refreshBalance({ activityScope, label: 'Connect PixelLab', background: false });
 		if (closed) return;
 		checking = false;
-		if (app.keyRejected) msg = 'PixelLab didn’t accept this key.';
-		else if (app.balanceError) msg = `Couldn’t reach PixelLab: ${app.balanceError}`;
+		if (app.keyRejected) msg = message('connectSheet.keyRejected');
+		else if (app.balanceError)
+			msg = message('connectSheet.balanceError', { reason: app.balanceError });
 		else if (tierDecision(app.balance, { required: minimumTier }).kind === 'required')
 			clearPendingConnection();
 		else if (accountTier(app.balance) === 0 && pendingConnectionMinimumTier() === null) return;
@@ -47,45 +50,53 @@
 	}
 </script>
 
-<Sheet title="Connect PixelLab" onclose={() => (ui.sheet = null)}>
+<Sheet title={t('connectSheet.titleConnectPixelLab')} onclose={() => (ui.sheet = null)}>
 	<div class="connect-hero">
 		<span class="key-badge" aria-hidden="true"><KeyRound size={22} /></span>
 		<div class="field">
-			<p style="font-weight:600">Generate characters and equipment with your PixelLab account.</p>
+			<p style="font-weight:600">
+				{t('connectSheet.generateCharactersAndEquipmentWithYourPixelLab')}
+			</p>
 			<ul class="facts small">
-				<li><Check size={14} />Generations come from your PixelLab account.</li>
-				<li><Check size={14} />Sent only to api.pixellab.ai.</li>
+				<li><Check size={14} />{t('connectSheet.generationsComeFromYourPixelLabAccount')}</li>
+				<li><Check size={14} />{t('connectSheet.sentOnlyToApiPixellabAi')}</li>
 			</ul>
 		</div>
 	</div>
 	{#if app.key && !app.keyRejected}
+		{@const remaining =
+			app.balance && formatNumber(Math.round(app.balance.subscription.generations))}
+		{@const total = app.balance && formatNumber(Math.round(app.balance.subscription.total))}
 		<p class="notice ok small">
-			<Check size={14} />Connected{app.remembered
-				? ' and remembered on this device'
-				: ' for this tab'}{app.balance
-				? ` · ${fmtNum(app.balance.subscription.generations)} of ${fmtNum(app.balance.subscription.total)} gens left`
-				: ''}.
-			<button class="bu-action btn sm" data-variant="outline" onclick={forgetKey}>Forget key</button
+			<Check size={14} />{app.balance
+				? app.remembered
+					? t('connectSheet.connectedRememberedWithBalance', { remaining, total })
+					: t('connectSheet.connectedForTabWithBalance', { remaining, total })
+				: app.remembered
+					? t('connectSheet.connectedRemembered')
+					: t('connectSheet.connectedForTab')}
+			<button class="bu-action btn sm" data-variant="outline" onclick={forgetKey}
+				>{t('connectSheet.forgetKey')}</button
 			>
 		</p>
 	{/if}
-	<TierNotice {minimumTier} feature="This generation" />
+	<TierNotice {minimumTier} feature={t('connectSheet.thisGeneration')} />
 	{#if app.key && !app.keyRejected && accountTier(app.balance) === 0}
-		<p class="notice warn small" role="status">{FREE_PLAN_NOTICE}</p>
+		<p class="notice warn small" role="status">{t('connectSheet.freePlanNotice')}</p>
 		<div class="field-row">
 			<a
 				class="bu-action btn sm"
 				data-variant="outline"
 				href="https://www.pixellab.ai/#pricing"
 				target="_blank"
-				rel="noreferrer">View PixelLab plans <ExternalLink size={12} /></a
+				rel="noreferrer">{t('connectSheet.viewPixelLabPlans')} <ExternalLink size={12} /></a
 			><button
 				class="bu-action btn sm"
 				data-variant="outline"
 				onclick={() => {
 					clearPendingConnection();
 					connected();
-				}}>Continue with limited access</button
+				}}>{t('connectSheet.continueWithLimitedAccess')}</button
 			>
 		</div>
 	{/if}
@@ -97,46 +108,45 @@
 		}}
 	>
 		<label class="field">
-			<span class="label">API key</span>
+			<span class="label">{t('connectSheet.aPIKey')}</span>
 			<input
 				class="bu-input input"
 				type="password"
 				bind:value={key}
 				autocomplete="off"
 				spellcheck="false"
-				placeholder="Paste your key"
+				placeholder={t('connectSheet.placeholderPasteYourKey')}
 			/>
 		</label>
 		<label class="toggle-row"
-			><span>Remember on this device</span><input
+			><span>{t('connectSheet.rememberOnThisDevice')}</span><input
 				class="switch"
 				type="checkbox"
 				bind:checked={remember}
 			/></label
 		>
 		{#if remember && sharedOrigin}<p class="notice warn small">
-				This copy of PixelDoll runs in a folder of {location.host}, a site other GitHub Pages
-				projects share. Any of their pages could read a remembered key. Leave Remember off here, or
-				use PixelDoll from its own address.
+				{t('connectSheet.sharedOriginWarning', { host: location.host })}
 			</p>{/if}
-		{#if msg}<p class="notice bad small">{msg}</p>{/if}
+		{#if msg}<p class="notice bad small">{displayMessage(msg)}</p>{/if}
 		<AffiliationNotice multiline />
 		<div class="field-row">
 			<a class="small" href="https://pixellab.ai/account" target="_blank" rel="noreferrer"
-				>Get a key <ExternalLink size={12} style="display:inline" /></a
+				>{t('connectSheet.getAKey')} <ExternalLink size={12} style="display:inline" /></a
 			>
 			<span class="actions">
 				<span class="api-action"
 					><ApiPeek
 						scope="account-connect"
-						label="Connect PixelLab"
+						label={t('connectSheet.titleConnectPixelLab')}
 						plan={balancePlan()}
 						{activityScope}
 					/><button
 						class="bu-action btn primary"
 						data-variant="primary"
 						type="submit"
-						disabled={!key.trim() || checking}>{checking ? 'Checking…' : 'Connect'}</button
+						disabled={!key.trim() || checking}
+						>{checking ? t('connectSheet.checking') : t('connectSheet.connect')}</button
 					></span
 				>
 			</span>

@@ -37,7 +37,7 @@ test('mirrors reverse atomically and deleting a source promotes the surviving vi
 	toggleMirror(d, 'east');
 	expect(d.mirrors.east).toBe('west');
 	expect(d.mirrors.west).toBeUndefined();
-	expect(toggleDirection(d, 'west')).toBe('E now uses its own view.');
+	expect(toggleDirection(d, 'west')).toBe('east');
 	expect(d.selected).toContain('east');
 	expect(d.mirrors.east).toBeUndefined();
 	toggleMirror(d, 'west');
@@ -52,7 +52,7 @@ test('mixed direction operations cannot create dangling or cyclic mirrors', () =
 		const dir = DIRECTIONS[(i * 13 + Math.floor(i / 9)) % 8];
 		if (i % 3) toggleMirror(d, dir);
 		else toggleDirection(d, dir);
-		expect(facingErrors(facingOf(d))).toEqual(
+		expect(facingErrors(facingOf(d)).map((e) => e.message)).toEqual(
 			d.selected.length ? [] : ['Choose at least one direction.']
 		);
 	}
@@ -160,7 +160,7 @@ test('details and traits produce one exact prompt without accumulating base hint
 	const d = newCharacterDraft();
 	expect(draftErrors(d)).toEqual([]);
 	readPrompt(d, '');
-	expect(draftErrors(d)).toContain('Enter a character prompt.');
+	expect(draftErrors(d).map((e) => e.message)).toContain('Enter a character prompt.');
 	readPrompt(d, BASE_BODY);
 	writeDetails(d, 'freckled dwarf');
 	writeTrait(d, 'kind', 'Dwarf');
@@ -168,14 +168,16 @@ test('details and traits produce one exact prompt without accumulating base hint
 	expect(d.prompt).toBe(`elderly dwarf\nKind: Dwarf\n${BASE_BODY}`);
 	expect(draftErrors(d)).toEqual([]);
 	d.seed = '1e3';
-	expect(draftErrors(d)).toContain('Seed must be a safe, non-negative whole number.');
+	expect(draftErrors(d).map((e) => e.message)).toContain(
+		'Seed must be a safe, non-negative whole number.'
+	);
 	d.seed = '0';
 	expect(draftErrors(d)).toEqual([]);
 	d.body = 224;
 	d.frame = autoFrame(d.body);
 	expect(draftErrors(d)).toEqual([]);
 	d.body = 257;
-	expect(draftErrors(d)[0]).toContain('32–256');
+	expect(draftErrors(d)[0].message).toContain('32–256');
 	expect([48, 64, 96, 128].map(autoFrame)).toEqual([64, 80, 128, 160]);
 });
 test('skeleton estimation pads without scaling and restores fractional coordinates', () => {

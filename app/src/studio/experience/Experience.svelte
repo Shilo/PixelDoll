@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { formatNumber, t } from 'svelte-whisper';
+	import { displayMessage } from '../../lib/i18n.ts';
+	import { message } from '../../lib/message.ts';
 	import { onMount, tick, untrack } from 'svelte';
 	import Toolbar from '../Toolbar.svelte';
 	import CharacterActions from '../CharacterActions.svelte';
@@ -42,8 +45,12 @@
 		Grid2x2,
 		TriangleAlert
 	} from '../icons.ts';
-	import { directionInfo, directionLabel } from './movement.ts';
-	import { moveLabel } from '../model.ts';
+	import {
+		displayDirection,
+		displayDirectionInSentence,
+		displayDirectionShort
+	} from '../displayDirection.ts';
+	import { displayMove } from '../displayMove.ts';
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { workspaceCopy } from '../../lib/store/workspace-mode.ts';
@@ -87,16 +94,14 @@
 						}))
 				: list.map((p) => ({ offset: 0, p }))
 	);
-	const MOVES_OFF = $derived(
-		experience.testMount
-			? 'Moves are picked in Preview. Mounted movement uses Ride when available, otherwise a standing pose.'
-			: 'Moves are picked in Preview. Here, moving plays idle or walk.'
+	const movesOff = $derived(
+		message(experience.testMount ? 'experience.movesOffMounted' : 'experience.movesOffWalking')
 	);
 	const tabs = [
-		['wardrobe', 'Wardrobe'],
-		['colors', 'Colors'],
-		['outfits', 'Outfits'],
-		['moves', 'Moves']
+		['wardrobe', 'experience.tabWardrobe'],
+		['colors', 'experience.tabColors'],
+		['outfits', 'experience.tabOutfits'],
+		['moves', 'experience.tabMoves']
 	] as const;
 	const g = $derived(layout(viewportWidth, viewportHeight, experience.screen, previewHeight));
 	// The cast is drawn from 64 px frames whose bodies stand about 50 px tall and 48 px wide.
@@ -522,7 +527,7 @@
 	<div class="scene-reading" aria-hidden="true"></div>
 	<Toolbar />
 	{#if workspaceCopy}<div class="workspace-banner bu-floating" role="status">
-			Workspace copy · PixelLab off
+			{t('experience.workspaceCopyPixelLabOff')}
 		</div>{/if}
 	{#if experience.screen === 'characters'}
 		<!-- Keyboard focus on this game region scopes selection shortcuts. -->
@@ -549,7 +554,7 @@
 			data-scene-min={selectionZoom.min}
 			data-scene-max={selectionZoom.max}
 			role="application"
-			aria-label="Character selection. WASD or arrows select; Enter customizes; plus and minus zoom."
+			aria-label={t('experience.characterSelectionWASDOrArrowsSelectEnter')}
 			tabindex="0"
 			bind:this={selection}
 			onkeydown={selectionKey}
@@ -588,29 +593,31 @@
 							<button
 								class="bu-action"
 								data-variant="quiet"
-								aria-label="Previous character"
+								aria-label={t('experience.previousCharacter')}
 								onclick={() => next(-1)}><ChevronLeft size={18} /></button
 							><span class="num">{Math.max(0, index) + 1} / {list.length}</span><button
 								class="bu-action"
 								data-variant="quiet"
-								aria-label="Next character"
+								aria-label={t('experience.nextCharacter')}
 								onclick={() => next(1)}><ChevronRight size={18} /></button
 							>
 						</div>{/if}
-				</div>{:else}<p class="empty-cast">No matching characters</p>{/if}
+				</div>{:else}<p class="empty-cast">{t('experience.noMatchingCharacters')}</p>{/if}
 		</div>
 		{#if selectionZoom.zoomed}
 			<div class="scene-zoom-controls">
 				<ZoomControls zoom={selectionZoom} onchange={changeZoom} />
 			</div>
 		{/if}
-		<aside class="cast-library" aria-label="Your characters">
+		<aside class="cast-library" aria-label={t('experience.yourCharacters')}>
 			<div class="cast-search">
 				<input
 					class="bu-input"
 					type="search"
-					aria-label="Search characters"
-					placeholder={g.sheet ? 'Search' : 'Search characters'}
+					aria-label={t('experience.searchCharacters')}
+					placeholder={g.sheet
+						? t('experience.placeholderSearch')
+						: t('experience.searchCharacters')}
 					bind:value={search}
 				/>
 				{#if g.sheet}<NewCharacterButton compact />{/if}
@@ -626,23 +633,25 @@
 							onclick={() => pick(p.id)}
 							><CharacterThumb id={p.id} name={p.name} trim /><span
 								><strong><CharacterName id={p.id} name={p.name} /></strong>{#if facts}<small
-										>{facts}</small
+										>{#each facts as fact, index}<span class="character-fact"
+												>{index ? ' · ' : ''}{displayMessage(fact)}</span
+											>{/each}</small
 									>{/if}</span
 							></button
 						>
 					</CharacterActions>
-				{:else}<p class="muted">No matching characters</p>{/each}
+				{:else}<p class="muted">{t('experience.noMatchingCharacters')}</p>{/each}
 				<NewCharacterButton row />
 			</div>
 			<button
 				class="bu-action customize-action"
 				data-variant="primary"
 				onclick={customize}
-				aria-label={`Customize ${name}`}
-				title={`Customize ${name}`}
+				aria-label={t('experience.customizeName', { name })}
+				title={t('experience.customizeName', { name })}
 				aria-busy={doc.loading || !!openingProjectId() || !!wheelTarget}
 				disabled={!m || !list.length}
-				><span>Customize {name}</span><ChevronRight size={16} /></button
+				><span>{t('experience.customizeName', { name })}</span><ChevronRight size={16} /></button
 			>
 		</aside>
 	{:else}
@@ -659,31 +668,34 @@
 				<div
 					class="playback-bar bu-floating"
 					role="toolbar"
-					aria-label="Preview controls"
+					aria-label={t('stage.previewControls')}
 					bind:offsetHeight={playbackHeight}
 				>
 					{#if canPlay}
 						<button
 							class="bu-action"
 							data-variant="quiet"
-							aria-label={ui.playing ? 'Pause' : 'Play'}
+							aria-label={ui.playing ? t('common.pause') : t('common.play')}
 							onclick={() => (ui.playing = !ui.playing)}
 							>{#if ui.playing}<Pause size={18} />{:else}<Play size={18} />{/if}</button
 						>
 					{/if}
 					<label class="playback-move"
-						><span class="sr">Move</span><select
+						><span class="sr">{t('common.move')}</span><select
 							class="bu-select"
 							data-variant="quiet"
-							title={moveLabel(ui.anim, moveIds)}
+							title={displayMove(ui.anim, moveIds)}
 							bind:value={ui.anim}
 							onchange={() => (ui.frame = 0)}
-							>{#each m.rig.animations as a}<option value={a.id}>{moveLabel(a.id, moveIds)}</option
+							>{#each m.rig.animations as a}<option value={a.id}
+									>{displayMove(a.id, moveIds)}</option
 								>{/each}</select
 						></label
 					>
 					{#if experience.presentation !== 'animation'}<span class="small muted playback-still"
-							>{experience.presentation === 'unavailable' ? 'Unavailable' : 'Still'}</span
+							>{experience.presentation === 'unavailable'
+								? t('common.unavailable')
+								: t('experience.still')}</span
 						>{/if}
 					<span class="playback-sep" aria-hidden="true"></span>
 					{#if g.cycleFacing}
@@ -692,19 +704,19 @@
 						<button
 							class="bu-action facing-cycle"
 							data-variant="direction"
-							aria-label="Facing: {directionLabel(ui.dir)}"
-							title="Facing {directionLabel(ui.dir)}. Next direction"
+							aria-label={t('experience.facing', { direction: displayDirection(ui.dir) })}
+							title={t('experience.nextDirection', { direction: displayDirection(ui.dir) })}
 							onclick={() => (ui.dir = dirs[(dirs.indexOf(ui.dir) + 1) % dirs.length] ?? dirs[0])}
-							>{directionInfo(ui.dir)?.short ?? ui.dir}</button
+							>{displayDirectionShort(ui.dir)}</button
 						>
 					{:else}
-						<div class="facing-buttons" role="group" aria-label="Direction">
+						<div class="facing-buttons" role="group" aria-label={t('common.direction')}>
 							{#each m.rig.directions as d}<button
 									class="bu-action"
 									data-variant="direction"
 									aria-pressed={ui.dir === d.id}
-									aria-label="Face {d.id}"
-									onclick={() => (ui.dir = d.id)}>{directionInfo(d.id)?.short ?? d.id}</button
+									aria-label={t('stage.faceId', { id: displayDirectionInSentence(d.id) })}
+									onclick={() => (ui.dir = d.id)}>{displayDirectionShort(d.id)}</button
 								>{/each}
 						</div>
 					{/if}
@@ -712,19 +724,20 @@
 					<button
 						class="bu-action playback-inspect"
 						data-variant="quiet"
-						aria-label="Inspect"
-						title="Inspect"
+						aria-label={t('experience.inspect')}
+						title={t('experience.inspect')}
 						onclick={() => (ui.sheet = 'inspect')}><Grid2x2 size={16} /></button
 					>
 					{#if missing}
 						<button
 							class="bu-action"
 							data-variant="quiet"
-							aria-label="{missing.items.length} equipped {missing.items.length === 1
-								? 'item needs'
-								: 'items need'} frames"
+							aria-label={t('experience.missingEquippedFrames', {
+								count: missing.items.length,
+								n: formatNumber(missing.items.length)
+							})}
 							popovertarget="preview-coverage"
-							><TriangleAlert size={16} /><span>{missing.items.length}</span></button
+							><TriangleAlert size={16} /><span>{formatNumber(missing.items.length)}</span></button
 						>
 						<div
 							id="preview-coverage"
@@ -737,9 +750,10 @@
 							<PopoverArrow />
 							<div class="menu-surface bu-popover-surface bu-floating">
 								<p class="menu-sec">
-									Missing frames for {moveLabel(missing.clip, moveIds)} · {directionLabel(
-										missing.direction
-									)}
+									{t('experience.missingFramesForMove', {
+										move: displayMove(missing.clip, moveIds),
+										direction: displayDirection(missing.direction)
+									})}
 								</p>
 								{#each missing.items as item (item.id)}
 									{@const saved = m.items.find((i) => i.id === (item.variantOf ?? item.id))}
@@ -757,9 +771,9 @@
 				</div>
 			</div>
 		{/if}
-		<aside class="equipment-rail" aria-label="Customization">
+		<aside class="equipment-rail" aria-label={t('experience.customization')}>
 			{#if g.sheet}<span class="sheet-handle" aria-hidden="true"></span>{/if}
-			<div class="equipment-modes" role="tablist" aria-label="Customization panels">
+			<div class="equipment-modes" role="tablist" aria-label={t('experience.customizationPanels')}>
 				<!-- Moves stays in place in the live views, aria-disabled: there movement picks idle or walk. It stays in the Tab
 				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->
 				{#each tabs as [id, label]}{@const off =
@@ -772,15 +786,15 @@
 						aria-controls="customization-panel"
 						aria-disabled={off || undefined}
 						aria-describedby={off ? 'moves-tab-note' : undefined}
-						title={off ? MOVES_OFF : undefined}
+						title={off ? displayMessage(movesOff) : undefined}
 						tabindex={ui.tab === id || off ? 0 : -1}
 						onclick={() => {
-							if (off) toast(MOVES_OFF);
+							if (off) toast(movesOff);
 							else panel(id);
-						}}><span class="bu-tab-label">{label}</span></button
+						}}><span class="bu-tab-label">{t(label)}</span></button
 					>{/each}
 			</div>
-			<span class="sr" id="moves-tab-note">{MOVES_OFF}</span>
+			<span class="sr" id="moves-tab-note">{displayMessage(movesOff)}</span>
 			<PhonePanel />
 		</aside>
 	{/if}

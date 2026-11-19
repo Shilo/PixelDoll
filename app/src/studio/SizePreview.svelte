@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { ui } from './state.svelte.ts';
+	import { formatNumber, t } from 'svelte-whisper';
+	import RichMessage from './RichMessage.svelte';
 	let { body, frame }: { body: number; frame: number } = $props();
+	const bodySize = $derived(body ? formatNumber(body) : '—');
+	const frameSize = $derived(frame ? formatNumber(frame) : '—');
 	let canvas: HTMLCanvasElement;
 	$effect(() => {
 		void ui.theme;
@@ -32,13 +36,14 @@
 <div
 	class="size-guide"
 	role="img"
-	aria-label="Size guide: {body || '—'} pixel body canvas inside a {frame || '—'} pixel frame"
+	aria-label={t('sizePreview.label', { body: bodySize, frame: frameSize })}
 >
 	<div class="preview-box"><canvas bind:this={canvas}></canvas></div>
 	<div class="sizes">
-		<span>Body <b>{body || '—'} px</b></span><span
-			>Frame <b>{frame || '—'} × {frame || '—'} px</b></span
-		>
+		{#snippet bodyMeasure()}<b>{t('sizePreview.bodyMeasure', { size: bodySize })}</b>{/snippet}
+		{#snippet frameMeasure()}<b>{t('sizePreview.frameMeasure', { size: frameSize })}</b>{/snippet}
+		<span><RichMessage key="sizePreview.body" slots={{ measure: bodyMeasure }} /></span>
+		<span><RichMessage key="sizePreview.frame" slots={{ measure: frameMeasure }} /></span>
 	</div>
 </div>
 

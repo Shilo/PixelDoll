@@ -1,7 +1,3 @@
-<script module lang="ts">
-	export const DEMO_CHARACTER_LOCKED = "Demo character can't be deleted";
-</script>
-
 <script lang="ts">
 	import { Trash } from './icons.ts';
 	// A destructive menu item. When `locked` gives a reason, the item stays in its place, unavailable, with the reason

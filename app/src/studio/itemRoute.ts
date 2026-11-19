@@ -26,6 +26,7 @@ import {
 } from '../lib/items/items.ts';
 import type { Item, Rig } from '../lib/store/manifest.ts';
 import { DEFAULT_MOVE, matchesStanding } from '../lib/rig/rig.ts';
+import { LocalizedError } from '../lib/message.ts';
 
 export interface NewItemInput {
 	name: string;
@@ -98,8 +99,9 @@ export function standingCoverage(
 		matching.find((a) => a.id === DEFAULT_MOVE) ??
 		(hasRest || matching.length === 1 ? matching[0] : undefined);
 	if (!standing)
-		throw new Error(
-			'No complete standing move was found. Import standing views or set up the character with a one-frame standing reference before making an item. No generations were requested.'
+		throw new LocalizedError(
+			'No complete standing move was found. Import standing views or set up the character with a one-frame standing reference before making an item. No generations were requested.',
+			'itemRoute.errors.noStandingMove'
 		);
 	const anims = [
 		standing.id,
@@ -126,8 +128,9 @@ const spec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> => ({
 export function itemMethod(ctx: RigCtx, s: Omit<ItemSpec, 'id'>): Method {
 	const automatic = defaultMethod(ctx, s);
 	if (s.method === 'skel' && (automatic !== 'skel' || s.key === 'none'))
-		throw new Error(
-			'Skeleton posing is not available for this item on this character. Choose Automatic.'
+		throw new LocalizedError(
+			'Skeleton posing is not available for this item on this character. Choose Automatic.',
+			'itemRoute.errors.skeletonUnavailable'
 		);
 	return s.method ?? automatic;
 }

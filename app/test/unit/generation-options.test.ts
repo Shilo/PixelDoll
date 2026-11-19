@@ -92,12 +92,14 @@ test('every model limit comes from the MODELS table, in the form and before spen
 		['pro-flash', 256, false]
 	]);
 	const proError = 'Body size must be 32–168 whole pixels with Pro.';
-	expect(bodyErrors(172, 'pro')).toEqual([proError]);
+	expect(bodyErrors(172, 'pro').map((e) => e.message)).toEqual([proError]);
 	expect(bodyErrors(168, 'pro')).toEqual([]);
 	expect(bodyErrors(172, 'v3')).toEqual([]);
-	expect(bodyErrors(170, 'v3')).toEqual(['Body size must use 4 px steps (32, 36, …, 256).']);
+	expect(bodyErrors(170, 'v3').map((e) => e.message)).toEqual([
+		'Body size must use 4 px steps (32, 36, …, 256).'
+	]);
 	const d = { ...newCharacterDraft(), body: 172, model: 'pro' as const };
-	expect(draftErrors(d)).toContain(proError);
+	expect(draftErrors(d).map((e) => e.message)).toContain(proError);
 	expect(draftErrors({ ...d, body: 168 })).toEqual([]);
 	expect(draftErrors({ ...d, model: 'v3' })).toEqual([]);
 	for (const frame of [256, undefined]) {

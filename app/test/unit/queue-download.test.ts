@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { Queue, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts';
+import { Queue, queueErrorParts, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts';
 
 // A paid job that completes with a storage URL; the free GET /balance probe always answers.
 function fixture(deps: Partial<Deps>) {
@@ -52,8 +52,23 @@ test('a storage download that keeps throwing TypeError while online gives up ins
 	});
 	const r = await q.enqueue({ method: 'POST', path: '/x', body: { seed: 1 } });
 	await run(900); // 15 minutes of 1 s ticks: probes and backoff between tries
-	expect(store.get(r.id)?.state).toBe('failed');
-	expect(store.get(r.id)?.error).toMatch(/Download manually: https:\/\/x\/e\.png/);
+	const stored = store.get(r.id)!;
+	expect(stored.state).toBe('failed');
+	const raw = 'result download failed 10x: Failed to fetch. Download manually: https://x/e.png';
+	expect(stored.error).toBe(raw);
+	expect(queueErrorParts(stored)).toEqual([
+		{
+			key: 'activity.error.download',
+			vars: { count: 10, error: 'Failed to fetch', urls: 'https://x/e.png' }
+		}
+	]);
+	expect(stored.error).toBe(raw);
+	expect(
+		queueErrorParts({
+			...stored,
+			jobs: stored.jobs.map((job) => ({ ...job, failedAtProvider: true }))
+		})
+	).toEqual([raw]);
 	expect(fetches).toBe(10);
 	expect(probes()).toBeGreaterThan(0); // each TypeError still paused the queue until a probe got through
 });

@@ -5,6 +5,7 @@ import { queue } from './lib/pixellab/queue.ts';
 import { askPersist } from './lib/store/db.ts';
 import { app, getKeyRevision, setKey } from './lib/app.svelte.ts';
 import { workspaceCopy } from './lib/store/workspace-mode.ts';
+import { setupI18n } from './lib/i18n.ts';
 
 export async function launchStudio() {
 	askPersist();
@@ -15,6 +16,7 @@ export async function launchStudio() {
 		if (!event.persisted) queue.disconnect();
 	};
 	addEventListener('pagehide', leave);
+	const i18n = setupI18n();
 	try {
 		// leader tab resumes the ledger; other tabs mirror it (Web Locks). Only a real open error fails here (no IndexedDB,
 		// onerror, onblocked in db.ts): a slow open (big ledger, hidden throttled tab) just takes longer.
@@ -28,6 +30,7 @@ export async function launchStudio() {
 		}
 		throw e;
 	}
+	await i18n;
 	import.meta.hot?.dispose(() => {
 		removeEventListener('pagehide', leave);
 		queue.disconnect();

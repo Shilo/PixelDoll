@@ -2,12 +2,13 @@
 	// A short alert that confirms one destructive action: a question, at most a line or two of consequence, Cancel and
 	// the action. It stays centered at every size, unlike sheets, and Cancel takes focus so Enter never destroys.
 	import type { Snippet } from 'svelte';
+	import { t } from 'svelte-whisper';
 	import { TriangleAlert } from './icons.ts';
 	let {
 		title,
 		action,
 		busyAction = action,
-		cancel = 'Cancel',
+		cancel,
 		busy = false,
 		problem = '',
 		blocked = false,
@@ -65,7 +66,9 @@
 			<TriangleAlert size={16} aria-hidden="true" /><span>{problem}</span>
 		</p>{/if}
 	<div class="confirm-actions">
-		<button bind:this={keep} class="bu-btn" disabled={busy} onclick={oncancel}>{cancel}</button>
+		<button bind:this={keep} class="bu-btn" disabled={busy} onclick={oncancel}
+			>{cancel ?? t('common.cancel')}</button
+		>
 		<button class="bu-btn" data-variant="danger" disabled={busy || blocked} onclick={onconfirm}
 			>{busy ? busyAction : action}</button
 		>

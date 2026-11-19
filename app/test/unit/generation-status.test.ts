@@ -2,6 +2,11 @@ import { expect, test } from 'vitest';
 import { generationStatus } from '../../src/studio/generationStatus.ts';
 import type { Gen } from '../../src/studio/state.svelte.ts';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
+import { message, type Message } from '../../src/lib/message.ts';
+
+type Vars = Parameters<typeof message>[1];
+const m = (key: string, vars?: Vars) =>
+	message(`generation.status.${key}` as Parameters<typeof message>[0], vars);
 
 const generation = (calls = 1) =>
 	({
@@ -17,52 +22,78 @@ const record = (state: JobRec['state'], extra: Partial<JobRec> = {}) =>
 		jobs: [],
 		...extra
 	}) as JobRec;
+const formatters = {
+	render: (value: Message | string) => (typeof value === 'string' ? value : value.key),
+	formatNumber: (value: number) => `[${value}]`
+};
 const status = (jobs: JobRec[], now = 60_000, g = generation()) =>
-	generationStatus(g, jobs, now, true, null);
+	generationStatus(g, jobs, now, true, null, formatters);
 
 test('countdown decreases from submission, not draft creation or page mounting', () => {
-	expect(status([record('running')]).text).toBe('~7min left');
-	expect(status([record('running')], 120_000).text).toBe('~6min left');
-	expect(status([record('running')], 480_000).text).toBe('Taking longer');
-	expect(status([record('running')], 1).text).toBe('~7min left');
+	expect(status([record('running')]).text).toEqual(m('minutesLeft', { minutes: 7 }));
+	expect(status([record('running')], 120_000).text).toEqual(m('minutesLeft', { minutes: 6 }));
+	expect(status([record('running')], 480_000).text).toEqual(m('takingLonger'));
+	expect(status([record('running')], 1).text).toEqual(m('minutesLeft', { minutes: 7 }));
 });
 
 test('queue, credentials, pauses and unknown outcomes replace speculative countdowns', () => {
-	expect(status([]).text).toBe('Designing');
-	expect(status([record('queued', { submittedAt: undefined })]).text).toBe('Queued');
-	expect(status([record('running', { submittedAt: NaN })]).text).toBe('Designing');
-	expect(generationStatus(generation(), [], 0, false, null)).toMatchObject({
-		text: 'Connect to start',
+	expect(status([]).text).toEqual(m('designing'));
+	expect(status([record('queued', { submittedAt: undefined })]).text).toEqual(m('queued'));
+	expect(
+		status([record('running', { submittedAt: NaN })], 0, {
+			...generation(),
+			status: 'Adding the other moves'
+		}).text
+	).toEqual(m('addingMoves'));
+	expect(generationStatus(generation(), [], 0, false, null, formatters)).toMatchObject({
+		text: m('connect'),
 		attention: true
 	});
-	expect(generationStatus(generation(), [], 0, true, 'offline')).toMatchObject({
-		text: 'Paused',
+	expect(generationStatus(generation(), [], 0, true, 'offline', formatters)).toMatchObject({
+		text: m('paused'),
 		attention: true
 	});
 	expect(status([record('lost', { error: 'Unknown response' })])).toMatchObject({
-		text: 'Needs attention',
+		text: m('needsAttention'),
 		detail: 'Unknown response',
 		attention: true
 	});
 });
 
 test('local checks and terminal states never promise zero seconds', () => {
-	expect(status([record('done')]).text).toBe('Checking frames');
-	expect(status([], 0, { ...generation(), phase: 'review' }).text).toBe('Review');
+	expect(status([record('done')]).text).toEqual(m('checking'));
+	expect(status([], 0, { ...generation(), phase: 'review' }).text).toEqual(m('review'));
 	expect(status([], 0, { ...generation(), phase: 'failed', error: 'No frames' })).toMatchObject({
-		text: 'Failed',
+		text: m('failed'),
 		detail: 'No frames'
 	});
-	expect(status([], 0, { ...generation(), phase: 'failed', canceled: true }).text).toBe('Canceled');
+	expect(
+		status([record('lost', { error: 'Unknown response' })], 0, {
+			...generation(),
+			phase: 'failed',
+			error: 'call 1 lost: Unknown response'
+		}).detail
+	).toEqual(
+		message('generation.outcome.callError', {
+			index: '[1]',
+			state: 'activity.state.lost',
+			error: 'Unknown response'
+		})
+	);
+	expect(status([], 0, { ...generation(), phase: 'failed', canceled: true }).text).toEqual(
+		m('canceled')
+	);
 });
 
 test('a finished design does not hide remaining queued or unsubmitted batches', () => {
-	expect(status([record('done')], 60_000, generation(2)).text).toBe('~7min left');
+	expect(status([record('done')], 60_000, generation(2)).text).toEqual(
+		m('minutesLeft', { minutes: 7 })
+	);
 	expect(
 		status(
 			[record('done'), record('queued', { id: '1', submittedAt: undefined })],
 			60_000,
 			generation(2)
 		).text
-	).toBe('Queued');
+	).toEqual(m('queued'));
 });

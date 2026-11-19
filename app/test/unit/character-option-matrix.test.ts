@@ -129,7 +129,7 @@ test('all 12,082 direction and mirror transitions preserve valid sources and det
 			toggleDirection(changed, dir);
 			operations++;
 			expect(changed.selected.includes(dir)).toBe(!removed);
-			expect(facingErrors(facingOf(changed))).toEqual(
+			expect(facingErrors(facingOf(changed)).map((e) => e.message)).toEqual(
 				changed.selected.length ? [] : ['Choose at least one direction.']
 			);
 			if (removed) {
@@ -303,7 +303,9 @@ test('blank and explicit seeds keep their intended request semantics and reject 
 	for (const seed of ['-1', '1.5', '1e3', ' 1', '1 ', 'NaN', 'Infinity', String(max + 1)]) {
 		const draft = newCharacterDraft();
 		draft.seed = seed;
-		expect(draftErrors(draft)).toContain('Seed must be a safe, non-negative whole number.');
+		expect(draftErrors(draft).map((e) => e.message)).toContain(
+			'Seed must be a safe, non-negative whole number.'
+		);
 	}
 	for (const seed of [-1, 1.5, NaN, Infinity, max + 1])
 		await expect(createCharacter({ ...specOf(plans[0]), seed })).rejects.toThrow('Invalid seed');

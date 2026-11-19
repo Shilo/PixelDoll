@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { beginActivityCall, finishActivityCall } from '../lib/pixellab/activity.ts';
+	import { t } from 'svelte-whisper';
 	let { src, activityScope }: { src: string; activityScope?: string } = $props();
 	let frame: HTMLSpanElement;
 	let source = $state<string | undefined>();
@@ -24,6 +25,7 @@
 				'GET',
 				src,
 				undefined,
+				// Persisted activity records keep their English label; it is copied verbatim.
 				{ label: 'Character preview', background: true, activityScope },
 				'download'
 			);
@@ -79,7 +81,7 @@
 			onerror={() => finish(false)}
 		/>{/if}
 	{#if failed}<span class="preview-error faint small" role="status"
-			>Preview unavailable. Refresh to retry.</span
+			>{t('apiPeek.previewUnavailable')}</span
 		>{/if}
 </span>
 

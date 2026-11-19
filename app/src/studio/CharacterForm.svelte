@@ -9,7 +9,10 @@
 	import { enhanceCharacter } from './enhanceCharacter.ts';
 	import { routes } from '../lib/pixellab/routes.ts';
 	import { Copy, Check, ChevronRight, WandSparkles, Undo2 } from './icons.ts';
-	import { HANDS_SWAP, KEEP_EACH_HAND } from './model.ts';
+	import { displayDirectionShort } from './displayDirection.ts';
+	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { message as notice, type Message } from '../lib/message.ts';
+	import { t, type WhisperKey } from 'svelte-whisper';
 	import {
 		autoFrame,
 		BODY_SIZES,
@@ -40,6 +43,7 @@
 		type CharacterModel,
 		type Trait
 	} from './characterConfig.ts';
+	import type { DirectionName } from '../lib/rig/rig.ts';
 
 	let {
 		draft: d = $bindable(),
@@ -51,9 +55,67 @@
 		onconnect: (target: 'details' | 'prompt') => void;
 	} = $props();
 	const scope = `enhance:${crypto.randomUUID()}`;
+	// Trait, preset, model and style values are prompt and draft data; only their displayed names are translated.
+	const TRAIT_TEXT: Record<Trait, { label: WhisperKey; help: WhisperKey }> = {
+		kind: { label: 'create.form.traits.kind.label', help: 'create.form.traits.kind.help' },
+		build: { label: 'create.form.traits.build.label', help: 'create.form.traits.build.help' },
+		proportions: {
+			label: 'create.form.traits.proportions.label',
+			help: 'create.form.traits.proportions.help'
+		},
+		skin: { label: 'create.form.traits.skin.label', help: 'create.form.traits.skin.help' }
+	};
+	const OPTION_TEXT: Record<string, WhisperKey> = {
+		Human: 'create.form.traitOptions.human',
+		Elf: 'create.form.traitOptions.elf',
+		Dwarf: 'create.form.traitOptions.dwarf',
+		Orc: 'create.form.traitOptions.orc',
+		Undead: 'create.form.traitOptions.undead',
+		Slender: 'create.form.traitOptions.slender',
+		Broad: 'create.form.traitOptions.broad',
+		Muscular: 'create.form.traitOptions.muscular',
+		Rounded: 'create.form.traitOptions.rounded',
+		Natural: 'create.form.traitOptions.natural',
+		Chibi: 'create.form.traitOptions.chibi',
+		'Deep brown': 'create.form.traitOptions.deepBrown',
+		Brown: 'create.form.traitOptions.brown',
+		Tan: 'create.form.traitOptions.tan',
+		'Light tan': 'create.form.traitOptions.lightTan',
+		Light: 'create.form.traitOptions.light',
+		Pale: 'create.form.traitOptions.pale'
+	};
+	const optionText = (option: string) => (OPTION_TEXT[option] ? t(OPTION_TEXT[option]) : option);
+	const PRESET_TEXT: Record<string, WhisperKey> = {
+		eight: 'create.form.presets.eight',
+		four: 'create.form.presets.four',
+		diagonal: 'create.form.presets.diagonal',
+		side: 'create.form.presets.side',
+		unique: 'create.form.presets.unique'
+	};
+	const MODEL_TEXT: Record<CharacterModel, { label: WhisperKey; help: WhisperKey }> = {
+		v3: { label: 'create.form.models.v3.label', help: 'create.form.models.v3.help' },
+		pro: { label: 'create.form.models.pro.label', help: 'create.form.models.pro.help' },
+		'pro-flash': {
+			label: 'create.form.models.proFlash.label',
+			help: 'create.form.models.proFlash.help'
+		}
+	};
+	const modelId = $derived(
+		MODEL_IDS.includes(d.model as CharacterModel) ? (d.model as CharacterModel) : 'v3'
+	);
+	const OUTLINE_TEXT: Record<string, WhisperKey> = {
+		'single color outline': 'generationDetails.outline.colored',
+		'selective outline': 'generationDetails.outline.selective',
+		lineless: 'generationDetails.outline.none'
+	};
+	const DETAIL_TEXT: Record<string, WhisperKey> = {
+		'low detail': 'generationDetails.detail.low',
+		'highly detailed': 'generationDetails.detail.high'
+	};
+	const styleText = (keys: Record<string, WhisperKey>, value: string, fallback: string) =>
+		keys[value] ? t(keys[value]) : fallback;
 	let frameInput: HTMLInputElement;
-	let message = $state(''),
-		announcement = $state(''),
+	let message = $state<Message | string>(''),
 		copied = $state<'details' | 'prompt' | null>(null);
 	let undo = $state<{ target: 'details' | 'prompt'; before: string; after: string } | null>(null);
 	let abort: AbortController | undefined;
@@ -64,31 +126,46 @@
 	let advancedOpen = $state(!!(d.seed || (d.model && d.model !== 'v3') || d.outline || d.detail));
 	// The selected model's limits (MODELS in characterConfig.ts) decide which controls show and what they accept.
 	const model = $derived(modelOf(d.model));
-	const bodyError = $derived(bodyErrors(d.body, d.model)[0] ?? '');
+	const bodyErrorValue = $derived(bodyErrors(d.body, d.model)[0]);
+	const bodyError = $derived(bodyErrorValue ? displayError(bodyErrorValue) : '');
 	const advancedNote = $derived(
 		[
-			model === MODELS.v3 ? '' : model.label,
+			model === MODELS.v3 ? '' : t(MODEL_TEXT[modelId].label),
 			model.styleHints && d.outline
-				? `${OUTLINES.find((o) => o.value === d.outline)?.label} outline`
+				? t('create.form.outlineNote', {
+						outline: styleText(
+							OUTLINE_TEXT,
+							d.outline,
+							OUTLINES.find((o) => o.value === d.outline)?.label ?? d.outline
+						)
+					})
 				: '',
 			model.styleHints && d.detail
-				? `${DETAILS.find((o) => o.value === d.detail)?.label} detail`
+				? t('create.form.detailNote', {
+						detail: styleText(
+							DETAIL_TEXT,
+							d.detail,
+							DETAILS.find((o) => o.value === d.detail)?.label ?? d.detail
+						)
+					})
 				: '',
-			d.seed ? `seed ${d.seed}` : ''
+			d.seed ? t('generationDetails.seed', { seed: d.seed }) : ''
 		]
 			.filter(Boolean)
 			.join(' · ')
 	);
 	const preset = $derived(presetOf(d));
 	const errors = $derived(draftErrors(d));
+	let promoted = $state<DirectionName | undefined>();
+	const announcement = $derived(
+		promoted ? t('create.form.ownView', { direction: displayDirectionShort(promoted) }) : ''
+	);
 	const enhanceTarget = $derived(d.tab === 'appearance' ? 'details' : 'prompt');
 	let editorHelp: { show: () => Promise<void>; hide: () => void };
 	const editorHelpId = $props.id(),
 		bodyErrorId = `${editorHelpId}-body-error`;
 	const editorHelpText = $derived(
-		d.tab === 'appearance'
-			? 'Describe distinctive features, then choose appearance hints below. These choices build the linked prompt. Hair, clothes and gear are added later.'
-			: 'This exact text is sent to the selected model. Complete lines such as Kind: Elf update Appearance. Other text stays in Details; prose is never guessed as a trait.'
+		d.tab === 'appearance' ? t('create.form.appearanceHelp') : t('create.form.promptHelp')
 	);
 	// Enhance with the chosen V3 style hints, so the text it writes fits the drawing they guide.
 	const enhanceInput = () => ({
@@ -140,7 +217,7 @@
 			message = '';
 		} catch {
 			if (target === 'prompt') d.tab = 'prompt';
-			message = 'Select the text to copy it.';
+			message = notice('create.form.selectToCopy');
 		}
 	}
 	async function enhance(target: 'details' | 'prompt') {
@@ -165,7 +242,7 @@
 			const enhanced = await enhanceCharacter(app.key, input, abort.signal, scope);
 			if (!alive) return;
 			if (d.prompt !== before || d.body !== input.image_size.width || d.view !== input.view) {
-				message = 'Settings changed. Your text was kept.';
+				message = notice('create.form.settingsChanged');
 				return;
 			}
 			if (target === 'prompt') readPrompt(d, enhanced);
@@ -175,13 +252,13 @@
 				readPrompt(parsed, enhanced);
 				for (const key of TRAIT_KEYS) writeTrait(parsed, key, UNSET);
 				if (!parsed.details.trim()) {
-					message = 'PixelLab returned no details. Your text was kept.';
+					message = notice('create.form.noDetails');
 					return;
 				}
 				const candidate = { ...d };
 				writeDetails(candidate, parsed.details);
 				if (candidate.prompt.length > 2000) {
-					message = 'The enhanced text is too long. Your text was kept.';
+					message = notice('create.form.tooLong');
 					return;
 				}
 				writeDetails(d, parsed.details);
@@ -191,10 +268,16 @@
 			if (alive)
 				message =
 					e instanceof ApiError
-						? `${e.status === 401 ? 'Reconnect PixelLab to enhance.' : e.status === 402 ? 'Not enough PixelLab credits.' : e.status === 0 ? 'No clear answer from PixelLab.' : 'PixelLab could not enhance this text.'} Your text was kept.`
+						? e.status === 401
+							? notice('create.form.enhanceError.reconnect')
+							: e.status === 402
+								? notice('create.form.enhanceError.credits')
+								: e.status === 0
+									? notice('create.form.enhanceError.noAnswer')
+									: notice('create.form.enhanceError.failedApi')
 						: e instanceof Error
-							? e.message
-							: 'Enhancement failed. Your text was kept.';
+							? errorMessage(e)
+							: notice('create.form.enhanceError.failed');
 		} finally {
 			if (alive) busy = false;
 		}
@@ -211,13 +294,13 @@
 </script>
 
 <div class="creator-grid">
-	<section class="appearance" aria-label="Character appearance">
+	<section class="appearance" aria-label={t('create.form.appearanceSection')}>
 		<div class="editor-toolbar">
 			<div
 				class="creator-tabs bu-tabs"
 				role="tablist"
 				tabindex="-1"
-				aria-label="Prompt editor"
+				aria-label={t('create.form.promptEditor')}
 				aria-describedby={editorHelpId}
 				onpointerenter={(e) => {
 					if (e.pointerType === 'mouse') void editorHelp.show();
@@ -237,7 +320,7 @@
 					tabindex={d.tab === 'appearance' ? 0 : -1}
 					aria-selected={d.tab === 'appearance'}
 					onkeydown={tabKey}
-					onclick={() => (d.tab = 'appearance')}>Appearance</button
+					onclick={() => (d.tab = 'appearance')}>{t('create.form.appearanceTab')}</button
 				>
 				<button
 					role="tab"
@@ -246,7 +329,7 @@
 					tabindex={d.tab === 'prompt' ? 0 : -1}
 					aria-selected={d.tab === 'prompt'}
 					onkeydown={tabKey}
-					onclick={() => (d.tab = 'prompt')}>Prompt</button
+					onclick={() => (d.tab = 'prompt')}>{t('common.prompt')}</button
 				>
 			</div>
 			<span class="prompt-actions">
@@ -254,12 +337,16 @@
 					bind:this={editorHelp}
 					iconOnly
 					tooltipId={editorHelpId}
-					title={d.tab === 'appearance' ? 'Appearance help' : 'Prompt help'}
+					title={d.tab === 'appearance'
+						? t('create.form.appearanceHelpTitle')
+						: t('create.form.promptHelpTitle')}
 					text={editorHelpText}
 				/>
 				<ApiPeek
 					scope={d.tab === 'appearance' ? 'character-details-enhance' : 'character-prompt-enhance'}
-					label={d.tab === 'appearance' ? 'Enhance details' : 'Enhance exact prompt'}
+					label={d.tab === 'appearance'
+						? t('create.form.enhanceDetails')
+						: t('create.form.enhancePrompt')}
 					plan={[
 						{
 							...routes.enhanceCharacterV3Prompt(enhanceInput()),
@@ -275,26 +362,39 @@
 				<button
 					class="bu-action btn icon copy"
 					data-variant="outline"
-					aria-label={d.tab === 'appearance' ? 'Copy details' : 'Copy exact prompt'}
-					title={d.tab === 'appearance' ? 'Copy details' : 'Copy exact prompt'}
+					aria-label={d.tab === 'appearance'
+						? t('create.form.copyDetails')
+						: t('create.form.copyPrompt')}
+					title={d.tab === 'appearance'
+						? t('create.form.copyDetails')
+						: t('create.form.copyPrompt')}
 					onclick={() => copy(enhanceTarget)}
 					>{#if copied === enhanceTarget}<Check size={14} />{:else}<Copy size={14} />{/if}</button
 				>
 				<button
 					class="bu-action btn small enhance"
 					data-variant="outline"
-					aria-label={canUndo(enhanceTarget) ? 'Undo' : busy ? 'Enhancing…' : 'Enhance'}
+					aria-label={canUndo(enhanceTarget)
+						? t('common.undo')
+						: busy
+							? t('create.form.enhancing')
+							: t('create.form.enhance')}
 					aria-busy={busy}
 					title={canUndo(enhanceTarget)
-						? 'Restore the previous prompt'
-						: 'Enhance with V3 (~0.05 gens)'}
+						? t('create.form.undoTitle')
+						: t('create.form.enhanceTitle')}
 					disabled={busy || (!canUndo(enhanceTarget) && !canEnhance(enhanceTarget))}
 					onclick={() => enhance(enhanceTarget)}
 				>
 					{#if canUndo(enhanceTarget)}<Undo2 size={13} />{:else}<WandSparkles size={13} />{/if}
 					<span class="enhance-label"
-						><span class="enhance-sizer" aria-hidden="true">Enhance</span><span class="enhance-text"
-							>{canUndo(enhanceTarget) ? 'Undo' : busy ? 'Enhancing…' : 'Enhance'}</span
+						><span class="enhance-sizer" aria-hidden="true">{t('create.form.enhance')}</span><span
+							class="enhance-text"
+							>{canUndo(enhanceTarget)
+								? t('common.undo')
+								: busy
+									? t('create.form.enhancing')
+									: t('create.form.enhance')}</span
 						></span
 					>
 				</button>
@@ -310,36 +410,37 @@
 				<div class="creator-field">
 					<textarea
 						class="bu-input input details-input"
-						aria-label="Details"
+						aria-label={t('common.details')}
 						rows="3"
 						maxlength="2000"
 						value={d.details}
 						oninput={(e) => details(e.currentTarget.value)}
-						placeholder="A freckled elf with a kind face"></textarea>
+						placeholder={t('create.form.detailsPlaceholder')}></textarea>
 				</div>
 				{#each TRAIT_KEYS as key (key)}
 					<div class="trait-row">
-						<Help title={TRAITS[key].label} text={TRAITS[key].help} /><select
+						<Help title={t(TRAIT_TEXT[key].label)} text={t(TRAIT_TEXT[key].help)} /><select
 							class="bu-input input"
-							aria-label={TRAITS[key].label}
+							aria-label={t(TRAIT_TEXT[key].label)}
 							value={d[key]}
 							onchange={(e) => trait(key, e.currentTarget.value)}
-							><option>{UNSET}</option>{#each TRAITS[key].options as option (option)}<option
-									>{option}</option
+							><option value={UNSET}>{t('create.form.notSet')}</option
+							>{#each TRAITS[key].options as option (option)}<option value={option}
+									>{optionText(option)}</option
 								>{/each}</select
 						>
 					</div>
 				{/each}
 				<div class="trait-row">
-					<Help
-						title="Nude"
-						text="Off: plain white underwear. On: nothing worn. Underwear is part of the base and may show through open clothing. Exact prompt edits can override this guidance. Review generated coverage."
-					/><label class="bu-check bu-action nude-field" data-variant="field"
-						><span>{isNudeBase(d) ? 'Nothing worn' : 'White underwear'}</span><input
+					<Help title={t('create.form.nude')} text={t('create.form.nudeHelp')} /><label
+						class="bu-check bu-action nude-field"
+						data-variant="field"
+						><span>{isNudeBase(d) ? t('create.form.nothingWorn') : t('create.form.underwear')}</span
+						><input
 							class="bu-switch"
 							type="checkbox"
 							role="switch"
-							aria-label="Nude"
+							aria-label={t('create.form.nude')}
 							checked={isNudeBase(d)}
 							onchange={(event) => {
 								edited();
@@ -352,12 +453,12 @@
 					<button
 						class="prompt-excerpt"
 						onclick={() => (d.tab = 'prompt')}
-						aria-label="Edit exact prompt">{d.prompt}</button
+						aria-label={t('create.form.editPrompt')}>{d.prompt}</button
 					><button
 						class="bu-action btn icon copy"
 						data-variant="outline"
-						title="Copy exact prompt"
-						aria-label="Copy exact prompt"
+						title={t('create.form.copyPrompt')}
+						aria-label={t('create.form.copyPrompt')}
 						onclick={() => copy('prompt')}
 						>{#if copied === 'prompt'}<Check size={14} />{:else}<Copy size={14} />{/if}</button
 					>
@@ -367,7 +468,7 @@
 			<div id="prompt-panel" role="tabpanel" aria-labelledby="prompt-tab" class="editor-panel">
 				<textarea
 					class="bu-input input exact-input"
-					aria-label="Exact prompt"
+					aria-label={t('create.form.exactPrompt')}
 					value={d.prompt}
 					oninput={(e) => {
 						edited();
@@ -377,22 +478,24 @@
 					spellcheck="false"></textarea>
 			</div>
 		{/if}
-		{#if message}<p class="creator-message" role="status">{message}</p>{/if}
+		{#if message}<p class="creator-message" role="status">{displayMessage(message)}</p>{/if}
 	</section>
 
-	<section class="creator-guide" aria-label="Size guide">
-		<h3>Size guide</h3>
+	<section class="creator-guide" aria-label={t('create.form.sizeGuide')}>
+		<h3>{t('create.form.sizeGuide')}</h3>
 		<SizePreview body={d.body || 0} frame={frame || 0} />
 	</section>
-	<section class="geometry" aria-label="Character size and camera">
+	<section class="geometry" aria-label={t('create.form.geometrySection')}>
 		<div class="creator-field">
 			<Help
-				title="Body size"
-				text="The source canvas the model draws into, in pixels—not a guaranteed opaque body height. This model accepts {model
-					.body.min}–{model.body
-					.max} pixels in {BODY_STEP} px steps. The frame adds space for movement and equipment."
+				title={t('create.form.bodySize')}
+				text={t('create.form.bodySizeHelp', {
+					min: model.body.min,
+					max: model.body.max,
+					step: BODY_STEP
+				})}
 			/>
-			<div class="body-presets" role="group" aria-label="Body size presets">
+			<div class="body-presets" role="group" aria-label={t('create.form.bodyPresets')}>
 				{#each BODY_SIZES as size (size)}<button
 						class="bu-action btn"
 						data-variant="outline"
@@ -407,7 +510,7 @@
 			<div class="pixel-input">
 				<input
 					class="bu-input input"
-					aria-label="Body size"
+					aria-label={t('create.form.bodySize')}
 					type="number"
 					min={model.body.min}
 					max={model.body.max}
@@ -421,10 +524,7 @@
 			{#if bodyError}<p class="field-error" id={bodyErrorId}>{bodyError}</p>{/if}
 		</div>
 		<div class="creator-field">
-			<Help
-				title="Frame"
-				text="The square cell used by every exported frame. Auto adds padding around the body canvas. Enter a larger value for more room, up to 256 px. Pixels are padded, never scaled."
-			/>
+			<Help title={t('generationDetails.settings.frame')} text={t('create.form.frameHelp')} />
 			<div class="frame-controls">
 				<button
 					class="bu-action btn"
@@ -437,13 +537,13 @@
 							frameInput.focus();
 							frameInput.select();
 						}
-					}}>Auto</button
+					}}>{t('create.form.auto')}</button
 				>
 				<div class="pixel-input">
 					<input
 						bind:this={frameInput}
 						class="bu-input input"
-						aria-label="Frame size"
+						aria-label={t('create.form.frameSize')}
 						type="number"
 						min={autoFrame(d.body || 32)}
 						max="256"
@@ -458,117 +558,122 @@
 			</div>
 		</div>
 		{#if (frame ?? 0) > 80}<p class="creator-message">
-				{(frame ?? 0) > 128
-					? 'Above 128 px, items dress 4 views per call at 15–25 gens each, with no repair-grid fallback.'
-					: 'Above 80 px, items dress 4 views per call, so they can cost more.'}
+				{(frame ?? 0) > 128 ? t('create.form.frameAbove128') : t('create.form.frameAbove80')}
 			</p>{/if}
 		<div class="creator-field camera">
 			<Help
-				title="Camera"
-				text="Low top-down shows a slight overhead view. High top-down looks down more steeply. Side is level with the character. Direction presets also set a suitable camera."
-			/><select class="bu-input input" aria-label="Camera" bind:value={d.view}
-				><option value="low top-down">Low top-down</option><option value="high top-down"
-					>High top-down</option
-				><option value="side">Side</option></select
+				title={t('generationDetails.settings.camera')}
+				text={t('create.form.cameraHelp')}
+			/><select
+				class="bu-input input"
+				aria-label={t('generationDetails.settings.camera')}
+				bind:value={d.view}
+				><option value="low top-down">{t('create.form.cameras.low')}</option><option
+					value="high top-down">{t('create.form.cameras.high')}</option
+				><option value="side">{t('create.form.cameras.side')}</option></select
 			>
 		</div>
 	</section>
 
-	<section class="facing" aria-label="Character directions">
-		<Help
-			title="Directions"
-			text="Choose the views to keep and animate. V3 first creates all eight original views. Attached mirror buttons mirror a horizontal partner; a blue mirror button marks a derived view, {HANDS_SWAP} (a Main hand sword appears in the left hand). {KEEP_EACH_HAND} Turning it off uses that view’s original artwork. For one facing, choose Side-scroller 2 and turn W off."
-		/>
-		<div class="direction-presets" role="group" aria-label="Direction presets">
+	<section class="facing" aria-label={t('create.form.directionsSection')}>
+		<Help title={t('common.directions')} text={t('create.form.directionsHelp')} />
+		<div class="direction-presets" role="group" aria-label={t('create.form.directionPresets')}>
 			{#each PRESETS as p (p.id)}<button
 					class="bu-action btn"
 					data-variant="outline"
 					aria-pressed={preset === p.id}
 					onclick={() => {
 						setPreset(d, p.id);
-						announcement = '';
-					}}>{p.label}</button
+						promoted = undefined;
+					}}>{PRESET_TEXT[p.id] ? t(PRESET_TEXT[p.id]) : p.label}</button
 				>{/each}
 		</div>
 		<DirectionCompass
-			label="Facing directions"
+			label={t('create.form.facingDirections')}
 			selected={d.selected}
 			mirrors={d.mirrors}
 			shortLabels
-			ontoggle={(dir) => (announcement = toggleDirection(d, dir))}
+			ontoggle={(dir) => (promoted = toggleDirection(d, dir))}
 			onmirror={(dir) => toggleMirror(d, dir)}
 		/>
 		<span class="direction-announcement" aria-live="polite">{announcement}</span>
 		<details class="disclosure advanced" bind:open={advancedOpen}>
 			<summary
-				><ChevronRight size={14} />Advanced{#if advancedNote}<span class="faint advanced-note"
-						>{advancedNote}</span
+				><ChevronRight size={14} />{t('common.advanced')}{#if advancedNote}<span
+						class="faint advanced-note">{advancedNote}</span
 					>{/if}</summary
 			>
 			<div>
 				<div class="trait-row">
-					<Help
-						title="Model"
-						text="The PixelLab model that draws the character. Each model accepts its own body sizes and options, so the controls change with it. Every model registers the character with V3, so moves and items work the same."
-					/><select
+					<Help title={t('create.form.model')} text={t('create.form.modelHelp')} /><select
 						class="bu-input input"
-						aria-label="Model"
+						aria-label={t('create.form.model')}
 						value={d.model ?? 'v3'}
 						onchange={(e) => (d.model = e.currentTarget.value as CharacterModel)}
-						>{#each MODEL_IDS as id (id)}<option value={id}>{MODELS[id].label}</option
+						>{#each MODEL_IDS as id (id)}<option value={id}>{t(MODEL_TEXT[id].label)}</option
 							>{/each}</select
 					>
 				</div>
 				{#if model.styleHints}
 					<div class="trait-row">
 						<Help
-							title="Outline"
-							text="Outline style guidance for Character V3. The model may not follow it exactly."
+							title={t('generationDetails.settings.outline')}
+							text={t('create.form.outlineHelp')}
 						/><select
 							class="bu-input input"
-							aria-label="Outline"
+							aria-label={t('generationDetails.settings.outline')}
 							value={d.outline ?? ''}
 							onchange={(e) => (d.outline = e.currentTarget.value)}
-							>{#each OUTLINES as o (o.value)}<option value={o.value}>{o.label}</option
+							>{#each OUTLINES as o (o.value)}<option value={o.value}
+									>{o.value
+										? styleText(OUTLINE_TEXT, o.value, o.label)
+										: t('create.form.outlines.default')}</option
 								>{/each}</select
 						>
 					</div>
 					<div class="trait-row">
 						<Help
-							title="Detail"
-							text="Detail level guidance for Character V3. The model may not follow it exactly."
+							title={t('generationDetails.settings.detail')}
+							text={t('create.form.detailHelp')}
 						/><select
 							class="bu-input input"
-							aria-label="Detail"
+							aria-label={t('generationDetails.settings.detail')}
 							value={d.detail ?? ''}
 							onchange={(e) => (d.detail = e.currentTarget.value)}
-							>{#each DETAILS as o (o.value)}<option value={o.value}>{o.label}</option
+							>{#each DETAILS as o (o.value)}<option value={o.value}
+									>{o.value
+										? styleText(DETAIL_TEXT, o.value, o.label)
+										: t('create.form.details.default')}</option
 								>{/each}</select
 						>
 					</div>
 				{:else}
 					<p class="faint small">
-						{model.help} Body size {model.body.min}–{model.body.max} px.
+						{t('create.form.modelSummary', {
+							help: t(MODEL_TEXT[modelId].help),
+							min: model.body.min,
+							max: model.body.max
+						})}
 					</p>
 				{/if}
 				<div class="trait-row">
 					<Help
-						title="Seed"
-						text="Controls the random starting point for character generation. Moves added later pick their own seeds. It does not randomize one specific trait. Leave blank for a fresh seed. Reusing it can give similar results, but does not guarantee identical pixels."
+						title={t('generationDetails.settings.seed')}
+						text={t('create.form.seedHelp')}
 					/><input
 						class="bu-input input"
-						aria-label="Seed"
+						aria-label={t('generationDetails.settings.seed')}
 						inputmode="numeric"
 						pattern="[0-9]*"
 						bind:value={d.seed}
-						placeholder="Random"
+						placeholder={t('create.form.random')}
 					/>
 				</div>
 			</div>
 		</details>
 	</section>
 </div>
-{#if errors.length}<p class="creator-validation" role="status">{errors[0]}</p>{/if}
+{#if errors.length}<p class="creator-validation" role="status">{displayError(errors[0])}</p>{/if}
 
 <style>
 	.creator-grid {

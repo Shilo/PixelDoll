@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { t } from 'svelte-whisper';
 	import { contextMenu } from '../lib/input/contextMenu.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import { EllipsisVertical } from './icons.ts';
@@ -27,7 +28,7 @@
 		bind:this={more}
 		class="bu-action character-more"
 		data-variant="quiet"
-		aria-label={`More actions for ${name}`}
+		aria-label={t('experience.moreActionsFor', { name })}
 		aria-haspopup="menu"
 		aria-expanded={expanded}
 		popovertarget={menuId}><EllipsisVertical size={18} /></button
@@ -40,7 +41,7 @@
 	popover
 	bind:this={menu}
 	role="menu"
-	aria-label={`Actions for ${name}`}
+	aria-label={t('experience.actionsFor', { name })}
 	ontoggle={(event) => {
 		expanded = event.newState === 'open';
 		popoverFocus(event);

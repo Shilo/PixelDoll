@@ -663,6 +663,7 @@ test('global Export choices survive a browser restart, character changes and dyn
 	const profile = await mkdtemp(join(tmpdir(), 'pd-export-'));
 	const launch = async () => {
 		const context = await chromium.launchPersistentContext(profile, {
+			locale: 'en-US',
 			headless: true,
 			channel: info.project.use.channel,
 			args: info.project.use.launchOptions?.args, // persistent launches skip the config's offline guard

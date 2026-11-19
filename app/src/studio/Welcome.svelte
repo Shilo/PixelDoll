@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { t, type WhisperKey } from 'svelte-whisper';
+	import LanguagePicker from './LanguagePicker.svelte';
+	import RichMessage from './RichMessage.svelte';
 	import Sprite from './Sprite.svelte';
 	import ApiPeek from './ApiPeek.svelte';
 	import { composeCell } from '../lib/compose/compose.ts';
@@ -30,11 +33,11 @@
 		if (doc.id !== DEMO) void openProject(DEMO);
 	}
 	const STEPS = [
-		['Create', 'Describe the body'],
-		['Add items', 'Hats, tops, weapons'],
-		['Dress up', 'Wear, recolor, play'],
-		['Export', 'Any game engine']
-	];
+		['welcome.steps.create', 'welcome.steps.describeBody'],
+		['welcome.steps.addItems', 'welcome.steps.examples'],
+		['welcome.steps.dressUp', 'welcome.steps.wearRecolorPlay'],
+		['welcome.steps.export', 'welcome.steps.anyEngine']
+	] as const satisfies readonly (readonly [WhisperKey, WhisperKey])[];
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />
@@ -60,10 +63,12 @@
 			>PixelDoll</span
 		>
 		<span class="api-action"
-			><ApiPeek scope="all" all /><button
+			><ApiPeek scope="all" all /><LanguagePicker compact /><button
 				class="bu-action btn icon plain"
 				data-variant="quiet"
-				aria-label={ui.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+				aria-label={ui.theme === 'dark'
+					? t('welcome.switchToLightMode')
+					: t('welcome.switchToDarkMode')}
 				onclick={toggleTheme}
 				>{#if ui.theme === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}</button
 			></span
@@ -71,46 +76,46 @@
 	</div>
 	<main class="welcome-main">
 		<div class="hero-stage" style:width="{heroPx + 32}px" style:height="{heroPx + 32}px">
-			{#if img}<Sprite {img} {k} label="Demo character walking" />{:else}<span
+			{#if img}<Sprite {img} {k} label={t('welcome.labelDemoCharacterWalking')} />{:else}<span
 					class="bu-ring ring spin"
 					aria-hidden="true"
 				></span>{/if}
 		</div>
 		<div class="hero-copy">
 			<h1 class="hero-title">
-				Dress up your 2D game characters with pixel&#8209;perfect paper dolling
+				{t('welcome.dressUpYour2DGameCharactersWith')}
 			</h1>
 			<p class="hero-sub">
-				Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any
-				game engine.
+				{t('welcome.generateSwappableFrameAlignedEquipmentLayersWith')}
 			</p>
 			<div class="hero-actions">
 				<button class="bu-action btn primary lg" data-variant="primary" onclick={create}
-					><Sparkles size={16} />Create your character</button
+					><Sparkles size={16} />{t('welcome.createYourCharacter')}</button
 				>
-				<button class="bu-action btn lg" data-variant="outline" onclick={demo}>Try the demo</button>
+				<button class="bu-action btn lg" data-variant="outline" onclick={demo}
+					>{t('welcome.tryTheDemo')}</button
+				>
 			</div>
 			<button
 				class="bu-action btn plain"
 				data-variant="quiet"
 				onclick={() => {
 					ui.sheet = 'importZip';
-				}}><Download size={16} />Import an existing character</button
+				}}><Download size={16} />{t('welcome.importAnExistingCharacter')}</button
 			>
 			<p class="faint small">
-				The demo needs no account. Creating uses your <a
-					href="https://pixellab.ai"
-					target="_blank"
-					rel="noreferrer">PixelLab</a
-				> generations.
+				{#snippet pixelLab()}<a href="https://pixellab.ai" target="_blank" rel="noreferrer"
+						>PixelLab</a
+					>{/snippet}
+				<RichMessage key="welcome.demoNeedsNoAccount" slots={{ pixelLab }} />
 			</p>
 		</div>
 	</main>
 	<ol class="how">
-		{#each STEPS as [t, s], i (t)}
+		{#each STEPS as [label, description], i (label)}
 			<li>
 				<span class="how-num">{i + 1}</span><span class="how-text"
-					><b>{t}</b><span class="muted small">{s}</span></span
+					><b>{t(label)}</b><span class="muted small">{t(description)}</span></span
 				>
 			</li>
 		{/each}

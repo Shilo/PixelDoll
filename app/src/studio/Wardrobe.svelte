@@ -5,6 +5,9 @@
 </script>
 
 <script lang="ts">
+	import { formatNumber, formatPercent, getLocale, t } from 'svelte-whisper';
+	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { message, type Message } from '../lib/message.ts';
 	import { contextMenu } from '../lib/input/contextMenu.ts';
 	// One continuous list of every equipment category with sticky headers, and a slot rail that follows and drives it.
 	import { onMount, tick, untrack } from 'svelte';
@@ -16,8 +19,16 @@
 	import type { SharedItem } from '../lib/equipment/shared.ts';
 	import TileMarks, { sortMarks, type Mark } from './TileMarks.svelte';
 	import type { CellKey, Item, Manifest } from '../lib/store/manifest.ts';
-	import { categories, isEmpty, shownCategories, slotDef, useText } from './slots.ts';
+	import {
+		categories,
+		shownCategories,
+		slotBusyMessage,
+		slotDef,
+		slotLabelMessage,
+		slotUseMessages
+	} from './slots.ts';
 	import { slotDrag } from './slotDrag.ts';
+	import { displayNestedMessage } from './nestedMessage.ts';
 	import {
 		ui,
 		doc,
@@ -73,7 +84,10 @@
 		Shuffle
 	} from './icons.ts';
 
+	const outcomeFormatters = { render: displayMessage, formatNumber };
 	const m = $derived(store.project?.manifest);
+	const formatList = (parts: string[]) =>
+		new Intl.ListFormat(getLocale(), { type: 'unit' }).format(parts);
 	let list = $state<HTMLElement>();
 	let rail = $state<HTMLElement>();
 	let spacer = $state(0);
@@ -95,53 +109,72 @@
 	function statusOf(it: NonNullable<typeof m>['items'][number]) {
 		const h = m ? healthOf(m, it) : 'demo';
 		return {
-			look: h === 'look' || h === 'stale' ? HEALTH_LABEL[h] : '',
+			look: h === 'look' || h === 'stale' ? displayMessage(HEALTH_LABEL[h]) : '',
 			unfit:
 				h === 'unfitted' && m
-					? unfitText(m, it.copiedFrom?.name ?? 'another character', it.unfitted ?? [])
+					? unfitText(
+							m,
+							it.copiedFrom?.name ?? t('studioModel.anotherCharacter'),
+							it.unfitted ?? [],
+							t
+						)
 					: '',
-			missing: m ? missingFramesNote(m, it) : '',
+			missing: m ? displayMessage(missingFramesNote(m, it)) : '',
 			hidden: doc.items[it.slot] === it.id && hidden.has(it.slot)
 		};
 	}
-	const WORN: Mark = { kind: 'worn', label: 'Wearing', text: 'Wearing.' };
+	const wornMark: Mark = $derived({
+		kind: 'worn',
+		label: t('wardrobe.wearing'),
+		text: t('wardrobe.wearingNote')
+	});
 	const unfitMark = (text: string): Mark => ({
 		kind: 'unfitted',
-		label: 'Not fitted to this body',
+		label: t('wardrobe.notFitted'),
 		text
 	});
 	/** Moves an item has no art for here (it hides in them once worn). */
 	const missingMark = (missing: string): Mark | false =>
-		!!missing && { kind: 'missing', label: missing, text: `${missing}; it hides there.` };
+		!!missing && {
+			kind: 'missing',
+			label: missing,
+			text: t('wardrobe.missingNote', { coverage: missing })
+		};
 	/** Every corner icon an own item's tile shows, each with the words its tooltip and ⋮ menu give. */
 	function marksOf(it: NonNullable<typeof m>['items'][number]): Mark[] {
 		const st = statusOf(it);
 		const from = it.copiedFrom?.name;
 		return sortMarks([
-			doc.items[it.slot] === it.id && !doc.drafts[it.slot] && WORN,
+			doc.items[it.slot] === it.id && !doc.drafts[it.slot] && wornMark,
 			!!from && {
 				kind: 'shared',
-				label: `Copied from ${from}`,
-				text: `Copied from ${from} for free.`
+				label: t('wardrobe.copiedFrom', { from }),
+				text: t('wardrobe.copiedFree', { from })
 			},
 			!!st.unfit && unfitMark(st.unfit),
-			!!st.look && { kind: 'check', label: st.look, text: `${st.look}.` },
+			!!st.look && {
+				kind: 'check',
+				label: st.look,
+				text: t('wardrobe.statusNote', { status: st.look })
+			},
 			missingMark(st.missing),
 			st.hidden && {
 				kind: 'hidden',
-				label: 'Hidden by another item',
-				text: 'Hidden by another item.'
+				label: t('itemPane.hiddenByAnotherItem'),
+				text: t('wardrobe.hiddenNote')
 			}
 		]);
 	}
 	/** An accessible tile name: the item, then what its icons say (a worn tile says so with aria-pressed). */
 	const tileName = (name: string, marks: Mark[]) =>
-		[
+		formatList([
 			name,
 			...marks
-				.filter((x) => x.kind !== 'worn')
-				.map((x) => x.label[0].toLowerCase() + x.label.slice(1))
-		].join(', ');
+				.filter((mark) => mark.kind !== 'worn')
+				.map((mark) =>
+					getLocale() === 'en' ? mark.label[0].toLowerCase() + mark.label.slice(1) : mark.label
+				)
+		]);
 	/** Stands for the Empty tile, which has no data-tile key, when picking where focus lands after a removal. */
 	const EMPTY = 'empty';
 	/** Remove an item for good, then focus the next tile in its category, else the previous one (the Empty tile at
@@ -216,7 +249,7 @@
 			);
 			return {
 				key,
-				label: c.label,
+				label: displayMessage(slotLabelMessage(m, key)),
 				items,
 				pending,
 				others,
@@ -253,21 +286,25 @@
 			const names = [...new Set(others.map((x) => x.sourceName))];
 			return {
 				key,
-				label: others[0].source.slots.find((s) => s.id === key)?.label ?? key,
+				label: displayMessage(slotLabelMessage(others[0].source, key)),
 				items: [] as Item[],
 				pending: [] as typeof gens,
 				others,
 				worn: false,
 				choices: 0,
 				holder: undefined as Item | undefined,
-				fromOthers: `From ${names.join(', ')}. Wearing an item adds this category to ${m.name}.`
+				fromOthers: t('wardrobe.fromOthers', { sources: formatList(names), name: m.name })
 			};
 		});
 	});
 	const sections = $derived([...own, ...fromOthers]);
 	/** This character's slots Wardrobe doesn't show, listed under Not shown at the bottom. */
 	const notShown = $derived(
-		m ? categories(m).filter((c) => !own.some((s) => s.key === c.key)) : []
+		m
+			? categories(m)
+					.filter((c) => !own.some((s) => s.key === c.key))
+					.map((c) => ({ ...c, label: displayMessage(slotLabelMessage(m, c.key)) }))
+			: []
 	);
 	/** Every corner icon another character's item shows here, each with the words its tooltip and ⋮ menu give. */
 	function sharedMarks(x: SharedItem): Mark[] {
@@ -276,31 +313,34 @@
 		return sortMarks([
 			{
 				kind: 'shared',
-				label: x.fit === 'remake' ? `From ${x.sourceName}` : `Free from ${x.sourceName}`,
+				label:
+					x.fit === 'remake'
+						? t('wardrobe.source', { from: x.sourceName })
+						: t('wardrobe.sourceFree', { from: x.sourceName }),
 				text:
 					x.fit === 'remake'
-						? `From ${x.sourceName}.`
+						? t('wardrobe.sourceNote', { from: x.sourceName })
 						: x.fit === 'copy'
-							? `From ${x.sourceName}, the same body: wearing it copies it here exactly, for free.`
-							: `From ${x.sourceName}. Wearing it copies it here for free.`
+							? t('wardrobe.sourceSameBody', { from: x.sourceName })
+							: t('wardrobe.sourceCopy', { from: x.sourceName })
 			},
 			x.fit === 'remake' && {
 				kind: 'blocked',
-				label: 'Can’t be worn',
-				text: `It can’t be worn on ${m.name}: it has no frames for this character’s moves and views, or its art is too large to export. Make one for this character instead.`
+				label: t('wardrobe.cannotWear'),
+				text: t('wardrobe.cannotWearNote', { name: m.name })
 			},
-			x.fit === 'unfitted' && unfitMark(unfitText(m, x.sourceName, x.notes ?? [])),
+			x.fit === 'unfitted' && unfitMark(unfitText(m, x.sourceName, x.notes ?? [], t)),
 			x.fit === 'refit' && {
 				kind: 'check',
-				label: 'Check fit',
-				text: `Fitted to this body from ${x.sourceName}’s item for free. Check it in each move.`
+				label: t('wardrobe.checkFit'),
+				text: t('wardrobe.checkFitNote', { from: x.sourceName })
 			},
 			missingMark(missing)
 		]);
 	}
 	/** Moves the item has no art for here, worded like an own item's missing frames (it hides in them once worn). */
 	const sharedMissing = (x: SharedItem) =>
-		m ? missingFramesNote(m, { ...x.item, coverage: x.cells as CellKey[] }) : '';
+		m ? displayMessage(missingFramesNote(m, { ...x.item, coverage: x.cells as CellKey[] })) : '';
 	const sectionId = (id: string) => `wardrobe-${id.replace(/\s+/g, '-').toLowerCase()}`;
 
 	function remember() {
@@ -482,7 +522,17 @@
 	};
 
 	// ---------- slots: each header opens its slot's menu and drags to reorder; Not shown lists the rest ----------
-	let announce = $state('');
+	let announce = $state.raw<Message>();
+	const announcement = $derived.by(() => {
+		if (!announce) return '';
+		const vars = Object.fromEntries(
+			Object.entries(announce.vars ?? {}).map(([name, value]) => [
+				name,
+				typeof value === 'number' ? formatNumber(value) : value
+			])
+		);
+		return displayNestedMessage({ ...announce, vars });
+	});
 	let slotMenu = $state<HTMLElement>();
 	let slotFor = $state(''),
 		slotMenuOpen = $state(false),
@@ -495,9 +545,15 @@
 	/** Why a slot can't be hidden now (it holds items or attempts), or '' when it is empty. */
 	function hideBlock(key: string, label: string) {
 		const use = slotUseHere(key);
-		return isEmpty(use)
-			? ''
-			: `${label} has ${useText(use)}. Only empty slots can be hidden${use.stopped ? '; dismiss stopped attempts in Activity first' : ''}.`;
+		return displayMessage(
+			slotBusyMessage(
+				label,
+				use,
+				'hideWardrobe',
+				new Intl.ListFormat(getLocale()).format(slotUseMessages(use).map(displayMessage)),
+				use.stopped ? t('studioSlots.busy.dismissStopped') : ''
+			)
+		);
 	}
 	const slotHideBlock = $derived(slotAt >= 0 ? hideBlock(slotFor, own[slotAt].label) : '');
 	// A slot gone from the list (hidden or deleted elsewhere, undo) closes its menu rather than act on a ghost.
@@ -523,29 +579,35 @@
 			: list?.querySelector<HTMLElement>(`[data-slot-button="${CSS.escape(ui.group)}"]`);
 		focus?.focus({ preventScroll: true });
 	}
-	function moveTo(key: string, label: string, to: number) {
+	function moveTo(key: string, to: number) {
 		try {
 			moveSlot(key, to);
 		} catch (e) {
-			toast((e as Error).message);
+			toast(errorMessage(e));
 			return;
 		}
-		announce = `${label} moved to position ${to + 1} of ${own.length}.`;
+		announce = message('wardrobe.slotMoved', {
+			label: slotLabelMessage(m, key),
+			position: to + 1,
+			total: own.length
+		});
 		void settle(key);
 	}
-	async function hide(key: string, label: string) {
-		if (hideBlock(key, label)) return;
+	async function hide(key: string) {
+		const label = slotLabelMessage(m, key);
+		if (hideBlock(key, displayMessage(label))) return;
 		closeSlotMenu();
-		const problem = await hideSlot(key).catch((e: Error) => e.message);
+		const problem = await hideSlot(key).catch(errorMessage);
 		if (problem) {
 			toast(problem);
 			return;
 		}
-		announce = `${label} is not shown. It is listed under Not shown.`;
+		announce = message('wardrobe.slotHidden', { label });
 		await tick();
 		list?.querySelector<HTMLElement>('.not-shown-toggle')?.focus({ preventScroll: true });
 	}
-	async function showHidden(key: string, label: string, to?: number) {
+	async function showHidden(key: string, to?: number) {
+		const label = slotLabelMessage(m, key);
 		const index = notShown.findIndex((slot) => slot.key === key);
 		const next = notShown[index + 1]?.key ?? notShown[index - 1]?.key;
 		const anchor = to === undefined && list?.querySelector<HTMLElement>('.not-shown-toggle');
@@ -558,12 +620,16 @@
 			else showSlotAt(key, to);
 		} catch (e) {
 			restoreAnchor = null;
-			toast((e as Error).message);
+			toast(errorMessage(e));
 			return;
 		}
 		await tick();
 		const at = own.findIndex((s) => s.key === key);
-		announce = `${label} is shown at position ${at + 1} of ${own.length}.`;
+		announce = message('wardrobe.slotShown', {
+			label,
+			position: at + 1,
+			total: own.length
+		});
 		if (to !== undefined) void settle(key);
 		else {
 			const focus = next
@@ -707,7 +773,9 @@
 				void tick().then(() => {
 					if (drag) dragPreview?.showPopover();
 				});
-				announce = `Dragging ${source.label}. Drop it between slots in the ${source.rail ? 'navigation rail' : 'list'}; Escape cancels.`;
+				announce = message(source.rail ? 'wardrobe.dragInRail' : 'wardrobe.dragInList', {
+					label: slotLabelMessage(m, source.key)
+				});
 				cancelAnimationFrame(dragFrame);
 				dragFrame = requestAnimationFrame(dragStep);
 			},
@@ -721,12 +789,14 @@
 				drag = null;
 				armed = '';
 				if (!target) {
-					announce = commit ? `${source.label} stays where it was.` : 'Drag canceled.';
+					announce = commit
+						? message('wardrobe.slotUnmoved', { label: slotLabelMessage(m, source.key) })
+						: message('wardrobe.dragCanceled');
 					return;
 				}
-				if (source.hidden) void showHidden(source.key, source.label, target.to);
+				if (source.hidden) void showHidden(source.key, target.to);
 				else {
-					moveTo(source.key, source.label, target.to);
+					moveTo(source.key, target.to);
 					if (source.rail)
 						void tick().then(() =>
 							rail
@@ -750,7 +820,7 @@
 			{@attach stickyFade({ inside: 10, outside: 10 })}
 		>
 			{#each sections as s (s.key)}
-				{@const lower = s.label.toLowerCase()}
+				{@const lower = getLocale() === 'en' ? s.label.toLowerCase() : s.label}
 				{@const count = s.fromOthers ? s.others.length : s.items.length + s.pending.length}
 				<section
 					class="slot-section"
@@ -798,27 +868,31 @@
 									><span class="section-menu-name">{s.label}</span><span
 										class="bu-section-count"
 										id={`${sectionId(s.key)}-count`}
-										>{count}<span class="sr">{` ${count === 1 ? 'item' : 'items'}`}</span></span
+										><span aria-hidden="true">{formatNumber(count)}</span><span class="sr"
+											>{t('wardrobe.itemCount', { count, n: formatNumber(count) })}</span
+										></span
 									></button
 								>{/if}
 						</h3>
 						{#if s.fromOthers}<span class="bu-section-count"
-								>{count}<span class="sr">{` ${count === 1 ? 'item' : 'items'}`}</span></span
+								><span aria-hidden="true">{formatNumber(count)}</span><span class="sr"
+									>{t('wardrobe.itemCount', { count, n: formatNumber(count) })}</span
+								></span
 							>{/if}
 						{#if !s.fromOthers}
 							<button
 								class="bu-action section-action"
 								data-variant="quiet"
-								aria-label="Random {lower} item"
-								title="Random {lower} item"
+								aria-label={t('wardrobe.randomLowerItem', { lower })}
+								title={t('wardrobe.randomLowerItem', { lower })}
 								disabled={!s.choices}
 								onclick={() => randomizeGroup(s.key)}><Shuffle size={16} /></button
 							>
 							<button
 								class="bu-action section-action section-add"
 								data-variant="quiet"
-								aria-label="New {lower} item"
-								title="New {lower} item"
+								aria-label={t('wardrobe.newLowerItem', { lower })}
+								title={t('wardrobe.newLowerItem', { lower })}
 								onclick={() => openNewItem(s.key)}><Plus size={18} /></button
 							>
 						{/if}
@@ -826,21 +900,27 @@
 					<div class="section-body">
 						{#if s.fromOthers}<p class="section-note faint small">{s.fromOthers}</p>{/if}
 						{#if s.holder}<p class="section-note faint small">
-								Held by {s.holder.name} (two-handed).
+								{t('wardrobe.heldBy', { name: s.holder.name })}
 							</p>{/if}
-						<div class="slot-tiles" role="group" aria-label="{s.label} items">
+						<div
+							class="slot-tiles"
+							role="group"
+							aria-label={t('wardrobe.labelItems', { label: s.label })}
+						>
 							{#if !s.fromOthers}
 								<button
 									class="bu-tile item-tile"
 									data-variant="empty"
 									aria-pressed={!s.worn}
-									aria-label="Empty {lower}"
+									aria-label={t('wardrobe.emptyLower', { lower })}
 									onclick={() => clearSlots([s.key])}
 									><span class="bu-tile-art tile-art" aria-hidden="true"><Ban size={26} /></span
-									><span class="bu-tile-label">Empty</span>{#if !s.worn}<span
+									><span class="bu-tile-label">{t('wardrobe.empty')}</span>{#if !s.worn}<span
 											class="tile-marks"
 											aria-hidden="true"
-											><span class="bu-tile-check" title="Nothing worn here"><Check /></span></span
+											><span class="bu-tile-check" title={t('wardrobe.titleNothingWornHere')}
+												><Check /></span
+											></span
 										>{/if}</button
 								>
 							{/if}
@@ -872,8 +952,8 @@
 										popovertarget="item-menu"
 										aria-haspopup="menu"
 										aria-expanded={menuOpen && menuFor === it.id}
-										aria-label="More options for {it.name}"
-										title="Options"
+										aria-label={t('wardrobe.moreOptionsForName', { name: it.name })}
+										title={t('wardrobe.titleOptions')}
 										onclick={() => {
 											// The same ⋮ toggles the menu closed; another tile's ⋮ reopens it for that tile.
 											if (menuOpen && menuFor !== it.id)
@@ -885,7 +965,15 @@
 							{/each}
 							{#each s.pending as x (x.draft.spec.id)}
 								{@const p = genProgress(x, $queue.jobs)}
-								{@const info = generationStatus(x, $queue.jobs, now, !!app.key, $queue.paused)}
+								{@const info = generationStatus(
+									x,
+									$queue.jobs,
+									now,
+									!!app.key,
+									$queue.paused,
+									outcomeFormatters
+								)}
+								{@const status = displayMessage(info.text)}
 								{@const on = doc.drafts[x.draft.spec.slot] === x.draft.spec.id}
 								{@const preview = store.results[x.draft.spec.id]?.preview}
 								{@const previewItem = preview?.manifest.items.find(
@@ -906,9 +994,15 @@
 										class="bu-tile item-tile"
 										data-selected={ui.selected === `gen:${x.draft.spec.id}` || undefined}
 										data-tile="gen:{x.draft.spec.id}"
-										aria-label="{x.input.name}, {x.phase === 'running'
-											? p.pct + '%, '
-											: ''}{info.text}{x.phase !== 'running' && on ? ', Wearing' : ''}"
+										aria-label={x.phase === 'running'
+											? t('wardrobe.generationTileRunning', {
+													name: x.input.name,
+													percent: formatPercent(p.pct / 100),
+													status
+												})
+											: on
+												? t('wardrobe.generationTileWearing', { name: x.input.name, status })
+												: t('wardrobe.generationTile', { name: x.input.name, status })}
 										aria-pressed={x.phase === 'running' ? on : undefined}
 										aria-haspopup={x.phase !== 'running' ? 'dialog' : undefined}
 										onclick={() =>
@@ -947,37 +1041,40 @@
 										</span>
 										{#if x.phase === 'running'}<span
 												class="generation-percent bu-muted small num"
-												aria-hidden="true">{p.pct}%</span
+												aria-hidden="true">{formatPercent(p.pct / 100)}</span
 											>{/if}
 										<span class="generation-caption">
 											<span class="generation-time bu-muted small num" aria-hidden="true"
-												>{info.text}</span
+												>{status}</span
 											>
 											<span class="bu-tile-label tile-name">{x.input.name}</span>
 										</span>
 										<TileMarks
 											marks={sortMarks([
-												on && WORN,
-												info.attention && { kind: 'check', label: info.text, text: info.text }
+												on && wornMark,
+												info.attention && { kind: 'check', label: status, text: status }
 											])}
 										/>
 									</button>
 									{#if x.phase === 'running'}<span
 											class="sr"
 											role="progressbar"
-											aria-label="{x.input.name} progress"
+											aria-label={t('wardrobe.nameProgress', { name: x.input.name })}
 											aria-valuenow={p.pct}
 											aria-valuemin={0}
 											aria-valuemax={100}
-											aria-valuetext="{p.pct}%, {info.text}"
+											aria-valuetext={t('wardrobe.generationProgress', {
+												percent: formatPercent(p.pct / 100),
+												status
+											})}
 										></span>{/if}
 									<button
 										class="bu-tile-more tile-more"
 										popovertarget="item-menu"
 										aria-haspopup="menu"
 										aria-expanded={menuOpen && menuFor === 'gen:' + x.draft.spec.id}
-										title="Options"
-										aria-label="More options for {x.input.name}"
+										title={t('wardrobe.titleOptions')}
+										aria-label={t('wardrobe.moreOptionsForName', { name: x.input.name })}
 										onclick={() => {
 											if (menuOpen && menuFor !== 'gen:' + x.draft.spec.id)
 												document.getElementById('item-menu')?.hidePopover();
@@ -1014,8 +1111,8 @@
 										popovertarget="item-menu"
 										aria-haspopup="menu"
 										aria-expanded={menuOpen && menuFor === key}
-										aria-label="More options for {x.item.name}"
-										title="Options"
+										aria-label={t('wardrobe.moreOptionsForName', { name: x.item.name })}
+										title={t('wardrobe.titleOptions')}
 										onclick={() => {
 											if (menuOpen && menuFor !== key)
 												document.getElementById('item-menu')?.hidePopover();
@@ -1028,10 +1125,10 @@
 								<button
 									class="bu-tile item-tile"
 									data-variant="add"
-									aria-label="New {lower} item"
+									aria-label={t('wardrobe.newLowerItem', { lower })}
 									onclick={() => openNewItem(s.key)}
 									><span class="bu-tile-art tile-art" aria-hidden="true"><Plus size={26} /></span
-									><span class="bu-tile-label">New</span></button
+									><span class="bu-tile-label">{t('common.new')}</span></button
 								>
 							{/if}
 						</div>
@@ -1039,7 +1136,7 @@
 				</section>
 			{/each}
 			{#if !own.length}<p class="faint small no-slots">
-					No slots are shown. Show one below, or add a slot.
+					{t('wardrobe.noSlotsAreShownShowOneBelow')}
 				</p>{/if}
 			{#if notShown.length}
 				<div class="not-shown">
@@ -1050,16 +1147,14 @@
 						aria-expanded={notShownOpen}
 						aria-controls="wardrobe-not-shown"
 						onclick={() => void toggleNotShown()}
-						><EyeOff size={16} aria-hidden="true" /><span class="bu-section-title">Not shown</span
-						><span class="bu-section-count not-shown-count">{notShown.length}</span><ChevronRight
-							class="not-shown-chevron"
-							size={16}
-							aria-hidden="true"
-						/></button
+						><EyeOff size={16} aria-hidden="true" /><span class="bu-section-title"
+							>{t('wardrobe.notShown')}</span
+						><span class="bu-section-count not-shown-count">{formatNumber(notShown.length)}</span
+						><ChevronRight class="not-shown-chevron" size={16} aria-hidden="true" /></button
 					>
 					<div id="wardrobe-not-shown" hidden={!notShownOpen}>
 						<p class="faint small not-shown-note" id="wardrobe-not-shown-note">
-							Drag a slot or tap its eye.
+							{t('wardrobe.dragASlotOrTapItsEye')}
 						</p>
 						<ul class="not-shown-list" aria-describedby="wardrobe-not-shown-note">
 							{#each notShown as c (c.key)}
@@ -1081,14 +1176,14 @@
 								>
 									<button
 										class="bu-action not-shown-slot"
-										aria-label="Show {c.label}"
+										aria-label={t('slotsSheet.showLabel', { label: c.label })}
 										data-show-slot={c.key}
 										popovertarget="slot-menu"
 										aria-haspopup="menu"
 										aria-expanded={slotMenuOpen && slotFor === c.key}
 										onclick={(event) => {
 											event.preventDefault();
-											void showHidden(c.key, c.label);
+											void showHidden(c.key);
 										}}
 										><span class="slot-drag-icon"
 											><GroupIcon group={c.key} size={18} /><GripVertical
@@ -1109,7 +1204,7 @@
 			{/if}
 			{#if shared.error}<p class="notice warn small" role="alert">{shared.error}</p>{/if}
 			{#if shared.skipped}<p class="faint small">
-					Some items from other characters couldn’t be read.
+					{t('wardrobe.someItemsFromOtherCharactersCouldnT')}
 				</p>{/if}
 			<div class="list-spacer" style:height="{spacer}px" aria-hidden="true"></div>
 			{#if drag?.line != null && !drag.source.rail}<div
@@ -1139,7 +1234,9 @@
 			data-placement="bottom-start"
 			popover
 			role="menu"
-			aria-label={slotEntry ? `${slotEntry.label} slot` : 'Slot'}
+			aria-label={slotEntry
+				? t('wardrobe.slotLabel', { label: slotEntry.label })
+				: t('wardrobe.slot')}
 			bind:this={slotMenu}
 			ontoggle={(e) => {
 				slotMenuOpen = e.newState === 'open';
@@ -1157,8 +1254,8 @@
 							role="menuitem"
 							onclick={() => {
 								closeSlotMenu();
-								void showHidden(s.key, s.label);
-							}}><Eye size={16} aria-hidden="true" />Show slot</button
+								void showHidden(s.key);
+							}}><Eye size={16} aria-hidden="true" />{t('wardrobe.showSlot')}</button
 						>
 					{:else}
 						<button
@@ -1169,8 +1266,8 @@
 							onclick={() => {
 								if (slotAt === 0) return;
 								closeSlotMenu();
-								moveTo(s.key, s.label, slotAt - 1);
-							}}><ArrowUp size={16} aria-hidden="true" />Move up</button
+								moveTo(s.key, slotAt - 1);
+							}}><ArrowUp size={16} aria-hidden="true" />{t('wardrobe.moveUp')}</button
 						>
 						<button
 							class="row"
@@ -1180,17 +1277,18 @@
 							onclick={() => {
 								if (slotAt === own.length - 1) return;
 								closeSlotMenu();
-								moveTo(s.key, s.label, slotAt + 1);
-							}}><ArrowDown size={16} aria-hidden="true" />Move down</button
+								moveTo(s.key, slotAt + 1);
+							}}><ArrowDown size={16} aria-hidden="true" />{t('wardrobe.moveDown')}</button
 						>
 						<button
 							class="row"
 							data-variant="quiet"
 							role="menuitem"
 							aria-disabled={!!slotHideBlock || undefined}
-							onclick={() => void hide(s.key, s.label)}
+							onclick={() => void hide(s.key)}
 							><EyeOff size={16} aria-hidden="true" /><span class="row-name"
-								>Hide slot{#if slotHideBlock}<small class="row-reason">{slotHideBlock}</small
+								>{t('wardrobe.hideSlot')}{#if slotHideBlock}<small class="row-reason"
+										>{slotHideBlock}</small
 									>{/if}</span
 							></button
 						>
@@ -1201,15 +1299,16 @@
 						data-variant="quiet"
 						role="menuitem"
 						onclick={() => openSlotSettings(s.key)}
-						>{#if slotCustom}<Pencil size={16} aria-hidden="true" />Edit slot…{:else}<CopyPlus
-								size={16}
-								aria-hidden="true"
-							/>Make a custom copy…{/if}</button
+						>{#if slotCustom}<Pencil size={16} aria-hidden="true" />{t(
+								'wardrobe.editSlot'
+							)}{:else}<CopyPlus size={16} aria-hidden="true" />{t(
+								'wardrobe.makeACustomCopy'
+							)}{/if}</button
 					>
 				{/if}
 			</div>
 		</div>
-		<p class="sr" aria-live="polite">{announce}</p>
+		<p class="sr" aria-live="polite">{announcement}</p>
 		<!-- Always mounted: a ⋮ click opens it in the same task, before the chosen item renders into it. -->
 		<ItemMenu
 			id={menuFor}
@@ -1217,7 +1316,14 @@
 			marks={menuShared ? sharedMarks(menuShared) : menuItem ? marksOf(menuItem) : []}
 			generation={menuGeneration}
 			generationInfo={menuGeneration
-				? generationStatus(menuGeneration, $queue.jobs, now, !!app.key, $queue.paused)
+				? generationStatus(
+						menuGeneration,
+						$queue.jobs,
+						now,
+						!!app.key,
+						$queue.paused,
+						outcomeFormatters
+					)
 				: undefined}
 			onremove={(id) => void remove(id)}
 			bind:open={menuOpen}
@@ -1226,7 +1332,7 @@
 		<div class="slot-rail-column">
 			<nav
 				class="slot-rail bu-scroll-hidden bu-edge-fade"
-				aria-label="Equipment slots"
+				aria-label={t('wardrobe.equipmentSlots')}
 				bind:this={rail}
 				{@attach edgeFade({ axis: 'y', size: 24 })}
 			>
@@ -1243,7 +1349,7 @@
 								data-dragged={drag?.source.key === s.key || undefined}
 								data-filled={s.worn || undefined}
 								aria-current={!notShownCurrent && ui.group === s.key ? 'true' : undefined}
-								aria-label={s.worn ? `${s.label}, equipped` : s.label}
+								aria-label={s.worn ? t('wardrobe.equipped', { label: s.label }) : s.label}
 								aria-haspopup={!s.fromOthers ? 'menu' : undefined}
 								aria-expanded={!s.fromOthers ? slotMenuOpen && slotFor === s.key : undefined}
 								tabindex={!notShownCurrent && ui.group === s.key ? 0 : -1}
@@ -1281,9 +1387,12 @@
 								tabindex={notShownCurrent || !sections.some((slot) => slot.key === ui.group)
 									? 0
 									: -1}
-								aria-label="Not shown, {notShown.length} slots"
+								aria-label={t('wardrobe.notShownLengthSlots', {
+									length: formatNumber(notShown.length)
+								})}
 								onclick={() => void showNotShown()}
-								><EyeOff size={22} aria-hidden="true" /><span class="bu-rail-label">Not shown</span
+								><EyeOff size={22} aria-hidden="true" /><span class="bu-rail-label"
+									>{t('wardrobe.notShown')}</span
 								></button
 							>
 						</li>{/if}
@@ -1299,9 +1408,13 @@
 				<button
 					class="bu-action slot-tab slot-add"
 					data-variant="rail"
+					aria-label={t('slotsSheet.titleAddSlot')}
 					aria-haspopup="dialog"
+					title={t('slotsSheet.titleAddSlot')}
 					onclick={addSlot}
-					><Plus size={22} aria-hidden="true" /><span class="bu-rail-label">Add slot</span></button
+					><Plus size={22} aria-hidden="true" /><span class="bu-rail-label"
+						>{t('wardrobe.addSlot')}</span
+					></button
 				>
 			</div>
 		</div>

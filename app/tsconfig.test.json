@@ -8,6 +8,7 @@
 	"include": [
 		"test/**/*.ts",
 		"src/version.d.ts",
+		"src/whisper.d.ts",
 		"src/studio/gifenc.d.ts",
 		"vitest.config.ts",
 		"playwright.config.ts",

@@ -4,8 +4,10 @@
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { doc, store, ui, view } from './state.svelte.ts';
 	import { buildPresentation } from './experience/presentation.ts';
-	import { directionLabel } from './experience/movement.ts';
-	import { moveLabel } from './model.ts';
+	import { displayDirection } from './displayDirection.ts';
+	import { directionLabel } from '../lib/rig/directions.ts';
+	import { errorTranslation } from '../lib/message.ts';
+	import { displayMove } from './displayMove.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import {
 		ALL_DIRECTIONS,
@@ -30,6 +32,7 @@
 		Share2,
 		ChevronDown
 	} from './icons.ts';
+	import { getLocale, t } from 'svelte-whisper';
 
 	let popover: HTMLElement;
 	let open = $state(false);
@@ -42,7 +45,8 @@
 	let copying = $state(false);
 	let file = $state.raw<File | null>(null);
 	let encoding = $state(false);
-	let feedback = $state('');
+	// Kept as a function so a shown message follows a language switch.
+	let feedback = $state<(() => string) | null>(null);
 	let viewportWidth = $state(innerWidth);
 	let viewportHeight = $state(innerHeight);
 	const moveIds = $derived(store.project?.manifest.rig.animations.map((a) => a.id) ?? []);
@@ -57,14 +61,14 @@
 	);
 	const animate = $derived(wantedAnimate && canAnimate);
 	const planned = $derived.by(() => {
-		if (!availability) return { media: null, error: '' };
+		if (!availability) return { media: null, error: null };
 		try {
 			return {
 				media: buildShareMedia(availability, view.items, move, direction, animate),
-				error: ''
+				error: null
 			};
 		} catch (error) {
-			return { media: null, error: (error as Error).message };
+			return { media: null, error: error as unknown };
 		}
 	});
 	const directionOptions = $derived.by(() =>
@@ -115,11 +119,34 @@
 	const omittedText = $derived.by(() => {
 		const missing = planned.media?.omitted ?? [];
 		if (!missing.length) return '';
+		const english = getLocale() === 'en';
 		const names = missing
 			.slice(0, 3)
-			.map((entry) => `${entry.move.replaceAll('-', ' ')} ${directionLabel(entry.direction)}`);
-		return `${missing.length} unavailable ${missing.length === 1 ? 'view' : 'views'} omitted: ${names.join(', ')}${missing.length > 3 ? `, and ${missing.length - 3} more` : ''}`;
+			.map(({ move, direction }) =>
+				english
+					? `${move.replaceAll('-', ' ')} ${directionLabel(direction)}`
+					: `${displayMove(move, moveIds)} ${displayDirection(direction)}`
+			);
+		const more = missing.length - 3;
+		return t(more > 0 ? 'share.omittedMore' : 'share.omitted', {
+			count: missing.length,
+			names: names.join(', '),
+			more
+		});
 	});
+
+	/** A share error in the active language; its direction id is shown by name. */
+	function shareError(error: unknown): string {
+		const translation = errorTranslation(error);
+		if (!translation) return (error as Error).message;
+		const { direction, ...vars } = (translation.vars ?? {}) as Record<string, unknown>;
+		return t(
+			translation.key,
+			typeof direction === 'string'
+				? { ...vars, direction: displayDirection(direction as DirectionName) }
+				: vars
+		);
+	}
 
 	$effect(() => {
 		if (!open) return;
@@ -143,7 +170,7 @@
 		const filename = `${name}-${move === ALL_MOVES ? 'all-moves' : move}-${direction === ALL_DIRECTIONS ? 'all-directions' : direction}`;
 		file = null;
 		png = null;
-		feedback = '';
+		feedback = null;
 		copying = false;
 		if (!open || !media) {
 			encoding = false;
@@ -170,7 +197,11 @@
 			})
 			.catch((error) => {
 				if (run !== serial) return;
-				feedback = `Could not prepare ${media.extension.toUpperCase()}: ${(error as Error).message}`;
+				feedback = () =>
+					t('share.prepareFailed', {
+						format: media.extension.toUpperCase(),
+						detail: shareError(error)
+					});
 				encoding = false;
 			});
 		return () => {
@@ -229,7 +260,7 @@
 	function copyPng() {
 		if (!png || copying) return;
 		if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
-			feedback = 'Image copying is unavailable in this browser. Download PNG instead.';
+			feedback = () => t('share.copyUnavailable');
 			return;
 		}
 		const run = serial;
@@ -238,26 +269,27 @@
 			void navigator.clipboard
 				.write([new ClipboardItem({ 'image/png': png })])
 				.then(() => {
-					if (run === serial) feedback = 'PNG copied';
+					if (run === serial) feedback = () => t('share.copied');
 				})
 				.catch((error) => {
-					if (run === serial) feedback = `Could not copy PNG: ${(error as Error).message}`;
+					if (run === serial)
+						feedback = () => t('share.copyFailed', { detail: (error as Error).message });
 				})
 				.finally(() => {
 					if (run === serial) copying = false;
 				});
 		} catch (error) {
 			copying = false;
-			feedback = `Could not copy PNG: ${(error as Error).message}`;
+			feedback = () => t('share.copyFailed', { detail: (error as Error).message });
 		}
 	}
 	function share() {
 		if (!file || !canShare) return;
 		void navigator
-			.share({ files: [file], title: store.project?.manifest.name ?? 'PixelDoll character' })
+			.share({ files: [file], title: store.project?.manifest.name ?? t('share.untitled') })
 			.catch((error) => {
 				if ((error as Error).name !== 'AbortError')
-					feedback = `Could not share: ${(error as Error).message}`;
+					feedback = () => t('share.shareFailed', { detail: (error as Error).message });
 			});
 	}
 </script>
@@ -270,7 +302,7 @@
 	popover
 	bind:this={popover}
 	role="dialog"
-	aria-label="Share character preview"
+	aria-label={t('share.dialog')}
 	ontoggle={toggle}
 >
 	<PopoverArrow />
@@ -278,24 +310,29 @@
 		<div
 			class="share-preview"
 			style:--share-preview-height="{previewHeight}px"
-			aria-label="Selected artwork preview"
+			aria-label={t('share.preview')}
 			role="img"
 		>
 			{#if image}<Sprite
 					img={image}
 					k={Math.max(1, Math.floor(3 * ui.dpr))}
 					limit={previewLimit}
-					label="Selected artwork"
+					label={t('share.artwork')}
 				/>{/if}
 		</div>
 		<div class="share-controls">
 			<label class="share-picker">
 				<PersonStanding size={16} aria-hidden="true" />
-				<select class="bu-select" aria-label="Move" bind:value={move} onchange={() => (index = 0)}>
+				<select
+					class="bu-select"
+					aria-label={t('common.move')}
+					bind:value={move}
+					onchange={() => (index = 0)}
+				>
 					{#each store.project?.manifest.rig.animations ?? [] as animation (animation.id)}<option
-							value={animation.id}>{moveLabel(animation.id, moveIds)}</option
+							value={animation.id}>{displayMove(animation.id, moveIds)}</option
 						>{/each}
-					<option value={ALL_MOVES}>All moves</option>
+					<option value={ALL_MOVES}>{t('share.allMoves')}</option>
 				</select>
 				<ChevronDown size={14} aria-hidden="true" />
 			</label>
@@ -303,16 +340,16 @@
 				<Compass size={16} aria-hidden="true" />
 				<select
 					class="bu-select"
-					aria-label="Direction"
+					aria-label={t('common.direction')}
 					bind:value={direction}
 					onchange={() => (index = 0)}
 				>
 					{#each store.project?.manifest.rig.directions ?? [] as entry (entry.id)}<option
 							value={entry.id}
 							disabled={directionOptions.find((option) => option.id === entry.id)?.disabled ??
-								false}>{directionLabel(entry.id as DirectionName)}</option
+								false}>{displayDirection(entry.id as DirectionName)}</option
 						>{/each}
-					<option value={ALL_DIRECTIONS}>All directions</option>
+					<option value={ALL_DIRECTIONS}>{t('stage.allDirections')}</option>
 				</select>
 				<ChevronDown size={14} aria-hidden="true" />
 			</label>
@@ -320,13 +357,14 @@
 		<div class="share-controls">
 			<label class="share-picker">
 				<Scaling size={16} aria-hidden="true" />
-				<select class="bu-select" aria-label="Size" bind:value={scale}>
-					{#each SHARE_SCALES as size}<option value={size}>{size}x size</option>{/each}
+				<select class="bu-select" aria-label={t('share.size')} bind:value={scale}>
+					{#each SHARE_SCALES as size}<option value={size}>{t('share.sizeOption', { size })}</option
+						>{/each}
 				</select>
 				<ChevronDown size={14} aria-hidden="true" />
 			</label>
 			<label class="share-animate bu-check bu-action" data-variant="field">
-				<span><Clapperboard size={16} aria-hidden="true" />Animated</span>
+				<span><Clapperboard size={16} aria-hidden="true" />{t('share.animated')}</span>
 				<input
 					class="bu-switch"
 					type="checkbox"
@@ -343,18 +381,22 @@
 		<hr class="share-divider bu-separator" />
 		<div class="share-actions">
 			<button class="bu-action" data-variant="outline" disabled={!png || copying} onclick={copyPng}
-				><Copy size={16} aria-hidden="true" />{copying ? 'Copying…' : 'Copy PNG'}</button
+				><Copy size={16} aria-hidden="true" />{copying
+					? t('common.copying')
+					: t('share.copy')}</button
 			>
 			<button
 				class="bu-action"
 				data-variant="outline"
 				disabled={!canShare || encoding}
-				onclick={share}><Share2 size={16} aria-hidden="true" />Share to…</button
+				onclick={share}><Share2 size={16} aria-hidden="true" />{t('share.shareTo')}</button
 			>
 			<button
 				class="share-download bu-action"
 				data-variant="primary"
-				aria-label={encoding ? `Preparing ${label}` : `Download ${label}`}
+				aria-label={encoding
+					? t('share.preparingLabel', { format: label })
+					: t('share.downloadLabel', { format: label })}
 				aria-describedby={dimensions ? 'share-output-resolution' : undefined}
 				disabled={!file || encoding}
 				onclick={download}
@@ -364,16 +406,19 @@
 						size={16}
 						aria-hidden="true"
 					/>{:else}<Download size={16} aria-hidden="true" />{/if}
-				<span>{encoding ? 'Preparing…' : `Download ${label}`}</span>
+				<span>{encoding ? t('common.preparing') : t('share.downloadLabel', { format: label })}</span
+				>
 				{#if dimensions}<span id="share-output-resolution" class="share-resolution"
-						>{dimensions.w} × {dimensions.h} px</span
+						>{t('share.resolution', { width: dimensions.w, height: dimensions.h })}</span
 					>{/if}
 			</button>
 		</div>
-		{#if planned.error}<p class="share-message bu-error" role="status">{planned.error}</p>{/if}
+		{#if planned.error !== null}<p class="share-message bu-error" role="status">
+				{shareError(planned.error)}
+			</p>{/if}
 		{#if omittedText}<p class="share-message bu-badge" data-tone="warning" role="status">
 				{omittedText}
 			</p>{/if}
-		{#if feedback}<p class="share-message" role="status">{feedback}</p>{/if}
+		{#if feedback}<p class="share-message" role="status">{feedback()}</p>{/if}
 	</div>
 </div>

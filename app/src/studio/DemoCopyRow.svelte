@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { message } from '../lib/message.ts';
+	import { t } from 'svelte-whisper';
 	import { copyDemo, doc, openProject, toast } from './state.svelte.ts';
 	import { Copy } from './icons.ts';
 	let { id, close }: { id: string; close: () => void } = $props();
@@ -11,9 +13,11 @@
 			if (doc.id !== id) await openProject(id);
 			if (doc.id !== id || doc.loading || doc.error) return;
 			const copyId = await copyDemo();
-			if (doc.id === copyId) toast('Opened your editable copy of the demo. No generations used.');
+			if (doc.id === copyId) toast(message('demoCopyRow.openedYourEditableCopyOfTheDemo'));
 		} catch (error) {
-			toast(`Could not copy the demo: ${(error as Error).message}`, { tone: 'danger' });
+			toast(message('state.couldNotCopyTheDemoReason', { reason: (error as Error).message }), {
+				tone: 'danger'
+			});
 		} finally {
 			busy = false;
 		}
@@ -22,6 +26,6 @@
 
 {#if id.startsWith('fixture:')}
 	<button class="row" role="menuitem" disabled={busy} onclick={editCopy}>
-		<Copy size={16} /><span class="row-name">Edit a copy</span>
+		<Copy size={16} /><span class="row-name">{t('demoCopyRow.editACopy')}</span>
 	</button>
 {/if}

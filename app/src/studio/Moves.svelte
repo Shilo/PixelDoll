@@ -4,13 +4,16 @@
 	import { ui, doc, store, view, isDemo, moving } from './state.svelte.ts';
 	import Lazy from './Lazy.svelte';
 	import { ChevronRight, Plus } from './icons.ts';
-	import { moveLabel } from './model.ts';
+	import { displayMove } from './displayMove.ts';
+	import { displayError } from '../lib/i18n.ts';
 	import SavedActions from './SavedActions.svelte';
 	import { downloadMoveZip } from './download.svelte.ts';
 	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
+	import { displayDirectionInSentence } from './displayDirection.ts';
+	import { t } from 'svelte-whisper';
 	const m = $derived(store.project?.manifest);
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
-	const nice = (id: string) => moveLabel(id, moveIds);
+	const nice = (id: string) => displayMove(id, moveIds);
 	const k = $derived(Math.max(1, Math.floor(ui.dpr)));
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done);
 	const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id));
@@ -39,7 +42,7 @@
 				<SavedActions
 					name={nice(a.id)}
 					kind="move"
-					locked={moveDeletionBlocked(a.id)}
+					locked={displayError(moveDeletionBlocked(a.id))}
 					ondownload={() => downloadMoveZip(a.id)}
 					ondelete={() => removeMove(a.id)}
 				>
@@ -61,15 +64,18 @@
 								)}
 								{k}
 								limit={56}
-								label="{nice(a.id)} preview"
+								label={t('moves.preview', { move: nice(a.id) })}
 							/></span
 						>
 						<span class="move-text"
 							><b>{nice(a.id)}</b><span class="muted small"
-								>{a.cells}
-								{a.cells === 1 ? 'frame' : 'frames'} · {nDirs === 1
-									? `${dirs[0]?.id ?? 'one'} only`
-									: `${nDirs} directions`}</span
+								>{t('moves.frames', { count: a.cells })} · {nDirs === 1
+									? dirs[0]
+										? t('moves.onlyDirection', {
+												direction: displayDirectionInSentence(dirs[0].id)
+											})
+										: t('moves.oneDirection')
+									: t('moves.directions', { count: nDirs })}</span
 							></span
 						>
 					</button>
@@ -77,7 +83,7 @@
 			{/each}
 		</div>
 		<details class="disclosure">
-			<summary><ChevronRight size={14} />Details</summary>
+			<summary><ChevronRight size={14} />{t('common.details')}</summary>
 			<div>
 				<dl class="kv">
 					{#each m.rig.animations as a (a.id)}
@@ -91,12 +97,21 @@
 									: ''}
 						</dd>
 					{/each}
-					<dt>Cell</dt>
-					<dd>{m.rig.cell.w}×{m.rig.cell.h}, pivot {m.rig.pivot.x},{m.rig.pivot.y}</dd>
-					<dt>Directions</dt>
+					<dt>{t('moves.cell')}</dt>
+					<dd>
+						{t('moves.cellSize', {
+							w: m.rig.cell.w,
+							h: m.rig.cell.h,
+							x: m.rig.pivot.x,
+							y: m.rig.pivot.y
+						})}
+					</dd>
+					<dt>{t('common.directions')}</dt>
 					<dd>
 						{m.rig.directions
-							.map((d) => d.id + (d.mirrorOf ? ` (mirror of ${d.mirrorOf})` : ''))
+							.map((d) =>
+								d.mirrorOf ? t('moves.mirrorOf', { direction: d.id, source: d.mirrorOf }) : d.id
+							)
 							.join(', ')}
 					</dd>
 				</dl>
@@ -108,8 +123,11 @@
 					class="move-text"
 					><b>{nice(moving.spec.id)}</b><span class="muted small"
 						>{moving.error
-							? 'Failed: tap for details'
-							: `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span
+							? t('moves.failed')
+							: t('moves.adding', {
+									done: moving.progress?.done ?? 0,
+									total: moving.progress?.total ?? '?'
+								})}</span
 					></span
 				></button
 			>
@@ -118,7 +136,7 @@
 			<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
 				><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
 					><b>{nice(q.spec.id)}</b><span class="muted small"
-						>{moving.error ? 'Waiting for the failed move' : 'Queued'}</span
+						>{moving.error ? t('moves.waitingForFailed') : t('generation.status.queued')}</span
 					></span
 				></button
 			>
@@ -132,7 +150,7 @@
 		{#if !isDemo()}<button
 				class="bu-action add-row"
 				data-variant="outline"
-				onclick={() => (ui.sheet = 'move')}><Plus size={16} />Add a move</button
+				onclick={() => (ui.sheet = 'move')}><Plus size={16} />{t('moves.add')}</button
 			>{/if}
 	{/if}
 </div>

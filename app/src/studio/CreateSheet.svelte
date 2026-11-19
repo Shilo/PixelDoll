@@ -33,6 +33,11 @@
 		withKey
 	} from './state.svelte.ts';
 	import { Check, CircleAlert, TriangleAlert } from './icons.ts';
+	import { displayDirection, displayDirectionInSentence } from './displayDirection.ts';
+	import { displayError, displayMessage } from '../lib/i18n.ts';
+	import { errorText } from '../lib/message.ts';
+	import { formatNumber, t } from 'svelte-whisper';
+	const policyDecline = /\b5000\b|policy/i;
 	let d = $state(formDrafts.character ?? newCharacterDraft());
 	let enhancing = $state(false);
 	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
@@ -90,8 +95,8 @@
 	});
 	let frame = $state(0);
 	$effect(() => {
-		const t = setInterval(() => frame++, 110);
-		return () => clearInterval(t);
+		const timer = setInterval(() => frame++, 110);
+		return () => clearInterval(timer);
 	});
 	const k = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1.25 : 2))));
 
@@ -105,7 +110,9 @@
 			ui.sheet = 'create';
 		}); // refused (a resumed create runs): keep the form
 	}
-	const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ');
+	const gensRange = $derived(
+		t('create.sheet.gensRange', { lo: formatNumber(lo), hi: formatNumber(hi) })
+	);
 	async function open() {
 		const id = creating.projectId;
 		await cancelCreate();
@@ -117,19 +124,19 @@
 </script>
 
 <Sheet
-	title="New character"
+	title={t('create.sheet.title')}
 	cancel={running ? 'Hide' : creating.projectId ? 'Close' : 'Cancel'}
 	onclose={() => (ui.sheet = null)}
 	className="character-sheet"
 	wide
 >
 	{#snippet heading()}{#if !creating.spec}<label class="character-name-field"
-				><span>Name</span><input
+				><span>{t('common.name')}</span><input
 					class="bu-input input character-name"
-					aria-label="Name"
-					title="Library and export name; not part of the prompt"
+					aria-label={t('common.name')}
+					title={t('create.sheet.nameTitle')}
 					bind:value={d.name}
-					placeholder="Name"
+					placeholder={t('common.name')}
 					maxlength="80"
 				/></label
 			>{/if}{/snippet}
@@ -137,11 +144,13 @@
 		<div class="create-review">
 			<ApiPeek
 				scope="character-create-result"
-				label="Completed character generation"
+				label={t('create.sheet.resultLabel')}
 				plan={creating.spec ? createPlan(creating.spec) : []}
 				activityScope={creating.spec?.activityScope}
 			/>
-			<h3 style="font-size:var(--fs-title)">{creating.spec?.name} is ready</h3>
+			<h3 style="font-size:var(--fs-title)">
+				{t('create.sheet.ready', { name: creating.spec?.name ?? '' })}
+			</h3>
 			{#if result}
 				{@const a =
 					result.manifest.rig.animations.find((x) => x.id === 'walk') ??
@@ -155,19 +164,21 @@
 								h={result.manifest.rig.cell.h}
 								{k}
 								checker
-								label="{creating.spec?.name} {a.id} {d.id}"
-							/>{nice(d.id)}
+								label={t('create.sheet.resultFrame', {
+									name: creating.spec?.name ?? '',
+									move: a.id,
+									direction: displayDirectionInSentence(d.id)
+								})}
+							/>{displayDirection(d.id)}
 						</figure>
 					{/each}
 				</div>
 			{/if}
 			{#if qualityNotes.length}
 				<details class="quality-notes small" open={failedNotes.length > 0}>
-					<summary
-						>{qualityNotes.length} quality {qualityNotes.length === 1 ? 'note' : 'notes'}</summary
-					>
+					<summary>{t('create.sheet.qualityNotes', { count: qualityNotes.length })}</summary>
 					<ul class="reasons">
-						{#each qualityNotes as w (w)}<li><TriangleAlert size={12} />{plain(w)}</li>{/each}
+						{#each qualityNotes as w (w)}<li><TriangleAlert size={12} />{plain(w, t)}</li>{/each}
 					</ul>
 				</details>
 			{/if}
@@ -178,7 +189,7 @@
 				<p style="font-weight:600">{creating.spec?.name}</p>
 				<ApiPeek
 					scope="character-create-progress"
-					label="Current character generation"
+					label={t('create.sheet.progressLabel')}
 					plan={creating.spec ? createPlan(creating.spec) : []}
 					activityScope={creating.spec?.activityScope}
 				/>
@@ -190,7 +201,9 @@
 								class="bu-ring ring spin"
 								aria-hidden="true"
 							></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}
-						{s.label}{#if i === stepIx && creating.progress && creating.progress.total > 1}<span
+						{displayMessage(
+							s.label
+						)}{#if i === stepIx && creating.progress && creating.progress.total > 1}<span
 								class="muted num small"
 								>&nbsp;{creating.progress.done}/{creating.progress.total}</span
 							>{/if}
@@ -200,24 +213,27 @@
 			{#if creating.views.length}
 				<div class="review-grid">
 					{#each creating.views as v (v.id)}<figure>
-							<Sprite img={v.img} {k} checker label="{creating.spec?.name} standing {v.id}" />{nice(
-								v.id
-							)}
+							<Sprite
+								img={v.img}
+								{k}
+								checker
+								label={t('create.sheet.standingFrame', {
+									name: creating.spec?.name ?? '',
+									direction: displayDirectionInSentence(v.id)
+								})}
+							/>{displayDirection(v.id)}
 						</figure>{/each}
 				</div>
 			{/if}
 			{#if creating.error}
 				<p class="notice bad small">
-					<CircleAlert size={14} />{creating.error.match(/\b5000\b/) ||
-					/policy/i.test(creating.error)
-						? 'PixelLab declined this description. Try different words.'
-						: creating.error}
+					<CircleAlert size={14} />{policyDecline.test(errorText(creating.error))
+						? t('create.sheet.declined')
+						: displayError(creating.error)}
 				</p>
 			{:else}
 				<p class="muted small">
-					Estimated time: about {est.minutes} minutes plus PixelLab queue time. Busy queues and quality
-					checks can take much longer. You can hide this sheet and keep working. After a reload, check
-					Activity if a request needs attention.
+					{t('create.sheet.time', { minutes: formatNumber(est.minutes) })}
 				</p>
 			{/if}
 		</div>
@@ -225,7 +241,7 @@
 		<TierNotice
 			minimumTier={0}
 			recommendedTier={GENERATION_RECOMMENDATION.tier}
-			feature="Character generation"
+			feature={t('create.sheet.feature')}
 			recommendation={GENERATION_RECOMMENDATION.reason}
 		/>
 		<CharacterForm bind:draft={d} bind:busy={enhancing} onconnect={connectEnhance} />
@@ -233,23 +249,23 @@
 
 	{#snippet footer()}
 		{#if creating.projectId}
-			<span class="foot-note">Saved on this device.</span>
+			<span class="foot-note">{t('create.sheet.saved')}</span>
 			{#if result}<BaseMoves
 					projectId={creating.projectId}
 					manifest={result.manifest}
 					onadd={() => void open()}
 				/>{/if}
 			<button class="bu-action btn primary lg" data-variant="primary" onclick={open}
-				>Start dressing up</button
+				>{t('create.sheet.startDressing')}</button
 			>
 		{:else if creating.error}
 			<button class="bu-action btn plain" data-variant="quiet" onclick={cancelCreate}
-				>Start over</button
+				>{t('common.startOver')}</button
 			>
 			<span class="api-action"
 				><ApiPeek
 					scope="character-create-retry"
-					label="Create character again"
+					label={t('create.sheet.retryLabel')}
 					plan={creating.spec ? createPlan(creating.spec, true) : []}
 				/><button
 					class="bu-action btn primary"
@@ -263,30 +279,26 @@
 								seed: 1 + Math.floor(Math.random() * 1_000_000)
 							});
 							ui.sheet = 'create';
-						})}>Try again <span class="cost">{lo}–{hi} gens</span></button
+						})}>{t('common.tryAgain')} <span class="cost">{gensRange}</span></button
 				></span
 			><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
 		{:else if running}
-			<span class="foot-note">Estimated {lo}–{hi} gens</span>
+			<span class="foot-note">{t('create.sheet.estimated', { gens: gensRange })}</span>
 			<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}
-				>Keep working</button
+				>{t('create.sheet.keepWorking')}</button
 			>
 		{:else}
-			<span
-				class="foot-note creator-cost"
-				title="The standing views in every direction; add idle, walk and other moves afterward. A missing standing joint may cost a little more"
-				>~{lo}–{hi} gens</span
-			>
+			<span class="foot-note creator-cost" title={t('create.sheet.costTitle')}>~{gensRange}</span>
 			<span class="api-action"
 				><ApiPeek
 					scope="character-create"
-					label="Create character"
+					label={t('create.sheet.create')}
 					plan={createPlan(formSpec, !d.seed)}
 				/><button
 					class="bu-action btn primary lg"
 					data-variant="primary"
 					disabled={!!errors.length || enhancing}
-					onclick={go}>Create character</button
+					onclick={go}>{t('create.sheet.create')}</button
 				></span
 			>
 		{/if}

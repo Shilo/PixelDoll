@@ -1,6 +1,7 @@
 // What the Export sheet and the ⋮ menus' Download ZIP export: a character with its current look and saved outfits, or
 // a single item on the base body. Pure; the Studio supplies the project, look and settings.
-import { exportZip } from './export.ts';
+import { exportZip, type ExportResult, type NoteTerm } from './export.ts';
+import { errorTranslation, message, type Message } from '../message.ts';
 import { storeVariants, variantOf } from '../dress/dress.ts';
 import { itemHashes } from '../equipment/copy.ts';
 import { SLOTS } from '../items/slots.ts';
@@ -58,7 +59,7 @@ async function requestedExport(
 		settings: ExportSettings;
 		projectData?: ImportedCharacter['extra'];
 	}
-) {
+): Promise<ExportResult & { zip: Uint8Array | null }> {
 	const current: Preset = {
 		id: o.look.id ?? 'current',
 		name: o.look.name ?? 'Current look',
@@ -70,39 +71,64 @@ async function requestedExport(
 		...p.manifest.presets.filter((x) => x.id !== 'current' && x.id !== current.id)
 	];
 	const manifest = structuredClone({ ...p.manifest, presets }) as Manifest;
-	const warnings = new Set<string>();
+	const warnings = new Set<string>(),
+		warningMessages = new Map<string, Message>();
+	const note = (text: string, display: Message) => {
+		warnings.add(text);
+		warningMessages.set(text, display);
+	};
 	for (const preset of manifest.presets) {
-		const omitted: string[] = [];
+		const omitted: string[] = [],
+			omittedSlots: NoteTerm[] = [];
 		for (const [slot, item] of Object.entries(preset.items)) {
 			if (slot === 'body' || validEquipment(manifest, slot, item)) continue;
 			delete preset.items[slot];
-			if (item != null)
+			if (item != null) {
 				omitted.push(
 					manifest.slots.find((entry) => entry.id === slot)?.label ??
 						SLOTS.find((entry) => entry.id === slot)?.label ??
 						slot.replace(/[_-]/g, ' ')
 				);
+				omittedSlots.push({ slot });
+			}
 		}
 		if (omitted.length)
-			warnings.add(`${preset.name}: Missing equipment was left out (${omitted.join(', ')}).`);
+			note(
+				`${preset.name}: Missing equipment was left out (${omitted.join(', ')}).`,
+				message('export.warnings.missingEquipment', {
+					outfit:
+						preset.id === current.id && o.look.name === undefined
+							? message('export.outfits.current')
+							: preset.name,
+					slots: omittedSlots
+				})
+			);
 	}
 	applyExportSettings(manifest, o.settings);
 	storeVariants(manifest, ...presets.map((x) => x.variants));
-	for (const warning of leaveEmptyFrames({ manifest, images: p.images })) warnings.add(warning);
-	const blocked = (problem: string, errors: string[] = []) => ({
+	for (const warning of leaveEmptyFrames({ manifest, images: p.images }, warningMessages))
+		warnings.add(warning);
+	const blocked = (problem: string, problemMessage: Message, error?: unknown) => ({
 		zip: null,
 		entries: [],
 		warnings: [...warnings],
-		errors,
-		problem
+		warningMessages,
+		errors: error === undefined ? [] : [String(error)],
+		errorMessages: error === undefined ? [] : [errorTranslation(error)],
+		problem,
+		problemMessage
 	});
 	try {
 		manifestShape(manifest);
 	} catch (error) {
-		return blocked('This character does not fit the export limits.', [String(error)]);
+		return blocked(
+			'This character does not fit the export limits.',
+			message('export.problem.characterLimits'),
+			error
+		);
 	}
 	if (!hasVisibleBase({ manifest, images: p.images }))
-		return blocked('The body has no visible frames.');
+		return blocked('The body has no visible frames.', message('export.problem.noVisibleFrames'));
 	const images: Project['images'] = new Map();
 	const missing = new Set<string>();
 	async function include(hash: string) {
@@ -127,7 +153,10 @@ async function requestedExport(
 		const rest = manifest.rig.rest?.[view];
 		if (rest && !(await include(rest.image))) {
 			delete manifest.rig.rest![view];
-			warnings.add('Missing body reference images were left out of the editable copy.');
+			note(
+				'Missing body reference images were left out of the editable copy.',
+				message('export.warnings.bodyReferences')
+			);
 		}
 	}
 	for (const item of manifest.items) {
@@ -137,11 +166,15 @@ async function requestedExport(
 			const hash = item.dressed?.[facing];
 			if (hash && !(await include(hash))) {
 				delete item.dressed![facing];
-				warnings.add(`${item.name}: Missing reference images were left out of the editable copy.`);
+				note(
+					`${item.name}: Missing reference images were left out of the editable copy.`,
+					message('export.warnings.itemReferences', { item: item.name })
+				);
 			}
 		}
 		for (const hash of itemHashes(item))
-			if (!(await include(hash))) return blocked('Some saved images are damaged.');
+			if (!(await include(hash)))
+				return blocked('Some saved images are damaged.', message('export.problem.damagedImages'));
 	}
 	return exportZip(
 		{ manifest, images },
@@ -150,22 +183,33 @@ async function requestedExport(
 			baked: o.baked,
 			projectData: o.projectData
 		},
-		[...warnings]
+		[...warnings],
+		warningMessages
 	);
 }
+
+const SKIPPED_SOURCES = 'Some source images could not be included.';
 
 export async function buildExport(
 	project: Project,
 	options: Parameters<typeof requestedExport>[1]
 ) {
 	let problem = 'Could not build this export.';
+	let problemMessage = message('export.problem.buildFailed');
 	let errors: string[] = [];
+	let errorMessages: ExportResult['errorMessages'];
+	let requestedWarnings: string[] = [];
+	let requestedWarningMessages: ExportResult['warningMessages'];
 	let retryable = false;
 	try {
 		const result = await requestedExport(project, options);
 		if (result.zip) return { ...result, kind: 'requested' as const };
 		problem = result.problem ?? problem;
+		problemMessage = result.problemMessage ?? problemMessage;
 		errors = result.errors;
+		errorMessages = result.errorMessages;
+		requestedWarnings = result.warnings;
+		requestedWarningMessages = result.warningMessages;
 	} catch (error) {
 		console.error('Could not build export', error);
 		retryable = true;
@@ -177,15 +221,22 @@ export async function buildExport(
 				kind: 'recovery' as const,
 				...recovery,
 				problem,
+				problemMessage,
 				errors,
-				warnings: recovery.skipped ? ['Some source images could not be included.'] : []
+				errorMessages,
+				requestedWarnings,
+				requestedWarningMessages,
+				warnings: recovery.skipped ? [SKIPPED_SOURCES] : [],
+				warningMessages: new Map([[SKIPPED_SOURCES, message('export.warnings.skippedSources')]])
 			};
 		return {
 			kind: 'failed' as const,
 			zip: null,
 			entries: [],
 			problem,
+			problemMessage,
 			errors,
+			errorMessages,
 			warnings: [],
 			retryable
 		};
@@ -196,7 +247,9 @@ export async function buildExport(
 			zip: null,
 			entries: [],
 			problem: 'The artwork ZIP could not be prepared.',
+			problemMessage: message('export.problem.artworkFailed'),
 			errors,
+			errorMessages,
 			warnings: [],
 			retryable: true
 		};

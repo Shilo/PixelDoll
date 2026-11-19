@@ -153,7 +153,9 @@ test('another character’s item on the same body is worn for free, survives rel
 	const others = await threeCharacters(page);
 	// One grid: no separate row, and the other characters' items follow this character's own.
 	await expect(page.locator('.equipment-scroll')).not.toContainText('From your other characters');
-	await expect(section(page, 'Head').locator('.bu-section-count')).toHaveText('2 items');
+	const count = section(page, 'Head').locator('.bu-section-count');
+	await expect(count.locator('[aria-hidden="true"]')).toHaveText('2');
+	await expect(count.locator('.sr')).toHaveText('2 items');
 	// Only items this character does not already have: its own helmet and hat stay off the list. Exact copies come first;
 	// every other item is free too, worn as drawn. A tile shows its name only, and its icons say the rest.
 	const tiles = others.locator('.shared-tile');

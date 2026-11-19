@@ -1,8 +1,12 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
 	import { installWorkspaceCopy } from '../lib/store/db.ts';
 	import { readWorkspace } from '../lib/store/workspace.ts';
 	import { MAX_ZIP_BYTES } from '../lib/store/zip.ts';
 	import { setWorkspaceInfo, workspaceUrl } from '../lib/store/workspace-mode.ts';
+	import { LocalizedError, message, type Message } from '../lib/message.ts';
+	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import RichMessage from './RichMessage.svelte';
 	import { FileArchive } from './icons.ts';
 	import { fileDrop, preventFileNavigation } from './fileDrop.ts';
 	import './studio.css';
@@ -11,7 +15,7 @@
 	let input: HTMLInputElement;
 	let busy = $state(false);
 	let installed = $state(false);
-	let error = $state('');
+	let error = $state<Message | string>('');
 	let dragging = $state(false);
 	const drop = fileDrop(
 		() => busy || installed,
@@ -27,13 +31,14 @@
 		if (busy || installed) return;
 		const [file] = files;
 		if (!file || files.length !== 1) {
-			error = 'Choose one workspace ZIP, not a folder or multiple files.';
+			error = message('openWorkspace.chooseOne');
 			return;
 		}
 		busy = true;
 		error = '';
 		try {
-			if (file.size > MAX_ZIP_BYTES) throw new Error('Choose a workspace ZIP up to 64 MB.');
+			if (file.size > MAX_ZIP_BYTES)
+				throw new LocalizedError('Choose a workspace ZIP up to 64 MB.', 'openWorkspace.tooLarge');
 			const { projects, blobs, ...info } = await readWorkspace(
 				new Uint8Array(await file.arrayBuffer())
 			);
@@ -42,9 +47,7 @@
 			installed = true;
 			await openStudio();
 		} catch (cause) {
-			error = installed
-				? 'The copy could not open. Reload this tab to try again.'
-				: (cause as Error).message;
+			error = installed ? message('openWorkspace.reopen') : errorMessage(cause);
 		} finally {
 			busy = false;
 		}
@@ -54,17 +57,14 @@
 <svelte:window ondragover={preventFileNavigation} ondrop={preventFileNavigation} />
 <main class="studio-app picker" aria-busy={busy}>
 	<section class="bu-surface" aria-labelledby="workspace-title">
-		<h1 id="workspace-title">Open workspace copy</h1>
-		<p>
-			Choose a ZIP made with <strong>Export my workspace</strong>. Your library stays unchanged.
-		</p>
-		<p>
-			PixelLab is off here. Any changes to the copy are discarded when you close or reload this tab.
-		</p>
+		<h1 id="workspace-title">{t('workspaceCopy.title')}</h1>
+		{#snippet command()}<strong>{t('workspace.exportTitle')}</strong>{/snippet}
+		<p><RichMessage key="openWorkspace.introCommand" slots={{ command }} /></p>
+		<p>{t('openWorkspace.privacy')}</p>
 		<input
 			type="file"
 			accept=".zip,application/zip"
-			aria-label="Choose workspace ZIP"
+			aria-label={t('openWorkspace.chooseZip')}
 			hidden
 			disabled={busy || installed}
 			bind:this={input}
@@ -82,13 +82,19 @@
 		>
 			<FileArchive size={30} aria-hidden="true" />
 			<strong aria-live="polite"
-				>{busy ? 'Opening…' : dragging ? 'Release to open' : 'Drop a workspace ZIP here'}</strong
+				>{busy
+					? t('openWorkspace.opening')
+					: dragging
+						? t('openWorkspace.release')
+						: t('openWorkspace.drop')}</strong
 			>
-			<span>or click to choose a ZIP</span>
+			<span>{t('openWorkspace.orChoose')}</span>
 		</button>
-		{#if error}<p class="notice warn" role="alert">{error}</p>{/if}
+		{#if error}<p class="notice warn" role="alert">{displayMessage(error)}</p>{/if}
 		<div class="actions">
-			<a class="btn bu-action" data-variant="quiet" href={workspaceUrl(false)}>Go to my library</a>
+			<a class="btn bu-action" data-variant="quiet" href={workspaceUrl(false)}
+				>{t('openWorkspace.libraryLink')}</a
+			>
 		</div>
 	</section>
 </main>

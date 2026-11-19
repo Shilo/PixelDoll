@@ -18,6 +18,8 @@ import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
 import type { StoredProject } from './project.ts';
 import { unzip, type ZipEntry } from './zip.ts';
 import * as db from './db.ts';
+import type { WhisperKey, WhisperVars } from 'svelte-whisper';
+import { LocalizedError, message, type Message } from '../message.ts';
 
 export interface CharacterImportState {
 	id: string;
@@ -29,30 +31,34 @@ export interface ImportedCharacter {
 	project: Project;
 	extra: Pick<StoredProject, 'character' | 'skeletons' | 'rigQa'>;
 	warnings: string[];
+	/** Localized counterparts aligned with `warnings`; an empty slot keeps the English text. */
+	warningKeys?: (Message | undefined)[];
 	states?: CharacterImportState[];
 	stateId?: string;
 }
-export class CharacterImportError extends Error {
+export class CharacterImportError extends LocalizedError {
 	constructor(
-		message: string,
+		english: string,
+		key: WhisperKey,
+		vars?: WhisperVars,
 		public states: CharacterImportState[] = [],
 		public stateId?: string
 	) {
-		super(message);
+		super(english, key, vars);
 	}
 }
 const text = new TextDecoder();
 export const hashPattern = /^sha256:[0-9a-f]{64}$/;
 const required = (files: Map<string, Uint8Array>, path: string) => {
 	const b = files.get(path);
-	if (!b) throw new Error(`Missing file: ${path}`);
+	if (!b) throw new LocalizedError(`Missing file: ${path}`, 'import.error.missingFile', { path });
 	return b;
 };
 const json = (files: Map<string, Uint8Array>, path: string): unknown => {
 	try {
 		return JSON.parse(text.decode(required(files, path)));
 	} catch {
-		throw new Error(`Could not read ${path}.`);
+		throw new LocalizedError(`Could not read ${path}.`, 'import.error.unreadableFile', { path });
 	}
 };
 export const fitsEditableImage = ({ w, h }: { w: number; h: number }) =>
@@ -61,7 +67,10 @@ export const fitsEditableImage = ({ w, h }: { w: number; h: number }) =>
 async function image(bytes: Uint8Array): Promise<Img> {
 	const size = pngSize(bytes);
 	if (!size || !fitsEditableImage(size))
-		throw new Error('An image is not a PNG or exceeds the import size limit.');
+		throw new LocalizedError(
+			'An image is not a PNG or exceeds the import size limit.',
+			'import.error.imageUnsupported'
+		);
 	return decodePng(bytes);
 }
 const hasPixels = (im: Img) => !!opaqueBox(im);
@@ -76,7 +85,10 @@ export function manifestShape(m: Manifest) {
 		!Array.isArray(m.materials) ||
 		!Array.isArray(m.presets)
 	)
-		throw new Error('This is not a supported PixelDoll character export.');
+		throw new LocalizedError(
+			'This is not a supported PixelDoll character export.',
+			'import.error.unsupportedExport'
+		);
 	if (
 		!Array.isArray(m.rig.directions) ||
 		!Array.isArray(m.rig.animations) ||
@@ -84,7 +96,10 @@ export function manifestShape(m: Manifest) {
 		m.rig.animations.length > 100 ||
 		m.items.length > 500
 	)
-		throw new Error('The character has an invalid or oversized rig.');
+		throw new LocalizedError(
+			'The character has an invalid or oversized rig.',
+			'import.error.invalidRig'
+		);
 	for (const a of m.rig.animations)
 		if (
 			!a ||
@@ -95,7 +110,10 @@ export function manifestShape(m: Manifest) {
 			a.frames.length < 1 ||
 			a.frames.length > 1000
 		)
-			throw new Error('The character has an invalid frame count.');
+			throw new LocalizedError(
+				'The character has an invalid frame count.',
+				'import.error.invalidFrameCount'
+			);
 	if (
 		m.items.some(
 			(item) =>
@@ -105,30 +123,43 @@ export function manifestShape(m: Manifest) {
 				item.layers.some((layer) => !layer)
 		)
 	)
-		throw new Error('The character has an invalid item or layer.');
+		throw new LocalizedError(
+			'The character has an invalid item or layer.',
+			'import.error.invalidItem'
+		);
 	if (new Set(m.items.map((i) => i.id)).size !== m.items.length)
-		throw new Error('The character has duplicate item IDs.');
+		throw new LocalizedError(
+			'The character has duplicate item IDs.',
+			'import.error.duplicateItems'
+		);
 	// Count logical cells, including repeated hash references: a tiny archive can otherwise request gigabytes of copies.
 	let pixels = 0;
 	for (const item of m.items)
 		for (const layer of item.layers) {
 			const f = layerFrame(m.rig, layer);
 			if (![f.w, f.h].every((n) => Number.isInteger(n) && n >= 1 && n <= 256))
-				throw new Error('The export has an invalid layer size.');
+				throw new LocalizedError(
+					'The export has an invalid layer size.',
+					'import.error.invalidLayerSize'
+				);
 			const cells = Object.values(layer.cells ?? {}).reduce(
 				(n, dirs) =>
 					n +
 					Object.values(dirs).reduce((k, rows) => {
 						if (rows != null && !Array.isArray(rows))
-							throw new Error('The character has an invalid layer frame list.');
+							throw new LocalizedError(
+								'The character has an invalid layer frame list.',
+								'import.error.invalidFrameList'
+							);
 						return k + (rows?.length ?? 0);
 					}, 0),
 				0
 			);
 			pixels += cells * f.w * f.h;
 			if (!Number.isSafeInteger(pixels) || pixels > 64 * 1024 * 1024)
-				throw new Error(
-					'This character contains too many image pixels, including repeated frame references. Export fewer items or moves.'
+				throw new LocalizedError(
+					'This character contains too many image pixels, including repeated frame references. Export fewer items or moves.',
+					'import.error.tooManyPixels'
 				);
 		}
 }
@@ -162,8 +193,9 @@ export async function readCharacterZip(
 		const roots = [...files.keys()].filter((p) => /\/(project|metadata)\.json$/.test(p));
 		const prefixes = new Set(roots.map((p) => p.slice(0, p.lastIndexOf('/') + 1)));
 		if (prefixes.size > 1)
-			throw new Error(
-				'This ZIP contains multiple character folders. Choose a ZIP containing one character folder; PixelLab states within one metadata.json are supported.'
+			throw new LocalizedError(
+				'This ZIP contains multiple character folders. Choose a ZIP containing one character folder; PixelLab states within one metadata.json are supported.',
+				'import.error.multipleFolders'
 			);
 		if (prefixes.size === 1) {
 			const prefix = [...prefixes][0];
@@ -180,13 +212,22 @@ export async function readCharacterZip(
 		checkArchivePixels(files.values());
 		result = await pixelLab(files, stateId, animationStateIds);
 	} else
-		throw new Error(
-			'This ZIP needs PixelLab metadata.json or a PixelDoll project.json. Arbitrary PNG folders and spritesheet ZIPs need a direction and frame layout; they are not supported yet.'
+		throw new LocalizedError(
+			'This ZIP needs PixelLab metadata.json or a PixelDoll project.json. Arbitrary PNG folders and spritesheet ZIPs need a direction and frame layout; they are not supported yet.',
+			'import.error.unsupportedArchive'
 		);
 	const errors = validate(result.project);
 	if (errors.length)
-		throw new Error(`The character is not compatible: ${errors.slice(0, 3).join('; ')}`);
-	if (!hasVisibleBase(result.project)) throw new Error('The character has no visible base frames.');
+		throw new LocalizedError(
+			`The character is not compatible: ${errors.slice(0, 3).join('; ')}`,
+			'import.error.incompatible',
+			{ details: errors.slice(0, 3).join('; ') }
+		);
+	if (!hasVisibleBase(result.project))
+		throw new LocalizedError(
+			'The character has no visible base frames.',
+			'import.error.noVisibleBase'
+		);
 	return result;
 }
 
@@ -196,8 +237,9 @@ export function checkArchivePixels(files: Iterable<Uint8Array>) {
 		const size = pngSize(bytes);
 		if (size) decodedPixels += size.w * size.h;
 		if (decodedPixels > 64 * 1024 * 1024)
-			throw new Error(
-				'This archive contains too many image pixels. Export a smaller character or fewer moves.'
+			throw new LocalizedError(
+				'This archive contains too many image pixels. Export a smaller character or fewer moves.',
+				'import.error.archivePixels'
 			);
 	}
 }
@@ -222,7 +264,10 @@ async function editable(files: Map<string, Uint8Array>): Promise<ImportedCharact
 		manifest: Manifest;
 	} & ImportedCharacter['extra'];
 	if (data.format !== 'pixeldoll-project/1')
-		throw new Error('This PixelDoll project version is not supported.');
+		throw new LocalizedError(
+			'This PixelDoll project version is not supported.',
+			'import.error.unsupportedProject'
+		);
 	const m = data.manifest;
 	manifestShape(m);
 	const refs = new Set<string>();
@@ -235,7 +280,11 @@ async function editable(files: Map<string, Uint8Array>): Promise<ImportedCharact
 	for (const r of Object.values(m.rig.rest ?? {})) if (r) refs.add(r.image);
 	const cells = new Map<string, Uint8Array>();
 	for (const h of refs) {
-		if (!hashPattern.test(h)) throw new Error('The project contains an invalid image hash.');
+		if (!hashPattern.test(h))
+			throw new LocalizedError(
+				'The project contains an invalid image hash.',
+				'import.error.invalidHash'
+			);
 		cells.set(h, required(files, `cells/${h.slice(7)}.png`));
 	}
 	checkArchivePixels(cells.values());
@@ -243,7 +292,10 @@ async function editable(files: Map<string, Uint8Array>): Promise<ImportedCharact
 	for (const [h, bytes] of cells) {
 		const im = await image(bytes);
 		if ((await cellHash(im)) !== h)
-			throw new Error('A project image does not match its stored hash.');
+			throw new LocalizedError(
+				'A project image does not match its stored hash.',
+				'import.error.hashMismatch'
+			);
 		images.set(h, im);
 	}
 	return {
@@ -276,7 +328,10 @@ const object = (value: unknown): value is Record<string, unknown> =>
 	typeof value === 'object' && value !== null && !Array.isArray(value);
 function pixelLabGeometry(character: PixelLabCharacter) {
 	if (character.view != null && !['low top-down', 'high top-down', 'side'].includes(character.view))
-		throw new Error('The character has an unsupported camera view.');
+		throw new LocalizedError(
+			'The character has an unsupported camera view.',
+			'import.error.cameraView'
+		);
 	const size = character.size;
 	if (
 		size != null &&
@@ -286,12 +341,19 @@ function pixelLabGeometry(character: PixelLabCharacter) {
 			size.width < 1 ||
 			size.height < 1)
 	)
-		throw new Error('The character size must contain positive whole-pixel width and height.');
+		throw new LocalizedError(
+			'The character size must contain positive whole-pixel width and height.',
+			'import.error.characterSize'
+		);
 }
 function pixelLabInfo(character: PixelLabCharacter) {
 	for (const field of ['name', 'prompt', 'template_id'] as const)
 		if (character[field] != null && typeof character[field] !== 'string')
-			throw new Error(`The character ${field.replace('_id', '')} must be text.`);
+			throw new LocalizedError(
+				`The character ${field.replace('_id', '')} must be text.`,
+				'import.error.fieldText',
+				{ field: field.replace('_id', '') }
+			);
 	pixelLabGeometry(character);
 }
 
@@ -301,7 +363,11 @@ async function pixelLab(
 	animationStateIds?: readonly string[] | 'all'
 ): Promise<ImportedCharacter> {
 	const metadata = json(files, 'metadata.json');
-	if (!object(metadata)) throw new Error('The PixelLab metadata must describe a character.');
+	if (!object(metadata))
+		throw new LocalizedError(
+			'The PixelLab metadata must describe a character.',
+			'import.error.metadataShape'
+		);
 	let meta = metadata as PixelLabCharacter & {
 		character?: PixelLabCharacter;
 		states?: PixelLabState[];
@@ -310,7 +376,8 @@ async function pixelLab(
 	const rotations: { dir: DirectionName; path: string }[] = [],
 		source: PixelLabMove[] = [];
 	let projectName: string | undefined;
-	const warnings: string[] = [];
+	const warnings: string[] = [],
+		warningKeys: Message[] = [];
 	try {
 		if (meta.states !== undefined) {
 			if (
@@ -326,9 +393,15 @@ async function pixelLab(
 						typeof s.character.name !== 'string'
 				)
 			)
-				throw new Error('The PixelLab export has an invalid character state list.');
+				throw new LocalizedError(
+					'The PixelLab export has an invalid character state list.',
+					'import.error.stateList'
+				);
 			if (new Set(meta.states.map((s) => s.character.id)).size !== meta.states.length)
-				throw new Error('The PixelLab export has duplicate character state IDs.');
+				throw new LocalizedError(
+					'The PixelLab export has duplicate character state IDs.',
+					'import.error.stateIds'
+				);
 			const declared = new Set<string>(),
 				owners = new Map<string, Set<string>>();
 			const parsed = meta.states.map((state) => {
@@ -359,23 +432,43 @@ async function pixelLab(
 									for (const path of frames) if (typeof path === 'string') declared.add(path);
 				try {
 					if (!object(state.frames))
-						throw new Error(`The “${state.character.name}” state has an invalid frame layout.`);
+						throw new LocalizedError(
+							`The “${state.character.name}” state has an invalid frame layout.`,
+							'import.error.stateFrames',
+							{ state: state.character.name }
+						);
 					if (state.frames.animations !== undefined) {
 						if (!object(state.frames.animations))
-							throw new Error(`The “${state.character.name}” state has an invalid animation list.`);
+							throw new LocalizedError(
+								`The “${state.character.name}” state has an invalid animation list.`,
+								'import.error.stateAnimations',
+								{ state: state.character.name }
+							);
 						for (const [name, dirs] of Object.entries(state.frames.animations)) {
 							if (!object(dirs) || !Object.keys(dirs).length)
-								throw new Error(`The ${name} move has no animation directions.`);
+								throw new LocalizedError(
+									`The ${name} move has no animation directions.`,
+									'import.error.moveDirections',
+									{ move: name }
+								);
 							for (const [dir, frames] of Object.entries(dirs)) {
 								if (!DIRECTIONS.includes(dir as DirectionName))
-									throw new Error(`The ${name}/${dir} animation has an unsupported direction.`);
+									throw new LocalizedError(
+										`The ${name}/${dir} animation has an unsupported direction.`,
+										'import.error.moveDirection',
+										{ move: name, direction: dir }
+									);
 								if (
 									!Array.isArray(frames) ||
 									!frames.length ||
 									frames.length > 120 ||
 									frames.some((path) => typeof path !== 'string')
 								)
-									throw new Error(`The ${name}/${dir} animation must contain 1–120 frame paths.`);
+									throw new LocalizedError(
+										`The ${name}/${dir} animation must contain 1–120 frame paths.`,
+										'import.error.moveFrames',
+										{ move: name, direction: dir }
+									);
 							}
 							moves.push({ name, dirs: dirs as Record<string, string[]> });
 						}
@@ -419,13 +512,18 @@ async function pixelLab(
 				? meta.states.find((s) => s.character.id === stateId)
 				: meta.states[0];
 			if (!selected)
-				throw new Error('This PixelLab export does not include the selected character state.');
+				throw new LocalizedError(
+					'This PixelLab export does not include the selected character state.',
+					'import.error.selectedState'
+				);
 			stateId = selected.character.id;
 			try {
 				pixelLabInfo(selected.character);
 			} catch (failure) {
-				throw new Error(
-					`${(failure as Error).message} Choose another standing pose or export its ZIP again.`
+				throw new LocalizedError(
+					`${(failure as Error).message} Choose another standing pose or export its ZIP again.`,
+					'import.error.stateInfo',
+					{ detail: (failure as Error).message }
 				);
 			}
 			const groupName = meta.name ?? meta.character?.name;
@@ -447,13 +545,15 @@ async function pixelLab(
 				.slice(0, 60)
 				.trim();
 			if (!object(selected.frames?.rotations))
-				throw new Error(
-					'This PixelLab export does not include the selected character state rotations.'
+				throw new LocalizedError(
+					'This PixelLab export does not include the selected character state rotations.',
+					'import.error.selectedRotations'
 				);
 			for (const [dir, path] of Object.entries(selected.frames.rotations)) {
 				if (!DIRECTIONS.includes(dir as DirectionName) || typeof path !== 'string')
-					throw new Error(
-						'The selected character state has an invalid rotation path or direction.'
+					throw new LocalizedError(
+						'The selected character state has an invalid rotation path or direction.',
+						'import.error.rotationPath'
 					);
 				rotations.push({ dir: dir as DirectionName, path });
 			}
@@ -465,7 +565,10 @@ async function pixelLab(
 						: animationStateIds;
 			for (const id of requested)
 				if (!meta.states.some((s) => s.character.id === id))
-					throw new Error('This PixelLab export does not include one of the selected move states.');
+					throw new LocalizedError(
+						'This PixelLab export does not include one of the selected move states.',
+						'import.error.selectedMoves'
+					);
 			const included = [selected, ...meta.states.filter((s) => s !== selected)].filter((state) =>
 				requested.includes(state.character.id)
 			);
@@ -475,16 +578,20 @@ async function pixelLab(
 					own = selected.character;
 				const entry = parsed.find((entry) => entry.state === state)!;
 				if (entry.error)
-					throw new Error(
-						`${entry.error} Uncheck that state’s moves to continue, or export its ZIP again.`
+					throw new LocalizedError(
+						`${entry.error} Uncheck that state’s moves to continue, or export its ZIP again.`,
+						'import.error.fixState',
+						{ detail: entry.error }
 					);
 				if (sibling && !entry.moves.length) continue;
 				if (sibling) {
 					try {
 						pixelLabGeometry(character);
 					} catch (failure) {
-						throw new Error(
-							`Moves from “${character.name}” have invalid size or camera metadata: ${(failure as Error).message} Uncheck that state’s moves to continue.`
+						throw new LocalizedError(
+							`Moves from “${character.name}” have invalid size or camera metadata: ${(failure as Error).message} Uncheck that state’s moves to continue.`,
+							'import.error.stateMetadata',
+							{ state: character.name, detail: (failure as Error).message }
 						);
 					}
 				}
@@ -496,15 +603,19 @@ async function pixelLab(
 							(character.size.width !== own.size.width ||
 								character.size.height !== own.size.height)))
 				)
-					throw new Error(
-						`Moves from “${character.name}” use a different character size or camera view. Uncheck that state to continue.`
+					throw new LocalizedError(
+						`Moves from “${character.name}” use a different character size or camera view. Uncheck that state to continue.`,
+						'import.error.stateMismatch',
+						{ state: character.name }
 					);
 				for (const { name, dirs: directions } of entry.moves) {
 					const dirs: PixelLabMove['dirs'] = new Map();
 					for (const [dir, frames] of Object.entries(directions)) {
 						if (!rotations.some((r) => r.dir === dir))
-							throw new Error(
-								`The ${name}/${dir} animation has no matching standing view in the selected state.`
+							throw new LocalizedError(
+								`The ${name}/${dir} animation has no matching standing view in the selected state.`,
+								'import.error.missingStandingView',
+								{ move: name, direction: dir }
 							);
 						dirs.set(
 							dir as DirectionName,
@@ -513,8 +624,9 @@ async function pixelLab(
 					}
 					source.push({ name, state: character.name, sibling, dirs });
 					if (source.length > 99)
-						throw new Error(
-							'This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).'
+						throw new LocalizedError(
+							'This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).',
+							'import.error.tooManyMoves'
 						);
 				}
 			}
@@ -522,8 +634,10 @@ async function pixelLab(
 				orphan &&
 				(animationStateIds === undefined || animationStateIds === 'all' || animationStateIds.length)
 			)
-				throw new Error(
-					`This ZIP contains an animation file without an unambiguous state layout: ${orphan}. Export a new character ZIP with individual frames.`
+				throw new LocalizedError(
+					`This ZIP contains an animation file without an unambiguous state layout: ${orphan}. Export a new character ZIP with individual frames.`,
+					'import.error.orphanFile',
+					{ path: orphan }
 				);
 			meta = { character: selected.character };
 		} else {
@@ -540,20 +654,32 @@ async function pixelLab(
 				if (rotation && DIRECTIONS.includes(rotation[1] as DirectionName))
 					rotations.push({ dir: rotation[1] as DirectionName, path });
 				else if (png && /^rotations\//i.test(path))
-					throw new Error(
-						`Unsupported rotation image path: ${path}. Export a character ZIP with named direction PNGs.`
+					throw new LocalizedError(
+						`Unsupported rotation image path: ${path}. Export a character ZIP with named direction PNGs.`,
+						'import.error.rotationPathName',
+						{ path }
 					);
 				const animation = /^animations\/([^/]+)\/([a-z-]+)\/frame_(\d+)\.png$/.exec(path);
 				if (!animation && png && /^animations\//i.test(path))
-					throw new Error(
-						`Unsupported animation frame path: ${path}. Export a character ZIP with individual numbered frames.`
+					throw new LocalizedError(
+						`Unsupported animation frame path: ${path}. Export a character ZIP with individual numbered frames.`,
+						'import.error.animationPath',
+						{ path }
 					);
 				if (!animation) continue;
 				const [, name, dir, index] = animation;
 				if (!Number.isSafeInteger(+index))
-					throw new Error(`${path} has an invalid animation frame number.`);
+					throw new LocalizedError(
+						`${path} has an invalid animation frame number.`,
+						'import.error.frameNumber',
+						{ path }
+					);
 				if (!DIRECTIONS.includes(dir as DirectionName))
-					throw new Error(`The ${name} animation has an unsupported direction: ${dir}.`);
+					throw new LocalizedError(
+						`The ${name} animation has an unsupported direction: ${dir}.`,
+						'import.error.animationDirection',
+						{ move: name, direction: dir }
+					);
 				let move = source.find((s) => s.name === name);
 				if (!move) {
 					move = { name, sibling: false, dirs: new Map() };
@@ -566,25 +692,40 @@ async function pixelLab(
 			}
 		}
 		if (!rotations.length)
-			throw new Error(
-				'This PixelLab ZIP has no supported rotation images. Export a single character with rotations/ and animations/ folders.'
+			throw new LocalizedError(
+				'This PixelLab ZIP has no supported rotation images. Export a single character with rotations/ and animations/ folders.',
+				'import.error.noRotations'
 			);
 		const directions = DIRECTIONS.filter((d) => rotations.some((r) => r.dir === d));
 		const groups = source.flatMap((move) => {
 			const counts = new Set([...move.dirs.values()].map((frames) => frames.length));
 			for (const [dir, frames] of move.dirs) {
 				if (!directions.includes(dir))
-					throw new Error(`The ${dir} animation has no matching rotation.`);
+					throw new LocalizedError(
+						`The ${dir} animation has no matching rotation.`,
+						'import.error.noRotation',
+						{ direction: dir }
+					);
 				if (!frames.length || frames.length > 120)
-					throw new Error(`${move.name}/${dir} must contain 1–120 frames.`);
+					throw new LocalizedError(
+						`${move.name}/${dir} must contain 1–120 frames.`,
+						'import.error.moveFrameRange',
+						{ move: move.name, direction: dir }
+					);
 				frames.sort((a, b) => a.index - b.index);
 				if (frames.some((f, i) => f.index !== frames[0].index + i))
-					throw new Error(`${move.name}/${dir} is missing animation frames.`);
+					throw new LocalizedError(
+						`${move.name}/${dir} is missing animation frames.`,
+						'import.error.missingAnimationFrames',
+						{ move: move.name, direction: dir }
+					);
 			}
-			if (counts.size > 1)
+			if (counts.size > 1) {
 				warnings.push(
 					`“${move.name}” has different frame counts by direction. Its directions were imported as separate moves to keep every original frame and direction length.`
 				);
+				warningKeys.push(message('import.warning.frameCounts', { move: move.name }));
+			}
 			return [...counts].map((count) => {
 				const dirs = new Map([...move.dirs].filter(([, frames]) => frames.length === count));
 				return {
@@ -596,8 +737,9 @@ async function pixelLab(
 			});
 		});
 		if (groups.length > 99)
-			throw new Error(
-				'This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).'
+			throw new LocalizedError(
+				'This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).',
+				'import.error.tooManyMoves'
 			);
 		const paths = [
 			...rotations.map((r) => r.path),
@@ -615,7 +757,11 @@ async function pixelLab(
 				size.h > 8192 ||
 				size.w * size.h > 8_388_608
 			)
-				throw new Error(`${path} is not a PNG or exceeds the import size limit.`);
+				throw new LocalizedError(
+					`${path} is not a PNG or exceeds the import size limit.`,
+					'import.error.frameImage',
+					{ path }
+				);
 			return Math.max(size.w, size.h);
 		});
 		// A common canvas preserves the source origin across padded frames. Small exports retain the existing floor margin.
@@ -625,8 +771,9 @@ async function pixelLab(
 			),
 			frame = Math.max(64, char);
 		if (paths.length * frame * frame > 64 * 1024 * 1024)
-			throw new Error(
-				'This character contains too many image pixels, including repeated frame references. Select fewer states or export fewer moves.'
+			throw new LocalizedError(
+				'This character contains too many image pixels, including repeated frame references. Select fewer states or export fewer moves.',
+				'import.error.tooManyPixelsStates'
 			);
 		const images = new Map<string, Img>(),
 			importedPaths = new Map<string, Sha256>(),
@@ -638,10 +785,13 @@ async function pixelLab(
 			const im = await image(required(files, path)),
 				n = normalize(im, frame, frame, 128, char);
 			if (n.cutPx)
-				throw new Error(
-					`${path} would lose ${n.cutPx} visible pixels in a ${frame} px cell. Import a smaller character; artwork is never rescaled.`
+				throw new LocalizedError(
+					`${path} would lose ${n.cutPx} visible pixels in a ${frame} px cell. Import a smaller character; artwork is never rescaled.`,
+					'import.error.cutPixels',
+					{ path, cut: n.cutPx, frame }
 				);
-			if (!hasPixels(n.img)) throw new Error(`${path} is an empty frame.`);
+			if (!hasPixels(n.img))
+				throw new LocalizedError(`${path} is an empty frame.`, 'import.error.emptyFrame', { path });
 			semi += n.semiAlpha;
 			const h = await cellHash(n.img);
 			images.set(h, n.img);
@@ -726,10 +876,26 @@ async function pixelLab(
 				'Imported artwork is the fixed base: existing clothes and hair cannot be removed. Set up its pose rig to use skeleton-posed equipment and add new moves.',
 				...warnings,
 				...(semi ? ['Partially transparent edges were converted to pixel-art transparency.'] : [])
+			],
+			warningKeys: [
+				message('import.warning.fixedBase'),
+				...warningKeys,
+				...(semi ? [message('import.warning.semiAlpha')] : [])
 			]
 		};
 	} catch (error) {
-		throw new CharacterImportError((error as Error).message, states, stateId ?? states?.[0]?.id);
+		const english = (error as Error).message;
+		const translation =
+			error instanceof LocalizedError
+				? error.translation
+				: message('import.error.detail', { detail: english });
+		throw new CharacterImportError(
+			english,
+			translation.key,
+			translation.vars,
+			states,
+			stateId ?? states?.[0]?.id
+		);
 	}
 }
 export async function saveImportedCharacter(
@@ -737,7 +903,10 @@ export async function saveImportedCharacter(
 	name: string
 ): Promise<string> {
 	if (!name.trim() || name.trim().length > 60)
-		throw new Error('Enter a character name of 1–60 characters.');
+		throw new LocalizedError(
+			'Enter a character name of 1–60 characters.',
+			'import.error.nameLength'
+		);
 	const manifest = structuredClone(imported.project.manifest);
 	manifest.name = name.trim();
 	const id = `rig-${crypto.randomUUID()}`; // Always a new copy; never overwrite another character with the same body.

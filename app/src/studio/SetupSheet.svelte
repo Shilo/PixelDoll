@@ -22,13 +22,23 @@
 		withKey
 	} from './state.svelte.ts';
 	import { Check, TriangleAlert } from './icons.ts';
-	import { moveLabel } from './model.ts';
+	import { displayMove } from './displayMove.ts';
+	import { displayDirection } from './displayDirection.ts';
+	import { setupWarningNote } from './model.ts';
+	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
+	import type { Message } from '../lib/message.ts';
+	import { displayNestedMessage } from './nestedMessage.ts';
+	import { formatNumber, getLocale, t } from 'svelte-whisper';
+	import { cameraMessage } from '../lib/store/generation.ts';
 	const m = $derived(store.project?.manifest);
+	const camera = $derived(
+		m?.rig.view && getLocale() !== 'en' ? cameraMessage(m.rig.view) : undefined
+	);
 	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
 	let rec = $state.raw<StoredProject | null>(null),
 		plan = $state.raw<SetupPlan | null>(null);
 	const draft = formDrafts.setup?.projectId === doc.id ? formDrafts.setup : undefined;
-	let error = $state(''),
+	let error = $state.raw<Message | string>(''),
 		looks = $state(
 			draft?.looks ?? store.project?.manifest.items.find((i) => i.slot === 'body')?.prompt ?? ''
 		),
@@ -56,10 +66,10 @@
 						error = '';
 					}
 				},
-				(e: Error) => {
+				(e: unknown) => {
 					if (!stale) {
 						plan = null;
-						error = e.message;
+						error = errorMessage(e);
 					}
 				}
 			);
@@ -89,21 +99,21 @@
 </script>
 
 <Sheet
-	title="Set up character"
+	title={t('setup.title')}
 	cancel={active ? 'Hide' : 'Later'}
 	onclose={() => (ui.sheet = null)}
 >
 	{#if mine && settingUp.spec}
 		<div class="api-action">
-			<span class="small muted">Rig setup</span><ApiPeek
+			<span class="small muted">{t('setup.rigSetup')}</span><ApiPeek
 				scope="character-setup-progress"
-				label="Current rig setup"
+				label={t('setup.currentRigSetup')}
 				plan={setupPeekPlan(plan, settingUp.spec.looks)}
 				activityScope={settingUp.spec.activityScope}
 			/>
 		</div>
 		{#if settingUp.done}<p class="notice ok">
-				<Check size={16} />Ready. You can add equipment and moves fitted to this character.
+				<Check size={16} />{t('setup.ready')}
 			</p>
 		{:else}
 			<ol class="steps-list">
@@ -111,75 +121,73 @@
 						{#if i < step}<Check size={16} />{:else if i === step && !settingUp.error}<span
 								class="bu-ring ring spin"
 								aria-hidden="true"
-							></span>{:else}<span class="dot" aria-hidden="true"
-							></span>{/if}{s.label}{#if i === step && settingUp.progress}<span class="small faint"
+							></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}{displayMessage(
+							s.label
+						)}{#if i === step && settingUp.progress}<span class="small faint"
 								>{settingUp.progress.done}/{settingUp.progress.total}</span
 							>{/if}
 					</li>{/each}
 			</ol>
 		{/if}
 		{#if settingUp.error}<p class="notice bad" role="alert">
-				<TriangleAlert size={16} /><span>{settingUp.error}</span>
+				<TriangleAlert size={16} /><span>{displayError(settingUp.error)}</span>
 			</p>{/if}
 		{#each settingUp.warnings as warning (warning)}<p class="notice warn small">
-				<TriangleAlert size={14} /><span>{warning}</span>
+				<TriangleAlert size={14} /><span>{setupWarningNote(warning, t, displayDirection)}</span>
 			</p>{/each}
 	{:else}
 		{#if ready}<p class="notice ok small">
-				<Check size={16} />This character already has its pose rig. Run setup again only to
-				reconnect its standing views to a different PixelLab account.
+				<Check size={16} />{t('setup.alreadyRigged')}
 			</p>{/if}
 		<p class="muted">
-			Find joints on the frozen body frames, check alignment and colors, and connect the standing
-			views to your PixelLab account. Your existing artwork, equipment and outfits stay aligned.
+			{t('setup.intro')}
 		</p>
 		<p class="faint small">
-			Pose registration uses a humanoid rig with {m?.rig.view
-				? `the saved ${m.rig.view} camera`
-				: 'a low top-down camera because no camera was saved'}. Check that this view matches the
-			artwork before starting setup.
+			{m?.rig.view
+				? t('setup.cameraSaved', { view: camera ? displayMessage(camera) : m.rig.view })
+				: t('setup.cameraDefault')}
 		</p>
 		{#if preview}<div class="setup-preview">
-				<Sprite img={preview} k={3} limit={192} label="Standing reference for rig setup" />
+				<Sprite img={preview} k={3} limit={192} label={t('setup.previewLabel')} />
 			</div>{/if}
 		{#if m}<label class="field"
-				><span class="label">Standing reference</span><select
+				><span class="label">{t('setup.standingReference')}</span><select
 					class="bu-input input"
 					bind:value={restAnim}
 					disabled={plan?.fixedRest}
-					><option value="">Choose automatically</option>{#each m.rig.animations as a (a.id)}<option
-							value={a.id}>{moveLabel(a.id, moveIds)}</option
+					><option value="">{t('setup.chooseAutomatically')}</option
+					>{#each m.rig.animations as a (a.id)}<option value={a.id}
+							>{displayMove(a.id, moveIds)}</option
 						>{/each}</select
 				><span class="faint small"
-					>{plan?.fixedRest
-						? 'Saved standing views are retained so existing equipment keyframes stay aligned.'
-						: 'Use a clear standing pose with every direction. The first frame is the reference.'}</span
+					>{plan?.fixedRest ? t('setup.fixedRest') : t('setup.chooseRest')}</span
 				></label
 			>{/if}
 		<label class="field"
-			><span class="label">Existing appearance</span><textarea
+			><span class="label">{t('setup.appearance')}</span><textarea
 				class="bu-input input"
 				rows="3"
 				maxlength="2000"
 				bind:value={looks}
-				placeholder="Describe the body, hair, colors and clothes already in this artwork"
-			></textarea><span class="faint small"
-				>This guides new moves. Include existing hair and clothes; setup cannot separate them from
-				the base.</span
+				placeholder={t('setup.appearancePlaceholder')}></textarea><span class="faint small"
+				>{t('setup.appearanceHelp')}</span
 			></label
 		>
 		{#if plan}<p class="faint small">
-				{plan.frames.size} unique body frames · {plan.gens} gens estimated. Includes a 0.25-gen account
-				connection. Matching saved measurements are reused.
+				{t('setup.estimate', {
+					frames: formatNumber(plan.frames.size),
+					gens: formatNumber(plan.gens, { maximumFractionDigits: 2 }),
+					connection: formatNumber(0.25)
+				})}
 			</p>{/if}
 		{#each plan?.warnings ?? [] as warning (warning)}<p class="notice warn small">
-				<TriangleAlert size={14} /><span>{warning}</span>
+				<TriangleAlert size={14} /><span>{setupWarningNote(warning, t, displayDirection)}</span>
 			</p>{/each}
 		{#if error}<p class="notice warn small" role="alert">
-				<TriangleAlert size={16} /><span>{error}</span>
+				<TriangleAlert size={16} /><span>{displayNestedMessage(error)}</span>
 			</p>{/if}
 		{#if busyElsewhere}<p class="notice small">
-				Finish the other character operation before starting setup.
+				{t('setup.busyElsewhere')}
 			</p>{/if}
 	{/if}
 	{#snippet footer()}
@@ -190,38 +198,45 @@
 					await dismissSetup();
 					customize();
 					ui.sheet = null;
-				}}>Start dressing up</button
+				}}>{t('create.sheet.startDressing')}</button
 			>
 		{:else if mine && settingUp.error}<ApiPeek
 				scope="character-setup-resume"
-				label="Resume rig setup"
+				label={t('setup.resumeRigSetup')}
 				plan={setupPeekPlan(plan, settingUp.spec?.looks ?? looks)}
 				activityScope={settingUp.spec?.activityScope}
 			/><button class="bu-action btn plain" data-variant="quiet" onclick={dismissSetup}
-				>Dismiss setup</button
+				>{t('setup.dismiss')}</button
 			><span class="api-action"
 				><button
 					class="bu-action btn primary"
 					data-variant="primary"
 					onclick={() =>
 						settingUp.spec && withKey(() => void startSetup($state.snapshot(settingUp.spec!)))}
-					>Resume setup</button
+					>{t('setup.resume')}</button
 				></span
 			>
-		{:else if active}<span class="foot-note">You can keep working. Setup resumes after reload.</span
-			><button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}
-				>Hide</button
+		{:else if active}<span class="foot-note">{t('setup.keepWorking')}</span><button
+				class="bu-action btn"
+				data-variant="outline"
+				onclick={() => (ui.sheet = null)}>{t('common.hide')}</button
 			>
-		{:else}<span class="foot-note">Existing pixels stay unchanged</span><span class="api-action"
+		{:else}<span class="foot-note">{t('setup.pixelsUnchanged')}</span><span class="api-action"
 				><ApiPeek
 					scope="character-setup"
-					label="Set up rig"
+					label={t('setup.setUpRig')}
 					plan={setupPeekPlan(plan, looks)}
 				/><button
 					class="bu-action btn primary"
 					data-variant="primary"
 					disabled={!plan || !looks.trim() || busyElsewhere}
-					onclick={go}>Set up <span class="cost">{plan?.gens ?? '–'} gens</span></button
+					onclick={go}
+					>{t('setup.setUp')}
+					<span class="cost"
+						>{t('generationDetails.gens', {
+							value: plan ? formatNumber(plan.gens, { maximumFractionDigits: 2 }) : '–'
+						})}</span
+					></button
 				></span
 			>{/if}
 	{/snippet}

@@ -45,12 +45,17 @@
 		pendingMoves,
 		withKey
 	} from './state.svelte.ts';
-	import { bodyQualityNote, moveLabel } from './model.ts';
+	import { bodyQualityNote } from './model.ts';
+	import { displayMove } from './displayMove.ts';
 	import { directionLabel } from './experience/movement.ts';
 	import { Check, ChevronRight, CircleAlert } from './icons.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { GENERATION_RECOMMENDATION, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
+	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { errorText, message, type Message } from '../lib/message.ts';
+	import { displayNestedMessage } from './nestedMessage.ts';
+	import { formatNumber, t } from 'svelte-whisper';
 
 	const m = $derived(store.project?.manifest);
 	let rec = $state.raw<StoredProject | null>(null);
@@ -113,7 +118,7 @@
 		frames,
 		replace: replacing
 	});
-	const motionIssue = $derived(m && id ? bodyMoveIssue(m, motion) : '');
+	const motionIssue = $derived(m && id ? bodyMoveIssue(m, motion) : undefined);
 	let included = $state<string[]>(draft?.items ?? []);
 	const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id));
 	const est = $derived(
@@ -126,7 +131,7 @@
 		try {
 			return { tier: m && spec ? moveMinimumTier(m, spec) : 0, error: '' };
 		} catch (error) {
-			return { tier: 0, error: error instanceof Error ? error.message : String(error) };
+			return { tier: 0, error: displayError(error) };
 		}
 	};
 	const tierBlocked = (required: number) =>
@@ -157,7 +162,7 @@
 			!!moving.spec.itemsOnly &&
 			!moving.spec.replace &&
 			!moving.spec.itemReview &&
-			moving.error.startsWith(ITEM_MOVE_SAVE_CONFLICT)
+			errorText(moving.error).startsWith(ITEM_MOVE_SAVE_CONFLICT)
 	);
 	const retryPlan = $derived(
 		moving.error && moving.spec
@@ -192,7 +197,8 @@
 	// another character's failed move holds every new move; only its own sheet can try it again or start over
 	const holder = $derived(
 		!mine && moving.spec && moving.error
-			? (store.projects.find((p) => p.id === moving.projectId)?.name ?? 'that character')
+			? (store.projects.find((p) => p.id === moving.projectId)?.name ??
+					t('moveSheet.thatCharacter'))
 			: ''
 	);
 	const steps = $derived(
@@ -201,11 +207,20 @@
 		)
 	);
 	const stepIx = $derived(steps.findIndex((step) => step.id === moving.progress?.step));
-	const nice = (s: string) => moveLabel(s, options);
+	const nice = (s: string) => displayMove(s, options);
+	const decimal = (n: number) =>
+		formatNumber(n, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+	const usd = (n: number) =>
+		formatNumber(n, {
+			style: 'currency',
+			currency: 'USD',
+			minimumFractionDigits: 3,
+			maximumFractionDigits: 3
+		});
 	let recovery = $state<MeasurementRecoveryPlan | null>(null);
-	let recoveryError = $state('');
+	let recoveryError = $state.raw<Message | string>('');
 	let recoveryChecking = $state(false);
-	let recoveryUnavailable = $state('');
+	let recoveryUnavailable = $state.raw<Message[]>([]);
 	let colorRepair = $state<BodyPaletteRepairPlan | null>(null);
 	// Frames are decoded images: keep them raw rather than deeply proxied.
 	let keep = $state.raw<KeepBodyPlan | null>(null);
@@ -224,7 +239,7 @@
 		colorRepair = null;
 		keep = null;
 		recoveryError = '';
-		recoveryUnavailable = '';
+		recoveryUnavailable = [];
 		recoveryChecking = false;
 		if (mine && error && spec && !moving.done && spec.itemMethod !== 'grid') {
 			recoveryChecking = true;
@@ -234,11 +249,13 @@
 					recovery = review.recovery ?? null;
 					colorRepair = review.colorRepair ?? null;
 					keep = review.keep ?? null;
-					recoveryUnavailable = review.unavailable ?? '';
+					recoveryUnavailable = review.unavailableMessages ?? [];
 				})
 				.catch((error: unknown) => {
 					if (current)
-						recoveryError = `Could not check cached frames: ${error instanceof Error ? error.message : String(error)}`;
+						recoveryError = message('moveSheet.recoveryCheckFailed', {
+							error: errorMessage(error)
+						});
 				})
 				.finally(() => {
 					if (current) recoveryChecking = false;
@@ -256,7 +273,7 @@
 		withKey(() => {
 			ui.sheet = 'move';
 			void retryMoveMeasurements(projectId, spec, reviewed).catch((e) => {
-				recoveryError = e instanceof Error ? e.message : String(e);
+				recoveryError = errorMessage(e);
 			});
 		}, recoveryTier);
 	}
@@ -269,7 +286,7 @@
 			reviewed = keep;
 		ui.sheet = 'move';
 		void keepMoveBody(projectId, spec, reviewed).catch((e) => {
-			recoveryError = e instanceof Error ? e.message : String(e);
+			recoveryError = errorMessage(e);
 		});
 	}
 
@@ -281,7 +298,7 @@
 		withKey(() => {
 			ui.sheet = 'move';
 			void matchMoveBodyColors(projectId, spec, reviewed).catch((e) => {
-				recoveryError = e instanceof Error ? e.message : String(e);
+				recoveryError = errorMessage(e);
 			});
 		}, recoveryTier);
 	}
@@ -329,14 +346,14 @@
 			onclick={() => {
 				void dismissMove();
 				ui.sheet = null;
-			}}>Done</button
+			}}>{t('common.done')}</button
 		>
 	{:else if progress && moving.error}
 		<button class="bu-action btn plain" data-variant="quiet" onclick={dismissMove}
-			>{keep ? 'Discard' : 'Start over'}</button
+			>{keep ? t('common.discard') : t('common.startOver')}</button
 		>
 		<span class="api-action"
-			><ApiPeek scope="move-retry" label="Generate move again" plan={retryPlan} /><button
+			><ApiPeek scope="move-retry" label={t('moveSheet.retryLabel')} plan={retryPlan} /><button
 				class="bu-action btn"
 				data-variant="outline"
 				disabled={!!retryAccess.error || tierBlocked(retryTier)}
@@ -354,9 +371,10 @@
 						ui.sheet = 'move';
 					}, retryTier)}
 				>{recovery || colorRepair || keep || savedItemFrames || moving.spec?.reuseItemFrames
-					? 'Generate new frames'
-					: 'Try again'}{#if retryGens}
-					<span class="cost">Est. {retryGens} gens</span>{/if}</button
+					? t('moveSheet.newFrames')
+					: t('common.tryAgain')}{#if retryGens}
+					<span class="cost">{t('moves.estimate', { gens: formatNumber(retryGens) })}</span
+					>{/if}</button
 			></span
 		>
 		{#if savedItemFrames}<button
@@ -367,7 +385,7 @@
 					void startMove(moving.projectId, {
 						...$state.snapshot(moving.spec),
 						reuseItemFrames: true
-					})}>Use saved frames</button
+					})}>{t('moveSheet.useSaved')}</button
 			>{/if}
 		{#if recovery}<button
 				class="bu-action btn primary"
@@ -375,36 +393,45 @@
 				disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
 				aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
 				onclick={retryChecks}
-				>{recovery.checks ? 'Retry joint checks' : 'Reuse cached frames'}</button
+				>{recovery.checks ? t('moveSheet.retryChecks') : t('moveSheet.reuseCached')}</button
 			>{/if}
 		{#if colorRepair}<button
 				class="bu-action btn primary"
 				data-variant="primary"
 				disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
 				aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
-				onclick={matchColors}>Match body colors</button
+				onclick={matchColors}>{t('moveSheet.matchColors')}</button
 			>{/if}
 		{#if keep}<button class="bu-action btn primary" data-variant="primary" onclick={keepBody}
-				>Keep frames</button
+				>{t('moveSheet.keepFrames')}</button
 			>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
 	{:else if progress}
-		<span class="foot-note">You can keep working.</span>
+		<span class="foot-note">{t('moveSheet.keepWorking')}</span>
 		<button class="bu-action btn" data-variant="outline" onclick={() => (adding = true)}
-			>Queue another move</button
+			>{t('moveSheet.queueAnother')}</button
 		>
 		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}
-			>Hide</button
+			>{t('common.hide')}</button
 		>
 	{:else if ok}
 		<span class="foot-note"
 			>{est
-				? `About ${est.minutes} min · body ${Math.ceil(est.body)} gens${est.items ? ` + ${est.items} gens if equipment runs` : ''}`
+				? est.items
+					? t('moveSheet.footEstimateItems', {
+							minutes: formatNumber(est.minutes),
+							body: formatNumber(Math.ceil(est.body)),
+							items: formatNumber(est.items)
+						})
+					: t('moveSheet.footEstimate', {
+							minutes: formatNumber(est.minutes),
+							body: formatNumber(Math.ceil(est.body))
+						})
 				: ''}</span
 		>
 		<span class="api-action"
 			><ApiPeek
 				scope="move-add"
-				label="Add or replace move"
+				label={t('moveSheet.addLabel')}
 				plan={movePlan(rec, {
 					...motion,
 					items: chosen,
@@ -424,10 +451,20 @@
 					tierBlocked(addTier)}
 				aria-describedby={tierBlocked(addTier) ? 'move-action-tier' : undefined}
 				onclick={go}
-				>{busy ? 'Queue' : replacing ? 'Replace' : 'Add'}
-				{id ? nice(id) : 'move'}{replacing ? ' views' : ''}
+				>{t(
+					busy
+						? replacing
+							? 'moveSheet.submit.queueViews'
+							: 'moveSheet.submit.queue'
+						: replacing
+							? 'moveSheet.submit.replaceViews'
+							: 'moveSheet.submit.add',
+					{ move: id ? nice(id) : t('moveSheet.submit.move') }
+				)}
 				<span class="cost">
-					Est. {est ? Math.ceil(est.gens) : '–'} gens{est?.items ? ' with equipment' : ''}
+					{t(est?.items ? 'moveSheet.estimateWithItems' : 'moves.estimate', {
+						gens: est ? formatNumber(Math.ceil(est.gens)) : '–'
+					})}
 				</span></button
 			></span
 		>
@@ -436,22 +473,22 @@
 
 <Sheet
 	title={progress && moving.spec?.itemMethod === 'grid'
-		? 'Repair item frames'
+		? t('moveSheet.titleRepair')
 		: (progress ? moving.spec?.replace : replacing)
-			? 'Replace move views'
-			: 'Add a move'}
+			? t('moveSheet.titleReplace')
+			: t('moves.add')}
 	cancel={progress && !moving.done ? 'Hide' : 'Cancel'}
 	onclose={() => (ui.sheet = null)}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
 >
 	{#if holder}<p class="notice small">
 			<CircleAlert size={14} /><span
-				>{nice(moving.spec!.id)} failed on {holder}, so new moves wait. Open it to try again or
-				start over.</span
+				>{t('moveSheet.heldBy', { move: nice(moving.spec!.id), character: holder })}</span
 			><button
 				class="bu-action btn sm"
 				data-variant="outline"
-				onclick={() => void openProject(moving.projectId)}>Open {holder}</button
+				onclick={() => void openProject(moving.projectId)}
+				>{t('moveSheet.open', { character: holder })}</button
 			>
 		</p>{/if}
 	{#if progress}
@@ -461,14 +498,13 @@
 					? ` · ${moving.spec.dirs.map(directionLabel).join(', ')}`
 					: ''}<ApiPeek
 					scope="move-progress"
-					label="Current move generation"
+					label={t('moveSheet.progressLabel')}
 					plan={moving.spec ? movePlan(rec, moving.spec) : []}
 					activityScope={moving.spec?.activityScope}
 				/>
 			</p>
 			{#if moving.spec?.itemMethod === 'grid'}<p class="muted small">
-					Only the selected item frames are redrawn; the body stays fixed. Results that fail hard
-					checks keep the previous item frames.
+					{t('moveSheet.repairNote')}
 				</p>{/if}
 			<ol class="steps-list">
 				{#each steps as s, i (s.id)}
@@ -478,47 +514,54 @@
 								class="bu-ring ring spin"
 								aria-hidden="true"
 							></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}
-						{s.label}{#if !moving.done && i === stepIx && moving.progress && moving.progress.total > 1}<span
+						{displayMessage(
+							s.label
+						)}{#if !moving.done && i === stepIx && moving.progress && moving.progress.total > 1}<span
 								class="muted num small">&nbsp;{moving.progress.done}/{moving.progress.total}</span
 							>{/if}
 					</li>
 				{/each}
 			</ol>
-			{#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>
+			{#if moving.error}<p class="notice bad small">
+					<CircleAlert size={14} />{displayError(moving.error)}
+				</p>
 				{#if retryAccess.error || recoveryAccess.error}<p class="notice warn small" role="status">
 						{retryAccess.error || recoveryAccess.error}
 					</p>{/if}
 				{#if retryTier || recoveryTier}<TierNotice
 						id="move-retry-tier"
 						minimumTier={Math.max(retryTier, recoveryTier)}
-						feature="Generating this move again"
+						feature={t('moveSheet.retryFeature')}
 					/>{/if}{/if}
 			{#if savedItemFrames}<p class="muted small">
-					Use saved frames to check for completed artwork that matches this move and equipment.
-					Recovering these frames makes no PixelLab request.
+					{t('moveSheet.savedFramesNote')}
 				</p>{/if}
-			{#if recoveryChecking}<p class="muted small" role="status">Checking cached frames…</p>{/if}
-			{#if recoveryUnavailable}<p class="notice small">{recoveryUnavailable}</p>{/if}
+			{#if recoveryChecking}<p class="muted small" role="status">
+					{t('moveSheet.checkingCached')}
+				</p>{/if}
+			{#if recoveryUnavailable.length}<p class="notice small">
+					{recoveryUnavailable.map(displayNestedMessage).join(' ')}
+				</p>{/if}
 			{#if ownQueued.length}<p class="muted small">
-					Queued next: {ownQueued.map((q) => nice(q.spec.id)).join(', ')}{moving.error
-						? keep
-							? '. Keep frames or Try again continues with them; Discard drops them too.'
-							: '. Try again continues with them; Start over drops them.'
-						: ''}
+					{t(
+						moving.error
+							? keep
+								? 'moveSheet.queuedNextKeep'
+								: 'moveSheet.queuedNextRetry'
+							: 'moveSheet.queuedNext',
+						{ moves: ownQueued.map((q) => nice(q.spec.id)).join(', ') }
+					)}
 				</p>{/if}
 			{#if keep && moving.spec}
-				<section class="keep-review" aria-label="Review body frames">
+				<section class="keep-review" aria-label={t('moveSheet.keepReview')}>
 					<p class="small">
-						These frames passed the structural checks but have the quality warnings below. Keep
-						saves them as they are, body only, with no PixelLab request. Discard saves nothing; the
-						generated images stay in Activity.
+						{t('moveSheet.keepNote')}
 					</p>
 					{#if moving.spec.items.length}<p class="small">
-							PixelLab was not asked to animate the selected items. Generate their frames later as a
-							separate, priced step.
+							{t('moveSheet.keepItemsNote')}
 						</p>{/if}
 					{#if moving.spec.replace}<p class="small">
-							Keeping these views hides their old equipment frames until you make new ones.
+							{t('moveSheet.keepReplaceNote')}
 						</p>{/if}
 					{#each keep.directions as view (view.dir)}
 						<div class="keep-view">
@@ -528,11 +571,15 @@
 										img={frame}
 										k={keepK}
 										checker
-										label="{nice(moving.spec.id)} {directionLabel(view.dir)} frame {i + 1}"
+										label={t('moveSheet.frameLabel', {
+											move: nice(moving.spec.id),
+											direction: directionLabel(view.dir),
+											number: i + 1
+										})}
 									/>{/each}
 							</div>
 							{#each view.warnings as warning (warning)}<p class="notice warn small">
-									<CircleAlert size={14} />{bodyQualityNote(warning)}
+									<CircleAlert size={14} />{bodyQualityNote(warning, t)}
 								</p>{/each}
 						</div>
 					{/each}
@@ -540,55 +587,71 @@
 			{/if}
 			{#if recovery}
 				<p class="notice warn small">
-					Reuse the completed body frames and joint results.{' '}{#if recovery.checks}Retry {recovery.checks}
-						unfinished joint {recovery.checks === 1 ? 'check' : 'checks'} · estimated {recovery.gens.toFixed(
-							1
-						)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying
-						can charge again. PixelLab billing and queue time vary.{:else}No new body or joint
-						requests are made.{/if}{#if recoveryItemGens}{' '}Selected equipment poses follow after
-						the body passes · estimated {Math.ceil(recoveryItemGens)} additional gens, with retries and
-						dollar billing possible.{/if}
+					{[
+						t('moveSheet.recovery.reuse'),
+						recovery.checks
+							? t('moveSheet.recovery.checks', {
+									count: recovery.checks,
+									gens: decimal(recovery.gens),
+									usd: usd(recovery.usd)
+								})
+							: t('moveSheet.recovery.noRequests'),
+						recoveryItemGens
+							? t('moveSheet.recovery.items', {
+									gens: formatNumber(Math.ceil(recoveryItemGens))
+								})
+							: ''
+					]
+						.filter(Boolean)
+						.join(' ')}
 				</p>
 			{/if}
 			{#if colorRepair}
 				<p class="notice warn small">
-					Match {colorRepair.changedPixels} nearby color {colorRepair.changedPixels === 1
-						? 'pixel'
-						: 'pixels'} to the standing palette across {colorRepair.changedFrames} cached {colorRepair.directions
-						.map(directionLabel)
-						.join(', ')}
-					{colorRepair.changedFrames === 1 ? 'frame' : 'frames'}. The body shape stays fixed; other
-					colors are left alone. Recheck {colorRepair.checks} changed frames · estimated {colorRepair.gens.toFixed(
-						1
-					)} gens or ${colorRepair.usd.toFixed(3)}.{#if colorRepair.itemGens}
-						Selected equipment poses follow after the body passes · estimated {Math.ceil(
-							colorRepair.itemGens
-						)} additional gens.{/if} PixelLab may bill dollars; quality retries cost extra and queue time
-					varies. Existing body views are kept if a check still fails.
+					{[
+						t('moveSheet.color.match', {
+							pixels: t('moveSheet.color.pixels', { count: colorRepair.changedPixels }),
+							frames: t('moveSheet.color.frames', {
+								count: colorRepair.changedFrames,
+								directions: colorRepair.directions.map(directionLabel).join(', ')
+							})
+						}),
+						t('moveSheet.color.recheck', {
+							count: colorRepair.checks,
+							gens: decimal(colorRepair.gens),
+							usd: usd(colorRepair.usd)
+						}),
+						colorRepair.itemGens
+							? t('moveSheet.color.items', {
+									gens: formatNumber(Math.ceil(colorRepair.itemGens))
+								})
+							: '',
+						t('moveSheet.color.billing')
+					]
+						.filter(Boolean)
+						.join(' ')}
 				</p>
 			{/if}
 			{#if recoveryError}<p class="notice bad small">
-					<CircleAlert size={14} />{recoveryError}
+					<CircleAlert size={14} />{displayNestedMessage(recoveryError)}
 				</p>{/if}
 			{#each moving.warnings as warning (warning)}<p class="notice warn small">
-					<CircleAlert size={14} />{bodyQualityNote(warning)}
+					<CircleAlert size={14} />{bodyQualityNote(warning, t)}
 				</p>{/each}
 		</div>
 	{:else if isDemo() || !ok}
 		<p class="notice small">
-			<CircleAlert size={14} />{isDemo()
-				? 'Moves are added to your own character.'
-				: 'Set up this character’s pose rig to add moves. Your existing artwork and layers stay aligned.'}
+			<CircleAlert size={14} />{isDemo() ? t('moveSheet.demo') : t('moveSheet.needsSetup')}
 		</p>
 		{#if !isDemo()}<button
 				class="bu-action btn primary"
 				data-variant="primary"
-				onclick={() => (ui.sheet = 'setup')}>Set up character</button
+				onclick={() => (ui.sheet = 'setup')}>{t('setup.title')}</button
 			>{/if}
 	{:else}
 		<div class="form">
 			<div class="field">
-				<span class="label" id="act">Move</span>
+				<span class="label" id="act">{t('common.move')}</span>
 				<div class="chips" role="radiogroup" aria-labelledby="act">
 					{#each options as a (a)}
 						<button
@@ -599,16 +662,16 @@
 								? 0
 								: -1}
 							onclick={() => chooseAction(a)}
-							>{#if have.has(a)}<Check size={12} />{/if}{nice(a)}{have.has(a)
-								? ' · added'
-								: ''}</button
+							>{#if have.has(a)}<Check size={12} />{/if}{have.has(a)
+								? t('moveSheet.added', { move: nice(a) })
+								: nice(a)}</button
 						>
 					{/each}
 				</div>
 			</div>
 			{#if replacing}
 				<div class="field">
-					<span class="label">Views to replace</span>
+					<span class="label">{t('moveSheet.viewsToReplace')}</span>
 					{#each availableDirs as dir (dir)}<label class="check"
 							><input
 								type="checkbox"
@@ -620,48 +683,47 @@
 							/>{directionLabel(dir)}</label
 						>{/each}
 					<p class="notice warn small">
-						Saving a replacement clears the old equipment frames in these views. Selected equipment
-						is animated only if the body passes its checks. Other equipment stays hidden in those
-						views until new frames are made. Other views and moves stay fixed.{#if m?.rig.directions.some((d) => d.mirrorOf)}
-							Mirrored views follow their source.{/if}
+						{m?.rig.directions.some((d) => d.mirrorOf)
+							? t('moveSheet.replaceNoteMirrored')
+							: t('moveSheet.replaceNote')}
 					</p>
 				</div>
-			{:else}<p class="faint small">Choose an existing move to replace selected views.</p>{/if}
+			{:else}<p class="faint small">{t('moveSheet.chooseToReplace')}</p>{/if}
 			<label class="field">
 				<span class="label"
-					>{describingReplacement ? 'Describe the replacement' : 'Or describe it'}
-					{#if !describingReplacement}<span class="faint">(optional)</span>{/if}</span
+					>{describingReplacement ? t('moveSheet.describeReplacement') : t('moveSheet.describe')}
+					{#if !describingReplacement}<span class="faint">{t('common.optional')}</span>{/if}</span
 				>
 				<input
 					class="bu-input input"
 					bind:value={text}
-					placeholder="e.g. jumping in place"
+					placeholder={t('moveSheet.describePlaceholder')}
 					maxlength="120"
 				/>
 			</label>
 			{#if text.trim()}<p class="faint small">
-					The body is drawn with empty hands and no effects. Add weapons and props as items.
+					{t('moveSheet.emptyHands')}
 				</p>{/if}
 			{#if reservedMove(id)}<p class="notice warn small">
-					<CircleAlert size={14} />{reservedMove(id)}
+					<CircleAlert size={14} />{displayError(reservedMove(id))}
 				</p>{:else if motionIssue}<p class="notice warn small">
-					<CircleAlert size={14} />{motionIssue}
+					<CircleAlert size={14} />{displayError(motionIssue)}
 				</p>{:else if pendingIds.includes(id)}<p class="notice small">
-					<CircleAlert size={14} />{nice(id)} is already queued.
+					<CircleAlert size={14} />{t('moveSheet.alreadyQueued', { move: nice(id) })}
 				</p>{:else if busy}<p class="faint small">
-					It waits for the move in progress, then runs by itself.
+					{t('moveSheet.waitsForCurrent')}
 				</p>{/if}
 			{#if addAccess.error}<p class="notice warn small" role="status">{addAccess.error}</p>{/if}
 			<TierNotice
 				id="move-action-tier"
 				minimumTier={addTier}
 				recommendedTier={GENERATION_RECOMMENDATION.tier}
-				feature="Moves for worn items"
+				feature={t('moveSheet.addFeature')}
 				recommendation={GENERATION_RECOMMENDATION.reason}
 			/>
 			{#if items.length}
 				<div class="field">
-					<span class="label">Animate these items too</span>
+					<span class="label">{t('moveSheet.animateItems')}</span>
 					{#each items as it (it.id)}
 						<label class="check"
 							><input
@@ -673,47 +735,55 @@
 										: included.filter((x) => x !== it.id))}
 							/>{it.name}
 							<span class="faint small">
-								{m && est
-									? moveEstimate(m, { ...motion, items: [it.id], dirs: targetDirs }).items
-									: '–'}
-								gens
+								{t('generationDetails.gens', {
+									value:
+										m && est
+											? formatNumber(
+													moveEstimate(m, { ...motion, items: [it.id], dirs: targetDirs }).items
+												)
+											: '–'
+								})}
 							</span></label
 						>
 					{/each}
 					<p class="faint small">
-						Items are unchecked by default. If body checks stop this move, equipment requests are
-						not sent. You can generate equipment later from each item’s details.
+						{t('moveSheet.itemsNote')}
 					</p>
 				</div>
 			{/if}
 			{#if (unavailable.length || shared.items.length) && targetDirs.length}
 				<p class="faint small">
-					This list only shows equipment that can follow the body’s poses in every view being
-					generated. Shared copies can still be worn in views where they have frames. To animate an
-					unfitted copy, make one for this character. Other items may offer animation for existing
-					moves in their details.
+					{t('moveSheet.listNote')}
 				</p>
 			{/if}
 			<p class="faint small">
-				PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time
-				varies.
+				{t('moveSheet.billing')}
 			</p>
 			<details class="disclosure">
-				<summary><ChevronRight size={14} />Details</summary>
+				<summary><ChevronRight size={14} />{t('common.details')}</summary>
 				<div>
 					<p class="faint small">
-						{text.trim()
-							? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view'
-							: action === 'walk'
-								? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view'
-								: 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames ×
-						{dirs} directions{m?.rig.directions.some((d) => d.mirrorOf)
-							? ` (${m.rig.directions
-									.filter((d) => d.mirrorOf)
-									.map((d) => d.id.replaceAll('-', ' '))
-									.join(', ')} mirrored)`
-							: ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · body review notes
-						do not trigger redraws.
+						{[
+							text.trim()
+								? t('moveSheet.pipeline.described')
+								: action === 'walk'
+									? t('moveSheet.pipeline.walk')
+									: t('moveSheet.pipeline.authored'),
+							m?.rig.directions.some((d) => d.mirrorOf)
+								? t('moveSheet.pipeline.gridMirrored', {
+										frames: est?.frames ?? '',
+										dirs,
+										mirrored: m.rig.directions
+											.filter((d) => d.mirrorOf)
+											.map((d) => d.id.replaceAll('-', ' '))
+											.join(', ')
+									})
+								: t('moveSheet.pipeline.grid', { frames: est?.frames ?? '', dirs }),
+							t('moveSheet.pipeline.cost', {
+								body: est ? decimal(est.body) : '',
+								items: est?.items ?? ''
+							})
+						].join(' · ')}
 					</p>
 				</div>
 			</details>

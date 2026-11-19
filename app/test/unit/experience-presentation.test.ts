@@ -526,6 +526,7 @@ describe('synchronized production equipment', () => {
 		for (const direction of ['east', 'west'] as const) {
 			expect(at(direction)).toMatchObject({
 				loading: 'Sword loading — East',
+				loadingItems: [{ name: 'Sword', directions: ['east'] }],
 				hiddenItems: [],
 				issue: null
 			});

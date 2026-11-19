@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
+	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { message, type Message } from '../lib/message.ts';
 	// One shared per-tile item menu (approved in docs/design/2026-11-11-ui-refinement/ui-lab-7.html): an arrowed popover
 	// anchored to the tile's ⋮ at every size, with Wear as a toggle in its header.
 	import PopoverArrow from './PopoverArrow.svelte';
@@ -11,7 +14,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { extendable } from './create.ts';
-	import { slotLabel } from './slots.ts';
+	import { slotLabelMessage } from './slots.ts';
 	import { twoHanded } from '../lib/compose/compose.ts';
 	import type { generationStatus } from './generationStatus.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
@@ -68,7 +71,7 @@
 	/** The running generation's Cancel alert is open. */
 	let cancelling = $state(false);
 	let cancelBusy = $state(false);
-	let cancelError = $state('');
+	let cancelError = $state<Message | string>('');
 	async function cancel() {
 		if (!generation) return;
 		cancelBusy = true;
@@ -80,9 +83,7 @@
 			}
 		} catch (error) {
 			cancelError =
-				error instanceof Error
-					? error.message
-					: 'Could not save cancellation. Keep this tab open and try again.';
+				error instanceof Error ? errorMessage(error) : message('itemMenu.cancelSaveError');
 		} finally {
 			cancelBusy = false;
 		}
@@ -95,7 +96,11 @@
 	const both = $derived(!!m && !!it && twoHanded(m, it));
 	// The header names the category; the lines below it explain each of the tile's icons.
 	const sentence = $derived(
-		it ? [slotLabel(m, it.slot), both ? 'Two-handed' : ''].filter(Boolean).join(' · ') : ''
+		it
+			? [displayMessage(slotLabelMessage(m, it.slot)), both ? t('itemMenu.twoHanded') : '']
+					.filter(Boolean)
+					.join(' · ')
+			: ''
 	);
 	function close() {
 		menu?.hidePopover();
@@ -172,14 +177,17 @@
 			<div class="item-menu-head">
 				<span class="item-menu-title"
 					><strong id="generation-menu-name">{generation.input.name}</strong><small
-						>{generationInfo.text}</small
+						>{displayMessage(generationInfo.text)}</small
 					></span
 				>
 			</div>
 			<div class="item-menu-confirm">
-				<p class="small">{generationInfo.detail}</p>
+				<p class="small">{displayMessage(generationInfo.detail)}</p>
 				{#if generation.phase === 'running'}<p class="small">
-						{generation.status || 'Preparing your item'} · {generation.input.prompt}
+						{t('itemMenu.runningDetail', {
+							status: displayMessage(generation.status || message('itemMenu.preparing')),
+							prompt: generation.input.prompt
+						})}
 					</p>{/if}
 				<div role="menu" aria-labelledby="generation-menu-name">
 					{#if generation.cancelSaveFailed}<button
@@ -188,7 +196,7 @@
 							data-variant="quiet"
 							role="menuitem"
 							disabled={cancelBusy}
-							onclick={cancel}>Save cancellation</button
+							onclick={cancel}>{t('generation.status.saveCancellation')}</button
 						>{/if}
 					{#if generation.phase !== 'running'}
 						<button
@@ -196,14 +204,15 @@
 							data-variant="quiet"
 							role="menuitem"
 							onclick={() => act(() => void openGenerationReview(generation!.draft.spec.id))}
-							><Info size={16} />Review item…</button
+							><Info size={16} />{t('itemMenu.reviewItem')}</button
 						>
 					{/if}
 					<button
 						class="row bu-action"
 						data-variant="quiet"
 						role="menuitem"
-						onclick={() => act(() => (ui.sheet = 'activity'))}><Info size={16} />Activity…</button
+						onclick={() => act(() => (ui.sheet = 'activity'))}
+						><Info size={16} />{t('itemMenu.activity')}</button
 					>
 					{#if generation.phase === 'running' && $queue.role !== 'follower'}
 						<button
@@ -212,15 +221,15 @@
 							data-variant="quiet"
 							role="menuitem"
 							onclick={() => ask(() => (cancelling = true))}
-							><Trash size={16} />Cancel generation…</button
+							><Trash size={16} />{t('itemMenu.cancelGeneration')}</button
 						>
 					{/if}
 				</div>
 				{#if generation.phase === 'running' && $queue.role === 'follower'}<p class="small">
-						Cancel from the tab that is generating this item.
+						{t('itemMenu.cancelFromTheTabThatIsGenerating')}
 					</p>{/if}
 				{#if cancelError && !cancelling}<p class="notice bad small" role="alert">
-						{cancelError}
+						{displayMessage(cancelError)}
 					</p>{/if}
 			</div>
 		</div>
@@ -231,7 +240,7 @@
 				<span class="item-menu-art" aria-hidden="true"><SharedThumb {entry} /></span>
 				<span class="item-menu-title">
 					<strong id="item-menu-name">{entry.item.name}</strong>
-					<small>{slotLabel(entry.source, entry.item.slot)}</small>
+					<small>{displayMessage(slotLabelMessage(entry.source, entry.item.slot))}</small>
 				</span>
 			</div>
 			<TileMarks {marks} list />
@@ -244,8 +253,8 @@
 						role="menuitem"
 						onclick={() => act(() => void addShared(entry))}
 						><Circle size={16} aria-hidden="true" />{isDemo()
-							? 'Wear in a copy of the demo'
-							: 'Wear'}<small class="row-aside">Free</small></button
+							? t('itemMenu.wearInACopyOfTheDemo')
+							: t('common.wear')}<small class="row-aside">{t('common.free')}</small></button
 					>
 				{/if}
 				<!-- The New item sheet that opens next prices it before anything is spent; an item without a description is
@@ -262,8 +271,8 @@
 								name: entry.item.name
 							})
 						)}
-					><RefreshCw size={16} aria-hidden="true" />Make one for {m.name}…<small class="row-aside"
-						>Paid</small
+					><RefreshCw size={16} aria-hidden="true" />{t('itemMenu.remake', { name: m.name })}<small
+						class="row-aside">{t('itemMenu.paid')}</small
 					></button
 				>
 			</div>
@@ -283,8 +292,8 @@
 					class="bu-action item-menu-wear"
 					data-variant="outline"
 					aria-pressed={on}
-					aria-label="Wear {it.name}"
-					title={on ? 'Wearing (take off)' : 'Wear'}
+					aria-label={t('itemMenu.wearName', { name: it.name })}
+					title={on ? t('itemMenu.titleWearingTakeOff') : t('common.wear')}
 					onclick={() => wear(it.id)}
 					>{#if on}<CircleCheck size={20} aria-hidden="true" />{:else}<Circle
 							size={20}
@@ -302,12 +311,12 @@
 						act(() => {
 							ui.selected = it.id;
 							ui.sheet = 'item';
-						})}><Info size={16} aria-hidden="true" />Details…</button
+						})}><Info size={16} aria-hidden="true" />{t('common.detailsMenu')}</button
 				>
 				{#if otherHand}
 					<!-- Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
 					<label class="row bu-action bu-check item-menu-switch" data-variant="quiet">
-						<span><HandGrab size={16} aria-hidden="true" />Two-handed</span>
+						<span><HandGrab size={16} aria-hidden="true" />{t('itemMenu.twoHanded')}</span>
 						<input
 							class="bu-switch"
 							type="checkbox"
@@ -331,10 +340,9 @@
 							role="menuitem"
 							onclick={() =>
 								act(() => openNewItem(otherHand, { slot: otherHand, prompt: it.prompt }))}
-							><CopyPlus size={16} aria-hidden="true" />Make one for the {slotLabel(
-								m,
-								otherHand
-							)}…<small class="row-aside">Paid</small></button
+							><CopyPlus size={16} aria-hidden="true" />{t('itemMenu.makeForSlot', {
+								slot: displayMessage(slotLabelMessage(m, otherHand))
+							})}<small class="row-aside">{t('itemMenu.paid')}</small></button
 						>
 					{/if}
 				{/if}
@@ -353,8 +361,8 @@
 								})
 							)}
 						><RefreshCw size={16} aria-hidden="true" />{remakeOnly
-							? `Make one for ${m.name}…`
-							: 'Try again…'}<small class="row-aside">Paid</small></button
+							? t('itemMenu.remake', { name: m.name })
+							: t('itemMenu.tryAgain')}<small class="row-aside">{t('itemMenu.paid')}</small></button
 					>
 				{/if}
 				<button
@@ -362,13 +370,13 @@
 					data-variant="quiet"
 					role="menuitem"
 					onclick={() => act(() => void downloadItemZip(it.id))}
-					><Download size={16} />Download ZIP</button
+					><Download size={16} />{t('common.downloadZip')}</button
 				>
 				<hr class="bu-separator" />
 				<DeleteRow
 					class="bu-action"
-					label="Delete item…"
-					locked={isDemo() ? "Demo items can't be deleted" : ''}
+					label={t('itemMenu.labelDeleteItem')}
+					locked={isDemo() ? t('itemMenu.demoDeleteLocked') : ''}
 					onclick={() => ask(() => (deleting = { id: it.id, name: it.name }))}
 				/>
 			</div>
@@ -378,32 +386,32 @@
 {#if deleting}
 	{@const target = deleting}
 	<ConfirmDialog
-		title="Delete {target.name}?"
-		action="Delete"
+		title={t('common.deleteNamed', { name: target.name })}
+		action={t('common.delete')}
 		oncancel={() => (deleting = null)}
 		onconfirm={() => {
 			const id = target.id;
 			deleting = null;
 			onremove(id);
-		}}><p>This can't be undone.</p></ConfirmDialog
+		}}><p>{t('common.cannotUndo')}</p></ConfirmDialog
 	>
 {/if}
 <!-- A failed save keeps the alert open to show why, even though the generation has already stopped. -->
 {#if cancelling && generation && (generation.phase === 'running' || cancelError)}
 	<ConfirmDialog
-		title="Cancel {generation.input.name}?"
-		action="Cancel item"
-		busyAction="Canceling…"
-		cancel="Keep"
+		title={t('itemMenu.titleCancelName', { name: generation.input.name })}
+		action={t('itemMenu.cancelItem')}
+		busyAction={t('itemMenu.canceling')}
+		cancel={t('itemMenu.keep')}
 		busy={cancelBusy}
-		problem={cancelError}
+		problem={displayMessage(cancelError)}
 		oncancel={() => {
 			cancelling = false;
 			cancelError = '';
 		}}
 		onconfirm={cancel}
 		><p>
-			Generations already used are not refunded, and requests already sent may still charge.
+			{t('itemMenu.generationsAlreadyUsedAreNotRefundedAnd')}
 		</p></ConfirmDialog
 	>
 {/if}

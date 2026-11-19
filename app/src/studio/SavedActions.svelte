@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
+	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import type { Message } from '../lib/message.ts';
 	import type { Snippet } from 'svelte';
 	import RowActions from './RowActions.svelte';
 	import DeleteRow from './DeleteRow.svelte';
@@ -22,7 +25,7 @@
 	} = $props();
 	let deleting = $state(false);
 	let busy = $state(false);
-	let problem = $state('');
+	let problem = $state<string | Message>('');
 	async function remove() {
 		busy = true;
 		problem = '';
@@ -30,7 +33,7 @@
 			await ondelete();
 			deleting = false;
 		} catch (error) {
-			problem = error instanceof Error ? error.message : `Could not delete this ${kind}.`;
+			problem = errorMessage(error);
 			if (kind === 'outfit') toast(problem, { tone: 'danger' });
 		} finally {
 			busy = false;
@@ -46,11 +49,13 @@
 			onclick={() => {
 				close();
 				void ondownload();
-			}}><Download size={16} />Download ZIP</button
+			}}><Download size={16} />{t('common.downloadZip')}</button
 		>
 		<hr class="bu-separator" />
 		<DeleteRow
-			label={kind === 'move' ? 'Delete move…' : 'Delete outfit'}
+			label={kind === 'move'
+				? t('savedActions.labelDeleteMove')
+				: t('savedActions.labelDeleteOutfit')}
 			{locked}
 			onclick={() => {
 				close();
@@ -62,10 +67,10 @@
 </RowActions>
 {#if deleting}
 	<ConfirmDialog
-		title={`Delete ${name}?`}
-		action="Delete"
+		title={t('common.deleteNamed', { name })}
+		action={t('common.delete')}
 		{busy}
-		{problem}
+		problem={displayMessage(problem)}
 		blocked={!!locked}
 		oncancel={() => {
 			deleting = false;
@@ -73,7 +78,7 @@
 		}}
 		onconfirm={remove}
 	>
-		<p>This removes the move from the body and every item. This can't be undone.</p>
+		<p>{t('savedActions.thisRemovesTheMoveFromTheBody')}</p>
 		{#if locked}<p>{locked}</p>{/if}
 	</ConfirmDialog>
 {/if}

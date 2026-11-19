@@ -29,7 +29,7 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 1 : 0, // A CI timing flake is retried once and annotated as flaky.
 	reporter: process.env.CI ? [['list'], ['github']] : 'list',
-	use: { trace: 'retain-on-failure', channel, launchOptions: offlineLaunch },
+	use: { locale: 'en-US', trace: 'retain-on-failure', channel, launchOptions: offlineLaunch },
 	webServer: [
 		...(!process.env.BASE
 			? [

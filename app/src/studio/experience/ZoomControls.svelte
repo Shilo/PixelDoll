@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
 	import { Minus, Plus } from '../icons.ts';
 	import { zoomStep, type SceneZoom } from './zoom.ts';
 	const description = $props.id();
@@ -16,29 +17,31 @@
 <div
 	class="scene-zoom bu-floating"
 	role="group"
-	aria-label="Scene zoom"
-	title="Wheel or pinch to zoom. Focus the scene for +, -, and 0. Middle-click resets."
+	aria-label={t('zoomControls.sceneZoom')}
+	title={t('zoomControls.titleWheelOrPinchToZoomFocus')}
 >
-	<span class="sr" id={description}>{percent}% of the character's true size</span>
+	<span class="sr" id={description}
+		>{t('zoomControls.percentOfTheCharacterSTrueSize', { percent })}</span
+	>
 	<button
 		class="bu-action"
 		data-variant="quiet"
-		aria-label="Zoom out"
+		aria-label={t('common.zoomOut')}
 		disabled={zoom.scale <= zoom.min + 1e-9}
 		onclick={() => onchange(zoomStep(zoom, -1))}><Minus size={18} /></button
 	>
 	<button
 		class="bu-action scene-zoom-reset num"
 		data-variant="quiet"
-		aria-label="Reset scene zoom"
+		aria-label={t('zoomControls.resetSceneZoom')}
 		aria-describedby={description}
-		title="Reset to the fit (0 or middle-click in the scene)"
+		title={t('zoomControls.titleResetToTheFit0Or')}
 		onclick={() => onchange(null)}>{percent}%</button
 	>
 	<button
 		class="bu-action"
 		data-variant="quiet"
-		aria-label="Zoom in"
+		aria-label={t('common.zoomIn')}
 		disabled={zoom.scale >= zoom.max - 1e-9}
 		onclick={() => onchange(zoomStep(zoom, 1))}><Plus size={18} /></button
 	>

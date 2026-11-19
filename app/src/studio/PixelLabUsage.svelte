@@ -2,14 +2,9 @@
 	import type { Snippet } from 'svelte';
 	import { app } from '../lib/app.svelte.ts';
 	import { ExternalLink, Gauge } from './icons.ts';
+	import { formatNumber, formatPercent, t } from 'svelte-whisper';
 
 	let { compact = true, actions }: { compact?: boolean; actions?: Snippet } = $props();
-	const countFormat = new Intl.NumberFormat('en-US');
-	const percentFormat = new Intl.NumberFormat('en-US', {
-		style: 'percent',
-		maximumFractionDigits: 1
-	});
-	const creditFormat = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 	const balance = $derived(app.keyRejected || app.balanceError ? null : app.balance);
 	const usage = $derived.by(() => {
 		if (!balance?.subscription) return null;
@@ -30,19 +25,17 @@
 		typeof creditBalance === 'number' &&
 			Number.isFinite(creditBalance) &&
 			(usage?.exhausted || ((!compact || !usage) && creditBalance > 0))
-			? creditFormat.format(creditBalance)
+			? formatNumber(creditBalance, { style: 'currency', currency: 'USD' })
 			: null
 	);
 </script>
 
 <span class={['usage', { compact }]}>
 	<span class="summary">
-		<span class="label"><Gauge size={18} /><span>PixelLab Usage</span></span>
+		<span class="label"><Gauge size={18} /><span>{t('usage.title')}</span></span>
 		{#if usage}
 			<span class="count bu-small bu-number">
-				{countFormat.format(usage.used)}<span class="bu-muted"
-					>{` / ${countFormat.format(usage.total)}`}</span
-				>
+				{formatNumber(usage.used)}<span class="bu-muted">{` / ${formatNumber(usage.total)}`}</span>
 			</span>
 		{/if}
 		<span class="actions">
@@ -53,21 +46,26 @@
 				<progress class="bu-progress" value={usage.used} max={usage.total} aria-hidden="true"
 				></progress>
 				<span class="bu-small bu-muted bu-number">
-					{percentFormat.format(usage.exhausted ? 1 : Math.min(0.999, usage.used / usage.total))} used
+					{t('usage.used', {
+						percent: formatPercent(
+							usage.exhausted ? 1 : Math.min(0.999, usage.used / usage.total),
+							1
+						)
+					})}
 				</span>
 			</span>
 		{:else if app.key || !compact}
 			<span class="detail bu-small bu-muted">
 				{!app.key
-					? 'Not connected'
+					? t('usage.notConnected')
 					: app.balance || app.balanceError || app.keyRejected
-						? 'Usage unavailable'
-						: 'Checking usage…'}
+						? t('usage.unavailable')
+						: t('usage.checking')}
 			</span>
 		{/if}
 		{#if credits !== null}
-			<span class="detail credits bu-small bu-muted"
-				><span class="bu-number">{credits}</span> additional credits left</span
+			<span class="detail credits bu-small bu-muted bu-number"
+				>{t('usage.credits', { credits })}</span
 			>
 		{/if}
 	</span>

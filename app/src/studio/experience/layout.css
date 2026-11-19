@@ -1115,7 +1115,7 @@
 	max-height: 100%;
 	overflow: hidden;
 }
-.character-row > span:last-child > *,
+.character-row > span:last-child > strong,
 .move-text > * {
 	min-width: 0;
 	white-space: nowrap;
@@ -1177,9 +1177,12 @@
 .character-row small {
 	color: var(--bu-muted);
 	font-size: 13px;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+/* Facts are separate localized phrases; keep each one whole so a line never starts with a unit or numeral. */
+.character-row small .character-fact {
 	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
 }
 .character-thumbnail {
 	display: flex;
@@ -1612,6 +1615,24 @@
 	white-space: normal;
 	font-size: 14px;
 	min-height: 44px;
+}
+/* Korean preset labels are wider than the other translations. Give the side preset half the row and the
+   other two a quarter each, so all five stay on one line without shrinking text or truncating labels. */
+.studio-app .character-sheet .direction-presets:lang(ko) {
+	grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+.studio-app .character-sheet .direction-presets:lang(ko) .btn {
+	word-break: keep-all;
+}
+.studio-app .character-sheet .direction-presets:lang(ko) .btn:nth-child(-n + 2) {
+	grid-column: span 4;
+}
+.studio-app .character-sheet .direction-presets:lang(ko) .btn:nth-child(3),
+.studio-app .character-sheet .direction-presets:lang(ko) .btn:nth-child(5) {
+	grid-column: span 2;
+}
+.studio-app .character-sheet .direction-presets:lang(ko) .btn:nth-child(4) {
+	grid-column: span 4;
 }
 .studio-app .character-sheet .prompt-excerpt {
 	font-size: 14px;

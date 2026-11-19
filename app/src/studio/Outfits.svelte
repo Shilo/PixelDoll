@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
 	// Saved looks (presets) for the customization panel's Outfits tab.
 	import { store, doc, applyPreset, savePreset, deletePreset, sameOutfit } from './state.svelte.ts';
 	import type { Img } from '../lib/image/png.ts';
@@ -47,7 +48,7 @@
 </script>
 
 {#if m}
-	<section class="group outfits" aria-label="Outfits">
+	<section class="group outfits" aria-label={t('outfits.outfits')}>
 		<ul class="rows">
 			{#each m.presets as p (p.id)}
 				<li>
@@ -70,7 +71,7 @@
 				</li>
 			{:else}
 				<li class="faint small" style="padding:4px 8px">
-					Save a look to switch between outfits in your game.
+					{t('outfits.saveALookToSwitchBetweenOutfits')}
 				</li>
 			{/each}
 		</ul>
@@ -87,16 +88,18 @@
 				<input
 					class="bu-input input"
 					bind:value={outfitName}
-					placeholder="Outfit name"
-					aria-label="Outfit name"
+					placeholder={t('outfits.outfitName')}
+					aria-label={t('outfits.outfitName')}
 					autofocus
 				/>
-				<button class="bu-action btn primary" data-variant="primary" type="submit">Save</button>
+				<button class="bu-action btn primary" data-variant="primary" type="submit"
+					>{t('common.save')}</button
+				>
 				<button
 					class="bu-action btn icon plain"
 					data-variant="quiet"
 					type="button"
-					aria-label="Cancel"
+					aria-label={t('common.cancel')}
 					onclick={closeForm}><X size={14} /></button
 				>
 			</form>
@@ -105,7 +108,7 @@
 				class="bu-action add-row"
 				data-variant="outline"
 				bind:this={addButton}
-				onclick={() => (naming = true)}><Plus size={16} />Save current look</button
+				onclick={() => (naming = true)}><Plus size={16} />{t('outfits.saveCurrentLook')}</button
 			>
 		{/if}
 	</section>

@@ -9,11 +9,9 @@
 	import Sprite from './Sprite.svelte';
 	import { app } from '../lib/app.svelte.ts';
 	import { composeCell } from '../lib/compose/compose.ts';
-	import {
-		configureImportedDirections,
-		directionLabel,
-		directionProblem
-	} from '../lib/rig/directions.ts';
+	import { configureImportedDirections, directionProblemError } from '../lib/rig/directions.ts';
+	import { displayDirection } from './displayDirection.ts';
+	import { displayDirectionProblem } from './displayDirectionProblem.ts';
 	import { flipH, mirrorPartner } from '../lib/rig/mirror.ts';
 	import { DIRECTIONS, type DirectionName, type RigDirection } from '../lib/rig/rig.ts';
 	import {
@@ -48,6 +46,9 @@
 		KeyRound,
 		TriangleAlert
 	} from './icons.ts';
+	import { t } from 'svelte-whisper';
+	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { LocalizedError, message, type Message } from '../lib/message.ts';
 
 	let { source }: { source: 'device' | 'pixellab' } = $props();
 	let prepared = $state.raw<ImportedCharacter | null>(null);
@@ -66,7 +67,9 @@
 	);
 	const directions = $derived(directionChoices ?? originalDirections);
 	const directionError = $derived(
-		prepared && directionChoices ? directionProblem(prepared.project, directions, 'import') : ''
+		prepared && directionChoices
+			? directionProblemError(prepared.project, directions, 'import')
+			: undefined
 	);
 	const previewFacing = $derived(directions.find(({ id }) => id === facing) ?? directions[0]);
 	const needsSetup = $derived(
@@ -78,7 +81,7 @@
 	let bytes: Uint8Array | null = null;
 	let name = $state(''),
 		id = $state(''),
-		error = $state(''),
+		error = $state<Message | string>(''),
 		busy = $state(false),
 		saving = $state(false),
 		loading = $state(false);
@@ -87,7 +90,7 @@
 		offset = $state(0),
 		listed = $state(false),
 		previewRevision = $state(0),
-		libraryError = $state('');
+		libraryError = $state<Message | string>('');
 	let alive = true;
 	let fileInput = $state<HTMLInputElement>();
 	let dragging = $state(false);
@@ -95,7 +98,7 @@
 		() => busy,
 		(active) => (dragging = active),
 		(files) => {
-			if (!files.length) error = 'Choose a ZIP file, not a folder.';
+			if (!files.length) error = message('import.error.chooseZipFile');
 			else void importFiles(files);
 		}
 	);
@@ -198,7 +201,7 @@
 			offset = next;
 			previewRevision++;
 		} catch (e) {
-			if (alive) libraryError = (e as Error).message;
+			if (alive) libraryError = errorMessage(e);
 		} finally {
 			if (alive) loading = false;
 		}
@@ -219,8 +222,8 @@
 		];
 	}
 	function stateLabel(state: CharacterImportState) {
-		const label = state.name || 'Untitled state';
-		return states.filter((s) => (s.name || 'Untitled state') === label).length > 1
+		const label = state.name || t('import.untitledState');
+		return states.filter((s) => (s.name || t('import.untitledState')) === label).length > 1
 			? `${label} (${states.indexOf(state) + 1})`
 			: label;
 	}
@@ -256,15 +259,20 @@
 		reset();
 		busy = true;
 		try {
-			if (files.length !== 1) throw new Error('Choose one character ZIP at a time.');
+			if (files.length !== 1)
+				throw new LocalizedError('Choose one character ZIP at a time.', 'import.error.oneAtATime');
 			const file = files[0];
 			if (!/\.zip$/i.test(file.name))
-				throw new Error('Choose a ZIP file exported from PixelLab or PixelDoll.');
-			if (file.size > MAX_ZIP_BYTES) throw new Error('Choose a ZIP smaller than 64 MB.');
+				throw new LocalizedError(
+					'Choose a ZIP file exported from PixelLab or PixelDoll.',
+					'import.error.chooseZip'
+				);
+			if (file.size > MAX_ZIP_BYTES)
+				throw new LocalizedError('Choose a ZIP smaller than 64 MB.', 'zip.tooLarge');
 			const data = new Uint8Array(await file.arrayBuffer());
 			if (alive) await prepare(data, undefined, 'all');
 		} catch (e) {
-			if (alive) error = (e as Error).message;
+			if (alive) error = errorMessage(e);
 		} finally {
 			if (alive) busy = false;
 		}
@@ -286,7 +294,7 @@
 				selected
 			);
 		} catch (e) {
-			if (alive) error = (e as Error).message;
+			if (alive) error = errorMessage(e);
 		} finally {
 			if (alive) busy = false;
 		}
@@ -303,7 +311,7 @@
 		try {
 			await prepare(data, value, selected);
 		} catch (e) {
-			if (alive) error = (e as Error).message;
+			if (alive) error = errorMessage(e);
 		} finally {
 			if (alive) busy = false;
 		}
@@ -317,7 +325,7 @@
 		try {
 			await prepare(data, stateId, moveStates);
 		} catch (e) {
-			if (alive) error = (e as Error).message;
+			if (alive) error = errorMessage(e);
 		} finally {
 			if (alive) busy = false;
 		}
@@ -342,9 +350,9 @@
 			dismissWelcome();
 			customize();
 			ui.sheet = setupNext && needsSetup ? 'setup' : null;
-			toast(`Imported ${name.trim()}`);
+			toast(message('import.imported', { name: name.trim() }));
 		} catch (e) {
-			if (alive) error = (e as Error).message;
+			if (alive) error = errorMessage(e);
 		} finally {
 			if (alive) {
 				busy = false;
@@ -357,7 +365,7 @@
 <svelte:window ondragover={preventFileNavigation} ondrop={preventFileNavigation} />
 
 <Sheet
-	title={source === 'device' ? 'Import from device' : 'Import from PixelLab'}
+	title={source === 'device' ? t('import.titleDevice') : t('import.titlePixelLab')}
 	onclose={close}
 	cancelDisabled={saving}
 	className={prepared
@@ -369,14 +377,14 @@
 	{#if source === 'pixellab'}<div class="api-action">
 			<ApiPeek
 				scope="library-open"
-				label="Browse PixelLab characters"
+				label={t('import.browseLibrary')}
 				plan={libraryPlan()}
 				activityScope={listScope(0)}
 			/>
 		</div>{/if}
 	{#if states.length > 1}
 		<div class="field">
-			<label class="label" for="import-standing-state">Standing pose state</label>
+			<label class="label" for="import-standing-state">{t('import.standingState')}</label>
 			<select
 				class="bu-input input"
 				id="import-standing-state"
@@ -388,15 +396,15 @@
 					>{/each}</select
 			>
 			<p class="faint small" id="import-standing-help">
-				Uses this state’s static directional views.
+				{t('import.standingStateHint')}
 			</p>
 		</div>
 	{/if}
 	{#if states.some((state) => state.animations !== 0)}
 		<section class="state-moves" role="group" aria-labelledby="import-moves-title">
-			<h3 class="label" id="import-moves-title">Moves to import</h3>
+			<h3 class="label" id="import-moves-title">{t('import.movesTitle')}</h3>
 			<p class="faint small">
-				Moves keep the appearance of their source state. Uncheck any versions you do not want.
+				{t('import.movesHint')}
 			</p>
 			{#each states.filter((state) => state.animations !== 0) as state (state.id)}
 				<label class="check"
@@ -406,9 +414,12 @@
 						disabled={busy}
 						onchange={(e) => changeMoves(state.id, e.currentTarget.checked)}
 					/><span
-						>{stateLabel(state)} · {state.animations === null
-							? 'unreadable moves'
-							: `${state.animations} ${state.animations === 1 ? 'move' : 'moves'}`}</span
+						>{state.animations === null
+							? t('import.stateMovesUnreadable', { name: stateLabel(state) })
+							: t('import.stateMoves', {
+									name: stateLabel(state),
+									count: state.animations
+								})}</span
 					></label
 				>
 			{/each}
@@ -418,7 +429,7 @@
 		{#if source === 'device'}
 			<section
 				class="bu-dialog-surface import-drop"
-				aria-label="Character ZIP drop area"
+				aria-label={t('import.dropArea')}
 				aria-busy={busy}
 				ondragenter={drop.enter}
 				ondragleave={drop.leave}
@@ -427,40 +438,35 @@
 			>
 				<FileArchive size={32} />
 				<strong aria-live="polite"
-					>{busy
-						? 'Reading your ZIP…'
-						: dragging
-							? 'Release ZIP to preview'
-							: 'Drop a character ZIP here'}</strong
+					>{busy ? t('import.reading') : dragging ? t('import.release') : t('import.drop')}</strong
 				>
-				<span class="muted small">PixelLab character or PixelDoll export · up to 64 MB</span>
+				<span class="muted small">{t('import.dropNote')}</span>
 				<button
 					class="bu-action btn"
 					data-variant="outline"
 					disabled={busy}
-					onclick={() => fileInput?.click()}>Choose ZIP</button
+					onclick={() => fileInput?.click()}>{t('import.chooseZip')}</button
 				>
 				<input
 					hidden
 					type="file"
 					accept=".zip,application/zip"
-					aria-label="Character ZIP"
+					aria-label={t('import.characterZip')}
 					bind:this={fileInput}
 					disabled={busy}
 					onchange={fileChanged}
 				/>
 			</section>
 			<p class="muted small">
-				Your files stay on this device. Preview your character before importing.
+				{t('import.devicePrivacy')}
 			</p>
 			<p class="faint small">
-				In PixelLab’s character creator, export a ZIP with individual frames. Enclosing folders are
-				supported. Other spritesheet layouts and PNG-only ZIPs are not supported.
+				{t('import.pixelLabHint')}
 			</p>
 		{:else}
 			{#if !app.key || app.keyRejected}
 				{#if libraryError}<p class="notice bad small" role="alert">
-						<TriangleAlert size={16} /><span>{libraryError}</span>
+						<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span>
 					</p>{/if}
 				<button
 					class="bu-action btn"
@@ -469,37 +475,37 @@
 					onclick={() =>
 						withKey(() => {
 							ui.sheet = 'importPixelLab';
-						})}><KeyRound size={16} />Connect PixelLab to browse your characters</button
+						})}><KeyRound size={16} />{t('import.connect')}</button
 				>
 			{:else}
 				<div class="library-head">
-					<span class="label">Your PixelLab characters</span><span class="api-action"
+					<span class="label">{t('import.libraryTitle')}</span><span class="api-action"
 						><ApiPeek
 							scope="library-refresh"
-							label="Refresh character library"
+							label={t('import.refreshLibrary')}
 							plan={libraryPlan(offset)}
 							activityScope={listScope(offset)}
 						/><button
 							class="bu-action btn plain small"
 							data-variant="quiet"
 							disabled={busy || loading}
-							onclick={() => load(offset)}>Refresh</button
+							onclick={() => load(offset)}>{t('import.refresh')}</button
 						></span
 					>
 				</div>
-				<div class="character-library" aria-label="PixelLab characters" aria-busy={loading}>
+				<div class="character-library" aria-label={t('import.libraryLabel')} aria-busy={loading}>
 					{#if libraryError}<p class="notice bad small" role="alert">
-							<TriangleAlert size={16} /><span>{libraryError}</span>
+							<TriangleAlert size={16} /><span>{displayMessage(libraryError)}</span>
 						</p>{/if}
-					{#if loading}<p class="muted" role="status">Loading characters…</p>
+					{#if loading}<p class="muted" role="status">{t('import.loadingCharacters')}</p>
 					{:else if !characters.length && !libraryError}<p class="faint">
-							No characters found on this PixelLab account.
+							{t('import.noCharacters')}
 						</p>{/if}
 					{#each characters as ch (ch.id)}
 						<div class="api-action library-entry">
 							<ApiPeek
 								scope={`library-character-${ch.id}`}
-								label={`Preview ${ch.name || 'character'}`}
+								label={t('import.previewNamed', { name: ch.name || t('import.character') })}
 								plan={characterZipPlan(ch.id)}
 								activityScope={zipScope(ch.id)}
 							/><button
@@ -512,10 +518,13 @@
 											activityScope={listScope(offset)}
 										/>{/key}{/if}
 								<span
-									><b>{ch.name || 'Untitled character'}</b><span class="faint small"
-										>{ch.directions}
-										{ch.directions === 1 ? 'direction' : 'directions'} · {ch.animation_count}
-										{ch.animation_count === 1 ? 'move' : 'moves'}</span
+									><b>{ch.name || t('import.untitledCharacter')}</b><span class="faint small"
+										>{t('import.libraryCounts', {
+											directions: t('export.count.directions', {
+												count: ch.directions
+											}),
+											moves: t('import.count.moves', { count: ch.animation_count })
+										})}</span
 									></span
 								>
 							</button>
@@ -526,34 +535,38 @@
 					<span class="api-action"
 						><ApiPeek
 							scope="library-previous"
-							label="Previous character page"
+							label={t('import.previousCharacterPage')}
 							plan={libraryPlan(Math.max(0, offset - 20))}
 							activityScope={listScope(Math.max(0, offset - 20))}
 						/><button
 							class="bu-action btn icon page-button"
 							data-variant="outline"
-							aria-label="Previous page"
+							aria-label={t('import.previousPage')}
 							disabled={busy || loading || offset === 0}
 							onclick={() => load(Math.max(0, offset - 20))}><ChevronLeft size={18} /></button
 						></span
 					><span class="faint small"
 						>{characters.length
-							? `${offset + 1}–${Math.min(offset + characters.length, total)} of ${total}`
+							? t('import.libraryRange', {
+									start: offset + 1,
+									end: Math.min(offset + characters.length, total),
+									total
+								})
 							: loading
-								? 'Loading…'
+								? t('common.loading')
 								: libraryError
-									? 'Unavailable'
-									: '0 of 0'}</span
+									? t('common.unavailable')
+									: t('import.libraryEmptyRange')}</span
 					><span class="api-action"
 						><ApiPeek
 							scope="library-next"
-							label="Next character page"
+							label={t('import.nextCharacterPage')}
 							plan={libraryPlan(offset + 20)}
 							activityScope={listScope(offset + 20)}
 						/><button
 							class="bu-action btn icon page-button"
 							data-variant="outline"
-							aria-label="Next page"
+							aria-label={t('import.nextPage')}
 							disabled={busy || loading || offset + characters.length >= total}
 							onclick={() => load(offset + 20)}><ChevronRight size={18} /></button
 						></span
@@ -567,28 +580,28 @@
 					void fromPixelLab(id);
 				}}
 			>
-				<label class="label" for="import-character-id">Direct import (connection optional)</label>
+				<label class="label" for="import-character-id">{t('import.directImport')}</label>
 				<div class="direct-import-row">
 					<input
 						class="bu-input input"
 						id="import-character-id"
 						type="text"
 						bind:value={id}
-						placeholder="Paste a character ID or creator link"
+						placeholder={t('import.directImportPlaceholder')}
 						disabled={busy}
 					/>
 					<span class="api-action"
 						><ApiPeek
 							scope="library-preview"
-							label="Preview character ZIP"
+							label={t('import.previewZip')}
 							plan={characterZipPlan(id)}
 							activityScope={zipScope(id)}
 						/><button
 							class="bu-action btn"
 							data-variant="outline"
 							type="submit"
-							aria-label="Preview character"
-							disabled={busy || !id.trim()}>Preview</button
+							aria-label={t('import.previewCharacter')}
+							disabled={busy || !id.trim()}>{t('import.preview')}</button
 						></span
 					>
 				</div>
@@ -599,26 +612,26 @@
 			{#if preview}<Sprite
 					img={preview}
 					k={Math.max(1, Math.min(3, Math.floor((256 * ui.dpr) / Math.max(preview.w, preview.h))))}
-					label="Character import preview"
+					label={t('import.previewArtwork')}
 				/>{/if}
 			{#if !previewValid && !busy}<p class="muted small">
-					Showing the last preview. Update your selections to continue.
+					{t('import.stalePreview')}
 				</p>
 			{:else}<p class="muted">
-					{directions.length}
-					{directions.length === 1 ? 'direction' : 'directions'} · {prepared.project.manifest.rig
-						.animations.length}
-					{prepared.project.manifest.rig.animations.length === 1 ? 'move' : 'moves'} · {prepared.project.manifest.items.filter(
-						(i) => i.slot !== 'body'
-					).length} separate {prepared.project.manifest.items.filter((i) => i.slot !== 'body')
-						.length === 1
-						? 'item'
-						: 'items'}
+					{t('import.previewSummary', {
+						directions: t('export.count.directions', { count: directions.length }),
+						moves: t('import.count.moves', {
+							count: prepared.project.manifest.rig.animations.length
+						}),
+						items: t('import.count.separateItems', {
+							count: prepared.project.manifest.items.filter((i) => i.slot !== 'body').length
+						})
+					})}
 				</p>{/if}
 		</div>
-		{#if busy && !saving}<p class="muted" role="status">Updating preview…</p>{/if}
+		{#if busy && !saving}<p class="muted" role="status">{t('import.updatingPreview')}</p>{/if}
 		<label class="field"
-			><span class="label">Character name</span><input
+			><span class="label">{t('import.characterName')}</span><input
 				class="bu-input input"
 				type="text"
 				bind:value={name}
@@ -628,13 +641,12 @@
 		>
 		{#if prepared.format === 'pixellab'}
 			<details>
-				<summary>Directions</summary>
+				<summary>{t('common.directions')}</summary>
 				<p class="muted small">
-					Use the arrows to keep or skip views. A mirror button flips the opposite view and replaces
-					any original artwork for that direction in this copy.
+					{t('import.directionsHint')}
 				</p>
 				<DirectionCompass
-					label="Directions to import"
+					label={t('import.directionsToImport')}
 					selected={directions.map(({ id }) => id)}
 					available={availableDirections}
 					mirrorSources={originalIds}
@@ -644,10 +656,14 @@
 					onmirror={toggleMirror}
 				/>
 				<p class="sr" role="status">
-					Preview: {previewFacing ? directionLabel(previewFacing.id) : 'No directions selected'}
+					{previewFacing
+						? t('import.previewDirection', {
+								direction: displayDirection(previewFacing.id)
+							})
+						: t('import.noDirections')}
 				</p>
 				{#if previewFacing && directions.length > 1}<label class="field">
-						<span class="label">Preview direction</span>
+						<span class="label">{t('import.previewDirectionLabel')}</span>
 						<select
 							class="bu-input input"
 							value={previewFacing.id}
@@ -655,42 +671,47 @@
 							onchange={(event) => (facing = event.currentTarget.value as DirectionName)}
 						>
 							{#each directions as direction (direction.id)}<option value={direction.id}
-									>{directionLabel(direction.id)}</option
+									>{displayDirection(direction.id)}</option
 								>{/each}
 						</select>
 					</label>{/if}
 			</details>
 		{/if}
 		{#if directionError}<p class="notice warn small" role="status">
-				<TriangleAlert size={16} /><span>{directionError}</span>
+				<TriangleAlert size={16} /><span>{displayDirectionProblem(directionError.translation)}</span
+				>
 			</p>{/if}
-		{#each prepared.warnings as warning (warning)}<p class="notice warn small">
-				<TriangleAlert size={16} /><span>{warning}</span>
+		{#each prepared.warnings as warning, index (warning)}<p class="notice warn small">
+				<TriangleAlert size={16} /><span
+					>{displayMessage(prepared.warningKeys?.[index] ?? warning)}</span
+				>
 			</p>{/each}
 		{#if needsSetup}<label class="check"
-				><input type="checkbox" bind:checked={setupNext} disabled={busy} />Set up the pose rig next
-				(recommended)</label
+				><input type="checkbox" bind:checked={setupNext} disabled={busy} />{t(
+					'import.setupNext'
+				)}</label
 			>
 			<p class="faint small">
-				Import is free. Rig setup shows its PixelLab generation cost before you start.
+				{t('import.setupNextHint')}
 			</p>{/if}
 		<button class="bu-action btn plain" data-variant="quiet" disabled={busy} onclick={reset}
-			>Choose another character</button
+			>{t('import.chooseAnother')}</button
 		>
 	{/if}
 	{#if busy && (!prepared || saving)}<p class="muted" role="status">
-			{saving ? 'Saving your local copy…' : 'Preparing your character…'}
+			{saving ? t('import.saving') : t('import.preparing')}
 		</p>{/if}
 	{#if error}<p class="notice bad small" role="alert">
-			<TriangleAlert size={16} /><span>{error}</span>
+			<TriangleAlert size={16} /><span>{displayDirectionProblem(error)}</span>
 		</p>{/if}
 	{#snippet footer()}
-		<span class="foot-note import-note">Free · saves a new local copy</span>
+		<span class="foot-note import-note">{t('import.note')}</span>
 		<button
 			class="bu-action btn primary"
 			data-variant="primary"
 			disabled={!prepared || !previewValid || busy || !name.trim() || !!directionError}
-			onclick={save}><Download size={16} />{busy ? 'Working…' : 'Import character'}</button
+			onclick={save}
+			><Download size={16} />{busy ? t('import.working') : t('import.importCharacter')}</button
 		>
 	{/snippet}
 </Sheet>

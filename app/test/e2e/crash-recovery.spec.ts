@@ -17,6 +17,7 @@ test('Export choices survive abrupt browser termination and restart', async ({},
 	const launch = async () => {
 		// Exercise the full Chromium browser's persistent-profile implementation for the native crash check.
 		const context = await chromium.launchPersistentContext(profile, {
+			locale: 'en-US',
 			headless: true,
 			channel: info.project.use.channel ?? 'chromium',
 			args: info.project.use.launchOptions?.args, // persistent launches skip the config's offline guard

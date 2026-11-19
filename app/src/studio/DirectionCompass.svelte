@@ -1,9 +1,11 @@
 <script lang="ts">
 	import MirrorViews from '@lucide/svelte/icons/triangles-centerline-dashed-vertical';
 	import { directionLabel } from '../lib/rig/directions.ts';
+	import { getLocale, t } from 'svelte-whisper';
 	import { mirrorPartner } from '../lib/rig/mirror.ts';
 	import type { DirectionName } from '../lib/rig/rig.ts';
-	import { ANGLES, COMPASS, DIRECTION_LABELS, type Mirrors } from './characterConfig.ts';
+	import { ANGLES, COMPASS, type Mirrors } from './characterConfig.ts';
+	import { displayDirection, displayDirectionShort } from './displayDirection.ts';
 	import { ArrowUp, PersonStanding } from './icons.ts';
 
 	let {
@@ -27,6 +29,8 @@
 		ontoggle: (dir: DirectionName) => void;
 		onmirror?: (dir: DirectionName) => void;
 	} = $props();
+	const fullName = (direction: DirectionName) =>
+		getLocale() === 'en' ? directionLabel(direction) : displayDirection(direction);
 </script>
 
 <div class={['compass', { 'with-mirrors': !!onmirror }]} role="group" aria-label={label}>
@@ -36,17 +40,23 @@
 			{@const opposite = mirrorPartner(dir)}
 			{@const partner = onmirror && opposite && mirrorSources.includes(opposite) ? opposite : null}
 			{@const source = mirrors[dir]}
-			{@const name = shortLabels ? DIRECTION_LABELS[dir] : directionLabel(dir)}
-			{@const description = `${name} direction${!onmirror && source ? ` · Mirrors ${directionLabel(source)}` : ''}`}
+			{@const name = shortLabels ? displayDirectionShort(dir) : fullName(dir)}
+			{@const description =
+				!onmirror && source
+					? t('directionCompass.mirroredDirection', { name, source: fullName(source) })
+					: t('directionCompass.direction', { name })}
 			{#snippet mirrorButton()}
-				{#if onmirror && partner}<button
+				{#if onmirror && partner}
+					{@const mirrorFrom = t('directionCompass.mirrorFrom', {
+						name,
+						source: fullName(partner)
+					})}
+					<button
 						type="button"
 						class="mirror bu-action"
 						data-variant="field"
-						aria-label={shortLabels
-							? `Mirror ${name}`
-							: `Mirror ${name} from ${directionLabel(partner)}`}
-						title="Mirror {name} from {directionLabel(partner)}"
+						aria-label={shortLabels ? t('directionCompass.mirror', { name }) : mirrorFrom}
+						title={mirrorFrom}
 						aria-pressed={!!source}
 						{disabled}
 						onclick={() => onmirror?.(dir)}><MirrorViews size={15} /></button
@@ -71,7 +81,9 @@
 				>
 					<ArrowUp size={18} style="transform:rotate({ANGLES[dir]}deg)" />
 					<span
-						>{DIRECTION_LABELS[dir]}{#if !onmirror && source}<MirrorViews size={12} />{/if}</span
+						>{displayDirectionShort(dir)}{#if !onmirror && source}<MirrorViews
+								size={12}
+							/>{/if}</span
 					>
 				</button>
 				{#if !west}{@render mirrorButton()}{/if}

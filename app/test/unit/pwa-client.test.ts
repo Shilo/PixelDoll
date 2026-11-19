@@ -320,7 +320,7 @@ describe('PWA deployment discovery remains independent of browser worker stalls'
 		await settle();
 		await vi.advanceTimersByTimeAsync(15_000);
 		expect(get(app.client.pwa)).toMatchObject({ available: next, ready: false });
-		expect(get(app.client.pwa).error).toContain('The update did not respond.');
+		expect([get(app.client.pwa).error].flat()).toContainEqual({ key: 'pwa.noResponse' });
 		release();
 		app.wake('online');
 		await settle();
@@ -351,7 +351,7 @@ describe('PWA deployment discovery remains independent of browser worker stalls'
 			ready: true,
 			offlineReady: false
 		});
-		expect(get(app.client.pwa).error).toContain('The update did not respond.');
+		expect([get(app.client.pwa).error].flat()).toContainEqual({ key: 'pwa.noResponse' });
 	});
 
 	it.each(['GET_RELEASE', 'VERIFY'])(
@@ -455,7 +455,10 @@ describe('PWA deployment discovery remains independent of browser worker stalls'
 
 		expect(get(app.client.pwa).available).toEqual(next);
 		expect(get(app.client.pwa).ready).toBe(false);
-		expect(get(app.client.pwa).error).toContain('The browser could not download sw.js');
+		expect(get(app.client.pwa).error).toContainEqual({
+			key: 'pwa.setupFailed',
+			vars: { reason: 'The browser could not download sw.js' }
+		});
 		expect(app.reload).not.toHaveBeenCalled();
 
 		app.wake('online');
@@ -753,11 +756,11 @@ describe('manual update save deadlines', () => {
 			await settle();
 			expect(checks).toBe(stalledCheck);
 			await vi.advanceTimersByTimeAsync(15_000);
-			expect(await result).toEqual(
-				new Error(
-					'Saving your work took too long. Open the update in a new tab to keep your work open.'
-				)
-			);
+			expect(await result).toMatchObject({
+				message:
+					'Saving your work took too long. Open the update in a new tab to keep your work open.',
+				translation: { key: 'pwa.saveTimeout' }
+			});
 			expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true });
 			finishSave();
 			await settle();

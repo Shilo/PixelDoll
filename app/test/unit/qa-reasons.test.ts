@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { qaReasons } from '../../src/studio/model.ts';
+import { plainReasonMessage, qaReasonMessages, qaReasons } from '../../src/studio/model.ts';
 import type { ItemQa, QaSummary } from '../../src/lib/store/manifest.ts';
 
 const clean: QaSummary = {
@@ -37,6 +37,12 @@ test('a passing posed move does not list the stricter standing key-outside limit
 		{ 'walk/south/0': 'posed', 'default/south/0': 'ea2' }
 	);
 	expect(qaReasons(q, false, false)).toEqual(['The item touches the frame edge (may be cut off)']);
+	expect(qaReasonMessages(q, false, false)).toMatchObject([{ key: 'studioModel.qa.edge' }]);
+	expect(plainReasonMessage('R1 idle/east: dressed item pasted on 2 frames')).toEqual({
+		key: 'studioModel.qa.heldPasted',
+		vars: { count: 2, move: 'idle', direction: 'east' }
+	});
+	expect(plainReasonMessage('Unknown upstream diagnosis')).toBe('Unknown upstream diagnosis');
 });
 
 test('key outside is judged against the limit the clip was gated with', () => {

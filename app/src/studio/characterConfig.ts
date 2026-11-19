@@ -2,6 +2,7 @@ import { DIRECTIONS, type DirectionName, type RigDirection, type Rig } from '../
 import { mirrorPartner } from '../lib/rig/mirror.ts';
 export { PAIRS } from '../lib/rig/mirror.ts';
 import { BASE_BODY, UNDERWEAR_BODY, isBaseBody } from './model.ts';
+import { LocalizedError } from '../lib/message.ts';
 
 export const BODY_SIZES = [48, 64, 96, 128] as const;
 export const TRAITS = {
@@ -29,16 +30,6 @@ export const TRAITS = {
 export type Trait = keyof typeof TRAITS;
 export const TRAIT_KEYS = Object.keys(TRAITS) as Trait[];
 export const UNSET = 'Not set';
-export const DIRECTION_LABELS: Record<DirectionName, string> = {
-	north: 'N',
-	'north-east': 'NE',
-	east: 'E',
-	'south-east': 'SE',
-	south: 'S',
-	'south-west': 'SW',
-	west: 'W',
-	'north-west': 'NW'
-};
 export const COMPASS: (DirectionName | null)[] = [
 	'north-west',
 	'north',
@@ -300,21 +291,22 @@ export function presetOf(d: Pick<CharacterDraft, 'selected' | 'mirrors'>): strin
 				JSON.stringify(Object.entries(d.mirrors).sort())
 	)?.id;
 }
+/** Returns the mirrored direction that now uses its own view, if removing `dir` promoted one. */
 export function toggleDirection(
 	d: Pick<CharacterDraft, 'selected' | 'mirrors'>,
 	dir: DirectionName
-): string {
+): DirectionName | undefined {
 	if (!d.selected.includes(dir)) {
 		d.selected.push(dir);
-		return '';
+		return undefined;
 	}
 	d.selected = d.selected.filter((v) => v !== dir);
 	delete d.mirrors[dir];
-	let promoted = '';
+	let promoted: DirectionName | undefined;
 	for (const target of DIRECTIONS)
 		if (d.mirrors[target] === dir) {
 			delete d.mirrors[target];
-			promoted = `${DIRECTION_LABELS[target]} now uses its own view.`;
+			promoted = target;
 		}
 	return promoted;
 }
@@ -340,30 +332,59 @@ export function facingOf(d: Pick<CharacterDraft, 'selected' | 'mirrors'>): RigDi
 	}));
 }
 /** Validate again before any paid request; saved drafts and imported settings are not trusted. */
-export function facingErrors(dirs: RigDirection[]): string[] {
-	if (!dirs.length) return ['Choose at least one direction.'];
-	if (new Set(dirs.map((d) => d.id)).size !== dirs.length) return ['Duplicate direction.'];
-	const errors: string[] = [];
+export function facingErrors(dirs: RigDirection[]): LocalizedError[] {
+	if (!dirs.length)
+		return [
+			new LocalizedError('Choose at least one direction.', 'create.config.errors.noDirection')
+		];
+	if (new Set(dirs.map((d) => d.id)).size !== dirs.length)
+		return [new LocalizedError('Duplicate direction.', 'create.config.errors.duplicateDirection')];
+	const errors: LocalizedError[] = [];
 	for (const d of dirs) {
-		if (!DIRECTIONS.includes(d.id)) errors.push('Unknown direction.');
+		if (!DIRECTIONS.includes(d.id))
+			errors.push(
+				new LocalizedError('Unknown direction.', 'create.config.errors.unknownDirection')
+			);
 		if (
 			d.mirrorOf &&
 			(mirrorPartner(d.id) !== d.mirrorOf || !dirs.some((s) => s.id === d.mirrorOf && !s.mirrorOf))
 		)
-			errors.push(`Invalid mirror source for ${d.id}.`);
+			errors.push(
+				new LocalizedError(
+					`Invalid mirror source for ${d.id}.`,
+					'create.config.errors.invalidMirror',
+					{ direction: d.id }
+				)
+			);
 	}
 	return errors;
 }
 /** The body size problem for a model, if any (its range from MODELS). */
-export function bodyErrors(body: number | undefined, model?: string): string[] {
+export function bodyErrors(body: number | undefined, model?: string): LocalizedError[] {
 	const m = modelOf(model),
 		{ min, max } = m.body;
 	if (!Number.isInteger(body) || body! < min || body! > max)
 		return [
-			`Body size must be ${min}–${max} whole pixels${m === MODELS.v3 ? '' : ` with ${m.label}`}.`
+			m === MODELS.v3
+				? new LocalizedError(
+						`Body size must be ${min}–${max} whole pixels.`,
+						'create.config.errors.bodyRange',
+						{ min, max }
+					)
+				: new LocalizedError(
+						`Body size must be ${min}–${max} whole pixels with ${m.label}.`,
+						'create.config.errors.bodyRangeModel',
+						{ min, max, model: m.label }
+					)
 		];
 	if (body! % BODY_STEP)
-		return [`Body size must use ${BODY_STEP} px steps (${min}, ${min + BODY_STEP}, …, ${max}).`];
+		return [
+			new LocalizedError(
+				`Body size must use ${BODY_STEP} px steps (${min}, ${min + BODY_STEP}, …, ${max}).`,
+				'create.config.errors.bodyStep',
+				{ step: BODY_STEP, min, next: min + BODY_STEP, max }
+			)
+		];
 	return [];
 }
 export const validBodySize = (body: number | undefined, model?: string) =>
@@ -372,15 +393,21 @@ export function sizeErrors(
 	body: number | undefined,
 	frame: number | undefined,
 	model?: string
-): string[] {
+): LocalizedError[] {
 	const bad = bodyErrors(body, model);
 	if (bad.length) return bad;
 	const min = autoFrame(body!);
 	return !Number.isInteger(frame) || frame! < min || frame! > 256
-		? [`Frame must be ${min}–256 whole pixels.`]
+		? [
+				new LocalizedError(
+					`Frame must be ${min}–256 whole pixels.`,
+					'create.config.errors.frameRange',
+					{ min }
+				)
+			]
 		: [];
 }
-export function draftErrors(d: CharacterDraft): string[] {
+export function draftErrors(d: CharacterDraft): LocalizedError[] {
 	return [
 		...sizeErrors(
 			d.body,
@@ -392,12 +419,22 @@ export function draftErrors(d: CharacterDraft): string[] {
 		(!/^\d+$/.test(d.seed) ||
 			!Number.isSafeInteger(Number(d.seed)) ||
 			Number(d.seed) > Number.MAX_SAFE_INTEGER - 100_000)
-			? ['Seed must be a safe, non-negative whole number.']
+			? [
+					new LocalizedError(
+						'Seed must be a safe, non-negative whole number.',
+						'create.config.errors.seed'
+					)
+				]
 			: []),
 		...(!d.prompt.trim()
-			? ['Enter a character prompt.']
+			? [new LocalizedError('Enter a character prompt.', 'create.config.errors.promptRequired')]
 			: d.prompt.length > 2000
-				? ['The complete prompt must be 2,000 characters or fewer.']
+				? [
+						new LocalizedError(
+							'The complete prompt must be 2,000 characters or fewer.',
+							'create.config.errors.promptLength'
+						)
+					]
 				: [])
 	];
 }

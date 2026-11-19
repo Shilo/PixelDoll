@@ -11,6 +11,8 @@ import { moveDirs } from '../dress/dress.ts';
 import { portableAssetName } from './paths.ts';
 import type { Manifest, Project } from '../store/manifest.ts';
 import { outfitProject, type OutFile } from './generic.ts';
+import type { NoteTerm } from './export.ts';
+import { LocalizedError, message, type Message } from '../message.ts';
 
 /** Sheet rows: down, left, right, up. */
 export const ROWS: DirectionName[] = ['south', 'west', 'east', 'north'];
@@ -200,21 +202,32 @@ export function rpgMakerFiles(
 	p: Project,
 	m: Manifest,
 	layout: RpgLayout
-): { files: OutFile[]; warnings: string[] } {
+): { files: OutFile[]; warnings: string[]; warningMessages: Map<string, Message> } {
 	const src = p.manifest,
 		{ rig } = src,
 		have = new Set(rig.directions.map((d) => d.id)),
 		missing = ROWS.filter((d) => !have.has(d));
 	if (missing.length)
-		throw new Error(
-			`RPG Maker: characters need front, side and back views; this one has no ${missing.join(', ')} view.`
+		throw new LocalizedError(
+			`RPG Maker: characters need front, side and back views; this one has no ${missing.join(', ')} view.`,
+			'export.error.rpgMissingViews',
+			{
+				count: missing.length,
+				directions: missing.map((direction): NoteTerm => ({ direction }))
+			}
 		);
-	const warnings: string[] = [];
+	const warnings: string[] = [],
+		warningMessages = new Map<string, Message>();
+	const note = (text: string, display: Message) => {
+		warnings.push(text);
+		warningMessages.set(text, display);
+	};
 	const standing = rig.animations.find((a) => a.id === DEFAULT_MOVE);
 	const walk = walkMove(rig);
 	if (!walk)
-		warnings.push(
-			'RPG Maker: no walk move, so the sheets stand still. Add a walk move to animate them.'
+		note(
+			'RPG Maker: no walk move, so the sheets stand still. Add a walk move to animate them.',
+			message('export.warnings.rpgNoWalk')
 		);
 	const srcOf = (dir: DirectionName) => rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir;
 	const walkDirs = walk ? new Set(moveDirs(src, walk.id)) : new Set<DirectionName>();
@@ -246,13 +259,19 @@ export function rpgMakerFiles(
 			return [dir, { stand: s, strideA: at(g.strideA), passing, strideB: at(g.strideB) }] as const;
 		})
 	);
-	if (walk && ROWS.some((d) => !walkDirs.has(d)))
-		warnings.push(
-			`RPG Maker: the walk has no ${ROWS.filter((d) => !walkDirs.has(d)).join(', ')} view, so those rows stand still.`
+	const stillRows = walk ? ROWS.filter((d) => !walkDirs.has(d)) : [];
+	if (stillRows.length)
+		note(
+			`RPG Maker: the walk has no ${stillRows.join(', ')} view, so those rows stand still.`,
+			message('export.warnings.rpgWalkViews', {
+				count: stillRows.length,
+				directions: stillRows.map((direction): NoteTerm => ({ direction }))
+			})
 		);
 	if ([...gaits.values()].some((g) => g.guessed))
-		warnings.push(
-			'RPG Maker: the walk steps could not be detected, so the first walk frame is used as a step. Check the sheet.'
+		note(
+			'RPG Maker: the walk steps could not be detected, so the first walk frame is used as a step. Check the sheet.',
+			message('export.warnings.rpgSteps')
 		);
 	// Generated walks can drift up or down between frames (up to 8 px on a 128 px body), and views can stand at different
 	// heights (5 px apart), while RPG Maker stands every cell on the tile, so both read as hopping when walking or turning. Every
@@ -321,8 +340,9 @@ export function rpgMakerFiles(
 		// grounded walk frames may still dip a pixel below the standing frame, and art can hang below the feet line: kept, and
 		// only a larger drop is worth a note
 		if (below > 2)
-			warnings.push(
-				`RPG Maker: ${base} has ${below} px below the feet, so it stands ${below} px higher on the map.`
+			note(
+				`RPG Maker: ${base} has ${below} px below the feet, so it stands ${below} px higher on the map.`,
+				message('export.warnings.rpgBelowFeet', { sheet: base, count: below })
 			);
 		files.push({ name: layout === 'vx' ? `$${base}.png` : `${base}.png`, data });
 	}
@@ -348,7 +368,7 @@ above the head. Diagonal views, idle and action moves have no place in this form
 project.json and cells/ are PixelDoll's editable copy (Import it to keep working); the game does not need them.
 `
 	});
-	return { files, warnings };
+	return { files, warnings, warningMessages };
 }
 
 type Placed = { im: Img; dy: number };

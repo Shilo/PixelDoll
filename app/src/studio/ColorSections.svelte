@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
+	import { message } from '../lib/message.ts';
 	// Colors tab: the character, then each worn item, in one continuous list with sticky headers like Wardrobe.
 	import { tick } from 'svelte';
 	import { stickyFade } from '@shilo/bronze-ui/svelte';
@@ -20,7 +22,7 @@
 						return {
 							it,
 							base,
-							name: base ? 'Character' : it.name,
+							name: base ? t('common.character') : it.name,
 							mats,
 							free: mats.some((x) => !x.linkTo),
 							changed: mats.some((x) => doc.variants[x.id] !== undefined)
@@ -56,7 +58,13 @@
 	{@attach stickyFade({ inside: 10, outside: 10 })}
 >
 	{#each sections as s (s.it.id)}
-		{@const lower = s.base ? 'character' : s.name.toLowerCase()}
+		{@const lower = s.name}
+		{@const randomColorsMessage = s.base
+			? message('colorSections.randomCharacterColors')
+			: message('colorSections.randomLowerColors', { lower })}
+		{@const resetColorsMessage = s.base
+			? message('colorSections.resetCharacterColors')
+			: message('colorSections.resetLowerColors', { lower })}
 		<section class="slot-section" data-owner={s.it.id} aria-labelledby="colors-{s.it.id}">
 			<div class="bu-section-head">
 				{#if s.base}<PersonStanding size={16} aria-hidden="true" />{:else}<GroupIcon
@@ -67,29 +75,29 @@
 				<button
 					class="bu-action section-action"
 					data-variant="quiet"
-					aria-label="Random {lower} colors"
-					title="Random {lower} colors"
+					aria-label={t(randomColorsMessage.key, randomColorsMessage.vars)}
+					title={t(randomColorsMessage.key, randomColorsMessage.vars)}
 					disabled={!s.free}
-					onclick={() => randomizeColors([s.it.id], `Random ${lower} colors`)}
+					onclick={() => randomizeColors([s.it.id], randomColorsMessage)}
 					><Shuffle size={16} /></button
 				>
 				<button
 					class="bu-action section-action"
 					data-variant="quiet"
-					aria-label="Reset {lower} colors"
-					title="Reset to original colors"
+					aria-label={t(resetColorsMessage.key, resetColorsMessage.vars)}
+					title={t('colorSections.titleResetToOriginalColors')}
 					disabled={!s.changed}
 					onclick={() =>
 						resetColors(
 							s.mats.map((x) => x.id),
-							`Reset ${lower} colors`
+							resetColorsMessage
 						)}><RotateCcw size={16} /></button
 				>
 			</div>
 			<div class="section-body"><Colors only={s.it.id} /></div>
 		</section>
 	{:else}
-		<p class="muted">Wear something to change its colors.</p>
+		<p class="muted">{t('colorSections.wearSomethingToChangeItsColors')}</p>
 	{/each}
 	{#if sections.length}<div
 			class="list-spacer"

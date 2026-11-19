@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
 	import type { Snippet } from 'svelte';
 	import { ExternalLink, Info } from './icons.ts';
 
@@ -32,7 +33,7 @@
 		<span class="bu-notice-content">{@render children()}</span>
 		<span class="external-icon bu-muted" aria-hidden="true"><ExternalLink size={14} /></span>
 	</span>
-	<span class="bu-sr"> (opens in a new tab)</span>
+	<span class="bu-sr"> {t('noticeLink.opensInANewTab')}</span>
 </a>
 
 <style>

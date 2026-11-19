@@ -1864,7 +1864,7 @@ dialog.sheet.bottom .foot-note {
 	} /* B15: "North-east" in full */
 }
 @container (max-width: 339px) {
-	.canvas-bar [aria-label='All directions'] {
+	.canvas-bar [data-all-directions] {
 		display: none;
 	}
 	.canvas-bar .select {

@@ -1169,7 +1169,10 @@ test('ZIP guard limits entry count and rejects an empty file with clear errors',
 		data: new Uint8Array()
 	}));
 	await expect(unzip(await zip(entries))).rejects.toThrow('Split, ZIP64 or oversized archives');
-	await expect(unzip(new Uint8Array())).rejects.toThrow('not a supported ZIP archive');
+	await expect(unzip(new Uint8Array())).rejects.toMatchObject({
+		message: 'This file is not a supported ZIP archive.',
+		translation: { key: 'zip.unsupported' }
+	});
 });
 
 test('sparse imported clips can be dressed without planning missing base frames', async () => {

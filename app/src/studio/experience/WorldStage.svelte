@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
 	import { onMount, untrack } from 'svelte';
 	import { ui, doc, view, toast, stepPreviewFrame } from '../state.svelte.ts';
 	import { experience, characters, setMode, sharedZoom } from './state.svelte.ts';
@@ -14,6 +15,7 @@
 	import { EYE, heroRoom, layout, placeWorld, ringRadius } from './geometry.ts';
 	import { floorRing, RING_GAP, RING_STROKE } from './floorRing.ts';
 	import { LoaderCircle } from '../icons.ts';
+	import { displayDirection } from '../displayDirection.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { bakedFrame, unionFrame, type Frame } from '../../lib/compose/compose.ts';
 	import { paintedFrame, reachFrame, actorScale, previewBounds, framePosition } from './bounds.ts';
@@ -30,11 +32,13 @@
 	import { frameRecorder } from './paint.ts';
 	import {
 		TEST_MOUNT,
+		MOUNT_HEIGHT_REASON,
 		mountView,
 		mountedFrame,
 		placeRider,
 		riderContact,
-		sampleMountFrame
+		sampleMountFrame,
+		type MountViewResult
 	} from './mounts.ts';
 	import type { Img } from '../../lib/image/png.ts';
 	import { hideMountedLegs, mountLegGeometry } from './mountLegs.ts';
@@ -51,9 +55,11 @@
 		livePlaybackDelta,
 		type Presentation
 	} from './presentation.ts';
+	import { displayLoadingItems, displayPresentationNotice } from './displayPresentation.ts';
 	import { IDLE, Joystick, joystickTravel, type JoystickSize } from '../../lib/input/joystick.ts';
 	import JoystickView from '../../lib/input/Joystick.svelte';
 	import {
+		directionInfo,
 		keyboardVector,
 		nearestDirection,
 		integrateMovement,
@@ -119,6 +125,17 @@
 	});
 	const fitFrame = $derived(mountBounds ?? bodyFrame);
 	let mountIssue = $state('');
+	function displayMountIssue(failure: Extract<MountViewResult, { ok: false }>, direction: string) {
+		if (failure.missingView) {
+			const facing = directionInfo(direction);
+			return t('worldStage.notice.mountViewMissing', {
+				direction: facing ? displayDirection(facing.id) : direction
+			});
+		}
+		return failure.reason === MOUNT_HEIGHT_REASON
+			? t('worldStage.notice.mountHeight')
+			: failure.reason;
+	}
 	function mountedPresentation(p: Presentation) {
 		const project = view.project,
 			frame = drawingFrame;
@@ -135,7 +152,7 @@
 		const facing = grounding?.facings.get(p.direction);
 		const height = facing?.standingHeight ?? bodyFrame.h;
 		const result = mountView(TEST_MOUNT, p.direction, height);
-		if (!result.ok) return { view: null, reason: result.reason } as const;
+		if (!result.ok) return { view: null, failure: result, direction: p.direction } as const;
 		const ground = { x: frame.x + (facing?.x ?? 0), y: frame.y + (facing?.y ?? 0) };
 		const cell = p.kind === 'animation' ? (p.sequence?.frames[0]?.cell ?? p.cell) : p.cell;
 		const contact = riderContact(
@@ -949,13 +966,14 @@
 					} else if (missing) missing = null;
 				}
 				const notes = [
-					p.issue,
+					p.notice ? displayPresentationNotice(p.notice) : '',
 					live && result?.hiddenItems.length
-						? `${result.hiddenItems.length} equipped item${result.hiddenItems.length === 1 ? '' : 's'} hidden for this view`
+						? t('worldStage.notice.equippedHidden', { count: result.hiddenItems.length })
 						: ''
 				].filter(Boolean);
 				const mounted = mountedPresentation(p);
-				mountIssue = mounted && !mounted.view ? mounted.reason : '';
+				mountIssue =
+					mounted && !mounted.view ? displayMountIssue(mounted.failure, mounted.direction) : '';
 				if (mounted?.view && !ui.sheet && !document.hidden)
 					mountElapsed += live ? travelDelta(velocity, dt, travelRate) : ui.playing ? dt : 0;
 				delete host.dataset.mountLegs;
@@ -968,34 +986,34 @@
 					host.dataset.mountLegIssue = legResult.issue ?? '';
 					experience.mountLegIssue = legResult.issue
 						? axial
-							? 'Front and back views keep both legs visible.'
-							: "Leg hiding isn't available for this pose."
+							? t('worldStage.notice.legsAxial')
+							: t('worldStage.notice.legsPose')
 						: '';
 					if (legResult.issue) {
 						if (
 							experience.mountLegs !== 'far' ||
 							(p.direction !== 'north' && p.direction !== 'south')
 						)
-							mountIssue = 'Leg hiding unavailable. Open Mount settings.';
+							mountIssue = t('worldStage.notice.legsUnavailable');
 					} else host.dataset.mountLegs = experience.mountLegs;
 					if (legResult.source) host.dataset.mountLegSource = legResult.source;
 				}
-				const loadings = new Set(result?.loading ? [result.loading] : []);
+				const loadings = new Set(result ? displayLoadingItems(result.loadingItems) : []);
 				if ((velocity.x || velocity.y) && !hasMoved) {
 					hasMoved = true;
 					hint = false;
 				}
 				if (live && hasMoved && !ui.sheet) {
-					const issues = [
-						[p.issueKey, p.issue],
-						[result?.issueKey, result?.issue]
-					].filter(([id, text]) => id && text && !noticed.has(id));
+					const issues: [string, string][] = [];
+					for (const shown of [p, result])
+						if (shown?.issueKey && shown.notice && !noticed.has(shown.issueKey))
+							issues.push([shown.issueKey, displayPresentationNotice(shown.notice)]);
 					// An unresolved error can defer this batch; only consume warnings the toast accepts.
 					if (
 						issues.length &&
 						toast([...new Set(issues.map(([, text]) => text))].join(' '), { tone: 'warning' })
 					)
-						for (const [id] of issues) noticed.add(id!);
+						for (const [id] of issues) noticed.add(id);
 				}
 				if (img && result) {
 					const frame = result.frame,
@@ -1050,13 +1068,14 @@
 						.filter((direction) => direction !== ui.dir)
 						.map((direction) => {
 							const entry = companion(a, direction, view.cell);
-							if (entry.result.issue) notes.push(entry.result.issue);
-							if (entry.result.loading) loadings.add(entry.result.loading);
+							if (entry.result.notice) notes.push(displayPresentationNotice(entry.result.notice));
+							for (const text of displayLoadingItems(entry.result.loadingItems)) loadings.add(text);
 							const ground = origin(direction);
 							const actor = entry.canvas
 								? prepareActor(a, entry.presentation, entry.result, entry.canvas, view.cell)
 								: null;
-							if (actor?.mounted && !actor.mounted.view) notes.push(actor.mounted.reason);
+							if (actor?.mounted && !actor.mounted.view)
+								notes.push(displayMountIssue(actor.mounted.failure, actor.mounted.direction));
 							if (
 								actor?.legs?.issue &&
 								!(
@@ -1064,8 +1083,8 @@
 									(direction === 'north' || direction === 'south')
 								)
 							) {
-								mountIssue = 'Leg hiding unavailable. Open Mount settings.';
-								experience.mountLegIssue = "Leg hiding isn't available for this pose.";
+								mountIssue = t('worldStage.notice.legsUnavailable');
+								experience.mountLegIssue = t('worldStage.notice.legsPose');
 							}
 							return {
 								entry,
@@ -1226,10 +1245,10 @@
 	role="application"
 	tabindex="0"
 	aria-label={experience.mode === 'preview'
-		? 'Character preview. WASD or arrows change facing. Keys 1, 2, 3 switch views.'
+		? t('worldStage.characterPreviewWASDOrArrowsChangeFacing')
 		: experience.mode === 'side'
-			? 'Side-scroller test world. A/D, left/right arrows or horizontal drag to move. Keys 1, 2, 3 switch views.'
-			: 'Character test world. WASD, arrows or drag to move. Keys 1, 2, 3 switch views.'}
+			? t('worldStage.sideScrollerTestWorldADLeft')
+			: t('worldStage.characterTestWorldWASDArrowsOrDrag')}
 	onkeydown={key}
 	onfocusout={() => keys.clear()}
 	onpointerdown={down}
@@ -1244,7 +1263,7 @@
 	<canvas class="world-sky" bind:this={sky} aria-hidden="true"></canvas>
 	<canvas class="world-ground" bind:this={floor} aria-hidden="true"></canvas>
 	<canvas class="world-actors" bind:this={canvas} aria-hidden="true"></canvas>
-	{#if doc.loading}<span class="world-loading">Loading character…</span>{/if}
+	{#if doc.loading}<span class="world-loading">{t('worldStage.loadingCharacter')}</span>{/if}
 </div>
 <!-- One bottom-anchored stack: the movement hint always sits above the fallback note, whatever the note wraps to.
      In Preview it also clears the playback bar, whose top is --playback-top. -->
@@ -1257,10 +1276,10 @@
 		{#if mountIssue}<p class="world-hint" role="status">{mountIssue}</p>{/if}
 		{#if hint}<p class="world-hint">
 				{matchMedia('(pointer:coarse)').matches
-					? 'Drag in the world to move'
+					? t('worldStage.dragInTheWorldToMove')
 					: experience.mode === 'side'
-						? 'Focus world · A/D or ←/→ to move'
-						: 'Focus world · WASD or arrow keys to move'}
+						? t('worldStage.focusWorldADOrToMove')
+						: t('worldStage.focusWorldWASDOrArrowKeysTo')}
 			</p>{/if}{#if loadingNote}<p class="world-coverage world-loading-items" role="status">
 				<LoaderCircle size={14} class="spin" aria-hidden="true" />{loadingNote}
 			</p>{/if}{#if note || rendererWarning}<p class="world-coverage">

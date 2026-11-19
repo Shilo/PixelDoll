@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
 	import NoticeLink from './NoticeLink.svelte';
 
 	let { multiline = false }: { multiline?: boolean } = $props();
@@ -7,11 +8,12 @@
 <div class="affiliation-spacing">
 	<NoticeLink
 		href="https://pixellab.ai"
-		label="Powered by PixelLab. Not an official app. Visit PixelLab (opens in a new tab)."
+		label={t('affiliationNotice.labelPoweredByPixelLabNotAnOfficial')}
 	>
 		<span class={multiline ? 'multiline' : undefined}
-			><span class="affiliation-sentence">Powered by PixelLab.</span>
-			<span class="affiliation-sentence bu-muted">Not an official app.</span></span
+			><span class="affiliation-sentence">{t('affiliationNotice.poweredByPixelLab')}</span>
+			<span class="affiliation-sentence bu-muted">{t('affiliationNotice.notAnOfficialApp')}</span
+			></span
 		>
 	</NoticeLink>
 </div>

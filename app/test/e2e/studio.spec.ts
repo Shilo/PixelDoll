@@ -2844,13 +2844,13 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
 	await expect(
 		notes,
 		'South is ready, but the visible companion facings are still loading'
-	).toHaveText('Loading helm loading — East, North');
+	).toHaveText('Loading helm loading: East, North');
 	await expect(coverage).toHaveCount(0);
 	for (const dir of ['east', 'west', 'north']) {
 		await studio((s, d) => {
 			s.ui.dir = d;
 		}, dir);
-		await expect(notes).toHaveText('Loading helm loading — East, North');
+		await expect(notes).toHaveText('Loading helm loading: East, North');
 		await expect(page.locator('.world-coverage', { hasText: 'hidden' })).toHaveCount(0);
 		await expect(coverage).toHaveCount(0);
 	}
@@ -2859,7 +2859,7 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
 	await expect(tile).toHaveAttribute('aria-pressed', 'false');
 	await expect(notes).toHaveCount(0);
 	await tile.click();
-	await expect(notes).toHaveText('Loading helm loading — East, North');
+	await expect(notes).toHaveText('Loading helm loading: East, North');
 	// finished with gaps: those views are missing (hidden and said so), no longer loading; Discard takes the draft off
 	await studio((s) => {
 		s.gens.find((g) => g.draft.spec.id === 'loading_helm').phase = 'review';

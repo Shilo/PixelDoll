@@ -1,5 +1,6 @@
 import { flushSync } from 'svelte';
 import { get, writable } from 'svelte/store';
+import { errorText, errorTranslation, LocalizedError, message, type Message } from './message.ts';
 
 export interface Release {
 	build: string;
@@ -18,7 +19,7 @@ export function readRelease(value: unknown): Release {
 		typeof r.commit !== 'string' ||
 		!/^[a-f0-9]{7,40}$/.test(r.commit)
 	)
-		throw new Error('The update description is invalid.');
+		throw new LocalizedError('The update description is invalid.', 'pwa.invalidRelease');
 	return { build: r.build, version: r.version, commit: r.commit };
 }
 
@@ -36,12 +37,12 @@ export function workerMessage(
 			else resolve(value!);
 		};
 		const timer = setTimeout(
-			() => done(new Error('The update did not respond. Try again.')),
+			() => done(new LocalizedError('The update did not respond. Try again.', 'pwa.noResponse')),
 			15_000
 		);
 		channel.port1.onmessage = ({ data }: MessageEvent<unknown>) => {
 			if (!data || typeof data !== 'object')
-				return done(new Error('The update response is invalid.'));
+				return done(new LocalizedError('The update response is invalid.', 'pwa.invalidResponse'));
 			const reply = data as Record<string, unknown>;
 			done(typeof reply.error === 'string' ? new Error(reply.error) : undefined, reply);
 		};
@@ -53,12 +54,12 @@ export function workerMessage(
 	});
 }
 
-export function bounded<T>(promise: Promise<T>, message: string): Promise<T> {
+export function bounded<T>(promise: Promise<T>, timeout: Error): Promise<T> {
 	let timer: ReturnType<typeof setTimeout>;
 	return Promise.race([
 		promise,
 		new Promise<never>((_, reject) => {
-			timer = setTimeout(() => reject(new Error(message)), 15_000);
+			timer = setTimeout(() => reject(timeout), 15_000);
 		})
 	]).finally(() => clearTimeout(timer));
 }
@@ -72,14 +73,17 @@ export async function fetchRelease(base: URL): Promise<Release> {
 		redirect: 'error',
 		signal: AbortSignal.timeout(12_000)
 	});
-	if (!response.ok) throw new Error(`Update check failed (${response.status}).`);
+	if (!response.ok)
+		throw new LocalizedError(`Update check failed (${response.status}).`, 'pwa.checkFailed', {
+			status: response.status
+		});
 	return readRelease(await response.json());
 }
 
 export function waitForWorker(
 	worker: ServiceWorker,
 	ready: () => boolean,
-	timeout: string
+	timeout: Error
 ): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const finish = (error?: Error) => {
@@ -90,14 +94,25 @@ export function waitForWorker(
 		};
 		const changed = () => {
 			if (worker.state === 'redundant')
-				finish(new Error('The update was replaced or could not be downloaded. Try again.'));
+				finish(
+					new LocalizedError(
+						'The update was replaced or could not be downloaded. Try again.',
+						'pwa.replaced'
+					)
+				);
 			else if (ready()) finish();
 		};
-		const timer = setTimeout(() => finish(new Error(timeout)), 15_000);
+		const timer = setTimeout(() => finish(timeout), 15_000);
 		worker.addEventListener('statechange', changed);
 		changed();
 	});
 }
+
+/** A PWA problem; a list holds the failures of one update check, which resumes by itself. */
+export type PwaError = Message | string | (Message | string)[];
+/** Translation-free: the UI formats these (studio/pwaText.ts), so this module stays testable without the i18n runtime. */
+const errorMessage = (error: unknown): Message | string =>
+	errorTranslation(error) ?? errorText(error);
 
 interface InstallPrompt extends Event {
 	prompt(): Promise<void>;
@@ -119,11 +134,11 @@ export const pwa = writable({
 	ready: false,
 	reloading: false,
 	offlineReady: false,
-	error: '',
+	error: '' as PwaError,
 	installable: false,
 	installed: false,
 	installing: false,
-	installError: ''
+	installError: '' as Message | string
 });
 let registration: ServiceWorkerRegistration | undefined;
 let latest: Release | null = null;
@@ -156,14 +171,15 @@ async function inspectWorker() {
 	try {
 		const check = await workerMessage(worker, 'VERIFY', release.build);
 		if (!relevant()) return;
-		if (check.ready !== true) throw new Error('The downloaded app is incomplete.');
+		if (check.ready !== true)
+			throw new LocalizedError('The downloaded app is incomplete.', 'pwa.downloadIncomplete');
 		if (release.build === __APP_BUILD__) pwa.update((s) => ({ ...s, offlineReady: true }));
 	} catch (e) {
 		if (!relevant()) return;
 		pwa.update((s) => ({
 			...s,
 			...(release.build === __APP_BUILD__ ? { offlineReady: false } : { ready: false }),
-			error: (e as Error).message
+			error: errorMessage(e)
 		}));
 		throw e;
 	}
@@ -182,7 +198,7 @@ export function checkForUpdate(): Promise<void> {
 	checking = (async () => {
 		do {
 			checkAgain = false;
-			const failures: string[] = [];
+			const failures: (Message | string)[] = [];
 			// Discover first: stalled browser operations and cache/quota failures cannot hide newer deployments.
 			try {
 				latest = await fetchRelease(base);
@@ -195,25 +211,34 @@ export function checkForUpdate(): Promise<void> {
 					error: ''
 				}));
 			} catch (e) {
-				failures.push((e as Error).message);
+				failures.push(errorMessage(e));
 			}
 			try {
 				if (!registration && registerWorker)
-					await bounded(registerWorker(), 'Offline setup did not respond.');
+					await bounded(
+						registerWorker(),
+						new LocalizedError('Offline setup did not respond.', 'pwa.setupNoResponse')
+					);
 			} catch (e) {
-				failures.push(`Offline setup failed: ${(e as Error).message}`);
+				failures.push(message('pwa.setupFailed', { reason: errorMessage(e) }));
 			}
 			const inspect = () =>
 				inspectWorker().catch((e) => {
-					failures.push((e as Error).message);
+					failures.push(errorMessage(e));
 				});
 			// The old cache may need a slow repair. Its health check must not delay staging or verifying the new release.
 			const update = async () => {
 				if (!registration) return;
 				try {
-					await bounded(registration.update(), 'The browser update check did not respond.');
+					await bounded(
+						registration.update(),
+						new LocalizedError(
+							'The browser update check did not respond.',
+							'pwa.browserCheckNoResponse'
+						)
+					);
 				} catch (e) {
-					failures.push((e as Error).message);
+					failures.push(errorMessage(e));
 				}
 				await inspect();
 			};
@@ -221,7 +246,7 @@ export function checkForUpdate(): Promise<void> {
 			if (!stopped && failures.length)
 				pwa.update((s) => ({
 					...s,
-					error: `${[...new Set(failures)].join(' ')} Checks resume automatically when connected.`
+					error: [...new Map(failures.map((f) => [JSON.stringify(f), f])).values()]
 				}));
 		} while (checkAgain && !stopped);
 	})().finally(() => {
@@ -260,7 +285,7 @@ export async function installApp() {
 	} catch (e) {
 		pwa.update((s) => ({
 			...s,
-			installError: `Installation could not open: ${(e as Error).message}`
+			installError: message('pwa.installFailed', { reason: errorMessage(e) })
 		}));
 		requestInstallHelp();
 		return false;
@@ -290,7 +315,7 @@ export function startPwa() {
 		if (document.visibilityState === 'visible') void checkForUpdate();
 	};
 	const onController = () => {
-		void inspectWorker().catch((e) => pwa.update((s) => ({ ...s, error: (e as Error).message })));
+		void inspectWorker().catch((e) => pwa.update((s) => ({ ...s, error: errorMessage(e) })));
 	};
 	const watch = () => {
 		const worker = registration?.installing;
@@ -299,8 +324,7 @@ export function startPwa() {
 			if (worker.state === 'redundant')
 				pwa.update((s) => ({
 					...s,
-					error:
-						'The update could not be saved. Your current work is unchanged. Retrying automatically. If this continues while connected, finish your work, then close every PixelDoll window and reopen. More device storage may be needed.'
+					error: message('pwa.saveFailed')
 				}));
 		});
 	};
@@ -309,7 +333,7 @@ export function startPwa() {
 	if (!capture)
 		pwa.update((s) => ({
 			...s,
-			installError: 'The install controls could not load. Reconnect and reload to try again.'
+			installError: message('pwa.installUnavailable')
 		}));
 	addEventListener('focus', wake);
 	addEventListener('online', wake);
@@ -382,12 +406,13 @@ async function activateUpdate(
 	commitReload?: () => void
 ) {
 	const target = get(pwa).available;
-	if (!target || !registration) throw new Error('No update is ready yet.');
+	if (!target || !registration) throw new LocalizedError('No update is ready yet.', 'pwa.notReady');
 	const validate = () => {
 		automatic?.validate();
 		if (get(pwa).available?.build !== target.build || !get(pwa).ready)
-			throw new Error(
-				'The available update changed or is still downloading. Review the current version and try again.'
+			throw new LocalizedError(
+				'The available update changed or is still downloading. Review the current version and try again.',
+				'pwa.targetChanged'
 			);
 	};
 	// An unresponsive save must leave the current tab open and let the user try the separate-tab update.
@@ -395,7 +420,10 @@ async function activateUpdate(
 		prepare &&
 		bounded(
 			prepare(),
-			'Saving your work took too long. Open the update in a new tab to keep your work open.'
+			new LocalizedError(
+				'Saving your work took too long. Open the update in a new tab to keep your work open.',
+				'pwa.saveTimeout'
+			)
 		);
 	validate();
 	await prepareToReload();
@@ -406,12 +434,15 @@ async function activateUpdate(
 	validate();
 	const worker = registration.waiting ?? registration.active;
 	if (!worker || readRelease(await workerMessage(worker, 'GET_RELEASE')).build !== target.build)
-		throw new Error('The update changed. Try again.');
+		throw new LocalizedError('The update changed. Try again.', 'pwa.changed');
 	validate();
 	const verified = await workerMessage(worker, 'VERIFY', target.build);
 	validate();
 	if (verified.ready !== true)
-		throw new Error('The update is incomplete. Reconnect and try again.');
+		throw new LocalizedError(
+			'The update is incomplete. Reconnect and try again.',
+			'pwa.incomplete'
+		);
 	await prepareToReload();
 	validate();
 	if (worker === registration.waiting) {
@@ -420,7 +451,7 @@ async function activateUpdate(
 		await waitForWorker(
 			worker,
 			() => worker.state === 'activated',
-			'The update could not activate. Try again.'
+			new LocalizedError('The update could not activate. Try again.', 'pwa.activateFailed')
 		);
 		validate();
 	}
@@ -429,11 +460,17 @@ async function activateUpdate(
 		(prepare ? navigator.serviceWorker.controller : null) ?? registration?.active;
 	const active = servingWorker();
 	if (!active || readRelease(await workerMessage(active, 'GET_RELEASE')).build !== target.build)
-		throw new Error('Another version activated. Review the update and try again.');
+		throw new LocalizedError(
+			'Another version activated. Review the update and try again.',
+			'pwa.otherVersion'
+		);
 	validate();
 	await prepareToReload();
 	validate();
 	if (active !== servingWorker() || active.state === 'redundant')
-		throw new Error('Another version activated. Review the update and try again.');
+		throw new LocalizedError(
+			'Another version activated. Review the update and try again.',
+			'pwa.otherVersion'
+		);
 	commitReload?.();
 }

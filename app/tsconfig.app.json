@@ -7,6 +7,7 @@
 		"types": ["svelte", "vite/client"],
 		"allowArbitraryExtensions": true,
 		"allowImportingTsExtensions": true,
+		"resolveJsonModule": true,
 		"noEmit": true,
 		/**
 		 * Typecheck JS in `.svelte` and `.js` files by default.

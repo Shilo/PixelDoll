@@ -125,6 +125,9 @@ import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, hasCompleteCells } from '../lib/dress/dress.ts';
 import { saveSplit } from '../lib/dress/project.ts';
 import { cellImg } from '../lib/compose/compose.ts';
+import { LocalizedError, message, type Message } from '../lib/message.ts';
+import { activityStateMessage } from './generationStatus.ts';
+import type { WhisperKey } from 'svelte-whisper';
 
 /** The form sends an exact prompt, frame, camera and explicit direction plan. */
 export interface CreateSpec {
@@ -144,10 +147,10 @@ export interface CreateSpec {
 	projectId?: string;
 }
 export type CreateStep = 'draw' | 'rest' | 'save';
-export const STEPS: { id: CreateStep; label: string }[] = [
-	{ id: 'draw', label: 'Drawing your character' },
-	{ id: 'rest', label: 'Setting up the skeleton' },
-	{ id: 'save', label: 'Checking and saving' }
+export const STEPS: { id: CreateStep; label: Message }[] = [
+	{ id: 'draw', label: message('create.steps.draw') },
+	{ id: 'rest', label: message('create.steps.rest') },
+	{ id: 'save', label: message('create.steps.save') }
 ];
 const CELL = 64,
 	EST = 0.1;
@@ -277,16 +280,18 @@ export async function run(
 			.snapshot()
 			.jobs.find((record) => record.requestHash === requestHash && record.state === 'done');
 		if (req.path !== '/estimate-skeleton' && (!recovery.rawHashes.has(requestHash) || !completed))
-			throw new Error(
-				'Joint-check recovery cannot generate or re-roll body artwork. Existing results were kept.'
+			throw new LocalizedError(
+				'Joint-check recovery cannot generate or re-roll body artwork. Existing results were kept.',
+				'create.errors.jointCheckRecoveryCannot'
 			);
 		signal?.throwIfAborted();
 		// Consume a reviewed check once, including when another tab already completed it. Repeated frames cannot buy it twice.
 		const allowed = req.path === '/estimate-skeleton' && recovery.checkHashes.delete(requestHash);
 		if (completed) return completed;
 		if (!allowed)
-			throw new Error(
-				'Cached joint results changed. Review the body frames again before continuing. No replacement request was made.'
+			throw new LocalizedError(
+				'Cached joint results changed. Review the body frames again before continuing. No replacement request was made.',
+				'create.errors.cachedJointResultsChanged'
 			);
 	}
 	const rec = await queue.enqueue(req, {
@@ -305,8 +310,14 @@ export async function run(
 	const r = live(rec) ? await queue.settled(rec.id) : rec;
 	signal?.throwIfAborted();
 	if (r.state !== 'done')
-		throw new Error(
-			`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}${resumeSafe ? '. Generation stopped without resending. Review this request in Activity before starting again.' : ''}`
+		throw new LocalizedError(
+			`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}${resumeSafe ? '. Generation stopped without resending. Review this request in Activity before starting again.' : ''}`,
+			resumeSafe ? 'create.errors.requestStoppedResume' : 'create.errors.requestStopped',
+			{
+				label,
+				state: activityStateMessage(r.state),
+				error: r.error ? ` (${r.error.slice(0, 160)})` : ''
+			}
 		);
 	return r;
 }
@@ -321,7 +332,12 @@ async function imagesOf(
 		res.map(async (x) => {
 			if (read) return { label: x.label, img: await read(x.sha) };
 			const blob = await db.getBlob(x.sha);
-			if (!blob) throw new Error(`result ${x.label} missing in storage`);
+			if (!blob)
+				throw new LocalizedError(
+					`result ${x.label} missing in storage`,
+					'create.errors.resultMissingStorage',
+					{ label: x.label }
+				);
 			return { label: x.label, img: await decodePng(blob) };
 		})
 	);
@@ -349,8 +365,10 @@ export function managedRestKeypoints(
 	if (refs == null) return out; // optional/untyped containers can be unavailable, not malformed coordinates
 	for (const d of directions) {
 		const invalid = () =>
-			new Error(
-				`${d}: PixelLab returned incomplete or invalid standing joints. Animation was not started from these joints; existing results are kept.`
+			new LocalizedError(
+				`${d}: PixelLab returned incomplete or invalid standing joints. Animation was not started from these joints; existing results are kept.`,
+				'create.errors.pixellabReturnedIncompleteInvalid',
+				{ direction: d }
 			);
 		if (!refs || typeof refs !== 'object' || Array.isArray(refs)) throw invalid();
 		if (!Object.hasOwn(refs, d)) continue; // a wholly absent reference retains the bounded estimate fallback
@@ -486,19 +504,25 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 	j.tick();
 	const outs = await imagesOf(r);
 	if (outs.length !== j.keypoints.length)
-		throw new Error(
-			`${j.anim} ${j.dir}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.`
+		throw new LocalizedError(
+			`${j.anim} ${j.dir}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.`,
+			'create.errors.pixellabReturnedWrongNumber',
+			{ move: j.anim, direction: j.dir }
 		);
 	const normalized = outs.map((o) => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
 	if (normalized.some((n) => n.cutPx))
-		throw new Error(
-			`${j.anim} ${j.dir}: animation exceeds the ${j.rest.w} px frame. Increase Frame or reduce Body size before creating again.`
+		throw new LocalizedError(
+			`${j.anim} ${j.dir}: animation exceeds the ${j.rest.w} px frame. Increase Frame or reduce Body size before creating again.`,
+			'create.errors.animationExceedsPxFrame',
+			{ move: j.anim, direction: j.dir, w: j.rest.w }
 		);
 	const rawFrames = normalized.map((n) => n.img);
 	// Do not spend on joint measurements or another render when the returned artwork is empty.
 	if (rawFrames.some((f) => !opaqueBox(f)))
-		throw new Error(
-			`${j.anim} ${j.dir}: PixelLab returned empty frames. No paid retry was started. Review Activity before requesting another attempt.`
+		throw new LocalizedError(
+			`${j.anim} ${j.dir}: PixelLab returned empty frames. No paid retry was started. Review Activity before requesting another attempt.`,
+			'create.errors.pixellabReturnedEmptyFrames',
+			{ move: j.anim, direction: j.dir }
 		);
 	const candidate = j.paletteRepair
 		? await paletteCandidate(j.anim, j.dir, j.rest, rawFrames, j.keypoints, 0)
@@ -513,8 +537,10 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		})
 	);
 	if (measured.some((k) => !hasAll(k)))
-		throw new Error(
-			`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`
+		throw new LocalizedError(
+			`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`,
+			'create.errors.validJointsWereFound',
+			{ move: j.anim, direction: j.dir }
 		);
 	const qa = bodyClipQa(
 		j.anim,
@@ -617,7 +643,9 @@ async function paletteCandidate(
 	);
 	if (measured.some((k) => !hasAll(k)))
 		throw new RecoveryUnavailable(
-			`${dir}: match body colors only after all original joint checks have completed.`
+			`${dir}: match body colors only after all original joint checks have completed.`,
+			'create.errors.matchBodyColorsOnly',
+			{ direction: dir }
 		);
 	const rawQa = clipQa({ anim, rest, frames, requested, measured, stray });
 	if (rawQa.paletteFit >= RIG_GATES.paletteFit) return { frames }; // already-good views are bit-for-bit unchanged
@@ -630,22 +658,30 @@ async function paletteCandidate(
 		rawQa.border > RIG_GATES.border
 	)
 		throw new RecoveryUnavailable(
-			`${dir}: color matching cannot repair pose, feet or border failures.`
+			`${dir}: color matching cannot repair pose, feet or border failures.`,
+			'create.errors.colorMatchingCannotRepair',
+			{ direction: dir }
 		);
 	let fixed: ReturnType<typeof repairBodyPalette>;
 	try {
 		fixed = repairBodyPalette(rest, frames);
 	} catch (error) {
-		if (error instanceof PaletteRepairUnavailable) throw new RecoveryUnavailable(error.message);
+		// palette.ts has one bounded-drift refusal; keep its English and translate it here.
+		if (error instanceof PaletteRepairUnavailable)
+			throw new RecoveryUnavailable(error.message, 'create.errors.paletteDrift');
 		throw error;
 	}
 	if (!fixed.changedPixels)
 		throw new RecoveryUnavailable(
-			`${dir}: the color drift is outside the bounded reference-palette repair.`
+			`${dir}: the color drift is outside the bounded reference-palette repair.`,
+			'create.errors.colorDriftOutsideBounded',
+			{ direction: dir }
 		);
 	if (fixed.paletteFit < RIG_GATES.paletteFit)
 		throw new RecoveryUnavailable(
-			`${dir}: bounded color matching still fails the palette quality check. No new joint checks were started.`
+			`${dir}: bounded color matching still fails the palette quality check. No new joint checks were started.`,
+			'create.errors.boundedColorMatchingStill',
+			{ direction: dir }
 		);
 	return {
 		frames: fixed.frames,
@@ -696,7 +732,12 @@ async function motion(
 			return k;
 		})
 	);
-	if (kps.some((k) => !k)) throw new Error(`${label}: joints not found on every frame`);
+	if (kps.some((k) => !k))
+		throw new LocalizedError(
+			`${label}: joints not found on every frame`,
+			'create.errors.jointsFoundEveryFrame',
+			{ label }
+		);
 	return { keypoints: kps as Keypoint[][], record: r };
 }
 
@@ -711,10 +752,16 @@ function normalizeMotionFrames(
 ): Img[] {
 	const got = (r.response as SubmitResponse | undefined)?.directions;
 	if (got && !got.includes(dir))
-		throw new Error(`${label}: PixelLab dropped the direction (busy). Try again.`); // S4 truncation
+		throw new LocalizedError(
+			`${label}: PixelLab dropped the direction (busy). Try again.`,
+			'create.errors.pixellabDroppedDirectionBusy',
+			{ label }
+		); // S4 truncation
 	const returned = r.jobs.reduce((count, job) => count + job.results.length, 0),
-		mismatch = new Error(
-			`${label}: PixelLab returned ${returned} motion frames for ${expected} requested. No joint checks or body render were requested for this view.`
+		mismatch = new LocalizedError(
+			`${label}: PixelLab returned ${returned} motion frames for ${expected} requested. No joint checks or body render were requested for this view.`,
+			'create.errors.pixellabReturnedMotionFrames',
+			{ label, returned, expected: expected }
 		);
 	// keep_first_frame: false should strip the start frame, but on 2026-11-08 pixminimax returned it as frame 0 of every
 	// described move (9 for 8): drop it only when it is pixel-identical to the standing view, else the count fails.
@@ -723,8 +770,10 @@ function normalizeMotionFrames(
 	const frames = images.map((image) => {
 		const normalized = normalize(image, size, size, 128, size);
 		if (normalized.cutPx)
-			throw new Error(
-				`${label}: motion exceeds the ${size} px frame. Increase Frame or reduce Body size before creating again.`
+			throw new LocalizedError(
+				`${label}: motion exceeds the ${size} px frame. Increase Frame or reduce Body size before creating again.`,
+				'create.errors.motionExceedsPxFrame',
+				{ label, size }
 			);
 		return normalized.img;
 	});
@@ -738,7 +787,11 @@ function normalizeMotionFrames(
 			throw mismatch;
 	}
 	if (frames.some((f) => !opaqueBox(f)))
-		throw new Error(`${label}: PixelLab returned an empty motion frame`);
+		throw new LocalizedError(
+			`${label}: PixelLab returned an empty motion frame`,
+			'create.errors.pixellabReturnedEmptyMotion',
+			{ label }
+		);
 	return frames;
 }
 
@@ -773,8 +826,9 @@ async function completedCreation(
 ): Promise<StoredProject | undefined> {
 	const saved = await db.get<StoredProject>('projects', id);
 	if (saved && saved.creationSpec !== creationSpec)
-		throw new Error(
-			'This creation identity belongs to another saved character. Start a new character to keep both.'
+		throw new LocalizedError(
+			'This creation identity belongs to another saved character. Start a new character to keep both.',
+			'create.errors.creationIdentityBelongsAnother'
 		);
 	return saved;
 }
@@ -784,7 +838,11 @@ export async function publishCreatedCharacter(
 	rec: StoredProject,
 	images: Map<Sha256, Img>
 ): Promise<string> {
-	if (!rec.creationSpec) throw new Error('This creation attempt has no saved fingerprint.');
+	if (!rec.creationSpec)
+		throw new LocalizedError(
+			'This creation attempt has no saved fingerprint.',
+			'create.errors.creationAttemptSavedFingerprint'
+		);
 	const blobs = new Map<string, Blob>();
 	for (const [hash, im] of images)
 		blobs.set(
@@ -815,40 +873,56 @@ export async function createCharacter(
 ): Promise<string> {
 	const projectId = spec.projectId ?? `rig-${crypto.randomUUID()}`;
 	if (!/^rig-[a-z0-9-]+$/.test(projectId))
-		throw new Error(
-			'This creation attempt has an invalid project identity. Start a new character.'
+		throw new LocalizedError(
+			'This creation attempt has an invalid project identity. Start a new character.',
+			'create.errors.creationAttemptInvalidProject'
 		);
 	const cell = spec.frame ?? CELL,
 		directions = spec.directions,
 		DIRS = directions.filter((d) => !d.mirrorOf).map((d) => d.id);
+	const invalid = (english: string, key: WhisperKey, vars?: Record<string, string>) => [
+		new LocalizedError(english, key, vars)
+	];
 	const errors = [
 		...facingErrors(directions),
 		...(spec.frame !== undefined
 			? sizeErrors(spec.size, cell, spec.model)
 			: bodyErrors(spec.size, spec.model)),
 		...(!spec.description.trim() || spec.description.length > 2000
-			? ['Enter a prompt of 1–2,000 characters.']
+			? invalid('Enter a prompt of 1–2,000 characters.', 'create.errors.promptLength')
 			: []),
 		...(!Number.isSafeInteger(spec.seed) ||
 		spec.seed < 0 ||
 		spec.seed > Number.MAX_SAFE_INTEGER - 100_000
-			? ['Invalid seed.']
+			? invalid('Invalid seed.', 'create.errors.invalidSeed')
 			: []),
 		...(spec.view && !['low top-down', 'high top-down', 'side'].includes(spec.view)
-			? ['Invalid camera.']
+			? invalid('Invalid camera.', 'create.errors.invalidCamera')
 			: []),
-		...(spec.model !== undefined && !MODEL_IDS.includes(spec.model) ? ['Invalid model.'] : []),
+		...(spec.model !== undefined && !MODEL_IDS.includes(spec.model)
+			? invalid('Invalid model.', 'create.errors.invalidModel')
+			: []),
 		...((spec.outline !== undefined || spec.detail !== undefined) && !modelOf(spec.model).styleHints
-			? [`Outline and detail do not apply to ${modelOf(spec.model).label}.`]
+			? invalid(
+					`Outline and detail do not apply to ${modelOf(spec.model).label}.`,
+					'create.errors.styleUnsupported',
+					{ model: modelOf(spec.model).label }
+				)
 			: []),
 		...(spec.outline !== undefined && !OUTLINE_VALUES.includes(spec.outline)
-			? ['Invalid outline.']
+			? invalid('Invalid outline.', 'create.errors.invalidOutline')
 			: []),
 		...(spec.detail !== undefined && !DETAIL_VALUES.includes(spec.detail)
-			? ['Invalid detail.']
+			? invalid('Invalid detail.', 'create.errors.invalidDetail')
 			: [])
 	];
-	if (errors.length) throw new Error(errors.join(' '));
+	// The English message keeps every reason; the translated message shows the first.
+	if (errors.length)
+		throw new LocalizedError(
+			errors.map((e) => e.message).join(' '),
+			errors[0].translation.key,
+			errors[0].translation.vars
+		);
 	const creationSpec = await sha256(
 		stableStringify({ ...spec, projectId: undefined, activityScope: undefined })
 	);
@@ -875,14 +949,26 @@ export async function createCharacter(
 	let pad: [number, number] = [0, 0];
 	for (const d of DIRECTIONS) {
 		const r = rots.find((x) => x.label === d);
-		if (!r) throw new Error(`PixelLab returned no ${d} view`);
+		if (!r)
+			throw new LocalizedError(
+				`PixelLab returned no ${d} view`,
+				'create.errors.pixellabReturnedView',
+				{ direction: d }
+			);
 		const n = normalize(r.img, cell, cell);
 		if (n.cutPx)
-			throw new Error(
-				`The ${d} view does not fit the ${cell} px frame. Increase Frame or reduce Body size before creating again.`
+			throw new LocalizedError(
+				`The ${d} view does not fit the ${cell} px frame. Increase Frame or reduce Body size before creating again.`,
+				'create.errors.viewDoesFitPx',
+				{ direction: d, cell }
 			);
 		const top = opaqueBox(n.img)?.y0 ?? cell;
-		if (!opaqueBox(n.img)) throw new Error(`PixelLab returned an empty ${d} view.`);
+		if (!opaqueBox(n.img))
+			throw new LocalizedError(
+				`PixelLab returned an empty ${d} view.`,
+				'create.errors.pixellabReturnedEmptyView',
+				{ direction: d }
+			);
 		if (top < HEADROOM_MIN)
 			restWarnings.push(
 				`${d}: standing headroom ${top} px; tall hair or hats may need a larger frame`
@@ -920,7 +1006,11 @@ export async function createCharacter(
 		spec.activityScope
 	);
 	const charId = (imp.response as { character_id?: string })?.character_id;
-	if (!charId) throw new Error('PixelLab did not return a character ID');
+	if (!charId)
+		throw new LocalizedError(
+			'PixelLab did not return a character ID',
+			'create.errors.pixellabDidReturnCharacter'
+		);
 	const ch = await run(
 		routes.getCharacter(charId),
 		`${spec.name} · skeleton`,
@@ -941,7 +1031,12 @@ export async function createCharacter(
 		managed = managedRestKeypoints(refs, DIRS);
 	for (const d of DIRS) {
 		const kps = managed[d] ?? (await joints(rest[d], true, undefined, spec.activityScope)); // only absent references use the existing bounded estimate fallback
-		if (!hasAll(kps)) throw new Error(`no valid joints found on the ${d} view`);
+		if (!hasAll(kps))
+			throw new LocalizedError(
+				`no valid joints found on the ${d} view`,
+				'create.errors.validJointsFoundView',
+				{ direction: d }
+			);
 		restKps[d] = kps!;
 	}
 
@@ -953,8 +1048,10 @@ export async function createCharacter(
 		{ size: cell, directions }
 	);
 	if (built.errors.length)
-		throw new Error(
-			`The standing views do not fit together: ${built.errors.slice(0, 3).join('; ')}`
+		throw new LocalizedError(
+			`The standing views do not fit together: ${built.errors.slice(0, 3).join('; ')}`,
+			'create.errors.standingViewsDoFit',
+			{ reasons: built.errors.slice(0, 3).join('; ') }
 		);
 	const rig = built.rig;
 	rig.view = view;
@@ -1002,7 +1099,10 @@ export async function createCharacter(
 		rig,
 		Object.fromEntries(Object.entries(built.cells).map(([key, c]) => [key, c.hash]))
 	);
-	if (errs.length) throw new Error(`rig not valid: ${errs.join('; ')}`);
+	if (errs.length)
+		throw new LocalizedError(`rig not valid: ${errs.join('; ')}`, 'create.errors.rigValid', {
+			errs: errs.join('; ')
+		});
 	const manifest: Manifest = {
 		format: CURRENT_FORMAT,
 		name: spec.name,
@@ -1085,8 +1185,9 @@ const recoverySpecHash = (spec: MoveSpec) =>
 	sha256(stableStringify({ ...spec, measurementRecovery: undefined, activityScope: undefined }));
 function approvedCheckHashes(value: unknown): Set<string> {
 	const invalid = () =>
-		new Error(
-			'The reviewed joint-check hashes are invalid. Review the body frames and cost again.'
+		new LocalizedError(
+			'The reviewed joint-check hashes are invalid. Review the body frames and cost again.',
+			'create.errors.reviewedJointCheckHashes'
 		);
 	if (!Array.isArray(value)) throw invalid();
 	const hashes = new Set<string>();
@@ -1099,7 +1200,11 @@ function approvedCheckHashes(value: unknown): Set<string> {
 }
 function approvedMeasurementIds(intent: unknown): string[] | undefined {
 	if (intent === undefined) return undefined;
-	const invalid = () => new Error('The joint-check recovery intent is invalid.');
+	const invalid = () =>
+		new LocalizedError(
+			'The joint-check recovery intent is invalid.',
+			'create.errors.jointCheckRecoveryIntent'
+		);
 	if (!intent || typeof intent !== 'object' || Array.isArray(intent)) throw invalid();
 	const value = intent as Partial<NonNullable<MoveSpec['measurementRecovery']>>;
 	if (
@@ -1131,7 +1236,10 @@ function approvedMeasurementIds(intent: unknown): string[] | undefined {
 function checkedPaletteIntent(intent: unknown, checkHashes = true): void {
 	if (intent === undefined) return;
 	if (!intent || typeof intent !== 'object' || Array.isArray(intent))
-		throw new Error('The body color-repair intent is invalid.');
+		throw new LocalizedError(
+			'The body color-repair intent is invalid.',
+			'create.errors.bodyColorRepairIntent'
+		);
 	const value = intent as Partial<NonNullable<MoveSpec['bodyPaletteRepair']>>;
 	if (
 		value.version !== 'near-rest-v1' ||
@@ -1140,7 +1248,10 @@ function checkedPaletteIntent(intent: unknown, checkHashes = true): void {
 		typeof value.rigVersion !== 'string' ||
 		!value.rigVersion
 	)
-		throw new Error('This character or color-repair policy changed since review.');
+		throw new LocalizedError(
+			'This character or color-repair policy changed since review.',
+			'create.errors.characterColorRepairPolicy'
+		);
 	if (checkHashes) approvedCheckHashes(value.checkHashes);
 }
 /** A completed body publication can outlive failed equipment work; only its exact durable receipt permits resuming. */
@@ -1157,21 +1268,29 @@ async function publishedMoveRecovery(rec: StoredProject, spec: MoveSpec): Promis
 	);
 }
 export const MOVE_STEPS = [
-	{ id: 'animate', label: 'Animating the body' },
-	{ id: 'save', label: 'Checking and saving the body' },
-	{ id: 'items', label: 'Posing your items' }
+	{ id: 'animate', label: message('create.moveSteps.animate') },
+	{ id: 'save', label: message('create.moveSteps.save') },
+	{ id: 'items', label: message('create.moveSteps.items') }
 ];
 export const isV13 = rigReady;
 /** Why a move can't take this id: Default is every character's standing views, never generated or replaced. */
 export const reservedMove = (id: string) =>
-	id === DEFAULT_MOVE ? 'Default is the standing pose. Name the move something else.' : '';
+	id === DEFAULT_MOVE
+		? new LocalizedError(
+				'Default is the standing pose. Name the move something else.',
+				'create.errors.reservedMove'
+			)
+		: undefined;
 const genDirs = (m: Manifest) => m.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id);
 /** Explicit subsets name authored views; mirrored children are handled at publication. */
 export function moveDirections(m: Manifest, dirs?: readonly DirectionName[]): DirectionName[] {
 	const all = genDirs(m);
 	if (dirs === undefined) return all;
 	if (!dirs.length || new Set(dirs).size !== dirs.length || dirs.some((d) => !all.includes(d)))
-		throw new Error('Choose one or more independently drawn directions for this move.');
+		throw new LocalizedError(
+			'Choose one or more independently drawn directions for this move.',
+			'create.errors.chooseOneMoreIndependently'
+		);
 	return all.filter((d) => dirs.includes(d));
 }
 interface BodyPaletteStats {
@@ -1210,7 +1329,7 @@ interface CachedBodyClip {
 	facing?: { dir: string; rest: Keypoint[] };
 }
 /** An expected eligibility limit, distinct from a failed storage read or malformed PNG. */
-class RecoveryUnavailable extends Error {}
+class RecoveryUnavailable extends LocalizedError {}
 /** Review only the selected standing views and exact cached results, never unrelated equipment sheets. */
 async function recoveryContext(projectId: string) {
 	const rec = await db.get<StoredProject>('projects', projectId);
@@ -1227,7 +1346,11 @@ async function recoveryContext(projectId: string) {
 			if (!image) {
 				image = db.getBlob(sha).then((blob) => {
 					if (!blob)
-						throw new Error(`Cached recovery image ${sha.slice(0, 12)} is missing in storage.`);
+						throw new LocalizedError(
+							`Cached recovery image ${sha.slice(0, 12)} is missing in storage.`,
+							'create.errors.cachedRecoveryImageMissing',
+							{ sha: sha.slice(0, 12) }
+						);
 					return decodePng(blob);
 				});
 				images.set(sha, image);
@@ -1271,22 +1394,45 @@ export interface MoveRecoveryReview {
 	recovery?: MeasurementRecoveryPlan;
 	colorRepair?: BodyPaletteRepairPlan;
 	keep?: KeepBodyPlan;
+	/** English, for logs and tests; `unavailableMessages` holds the same reasons for display. */
 	unavailable?: string;
+	unavailableMessages?: Message[];
 }
+const unavailableOf = (reasons: LocalizedError[]) =>
+	reasons.length
+		? {
+				unavailable: reasons.map((r) => r.message).join(' '),
+				unavailableMessages: reasons.map((r) => r.translation)
+			}
+		: {};
 /** Recovery reuses completed body artwork: chosen views of a replacement, or every drawn view of a new move. */
-function recoveryScopeIssue(m: Manifest, spec: MoveSpec, allowMotion = false): string {
+function recoveryScopeIssue(
+	m: Manifest,
+	spec: MoveSpec,
+	allowMotion = false
+): RecoveryUnavailable | undefined {
 	const authored =
 		!spec.itemsOnly &&
 		!spec.itemMethod &&
 		(isAuthoredAction(spec.action) || (allowMotion && !bodyMoveIssue(m, spec))) &&
 		!!spec.dirs?.length;
-	if (!authored) return 'Joint-check recovery needs the original authored body-repair settings.';
-	if (spec.replace) return '';
+	if (!authored)
+		return new RecoveryUnavailable(
+			'Joint-check recovery needs the original authored body-repair settings.',
+			'create.errors.recoveryNeedsAuthored'
+		);
+	if (spec.replace) return undefined;
 	if (m.rig.animations.some((a) => a.id === spec.id))
-		return 'This move was saved since that attempt. Nothing is left to recover.';
+		return new RecoveryUnavailable(
+			'This move was saved since that attempt. Nothing is left to recover.',
+			'create.errors.recoveryAlreadySaved'
+		);
 	return moveDirections(m, spec.dirs).length === genDirs(m).length
-		? ''
-		: 'A new move needs every independently drawn direction.';
+		? undefined
+		: new RecoveryUnavailable(
+				'A new move needs every independently drawn direction.',
+				'create.errors.newMoveNeedsEvery'
+			);
 }
 /** One local review owns its memoized images. Reopening or executing always reads and validates fresh state. */
 export async function reviewMoveRecovery(
@@ -1310,32 +1456,43 @@ export async function reviewMoveRecovery(
 		const candidates: CachedBodyClip[] = [],
 			plan = await inspectMeasurementRecovery(context, inspection, true, candidates);
 		if (plan.checks && !isAuthoredAction(spec.action))
-			return {
-				unavailable: 'Keeping this move requires completed cached joint checks for every frame.'
-			};
+			return unavailableOf([
+				new RecoveryUnavailable(
+					'Keeping this move requires completed cached joint checks for every frame.',
+					'create.errors.keepNeedsChecks'
+				)
+			]);
 		if (plan.checks && plan.recordIds.length) return { recovery: plan };
-		if (plan.checks) return { unavailable: 'Cached frames have no failed joint checks to retry.' };
+		if (plan.checks)
+			return unavailableOf([
+				new RecoveryUnavailable(
+					'Cached frames have no failed joint checks to retry.',
+					'create.errors.noFailedChecks'
+				)
+			]);
 		if (spec.bodyPaletteRepair) return { recovery: plan };
 		// Color matching and keeping are independent choices: a limit on one never hides the other.
-		let colorRepair: BodyPaletteRepairPlan | undefined, unavailable: string | undefined;
+		let colorRepair: BodyPaletteRepairPlan | undefined;
+		const unavailable: RecoveryUnavailable[] = [];
 		try {
 			if (isAuthoredAction(spec.action))
 				colorRepair = await inspectBodyPaletteRepair(context, inspection);
 		} catch (error) {
 			if (!(error instanceof RecoveryUnavailable)) throw error;
-			unavailable = error.message;
+			unavailable.push(error);
 		}
 		let keep: KeepBodyPlan | undefined;
 		try {
 			keep = await inspectKeptBody(context, inspection, plan, candidates);
 		} catch (error) {
 			if (!(error instanceof RecoveryUnavailable)) throw error;
-			unavailable = [unavailable, error.message].filter(Boolean).join(' ');
+			unavailable.push(error);
 		}
-		if (colorRepair || keep || unavailable) return { colorRepair, keep, unavailable };
+		if (colorRepair || keep || unavailable.length)
+			return { colorRepair, keep, ...unavailableOf(unavailable) };
 		return spec.measurementRecovery ? { recovery: plan } : {};
 	} catch (error) {
-		if (error instanceof RecoveryUnavailable) return { unavailable: error.message };
+		if (error instanceof RecoveryUnavailable) return unavailableOf([error]);
 		throw error;
 	}
 }
@@ -1355,7 +1512,9 @@ async function inspectKeptBody(
 			);
 			if (measured.some((k) => !hasAll(k)))
 				throw new RecoveryUnavailable(
-					`${directionLabel(c.dir)}: some frames have no valid measured joints, so they cannot be kept.`
+					`${directionLabel(c.dir)}: some frames have no valid measured joints, so they cannot be kept.`,
+					'create.errors.someFramesValidMeasured',
+					{ direction: directionLabel(c.dir) }
 				);
 			return { ...c, qa: bodyClipQa(spec.id, c.rest, c.frames, c.keypoints, measured, c.facing) };
 		})
@@ -1363,7 +1522,9 @@ async function inspectKeptBody(
 	const broken = clips.find((c) => c.qa.fails.length);
 	if (broken)
 		throw new RecoveryUnavailable(
-			`${directionLabel(broken.dir)}: ${broken.qa.fails.join('; ')}. These frames cannot be kept.`
+			`${directionLabel(broken.dir)}: ${broken.qa.fails.join('; ')}. These frames cannot be kept.`,
+			'create.errors.framesCannotKept',
+			{ direction: directionLabel(broken.dir), reasons: broken.qa.fails.join('; ') }
 		);
 	if (!clips.length || !clips.some((c) => failsBodyGate(c.qa))) return undefined;
 	return {
@@ -1383,7 +1544,11 @@ export async function bodyPaletteRepairPlan(
 	spec: MoveSpec
 ): Promise<BodyPaletteRepairPlan> {
 	const plan = await inspectBodyPaletteRepair(await recoveryContext(projectId), spec);
-	if (!plan) throw new RecoveryUnavailable('No palette-only body failure can be matched safely.');
+	if (!plan)
+		throw new RecoveryUnavailable(
+			'No palette-only body failure can be matched safely.',
+			'create.errors.paletteOnlyBodyFailure'
+		);
 	return plan;
 }
 async function inspectBodyPaletteRepair(
@@ -1408,7 +1573,8 @@ async function inspectBodyPaletteRepair(
 	if (!plan.palette?.directions.length) return undefined;
 	if (plan.recordIds.length)
 		throw new RecoveryUnavailable(
-			'Review unknown joint-check outcomes before matching these body colors.'
+			'Review unknown joint-check outcomes before matching these body colors.',
+			'create.errors.reviewUnknownJointCheck'
 		);
 	return {
 		...plan,
@@ -1441,7 +1607,7 @@ async function inspectMeasurementRecovery(
 		spec,
 		(reviewOnly && !spec.bodyPaletteRepair) || !!spec.measurementRecovery?.keep
 	);
-	if (scopeIssue) throw new RecoveryUnavailable(scopeIssue);
+	if (scopeIssue) throw scopeIssue;
 	const approved = reviewOnly ? undefined : approvedMeasurementIds(spec.measurementRecovery);
 	checkedPaletteIntent(spec.bodyPaletteRepair, !reviewOnly);
 	const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
@@ -1452,9 +1618,15 @@ async function inspectMeasurementRecovery(
 			!spec.bodyPaletteRepair.id ||
 			spec.bodyPaletteRepair.rigVersion !== rigVersion)
 	)
-		throw new Error('This character or color-repair policy changed since review.');
+		throw new LocalizedError(
+			'This character or color-repair policy changed since review.',
+			'create.errors.characterColorRepairPolicy'
+		);
 	if (spec.measurementRecovery && spec.measurementRecovery.rigVersion !== rigVersion)
-		throw new Error('This character changed since these joint checks were reviewed.');
+		throw new LocalizedError(
+			'This character changed since these joint checks were reviewed.',
+			'create.errors.characterChangedSinceJoint'
+		);
 	const seen = new Set<string>(),
 		needed = new Set<string>(),
 		recordIds = new Set<string>(),
@@ -1469,7 +1641,11 @@ async function inspectMeasurementRecovery(
 	for (const d of moveDirections(rec.manifest, spec.dirs)) {
 		const rest = rig.rest?.[d];
 		if (!rest || !hasAll(rest.keypoints))
-			throw new Error(`${d}: original standing artwork or joints are missing.`);
+			throw new LocalizedError(
+				`${d}: original standing artwork or joints are missing.`,
+				'create.errors.originalStandingArtworkJoints',
+				{ direction: d }
+			);
 		const restImg = await context.read(rest.image.slice(7));
 		let keypoints: Keypoint[][];
 		const authored = isAuthoredAction(spec.action);
@@ -1487,7 +1663,9 @@ async function inspectMeasurementRecovery(
 				record = jobs.find((job) => job.requestHash === hash && job.state === 'done');
 			if (!record)
 				throw new RecoveryUnavailable(
-					`${d}: the original completed motion is unavailable. No request was made.`
+					`${d}: the original completed motion is unavailable. No request was made.`,
+					'create.errors.originalCompletedMotionUnavailable',
+					{ direction: d }
 				);
 			const frames = normalizeMotionFrames(
 				record,
@@ -1503,7 +1681,9 @@ async function inspectMeasurementRecovery(
 			);
 			if (measured.some((points) => !hasAll(points)))
 				throw new RecoveryUnavailable(
-					`${d}: the original motion has no valid completed joint checks for every frame. No request was made.`
+					`${d}: the original motion has no valid completed joint checks for every frame. No request was made.`,
+					'create.errors.originalMotionValidCompleted',
+					{ direction: d }
 				);
 			keypoints = measured as Keypoint[][];
 			rawHashes.push(hash);
@@ -1524,18 +1704,26 @@ async function inspectMeasurementRecovery(
 			if (!raw) {
 				if (!attempt)
 					throw new RecoveryUnavailable(
-						`${d}: the original completed body render is unavailable. No body was regenerated.`
+						`${d}: the original completed body render is unavailable. No body was regenerated.`,
+						'create.errors.originalCompletedBodyRender',
+						{ direction: d }
 					);
 				break;
 			}
 			const outputs = await imagesOf(raw, context.read);
 			if (outputs.length !== keypoints.length || outputs.some((o) => !o.img.w || !o.img.h))
-				throw new Error(`${d}: the cached body render is incomplete.`);
+				throw new LocalizedError(
+					`${d}: the cached body render is incomplete.`,
+					'create.errors.cachedBodyRenderIncomplete',
+					{ direction: d }
+				);
 			rawHashes.push(rawHash);
 			const normalized = outputs.map((out) => context.normalize(out.img));
 			if (normalized.some((n) => n.cutPx || !opaqueBox(n.img)))
-				throw new Error(
-					`${d}: the cached body frames do not fit this character. No body was regenerated.`
+				throw new LocalizedError(
+					`${d}: the cached body frames do not fit this character. No body was regenerated.`,
+					'create.errors.cachedBodyFramesDo',
+					{ direction: d }
 				);
 			const frames = normalized.map((n) => n.img);
 			// Only the first render is ever published; a later seed is a legacy attempt, never a keep candidate.
@@ -1569,14 +1757,20 @@ async function inspectMeasurementRecovery(
 				const reviewed = approved ? matches.filter((r) => approved.includes(r.id)) : [];
 				for (const old of reviewed) {
 					if (!retryableEstimate(old))
-						throw new Error('A reviewed joint check is no longer eligible for explicit recovery.');
+						throw new LocalizedError(
+							'A reviewed joint check is no longer eligible for explicit recovery.',
+							'create.errors.reviewedJointCheckLonger'
+						);
 					recordIds.add(old.id);
 				}
 				const done = matches.find((r) => r.state === 'done');
 				if (done) {
 					const points = checkedKeypoints((done.response as { keypoints?: unknown })?.keypoints);
 					if (!points || !checkedKeypoints(unpadSkeleton(points, input, frame)))
-						throw new Error('A completed joint check has invalid measurements.');
+						throw new LocalizedError(
+							'A completed joint check has invalid measurements.',
+							'create.errors.completedJointCheckInvalid'
+						);
 					continue;
 				}
 				const active = matches.find(live);
@@ -1586,7 +1780,8 @@ async function inspectMeasurementRecovery(
 						active.estimateRecovery?.id !== spec.measurementRecovery.id
 					)
 						throw new RecoveryUnavailable(
-							'Wait for the current joint checks to finish before recovering them.'
+							'Wait for the current joint checks to finish before recovering them.',
+							'create.errors.waitCurrentJointChecks'
 						);
 					needed.add(hash);
 					continue;
@@ -1601,8 +1796,9 @@ async function inspectMeasurementRecovery(
 						continue;
 					}
 					if (!retryableEstimate(latest) || (approved && !approved.includes(latest.id)))
-						throw new Error(
-							'A joint-check outcome changed. Review the exact checks again before retrying.'
+						throw new LocalizedError(
+							'A joint-check outcome changed. Review the exact checks again before retrying.',
+							'create.errors.jointCheckOutcomeChanged'
 						);
 					recordIds.add(latest.id);
 				}
@@ -1611,13 +1807,20 @@ async function inspectMeasurementRecovery(
 		}
 	}
 	if (approved && (recordIds.size !== approved.length || approved.some((id) => !recordIds.has(id))))
-		throw new Error('The reviewed joint checks do not match these exact cached body frames.');
+		throw new LocalizedError(
+			'The reviewed joint checks do not match these exact cached body frames.',
+			'create.errors.reviewedJointChecksDo'
+		);
 	if (approved && !approved.length && needed.size)
-		throw new Error(
-			'Cached body reuse requires completed joint checks. Review the unfinished checks before continuing.'
+		throw new LocalizedError(
+			'Cached body reuse requires completed joint checks. Review the unfinished checks before continuing.',
+			'create.errors.cachedBodyReuseRequires'
 		);
 	if (allowed && [...needed].some((hash) => !allowed.has(hash)))
-		throw new Error('The pending joint checks changed. Review their exact frames and cost again.');
+		throw new LocalizedError(
+			'The pending joint checks changed. Review their exact frames and cost again.',
+			'create.errors.pendingJointChecksChanged'
+		);
 	return {
 		recordIds: [...recordIds].sort(),
 		checkHashes: [...needed].sort(),
@@ -1699,12 +1902,18 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
 export function bodyMoveIssue(
 	m: Manifest,
 	s: Pick<MoveSpec, 'action' | 'text' | 'frames'>
-): string {
-	if (s.action === 'walk' || isAuthoredAction(s.action)) return '';
+): LocalizedError | undefined {
+	if (s.action === 'walk' || isAuthoredAction(s.action)) return undefined;
 	const frames = moveFrames(m, s);
 	if (![4, 8, 12].includes(frames))
-		return `Described moves can be generated with 4, 8 or 12 frames. This move has ${frames}.`;
-	return s.text?.trim() ? '' : 'Describe this move before generating it.';
+		return new LocalizedError(
+			`Described moves can be generated with 4, 8 or 12 frames. This move has ${frames}.`,
+			'create.errors.describedFrames',
+			{ frames }
+		);
+	return s.text?.trim()
+		? undefined
+		: new LocalizedError('Describe this move before generating it.', 'create.errors.describeMove');
 }
 export function moveEstimate(
 	m: Manifest,
@@ -1729,7 +1938,11 @@ export function moveEstimate(
 		s.itemMethod === 'grid'
 			? s.items.reduce((sum, id) => {
 					const item = m.items.find((i) => i.id === id);
-					if (!item) throw new Error('The selected equipment is no longer available.');
+					if (!item)
+						throw new LocalizedError(
+							'The selected equipment is no longer available.',
+							'create.errors.selectedEquipmentLongerAvailable'
+						);
 					const cell = item.layers[0]?.cell ?? m.rig.cell;
 					return sum + repairGridLayout(cell, n, 1).gens * dirs;
 				}, 0)
@@ -1763,7 +1976,11 @@ export function moveMinimumTier(manifest: Manifest, spec: MoveSpec): number {
 		0,
 		...spec.items.map((id) => {
 			const item = manifest.items.find((candidate) => candidate.id === id);
-			if (!item) throw new Error('The selected equipment is no longer available.');
+			if (!item)
+				throw new LocalizedError(
+					'The selected equipment is no longer available.',
+					'create.errors.selectedEquipmentLongerAvailable'
+				);
 			const dirs = moveDirections(manifest, spec.dirs).filter(
 				(dir) =>
 					spec.itemMethod === 'grid' || redraw || !hasCompleteCells(manifest, item, spec.id, dir)
@@ -1790,11 +2007,16 @@ export function moveMinimumTier(manifest: Manifest, spec: MoveSpec): number {
 
 /** Bind a delayed item-only click to its priced artwork. Other queued moves may update this item's unrelated clips. */
 export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
-	if (!spec.itemsOnly) throw new Error('Only existing item frames can use this review.');
+	if (!spec.itemsOnly)
+		throw new LocalizedError(
+			'Only existing item frames can use this review.',
+			'create.errors.onlyExistingItemFrames'
+		);
 	const dirs = moveDirections(m, spec.dirs);
 	if (spec.itemMethod !== 'anchor' && !canPose(m.rig, { anims: [spec.id], dirs }))
-		throw new Error(
-			'This move has missing or invalid stored joints. Set up its poses before generating equipment. No generation was requested.'
+		throw new LocalizedError(
+			'This move has missing or invalid stored joints. Set up its poses before generating equipment. No generation was requested.',
+			'create.errors.moveMissingInvalidStored'
 		);
 	const rows = <T>(value: Partial<Record<DirectionName, T>> | undefined) => {
 		const entries = dirs
@@ -1804,7 +2026,11 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 	};
 	const items = [m.rig.baseItem, ...spec.items].map((id) => {
 		const item = m.items.find((i) => i.id === id);
-		if (!item) throw new Error('The selected equipment is no longer available.');
+		if (!item)
+			throw new LocalizedError(
+				'The selected equipment is no longer available.',
+				'create.errors.selectedEquipmentLongerAvailable'
+			);
 		return {
 			...item,
 			qa: undefined,
@@ -1880,15 +2106,19 @@ export async function addMove(
 			spec.reuseItemFrames ||
 			spec.bodyPaletteRepair)
 	)
-		throw new Error('Keeping reviewed body frames saves only the body. No request was made.');
+		throw new LocalizedError(
+			'Keeping reviewed body frames saves only the body. No request was made.',
+			'create.errors.keepingReviewedBodyFrames'
+		);
 	const { rec } = await loadProject(projectId);
 	const assertReview = (m: Manifest) => {
 		if (
 			spec.itemReview &&
 			stableStringify(reviewItemMove(m, spec).itemReview) !== stableStringify(spec.itemReview)
 		) {
-			throw new Error(
-				'This character, item or price changed. Reopen the item and review its current estimate before generating. No paid request was made.'
+			throw new LocalizedError(
+				'This character, item or price changed. Reopen the item and review its current estimate before generating. No paid request was made.',
+				'create.errors.characterItemPriceChanged'
 			);
 		}
 	};
@@ -1900,8 +2130,9 @@ export async function addMove(
 		spec.reuseItemFrames &&
 		(spec.itemMethod === 'grid' || !spec.itemsOnly || !existing || spec.replace)
 	)
-		throw new Error(
-			'Saved equipment recovery needs an existing move and its equipment only. No generation was requested.'
+		throw new LocalizedError(
+			'Saved equipment recovery needs an existing move and its equipment only. No generation was requested.',
+			'create.errors.savedEquipmentRecoveryNeeds'
 		);
 	if (spec.itemMethod === 'anchor') {
 		if (
@@ -1913,8 +2144,9 @@ export async function addMove(
 			!spec.items.length ||
 			spec.items.some((id) => !anchorable(rec.manifest).some((i) => i.id === id))
 		)
-			throw new Error(
-				'Anchored equipment generation requires an existing move and its saved standing items. No generation was requested.'
+			throw new LocalizedError(
+				'Anchored equipment generation requires an existing move and its saved standing items. No generation was requested.',
+				'create.errors.anchoredEquipmentGenerationRequires'
 			);
 	} else if (
 		spec.itemsOnly &&
@@ -1932,26 +2164,42 @@ export async function addMove(
 					)
 			)
 		)
-			throw new Error(
-				'This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.'
+			throw new LocalizedError(
+				'This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.',
+				'create.errors.moveItemMissingStored'
 			);
-	} else if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
+	} else if (!isV13(rec))
+		throw new LocalizedError(
+			'Set up this character’s pose rig before adding moves.',
+			'create.errors.setUpRigFirst'
+		);
 	if (spec.itemMethod === 'grid' && !existing)
-		throw new Error('Choose an existing move before repairing its equipment.');
-	if (reservedMove(spec.id) && (spec.replace || !existing)) throw new Error(reservedMove(spec.id));
+		throw new LocalizedError(
+			'Choose an existing move before repairing its equipment.',
+			'create.errors.chooseExistingMoveRepairing'
+		);
+	const reserved = reservedMove(spec.id);
+	if (reserved && (spec.replace || !existing)) throw reserved;
 	if (!existing && dirs.length !== genDirs(rec.manifest).length)
-		throw new Error('A new move needs every independently drawn direction.');
+		throw new LocalizedError(
+			'A new move needs every independently drawn direction.',
+			'create.errors.newMoveNeedsEvery'
+		);
 	if (
 		existing &&
 		dirs.length !== genDirs(rec.manifest).length &&
 		existing.cells !== moveFrames(rec.manifest, spec)
 	)
-		throw new Error('A partial repair must keep the existing frame count.');
+		throw new LocalizedError(
+			'A partial repair must keep the existing frame count.',
+			'create.errors.partialRepairMustKeep'
+		);
 	if (!spec.itemMethod && !spec.itemsOnly && spec.items.length) {
 		const eligible = new Set(posable(rec.manifest, dirs).map((item) => item.id));
 		if (spec.items.some((id) => !eligible.has(id)))
-			throw new Error(
-				'Selected equipment no longer has standing designs for all selected views. Review the equipment selection before trying again. No generation was requested.'
+			throw new LocalizedError(
+				'Selected equipment no longer has standing designs for all selected views. Review the equipment selection before trying again. No generation was requested.',
+				'create.errors.selectedEquipmentLongerStanding'
 			);
 	}
 	const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
@@ -1993,13 +2241,18 @@ export async function addMove(
 			reviewItemMove(m, target).itemReview!.artwork !==
 			reviewItemMove(fresh.rec.manifest, target).itemReview!.artwork
 		)
-			throw new Error(
-				'The item frames changed before generation. Reopen the item to review them again.'
+			throw new LocalizedError(
+				'The item frames changed before generation. Reopen the item to review them again.',
+				'create.errors.itemFramesChangedGeneration'
 			);
 	};
 	const plans = spec.items.map((id) => {
 		const it = fresh.rec.manifest.items.find((i) => i.id === id);
-		if (!it) throw new Error('This item changed or was removed while the move was being prepared.');
+		if (!it)
+			throw new LocalizedError(
+				'This item changed or was removed while the move was being prepared.',
+				'create.errors.itemChangedWasRemoved'
+			);
 		return {
 			id,
 			dirs: dirs.filter(
@@ -2016,7 +2269,11 @@ export async function addMove(
 		if (!plan.dirs.length) continue;
 		const ctx = await loadProject(projectId),
 			it = ctx.rec.manifest.items.find((i) => i.id === plan.id);
-		if (!it) throw new Error('This item changed or was removed while the move was being prepared.');
+		if (!it)
+			throw new LocalizedError(
+				'This item changed or was removed while the move was being prepared.',
+				'create.errors.itemChangedWasRemoved'
+			);
 		assertArtwork(ctx.rec.manifest, plan.id, plan.dirs);
 		if (spec.itemMethod === 'anchor')
 			await animateAnchoredItem(ctx, it, spec.id, plan.dirs, spec.seed, tick, {
@@ -2029,13 +2286,18 @@ export async function addMove(
 				const current = await loadProject(projectId),
 					item = current.rec.manifest.items.find((i) => i.id === plan.id);
 				if (!item)
-					throw new Error('This item changed or was removed while the move was being prepared.');
+					throw new LocalizedError(
+						'This item changed or was removed while the move was being prepared.',
+						'create.errors.itemChangedWasRemoved'
+					);
 				assertArtwork(current.rec.manifest, plan.id, [d]);
 				const result = await regridClip(current, item, spec.id, d, spec.seed);
 				tick();
 				if (!result.saved)
-					throw new Error(
-						`${item.name} ${spec.id} ${d}: the repair still fails quality checks. Existing artwork was kept; review Activity before trying again.`
+					throw new LocalizedError(
+						`${item.name} ${spec.id} ${d}: the repair still fails quality checks. Existing artwork was kept; review Activity before trying again.`,
+						'create.errors.repairStillFailsQuality',
+						{ name: item.name, id: spec.id, direction: d }
 					);
 			}
 		else
@@ -2052,8 +2314,14 @@ export async function addMove(
 				if (!(error instanceof PartialMoveError)) throw error;
 				// Try again skips complete views unless it replaces the move, which redraws the body and every view.
 				const views = error.savedDirs.map(directionLabel).join(', ');
-				throw new Error(
-					`${error.reason} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`
+				throw new LocalizedError(
+					`${error.reason} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`,
+					spec.replace
+						? 'create.errors.partialSaved'
+						: spec.reuseItemFrames
+							? 'create.errors.partialSavedNewFrames'
+							: 'create.errors.partialSavedRetry',
+					{ reason: error.reason, views }
 				);
 			});
 	}
@@ -2116,10 +2384,18 @@ async function addBodyClip(
 		m = rec.manifest,
 		rig = m.rig;
 	const issue = bodyMoveIssue(m, spec);
-	if (issue) throw new Error(`${issue} No generation was requested.`);
+	if (issue)
+		throw new LocalizedError(
+			`${issue.message} No generation was requested.`,
+			`${issue.translation.key}Blocked` as WhisperKey,
+			issue.translation.vars
+		);
 	const version = moveRigVersion(rec);
 	if (recovery && recovery.rigVersion !== version)
-		throw new Error('This character changed since these joint checks were reviewed.');
+		throw new LocalizedError(
+			'This character changed since these joint checks were reviewed.',
+			'create.errors.characterChangedSinceJoint'
+		);
 	const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
 	const receiptSpecHash = intent ? await recoverySpecHash(spec) : undefined;
 	const dirs = moveDirections(m, spec.dirs) as Direction[],
@@ -2200,8 +2476,9 @@ async function addBodyClip(
 	onProgress({ step: 'save', done: 0, total: 1, recIds: [] });
 	const fresh = (await db.get<StoredProject>('projects', projectId))!;
 	if (!fresh || moveRigVersion(fresh) !== version)
-		throw new Error(
-			'This character changed in another tab while the move was generating. Reopen it before trying again.'
+		throw new LocalizedError(
+			'This character changed in another tab while the move was generating. Reopen it before trying again.',
+			'create.errors.characterChangedAnotherTab'
 		);
 	const fm = fresh.manifest,
 		frig = fm.rig,
@@ -2226,15 +2503,20 @@ async function addBodyClip(
 			frames: c.out.frames
 		}));
 		if (kept.some((c) => c.qa.fails.length) || (await keptBodyHash(version, kept)) !== keep.qaHash)
-			throw new Error(
-				'These body frames or their quality checks changed since review. Nothing was saved and no request was made. Review them again.'
+			throw new LocalizedError(
+				'These body frames or their quality checks changed since review. Nothing was saved and no request was made. Review them again.',
+				'create.errors.bodyFramesTheirQuality'
 			);
 	} else if (spec.dirs && clips.some(({ out: { qa } }) => failsBodyGate(qa)))
-		throw new Error(
-			old
-				? 'The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.'
-				: 'The new move fails body-pose quality checks, so it was not saved. Review the results before trying again.'
-		);
+		throw old
+			? new LocalizedError(
+					'The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.',
+					'create.errors.replacementFailsQa'
+				)
+			: new LocalizedError(
+					'The new move fails body-pose quality checks, so it was not saved. Review the results before trying again.',
+					'create.errors.newMoveFailsQa'
+				);
 	const layer = baseIt.layers[0],
 		cellMap: Partial<Record<DirectionName, (Sha256 | null)[]>> = {
 			...baseIt.layers[0].cells?.[spec.id]
@@ -2322,7 +2604,10 @@ async function addBodyClip(
 				hashes
 			)
 		);
-	if (errs.length) throw new Error(`rig not valid: ${errs.join('; ')}`);
+	if (errs.length)
+		throw new LocalizedError(`rig not valid: ${errs.join('; ')}`, 'create.errors.rigValid', {
+			errs: errs.join('; ')
+		});
 	const qa = (fresh.rigQa ?? {}) as { warnings?: string[]; clips?: Record<string, ClipQa> };
 	fresh.rigQa = {
 		...qa,
@@ -2337,8 +2622,9 @@ async function addBodyClip(
 	await db.update<StoredProject>('projects', projectId, (cur) => {
 		if (!cur) throw new Error(`project ${projectId} vanished`);
 		if (moveRigVersion(cur) !== version)
-			throw new Error(
-				'This character changed in another tab before the move could be saved. Reopen it before trying again.'
+			throw new LocalizedError(
+				'This character changed in another tab before the move could be saved. Reopen it before trying again.',
+				'create.errors.characterChangedAnotherTab2'
 			);
 		clearMovePoseData(cur.manifest.rig, (cur.skeletons ??= {}), spec.id, dirs);
 		const cb = cur.manifest.items.find((i) => i.id === frig.baseItem)!;
@@ -2377,7 +2663,11 @@ export async function saveCopy(
 	// The bundled demo explicitly supplies its standing source; imported characters never guess a move by name.
 	if (standingSource && !m.rig.animations.some((a) => a.id === DEFAULT_MOVE)) {
 		const source = m.rig.animations.find((a) => a.id === standingSource);
-		if (!source) throw new Error('The demo standing reference is missing.');
+		if (!source)
+			throw new LocalizedError(
+				'The demo standing reference is missing.',
+				'create.errors.demoStandingReferenceMissing'
+			);
 		for (const item of m.items) {
 			// Equipment covers the standing move exactly where it covers the source frame.
 			if (item.coverage)
@@ -2393,7 +2683,11 @@ export async function saveCopy(
 				for (const dir of m.rig.directions) {
 					const image = cellImg(p, layer, standingSource, dir.id, 0);
 					if (!image && item.id === m.rig.baseItem)
-						throw new Error(`The demo has no standing body facing ${dir.id}.`);
+						throw new LocalizedError(
+							`The demo has no standing body facing ${dir.id}.`,
+							'create.errors.demoStandingBodyFacing',
+							{ id: dir.id }
+						);
 					const hash = image ? await cellHash(image) : null;
 					layer.cells[DEFAULT_MOVE][dir.id] = [hash];
 					if (image && hash) images.set(hash, image);

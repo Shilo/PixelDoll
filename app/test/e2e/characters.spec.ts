@@ -21,6 +21,73 @@ import { splitBase } from '../../src/lib/dress/regions.ts';
 import { composeCell } from '../../src/lib/compose/compose.ts';
 
 const ID = 'f6a0bdc5-354e-4682-8df3-55fc3d118737';
+const moreOptions = 'button[popovertarget="experience-options"]';
+
+test.describe('first Studio render in French', () => {
+	test.use({ locale: 'fr-CA' });
+
+	test('detects the browser language before rendering and remembers an explicit choice', async ({
+		page
+	}) => {
+		const french = JSON.parse(
+			await readFile(new URL('../../src/locales/fr.json', import.meta.url), 'utf8')
+		) as typeof import('../../src/locales/fr.json');
+		const label = french.toolbar.moreOptions;
+		expect(label).not.toBe('More options');
+		await page.addInitScript((selector) => {
+			const observer = new MutationObserver(() => {
+				const label = document.querySelector(selector)?.getAttribute('aria-label');
+				if (!label) return;
+				document.documentElement.dataset.firstOptionsLabel = label;
+				observer.disconnect();
+			});
+			observer.observe(document, { childList: true, subtree: true, attributes: true });
+		}, moreOptions);
+		await page.goto('/');
+		await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+		await expect(page.locator('html')).toHaveAttribute('data-first-options-label', label);
+		await page
+			.getByRole('button', { name: french.newCharacterButton.newCharacter, exact: true })
+			.first()
+			.click();
+		await page
+			.getByRole('menuitem', { name: french.newCharacterButton.createFromScratch, exact: true })
+			.click();
+		const draft = page.getByRole('dialog', { name: french.create.sheet.title, exact: true });
+		await draft.getByRole('textbox', { name: french.common.name, exact: true }).fill('Draft hero');
+		await page.keyboard.press('Escape');
+		await expect(draft).toBeHidden();
+		await page.getByRole('button', { name: label, exact: true }).click();
+		await page.locator('#experience-options').getByRole('combobox').selectOption('en');
+		await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeVisible();
+		await page.keyboard.press('Escape');
+		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
+		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await expect(
+			page.getByRole('dialog', { name: 'New character', exact: true }).getByRole('textbox', {
+				name: 'Name',
+				exact: true
+			})
+		).toHaveValue('Draft hero');
+		await page.reload();
+		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await expect(page.getByRole('combobox', { name: 'Language' })).toHaveValue('en');
+	});
+});
+
+test.describe('first Studio render in Traditional Chinese', () => {
+	test.use({ locale: 'zh-TW' });
+
+	test('falls back to English rather than Simplified Chinese', async ({ page }) => {
+		await page.goto('/');
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+		const picker = page.getByRole('combobox', { name: 'Language' });
+		await expect(picker).toHaveValue('en');
+		await expect(picker.locator('option[value="zh-Hans"]')).toHaveText('简体中文');
+	});
+});
 
 test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await page.addInitScript(() => {
@@ -2345,6 +2412,8 @@ test('storage failures before paid work surface errors and release the move runn
 	const result = await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path);
+		const i18nPath = '/src/lib/i18n.ts';
+		const { displayError } = await import(i18nPath);
 		const put = IDBObjectStore.prototype.put;
 		IDBObjectStore.prototype.put = function (value, key) {
 			if (key === 'studio-create' || key === 'studio-move')
@@ -2368,13 +2437,13 @@ test('storage failures before paid work surface errors and release the move runn
 			});
 			await firstCreate;
 			await s.startMove(s.doc.id, { id: 'first', action: 'cast', frames: 8, items: [], seed: 1 });
-			const firstError = s.moving.error;
+			const firstError = displayError(s.moving.error);
 			await s.startMove(s.doc.id, { id: 'second', action: 'cast', frames: 8, items: [], seed: 2 });
 			return {
-				createError: s.creating.error,
+				createError: displayError(s.creating.error),
 				createName: s.creating.spec.name,
 				firstError,
-				secondError: s.moving.error,
+				secondError: displayError(s.moving.error),
 				secondId: s.moving.spec.id
 			};
 		} finally {

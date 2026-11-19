@@ -9,6 +9,7 @@ import { DIRECTIONS } from '../../lib/rig/rig.ts';
 import { directionLabel } from './movement.ts';
 
 export const TEST_MOUNT = 'narrow-saddle';
+export const MOUNT_HEIGHT_REASON = 'Open saddle needs a standing height from 8 to 256 px';
 export type MountId = typeof TEST_MOUNT;
 type Point = { x: number; y: number };
 
@@ -301,7 +302,7 @@ export function mountView(id: MountId, direction: DirectionName, height: number)
 	if (!Number.isFinite(height) || height < 8 || height > 256)
 		return {
 			ok: false,
-			reason: 'Open saddle needs a standing height from 8 to 256 px',
+			reason: MOUNT_HEIGHT_REASON,
 			missingView: false
 		};
 	const H = Math.round(height),

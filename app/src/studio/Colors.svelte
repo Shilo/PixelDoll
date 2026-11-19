@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { t } from 'svelte-whisper';
 	// Material swatches: each option is the REAL variant ramp (lib/dress exact index swap), drawn as its color steps.
 	import { SWATCHES, materialNames, variantOf, variantRampOf } from '../lib/dress/dress.ts';
 	import type { Hex, Material } from '../lib/store/manifest.ts';
 	import { doc, store, setVariant } from './state.svelte.ts';
+	import { displaySwatch } from './displaySwatch.ts';
 	import { Plus } from './icons.ts';
 	// One item's materials; ColorSections gives each worn item its own section and header.
 	let { only }: { only: string } = $props();
@@ -46,16 +48,22 @@
 			<div class="mat">
 				<span class="muted small">{names[mi]}</span>
 				{#if mat.linkTo}
-					<span class="faint small">Follows {nameOf(mat.linkTo)}</span>
+					<span class="faint small">{t('colors.follows', { name: nameOf(mat.linkTo) })}</span>
 				{:else}
-					<div class="swatches" role="radiogroup" aria-label="{names[mi]} color">
+					<div
+						class="swatches"
+						role="radiogroup"
+						aria-label={t('colors.miColor', { mi: names[mi] })}
+					>
 						<button
 							class="swatch"
 							role="radio"
 							aria-checked={!doc.variants[mat.id]}
 							tabindex={!doc.variants[mat.id] || doc.variants[mat.id]?.startsWith('#') ? 0 : -1}
-							title={mat.defaultVariant ? 'Saved color' : 'Original'}
-							aria-label={mat.defaultVariant ? 'Saved color' : 'Original'}
+							title={mat.defaultVariant ? t('colors.titleSavedColor') : t('colors.titleOriginal')}
+							aria-label={mat.defaultVariant
+								? t('colors.titleSavedColor')
+								: t('colors.titleOriginal')}
 							onclick={() => setVariant(mat.id, null)}
 						>
 							{#each mat.defaultVariant ? (variantRampOf(mat, mat.defaultVariant) ?? mat.ramp) : mat.ramp as c, i (i)}<i
@@ -65,13 +73,14 @@
 						{#each Object.keys(SWATCHES) as name (name)}
 							{@const r = variantRampOf(mat, name)}
 							{#if r}
+								{@const label = displaySwatch(name)}
 								<button
 									class="swatch"
 									role="radio"
 									aria-checked={doc.variants[mat.id] === name}
 									tabindex={doc.variants[mat.id] === name ? 0 : -1}
-									title={name}
-									aria-label={name}
+									title={label}
+									aria-label={label}
 									onclick={() => setVariant(mat.id, name)}
 								>
 									{#each r as c, i (i)}<i style:background={c}></i>{/each}
@@ -80,11 +89,11 @@
 						{/each}
 						<label
 							class="swatch pick"
-							title="Pick any color"
+							title={t('colors.titlePickAnyColor')}
 							style:background={pick?.startsWith('#') ? pick : ''}
 						>
 							{#if !pick?.startsWith('#')}<Plus size={14} />{/if}
-							<span class="sr">Pick any color</span>
+							<span class="sr">{t('colors.titlePickAnyColor')}</span>
 							<input
 								type="color"
 								value={custom(mat)}

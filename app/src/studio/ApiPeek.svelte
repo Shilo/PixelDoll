@@ -8,12 +8,17 @@
 		sanitizeActivityValue,
 		type ApiCall
 	} from '../lib/pixellab/activity.ts';
-	import type { PeekCall } from './apiPlans.ts';
+	import { planDisplay, type PeekCall, type PlanDisplayContext } from './apiPlans.ts';
+	import { usdText } from './displayCost.ts';
+	import { displayDirection } from './displayDirection.ts';
 	import RequestFields from './RequestFields.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { CodeXml, Copy, Check, ListPlus, ListMinus, X, ChevronRight } from './icons.ts';
+	import { formatNumber, t } from 'svelte-whisper';
+	import { displayMessage } from '../lib/i18n.ts';
+	import { message, type Message } from '../lib/message.ts';
 
 	let {
 		scope,
@@ -37,7 +42,7 @@
 	let opener: HTMLButtonElement;
 	let open = $state(false);
 	let backgrounds = $state(false);
-	let copied = $state('');
+	let copied = $state<Message>();
 	let inspectionError = $state(false);
 	const actual = $derived(
 		$apiActivity.filter(
@@ -61,37 +66,43 @@
 	const unknownEstimate = $derived(
 		plan.filter((c) => c.method === 'POST' && c.generations === undefined).length
 	);
-	const format = (n: number) => +n.toFixed(3);
+	const gens = (n: number) =>
+		t('generationDetails.gens', { value: formatNumber(n, { maximumFractionDigits: 3 }) });
+	const usd = usdText;
+	const planFormatters: PlanDisplayContext = { t, formatNumber, displayDirection };
+	/** Planned calls show translated captions; recorded calls keep their saved English labels. */
+	const labelText = (c: ApiCall | PeekCall): string =>
+		('state' in c ? undefined : planDisplay(c)?.label?.(planFormatters)) ?? c.label ?? '';
+	const noteText = (c: PeekCall): string => planDisplay(c)?.note?.(planFormatters) ?? c.note ?? '';
 	function price(c: ApiCall | PeekCall): string {
 		if ('cost' in c) {
-			if (c.costSource === 'free') return 'Free';
+			if (c.costSource === 'free') return t('common.free');
 			const bits = [
-				c.cost.generations !== null ? `${format(c.cost.generations)} gens` : '',
-				c.cost.usd !== null ? `$${c.cost.usd.toFixed(3)}` : ''
+				c.cost.generations !== null ? gens(c.cost.generations) : '',
+				c.cost.usd !== null ? usd(c.cost.usd) : ''
 			].filter(Boolean);
-			return (
-				(bits.join(' + ') || (c.usagePending ? 'Pending' : 'Unknown')) +
-				(c.costPartial ? ' + ?' : '')
-			);
+			const base =
+				bits.join(' + ') || (c.usagePending ? t('apiPeek.pending') : t('apiPeek.unknown'));
+			return c.costPartial ? t('apiPeek.partial', { cost: base }) : base;
 		}
 		return c.generations !== undefined
-			? `~${format(c.generations)} gens`
+			? t('apiPeek.estimate', { cost: gens(c.generations) })
 			: c.method === 'POST'
-				? 'Estimate varies'
-				: 'Free';
+				? t('apiPeek.estimateVaries')
+				: t('common.free');
 	}
 	// The event's own element, not the binding: an open panel closes (and toggles) after its sheet unmounts it.
 	async function toggled(e: ToggleEvent & { currentTarget: HTMLDivElement }) {
 		const el = e.currentTarget;
 		open = e.newState === 'open';
 		if (open) {
-			copied = '';
+			copied = undefined;
 			inspectionError = false;
 			await tick();
 			if (!el.isConnected) return;
 			el.dataset.placement = opener.getBoundingClientRect().top < 100 ? 'bottom-end' : 'top-end';
 			popoverFocus({ currentTarget: el, newState: e.newState }, false);
-			el.querySelector<HTMLButtonElement>('[aria-label="Close API calls"]')?.focus();
+			el.querySelector<HTMLButtonElement>('[data-peek-close]')?.focus();
 		} else {
 			popoverFocus({ currentTarget: el, newState: e.newState }, false);
 		}
@@ -132,7 +143,7 @@
 				);
 		try {
 			await navigator.clipboard.writeText(text);
-			copied = `Copied ${calls.length} call${calls.length === 1 ? '' : 's'}`;
+			copied = message('apiPeek.copied', { count: calls.length });
 		} catch {
 			// Still usable when clipboard permissions are unavailable (including some mobile browsers).
 			const blob = new Blob([text], { type: 'application/json' }),
@@ -142,15 +153,18 @@
 			a.download = 'pixeldoll-calls.json';
 			a.click();
 			setTimeout(() => URL.revokeObjectURL(url), 1000);
-			copied = 'Saved calls as JSON';
+			copied = message('apiPeek.savedJson');
 		}
 	}
 </script>
 
 {#snippet jobStatus(job: NonNullable<ApiCall['job']>, id?: string)}
 	<p class="request-status">
-		Job{id ? ` ${id}` : ''}
-		{job.policy ? 'refused by content policy' : job.status}{job.error ? `: ${job.error}` : ''}
+		{t(job.error ? 'apiPeek.jobError' : 'apiPeek.job', {
+			id: id ? ` ${id}` : '',
+			state: job.policy ? t('apiPeek.jobPolicy') : job.status,
+			error: job.error ?? ''
+		})}
 	</p>
 {/snippet}
 
@@ -159,12 +173,13 @@
 	type="button"
 	class={menu ? 'row bu-action api-peek-trigger' : 'bu-action btn icon plain api-peek-trigger'}
 	data-variant="quiet"
-	aria-label={all ? 'Inspect all API calls' : 'Inspect API calls'}
-	title="PixelLab API calls"
+	aria-label={all ? t('apiPeek.inspectAll') : t('apiPeek.inspect')}
+	title={t('apiPeek.triggerTitle')}
 	aria-expanded={open}
 	aria-controls={id}
 	popovertarget={id}
-	><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name">API calls</span>{/if}</button
+	><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name">{t('apiPeek.title')}</span
+		>{/if}</button
 >
 <div
 	bind:this={panel}
@@ -172,7 +187,7 @@
 	popover="auto"
 	class="api-peek bu-popover-anchor"
 	role="dialog"
-	aria-label="API calls"
+	aria-label={t('apiPeek.title')}
 	tabindex="-1"
 	ontoggle={toggled}
 	onkeydown={keydown}
@@ -182,19 +197,19 @@
 		{#if open}
 			<header class="peek-head">
 				<div class="peek-heading">
-					<strong>API calls</strong><span class="peek-sub" role="status"
-						>{copied ||
-							(inspectionError ? 'Saved requests unavailable' : '') ||
+					<strong>{t('apiPeek.title')}</strong><span class="peek-sub" role="status"
+						>{(copied ? displayMessage(copied) : '') ||
+							(inspectionError ? t('apiPeek.inspectionError') : '') ||
 							label ||
-							(all ? 'Recent API calls' : 'This action')}</span
+							(all ? t('apiPeek.recent') : t('apiPeek.thisAction'))}</span
 					>
 				</div>
 				<button
 					type="button"
 					class="bu-action btn icon plain"
 					data-variant="quiet"
-					aria-label="Copy all calls"
-					title="Copy all calls as JSON, including background calls"
+					aria-label={t('apiPeek.copyAll')}
+					title={t('apiPeek.copyAllTitle')}
 					disabled={!calls.length}
 					onclick={copy}
 					>{#if copied}<Check size={16} />{:else}<Copy size={16} />{/if}</button
@@ -203,10 +218,12 @@
 					type="button"
 					class="bu-action btn icon plain"
 					data-variant="quiet"
-					aria-label={backgrounds ? 'Hide background calls' : 'Show background calls'}
+					aria-label={backgrounds ? t('apiPeek.hideBackground') : t('apiPeek.showBackground')}
 					title={backgrounds
-						? 'Hide background calls'
-						: `Show background calls${hidden ? ` (${hidden})` : ''}`}
+						? t('apiPeek.hideBackground')
+						: hidden
+							? t('apiPeek.showBackgroundCount', { count: hidden })
+							: t('apiPeek.showBackground')}
 					aria-pressed={backgrounds}
 					onclick={() => (backgrounds = !backgrounds)}
 					>{#if backgrounds}<ListMinus size={17} />{:else}<ListPlus size={17} />{/if}</button
@@ -215,8 +232,9 @@
 					type="button"
 					class="bu-action btn icon plain"
 					data-variant="quiet"
-					aria-label="Close API calls"
-					title="Close"
+					data-peek-close
+					aria-label={t('apiPeek.close')}
+					title={t('common.close')}
 					onclick={close}><X size={17} /></button
 				>
 			</header>
@@ -229,24 +247,29 @@
 									><span class="call-method">{c.method}</span><span
 										>{'endpoint' in c ? c.endpoint : c.path}</span
 									></span
-								>{#if c.label}<span class="call-context">{c.label}</span>{/if}</span
+								>{#if c.label}<span class="call-context">{labelText(c)}</span>{/if}</span
 							><span class="call-price">{price(c)}</span></summary
 						>
 						<div class="peek-request">
 							{#if 'state' in c}<p class="request-status">
-									{c.restored
-										? 'Saved request'
-										: c.state === 'pending'
-											? 'Sending'
-											: c.state === 'failed'
-												? 'Failed'
-												: 'Sent'}{c.status ? ` · HTTP ${c.status}` : ''}{c.background
-										? ' · Background'
-										: ''}{c.costSource === 'unknown' && !c.usagePending
-										? ' · Cost not reported'
-										: ''}
+									{[
+										c.restored
+											? t('apiPeek.state.saved')
+											: c.state === 'pending'
+												? t('apiPeek.state.sending')
+												: c.state === 'failed'
+													? t('generation.status.failed')
+													: t('apiPeek.state.sent'),
+										c.status ? t('apiPeek.state.http', { status: c.status }) : '',
+										c.background ? t('apiPeek.state.background') : '',
+										c.costSource === 'unknown' && !c.usagePending
+											? t('apiPeek.state.costUnknown')
+											: ''
+									]
+										.filter(Boolean)
+										.join(' · ')}
 								</p>{:else}<p class="request-status">
-									Planned · Estimate{c.background ? ' · Background' : ''}
+									{c.background ? t('apiPeek.state.plannedBackground') : t('apiPeek.state.planned')}
 								</p>{/if}
 							{#if 'job' in c && c.job}{@render jobStatus(c.job)}{/if}
 							{#if 'failedJobs' in c}
@@ -255,53 +278,58 @@
 								{/each}
 							{/if}
 							{#if 'bodyUnavailable' in c && c.bodyUnavailable}<p class="request-status">
-									Some saved image inputs are no longer available. Copy includes stored references.
+									{t('apiPeek.bodyUnavailable')}
 								</p>{/if}
 							{#if c.body !== undefined && c.body !== null}<RequestFields
 									value={'cost' in c ? c.body : sanitizeActivityValue(c.body)}
 								/>{:else}<p class="request-status">
-									{c.method === 'POST'
-										? 'Request fields available when prepared.'
-										: 'No request body.'}
+									{c.method === 'POST' ? t('apiPeek.fieldsLater') : t('apiPeek.noBody')}
 								</p>{/if}
-							{#if 'note' in c && c.note}<p class="request-status">{c.note}</p>{/if}
+							{#if 'note' in c && c.note}<p class="request-status">{noteText(c)}</p>{/if}
 						</div>
 					</details>
 				{/each}
 				{#if !visible.length}<p class="peek-empty">
 						{hidden
-							? 'No foreground calls. Show background calls to see checks and downloads.'
+							? t('apiPeek.emptyForeground')
 							: all
-								? 'No calls recorded yet. Automatic calls appear here too.'
-								: 'No API calls for this action yet.'}
+								? t('apiPeek.emptyAll')
+								: t('apiPeek.emptyAction')}
 					</p>{/if}
 			</div>
 			{#if recorded && ($activityRetention.droppedBackground || $activityRetention.droppedForeground)}<p
 					class="peek-retention"
 				>
-					Recent history · Older calls omitted{all && $activityRetention.droppedForeground
-						? '; total covers this list'
-						: ''}. Copy includes this list.
+					{all && $activityRetention.droppedForeground
+						? t('apiPeek.retentionTotal')
+						: t('apiPeek.retention')}
 				</p>{/if}
 			<footer class="peek-total">
 				<span
-					>{recorded ? 'Total' : 'Estimated total'}<span class="total-caption"
-						>{calls.length} call{calls.length === 1 ? '' : 's'}{!backgrounds && hidden
-							? ` · ${hidden} background hidden`
-							: ''}</span
+					>{recorded ? t('apiPeek.total') : t('apiPeek.estimatedTotal')}<span class="total-caption"
+						>{!backgrounds && hidden
+							? t('apiPeek.callsHidden', { count: calls.length, hidden })
+							: t('apiPeek.calls', { count: calls.length })}</span
 					></span
 				><strong
-					>{#if recorded}{#if totals.generations || totals.usd || !totals.unknown}{format(
-								totals.generations
-							)} gens{totals.usd ? ` + $${totals.usd.toFixed(3)}` : ''}{:else}{totals.pending
-								? 'Pending'
-								: 'Unknown'}{/if}{#if totals.unknown || totals.pending}<span class="total-caption"
-								>{unknownFinished > 0 ? `${unknownFinished} unknown` : ''}{unknownFinished > 0 &&
-								totals.pending
-									? ' · '
-									: ''}{totals.pending ? `${totals.pending} pending` : ''}</span
-							>{/if}{:else}~{format(knownEstimate)} gens{#if unknownEstimate}<span
-								class="total-caption">+ variable costs</span
+					>{#if recorded}{#if totals.generations || totals.usd || !totals.unknown}{[
+								gens(totals.generations),
+								totals.usd ? usd(totals.usd) : ''
+							]
+								.filter(Boolean)
+								.join(' + ')}{:else}{totals.pending
+								? t('apiPeek.pending')
+								: t('apiPeek.unknown')}{/if}{#if totals.unknown || totals.pending}<span
+								class="total-caption"
+								>{[
+									unknownFinished > 0 ? t('apiPeek.unknownCount', { count: unknownFinished }) : '',
+									totals.pending ? t('apiPeek.pendingCount', { count: totals.pending }) : ''
+								]
+									.filter(Boolean)
+									.join(' · ')}</span
+							>{/if}{:else}{t('apiPeek.estimate', {
+							cost: gens(knownEstimate)
+						})}{#if unknownEstimate}<span class="total-caption">{t('apiPeek.variable')}</span
 							>{/if}{/if}</strong
 				>
 			</footer>

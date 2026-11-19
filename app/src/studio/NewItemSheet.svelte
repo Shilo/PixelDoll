@@ -14,7 +14,8 @@
 		categoryCopy,
 		profileOf,
 		shownCategories,
-		slotDef
+		slotDef,
+		slotLabelMessage
 	} from './slots.ts';
 	import type { Manifest } from '../lib/store/manifest.ts';
 	import { untrack } from 'svelte';
@@ -36,6 +37,10 @@
 	import type { Method } from '../lib/items/items.ts';
 	import { rigReady } from '../lib/rig/setup.ts';
 	import { ChevronDown, ChevronRight, Info, Sparkles, TriangleAlert } from './icons.ts';
+	import { displayDirectionInSentence } from './displayDirection.ts';
+	import { displaySwatch } from './displaySwatch.ts';
+	import { displayError, displayMessage } from '../lib/i18n.ts';
+	import { formatNumber, getLocale, t, type WhisperKey } from 'svelte-whisper';
 
 	const draft =
 		formDrafts.item?.projectId === doc.id &&
@@ -64,7 +69,8 @@
 	let busy = $state(false);
 	const g = $derived(categoryCopy(m, group));
 	const fullPrompt = $derived(`${prompt.trim()}${color ? `, ${color} colored` : ''}`);
-	const itemName = $derived(name.trim() || itemNameFrom(prompt) || 'New item');
+	const suggestedName = $derived(name.trim() || itemNameFrom(prompt));
+	const itemName = $derived(suggestedName || 'New item');
 	const input = $derived({
 		name: itemName,
 		slot,
@@ -86,7 +92,7 @@
 				error: ''
 			};
 		} catch (e) {
-			return { plan: null, error: (e as Error).message };
+			return { plan: null, error: displayError(e) };
 		}
 	});
 	const plan = $derived(planned.plan);
@@ -104,17 +110,10 @@
 			return null;
 		}
 	});
-	const METHODS: Record<Method, { label: string; help: string }> = {
-		skel: {
-			label: 'Skeleton posing',
-			help: 'Dresses the standing views once, then poses that design onto each move with the character’s skeleton (Skeleton animation V3). Keeps one design everywhere; held items follow the hand.'
-		},
-		anchor: {
-			label: 'Frame editing',
-			help: 'Edits each move’s frames directly (Edit animation V2), anchored on the standing design. An alternative when posing bends an item badly, such as a stiff cape. Later moves use the same method.'
-		}
+	const METHODS: Record<Method, { label: WhisperKey; help: WhisperKey }> = {
+		skel: { label: 'generationDetails.method.skeletonPose', help: 'newItem.methods.skel.help' },
+		anchor: { label: 'generationDetails.method.frameEditing', help: 'newItem.methods.anchor.help' }
 	};
-	const OFF_HAND_HINT = 'Shields and bows usually go in the off hand.';
 	// The hand a held category uses, from its own definition (a built-in that holds nothing yet uses its catalog default).
 	const side = $derived.by(() => {
 		const def = slotDef(m, group);
@@ -126,7 +125,13 @@
 			? baseClothesNote((rec as { character?: { looks?: string } } | null)?.character?.looks)
 			: ''
 	);
-	const handNote = $derived(m ? mirroredHandsNote(m.rig) : '');
+	const handNote = $derived(
+		m
+			? mirroredHandsNote(m.rig, t, displayDirectionInSentence, (parts) =>
+					new Intl.ListFormat(getLocale()).format(parts)
+				)
+			: ''
+	);
 
 	async function make(i: typeof input, consent?: Parameters<typeof startItem>[1]) {
 		formDrafts.item = undefined;
@@ -183,36 +188,42 @@
 </script>
 
 {#snippet foot()}
-	<span class="foot-note">{plan ? `About ${plan.minutes} min. You can keep working.` : ''}</span>
+	<span class="foot-note"
+		>{plan ? t('newItem.footNote', { minutes: formatNumber(plan.minutes) }) : ''}</span
+	>
 	<span class="api-action"
 		><ApiPeek
 			scope="item-make"
-			label="Make item"
+			label={t('newItem.makeLabel')}
 			plan={itemPlan(m && rec ? ({ rec: { ...rec, manifest: m } } as RigCtx) : null, input)}
 		/><button
 			class="bu-action btn primary lg"
 			data-variant="primary"
 			disabled={!canMake}
 			aria-describedby={tierBlocked ? 'new-item-tier' : undefined}
-			onclick={go}>Make <span class="cost">Est. {plan?.gens ?? '–'} gens</span></button
+			onclick={go}
+			>{t('newItem.make')}
+			<span class="cost">{t('moves.estimate', { gens: plan ? formatNumber(plan.gens) : '–' })}</span
+			></button
 		></span
 	>
 {/snippet}
 
-<Sheet title="New item" onclose={() => (ui.sheet = null)} footer={isDemo() ? undefined : foot}>
+<Sheet
+	title={t('newItem.title')}
+	onclose={() => (ui.sheet = null)}
+	footer={isDemo() ? undefined : foot}
+>
 	{#if isDemo()}
 		<div class="notice small">
 			<Sparkles size={16} />
-			<span
-				>Items are drawn for your own character. Create one, or make an editable copy of the demo
-				body to add items to it.</span
-			>
+			<span>{t('newItem.demo')}</span>
 		</div>
 		<div class="actions">
 			<button
 				class="bu-action btn primary"
 				data-variant="primary"
-				onclick={() => (ui.sheet = 'create')}>Create your character</button
+				onclick={() => (ui.sheet = 'create')}>{t('welcome.createYourCharacter')}</button
 			>
 			<button
 				class="bu-action btn copy-demo"
@@ -220,37 +231,32 @@
 				onclick={useCopy}
 				disabled={busy}
 			>
-				<span class:copy-hidden={busy}>Copy the demo body</span>
-				<span class:copy-hidden={!busy}>Copying…</span>
+				<span class:copy-hidden={busy}>{t('newItem.copyDemo')}</span>
+				<span class:copy-hidden={!busy}>{t('common.copying')}</span>
 			</button>
 		</div>
 	{:else}
 		<TierNotice
 			id="new-item-tier"
 			minimumTier={plan?.minimumTier ?? 0}
-			feature="Equipment generation"
+			feature={t('newItem.feature')}
 		/>
 		{#if rec && !rigReady(rec)}<p class="notice small">
-				<TriangleAlert size={16} /><span
-					>Set up this character to use skeleton-posed equipment, oversize weapons and new moves.</span
-				><button
+				<TriangleAlert size={16} /><span>{t('newItem.needsSetup')}</span><button
 					class="bu-action btn small"
 					data-variant="outline"
-					onclick={() => (ui.sheet = 'setup')}>Set up character</button
+					onclick={() => (ui.sheet = 'setup')}>{t('setup.title')}</button
 				>
 			</p>{/if}
 		{#if planned.error}<p class="notice warn small" role="alert">
-				<TriangleAlert size={16} /><span
-					>This character’s frames cannot use the item generator: {planned.error}</span
-				>
+				<TriangleAlert size={16} /><span>{t('newItem.planError', { error: planned.error })}</span>
 			</p>{/if}
 		<div class="form">
 			<p class="muted small">
-				Make the standing design first. Generate this item for individual moves from its details
-				after you like the result.
+				{t('newItem.standingFirst')}
 			</p>
 			<div class="field">
-				<span class="label" id="where">Where does it go?</span>
+				<span class="label" id="where">{t('newItem.where')}</span>
 				<div class="chips" role="radiogroup" aria-labelledby="where">
 					{#each offered as x (x.key)}
 						<button
@@ -258,32 +264,33 @@
 							role="radio"
 							aria-checked={group === x.key}
 							tabindex={group === x.key ? 0 : -1}
-							onclick={() => (group = x.key)}><GroupIcon group={x.key} size={14} />{x.label}</button
+							onclick={() => (group = x.key)}
+							><GroupIcon group={x.key} size={14} />{displayMessage(
+								slotLabelMessage(m, x.key)
+							)}</button
 						>
 					{/each}
 				</div>
 				{#if all.length > offered.length}<button
 						class="bu-action btn plain link small more-categories"
 						data-variant="quiet"
-						onclick={() => (more = true)}>More categories</button
+						onclick={() => (more = true)}>{t('newItem.moreCategories')}</button
 					>{/if}
 				{#if !shown.some((c) => c.key === group)}<p class="faint small">
-						Not shown in Wardrobe yet. Making an item shows it.
+						{t('newItem.notShown')}
 					</p>{/if}
-				{#if clothesNote}<p class="faint small">{clothesNote}</p>{/if}
+				{#if clothesNote}<p class="faint small">{displayMessage(clothesNote)}</p>{/if}
 				{#if side}<p class="faint small">
-						{side === 'right'
-							? 'Held in the character’s right hand.'
-							: 'Held in the character’s left hand.'}
+						{side === 'right' ? t('newItem.rightHand') : t('newItem.leftHand')}
 					</p>
 					{#if handNote}<p class="faint small">
 							{handNote}
 						</p>{/if}{/if}
 				<!-- Always present and only filled while the hint shows: announced once, not on every keystroke. -->
-				<span class="sr" aria-live="polite">{offHandHint ? OFF_HAND_HINT : ''}</span>
+				<span class="sr" aria-live="polite">{offHandHint ? t('newItem.offHandHint') : ''}</span>
 			</div>
 			<label class="field">
-				<span class="label">What is it?</span>
+				<span class="label">{t('newItem.what')}</span>
 				<textarea
 					class="bu-input input"
 					rows="2"
@@ -291,31 +298,37 @@
 					onkeydown={promptKeydown}
 					aria-keyshortcuts="Control+Enter Meta+Enter"
 					aria-describedby="item-submit-hint"
-					placeholder="e.g. {g.ideas[0]?.label ?? 'a leather hat'}"
+					placeholder={t('newItem.placeholder', {
+						idea: g.ideas[0] ? displayMessage(g.ideas[0].caption) : t('newItem.defaultIdea')
+					})}
 					maxlength="300"></textarea>
 			</label>
-			<p class="faint small" id="item-submit-hint">Ctrl+Enter or Cmd+Enter to make the item.</p>
+			<p class="faint small" id="item-submit-hint">{t('newItem.shortcut')}</p>
 			{#if offHandHint}<p class="notice small">
-					<Info size={16} /><span>{OFF_HAND_HINT}</span><button
+					<Info size={16} /><span>{t('newItem.offHandHint')}</span><button
 						class="bu-action btn sm"
 						data-variant="outline"
-						onclick={() => (group = 'off_hand')}>Use Off hand</button
+						onclick={() => (group = 'off_hand')}>{t('newItem.useOffHand')}</button
 					>
 				</p>{/if}
-			<div class="chips" aria-label="Ideas">
+			<div class="chips" aria-label={t('newItem.ideas')}>
 				{#each g.ideas as idea (idea.label)}
-					<button class="chip" onclick={() => (prompt = idea.label)}>{idea.label}</button>
+					<button class="chip" onclick={() => (prompt = idea.label)}
+						>{displayMessage(idea.caption)}</button
+					>
 				{/each}
 			</div>
 			<div class="field">
-				<span class="label">Color hint <span class="faint">(optional)</span></span>
-				<div class="dots" role="radiogroup" aria-label="Color hint">
+				<span class="label"
+					>{t('newItem.colorHint')} <span class="faint">{t('common.optional')}</span></span
+				>
+				<div class="dots" role="radiogroup" aria-label={t('newItem.colorHint')}>
 					<button
 						class="dot-swatch none"
 						role="radio"
 						aria-checked={!color}
 						tabindex={!color ? 0 : -1}
-						onclick={() => (color = '')}>Any</button
+						onclick={() => (color = '')}>{t('newItem.anyColor')}</button
 					>
 					{#each Object.entries(SWATCHES) as [n, hex] (n)}
 						<button
@@ -323,8 +336,8 @@
 							role="radio"
 							aria-checked={color === n}
 							tabindex={color === n ? 0 : -1}
-							aria-label={n}
-							title={n}
+							aria-label={displaySwatch(n)}
+							title={displaySwatch(n)}
 							style:background={hex}
 							onclick={() => (color = n)}
 						></button>
@@ -332,38 +345,46 @@
 				</div>
 			</div>
 			<p class="faint small">
-				Consistency checks run automatically. If issues are detected, you choose whether to keep the
-				item or request a paid retry. No quality retries or repairs run without your request.
-				PixelLab may bill dollars and queue time varies.
+				{t('newItem.checksNote')}
 			</p>
 			<details class="disclosure" open={!!method}>
-				<summary><ChevronRight size={14} />Advanced</summary>
+				<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
 				<div>
 					<label class="field"
-						><span class="label small">Name</span><input
+						><span class="label small">{t('common.name')}</span><input
 							class="bu-input input"
 							bind:value={name}
-							placeholder={itemName}
+							placeholder={suggestedName || t('newItem.title')}
 						/></label
 					>
 					{#if automatic === 'skel'}
 						<label class="field"
-							><span class="label small">Animation method</span>
+							><span class="label small">{t('newItem.method')}</span>
 							<span class="select-wrap boxed"
 								><select class="bu-select select" bind:value={method}
-									><option value="">Automatic ({METHODS[automatic].label})</option
+									><option value=""
+										>{t('newItem.automatic', { method: t(METHODS[automatic].label) })}</option
 									>{#each Object.entries(METHODS) as [id, x] (id)}<option value={id}
-											>{x.label}</option
+											>{t(x.label)}</option
 										>{/each}</select
 								><ChevronDown size={12} /></span
 							>
 						</label>
-						<p class="faint small">{METHODS[method || automatic].help}</p>
+						<p class="faint small">{t(METHODS[method || automatic].help)}</p>
 					{/if}
 					{#if plan}<p class="faint small">
-							{plan.calls} PixelLab calls · {plan.cells} frames · {itemRoute.label}{plan.cell
-								? ` · ${plan.cell} px canvas so long weapons are never cut off`
-								: ''}. Each planned batch runs once. Failed checks wait for your review.
+							{plan.cell
+								? t('newItem.planCanvas', {
+										calls: formatNumber(plan.calls, { useGrouping: false }),
+										cells: formatNumber(plan.cells, { useGrouping: false }),
+										route: t('newItem.routeLabel'),
+										cell: formatNumber(plan.cell, { useGrouping: false })
+									})
+								: t('newItem.plan', {
+										calls: formatNumber(plan.calls, { useGrouping: false }),
+										cells: formatNumber(plan.cells, { useGrouping: false }),
+										route: t('newItem.routeLabel')
+									})}
 						</p>{/if}
 				</div>
 			</details>
