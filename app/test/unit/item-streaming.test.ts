@@ -201,7 +201,21 @@ test('standing artwork in a reactive draft slot supplies a thumbnail before any 
 	const { ctx, d, dressed } = await fixture(),
 		results: ItemResult[] = [];
 	ctx.rec.manifest.slots = ctx.rec.manifest.slots.filter((slot) => slot.id !== d.spec.slot);
-	d.spec.slotConfig = new Proxy({ ...slotOf(d.spec.slot), clips: new Proxy(['hair'], {}) }, {});
+	const slot = {
+		...slotOf(d.spec.slot),
+		hides: ['torso_inner'],
+		clips: ['neck'],
+		zOverrides: [{ layer: 'bg' as const, z: 4 }]
+	};
+	d.spec.slotConfig = new Proxy(
+		{
+			...slot,
+			hides: new Proxy(slot.hides, {}),
+			clips: new Proxy(slot.clips, {}),
+			zOverrides: new Proxy([new Proxy(slot.zOverrides[0], {})], {})
+		},
+		{}
+	);
 	const run = runItem(d, ctx, { result: (r) => results.push(r) });
 	await Promise.race([run, vi.waitFor(() => expect(q.order).toHaveLength(1))]);
 	await land(q.order[0].id, [dressed, dressed]);
@@ -220,7 +234,9 @@ test('standing artwork in a reactive draft slot supplies a thumbnail before any 
 	);
 	for (const pose of q.order.filter((o) => o.path === '/animate-with-skeleton-v3'))
 		await land(pose.id, Array(4).fill(dressed));
-	await run;
+	const completed = await run;
+	expect(completed?.cells).toHaveLength(8);
+	expect(completed?.preview?.manifest.slots.find((entry) => entry.id === slot.id)).toEqual(slot);
 });
 
 test('an item reference reserves the first frame and later batches reuse the first dressed body, not the concept output', async () => {
