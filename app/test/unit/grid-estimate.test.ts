@@ -1,5 +1,11 @@
 import { expect, test } from 'vitest';
-import { gridEstimate, packGrid, planGens, repairGridLayout } from '../../src/lib/items/items.ts';
+import {
+	gridEstimate,
+	packGrid,
+	planGens,
+	repairGridLayout,
+	repairGridPlan
+} from '../../src/lib/items/items.ts';
 import { requestTier } from '../../src/lib/pixellab/plans.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { moveEstimate } from '../../src/studio/create.ts';
@@ -105,6 +111,24 @@ test('a narrower packing replaces the qualified layout only when it is strictly 
 	expect(repairGridLayout({ w: 300, h: 200 }, 1, 0)).toMatchObject({ cols: 1 });
 	expect(repairGridLayout({ w: 80, h: 80 }, 1, 1)).toMatchObject({ w: 160, h: 80, cols: 2 });
 });
+
+test.each([
+	[64, [8], 1, 10],
+	[96, [3, 3, 2], 1, 30],
+	[128, [3, 3, 2], 1, 30],
+	[160, [8], 2, 25]
+] as const)(
+	'repair planning keeps complete %i px cells and a protected reference per request',
+	(size, counts, tier, gens) => {
+		const plan = repairGridPlan({ w: size, h: size }, 8, true);
+		expect(plan.map((batch) => batch.count)).toEqual(counts);
+		expect(plan.map((batch) => batch.tier)).toEqual(counts.map(() => tier));
+		expect(plan.reduce((total, batch) => total + batch.gens, 0)).toBe(gens);
+		expect(
+			plan.flatMap(({ start, count }) => Array.from({ length: count }, (_, index) => start + index))
+		).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+	}
+);
 
 test('move estimate prices each actual item canvas with only its matching direction reference', () => {
 	const dirs = ['south', 'east', 'north', 'west'],

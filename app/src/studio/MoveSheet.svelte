@@ -150,14 +150,20 @@
 	let adding = $state(false);
 	const progress = $derived(mine && !adding);
 	const busy = $derived(!!moving.spec && !moving.done);
-	// A save conflict leaves the paid frames in Activity: anchored and skeleton item moves can reattach them for free.
 	const savedItemFrames = $derived(
 		!!moving.spec &&
-			moving.spec.itemMethod !== 'grid' &&
 			!!moving.spec.itemsOnly &&
 			!moving.spec.replace &&
-			!moving.spec.itemReview &&
-			moving.error.startsWith(ITEM_MOVE_SAVE_CONFLICT)
+			(moving.spec.itemMethod === 'grid'
+				? !!moving.spec.itemReview &&
+					!moving.spec.reuseItemFrames &&
+					$queue.jobs.some(
+						(job) =>
+							job.activityScope === moving.spec?.activityScope &&
+							job.endpoint === '/inpaint-v3' &&
+							job.state === 'done'
+					)
+				: !moving.spec.itemReview && moving.error.startsWith(ITEM_MOVE_SAVE_CONFLICT))
 	);
 	const retryPlan = $derived(
 		moving.error && moving.spec

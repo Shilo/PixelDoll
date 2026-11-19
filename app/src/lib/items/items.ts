@@ -197,11 +197,18 @@ export function gridEstimate(
  * columns (closest to the qualified row). When GRID_COLS does not fit 512 px, another column count still may. Both paths have
  * repacked to reach Tier 1 since 218f448e and their results are checked for review; no matched test has qualified other
  * layouts for the new-item draft fallback, which stays on GRID_COLS (2026-11-07). */
-export function repairGridLayout(cell: { w: number; h: number }, cells: number, refs: number) {
+export function repairGridLayout(
+	cell: { w: number; h: number },
+	cells: number,
+	refs: number,
+	sideLimit = 512
+) {
 	validGrid(cell, cells, refs); // bound the column search: a zero or non-integer width would never end it (malformed records)
-	const tier = (l: { w: number; h: number }) =>
-		Math.max(l.w, l.h) <= INPAINT_TIER_ONE_SIDE ? 1 : 2;
-	const fits = (cols: number) => gridFits(cell, cells, refs, cols);
+	const tier = (l: { w: number; h: number }) => inpaintTier(l.w, l.h);
+	const fits = (cols: number) =>
+		gridFits(cell, cells, refs, cols) &&
+		cols * cell.w <= sideLimit &&
+		Math.ceil((cells + refs) / cols) * cell.h <= sideLimit;
 	const better = (
 		a: { w: number; h: number; gens: number },
 		b: { w: number; h: number; gens: number }
@@ -217,7 +224,7 @@ export function repairGridLayout(cell: { w: number; h: number }, cells: number, 
 		? { ...gridEstimate(cell, cells, refs), cols: GRID_COLS }
 		: undefined;
 	const qualified = layout;
-	for (let cols = Math.floor(512 / cell.w); cols >= 1; cols--) {
+	for (let cols = Math.floor(sideLimit / cell.w); cols >= 1; cols--) {
 		if (cols === GRID_COLS || !fits(cols)) continue;
 		const next = { ...gridEstimate(cell, cells, refs, cols), cols };
 		// Against the qualified layout only a strictly lower price or tier counts; among alternatives, the full order.
@@ -225,8 +232,29 @@ export function repairGridLayout(cell: { w: number; h: number }, cells: number, 
 			l.gens < qualified!.gens || (l.gens === qualified!.gens && tier(l) < tier(qualified!));
 		if (!layout || (layout === qualified ? cheaper(next) : better(next, layout))) layout = next;
 	}
-	if (!layout) return { ...gridEstimate(cell, cells, refs), cols: GRID_COLS }; // throws the canvas-bounds error
+	if (!layout)
+		throw new Error(
+			'This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.'
+		);
 	return layout;
+}
+
+export function repairGridPlan(
+	cell: { w: number; h: number },
+	frames: number,
+	preferTierOne = false
+) {
+	validGrid(cell, frames, 1);
+	const capacity = (side: number) => Math.floor(side / cell.w) * Math.floor(side / cell.h) - 1;
+	const side = preferTierOne && capacity(INPAINT_TIER_ONE_SIDE) > 0 ? INPAINT_TIER_ONE_SIDE : 512;
+	const limit = capacity(side);
+	if (limit < 1) throw new Error('The item frame and its reference cannot fit in one repair grid.');
+	return Array.from({ length: Math.ceil(frames / limit) }, (_, index) => {
+		const start = index * limit;
+		const count = Math.min(limit, frames - start);
+		const layout = repairGridLayout(cell, count, 1, side);
+		return { start, count, ...layout, tier: inpaintTier(layout.w, layout.h) };
+	});
 }
 /** Pack matching cells and occupancy masks row-major; nonzero mask px generate, null masks and unused cells stay protected. */
 export function packGrid(

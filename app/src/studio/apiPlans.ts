@@ -20,6 +20,7 @@ import { pickKey } from '../lib/image/chroma.ts';
 import {
 	gridEstimate,
 	repairGridLayout,
+	repairGridPlan,
 	frozenGrid,
 	planItem,
 	planAnchoredMove,
@@ -334,13 +335,18 @@ export function movePlan(
 		}
 		for (const direction of missingDirs) {
 			if (spec.itemMethod === 'grid') {
-				calls.push({
-					method: 'POST',
-					path: '/inpaint-v3',
-					label: `${item.name} ${direction} · repair equipment`,
-					generations: repairGridLayout(item.layers[0]?.cell ?? m.rig.cell, frames, 1).gens,
-					note: 'Edits only selected equipment frames with one protected matching-direction reference. The body remains unchanged; results are retained only when quality improves.'
-				});
+				for (const batch of repairGridPlan(
+					item.layers[0]?.cell ?? m.rig.cell,
+					frames,
+					spec.preferTierOneRepair
+				))
+					calls.push({
+						method: 'POST',
+						path: '/inpaint-v3',
+						label: `${item.name} ${direction} · repair equipment`,
+						generations: batch.gens,
+						note: `${batch.w}×${batch.h}, frames ${batch.start + 1}–${batch.start + batch.count}. Uses one protected matching-direction reference. The body remains unchanged. The full facing must pass quality checks before any frames are saved.`
+					});
 			} else
 				for (const batch of poseBatches(frames)) {
 					const cells = Array.from(
