@@ -1229,14 +1229,24 @@ test('studio demo: touch slot headers scroll before a hold and drag after arming
 	await page.clock.runFor(32);
 	await expect.poll(keys).toEqual(['hair', ...original.filter((key) => key !== 'hair')]);
 	await expect(page.locator('.slot-drag-preview')).not.toBeVisible();
+	const navigationScroll = await list.evaluateHandle((element) => {
+		const scroll = { ended: false };
+		element.addEventListener('scrollend', () => (scroll.ended = true), { once: true });
+		return scroll;
+	});
 	const navigation = (await railHead.boundingBox())!;
 	await touch('touchStart', [
 		{ x: navigation.x + 15, y: navigation.y + navigation.height / 2, id: 4 }
 	]);
 	await touch('touchEnd', []);
-	await page.clock.runFor(32);
 	await expect(railHead).toHaveAttribute('aria-current', 'true');
 	await expect(page.locator('#slot-menu')).not.toBeVisible();
+	await expect
+		.poll(() => navigationScroll.evaluate((scroll) => scroll.ended), {
+			message: 'Head navigation finishes scrolling before the hold'
+		})
+		.toBe(true);
+	await navigationScroll.dispose();
 	const holdRail = (await railHead.boundingBox())!;
 	const beforeHold = await keys();
 	await touch('touchStart', [{ x: holdRail.x + 15, y: holdRail.y + 20, id: 5 }]);
