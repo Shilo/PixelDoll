@@ -13,6 +13,7 @@
 	import Lazy from './Lazy.svelte';
 	import RenameSheet from './RenameSheet.svelte';
 	import DeleteSheet from './DeleteSheet.svelte';
+	import DirectionsSheet from './DirectionsSheet.svelte';
 	import { moveDirs } from '../lib/dress/dress.ts';
 	import {
 		COPY_GENERATION_OFF,
@@ -35,6 +36,7 @@
 		lastProject,
 		loadGens,
 		toast,
+		dismissToast,
 		resumeCreate,
 		resumeMove,
 		resumeSetup,
@@ -76,6 +78,9 @@
 		if (ui.sheet === 'gen' && (!genOf(ui.selected) || genOf(ui.selected)?.phase === 'running'))
 			ui.sheet = null;
 	});
+	$effect(() => {
+		if (experience.screen === 'studio' && ui.toast === previewNoticeDetails) untrack(dismissToast);
+	});
 
 	// once on mount (an $effect would re-run on every state it reads, e.g. the theme)
 	onMount(() => {
@@ -94,7 +99,7 @@
 			ui.welcome = false;
 		}
 		const off = initUi();
-		if (!workspaceCopy) toast(PREVIEW_NOTICE.description, PREVIEW_NOTICE);
+		if (!workspaceCopy) toast(previewNoticeDetails, PREVIEW_NOTICE);
 		void (async () => {
 			const listed = await refreshProjects();
 			const initial = lastProject();
@@ -314,6 +319,23 @@
 	const offline = $derived(!online || $queue.paused === 'offline');
 </script>
 
+{#snippet previewNoticeDetails()}
+	<div><strong class="preview-risk">{PREVIEW_NOTICE.risk}</strong></div>
+	{PREVIEW_NOTICE.description}
+	{#if store.project}
+		<button
+			class="bu-action btn sm preview-export"
+			data-variant="outline"
+			aria-label="Export sprites"
+			aria-haspopup="dialog"
+			onclick={() => {
+				dismissToast();
+				ui.sheet = 'export';
+			}}>Export</button
+		>
+	{/if}
+{/snippet}
+
 <svelte:window
 	onkeydown={onkey}
 	onpopstate={onpop}
@@ -352,6 +374,7 @@
 	{#if ui.sheet === 'workspaceExport' && !workspaceCopy}<Lazy load={parts.workspace} />{/if}
 	{#if !workspaceCopy && ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
+	{#if ui.sheet === 'directions'}<DirectionsSheet id={ui.directionProject} />{/if}
 	{#if ui.sheet === 'importZip' || (!workspaceCopy && ui.sheet === 'importPixelLab')}{#key ui.sheet}<Lazy
 				load={parts[ui.sheet]}
 				source={ui.sheet === 'importZip' ? 'device' : 'pixellab'}
@@ -371,3 +394,14 @@
 		>
 	{/if}
 </div>
+
+<style>
+	.preview-risk {
+		font-weight: 600;
+		text-wrap: pretty;
+	}
+	.preview-export {
+		display: block;
+		margin-top: 6px;
+	}
+</style>

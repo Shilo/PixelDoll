@@ -1,12 +1,20 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import Sheet from './Sheet.svelte';
+	import DirectionCompass from './DirectionCompass.svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import ApiPreview from './ApiPreview.svelte';
 	import { libraryPlan, characterZipPlan } from './apiPlans.ts';
 	import Sprite from './Sprite.svelte';
 	import { app } from '../lib/app.svelte.ts';
 	import { composeCell } from '../lib/compose/compose.ts';
+	import {
+		configureImportedDirections,
+		directionLabel,
+		directionProblem
+	} from '../lib/rig/directions.ts';
+	import { flipH, mirrorPartner } from '../lib/rig/mirror.ts';
+	import { DIRECTIONS, type DirectionName, type RigDirection } from '../lib/rig/rig.ts';
 	import {
 		characterId,
 		downloadCharacter,
@@ -45,6 +53,21 @@
 	let previewValid = $state(false),
 		nameInitialized = false;
 	let setupNext = $state(true);
+	let directionChoices = $state.raw<RigDirection[] | null>(null);
+	let facing = $state<DirectionName>('south');
+	const originalDirections = $derived(prepared?.project.manifest.rig.directions ?? []);
+	const originalIds = $derived(originalDirections.map(({ id }) => id));
+	const availableDirections = $derived(
+		DIRECTIONS.filter((dir) => {
+			const partner = mirrorPartner(dir);
+			return originalIds.includes(dir) || (partner && originalIds.includes(partner));
+		})
+	);
+	const directions = $derived(directionChoices ?? originalDirections);
+	const directionError = $derived(
+		prepared && directionChoices ? directionProblem(prepared.project, directions, 'import') : ''
+	);
+	const previewFacing = $derived(directions.find(({ id }) => id === facing) ?? directions[0]);
 	const needsSetup = $derived(
 		!!prepared && !rigReady({ manifest: prepared.project.manifest, ...prepared.extra })
 	);
@@ -84,17 +107,50 @@
 	});
 	const preview = $derived.by(() => {
 		const p = prepared?.project;
-		if (!p) return null;
-		const m = p.manifest,
-			dir = m.rig.directions.find((d) => d.id === 'south')?.id ?? m.rig.directions[0].id;
-		return composeCell(
+		if (!p || !previewFacing) return null;
+		const m = p.manifest;
+		const img = composeCell(
 			p,
 			m.presets[0]?.items ?? { body: m.rig.baseItem },
 			m.rig.animations[0].id,
-			dir,
+			directionChoices ? (previewFacing.mirrorOf ?? previewFacing.id) : previewFacing.id,
 			0
 		);
+		return directionChoices && previewFacing.mirrorOf ? flipH(img) : img;
 	});
+	function changeDirection(id: DirectionName, value: 'original' | 'mirror' | 'off') {
+		const previous = directions.filter((dir) => dir.id !== id);
+		const mirrorOf = mirrorPartner(id);
+		if (value === 'original') previous.push({ id });
+		if (value === 'mirror' && mirrorOf) previous.push({ id, mirrorOf });
+		previous.sort((first, second) => DIRECTIONS.indexOf(first.id) - DIRECTIONS.indexOf(second.id));
+		directionChoices =
+			originalDirections.length === previous.length &&
+			previous.every((dir, index) => dir.id === originalDirections[index].id && !dir.mirrorOf)
+				? null
+				: previous;
+		if (value !== 'off') facing = id;
+	}
+	function toggleDirection(id: DirectionName) {
+		changeDirection(
+			id,
+			directions.some((dir) => dir.id === id)
+				? 'off'
+				: originalIds.includes(id)
+					? 'original'
+					: 'mirror'
+		);
+	}
+	function toggleMirror(id: DirectionName) {
+		changeDirection(
+			id,
+			directions.find((dir) => dir.id === id)?.mirrorOf
+				? originalIds.includes(id)
+					? 'original'
+					: 'off'
+				: 'mirror'
+		);
+	}
 	$effect(() => {
 		if (source === 'pixellab' && app.key && !listed) {
 			listed = true;
@@ -103,6 +159,8 @@
 	});
 	function reset() {
 		prepared = null;
+		directionChoices = null;
+		facing = 'south';
 		previewValid = false;
 		nameInitialized = false;
 		bytes = null;
@@ -169,6 +227,10 @@
 		try {
 			const result = await readCharacterZip(data, selected, selection);
 			if (!alive) return;
+			if (prepared?.stateId !== result.stateId) {
+				directionChoices = null;
+				facing = 'south';
+			}
 			choices(result.states ?? [], result.stateId, selection);
 			prepared = result;
 			previewValid = true;
@@ -290,12 +352,18 @@
 		}
 	}
 	async function save() {
-		if (!prepared || !previewValid || busy) return;
+		if (!prepared || !previewValid || busy || directionError) return;
 		busy = true;
 		saving = true;
 		error = '';
 		try {
-			const projectId = await saveImportedCharacter(prepared, name);
+			const imported = directionChoices
+				? {
+						...prepared,
+						project: await configureImportedDirections(prepared.project, directionChoices)
+					}
+				: prepared;
+			const projectId = await saveImportedCharacter(imported, name);
 			await refreshProjects();
 			if (!alive) return;
 			await openProject(projectId);
@@ -566,8 +634,9 @@
 					Showing the last preview. Update your selections to continue.
 				</p>
 			{:else}<p class="muted">
-					{prepared.project.manifest.rig.directions.length} directions · {prepared.project.manifest
-						.rig.animations.length}
+					{directions.length}
+					{directions.length === 1 ? 'direction' : 'directions'} · {prepared.project.manifest.rig
+						.animations.length}
 					{prepared.project.manifest.rig.animations.length === 1 ? 'move' : 'moves'} · {prepared.project.manifest.items.filter(
 						(i) => i.slot !== 'body'
 					).length} separate {prepared.project.manifest.items.filter((i) => i.slot !== 'body')
@@ -586,6 +655,44 @@
 				disabled={busy}
 			/></label
 		>
+		{#if prepared.format === 'pixellab'}
+			<details>
+				<summary>Directions</summary>
+				<p class="muted small">
+					Use the arrows to keep or skip views. A mirror button flips the opposite view and replaces
+					any original artwork for that direction in this copy.
+				</p>
+				<DirectionCompass
+					label="Directions to import"
+					selected={directions.map(({ id }) => id)}
+					available={availableDirections}
+					mirrorSources={originalIds}
+					mirrors={Object.fromEntries(directions.map(({ id, mirrorOf }) => [id, mirrorOf]))}
+					disabled={busy}
+					ontoggle={toggleDirection}
+					onmirror={toggleMirror}
+				/>
+				<p class="sr" role="status">
+					Preview: {previewFacing ? directionLabel(previewFacing.id) : 'No directions selected'}
+				</p>
+				{#if previewFacing && directions.length > 1}<label class="field">
+						<span class="label">Preview direction</span>
+						<select
+							class="bu-input input"
+							value={previewFacing.id}
+							disabled={busy}
+							onchange={(event) => (facing = event.currentTarget.value as DirectionName)}
+						>
+							{#each directions as direction (direction.id)}<option value={direction.id}
+									>{directionLabel(direction.id)}</option
+								>{/each}
+						</select>
+					</label>{/if}
+			</details>
+		{/if}
+		{#if directionError}<p class="notice warn small" role="status">
+				<TriangleAlert size={16} /><span>{directionError}</span>
+			</p>{/if}
 		{#each prepared.warnings as warning (warning)}<p class="notice warn small">
 				<TriangleAlert size={16} /><span>{warning}</span>
 			</p>{/each}
@@ -611,7 +718,7 @@
 		<button
 			class="bu-action btn primary"
 			data-variant="primary"
-			disabled={!prepared || !previewValid || busy || !name.trim()}
+			disabled={!prepared || !previewValid || busy || !name.trim() || !!directionError}
 			onclick={save}><Download size={16} />{busy ? 'Working…' : 'Import character'}</button
 		>
 	{/snippet}

@@ -195,7 +195,12 @@
 			? (store.projects.find((p) => p.id === moving.projectId)?.name ?? 'that character')
 			: ''
 	);
-	const stepIx = $derived(MOVE_STEPS.findIndex((s) => s.id === moving.progress?.step));
+	const steps = $derived(
+		MOVE_STEPS.filter((step) =>
+			step.id === 'items' ? !!moving.spec?.items.length : !moving.spec?.itemsOnly
+		)
+	);
+	const stepIx = $derived(steps.findIndex((step) => step.id === moving.progress?.step));
 	const nice = (s: string) => moveLabel(s, options);
 	let recovery = $state<MeasurementRecoveryPlan | null>(null);
 	let recoveryError = $state('');
@@ -421,7 +426,9 @@
 				onclick={go}
 				>{busy ? 'Queue' : replacing ? 'Replace' : 'Add'}
 				{id ? nice(id) : 'move'}{replacing ? ' views' : ''}
-				<span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button
+				<span class="cost">
+					Est. {est ? Math.ceil(est.gens) : '–'} gens{est?.items ? ' with equipment' : ''}
+				</span></button
 			></span
 		>
 	{/if}
@@ -464,7 +471,7 @@
 					checks keep the previous item frames.
 				</p>{/if}
 			<ol class="steps-list">
-				{#each MOVE_STEPS as s, i (s.id)}
+				{#each steps as s, i (s.id)}
 					{@const done = moving.done || i < stepIx}
 					<li class:done class:now={!moving.done && i === stepIx}>
 						{#if done}<Check size={16} />{:else if i === stepIx && !moving.error}<span
@@ -682,8 +689,9 @@
 			{#if (unavailable.length || shared.items.length) && targetDirs.length}
 				<p class="faint small">
 					This list only shows equipment that can follow the body’s poses in every view being
-					generated. You can still wear shared copies. Open an item’s details to make frames for an
-					existing move or make a fitted copy for this character.
+					generated. Shared copies can still be worn in views where they have frames. To animate an
+					unfitted copy, make one for this character. Other items may offer animation for existing
+					moves in their details.
 				</p>
 			{/if}
 			<p class="faint small">

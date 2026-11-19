@@ -15,6 +15,7 @@
 	import ApiPeek from './ApiPeek.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
+	import PixelLabUsage from './PixelLabUsage.svelte';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
 	import { characterFacts, fmtNum } from './model.ts';
@@ -505,6 +506,16 @@
 				class="row-aside faint small num">{__APP_COMMIT__}</span
 			><ExternalLink size={16} /></a
 		>
+		<hr />
+		<a
+			class="row bu-action"
+			data-variant="quiet"
+			href="https://www.pixellab.ai/account"
+			target="_blank"
+			rel="noreferrer"
+		>
+			<PixelLabUsage />
+		</a>
 		<AffiliationNotice />
 	</div>
 </div>

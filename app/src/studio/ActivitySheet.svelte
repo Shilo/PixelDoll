@@ -1,11 +1,12 @@
 <script lang="ts">
 	import Sheet from './Sheet.svelte';
+	import PixelLabUsage from './PixelLabUsage.svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { balancePlan, cancelPlan, queuedPlan } from './apiPlans.ts';
 	import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
 	import { requestTier } from '../lib/pixellab/plans.ts';
-	import { fmtNum, unknownCostText } from './model.ts';
+	import { unknownCostText } from './model.ts';
 	import { ui, cleanUp, toast } from './state.svelte.ts';
 	async function clear() {
 		let n: Awaited<ReturnType<typeof cleanUp>>;
@@ -20,7 +21,7 @@
 			`Cleared ${n.jobs} finished job${n.jobs === 1 ? '' : 's'}${n.blobs ? ` and ${n.blobs} unused image${n.blobs === 1 ? '' : 's'}` : ''}. Jobs your drafts or a running create or move still use are kept.`
 		);
 	}
-	import { ChevronRight, CircleAlert, CircleCheck, Coins, RefreshCw } from './icons.ts';
+	import { ChevronRight, CircleAlert, CircleCheck, RefreshCw } from './icons.ts';
 
 	let now = $state(Date.now());
 	const balanceScope = crypto.randomUUID();
@@ -54,37 +55,32 @@
 
 <Sheet title="Activity" cancel="Done" onclose={() => (ui.sheet = null)}>
 	<div class="act-list">
-		<div class="field-row">
-			<span class="balance" style="display:flex;gap:6px;align-items:center"
-				><Coins size={16} />
-				{#if app.balance}<b class="num">{fmtNum(app.balance.subscription.generations)}</b> of {fmtNum(
-						app.balance.subscription.total
-					)} gens left{app.balance.credits.usd ? ` · $${app.balance.credits.usd.toFixed(2)}` : ''}
-				{:else if app.key}Balance unavailable{:else}Not connected{/if}</span
-			>
-			{#if app.key}<span class="api-action"
-					><ApiPeek
-						scope="balance-refresh"
-						label="Refresh balance"
-						plan={balancePlan()}
-						activityScope={balanceScope}
-					/><button
-						class="bu-action btn icon plain"
-						data-variant="quiet"
-						aria-label="Refresh balance"
-						onclick={() =>
-							refreshBalance({
-								activityScope: balanceScope,
-								label: 'Refresh balance',
-								background: false
-							})}><RefreshCw size={14} /></button
-					></span
-				>{:else}<button
-					class="bu-action btn sm"
-					data-variant="outline"
-					onclick={() => (ui.sheet = 'connect')}>Connect</button
-				>{/if}
-		</div>
+		<PixelLabUsage compact={false}>
+			{#snippet actions()}
+				{#if app.key}<span class="api-action"
+						><ApiPeek
+							scope="balance-refresh"
+							label="Refresh balance"
+							plan={balancePlan()}
+							activityScope={balanceScope}
+						/><button
+							class="bu-action btn icon plain"
+							data-variant="quiet"
+							aria-label="Refresh balance"
+							onclick={() =>
+								refreshBalance({
+									activityScope: balanceScope,
+									label: 'Refresh balance',
+									background: false
+								})}><RefreshCw size={14} /></button
+						></span
+					>{:else}<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						onclick={() => (ui.sheet = 'connect')}>Connect</button
+					>{/if}
+			{/snippet}
+		</PixelLabUsage>
 		<p class="faint small" data-testid="queue-capacity">
 			Up to {$queue.concurrency}
 			{$queue.concurrency === 1 ? 'job' : 'jobs'} at once.

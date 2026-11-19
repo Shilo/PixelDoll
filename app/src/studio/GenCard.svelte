@@ -284,7 +284,9 @@
 			<p class="faint small">
 				{spentUnknown || unsettledCost
 					? 'PixelLab did not report the full cost. Check your balance before retrying.'
-					: `PixelLab reported ${+spent.toFixed(2)} gens${spentUsd ? ` + $${spentUsd.toFixed(3)}` : ''} for this attempt.`}
+					: spent || spentUsd
+						? `PixelLab reported ${[spent ? `${+spent.toFixed(2)} gens` : '', spentUsd ? `$${spentUsd.toFixed(3)}` : ''].filter(Boolean).join(' + ')} for this attempt.`
+						: 'PixelLab reported no charge for this attempt.'}
 				Try again starts a new paid attempt.
 			</p>
 		{/if}

@@ -15,6 +15,7 @@ import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { assetUrl } from '../assets.ts';
 import { stableStringify } from '../image/hash.ts';
+import { retainSlotDirections } from '../items/slots.ts';
 
 export interface Outfit {
 	items: Preset['items'];
@@ -312,7 +313,11 @@ export async function saveDress(
 			items: { ...d.current.items, ...Object.fromEntries(newSlots) },
 			variants: { ...d.current.variants, ...extraVariants }
 		};
-		const cleaned = { ...d, materials, current, slots: merged(manifest.slots, manifest.items) };
+		const slots = retainSlotDirections(
+			merged(manifest.slots, manifest.items),
+			manifest.rig.directions
+		);
+		const cleaned = { ...d, materials, current, slots };
 		for (const preset of [...cleaned.presets, ...(current ? [current] : [])]) {
 			for (const slot of Object.keys(preset.items))
 				if (preset.items[slot] && !live.has(preset.items[slot]!)) preset.items[slot] = null;

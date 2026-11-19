@@ -1,6 +1,7 @@
 // Studio state: UI (size class, theme, tabs, sheets, playback), the open project + outfit with undo/redo and autosave,
 // item generations (drafts) and the create-character run. Pixel data lives in $state.raw (deep proxies over the manifest
 // made recolor/compose take seconds, B5); manifest edits bump doc.rev.
+import type { Snippet } from 'svelte';
 import {
 	applyDress,
 	dressOf,
@@ -13,6 +14,7 @@ import {
 	type Outfit
 } from '../lib/dress/project.ts';
 import { splitBase } from '../lib/dress/regions.ts';
+import { retainSlotDirections } from '../lib/items/slots.ts';
 import { keepThumbnails } from './experience/thumbnails.svelte.ts';
 import {
 	deriveMaterials,
@@ -168,6 +170,7 @@ export type SheetId =
 	| 'gen'
 	| 'move'
 	| 'rename'
+	| 'directions'
 	| 'importZip'
 	| 'importPixelLab'
 	| 'delete'
@@ -198,6 +201,7 @@ export const ui = $state({
 	slotTarget: null as string | null,
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
+	directionProject: '',
 	details: '', // the character the Details sheet is for
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		group: string;
@@ -213,7 +217,7 @@ export const ui = $state({
 	frame: 0,
 	zoom: 0, // device px per sprite px; 0 = fit
 	bg: 'checker' as 'checker' | 'solid',
-	toast: '',
+	toast: '' as string | Snippet,
 	toastTitle: '',
 	toastPending: false,
 	toastTone: 'info' as 'info' | 'success' | 'warning' | 'danger',
@@ -335,7 +339,7 @@ export function resumeToast(reason: 'pointer' | 'focus') {
 	if (!toastT) armToast();
 }
 /** A zero duration keeps the message until dismissed or replaced. Return false when an unresolved error takes priority. */
-export function toast(s: string, options: number | ToastOptions = 4000) {
+export function toast(s: string | Snippet, options: number | ToastOptions = 4000) {
 	const o: ToastOptions = typeof options === 'number' ? { duration: options } : options;
 	if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
 	stopToastTimer();
@@ -576,7 +580,9 @@ export async function refreshProjects(): Promise<boolean> {
 /** A saved character as the Studio shows it, read without opening it. */
 export async function readCharacter(id: string) {
 	const r = await openSource(id);
-	const split = await splitBase(r.project); // B15: shirt / shorts color regions on the base (idempotent; fixtures in memory)
+	const manifest = r.project.manifest;
+	const base = manifest.items.find(({ id }) => id === manifest.rig.baseItem);
+	const split = base?.regions === 'shirt-shorts' ? null : await splitBase(r.project);
 	deriveMaterials(r.project); // items without materials (new items, fresh fixtures)
 	return { r, split };
 }
@@ -599,7 +605,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 	try {
 		const { r, split } = await readCharacter(id);
 		if (request !== openRequest) return;
-		if (split.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
+		if (split?.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
 		if (request !== openRequest) return;
 		await flushSave(); // an edit made to the previous character while this one loaded lands before it is replaced
 		if (request !== openRequest) return;
@@ -700,6 +706,13 @@ export const lastProject = () => lsGet(K.last) ?? DEMO;
  *  cancel the open of the newly picked one. */
 const viewing = (id: string) => doc.id === id && (!opening || opening === id);
 
+export async function refreshCharacterDirections(id: string): Promise<boolean> {
+	const reload = viewing(id);
+	if (reload) await openProject(id, { quiet: true });
+	const listed = await refreshProjects();
+	return listed && (!reload || doc.id === id || !!opening);
+}
+
 // ---- undo/redo: snapshots of the dress state (outfit, colors, presets, layer order, hides) ----
 const snap = () =>
 	JSON.stringify(
@@ -717,7 +730,7 @@ function restore(e: UndoStep) {
 	const keep = busySlots(m),
 		from = e.from ? (JSON.parse(e.from) as Slot[]) : m.slots,
 		removed = from.filter((s) => !d.slots.some((x) => x.id === s.id));
-	d.slots = mergeSlotEdits(from, d.slots, m.slots, keep);
+	d.slots = retainSlotDirections(mergeSlotEdits(from, d.slots, m.slots, keep), m.rig.directions);
 	const kept = removed.filter((s) => keep.has(s.id) && d.slots.some((x) => x.id === s.id));
 	applyDress(m, d);
 	doc.items = { ...d.current!.items };
@@ -924,8 +937,7 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 }
 
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
-export function deletionBlocked(id = doc.id): string {
-	if (id.startsWith('fixture:')) return 'The bundled demo cannot be deleted.';
+function characterEditBlocked(action: 'delete' | 'change directions for'): string {
 	if (doc.loading || opening) return 'Wait for the character to finish loading.';
 	if (queue.role === 'follower')
 		return 'Manage characters in the other PixelDoll tab, or close it first.';
@@ -937,8 +949,27 @@ export function deletionBlocked(id = doc.id): string {
 		(moving.spec && !moving.done) ||
 		(settingUp.spec && !settingUp.done)
 	)
-		return 'Finish or dismiss pending generation work before deleting a character.';
+		return action === 'delete'
+			? 'Finish or dismiss pending generation work before deleting a character.'
+			: 'Finish or dismiss pending generation work before changing directions.';
 	return '';
+}
+
+export function deletionBlocked(id = doc.id): string {
+	return id.startsWith('fixture:')
+		? 'The bundled demo cannot be deleted.'
+		: characterEditBlocked('delete');
+}
+
+export function directionEditsBlocked(id: string): string {
+	if (!id.startsWith('rig-')) return 'Only saved characters can be edited.';
+	return (
+		characterEditBlocked('change directions for') ||
+		(!generationSettled() ? 'Wait for the current generation work to finish.' : '') ||
+		(gens.some((gen) => gen.draft.rigId === id)
+			? 'Keep or dismiss this character’s item drafts before changing directions.'
+			: '')
+	);
 }
 function generationSettled() {
 	return (

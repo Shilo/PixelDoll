@@ -1,5 +1,6 @@
 import {
 	bakedFrame,
+	cellImg,
 	equipped,
 	hiddenSlots,
 	layerFrame,
@@ -9,6 +10,7 @@ import {
 	type Frame
 } from '../../lib/compose/compose.ts';
 import type { Img } from '../../lib/image/png.ts';
+import { DEFAULT_MOVE } from '../../lib/rig/rig.ts';
 import type { DirectionName, Preset, Project } from '../../lib/store/manifest.ts';
 
 interface Pixels {
@@ -186,11 +188,15 @@ export function framePosition(
 export function standingFrame(project: Project, direction: DirectionName, body?: Frame): Frame {
 	const rig = project.manifest.rig;
 	const mirror = rig.directions.find((entry) => entry.id === direction)?.mirrorOf;
-	const reference = rig.rest?.[direction] ?? (mirror ? rig.rest?.[mirror] : undefined);
-	const image = reference && project.images.get(reference.image);
+	const authored = rig.rest?.[direction];
+	const own = authored?.registrationOnly ? undefined : authored;
+	const reference = own ?? (mirror ? rig.rest?.[mirror] : undefined);
+	const source = reference && project.images.get(reference.image);
+	const base = project.manifest.items.find(({ id }) => id === rig.baseItem)?.layers[0];
+	const image = source ?? (base ? cellImg(project, base, DEFAULT_MOVE, direction, 0) : null);
 	const pixels =
 		image && image.w === rig.cell.w && image.h === rig.cell.h ? paintedPixels(image) : null;
-	const flip = !rig.rest?.[direction] && !!mirror;
+	const flip = !!source && !own && !!mirror;
 	return pixels
 		? {
 				w: pixels.right - pixels.left,
