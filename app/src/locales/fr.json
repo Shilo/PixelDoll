@@ -147,10 +147,16 @@
 		"wearSomethingToChangeItsColors": "Portez un objet pour changer ses couleurs."
 	},
 	"connectSheet": {
-		"keyRejected": "PixelLab n’a pas accepté cette clé.",
-		"balanceError": "Impossible de joindre PixelLab : {reason}",
-		"connectedRememberedWithBalance": "Connexion établie, clé mémorisée sur cet appareil · générations restantes : {remaining} sur {total}.",
-		"connectedForTabWithBalance": "Connexion limitée à cet onglet · générations restantes : {remaining} sur {total}.",
+		"keyRejected": "PixelLab n’a pas accepté cette clé. Saisissez une nouvelle clé API pour vous reconnecter.",
+		"balanceError": "Impossible de joindre PixelLab. Réessayez de vous connecter.",
+		"reconnect": "Reconnecter PixelLab",
+		"titleReplace": "Remplacer la clé PixelLab",
+		"replaceKey": "Remplacer la clé",
+		"keepKey": "Conserver la clé actuelle",
+		"openAccount": "Ouvrir le compte PixelLab",
+		"connectionChanged": "La connexion a changé pendant la vérification. Réessayez.",
+		"replacementRejected": "PixelLab n’a pas accepté la nouvelle clé. La clé actuelle n’a pas été modifiée.",
+		"replacementUnverified": "Impossible de vérifier la nouvelle clé. La clé actuelle n’a pas été modifiée.",
 		"connectedRemembered": "Connexion établie, clé mémorisée sur cet appareil.",
 		"connectedForTab": "Connexion limitée à cet onglet.",
 		"thisGeneration": "Cette génération",
@@ -501,7 +507,6 @@
 		"anApproximateCutoutMayHideClothingOr": "Découpe approximative. Peut masquer des vêtements ou laisser de petits fragments.",
 		"otherTab": "Autre onglet",
 		"updateToVVersion": "Mettre à jour vers v{version}",
-		"keyNotAccepted": "Clé refusée",
 		"pixelLabAccount": "Compte PixelLab",
 		"lightMode": "Mode clair",
 		"darkMode": "Mode sombre",
@@ -1388,6 +1393,9 @@
 		"recommended": "Cette fonctionnalité est disponible avec votre forfait : {feature}. Un forfait Tier {tier} ou supérieur est recommandé."
 	},
 	"usage": {
+		"generations": "Générations",
+		"refreshing": "Actualisation du solde…",
+		"loadFailed": "Impossible de charger les données d’utilisation de PixelLab. Essayez d’actualiser le solde.",
 		"title": "Utilisation de PixelLab",
 		"used": "Utilisation : {percent}",
 		"notConnected": "Aucune connexion à PixelLab",

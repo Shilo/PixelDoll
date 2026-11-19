@@ -147,10 +147,16 @@
 		"wearSomethingToChangeItsColors": "色を変えるには、何かを装備してください。"
 	},
 	"connectSheet": {
-		"keyRejected": "PixelLabがこのキーを受け付けませんでした。",
-		"balanceError": "PixelLabに接続できませんでした：{reason}",
-		"connectedRememberedWithBalance": "接続済み。キーはこのデバイスに記憶しました。残り{remaining}/{total}回。",
-		"connectedForTabWithBalance": "このタブで接続済みです。残り{remaining}/{total}回。",
+		"keyRejected": "PixelLabがこのキーを受け付けませんでした。再接続するには、新しいAPIキーを入力してください。",
+		"balanceError": "PixelLabに接続できませんでした。もう一度お試しください。",
+		"reconnect": "PixelLabに再接続",
+		"titleReplace": "PixelLabキーを変更",
+		"replaceKey": "キーを変更",
+		"keepKey": "現在のキーを保持",
+		"openAccount": "PixelLabアカウントを開く",
+		"connectionChanged": "確認中に接続が変更されました。もう一度お試しください。",
+		"replacementRejected": "PixelLabが新しいキーを受け付けませんでした。現在のキーは変更されていません。",
+		"replacementUnverified": "新しいキーを確認できませんでした。現在のキーは変更されていません。",
 		"connectedRemembered": "接続済みです。キーはこのデバイスに記憶しました。",
 		"connectedForTab": "このタブで接続済みです。",
 		"thisGeneration": "今回の生成",
@@ -486,7 +492,6 @@
 		"anApproximateCutoutMayHideClothingOr": "簡易的な切り抜きです。服の一部が隠れたり、切り残しが出たりする場合があります。",
 		"otherTab": "別のタブ",
 		"updateToVVersion": "v{version}に更新",
-		"keyNotAccepted": "キーが受け付けられませんでした",
 		"pixelLabAccount": "PixelLabアカウント",
 		"lightMode": "ライトモード",
 		"darkMode": "ダークモード",
@@ -1337,6 +1342,9 @@
 		"recommended": "{feature}はお使いのプランで利用できます。Tier {tier}以上を推奨します。"
 	},
 	"usage": {
+		"generations": "生成回数",
+		"refreshing": "残高を更新中…",
+		"loadFailed": "PixelLabの利用状況を読み込めませんでした。残高を更新してください。",
 		"title": "PixelLabの使用状況",
 		"used": "{percent}使用済み",
 		"notConnected": "未接続",

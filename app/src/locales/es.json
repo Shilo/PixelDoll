@@ -147,10 +147,16 @@
 		"wearSomethingToChangeItsColors": "Ponte algo para cambiar sus colores."
 	},
 	"connectSheet": {
-		"keyRejected": "PixelLab no aceptó esta clave.",
-		"balanceError": "No se pudo conectar con PixelLab: {reason}",
-		"connectedRememberedWithBalance": "Conectado · Clave guardada en este dispositivo · Te quedan {remaining} de {total} generaciones.",
-		"connectedForTabWithBalance": "Conectado solo en esta pestaña · Te quedan {remaining} de {total} generaciones.",
+		"keyRejected": "PixelLab no aceptó esta clave. Ingresa una nueva clave de API para volver a conectarte.",
+		"balanceError": "No se pudo contactar con PixelLab. Intenta conectarte de nuevo.",
+		"reconnect": "Volver a conectar PixelLab",
+		"titleReplace": "Reemplazar la clave de PixelLab",
+		"replaceKey": "Reemplazar clave",
+		"keepKey": "Conservar la clave actual",
+		"openAccount": "Abrir la cuenta de PixelLab",
+		"connectionChanged": "La conexión cambió durante la verificación. Inténtalo de nuevo.",
+		"replacementRejected": "PixelLab no aceptó la nueva clave. La clave actual no cambió.",
+		"replacementUnverified": "No se pudo verificar la nueva clave. La clave actual no cambió.",
 		"connectedRemembered": "Conectado · Clave guardada en este dispositivo.",
 		"connectedForTab": "Conectado solo en esta pestaña.",
 		"thisGeneration": "Esta generación",
@@ -504,7 +510,6 @@
 		"anApproximateCutoutMayHideClothingOr": "Un recorte aproximado. Puede ocultar ropa o dejar pequeños fragmentos.",
 		"otherTab": "Otra pestaña",
 		"updateToVVersion": "Actualizar a v{version}",
-		"keyNotAccepted": "Clave no aceptada",
 		"pixelLabAccount": "Cuenta de PixelLab",
 		"lightMode": "Modo claro",
 		"darkMode": "Modo oscuro",
@@ -1394,6 +1399,9 @@
 		"recommended": "{feature} está disponible en tu plan. Se recomienda Tier {tier} o superior."
 	},
 	"usage": {
+		"generations": "Generaciones",
+		"refreshing": "Actualizando saldo…",
+		"loadFailed": "No se pudieron cargar los datos de uso de PixelLab. Intenta actualizar el saldo.",
 		"title": "Uso de PixelLab",
 		"used": "{percent} usado",
 		"notConnected": "Sin conectar",

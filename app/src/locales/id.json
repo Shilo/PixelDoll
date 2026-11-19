@@ -147,10 +147,16 @@
 		"wearSomethingToChangeItsColors": "Kenakan item untuk mengubah warnanya."
 	},
 	"connectSheet": {
-		"keyRejected": "PixelLab tidak menerima kunci ini.",
-		"balanceError": "Tidak dapat terhubung ke PixelLab: {reason}",
-		"connectedRememberedWithBalance": "Terhubung dan kunci tersimpan di perangkat ini · Sisa {remaining} dari {total} generasi.",
-		"connectedForTabWithBalance": "Terhubung untuk tab ini · Sisa {remaining} dari {total} generasi.",
+		"keyRejected": "PixelLab menolak kunci ini. Masukkan kunci API baru untuk menyambungkan kembali.",
+		"balanceError": "Tidak dapat menghubungi PixelLab. Coba sambungkan lagi.",
+		"reconnect": "Sambungkan kembali PixelLab",
+		"titleReplace": "Ganti kunci PixelLab",
+		"replaceKey": "Ganti kunci",
+		"keepKey": "Pertahankan kunci saat ini",
+		"openAccount": "Buka akun PixelLab",
+		"connectionChanged": "Koneksi berubah saat pemeriksaan. Coba lagi.",
+		"replacementRejected": "PixelLab menolak kunci baru. Kunci saat ini tidak diubah.",
+		"replacementUnverified": "Kunci baru tidak dapat diverifikasi. Kunci saat ini tidak diubah.",
 		"connectedRemembered": "Terhubung dan kunci tersimpan di perangkat ini.",
 		"connectedForTab": "Terhubung untuk tab ini.",
 		"thisGeneration": "Generasi ini",
@@ -483,7 +489,6 @@
 		"anApproximateCutoutMayHideClothingOr": "Potongan ini hanya perkiraan. Pakaian bisa ikut tersembunyi atau menyisakan serpihan kecil.",
 		"otherTab": "Tab lain",
 		"updateToVVersion": "Perbarui ke v{version}",
-		"keyNotAccepted": "Kunci tidak diterima",
 		"pixelLabAccount": "Akun PixelLab",
 		"lightMode": "Mode terang",
 		"darkMode": "Mode gelap",
@@ -1332,6 +1337,9 @@
 		"recommended": "{feature} tersedia dalam paket Anda. Tier {tier} atau lebih tinggi disarankan."
 	},
 	"usage": {
+		"generations": "Generasi",
+		"refreshing": "Memperbarui saldo…",
+		"loadFailed": "Data penggunaan dari PixelLab tidak dapat dimuat. Coba perbarui saldo.",
 		"title": "Penggunaan PixelLab",
 		"used": "{percent} terpakai",
 		"notConnected": "Tidak terhubung",

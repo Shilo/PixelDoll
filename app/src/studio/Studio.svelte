@@ -215,15 +215,16 @@
 			observedFinished = new Set(finished.map((job) => job.id));
 			return added;
 		});
-		if (app.key)
-			void refreshBalance({
+		untrack(() =>
+			refreshBalance({
 				background: true,
 				label: 'Update account balance',
 				relatedQueueIds: fresh.map((job) => job.id),
 				relatedScopes: [
 					...new Set(fresh.flatMap((job) => (job.activityScope ? [job.activityScope] : [])))
 				]
-			});
+			})
+		);
 	});
 	// the page title shows running work
 	const running = $derived(

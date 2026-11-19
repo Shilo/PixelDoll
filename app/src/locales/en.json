@@ -147,10 +147,16 @@
 		"wearSomethingToChangeItsColors": "Wear something to change its colors."
 	},
 	"connectSheet": {
-		"keyRejected": "PixelLab didn’t accept this key.",
-		"balanceError": "Couldn’t reach PixelLab: {reason}",
-		"connectedRememberedWithBalance": "Connected and remembered on this device · {remaining} of {total} gens left.",
-		"connectedForTabWithBalance": "Connected for this tab · {remaining} of {total} gens left.",
+		"keyRejected": "PixelLab didn’t accept this key. Enter a new API key to reconnect.",
+		"balanceError": "Couldn’t reach PixelLab. Try connecting again.",
+		"reconnect": "Reconnect PixelLab",
+		"titleReplace": "Replace PixelLab key",
+		"replaceKey": "Replace key",
+		"keepKey": "Keep current key",
+		"openAccount": "Open PixelLab account",
+		"connectionChanged": "The connection changed while checking. Try again.",
+		"replacementRejected": "PixelLab didn’t accept the new key. Current key was not changed.",
+		"replacementUnverified": "Couldn’t verify the new key. Current key was not changed.",
 		"connectedRemembered": "Connected and remembered on this device.",
 		"connectedForTab": "Connected for this tab.",
 		"thisGeneration": "This generation",
@@ -498,7 +504,6 @@
 		"anApproximateCutoutMayHideClothingOr": "An approximate cutout. May hide clothing or leave small fragments.",
 		"otherTab": "Other tab",
 		"updateToVVersion": "Update to v{version}",
-		"keyNotAccepted": "Key not accepted",
 		"pixelLabAccount": "PixelLab account",
 		"lightMode": "Light mode",
 		"darkMode": "Dark mode",
@@ -1385,6 +1390,9 @@
 		"recommended": "{feature} is available on your plan. Tier {tier} or higher is recommended."
 	},
 	"usage": {
+		"generations": "Generations",
+		"refreshing": "Refreshing balance…",
+		"loadFailed": "Couldn’t load usage from PixelLab. Try refreshing.",
 		"title": "PixelLab usage",
 		"used": "{percent} used",
 		"notConnected": "Not connected",

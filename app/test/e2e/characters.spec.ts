@@ -103,6 +103,16 @@ test.describe('first Studio render in French', () => {
 			.toBeNull();
 		await page.reload();
 		await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+		await page.getByRole('button', { name: label, exact: true }).click();
+		const connectLabel = french.connectSheet.titleConnectPixelLab;
+		await page.getByRole('button', { name: connectLabel, exact: true }).click();
+		const connect = page.getByRole('dialog', { name: connectLabel, exact: true });
+		await expect(
+			connect.getByPlaceholder(french.connectSheet.placeholderPasteYourKey)
+		).toBeVisible();
+		await expect(
+			connect.getByRole('button', { name: french.common.cancel, exact: true })
+		).toBeVisible();
 	});
 });
 

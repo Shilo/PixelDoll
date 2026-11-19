@@ -147,10 +147,16 @@
 		"wearSomethingToChangeItsColors": "Equipe um item para mudar suas cores."
 	},
 	"connectSheet": {
-		"keyRejected": "O PixelLab não aceitou essa chave.",
-		"balanceError": "Não foi possível acessar o PixelLab: {reason}",
-		"connectedRememberedWithBalance": "Conexão ativa e chave salva neste dispositivo · restam {remaining} de {total} gerações.",
-		"connectedForTabWithBalance": "Conexão ativa nesta aba · restam {remaining} de {total} gerações.",
+		"keyRejected": "O PixelLab não aceitou esta chave. Insira uma nova chave de API para reconectar.",
+		"balanceError": "Não foi possível acessar o PixelLab. Tente conectar novamente.",
+		"reconnect": "Reconectar ao PixelLab",
+		"titleReplace": "Substituir a chave do PixelLab",
+		"replaceKey": "Substituir chave",
+		"keepKey": "Manter a chave atual",
+		"openAccount": "Abrir conta do PixelLab",
+		"connectionChanged": "A conexão mudou durante a verificação. Tente novamente.",
+		"replacementRejected": "O PixelLab não aceitou a nova chave. A chave atual não foi alterada.",
+		"replacementUnverified": "Não foi possível verificar a nova chave. A chave atual não foi alterada.",
 		"connectedRemembered": "Conexão ativa e chave salva neste dispositivo.",
 		"connectedForTab": "Conexão ativa nesta aba.",
 		"thisGeneration": "Esta geração",
@@ -501,7 +507,6 @@
 		"anApproximateCutoutMayHideClothingOr": "O recorte é aproximado. Pode ocultar roupas ou deixar pequenos fragmentos.",
 		"otherTab": "Outra aba",
 		"updateToVVersion": "Atualizar para v{version}",
-		"keyNotAccepted": "Chave não aceita",
 		"pixelLabAccount": "Conta do PixelLab",
 		"lightMode": "Modo claro",
 		"darkMode": "Modo escuro",
@@ -1402,6 +1407,9 @@
 		"recommended": "{feature} está disponível no seu plano. Recomendamos o Tier {tier} ou superior."
 	},
 	"usage": {
+		"generations": "Gerações",
+		"refreshing": "Atualizando saldo…",
+		"loadFailed": "Não foi possível carregar os dados de uso do PixelLab. Tente atualizar o saldo.",
 		"title": "Uso do PixelLab",
 		"used": "{percent} usado",
 		"notConnected": "Sem conexão com a conta",

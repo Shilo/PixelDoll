@@ -27,9 +27,6 @@ export function accountTier(balance: Balance | null): number | null {
 	return null;
 }
 
-export const FREE_PLAN_NOTICE =
-	'Your key is valid. Equipment generation needs PixelLab Tier 1 or higher. You can create characters and body moves, import, dress up, recolor and export on Free/Trial. Generation limits and costs still apply.';
-
 export const GENERATION_RECOMMENDATION = {
 	tier: 1,
 	reason:

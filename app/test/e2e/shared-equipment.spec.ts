@@ -330,8 +330,6 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await more.click();
 	await expect(page.getByRole('button', { name: 'Connect PixelLab', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
-	await expect(page.getByRole('link', { name: /^PixelLab usage/ })).toBeFocused();
-	await page.keyboard.press('Tab');
 	await expect(page.getByRole('button', { name: 'Language', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect(settings).toBeFocused();

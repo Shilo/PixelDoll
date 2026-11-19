@@ -147,10 +147,16 @@
 		"wearSomethingToChangeItsColors": "穿上装备后才能更改其颜色。"
 	},
 	"connectSheet": {
-		"keyRejected": "PixelLab 未接受此密钥。",
-		"balanceError": "无法连接 PixelLab：{reason}",
-		"connectedRememberedWithBalance": "已连接，并已在此设备上记住 · 剩余 {remaining}/{total} 次生成。",
-		"connectedForTabWithBalance": "已为此标签页连接 · 剩余 {remaining}/{total} 次生成。",
+		"keyRejected": "PixelLab 未接受此密钥。请输入新的 API 密钥以重新连接。",
+		"balanceError": "无法连接到 PixelLab。请重试。",
+		"reconnect": "重新连接 PixelLab",
+		"titleReplace": "更换 PixelLab 密钥",
+		"replaceKey": "更换密钥",
+		"keepKey": "保留当前密钥",
+		"openAccount": "打开 PixelLab 账户",
+		"connectionChanged": "验证过程中连接已变更。请重试。",
+		"replacementRejected": "PixelLab 未接受新密钥。当前密钥未更改。",
+		"replacementUnverified": "无法验证新密钥。当前密钥未更改。",
 		"connectedRemembered": "已连接，并已在此设备上记住。",
 		"connectedForTab": "已为此标签页连接。",
 		"thisGeneration": "本次生成",
@@ -481,7 +487,6 @@
 		"anApproximateCutoutMayHideClothingOr": "粗略裁切。可能遮住服装或留下小块碎片。",
 		"otherTab": "另一个标签页",
 		"updateToVVersion": "更新到 v{version}",
-		"keyNotAccepted": "密钥未被接受",
 		"pixelLabAccount": "PixelLab 账户",
 		"lightMode": "浅色模式",
 		"darkMode": "深色模式",
@@ -1320,6 +1325,9 @@
 		"recommended": "{feature}在你的套餐中可用。建议使用 Tier {tier} 或更高套餐。"
 	},
 	"usage": {
+		"generations": "生成次数",
+		"refreshing": "正在刷新余额…",
+		"loadFailed": "无法加载 PixelLab 用量。请尝试刷新余额。",
 		"title": "PixelLab 用量",
 		"used": "已用 {percent}",
 		"notConnected": "未连接",

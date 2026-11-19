@@ -147,10 +147,16 @@
 		"wearSomethingToChangeItsColors": "색상을 바꾸려면 아이템을 착용해 보세요."
 	},
 	"connectSheet": {
-		"keyRejected": "PixelLab이 이 키를 받아들이지 않았어요.",
-		"balanceError": "PixelLab에 연결하지 못했어요: {reason}",
-		"connectedRememberedWithBalance": "연결됐고 이 기기에 기억해 뒀어요 · 생성 {remaining}/{total}회 남음.",
-		"connectedForTabWithBalance": "이 탭에 연결됐어요 · 생성 {remaining}/{total}회 남음.",
+		"keyRejected": "PixelLab에서 이 키를 승인하지 않았어요. 새 API 키를 입력해 다시 연결하세요.",
+		"balanceError": "PixelLab에 연결할 수 없어요. 다시 연결해 보세요.",
+		"reconnect": "PixelLab 다시 연결",
+		"titleReplace": "PixelLab 키 교체",
+		"replaceKey": "키 교체",
+		"keepKey": "현재 키 유지",
+		"openAccount": "PixelLab 계정 열기",
+		"connectionChanged": "확인 중에 연결이 변경됐어요. 다시 시도하세요.",
+		"replacementRejected": "PixelLab에서 새 키를 승인하지 않았어요. 현재 키는 그대로예요.",
+		"replacementUnverified": "새 키를 확인할 수 없어요. 현재 키는 그대로예요.",
 		"connectedRemembered": "연결됐고 이 기기에 기억해 뒀어요.",
 		"connectedForTab": "이 탭에 연결됐어요.",
 		"thisGeneration": "이번 생성",
@@ -486,7 +492,6 @@
 		"anApproximateCutoutMayHideClothingOr": "대략적인 잘라내기예요. 의상이 가려지거나 작은 조각이 남을 수 있어요.",
 		"otherTab": "다른 탭",
 		"updateToVVersion": "v{version} 버전으로 업데이트",
-		"keyNotAccepted": "키가 거부됨",
 		"pixelLabAccount": "PixelLab 계정",
 		"lightMode": "라이트 모드",
 		"darkMode": "다크 모드",
@@ -1333,6 +1338,9 @@
 		"recommended": "{feature} 기능은 현재 요금제에서 사용할 수 있어요. Tier {tier} 이상을 권장해요."
 	},
 	"usage": {
+		"generations": "생성 횟수",
+		"refreshing": "잔액 새로 고치는 중…",
+		"loadFailed": "PixelLab 사용량을 불러올 수 없어요. 잔액을 새로 고쳐 보세요.",
 		"title": "PixelLab 사용량",
 		"used": "{percent} 사용",
 		"notConnected": "연결 안 됨",

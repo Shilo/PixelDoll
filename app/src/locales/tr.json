@@ -147,10 +147,16 @@
 		"wearSomethingToChangeItsColors": "Renklerini değiştirmek için karaktere bir eşya giydirin."
 	},
 	"connectSheet": {
-		"keyRejected": "PixelLab bu anahtarı kabul etmedi.",
-		"balanceError": "PixelLab hizmetine ulaşılamadı: {reason}",
-		"connectedRememberedWithBalance": "Bağlandı, anahtar bu cihazda hatırlanacak · Üretim hakkı: {remaining} / {total} kaldı.",
-		"connectedForTabWithBalance": "Bu sekmede bağlandı · Üretim hakkı: {remaining} / {total} kaldı.",
+		"keyRejected": "PixelLab bu anahtarı kabul etmedi. Yeniden bağlanmak için yeni bir API anahtarı girin.",
+		"balanceError": "PixelLab’a ulaşılamadı. Yeniden bağlanmayı deneyin.",
+		"reconnect": "PixelLab’a yeniden bağlan",
+		"titleReplace": "PixelLab anahtarını değiştir",
+		"replaceKey": "Anahtarı değiştir",
+		"keepKey": "Mevcut anahtarı koru",
+		"openAccount": "PixelLab hesabını aç",
+		"connectionChanged": "Kontrol sırasında bağlantı değişti. Tekrar deneyin.",
+		"replacementRejected": "PixelLab yeni anahtarı kabul etmedi. Mevcut anahtar değiştirilmedi.",
+		"replacementUnverified": "Yeni anahtar doğrulanamadı. Mevcut anahtar değiştirilmedi.",
 		"connectedRemembered": "Bağlandı, anahtar bu cihazda hatırlanacak.",
 		"connectedForTab": "Bu sekmede bağlandı.",
 		"thisGeneration": "Bu üretim",
@@ -501,7 +507,6 @@
 		"anApproximateCutoutMayHideClothingOr": "Kesim yaklaşık yapılır. Giysileri gizleyebilir veya küçük parçalar bırakabilir.",
 		"otherTab": "Diğer sekme",
 		"updateToVVersion": "v{version} sürümüne güncelleyin",
-		"keyNotAccepted": "Anahtar kabul edilmedi",
 		"pixelLabAccount": "PixelLab hesabı",
 		"lightMode": "Açık mod",
 		"darkMode": "Koyu mod",
@@ -1388,6 +1393,9 @@
 		"recommended": "{feature} planınızda kullanılabilir. Tier {tier} veya üzeri önerilir."
 	},
 	"usage": {
+		"generations": "Üretimler",
+		"refreshing": "Bakiye yenileniyor…",
+		"loadFailed": "PixelLab kullanım bilgileri yüklenemedi. Bakiyeyi yenilemeyi deneyin.",
 		"title": "PixelLab kullanımı",
 		"used": "{percent} kullanıldı",
 		"notConnected": "Bağlı değil",

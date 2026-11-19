@@ -147,10 +147,16 @@
 		"wearSomethingToChangeItsColors": "Leg einen Gegenstand an, um seine Farben zu ändern."
 	},
 	"connectSheet": {
-		"keyRejected": "PixelLab hat diesen Schlüssel nicht akzeptiert.",
-		"balanceError": "PixelLab war nicht erreichbar: {reason}",
-		"connectedRememberedWithBalance": "Verbunden; Schlüssel auf diesem Gerät gespeichert · noch {remaining} von {total} Generierungen.",
-		"connectedForTabWithBalance": "Für diesen Tab verbunden · noch {remaining} von {total} Generierungen.",
+		"keyRejected": "PixelLab hat diesen Schlüssel nicht akzeptiert. Gib einen neuen API-Schlüssel ein, um dich erneut zu verbinden.",
+		"balanceError": "PixelLab ist nicht erreichbar. Versuche erneut, eine Verbindung herzustellen.",
+		"reconnect": "Erneut mit PixelLab verbinden",
+		"titleReplace": "PixelLab-Schlüssel ersetzen",
+		"replaceKey": "Schlüssel ersetzen",
+		"keepKey": "Aktuellen Schlüssel behalten",
+		"openAccount": "PixelLab-Konto öffnen",
+		"connectionChanged": "Die Verbindung hat sich während der Prüfung geändert. Versuche es erneut.",
+		"replacementRejected": "PixelLab hat den neuen Schlüssel nicht akzeptiert. Der aktuelle Schlüssel wurde nicht geändert.",
+		"replacementUnverified": "Der neue Schlüssel konnte nicht geprüft werden. Der aktuelle Schlüssel wurde nicht geändert.",
 		"connectedRemembered": "Verbunden; Schlüssel auf diesem Gerät gespeichert.",
 		"connectedForTab": "Für diesen Tab verbunden.",
 		"thisGeneration": "Diese Generierung",
@@ -504,7 +510,6 @@
 		"anApproximateCutoutMayHideClothingOr": "Ungenauer Ausschnitt: Kleidung kann verdeckt werden, kleine Fragmente können sichtbar bleiben.",
 		"otherTab": "Anderer Tab",
 		"updateToVVersion": "Auf v{version} aktualisieren",
-		"keyNotAccepted": "Schlüssel nicht akzeptiert",
 		"pixelLabAccount": "PixelLab-Konto",
 		"lightMode": "Heller Modus",
 		"darkMode": "Dunkler Modus",
@@ -1394,6 +1399,9 @@
 		"recommended": "{feature} ist in deinem Tarif verfügbar. Empfohlen wird mindestens Tier {tier}."
 	},
 	"usage": {
+		"generations": "Generierungen",
+		"refreshing": "Kontostand wird aktualisiert…",
+		"loadFailed": "Die Nutzungsdaten von PixelLab konnten nicht geladen werden. Versuche, sie zu aktualisieren.",
 		"title": "PixelLab-Nutzung",
 		"used": "{percent} verbraucht",
 		"notConnected": "Nicht verbunden",

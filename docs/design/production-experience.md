@@ -4,8 +4,10 @@ Implemented on `feat/game-experience-rework`, 2026-10-23. This is the production
 
 ## Experience and preserved workflows
 
-The More menu starts with PixelLab account access and usage, followed by character actions (demo copy and phone shortcuts), view
-preferences (appearance and Wardrobe settings), generation tools (Activity and API calls), workspace actions, and app information (installation,
+The More menu starts with one PixelLab row: Connect PixelLab, Reconnect PixelLab for a rejected key, or the compact PixelLab usage meter. The meter shows used and total generations, a progress bar, percent used, and credits when the quota is exhausted. The chevron opens the local sheet. Connected users see the full usage meter, refresh, key management and the external account link; the key form is only shown for setup, reconnection or replacement. Activity keeps its detailed meter beside jobs. Workspace copies omit the PixelLab row because generation is disabled there.
+
+The PixelLab row is followed by character actions (demo copy and phone shortcuts), view
+preferences (Language, Wardrobe settings, and appearance), generation tools (Activity and API calls), workspace actions, and app information (installation,
 updates, and version). The version button opens a popover to view source code, open the displayed commit, or copy the
 version details for support. The row uses `-pre` for prereleases, no suffix for stable builds, and `-dev` for the
 Vite dev server regardless of release status. The dev commit is the checked-out revision and does not include local edits. The PixelLab affiliation
