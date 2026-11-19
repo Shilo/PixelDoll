@@ -4631,9 +4631,9 @@ test('Export discloses saved item and body review flags without blocking analysi
 	expect(requests).toEqual([]);
 });
 
-async function targetedRepairFixture(page: Page) {
+async function targetedRepairFixture(page: Page, keepMirrors = false) {
 	await page.locator('.world-actors').first().waitFor();
-	return page.evaluate(async () => {
+	return page.evaluate(async (keepMirrors) => {
 		const path = '/src/studio/state.svelte.ts',
 			s = await import(path),
 			dbPath = '/src/lib/store/db.ts',
@@ -4644,7 +4644,8 @@ async function targetedRepairFixture(page: Page) {
 		const rec = await db.get('projects', s.doc.id),
 			m = rec.manifest,
 			base = m.items.find((it: { id: string }) => it.id === m.rig.baseItem);
-		m.rig.directions = m.rig.directions.map((d: { id: string }) => ({ id: d.id }));
+		if (!keepMirrors)
+			m.rig.directions = m.rig.directions.map((d: { id: string }) => ({ id: d.id }));
 		for (const it of m.items) {
 			for (const layer of it.layers)
 				for (const dirs of Object.values(layer.cells ?? {}) as any[])
@@ -4711,7 +4712,7 @@ async function targetedRepairFixture(page: Page) {
 		await db.put('projects', s.doc.id, rec);
 		await s.openProject(s.doc.id);
 		return { itemId: sword.id, itemName: sword.name };
-	});
+	}, keepMirrors);
 }
 
 test('failed anchored moves offer cache-only recovery without an API key or a new request', async ({
@@ -5008,6 +5009,24 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	});
 	expect(posts).toEqual([]);
 	expect(errors).toEqual([]);
+});
+
+test('targeted move replacement names mirrored effects without offering a separate redraw', async ({
+	page
+}, info) => {
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page, true);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+	await page.getByRole('radio', { name: 'Walk · added', exact: true }).click();
+	const directions = page.getByRole('group', { name: 'Directions to redraw' });
+	await expect(directions.getByRole('button', { name: /West direction/ })).toHaveCount(0);
+	await expect(directions).toHaveAccessibleDescription(/Mirrored views also change: West/);
+	await directions.getByRole('button', { name: 'East direction', exact: true }).click();
+	await expect(directions).not.toHaveAccessibleDescription(/Mirrored views also change/);
 });
 
 test('partial missing gear and explicit item repair stay on the current move and view', async ({

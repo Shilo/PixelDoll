@@ -48,6 +48,7 @@
 		withKey
 	} from './state.svelte.ts';
 	import { bodyQualityNote, moveLabel } from './model.ts';
+	import { affectedMoveDirections } from './replaceMove.ts';
 	import { directionLabel } from './experience/movement.ts';
 	import { Check, ChevronRight, CircleAlert } from './icons.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -100,6 +101,14 @@
 	let selectedDirs = $state<DirectionName[]>(draft?.dirs ?? untrack(() => [...availableDirs]));
 	const targetDirs = $derived(
 		replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs
+	);
+	const affectedMirrors = $derived(
+		m
+			? affectedMoveDirections(m.rig, targetDirs)
+					.filter((dir) => !targetDirs.includes(dir))
+					.map(directionLabel)
+					.join(', ')
+			: ''
 	);
 	const describingReplacement = $derived(
 		replacing &&
@@ -317,7 +326,7 @@
 			items: chosen,
 			poseStyle: 'visible-side-v1' as const,
 			seed: 1 + Math.floor(Math.random() * 1_000_000),
-			...(replacing ? { dirs: [...targetDirs] } : {})
+			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] })
 		};
 		formDrafts.move = {
 			projectId,
@@ -671,8 +680,9 @@
 									: [...selectedDirs, dir])}
 						/>
 						<p class="notice warn small" id="move-redraw-warning">
-							Replacing these views hides equipment until new frames are made. Mirrors follow their
-							source. Other moves stay unchanged.
+							Replacing these views hides equipment until new frames are made.
+							{#if affectedMirrors}Mirrored views also change: {affectedMirrors}.{/if}
+							Other moves stay unchanged.
 						</p>
 					</div>
 				</div>
@@ -744,13 +754,9 @@
 									? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view'
 									: 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames
 							×
-							{dirs} directions{m?.rig.directions.some((d) => d.mirrorOf)
-								? ` (${m.rig.directions
-										.filter((d) => d.mirrorOf)
-										.map((d) => d.id.replaceAll('-', ' '))
-										.join(', ')} mirrored)`
-								: ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · body review notes
-							do not trigger redraws.
+							{dirs} directions{affectedMirrors ? ` (${affectedMirrors} mirrored)` : ''} · body ≈ {est?.body.toFixed(
+								1
+							)} gens, items {est?.items} gens · body review notes do not trigger redraws.
 						</p>
 					</div>
 				</details>{/if}

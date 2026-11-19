@@ -1062,6 +1062,7 @@ export interface MoveSpec {
 	replace?: boolean;
 	activityScope?: string;
 	dirs?: DirectionName[];
+	approvedDirs?: DirectionName[];
 	itemMethod?: 'grid' | 'anchor';
 	preferTierOneRepair?: true;
 	reuseItemFrames?: true;
@@ -1174,6 +1175,15 @@ export function moveDirections(m: Manifest, dirs?: readonly DirectionName[]): Di
 	if (!dirs.length || new Set(dirs).size !== dirs.length || dirs.some((d) => !all.includes(d)))
 		throw new Error('Choose one or more independently drawn directions for this move.');
 	return all.filter((d) => dirs.includes(d));
+}
+function approvedMoveDirections(m: Manifest, spec: MoveSpec): DirectionName[] {
+	const dirs = moveDirections(m, spec.dirs),
+		approved = spec.approvedDirs;
+	if (approved && (approved.length !== dirs.length || dirs.some((dir) => !approved.includes(dir))))
+		throw new Error(
+			'Character directions changed. Review the move’s current estimate before trying again. No generation was requested.'
+		);
+	return dirs;
 }
 interface BodyPaletteStats {
 	directions: DirectionName[];
@@ -1909,7 +1919,7 @@ export async function addMove(
 		}
 	};
 	assertReview(rec.manifest);
-	const dirs = moveDirections(rec.manifest, spec.dirs),
+	const dirs = approvedMoveDirections(rec.manifest, spec),
 		existing = rec.manifest.rig.animations.find((a) => a.id === spec.id);
 	// Saved-frame recovery only reattaches completed equipment requests, never a new or replaced body clip.
 	if (
@@ -2146,7 +2156,7 @@ async function addBodyClip(
 		throw new Error('This character changed since these joint checks were reviewed.');
 	const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
 	const receiptSpecHash = intent ? await recoverySpecHash(spec) : undefined;
-	const dirs = moveDirections(m, spec.dirs) as Direction[],
+	const dirs = approvedMoveDirections(m, spec) as Direction[],
 		affected = affectedMoveDirections(rig, dirs),
 		n = moveFrames(m, spec),
 		name = m.name;
