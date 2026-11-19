@@ -442,7 +442,7 @@
 		void sections;
 		void notShown.length;
 		void notShownOpen;
-		if (list && sharedHidden && !untrack(() => sections.some((slot) => slot.key === ui.group))) {
+		if (list && !untrack(() => sections.some((slot) => slot.key === ui.group))) {
 			if (suppressSpy) list.scrollTo({ top: list.scrollTop, behavior: 'instant' });
 			suppressSpy = false;
 			scrolled();

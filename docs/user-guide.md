@@ -155,7 +155,7 @@ A tile's icons sit in its top-left corner, up to four to a row, in this order, a
   with **Make one for <this character>…**.
 - **On the demo:** the demo never changes, so tapping a tile saves an editable copy of the demo on this device (or
   opens the copy made before) and wears the item there: "Opened your editable copy of the demo. …" Nothing is generated.
-  The demo's own items are offered to your other characters the same way.
+  Bundled demo items are hidden on saved characters by default. To browse them, turn on **More options → Wardrobe settings → Show demo items**. This preference is saved in your browser. The demo's own wardrobe and any items you have already copied stay unchanged.
 
 A copy with the same standing views as its source gets moves added later like any item (a missing-frames notice with a
 priced **Make it**). A free fit, or a copy whose standing views differ, has no standing design for this body, so its

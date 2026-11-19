@@ -6924,6 +6924,10 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	page
 }) => {
 	await editableCopy(page);
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: /^Wardrobe settings/ }).click();
+	await page.getByRole('switch', { name: 'Show demo items', exact: true }).check();
+	await page.keyboard.press('Escape');
 	await equipmentGroup(page, 'Head');
 	const head = section(page, 'Head');
 	// The character's own tile: once it is deleted, the demo's own Wizard hat is offered from the demo instead, in the

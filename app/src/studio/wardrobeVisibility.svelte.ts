@@ -1,10 +1,11 @@
 import { SvelteMap } from 'svelte/reactivity';
 
 const globalKey = 'pixeldoll.wardrobe.hideShared';
+const demoKey = 'pixeldoll.wardrobe.showDemo';
 const characterKey = (characterId: string) => `${globalKey}:${characterId}`;
 const choices = new SvelteMap<string, boolean>();
 
-function hidden(key: string) {
+function enabled(key: string) {
 	const choice = choices.get(key);
 	if (choice !== undefined) return choice;
 	try {
@@ -14,10 +15,10 @@ function hidden(key: string) {
 	}
 }
 
-function setHidden(key: string, hide: boolean) {
-	choices.set(key, hide);
+function setEnabled(key: string, value: boolean) {
+	choices.set(key, value);
 	try {
-		if (hide) localStorage.setItem(key, '1');
+		if (value) localStorage.setItem(key, '1');
 		else localStorage.removeItem(key);
 		return true;
 	} catch {
@@ -25,11 +26,13 @@ function setHidden(key: string, hide: boolean) {
 	}
 }
 
-export const sharedItemsHiddenForAll = () => hidden(globalKey);
-export const setSharedItemsHiddenForAll = (hide: boolean) => setHidden(globalKey, hide);
+export const demoItemsShown = () => enabled(demoKey);
+export const setDemoItemsShown = (show: boolean) => setEnabled(demoKey, show);
+export const sharedItemsHiddenForAll = () => enabled(globalKey);
+export const setSharedItemsHiddenForAll = (hide: boolean) => setEnabled(globalKey, hide);
 export const setSharedItemsHiddenForCharacter = (characterId: string, hide: boolean) =>
-	setHidden(characterKey(characterId), hide);
+	setEnabled(characterKey(characterId), hide);
 
 export function sharedItemsHidden(characterId: string) {
-	return sharedItemsHiddenForAll() || hidden(characterKey(characterId));
+	return sharedItemsHiddenForAll() || enabled(characterKey(characterId));
 }

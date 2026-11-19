@@ -7,13 +7,11 @@
 		label,
 		icon,
 		aside,
-		panelLabelledBy,
 		children
 	}: {
 		label: string;
 		icon?: Snippet;
 		aside?: Snippet;
-		panelLabelledBy?: string;
 		children: Snippet;
 	} = $props();
 	const panelId = $props.id();
@@ -46,12 +44,6 @@
 		<ChevronRight size={16} aria-hidden="true" />
 	{/if}
 </button>
-<div
-	id={panelId}
-	role="group"
-	aria-label={panelLabelledBy ? undefined : label}
-	aria-labelledby={panelLabelledBy}
-	hidden={!open}
->
+<div id={panelId} role="group" aria-label={label} hidden={!open}>
 	{@render children()}
 </div>

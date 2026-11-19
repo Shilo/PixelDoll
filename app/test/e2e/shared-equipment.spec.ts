@@ -7,6 +7,7 @@ import {
 	section
 } from './immersive-helpers.ts';
 import { test, expect, type Locator, type Page } from '@playwright/test';
+import type { Preset } from '../../src/lib/store/manifest.ts';
 
 test.beforeEach(async ({ context }) => {
 	await context.addInitScript(() => {
@@ -20,14 +21,14 @@ test.beforeEach(async ({ context }) => {
  *  wizard hat, "Stout" (a different body on the same canvas: its pivot moved) with a stout helmet, and "Giant" (no move in
  *  common: every move renamed, so its helmet can only show its standing pose) with a giant helmet. Then reopens the copy and
  *  returns its Head grid, where the other characters' items are the `.shared-tile`s after its own (each has a ⋮ beside it). */
-async function threeCharacters(page: Page) {
+async function threeCharacters(page: Page, leaveDemoHelmet = false) {
 	await openStudio(page, '/');
 	await newItem(page, 'Head');
 	await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
 	await page.keyboard.press('Escape');
 	await expect(page.getByRole('dialog')).toHaveCount(0);
-	await page.evaluate(async () => {
+	await page.evaluate(async (leaveDemoHelmet) => {
 		const request = indexedDB.open('pixeldoll', 1);
 		const database = await new Promise<IDBDatabase>((resolve, reject) => {
 			request.onsuccess = () => resolve(request.result);
@@ -37,7 +38,13 @@ async function threeCharacters(page: Page) {
 		const all = await new Promise<
 			{
 				id: string;
-				manifest?: { name: string; rig: { pivot: { x: number }; view?: string }; items: any[] };
+				manifest?: {
+					name: string;
+					rig: { pivot: { x: number }; view?: string };
+					items: any[];
+					presets: Preset[];
+				};
+				dress?: { current?: Pick<Preset, 'items' | 'variants'> };
 			}[]
 		>((resolve, reject) => {
 			const read = store.getAll();
@@ -69,18 +76,33 @@ async function threeCharacters(page: Page) {
 		}
 		const stout = clone('rig-stout', 'Stout', 'helmet_steel', 'Stout helmet', 'a stout helmet');
 		stout.manifest!.rig.pivot.x += 1;
-		for (const rec of [
-			clone('rig-twin', 'Twin', 'hat_wizard', 'Traveling wizard hat', 'a traveling wizard hat'),
-			stout,
-			giant
-		])
-			store.put(rec, rec.id);
+		const twin = clone(
+			'rig-twin',
+			'Twin',
+			'hat_wizard',
+			'Traveling wizard hat',
+			'a traveling wizard hat'
+		);
+		if (leaveDemoHelmet) {
+			const fallback = giant.manifest!.items.find((item) => item.id === 'helmet_steel');
+			fallback.prompt = copy.manifest!.items.find((item) => item.id === 'helmet_steel').prompt;
+			fallback.unfitted = [];
+			for (const record of [copy, twin]) {
+				const manifest = record.manifest!;
+				manifest.items = manifest.items.filter((item) => item.id !== 'helmet_steel');
+				for (const outfit of [...manifest.presets, record.dress?.current]) {
+					if (outfit?.items.head === 'helmet_steel') outfit.items.head = null;
+				}
+			}
+			store.put(copy, copy.id);
+		}
+		for (const rec of [twin, stout, giant]) store.put(rec, rec.id);
 		await new Promise<void>((resolve, reject) => {
 			store.transaction.oncomplete = () => resolve();
 			store.transaction.onerror = store.transaction.onabort = () => reject(store.transaction.error);
 		});
 		database.close();
-	});
+	}, leaveDemoHelmet);
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('Adventurer copy');
 	await equipmentGroup(page, 'Head');
@@ -90,6 +112,90 @@ async function threeCharacters(page: Page) {
 const ownTile = (page: Page) => page.locator('.bu-tile:not(.shared-tile)');
 /** Another character's item in a grid, by its name. */
 const sharedTile = (grid: Locator, name: string) => grid.locator('.shared-tile', { hasText: name });
+
+test('demo offers are opt-in and both visibility choices survive reload', async ({ page }) => {
+	const head = await threeCharacters(page, true);
+	const demoHelmet = sharedTile(head, 'Steel helmet');
+	const savedHelmet = sharedTile(head, 'Giant helmet');
+	const savedHat = sharedTile(head, 'Traveling wizard hat');
+	const ownHat = head.getByRole('button', { name: /^Wizard hat(,|$)/ }).and(ownTile(page));
+	const showDemo = page.getByRole('switch', { name: 'Show demo items', exact: true });
+	const hideAll = page.getByRole('switch', { name: 'Hide shared items for all characters' });
+	const openSettings = async () => {
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await page.getByRole('button', { name: /^Wardrobe settings/ }).click();
+	};
+	await expect(savedHat).toBeVisible();
+	await expect(savedHelmet).toBeVisible();
+	await expect(ownHat).toBeVisible();
+	await expect(demoHelmet).toHaveCount(0);
+	await openSettings();
+	await expect(showDemo).not.toBeChecked();
+	await showDemo.check();
+	await expect(demoHelmet).toBeVisible();
+	await expect(demoHelmet).toHaveAccessibleName(/free from Adventurer/i);
+	await expect(savedHelmet).toHaveCount(0);
+	await hideAll.check();
+	await expect(demoHelmet).toHaveCount(0);
+	await expect(savedHat).toHaveCount(0);
+	await expect(showDemo).toBeChecked();
+	await hideAll.uncheck();
+	await expect(demoHelmet).toBeVisible();
+
+	await page.evaluate(() => sessionStorage.setItem('pause-demo-fixture', '1'));
+	await page.addInitScript(() => {
+		if (!sessionStorage.getItem('pause-demo-fixture')) return;
+		sessionStorage.removeItem('pause-demo-fixture');
+		const release = new Promise<void>((resolve) => {
+			window.addEventListener('release-demo-fixture', () => resolve(), { once: true });
+		});
+		const fetchNormally = window.fetch;
+		window.fetch = async (...args) => {
+			if (new URL(String(args[0]), location.href).pathname.endsWith('/fixtures/s2/fixture.json')) {
+				document.documentElement.setAttribute('data-demo-fixture-paused', '');
+				await release;
+			}
+			return fetchNormally(...args);
+		};
+	});
+	await reloadStudio(page);
+	await expect(page.locator('html[data-demo-fixture-paused]')).toHaveCount(1);
+	await expect(savedHelmet).toBeVisible();
+	await expect(demoHelmet).toHaveCount(0);
+	await page.evaluate(() => window.dispatchEvent(new Event('release-demo-fixture')));
+	await expect(demoHelmet).toBeVisible();
+	await openSettings();
+	await expect(showDemo).toBeChecked();
+	await showDemo.uncheck();
+	await expect(demoHelmet).toHaveCount(0);
+	await expect(savedHelmet).toBeVisible();
+	await expect(savedHat).toBeVisible();
+	await expect(ownHat).toBeVisible();
+
+	await reloadStudio(page);
+	await equipmentGroup(page, 'Head');
+	await expect(savedHat).toBeVisible();
+	await expect(savedHelmet).toBeVisible();
+	await expect(demoHelmet).toHaveCount(0);
+	await openSettings();
+	await expect(showDemo).not.toBeChecked();
+	await showDemo.check();
+	await page.keyboard.press('Escape');
+	await demoHelmet.click();
+	const ownedHelmet = head.getByRole('button', { name: /^Steel helmet(,|$)/ }).and(ownTile(page));
+	await expect(ownedHelmet).toHaveAttribute('aria-pressed', 'true');
+	await openSettings();
+	await showDemo.uncheck();
+	await expect(ownedHelmet).toHaveAttribute('aria-pressed', 'true');
+	await expect(savedHat).toBeVisible();
+	await page.keyboard.press('Escape');
+	await page.evaluate(() => localStorage.setItem('pixeldoll.studio.project', 'fixture:s2'));
+	await reloadStudio(page);
+	await equipmentGroup(page, 'Head');
+	await expect(
+		ownTile(page).and(page.getByRole('button', { name: /^Steel helmet(,|$)/ }))
+	).toBeVisible();
+});
 
 test('a shared custom category appears before adoption and stays after wearing and reload', async ({
 	page
@@ -188,6 +294,8 @@ test('a shared custom category appears before adoption and stays after wearing a
 	);
 	await expect(sharedTiles).toHaveCount(0);
 	await allCharacters.focus();
+	await page.keyboard.press('Tab');
+	await expect(page.getByRole('switch', { name: 'Show demo items', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect(page.getByRole('button', { name: 'Activity', exact: true })).toBeFocused();
 	await page.keyboard.press('Escape');
