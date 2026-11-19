@@ -71,7 +71,7 @@
 				</div>
 			</div>
 		{/if}
-		<PixelLabUsage compact={false}>
+		<PixelLabUsage>
 			{#snippet actions()}
 				{#if app.key}<span class="api-action"
 						><ApiPeek

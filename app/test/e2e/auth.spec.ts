@@ -40,7 +40,7 @@ test('PixelLab notice opens PixelLab without leaving the app', async ({ page, co
 	await popup.close();
 });
 
-test('More and Activity share PixelLab usage and show credits once quota is used', async ({
+test('More opens local PixelLab usage and keeps the detailed meter in Activity', async ({
 	page
 }) => {
 	let remaining = 42;
@@ -55,15 +55,24 @@ test('More and Activity share PixelLab usage and show credits once quota is used
 	await page.addInitScript((key) => localStorage.setItem('pixellabApiKey', key), key);
 	await openStudio(page, '/');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	const usage = page.getByRole('link', { name: /PixelLab usage/ });
+	const usage = page.getByRole('button', { name: /^PixelLab usage/ });
 	const usageLabel = await usage.getByText('PixelLab usage', { exact: true }).boundingBox();
 	const versionLabel = await page.getByText(/^Version /).boundingBox();
 	expect(usageLabel?.x).toBe(versionLabel?.x);
-	await expect(usage).toContainText('58 / 100');
-	await expect(usage).toContainText('58% used');
-	await expect(usage).toHaveAttribute('href', 'https://www.pixellab.ai/account');
-	await expect(usage).toHaveAttribute('target', '_blank');
-	await expect(usage.getByText('$3.06 credits left')).toBeHidden();
+	await expect(usage).toContainText('42 gens left');
+	await expect(page.getByRole('link', { name: /PixelLab usage/ })).toHaveCount(0);
+	await expect(usage.locator('progress')).toHaveCount(0);
+	await usage.click();
+	const account = page.getByRole('dialog', { name: 'PixelLab usage', exact: true });
+	await expect(account.getByText('58 / 100', { exact: true })).toBeVisible();
+	await expect(account.getByText('58% used')).toBeVisible();
+	await expect(account.getByLabel('API key', { exact: true })).toHaveCount(0);
+	const external = account.getByRole('link', { name: 'Open PixelLab account' });
+	await expect(external).toHaveAttribute('href', 'https://www.pixellab.ai/account');
+	await expect(external).toHaveAttribute('target', '_blank');
+	await account.getByRole('button', { name: 'Done', exact: true }).click();
+	await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeFocused();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Activity', exact: true }).click();
 	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
 	await expect(activity.getByText('PixelLab usage', { exact: true })).toBeVisible();
@@ -86,8 +95,84 @@ test('More and Activity share PixelLab usage and show credits once quota is used
 	await expectInlineCredits(activity);
 	await activity.getByRole('button', { name: 'Done', exact: true }).click();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await expect(usage).toContainText('100 / 100');
-	await expectInlineCredits(usage);
+	await expect(usage).toContainText('0 gens left');
+	await usage.click();
+	await expect(account.getByText('100 / 100', { exact: true })).toBeVisible();
+	await expectInlineCredits(account);
+});
+
+test('PixelLab usage recovers from errors, replaces a key, reconnects, and forgets locally', async ({
+	page
+}) => {
+	let balanceStatus = 200;
+	await page.route('https://api.pixellab.ai/**', (route) => {
+		expect(route.request().method()).toBe('GET');
+		expect(new URL(route.request().url()).pathname).toBe('/v2/balance');
+		return route.fulfill({
+			status: balanceStatus,
+			json: {
+				subscription: { type: 'generations', status: 'active', generations: 42, total: 100 },
+				credits: { usd: 0 }
+			}
+		});
+	});
+	await openStudio(page, '/');
+	const openMore = () => page.getByRole('button', { name: 'More options', exact: true }).click();
+	const fillKey = async (dialog: ReturnType<typeof page.getByRole>, value: string) => {
+		await dialog.getByLabel('API key', { exact: true }).fill(value);
+		await dialog.getByRole('checkbox', { name: 'Remember on this device' }).check();
+	};
+	await openMore();
+	await page.getByRole('button', { name: 'Connect PixelLab', exact: true }).click();
+	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+	await fillKey(connect, key);
+	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+	await expect(connect).toBeHidden();
+	await openMore();
+	await page.getByRole('button', { name: 'PixelLab usage 42 gens left', exact: true }).click();
+	const account = page.getByRole('dialog', { name: 'PixelLab usage', exact: true });
+	const refresh = account.getByRole('button', { name: 'Refresh', exact: true });
+	balanceStatus = 503;
+	await refresh.click();
+	await expect(account.getByRole('status')).toContainText('Couldn’t load usage');
+	await expect(account.locator('progress')).toHaveCount(0);
+	await account.getByRole('button', { name: 'Done', exact: true }).click();
+	await openMore();
+	await page.getByRole('button', { name: 'PixelLab usage', exact: true }).click();
+	balanceStatus = 200;
+	await refresh.click();
+	await expect(account.getByText('58% used')).toBeVisible();
+	const replace = account.getByRole('button', { name: 'Replace key', exact: true });
+	await replace.click();
+	const replacement = page.getByRole('dialog', { name: 'Replace PixelLab key', exact: true });
+	await expect(replacement.getByLabel('API key', { exact: true })).toBeFocused();
+	await fillKey(replacement, 'synthetic-replacement');
+	await replacement.getByRole('button', { name: 'Keep current key' }).click();
+	await expect(replace).toBeFocused();
+	await replace.click();
+	await expect(replacement.getByLabel('API key', { exact: true })).toHaveValue('');
+	await fillKey(replacement, 'synthetic-replacement');
+	await replacement.getByRole('button', { name: 'Replace key', exact: true }).click();
+	await expect(account.getByText('58% used')).toBeVisible();
+	expect(await page.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBe(
+		'synthetic-replacement'
+	);
+	balanceStatus = 401;
+	await refresh.click();
+	const reconnect = page.getByRole('dialog', { name: 'Reconnect PixelLab', exact: true });
+	await expect(reconnect.getByRole('status')).toContainText('didn’t accept this key');
+	await reconnect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await openMore();
+	await page.getByRole('button', { name: 'Reconnect PixelLab', exact: true }).click();
+	balanceStatus = 200;
+	await fillKey(reconnect, key);
+	await reconnect.getByRole('button', { name: 'Connect', exact: true }).click();
+	await expect(reconnect).toBeHidden();
+	await openMore();
+	await page.getByRole('button', { name: 'PixelLab usage 42 gens left', exact: true }).click();
+	await account.getByRole('button', { name: 'Forget key', exact: true }).click();
+	await expect(connect.getByLabel('API key', { exact: true })).toBeFocused();
+	expect(await page.evaluate(() => localStorage.getItem('pixellabApiKey'))).toBeNull();
 });
 
 for (const remembered of [true, false]) {
@@ -160,7 +245,7 @@ test('shared token: a saved replacement retains the current account until reload
 	await openStudio(page, '/');
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitem', { name: 'PixelLab account', exact: true }).click();
-	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+	const dialog = page.getByRole('dialog', { name: 'PixelLab usage', exact: true });
 	await expect(dialog.getByText(/Connected and remembered/)).toBeVisible();
 	const peer = await context.newPage();
 	await peer.goto(new URL('/__auth-peer', page.url()).href);

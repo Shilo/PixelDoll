@@ -17,11 +17,10 @@
 	import ApiPeek from './ApiPeek.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
-	import PixelLabUsage from './PixelLabUsage.svelte';
 	import VersionRow from './VersionRow.svelte';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
-	import { characterFacts, fmtNum } from './model.ts';
+	import { characterFacts, fmtNum, generationUsage } from './model.ts';
 	import { sharedItemsHidden, sharedItemsHiddenForAll } from './wardrobeVisibility.svelte.ts';
 	import {
 		ui,
@@ -50,6 +49,7 @@
 		RefreshCw,
 		Share2,
 		Ellipsis,
+		Gauge,
 		KeyRound,
 		Redo2,
 		Sun,
@@ -71,6 +71,12 @@
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
+	const accountLabel = $derived(
+		!app.key ? 'Connect PixelLab' : app.keyRejected ? 'Reconnect PixelLab' : 'PixelLab usage'
+	);
+	const usage = $derived(
+		app.key && !app.keyRejected && !app.balanceError ? generationUsage(app.balance) : null
+	);
 	const facts = $derived(m && characterFacts(m));
 	const name = $derived(characterName());
 	let mountMenuOpen = $state(false);
@@ -365,32 +371,24 @@
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
-		<!-- PixelLab account: keep connection and account access first at every width. -->
 		{#if !workspaceCopy}<button
 				class="row bu-action"
 				data-variant="quiet"
+				aria-haspopup="dialog"
 				onclick={() => {
 					closeOptions();
 					ui.sheet = 'connect';
 				}}
-				><KeyRound size={18} /><span class="row-name"
-					>{app.key
-						? app.keyRejected
-							? 'Key not accepted'
-							: 'PixelLab account'
-						: 'Connect PixelLab'}</span
-				></button
-			>{/if}
-		<a
-			class="row bu-action"
-			data-variant="quiet"
-			href="https://www.pixellab.ai/account"
-			target="_blank"
-			rel="noreferrer"
-		>
-			<PixelLabUsage />
-		</a>
-		<hr />
+			>
+				{#if app.key && !app.keyRejected}<Gauge size={18} />{:else}<KeyRound size={18} />{/if}
+				<span class="row-name">{accountLabel}</span>
+				{#if usage}<span class="row-aside bu-small bu-muted bu-number"
+						>{fmtNum(usage.remaining)} gens left</span
+					>{/if}
+				<ChevronRight size={16} aria-hidden="true" />
+			</button>
+			<hr />
+		{/if}
 		<!-- Character actions: demo editing and actions moved from the toolbar on smaller screens. -->
 		{#if experience.screen === 'studio'}<DemoCopyRow id={doc.id} close={closeOptions} />{/if}
 		{#if experience.screen === 'studio'}<button

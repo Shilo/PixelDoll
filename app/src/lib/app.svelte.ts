@@ -71,7 +71,7 @@ export function setKey(key: string, remember: boolean, activity?: ActivityContex
 	}
 	sharedAuth.changed();
 	queue.setKey(app.key);
-	void refreshBalance(activity);
+	return refreshBalance(activity);
 }
 
 export function forgetKey() {

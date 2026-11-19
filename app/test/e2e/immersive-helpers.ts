@@ -127,6 +127,6 @@ export async function openAccount(page: Page) {
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')
-		.getByRole('button', { name: /^(Connect PixelLab|PixelLab account|Key not accepted)$/ })
+		.getByRole('button', { name: /^(Connect PixelLab$|Reconnect PixelLab$|PixelLab usage\b)/ })
 		.click();
 }
