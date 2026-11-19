@@ -340,14 +340,15 @@ export function movePlan(
 				for (const batch of repairGridPlan(
 					item.layers[0]?.cell ?? m.rig.cell,
 					frames,
-					spec.preferTierOneRepair
+					spec.preferTierOneRepair,
+					spec.redrawItem
 				))
 					calls.push({
 						method: 'POST',
-						path: '/inpaint-v3',
-						label: `${item.name} ${direction} · repair equipment`,
+						path: spec.redrawItem ? '/edit-images-v2' : '/inpaint-v3',
+						label: `${item.name} ${direction} · ${spec.redrawItem ? 'redraw' : 'repair'} equipment`,
 						generations: batch.gens,
-						note: `${batch.w}×${batch.h}, frames ${batch.start + 1}–${batch.start + batch.count}. Uses one protected matching-direction reference. The body remains unchanged. Complete repairs with blocking visual issues are held for your review.`
+						note: `${batch.w}×${batch.h}, frames ${batch.start + 1}–${batch.start + batch.count}. ${spec.redrawItem ? `Sends an unmasked sheet with a matching reference. PixelDoll limits what it keeps and always asks before replacing your frames. PixelDoll requires Tier 1. If billed in dollars, the minimum is ${batch.gens === 10 ? '$0.080' : batch.gens === 15 ? '$0.115' : '$0.150'}; the actual charge may be higher.` : 'Uses one protected matching-direction reference. The body remains unchanged. Complete repairs with blocking visual issues are held for your review.'}`
 					});
 			} else
 				for (const batch of poseBatches(frames)) {

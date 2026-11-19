@@ -106,7 +106,9 @@
 				></span><span class="move-text"
 					><b>{nice(moving.spec.id)}</b><span class="muted small"
 						>{moving.repairReview
-							? 'Review item repair'
+							? moving.spec?.redrawItem
+								? 'Review item redraw'
+								: 'Review item repair'
 							: moving.error
 								? 'Failed: tap for details'
 								: `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span

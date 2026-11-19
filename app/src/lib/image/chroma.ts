@@ -65,6 +65,23 @@ const HUES: Record<Key, RegExp> = {
 };
 /** May this key be used for an item? A key must stay far from the item hue (magenta failed on a red cape, gray on steel [S2]). */
 export const keyAllowed = (prompt: string, k: Key) => !HUES[k].test(prompt);
+export const keyMatte = (key: Key) => [...RAMP[key](1), 255];
+
+export function clearKeyMatte(image: Img, source: Img, key: Key) {
+	const [red, green, blue] = keyMatte(key);
+	const nearMatte = (data: Img['data'], offset: number) =>
+		Math.abs(data[offset] - red) <= 12 &&
+		Math.abs(data[offset + 1] - green) <= 12 &&
+		Math.abs(data[offset + 2] - blue) <= 12;
+	for (let offset = 0; offset < image.data.length; offset += 4) {
+		if (
+			nearMatte(image.data, offset) &&
+			!(source.data[offset + 3] && nearMatte(source.data, offset))
+		)
+			image.data[offset + 3] = 0;
+	}
+}
+
 /**
  * Green unless the item's color words collide with green (S2 rule), then magenta, then blue (green + pink: magenta keyed out the
  * pink on every frame), then azure (green + purple: magenta removed the purple stripes while every gate passed). When all four

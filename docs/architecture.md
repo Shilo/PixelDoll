@@ -35,7 +35,7 @@ Evidence tags: **[S1]–[S4]** live spikes, **[M1]–[M5]** mockup reports, **[R
 | Create characters | `create-character-v3` (default), `create-character-pro` (closer prompt adherence, 32–168 px), `create-character-pro-flash` (chibi styles only) | 4/8-direction standard routes |
 | Animate | `skeleton-v3` (raw `/animate-with-skeleton-v3`, managed `mode: "skeleton-v3"`), `pixminimax`, `v3` (managed or raw text) | `mode: "template"`, `mode: "pro"`, legacy `/animate-with-skeleton` |
 | Skeleton | `estimate-skeleton` | — |
-| Edit (Pro allowed for editing) | `edit-animation-v2`, `inpaint-v3` (best); `transfer-outfit-v2` (reference-image dressing: concept-image items, experimental until their spike passes); Pro Flash / Pixen only for drafts | `edit-images-v2` for layers (shifts every frame [S4]) |
+| Edit (Pro allowed for editing) | `edit-animation-v2`, `inpaint-v3` (best); `transfer-outfit-v2` (reference-image dressing: concept-image items, experimental until their spike passes); `edit-images-v2` only for explicit reviewed item redraw [D29]; Pro Flash / Pixen only for drafts | `edit-images-v2` for automatic layers (shifts in [S4]) |
 
 ---
 
@@ -211,7 +211,7 @@ change. Only corrected PNGs need new actual measurements. Existing pose, palette
 | `transfer-outfit-v2` as the per-clip design lock | Superseded, not banned: anchor-cell `edit-animation-v2` held the design closer (palette distance 9–10 vs 34) and kept the sword's shape (area CV 0.04 vs 0.27–0.39) [S2 X4]. Allowed for reference-image dressing; run the same chroma gates. Concept-image items use the anchored edit-animation-v2 route instead: blind-judged against transfer, no winner and more hard fails on transfer ([round 2](research/generation-quality-round2-2026-10-25.md) arm E). |
 | Per-cell masked inpaint, Pro Flash reference per cell | Design flicker [S1, S4]. |
 | Animating a dressed keyframe with pixminimax/v3 | Misaligned body (IoU 0.65–0.84) [S4]. |
-| `edit-images-v2`, Pro Flash grids, Pixen | Shifts / key loss / faces drawn into layers [S4]. Pixen = 1-gen draft preview only. |
+| `edit-images-v2`, Pro Flash grids, Pixen | Shifts / key loss / faces drawn into layers [S4]. `edit-images-v2` is only an explicit, reviewed alternative [D29]. Pixen = 1-gen draft preview only. |
 
 ### 4.4 Chroma extraction (unchanged from S2)
 
