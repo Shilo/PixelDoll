@@ -4,6 +4,7 @@
 	import './experience/theme.css';
 	import './experience/layout.css';
 	import { rememberActivation } from './experience/focus.ts';
+	import { experience } from './experience/state.svelte.ts';
 	import Experience from './experience/Experience.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
@@ -69,6 +70,9 @@
 	$effect(() => {
 		if (ui.sheet === 'gen' && (!genOf(ui.selected) || genOf(ui.selected)?.phase === 'running'))
 			ui.sheet = null;
+	});
+	$effect(() => {
+		if (experience.screen === 'studio' && ui.toast === previewNoticeDetails) untrack(dismissToast);
 	});
 
 	// once on mount (an $effect would re-run on every state it reads, e.g. the theme)
