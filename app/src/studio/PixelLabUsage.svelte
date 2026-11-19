@@ -37,7 +37,7 @@
 
 <span class={['usage', { compact }]}>
 	<span class="summary">
-		<span class="label"><Gauge size={18} /><span>PixelLab Usage</span></span>
+		<span class="label"><Gauge size={18} /><span>PixelLab usage</span></span>
 		{#if usage}
 			<span class="count bu-small bu-number">
 				{countFormat.format(usage.used)}<span class="bu-muted"

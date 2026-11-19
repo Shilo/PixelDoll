@@ -55,8 +55,8 @@ test('More and Activity share PixelLab usage and show credits once quota is used
 	await page.addInitScript((key) => localStorage.setItem('pixellabApiKey', key), key);
 	await openStudio(page, '/');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	const usage = page.getByRole('link', { name: /PixelLab Usage/ });
-	const usageLabel = await usage.getByText('PixelLab Usage', { exact: true }).boundingBox();
+	const usage = page.getByRole('link', { name: /PixelLab usage/ });
+	const usageLabel = await usage.getByText('PixelLab usage', { exact: true }).boundingBox();
 	const versionLabel = await page.getByText(/^Version /).boundingBox();
 	expect(usageLabel?.x).toBe(versionLabel?.x);
 	await expect(usage).toContainText('58 / 100');
@@ -66,6 +66,7 @@ test('More and Activity share PixelLab usage and show credits once quota is used
 	await expect(usage.getByText('$3.06 credits left')).toBeHidden();
 	await page.getByRole('button', { name: 'Activity', exact: true }).click();
 	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
+	await expect(activity.getByText('PixelLab usage', { exact: true })).toBeVisible();
 	await expect(activity.getByText('58 / 100', { exact: true })).toBeVisible();
 	await expect(activity.getByText('58% used')).toBeVisible();
 	await expect(activity.getByText('$3.06 credits left')).toBeVisible();
