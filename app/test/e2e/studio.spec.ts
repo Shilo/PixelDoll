@@ -2514,7 +2514,9 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 		/Est\. \d+ gens/
 	);
 	await expect(
-		move.getByText('PixelLab may charge in dollars. Retries cost extra.', { exact: true })
+		move.getByText('PixelLab may charge in dollars. Retries and fallbacks cost extra.', {
+			exact: true
+		})
 	).toBeVisible();
 	await move.getByRole('button', { name: /^Add Jumping in/ }).click();
 	await page
@@ -4800,8 +4802,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 		sword.dressed = { east: sword.dressed.east };
 		const custom = m.rig.animations.find((a: { id: string }) => a.id === 'walk');
 		custom.id = 'idle';
-		for (const source of Object.values(custom.sources) as { motion?: string }[])
-			source.motion = 'pixminimax:idle, shift weight to the leading foot';
+		custom.sources.east.motion = 'pixminimax:idle, shift weight to the leading foot';
 		for (const item of m.items)
 			for (const layer of item.layers)
 				if (layer.cells?.walk) {
@@ -4839,10 +4840,24 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await sword.check();
 	await expect(replace).toContainText('gens with equipment');
 	await expect(sheet).toContainText('3 gens if equipment runs');
-	await expect(sheet).toContainText('equipment requests are not sent');
+	await expect(sheet).toContainText(
+		'Equipment requests are not sent if body checks stop the move.'
+	);
 	await sheet.getByRole('checkbox', { name: 'West', exact: true }).check();
 	await expect(sword).toHaveCount(0);
 	await expect(sheet).not.toContainText('if equipment runs');
+	await sheet.getByRole('checkbox', { name: 'East', exact: true }).uncheck();
+	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveCount(0);
+	await expect(replace).toBeDisabled();
+	await expect(replace).not.toContainText('Est.');
+	await expect(sheet).toContainText('A partial repair must keep the existing frame count.');
+	await expect(sheet.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(
+		0
+	);
+	await sheet.getByRole('checkbox', { name: 'East', exact: true }).check();
+	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveValue(
+		'Step sideways and shift weight to the leading foot'
+	);
 	const custom = sheet.getByRole('textbox', { name: 'Describe a new move', exact: true });
 	await expect(custom).toHaveValue('');
 	await custom.fill('jumping in place');

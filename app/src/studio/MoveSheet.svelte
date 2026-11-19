@@ -16,6 +16,7 @@
 	import {
 		MOVE_STEPS,
 		bodyMoveIssue,
+		partialMoveFrameIssue,
 		isAuthoredAction,
 		isV13,
 		reservedMove,
@@ -81,12 +82,6 @@
 			.slice(0, 24);
 	const replacing = $derived(replaceSelected && have.has(action));
 	const savedMove = $derived(m?.rig.animations.find((a) => a.id === action));
-	const describingReplacement = $derived(
-		replacing &&
-			((action !== 'walk' && !isAuthoredAction(action)) ||
-				Object.values(savedMove?.sources ?? {}).some((s) => s?.motion?.startsWith('pixminimax:')))
-	);
-	const describing = $derived(!action || describingReplacement);
 	// Ids allow only a-z, 0-9, - and _ (rig.ts): a description in another script gets the first free "move-N".
 	const freeMoveId = () => {
 		let n = 1;
@@ -105,6 +100,12 @@
 	const targetDirs = $derived(
 		replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs
 	);
+	const describingReplacement = $derived(
+		replacing &&
+			((action !== 'walk' && !isAuthoredAction(action)) ||
+				targetDirs.some((dir) => savedMove?.sources?.[dir]?.motion?.startsWith('pixminimax:')))
+	);
+	const describing = $derived(!action || describingReplacement);
 	const items = $derived(m && targetDirs.length ? posable(m, targetDirs) : []);
 	const unavailable = $derived(
 		(m?.items ?? []).filter(
@@ -124,7 +125,11 @@
 			return 'This move changed while you were editing. Select it again to continue.';
 		if (!action && id && options.includes(id))
 			return `${nice(id)} is already a move option. Start the description with different words.`;
-		return m && id ? bodyMoveIssue(m, motion) : '';
+		if (!m || !id) return '';
+		return (
+			bodyMoveIssue(m, motion) ||
+			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
+		);
 	});
 	let included = $state<string[]>(draft?.items ?? []);
 	const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id));
@@ -415,15 +420,17 @@
 			>Hide</button
 		>
 	{:else if ok}
-		<span class="foot-note"
-			>{est
-				? `About ${est.minutes} min · body ${Math.ceil(est.body)} gens${est.items ? ` + ${est.items} gens if equipment runs` : ''}`
-				: ''}</span
-		>
-		{#if est}<span class="foot-note"
-				>PixelLab may charge in dollars. Retries and fallbacks cost extra.</span
-			>{/if}
-		<span class="api-action">
+		{#if est}
+			<span class="foot-note move-cost-note">
+				<span
+					>About {est.minutes} min · body {Math.ceil(est.body)} gens{est.items
+						? ` + ${est.items} gens if equipment runs`
+						: ''}</span
+				>
+				<span>PixelLab may charge in dollars. Retries and fallbacks cost extra.</span>
+			</span>
+		{/if}
+		<span class="api-action move-action">
 			{#if est}<ApiPeek
 					scope="move-add"
 					label="Add or replace move"
@@ -442,11 +449,13 @@
 					tierBlocked(addTier)}
 				aria-describedby={tierBlocked(addTier) ? 'move-action-tier' : undefined}
 				onclick={go}
-				>{replacing ? (busy ? 'Queue replacement:' : 'Replace') : busy ? 'Queue' : 'Add'}
-				{id ? nice(id) : 'move'}{replacing ? ' views' : ''}
-				<span class="cost">
-					Est. {est ? Math.ceil(est.gens) : '–'} gens{est?.items ? ' with equipment' : ''}
-				</span></button
+				><span
+					>{replacing ? (busy ? 'Queue replacement:' : 'Replace') : busy ? 'Queue' : 'Add'}
+					{id ? nice(id) : 'move'}{replacing ? ' views' : ''}
+					{#if est}<span class="cost">
+							Est. {Math.ceil(est.gens)} gens{est.items ? ' with equipment' : ''}
+						</span>{/if}</span
+				></button
 			></span
 		>
 	{/if}
@@ -653,10 +662,8 @@
 							/>{directionLabel(dir)}</label
 						>{/each}
 					<p class="notice warn small">
-						Saving a replacement clears the old equipment frames in these views. Selected equipment
-						is animated only if the body passes its checks. Other equipment stays hidden in those
-						views until new frames are made. Other views and moves stay fixed.{#if m?.rig.directions.some((d) => d.mirrorOf)}
-							Mirrored views follow their source.{/if}
+						Replacing these views hides equipment until new frames are made. Mirrors follow their
+						source. Other moves stay unchanged.
 					</p>
 				</div>
 			{/if}
@@ -706,8 +713,8 @@
 						>
 					{/each}
 					<p class="faint small">
-						Equipment requests are not sent if body checks stop the move. Unchecked items stay
-						hidden until animated.
+						Equipment requests are not sent if body checks stop the move.
+						{#if !replacing}Unchecked items stay hidden until animated.{/if}
 					</p>
 				</div>
 			{/if}
@@ -742,6 +749,15 @@
 </Sheet>
 
 <style>
+	.move-cost-note {
+		display: grid;
+		gap: 2px;
+	}
+	.move-action > .btn {
+		white-space: normal;
+		height: auto;
+		min-height: var(--ctl-h);
+	}
 	.keep-review {
 		display: grid;
 		gap: 8px;

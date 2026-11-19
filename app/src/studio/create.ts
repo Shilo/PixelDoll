@@ -1679,6 +1679,16 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
 			? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length
 			: s.frames;
 };
+export function partialMoveFrameIssue(
+	m: Manifest,
+	spec: Pick<MoveSpec, 'id' | 'action' | 'frames'>,
+	directionCount: number
+): string {
+	const existing = m.rig.animations.find((move) => move.id === spec.id);
+	return existing && directionCount !== genDirs(m).length && existing.cells !== moveFrames(m, spec)
+		? 'A partial repair must keep the existing frame count.'
+		: '';
+}
 /** The described motion must fit both PixMiniMax and the single raw Skeleton v3 render. */
 export function bodyMoveIssue(
 	m: Manifest,
@@ -1925,12 +1935,8 @@ export async function addMove(
 	if (reservedMove(spec.id) && (spec.replace || !existing)) throw new Error(reservedMove(spec.id));
 	if (!existing && dirs.length !== genDirs(rec.manifest).length)
 		throw new Error('A new move needs every independently drawn direction.');
-	if (
-		existing &&
-		dirs.length !== genDirs(rec.manifest).length &&
-		existing.cells !== moveFrames(rec.manifest, spec)
-	)
-		throw new Error('A partial repair must keep the existing frame count.');
+	const frameIssue = partialMoveFrameIssue(rec.manifest, spec, dirs.length);
+	if (frameIssue) throw new Error(frameIssue);
 	if (!spec.itemMethod && !spec.itemsOnly && spec.items.length) {
 		const eligible = new Set(posable(rec.manifest, dirs).map((item) => item.id));
 		if (spec.items.some((id) => !eligible.has(id)))
