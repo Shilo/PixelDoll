@@ -4,7 +4,7 @@ Implemented on `feat/game-experience-rework`, 2026-10-23. This is the production
 
 ## Experience and preserved workflows
 
-The More menu starts with one PixelLab row: Connect PixelLab, Reconnect PixelLab for a rejected key, or PixelLab usage with a remaining count when available. The chevron opens the local sheet. Connected users see the full usage meter, refresh, key management and the external account link; the key form is only shown for setup, reconnection or replacement. Activity keeps its detailed meter beside jobs. Workspace copies omit the PixelLab row because generation is disabled there.
+The More menu starts with one PixelLab row: Connect PixelLab, Reconnect PixelLab for a rejected key, or the compact PixelLab usage meter. The meter shows used and total generations, a progress bar, percent used, and credits when the quota is exhausted. The chevron opens the local sheet. Connected users see the full usage meter, refresh, key management and the external account link; the key form is only shown for setup, reconnection or replacement. Activity keeps its detailed meter beside jobs. Workspace copies omit the PixelLab row because generation is disabled there.
 
 The PixelLab row is followed by character actions (demo copy and phone shortcuts), view
 preferences (appearance and Wardrobe settings), generation tools (Activity and API calls), workspace actions, and app information (installation,

@@ -14,7 +14,6 @@ import type {
 import { GATES, isAction, SLOTS } from '../lib/items/items.ts';
 import { coverageGaps } from '../lib/dress/dress.ts';
 import type { Rig } from '../lib/rig/rig.ts';
-import type { Balance } from '../lib/pixellab/routes.ts';
 
 /** A body-QA note with a readable clip and direction prefix ("walk/west: ..." -> "Walk west: ..."). */
 export const bodyQualityNote = (w: string) =>
@@ -448,21 +447,6 @@ export const fmtGens = (n: number) => `${Math.round(n * 10) / 10} gens`;
 /** Appended to a reported spend: calls PixelLab did not price are unknown, never $0. */
 export const unknownCostText = (calls = 0) => (calls ? ` + ${calls} unknown` : '');
 export const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US');
-
-export function generationUsage(balance: Balance | null) {
-	if (!balance?.subscription) return null;
-	const { generations: remaining, total, status } = balance.subscription;
-	if (status === 'expired' || status === 'none') return null;
-	if (
-		!Number.isFinite(total) ||
-		!Number.isFinite(remaining) ||
-		total <= 0 ||
-		remaining < 0 ||
-		remaining > total
-	)
-		return null;
-	return { remaining, used: total - remaining, total, exhausted: remaining === 0 };
-}
 export const fmtTime = (s: number) =>
 	s >= 90 ? `${Math.round(s / 60)} min` : `${Math.max(5, Math.round(s / 5) * 5)} s`;
 
