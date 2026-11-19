@@ -48,7 +48,6 @@
 		isDemo
 	} from './state.svelte.ts';
 	import {
-		Check,
 		Archive,
 		ChevronLeft,
 		ChevronRight,
@@ -644,7 +643,8 @@
 		{#snippet proj(p: (typeof store.projects)[number])}
 			<CharacterActions id={p.id} name={p.name}>
 				<button
-					class="row"
+					class="row bu-action"
+					data-variant="row"
 					role="menuitemradio"
 					aria-checked={p.id === doc.id}
 					aria-label={p.name}
@@ -652,11 +652,13 @@
 				>
 					<CharacterThumb id={p.id} name={p.name} size={48} /><span class="row-name"
 						><CharacterName id={p.id} name={p.name} /></span
-					>{#if p.id === doc.id}<Check size={14} />{/if}
+					>
 				</button>
 			</CharacterActions>
 		{/snippet}
-		{#each store.projects.filter((p) => !p.dev) as p (p.id)}{@render proj(p)}{/each}
+		<div class="bu-choice-group project-choices">
+			{#each store.projects.filter((p) => !p.dev) as p (p.id)}{@render proj(p)}{/each}
+		</div>
 		<NewCharacterButton row />
 		{#if !isDemo()}<button
 				class="row"
@@ -724,13 +726,18 @@
 						class="faint small num">{devRigs.length}</span
 					></summary
 				>
-				{#each devRigs as p (p.id)}{@render proj(p)}{/each}
+				<div class="bu-choice-group project-choices">
+					{#each devRigs as p (p.id)}{@render proj(p)}{/each}
+				</div>
 			</details>
 		{/if}
 	</div>
 </div>
 
 <style>
+	.project-choices {
+		gap: 0;
+	}
 	.wardrobe-character-name {
 		display: block;
 		overflow: hidden;

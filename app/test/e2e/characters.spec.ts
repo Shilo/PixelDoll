@@ -1652,12 +1652,16 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 	await expect(page.locator('.project-btn')).toContainText('Imported one');
 	await importCopy('Imported two');
 	await page.locator('.project-btn').click();
-	await expect(
-		page.getByRole('menuitemradio', { name: 'Imported one', exact: true })
-	).toBeVisible();
-	await expect(
-		page.getByRole('menuitemradio', { name: 'Imported two', exact: true })
-	).toBeVisible();
+	const otherCharacter = page.getByRole('menuitemradio', { name: 'Imported one', exact: true });
+	const currentCharacter = page.getByRole('menuitemradio', { name: 'Imported two', exact: true });
+	await expect(otherCharacter).not.toBeChecked();
+	await expect(currentCharacter).toBeChecked();
+	await expect(currentCharacter).not.toHaveCSS(
+		'background-color',
+		await otherCharacter.evaluate((row) => getComputedStyle(row).backgroundColor)
+	);
+	await expect(currentCharacter.locator(':scope > svg')).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'More actions for Imported two' })).toBeVisible();
 	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
 	await expect(page.getByRole('alertdialog')).toContainText('Imported two');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
