@@ -13,6 +13,7 @@
 	import NewCharacterButton from './NewCharacterButton.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import MenuDisclosure from './MenuDisclosure.svelte';
+	import WardrobeVisibility from './WardrobeVisibility.svelte';
 	import ApiPeek from './ApiPeek.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
@@ -21,19 +22,11 @@
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
 	import { characterFacts, fmtNum } from './model.ts';
-	import {
-		demoItemsShown,
-		setDemoItemsShown,
-		sharedItemsHidden,
-		sharedItemsHiddenForAll,
-		setSharedItemsHiddenForAll,
-		setSharedItemsHiddenForCharacter
-	} from './wardrobeVisibility.svelte.ts';
+	import { sharedItemsHidden, sharedItemsHiddenForAll } from './wardrobeVisibility.svelte.ts';
 	import {
 		ui,
 		doc,
 		store,
-		DEMO_NAME,
 		creating,
 		settingUp,
 		gens,
@@ -42,9 +35,7 @@
 		redo,
 		randomize,
 		refreshProjects,
-		refreshShared,
 		characterName,
-		toast,
 		toggleTheme,
 		isDemo
 	} from './state.svelte.ts';
@@ -76,22 +67,16 @@
 		Mountain,
 		Grid2x2,
 		PawPrint,
-		Shirt,
-		LayoutTemplate,
-		Lock,
-		UserRound,
-		UsersRound
+		Shirt
 	} from './icons.ts';
 
 	const m = $derived(store.project?.manifest);
 	const facts = $derived(m && characterFacts(m));
 	const name = $derived(characterName());
 	let mountMenuOpen = $state(false);
-	const hideSharedForAll = $derived(sharedItemsHiddenForAll());
-	function reportVisibilitySave(saved: boolean) {
-		if (!saved)
-			toast('Visibility changed, but this browser could not save it.', { tone: 'warning' });
-	}
+	const currentWardrobe = $derived(
+		experience.screen === 'studio' && m && !isDemo() ? { id: doc.id, name } : undefined
+	);
 	const prompt = $derived(m?.items.find((it) => it.id === m.rig.baseItem)?.prompt ?? '');
 	const characterCount = $derived(store.projects.filter((p) => !p.dev).length);
 	const VIEWS = [
@@ -473,72 +458,15 @@
 				class="row-name">{ui.theme === 'dark' ? 'Light mode' : 'Dark mode'}</span
 			></button
 		>
-		{#if experience.screen === 'studio' && m}
-			<MenuDisclosure label="Wardrobe settings">
-				{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
-				{#snippet aside()}
-					{#if sharedItemsHidden(doc.id)}
-						<span class="row-aside wardrobe-status faint small">Own items only</span>
-					{/if}
-				{/snippet}
-				<div role="group" aria-labelledby="shared-items-title">
-					<p class="menu-sec" id="shared-items-title">Hide shared items</p>
-					<label class="row bu-check"
-						><UsersRound size={18} aria-hidden="true" /><span class="row-name">All characters</span
-						><input
-							class="bu-switch"
-							type="checkbox"
-							role="switch"
-							aria-label="Hide shared items for all characters"
-							checked={hideSharedForAll}
-							onchange={(event) =>
-								reportVisibilitySave(setSharedItemsHiddenForAll(event.currentTarget.checked))}
-						/></label
-					>
-					<label class="row bu-check"
-						><UserRound size={18} aria-hidden="true" /><span class="row-name wardrobe-character"
-							><span class="wardrobe-character-name">{name}</span><span class="faint small"
-								>(Current)</span
-							></span
-						>{#if hideSharedForAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}<input
-							class="bu-switch"
-							type="checkbox"
-							role="switch"
-							aria-label={`Hide shared items for ${name} (Current)${hideSharedForAll ? ' (All characters is on)' : ''}`}
-							checked={sharedItemsHidden(doc.id)}
-							disabled={hideSharedForAll}
-							onchange={(event) =>
-								reportVisibilitySave(
-									setSharedItemsHiddenForCharacter(doc.id, event.currentTarget.checked)
-								)}
-						/></label
-					>
-					{#if !isDemo()}
-						<label class="row bu-check">
-							<LayoutTemplate size={18} aria-hidden="true" />
-							<span class="row-name wardrobe-character">
-								<span class="wardrobe-character-name">{DEMO_NAME}</span><span class="faint small"
-									>(Demo)</span
-								>
-							</span>
-							{#if hideSharedForAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
-							<input
-								class="bu-switch"
-								type="checkbox"
-								role="switch"
-								aria-label={`Hide shared items from ${DEMO_NAME} (Demo)${hideSharedForAll ? ' (All characters is on)' : ''}`}
-								checked={hideSharedForAll || !demoItemsShown()}
-								disabled={hideSharedForAll}
-								onchange={(event) => {
-									reportVisibilitySave(setDemoItemsShown(!event.currentTarget.checked));
-									void refreshShared();
-								}}
-							/>
-						</label>
-					{/if}
-				</div>
-			</MenuDisclosure>
-		{/if}
+		<MenuDisclosure label="Wardrobe settings">
+			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
+			{#snippet aside()}
+				{#if sharedItemsHiddenForAll() || (currentWardrobe && sharedItemsHidden(currentWardrobe.id))}
+					<span class="row-aside wardrobe-status faint small">Own items only</span>
+				{/if}
+			{/snippet}
+			<WardrobeVisibility current={currentWardrobe} />
+		</MenuDisclosure>
 		<hr />
 		<!-- Diagnostics: inspect generation activity and API requests. -->
 		<button
@@ -747,19 +675,6 @@
 <style>
 	.project-choices {
 		gap: 0;
-	}
-	.wardrobe-character {
-		display: flex;
-		align-items: baseline;
-		gap: 0.35em;
-	}
-	.wardrobe-character .small {
-		flex: none;
-	}
-	.wardrobe-character-name {
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 	@container (max-width: 300px) {
 		.wardrobe-status {
