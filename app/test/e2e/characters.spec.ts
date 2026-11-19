@@ -784,7 +784,14 @@ test('character directions can be configured on import and removed only after co
 		await page
 			.getByRole('button', { name: 'More actions for Direction test hero', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Directions…', exact: true }).click();
+		const menu = page.getByRole('menu', { name: 'Actions for Direction test hero', exact: true });
+		await expect(menu.getByRole('menuitem')).toHaveText([
+			'Details…',
+			'Directions…',
+			'Download ZIP',
+			'Delete character…'
+		]);
+		await menu.getByRole('menuitem', { name: 'Directions…', exact: true }).click();
 	};
 	await openDirections();
 	const settings = page.getByRole('dialog', { name: 'Directions', exact: true });

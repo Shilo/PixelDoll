@@ -11,7 +11,18 @@
 
 <RowActions {name} {children}>
 	{#snippet actions(close)}
-		<DemoCopyRow {id} {close} />
+		<button
+			class="row"
+			role="menuitem"
+			onclick={() => {
+				close();
+				document
+					.querySelectorAll<HTMLElement>('[popover]:popover-open')
+					.forEach((popover) => popover.hidePopover());
+				ui.details = id;
+				ui.sheet = 'details';
+			}}><Info size={16} />Details…</button
+		>
 		{#if id.startsWith('rig-')}
 			<button
 				class="row"
@@ -34,18 +45,7 @@
 				void downloadCharacterZip(id);
 			}}><Download size={16} />Download ZIP</button
 		>
-		<button
-			class="row"
-			role="menuitem"
-			onclick={() => {
-				close();
-				document
-					.querySelectorAll<HTMLElement>('[popover]:popover-open')
-					.forEach((popover) => popover.hidePopover());
-				ui.details = id;
-				ui.sheet = 'details';
-			}}><Info size={16} />Details…</button
-		>
+		<DemoCopyRow {id} {close} />
 		<hr class="bu-separator" />
 		<DeleteRow
 			label="Delete character…"
