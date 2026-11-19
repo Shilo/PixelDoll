@@ -584,24 +584,24 @@
 					</div>
 				</fieldset>
 				<hr class="bu-separator export-divider" />
-				<label class="check export-dressed">
-					<input
-						type="checkbox"
-						checked={baked}
-						disabled={saving || !ready}
-						aria-label={DRESSED_SHEETS}
-						aria-describedby="export-dressed-description"
-						onchange={(e) =>
-							changeSetting(e.currentTarget, { dressedCharacterSheets: e.currentTarget.checked })}
-					/>
-					<span
-						><span>{DRESSED_SHEETS}</span><span class="muted small" id="export-dressed-description"
-							>Adds PNG sprite sheets of your current look and each saved outfit, with the body and
-							equipped items combined. Separate layers are always included, except in RPG Maker
-							sheets, which are always combined.</span
-						></span
-					>
-				</label>
+				<div class="export-dressed">
+					<label class="check">
+						<input
+							type="checkbox"
+							checked={baked}
+							disabled={saving || !ready}
+							aria-describedby="export-dressed-description"
+							onchange={(e) =>
+								changeSetting(e.currentTarget, { dressedCharacterSheets: e.currentTarget.checked })}
+						/>
+						<span>{DRESSED_SHEETS}</span>
+					</label>
+					<p class="muted small" id="export-dressed-description">
+						Adds PNG sprite sheets of your current look and each saved outfit, with the body and
+						equipped items combined. Separate layers are always included, except in RPG Maker
+						sheets, which are always combined.
+					</p>
+				</div>
 			{:else}
 				<fieldset class="export-picker" aria-label="Export format">
 					{#each GROUPS as group (group.id)}
@@ -879,19 +879,15 @@
 	.export-move input {
 		flex: none;
 	}
-	.export-dressed {
-		align-items: flex-start;
+	.export-dressed .check {
 		gap: 10px;
 	}
 	.export-dressed input {
 		flex: none;
-		margin-top: 3px;
 	}
-	.export-dressed > span {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		min-width: 0;
+	.export-dressed p {
+		margin: 4px 0 0;
+		padding-inline-start: 26px;
 	}
 	.export-divider {
 		width: 100%;

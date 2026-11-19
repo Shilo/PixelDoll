@@ -5,6 +5,7 @@
 		activityRetention,
 		activityTotals,
 		exportActivityJson,
+		sanitizeActivityUrl,
 		sanitizeActivityValue,
 		type ApiCall
 	} from '../lib/pixellab/activity.ts';
@@ -37,7 +38,10 @@
 	let opener: HTMLButtonElement;
 	let open = $state(false);
 	let backgrounds = $state(false);
-	let copied = $state('');
+	let copyStatus = $state('');
+	let copiedAll = $state(false);
+	let manualCopy = $state<string>();
+	let endpointCopyAttempt = 0;
 	let inspectionError = $state(false);
 	const actual = $derived(
 		$apiActivity.filter(
@@ -62,6 +66,11 @@
 		plan.filter((c) => c.method === 'POST' && c.generations === undefined).length
 	);
 	const format = (n: number) => +n.toFixed(3);
+	function safePlannedPath(path: string) {
+		return /^https?:\/\//i.test(path) || (path.startsWith('/') && /[?#]/.test(path))
+			? sanitizeActivityUrl(path)
+			: path;
+	}
 	function price(c: ApiCall | PeekCall): string {
 		if ('cost' in c) {
 			if (c.costSource === 'free') return 'Free';
@@ -85,7 +94,9 @@
 		const el = e.currentTarget;
 		open = e.newState === 'open';
 		if (open) {
-			copied = '';
+			copyStatus = '';
+			copiedAll = false;
+			manualCopy = undefined;
 			inspectionError = false;
 			await tick();
 			if (!el.isConnected) return;
@@ -93,6 +104,7 @@
 			popoverFocus({ currentTarget: el, newState: e.newState }, false);
 			el.querySelector<HTMLButtonElement>('[aria-label="Close API calls"]')?.focus();
 		} else {
+			endpointCopyAttempt++;
 			popoverFocus({ currentTarget: el, newState: e.newState }, false);
 		}
 	}
@@ -117,6 +129,7 @@
 		}
 	}
 	async function copy() {
+		endpointCopyAttempt++;
 		const text = recorded
 			? exportActivityJson(actual)
 			: JSON.stringify(
@@ -125,14 +138,16 @@
 						scope,
 						costBasis: 'estimated',
 						total: { generations: knownEstimate, unknown: unknownEstimate },
-						calls: sanitizeActivityValue(plan)
+						calls: sanitizeActivityValue(
+							plan.map((call) => ({ ...call, path: safePlannedPath(call.path) }))
+						)
 					},
 					null,
 					2
 				);
 		try {
 			await navigator.clipboard.writeText(text);
-			copied = `Copied ${calls.length} call${calls.length === 1 ? '' : 's'}`;
+			copyStatus = `Copied ${calls.length} call${calls.length === 1 ? '' : 's'}`;
 		} catch {
 			// Still usable when clipboard permissions are unavailable (including some mobile browsers).
 			const blob = new Blob([text], { type: 'application/json' }),
@@ -142,7 +157,48 @@
 			a.download = 'pixeldoll-calls.json';
 			a.click();
 			setTimeout(() => URL.revokeObjectURL(url), 1000);
-			copied = 'Saved calls as JSON';
+			copyStatus = 'Saved calls as JSON';
+		}
+		copiedAll = true;
+	}
+	async function copyEndpoint(
+		event: MouseEvent & { currentTarget: HTMLButtonElement },
+		key: string,
+		endpoint: string,
+		context: string
+	) {
+		const button = event.currentTarget;
+		const active = document.activeElement;
+		const attempt = ++endpointCopyAttempt;
+		copyStatus = '';
+		manualCopy = undefined;
+		let copied: boolean;
+		try {
+			await navigator.clipboard.writeText(endpoint);
+			copied = true;
+		} catch {
+			copied = false;
+		}
+		await tick();
+		if (attempt !== endpointCopyAttempt || !button.isConnected || !panel.matches(':popover-open'))
+			return;
+		if (copied) {
+			copyStatus = `Endpoint copied: ${context}`;
+			return;
+		}
+		copyStatus = 'Could not copy automatically. Use the endpoint field to copy manually.';
+		manualCopy = key;
+		await tick();
+		const field = button
+			.closest('.peek-request')
+			?.querySelector<HTMLInputElement>('.manual-endpoint');
+		if (
+			attempt === endpointCopyAttempt &&
+			field?.getClientRects().length &&
+			document.activeElement === active
+		) {
+			field.focus();
+			field.select();
 		}
 	}
 </script>
@@ -182,12 +238,17 @@
 		{#if open}
 			<header class="peek-head">
 				<div class="peek-heading">
-					<strong>API calls</strong><span class="peek-sub" role="status"
-						>{copied ||
+					<strong>API calls</strong><span
+						class="peek-sub"
+						class:copy-feedback={copyStatus}
+						role="status"
+						>{copyStatus ||
 							(inspectionError ? 'Saved requests unavailable' : '') ||
 							label ||
 							(all ? 'Recent API calls' : 'This action')}</span
 					>
+					{#if inspectionError && copyStatus}<span class="peek-sub">Saved requests unavailable</span
+						>{/if}
 				</div>
 				<button
 					type="button"
@@ -197,7 +258,7 @@
 					title="Copy all calls as JSON, including background calls"
 					disabled={!calls.length}
 					onclick={copy}
-					>{#if copied}<Check size={16} />{:else}<Copy size={16} />{/if}</button
+					>{#if copiedAll}<Check size={16} />{:else}<Copy size={16} />{/if}</button
 				>
 				<button
 					type="button"
@@ -222,17 +283,38 @@
 			</header>
 			<div class="peek-list">
 				{#each visible as c, i ('id' in c ? c.id : `${scope}:${i}:${c.path}`)}
+					{@const key = 'id' in c ? c.id : `${scope}:${i}:${c.path}`}
+					{@const endpoint = 'endpoint' in c ? c.endpoint : safePlannedPath(c.path)}
+					{@const endpointContext = c.label
+						? `${c.method}, ${c.label}`
+						: `${c.method}, call ${i + 1}`}
 					<details class="peek-call">
 						<summary
 							><ChevronRight size={13} /><span class="call-name"
 								><span class="call-route"
-									><span class="call-method">{c.method}</span><span
-										>{'endpoint' in c ? c.endpoint : c.path}</span
-									></span
+									><span class="call-method">{c.method}</span><span>{endpoint}</span></span
 								>{#if c.label}<span class="call-context">{c.label}</span>{/if}</span
 							><span class="call-price">{price(c)}</span></summary
 						>
 						<div class="peek-request">
+							<div class="request-endpoint">
+								<code>{endpoint}</code>
+								<button
+									type="button"
+									class="bu-action btn icon plain"
+									data-variant="quiet"
+									aria-label={`Copy endpoint ${c.method} ${endpoint}${c.label ? `, ${c.label}` : ''}`}
+									title="Copy endpoint"
+									onclick={(event) => copyEndpoint(event, key, endpoint, endpointContext)}
+									><Copy size={14} /></button
+								>
+							</div>
+							{#if manualCopy === key}<input
+									class="bu-input input manual-endpoint"
+									aria-label="Endpoint for manual copy"
+									value={endpoint}
+									readonly
+								/>{/if}
 							{#if 'state' in c}<p class="request-status">
 									{c.restored
 										? 'Saved request'
@@ -356,6 +438,10 @@
 		text-overflow: ellipsis;
 		overflow: hidden;
 	}
+	.copy-feedback {
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
 	.peek-list {
 		overflow: auto;
 		overscroll-behavior: contain;
@@ -429,6 +515,21 @@
 		padding: 0 14px 12px 32px;
 		font-size: 11.5px;
 	}
+	.request-endpoint {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		margin-bottom: 4px;
+	}
+	.request-endpoint code {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+	.manual-endpoint {
+		width: 100%;
+		min-width: 0;
+		margin-bottom: 8px;
+	}
 	.request-status {
 		color: var(--text-3);
 		font-size: 11px;
@@ -473,7 +574,8 @@
 		margin-top: 3px;
 	}
 	@media (max-width: 599px), (max-height: 499px) {
-		.peek-head .btn {
+		.peek-head .btn,
+		.request-endpoint .btn {
 			min-height: 44px;
 			min-width: 44px;
 		}
