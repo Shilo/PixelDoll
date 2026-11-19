@@ -438,6 +438,15 @@
 				class={{ 'mobile-sep': !doc.id.startsWith('fixture:') }}
 			/>{/if}
 		<!-- Preferences: change how the Studio looks or what the Wardrobe shows. -->
+		<MenuDisclosure sectionKey="more-wardrobe-settings" label="Wardrobe settings">
+			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
+			{#snippet aside()}
+				{#if sharedItemsHidden(doc.id)}
+					<span class="row-aside wardrobe-status faint small">Own items only</span>
+				{/if}
+			{/snippet}
+			<WardrobeVisibility />
+		</MenuDisclosure>
 		<button
 			class="row bu-action"
 			data-variant="quiet"
@@ -449,15 +458,6 @@
 				class="row-name">{ui.theme === 'dark' ? 'Light mode' : 'Dark mode'}</span
 			></button
 		>
-		<MenuDisclosure sectionKey="more-wardrobe-settings" label="Wardrobe settings">
-			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
-			{#snippet aside()}
-				{#if sharedItemsHidden(doc.id)}
-					<span class="row-aside wardrobe-status faint small">Own items only</span>
-				{/if}
-			{/snippet}
-			<WardrobeVisibility />
-		</MenuDisclosure>
 		<hr />
 		<!-- Diagnostics: inspect generation activity and API requests. -->
 		<button
