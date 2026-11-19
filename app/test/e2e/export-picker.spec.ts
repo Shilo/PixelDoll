@@ -3091,14 +3091,23 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await popover.getByRole('switch').uncheck();
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('east');
 	await popover.getByRole('combobox', { name: 'Move' }).selectOption('cross-punch');
-	await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeDisabled();
-	await expect(popover.getByRole('status')).toContainText(
-		'cross-punch facing East has no complete artwork'
-	);
+	await expect(popover.locator('.share-preview canvas')).toBeVisible();
+	await expect(popover.getByRole('status')).toContainText('cross punch East');
+	const [fallbackPng] = await Promise.all([
+		page.waitForEvent('download'),
+		popover.getByRole('button', { name: 'Download PNG' }).click()
+	]);
+	await popover.getByRole('button', { name: 'Share to…' }).click();
+	await expect
+		.poll(() =>
+			page.evaluate(() => (window as unknown as { __shared?: { name: string } }).__shared?.name)
+		)
+		.toBe(fallbackPng.suggestedFilename());
+	expect(fallbackPng.suggestedFilename()).toMatch(/-cross-punch-east\.png$/);
 	await popover.getByRole('combobox', { name: 'Direction' }).selectOption('__all_directions__');
 	await expect(
 		popover.getByRole('combobox', { name: 'Direction' }).locator('option[value="east"]')
-	).toHaveAttribute('disabled', '');
+	).toBeEnabled();
 	await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeEnabled();
 
 	await page.keyboard.press('Escape');

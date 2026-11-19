@@ -1239,13 +1239,7 @@
 		"untitled": "Personaje de PixelDoll",
 		"error": {
 			"noArtwork": "No hay imágenes disponibles para compartir",
-			"incomplete": "Las imágenes de {move} en dirección {direction} están incompletas",
-			"itemsMissing": "A estos objetos les faltan imágenes de {move} / {direction}: {items}",
-			"cannotRender": "No se puede renderizar {move} en dirección {direction}",
 			"loading": "Las imágenes del personaje aún se están cargando",
-			"select": "Selecciona una animación y una dirección disponibles",
-			"noFrames": "{move} no tiene fotogramas",
-			"noPairs": "No hay pares completos de animación y dirección disponibles para compartir",
 			"gifTooLarge": "El GIF seleccionado es demasiado grande",
 			"size": "Selecciona un tamaño de imagen disponible",
 			"imageTooLarge": "La imagen seleccionada es demasiado grande. Elige un tamaño menor o menos vistas",

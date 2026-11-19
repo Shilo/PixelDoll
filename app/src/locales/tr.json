@@ -1233,13 +1233,7 @@
 		"untitled": "PixelDoll karakteri",
 		"error": {
 			"noArtwork": "Paylaşılabilecek görsel yok",
-			"incomplete": "{move} animasyonunun {direction} yönündeki görseli eksik",
-			"itemsMissing": "{items} için {move} / {direction} görselleri eksik",
-			"cannotRender": "{move} animasyonunun {direction} yönü çizilemiyor",
 			"loading": "Karakter görselleri hâlâ yükleniyor",
-			"select": "Kullanılabilir bir animasyon ve yön seçin",
-			"noFrames": "{move} animasyonunda kare yok",
-			"noPairs": "Paylaşılabilecek eksiksiz bir animasyon ve yön çifti yok",
 			"gifTooLarge": "Seçilen GIF çok büyük",
 			"size": "Kullanılabilir bir görsel boyutu seçin",
 			"imageTooLarge": "Seçilen görsel çok büyük. Daha küçük bir boyut veya daha az görünüm seçin",

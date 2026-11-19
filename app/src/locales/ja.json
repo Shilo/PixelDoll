@@ -1189,13 +1189,7 @@
 		"untitled": "PixelDollキャラクター",
 		"error": {
 			"noArtwork": "共有できるアートワークがありません",
-			"incomplete": "{direction}向きの{move}には完全なアートワークがありません",
-			"itemsMissing": "{items}には{move}/{direction}のアートワークがありません",
-			"cannotRender": "{direction}向きの{move}を描画できません",
 			"loading": "キャラクターのアートワークを読み込み中です",
-			"select": "利用できるモーションと向きを選んでください",
-			"noFrames": "{move}にはフレームがありません",
-			"noPairs": "モーションと向きの組み合わせで、共有に必要な画像がすべて揃っているものがありません",
 			"gifTooLarge": "選択したGIFは大きすぎます",
 			"size": "利用できる画像サイズを選んでください",
 			"imageTooLarge": "選択した画像は大きすぎます。小さいサイズを選ぶか、ビューを減らしてください",

@@ -1,13 +1,15 @@
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
-import type { Img } from '../lib/image/png.ts';
+import { makeImg, type Img } from '../lib/image/png.ts';
 import type { DirectionName, Preset } from '../lib/store/manifest.ts';
 import {
+	buildPresentation,
 	renderPresentation,
-	type Presentation,
+	resolveLive,
+	resolvePreview,
+	type PresentationOptions,
 	type PresentationAvailability
 } from './experience/presentation.ts';
-import { directionLabel } from './experience/movement.ts';
 import { LocalizedError } from '../lib/message.ts';
 
 export const ALL_MOVES = '__all_moves__';
@@ -24,7 +26,8 @@ export interface ShareMedia {
 	animated: boolean;
 	grid: boolean;
 	previewRows: number;
-	omitted: { move: string; direction: DirectionName; reason: string }[];
+	omitted: { move: string; direction: DirectionName }[];
+	empty: boolean;
 	mime: 'image/png' | 'image/gif';
 	extension: 'png' | 'gif';
 }
@@ -93,87 +96,30 @@ function tile(images: (Img | null)[], columns: number, gap = 0): Img {
 	return out;
 }
 
-function rendered(
-	a: PresentationAvailability,
-	items: Preset['items'],
-	move: string,
-	direction: DirectionName,
-	cell: number
-): Img {
-	const sequence = a.animations.get(move)?.get(direction);
-	if (!sequence)
-		throw new LocalizedError(
-			`${move} facing ${directionLabel(direction)} has no complete artwork`,
-			'share.error.incomplete',
-			{ move, direction }
-		);
-	const presentation: Presentation = {
-		kind: 'animation',
-		moving: false,
-		requestedClip: move,
-		intendedDirection: direction,
-		direction,
-		clip: move,
-		cell,
-		sequence,
-		issue: null,
-		issueKey: null,
-		loading: false
-	};
-	const result = renderPresentation(a, items, presentation, cell);
-	if (result.loading) throw new Error(result.loading);
-	if (result.hiddenItems.length)
-		throw new LocalizedError(
-			`${result.hiddenItems.map((item) => item.name).join(', ')} missing ${move} / ${directionLabel(direction)} artwork`,
-			'share.error.itemsMissing',
-			{ items: result.hiddenItems.map((item) => item.name).join(', '), move, direction }
-		);
-	if (!result.image)
-		throw new LocalizedError(
-			`${move} facing ${directionLabel(direction)} cannot be rendered`,
-			'share.error.cannotRender',
-			{ move, direction }
-		);
-	return result.image;
-}
-const selectedMoves = (a: PresentationAvailability, move: string) =>
-	move === ALL_MOVES ? a.project.manifest.rig.animations.map((animation) => animation.id) : [move];
+export const buildSharePresentation = (
+	project: PresentationAvailability['project'],
+	options?: PresentationOptions
+) => buildPresentation(project, { ...options, allowPartialAnimations: true });
 
-/** Body sequences and renderPresentation's equipped-item check both validate every authored timeline cell. */
-export function canShareDirection(
-	a: PresentationAvailability,
-	items: Preset['items'],
-	move: string,
-	direction: DirectionName
-): boolean {
-	return selectedMoves(a, move).some((selected) => {
-		const cell = a.project.manifest.rig.animations.find((animation) => animation.id === selected)
-			?.frames[0]?.cell;
-		if (cell === undefined) return false;
-		try {
-			rendered(a, items, selected, direction, cell);
-			return true;
-		} catch {
-			return false;
-		}
-	});
-}
+const selectedMoves = (a: PresentationAvailability, move: string) =>
+	a.project.manifest.rig.animations.filter(
+		(animation) => move === ALL_MOVES || animation.id === move
+	);
+const selectedDirections = (a: PresentationAvailability, direction: string) =>
+	direction === ALL_DIRECTIONS ? a.directions : a.directions.filter((id) => id === direction);
 
 /** A GIF needs at least two authored moments among the renderable selected moves. */
 export function canAnimateShare(
 	a: PresentationAvailability,
-	items: Preset['items'],
 	move: string,
 	direction: string
 ): boolean {
-	const directions =
-		direction === ALL_DIRECTIONS ? a.directions : a.directions.filter((id) => id === direction);
+	const directions = selectedDirections(a, direction);
 	let moments = 0;
-	for (const selected of selectedMoves(a, move)) {
-		if (!directions.some((id) => canShareDirection(a, items, selected, id))) continue;
-		moments +=
-			a.project.manifest.rig.animations.find((animation) => animation.id === selected)?.frames
-				.length ?? 0;
+	for (const { id, frames } of selectedMoves(a, move)) {
+		const views = a.animations.get(id);
+		const available = new Set(directions.flatMap((facing) => views?.get(facing)?.frames ?? []));
+		moments += frames.filter((frame) => available.has(frame)).length;
 		if (moments > 1) return true;
 	}
 	return false;
@@ -189,47 +135,48 @@ export function buildShareMedia(
 ): ShareMedia {
 	if (a.loading)
 		throw new LocalizedError('Character artwork is still loading', 'share.error.loading');
-	if (a.metadataIssues.length) throw new Error(a.metadataIssues[0]);
 	const moves = selectedMoves(a, move);
-	const directions =
-		direction === ALL_DIRECTIONS ? a.directions : a.directions.filter((id) => id === direction);
-	if (!directions.length || !moves.length)
-		throw new LocalizedError('Select an available move and direction', 'share.error.select');
+	const directions = selectedDirections(a, direction);
 	const omitted: ShareMedia['omitted'] = [];
 	const entries: {
-		move: string;
 		timeline: { cell: number; ms: number }[];
-		views: Map<DirectionName, Img[]>;
+		views: Map<DirectionName, Map<number, Img>>;
 	}[] = [];
-	for (const selectedMove of moves) {
-		const timeline = a.project.manifest.rig.animations.find(
-			(animation) => animation.id === selectedMove
-		)?.frames;
-		if (!timeline?.length)
-			throw new LocalizedError(`${selectedMove} has no frames`, 'share.error.noFrames', {
-				move: selectedMove
-			});
-		const views = new Map<DirectionName, Img[]>();
+	for (const { id: selectedMove, frames: timeline } of moves) {
+		const views = new Map<DirectionName, Map<number, Img>>();
 		for (const id of directions) {
-			try {
-				views.set(
-					id,
-					(animate ? timeline : timeline.slice(0, 1)).map((frame) =>
-						rendered(a, items, selectedMove, id, frame.cell)
-					)
-				);
-			} catch (error) {
-				if (move !== ALL_MOVES && direction !== ALL_DIRECTIONS) throw error;
-				omitted.push({ move: selectedMove, direction: id, reason: (error as Error).message });
+			const presentation = resolvePreview(a, { clip: selectedMove, direction: id });
+			const frames = presentation.sequence?.frames ?? [];
+			const images = new Map<number, Img>();
+			for (const { cell } of animate ? frames : frames.slice(0, 1)) {
+				if (images.has(cell)) continue;
+				const { image } = renderPresentation(a, items, presentation, cell);
+				if (image) images.set(cell, image);
 			}
+			if (images.size) views.set(id, images);
+			else omitted.push({ move: selectedMove, direction: id });
 		}
-		if (views.size) entries.push({ move: selectedMove, timeline, views });
+		if (views.size) entries.push({ timeline, views });
 	}
-	if (!entries.length)
-		throw new LocalizedError(
-			'No complete move and direction pairs are available to share',
-			'share.error.noPairs'
-		);
+	if (!entries.length) {
+		const facing = directions.find((id) => a.stills.has(id));
+		const presentation = facing
+			? resolvePreview(a, { clip: move, direction: facing })
+			: resolveLive(a, { velocity: { x: 0, y: 0 }, defaultDirection: directions[0] });
+		const { image, frame } = renderPresentation(a, items, presentation);
+		const still = image ?? makeImg(frame.w, frame.h);
+		return {
+			frames: [{ image: still, ms: 1000 }],
+			still,
+			animated: false,
+			grid: false,
+			previewRows: 1,
+			omitted,
+			empty: !image,
+			mime: 'image/png',
+			extension: 'png'
+		};
+	}
 	const layoutDirections = directions.filter((id) => entries.some((entry) => entry.views.has(id)));
 	const columns =
 		layoutDirections.length <= 4 ? layoutDirections.length : layoutDirections.length <= 6 ? 3 : 4;
@@ -237,7 +184,7 @@ export function buildShareMedia(
 	const gap = columns > 1 || entries.length > 1 ? 4 : 0;
 	const still = tile(
 		entries.flatMap((entry) => [
-			...layoutDirections.map((id) => entry.views.get(id)?.[0] ?? null),
+			...layoutDirections.map((id) => entry.views.get(id)?.values().next().value ?? null),
 			...Array<null>(columns * rowsPerMove - layoutDirections.length).fill(null)
 		]),
 		columns,
@@ -246,11 +193,12 @@ export function buildShareMedia(
 	const frames: ShareFrame[] = [];
 	if (animate)
 		for (const entry of entries)
-			for (let i = 0; i < entry.timeline.length; i++) {
-				const images = layoutDirections.map((id) => entry.views.get(id)?.[i] ?? null);
+			for (const { cell, ms } of entry.timeline) {
+				const images = layoutDirections.map((id) => entry.views.get(id)?.get(cell) ?? null);
+				if (!images.some(Boolean)) continue;
 				frames.push({
 					image: tile(images, columns, columns > 1 ? 4 : 0),
-					ms: entry.timeline[i].ms
+					ms
 				});
 			}
 	const animated = animate && frames.length > 1;
@@ -263,6 +211,7 @@ export function buildShareMedia(
 		grid: columns > 1 || entries.length > 1,
 		previewRows: animated ? rowsPerMove : entries.length * rowsPerMove,
 		omitted,
+		empty: false,
 		mime: animated ? 'image/gif' : 'image/png',
 		extension: animated ? 'gif' : 'png'
 	};

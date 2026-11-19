@@ -133,6 +133,7 @@ interface CheckedCell {
 }
 export interface PresentationOptions {
 	loading?: boolean;
+	allowPartialAnimations?: boolean;
 }
 
 /** Rebuild when the project, its images, or coverage changes. No requests or storage writes occur here. */
@@ -310,7 +311,12 @@ export function buildPresentation(
 					}
 				}
 				if (!validTimeline || !directions.includes(direction)) continue;
-				const cells = animation.frames.map((frame) => frame.cell);
+				const frames = options.allowPartialAnimations
+					? animation.frames.filter((frame) =>
+							complete(body, animation.id, direction, [frame.cell])
+						)
+					: animation.frames;
+				const cells = frames.map((frame) => frame.cell);
 				if (
 					!complete(body, animation.id, direction, cells) ||
 					!cells.some((index) =>
@@ -321,8 +327,8 @@ export function buildPresentation(
 				usable.set(direction, {
 					clip: animation.id,
 					direction,
-					frames: animation.frames,
-					duration
+					frames,
+					duration: frames === animation.frames ? duration : timelineDuration(frames)
 				});
 			}
 		}

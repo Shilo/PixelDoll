@@ -1239,13 +1239,7 @@
 		"untitled": "PixelDoll-Figur",
 		"error": {
 			"noArtwork": "Keine Grafik zum Teilen verfügbar",
-			"incomplete": "Für {move} in Blickrichtung {direction} sind die Grafiken unvollständig",
-			"itemsMissing": "Für {items} fehlen Grafiken für {move} / {direction}",
-			"cannotRender": "{move} in Blickrichtung {direction} kann nicht gerendert werden",
 			"loading": "Die Figurengrafiken werden noch geladen",
-			"select": "Wähle eine verfügbare Animation und Blickrichtung",
-			"noFrames": "{move} hat keine Frames",
-			"noPairs": "Keine vollständige Kombination aus Animation und Blickrichtung zum Teilen verfügbar",
 			"gifTooLarge": "Das ausgewählte GIF ist zu groß",
 			"size": "Wähle eine verfügbare Bildgröße",
 			"imageTooLarge": "Das ausgewählte Bild ist zu groß. Wähle eine kleinere Größe oder weniger Ansichten",

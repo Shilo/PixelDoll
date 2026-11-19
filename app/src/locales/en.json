@@ -1230,13 +1230,7 @@
 		"untitled": "PixelDoll character",
 		"error": {
 			"noArtwork": "No artwork is available to share",
-			"incomplete": "{move} facing {direction} has no complete artwork",
-			"itemsMissing": "{items} missing {move} / {direction} artwork",
-			"cannotRender": "{move} facing {direction} cannot be rendered",
 			"loading": "Character artwork is still loading",
-			"select": "Select an available move and direction",
-			"noFrames": "{move} has no frames",
-			"noPairs": "No complete move and direction pairs are available to share",
 			"gifTooLarge": "Selected GIF is too large",
 			"size": "Select an available image size",
 			"imageTooLarge": "Selected image is too large. Choose a smaller size or fewer views",
