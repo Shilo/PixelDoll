@@ -284,8 +284,9 @@ remain unchanged. This runs locally and makes no PixelLab call; export a backup 
 
 ## Add a move
 
-Open the **Moves** tab → **Add a move**. Pick a preset such as **Idle**, **Walk**, or **Slash**, or choose **Describe a move**
-and type something like "jumping in place". Items you check under **Animate these items too** are made for the new move.
+Open the **Moves** tab → **Add a move**. Type a motion such as "jumping in place" or pick a preset such as **Idle**, **Walk**,
+or **Slash** below the field. Typing deselects the preset; picking a preset clears the description.
+Items you check under **Animate these items too** are made for the new move.
 Items are unchecked by default so you can approve the body motion before buying its equipment frames.
 Items you leave out stay hidden in that move until you make them. A worn item without frames for the current move shows
 a note on the stage with **Make it** and its price.

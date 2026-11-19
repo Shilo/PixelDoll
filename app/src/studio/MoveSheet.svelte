@@ -64,9 +64,9 @@
 	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
 	// Default is the standing views themselves: nothing to generate or replace.
 	const options = $derived(
-		[...new Set(['idle', 'walk', ...AUTHORED, ...(m?.rig.animations.map((a) => a.id) ?? [])])]
-			.filter((a) => !reservedMove(a))
-			.concat('')
+		[
+			...new Set(['idle', 'walk', ...AUTHORED, ...(m?.rig.animations.map((a) => a.id) ?? [])])
+		].filter((a) => !reservedMove(a))
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
 	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
@@ -323,6 +323,10 @@
 		const flagged = availableDirs.filter((d) => clips?.[`${next}/${d}`]?.fails?.length);
 		selectedDirs = flagged.length ? flagged : [...availableDirs];
 	}
+	function describeMove(value: string) {
+		chooseAction('');
+		text = value;
+	}
 </script>
 
 {#snippet foot()}
@@ -578,18 +582,33 @@
 	{:else}
 		<div class="form">
 			<div class="field">
-				<span class="label" id="act">Move</span>
+				<label class="label" for="move-description"
+					>{replacing ? 'Describe a new move' : 'Describe the motion'}</label
+				>
+				<input
+					id="move-description"
+					class="bu-input input"
+					value={action ? '' : text}
+					oninput={(event) => describeMove(event.currentTarget.value)}
+					placeholder="e.g. jumping in place"
+					aria-describedby="move-description-hint"
+					maxlength="120"
+				/>
+				<p class="faint small" id="move-description-hint">
+					Describe body motion only. Add weapons and props as items.
+				</p>
+			</div>
+			<div class="field">
+				<span class="label" id="act">Or choose a move</span>
 				<div class="chips" role="radiogroup" aria-labelledby="act">
 					{#each options as a (a)}
 						<button
 							class="chip"
 							role="radio"
 							aria-checked={action === a}
-							tabindex={action === a ? 0 : -1}
+							tabindex={(options.includes(action) ? action : options[0]) === a ? 0 : -1}
 							onclick={() => chooseAction(a)}
-							>{#if have.has(a)}<Check size={12} />{/if}{a ? nice(a) : 'Describe a move'}{have.has(
-								a
-							)
+							>{#if have.has(a)}<Check size={12} />{/if}{nice(a)}{have.has(a)
 								? ' · added'
 								: ''}</button
 						>
@@ -616,18 +635,16 @@
 					</p>
 				</div>
 			{/if}
-			{#if describing}<label class="field">
-					<span class="label"
-						>{describingReplacement ? 'Describe the replacement' : 'Describe the motion'}</span
-					>
+			{#if describingReplacement}<label class="field">
+					<span class="label">Describe the replacement</span>
 					<input
 						class="bu-input input"
 						bind:value={text}
 						placeholder="e.g. jumping in place"
+						aria-describedby="move-description-hint"
 						maxlength="120"
 					/>
-				</label>
-				<p class="faint small">Describe body motion only. Add weapons and props as items.</p>{/if}
+				</label>{/if}
 			{#if reservedMove(id)}<p class="notice warn small">
 					<CircleAlert size={14} />{reservedMove(id)}
 				</p>{:else if motionIssue}<p class="notice warn small">

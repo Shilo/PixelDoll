@@ -2465,20 +2465,33 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
-	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await move.getByRole('radio', { name: 'Cast', exact: true }).click();
-	const description = move.getByRole('textbox', { name: 'Describe the motion', exact: true });
-	await expect(description).toHaveCount(0);
-	await move.getByRole('radio', { name: 'Describe a move', exact: true }).click();
+	await expect(page.getByRole('dialog', { name: 'Add a move', exact: true })).toBeVisible();
+	const move = page.getByRole('dialog', { name: /^(Add a move|Replace move views)$/ });
+	const description = move.getByRole('textbox', { name: /^Describe (the motion|a new move)$/ });
+	const choices = move.getByRole('radiogroup', { name: 'Or choose a move' });
+	const cast = choices.getByRole('radio', { name: 'Cast', exact: true });
+	await expect(description).toBeVisible();
+	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(1);
+	await cast.click();
+	await description.focus();
+	await expect(cast).toBeChecked();
 	await description.fill('walk');
 	await expect(move.getByRole('button', { name: /^Add Walk/ })).toBeDisabled();
 	await expect(move.getByText('Directions to redraw')).toHaveCount(0);
 	await expect(move).toContainText('Walk is already a move option.');
 	await description.fill('jumping in place');
-	await description.press('Shift+Tab');
-	await expect(move.getByRole('radio', { name: 'Describe a move', exact: true })).toBeFocused();
-	await page.keyboard.press('Space');
+	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
+	await description.press('Tab');
+	await expect(choices.getByRole('radio').first()).toBeFocused();
 	await expect(description).toHaveValue('jumping in place');
+	await page.keyboard.press('ArrowRight');
+	await expect(choices.getByRole('radio').nth(1)).toBeChecked();
+	await expect(description).toHaveValue('');
+	await description.fill('jumping in place');
+	await description.clear();
+	await expect(move.getByRole('button', { name: /^Add move/ })).toBeDisabled();
+	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
+	await description.fill('jumping in place');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).not.toBeChecked();
 	await move.getByRole('checkbox', { name: new RegExp(vest.name) }).check();
 	await expect(move.getByRole('button', { name: /^Add Jumping in/ })).toContainText(
@@ -2496,13 +2509,12 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
 	await expect(description).toHaveValue('jumping in place');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toBeChecked();
-	await move.getByRole('radio', { name: 'Cast', exact: true }).click();
-	await expect(description).toHaveCount(0);
+	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
+	await cast.click();
+	await expect(description).toBeEnabled();
+	await expect(description).toHaveValue('');
 	await expect(move.getByRole('button', { name: /^Add Cast/ })).toBeEnabled();
-	await expect(move.getByRole('radio', { name: 'Cast', exact: true })).toHaveAttribute(
-		'aria-checked',
-		'true'
-	);
+	await expect(cast).toBeChecked();
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.locator('.project-btn').click();
@@ -4695,6 +4707,12 @@ test('a custom move replacement keeps its name and requires a supported frame co
 		.fill('Step sideways and shift weight to the leading foot');
 	await expect(replace).toBeEnabled();
 	await expect(replace).toContainText('Est. 23 gens');
+	const custom = sheet.getByRole('textbox', { name: 'Describe a new move', exact: true });
+	await expect(custom).toHaveValue('');
+	await custom.fill('jumping in place');
+	const add = page.getByRole('dialog', { name: 'Add a move', exact: true });
+	await expect(add.getByRole('button', { name: /^Add Jumping in/ })).toBeEnabled();
+	await expect(add.getByText('Directions to redraw')).toHaveCount(0);
 });
 
 async function oversizedItemFixture(page: Page, itemId: string) {
