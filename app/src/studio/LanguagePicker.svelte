@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { getLocale, getLocales, localeName, setLocale, t } from 'svelte-whisper';
+	import { getLocale, getLocales, localeName, t } from 'svelte-whisper';
+	import { selectLanguage } from '../lib/i18n.ts';
 
 	const names: Record<string, string> = {
 		en: 'English',
@@ -26,7 +27,7 @@
 		pending = true;
 		failed = false;
 		try {
-			failed = !(await setLocale(id)) && getLocale() !== id;
+			failed = !(await selectLanguage(id)) && getLocale() !== id;
 		} finally {
 			select.value = getLocale();
 			pending = false;

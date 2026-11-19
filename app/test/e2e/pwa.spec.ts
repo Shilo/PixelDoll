@@ -280,7 +280,7 @@ test('installed shell includes valid icons and works offline after a cold naviga
 			.click();
 		await expect(
 			page.getByRole('dialog', { name: 'Installation help', exact: true })
-		).toContainText('App files are ready for offline launches.');
+		).toContainText('The app is ready to open offline in English.');
 		const cached = await page.evaluate(async () =>
 			(
 				await Promise.all(
@@ -328,6 +328,11 @@ test('an offline launch needs no optional languages and retains a language used 
 		await expect(customize).toHaveText(english);
 		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 		expect(await page.evaluate(() => localStorage.getItem('pixeldoll.locale'))).toBe('de');
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await page.getByRole('combobox', { name: 'Language' }).selectOption('fr');
+		await expect(page.locator('#experience-options')).toContainText(
+			'Could not load that language. Reconnect and reload, then try again.'
+		);
 		await context.setOffline(false);
 		const germanPath = optional.find((file) => file.locale === 'de')!.path;
 		await expect
@@ -359,6 +364,7 @@ test('an uncontrolled first visit saves the detected language for this release a
 	const first = await testRelease('locale-first', '8.0.1');
 	const next = await testRelease('locale-next', '8.0.2');
 	const server = await pwaServer(first);
+	const held = server.hold('icons/pwa/icon-512.png');
 	await context.addInitScript(() =>
 		Object.defineProperty(navigator, 'languages', { value: ['de-DE'] })
 	);
@@ -377,6 +383,17 @@ test('an uncontrolled first visit saves the detected language for this release a
 		await page.goto(server.url);
 		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
 		expect(await page.evaluate(() => navigator.serviceWorker.controller)).toBeNull();
+		await held.requested;
+		await expect
+			.poll(() =>
+				page.evaluate(async () => {
+					const cache = await caches.open(`pixeldoll-meta:${location.href}`);
+					const preference = await cache.match(new URL('.pwa-meta/language', location.href));
+					return (await preference?.json())?.locale;
+				})
+			)
+			.toBe('de');
+		held.release();
 		await expect.poll(() => cached(first)).toBe(true);
 		await page.keyboard.press('Shift');
 		server.deploy(next);
@@ -1272,7 +1289,7 @@ test('a missing current static cache is repaired online without clearing saved b
 		await expect(help).toContainText('Offline files are not ready yet.');
 		await context.setOffline(false);
 		await page.evaluate(() => dispatchEvent(new Event('online')));
-		await expect(help).toContainText('App files are ready for offline launches.', {
+		await expect(help).toContainText('The app is ready to open offline in English.', {
 			timeout: 30_000
 		});
 		await help.getByRole('button', { name: 'Close', exact: true }).click();

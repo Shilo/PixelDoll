@@ -6,7 +6,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 - **Offline languages are optional.** English is included in the app. Other languages can be used offline after the
   matching catalog is cached. If the preferred catalog is missing, PixelDoll opens in English without changing the
-  preference. Reconnect and reload to retrieve it, or to switch to a language you have not used yet.
+  preference. Reconnect and reload to retrieve it, or to switch to a language you have not used yet. An older open tab
+  may also need to update and reload before it can load a catalog no longer served by a newer deployment.
 - **Intentional shared-origin trust.** Every app on this origin may use the optional remembered `pixellabApiKey`. A
   compromise in any such app can expose it. App-generated channel notifications contain no token, and Forget clears
   cooperating open apps. Origin isolation and encryption are not part of the current UX. See

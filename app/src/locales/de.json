@@ -81,7 +81,7 @@
 	"language": {
 		"label": "Sprache",
 		"loading": "Sprache wird geladen…",
-		"failed": "Diese Sprache konnte nicht geladen werden. Versuch es noch einmal."
+		"failed": "Diese Sprache konnte nicht geladen werden. Geh online, lade die Seite neu und versuch es noch einmal."
 	},
 	"directionCompass": {
 		"direction": "Blickrichtung: {name}",
@@ -356,7 +356,7 @@
 		"onIPhoneOrIPadOpenPixelDollIn": "Öffne PixelDoll auf dem iPhone oder iPad in Safari. Tippe auf „Teilen“, dann auf „Zum Home-Bildschirm“ und, falls angeboten, auf „Als Web-App öffnen“.",
 		"ifYourBrowserOffersInstallAppAdd": "Wenn dein Browser „App installieren“, „Zum Dock hinzufügen“ oder „Zum Startbildschirm hinzufügen“ anbietet, verwende den entsprechenden Befehl. Du kannst PixelDoll auch in einem Browser öffnen, der die Installation unterstützt.",
 		"savedCharactersDressingRecoloringDeviceImportAnd": "Sobald alle App-Dateien geladen sind, kannst du offline auf gespeicherte Figuren zugreifen, sie ausstatten und umfärben sowie Dateien vom Gerät importieren und exportieren. Für Generierungen, Kontoinformationen und die PixelLab-Bibliothek brauchst du eine Verbindung.",
-		"appFilesAreReadyForOfflineLaunches": "Die App-Dateien sind für den Offline-Start bereit.",
+		"appFilesAreReadyForOfflineLaunches": "Die App lässt sich offline auf Englisch öffnen. Wenn du eine andere Sprache offline verwenden möchtest, öffne die App zuerst mit Internetverbindung in dieser Sprache.",
 		"offlineFilesAreNotReadyYetKeep": "Die Offline-Dateien sind noch nicht bereit. Lass PixelDoll geöffnet und bleib online.",
 		"openTheUpdatedAppInANew": "Öffne die aktualisierte App in einem neuen Tab, damit deine Arbeit hier geöffnet bleibt.",
 		"openUpdatedApp": "Aktualisierte App öffnen",

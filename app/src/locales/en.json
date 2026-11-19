@@ -81,7 +81,7 @@
 	"language": {
 		"label": "Language",
 		"loading": "Loading language…",
-		"failed": "Could not load that language. Try again."
+		"failed": "Could not load that language. Reconnect and reload, then try again."
 	},
 	"directionCompass": {
 		"direction": "{name} direction",
@@ -353,7 +353,7 @@
 		"onIPhoneOrIPadOpenPixelDollIn": "On iPhone or iPad, open PixelDoll in Safari, tap Share, then Add to Home Screen and Open as Web App if offered.",
 		"ifYourBrowserOffersInstallAppAdd": "If your browser offers Install app, Add to Dock, or Add to Home Screen, use that command. You can also open PixelDoll in a browser that supports installation.",
 		"savedCharactersDressingRecoloringDeviceImportAnd": "Saved characters, dressing, recoloring, device import, and export work offline after the app files finish downloading. PixelLab generation, account information, and its library need a connection.",
-		"appFilesAreReadyForOfflineLaunches": "App files are ready for offline launches.",
+		"appFilesAreReadyForOfflineLaunches": "The app is ready to open offline in English. To use another language offline, open the app in that language while connected first.",
 		"offlineFilesAreNotReadyYetKeep": "Offline files are not ready yet. Keep PixelDoll open while connected.",
 		"openTheUpdatedAppInANew": "Open the updated app in a new tab to keep your work open here.",
 		"openUpdatedApp": "Open updated app",

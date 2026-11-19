@@ -60,6 +60,25 @@ for (const rel of readdirSync(dist, { recursive: true })) {
 }
 if (startupPolicies !== 1)
 	bad.push(`${join(dist, 'assets')}: missing or duplicated isolated startup policy`);
+try {
+	const worker = join(dist, 'sw.js');
+	const inventory = JSON.parse(/^const FILES = (.*);$/m.exec(readFileSync(worker, 'utf8'))?.[1]);
+	const expected = readdirSync(new URL('../src/locales/', import.meta.url))
+		.filter((name) => name.endsWith('.json') && name !== 'en.json')
+		.map((name) => name.slice(0, -5))
+		.sort();
+	const optional = inventory.filter((file) => Object.hasOwn(file, 'locale'));
+	if (
+		JSON.stringify(optional.map((file) => file.locale).sort()) !== JSON.stringify(expected) ||
+		optional.some(
+			(file) => !/^assets\/[^/]+\.js$/.test(file.path) || !/^[a-f0-9]{64}$/.test(file.hash)
+		) ||
+		new Set(optional.map((file) => file.path)).size !== optional.length
+	)
+		bad.push(`${worker}: expected exactly one verified optional chunk per non-English locale`);
+} catch {
+	bad.push(`${join(dist, 'sw.js')}: missing or malformed offline inventory`);
+}
 if (bad.length) {
 	console.error(`dist guard: ${bad.length} problem(s) in ${dist}/\n${bad.join('\n')}`);
 	process.exit(1);

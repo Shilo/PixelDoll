@@ -81,7 +81,7 @@
 	"language": {
 		"label": "Idioma",
 		"loading": "Cargando idioma…",
-		"failed": "No se pudo cargar ese idioma. Inténtalo de nuevo."
+		"failed": "No se pudo cargar ese idioma. Vuelve a conectarte, recarga la página e inténtalo de nuevo."
 	},
 	"directionCompass": {
 		"direction": "Dirección {name}",
@@ -356,7 +356,7 @@
 		"onIPhoneOrIPadOpenPixelDollIn": "En iPhone o iPad, abre PixelDoll en Safari, toca «Compartir» y luego «Agregar a la pantalla de inicio» y «Abrir como app web», si aparecen.",
 		"ifYourBrowserOffersInstallAppAdd": "Si tu navegador ofrece Instalar app, Agregar al Dock o Agregar a la pantalla de inicio, usa esa opción. También puedes abrir PixelDoll en un navegador que admita la instalación.",
 		"savedCharactersDressingRecoloringDeviceImportAnd": "Puedes usar tus personajes guardados, vestirlos, cambiar sus colores, importar desde el dispositivo y exportar sin conexión cuando se terminen de descargar los archivos de la app. Necesitas conexión para generar con PixelLab o consultar tu cuenta y tu biblioteca.",
-		"appFilesAreReadyForOfflineLaunches": "Ya puedes abrir la app sin conexión.",
+		"appFilesAreReadyForOfflineLaunches": "Ya puedes abrir la app en inglés sin conexión. Para usar otro idioma sin conexión, abre primero la app en ese idioma con conexión a internet.",
 		"offlineFilesAreNotReadyYetKeep": "Los archivos para el uso sin conexión aún no están listos. Mantén PixelDoll abierto mientras tengas conexión.",
 		"openTheUpdatedAppInANew": "Abre la app actualizada en una pestaña nueva para mantener tu trabajo abierto aquí.",
 		"openUpdatedApp": "Abrir la app actualizada",

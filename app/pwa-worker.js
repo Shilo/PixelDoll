@@ -2,8 +2,11 @@
 const SCOPE = self.registration.scope;
 const PREFIX = `pixeldoll-static:${SCOPE}:`;
 const CACHE = PREFIX + RELEASE.build;
+const PARTIAL_PREFIX = `pixeldoll-partial:${SCOPE}:`;
+const PARTIAL = PARTIAL_PREFIX + RELEASE.build;
 const META = `pixeldoll-meta:${SCOPE}`;
 const ACTIVE = new URL('.pwa-meta/active', SCOPE).href;
+const LANGUAGE = new URL('.pwa-meta/language', SCOPE).href;
 const PENDING = new URL('.pwa-meta/pending/', SCOPE).href;
 const METADATA_LOCK = `pixeldoll-cache-metadata:${SCOPE}`;
 const FILE_URLS = FILES.map((file) => ({ ...file, url: new URL(file.path, SCOPE).href }));
@@ -73,10 +76,16 @@ async function retireUnusedReleases() {
 		for (const name of await caches.keys()) {
 			if (self.registration.installing || self.registration.waiting) return;
 			if (name.startsWith(PREFIX) && !keep.has(name)) await caches.delete(name);
+			if (name.startsWith(PARTIAL_PREFIX)) await caches.delete(name);
 		}
 		const live = new Set(windows.map((client) => leaseUrl(client.id)));
 		for (const request of await meta.keys())
-			if (request.url !== ACTIVE && !request.url.startsWith(PENDING) && !live.has(request.url))
+			if (
+				request.url !== ACTIVE &&
+				request.url !== LANGUAGE &&
+				!request.url.startsWith(PENDING) &&
+				!live.has(request.url)
+			)
 				await meta.delete(request);
 	});
 }
@@ -132,30 +141,63 @@ async function currentResponse(file, repair = true) {
 }
 
 async function loadLocale(file, cache) {
-	for (const name of await caches.keys()) {
+	const stored = await retainedFile(file, await caches.keys());
+	if (!stored) return download(file, cache);
+	await saveDownload(file, cache, stored);
+	return stored;
+}
+
+async function retainedFile(file, names) {
+	for (const name of names) {
 		if (!name.startsWith(PREFIX) || name === CACHE) continue;
-		const stored = await verified(await (await caches.open(name)).match(file.url), file);
-		if (stored) {
-			await saveDownload(file, cache, stored);
-			return stored;
-		}
+		const url = new URL(file.url);
+		if (url.searchParams.has('pd-build'))
+			url.searchParams.set('pd-build', name.slice(PREFIX.length));
+		const stored = await verified(await (await caches.open(name)).match(url.href), file);
+		if (stored) return stored;
 	}
-	return download(file, cache);
+}
+
+function timedSignal(milliseconds, parent) {
+	const controller = new AbortController();
+	const abort = () => controller.abort(parent.reason);
+	if (parent?.aborted) abort();
+	else parent?.addEventListener('abort', abort, { once: true });
+	const timer = setTimeout(
+		() => controller.abort(new DOMException('The offline download timed out.', 'TimeoutError')),
+		milliseconds
+	);
+	return {
+		signal: controller.signal,
+		clear() {
+			clearTimeout(timer);
+			parent?.removeEventListener('abort', abort);
+		}
+	};
 }
 
 async function download(file, cache, installationSignal) {
-	const signal = installationSignal
-		? AbortSignal.any([installationSignal, AbortSignal.timeout(120_000)])
-		: AbortSignal.timeout(20_000);
-	const downloaded = await verified(
-		await fetch(file.url, {
-			cache: 'no-store',
-			credentials: 'omit',
-			redirect: 'error',
-			signal
-		}),
-		file
-	);
+	const deadline = timedSignal(installationSignal ? 120_000 : 20_000, installationSignal);
+	const request = async (cacheMode) =>
+		verified(
+			await fetch(file.url, {
+				cache: cacheMode,
+				credentials: 'omit',
+				redirect: 'error',
+				signal: deadline.signal
+			}),
+			file
+		);
+	let downloaded;
+	try {
+		if (file.path.startsWith('assets/')) downloaded = await request('force-cache');
+		if (!downloaded) downloaded = await request('no-store');
+		if (deadline.signal.aborted) throw deadline.signal.reason;
+	} catch (error) {
+		throw deadline.signal.aborted ? deadline.signal.reason : error;
+	} finally {
+		deadline.clear();
+	}
 	if (!downloaded)
 		throw new Error(
 			installationSignal
@@ -182,22 +224,56 @@ async function verify(repair = true) {
 	return true;
 }
 
+async function savePartial(cache) {
+	const requests = await cache.keys();
+	if (!requests.length) return;
+	const partial = await caches.open(PARTIAL);
+	for (const request of requests) {
+		const response = await cache.match(request);
+		if (response) await partial.put(request, response);
+	}
+}
+
+async function prepareLanguage(cache) {
+	if (!(await caches.keys()).includes(META)) return;
+	const meta = await caches.open(META);
+	const preference = await (await meta.match(LANGUAGE))?.json();
+	const file = LOCALES.get(preference?.locale);
+	if (!file || (await verified(await cache.match(file.url), file))) return;
+	const deadline = timedSignal(10_000);
+	try {
+		const retained = await retainedFile(file, await caches.keys());
+		if (retained) await saveDownload(file, cache, retained);
+		else await download(file, cache, deadline.signal);
+	} finally {
+		deadline.clear();
+	}
+}
+
 self.addEventListener('install', (event) => {
 	event.waitUntil(
 		(async () => {
 			const cache = await caches.open(CACHE);
 			const cancel = new AbortController();
-			const installSignal = AbortSignal.any([cancel.signal, AbortSignal.timeout(180_000)]);
+			const deadline = timedSignal(180_000, cancel.signal);
+			const installSignal = deadline.signal;
 			const required = REQUIRED_FILES.values();
 			let failure;
 			try {
+				const names = await caches.keys();
+				const partial = names.includes(PARTIAL) ? await caches.open(PARTIAL) : undefined;
 				// A failed deployment or a CDN serving mixed releases must never replace the last complete offline app.
 				await Promise.all(
 					Array.from({ length: 4 }, async () => {
 						for (const file of required) {
 							if (installSignal.aborted) return;
 							try {
-								await download(file, cache, installSignal);
+								const saved =
+									(await verified(await partial?.match(file.url), file)) ??
+									(await retainedFile(file, names));
+								if (installSignal.aborted) return;
+								if (saved) await saveDownload(file, cache, saved);
+								else await download(file, cache, installSignal);
 							} catch (error) {
 								if (!installSignal.aborted) {
 									failure = error;
@@ -209,12 +285,25 @@ self.addEventListener('install', (event) => {
 					})
 				);
 				if (cancel.signal.aborted) throw failure;
-				installSignal.throwIfAborted();
+				if (installSignal.aborted) throw installSignal.reason;
 				await verify(false);
-				installSignal.throwIfAborted();
+				if (installSignal.aborted) throw installSignal.reason;
+				if (partial) await caches.delete(PARTIAL);
 			} catch (error) {
+				try {
+					await savePartial(cache);
+				} catch (backupError) {
+					console.warn('PixelDoll could not retain offline download progress:', backupError);
+				}
 				await caches.delete(CACHE);
 				throw error;
+			} finally {
+				deadline.clear();
+			}
+			try {
+				await prepareLanguage(cache);
+			} catch (error) {
+				console.warn('PixelDoll could not prepare a language for offline use:', error);
 			}
 			// Updates wait for an explicit action. Automatically activating can interrupt a paid request or an unsaved form.
 		})()
@@ -239,9 +328,26 @@ self.addEventListener('message', (event) => {
 	const message = event.data;
 	if (message?.type === 'CACHE_LOCALE') {
 		const file = LOCALES.get(message.locale);
-		if (file && event.source?.url?.startsWith(SCOPE))
+		if (
+			(file || message.locale === 'en') &&
+			Number.isFinite(message.selectedAt) &&
+			event.source?.url?.startsWith(SCOPE)
+		)
 			event.waitUntil(
-				currentResponse(file).catch((error) => {
+				(async () => {
+					await metadataChange(async () => {
+						const meta = await caches.open(META);
+						const previous = await (await meta.match(LANGUAGE))?.json();
+						if (previous && previous.selectedAt >= message.selectedAt) return;
+						await meta.put(
+							LANGUAGE,
+							new Response(
+								JSON.stringify({ locale: message.locale, selectedAt: message.selectedAt })
+							)
+						);
+					});
+					if (file && message.online !== false) await currentResponse(file);
+				})().catch((error) => {
 					console.warn('PixelDoll could not prepare a language for offline use:', error);
 				})
 			);

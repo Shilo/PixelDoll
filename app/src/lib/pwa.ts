@@ -150,23 +150,24 @@ let stopped = true;
 let base: URL;
 let registerWorker: (() => Promise<void>) | undefined;
 let offlineLocale = 'en';
+let localeSelectedAt = Date.now();
 
-export function setOfflineLocale(locale: string) {
-	if (!locale || locale === offlineLocale) return;
+export function setOfflineLocale(locale: string, explicit = false) {
+	if (!explicit && locale === offlineLocale) return;
 	offlineLocale = locale;
+	localeSelectedAt = Math.max(Date.now(), localeSelectedAt + 1);
 	cacheActiveLocale();
 }
 
 function cacheLocale(worker: ServiceWorker | null | undefined) {
-	if (
-		stopped ||
-		!navigator.onLine ||
-		offlineLocale === 'en' ||
-		(worker?.state !== 'activated' && worker?.state !== 'installed')
-	)
-		return;
+	if (stopped || !worker || worker.state === 'redundant') return;
 	try {
-		worker.postMessage({ type: 'CACHE_LOCALE', locale: offlineLocale });
+		worker.postMessage({
+			type: 'CACHE_LOCALE',
+			locale: offlineLocale,
+			selectedAt: localeSelectedAt,
+			online: navigator.onLine && (worker.state === 'installed' || worker.state === 'activated')
+		});
 	} catch (error) {
 		console.warn('PixelDoll could not request an offline language:', error);
 	}
@@ -174,7 +175,7 @@ function cacheLocale(worker: ServiceWorker | null | undefined) {
 
 function cacheActiveLocale() {
 	cacheLocale(registration?.active);
-	cacheLocale(registration?.waiting);
+	cacheLocale(registration?.waiting ?? registration?.installing);
 }
 
 async function inspectWorker() {
@@ -242,7 +243,12 @@ export function checkForUpdate(): Promise<void> {
 				failures.push(errorMessage(e));
 			}
 			try {
-				if (!registration && registerWorker)
+				if (
+					!registration?.active &&
+					!registration?.waiting &&
+					!registration?.installing &&
+					registerWorker
+				)
 					await bounded(
 						registerWorker(),
 						new LocalizedError('Offline setup did not respond.', 'pwa.setupNoResponse')
@@ -351,6 +357,7 @@ export function startPwa() {
 	};
 	const watch = () => {
 		const worker = registration?.installing;
+		cacheLocale(worker);
 		worker?.addEventListener('statechange', () => {
 			if (worker.state === 'installed' || worker.state === 'activated') onController();
 			if (worker.state === 'redundant')
@@ -387,6 +394,7 @@ export function startPwa() {
 					updateViaCache: 'none'
 				});
 		if (stopped) return;
+		registration?.removeEventListener('updatefound', watch);
 		registration = r;
 		cacheActiveLocale();
 		r.addEventListener('updatefound', watch);

@@ -81,7 +81,7 @@
 	"language": {
 		"label": "Bahasa",
 		"loading": "Memuat bahasa…",
-		"failed": "Bahasa tersebut tidak dapat dimuat. Coba lagi."
+		"failed": "Bahasa tersebut tidak dapat dimuat. Sambungkan kembali ke internet, muat ulang halaman, lalu coba lagi."
 	},
 	"directionCompass": {
 		"direction": "Arah {name}",
@@ -343,7 +343,7 @@
 		"onIPhoneOrIPadOpenPixelDollIn": "Di iPhone atau iPad, buka PixelDoll di Safari, ketuk Bagikan, lalu Tambahkan ke Layar Utama dan Buka sebagai App Web jika tersedia.",
 		"ifYourBrowserOffersInstallAppAdd": "Jika browser menawarkan Pasang aplikasi, Tambahkan ke Dock, atau Tambahkan ke Layar Utama, pilih perintah tersebut. Anda juga dapat membuka PixelDoll di browser yang mendukung pemasangan.",
 		"savedCharactersDressingRecoloringDeviceImportAnd": "Setelah file aplikasi selesai diunduh, karakter tersimpan, pemakaian perlengkapan, pewarnaan ulang, impor dari perangkat, dan ekspor bisa digunakan tanpa koneksi. Generasi PixelLab, informasi akun, dan pustaka PixelLab memerlukan koneksi.",
-		"appFilesAreReadyForOfflineLaunches": "File aplikasi siap digunakan untuk membuka PixelDoll tanpa koneksi.",
+		"appFilesAreReadyForOfflineLaunches": "Aplikasi siap dibuka dalam bahasa Inggris tanpa koneksi. Untuk menggunakan bahasa lain tanpa koneksi, buka dulu aplikasi dalam bahasa tersebut saat terhubung ke internet.",
 		"offlineFilesAreNotReadyYetKeep": "File untuk penggunaan offline belum siap. Biarkan PixelDoll terbuka selama Anda terhubung.",
 		"openTheUpdatedAppInANew": "Buka aplikasi yang sudah diperbarui di tab baru agar pekerjaan Anda tetap terbuka di sini.",
 		"openUpdatedApp": "Buka aplikasi yang diperbarui",

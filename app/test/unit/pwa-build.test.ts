@@ -77,7 +77,7 @@ function worker(
 	let windows: WindowClient[] = [{ id: 'current-client', url: scope }];
 	let broken = false;
 	let offline = false;
-	let intercept: ((options: RequestInit) => Promise<Response>) | undefined;
+	let intercept: ((options: RequestInit, url: string) => Promise<Response>) | undefined;
 	const skipWaiting = vi.fn(async () => {});
 	const update = vi.fn(async () => {
 		if (offline) throw new TypeError('Offline');
@@ -136,14 +136,15 @@ function worker(
 			Request,
 			Response,
 			AbortController,
-			AbortSignal,
+			AbortSignal: { timeout: AbortSignal.timeout },
+			DOMException,
 			MessageChannel,
 			setTimeout,
 			clearTimeout,
 			fetch: async (input: string | Request, options: RequestInit = {}) => {
 				const url = typeof input === 'string' ? input : input.url;
 				fetched.push({ url, options });
-				if (intercept) return intercept(options);
+				if (intercept) return intercept(options, url);
 				if (offline) throw new TypeError('Offline');
 				return new Response(
 					broken
@@ -289,7 +290,7 @@ describe('PWA worker release safety', () => {
 		});
 		expect(app.fetched.map(({ url }) => url)).not.toContain(url);
 		await app.event('message', {
-			data: { type: 'CACHE_LOCALE', locale: 'fr' },
+			data: { type: 'CACHE_LOCALE', locale: 'fr', selectedAt: 1 },
 			source: { url: 'https://other.test/' }
 		});
 		expect(app.fetched.map(({ url }) => url)).not.toContain(url);
@@ -336,7 +337,7 @@ describe('PWA worker release safety', () => {
 		expect(app.fetched).toHaveLength(files.length);
 		for (const fetch of app.fetched)
 			expect(fetch.options).toEqual({
-				cache: 'no-store',
+				cache: fetch.url.startsWith(scope + 'assets/') ? 'force-cache' : 'no-store',
 				credentials: 'omit',
 				redirect: 'error',
 				signal: expect.any(AbortSignal)
@@ -500,6 +501,92 @@ describe('PWA worker release safety', () => {
 			'PWA release bytes did not match this build'
 		);
 		expect(await app.caches.keys()).toEqual([prefix + 'build-a', 'another-app']);
+	});
+
+	it('reuses required retained bytes only if exact and bypasses mismatched HTTP cache bytes', async () => {
+		const app = worker();
+		const previous = await app.caches.open(prefix + 'build-a');
+		await previous.put(scope + 'worlds/forest.png?pd-build=build-a', new Response('world B'));
+		await previous.put(scope + 'index.html?pd-build=build-a', new Response('wrong shell'));
+		app.interceptNetwork(
+			async ({ cache }, url) =>
+				new Response(
+					cache === 'force-cache' ? 'stale HTTP bytes' : bytes.get(url.slice(scope.length))
+				)
+		);
+		await app.event('install');
+		expect(app.fetched.map(({ url, options }) => [url, options.cache]).sort()).toEqual(
+			[
+				[scope + files[0]!.path, 'no-store'],
+				[scope + files[2]!.path, 'force-cache'],
+				[scope + files[2]!.path, 'no-store']
+			].sort()
+		);
+	});
+
+	it.each(['TimeoutError', 'TypeError'])(
+		'keeps install progress after %s separate and verifies it on retry',
+		async (name) => {
+			const app = worker();
+			const partialName = `pixeldoll-partial:${scope}:${release.build}`;
+			const index = scope + files[0]!.path;
+			const world = scope + files[1]!.path;
+			const asset = scope + files[2]!.path;
+			const timeout = deferred<Response>();
+			app.interceptNetwork(async (_, url) =>
+				url === asset ? timeout.promise : new Response(bytes.get(url.slice(scope.length)))
+			);
+			const rejection = expect(app.event('install')).rejects.toMatchObject({ name });
+			await vi.waitFor(() => expect(app.cacheData.get(prefix + release.build)?.size).toBe(2));
+			timeout.reject(
+				name === 'TimeoutError' ? new DOMException('timed out', name) : new TypeError('Offline')
+			);
+			await rejection;
+			expect(app.cacheData.has(prefix + release.build)).toBe(false);
+			expect(app.cacheData.get(partialName)?.size).toBe(2);
+			await (await app.caches.open(partialName)).put(world, new Response('corrupt partial'));
+			app.interceptNetwork(undefined);
+			app.fetched.length = 0;
+			await app.event('install');
+			expect(app.fetched.map(({ url }) => url).sort()).toEqual([world, asset].sort());
+			expect(app.fetched.some(({ url }) => url === index)).toBe(false);
+			expect(app.cacheData.has(partialName)).toBe(false);
+		}
+	);
+
+	it('prepares the remembered locale for a changed release without open tabs and honors a newer English selection', async () => {
+		const previous = worker();
+		const source = { id: 'current-client', url: scope };
+		const setLocale = (app: ReturnType<typeof worker>, locale: string, selectedAt: number) =>
+			app.message({ type: 'CACHE_LOCALE', locale, selectedAt, online: false }, source);
+		const oldPath = 'assets/fr-old.js';
+		const path = 'assets/fr-new.js';
+		const old = worker(
+			previous.cacheData,
+			{ ...release, build: 'build-a' },
+			new Map([[oldPath, 'old']]),
+			true,
+			new Map([[oldPath, 'fr']])
+		);
+		await setLocale(old, 'fr', 1);
+		const candidate = () =>
+			worker(
+				previous.cacheData,
+				release,
+				new Map([...bytes, [path, 'new']]),
+				true,
+				new Map([[path, 'fr']])
+			);
+		const app = candidate();
+		app.closeWindows();
+		await app.event('install');
+		expect(app.fetched.map(({ url }) => url)).toContain(scope + path);
+		await setLocale(app, 'en', 3);
+		await setLocale(old, 'fr', 2);
+		await app.caches.delete(prefix + release.build);
+		const next = candidate();
+		await next.event('install');
+		expect(next.fetched.map(({ url }) => url)).not.toContain(scope + path);
 	});
 
 	it('starts only four transfers, aborts peers on failure, and drains them before deleting the candidate', async () => {

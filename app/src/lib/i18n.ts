@@ -5,8 +5,8 @@ import {
 	getLocale,
 	getLocales,
 	init,
-	locale,
 	registerLoader,
+	setLocale,
 	t
 } from 'svelte-whisper';
 import en from '../locales/en.json';
@@ -39,17 +39,15 @@ export function setupI18n(): Promise<void> {
 			initial: workspaceCopy ? saved : undefined,
 			detect: !saved
 		});
-		if (!workspaceCopy && import.meta.env.PROD) {
-			setOfflineLocale(saved ?? detectLocale() ?? 'en');
-			let applied: string | undefined;
-			locale.subscribe((active) => {
-				if (active !== 'en' || storedLocale() === 'en' || (applied && applied !== 'en'))
-					setOfflineLocale(active);
-				applied = active;
-			});
-		}
+		if (!workspaceCopy && import.meta.env.PROD) setOfflineLocale((saved ?? detectLocale()) || 'en');
 	}
 	return ready;
+}
+
+export async function selectLanguage(id: string): Promise<boolean> {
+	const selected = await setLocale(id);
+	if (selected && !workspaceCopy && import.meta.env.PROD) setOfflineLocale(id, true);
+	return selected;
 }
 
 export function displayMessage(value: Message | string): string {

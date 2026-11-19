@@ -81,7 +81,7 @@
 	"language": {
 		"label": "Dil",
 		"loading": "Dil yükleniyor…",
-		"failed": "Dil yüklenemedi. Tekrar deneyin."
+		"failed": "Bu dil yüklenemedi. İnternete yeniden bağlanın, sayfayı yeniden yükleyin ve tekrar deneyin."
 	},
 	"directionCompass": {
 		"direction": "Yön: {name}",
@@ -353,7 +353,7 @@
 		"onIPhoneOrIPadOpenPixelDollIn": "iPhone veya iPad'de PixelDoll'u Safari'de açın. Paylaş'a, ardından Ana Ekrana Ekle'ye dokunun. Sunulursa Web Uygulaması Olarak Aç seçeneğini kullanın.",
 		"ifYourBrowserOffersInstallAppAdd": "Tarayıcınız Uygulamayı yükle, Dock'a ekle veya Ana Ekrana Ekle seçeneğini sunuyorsa onu kullanın. PixelDoll'u kurulumu destekleyen bir tarayıcıda da açabilirsiniz.",
 		"savedCharactersDressingRecoloringDeviceImportAnd": "Uygulama dosyaları indirildikten sonra kayıtlı karakterlere erişme, giydirme, renk değiştirme, cihazdan içe aktarma ve dışa aktarma çevrimdışı çalışır. PixelLab ile üretim, hesap bilgileri ve PixelLab kitaplığı için bağlantı gerekir.",
-		"appFilesAreReadyForOfflineLaunches": "Uygulama dosyaları çevrimdışı açılış için hazır.",
+		"appFilesAreReadyForOfflineLaunches": "Uygulamayı artık çevrimdışı olarak İngilizce açabilirsiniz. Başka bir dili çevrimdışı kullanmak için önce internete bağlıyken uygulamayı o dilde açın.",
 		"offlineFilesAreNotReadyYetKeep": "Çevrimdışı kullanım dosyaları henüz hazır değil. Bağlantınız varken PixelDoll'u açık tutun.",
 		"openTheUpdatedAppInANew": "Çalışmanızı burada açık tutmak için güncellenen uygulamayı yeni bir sekmede açın.",
 		"openUpdatedApp": "Güncel uygulamayı açın",

@@ -81,7 +81,7 @@
 	"language": {
 		"label": "Langue",
 		"loading": "Chargement de la langue…",
-		"failed": "Impossible de charger cette langue. Réessayez."
+		"failed": "Impossible de charger cette langue. Rétablissez la connexion, rechargez la page, puis réessayez."
 	},
 	"directionCompass": {
 		"direction": "Direction : {name}",
@@ -353,7 +353,7 @@
 		"onIPhoneOrIPadOpenPixelDollIn": "Sur iPhone ou iPad, ouvrez PixelDoll dans Safari, touchez « Partager », puis « Sur l’écran d’accueil ». Activez « Ouvrir comme app web » si l’option est proposée.",
 		"ifYourBrowserOffersInstallAppAdd": "Si votre navigateur propose « Installer l’application », « Ajouter au Dock » ou « Ajouter à l’écran d’accueil », utilisez cette commande. Vous pouvez aussi ouvrir PixelDoll dans un navigateur qui prend en charge l’installation.",
 		"savedCharactersDressingRecoloringDeviceImportAnd": "Une fois les fichiers de l’application téléchargés, vous pouvez accéder à vos personnages enregistrés, les habiller, les recolorer, importer des fichiers depuis l’appareil et exporter hors ligne. La génération, les informations du compte PixelLab et la bibliothèque PixelLab nécessitent une connexion.",
-		"appFilesAreReadyForOfflineLaunches": "Les fichiers de l’application sont prêts pour un lancement hors ligne.",
+		"appFilesAreReadyForOfflineLaunches": "L’application peut s’ouvrir en anglais hors ligne. Pour utiliser une autre langue hors ligne, ouvrez d’abord l’application dans cette langue avec une connexion à Internet.",
 		"offlineFilesAreNotReadyYetKeep": "Les fichiers hors ligne ne sont pas encore prêts. Gardez PixelDoll ouvert tant que vous êtes connecté.",
 		"openTheUpdatedAppInANew": "Ouvrez l’application mise à jour dans un nouvel onglet pour garder votre travail ouvert ici.",
 		"openUpdatedApp": "Ouvrir l’application mise à jour",

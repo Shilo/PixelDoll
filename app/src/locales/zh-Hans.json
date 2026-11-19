@@ -81,7 +81,7 @@
 	"language": {
 		"label": "语言",
 		"loading": "正在加载语言…",
-		"failed": "无法加载该语言。请重试。"
+		"failed": "无法加载该语言。请重新连接并重新加载页面，然后重试。"
 	},
 	"directionCompass": {
 		"direction": "{name}方向",
@@ -341,7 +341,7 @@
 		"onIPhoneOrIPadOpenPixelDollIn": "在 iPhone 或 iPad 上，请在 Safari 中打开 PixelDoll，轻点“分享”，然后选择“添加到主屏幕”；如有提示，请选择“作为 Web 应用打开”。",
 		"ifYourBrowserOffersInstallAppAdd": "如果你的浏览器提供“安装应用”“添加到程序坞”或“添加到主屏幕”，请使用该命令。你也可以在支持安装的浏览器中打开 PixelDoll。",
 		"savedCharactersDressingRecoloringDeviceImportAnd": "应用文件下载完成后，已保存的角色、换装、重新上色、设备导入和导出均可离线使用。PixelLab 生成、账户信息和 PixelLab 角色库需要网络连接。",
-		"appFilesAreReadyForOfflineLaunches": "应用文件已可离线启动。",
+		"appFilesAreReadyForOfflineLaunches": "现在可以离线打开应用并使用英语。如需离线使用其他语言，请先在联网时用该语言打开应用。",
 		"offlineFilesAreNotReadyYetKeep": "离线文件尚未就绪。请保持 PixelDoll 打开并连接网络。",
 		"openTheUpdatedAppInANew": "在新标签页中打开更新后的应用，以便在此处保留你的工作。",
 		"openUpdatedApp": "打开更新后的应用",

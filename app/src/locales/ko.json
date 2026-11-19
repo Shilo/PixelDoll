@@ -81,7 +81,7 @@
 	"language": {
 		"label": "언어",
 		"loading": "언어를 불러오는 중이에요…",
-		"failed": "해당 언어를 불러오지 못했어요. 다시 시도해 주세요."
+		"failed": "해당 언어를 불러오지 못했어요. 인터넷에 다시 연결하고 페이지를 새로고침한 뒤 다시 시도해 주세요."
 	},
 	"directionCompass": {
 		"direction": "{name} 방향",
@@ -346,7 +346,7 @@
 		"onIPhoneOrIPadOpenPixelDollIn": "iPhone 또는 iPad에서는 Safari로 PixelDoll을 열고 공유를 누른 다음, 제공되는 경우 홈 화면에 추가 및 웹 앱으로 열기를 선택하세요.",
 		"ifYourBrowserOffersInstallAppAdd": "브라우저에 앱 설치, Dock에 추가, 홈 화면에 추가 명령이 있으면 사용하세요. 설치를 지원하는 브라우저에서 PixelDoll을 열 수도 있어요.",
 		"savedCharactersDressingRecoloringDeviceImportAnd": "저장된 캐릭터, 꾸미기, 색상 변경, 기기 가져오기, 내보내기는 앱 파일 다운로드가 끝나면 오프라인에서도 작동해요. PixelLab 생성, 계정 정보, 라이브러리에는 연결이 필요해요.",
-		"appFilesAreReadyForOfflineLaunches": "앱 파일이 오프라인 실행 준비를 마쳤어요.",
+		"appFilesAreReadyForOfflineLaunches": "이제 오프라인에서도 앱을 영어로 열 수 있어요. 다른 언어를 오프라인에서 사용하려면 인터넷에 연결된 상태에서 해당 언어로 앱을 먼저 열어 주세요.",
 		"offlineFilesAreNotReadyYetKeep": "오프라인 파일이 아직 준비되지 않았어요. 연결된 상태로 PixelDoll을 열어 두세요.",
 		"openTheUpdatedAppInANew": "작업을 여기서 계속하려면 새 탭에서 업데이트된 앱을 여세요.",
 		"openUpdatedApp": "업데이트된 앱 열기",
