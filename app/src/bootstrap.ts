@@ -30,7 +30,17 @@ export async function launchStudio() {
 		}
 		throw e;
 	}
-	await i18n;
+	let localeTimer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		await Promise.race([
+			i18n,
+			new Promise<void>((resolve) => {
+				localeTimer = setTimeout(resolve, 1500);
+			})
+		]);
+	} finally {
+		clearTimeout(localeTimer);
+	}
 	import.meta.hot?.dispose(() => {
 		removeEventListener('pagehide', leave);
 		queue.disconnect();

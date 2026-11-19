@@ -89,6 +89,40 @@ test.describe('first Studio render in Traditional Chinese', () => {
 	});
 });
 
+test.describe('first Studio render with a stalled Japanese catalog', () => {
+	test.use({ locale: 'ja-JP' });
+
+	test('opens in English and switches to Japanese when the catalog arrives', async ({ page }) => {
+		const japanese = JSON.parse(
+			await readFile(new URL('../../src/locales/ja.json', import.meta.url), 'utf8')
+		) as typeof import('../../src/locales/ja.json');
+		let release!: () => void, markRequested!: () => void;
+		const held = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		const requested = new Promise<void>((resolve) => {
+			markRequested = resolve;
+		});
+		await page.route(/\/assets\/ja-[^/]+\.js$/, async (route) => {
+			markRequested();
+			await held;
+			await route.continue();
+		});
+		try {
+			await page.goto('/', { waitUntil: 'commit' });
+			await requested;
+			await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeVisible();
+			await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+		} finally {
+			release();
+		}
+		await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+		await expect(
+			page.getByRole('button', { name: japanese.toolbar.moreOptions, exact: true })
+		).toBeVisible();
+	});
+});
+
 test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await page.addInitScript(() => {
 		localStorage.setItem('pixeldoll.agentKey', 'off');
