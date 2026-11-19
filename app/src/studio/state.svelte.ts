@@ -104,6 +104,7 @@ import { demoItemsShown } from './wardrobeVisibility.svelte.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
+import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
@@ -1257,6 +1258,10 @@ export function applyPreset(p: Preset) {
 		},
 		{ keepHand: 'main_hand', quiet: true }
 	);
+	if (store.project?.manifest.rig.animations.some((move) => move.id === DEFAULT_MOVE)) {
+		ui.anim = DEFAULT_MOVE;
+		ui.frame = 0;
+	}
 }
 export function savePreset(name: string) {
 	const m = store.project!.manifest;

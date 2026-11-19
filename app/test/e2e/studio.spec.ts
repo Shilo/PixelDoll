@@ -6756,6 +6756,11 @@ for (const kind of ['outfit', 'move'] as const) {
 		await equipmentMode(page, kind === 'outfit' ? 'Outfits' : 'Moves');
 		let name = 'Saved menu look';
 		if (kind === 'outfit') {
+			await equipmentGroup(page, 'Head');
+			await section(page, 'Head')
+				.getByRole('button', { name: /^Wizard hat(,|$)/ })
+				.click();
+			await equipmentMode(page, 'Outfits');
 			await page.getByRole('button', { name: 'Save current look', exact: true }).click();
 			await page.getByRole('textbox', { name: 'Outfit name' }).fill(name);
 			await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -6771,6 +6776,33 @@ for (const kind of ['outfit', 'move'] as const) {
 		const menu = page.getByRole('menu', { name: `Actions for ${name}`, exact: true });
 		if (kind === 'outfit') {
 			await expect(choice).toHaveAttribute('aria-pressed', 'true');
+			const move = page.getByRole('combobox', { name: 'Move', exact: true });
+			const pause = page.getByRole('button', { name: 'Pause', exact: true });
+			if (await pause.isVisible()) await pause.click();
+			const stage = () =>
+				page
+					.locator('.world-actors')
+					.evaluate((canvas) => (canvas as HTMLCanvasElement).toDataURL());
+			await move.selectOption('default');
+			const warning = page.getByRole('button', { name: /equipped items? needs? frames/ });
+			await expect(warning).toBeHidden();
+			const dressedDefault = await stage();
+			await move.selectOption('cross-punch');
+			await expect(warning).toBeVisible();
+			await expect.poll(stage).not.toBe(dressedDefault);
+			await choice.click();
+			await expect(move).toHaveValue('default');
+			await expect(warning).toBeHidden();
+			await expect.poll(stage).toBe(dressedDefault);
+			await equipmentGroup(page, 'Head');
+			await section(page, 'Head').getByRole('button', { name: 'Empty head', exact: true }).click();
+			await move.selectOption('walk');
+			await equipmentMode(page, 'Outfits');
+			await expect(choice).toHaveAttribute('aria-pressed', 'false');
+			await choice.click();
+			await expect(move).toHaveValue('default');
+			await expect(choice).toHaveAttribute('aria-pressed', 'true');
+			await expect.poll(stage).toBe(dressedDefault);
 			await equipmentGroup(page, 'Head');
 			await section(page, 'Head').getByRole('button', { name: 'Empty head', exact: true }).click();
 			await equipmentMode(page, 'Outfits');
