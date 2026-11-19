@@ -274,9 +274,28 @@ test('the startup preview notice expires after eight seconds', async ({ page }, 
 
 test('the startup pre-release notice opens the existing export picker', async ({ page }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	let releaseFixture!: () => void;
+	const fixtureHeld = new Promise<void>((resolve) => {
+		releaseFixture = resolve;
+	});
+	await page.route('**/fixtures/s2/fixture.json', async (route) => {
+		await fixtureHeld;
+		await route.continue();
+	});
 	await page.goto(dev);
 	const notice = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
-	await notice.getByRole('button', { name: 'Export sprites', exact: true }).click();
+	const exportButton = notice.getByRole('button', { name: 'Export sprites', exact: true });
+	let loadingHeight: number;
+	try {
+		await expect(exportButton).toBeVisible();
+		await expect(exportButton).toBeDisabled();
+		loadingHeight = await notice.evaluate((element) => element.clientHeight);
+	} finally {
+		releaseFixture();
+	}
+	await expect(exportButton).toBeEnabled();
+	expect(await notice.evaluate((element) => element.clientHeight)).toBe(loadingHeight);
+	await exportButton.click();
 	await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toBeVisible();
 	await expect(notice).toHaveCount(0);
 });

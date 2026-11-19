@@ -322,18 +322,17 @@
 {#snippet previewNoticeDetails()}
 	<div><strong class="preview-risk">{PREVIEW_NOTICE.risk}</strong></div>
 	{PREVIEW_NOTICE.description}
-	{#if store.project}
-		<button
-			class="bu-action btn sm preview-export"
-			data-variant="outline"
-			aria-label="Export sprites"
-			aria-haspopup="dialog"
-			onclick={() => {
-				dismissToast();
-				ui.sheet = 'export';
-			}}>Export</button
-		>
-	{/if}
+	<button
+		class="bu-action btn sm preview-export"
+		data-variant="outline"
+		aria-label="Export sprites"
+		aria-haspopup="dialog"
+		disabled={!store.project}
+		onclick={() => {
+			dismissToast();
+			ui.sheet = 'export';
+		}}>Export</button
+	>
 {/snippet}
 
 <svelte:window
