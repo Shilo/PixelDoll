@@ -276,6 +276,20 @@ test('character list thumbnails and New stay left-aligned and sizes fit', async 
 				});
 				expect(geometry.inset).toBeCloseTo(geometry.expected, 0);
 			}
+			const name = rows.first().locator('strong');
+			const newLabel = rows.last().locator('span').last();
+			const alignedLeft = (await newLabel.boundingBox())!.x;
+			expect((await name.boundingBox())!.x).toBeCloseTo(alignedLeft, 0);
+			const longNameLeft = await name.evaluate((node) => {
+				const longName = document.createElement('span');
+				longName.textContent =
+					'A long character name that should truncate instead of shifting columns';
+				node.append(longName);
+				const left = node.getBoundingClientRect().left;
+				longName.remove();
+				return left;
+			});
+			expect(longNameLeft).toBeCloseTo(alignedLeft, 0);
 		}
 	}
 });

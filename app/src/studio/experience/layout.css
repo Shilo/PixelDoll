@@ -1113,6 +1113,9 @@
 	height: 74px;
 	max-height: 74px;
 }
+.character-row > .character-thumbnail {
+	flex-shrink: 0;
+}
 .character-row > span:last-child {
 	display: flex;
 	flex-direction: column;
