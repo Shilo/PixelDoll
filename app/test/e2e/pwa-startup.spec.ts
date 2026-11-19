@@ -242,7 +242,27 @@ test('a fresh launch survives programmatic focus changes and updates every chang
 }) => {
 	const a = await testRelease('startup-fast-a', '11.0.1'),
 		b = await changedRelease('startup-fast-b', '11.0.2');
+	const navigationPath = 'startup-pending-navigation';
+	b.files.set(
+		'sw.js',
+		Buffer.concat([
+			b.files.get('sw.js')!,
+			Buffer.from(`
+const respondWith = FetchEvent.prototype.respondWith;
+let navigationHeld = false;
+FetchEvent.prototype.respondWith = function (response) {
+	if (!navigationHeld && this.request.mode === 'navigate') {
+		navigationHeld = true;
+		const onlineGate = fetch(new URL(${JSON.stringify(navigationPath)}, self.registration.scope))
+			.catch(() => undefined);
+		response = Promise.all([response, onlineGate]).then(([shell]) => shell);
+	}
+	return respondWith.call(this, response);
+};`)
+		])
+	);
 	const server = await pwaServer(a);
+	const navigation = server.hold(navigationPath);
 	let fresh: Page | undefined, held: ReturnType<typeof server.hold> | undefined;
 	try {
 		await cachedApp(page, server.url, a);
@@ -284,10 +304,23 @@ test('a fresh launch survives programmatic focus changes and updates every chang
 			return { trustedElementBlur, focused: document.hasFocus() };
 		});
 		expect(focusTransfer).toEqual({ trustedElementBlur: true, focused: true });
+		await expect(fresh.locator('.customize-action')).toBeEnabled();
+		const customize = (await fresh.locator('.customize-action').boundingBox())!;
 		await fresh.evaluate(() => {
+			window.addEventListener('keyup', (event) => {
+				if (event.isTrusted && event.key === '2')
+					sessionStorage.setItem(
+						'pwa-startup-world-after-input',
+						document.querySelector('#world-stage')?.getAttribute('aria-label') ?? 'none'
+					);
+			});
 			addEventListener(
 				'beforeunload',
 				() => {
+					sessionStorage.setItem(
+						'pwa-startup-reload-dialog',
+						document.querySelector('dialog:modal .sheet-title')?.textContent ?? 'none'
+					);
 					sessionStorage.setItem(
 						'pwa-startup-reload-notice',
 						[...document.querySelectorAll('.bu-toast[role="status"] .bu-small')]
@@ -305,7 +338,19 @@ test('a fresh launch survives programmatic focus changes and updates every chang
 			);
 		});
 		held.release();
+		await expect
+			.poll(() => server.requests.some((path) => path.endsWith(navigationPath)))
+			.toBe(true);
+		await fresh.mouse.click(customize.x + customize.width / 2, customize.y + customize.height / 2);
+		await fresh.keyboard.press('2');
+		navigation.release();
 		await loadedBuild(fresh, b);
+		expect(
+			await fresh.evaluate(() => ({
+				dialog: sessionStorage.getItem('pwa-startup-reload-dialog'),
+				world: sessionStorage.getItem('pwa-startup-world-after-input')
+			}))
+		).toEqual({ dialog: 'Updating PixelDoll', world: 'none' });
 		expect(await fresh.evaluate(() => sessionStorage.getItem('pwa-startup-reload-notice'))).toBe(
 			'Ready to update. Reloading...'
 		);
@@ -325,6 +370,7 @@ test('a fresh launch survives programmatic focus changes and updates every chang
 		await expect(fresh.locator('.customize-action')).toBeVisible();
 		await loadedBuild(fresh, b);
 	} finally {
+		navigation.release();
 		held?.release();
 		await context.setOffline(false);
 		await fresh?.close();
@@ -781,7 +827,7 @@ test('an incomplete release cannot trigger a startup reload', async ({ page }) =
 async function checkActivationCancellation(
 	page: Page,
 	context: BrowserContext,
-	cancelByInput: boolean
+	cancelBy: 'deadline' | 'trusted input' | 'Top-down' | 'Side-scroller'
 ) {
 	const a = await testRelease('startup-activate-a', '11.5.1'),
 		b = await changedRelease('startup-activate-b', '11.5.2'),
@@ -821,10 +867,31 @@ async function checkActivationCancellation(
 		await fresh.bringToFront();
 		await fresh.goto(server.url);
 		await expect(fresh.locator('html')).toHaveAttribute('data-startup-activation-held', 'yes');
-		if (cancelByInput) {
+		const world = fresh.locator('#world-stage');
+		if (cancelBy === 'trusted input') {
 			await fresh.clock.fastForward(4_000);
 			await fresh.keyboard.press('Shift'); // Trusted input alone must cancel, even when no form is open.
-		} else await waitPastOpportunity(fresh);
+		} else if (cancelBy === 'deadline') await waitPastOpportunity(fresh);
+		else {
+			const customize = fresh.locator('.customize-action');
+			const mode = fresh.getByRole('button', { name: cancelBy, exact: true });
+			if (cancelBy === 'Top-down') {
+				await customize.dispatchEvent('click');
+				await mode.dispatchEvent('click');
+				await world.dispatchEvent('keydown', { key: 'ArrowRight' });
+			} else {
+				await customize.click();
+				await mode.click();
+				await fresh.keyboard.down('ArrowRight');
+			}
+			await expect(world).toBeFocused();
+			await fresh.clock.runFor(200);
+			await expect
+				.poll(() => world.evaluate((element) => Number(element.dataset.position!.split(',')[0])))
+				.toBeGreaterThan(0);
+			if (cancelBy === 'Top-down')
+				await fresh.getByRole('button', { name: 'Preview', exact: true }).dispatchEvent('click');
+		}
 		const reloaded = fresh.waitForEvent('framenavigated', {
 			predicate: (frame) => frame === fresh?.mainFrame(),
 			timeout: 2_000
@@ -835,6 +902,13 @@ async function checkActivationCancellation(
 		await expect(reloaded).rejects.toThrow(/Timeout/);
 		await expect.poll(() => workerBuild(fresh!, 'active')).toBe(b.release.build);
 		await loadedBuild(fresh, a);
+		if (cancelBy === 'Top-down' || cancelBy === 'Side-scroller')
+			await expect(
+				fresh.getByRole('button', {
+					name: cancelBy === 'Top-down' ? 'Preview' : cancelBy,
+					exact: true
+				})
+			).toHaveAttribute('aria-pressed', 'true');
 		await expect(fresh.getByRole('button', { name: /^Update to v11\.5\.2/ }).first()).toBeEnabled();
 		await expect(
 			fresh.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })
@@ -845,11 +919,11 @@ async function checkActivationCancellation(
 	}
 }
 
-for (const cancelByInput of [false, true]) {
-	test(`activation completing after ${cancelByInput ? 'trusted input' : 'the startup deadline'} leaves the current document open`, async ({
+for (const cancelBy of ['deadline', 'trusted input', 'Top-down', 'Side-scroller'] as const) {
+	test(`activation completing after ${cancelBy} leaves the current document open`, async ({
 		page,
 		context
 	}) => {
-		await checkActivationCancellation(page, context, cancelByInput);
+		await checkActivationCancellation(page, context, cancelBy);
 	});
 }

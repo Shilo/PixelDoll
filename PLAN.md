@@ -229,9 +229,10 @@ service worker. The implementation uses the platform APIs without another depend
   ticker worker, worlds, export icons and demo artwork. `app/pwa-worker.js` stages a separate cache, bypasses HTTP caches
   and verifies every file's SHA-256 before installation. Each build gets a distinct identity even when rebuilt from
   the same commit. Public artwork URLs carry that identity; hashed Vite asset names are already immutable.
-- **Update default (2026-11-03):** startup gets one nonblocking two-second automatic-reload opportunity, measured
+- **Update default:** startup gets one nonblocking 15-second automatic-reload opportunity, measured
   from the first Studio mount. Checks, staging and verification run while the app works normally, including offline.
   The opportunity ends on trusted input, loss of focus/visibility, navigation, restoration or cross-tab storage changes.
+  Entering Top-down or Side-scroller also closes it for the rest of that page load, even without a trusted input event.
   Native restored/autofilled form values and session-only connections also prevent automatic reload. Existing Studio
   save and generation guards apply; there is no UI-state snapshot or restoration layer. The initial capture runs in
   main before bootstrap in an isolated build chunk, and startup completion is reactive so a quickly ready update can
@@ -239,8 +240,10 @@ service worker. The implementation uses the platform APIs without another depend
   guard rejects startup chunks that import the app or credential/storage code.
   Complete release verification and target agreement remain mandatory, with eligibility checked after asynchronous
   steps and immediately before activation and reload. A late completion leaves the page open, even if its worker has
-  activated. A scoped, credential-free session marker prevents automatic reload chains; unavailable marker storage
-  falls back to manual updating. Already open or resumed windows and all late/unsafe updates require an explicit click.
+  activated. Once an eligible reload is committed, the existing update dialog prevents starting work in the old page
+  while the browser completes navigation. A scoped, credential-free session marker prevents automatic reload chains;
+  unavailable marker storage falls back to manual updating. Already open or resumed windows and all late/unsafe
+  updates require an explicit click.
   The app cannot preserve forms, prepared ZIPs, undo history, preview state or a session-only connection through reload.
   A timed versioned notice and More options action
   remain available even when an ordinary toast is replaced. Saved outfits are flushed and checked; an open panel,
