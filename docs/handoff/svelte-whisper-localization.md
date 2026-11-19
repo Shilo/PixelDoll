@@ -54,7 +54,7 @@ The owner's instruction: this work is critical and is done by a full team, not b
 
 | Decision | Value |
 |---|---|
-| Library | `svelte-whisper` 2.1.1, installed from GitHub (it is not on npm): `npm install -E github:Shilo/svelte-whisper#v2.1.1` |
+| Library | `svelte-whisper` 2.3.0, installed from GitHub (it is not on npm): `npm install -E github:Shilo/svelte-whisper#v2.3.0` |
 | Source language | English, `app/src/locales/en.json`. Every other file mirrors its keys. |
 | Locale files | One JSON file per language in `app/src/locales/`. The file name is the locale id. |
 | Call style | Plain functions (`t('key')`, `formatNumber(n)`, `getLocale()`). None of the 85 components here is a legacy component (no `export let`, no `$:`), so the `$t` store forms are not needed. Do not convert or restructure components. |
@@ -121,7 +121,7 @@ Vitest 4 with `environment: 'node'` and no Svelte plugin in `app/vitest.config.t
 hand-written PWA build (`app/pwa-build.ts`, `app/pwa-worker.js`), a strict Content-Security-Policy in
 `app/index.html`, and startup in two steps: `app/src/main.ts` imports `app/src/bootstrap.ts`.
 
-1. **Install** from `app/`: `npm install -E github:Shilo/svelte-whisper#v2.1.1`, and commit the lockfile. No Vite or
+1. **Install** from `app/`: `npm install -E github:Shilo/svelte-whisper#v2.3.0`, and commit the lockfile. No Vite or
    Svelte configuration is needed: the package is a `.svelte.js` module that the existing Svelte plugin compiles, in
    dev and in production.
 2. **Create `app/src/locales/en.json`** (start small; it grows as you extract text) and `app/src/lib/i18n.ts`:
@@ -195,21 +195,20 @@ hand-written PWA build (`app/pwa-build.ts`, `app/pwa-worker.js`), a strict Conte
    <script lang="ts">
      import { getLocale, setLocale, getLocales, localeName } from 'svelte-whisper';
 
-     // Each language under its own name; these are not translated. The names are in the table in section 2.
-     const NAMES: Record<string, string> = { en: 'English', es: 'Español' /* … */ };
+     const nameOf = (id: string) => (id === 'id' ? 'Bahasa Indonesia' : localeName(id));
    </script>
 
    {#each getLocales() as id (id)}
      <button aria-pressed={getLocale() === id} lang={id} onclick={() => switchLanguage(id)}>
-       {NAMES[id] ?? localeName(id)}
+       {nameOf(id)}
      </button>
    {/each}
    ```
 
-   - Language names need no translation keys: each is shown in its own language. `localeName(id)` returns that
-     name from the browser, but the result varies (one browser gives 简体中文 for `zh-Hans`, another 中文（简体）,
-     and Spanish, French and Portuguese come back lower-case), so the fixed list uses the exact names from the
-     table and `localeName(id)` covers a language added later.
+   - Language names need no translation keys. `localeName(id)` gives the browser's native name cased as a label,
+     and `localeName(id, activeLanguage)` gives the secondary name in the active language. Keep the intentional
+     `Bahasa Indonesia` override; other names can vary with the browser's locale data. For a name inside a
+     sentence, use `localeName(id, displayLocale, true)` to preserve the browser's original casing.
    - Put `lang={id}` on each option so the browser picks the right font for each name.
    - `switchLanguage` is yours to write. It awaits `setLocale(id)`, which resolves `true` once the language is
      active and `false` when its file could not be downloaded or a newer choice replaced this one. While it is

@@ -5,19 +5,7 @@
 	import { Check, ChevronRight, Languages } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
 
-	const names: Record<string, string> = {
-		en: 'English',
-		es: 'Español',
-		'zh-Hans': '简体中文',
-		'pt-BR': 'Português (Brasil)',
-		ja: '日本語',
-		de: 'Deutsch',
-		fr: 'Français',
-		ko: '한국어',
-		tr: 'Türkçe',
-		id: 'Bahasa Indonesia'
-	};
-	const nameOf = (id: string) => names[id] ?? localeName(id);
+	const nameOf = (id: string) => (id === 'id' ? 'Bahasa Indonesia' : localeName(id));
 	const alphabetical = new Intl.Collator('en');
 	const choices = getLocales()
 		.map((id) => ({ id, name: nameOf(id) }))

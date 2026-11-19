@@ -67,9 +67,9 @@ test.describe('first Studio render in French', () => {
 		await expect(frenchMenu.getByRole('button').first()).toHaveText('Automatique (Français)');
 		await expect(frenchMenu.getByRole('button').first()).toHaveAttribute('aria-pressed', 'true');
 		await expect(
-			frenchMenu.getByRole('button', { name: 'Deutsch allemand', exact: true })
+			frenchMenu.getByRole('button', { name: 'Deutsch Allemand', exact: true })
 		).toBeVisible();
-		await frenchMenu.getByRole('button', { name: 'English anglais', exact: true }).click();
+		await frenchMenu.getByRole('button', { name: 'English Anglais', exact: true }).click();
 		await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Language', exact: true })).toBeFocused();
 		await page.keyboard.press('Escape');
