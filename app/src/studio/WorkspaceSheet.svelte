@@ -35,14 +35,18 @@
 		};
 		try {
 			await prepareWorkspaceExport();
-			const bytes = await exportWorkspace(
+			const { bytes, hasOmissions } = await exportWorkspace(
 				view,
 				includeErrors ? { tier: accountTier(app.balance), calls: get(apiActivity) } : undefined,
 				[app.key, readSavedKey()]
 			);
 			saveZip(bytes, `pixeldoll-${new Date().toISOString().slice(0, 10)}.workspace.zip`);
 			close();
-			toast('Workspace exported.', { tone: 'success' });
+			if (hasOmissions)
+				toast('Workspace exported with omissions. Open the copy and check Activity for details.', {
+					tone: 'warning'
+				});
+			else toast('Workspace exported.', { tone: 'success' });
 		} catch (cause) {
 			error = (cause as Error).message;
 		} finally {
@@ -59,8 +63,21 @@
 		</p>
 		{#if workspaceInfo?.missing.length}
 			<p class="notice warn">
-				{workspaceInfo.missing.length} artwork files were already missing when this copy was exported.
+				{workspaceInfo.missing.length} artwork files were missing or unreadable.
 			</p>
+		{/if}
+		{#if workspaceInfo?.omitted}
+			<ul class="notice warn">
+				{#if workspaceInfo.omitted.characters}
+					<li>Saved characters skipped: {workspaceInfo.omitted.characters}.</li>
+				{/if}
+				{#if workspaceInfo.omitted.demoOutfit}<li>
+						The demo uses its default outfit settings.
+					</li>{/if}
+				{#if workspaceInfo.omitted.exportSettings}<li>
+						The copy uses default export settings.
+					</li>{/if}
+			</ul>
 		{/if}
 		{#if workspaceInfo?.diagnostics}
 			<p>PixelLab tier: {workspaceInfo.diagnostics.tier ?? 'Not recorded'}</p>

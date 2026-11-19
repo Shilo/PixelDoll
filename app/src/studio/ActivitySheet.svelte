@@ -53,8 +53,24 @@
 	};
 </script>
 
-<Sheet title="Activity" cancel="Done" onclose={() => (ui.sheet = null)}>
+<Sheet
+	title="Activity"
+	cancel={ui.waitingForTab ? 'Cancel request' : 'Done'}
+	onclose={() => (ui.sheet = null)}
+>
 	<div class="act-list">
+		{#if ui.waitingForTab}
+			<div class="notice warn" role="status">
+				<CircleAlert size={18} />
+				<div class="waiting-copy">
+					<h3>Waiting for another tab</h3>
+					<p>
+						Your generation hasn’t started. Keep Activity open and PixelDoll will continue here when
+						the other tab is ready.
+					</p>
+				</div>
+			</div>
+		{/if}
 		<PixelLabUsage compact={false}>
 			{#snippet actions()}
 				{#if app.key}<span class="api-action"
@@ -74,7 +90,7 @@
 									background: false
 								})}><RefreshCw size={14} /></button
 						></span
-					>{:else}<button
+					>{:else if !ui.waitingForTab}<button
 						class="bu-action btn sm"
 						data-variant="outline"
 						onclick={() => (ui.sheet = 'connect')}>Connect</button
@@ -92,12 +108,7 @@
 				)} s before trying again. Your jobs stay queued.
 			</p>
 		{/if}
-		{#if $queue.role === 'follower' && ui.waitingForTab}
-			<p class="notice small">
-				<CircleAlert size={14} />PixelDoll is running jobs in another tab, so this tab can’t start
-				yours yet. Close that tab and it starts here, or press Done to cancel.
-			</p>
-		{:else if $queue.role === 'follower'}
+		{#if $queue.role === 'follower' && !ui.waitingForTab}
 			<p class="notice small">
 				<CircleAlert size={14} />Running in another tab. Keys stay in the tab where you connect.
 				Connect PixelLab in the active queue tab, or close it to run jobs here.
@@ -124,7 +135,9 @@
 					>{/if}
 			</p>
 		{/if}
-		{#if !running.length && !queued.length}<p class="muted">Nothing generating.</p>{/if}
+		{#if !ui.waitingForTab && !running.length && !queued.length}<p class="muted">
+				Nothing generating.
+			</p>{/if}
 		{#if running.length}
 			<section class="act-group">
 				<span class="sec-title">Generating</span>
@@ -282,3 +295,13 @@
 		</details>
 	</div>
 </Sheet>
+
+<style>
+	.waiting-copy {
+		display: grid;
+		gap: 4px;
+	}
+	.waiting-copy h3 {
+		font-size: var(--fs-md);
+	}
+</style>

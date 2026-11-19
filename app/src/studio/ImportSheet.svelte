@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import Sheet from './Sheet.svelte';
+	import { fileDrop, preventFileNavigation } from './fileDrop.ts';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import ApiPreview from './ApiPreview.svelte';
@@ -89,8 +90,15 @@
 		libraryError = $state('');
 	let alive = true;
 	let fileInput = $state<HTMLInputElement>();
-	let dragging = $state(false),
-		dragDepth = 0;
+	let dragging = $state(false);
+	const drop = fileDrop(
+		() => busy,
+		(active) => (dragging = active),
+		(files) => {
+			if (!files.length) error = 'Choose a ZIP file, not a folder.';
+			else void importFiles(files);
+		}
+	);
 	const reads = new AbortController();
 	const peekScope = crypto.randomUUID();
 	const listScope = (page: number) => `${peekScope}:library:${page}`;
@@ -169,8 +177,7 @@
 		states = [];
 		stateId = '';
 		moveStates = [];
-		dragging = false;
-		dragDepth = 0;
+		drop.reset();
 	}
 	function close() {
 		if (!saving) {
@@ -267,42 +274,6 @@
 			files = Array.from(input.files ?? []);
 		input.value = ''; // Choosing the same file after an error or reset must fire change again.
 		void importFiles(files);
-	}
-	function hasFiles(e: DragEvent) {
-		return e.dataTransfer?.types.includes('Files') ?? false;
-	}
-	function preventFileNavigation(e: DragEvent) {
-		if (!hasFiles(e)) return;
-		e.preventDefault();
-		if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
-	}
-	function dragEntered(e: DragEvent) {
-		if (!hasFiles(e)) return;
-		e.preventDefault();
-		e.stopPropagation();
-		dragDepth++;
-		dragging = !busy;
-	}
-	function dragLeft(e: DragEvent) {
-		if (!hasFiles(e)) return;
-		dragDepth = Math.max(0, dragDepth - 1);
-		dragging = dragDepth > 0 && !busy;
-	}
-	function dragOver(e: DragEvent) {
-		if (!hasFiles(e)) return;
-		e.preventDefault();
-		e.stopPropagation();
-		if (e.dataTransfer) e.dataTransfer.dropEffect = busy ? 'none' : 'copy';
-	}
-	function dropped(e: DragEvent) {
-		if (!hasFiles(e)) return;
-		e.preventDefault();
-		e.stopPropagation();
-		dragging = false;
-		dragDepth = 0;
-		const files = Array.from(e.dataTransfer?.files ?? []);
-		if (!busy && !files.length) error = 'Choose a ZIP file, not a folder.';
-		else void importFiles(files);
 	}
 	async function fromPixelLab(value: string) {
 		if (busy) return;
@@ -449,10 +420,10 @@
 				class="bu-dialog-surface import-drop"
 				aria-label="Character ZIP drop area"
 				aria-busy={busy}
-				ondragenter={dragEntered}
-				ondragleave={dragLeft}
-				ondragover={dragOver}
-				ondrop={dropped}
+				ondragenter={drop.enter}
+				ondragleave={drop.leave}
+				ondragover={drop.over}
+				ondrop={drop.drop}
 			>
 				<FileArchive size={32} />
 				<strong aria-live="polite"

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Help from './Help.svelte';
+	import ReferenceField from './ReferenceField.svelte';
 	import SizePreview from './SizePreview.svelte';
 	import ApiPeek from './ApiPeek.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
@@ -15,6 +16,8 @@
 		BODY_SIZES,
 		BODY_STEP,
 		bodyErrors,
+		characterReference,
+		characterReferenceIssue,
 		DETAILS,
 		draftErrors,
 		isNudeBase,
@@ -44,10 +47,12 @@
 	let {
 		draft: d = $bindable(),
 		busy = $bindable(false),
+		referenceLoading = $bindable(false),
 		onconnect
 	}: {
 		draft: CharacterDraft;
 		busy?: boolean;
+		referenceLoading?: boolean;
 		onconnect: (target: 'details' | 'prompt') => void;
 	} = $props();
 	const scope = `enhance:${crypto.randomUUID()}`;
@@ -65,6 +70,16 @@
 	// The selected model's limits (MODELS in characterConfig.ts) decide which controls show and what they accept.
 	const model = $derived(modelOf(d.model));
 	const bodyError = $derived(bodyErrors(d.body, d.model)[0] ?? '');
+	const referenceMax = $derived(
+		Math.min(
+			characterReference[d.model ?? 'v3'].max,
+			d.model === 'pro-flash' && d.body && !bodyError
+				? d.body
+				: (d.model ?? 'v3') === 'v3' && frame && Number.isInteger(frame) && frame >= 32
+					? frame
+					: Infinity
+		)
+	);
 	const advancedNote = $derived(
 		[
 			model === MODELS.v3 ? '' : model.label,
@@ -102,6 +117,7 @@
 	});
 	const canEnhance = (target: 'details' | 'prompt') =>
 		!busy &&
+		!referenceLoading &&
 		!!(target === 'details' ? d.details : d.prompt).trim() &&
 		validBodySize(d.body) &&
 		enhanceInput().description.length <= 2000;
@@ -380,9 +396,19 @@
 		{#if message}<p class="creator-message" role="status">{message}</p>{/if}
 	</section>
 
-	<section class="creator-guide" aria-label="Size guide">
-		<h3>Size guide</h3>
-		<SizePreview body={d.body || 0} frame={frame || 0} />
+	<section class="creator-rail" aria-label="Size guide and reference">
+		<div class="creator-guide">
+			<h3>Size guide</h3>
+			<SizePreview body={d.body || 0} frame={frame || 0} />
+		</div>
+		<ReferenceField
+			bind:value={d.reference}
+			bind:loading={referenceLoading}
+			hint={characterReference[d.model ?? 'v3'].hint}
+			max={{ width: referenceMax, height: referenceMax }}
+			issue={characterReferenceIssue(d.reference, d.model, frame, d.body)}
+			disabled={busy}
+		/>
 	</section>
 	<section class="geometry" aria-label="Character size and camera">
 		<div class="creator-field">

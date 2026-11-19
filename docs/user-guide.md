@@ -30,9 +30,7 @@ A gen is one PixelLab generation from your account's monthly allowance. Creation
 | Action                                                                     | About                                                                                                           |
 | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Create a character (its standing **Default** pose)                         | about 2–5 gens                                                                                                  |
-| **Add idle + walk**, default **Top-down 8** (5 drawn views, west mirrored) | about 55 gens for the body; items are generated separately                                                      |
-| **Top-down 4** / **Diagonal 4** / **Side-scroller 2**                      | about 33 / 22 / 11 gens                                                                                         |
-| **Unique 8** (every view drawn independently)                              | about 88 gens                                                                                                   |
+| **Idle** or **Walk**, default **Top-down 8** (5 drawn views)                 | about 17 gens for Idle or 38 for Walk, without items                                                             |
 | Make an item                                                               | standing views only, about 10 gens for frames up to 80 px; larger or padded held items can require more batches |
 | Add a move                                                                 | depends on the move, views and selected items; shown before spending                                            |
 | Try again on an item                                                       | shown on the button                                                                                             |
@@ -47,7 +45,9 @@ request may still have run or charged. Estimates are not spending caps.
 
 Press the **code brackets** icon beside a PixelLab action to peek at its requests without running it. Before generation,
 the list shows estimated costs and the fields already known; dependent images and poses become available when prepared.
-Expand a call for readable fields, with nested objects and lists you can open individually.
+Expand a call to select its endpoint or use **Copy endpoint**. If clipboard access is blocked, the inspector shows
+a read-only field for manual copying. The expanded view also shows readable fields, with nested objects and lists you
+can open individually.
 
 The **API calls** action in **More options** shows recorded calls, including automatic generation and quality repairs. Each call shows
 its cost, with a total below. Pending or unreported charges are marked explicitly; dollar charges stay separate from gens.
@@ -80,7 +80,11 @@ Character menu → **New character…**
    variation, or enter a non-negative whole seed. The seed affects
    the drawing rather than one appearance trait, and moves added later pick their own seeds; reuse can give similar
    results but does not guarantee identical pixels.
-6. Press **Create character**. It draws your character standing in the selected directions, its **Default** pose, in a
+6. Optionally drop one image on **Reference** below Size guide, or choose **Add image**. V3 starts from a front-facing sprite
+   sized for the Frame. Pro draws from a sketch or design. Pro Flash uses the artwork as a style guide sized for the
+   chosen Body. Uploads over the shown pixel dimensions are downscaled proportionally with a notice. Keep a text prompt
+   in all three models.
+7. Press **Create character**. It draws your character standing in the selected directions, its **Default** pose, in a
    few minutes. Idle, walk and other moves come afterward.
 
 Hover a title on desktop, or tap it on mobile, for help. **Enhance** uses the V3 prompt endpoint with the current body size
@@ -97,9 +101,8 @@ with nothing worn instead. These are generation instructions, not a guarantee of
 Keep this tab open while PixelLab responds; you can keep dressing existing characters. After reopening, PixelDoll can resume requests with a
 known job ID and reuse saved results. If a submitted request has an unknown outcome, generation stops for review in
 **Activity**; it is never automatically sent again. **Try again** starts a new paid attempt and may incur additional charges.
-When creation is done, press **Add idle + walk** to queue both moves (the button shows the price) or **Start dressing up**
-to dress the Default pose first. **Moves → Add idle + walk** offers the same later. While a move is being added,
-**Queue another move** lines up the next one; it runs by itself when the current move finishes.
+When creation is done, press **Start dressing up** to dress the Default pose or open **Moves → Add a move** and pick
+**Idle**, **Walk**, or another move. Each move shows its own estimate before you queue it.
 **Default** is the character's standing pose: one still frame per direction, listed first in Moves and Share and
 exported like any move. "Default" can't be used as the name of another move.
 
@@ -221,7 +224,13 @@ one item of each can be worn together.
 1. **Where does it go?** Pick the group. **Details** lets you choose the exact slot (a beard goes under Hair, a belt under
    Legs).
 2. **What is it?** Describe the item, for example "leather hat", or tap an idea.
-3. Add an optional **Color hint**, then press **Make**.
+3. To guide the design with artwork, optionally drop one image on **Reference** or choose **Add image**. Use an image of
+   the item by itself. Uploads bigger than the shown canvas are downscaled proportionally with a notice.
+   A reference can change the estimate if it requires an extra batch.
+4. Add an optional **Color hint**, then press **Make**.
+
+References accept PNG, JPEG or WebP up to 8 MB and the dimensions shown in the form. PixelDoll sends the image to PixelLab
+when you generate. Removing an attachment from the form does not erase a previously submitted request.
 
 Items are drawn for your own character. On the demo, use **Copy the demo body** to get an editable copy first.
 
@@ -291,20 +300,20 @@ remain unchanged. This runs locally and makes no PixelLab call; export a backup 
 
 ## Add a move
 
-Open the **Moves** tab → **Add a move**. Pick **Idle**, **Walk**, **Slash**, **Cast**, **Hurt** or **Death**, or describe your own under **Or
-describe it**, for example "jumping in place". Items you check under **Animate these items too** are made for the new move.
+Open the **Moves** tab → **Add a move**. Type a motion such as "jumping in place" or pick a preset such as **Idle**, **Walk**,
+or **Slash** below the field. Typing deselects the preset; picking a preset clears the description.
+Items you check under **Animate these items too** are made for the new move.
 Items are unchecked by default so you can approve the body motion before buying its equipment frames.
 Items you leave out stay hidden in that move until you make them. A worn item without frames for the current move shows
 a note on the stage with **Make it** and its price.
 
-New characters start with only **Default**; **Add idle + walk** in **Moves** adds both body moves in one tap without equipment. Moves run one at a time:
-a move you add while another is running waits as **Queued**. If a move fails, the queue waits: **Try again** continues
+**Queue another move** lets you set up the next move while one is running. Moves run one at a time. If a move fails, the queue waits: **Try again** continues
 with the queued moves, **Start over** drops them.
 
 Moves are added to your own characters (not the demo), using their existing direction policy. Older mirrored characters
 stay mirrored; the new-character setting does not rebuild their frozen artwork.
 
-To repair an existing move, choose it again in **Add a move**, then check the views to replace. Views with failed body
+To repair an existing move, select its **added** chip in **Add a move**, then use the **Directions to redraw** compass. Views with failed body
 checks are selected initially. Other directions and moves keep their existing pixels. Selected equipment is re-posed
 only for the replaced views; other equipment stays hidden there until **Make it** fills the missing views. A replacement
 that still fails body checks keeps the previous artwork.
@@ -332,10 +341,12 @@ The ZIP includes your saved characters, artwork, items, moves, outfits, and work
 adds your PixelLab tier and a summary of failed and unfinished requests. Your key, request bodies, and unfinished drafts
 are not included. The ZIP does include artwork and saved prompts, so share it privately with someone you trust.
 
-Choose **More options → Open workspace copy** to open the ZIP in a separate tab. You can inspect or change the copy
+Choose **More options → Open workspace copy**, then drop the ZIP in the box or click the box to choose it. The
+`?workspace-copy` address opens a separate, temporary copy. You can inspect or change the copy
 without changing your own library. PixelLab is off and no jobs restart. Close or reload the tab to discard the copy and
-its edits. This is not a backup restore or merge. Already-missing artwork stays missing and is listed in the copy's
-Activity. Workspace ZIPs are limited to 64 MB, 5,000 files, and additional artwork and record limits; for larger
+its edits. This is not a backup restore or merge. Export and open keep usable records and artwork when some data is
+damaged. The copy's Activity reports skipped records and missing artwork. Unreadable or unsupported ZIPs cannot be
+opened. Workspace ZIPs are limited to 64 MB, 5,000 files, and additional artwork and record limits; for larger
 libraries, use individual character ZIPs. Uncommitted edits outside the current character are not included.
 
 Press **Export** (toolbar), choose an **Export format**, and download the zip. **Engines and frameworks** lists Godot, Unity,

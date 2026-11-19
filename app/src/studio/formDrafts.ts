@@ -9,6 +9,7 @@ export const formDrafts: {
 		prompt: string;
 		color: string;
 		name: string;
+		reference?: import('../lib/image/reference.ts').PickedReference;
 		method?: import('../lib/items/items.ts').Method;
 	};
 	character?: CharacterDraft;
@@ -16,6 +17,7 @@ export const formDrafts: {
 	move?: {
 		projectId: string;
 		action: string;
+		replace: boolean;
 		text: string;
 		items: string[];
 		dirs?: import('../lib/store/manifest.ts').DirectionName[];

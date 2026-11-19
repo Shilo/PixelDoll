@@ -5,6 +5,7 @@ import { handOf, requireSlot, specSlot, type SlotSource } from './slots.ts';
 import { queue, requestIdentity, type JobRec } from '../pixellab/queue.ts';
 import { reportedUsage } from '../pixellab/activity.ts';
 import { base64ToBytes, binaryAlpha, bytesToBase64, decodePng, type Img } from '../image/png.ts';
+import { normalize } from '../rig/normalize.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { cellHash, rigArtworkVersion, type Sha256 } from '../rig/rig.ts';
 import {
@@ -28,7 +29,7 @@ import type {
 	Provenance,
 	Slot
 } from '../store/manifest.ts';
-import { dropCut } from '../compose/compose.ts';
+import { composeCell, dropCut } from '../compose/compose.ts';
 import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches, poseGensFor } from '../rig/clips.ts';
@@ -74,6 +75,7 @@ import {
 	putItem,
 	gridEstimate,
 	repairGridLayout,
+	repairGridPlan,
 	bandMask,
 	cutGrid,
 	g2Fails,
@@ -124,6 +126,7 @@ export interface CallState {
 	kind?: CallKind;
 	frozen?: true;
 	reference?: { image: Sha256; cell: CellKey };
+	concept?: true;
 }
 export interface Draft {
 	spec: ItemSpec;
@@ -214,8 +217,9 @@ export function newDraft(
 	return {
 		spec: s,
 		rigId: ctx.rec.id,
-		calls: planItem(ctx.rec.manifest.rig, s).map((c) => ({
+		calls: planItem(ctx.rec.manifest.rig, s).map((c, index) => ({
 			...c,
+			...(index === 0 && s.reference ? { concept: true as const } : {}),
 			...(c.kind === 'grid' ? { frozen: true as const } : {}),
 			seed: seed(),
 			rerolls: 0,
@@ -259,8 +263,9 @@ const settled = (id: string, signal?: AbortSignal) =>
 	});
 const outputsOf = (r: JobRec) => [...(r.jobs[0]?.results ?? [])].sort(frameOrder);
 /** Outputs of call k in cell order (an anchored call's first output is the anchor's: dropped). */
+const hasAnchor = (k: number, c: CallState) => !!(c.reference || c.concept || anchored(k, c.kind));
 const cellOuts = (k: number, c: CallState, r: JobRec) =>
-	outputsOf(r).slice(c.reference || anchored(k, c.kind) ? 1 : 0);
+	outputsOf(r).slice(hasAnchor(k, c) ? 1 : 0);
 /** Dressed keyframe outputs of dress call k, per rest cell (the call must be done). */
 function chunkOuts(
 	calls: CallState[],
@@ -435,7 +440,8 @@ async function gridReq(
 	refs: { dir: DirectionName; im: Img }[],
 	seed: number,
 	pad = 0,
-	repair = false
+	repair = false,
+	repairCols?: number
 ): Promise<Req> {
 	const { rig } = ctx.rec.manifest,
 		w = rig.cell.w + 2 * pad,
@@ -450,9 +456,12 @@ async function gridReq(
 	if (refs.length !== 1)
 		throw new Error(`${dir}: repair needs exactly one matching dressed reference`);
 	const cell = { w, h };
-	const layout = repair
-		? repairGridLayout(cell, cells.length, refs.length)
-		: gridEstimate(cell, cells.length, refs.length);
+	const layout =
+		repairCols !== undefined
+			? gridEstimate(cell, cells.length, refs.length, repairCols)
+			: repair
+				? repairGridLayout(cell, cells.length, refs.length)
+				: gridEstimate(cell, cells.length, refs.length);
 	const cols = layout.w / w;
 	if (refs.some((r) => r.im.w !== w || r.im.h !== h))
 		throw new Error('Equipment reference dimensions do not match its repair canvas.');
@@ -588,12 +597,21 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 		});
 	} else {
 		const frames: string[] = [];
+		const cell = { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad };
 		if (c.reference) frames.push(await blobB64(c.reference.image.slice(7)));
-		else if (anchored(k, c.kind)) {
+		else if (c.concept) {
+			if (!d.spec.reference) throw new Error('The item reference is missing.');
+			const image = await decodePng(base64ToBytes(d.spec.reference.base64));
+			const prepared = normalize(image, cell.w, cell.h, 128, cell.h);
+			if (prepared.cutPx) throw new Error('The item reference does not fit the frame.');
+			frames.push(bytesToBase64(await encodePngBytes(prepared.img)));
+		} else if (anchored(k, c.kind)) {
 			// anchor cell: the design call's dressed cell 0 (cross-call design lock, S2; B16: dress chunks too)
 			const a = recOf(d.calls[0].recId);
 			if (a?.state !== 'done') throw new Error('design call not done');
-			frames.push(await blobB64(outputsOf(a)[0].sha));
+			const dressed = cellOuts(0, d.calls[0], a)[0];
+			if (!dressed) throw new Error('The design call returned no dressed frame.');
+			frames.push(await blobB64(dressed.sha));
 		}
 		const mark =
 			c.kind === 'dress' && heldSkel(requireSlot(ctx.rec.manifest, d.spec.slot), d.spec.method);
@@ -618,10 +636,11 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
 				dressItem({ ...d.spec, slotConfig: requireSlot(ctx.rec.manifest, d.spec.slot) }),
 				route,
 				c.cells,
-				c.reference?.cell ?? (anchored(k, c.kind) ? d.calls[0].cells[0] : undefined)
+				c.reference?.cell ?? (anchored(k, c.kind) ? d.calls[0].cells[0] : undefined),
+				c.concept
 			),
 			c.seed,
-			{ w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad }
+			cell
 		);
 	}
 	return req;
@@ -821,6 +840,26 @@ export async function runItem(
 			if (r0.state !== 'done') {
 				d.log.push(`call 1 ${r0.state}: ${r0.error ?? ''}`);
 				break;
+			}
+			if (d.calls[0].concept) {
+				const frames = outputsOf(r0);
+				const { cell } = ctx.rec.manifest.rig;
+				const pad = padOf(specSlot(d.spec), d.spec.method, cell);
+				if (
+					r0.jobs.length !== 1 ||
+					frames.length !== d.calls[0].cells.length + 1 ||
+					frames.some((frame, index) => frame.label.split('/').at(-1) !== String(index))
+				)
+					throw new Error(
+						'PixelLab returned incomplete reference or standing frames. No dependent request was sent.'
+					);
+				for (const frame of frames.slice(1)) {
+					const image = await img(frame.sha);
+					if (image.w !== cell.w + 2 * pad || image.h !== cell.h + 2 * pad)
+						throw new Error(
+							'PixelLab returned a standing frame of the wrong size. No dependent request was sent.'
+						);
+				}
 			}
 			const gates = [poseEarly(early, 0, r0)];
 			const rd = await Promise.all(
@@ -1032,7 +1071,7 @@ export async function evaluateItem(
 		const expected =
 			c.kind === 'pose'
 				? Math.max(3, c.cells.length)
-				: Math.max(EDIT_MIN_FRAMES - Number(!!c.reference || anchored(k, c.kind)), c.cells.length);
+				: Math.max(EDIT_MIN_FRAMES - Number(hasAnchor(k, c)), c.cells.length);
 		if (o.length !== expected) {
 			g1.set(k, `G1 ${o.length} outputs for ${expected} requested frames`);
 			continue;
@@ -1892,6 +1931,23 @@ export async function mergeClip(
 	pad = 0,
 	standingMaterials?: Material[]
 ) {
+	await publishClip(
+		ctx.rec.id,
+		await prepareClip(ctx, item, anim, dirs, cells, prov, q, pad),
+		standingMaterials
+	);
+}
+
+async function prepareClip(
+	ctx: RigCtx,
+	item: Item,
+	anim: string,
+	dirs: DirectionName[],
+	cells: CellOut[],
+	prov: Provenance[],
+	q: QaResult,
+	pad: number
+) {
 	const { rig } = ctx.rec.manifest,
 		key = item.key!;
 	const version = rigArtworkVersion(rig, ctx.rec.character),
@@ -1953,8 +2009,26 @@ export async function mergeClip(
 	);
 	out.provenance = [...out.provenance, ...prov];
 	out.qa = mergeQa(item, q.qa, qaCells);
-	await saveItem(ctx.rec.id, out, built.images, slotLadder(ctx.rec.manifest.rig), (current) => {
-		const currentItem = current.manifest.items.find((i) => i.id === item.id);
+	return { out, images: built.images, originalItem, version, ladder: slotLadder(rig) };
+}
+
+type PreparedClip = Awaited<ReturnType<typeof prepareClip>>;
+export type RepairReview = {
+	clip: PreparedClip;
+	findings: string[];
+	current: Img[];
+	replacement: Img[];
+};
+
+async function publishClip(
+	projectId: string,
+	prepared: PreparedClip,
+	standingMaterials?: Material[]
+) {
+	const { images, originalItem, version, ladder } = prepared;
+	const out = structuredClone(prepared.out);
+	await saveItem(projectId, out, images, ladder, (current) => {
+		const currentItem = current.manifest.items.find((i) => i.id === out.id);
 		if (
 			!currentItem ||
 			rigArtworkVersion(current.manifest.rig, current.character) !== version ||
@@ -1965,7 +2039,7 @@ export async function mergeClip(
 		out.materials = currentItem.materials;
 		if (!out.materials.length && standingMaterials?.length) {
 			current.manifest.materials = [
-				...current.manifest.materials.filter((m) => m.owner !== item.id),
+				...current.manifest.materials.filter((m) => m.owner !== out.id),
 				...standingMaterials
 			];
 			out.materials = standingMaterials.map((m) => m.id);
@@ -1973,6 +2047,17 @@ export async function mergeClip(
 		if (currentItem.hides === undefined) delete out.hides;
 		else out.hides = currentItem.hides;
 	});
+}
+
+export async function repairAlreadyApplied(projectId: string, review: RepairReview) {
+	const { rec } = await loadProject(projectId);
+	const current = rec.manifest.items.find((item) => item.id === review.clip.out.id);
+	return !!current && clipArtwork(current) === clipArtwork(review.clip.out);
+}
+
+export async function applyRepairReview(projectId: string, review: RepairReview) {
+	if (await repairAlreadyApplied(projectId, review)) return;
+	await publishClip(projectId, review.clip);
 }
 /** Free acknowledgment of the exact artwork and warnings the player reviewed, never a new generation. */
 export async function acceptItemReview(
@@ -2016,7 +2101,8 @@ export async function gridRepairRequest(
 	anim: string,
 	dir: DirectionName,
 	seed: number,
-	selectedCells?: string[]
+	selectedCells?: string[],
+	repairCols?: number
 ): Promise<Req> {
 	const { rig } = ctx.rec.manifest;
 	if (
@@ -2048,6 +2134,9 @@ export async function gridRepairRequest(
 		})
 	)
 		throw new Error('Choose unique existing frames from this move and direction to repair.');
+	const slot = requireSlot(ctx.rec.manifest, item.slot);
+	if (item.layers.length !== (slot.bgZ == null ? 1 : 2))
+		throw new Error('Equipment layers do not match this slot. No generation was requested.');
 	const pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
 	if (
 		!Number.isInteger(pad) ||
@@ -2069,7 +2158,7 @@ export async function gridRepairRequest(
 		ctx,
 		{
 			slot: item.slot,
-			slotConfig: structuredClone(requireSlot(ctx.rec.manifest, item.slot)),
+			slotConfig: structuredClone(slot),
 			prompt: item.prompt,
 			key: item.key
 		},
@@ -2077,7 +2166,8 @@ export async function gridRepairRequest(
 		refs,
 		seed,
 		pad,
-		true
+		true,
+		repairCols
 	);
 }
 /** One clip-direction edited on its own canvas; body frames remain frozen and reference cells are protected. A grid the account's
@@ -2093,7 +2183,8 @@ async function gridItemClip(
 	seed: number,
 	selectedCells?: string[],
 	activityScope?: string,
-	savedOnly = false
+	savedOnly = false,
+	prepared?: { request: Req; tier: number; start: number; count: number }
 ): Promise<{ cells: CellOut[]; prov: Provenance } | { blocked: string }> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
@@ -2106,7 +2197,7 @@ async function gridItemClip(
 			),
 		n = cells.length;
 	// Reattaching a finished grid needs no plan check: nothing is sent.
-	const req = await gridRepairRequest(ctx, item, anim, dir, seed, cells),
+	const req = prepared?.request ?? (await gridRepairRequest(ctx, item, anim, dir, seed, cells)),
 		blocked = savedOnly ? null : queue.planBlocks(req, 1);
 	if (blocked) return { blocked };
 	const w = rig.cell.w + 2 * pad,
@@ -2115,10 +2206,10 @@ async function gridItemClip(
 	const rec = await submitOrSaved(
 		req,
 		{
-			label: `grid ${item.name} · ${anim} ${dir}`,
+			label: `grid ${item.name} · ${anim} ${dir}${prepared ? ` · frames ${prepared.start + 1}–${prepared.start + prepared.count}` : ''}`,
 			tag: 'studio-move',
 			activityScope,
-			minimumTier: 1
+			minimumTier: prepared?.tier ?? 1
 		},
 		savedOnly
 	);
@@ -2150,7 +2241,7 @@ async function gridItemClip(
 			stencil: stencils.cells[i]
 		})
 	);
-	postProcess(rig, slot, out, keys, pad);
+	if (!prepared) postProcess(rig, slot, out, keys, pad);
 	return { cells: out, prov: toProv(r, { cells, seed, rerolls: 0, old: [] }) };
 }
 /**
@@ -2162,8 +2253,11 @@ export async function regridClip(
 	item: Item,
 	anim: string,
 	dir: DirectionName,
-	seedN = seed()
-): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[] }> {
+	seedN = seed(),
+	preferTierOne = false,
+	activityScope?: string,
+	savedOnly = false
+): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[]; review?: RepairReview }> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
 		key = item.key!;
@@ -2171,20 +2265,108 @@ export async function regridClip(
 		throw new Error(`${item.name}: no grid reference for this item`);
 	const pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
 	const { keys, cuts, hidden } = await dressedKeys(ctx, item, pad);
-	const g = await gridItemClip(ctx, item, anim, dir, 0, keys, cuts, seedN);
-	if ('blocked' in g) throw new Error(g.blocked);
+	const frames = rig.animations.find((a) => a.id === anim)?.cells;
+	if (!frames) throw new Error('Choose an existing move before repairing its equipment.');
+	const batches = repairGridPlan(item.layers[0].cell ?? rig.cell, frames, preferTierOne);
+	const requests = await Promise.all(
+		batches.map(async (batch) => {
+			const cells = Array.from(
+				{ length: batch.count },
+				(_, index) => `${anim}/${dir}/${batch.start + index}`
+			);
+			const batchSeed = seedN + batch.start;
+			return {
+				...batch,
+				cells,
+				seed: batchSeed,
+				request: await gridRepairRequest(ctx, item, anim, dir, batchSeed, cells, batch.cols)
+			};
+		})
+	);
+	if (!savedOnly)
+		for (const batch of requests) {
+			const blocked = queue.planBlocks(batch.request, batch.tier);
+			if (blocked) throw new Error(blocked);
+		}
+	const cells: CellOut[] = [],
+		provenance: Provenance[] = [];
+	for (const [index, request] of requests.entries()) {
+		const result = await gridItemClip(
+			ctx,
+			item,
+			anim,
+			dir,
+			index,
+			keys,
+			cuts,
+			request.seed,
+			request.cells,
+			activityScope,
+			savedOnly,
+			request
+		);
+		if ('blocked' in result) throw new Error(result.blocked);
+		if (index < requests.length - 1 && result.cells.some((cell) => cell.shifted))
+			throw new Error(
+				'A repair batch returned misaligned frames. Remaining batches were stopped and existing artwork was kept.'
+			);
+		cells.push(...result.cells);
+		provenance.push(result.prov);
+	}
+	postProcess(rig, slot, cells, keys, pad);
 	const qa = withH4(
-		itemQa(rig, slot, key, g.cells, 0, GATES.keyOutsidePosed, pad, hidden),
+		itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed, pad, hidden),
 		slot,
-		g.cells,
+		cells,
 		keys,
 		rig,
 		referenceBodies(rig, ctx.project.images),
 		item.prompt
 	);
-	const saved = !qa.failCalls.size;
-	if (saved) await mergeClip(ctx, item, anim, [dir], g.cells, [g.prov], qa, pad);
-	return { qa, saved, cells: g.cells };
+	if (batches.length > 1)
+		for (const [batch, findings] of qa.softCalls) {
+			const palette = findings.filter((finding) => finding.startsWith('G6 '));
+			if (palette.length) {
+				qa.failCalls.set(batch, [...(qa.failCalls.get(batch) ?? []), ...palette]);
+				qa.qa.status = 'fail';
+				qa.qa.clips[`${anim}/${dir}`].status = 'fail';
+			}
+		}
+	const clip = await prepareClip(ctx, item, anim, [dir], cells, provenance, qa, pad);
+	if (!qa.failCalls.size) {
+		await publishClip(ctx.rec.id, clip);
+		return { qa, saved: true, cells };
+	}
+
+	const project = ctx.project;
+	const repaired = {
+		manifest: {
+			...project.manifest,
+			items: project.manifest.items.map((entry) => (entry.id === item.id ? clip.out : entry))
+		},
+		images: new Map([...project.images, ...clip.images])
+	};
+	const frame = {
+		w: rig.cell.w + 2 * pad,
+		h: rig.cell.h + 2 * pad,
+		x: rig.pivot.x + pad,
+		y: rig.pivot.y + pad
+	};
+	const previews = (source: Project) =>
+		Array.from({ length: frames }, (_, index) =>
+			composeCell(source, { [item.slot]: item.id }, anim, dir, index, frame)
+		);
+	return {
+		qa,
+		saved: false,
+		cells,
+		review: {
+			clip,
+			findings: [...new Set([...qa.failCalls.values()].flat())],
+			current: previews(project),
+			replacement: previews(repaired)
+		}
+	};
 }
 
 /** B16 fake-API check: an 8-direction held dress never sends edit-animation-v2 more frames than its size takes, every direction

@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { equipmentFixture } from './equipment-fixture.ts';
 import { coverage, itemRoute, standingCoverage } from '../../src/studio/itemRoute.ts';
-import { baseMoveSpecs, itemMoveOffer, missingItemMoves } from '../../src/studio/create.ts';
+import { itemMoveOffer, missingItemMoves } from '../../src/studio/create.ts';
 import { itemPlan, movePlan } from '../../src/studio/apiPlans.ts';
 import {
 	hasCells,
@@ -249,15 +249,6 @@ test('unrigged imports with renamed standing views use only those frames; ambigu
 	rig.animations.pop();
 	delete ctx.rec.manifest.items[0].layers[0].cells!['still-custom'].east;
 	expect(() => standingCoverage(ctx)).toThrow('No complete standing move');
-});
-
-test('quick body moves never automatically include existing equipment', async () => {
-	const ctx = await fixture(),
-		m = ctx.rec.manifest;
-	m.items[1].status = 'accepted';
-	const specs = baseMoveSpecs(m);
-	expect(specs).toHaveLength(2);
-	expect(specs.every((s) => !s.items.length)).toBe(true);
 });
 
 test('verified standing aliases share one paid dress and do not require source keypoints to be rig-ready', async () => {

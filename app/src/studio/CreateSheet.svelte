@@ -12,7 +12,6 @@
 	import type { Project } from '../lib/store/manifest.ts';
 	import type { ClipQa } from '../lib/rig/clips.ts';
 	import { STEPS, estimate, type CreateSpec } from './create.ts';
-	import BaseMoves from './BaseMoves.svelte';
 	import CharacterForm from './CharacterForm.svelte';
 	import {
 		autoFrame,
@@ -34,11 +33,22 @@
 	} from './state.svelte.ts';
 	import { Check, CircleAlert, TriangleAlert } from './icons.ts';
 	let d = $state(formDrafts.character ?? newCharacterDraft());
+	formDrafts.character = undefined;
 	let enhancing = $state(false);
+	let referenceLoading = $state(false);
 	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
 	const errors = $derived(draftErrors(d));
 	const formSpec = $derived<CreateSpec>({
 		description: d.prompt,
+		...(d.reference
+			? {
+					reference: {
+						base64: d.reference.base64,
+						width: d.reference.width,
+						height: d.reference.height
+					}
+				}
+			: {}),
 		name:
 			d.name.trim() ||
 			(d.details ? nameFrom(d.details) : d.kind !== 'Not set' ? d.kind : 'My character'),
@@ -53,9 +63,6 @@
 	const est = $derived(estimate(creating.spec ?? formSpec));
 	const lo = $derived(Math.round(est.gens)),
 		hi = $derived(Math.ceil(est.maxGens / 5) * 5);
-	$effect(() => {
-		if (!creating.spec) formDrafts.character = $state.snapshot(d);
-	});
 	function connectEnhance(target: 'details' | 'prompt') {
 		const draft = $state.snapshot(d);
 		delete draft.enhanceOnConnect;
@@ -96,7 +103,7 @@
 	const k = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1.25 : 2))));
 
 	function go() {
-		if (errors.length || enhancing) return;
+		if (errors.length || enhancing || referenceLoading) return;
 		formDrafts.character = $state.snapshot(d);
 		const spec = { ...$state.snapshot(formSpec), seed: d.seed ? Number(d.seed) : freshSeed() };
 		withKey(() => {
@@ -228,17 +235,17 @@
 			feature="Character generation"
 			recommendation={GENERATION_RECOMMENDATION.reason}
 		/>
-		<CharacterForm bind:draft={d} bind:busy={enhancing} onconnect={connectEnhance} />
+		<CharacterForm
+			bind:draft={d}
+			bind:busy={enhancing}
+			bind:referenceLoading
+			onconnect={connectEnhance}
+		/>
 	{/if}
 
 	{#snippet footer()}
 		{#if creating.projectId}
 			<span class="foot-note">Saved on this device.</span>
-			{#if result}<BaseMoves
-					projectId={creating.projectId}
-					manifest={result.manifest}
-					onadd={() => void open()}
-				/>{/if}
 			<button class="bu-action btn primary lg" data-variant="primary" onclick={open}
 				>Start dressing up</button
 			>
@@ -285,7 +292,7 @@
 				/><button
 					class="bu-action btn primary lg"
 					data-variant="primary"
-					disabled={!!errors.length || enhancing}
+					disabled={!!errors.length || enhancing || referenceLoading}
 					onclick={go}>Create character</button
 				></span
 			>

@@ -49,7 +49,7 @@ import type {
 	ZOverride
 } from '../lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../lib/store/manifest.ts';
-import type { ItemPaletteRepairPlan, Draft, ItemResult } from '../lib/items/run.ts';
+import type { ItemPaletteRepairPlan, Draft, ItemResult, RepairReview } from '../lib/items/run.ts';
 import { loadDrafts } from '../lib/items/drafts.ts';
 import { insertSlotInLadder } from '../lib/items/slots.ts';
 import { app } from '../lib/app.svelte.ts';
@@ -113,11 +113,20 @@ const itemFlow = async () => (await lazy(() => import('./itemRoute.ts'))).itemRo
 const itemRun = () =>
 	lazy(() =>
 		import('../lib/items/run.ts').then(
-			({ acceptItemReview, evaluateItem, isClean, matchItemColors }) => ({
+			({
 				acceptItemReview,
+				applyRepairReview,
 				evaluateItem,
 				isClean,
-				matchItemColors
+				matchItemColors,
+				repairAlreadyApplied
+			}) => ({
+				acceptItemReview,
+				applyRepairReview,
+				evaluateItem,
+				isClean,
+				matchItemColors,
+				repairAlreadyApplied
 			})
 		)
 	);
@@ -1021,7 +1030,8 @@ export function updateBlocked(): string {
 	if (
 		!generationSettled() ||
 		(heldCreate() && !creating.error) ||
-		(heldMove() && !moving.error) ||
+		(heldMove() && !moving.error && !moving.repairReview) ||
+		moving.resolvingRepair ||
 		(moving.queued.length && !heldMove()) ||
 		(heldSetup() && !settingUp.error)
 	)
@@ -1044,8 +1054,14 @@ async function verifyHaltedFlows() {
 				value: stableStringify({
 					spec: flow.spec,
 					progress: flow.progress,
-					error: flow.error,
-					...(key === MOVE_KEY ? { projectId: moving.projectId, queued: moving.queued } : {})
+					error: key === MOVE_KEY && moving.repairReview ? '' : flow.error,
+					...(key === MOVE_KEY
+						? {
+								projectId: moving.projectId,
+								queued: moving.queued,
+								repairReview: !!moving.repairReview
+							}
+						: {})
 				})
 			}));
 	const before = snapshots();
@@ -1053,7 +1069,11 @@ async function verifyHaltedFlows() {
 	const verified = await Promise.all(
 		before.map(async ({ key, value, fallback }) => {
 			const record = await db.get<
-				FlowDraft<unknown> & { projectId?: string; queued?: QueuedMove[] }
+				FlowDraft<unknown> & {
+					projectId?: string;
+					queued?: QueuedMove[];
+					repairReview?: RepairReview;
+				}
 			>('projects', key);
 			return (
 				record?.spec &&
@@ -1062,9 +1082,13 @@ async function verifyHaltedFlows() {
 					stableStringify({
 						spec: record.spec,
 						progress: record.progress ?? null,
-						error: record.error || fallback,
+						error: record.error || (record.status === 'review' ? '' : fallback),
 						...(key === MOVE_KEY
-							? { projectId: record.projectId, queued: record.queued ?? [] }
+							? {
+									projectId: record.projectId,
+									queued: record.queued ?? [],
+									repairReview: !!record.repairReview
+								}
 							: {})
 					})
 			);
@@ -1633,7 +1657,7 @@ export const REQUEST_TEXT = 5; // 5: repair grids pack into the cheapest layout 
 const STOPPED = 'Generation stopped. Review Activity before trying again.';
 const SETUP_STOPPED = 'Setup stopped. Review Activity before trying again.';
 const halted = (r: { status?: string; requestText?: number }) =>
-	r.status === 'failed' || r.requestText !== REQUEST_TEXT;
+	r.status === 'failed' || r.status === 'review' || r.requestText !== REQUEST_TEXT;
 export interface Gen {
 	draft: Draft;
 	input: NewItemInput;
@@ -2410,7 +2434,7 @@ export function genProgress(g: Gen, jobs: JobRec[]): { pct: number } {
 // pipeline never ran, so the saved run stays running for a reload to resume.
 interface FlowDraft<S> {
 	spec: S;
-	status?: 'running' | 'failed';
+	status?: 'running' | 'failed' | 'review';
 	error?: string;
 	progress?: Progress | null;
 	requestText?: number;
@@ -2560,10 +2584,13 @@ export const moving = $state({
 	error: '',
 	done: false,
 	warnings: [] as string[],
-	queued: [] as QueuedMove[]
+	queued: [] as QueuedMove[],
+	repairReview: null as RepairReview | null,
+	repairApplied: false,
+	resolvingRepair: false
 });
 const MOVE_KEY = 'studio-move';
-let moveRunning = false,
+let moveRunning = $state(false),
 	moveRevision = 0;
 /** The stored move record without its queue (null: the current move is finished or dismissed). */
 let moveRecord: object | null = null,
@@ -2604,14 +2631,20 @@ export async function queueMoves(projectId: string, specs: MoveSpec[]) {
 	moving.queued = rest;
 	await startMove(next.projectId, next.spec);
 }
-/** A character's moves running or waiting in the queue; with `itemId`, only those that pose that item. */
+/** A character's moves running, publishing or queued; with `itemId`, only those that pose that item. */
 export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 	[
-		...(moving.spec && !moving.done && moving.projectId === projectId ? [moving.spec] : []),
+		...(moving.spec && (!moving.done || moveRunning) && moving.projectId === projectId
+			? [moving.spec]
+			: []),
 		...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec)
 	].filter((s) => !itemId || s.items.includes(itemId));
 export async function startMove(projectId: string, spec: MoveSpec) {
 	if (hmrReloading) return;
+	if (moving.repairReview) {
+		toast('Open Moves to decide whether to use the finished repair first.', { tone: 'warning' });
+		return;
+	}
 	if (spec.reuseItemFrames && queue.role === 'follower') {
 		toast('Use saved frames in the tab that is managing your PixelDoll jobs.', { tone: 'warning' });
 		return;
@@ -2681,6 +2714,45 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 				})
 			: await flow.addMove(projectId, spec, progress);
 		if (!current()) return;
+		if (result.repairReview) {
+			const progress = $state.snapshot(moving.progress);
+			try {
+				await storeMove({
+					id: MOVE_KEY,
+					spec,
+					projectId,
+					status: 'review',
+					requestText: REQUEST_TEXT,
+					progress,
+					repairReview: result.repairReview
+				});
+			} catch {
+				const message =
+					'The repair is available in this tab, but its review could not be saved. Decide before closing or reloading.';
+				const fallback = await persistFlowFailure(
+					MOVE_KEY,
+					{ spec, projectId, progress },
+					new Error(
+						'The review could not be saved. Use saved frames to recover it without another charge.'
+					),
+					storeMove
+				);
+				if (current())
+					moving.error = fallback.includes('Could not save this failure')
+						? `${message} Recovery after reload is not guaranteed.`
+						: message;
+			}
+			if (!current()) return;
+			moving.repairReview = result.repairReview;
+			if (ui.sheet !== 'move')
+				toast('Your paid repair is ready to review. The current frames are unchanged.', {
+					tone: 'warning',
+					action: () => {
+						ui.sheet = 'move';
+					}
+				});
+			return;
+		}
 		moving.warnings = result.warnings;
 		moving.done = true;
 		await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
@@ -2887,22 +2959,79 @@ export async function resumeMove() {
 	if (hmrReloading || moveResumed || queue.role === 'follower') return;
 	moveResumed = true;
 	const r = await db
-		.get<FlowDraft<MoveSpec> & { projectId: string; queued?: QueuedMove[] }>('projects', MOVE_KEY)
+		.get<
+			FlowDraft<MoveSpec> & {
+				projectId: string;
+				queued?: QueuedMove[];
+				repairReview?: RepairReview;
+			}
+		>('projects', MOVE_KEY)
 		.catch(() => undefined);
 	if (!r?.spec || (moving.spec && !moving.done)) return;
 	const { queued, ...record } = r;
 	moving.queued = queued ?? [];
 	moveRecord = record; // a halted move keeps its stored record while moves are queued behind it
+	let applied = false,
+		repairError = '';
+	if (r.repairReview) {
+		try {
+			applied = await (await itemRun()).repairAlreadyApplied(r.projectId, r.repairReview);
+		} catch (error) {
+			repairError = error instanceof Error ? error.message : String(error);
+		}
+	}
 	if (halted(r))
 		Object.assign(moving, {
 			spec: r.spec,
 			projectId: r.projectId,
 			progress: r.progress ?? null,
-			error: r.error || STOPPED,
+			error: r.error || (r.repairReview ? repairError : STOPPED),
+			repairReview: r.repairReview ?? null,
+			repairApplied: applied,
 			done: false,
 			warnings: []
 		});
 	else void startMove(r.projectId, r.spec);
+}
+
+export async function resolveRepairReview(useRepair: boolean) {
+	if (moveRunning || !moving.repairReview || queue.role === 'follower') return;
+	const projectId = moving.projectId,
+		review = $state.snapshot(moving.repairReview),
+		record = moveRecord;
+	moveRunning = moving.resolvingRepair = true;
+	moving.error = '';
+	try {
+		const run = await itemRun();
+		if (useRepair) {
+			if (!moving.repairApplied) await run.applyRepairReview(projectId, review);
+			moving.repairApplied = true;
+		} else if (await run.repairAlreadyApplied(projectId, review)) {
+			moving.repairApplied = true;
+			throw new Error('The repair is already saved. Finish the review to continue.');
+		}
+		try {
+			await storeMove(null);
+		} catch (error) {
+			moveRecord = record;
+			throw error;
+		}
+		moving.repairReview = null;
+		moving.repairApplied = false;
+		moving.done = true;
+		if (useRepair && viewing(projectId)) await openProject(projectId, { quiet: true });
+		toast(useRepair ? 'Repair saved.' : 'Current item frames kept.');
+	} catch (error) {
+		moving.error = error instanceof Error ? error.message : String(error);
+		toast(moving.error, { tone: 'danger' });
+	} finally {
+		moveRunning = moving.resolvingRepair = false;
+	}
+	if (moving.done && moving.queued.length) {
+		const [next, ...rest] = moving.queued;
+		moving.queued = rest;
+		await startMove(next.projectId, next.spec);
+	}
 }
 /** Drops the failed or finished move and the moves queued for the same character; other characters' queued moves go on. */
 export async function dismissMove() {
@@ -2916,6 +3045,8 @@ export async function dismissMove() {
 		error: '',
 		done: false,
 		warnings: [],
+		repairReview: null,
+		repairApplied: false,
 		queued: others
 	});
 	await storeMove(null);
