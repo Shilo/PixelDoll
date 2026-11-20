@@ -60,6 +60,20 @@ test('a delayed autosave preserves materials introduced by an accepted generatio
 	expect(saved.manifest.items.find((it) => it.id === 'hat')!.materials).toEqual(['hat_1']);
 });
 
+test('an autosave from before an item move cannot restore its old equipment key', async () => {
+	const live = record();
+	const hat = live.manifest.items.find(({ id }) => id === 'hat')!;
+	hat.slot = 'head';
+	const stale = structuredClone(live.manifest);
+	hat.slot = 'face_acc';
+	live.manifest.slots.push({ id: 'face_acc', class: 'rigid', z: 120 });
+	records.set(live.id, live);
+	await saveDress(live.id, stale, { items: { head: 'hat' }, variants: {} });
+	const saved = records.get(live.id) as ReturnType<typeof record>;
+	expect(saved.dress.current.items).toEqual({ head: null, face_acc: 'hat' });
+	expect(saved.manifest.presets[0].items).toMatchObject({ head: null, face_acc: 'hat' });
+});
+
 test('deleting equipment cleans current and saved outfits, and stale autosaves cannot revive references', async () => {
 	const live = record(),
 		stale = structuredClone(live.manifest);

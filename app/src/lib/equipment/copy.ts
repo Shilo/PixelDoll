@@ -8,6 +8,7 @@ import { flipH } from '../rig/mirror.ts';
 import { cellHash, cellKey } from '../rig/rig.ts';
 import { variantOf, variantRampOf } from '../dress/dress.ts';
 import { putItem, slotLadder } from '../items/items.ts';
+import { retargetLayerDepth } from '../items/slots.ts';
 import { clipOf, mergeQa, summaryOf } from '../items/qa-summary.ts';
 import type { StoredProject } from '../store/project.ts';
 import { itemContent, newItemExportId } from '../store/identity.ts';
@@ -415,13 +416,11 @@ export async function sharedFit(
 function retargetDepth(item: Item, plan: SlotCopyPlan) {
 	const { from, to } = plan;
 	for (const layer of item.layers) {
-		if (layer.role === 'bg') {
-			if (to.bgZ == null)
-				throw new Error(
-					`This character’s “${to.label ?? to.id}” category has no back layer for ${item.name}. Change the category’s behavior or delete it, then try again.`
-				);
-			layer.z = layer.z - (from.bgZ ?? from.z) + to.bgZ;
-		} else layer.z = layer.z - from.z + to.z;
+		if (layer.role === 'bg' && to.bgZ == null)
+			throw new Error(
+				`This character’s “${to.label ?? to.id}” category has no back layer for ${item.name}. Change the category’s behavior or delete it, then try again.`
+			);
+		layer.z = retargetLayerDepth(layer, from, to);
 	}
 }
 /** Copy an item of another saved character into `targetId` in one transaction: exact on an identical body, otherwise a free

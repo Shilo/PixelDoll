@@ -560,6 +560,11 @@
 		"workspaceActions": "Actions de l’espace de travail"
 	},
 	"wardrobe": {
+		"moveItemTo": "Déplacer vers un emplacement",
+		"dragItem": "Déplacement de {name}. Déposez-le dans un autre emplacement.",
+		"itemMoved": "{name} a été déplacé vers {label}.",
+		"itemMoveBusy": "Terminez ou abandonnez la génération associée avant de déplacer cet objet.",
+		"itemMoveChanged": "L’objet ou l’emplacement a changé. Réessayez.",
 		"notShownInMove": "Non affiché dans ce mouvement",
 		"notShownInMoveNote": "L’objet est porté, mais il reste invisible car il manque des images dans toutes les vues de ce mouvement.",
 		"randomLowerItem": "Choisir un objet au hasard : {lower}",

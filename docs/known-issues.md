@@ -261,6 +261,11 @@ can lose unexported work.
 
 ## Layout
 
+- **Moving saved items changes their slot, not their pixels.** Use the Wardrobe drag or the item's Move to slot menu to
+  correct a category without generating again. The destination controls draw order, clipping, and future generation.
+  An existing item already worn in the destination stays worn. Moves that would discard back-layer artwork or change
+  held-item geometry are unavailable. Moving into a slot with a back layer does not create new artwork for it.
+
 - On a 390 px phone with the equipment panel expanded, the character sprite overlaps the Preview / Top-down /
   Side-scroller labels (Later card "Keep the phone character clear of the view tabs").
 - The character is drawn at a whole-pixel scale rounded down from the target, so on desktop it fills about 56% of the

@@ -543,6 +543,11 @@
 		"workspaceActions": "워크스페이스 작업"
 	},
 	"wardrobe": {
+		"moveItemTo": "슬롯으로 이동",
+		"dragItem": "{name}을(를) 드래그 중입니다. 다른 슬롯에 놓으세요.",
+		"itemMoved": "{name}을(를) {label}(으)로 옮겼습니다.",
+		"itemMoveBusy": "이 아이템을 옮기기 전에 관련 생성을 완료하거나 폐기하세요.",
+		"itemMoveChanged": "아이템 또는 슬롯이 변경되었습니다. 다시 시도하세요.",
 		"notShownInMove": "이 동작에서는 표시되지 않음",
 		"notShownInMoveNote": "착용 중이지만 이 동작의 모든 방향에 프레임이 없어 표시되지 않습니다.",
 		"randomLowerItem": "무작위 {lower} 아이템",

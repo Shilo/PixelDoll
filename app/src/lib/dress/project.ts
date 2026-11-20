@@ -21,6 +21,25 @@ export interface Outfit {
 	items: Preset['items'];
 	variants: Preset['variants'];
 }
+
+export function reconcileItemSlots(
+	items: Outfit['items'],
+	knownSlots: ReadonlyMap<string, string>
+) {
+	const displaced: [string, string][] = [];
+	for (const [from, id] of Object.entries(items)) {
+		if (!id) continue;
+		if (!knownSlots.has(id)) items[from] = null;
+		else {
+			const to = knownSlots.get(id);
+			if (to && to !== from) {
+				items[from] = null;
+				displaced.push([to, id]);
+			}
+		}
+	}
+	for (const [to, id] of displaced) items[to] ??= id;
+}
 export interface DressState {
 	/** Snapshots from another format are ignored and removed (store/project.ts deleteOutdated). */
 	format: typeof CURRENT_FORMAT;
@@ -190,11 +209,13 @@ export function applyDress(m: Manifest, d: DressState) {
 		...m.materials.filter((x) => current.has(x.owner) && !owners.has(x.owner))
 	];
 	m.presets = structuredClone(d.presets);
+	const knownSlots = new Map(m.items.map((it) => [it.id, it.slot]));
+	for (const preset of m.presets) reconcileItemSlots(preset.items, knownSlots);
 	if (Array.isArray(d.slots)) m.slots = mergeSlots(m, d.slots);
 	for (const it of m.items) {
 		it.materials = m.materials.filter((x) => x.owner === it.id).map((x) => x.id);
 		const h = d.hides?.[it.id];
-		if (h !== undefined) h ? (it.hides = [...h]) : delete it.hides;
+		if (h !== undefined) h ? (it.hides = h.filter((slot) => slot !== it.slot)) : delete it.hides;
 	}
 }
 
@@ -319,9 +340,9 @@ export async function saveDress(
 			manifest.rig.directions
 		);
 		const cleaned = { ...d, materials, current, slots };
+		const knownSlots = new Map(manifest.items.map((it) => [it.id, it.slot]));
 		for (const preset of [...cleaned.presets, ...(current ? [current] : [])]) {
-			for (const slot of Object.keys(preset.items))
-				if (preset.items[slot] && !live.has(preset.items[slot]!)) preset.items[slot] = null;
+			reconcileItemSlots(preset.items, knownSlots);
 			for (const material of Object.keys(preset.variants))
 				if (!materialIds.has(material)) delete preset.variants[material];
 		}
