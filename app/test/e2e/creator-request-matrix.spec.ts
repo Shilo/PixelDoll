@@ -76,7 +76,7 @@ async function setup(page: Page) {
 		// Each matrix case requests new work. Repeating the same paid request after a terminal refusal is deliberately deduplicated.
 		if (freshAttempt) {
 			const closed = sheet.locator('details.advanced:not([open]) > summary');
-			if (await closed.count()) await closed.click(); // Start over closes Advanced again
+			if (await closed.count()) await closed.click(); // The form is remounted after discarding the attempt.
 			await sheet.getByRole('textbox', { name: 'Seed', exact: true }).fill(String(343 + before));
 		}
 		await sheet.getByRole('button', { name: 'Create character', exact: true }).click();
@@ -99,7 +99,7 @@ async function setup(page: Page) {
 		expect(body).not.toHaveProperty('direction_images');
 		expect(body).not.toHaveProperty('n_directions'); // V3's from-scratch default is eight, independent of kept views.
 		expect(unexpected).toEqual([]);
-		await sheet.getByRole('button', { name: 'Start over', exact: true }).click();
+		await sheet.getByRole('button', { name: 'Discard', exact: true }).click();
 		await expect(sheet.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
 		return body;
 	}
@@ -295,7 +295,7 @@ test('all cameras and blank, zero and maximum safe seeds reach outgoing JSON wit
 		await sheet.getByRole('combobox', { name: 'Camera', exact: true }).selectOption(view);
 		expect((await submit()).view).toBe(view);
 	}
-	// Seed is under Advanced, which Start over closes again.
+	// Seed is under Advanced, which closes when the form is remounted.
 	const closedAdvanced = sheet.locator('details.advanced:not([open]) > summary');
 	const openAdvanced = async () => {
 		if (await closedAdvanced.count()) await closedAdvanced.click();

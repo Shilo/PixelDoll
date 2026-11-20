@@ -121,7 +121,12 @@ import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
 let hmrReloading = import.meta.hot?.data.flowReloading === true;
 // The paid pipelines load on first use, outside the startup bundle (lib/lazy.ts).
-const createFlow = () => lazy(() => import('./create.ts'));
+let createModule: Promise<typeof import('./create.ts')> | undefined;
+const createFlow = () =>
+	(createModule ??= lazy(() => import('./create.ts')).catch((error: unknown) => {
+		createModule = undefined;
+		throw error;
+	}));
 const itemFlow = async () => (await lazy(() => import('./itemRoute.ts'))).itemRoute;
 const itemRun = () =>
 	lazy(() =>
@@ -2946,7 +2951,6 @@ export async function discardCreate(id: string) {
 	run.running = true;
 	try {
 		await db.del('projects', createDraftKey(id));
-		if (createPresentation.id === id) ui.sheet = null;
 		removeCreate(run);
 	} catch (error) {
 		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), { tone: 'danger' });

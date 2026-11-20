@@ -350,7 +350,8 @@ test('discarding a failed creation cannot race a retry for the same draft', asyn
 	deletion.resolve();
 	await removing;
 	expect(s.creates).toHaveLength(0);
-	expect(s.ui.sheet).toBeNull();
+	expect(s.ui.sheet).toBe('create');
+	expect(s.createPresentation.id).toBe('');
 });
 
 for (const kind of ['create', 'move', 'setup'] as const) {
@@ -1922,6 +1923,11 @@ describe('move queue', () => {
 			queue.role = 'leader';
 			notify({ role: 'leader' });
 			await vi.waitFor(() => expect(ran).toBe(true));
+			expect(s.creates.map((run) => [run.spec.name, String(run.error)])).toEqual([
+				['A', ''],
+				['C', ''],
+				['B', '']
+			]);
 			await vi.waitFor(() =>
 				expect(mocks.create.mock.calls.map((c) => c[0].name)).toEqual(['A', 'C', 'B'])
 			);

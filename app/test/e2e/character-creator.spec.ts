@@ -60,7 +60,13 @@ test('four overlapping creations keep independent rows and only the uninterrupte
 	const errors: string[] = [];
 	page.on('pageerror', (error) => errors.push(error.message));
 	const identities = new Map<string, number>();
-	const gates = new Map([1, 2, 3, 4].map((seed) => [seed, Promise.withResolvers<void>()]));
+	const gates = new Map(
+		[1, 2, 3, 4].map((seed) => {
+			let resolve!: () => void;
+			const promise = new Promise<void>((release) => (resolve = release));
+			return [seed, { promise, resolve }];
+		})
+	);
 	const waiting = new Set<number>();
 	await context.route('https://*.pixellab.ai/**', async (route) => {
 		const request = route.request();
