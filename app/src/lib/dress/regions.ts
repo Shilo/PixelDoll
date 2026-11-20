@@ -8,10 +8,12 @@ import { components } from '../image/chroma.ts';
 import type { Img } from '../image/png.ts';
 import { opaqueBox } from '../rig/normalize.ts';
 import {
+	DEFAULT_MOVE,
 	baseHashOf,
 	cellHash,
 	storedCellHashes,
 	type DirectionName,
+	type Rig,
 	type Sha256
 } from '../rig/rig.ts';
 import type { Project } from '../store/manifest.ts';
@@ -33,6 +35,17 @@ export function isGarment(c: number): boolean {
 	return v;
 }
 export const isShorts = (c: number) => (c & 1) === 1;
+
+export function isNativeMoveDirection(rig: Rig, anim: string, dir: DirectionName): boolean {
+	if (anim === DEFAULT_MOVE) return false;
+	const sourceDir = rig.directions.find((direction) => direction.id === dir)?.mirrorOf ?? dir;
+	const source = rig.animations.find((move) => move.id === anim)?.sources?.[sourceDir];
+	return (
+		(source?.route === 'v3' || source?.route === 'pixminimax') &&
+		source.motion?.startsWith(`${source.route}:`) === true
+	);
+}
+
 /** The cell without its region marks: one body's pixels are the same however a split marked them. */
 export function withoutRegions(im: Img): Img {
 	const data = new Uint8ClampedArray(im.data);
@@ -171,12 +184,17 @@ export async function splitBase(
 	const jobs: { anim: string; cells: (Sha256 | null)[]; i: number; im: Img; line: BodyLine }[] = [];
 	for (const l of base.layers)
 		for (const [anim, dirs] of Object.entries(l.cells ?? {}))
-			for (const [dir, cells] of Object.entries(dirs ?? {}) as [DirectionName, (Sha256 | null)[]][])
+			for (const [dir, cells] of Object.entries(dirs ?? {}) as [
+				DirectionName,
+				(Sha256 | null)[]
+			][]) {
+				if (isNativeMoveDirection(rig, anim, dir)) continue;
 				for (const [i, h] of cells.entries()) {
 					const im = h && p.images.get(h),
 						line = im && lineAt(p, anim, dir, i, im);
 					if (im && line) jobs.push({ anim, cells, i, im, line });
 				}
+			}
 	// The split follows from the cells and their lines alone, so reopening a character reuses it instead of redoing the
 	// pixel work (the demo, rebuilt unsplit on every open, included).
 	const key = jobs.map((j) => `${j.cells[j.i]} ${JSON.stringify(j.line)}`).join('|');

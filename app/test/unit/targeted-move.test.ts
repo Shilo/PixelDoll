@@ -1,17 +1,29 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { addMove, moveDirections, moveEstimate, reviewItemMove } from '../../src/studio/create.ts';
+import {
+	addMove,
+	b64,
+	moveDirections,
+	moveEstimate,
+	moveFrames,
+	nativeMoveGens,
+	nativeMoveRequest,
+	reviewItemMove,
+	reviewMoveRecovery
+} from '../../src/studio/create.ts';
+import { moveFrameCounts } from '../../src/studio/moveAnimationOptions.ts';
 import { movePlan } from '../../src/studio/apiPlans.ts';
-import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts';
+import { queue, requestIdentity, type JobRec } from '../../src/lib/pixellab/queue.ts';
+import { png, routes } from '../../src/lib/pixellab/routes.ts';
 import * as db from '../../src/lib/store/db.ts';
 import * as projects from '../../src/lib/store/project.ts';
-import { makeImg } from '../../src/lib/image/png.ts';
+import { decodePng, makeImg } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
 import { cellHash, type Keypoint, type DirectionName } from '../../src/lib/rig/rig.ts';
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 afterEach(() => vi.restoreAllMocks());
-async function fixture(fail = false) {
+async function fixture(fail = false, nativeReply?: 'redrawn' | 'exact' | 'none', withHat = false) {
 	const dirs: DirectionName[] = ['south', 'east', 'north', 'west'],
 		im = makeImg(64, 64);
 	for (let y = 10; y < 60; y++)
@@ -114,29 +126,60 @@ async function fixture(fail = false) {
 			)
 		}
 	};
-	const original = structuredClone(saved),
-		blobs = new Map<string, Blob>();
+	const blobs = new Map<string, Blob>(),
+		images = new Map([[hash, im]]);
+	if (withHat) {
+		const hat = structuredClone(im);
+		for (let y = 7; y < 15; y++)
+			for (let x = 23; x < 41; x++) hat.data.set([91, 60, 30, 255], (y * 64 + x) * 4);
+		const hatHash = await cellHash(hat);
+		blobs.set(hatHash.slice(7), new Blob([(await encodePngBytes(hat)) as Uint8Array<ArrayBuffer>]));
+		Object.assign(manifest.items[1], {
+			key: 'green',
+			route: 'skeleton-pose',
+			dressed: Object.fromEntries(dirs.map((dir) => [dir, hatHash]))
+		});
+	}
+	const original = structuredClone(saved);
 	let requested: Keypoint[][] = [];
 	vi.spyOn(projects, 'loadProject').mockImplementation(async () => {
 		const rec = structuredClone(saved);
-		return { rec, project: { manifest: rec.manifest, images: new Map([[hash, im]]) } };
+		return { rec, project: { manifest: rec.manifest, images } };
 	});
 	vi.spyOn(db, 'updateCharacter').mockImplementation(async (_id, _blobs, change) => {
 		saved = change(structuredClone(saved)) as projects.StoredProject;
 	});
 	vi.spyOn(db, 'get').mockImplementation(async () => structuredClone(saved));
 	vi.spyOn(db, 'getBlob').mockImplementation(async (h) => blobs.get(h));
-	const put = vi.spyOn(db, 'put').mockResolvedValue(undefined),
+	const put = vi.spyOn(db, 'put').mockImplementation(async (store, sha, value) => {
+			if (withHat && store === 'blobs' && value instanceof Blob) {
+				blobs.set(sha, value);
+				images.set(`sha256:${sha}`, await decodePng(value));
+			}
+		}),
 		update = vi.spyOn(db, 'update').mockImplementation(async (_s, _id, change) => {
 			saved = change(structuredClone(saved)) as projects.StoredProject;
 		});
 	const enqueue = vi.spyOn(queue, 'enqueue').mockImplementation(async (req) => {
-		if (req.path === '/animate-with-skeleton-v3') {
-			requested = (req.body as { keypoints: Keypoint[][] }).keypoints;
+		if (
+			req.path === '/animate-with-skeleton-v3' ||
+			req.path === '/animate-with-text-v3' ||
+			req.path === '/animate-pixminimax'
+		) {
+			const skeleton = req.path === '/animate-with-skeleton-v3';
+			requested = skeleton
+				? (req.body as { keypoints: Keypoint[][] }).keypoints
+				: Array.from({ length: (req.body as { frame_count: number }).frame_count }, () => points);
+			const echo = !skeleton && nativeReply !== 'none' ? 1 : 0;
 			const outputs = await Promise.all(
-				requested.map(async (_, i) => {
+				Array.from({ length: requested.length + echo }, async (_, i) => {
 					const image = structuredClone(im);
-					image.data[(10 * 64 + 25) * 4] = 180 + i;
+					image.data[(10 * 64 + 25) * 4] =
+						echo && i === 0
+							? nativeReply === 'exact'
+								? 180
+								: 91
+							: (skeleton ? 180 : 185) + i - echo;
 					const sha = 'frame-' + i;
 					blobs.set(
 						sha,
@@ -156,7 +199,7 @@ async function fixture(fail = false) {
 				createdAt: 0,
 				gens: 3,
 				usd: 0,
-				jobs: [{ id: 'job', results: outputs }]
+				jobs: [{ id: 'job', results: skeleton ? outputs : outputs.reverse() }]
 			} as unknown as JobRec;
 		}
 		if (req.path === '/estimate-skeleton')
@@ -221,6 +264,219 @@ test('targeted replacement preserves every unselected body/item/pose row and cle
 	}
 	expect(next.manifest.items[1].layers[0].cells!.idle!.east).toBeUndefined();
 	expect((next.rigQa as { warnings: string[] }).warnings).toEqual(['idle/south: retained']);
+});
+
+test.each(['none', 'redrawn'] as const)(
+	'native V3 freezes generated frames in order with %s echo',
+	async (reply) => {
+		const f = await fixture(false, reply);
+		await f.run({ animation: { model: 'v3', frameCount: 16 }, dirs: undefined });
+		const saved = f.saved(),
+			source = saved.manifest.rig.animations[0].sources!.east!;
+		expect(source.route).toBe('v3');
+		expect(source.keypoints).toEqual(source.measured);
+		expect(source.keypoints).toHaveLength(16);
+		expect(
+			f.enqueue.mock.calls.filter(([request]) => request.path !== '/estimate-skeleton')
+		).toHaveLength(4);
+		expect(
+			f.enqueue.mock.calls.every(([request]) => request.path !== '/animate-with-skeleton-v3')
+		).toBe(true);
+		const standing = (await projects.loadProject('rig-target')).project.images
+			.values()
+			.next().value!;
+		const hashes = await Promise.all(
+			Array.from({ length: 16 }, async (_, index) => {
+				const frame = structuredClone(standing);
+				frame.data[(10 * 64 + 25) * 4] = 185 + index;
+				return cellHash(frame);
+			})
+		);
+		expect(saved.manifest.items[0].layers[0].cells!.idle!.east).toEqual(hashes);
+	}
+);
+
+test('native PixMiniMax rejects a missing leading frame before buying any joint checks', async () => {
+	const f = await fixture(false, 'none');
+	await expect(f.run({ animation: { model: 'pixminimax' } })).rejects.toThrow(
+		'PixelLab returned 4 motion frames for 4 requested'
+	);
+	expect(f.enqueue).toHaveBeenCalledOnce();
+	expect(f.saved()).toEqual(f.original);
+});
+
+test('native PixMiniMax discards a redrawn leading frame and plans all 40 equipment poses in order', async () => {
+	const f = await fixture(false, 'redrawn', true),
+		manifest = f.original.manifest,
+		spec = {
+			id: 'idle',
+			action: 'idle',
+			frames: 8,
+			animation: { model: 'pixminimax' as const, frameCount: 40 },
+			items: ['hat'],
+			replace: true
+		};
+	const plan = movePlan(f.original, spec);
+	expect(plan[0]).toMatchObject({
+		path: '/animate-pixminimax',
+		generations: 6,
+		body: { first_frame: png('[standing artwork]') }
+	});
+	expect(
+		plan
+			.filter((call) => call.path === '/animate-with-skeleton-v3' && call.label?.includes('east'))
+			.map((call) => call.label)
+	).toEqual(['Hat east · frames 1–14', 'Hat east · frames 15–27', 'Hat east · frames 28–40']);
+	expect(plan.reduce((sum, call) => sum + (call.generations ?? 0), 0)).toBeCloseTo(
+		moveEstimate(manifest, spec).gens
+	);
+	await f.run({ animation: spec.animation, dirs: undefined, items: spec.items });
+	const source = f.saved().manifest.rig.animations[0].sources!.east!;
+	expect(source.route).toBe('pixminimax');
+	expect(source.keypoints).toHaveLength(40);
+	expect(source.keypoints).toEqual(source.measured);
+	const standing = (await projects.loadProject('rig-target')).project.images.values().next().value!;
+	const hashes = await Promise.all(
+		Array.from({ length: 40 }, (_, index) => {
+			const frame = structuredClone(standing);
+			frame.data[(10 * 64 + 25) * 4] = 185 + index;
+			return cellHash(frame);
+		})
+	);
+	expect(f.saved().manifest.items[0].layers[0].cells!.idle!.east).toEqual(hashes);
+	const equipmentCalls = f.enqueue.mock.calls.flatMap(([request]) =>
+		request.path === '/animate-with-skeleton-v3'
+			? [request.body as { direction: DirectionName; keypoints: Keypoint[][] }]
+			: []
+	);
+	for (const { id } of manifest.rig.directions) {
+		expect(
+			equipmentCalls.filter((body) => body.direction === id).map((body) => body.keypoints.length)
+		).toEqual([14, 13, 13]);
+		expect(f.saved().manifest.items[1].layers[0].cells!.idle![id]).toHaveLength(40);
+	}
+});
+
+test('native measurement recovery without explicit directions retries only the approved joint check', async () => {
+	const f = await fixture(),
+		spec = {
+			id: 'idle',
+			action: 'idle',
+			frames: 4,
+			animation: { model: 'v3' as const },
+			items: [],
+			replace: true,
+			dirs: undefined,
+			seed: 23
+		},
+		rest = f.original.manifest.rig.rest!.east!,
+		standing = (await projects.loadProject('rig-target')).project.images.get(rest.image)!,
+		first = await b64(standing),
+		blobs = new Map<string, Blob>(),
+		jobs: JobRec[] = [];
+	const storeImage = async (sha: string, image: typeof standing) => {
+		blobs.set(sha, new Blob([(await encodePngBytes(image)) as Uint8Array<ArrayBuffer>]));
+	};
+	await storeImage(rest.image.slice(7), standing);
+	const results = [];
+	for (let index = 0; index < 4; index++) {
+		const frame = structuredClone(standing),
+			sha = `cached-${index}`;
+		frame.data[(10 * 64 + 25) * 4] = 185 + index;
+		await storeImage(sha, frame);
+		results.push({ label: String(index), sha });
+		jobs.push({
+			id: `check-${index}`,
+			requestHash: (await requestIdentity(routes.estimateSkeleton(png(await b64(frame)))))
+				.requestHash,
+			method: 'POST',
+			endpoint: '/estimate-skeleton',
+			state: index === 0 ? 'lost' : 'done',
+			jobs: [],
+			createdAt: 0,
+			...(index ? { response: { keypoints: rest.keypoints } } : {})
+		} as unknown as JobRec);
+	}
+	const rawHashes = [];
+	for (const dir of ['south', 'east', 'north', 'west'] as const) {
+		const { requestHash } = await requestIdentity(
+			nativeMoveRequest(f.original, spec, dir, 'v3', first)
+		);
+		rawHashes.push(requestHash);
+		jobs.push({
+			id: `raw-${dir}`,
+			requestHash,
+			state: 'done',
+			endpoint: '/animate-with-text-v3',
+			params: {},
+			createdAt: 0,
+			jobs: [{ id: 'job', results }]
+		} as JobRec);
+	}
+	vi.spyOn(db, 'getBlob').mockImplementation(async (sha) => blobs.get(sha));
+	vi.spyOn(queue, 'snapshot').mockReturnValue({ ...queue.snapshot(), jobs });
+	const review = (await reviewMoveRecovery('rig-target', spec)).recovery!;
+	expect(review).toMatchObject({ recordIds: ['check-0'], checks: 1, rawHashes });
+	f.enqueue.mockImplementation(async () => {
+		const completed = {
+			...jobs[0],
+			id: 'check-0-retry',
+			state: 'done' as const,
+			response: { keypoints: rest.keypoints }
+		};
+		jobs.push(completed);
+		return completed;
+	});
+	await f.run({
+		...spec,
+		measurementRecovery: {
+			id: 'reviewed',
+			recordIds: review.recordIds,
+			checkHashes: review.checkHashes,
+			rigVersion: review.rigVersion
+		}
+	});
+	expect(f.enqueue).toHaveBeenCalledOnce();
+	expect(f.enqueue.mock.calls[0][0].path).toBe('/estimate-skeleton');
+	expect(f.saved().manifest.rig.animations[0].sources!.east!.route).toBe('v3');
+});
+
+test('raw PixMiniMax estimates reflect provider pricing by canvas and frame count', () => {
+	expect(nativeMoveGens('pixminimax', { w: 64, h: 64 }, 24)).toBe(3);
+	expect(nativeMoveGens('pixminimax', { w: 65, h: 65 }, 24)).toBe(1);
+	expect(nativeMoveGens('pixminimax', { w: 128, h: 128 }, 40)).toBe(6);
+	expect(nativeMoveGens('pixminimax', { w: 129, h: 129 }, 40)).toBe(2);
+});
+
+test('model options respect presets, explicit overrides and actual V3 canvas budget', async () => {
+	const f = await fixture();
+	const m = f.original.manifest;
+	expect(moveFrames(m, { action: 'idle', frames: 8 })).toBe(4);
+	expect(moveFrameCounts('v3', 192)).toEqual([4, 6, 8, 10, 12, 14]);
+	expect(moveFrameCounts('v3', 256)).toEqual([4, 6, 8]);
+	expect(moveFrameCounts('pixminimax', 256).at(-1)).toBe(40);
+	m.rig.cell = { w: 256, h: 256 };
+	expect(moveFrames(m, { action: 'slash', frames: 16, animation: { model: 'v3' } })).toBe(8);
+	await f.run({ animation: { model: 'skeleton-v3', frameCount: 5 }, dirs: undefined });
+	expect(f.saved().manifest.rig.animations[0].cells).toBe(5);
+});
+
+test('resampling Death keeps its final pose and duration', async () => {
+	const resized = await fixture();
+	const spec = { id: 'death', action: 'death', replace: false, dirs: undefined };
+	await resized.run(spec);
+	const authored = resized.saved().manifest.rig.animations.find((clip) => clip.id === 'death')!;
+	vi.restoreAllMocks();
+	const alternate = await fixture();
+	await alternate.run({ ...spec, animation: { model: 'skeleton-v3', frameCount: 12 } });
+	const changed = alternate.saved().manifest.rig.animations.find((clip) => clip.id === 'death')!;
+	expect(changed.cells).toBe(12);
+	expect(changed.sources!.east!.keypoints!.at(-1)).toEqual(
+		authored.sources!.east!.keypoints!.at(-1)
+	);
+	expect(changed.frames.reduce((total, frame) => total + frame.ms, 0)).toBe(
+		authored.frames.reduce((total, frame) => total + frame.ms, 0)
+	);
 });
 
 test('regeneration keeps explicit play-once preferences, including choices changed during frame publication', async () => {

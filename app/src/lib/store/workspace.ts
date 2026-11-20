@@ -26,6 +26,8 @@ const tools = [
 	'animate-with-skeleton-v3',
 	'animate-with-v3',
 	'animate-with-pixminimax',
+	'animate-with-text-v3',
+	'animate-pixminimax',
 	'estimate-skeleton',
 	'edit-animation-v2',
 	'inpaint-v3',
