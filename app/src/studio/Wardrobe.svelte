@@ -730,9 +730,9 @@
 					: undefined;
 		return key && itemTargets.includes(key) ? key : '';
 	}
-	async function moveTile(id: string, target: string) {
+	async function moveTileFromMenu(id: string, target: string) {
 		const surface = list;
-		if (!(await moveItemToSlot(id, target)) || surface !== list) return;
+		if (!(await moveItemToSlot(id, target, { showDestination: true })) || surface !== list) return;
 		await tick();
 		if (surface === list)
 			list
@@ -863,7 +863,7 @@
 				itemDrop = '';
 				armed = '';
 				if (source.item) {
-					if (itemTarget) void moveTile(source.item.id, itemTarget);
+					if (itemTarget) void moveItemToSlot(source.item.id, itemTarget);
 					else announce = message('wardrobe.dragCanceled');
 					return;
 				}
@@ -1440,7 +1440,7 @@
 					)
 				: undefined}
 			onremove={(id) => void remove(id)}
-			onmove={(id, target) => void moveTile(id, target)}
+			onmove={(id, target) => void moveTileFromMenu(id, target)}
 			bind:open={menuOpen}
 		/>
 		<!-- Navigation over the list's sections (not tabs): arrows move along it like the other rails (Studio.svelte). -->
