@@ -118,7 +118,9 @@ import {
 	MODEL_IDS,
 	OUTLINE_VALUES,
 	bodyErrors,
+	characterReference,
 	characterReferenceIssue,
+	costBody,
 	facingErrors,
 	modelOf,
 	sizeErrors,
@@ -243,24 +245,21 @@ export const labelViews = <T extends { label: string }>(
 /** Cost from measured prices: base 2 + import 0.25. Creation makes only the Default move (the standing views); idle, walk
  * and other moves are added later and priced by moveEstimate. */
 export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model' | 'reference'>) {
-	const n = spec.directions.filter((d) => !d.mirrorOf).length;
+	const n = spec.directions.filter((d) => !d.mirrorOf).length,
+		size = costBody(spec.size, spec.model);
 	// Pro Flash's first image (GET /pro-flash/cost, provisional, 2026-11-12): 5 gens to 96 px, 6 to 208 px, then 9; V3's
 	// costs 1. The eight rotations are priced alike.
 	if (spec.model === 'pro') {
-		const draw = proDrawGens(spec.size);
+		const draw = proDrawGens(size);
 		return { gens: draw.lo + 0.25, maxGens: +(draw.hi + 0.25 + n * EST).toFixed(2), minutes: 5 };
 	}
 	const source = !spec.model ? spec.reference : undefined;
-	const first = source
-		? 0
-		: spec.model !== 'pro-flash'
-			? 1
-			: spec.size <= 96
-				? 5
-				: spec.size <= 208
-					? 6
-					: 9;
-	const area = source ? source.width * source.height : spec.size * spec.size;
+	const first = source ? 0 : spec.model !== 'pro-flash' ? 1 : size <= 96 ? 5 : size <= 208 ? 6 : 9;
+	// An oversized reference cannot be created, so it must not inflate the price either.
+	const area = source
+		? Math.min(source.width, characterReference.v3.max) *
+			Math.min(source.height, characterReference.v3.max)
+		: size * size;
 	const gens =
 		spec.model === 'standard' ? 1.25 : +(first + 0.25 + Math.ceil((area * 8) / 65536)).toFixed(2);
 	// Missing managed rest joints may require one estimate per direction.

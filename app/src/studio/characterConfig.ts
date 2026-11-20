@@ -204,6 +204,12 @@ export const MODEL_IDS = Object.keys(MODELS) as CharacterModel[];
 /** The limits of a model; absent or unknown means the default (createCharacter refuses unknown models separately). */
 export const modelOf = (model?: string): ModelLimits =>
 	MODELS[model && Object.hasOwn(MODELS, model) ? (model as CharacterModel) : 'v3'];
+/** The body size a price estimate may use: the form can hold an out-of-range number, but costs never grow past the
+ * model's accepted range. */
+export const costBody = (body: number, model?: string): number => {
+	const { min, max } = modelOf(model).body;
+	return Math.min(max, Math.max(min, Number.isFinite(body) ? body : min));
+};
 /** V3 style hints (soft guidance the model may not follow exactly), for models with styleHints. */
 export const OUTLINES = [
 	{ value: '', label: 'Default (black)' },

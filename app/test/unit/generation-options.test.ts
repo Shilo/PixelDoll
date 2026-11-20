@@ -214,6 +214,31 @@ test('Pro Flash estimates follow the measured /pro-flash/cost table', () => {
 	expect(plan[0].generations).toBe(6);
 });
 
+test('cost estimates clamp out-of-range body sizes and references to the model limits', () => {
+	for (const model of [undefined, 'pro-flash', 'standard'] as const) {
+		const { min, max } = MODELS[model ?? 'v3'].body;
+		expect(estimate({ directions: four, size: 512, model })).toEqual(
+			estimate({ directions: four, size: max, model })
+		);
+		expect(estimate({ directions: four, size: 0, model })).toEqual(
+			estimate({ directions: four, size: min, model })
+		);
+	}
+	expect(estimate({ directions: four, size: 400, model: 'pro' })).toEqual(
+		estimate({ directions: four, size: MODELS.pro.body.max, model: 'pro' })
+	);
+	// The form can hold artwork larger than V3 accepts; that artwork is never created, so it never raises the price.
+	expect(
+		estimate({ directions: four, size: 48, reference: { width: 300, height: 300, base64: '' } })
+	).toEqual(
+		estimate({
+			directions: four,
+			size: 48,
+			reference: { width: 256, height: 256, base64: '' }
+		})
+	);
+});
+
 test('creation refuses unknown models, hints and hints combined with Pro Flash before spending', async () => {
 	const bad = async (extra: Record<string, unknown>) =>
 		createCharacter({ ...spec, ...extra } as Parameters<typeof createCharacter>[0]).catch(
