@@ -1962,7 +1962,7 @@
 			"keepNeedsChecks": "Bu animasyonu saklamak için tüm karelerin önbellekte tamamlanmış eklem kontrolleri olmalı.",
 			"noFailedChecks": "Önbellekteki karelerde yeniden denenebilecek başarısız eklem kontrolü yok.",
 			"paletteDrift": "Renk sapması küçük bir palet onarımı için fazla. Mevcut görsel korundu.",
-			"describedFrames": "Tarifle üretilen animasyonlar 4, 8 veya 12 kare olabilir. Bu animasyonun {frames} karesi var.",
+			"moveAnimationFrames": "Bu model ve tuval boyutu {frames} kareyi desteklemiyor. Desteklenen bir kare sayısı seçin.",
 			"describeMove": "Bu animasyonu üretmeden önce tarif edin.",
 			"partialSaved": "{reason} Tamamlanan görünümler kaydedildi ({views}).",
 			"partialSavedNewFrames": "{reason} Tamamlanan görünümler kaydedildi ({views}). Yeni kareler üretin seçeneği yalnızca eksik kareleri ister.",
@@ -1972,7 +1972,7 @@
 			"moveDirectionsChanged": "Karakterin yönleri değişti. Yeniden denemeden önce animasyonun güncel tahminini inceleyin. Üretim isteği gönderilmedi.",
 			"reviewItemRedrawFirst": "Üretmeden önce eşyanın yeniden çizimini ve tahminini inceleyin. İstek gönderilmedi.",
 			"chooseRepairTarget": "Onarmadan önce bir eşya ve mevcut bir animasyondan bir yön seçin. Üretim isteği gönderilmedi.",
-			"describedFramesBlocked": "Tarifle üretilen animasyonlar 4, 8 veya 12 kare olabilir. Bu animasyonun {frames} karesi var. Üretim isteği gönderilmedi.",
+			"moveAnimationFramesBlocked": "Bu model ve tuval boyutu {frames} kareyi desteklemiyor. Üretim isteği gönderilmedi.",
 			"describeMoveBlocked": "Bu animasyonu üretmeden önce tarif edin. Üretim isteği gönderilmedi.",
 			"chooseExistingMoveRepairing": "Ekipmanını onarmadan önce mevcut bir animasyon seçin."
 		},
@@ -2250,6 +2250,27 @@
 		"describeMotion": "Hareketi tarif edin",
 		"motionOnly": "Yalnızca gövdenin hareketini tarif edin. Silah ve aksesuarları eşya olarak ekleyin.",
 		"orChoose": "Veya bir animasyon seçin",
+		"motionModel": "Hareket modeli",
+		"motionModelHelp": "Skeleton v3, gövde ve ekipman için aynı pozları kullanır. V3 ve PixMiniMax önce gövdeyi çizer, ardından PixelDoll ekipman için pozları belirler.",
+		"models": {
+			"skeletonV3": "Varsayılan (Skeleton V3)",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "Kareler",
+		"framesHelp": "Seçenekler bu modele ve karakterin tuvaline ({canvas} px) uyar. Varsayılan seçenek PixelDoll'un hazır kare sayısını korur.",
+		"framesDefault": {
+			"one": "Varsayılan ({count} kare)",
+			"other": "Varsayılan ({count} kare)"
+		},
+		"framesValue": {
+			"one": "{count} kare",
+			"other": "{count} kare"
+		},
+		"framesKept": {
+			"one": "Korunur: {count} kare",
+			"other": "Korunur: {count} kare"
+		},
 		"redrawDirections": "Yeniden çizilecek yönler",
 		"redrawHidesEquipment": "Bu görünümler değiştirildiğinde, yeni kareler oluşturulana kadar ekipman gizlenir.",
 		"redrawMirrors": "Aynalanan görünümler de değişir: {directions}.",

@@ -1968,7 +1968,7 @@
 			"keepNeedsChecks": "Conservar esta animación requiere comprobaciones de articulaciones en caché completadas para todos los fotogramas.",
 			"noFailedChecks": "Los fotogramas en caché no tienen comprobaciones de articulaciones fallidas que reintentar.",
 			"paletteDrift": "La variación de color es excesiva para una corrección menor de la paleta. Se conservaron las imágenes anteriores.",
-			"describedFrames": "Las animaciones descritas se pueden generar con 4, 8 o 12 fotogramas. Esta animación tiene {frames}.",
+			"moveAnimationFrames": "Este modelo y tamaño de lienzo no admiten {frames} fotogramas. Elige una cantidad compatible.",
 			"describeMove": "Describe esta animación antes de generarla.",
 			"partialSaved": "{reason} Se guardaron las vistas terminadas ({views}).",
 			"partialSavedNewFrames": "{reason} Se guardaron las vistas terminadas ({views}); Generar fotogramas nuevos solo pide las que faltan.",
@@ -1978,7 +1978,7 @@
 			"moveDirectionsChanged": "Las direcciones del personaje cambiaron. Revisa la estimación actual de la animación antes de volver a intentarlo. No se solicitó ninguna generación.",
 			"reviewItemRedrawFirst": "Revisa el redibujado del objeto y su estimación antes de generar. No se envió ninguna solicitud.",
 			"chooseRepairTarget": "Para reparar, elige un objeto y una dirección de una animación existente. No se solicitó ninguna generación.",
-			"describedFramesBlocked": "Las animaciones descritas se pueden generar con 4, 8 o 12 fotogramas. Esta animación tiene {frames}. No se solicitó ninguna generación.",
+			"moveAnimationFramesBlocked": "Este modelo y tamaño de lienzo no admiten {frames} fotogramas. No se solicitó ninguna generación.",
 			"describeMoveBlocked": "Describe esta animación antes de generarla. No se solicitó ninguna generación.",
 			"chooseExistingMoveRepairing": "Elige una animación existente antes de reparar su equipamiento."
 		},
@@ -2259,6 +2259,27 @@
 		"describeMotion": "Describe el movimiento",
 		"motionOnly": "Describe solo el movimiento del cuerpo. Añade las armas y los accesorios como objetos.",
 		"orChoose": "O elige una animación",
+		"motionModel": "Modelo de movimiento",
+		"motionModelHelp": "Skeleton v3 usa las mismas poses para el cuerpo y el equipo. V3 y PixMiniMax dibujan primero el cuerpo. Después, PixelDoll detecta las poses para el equipo.",
+		"models": {
+			"skeletonV3": "Predeterminado (Skeleton V3)",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "Fotogramas",
+		"framesHelp": "Las opciones encajan con este modelo y el lienzo del personaje ({canvas} px). La opción predeterminada mantiene la cantidad de fotogramas predefinida de PixelDoll.",
+		"framesDefault": {
+			"one": "Predeterminado ({count} fotograma)",
+			"other": "Predeterminado ({count} fotogramas)"
+		},
+		"framesValue": {
+			"one": "{count} fotograma",
+			"other": "{count} fotogramas"
+		},
+		"framesKept": {
+			"one": "Se mantiene: {count} fotograma",
+			"other": "Se mantienen: {count} fotogramas"
+		},
 		"redrawDirections": "Direcciones que se redibujarán",
 		"redrawHidesEquipment": "Al reemplazar estas vistas, el equipo se oculta hasta que se creen nuevos fotogramas.",
 		"redrawMirrors": "También cambian las vistas reflejadas: {directions}.",

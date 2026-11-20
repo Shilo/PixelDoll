@@ -1861,7 +1861,7 @@
 			"keepNeedsChecks": "保留此动作需要每一帧都有已完成的缓存关节检查。",
 			"noFailedChecks": "缓存帧没有可重试的失败关节检查。",
 			"paletteDrift": "颜色偏移过大，无法进行小幅调色板修复。现有图像已保留。",
-			"describedFrames": "描述的动作可以用 4、8 或 12 帧生成。此动作有 {frames} 帧。",
+			"moveAnimationFrames": "此模型和画布尺寸不支持 {frames} 帧。请选择支持的帧数。",
 			"describeMove": "生成前请先描述此动作。",
 			"partialSaved": "{reason} 已保存完成的视图（{views}）。",
 			"partialSavedNewFrames": "{reason} 已保存完成的视图（{views}）；“生成新帧”只会请求缺失的帧。",
@@ -1871,7 +1871,7 @@
 			"moveDirectionsChanged": "角色的朝向已更改。请先查看此动作的最新费用预估，再重试。未发送生成请求。",
 			"reviewItemRedrawFirst": "生成前请先查看装备重绘的设置和费用预估。未发送请求。",
 			"chooseRepairTarget": "修复前，请选择一件装备和现有动作中的一个朝向。未发送生成请求。",
-			"describedFramesBlocked": "描述的动作可以用 4、8 或 12 帧生成。此动作有 {frames} 帧。 未发出生成请求。",
+			"moveAnimationFramesBlocked": "此模型和画布尺寸不支持 {frames} 帧。未发出生成请求。",
 			"describeMoveBlocked": "生成前请先描述此动作。 未发出生成请求。",
 			"chooseExistingMoveRepairing": "修复装备前，请先选择一个现有动作。"
 		},
@@ -2135,6 +2135,24 @@
 		"describeMotion": "描述动作",
 		"motionOnly": "只描述身体动作。武器和道具请通过装备添加。",
 		"orChoose": "或选择一个动作",
+		"motionModel": "运动模型",
+		"motionModelHelp": "Skeleton v3 为身体和装备使用相同的姿势。V3 和 PixMiniMax 会先绘制身体，再由 PixelDoll 检测装备所用的姿势。",
+		"models": {
+			"skeletonV3": "默认（Skeleton V3）",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "帧",
+		"framesHelp": "选项会随此模型和角色的画布（{canvas} px）变化。默认选项使用 PixelDoll 预设的帧数。",
+		"framesDefault": {
+			"other": "默认（{count} 帧）"
+		},
+		"framesValue": {
+			"other": "{count} 帧"
+		},
+		"framesKept": {
+			"other": "保留：{count} 帧"
+		},
 		"redrawDirections": "要重绘的朝向",
 		"redrawHidesEquipment": "替换这些视图后，装备会隐藏，直到生成新帧。",
 		"redrawMirrors": "镜像视图也会变更：{directions}。",

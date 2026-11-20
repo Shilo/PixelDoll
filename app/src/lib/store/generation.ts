@@ -10,6 +10,8 @@ const TOOLS: Record<string, string> = {
 	'/create-character-pro-flash': 'Character Pro Flash',
 	'/estimate-skeleton': 'Skeleton estimate',
 	'/animate-with-skeleton-v3': 'Skeleton animation V3',
+	'/animate-with-text-v3': 'Animation V3',
+	'/animate-pixminimax': 'PixMiniMax',
 	'/edit-animation-v2': 'Edit animation V2',
 	'/inpaint-v3': 'Inpaint V3',
 	'/transfer-outfit-v2': 'Transfer outfit V2'

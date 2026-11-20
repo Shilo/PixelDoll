@@ -1953,7 +1953,7 @@
 			"keepNeedsChecks": "Keeping this move requires completed cached joint checks for every frame.",
 			"noFailedChecks": "Cached frames have no failed joint checks to retry.",
 			"paletteDrift": "Too much color drift for a small palette repair. Existing artwork was kept.",
-			"describedFrames": "Described moves can be generated with 4, 8 or 12 frames. This move has {frames}.",
+			"moveAnimationFrames": "This model and canvas don’t support {frames} frames. Choose a supported frame count.",
 			"describeMove": "Describe this move before generating it.",
 			"partialSaved": "{reason} The finished views were saved ({views}).",
 			"partialSavedNewFrames": "{reason} The finished views were saved ({views}); Generate new frames requests only the missing ones.",
@@ -1963,7 +1963,7 @@
 			"moveDirectionsChanged": "Character directions changed. Review the move’s current estimate before trying again. No generation was requested.",
 			"reviewItemRedrawFirst": "Review the item redraw and its estimate before generating. No request was made.",
 			"chooseRepairTarget": "Choose one item and one facing of an existing move before repairing. No generation was requested.",
-			"describedFramesBlocked": "Described moves can be generated with 4, 8 or 12 frames. This move has {frames}. No generation was requested.",
+			"moveAnimationFramesBlocked": "This model and canvas don’t support {frames} frames. No generation was requested.",
 			"describeMoveBlocked": "Describe this move before generating it. No generation was requested.",
 			"chooseExistingMoveRepairing": "Choose an existing move before repairing its equipment."
 		},
@@ -2241,6 +2241,27 @@
 		"describeMotion": "Describe the motion",
 		"motionOnly": "Describe body motion only. Add weapons and props as items.",
 		"orChoose": "Or choose a move",
+		"motionModel": "Motion model",
+		"motionModelHelp": "Skeleton v3 uses shared poses for the body and equipment. V3 and PixMiniMax draw the body first, then PixelDoll finds poses for equipment.",
+		"models": {
+			"skeletonV3": "Default (Skeleton V3)",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "Frames",
+		"framesHelp": "Choices fit this model and the character's {canvas} px canvas. The default keeps PixelDoll's preset frame count.",
+		"framesDefault": {
+			"one": "Default ({count} frame)",
+			"other": "Default ({count} frames)"
+		},
+		"framesValue": {
+			"one": "{count} frame",
+			"other": "{count} frames"
+		},
+		"framesKept": {
+			"one": "Kept: {count} frame",
+			"other": "Kept: {count} frames"
+		},
 		"redrawDirections": "Directions to redraw",
 		"redrawHidesEquipment": "Replacing these views hides equipment until new frames are made.",
 		"redrawMirrors": "Mirrored views also change: {directions}.",

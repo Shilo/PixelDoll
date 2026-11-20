@@ -1886,7 +1886,7 @@
 			"keepNeedsChecks": "このモーションを残すには、すべてのフレームでキャッシュされた関節チェックが完了している必要があります。",
 			"noFailedChecks": "キャッシュされたフレームに、再試行が必要な失敗した関節チェックはありません。",
 			"paletteDrift": "色のずれが大きく、パレットの微調整では直せません。既存のアートワークは残しています。",
-			"describedFrames": "説明から作るモーションは4、8、12フレームで生成できます。このモーションは{frames}フレームです。",
+			"moveAnimationFrames": "このモデルとキャンバスサイズでは{frames}フレームに対応していません。対応するフレーム数を選んでください。",
 			"describeMove": "生成する前に、このモーションを説明してください。",
 			"partialSaved": "{reason} 完了したビューは保存しました（{views}）。",
 			"partialSavedNewFrames": "{reason} 完了したビューは保存しました（{views}）。［新しいフレームを生成］では、不足しているビューだけをリクエストします。",
@@ -1896,7 +1896,7 @@
 			"moveDirectionsChanged": "キャラクターの向きが変わりました。再試行する前に、モーションの現在の見積もりを確認してください。生成はリクエストされていません。",
 			"reviewItemRedrawFirst": "生成前に、アイテムの描き直しと見積もりを確認してください。リクエストは送信されていません。",
 			"chooseRepairTarget": "修復する前に、既存のモーションからアイテムと向きを1つずつ選んでください。生成はリクエストされていません。",
-			"describedFramesBlocked": "説明から作るモーションは4、8、12フレームで生成できます。このモーションは{frames}フレームです。 生成リクエストは送信されていません。",
+			"moveAnimationFramesBlocked": "このモデルとキャンバスサイズでは{frames}フレームに対応していません。生成リクエストは送信されていません。",
 			"describeMoveBlocked": "生成する前に、このモーションを説明してください。 生成リクエストは送信されていません。",
 			"chooseExistingMoveRepairing": "装備を修復する前に、既存のモーションを選んでください。"
 		},
@@ -2166,6 +2166,24 @@
 		"describeMotion": "動きを説明",
 		"motionOnly": "体の動きだけを説明してください。武器や小道具はアイテムとして追加します。",
 		"orChoose": "またはモーションを選択",
+		"motionModel": "モーションのモデル",
+		"motionModelHelp": "Skeleton v3 は体と装備に同じポーズを使います。V3 と PixMiniMax は先に体を描き、その後 PixelDoll が装備用のポーズを検出します。",
+		"models": {
+			"skeletonV3": "標準（Skeleton V3）",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "フレーム",
+		"framesHelp": "選択肢はこのモデルとキャラクターのキャンバス（{canvas} px）に合わせて変わります。デフォルトでは PixelDoll のプリセットのフレーム数を使用します。",
+		"framesDefault": {
+			"other": "デフォルト（{count} フレーム）"
+		},
+		"framesValue": {
+			"other": "{count} フレーム"
+		},
+		"framesKept": {
+			"other": "維持: {count} フレーム"
+		},
 		"redrawDirections": "描き直す向き",
 		"redrawHidesEquipment": "この向きの画像を差し替えると、新しいフレームを作るまで装備が非表示になります。",
 		"redrawMirrors": "反転表示も変わります：{directions}。",

@@ -5,7 +5,14 @@
 	// re-rendered through raw skeleton-v3), plus one pose call per worn item x direction so the items follow the new clip.
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
+	import Help from './Help.svelte';
 	import Sprite from './Sprite.svelte';
+	import {
+		defaultMoveFrameCount,
+		moveFrameCounts,
+		type MoveAnimationModel,
+		type MoveAnimationOptions
+	} from './moveAnimationOptions.ts';
 	import { untrack } from 'svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { movePlan } from './apiPlans.ts';
@@ -24,6 +31,7 @@
 	import {
 		MOVE_STEPS,
 		bodyMoveIssue,
+		moveFrames,
 		partialMoveFrameIssue,
 		isAuthoredAction,
 		isV13,
@@ -66,7 +74,7 @@
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { errorText, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
-	import { formatNumber, t } from 'svelte-whisper';
+	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
 	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
 
 	const m = $derived(store.project?.manifest);
@@ -88,6 +96,23 @@
 		].filter((a) => !reservedMove(a))
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
+	// The PixelLab models that can make a move's body frames; Skeleton v3 keeps the current flow.
+	const MODELS: MoveAnimationModel[] = ['skeleton-v3', 'pixminimax', 'v3'];
+	const advancedId = $props.id();
+	const MODEL_TEXT: Record<MoveAnimationModel, WhisperKey> = {
+		'skeleton-v3': 'moveSheet.models.skeletonV3',
+		v3: 'moveSheet.models.v3',
+		pixminimax: 'moveSheet.models.pixminimax'
+	};
+	// Advanced starts open when a restored draft already changed something there, so no choice is hidden.
+	let advancedOpen = $state(
+		!!(
+			draft?.animation &&
+			(draft.animation.model !== 'skeleton-v3' || draft.animation.frameCount !== undefined)
+		)
+	);
+	let modelChoice = $state<MoveAnimationModel | undefined>(draft?.animation?.model);
+	let frameChoice = $state<number | undefined>(draft?.animation?.frameCount);
 	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
 	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? '');
@@ -128,7 +153,15 @@
 	const describingReplacement = $derived(
 		replacing &&
 			((action !== 'walk' && !isAuthoredAction(action)) ||
-				targetDirs.some((dir) => savedMove?.sources?.[dir]?.motion?.startsWith('pixminimax:')))
+				targetDirs.some((dir) => {
+					const source = savedMove?.sources?.[dir];
+					if (source?.route === 'skeleton-v3') return !!source.motion?.startsWith('pixminimax:');
+					if (source?.route !== 'v3' && source?.route !== 'pixminimax') return false;
+					const prefix = `${source.route}:`;
+					return (
+						!!source.motion?.startsWith(prefix) && source.motion.slice(prefix.length) !== action
+					);
+				}))
 	);
 	const describing = $derived(!action || describingReplacement);
 	const items = $derived(m && targetDirs.length ? posable(m, targetDirs) : []);
@@ -137,13 +170,73 @@
 			(item) => item.slot !== 'body' && !items.some((eligible) => eligible.id === item.id)
 		)
 	);
-	const frames = $derived(replacing ? (savedMove?.cells ?? 8) : 8);
+	const canvas = $derived(m?.rig.cell.w ?? 0);
+	// Ride is a static authored pose on Skeleton v3 (create.ts moveAnimationModel), so it has no model or frame choice.
+	const riding = $derived(!describing && action === 'ride');
+	// The frame count the core falls back to: a replaced clip's cells, otherwise PixelDoll's 8-frame preset.
+	const baseFrames = $derived(replacing ? (savedMove?.cells ?? 8) : 8);
+	// A partial replacement must keep the saved clip's cell count so redrawn views line up with the kept ones.
+	const keptFrames = $derived(
+		replacing && targetDirs.length !== availableDirs.length ? savedMove?.cells : undefined
+	);
+	const fitsKept = (option: MoveAnimationModel) =>
+		keptFrames === undefined || moveFrameCounts(option, canvas).includes(keptFrames);
+	const model = $derived.by(() => {
+		if (modelChoice && fitsKept(modelChoice)) return modelChoice;
+		const preferred =
+			keptFrames ??
+			(m && moveFrames(m, { action: describing ? undefined : action, frames: baseFrames }));
+		const fitsPreferred = (option: MoveAnimationModel) =>
+			preferred !== undefined && moveFrameCounts(option, canvas).includes(preferred);
+		if (replacing) {
+			for (const dir of targetDirs) {
+				const route = savedMove?.sources?.[dir]?.route;
+				if (route && route !== 'import' && fitsPreferred(route)) return route;
+			}
+		}
+		return MODELS.find(fitsPreferred) ?? 'skeleton-v3';
+	});
+	// Model-valid counts for this character's actual canvas; the same object prices and submits the move.
+	const frameCounts = $derived(moveFrameCounts(model, canvas));
+	const userFrameCount = $derived(
+		keptFrames === undefined && frameChoice !== undefined && frameCounts.includes(frameChoice)
+			? frameChoice
+			: undefined
+	);
+	const chosenFrameCount = $derived(
+		keptFrames !== undefined && frameCounts.includes(keptFrames) ? keptFrames : userFrameCount
+	);
+	const animationOptions = $derived<MoveAnimationOptions | undefined>(
+		riding
+			? undefined
+			: { model, ...(chosenFrameCount === undefined ? {} : { frameCount: chosenFrameCount }) }
+	);
+	// What the core resolves with no explicit count, so the Default label matches the price and the request.
+	const defaultFrames = $derived(
+		m
+			? moveFrames(m, {
+					action: describing ? undefined : action,
+					frames: baseFrames,
+					animation: { model }
+				})
+			: baseFrames
+	);
+	const shownFrames = $derived(userFrameCount ?? defaultFrames);
+	const advancedNote = $derived(
+		[
+			model === 'skeleton-v3' ? '' : t(MODEL_TEXT[model]),
+			userFrameCount === undefined ? '' : t('moveSheet.framesValue', { count: userFrameCount })
+		]
+			.filter(Boolean)
+			.join(' · ')
+	);
 	const motion = $derived({
 		id,
 		action: describing ? undefined : action,
 		text: describing ? text.trim() || undefined : undefined,
-		frames,
-		replace: replacing
+		frames: baseFrames,
+		replace: replacing,
+		animation: animationOptions
 	});
 	const motionIssue = $derived.by(() => {
 		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
@@ -357,7 +450,11 @@
 			text,
 			items: $state.snapshot(included),
 			dirs: [...selectedDirs],
-			poseStyle: 'visible-side-v1'
+			poseStyle: 'visible-side-v1',
+			animation:
+				!riding && (modelChoice !== undefined || userFrameCount !== undefined)
+					? { model, frameCount: userFrameCount }
+					: undefined
 		};
 		withKey(() => {
 			formDrafts.move = undefined;
@@ -372,10 +469,16 @@
 		action = next;
 		replaceSelected = replace;
 		text = '';
+		frameChoice = undefined;
 		const clips = (rec?.rigQa as { clips?: Record<string, { fails?: unknown[] }> } | undefined)
 			?.clips;
 		const flagged = availableDirs.filter((d) => clips?.[`${next}/${d}`]?.fails?.length);
 		selectedDirs = flagged.length ? flagged : [...availableDirs];
+	}
+	function chooseModel(next: MoveAnimationModel) {
+		modelChoice = next;
+		if (frameChoice !== undefined && keptFrames === undefined)
+			frameChoice = defaultMoveFrameCount(next, canvas, frameChoice);
 	}
 	function describeMove(value: string) {
 		chooseAction('');
@@ -863,6 +966,79 @@
 						maxlength="120"
 					/>
 				</label>{/if}
+			{#if !riding}
+				<details class="disclosure advanced" bind:open={advancedOpen}>
+					<summary
+						><ChevronRight size={14} />{t('common.advanced')}{#if advancedNote}<span
+								class="faint advanced-note">{advancedNote}</span
+							>{/if}</summary
+					>
+					<div>
+						<div class="advanced-field">
+							<div class="advanced-label">
+								<label for={`${advancedId}-model`}>{t('moveSheet.motionModel')}</label>
+								<Help
+									iconOnly
+									title={t('moveSheet.motionModel')}
+									text={t('moveSheet.motionModelHelp')}
+								/>
+							</div>
+							<select
+								id={`${advancedId}-model`}
+								class="bu-input input"
+								value={model}
+								onchange={(e) => chooseModel(e.currentTarget.value as MoveAnimationModel)}
+								>{#each MODELS as option (option)}<option
+										value={option}
+										disabled={option !== model && !fitsKept(option)}>{t(MODEL_TEXT[option])}</option
+									>{/each}</select
+							>
+						</div>
+						<div class="advanced-field frames-field">
+							<div class="advanced-label">
+								{#if keptFrames === undefined && frameCounts.length}
+									<label for={`${advancedId}-frames`}>{t('moveSheet.frames')}</label>
+								{:else}
+									<span>{t('moveSheet.frames')}</span>
+								{/if}
+								<Help
+									iconOnly
+									title={t('moveSheet.frames')}
+									text={t('moveSheet.framesHelp', { canvas: formatNumber(canvas) })}
+								/>
+								{#if keptFrames === undefined && frameCounts.length}
+									<button
+										type="button"
+										class="bu-action btn plain frame-default"
+										data-variant="quiet"
+										aria-disabled={userFrameCount === undefined}
+										onclick={() => (frameChoice = undefined)}
+										>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
+									>
+								{/if}
+							</div>
+							{#if keptFrames !== undefined}
+								<span class="faint">{t('moveSheet.framesKept', { count: keptFrames })}</span>
+							{:else if frameCounts.length}
+								<div class="frame-controls">
+									<input
+										id={`${advancedId}-frames`}
+										type="range"
+										aria-valuetext={t('moveSheet.framesValue', { count: shownFrames })}
+										min={0}
+										max={frameCounts.length - 1}
+										value={frameCounts.indexOf(shownFrames)}
+										oninput={(e) => (frameChoice = frameCounts[e.currentTarget.valueAsNumber])}
+									/>
+									<span class="frame-value"
+										>{t('moveSheet.framesValue', { count: shownFrames })}</span
+									>
+								</div>
+							{/if}
+						</div>
+					</div>
+				</details>
+			{/if}
 			{#if reservedMove(id)}<p class="notice warn small">
 					<CircleAlert size={14} />{displayError(reservedMove(id))}
 				</p>{:else if motionIssue}<p class="notice warn small">
@@ -993,5 +1169,63 @@
 		width: 100%;
 		max-width: 192px;
 		min-width: 0;
+	}
+	.advanced {
+		margin-top: 4px;
+	}
+	.advanced > summary {
+		min-height: 36px;
+	}
+	.advanced-note {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-weight: 400;
+		font-size: var(--fs-sm);
+	}
+	.advanced > div {
+		padding-left: 0;
+		gap: 10px;
+	}
+	.advanced-field {
+		display: grid;
+		gap: 4px;
+		min-width: 0;
+	}
+	.advanced-label {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
+	}
+	.frames-field {
+		row-gap: 0;
+	}
+	.frame-controls {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 12px;
+	}
+	.frame-controls input {
+		min-width: 0;
+		width: 100%;
+	}
+	.frame-controls input[type='range'] {
+		margin: 0;
+		min-height: 44px;
+	}
+	.frame-default {
+		margin-inline-start: auto;
+	}
+	.frame-value {
+		font-variant-numeric: tabular-nums;
+	}
+	@media (max-width: 599px), (max-height: 499px) {
+		.advanced-field .input {
+			min-height: 44px;
+			font-size: 16px;
+		}
 	}
 </style>

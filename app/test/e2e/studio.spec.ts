@@ -2848,6 +2848,29 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(move.getByRole('button', { name: /^Add move/ })).toBeDisabled();
 	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
 	await description.fill('jumping in place');
+	const advanced = move.locator('details.advanced');
+	await advanced.locator('summary').click();
+	const model = advanced.getByRole('combobox', { name: 'Motion model' });
+	const slider = advanced.getByRole('slider', { name: 'Frames' });
+	await expect(model).toHaveValue('skeleton-v3');
+	await expect(model.getByRole('option')).toHaveText(['Default (Skeleton V3)', 'PixMiniMax', 'V3']);
+	await slider.press('Home');
+	await expect(slider).toHaveAttribute('aria-valuetext', '3 frames');
+	await model.selectOption('pixminimax');
+	await slider.press('End');
+	await expect(slider).toHaveAttribute('aria-valuetext', '40 frames');
+	await slider.press('ArrowLeft');
+	await expect(slider).toHaveAttribute('aria-valuetext', '36 frames');
+	await slider.press('End');
+	await model.selectOption('v3');
+	await expect(slider).toHaveAttribute('aria-valuetext', '16 frames');
+	await slider.press('Home');
+	await slider.press('ArrowRight');
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await advanced.getByRole('button', { name: 'Default (8 frames)', exact: true }).click();
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
+	await model.selectOption('skeleton-v3');
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).not.toBeChecked();
 	await move.getByRole('checkbox', { name: new RegExp(vest.name) }).check();
 	await expect(move.getByRole('button', { name: /^Add Jumping in/ })).toContainText(
@@ -2873,6 +2896,10 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(description).toHaveValue('');
 	await expect(move.getByRole('button', { name: /^Add Cast/ })).toBeEnabled();
 	await expect(cast).toBeChecked();
+	// Presets offer the model and frame choices too; static Ride stays on its Skeleton v3 pose.
+	await expect(advanced).toHaveCount(1);
+	await choices.getByRole('radio', { name: /^Ride\b/ }).click();
+	await expect(advanced).toHaveCount(0);
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.locator('.project-btn').click();
@@ -5277,6 +5304,8 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 		const custom = m.rig.animations.find((a: { id: string }) => a.id === 'walk');
 		custom.id = 'idle';
 		custom.sources.east.motion = 'pixminimax:idle, shift weight to the leading foot';
+		custom.sources.west.route = 'v3';
+		custom.sources.west.motion = 'v3:idle, shift weight to the leading foot';
 		for (const item of m.items)
 			for (const layer of item.layers)
 				if (layer.cells?.walk) {
@@ -5290,10 +5319,12 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
 	await page.getByRole('radio', { name: 'Cross punch · added', exact: true }).click();
-	await expect(sheet).toContainText(
-		'Described moves can be generated with 4, 8 or 12 frames. This move has 6.'
-	);
-	await expect(sheet.getByRole('button', { name: /^Replace Cross punch views/ })).toBeDisabled();
+	const replacePunch = sheet.getByRole('button', { name: /^Replace Cross punch views/ });
+	await expect(replacePunch).toBeDisabled();
+	await sheet
+		.getByRole('textbox', { name: 'Describe the replacement', exact: true })
+		.fill('Punch across the body');
+	await expect(replacePunch).toBeEnabled();
 	await sheet.getByRole('radio', { name: 'Idle · added', exact: true }).click();
 	const replace = sheet.getByRole('button', { name: /^Replace Idle views/ });
 	await expect(replace).toBeDisabled();
@@ -5327,17 +5358,26 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(sword).toHaveCount(0);
 	await expect(sheet).not.toContainText('if equipment runs');
 	await east.click();
-	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveCount(0);
-	await expect(replace).toBeDisabled();
-	await expect(replace).not.toContainText('Est.');
-	await expect(sheet).toContainText('A partial repair must keep the existing frame count.');
-	await expect(sheet.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(
-		0
-	);
-	await east.click();
 	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveValue(
 		'Step sideways and shift weight to the leading foot'
 	);
+	await expect(replace).toBeEnabled();
+	const advanced = sheet.locator('summary').filter({ hasText: 'Advanced' });
+	await expect(advanced).toContainText('V3');
+	await advanced.click();
+	await expect(sheet.getByRole('slider', { name: 'Frames', exact: true })).toHaveCount(0);
+	await expect(sheet.getByText('Kept: 8 frames', { exact: true })).toBeVisible();
+	const model = sheet.getByRole('combobox', { name: 'Motion model', exact: true });
+	await expect(model).toHaveValue('v3');
+	await east.click();
+	await expect(model).toHaveValue('skeleton-v3');
+	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveValue(
+		'Step sideways and shift weight to the leading foot'
+	);
+	await model.selectOption('pixminimax');
+	await east.click();
+	await expect(model).toHaveValue('pixminimax');
+	await model.selectOption('skeleton-v3');
 	const custom = sheet.getByRole('textbox', { name: 'Describe a new move', exact: true });
 	await expect(custom).toHaveValue('');
 	await custom.fill('jumping in place');

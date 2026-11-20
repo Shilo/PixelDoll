@@ -1879,7 +1879,7 @@
 			"keepNeedsChecks": "Untuk menyimpan animasi ini, setiap frame harus memiliki hasil pemeriksaan sendi yang sudah selesai di cache.",
 			"noFailedChecks": "Frame di cache tidak memiliki pemeriksaan sendi gagal yang bisa dicoba ulang.",
 			"paletteDrift": "Pergeseran warna terlalu besar untuk perbaikan kecil pada palet. Gambar yang ada tetap disimpan.",
-			"describedFrames": "Animasi berdasarkan deskripsi bisa dibuat dengan 4, 8, atau 12 frame. Animasi ini memiliki {frames} frame.",
+			"moveAnimationFrames": "Model dan ukuran kanvas ini tidak mendukung {frames} frame. Pilih jumlah frame yang didukung.",
 			"describeMove": "Deskripsikan animasi ini sebelum membuatnya.",
 			"partialSaved": "{reason} Tampilan yang selesai sudah disimpan ({views}).",
 			"partialSavedNewFrames": "{reason} Tampilan yang selesai sudah disimpan ({views}). Buat frame baru hanya meminta frame yang belum ada.",
@@ -1889,7 +1889,7 @@
 			"moveDirectionsChanged": "Arah karakter berubah. Tinjau estimasi terbaru untuk animasi ini sebelum mencoba lagi. Tidak ada permintaan pembuatan yang dikirim.",
 			"reviewItemRedrawFirst": "Tinjau penggambaran ulang item dan estimasinya sebelum membuatnya. Tidak ada permintaan yang dikirim.",
 			"chooseRepairTarget": "Sebelum memperbaiki, pilih satu item dan satu arah dari animasi yang sudah ada. Tidak ada permintaan pembuatan yang dikirim.",
-			"describedFramesBlocked": "Animasi berdasarkan deskripsi bisa dibuat dengan 4, 8, atau 12 frame. Animasi ini memiliki {frames} frame. Tidak ada generasi yang diminta.",
+			"moveAnimationFramesBlocked": "Model dan ukuran kanvas ini tidak mendukung {frames} frame. Tidak ada generasi yang diminta.",
 			"describeMoveBlocked": "Deskripsikan animasi ini sebelum membuatnya. Tidak ada generasi yang diminta.",
 			"chooseExistingMoveRepairing": "Pilih animasi yang sudah ada sebelum memperbaiki perlengkapannya."
 		},
@@ -2157,6 +2157,24 @@
 		"describeMotion": "Deskripsikan gerakannya",
 		"motionOnly": "Jelaskan gerakan tubuh saja. Tambahkan senjata dan properti sebagai item.",
 		"orChoose": "Atau pilih animasi",
+		"motionModel": "Model gerakan",
+		"motionModelHelp": "Skeleton v3 memakai pose yang sama untuk tubuh dan perlengkapan. V3 dan PixMiniMax menggambar tubuh terlebih dahulu, lalu PixelDoll mendeteksi pose untuk perlengkapan.",
+		"models": {
+			"skeletonV3": "Bawaan (Skeleton V3)",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "Frame",
+		"framesHelp": "Pilihannya sesuai dengan model ini dan kanvas karakter ({canvas} px). Opsi default memakai jumlah frame bawaan PixelDoll.",
+		"framesDefault": {
+			"other": "Default ({count} frame)"
+		},
+		"framesValue": {
+			"other": "{count} frame"
+		},
+		"framesKept": {
+			"other": "Dipertahankan: {count} frame"
+		},
 		"redrawDirections": "Arah yang akan digambar ulang",
 		"redrawHidesEquipment": "Mengganti tampilan ini akan menyembunyikan perlengkapan sampai frame baru dibuat.",
 		"redrawMirrors": "Tampilan cermin juga berubah: {directions}.",

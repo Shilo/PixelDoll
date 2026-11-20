@@ -1966,7 +1966,7 @@
 			"keepNeedsChecks": "Garder cette animation nécessite des contrôles d’articulations en cache terminés pour chaque image.",
 			"noFailedChecks": "Les images en cache n’ont aucun contrôle d’articulations en échec à relancer.",
 			"paletteDrift": "Dérive des couleurs trop importante pour une petite réparation de palette. Le visuel existant a été conservé.",
-			"describedFrames": "Les animations décrites peuvent être générées avec 4, 8 ou 12 images. Cette animation en a {frames}.",
+			"moveAnimationFrames": "Ce modèle et cette taille de canevas ne prennent pas en charge {frames} images. Choisissez un nombre compatible.",
 			"describeMove": "Décrivez cette animation avant de la générer.",
 			"partialSaved": "{reason} Les vues terminées ont été enregistrées ({views}).",
 			"partialSavedNewFrames": "{reason} Les vues terminées ont été enregistrées ({views}). « Générer de nouvelles images » ne demande que les images manquantes.",
@@ -1976,7 +1976,7 @@
 			"moveDirectionsChanged": "Les directions du personnage ont changé. Consultez l’estimation actuelle de l’animation avant de réessayer. Aucune génération n’a été demandée.",
 			"reviewItemRedrawFirst": "Vérifiez le redessin de l’objet et son estimation avant de lancer la génération. Aucune demande n’a été envoyée.",
 			"chooseRepairTarget": "Avant de réparer, choisissez un objet et une direction d’une animation existante. Aucune génération n’a été demandée.",
-			"describedFramesBlocked": "Les animations décrites peuvent être générées avec 4, 8 ou 12 images. Cette animation en a {frames}. Aucune génération n’a été demandée.",
+			"moveAnimationFramesBlocked": "Ce modèle et cette taille de canevas ne prennent pas en charge {frames} images. Aucune génération n’a été demandée.",
 			"describeMoveBlocked": "Décrivez cette animation avant de la générer. Aucune génération n’a été demandée.",
 			"chooseExistingMoveRepairing": "Choisissez une animation existante avant de réparer son équipement."
 		},
@@ -2257,6 +2257,27 @@
 		"describeMotion": "Décrivez le mouvement",
 		"motionOnly": "Décrivez uniquement le mouvement du corps. Ajoutez les armes et accessoires comme objets.",
 		"orChoose": "Ou choisissez une animation",
+		"motionModel": "Modèle de mouvement",
+		"motionModelHelp": "Skeleton v3 utilise les mêmes poses pour le corps et l’équipement. V3 et PixMiniMax dessinent d’abord le corps, puis PixelDoll détecte les poses pour l’équipement.",
+		"models": {
+			"skeletonV3": "Par défaut (Skeleton V3)",
+			"v3": "V3",
+			"pixminimax": "PixMiniMax"
+		},
+		"frames": "Images",
+		"framesHelp": "Les choix correspondent à ce modèle et au canevas du personnage ({canvas} px). L'option par défaut garde le nombre d'images prédéfini de PixelDoll.",
+		"framesDefault": {
+			"one": "Par défaut ({count} image)",
+			"other": "Par défaut ({count} images)"
+		},
+		"framesValue": {
+			"one": "{count} image",
+			"other": "{count} images"
+		},
+		"framesKept": {
+			"one": "Conservé : {count} image",
+			"other": "Conservées : {count} images"
+		},
 		"redrawDirections": "Directions à redessiner",
 		"redrawHidesEquipment": "Le remplacement de ces vues masque l’équipement jusqu’à la création de nouvelles images.",
 		"redrawMirrors": "Les vues en miroir changent aussi : {directions}.",
