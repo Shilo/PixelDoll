@@ -1330,7 +1330,7 @@ test('a production workspace copy offers the user guide without install actions'
 		await page.goto(server.url);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		await page.getByRole('button', { name: 'Workspace...', exact: true }).click();
-		await page.getByRole('button', { name: 'Export my workspace', exact: true }).click();
+		await page.getByRole('button', { name: 'Export my workspace...', exact: true }).click();
 		const [archive] = await Promise.all([
 			page.waitForEvent('download'),
 			page.getByRole('button', { name: 'Download ZIP', exact: true }).click()

@@ -3097,7 +3097,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 		page.waitForEvent('download'),
 		popover.getByRole('button', { name: 'Download PNG' }).click()
 	]);
-	await popover.getByRole('button', { name: 'Share to…' }).click();
+	await popover.getByRole('button', { name: 'Share to...', exact: true }).click();
 	await expect
 		.poll(() =>
 			page.evaluate(() => (window as unknown as { __shared?: { name: string } }).__shared?.name)
