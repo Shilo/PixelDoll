@@ -7238,7 +7238,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expectAnchoredMenu(page);
 	await expect(more).toHaveAttribute('aria-expanded', 'true');
 	const items = itemMenu(page).getByRole('menuitem');
-	await expect(items.first()).toHaveAccessibleName('Rename...');
+	await expect(items.first()).toHaveAccessibleName('Details...');
 	await expect(items.first()).toBeFocused();
 	await expect(items.last()).toHaveAccessibleName('Delete item…');
 	const iconOffsets = await items.evaluateAll((rows) =>
@@ -7250,7 +7250,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	expect(iconOffsets).toEqual(Array(iconOffsets.length).fill(iconOffsets.at(-1)));
 	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
 	await page.keyboard.press('ArrowDown');
-	await expect(items.nth(1)).toHaveAccessibleName('Details...');
+	await expect(items.nth(1)).toHaveAccessibleName('Rename...');
 	await expect(items.nth(1)).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect.poll(() => menuOpen(page)).toBe(false);
