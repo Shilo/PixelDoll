@@ -419,47 +419,78 @@
 	}
 	function stop() {
 		pendingTap = null;
-		handoff = false;
-		keys.clear();
+		endWalk();
 		release();
 		clearHover();
 	}
-	// A walk held on the keyboard continues through a pointer press on a control outside the stage (a wardrobe tile, a
-	// tab): the press takes focus, and the stage takes it back when the press ends, so the held keys and the next ones
-	// still move the character. A field, a menu or a dialog needs the keyboard itself, so the walk ends there.
-	let handoff = false;
+	// A walk held on the keyboard continues through a plain mouse click on a control outside the stage (a wardrobe tile,
+	// a tab). The click takes focus; while it does (`handoff`), movement keys stay the stage's, and one frame after the
+	// button is released the stage takes focus back, so the held keys and the next ones still move the character.
+	// Whatever needs the keyboard, or can keep a key release from the page, ends the walk instead: a field, a menu, a
+	// dialog, another key, another mouse button (a native menu, autoscroll), a touch or pen press (a long press).
+	let handoff = false,
+		handback = 0;
 	const typing = (target: EventTarget | null) =>
 		target instanceof Element && !!target.closest('input, textarea, select, [contenteditable]');
 	function pressOutside(e: PointerEvent) {
-		handoff =
-			experience.mode !== 'preview' &&
-			keys.size > 0 &&
-			!ui.sheet &&
-			e.target instanceof Node &&
-			!host?.contains(e.target) &&
-			!typing(e.target);
+		cancelAnimationFrame(handback);
+		handoff = false;
+		if (
+			experience.mode === 'preview' ||
+			!keys.size ||
+			ui.sheet ||
+			!(e.target instanceof Node) ||
+			host?.contains(e.target)
+		)
+			return;
+		if (e.pointerType === 'mouse' && e.button === 0 && !typing(e.target)) handoff = true;
+		else keys.clear();
+	}
+	function endWalk() {
+		cancelAnimationFrame(handback);
+		handoff = false;
+		keys.clear();
+	}
+	/** A second mouse button pressed while the first is down sends no pointerdown of its own. */
+	function otherButton(e: MouseEvent) {
+		if (e.button !== 0 && keys.size && e.target instanceof Node && !host?.contains(e.target))
+			endWalk();
 	}
 	function pressEnded() {
 		if (!handoff) return;
-		handoff = false;
-		// After the control's own click, which follows this event.
-		requestAnimationFrame(() => {
+		// The control's own click follows this event: the keys stay the stage's until it has run.
+		cancelAnimationFrame(handback);
+		handback = requestAnimationFrame(() => {
+			handoff = false;
 			if (document.activeElement === host) return;
 			if (
 				ui.sheet ||
 				experience.mode === 'preview' ||
 				typing(document.activeElement) ||
-				document.querySelector('[popover]:popover-open')
+				document.querySelector('[popover]:popover-open, dialog[open]')
 			)
 				keys.clear();
 			else host?.focus({ preventScroll: true });
 		});
 	}
-	/** While the press holds focus, the held movement keys repeat on that control: they stay the stage's. */
+	/** Keys pressed while the click holds focus. Movement keys, held or new, are the stage's and never reach the clicked
+	 *  control (an arrow would move its tab or scroll its list). Any other key is the keyboard used on the interface. */
 	function heldElsewhere(e: KeyboardEvent) {
-		if (!handoff || e.target === host || !keys.has(e.key.toLowerCase())) return;
-		e.preventDefault();
-		e.stopImmediatePropagation();
+		if (!handoff || e.target === host) return;
+		const k = e.key.toLowerCase();
+		if (MOVEMENT_KEYS.has(k) && !e.ctrlKey && !e.metaKey && !e.altKey) {
+			e.preventDefault();
+			e.stopImmediatePropagation();
+			if (!e.repeat || keys.has(k)) keys.add(k);
+		} else if (
+			e.ctrlKey ||
+			e.metaKey ||
+			e.altKey ||
+			k.length === 1 ||
+			['tab', 'enter', 'escape', 'contextmenu'].includes(k)
+		)
+			// A key that acts on the interface (not a lock, media or input-method key): the keyboard is in use there.
+			endWalk();
 	}
 	// Non-primary touch taps do not consistently produce native clicks. Keep the
 	// first world finger's capture while a deliberate second tap operates a button.
@@ -869,9 +900,11 @@
 			host.dataset.sceneOffset = `${zoom.offset.x},${zoom.offset.y}`;
 			host.dataset.sceneMin = String(shared.min);
 			host.dataset.sceneMax = String(shared.max);
-			let velocity = stick.origin
-				? { x: stick.value.x, y: -stick.value.y }
-				: keyboardVector(keys, experience.mode === 'side');
+			// A press on the stage that has not been dragged yet steers nothing: the keyboard keeps the walk.
+			let velocity =
+				stick.origin && (stick.value.x || stick.value.y)
+					? { x: stick.value.x, y: -stick.value.y }
+					: keyboardVector(keys, experience.mode === 'side');
 			if (ui.sheet || document.hidden) velocity = { x: 0, y: 0 };
 			const speed = travelSpeed(experience.mode === 'side' ? 'side' : 'topdown', mountVisible),
 				travelRate = speed / MOTION.walkSpeed.topdown;
@@ -1255,6 +1288,8 @@
 	onpointerdowncapture={pressOutside}
 	onpointerupcapture={pressEnded}
 	onpointercancelcapture={pressEnded}
+	onmousedowncapture={otherButton}
+	oncontextmenucapture={endWalk}
 	onkeydowncapture={heldElsewhere}
 />
 <svelte:document onvisibilitychange={stop} />

@@ -134,23 +134,25 @@ async function plannedCreation(page: Page, sheet: Locator) {
 	await peek.getByRole('button', { name: 'Close API calls', exact: true }).click();
 }
 
-test('underwear is default and Nude explicitly switches the exact outgoing prompt', async ({
+test('underwear is default and base clothing changes the exact outgoing prompt', async ({
 	page
 }) => {
 	const { sheet, submit } = await setup(page);
-	const nude = sheet.getByRole('switch', { name: 'Nude', exact: true });
-	await expect(nude).not.toBeChecked();
+	const clothing = sheet.getByRole('radiogroup', { name: 'Base clothing' });
+	const underwear = clothing.getByRole('radio', { name: 'Underwear', exact: true });
+	const nothingWorn = clothing.getByRole('radio', { name: 'Nothing worn', exact: true });
+	await expect(underwear).toBeChecked();
 	expect((await submit()).description).toBe(UNDERWEAR_BODY);
-	await nude.focus();
-	await page.keyboard.press('Space');
-	await expect(nude).toBeChecked();
+	await underwear.focus();
+	await page.keyboard.press('ArrowRight');
+	await expect(nothingWorn).toBeChecked();
 	expect((await submit()).description).toBe(BASE_BODY);
-	await nude.uncheck();
+	await underwear.click();
 	expect((await submit()).description).toBe(UNDERWEAR_BODY);
 	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
 	await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).fill(BASE_BODY);
 	await sheet.getByRole('tab', { name: 'Appearance', exact: true }).click();
-	await expect(nude).toBeChecked();
+	await expect(nothingWorn).toBeChecked();
 	await sheet.getByLabel('Skin', { exact: true }).selectOption('Tan');
 	expect((await submit()).description).toBe(`Skin: Tan\n${BASE_BODY}`);
 });

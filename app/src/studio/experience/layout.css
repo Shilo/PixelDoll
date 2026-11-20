@@ -262,7 +262,7 @@
 	}
 }
 /* Share and Export carry text only where the bar has room. */
-@media (max-width: 1099px) {
+@media (max-width: 1199px) {
 	.header-share span,
 	.header-export span {
 		display: none;
