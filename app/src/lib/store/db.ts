@@ -204,7 +204,8 @@ async function editIdleCharacter(
 	edit: (
 		projects: { delete(key: string): void; put(value: unknown, key: string): void },
 		records: any[]
-	) => void
+	) => void,
+	blobs?: Map<string, Blob>
 ): Promise<void> {
 	if (!id.startsWith('rig-')) throw new Error(`You can only ${action} a saved character.`);
 	if (copy) {
@@ -216,12 +217,16 @@ async function editIdleCharacter(
 			},
 			[...projects.values()]
 		);
+		for (const [hash, blob] of blobs ?? []) copy.blobs.set(hash, blob);
 		copy.projects = projects;
 		return;
 	}
 	const db = await open();
 	return new Promise((res, rej) => {
-		const t = db.transaction(['projects', 'jobs'], 'readwrite'),
+		const t = db.transaction(
+				blobs?.size ? ['projects', 'jobs', 'blobs'] : ['projects', 'jobs'],
+				'readwrite'
+			),
 			projects = t.objectStore('projects');
 		const records = projects.getAll(),
 			jobs = t.objectStore('jobs').getAll();
@@ -242,6 +247,7 @@ async function editIdleCharacter(
 						`Finish or dismiss pending generation work before you ${action} a character.`
 					);
 				edit(projects, records.result);
+				for (const [hash, blob] of blobs ?? []) t.objectStore('blobs').put(blob, hash);
 			} catch (failure) {
 				error = failure;
 				t.abort();
@@ -265,19 +271,25 @@ export async function deleteCharacter(id: string): Promise<void> {
 
 export async function saveCharacterDirections(
 	original: StoredProject,
-	next: StoredProject
+	next: StoredProject,
+	blobs: Map<string, Blob>
 ): Promise<void> {
 	const { id } = original;
 	const version = stableStringify(original);
-	await editIdleCharacter(id, 'change directions for', (projects, records) => {
-		if (records.some((record) => withoutCharacters(record, new Set([id]))))
-			throw new Error('Keep or dismiss this character’s item drafts before changing directions.');
-		if (stableStringify(records.find((record) => record?.id === id)) !== version)
-			throw new Error(
-				'This character changed. Close and reopen Directions to review the latest version.'
-			);
-		projects.put(next, id);
-	});
+	await editIdleCharacter(
+		id,
+		'change directions for',
+		(projects, records) => {
+			if (records.some((record) => withoutCharacters(record, new Set([id]))))
+				throw new Error('Keep or dismiss this character’s item drafts before changing directions.');
+			if (stableStringify(records.find((record) => record?.id === id)) !== version)
+				throw new Error(
+					'This character changed. Close and reopen Directions to review the latest version.'
+				);
+			projects.put(next, id);
+		},
+		blobs
+	);
 }
 
 /** Atomic read-modify-write: get + put in ONE readwrite transaction, so concurrent writers (another accept, autosave, another

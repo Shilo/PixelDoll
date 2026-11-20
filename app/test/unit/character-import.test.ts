@@ -12,10 +12,12 @@ import { coverage } from '../../src/studio/itemRoute.ts';
 import { cellHash, DIRECTIONS, type DirectionName } from '../../src/lib/rig/rig.ts';
 import {
 	configureImportedDirections,
-	retainCharacterDirections
+	configureDirections,
+	editDirectionChoice
 } from '../../src/lib/rig/directions.ts';
 import { flipH } from '../../src/lib/rig/mirror.ts';
-import { setupPlan } from '../../src/lib/rig/setup.ts';
+import { LABELS } from '../../src/lib/rig/poses.ts';
+import { rigReady, setupPlan } from '../../src/lib/rig/setup.ts';
 import { expectPixels } from './pixels.ts';
 import {
 	CharacterImportError,
@@ -159,6 +161,7 @@ test('an import replaces a supplied mirror, preserves sparse moves and round-tri
 	const base = next.manifest.items[0].layers[0];
 	expect(base.cells!.default.west![0]).not.toBe(source.cells!.default.west![0]);
 	expect(next.manifest.rig.rest?.west?.image).toBe(source.cells!.default.west![0]);
+	expect(next.manifest.rig.rest?.west?.registrationOnly).toBe(true);
 	expect(next.manifest.rig.pivot).toEqual(project.manifest.rig.pivot);
 	expectPixels(
 		cellImg(next, base, 'default', 'west', 0),
@@ -169,11 +172,106 @@ test('an import replaces a supplied mirror, preserves sparse moves and round-tri
 		cellImg(project, source, 'default', 'east', 0)
 	);
 	expect(cellImg(next, base, 'walking', 'west', 0)).toBeNull();
+	const original = project.manifest.rig.directions;
+	const unlinked = editDirectionChoice(original, next.manifest.rig.directions, 'west', 'mirror');
+	const restored = await configureImportedDirections(project, unlinked);
+	expect(restored.manifest.items[0].layers[0].cells!.default.west).toEqual(
+		source.cells!.default.west
+	);
 	await expect(configureImportedDirections(project, [{ id: 'east' }])).rejects.toThrow('walking');
 	const exported = await exportFiles(next, { engines: ['generic'], baked: false });
 	expect(exported.errors).toEqual([]);
 	expect((await readCharacterZip(await zip(exported.entries))).project.manifest).toEqual(
 		next.manifest
+	);
+});
+
+test('unlinking a source-only import creates independent West, even if East is not imported', async () => {
+	const { project } = await readCharacterZip(
+		await zip([
+			{ name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Side hero' })) },
+			{ name: 'rotations/east.png', data: await encodePngBytes(sprite(123, 15)) }
+		])
+	);
+	const original = project.manifest.rig.directions;
+	const mirrored = editDirectionChoice(original, original, 'west', 'mirror');
+	const unlinked = editDirectionChoice(original, mirrored, 'west', 'mirror');
+	const westOnly = editDirectionChoice(original, unlinked, 'east', 'direction');
+	const copy = await configureImportedDirections(project, westOnly);
+	expect(copy.manifest.rig.directions).toEqual([{ id: 'west' }]);
+	expectPixels(
+		cellImg(copy, copy.manifest.items[0].layers[0], 'default', 'west', 0),
+		flipH(cellImg(project, project.manifest.items[0].layers[0], 'default', 'east', 0)!)
+	);
+});
+
+test('unlinked saved frames keep equipped pixels and usable rig data after East is removed', async () => {
+	const project = await loadFixture(
+		async (path) =>
+			new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url)))
+	);
+	const { manifest } = project;
+	const { rig } = manifest;
+	const body = manifest.items.find(({ id }) => id === rig.baseItem)!;
+	const hat = manifest.items.find(({ id }) => id === 'hat_wizard')!;
+	const pose = LABELS.map((label) => ({ label, x: 0.25, y: 0.5 }));
+	for (const dir of ['east', 'south'] as const) {
+		(rig.rest ??= {})[dir] = { image: body.layers[0].cells!.walk[dir]![0]!, keypoints: pose };
+		for (const move of rig.animations)
+			(move.sources ??= {})[dir] = {
+				route: 'import',
+				reference: rig.rest[dir].image,
+				keypoints: Array.from({ length: move.cells }, () => pose),
+				provenance: []
+			};
+	}
+	(rig.anchors ??= {}).head = { walk: { east: Array.from({ length: 8 }, () => [8, 9]) } };
+	const westMask = [rig.cell.w - 4];
+	hat.baseCut = { walk: { west: [westMask, ...Array.from({ length: 7 }, () => null)] } };
+	hat.dressed = { east: hat.layers[0].cells!.walk.east![0]! };
+	const record = {
+		manifest,
+		skeletons: { 'walk/east/0': { NOSE: { x: 8, y: 9, z: 0 } } },
+		character: { id, looks: 'test' }
+	};
+	const outfit = { ...manifest.presets[0].items, [hat.slot]: hat.id };
+	const expected = composeCell(project, outfit, 'walk', 'west', 0);
+	const { record: next, newImages } = await configureDirections(
+		record,
+		[{ id: 'south' }, { id: 'west' }],
+		project.images
+	);
+	const standalone = {
+		manifest: next.manifest,
+		images: new Map([...project.images, ...newImages])
+	};
+	const westHat = next.manifest.items.find(({ id }) => id === hat.id)!;
+	expect(rigReady(next)).toBe(true);
+	expect(next.manifest.rig.directions).toEqual([{ id: 'south' }, { id: 'west' }]);
+	expect(next.manifest.rig.rest?.west?.keypoints[0].x).toBe(0.75);
+	expect(next.manifest.rig.anchors?.head?.walk?.west).toEqual(
+		Array.from({ length: 8 }, () => [rig.cell.w - 9, 9])
+	);
+	expect(Object.entries(next.skeletons)).toContainEqual([
+		'walk/west/0',
+		{ NOSE: { x: rig.cell.w - 8, y: 9, z: 0 } }
+	]);
+	expect(westHat.baseCut?.walk?.west?.[0]).toEqual(westMask);
+	expect(westHat.baseCut?.walk?.west?.[0]).not.toBe(westMask);
+	expect(westHat.coverage?.some((key) => key.startsWith('walk/west/'))).toBe(true);
+	expectPixels(composeCell(standalone, outfit, 'walk', 'west', 0), expected);
+	const offCenter = structuredClone(next);
+	const offCenterHat = offCenter.manifest.items.find(({ id }) => id === hat.id)!;
+	offCenterHat.layers[0].pivot = { x: rig.pivot.x - 1, y: rig.pivot.y };
+	await expect(
+		configureDirections(
+			offCenter,
+			[{ id: 'south' }, { id: 'east', mirrorOf: 'west' }, { id: 'west' }],
+			standalone.images
+		)
+	).rejects.toThrow('off-center layer');
+	expect((await exportFiles(standalone, { engines: ['generic'], baked: false })).errors).toEqual(
+		[]
 	);
 });
 
@@ -215,18 +313,16 @@ test('eight original views and every horizontal mirror preserve the intended pix
 			expectPixels(cellImg(configured, layer, 'default', id, 0), expected, `${id} rendered`);
 		}
 		await expect(
-			retainCharacterDirections(
+			configureDirections(
 				record,
 				selected.filter(({ id }) => id !== (mirrorSide === 'east' ? 'north-west' : 'north-east')),
 				configured.images
 			)
 		).rejects.toThrow('Keep North');
 		const cardinals = selected.filter(({ id }) => !id.includes('-'));
-		const { manifest: removed } = await retainCharacterDirections(
-			record,
-			cardinals,
-			configured.images
-		);
+		const {
+			record: { manifest: removed }
+		} = await configureDirections(record, cardinals, configured.images);
 		expect(removed.rig.directions).toEqual(cardinals);
 		for (const { id } of cardinals)
 			expect(removed.items[0].layers[0].cells!.default[id]).toEqual(layer.cells!.default[id]);
@@ -269,7 +365,7 @@ test('removing saved directions prunes fitted equipment but never changes retain
 	stale.baseHash = `sha256:${'0'.repeat(64)}`;
 	const original = { id: 'rig-test', savedAt: '', origin: 'studio' as const, manifest };
 	await expect(
-		retainCharacterDirections(original, [{ id: 'west', mirrorOf: 'east' }], project.images)
+		configureDirections(original, [{ id: 'west', mirrorOf: 'east' }], project.images)
 	).rejects.toThrow('Keep East');
 	const retained = manifest.rig.directions.filter(({ id }) => id !== 'west');
 	const sparse = structuredClone(original);
@@ -283,8 +379,10 @@ test('removing saved directions prunes fitted equipment but never changes retain
 	const blankHash = await cellHash(blank);
 	const images = new Map(project.images).set(blankHash, blank);
 	hat.layers[0].cells!.walk.south = [blankHash];
-	await expect(retainCharacterDirections(sparse, retained, images)).rejects.toThrow(hat.name);
-	const { manifest: trimmed } = await retainCharacterDirections(original, retained, project.images);
+	await expect(configureDirections(sparse, retained, images)).rejects.toThrow(hat.name);
+	const {
+		record: { manifest: trimmed }
+	} = await configureDirections(original, retained, project.images);
 	expect(trimmed.rig.baseHash).not.toBe(manifest.rig.baseHash);
 	expect(trimmed.rig.directions).toEqual(retained);
 	for (const item of trimmed.items) {

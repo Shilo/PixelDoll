@@ -1,6 +1,7 @@
 // Generic export (manifest-spec §3, §5, §6.6): validation, the exported manifest.json, _stripN strips, baked composites,
 import type { Img } from '../image/png.ts';
 import { DIRECTIONS, validateRig } from '../rig/rig.ts';
+import { centeredMirrorFrame } from '../rig/mirror.ts';
 import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
 import { CURRENT_FORMAT } from '../store/manifest.ts';
 import { behaviorOf, SLOTS } from '../items/slots.ts';
@@ -322,7 +323,7 @@ export function validate(p: Project): string[] {
 					`${it.id}.${l.id}: cell ${f.w}x${f.h} must be 1–256 px with an integer pivot inside the cell`
 				);
 			// a mirrored row is a flip of the whole layer cell: only correct if that cell is centered on the rig cell
-			if (mirrored && 2 * (m.rig.pivot.x - f.x) + f.w !== m.rig.cell.w)
+			if (mirrored && !centeredMirrorFrame(m.rig, f))
 				e.push(
 					`${it.id}.${l.id}: cell ${f.w} with pivot x ${f.x} is not centered on the rig cell (mirrored directions flip it)`
 				);

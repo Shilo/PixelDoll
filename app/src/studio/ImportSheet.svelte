@@ -13,11 +13,17 @@
 	import Sprite from './Sprite.svelte';
 	import { app } from '../lib/app.svelte.ts';
 	import { composeCell } from '../lib/compose/compose.ts';
-	import { configureImportedDirections, directionProblemError } from '../lib/rig/directions.ts';
+	import {
+		availableDirectionViews,
+		configureImportedDirections,
+		directionArtwork,
+		directionProblemError,
+		editDirectionChoice
+	} from '../lib/rig/directions.ts';
 	import { displayDirection } from './displayDirection.ts';
-	import { displayDirectionProblem } from './displayDirectionProblem.ts';
-	import { flipH, mirrorPartner } from '../lib/rig/mirror.ts';
-	import { DIRECTIONS, type DirectionName, type RigDirection } from '../lib/rig/rig.ts';
+	import { displayDirectionList, displayDirectionProblem } from './displayDirectionProblem.ts';
+	import { flipH } from '../lib/rig/mirror.ts';
+	import type { DirectionName, RigDirection } from '../lib/rig/rig.ts';
 	import {
 		characterId,
 		downloadCharacter,
@@ -64,29 +70,27 @@
 	let facing = $state<DirectionName>('south');
 	const originalDirections = $derived(prepared?.project.manifest.rig.directions ?? []);
 	const originalIds = $derived(originalDirections.map(({ id }) => id));
-	const availableDirections = $derived(
-		DIRECTIONS.filter((dir) => {
-			const partner = mirrorPartner(dir);
-			return originalIds.includes(dir) || (partner && originalIds.includes(partner));
-		})
-	);
+	const availableDirections = $derived(availableDirectionViews(originalDirections));
 	const directions = $derived(directionChoices ?? originalDirections);
 	const mirrors = $derived(
 		Object.fromEntries(directions.flatMap(({ id, mirrorOf }) => (mirrorOf ? [[id, mirrorOf]] : [])))
 	);
 	const selected = $derived(directions.map(({ id }) => id));
+	const replaced = $derived(
+		originalDirections.flatMap(({ id, mirrorOf }) => (!mirrorOf && mirrors[id] ? [id] : []))
+	);
 	const activePreset = $derived(presetOf({ selected, mirrors }));
 	const availablePresets = $derived(
 		prepared
 			? PRESETS.filter(
-					(preset) => !directionProblemError(prepared!.project, facingOf(preset), 'import')
+					(preset) =>
+						facingOf(preset).every(({ id, mirrorOf }) => originalIds.includes(mirrorOf ?? id)) &&
+						!directionProblemError(prepared!.project, facingOf(preset))
 				)
 			: []
 	);
 	const directionError = $derived(
-		prepared && directionChoices
-			? directionProblemError(prepared.project, directions, 'import')
-			: undefined
+		prepared && directionChoices ? directionProblemError(prepared.project, directions) : undefined
 	);
 	const previewFacing = $derived(directions.find(({ id }) => id === facing) ?? directions[0]);
 	const needsSetup = $derived(
@@ -137,53 +141,34 @@
 		const p = prepared?.project;
 		if (!p || !previewFacing) return null;
 		const m = p.manifest;
+		const artwork = directionArtwork(originalDirections, previewFacing);
 		const img = composeCell(
 			p,
 			m.presets[0]?.items ?? { body: m.rig.baseItem },
 			m.rig.animations[0].id,
-			directionChoices ? (previewFacing.mirrorOf ?? previewFacing.id) : previewFacing.id,
+			artwork.id,
 			0
 		);
-		return directionChoices && previewFacing.mirrorOf ? flipH(img) : img;
+		return artwork.flip ? flipH(img) : img;
 	});
-	function changeDirection(id: DirectionName, value: 'original' | 'mirror' | 'off') {
-		const previous = directions.filter((dir) => dir.id !== id);
-		const mirrorOf = mirrorPartner(id);
-		if (value === 'original') previous.push({ id });
-		if (value === 'mirror' && mirrorOf) previous.push({ id, mirrorOf });
-		previous.sort((first, second) => DIRECTIONS.indexOf(first.id) - DIRECTIONS.indexOf(second.id));
-		setDirections(previous);
-		if (value !== 'off') facing = id;
+	function changeDirection(id: DirectionName, control: 'direction' | 'mirror') {
+		const next = editDirectionChoice(originalDirections, directions, id, control);
+		setDirections(next);
+		if (next.some((dir) => dir.id === id)) facing = id;
 	}
 	function setDirections(next: RigDirection[]) {
 		directionChoices =
 			originalDirections.length === next.length &&
-			next.every((dir, index) => dir.id === originalDirections[index].id && !dir.mirrorOf)
+			next.every(
+				(dir, index) =>
+					dir.id === originalDirections[index].id &&
+					dir.mirrorOf === originalDirections[index].mirrorOf
+			)
 				? null
 				: next;
 	}
 	function choosePreset(preset: DirectionPreset) {
 		setDirections(facingOf(preset));
-	}
-	function toggleDirection(id: DirectionName) {
-		changeDirection(
-			id,
-			directions.some((dir) => dir.id === id)
-				? 'off'
-				: originalIds.includes(id)
-					? 'original'
-					: 'mirror'
-		);
-	}
-	function toggleMirror(id: DirectionName) {
-		changeDirection(
-			id,
-			directions.find((dir) => dir.id === id)?.mirrorOf
-				? originalIds.includes(id)
-					? 'original'
-					: 'off'
-				: 'mirror'
-		);
 	}
 	$effect(() => {
 		if (source === 'pixellab' && app.key && !listed) {
@@ -359,12 +344,15 @@
 		saving = true;
 		error = '';
 		try {
-			const imported = directionChoices
-				? {
-						...prepared,
-						project: await configureImportedDirections(prepared.project, directionChoices)
-					}
-				: prepared;
+			let imported = prepared;
+			if (directionChoices) {
+				const { metadata, ...project } = await configureImportedDirections(
+					prepared.project,
+					directionChoices,
+					prepared.extra
+				);
+				imported = { ...prepared, project, extra: { ...prepared.extra, ...metadata } };
+			}
 			const projectId = await saveImportedCharacter(imported, name);
 			await refreshProjects();
 			if (!alive) return;
@@ -372,7 +360,10 @@
 			if (!alive) return;
 			dismissWelcome();
 			customize();
-			ui.sheet = setupNext && needsSetup ? 'setup' : null;
+			ui.sheet =
+				setupNext && !rigReady({ manifest: imported.project.manifest, ...imported.extra })
+					? 'setup'
+					: null;
 			const alias = imported.project.manifest.exportId;
 			if (
 				alias &&
@@ -668,12 +659,15 @@
 				disabled={busy}
 			/></label
 		>
-		{#if prepared.format === 'pixellab'}
+		{#if originalDirections.length}
 			<details>
 				<summary>{t('common.directions')}</summary>
 				<p class="muted small">
 					{t('import.directionsHint')}
 				</p>
+				{#if replaced.length}<p class="notice warn small" role="status">
+						{t('import.replaceDirectionArt', { directions: displayDirectionList(replaced) })}
+					</p>{/if}
 				<DirectionPresets
 					active={activePreset}
 					available={(preset) => availablePresets.includes(preset)}
@@ -690,8 +684,8 @@
 					mirrorSources={originalIds}
 					{mirrors}
 					disabled={busy}
-					ontoggle={toggleDirection}
-					onmirror={toggleMirror}
+					ontoggle={(dir) => changeDirection(dir, 'direction')}
+					onmirror={(dir) => changeDirection(dir, 'mirror')}
 				/>
 				<p class="sr" role="status">
 					{previewFacing
