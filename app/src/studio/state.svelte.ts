@@ -1605,7 +1605,11 @@ export function itemSlotTargets(manifest: Manifest, item: Item) {
 	});
 }
 
-export async function moveItemToSlot(itemId: string, targetId: string): Promise<boolean> {
+export async function moveItemToSlot(
+	itemId: string,
+	targetId: string,
+	{ showDestination = false } = {}
+): Promise<boolean> {
 	const item = itemById(itemId),
 		projectId = doc.id,
 		request = openRequest;
@@ -1683,7 +1687,7 @@ export async function moveItemToSlot(itemId: string, targetId: string): Promise<
 				step.snap = JSON.stringify(dress);
 			}
 			store.exportRecord = record;
-			ui.group = targetId;
+			if (showDestination) ui.group = targetId;
 			bump();
 			if (edits !== startingEdits) save();
 		}

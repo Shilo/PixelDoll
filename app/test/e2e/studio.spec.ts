@@ -798,8 +798,15 @@ test('dev server: a saved item moves between slots by mouse, keyboard menu and t
 	await page.mouse.move(start.x, start.y);
 	await page.mouse.down();
 	await page.mouse.move(face.x, face.y, { steps: 6 });
+	const list = page.locator('.equipment-scroll');
+	const currentSlot = page.locator('[data-rail][aria-current="true"]');
+	const beforeDrop = await list.evaluate((element) => element.scrollTop);
+	const slotBeforeDrop = await currentSlot.getAttribute('data-rail');
+	expect(slotBeforeDrop).not.toBe('face_acc');
 	await page.mouse.up();
 	await expect(at('face_acc')).toHaveAttribute('aria-pressed', 'true');
+	await expect(currentSlot).toHaveAttribute('data-rail', slotBeforeDrop!);
+	expect(await list.evaluate((element) => element.scrollTop)).toBe(beforeDrop);
 
 	await at('face_acc').focus();
 	await page.keyboard.press('Shift+F10');
