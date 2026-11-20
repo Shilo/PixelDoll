@@ -1,6 +1,6 @@
 # Animation model default audit
 
-Status: archival screen and automated checks complete. One live PixMiniMax body-only preflight billed 1 of the approved 120 generations; the matched pilot has not started. No new artwork was saved.
+Status: archival screen and automated checks complete. Live PixMiniMax Walk and Slash runs billed 5.4 generations against the approved 120-generation ceiling. The interrupted Skeleton V3 baseline has no recovered receipt, so total spend and the matched comparison are incomplete. No new artwork was retained.
 
 Decision: could PixMiniMax replace Skeleton V3 as the Add a move default without trading expressive motion for lower equipment accuracy, character consistency, or reliability? Text V3 is the third arm, not a presumed fallback. The equipment renderer stays Skeleton V3 in every arm. Ride is out of scope and stays on its pose-driven path.
 
@@ -41,6 +41,13 @@ The bundled 64×64 demo has finished headwear and sword layers but no stored res
 - Submitted one south Walk to `/animate-pixminimax` through the configured localhost development API, using the production request builder, seed 7, eight frames and prompt enhancement off. One submission, no retry. No project or artwork was written.
 - Completed in 91 seconds including polling. The receipt reported 1 generation. The response contained nine 64×64 frames; the leading frame was excluded, leaving eight distinct motion frames. Exact and tolerance-based palette fit were both 100%, including the worst frame. There were 50 nontransparent border pixels summed across the eight raw frames; contact alone does not show clipping.
 - This measured response shape, palette, and billing only. It did not run production publication QA, pose the sword, score perceived motion, or test the other models. It is not a matched observation or evidence for changing the default.
+
+### Live sword-only Slash qualification
+
+- Ran the production Add a move path on an in-memory copy of the same character, facing south, at eight frames and seed 7. The PixMiniMax body returned nine frames; production kept eight and stored joints for all eight. Four paid skeleton checks supplied the measurements; the other frames needed no additional paid check. Skeleton V3 posed and extracted all eight sword frames.
+- Body QA reported 100% tolerant palette fit, zero foot drift, and 80 border-contact pixels. Sword QA retained the full key and reported zero shifted frames, but marked all eight grips ambiguous. That is a first-pass review warning, not confirmation of a wrong hand or a clean equipment pass. No blind visual rating was recorded.
+- Receipts: 1 generation for the Slash body, 0.4 for skeleton checks, and 3 for the sword, totaling 4.4 generations for this case. The earlier body-only Walk brings confirmed spend to 5.4.
+- The browser session ended during the Skeleton V3 baseline without a recovered submission or terminal receipt. Its artwork, outcome, and charges are unverified. Do not assume zero spend or rerun it automatically. Text V3 and the remaining matched cases were not run. Keep Skeleton V3 as the default.
 
 Use one frozen 64×64 humanoid with east and south views, one already-fitted head item and one already-fitted hand item. Test Walk and unarmed Slash at eight frames, one predeclared seed, all three body routes: 4 matched cases, **12 body clips and up to 24 fitted gear clips**. Do not redress items between arms. Use the same action intent and direction; document the actual pose source for Skeleton V3 and exact text for both native arms. A shared seed is a blocking label, not a guarantee of matched random draws across models. Randomize arm order within each case. Run the actual production body normalization, measurement, item pose, extraction and QA; in-memory observation must not change whether production would save a result.
 
