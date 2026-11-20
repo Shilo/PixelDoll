@@ -11,6 +11,7 @@
 		doc,
 		store,
 		deletionBlocked,
+		openPendingWork,
 		removeProject
 	} from './state.svelte.ts';
 	let busy = $state(false),
@@ -40,7 +41,7 @@
 </script>
 
 {#snippet viewPending()}
-	<button class="bu-btn" onclick={() => (ui.sheet = 'activity')}
+	<button class="bu-btn" onclick={() => void openPendingWork()}
 		>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
 	>
 {/snippet}

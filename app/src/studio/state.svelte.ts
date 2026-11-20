@@ -1629,7 +1629,10 @@ export async function moveItemToSlot(itemId: string, targetId: string): Promise<
 			savedMove?.projectId === projectId ||
 			savedMove?.queued?.some((move) => move.projectId === projectId)
 		) {
-			toast(message('wardrobe.itemMoveBusy'), { tone: 'warning' });
+			toast(message('wardrobe.itemMoveBusy'), {
+				tone: 'warning',
+				action: () => openPendingWork({ projectId, slots: [item.slot, targetId] })
+			});
 			return false;
 		}
 		const record = await db.update<DressedRecord>('projects', projectId, (rec) => {
@@ -2440,6 +2443,50 @@ export async function openGenerationReview(id: string) {
 	ui.group = g.input.slot;
 	ui.selected = `gen:${id}`;
 }
+/** Shows an item draft: its review when it stopped or waits for one, else its tile, which shows the progress. */
+async function openDraft(g: Gen) {
+	if (g.phase !== 'running') return openGenerationReview(g.draft.spec.id);
+	await openProject(g.draft.rigId);
+	if (!gens.includes(g) || doc.id !== g.draft.rigId) return;
+	ui.sheet = null;
+	ui.tab = 'wardrobe';
+	ui.group = g.input.slot;
+	ui.selected = `gen:${g.draft.spec.id}`;
+}
+/** Opens a character's move or setup panel, which shows its progress or failure and how to retry or dismiss it. */
+export async function openFlow(sheet: 'move' | 'setup', projectId: string) {
+	if (projectId && doc.id !== projectId) await openProject(projectId);
+	if (!projectId || doc.id === projectId) ui.sheet = sheet;
+}
+/** Opens the work a busy or failure notice is about, so the user can finish or discard it: the item draft, move, setup or
+ *  new character this tab holds, stopped work first. Anything else (another tab's work, jobs alone) opens Activity. */
+export async function openPendingWork(
+	scope: { projectId?: string; slots?: readonly string[] } = {}
+) {
+	const { projectId, slots } = scope;
+	const ours = (id: string) => !projectId || id === projectId;
+	const drafts = gens.filter(
+		(g) => !g.draft.acceptedAt && ours(g.draft.rigId) && (!slots || slots.includes(g.input.slot))
+	);
+	const draft =
+		drafts.find((g) => g.phase === 'failed') ??
+		drafts.find((g) => g.phase === 'review') ??
+		drafts[0];
+	const move = moving.spec && !moving.done && ours(moving.projectId) ? moving.projectId : undefined;
+	const setup =
+		settingUp.spec && !settingUp.done && ours(settingUp.spec.projectId)
+			? settingUp.spec.projectId
+			: undefined;
+	const create = creates.find((run) => !run.projectId && run.error && !run.running);
+	if (draft && draft.phase !== 'running') return openDraft(draft);
+	if (move !== undefined && moving.error) return openFlow('move', move);
+	if (setup !== undefined && settingUp.error) return openFlow('setup', setup);
+	if (create && !projectId) return reviewFailedCreate(create.id);
+	if (draft) return openDraft(draft);
+	if (move !== undefined) return openFlow('move', move);
+	if (setup !== undefined) return openFlow('setup', setup);
+	ui.sheet = 'activity';
+}
 export async function acceptItemIssues(projectId: string, itemId: string, reviewed: Item) {
 	if (follower()) return;
 	await (await itemRun()).acceptItemReview(projectId, itemId, reviewed);
@@ -3212,7 +3259,10 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 export async function startMove(projectId: string, spec: MoveSpec) {
 	if (hmrReloading) return;
 	if (moving.repairReview) {
-		toast(message('repairReview.finishFirst'), { tone: 'warning' });
+		toast(message('repairReview.finishFirst'), {
+			tone: 'warning',
+			action: () => openFlow('move', moving.projectId)
+		});
 		return;
 	}
 	if (spec.reuseItemFrames && queue.role === 'follower') {
@@ -3220,7 +3270,10 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 		return;
 	}
 	if (moveRunning) {
-		toast(message('state.anotherMoveIsStillBeingAddedSo'), { tone: 'warning' });
+		toast(message('state.anotherMoveIsStillBeingAddedSo'), {
+			tone: 'warning',
+			action: () => openFlow('move', moving.projectId)
+		});
 		return;
 	}
 	spec = withActivityScope($state.snapshot(spec), 'move'); // queued specs are reactive proxies, which storage cannot clone
@@ -3319,9 +3372,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			if (ui.sheet !== 'move')
 				toast(message('repairReview.ready'), {
 					tone: 'warning',
-					action: () => {
-						ui.sheet = 'move';
-					}
+					action: () => openFlow('move', projectId)
 				});
 			return;
 		}
@@ -3383,7 +3434,8 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			if (current() && ui.sheet !== 'move')
 				toast(message('state.moveNameFailedOpenMovesToTryAgain', { moveName }), {
 					tone: 'danger',
-					duration: 8000
+					duration: 8000,
+					action: () => openFlow('move', projectId)
 				}); // timed: the Moves panel keeps the failure, and a persistent error would hide later successes
 		}
 	} finally {
@@ -3681,7 +3733,8 @@ export async function startSetup(spec: SetupSpec) {
 	if (hmrReloading) return;
 	if (setupRunning) {
 		toast(message('state.anotherRigSetupIsStillRunningSo'), {
-			tone: 'warning'
+			tone: 'warning',
+			action: () => openFlow('setup', settingUp.spec?.projectId ?? '')
 		});
 		return;
 	}

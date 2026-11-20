@@ -798,6 +798,34 @@ test('dev server: a saved item moves between slots by mouse, keyboard menu and t
 	await expect(at('face_acc')).toHaveAttribute('aria-pressed', 'true');
 	await reloadStudio(page);
 	await expect(at('face_acc')).toHaveAttribute('aria-pressed', 'true');
+
+	// A stopped move holds this character's items: clicking the busy notice opens that move.
+	await page.evaluate(async () => {
+		const path = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ path);
+		const s = (window as unknown as { __studio: { doc: { id: string } } }).__studio;
+		await db.put('projects', 'studio-move', {
+			id: 'studio-move',
+			status: 'failed',
+			error: 'Saved terminal failure',
+			progress: { step: 'animate', done: 1, total: 4, recIds: [] },
+			projectId: s.doc.id,
+			spec: { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 }
+		});
+	});
+	await reloadStudio(page);
+	await at('face_acc').focus();
+	await page.keyboard.press('Shift+F10');
+	await page.getByRole('menuitem', { name: 'Move to slot' }).press('Enter');
+	await page.getByRole('menuitem', { name: 'Hair', exact: true }).press('Enter');
+	await page
+		.locator('.toast .bu-notice', { hasText: 'Finish or discard the related generation' })
+		.locator('.bu-notice-activate')
+		.click();
+	await expect(page.getByRole('dialog', { name: 'Add a move', exact: true })).toContainText(
+		'Saved terminal failure'
+	);
+	await expect(at('face_acc')).toHaveCount(1);
 });
 
 test('studio demo: slots add, rename, show, hide and reorder without changing the drawing', async ({

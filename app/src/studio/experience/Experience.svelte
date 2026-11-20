@@ -29,6 +29,7 @@
 		creates,
 		openProject,
 		openingProjectId,
+		reviewFailedCreate,
 		refreshProjects,
 		characterName,
 		showStanding,
@@ -675,7 +676,8 @@
 								<button
 									class="bu-action btn sm"
 									data-variant="quiet"
-									onclick={() => (ui.sheet = 'activity')}
+									onclick={() =>
+										run.running ? (ui.sheet = 'activity') : reviewFailedCreate(run.id)}
 								>
 									{openerLabel(createStatus)}<SurfaceChevron />
 								</button>
