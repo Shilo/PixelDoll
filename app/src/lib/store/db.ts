@@ -2,9 +2,13 @@
 import { sha256, stableStringify } from '../image/hash.ts';
 import type { StoredProject } from './project.ts';
 import { COPY_GENERATION_OFF, workspaceCopy } from './workspace-mode.ts';
+import { LocalizedError } from '../message.ts';
 
 export type StoreName = 'projects' | 'blobs' | 'jobs';
 export const CREATE_DRAFT_PREFIX = 'studio-create:';
+// Bump when PixelLab request inputs change. Work saved with different inputs no longer matches its ledger records and would
+// resend paid calls, so it waits for review instead of resuming by itself.
+export const REQUEST_TEXT = 5; // 5: repair grids pack into the cheapest layout (2026-11-07)
 const DB = 'pixeldoll',
 	VERSION = 1;
 
@@ -233,19 +237,38 @@ async function editIdleCharacter(
 		let error: unknown;
 		jobs.onsuccess = () => {
 			const busy = jobs.result.some((j) => ['queued', 'submitting', 'running'].includes(j.state));
+			// Running work could write any character back. Stopped work waits for the user and holds only its own character.
+			const holds = (r: {
+				status?: string;
+				requestText?: number;
+				projectId?: string;
+				spec?: { projectId?: string };
+				queued?: { projectId?: string }[];
+			}) =>
+				(r.status === 'running' && r.requestText === REQUEST_TEXT) || // older inputs wait for review
+				r.projectId === id ||
+				r.spec?.projectId === id ||
+				!!r.queued?.some((queued) => queued.projectId === id);
 			const work = records.result.some(
 				(r) =>
-					r?.id?.startsWith(CREATE_DRAFT_PREFIX) ||
-					r.id === 'studio-move' ||
-					r.id === 'studio-setup' ||
-					(r.id === 'studio-drafts' &&
+					((r?.id?.startsWith(CREATE_DRAFT_PREFIX) ||
+						r?.id === 'studio-move' ||
+						r?.id === 'studio-setup') &&
+						holds(r)) ||
+					(r?.id === 'studio-drafts' &&
 						r.gens?.some((g: { phase: string }) => g.phase === 'running'))
 			);
 			try {
 				if (busy || work)
-					throw new Error(
-						`Finish or dismiss pending generation work before you ${action} a character.`
-					);
+					throw action === 'delete'
+						? new LocalizedError(
+								'Finish or dismiss pending generation work before deleting a character.',
+								'state.finishBeforeCharacterRemoval'
+							)
+						: new LocalizedError(
+								'Finish or dismiss pending generation work before changing directions.',
+								'state.finishBeforeDirectionRemoval'
+							);
 				edit(projects, records.result);
 				for (const [hash, blob] of blobs ?? []) t.objectStore('blobs').put(blob, hash);
 			} catch (failure) {

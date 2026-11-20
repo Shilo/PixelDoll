@@ -271,6 +271,7 @@
 		"titleShowThisFrame": "Diesen Frame anzeigen",
 		"checksFoundIssuesNoPaidRetryWas": "Bei der Prüfung sind Probleme aufgefallen. Es wurde kein kostenpflichtiger Neuversuch gestartet. Du kannst einen weiteren Versuch anfordern oder den Gegenstand unverändert übernehmen.",
 		"acceptAsIs": "Unverändert übernehmen",
+		"pendingWorkBusy": "Eine Animation oder Einrichtung läuft oder wurde gestoppt. Schließe sie ab oder verwirf sie, um diese Aktionen zu nutzen.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Übernimmt die aktuelle Grafik, ohne Credits zu verbrauchen. Die festgestellten Probleme bleiben in den Details vermerkt.",
 		"youAcceptedThisArtworkWithItsRecorded": "Du hast diese Grafik mit den festgehaltenen Qualitätshinweisen übernommen.",
 		"generateItemForMove": "Gegenstand für Animation generieren",
@@ -828,6 +829,12 @@
 		"moveNameAdded": "{moveName} hinzugefügt",
 		"moveNameHasItemIssuesToReviewNo": "Bei Gegenständen für {moveName} gibt es Probleme zu prüfen. Es wurde kein kostenpflichtiger Neuversuch gestartet.",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName} fehlgeschlagen. Öffne „Animationen“, um es erneut zu versuchen oder von vorn zu beginnen.",
+		"createFailedOpen": "{name} konnte nicht erstellt werden. Öffne es, um es erneut zu versuchen oder von vorn zu beginnen.",
+		"setupFailedOpen": "Die Charaktereinrichtung wurde gestoppt. Öffne sie, um es erneut zu versuchen oder von vorn zu beginnen.",
+		"stoppedWork": {
+			"one": "{count} Generierung wurde gestoppt. Öffne sie, um den Grund zu sehen, und versuche es erneut oder verwirf sie.",
+			"other": "{count} Generierungen wurden gestoppt. Öffne sie, um den Grund zu sehen, und versuche es erneut oder verwirf sie."
+		},
 		"thisOperationChangedReviewTheJointChecks": "Der Vorgang hat sich geändert. Prüfe die Gelenke erneut.",
 		"thePendingJointChecksChangedReviewTheir": "Die ausstehenden Gelenkprüfungen haben sich geändert. Prüfe die Kosten erneut.",
 		"thisOperationChangedReviewTheBodyFrames": "Der Vorgang hat sich geändert. Prüfe die Frames des Grundkörpers erneut.",

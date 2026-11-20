@@ -23,6 +23,7 @@
 		settingUp,
 		dismissSetup,
 		gens,
+		openDraft,
 		openProject,
 		cleanUp,
 		toast
@@ -63,7 +64,8 @@
 	const creatingPending = $derived(creates.filter((run) => !run.projectId));
 	const movingPending = $derived(moving.spec && !moving.done ? moving.spec : null);
 	const setupPending = $derived(settingUp.spec && !settingUp.done ? settingUp.spec : null);
-	const generatingItems = $derived(gens.filter((gen) => gen.phase === 'running'));
+	// Every unsaved item draft: running ones, and stopped or reviewable ones that hold their slot until kept or discarded.
+	const generatingItems = $derived(gens.filter((gen) => !gen.draft.acceptedAt));
 	const flowsPending = $derived(
 		creatingPending.length ||
 			movingPending ||
@@ -194,7 +196,12 @@
 					{#each generatingItems as gen (gen.draft.spec.id)}
 						{@render workRow(
 							`${gen.input.name} · ${characterName(gen.draft.rigId)}`,
-							t('activity.inProgress')
+							gen.phase === 'failed'
+								? t('generation.status.needsAttention')
+								: gen.phase === 'review'
+									? t('activity.readyToReview')
+									: t('activity.inProgress'),
+							() => void openDraft(gen)
 						)}
 					{/each}
 				</ul>

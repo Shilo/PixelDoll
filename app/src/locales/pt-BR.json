@@ -268,6 +268,7 @@
 		"titleShowThisFrame": "Mostrar este quadro",
 		"checksFoundIssuesNoPaidRetryWas": "As verificações encontraram problemas. Nenhuma nova tentativa paga foi iniciada. Você pode solicitar outra tentativa ou aceitar o item como está.",
 		"acceptAsIs": "Aceitar como está",
+		"pendingWorkBusy": "Há uma animação ou configuração em andamento ou parada. Conclua ou descarte para usar estas ações.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Aceita a arte atual sem gastar créditos. Os problemas detectados continuam nos detalhes do item.",
 		"youAcceptedThisArtworkWithItsRecorded": "Você aceitou esta arte com as observações de qualidade registradas.",
 		"generateItemForMove": "Gerar item para animação",
@@ -830,6 +831,12 @@
 		"moveNameAdded": "Animação adicionada: {moveName}",
 		"moveNameHasItemIssuesToReviewNo": "Há problemas com itens para revisar em {moveName}. Nenhuma nova tentativa paga foi iniciada.",
 		"moveNameFailedOpenMovesToTryAgain": "Falha em {moveName}. Abra Animações para tentar novamente ou começar de novo.",
+		"createFailedOpen": "Não foi possível criar {name}. Abra para tentar novamente ou começar de novo.",
+		"setupFailedOpen": "A configuração do personagem parou. Abra para tentar novamente ou começar de novo.",
+		"stoppedWork": {
+			"one": "{count} geração parou. Abra para ver o motivo e tente novamente ou descarte.",
+			"other": "{count} gerações pararam. Abra para ver o motivo e tente novamente ou descarte."
+		},
 		"thisOperationChangedReviewTheJointChecks": "Esta operação mudou. Revise novamente as verificações das articulações.",
 		"thePendingJointChecksChangedReviewTheir": "As verificações pendentes das articulações mudaram. Confira o custo novamente.",
 		"thisOperationChangedReviewTheBodyFrames": "Esta operação mudou. Revise novamente os quadros do corpo.",

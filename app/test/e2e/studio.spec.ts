@@ -799,7 +799,7 @@ test('dev server: a saved item moves between slots by mouse, keyboard menu and t
 	await reloadStudio(page);
 	await expect(at('face_acc')).toHaveAttribute('aria-pressed', 'true');
 
-	// A stopped move holds this character's items: clicking the busy notice opens that move.
+	// A stopped move holds the items it poses: clicking the busy notice opens that move.
 	await page.evaluate(async () => {
 		const path = '/src/lib/store/db.ts',
 			db = await import(/* @vite-ignore */ path);
@@ -810,10 +810,14 @@ test('dev server: a saved item moves between slots by mouse, keyboard menu and t
 			error: 'Saved terminal failure',
 			progress: { step: 'animate', done: 1, total: 4, recIds: [] },
 			projectId: s.doc.id,
-			spec: { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 }
+			spec: { id: 'cast', action: 'cast', frames: 8, items: ['hat_wizard'], seed: 1 }
 		});
 	});
 	await reloadStudio(page);
+	// Work that stopped before this page loaded is announced once.
+	const stopped = page.locator('.toast .bu-notice', { hasText: '1 generation stopped' });
+	await stopped.getByRole('button', { name: 'Dismiss notification' }).click();
+	await expect(stopped).toBeHidden();
 	await at('face_acc').focus();
 	await page.keyboard.press('Shift+F10');
 	await page.getByRole('menuitem', { name: 'Move to slot' }).press('Enter');
@@ -6785,6 +6789,18 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 	await expect(retry).toBeEnabled();
 	await expect(page.getByRole('dialog', { name: 'Item review', exact: true })).toBeVisible();
 	await expect(page.locator('.equipment-scroll .gen')).toHaveCount(0);
+	await page
+		.getByRole('dialog', { name: 'Item review', exact: true })
+		.getByRole('button', { name: 'Done', exact: true })
+		.click();
+	// Activity lists the stopped draft that holds its slot and opens its review.
+	await page
+		.locator('.header-actions')
+		.getByRole('button', { name: 'Activity', exact: true })
+		.click();
+	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
+	await expect(activity.getByText('Needs attention', { exact: true })).toBeVisible();
+	await activity.getByRole('button', { name: /^Open Fresh retry price · / }).click();
 	await page
 		.getByRole('dialog', { name: 'Item review', exact: true })
 		.getByRole('button', { name: 'Done', exact: true })

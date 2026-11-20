@@ -65,6 +65,7 @@ vi.mock('../../src/lib/dress/project.ts', async (original) => ({
 vi.mock('../../src/lib/store/db.ts', async (original) => ({
 	CREATE_DRAFT_PREFIX: (await original<typeof import('../../src/lib/store/db.ts')>())
 		.CREATE_DRAFT_PREFIX,
+	REQUEST_TEXT: (await original<typeof import('../../src/lib/store/db.ts')>()).REQUEST_TEXT,
 	withoutCharacters: (await original<typeof import('../../src/lib/store/db.ts')>())
 		.withoutCharacters,
 	put: mocks.put,

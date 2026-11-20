@@ -6,7 +6,7 @@
 	import type { Message } from '../lib/message.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import {
-		DELETE_GENERATION_BLOCK,
+		blockedByWork,
 		ui,
 		doc,
 		store,
@@ -41,7 +41,7 @@
 </script>
 
 {#snippet viewPending()}
-	<button class="bu-btn" onclick={() => void openPendingWork()}
+	<button class="bu-btn" onclick={() => void openPendingWork({ projectId: id, flows: true })}
 		>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
 	>
 {/snippet}
@@ -54,7 +54,7 @@
 	busyAction={t('common.deleting')}
 	{busy}
 	problem={error ? displayMessage(error) : displayError(reason)}
-	problemAction={reason === DELETE_GENERATION_BLOCK ? viewPending : undefined}
+	problemAction={blockedByWork(reason) ? viewPending : undefined}
 	blocked={!!reason}
 	oncancel={() => (ui.sheet = null)}
 	onconfirm={() => void remove()}

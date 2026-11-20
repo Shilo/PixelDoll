@@ -20,8 +20,10 @@
 	import { loadProject } from '../lib/store/project.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
 	import {
+		blockedByWork,
 		directionEditsBlocked,
 		flushSave,
+		openPendingWork,
 		refreshCharacterDirections,
 		toast,
 		ui
@@ -159,6 +161,7 @@
 		{#if problem || blocked}<p class="notice warn small" role="status">
 				{problem ? displayDirectionProblem(problem.translation) : displayError(blocked)}
 			</p>{/if}
+		{#if !problem && blockedByWork(blocked)}{@render viewPending()}{/if}
 		{#if error && !confirm}<p class="notice bad small" role="alert">
 				{displayDirectionProblem(error)}
 			</p>{/if}
@@ -192,6 +195,18 @@
 	{/snippet}
 </Sheet>
 
+{#snippet viewPending()}
+	<button
+		class="bu-btn"
+		onclick={() => {
+			confirm = false;
+			void openPendingWork({
+				projectId: id,
+				flows: !!blocked && blocked.translation.key !== 'directionsSheet.resolveDrafts'
+			});
+		}}>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
+	>
+{/snippet}
 {#if confirm}
 	<ConfirmDialog
 		title={removalOnly
@@ -204,6 +219,7 @@
 		busyAction={t(removalOnly ? 'directionsSheet.removing' : 'directionsSheet.saving')}
 		{busy}
 		problem={error ? displayDirectionProblem(error) : displayError(blocked)}
+		problemAction={!error && blockedByWork(blocked) ? viewPending : undefined}
 		blocked={!!blocked}
 		oncancel={() => (confirm = false)}
 		onconfirm={() => void save()}

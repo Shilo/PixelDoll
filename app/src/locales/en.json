@@ -268,6 +268,7 @@
 		"titleShowThisFrame": "Show this frame",
 		"checksFoundIssuesNoPaidRetryWas": "Checks found issues. No paid retry was started. You can request another attempt or accept this item as it is.",
 		"acceptAsIs": "Accept as is",
+		"pendingWorkBusy": "A move or setup is running or stopped. Finish or dismiss it to use these actions.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Accepts the current artwork without spending credits. The detected issues remain in its details.",
 		"youAcceptedThisArtworkWithItsRecorded": "You accepted this artwork with its recorded quality notes.",
 		"generateItemForMove": "Generate item for move",
@@ -819,6 +820,12 @@
 		"moveNameAdded": "{moveName} added",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} has item issues to review. No paid retry was started.",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName} failed. Open Moves to try again or start over.",
+		"createFailedOpen": "{name} could not be created. Open it to try again or start over.",
+		"setupFailedOpen": "Character setup stopped. Open it to try again or start over.",
+		"stoppedWork": {
+			"one": "{count} generation stopped. Open it to see why, then try again or discard it.",
+			"other": "{count} generations stopped. Open them to see why, then try again or discard them."
+		},
 		"thisOperationChangedReviewTheJointChecks": "This operation changed. Review the joint checks again.",
 		"thePendingJointChecksChangedReviewTheir": "The pending joint checks changed. Review their cost again.",
 		"thisOperationChangedReviewTheBodyFrames": "This operation changed. Review the body frames again.",

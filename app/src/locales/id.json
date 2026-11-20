@@ -259,6 +259,7 @@
 		"titleShowThisFrame": "Tampilkan frame ini",
 		"checksFoundIssuesNoPaidRetryWas": "Pemeriksaan menemukan masalah. Tidak ada percobaan ulang berbayar yang dimulai. Anda dapat meminta percobaan lain atau menerima item ini apa adanya.",
 		"acceptAsIs": "Terima apa adanya",
+		"pendingWorkBusy": "Ada animasi atau penyiapan yang sedang berjalan atau berhenti. Selesaikan atau buang untuk memakai tindakan ini.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Menerima gambar saat ini tanpa menggunakan kredit. Masalah yang ditemukan tetap tercatat di detail item.",
 		"youAcceptedThisArtworkWithItsRecorded": "Anda menerima gambar ini beserta catatan kualitasnya.",
 		"generateItemForMove": "Buat item untuk animasi",
@@ -793,6 +794,11 @@
 		"moveNameAdded": "{moveName} ditambahkan",
 		"moveNameHasItemIssuesToReviewNo": "Ada masalah pada item di {moveName} yang perlu ditinjau. Tidak ada percobaan ulang berbayar yang dimulai.",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName} gagal. Buka Animasi untuk mencoba lagi atau mulai dari awal.",
+		"createFailedOpen": "{name} tidak dapat dibuat. Buka untuk mencoba lagi atau mulai dari awal.",
+		"setupFailedOpen": "Penyiapan karakter berhenti. Buka untuk mencoba lagi atau mulai dari awal.",
+		"stoppedWork": {
+			"other": "{count} pembuatan berhenti. Buka untuk melihat alasannya, lalu coba lagi atau buang."
+		},
 		"thisOperationChangedReviewTheJointChecks": "Operasi ini berubah. Tinjau ulang pemeriksaan sendi.",
 		"thePendingJointChecksChangedReviewTheir": "Pemeriksaan sendi yang tertunda berubah. Tinjau ulang biayanya.",
 		"thisOperationChangedReviewTheBodyFrames": "Operasi ini berubah. Tinjau ulang frame tubuh.",

@@ -268,6 +268,7 @@
 		"titleShowThisFrame": "Bu kareyi gösterin",
 		"checksFoundIssuesNoPaidRetryWas": "Kontroller sorun buldu. Ücretli bir deneme başlatılmadı. Yeni bir deneme isteyebilir veya eşyayı olduğu gibi kabul edebilirsiniz.",
 		"acceptAsIs": "Olduğu gibi kabul edin",
+		"pendingWorkBusy": "Bir animasyon veya kurulum çalışıyor ya da durdu. Bu işlemleri kullanmak için tamamlayın veya atın.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Kredi harcamadan mevcut görseli kabul eder. Bulunan sorunlar eşya ayrıntılarında kalır.",
 		"youAcceptedThisArtworkWithItsRecorded": "Bu görseli kayıtlı kalite notlarıyla birlikte kabul ettiniz.",
 		"generateItemForMove": "Animasyon için eşya üretin",
@@ -825,6 +826,12 @@
 		"moveNameAdded": "{moveName} eklendi",
 		"moveNameHasItemIssuesToReviewNo": "{moveName} animasyonunda incelenecek eşya sorunları var. Ücretli bir deneme başlatılmadı.",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName} başarısız oldu. Tekrar denemek veya baştan başlamak için Animasyonlar bölümünü açın.",
+		"createFailedOpen": "{name} oluşturulamadı. Tekrar denemek veya baştan başlamak için açın.",
+		"setupFailedOpen": "Karakter kurulumu durdu. Tekrar denemek veya baştan başlamak için açın.",
+		"stoppedWork": {
+			"one": "{count} üretim durdu. Nedenini görmek için açın, ardından tekrar deneyin veya atın.",
+			"other": "{count} üretim durdu. Nedenini görmek için açın, ardından tekrar deneyin veya atın."
+		},
 		"thisOperationChangedReviewTheJointChecks": "Bu işlem değişti. Eklem kontrollerini yeniden inceleyin.",
 		"thePendingJointChecksChangedReviewTheir": "Bekleyen eklem kontrolleri değişti. Ücretlerini yeniden inceleyin.",
 		"thisOperationChangedReviewTheBodyFrames": "Bu işlem değişti. Gövde karelerini yeniden inceleyin.",

@@ -1051,6 +1051,17 @@ function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'
 	}
 }
 
+/** Blocks that unfinished generation work causes, which openPendingWork can show. */
+const WORK_BLOCKS = new Set([
+	'state.finishBeforeCharacterRemoval',
+	'state.finishBeforeMoveRemoval',
+	'state.finishBeforeDirectionRemoval',
+	'directionsSheet.waitForGeneration',
+	'directionsSheet.resolveDrafts',
+	'moveRemoval.resolveDrafts'
+]);
+export const blockedByWork = (reason: LocalizedError | '') =>
+	!!reason && WORK_BLOCKS.has(reason.translation.key);
 export const DELETE_GENERATION_BLOCK = new LocalizedError(
 	'Finish or dismiss pending generation work before deleting a character.',
 	'state.finishBeforeCharacterRemoval'
@@ -1059,9 +1070,30 @@ export const DELETE_GENERATION_BLOCK = new LocalizedError(
 let characterJobsPending = $state(false),
 	characterJobsInOtherTab = $state(false);
 
+/** Running work can write to any character, so it holds them all. Stopped work waits for the user and holds only its own
+ *  character: a failed move or setup must not lock every other character until it is found and dismissed. */
+function workHolds(id: string) {
+	return (
+		characterJobsPending ||
+		gens.some((g) => g.phase === 'running') ||
+		settling.size > 0 ||
+		creates.some(
+			(run) => !run.projectId && (run.running || !run.error || run.spec.projectId === id)
+		) ||
+		(heldMove() &&
+			(moveRunning ||
+				moving.resolvingRepair ||
+				(!moving.error && !moving.repairReview) ||
+				moving.projectId === id)) ||
+		moving.queued.some((queued) => queued.projectId === id) ||
+		(moving.queued.length > 0 && !heldMove()) ||
+		(heldSetup() && (!settingUp.error || settingUp.spec?.projectId === id))
+	);
+}
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
 function characterEditBlocked(
-	action: 'delete' | 'delete move' | 'change directions for'
+	action: 'delete' | 'delete move' | 'change directions for',
+	id: string
 ): LocalizedError | '' {
 	if (doc.loading || opening)
 		return new LocalizedError(
@@ -1078,15 +1110,7 @@ function characterEditBlocked(
 					'Manage characters in the other PixelDoll tab, or close it first.',
 					'state.manageCharactersInOtherTab'
 				);
-	if (
-		characterJobsPending ||
-		gens.some((g) => g.phase === 'running') ||
-		settling.size ||
-		heldCreate() ||
-		heldMove() ||
-		moving.queued.length ||
-		heldSetup()
-	)
+	if (workHolds(id))
 		return action === 'delete'
 			? DELETE_GENERATION_BLOCK
 			: action === 'delete move'
@@ -1107,21 +1131,21 @@ export function deletionBlocked(
 ): LocalizedError | '' {
 	return id.startsWith('fixture:')
 		? new LocalizedError('The bundled demo cannot be deleted.', 'deleteSheet.demo')
-		: characterEditBlocked(kind === 'character' ? 'delete' : 'delete move');
+		: characterEditBlocked(kind === 'character' ? 'delete' : 'delete move', id);
 }
 
 export function directionEditsBlocked(id: string): LocalizedError | '' {
 	if (!id.startsWith('rig-'))
 		return new LocalizedError('Only saved characters can be edited.', 'directionsSheet.savedOnly');
 	return (
-		characterEditBlocked('change directions for') ||
+		characterEditBlocked('change directions for', id) ||
 		(!generationSettled()
 			? new LocalizedError(
 					'Wait for the current generation work to finish.',
 					'directionsSheet.waitForGeneration'
 				)
 			: '') ||
-		(gens.some((gen) => gen.draft.rigId === id)
+		(gens.some((gen) => gen.draft.rigId === id && !gen.draft.acceptedAt)
 			? new LocalizedError(
 					'Keep or dismiss this character’s item drafts before changing directions.',
 					'directionsSheet.resolveDrafts'
@@ -1614,10 +1638,10 @@ export async function moveItemToSlot(itemId: string, targetId: string): Promise<
 	const previous = flushSave();
 	const work = previous.then(async () => {
 		const savedGens = await readGens();
-		const savedMove = await db.get<{ projectId: string; queued?: QueuedMove[] }>(
-			'projects',
-			MOVE_KEY
-		);
+		const savedMove = await db.get<QueuedMove & { queued?: QueuedMove[] }>('projects', MOVE_KEY);
+		// Only a move that poses this item holds it (another tab's moves are read from storage), as pendingMoves does here.
+		const poses = (move?: QueuedMove) =>
+			move?.projectId === projectId && !!move.spec?.items?.includes(itemId);
 		if (
 			[...gens, ...savedGens].some(
 				(gen) =>
@@ -1626,8 +1650,8 @@ export async function moveItemToSlot(itemId: string, targetId: string): Promise<
 					(gen.input.slot === item.slot || gen.input.slot === targetId)
 			) ||
 			pendingMoves(projectId, itemId).length ||
-			savedMove?.projectId === projectId ||
-			savedMove?.queued?.some((move) => move.projectId === projectId)
+			poses(savedMove) ||
+			savedMove?.queued?.some(poses)
 		) {
 			toast(message('wardrobe.itemMoveBusy'), {
 				tone: 'warning',
@@ -2107,9 +2131,7 @@ export function pick(id: string) {
 }
 
 // ---------- item generations ----------
-// Bump when PixelLab request inputs change. Work saved with different inputs no longer matches its ledger records and would
-// resend paid calls, so it waits for review instead of resuming by itself.
-export const REQUEST_TEXT = 5; // 5: repair grids pack into the cheapest layout (2026-11-07)
+export const REQUEST_TEXT = db.REQUEST_TEXT;
 const STOPPED = GENERATION_STOPPED;
 const SETUP_STOPPED = 'Setup stopped. Review Activity before trying again.';
 const REPAIR_REVIEW_RECOVERY =
@@ -2246,8 +2268,28 @@ async function takeOver() {
 /** Studio's startup resumes are done; as the leader, a click waiting from before can now run. */
 export function startupResumed() {
 	studioStartup = 'ready';
-	if (queue.role !== 'follower') resumedHere = true;
+	if (queue.role !== 'follower') {
+		resumedHere = true;
+		announceStoppedWork();
+	}
 	runWaiting();
+}
+/** Stopped item drafts, moves, setups and new characters: each waits for the user and blocks related edits. */
+export const stoppedWork = () =>
+	gens.filter((g) => g.phase === 'failed').length +
+	(heldMove() && moving.error && !moveRunning ? 1 : 0) +
+	(heldSetup() && settingUp.error ? 1 : 0) +
+	creates.filter((run) => !run.projectId && run.error && !run.running).length;
+/** Work that stopped before this page loaded waits silently in its panel, so say so once. */
+function announceStoppedWork() {
+	const count = stoppedWork();
+	// A warning: an error already shown stays visible, and the panel it opens is not covered.
+	if (count)
+		toast(message('state.stoppedWork', { count }), {
+			tone: 'warning',
+			duration: 10000,
+			action: () => openPendingWork()
+		});
 }
 
 /** `reported`: the failure already showed its own notice. */
@@ -2444,7 +2486,7 @@ export async function openGenerationReview(id: string) {
 	ui.selected = `gen:${id}`;
 }
 /** Shows an item draft: its review when it stopped or waits for one, else its tile, which shows the progress. */
-async function openDraft(g: Gen) {
+export async function openDraft(g: Gen) {
 	if (g.phase !== 'running') return openGenerationReview(g.draft.spec.id);
 	await openProject(g.draft.rigId);
 	if (!gens.includes(g) || doc.id !== g.draft.rigId) return;
@@ -2458,33 +2500,34 @@ export async function openFlow(sheet: 'move' | 'setup', projectId: string) {
 	if (projectId && doc.id !== projectId) await openProject(projectId);
 	if (!projectId || doc.id === projectId) ui.sheet = sheet;
 }
-/** Opens the work a busy or failure notice is about, so the user can finish or discard it: the item draft, move, setup or
- *  new character this tab holds, stopped work first. Anything else (another tab's work, jobs alone) opens Activity. */
+/** Opens the work a busy or failure notice is about, so the user can finish or discard it, stopped work first: the item
+ *  draft, move, setup or new character this tab holds. `flows`: the block comes from moves, setups, creations and running
+ *  work only (deletes, direction changes, item repairs), so stopped item drafts are skipped and running work is found on
+ *  any character, as it holds them all. Anything else (another tab's work, jobs alone) opens Activity. */
 export async function openPendingWork(
-	scope: { projectId?: string; slots?: readonly string[] } = {}
+	scope: { projectId?: string; slots?: readonly string[]; flows?: boolean } = {}
 ) {
-	const { projectId, slots } = scope;
+	const { projectId, slots, flows } = scope;
 	const ours = (id: string) => !projectId || id === projectId;
 	const drafts = gens.filter(
-		(g) => !g.draft.acceptedAt && ours(g.draft.rigId) && (!slots || slots.includes(g.input.slot))
+		(g) => !g.draft.acceptedAt && (!slots || slots.includes(g.input.slot))
 	);
-	const draft =
-		drafts.find((g) => g.phase === 'failed') ??
-		drafts.find((g) => g.phase === 'review') ??
-		drafts[0];
-	const move = moving.spec && !moving.done && ours(moving.projectId) ? moving.projectId : undefined;
-	const setup =
-		settingUp.spec && !settingUp.done && ours(settingUp.spec.projectId)
-			? settingUp.spec.projectId
-			: undefined;
+	const stoppedDraft = flows
+		? undefined
+		: (drafts.find((g) => g.phase === 'failed' && ours(g.draft.rigId)) ??
+			drafts.find((g) => g.phase === 'review' && ours(g.draft.rigId)));
+	const runningDraft = drafts.find((g) => g.phase === 'running' && (flows || ours(g.draft.rigId)));
+	const move = moving.spec && !moving.done ? moving.projectId : undefined;
+	const setup = settingUp.spec && !settingUp.done ? settingUp.spec.projectId : undefined;
 	const create = creates.find((run) => !run.projectId && run.error && !run.running);
-	if (draft && draft.phase !== 'running') return openDraft(draft);
-	if (move !== undefined && moving.error) return openFlow('move', move);
-	if (setup !== undefined && settingUp.error) return openFlow('setup', setup);
+	if (stoppedDraft) return openDraft(stoppedDraft);
+	if (move !== undefined && moving.error && ours(move)) return openFlow('move', move);
+	if (setup !== undefined && settingUp.error && ours(setup)) return openFlow('setup', setup);
 	if (create && !projectId) return reviewFailedCreate(create.id);
-	if (draft) return openDraft(draft);
-	if (move !== undefined) return openFlow('move', move);
-	if (setup !== undefined) return openFlow('setup', setup);
+	if (runningDraft) return openDraft(runningDraft);
+	if (move !== undefined && !moving.error && (flows || ours(move))) return openFlow('move', move);
+	if (setup !== undefined && !settingUp.error && (flows || ours(setup)))
+		return openFlow('setup', setup);
 	ui.sheet = 'activity';
 }
 export async function acceptItemIssues(projectId: string, itemId: string, reviewed: Item) {
@@ -3142,6 +3185,12 @@ export async function startCreate(input: CreateSpec, present = false, attemptId?
 				e
 			);
 			if (current()) run.error = error;
+			if (current() && (ui.sheet !== 'create' || createPresentation.id !== run.id))
+				toast(message('state.createFailedOpen', { name: spec.name }), {
+					tone: 'danger',
+					duration: 8000,
+					action: () => reviewFailedCreate(run.id)
+				});
 		}
 	} finally {
 		active = false;
@@ -3622,6 +3671,20 @@ export async function resumeMove() {
 		>('projects', MOVE_KEY)
 		.catch(() => undefined);
 	if (!r?.spec || (moving.spec && !moving.done)) return;
+	// A move whose character is gone can never be opened to retry or dismiss. Moves queued behind it wait for a decision.
+	if (
+		r.projectId?.startsWith('rig-') &&
+		!r.queued?.length &&
+		!(await db.get('projects', r.projectId).catch(() => true))
+	) {
+		try {
+			await db.del('projects', MOVE_KEY);
+			console.warn('Removed saved move with no character to resume.');
+			return;
+		} catch (error) {
+			console.error('Could not remove a saved move with no character', error); // kept and shown as stopped
+		}
+	}
 	const { queued, ...record } = r;
 	moving.queued = queued ?? [];
 	moveRecord = record; // a halted move keeps its stored record while moves are queued behind it
@@ -3776,6 +3839,12 @@ export async function startSetup(spec: SetupSpec) {
 				e
 			);
 			if (current()) settingUp.error = error;
+			if (current() && ui.sheet !== 'setup')
+				toast(message('state.setupFailedOpen'), {
+					tone: 'danger',
+					duration: 8000,
+					action: () => openFlow('setup', spec.projectId)
+				});
 		}
 	} finally {
 		if (revision === setupRevision) setupRunning = false;

@@ -268,6 +268,7 @@
 		"titleShowThisFrame": "Afficher cette image",
 		"checksFoundIssuesNoPaidRetryWas": "Les vérifications ont détecté des problèmes. Aucune nouvelle tentative payante n’a été lancée. Vous pouvez demander une autre tentative ou accepter cet objet tel quel.",
 		"acceptAsIs": "Accepter tel quel",
+		"pendingWorkBusy": "Une animation ou configuration est en cours ou arrêtée. Terminez-la ou abandonnez-la pour utiliser ces actions.",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "Conserve le visuel actuel sans dépenser de crédits. Les problèmes détectés restent indiqués dans les détails de l’objet.",
 		"youAcceptedThisArtworkWithItsRecorded": "Vous avez accepté ce visuel. Les remarques sur sa qualité restent enregistrées.",
 		"generateItemForMove": "Générer l’objet pour l’animation",
@@ -822,6 +823,12 @@
 		"moveNameAdded": "{moveName} ajoutée",
 		"moveNameHasItemIssuesToReviewNo": "Des objets de l’animation {moveName} doivent être vérifiés. Aucune nouvelle tentative payante n’a été lancée.",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName} a échoué. Ouvrez Animations pour réessayer ou recommencer.",
+		"createFailedOpen": "{name} n’a pas pu être créé. Ouvrez-le pour réessayer ou recommencer.",
+		"setupFailedOpen": "La configuration du personnage s’est arrêtée. Ouvrez-la pour réessayer ou recommencer.",
+		"stoppedWork": {
+			"one": "{count} génération s’est arrêtée. Ouvrez-la pour voir pourquoi, puis réessayez ou abandonnez-la.",
+			"other": "{count} générations se sont arrêtées. Ouvrez-les pour voir pourquoi, puis réessayez ou abandonnez-les."
+		},
 		"thisOperationChangedReviewTheJointChecks": "Cette opération a changé. Vérifiez à nouveau les contrôles d’articulations.",
 		"thePendingJointChecksChangedReviewTheir": "Les contrôles d’articulations en attente ont changé. Vérifiez à nouveau leur coût.",
 		"thisOperationChangedReviewTheBodyFrames": "Cette opération a changé. Vérifiez à nouveau les images du corps.",

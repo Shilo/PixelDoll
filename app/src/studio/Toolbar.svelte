@@ -43,10 +43,12 @@
 		refreshProjects,
 		characterName,
 		toggleTheme,
-		isDemo
+		isDemo,
+		stoppedWork
 	} from './state.svelte.ts';
 	import {
 		Archive,
+		CircleAlert,
 		ChevronDown,
 		ChevronLeft,
 		ChevronRight,
@@ -138,6 +140,7 @@
 			creates.some((run) => run.running && !run.error) ||
 			(!!settingUp.spec && !settingUp.done && !settingUp.error)
 	);
+	const stopped = $derived(stoppedWork());
 	const undoLabel = $derived(doc.undo.at(-1)?.label);
 	const redoLabel = $derived(doc.redo.at(-1)?.label);
 	const undoText = $derived(
@@ -329,6 +332,13 @@
 				title={t('activity.title')}
 				onclick={() => (ui.sheet = 'activity')}
 				><span class="bu-ring ring spin"></span><span class="num">{active || ''}</span></button
+			>{:else if stopped}<button
+				class="bu-action stopped-work"
+				data-variant="quiet"
+				aria-label={t('activity.title')}
+				title={t('generation.status.needsAttention')}
+				onclick={() => (ui.sheet = 'activity')}
+				><CircleAlert size={18} /><span class="num">{stopped}</span></button
 			>{/if}
 		<FullscreenButton />
 		<button
@@ -771,6 +781,9 @@
 <style>
 	.project-choices {
 		gap: 0;
+	}
+	.stopped-work {
+		color: var(--bu-danger);
 	}
 	@container (max-width: 300px) {
 		.wardrobe-status {

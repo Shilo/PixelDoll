@@ -262,6 +262,7 @@
 		"titleShowThisFrame": "このフレームを表示",
 		"checksFoundIssuesNoPaidRetryWas": "チェックで問題が見つかりました。有料の再試行は開始していません。もう一度生成をリクエストするか、このアイテムをそのまま承認できます。",
 		"acceptAsIs": "このまま承認",
+		"pendingWorkBusy": "モーションまたはセットアップが実行中か停止しています。これらの操作を使うには、完了するか破棄してください。",
 		"acceptsTheCurrentArtworkWithoutSpendingCredits": "クレジットを消費せずに現在のアートワークを承認します。検出された問題は詳細に残ります。",
 		"youAcceptedThisArtworkWithItsRecorded": "記録された品質メモとともに、このアートワークを承認しました。",
 		"generateItemForMove": "モーション用のアイテムを生成",
@@ -798,6 +799,11 @@
 		"moveNameAdded": "{moveName}を追加しました",
 		"moveNameHasItemIssuesToReviewNo": "{moveName}には、確認が必要なアイテムがあります。有料の再試行は開始していません。",
 		"moveNameFailedOpenMovesToTryAgain": "{moveName}の生成に失敗しました。「モーション」を開き、再試行するか最初からやり直してください。",
+		"createFailedOpen": "{name}を作成できませんでした。開いて再試行するか、最初からやり直してください。",
+		"setupFailedOpen": "キャラクターのセットアップが停止しました。開いて再試行するか、最初からやり直してください。",
+		"stoppedWork": {
+			"other": "{count}件の生成が停止しました。開いて理由を確認し、再試行するか破棄してください。"
+		},
 		"thisOperationChangedReviewTheJointChecks": "この操作が変更されました。関節のチェックをもう一度確認してください。",
 		"thePendingJointChecksChangedReviewTheir": "保留中の関節のチェックが変更されました。費用をもう一度確認してください。",
 		"thisOperationChangedReviewTheBodyFrames": "この操作が変更されました。体のフレームをもう一度確認してください。",
