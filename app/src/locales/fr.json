@@ -2240,7 +2240,7 @@
 		"motionModel": "Modèle de mouvement",
 		"motionModelHelp": "Skeleton v3 utilise les mêmes poses pour le corps et l’équipement. V3 et PixMiniMax dessinent d’abord le corps, puis PixelDoll détecte les poses pour l’équipement.",
 		"models": {
-			"skeletonV3": "Skeleton v3",
+			"skeletonV3": "Par défaut (Skeleton V3)",
 			"v3": "V3",
 			"pixminimax": "PixMiniMax"
 		},

@@ -2007,7 +2007,7 @@ export const moveFrames = (m: Manifest, s: MoveFrameSpec) => {
 	const model = moveAnimationModel(s);
 	return (
 		s.animation?.frameCount ??
-		(model === 'skeleton-v3' ? preferred : defaultMoveFrameCount(model, m.rig.cell.w, preferred))
+		(s.animation ? defaultMoveFrameCount(model, m.rig.cell.w, preferred) : preferred)
 	);
 };
 

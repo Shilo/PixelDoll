@@ -2233,7 +2233,7 @@
 		"motionModel": "Hareket modeli",
 		"motionModelHelp": "Skeleton v3, gövde ve ekipman için aynı pozları kullanır. V3 ve PixMiniMax önce gövdeyi çizer, ardından PixelDoll ekipman için pozları belirler.",
 		"models": {
-			"skeletonV3": "Skeleton v3",
+			"skeletonV3": "Varsayılan (Skeleton V3)",
 			"v3": "V3",
 			"pixminimax": "PixMiniMax"
 		},

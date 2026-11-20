@@ -96,7 +96,8 @@
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
 	// The PixelLab models that can make a move's body frames; Skeleton v3 keeps the current flow.
-	const MODELS: MoveAnimationModel[] = ['skeleton-v3', 'v3', 'pixminimax'];
+	const MODELS: MoveAnimationModel[] = ['skeleton-v3', 'pixminimax', 'v3'];
+	const advancedId = $props.id();
 	const MODEL_TEXT: Record<MoveAnimationModel, WhisperKey> = {
 		'skeleton-v3': 'moveSheet.models.skeletonV3',
 		v3: 'moveSheet.models.v3',
@@ -180,7 +181,7 @@
 	const fitsKept = (option: MoveAnimationModel) =>
 		keptFrames === undefined || moveFrameCounts(option, canvas).includes(keptFrames);
 	const model = $derived.by(() => {
-		if (modelChoice) return modelChoice;
+		if (modelChoice && fitsKept(modelChoice)) return modelChoice;
 		const preferred =
 			keptFrames ??
 			(m && moveFrames(m, { action: describing ? undefined : action, frames: baseFrames }));
@@ -219,6 +220,7 @@
 				})
 			: baseFrames
 	);
+	const shownFrames = $derived(userFrameCount ?? defaultFrames);
 	const advancedNote = $derived(
 		[
 			model === 'skeleton-v3' ? '' : t(MODEL_TEXT[model]),
@@ -971,13 +973,18 @@
 							>{/if}</summary
 					>
 					<div>
-						<div class="trait-row">
-							<Help
-								title={t('moveSheet.motionModel')}
-								text={t('moveSheet.motionModelHelp')}
-							/><select
+						<div class="advanced-field">
+							<div class="advanced-label">
+								<label for={`${advancedId}-model`}>{t('moveSheet.motionModel')}</label>
+								<Help
+									iconOnly
+									title={t('moveSheet.motionModel')}
+									text={t('moveSheet.motionModelHelp')}
+								/>
+							</div>
+							<select
+								id={`${advancedId}-model`}
 								class="bu-input input"
-								aria-label={t('moveSheet.motionModel')}
 								value={model}
 								onchange={(e) => chooseModel(e.currentTarget.value as MoveAnimationModel)}
 								>{#each MODELS as option (option)}<option
@@ -986,27 +993,45 @@
 									>{/each}</select
 							>
 						</div>
-						<div class="trait-row">
-							<Help
-								title={t('moveSheet.frames')}
-								text={t('moveSheet.framesHelp', { canvas: formatNumber(canvas) })}
-							/>{#if keptFrames !== undefined}<select
-									class="bu-input input"
-									aria-label={t('moveSheet.frames')}
-									disabled
-									><option>{t('moveSheet.framesKept', { count: keptFrames })}</option></select
-								>{:else}<select
-									class="bu-input input"
-									aria-label={t('moveSheet.frames')}
-									value={userFrameCount === undefined ? '' : String(userFrameCount)}
-									onchange={(e) =>
-										(frameChoice =
-											e.currentTarget.value === '' ? undefined : Number(e.currentTarget.value))}
-									><option value="">{t('moveSheet.framesDefault', { count: defaultFrames })}</option
-									>{#each frameCounts as count (count)}<option value={String(count)}
-											>{t('moveSheet.framesValue', { count })}</option
-										>{/each}</select
-								>{/if}
+						<div class="advanced-field">
+							<div class="advanced-label">
+								{#if keptFrames === undefined && frameCounts.length}
+									<label for={`${advancedId}-frames`}>{t('moveSheet.frames')}</label>
+								{:else}
+									<span>{t('moveSheet.frames')}</span>
+								{/if}
+								<Help
+									iconOnly
+									title={t('moveSheet.frames')}
+									text={t('moveSheet.framesHelp', { canvas: formatNumber(canvas) })}
+								/>
+							</div>
+							{#if keptFrames !== undefined}
+								<span class="faint">{t('moveSheet.framesKept', { count: keptFrames })}</span>
+							{:else if frameCounts.length}
+								<div class="frame-controls">
+									<input
+										id={`${advancedId}-frames`}
+										type="range"
+										aria-valuetext={t('moveSheet.framesValue', { count: shownFrames })}
+										min={0}
+										max={frameCounts.length - 1}
+										value={frameCounts.indexOf(shownFrames)}
+										oninput={(e) => (frameChoice = frameCounts[e.currentTarget.valueAsNumber])}
+									/>
+									<span class="frame-value"
+										>{t('moveSheet.framesValue', { count: shownFrames })}</span
+									>
+								</div>
+								<button
+									type="button"
+									class="bu-action btn plain frame-default"
+									data-variant="quiet"
+									aria-disabled={userFrameCount === undefined}
+									onclick={() => (frameChoice = undefined)}
+									>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
+								>
+							{/if}
 						</div>
 					</div>
 				</details>
@@ -1160,20 +1185,39 @@
 		padding-left: 0;
 		gap: 10px;
 	}
-	.trait-row {
+	.advanced-field {
 		display: grid;
-		grid-template-columns: 88px minmax(0, 1fr);
-		gap: 8px;
-		align-items: center;
+		gap: 4px;
+		min-width: 0;
 	}
-	.trait-row :global(.help-title) {
-		align-self: center;
+	.advanced-label {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
+	}
+	.frame-controls {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 12px;
+	}
+	.frame-controls input {
+		min-width: 0;
+		width: 100%;
+	}
+	.frame-controls input[type='range'] {
+		margin: 0;
+		min-height: 44px;
+	}
+	.frame-default {
+		justify-self: start;
+	}
+	.frame-value {
+		font-variant-numeric: tabular-nums;
 	}
 	@media (max-width: 599px), (max-height: 499px) {
-		.trait-row {
-			grid-template-columns: 90px minmax(0, 1fr);
-		}
-		.trait-row .input {
+		.advanced-field .input {
 			min-height: 44px;
 			font-size: 16px;
 		}

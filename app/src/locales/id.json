@@ -2141,7 +2141,7 @@
 		"motionModel": "Model gerakan",
 		"motionModelHelp": "Skeleton v3 memakai pose yang sama untuk tubuh dan perlengkapan. V3 dan PixMiniMax menggambar tubuh terlebih dahulu, lalu PixelDoll mendeteksi pose untuk perlengkapan.",
 		"models": {
-			"skeletonV3": "Skeleton v3",
+			"skeletonV3": "Bawaan (Skeleton V3)",
 			"v3": "V3",
 			"pixminimax": "PixMiniMax"
 		},

@@ -476,6 +476,7 @@ test('model options respect presets, explicit overrides and actual V3 canvas bud
 	expect(moveFrameCounts('pixminimax', 256).at(-1)).toBe(40);
 	m.rig.cell = { w: 256, h: 256 };
 	expect(moveFrames(m, { action: 'slash', frames: 16, animation: { model: 'v3' } })).toBe(8);
+	expect(moveFrames(m, { frames: 16, animation: { model: 'skeleton-v3' } })).toBe(15);
 	await f.run({ animation: { model: 'skeleton-v3', frameCount: 5 }, dirs: undefined });
 	expect(f.saved().manifest.rig.animations[0].cells).toBe(5);
 });

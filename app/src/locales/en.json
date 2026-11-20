@@ -2224,7 +2224,7 @@
 		"motionModel": "Motion model",
 		"motionModelHelp": "Skeleton v3 uses shared poses for the body and equipment. V3 and PixMiniMax draw the body first, then PixelDoll finds poses for equipment.",
 		"models": {
-			"skeletonV3": "Skeleton v3",
+			"skeletonV3": "Default (Skeleton V3)",
 			"v3": "V3",
 			"pixminimax": "PixMiniMax"
 		},

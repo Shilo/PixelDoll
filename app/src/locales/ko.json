@@ -2138,7 +2138,7 @@
 		"motionModel": "모션 모델",
 		"motionModelHelp": "Skeleton v3는 몸과 장비에 같은 포즈를 사용해요. V3와 PixMiniMax는 몸을 먼저 그리고, 이후 PixelDoll이 장비에 사용할 포즈를 찾아요.",
 		"models": {
-			"skeletonV3": "Skeleton v3",
+			"skeletonV3": "기본(Skeleton V3)",
 			"v3": "V3",
 			"pixminimax": "PixMiniMax"
 		},

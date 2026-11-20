@@ -2713,21 +2713,27 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	const advanced = move.locator('details.advanced');
 	await advanced.locator('summary').click();
 	const model = advanced.getByRole('combobox', { name: 'Motion model' });
-	const frames = advanced.getByRole('combobox', { name: 'Frames' });
+	const slider = advanced.getByRole('slider', { name: 'Frames' });
 	await expect(model).toHaveValue('skeleton-v3');
-	await expect(frames.getByRole('option')).toHaveCount(14);
+	await expect(model.getByRole('option')).toHaveText(['Default (Skeleton V3)', 'PixMiniMax', 'V3']);
+	await slider.press('Home');
+	await expect(slider).toHaveAttribute('aria-valuetext', '3 frames');
 	await model.selectOption('pixminimax');
-	await expect(frames.getByRole('option')).toHaveCount(11);
-	await frames.selectOption('40');
+	await slider.press('End');
+	await expect(slider).toHaveAttribute('aria-valuetext', '40 frames');
+	await slider.press('ArrowLeft');
+	await expect(slider).toHaveAttribute('aria-valuetext', '36 frames');
 	await model.selectOption('v3');
-	await expect(frames).toHaveValue('');
-	await expect(frames.getByRole('option')).toHaveCount(8);
-	await expect(frames.getByRole('option', { name: '16 frames', exact: true })).toHaveCount(1);
-	await expect(frames.getByRole('option', { selected: true })).toHaveText(
-		/^Default \(\d+ frames?\)$/
-	);
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
+	await slider.press('End');
+	await expect(slider).toHaveAttribute('aria-valuetext', '16 frames');
+	await slider.press('Home');
+	await slider.press('ArrowRight');
+	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
+	await advanced.getByRole('button', { name: 'Default (8 frames)', exact: true }).click();
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await model.selectOption('skeleton-v3');
-	await expect(frames).toHaveValue('');
+	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).not.toBeChecked();
 	await move.getByRole('checkbox', { name: new RegExp(vest.name) }).check();
 	await expect(move.getByRole('button', { name: /^Add Jumping in/ })).toContainText(
@@ -5190,9 +5196,8 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	const advanced = sheet.locator('summary').filter({ hasText: 'Advanced' });
 	await expect(advanced).toContainText('V3');
 	await advanced.click();
-	const kept = sheet.getByRole('combobox', { name: 'Frames', exact: true });
-	await expect(kept).toBeDisabled();
-	await expect(kept.locator('option:checked')).toHaveText('Kept: 8 frames');
+	await expect(sheet.getByRole('slider', { name: 'Frames', exact: true })).toHaveCount(0);
+	await expect(sheet.getByText('Kept: 8 frames', { exact: true })).toBeVisible();
 	const model = sheet.getByRole('combobox', { name: 'Motion model', exact: true });
 	await expect(model).toHaveValue('v3');
 	await east.click();

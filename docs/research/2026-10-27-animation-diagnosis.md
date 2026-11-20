@@ -184,3 +184,19 @@ Candidate scope: three proportion families, south/east first, six moves, then al
 - `npm run check`, `npm test`, and Playwright production suites were skipped for this documentation/standalone research change. No production source was changed by this investigation. The temporary app harness entry was removed and the agent dev server stopped after testing. The credential-free static evidence viewer remains available for review. No packages, new services, or animation archives were installed.
 - External tools were surveyed from primary sources; their browser integration, exact free archive inventories, and effect on PixelDoll output were not benchmarked. The linked video was unavailable.
 - Full 8-direction coverage, proportion-family motion, all sprite sizes, actual revised solver output, and equipment qualification remain future implementation/validation work, not claims of this research.
+
+## Advanced model comparison follow-up
+
+Replayed 96 archived body frames from `1f95029` (`spikes/api/out/s3_k1` and `spikes/api/out/s4_anim`). The samples share the S2 b48 character, 64 px canvas, east/south views, walk/slash intent and eight frames per clip. Skeleton v3 was pose-driven; PixMiniMax and text V3 used prompts. These are comparable historical bodies, not reruns from identical motion cues or a matched equipment test.
+
+| Measure | Skeleton v3 | PixMiniMax | Text V3 |
+| --- | --- | --- | --- |
+| Walk palette fit | 99.51–100% | 99.67–100% | 99.59–100% |
+| Walk bottom drift | 1 px | 1 px | 0–1 px |
+| Slash horizontal excursion, east/south | 9.5 / 5.5 px | 14.5 / 14 px | 6.5 / 4.5 px |
+| Slash palette fit, east/south | 100 / 100% | 96.24 / 100% | 98.61 / 99.49% |
+| Consecutive exact visible pixels, slash east/south | 54.3 / 67.0% | 37.6 / 41.7% | 55.5 / 52.0% |
+
+Excursion measures the range of the horizontal bounding-box center. Consecutive exact pixels use the union of visible pixels as the denominator, so more movement alone can lower the score. Neither metric measures jitter or equipment alignment. PixMiniMax was close on these walk body metrics and moved appreciably farther on slash, but its east slash fell below the 97% palette gate. The existing palette helper improved it to 96.58%, still below the gate. All four archived V3 clips already passed the palette threshold before that helper; the live V3 hat failure was separate: four of six frames were below the key-retention gate with no registration shifts recorded.
+
+Keep Skeleton v3 as the default. First qualify one paired 8-frame east slash with a frozen body and the same standing gear, using a head item and a held item to expose anchor and handedness errors. Keep output and receipts, judge body motion without labels, and require existing item gates without relaxing them. Add south walk and a second body, direction set, and seed only if the pilot clears both motion and fit. For V3, inspect the four failed hat frames against their keyed inputs before buying a direct-on-frozen-frames edit; do not recolor or regenerate the base to repair a key-retention failure.

@@ -2121,7 +2121,7 @@
 		"motionModel": "运动模型",
 		"motionModelHelp": "Skeleton v3 为身体和装备使用相同的姿势。V3 和 PixMiniMax 会先绘制身体，再由 PixelDoll 检测装备所用的姿势。",
 		"models": {
-			"skeletonV3": "Skeleton v3",
+			"skeletonV3": "默认（Skeleton V3）",
 			"v3": "V3",
 			"pixminimax": "PixMiniMax"
 		},
