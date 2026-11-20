@@ -51,6 +51,98 @@ async function connect(page: Page) {
 		.click();
 }
 
+test('four overlapping creations keep independent rows and only the uninterrupted sheet goes Ready', async ({
+	page,
+	context
+}) => {
+	test.setTimeout(120_000);
+	const api = new CharacterApi();
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	const identities = new Map<string, number>();
+	const gates = new Map([1, 2, 3, 4].map((seed) => [seed, Promise.withResolvers<void>()]));
+	const waiting = new Set<number>();
+	await context.route('https://*.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		const path = new URL(request.url()).pathname;
+		const method = request.method();
+		const body = request.postDataJSON();
+		if (method === 'GET' && path.startsWith('/v2/characters/')) {
+			const seed = identities.get(path.split('/').pop()!);
+			if (seed) {
+				waiting.add(seed);
+				await gates.get(seed)!.promise;
+			}
+		}
+		const response = await api.handle(method, request.url(), body);
+		if (path === '/v2/create-character-v3' && body?.reference_image && response.ok) {
+			const { character_id } = await response.clone().json();
+			identities.set(character_id, body.seed);
+		}
+		await fulfill(route, response);
+	});
+	const sheet = await open(page);
+	const name = sheet.getByRole('textbox', { name: 'Name', exact: true });
+	const details = sheet.getByRole('textbox', { name: 'Details', exact: true });
+	const create = sheet.getByRole('button', { name: 'Create character', exact: true });
+	const ready = sheet.getByRole('button', { name: 'Start dressing up', exact: true });
+	const library = page.getByRole('complementary', { name: 'Your characters' });
+	const row = (seed: number) =>
+		library.locator('.character-row').filter({ hasText: `Run ${seed}` });
+	const saved = (seed: number) => row(seed).and(library.locator('[aria-pressed]'));
+	try {
+		for (const seed of [1, 2, 3, 4]) {
+			if (seed > 1) await open(page, false);
+			await expect(name).toHaveValue('');
+			await expect(details).toHaveValue('');
+			await name.fill(`Run ${seed}`);
+			await details.fill(`A friendly humanoid scout holding lantern number ${seed}`);
+			await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click();
+			await sheet.locator('details.advanced:not([open]) > summary').click();
+			await sheet.getByRole('textbox', { name: 'Seed', exact: true }).fill(String(seed));
+			await create.click();
+			if (seed === 1) await connect(page);
+			await expect(sheet.getByText(`Run ${seed}`, { exact: true })).toBeVisible();
+			if (seed < 4) {
+				await sheet.getByRole('button', { name: 'Hide', exact: true }).click();
+				if (seed === 1) await page.getByRole('button', { name: 'Characters', exact: true }).click();
+				await expect(row(seed).getByRole('progressbar')).toBeVisible();
+				await expect(row(seed).getByRole('button')).toHaveCount(0);
+			}
+		}
+		await expect.poll(() => [...waiting].sort(), { timeout: 60_000 }).toEqual([1, 2, 3, 4]);
+		expect(await library.locator('.pending-character').count()).toBe(4);
+		await expect(row(1)).toContainText(/Frame \d+×\d+ px/);
+		await expect(row(1)).toContainText('2 directions');
+		await expect(
+			library.getByRole('progressbar', { name: /Run 1/, includeHidden: true })
+		).toHaveAttribute('aria-valuetext', 'Setting up the skeleton');
+		gates.get(2)!.resolve();
+		await expect(saved(2)).toHaveCount(1);
+		await expect(ready).toHaveCount(0);
+		await expect(sheet.getByText('Run 4', { exact: true })).toBeVisible();
+		gates.get(4)!.resolve();
+		await expect(ready).toBeVisible();
+		await expect(sheet).toContainText('Run 4 is ready');
+		await sheet.getByRole('button', { name: 'Close', exact: true }).first().click();
+		await open(page, false);
+		await expect(name).toHaveValue('');
+		await details.fill('A draft that should remain open');
+		for (const seed of [3, 1]) gates.get(seed)!.resolve();
+		for (const seed of [1, 2, 3, 4]) await expect(saved(seed)).toHaveCount(1);
+		await expect(details).toHaveValue('A draft that should remain open');
+		await expect(ready).toHaveCount(0);
+		await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await open(page, false);
+		await expect(details).toHaveValue('');
+		const posts = api.calls.filter((call) => call.path === '/v2/create-character-v3');
+		expect(posts.map((call) => call.body?.seed).sort()).toEqual([1, 1, 2, 2, 3, 3, 4, 4]);
+		expect(errors).toEqual([]);
+	} finally {
+		for (const gate of gates.values()) gate.resolve();
+	}
+});
+
 // The two offline creation runs are the heaviest tests here (about 22 s and 42 s). CI shards are contiguous slices of the
 // test order, so they are registered apart to land in different shards (docs/testing/test-performance.md).
 offlineCreation({ preset: 'Unique 8', size: 128, frame: 256, reverse: false, unique: 8, rows: 8 });
@@ -96,9 +188,23 @@ test.describe('creation safety', () => {
 					return rec!;
 				}
 			);
-			state.creating.warnings = warnings;
-			state.creating.projectId = id;
+			state.creates.push({
+				id,
+				projectId: id,
+				spec: {
+					description: 'Fixture',
+					name: 'Fixture',
+					seed: 1,
+					size: 48,
+					directions: [{ id: 'south' }]
+				},
+				running: false,
+				error: '',
+				progress: null,
+				views: []
+			});
 			state.ui.sheet = 'create';
+			state.createPresentation.id = id;
 		});
 		const notes = page.locator('.quality-notes');
 		await expect(notes).toHaveAttribute('open', '');
@@ -244,13 +350,17 @@ test.describe('creation safety', () => {
 		expect(api.calls.filter((c) => c.path === '/v2/create-character-v3')).toHaveLength(2); // cached art reused, local identities separate
 		await page.evaluate(async () => {
 			const modulePath = '/src/lib/store/db.ts';
-			const { put } = (await import(modulePath)) as typeof import('../../src/lib/store/db.ts');
+			const { put, CREATE_DRAFT_PREFIX } = (await import(
+				modulePath
+			)) as typeof import('../../src/lib/store/db.ts');
 			const statePath = '/src/studio/state.svelte.ts';
-			const { creating, REQUEST_TEXT } = (await import(
+			const { creates, createPresentation, REQUEST_TEXT } = (await import(
 				statePath
 			)) as typeof import('../../src/studio/state.svelte.ts');
-			await put('projects', 'studio-create', {
-				id: 'studio-create',
+			const creating = creates.find((run) => run.id === createPresentation.id)!;
+			const id = CREATE_DRAFT_PREFIX + creating.id;
+			await put('projects', id, {
+				id,
 				spec: JSON.parse(JSON.stringify(creating.spec)),
 				requestText: REQUEST_TEXT
 			});
@@ -261,10 +371,12 @@ test.describe('creation safety', () => {
 				async () =>
 					page.evaluate(async () => {
 						const modulePath = '/src/lib/store/db.ts';
-						const { get } = (await import(
+						const { all, CREATE_DRAFT_PREFIX } = (await import(
 							modulePath
 						)) as typeof import('../../src/lib/store/db.ts');
-						return !(await get('projects', 'studio-create'));
+						return !(await all<{ id: string }>('projects')).some((record) =>
+							record.id.startsWith(CREATE_DRAFT_PREFIX)
+						);
 					}),
 				{ timeout: 30_000 }
 			)
@@ -1263,28 +1375,10 @@ function offlineCreation(config: CreationCase) {
 		await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toHaveCount(
 			0
 		);
-		await sheet.getByRole('button', { name: 'Hide', exact: true }).click();
-		await page.getByRole('button', { name: 'Characters', exact: true }).click();
-		const library = page.getByRole('complementary', { name: 'Your characters' });
-		const pending = library.getByRole('button', { name: /^Offline creator test/ });
-		await expect(pending).toContainText(`Frame ${config.frame}×${config.frame} px`);
-		await expect(pending).toContainText(`${config.rows} directions`);
-		const progress = library.getByRole('progressbar', { name: /Offline creator test/ });
-		await expect(progress).toHaveAttribute('aria-valuenow', '1');
-		await expect(progress).toHaveAttribute('aria-valuetext', 'Setting up the skeleton');
-		await expect(pending.locator('progress')).toBeVisible();
-		await pending.click();
-		await expect(sheet.locator('.review-grid figure')).toHaveCount(config.rows);
 		release();
 		await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible(
 			{ timeout: 150_000 }
 		);
-		await expect(page.locator('.cast-library .pending-character')).toHaveCount(0);
-		await expect(
-			page
-				.locator('.cast-library .character-row[aria-pressed]')
-				.filter({ hasText: 'Offline creator test' })
-		).toHaveCount(1);
 		const preview = await sheet
 			.locator('.review-grid canvas')
 			.first()

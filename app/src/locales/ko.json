@@ -772,7 +772,6 @@
 			"other": "{label} 항목과 아이템 {count}개를 삭제했어요"
 		},
 		"couldNotSaveFlowFailure": "{error} 이 기기에 이 실패를 저장하지 못했어요. 다시 불러오기 전에 이 작업을 버려 주세요.",
-		"anotherCharacterIsStillBeingCreatedSo": "다른 캐릭터를 아직 만들고 있어서 내 캐릭터 생성이 시작되지 않았어요. 입력한 내용은 유지돼요.",
 		"useSavedFramesInTheTabThat": "PixelDoll 작업을 관리하는 탭에서 저장된 프레임을 사용하세요.",
 		"anotherMoveIsStillBeingAddedSo": "다른 동작을 아직 추가하고 있어서 이 동작은 시작되지 않았어요. 끝나면 다시 시도해 주세요.",
 		"moveNameAdded": "{moveName} 추가됨",

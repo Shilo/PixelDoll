@@ -772,7 +772,6 @@
 			"other": "{label}とそのアイテム{count}個を削除しました"
 		},
 		"couldNotSaveFlowFailure": "このエラーをこのデバイスに保存できませんでした。再読み込みする前に、この操作を破棄してください。（{error}）",
-		"anotherCharacterIsStillBeingCreatedSo": "別のキャラクターを作成中のため、このキャラクターの作成は開始されませんでした。入力した内容は残っています。",
 		"useSavedFramesInTheTabThat": "保存済みのフレームは、PixelDollのジョブを管理しているタブで使ってください。",
 		"anotherMoveIsStillBeingAddedSo": "別のモーションを追加中のため、このモーションの追加は始まりませんでした。完了後にもう一度お試しください。",
 		"moveNameAdded": "{moveName}を追加しました",

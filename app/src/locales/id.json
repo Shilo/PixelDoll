@@ -767,7 +767,6 @@
 			"other": "{label} dan {count} itemnya dihapus"
 		},
 		"couldNotSaveFlowFailure": "{error} Kegagalan ini tidak dapat disimpan di perangkat ini. Singkirkan operasi ini sebelum memuat ulang.",
-		"anotherCharacterIsStillBeingCreatedSo": "Karakter lain masih dibuat, jadi pembuatan karakter Anda belum dimulai. Detail Anda tetap tersimpan.",
 		"useSavedFramesInTheTabThat": "Gunakan frame tersimpan di tab yang mengelola pekerjaan PixelDoll Anda.",
 		"anotherMoveIsStillBeingAddedSo": "Animasi lain masih ditambahkan, jadi penambahan animasi ini belum dimulai. Coba lagi setelah proses itu selesai.",
 		"moveNameAdded": "{moveName} ditambahkan",

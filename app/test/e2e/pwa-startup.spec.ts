@@ -461,8 +461,9 @@ test('saved failed generation does not block either startup or manual updates wh
 	try {
 		await cachedApp(page, server.url, a);
 		const failed = {
-			id: 'studio-create',
+			id: 'studio-create:rig-startup-halted',
 			spec: {
+				projectId: 'rig-startup-halted',
 				name: 'Saved failed character',
 				description: 'Body',
 				seed: 9,

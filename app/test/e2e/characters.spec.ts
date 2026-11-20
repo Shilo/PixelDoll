@@ -2101,8 +2101,8 @@ test('PixelLab library connection, pagination and direct import use only free re
 				const db = r.result,
 					t = db.transaction('projects', 'readwrite');
 				t.objectStore('projects').put(
-					{ id: 'studio-create', spec: { name: 'Pending fixture' } },
-					'studio-create'
+					{ id: 'studio-create:rig-fixture', spec: { name: 'Pending fixture' } },
+					'studio-create:rig-fixture'
 				);
 				t.oncomplete = () => {
 					db.close();
@@ -2631,7 +2631,7 @@ test('storage failures before paid work surface errors and release the move runn
 		const { displayError } = await import(i18nPath);
 		const put = IDBObjectStore.prototype.put;
 		IDBObjectStore.prototype.put = function (value, key) {
-			if (key === 'studio-create' || key === 'studio-move')
+			if (String(key).startsWith('studio-create:') || key === 'studio-move')
 				throw new DOMException('Test storage quota exceeded', 'QuotaExceededError');
 			return put.call(this, value, key);
 		};
@@ -2655,8 +2655,10 @@ test('storage failures before paid work surface errors and release the move runn
 			const firstError = displayError(s.moving.error);
 			await s.startMove(s.doc.id, { id: 'second', action: 'cast', frames: 8, items: [], seed: 2 });
 			return {
-				createError: displayError(s.creating.error),
-				createName: s.creating.spec.name,
+				creates: s.creates.map((run: (typeof s.creates)[number]) => ({
+					name: run.spec.name,
+					error: displayError(run.error)
+				})),
 				firstError,
 				secondError: displayError(s.moving.error),
 				secondId: s.moving.spec.id
@@ -2665,8 +2667,10 @@ test('storage failures before paid work surface errors and release the move runn
 			IDBObjectStore.prototype.put = put;
 		}
 	});
-	expect(result.createError).toContain('Test storage quota exceeded');
-	expect(result.createName).toBe('Storage fixture');
+	expect(result.creates).toEqual([
+		{ name: 'Storage fixture', error: expect.stringContaining('Test storage quota exceeded') },
+		{ name: 'Duplicate request', error: expect.stringContaining('Test storage quota exceeded') }
+	]);
 	expect(result.firstError).toContain('Test storage quota exceeded');
 	expect(result.secondError).toContain('Test storage quota exceeded');
 	expect(result.secondId).toBe('second');

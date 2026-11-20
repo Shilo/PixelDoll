@@ -37,7 +37,8 @@ export async function deleteOutdated(): Promise<number> {
 			? undefined
 			: r.kind === 'dress' || r.manifest
 				? (r.format ?? r.manifest?.format)
-				: r.id === 'studio-create' && !Array.isArray(r.spec?.directions)
+				: r.id === 'studio-create' ||
+					  (r.id.startsWith(db.CREATE_DRAFT_PREFIX) && !Array.isArray(r.spec?.directions))
 					? undefined
 					: CURRENT_FORMAT;
 	const outdated = (await db.all<OutdatedCandidate>('projects')).filter(

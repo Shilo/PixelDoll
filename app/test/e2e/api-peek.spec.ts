@@ -546,21 +546,28 @@ test('an action peek includes its shared balance check without another operation
 			relatedQueueIds: ['own-job', 'other-job']
 		});
 		finishActivityCall(shared, 200, true, {});
-		const studio = (
-			window as unknown as {
-				__studio: { creating: { spec: unknown; error: string }; ui: { sheet: string } };
-			}
-		).__studio;
-		studio.creating.spec = {
+		const statePath = '/src/studio/state.svelte.ts';
+		const { creates, reviewFailedCreate } = (await import(
+			statePath
+		)) as typeof import('../../src/studio/state.svelte.ts');
+		const spec = {
 			description: 'Fixture character',
 			name: 'Scope fixture',
 			seed: 1,
 			size: 48,
-			directions: [{ id: 'south' }],
+			directions: [{ id: 'south' as const }],
 			activityScope: 'scope-one'
 		};
-		studio.creating.error = 'Fixture stopped';
-		studio.ui.sheet = 'create';
+		creates.push({
+			id: 'rig-scope',
+			spec,
+			error: 'Fixture stopped',
+			running: false,
+			projectId: '',
+			progress: null,
+			views: []
+		});
+		reviewFailedCreate('rig-scope');
 	});
 	const sheet = page.locator('dialog[open]');
 	await expect(sheet).toHaveAccessibleName('New character');
@@ -668,7 +675,7 @@ test('mirrored saved requests show their payload and updated charge without send
 	expect(await page.evaluate(() => sessionStorage.getItem('api-peek-copy'))).toBe(
 		'/create-character-v3'
 	);
-	await page.evaluate(() => {
+	await page.evaluate(async () => {
 		navigator.clipboard.writeText = async () => {
 			throw new DOMException('Clipboard unavailable', 'NotAllowedError');
 		};

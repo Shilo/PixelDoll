@@ -802,7 +802,6 @@
 			"other": "{label} und {count} zugehörige Gegenstände gelöscht"
 		},
 		"couldNotSaveFlowFailure": "{error} Dieser Fehler konnte nicht auf diesem Gerät gespeichert werden. Verwirf den Vorgang, bevor du die Seite neu lädst.",
-		"anotherCharacterIsStillBeingCreatedSo": "Eine andere Figur wird noch erstellt. Deine Generierung wurde deshalb nicht gestartet. Deine Angaben bleiben erhalten.",
 		"useSavedFramesInTheTabThat": "Verwende gespeicherte Frames in dem Tab, der deine PixelDoll-Aufträge verwaltet.",
 		"anotherMoveIsStillBeingAddedSo": "Eine andere Animation wird noch hinzugefügt. Diese wurde deshalb nicht gestartet. Versuch es erneut, sobald die andere fertig ist.",
 		"moveNameAdded": "{moveName} hinzugefügt",

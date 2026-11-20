@@ -99,6 +99,12 @@ or estimate calls run at creation: about 2.25 gens up to a 90 px body (3.25 up t
 the creator as soon as the draw is normalized (`onViews`). The animation workflow and every PixelLab request body are
 unchanged: skeleton-v3 is deferred for replacement ([review §15–§17](research/generation-pipeline-review-2026-10-25.md)).
 
+Each submission has a separate `studio-create:<attempt>` record. Closing the creator leaves the job running and releases
+the sheet's association with it. Characters shows progress inline, Activity handles recovery, and completed characters
+join the library without reopening the creator. Only the submitting sheet can advance to Ready. After a reload or tab
+handoff, the queue leader resumes compatible drafts with their saved identity, using the existing account limits.
+An explicit retry replaces just that draft with a fresh seed and publication identity.
+
 - **Add a move** (`MoveSheet.svelte`) prices one move before queuing it. Idle uses authored keypoints and Walk uses
   managed motion; both render against the standing body. Equipment is unchecked by default and can be generated later.
 - **Move queue** (`queueMoves` in `state.svelte.ts`): moves run one at a time, FIFO, through the unchanged `addMove`; Add a

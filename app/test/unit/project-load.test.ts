@@ -386,7 +386,7 @@ test('an unfinished creation saved before direction plans is removed; a current 
 	expect(del.mock.calls.map(([, id]) => id)).toEqual(['studio-create']);
 	del.mockClear();
 	vi.spyOn(db, 'all').mockResolvedValue([
-		{ id: 'studio-create', spec: { name: 'New', size: 48, directions: [{ id: 'south' }] } }
+		{ id: 'studio-create:rig-new', spec: { name: 'New', size: 48, directions: [{ id: 'south' }] } }
 	]);
 	expect(await deleteOutdated()).toBe(0);
 	expect(del).not.toHaveBeenCalled();

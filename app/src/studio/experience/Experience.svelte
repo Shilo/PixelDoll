@@ -26,7 +26,7 @@
 		ui,
 		doc,
 		store,
-		creating,
+		creates,
 		openProject,
 		openingProjectId,
 		refreshProjects,
@@ -87,18 +87,12 @@
 		store.projects.filter((p) => !p.dev && p.name.toLowerCase().includes(query))
 	);
 	const pending = $derived(
-		!creating.projectId && creating.spec?.name?.toLowerCase().includes(query) ? creating.spec : null
-	);
-	const createStep = $derived(
-		CREATE_STEPS.findIndex((step) => step.id === creating.progress?.step)
-	);
-	const createProgress = $derived(Math.max(0, createStep));
-	const createStatus = $derived(
-		creating.error
-			? t('generation.status.needsAttention')
-			: createStep < 0
-				? t('activity.inProgress')
-				: displayMessage(CREATE_STEPS[createStep].label)
+		creates.filter(
+			(run) =>
+				!run.projectId &&
+				!store.projects.some((project) => project.id === run.spec.projectId) &&
+				run.spec.name.toLowerCase().includes(query)
+		)
 	);
 	$effect(() => {
 		if (search && list.length && !doc.loading && !list.some((p) => p.id === doc.id))
@@ -651,49 +645,52 @@
 				{#if g.sheet}<NewCharacterButton compact />{/if}
 			</div>
 			<div class="character-rows">
-				{#if pending}
-					<button
-						class="bu-action character-row pending-character"
-						data-variant="row"
-						aria-haspopup="dialog"
-						onclick={() => (ui.sheet = 'create')}
-					>
+				{#each pending as run (run.id)}
+					{@const spec = run.spec}
+					{@const step = CREATE_STEPS.findIndex((stage) => stage.id === run.progress?.step)}
+					{@const createProgress = Math.max(0, step)}
+					{@const createStatus = run.error
+						? t('generation.status.needsAttention')
+						: step < 0
+							? t('activity.state.queued')
+							: displayMessage(CREATE_STEPS[step].label)}
+					<div class="character-row pending-character">
 						<span class="character-thumbnail" aria-hidden="true">
-							{#if creating.views[0]}
-								<Sprite img={creating.views[0].img} k={1} limit={64} label={pending.name} />
+							{#if run.views[0]}
+								<Sprite img={run.views[0].img} k={1} limit={64} label={spec.name} />
 							{:else}<PersonStanding size={24} />{/if}
 						</span>
 						<span>
-							<strong>{openerName(pending.name)}</strong>
+							<strong>{spec.name}</strong>
 							<small class="character-sizes">
-								{#if pending.frame}<span
+								{#if spec.frame}<span
 										>{t('sizePreview.frame', {
-											measure: pixelSize({ w: pending.frame, h: pending.frame })
+											measure: pixelSize({ w: spec.frame, h: spec.frame })
 										})} ·</span
 									>{/if}
-								<span
-									>{t('export.count.directions', { count: pending.directions?.length ?? 0 })}</span
-								>
+								<span>{t('export.count.directions', { count: spec.directions?.length ?? 0 })}</span>
 							</small>
-							<small class="pending-character-status">{createStatus}<SurfaceChevron /></small>
-							{#if !creating.error}<progress
+							{#if run.error}
+								<button
+									class="bu-action btn sm"
+									data-variant="quiet"
+									onclick={() => (ui.sheet = 'activity')}
+								>
+									{openerLabel(createStatus)}<SurfaceChevron />
+								</button>
+							{:else}
+								<small class="pending-character-status">{createStatus}</small>
+								<progress
 									class="bu-progress"
 									value={createProgress}
 									max={CREATE_STEPS.length}
-									aria-hidden="true"
-								></progress>{/if}
+									aria-label={t('wardrobe.nameProgress', { name: spec.name })}
+									aria-valuetext={createStatus}
+								></progress>
+							{/if}
 						</span>
-					</button>
-					{#if !creating.error}<span
-							class="sr"
-							role="progressbar"
-							aria-label={t('wardrobe.nameProgress', { name: pending.name })}
-							aria-valuenow={createProgress}
-							aria-valuemin={0}
-							aria-valuemax={CREATE_STEPS.length}
-							aria-valuetext={createStatus}
-						></span>{/if}
-				{/if}
+					</div>
+				{/each}
 				{#each list as p (p.id)}
 					{@const still = stills.get(p.id)}
 					{@const facts = p.facts ?? still?.facts}
@@ -724,7 +721,9 @@
 							></button
 						>
 					</CharacterActions>
-				{:else}{#if !pending}<p class="muted">{t('experience.noMatchingCharacters')}</p>{/if}{/each}
+				{:else}{#if !pending.length}<p class="muted">
+							{t('experience.noMatchingCharacters')}
+						</p>{/if}{/each}
 				<NewCharacterButton row />
 			</div>
 			<button

@@ -63,6 +63,8 @@ vi.mock('../../src/lib/dress/project.ts', async (original) => ({
 }));
 
 vi.mock('../../src/lib/store/db.ts', async (original) => ({
+	CREATE_DRAFT_PREFIX: (await original<typeof import('../../src/lib/store/db.ts')>())
+		.CREATE_DRAFT_PREFIX,
 	withoutCharacters: (await original<typeof import('../../src/lib/store/db.ts')>())
 		.withoutCharacters,
 	put: mocks.put,
@@ -227,12 +229,14 @@ test.each(['create', 'move', 'setup'] as const)(
 				return second.promise;
 			});
 		const s = await import('../../src/studio/state.svelte.ts');
-		const state = kind === 'create' ? s.creating : kind === 'move' ? s.moving : s.settingUp;
+		const stateOf = () =>
+			kind === 'create' ? s.creates[0] : kind === 'move' ? s.moving : s.settingUp;
 		const start = (seed: number) =>
 			kind === 'create'
 				? s.startCreate({
 						description: 'body',
 						name: 'Fixture',
+						projectId: 'rig-fixture',
 						seed,
 						size: 48,
 						directions: [{ id: 'south' as const }]
@@ -247,6 +251,7 @@ test.each(['create', 'move', 'setup'] as const)(
 							seed
 						});
 		const initial = start(1);
+		const state = stateOf();
 		await vi.waitFor(() => expect(callbacks).toHaveLength(1));
 		callbacks[0](progress('animate', 10));
 		first.reject(new Error('First branch failed'));
@@ -299,13 +304,63 @@ test('creation identity is persisted before paid work, survives failed resume, a
 	expect(mocks.create.mock.calls[2][0].projectId).not.toBe(saved.projectId);
 });
 
+test('a published creation remains ready when removing its recovery draft fails', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	mocks.create.mockResolvedValue('rig-published');
+	mocks.del.mockRejectedValueOnce(new Error('Could not remove draft'));
+	await s.startCreate(
+		{
+			projectId: 'rig-published',
+			description: 'body',
+			name: 'Published',
+			seed: 1,
+			size: 48,
+			directions: [{ id: 'south' }]
+		},
+		true
+	);
+	expect(s.creates[0]).toMatchObject({ projectId: 'rig-published', error: '', running: false });
+	expect(mocks.put).toHaveBeenCalledOnce();
+	expect(s.ui.toast).toEqual(
+		message('state.couldNotSaveReason', { reason: 'Could not remove draft' })
+	);
+	s.ui.sheet = null;
+	s.ui.sheet = 'create';
+	expect(s.createPresentation.id).toBe('');
+	expect(s.creates).toHaveLength(0);
+});
+
+test('discarding a failed creation cannot race a retry for the same draft', async () => {
+	const s = await import('../../src/studio/state.svelte.ts');
+	const form = {
+		projectId: 'rig-failed',
+		description: 'body',
+		name: 'Failed',
+		seed: 1,
+		size: 48,
+		directions: [{ id: 'south' as const }]
+	};
+	mocks.create.mockRejectedValueOnce(new Error('Fixture failed'));
+	await s.startCreate(form, true);
+	const deletion = pending<void>();
+	mocks.del.mockReturnValueOnce(deletion.promise);
+	const removing = s.discardCreate('rig-failed');
+	await s.startCreate({ ...form, projectId: undefined, seed: 2 }, true, 'rig-failed');
+	expect(mocks.create).toHaveBeenCalledOnce();
+	deletion.resolve();
+	await removing;
+	expect(s.creates).toHaveLength(0);
+	expect(s.ui.sheet).toBeNull();
+});
+
 for (const kind of ['create', 'move', 'setup'] as const) {
-	const key = 'studio-' + kind;
+	const key = kind === 'create' ? 'studio-create:rig-fixture' : 'studio-' + kind;
 	const spec =
 		kind === 'create'
 			? {
 					description: 'body',
 					name: 'Fixture',
+					projectId: 'rig-fixture',
 					seed: 1,
 					size: 48,
 					directions: [{ id: 'south' as const }]
@@ -320,7 +375,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 						seed: 1
 					};
 	const stateOf = (s: typeof import('../../src/studio/state.svelte.ts')) =>
-		kind === 'create' ? s.creating : kind === 'move' ? s.moving : s.settingUp;
+		kind === 'create' ? s.creates[0] : kind === 'move' ? s.moving : s.settingUp;
 	const start = (s: typeof import('../../src/studio/state.svelte.ts'), next = spec) =>
 		kind === 'create'
 			? s.startCreate(next as Parameters<typeof s.startCreate>[0])
@@ -336,6 +391,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 			records.set(id, structuredClone(value));
 		});
 		mocks.get.mockImplementation(async (_store, id) => structuredClone(records.get(id)));
+		mocks.all.mockImplementation(async () => [...records.values()]);
 		mocks[kind].mockRejectedValue(new Error('Known terminal failure'));
 		const first = await import('../../src/studio/state.svelte.ts');
 		await start(first);
@@ -378,12 +434,15 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 		`${kind} retains interrupted recovery for status %s`,
 		async (status) => {
 			const s = await import('../../src/studio/state.svelte.ts');
-			mocks.get.mockResolvedValue({
+			const record = {
+				id: key,
 				spec,
 				projectId: 'project',
 				requestText: s.REQUEST_TEXT,
 				...(status ? { status } : {})
-			});
+			};
+			mocks.get.mockResolvedValue(record);
+			mocks.all.mockResolvedValue([record]);
 			const wait = pending<string>();
 			mocks[kind].mockReturnValue(wait.promise);
 			await resume(s);
@@ -395,7 +454,9 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 	);
 
 	test(`${kind} saved with older request wording waits for review instead of resending`, async () => {
-		mocks.get.mockResolvedValue({ spec, projectId: 'project', status: 'running' });
+		const record = { id: key, spec, projectId: 'project', status: 'running' };
+		mocks.get.mockResolvedValue(record);
+		mocks.all.mockResolvedValue([record]);
 		const s = await import('../../src/studio/state.svelte.ts');
 		await resume(s);
 		expect(mocks[kind]).not.toHaveBeenCalled();
@@ -1819,20 +1880,27 @@ describe('move queue', () => {
 		await s.resumeCreate();
 		expect(mocks.create).not.toHaveBeenCalled();
 		expect(records.has('studio-create')).toBe(false);
-		expect(s.creating.spec).toBeNull();
+		expect(s.creates).toHaveLength(0);
 		expect(s.ui.toast).toBe('Removed 1 saved item made by an earlier preview version.');
 	});
 
-	test('a waiting Create after this tab resumed the closed tab create keeps that create and says why it did not start', async () => {
+	test('a waiting Create starts independently after takeover restores the closed tab create', async () => {
 		const records = storage();
 		mocks.create.mockReturnValue(new Promise(() => {}));
 		const { REQUEST_TEXT } = await import('../../src/studio/state.svelte.ts');
-		records.set('studio-create', {
-			id: 'studio-create',
+		records.set('studio-create:rig-a', {
+			id: 'studio-create:rig-a',
 			spec: specA,
 			status: 'running',
 			requestText: REQUEST_TEXT
 		});
+		records.set('studio-create:rig-c', {
+			id: 'studio-create:rig-c',
+			spec: { ...specA, name: 'C', projectId: 'rig-rerolled-c', seed: 3 },
+			status: 'running',
+			requestText: REQUEST_TEXT
+		});
+		mocks.all.mockImplementation(async () => [...records.values()]);
 		vi.resetModules();
 		const { app } = (await import('../../src/lib/app.svelte.ts')) as unknown as {
 			app: { key: string };
@@ -1849,16 +1917,38 @@ describe('move queue', () => {
 			let ran = false;
 			s.withKey(() => {
 				ran = true;
-				void s.startCreate(specB);
+				void s.startCreate(specB, true);
 			});
 			queue.role = 'leader';
 			notify({ role: 'leader' });
 			await vi.waitFor(() => expect(ran).toBe(true));
-			expect(mocks.create.mock.calls.map((c) => c[0].name)).toEqual(['A']);
-			expect([s.createBusy(), s.ui.toast]).toEqual([
-				true,
-				message('state.anotherCharacterIsStillBeingCreatedSo')
-			]);
+			await vi.waitFor(() =>
+				expect(mocks.create.mock.calls.map((c) => c[0].name)).toEqual(['A', 'C', 'B'])
+			);
+			expect(s.createPresentation.id).toBe(s.creates.find((run) => run.spec.name === 'B')?.id);
+			expect(records.get('studio-create:rig-a')?.spec.name).toBe('A');
+			expect(records.get('studio-create:rig-c')?.spec.projectId).toBe('rig-rerolled-c');
+		} finally {
+			queue.role = 'leader';
+		}
+	});
+
+	test('closing a Create form before the handoff notice cancels its waiting action', async () => {
+		const s = await import('../../src/studio/state.svelte.ts');
+		const { queue } = await import('../../src/lib/pixellab/queue.ts');
+		queue.role = 'follower';
+		try {
+			s.ui.sheet = 'create';
+			const create = vi.fn();
+			s.withKey(create);
+			expect(s.ui.waitingForTab).toBe(true);
+			s.ui.sheet = null;
+			s.ui.sheet = 'create';
+			expect(s.ui.waitingForTab).toBe(false);
+			queue.role = 'leader';
+			s.startupResumed();
+			expect(create).not.toHaveBeenCalled();
+			expect(s.createPresentation.id).toBe('');
 		} finally {
 			queue.role = 'leader';
 		}
@@ -1885,12 +1975,13 @@ describe('move queue', () => {
 			const s = await import('../../src/studio/state.svelte.ts');
 			const notify = mocks.subscribe.mock.calls.at(-1)![0] as (snapshot: { role: string }) => void;
 			const loaded = s.loadGens(); // Studio mount, still reading the drafts
-			records.set('studio-create', {
-				id: 'studio-create',
+			records.set('studio-create:rig-a', {
+				id: 'studio-create:rig-a',
 				spec: specA,
 				status: 'running',
 				requestText: REQUEST_TEXT
 			}); // the other tab's create
+			mocks.all.mockImplementation(async () => [...records.values()]);
 			let ran = 0;
 			s.withKey(() => {
 				ran++;
@@ -1907,8 +1998,10 @@ describe('move queue', () => {
 			await s.resumeSetup(); // Studio mount continues
 			s.startupResumed();
 			expect(ran).toBe(1);
-			await vi.waitFor(() => expect(mocks.create.mock.calls.map((c) => c[0].name)).toEqual(['A']));
-			expect(records.get('studio-create')?.spec.name).toBe('A');
+			await vi.waitFor(() =>
+				expect(mocks.create.mock.calls.map((c) => c[0].name)).toEqual(['A', 'B'])
+			);
+			expect(records.get('studio-create:rig-a')?.spec.name).toBe('A');
 		} finally {
 			queue.role = 'leader';
 		}

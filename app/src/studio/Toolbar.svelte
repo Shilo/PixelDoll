@@ -32,7 +32,7 @@
 		ui,
 		doc,
 		store,
-		creating,
+		creates,
 		settingUp,
 		gens,
 		openProject,
@@ -132,7 +132,7 @@
 	const busy = $derived(
 		active > 0 ||
 			gens.some((g) => g.phase === 'running') ||
-			(!!creating.spec && !creating.projectId && !creating.error) ||
+			creates.some((run) => run.running && !run.error) ||
 			(!!settingUp.spec && !settingUp.done && !settingUp.error)
 	);
 	const undoLabel = $derived(doc.undo.at(-1)?.label);

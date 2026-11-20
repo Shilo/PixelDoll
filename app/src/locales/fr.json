@@ -796,7 +796,6 @@
 			"other": "{label} et ses {count} objets supprimés"
 		},
 		"couldNotSaveFlowFailure": "{error} Impossible d’enregistrer cet échec sur cet appareil. Fermez cette opération avant de recharger.",
-		"anotherCharacterIsStillBeingCreatedSo": "Un autre personnage est encore en cours de création, le vôtre n’a donc pas démarré. Vos informations sont conservées.",
 		"useSavedFramesInTheTabThat": "Utilisez les images enregistrées dans l’onglet qui gère vos tâches PixelDoll.",
 		"anotherMoveIsStillBeingAddedSo": "Une autre animation est encore en cours d’ajout, celle-ci n’a donc pas démarré. Réessayez quand elle sera terminée.",
 		"moveNameAdded": "{moveName} ajoutée",

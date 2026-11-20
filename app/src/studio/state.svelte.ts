@@ -119,7 +119,7 @@ import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
-const hmrReloading = import.meta.hot?.data.flowReloading === true;
+let hmrReloading = import.meta.hot?.data.flowReloading === true;
 // The paid pipelines load on first use, outside the startup bundle (lib/lazy.ts).
 const createFlow = () => lazy(() => import('./create.ts'));
 const itemFlow = async () => (await lazy(() => import('./itemRoute.ts'))).itemRoute;
@@ -151,6 +151,7 @@ const setupFlow = () => lazy(() => import('./setup.ts'));
 export const prefetchFlows = () =>
 	Promise.allSettled([createFlow(), itemFlow(), itemRun(), setupFlow()]);
 import.meta.hot?.dispose((data) => {
+	hmrReloading = true;
 	data.flowReloading = true;
 	queue.disconnect();
 	window.location.reload();
@@ -212,6 +213,8 @@ const sizeNow = (): Size => {
 	return 'expanded';
 };
 
+let panel = $state<SheetId>(null);
+export const createPresentation = $state({ id: '' });
 export const ui = $state({
 	size: sizeNow(),
 	dpr: devicePixelRatio || 1,
@@ -222,7 +225,19 @@ export const ui = $state({
 	group: 'head', // a Wardrobe category: its slot key
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
-	sheet: null as SheetId,
+	get sheet(): SheetId {
+		return panel;
+	},
+	set sheet(next: SheetId) {
+		if (panel === 'create' && next !== 'activity' && afterTakeOver) cancelWaitingForTab();
+		const id = createPresentation.id;
+		createPresentation.id = '';
+		if (id) {
+			const attempt = creates.find((run) => run.id === id);
+			if (attempt?.projectId) removeCreate(attempt);
+		}
+		panel = next;
+	},
 	slotTarget: null as string | null,
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
@@ -1069,7 +1084,8 @@ function generationSettled() {
 	return (
 		!gens.some((g) => g.phase === 'running') &&
 		!settling.size &&
-		!createRunning &&
+		!createRestoring &&
+		!creates.some((run) => run.running) &&
 		!moveRunning &&
 		!setupRunning &&
 		!takeOverRunning &&
@@ -1078,7 +1094,7 @@ function generationSettled() {
 		!runningGens.size
 	);
 }
-const heldCreate = () => creating.spec && !creating.projectId;
+const heldCreate = () => creates.some((run) => !run.projectId);
 const heldMove = () => moving.spec && !moving.done;
 const heldSetup = () => settingUp.spec && !settingUp.done;
 /** Failed flows hold queue leadership so a waiting action in another tab cannot replace them. */
@@ -1124,7 +1140,7 @@ function updateBlocker(): LocalizedError | undefined {
 		);
 	if (
 		!generationSettled() ||
-		(heldCreate() && !creating.error) ||
+		creates.some((run) => !run.projectId && !run.error) ||
 		(heldMove() && !moving.error && !moving.repairReview) ||
 		moving.resolvingRepair ||
 		(moving.queued.length && !heldMove()) ||
@@ -1143,7 +1159,12 @@ export function updateBlocked(): Message | '' {
 async function verifyHaltedFlows() {
 	const snapshots = () =>
 		[
-			{ key: CREATE_KEY, held: heldCreate(), flow: creating, fallback: STOPPED },
+			...creates.map((run) => ({
+				key: createDraftKey(run.id),
+				held: !run.projectId,
+				flow: run,
+				fallback: STOPPED
+			})),
 			{ key: MOVE_KEY, held: heldMove(), flow: moving, fallback: STOPPED },
 			{ key: SETUP_KEY, held: heldSetup(), flow: settingUp, fallback: SETUP_STOPPED }
 		]
@@ -1239,15 +1260,8 @@ export async function removeProject(id = doc.id): Promise<void> {
 	store.results = Object.fromEntries(
 		Object.entries(store.results).filter(([draftId]) => !deletedDrafts.has(draftId))
 	);
-	if (creating.projectId === id)
-		Object.assign(creating, {
-			spec: null,
-			projectId: '',
-			progress: null,
-			error: '',
-			warnings: [],
-			views: []
-		});
+	const attempt = creates.find((run) => run.projectId === id);
+	if (attempt) removeCreate(attempt);
 	if (moving.projectId === id) await dismissMove();
 	await refreshProjects();
 	if (doc.id === id && request === openRequest) {
@@ -2469,10 +2483,10 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 	const drafts = [...gens.map((g) => g.draft), ...(await loadDrafts())];
 	const refs = new Set(drafts.flatMap((d) => d.calls.flatMap((c) => [c.recId, ...c.old])));
 	const flow = !!(
-		creating.spec ||
+		heldCreate() ||
 		moving.spec ||
 		settingUp.spec ||
-		(await db.get('projects', CREATE_KEY)) ||
+		(await readCreateDrafts()).length ||
 		(await db.get('projects', MOVE_KEY)) ||
 		(await db.get('projects', SETUP_KEY))
 	);
@@ -2480,10 +2494,11 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 	const jobs = await queue.clearFinished(
 		(r) =>
 			refs.has(r.id) ||
-			(flow && FLOW_TAGS.includes(r.tag ?? '')) ||
+			((flow || heldCreate()) && FLOW_TAGS.includes(r.tag ?? '')) ||
 			(r.finishedAt ?? r.createdAt) > cutoff
 	);
-	const idle = sweep && !flow && queue.idle() && !runningGens.size && !settling.size;
+	const idle =
+		sweep && !flow && !heldCreate() && queue.idle() && !runningGens.size && !settling.size;
 	return { jobs, blobs: idle ? await db.gcBlobs() : 0 };
 }
 
@@ -2787,105 +2802,157 @@ function withActivityScope<T extends { seed: number; activityScope?: string }>(
 	};
 }
 /** `views`: the standing views, shown while the rest of creation finishes (not persisted: a resume re-reads the cached draw). */
-export const creating = $state({
-	spec: null as CreateSpec | null,
-	progress: null as Progress | null,
-	error: '' as string | LocalizedError,
-	projectId: '',
-	warnings: [] as string[],
-	views: [] as { id: DirectionName; img: Img }[]
-});
-const CREATE_KEY = 'studio-create';
-let createRunning = false,
-	createRevision = 0;
-/** A create (perhaps one resumed from a closed tab) runs here, so another cannot start yet. */
-export const createBusy = () => createRunning;
-export async function startCreate(spec: CreateSpec) {
-	if (hmrReloading) return;
-	if (createRunning) {
-		toast(message('state.anotherCharacterIsStillBeingCreatedSo'), { tone: 'warning' });
-		return;
-	}
-	createRunning = true;
-	const revision = ++createRevision,
-		current = () => revision === createRevision && createRunning;
-	let failed = false;
-	spec = withActivityScope(
-		{ ...spec, projectId: spec.projectId ?? `rig-${crypto.randomUUID()}` },
+interface CreateAttempt {
+	id: string;
+	spec: CreateSpec;
+	running: boolean;
+	projectId: string;
+	progress: Progress | null;
+	error: string | LocalizedError;
+	views: { id: DirectionName; img: Img }[];
+}
+export const creates = $state<CreateAttempt[]>([]);
+const createDraftKey = (id: string) => `${db.CREATE_DRAFT_PREFIX}${id}`;
+async function readCreateDrafts() {
+	return (await db.all<FlowDraft<CreateSpec> & { id: string }>('projects')).filter(
+		(record) => !!record?.spec?.projectId && record.id?.startsWith(db.CREATE_DRAFT_PREFIX)
+	);
+}
+function removeCreate(run: CreateAttempt) {
+	const index = creates.indexOf(run);
+	if (index >= 0) creates.splice(index, 1);
+	if (createPresentation.id === run.id) createPresentation.id = '';
+}
+function addCreate(id: string, spec: CreateSpec) {
+	creates.push({
+		id,
+		spec,
+		running: false,
+		projectId: '',
+		progress: null,
+		error: '',
+		views: []
+	});
+	return creates[creates.length - 1];
+}
+export function reviewFailedCreate(id: string) {
+	if (!creates.some((run) => run.id === id && run.error && !run.running)) return;
+	ui.sheet = 'create';
+	createPresentation.id = id;
+}
+const canDriveCreate = () => !hmrReloading && queue.role !== 'follower';
+export async function startCreate(input: CreateSpec, present = false, attemptId?: string) {
+	if (!canDriveCreate()) return;
+	const spec = withActivityScope(
+		{ ...input, projectId: input.projectId ?? `rig-${crypto.randomUUID()}` },
 		'create'
-	); // persisted before paid work
-	creating.spec = spec;
-	creating.error = '';
-	creating.projectId = '';
-	creating.progress = null;
-	creating.views = [];
+	);
+	const id = attemptId ?? spec.projectId;
+	const run = creates.find((attempt) => attempt.id === id) ?? addCreate(id, spec);
+	if (run.running || run.projectId) return;
+	if (present) {
+		ui.sheet = 'create';
+		createPresentation.id = run.id;
+	}
+	run.running = true;
+	const key = createDraftKey(run.id);
+	let active = true;
+	const current = () => canDriveCreate() && active;
+	let callbacksDone = false;
+	Object.assign(run, { spec, error: '', progress: null, views: [] });
 	try {
-		await db.put('projects', CREATE_KEY, {
-			id: CREATE_KEY,
+		await db.put('projects', key, {
+			id: key,
 			spec,
 			status: 'running',
 			requestText: REQUEST_TEXT
 		});
-		const id = await (
-			await createFlow()
-		).createCharacter(
+		const flow = await createFlow();
+		if (!current()) return;
+		const id = await flow.createCharacter(
 			spec,
-			(p) => {
-				if (current() && !failed) creating.progress = p;
+			(progress) => {
+				if (current() && !callbacksDone) run.progress = progress;
 			},
-			(v) => {
-				if (current() && !failed) creating.views = v;
+			(views) => {
+				if (current() && !callbacksDone) run.views = views;
 			}
 		);
 		if (!current()) return;
-		creating.projectId = id;
-		const rec = await db.get<{ rigQa?: { warnings?: string[] } }>('projects', id);
+		callbacksDone = true;
+		const acknowledgments = await Promise.allSettled([
+			db.del('projects', key),
+			refreshAfterCreate()
+		]);
 		if (!current()) return;
-		creating.warnings = rec?.rigQa?.warnings ?? [];
-		await db.del('projects', CREATE_KEY);
-		if (current()) await refreshProjects();
+		for (const acknowledgment of acknowledgments)
+			if (acknowledgment.status === 'rejected')
+				toast(
+					message('state.couldNotSaveReason', { reason: errorMessage(acknowledgment.reason) }),
+					{
+						tone: 'danger'
+					}
+				);
+		if (createPresentation.id === run.id) run.projectId = id;
+		else removeCreate(run);
 	} catch (e) {
 		if (current()) {
-			failed = true;
-			creating.error = e instanceof LocalizedError ? e : errorText(e);
+			callbacksDone = true;
+			run.error = e instanceof LocalizedError ? e : errorText(e);
 			const error = await persistFlowFailure(
-				CREATE_KEY,
-				{ spec, progress: $state.snapshot(creating.progress) },
+				key,
+				{ spec, progress: $state.snapshot(run.progress) },
 				e
 			);
-			if (current()) creating.error = error;
+			if (current()) run.error = error;
 		}
 	} finally {
-		if (revision === createRevision) createRunning = false;
+		active = false;
+		run.running = false;
 	}
 }
-let createResumed = false;
-export async function resumeCreate() {
-	if (hmrReloading || createResumed || queue.role === 'follower') return; // the leader resumes it (takeOver)
-	createResumed = true;
-	const r = await db.get<FlowDraft<CreateSpec>>('projects', CREATE_KEY).catch(() => undefined);
-	if (!r?.spec || (creating.spec && !creating.projectId)) return; // a finished create here never hides another tab's
-	if (halted(r))
-		Object.assign(creating, {
-			spec: r.spec,
-			progress: r.progress ?? null,
-			error: restoredFlowError(r, STOPPED),
-			projectId: '',
-			warnings: [],
-			views: []
-		});
-	else void startCreate(r.spec);
+let createRefresh = Promise.resolve(true);
+function refreshAfterCreate() {
+	const refresh = createRefresh.then(refreshProjects);
+	createRefresh = refresh.catch(() => false);
+	return refresh;
 }
-export async function cancelCreate() {
-	if (createRunning) return;
-	createRevision++;
-	creating.spec = null;
-	creating.progress = null;
-	creating.error = '';
-	creating.projectId = '';
-	creating.warnings = [];
-	creating.views = [];
-	await db.del('projects', CREATE_KEY);
+let createResumed = false,
+	createRestoring = false;
+export async function resumeCreate() {
+	if (!canDriveCreate() || createResumed || createRestoring) return;
+	createRestoring = true;
+	try {
+		const records = await readCreateDrafts();
+		if (!canDriveCreate()) return;
+		createResumed = true;
+		for (const record of records) {
+			const id = record.id.slice(db.CREATE_DRAFT_PREFIX.length);
+			if (creates.some((run) => run.id === id)) continue;
+			if (!halted(record)) void startCreate(record.spec, false, id);
+			else {
+				const run = addCreate(id, record.spec);
+				run.progress = record.progress ?? null;
+				run.error = restoredFlowError(record, STOPPED);
+			}
+		}
+	} finally {
+		createRestoring = false;
+	}
+}
+export async function discardCreate(id: string) {
+	const run = creates.find((attempt) => attempt.id === id);
+	if (!canDriveCreate() || !run || !run.error || run.running) return;
+	run.running = true;
+	try {
+		await db.del('projects', createDraftKey(id));
+		if (createPresentation.id === id) ui.sheet = null;
+		removeCreate(run);
+	} catch (error) {
+		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), { tone: 'danger' });
+	} finally {
+		run.running = false;
+	}
 }
 
 // ---------- add a move (one at a time, FIFO; resumable like create) ----------

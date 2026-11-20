@@ -3136,7 +3136,7 @@ async function busyFirstTab(
 						t = db.transaction('projects', 'readwrite');
 					t.objectStore('projects').put(
 						{
-							id: 'studio-create',
+							id: 'studio-create:rig-failed-x',
 							status: 'failed',
 							error: 'Saved terminal failure',
 							spec: {
@@ -3148,7 +3148,7 @@ async function busyFirstTab(
 								projectId: 'rig-failed-x'
 							}
 						},
-						'studio-create'
+						'studio-create:rig-failed-x'
 					);
 					t.oncomplete = () => {
 						db.close();
@@ -3194,15 +3194,18 @@ test('a click waiting on a busy first tab continues as soon as that tab is idle,
 	await expect(second.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toHaveCount(
 		0
 	);
-	await page.locator('.project-btn').click();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
-		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.locator('#experience-options')
+		.getByRole('button', { name: /Activity/ })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
+	await page
+		.getByRole('dialog', { name: 'Activity', exact: true })
+		.getByRole('button', { name: /Open New character.*Failed/ })
+		.click();
 	await page
 		.getByRole('dialog', { name: 'New character', exact: true })
-		.getByRole('button', { name: 'Start over', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
 		.click();
 	await expect(second.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toBeVisible({
 		timeout: 15000
@@ -3585,45 +3588,51 @@ test('interrupted character specifications retain their own estimates', async ({
 		// Form drafts are memory-only. A valid current form must not change a persisted older request.
 		formDrafts.character = newCharacterDraft();
 		setPreset(formDrafts.character, 'unique');
-		const s = (
-			window as unknown as {
-				__studio: { ui: { sheet: string }; creating: { spec: any; error: string } };
-			}
-		).__studio;
+		const pathToState = '/src/studio/state.svelte.ts';
+		const s = (await import(pathToState)) as typeof import('../../src/studio/state.svelte.ts');
 		// A stored interrupted run keeps its own direction plan and size; the new form's defaults must not alter its pricing.
-		s.creating.spec = {
+		const spec = {
 			description: 'Interrupted run',
 			name: 'Interrupted run',
 			seed: 123,
 			size: 48,
-			directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west' }]
+			directions: (['south', 'east', 'north', 'west'] as const).map((id) => ({ id }))
 		};
-		s.creating.error = 'Stored interruption';
-		s.ui.sheet = 'create';
+		s.creates.push({
+			id: 'rig-cost-fixture',
+			spec,
+			error: 'Stored interruption',
+			running: false,
+			projectId: '',
+			progress: null,
+			views: []
+		});
+		s.reviewFailedCreate('rig-cost-fixture');
 	});
 	const create = page.getByRole('dialog', { name: 'New character', exact: true });
 	// Creation is priced by the draw (body size) plus a standing-joint fallback per direction; it makes no animation.
 	await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('2–5 gens');
-	await page.evaluate(() => {
-		const s = (
-			window as unknown as { __studio: { creating: { spec: { directions: { id: string }[] } } } }
-		).__studio;
-		s.creating.spec.directions = [
-			'south',
-			'south-east',
-			'east',
-			'north-east',
-			'north',
-			'north-west',
-			'west',
-			'south-west'
-		].map((id) => ({ id }));
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+		s.creates[0].spec.directions = (
+			[
+				'south',
+				'south-east',
+				'east',
+				'north-east',
+				'north',
+				'north-west',
+				'west',
+				'south-west'
+			] as const
+		).map((id) => ({ id }));
 	});
 	await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('2–5 gens');
-	await page.evaluate(() => {
-		const s = (window as unknown as { __studio: { creating: { spec: { size: number } } } })
-			.__studio;
-		s.creating.spec.size = 128; // the stored run, not the 64 px form draft, sets the price
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+		s.creates[0].spec.size = 128; // the stored run, not the 64 px form draft, sets the price
 	});
 	await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('3–5 gens');
 	expect(calls).toEqual([]);
@@ -3660,34 +3669,34 @@ test('character Try again preserves the direction plan and allocates a fresh pub
 	);
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await page.evaluate(async () => {
-		const s = (
-			window as unknown as {
-				__studio: {
-					loadGens: () => Promise<void>;
-					creating: { spec: any; error: string };
-					ui: { sheet: string };
-				};
-				originalCreatePut?: IDBObjectStore['put'];
-			}
-		).__studio;
+		const path = '/src/studio/state.svelte.ts';
+		const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
 		await s.loadGens();
 		const put = IDBObjectStore.prototype.put;
 		(window as unknown as { originalCreatePut: IDBObjectStore['put'] }).originalCreatePut = put;
 		IDBObjectStore.prototype.put = function (value, key) {
-			if (key === 'studio-create')
+			if (key === 'studio-create:prior-attempt-identity')
 				throw new Error('Synthetic draft persistence stopped before any paid request');
 			return put.call(this, value, key);
 		};
-		s.creating.spec = {
+		const spec = {
 			projectId: 'prior-attempt-identity',
 			description: 'Retry body',
 			name: 'Retry fixture',
 			size: 48,
-			directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west' }],
+			directions: (['south', 'east', 'north', 'west'] as const).map((id) => ({ id })),
 			seed: 0
 		};
-		s.creating.error = 'Prior interrupted attempt';
-		s.ui.sheet = 'create';
+		s.creates.push({
+			id: 'prior-attempt-identity',
+			spec,
+			error: 'Prior interrupted attempt',
+			running: false,
+			projectId: '',
+			progress: null,
+			views: []
+		});
+		s.reviewFailedCreate('prior-attempt-identity');
 	});
 	try {
 		await page
@@ -3701,20 +3710,14 @@ test('character Try again preserves the direction plan and allocates a fresh pub
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toContainText(
 			'Synthetic draft persistence stopped before any paid request'
 		);
-		const retry = await page.evaluate(() => {
-			const s = (
-				window as unknown as {
-					__studio: {
-						creating: {
-							spec: { projectId?: string; seed: number; directions: { id: string }[] };
-						};
-					};
-				}
-			).__studio;
+		const retry = await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts';
+			const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			const { spec } = s.creates[0];
 			return {
-				projectId: s.creating.spec.projectId,
-				seed: s.creating.spec.seed,
-				directions: s.creating.spec.directions
+				projectId: spec.projectId,
+				seed: spec.seed,
+				directions: spec.directions
 			};
 		});
 		expect(retry.projectId).toBeTruthy();
@@ -4511,9 +4514,9 @@ test('reload restores failed create, move and setup for review without paid subm
 			error: 'Saved terminal failure; inspect Activity',
 			progress: { step: 'animate', done: 4, total: 69, recIds: [] }
 		};
-		await db.put('projects', 'studio-create', {
+		await db.put('projects', 'studio-create:rig-failed-browser-fixture', {
 			...common,
-			id: 'studio-create',
+			id: 'studio-create:rig-failed-browser-fixture',
 			spec: {
 				name: 'Failed character',
 				description: 'body',
@@ -4548,7 +4551,7 @@ test('reload restores failed create, move and setup for review without paid subm
 			page.evaluate(async () => {
 				const path = '/src/studio/state.svelte.ts',
 					s = await import(/* @vite-ignore */ path);
-				return [s.creating.error, s.moving.error, s.settingUp.error];
+				return [s.creates[0]?.error, s.moving.error, s.settingUp.error];
 			})
 		)
 		.toEqual(Array(3).fill('Saved terminal failure; inspect Activity'));
@@ -4557,8 +4560,11 @@ test('reload restores failed create, move and setup for review without paid subm
 		['move', 'Add a move'],
 		['setup', 'Set up character']
 	] as const) {
-		await page.evaluate((sheet) => {
-			(window as unknown as { __studio: { ui: { sheet: string } } }).__studio.ui.sheet = sheet;
+		await page.evaluate(async (sheet) => {
+			const path = '/src/studio/state.svelte.ts';
+			const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			if (sheet === 'create') s.reviewFailedCreate('rig-failed-browser-fixture');
+			else s.ui.sheet = sheet;
 		}, sheet);
 		const dialog = page.getByRole('dialog', { name, exact: true });
 		await expect(dialog).toContainText('Saved terminal failure; inspect Activity');

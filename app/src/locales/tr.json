@@ -799,7 +799,6 @@
 			"other": "{label} ve içindeki {count} eşya silindi"
 		},
 		"couldNotSaveFlowFailure": "{error} Bu hata bu cihaza kaydedilemedi. Sayfayı yeniden yüklemeden önce bu işlemi kapatın.",
-		"anotherCharacterIsStillBeingCreatedSo": "Başka bir karakter hâlâ oluşturulduğundan yeni karakteriniz başlatılmadı. Girdiğiniz ayrıntılar korundu.",
 		"useSavedFramesInTheTabThat": "Kayıtlı kareleri PixelDoll işlerinizi yöneten sekmede kullanın.",
 		"anotherMoveIsStillBeingAddedSo": "Başka bir animasyon hâlâ ekleniyor, bu nedenle bu animasyon başlatılmadı. Bittiğinde tekrar deneyin.",
 		"moveNameAdded": "{moveName} eklendi",

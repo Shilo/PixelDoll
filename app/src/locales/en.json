@@ -793,7 +793,6 @@
 			"other": "Deleted {label} and its {count} items"
 		},
 		"couldNotSaveFlowFailure": "{error} Could not save this failure on this device. Dismiss this operation before reloading.",
-		"anotherCharacterIsStillBeingCreatedSo": "Another character is still being created, so yours did not start. Your details are kept.",
 		"useSavedFramesInTheTabThat": "Use saved frames in the tab that is managing your PixelDoll jobs.",
 		"anotherMoveIsStillBeingAddedSo": "Another move is still being added, so this one did not start. Try again when it finishes.",
 		"moveNameAdded": "{moveName} added",
