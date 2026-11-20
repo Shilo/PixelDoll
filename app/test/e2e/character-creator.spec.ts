@@ -1648,10 +1648,11 @@ test('switching the model keeps Advanced open and base clothing shows both choic
 	const nothingWorn = clothing.getByRole('radio', { name: 'Nothing worn', exact: true });
 	await expect(underwear).toBeChecked();
 	await expect(nothingWorn).toBeVisible();
+	const kind = sheet.getByRole('combobox', { name: 'Kind', exact: true });
+	expect((await clothing.boundingBox())!.height).toBeCloseTo((await kind.boundingBox())!.height, 0);
 	for (const radio of [underwear, nothingWorn]) {
 		const target = (await radio.boundingBox())!;
 		expect(target.width).toBeGreaterThanOrEqual(48);
-		expect(target.height).toBeGreaterThanOrEqual(48);
 	}
 	await nothingWorn.click();
 	await expect(nothingWorn).toBeChecked();
