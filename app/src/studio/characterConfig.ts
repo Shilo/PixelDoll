@@ -2,7 +2,7 @@ import { DIRECTIONS, type DirectionName, type RigDirection, type Rig } from '../
 import { mirrorPartner } from '../lib/rig/mirror.ts';
 export { PAIRS } from '../lib/rig/mirror.ts';
 import { BASE_BODY, UNDERWEAR_BODY, isBaseBody } from './model.ts';
-import { LocalizedError } from '../lib/message.ts';
+import { LocalizedError, message, type Message } from '../lib/message.ts';
 import {
 	referenceSizeError,
 	type ImageReference,
@@ -10,6 +10,11 @@ import {
 } from '../lib/image/reference.ts';
 
 export const BODY_SIZES = [48, 64, 96, 128] as const;
+export const CREATE_STEPS: { id: string; label: Message }[] = [
+	{ id: 'draw', label: message('create.steps.draw') },
+	{ id: 'rest', label: message('create.steps.rest') },
+	{ id: 'save', label: message('create.steps.save') }
+];
 export const TRAITS = {
 	kind: {
 		label: 'Kind',

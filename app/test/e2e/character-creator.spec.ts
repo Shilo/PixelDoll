@@ -1263,10 +1263,28 @@ function offlineCreation(config: CreationCase) {
 		await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toHaveCount(
 			0
 		);
+		await sheet.getByRole('button', { name: 'Hide', exact: true }).click();
+		await page.getByRole('button', { name: 'Characters', exact: true }).click();
+		const library = page.getByRole('complementary', { name: 'Your characters' });
+		const pending = library.getByRole('button', { name: /^Offline creator test/ });
+		await expect(pending).toContainText(`Frame ${config.frame}×${config.frame} px`);
+		await expect(pending).toContainText(`${config.rows} directions`);
+		const progress = library.getByRole('progressbar', { name: /Offline creator test/ });
+		await expect(progress).toHaveAttribute('aria-valuenow', '1');
+		await expect(progress).toHaveAttribute('aria-valuetext', 'Setting up the skeleton');
+		await expect(pending.locator('progress')).toBeVisible();
+		await pending.click();
+		await expect(sheet.locator('.review-grid figure')).toHaveCount(config.rows);
 		release();
 		await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible(
 			{ timeout: 150_000 }
 		);
+		await expect(page.locator('.cast-library .pending-character')).toHaveCount(0);
+		await expect(
+			page
+				.locator('.cast-library .character-row[aria-pressed]')
+				.filter({ hasText: 'Offline creator test' })
+		).toHaveCount(1);
 		const preview = await sheet
 			.locator('.review-grid canvas')
 			.first()
