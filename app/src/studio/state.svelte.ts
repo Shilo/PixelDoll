@@ -215,6 +215,7 @@ export type SheetId =
 	| 'details'
 	| 'setup'
 	| 'workspaceExport'
+	| 'settings'
 	| 'slots';
 const sizeNow = (): Size => {
 	const w = innerWidth,
@@ -354,10 +355,13 @@ export function applyTheme() {
 	document.documentElement.dataset.theme = ui.theme;
 	document.documentElement.style.colorScheme = ui.theme;
 }
-export function toggleTheme() {
-	ui.theme = ui.theme === 'dark' ? 'light' : 'dark';
+export function setTheme(theme: typeof ui.theme) {
+	ui.theme = theme;
 	lsSet(K.theme, ui.theme);
 	applyTheme();
+}
+export function toggleTheme() {
+	setTheme(ui.theme === 'dark' ? 'light' : 'dark');
 }
 export function dismissWelcome() {
 	ui.welcome = false;

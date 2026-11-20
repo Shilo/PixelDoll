@@ -1,4 +1,14 @@
 {
+	"settings": {
+		"wardrobe": "공유 아이템",
+		"exportDefaults": "내보내기 기본값",
+		"connection": "PixelLab 연결",
+		"general": "모양 및 언어",
+		"theme": "테마",
+		"search": "설정 검색",
+		"noResults": "검색과 일치하는 설정이 없어요.",
+		"all": "모든 설정"
+	},
 	"common": {
 		"loadFailed": "PixelDoll의 일부를 불러오지 못했어요. 페이지를 새로고침하고 다시 시도하세요.",
 		"advanced": "고급",
@@ -538,7 +548,7 @@
 		"setUpCharacter": "캐릭터 설정…",
 		"connectPixelLab2": "PixelLab 연결…",
 		"characterSelection": "캐릭터 선택",
-		"wardrobeSettings": "옷장 설정",
+		"wardrobeSettings": "옷장 표시",
 		"ownItemsOnly": "내 아이템만",
 		"workspace": "워크스페이스…",
 		"workspaceActions": "워크스페이스 작업"
@@ -838,7 +848,6 @@
 	"export": {
 		"sheet": {
 			"title": "내보내기",
-			"settingsTitle": "내보내기 설정",
 			"back": "뒤로",
 			"settings": "설정",
 			"close": "내보내기 닫기",

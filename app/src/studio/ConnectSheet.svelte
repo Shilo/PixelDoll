@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { closeSettingsAccount } from './settingsNavigation.svelte.ts';
 	import { t, type WhisperKey } from 'svelte-whisper';
 	import { onDestroy, tick } from 'svelte';
 	import { app, setKey, replaceKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts';
@@ -70,7 +71,10 @@
 				tierDecision(app.balance, { required: minimumTier }).kind === 'required');
 		if (tierDecision(app.balance, { required: minimumTier }).kind === 'required')
 			clearPendingConnection();
-		else if (!limitedAccess) connected();
+		else if (!limitedAccess) finishConnection();
+	}
+	function finishConnection() {
+		if (!closeSettingsAccount()) connected();
 	}
 	async function confirmReplacement(nextKey: string, save: boolean) {
 		const isCurrent = () => !closed && ui.sheet === 'connect' && replacing;
@@ -136,7 +140,9 @@
 <Sheet
 	{title}
 	cancel={showForm ? 'common.cancel' : 'common.done'}
-	onclose={() => (ui.sheet = null)}
+	onclose={() => {
+		if (!closeSettingsAccount()) ui.sheet = null;
+	}}
 >
 	{#if !showForm}
 		<PixelLabUsage label={t('usage.generations')}>
@@ -180,7 +186,7 @@
 					rel="noreferrer">{t('connectSheet.viewPixelLabPlans')} <ExternalLink size={12} /></a
 				>
 				{#if limitedAccess}
-					<button class="bu-action btn sm" data-variant="outline" onclick={connected}
+					<button class="bu-action btn sm" data-variant="outline" onclick={finishConnection}
 						>{t('connectSheet.continueWithLimitedAccess')}</button
 					>
 				{/if}

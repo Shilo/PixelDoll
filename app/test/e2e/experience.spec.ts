@@ -129,7 +129,13 @@ for (const theme of ['dark', 'light'] as const)
 			}
 			if (theme === 'light') {
 				await page.getByRole('button', { name: 'More options', exact: true }).click();
-				await page.getByRole('button', { name: 'Light mode', exact: true }).click();
+				await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+				await page.getByRole('button', { name: 'Appearance and language', exact: true }).click();
+				await page.getByRole('radio', { name: 'Light mode', exact: true }).check();
+				await page
+					.getByRole('dialog', { name: 'Settings' })
+					.getByRole('button', { name: 'Close', exact: true })
+					.click();
 			}
 			await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
 			const caption = (await page.locator('.selected-name-text').boundingBox())!;

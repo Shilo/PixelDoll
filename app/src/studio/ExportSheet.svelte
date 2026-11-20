@@ -4,7 +4,11 @@
 	import { assetUrl } from '../lib/assets.ts';
 	// Export (M5): one engine at a time; the zip is built when the sheet opens so the button can name its size.
 	import Sheet from './Sheet.svelte';
+	import SettingsContent from './SettingsContent.svelte';
+	import SettingsHeader from './SettingsHeader.svelte';
+	import { openSettings, settingsNavigation } from './settingsNavigation.svelte.ts';
 	import { tick, untrack } from 'svelte';
+	import { exportFormatNames } from './exportFormatNames.ts';
 	import { buildExport } from '../lib/export/build.ts';
 	import { characterZipId, editableData, saveZip } from './download.svelte.ts';
 	import { ROWS as RPG_ROWS, walkMove } from '../lib/export/rpgmaker.ts';
@@ -46,6 +50,15 @@
 	import { displayDirectionInSentence } from './displayDirection.ts';
 	import { slotLabelMessage } from './slots.ts';
 	import RichMessage from './RichMessage.svelte';
+	let {
+		embedded = false,
+		onSaving,
+		focusEntry
+	}: {
+		embedded?: boolean;
+		onSaving?: (saving: boolean) => void;
+		focusEntry?: string;
+	} = $props();
 
 	type Target = { id: Engine; name: string; sub: WhisperKey; detail: WhisperKey };
 	// One RPG Maker card split in two: its body only selects (Standard, or the version already chosen), and its version button
@@ -53,7 +66,7 @@
 	// format. Selecting never opens the menu by itself, so arrow keys across the cards stay plain radio behavior.
 	const RPG_XP = {
 		id: 'rpgmakerxp',
-		name: 'RPG Maker',
+		name: exportFormatNames.rpgmakerxp,
 		sub: 'export.target.rpgmaker.sub',
 		detail: 'export.target.rpgmakerxp.detail'
 	} satisfies Target;
@@ -87,31 +100,31 @@
 			targets: [
 				{
 					id: 'godot',
-					name: 'Godot',
+					name: exportFormatNames.godot,
 					sub: 'export.target.godot.sub',
 					detail: 'export.target.godot.detail'
 				},
 				{
 					id: 'unity',
-					name: 'Unity',
+					name: exportFormatNames.unity,
 					sub: 'export.target.unity.sub',
 					detail: 'export.target.unity.detail'
 				},
 				{
 					id: 'phaser',
-					name: 'Phaser',
+					name: exportFormatNames.phaser,
 					sub: 'export.target.phaser.sub',
 					detail: 'export.target.phaser.detail'
 				},
 				{
 					id: 'gdevelop',
-					name: 'GDevelop',
+					name: exportFormatNames.gdevelop,
 					sub: 'export.target.gdevelop.sub',
 					detail: 'export.target.gdevelop.detail'
 				},
 				{
 					id: 'rpgmaker',
-					name: 'RPG Maker',
+					name: exportFormatNames.rpgmaker,
 					sub: 'export.target.rpgmaker.sub',
 					detail: 'export.target.rpgmaker.detail'
 				}
@@ -123,13 +136,13 @@
 			targets: [
 				{
 					id: 'aseprite',
-					name: 'Aseprite',
+					name: exportFormatNames.aseprite,
 					sub: 'export.target.aseprite.sub',
 					detail: 'export.target.aseprite.detail'
 				},
 				{
 					id: 'generic',
-					name: 'PNG + JSON',
+					name: exportFormatNames.generic,
 					sub: 'export.target.generic.sub',
 					detail: 'export.target.generic.detail'
 				}
@@ -144,7 +157,11 @@
 	const selected = $derived(
 		engine === 'rpgmakerxp' ? RPG_XP : ENGINES.find((target) => target.id === engine)
 	);
-	let settings = $state(false);
+	const settings = $derived(ui.sheet === 'settings');
+	const returningToExport = $derived(settings && settingsNavigation.fromExport);
+	const viewingPreferences = $derived(
+		embedded || !settings || settingsNavigation.section === 'export'
+	);
 	let pendingWrites = $state(0);
 	const saving = $derived(pendingWrites > 0);
 	let writeSequence = 0,
@@ -157,7 +174,14 @@
 	let loadError = $state<Message | null>(null);
 	let invalidPreferences = $state(false);
 	let content = $state<HTMLDivElement>();
-	let navigation: HTMLButtonElement;
+	$effect(() => {
+		if (!ready || !focusEntry || !document.activeElement?.matches('.settings-heading')) return;
+		const row = content?.querySelector<HTMLElement>(`[data-setting="${focusEntry}"]`);
+		(
+			row?.querySelector<HTMLElement>('input:not(:disabled), select:not(:disabled)') ?? row
+		)?.focus();
+	});
+	let navigation = $state<HTMLButtonElement>();
 	let result = $state.raw<{
 		zip: Uint8Array | null;
 		fileId?: string;
@@ -259,6 +283,7 @@
 		return translated ? displayNote(translated) : warning;
 	}
 	$effect(() => {
+		if (!viewingPreferences) return;
 		const openedId = doc.id;
 		let active = true,
 			request = 0;
@@ -321,10 +346,11 @@
 		};
 	});
 	async function navigate() {
-		settings = !settings;
+		if (returningToExport) ui.sheet = 'export';
+		else openSettings('export');
 		await tick();
 		content?.closest('.sheet-body')?.scrollTo(0, 0);
-		navigation.focus();
+		navigation?.focus();
 	}
 	async function changeSetting(input: HTMLInputElement, change: ExportSettingChange) {
 		return persistSettings(
@@ -347,7 +373,7 @@
 			(document.activeElement === document.body ||
 				document.activeElement === content?.closest('dialog'))
 		)
-			navigation.focus({ preventScroll: true });
+			(navigation ?? content)?.focus({ preventScroll: true });
 	}
 	async function persistSettings(
 		commit: () => Promise<ExportSettings>,
@@ -358,6 +384,7 @@
 			hadFocus = !!input && document.activeElement === input,
 			sequence = ++writeSequence;
 		pendingWrites++;
+		onSaving?.(true);
 		if (optimisticEngine) formatChoice = optimisticEngine;
 		saveError = null;
 		try {
@@ -373,6 +400,7 @@
 			if (sequence === writeSequence) saveError = message('export.settings.saveFailed');
 		} finally {
 			pendingWrites--;
+			onSaving?.(saving);
 			if (!saving) {
 				formatChoice = null;
 				if (refreshAgain) {
@@ -446,12 +474,13 @@
 	});
 
 	$effect(() => {
+		if (settings || embedded) return;
 		void attempt;
 		const e = engine,
 			b = baked,
 			p = store.project;
 		const rec = store.exportRecord,
-			settings = preferences;
+			exportPreferences = preferences;
 		if (!p || !ready || saving) return;
 		busy = true;
 		result = null;
@@ -482,7 +511,7 @@
 					engine: e,
 					baked: b,
 					look,
-					settings: settings!,
+					settings: exportPreferences!,
 					projectData: editableData(rec)
 				})),
 				rigIssues
@@ -591,356 +620,410 @@
 		>{/if}
 {/snippet}
 
-<Sheet
-	title={settings ? t('export.sheet.settingsTitle') : t('export.sheet.title')}
-	className="export-sheet"
-	onclose={() => (ui.sheet = null)}
-	cancelDisabled={saving}
-	footer={settings ? undefined : exportFooter}
->
-	{#snippet leading()}
-		<button
-			class="bu-action btn plain link"
-			data-variant="quiet"
-			bind:this={navigation}
-			aria-label={t(settings ? 'export.sheet.back' : 'export.sheet.settings')}
-			disabled={saving}
-			onclick={navigate}
+{#snippet preferencesStatus()}
+	{#if loadError || saveError}<p class="notice bad small" role="alert">
+			<TriangleAlert size={14} />{saveError
+				? displayMessage(saveError)
+				: loadError
+					? displayMessage(loadError)
+					: ''}
+		</p>{/if}
+	{#if invalidPreferences}
+		<p class="muted small">
+			{t('export.settings.resetHint')}
+		</p>
+		<button class="bu-action btn" onclick={resetSettings} disabled={saving || refreshing}
+			>{t('export.settings.reset')}</button
 		>
-			{#if settings}<ChevronLeft size={16} aria-hidden="true" />{t(
-					'export.sheet.back'
-				)}{:else}<Settings2 size={16} aria-hidden="true" />{openerLabel(
-					t('export.sheet.settings')
-				)}<SurfaceChevron />{/if}
-		</button>
-	{/snippet}
-	{#snippet trailing()}
-		<button
-			class="bu-action btn plain link done"
-			data-variant="quiet"
-			aria-label={t('export.sheet.close')}
-			disabled={saving}
-			onclick={() => (ui.sheet = null)}><X size={18} aria-hidden="true" /></button
-		>
-	{/snippet}
-	{#key settings}
-		<div class="export-page" class:settings-page={settings} bind:this={content}>
-			{#if loadError || saveError}<p class="notice bad small" role="alert">
-					<TriangleAlert size={14} />{saveError
-						? displayMessage(saveError)
-						: loadError
-							? displayMessage(loadError)
-							: ''}
-				</p>{/if}
-			{#if invalidPreferences}
-				<p class="muted small">
-					{t('export.settings.resetHint')}
-				</p>
-				<button class="bu-action btn" onclick={resetSettings} disabled={saving || refreshing}
-					>{t('export.settings.reset')}</button
-				>
-			{/if}
-			{#if !ready && refreshing}<p class="muted small" role="status">
-					{t('export.settings.loading')}
-				</p>{/if}
-			{#each catalog.warningMessages as warning}<p class="notice warn small">
-					<TriangleAlert size={14} />{displayMessage(warning)}
-				</p>{/each}
-			{#if settings}
-				<fieldset class="export-playback" aria-describedby="export-playback-description">
-					<legend class="label">{PLAY_ONCE}</legend>
-					<p class="muted small" id="export-playback-description">
-						{t('export.settings.playOnceHint')}
-					</p>
-					<div class="export-moves">
-						{#each names as name (name)}
-							<label
-								class="bu-action bu-check export-move"
-								data-variant="field"
-								aria-disabled={saving}
-							>
-								<span>{animationLabel(name)}</span><input
-									type="checkbox"
-									checked={once.includes(name)}
-									disabled={saving || !ready}
-									onchange={(e) =>
-										changeSetting(e.currentTarget, {
-											animation: name,
-											playOnce: e.currentTarget.checked
-										})}
-								/>
-							</label>
-						{/each}
-					</div>
-				</fieldset>
-				<hr class="bu-separator export-divider" />
-				<div class="export-dressed">
-					<label class="check">
-						<input
-							type="checkbox"
-							checked={baked}
-							disabled={saving || !ready}
-							aria-describedby="export-dressed-description"
-							onchange={(e) =>
-								changeSetting(e.currentTarget, { dressedCharacterSheets: e.currentTarget.checked })}
-						/>
-						<span>{DRESSED_SHEETS}</span>
-					</label>
-					<p class="muted small" id="export-dressed-description">
-						{t('export.settings.dressedHint')}
-					</p>
-				</div>
-			{:else}
-				<fieldset class="export-picker" aria-label={t('export.settings.format')}>
-					{#each GROUPS as group (group.id)}
-						<section aria-labelledby={`export-${group.id}`}>
-							<h3 class="label" id={`export-${group.id}`}>{t(group.name)}</h3>
-							<div class="export-targets">
-								{#each group.targets as e (e.id)}
-									{#snippet target()}
-										<label class="export-target">
-											<span
-												class="target-icon"
-												aria-hidden="true"
-												style:mask-image={`url("${assetUrl(`icons/exports/${e.id}.svg`)}")`}
-											></span>
-											<span class="target-label"
-												><span class="engine-name">{e.name}</span><span class="engine-sub"
-													>{t(e.sub)}</span
-												></span
-											>
-											<input
-												type="radio"
-												name="export-format"
-												value={e.id}
-												checked={cardOf(engine) === e.id}
-												disabled={!ready}
-												onchange={(event) => changeSetting(event.currentTarget, { engine: e.id })}
-												aria-label={e.name}
-												aria-describedby={cardOf(engine) === e.id
-													? 'export-description'
-													: undefined}
-											/>
-										</label>
-									{/snippet}
-									{#if e.id === 'rpgmaker'}
-										<div class="export-split">
-											<div class="split-card" class:on={rpg}>
-												{@render target()}
-												<button
-													type="button"
-													class="version-btn"
-													popovertarget="rpg-version-menu"
-													aria-haspopup="menu"
-													disabled={!ready}
-													aria-label={t('export.settings.versionLabel', {
-														version: t(rpgVersion.title)
-													})}
-													onclick={() => {
-														if (!rpg) chooseEngine(rpgVersion.id);
-													}}
-												>
-													<span class="version-value"
-														>{#each RPG_VERSIONS as v (v.id)}<span
-																aria-hidden="true"
-																class:hidden={v.id !== rpgVersion.id}>{t(v.value)}</span
-															>{/each}</span
-													>
+	{/if}
+	{#if !ready && refreshing}<p class="muted small" role="status">
+			{t('export.settings.loading')}
+		</p>{/if}
+	{#each catalog.warningMessages as warning}<p class="notice warn small">
+			<TriangleAlert size={14} />{displayMessage(warning)}
+		</p>{/each}
+{/snippet}
 
-													<ChevronDown size={16} aria-hidden="true" />
-												</button>
-											</div>
-										</div>
-									{:else}
-										{@render target()}
-									{/if}
-								{/each}
-							</div>
-						</section>
-					{/each}
-				</fieldset>
-				<div
-					id="rpg-version-menu"
-					class="menu version-menu bu-popover-anchor"
-					data-placement="bottom-end"
-					popover
-					role="menu"
-					aria-label={t('export.settings.versionMenu')}
-					bind:this={versionMenu}
-					ontoggle={popoverFocus}
-				>
-					<PopoverArrow />
-					<div class="menu-surface bu-popover-surface bu-floating">
-						<p class="menu-sec">{t('export.settings.version')}</p>
-						{#each RPG_VERSIONS as v (v.id)}
-							<button
-								type="button"
-								class="row version-row"
-								role="menuitemradio"
-								aria-checked={engine === v.id}
-								onclick={() => {
-									chooseEngine(v.id);
-									versionMenu?.hidePopover();
-								}}
-							>
-								<span class="version-check" aria-hidden="true"
-									>{#if engine === v.id}<Check size={16} />{/if}</span
-								>
-								<span class="version-text"
-									><span class="version-title">{t(v.title)}</span><span class="version-sub"
-										>{t(v.sub)}</span
-									></span
-								>
-							</button>
-						{/each}
-					</div>
-				</div>
-				{#if selected}<p
-						class="export-description muted small"
-						id="export-description"
-						aria-live="polite"
-					>
-						{#snippet engineName()}<strong>{selected?.name}</strong>{/snippet}
-						<RichMessage
-							key="export.sheet.description"
-							vars={{ detail: t(selected.detail) }}
-							slots={{ name: engineName }}
+{#snippet exportSettings(_entry?: string)}
+	<div class="export-page" bind:this={content} tabindex="-1">
+		{@render preferencesStatus()}
+		<fieldset
+			class="export-playback"
+			data-setting="playback"
+			tabindex="-1"
+			aria-describedby="export-playback-description"
+		>
+			<legend class="label">{PLAY_ONCE}</legend>
+			<p class="muted small" id="export-playback-description">
+				{t('export.settings.playOnceHint')}
+			</p>
+			<div class="export-moves">
+				{#each names as name (name)}
+					<label class="bu-action bu-check export-move" data-variant="field" aria-disabled={saving}>
+						<span>{animationLabel(name)}</span><input
+							type="checkbox"
+							checked={once.includes(name)}
+							disabled={saving || !ready}
+							onchange={(e) =>
+								changeSetting(e.currentTarget, {
+									animation: name,
+									playOnce: e.currentTarget.checked
+								})}
 						/>
-					</p>{/if}
-				{#if ready && !pendingExport && (result?.kind === 'recovery' || result?.kind === 'failed')}
-					<p
-						class="notice {result.kind === 'recovery' ? 'warn' : 'bad'} small"
-						role={result.kind === 'recovery' ? 'status' : 'alert'}
+					</label>
+				{/each}
+			</div>
+		</fieldset>
+		<hr class="bu-separator export-divider" />
+		<div class="export-dressed" data-setting="sheets" tabindex="-1">
+			<label class="check">
+				<input
+					type="checkbox"
+					checked={baked}
+					disabled={saving || !ready}
+					aria-describedby="export-dressed-description"
+					onchange={(e) =>
+						changeSetting(e.currentTarget, {
+							dressedCharacterSheets: e.currentTarget.checked
+						})}
+				/>
+				<span>{DRESSED_SHEETS}</span>
+			</label>
+			<p class="muted small" id="export-dressed-description">
+				{t('export.settings.dressedHint')}
+			</p>
+		</div>
+		<hr class="bu-separator export-divider" />
+		<label class="export-dressed" data-setting="format" tabindex="-1">
+			<span class="label">{t('export.settings.format')}</span>
+			<select
+				class="bu-input input"
+				value={engine}
+				disabled={!ready || saving}
+				onchange={(event) => chooseEngine(event.currentTarget.value as Engine)}
+			>
+				{#each ENGINES as target (target.id)}
+					{#if target.id === 'rpgmaker'}
+						{#each RPG_VERSIONS as version (version.id)}
+							<option value={version.id}>{target.name} {t(version.value)}</option>
+						{/each}
+					{:else}
+						<option value={target.id}>{target.name}</option>
+					{/if}
+				{/each}
+			</select>
+		</label>
+	</div>
+{/snippet}
+
+{#if embedded}
+	{@render exportSettings()}
+{:else}
+	<Sheet
+		title={t(settings ? 'export.sheet.settings' : 'export.sheet.title')}
+		className="export-sheet"
+		onclose={() => (ui.sheet = null)}
+		cancel="common.close"
+		cancelDisabled={saving}
+		footer={settings ? undefined : exportFooter}
+	>
+		{#snippet heading()}{#if settings}<SettingsHeader busy={saving} />{/if}{/snippet}
+		{#snippet leading()}
+			{#if !settings || returningToExport}
+				<button
+					class="bu-action btn plain link"
+					data-variant="quiet"
+					bind:this={navigation}
+					aria-label={t(settings ? 'export.sheet.back' : 'export.sheet.settings')}
+					disabled={saving}
+					onclick={navigate}
+				>
+					{#if settings}<ChevronLeft size={16} aria-hidden="true" /><span class="export-back-label"
+							>{t('export.sheet.back')}</span
+						>{:else}<Settings2 size={16} aria-hidden="true" />{openerLabel(
+							t('export.sheet.settings')
+						)}<SurfaceChevron />{/if}
+				</button>
+			{:else}<span></span>{/if}
+		{/snippet}
+		{#snippet trailing()}
+			<button
+				class="bu-action btn plain link done"
+				data-variant="quiet"
+				aria-label={t(settings && !returningToExport ? 'common.close' : 'export.sheet.close')}
+				disabled={saving}
+				onclick={() => (ui.sheet = null)}><X size={18} aria-hidden="true" /></button
+			>
+		{/snippet}
+		{#key settings}
+			{#if settings}
+				<SettingsContent busy={saving} {exportSettings} />
+			{:else}
+				<div class="export-page" bind:this={content}>
+					{@render preferencesStatus()}
+					<fieldset class="export-picker" aria-label={t('export.settings.format')}>
+						{#each GROUPS as group (group.id)}
+							<section aria-labelledby={`export-${group.id}`}>
+								<h3 class="label" id={`export-${group.id}`}>{t(group.name)}</h3>
+								<div class="export-targets">
+									{#each group.targets as e (e.id)}
+										{#snippet target()}
+											<label class="export-target">
+												<span
+													class="target-icon"
+													aria-hidden="true"
+													style:mask-image={`url("${assetUrl(`icons/exports/${e.id}.svg`)}")`}
+												></span>
+												<span class="target-label"
+													><span class="engine-name">{e.name}</span><span class="engine-sub"
+														>{t(e.sub)}</span
+													></span
+												>
+												<input
+													type="radio"
+													name="export-format"
+													value={e.id}
+													checked={cardOf(engine) === e.id}
+													disabled={!ready}
+													onchange={(event) => changeSetting(event.currentTarget, { engine: e.id })}
+													aria-label={e.name}
+													aria-describedby={cardOf(engine) === e.id
+														? 'export-description'
+														: undefined}
+												/>
+											</label>
+										{/snippet}
+										{#if e.id === 'rpgmaker'}
+											<div class="export-split">
+												<div class="split-card" class:on={rpg}>
+													{@render target()}
+													<button
+														type="button"
+														class="version-btn"
+														popovertarget="rpg-version-menu"
+														aria-haspopup="menu"
+														disabled={!ready}
+														aria-label={t('export.settings.versionLabel', {
+															version: t(rpgVersion.title)
+														})}
+														onclick={() => {
+															if (!rpg) chooseEngine(rpgVersion.id);
+														}}
+													>
+														<span class="version-value"
+															>{#each RPG_VERSIONS as v (v.id)}<span
+																	aria-hidden="true"
+																	class:hidden={v.id !== rpgVersion.id}>{t(v.value)}</span
+																>{/each}</span
+														>
+
+														<ChevronDown size={16} aria-hidden="true" />
+													</button>
+												</div>
+											</div>
+										{:else}
+											{@render target()}
+										{/if}
+									{/each}
+								</div>
+							</section>
+						{/each}
+					</fieldset>
+					<div
+						id="rpg-version-menu"
+						class="menu version-menu bu-popover-anchor"
+						data-placement="bottom-end"
+						popover
+						role="menu"
+						aria-label={t('export.settings.versionMenu')}
+						bind:this={versionMenu}
+						ontoggle={popoverFocus}
 					>
-						<TriangleAlert size={14} aria-hidden="true" />
-						<span
-							>{problem}
-							{result.kind === 'recovery'
-								? t('export.recovery.canDownloadSources')
-								: t('export.failure.noZip')}
-							{result.warnings.map(displayWarning).join(' ')}</span
+						<PopoverArrow />
+						<div class="menu-surface bu-popover-surface bu-floating">
+							<p class="menu-sec">{t('export.settings.version')}</p>
+							{#each RPG_VERSIONS as v (v.id)}
+								<button
+									type="button"
+									class="row version-row"
+									role="menuitemradio"
+									aria-checked={engine === v.id}
+									onclick={() => {
+										chooseEngine(v.id);
+										versionMenu?.hidePopover();
+									}}
+								>
+									<span class="version-check" aria-hidden="true"
+										>{#if engine === v.id}<Check size={16} />{/if}</span
+									>
+									<span class="version-text"
+										><span class="version-title">{t(v.title)}</span><span class="version-sub"
+											>{t(v.sub)}</span
+										></span
+									>
+								</button>
+							{/each}
+						</div>
+					</div>
+					{#if selected}<p
+							class="export-description muted small"
+							id="export-description"
+							aria-live="polite"
 						>
-					</p>
-				{/if}
-				{#if m && result?.kind === 'requested'}
-					{#if rpg}<p class="muted">
-							{m.presets.filter((x) => x.id !== 'current').length
-								? t('export.summary.rpgOutfits', {
-										count: m.presets.filter((x) => x.id !== 'current').length
-									})
-								: t('export.summary.rpgCurrent')}
-						</p>{:else}
-						<p class="muted">
-							{t(
-								m.presets.filter((x) => x.id !== 'current').length
-									? 'export.summary.sheetsOutfits'
-									: 'export.summary.sheetsCurrent',
-								{
-									directions: t('export.count.directions', {
-										count: m.rig.directions.length
-									}),
-									moves: t('export.count.moves', { count: m.rig.animations.length }),
-									items: t('export.count.items', { count: items.length }),
-									outfits: t('export.count.outfits', {
-										count: m.presets.filter((x) => x.id !== 'current').length
-									})
-								}
-							)}
+							{#snippet engineName()}<strong>{selected?.name}</strong>{/snippet}
+							<RichMessage
+								key="export.sheet.description"
+								vars={{ detail: t(selected.detail) }}
+								slots={{ name: engineName }}
+							/>
 						</p>{/if}
-					{#if reviewItems.length || result.rigIssues.length}
-						<p class="notice warn small">
-							<TriangleAlert size={14} aria-hidden="true" /><span
-								>{t('export.notes.artworkWarning')}</span
+					{#if ready && !pendingExport && (result?.kind === 'recovery' || result?.kind === 'failed')}
+						<p
+							class="notice {result.kind === 'recovery' ? 'warn' : 'bad'} small"
+							role={result.kind === 'recovery' ? 'status' : 'alert'}
+						>
+							<TriangleAlert size={14} aria-hidden="true" />
+							<span
+								>{problem}
+								{result.kind === 'recovery'
+									? t('export.recovery.canDownloadSources')
+									: t('export.failure.noZip')}
+								{result.warnings.map(displayWarning).join(' ')}</span
 							>
 						</p>
 					{/if}
-					{#if hasNotes}
+					{#if m && result?.kind === 'requested'}
+						{#if rpg}<p class="muted">
+								{m.presets.filter((x) => x.id !== 'current').length
+									? t('export.summary.rpgOutfits', {
+											count: m.presets.filter((x) => x.id !== 'current').length
+										})
+									: t('export.summary.rpgCurrent')}
+							</p>{:else}
+							<p class="muted">
+								{t(
+									m.presets.filter((x) => x.id !== 'current').length
+										? 'export.summary.sheetsOutfits'
+										: 'export.summary.sheetsCurrent',
+									{
+										directions: t('export.count.directions', {
+											count: m.rig.directions.length
+										}),
+										moves: t('export.count.moves', { count: m.rig.animations.length }),
+										items: t('export.count.items', { count: items.length }),
+										outfits: t('export.count.outfits', {
+											count: m.presets.filter((x) => x.id !== 'current').length
+										})
+									}
+								)}
+							</p>{/if}
+						{#if reviewItems.length || result.rigIssues.length}
+							<p class="notice warn small">
+								<TriangleAlert size={14} aria-hidden="true" /><span
+									>{t('export.notes.artworkWarning')}</span
+								>
+							</p>
+						{/if}
+						{#if hasNotes}
+							<details class="disclosure">
+								<summary><ChevronRight size={14} />{t('export.notes.title')}</summary>
+								<div class="small">
+									{#if reviewItems.length}<p>
+											{displayNote(message('export.notes.checkArtwork', { names: reviewItems }))}
+										</p>{/if}
+									{#if result.rigIssues.length}<p>
+											{displayNote(message('export.notes.checkBody', { names: result.rigIssues }))}
+										</p>{/if}
+									{#if result.warnings.length}<ul>
+											{#each result.warnings as warning}<li>{displayWarning(warning)}</li>{/each}
+										</ul>{/if}
+									{#if gaps.length}
+										<p>
+											{rpg ? t('export.notes.missingRpg') : t('export.notes.missingEmpty')}
+										</p>
+										<ul>
+											{#each gaps as gap}<li>{displayNote(gap)}</li>{/each}
+										</ul>
+									{/if}
+								</div>
+							</details>
+						{/if}
+					{/if}
+					{#if ready && !pendingExport && (result?.details?.length || result?.requestedWarnings?.length)}
 						<details class="disclosure">
-							<summary><ChevronRight size={14} />{t('export.notes.title')}</summary>
+							<summary><ChevronRight size={14} />{t('export.notes.technical')}</summary>
 							<div class="small">
-								{#if reviewItems.length}<p>
-										{displayNote(message('export.notes.checkArtwork', { names: reviewItems }))}
-									</p>{/if}
-								{#if result.rigIssues.length}<p>
-										{displayNote(message('export.notes.checkBody', { names: result.rigIssues }))}
-									</p>{/if}
-								{#if result.warnings.length}<ul>
-										{#each result.warnings as warning}<li>{displayWarning(warning)}</li>{/each}
+								{#if result.details?.length}<ul>
+										{#each result.details as detail, index (index)}
+											{@const translated = result.detailMessages?.[index]}
+											<li>{translated ? displayNote(translated) : detail}</li>
+										{/each}
 									</ul>{/if}
-								{#if gaps.length}
-									<p>
-										{rpg ? t('export.notes.missingRpg') : t('export.notes.missingEmpty')}
-									</p>
+								{#if result.requestedWarnings?.length}
+									<p>{t('export.recovery.requestedWarnings')}</p>
 									<ul>
-										{#each gaps as gap}<li>{displayNote(gap)}</li>{/each}
+										{#each result.requestedWarnings as warning}<li>
+												{typeof warning === 'string' ? warning : displayNote(warning)}
+											</li>{/each}
 									</ul>
 								{/if}
 							</div>
 						</details>
 					{/if}
-				{/if}
-				{#if ready && !pendingExport && (result?.details?.length || result?.requestedWarnings?.length)}
-					<details class="disclosure">
-						<summary><ChevronRight size={14} />{t('export.notes.technical')}</summary>
-						<div class="small">
-							{#if result.details?.length}<ul>
-									{#each result.details as detail, index (index)}
-										{@const translated = result.detailMessages?.[index]}
-										<li>{translated ? displayNote(translated) : detail}</li>
-									{/each}
-								</ul>{/if}
-							{#if result.requestedWarnings?.length}
-								<p>{t('export.recovery.requestedWarnings')}</p>
-								<ul>
-									{#each result.requestedWarnings as warning}<li>
-											{typeof warning === 'string' ? warning : displayNote(warning)}
-										</li>{/each}
-								</ul>
-							{/if}
-						</div>
-					</details>
-				{/if}
-				{#if result?.kind !== 'recovery'}<hr class="bu-separator export-divider" />
-					<section aria-labelledby="export-settings-summary">
-						<h3 class="label" id="export-settings-summary">
-							{t('export.notes.currentSettings')}
-						</h3>
-						<dl class="export-summary small">
-							{#if !rpg}<dt>{PLAY_ONCE}</dt>
+					{#if result?.kind !== 'recovery'}<hr class="bu-separator export-divider" />
+						<section aria-labelledby="export-settings-summary">
+							<h3 class="label" id="export-settings-summary">
+								{t('export.notes.currentSettings')}
+							</h3>
+							<dl class="export-summary small">
+								{#if !rpg}<dt>{PLAY_ONCE}</dt>
+									<dd>
+										{ready
+											? playbackSummary
+											: refreshing
+												? t('common.loading')
+												: t('common.unavailable')}
+									</dd>{/if}
+								<dt>{DRESSED_SHEETS}</dt>
 								<dd>
 									{ready
-										? playbackSummary
+										? outfitSummary
 										: refreshing
 											? t('common.loading')
 											: t('common.unavailable')}
-								</dd>{/if}
-							<dt>{DRESSED_SHEETS}</dt>
-							<dd>
-								{ready ? outfitSummary : refreshing ? t('common.loading') : t('common.unavailable')}
-							</dd>
-						</dl>
-					</section>{/if}
-				{#if result?.zip}<details class="disclosure">
-						<summary><ChevronRight size={14} />{t('export.notes.files')}</summary>
-						<div>
-							{#if result}<p class="faint small">
-									{t('export.notes.fileCount', { count: result.files.length })}
-								</p>
-								<pre
-									class="mono faint"
-									style="max-height:160px;overflow:auto;margin:0">{result.files.join(
-										'\n'
-									)}</pre>{/if}
-						</div>
-					</details>{/if}
+								</dd>
+							</dl>
+						</section>{/if}
+					{#if result?.zip}<details class="disclosure">
+							<summary><ChevronRight size={14} />{t('export.notes.files')}</summary>
+							<div>
+								{#if result}<p class="faint small">
+										{t('export.notes.fileCount', { count: result.files.length })}
+									</p>
+									<pre
+										class="mono faint"
+										style="max-height:160px;overflow:auto;margin:0">{result.files.join(
+											'\n'
+										)}</pre>{/if}
+							</div>
+						</details>{/if}
+				</div>
 			{/if}
-		</div>
-	{/key}
-</Sheet>
+		{/key}
+	</Sheet>
+{/if}
 
 <style>
 	:global(dialog.export-sheet) {
 		height: min(680px, calc(100dvh - 32px));
+	}
+	:global(dialog.export-sheet .sheet-head) {
+		min-height: 44px;
+	}
+	@media (max-width: 420px) {
+		.export-back-label {
+			display: none;
+		}
 	}
 	.export-page {
 		display: flex;
@@ -948,17 +1031,6 @@
 		gap: 16px;
 		min-width: 0;
 		animation: export-back 150ms ease-out;
-	}
-	.settings-page {
-		animation-name: export-forward;
-	}
-	@keyframes export-forward {
-		from {
-			transform: translateX(12px);
-		}
-		to {
-			transform: translateX(0);
-		}
 	}
 	@keyframes export-back {
 		from {
@@ -1014,7 +1086,6 @@
 	}
 	.export-dressed p {
 		margin: 4px 0 0;
-		padding-inline-start: 26px;
 	}
 	.export-divider {
 		width: 100%;

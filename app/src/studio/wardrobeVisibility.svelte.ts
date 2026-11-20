@@ -1,4 +1,5 @@
 import { SvelteMap } from 'svelte/reactivity';
+import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 
 const globalKey = 'pixeldoll.wardrobe.hideShared';
 const demoKey = 'pixeldoll.wardrobe.showDemo';
@@ -17,6 +18,7 @@ function enabled(key: string) {
 
 function setEnabled(key: string, value: boolean) {
 	choices.set(key, value);
+	if (workspaceCopy) return true;
 	try {
 		if (value) localStorage.setItem(key, '1');
 		else localStorage.removeItem(key);

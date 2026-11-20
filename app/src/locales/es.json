@@ -1,4 +1,14 @@
 {
+	"settings": {
+		"wardrobe": "Objetos compartidos del armario",
+		"exportDefaults": "Valores de exportación",
+		"connection": "Conexión con PixelLab",
+		"general": "Apariencia e idioma",
+		"theme": "Tema",
+		"search": "Buscar ajustes",
+		"noResults": "No hay ajustes que coincidan con tu búsqueda.",
+		"all": "Todos los ajustes"
+	},
 	"common": {
 		"loadFailed": "No se pudo cargar una parte de PixelDoll. Recarga la página para volver a intentarlo.",
 		"advanced": "Avanzado",
@@ -561,7 +571,7 @@
 		"setUpCharacter": "Configurar personaje…",
 		"connectPixelLab2": "Conectar PixelLab…",
 		"characterSelection": "Selección de personaje",
-		"wardrobeSettings": "Ajustes del armario",
+		"wardrobeSettings": "Visibilidad del guardarropa",
 		"ownItemsOnly": "Solo objetos propios",
 		"workspace": "Espacio de trabajo…",
 		"workspaceActions": "Acciones del espacio de trabajo"
@@ -869,7 +879,6 @@
 	"export": {
 		"sheet": {
 			"title": "Exportar",
-			"settingsTitle": "Ajustes de exportación",
 			"back": "Atrás",
 			"settings": "Ajustes",
 			"close": "Cerrar exportación",

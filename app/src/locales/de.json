@@ -1,4 +1,14 @@
 {
+	"settings": {
+		"wardrobe": "Geteilte Garderobenobjekte",
+		"exportDefaults": "Exportvorgaben",
+		"connection": "PixelLab-Verbindung",
+		"general": "Darstellung und Sprache",
+		"theme": "Design",
+		"search": "Einstellungen durchsuchen",
+		"noResults": "Keine passenden Einstellungen gefunden.",
+		"all": "Alle Einstellungen"
+	},
 	"common": {
 		"loadFailed": "Ein Teil von PixelDoll konnte nicht geladen werden. Lade die Seite neu und versuche es erneut.",
 		"advanced": "Erweitert",
@@ -561,7 +571,7 @@
 		"setUpCharacter": "Figur einrichten…",
 		"connectPixelLab2": "PixelLab verbinden…",
 		"characterSelection": "Figurenauswahl",
-		"wardrobeSettings": "Garderoben-Einstellungen",
+		"wardrobeSettings": "Sichtbarkeit in der Garderobe",
 		"ownItemsOnly": "Nur eigene Gegenstände",
 		"workspace": "Arbeitsbereich…",
 		"workspaceActions": "Arbeitsbereich-Aktionen"
@@ -869,7 +879,6 @@
 	"export": {
 		"sheet": {
 			"title": "Export",
-			"settingsTitle": "Exporteinstellungen",
 			"back": "Zurück",
 			"settings": "Einstellungen",
 			"close": "Export schließen",

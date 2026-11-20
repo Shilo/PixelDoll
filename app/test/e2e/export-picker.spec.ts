@@ -1642,7 +1642,8 @@ test('Export settings persist explicit None, list and All choices, and toggle co
 		summary = dialog.locator('.export-summary dd');
 	const openSettings = async () => {
 		await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
-		await expect(dialog).toHaveAccessibleName('Export settings');
+		await expect(dialog).toHaveAccessibleName('Settings');
+		await expect(dialog.getByRole('heading', { name: 'Export defaults' })).toBeVisible();
 	};
 	const back = async () => {
 		await dialog.getByRole('button', { name: 'Back', exact: true }).click();
@@ -1722,6 +1723,52 @@ test('Export settings persist explicit None, list and All choices, and toggle co
 			(a: { loop: boolean }) => a.loop === true
 		)
 	).toBe(true);
+});
+
+test('Settings search opens the shared Export settings from the Studio menu', async ({
+	page
+}, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await openStudio(page, dev);
+	await enterStudio(page);
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	const search = settings.getByRole('searchbox', { name: 'Search settings' });
+	await search.fill('no such preference');
+	await expect(settings.getByRole('status')).toHaveText('No settings match your search.');
+	await search.fill('png json');
+	await settings.getByRole('button', { name: /Export format/ }).click();
+	await expect(settings.getByRole('combobox', { name: 'Export format' })).toBeFocused();
+	await page.setViewportSize({ width: 320, height: 640 });
+	await page.goBack();
+	await expect(search).toBeFocused();
+	await search.fill('sheets outfit');
+	await settings.getByRole('button', { name: /Include dressed character sheets/ }).click();
+	const dressed = settings.getByRole('checkbox', { name: 'Include dressed character sheets' });
+	await dressed.uncheck();
+	await expect(dressed).toBeEnabled();
+	await page.setViewportSize({ width: 667, height: 375 });
+	const up = settings.getByRole('button', { name: 'Settings', exact: true });
+	await expect(up).toBeVisible();
+	await expect(dressed).toBeVisible();
+	await up.click();
+	await expect(search).toBeFocused();
+	await expect(
+		settings.getByRole('button', { name: 'Export defaults', exact: true })
+	).toBeVisible();
+	await settings.getByRole('button', { name: 'Close', exact: true }).click();
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('button', { name: 'Settings', exact: true }).click();
+	await expect(dialog).toHaveAccessibleName('Settings');
+	await expect(dialog.getByRole('heading', { name: 'Export defaults' })).toBeVisible();
+	await expect(
+		dialog.getByRole('checkbox', { name: 'Include dressed character sheets' })
+	).not.toBeChecked();
+	await page.goBack();
+	await expect(dialog).toHaveAccessibleName('Export');
 });
 
 test('Export settings show storage failures without changing the choice or trapping navigation', async ({

@@ -6,6 +6,7 @@
 	import './experience/theme.css';
 	import './experience/layout.css';
 	import { rememberActivation } from './experience/focus.ts';
+	import { backFromSettings, settingsNavigation } from './settingsNavigation.svelte.ts';
 	import Experience from './experience/Experience.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
@@ -61,6 +62,7 @@
 		create: () => import('./CreateSheet.svelte'),
 		newitem: () => import('./NewItemSheet.svelte'),
 		export: () => import('./ExportSheet.svelte'),
+		settings: () => import('./SettingsSheet.svelte'),
 		activity: () => import('./ActivitySheet.svelte'),
 		move: () => import('./MoveSheet.svelte'),
 		importZip: () => import('./ImportSheet.svelte'),
@@ -184,7 +186,10 @@
 	});
 	// Closing Connect cancels its spending action, also when the sheet closes before its code loaded (ConnectSheet never mounted).
 	$effect(() => {
-		if (ui.sheet !== 'connect') clearPendingConnection();
+		if (ui.sheet !== 'connect') {
+			clearPendingConnection();
+			settingsNavigation.accountOpen = false;
+		}
 	});
 	// Leaving Activity by any route (Done, Back, another sheet) cancels a click waiting there for the other tab. Before
 	// Activity opens, the click waits quietly for an idle tab to hand over the jobs.
@@ -197,7 +202,7 @@
 	const onpop = () => {
 		if (!sheetEntry) return;
 		// An atomic local save/publish has the same disabled-close rule for browser Back as for Cancel/Escape.
-		if (ui.sheetBusy) {
+		if (ui.sheetBusy || backFromSettings()) {
 			history.pushState({ pixeldollSheet: 1 }, '');
 			return;
 		}
@@ -370,7 +375,10 @@
 	{:else if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}
 	{#if !workspaceCopy && ui.sheet === 'create'}<Lazy load={parts.create} />{/if}
 	{#if !workspaceCopy && ui.sheet === 'newitem'}<Lazy load={parts.newitem} />{/if}
-	{#if ui.sheet === 'export'}<Lazy load={parts.export} />{/if}
+	{#if ui.sheet === 'export' || (ui.sheet === 'settings' && settingsNavigation.fromExport)}<Lazy
+			load={parts.export}
+		/>
+	{:else if ui.sheet === 'settings'}<Lazy load={parts.settings} />{/if}
 	{#if ui.sheet === 'activity'}
 		{#if workspaceCopy}<Lazy load={parts.workspace} report={true} />
 		{:else}<Lazy load={parts.activity} />{/if}

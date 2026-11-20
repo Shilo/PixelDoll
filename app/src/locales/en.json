@@ -1,4 +1,14 @@
 {
+	"settings": {
+		"wardrobe": "Shared wardrobe items",
+		"exportDefaults": "Export defaults",
+		"connection": "PixelLab connection",
+		"general": "Appearance and language",
+		"theme": "Theme",
+		"search": "Search settings",
+		"noResults": "No settings match your search.",
+		"all": "All settings"
+	},
 	"common": {
 		"loadFailed": "Part of PixelDoll could not load. Reload to try again.",
 		"advanced": "Advanced",
@@ -552,7 +562,7 @@
 		"setUpCharacter": "Set up character…",
 		"connectPixelLab2": "Connect PixelLab…",
 		"characterSelection": "Character selection",
-		"wardrobeSettings": "Wardrobe settings",
+		"wardrobeSettings": "Wardrobe visibility",
 		"ownItemsOnly": "Own items only",
 		"workspace": "Workspace...",
 		"workspaceActions": "Workspace actions"
@@ -860,7 +870,6 @@
 	"export": {
 		"sheet": {
 			"title": "Export",
-			"settingsTitle": "Export settings",
 			"back": "Back",
 			"settings": "Settings",
 			"close": "Close export",

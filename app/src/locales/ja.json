@@ -1,4 +1,14 @@
 {
+	"settings": {
+		"wardrobe": "共有アイテム",
+		"exportDefaults": "エクスポートの既定値",
+		"connection": "PixelLab 接続",
+		"general": "外観と言語",
+		"theme": "テーマ",
+		"search": "設定を検索",
+		"noResults": "検索に一致する設定がありません。",
+		"all": "すべての設定"
+	},
 	"common": {
 		"loadFailed": "PixelDoll の一部を読み込めませんでした。ページを再読み込みして、もう一度お試しください。",
 		"advanced": "詳細設定",
@@ -538,7 +548,7 @@
 		"setUpCharacter": "キャラクターを設定…",
 		"connectPixelLab2": "PixelLabに接続…",
 		"characterSelection": "キャラクターの選択",
-		"wardrobeSettings": "装備の設定",
+		"wardrobeSettings": "ワードローブの表示",
 		"ownItemsOnly": "自分のアイテムのみ",
 		"workspace": "ワークスペース…",
 		"workspaceActions": "ワークスペースの操作"
@@ -838,7 +848,6 @@
 	"export": {
 		"sheet": {
 			"title": "エクスポート",
-			"settingsTitle": "エクスポートの設定",
 			"back": "戻る",
 			"settings": "設定",
 			"close": "エクスポートを閉じる",

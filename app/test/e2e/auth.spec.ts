@@ -56,8 +56,8 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	const usage = page.getByRole('button', { name: /^PixelLab usage/ });
 	const usageLabel = await usage.getByText('PixelLab usage', { exact: true }).boundingBox();
-	const versionLabel = await page.getByText(/^Version /).boundingBox();
-	expect(usageLabel?.x).toBe(versionLabel?.x);
+	const settingsLabel = await page.getByText('Settings...', { exact: true }).boundingBox();
+	expect(usageLabel?.x).toBe(settingsLabel?.x);
 	await expect(usage.getByText('58 / 100', { exact: true })).toBeVisible();
 	await expect(usage.getByText('58% used', { exact: true })).toBeVisible();
 	const meter = usage.locator('progress');

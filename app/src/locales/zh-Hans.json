@@ -1,4 +1,14 @@
 {
+	"settings": {
+		"wardrobe": "共享衣橱装备",
+		"exportDefaults": "导出默认设置",
+		"connection": "PixelLab 连接",
+		"general": "外观和语言",
+		"theme": "主题",
+		"search": "搜索设置",
+		"noResults": "没有符合搜索条件的设置。",
+		"all": "所有设置"
+	},
 	"common": {
 		"loadFailed": "无法加载 PixelDoll 的部分内容。请重新加载页面后重试。",
 		"advanced": "高级",
@@ -533,7 +543,7 @@
 		"setUpCharacter": "设置角色…",
 		"connectPixelLab2": "连接 PixelLab…",
 		"characterSelection": "角色选择",
-		"wardrobeSettings": "衣橱设置",
+		"wardrobeSettings": "衣橱显示",
 		"ownItemsOnly": "仅自己的装备",
 		"workspace": "工作区…",
 		"workspaceActions": "工作区操作"
@@ -825,7 +835,6 @@
 	"export": {
 		"sheet": {
 			"title": "导出",
-			"settingsTitle": "导出设置",
 			"back": "返回",
 			"settings": "设置",
 			"close": "关闭导出",

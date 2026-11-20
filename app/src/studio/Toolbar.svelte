@@ -2,6 +2,7 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import LanguagePicker from './LanguagePicker.svelte';
+	import { openSettings } from './settingsNavigation.svelte.ts';
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	import { app } from '../lib/app.svelte.ts';
@@ -23,7 +24,6 @@
 	import FullscreenButton from './FullscreenButton.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
 	import PixelLabUsage from './PixelLabUsage.svelte';
-	import VersionRow from './VersionRow.svelte';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
 	import { characterFacts } from './model.ts';
@@ -42,7 +42,6 @@
 		randomize,
 		refreshProjects,
 		characterName,
-		toggleTheme,
 		isDemo,
 		stoppedWork
 	} from './state.svelte.ts';
@@ -60,11 +59,10 @@
 		CircleHelp,
 		RefreshCw,
 		Share2,
+		Settings2,
 		Ellipsis,
 		KeyRound,
 		Redo2,
-		Sun,
-		Moon,
 		Undo2,
 		House,
 		Activity,
@@ -491,29 +489,37 @@
 		{#if experience.screen === 'studio'}<hr
 				class={{ 'mobile-sep': !doc.id.startsWith('fixture:') }}
 			/>{/if}
-		<LanguagePicker />
-		<!-- Preferences: change how the Studio looks or what the Wardrobe shows. -->
-		<MenuDisclosure sectionKey="more-wardrobe-settings" label={t('toolbar.wardrobeSettings')}>
-			{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
-			{#snippet aside()}
-				{#if sharedItemsHidden(doc.id)}
-					<span class="row-aside wardrobe-status faint small">{t('toolbar.ownItemsOnly')}</span>
-				{/if}
-			{/snippet}
-			<WardrobeVisibility />
-		</MenuDisclosure>
 		<button
 			class="row bu-action"
 			data-variant="quiet"
+			aria-haspopup="dialog"
 			onclick={() => {
-				toggleTheme();
 				closeOptions();
+				openSettings();
 			}}
-			>{#if ui.theme === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}<span
-				class="row-name"
-				>{ui.theme === 'dark' ? t('toolbar.lightMode') : t('toolbar.darkMode')}</span
-			></button
+			><Settings2 size={18} aria-hidden="true" /><span class="row-name"
+				>{openerLabel(t('export.sheet.settings'))}</span
+			><SurfaceChevron /></button
 		>
+		<LanguagePicker />
+		{#if doc.id}<MenuDisclosure
+				sectionKey="more-wardrobe-settings"
+				label={t('toolbar.wardrobeSettings')}
+			>
+				{#snippet icon()}<Shirt size={18} aria-hidden="true" />{/snippet}
+				{#snippet aside()}
+					{#if sharedItemsHidden(doc.id)}
+						<span class="row-aside wardrobe-status faint small">{t('toolbar.ownItemsOnly')}</span>
+					{/if}
+				{/snippet}
+				<WardrobeVisibility
+					scope="character"
+					onManage={() => {
+						closeOptions();
+						openSettings('wardrobe');
+					}}
+				/>
+			</MenuDisclosure>{/if}
 		<hr />
 		<!-- Diagnostics: inspect generation activity and API requests. -->
 		<button
@@ -573,7 +579,7 @@
 			</div>
 			<hr />
 		{/if}
-		<!-- App info: installation, updates, source code, and build version. -->
+		<!-- App actions: installation, updates, and help. -->
 		{#if import.meta.env.PROD && !$pwa.installed && ($pwa.installable || $pwa.installing)}
 			<button
 				class="row bu-action"
@@ -638,7 +644,6 @@
 				</div>
 			</div>
 		{/if}
-		<VersionRow />
 		<!-- Attribution footer: keep this below the app links. -->
 		<AffiliationNotice />
 	</div>

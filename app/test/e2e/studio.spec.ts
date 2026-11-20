@@ -162,11 +162,20 @@ async function showNotification(
 	);
 }
 
-test('version button opens build actions by click, keyboard, and tap', async ({ page }, info) => {
+test('Settings version opens build actions by click, keyboard, and tap', async ({ page }, info) => {
 	await page.goto('/');
 	const more = page.getByRole('button', { name: 'More options', exact: true });
-	await more.click();
-	const version = page.locator('#experience-options').getByRole('button', { name: /^Version / });
+	const openSettings = async () => {
+		await more.click();
+		await expect(
+			page.locator('#experience-options').getByRole('button', { name: /^Version / })
+		).toHaveCount(0);
+		await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	};
+	await openSettings();
+	const version = page
+		.getByRole('dialog', { name: 'Settings' })
+		.getByRole('button', { name: /^Version \d/ });
 	const actions = page.getByRole('group', { name: 'Version actions', exact: true });
 	const repository = 'https://github.com/Shilo/PixelDoll';
 	const [, label, hash] = /^(Version \d+\.\d+\.\d+-pre)\s+([a-f0-9]{7,})$/i.exec(
@@ -194,7 +203,7 @@ test('version button opens build actions by click, keyboard, and tap', async ({ 
 	await expect(sourcePage).toHaveURL(repository);
 	await sourcePage.close();
 	if (await actions.isVisible()) await page.keyboard.press('Escape');
-	if (!(await version.isVisible())) await more.click();
+	if (!(await version.isVisible())) await openSettings();
 	await version.press('Enter');
 	await expect(source).toBeFocused();
 	await page.keyboard.press('Escape');
@@ -233,7 +242,7 @@ test('version button opens build actions by click, keyboard, and tap', async ({ 
 	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
 		.baseURL!;
 	await page.goto(dev);
-	await more.click();
+	await openSettings();
 	await expect(version).toHaveAccessibleName(/^Version \d+\.\d+\.\d+-dev [a-f0-9]{7,}$/i);
 });
 
@@ -975,7 +984,13 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await expect(menu).toContainText('items');
 	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Light mode', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Appearance and language', exact: true }).click();
+	await page.getByRole('radio', { name: 'Light mode', exact: true }).check();
+	await page
+		.getByRole('dialog', { name: 'Settings' })
+		.getByRole('button', { name: 'Close', exact: true })
+		.click();
 	await page.setViewportSize({ width: 320, height: 568 });
 	await equipmentGroup(page, 'Brooch');
 	await header('accessory').click();
@@ -1534,7 +1549,13 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 		.click();
 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Light mode', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Appearance and language', exact: true }).click();
+	await page.getByRole('radio', { name: 'Light mode', exact: true }).check();
+	await page
+		.getByRole('dialog', { name: 'Settings' })
+		.getByRole('button', { name: 'Close', exact: true })
+		.click();
 	assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light');
 	step('theme switch');
 
@@ -7373,7 +7394,8 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 }) => {
 	await editableCopy(page);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: /^Wardrobe settings/ }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	await page.getByRole('button', { name: 'Shared wardrobe items', exact: true }).click();
 	await page.getByRole('switch', { name: 'Hide shared items from demo character' }).uncheck();
 	await page.keyboard.press('Escape');
 	await equipmentGroup(page, 'Head');

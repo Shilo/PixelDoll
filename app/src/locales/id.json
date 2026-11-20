@@ -1,4 +1,14 @@
 {
+	"settings": {
+		"wardrobe": "Item lemari bersama",
+		"exportDefaults": "Setelan ekspor bawaan",
+		"connection": "Koneksi PixelLab",
+		"general": "Tampilan dan bahasa",
+		"theme": "Tema",
+		"search": "Cari pengaturan",
+		"noResults": "Tidak ada pengaturan yang cocok dengan pencarian Anda.",
+		"all": "Semua pengaturan"
+	},
 	"common": {
 		"loadFailed": "Sebagian PixelDoll tidak dapat dimuat. Muat ulang halaman untuk mencoba lagi.",
 		"advanced": "Lanjutan",
@@ -535,7 +545,7 @@
 		"setUpCharacter": "Siapkan karakter…",
 		"connectPixelLab2": "Hubungkan PixelLab…",
 		"characterSelection": "Pilihan karakter",
-		"wardrobeSettings": "Pengaturan lemari",
+		"wardrobeSettings": "Visibilitas lemari",
 		"ownItemsOnly": "Hanya item sendiri",
 		"workspace": "Ruang kerja…",
 		"workspaceActions": "Tindakan ruang kerja"
@@ -833,7 +843,6 @@
 	"export": {
 		"sheet": {
 			"title": "Ekspor",
-			"settingsTitle": "Pengaturan ekspor",
 			"back": "Kembali",
 			"settings": "Pengaturan",
 			"close": "Tutup ekspor",

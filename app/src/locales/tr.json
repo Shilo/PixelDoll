@@ -1,4 +1,14 @@
 {
+	"settings": {
+		"wardrobe": "Paylaşılan gardırop eşyaları",
+		"exportDefaults": "Dışa aktarma varsayılanları",
+		"connection": "PixelLab bağlantısı",
+		"general": "Görünüm ve dil",
+		"theme": "Tema",
+		"search": "Ayarlarda ara",
+		"noResults": "Aramanızla eşleşen ayar bulunamadı.",
+		"all": "Tüm ayarlar"
+	},
 	"common": {
 		"loadFailed": "PixelDoll'un bir bölümü yüklenemedi. Yeniden denemek için sayfayı yenileyin.",
 		"advanced": "Gelişmiş",
@@ -558,7 +568,7 @@
 		"setUpCharacter": "Karakteri hazırlayın…",
 		"connectPixelLab2": "PixelLab hesabını bağlayın…",
 		"characterSelection": "Karakter seçimi",
-		"wardrobeSettings": "Gardırop ayarları",
+		"wardrobeSettings": "Gardırop görünürlüğü",
 		"ownItemsOnly": "Yalnızca kendi eşyaları",
 		"workspace": "Çalışma alanı…",
 		"workspaceActions": "Çalışma alanı işlemleri"
@@ -866,7 +876,6 @@
 	"export": {
 		"sheet": {
 			"title": "Dışa aktarım",
-			"settingsTitle": "Dışa aktarım ayarları",
 			"back": "Geri",
 			"settings": "Ayarlar",
 			"close": "Dışa aktarımı kapatın",
