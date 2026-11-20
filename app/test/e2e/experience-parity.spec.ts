@@ -1111,29 +1111,54 @@ test('a held keyboard walk continues through a click on a control and ends when 
 	await page.keyboard.press('Enter');
 	await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 	const x = async () => Number((await world(page).getAttribute('data-position'))!.split(',')[0]);
-	await page.keyboard.down('d');
+	const stopped = () =>
+		expect
+			.poll(async () => {
+				const before = await x();
+				await page.evaluate(
+					() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+				);
+				return (await x()) - before;
+			})
+			.toBe(0);
+	// A held key repeats, as a real keyboard does: a repeat that reached the clicked tab would move its selection on.
+	const session = await page.context().newCDPSession(page);
+	const repeat = () =>
+		session.send('Input.dispatchKeyEvent', {
+			type: 'rawKeyDown',
+			key: 'ArrowRight',
+			code: 'ArrowRight',
+			windowsVirtualKeyCode: 39,
+			autoRepeat: true
+		});
+	await page.keyboard.down('ArrowRight');
 	await expect.poll(x).toBeGreaterThan(10);
 	const colors = page
 		.getByRole('tablist', { name: 'Customization panels' })
 		.getByRole('tab', { name: 'Colors', exact: true });
-	await colors.click();
-	// The click did its work, the stage has the keyboard again, and the walk goes on.
-	await expect(colors).toHaveAttribute('aria-selected', 'true');
+	const tab = (await colors.boundingBox())!;
+	await page.mouse.move(tab.x + tab.width / 2, tab.y + tab.height / 2);
+	await page.mouse.down();
+	await repeat();
+	await page.mouse.up();
+	for (let i = 0; i < 3; i++) await repeat();
+	// The click did its work and nothing else did, the stage has the keyboard again, and the walk goes on.
 	await expect(world(page)).toBeFocused();
+	await expect(colors).toHaveAttribute('aria-selected', 'true');
 	const walked = await x();
 	await expect.poll(x).toBeGreaterThan(walked + 10);
-	// A menu needs the keyboard itself: the walk ends there.
+	// Another mouse button can open a native menu that keeps the key release from the page: the walk ends at the press.
+	await colors.click({ button: 'right' });
+	await stopped();
+	await page.keyboard.up('ArrowRight');
+	// A menu needs the keyboard itself: the walk ends there too.
+	await world(page).focus();
+	await page.keyboard.down('d');
+	const again = await x();
+	await expect.poll(x).toBeGreaterThan(again + 10);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(world(page)).not.toBeFocused();
-	await expect
-		.poll(async () => {
-			const before = await x();
-			await page.evaluate(
-				() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
-			);
-			return (await x()) - before;
-		})
-		.toBe(0);
+	await stopped();
 	await page.keyboard.up('d');
 });
 
