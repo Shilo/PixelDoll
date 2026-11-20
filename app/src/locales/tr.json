@@ -2387,7 +2387,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Çalışma alanı kopyasını açın",
-		"tabOnlyKey": "Anahtarınız yalnızca bu sekmede kullanılır ve kaydedilmez."
+		"tabOnlyKey": "Bu bağlantı yalnızca bu sekme için geçerlidir ve kaydedilmez.",
+		"useSavedKey": "Kayıtlı anahtarı kullan"
 	},
 	"moveNames": { "default": "Varsayılan", "idle": "Bekleme", "walk": "Yürüme" },
 	"moveRemoval": {

@@ -2291,7 +2291,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Buka salinan ruang kerja",
-		"tabOnlyKey": "Kunci Anda hanya digunakan di tab ini dan tidak disimpan."
+		"tabOnlyKey": "Koneksi ini hanya berlaku di tab ini dan tidak disimpan.",
+		"useSavedKey": "Gunakan kunci tersimpan"
 	},
 	"moveNames": { "default": "Bawaan", "idle": "Diam", "walk": "Berjalan" },
 	"moveRemoval": {

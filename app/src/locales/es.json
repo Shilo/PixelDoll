@@ -2396,7 +2396,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Abrir copia del espacio de trabajo",
-		"tabOnlyKey": "Tu clave solo se usa en esta pestaña y no se guarda."
+		"tabOnlyKey": "Esta conexión solo se usa en esta pestaña y no se guarda.",
+		"useSavedKey": "Usar clave guardada"
 	},
 	"moveNames": {
 		"default": "Predeterminada",

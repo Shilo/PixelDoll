@@ -2378,7 +2378,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Open workspace copy",
-		"tabOnlyKey": "Your key is used only in this tab and is not saved."
+		"tabOnlyKey": "This connection is only for this tab and is not saved.",
+		"useSavedKey": "Use saved key"
 	},
 	"moveNames": { "default": "Default", "idle": "Idle", "walk": "Walk" },
 	"moveRemoval": {

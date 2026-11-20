@@ -2407,7 +2407,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Abrir cópia do espaço de trabalho",
-		"tabOnlyKey": "Sua chave é usada apenas nesta aba e não é salva."
+		"tabOnlyKey": "Esta conexão vale apenas nesta aba e não é salva.",
+		"useSavedKey": "Usar chave salva"
 	},
 	"moveNames": { "default": "Padrão", "idle": "Repouso", "walk": "Caminhada" },
 	"moveRemoval": {

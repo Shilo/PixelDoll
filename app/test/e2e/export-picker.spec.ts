@@ -315,6 +315,8 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		.toEqual({ opened: true, gap: true, other: 'Workspace Beta', hasKey: false, jobs: 0 });
 	expect(requests).toEqual([]);
 	const copyKey = 'synthetic-workspace-tab-key';
+	const savedKey = 'fake-workspace-test-key-no-network';
+	let expectedCopyKey = copyKey;
 	const copyRequests: string[] = [];
 	let releaseEstimate!: () => void;
 	const estimate = new Promise<void>((resolve) => (releaseEstimate = resolve));
@@ -325,7 +327,7 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await copy.route('https://api.pixellab.ai/**', async (route) => {
 		const request = route.request();
 		const path = new URL(request.url()).pathname;
-		expect(request.headers().authorization === `Bearer ${copyKey}`).toBe(true);
+		expect(request.headers().authorization === `Bearer ${expectedCopyKey}`).toBe(true);
 		copyRequests.push(`${request.method()} ${path}`);
 		if (path === '/v2/balance') return route.fulfill({ json: balance });
 		await estimate;
@@ -334,6 +336,10 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await copy.getByRole('button', { name: 'More options', exact: true }).click();
 	await copy.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
 	const connect = copy.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+	const useSavedKey = connect.getByRole('button', { name: 'Use saved key', exact: true });
+	await expect(useSavedKey).toBeVisible();
+	await expect(connect.getByLabel('API key', { exact: true })).toBeEmpty();
+	expect(copyRequests).toEqual([]);
 	await expect(connect.getByRole('checkbox', { name: 'Remember on this device' })).toHaveCount(0);
 	await connect.getByLabel('API key', { exact: true }).fill(copyKey);
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
@@ -426,9 +432,21 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
 	await copy.getByRole('button', { name: 'More options', exact: true }).click();
 	await copy.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
-	await connect.getByLabel('API key', { exact: true }).fill(copyKey);
-	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+	expectedCopyKey = savedKey;
+	const requestsBeforeSavedKey = copyRequests.length;
+	await useSavedKey.click();
 	await expect(connect).toBeHidden();
+	expect(copyRequests.slice(requestsBeforeSavedKey)).toEqual(['GET /v2/balance']);
+	expect(
+		await copy.evaluate(async (expectedKey) => {
+			const appPath = '/src/lib/app.svelte.ts';
+			return {
+				remembered: (await import(appPath)).app.remembered,
+				keyKept: localStorage.getItem('pixellabApiKey') === expectedKey,
+				forgetMarker: localStorage.getItem('pixellabAuthForget')
+			};
+		}, savedKey)
+	).toEqual({ remembered: false, keyKept: true, forgetMarker });
 	await page.evaluate(async () => {
 		const appPath = '/src/lib/app.svelte.ts';
 		(await import(appPath)).forgetKey();
@@ -436,6 +454,11 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await expect(
 		copy.getByRole('status').filter({ hasText: 'Workspace copy · PixelLab off' })
 	).toBeVisible();
+	await copy.getByRole('button', { name: 'More options', exact: true }).click();
+	await copy.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	await expect(connect.getByLabel('API key', { exact: true })).toBeVisible();
+	await expect(useSavedKey).toHaveCount(0);
+	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await copy.reload();
 	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
 	await copy.goto(new URL('/?workspace-copy=', page.url()).href);

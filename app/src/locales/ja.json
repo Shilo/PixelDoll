@@ -2300,7 +2300,8 @@
 	},
 	"workspaceCopy": {
 		"title": "ワークスペースのコピーを開く",
-		"tabOnlyKey": "キーはこのタブでのみ使用され、保存されません。"
+		"tabOnlyKey": "この接続はこのタブでのみ有効で、保存されません。",
+		"useSavedKey": "保存済みのキーを使う"
 	},
 	"moveNames": { "default": "デフォルト", "idle": "待機", "walk": "歩き" },
 	"moveRemoval": {

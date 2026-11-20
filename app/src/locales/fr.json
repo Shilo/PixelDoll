@@ -2394,7 +2394,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Ouvrir une copie de l’espace de travail",
-		"tabOnlyKey": "Votre clé n’est utilisée que dans cet onglet et n’est pas enregistrée."
+		"tabOnlyKey": "Cette connexion est limitée à cet onglet et n’est pas enregistrée.",
+		"useSavedKey": "Utiliser la clé enregistrée"
 	},
 	"moveNames": { "default": "Par défaut", "idle": "Attente", "walk": "Marche" },
 	"moveRemoval": {

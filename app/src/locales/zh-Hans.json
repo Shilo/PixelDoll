@@ -2269,7 +2269,8 @@
 	},
 	"workspaceCopy": {
 		"title": "打开工作区副本",
-		"tabOnlyKey": "你的密钥仅在此标签页中使用，不会保存。"
+		"tabOnlyKey": "连接仅在此标签页中有效，不会保存。",
+		"useSavedKey": "使用已保存的密钥"
 	},
 	"moveNames": { "default": "Default", "idle": "待机", "walk": "行走" },
 	"moveRemoval": {

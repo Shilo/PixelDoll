@@ -2393,7 +2393,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Arbeitsbereichskopie öffnen",
-		"tabOnlyKey": "Dein Schlüssel wird nur in diesem Tab verwendet und nicht gespeichert."
+		"tabOnlyKey": "Diese Verbindung gilt nur für diesen Tab und wird nicht gespeichert.",
+		"useSavedKey": "Gespeicherten Schlüssel verwenden"
 	},
 	"moveNames": { "default": "Standpose", "idle": "Idle", "walk": "Gehen" },
 	"moveRemoval": {

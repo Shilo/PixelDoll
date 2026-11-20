@@ -2288,7 +2288,8 @@
 	},
 	"workspaceCopy": {
 		"title": "워크스페이스 사본 열기",
-		"tabOnlyKey": "키는 이 탭에서만 사용되며 저장되지 않습니다."
+		"tabOnlyKey": "이 연결은 이 탭에서만 유지되며 저장되지 않습니다.",
+		"useSavedKey": "저장된 키 사용"
 	},
 	"moveNames": { "default": "Default", "idle": "대기", "walk": "걷기" },
 	"moveRemoval": {
