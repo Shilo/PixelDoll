@@ -1,6 +1,6 @@
 # Animation model default audit
 
-Status: archival screen and automated checks complete. Live PixMiniMax Walk and Slash runs billed 5.4 generations against the approved 120-generation ceiling. The interrupted Skeleton V3 baseline has no recovered receipt, so total spend and the matched comparison are incomplete. No new artwork was retained.
+Status: one matched live body-only Slash comparison is complete. The equipment comparison, repeatability and default-promotion audit remain incomplete. The earlier interrupted Skeleton V3 receipt is still unknown. No new artwork was retained.
 
 Decision: could PixMiniMax replace Skeleton V3 as the Add a move default without trading expressive motion for lower equipment accuracy, character consistency, or reliability? Text V3 is the third arm, not a presumed fallback. The equipment renderer stays Skeleton V3 in every arm. Ride is out of scope and stays on its pose-driven path.
 
@@ -52,6 +52,22 @@ The bundled 64×64 demo has finished headwear and sword layers but no stored res
 After restarting Docker and the local API, an authenticated read-only balance request returned HTTP 200. The audit browser session was gone, and the available API logs did not identify the interrupted job. A successful balance request establishes connectivity, not per-job billing. No additional generation was submitted. Full offline verification passed: 2,895 unit tests passed, one skipped, and the static, localization and formatting checks passed. These checks do not qualify live motion or gear fit.
 
 Seven targeted browser regressions passed. The move draft test covered model order, keyboard frame steps, and clamping from 40 PixMiniMax frames to 16 V3 frames on the test canvas. Three replacement tests covered retained views and estimates, eligible equipment, and mirrored effects. Three API Preview tests covered draft updates without submission, recorded request and usage details, and phone layout. No live artwork was available for screenshots.
+
+### Matched live body-only Slash after restart
+
+The prior browser fixture was no longer available. On the configured local development API, created a fresh humanoid with independent south and east views and a 64×64 cell. The standing sword returned artwork but received a QA warning, so it was not accepted as a reference and no gear comparison ran. Used the same standing south view, eight frames and seed 7 through the production body path for all three arms. No palette repair, re-roll, or visual rating was performed.
+
+| Body route | Returned / kept / distinct frames | Exact RGB fit on saved pixels | Production tolerant fit | Median adjacent silhouette change | Body render generations |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Skeleton V3 | 8 / 8 / 8 | 84.01% | 100% | 93 px | 3 |
+| PixMiniMax | 9 / 8 / 4 | 100% | 100% | 0 px | 1 |
+| Text V3 | 9 / 8 / 7 | 97.72% | 97.70% | 25 px | 1 |
+
+All arms saved eight joint sets with zero reported foot drift and border contact. Text V3 had one production warning. The tolerant score is measured by production before post-save region processing and reported at its stored precision; exact fit is a separate diagnostic on saved cells. Different region processing makes the exact figures unsuitable for ranking color fidelity. Silhouette change counts binary-alpha pixel differences, not motion quality. PixMiniMax repeated the same opening frame three times and returned to it on the last frame. Distinct-frame counts show where to look for a stall but do not establish perceived motion quality.
+
+Reported charges for this round: 2 generations for the initial body fixture, 10 for the standing sword, 5 for the three Slash body renders, and 1.6 for 16 skeleton checks. The additional character registration returned no explicit receipt, so 18.6 is a confirmed subtotal, not total spend. Combined with the earlier 5.4, confirmed charges are at least 24 generations; the interrupted baseline charge also remains unknown.
+
+Keep Skeleton V3 as default. This is one action, one view, one character and one seed, without a qualified gear reference or independent visual review. The matched Walk, east Slash, and equipped comparisons remain open.
 
 Use one frozen 64×64 humanoid with east and south views, one already-fitted head item and one already-fitted hand item. Test Walk and unarmed Slash at eight frames, one predeclared seed, all three body routes: 4 matched cases, **12 body clips and up to 24 fitted gear clips**. Do not redress items between arms. Use the same action intent and direction; document the actual pose source for Skeleton V3 and exact text for both native arms. A shared seed is a blocking label, not a guarantee of matched random draws across models. Randomize arm order within each case. Run the actual production body normalization, measurement, item pose, extraction and QA; in-memory observation must not change whether production would save a result.
 
