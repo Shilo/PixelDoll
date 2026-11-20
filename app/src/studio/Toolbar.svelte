@@ -46,12 +46,14 @@
 	} from './state.svelte.ts';
 	import {
 		Archive,
+		ChevronDown,
 		ChevronLeft,
 		ChevronRight,
 		Download,
 		FileArchive,
 		MonitorDown,
 		BookOpen,
+		ExternalLink,
 		CircleHelp,
 		RefreshCw,
 		Share2,
@@ -211,8 +213,8 @@
 				aria-haspopup="menu"
 				onclick={() => void refreshProjects()}
 				><span class="name-line"
-					><span class="name-text"><CharacterName id={doc.id} {name} opener /></span>
-					<SurfaceChevron /></span
+					><span class="name-text"><CharacterName id={doc.id} {name} /></span>
+					<ChevronDown size={16} aria-hidden="true" /></span
 				>{#if facts}<span class="name-facts"
 						>{t('sizePreview.frame', { measure: facts.frame })} · {facts.counts
 							.map(displayMessage)
@@ -269,11 +271,11 @@
 				aria-label={t('toolbar.mountSettings')}
 				data-active={experience.testMount || undefined}
 				aria-expanded={mountMenuOpen}
-				title={openerLabel(
-					experience.testMount ? t('toolbar.titleMountSettingsMounted') : t('toolbar.mountSettings')
-				)}
+				title={experience.testMount
+					? t('toolbar.titleMountSettingsMounted')
+					: t('toolbar.mountSettings')}
 				popovertarget="mount-options"
-				disabled={!m}><PawPrint size={18} aria-hidden="true" /><SurfaceChevron compact /></button
+				disabled={!m}><PawPrint size={18} aria-hidden="true" /></button
 			>
 			<button
 				class="bu-action header-random"
@@ -303,7 +305,7 @@
 				class="bu-action header-share"
 				data-variant="outline"
 				aria-label={t('toolbar.shareCharacter')}
-				title={openerLabel(t('common.share'))}
+				title={t('common.share')}
 				popovertarget="share-popover"
 				disabled={!m}
 				><Share2 size={16} /><span>{openerLabel(t('common.share'))}</span><SurfaceChevron /></button
@@ -312,7 +314,7 @@
 				class="bu-action header-export"
 				data-variant="outline"
 				aria-label={t('toolbar.export')}
-				title={openerLabel(t('toolbar.export'))}
+				title={t('toolbar.export')}
 				onclick={() => (ui.sheet = 'export')}
 				disabled={!m}
 				><Download size={16} /><span>{openerLabel(t('toolbar.export'))}</span><SurfaceChevron
@@ -323,19 +325,18 @@
 				class="bu-action"
 				data-variant="quiet"
 				aria-label={t('activity.title')}
-				title={openerLabel(t('activity.title'))}
+				title={t('activity.title')}
 				onclick={() => (ui.sheet = 'activity')}
-				><span class="bu-ring ring spin"></span><span class="num">{active || ''}</span
-				><SurfaceChevron compact /></button
+				><span class="bu-ring ring spin"></span><span class="num">{active || ''}</span></button
 			>{/if}
 		<FullscreenButton />
 		<button
 			class="bu-action"
 			data-variant="quiet"
 			aria-label={t('toolbar.moreOptions')}
-			title={openerLabel(t('toolbar.moreOptions'))}
+			title={t('toolbar.moreOptions')}
 			data-popover-fallback="share-popover"
-			popovertarget="experience-options"><Ellipsis size={20} /><SurfaceChevron compact /></button
+			popovertarget="experience-options"><Ellipsis size={20} /></button
 		>
 	</div>
 </header>
@@ -554,9 +555,8 @@
 						target="_blank"
 						rel="noopener"
 						onclick={closeOptions}
-						><FileArchive size={18} /><span class="row-name"
-							>{openerLabel(t('workspaceCopy.title'))}</span
-						><SurfaceChevron /></a
+						><FileArchive size={18} /><span class="row-name">{t('workspaceCopy.title')}</span
+						><ExternalLink size={16} aria-hidden="true" /></a
 					>
 				</div>
 			</div>
@@ -571,9 +571,8 @@
 				onclick={() => {
 					void installApp();
 				}}
-				><MonitorDown size={18} /><span class="row-name"
-					>{openerLabel(t('pwaRuntime.installPixelDoll'))}</span
-				><SurfaceChevron /></button
+				><MonitorDown size={18} /><span class="row-name">{t('pwaRuntime.installPixelDoll')}</span
+				></button
 			>
 		{/if}
 		{#if $pwa.available}<button
@@ -582,8 +581,8 @@
 				disabled={!$pwa.ready}
 				onclick={requestUpdate}
 				><RefreshCw size={18} /><span class="row-name"
-					>{openerLabel(t('toolbar.updateToVVersion', { version: $pwa.available.version }))}</span
-				><SurfaceChevron /></button
+					>{t('toolbar.updateToVVersion', { version: $pwa.available.version })}</span
+				></button
 			>{/if}
 		{#if import.meta.env.PROD}
 			<button
@@ -614,9 +613,8 @@
 						target="_blank"
 						rel="noopener"
 						onclick={closeOptions}
-						><BookOpen size={18} /><span class="row-name"
-							>{openerLabel(t('toolbar.userGuide'))}</span
-						><SurfaceChevron /></a
+						><BookOpen size={18} /><span class="row-name">{t('toolbar.userGuide')}</span
+						><ExternalLink size={16} aria-hidden="true" /></a
 					>
 					{#if !workspaceCopy}
 						<button class="row bu-action" data-variant="quiet" onclick={requestInstallHelp}>

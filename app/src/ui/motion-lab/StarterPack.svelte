@@ -1,5 +1,4 @@
 <script lang="ts">
-	import SurfaceChevron from '../../studio/SurfaceChevron.svelte';
 	import { onMount, type ComponentProps } from 'svelte';
 	import { listProjects, loadProject, type StoredProject } from '../../lib/store/project.ts';
 	import { DIRECTIONS, defaultMs, cellHash, type DirectionName } from '../../lib/rig/rig.ts';
@@ -665,8 +664,7 @@
 			<button
 				class="bu-btn"
 				disabled={busy || !frames.length || !!renderError}
-				onclick={() => action(openAuthoring)}
-				>Open hand and foot review · Free...<SurfaceChevron /></button
+				onclick={() => action(openAuthoring)}>Open hand and foot review · Free</button
 			>{#if authoring}<button class="bu-btn" onclick={() => (authoring = undefined)}
 					>Close hand and foot review</button
 				>{/if}

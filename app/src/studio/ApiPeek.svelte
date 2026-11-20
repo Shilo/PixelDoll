@@ -243,13 +243,13 @@
 	class={menu ? 'row bu-action api-peek-trigger' : 'bu-action btn icon plain api-peek-trigger'}
 	data-variant="quiet"
 	aria-label={triggerLabel ?? (all ? t('apiPeek.inspectAll') : t('apiPeek.inspect'))}
-	title={openerLabel(t('apiPeek.triggerTitle'))}
+	title={t('apiPeek.triggerTitle')}
 	aria-expanded={open}
 	aria-controls={id}
 	popovertarget={id}
 	><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name"
 			>{openerLabel(t('apiPeek.title'))}</span
-		>{/if}<SurfaceChevron compact={!menu} /></button
+		><SurfaceChevron />{/if}</button
 >
 <div
 	bind:this={panel}

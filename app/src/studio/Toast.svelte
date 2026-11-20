@@ -1,6 +1,4 @@
 <script lang="ts">
-	import SurfaceChevron from './SurfaceChevron.svelte';
-	import { openerLabel } from './openerLabel.ts';
 	import { Notice } from '@shilo/bronze-ui/svelte';
 	import { onDestroy } from 'svelte';
 	import { displayNestedMessage } from './nestedMessage.ts';
@@ -141,39 +139,24 @@
 			}
 		}}
 	>
-		{#if ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet)}
-			{@const opens = typeof ui.toast !== 'function' && !!ui.toastAction}
-			{@const title = ui.toastTitle ? displayNestedMessage(ui.toastTitle) : undefined}
-			<Notice
+		{#if ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet)}<Notice
 				class="bu-toast"
-				title={opens && title ? openerLabel(title) : title}
+				title={ui.toastTitle ? displayNestedMessage(ui.toastTitle) : undefined}
 				tone={ui.toastTone}
 				indicator={ui.toastPending ? pendingIndicator : undefined}
 				live
 				onactivate={typeof ui.toast !== 'function' ? activate : undefined}
 				ondismiss={dismiss}
 			>
-				{#if typeof ui.toast === 'function'}
-					{@render ui.toast()}
-				{:else}
-					{@const text = Array.isArray(ui.toast)
-						? ui.toast.map(displayNestedMessage).join(' ')
-						: displayNestedMessage(ui.toast)}
-					{#if opens}<span class="notice-opener"
-							>{title ? text : openerLabel(text)}<SurfaceChevron /></span
-						>{:else}{text}{/if}
-				{/if}
+				{#if typeof ui.toast === 'function'}{@render ui.toast()}{:else if Array.isArray(ui.toast)}{ui.toast
+						.map(displayNestedMessage)
+						.join(' ')}{:else}{displayNestedMessage(ui.toast)}{/if}
 			</Notice>{/if}
 		<PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
 	</div>
 {/if}
 
 <style>
-	:global(.notice-opener) {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
 	@media (pointer: coarse) {
 		.toast-controls-only {
 			pointer-events: none;

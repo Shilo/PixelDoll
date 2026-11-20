@@ -821,7 +821,7 @@ test('an incomplete release cannot trigger a startup reload', async ({ page }) =
 		await expect(
 			page
 				.locator('#experience-options')
-				.getByRole('button', { name: 'Update to v11.4.2...', exact: true })
+				.getByRole('button', { name: 'Update to v11.4.2', exact: true })
 		).toBeDisabled();
 		await expect(page.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(
 			0

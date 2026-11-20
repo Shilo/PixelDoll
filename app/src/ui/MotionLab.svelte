@@ -1,5 +1,4 @@
 <script lang="ts">
-	import SurfaceChevron from '../studio/SurfaceChevron.svelte';
 	import { onMount } from 'svelte';
 	import { LABELS } from '../lib/rig/poses.ts';
 	import { poseCallGens } from '../lib/rig/clips.ts';
@@ -929,11 +928,11 @@
 			<button class="bu-btn" onclick={() => download('pixeldoll-motion.json', doc)}
 				>Save motion document</button
 			><label class="bu-btn"
-				>Import motion document...<input
+				>Import motion document<input
 					type="file"
 					accept="application/json"
 					onchange={imported}
-				/><SurfaceChevron /></label
+				/></label
 			>
 			<label class="bu-field"
 				>Candidate seed<input

@@ -169,7 +169,7 @@ test('version button opens build actions by click, keyboard, and tap', async ({ 
 	const version = page.locator('#experience-options').getByRole('button', { name: /^Version / });
 	const actions = page.getByRole('group', { name: 'Version actions', exact: true });
 	const repository = 'https://github.com/Shilo/PixelDoll';
-	const [, label, hash] = /^(Version \d+\.\d+\.\d+-pre)\.\.\.\s+([a-f0-9]{7,})$/i.exec(
+	const [, label, hash] = /^(Version \d+\.\d+\.\d+-pre)\s+([a-f0-9]{7,})$/i.exec(
 		(await version.innerText()).trim()
 	)!;
 	await expect(version).toHaveAttribute('aria-expanded', 'false');
@@ -180,10 +180,12 @@ test('version button opens build actions by click, keyboard, and tap', async ({ 
 	await expect(version).toHaveAttribute('aria-expanded', 'true');
 	expect(page.context().pages()).toHaveLength(1);
 	const source = actions.getByRole('link', {
-		name: 'Open source code... Shilo/PixelDoll',
+		name: 'Open source code Shilo/PixelDoll',
 		exact: true
 	});
-	const commit = actions.getByRole('link', { name: `View commit... ${hash}` });
+	const commit = actions.getByRole('link', { name: `View commit ${hash}` });
+	await expect(source.locator('svg.lucide-external-link')).toBeVisible();
+	await expect(commit.locator('svg.lucide-external-link')).toBeVisible();
 	await expect(commit).toHaveAttribute('href', `${repository}/commit/${hash}`);
 	await page.context().route(repository, (route) => route.fulfill({ body: '' }));
 	const opened = page.waitForEvent('popup');
@@ -222,7 +224,7 @@ test('version button opens build actions by click, keyboard, and tap', async ({ 
 	await expect(actions).toBeInViewport({ ratio: 1 });
 	await expect(commit).toBeVisible();
 	await expect(source.getByText('Shilo/PixelDoll', { exact: true })).toBeInViewport({ ratio: 1 });
-	const sourceLabel = source.getByText('Open source code...', { exact: true });
+	const sourceLabel = source.getByText('Open source code', { exact: true });
 	expect(await sourceLabel.evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(
 		await sourceLabel.evaluate((element) => element.clientWidth)
 	);
@@ -232,7 +234,7 @@ test('version button opens build actions by click, keyboard, and tap', async ({ 
 		.baseURL!;
 	await page.goto(dev);
 	await more.click();
-	await expect(version).toHaveAccessibleName(/^Version \d+\.\d+\.\d+-dev\.\.\. [a-f0-9]{7,}$/i);
+	await expect(version).toHaveAccessibleName(/^Version \d+\.\d+\.\d+-dev [a-f0-9]{7,}$/i);
 });
 
 test('notifications support optional titles, keyboard dismissal and visible errors inside dialogs', async ({
@@ -412,7 +414,7 @@ for (const [width, height] of [
 			await expect(notice).toHaveCount(0);
 			await expect(page.getByRole('dialog')).toHaveCount(0);
 			await offerExport();
-			await notice.getByRole('button', { name: 'Open export...', exact: true })[gesture]();
+			await notice.getByRole('button', { name: 'Open export', exact: true })[gesture]();
 			const dialog = page.getByRole('dialog', { name: 'Export', exact: true });
 			await expect(dialog).toBeVisible();
 			await expect(notice).toHaveCount(0);
@@ -1339,7 +1341,7 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	await expect(page.getByRole('heading', { name: 'Off hand', exact: true })).toBeVisible();
 	// An empty category shows Empty first and a New tile beside it, plus the header's +.
 	await expect(page.getByRole('group', { name: 'Off hand items', exact: true })).toHaveText(
-		/^\s*Empty\s*New\.\.\.\s*$/
+		/^\s*Empty\s*New\s*$/
 	);
 	await expect(page.getByRole('button', { name: 'New off hand item', exact: true })).toHaveCount(2);
 	await equipmentGroup(page, 'Head');
@@ -2304,7 +2306,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 		.filter({ has: page.getByText('Adventurer (Demo)', { exact: true }) })
 		.click();
 	await page.locator('.customize-action').click();
-	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)...');
+	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)');
 	// The page heading names the character outside the menu button (a heading cannot sit inside a button).
 	await expect(page.getByRole('heading', { level: 1, name: 'Adventurer' })).toHaveCount(1);
 	await expect(page.locator('.project-btn h1')).toHaveCount(0);
@@ -2550,7 +2552,7 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
 				{ initial, shared, legacy }
 			);
 			await openStudio(page, '/#/');
-			await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)...');
+			await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)');
 			await expect(page.locator('.world-actors').first()).toBeVisible();
 			await page.locator('.project-btn').click();
 			await page
@@ -2738,7 +2740,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitemradio', { name: 'Adventurer (demo)', exact: true }).click();
 	// Wait for the switch itself: clicking Add a move before the demo replaced the fixture raced the load (the old flake).
-	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)...');
+	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)');
 	await expect(page.locator('.move-list')).toBeVisible();
 	// The draft stays with its character: the read-only demo offers no Add a move at all.
 	await expect(page.getByRole('button', { name: 'Add a move...', exact: true })).toHaveCount(0);
@@ -4634,7 +4636,7 @@ test('moves waiting behind another character’s failed move point to it', async
 	});
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: /^Jump\.\.\. Waiting for the failed move/ }).click();
+	await page.getByRole('button', { name: /^Jump Waiting for the failed move/ }).click();
 	const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(sheet).toContainText(
 		'Cast failed on Failed mover, so new moves wait. Open it to try again or start over.'
@@ -4997,7 +4999,7 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 	}, itemId);
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Walk... Failed: tap for details' }).click();
+	await page.getByRole('button', { name: 'Walk Failed: tap for details' }).click();
 	const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(sheet.getByRole('button', { name: /^Generate new frames/ })).toContainText(
 		'Est. 10 gens'
@@ -6527,7 +6529,7 @@ test('standing-first items quote only standing and offer actual custom moves one
 	await coverage.click();
 	const gaps = page.locator('#preview-coverage');
 	await expect(gaps).toContainText('Missing frames for Custom walk');
-	const missingItem = gaps.getByRole('button', { name: `${fixture.itemName}...`, exact: true });
+	const missingItem = gaps.getByRole('button', { name: fixture.itemName, exact: true });
 	await expect(missingItem).toBeInViewport();
 	await missingItem.click();
 	await page.setViewportSize({ width: 1440, height: 900 });
@@ -7154,6 +7156,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 		.getByRole('button', { name: /^Wizard hat(,|$)/ })
 		.and(page.locator('.bu-tile:not(.shared-tile)'));
 	const more = head.getByRole('button', { name: 'More options for Wizard hat', exact: true });
+	await expect(more.locator('svg')).toHaveCount(1);
 	// A sibling control, never nested in the tile, drawn 3 px inside its top-right corner at 28 by 25 px.
 	expect(await more.evaluate((b) => !!b.closest('.item-tile'))).toBe(false);
 	await expect(more).toHaveAttribute('aria-haspopup', 'menu');

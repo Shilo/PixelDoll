@@ -994,7 +994,8 @@ test('imported move names remain readable, distinct and contained in Preview and
 		.getByRole('toolbar', { name: 'Preview controls', exact: true })
 		.getByRole('button', { name: 'Inspect', exact: true });
 	await expect(inspectAction).toHaveText('');
-	await expect(inspectAction).toHaveAttribute('title', 'Inspect...');
+	await expect(inspectAction).toHaveAttribute('title', 'Inspect');
+	await expect(inspectAction.locator('svg')).toHaveCount(1);
 	await move.selectOption('right_punch');
 	await expect(move).toHaveValue('right_punch');
 	await move.selectOption('right-punch');
@@ -2103,12 +2104,9 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 			.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
 			.uncheck();
 		await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
-		await expect(page.locator('.name-menu .name-text')).toHaveText(
-			`Wheel character ${copy + 1}...`,
-			{
-				timeout: 30_000
-			}
-		); // a full import saves and reopens the character
+		await expect(page.locator('.name-menu .name-text')).toHaveText(`Wheel character ${copy + 1}`, {
+			timeout: 30_000
+		}); // a full import saves and reopens the character
 	}
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
 	const rows = page.locator('.character-row');

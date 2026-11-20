@@ -33,7 +33,8 @@ async function newCharacter(page: Page) {
 async function expectPeekBeforePrimary(page: Page) {
 	const sheet = page.locator('dialog[open]');
 	const inspect = sheet.locator('.sheet-foot .api-peek-trigger');
-	await expect(inspect).toHaveAttribute('title', 'PixelLab API calls...');
+	await expect(inspect).toHaveAttribute('title', 'PixelLab API calls');
+	await expect(inspect.locator('svg')).toHaveCount(1);
 	const icon = await inspect.boundingBox(),
 		primary = await sheet.locator('.sheet-foot .btn.primary').boundingBox();
 	expect(icon).not.toBeNull();

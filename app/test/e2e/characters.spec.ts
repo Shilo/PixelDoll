@@ -204,13 +204,13 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
 	);
 	await expect(page.locator('.customize-action')).toBeEnabled();
-	await expect(page.locator('.selected-name-text')).toHaveText('Adventurer (Demo)...');
+	await expect(page.locator('.selected-name-text')).toHaveText('Adventurer (Demo)');
 	await expect(page.locator('.character-row strong .bu-muted')).toHaveText('(Demo)');
 	await page
 		.getByRole('button', { name: 'More actions for Adventurer (demo)', exact: true })
 		.click();
 	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
-	await expect(page.locator('.selected-name-text')).toHaveText('Adventurer copy...');
+	await expect(page.locator('.selected-name-text')).toHaveText('Adventurer copy');
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts';
 		const state = await import(path);
@@ -220,7 +220,8 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 		name: 'More actions for Saved hero',
 		exact: true
 	});
-	await expect(savedActions).toHaveAttribute('title', 'More actions for Saved hero...');
+	await expect(savedActions).toHaveAttribute('title', 'More actions for Saved hero');
+	await expect(savedActions.locator('svg')).toHaveCount(1);
 	await savedActions.click();
 	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
 	await page.keyboard.press('Escape');
@@ -235,7 +236,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 			includeHidden: true
 		})
 	).toBeEnabled();
-	await expect(page.locator('.selected-name-text')).toHaveText('Saved hero...');
+	await expect(page.locator('.selected-name-text')).toHaveText('Saved hero');
 	await expect(page.locator('.cast-library .character-row')).toHaveCount(2);
 	await page.reload();
 	const rows = page.locator('.cast-library .character-row');
@@ -280,7 +281,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 		'4 directions · 3 moves · 6 items'
 	]);
 	await page.locator('.customize-action').click();
-	await expect(page.locator('.name-text')).toHaveText('Adventurer (Demo)...');
+	await expect(page.locator('.name-text')).toHaveText('Adventurer (Demo)');
 	await expect(page.locator('.name-facts')).toHaveText(
 		'Frame 64×64 px · 4 directions · 2 moves · 6 items'
 	);
@@ -292,23 +293,11 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(moveDetails.getByText(/^\d+×\d+ px$/)).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
-	await expect(page.locator('.name-text')).toHaveText('Saved hero...');
+	await expect(page.locator('.name-text')).toHaveText('Saved hero');
 	const viewport = page.viewportSize()!;
 	await page.setViewportSize({ width: 320, height: 700 });
-	await expect
-		.poll(() =>
-			page.locator('.name-line').evaluate((line) => {
-				const name = line.querySelector('.name-opener-value')!.getBoundingClientRect();
-				const suffix = line.querySelector('.name-opener-suffix')!.getBoundingClientRect();
-				const chevron = line.querySelector('svg[data-surface-chevron]')!.getBoundingClientRect();
-				return (
-					Math.abs(name.top - suffix.top) < 1 &&
-					name.right <= suffix.left &&
-					suffix.right <= chevron.left
-				);
-			})
-		)
-		.toBe(true);
+	await expect(page.locator('.name-text')).toBeVisible();
+	await expect(page.locator('.name-text')).toHaveText('Saved hero');
 	await page.setViewportSize(viewport);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
@@ -389,6 +378,9 @@ test('both New character entry points offer separate import sources on desktop a
 	await page.goto('/');
 	for (const width of [1440, 390]) {
 		await page.setViewportSize({ width, height: 850 });
+		const more = page.getByRole('button', { name: 'More options', exact: true });
+		await expect(more).toHaveAttribute('title', 'More options');
+		await expect(more.locator('svg')).toHaveCount(1);
 		const library = page.getByRole('complementary', { name: 'Your characters' });
 		const add = library.locator('.new-character-row');
 		await expect(add).toBeVisible();
@@ -704,10 +696,10 @@ test('device import previews a dropped ZIP and offers a keyboard-accessible file
 	await expect(drop).toContainText('Release ZIP to preview');
 	// Crossing the button inside the drop surface must not reset its active state.
 	await drop
-		.getByRole('button', { name: 'Choose ZIP...', exact: true })
+		.getByRole('button', { name: 'Choose ZIP', exact: true })
 		.dispatchEvent('dragenter', { dataTransfer: transfer });
 	await drop
-		.getByRole('button', { name: 'Choose ZIP...', exact: true })
+		.getByRole('button', { name: 'Choose ZIP', exact: true })
 		.dispatchEvent('dragleave', { dataTransfer: transfer });
 	await expect(drop).toContainText('Release ZIP to preview');
 	await drop.dispatchEvent('dragleave', { dataTransfer: transfer });
@@ -720,7 +712,7 @@ test('device import previews a dropped ZIP and offers a keyboard-accessible file
 	await expect(dialog.getByLabel('Character name', { exact: true })).toHaveValue('Drop preview');
 	await dialog.getByRole('button', { name: 'Choose another character', exact: true }).click();
 	const choosing = page.waitForEvent('filechooser');
-	await dialog.getByRole('button', { name: 'Choose ZIP...', exact: true }).focus();
+	await dialog.getByRole('button', { name: 'Choose ZIP', exact: true }).focus();
 	await page.keyboard.press('Enter');
 	await (
 		await choosing
@@ -762,7 +754,7 @@ test('device import validates dropped files and picker files before previewing',
 		await expect(
 			dialog.getByRole('button', { name: 'Import character', exact: true })
 		).toBeDisabled();
-		await expect(dialog.getByRole('button', { name: 'Choose ZIP...', exact: true })).toBeEnabled();
+		await expect(dialog.getByRole('button', { name: 'Choose ZIP', exact: true })).toBeEnabled();
 		await transfer.dispose();
 	}
 	const picker = dialog.getByLabel('Character ZIP', { exact: true });
@@ -2916,8 +2908,7 @@ test('every character loads its frames once across switching, menus and updates,
 				(r) => r.manifest?.name === name
 			)!.id;
 		}, name);
-	const selectedName = async () =>
-		(await page.locator('.selected-name-text').textContent())?.replace(/\.\.\.$/, '');
+	const selectedName = () => page.locator('.selected-name-text').textContent();
 
 	await page.goto(devURL);
 	await settled();
@@ -3068,7 +3059,7 @@ test('every character loads its frames once across switching, menus and updates,
 	await expect(rows).toHaveCount(5);
 	await expect(rows.filter({ hasText: 'Hero 3' })).toHaveCount(0);
 	await step(() => rows.filter({ hasText: 'Hero 5' }).click());
-	await expect(page.locator('.selected-name-text')).toHaveText('Hero 5...');
+	await expect(page.locator('.selected-name-text')).toHaveText('Hero 5');
 	await settled();
 	const imported = await stats();
 	expect(imported.frames).toBeGreaterThan(updated.frames);

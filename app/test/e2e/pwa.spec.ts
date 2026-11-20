@@ -59,7 +59,7 @@ async function openUpdatedApp(page: Page, button: Locator) {
 	const context = page.context();
 	const existing = context.pages();
 	const newTab = () => context.pages().find((tab) => !existing.includes(tab));
-	const link = page.getByRole('link', { name: 'Open updated app...', exact: true });
+	const link = page.getByRole('link', { name: 'Open updated app', exact: true });
 	await button.click();
 	await expect
 		.poll(async () => !!newTab() || (await link.isVisible()), { timeout: 30_000 })
@@ -638,7 +638,7 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await expect(notice).toHaveCount(0);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		const menu = page.locator('#experience-options');
-		const update = menu.getByRole('button', { name: 'Update to v8.9.2...', exact: true });
+		const update = menu.getByRole('button', { name: 'Update to v8.9.2', exact: true });
 		await expect(update).toBeEnabled();
 		await page.keyboard.press('Escape');
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
@@ -664,9 +664,7 @@ test('update notices expire without hiding the menu action, survive interaction,
 		await page.mouse.move(0, 0);
 		await page.evaluate(() => dispatchEvent(new Event('online')));
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await expect(
-			menu.getByRole('button', { name: 'Update to v8.9.3...', exact: true })
-		).toBeEnabled();
+		await expect(menu.getByRole('button', { name: 'Update to v8.9.3', exact: true })).toBeEnabled();
 		await expect(newer).toHaveCount(0);
 		await page.keyboard.press('Escape');
 		const held = server.hold(
@@ -706,7 +704,9 @@ test('update notices expire without hiding the menu action, survive interaction,
 		held.release();
 		await discover(page, d);
 		const latest = page.getByRole('status').filter({ hasText: 'Update to v8.9.4' });
+		await expect(latest.locator('strong')).toHaveText('Update to v8.9.4');
 		await expect(latest.locator('.bu-small')).toHaveText('Ready to update.');
+		await expect(latest.locator('[data-surface-chevron]')).toHaveCount(0);
 		await expect(latest.locator('.bu-notice-indicator')).toHaveCount(0);
 		await page.clock.fastForward(15000);
 		await expect(latest).toHaveCount(0);
@@ -734,7 +734,7 @@ test('update notices expire without hiding the menu action, survive interaction,
 			);
 		});
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await menu.getByRole('button', { name: 'Update to v8.9.4...', exact: true }).click();
+		await menu.getByRole('button', { name: 'Update to v8.9.4', exact: true }).click();
 		await expectLoadedBuild(page, d);
 		expect(
 			await page.evaluate(() => JSON.parse(sessionStorage.getItem('pwa-reload-notice')!))
@@ -983,7 +983,7 @@ test('a stalled outfit save releases the update dialog and leaves the old Studio
 		await expect(paused.getByRole('button', { name: 'Close', exact: true })).toBeEnabled();
 		const updated = await openUpdatedApp(
 			page,
-			paused.getByRole('button', { name: 'Update now...', exact: true })
+			paused.getByRole('button', { name: 'Update now', exact: true })
 		);
 		await expectLoadedBuild(updated, b);
 		await expectLoadedBuild(page, a);
@@ -1052,12 +1052,12 @@ for (const loading of ['stalled', 'failed'] as const) {
 			await page.getByRole('button', { name: 'More options', exact: true }).click();
 			await page
 				.locator('#experience-options')
-				.getByRole('button', { name: 'Update to v9.3.2...', exact: true })
+				.getByRole('button', { name: 'Update to v9.3.2', exact: true })
 				.click();
 			await expect(paused.getByRole('alert')).toHaveText(reason);
 			const recovery = await openUpdatedApp(
 				page,
-				paused.getByRole('button', { name: 'Update now...', exact: true })
+				paused.getByRole('button', { name: 'Update now', exact: true })
 			);
 			await expect(recovery).toHaveURL(server.url, { timeout: 30_000 });
 			await expectLoadedBuild(recovery, b);
@@ -1092,7 +1092,7 @@ test('Update now preserves the draft when verification fails and opens the verif
 		server.deploy(b);
 		await (await discover(page, b)).click();
 		const paused = page.getByRole('dialog', { name: 'Update paused', exact: true });
-		const button = paused.getByRole('button', { name: 'Update now...', exact: true });
+		const button = paused.getByRole('button', { name: 'Update now', exact: true });
 		const asset = b.inventory.find((file) => file.path.startsWith('appearance.js?'))!.path;
 		server.failures.add('appearance.js');
 		await page.evaluate(
@@ -1146,7 +1146,7 @@ test('slow or blocked updates stay in Studio and offer a direct link to the veri
 		server.deploy(b);
 		await (await discover(page, b)).click();
 		const paused = page.getByRole('dialog', { name: 'Update paused', exact: true });
-		const button = paused.getByRole('button', { name: 'Update now...', exact: true });
+		const button = paused.getByRole('button', { name: 'Update now', exact: true });
 		await page.evaluate(() => {
 			window.open = (url) => {
 				document.documentElement.dataset.openedUrl = String(url);
@@ -1166,7 +1166,7 @@ test('slow or blocked updates stay in Studio and offer a direct link to the veri
 			held.release();
 		}
 		const ready = page.getByRole('dialog', { name: 'Update ready', exact: true });
-		const link = ready.getByRole('link', { name: 'Open updated app...', exact: true });
+		const link = ready.getByRole('link', { name: 'Open updated app', exact: true });
 		await expect(link).toBeFocused();
 		await expect(link).toHaveAttribute('href', server.url);
 		const popup = context.waitForEvent('page');
@@ -1300,7 +1300,7 @@ test('phone installation help stays available before and after a standalone laun
 		});
 		await openInstalled(page, server.url, release);
 		const more = page.getByRole('button', { name: 'More options', exact: true });
-		const install = page.getByRole('button', { name: 'Install PixelDoll...', exact: true });
+		const install = page.getByRole('button', { name: 'Install PixelDoll', exact: true });
 		const help = page.getByRole('dialog', { name: 'Installation help', exact: true });
 		for (const standalone of [false, true]) {
 			if (standalone) {
@@ -1339,12 +1339,16 @@ test('a production workspace copy offers the user guide without install actions'
 		await page.getByLabel('Choose workspace ZIP').setInputFiles(await archive.path());
 		await expect(page.getByText('Workspace copy · PixelLab off', { exact: true })).toBeVisible();
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await expect(
-			page.getByRole('button', { name: 'Install PixelDoll...', exact: true })
-		).toHaveCount(0);
+		await expect(page.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
+			0
+		);
 		await page.getByRole('button', { name: 'Help...', exact: true }).click();
 		const help = page.getByRole('group', { name: 'Help', exact: true });
-		await expect(help.getByRole('link', { name: 'User guide...', exact: true })).toBeVisible();
+		await expect(
+			help
+				.getByRole('link', { name: 'User guide', exact: true })
+				.locator('svg.lucide-external-link')
+		).toBeVisible();
 		await expect(
 			help.getByRole('button', { name: 'Installation help...', exact: true })
 		).toHaveCount(0);
@@ -1491,7 +1495,7 @@ test('accepting an install prompt does not report installation until the browser
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		const install = page
 			.locator('#experience-options')
-			.getByRole('button', { name: 'Install PixelDoll...', exact: true });
+			.getByRole('button', { name: 'Install PixelDoll', exact: true });
 		await install.click();
 		await expect(page.locator('html')).toHaveAttribute('data-pwa-prompted', 'yes');
 		// The native event is single-use; its disappearance does not establish that installation completed.
@@ -1589,11 +1593,11 @@ test('an install offer captured before the module app starts remains available f
 		await expect(
 			menu.getByRole('button', { name: 'Installation help...', exact: true })
 		).toHaveCount(0);
-		await menu.getByRole('button', { name: 'Install PixelDoll...', exact: true }).click();
+		await menu.getByRole('button', { name: 'Install PixelDoll', exact: true }).click();
 		await expect(page.locator('html')).toHaveAttribute('data-pwa-early-prompt', 'shown');
-		await expect(
-			menu.getByRole('button', { name: 'Install PixelDoll...', exact: true })
-		).toHaveCount(0);
+		await expect(menu.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
+			0
+		);
 		await expect(menu.getByRole('button', { name: 'Help...', exact: true })).toBeVisible();
 		await expectLoadedBuild(page, release);
 	} finally {
@@ -1620,23 +1624,24 @@ test('installation help upgrades on a late native offer and preserves explicit p
 		await openInstalled(page, server.url, release);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
 		const menu = page.locator('#experience-options');
-		await expect(
-			menu.getByRole('button', { name: 'Install PixelDoll...', exact: true })
-		).toHaveCount(0);
+		await expect(menu.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
+			0
+		);
 		await expect(
 			menu.getByRole('button', { name: 'Installation help...', exact: true })
 		).toHaveCount(0);
 		await menu.getByRole('button', { name: 'Help...', exact: true }).click();
 		const helpMenu = page.locator('#help-options');
-		await expect(
-			helpMenu.getByRole('link', { name: 'User guide...', exact: true })
-		).toHaveAttribute('href', 'https://github.com/Shilo/PixelDoll/blob/main/docs/user-guide.md');
+		await expect(helpMenu.getByRole('link', { name: 'User guide', exact: true })).toHaveAttribute(
+			'href',
+			'https://github.com/Shilo/PixelDoll/blob/main/docs/user-guide.md'
+		);
 		await helpMenu.getByRole('button', { name: 'Installation help...', exact: true }).click();
 		const help = page.getByRole('dialog', { name: 'Installation help', exact: true });
 		await expect(help).toContainText('A browser install prompt isn’t available in this window.');
-		await expect(
-			help.getByRole('button', { name: 'Install PixelDoll...', exact: true })
-		).toHaveCount(0);
+		await expect(help.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
+			0
+		);
 		await page.evaluate(() => {
 			const event = new Event('beforeinstallprompt', { cancelable: true });
 			Object.assign(event, {
@@ -1647,12 +1652,12 @@ test('installation help upgrades on a late native offer and preserves explicit p
 			});
 			dispatchEvent(event);
 		});
-		await help.getByRole('button', { name: 'Install PixelDoll...', exact: true }).click();
+		await help.getByRole('button', { name: 'Install PixelDoll', exact: true }).click();
 		await expect(help.getByRole('alert')).toContainText('Native prompt rejected for this test');
 		await expect(help).toBeVisible();
-		await expect(
-			help.getByRole('button', { name: 'Install PixelDoll...', exact: true })
-		).toHaveCount(0);
+		await expect(help.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
+			0
+		);
 		await page.evaluate(() => {
 			const event = new Event('beforeinstallprompt', { cancelable: true });
 			Object.assign(event, {
@@ -1664,13 +1669,13 @@ test('installation help upgrades on a late native offer and preserves explicit p
 			dispatchEvent(event);
 		});
 		await expect(help.getByRole('alert')).toHaveCount(0);
-		await help.getByRole('button', { name: 'Install PixelDoll...', exact: true }).click();
+		await help.getByRole('button', { name: 'Install PixelDoll', exact: true }).click();
 		await expect(page.locator('html')).toHaveAttribute('data-pwa-late-prompt', 'shown');
 		await expect(help).not.toBeVisible();
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await expect(
-			menu.getByRole('button', { name: 'Install PixelDoll...', exact: true })
-		).toHaveCount(0);
+		await expect(menu.getByRole('button', { name: 'Install PixelDoll', exact: true })).toHaveCount(
+			0
+		);
 		await expect(menu.getByRole('button', { name: 'Help...', exact: true })).toBeVisible();
 		await expectLoadedBuild(page, release);
 	} finally {

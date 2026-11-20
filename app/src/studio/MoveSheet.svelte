@@ -565,11 +565,9 @@
 		</p>{/if}
 	{#if mine && adding && moving.repairReview}
 		<button class="bu-action btn" data-variant="outline" onclick={() => (adding = false)}
-			>{openerLabel(
-				moving.spec?.redrawItem
-					? t('moveSheet.review.redrawTitle')
-					: t('moveSheet.review.repairTitle')
-			)}<SurfaceChevron /></button
+			>{moving.spec?.redrawItem
+				? t('moveSheet.review.redrawTitle')
+				: t('moveSheet.review.repairTitle')}</button
 		>
 	{/if}
 	{#if repairReview && moving.spec}

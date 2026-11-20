@@ -1,6 +1,6 @@
 <script lang="ts">
 	import SurfaceChevron from './SurfaceChevron.svelte';
-	import { openerLabel, openerName } from './openerLabel.ts';
+	import { openerLabel } from './openerLabel.ts';
 	import Sprite from './Sprite.svelte';
 	import { moveThumbnails } from './moveThumbnails.ts';
 	import { ui, doc, store, view, isDemo, moving } from './state.svelte.ts';
@@ -131,7 +131,7 @@
 					class:spin={!moving.error && !moving.repairReview}
 					aria-hidden="true"
 				></span><span class="move-text"
-					><b>{openerName(nice(moving.spec.id))}</b><span class="muted small"
+					><b>{nice(moving.spec.id)}</b><span class="muted small"
 						>{moving.repairReview
 							? moving.spec?.redrawItem
 								? t('moveSheet.review.redrawTitle')
@@ -143,20 +143,20 @@
 										total: moving.progress?.total ?? '?'
 									})}</span
 					></span
-				><SurfaceChevron /></button
+				></button
 			>
 		{/if}
 		{#each queued as q, i (i)}
 			<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
 				><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
-					><b>{openerName(nice(q.spec.id))}</b><span class="muted small"
+					><b>{nice(q.spec.id)}</b><span class="muted small"
 						>{moving.repairReview
 							? t('moves.waitingForRepairReview')
 							: moving.error
 								? t('moves.waitingForFailed')
 								: t('generation.status.queued')}</span
 					></span
-				><SurfaceChevron /></button
+				></button
 			>
 		{/each}
 		{#if !isDemo()}<button

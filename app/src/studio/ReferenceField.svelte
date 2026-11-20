@@ -1,6 +1,4 @@
 <script lang="ts">
-	import SurfaceChevron from './SurfaceChevron.svelte';
-	import { openerLabel } from './openerLabel.ts';
 	import {
 		REFERENCE_MAX_MB,
 		readReference,
@@ -162,11 +160,6 @@
 			{/if}
 			<span class="reference-copy">
 				{#if value}
-					<span
-						>{loading
-							? t('referenceField.opening')
-							: openerLabel(t('referenceField.chooseDifferent'))}</span
-					>
 					<small class="reference-file" id={fileId}>
 						<span class="filename" title={value.name}>{value.name}</span>
 						<span class="faint dimensions"
@@ -174,18 +167,13 @@
 						>
 					</small>
 				{:else}
-					<span
-						>{loading
-							? t('referenceField.opening')
-							: openerLabel(t('referenceField.addImage'))}</span
-					>
+					<span>{loading ? t('referenceField.opening') : t('referenceField.addImage')}</span>
 					{#if !loading}<small class="faint" aria-hidden="true"
 							>{t('referenceField.dropHint')}</small
 						>{/if}
 				{/if}
 			</span>
-			{#if !loading}<SurfaceChevron />{/if}</button
-		>
+		</button>
 		{#if value}
 			<button
 				type="button"
@@ -246,7 +234,6 @@
 		min-block-size: 44px;
 	}
 	.drop {
-		position: relative;
 		flex: 1;
 		min-width: 0;
 		min-height: 0;
@@ -265,15 +252,6 @@
 	}
 	.attached .drop {
 		padding: 2px 4px;
-	}
-	.drop:not(:disabled) {
-		padding-inline-end: 22px;
-	}
-	.drop > :global(svg[data-surface-chevron]) {
-		position: absolute;
-		inset-inline-end: 4px;
-		inset-block: 0;
-		margin-block: auto;
 	}
 	.drop > :global(svg) {
 		flex: none;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import SurfaceChevron from '../SurfaceChevron.svelte';
-	import { openerLabel, openerName } from '../openerLabel.ts';
+	import { openerLabel } from '../openerLabel.ts';
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage } from '../../lib/i18n.ts';
 	import { message } from '../../lib/message.ts';
@@ -43,6 +43,7 @@
 	import { WORLDS, worldArt } from './config.ts';
 	import { heroScale, layout, placeWorld } from './geometry.ts';
 	import {
+		ChevronDown,
 		ChevronLeft,
 		ChevronRight,
 		Play,
@@ -608,8 +609,8 @@
 						class="selected-name project-btn"
 						popovertarget="project-menu"
 						onclick={() => void refreshProjects()}
-						><span class="selected-name-text"><CharacterName id={doc.id} {name} opener /></span>
-						<SurfaceChevron /></button
+						><span class="selected-name-text"><CharacterName id={doc.id} {name} /></span>
+						<ChevronDown size={16} aria-hidden="true" /></button
 					>
 					{#if list.length > 1}<div class="selected-step">
 							<button
@@ -807,9 +808,8 @@
 						class="bu-action playback-inspect"
 						data-variant="quiet"
 						aria-label={t('experience.inspect')}
-						title={openerLabel(t('experience.inspect'))}
-						onclick={() => (ui.sheet = 'inspect')}
-						><Grid2x2 size={16} /><SurfaceChevron compact /></button
+						title={t('experience.inspect')}
+						onclick={() => (ui.sheet = 'inspect')}><Grid2x2 size={16} /></button
 					>
 					{#if missing}
 						{@const coverageLabel = t('experience.missingEquippedFrames', {
@@ -820,10 +820,9 @@
 							class="bu-action"
 							data-variant="quiet"
 							aria-label={coverageLabel}
-							title={openerLabel(coverageLabel)}
+							title={coverageLabel}
 							popovertarget="preview-coverage"
-							><TriangleAlert size={16} /><span>{formatNumber(missing.items.length)}</span
-							><SurfaceChevron compact /></button
+							><TriangleAlert size={16} /><span>{formatNumber(missing.items.length)}</span></button
 						>
 						<div
 							id="preview-coverage"
@@ -847,7 +846,7 @@
 											class="row bu-action"
 											data-variant="quiet"
 											onclick={() => showMissingItem(saved)}
-											>{openerName(item.name)}<SurfaceChevron /></button
+											>{item.name}<ChevronRight size={16} aria-hidden="true" /></button
 										>
 									{:else}<p class="menu-sec">{item.name}</p>{/if}
 								{/each}

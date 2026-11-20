@@ -1,6 +1,4 @@
 <script lang="ts">
-	import SurfaceChevron from './SurfaceChevron.svelte';
-	import { openerLabel } from './openerLabel.ts';
 	import type { DirectionName } from '../lib/store/manifest.ts';
 	import Sprite from './Sprite.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
@@ -382,9 +380,7 @@
 				class="bu-action"
 				data-variant="outline"
 				disabled={!canShare || encoding}
-				onclick={share}
-				><Share2 size={16} aria-hidden="true" />{openerLabel(t('share.shareTo'))}<SurfaceChevron
-				/></button
+				onclick={share}><Share2 size={16} aria-hidden="true" />{t('share.shareTo')}</button
 			>
 			<button
 				class="share-download bu-action"

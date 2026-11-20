@@ -55,7 +55,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await openStudio(page, '/');
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	const usage = page.getByRole('button', { name: /^PixelLab usage/ });
-	const usageLabel = await usage.getByText('PixelLab usage...', { exact: true }).boundingBox();
+	const usageLabel = await usage.getByText('PixelLab usage', { exact: true }).boundingBox();
 	const versionLabel = await page.getByText(/^Version /).boundingBox();
 	expect(usageLabel?.x).toBe(versionLabel?.x);
 	await expect(usage.getByText('58 / 100', { exact: true })).toBeVisible();
@@ -104,7 +104,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await expect(fullCount).toBeVisible();
 	await expect(meter).toHaveAttribute('value', '50000');
 	await expect(meter).toHaveAttribute('max', '50000');
-	const label = usage.getByText('PixelLab usage...', { exact: true });
+	const label = usage.getByText('PixelLab usage', { exact: true });
 	const labelBox = await label.boundingBox();
 	const countBox = await fullCount.boundingBox();
 	const chevronBox = await usage.locator('.actions svg').boundingBox();

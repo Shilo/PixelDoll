@@ -447,8 +447,7 @@
 					class="bu-action btn"
 					data-variant="outline"
 					disabled={busy}
-					onclick={() => fileInput?.click()}
-					>{openerLabel(t('import.chooseZip'))}<SurfaceChevron /></button
+					onclick={() => fileInput?.click()}>{t('import.chooseZip')}</button
 				>
 				<input
 					hidden

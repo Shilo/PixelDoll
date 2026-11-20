@@ -1,12 +1,10 @@
 <script lang="ts">
-	import SurfaceChevron from './SurfaceChevron.svelte';
 	import type { Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import { contextMenu } from '../lib/input/contextMenu.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import { EllipsisVertical } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
-	import { openerName } from './openerLabel.ts';
 	let {
 		name,
 		children,
@@ -31,10 +29,10 @@
 		class="bu-action character-more"
 		data-variant="quiet"
 		aria-label={t('experience.moreActionsFor', { name })}
-		title={openerName(t('experience.moreActionsFor', { name }))}
+		title={t('experience.moreActionsFor', { name })}
 		aria-haspopup="menu"
 		aria-expanded={expanded}
-		popovertarget={menuId}><EllipsisVertical size={18} /><SurfaceChevron compact /></button
+		popovertarget={menuId}><EllipsisVertical size={18} /></button
 	>
 </div>
 <div

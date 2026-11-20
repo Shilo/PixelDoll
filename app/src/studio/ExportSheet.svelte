@@ -29,6 +29,7 @@
 	import { displayMove } from './displayMove.ts';
 	import {
 		Check,
+		ChevronDown,
 		ChevronLeft,
 		ChevronRight,
 		Download,
@@ -742,13 +743,12 @@
 													<span class="version-value"
 														>{#each RPG_VERSIONS as v (v.id)}<span
 																aria-hidden="true"
-																class:hidden={v.id !== rpgVersion.id}
-																>{openerLabel(t(v.value))}</span
+																class:hidden={v.id !== rpgVersion.id}>{t(v.value)}</span
 															>{/each}</span
 													>
 
-													<SurfaceChevron /></button
-												>
+													<ChevronDown size={16} aria-hidden="true" />
+												</button>
 											</div>
 										</div>
 									{:else}

@@ -1,6 +1,4 @@
 <script lang="ts">
-	import SurfaceChevron from './SurfaceChevron.svelte';
-	import { openerLabel } from './openerLabel.ts';
 	import Sheet from './Sheet.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
@@ -163,9 +161,8 @@
 			class="bu-action btn creation-wardrobe"
 			data-variant="quiet"
 			aria-label={t('toolbar.wardrobeSettings')}
-			title={openerLabel(t('toolbar.wardrobeSettings'))}
-			popovertarget={wardrobeMenuId}
-			><Shirt size={18} aria-hidden="true" /><SurfaceChevron compact /></button
+			title={t('toolbar.wardrobeSettings')}
+			popovertarget={wardrobeMenuId}><Shirt size={18} aria-hidden="true" /></button
 		>
 		{#if creating?.projectId && !running}
 			<button

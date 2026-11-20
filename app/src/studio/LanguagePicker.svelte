@@ -40,7 +40,7 @@
 		class={compact ? 'bu-action btn icon plain' : 'row bu-action'}
 		data-variant="quiet"
 		aria-label={t('language.label')}
-		title={compact ? openerLabel(t('language.label')) : undefined}
+		title={compact ? t('language.label') : undefined}
 		aria-describedby={compact ? undefined : valueId}
 		aria-controls={menuId}
 		aria-expanded={expanded}
@@ -50,9 +50,9 @@
 		{#if !compact}
 			<span class="row-name">{openerLabel(t('language.label'))}</span>
 			<span id={valueId} class="faint small" lang={activeLanguage}>{nameOf(activeLanguage)}</span>
+			<SurfaceChevron />
 		{/if}
-		<SurfaceChevron {compact} /></button
-	>
+	</button>
 	<div
 		id={menuId}
 		class="menu bu-popover-anchor"
