@@ -14,9 +14,10 @@
 	import { loadProject } from '../lib/store/project.ts';
 	import type { Project } from '../lib/store/manifest.ts';
 	import type { ClipQa } from '../lib/rig/clips.ts';
-	import { STEPS, estimate, type CreateSpec } from './create.ts';
+	import { estimate, type CreateSpec } from './create.ts';
 	import CharacterForm from './CharacterForm.svelte';
 	import {
+		CREATE_STEPS,
 		autoFrame,
 		draftErrors,
 		facingOf,
@@ -27,10 +28,10 @@
 	import { nameFrom, bodyQualityNote as plain } from './model.ts';
 	import {
 		ui,
-		creating,
+		creates,
+		createPresentation,
 		startCreate,
-		createBusy,
-		cancelCreate,
+		discardCreate,
 		openProject,
 		withKey
 	} from './state.svelte.ts';
@@ -44,6 +45,7 @@
 	const policyDecline = /\b5000\b|policy/i;
 	let d = $state(formDrafts.character ?? newCharacterDraft());
 	formDrafts.character = undefined;
+	const creating = $derived(creates.find((run) => run.id === createPresentation.id));
 	let enhancing = $state(false);
 	let referenceLoading = $state(false);
 	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
@@ -70,7 +72,7 @@
 		exactPrompt: true,
 		...styleOf(d)
 	});
-	const est = $derived(estimate(creating.spec ?? formSpec));
+	const est = $derived(estimate(creating?.spec ?? formSpec));
 	const lo = $derived(Math.round(est.gens)),
 		hi = $derived(Math.ceil(est.maxGens / 5) * 5);
 	function connectEnhance(target: 'details' | 'prompt') {
@@ -82,21 +84,24 @@
 			ui.sheet = 'create';
 		});
 	}
-	const running = $derived(!!creating.spec && !creating.projectId && !creating.error);
-	const stepIx = $derived(STEPS.findIndex((s) => s.id === creating.progress?.step));
+	const running = $derived(!!creating && !creating.projectId && !creating.error);
+	const stepIx = $derived(CREATE_STEPS.findIndex((s) => s.id === creating?.progress?.step));
 	let result = $state.raw<Project | null>(null);
 	let failedNotes = $state<string[]>([]);
-	const qualityNotes = $derived([...new Set([...failedNotes, ...creating.warnings])]);
+	let warnings = $state<string[]>([]);
+	const qualityNotes = $derived([...new Set([...failedNotes, ...warnings])]);
 	$effect(() => {
-		const id = creating.projectId;
+		const id = creating?.projectId;
 		let active = true;
 		result = null;
 		failedNotes = [];
+		warnings = [];
 		if (id)
 			void loadProject(id).then(({ rec, project }) => {
 				if (!active) return;
 				result = project;
-				const qa = rec.rigQa as { clips?: Record<string, ClipQa> } | undefined;
+				const qa = rec.rigQa as { warnings?: string[]; clips?: Record<string, ClipQa> } | undefined;
+				warnings = qa?.warnings ?? [];
 				failedNotes = Object.entries(qa?.clips ?? {}).flatMap(([clip, qa]) =>
 					[...qa.fails, ...(qa.warnings ?? [])].map((f) => `${clip}: ${f}`)
 				);
@@ -113,21 +118,20 @@
 	const k = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1.25 : 2))));
 
 	function go() {
-		if (errors.length || enhancing || referenceLoading) return;
+		if (createPresentation.id || errors.length || enhancing || referenceLoading) return;
 		formDrafts.character = $state.snapshot(d);
 		const spec = { ...$state.snapshot(formSpec), seed: d.seed ? Number(d.seed) : freshSeed() };
 		withKey(() => {
-			if (!createBusy()) formDrafts.character = undefined;
-			void startCreate(spec);
-			ui.sheet = 'create';
-		}); // refused (a resumed create runs): keep the form
+			formDrafts.character = undefined;
+			void startCreate(spec, true);
+		});
 	}
 	const gensRange = $derived(
 		t('create.sheet.gensRange', { lo: formatNumber(lo), hi: formatNumber(hi) })
 	);
 	async function open() {
-		const id = creating.projectId;
-		await cancelCreate();
+		const id = creating?.projectId;
+		if (!id) return;
 		ui.sheet = null;
 		ui.welcome = false;
 		await openProject(id);
@@ -137,12 +141,12 @@
 
 <Sheet
 	title={t('create.sheet.title')}
-	cancel={running ? 'common.hide' : creating.projectId ? 'common.close' : 'common.cancel'}
+	cancel={running ? 'common.hide' : creating?.projectId ? 'common.close' : 'common.cancel'}
 	onclose={() => (ui.sheet = null)}
 	className="character-sheet"
 	wide
 >
-	{#snippet heading()}{#if !creating.spec}<label class="character-name-field"
+	{#snippet heading()}{#if !creating}<label class="character-name-field"
 				><span>{t('common.name')}</span><input
 					class="bu-input input character-name"
 					aria-label={t('common.name')}
@@ -160,7 +164,7 @@
 			title={t('toolbar.wardrobeSettings')}
 			popovertarget={wardrobeMenuId}><Shirt size={18} aria-hidden="true" /></button
 		>
-		{#if creating.projectId && !running}
+		{#if creating?.projectId && !running}
 			<button
 				class="bu-action btn plain link done"
 				data-variant="quiet"
@@ -178,7 +182,7 @@
 			<div class="menu-surface bu-popover-surface bu-floating"><WardrobeVisibility /></div>
 		</div>
 	{/snippet}
-	{#if creating.projectId}
+	{#if creating?.projectId}
 		<div class="create-review">
 			<ApiPeek
 				scope="character-create-result"
@@ -221,7 +225,7 @@
 				</details>
 			{/if}
 		</div>
-	{:else if running || creating.error}
+	{:else if creating}
 		<div class="form">
 			<div class="api-action">
 				<p style="font-weight:600">{creating.spec?.name}</p>
@@ -232,22 +236,22 @@
 					activityScope={creating.spec?.activityScope}
 				/>
 			</div>
-			<ol class="steps-list">
-				{#each STEPS as s, i (s.id)}
-					<li class:done={i < stepIx} class:now={i === stepIx}>
-						{#if i < stepIx}<Check size={16} />{:else if i === stepIx && !creating.error}<span
-								class="bu-ring ring spin"
-								aria-hidden="true"
-							></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}
-						{displayMessage(
-							s.label
-						)}{#if i === stepIx && creating.progress && creating.progress.total > 1}<span
-								class="muted num small"
-								>&nbsp;{creating.progress.done}/{creating.progress.total}</span
-							>{/if}
-					</li>
-				{/each}
-			</ol>
+			{#if !creating.error}<ol class="steps-list">
+					{#each CREATE_STEPS as s, i (s.id)}
+						<li class:done={i < stepIx} class:now={i === stepIx}>
+							{#if i < stepIx}<Check size={16} />{:else if i === stepIx && !creating.error}<span
+									class="bu-ring ring spin"
+									aria-hidden="true"
+								></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}
+							{displayMessage(
+								s.label
+							)}{#if i === stepIx && creating.progress && creating.progress.total > 1}<span
+									class="muted num small"
+									>&nbsp;{creating.progress.done}/{creating.progress.total}</span
+								>{/if}
+						</li>
+					{/each}
+				</ol>{/if}
 			{#if creating.views.length}
 				<div class="review-grid">
 					{#each creating.views as v (v.id)}<figure>
@@ -291,14 +295,17 @@
 	{/if}
 
 	{#snippet footer()}
-		{#if creating.projectId}
+		{#if creating?.projectId}
 			<span class="foot-note">{t('create.sheet.saved')}</span>
 			<button class="bu-action btn primary lg" data-variant="primary" onclick={open}
 				>{t('create.sheet.startDressing')}</button
 			>
-		{:else if creating.error}
-			<button class="bu-action btn plain" data-variant="quiet" onclick={cancelCreate}
-				>{t('common.startOver')}</button
+		{:else if creating?.error}
+			<button
+				class="bu-action btn plain"
+				data-variant="quiet"
+				disabled={creating.running}
+				onclick={() => creating && discardCreate(creating.id)}>{t('common.discard')}</button
 			>
 			<span class="api-action"
 				><ApiPeek
@@ -308,16 +315,17 @@
 				/><button
 					class="bu-action btn primary"
 					data-variant="primary"
-					onclick={() =>
-						creating.spec &&
-						withKey(() => {
-							void startCreate({
-								...$state.snapshot(creating.spec!),
-								projectId: undefined,
-								seed: 1 + Math.floor(Math.random() * 1_000_000)
-							});
-							ui.sheet = 'create';
-						})}>{t('common.tryAgain')} <span class="cost">{gensRange}</span></button
+					disabled={creating.running}
+					onclick={() => {
+						if (!creating) return;
+						const id = creating.id;
+						const spec = {
+							...$state.snapshot(creating.spec),
+							projectId: undefined,
+							seed: freshSeed()
+						};
+						withKey(() => void startCreate(spec, true, id));
+					}}>{t('common.tryAgain')} <span class="cost">{gensRange}</span></button
 				></span
 			><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
 		{:else if running}

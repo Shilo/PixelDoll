@@ -1,8 +1,10 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { getLocale, getLocales, localeName, t } from 'svelte-whisper';
 	import { detectedLanguage, languagePreference, selectLanguage } from '../lib/i18n.ts';
 	import { popoverFocus } from './experience/focus.ts';
-	import { Check, ChevronRight, Languages } from './icons.ts';
+	import { Check, Languages } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
 
 	const nameOf = (id: string) => (id === 'id' ? 'Bahasa Indonesia' : localeName(id));
@@ -38,6 +40,7 @@
 		class={compact ? 'bu-action btn icon plain' : 'row bu-action'}
 		data-variant="quiet"
 		aria-label={t('language.label')}
+		title={compact ? t('language.label') : undefined}
 		aria-describedby={compact ? undefined : valueId}
 		aria-controls={menuId}
 		aria-expanded={expanded}
@@ -45,9 +48,9 @@
 	>
 		<Languages size={18} aria-hidden="true" />
 		{#if !compact}
-			<span class="row-name">{t('language.label')}</span>
+			<span class="row-name">{openerLabel(t('language.label'))}</span>
 			<span id={valueId} class="faint small" lang={activeLanguage}>{nameOf(activeLanguage)}</span>
-			<ChevronRight size={16} aria-hidden="true" />
+			<SurfaceChevron />
 		{/if}
 	</button>
 	<div

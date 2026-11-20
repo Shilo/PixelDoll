@@ -85,7 +85,7 @@ export async function selectedItemDetails(page: Page) {
 	);
 	await more.scrollIntoViewIfNeeded();
 	await more.click();
-	await page.getByRole('menuitem', { name: 'Details…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Details...', exact: true }).click();
 	const dialog = page.getByRole('dialog');
 	await expect(dialog.locator('.insp-body')).toBeVisible();
 	return dialog;
@@ -127,6 +127,8 @@ export async function openAccount(page: Page) {
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
 		.locator('#experience-options')
-		.getByRole('button', { name: /^(Connect PixelLab$|Reconnect PixelLab$|PixelLab usage\b)/ })
+		.getByRole('button', {
+			name: /^(Connect PixelLab\.\.\.$|Reconnect PixelLab\.\.\.$|PixelLab usage\b)/
+		})
 		.click();
 }

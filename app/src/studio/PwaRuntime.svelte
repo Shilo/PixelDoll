@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
+	import { ExternalLink } from './icons.ts';
 	import { onMount, tick } from 'svelte';
 	import {
 		pwa,
@@ -234,7 +235,8 @@
 					href={updateUrl}
 					target="_blank"
 					rel="noopener"
-					onclick={close}>{t('pwaRuntime.openUpdatedApp')}</a
+					onclick={close}
+					>{t('pwaRuntime.openUpdatedApp')}<ExternalLink size={16} aria-hidden="true" /></a
 				>
 			{:else if error}
 				<p role="alert">{displayNestedMessage(error)}</p>

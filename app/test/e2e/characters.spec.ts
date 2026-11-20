@@ -51,7 +51,10 @@ test.describe('first Studio render in French', () => {
 			.first()
 			.click();
 		await page
-			.getByRole('menuitem', { name: french.newCharacterButton.createFromScratch, exact: true })
+			.getByRole('menuitem', {
+				name: french.newCharacterButton.createFromScratch.replace(/…$/u, '...'),
+				exact: true
+			})
 			.click();
 		const draft = page.getByRole('dialog', { name: french.create.sheet.title, exact: true });
 		const name = draft.getByRole('textbox', { name: french.common.name, exact: true });
@@ -87,7 +90,7 @@ test.describe('first Studio render in French', () => {
 		await expect(page.getByRole('button', { name: 'Language', exact: true })).toBeFocused();
 		await page.keyboard.press('Escape');
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await expect(
 			page.getByRole('dialog', { name: 'New character', exact: true }).getByRole('textbox', {
 				name: 'Name',
@@ -118,7 +121,7 @@ test.describe('first Studio render in French', () => {
 		await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
 		await page.getByRole('button', { name: label, exact: true }).click();
 		const connectLabel = french.connectSheet.titleConnectPixelLab;
-		await page.getByRole('button', { name: connectLabel, exact: true }).click();
+		await page.getByRole('button', { name: `${connectLabel}...`, exact: true }).click();
 		const connect = page.getByRole('dialog', { name: connectLabel, exact: true });
 		await expect(
 			connect.getByPlaceholder(french.connectSheet.placeholderPasteYourKey)
@@ -213,7 +216,13 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 		const state = await import(path);
 		await state.renameProject('Saved hero');
 	});
-	await page.getByRole('button', { name: 'More actions for Saved hero', exact: true }).click();
+	const savedActions = page.getByRole('button', {
+		name: 'More actions for Saved hero',
+		exact: true
+	});
+	await expect(savedActions).toHaveAttribute('title', 'More actions for Saved hero');
+	await expect(savedActions.locator('svg')).toHaveCount(1);
+	await savedActions.click();
 	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
 	await page.keyboard.press('Escape');
 	await page
@@ -278,12 +287,18 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	);
 	await page.getByRole('tab', { name: 'Moves', exact: true }).click();
 	const moveDetails = page.locator('.colors details').filter({ hasText: 'pivot' });
+	await expect(moveDetails.locator('summary')).not.toContainText('...');
 	await moveDetails.locator('summary').click();
 	await expect(moveDetails.getByText(/^64×64 px, pivot /)).toBeVisible();
 	await expect(moveDetails.getByText(/^\d+×\d+ px$/)).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Edit a copy', exact: true }).click();
 	await expect(page.locator('.name-text')).toHaveText('Saved hero');
+	const viewport = page.viewportSize()!;
+	await page.setViewportSize({ width: 320, height: 700 });
+	await expect(page.locator('.name-text')).toBeVisible();
+	await expect(page.locator('.name-text')).toHaveText('Saved hero');
+	await page.setViewportSize(viewport);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.getByRole('menuitem', { name: 'Edit a copy', exact: true })).toHaveCount(0);
 });
@@ -364,6 +379,9 @@ test('both New character entry points offer separate import sources on desktop a
 	await page.goto('/');
 	for (const width of [1440, 390]) {
 		await page.setViewportSize({ width, height: 850 });
+		const more = page.getByRole('button', { name: 'More options', exact: true });
+		await expect(more).toHaveAttribute('title', 'More options');
+		await expect(more.locator('svg')).toHaveCount(1);
 		const library = page.getByRole('complementary', { name: 'Your characters' });
 		const add = library.locator('.new-character-row');
 		await expect(add).toBeVisible();
@@ -372,21 +390,26 @@ test('both New character entry points offer separate import sources on desktop a
 				? page.locator('.experience-header .selection-create')
 				: library.locator('.cast-action');
 		for (const trigger of [entry, add]) {
+			await expect(trigger.locator(':scope > span').last()).toHaveText(/\.\.\.$/);
+			await expect(trigger.locator('svg[data-surface-chevron]')).toBeVisible();
 			await trigger.click();
 			const menu = page.getByRole('menu', { name: 'New character', exact: true });
+			await expect(
+				menu.locator('[role="menuitem"] > svg[data-surface-chevron][aria-hidden="true"]')
+			).toHaveCount(3);
 			await expect(menu.getByRole('menuitem')).toHaveText([
-				'Create from scratch…',
-				'Import from device…',
-				'Import from PixelLab…'
+				'Create from scratch...',
+				'Import from device...',
+				'Import from PixelLab...'
 			]);
-			await menu.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+			await menu.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 			await expect(
 				page.getByRole('dialog', { name: 'Import from device', exact: true })
 			).toBeVisible();
 			await expect(page.getByRole('tablist', { name: 'Import source' })).toHaveCount(0);
 			await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 			await trigger.click();
-			await menu.getByRole('menuitem', { name: 'Import from PixelLab…', exact: true }).click();
+			await menu.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
 			await expect(
 				page.getByRole('dialog', { name: 'Import from PixelLab', exact: true })
 			).toBeVisible();
@@ -496,7 +519,7 @@ test('experimental native attack imports with warnings and exact frame stepping 
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'experimental-east-axe.zip',
 		mimeType: 'application/zip',
@@ -662,7 +685,7 @@ test('device import previews a dropped ZIP and offers a keyboard-accessible file
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true }),
 		drop = dialog.getByRole('region', { name: 'Character ZIP drop area', exact: true });
 	const transfer = await page.evaluateHandle((bytes) => {
@@ -710,7 +733,7 @@ test('device import validates dropped files and picker files before previewing',
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true }),
 		drop = dialog.getByRole('region', { name: 'Character ZIP drop area', exact: true });
 	for (const [files, message] of [
@@ -777,7 +800,7 @@ test('device import ignores extra drops while reading and cancels without a late
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true }),
 		drop = dialog.getByRole('region', { name: 'Character ZIP drop area', exact: true });
 	const transfer = await page.evaluateHandle(() => {
@@ -826,7 +849,7 @@ test('device import ignores extra drops while reading and cancels without a late
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	await expect(drop).toContainText('Drop a character ZIP here');
 	await expect(dialog.getByRole('alert')).toHaveCount(0);
 	await transfer.dispose();
@@ -843,7 +866,7 @@ test('device import includes sibling moves and preserves explicit selections whe
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'multi-state.zip',
@@ -929,7 +952,7 @@ test('character directions can be configured on import and removed only after co
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const importer = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await importer.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'directions.zip',
@@ -968,13 +991,13 @@ test('character directions can be configured on import and removed only after co
 			.click();
 		const menu = page.getByRole('menu', { name: 'Actions for Direction test hero', exact: true });
 		await expect(menu.getByRole('menuitem')).toHaveText([
-			'Rename…',
-			'Details…',
-			'Directions…',
+			'Rename...',
+			'Details...',
+			'Directions...',
 			'Download ZIP',
-			'Delete character…'
+			'Delete character...'
 		]);
-		await menu.getByRole('menuitem', { name: 'Directions…', exact: true }).click();
+		await menu.getByRole('menuitem', { name: 'Directions...', exact: true }).click();
 	};
 	await openDirections();
 	const settings = page.getByRole('dialog', { name: 'Directions', exact: true });
@@ -1027,7 +1050,7 @@ test('browser Back respects an atomic import and closes sheets after it finishes
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'multi-state.zip',
@@ -1073,7 +1096,7 @@ test('browser Back respects an atomic import and closes sheets after it finishes
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	await expect(dialog).toBeVisible();
 	await page.goBack();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -1089,7 +1112,7 @@ test('standing state updates retain the preview, optional moves, edited names an
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true }),
 		name = dialog.getByLabel('Character name', { exact: true });
 	await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({
@@ -1173,7 +1196,7 @@ test('failed standing state updates retain the old preview but block saving unti
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'incompatible.zip',
@@ -1211,7 +1234,7 @@ test('a single-state import can exclude its own animation and retain static Defa
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'single-state.zip',
@@ -1241,7 +1264,7 @@ test('an incompatible sibling move can be unchecked after the initial import err
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'incompatible-state.zip',
@@ -1268,7 +1291,7 @@ test('unreadable sibling move metadata stays visible and can be excluded from th
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'unreadable-state.zip',
@@ -1307,7 +1330,7 @@ test('PixelLab link import initially selects only the requested state and offers
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from PixelLab…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from PixelLab', exact: true });
 	await dialog.getByLabel('Direct import (connection optional)', { exact: true }).fill(ID);
 	await dialog.getByRole('button', { name: 'Preview character', exact: true }).click();
@@ -1356,7 +1379,7 @@ test('a canceled library error cannot affect a newly opened device ZIP preview',
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from PixelLab…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Import from PixelLab', exact: true });
 	await requested;
 	try {
@@ -1366,7 +1389,7 @@ test('a canceled library error cannot affect a newly opened device ZIP preview',
 			.locator('#project-menu')
 			.getByRole('button', { name: 'New character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 		await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 			name: 'local.zip',
 			mimeType: 'application/zip',
@@ -1385,7 +1408,7 @@ test('a canceled library error cannot affect a newly opened device ZIP preview',
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from PixelLab…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
 	await expect(page.getByRole('dialog').getByRole('alert')).toContainText('503');
 	await expect(page.getByRole('dialog')).not.toContainText('No characters found');
 });
@@ -1401,7 +1424,7 @@ test('import can be canceled before choosing a file and reopened', async ({ page
 			.locator('#project-menu')
 			.getByRole('button', { name: 'New character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 		await expect(page.getByRole('dialog')).toBeVisible();
 		if (close === 'Cancel') await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 		else await page.keyboard.press('Escape');
@@ -1760,7 +1783,7 @@ test('canceling a downloading import closes it and cannot reopen a late preview'
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from PixelLab…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
 	await page.getByLabel('Direct import (connection optional)', { exact: true }).fill(ID);
 	await page.getByRole('button', { name: 'Preview character', exact: true }).click();
 	try {
@@ -1777,7 +1800,7 @@ test('canceling a downloading import closes it and cannot reopen a late preview'
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	await expect(page.getByRole('dialog')).not.toContainText('PixelLab could not find');
 	await expect(page.getByRole('button', { name: 'Import character', exact: true })).toBeDisabled();
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -1808,7 +1831,7 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
 			.locator('#project-menu')
 			.getByRole('button', { name: 'New character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 		await page
 			.getByLabel('Character ZIP', { exact: true })
 			.setInputFiles({ name: 'saved-character.zip', mimeType: 'application/zip', buffer: bytes });
@@ -1938,7 +1961,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from PixelLab…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from PixelLab...', exact: true }).click();
 	await page.getByRole('button', { name: 'Connect PixelLab to browse your characters' }).click();
 	await page.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key');
 	await page.getByRole('dialog').getByRole('button', { name: 'Connect', exact: true }).click();
@@ -2072,8 +2095,8 @@ test('PixelLab library connection, pagination and direct import use only free re
 				const db = r.result,
 					t = db.transaction('projects', 'readwrite');
 				t.objectStore('projects').put(
-					{ id: 'studio-create', spec: { name: 'Pending fixture' } },
-					'studio-create'
+					{ id: 'studio-create:rig-fixture', spec: { name: 'Pending fixture' } },
+					'studio-create:rig-fixture'
 				);
 				t.oncomplete = () => {
 					db.close();
@@ -2171,7 +2194,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	await page
 		.getByLabel('Character ZIP', { exact: true })
 		.setInputFiles({ name: 'hero.zip', mimeType: 'application/zip', buffer: Buffer.from(data) });
@@ -2221,7 +2244,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(page.getByRole('dialog')).toContainText('96 px canvas');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await page.getByRole('radio', { name: 'Idle', exact: true }).click();
 	await page.getByRole('button', { name: /^Add Idle/ }).click();
 	await expect(
@@ -2539,7 +2562,7 @@ test('rename display names and export IDs without changing saved keys or calling
 	await expect(page.locator('.project-btn')).toContainText('旅人');
 	await equipmentGroup(page, 'Head');
 	await page.getByRole('button', { name: `More options for ${target.name}`, exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Rename…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
 	await rename('Rename item', 'Travel cap', 'travel_cap');
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('旅人');
@@ -2664,7 +2687,7 @@ test('storage failures before paid work surface errors and release the move runn
 		const { displayError } = await import(i18nPath);
 		const put = IDBObjectStore.prototype.put;
 		IDBObjectStore.prototype.put = function (value, key) {
-			if (key === 'studio-create' || key === 'studio-move')
+			if (String(key).startsWith('studio-create:') || key === 'studio-move')
 				throw new DOMException('Test storage quota exceeded', 'QuotaExceededError');
 			return put.call(this, value, key);
 		};
@@ -2688,8 +2711,10 @@ test('storage failures before paid work surface errors and release the move runn
 			const firstError = displayError(s.moving.error);
 			await s.startMove(s.doc.id, { id: 'second', action: 'cast', frames: 8, items: [], seed: 2 });
 			return {
-				createError: displayError(s.creating.error),
-				createName: s.creating.spec.name,
+				creates: s.creates.map((run: (typeof s.creates)[number]) => ({
+					name: run.spec.name,
+					error: displayError(run.error)
+				})),
 				firstError,
 				secondError: displayError(s.moving.error),
 				secondId: s.moving.spec.id
@@ -2698,8 +2723,10 @@ test('storage failures before paid work surface errors and release the move runn
 			IDBObjectStore.prototype.put = put;
 		}
 	});
-	expect(result.createError).toContain('Test storage quota exceeded');
-	expect(result.createName).toBe('Storage fixture');
+	expect(result.creates).toEqual([
+		{ name: 'Storage fixture', error: expect.stringContaining('Test storage quota exceeded') },
+		{ name: 'Duplicate request', error: expect.stringContaining('Test storage quota exceeded') }
+	]);
 	expect(result.firstError).toContain('Test storage quota exceeded');
 	expect(result.secondError).toContain('Test storage quota exceeded');
 	expect(result.secondId).toBe('second');

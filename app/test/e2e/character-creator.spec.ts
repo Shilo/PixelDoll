@@ -40,7 +40,7 @@ async function open(page: Page, navigate = true) {
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	return page.getByRole('dialog', { name: 'New character', exact: true });
 }
 async function connect(page: Page) {
@@ -50,6 +50,104 @@ async function connect(page: Page) {
 		.getByRole('button', { name: 'Connect', exact: true })
 		.click();
 }
+
+test('four overlapping creations keep independent rows and only the uninterrupted sheet goes Ready', async ({
+	page,
+	context
+}) => {
+	test.setTimeout(120_000);
+	const api = new CharacterApi();
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	const identities = new Map<string, number>();
+	const gates = new Map(
+		[1, 2, 3, 4].map((seed) => {
+			let resolve!: () => void;
+			const promise = new Promise<void>((release) => (resolve = release));
+			return [seed, { promise, resolve }];
+		})
+	);
+	const waiting = new Set<number>();
+	await context.route('https://*.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		const path = new URL(request.url()).pathname;
+		const method = request.method();
+		const body = request.postDataJSON();
+		if (method === 'GET' && path.startsWith('/v2/characters/')) {
+			const seed = identities.get(path.split('/').pop()!);
+			if (seed) {
+				waiting.add(seed);
+				await gates.get(seed)!.promise;
+			}
+		}
+		const response = await api.handle(method, request.url(), body);
+		if (path === '/v2/create-character-v3' && body?.reference_image && response.ok) {
+			const { character_id } = await response.clone().json();
+			identities.set(character_id, body.seed);
+		}
+		await fulfill(route, response);
+	});
+	const sheet = await open(page);
+	const name = sheet.getByRole('textbox', { name: 'Name', exact: true });
+	const details = sheet.getByRole('textbox', { name: 'Details', exact: true });
+	const create = sheet.getByRole('button', { name: 'Create character', exact: true });
+	const ready = sheet.getByRole('button', { name: 'Start dressing up', exact: true });
+	const library = page.getByRole('complementary', { name: 'Your characters' });
+	const row = (seed: number) =>
+		library.locator('.character-row').filter({ hasText: `Run ${seed}` });
+	const saved = (seed: number) => row(seed).and(library.locator('[aria-pressed]'));
+	try {
+		for (const seed of [1, 2, 3, 4]) {
+			if (seed > 1) await open(page, false);
+			await expect(name).toHaveValue('');
+			await expect(details).toHaveValue('');
+			await name.fill(`Run ${seed}`);
+			await details.fill(`A friendly humanoid scout holding lantern number ${seed}`);
+			await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click();
+			await sheet.locator('details.advanced:not([open]) > summary').click();
+			await sheet.getByRole('textbox', { name: 'Seed', exact: true }).fill(String(seed));
+			await create.click();
+			if (seed === 1) await connect(page);
+			await expect(sheet.getByText(`Run ${seed}`, { exact: true })).toBeVisible();
+			if (seed < 4) {
+				await sheet.getByRole('button', { name: 'Hide', exact: true }).click();
+				if (seed === 1) await page.getByRole('button', { name: 'Characters', exact: true }).click();
+				await expect(row(seed).getByRole('progressbar')).toBeVisible();
+				await expect(row(seed).getByRole('button')).toHaveCount(0);
+			}
+		}
+		await expect.poll(() => [...waiting].sort(), { timeout: 60_000 }).toEqual([1, 2, 3, 4]);
+		expect(await library.locator('.pending-character').count()).toBe(4);
+		await expect(row(1)).toContainText(/Frame \d+×\d+ px/);
+		await expect(row(1)).toContainText('2 directions');
+		await expect(
+			library.getByRole('progressbar', { name: /Run 1/, includeHidden: true })
+		).toHaveAttribute('aria-valuetext', 'Setting up the skeleton');
+		gates.get(2)!.resolve();
+		await expect(saved(2)).toHaveCount(1);
+		await expect(ready).toHaveCount(0);
+		await expect(sheet.getByText('Run 4', { exact: true })).toBeVisible();
+		gates.get(4)!.resolve();
+		await expect(ready).toBeVisible();
+		await expect(sheet).toContainText('Run 4 is ready');
+		await sheet.getByRole('button', { name: 'Close', exact: true }).first().click();
+		await open(page, false);
+		await expect(name).toHaveValue('');
+		await details.fill('A draft that should remain open');
+		for (const seed of [3, 1]) gates.get(seed)!.resolve();
+		for (const seed of [1, 2, 3, 4]) await expect(saved(seed)).toHaveCount(1);
+		await expect(details).toHaveValue('A draft that should remain open');
+		await expect(ready).toHaveCount(0);
+		await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await open(page, false);
+		await expect(details).toHaveValue('');
+		const posts = api.calls.filter((call) => call.path === '/v2/create-character-v3');
+		expect(posts.map((call) => call.body?.seed).sort()).toEqual([1, 1, 2, 2, 3, 3, 4, 4]);
+		expect(errors).toEqual([]);
+	} finally {
+		for (const gate of gates.values()) gate.resolve();
+	}
+});
 
 // The two offline creation runs are the heaviest tests here (about 22 s and 42 s). CI shards are contiguous slices of the
 // test order, so they are registered apart to land in different shards (docs/testing/test-performance.md).
@@ -96,9 +194,23 @@ test.describe('creation safety', () => {
 					return rec!;
 				}
 			);
-			state.creating.warnings = warnings;
-			state.creating.projectId = id;
+			state.creates.push({
+				id,
+				projectId: id,
+				spec: {
+					description: 'Fixture',
+					name: 'Fixture',
+					seed: 1,
+					size: 48,
+					directions: [{ id: 'south' }]
+				},
+				running: false,
+				error: '',
+				progress: null,
+				views: []
+			});
 			state.ui.sheet = 'create';
+			state.createPresentation.id = id;
 		});
 		const notes = page.locator('.quality-notes');
 		await expect(notes).toHaveAttribute('open', '');
@@ -222,7 +334,7 @@ test.describe('creation safety', () => {
 			.locator('#project-menu')
 			.getByRole('button', { name: 'New character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await configure('Separate character');
 		await sheet.getByRole('button', { name: 'Create character', exact: true }).click();
 		await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible(
@@ -244,13 +356,17 @@ test.describe('creation safety', () => {
 		expect(api.calls.filter((c) => c.path === '/v2/create-character-v3')).toHaveLength(2); // cached art reused, local identities separate
 		await page.evaluate(async () => {
 			const modulePath = '/src/lib/store/db.ts';
-			const { put } = (await import(modulePath)) as typeof import('../../src/lib/store/db.ts');
+			const { put, CREATE_DRAFT_PREFIX } = (await import(
+				modulePath
+			)) as typeof import('../../src/lib/store/db.ts');
 			const statePath = '/src/studio/state.svelte.ts';
-			const { creating, REQUEST_TEXT } = (await import(
+			const { creates, createPresentation, REQUEST_TEXT } = (await import(
 				statePath
 			)) as typeof import('../../src/studio/state.svelte.ts');
-			await put('projects', 'studio-create', {
-				id: 'studio-create',
+			const creating = creates.find((run) => run.id === createPresentation.id)!;
+			const id = CREATE_DRAFT_PREFIX + creating.id;
+			await put('projects', id, {
+				id,
 				spec: JSON.parse(JSON.stringify(creating.spec)),
 				requestText: REQUEST_TEXT
 			});
@@ -261,10 +377,12 @@ test.describe('creation safety', () => {
 				async () =>
 					page.evaluate(async () => {
 						const modulePath = '/src/lib/store/db.ts';
-						const { get } = (await import(
+						const { all, CREATE_DRAFT_PREFIX } = (await import(
 							modulePath
 						)) as typeof import('../../src/lib/store/db.ts');
-						return !(await get('projects', 'studio-create'));
+						return !(await all<{ id: string }>('projects')).some((record) =>
+							record.id.startsWith(CREATE_DRAFT_PREFIX)
+						);
 					}),
 				{ timeout: 30_000 }
 			)
@@ -307,7 +425,7 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 		.getByRole('button', { name: 'Start dressing up', exact: true })
 		.click({ timeout: 90_000 });
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
@@ -368,7 +486,7 @@ test('a failed required measurement stops the queued idle without paying for an 
 	await expect(sheet.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click();
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await move.getByRole('button', { name: /^Add Idle/ }).click();
 	try {
@@ -706,7 +824,7 @@ test('Appearance enhancement cannot clear selected hints with repeated clauses o
 	await expect(sheet.getByRole('combobox', { name: 'Kind', exact: true })).toHaveValue('Elf');
 });
 
-test('Appearance enhancement preserves coverage and changing Nude clears stale Undo', async ({
+test('Appearance enhancement preserves coverage and changing base clothing clears stale Undo', async ({
 	page,
 	context
 }) => {
@@ -730,7 +848,7 @@ test('Appearance enhancement preserves coverage and changing Nude clears stale U
 	await expect(sheet.getByRole('button', { name: 'Edit exact prompt', exact: true })).toHaveText(
 		`A calm face\n${UNDERWEAR_BODY}`
 	);
-	const nude = sheet.getByRole('switch', { name: 'Nude', exact: true });
+	const nude = sheet.getByRole('radio', { name: 'Nothing worn', exact: true });
 	await expect(nude).not.toBeChecked();
 	await nude.check();
 	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toHaveCount(0);
@@ -802,7 +920,7 @@ test('canceling the connection discards the pending enhancement instead of charg
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'A friendly elf'
 	);
@@ -884,6 +1002,19 @@ for (const viewport of [
 			await expect(guide).toBeVisible();
 		}
 		if (viewport.width === 320) {
+			const clothing = sheet.getByRole('radiogroup', { name: 'Base clothing' });
+			await clothing.scrollIntoViewIfNeeded();
+			await expect(clothing).toBeInViewport({ ratio: 1 });
+			for (const label of ['Underwear', 'Nothing worn']) {
+				const text = clothing.getByText(label, { exact: true });
+				expect(
+					await text.evaluate((element) => {
+						const range = document.createRange();
+						range.selectNodeContents(element);
+						return range.getClientRects().length;
+					})
+				).toBe(1);
+			}
 			const preview = (await diagram.boundingBox())!;
 			expect(preview.width).toBeLessThanOrEqual(128);
 			expect(preview.height).toBeCloseTo(preview.width, 0);
@@ -1297,13 +1428,13 @@ function offlineCreation(config: CreationCase) {
 			.locator('#project-menu')
 			.getByRole('button', { name: 'New character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		await expect(page.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
 		await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 		await equipmentMode(page, 'Moves');
 		const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
 		for (const name of ['Idle', 'Walk']) {
-			await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+			await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 			await move.getByRole('radio', { name, exact: true }).click();
 			await move.getByRole('button', { name: new RegExp(`^Add ${name}`) }).click();
 			await move.getByRole('button', { name: 'Done', exact: true }).click({ timeout: 120_000 });
@@ -1390,7 +1521,7 @@ function offlineCreation(config: CreationCase) {
 			.locator('#project-menu')
 			.getByRole('button', { name: 'New character', exact: true })
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 		await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 			name: 'custom-character.zip',
 			mimeType: 'application/zip',
@@ -1430,7 +1561,7 @@ function offlineCreation(config: CreationCase) {
 	});
 }
 
-test('switching the model keeps Advanced open and the Nude switch sits in its field', async ({
+test('switching the model keeps Advanced open and base clothing shows both choices', async ({
 	page
 }) => {
 	const sheet = await open(page);
@@ -1501,7 +1632,7 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 	await expect(sheet.getByRole('button', { name: /^Create character/ })).toBeEnabled();
 	await expect(sheet.locator('details.advanced')).toHaveAttribute('open', '');
 	await expect(sheet.getByRole('combobox', { name: 'Outline', exact: true })).toBeVisible();
-	// The sheet's 44 px floor is for one-line fields only: taller fields and switches keep their own size.
+	// The sheet's 44 px floor is for one-line fields only: taller fields keep their own size.
 	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveCSS(
 		'min-height',
 		'112px'
@@ -1512,16 +1643,20 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 		'302px'
 	);
 	await sheet.getByRole('tab', { name: 'Appearance', exact: true }).click();
-	// The switch is drawn inside its own field; none of its parts float elsewhere on the sheet.
-	const nude = sheet.getByRole('switch', { name: 'Nude', exact: true });
-	const field = await sheet.locator('.nude-field').boundingBox(),
-		knob = await nude.boundingBox();
-	expect([Math.round(knob!.width), Math.round(knob!.height)]).toEqual([44, 26]);
-	expect(knob!.x).toBeGreaterThan(field!.x);
-	expect(knob!.x + knob!.width).toBeLessThan(field!.x + field!.width);
-	await expect(sheet.locator('.nude-field')).toContainText('White underwear');
-	await nude.check();
-	await expect(sheet.locator('.nude-field')).toContainText('Nothing worn');
+	const clothing = sheet.getByRole('radiogroup', { name: 'Base clothing' });
+	const underwear = clothing.getByRole('radio', { name: 'Underwear', exact: true });
+	const nothingWorn = clothing.getByRole('radio', { name: 'Nothing worn', exact: true });
+	await expect(underwear).toBeChecked();
+	await expect(nothingWorn).toBeVisible();
+	const kind = sheet.getByRole('combobox', { name: 'Kind', exact: true });
+	expect((await clothing.boundingBox())!.height).toBeCloseTo((await kind.boundingBox())!.height, 0);
+	for (const radio of [underwear, nothingWorn]) {
+		const target = (await radio.boundingBox())!;
+		expect(target.width).toBeGreaterThanOrEqual(48);
+	}
+	await nothingWorn.click();
+	await expect(nothingWorn).toBeChecked();
+	await expect(underwear).not.toBeChecked();
 	await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill('Discard me');
 	const details = sheet.getByRole('textbox', { name: 'Details', exact: true });
 	await details.fill('Discard these details');
@@ -1558,7 +1693,8 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 	await expect(sheet.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('');
 	await expect(details).toHaveValue('');
 	await expect(body).toHaveValue('64');
-	await expect(nude).not.toBeChecked();
+	await expect(underwear).toBeChecked();
+	await expect(nothingWorn).not.toBeChecked();
 	await drop.evaluate((element) => {
 		const dataTransfer = new DataTransfer();
 		const bytes = new Uint8Array(8 * 1024 * 1024 + 1);

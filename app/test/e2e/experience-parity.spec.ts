@@ -166,7 +166,7 @@ test('rapid clicks operate controls without selecting their labels', async ({ pa
 	expect(await selected()).toBe('');
 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Connect PixelLab', exact: true }).click();
+	await page.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	const remember = dialog.getByRole('checkbox', { name: 'Remember on this device' });
 	const label = dialog.getByText('Remember on this device', { exact: true });
@@ -356,7 +356,7 @@ test('full screen includes the whole app and survives screen changes, dialogs an
 	await expect(modes(page)).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.locator('#experience-options')).toBeVisible();
-	await page.getByRole('button', { name: 'Activity', exact: true }).click();
+	await page.getByRole('button', { name: 'Activity...', exact: true }).click();
 	await expect(page.getByRole('dialog')).toBeVisible();
 	expect(await rootIsFullscreen()).toBe(true);
 	await page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true }).click();
@@ -612,7 +612,7 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	const create = page.getByRole('button', { name: 'New character', exact: true }).first();
 	await create.focus();
 	await page.keyboard.press('Enter');
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'New character', exact: true });
 	const name = dialog.getByRole('textbox', { name: 'Name', exact: true });
 	await name.fill('Keyboard draft');
@@ -967,7 +967,7 @@ test('imported move names remain readable, distinct and contained in Preview and
 		.getByRole('button', { name: 'New character', exact: true })
 		.first()
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const importing = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await importing.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'move-labels.zip',
@@ -995,6 +995,7 @@ test('imported move names remain readable, distinct and contained in Preview and
 		.getByRole('button', { name: 'Inspect', exact: true });
 	await expect(inspectAction).toHaveText('');
 	await expect(inspectAction).toHaveAttribute('title', 'Inspect');
+	await expect(inspectAction.locator('svg')).toHaveCount(1);
 	await move.selectOption('right_punch');
 	await expect(move).toHaveValue('right_punch');
 	await move.selectOption('right-punch');
@@ -1125,29 +1126,54 @@ test('a held keyboard walk continues through a click on a control and ends when 
 	await page.keyboard.press('Enter');
 	await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click();
 	const x = async () => Number((await world(page).getAttribute('data-position'))!.split(',')[0]);
-	await page.keyboard.down('d');
+	const stopped = () =>
+		expect
+			.poll(async () => {
+				const before = await x();
+				await page.evaluate(
+					() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+				);
+				return (await x()) - before;
+			})
+			.toBe(0);
+	// A held key repeats, as a real keyboard does: a repeat that reached the clicked tab would move its selection on.
+	const session = await page.context().newCDPSession(page);
+	const repeat = () =>
+		session.send('Input.dispatchKeyEvent', {
+			type: 'rawKeyDown',
+			key: 'ArrowRight',
+			code: 'ArrowRight',
+			windowsVirtualKeyCode: 39,
+			autoRepeat: true
+		});
+	await page.keyboard.down('ArrowRight');
 	await expect.poll(x).toBeGreaterThan(10);
 	const colors = page
 		.getByRole('tablist', { name: 'Customization panels' })
 		.getByRole('tab', { name: 'Colors', exact: true });
-	await colors.click();
-	// The click did its work, the stage has the keyboard again, and the walk goes on.
-	await expect(colors).toHaveAttribute('aria-selected', 'true');
+	const tab = (await colors.boundingBox())!;
+	await page.mouse.move(tab.x + tab.width / 2, tab.y + tab.height / 2);
+	await page.mouse.down();
+	await repeat();
+	await page.mouse.up();
+	for (let i = 0; i < 3; i++) await repeat();
+	// The click did its work and nothing else did, the stage has the keyboard again, and the walk goes on.
 	await expect(world(page)).toBeFocused();
+	await expect(colors).toHaveAttribute('aria-selected', 'true');
 	const walked = await x();
 	await expect.poll(x).toBeGreaterThan(walked + 10);
-	// A menu needs the keyboard itself: the walk ends there.
+	// Another mouse button can open a native menu that keeps the key release from the page: the walk ends at the press.
+	await colors.click({ button: 'right' });
+	await stopped();
+	await page.keyboard.up('ArrowRight');
+	// A menu needs the keyboard itself: the walk ends there too.
+	await world(page).focus();
+	await page.keyboard.down('d');
+	const again = await x();
+	await expect.poll(x).toBeGreaterThan(again + 10);
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(world(page)).not.toBeFocused();
-	await expect
-		.poll(async () => {
-			const before = await x();
-			await page.evaluate(
-				() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
-			);
-			return (await x()) - before;
-		})
-		.toBe(0);
+	await stopped();
 	await page.keyboard.up('d');
 });
 
@@ -2065,7 +2091,7 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 			.getByRole('button', { name: 'New character', exact: true })
 			.first()
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 		const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
 		await dialog
 			.getByLabel('Character ZIP', { exact: true })

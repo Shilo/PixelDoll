@@ -1,4 +1,6 @@
 <script lang="ts" module>
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	// Survives tab switches (the list unmounts) so returning to Wardrobe keeps the reader's place, for the same character
 	// and only while no other view has picked a different category meanwhile.
 	let memory: { id: string; open: number; group: string; scroll: number } | null = null;
@@ -919,7 +921,7 @@
 								onclick={() => randomizeGroup(s.key)}><Shuffle size={16} /></button
 							>
 							<button
-								class="bu-action section-action section-add"
+								class="bu-action section-action"
 								data-variant="quiet"
 								aria-label={t('wardrobe.newLowerItem', { lower })}
 								title={t('wardrobe.newLowerItem', { lower })}
@@ -1128,6 +1130,8 @@
 										aria-label={tileName(x.item.name, marks)}
 										aria-busy={adding}
 										aria-disabled={!!shared.adding || undefined}
+										aria-haspopup={remake ? 'menu' : undefined}
+										aria-expanded={remake ? menuOpen && menuFor === key : undefined}
 										onclick={(e) =>
 											remake ? openMenu(e.currentTarget.parentElement!) : addShared(x)}
 									>
@@ -1334,11 +1338,11 @@
 						data-variant="quiet"
 						role="menuitem"
 						onclick={() => openSlotSettings(s.key)}
-						>{#if slotCustom}<Pencil size={16} aria-hidden="true" />{t(
-								'wardrobe.editSlot'
-							)}{:else}<CopyPlus size={16} aria-hidden="true" />{t(
-								'wardrobe.makeACustomCopy'
-							)}{/if}</button
+						>{#if slotCustom}<Pencil size={16} aria-hidden="true" />{openerLabel(
+								t('wardrobe.editSlot')
+							)}{:else}<CopyPlus size={16} aria-hidden="true" />{openerLabel(
+								t('wardrobe.makeACustomCopy')
+							)}{/if}<SurfaceChevron /></button
 					>
 				{/if}
 			</div>

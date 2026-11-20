@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import type { Message } from '../lib/message.ts';
@@ -657,9 +659,9 @@
 							prompt: it.prompt,
 							route: it.route
 						})}
-					><RefreshCw size={14} />{remakeOnly
-						? t('itemMenu.makeOneForName', { name: m.name })
-						: t('common.tryAgain')}</button
+					><RefreshCw size={14} />{openerLabel(
+						remakeOnly ? t('itemMenu.makeOneForName', { name: m.name }) : t('common.tryAgain')
+					)}<SurfaceChevron /></button
 				>
 			{/if}
 			{#if !isDemo()}
@@ -667,7 +669,7 @@
 					class="bu-action btn plain danger"
 					data-variant="quiet"
 					onclick={() => (confirmRemove = true)}
-					><Trash size={14} />{t('itemMenu.labelDeleteItem')}</button
+					><Trash size={14} />{openerLabel(t('itemMenu.labelDeleteItem'))}<SurfaceChevron /></button
 				>
 			{/if}
 		</div>
@@ -675,7 +677,7 @@
 		{#if recolorable}
 			<!-- Colors live in the Colors tab; this opens it on the item's own section. -->
 			<button class="bu-action btn plain recolor-link" data-variant="quiet" onclick={recolor}
-				><Palette size={14} />{t('itemPane.recolor')}<ChevronRight size={14} /></button
+				><Palette size={14} />{t('itemPane.recolor')}</button
 			>
 		{/if}
 

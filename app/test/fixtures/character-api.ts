@@ -7,6 +7,8 @@ import { opaqueBox } from '../../src/lib/rig/normalize.ts';
 type Image = { base64: string };
 interface Input {
 	description?: string;
+	seed?: number;
+	character_id?: string;
 	image_size?: { width: number };
 	reference_image?: Image;
 	direction_images?: Partial<Record<DirectionName, Image>>;
@@ -19,7 +21,7 @@ export class CharacterApi {
 	calls: { method: string; path: string; body: Input | null }[] = [];
 	private jobs = new Map<string, object>();
 	private images = new Map<string, Uint8Array>();
-	private standing = new Map<DirectionName, { image: Img; points: Keypoint[] }>();
+	private standing = new Map<string, Map<DirectionName, { image: Img; points: Keypoint[] }>>();
 	private markers = new Map<number, { size: number; points: Keypoint[] }>();
 	private serial = 0;
 	private json(body: unknown, status = 200) {
@@ -109,14 +111,17 @@ export class CharacterApi {
 			});
 		}
 		if (path === '/v2/create-character-v3' && body?.reference_image) {
+			const id = crypto.randomUUID();
+			const standing = new Map<DirectionName, { image: Img; points: Keypoint[] }>();
 			for (const dir of DIRECTIONS) {
 				const ref = dir === 'south' ? body.reference_image : body.direction_images?.[dir];
 				if (!ref) return this.json({ detail: `Missing original ${dir}` }, 422);
 				const image = await decodePngBytes(base64ToBytes(ref.base64));
-				this.standing.set(dir, { image, points: this.points(image) });
+				standing.set(dir, { image, points: this.points(image) });
 			}
+			this.standing.set(id, standing);
 			return this.json({
-				character_id: '00000000-0000-4000-8000-000000000001',
+				character_id: id,
 				usage: { type: 'generations', generations: 0.25 }
 			});
 		}
@@ -134,20 +139,23 @@ export class CharacterApi {
 			}
 			return this.job({ storage_urls: urls });
 		}
-		if (path.startsWith('/v2/characters/') && method === 'GET')
+		if (path.startsWith('/v2/characters/') && method === 'GET') {
+			const standing = this.standing.get(path.split('/').pop()!);
+			if (!standing) return this.json({ detail: 'Offline fixture character not found' }, 404);
 			return this.json({
 				skeletons: {
 					'2d_references': Object.fromEntries(
-						[...this.standing].map(([dir, { points }]) => [
+						[...standing].map(([dir, { points }]) => [
 							dir,
 							{ keypoints: Object.fromEntries(points.map((p) => [p.label, { x: p.x, y: p.y }])) }
 						])
 					)
 				}
 			});
+		}
 		if (path === '/v2/characters/animations') {
 			const dir = body!.directions![0],
-				source = this.standing.get(dir)!,
+				source = this.standing.get(body!.character_id!)!.get(dir)!,
 				images = [];
 			for (let i = 0; i < 8; i++)
 				images.push({ type: 'base64', base64: await this.output(source.image, source.points) });

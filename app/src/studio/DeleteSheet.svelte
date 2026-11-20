@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { t } from 'svelte-whisper';
 	import { displayMessage, displayError, errorMessage } from '../lib/i18n.ts';
 	import type { Message } from '../lib/message.ts';
@@ -39,7 +41,7 @@
 
 {#snippet viewPending()}
 	<button class="bu-btn" onclick={() => (ui.sheet = 'activity')}
-		>{t('deleteSheet.viewPendingWork')}</button
+		>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
 	>
 {/snippet}
 

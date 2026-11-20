@@ -271,7 +271,7 @@ FetchEvent.prototype.respondWith = function (response) {
 	try {
 		await cachedApp(page, server.url, a);
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		const draft = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });
@@ -461,8 +461,9 @@ test('saved failed generation does not block either startup or manual updates wh
 	try {
 		await cachedApp(page, server.url, a);
 		const failed = {
-			id: 'studio-create',
+			id: 'studio-create:rig-startup-halted',
 			spec: {
+				projectId: 'rig-startup-halted',
 				name: 'Saved failed character',
 				description: 'Body',
 				seed: 9,
@@ -638,7 +639,7 @@ test('trusted interaction during the startup opportunity preserves an unfinished
 		await held.requested;
 		await fresh.clock.fastForward(4_000);
 		await fresh.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await fresh.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await fresh.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		const name = fresh
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });
@@ -721,7 +722,7 @@ test('an offline cached launch is interactive without waiting for an update chec
 		await page.reload();
 		await expect(page.locator('.customize-action')).toBeVisible();
 		await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-		await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		const name = page
 			.getByRole('dialog', { name: 'New character', exact: true })
 			.getByRole('textbox', { name: 'Name', exact: true });

@@ -15,7 +15,7 @@
 		store,
 		settingUp,
 		moving,
-		creating,
+		creates,
 		startSetup,
 		setupBusy,
 		dismissSetup,
@@ -48,7 +48,7 @@
 	const busyElsewhere = $derived(
 		(!!settingUp.spec && !settingUp.done && !mine) ||
 			(!!moving.spec && !moving.done) ||
-			(!!creating.spec && !creating.projectId)
+			creates.some((run) => !run.projectId)
 	);
 	const ready = $derived(rigReady(rec));
 	const step = $derived(SETUP_STEPS.findIndex((s) => s.id === settingUp.progress?.step));

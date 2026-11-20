@@ -65,7 +65,7 @@ async function setup(page: Page) {
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'New character', exact: true });
 	await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill('Local library name only');
 	const closedAdvanced = sheet.locator('details.advanced:not([open]) > summary');
@@ -76,7 +76,7 @@ async function setup(page: Page) {
 		// Each matrix case requests new work. Repeating the same paid request after a terminal refusal is deliberately deduplicated.
 		if (freshAttempt) {
 			const closed = sheet.locator('details.advanced:not([open]) > summary');
-			if (await closed.count()) await closed.click(); // Start over closes Advanced again
+			if (await closed.count()) await closed.click(); // The form is remounted after discarding the attempt.
 			await sheet.getByRole('textbox', { name: 'Seed', exact: true }).fill(String(343 + before));
 		}
 		await sheet.getByRole('button', { name: 'Create character', exact: true }).click();
@@ -99,7 +99,7 @@ async function setup(page: Page) {
 		expect(body).not.toHaveProperty('direction_images');
 		expect(body).not.toHaveProperty('n_directions'); // V3's from-scratch default is eight, independent of kept views.
 		expect(unexpected).toEqual([]);
-		await sheet.getByRole('button', { name: 'Start over', exact: true }).click();
+		await sheet.getByRole('button', { name: 'Discard', exact: true }).click();
 		await expect(sheet.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
 		return body;
 	}
@@ -134,23 +134,25 @@ async function plannedCreation(page: Page, sheet: Locator) {
 	await peek.getByRole('button', { name: 'Close API calls', exact: true }).click();
 }
 
-test('underwear is default and Nude explicitly switches the exact outgoing prompt', async ({
+test('underwear is default and base clothing changes the exact outgoing prompt', async ({
 	page
 }) => {
 	const { sheet, submit } = await setup(page);
-	const nude = sheet.getByRole('switch', { name: 'Nude', exact: true });
-	await expect(nude).not.toBeChecked();
+	const clothing = sheet.getByRole('radiogroup', { name: 'Base clothing' });
+	const underwear = clothing.getByRole('radio', { name: 'Underwear', exact: true });
+	const nothingWorn = clothing.getByRole('radio', { name: 'Nothing worn', exact: true });
+	await expect(underwear).toBeChecked();
 	expect((await submit()).description).toBe(UNDERWEAR_BODY);
-	await nude.focus();
-	await page.keyboard.press('Space');
-	await expect(nude).toBeChecked();
+	await underwear.focus();
+	await page.keyboard.press('ArrowRight');
+	await expect(nothingWorn).toBeChecked();
 	expect((await submit()).description).toBe(BASE_BODY);
-	await nude.uncheck();
+	await underwear.click();
 	expect((await submit()).description).toBe(UNDERWEAR_BODY);
 	await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click();
 	await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).fill(BASE_BODY);
 	await sheet.getByRole('tab', { name: 'Appearance', exact: true }).click();
-	await expect(nude).toBeChecked();
+	await expect(nothingWorn).toBeChecked();
 	await sheet.getByLabel('Skin', { exact: true }).selectOption('Tan');
 	expect((await submit()).description).toBe(`Skin: Tan\n${BASE_BODY}`);
 });
@@ -293,7 +295,7 @@ test('all cameras and blank, zero and maximum safe seeds reach outgoing JSON wit
 		await sheet.getByRole('combobox', { name: 'Camera', exact: true }).selectOption(view);
 		expect((await submit()).view).toBe(view);
 	}
-	// Seed is under Advanced, which Start over closes again.
+	// Seed is under Advanced, which closes when the form is remounted.
 	const closedAdvanced = sheet.locator('details.advanced:not([open]) > summary');
 	const openAdvanced = async () => {
 		if (await closedAdvanced.count()) await closedAdvanced.click();

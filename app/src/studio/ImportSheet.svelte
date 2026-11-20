@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { onDestroy } from 'svelte';
 	import Sheet from './Sheet.svelte';
 	import { fileDrop, preventFileNavigation } from './fileDrop.ts';
@@ -482,7 +484,7 @@
 					onclick={() =>
 						withKey(() => {
 							ui.sheet = 'importPixelLab';
-						})}><KeyRound size={16} />{t('import.connect')}</button
+						})}><KeyRound size={16} />{openerLabel(t('import.connect'))}<SurfaceChevron /></button
 				>
 			{:else}
 				<div class="library-head">

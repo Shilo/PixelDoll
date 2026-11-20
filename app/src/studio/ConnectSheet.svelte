@@ -191,6 +191,7 @@
 				class="bu-action btn sm"
 				data-variant="outline"
 				bind:this={replaceButton}
+				aria-label={t('connectSheet.replaceKey')}
 				onclick={() => {
 					replacing = true;
 					remember = app.remembered;

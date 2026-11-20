@@ -29,6 +29,7 @@
 		class="bu-action character-more"
 		data-variant="quiet"
 		aria-label={t('experience.moreActionsFor', { name })}
+		title={t('experience.moreActionsFor', { name })}
 		aria-haspopup="menu"
 		aria-expanded={expanded}
 		popovertarget={menuId}><EllipsisVertical size={18} /></button

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { SegmentedControl } from '@shilo/bronze-ui/svelte';
 	import Help from './Help.svelte';
 	import ReferenceField from './ReferenceField.svelte';
 	import SizePreview from './SizePreview.svelte';
@@ -447,23 +448,20 @@
 						>
 					</div>
 				{/each}
-				<div class="trait-row">
-					<Help title={t('create.form.nude')} text={t('create.form.nudeHelp')} /><label
-						class="bu-check bu-action nude-field"
-						data-variant="field"
-						><span>{isNudeBase(d) ? t('create.form.nothingWorn') : t('create.form.underwear')}</span
-						><input
-							class="bu-switch"
-							type="checkbox"
-							role="switch"
-							aria-label={t('create.form.nude')}
-							checked={isNudeBase(d)}
-							onchange={(event) => {
-								edited();
-								writeNudeBase(d, event.currentTarget.checked);
-							}}
-						/></label
-					>
+				<div class="base-clothing">
+					<Help title={t('create.form.baseClothing')} text={t('create.form.baseClothingHelp')} />
+					<SegmentedControl
+						label={t('create.form.baseClothing')}
+						options={[
+							{ value: 'underwear', label: t('create.form.underwear') },
+							{ value: 'none', label: t('create.form.nothingWorn') }
+						]}
+						value={isNudeBase(d) ? 'none' : 'underwear'}
+						onchange={(selection) => {
+							edited();
+							writeNudeBase(d, selection === 'none');
+						}}
+					/>
 				</div>
 				<div class="prompt-note">
 					<button
@@ -793,13 +791,12 @@
 	.trait-row :global(.help-title) {
 		align-self: center;
 	}
-	/* A field like the selects above it: the state on the left, the switch at the trailing edge. */
-	.nude-field {
-		min-height: 44px;
-		justify-content: space-between;
-		padding: 0 9px 0 12px;
-		border-radius: var(--bu-radius-control);
-		font-size: 16px;
+	.base-clothing {
+		display: grid;
+		gap: 4px;
+	}
+	.base-clothing :global(.help-title) {
+		justify-self: start;
 	}
 	.input {
 		width: 100%;

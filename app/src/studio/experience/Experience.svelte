@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from '../SurfaceChevron.svelte';
+	import { openerLabel } from '../openerLabel.ts';
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage } from '../../lib/i18n.ts';
 	import { message } from '../../lib/message.ts';
@@ -11,6 +13,8 @@
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
+	import Sprite from '../Sprite.svelte';
+	import { CREATE_STEPS } from '../characterConfig.ts';
 	import CastCarousel from './CastCarousel.svelte';
 	import ZoomControls from './ZoomControls.svelte';
 	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
@@ -22,6 +26,7 @@
 		ui,
 		doc,
 		store,
+		creates,
 		openProject,
 		openingProjectId,
 		refreshProjects,
@@ -44,6 +49,7 @@
 		Play,
 		Pause,
 		Grid2x2,
+		PersonStanding,
 		TriangleAlert
 	} from '../icons.ts';
 	import {
@@ -77,8 +83,17 @@
 			experience.testMount
 	);
 	const name = $derived(characterName());
+	const query = $derived(search.toLowerCase());
 	const list = $derived(
-		store.projects.filter((p) => !p.dev && p.name.toLowerCase().includes(search.toLowerCase()))
+		store.projects.filter((p) => !p.dev && p.name.toLowerCase().includes(query))
+	);
+	const pending = $derived(
+		creates.filter(
+			(run) =>
+				!run.projectId &&
+				!store.projects.some((project) => project.id === run.spec.projectId) &&
+				run.spec.name.toLowerCase().includes(query)
+		)
 	);
 	$effect(() => {
 		if (search && list.length && !doc.loading && !list.some((p) => p.id === doc.id))
@@ -595,7 +610,7 @@
 						popovertarget="project-menu"
 						onclick={() => void refreshProjects()}
 						><span class="selected-name-text"><CharacterName id={doc.id} {name} /></span>
-						<ChevronDown size={16} /></button
+						<ChevronDown size={16} aria-hidden="true" /></button
 					>
 					{#if list.length > 1}<div class="selected-step">
 							<button
@@ -631,6 +646,52 @@
 				{#if g.sheet}<NewCharacterButton compact />{/if}
 			</div>
 			<div class="character-rows">
+				{#each pending as run (run.id)}
+					{@const spec = run.spec}
+					{@const step = CREATE_STEPS.findIndex((stage) => stage.id === run.progress?.step)}
+					{@const createProgress = Math.max(0, step)}
+					{@const createStatus = run.error
+						? t('generation.status.needsAttention')
+						: step < 0
+							? t('activity.state.queued')
+							: displayMessage(CREATE_STEPS[step].label)}
+					<div class="character-row pending-character">
+						<span class="character-thumbnail" aria-hidden="true">
+							{#if run.views[0]}
+								<Sprite img={run.views[0].img} k={1} limit={64} label={spec.name} />
+							{:else}<PersonStanding size={24} />{/if}
+						</span>
+						<span>
+							<strong>{spec.name}</strong>
+							<small class="character-sizes">
+								{#if spec.frame}<span
+										>{t('sizePreview.frame', {
+											measure: pixelSize({ w: spec.frame, h: spec.frame })
+										})} ·</span
+									>{/if}
+								<span>{t('export.count.directions', { count: spec.directions?.length ?? 0 })}</span>
+							</small>
+							{#if run.error}
+								<button
+									class="bu-action btn sm"
+									data-variant="quiet"
+									onclick={() => (ui.sheet = 'activity')}
+								>
+									{openerLabel(createStatus)}<SurfaceChevron />
+								</button>
+							{:else}
+								<small class="pending-character-status">{createStatus}</small>
+								<progress
+									class="bu-progress"
+									value={createProgress}
+									max={CREATE_STEPS.length}
+									aria-label={t('wardrobe.nameProgress', { name: spec.name })}
+									aria-valuetext={createStatus}
+								></progress>
+							{/if}
+						</span>
+					</div>
+				{/each}
 				{#each list as p (p.id)}
 					{@const still = stills.get(p.id)}
 					{@const facts = p.facts ?? still?.facts}
@@ -661,7 +722,9 @@
 							></button
 						>
 					</CharacterActions>
-				{:else}<p class="muted">{t('experience.noMatchingCharacters')}</p>{/each}
+				{:else}{#if !pending.length}<p class="muted">
+							{t('experience.noMatchingCharacters')}
+						</p>{/if}{/each}
 				<NewCharacterButton row />
 			</div>
 			<button
@@ -749,13 +812,15 @@
 						onclick={() => (ui.sheet = 'inspect')}><Grid2x2 size={16} /></button
 					>
 					{#if missing}
+						{@const coverageLabel = t('experience.missingEquippedFrames', {
+							count: missing.items.length,
+							n: formatNumber(missing.items.length)
+						})}
 						<button
 							class="bu-action"
 							data-variant="quiet"
-							aria-label={t('experience.missingEquippedFrames', {
-								count: missing.items.length,
-								n: formatNumber(missing.items.length)
-							})}
+							aria-label={coverageLabel}
+							title={coverageLabel}
 							popovertarget="preview-coverage"
 							><TriangleAlert size={16} /><span>{formatNumber(missing.items.length)}</span></button
 						>
@@ -781,7 +846,7 @@
 											class="row bu-action"
 											data-variant="quiet"
 											onclick={() => showMissingItem(saved)}
-											>{item.name}<ChevronRight size={16} /></button
+											>{item.name}<ChevronRight size={16} aria-hidden="true" /></button
 										>
 									{:else}<p class="menu-sec">{item.name}</p>{/if}
 								{/each}
@@ -823,6 +888,19 @@
 </div>
 
 <style>
+	.pending-character > .character-thumbnail {
+		width: 64px;
+		flex: none;
+	}
+	.pending-character > span:last-child {
+		flex: 1;
+		padding-block: 4px;
+	}
+	.pending-character-status {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
 	.character-row:has(.character-sizes) > span:last-child {
 		line-height: 1.1;
 	}

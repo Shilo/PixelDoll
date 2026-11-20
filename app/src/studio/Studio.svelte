@@ -26,7 +26,9 @@
 		view,
 		gens,
 		genOf,
-		creating,
+		creates,
+		createPresentation,
+		reviewFailedCreate,
 		settingUp,
 		initUi,
 		refreshProjects,
@@ -89,7 +91,9 @@
 				doc,
 				store,
 				gens,
-				creating,
+				creates,
+				createPresentation,
+				reviewFailedCreate,
 				loadGens
 			};
 		if (workspaceCopy && workspaceInfo) {
@@ -229,7 +233,7 @@
 	// the page title shows running work
 	const running = $derived(
 		gens.filter((g) => g.phase === 'running').length +
-			(creating.spec && !creating.projectId && !creating.error ? 1 : 0) +
+			creates.filter((run) => run.running && !run.error).length +
 			(settingUp.spec && !settingUp.done && !settingUp.error ? 1 : 0)
 	);
 	$effect(() => {

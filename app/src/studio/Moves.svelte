@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import Sprite from './Sprite.svelte';
 	import { moveThumbnails } from './moveThumbnails.ts';
 	import { ui, doc, store, view, isDemo, moving } from './state.svelte.ts';
@@ -160,7 +162,8 @@
 		{#if !isDemo()}<button
 				class="bu-action add-row"
 				data-variant="outline"
-				onclick={() => (ui.sheet = 'move')}><Plus size={16} />{t('moves.add')}</button
+				onclick={() => (ui.sheet = 'move')}
+				><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
 			>{/if}
 	{/if}
 </div>

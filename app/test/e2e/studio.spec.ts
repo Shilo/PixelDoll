@@ -184,6 +184,8 @@ test('version button opens build actions by click, keyboard, and tap', async ({ 
 		exact: true
 	});
 	const commit = actions.getByRole('link', { name: `View commit ${hash}` });
+	await expect(source.locator('svg.lucide-external-link')).toBeVisible();
+	await expect(commit.locator('svg.lucide-external-link')).toBeVisible();
 	await expect(commit).toHaveAttribute('href', `${repository}/commit/${hash}`);
 	await page.context().route(repository, (route) => route.fulfill({ body: '' }));
 	const opened = page.waitForEvent('popup');
@@ -801,7 +803,7 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await addSheet.getByRole('button', { name: 'Create slot', exact: true }).click();
 	await expect.poll(scroll).toBe(beforeAdd);
 	await header('accessory').click();
-	await menu.getByRole('menuitem', { name: 'Edit slot…', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Edit slot...', exact: true }).click();
 	const editor = page.getByRole('dialog', { name: 'Accessory', exact: true });
 	await editor.getByRole('textbox', { name: 'Name', exact: true }).fill('Brooch');
 	await editor
@@ -832,7 +834,7 @@ test('studio demo: slots add, rename, show, hide and reorder without changing th
 	await page.setViewportSize({ width: 320, height: 568 });
 	await equipmentGroup(page, 'Brooch');
 	await header('accessory').click();
-	await menu.getByRole('menuitem', { name: 'Edit slot…', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Edit slot...', exact: true }).click();
 	const compactEditor = page.getByRole('dialog', { name: 'Brooch', exact: true });
 	await expect(compactEditor.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
 		'Brooch'
@@ -1065,7 +1067,7 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 	await expect(slotMenu).toBeVisible();
 	await expect(slotMenu).toHaveAccessibleName('Underwear slot');
 	await expect(slotMenu.getByRole('menuitem', { name: 'Show slot', exact: true })).toBeVisible();
-	await expect(slotMenu.getByRole('menuitem', { name: 'Make a custom copy…' })).toBeVisible();
+	await expect(slotMenu.getByRole('menuitem', { name: 'Make a custom copy...' })).toBeVisible();
 	await expect(slotMenu.getByRole('menuitem', { name: 'Hide slot' })).toHaveCount(0);
 	expect(await keys()).toEqual(original);
 	await page.keyboard.press('Escape');
@@ -1436,7 +1438,7 @@ test('studio demo: base colors, Create size and direction pricing, stripped dev 
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const cost = async () => {
 		const value = await page.locator('dialog .foot-note').textContent();
 		assert.ok(value, 'Create cost is shown');
@@ -1491,7 +1493,7 @@ test('studio demo: Create without a key opens Connect, Escape restores focus and
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	await expect(page.locator('dialog').getByLabel('Name', { exact: true })).toBeFocused(); // first field focused, not Cancel (checked before fill() moves focus)
 	await page.locator('dialog textarea').fill('a cheerful elf archer');
 	await page
@@ -1881,7 +1883,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 	}
 	await checkFrames();
 	// Delete asks in an alert over the details; Cancel keeps the item and the details open.
-	await inspector.getByRole('button', { name: 'Delete item…', exact: true }).click();
+	await inspector.getByRole('button', { name: 'Delete item...', exact: true }).click();
 	const deleteAlert = page.getByRole('alertdialog', { name: /^Delete .+\?$/ });
 	await expect(deleteAlert.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
 	await page.keyboard.press('Escape');
@@ -1932,7 +1934,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'eight-directions.zip',
 		mimeType: 'application/zip',
@@ -2100,7 +2102,7 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 		name: 'Choose a different reference image',
 		exact: true
 	});
-	const thumbnail = attachment.locator('svg');
+	const thumbnail = attachment.locator('.reference-thumbnail');
 	await expect(thumbnail).toHaveAttribute('viewBox', '1 1 12 1');
 	expect(
 		await thumbnail.evaluate(
@@ -2248,7 +2250,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const character = page.getByRole('dialog', { name: 'New character', exact: true });
 	await character
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -2265,7 +2267,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	await expect(character.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'a cheerful elf archer'
 	);
@@ -2351,7 +2353,7 @@ test('closing Connect before its code loads still discards the pending action', 
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const character = page.getByRole('dialog', { name: 'New character', exact: true });
 	await character
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -2650,7 +2652,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'draft-fixture.zip',
 		mimeType: 'application/zip',
@@ -2680,7 +2682,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await setup.getByRole('button', { name: 'Later', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'Add a move', exact: true })).toBeVisible();
 	const move = page.getByRole('dialog', { name: /^(Add a move|Replace move views)$/ });
 	const description = move.getByRole('textbox', { name: /^Describe (the motion|a new move)$/ });
@@ -2724,7 +2726,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 		.getByRole('button', { name: 'Cancel', exact: true })
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
-	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await expect(description).toHaveValue('jumping in place');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toBeChecked();
 	await expect(choices.getByRole('radio', { checked: true })).toHaveCount(0);
@@ -2741,7 +2743,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(page.locator('.project-btn .name-text')).toHaveText('Adventurer (Demo)');
 	await expect(page.locator('.move-list')).toBeVisible();
 	// The draft stays with its character: the read-only demo offers no Add a move at all.
-	await expect(page.getByRole('button', { name: 'Add a move', exact: true })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'Add a move...', exact: true })).toHaveCount(0);
 	expect(requests).toEqual([]);
 });
 
@@ -2788,7 +2790,7 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const editor = page.getByRole('tablist', { name: 'Prompt editor', exact: true });
 	await expect(editor.locator('[tabindex="0"]')).toHaveCount(1);
 	await editor.getByRole('tab', { name: 'Appearance', exact: true }).focus();
@@ -3093,7 +3095,7 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
 	await expect(page.locator('#preview-coverage')).toContainText('Loading helm');
 	await coverage.click();
 	await page.getByRole('button', { name: 'More options for Loading helm', exact: true }).click();
-	await page.getByRole('menuitem', { name: 'Review item…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Review item...', exact: true }).click();
 	await page.locator('.gen').getByRole('button', { name: 'Discard', exact: true }).click();
 	await expect(tile).toHaveCount(0);
 	await expect(coverage).toHaveCount(0);
@@ -3136,7 +3138,7 @@ async function busyFirstTab(
 						t = db.transaction('projects', 'readwrite');
 					t.objectStore('projects').put(
 						{
-							id: 'studio-create',
+							id: 'studio-create:rig-failed-x',
 							status: 'failed',
 							error: 'Saved terminal failure',
 							spec: {
@@ -3148,7 +3150,7 @@ async function busyFirstTab(
 								projectId: 'rig-failed-x'
 							}
 						},
-						'studio-create'
+						'studio-create:rig-failed-x'
 					);
 					t.oncomplete = () => {
 						db.close();
@@ -3168,7 +3170,7 @@ async function busyFirstTab(
 		.locator('#project-menu')
 		.getByRole('button', { name: 'New character', exact: true })
 		.click();
-	await second.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await second.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const create = second.getByRole('dialog', { name: 'New character', exact: true });
 	await create
 		.getByRole('textbox', { name: 'Details', exact: true })
@@ -3194,15 +3196,18 @@ test('a click waiting on a busy first tab continues as soon as that tab is idle,
 	await expect(second.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toHaveCount(
 		0
 	);
-	await page.locator('.project-btn').click();
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page
-		.locator('#project-menu')
-		.getByRole('button', { name: 'New character', exact: true })
+		.locator('#experience-options')
+		.getByRole('button', { name: /Activity/ })
 		.click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page
+		.getByRole('dialog', { name: 'Activity', exact: true })
+		.getByRole('button', { name: /Open New character.*Failed/ })
+		.click();
 	await page
 		.getByRole('dialog', { name: 'New character', exact: true })
-		.getByRole('button', { name: 'Start over', exact: true })
+		.getByRole('button', { name: 'Discard', exact: true })
 		.click();
 	await expect(second.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toBeVisible({
 		timeout: 15000
@@ -3251,7 +3256,7 @@ test('a tab that is not running the generations still opens New item from an ite
 	await equipmentGroup(second, 'Head');
 	await second.getByRole('button', { name: 'More options for Steel helmet', exact: true }).click();
 	// Opening the sheet spends nothing, so only its Make button waits for this tab to take over the jobs.
-	await itemMenu(second).getByRole('menuitem', { name: 'Try again…', exact: true }).click();
+	await itemMenu(second).getByRole('menuitem', { name: 'Try again...', exact: true }).click();
 	await expect(second.getByRole('dialog', { name: 'New item', exact: true })).toBeVisible();
 	await expect(second.getByRole('dialog', { name: 'Activity', exact: true })).toHaveCount(0);
 });
@@ -3289,7 +3294,7 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 			.locator('#project-menu')
 			.getByRole('button', { name: 'New character', exact: true })
 			.click();
-		await follower.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+		await follower.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 		return follower.getByRole('dialog', { name: 'New character', exact: true });
 	}
 	let create = await openCreate();
@@ -3585,45 +3590,51 @@ test('interrupted character specifications retain their own estimates', async ({
 		// Form drafts are memory-only. A valid current form must not change a persisted older request.
 		formDrafts.character = newCharacterDraft();
 		setPreset(formDrafts.character, 'unique');
-		const s = (
-			window as unknown as {
-				__studio: { ui: { sheet: string }; creating: { spec: any; error: string } };
-			}
-		).__studio;
+		const pathToState = '/src/studio/state.svelte.ts';
+		const s = (await import(pathToState)) as typeof import('../../src/studio/state.svelte.ts');
 		// A stored interrupted run keeps its own direction plan and size; the new form's defaults must not alter its pricing.
-		s.creating.spec = {
+		const spec = {
 			description: 'Interrupted run',
 			name: 'Interrupted run',
 			seed: 123,
 			size: 48,
-			directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west' }]
+			directions: (['south', 'east', 'north', 'west'] as const).map((id) => ({ id }))
 		};
-		s.creating.error = 'Stored interruption';
-		s.ui.sheet = 'create';
+		s.creates.push({
+			id: 'rig-cost-fixture',
+			spec,
+			error: 'Stored interruption',
+			running: false,
+			projectId: '',
+			progress: null,
+			views: []
+		});
+		s.reviewFailedCreate('rig-cost-fixture');
 	});
 	const create = page.getByRole('dialog', { name: 'New character', exact: true });
 	// Creation is priced by the draw (body size) plus a standing-joint fallback per direction; it makes no animation.
 	await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('2–5 gens');
-	await page.evaluate(() => {
-		const s = (
-			window as unknown as { __studio: { creating: { spec: { directions: { id: string }[] } } } }
-		).__studio;
-		s.creating.spec.directions = [
-			'south',
-			'south-east',
-			'east',
-			'north-east',
-			'north',
-			'north-west',
-			'west',
-			'south-west'
-		].map((id) => ({ id }));
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+		s.creates[0].spec.directions = (
+			[
+				'south',
+				'south-east',
+				'east',
+				'north-east',
+				'north',
+				'north-west',
+				'west',
+				'south-west'
+			] as const
+		).map((id) => ({ id }));
 	});
 	await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('2–5 gens');
-	await page.evaluate(() => {
-		const s = (window as unknown as { __studio: { creating: { spec: { size: number } } } })
-			.__studio;
-		s.creating.spec.size = 128; // the stored run, not the 64 px form draft, sets the price
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+		s.creates[0].spec.size = 128; // the stored run, not the 64 px form draft, sets the price
 	});
 	await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('3–5 gens');
 	expect(calls).toEqual([]);
@@ -3660,34 +3671,34 @@ test('character Try again preserves the direction plan and allocates a fresh pub
 	);
 	await expect(page.locator('.world-actors').first()).toBeVisible();
 	await page.evaluate(async () => {
-		const s = (
-			window as unknown as {
-				__studio: {
-					loadGens: () => Promise<void>;
-					creating: { spec: any; error: string };
-					ui: { sheet: string };
-				};
-				originalCreatePut?: IDBObjectStore['put'];
-			}
-		).__studio;
+		const path = '/src/studio/state.svelte.ts';
+		const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
 		await s.loadGens();
 		const put = IDBObjectStore.prototype.put;
 		(window as unknown as { originalCreatePut: IDBObjectStore['put'] }).originalCreatePut = put;
 		IDBObjectStore.prototype.put = function (value, key) {
-			if (key === 'studio-create')
+			if (key === 'studio-create:prior-attempt-identity')
 				throw new Error('Synthetic draft persistence stopped before any paid request');
 			return put.call(this, value, key);
 		};
-		s.creating.spec = {
+		const spec = {
 			projectId: 'prior-attempt-identity',
 			description: 'Retry body',
 			name: 'Retry fixture',
 			size: 48,
-			directions: [{ id: 'south' }, { id: 'east' }, { id: 'north' }, { id: 'west' }],
+			directions: (['south', 'east', 'north', 'west'] as const).map((id) => ({ id })),
 			seed: 0
 		};
-		s.creating.error = 'Prior interrupted attempt';
-		s.ui.sheet = 'create';
+		s.creates.push({
+			id: 'prior-attempt-identity',
+			spec,
+			error: 'Prior interrupted attempt',
+			running: false,
+			projectId: '',
+			progress: null,
+			views: []
+		});
+		s.reviewFailedCreate('prior-attempt-identity');
 	});
 	try {
 		await page
@@ -3701,20 +3712,14 @@ test('character Try again preserves the direction plan and allocates a fresh pub
 		await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toContainText(
 			'Synthetic draft persistence stopped before any paid request'
 		);
-		const retry = await page.evaluate(() => {
-			const s = (
-				window as unknown as {
-					__studio: {
-						creating: {
-							spec: { projectId?: string; seed: number; directions: { id: string }[] };
-						};
-					};
-				}
-			).__studio;
+		const retry = await page.evaluate(async () => {
+			const path = '/src/studio/state.svelte.ts';
+			const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			const { spec } = s.creates[0];
 			return {
-				projectId: s.creating.spec.projectId,
-				seed: s.creating.spec.seed,
-				directions: s.creating.spec.directions
+				projectId: spec.projectId,
+				seed: spec.seed,
+				directions: spec.directions
 			};
 		});
 		expect(retry.projectId).toBeTruthy();
@@ -3863,7 +3868,7 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
 	const menu = page.locator('#item-menu');
 	await expect(menu).toContainText(/Keep this tab open|Waiting for your PixelLab key/);
 	await expect(menu).not.toContainText('picks up where it left off');
-	await menu.getByRole('menuitem', { name: 'Activity…', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Activity...', exact: true }).click();
 	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
 	await expect(activity.locator('#activity-submitting-stop')).toHaveText(
 		'Stop is unavailable until PixelLab responds.'
@@ -4149,7 +4154,7 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 	await tile.focus();
 	await page.keyboard.press('Shift+F10');
 	const menu = page.locator('#item-menu');
-	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Cancel generation...', exact: true }).click();
 	const cancelAlert = page.getByRole('alertdialog', { name: 'Cancel Ponytail?' });
 	await expect(menu).not.toBeVisible();
 	await expect(cancelAlert.getByRole('button', { name: 'Keep', exact: true })).toBeFocused();
@@ -4159,12 +4164,12 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 	const more = page.getByRole('button', { name: 'More options for Ponytail', exact: true });
 	await expect(more).toBeFocused();
 	await more.click();
-	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Cancel generation...', exact: true }).click();
 	await cancelAlert.getByRole('button', { name: 'Keep', exact: true }).click();
 	await expect(cancelAlert).toHaveCount(0);
 	await expect(tile).toContainText('42%');
 	await more.click();
-	await menu.getByRole('menuitem', { name: 'Cancel generation…', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Cancel generation...', exact: true }).click();
 	await page.evaluate(() => {
 		const put = IDBObjectStore.prototype.put;
 		(window as unknown as { restoreItemPut: () => void }).restoreItemPut = () =>
@@ -4194,7 +4199,7 @@ test('item tile cancellation confirms cost, retries failed saves and stays cance
 		'Ponytail, Canceled'
 	);
 	await page.getByRole('button', { name: 'More options for Ponytail', exact: true }).click();
-	await menu.getByRole('menuitem', { name: 'Review item…', exact: true }).click();
+	await menu.getByRole('menuitem', { name: 'Review item...', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'Item review', exact: true })).toBeVisible();
 	await page.locator('.gen').getByRole('button', { name: 'Discard', exact: true }).click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -4511,9 +4516,9 @@ test('reload restores failed create, move and setup for review without paid subm
 			error: 'Saved terminal failure; inspect Activity',
 			progress: { step: 'animate', done: 4, total: 69, recIds: [] }
 		};
-		await db.put('projects', 'studio-create', {
+		await db.put('projects', 'studio-create:rig-failed-browser-fixture', {
 			...common,
-			id: 'studio-create',
+			id: 'studio-create:rig-failed-browser-fixture',
 			spec: {
 				name: 'Failed character',
 				description: 'body',
@@ -4548,7 +4553,7 @@ test('reload restores failed create, move and setup for review without paid subm
 			page.evaluate(async () => {
 				const path = '/src/studio/state.svelte.ts',
 					s = await import(/* @vite-ignore */ path);
-				return [s.creating.error, s.moving.error, s.settingUp.error];
+				return [s.creates[0]?.error, s.moving.error, s.settingUp.error];
 			})
 		)
 		.toEqual(Array(3).fill('Saved terminal failure; inspect Activity'));
@@ -4557,8 +4562,11 @@ test('reload restores failed create, move and setup for review without paid subm
 		['move', 'Add a move'],
 		['setup', 'Set up character']
 	] as const) {
-		await page.evaluate((sheet) => {
-			(window as unknown as { __studio: { ui: { sheet: string } } }).__studio.ui.sheet = sheet;
+		await page.evaluate(async (sheet) => {
+			const path = '/src/studio/state.svelte.ts';
+			const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+			if (sheet === 'create') s.reviewFailedCreate('rig-failed-browser-fixture');
+			else s.ui.sheet = sheet;
 		}, sheet);
 		const dialog = page.getByRole('dialog', { name, exact: true });
 		await expect(dialog).toContainText('Saved terminal failure; inspect Activity');
@@ -5109,7 +5117,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 		await s.openProject(s.doc.id);
 	});
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
 	await page.getByRole('radio', { name: 'Cross punch · added', exact: true }).click();
 	await expect(sheet).toContainText(
@@ -5241,7 +5249,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	);
 	const fixture = await targetedRepairFixture(page);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await page.getByRole('radio', { name: 'Walk · added', exact: true }).click();
 	const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
 	const directions = sheet.getByRole('group', { name: 'Directions to redraw' });
@@ -5277,7 +5285,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		.getByRole('dialog', { name: 'Connect PixelLab' })
 		.getByRole('button', { name: 'Cancel', exact: true })
 		.click();
-	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await expect(east).toHaveAttribute('aria-pressed', 'true');
 	await expect(west).toHaveAttribute('aria-pressed', 'false');
 	await page.evaluate(() => {
@@ -5318,7 +5326,7 @@ test('targeted move replacement names mirrored effects without offering a separa
 	);
 	await targetedRepairFixture(page, true);
 	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await page.getByRole('radio', { name: 'Walk · added', exact: true }).click();
 	const directions = page.getByRole('group', { name: 'Directions to redraw' });
 	await expect(directions.getByRole('button', { name: /West direction/ })).toHaveCount(0);
@@ -5387,6 +5395,8 @@ test('partial missing gear and explicit item repair stay on the current move and
 	await inspectStage(page);
 	const make = page.locator('.stage-note').getByRole('button', { name: /^Make it/ });
 	await expect(make).toContainText('Est. 3 gens');
+	await expect(make).not.toContainText('...');
+	await expect(make.locator('[data-surface-chevron]')).toHaveCount(0);
 	await make.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await connect.getByLabel('API key', { exact: true }).fill('synthetic-partial-repair-key');
@@ -7146,6 +7156,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 		.getByRole('button', { name: /^Wizard hat(,|$)/ })
 		.and(page.locator('.bu-tile:not(.shared-tile)'));
 	const more = head.getByRole('button', { name: 'More options for Wizard hat', exact: true });
+	await expect(more.locator('svg')).toHaveCount(1);
 	// A sibling control, never nested in the tile, drawn 3 px inside its top-right corner at 28 by 25 px.
 	expect(await more.evaluate((b) => !!b.closest('.item-tile'))).toBe(false);
 	await expect(more).toHaveAttribute('aria-haspopup', 'menu');
@@ -7195,7 +7206,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expectAnchoredMenu(page);
 	await expect(more).toHaveAttribute('aria-expanded', 'true');
 	const items = itemMenu(page).getByRole('menuitem');
-	await expect(items.first()).toHaveAccessibleName('Rename…');
+	await expect(items.first()).toHaveAccessibleName('Rename...');
 	await expect(items.first()).toBeFocused();
 	await expect(items.last()).toHaveAccessibleName('Delete item…');
 	const iconOffsets = await items.evaluateAll((rows) =>
@@ -7207,7 +7218,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	expect(iconOffsets).toEqual(Array(iconOffsets.length).fill(iconOffsets.at(-1)));
 	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
 	await page.keyboard.press('ArrowDown');
-	await expect(items.nth(1)).toHaveAccessibleName('Details…');
+	await expect(items.nth(1)).toHaveAccessibleName('Details...');
 	await expect(items.nth(1)).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect.poll(() => menuOpen(page)).toBe(false);
@@ -7309,7 +7320,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 		exact: true
 	});
 	await helmetMore.click();
-	await itemMenu(page).getByRole('menuitem', { name: 'Details…', exact: true }).click();
+	await itemMenu(page).getByRole('menuitem', { name: 'Details...', exact: true }).click();
 	const details = page.getByRole('dialog', { name: 'Item', exact: true });
 	await expect(details.locator('.insp-title')).toHaveText('Steel helmet');
 	await details.getByRole('button', { name: 'Done', exact: true }).click();
@@ -7664,7 +7675,7 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	const twoHanded = itemMenu(page).getByRole('menuitemcheckbox', { name: 'Two-handed' });
 	await expect(twoHanded).not.toBeChecked();
 	await expect(
-		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Off hand…', exact: true })
+		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Off hand...', exact: true })
 	).toBeVisible();
 
 	// Switching it on while worn takes the other hand's item off, says so, and Undo brings it back.
@@ -7699,12 +7710,12 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	// the Main hand.
 	await off.getByRole('button', { name: 'More options for Round shield', exact: true }).click();
 	await expect(
-		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Main hand…', exact: true })
+		itemMenu(page).getByRole('menuitem', { name: 'Make one for the Main hand...', exact: true })
 	).toBeVisible();
 	await page.keyboard.press('Escape');
 	await main.getByRole('button', { name: 'More options for Steel longsword', exact: true }).click();
 	await itemMenu(page)
-		.getByRole('menuitem', { name: 'Make one for the Off hand…', exact: true })
+		.getByRole('menuitem', { name: 'Make one for the Off hand...', exact: true })
 		.click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
 	await expect(sheet.getByRole('radio', { name: 'Off hand', exact: true })).toHaveAttribute(

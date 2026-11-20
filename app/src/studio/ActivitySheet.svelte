@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import Sheet from './Sheet.svelte';
 	import PixelLabUsage from './PixelLabUsage.svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -15,7 +17,8 @@
 		ui,
 		doc,
 		store,
-		creating,
+		creates,
+		reviewFailedCreate,
 		moving,
 		settingUp,
 		gens,
@@ -56,12 +59,12 @@
 		jobs.filter((r) => !['running', 'submitting', 'queued'].includes(r.state)).slice(0, 12)
 	);
 	// Job labels are persisted English records; only the generated joint-check label is display text.
-	const creatingPending = $derived(creating.spec && !creating.projectId ? creating.spec : null);
+	const creatingPending = $derived(creates.filter((run) => !run.projectId));
 	const movingPending = $derived(moving.spec && !moving.done ? moving.spec : null);
 	const setupPending = $derived(settingUp.spec && !settingUp.done ? settingUp.spec : null);
 	const generatingItems = $derived(gens.filter((gen) => gen.phase === 'running'));
 	const flowsPending = $derived(
-		creatingPending ||
+		creatingPending.length ||
 			movingPending ||
 			setupPending ||
 			generatingItems.length ||
@@ -69,7 +72,7 @@
 	);
 	const characterName = (id: string) =>
 		store.projects.find((project) => project.id === id)?.name ?? t('common.character');
-	async function openWork(sheet: 'create' | 'move' | 'setup', projectId?: string) {
+	async function openWork(sheet: 'move' | 'setup', projectId?: string) {
 		if (projectId && doc.id !== projectId) await openProject(projectId);
 		if (ui.sheet === 'activity' && (!projectId || doc.id === projectId)) ui.sheet = sheet;
 	}
@@ -144,13 +147,13 @@
 			<section class="act-group" aria-label={t('activity.pendingWork')}>
 				<span class="sec-title">{t('activity.pendingWork')}</span>
 				<ul>
-					{#if creatingPending}
+					{#each creatingPending as run (run.id)}
 						{@render workRow(
-							`${t('newCharacterButton.newCharacter')} · ${creatingPending.name}`,
-							creating.error ? t('generation.status.needsAttention') : t('activity.inProgress'),
-							() => void openWork('create')
+							`${t('newCharacterButton.newCharacter')} · ${run.spec.name}`,
+							run.error ? t('generation.status.needsAttention') : t('activity.inProgress'),
+							run.error && !run.running ? () => reviewFailedCreate(run.id) : undefined
 						)}
-					{/if}
+					{/each}
 					{#if movingPending}
 						{@const task = movingPending.redrawItem
 							? t('activity.redrawFrames')
@@ -221,7 +224,8 @@
 					>{:else if !ui.waitingForTab}<button
 						class="bu-action btn sm"
 						data-variant="outline"
-						onclick={() => (ui.sheet = 'connect')}>{t('connectSheet.connect')}</button
+						onclick={() => (ui.sheet = 'connect')}
+						>{openerLabel(t('connectSheet.connect'))}<SurfaceChevron /></button
 					>{/if}
 			{/snippet}
 		</PixelLabUsage>
@@ -256,7 +260,9 @@
 							class="bu-action btn sm"
 							data-variant="outline"
 							onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}
-							>{$queue.paused === 'auth' ? t('connectSheet.connect') : t('activity.resume')}</button
+							>{$queue.paused === 'auth'
+								? openerLabel(t('connectSheet.connect'))
+								: t('activity.resume')}{#if $queue.paused === 'auth'}<SurfaceChevron />{/if}</button
 						></span
 					>{/if}
 			</p>
@@ -448,7 +454,7 @@
 				data-variant="outline"
 				aria-label={t('activity.openWorkNamed', { label })}
 				disabled={doc.loading || $queue.role === 'follower'}
-				onclick={open}>{t('activity.openWork')}</button
+				onclick={open}>{openerLabel(t('activity.openWork'))}<SurfaceChevron /></button
 			>{/if}
 	</li>
 {/snippet}

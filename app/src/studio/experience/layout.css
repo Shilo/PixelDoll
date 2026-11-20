@@ -251,9 +251,8 @@
 	}
 }
 /* Share and Export carry text only where the bar has room. */
-@media (max-width: 1099px) {
-	.header-share span,
-	.header-export span {
+@media (max-width: 1199px) {
+	.experience-header :is(.header-share, .header-export) :is(span, svg[data-surface-chevron]) {
 		display: none;
 	}
 	.experience-header :is(.header-share, .header-export) {
@@ -1600,8 +1599,13 @@
 .studio-app .character-sheet :is(input, select, textarea) {
 	font-size: 16px;
 }
-.studio-app .character-sheet :is(input:where(:not([type='checkbox'], [type='radio'])), select) {
+.studio-app .character-sheet :is(input:where(:not([type='checkbox'], [type='radio'])), select),
+.studio-app .character-sheet .base-clothing .bu-segmented {
 	min-height: 44px;
+}
+.studio-app .character-sheet .base-clothing .bu-segment-face {
+	min-height: 0;
+	padding-block: 0;
 }
 .studio-app .character-sheet .details-input {
 	min-height: 112px;

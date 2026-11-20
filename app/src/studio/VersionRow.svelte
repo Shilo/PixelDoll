@@ -2,7 +2,7 @@
 	import { t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
 	import { popoverFocus } from './experience/focus.ts';
-	import { ChevronRight, Copy, GitCommitHorizontal, Github } from './icons.ts';
+	import { ChevronRight, Copy, ExternalLink, GitCommitHorizontal, Github } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
 	import { PRE_RELEASE } from './previewNotice.ts';
 	import { toast } from './state.svelte.ts';
@@ -36,8 +36,9 @@
 	<Github size={18} />
 	<span class="row-name wrap-name">{t('toolbar.version', { version })}</span>
 	<span class="build-meta faint small num">{__APP_COMMIT__}</span>
-	<ChevronRight size={16} aria-hidden="true" />
-</button>
+
+	<ChevronRight size={16} aria-hidden="true" /></button
+>
 <div
 	id={menuId}
 	class="menu bu-popover-anchor"
@@ -62,6 +63,7 @@
 		>
 			<Github size={18} /><span class="row-name wrap-name">{t('versionRow.openSource')}</span>
 			<span class="build-meta faint small">{repositoryName}</span>
+			<ExternalLink size={16} aria-hidden="true" />
 		</a>
 		<a
 			class="row bu-action"
@@ -72,6 +74,7 @@
 		>
 			<GitCommitHorizontal size={18} /><span class="row-name">{t('versionRow.viewCommit')}</span>
 			<span class="build-meta faint small num">{__APP_COMMIT__}</span>
+			<ExternalLink size={16} aria-hidden="true" />
 		</a>
 		<button class="row bu-action" data-variant="quiet" onclick={copyVersion}>
 			<Copy size={18} /><span class="row-name">{t('versionRow.copyDetails')}</span>

@@ -1307,7 +1307,7 @@ test('wheel, keys, middle click and native controls only change zoom where the s
 
 	// The creator is native: typing, caret moves and wheel stay inside the dialog.
 	await page.getByRole('button', { name: 'New character', exact: true }).first().click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'New character', exact: true });
 	const name = dialog.getByRole('textbox', { name: 'Name', exact: true });
 	await name.click();

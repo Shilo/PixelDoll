@@ -4,6 +4,7 @@ import type { StoredProject } from './project.ts';
 import { COPY_GENERATION_OFF, workspaceCopy } from './workspace-mode.ts';
 
 export type StoreName = 'projects' | 'blobs' | 'jobs';
+export const CREATE_DRAFT_PREFIX = 'studio-create:';
 const DB = 'pixeldoll',
 	VERSION = 1;
 
@@ -229,7 +230,7 @@ async function editIdleCharacter(
 			const busy = jobs.result.some((j) => ['queued', 'submitting', 'running'].includes(j.state));
 			const work = records.result.some(
 				(r) =>
-					r.id === 'studio-create' ||
+					r?.id?.startsWith(CREATE_DRAFT_PREFIX) ||
 					r.id === 'studio-move' ||
 					r.id === 'studio-setup' ||
 					(r.id === 'studio-drafts' &&

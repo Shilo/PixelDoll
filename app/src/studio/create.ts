@@ -152,12 +152,6 @@ export interface CreateSpec {
 	activityScope?: string;
 	projectId?: string;
 }
-export type CreateStep = 'draw' | 'rest' | 'save';
-export const STEPS: { id: CreateStep; label: Message }[] = [
-	{ id: 'draw', label: message('create.steps.draw') },
-	{ id: 'rest', label: message('create.steps.rest') },
-	{ id: 'save', label: message('create.steps.save') }
-];
 const CELL = 64,
 	EST = 0.1;
 // Read-only receipt lookup includes previously completed render attempts. New renders submit once.
