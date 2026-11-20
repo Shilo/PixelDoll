@@ -11,6 +11,8 @@
 	import WorldStage from './WorldStage.svelte';
 	import PopoverArrow from '../PopoverArrow.svelte';
 	import CharacterThumb from './CharacterThumb.svelte';
+	import Sprite from '../Sprite.svelte';
+	import { CREATE_STEPS } from '../characterConfig.ts';
 	import CastCarousel from './CastCarousel.svelte';
 	import ZoomControls from './ZoomControls.svelte';
 	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
@@ -22,6 +24,7 @@
 		ui,
 		doc,
 		store,
+		creating,
 		openProject,
 		openingProjectId,
 		refreshProjects,
@@ -44,6 +47,7 @@
 		Play,
 		Pause,
 		Grid2x2,
+		PersonStanding,
 		TriangleAlert
 	} from '../icons.ts';
 	import {
@@ -77,8 +81,23 @@
 			experience.testMount
 	);
 	const name = $derived(characterName());
+	const query = $derived(search.toLowerCase());
 	const list = $derived(
-		store.projects.filter((p) => !p.dev && p.name.toLowerCase().includes(search.toLowerCase()))
+		store.projects.filter((p) => !p.dev && p.name.toLowerCase().includes(query))
+	);
+	const pending = $derived(
+		!creating.projectId && creating.spec?.name?.toLowerCase().includes(query) ? creating.spec : null
+	);
+	const createStep = $derived(
+		CREATE_STEPS.findIndex((step) => step.id === creating.progress?.step)
+	);
+	const createProgress = $derived(Math.max(0, createStep));
+	const createStatus = $derived(
+		creating.error
+			? t('generation.status.needsAttention')
+			: createStep < 0
+				? t('activity.inProgress')
+				: displayMessage(CREATE_STEPS[createStep].label)
 	);
 	$effect(() => {
 		if (search && list.length && !doc.loading && !list.some((p) => p.id === doc.id))
@@ -631,6 +650,49 @@
 				{#if g.sheet}<NewCharacterButton compact />{/if}
 			</div>
 			<div class="character-rows">
+				{#if pending}
+					<button
+						class="bu-action character-row pending-character"
+						data-variant="row"
+						aria-haspopup="dialog"
+						onclick={() => (ui.sheet = 'create')}
+					>
+						<span class="character-thumbnail" aria-hidden="true">
+							{#if creating.views[0]}
+								<Sprite img={creating.views[0].img} k={1} limit={64} label={pending.name} />
+							{:else}<PersonStanding size={24} />{/if}
+						</span>
+						<span>
+							<strong>{pending.name}</strong>
+							<small class="character-sizes">
+								{#if pending.frame}<span
+										>{t('sizePreview.frame', {
+											measure: pixelSize({ w: pending.frame, h: pending.frame })
+										})} ·</span
+									>{/if}
+								<span
+									>{t('export.count.directions', { count: pending.directions?.length ?? 0 })}</span
+								>
+							</small>
+							<small>{createStatus}</small>
+							{#if !creating.error}<progress
+									class="bu-progress"
+									value={createProgress}
+									max={CREATE_STEPS.length}
+									aria-hidden="true"
+								></progress>{/if}
+						</span>
+					</button>
+					{#if !creating.error}<span
+							class="sr"
+							role="progressbar"
+							aria-label={t('wardrobe.nameProgress', { name: pending.name })}
+							aria-valuenow={createProgress}
+							aria-valuemin={0}
+							aria-valuemax={CREATE_STEPS.length}
+							aria-valuetext={createStatus}
+						></span>{/if}
+				{/if}
 				{#each list as p (p.id)}
 					{@const still = stills.get(p.id)}
 					{@const facts = p.facts ?? still?.facts}
@@ -661,7 +723,7 @@
 							></button
 						>
 					</CharacterActions>
-				{:else}<p class="muted">{t('experience.noMatchingCharacters')}</p>{/each}
+				{:else}{#if !pending}<p class="muted">{t('experience.noMatchingCharacters')}</p>{/if}{/each}
 				<NewCharacterButton row />
 			</div>
 			<button
@@ -823,6 +885,14 @@
 </div>
 
 <style>
+	.pending-character > .character-thumbnail {
+		width: 64px;
+		flex: none;
+	}
+	.pending-character > span:last-child {
+		flex: 1;
+		padding-block: 4px;
+	}
 	.character-row:has(.character-sizes) > span:last-child {
 		line-height: 1.1;
 	}

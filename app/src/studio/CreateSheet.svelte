@@ -14,9 +14,10 @@
 	import { loadProject } from '../lib/store/project.ts';
 	import type { Project } from '../lib/store/manifest.ts';
 	import type { ClipQa } from '../lib/rig/clips.ts';
-	import { STEPS, estimate, type CreateSpec } from './create.ts';
+	import { estimate, type CreateSpec } from './create.ts';
 	import CharacterForm from './CharacterForm.svelte';
 	import {
+		CREATE_STEPS,
 		autoFrame,
 		draftErrors,
 		facingOf,
@@ -83,7 +84,7 @@
 		});
 	}
 	const running = $derived(!!creating.spec && !creating.projectId && !creating.error);
-	const stepIx = $derived(STEPS.findIndex((s) => s.id === creating.progress?.step));
+	const stepIx = $derived(CREATE_STEPS.findIndex((s) => s.id === creating.progress?.step));
 	let result = $state.raw<Project | null>(null);
 	let failedNotes = $state<string[]>([]);
 	const qualityNotes = $derived([...new Set([...failedNotes, ...creating.warnings])]);
@@ -233,7 +234,7 @@
 				/>
 			</div>
 			<ol class="steps-list">
-				{#each STEPS as s, i (s.id)}
+				{#each CREATE_STEPS as s, i (s.id)}
 					<li class:done={i < stepIx} class:now={i === stepIx}>
 						{#if i < stepIx}<Check size={16} />{:else if i === stepIx && !creating.error}<span
 								class="bu-ring ring spin"
