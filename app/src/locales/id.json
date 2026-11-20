@@ -204,6 +204,7 @@
 		"waitForGeneration": "Tunggu hingga proses generasi saat ini selesai.",
 		"resolveDrafts": "Simpan atau buang draf item karakter ini sebelum mengubah arah.",
 		"chooseWhichDirectionsToKeepForName": "Pilih arah yang akan dipertahankan untuk {name}",
+		"keepMirrorsHint": "Gunakan tombol cermin untuk mempertahankan atau menghapus tampilan cermin yang sudah ada. Gambar asli tidak dapat diganti di sini.",
 		"labelDirectionsToKeep": "Arah yang dipertahankan",
 		"loadingDirections": "Memuat arah…",
 		"downloadBackup": "Unduh cadangan",
@@ -1034,6 +1035,7 @@
 		"updatingPreview": "Memperbarui pratinjau…",
 		"characterName": "Nama karakter",
 		"directionsHint": "Gunakan panah untuk mempertahankan atau melewati tampilan. Tombol cermin membalik tampilan dari arah berlawanan dan mengganti gambar asli untuk arah itu di salinan ini.",
+		"unavailablePresets": "Prasetel yang tidak tersedia memerlukan tampilan yang tidak ada dalam ZIP ini.",
 		"directionsToImport": "Arah yang akan diimpor",
 		"previewDirection": "Pratinjau: {direction}",
 		"noDirections": "Tidak ada arah yang dipilih",
@@ -1944,6 +1946,10 @@
 			},
 			"models": {
 				"v3": { "label": "Bawaan (V3)", "help": "Proporsi seimbang." },
+				"standard": {
+					"label": "Standar",
+					"help": "Menggambar delapan tampilan dari teks dengan templat tetap."
+				},
 				"pro": {
 					"label": "Pro",
 					"help": "Mengikuti prompt lebih dekat, dengan biaya beberapa kali lipat."
@@ -2022,6 +2028,7 @@
 			"sizeGuideReference": "Panduan ukuran dan referensi",
 			"reference": {
 				"frontFacing": "Gunakan sprite yang menghadap ke depan.",
+				"standardTextOnly": "Standar hanya menggunakan teks. Hapus gambar referensi atau pilih model lain.",
 				"concept": "Gunakan sketsa atau desain karakter.",
 				"style": "Gunakan ilustrasi sebagai acuan gaya.",
 				"tooLarge": "Pilih referensi berukuran maksimal {max} × {max} px.",

@@ -180,6 +180,14 @@ export function drawRequest(
 		...(seed === undefined ? {} : { seed })
 	};
 	const reference = spec.reference;
+	if (spec.model === 'standard')
+		return routes.createCharacterStandard({
+			...common,
+			...(spec.outline ? { outline: spec.outline } : {}),
+			...(spec.detail
+				? { detail: spec.detail === 'highly detailed' ? 'high detail' : spec.detail }
+				: {})
+		});
 	if (spec.model === 'pro')
 		return routes.createCharacterPro({
 			...common,
@@ -253,7 +261,8 @@ export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model' 
 					? 6
 					: 9;
 	const area = source ? source.width * source.height : spec.size * spec.size;
-	const gens = +(first + 0.25 + Math.ceil((area * 8) / 65536)).toFixed(2);
+	const gens =
+		spec.model === 'standard' ? 1.25 : +(first + 0.25 + Math.ceil((area * 8) / 65536)).toFixed(2);
 	// Missing managed rest joints may require one estimate per direction.
 	return { gens, maxGens: +(gens + n * EST).toFixed(2), minutes: 5 };
 }

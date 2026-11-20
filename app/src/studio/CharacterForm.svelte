@@ -6,6 +6,7 @@
 	import SizePreview from './SizePreview.svelte';
 	import ApiPeek from './ApiPeek.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
+	import DirectionPresets from './DirectionPresets.svelte';
 	import { app } from '../lib/app.svelte.ts';
 	import { ApiError } from '../lib/pixellab/client.ts';
 	import { enhanceCharacter } from './enhanceCharacter.ts';
@@ -29,7 +30,6 @@
 		MODELS,
 		modelOf,
 		OUTLINES,
-		PRESETS,
 		presetOf,
 		readPrompt,
 		setPreset,
@@ -91,15 +91,12 @@
 		Pale: 'create.form.traitOptions.pale'
 	};
 	const optionText = (option: string) => (OPTION_TEXT[option] ? t(OPTION_TEXT[option]) : option);
-	const PRESET_TEXT: Record<string, WhisperKey> = {
-		eight: 'create.form.presets.eight',
-		four: 'create.form.presets.four',
-		diagonal: 'create.form.presets.diagonal',
-		side: 'create.form.presets.side',
-		unique: 'create.form.presets.unique'
-	};
 	const MODEL_TEXT: Record<CharacterModel, { label: WhisperKey; help: WhisperKey }> = {
 		v3: { label: 'create.form.models.v3.label', help: 'create.form.models.v3.help' },
+		standard: {
+			label: 'create.form.models.standard.label',
+			help: 'create.form.models.standard.help'
+		},
 		pro: { label: 'create.form.models.pro.label', help: 'create.form.models.pro.help' },
 		'pro-flash': {
 			label: 'create.form.models.proFlash.label',
@@ -500,14 +497,14 @@
 			<h3>{t('create.form.sizeGuide')}</h3>
 			<SizePreview body={d.body || 0} frame={frame || 0} />
 		</div>
-		<ReferenceField
-			bind:value={d.reference}
-			bind:loading={referenceLoading}
-			hint={t(characterReference[modelId].hint)}
-			max={{ width: referenceMax, height: referenceMax }}
-			issue={displayError(characterReferenceIssue(d.reference, d.model, frame, d.body) ?? '')}
-			disabled={busy}
-		/>
+		{#if modelId !== 'standard' || d.reference}<ReferenceField
+				bind:value={d.reference}
+				bind:loading={referenceLoading}
+				hint={t(characterReference[modelId].hint)}
+				max={{ width: referenceMax, height: referenceMax }}
+				issue={displayError(characterReferenceIssue(d.reference, d.model, frame, d.body) ?? '')}
+				disabled={busy}
+			/>{/if}
 	</section>
 	<section class="geometry" aria-label={t('create.form.geometrySection')}>
 		<div class="creator-field">
@@ -601,17 +598,13 @@
 
 	<section class="facing" aria-label={t('create.form.directionsSection')}>
 		<Help title={t('common.directions')} text={t('create.form.directionsHelp')} />
-		<div class="direction-presets" role="group" aria-label={t('create.form.directionPresets')}>
-			{#each PRESETS as p (p.id)}<button
-					class="bu-action btn"
-					data-variant="outline"
-					aria-pressed={preset === p.id}
-					onclick={() => {
-						setPreset(d, p.id);
-						promoted = undefined;
-					}}>{PRESET_TEXT[p.id] ? t(PRESET_TEXT[p.id]) : p.label}</button
-				>{/each}
-		</div>
+		<DirectionPresets
+			active={preset}
+			onselect={(choice) => {
+				setPreset(d, choice.id);
+				promoted = undefined;
+			}}
+		/>
 		<DirectionCompass
 			label={t('create.form.facingDirections')}
 			selected={d.selected}
@@ -878,21 +871,6 @@
 		pointer-events: none;
 	}
 
-	.direction-presets {
-		display: grid;
-		grid-template-columns: repeat(6, minmax(0, 1fr));
-		gap: 5px;
-		margin-top: -4px;
-	}
-	.direction-presets .btn {
-		grid-column: span 2;
-		padding-inline: 3px;
-		font-size: var(--fs-sm);
-		white-space: nowrap;
-	}
-	.direction-presets .btn:nth-child(-n + 2) {
-		grid-column: span 3;
-	}
 	@media (pointer: coarse) {
 		.creator-tabs button {
 			min-height: 44px;
@@ -976,8 +954,7 @@
 			font-size: 16px;
 		}
 		.body-presets .btn,
-		.frame-controls .btn,
-		.direction-presets .btn {
+		.frame-controls .btn {
 			min-height: 44px;
 		}
 		.facing {
@@ -985,9 +962,6 @@
 		}
 		.exact-input {
 			min-height: 300px;
-		}
-		.direction-presets .btn {
-			font-size: 12px;
 		}
 		.prompt-excerpt {
 			font-size: 12px;

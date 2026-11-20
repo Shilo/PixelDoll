@@ -960,9 +960,16 @@ test('character directions can be configured on import and removed only after co
 		buffer: Buffer.from(archive)
 	});
 	await importer.getByText('Directions', { exact: true }).click();
+	const presets = importer.getByRole('group', { name: 'Direction presets' });
+	await expect(presets.getByRole('button', { name: 'Unique 8' })).toBeDisabled();
+	await presets.getByRole('button', { name: 'Top-down 4' }).click();
+	await expect(importer.locator('.import-preview')).toContainText('4 directions');
+	await presets.getByRole('button', { name: 'Top-down 8' }).click();
+	await expect(importer.locator('.import-preview')).toContainText('8 directions');
 	const options = importer.getByRole('group', { name: 'Directions to import' });
 	const westDirection = options.getByRole('button', { name: 'West direction', exact: true });
 	const westMirror = options.getByRole('button', { name: 'Mirror West from East', exact: true });
+	await westMirror.click();
 	await expect(westDirection).toHaveAttribute('aria-pressed', 'false');
 	await westMirror.click();
 	await expect(westDirection).toHaveAttribute('aria-pressed', 'true');
@@ -973,7 +980,7 @@ test('character directions can be configured on import and removed only after co
 	await expect(westMirror).toHaveAttribute('aria-pressed', 'true');
 	await expect(importer.getByRole('combobox', { name: 'Preview direction' })).toHaveValue('west');
 	await options
-		.getByRole('button', { name: 'Mirror North west from North east', exact: true })
+		.getByRole('button', { name: 'Mirror South west from South east', exact: true })
 		.click();
 	await options
 		.getByRole('button', { name: 'Mirror South east from South west', exact: true })
@@ -1012,7 +1019,11 @@ test('character directions can be configured on import and removed only after co
 		name: 'South east direction · Mirrors South west',
 		exact: true
 	});
-	await expect(kept.getByRole('button')).toHaveCount(8);
+	const northWestMirror = kept.getByRole('button', {
+		name: 'Mirror North west from North east',
+		exact: true
+	});
+	await expect(kept.getByRole('button')).toHaveCount(11);
 	await expect(northWest).toHaveAttribute('aria-pressed', 'true');
 	await expect(southEast).toHaveAttribute('aria-pressed', 'true');
 	await expect(west).toHaveAttribute('aria-pressed', 'true');
@@ -1021,7 +1032,8 @@ test('character directions can be configured on import and removed only after co
 	await expect(settings.getByRole('status')).toContainText('Keep East');
 	await expect(review).toBeDisabled();
 	await east.click();
-	await northWest.click();
+	await northWestMirror.click();
+	await expect(northWestMirror).toHaveAttribute('aria-pressed', 'false');
 	await southEast.click();
 	await review.click();
 	const confirmation = page.getByRole('alertdialog', { name: 'Remove 2 directions?', exact: true });
@@ -1034,7 +1046,7 @@ test('character directions can be configured on import and removed only after co
 	await expect(settings).toBeHidden();
 	await reloadStudio(page);
 	await openDirections();
-	await expect(kept.getByRole('button')).toHaveCount(6);
+	await expect(kept.getByRole('button')).toHaveCount(7);
 	await expect(northWest).toHaveCount(0);
 	await expect(southEast).toHaveCount(0);
 	await expect(west).toHaveAttribute('aria-pressed', 'true');

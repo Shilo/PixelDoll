@@ -214,6 +214,7 @@
 		"waitForGeneration": "Warte, bis die laufende Generierung abgeschlossen ist.",
 		"resolveDrafts": "Behalte oder verwirf die Gegenstandsentwürfe dieser Figur, bevor du die Blickrichtungen änderst.",
 		"chooseWhichDirectionsToKeepForName": "Wähle, welche Blickrichtungen für {name} erhalten bleiben sollen",
+		"keepMirrorsHint": "Mit der Spiegel-Schaltfläche kannst du eine vorhandene gespiegelte Ansicht behalten oder entfernen. Originalgrafiken lassen sich hier nicht ersetzen.",
 		"labelDirectionsToKeep": "Blickrichtungen, die erhalten bleiben",
 		"loadingDirections": "Blickrichtungen werden geladen…",
 		"downloadBackup": "Sicherung herunterladen",
@@ -1085,6 +1086,7 @@
 		"updatingPreview": "Vorschau wird aktualisiert…",
 		"characterName": "Figurenname",
 		"directionsHint": "Wähle mit den Pfeilen, welche Ansichten du behältst oder überspringst. Die Spiegelschaltfläche spiegelt die gegenüberliegende Ansicht und ersetzt in dieser Kopie vorhandene Grafiken für diese Blickrichtung.",
+		"unavailablePresets": "Nicht verfügbare Voreinstellungen benötigen Ansichten, die in dieser ZIP-Datei fehlen.",
 		"directionsToImport": "Blickrichtungen zum Importieren",
 		"previewDirection": "Vorschau: {direction}",
 		"noDirections": "Keine Blickrichtungen ausgewählt",
@@ -2032,6 +2034,10 @@
 			},
 			"models": {
 				"v3": { "label": "Standard (V3)", "help": "Ausgewogene Proportionen." },
+				"standard": {
+					"label": "Standard",
+					"help": "Zeichnet aus Text acht Ansichten anhand einer festen Vorlage."
+				},
 				"pro": {
 					"label": "Pro",
 					"help": "Hält sich genauer an den Prompt, kostet aber ein Mehrfaches."
@@ -2110,6 +2116,7 @@
 			"sizeGuideReference": "Größenhilfe und Referenzbild",
 			"reference": {
 				"frontFacing": "Nutze ein Sprite in Vorderansicht.",
+				"standardTextOnly": "Standard verwendet nur Text. Entferne das Referenzbild oder wähle ein anderes Modell.",
 				"concept": "Nutze eine Skizze oder einen Charakterentwurf.",
 				"style": "Nutze eine Illustration als Stilvorlage.",
 				"tooLarge": "Wähle ein Referenzbild mit höchstens {max} × {max} px.",

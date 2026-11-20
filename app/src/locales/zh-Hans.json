@@ -204,6 +204,7 @@
 		"waitForGeneration": "请等待当前生成任务完成。",
 		"resolveDrafts": "更改朝向之前，请先保留或放弃此角色的装备草稿。",
 		"chooseWhichDirectionsToKeepForName": "选择要为{name}保留的朝向",
+		"keepMirrorsHint": "使用镜像按钮保留或移除已有的镜像视图。此处不能替换原始图像。",
 		"labelDirectionsToKeep": "要保留的朝向",
 		"loadingDirections": "正在加载朝向…",
 		"downloadBackup": "下载备份",
@@ -1028,6 +1029,7 @@
 		"updatingPreview": "正在更新预览…",
 		"characterName": "角色名称",
 		"directionsHint": "使用箭头保留或跳过视图。镜像按钮会翻转相对视图，并在此副本中替换该朝向的任何原始图像。",
+		"unavailablePresets": "不可用的预设需要此 ZIP 中缺少的视图。",
 		"directionsToImport": "要导入的朝向",
 		"previewDirection": "预览：{direction}",
 		"noDirections": "未选择朝向",
@@ -1928,6 +1930,10 @@
 			},
 			"models": {
 				"v3": { "label": "默认（V3）", "help": "均衡的比例。" },
+				"standard": {
+					"label": "标准",
+					"help": "根据文本使用固定模板绘制八个方向的视图。"
+				},
 				"pro": {
 					"label": "Pro",
 					"help": "更贴近提示词，但费用是默认模型的数倍。"
@@ -2002,6 +2008,7 @@
 			"sizeGuideReference": "尺寸指南和参考图",
 			"reference": {
 				"frontFacing": "使用正面朝向的精灵图。",
+				"standardTextOnly": "标准模型仅使用文本。请移除参考图像或选择其他模型。",
 				"concept": "使用草图或角色设计图。",
 				"style": "使用美术图作为风格参考。",
 				"tooLarge": "请选择不超过 {max} × {max} 像素的参考图。",

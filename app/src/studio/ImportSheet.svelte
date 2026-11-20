@@ -5,6 +5,8 @@
 	import Sheet from './Sheet.svelte';
 	import { fileDrop, preventFileNavigation } from './fileDrop.ts';
 	import DirectionCompass from './DirectionCompass.svelte';
+	import DirectionPresets from './DirectionPresets.svelte';
+	import { facingOf, PRESETS, presetOf, type DirectionPreset } from './characterConfig.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import ApiPreview from './ApiPreview.svelte';
 	import { libraryPlan, characterZipPlan } from './apiPlans.ts';
@@ -69,6 +71,18 @@
 		})
 	);
 	const directions = $derived(directionChoices ?? originalDirections);
+	const mirrors = $derived(
+		Object.fromEntries(directions.flatMap(({ id, mirrorOf }) => (mirrorOf ? [[id, mirrorOf]] : [])))
+	);
+	const selected = $derived(directions.map(({ id }) => id));
+	const activePreset = $derived(presetOf({ selected, mirrors }));
+	const availablePresets = $derived(
+		prepared
+			? PRESETS.filter(
+					(preset) => !directionProblemError(prepared!.project, facingOf(preset), 'import')
+				)
+			: []
+	);
 	const directionError = $derived(
 		prepared && directionChoices
 			? directionProblemError(prepared.project, directions, 'import')
@@ -138,12 +152,18 @@
 		if (value === 'original') previous.push({ id });
 		if (value === 'mirror' && mirrorOf) previous.push({ id, mirrorOf });
 		previous.sort((first, second) => DIRECTIONS.indexOf(first.id) - DIRECTIONS.indexOf(second.id));
-		directionChoices =
-			originalDirections.length === previous.length &&
-			previous.every((dir, index) => dir.id === originalDirections[index].id && !dir.mirrorOf)
-				? null
-				: previous;
+		setDirections(previous);
 		if (value !== 'off') facing = id;
+	}
+	function setDirections(next: RigDirection[]) {
+		directionChoices =
+			originalDirections.length === next.length &&
+			next.every((dir, index) => dir.id === originalDirections[index].id && !dir.mirrorOf)
+				? null
+				: next;
+	}
+	function choosePreset(preset: DirectionPreset) {
+		setDirections(facingOf(preset));
 	}
 	function toggleDirection(id: DirectionName) {
 		changeDirection(
@@ -654,12 +674,21 @@
 				<p class="muted small">
 					{t('import.directionsHint')}
 				</p>
+				<DirectionPresets
+					active={activePreset}
+					available={(preset) => availablePresets.includes(preset)}
+					disabled={busy}
+					onselect={choosePreset}
+				/>
+				{#if availablePresets.length < PRESETS.length}<p class="muted small">
+						{t('import.unavailablePresets')}
+					</p>{/if}
 				<DirectionCompass
 					label={t('import.directionsToImport')}
-					selected={directions.map(({ id }) => id)}
+					{selected}
 					available={availableDirections}
 					mirrorSources={originalIds}
-					mirrors={Object.fromEntries(directions.map(({ id, mirrorOf }) => [id, mirrorOf]))}
+					{mirrors}
 					disabled={busy}
 					ontoggle={toggleDirection}
 					onmirror={toggleMirror}

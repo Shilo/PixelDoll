@@ -5,6 +5,7 @@ import { message, type Message } from '../message.ts';
 
 const TOOLS: Record<string, string> = {
 	'/create-character-v3': 'Character V3',
+	'/create-character-with-8-directions': 'Character Standard',
 	'/create-character-pro': 'Character Pro',
 	'/create-character-pro-flash': 'Character Pro Flash',
 	'/estimate-skeleton': 'Skeleton estimate',
@@ -153,7 +154,12 @@ const CAMERA_KEYS = {
 export const cameraMessage = (view: NonNullable<Manifest['rig']['view']>): Message | undefined =>
 	Object.hasOwn(CAMERA_KEYS, view) ? CAMERA_KEYS[view] : undefined;
 
-const CREATORS = ['/create-character-v3', '/create-character-pro', '/create-character-pro-flash'];
+const CREATORS = [
+	'/create-character-v3',
+	'/create-character-with-8-directions',
+	'/create-character-pro',
+	'/create-character-pro-flash'
+];
 /** The summary for one item; the base body describes the character's creation. */
 export function generationDetails(m: Manifest, it: Item): GenerationDetails {
 	const prov = it.provenance ?? [];

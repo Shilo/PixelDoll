@@ -211,6 +211,7 @@
 		"waitForGeneration": "Aguarde até que as gerações em andamento terminem.",
 		"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de alterar as direções.",
 		"chooseWhichDirectionsToKeepForName": "Escolha as direções que você quer manter para {name}",
+		"keepMirrorsHint": "Use o botão de espelhamento para manter ou remover uma vista espelhada existente. Não é possível substituir a arte original aqui.",
 		"labelDirectionsToKeep": "Direções a manter",
 		"loadingDirections": "Carregando direções…",
 		"downloadBackup": "Baixar cópia de segurança",
@@ -1093,6 +1094,7 @@
 		"updatingPreview": "Atualizando prévia…",
 		"characterName": "Nome do personagem",
 		"directionsHint": "Use as setas para manter ou pular vistas. O botão de espelhar inverte a vista oposta e substitui a arte original, se houver, naquela direção nesta cópia.",
+		"unavailablePresets": "As predefinições indisponíveis precisam de vistas que não estão neste ZIP.",
 		"directionsToImport": "Direções a importar",
 		"previewDirection": "Prévia: {direction}",
 		"noDirections": "Nenhuma direção selecionada",
@@ -2046,6 +2048,10 @@
 			},
 			"models": {
 				"v3": { "label": "Padrão (V3)", "help": "Proporções equilibradas." },
+				"standard": {
+					"label": "Padrão",
+					"help": "Desenha oito vistas a partir do texto usando um molde fixo."
+				},
 				"pro": {
 					"label": "Pro",
 					"help": "Segue o prompt com mais fidelidade, mas custa várias vezes mais."
@@ -2124,6 +2130,7 @@
 			"sizeGuideReference": "Guia de tamanhos e referência",
 			"reference": {
 				"frontFacing": "Use um sprite de frente.",
+				"standardTextOnly": "O modelo Padrão usa apenas texto. Remova a imagem de referência ou escolha outro modelo.",
 				"concept": "Use um esboço ou um desenho do personagem.",
 				"style": "Use uma arte como referência de estilo.",
 				"tooLarge": "Escolha uma referência de até {max} × {max} px.",

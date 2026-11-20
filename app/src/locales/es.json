@@ -214,6 +214,7 @@
 		"waitForGeneration": "Espera a que termine la generación en curso.",
 		"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de cambiar las direcciones.",
 		"chooseWhichDirectionsToKeepForName": "Elige qué direcciones conservar para {name}",
+		"keepMirrorsHint": "Usa el botón de espejo para conservar o quitar una vista reflejada existente. Aquí no se pueden sustituir las imágenes originales.",
 		"labelDirectionsToKeep": "Direcciones para conservar",
 		"loadingDirections": "Cargando direcciones…",
 		"downloadBackup": "Descargar copia de seguridad",
@@ -1085,6 +1086,7 @@
 		"updatingPreview": "Actualizando vista previa…",
 		"characterName": "Nombre del personaje",
 		"directionsHint": "Usa las flechas para conservar u omitir vistas. El botón de reflejo invierte la vista opuesta y reemplaza la imagen original de esa dirección en esta copia.",
+		"unavailablePresets": "Los ajustes preestablecidos no disponibles necesitan vistas que faltan en este ZIP.",
 		"directionsToImport": "Direcciones para importar",
 		"previewDirection": "Vista previa: {direction}",
 		"noDirections": "No hay direcciones seleccionadas",
@@ -2035,6 +2037,10 @@
 					"label": "Predeterminado (V3)",
 					"help": "Proporciones equilibradas."
 				},
+				"standard": {
+					"label": "Estándar",
+					"help": "Dibuja ocho vistas a partir del texto con una plantilla fija."
+				},
 				"pro": {
 					"label": "Pro",
 					"help": "Sigue el prompt con más fidelidad, pero cuesta varias veces más."
@@ -2113,6 +2119,7 @@
 			"sizeGuideReference": "Guía de tamaños y referencia",
 			"reference": {
 				"frontFacing": "Usa un sprite visto de frente.",
+				"standardTextOnly": "Estándar solo admite texto. Quita la imagen de referencia o elige otro modelo.",
 				"concept": "Usa un boceto o un diseño de personaje.",
 				"style": "Usa una ilustración como referencia de estilo.",
 				"tooLarge": "Elige una referencia de hasta {max} × {max} px.",

@@ -211,6 +211,7 @@
 		"waitForGeneration": "Devam eden üretimin bitmesini bekleyin.",
 		"resolveDrafts": "Yönleri değiştirmeden önce bu karakterin eşya taslaklarını kaydedin veya atın.",
 		"chooseWhichDirectionsToKeepForName": "{name} için hangi yönlerin kalacağını seçin",
+		"keepMirrorsHint": "Mevcut bir aynalanmış görünümü tutmak veya kaldırmak için aynalama düğmesini kullanın. Özgün çizim burada değiştirilemez.",
 		"labelDirectionsToKeep": "Kalacak yönler",
 		"loadingDirections": "Yönler yükleniyor…",
 		"downloadBackup": "Yedeği indirin",
@@ -1079,6 +1080,7 @@
 		"updatingPreview": "Önizleme güncelleniyor…",
 		"characterName": "Karakter adı",
 		"directionsHint": "Görünümleri tutmak veya atlamak için okları kullanın. Aynalama düğmesi karşı yöndeki görünümü ters çevirir ve bu kopyada o yönün özgün görseli varsa onun yerine koyar.",
+		"unavailablePresets": "Kullanılamayan ön ayarlar için bu ZIP dosyasında bulunmayan görünümler gerekir.",
 		"directionsToImport": "İçe aktarılacak yönler",
 		"previewDirection": "Önizleme: {direction}",
 		"noDirections": "Hiç yön seçilmedi",
@@ -2026,6 +2028,10 @@
 			},
 			"models": {
 				"v3": { "label": "Varsayılan (V3)", "help": "Dengeli oranlar." },
+				"standard": {
+					"label": "Standart",
+					"help": "Metinden sabit bir şablonla sekiz görünüm çizer."
+				},
 				"pro": {
 					"label": "Pro",
 					"help": "İstemi daha yakından takip eder ancak birkaç kat daha pahalıdır."
@@ -2104,6 +2110,7 @@
 			"sizeGuideReference": "Boyut kılavuzu ve referans",
 			"reference": {
 				"frontFacing": "Öne bakan bir sprite kullanın.",
+				"standardTextOnly": "Standart yalnızca metin kullanır. Referans görselini kaldırın veya başka bir model seçin.",
 				"concept": "Bir eskiz veya karakter tasarımı kullanın.",
 				"style": "Stil örneği olarak bir görsel kullanın.",
 				"tooLarge": "En fazla {max} × {max} piksel boyutunda bir referans seçin.",

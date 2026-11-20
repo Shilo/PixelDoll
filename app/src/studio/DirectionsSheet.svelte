@@ -25,6 +25,9 @@
 	let { id }: { id: string } = $props();
 	let loaded = $state.raw<Awaited<ReturnType<typeof loadProject>>>();
 	const record = $derived(loaded?.rec);
+	const mirrorTargets = $derived(
+		record?.manifest.rig.directions.filter(({ mirrorOf }) => mirrorOf).map(({ id }) => id) ?? []
+	);
 	let excluded = $state.raw<DirectionName[]>([]);
 	let confirm = $state(false);
 	let busy = $state(false);
@@ -102,6 +105,7 @@
 		<p class="muted">
 			{t('directionsSheet.chooseWhichDirectionsToKeepForName', { name: record.manifest.name })}.
 		</p>
+		{#if mirrorTargets.length}<p class="muted small">{t('directionsSheet.keepMirrorsHint')}</p>{/if}
 		<DirectionCompass
 			label={t('directionsSheet.labelDirectionsToKeep')}
 			available={record.manifest.rig.directions.map(({ id }) => id)}
@@ -111,6 +115,8 @@
 			)}
 			disabled={busy}
 			ontoggle={toggle}
+			{mirrorTargets}
+			onmirror={mirrorTargets.length ? toggle : undefined}
 		/>
 		{#if problem || blocked}<p class="notice warn small" role="status">
 				{problem ? displayDirectionProblem(problem.translation) : displayError(blocked)}

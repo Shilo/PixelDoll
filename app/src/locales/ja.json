@@ -207,6 +207,7 @@
 		"waitForGeneration": "実行中の生成が終わるまでお待ちください。",
 		"resolveDrafts": "向きを変更する前に、このキャラクターのアイテムの下書きを残すか破棄してください。",
 		"chooseWhichDirectionsToKeepForName": "{name}に残す向きを選んでください",
+		"keepMirrorsHint": "ミラーボタンで既存の反転ビューを残すか削除するかを選べます。ここでは元の画像を置き換えることはできません。",
 		"labelDirectionsToKeep": "残す向き",
 		"loadingDirections": "向きを読み込み中…",
 		"downloadBackup": "バックアップをダウンロード",
@@ -1039,6 +1040,7 @@
 		"updatingPreview": "プレビューを更新中…",
 		"characterName": "キャラクター名",
 		"directionsHint": "矢印で残す向きを選びます。反転ボタンを押すと、反対向きの画像を左右反転します。このコピーでは、対象の向きの元の画像があれば置き換わります。",
+		"unavailablePresets": "利用できないプリセットには、このZIPに含まれていない方向の画像が必要です。",
 		"directionsToImport": "インポートする向き",
 		"previewDirection": "プレビュー：{direction}",
 		"noDirections": "向きが選択されていません",
@@ -1951,6 +1953,10 @@
 			},
 			"models": {
 				"v3": { "label": "標準（V3）", "help": "バランスの取れた頭身です。" },
+				"standard": {
+					"label": "スタンダード",
+					"help": "固定テンプレートを使い、テキストから8方向の画像を描きます。"
+				},
 				"pro": {
 					"label": "Pro",
 					"help": "プロンプトにより忠実に従いますが、費用は数倍かかります。"
@@ -2029,6 +2035,7 @@
 			"sizeGuideReference": "サイズガイドと参考画像",
 			"reference": {
 				"frontFacing": "正面を向いたスプライトを使ってください。",
+				"standardTextOnly": "スタンダードではテキストのみを使用します。参照画像を削除するか、別のモデルを選んでください。",
 				"concept": "スケッチやキャラクターのデザイン画を使ってください。",
 				"style": "作風の参考になる画像を使ってください。",
 				"tooLarge": "{max} × {max} px 以下の参考画像を選んでください。",

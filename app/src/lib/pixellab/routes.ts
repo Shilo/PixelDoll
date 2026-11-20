@@ -51,6 +51,10 @@ export interface CreateCharacterV3 {
 	reference_image?: B64Image; // import mode: south view; with every other direction in direction_images = 0.25 gen, pixel-exact (S3)
 	direction_images?: Partial<Record<Direction, B64Image>>;
 }
+export type CreateCharacterStandard = Pick<
+	CreateCharacterV3,
+	'description' | 'image_size' | 'view' | 'template_id' | 'seed' | 'outline' | 'detail'
+>;
 /** Pro Flash draws the south view, then V3 rotates it into 8 (S4: chibi style; rejects no_background and n_directions 4). */
 export interface CreateCharacterProFlash {
 	description: string;
@@ -183,6 +187,8 @@ export interface AnimateSkeletonV3 {
 
 export const routes = {
 	createCharacterV3: (b: CreateCharacterV3) => post('/create-character-v3', b),
+	createCharacterStandard: (b: CreateCharacterStandard) =>
+		post('/create-character-with-8-directions', { ...b, mode: 'standard' }),
 	createCharacterPro: (b: CreateCharacterPro) => post('/create-character-pro', b),
 	createCharacterProFlash: (b: CreateCharacterProFlash) => post('/create-character-pro-flash', b),
 	enhanceCharacterV3Prompt: (b: EnhanceCharacterV3Prompt) =>

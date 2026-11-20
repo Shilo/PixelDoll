@@ -15,6 +15,7 @@
 		available = COMPASS,
 		mirrors = {},
 		mirrorSources = COMPASS,
+		mirrorTargets,
 		disabled = false,
 		shortLabels = false,
 		compact = false,
@@ -27,6 +28,7 @@
 		available?: readonly (DirectionName | null)[];
 		mirrors?: Mirrors;
 		mirrorSources?: readonly (DirectionName | null)[];
+		mirrorTargets?: readonly DirectionName[];
 		disabled?: boolean;
 		shortLabels?: boolean;
 		compact?: boolean;
@@ -47,11 +49,17 @@
 		{#if dir && available.includes(dir)}
 			{@const west = dir.includes('west')}
 			{@const opposite = mirrorPartner(dir)}
-			{@const partner = onmirror && opposite && mirrorSources.includes(opposite) ? opposite : null}
+			{@const partner =
+				onmirror &&
+				opposite &&
+				mirrorSources.includes(opposite) &&
+				(!mirrorTargets || mirrorTargets.includes(dir))
+					? opposite
+					: null}
 			{@const source = mirrors[dir]}
 			{@const name = shortLabels ? displayDirectionShort(dir) : fullName(dir)}
 			{@const description =
-				!onmirror && source
+				(!onmirror || mirrorTargets) && source
 					? t('directionCompass.mirroredDirection', { name, source: fullName(source) })
 					: t('directionCompass.direction', { name })}
 			{#snippet mirrorButton()}
@@ -66,7 +74,7 @@
 						data-variant="field"
 						aria-label={shortLabels ? t('directionCompass.mirror', { name }) : mirrorFrom}
 						title={mirrorFrom}
-						aria-pressed={!!source}
+						aria-pressed={selected.includes(dir) && !!source}
 						{disabled}
 						onclick={() => onmirror?.(dir)}><MirrorViews size={15} /></button
 					>{/if}

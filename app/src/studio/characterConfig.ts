@@ -100,6 +100,8 @@ export const PRESETS = [
 	view: NonNullable<Rig['view']>;
 }[];
 
+export type DirectionPreset = (typeof PRESETS)[number];
+
 export interface CharacterDraft {
 	reference?: PickedReference;
 	name: string;
@@ -125,9 +127,10 @@ export interface CharacterDraft {
 	enhanceOnConnect?: 'details' | 'prompt';
 }
 /** The model that draws a new character. All end in the same V3 registration, so moves and items work the same way. */
-export type CharacterModel = 'v3' | 'pro' | 'pro-flash';
+export type CharacterModel = 'v3' | 'standard' | 'pro' | 'pro-flash';
 export const characterReference = {
 	v3: { max: 256, hint: 'create.form.reference.frontFacing' },
+	standard: { max: 128, hint: 'create.form.reference.standardTextOnly' },
 	pro: { max: 1024, hint: 'create.form.reference.concept' },
 	'pro-flash': { max: 256, hint: 'create.form.reference.style' }
 } as const satisfies Record<CharacterModel, { max: number; hint: string }>;
@@ -139,6 +142,11 @@ export function characterReferenceIssue(
 	body?: number
 ): LocalizedError | undefined {
 	if (!image) return undefined;
+	if (model === 'standard')
+		return new LocalizedError(
+			'Standard uses text only. Remove the reference image or choose another model.',
+			'create.form.reference.standardTextOnly'
+		);
 	const { max } = characterReference[model];
 	const sizeIssue = referenceSizeError(image, max);
 	if (sizeIssue) return new LocalizedError(sizeIssue, 'create.form.reference.tooLarge', { max });
@@ -171,6 +179,12 @@ export const MODELS: Record<CharacterModel, ModelLimits> = {
 		label: 'Default (V3)',
 		help: 'Balanced proportions.',
 		body: { min: 32, max: 256 },
+		styleHints: true
+	},
+	standard: {
+		label: 'Standard',
+		help: 'Draws eight views on a fixed template from text.',
+		body: { min: 32, max: 128 },
 		styleHints: true
 	},
 	pro: {

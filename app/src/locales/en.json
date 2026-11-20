@@ -211,6 +211,7 @@
 		"waitForGeneration": "Wait for the current generation work to finish.",
 		"resolveDrafts": "Keep or dismiss this character’s item drafts before changing directions.",
 		"chooseWhichDirectionsToKeepForName": "Choose which directions to keep for {name}",
+		"keepMirrorsHint": "Use a mirror button to keep or remove an existing mirrored view. Original artwork cannot be replaced here.",
 		"labelDirectionsToKeep": "Directions to keep",
 		"loadingDirections": "Loading directions…",
 		"downloadBackup": "Download backup",
@@ -1076,6 +1077,7 @@
 		"updatingPreview": "Updating preview…",
 		"characterName": "Character name",
 		"directionsHint": "Use the arrows to keep or skip views. A mirror button flips the opposite view and replaces any original artwork for that direction in this copy.",
+		"unavailablePresets": "Unavailable presets need views that this ZIP is missing.",
 		"directionsToImport": "Directions to import",
 		"previewDirection": "Preview: {direction}",
 		"noDirections": "No directions selected",
@@ -2017,6 +2019,10 @@
 			},
 			"models": {
 				"v3": { "label": "Default (V3)", "help": "Balanced proportions." },
+				"standard": {
+					"label": "Standard",
+					"help": "Draws eight views on a fixed template from text."
+				},
 				"pro": {
 					"label": "Pro",
 					"help": "Follows the prompt more closely, at several times the cost."
@@ -2095,6 +2101,7 @@
 			"sizeGuideReference": "Size guide and reference",
 			"reference": {
 				"frontFacing": "Use a front-facing sprite.",
+				"standardTextOnly": "Standard uses text only. Remove the reference image or choose another model.",
 				"concept": "Use a sketch or character design.",
 				"style": "Use artwork as a style guide.",
 				"tooLarge": "Choose a reference no larger than {max} × {max} px.",

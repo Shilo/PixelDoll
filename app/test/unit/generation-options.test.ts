@@ -29,6 +29,36 @@ import { LABELS } from '../../src/lib/rig/poses.ts';
 const four = (['south', 'east', 'north', 'west'] as const).map((id) => ({ id }));
 const spec = { description: 'farmer', name: 'F', size: 48, seed: 7, directions: four };
 
+test('Standard uses the eight-view template draw and keeps V3 registration', () => {
+	const standard = {
+		...spec,
+		exactPrompt: true,
+		model: 'standard',
+		detail: 'highly detailed'
+	} as const;
+	expect(drawRequest(standard, 7)).toEqual({
+		method: 'POST',
+		path: '/create-character-with-8-directions',
+		body: {
+			description: 'farmer',
+			image_size: { width: 48, height: 48 },
+			view: 'low top-down',
+			template_id: 'mannequin',
+			seed: 7,
+			mode: 'standard',
+			detail: 'high detail'
+		}
+	});
+	expect(
+		createPlan(standard)
+			.slice(0, 2)
+			.map(({ path, generations }) => [path, generations])
+	).toEqual([
+		['/create-character-with-8-directions', 1],
+		['/create-character-v3', 0.25]
+	]);
+});
+
 test('a default creation sends the same V3 body as before Advanced existed', () => {
 	expect(drawRequest({ ...spec, exactPrompt: true }, 7)).toEqual({
 		method: 'POST',
@@ -107,11 +137,12 @@ test('character references use the selected model’s documented image field and
 });
 
 test('every model limit comes from the MODELS table, in the form and before spending', async () => {
-	expect(MODEL_IDS).toEqual(['v3', 'pro', 'pro-flash']);
+	expect(MODEL_IDS).toEqual(['v3', 'standard', 'pro', 'pro-flash']);
 	expect(modelOf(undefined)).toBe(MODELS.v3);
 	expect(modelOf('nonsense')).toBe(MODELS.v3);
 	expect(MODEL_IDS.map((id) => [id, MODELS[id].body.max, MODELS[id].styleHints])).toEqual([
 		['v3', 256, true],
+		['standard', 128, true],
 		['pro', 168, false],
 		['pro-flash', 256, false]
 	]);
