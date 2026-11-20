@@ -766,6 +766,42 @@ test('dev server: a saved item moves between slots by mouse, keyboard menu and t
 	await page.mouse.up();
 	await expect(preview).not.toBeVisible();
 	await expect(at('head')).toHaveAttribute('aria-pressed', 'true');
+	const blocked = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		const dbPath = '/src/lib/store/db.ts';
+		const { doc, flushSave, moveItemToSlot } = await import(statePath);
+		const db = await import(dbPath);
+		await flushSave();
+		const transaction = IDBDatabase.prototype.transaction;
+		IDBDatabase.prototype.transaction = function (stores, mode, options) {
+			if (stores === 'projects' && mode === 'readwrite') {
+				IDBDatabase.prototype.transaction = transaction;
+				transaction
+					.call(this, 'projects', 'readwrite')
+					.objectStore('projects')
+					.put(
+						{
+							id: 'studio-move',
+							projectId: doc.id,
+							spec: { id: 'cast', frames: 8, items: ['hat_wizard'], seed: 1 }
+						},
+						'studio-move'
+					);
+			}
+			return transaction.call(this, stores, mode, options);
+		};
+		try {
+			return await moveItemToSlot('hat_wizard', 'face_acc');
+		} finally {
+			IDBDatabase.prototype.transaction = transaction;
+			await db.del('projects', 'studio-move');
+		}
+	});
+	expect(blocked).toBe(false);
+	await expect(
+		page.getByText('Finish or discard the related generation before moving this item.')
+	).toBeVisible();
+	await expect(at('head')).toHaveAttribute('aria-pressed', 'true');
 	await page.mouse.move(start.x, start.y);
 	await page.mouse.down();
 	await page.mouse.move(face.x, face.y, { steps: 6 });
@@ -776,9 +812,9 @@ test('dev server: a saved item moves between slots by mouse, keyboard menu and t
 	await page.keyboard.press('Shift+F10');
 	await page.getByRole('menuitem', { name: 'Move to slot' }).press('Enter');
 	await page.getByRole('menuitem', { name: 'Hair', exact: true }).press('Enter');
-	await expect(at('hair')).toHaveAttribute('aria-pressed', 'false');
+	await expect(at('hair')).toHaveAttribute('aria-pressed', 'true');
 	await expect(at('hair')).toBeFocused();
-	await at('hair').click();
+	await reloadStudio(page);
 	await expect(at('hair')).toHaveAttribute('aria-pressed', 'true');
 
 	await page.setViewportSize({ width: 390, height: 844 });
@@ -7352,7 +7388,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expectAnchoredMenu(page);
 	await expect(more).toHaveAttribute('aria-expanded', 'true');
 	const items = itemMenu(page).getByRole('menuitem');
-	await expect(items.first()).toHaveAccessibleName('Rename...');
+	await expect(items.first()).toHaveAccessibleName('Details...');
 	await expect(items.first()).toBeFocused();
 	await expect(items.last()).toHaveAccessibleName('Delete item…');
 	const iconOffsets = await items.evaluateAll((rows) =>
@@ -7364,7 +7400,7 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	expect(iconOffsets).toEqual(Array(iconOffsets.length).fill(iconOffsets.at(-1)));
 	await expect(itemMenu(page).getByRole('menuitem', { name: /Wear|Take off/ })).toHaveCount(0);
 	await page.keyboard.press('ArrowDown');
-	await expect(items.nth(1)).toHaveAccessibleName('Details...');
+	await expect(items.nth(1)).toHaveAccessibleName('Rename...');
 	await expect(items.nth(1)).toBeFocused();
 	await page.keyboard.press('Escape');
 	await expect.poll(() => menuOpen(page)).toBe(false);

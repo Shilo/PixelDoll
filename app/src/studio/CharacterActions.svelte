@@ -14,6 +14,18 @@
 
 <RowActions {name} {children}>
 	{#snippet actions(close)}
+		<button
+			class="row"
+			role="menuitem"
+			onclick={() => {
+				close();
+				document
+					.querySelectorAll<HTMLElement>('[popover]:popover-open')
+					.forEach((popover) => popover.hidePopover());
+				ui.details = id;
+				ui.sheet = 'details';
+			}}><Info size={16} />{openerLabel(t('common.detailsMenu'))}<SurfaceChevron /></button
+		>
 		{#if !id.startsWith('fixture:')}
 			<button
 				class="row"
@@ -29,18 +41,6 @@
 				/></button
 			>
 		{/if}
-		<button
-			class="row"
-			role="menuitem"
-			onclick={() => {
-				close();
-				document
-					.querySelectorAll<HTMLElement>('[popover]:popover-open')
-					.forEach((popover) => popover.hidePopover());
-				ui.details = id;
-				ui.sheet = 'details';
-			}}><Info size={16} />{openerLabel(t('common.detailsMenu'))}<SurfaceChevron /></button
-		>
 		{#if id.startsWith('rig-')}
 			<button
 				class="row"

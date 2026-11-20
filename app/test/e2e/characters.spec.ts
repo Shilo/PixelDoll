@@ -1005,8 +1005,8 @@ test('character directions can be mirrored and unlinked on import and after savi
 			.click();
 		const menu = page.getByRole('menu', { name: 'Actions for Direction test hero', exact: true });
 		await expect(menu.getByRole('menuitem')).toHaveText([
-			'Rename...',
 			'Details...',
+			'Rename...',
 			'Directions...',
 			'Download ZIP',
 			'Delete character...'
@@ -2596,7 +2596,14 @@ test('rename display names and export IDs without changing saved keys or calling
 	const rename = async (title: string, name: string, alias: string) => {
 		const dialog = page.getByRole('dialog', { name: title, exact: true });
 		await dialog.getByRole('textbox', { name: 'Display name' }).fill(name);
-		await dialog.locator('summary').click();
+		const summary = dialog.locator('summary');
+		const chevron = summary.locator('svg');
+		await expect(chevron).toHaveCSS('transform', 'none');
+		await summary.click();
+		await expect(chevron).toHaveCSS('transform', 'matrix(0, 1, -1, 0, 0, 0)');
+		await summary.press('Space');
+		await expect(chevron).toHaveCSS('transform', 'none');
+		await summary.press('Space');
 		const id = dialog.getByRole('textbox', { name: 'Export ID' });
 		await id.fill('aux');
 		await expect(id).toHaveAttribute('aria-invalid', 'true');

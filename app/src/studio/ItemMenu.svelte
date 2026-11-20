@@ -359,18 +359,6 @@
 				</div>
 			{:else}
 				<div role="menu" aria-labelledby="item-menu-name">
-					{#if !isDemo() && !it.variantOf}
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							role="menuitem"
-							onclick={() => act(() => openRename(doc.id, it.id))}
-						>
-							<Pencil size={16} aria-hidden="true" />{openerLabel(
-								t('toolbar.rename')
-							)}<SurfaceChevron />
-						</button>
-					{/if}
 					<button
 						class="row bu-action"
 						data-variant="quiet"
@@ -384,6 +372,18 @@
 							t('common.detailsMenu')
 						)}<SurfaceChevron /></button
 					>
+					{#if !isDemo() && !it.variantOf}
+						<button
+							class="row bu-action"
+							data-variant="quiet"
+							role="menuitem"
+							onclick={() => act(() => openRename(doc.id, it.id))}
+						>
+							<Pencil size={16} aria-hidden="true" />{openerLabel(
+								t('toolbar.rename')
+							)}<SurfaceChevron />
+						</button>
+					{/if}
 					{#if targets.length}
 						<button
 							class="row bu-action"

@@ -315,17 +315,32 @@ export async function saveCharacterDirections(
 	);
 }
 
+type RelatedRecord = <R>(key: string) => R | undefined;
+
+export function update<T>(
+	s: StoreName,
+	key: string,
+	fn: (v: T | undefined, related: RelatedRecord) => T,
+	relatedKeys: readonly string[]
+): Promise<T>;
+export function update<T>(s: StoreName, key: string, fn: (v: T | undefined) => T): Promise<T>;
 /** Atomic read-modify-write: get + put in ONE readwrite transaction, so concurrent writers (another accept, autosave, another
  * tab) queue behind it instead of overwriting each other. `fn` must be synchronous: do async work (hashing, blob writes) first.
- * Throwing in `fn` aborts the transaction (nothing is written). */
+ * Related records in the same store can be read for conflict checks. Throwing in `fn` aborts without writing. */
 export async function update<T>(
 	s: StoreName,
 	key: string,
-	fn: (v: T | undefined) => T
+	fn: (v: T | undefined, related: RelatedRecord) => T,
+	relatedKeys: readonly string[] = []
 ): Promise<T> {
 	if (copy) {
 		if (s === 'jobs') throw new Error(COPY_GENERATION_OFF);
-		const result = fn(structuredClone(copy[s].get(key)) as T | undefined);
+		const records = copy[s];
+		const result = fn(structuredClone(records.get(key)) as T | undefined, <R>(related: string) =>
+			relatedKeys.includes(related)
+				? (structuredClone(records.get(related)) as R | undefined)
+				: undefined
+		);
 		copy[s].set(key, structuredClone(result));
 		return result;
 	}
@@ -333,17 +348,24 @@ export async function update<T>(
 	return new Promise((res, rej) => {
 		const t = db.transaction(s, 'readwrite'),
 			o = t.objectStore(s),
-			g = o.get(key);
+			g = o.get(key),
+			related = new Map(
+				[...new Set(relatedKeys)].map((relatedKey) => [relatedKey, o.get(relatedKey)])
+			);
 		let out: T, err: unknown;
-		g.onsuccess = () => {
+		const write = () => {
 			try {
-				out = fn(g.result as T | undefined);
+				out = fn(
+					g.result as T | undefined,
+					<R>(relatedKey: string) => related.get(relatedKey)?.result as R | undefined
+				);
 				o.put(out, key);
 			} catch (e) {
 				err = e;
 				t.abort();
 			}
 		};
+		(related.size ? [...related.values()].at(-1)! : g).onsuccess = write;
 		t.oncomplete = () => res(out);
 		t.onerror = t.onabort = () => rej(err ?? t.error);
 	});

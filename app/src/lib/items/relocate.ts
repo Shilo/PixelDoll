@@ -5,17 +5,20 @@ import { retargetLayerDepth, slotLadder } from './slots.ts';
 const wearable = (slot?: Slot) => slot?.class === 'rigid' || slot?.class === 'worn';
 
 export function canRelocateItem(manifest: Manifest, item: Item, target?: Slot) {
+	const source = manifest.slots.find((slot) => slot.id === item.slot);
 	if (
 		item.status !== 'accepted' ||
 		item.pending?.length ||
 		item.id === manifest.rig.baseItem ||
 		item.variantOf ||
-		!wearable(manifest.slots.find((slot) => slot.id === item.slot)) ||
+		!source?.anchor ||
+		!wearable(source) ||
 		!item.layers.some((layer) => layer.role === 'fg')
 	)
 		return false;
 	if (!target) return true;
-	if (!wearable(target) || target.id === item.slot) return false;
+	if (target.class !== source.class || target.anchor !== source.anchor || target.id === item.slot)
+		return false;
 	return (
 		target.bgZ != null ||
 		!item.layers.some(
@@ -34,11 +37,12 @@ export function relocateWornItem(
 	items: Record<string, string | null>,
 	id: string,
 	from: string,
-	to: string
+	to: string,
+	{ replace = false } = {}
 ) {
 	if (items[from] !== id) return false;
 	items[from] = null;
-	items[to] ??= id;
+	if (replace || items[to] == null) items[to] = id;
 	return true;
 }
 
@@ -55,8 +59,18 @@ export function relocateItem(manifest: Manifest, item: Item, target: Slot): Item
 	];
 	if (target.bgZ != null) {
 		const back = item.layers.find((layer) => layer.role === 'bg');
+		const cells: NonNullable<Layer['cells']> = {};
+		if (!back)
+			for (const [animation, directions] of Object.entries(front.cells ?? {}))
+				cells[animation] = Object.fromEntries(
+					Object.entries(directions).map(([direction, row]) => [direction, row.map(() => null)])
+				);
 		layers.push({
-			...(back ?? { cells: {} }),
+			...(back ?? {
+				cells,
+				...(front.cell ? { cell: front.cell } : {}),
+				...(front.pivot ? { pivot: front.pivot } : {})
+			}),
 			id: 'bg',
 			role: 'bg',
 			z: back ? retargetLayerDepth(back, source, target) : target.bgZ
