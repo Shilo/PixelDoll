@@ -1619,9 +1619,9 @@ test('switching the model keeps Advanced open and base clothing shows both choic
 	const model = sheet.getByRole('combobox', { name: 'Model', exact: true });
 	await expect(model.locator('option')).toHaveText([
 		'Default (V3)',
-		'Standard',
 		'Pro',
-		'Pro Flash'
+		'Pro Flash',
+		'Standard'
 	]);
 	const drop = sheet.getByRole('button', { name: 'Add image', exact: true });
 	await model.selectOption('standard');
