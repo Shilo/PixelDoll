@@ -195,7 +195,7 @@
 				class="bu-action btn primary"
 				data-variant="primary"
 				onclick={async () => {
-					await dismissSetup();
+					if (!(await dismissSetup())) return;
 					customize();
 					ui.sheet = null;
 				}}>{t('create.sheet.startDressing')}</button

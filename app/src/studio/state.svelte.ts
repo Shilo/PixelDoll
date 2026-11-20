@@ -1148,6 +1148,7 @@ function workIdle() {
 		!heldCreate() &&
 		!heldMove() &&
 		!moving.queued.length &&
+		!setupRecovering &&
 		!heldSetup()
 	);
 }
@@ -3563,6 +3564,7 @@ export const settingUp = $state({
 const SETUP_KEY = 'studio-setup';
 let setupRunning = false,
 	setupResumed = false,
+	setupRecovering = false,
 	setupRevision = 0;
 /** A setup (perhaps one resumed from a closed tab) runs here, so another cannot start yet. */
 export const setupBusy = () => setupRunning;
@@ -3621,29 +3623,54 @@ export async function resumeSetup() {
 	if (hmrReloading || setupResumed || queue.role === 'follower') return;
 	setupResumed = true;
 	const revision = setupRevision;
-	const rec = await db.get<FlowDraft<SetupSpec>>('projects', SETUP_KEY).catch(() => undefined);
-	if (!rec?.spec || revision !== setupRevision || (settingUp.spec && !settingUp.done)) return;
-	if (rec.spec.projectId.startsWith('rig-')) {
-		const project = await db.get<StoredProject>('projects', rec.spec.projectId);
-		if (revision !== setupRevision) return;
-		if (!project) {
-			await db.del('projects', SETUP_KEY);
-			return;
+	const current = () => revision === setupRevision && queue.role !== 'follower';
+	setupRecovering = true;
+	try {
+		const rec = await db.get<FlowDraft<SetupSpec>>('projects', SETUP_KEY).catch(() => undefined);
+		if (!rec?.spec || !current() || (settingUp.spec && !settingUp.done)) return;
+		const { projectId } = rec.spec;
+		let needsReview = halted(rec);
+		try {
+			const missing =
+				typeof projectId !== 'string' ||
+				!projectId ||
+				(projectId.startsWith('rig-') && !(await db.get<StoredProject>('projects', projectId)));
+			if (!current()) return;
+			if (missing) {
+				await db.del('projects', SETUP_KEY);
+				console.warn('Removed saved setup with no character to resume.');
+				return;
+			}
+		} catch (error) {
+			console.error('Could not check or remove stale character setup', error);
+			needsReview = true;
 		}
+		if (!current()) return;
+		if (needsReview)
+			Object.assign(settingUp, {
+				spec: rec.spec,
+				progress: rec.progress ?? null,
+				error: restoredFlowError(rec, SETUP_STOPPED),
+				done: false,
+				warnings: []
+			});
+		else void startSetup(rec.spec);
+	} finally {
+		setupRecovering = false;
 	}
-	if (halted(rec))
-		Object.assign(settingUp, {
-			spec: rec.spec,
-			progress: rec.progress ?? null,
-			error: restoredFlowError(rec, SETUP_STOPPED),
-			done: false,
-			warnings: []
-		});
-	else void startSetup(rec.spec);
 }
 export async function dismissSetup() {
-	if (setupRunning) return;
+	if (setupRunning || (!settingUp.done && queue.role === 'follower')) return false;
 	setupRevision++;
-	Object.assign(settingUp, { spec: null, progress: null, error: '', done: false, warnings: [] });
-	await db.del('projects', SETUP_KEY);
+	setupRunning = true;
+	try {
+		if (queue.role !== 'follower') await db.del('projects', SETUP_KEY);
+		Object.assign(settingUp, { spec: null, progress: null, error: '', done: false, warnings: [] });
+		return true;
+	} catch (error) {
+		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), { tone: 'danger' });
+		return false;
+	} finally {
+		setupRunning = false;
+	}
 }

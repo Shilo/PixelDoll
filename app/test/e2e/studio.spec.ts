@@ -4573,6 +4573,38 @@ test('reload restores failed create, move and setup for review without paid subm
 		await expect(dialog.locator('.steps-list .ring.spin')).toHaveCount(0);
 		await page.keyboard.press('Escape');
 	}
+	const damaged = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			state = await import(/* @vite-ignore */ statePath),
+			dbPath = '/src/lib/store/db.ts',
+			db = await import(/* @vite-ignore */ dbPath);
+		const projectId = await state.copyDemo();
+		const project = await db.get('projects', projectId);
+		project.manifest.rig.rest = { south: { image: `sha256:${'f'.repeat(64)}` } };
+		await db.put('projects', projectId, project);
+		const setup = await db.get('projects', 'studio-setup');
+		await db.put('projects', 'studio-setup', { ...setup, spec: { ...setup.spec, projectId } });
+		return projectId as string;
+	});
+	await reloadStudio(page);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const state = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
+		state.ui.sheet = 'activity';
+	});
+	const activity = page.getByRole('dialog', { name: 'Activity', exact: true });
+	await activity.getByRole('button', { name: /Open Character setup/ }).click();
+	await activity.getByRole('button', { name: 'Dismiss setup', exact: true }).click();
+	await expect(activity.getByText(/Character setup ·/)).toHaveCount(0);
+	await expect
+		.poll(() =>
+			page.evaluate(async (id) => {
+				const path = '/src/lib/store/db.ts',
+					db = await import(/* @vite-ignore */ path);
+				return [!!(await db.get('projects', id)), !!(await db.get('projects', 'studio-setup'))];
+			}, damaged)
+		)
+		.toEqual([true, false]);
 	await page.evaluate(async () => {
 		const path = '/src/lib/store/db.ts',
 			db = await import(/* @vite-ignore */ path);
