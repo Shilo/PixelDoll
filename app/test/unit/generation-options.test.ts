@@ -144,14 +144,14 @@ test('character references use the selected model’s documented image field and
 });
 
 test('every model limit comes from the MODELS table, in the form and before spending', async () => {
-	expect(MODEL_IDS).toEqual(['v3', 'standard', 'pro', 'pro-flash']);
+	expect(MODEL_IDS).toEqual(['v3', 'pro', 'pro-flash', 'standard']);
 	expect(modelOf(undefined)).toBe(MODELS.v3);
 	expect(modelOf('nonsense')).toBe(MODELS.v3);
 	expect(MODEL_IDS.map((id) => [id, MODELS[id].body.max, MODELS[id].styleHints])).toEqual([
 		['v3', 256, true],
-		['standard', 128, true],
 		['pro', 168, false],
-		['pro-flash', 256, false]
+		['pro-flash', 256, false],
+		['standard', 128, true]
 	]);
 	const proError = 'Body size must be 32–168 whole pixels with Pro.';
 	expect(bodyErrors(172, 'pro').map((e) => e.message)).toEqual([proError]);
