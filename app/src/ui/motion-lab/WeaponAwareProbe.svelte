@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SurfaceChevron from '../../studio/SurfaceChevron.svelte';
 	import {
 		parseDisarmPacket,
 		submitDisarm,
@@ -184,7 +185,7 @@
 	</p>
 	<div class="bu-actions">
 		<button class="bu-btn" disabled={busy} onclick={() => fileInput.click()}
-			>Import weapon-aware test packet</button
+			>Import weapon-aware test packet...<SurfaceChevron /></button
 		><button
 			class="bu-btn"
 			disabled={!connected || busy || !packet || alreadySubmitted}

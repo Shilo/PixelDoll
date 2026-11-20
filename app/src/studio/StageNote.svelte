@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel, openerName } from './openerLabel.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	// B10 (T1 P1-1): a worn item missing frames for the shown view would silently vanish there. Say so, with one action to fix it.
@@ -107,11 +109,13 @@
 		>
 		{#if busy}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'move')}
-				><span class="bu-ring ring spin" aria-hidden="true"></span>{t('stageNote.making')}</button
+				><span class="bu-ring ring spin" aria-hidden="true"></span>{openerLabel(
+					t('stageNote.making')
+				)}<SurfaceChevron /></button
 			>
 		{:else if isDemo()}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'create')}
-				>{t('stageNote.makeYourOwn')}</button
+				>{openerLabel(t('stageNote.makeYourOwn'))}<SurfaceChevron /></button
 			>
 		{:else if freeCopy?.copiedFrom}
 			<!-- An exact copy whose source item gained these frames since: copied over for free, not made again. -->
@@ -156,7 +160,7 @@
 				/>{/if}
 		{:else if remake?.standing && !copyOnly}
 			<button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'setup')}
-				>{t('setup.title')}</button
+				>{openerLabel(t('setup.title'))}<SurfaceChevron /></button
 			>
 		{:else if remake}
 			<!-- A copy without its own standing design cannot be posed onto more moves: make one for this character. -->
@@ -165,8 +169,8 @@
 				data-variant="outline"
 				onclick={() => openNewItem(remake.slot, { slot: remake.slot, prompt: remake.prompt })}
 				>{copyOnly
-					? t('itemMenu.makeOneForName', { name: m?.name })
-					: t('stageNote.makeItAgain')}</button
+					? openerName(t('itemMenu.makeOneForName', { name: m?.name }))
+					: openerLabel(t('stageNote.makeItAgain'))}<SurfaceChevron /></button
 			>
 		{/if}
 	</div>

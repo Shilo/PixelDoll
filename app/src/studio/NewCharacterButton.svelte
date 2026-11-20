@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { t } from 'svelte-whisper';
 	import { ui } from './state.svelte.ts';
 	import { Plus, Download, Sparkles } from './icons.ts';
@@ -27,9 +29,10 @@
 	popovertarget={id}
 >
 	<span class:new-character-icon={row}><Plus size={row ? 24 : 16} /></span><span
-		>{compact ? t('common.new') : t('newCharacterButton.newCharacter')}</span
+		>{openerLabel(compact ? t('common.new') : t('newCharacterButton.newCharacter'))}</span
 	>
-</button>
+	<SurfaceChevron /></button
+>
 <div
 	{id}
 	class="menu bu-popover-anchor"
@@ -43,13 +46,17 @@
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
 		<button class="row" role="menuitem" onclick={() => choose('create')}
-			><Sparkles size={16} />{t('newCharacterButton.createFromScratch')}</button
+			><Sparkles size={16} />{openerLabel(t('newCharacterButton.createFromScratch'))}<SurfaceChevron
+			/></button
 		>
 		<button class="row" role="menuitem" onclick={() => choose('importZip')}
-			><Download size={16} />{t('newCharacterButton.importFromDevice')}</button
+			><Download size={16} />{openerLabel(t('newCharacterButton.importFromDevice'))}<SurfaceChevron
+			/></button
 		>
 		<button class="row" role="menuitem" onclick={() => choose('importPixelLab')}
-			><Download size={16} />{t('newCharacterButton.importFromPixelLab')}</button
+			><Download size={16} />{openerLabel(
+				t('newCharacterButton.importFromPixelLab')
+			)}<SurfaceChevron /></button
 		>
 	</div>
 </div>

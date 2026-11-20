@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { message } from '../lib/message.ts';
 	import { t } from 'svelte-whisper';
 	import './studio.css';
@@ -330,7 +332,7 @@
 		onclick={() => {
 			dismissToast();
 			ui.sheet = 'export';
-		}}>{t('toolbar.export')}</button
+		}}>{openerLabel(t('toolbar.export'))}<SurfaceChevron /></button
 	>
 {/snippet}
 

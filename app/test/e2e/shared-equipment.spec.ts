@@ -259,7 +259,7 @@ test('demo offers are opt-in and both visibility choices survive reload', async 
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
 	const library = page.getByRole('complementary', { name: 'Your characters' });
 	await library.locator('.new-character-row').click();
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const creator = page.getByRole('dialog', { name: 'New character', exact: true });
 	const creatorSettings = creator.getByRole('button', { name: 'Wardrobe settings', exact: true });
 	await creator.getByRole('textbox', { name: 'Name', exact: true }).fill('Unfinished character');
@@ -358,7 +358,9 @@ test('a shared custom category appears before adoption and stays after wearing a
 	const rail = page.getByRole('navigation', { name: 'Equipment slots' });
 	await equipmentGroup(page, 'Hair clip');
 	await more.click();
-	await expect(page.getByRole('button', { name: 'Connect PixelLab', exact: true })).toBeFocused();
+	await expect(
+		page.getByRole('button', { name: 'Connect PixelLab...', exact: true })
+	).toBeFocused();
 	await page.keyboard.press('Tab');
 	await expect(page.getByRole('button', { name: 'Language', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
@@ -413,7 +415,7 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await page.keyboard.press('Tab');
 	await expect(page.getByRole('button', { name: 'Light mode', exact: true })).toBeFocused();
 	await page.keyboard.press('Tab');
-	await expect(page.getByRole('button', { name: 'Activity', exact: true })).toBeFocused();
+	await expect(page.getByRole('button', { name: 'Activity...', exact: true })).toBeFocused();
 	await page.keyboard.press('Escape');
 	await pickCharacter('Stout');
 	await expect(sharedTiles).toHaveCount(0);
@@ -627,7 +629,7 @@ test('a shared item’s ⋮ explains how it fits and makes one for this characte
 	const menu = page.locator('#item-menu');
 	await expect(menu.locator('.item-menu-marks li')).toHaveText(titles);
 	await expect(menu.getByRole('menuitem', { name: /^Wear/ })).toBeFocused();
-	await menu.getByRole('menuitem', { name: /^Make one for Adventurer copy…/ }).click();
+	await menu.getByRole('menuitem', { name: /^Make one for Adventurer copy\.\.\./ }).click();
 	const sheet = page.getByRole('dialog', { name: 'New item', exact: true });
 	await expect(sheet.getByRole('radio', { name: 'Head', exact: true })).toHaveAttribute(
 		'aria-checked',
@@ -689,7 +691,7 @@ test('an item drawn for another body on the same canvas is worn as drawn for fre
 	);
 	await expect(details).toContainText('Not fitted');
 	await expect(
-		details.getByRole('button', { name: 'Make one for Adventurer copy', exact: true })
+		details.getByRole('button', { name: 'Make one for Adventurer copy...', exact: true })
 	).toBeVisible();
 	expect(requests).toEqual([]);
 });
@@ -732,7 +734,9 @@ test('items from other characters fit a phone without horizontal overflow and it
 	await expect(others.locator('.shared-tile')).toHaveCount(3);
 	await others.getByRole('button', { name: 'More options for Giant helmet', exact: true }).click();
 	await expect(
-		page.locator('#item-menu').getByRole('menuitem', { name: /^Make one for Adventurer copy…/ })
+		page
+			.locator('#item-menu')
+			.getByRole('menuitem', { name: /^Make one for Adventurer copy\.\.\./ })
 	).toBeInViewport();
 	const viewport = page.viewportSize()!;
 	for (const tile of await others.getByRole('button').all()) {
@@ -783,7 +787,7 @@ test('an item that can’t be worn here shows a red icon over dimmed art, and it
 	await giant.click();
 	const menu = page.locator('#item-menu');
 	await expect(
-		menu.getByRole('menuitem', { name: /^Make one for Adventurer copy…/ })
+		menu.getByRole('menuitem', { name: /^Make one for Adventurer copy\.\.\./ })
 	).toBeFocused();
 	await expect(menu.getByRole('menuitem', { name: /^Wear/ })).toHaveCount(0);
 	await expect(menu.locator('.item-menu-marks li')).toHaveText([
@@ -1041,7 +1045,7 @@ test('another character’s sword re-fits a body standing 1 px aside for free an
 	// A re-fit's issues are its fit: nothing to accept as is; a new item for this body is offered instead.
 	await expect(details.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0);
 	await expect(
-		details.getByRole('button', { name: 'Make one for Adventurer copy', exact: true })
+		details.getByRole('button', { name: 'Make one for Adventurer copy...', exact: true })
 	).toBeVisible();
 	// Each note shows its frame on the stage, paused.
 	const note = details.getByRole('button', { name: /^Walk facing south, frame 2: / });

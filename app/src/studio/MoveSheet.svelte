@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	// Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
 	// re-rendered through raw skeleton-v3), plus one pose call per worn item x direction so the items follow the new clip.
 	import Sheet from './Sheet.svelte';
@@ -563,9 +565,11 @@
 		</p>{/if}
 	{#if mine && adding && moving.repairReview}
 		<button class="bu-action btn" data-variant="outline" onclick={() => (adding = false)}
-			>{moving.spec?.redrawItem
-				? t('moveSheet.review.redrawTitle')
-				: t('moveSheet.review.repairTitle')}</button
+			>{openerLabel(
+				moving.spec?.redrawItem
+					? t('moveSheet.review.redrawTitle')
+					: t('moveSheet.review.repairTitle')
+			)}<SurfaceChevron /></button
 		>
 	{/if}
 	{#if repairReview && moving.spec}
@@ -787,7 +791,8 @@
 		{#if !isDemo()}<button
 				class="bu-action btn primary"
 				data-variant="primary"
-				onclick={() => (ui.sheet = 'setup')}>{t('setup.title')}</button
+				onclick={() => (ui.sheet = 'setup')}
+				>{openerLabel(t('setup.title'))}<SurfaceChevron /></button
 			>{/if}
 	{:else}
 		<div class="form" class:redraw-form={replacing}>

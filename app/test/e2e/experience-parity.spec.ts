@@ -166,7 +166,7 @@ test('rapid clicks operate controls without selecting their labels', async ({ pa
 	expect(await selected()).toBe('');
 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await page.getByRole('button', { name: 'Connect PixelLab', exact: true }).click();
+	await page.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	const remember = dialog.getByRole('checkbox', { name: 'Remember on this device' });
 	const label = dialog.getByText('Remember on this device', { exact: true });
@@ -356,7 +356,7 @@ test('full screen includes the whole app and survives screen changes, dialogs an
 	await expect(modes(page)).toBeVisible();
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.locator('#experience-options')).toBeVisible();
-	await page.getByRole('button', { name: 'Activity', exact: true }).click();
+	await page.getByRole('button', { name: 'Activity...', exact: true }).click();
 	await expect(page.getByRole('dialog')).toBeVisible();
 	expect(await rootIsFullscreen()).toBe(true);
 	await page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true }).click();
@@ -612,7 +612,7 @@ test('screen transitions preserve world keyboard focus while creator fields rema
 	const create = page.getByRole('button', { name: 'New character', exact: true }).first();
 	await create.focus();
 	await page.keyboard.press('Enter');
-	await page.getByRole('menuitem', { name: 'Create from scratch…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create from scratch...', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'New character', exact: true });
 	const name = dialog.getByRole('textbox', { name: 'Name', exact: true });
 	await name.fill('Keyboard draft');
@@ -967,7 +967,7 @@ test('imported move names remain readable, distinct and contained in Preview and
 		.getByRole('button', { name: 'New character', exact: true })
 		.first()
 		.click();
-	await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 	const importing = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await importing.getByLabel('Character ZIP', { exact: true }).setInputFiles({
 		name: 'move-labels.zip',
@@ -994,7 +994,7 @@ test('imported move names remain readable, distinct and contained in Preview and
 		.getByRole('toolbar', { name: 'Preview controls', exact: true })
 		.getByRole('button', { name: 'Inspect', exact: true });
 	await expect(inspectAction).toHaveText('');
-	await expect(inspectAction).toHaveAttribute('title', 'Inspect');
+	await expect(inspectAction).toHaveAttribute('title', 'Inspect...');
 	await move.selectOption('right_punch');
 	await expect(move).toHaveValue('right_punch');
 	await move.selectOption('right-punch');
@@ -2090,7 +2090,7 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 			.getByRole('button', { name: 'New character', exact: true })
 			.first()
 			.click();
-		await page.getByRole('menuitem', { name: 'Import from device…', exact: true }).click();
+		await page.getByRole('menuitem', { name: 'Import from device...', exact: true }).click();
 		const dialog = page.getByRole('dialog', { name: 'Import from device', exact: true });
 		await dialog
 			.getByLabel('Character ZIP', { exact: true })
@@ -2103,9 +2103,12 @@ test('selection wheel preserves fast input, normalizes deltas, and respects nati
 			.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
 			.uncheck();
 		await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
-		await expect(page.locator('.name-menu .name-text')).toHaveText(`Wheel character ${copy + 1}`, {
-			timeout: 30_000
-		}); // a full import saves and reopens the character
+		await expect(page.locator('.name-menu .name-text')).toHaveText(
+			`Wheel character ${copy + 1}...`,
+			{
+				timeout: 30_000
+			}
+		); // a full import saves and reopens the character
 	}
 	await page.getByRole('button', { name: 'Characters', exact: true }).click();
 	const rows = page.locator('.character-row');

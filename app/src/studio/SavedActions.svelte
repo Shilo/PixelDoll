@@ -53,6 +53,7 @@
 		>
 		<hr class="bu-separator" />
 		<DeleteRow
+			opens={kind === 'move'}
 			label={kind === 'move'
 				? t('savedActions.labelDeleteMove')
 				: t('savedActions.labelDeleteOutfit')}

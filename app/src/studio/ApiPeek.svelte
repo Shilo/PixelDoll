@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import { tick } from 'svelte';
 	import {
 		apiActivity,
@@ -241,12 +243,13 @@
 	class={menu ? 'row bu-action api-peek-trigger' : 'bu-action btn icon plain api-peek-trigger'}
 	data-variant="quiet"
 	aria-label={triggerLabel ?? (all ? t('apiPeek.inspectAll') : t('apiPeek.inspect'))}
-	title={t('apiPeek.triggerTitle')}
+	title={openerLabel(t('apiPeek.triggerTitle'))}
 	aria-expanded={open}
 	aria-controls={id}
 	popovertarget={id}
-	><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name">{t('apiPeek.title')}</span
-		>{/if}</button
+	><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name"
+			>{openerLabel(t('apiPeek.title'))}</span
+		>{/if}<SurfaceChevron compact={!menu} /></button
 >
 <div
 	bind:this={panel}

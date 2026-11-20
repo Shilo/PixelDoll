@@ -1,4 +1,6 @@
 <script lang="ts">
+	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { openerLabel } from './openerLabel.ts';
 	import LanguagePicker from './LanguagePicker.svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
@@ -63,7 +65,6 @@
 		Activity,
 		Pencil,
 		PersonStanding,
-		ChevronDown,
 		Copy,
 		Dices,
 		Eye,
@@ -210,8 +211,8 @@
 				aria-haspopup="menu"
 				onclick={() => void refreshProjects()}
 				><span class="name-line"
-					><span class="name-text"><CharacterName id={doc.id} {name} /></span>
-					<ChevronDown size={16} /></span
+					><span class="name-text"><CharacterName id={doc.id} {name} opener /></span>
+					<SurfaceChevron /></span
 				>{#if facts}<span class="name-facts"
 						>{t('sizePreview.frame', { measure: facts.frame })} · {facts.counts
 							.map(displayMessage)
@@ -268,11 +269,11 @@
 				aria-label={t('toolbar.mountSettings')}
 				data-active={experience.testMount || undefined}
 				aria-expanded={mountMenuOpen}
-				title={experience.testMount
-					? t('toolbar.titleMountSettingsMounted')
-					: t('toolbar.mountSettings')}
+				title={openerLabel(
+					experience.testMount ? t('toolbar.titleMountSettingsMounted') : t('toolbar.mountSettings')
+				)}
 				popovertarget="mount-options"
-				disabled={!m}><PawPrint size={18} aria-hidden="true" /></button
+				disabled={!m}><PawPrint size={18} aria-hidden="true" /><SurfaceChevron compact /></button
 			>
 			<button
 				class="bu-action header-random"
@@ -304,32 +305,37 @@
 				aria-label={t('toolbar.shareCharacter')}
 				title={t('common.share')}
 				popovertarget="share-popover"
-				disabled={!m}><Share2 size={16} /><span>{t('common.share')}</span></button
+				disabled={!m}
+				><Share2 size={16} /><span>{openerLabel(t('common.share'))}</span><SurfaceChevron /></button
 			>
 			<button
 				class="bu-action header-export"
 				data-variant="outline"
 				aria-label={t('toolbar.export')}
-				title={t('toolbar.export')}
+				title={openerLabel(t('toolbar.export'))}
 				onclick={() => (ui.sheet = 'export')}
-				disabled={!m}><Download size={16} /><span>{t('toolbar.export')}</span></button
+				disabled={!m}
+				><Download size={16} /><span>{openerLabel(t('toolbar.export'))}</span><SurfaceChevron
+				/></button
 			>
 		{/if}
 		{#if busy}<button
 				class="bu-action"
 				data-variant="quiet"
 				aria-label={t('activity.title')}
+				title={openerLabel(t('activity.title'))}
 				onclick={() => (ui.sheet = 'activity')}
-				><span class="bu-ring ring spin"></span><span class="num">{active || ''}</span></button
+				><span class="bu-ring ring spin"></span><span class="num">{active || ''}</span
+				><SurfaceChevron compact /></button
 			>{/if}
 		<FullscreenButton />
 		<button
 			class="bu-action"
 			data-variant="quiet"
 			aria-label={t('toolbar.moreOptions')}
-			title={t('toolbar.moreOptions')}
+			title={openerLabel(t('toolbar.moreOptions'))}
 			data-popover-fallback="share-popover"
-			popovertarget="experience-options"><Ellipsis size={20} /></button
+			popovertarget="experience-options"><Ellipsis size={20} /><SurfaceChevron compact /></button
 		>
 	</div>
 </header>
@@ -408,11 +414,11 @@
 				{:else}
 					<KeyRound size={18} />
 					<span class="row-name"
-						>{t(
-							app.keyRejected ? 'connectSheet.reconnect' : 'connectSheet.titleConnectPixelLab'
+						>{openerLabel(
+							t(app.keyRejected ? 'connectSheet.reconnect' : 'connectSheet.titleConnectPixelLab')
 						)}</span
 					>
-					<ChevronRight size={16} aria-hidden="true" />
+					<SurfaceChevron />
 				{/if}
 			</button>
 			<hr />
@@ -453,17 +459,22 @@
 				onclick={() => {
 					closeOptions();
 					document.getElementById('share-popover')?.showPopover();
-				}}><Share2 size={18} /><span class="row-name">{t('common.share')}</span></button
+				}}
+				><Share2 size={18} /><span class="row-name">{openerLabel(t('common.share'))}</span
+				><SurfaceChevron /></button
 			>{/if}
 		<!-- Narrow phones move Inspect here from the playback bar so its controls keep full-size targets. -->
 		{#if experience.screen === 'studio' && experience.mode === 'preview'}<button
 				class="row bu-action mobile-inspect"
 				data-variant="quiet"
+				aria-label={t('experience.inspect')}
 				disabled={!m}
 				onclick={() => {
 					closeOptions();
 					ui.sheet = 'inspect';
-				}}><Grid2x2 size={18} /><span class="row-name">{t('experience.inspect')}</span></button
+				}}
+				><Grid2x2 size={18} /><span class="row-name">{openerLabel(t('experience.inspect'))}</span
+				><SurfaceChevron /></button
 			>{/if}
 		{#if experience.screen === 'studio'}<hr
 				class={{ 'mobile-sep': !doc.id.startsWith('fixture:') }}
@@ -500,9 +511,9 @@
 				closeOptions();
 				ui.sheet = 'activity';
 			}}
-			><Activity size={18} /><span class="row-name">{t('activity.title')}</span
+			><Activity size={18} /><span class="row-name">{openerLabel(t('activity.title'))}</span
 			>{#if $queue.role === 'follower'}<span class="small">{t('toolbar.otherTab')}</span
-				>{/if}</button
+				>{/if}<SurfaceChevron /></button
 		>
 		<ApiPeek scope="all" all menu />
 		<hr />
@@ -510,9 +521,10 @@
 			<!-- Workspace: export or open a copy independently of the active character. -->
 			<button class="row bu-action" data-variant="quiet" popovertarget="workspace-options">
 				<Archive size={18} />
-				<span class="row-name">{t('toolbar.workspace')}</span>
-				<ChevronRight size={16} aria-hidden="true" />
-			</button>
+				<span class="row-name">{openerLabel(t('toolbar.workspace'))}</span>
+
+				<SurfaceChevron /></button
+			>
 			<div
 				id="workspace-options"
 				class="menu bu-popover-anchor"
@@ -531,8 +543,9 @@
 							closeOptions();
 							ui.sheet = 'workspaceExport';
 						}}
-						><Download size={18} /><span class="row-name">{t('workspace.exportTitle')}</span
-						></button
+						><Download size={18} /><span class="row-name"
+							>{openerLabel(t('workspace.exportTitle'))}</span
+						><SurfaceChevron /></button
 					>
 					<a
 						class="row bu-action"
@@ -541,7 +554,9 @@
 						target="_blank"
 						rel="noopener"
 						onclick={closeOptions}
-						><FileArchive size={18} /><span class="row-name">{t('workspaceCopy.title')}</span></a
+						><FileArchive size={18} /><span class="row-name"
+							>{openerLabel(t('workspaceCopy.title'))}</span
+						><SurfaceChevron /></a
 					>
 				</div>
 			</div>
@@ -556,8 +571,9 @@
 				onclick={() => {
 					void installApp();
 				}}
-				><MonitorDown size={18} /><span class="row-name">{t('pwaRuntime.installPixelDoll')}</span
-				></button
+				><MonitorDown size={18} /><span class="row-name"
+					>{openerLabel(t('pwaRuntime.installPixelDoll'))}</span
+				><SurfaceChevron /></button
 			>
 		{/if}
 		{#if $pwa.available}<button
@@ -566,14 +582,19 @@
 				disabled={!$pwa.ready}
 				onclick={requestUpdate}
 				><RefreshCw size={18} /><span class="row-name"
-					>{t('toolbar.updateToVVersion', { version: $pwa.available.version })}</span
-				></button
+					>{openerLabel(t('toolbar.updateToVVersion', { version: $pwa.available.version }))}</span
+				><SurfaceChevron /></button
 			>{/if}
 		{#if import.meta.env.PROD}
-			<button class="row bu-action" data-variant="quiet" popovertarget="help-options">
+			<button
+				class="row bu-action"
+				data-variant="quiet"
+				popovertarget="help-options"
+				aria-controls="help-options"
+			>
 				<CircleHelp size={18} aria-hidden="true" />
-				<span class="row-name">{t('toolbar.help')}</span>
-				<ChevronRight size={16} aria-hidden="true" />
+				<span class="row-name">{openerLabel(t('toolbar.help'))}</span>
+				<SurfaceChevron />
 			</button>
 			<div
 				id="help-options"
@@ -593,13 +614,16 @@
 						target="_blank"
 						rel="noopener"
 						onclick={closeOptions}
-						><BookOpen size={18} /><span class="row-name">{t('toolbar.userGuide')}</span></a
+						><BookOpen size={18} /><span class="row-name"
+							>{openerLabel(t('toolbar.userGuide'))}</span
+						><SurfaceChevron /></a
 					>
 					{#if !workspaceCopy}
 						<button class="row bu-action" data-variant="quiet" onclick={requestInstallHelp}>
 							<MonitorDown size={18} /><span class="row-name"
-								>{t('pwaRuntime.installationHelp')}</span
+								>{openerLabel(t('pwaRuntime.installationHelp'))}</span
 							>
+							<SurfaceChevron />
 						</button>
 					{/if}
 				</div>
@@ -662,17 +686,20 @@
 				role="menuitem"
 				aria-label={t('toolbar.renameCharacter')}
 				onclick={() => sheet('rename')}
-				><Pencil size={16} /><span class="row-name">{t('toolbar.rename')}</span></button
+				><Pencil size={16} /><span class="row-name">{openerLabel(t('toolbar.rename'))}</span
+				><SurfaceChevron /></button
 			>{/if}
 		{#if !isDemo()}<button
 				class="row"
 				role="menuitem"
 				aria-label={t('toolbar.setUpCharacter')}
 				onclick={() => sheet('setup')}
-				><PersonStanding size={16} /><span class="row-name">{t('toolbar.setUpCharacter')}</span
-				></button
+				><PersonStanding size={16} /><span class="row-name"
+					>{openerLabel(t('toolbar.setUpCharacter'))}</span
+				><SurfaceChevron /></button
 			>{/if}
 		<DeleteRow
+			opens
 			label={t('characterActions.labelDeleteCharacter')}
 			locked={isDemo() ? t('characterActions.demoDeleteLocked') : ''}
 			onclick={() => {
@@ -687,23 +714,23 @@
 			aria-label={app.key ? t('toolbar.pixelLabAccount') : t('toolbar.connectPixelLab2')}
 			onclick={() => sheet('connect')}
 			><KeyRound size={16} /><span class="row-name"
-				>{app.key ? t('toolbar.pixelLabAccount') : t('toolbar.connectPixelLab2')}</span
+				>{openerLabel(app.key ? t('toolbar.pixelLabAccount') : t('toolbar.connectPixelLab2'))}</span
 			>
 			{#if app.balance}<span class="faint small num"
 					>{t('toolbar.generationsRemaining', {
 						count: Math.round(app.balance.subscription.generations),
 						n: formatNumber(Math.round(app.balance.subscription.generations))
 					})}</span
-				>{/if}</button
+				>{/if}<SurfaceChevron /></button
 		>
 		<button
 			class="row"
 			role="menuitem"
 			aria-label={t('activity.title')}
 			onclick={() => sheet('activity')}
-			><Activity size={16} /><span class="row-name">{t('activity.title')}</span>{#if active}<span
-					class="badge accent">{formatNumber(active)}</span
-				>{/if}</button
+			><Activity size={16} /><span class="row-name">{openerLabel(t('activity.title'))}</span
+			>{#if active}<span class="badge accent">{formatNumber(active)}</span>{/if}<SurfaceChevron
+			/></button
 		>
 		<button
 			class="row"
