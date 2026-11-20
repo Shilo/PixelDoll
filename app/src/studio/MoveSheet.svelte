@@ -8,6 +8,7 @@
 	import Help from './Help.svelte';
 	import Sprite from './Sprite.svelte';
 	import {
+		defaultMoveFrameCount,
 		moveFrameCounts,
 		type MoveAnimationModel,
 		type MoveAnimationOptions
@@ -476,8 +477,8 @@
 	}
 	function chooseModel(next: MoveAnimationModel) {
 		modelChoice = next;
-		if (frameChoice !== undefined && !moveFrameCounts(next, canvas).includes(frameChoice))
-			frameChoice = undefined;
+		if (frameChoice !== undefined && keptFrames === undefined)
+			frameChoice = defaultMoveFrameCount(next, canvas, frameChoice);
 	}
 	function describeMove(value: string) {
 		chooseAction('');
@@ -993,7 +994,7 @@
 									>{/each}</select
 							>
 						</div>
-						<div class="advanced-field">
+						<div class="advanced-field frames-field">
 							<div class="advanced-label">
 								{#if keptFrames === undefined && frameCounts.length}
 									<label for={`${advancedId}-frames`}>{t('moveSheet.frames')}</label>
@@ -1005,6 +1006,16 @@
 									title={t('moveSheet.frames')}
 									text={t('moveSheet.framesHelp', { canvas: formatNumber(canvas) })}
 								/>
+								{#if keptFrames === undefined && frameCounts.length}
+									<button
+										type="button"
+										class="bu-action btn plain frame-default"
+										data-variant="quiet"
+										aria-disabled={userFrameCount === undefined}
+										onclick={() => (frameChoice = undefined)}
+										>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
+									>
+								{/if}
 							</div>
 							{#if keptFrames !== undefined}
 								<span class="faint">{t('moveSheet.framesKept', { count: keptFrames })}</span>
@@ -1023,14 +1034,6 @@
 										>{t('moveSheet.framesValue', { count: shownFrames })}</span
 									>
 								</div>
-								<button
-									type="button"
-									class="bu-action btn plain frame-default"
-									data-variant="quiet"
-									aria-disabled={userFrameCount === undefined}
-									onclick={() => (frameChoice = undefined)}
-									>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
-								>
 							{/if}
 						</div>
 					</div>
@@ -1196,6 +1199,9 @@
 		align-items: center;
 		gap: 4px;
 	}
+	.frames-field {
+		row-gap: 0;
+	}
 	.frame-controls {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
@@ -1211,7 +1217,7 @@
 		min-height: 44px;
 	}
 	.frame-default {
-		justify-self: start;
+		margin-inline-start: auto;
 	}
 	.frame-value {
 		font-variant-numeric: tabular-nums;

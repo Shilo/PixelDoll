@@ -2723,9 +2723,8 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await expect(slider).toHaveAttribute('aria-valuetext', '40 frames');
 	await slider.press('ArrowLeft');
 	await expect(slider).toHaveAttribute('aria-valuetext', '36 frames');
-	await model.selectOption('v3');
-	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await slider.press('End');
+	await model.selectOption('v3');
 	await expect(slider).toHaveAttribute('aria-valuetext', '16 frames');
 	await slider.press('Home');
 	await slider.press('ArrowRight');
