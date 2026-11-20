@@ -1,6 +1,6 @@
 # Animation model default audit
 
-Status: archival screen and automated checks complete; matched pilot approved up to 120 generations but not started. No new artwork was generated or saved, and no credits were spent.
+Status: archival screen and automated checks complete. One live PixMiniMax body-only preflight billed 1 of the approved 120 generations; the matched pilot has not started. No new artwork was saved.
 
 Decision: could PixMiniMax replace Skeleton V3 as the Add a move default without trading expressive motion for lower equipment accuracy, character consistency, or reliability? Text V3 is the third arm, not a presumed fallback. The equipment renderer stays Skeleton V3 in every arm. Ride is out of scope and stays on its pose-driven path.
 
@@ -34,6 +34,13 @@ PixMiniMax east Slash clears the clip gate at 97.35% but falls to 90.84% on its 
 ## Stage 1: paid pilot, approved and pending preflight
 
 The bundled 64×64 demo has finished headwear and sword layers but no stored rest rig, managed Walk source, or per-direction dressed references. Before spending, qualify a disposable rig-ready fixture, verify the exact production plans, and confirm transient review and per-request spend controls without retaining artwork. No paid fixture preparation or unmatched substitute was run.
+
+### Live body-only preflight, November 20, 2026
+
+- Fixture: existing rig-ready 64×64 Adventurer copy with independently drawn east and south views and a fitted sword. One-item plans for both moves, both views and all three routes total 73.2 estimated generations. Adding the missing hat and its pose calls increases the estimate to 119.2, before this preflight's one-generation receipt.
+- Submitted one south Walk to `/animate-pixminimax` through the configured localhost development API, using the production request builder, seed 7, eight frames and prompt enhancement off. One submission, no retry. No project or artwork was written.
+- Completed in 91 seconds including polling. The receipt reported 1 generation. The response contained nine 64×64 frames; the leading frame was excluded, leaving eight distinct motion frames. Exact and tolerance-based palette fit were both 100%, including the worst frame. There were 50 nontransparent border pixels summed across the eight raw frames; contact alone does not show clipping.
+- This measured response shape, palette, and billing only. It did not run production publication QA, pose the sword, score perceived motion, or test the other models. It is not a matched observation or evidence for changing the default.
 
 Use one frozen 64×64 humanoid with east and south views, one already-fitted head item and one already-fitted hand item. Test Walk and unarmed Slash at eight frames, one predeclared seed, all three body routes: 4 matched cases, **12 body clips and up to 24 fitted gear clips**. Do not redress items between arms. Use the same action intent and direction; document the actual pose source for Skeleton V3 and exact text for both native arms. A shared seed is a blocking label, not a guarantee of matched random draws across models. Randomize arm order within each case. Run the actual production body normalization, measurement, item pose, extraction and QA; in-memory observation must not change whether production would save a result.
 
