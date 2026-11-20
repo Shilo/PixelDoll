@@ -448,6 +448,25 @@ test('raw PixMiniMax estimates reflect provider pricing by canvas and frame coun
 	expect(nativeMoveGens('pixminimax', { w: 129, h: 129 }, 40)).toBe(2);
 });
 
+test('described Skeleton v3 quotes the rounded-up managed PixMiniMax motion count', async () => {
+	const f = await fixture();
+	const spec = {
+		id: 'step-softly',
+		text: 'Step softly',
+		frames: 8,
+		items: [],
+		animation: { model: 'skeleton-v3', frameCount: 15 } as const
+	};
+	const plan = movePlan(f.original, spec);
+	const motionCalls = plan.filter((call) => call.path === '/characters/animations');
+	expect(motionCalls).toHaveLength(4);
+	for (const call of motionCalls)
+		expect(call).toMatchObject({ body: { frame_count: 16 }, generations: 2 });
+	expect(plan.reduce((sum, call) => sum + (call.generations ?? 0), 0)).toBeCloseTo(
+		moveEstimate(f.original.manifest, spec).gens
+	);
+});
+
 test('model options respect presets, explicit overrides and actual V3 canvas budget', async () => {
 	const f = await fixture();
 	const m = f.original.manifest;

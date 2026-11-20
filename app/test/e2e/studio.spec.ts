@@ -5130,6 +5130,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 		custom.id = 'idle';
 		custom.sources.east.motion = 'pixminimax:idle, shift weight to the leading foot';
 		custom.sources.west.route = 'v3';
+		custom.sources.west.motion = 'v3:idle, shift weight to the leading foot';
 		for (const item of m.items)
 			for (const layer of item.layers)
 				if (layer.cells?.walk) {
@@ -5182,7 +5183,9 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(sword).toHaveCount(0);
 	await expect(sheet).not.toContainText('if equipment runs');
 	await east.click();
-	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveCount(0);
+	await expect(sheet.getByRole('textbox', { name: 'Describe the replacement' })).toHaveValue(
+		'Step sideways and shift weight to the leading foot'
+	);
 	await expect(replace).toBeEnabled();
 	const advanced = sheet.locator('summary').filter({ hasText: 'Advanced' });
 	await expect(advanced).toContainText('V3');

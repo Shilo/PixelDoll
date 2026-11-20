@@ -152,9 +152,13 @@
 		replacing &&
 			((action !== 'walk' && !isAuthoredAction(action)) ||
 				targetDirs.some((dir) => {
-					// Only a Skeleton v3 clip posed from a PixMiniMax description needs that text again.
 					const source = savedMove?.sources?.[dir];
-					return source?.route === 'skeleton-v3' && !!source.motion?.startsWith('pixminimax:');
+					if (source?.route === 'skeleton-v3') return !!source.motion?.startsWith('pixminimax:');
+					if (source?.route !== 'v3' && source?.route !== 'pixminimax') return false;
+					const prefix = `${source.route}:`;
+					return (
+						!!source.motion?.startsWith(prefix) && source.motion.slice(prefix.length) !== action
+					);
 				}))
 	);
 	const describing = $derived(!action || describingReplacement);

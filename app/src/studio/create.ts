@@ -2043,8 +2043,10 @@ export function moveMotionFrames(m: Manifest, spec: MoveFrameSpec): number {
 	return spec.action === 'walk' ? 8 : Math.ceil(moveFrames(m, spec) / 4) * 4;
 }
 
-export function moveMotionGens(spec: Pick<MoveSpec, 'action'>): number {
-	return spec.action === 'walk' ? 3 : 1;
+export function moveMotionGens(m: Manifest, spec: MoveFrameSpec): number {
+	return spec.action === 'walk'
+		? 3
+		: nativeMoveGens('pixminimax', m.rig.cell, moveMotionFrames(m, spec));
 }
 export function partialMoveFrameIssue(
 	m: Manifest,
@@ -2114,7 +2116,7 @@ export function moveEstimate(
 							: poseCallGens(n) +
 								(isAuthoredAction(s.action)
 									? 0
-									: moveMotionGens(s) + moveMotionFrames(m, s) * EST)));
+									: moveMotionGens(m, s) + moveMotionFrames(m, s) * EST)));
 	const items =
 		s.itemMethod === 'grid'
 			? s.items.reduce((sum, id) => {

@@ -400,7 +400,7 @@ export function movePlan(
 							label: `Create motion · ${direction}`,
 							generations: native
 								? nativeMoveGens(model, m.rig.cell, frames)
-								: moveMotionGens(spec),
+								: moveMotionGens(m, spec),
 							note: spec.seed === undefined ? `Known fields only. ${selectedSeed}` : undefined
 						},
 						({ t, displayDirection }) =>
