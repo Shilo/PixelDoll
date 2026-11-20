@@ -5,6 +5,7 @@
 	import './share.css';
 	import './experience/theme.css';
 	import './experience/layout.css';
+	import './experience/hoverActions.css';
 	import { rememberActivation } from './experience/focus.ts';
 	import Experience from './experience/Experience.svelte';
 	import { onMount, untrack } from 'svelte';

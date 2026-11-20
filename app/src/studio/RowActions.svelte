@@ -22,11 +22,11 @@
 	}
 </script>
 
-<div class="character-entry" {@attach contextMenu(open)}>
+<div class="character-entry hover-actions" {@attach contextMenu(open)}>
 	{@render children()}
 	<button
 		bind:this={more}
-		class="bu-action character-more"
+		class="bu-action character-more hover-actions-button"
 		data-variant="quiet"
 		aria-label={t('experience.moreActionsFor', { name })}
 		title={t('experience.moreActionsFor', { name })}
