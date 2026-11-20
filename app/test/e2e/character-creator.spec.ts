@@ -1567,8 +1567,18 @@ test('switching the model keeps Advanced open and base clothing shows both choic
 	const sheet = await open(page);
 	await sheet.locator('details.advanced > summary').click();
 	const model = sheet.getByRole('combobox', { name: 'Model', exact: true });
-	await expect(model.locator('option')).toHaveText(['Default (V3)', 'Pro', 'Pro Flash']);
+	await expect(model.locator('option')).toHaveText([
+		'Default (V3)',
+		'Standard',
+		'Pro',
+		'Pro Flash'
+	]);
 	const drop = sheet.getByRole('button', { name: 'Add image', exact: true });
+	await model.selectOption('standard');
+	await expect(drop).toBeVisible();
+	await expect(drop).toBeDisabled();
+	await model.selectOption('v3');
+	await expect(drop).toBeEnabled();
 	const missedDrop = await sheet.evaluate((dialog) => {
 		const dataTransfer = new DataTransfer();
 		dataTransfer.items.add(new File(['unexpected'], 'missed.png', { type: 'image/png' }));
@@ -1602,12 +1612,21 @@ test('switching the model keeps Advanced open and base clothing shows both choic
 	});
 	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
 	await expect(attachment).toContainText('80 × 48 px');
+	const remove = sheet.getByRole('button', { name: 'Remove reference', exact: true });
+	await model.selectOption('standard');
+	await expect(attachment).toBeVisible();
+	await expect(attachment).toBeDisabled();
+	await expect(attachment).toContainText('guide.png');
+	await expect(remove).toBeDisabled();
+	await expect(sheet.getByRole('button', { name: /^Create character/ })).toBeEnabled();
 	await model.selectOption('pro');
+	await expect(attachment).toBeEnabled();
+	await expect(remove).toBeEnabled();
 	await expect(sheet.getByText(/sketch or character design/)).toBeVisible();
 	await model.selectOption('pro-flash');
 	await expect(sheet.getByText(/use artwork as a style guide/i)).toBeVisible();
 	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
-	await sheet.getByRole('button', { name: 'Remove reference', exact: true }).click();
+	await remove.click();
 	await expect(drop).toBeFocused();
 	await model.selectOption('pro');
 	await expect(sheet.locator('details.advanced')).toHaveAttribute('open', '');

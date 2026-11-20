@@ -2130,7 +2130,7 @@
 			"sizeGuideReference": "Guia de tamanhos e referência",
 			"reference": {
 				"frontFacing": "Use um sprite de frente.",
-				"standardTextOnly": "O modelo Padrão usa apenas texto. Remova a imagem de referência ou escolha outro modelo.",
+				"standardTextOnly": "O modelo Padrão usa apenas texto.",
 				"concept": "Use um esboço ou um desenho do personagem.",
 				"style": "Use uma arte como referência de estilo.",
 				"tooLarge": "Escolha uma referência de até {max} × {max} px.",

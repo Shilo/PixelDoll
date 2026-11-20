@@ -89,17 +89,17 @@
 				try {
 					prepared = await readReference(file, limit, inspectColors);
 				} catch (failure) {
-					if (active && limitChanged()) continue;
+					if (active && !disabled && limitChanged()) continue;
 					throw failure;
 				}
+				if (!active || disabled) return;
 				if (limitChanged()) continue;
-				if (!active) return;
 				value = prepared;
 				announcement = message('referenceField.attached');
 				break;
 			}
 		} catch (failure) {
-			if (!active) return;
+			if (!active || disabled) return;
 			value = undefined;
 			error = message('referenceField.error', {
 				reason:

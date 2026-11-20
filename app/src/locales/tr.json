@@ -2110,7 +2110,7 @@
 			"sizeGuideReference": "Boyut kılavuzu ve referans",
 			"reference": {
 				"frontFacing": "Öne bakan bir sprite kullanın.",
-				"standardTextOnly": "Standart yalnızca metin kullanır. Referans görselini kaldırın veya başka bir model seçin.",
+				"standardTextOnly": "Standart yalnızca metin kullanır.",
 				"concept": "Bir eskiz veya karakter tasarımı kullanın.",
 				"style": "Stil örneği olarak bir görsel kullanın.",
 				"tooLarge": "En fazla {max} × {max} piksel boyutunda bir referans seçin.",

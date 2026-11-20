@@ -2101,7 +2101,7 @@
 			"sizeGuideReference": "Size guide and reference",
 			"reference": {
 				"frontFacing": "Use a front-facing sprite.",
-				"standardTextOnly": "Standard uses text only. Remove the reference image or choose another model.",
+				"standardTextOnly": "Standard uses text only.",
 				"concept": "Use a sketch or character design.",
 				"style": "Use artwork as a style guide.",
 				"tooLarge": "Choose a reference no larger than {max} × {max} px.",

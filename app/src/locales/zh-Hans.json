@@ -2008,7 +2008,7 @@
 			"sizeGuideReference": "尺寸指南和参考图",
 			"reference": {
 				"frontFacing": "使用正面朝向的精灵图。",
-				"standardTextOnly": "标准模型仅使用文本。请移除参考图像或选择其他模型。",
+				"standardTextOnly": "标准模型仅使用文本。",
 				"concept": "使用草图或角色设计图。",
 				"style": "使用美术图作为风格参考。",
 				"tooLarge": "请选择不超过 {max} × {max} 像素的参考图。",

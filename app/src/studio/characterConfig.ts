@@ -143,10 +143,7 @@ export function characterReferenceIssue(
 ): LocalizedError | undefined {
 	if (!image) return undefined;
 	if (model === 'standard')
-		return new LocalizedError(
-			'Standard uses text only. Remove the reference image or choose another model.',
-			'create.form.reference.standardTextOnly'
-		);
+		return new LocalizedError('Standard uses text only.', 'create.form.reference.standardTextOnly');
 	const { max } = characterReference[model];
 	const sizeIssue = referenceSizeError(image, max);
 	if (sizeIssue) return new LocalizedError(sizeIssue, 'create.form.reference.tooLarge', { max });
@@ -461,9 +458,13 @@ export function sizeErrors(
 			]
 		: [];
 }
+export function draftReference(d: CharacterDraft): PickedReference | undefined {
+	return d.model === 'standard' ? undefined : d.reference;
+}
+
 export function draftErrors(d: CharacterDraft): LocalizedError[] {
 	const frame = d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame;
-	const referenceIssue = characterReferenceIssue(d.reference, d.model, frame, d.body);
+	const referenceIssue = characterReferenceIssue(draftReference(d), d.model, frame, d.body);
 	return [
 		...sizeErrors(d.body, frame, d.model),
 		...(referenceIssue ? [referenceIssue] : []),

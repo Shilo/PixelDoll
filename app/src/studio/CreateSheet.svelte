@@ -20,6 +20,7 @@
 		CREATE_STEPS,
 		autoFrame,
 		draftErrors,
+		draftReference,
 		facingOf,
 		freshSeed,
 		newCharacterDraft,
@@ -50,14 +51,15 @@
 	let referenceLoading = $state(false);
 	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
 	const errors = $derived(draftErrors(d));
+	const reference = $derived(draftReference(d));
 	const formSpec = $derived<CreateSpec>({
 		description: d.prompt,
-		...(d.reference
+		...(reference
 			? {
 					reference: {
-						base64: d.reference.base64,
-						width: d.reference.width,
-						height: d.reference.height
+						base64: reference.base64,
+						width: reference.width,
+						height: reference.height
 					}
 				}
 			: {}),

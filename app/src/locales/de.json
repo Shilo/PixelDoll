@@ -2116,7 +2116,7 @@
 			"sizeGuideReference": "Größenhilfe und Referenzbild",
 			"reference": {
 				"frontFacing": "Nutze ein Sprite in Vorderansicht.",
-				"standardTextOnly": "Standard verwendet nur Text. Entferne das Referenzbild oder wähle ein anderes Modell.",
+				"standardTextOnly": "Standard verwendet nur Text.",
 				"concept": "Nutze eine Skizze oder einen Charakterentwurf.",
 				"style": "Nutze eine Illustration als Stilvorlage.",
 				"tooLarge": "Wähle ein Referenzbild mit höchstens {max} × {max} px.",

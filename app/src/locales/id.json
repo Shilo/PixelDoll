@@ -2028,7 +2028,7 @@
 			"sizeGuideReference": "Panduan ukuran dan referensi",
 			"reference": {
 				"frontFacing": "Gunakan sprite yang menghadap ke depan.",
-				"standardTextOnly": "Standar hanya menggunakan teks. Hapus gambar referensi atau pilih model lain.",
+				"standardTextOnly": "Standar hanya menggunakan teks.",
 				"concept": "Gunakan sketsa atau desain karakter.",
 				"style": "Gunakan ilustrasi sebagai acuan gaya.",
 				"tooLarge": "Pilih referensi berukuran maksimal {max} × {max} px.",

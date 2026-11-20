@@ -2117,7 +2117,7 @@
 			"sizeGuideReference": "Guide des tailles et référence",
 			"reference": {
 				"frontFacing": "Utilisez un sprite vu de face.",
-				"standardTextOnly": "Le modèle Standard utilise uniquement du texte. Retirez l’image de référence ou choisissez un autre modèle.",
+				"standardTextOnly": "Le modèle Standard utilise uniquement du texte.",
 				"concept": "Utilisez un croquis ou un dessin du personnage.",
 				"style": "Utilisez une illustration comme référence de style.",
 				"tooLarge": "Choisissez une référence de {max} × {max} px maximum.",
