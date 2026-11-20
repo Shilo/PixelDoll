@@ -5,10 +5,12 @@ import type { OutFile } from './generic.ts';
 import { layerFrame } from '../compose/compose.ts';
 import { runtimeSources } from '../runtime/sources.ts';
 
-/** Stable character identity: renaming/base changes create a separate library; same-character reexports retain names. */
+/** Stable character identity for a GDevelop library. */
 export function gdCharacterKey(m: Manifest): string {
 	let hash = 0xcbf29ce484222325n;
-	for (const byte of new TextEncoder().encode(JSON.stringify([m.name, m.rig.baseHash])))
+	for (const byte of new TextEncoder().encode(
+		m.exportId ?? JSON.stringify([m.name, m.rig.baseHash])
+	))
 		hash = BigInt.asUintN(64, (hash ^ BigInt(byte)) * 0x100000001b3n);
 	return hash.toString(16).padStart(16, '0');
 }

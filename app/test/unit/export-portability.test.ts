@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { unityJson } from '../../src/lib/export/unity.ts';
+import { gdCharacterKey } from '../../src/lib/export/gdevelop.ts';
 import { exportManifest } from '../../src/lib/export/generic.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
@@ -105,4 +106,30 @@ test('display names become portable Unity asset and Aseprite file names', async 
 	const result = await exportFiles(project, { engines: ['aseprite'], baked: false });
 	expect(result.errors).toEqual([]);
 	expect(result.entries.some((entry) => entry.name === 'aseprite/CON_.aseprite')).toBe(true);
+});
+
+test('character display names do not change paths or native identity when an Export ID is set', async () => {
+	const project = await fixture();
+	const build = async () => {
+		const result = await exportFiles(project, {
+			engines: ['godot', 'phaser', 'unity', 'gdevelop', 'aseprite'],
+			baked: false
+		});
+		expect(result.errors).toEqual([]);
+		const manifest = exportManifest(project, { engines: ['unity'], baked: false }).manifest;
+		return {
+			paths: result.entries.map((entry) => entry.name),
+			unity: unityJson(manifest).exportId,
+			gdevelop: gdCharacterKey(manifest)
+		};
+	};
+	project.manifest.exportId = 'stable_hero';
+	const original = await build();
+	project.manifest.name = '旅人';
+	expect(await build()).toEqual(original);
+	project.manifest.exportId = 'other_hero';
+	const renamed = await build();
+	expect(renamed.unity).not.toBe(original.unity);
+	expect(renamed.gdevelop).not.toBe(original.gdevelop);
+	expect(renamed.paths).toContain('aseprite/other_hero.aseprite');
 });

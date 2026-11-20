@@ -38,9 +38,11 @@ import {
 	deleteItems,
 	deleteOutdated,
 	listProjects,
-	loadProject
+	loadProject,
+	type StoredProject
 } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
+import { defaultCharacterExportId, editIdentity } from '../lib/store/identity.ts';
 import type {
 	CellKey,
 	DirectionName,
@@ -223,6 +225,7 @@ export const ui = $state({
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
 	sheet: null as SheetId,
+	renameTarget: null as { projectId: string; itemId?: string } | null,
 	slotTarget: null as string | null,
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
@@ -256,8 +259,34 @@ let waitingNotice: ReturnType<typeof setTimeout> | undefined;
 /** How long a click waits for an idle tab to hand over the jobs before Activity explains the wait: a handoff takes well
  *  under a second, so most clicks simply continue. */
 const HANDOFF_GRACE_MS = 1500;
+let identityChannel: BroadcastChannel | undefined;
 
 export function initUi() {
+	const channel =
+		!workspaceCopy && typeof BroadcastChannel !== 'undefined'
+			? new BroadcastChannel('pixeldoll:identity')
+			: undefined;
+	identityChannel = channel;
+	if (channel)
+		channel.onmessage = ({ data }) => {
+			if (
+				!data ||
+				typeof data.projectId !== 'string' ||
+				(data.itemId !== undefined && typeof data.itemId !== 'string')
+			)
+				return;
+			const { projectId, itemId } = data;
+			if (opening === projectId) openingIdentityRevision++;
+			const request = openRequest;
+			if (doc.id === projectId)
+				void db
+					.get<StoredProject>('projects', projectId)
+					.then((record) => {
+						if (record?.manifest) applySavedIdentity(projectId, itemId, request, record.manifest);
+					})
+					.catch((error: unknown) => console.error('refresh identity', error));
+			void refreshProjects();
+		};
 	const on = () => {
 		ui.size = sizeNow();
 		ui.dpr = devicePixelRatio || 1;
@@ -288,6 +317,8 @@ export function initUi() {
 	document.addEventListener('visibilitychange', hide);
 	applyTheme();
 	return () => {
+		channel?.close();
+		if (identityChannel === channel) identityChannel = undefined;
 		removeEventListener('unhandledrejection', unhandled);
 		removeEventListener('resize', on);
 		removeEventListener('pagehide', leave);
@@ -457,6 +488,7 @@ export function clearPendingConnection() {
 export interface ProjectRef {
 	id: string;
 	name: string;
+	exportId?: string;
 	demo: boolean;
 	dev: boolean;
 	savedAt: string;
@@ -467,6 +499,7 @@ export interface ProjectRef {
 }
 class Store {
 	project = $state.raw<Project | null>(null);
+	exportRecord = $state.raw<StoredProject>();
 	projects = $state.raw<ProjectRef[]>([]);
 	results = $state.raw<Record<string, ItemResult | null>>({});
 }
@@ -578,6 +611,7 @@ export async function refreshProjects(): Promise<boolean> {
 		...own.map((p) => ({
 			id: p.id,
 			name: p.manifest.name,
+			exportId: p.manifest.exportId ?? defaultCharacterExportId(p.id),
 			demo: false,
 			dev: p.origin === 'dev',
 			savedAt: p.savedAt,
@@ -625,6 +659,7 @@ export async function readCharacterForExport(id: string) {
 }
 
 let openRequest = 0,
+	openingIdentityRevision = 0,
 	opening = $state(''); // opening: the character the newest open is loading ('' when it finished)
 export const openingProjectId = () => opening;
 /** keep.wear: equip that item (Keep it). keep.quiet: reload the open character in place (a draft saved itself): the view, the
@@ -640,6 +675,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 	if (!quiet) doc.loading = true;
 	doc.error = '';
 	try {
+		const identityRevision = openingIdentityRevision;
 		const { r, split } = await readCharacter(id);
 		if (request !== openRequest) return;
 		if (split?.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
@@ -647,6 +683,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		await flushSave(); // an edit made to the previous character while this one loaded lands before it is replaced
 		if (request !== openRequest) return;
 		// Outfit edits and explicit metadata changes made during a reload are newer than its read.
+		if (openingIdentityRevision !== identityRevision) return openProject(id, keep);
 		if (id === doc.id && (edits !== seen || doc.rev !== revision)) return openProject(id, keep);
 		const m = r.project.manifest;
 		const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
@@ -687,6 +724,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
 		if (!quiet) ui.frame = 0;
 		store.project = r.project;
+		store.exportRecord = r.record;
 		// Another acceptance can supersede its reload. Retire worn drafts only when their saved items are published.
 		let acceptedWear = false;
 		for (const g of [...gens]) {
@@ -832,7 +870,7 @@ export function commit(
 /** Manifest edits are in place; a new top-level object lets every `$derived(store.project.manifest)` see the change. */
 function bump() {
 	const p = store.project!;
-	store.project = { manifest: { ...p.manifest }, images: p.images };
+	store.project = { ...p, manifest: { ...p.manifest } };
 	doc.rev++;
 }
 export function undo() {
@@ -1513,6 +1551,7 @@ export async function matchItemPalette(
 		if (doc.id !== projectId || request !== openRequest || refresh !== itemPaletteRefresh) return;
 		if (doc.rev !== revision) continue;
 		store.project = fresh.project;
+		store.exportRecord = fresh.rec;
 		slotBase = { id: projectId, slots: structuredClone(fresh.project.manifest.slots) };
 		doc.rev++;
 		return;
@@ -1842,7 +1881,7 @@ export async function copyDemoAndAdd(entry: SharedItem) {
 		} else if (now) await addEntry(now, true);
 		else {
 			const held = store.project?.manifest.items.find(
-				(it) => it.status === 'accepted' && itemKey(it) === itemKey(entry.item)
+				(it) => it.status === 'accepted' && itemKey(it, id) === itemKey(entry.item, entry.sourceId)
 			);
 			if (!held)
 				toast(
@@ -1876,20 +1915,56 @@ export async function copyDemo(): Promise<string> {
 	return id;
 }
 
-/** Rename the open (own) character: the manifest name is also the exported name. */
+export function openRename(projectId: string, itemId?: string) {
+	if (projectId.startsWith('fixture:')) return;
+	ui.renameTarget = { projectId, itemId };
+	ui.sheet = 'rename';
+}
+
 export async function renameProject(name: string) {
-	if (isDemo()) return;
-	const projectId = doc.id;
-	await db.update<{ manifest?: Manifest }>('projects', projectId, (rec) => {
-		if (!rec?.manifest) throw new Error('gone');
-		rec.manifest.name = name;
+	if (!isDemo()) await saveIdentity(doc.id, undefined, name);
+}
+
+export async function saveIdentity(
+	projectId: string,
+	itemId: string | undefined,
+	name: string | undefined,
+	exportId?: string
+) {
+	if (projectId.startsWith('fixture:')) return;
+	const request = openRequest;
+	const updated = await db.update<{ manifest?: Manifest }>('projects', projectId, (rec) => {
+		if (!rec?.manifest)
+			throw new LocalizedError(
+				'This saved character is no longer available.',
+				'directionsSheet.characterUnavailable'
+			);
+		editIdentity(rec.manifest, projectId, itemId, name, exportId);
 		return rec;
 	});
-	if (doc.id === projectId) {
-		store.project!.manifest.name = name;
-		bump();
-	}
+	if (opening === projectId) openingIdentityRevision++;
+	applySavedIdentity(projectId, itemId, request, updated.manifest!);
+	identityChannel?.postMessage({ projectId, itemId });
 	await refreshProjects();
+}
+
+function applySavedIdentity(
+	projectId: string,
+	itemId: string | undefined,
+	request: number,
+	manifest: Manifest
+) {
+	if (doc.id === projectId && openRequest === request && store.project) {
+		const current = store.project.manifest;
+		const from = itemId ? manifest.items.find((item) => item.id === itemId) : manifest;
+		const to = itemId ? current.items.find((item) => item.id === itemId) : current;
+		if (from && to) {
+			to.name = from.name;
+			if (from.exportId === undefined) delete to.exportId;
+			else to.exportId = from.exportId;
+			bump();
+		}
+	}
 }
 
 /** Wear an item if it is off and select it; a worn item stays on. Wardrobe tiles toggle with `wear` instead. */

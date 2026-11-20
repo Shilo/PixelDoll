@@ -16,6 +16,7 @@ import { normalize, opaqueBox, pivotOf } from '../rig/normalize.ts';
 import type { Manifest, Project } from './manifest.ts';
 import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
 import type { StoredProject } from './project.ts';
+import { checkExportIdentity, defaultCharacterExportId } from './identity.ts';
 import { unzip, type ZipEntry } from './zip.ts';
 import * as db from './db.ts';
 import type { WhisperKey, WhisperVars } from 'svelte-whisper';
@@ -132,6 +133,7 @@ export function manifestShape(m: Manifest) {
 			'The character has duplicate item IDs.',
 			'import.error.duplicateItems'
 		);
+	checkExportIdentity(m);
 	// Count logical cells, including repeated hash references: a tiny archive can otherwise request gigabytes of copies.
 	let pixels = 0;
 	for (const item of m.items)
@@ -914,6 +916,7 @@ export async function saveImportedCharacter(
 	const manifest = structuredClone(imported.project.manifest);
 	manifest.name = name.trim();
 	const id = `rig-${crypto.randomUUID()}`; // Always a new copy; never overwrite another character with the same body.
+	manifest.exportId ??= defaultCharacterExportId(id, manifest.name);
 	const blobs = new Map<string, Blob>();
 	for (const [h, im] of imported.project.images)
 		blobs.set(

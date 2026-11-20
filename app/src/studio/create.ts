@@ -30,6 +30,7 @@ import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
+import { defaultCharacterExportId, itemContent } from '../lib/store/identity.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { flipH } from '../lib/rig/mirror.ts';
@@ -884,6 +885,7 @@ export async function publishCreatedCharacter(
 			new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
 		);
 	try {
+		rec.manifest.exportId ??= defaultCharacterExportId(rec.id, rec.manifest.name);
 		await db.putCharacter(rec.id, rec, blobs);
 	} catch (error) {
 		if (!(await completedCreation(rec.id, rec.creationSpec))) throw error;
@@ -2108,7 +2110,7 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
 				'create.errors.selectedEquipmentLongerAvailable'
 			);
 		return {
-			...item,
+			...itemContent(item),
 			qa: undefined,
 			provenance: undefined,
 			designWarnings: undefined,
@@ -2751,6 +2753,7 @@ export async function saveCopy(
 	const m: Manifest = structuredClone(p.manifest);
 	m.name = name;
 	const id = `rig-${m.rig.baseHash.slice(7, 19)}`;
+	m.exportId = defaultCharacterExportId(id, name);
 	if (await db.get('projects', id)) return id;
 	const images = new Map(p.images);
 	// The bundled demo explicitly supplies its standing source; imported characters never guess a move by name.

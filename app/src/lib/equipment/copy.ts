@@ -10,6 +10,7 @@ import { variantOf, variantRampOf } from '../dress/dress.ts';
 import { putItem, slotLadder } from '../items/items.ts';
 import { clipOf, mergeQa, summaryOf } from '../items/qa-summary.ts';
 import type { StoredProject } from '../store/project.ts';
+import { itemContent, newItemExportId } from '../store/identity.ts';
 import type {
 	CellKey,
 	DirectionName,
@@ -158,6 +159,7 @@ export function copyShell(
 		id = `gear-${crypto.randomUUID()}`,
 		itemId = original.id;
 	item.id = id;
+	delete item.exportId;
 	item.baseHash = target.rig.baseHash;
 	item.coverage = targets as CellKey[];
 	const materials = source.materials
@@ -196,8 +198,15 @@ export function copyShell(
 }
 
 /** Same slot and same request: the same item for the wardrobe's purposes. */
-export const itemKey = (item: Pick<Item, 'slot' | 'prompt' | 'name'>) =>
-	`${item.slot}\n${(item.prompt.trim() || item.name).toLowerCase().replace(/\s+/g, ' ')}`;
+const completeCopyOrigin = (origin: Item['copiedFrom']) => (origin?.item ? origin : undefined);
+
+export const itemKey = (
+	item: Pick<Item, 'slot' | 'prompt'> & Partial<Pick<Item, 'id' | 'copiedFrom'>>,
+	sourceId?: string
+) => {
+	const origin = completeCopyOrigin(item.copiedFrom);
+	return `${item.slot}\n${item.prompt.trim().toLowerCase().replace(/\s+/g, ' ') || `\t${JSON.stringify([origin?.id ?? sourceId, origin?.item ?? item.id])}`}`;
+};
 
 /** How another character's item comes to `target`: an exact free copy, a free approximate re-fit, a free copy worn as drawn
  *  for the other body without fitting, or a new item made for it. */
@@ -486,7 +495,7 @@ export async function acceptCopy(
 	retargetDepth(item, slotPlan);
 	// The paid calls were made for the first character an item was copied from. An exact copy of a re-fit keeps the re-fit's
 	// notes too: its pixels and body are identical, so they still name exactly the frames to check.
-	item.copiedFrom = original.copiedFrom ?? {
+	item.copiedFrom = completeCopyOrigin(original.copiedFrom) ?? {
 		id: sourceId,
 		name: source.manifest.name,
 		item: original.id
@@ -528,6 +537,7 @@ export async function acceptCopy(
 				source.manifest.name
 			);
 			// A slot only the source defines (a custom one) comes with its item, shown and with its labels, behavior and depths.
+			item.exportId = newItemExportId(rec.manifest.items, item.id);
 			putItem(rec.manifest, item, [
 				...slotLadder(rec.manifest.rig),
 				...(freshPlan.add ? [freshPlan.add] : [])
@@ -570,8 +580,10 @@ async function blobsOf(item: Item, made: (hash: Sha256) => Img | undefined) {
 	}
 	return { blobs, keys };
 }
-const body = (m: Manifest) =>
-	stableStringify({ rig: m.rig, body: m.items.find((it) => it.id === m.rig.baseItem) });
+const body = (m: Manifest) => {
+	const item = m.items.find((entry) => entry.id === m.rig.baseItem);
+	return stableStringify({ rig: m.rig, body: item && itemContent(item) });
+};
 
 /** Cells an exact copy lacks here that its source item now covers on an identical body (moves the source gained after the
  *  copy), or null when there are none. A re-fit never takes more: its art was moved for this body, not copied. */
@@ -645,12 +657,13 @@ export async function copyMoreFrames(targetId: string, itemId: string): Promise<
 		(rec) => {
 			const at = rec?.manifest.items.findIndex((it) => it.id === itemId) ?? -1;
 			if (!rec || at < 0) throw new Error('That item was removed.');
+			const current = rec.manifest.items[at];
 			if (
 				body(rec.manifest) !== body(target.manifest) ||
-				stableStringify(rec.manifest.items[at]) !== stableStringify(item)
+				stableStringify(itemContent(current)) !== stableStringify(itemContent(item))
 			)
 				throw new Error('This character changed while the frames were being copied. Try again.');
-			rec.manifest.items[at] = next;
+			rec.manifest.items[at] = { ...next, name: current.name, exportId: current.exportId };
 			rec.savedAt = new Date().toISOString();
 			return rec;
 		},

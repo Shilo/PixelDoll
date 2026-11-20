@@ -8,6 +8,7 @@ import * as db from './db.ts';
 import type { Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.ts';
 import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
 import { putItem } from '../items/items.ts';
+import { defaultCharacterExportId, newItemExportId } from './identity.ts';
 
 export interface StoredProject {
 	id: string;
@@ -144,6 +145,7 @@ export async function loadProject(
 	signal?.throwIfAborted();
 	if (!rec) throw new Error(`project ${id} not found`);
 	if (!supportedFormat(rec.manifest?.format)) throw new Error(OUTDATED);
+	rec.manifest.exportId ??= defaultCharacterExportId(id);
 	const images = new Map<string, Img>();
 	const missing = new Set<string>();
 	let damagedTrack = false;
@@ -211,7 +213,13 @@ export async function saveItem(
 	await db.updateCharacter<StoredProject>(id, blobs, (rec) => {
 		if (!rec) throw new Error(`project ${id} not found`);
 		check?.(rec);
-		putItem(rec.manifest, item, ladder);
+		const previous = rec.manifest.items.find((entry) => entry.id === item.id);
+		const next = {
+			...item,
+			name: previous?.name ?? item.name,
+			exportId: previous ? previous.exportId : newItemExportId(rec.manifest.items, item.id)
+		};
+		putItem(rec.manifest, next, ladder);
 		rec.savedAt = new Date().toISOString();
 		return rec;
 	});

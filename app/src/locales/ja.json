@@ -392,7 +392,15 @@
 	"renameSheet": {
 		"couldNotRename": "名前を変更できませんでした：{reason}",
 		"titleRenameCharacter": "キャラクター名を変更",
-		"alsoTheNameInYourExports": "エクスポート時の名前にもなります。"
+		"titleRenameItem": "アイテム名を変更",
+		"displayName": "表示名",
+		"exportId": "エクスポートID",
+		"exportIdHelp": "エクスポートファイルやゲームコードで使用されます。変更した場合は、旧IDを使うゲーム側も更新してください。",
+		"invalidExportId": "先頭には英小文字または数字を使ってください。使えるのは英小文字、数字、ハイフン、アンダースコアのみです。予約名は使用できません。",
+		"duplicateExportId": "別のアイテムがこのエクスポートIDを使用しています。",
+		"characterIdConflict": "この作業スペースの別のキャラクターがこのエクスポートIDを使用しています。同じゲームで両方を使うには、別々のIDを指定してください。",
+		"invalidName": "名前は1〜60文字で入力してください。",
+		"itemMissing": "このアイテムは削除されました。"
 	},
 	"savedActions": {
 		"labelDeleteMove": "モーションを削除…",

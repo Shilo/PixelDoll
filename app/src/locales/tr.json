@@ -405,7 +405,15 @@
 	"renameSheet": {
 		"couldNotRename": "Yeniden adlandırılamadı: {reason}",
 		"titleRenameCharacter": "Karakteri yeniden adlandırın",
-		"alsoTheNameInYourExports": "Dışa aktarımlarda da bu ad kullanılır."
+		"titleRenameItem": "Eşyayı yeniden adlandırın",
+		"displayName": "Görünen ad",
+		"exportId": "Dışa aktarma kimliği",
+		"exportIdHelp": "Dışa aktarılan dosyalarda ve oyun kodunda kullanılır. Değiştirirseniz eski kimliği kullanan oyunları güncelleyin.",
+		"invalidExportId": "Küçük bir harf veya rakamla başlayın. Yalnızca küçük harf, rakam, kısa çizgi veya alt çizgi kullanın. Ayrılmış adlar kullanılamaz.",
+		"duplicateExportId": "Başka bir eşya bu dışa aktarma kimliğini kullanıyor.",
+		"characterIdConflict": "Bu çalışma alanındaki başka bir karakter bu dışa aktarma kimliğini kullanıyor. İkisini aynı oyuna eklemek için farklı kimlikler kullanın.",
+		"invalidName": "1 ile 60 karakter arasında bir ad girin.",
+		"itemMissing": "Bu eşya artık mevcut değil."
 	},
 	"savedActions": {
 		"labelDeleteMove": "Animasyonu silin…",

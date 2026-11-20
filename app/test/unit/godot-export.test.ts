@@ -147,6 +147,10 @@ test('Godot refuses more layer nodes than its native z range can represent', asy
 	expect(() => paperdollTscn(m)).toThrow('Godot: supports at most 8193');
 });
 
+const nativeBodyId = 'body'.padEnd(40, 'b');
+const nativeHatId = 'alt_hat'.padEnd(40, 'a');
+const nativeCapeId = 'woven_cape'.padEnd(40, 'c');
+
 // Opt-in native smoke/regression: GODOT_BIN=<Godot console executable> npm test -- godot-export
 test.skipIf(!process.env.GODOT_BIN)(
 	'Godot natively imports and runs palettes, presets, ownership, links and equipment guards',
@@ -227,6 +231,10 @@ test.skipIf(!process.env.GODOT_BIN)(
 		project.manifest.items[0].layers[0].z = 10000;
 		for (const item of project.manifest.items.slice(1)) item.layers[0].z = 9999;
 		project.manifest.slots[1].zOverrides = [{ layer: 'fg', cell: 0, z: 10001 }];
+		project.manifest.exportId = 'native_doll';
+		project.manifest.items[0].exportId = nativeBodyId;
+		project.manifest.items.find((item) => item.id === 'hat')!.exportId = nativeHatId;
+		project.manifest.items.find((item) => item.id === 'cape')!.exportId = nativeCapeId;
 		const output = await exportFiles(project, { engines: ['godot'], baked: true });
 		expect(output.errors).toEqual([]);
 		for (const entry of output.entries) {
@@ -321,17 +329,18 @@ func run() -> void:
 	var doll = load("res://godot/Paperdoll.tscn").instantiate()
 	root.add_child(doll)
 	await process_frame
+	check(doll.name == "native_doll", "Scene identity uses the character export ID")
 	check(doll.anim == "walk-fast" and doll.dir == "south", "Startup skips empty moves and unavailable first rig view")
-	check(doll._shown("body") == "base~cape~hat", "Both cutters select the combined body")
+	check(doll._shown("body") == "${nativeBodyId}~${nativeHatId}~${nativeCapeId}", "Both cutters select the combined body")
 	var image: Image = doll.body.sprite_frames.get_frame_texture(doll.body.animation, doll.body.frame).get_image()
 	check(image.get_pixel(20, 12).a == 0 and image.get_pixel(44, 16).a == 0, "Both cuts remain transparent")
 	doll.equip("head", "")
-	check(doll._shown("body") == "base~cape", "One removed cutter restores its original body pixels")
+	check(doll._shown("body") == "${nativeBodyId}~${nativeCapeId}", "One removed cutter restores its original body pixels")
 	doll.equip("back", "")
-	check(doll._shown("body") == "base", "Removing all cutters restores the original body")
-	doll.equip("back", "cape")
-	doll.equip("head", "hat")
-	check(doll._shown("body") == "base~cape~hat", "Equipment order leaves both cuts applied")
+	check(doll._shown("body") == "${nativeBodyId}", "Removing all cutters restores the original body")
+	doll.equip("back", "${nativeCapeId}")
+	doll.equip("head", "${nativeHatId}")
+	check(doll._shown("body") == "${nativeBodyId}~${nativeHatId}~${nativeCapeId}", "Equipment order leaves both cuts applied")
 	doll.play_anim("walk-fast", "west")
 	image = doll.body.sprite_frames.get_frame_texture(doll.body.animation, doll.body.frame).get_image()
 	check(image.get_pixel(43, 12).a == 0 and image.get_pixel(19, 16).a == 0, "Mirrored combined cuts remain transparent")
@@ -349,7 +358,7 @@ func run() -> void:
 	check(doll.dir == "south", "Unavailable view must not replace active playback")
 	check(not doll.play_anim("empty", "south"), "Unavailable move reports failure")
 	check(doll.anim == "walk-fast", "Empty move must not replace active playback")
-	check(doll.equipped.body == "base", "Default must retain frozen base even with body:null")
+	check(doll.equipped.body == "${nativeBodyId}", "Default must retain frozen base even with body:null")
 	check(color(doll, "hair") == Color.BLUE, "Default must use sourceSheets and defaultVariant")
 	check(color(doll, "body") == Color8(100, 100, 100), "Equal source RGBs must remain owner-local")
 	doll.play_anim("walk_fast", "south")
@@ -368,8 +377,8 @@ func run() -> void:
 	doll.play_anim("walk_fast", "south", true)
 	check(doll.body.frame == 0 and is_zero_approx(doll.body.frame_progress), "Explicit restart returns to the first playlist entry")
 	check(not doll.equip("body", ""), "Frozen-body mutation reports failure")
-	check(not doll.equip("hair", "base"), "Wrong-slot equipment reports failure")
-	check(doll.equipped.body == "base" and doll.equipped.hair == "a", "Frozen base and wrong-slot guards")
+	check(not doll.equip("hair", "${nativeBodyId}"), "Wrong-slot equipment reports failure")
+	check(doll.equipped.body == "${nativeBodyId}" and doll.equipped.hair == "a", "Frozen base and wrong-slot guards")
 	check(doll.equip("shield_extra", "shield_extra"), "Custom left-hand equipment loads")
 	check(doll.equip("weapon_extra", "weapon_extra"), "Custom right-hand equipment loads")
 	check(not doll.get_node("shield_extra_fg").visible, "Two-handed custom weapon hides copied off-hand slots")
@@ -392,17 +401,17 @@ func run() -> void:
 	doll.manifest.materials[1]["linkTo"] = "b"
 	doll.set_variant("a", "blue")
 	check(color(doll, "hair") == Color8(100, 100, 100), "Linked cycles must retain source palette")
-	doll.equip("head", "hat")
-	doll.equip("back", "cape")
+	doll.equip("head", "${nativeHatId}")
+	doll.equip("back", "${nativeCapeId}")
 	for it in doll.manifest.items:
-		if it.id == "hat":
+		if it.id == "${nativeHatId}":
 			it["hides"] = ["back"]
-		if it.id == "cape":
+		if it.id == "${nativeCapeId}":
 			it["hides"] = ["head"]
 	doll._refresh()
 	check(doll.get_node("back_fg").visible and not doll.get_node("head_fg").visible, "Two items that hide each other keep the later slot visible")
 	for it in doll.manifest.items:
-		if it.id == "hat" or it.id == "cape":
+		if it.id == "${nativeHatId}" or it.id == "${nativeCapeId}":
 			it.erase("hides")
 	doll._refresh()
 	check(doll.get_node("back_fg").visible and doll.get_node("head_fg").visible, "Both show again without hides")

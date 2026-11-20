@@ -4,12 +4,11 @@
 	import Sheet from './Sheet.svelte';
 	import { tick, untrack } from 'svelte';
 	import { buildExport } from '../lib/export/build.ts';
-	import { editableData, fileSlug, saveZip } from './download.svelte.ts';
+	import { characterZipId, editableData, saveZip } from './download.svelte.ts';
 	import { ROWS as RPG_ROWS, walkMove } from '../lib/export/rpgmaker.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { stableStringify } from '../lib/image/hash.ts';
 	import { coverageGaps, missingFrames, moveDirs } from '../lib/dress/dress.ts';
-	import * as db from '../lib/store/db.ts';
 	import { listProjects, type StoredProject } from '../lib/store/project.ts';
 	import {
 		exportAnimationCatalog,
@@ -23,7 +22,7 @@
 		type ExportSettings
 	} from '../lib/store/export-settings.ts';
 	import type { DirectionName, Engine } from '../lib/store/manifest.ts';
-	import { ui, doc, store, toast, isDemo } from './state.svelte.ts';
+	import { ui, doc, store, toast } from './state.svelte.ts';
 	import { displayMove } from './displayMove.ts';
 	import {
 		Check,
@@ -159,6 +158,7 @@
 	let navigation: HTMLButtonElement;
 	let result = $state.raw<{
 		zip: Uint8Array | null;
+		fileId?: string;
 		files: string[];
 		warnings: string[];
 		warningMessages?: Map<string, Message>;
@@ -448,23 +448,22 @@
 		const e = engine,
 			b = baked,
 			p = store.project;
-		const projectId = doc.id,
-			demo = isDemo(),
+		const rec = store.exportRecord,
 			settings = preferences;
 		if (!p || !ready || saving) return;
 		busy = true;
 		result = null;
 		const look = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
+		const snapshot = { ...p, manifest: structuredClone(p.manifest) };
 		let stale = false;
 		void (async () => {
-			const rec = demo ? undefined : await db.get<StoredProject>('projects', projectId);
 			const qa = rec?.rigQa as { clips?: Record<string, { fails?: unknown }> } | undefined;
 			const rigIssues = Object.entries(qa?.clips ?? {})
 				.filter(([clip, checks]) => {
 					const [anim, dir] = clip.split('/');
 					return (
-						p.manifest.rig.animations.some((a) => a.id === anim) &&
-						moveDirs(p.manifest, anim).some((d) => d === dir) &&
+						snapshot.manifest.rig.animations.some((a) => a.id === anim) &&
+						moveDirs(snapshot.manifest, anim).some((d) => d === dir) &&
 						Array.isArray(checks?.fails) &&
 						checks.fails.length > 0
 					);
@@ -477,7 +476,7 @@
 					});
 				});
 			return {
-				...(await buildExport(p, {
+				...(await buildExport(snapshot, {
 					engine: e,
 					baked: b,
 					look,
@@ -491,6 +490,7 @@
 				if (stale) return;
 				result = {
 					zip: r.zip,
+					fileId: characterZipId(snapshot.manifest),
 					files: r.entries.map((x) => x.name),
 					warnings: r.warnings,
 					warningMessages: r.kind === 'failed' ? undefined : r.warningMessages,
@@ -538,8 +538,8 @@
 		result ? (result.problemMessage ? displayMessage(result.problemMessage) : result.problem) : ''
 	);
 	function download() {
-		if (!result?.zip || !m || busy || saving || refreshing || !ready) return;
-		const name = fileSlug(store.projects.find((p) => p.id === doc.id)?.name ?? m.name);
+		if (!result?.zip || !result.fileId || busy || saving || refreshing || !ready) return;
+		const name = result.fileId;
 		const filename =
 			result.kind === 'recovery'
 				? `${name}-recovered-artwork.zip`

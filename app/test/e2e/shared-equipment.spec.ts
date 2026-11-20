@@ -464,7 +464,7 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await page.getByRole('menuitem', { name: 'Rename character…', exact: true }).click();
 	const rename = page.getByRole('dialog', { name: 'Rename character', exact: true });
 	const longName = 'Traveling Adventurer with an unusually long character name';
-	await rename.getByRole('textbox', { name: 'Name', exact: true }).fill(longName);
+	await rename.getByRole('textbox', { name: 'Display name', exact: true }).fill(longName);
 	await rename.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(rename).toBeHidden();
 	await page.setViewportSize({ width: 390, height: 844 });

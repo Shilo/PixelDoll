@@ -4,9 +4,9 @@ import { CURRENT_FORMAT } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
 import { layerFrame } from '../compose/compose.ts';
 import { runtimeSources, runtimeTypes } from '../runtime/sources.ts';
+import { atlasName } from '../runtime/paths.js';
 
-export const atlasName = (...parts: string[]) =>
-	parts.map((part) => `${part.length}-${part}`).join('_') + '.json';
+export { atlasName };
 
 export function atlasJson(m: Manifest, itemId: string, layerId: string, anim: string) {
 	const { rig } = m;
@@ -50,10 +50,9 @@ export const PAPERDOLL_JS =
 // Game config: pixelArt: true, roundPixels: true (Phaser 4 defaults roundPixels to false).
 // For exact Canvas pixels at integer positions, use scene.cameras.main.setRoundPixels(false): Canvas otherwise expands sprites by half a pixel.
 
-export const texKey = (m, item, layer, anim) => 'pd:' + JSON.stringify([m._base ?? m.name, item, layer, anim]);
-export const animKey = (m, anim, dir) => 'pd:' + JSON.stringify([m._base ?? m.name, anim, dir]);
+export const texKey = (m, item, layer, anim) => 'pd:' + JSON.stringify([m._base ?? m.exportId ?? m.name, item, layer, anim]);
+export const animKey = (m, anim, dir) => 'pd:' + JSON.stringify([m._base ?? m.exportId ?? m.name, anim, dir]);
 const loads = new WeakMap();
-const atlasName = (...parts) => parts.map((part) => part.length + '-' + part).join('_') + '.json';
 const available = (m, a) => m.rig.directions.filter((d) => !a.directions || a.directions.includes(d.id));
 async function json(url) {
   const response = await fetch(url);
@@ -223,7 +222,7 @@ export function phaserFiles(m: Manifest): OutFile[] {
 				});
 	files.push({ name: 'phaser/PaperdollContainer.js', data: PAPERDOLL_JS });
 	files.push({ name: 'phaser/types.d.ts', data: runtimeTypes });
-	const dir = `assets/${m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`;
+	const dir = `assets/${m.exportId ?? m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`;
 	const initial = m.rig.animations.find((a) => (a.directions ?? m.rig.directions).length > 0);
 	files.push({
 		name: 'phaser/README.txt',

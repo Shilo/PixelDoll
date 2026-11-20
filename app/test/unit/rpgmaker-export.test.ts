@@ -390,6 +390,30 @@ test('file names are ASCII: accents dropped, other characters replaced, empty na
 	);
 });
 
+test.each(['vx', 'xp'] as const)(
+	'RPG Maker %s keeps outfit and character IDs in separate filename namespaces',
+	async (format) => {
+		const first = await project({ names: ['Current look', 'Renamed outfit'] });
+		const second = await project({ names: ['Current look'] });
+		first.manifest.exportId = 'hero';
+		first.manifest.presets[1].id = 'night';
+		second.manifest.exportId = 'hero_night';
+		const names = [...run(first, format).files, ...run(second, format).files]
+			.map((file) => file.name)
+			.filter((name) => name.endsWith('.png'));
+		const prefix = format === 'vx' ? '$' : '';
+		expect(names).toEqual([
+			`${prefix}hero.png`,
+			`${prefix}hero~night.png`,
+			`${prefix}hero_night.png`
+		]);
+		first.manifest.exportId = 'h'.repeat(40);
+		first.manifest.presets[1].id = 'n'.repeat(220);
+		const longOutfit = run(first, format).files[1].name;
+		expect(longOutfit).toMatch(new RegExp(`^\\$?h{40}~~[0-9a-f]{16}\\.png$`));
+	}
+);
+
 test('the zip holds only the sheets, README, credits and the editable copy, built from the exported manifest', async () => {
 	const p = await project({ size: 32 });
 	for (const [engine, sheetName] of [

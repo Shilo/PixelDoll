@@ -417,7 +417,7 @@ test.each(['item', 'rig', 'material'] as const)(
 		const f = await fixture(),
 			plan = await itemPaletteRepairPlan('rig-test', 'sword', 'slash', 'south');
 		f.setRace(() => {
-			if (kind === 'item') f.current.manifest.items[1].name = 'Latest';
+			if (kind === 'item') f.current.manifest.items[1].layers[0].z++;
 			else if (kind === 'rig') f.current.manifest.rig.pivot.x++;
 			else f.current.manifest.materials[0].ramp[0] = '#313131';
 		});

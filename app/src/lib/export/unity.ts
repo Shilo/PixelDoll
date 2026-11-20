@@ -8,7 +8,7 @@ import { portableAssetName } from './paths.ts';
 function exportId(m: Manifest): string {
 	// Namespace + assembly identity: importing different characters must not define duplicate C# types.
 	let h = 0xcbf29ce484222325n;
-	for (const c of `${m.name}\0${m.rig.baseHash}`)
+	for (const c of m.exportId ?? `${m.name}\0${m.rig.baseHash}`)
 		h = BigInt.asUintN(64, (h ^ BigInt(c.codePointAt(0)!)) * 0x100000001b3n);
 	return `Character_${h.toString(16).padStart(16, '0')}`;
 }
@@ -16,7 +16,7 @@ function exportId(m: Manifest): string {
 export function unityJson(m: Manifest) {
 	const { rig } = m;
 	return {
-		name: portableAssetName(m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'Paperdoll'),
+		name: m.exportId ?? portableAssetName(m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'Paperdoll'),
 		exportId: exportId(m),
 		cellW: rig.cell.w,
 		cellH: rig.cell.h,

@@ -5,6 +5,7 @@ export type CellKey = `${string}/${DirectionName}/${number}`;
 export interface Manifest {
 	format: 'pixeldoll/3';
 	name: string;
+	exportId?: string;
 	app: string;
 	rig: Rig;
 	materials: Material[];
@@ -79,6 +80,7 @@ export interface Item {
 	pending?: CellKey[];
 	id: string;
 	name: string;
+	exportId?: string;
 	slot: string;
 	status: 'draft' | 'accepted' | 'stale';
 	mirror: 'flip' | 'generate';

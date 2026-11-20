@@ -406,9 +406,17 @@
 		"preparingTheUpdateKeepThisTabOpen": "Das Update wird vorbereitet. Lass diesen Tab geöffnet."
 	},
 	"renameSheet": {
-		"couldNotRename": "Die Figur konnte nicht umbenannt werden: {reason}",
+		"couldNotRename": "Umbenennen nicht möglich: {reason}",
 		"titleRenameCharacter": "Figur umbenennen",
-		"alsoTheNameInYourExports": "Dieser Name erscheint auch in deinen Exporten."
+		"titleRenameItem": "Gegenstand umbenennen",
+		"displayName": "Anzeigename",
+		"exportId": "Export-ID",
+		"exportIdHelp": "Wird in Exportdateien und im Spielcode verwendet. Wenn du sie änderst, aktualisiere alle Spiele, die die alte ID verwenden.",
+		"invalidExportId": "Beginne mit einem Kleinbuchstaben oder einer Ziffer. Verwende nur Kleinbuchstaben, Ziffern, Bindestriche oder Unterstriche. Reservierte Namen sind nicht zulässig.",
+		"duplicateExportId": "Ein anderer Gegenstand verwendet diese Export-ID.",
+		"characterIdConflict": "Eine andere Figur in diesem Arbeitsbereich nutzt diese Export-ID. Verwende unterschiedliche IDs, um beide im selben Spiel zu nutzen.",
+		"invalidName": "Gib einen Namen mit 1 bis 60 Zeichen ein.",
+		"itemMissing": "Diesen Gegenstand gibt es nicht mehr."
 	},
 	"savedActions": {
 		"labelDeleteMove": "Animation löschen…",

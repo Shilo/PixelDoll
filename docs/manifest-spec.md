@@ -7,7 +7,7 @@ One schema serves two files:
 - **`project.json`** inside the project zip (backup/share; the app's own document). Layers reference cells by hash (`cells`),
   and QA + provenance are complete.
 - **`manifest.json`** inside the export zip (consumed by engines). Layers reference sheets by path (`sheets`).
-  `cells` is dropped, everything else is kept (provenance is the credits trail [R5]).
+  `cells` is dropped and item IDs are projected into the game-facing namespace (provenance is the credits trail [R5]).
 
 The API key never appears in either file.
 
@@ -26,7 +26,22 @@ Animation `loop` records playback in exported files. Studio Export applies the u
 - **Pixels are integers.** Origin top-left, +x right, +y down. The pivot is a point in **pixel-edge coordinates** (`0..w`,
   `0..h`): `{x: 32, y: 60}` on a 64 cell is the line between columns 31/32 at the bottom edge of row 59.
 - **Directions** use PixelLab's `Direction` enum: `south, south-east, east, north-east, north, north-west, west, south-west`.
-- **ids** match `^[a-z0-9][a-z0-9_-]*$`, unique within their list, stable forever (rename = new `name`, same `id`).
+- **Internal IDs** match `^[a-z0-9][a-z0-9_-]*$`, are unique within their list, and do not change on rename.
+- **Export IDs** are optional `exportId` values on the character manifest and its items. Studio assigns a stable character
+  default; an item defaults to its internal `id`. Edited IDs match the same pattern, are at most 40 characters, and cannot
+  be reserved Windows path names. Existing implicit IDs remain usable until explicitly edited; newly created items get a
+  portable default. Item Export IDs must be unique within the character, including the body. Choose different
+  character Export IDs for distinct characters that share a game project. `name` is a label, not a game key or a prompt.
+- The editable `project.json` preserves internal IDs and Export IDs separately. In `manifest.json`, game-facing item IDs
+  replace internal IDs consistently in equipment, presets, material owners and generated layer paths. Runtime callers use
+  those exported IDs directly. Changing an Export ID can require updating existing game references; changing a display
+  name does not. PixelLab character, request and job identifiers are unaffected.
+- Editable imports preserve the character Export ID, with a warning when another saved character uses it. Phaser isolates
+  loaded assets by URL as well as using public equipment IDs. Very long derived sheet and resource filenames use bounded
+  stems; read paths from the manifest or generated loader rather than reconstructing them. RPG Maker uses `~` between the
+  character Export ID and an additional outfit ID.
+- Export ZIP names use the character and, where applicable, item Export IDs. A new character gets its default once; a later
+  display-name edit never rebuilds that ID, even before the first export.
 - **Cell key** for per-cell data: `"<anim>/<dir>/<cell>"`, e.g. `"walk/south/3"`.
 - **Hashes**: `"sha256:<hex>"` of the raw RGBA bytes (row-major, w·h·4), not of the PNG file, so re-encoding does not change it.
 - **Colors**: `"#rrggbb"` lower case. All exported pixels have alpha 0 or 255.

@@ -21,6 +21,7 @@ export const supportedFormat = (value: unknown): value is Manifest['format'] =>
 export interface Manifest {
 	format: typeof CURRENT_FORMAT;
 	name: string;
+	exportId?: string;
 	app: string;
 	rig: Rig;
 	materials: Material[];
@@ -94,6 +95,7 @@ export interface Item {
 	pending?: CellKey[];
 	id: string;
 	name: string;
+	exportId?: string;
 	slot: string;
 	status: 'draft' | 'accepted' | 'stale';
 	mirror: 'flip' | 'generate';

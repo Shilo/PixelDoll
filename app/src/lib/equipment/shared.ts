@@ -69,7 +69,9 @@ export async function listShared(
 	images?: ReadonlyMap<string, Img>,
 	bundled: readonly BundledSource[] = []
 ): Promise<{ items: SharedItem[]; skipped: number }> {
-	const own = new Set(target?.items.filter((it) => it.status === 'accepted').map(itemKey) ?? []),
+	const own = new Set(
+			target?.items.filter((it) => it.status === 'accepted').map((it) => itemKey(it, targetId))
+		),
 		groups = new Map<string, Omit<SharedItem, 'fit' | 'cells'>[]>();
 	const sources = [
 		...(await listProjects())
@@ -91,7 +93,7 @@ export async function listShared(
 		const m = rec.manifest,
 			variants = rec.variants;
 		for (const item of m.items) {
-			const key = itemKey(item);
+			const key = itemKey(item, rec.id);
 			if (!shareable(m, item) || own.has(key)) continue;
 			groups.set(key, [
 				...(groups.get(key) ?? []),

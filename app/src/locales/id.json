@@ -389,7 +389,15 @@
 	"renameSheet": {
 		"couldNotRename": "Tidak dapat mengganti nama: {reason}",
 		"titleRenameCharacter": "Ganti nama karakter",
-		"alsoTheNameInYourExports": "Nama ini juga dipakai dalam hasil ekspor."
+		"titleRenameItem": "Ganti nama item",
+		"displayName": "Nama tampilan",
+		"exportId": "ID ekspor",
+		"exportIdHelp": "Dipakai dalam berkas ekspor dan kode game. Jika Anda mengubahnya, perbarui game yang memakai ID lama.",
+		"invalidExportId": "Awali dengan huruf kecil atau angka. Gunakan hanya huruf kecil, angka, tanda hubung, atau garis bawah. Nama yang dicadangkan tidak diperbolehkan.",
+		"duplicateExportId": "Item lain memakai ID ekspor ini.",
+		"characterIdConflict": "Karakter lain di ruang kerja ini memakai ID ekspor ini. Gunakan ID yang berbeda agar keduanya dapat dipakai dalam satu game.",
+		"invalidName": "Masukkan nama dengan 1 hingga 60 karakter.",
+		"itemMissing": "Item ini sudah tidak ada."
 	},
 	"savedActions": {
 		"labelDeleteMove": "Hapus animasi…",

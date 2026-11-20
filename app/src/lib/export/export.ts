@@ -20,6 +20,8 @@ import { rpgMakerFiles } from './rpgmaker.ts';
 import { checkArchivePixels, projectEntries, type ImportedCharacter } from '../store/import.ts';
 import { reservedPathSegment } from './paths.ts';
 import { errorTranslation, message, type Message } from '../message.ts';
+import { checkExportIdentity } from '../store/identity.ts';
+import { projectExportIdentity } from './identity.ts';
 
 export interface ExportOptions {
 	engines: Engine[];
@@ -45,6 +47,14 @@ export type NoteTerm = { direction: DirectionName } | { slot: string } | { move:
 export async function exportFiles(src: Project, o: ExportOptions): Promise<ExportResult> {
 	const invalid = validate(src);
 	const invalidMessages: (Message | undefined)[] = invalid.map(() => undefined);
+	if (!invalid.length) {
+		try {
+			checkExportIdentity(src.manifest);
+		} catch (error) {
+			invalid.push(error instanceof Error ? error.message : String(error));
+			invalidMessages.push(errorTranslation(error));
+		}
+	}
 	if (
 		o.pixelsPerUnit !== undefined &&
 		(!Number.isFinite(o.pixelsPerUnit) || o.pixelsPerUnit <= 0)
@@ -106,12 +116,13 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			problem: 'The body frames no longer match this character.',
 			problemMessage: message('export.problem.bodyMismatch')
 		};
-	const p = await withTuckVariants(src); // B14: hair under a helmet ships as a baked "<hair>~<helmet>" item; engines swap to it
+	const p = projectExportIdentity(await withTuckVariants(src)); // B14: hair under a helmet ships as a baked "<hair>~<helmet>" item; engines swap to it
 	const errors = validate(p);
 	const errorMessages: (Message | undefined)[] = errors.map(() => undefined);
 	if (errors.length) return { entries: [], warnings: [], errors };
+	const exportedBase = p.manifest.items.find((item) => item.id === p.manifest.rig.baseItem);
 	if (
-		!base?.layers.some((l) =>
+		!exportedBase?.layers.some((l) =>
 			p.manifest.rig.animations.some((a) =>
 				p.manifest.rig.directions.some((d) =>
 					Array.from({ length: a.cells }, (_, i) => cellImg(p, l, a.id, d.id, i)).some((im) =>
@@ -236,11 +247,12 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 			errors.push(`Unsafe export path: ${name}`);
 			errorMessages.push(message('export.error.unsafePath', { path: name }));
 		}
-		if (names.has(name)) {
+		const pathKey = name.toLowerCase();
+		if (names.has(pathKey)) {
 			errors.push(`Duplicate export path: ${name}`);
 			errorMessages.push(message('export.error.duplicatePath', { path: name }));
 		}
-		names.add(name);
+		names.add(pathKey);
 	}
 	if (errors.length)
 		return {

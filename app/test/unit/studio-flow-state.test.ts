@@ -2718,6 +2718,47 @@ describe('optional review', () => {
 			'Made during the reload'
 		);
 	});
+
+	test('a rename broadcast during a character switch prevents opening stale export metadata', async () => {
+		routeMock(async () => null);
+		vi.stubGlobal('addEventListener', vi.fn());
+		vi.stubGlobal('removeEventListener', vi.fn());
+		vi.stubGlobal('document', {
+			addEventListener: vi.fn(),
+			removeEventListener: vi.fn(),
+			documentElement: { dataset: {}, style: {} }
+		});
+		const channel = { onmessage: (_event: MessageEvent) => {}, close: vi.fn() };
+		vi.stubGlobal(
+			'BroadcastChannel',
+			vi.fn(function () {
+				return channel;
+			})
+		);
+		const first = pending<unknown>();
+		const stale = opened();
+		const latest = opened();
+		latest.project.manifest.name = 'Renamed while opening';
+		latest.project.manifest.exportId = 'new_character_id';
+		mocks.source.mockReturnValueOnce(first.promise).mockResolvedValueOnce(latest);
+		const s = await import('../../src/studio/state.svelte.ts');
+		const dispose = s.initUi();
+		try {
+			s.doc.id = 'previous';
+			const opening = s.openProject('next');
+			await vi.waitFor(() => expect(mocks.source).toHaveBeenCalledOnce());
+			channel.onmessage(new MessageEvent('message', { data: { projectId: 'next' } }));
+			first.resolve(stale);
+			await opening;
+			expect(s.doc.id).toBe('next');
+			expect(s.store.project?.manifest).toMatchObject({
+				name: 'Renamed while opening',
+				exportId: 'new_character_id'
+			});
+		} finally {
+			dispose();
+		}
+	});
 });
 
 test('a worn draft saved or discarded in another tab comes off when the drafts are read', async () => {

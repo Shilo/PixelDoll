@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
 	import type { Snippet } from 'svelte';
-	import { ui } from './state.svelte.ts';
+	import { openRename, ui } from './state.svelte.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
-	import { Compass, Download, Info } from './icons.ts';
+	import { Compass, Download, Info, Pencil } from './icons.ts';
 	import DeleteRow from './DeleteRow.svelte';
 	import RowActions from './RowActions.svelte';
 	import DemoCopyRow from './DemoCopyRow.svelte';
@@ -12,6 +12,19 @@
 
 <RowActions {name} {children}>
 	{#snippet actions(close)}
+		{#if !id.startsWith('fixture:')}
+			<button
+				class="row"
+				role="menuitem"
+				onclick={() => {
+					close();
+					document
+						.querySelectorAll<HTMLElement>('[popover]:popover-open')
+						.forEach((popover) => popover.hidePopover());
+					openRename(id);
+				}}><Pencil size={16} aria-hidden="true" />{t('toolbar.rename')}</button
+			>
+		{/if}
 		<button
 			class="row"
 			role="menuitem"

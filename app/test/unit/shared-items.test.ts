@@ -104,6 +104,24 @@ test('other characters’ finished items are listed once, without this character
 	).toEqual([['rig-target', 'hat']]);
 });
 
+test('promptless items with the same local ID are distinct unless they share a copy origin', async () => {
+	const target = await equipmentFixture(),
+		source = await equipmentFixture();
+	hatOf(target).prompt = hatOf(source).prompt = '';
+	hatOf(source).copiedFrom = { id: 'rig-unknown', name: 'Unknown' };
+	await store('rig-target', target);
+	await store('rig-source', source);
+	expect(
+		(await listShared('rig-target', target.manifest)).items.map((entry) => entry.sourceId)
+	).toEqual(['rig-source']);
+	const copy = await acceptCopy('rig-source', 'hat', 'rig-target');
+	expect(copy?.copiedFrom).toMatchObject({ id: 'rig-source', item: 'hat' });
+	const repeated = await acceptCopy('rig-source', 'hat', 'rig-target');
+	expect(repeated?.id).toBe(copy?.id);
+	const loaded = await loadProject('rig-target');
+	expect((await listShared('rig-target', loaded.project.manifest)).items).toEqual([]);
+});
+
 test('an identical body copies the item pixel for pixel, as an independent item with its own colors', async () => {
 	const source = named(await equipmentFixture(), 'Knight');
 	await store('rig-source', source, {
@@ -130,8 +148,8 @@ test('an identical body copies the item pixel for pixel, as an independent item 
 		worn(source, { body: 'base', head: 'hat' }, { hat: 'red' })
 	);
 	// The source keeps its own item and materials.
-	const after = (await loadProject('rig-source')).project.manifest;
-	expect(after).toEqual(source.manifest);
+	const after = memory.records.get('rig-source') as StoredProject;
+	expect(after.manifest).toEqual(source.manifest);
 });
 
 test('one body whose color split marked a frame differently on each character still copies that view', async () => {

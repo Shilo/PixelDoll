@@ -334,9 +334,10 @@ test('character actions download and delete an unopened character without select
 	const downloaded = page.waitForEvent('download');
 	await menu.getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();
 	const download = await downloaded;
-	expect(download.suggestedFilename()).toBe('disposable-hero.pixeldoll.zip');
 	const imported = await readCharacterZip(new Uint8Array(await readFile((await download.path())!)));
 	expect(imported.project.manifest.name).toBe('Disposable hero');
+	expect(imported.project.manifest.exportId).toMatch(/^adventurer_copy_[a-f0-9]{12}$/);
+	expect(download.suggestedFilename()).toBe(`${imported.project.manifest.exportId}.pixeldoll.zip`);
 	expect(imported.project.manifest.items.length).toBeGreaterThan(1);
 	await row.locator('.character-more').click({ button: 'right' });
 	await menu.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
@@ -967,6 +968,7 @@ test('character directions can be configured on import and removed only after co
 			.click();
 		const menu = page.getByRole('menu', { name: 'Actions for Direction test hero', exact: true });
 		await expect(menu.getByRole('menuitem')).toHaveText([
+			'Rename…',
 			'Details…',
 			'Directions…',
 			'Download ZIP',
@@ -2497,6 +2499,66 @@ test('a delayed earlier character load cannot replace the last selected characte
 	expect(await page.evaluate(() => localStorage.getItem('pixeldoll.studio.project'))).toBe(id);
 });
 
+test('rename display names and export IDs without changing saved keys or calling PixelLab', async ({
+	page,
+	context
+}, info) => {
+	let requests = 0;
+	await context.route('https://api.pixellab.ai/**', (route) => {
+		requests++;
+		return route.abort();
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	const target = await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts',
+			studio = await import(path);
+		await studio.copyDemo();
+		const item = studio.store.project.manifest.items.find(
+			(entry: { slot: string }) => entry.slot === 'head'
+		);
+		return { projectId: studio.doc.id, id: item.id, name: item.name, prompt: item.prompt };
+	});
+	await page.locator('.project-btn').click();
+	await page.getByRole('menuitem', { name: 'Rename character…', exact: true }).click();
+	const rename = async (title: string, name: string, alias: string) => {
+		const dialog = page.getByRole('dialog', { name: title, exact: true });
+		await dialog.getByRole('textbox', { name: 'Display name' }).fill(name);
+		await dialog.locator('summary').click();
+		const id = dialog.getByRole('textbox', { name: 'Export ID' });
+		await id.fill('aux');
+		await expect(id).toHaveAttribute('aria-invalid', 'true');
+		await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+		await id.fill(alias);
+		await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+		await expect(dialog).toHaveCount(0);
+	};
+	await rename('Rename character', '旅人', 'travel_hero');
+	await expect(page.locator('.project-btn')).toContainText('旅人');
+	await equipmentGroup(page, 'Head');
+	await page.getByRole('button', { name: `More options for ${target.name}`, exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Rename…', exact: true }).click();
+	await rename('Rename item', 'Travel cap', 'travel_cap');
+	await reloadStudio(page);
+	await expect(page.locator('.project-btn')).toContainText('旅人');
+	const saved = await page.evaluate(async ({ projectId, id }) => {
+		const path = '/src/lib/store/db.ts',
+			db = await import(path);
+		const { manifest } = await db.get('projects', projectId);
+		return {
+			alias: manifest.exportId,
+			item: manifest.items.find((entry: { id: string }) => entry.id === id)
+		};
+	}, target);
+	expect(saved).toMatchObject({
+		alias: 'travel_hero',
+		item: { id: target.id, name: 'Travel cap', exportId: 'travel_cap', prompt: target.prompt }
+	});
+	expect(requests).toBe(0);
+});
+
 test('rename storage failures leave the name visible and retryable', async ({
 	page,
 	context
@@ -2518,10 +2580,12 @@ test('rename storage failures leave the name visible and retryable', async ({
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitem', { name: 'Rename character…', exact: true }).click();
 	const dialog = page.getByRole('dialog', { name: 'Rename character', exact: true });
-	await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Keep this name');
+	await dialog.getByRole('textbox', { name: 'Display name', exact: true }).fill('Keep this name');
 	await dialog.getByRole('button', { name: 'Save', exact: true }).click();
-	await expect(dialog.getByRole('alert')).toContainText('Could not rename');
-	await expect(dialog.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue(
+	await expect(dialog.getByRole('alert')).toContainText(
+		'This saved character is no longer available.'
+	);
+	await expect(dialog.getByRole('textbox', { name: 'Display name', exact: true })).toHaveValue(
 		'Keep this name'
 	);
 	await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();

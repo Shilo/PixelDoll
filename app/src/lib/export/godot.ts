@@ -3,6 +3,7 @@
 import type { Manifest } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
 import { layerFrame, resolveZ } from '../compose/compose.ts';
+import { boundedFileStem } from './paths.ts';
 
 const q = JSON.stringify;
 /** Encode instead of sanitize: valid move names walk-fast and walk_fast must remain distinct. */
@@ -73,9 +74,12 @@ export function paperdollTscn(m: Manifest): string {
 		'[gd_scene format=3]\n',
 		'[ext_resource type="Script" path="paperdoll.gd" id="script"]',
 		'[ext_resource type="Resource" path="library.tres" id="library"]',
-		...res.map((r) => `[ext_resource type="SpriteFrames" path=${q(r + '.tres')} id=${rid(r)}]`),
+		...res.map(
+			(r) =>
+				`[ext_resource type="SpriteFrames" path=${q(boundedFileStem(r) + '.tres')} id=${rid(r)}]`
+		),
 		'',
-		`[node name=${q(m.name.replace(/[^A-Za-z0-9_]/g, '_') || 'Paperdoll')} type="Node2D"]\ntexture_filter = 1\nscript = ExtResource("script")\nlibrary = ExtResource("library")\n`
+		`[node name=${q(m.exportId ?? (m.name.replace(/[^A-Za-z0-9_]/g, '_') || 'Paperdoll'))} type="Node2D"]\ntexture_filter = 1\nscript = ExtResource("script")\nlibrary = ExtResource("library")\n`
 	];
 	// B14: equal z_index draws in tree order, so the tree follows compose's tie-break (slot order, bg before fg): hair bg and a
 	// held bg both at z 5 (south) drew the hair over the blade in Godot, the blade over the hair in PixelDoll (4 px, Ranger)
@@ -402,7 +406,7 @@ func _find(list: Array, id: String, key := "id") -> Dictionary:
 export function godotFiles(m: Manifest): OutFile[] {
 	const files: OutFile[] = m.items.flatMap((it) =>
 		it.layers.map((l) => ({
-			name: `godot/${it.id}_${l.id}.tres`,
+			name: `godot/${boundedFileStem(`${it.id}_${l.id}`)}.tres`,
 			data: spriteFramesTres(m, it.id, l.id)
 		}))
 	);
@@ -411,7 +415,7 @@ export function godotFiles(m: Manifest): OutFile[] {
 	const layers = m.items.flatMap((it) => it.layers.map((l) => `${it.id}_${l.id}`));
 	files.push({
 		name: 'godot/library.tres',
-		data: `[gd_resource type="Resource" format=3]\n\n${layers.map((key, i) => `[ext_resource type="SpriteFrames" path=${q(key + '.tres')} id="f${i}"]`).join('\n')}\n\n[resource]\nmetadata/manifest = ${JSON.stringify(m)}\nmetadata/frames = {${layers.map((key, i) => `${q(key)}: ExtResource("f${i}")`).join(', ')}}\n`
+		data: `[gd_resource type="Resource" format=3]\n\n${layers.map((key, i) => `[ext_resource type="SpriteFrames" path=${q(boundedFileStem(key) + '.tres')} id="f${i}"]`).join('\n')}\n\n[resource]\nmetadata/manifest = ${JSON.stringify(m)}\nmetadata/frames = {${layers.map((key, i) => `${q(key)}: ExtResource("f${i}")`).join(', ')}}\n`
 	});
 	files.push(
 		{ name: 'godot/Paperdoll.tscn', data: paperdollTscn(m) },

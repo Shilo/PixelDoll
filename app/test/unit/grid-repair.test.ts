@@ -538,7 +538,7 @@ test('flagged repair preserves old artwork until the saved candidate is applied 
 test('applying a reviewed repair cannot overwrite an item edited since generation', async () => {
 	const f = await fixture('fail');
 	const { review } = await regridClip(f.ctx, f.item, 'slash', 'west', 123);
-	f.current().manifest.items.find((item) => item.id === f.item.id)!.name = 'Newer item';
+	f.current().manifest.items.find((item) => item.id === f.item.id)!.layers[0].z++;
 	await expect(applyRepairReview(f.ctx.rec.id, review!)).rejects.toThrow('changed while');
 	expect(f.saved()).toBeUndefined();
 	expect(f.enqueue).toHaveBeenCalledOnce();

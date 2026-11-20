@@ -9,7 +9,7 @@ import { moveDirs, recolor, storeVariants, variantOf, variantRampOf } from '../d
 import { bakedFrame, layerFrame, tuckedId, variantCovers } from '../compose/compose.ts';
 import { validPaletteRepairs } from '../dress/item-palette.ts';
 import { resolvePreset } from '../runtime/paperdoll.js';
-import { bakedSheetPath } from './paths.ts';
+import { bakedSheetPath, portablePathId } from './paths.ts';
 import { message, type Message } from '../message.ts';
 
 export type OutFile = { name: string; data: string | Img | Uint8Array };
@@ -565,7 +565,7 @@ export function genericFiles(
 						const strip = sheetRow(sheets.get(l.sheets![a.id])!, r, layerFrame(rig, l).h);
 						if (strip.data.some((v, i) => i % 4 === 3 && v))
 							files.push({
-								name: `generic/${it.id}_${l.id}/${a.id}_${d.id}_strip${a.cells}.png`,
+								name: `generic/${portablePathId(`${it.id}_${l.id}`)}/${a.id}_${d.id}_strip${a.cells}.png`,
 								data: strip
 							}); // no empty strips
 					});

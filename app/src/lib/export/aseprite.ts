@@ -245,7 +245,8 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
 }
 
 export async function asepriteFiles(m: Manifest, sheets: Map<string, Img>): Promise<OutFile[]> {
-	const name = portableAssetName(m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'paperdoll');
+	const name =
+		m.exportId ?? portableAssetName(m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'paperdoll');
 	return [
 		{ name: `aseprite/${name}.aseprite`, data: await asepriteFile(m, sheets) },
 		{

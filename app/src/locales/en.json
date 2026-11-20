@@ -405,7 +405,15 @@
 	"renameSheet": {
 		"couldNotRename": "Could not rename: {reason}",
 		"titleRenameCharacter": "Rename character",
-		"alsoTheNameInYourExports": "Also the name in your exports."
+		"titleRenameItem": "Rename item",
+		"displayName": "Display name",
+		"exportId": "Export ID",
+		"exportIdHelp": "Used in export files and game code. If you change it, update any games that use the old ID.",
+		"invalidExportId": "Start with a lowercase letter or number. Use only lowercase letters, numbers, hyphens, or underscores. Reserved names are not allowed.",
+		"duplicateExportId": "Another item uses this export ID.",
+		"characterIdConflict": "Another character in this workspace uses this Export ID. Use different IDs to put both in the same game.",
+		"invalidName": "Enter a name of 1 to 60 characters.",
+		"itemMissing": "This item no longer exists."
 	},
 	"savedActions": {
 		"labelDeleteMove": "Delete move…",

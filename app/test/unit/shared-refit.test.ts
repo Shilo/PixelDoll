@@ -9,7 +9,7 @@ import { LABELS } from '../../src/lib/rig/poses.ts';
 import { decodePng, makeImg, type Img } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash, DEFAULT_MOVE, type Keypoint, type Rig } from '../../src/lib/rig/rig.ts';
-import { loadProject } from '../../src/lib/store/project.ts';
+import { loadProject, type StoredProject } from '../../src/lib/store/project.ts';
 import { composeCell } from '../../src/lib/compose/compose.ts';
 import {
 	CURRENT_FORMAT,
@@ -331,7 +331,7 @@ test('a held item on a body moved by a known offset moves by exactly that offset
 	for (const [key, im] of Object.entries(before))
 		expectPixels(after[key], translate(im!, 2, 1), key);
 	// The source keeps its item.
-	expect((await loadProject('rig-knight')).project.manifest).toEqual(source.manifest);
+	expect((memory.records.get('rig-knight') as StoredProject).manifest).toEqual(source.manifest);
 });
 
 const turned = { 'RIGHT ELBOW': [21, 36] as Px, 'RIGHT ARM': [27, 37] as Px };

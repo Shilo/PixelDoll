@@ -31,6 +31,7 @@
 	import { rigReady } from '../lib/rig/setup.ts';
 	import {
 		ui,
+		store,
 		dismissWelcome,
 		refreshProjects,
 		openProject,
@@ -350,7 +351,13 @@
 			dismissWelcome();
 			customize();
 			ui.sheet = setupNext && needsSetup ? 'setup' : null;
-			toast(message('import.imported', { name: name.trim() }));
+			const alias = imported.project.manifest.exportId;
+			if (
+				alias &&
+				store.projects.some((entry) => entry.id !== projectId && entry.exportId === alias)
+			)
+				toast(message('renameSheet.characterIdConflict'), { tone: 'warning' });
+			else toast(message('import.imported', { name: name.trim() }));
 		} catch (e) {
 			if (alive) error = errorMessage(e);
 		} finally {

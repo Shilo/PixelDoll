@@ -8,7 +8,7 @@ import { bakedFrame, composeCell, over, type Frame } from '../compose/compose.ts
 import { DEFAULT_MOVE, type DirectionName, type RigAnimation } from '../rig/rig.ts';
 import { moveWords, WALK_WORDS } from '../rig/clips.ts';
 import { moveDirs } from '../dress/dress.ts';
-import { portableAssetName } from './paths.ts';
+import { boundedFileStem, portableAssetName } from './paths.ts';
 import type { Manifest, Project } from '../store/manifest.ts';
 import { outfitProject, type OutFile } from './generic.ts';
 import type { NoteTerm } from './export.ts';
@@ -308,7 +308,7 @@ export function rpgMakerFiles(
 		used = new Set<string>(),
 		drawn: Img[] = [];
 	// ASCII names (XP reads file names in the Windows code page); a name with no Latin letters still keeps two characters apart
-	const name = safeName(m.name) || `character_${src.rig.baseHash.slice(7, 13)}`;
+	const name = m.exportId ?? (safeName(m.name) || `character_${src.rig.baseHash.slice(7, 13)}`);
 	for (const [i, pr] of m.presets.entries()) {
 		const op = outfitProject(p, m, pr);
 		const cell = (k: Pick, dir: DirectionName) => ({
@@ -333,7 +333,9 @@ export function rpgMakerFiles(
 			continue;
 		drawn.push(data);
 		// the first preset is the current look (Export sheet) or the default outfit: the plain character name
-		const want = i ? `${name}_${safeName(pr.name) || safeName(pr.id) || 'outfit'}` : name;
+		const want = i
+			? `${name}${m.exportId ? '~' : '_'}${boundedFileStem((m.exportId ? pr.id : safeName(pr.name)) || safeName(pr.id) || 'outfit')}`
+			: name;
 		let base = portableAssetName(want);
 		for (let n = 2; used.has(base.toLowerCase()); n++) base = portableAssetName(`${want}_${n}`);
 		used.add(base.toLowerCase());

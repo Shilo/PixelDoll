@@ -34,6 +34,7 @@
 		settingUp,
 		gens,
 		openProject,
+		openRename,
 		undo,
 		redo,
 		randomize,
@@ -661,8 +662,10 @@
 				class="row"
 				role="menuitem"
 				aria-label={t('toolbar.renameCharacter')}
-				onclick={() => sheet('rename')}
-				><Pencil size={16} /><span class="row-name">{t('toolbar.rename')}</span></button
+				onclick={() => {
+					close();
+					openRename(doc.id);
+				}}><Pencil size={16} /><span class="row-name">{t('toolbar.rename')}</span></button
 			>{/if}
 		{#if !isDemo()}<button
 				class="row"

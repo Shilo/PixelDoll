@@ -26,6 +26,7 @@
 		wear,
 		isDemo,
 		openNewItem,
+		openRename,
 		toggleTwoHanded,
 		otherHandOf,
 		cancelGen,
@@ -41,6 +42,7 @@
 		CopyPlus,
 		HandGrab,
 		Info,
+		Pencil,
 		RefreshCw,
 		Trash
 	} from './icons.ts';
@@ -261,8 +263,7 @@
 							: t('common.wear')}<small class="row-aside">{t('common.free')}</small></button
 					>
 				{/if}
-				<!-- The New item sheet that opens next prices it before anything is spent; an item without a description is
-				     described by its name. -->
+				<!-- The New item sheet that opens next prices it before anything is spent. -->
 				<button
 					class="row bu-action"
 					data-variant="quiet"
@@ -271,7 +272,7 @@
 						act(() =>
 							openNewItem(entry.item.slot, {
 								slot: entry.item.slot,
-								prompt: entry.item.prompt || entry.item.name,
+								prompt: entry.item.prompt,
 								name: entry.item.name
 							})
 						)}
@@ -307,6 +308,16 @@
 			</div>
 			<TileMarks {marks} list />
 			<div role="menu" aria-labelledby="item-menu-name">
+				{#if !isDemo() && !it.variantOf}
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						role="menuitem"
+						onclick={() => act(() => openRename(doc.id, it.id))}
+					>
+						<Pencil size={16} aria-hidden="true" />{t('toolbar.rename')}
+					</button>
+				{/if}
 				<button
 					class="row bu-action"
 					data-variant="quiet"

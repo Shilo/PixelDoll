@@ -1986,7 +1986,9 @@ test('quick download recovers working images from an unopened character with a m
 	const downloaded = page.waitForEvent('download');
 	await page.getByRole('menuitem', { name: 'Download ZIP', exact: true }).click();
 	const download = await downloaded;
-	expect(download.suggestedFilename()).toBe('export-settings-test-recovered-artwork.zip');
+	expect(download.suggestedFilename()).toMatch(
+		/^export_settings_test_[a-f0-9]{12}-recovered-artwork\.zip$/
+	);
 	const files = await unzip(new Uint8Array(await readFile((await download.path())!)));
 	expect(files.has('project.json')).toBe(false);
 	expect(files.has('frames/1.png')).toBe(true);

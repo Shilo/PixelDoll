@@ -20,6 +20,7 @@ import { decodePngBytes, encodePngBytes } from '../image/pngraw.ts';
 import { hardMaskBits } from '../image/hard-mask.ts';
 import * as db from '../store/db.ts';
 import { loadProject, saveItem, type StoredProject } from '../store/project.ts';
+import { itemContent, itemExportIdTaken } from '../store/identity.ts';
 import type {
 	CellKey,
 	Item,
@@ -213,7 +214,12 @@ export function newDraft(
 	taken: string[] = []
 ): Draft {
 	let id = spec.id || slug(spec.name || spec.prompt.split(/\s+/).slice(0, 3).join(' '));
-	while (taken.includes(id) || ctx.rec.manifest.items.some((i) => i.id === id)) id += '_2';
+	while (
+		taken.includes(id) ||
+		ctx.rec.manifest.items.some((i) => i.id === id) ||
+		itemExportIdTaken(ctx.rec.manifest.items, id, id)
+	)
+		id += '_2';
 	const s: ItemSpec = {
 		...spec,
 		slotConfig: structuredClone(requireSlot(ctx.rec.manifest, spec.slot)),
@@ -1938,7 +1944,8 @@ export async function poseItemClip(
 /** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */
 export const ITEM_MOVE_SAVE_CONFLICT =
 	'This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity.';
-function clipArtwork({ materials: _materials, hides: _hides, ...artwork }: Item) {
+function clipArtwork(item: Item) {
+	const { materials: _materials, hides: _hides, ...artwork } = itemContent(item);
 	return stableStringify(artwork);
 }
 
@@ -2190,7 +2197,7 @@ export async function acceptItemReview(
 ): Promise<void> {
 	const ctx = await loadProject(projectId),
 		item = ctx.rec.manifest.items.find((i) => i.id === itemId);
-	const expected = stableStringify(reviewed),
+	const expected = stableStringify(itemContent(reviewed)),
 		version = rigArtworkVersion(ctx.rec.manifest.rig, ctx.rec.character);
 	if (
 		!item ||
@@ -2199,15 +2206,17 @@ export async function acceptItemReview(
 		item.status !== 'accepted' ||
 		!item.qa ||
 		item.baseHash !== ctx.rec.manifest.rig.baseHash ||
-		stableStringify(item) !== expected
+		stableStringify(itemContent(item)) !== expected
 	) {
 		throw itemReviewChangedError();
 	}
 	const accepted = { ...item, qa: { ...acceptQa(item.qa), status: 'accepted' as const } };
 	await saveItem(projectId, accepted, new Map(), [], (current) => {
+		const currentItem = current.manifest.items.find((i) => i.id === itemId);
 		if (
 			rigArtworkVersion(current.manifest.rig, current.character) !== version ||
-			stableStringify(current.manifest.items.find((i) => i.id === itemId)) !== expected
+			!currentItem ||
+			stableStringify(itemContent(currentItem)) !== expected
 		) {
 			throw itemReviewChangedError();
 		}
@@ -2661,12 +2670,14 @@ export interface ItemPaletteRepairPlan {
 	changedFrames: number[];
 	unmatchedPixels: number;
 }
-const paletteVersion = (rec: StoredProject, itemId: string) =>
-	stableStringify({
+const paletteVersion = (rec: StoredProject, itemId: string) => {
+	const item = rec.manifest.items.find((entry) => entry.id === itemId);
+	return stableStringify({
 		rig: rigArtworkVersion(rec.manifest.rig, rec.character),
-		item: rec.manifest.items.find((i) => i.id === itemId),
+		item: item && itemContent(item),
 		materials: rec.manifest.materials
 	});
+};
 /** Inspect only stored equipment pixels. No queue, PixelLab call, material membership edit or image mutation. */
 async function prepareItemPalette(
 	projectId: string,

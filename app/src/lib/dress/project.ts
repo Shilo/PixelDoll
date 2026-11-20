@@ -110,12 +110,12 @@ export async function openSource(
 	id: string,
 	signal?: AbortSignal,
 	options?: Parameters<typeof loadProject>[2]
-): Promise<{ project: Project; current?: Outfit; missingImages?: number }> {
+): Promise<{ project: Project; current?: Outfit; missingImages?: number; record?: StoredProject }> {
 	signal?.throwIfAborted();
 	if (id.startsWith('fixture:')) return openFixture(id, signal);
 	const { rec, project, missingImages } = await loadProject(id, signal, options);
 	signal?.throwIfAborted();
-	return { project, current: (rec as ProjectRecord).dress?.current, missingImages };
+	return { project, current: (rec as ProjectRecord).dress?.current, missingImages, record: rec };
 }
 
 export const dressOf = (m: Manifest, current?: Outfit): DressState => ({

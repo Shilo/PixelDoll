@@ -408,7 +408,15 @@
 	"renameSheet": {
 		"couldNotRename": "No se pudo cambiar el nombre: {reason}",
 		"titleRenameCharacter": "Cambiar nombre del personaje",
-		"alsoTheNameInYourExports": "También es el nombre en tus exportaciones."
+		"titleRenameItem": "Cambiar nombre del objeto",
+		"displayName": "Nombre visible",
+		"exportId": "ID de exportación",
+		"exportIdHelp": "Se usa en los archivos de exportación y en el código del juego. Si lo cambias, actualiza los juegos que usen el ID anterior.",
+		"invalidExportId": "Empieza con una letra minúscula o un número. Usa solo minúsculas, números, guiones o guiones bajos. No se permiten nombres reservados.",
+		"duplicateExportId": "Otro objeto usa este ID de exportación.",
+		"characterIdConflict": "Otro personaje de este espacio usa este ID de exportación. Usa ID distintos para incluir ambos en el mismo juego.",
+		"invalidName": "Introduce un nombre de 1 a 60 caracteres.",
+		"itemMissing": "Este objeto ya no existe."
 	},
 	"savedActions": {
 		"labelDeleteMove": "Eliminar animación…",

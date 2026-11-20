@@ -403,9 +403,17 @@
 		"preparingTheUpdateKeepThisTabOpen": "Preparando a atualização. Mantenha esta aba aberta."
 	},
 	"renameSheet": {
-		"couldNotRename": "Não foi possível renomear o personagem: {reason}",
+		"couldNotRename": "Não foi possível renomear: {reason}",
 		"titleRenameCharacter": "Renomear personagem",
-		"alsoTheNameInYourExports": "Esse nome também aparece nas suas exportações."
+		"titleRenameItem": "Renomear item",
+		"displayName": "Nome de exibição",
+		"exportId": "ID de exportação",
+		"exportIdHelp": "Usado nos arquivos exportados e no código do jogo. Se você alterar este ID, atualize os jogos que usam o ID anterior.",
+		"invalidExportId": "Comece com uma letra minúscula ou um número. Use apenas letras minúsculas, números, hífens ou sublinhados. Nomes reservados não são permitidos.",
+		"duplicateExportId": "Outro item usa este ID de exportação.",
+		"characterIdConflict": "Outro personagem neste espaço usa este ID de exportação. Use IDs diferentes para colocar os dois no mesmo jogo.",
+		"invalidName": "Insira um nome de 1 a 60 caracteres.",
+		"itemMissing": "Este item não existe mais."
 	},
 	"savedActions": {
 		"labelDeleteMove": "Excluir animação…",
