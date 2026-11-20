@@ -115,6 +115,13 @@ test('Pro draws from text with a transparent background and no V3 hints', () => 
 test('character references use the selected model’s documented image field and keep artwork out of the plan', async () => {
 	const reference = { width: 48, height: 64, base64: 'picked-image' };
 	const image = { type: 'base64', format: 'png', base64: reference.base64 };
+	const standard = { ...spec, size: 64, reference, model: 'standard' } as const;
+	expect(drawRequest(standard, 7)).toMatchObject({
+		path: '/create-character-with-8-directions',
+		body: { mode: 'standard', directions: { south: image } }
+	});
+	expect(JSON.stringify(createPlan(standard))).not.toContain(reference.base64);
+	await expect(createCharacter({ ...standard, size: 48 })).rejects.toThrow(/Increase Body size/);
 	expect(drawRequest({ ...spec, reference }, 7).body).toMatchObject({ reference_image: image });
 	expect(drawRequest({ ...spec, reference, model: 'pro' }, 7).body).toMatchObject({
 		method: 'create_from_concept',
@@ -137,14 +144,14 @@ test('character references use the selected model’s documented image field and
 });
 
 test('every model limit comes from the MODELS table, in the form and before spending', async () => {
-	expect(MODEL_IDS).toEqual(['v3', 'standard', 'pro', 'pro-flash']);
+	expect(MODEL_IDS).toEqual(['v3', 'pro', 'pro-flash', 'standard']);
 	expect(modelOf(undefined)).toBe(MODELS.v3);
 	expect(modelOf('nonsense')).toBe(MODELS.v3);
 	expect(MODEL_IDS.map((id) => [id, MODELS[id].body.max, MODELS[id].styleHints])).toEqual([
 		['v3', 256, true],
-		['standard', 128, true],
 		['pro', 168, false],
-		['pro-flash', 256, false]
+		['pro-flash', 256, false],
+		['standard', 128, true]
 	]);
 	const proError = 'Body size must be 32–168 whole pixels with Pro.';
 	expect(bodyErrors(172, 'pro').map((e) => e.message)).toEqual([proError]);
@@ -212,6 +219,31 @@ test('Pro Flash estimates follow the measured /pro-flash/cost table', () => {
 	const plan = createPlan({ ...spec, model: 'pro-flash' });
 	expect(plan[0].path).toBe('/create-character-pro-flash');
 	expect(plan[0].generations).toBe(6);
+});
+
+test('cost estimates clamp out-of-range body sizes and references to the model limits', () => {
+	for (const model of [undefined, 'pro-flash', 'standard'] as const) {
+		const { min, max } = MODELS[model ?? 'v3'].body;
+		expect(estimate({ directions: four, size: 512, model })).toEqual(
+			estimate({ directions: four, size: max, model })
+		);
+		expect(estimate({ directions: four, size: 0, model })).toEqual(
+			estimate({ directions: four, size: min, model })
+		);
+	}
+	expect(estimate({ directions: four, size: 400, model: 'pro' })).toEqual(
+		estimate({ directions: four, size: MODELS.pro.body.max, model: 'pro' })
+	);
+	// The form can hold artwork larger than V3 accepts; that artwork is never created, so it never raises the price.
+	expect(
+		estimate({ directions: four, size: 48, reference: { width: 300, height: 300, base64: '' } })
+	).toEqual(
+		estimate({
+			directions: four,
+			size: 48,
+			reference: { width: 256, height: 256, base64: '' }
+		})
+	);
 });
 
 test('creation refuses unknown models, hints and hints combined with Pro Flash before spending', async () => {

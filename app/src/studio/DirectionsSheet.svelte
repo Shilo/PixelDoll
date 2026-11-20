@@ -7,9 +7,15 @@
 	import Sheet from './Sheet.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
-	import { directionProblemError, retainCharacterDirections } from '../lib/rig/directions.ts';
+	import {
+		availableDirectionViews,
+		configureDirections,
+		directionProblemError,
+		editDirectionChoice
+	} from '../lib/rig/directions.ts';
 	import { displayDirectionList, displayDirectionProblem } from './displayDirectionProblem.ts';
-	import type { DirectionName } from '../lib/rig/rig.ts';
+	import type { DirectionName, RigDirection } from '../lib/rig/rig.ts';
+	import { encodePngBytes } from '../lib/image/pngraw.ts';
 	import * as db from '../lib/store/db.ts';
 	import { loadProject } from '../lib/store/project.ts';
 	import { downloadCharacterZip } from './download.svelte.ts';
@@ -25,19 +31,35 @@
 	let { id }: { id: string } = $props();
 	let loaded = $state.raw<Awaited<ReturnType<typeof loadProject>>>();
 	const record = $derived(loaded?.rec);
-	const mirrorTargets = $derived(
-		record?.manifest.rig.directions.filter(({ mirrorOf }) => mirrorOf).map(({ id }) => id) ?? []
-	);
-	let excluded = $state.raw<DirectionName[]>([]);
+	const original = $derived(record?.manifest.rig.directions ?? []);
+	const originalIds = $derived(original.map(({ id }) => id));
+	let choices = $state.raw<RigDirection[] | null>(null);
 	let confirm = $state(false);
 	let busy = $state(false);
 	let error = $state<string | Message>('');
-	const retained = $derived(
-		record?.manifest.rig.directions.filter(({ id }) => !excluded.includes(id)) ?? []
+	const retained = $derived(choices ?? original);
+	const selected = $derived(retained.map(({ id }) => id));
+	const excluded = $derived(originalIds.filter((id) => !selected.includes(id)));
+	const replaced = $derived(
+		original.flatMap(({ id, mirrorOf }) =>
+			!mirrorOf && retained.some((view) => view.id === id && view.mirrorOf) ? [id] : []
+		)
+	);
+	const changed = $derived(
+		retained.length !== original.length ||
+			retained.some(
+				({ id, mirrorOf }) => !original.some((view) => view.id === id && view.mirrorOf === mirrorOf)
+			)
+	);
+	const removalOnly = $derived(
+		excluded.length > 0 &&
+			retained.every(({ id, mirrorOf }) =>
+				original.some((view) => view.id === id && view.mirrorOf === mirrorOf)
+			)
 	);
 	const blocked = $derived(directionEditsBlocked(id));
 	const problem = $derived(
-		loaded && excluded.length ? directionProblemError(loaded.project, retained, 'saved') : undefined
+		loaded && changed ? directionProblemError(loaded.project, retained) : undefined
 	);
 	const losesCardinal = $derived(excluded.some((dir) => !dir.includes('-')));
 	$effect(() => {
@@ -60,21 +82,32 @@
 		return () => controller.abort();
 	});
 
-	function toggle(direction: DirectionName) {
-		excluded = excluded.includes(direction)
-			? excluded.filter((dir) => dir !== direction)
-			: [...excluded, direction];
+	function toggle(direction: DirectionName, control: 'direction' | 'mirror') {
+		error = '';
+		choices = editDirectionChoice(original, retained, direction, control);
 	}
-	async function remove() {
-		if (!loaded || !record || !excluded.length || problem || blocked || busy) return;
+	async function save() {
+		if (!loaded || !record || !changed || problem || blocked || busy) return;
 		busy = true;
 		error = '';
 		try {
-			const next = await retainCharacterDirections(record, retained, loaded.project.images);
+			const { record: next, newImages } = await configureDirections(
+				record,
+				retained,
+				loaded.project.images
+			);
+			const blobs = new Map<string, Blob>();
+			for (const [hash, image] of newImages)
+				blobs.set(
+					hash.slice(7),
+					new Blob([(await encodePngBytes(image)) as Uint8Array<ArrayBuffer>], {
+						type: 'image/png'
+					})
+				);
 			const reason = directionEditsBlocked(id);
 			if (reason) throw reason;
 			next.savedAt = new Date().toISOString();
-			await db.saveCharacterDirections(record, next);
+			await db.saveCharacterDirections(record, next, blobs);
 		} catch (failure) {
 			error = errorMessage(failure);
 			busy = false;
@@ -82,7 +115,11 @@
 		}
 		try {
 			if (await refreshCharacterDirections(id))
-				toast(message('directionsSheet.removed', { count: excluded.length }));
+				toast(
+					removalOnly
+						? message('directionsSheet.removed', { count: excluded.length })
+						: message('directionsSheet.saved')
+				);
 			else
 				toast(message('directionsSheet.directionsWereSavedReloadToRefreshThe'), {
 					tone: 'warning'
@@ -105,21 +142,25 @@
 		<p class="muted">
 			{t('directionsSheet.chooseWhichDirectionsToKeepForName', { name: record.manifest.name })}.
 		</p>
-		{#if mirrorTargets.length}<p class="muted small">{t('directionsSheet.keepMirrorsHint')}</p>{/if}
+		{#if originalIds.some((dir) => dir.includes('east') || dir.includes('west'))}
+			<p class="muted small">{t('directionsSheet.mirrorEditHint')}</p>
+		{/if}
 		<DirectionCompass
 			label={t('directionsSheet.labelDirectionsToKeep')}
-			available={record.manifest.rig.directions.map(({ id }) => id)}
-			selected={retained.map(({ id }) => id)}
-			mirrors={Object.fromEntries(
-				record.manifest.rig.directions.map(({ id, mirrorOf }) => [id, mirrorOf])
-			)}
+			available={availableDirectionViews(original)}
+			{selected}
+			mirrors={Object.fromEntries(retained.map(({ id, mirrorOf }) => [id, mirrorOf]))}
+			mirrorSources={originalIds}
+			mirrorTargets={availableDirectionViews(original)}
 			disabled={busy}
-			ontoggle={toggle}
-			{mirrorTargets}
-			onmirror={mirrorTargets.length ? toggle : undefined}
+			ontoggle={(dir) => toggle(dir, 'direction')}
+			onmirror={(dir) => toggle(dir, 'mirror')}
 		/>
 		{#if problem || blocked}<p class="notice warn small" role="status">
 				{problem ? displayDirectionProblem(problem.translation) : displayError(blocked)}
+			</p>{/if}
+		{#if error && !confirm}<p class="notice bad small" role="alert">
+				{displayDirectionProblem(error)}
 			</p>{/if}
 	{:else if error}<p class="notice bad small" role="alert">{displayDirectionProblem(error)}</p>
 	{:else}<p class="muted" role="status">{t('directionsSheet.loadingDirections')}</p>{/if}
@@ -136,32 +177,45 @@
 		<button
 			class="bu-action btn primary"
 			data-variant="primary"
-			disabled={!excluded.length || !!problem || !!blocked || busy}
+			disabled={!changed || !!problem || !!blocked || busy}
 			onclick={() => {
 				error = '';
-				confirm = true;
-			}}>{openerLabel(t('directionsSheet.reviewRemoval'))}<SurfaceChevron /></button
+				if (excluded.length || replaced.length) confirm = true;
+				else void save();
+			}}
+			>{#if excluded.length || replaced.length}
+				{openerLabel(
+					t(removalOnly ? 'directionsSheet.reviewRemoval' : 'directionsSheet.reviewChanges')
+				)}<SurfaceChevron />
+			{:else}{t('common.save')}{/if}</button
 		>
 	{/snippet}
 </Sheet>
 
 {#if confirm}
 	<ConfirmDialog
-		title={t('directionsSheet.removeTitle', {
-			count: excluded.length,
-			n: formatNumber(excluded.length)
-		})}
-		action={t('directionsSheet.removePermanently')}
-		busyAction={t('directionsSheet.removing')}
+		title={removalOnly
+			? t('directionsSheet.removeTitle', {
+					count: excluded.length,
+					n: formatNumber(excluded.length)
+				})
+			: t('directionsSheet.changeTitle')}
+		action={t(removalOnly ? 'directionsSheet.removePermanently' : 'common.save')}
+		busyAction={t(removalOnly ? 'directionsSheet.removing' : 'directionsSheet.saving')}
 		{busy}
 		problem={error ? displayDirectionProblem(error) : displayError(blocked)}
 		blocked={!!blocked}
 		oncancel={() => (confirm = false)}
-		onconfirm={() => void remove()}
+		onconfirm={() => void save()}
 	>
-		<p>
-			{t('directionsSheet.confirmRemoval', { directions: displayDirectionList(excluded) })}
-		</p>
+		{#if excluded.length}<p>
+				{t(removalOnly ? 'directionsSheet.confirmRemoval' : 'directionsSheet.confirmMixedRemoval', {
+					directions: displayDirectionList(excluded)
+				})}
+			</p>{/if}
+		{#if replaced.length}<p>
+				{t('directionsSheet.confirmReplace', { directions: displayDirectionList(replaced) })}
+			</p>{/if}
 		{#if losesCardinal}<p>{t('directionsSheet.rPGMakerExportNeedsAllFourCardinal')}</p>{/if}
 	</ConfirmDialog>
 {/if}

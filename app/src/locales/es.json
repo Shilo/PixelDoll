@@ -94,6 +94,7 @@
 		"mirrorFrom": "Reflejar {source} en {name}"
 	},
 	"directionProblem": {
+		"offCenterLayer": "Este personaje tiene una capa descentrada que no se puede reflejar.",
 		"keepOne": "Conserva al menos una dirección.",
 		"duplicate": "Cada dirección solo se puede usar una vez.",
 		"unavailable": "Esa dirección no está disponible para este personaje.",
@@ -214,7 +215,13 @@
 		"waitForGeneration": "Espera a que termine la generación en curso.",
 		"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de cambiar las direcciones.",
 		"chooseWhichDirectionsToKeepForName": "Elige qué direcciones conservar para {name}",
-		"keepMirrorsHint": "Usa el botón de espejo para conservar o quitar una vista reflejada existente. Aquí no se pueden sustituir las imágenes originales.",
+		"mirrorEditHint": "Usa las flechas para conservar o quitar vistas. Usa el botón de reflejo para invertir la vista opuesta o conservar los fotogramas actuales como vista independiente.",
+		"saved": "Direcciones guardadas",
+		"saving": "Guardando…",
+		"reviewChanges": "Revisar cambios",
+		"changeTitle": "¿Cambiar direcciones?",
+		"confirmMixedRemoval": "Estas direcciones se quitarán de las animaciones y el equipo del personaje: {directions}. No puedes deshacerlo.",
+		"confirmReplace": "Al activar el reflejo, las imágenes de {directions} se sustituyen por fotogramas invertidos de la vista opuesta. Si lo desactivas después, esos fotogramas se conservan. Descarga una copia de seguridad para conservar las imágenes originales.",
 		"labelDirectionsToKeep": "Direcciones para conservar",
 		"loadingDirections": "Cargando direcciones…",
 		"downloadBackup": "Descargar copia de seguridad",
@@ -1090,7 +1097,8 @@
 		"previewSummary": "{directions} · {moves} · {items}",
 		"updatingPreview": "Actualizando vista previa…",
 		"characterName": "Nombre del personaje",
-		"directionsHint": "Usa las flechas para conservar u omitir vistas. El botón de reflejo invierte la vista opuesta y reemplaza la imagen original de esa dirección en esta copia.",
+		"directionsHint": "Usa las flechas para conservar u omitir vistas. El botón de reflejo invierte la vista opuesta. Desactívalo antes de importar para conservar las imágenes originales. Si no las hay, los fotogramas invertidos quedan como vista independiente.",
+		"replaceDirectionArt": "La importación sustituye las imágenes originales de {directions} en esta copia. El origen no cambia.",
 		"unavailablePresets": "Los ajustes preestablecidos no disponibles necesitan vistas que faltan en este ZIP.",
 		"directionsToImport": "Direcciones para importar",
 		"previewDirection": "Vista previa: {direction}",
@@ -2044,7 +2052,7 @@
 				},
 				"standard": {
 					"label": "Estándar",
-					"help": "Dibuja ocho vistas a partir del texto con una plantilla fija."
+					"help": "Dibuja ocho vistas a partir de una plantilla o de tu sprite visto de frente."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2124,7 +2132,7 @@
 			"sizeGuideReference": "Guía de tamaños y referencia",
 			"reference": {
 				"frontFacing": "Usa un sprite visto de frente.",
-				"standardTextOnly": "Estándar solo admite texto. Quita la imagen de referencia o elige otro modelo.",
+				"characterSprite": "Sprite del personaje",
 				"concept": "Usa un boceto o un diseño de personaje.",
 				"style": "Usa una ilustración como referencia de estilo.",
 				"tooLarge": "Elige una referencia de hasta {max} × {max} px.",

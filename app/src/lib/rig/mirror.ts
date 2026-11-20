@@ -1,7 +1,10 @@
 // Direction plans and horizontal mirroring (architecture §2). Mirrored cells are flips of the source direction's cells.
 import { makeImg } from '../image/png.ts';
 import { flipH } from '../runtime/paperdoll.js';
-import { DIRECTIONS, type DirectionName, type RigDirection } from './rig.ts';
+import { DIRECTIONS, type DirectionName, type Rig, type RigDirection } from './rig.ts';
+
+export const centeredMirrorFrame = (rig: Rig, frame: { w: number; x: number }) =>
+	2 * (rig.pivot.x - frame.x) + frame.w === rig.cell.w;
 
 export const PAIRS: [DirectionName, DirectionName][] = [
 	['north-west', 'north-east'],

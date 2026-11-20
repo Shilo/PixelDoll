@@ -94,6 +94,7 @@
 		"mirrorFrom": "Mirror {name} from {source}"
 	},
 	"directionProblem": {
+		"offCenterLayer": "This character has an off-center layer that cannot be mirrored.",
 		"keepOne": "Keep at least one direction.",
 		"duplicate": "A direction can only be used once.",
 		"unavailable": "That direction is not available for this character.",
@@ -211,7 +212,13 @@
 		"waitForGeneration": "Wait for the current generation work to finish.",
 		"resolveDrafts": "Keep or dismiss this character’s item drafts before changing directions.",
 		"chooseWhichDirectionsToKeepForName": "Choose which directions to keep for {name}",
-		"keepMirrorsHint": "Use a mirror button to keep or remove an existing mirrored view. Original artwork cannot be replaced here.",
+		"mirrorEditHint": "Use an arrow to keep or remove a view. Use its mirror button to flip the opposite view or keep the current frames as an independent view.",
+		"saved": "Directions saved",
+		"saving": "Saving…",
+		"reviewChanges": "Review changes",
+		"changeTitle": "Change directions?",
+		"confirmMixedRemoval": "{directions} will be removed from this character’s moves and equipment. This can’t be undone.",
+		"confirmReplace": "Mirroring replaces the artwork for {directions} with flipped frames from the opposite view. Turning mirroring off later keeps those flipped frames. Download a backup to keep the original artwork.",
 		"labelDirectionsToKeep": "Directions to keep",
 		"loadingDirections": "Loading directions…",
 		"downloadBackup": "Download backup",
@@ -1081,7 +1088,8 @@
 		"previewSummary": "{directions} · {moves} · {items}",
 		"updatingPreview": "Updating preview…",
 		"characterName": "Character name",
-		"directionsHint": "Use the arrows to keep or skip views. A mirror button flips the opposite view and replaces any original artwork for that direction in this copy.",
+		"directionsHint": "Use the arrows to keep or skip views. A mirror button flips the opposite view. Turn it off before importing to keep the original artwork, or keep the flipped frames as an independent view when there’s no original.",
+		"replaceDirectionArt": "This import replaces the original artwork for {directions} in this copy. The source is unchanged.",
 		"unavailablePresets": "Unavailable presets need views that this ZIP is missing.",
 		"directionsToImport": "Directions to import",
 		"previewDirection": "Preview: {direction}",
@@ -2026,7 +2034,7 @@
 				"v3": { "label": "Default (V3)", "help": "Balanced proportions." },
 				"standard": {
 					"label": "Standard",
-					"help": "Draws eight views on a fixed template from text."
+					"help": "Draws eight views using a template or your front-facing sprite."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2106,7 +2114,7 @@
 			"sizeGuideReference": "Size guide and reference",
 			"reference": {
 				"frontFacing": "Use a front-facing sprite.",
-				"standardTextOnly": "Standard uses text only. Remove the reference image or choose another model.",
+				"characterSprite": "Character sprite",
 				"concept": "Use a sketch or character design.",
 				"style": "Use artwork as a style guide.",
 				"tooLarge": "Choose a reference no larger than {max} × {max} px.",

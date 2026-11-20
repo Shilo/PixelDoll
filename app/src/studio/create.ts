@@ -24,7 +24,7 @@ import {
 	type Req,
 	type SubmitResponse
 } from '../lib/pixellab/routes.ts';
-import { bytesToBase64, decodePng, type Img } from '../lib/image/png.ts';
+import { base64ToBytes, bytesToBase64, decodePng, makeImg, type Img } from '../lib/image/png.ts';
 import type { ImageReference } from '../lib/image/reference.ts';
 import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
@@ -118,7 +118,9 @@ import {
 	MODEL_IDS,
 	OUTLINE_VALUES,
 	bodyErrors,
+	characterReference,
 	characterReferenceIssue,
+	costBody,
 	facingErrors,
 	modelOf,
 	sizeErrors,
@@ -183,6 +185,7 @@ export function drawRequest(
 	if (spec.model === 'standard')
 		return routes.createCharacterStandard({
 			...common,
+			...(reference ? { directions: { south: png(reference.base64) } } : {}),
 			...(spec.outline ? { outline: spec.outline } : {}),
 			...(spec.detail
 				? { detail: spec.detail === 'highly detailed' ? 'high detail' : spec.detail }
@@ -243,24 +246,21 @@ export const labelViews = <T extends { label: string }>(
 /** Cost from measured prices: base 2 + import 0.25. Creation makes only the Default move (the standing views); idle, walk
  * and other moves are added later and priced by moveEstimate. */
 export function estimate(spec: Pick<CreateSpec, 'directions' | 'size' | 'model' | 'reference'>) {
-	const n = spec.directions.filter((d) => !d.mirrorOf).length;
+	const n = spec.directions.filter((d) => !d.mirrorOf).length,
+		size = costBody(spec.size, spec.model);
 	// Pro Flash's first image (GET /pro-flash/cost, provisional, 2026-11-12): 5 gens to 96 px, 6 to 208 px, then 9; V3's
 	// costs 1. The eight rotations are priced alike.
 	if (spec.model === 'pro') {
-		const draw = proDrawGens(spec.size);
+		const draw = proDrawGens(size);
 		return { gens: draw.lo + 0.25, maxGens: +(draw.hi + 0.25 + n * EST).toFixed(2), minutes: 5 };
 	}
 	const source = !spec.model ? spec.reference : undefined;
-	const first = source
-		? 0
-		: spec.model !== 'pro-flash'
-			? 1
-			: spec.size <= 96
-				? 5
-				: spec.size <= 208
-					? 6
-					: 9;
-	const area = source ? source.width * source.height : spec.size * spec.size;
+	const first = source ? 0 : spec.model !== 'pro-flash' ? 1 : size <= 96 ? 5 : size <= 208 ? 6 : 9;
+	// An oversized reference cannot be created, so it must not inflate the price either.
+	const area = source
+		? Math.min(source.width, characterReference.v3.max) *
+			Math.min(source.height, characterReference.v3.max)
+		: size * size;
 	const gens =
 		spec.model === 'standard' ? 1.25 : +(first + 0.25 + Math.ceil((area * 8) / 65536)).toFixed(2);
 	// Missing managed rest joints may require one estimate per direction.
@@ -360,6 +360,25 @@ export async function run(
 	return r;
 }
 export const b64 = async (im: Img) => bytesToBase64(await encodePngBytes(im));
+
+async function padStandardReference(
+	reference: ImageReference,
+	size: number
+): Promise<ImageReference> {
+	if (reference.width === size && reference.height === size) return reference;
+	const source = await decodePng(base64ToBytes(reference.base64));
+	const canvas = makeImg(size, size);
+	const left = Math.floor((size - source.w) / 2);
+	const top = Math.floor((size - source.h) / 2);
+	for (let row = 0; row < source.h; row++) {
+		const start = row * source.w * 4;
+		canvas.data.set(
+			source.data.subarray(start, start + source.w * 4),
+			((top + row) * size + left) * 4
+		);
+	}
+	return { base64: await b64(canvas), width: size, height: size };
+}
 /** Result images of a record, in frame order (labels "south/3" or "3"; character rotations are labeled by direction). */
 async function imagesOf(
 	r: JobRec,
@@ -972,8 +991,12 @@ export async function createCharacter(
 		view = spec.view ?? 'low top-down';
 	// 1. Draw the eight rotations before the shared rig registration.
 	onProgress({ step: 'draw', done: 0, total: 1, recIds: [] });
+	const drawSpec =
+		spec.model === 'standard' && spec.reference
+			? { ...spec, reference: await padStandardReference(spec.reference, spec.size) }
+			: spec;
 	const base = await run(
-		drawRequest(spec, spec.seed),
+		drawRequest(drawSpec, spec.seed),
 		`${spec.name} · creating`,
 		'studio-base',
 		false,

@@ -372,6 +372,50 @@ test.each(['failed', 'running'] as const)(
 	}
 );
 
+test.each(['read the character', 'remove the stale setup'])(
+	'keeps setup available for review without restarting if storage cannot %s',
+	async (operation) => {
+		const state = await import('../../src/studio/state.svelte.ts');
+		const spec = { projectId: 'rig-missing' };
+		const record = { spec, status: 'running', requestText: state.REQUEST_TEXT };
+		const failure = new Error('IndexedDB unavailable');
+		mocks.get.mockImplementation(async (_store, id) => {
+			if (id === 'studio-setup') return record;
+			if (operation === 'read the character') throw failure;
+		});
+		if (operation === 'remove the stale setup') mocks.del.mockRejectedValueOnce(failure);
+		await state.resumeSetup();
+		expect(state.settingUp.spec).toEqual(spec);
+		expect(state.settingUp.error).toMatchObject({
+			translation: message('generation.outcome.setupStopped')
+		});
+		expect(mocks.setup).not.toHaveBeenCalled();
+		if (operation === 'read the character') expect(mocks.del).not.toHaveBeenCalled();
+	}
+);
+
+test('setup recovery never deletes a draft after handing off during the character read', async () => {
+	const state = await import('../../src/studio/state.svelte.ts');
+	const { queue } = await import('../../src/lib/pixellab/queue.ts');
+	const record = { spec: { projectId: 'rig-missing' }, status: 'failed' };
+	const character = pending<undefined>();
+	mocks.get.mockImplementation(async (_store, id) =>
+		id === 'studio-setup' ? record : character.promise
+	);
+	const resumed = state.resumeSetup();
+	await vi.waitFor(() => expect(mocks.get).toHaveBeenCalledWith('projects', 'rig-missing'));
+	expect(queue.canYield()).toBe(false);
+	queue.role = 'follower';
+	try {
+		character.resolve(undefined);
+		await resumed;
+		expect(mocks.del).not.toHaveBeenCalled();
+		expect(state.settingUp.spec).toBeNull();
+	} finally {
+		queue.role = 'leader';
+	}
+});
+
 for (const kind of ['create', 'move', 'setup'] as const) {
 	const key = kind === 'create' ? 'studio-create:rig-fixture' : 'studio-' + kind;
 	const spec =
