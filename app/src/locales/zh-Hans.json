@@ -531,6 +531,11 @@
 		"workspaceActions": "工作区操作"
 	},
 	"wardrobe": {
+		"moveItemTo": "移至槽位",
+		"dragItem": "正在拖动{name}。请放到其他槽位。",
+		"itemMoved": "已将{name}移至{label}。",
+		"itemMoveBusy": "请先完成或丢弃相关生成，再移动此装备。",
+		"itemMoveChanged": "装备或槽位已变更。请重试。",
 		"notShownInMove": "此动作中不显示",
 		"notShownInMoveNote": "物品已穿戴，但此动作的所有朝向都缺少帧，因此不会显示。",
 		"randomLowerItem": "随机{lower}装备",

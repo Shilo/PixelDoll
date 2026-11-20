@@ -10,6 +10,7 @@ import {
 	mergeSlotEdits,
 	openSource,
 	openFixture,
+	reconcileItemSlots,
 	saveDress,
 	saveSplit,
 	type DressState,
@@ -17,6 +18,7 @@ import {
 } from '../lib/dress/project.ts';
 import { splitBase } from '../lib/dress/regions.ts';
 import { retainSlotDirections } from '../lib/items/slots.ts';
+import { canRelocateItem, relocateItem, relocateWornItem } from '../lib/items/relocate.ts';
 import { keepThumbnails } from './experience/thumbnails.svelte.ts';
 import { experience } from './experience/state.svelte.ts';
 import {
@@ -39,6 +41,7 @@ import {
 	deleteOutdated,
 	listProjects,
 	loadProject,
+	type DressedRecord,
 	type StoredProject
 } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
@@ -92,7 +95,9 @@ import {
 	setHidden,
 	type SlotSettings,
 	shownCategories,
+	slotDef,
 	slotLabel,
+	slotLabelMessage,
 	slotUse,
 	slotUseMessages,
 	type SlotUse
@@ -712,6 +717,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 			current = unsaved ?? pr; // replace, never merge: a reset or removal deletes keys
 		if (!quiet) {
 			doc.items = { ...current.items };
+			reconcileItemSlots(doc.items, new Map(m.items.map((it) => [it.id, it.slot])));
 			doc.variants = { ...current.variants };
 		} // in place: keep the live outfit
 		if (id !== doc.id) doc.drafts = {};
@@ -1586,6 +1592,109 @@ export async function removeItem(itemId: string) {
 	await deleteItem(projectId, itemId);
 	toast(message('state.removedName', { name: it.name }));
 	if (doc.id === projectId && request === openRequest) await openProject(projectId);
+}
+
+let relocating = $state(false);
+
+export function itemSlotTargets(manifest: Manifest, item: Item) {
+	if (isDemo() || relocating || !canRelocateItem(manifest, item)) return [];
+	return categories(manifest).filter((category) => {
+		const target = slotDef(manifest, category.key);
+		return target && canRelocateItem(manifest, item, target);
+	});
+}
+
+export async function moveItemToSlot(itemId: string, targetId: string): Promise<boolean> {
+	const item = itemById(itemId),
+		projectId = doc.id,
+		request = openRequest;
+	if (!item || isDemo() || relocating) return false;
+	relocating = true;
+	const previous = flushSave();
+	const work = previous.then(async () => {
+		const savedGens = await readGens();
+		const savedMove = await db.get<{ projectId: string; queued?: QueuedMove[] }>(
+			'projects',
+			MOVE_KEY
+		);
+		if (
+			[...gens, ...savedGens].some(
+				(gen) =>
+					gen.draft.rigId === projectId &&
+					!gen.draft.acceptedAt &&
+					(gen.input.slot === item.slot || gen.input.slot === targetId)
+			) ||
+			pendingMoves(projectId, itemId).length ||
+			savedMove?.projectId === projectId ||
+			savedMove?.queued?.some((move) => move.projectId === projectId)
+		) {
+			toast(message('wardrobe.itemMoveBusy'), { tone: 'warning' });
+			return false;
+		}
+		const record = await db.update<DressedRecord>('projects', projectId, (rec) => {
+			const manifest = rec?.manifest,
+				live = manifest?.items.find((entry) => entry.id === itemId),
+				target = manifest && slotDef(manifest, targetId);
+			if (
+				!rec ||
+				!manifest ||
+				!live ||
+				live.slot !== item.slot ||
+				!target ||
+				!relocateItem(manifest, live, target)
+			)
+				throw new LocalizedError(
+					'The item or slot changed. Try again.',
+					'wardrobe.itemMoveChanged'
+				);
+			if (rec.dress?.current)
+				relocateWornItem(rec.dress.current.items, itemId, item.slot, targetId);
+			rec.savedAt = new Date().toISOString();
+			return rec;
+		});
+		if (doc.id === projectId && openRequest === request && store.project) {
+			const manifest = store.project.manifest,
+				moved = record.manifest.items.find((entry) => entry.id === itemId)!,
+				target = record.manifest.slots.find((slot) => slot.id === targetId)!;
+			manifest.items = manifest.items.map((entry) => (entry.id === itemId ? moved : entry));
+			if (!manifest.slots.some((slot) => slot.id === targetId))
+				insertSlotInLadder(manifest.slots, target, record.manifest.slots);
+			for (const outfit of manifest.presets)
+				relocateWornItem(outfit.items, itemId, item.slot, targetId);
+			if (
+				relocateWornItem(doc.items, itemId, item.slot, targetId) &&
+				doc.items[targetId] === itemId
+			)
+				delete doc.drafts[targetId];
+			for (const step of [...doc.undo, ...doc.redo]) {
+				const dress = JSON.parse(step.snap) as DressState;
+				for (const outfit of [...dress.presets, ...(dress.current ? [dress.current] : [])])
+					relocateWornItem(outfit.items, itemId, item.slot, targetId);
+				step.snap = JSON.stringify(dress);
+			}
+			store.exportRecord = record;
+			ui.group = targetId;
+			bump();
+			if (pendingSave) save();
+		}
+		toast(
+			message('wardrobe.itemMoved', {
+				name: item.name,
+				label: slotLabelMessage(record.manifest, targetId)
+			})
+		);
+		return true;
+	});
+	const handled = work.catch((error: unknown) => {
+		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), { tone: 'danger' });
+		return false;
+	});
+	saving = handled.then(() => undefined);
+	try {
+		return await handled;
+	} finally {
+		relocating = false;
+	}
 }
 
 // ---------- items from other characters ----------

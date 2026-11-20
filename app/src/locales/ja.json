@@ -536,6 +536,11 @@
 		"workspaceActions": "ワークスペースの操作"
 	},
 	"wardrobe": {
+		"moveItemTo": "スロットに移動",
+		"dragItem": "{name} をドラッグ中です。別のスロットにドロップしてください。",
+		"itemMoved": "{name} を「{label}」に移動しました。",
+		"itemMoveBusy": "このアイテムを移動する前に、関連する生成を完了または破棄してください。",
+		"itemMoveChanged": "アイテムまたはスロットが変更されました。もう一度お試しください。",
 		"notShownInMove": "この動作では非表示",
 		"notShownInMoveNote": "装備中ですが、この動作ではどの向きにもフレームがないため表示されません。",
 		"randomLowerItem": "ランダムな{lower}",

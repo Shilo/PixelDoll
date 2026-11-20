@@ -559,6 +559,11 @@
 		"workspaceActions": "Acciones del espacio de trabajo"
 	},
 	"wardrobe": {
+		"moveItemTo": "Mover a ranura",
+		"dragItem": "Estás arrastrando {name}. Suéltalo en otra ranura.",
+		"itemMoved": "{name} se movió a {label}.",
+		"itemMoveBusy": "Termina o descarta la generación relacionada antes de mover este objeto.",
+		"itemMoveChanged": "El objeto o la ranura cambió. Inténtalo de nuevo.",
 		"notShownInMove": "No se muestra en este movimiento",
 		"notShownInMoveNote": "El objeto está equipado, pero no se muestra porque le faltan fotogramas en todas las vistas de este movimiento.",
 		"randomLowerItem": "Objeto aleatorio de {lower}",

@@ -561,6 +561,11 @@
 		"workspaceActions": "Ações do espaço de trabalho"
 	},
 	"wardrobe": {
+		"moveItemTo": "Mover para espaço",
+		"dragItem": "Arrastando {name}. Solte em outro espaço.",
+		"itemMoved": "{name} foi movido para {label}.",
+		"itemMoveBusy": "Conclua ou descarte a geração relacionada antes de mover este item.",
+		"itemMoveChanged": "O item ou o espaço mudou. Tente novamente.",
 		"notShownInMove": "Não aparece nesta animação",
 		"notShownInMoveNote": "O item está equipado, mas não aparece porque faltam quadros em todas as vistas desta animação.",
 		"randomLowerItem": "Sortear item: {lower}",

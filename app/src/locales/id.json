@@ -533,6 +533,11 @@
 		"workspaceActions": "Tindakan ruang kerja"
 	},
 	"wardrobe": {
+		"moveItemTo": "Pindahkan ke slot",
+		"dragItem": "Menyeret {name}. Lepaskan di slot lain.",
+		"itemMoved": "{name} dipindahkan ke {label}.",
+		"itemMoveBusy": "Selesaikan atau buang generasi terkait sebelum memindahkan item ini.",
+		"itemMoveChanged": "Item atau slot berubah. Coba lagi.",
 		"notShownInMove": "Tidak terlihat dalam gerakan ini",
 		"notShownInMoveNote": "Item sedang dipakai, tetapi tidak terlihat karena tidak memiliki bingkai di semua tampilan gerakan ini.",
 		"randomLowerItem": "Acak item {lower}",

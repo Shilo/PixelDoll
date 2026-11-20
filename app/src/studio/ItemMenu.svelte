@@ -2,6 +2,7 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { t } from 'svelte-whisper';
+	import { tick } from 'svelte';
 	import { displayMessage, errorMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
 	// One shared per-tile item menu (approved in docs/design/2026-11-11-ui-refinement/ui-lab-7.html): an arrowed popover
@@ -34,6 +35,7 @@
 		cancelGen,
 		openGenerationReview,
 		addShared,
+		itemSlotTargets,
 		type Gen
 	} from './state.svelte.ts';
 	import {
@@ -44,6 +46,8 @@
 		CopyPlus,
 		HandGrab,
 		Info,
+		ArrowRightLeft,
+		ChevronLeft,
 		Pencil,
 		RefreshCw,
 		Trash
@@ -54,6 +58,7 @@
 		entry,
 		marks,
 		onremove,
+		onmove,
 		open = $bindable(false),
 		generation,
 		generationInfo
@@ -66,6 +71,7 @@
 		marks: Mark[];
 		/** Removes the item for good once confirmed (Wardrobe moves focus to a neighbor afterwards). */
 		onremove: (id: string) => void;
+		onmove: (id: string, target: string) => void;
 		open?: boolean;
 		generation?: Gen;
 		generationInfo?: ReturnType<typeof generationStatus>;
@@ -95,6 +101,13 @@
 	}
 	const m = $derived(store.project?.manifest);
 	const it = $derived(m?.items.find((i) => i.id === id));
+	const targets = $derived(m && it ? itemSlotTargets(m, it) : []);
+	let pickingSlot = $state(false);
+	async function showTargets(show: boolean) {
+		pickingSlot = show;
+		await tick();
+		menu?.querySelector<HTMLElement>(show ? '[data-move-target]' : '[data-move-trigger]')?.focus();
+	}
 	const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot]);
 	const remakeOnly = $derived(!!m && !!it?.copiedFrom && !extendable(m, it.id));
 	const otherHand = $derived(m && it ? otherHandOf(m, it.slot) : undefined);
@@ -167,6 +180,7 @@
 	}}
 	ontoggle={(e) => {
 		open = e.newState === 'open';
+		if (!open) pickingSlot = false;
 		if (!open && !cancelling) cancelError = '';
 		// Open on the first command, not the header's Wear toggle.
 		popoverFocus(e, false);
@@ -312,101 +326,148 @@
 				>
 			</div>
 			<TileMarks {marks} list />
-			<div role="menu" aria-labelledby="item-menu-name">
-				{#if !isDemo() && !it.variantOf}
+			{#if pickingSlot}
+				<div
+					role="menu"
+					aria-label={t('wardrobe.moveItemTo')}
+					tabindex="-1"
+					onkeydown={(event) => {
+						if (event.key !== 'Escape') return;
+						event.preventDefault();
+						void showTargets(false);
+					}}
+				>
 					<button
 						class="row bu-action"
 						data-variant="quiet"
 						role="menuitem"
-						onclick={() => act(() => openRename(doc.id, it.id))}
+						onclick={() => void showTargets(false)}
 					>
-						<Pencil size={16} aria-hidden="true" />{openerLabel(t('toolbar.rename'))}<SurfaceChevron
-						/>
+						<ChevronLeft size={16} aria-hidden="true" />{t('export.sheet.back')}
 					</button>
-				{/if}
-				<button
-					class="row bu-action"
-					data-variant="quiet"
-					role="menuitem"
-					onclick={() =>
-						act(() => {
-							ui.selected = it.id;
-							ui.sheet = 'item';
-						})}
-					><Info size={16} aria-hidden="true" />{openerLabel(
-						t('common.detailsMenu')
-					)}<SurfaceChevron /></button
-				>
-				{#if otherHand}
-					<!-- Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
-					<label class="row bu-action bu-check item-menu-switch" data-variant="quiet">
-						<span><HandGrab size={16} aria-hidden="true" />{t('itemMenu.twoHanded')}</span>
-						<input
-							class="bu-switch"
-							type="checkbox"
-							role="menuitemcheckbox"
-							aria-checked={both}
-							checked={both}
-							onchange={() => toggleTwoHanded(it.id)}
-							onkeydown={(e) => {
-								// a menu item takes Enter as well as Space (a native checkbox only toggles on Space)
-								if (e.key !== 'Enter') return;
-								e.preventDefault();
-								toggleTwoHanded(it.id);
-							}}
-						/>
-					</label>
-					{#if !isDemo() && it.prompt && !both}
-						<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
+					{#each targets as target (target.key)}
 						<button
 							class="row bu-action"
 							data-variant="quiet"
 							role="menuitem"
-							onclick={() =>
-								act(() => openNewItem(otherHand, { slot: otherHand, prompt: it.prompt }))}
-							><CopyPlus size={16} aria-hidden="true" />{openerLabel(
-								t('itemMenu.makeForSlot', {
-									slot: displayMessage(slotLabelMessage(m, otherHand))
-								})
-							)}<SurfaceChevron /></button
+							data-move-target
+							onclick={() => act(() => onmove(it.id, target.key))}
 						>
+							{displayMessage(slotLabelMessage(m, target.key))}
+						</button>
+					{/each}
+				</div>
+			{:else}
+				<div role="menu" aria-labelledby="item-menu-name">
+					{#if !isDemo() && !it.variantOf}
+						<button
+							class="row bu-action"
+							data-variant="quiet"
+							role="menuitem"
+							onclick={() => act(() => openRename(doc.id, it.id))}
+						>
+							<Pencil size={16} aria-hidden="true" />{openerLabel(
+								t('toolbar.rename')
+							)}<SurfaceChevron />
+						</button>
 					{/if}
-				{/if}
-				{#if !isDemo() && it.prompt}
-					<!-- The New item sheet that opens next prices the attempt before anything is spent. -->
 					<button
 						class="row bu-action"
 						data-variant="quiet"
 						role="menuitem"
 						onclick={() =>
-							act(() =>
-								openNewItem(it.slot, {
-									slot: it.slot,
-									prompt: it.prompt,
-									route: it.route
-								})
-							)}
-						><RefreshCw size={16} aria-hidden="true" />{openerLabel(
-							remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.tryAgain')
+							act(() => {
+								ui.selected = it.id;
+								ui.sheet = 'item';
+							})}
+						><Info size={16} aria-hidden="true" />{openerLabel(
+							t('common.detailsMenu')
 						)}<SurfaceChevron /></button
 					>
-				{/if}
-				<button
-					class="row bu-action"
-					data-variant="quiet"
-					role="menuitem"
-					onclick={() => act(() => void downloadItemZip(it.id))}
-					><Download size={16} />{t('common.downloadZip')}</button
-				>
-				<hr class="bu-separator" />
-				<DeleteRow
-					opens
-					class="bu-action"
-					label={t('itemMenu.labelDeleteItem')}
-					locked={isDemo() ? t('itemMenu.demoDeleteLocked') : ''}
-					onclick={() => ask(() => (deleting = { id: it.id, name: it.name }))}
-				/>
-			</div>
+					{#if targets.length}
+						<button
+							class="row bu-action"
+							data-variant="quiet"
+							role="menuitem"
+							data-move-trigger
+							onclick={() => void showTargets(true)}
+						>
+							<ArrowRightLeft size={16} aria-hidden="true" />{openerLabel(
+								t('wardrobe.moveItemTo')
+							)}<SurfaceChevron />
+						</button>
+					{/if}
+					{#if otherHand}
+						<!-- Free and instant: a two-handed item takes both hands (wearing it takes the other hand's item off). -->
+						<label class="row bu-action bu-check item-menu-switch" data-variant="quiet">
+							<span><HandGrab size={16} aria-hidden="true" />{t('itemMenu.twoHanded')}</span>
+							<input
+								class="bu-switch"
+								type="checkbox"
+								role="menuitemcheckbox"
+								aria-checked={both}
+								checked={both}
+								onchange={() => toggleTwoHanded(it.id)}
+								onkeydown={(e) => {
+									// a menu item takes Enter as well as Space (a native checkbox only toggles on Space)
+									if (e.key !== 'Enter') return;
+									e.preventDefault();
+									toggleTwoHanded(it.id);
+								}}
+							/>
+						</label>
+						{#if !isDemo() && it.prompt && !both}
+							<!-- The same description drawn for the other hand; the New item sheet prices it first. -->
+							<button
+								class="row bu-action"
+								data-variant="quiet"
+								role="menuitem"
+								onclick={() =>
+									act(() => openNewItem(otherHand, { slot: otherHand, prompt: it.prompt }))}
+								><CopyPlus size={16} aria-hidden="true" />{openerLabel(
+									t('itemMenu.makeForSlot', {
+										slot: displayMessage(slotLabelMessage(m, otherHand))
+									})
+								)}<SurfaceChevron /></button
+							>
+						{/if}
+					{/if}
+					{#if !isDemo() && it.prompt}
+						<!-- The New item sheet that opens next prices the attempt before anything is spent. -->
+						<button
+							class="row bu-action"
+							data-variant="quiet"
+							role="menuitem"
+							onclick={() =>
+								act(() =>
+									openNewItem(it.slot, {
+										slot: it.slot,
+										prompt: it.prompt,
+										route: it.route
+									})
+								)}
+							><RefreshCw size={16} aria-hidden="true" />{openerLabel(
+								remakeOnly ? t('itemMenu.remake', { name: m.name }) : t('itemMenu.tryAgain')
+							)}<SurfaceChevron /></button
+						>
+					{/if}
+					<button
+						class="row bu-action"
+						data-variant="quiet"
+						role="menuitem"
+						onclick={() => act(() => void downloadItemZip(it.id))}
+						><Download size={16} />{t('common.downloadZip')}</button
+					>
+					<hr class="bu-separator" />
+					<DeleteRow
+						opens
+						class="bu-action"
+						label={t('itemMenu.labelDeleteItem')}
+						locked={isDemo() ? t('itemMenu.demoDeleteLocked') : ''}
+						onclick={() => ask(() => (deleting = { id: it.id, name: it.name }))}
+					/>
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>

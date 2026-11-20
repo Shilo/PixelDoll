@@ -556,6 +556,11 @@
 		"workspaceActions": "Çalışma alanı işlemleri"
 	},
 	"wardrobe": {
+		"moveItemTo": "Yuvaya taşı",
+		"dragItem": "{name} sürükleniyor. Başka bir yuvaya bırak.",
+		"itemMoved": "{name}, {label} yuvasına taşındı.",
+		"itemMoveBusy": "Bu eşyayı taşımadan önce ilgili üretimi tamamla veya iptal et.",
+		"itemMoveChanged": "Eşya veya yuva değişti. Tekrar dene.",
 		"notShownInMove": "Bu harekette görünmüyor",
 		"notShownInMoveNote": "Eşya takılı ancak bu hareketin hiçbir görünümünde kareleri olmadığı için görünmüyor.",
 		"randomLowerItem": "{lower} için rastgele eşya",

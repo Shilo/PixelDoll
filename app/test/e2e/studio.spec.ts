@@ -730,6 +730,76 @@ async function openDemo(page: Page) {
 
 const step = (s: string) => console.log('ok', s);
 
+test('dev server: a saved item moves between slots by mouse, keyboard menu and touch', async ({
+	context,
+	page
+}, info) => {
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		await (await import(path)).copyDemo();
+	});
+	const tile = page.locator('[data-tile="hat_wizard"]');
+	const rail = (slot: string) => page.locator(`[data-rail="${slot}"]`);
+	const preview = page.locator('.slot-drag-preview');
+	const at = (slot: string) => page.locator(`section[data-group="${slot}"]`).locator(tile);
+	const center = async (element: Locator) => {
+		const box = (await element.boundingBox())!;
+		return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+	};
+
+	await equipmentGroup(page, 'Head');
+	await tile.scrollIntoViewIfNeeded();
+	await tile.click();
+	await expect(tile).toHaveAttribute('aria-pressed', 'true');
+	await rail('face_acc').scrollIntoViewIfNeeded();
+	const start = await center(tile);
+	const face = await center(rail('face_acc'));
+	await page.mouse.move(start.x, start.y);
+	await page.mouse.down();
+	await page.mouse.move(face.x, face.y, { steps: 6 });
+	await expect(preview.getByRole('img', { includeHidden: true })).toHaveCount(1);
+	await page.keyboard.press('Escape');
+	await page.mouse.up();
+	await expect(preview).not.toBeVisible();
+	await expect(at('head')).toHaveAttribute('aria-pressed', 'true');
+	await page.mouse.move(start.x, start.y);
+	await page.mouse.down();
+	await page.mouse.move(face.x, face.y, { steps: 6 });
+	await page.mouse.up();
+	await expect(at('face_acc')).toHaveAttribute('aria-pressed', 'true');
+
+	await at('face_acc').focus();
+	await page.keyboard.press('Shift+F10');
+	await page.getByRole('menuitem', { name: 'Move to slot' }).press('Enter');
+	await page.getByRole('menuitem', { name: 'Hair', exact: true }).press('Enter');
+	await expect(at('hair')).toHaveAttribute('aria-pressed', 'false');
+	await expect(at('hair')).toBeFocused();
+	await at('hair').click();
+	await expect(at('hair')).toHaveAttribute('aria-pressed', 'true');
+
+	await page.setViewportSize({ width: 390, height: 844 });
+	await equipmentGroup(page, 'Hair');
+	await tile.scrollIntoViewIfNeeded();
+	await rail('face_acc').scrollIntoViewIfNeeded();
+	const source = await center(tile),
+		target = await center(rail('face_acc'));
+	const session = await context.newCDPSession(page);
+	await session.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+	await page.clock.install();
+	await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [source] });
+	await page.clock.runFor(300);
+	await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [target] });
+	await expect(preview).toBeVisible();
+	await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+	await expect(at('face_acc')).toHaveAttribute('aria-pressed', 'true');
+	await reloadStudio(page);
+	await expect(at('face_acc')).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('studio demo: slots add, rename, show, hide and reorder without changing the drawing', async ({
 	context,
 	page

@@ -559,6 +559,11 @@
 		"workspaceActions": "Arbeitsbereich-Aktionen"
 	},
 	"wardrobe": {
+		"moveItemTo": "In Slot verschieben",
+		"dragItem": "{name} wird gezogen. Lege den Gegenstand in einem anderen Slot ab.",
+		"itemMoved": "{name} wurde nach {label} verschoben.",
+		"itemMoveBusy": "Schließe die zugehörige Generierung ab oder verwirf sie, bevor du den Gegenstand verschiebst.",
+		"itemMoveChanged": "Der Gegenstand oder Slot hat sich geändert. Versuche es erneut.",
 		"notShownInMove": "In dieser Bewegung nicht sichtbar",
 		"notShownInMoveNote": "Der Gegenstand wird getragen, hat aber in keiner Ansicht dieser Bewegung Bilder und bleibt deshalb unsichtbar.",
 		"randomLowerItem": "Zufälliger Gegenstand: {lower}",

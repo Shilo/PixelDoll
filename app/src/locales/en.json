@@ -550,6 +550,11 @@
 		"workspaceActions": "Workspace actions"
 	},
 	"wardrobe": {
+		"moveItemTo": "Move to slot",
+		"dragItem": "Dragging {name}. Drop it on another slot.",
+		"itemMoved": "Moved {name} to {label}.",
+		"itemMoveBusy": "Finish or discard the related generation before moving this item.",
+		"itemMoveChanged": "The item or slot changed. Try again.",
 		"notShownInMove": "Not shown in this move",
 		"notShownInMoveNote": "Wearing it, but it is missing frames for this move in every view, so it is not shown.",
 		"randomLowerItem": "Random {lower} item",
