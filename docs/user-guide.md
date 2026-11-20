@@ -186,7 +186,9 @@ Arbitrary PNG folders, unrelated JSON formats, standalone spritesheets and custo
 
 **Cancel** closes the import before saving, including while a ZIP downloads or is being prepared. Pending reads are aborted where possible; late results cannot open a preview. Once **Import character** starts saving the local copy, Cancel is visibly disabled until that save finishes.
 
-PixelLab imports keep every supplied direction by default. Open **Directions** in the import review and use the compass arrows to keep or skip views. Use the attached mirror buttons to flip the opposite view. Mirroring replaces that direction's artwork in this local copy, including in moves. Editable PixelDoll backups restore their saved directions and mirror settings as-is.
+Imports keep their supplied directions and mirror settings by default. Open **Directions** in the import review and use the compass arrows to keep or skip views. Use the mirror button next to **W** to flip East into West. Turn it off before importing to keep original West artwork if supplied. If the ZIP only has East or West is already mirrored in the ZIP, turning mirroring off keeps the flipped West frames as an independent view.
+
+After import or creation, open the character's **⋯ → Directions…** to use the same compass. Turning a saved mirror off keeps its visible frames and equipment as independent artwork. Turning a mirror on and saving replaces that view's previous frames; download a backup first if you want to keep the original artwork. None of these direction changes spends PixelLab credits.
 
 Artwork uses a shared square canvas, at least 64 px and up to 256 px. Larger transparent padding can be cropped only when no visible pixels are lost; artwork is never rescaled. Existing clothes and hair in a PixelLab character are part of its base and cannot be removed as separate items. Standalone PNGs are not supported because they do not describe the direction and animation layout.
 
