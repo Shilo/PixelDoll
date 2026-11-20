@@ -303,7 +303,7 @@
 				class="bu-action header-share"
 				data-variant="outline"
 				aria-label={t('toolbar.shareCharacter')}
-				title={t('common.share')}
+				title={openerLabel(t('common.share'))}
 				popovertarget="share-popover"
 				disabled={!m}
 				><Share2 size={16} /><span>{openerLabel(t('common.share'))}</span><SurfaceChevron /></button
