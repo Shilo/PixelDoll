@@ -176,12 +176,6 @@ export const MODELS: Record<CharacterModel, ModelLimits> = {
 		body: { min: 32, max: 256 },
 		styleHints: true
 	},
-	standard: {
-		label: 'Standard',
-		help: 'Draws eight views using a template or your front-facing sprite.',
-		body: { min: 32, max: 128 },
-		styleHints: true
-	},
 	pro: {
 		label: 'Pro',
 		help: 'Follows the prompt more closely, at several times the cost.',
@@ -193,6 +187,12 @@ export const MODELS: Record<CharacterModel, ModelLimits> = {
 		help: 'A chibi style with a big head and short legs, at about three times the cost.',
 		body: { min: 32, max: 256 },
 		styleHints: false
+	},
+	standard: {
+		label: 'Standard',
+		help: 'Draws eight views using a template or your front-facing sprite.',
+		body: { min: 32, max: 128 },
+		styleHints: true
 	}
 };
 export const MODEL_IDS = Object.keys(MODELS) as CharacterModel[];
