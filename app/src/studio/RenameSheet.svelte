@@ -139,6 +139,9 @@
 		justify-content: space-between;
 		min-block-size: 44px;
 	}
+	.disclosure[open] > summary > :global(svg) {
+		transform: rotate(90deg);
+	}
 	.export-id {
 		font-family: var(--font-mono);
 	}
