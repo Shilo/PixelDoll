@@ -1567,7 +1567,12 @@ test('switching the model keeps Advanced open and base clothing shows both choic
 	const sheet = await open(page);
 	await sheet.locator('details.advanced > summary').click();
 	const model = sheet.getByRole('combobox', { name: 'Model', exact: true });
-	await expect(model.locator('option')).toHaveText(['Default (V3)', 'Pro', 'Pro Flash']);
+	await expect(model.locator('option')).toHaveText([
+		'Default (V3)',
+		'Standard',
+		'Pro',
+		'Pro Flash'
+	]);
 	const drop = sheet.getByRole('button', { name: 'Add image', exact: true });
 	const missedDrop = await sheet.evaluate((dialog) => {
 		const dataTransfer = new DataTransfer();
@@ -1607,6 +1612,14 @@ test('switching the model keeps Advanced open and base clothing shows both choic
 	await model.selectOption('pro-flash');
 	await expect(sheet.getByText(/use artwork as a style guide/i)).toBeVisible();
 	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
+	await model.selectOption('standard');
+	await expect(sheet.getByRole('spinbutton', { name: 'Body size', exact: true })).toHaveAttribute(
+		'max',
+		'128'
+	);
+	await expect(attachment).toHaveAccessibleDescription(/guide\.png/);
+	await expect(sheet.getByRole('button', { name: /^Create character/ })).toBeDisabled();
+	await model.selectOption('pro-flash');
 	await sheet.getByRole('button', { name: 'Remove reference', exact: true }).click();
 	await expect(drop).toBeFocused();
 	await model.selectOption('pro');
