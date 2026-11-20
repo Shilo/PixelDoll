@@ -263,8 +263,10 @@ can lose unexported work.
 
 - **Moving saved items changes their slot, not their pixels.** Use the Wardrobe drag or the item's Move to slot menu to
   correct a category without generating again. The destination controls draw order, clipping, and future generation.
-  An existing item already worn in the destination stays worn. Moves that would discard back-layer artwork or change
-  held-item geometry are unavailable. Moving into a slot with a back layer does not create new artwork for it.
+  A worn item stays on the character, replacing equipment in the destination on the current look only. Saved outfits
+  keep any item already worn in the destination. Moving is limited to wearable slots with the same equipment class and
+  attachment joint, and cannot discard back-layer artwork. It does not re-fit, redraw, or split existing pixels into a
+  new back layer. If the original art was fitted to the wrong part of the body, generate it for the intended slot instead.
 
 - On a 390 px phone with the equipment panel expanded, the character sprite overlaps the Preview / Top-down /
   Side-scroller labels (Later card "Keep the phone character clear of the view tabs").

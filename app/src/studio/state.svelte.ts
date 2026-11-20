@@ -1611,48 +1611,60 @@ export async function moveItemToSlot(itemId: string, targetId: string): Promise<
 		request = openRequest;
 	if (!item || isDemo() || relocating) return false;
 	relocating = true;
+	if (edits !== savedEdits && !pendingSave) save();
+	const startingEdits = edits;
 	const previous = flushSave();
 	const work = previous.then(async () => {
-		const savedGens = await readGens();
-		const savedMove = await db.get<{ projectId: string; queued?: QueuedMove[] }>(
+		if (openRequest !== request || savedEdits < startingEdits) return false;
+		const record = await db.update<DressedRecord>(
 			'projects',
-			MOVE_KEY
+			projectId,
+			(rec, related) => {
+				const savedGens = related<{ gens: Gen[] }>(GENS_KEY)?.gens ?? [],
+					savedMove = related<{ projectId: string; queued?: QueuedMove[] }>(MOVE_KEY);
+				if (
+					itemStarting ||
+					[...gens, ...savedGens].some(
+						(gen) =>
+							gen.draft.rigId === projectId &&
+							!gen.draft.acceptedAt &&
+							(gen.input.slot === item.slot || gen.input.slot === targetId)
+					) ||
+					pendingMoves(projectId, itemId).length ||
+					savedMove?.projectId === projectId ||
+					savedMove?.queued?.some((move) => move.projectId === projectId)
+				)
+					throw new LocalizedError(
+						'Finish or discard the related generation before moving this item.',
+						'wardrobe.itemMoveBusy'
+					);
+				const manifest = rec?.manifest,
+					live = manifest?.items.find((entry) => entry.id === itemId),
+					target = manifest && slotDef(manifest, targetId),
+					current =
+						rec?.dress?.current ?? (manifest?.presets[0] && structuredClone(manifest.presets[0]));
+				if (
+					!rec ||
+					!manifest ||
+					!live ||
+					live.slot !== item.slot ||
+					!target ||
+					!relocateItem(manifest, live, target)
+				)
+					throw new LocalizedError(
+						'The item or slot changed. Try again.',
+						'wardrobe.itemMoveChanged'
+					);
+				if (
+					current &&
+					relocateWornItem(current.items, itemId, item.slot, targetId, { replace: true })
+				)
+					rec.dress = { current: { items: current.items, variants: current.variants } };
+				rec.savedAt = new Date().toISOString();
+				return rec;
+			},
+			[GENS_KEY, MOVE_KEY]
 		);
-		if (
-			[...gens, ...savedGens].some(
-				(gen) =>
-					gen.draft.rigId === projectId &&
-					!gen.draft.acceptedAt &&
-					(gen.input.slot === item.slot || gen.input.slot === targetId)
-			) ||
-			pendingMoves(projectId, itemId).length ||
-			savedMove?.projectId === projectId ||
-			savedMove?.queued?.some((move) => move.projectId === projectId)
-		) {
-			toast(message('wardrobe.itemMoveBusy'), { tone: 'warning' });
-			return false;
-		}
-		const record = await db.update<DressedRecord>('projects', projectId, (rec) => {
-			const manifest = rec?.manifest,
-				live = manifest?.items.find((entry) => entry.id === itemId),
-				target = manifest && slotDef(manifest, targetId);
-			if (
-				!rec ||
-				!manifest ||
-				!live ||
-				live.slot !== item.slot ||
-				!target ||
-				!relocateItem(manifest, live, target)
-			)
-				throw new LocalizedError(
-					'The item or slot changed. Try again.',
-					'wardrobe.itemMoveChanged'
-				);
-			if (rec.dress?.current)
-				relocateWornItem(rec.dress.current.items, itemId, item.slot, targetId);
-			rec.savedAt = new Date().toISOString();
-			return rec;
-		});
 		if (doc.id === projectId && openRequest === request && store.project) {
 			const manifest = store.project.manifest,
 				moved = record.manifest.items.find((entry) => entry.id === itemId)!,
@@ -1662,10 +1674,7 @@ export async function moveItemToSlot(itemId: string, targetId: string): Promise<
 				insertSlotInLadder(manifest.slots, target, record.manifest.slots);
 			for (const outfit of manifest.presets)
 				relocateWornItem(outfit.items, itemId, item.slot, targetId);
-			if (
-				relocateWornItem(doc.items, itemId, item.slot, targetId) &&
-				doc.items[targetId] === itemId
-			)
+			if (relocateWornItem(doc.items, itemId, item.slot, targetId, { replace: true }))
 				delete doc.drafts[targetId];
 			for (const step of [...doc.undo, ...doc.redo]) {
 				const dress = JSON.parse(step.snap) as DressState;
@@ -1676,7 +1685,7 @@ export async function moveItemToSlot(itemId: string, targetId: string): Promise<
 			store.exportRecord = record;
 			ui.group = targetId;
 			bump();
-			if (pendingSave) save();
+			if (edits !== startingEdits) save();
 		}
 		toast(
 			message('wardrobe.itemMoved', {
@@ -1687,7 +1696,10 @@ export async function moveItemToSlot(itemId: string, targetId: string): Promise<
 		return true;
 	});
 	const handled = work.catch((error: unknown) => {
-		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), { tone: 'danger' });
+		const reason = errorMessage(error);
+		if (typeof reason !== 'string' && reason.key === 'wardrobe.itemMoveBusy')
+			toast(reason, { tone: 'warning' });
+		else toast(message('state.couldNotSaveReason', { reason }), { tone: 'danger' });
 		return false;
 	});
 	saving = handled.then(() => undefined);
@@ -2263,6 +2275,14 @@ interface ItemAttemptConsent {
 }
 export async function startItem(input: NewItemInput, consent?: ItemAttemptConsent) {
 	if (hmrReloading) return;
+	if (relocating) {
+		const request = openRequest;
+		await saving;
+		if (request !== openRequest) {
+			toast(message('state.thisCharacterOrItemChangedReopenIt'), { tone: 'warning' });
+			return;
+		}
+	}
 	itemStarting++; // counted from the click, before the draft exists, so this tab keeps the jobs meanwhile
 	try {
 		await startItemDraft(input, consent);
@@ -3211,6 +3231,7 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 	].filter((s) => !itemId || s.items.includes(itemId));
 export async function startMove(projectId: string, spec: MoveSpec) {
 	if (hmrReloading) return;
+	if (relocating) await saving;
 	if (moving.repairReview) {
 		toast(message('repairReview.finishFirst'), { tone: 'warning' });
 		return;
