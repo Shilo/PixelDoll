@@ -760,6 +760,7 @@
 		"finishBeforeCharacterRemoval": "Terminez ou abandonnez la génération en attente avant de supprimer un personnage.",
 		"finishBeforeMoveRemoval": "Terminez ou abandonnez la génération en attente avant de supprimer une animation.",
 		"finishBeforeDirectionRemoval": "Terminez ou abandonnez la génération en attente avant de changer les directions.",
+		"finishBeforeFixFrames": "Attendez la fin de la génération en cours avant de corriger les images.",
 		"couldNotRemoveCharactersSavedByAn": "Impossible de supprimer les personnages enregistrés par une ancienne préversion : {reason}",
 		"couldNotReadYourSavedCharactersReason": "Impossible de lire vos personnages enregistrés : {reason}",
 		"couldNotOpenThatCharacterError": "Impossible d’ouvrir ce personnage : {error}",
@@ -1274,7 +1275,8 @@
 			"look": "À vérifier",
 			"unfitted": "Non ajusté",
 			"stale": "Créé pour un autre corps",
-			"demo": "Démo"
+			"demo": "Démo",
+			"edited": "Modifié par vous"
 		},
 		"coverage": {
 			"oneMove": "Il manque des images pour {move}",
@@ -2437,5 +2439,99 @@
 		"unreadable": "Impossible d’ouvrir cette image. Choisissez un autre fichier.",
 		"noArtworkResized": "Aucun visuel visible ne reste après le redimensionnement. Choisissez une autre image.",
 		"noArtwork": "Cette image ne contient aucun visuel visible. Choisissez un autre fichier."
+	},
+	"fixFrames": {
+		"open": "Corriger les images",
+		"title": "Corriger les images",
+		"reviewTitle": "Vérifier les images",
+		"target": "Images de",
+		"body": "Corps de base",
+		"move": "Animation",
+		"gridLabel": "Images de {name} dans {move}",
+		"frameLabel": "{dir}, image {n}",
+		"editedByYou": "Modifiée par vous",
+		"mirrors": "Miroir de {of}",
+		"hint": "Téléchargez le PNG, modifiez-le dans n’importe quel éditeur de pixels comme Aseprite, Pixelorama ou Piskel, puis importez-le. Conservez sa taille et sa grille de {w}×{h} : les lignes sont les directions, les colonnes sont les images. Les couleurs sont celles d’origine, donc Recolorer fonctionne toujours.",
+		"hintLayers": "Téléchargez le ZIP : il contient un PNG par calque. Modifiez-les dans n’importe quel éditeur de pixels comme Aseprite, Pixelorama ou Piskel, conservez leurs noms, leur taille et la grille de {w}×{h}, puis importez le ZIP ou les PNG. Les couleurs sont celles d’origine, donc Recolorer fonctionne toujours.",
+		"downloadPng": "Télécharger le PNG",
+		"downloadZip": "Télécharger le ZIP",
+		"import": "Importer le PNG modifié",
+		"importFiles": "Importer les fichiers modifiés",
+		"demoNote": "Ceci est la démo intégrée. Modifiez une copie pour remplacer ses images.",
+		"restoring": "Restauration…",
+		"beforeFrame": "Avant, {dir} {n}",
+		"afterFrame": "Après, {dir} {n}",
+		"playing": "{move}, en lecture",
+		"changedFrame": "{dir}, image {n}, modifiée",
+		"editedFrame": "{dir}, image {n}, modifiée par vous",
+		"reading": "Lecture…",
+		"release": "Relâchez pour importer",
+		"changedCount": {
+			"one": "{n} image modifiée",
+			"other": "{n} images modifiées"
+		},
+		"nothingChanged": "Aucune image modifiée. Modifiez le PNG téléchargé, enregistrez-le et importez-le à nouveau.",
+		"replace": {
+			"one": "Remplacer {n} image",
+			"other": "Remplacer {n} images"
+		},
+		"restore": {
+			"one": "Restaurer l’original · {n}",
+			"other": "Restaurer les originaux · {n}"
+		},
+		"restoreTitle": {
+			"one": "Restaurer {n} image d’origine ?",
+			"other": "Restaurer {n} images d’origine ?"
+		},
+		"restoreAction": "Restaurer",
+		"restoreBody": "Chaque image de {name} que vous avez remplacée redevient telle qu’elle était avant vos modifications.",
+		"replaced": {
+			"one": "{count} image de {name} remplacée.",
+			"other": "{count} images de {name} remplacées."
+		},
+		"undo": "Annuler",
+		"undone": {
+			"one": "Remplacement annulé pour {count} image.",
+			"other": "Remplacement annulé pour {count} images."
+		},
+		"restored": {
+			"one": "{count} image d’origine restaurée.",
+			"other": "{count} images d’origine restaurées."
+		},
+		"notes": {
+			"softAlpha": {
+				"one": "{n} pixel semi-transparent deviendra entièrement opaque ou entièrement transparent.",
+				"other": "{n} pixels semi-transparents deviendront entièrement opaques ou entièrement transparents."
+			},
+			"newColors": {
+				"one": "{n} nouvelle couleur ne changera pas avec Recolorer.",
+				"other": "{n} nouvelles couleurs ne changeront pas avec Recolorer."
+			},
+			"mirrored": "{dir} est le miroir de {of}, donc ses modifications n’ont pas été utilisées. Modifiez {of}, ou désactivez le miroir dans Directions pour modifier {dir} séparément.",
+			"noBodyRow": "Cette animation n’a pas d’images du corps de base pour {dir}, donc les modifications à cet endroit n’ont pas été utilisées.",
+			"missingLayer": "Aucun fichier ne se termine par -{layer}.png, ce calque reste donc tel quel.",
+			"ignored": {
+				"one": "{n} autre fichier a été ignoré.",
+				"other": "{n} autres fichiers ont été ignorés."
+			},
+			"fitted": "Les objets ajustés à ces images du corps de base restent portés : {names}. Vérifiez-les sur les images modifiées.",
+			"emptiedBody": "Une image vide du corps de base est ignorée lors de la création de nouveaux objets pour elle."
+		},
+		"errors": {
+			"size": "Ce PNG fait {got} px, mais ces images nécessitent {want} px. Conservez la taille et la grille d’origine.",
+			"duplicateLayer": "Plusieurs fichiers se terminent par -{layer}.png. Choisissez un fichier par calque.",
+			"noLayerMatch": "Aucun PNG ne correspond à ces images. Utilisez les fichiers téléchargés en gardant les noms qui se terminent par -fg ou -bg.",
+			"noPng": "Aucun PNG trouvé. Choisissez le PNG que vous avez téléchargé et modifié.",
+			"notEditable": "Copiez ce personnage avant de corriger ses images.",
+			"targetGone": "Cet objet ou cette animation n’existe plus.",
+			"changed": "Ces images ont changé depuis votre vérification. Importez à nouveau le fichier.",
+			"originalsMissing": "Les images d’origine ne sont pas enregistrées dans cette copie du personnage.",
+			"originalsUnusable": "Les images d’origine de cette copie du personnage ne peuvent pas être utilisées, donc rien n’a été modifié.",
+			"nothingToRevert": "Ces images ont été modifiées à nouveau depuis, il n’y a donc rien à annuler ici.",
+			"badPng": "Ce fichier n’a pas pu être lu comme PNG. Enregistrez-le à nouveau au format PNG et importez-le.",
+			"resolveDrafts": "Conservez ou rejetez les brouillons d’objets de ce personnage avant de remplacer des images du corps de base.",
+			"importFailed": "Impossible de lire ces images. Réessayez.",
+			"saveFailed": "Impossible d’enregistrer ces images. Rien n’a été modifié. Réessayez."
+		}
 	}
 }

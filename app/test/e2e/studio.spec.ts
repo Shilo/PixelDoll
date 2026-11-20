@@ -17,7 +17,7 @@ import { readFileSync } from 'node:fs';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
-import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
+import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import './studio-thumbnails.ts';
 import './dialog-dismissal.ts';
 
@@ -6944,7 +6944,8 @@ for (const kind of ['outfit', 'move'] as const) {
 		await expect(menu).toBeVisible();
 		await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 		await expect(menu.locator('hr')).toHaveCount(1);
-		await expect(menu.getByRole('menuitem', { name: 'Download ZIP', exact: true })).toBeFocused();
+		// The first action takes focus: Fix frames, then Download ZIP.
+		await expect(menu.getByRole('menuitem', { name: /^Fix frames/ })).toBeFocused();
 		await page.keyboard.press('Escape');
 		await expect(trigger).toBeFocused();
 		await choice.click({ button: 'right' });
@@ -7771,4 +7772,109 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	await expect(sword).toHaveAttribute('aria-pressed', 'true');
 	await expect(shield).toHaveAttribute('aria-pressed', 'false');
 	expect(posts).toEqual([]);
+});
+
+test('Fix frames: download, edit, review, replace, Undo and Restore for an item and the body, offline', async ({
+	page,
+	context
+}, info) => {
+	await context.route('https://*.pixellab.ai/**', (route) => route.abort());
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
+	);
+	await page.evaluate(async () => {
+		const p = '/src/studio/state.svelte.ts',
+			s = (await import(p)) as typeof import('../../src/studio/state.svelte.ts');
+		await s.copyDemo();
+	});
+	const pixels = (anim: string, itemId: string) =>
+		page.evaluate(
+			async ([anim, itemId]) => {
+				const s = await import('/src/studio/state.svelte.ts' as string),
+					fix = await import('/src/lib/frames/fix.ts' as string);
+				return Array.from(fix.frameSheets(s.store.project, itemId, anim)[0].image.data as number[]);
+			},
+			[anim, itemId]
+		);
+	const original = await pixels('walk', 'helmet_steel');
+
+	await page.getByRole('button', { name: 'More options for Steel helmet' }).click();
+	await page.getByRole('menuitem', { name: /^Fix frames/ }).click();
+	const sheet = page.getByRole('dialog', { name: 'Fix frames' });
+	await sheet.getByRole('combobox', { name: 'Move' }).selectOption('walk');
+	const [download] = await Promise.all([
+		page.waitForEvent('download'),
+		sheet.getByRole('button', { name: 'Download PNG' }).click()
+	]);
+	expect(download.suggestedFilename()).toMatch(/-walk\.png$/);
+	const png = await decodePngBytes(readFileSync((await download.path())!));
+	expect([png.w, png.h]).toEqual([512, 256]);
+	const edit = (x: number, y: number) => {
+		const data = new Uint8ClampedArray(png.data);
+		data.set([214, 60, 190, 255], (y * png.w + x) * 4);
+		return encodePngBytes({ ...png, data });
+	};
+	const importPng = async (bytes: Uint8Array, name = 'edited.png') =>
+		sheet.locator('input[type=file]').setInputFiles({
+			name,
+			mimeType: 'image/png',
+			buffer: Buffer.from(bytes)
+		});
+
+	await importPng(await encodePngBytes(makeImg(10, 10)));
+	await expect(sheet.getByRole('alert')).toContainText('need 512×256 px');
+
+	await importPng(await edit(3 * 64 + 31, 12));
+	const review = page.getByRole('dialog', { name: 'Review frames' });
+	await expect(review).toContainText('1 frame changed');
+	await expect(review).toContainText("1 new color won't change with Recolor.");
+	await review.getByRole('button', { name: /^Replace 1 frame/ }).click();
+	await expect(sheet).toContainText('Restore original · 1');
+	expect(await pixels('walk', 'helmet_steel')).not.toEqual(original);
+	await sheet.getByRole('button', { name: /^Replaced 1 frame of Steel helmet. Undo/ }).click();
+	await expect(sheet.getByText('Undid 1 frame.')).toBeVisible();
+	expect(await pixels('walk', 'helmet_steel')).toEqual(original);
+
+	await importPng(await edit(3 * 64 + 31, 12));
+	await review.getByRole('button', { name: /^Replace 1 frame/ }).click();
+	await page.reload();
+	await page.getByRole('button', { name: 'Customize Adventurer copy' }).first().click();
+	await page.getByRole('button', { name: 'More options for Steel helmet' }).click();
+	await page.getByRole('menuitem', { name: /^Details/ }).click();
+	await page
+		.getByRole('dialog', { name: 'Item' })
+		.getByRole('button', { name: /^Fix frames/ })
+		.click();
+	await sheet.getByRole('combobox', { name: 'Move' }).selectOption('walk');
+	await sheet.getByRole('button', { name: 'Restore original · 1' }).click();
+	await page.getByRole('alertdialog').getByRole('button', { name: 'Restore', exact: true }).click();
+	await expect(sheet.getByText('Restored 1 original frame.')).toBeVisible();
+	expect(await pixels('walk', 'helmet_steel')).toEqual(original);
+	await sheet.getByRole('button', { name: 'Done' }).click();
+
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'More actions for Walk' }).click();
+	await page.getByRole('menuitem', { name: /^Fix frames/ }).click();
+	await expect(sheet.getByRole('combobox', { name: 'Frames of' })).toHaveValue('base');
+	const body = await pixels('walk', 'base');
+	const bodyPng = { w: 512, h: 256, data: new Uint8ClampedArray(body) };
+	bodyPng.data.set([40, 200, 240, 255], (20 * 512 + 30) * 4);
+	await importPng(await encodePngBytes(bodyPng), 'adventurer-body-walk.png');
+	await expect(review).toContainText('Items fitted to these body frames stay worn');
+	await review.getByRole('button', { name: /^Replace 1 frame/ }).click();
+	await expect(sheet).toContainText('Restore original · 1');
+	const fitted = await page.evaluate(async () => {
+		const s = await import('/src/studio/state.svelte.ts' as string),
+			m = s.store.project.manifest;
+		return {
+			stale: m.items.filter((i: { baseHash: string }) => i.baseHash !== m.rig.baseHash).length,
+			worn: s.doc.items.head
+		};
+	});
+	expect(fitted).toEqual({ stale: 0, worn: 'helmet_steel' });
 });

@@ -738,6 +738,7 @@
 		"finishBeforeCharacterRemoval": "캐릭터를 삭제하기 전에 대기 중인 생성 작업을 끝내거나 버려 주세요.",
 		"finishBeforeMoveRemoval": "동작을 삭제하기 전에 대기 중인 생성 작업을 끝내거나 버려 주세요.",
 		"finishBeforeDirectionRemoval": "방향을 바꾸기 전에 대기 중인 생성 작업을 끝내거나 버려 주세요.",
+		"finishBeforeFixFrames": "프레임을 수정하기 전에 진행 중인 생성 작업이 끝날 때까지 기다려 주세요.",
 		"couldNotRemoveCharactersSavedByAn": "이전 미리보기 버전에서 저장한 캐릭터를 제거하지 못했어요: {reason}",
 		"couldNotReadYourSavedCharactersReason": "저장된 캐릭터를 읽지 못했어요: {reason}",
 		"couldNotOpenThatCharacterError": "해당 캐릭터를 열지 못했어요: {error}",
@@ -1226,7 +1227,8 @@
 			"look": "확인 필요",
 			"unfitted": "맞지 않음",
 			"stale": "다른 몸체용",
-			"demo": "데모"
+			"demo": "데모",
+			"edited": "직접 편집함"
 		},
 		"coverage": {
 			"oneMove": "{move} 프레임 일부가 빠져 있어요",
@@ -2335,5 +2337,89 @@
 		"unreadable": "이 이미지를 열 수 없어요. 다른 파일을 선택하세요.",
 		"noArtworkResized": "크기를 줄인 뒤 남은 보이는 그림이 없어요. 다른 이미지를 선택하세요.",
 		"noArtwork": "이 이미지에는 보이는 그림이 없어요. 다른 파일을 선택하세요."
+	},
+	"fixFrames": {
+		"open": "프레임 수정",
+		"title": "프레임 수정",
+		"reviewTitle": "프레임 검토",
+		"target": "대상",
+		"body": "기본 몸체",
+		"move": "동작",
+		"gridLabel": "프레임: {name}, {move}",
+		"frameLabel": "{dir}, 프레임 {n}",
+		"editedByYou": "직접 수정함",
+		"mirrors": "{of} 대칭",
+		"hint": "PNG를 다운로드해 Aseprite, Pixelorama, Piskel 같은 픽셀 편집기에서 수정한 다음 가져오세요. 크기와 {w}×{h} 격자는 그대로 유지하세요. 행은 방향, 열은 프레임이에요. 색상은 원래 색상이라 색상 변경도 계속 쓸 수 있어요.",
+		"hintLayers": "ZIP을 다운로드하세요. 레이어마다 PNG가 하나씩 들어 있어요. Aseprite, Pixelorama, Piskel 같은 픽셀 편집기에서 수정하고 이름, 크기, {w}×{h} 격자는 그대로 유지한 다음 ZIP이나 PNG를 가져오세요. 색상은 원래 색상이라 색상 변경도 계속 쓸 수 있어요.",
+		"downloadPng": "PNG 다운로드",
+		"downloadZip": "ZIP 다운로드",
+		"import": "수정한 PNG 가져오기",
+		"importFiles": "수정한 파일 가져오기",
+		"demoNote": "기본 제공 데모예요. 프레임을 바꾸려면 사본을 수정하세요.",
+		"restoring": "복원하는 중…",
+		"beforeFrame": "변경 전, {dir} {n}",
+		"afterFrame": "변경 후, {dir} {n}",
+		"playing": "{move}, 재생 중",
+		"changedFrame": "{dir}, 프레임 {n}, 변경됨",
+		"editedFrame": "{dir}, 프레임 {n}, 직접 수정함",
+		"reading": "읽는 중…",
+		"release": "놓아서 가져오기",
+		"changedCount": {
+			"other": "프레임 {n}개 변경됨"
+		},
+		"nothingChanged": "변경된 프레임이 없어요. 다운로드한 PNG를 수정하고 저장한 다음 다시 가져오세요.",
+		"replace": {
+			"other": "프레임 {n}개 바꾸기"
+		},
+		"restore": {
+			"other": "원본 복원 · {n}"
+		},
+		"restoreTitle": {
+			"other": "원본 프레임 {n}개를 복원할까요?"
+		},
+		"restoreAction": "복원",
+		"restoreBody": "{name} 항목에서 바꾼 프레임이 모두 수정 전 상태로 돌아가요.",
+		"replaced": {
+			"other": "{name} 항목의 프레임 {count}개를 바꿨어요."
+		},
+		"undo": "실행 취소",
+		"undone": {
+			"other": "프레임 {count}개를 되돌렸어요."
+		},
+		"restored": {
+			"other": "원본 프레임 {count}개를 복원했어요."
+		},
+		"notes": {
+			"softAlpha": {
+				"other": "반투명 픽셀 {n}개가 완전히 불투명하거나 완전히 투명해져요."
+			},
+			"newColors": {
+				"other": "새 색상 {n}개는 색상 변경으로 바뀌지 않아요."
+			},
+			"mirrored": "{dir} 방향은 {of} 방향의 대칭이라 수정한 내용이 쓰이지 않았어요. {of} 방향을 수정하거나, {dir} 방향을 따로 수정하려면 방향 설정에서 대칭을 끄세요.",
+			"noBodyRow": "이 동작에는 {dir} 방향의 기본 몸체 프레임이 없어 그 부분의 수정 내용이 쓰이지 않았어요.",
+			"missingLayer": "이름이 -{layer}.png로 끝나는 파일이 없어서 그 레이어는 그대로 유지돼요.",
+			"ignored": {
+				"other": "다른 파일 {n}개는 무시했어요."
+			},
+			"fitted": "이 기본 몸체 프레임에 맞춘 아이템은 계속 착용돼요: {names}. 변경된 프레임에서 확인하세요.",
+			"emptiedBody": "빈 기본 몸체 프레임은 그 프레임에 새 아이템을 만들 때 건너뛰어요."
+		},
+		"errors": {
+			"size": "이 PNG는 {got} px이지만 이 프레임에는 {want} px이 필요해요. 원래 크기와 격자를 유지하세요.",
+			"duplicateLayer": "이름이 -{layer}.png로 끝나는 파일이 두 개 이상이에요. 레이어마다 파일을 하나씩 선택하세요.",
+			"noLayerMatch": "이 프레임과 맞는 PNG가 없어요. 다운로드한 파일을 사용하고 -fg나 -bg로 끝나는 이름은 그대로 두세요.",
+			"noPng": "PNG를 찾지 못했어요. 다운로드해서 수정한 PNG를 선택하세요.",
+			"notEditable": "프레임을 수정하기 전에 이 캐릭터를 복사하세요.",
+			"targetGone": "이 아이템이나 동작이 더 이상 없어요.",
+			"changed": "검토한 뒤 프레임이 바뀌었어요. 파일을 다시 가져오세요.",
+			"originalsMissing": "이 캐릭터 사본에는 원본 프레임이 저장되어 있지 않아요.",
+			"originalsUnusable": "이 캐릭터 사본의 원본 프레임을 사용할 수 없어서 아무것도 변경하지 않았어요.",
+			"nothingToRevert": "그 뒤로 이 프레임이 다시 바뀌어서 여기서 되돌릴 내용이 없어요.",
+			"badPng": "이 파일을 PNG로 읽을 수 없어요. PNG로 다시 저장한 다음 가져오세요.",
+			"resolveDrafts": "기본 몸체 프레임을 바꾸기 전에 이 캐릭터의 아이템 초안을 유지하거나 버리세요.",
+			"importFailed": "이 프레임을 읽을 수 없어요. 다시 시도하세요.",
+			"saveFailed": "이 프레임을 저장할 수 없어요. 아무것도 변경되지 않았어요. 다시 시도하세요."
+		}
 	}
 }

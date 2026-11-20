@@ -766,6 +766,7 @@
 		"finishBeforeCharacterRemoval": "Termina o descarta la generación pendiente antes de eliminar un personaje.",
 		"finishBeforeMoveRemoval": "Termina o descarta la generación pendiente antes de eliminar una animación.",
 		"finishBeforeDirectionRemoval": "Termina o descarta la generación pendiente antes de cambiar las direcciones.",
+		"finishBeforeFixFrames": "Espera a que termine la generación en curso antes de corregir fotogramas.",
 		"couldNotRemoveCharactersSavedByAn": "No se pudieron quitar los personajes guardados por una versión preliminar anterior: {reason}",
 		"couldNotReadYourSavedCharactersReason": "No se pudieron leer tus personajes guardados: {reason}",
 		"couldNotOpenThatCharacterError": "No se pudo abrir ese personaje: {error}",
@@ -1280,7 +1281,8 @@
 			"look": "Por revisar",
 			"unfitted": "Sin ajustar",
 			"stale": "Hecho para otro cuerpo",
-			"demo": "Demo"
+			"demo": "Demo",
+			"edited": "Editado por ti"
 		},
 		"coverage": {
 			"oneMove": "Faltan algunos fotogramas de {move}",
@@ -2443,5 +2445,99 @@
 		"unreadable": "No se pudo abrir esta imagen. Elige otro archivo.",
 		"noArtworkResized": "No queda arte visible tras cambiar el tamaño. Elige otra imagen.",
 		"noArtwork": "Esta imagen no tiene arte visible. Elige otro archivo."
+	},
+	"fixFrames": {
+		"open": "Corregir fotogramas",
+		"title": "Corregir fotogramas",
+		"reviewTitle": "Revisar fotogramas",
+		"target": "Fotogramas de",
+		"body": "Cuerpo base",
+		"move": "Animación",
+		"gridLabel": "Fotogramas de {name} en {move}",
+		"frameLabel": "{dir}, fotograma {n}",
+		"editedByYou": "Editado por ti",
+		"mirrors": "Reflejo de {of}",
+		"hint": "Descarga el PNG, edítalo en cualquier editor de píxeles como Aseprite, Pixelorama o Piskel y luego impórtalo. Mantén su tamaño y su cuadrícula de {w}×{h}: las filas son direcciones y las columnas, fotogramas. Los colores son los originales, así que Cambiar colores sigue funcionando.",
+		"hintLayers": "Descarga el ZIP: tiene un PNG por capa. Edítalos en cualquier editor de píxeles como Aseprite, Pixelorama o Piskel, mantén sus nombres, su tamaño y la cuadrícula de {w}×{h}, y luego importa el ZIP o los PNG. Los colores son los originales, así que Cambiar colores sigue funcionando.",
+		"downloadPng": "Descargar PNG",
+		"downloadZip": "Descargar ZIP",
+		"import": "Importar PNG editado",
+		"importFiles": "Importar archivos editados",
+		"demoNote": "Esta es la demo incluida. Edita una copia para reemplazar sus fotogramas.",
+		"restoring": "Restaurando…",
+		"beforeFrame": "Antes, {dir} {n}",
+		"afterFrame": "Después, {dir} {n}",
+		"playing": "{move}, en reproducción",
+		"changedFrame": "{dir}, fotograma {n}, cambiado",
+		"editedFrame": "{dir}, fotograma {n}, editado por ti",
+		"reading": "Leyendo…",
+		"release": "Suelta para importar",
+		"changedCount": {
+			"one": "{n} fotograma cambiado",
+			"other": "{n} fotogramas cambiados"
+		},
+		"nothingChanged": "No cambió ningún fotograma. Edita el PNG descargado, guárdalo e impórtalo de nuevo.",
+		"replace": {
+			"one": "Reemplazar {n} fotograma",
+			"other": "Reemplazar {n} fotogramas"
+		},
+		"restore": {
+			"one": "Restaurar original · {n}",
+			"other": "Restaurar originales · {n}"
+		},
+		"restoreTitle": {
+			"one": "¿Restaurar {n} fotograma original?",
+			"other": "¿Restaurar {n} fotogramas originales?"
+		},
+		"restoreAction": "Restaurar",
+		"restoreBody": "Cada fotograma de {name} que reemplazaste vuelve a estar como antes de tus ediciones.",
+		"replaced": {
+			"one": "Se reemplazó {count} fotograma de {name}.",
+			"other": "Se reemplazaron {count} fotogramas de {name}."
+		},
+		"undo": "Deshacer",
+		"undone": {
+			"one": "Se deshizo {count} fotograma.",
+			"other": "Se deshicieron {count} fotogramas."
+		},
+		"restored": {
+			"one": "Se restauró {count} fotograma original.",
+			"other": "Se restauraron {count} fotogramas originales."
+		},
+		"notes": {
+			"softAlpha": {
+				"one": "{n} píxel semitransparente se volverá totalmente opaco o totalmente transparente.",
+				"other": "{n} píxeles semitransparentes se volverán totalmente opacos o totalmente transparentes."
+			},
+			"newColors": {
+				"one": "{n} color nuevo no cambiará con Cambiar colores.",
+				"other": "{n} colores nuevos no cambiarán con Cambiar colores."
+			},
+			"mirrored": "{dir} es un reflejo de {of}, así que sus ediciones no se usaron. Edita {of} o desactiva el reflejo en Direcciones para editar {dir} por separado.",
+			"noBodyRow": "Esta animación no tiene fotogramas del cuerpo base en {dir}, así que las ediciones ahí no se usaron.",
+			"missingLayer": "Ningún archivo termina en -{layer}.png, así que esa capa se queda como está.",
+			"ignored": {
+				"one": "Se ignoró {n} archivo más.",
+				"other": "Se ignoraron {n} archivos más."
+			},
+			"fitted": "Los objetos ajustados a estos fotogramas del cuerpo base siguen puestos: {names}. Revísalos en los fotogramas cambiados.",
+			"emptiedBody": "Un fotograma vacío del cuerpo base se omite al crear objetos nuevos para él."
+		},
+		"errors": {
+			"size": "Este PNG mide {got} px, pero estos fotogramas necesitan {want} px. Mantén el tamaño y la cuadrícula originales.",
+			"duplicateLayer": "Más de un archivo termina en -{layer}.png. Elige un archivo por capa.",
+			"noLayerMatch": "Ningún PNG coincide con estos fotogramas. Usa los archivos descargados y conserva los nombres que terminan en -fg o -bg.",
+			"noPng": "No se encontró ningún PNG. Elige el PNG que descargaste y editaste.",
+			"notEditable": "Copia este personaje antes de corregir sus fotogramas.",
+			"targetGone": "Este objeto o esta animación ya no existe.",
+			"changed": "Estos fotogramas cambiaron desde tu revisión. Importa el archivo de nuevo.",
+			"originalsMissing": "Los fotogramas originales no están guardados en esta copia del personaje.",
+			"originalsUnusable": "Los fotogramas originales de esta copia del personaje no se pueden usar, así que no se cambió nada.",
+			"nothingToRevert": "Estos fotogramas se cambiaron de nuevo después, así que aquí no hay nada que deshacer.",
+			"badPng": "Este archivo no se pudo leer como PNG. Guárdalo de nuevo como PNG e impórtalo.",
+			"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de reemplazar fotogramas del cuerpo base.",
+			"importFailed": "No se pudieron leer estos fotogramas. Inténtalo de nuevo.",
+			"saveFailed": "No se pudieron guardar estos fotogramas. No se cambió nada. Inténtalo de nuevo."
+		}
 	}
 }

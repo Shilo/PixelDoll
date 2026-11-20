@@ -34,6 +34,7 @@
 		cancelGen,
 		openGenerationReview,
 		addShared,
+		openFrames,
 		type Gen
 	} from './state.svelte.ts';
 	import {
@@ -42,6 +43,7 @@
 		Download,
 		CircleCheck,
 		CopyPlus,
+		Grid2x2,
 		HandGrab,
 		Info,
 		Pencil,
@@ -391,6 +393,13 @@
 						)}<SurfaceChevron /></button
 					>
 				{/if}
+				<button
+					class="row bu-action"
+					data-variant="quiet"
+					role="menuitem"
+					onclick={() => act(() => openFrames(it.id))}
+					><Grid2x2 size={16} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
+				>
 				<button
 					class="row bu-action"
 					data-variant="quiet"

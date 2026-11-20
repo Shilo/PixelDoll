@@ -2,7 +2,14 @@
 // item generations (drafts) and the create-character run. Pixel data lives in $state.raw (deep proxies over the manifest
 // made recolor/compose take seconds, B5); manifest edits bump doc.rev.
 import type { Snippet } from 'svelte';
-import { errorMessage, errorText, message, LocalizedError, type Message } from '../lib/message.ts';
+import {
+	errorMessage,
+	errorText,
+	errorTranslation,
+	message,
+	LocalizedError,
+	type Message
+} from '../lib/message.ts';
 import { SvelteSet } from 'svelte/reactivity';
 import {
 	applyDress,
@@ -115,6 +122,7 @@ import {
 import { acceptCopy, copyMoreFrames, freeFrames, itemKey } from '../lib/equipment/copy.ts';
 import { demoItemsShown } from './wardrobeVisibility.svelte.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
+import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
 import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
@@ -210,7 +218,8 @@ export type SheetId =
 	| 'details'
 	| 'setup'
 	| 'workspaceExport'
-	| 'slots';
+	| 'slots'
+	| 'frames';
 const sizeNow = (): Size => {
 	const w = innerWidth,
 		h = innerHeight;
@@ -1055,7 +1064,7 @@ let characterJobsPending = $state(false),
 
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
 function characterEditBlocked(
-	action: 'delete' | 'delete move' | 'change directions for'
+	action: 'delete' | 'delete move' | 'change directions for' | 'fix frames of'
 ): LocalizedError | '' {
 	if (doc.loading || opening)
 		return new LocalizedError(
@@ -1088,10 +1097,15 @@ function characterEditBlocked(
 						'Finish or dismiss pending generation work before deleting a move.',
 						'state.finishBeforeMoveRemoval'
 					)
-				: new LocalizedError(
-						'Finish or dismiss pending generation work before changing directions.',
-						'state.finishBeforeDirectionRemoval'
-					);
+				: action === 'fix frames of'
+					? new LocalizedError(
+							'Wait for the current generation work to finish before fixing frames.',
+							'state.finishBeforeFixFrames'
+						)
+					: new LocalizedError(
+							'Finish or dismiss pending generation work before changing directions.',
+							'state.finishBeforeDirectionRemoval'
+						);
 	return '';
 }
 
@@ -1551,17 +1565,8 @@ export function resetLayer(itemId: string, ladder: ZOverride[]) {
 }
 
 let itemPaletteRefresh = 0;
-/** Free, explicit correction of one saved item view; keep the open outfit and inspector selection. */
-export async function matchItemPalette(
-	projectId: string,
-	itemId: string,
-	anim: string,
-	dir: DirectionName,
-	reviewed: ItemPaletteRepairPlan
-) {
-	const request = openRequest;
-	await flushSave();
-	await (await itemRun()).matchItemColors(projectId, itemId, anim, dir, reviewed);
+/** Show what a free local edit just saved, keeping the open outfit and inspector selection. */
+async function refreshSaved(projectId: string, request: number) {
 	if (doc.id !== projectId || request !== openRequest) return;
 	const refresh = ++itemPaletteRefresh;
 	for (;;) {
@@ -1574,6 +1579,82 @@ export async function matchItemPalette(
 		slotBase = { id: projectId, slots: structuredClone(fresh.project.manifest.slots) };
 		doc.rev++;
 		return;
+	}
+}
+/** Free, explicit correction of one saved item view; keep the open outfit and inspector selection. */
+export async function matchItemPalette(
+	projectId: string,
+	itemId: string,
+	anim: string,
+	dir: DirectionName,
+	reviewed: ItemPaletteRepairPlan
+) {
+	const request = openRequest;
+	await flushSave();
+	await (await itemRun()).matchItemColors(projectId, itemId, anim, dir, reviewed);
+	await refreshSaved(projectId, request);
+}
+
+// ---------- Fix frames ----------
+export const frames = $state({ item: '', anim: '' });
+const framesModule = () => lazy(() => import('../lib/frames/save.ts'));
+/** Open Fix frames for an item (the body when empty) and a move (the one playing when empty). */
+export function openFrames(itemId = '', anim = '') {
+	const m = store.project?.manifest;
+	if (!m) return;
+	frames.item = itemId || m.rig.baseItem;
+	frames.anim =
+		anim || (m.rig.animations.some((a) => a.id === ui.anim) ? ui.anim : m.rig.animations[0].id);
+	ui.sheet = 'frames';
+}
+export function framesBlocked(): LocalizedError | '' {
+	if (!doc.id.startsWith('rig-')) return '';
+	return characterEditBlocked('fix frames of');
+}
+export async function prepareFrames(
+	projectId: string,
+	itemId: string,
+	anim: string,
+	files: FramesFile[]
+) {
+	await flushSave();
+	return (await framesModule()).prepareFrames(projectId, itemId, anim, files);
+}
+/** Save a reviewed import; the toast's Undo reverts exactly this import. `name` is how the sheet calls the target. */
+export async function replaceFrames(prepared: PreparedFrames, name: string) {
+	const request = openRequest,
+		{ projectId, plan } = prepared;
+	const id = await (await framesModule()).saveFrames(prepared);
+	await refreshSaved(projectId, request);
+	toast(
+		[
+			message('fixFrames.replaced', { count: plan.changed.length, name }),
+			message('fixFrames.undo')
+		],
+		{
+			tone: 'success',
+			duration: 10000,
+			action: () => revertFrames(projectId, plan.itemId, { undo: id })
+		}
+	);
+}
+/** Undo one import of an item's frames, or restore every edited frame of it. */
+export async function revertFrames(
+	projectId: string,
+	itemId: string,
+	how: { undo: string } | 'restore'
+) {
+	const request = openRequest;
+	try {
+		await flushSave();
+		const count = await (await framesModule()).revertFrames(projectId, itemId, how);
+		await refreshSaved(projectId, request);
+		toast(message(how === 'restore' ? 'fixFrames.restored' : 'fixFrames.undone', { count }), {
+			tone: 'success'
+		});
+	} catch (error) {
+		console.error('fix frames', error);
+		toast(errorTranslation(error) ?? message('fixFrames.errors.saveFailed'), { tone: 'danger' });
 	}
 }
 

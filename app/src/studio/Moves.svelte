@@ -3,7 +3,7 @@
 	import { openerLabel } from './openerLabel.ts';
 	import Sprite from './Sprite.svelte';
 	import { moveThumbnails } from './moveThumbnails.ts';
-	import { ui, doc, store, view, isDemo, moving } from './state.svelte.ts';
+	import { ui, doc, store, view, isDemo, moving, openFrames } from './state.svelte.ts';
 	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayError } from '../lib/i18n.ts';
@@ -46,6 +46,7 @@
 					kind="move"
 					locked={displayError(moveDeletionBlocked(a.id))}
 					ondownload={() => downloadMoveZip(a.id)}
+					onfixframes={() => openFrames('', a.id)}
 					ondelete={() => removeMove(a.id)}
 				>
 					<button

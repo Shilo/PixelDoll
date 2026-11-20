@@ -300,6 +300,19 @@ It matches only small, unambiguous neutral color differences to that item's exis
 body pixels, existing palette colors, material ramps, saved recolors and quality warnings stay intact. Larger or ambiguous differences
 remain unchanged. This runs locally and makes no PixelLab call; export a backup before editing artwork.
 
+## Fix frames
+
+Any frame can be fixed by hand in your own pixel editor (Aseprite, Pixelorama, Piskel or similar). Open **Fix frames…**
+from an item's ⋮ menu or its **Item** sheet, or from a move's ⋮ menu in **Moves** for the body. Pick the body or an item
+and a move, then **Download PNG** (a ZIP with one PNG per layer for items drawn in front of and behind the body). Rows are
+directions and columns are frames; keep the size and grid, and the file names of a ZIP. The colors are the original
+colors, so Recolor keeps working. **Import edited PNG** shows what changed before anything is saved, then
+**Replace · Free** saves it. The toast offers **Undo**, and **Restore originals** puts every edited frame back later.
+
+A direction that mirrors another follows it: edit the source direction, or turn off mirroring in **Directions** to edit
+it on its own. Items fitted to the body stay worn after a body fix; check them on the changed frames. Checks are not run
+on edited frames, so the item shows **Edited by you**. This runs locally and makes no PixelLab call.
+
 ## Add a move
 
 Open the **Moves** tab → **Add a move**. Type a motion such as "jumping in place" or pick a preset such as **Idle**, **Walk**,

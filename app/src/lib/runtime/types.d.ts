@@ -106,6 +106,9 @@ export interface Item {
 	provenance: Provenance[];
 	designWarnings?: string[]; // explicitly accepted keyframe design issues, retained when move QA is replaced
 	paletteRepairs?: ItemPaletteRepair[]; // explicit local edits; paid source provenance and historical QA remain intact
+	/** Frames the user replaced from edited PNGs (Fix frames), oldest first: history for Undo and Restore originals, never read
+	 *  by compose or export. Keeping the earlier hashes here also keeps their pixels stored. */
+	frameEdits?: ItemFrameEdit[];
 	qa?: ItemQa; // not read by compose/export
 	/** The saved character this item was copied from without generating, and its item there; its provenance records that
 	 *  character's paid calls. */
@@ -141,6 +144,21 @@ export interface ItemPaletteRepair {
 		cell: number;
 		changedPixels: number;
 		layers: { id: string; before: Sha256; after: Sha256 }[];
+	}[];
+}
+
+export interface ItemFrameEdit {
+	version: 'frames-v1';
+	id: string;
+	anim: string;
+	frames: {
+		dir: DirectionName;
+		cell: number;
+		layers: { id: 'main' | 'fg' | 'bg'; before: Sha256 | null; after: Sha256 | null }[];
+		cut: { before: number[] | null; after: number[] | null };
+		added?: true;
+		rest?: Sha256;
+		newRows?: ('main' | 'fg' | 'bg')[];
 	}[];
 }
 

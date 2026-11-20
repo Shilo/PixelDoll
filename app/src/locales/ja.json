@@ -738,6 +738,7 @@
 		"finishBeforeCharacterRemoval": "キャラクターを削除する前に、保留中の生成を完了するか破棄してください。",
 		"finishBeforeMoveRemoval": "モーションを削除する前に、保留中の生成を完了するか破棄してください。",
 		"finishBeforeDirectionRemoval": "向きを変更する前に、保留中の生成を完了するか破棄してください。",
+		"finishBeforeFixFrames": "フレームを修正する前に、実行中の生成が終わるまでお待ちください。",
 		"couldNotRemoveCharactersSavedByAn": "以前のプレビュー版で保存したキャラクターを削除できませんでした：{reason}",
 		"couldNotReadYourSavedCharactersReason": "保存したキャラクターを読み込めませんでした：{reason}",
 		"couldNotOpenThatCharacterError": "そのキャラクターを開けませんでした：{error}",
@@ -1230,7 +1231,8 @@
 			"look": "要確認",
 			"unfitted": "未調整",
 			"stale": "別の素体用",
-			"demo": "デモ"
+			"demo": "デモ",
+			"edited": "自分で編集済み"
 		},
 		"coverage": {
 			"oneMove": "{move}のフレームが一部不足しています",
@@ -2347,5 +2349,89 @@
 		"unreadable": "この画像を開けませんでした。別のファイルを選択してください。",
 		"noArtworkResized": "縮小後に表示できる部分が残りませんでした。別の画像を選択してください。",
 		"noArtwork": "この画像には表示できる内容がありません。別のファイルを選択してください。"
+	},
+	"fixFrames": {
+		"open": "フレームを修正",
+		"title": "フレームを修正",
+		"reviewTitle": "フレームを確認",
+		"target": "対象",
+		"body": "素体",
+		"move": "モーション",
+		"gridLabel": "{move}の{name}のフレーム",
+		"frameLabel": "{dir}、フレーム{n}",
+		"editedByYou": "自分で編集済み",
+		"mirrors": "{of}を反転",
+		"hint": "PNGをダウンロードし、Aseprite、Pixelorama、Piskelなどのドット絵エディターで編集してから、インポートしてください。サイズと{w}×{h}のグリッドはそのまま保ってください。行が向き、列がフレームです。色は元の色のままなので、色の変更も引き続き使えます。",
+		"hintLayers": "ZIPをダウンロードしてください。レイヤーごとにPNGが1枚入っています。Aseprite、Pixelorama、Piskelなどのドット絵エディターで編集し、ファイル名、サイズ、{w}×{h}のグリッドはそのまま保ってから、ZIPまたはPNGをインポートしてください。色は元の色のままなので、色の変更も引き続き使えます。",
+		"downloadPng": "PNGをダウンロード",
+		"downloadZip": "ZIPをダウンロード",
+		"import": "編集したPNGをインポート",
+		"importFiles": "編集したファイルをインポート",
+		"demoNote": "これは付属のデモです。フレームを置き換えるにはコピーを編集してください。",
+		"restoring": "復元中…",
+		"beforeFrame": "変更前、{dir} {n}",
+		"afterFrame": "変更後、{dir} {n}",
+		"playing": "{move}、再生中",
+		"changedFrame": "{dir}、フレーム{n}、変更あり",
+		"editedFrame": "{dir}、フレーム{n}、自分で編集済み",
+		"reading": "読み込み中…",
+		"release": "離してインポート",
+		"changedCount": {
+			"other": "{n}フレームが変更されました"
+		},
+		"nothingChanged": "変更されたフレームはありません。ダウンロードしたPNGを編集して保存し、もう一度インポートしてください。",
+		"replace": {
+			"other": "{n}フレームを置き換え"
+		},
+		"restore": {
+			"other": "元のフレームを復元 · {n}"
+		},
+		"restoreTitle": {
+			"other": "{n}フレームを元に戻しますか？"
+		},
+		"restoreAction": "復元",
+		"restoreBody": "置き換えた{name}のフレームはすべて、編集前の状態に戻ります。",
+		"replaced": {
+			"other": "{name}の{count}フレームを置き換えました。"
+		},
+		"undo": "元に戻す",
+		"undone": {
+			"other": "{count}フレームを元に戻しました。"
+		},
+		"restored": {
+			"other": "元のフレームを{count}フレーム復元しました。"
+		},
+		"notes": {
+			"softAlpha": {
+				"other": "半透明のピクセル{n}個が完全に不透明または完全に透明になります。"
+			},
+			"newColors": {
+				"other": "新しい{n}色は色の変更で変わりません。"
+			},
+			"mirrored": "{dir}は{of}を反転しているため、編集は使われませんでした。{of}を編集するか、{dir}を個別に編集する場合は「向き」で反転をオフにしてください。",
+			"noBodyRow": "このモーションには{dir}の素体フレームがないため、その部分の編集は使われませんでした。",
+			"missingLayer": "名前が-{layer}.pngで終わるファイルがないため、そのレイヤーはそのままです。",
+			"ignored": {
+				"other": "ほかの{n}個のファイルは無視されました。"
+			},
+			"fitted": "これらの素体フレームに合わせたアイテムは着用されたままです：{names}。変更したフレームで確認してください。",
+			"emptiedBody": "空の素体フレームは、そのフレーム用に新しいアイテムを作るときにスキップされます。"
+		},
+		"errors": {
+			"size": "このPNGは{got} pxですが、このフレームには{want} pxが必要です。元のサイズとグリッドを保ってください。",
+			"duplicateLayer": "名前が-{layer}.pngで終わるファイルが複数あります。レイヤーごとにファイルを1つ選んでください。",
+			"noLayerMatch": "このフレームに一致するPNGがありません。ダウンロードしたファイルを使い、名前の末尾の-fgや-bgは変えないでください。",
+			"noPng": "PNGが見つかりません。ダウンロードして編集したPNGを選んでください。",
+			"notEditable": "フレームを修正する前に、このキャラクターをコピーしてください。",
+			"targetGone": "このアイテムまたはモーションはもう存在しません。",
+			"changed": "確認後にこれらのフレームが変更されました。もう一度ファイルをインポートしてください。",
+			"originalsMissing": "このキャラクターのコピーには元のフレームが保存されていません。",
+			"originalsUnusable": "このキャラクターのコピーにある元のフレームは使用できないため、何も変更されていません。",
+			"nothingToRevert": "その後これらのフレームが再び変更されたため、ここで元に戻せるものはありません。",
+			"badPng": "このファイルはPNGとして読み込めませんでした。PNGとして保存し直してからインポートしてください。",
+			"resolveDrafts": "素体フレームを置き換える前に、このキャラクターのアイテムの下書きを残すか破棄してください。",
+			"importFailed": "これらのフレームを読み込めませんでした。もう一度お試しください。",
+			"saveFailed": "これらのフレームを保存できませんでした。何も変更されていません。もう一度お試しください。"
+		}
 	}
 }

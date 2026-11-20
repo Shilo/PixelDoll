@@ -107,7 +107,7 @@
 			const reason = directionEditsBlocked(id);
 			if (reason) throw reason;
 			next.savedAt = new Date().toISOString();
-			await db.saveCharacterDirections(record, next, blobs);
+			await db.saveIdleCharacter(record, next, blobs, 'change directions for');
 		} catch (failure) {
 			error = errorMessage(failure);
 			busy = false;

@@ -763,6 +763,7 @@
 		"finishBeforeCharacterRemoval": "Karakteri silmeden önce bekleyen üretimleri tamamlayın veya kapatın.",
 		"finishBeforeMoveRemoval": "Animasyonu silmeden önce bekleyen üretimleri tamamlayın veya kapatın.",
 		"finishBeforeDirectionRemoval": "Yönleri değiştirmeden önce bekleyen üretimleri tamamlayın veya kapatın.",
+		"finishBeforeFixFrames": "Kareleri düzeltmeden önce süren üretimlerin bitmesini bekleyin.",
 		"couldNotRemoveCharactersSavedByAn": "Önceki bir ön sürümde kaydedilmiş karakterler kaldırılamadı: {reason}",
 		"couldNotReadYourSavedCharactersReason": "Kayıtlı karakterleriniz okunamadı: {reason}",
 		"couldNotOpenThatCharacterError": "Karakter açılamadı: {error}",
@@ -1274,7 +1275,8 @@
 			"look": "İnceleme gerekli",
 			"unfitted": "Uyarlanmadı",
 			"stale": "Başka gövde için yapıldı",
-			"demo": "Demo"
+			"demo": "Demo",
+			"edited": "Sizin tarafınızdan düzenlendi"
 		},
 		"coverage": {
 			"oneMove": "{move} animasyonunun bazı kareleri eksik",
@@ -2430,5 +2432,99 @@
 		"unreadable": "Bu görsel açılamadı. Farklı bir dosya seçin.",
 		"noArtworkResized": "Küçültmeden sonra görünür bir çizim kalmadı. Farklı bir görsel seçin.",
 		"noArtwork": "Bu görselde görünür bir çizim yok. Farklı bir dosya seçin."
+	},
+	"fixFrames": {
+		"open": "Kareleri düzeltin",
+		"title": "Kareleri düzeltin",
+		"reviewTitle": "Kareleri inceleyin",
+		"target": "Kareler",
+		"body": "Temel gövde",
+		"move": "Animasyon",
+		"gridLabel": "Kareler: {name}, {move}",
+		"frameLabel": "{dir}, kare {n}",
+		"editedByYou": "Sizin tarafınızdan düzenlendi",
+		"mirrors": "Aynası: {of}",
+		"hint": "PNG dosyasını indirin, Aseprite, Pixelorama veya Piskel gibi herhangi bir piksel düzenleyicide düzenleyin ve ardından içe aktarın. Boyutunu ve {w}×{h} ızgarasını koruyun: satırlar yönler, sütunlar karelerdir. Renkler orijinal renklerdir, bu yüzden renk değiştirme çalışmaya devam eder.",
+		"hintLayers": "ZIP dosyasını indirin: her katman için bir PNG içerir. Bunları Aseprite, Pixelorama veya Piskel gibi herhangi bir piksel düzenleyicide düzenleyin; adlarını, boyutlarını ve {w}×{h} ızgarasını koruyun, ardından ZIP veya PNG dosyalarını içe aktarın. Renkler orijinal renklerdir, bu yüzden renk değiştirme çalışmaya devam eder.",
+		"downloadPng": "PNG indirin",
+		"downloadZip": "ZIP indirin",
+		"import": "Düzenlenen PNG'yi içe aktarın",
+		"importFiles": "Düzenlenen dosyaları içe aktarın",
+		"demoNote": "Bu, birlikte gelen demodur. Karelerini değiştirmek için bir kopyasını düzenleyin.",
+		"restoring": "Geri yükleniyor…",
+		"beforeFrame": "Önce, {dir} {n}",
+		"afterFrame": "Sonra, {dir} {n}",
+		"playing": "{move}, oynatılıyor",
+		"changedFrame": "{dir}, kare {n}, değişti",
+		"editedFrame": "{dir}, kare {n}, sizin tarafınızdan düzenlendi",
+		"reading": "Okunuyor…",
+		"release": "İçe aktarmak için bırakın",
+		"changedCount": {
+			"one": "{n} kare değişti",
+			"other": "{n} kare değişti"
+		},
+		"nothingChanged": "Hiçbir kare değişmedi. İndirilen PNG'yi düzenleyin, kaydedin ve yeniden içe aktarın.",
+		"replace": {
+			"one": "{n} kareyi değiştirin",
+			"other": "{n} kareyi değiştirin"
+		},
+		"restore": {
+			"one": "Orijinali geri yükleyin · {n}",
+			"other": "Orijinalleri geri yükleyin · {n}"
+		},
+		"restoreTitle": {
+			"one": "{n} orijinal kare geri yüklensin mi?",
+			"other": "{n} orijinal kare geri yüklensin mi?"
+		},
+		"restoreAction": "Geri yükleyin",
+		"restoreBody": "{name} için değiştirdiğiniz her kare, düzenlemelerinizden önceki hâline döner.",
+		"replaced": {
+			"one": "{name} için {count} kare değiştirildi.",
+			"other": "{name} için {count} kare değiştirildi."
+		},
+		"undo": "Geri alın",
+		"undone": {
+			"one": "{count} kare geri alındı.",
+			"other": "{count} kare geri alındı."
+		},
+		"restored": {
+			"one": "{count} orijinal kare geri yüklendi.",
+			"other": "{count} orijinal kare geri yüklendi."
+		},
+		"notes": {
+			"softAlpha": {
+				"one": "{n} yarı saydam piksel tamamen opak veya tamamen saydam hâle getirilecek.",
+				"other": "{n} yarı saydam piksel tamamen opak veya tamamen saydam hâle getirilecek."
+			},
+			"newColors": {
+				"one": "{n} yeni renk, renk değiştirmeyle değişmeyecek.",
+				"other": "{n} yeni renk, renk değiştirmeyle değişmeyecek."
+			},
+			"mirrored": "{dir} yönü, {of} yönünün aynası olduğu için bu yöndeki düzenlemeler kullanılmadı. {of} yönünü düzenleyin veya {dir} yönünü ayrı düzenlemek için Yönler bölümünde aynalamayı kapatın.",
+			"noBodyRow": "Bu animasyonda {dir} yönü için temel gövde karesi yok, bu yüzden oradaki düzenlemeler kullanılmadı.",
+			"missingLayer": "Adı -{layer}.png ile biten dosya yok, bu yüzden o katman olduğu gibi kalır.",
+			"ignored": {
+				"one": "{n} diğer dosya yok sayıldı.",
+				"other": "{n} diğer dosya yok sayıldı."
+			},
+			"fitted": "Bu temel gövde karelerine uyarlanan eşyalar giyili kalır: {names}. Bunları değişen karelerde kontrol edin.",
+			"emptiedBody": "Boş bir temel gövde karesi, onun için yeni eşyalar oluşturulurken atlanır."
+		},
+		"errors": {
+			"size": "Bu PNG {got} px, ancak bu kareler {want} px gerektiriyor. Orijinal boyutu ve ızgarayı koruyun.",
+			"duplicateLayer": "Adı -{layer}.png ile biten birden fazla dosya var. Her katman için bir dosya seçin.",
+			"noLayerMatch": "Bu karelerle eşleşen PNG yok. İndirilen dosyaları kullanın ve -fg veya -bg ile biten adları koruyun.",
+			"noPng": "PNG bulunamadı. İndirip düzenlediğiniz PNG'yi seçin.",
+			"notEditable": "Karelerini düzeltmeden önce bu karakterin bir kopyasını oluşturun.",
+			"targetGone": "Bu eşya veya animasyon artık yok.",
+			"changed": "Bu kareler incelemenizden sonra değişti. Dosyayı yeniden içe aktarın.",
+			"originalsMissing": "Orijinal kareler, karakterin bu kopyasında kayıtlı değil.",
+			"originalsUnusable": "Karakterin bu kopyasındaki orijinal kareler kullanılamıyor, bu yüzden hiçbir şey değiştirilmedi.",
+			"nothingToRevert": "Bu kareler o zamandan beri yeniden değiştirildi, bu yüzden burada geri alınacak bir şey yok.",
+			"badPng": "Bu dosya PNG olarak okunamadı. PNG olarak yeniden kaydedip içe aktarın.",
+			"resolveDrafts": "Temel gövde karelerini değiştirmeden önce bu karakterin eşya taslaklarını saklayın veya atın.",
+			"importFailed": "Bu kareler okunamadı. Yeniden deneyin.",
+			"saveFailed": "Bu kareler kaydedilemedi. Hiçbir şey değişmedi. Yeniden deneyin."
+		}
 	}
 }
