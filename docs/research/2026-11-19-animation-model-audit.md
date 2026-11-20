@@ -1,6 +1,6 @@
 # Animation model default audit
 
-Status: archival screen and automated checks complete; paid matched pilot not run. No new artwork was generated or saved.
+Status: archival screen and automated checks complete; matched pilot approved up to 120 generations but not started. No new artwork was generated or saved, and no credits were spent.
 
 Decision: could PixMiniMax replace Skeleton V3 as the Add a move default without trading expressive motion for lower equipment accuracy, character consistency, or reliability? Text V3 is the third arm, not a presumed fallback. The equipment renderer stays Skeleton V3 in every arm. Ride is out of scope and stays on its pose-driven path.
 
@@ -19,7 +19,21 @@ Read existing PNG blobs from `1f95029` directly into memory. The screen covers S
 - Skeleton V3 touched the raw border on all three Walk and Death clips. Those files are 64×64; the native files are 68×68. The extra native padding and the historical pose/prompt differences rule out causal ranking. Raw border touch is not proof of lost pixels. Inspect against the submitted pose and intended floor line in the live matrix. Intentional movement such as a fall is not a stabilization failure.
 - `npm test -- targeted-move dress-regions`: 27 passed. These are fixture-backed regression checks for route/frame handling, recovery, item batching, and native body recolor behavior, not a measurement of provider quality. A read-only fetch of the public PixelLab OpenAPI confirmed that the three body routes and `/estimate-skeleton` still exist. It does not establish billing or quality.
 
-## Stage 1: paid pilot, pending credit approval
+### Archived palette screen with the production tolerance
+
+Rescored 216 raw frames using the color comparison in `paletteFit`: count pixels with nonzero alpha, and accept a pixel if one standing palette color differs by no more than 12 in each RGB channel. The 97% gate applies to the pooled clip score; individual frame misses are diagnostics, not additional gates. This reproduces the color comparison on archived inputs, not the full production QA path.
+
+| Route | Median clip fit | Clips below 97% | Individual frames below 97% |
+| --- | ---: | ---: | ---: |
+| Skeleton V3 | 100.00% | 0/9 | 1/72 |
+| PixMiniMax | 100.00% | 1/9 | 8/72 |
+| Text V3 | 97.47% | 3/9 | 25/72 |
+
+PixMiniMax east Slash clears the clip gate at 97.35% but falls to 90.84% on its worst frame. East Walk still misses at 96.11%. Palette fit measures color retention, not motion quality, exact dye compatibility, or equipment alignment. These historical inputs are unmatched and do not establish parity.
+
+## Stage 1: paid pilot, approved and pending preflight
+
+The bundled 64×64 demo has finished headwear and sword layers but no stored rest rig, managed Walk source, or per-direction dressed references. Before spending, qualify a disposable rig-ready fixture, verify the exact production plans, and confirm transient review and per-request spend controls without retaining artwork. No paid fixture preparation or unmatched substitute was run.
 
 Use one frozen 64×64 humanoid with east and south views, one already-fitted head item and one already-fitted hand item. Test Walk and unarmed Slash at eight frames, one predeclared seed, all three body routes: 4 matched cases, **12 body clips and up to 24 fitted gear clips**. Do not redress items between arms. Use the same action intent and direction; document the actual pose source for Skeleton V3 and exact text for both native arms. A shared seed is a blocking label, not a guarantee of matched random draws across models. Randomize arm order within each case. Run the actual production body normalization, measurement, item pose, extraction and QA; in-memory observation must not change whether production would save a result.
 
