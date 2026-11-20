@@ -115,6 +115,13 @@ test('Pro draws from text with a transparent background and no V3 hints', () => 
 test('character references use the selected model’s documented image field and keep artwork out of the plan', async () => {
 	const reference = { width: 48, height: 64, base64: 'picked-image' };
 	const image = { type: 'base64', format: 'png', base64: reference.base64 };
+	const standard = { ...spec, size: 64, reference, model: 'standard' } as const;
+	expect(drawRequest(standard, 7)).toMatchObject({
+		path: '/create-character-with-8-directions',
+		body: { mode: 'standard', directions: { south: image } }
+	});
+	expect(JSON.stringify(createPlan(standard))).not.toContain(reference.base64);
+	await expect(createCharacter({ ...standard, size: 48 })).rejects.toThrow(/Increase Body size/);
 	expect(drawRequest({ ...spec, reference }, 7).body).toMatchObject({ reference_image: image });
 	expect(drawRequest({ ...spec, reference, model: 'pro' }, 7).body).toMatchObject({
 		method: 'create_from_concept',

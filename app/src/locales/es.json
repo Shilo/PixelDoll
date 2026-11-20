@@ -2047,7 +2047,7 @@
 				},
 				"standard": {
 					"label": "Estándar",
-					"help": "Dibuja ocho vistas a partir del texto con una plantilla fija."
+					"help": "Dibuja ocho vistas a partir de una plantilla o de tu sprite visto de frente."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2127,7 +2127,7 @@
 			"sizeGuideReference": "Guía de tamaños y referencia",
 			"reference": {
 				"frontFacing": "Usa un sprite visto de frente.",
-				"standardTextOnly": "Estándar solo admite texto. Quita la imagen de referencia o elige otro modelo.",
+				"characterSprite": "Sprite del personaje",
 				"concept": "Usa un boceto o un diseño de personaje.",
 				"style": "Usa una ilustración como referencia de estilo.",
 				"tooLarge": "Elige una referencia de hasta {max} × {max} px.",

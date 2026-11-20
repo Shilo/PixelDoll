@@ -2044,7 +2044,7 @@
 				"v3": { "label": "Standard (V3)", "help": "Ausgewogene Proportionen." },
 				"standard": {
 					"label": "Standard",
-					"help": "Zeichnet aus Text acht Ansichten anhand einer festen Vorlage."
+					"help": "Zeichnet acht Ansichten anhand einer Vorlage oder deines Sprites in Vorderansicht."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2124,7 +2124,7 @@
 			"sizeGuideReference": "Größenhilfe und Referenzbild",
 			"reference": {
 				"frontFacing": "Nutze ein Sprite in Vorderansicht.",
-				"standardTextOnly": "Standard verwendet nur Text. Entferne das Referenzbild oder wähle ein anderes Modell.",
+				"characterSprite": "Figuren-Sprite",
 				"concept": "Nutze eine Skizze oder einen Charakterentwurf.",
 				"style": "Nutze eine Illustration als Stilvorlage.",
 				"tooLarge": "Wähle ein Referenzbild mit höchstens {max} × {max} px.",

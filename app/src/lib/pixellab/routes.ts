@@ -54,7 +54,7 @@ export interface CreateCharacterV3 {
 export type CreateCharacterStandard = Pick<
 	CreateCharacterV3,
 	'description' | 'image_size' | 'view' | 'template_id' | 'seed' | 'outline' | 'detail'
->;
+> & { directions?: Partial<Record<Direction, B64Image>> };
 /** Pro Flash draws the south view, then V3 rotates it into 8 (S4: chibi style; rejects no_background and n_directions 4). */
 export interface CreateCharacterProFlash {
 	description: string;

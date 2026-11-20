@@ -21,6 +21,7 @@
 		reviewFailedCreate,
 		moving,
 		settingUp,
+		dismissSetup,
 		gens,
 		openProject,
 		cleanUp,
@@ -72,9 +73,13 @@
 	);
 	const characterName = (id: string) =>
 		store.projects.find((project) => project.id === id)?.name ?? t('common.character');
+	let unopenedSetup = $state.raw<typeof settingUp.spec>(null);
 	async function openWork(sheet: 'move' | 'setup', projectId?: string) {
+		const setup = sheet === 'setup' ? setupPending : null;
 		if (projectId && doc.id !== projectId) await openProject(projectId);
-		if (ui.sheet === 'activity' && (!projectId || doc.id === projectId)) ui.sheet = sheet;
+		if (ui.sheet !== 'activity') return;
+		if (setup && (!projectId || doc.id !== projectId)) unopenedSetup = setup;
+		else if (!projectId || doc.id === projectId) ui.sheet = sheet;
 	}
 	const nice = (r: JobRec) =>
 		/^skeleton sha256:.{8}/.test(r.label)
@@ -174,7 +179,10 @@
 						{@render workRow(
 							`${t('activity.characterSetup')} · ${characterName(setupPending.projectId)}`,
 							settingUp.error ? t('generation.status.needsAttention') : t('activity.inProgress'),
-							() => void openWork('setup', setupPending.projectId)
+							() => void openWork('setup', setupPending.projectId),
+							unopenedSetup === setupPending && settingUp.error
+								? () => void dismissSetup()
+								: undefined
 						)}
 					{/if}
 					{#each moving.queued as work (work)}
@@ -446,10 +454,15 @@
 	</div>
 </Sheet>
 
-{#snippet workRow(label: string, status: string, open?: () => void)}
+{#snippet workRow(label: string, status: string, open?: () => void, dismiss?: () => void)}
 	<li>
 		<span class="act-main"><span>{label}</span><span class="muted small">{status}</span></span>
-		{#if open}<button
+		{#if dismiss}<button
+				class="bu-action btn sm"
+				data-variant="outline"
+				disabled={doc.loading || $queue.role === 'follower'}
+				onclick={dismiss}>{t('setup.dismiss')}</button
+			>{:else if open}<button
 				class="bu-action btn sm"
 				data-variant="outline"
 				aria-label={t('activity.openWorkNamed', { label })}

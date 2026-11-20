@@ -18,6 +18,7 @@
 		max,
 		sideBySide = false,
 		inspectColors = false,
+		label,
 		hint,
 		issue = '',
 		disabled = false
@@ -27,6 +28,7 @@
 		max: ReferenceSize;
 		sideBySide?: boolean;
 		inspectColors?: boolean;
+		label?: string;
 		hint: string;
 		issue?: string;
 		disabled?: boolean;
@@ -89,17 +91,17 @@
 				try {
 					prepared = await readReference(file, limit, inspectColors);
 				} catch (failure) {
-					if (active && limitChanged()) continue;
+					if (active && !disabled && limitChanged()) continue;
 					throw failure;
 				}
+				if (!active || disabled) return;
 				if (limitChanged()) continue;
-				if (!active) return;
 				value = prepared;
 				announcement = message('referenceField.attached');
 				break;
 			}
 		} catch (failure) {
-			if (!active) return;
+			if (!active || disabled) return;
 			value = undefined;
 			error = message('referenceField.error', {
 				reason:
@@ -115,7 +117,7 @@
 
 <div class={['reference', { 'side-by-side': sideBySide, attached: !!value }]}>
 	<span class="label reference-label"
-		>{t('referenceField.label')} <span class="faint">{t('common.optional')}</span></span
+		>{label ?? t('referenceField.label')} <span class="faint">{t('common.optional')}</span></span
 	>
 	<div class="reference-row">
 		<button

@@ -2038,7 +2038,7 @@
 				"v3": { "label": "Varsayılan (V3)", "help": "Dengeli oranlar." },
 				"standard": {
 					"label": "Standart",
-					"help": "Metinden sabit bir şablonla sekiz görünüm çizer."
+					"help": "Bir şablon veya öne bakan sprite’ınızı kullanarak sekiz görünüm çizer."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2118,7 +2118,7 @@
 			"sizeGuideReference": "Boyut kılavuzu ve referans",
 			"reference": {
 				"frontFacing": "Öne bakan bir sprite kullanın.",
-				"standardTextOnly": "Standart yalnızca metin kullanır. Referans görselini kaldırın veya başka bir model seçin.",
+				"characterSprite": "Karakter sprite’ı",
 				"concept": "Bir eskiz veya karakter tasarımı kullanın.",
 				"style": "Stil örneği olarak bir görsel kullanın.",
 				"tooLarge": "En fazla {max} × {max} piksel boyutunda bir referans seçin.",
