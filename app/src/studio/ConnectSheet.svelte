@@ -17,6 +17,7 @@
 	import { ExternalLink, KeyRound, Check, RefreshCw } from './icons.ts';
 	import { accountTier, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
+	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 
 	let key = $state('');
 	let remember = $state(false);
@@ -59,11 +60,23 @@
 			await confirmReplacement(nextKey, save);
 			return;
 		}
-		await setKey(nextKey, save, { activityScope, label: 'Connect PixelLab', background: false });
+		const activity = { activityScope, label: 'Connect PixelLab', background: false };
+		if (workspaceCopy) {
+			const isCurrent = () => !closed && ui.sheet === 'connect';
+			try {
+				if (!(await replaceKey(nextKey, false, isCurrent, activity)))
+					replacementError = 'connectSheet.connectionChanged';
+			} catch (error) {
+				replacementError =
+					error instanceof ApiError && error.kind === 'auth'
+						? 'connectSheet.keyRejected'
+						: 'connectSheet.balanceError';
+			}
+		} else await setKey(nextKey, save, activity);
 		if (closed) return;
 		checking = false;
 		connectionFailed = !!app.balanceError && !app.keyRejected;
-		if (needsKey || app.balanceError) return;
+		if (needsKey || app.balanceError || replacementError) return;
 		limitedAccess =
 			accountTier(app.balance) === 0 &&
 			(pendingConnectionMinimumTier() === null ||
@@ -247,14 +260,16 @@
 					placeholder={t('connectSheet.placeholderPasteYourKey')}
 				/>
 			</label>
-			<label class="toggle-row"
-				><span>{t('connectSheet.rememberOnThisDevice')}</span><input
-					class="switch"
-					type="checkbox"
-					bind:checked={remember}
-				/></label
-			>
-			{#if remember && sharedOrigin}<p class="notice warn small">
+			{#if workspaceCopy}<p class="small bu-muted">{t('workspaceCopy.tabOnlyKey')}</p>
+			{:else}<label class="toggle-row"
+					><span>{t('connectSheet.rememberOnThisDevice')}</span><input
+						class="switch"
+						type="checkbox"
+						bind:checked={remember}
+					/></label
+				>
+			{/if}
+			{#if !workspaceCopy && remember && sharedOrigin}<p class="notice warn small">
 					{t('connectSheet.sharedOriginWarning', { host: location.host })}
 				</p>{/if}
 			<AffiliationNotice multiline />

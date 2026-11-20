@@ -215,6 +215,7 @@ export type SheetId =
 	| 'details'
 	| 'setup'
 	| 'workspaceExport'
+	| 'workspaceReport'
 	| 'slots';
 const sizeNow = (): Size => {
 	const w = innerWidth,
@@ -484,10 +485,6 @@ function allowsTier(minimumTier: number): boolean {
 	return true;
 }
 export function withKey(fn: () => void, minimumTier = 0) {
-	if (workspaceCopy) {
-		toast(message('workspaceCopy.generationOff'));
-		return;
-	}
 	if (follower(() => withKey(fn, minimumTier))) return;
 	if (app.key && !app.keyRejected && !allowsTier(minimumTier)) {
 		afterConnect = null;
@@ -1154,6 +1151,9 @@ export function directionEditsBlocked(id: string): LocalizedError | '' {
 	);
 }
 function generationSettled() {
+	return !afterConnect && activeGenerationSettled();
+}
+function activeGenerationSettled() {
 	return (
 		!gens.some((g) => g.phase === 'running') &&
 		!settling.size &&
@@ -1162,10 +1162,12 @@ function generationSettled() {
 		!moveRunning &&
 		!setupRunning &&
 		!takeOverRunning &&
-		!afterConnect &&
 		!itemStarting &&
 		!runningGens.size
 	);
+}
+export function generationPending() {
+	return characterJobsPending || !activeGenerationSettled();
 }
 const heldCreate = () => creates.some((run) => !run.projectId);
 const heldMove = () => moving.spec && !moving.done;
@@ -2181,7 +2183,7 @@ const saveGens = () =>
 // Only the queue leader runs drafts, creates and moves (R6 P1-1: two tabs re-rolled the same draft and overwrote each
 // other's studio-drafts). A follower tab shows the leader's drafts, re-read when the ledger changes, and takes over when
 // the leader's tab closes.
-const runningGens = new Set<string>();
+const runningGens = new SvelteSet<string>();
 const generationControllers = new Map<string, AbortController>();
 const generationRuns = new Map<string, Promise<void>>();
 const cancellationRequested = new Set<string>();
@@ -2191,9 +2193,9 @@ let loading: Promise<void> | null = null,
 	takingOver = false,
 	takeOverRunning = false,
 	resumedHere = false,
-	itemStarting = 0,
 	mirrored = '',
 	mirrorAt = 0;
+let itemStarting = $state(0);
 let studioStartup = $state<'loading' | 'ready' | 'failed'>('loading');
 // A failed read rejects: an empty list would let the next save overwrite the stored drafts and cleanUp prune their records.
 const readGens = async () =>
@@ -3814,7 +3816,7 @@ export const settingUp = $state({
 	warnings: [] as string[]
 });
 const SETUP_KEY = 'studio-setup';
-let setupRunning = false,
+let setupRunning = $state(false),
 	setupResumed = false,
 	setupRecovering = false,
 	setupRevision = 0;

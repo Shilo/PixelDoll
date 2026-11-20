@@ -345,9 +345,16 @@ are not included. The ZIP does include artwork and saved prompts, so share it pr
 
 Choose **More options → Workspace... → Open workspace copy**, then drop the ZIP in the box or click the box to choose it. The
 `?workspace-copy` address opens a separate, temporary copy. You can inspect or change the copy
-without changing your own library. PixelLab is off and no jobs restart. Close or reload the tab to discard the copy and
-its edits. This is not a backup restore or merge. Export and open keep usable records and artwork when some data is
-damaged. The copy's Activity reports skipped records and missing artwork. Unreadable or unsupported ZIPs cannot be
+without changing your own library. PixelLab starts disconnected, and no jobs from the ZIP restart. To reproduce a PixelLab
+issue, choose **More options → Connect PixelLab** and enter your own key. The key is used only in this tab, and any new
+generations use your account. Choose **Forget key** in the copy to disconnect without changing your saved key.
+Forgetting your key in the main Studio also disconnects the copy. To test with another account, open a fresh copy
+so pending work cannot carry over to the other key.
+Wait for generations to finish and export any results you want to keep before closing or reloading. Leaving discards
+the copy, its edits, its jobs, and its key, but does not cancel or refund work submitted to PixelLab. Your browser may
+warn you before leaving while jobs are in progress. This is not a backup restore or merge.
+Export and open keep usable records and artwork when some data is damaged. **More options → Workspace activity** reports
+skipped records, missing artwork, and any diagnostics included in the ZIP. Unreadable or unsupported ZIPs cannot be
 opened. Workspace ZIPs are limited to 64 MB, 5,000 files, and additional artwork and record limits; for larger
 libraries, use individual character ZIPs. Uncommitted edits outside the current character are not included.
 

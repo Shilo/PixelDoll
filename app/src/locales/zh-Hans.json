@@ -1130,7 +1130,7 @@
 	},
 	"workspace": {
 		"activityTitle": "工作区活动",
-		"activityIntro": "随工作区一起保存，PixelDoll 版本为 {build}。PixelLab 已关闭，不会重新启动任何任务。",
+		"activityIntro": "随工作区一起保存，PixelDoll 版本为 {build}。ZIP 中的任务不会重新启动。",
 		"missing": { "other": "有 {count} 个图像文件缺失或无法读取。" },
 		"skippedCharacters": { "other": "已跳过的已保存角色：{count}。" },
 		"demoOutfit": "演示使用其默认套装设置。",
@@ -1161,7 +1161,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "此处 PixelLab 已关闭。关闭或重新加载此标签页时，对副本的任何更改都会被丢弃。",
+		"privacy": "打开副本时不会连接到 PixelLab。关闭或重新加载此标签页时，对副本的任何更改都会被丢弃。",
 		"chooseZip": "选择工作区 ZIP",
 		"opening": "正在打开…",
 		"release": "松开以打开",
@@ -2269,7 +2269,7 @@
 	},
 	"workspaceCopy": {
 		"title": "打开工作区副本",
-		"generationOff": "工作区副本中 PixelLab 已关闭。"
+		"tabOnlyKey": "你的密钥仅在此标签页中使用，不会保存。"
 	},
 	"moveNames": { "default": "Default", "idle": "待机", "walk": "行走" },
 	"moveRemoval": {

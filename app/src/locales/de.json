@@ -1190,7 +1190,7 @@
 	},
 	"workspace": {
 		"activityTitle": "Arbeitsbereichsaktivität",
-		"activityIntro": "Mit dem Arbeitsbereich aus PixelDoll {build} gespeichert. PixelLab ist ausgeschaltet. Es wird nichts neu gestartet.",
+		"activityIntro": "Mit dem Arbeitsbereich aus PixelDoll {build} gespeichert. Aufträge aus der ZIP-Datei werden nicht neu gestartet.",
 		"missing": {
 			"one": "{count} Grafikdatei fehlte oder war nicht lesbar.",
 			"other": "{count} Grafikdateien fehlten oder waren nicht lesbar."
@@ -1227,7 +1227,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "PixelLab ist hier ausgeschaltet. Alle Änderungen an der Kopie werden verworfen, wenn du diesen Tab schließt oder neu lädst.",
+		"privacy": "Die Kopie startet ohne Verbindung zu PixelLab. Alle Änderungen an der Kopie werden verworfen, wenn du diesen Tab schließt oder neu lädst.",
 		"chooseZip": "Arbeitsbereichs-ZIP auswählen",
 		"opening": "Wird geöffnet…",
 		"release": "Zum Öffnen loslassen",
@@ -2393,7 +2393,7 @@
 	},
 	"workspaceCopy": {
 		"title": "Arbeitsbereichskopie öffnen",
-		"generationOff": "In Arbeitsbereichskopien ist PixelLab ausgeschaltet."
+		"tabOnlyKey": "Dein Schlüssel wird nur in diesem Tab verwendet und nicht gespeichert."
 	},
 	"moveNames": { "default": "Standpose", "idle": "Idle", "walk": "Gehen" },
 	"moveRemoval": {
