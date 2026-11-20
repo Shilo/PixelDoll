@@ -2050,7 +2050,7 @@
 				"v3": { "label": "Padrão (V3)", "help": "Proporções equilibradas." },
 				"standard": {
 					"label": "Padrão",
-					"help": "Desenha oito vistas a partir do texto usando um molde fixo."
+					"help": "Desenha oito vistas usando um molde ou seu sprite de frente."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2130,7 +2130,7 @@
 			"sizeGuideReference": "Guia de tamanhos e referência",
 			"reference": {
 				"frontFacing": "Use um sprite de frente.",
-				"standardTextOnly": "O modelo Padrão usa apenas texto.",
+				"characterSprite": "Sprite do personagem",
 				"concept": "Use um esboço ou um desenho do personagem.",
 				"style": "Use uma arte como referência de estilo.",
 				"tooLarge": "Escolha uma referência de até {max} × {max} px.",

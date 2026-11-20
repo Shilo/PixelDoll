@@ -25,7 +25,6 @@
 		characterReferenceIssue,
 		DETAILS,
 		draftErrors,
-		draftReference,
 		isNudeBase,
 		MODEL_IDS,
 		MODELS,
@@ -135,7 +134,7 @@
 	const referenceMax = $derived(
 		Math.min(
 			characterReference[modelId].max,
-			modelId === 'pro-flash' && d.body && !bodyError
+			(modelId === 'pro-flash' || modelId === 'standard') && d.body && !bodyError
 				? d.body
 				: modelId === 'v3' && frame && Number.isInteger(frame) && frame >= 32
 					? frame
@@ -501,10 +500,11 @@
 		<ReferenceField
 			bind:value={d.reference}
 			bind:loading={referenceLoading}
+			label={modelId === 'standard' ? t('create.form.reference.characterSprite') : undefined}
 			hint={t(characterReference[modelId].hint)}
 			max={{ width: referenceMax, height: referenceMax }}
-			issue={displayError(characterReferenceIssue(draftReference(d), d.model, frame, d.body) ?? '')}
-			disabled={busy || modelId === 'standard'}
+			issue={displayError(characterReferenceIssue(d.reference, d.model, frame, d.body) ?? '')}
+			disabled={busy}
 		/>
 	</section>
 	<section class="geometry" aria-label={t('create.form.geometrySection')}>

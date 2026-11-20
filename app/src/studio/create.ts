@@ -24,7 +24,7 @@ import {
 	type Req,
 	type SubmitResponse
 } from '../lib/pixellab/routes.ts';
-import { bytesToBase64, decodePng, type Img } from '../lib/image/png.ts';
+import { base64ToBytes, bytesToBase64, decodePng, makeImg, type Img } from '../lib/image/png.ts';
 import type { ImageReference } from '../lib/image/reference.ts';
 import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
@@ -183,6 +183,7 @@ export function drawRequest(
 	if (spec.model === 'standard')
 		return routes.createCharacterStandard({
 			...common,
+			...(reference ? { directions: { south: png(reference.base64) } } : {}),
 			...(spec.outline ? { outline: spec.outline } : {}),
 			...(spec.detail
 				? { detail: spec.detail === 'highly detailed' ? 'high detail' : spec.detail }
@@ -360,6 +361,25 @@ export async function run(
 	return r;
 }
 export const b64 = async (im: Img) => bytesToBase64(await encodePngBytes(im));
+
+async function padStandardReference(
+	reference: ImageReference,
+	size: number
+): Promise<ImageReference> {
+	if (reference.width === size && reference.height === size) return reference;
+	const source = await decodePng(base64ToBytes(reference.base64));
+	const canvas = makeImg(size, size);
+	const left = Math.floor((size - source.w) / 2);
+	const top = Math.floor((size - source.h) / 2);
+	for (let row = 0; row < source.h; row++) {
+		const start = row * source.w * 4;
+		canvas.data.set(
+			source.data.subarray(start, start + source.w * 4),
+			((top + row) * size + left) * 4
+		);
+	}
+	return { base64: await b64(canvas), width: size, height: size };
+}
 /** Result images of a record, in frame order (labels "south/3" or "3"; character rotations are labeled by direction). */
 async function imagesOf(
 	r: JobRec,
@@ -972,8 +992,12 @@ export async function createCharacter(
 		view = spec.view ?? 'low top-down';
 	// 1. Draw the eight rotations before the shared rig registration.
 	onProgress({ step: 'draw', done: 0, total: 1, recIds: [] });
+	const drawSpec =
+		spec.model === 'standard' && spec.reference
+			? { ...spec, reference: await padStandardReference(spec.reference, spec.size) }
+			: spec;
 	const base = await run(
-		drawRequest(spec, spec.seed),
+		drawRequest(drawSpec, spec.seed),
 		`${spec.name} · creating`,
 		'studio-base',
 		false,

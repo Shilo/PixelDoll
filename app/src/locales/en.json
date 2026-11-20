@@ -2021,7 +2021,7 @@
 				"v3": { "label": "Default (V3)", "help": "Balanced proportions." },
 				"standard": {
 					"label": "Standard",
-					"help": "Draws eight views on a fixed template from text."
+					"help": "Draws eight views using a template or your front-facing sprite."
 				},
 				"pro": {
 					"label": "Pro",
@@ -2101,7 +2101,7 @@
 			"sizeGuideReference": "Size guide and reference",
 			"reference": {
 				"frontFacing": "Use a front-facing sprite.",
-				"standardTextOnly": "Standard uses text only.",
+				"characterSprite": "Character sprite",
 				"concept": "Use a sketch or character design.",
 				"style": "Use artwork as a style guide.",
 				"tooLarge": "Choose a reference no larger than {max} × {max} px.",

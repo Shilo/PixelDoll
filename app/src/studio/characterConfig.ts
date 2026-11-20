@@ -130,7 +130,7 @@ export interface CharacterDraft {
 export type CharacterModel = 'v3' | 'standard' | 'pro' | 'pro-flash';
 export const characterReference = {
 	v3: { max: 256, hint: 'create.form.reference.frontFacing' },
-	standard: { max: 128, hint: 'create.form.reference.standardTextOnly' },
+	standard: { max: 128, hint: 'create.form.reference.frontFacing' },
 	pro: { max: 1024, hint: 'create.form.reference.concept' },
 	'pro-flash': { max: 256, hint: 'create.form.reference.style' }
 } as const satisfies Record<CharacterModel, { max: number; hint: string }>;
@@ -142,13 +142,11 @@ export function characterReferenceIssue(
 	body?: number
 ): LocalizedError | undefined {
 	if (!image) return undefined;
-	if (model === 'standard')
-		return new LocalizedError('Standard uses text only.', 'create.form.reference.standardTextOnly');
 	const { max } = characterReference[model];
 	const sizeIssue = referenceSizeError(image, max);
 	if (sizeIssue) return new LocalizedError(sizeIssue, 'create.form.reference.tooLarge', { max });
 	const edge = Math.max(image.width, image.height);
-	if (model === 'pro-flash' && body && edge > body)
+	if ((model === 'standard' || model === 'pro-flash') && body && edge > body)
 		return new LocalizedError(
 			'Increase Body size to fit this reference, or choose smaller artwork.',
 			'create.form.reference.increaseBody'
@@ -180,7 +178,7 @@ export const MODELS: Record<CharacterModel, ModelLimits> = {
 	},
 	standard: {
 		label: 'Standard',
-		help: 'Draws eight views on a fixed template from text.',
+		help: 'Draws eight views using a template or your front-facing sprite.',
 		body: { min: 32, max: 128 },
 		styleHints: true
 	},
@@ -458,13 +456,9 @@ export function sizeErrors(
 			]
 		: [];
 }
-export function draftReference(d: CharacterDraft): PickedReference | undefined {
-	return d.model === 'standard' ? undefined : d.reference;
-}
-
 export function draftErrors(d: CharacterDraft): LocalizedError[] {
 	const frame = d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame;
-	const referenceIssue = characterReferenceIssue(draftReference(d), d.model, frame, d.body);
+	const referenceIssue = characterReferenceIssue(d.reference, d.model, frame, d.body);
 	return [
 		...sizeErrors(d.body, frame, d.model),
 		...(referenceIssue ? [referenceIssue] : []),

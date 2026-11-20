@@ -8,13 +8,14 @@ type Image = { base64: string };
 interface Input {
 	description?: string;
 	seed?: number;
+	mode?: string;
 	character_id?: string;
 	image_size?: { width: number };
 	reference_image?: Image;
 	direction_images?: Partial<Record<DirectionName, Image>>;
 	first_frame?: Image;
 	keypoints?: Keypoint[][];
-	directions?: DirectionName[];
+	directions?: DirectionName[] | Partial<Record<DirectionName, Image>>;
 	image?: Image;
 }
 export class CharacterApi {
@@ -125,16 +126,20 @@ export class CharacterApi {
 				usage: { type: 'generations', generations: 0.25 }
 			});
 		}
-		if (path === '/v2/create-character-v3') {
+		if (path === '/v2/create-character-v3' || path === '/v2/create-character-with-8-directions') {
 			const size = body?.image_size?.width ?? 64,
 				urls: Record<string, string> = {};
+			const south = Array.isArray(body?.directions) ? undefined : body?.directions?.south;
 			for (const [index, dir] of DIRECTIONS.entries()) {
 				const im = makeImg(size, size);
 				for (let y = Math.floor(size * 0.14); y < Math.floor(size * 0.87); y++)
 					for (let x = Math.floor(size * 0.35); x < Math.floor(size * 0.58); x++)
 						im.data.set([140 + index * 9, 100, 80, 255], (y * size + x) * 4);
 				const path = `/creator-fixture/${++this.serial}/${dir}.png`;
-				this.images.set(path, await encodePngBytes(im));
+				this.images.set(
+					path,
+					dir === 'south' && south ? base64ToBytes(south.base64) : await encodePngBytes(im)
+				);
 				urls[dir] = `https://cdn.pixellab.ai${path}`;
 			}
 			return this.job({ storage_urls: urls });
@@ -154,7 +159,10 @@ export class CharacterApi {
 			});
 		}
 		if (path === '/v2/characters/animations') {
-			const dir = body!.directions![0],
+			const directions = body?.directions;
+			if (!Array.isArray(directions) || !directions.length)
+				return this.json({ detail: 'Missing animation directions' }, 422);
+			const dir = directions[0],
 				source = this.standing.get(body!.character_id!)!.get(dir)!,
 				images = [];
 			for (let i = 0; i < 8; i++)
