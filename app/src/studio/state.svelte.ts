@@ -3620,8 +3620,17 @@ export async function startSetup(spec: SetupSpec) {
 export async function resumeSetup() {
 	if (hmrReloading || setupResumed || queue.role === 'follower') return;
 	setupResumed = true;
+	const revision = setupRevision;
 	const rec = await db.get<FlowDraft<SetupSpec>>('projects', SETUP_KEY).catch(() => undefined);
-	if (!rec?.spec || (settingUp.spec && !settingUp.done)) return;
+	if (!rec?.spec || revision !== setupRevision || (settingUp.spec && !settingUp.done)) return;
+	if (rec.spec.projectId.startsWith('rig-')) {
+		const project = await db.get<StoredProject>('projects', rec.spec.projectId);
+		if (revision !== setupRevision) return;
+		if (!project) {
+			await db.del('projects', SETUP_KEY);
+			return;
+		}
+	}
 	if (halted(rec))
 		Object.assign(settingUp, {
 			spec: rec.spec,

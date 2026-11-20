@@ -354,6 +354,24 @@ test('discarding a failed creation cannot race a retry for the same draft', asyn
 	expect(s.createPresentation.id).toBe('');
 });
 
+test.each(['failed', 'running'] as const)(
+	'clears %s rig setup work for a missing character without reopening or restarting it',
+	async (status) => {
+		const state = await import('../../src/studio/state.svelte.ts');
+		const projectId = 'rig-missing';
+		mocks.get.mockImplementation(async (_store, id) =>
+			id === 'studio-setup'
+				? { spec: { projectId }, status, requestText: state.REQUEST_TEXT }
+				: undefined
+		);
+		await state.resumeSetup();
+		expect(mocks.del).toHaveBeenCalledWith('projects', 'studio-setup');
+		expect(state.settingUp.spec).toBeNull();
+		expect(mocks.load).not.toHaveBeenCalled();
+		expect(mocks.setup).not.toHaveBeenCalled();
+	}
+);
+
 for (const kind of ['create', 'move', 'setup'] as const) {
 	const key = kind === 'create' ? 'studio-create:rig-fixture' : 'studio-' + kind;
 	const spec =
@@ -369,7 +387,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 			: kind === 'move'
 				? { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 }
 				: {
-						projectId: 'project',
+						projectId: 'rig-fixture',
 						baseHash: 'sha256:' + 'a'.repeat(64),
 						restAnim: 'idle',
 						looks: 'body',
@@ -388,6 +406,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 
 	test(`${kind} persists terminal failure, restores it after module reload without running, and explicit retry clears status`, async () => {
 		const records = new Map<string, any>();
+		if (kind === 'setup') records.set('rig-fixture', { id: 'rig-fixture' });
 		mocks.put.mockImplementation(async (_store, id, value) => {
 			records.set(id, structuredClone(value));
 		});
