@@ -706,7 +706,7 @@ test('Appearance enhancement cannot clear selected hints with repeated clauses o
 	await expect(sheet.getByRole('combobox', { name: 'Kind', exact: true })).toHaveValue('Elf');
 });
 
-test('Appearance enhancement preserves coverage and changing Nude clears stale Undo', async ({
+test('Appearance enhancement preserves coverage and changing base clothing clears stale Undo', async ({
 	page,
 	context
 }) => {
@@ -730,7 +730,7 @@ test('Appearance enhancement preserves coverage and changing Nude clears stale U
 	await expect(sheet.getByRole('button', { name: 'Edit exact prompt', exact: true })).toHaveText(
 		`A calm face\n${UNDERWEAR_BODY}`
 	);
-	const nude = sheet.getByRole('switch', { name: 'Nude', exact: true });
+	const nude = sheet.getByRole('radio', { name: 'Nothing worn', exact: true });
 	await expect(nude).not.toBeChecked();
 	await nude.check();
 	await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toHaveCount(0);
@@ -884,6 +884,19 @@ for (const viewport of [
 			await expect(guide).toBeVisible();
 		}
 		if (viewport.width === 320) {
+			const clothing = sheet.getByRole('radiogroup', { name: 'Base clothing' });
+			await clothing.scrollIntoViewIfNeeded();
+			await expect(clothing).toBeInViewport({ ratio: 1 });
+			for (const label of ['Underwear', 'Nothing worn']) {
+				const text = clothing.getByText(label, { exact: true });
+				expect(
+					await text.evaluate((element) => {
+						const range = document.createRange();
+						range.selectNodeContents(element);
+						return range.getClientRects().length;
+					})
+				).toBe(1);
+			}
 			const preview = (await diagram.boundingBox())!;
 			expect(preview.width).toBeLessThanOrEqual(128);
 			expect(preview.height).toBeCloseTo(preview.width, 0);
@@ -1430,7 +1443,7 @@ function offlineCreation(config: CreationCase) {
 	});
 }
 
-test('switching the model keeps Advanced open and the Nude switch sits in its field', async ({
+test('switching the model keeps Advanced open and base clothing shows both choices', async ({
 	page
 }) => {
 	const sheet = await open(page);
@@ -1501,7 +1514,7 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 	await expect(sheet.getByRole('button', { name: /^Create character/ })).toBeEnabled();
 	await expect(sheet.locator('details.advanced')).toHaveAttribute('open', '');
 	await expect(sheet.getByRole('combobox', { name: 'Outline', exact: true })).toBeVisible();
-	// The sheet's 44 px floor is for one-line fields only: taller fields and switches keep their own size.
+	// The sheet's 44 px floor is for one-line fields only: taller fields keep their own size.
 	await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveCSS(
 		'min-height',
 		'112px'
@@ -1512,16 +1525,19 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 		'302px'
 	);
 	await sheet.getByRole('tab', { name: 'Appearance', exact: true }).click();
-	// The switch is drawn inside its own field; none of its parts float elsewhere on the sheet.
-	const nude = sheet.getByRole('switch', { name: 'Nude', exact: true });
-	const field = await sheet.locator('.nude-field').boundingBox(),
-		knob = await nude.boundingBox();
-	expect([Math.round(knob!.width), Math.round(knob!.height)]).toEqual([44, 26]);
-	expect(knob!.x).toBeGreaterThan(field!.x);
-	expect(knob!.x + knob!.width).toBeLessThan(field!.x + field!.width);
-	await expect(sheet.locator('.nude-field')).toContainText('White underwear');
-	await nude.check();
-	await expect(sheet.locator('.nude-field')).toContainText('Nothing worn');
+	const clothing = sheet.getByRole('radiogroup', { name: 'Base clothing' });
+	const underwear = clothing.getByRole('radio', { name: 'Underwear', exact: true });
+	const nothingWorn = clothing.getByRole('radio', { name: 'Nothing worn', exact: true });
+	await expect(underwear).toBeChecked();
+	await expect(nothingWorn).toBeVisible();
+	for (const radio of [underwear, nothingWorn]) {
+		const target = (await radio.boundingBox())!;
+		expect(target.width).toBeGreaterThanOrEqual(48);
+		expect(target.height).toBeGreaterThanOrEqual(48);
+	}
+	await nothingWorn.click();
+	await expect(nothingWorn).toBeChecked();
+	await expect(underwear).not.toBeChecked();
 	await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill('Discard me');
 	const details = sheet.getByRole('textbox', { name: 'Details', exact: true });
 	await details.fill('Discard these details');
@@ -1558,7 +1574,8 @@ test('switching the model keeps Advanced open and the Nude switch sits in its fi
 	await expect(sheet.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('');
 	await expect(details).toHaveValue('');
 	await expect(body).toHaveValue('64');
-	await expect(nude).not.toBeChecked();
+	await expect(underwear).toBeChecked();
+	await expect(nothingWorn).not.toBeChecked();
 	await drop.evaluate((element) => {
 		const dataTransfer = new DataTransfer();
 		const bytes = new Uint8Array(8 * 1024 * 1024 + 1);
