@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { CURRENT_OUTFIT_ID } from '../lib/store/identity.ts';
+	import { CURRENT_OUTFIT_ID, moveExportId } from '../lib/store/identity.ts';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { assetUrl } from '../lib/assets.ts';
@@ -195,12 +195,22 @@
 	});
 	const names = $derived(catalog.names);
 	const once = $derived(preferences?.playOnce ?? []);
+	const moveChoices = $derived(
+		new Map(
+			m?.rig.animations.map((animation) => [moveExportId(animation), animation.moveLoop] as const)
+		)
+	);
+	const playsOnce = (name: string) => {
+		const choice = moveChoices.get(name);
+		return choice === undefined ? once.includes(name) : !choice;
+	};
+	const catalogOnce = $derived(names.filter(playsOnce));
 	const playbackSummary = $derived(
-		!once.length
+		!catalogOnce.length
 			? t('common.none')
-			: once.length === names.length
+			: catalogOnce.length === names.length
 				? t('export.playback.all')
-				: once.map(animationLabel).join(', ')
+				: catalogOnce.map(animationLabel).join(', ')
 	);
 	const outfits = $derived(m?.presets.filter((p) => p.id !== CURRENT_OUTFIT_ID) ?? []);
 	// RPG Maker sheets are always dressed composites, whatever the setting says
@@ -655,12 +665,17 @@
 					</p>
 					<div class="export-moves">
 						{#each names as name (name)}
+							{@const choice = moveChoices.get(name)}
 							<label
 								class="bu-action bu-check export-move"
 								data-variant="field"
 								aria-disabled={saving}
 							>
-								<span>{animationLabel(name)}</span><input
+								<span
+									>{animationLabel(name)}{#if choice !== undefined}
+										<small class="muted">{t('export.settings.playbackSetInMove')}</small>
+									{/if}</span
+								><input
 									type="checkbox"
 									checked={once.includes(name)}
 									disabled={saving || !ready}

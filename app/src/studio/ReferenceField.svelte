@@ -6,7 +6,7 @@
 		type ReferenceSize
 	} from '../lib/image/reference.ts';
 	import Upload from '@lucide/svelte/icons/upload';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, type Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import { errorMessage, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
@@ -21,7 +21,13 @@
 		label,
 		hint,
 		issue = '',
-		disabled = false
+		disabled = false,
+		exactFrame = false,
+		caption,
+		thumbnail,
+		beforePick,
+		removeLabel,
+		onremove
 	}: {
 		value?: PickedReference;
 		loading?: boolean;
@@ -32,6 +38,12 @@
 		hint: string;
 		issue?: string;
 		disabled?: boolean;
+		exactFrame?: boolean;
+		caption?: string;
+		thumbnail?: Snippet;
+		beforePick?: (accept: () => void) => void;
+		removeLabel?: string;
+		onremove?: () => void;
 	} = $props();
 	const id = $props.id();
 	const helpId = `${id}-help`;
@@ -70,12 +82,17 @@
 		event.dataTransfer.dropEffect = 'none';
 		dragging = false;
 	}
-	async function choose(files: FileList | undefined | null) {
+	function pick(accept: () => void) {
+		if (disabled || loading) return;
+		if (beforePick) beforePick(accept);
+		else accept();
+	}
+	async function choose(files: ArrayLike<File> | undefined | null) {
 		if (!files?.length || loading || disabled) return;
 		error = '';
 		announcement = '';
 		if (files.length !== 1) {
-			value = undefined;
+			if (!exactFrame) value = undefined;
 			error = message('referenceField.error', {
 				reason: message('referenceField.oneAtATime')
 			});
@@ -89,7 +106,7 @@
 				const limitChanged = () => limit.width !== max.width || limit.height !== max.height;
 				let prepared: PickedReference;
 				try {
-					prepared = await readReference(file, limit, inspectColors);
+					prepared = await readReference(file, limit, inspectColors, exactFrame);
 				} catch (failure) {
 					if (active && !disabled && limitChanged()) continue;
 					throw failure;
@@ -102,7 +119,7 @@
 			}
 		} catch (failure) {
 			if (!active || disabled) return;
-			value = undefined;
+			if (!exactFrame) value = undefined;
 			error = message('referenceField.error', {
 				reason:
 					failure instanceof Error ? errorMessage(failure) : message('referenceField.unreadable')
@@ -115,9 +132,13 @@
 
 <svelte:window ondragover={preventMissedFileDrop} ondrop={preventMissedFileDrop} />
 
-<div class={['reference', { 'side-by-side': sideBySide, attached: !!value }]}>
+<div
+	class={['reference', { 'side-by-side': sideBySide, attached: !!value, 'move-frame': exactFrame }]}
+>
 	<span class="label reference-label"
-		>{label ?? t('referenceField.label')} <span class="faint">{t('common.optional')}</span></span
+		>{label ?? t('referenceField.label')}{#if !exactFrame}{' '}<span class="faint"
+				>{t('common.optional')}</span
+			>{/if}</span
 	>
 	<div class="reference-row">
 		<button
@@ -125,15 +146,24 @@
 			class={['drop', empty ? 'bu-tile bu-focus' : 'bu-action']}
 			bind:this={drop}
 			data-variant={empty ? 'empty' : dragging ? 'primary' : 'outline'}
-			aria-label={loading
-				? t('referenceField.openingLabel')
-				: value
-					? t('referenceField.chooseDifferent')
-					: t('referenceField.addImage')}
-			aria-describedby={value ? `${fileId} ${helpId}` : helpId}
+			aria-label={exactFrame && label
+				? label
+				: loading
+					? t('referenceField.openingLabel')
+					: value
+						? t('referenceField.chooseDifferent')
+						: t('referenceField.addImage')}
+			aria-describedby={exactFrame && !hint
+				? fileId
+				: value || exactFrame
+					? `${fileId} ${helpId}`
+					: helpId}
 			aria-disabled={disabled || loading}
+			title={exactFrame && !loading ? (value?.name ?? caption) : undefined}
 			onclick={() => {
-				if (!disabled && !loading) input.click();
+				pick(() => {
+					if (active) input.click();
+				});
 			}}
 			ondragover={(event) => {
 				if (!event.dataTransfer?.types.includes('Files')) return;
@@ -146,7 +176,11 @@
 				if (!event.dataTransfer?.types.includes('Files')) return;
 				event.preventDefault();
 				dragging = false;
-				void choose(event.dataTransfer?.files);
+				const files = Array.from(event.dataTransfer.files);
+				if (files.length)
+					pick(() => {
+						if (active) void choose(files);
+					});
 			}}
 		>
 			{#if value}
@@ -157,7 +191,9 @@
 						height={value.height}
 					/>
 				</svg>
-			{:else}
+			{:else if thumbnail}
+				{@render thumbnail()}
+			{:else if !disabled}
 				<Upload size={22} />
 			{/if}
 			<span class="reference-copy">
@@ -168,23 +204,33 @@
 							>{t('share.resolution', { width: value.width, height: value.height })}</span
 						>
 					</small>
-				{:else}
-					<span>{loading ? t('referenceField.opening') : t('referenceField.addImage')}</span>
-					{#if !loading}<small class="faint" aria-hidden="true"
+				{:else if !exactFrame || !disabled}
+					<span class="reference-caption" id={fileId}
+						>{loading
+							? t('referenceField.opening')
+							: (caption ?? t('referenceField.addImage'))}</span
+					>
+					{#if !loading && !disabled}<small class="faint reference-drop-hint" aria-hidden="true"
 							>{t('referenceField.dropHint')}</small
 						>{/if}
 				{/if}
 			</span>
 		</button>
-		{#if value}
+		{#if exactFrame && disabled}
+			<span class="frame-unavailable" id={fileId}
+				><span class="reference-caption">{caption}</span></span
+			>
+		{/if}
+		{#if value || (thumbnail && onremove)}
 			<button
 				type="button"
 				class="bu-action remove"
-				data-variant="outline"
-				aria-label={t('referenceField.remove')}
+				data-variant={exactFrame ? 'quiet' : 'outline'}
+				aria-label={removeLabel ?? t('referenceField.remove')}
 				disabled={disabled || loading}
 				onclick={() => {
-					value = undefined;
+					if (onremove) onremove();
+					else value = undefined;
 					error = '';
 					announcement = message('referenceField.removed');
 					drop.focus();
@@ -194,7 +240,7 @@
 	</div>
 	<input
 		type="file"
-		accept="image/png,image/jpeg,image/webp"
+		accept={exactFrame ? 'image/png' : 'image/png,image/jpeg,image/webp'}
 		hidden
 		bind:this={input}
 		oncancel={(event) => event.stopPropagation()}
@@ -203,7 +249,11 @@
 			input.value = '';
 		}}
 	/>
-	<small class="faint" id={helpId}>{hint} {limits}</small>
+	{#if hint || !exactFrame}
+		<small class="faint" id={helpId}
+			>{exactFrame ? hint : hint ? `${hint} ${limits}` : limits}</small
+		>
+	{/if}
 	{#if error || issue}<small role="alert">{displayNestedMessage(error || issue)}</small>{/if}
 	{#if resizeNotice}<small>{displayNestedMessage(resizeNotice)}</small>{/if}
 	<span class="reference-announcement" role="status"
@@ -220,6 +270,13 @@
 	.reference-label {
 		color: var(--text);
 	}
+	.move-frame {
+		align-content: start;
+		container-type: inline-size;
+	}
+	.move-frame .reference-label {
+		font-size: var(--fs-sm);
+	}
 	.reference-row {
 		display: flex;
 		align-items: stretch;
@@ -234,6 +291,10 @@
 	.side-by-side:not(.attached) .reference-row {
 		block-size: auto;
 		min-block-size: 44px;
+	}
+	.move-frame.side-by-side .reference-row {
+		position: relative;
+		block-size: 68px;
 	}
 	.drop {
 		flex: 1;
@@ -254,6 +315,27 @@
 	}
 	.attached .drop {
 		padding: 2px 4px;
+	}
+	.move-frame.side-by-side .drop {
+		padding-inline: 8px;
+		gap: 6px;
+	}
+	.move-frame.side-by-side .reference-row:has(.remove) .drop {
+		padding-inline-end: 44px;
+	}
+	.move-frame .remove {
+		position: absolute;
+		inset-block-start: 50%;
+		inset-inline-end: 0;
+		translate: 0 -50%;
+	}
+	.frame-unavailable {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		align-content: center;
+		padding-inline: 8px;
+		pointer-events: none;
 	}
 	.drop > :global(svg) {
 		flex: none;
@@ -297,10 +379,51 @@
 	.dimensions {
 		white-space: nowrap;
 	}
+	.move-frame .dimensions {
+		display: none;
+	}
 	.reference-copy .filename {
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	.move-frame .reference-copy {
+		min-height: 0;
+		overflow: hidden;
+	}
+	.move-frame .reference-caption {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		overflow: hidden;
+		overflow-wrap: anywhere;
+	}
+	.move-frame .reference-drop-hint {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	@container (width < 166px) {
+		.move-frame.side-by-side .drop {
+			flex-direction: column;
+			justify-content: center;
+			gap: 2px;
+		}
+		.move-frame.side-by-side .drop .reference-thumbnail,
+		.move-frame .drop > :global(img),
+		.move-frame .drop :global(.sprite-box > canvas) {
+			max-height: 22px;
+			max-width: 100%;
+			object-fit: contain;
+		}
+		.move-frame .reference-copy {
+			width: 100%;
+			text-align: center;
+		}
+		.move-frame .reference-drop-hint {
+			display: none;
+		}
 	}
 	.remove {
 		min-width: 44px;

@@ -307,7 +307,7 @@ export interface RestView {
 
 export interface ClipSource {
 	route: 'skeleton-v3' | 'pixminimax' | 'v3' | 'import';
-	reference: Sha256; // first_frame sent (rig.rest[dir].image)
+	reference: Sha256; // standing alignment reference (also the first_frame unless a custom start is supplied)
 	keypoints?: Keypoint[][]; // [cell][18]: the sequence sent to raw skeleton-v3; items are posed with exactly this
 	motion?: string; // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "pixminimax:<text>"
 	measured?: Keypoint[][]; // [cell][18]: re-estimated on the frozen frames (QA, anchors)
@@ -334,8 +334,10 @@ export interface RigAnimation {
 	/** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
 	directions?: DirectionName[];
 	cells: number;
-	/** Serialized playback metadata. Global Export preferences replace it on export copies; app previews and sharing always loop. */
+	/** Serialized playback metadata; app previews and sharing always loop. */
 	loop: boolean;
+	/** Explicit Add a move choice; omitted when global Export preferences supply the default. */
+	moveLoop?: boolean;
 	frames: { cell: number; ms: number }[];
 	source?: {
 		endpoint: string;

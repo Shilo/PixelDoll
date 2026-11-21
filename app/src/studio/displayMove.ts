@@ -4,7 +4,8 @@ import { moveLabel, type MoveRef } from './model.ts';
 const labels: Readonly<Record<string, WhisperKey>> = {
 	default: 'moveNames.default',
 	idle: 'moveNames.idle',
-	walk: 'moveNames.walk'
+	walk: 'moveNames.walk',
+	run: 'moveNames.run'
 };
 
 /** The move's name in the active language: a name the user gave it stays as typed. */
