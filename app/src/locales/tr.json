@@ -2171,6 +2171,7 @@
 		"loop": "Döngü",
 		"loopHint": "Dışa aktarımlarda varsayılan olarak tekrarlanır.",
 		"referenceDirection": "Başlangıç ve bitiş kareleri",
+		"referenceHelp": "İlk poza yön vermek için bir başlangıç görseli kullanın. Model destekliyorsa bitiş görseli son poza yön verir. Her iki uçta aynı görseli kullanmak döngüyü daha akıcı hâle getirebilir.",
 		"referenceEdited": "{direction} (özel kareler)",
 		"referenceSize": "Yalnızca gövdeyi içeren {width} × {height} boyutunda saydam PNG kullanın.",
 		"referenceInvalid": "Görünür çizim ve saydam arka plan içeren {width} × {height} boyutunda bir PNG kullanın.",

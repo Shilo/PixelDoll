@@ -2177,6 +2177,7 @@
 		"loop": "Schleife",
 		"loopHint": "In Exporten standardmäßig wiederholen.",
 		"referenceDirection": "Start- und End-Frames",
+		"referenceHelp": "Ein Startbild gibt die erste Pose vor. Wenn das Modell ein Endbild unterstützt, dient es als Vorlage für die letzte Pose. Dasselbe Bild an beiden Enden kann den Übergang in der Schleife verbessern.",
 		"referenceEdited": "{direction} (eigene Frames)",
 		"referenceSize": "Verwende transparente PNGs nur mit dem Körper in {width} × {height}.",
 		"referenceInvalid": "Verwende ein PNG mit sichtbarer Grafik und transparentem Hintergrund in {width} × {height}.",

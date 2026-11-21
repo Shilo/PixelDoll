@@ -2180,6 +2180,7 @@
 		"loop": "Repetir",
 		"loopHint": "Se repite de forma predeterminada en las exportaciones.",
 		"referenceDirection": "Fotogramas inicial y final",
+		"referenceHelp": "Usa una imagen inicial como guía para la primera pose. Si el modelo admite una imagen final, esta guía la última pose. Usar la misma imagen en ambos extremos puede suavizar la repetición.",
 		"referenceEdited": "{direction} (fotogramas propios)",
 		"referenceSize": "Usa PNG transparentes solo del cuerpo de {width} × {height}.",
 		"referenceInvalid": "Usa un PNG de {width} × {height} con arte visible y fondo transparente.",

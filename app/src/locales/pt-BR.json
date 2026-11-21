@@ -2191,6 +2191,7 @@
 		"loop": "Repetir",
 		"loopHint": "Repetida por padrão nas exportações.",
 		"referenceDirection": "Quadros inicial e final",
+		"referenceHelp": "Use uma imagem inicial como referência para a primeira pose. Se o modelo aceitar uma imagem final, ela orienta a última pose. Usar a mesma imagem nas duas pontas pode suavizar a repetição.",
 		"referenceEdited": "{direction} (quadros personalizados)",
 		"referenceSize": "Use PNGs transparentes apenas do corpo com {width} × {height}.",
 		"referenceInvalid": "Use um PNG de {width} × {height} com arte visível e fundo transparente.",

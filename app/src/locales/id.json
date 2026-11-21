@@ -2085,6 +2085,7 @@
 		"loop": "Ulangi",
 		"loopHint": "Diulang secara bawaan di ekspor.",
 		"referenceDirection": "Frame awal dan akhir",
+		"referenceHelp": "Gunakan gambar awal sebagai panduan pose pertama. Jika didukung, gambar akhir memandu pose terakhir. Menggunakan gambar yang sama di kedua ujung dapat membuat pengulangan lebih mulus.",
 		"referenceEdited": "{direction} (frame khusus)",
 		"referenceSize": "Gunakan PNG transparan khusus tubuh berukuran {width} × {height}.",
 		"referenceInvalid": "Gunakan PNG {width} × {height} dengan gambar yang terlihat dan latar transparan.",

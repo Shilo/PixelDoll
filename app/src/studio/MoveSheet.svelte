@@ -1151,9 +1151,16 @@
 					/>
 				</label>{/if}
 			{#if !riding}
-				<label class="check">
+				<label class="bu-check loop-setting">
+					<span class="loop-copy">
+						<span>{t('moveSheet.loop')}</span>
+						<span id={`${advancedId}-loop-hint`} class="faint small">{t('moveSheet.loopHint')}</span
+						>
+					</span>
 					<input
+						class="bu-switch"
 						type="checkbox"
+						role="switch"
 						checked={looping}
 						aria-label={t('moveSheet.loop')}
 						aria-describedby={`${advancedId}-loop-hint`}
@@ -1163,8 +1170,6 @@
 							void changeLoop(enabled);
 						}}
 					/>
-					{t('moveSheet.loop')}
-					<span id={`${advancedId}-loop-hint`} class="faint small">{t('moveSheet.loopHint')}</span>
 				</label>
 				<div class="frame-settings">
 					<div class="advanced-field frames-field">
@@ -1242,12 +1247,21 @@
 								{@const size = { width: m.rig.cell.w, height: m.rig.cell.h }}
 								{@const autoEnd =
 									frameReference?.end === undefined && automaticMoveEnd(action, looping)}
-								<div class="reference-heading" id={`${advancedId}-reference-heading`}>
-									<span id={`${advancedId}-reference-title`}
-										>{t('moveSheet.referenceDirection')}</span
-									>
+								<div class="reference-heading">
+									<div class="advanced-label">
+										<span id={`${advancedId}-reference-title`}
+											>{t('moveSheet.referenceDirection')}</span
+										>
+										<Help
+											iconOnly
+											title={t('moveSheet.referenceDirection')}
+											text={t('moveSheet.referenceHelp')}
+										/>
+									</div>
 									{#if targetDirs.length === 1 || !showFullFrameDirections}
-										<span class="faint">{directionLabel(direction)}</span>
+										<span class="faint" id={`${advancedId}-reference-direction`}
+											>{directionLabel(direction)}</span
+										>
 									{/if}
 								</div>
 								{#if targetDirs.length > 1}
@@ -1320,7 +1334,7 @@
 									role={targetDirs.length > 1 ? 'tabpanel' : 'group'}
 									aria-labelledby={targetDirs.length > 1
 										? `${advancedId}-frame-${direction}`
-										: `${advancedId}-reference-heading`}
+										: `${advancedId}-reference-title ${advancedId}-reference-direction`}
 								>
 									{#key `${action}/${direction}/${model}`}
 										<div class="frame-references">
@@ -1538,6 +1552,14 @@
 		max-width: 192px;
 		min-width: 0;
 	}
+	.loop-setting {
+		justify-content: space-between;
+	}
+	.loop-copy {
+		display: grid;
+		gap: 2px;
+		min-width: 0;
+	}
 	.frame-settings {
 		display: grid;
 		gap: 2px;
@@ -1574,7 +1596,7 @@
 	.reference-heading {
 		display: flex;
 		flex-wrap: wrap;
-		align-items: baseline;
+		align-items: center;
 		justify-content: space-between;
 		gap: 4px 12px;
 	}

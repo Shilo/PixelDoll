@@ -158,6 +158,7 @@
 					? `${fileId} ${helpId}`
 					: helpId}
 			aria-disabled={disabled || loading}
+			title={exactFrame && !loading ? (value?.name ?? caption) : undefined}
 			onclick={() => {
 				pick(() => {
 					if (active) input.click();
@@ -203,19 +204,21 @@
 						>
 					</small>
 				{:else if !exactFrame || !disabled}
-					<span id={fileId}
+					<span class="reference-caption" id={fileId}
 						>{loading
 							? t('referenceField.opening')
 							: (caption ?? t('referenceField.addImage'))}</span
 					>
-					{#if !loading && !disabled}<small class="faint" aria-hidden="true"
+					{#if !loading && !disabled}<small class="faint reference-drop-hint" aria-hidden="true"
 							>{t('referenceField.dropHint')}</small
 						>{/if}
 				{/if}
 			</span>
 		</button>
 		{#if exactFrame && disabled}
-			<span class="frame-unavailable" id={fileId}>{caption}</span>
+			<span class="frame-unavailable" id={fileId}
+				><span class="reference-caption">{caption}</span></span
+			>
 		{/if}
 		{#if value || (thumbnail && onremove)}
 			<button
@@ -269,6 +272,7 @@
 	}
 	.move-frame {
 		align-content: start;
+		container-type: inline-size;
 	}
 	.move-frame .reference-label {
 		font-size: var(--fs-sm);
@@ -382,6 +386,44 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	.move-frame .reference-copy {
+		min-height: 0;
+		overflow: hidden;
+	}
+	.move-frame .reference-caption {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		overflow: hidden;
+		overflow-wrap: anywhere;
+	}
+	.move-frame .reference-drop-hint {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	@container (width < 166px) {
+		.move-frame.side-by-side .drop {
+			flex-direction: column;
+			justify-content: center;
+			gap: 2px;
+		}
+		.move-frame.side-by-side .drop .reference-thumbnail,
+		.move-frame .drop > :global(img),
+		.move-frame .drop :global(.sprite-box > canvas) {
+			max-height: 22px;
+			max-width: 100%;
+			object-fit: contain;
+		}
+		.move-frame .reference-copy {
+			width: 100%;
+			text-align: center;
+		}
+		.move-frame .reference-drop-hint {
+			display: none;
+		}
 	}
 	.remove {
 		min-width: 44px;

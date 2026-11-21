@@ -2178,6 +2178,7 @@
 		"loop": "Boucle",
 		"loopHint": "Répétée par défaut dans les exports.",
 		"referenceDirection": "Images de départ et de fin",
+		"referenceHelp": "L’image de départ guide la première pose. Si le modèle accepte une image de fin, celle-ci guide la dernière pose. Utiliser la même image aux deux extrémités peut rendre la boucle plus fluide.",
 		"referenceEdited": "{direction} (images personnalisées)",
 		"referenceSize": "Utilisez des PNG transparents du corps seul en {width} × {height}.",
 		"referenceInvalid": "Utilisez un PNG de {width} × {height} avec un visuel visible et un fond transparent.",

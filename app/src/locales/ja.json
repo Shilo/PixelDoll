@@ -2092,6 +2092,7 @@
 		"loop": "ループ",
 		"loopHint": "エクスポートでは既定で繰り返します。",
 		"referenceDirection": "開始フレームと終了フレーム",
+		"referenceHelp": "開始画像は最初のポーズの目安になります。対応モデルでは、終了画像が最後のポーズの目安になります。両方に同じ画像を使うと、ループのつなぎ目を滑らかにできます。",
 		"referenceEdited": "{direction}（カスタムフレーム）",
 		"referenceSize": "体だけの透明PNG（{width} × {height}）を使用してください。",
 		"referenceInvalid": "見える絵と透明な背景がある {width} × {height} のPNGを使用してください。",

@@ -2162,6 +2162,7 @@
 		"loop": "Loop",
 		"loopHint": "Repeat by default in exports.",
 		"referenceDirection": "Start and end frames",
+		"referenceHelp": "Use a start image to guide the opening pose. If the model supports an end image, it guides the final pose. Matching the two can make a loop smoother.",
 		"referenceEdited": "{direction} (custom frames)",
 		"referenceSize": "Use body-only {width} × {height} transparent PNGs.",
 		"referenceInvalid": "Use a {width} × {height} PNG with visible art and a transparent background.",

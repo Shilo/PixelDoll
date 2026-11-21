@@ -2082,6 +2082,7 @@
 		"loop": "반복",
 		"loopHint": "내보내기에서 기본으로 반복해요.",
 		"referenceDirection": "시작 및 종료 프레임",
+		"referenceHelp": "시작 이미지는 첫 자세의 기준이 돼요. 모델이 종료 이미지를 지원하면 마지막 자세의 기준으로 쓸 수 있어요. 처음과 끝에 같은 이미지를 쓰면 반복이 더 자연스러울 수 있어요.",
 		"referenceEdited": "{direction}(사용자 지정 프레임)",
 		"referenceSize": "몸체만 있는 {width} × {height} 투명 PNG를 사용하세요.",
 		"referenceInvalid": "보이는 그림과 투명 배경이 있는 {width} × {height} PNG를 사용하세요.",

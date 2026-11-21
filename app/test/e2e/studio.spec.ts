@@ -5414,7 +5414,7 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	const add = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(add.getByRole('button', { name: /^Add Jumping in/ })).toBeEnabled();
 	await expect(add.getByText('Directions to redraw')).toHaveCount(0);
-	const loop = add.getByRole('checkbox', { name: 'Loop', exact: true });
+	const loop = add.getByRole('switch', { name: 'Loop', exact: true });
 	await expect(loop).not.toBeChecked();
 	await expect(add.getByRole('slider', { name: 'Frames', exact: true })).toBeVisible();
 	const addAdvanced = add.locator('summary').filter({ hasText: 'Advanced' });
@@ -5429,6 +5429,33 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await loop.check();
 	const end = add.getByRole('button', { name: 'End frame', exact: true });
 	await expect(end).toContainText('Same as start');
+	const originalViewport = page.viewportSize()!;
+	await page.setViewportSize({ width: 320, height: 700 });
+	const frameHelp = add.getByRole('button', { name: 'Start and end frames', exact: true });
+	await frameHelp.click();
+	const frameTooltip = page.getByRole('tooltip').filter({ hasText: 'guide the opening pose' });
+	await expect(frameTooltip).toBeVisible();
+	await expect(frameTooltip).toContainText('make a loop smoother');
+	await frameHelp.press('Escape');
+	await expect(frameTooltip).toBeHidden();
+	await expect(add).toBeVisible();
+	await expect(frameTabs).toHaveCount(1);
+	await expect(directionTabs).toHaveCount(4);
+	for (const name of ['South', 'East', 'North', 'West']) {
+		await expect(frameTabs.getByRole('tab', { name, exact: true })).toHaveCount(1);
+	}
+	const frameCopy = end.locator('.reference-copy');
+	await expect(frameCopy).toBeVisible();
+	await expect
+		.poll(() =>
+			end.evaluate((tile) => {
+				const box = tile.getBoundingClientRect();
+				const copy = tile.querySelector('.reference-copy')!.getBoundingClientRect();
+				return copy.top >= box.top && copy.bottom <= box.bottom;
+			})
+		)
+		.toBe(true);
+	await page.setViewportSize(originalViewport);
 	await add.getByRole('button', { name: 'Remove end frame', exact: true }).click();
 	await expect(end).toContainText('No end frame');
 	const [endPicker] = await Promise.all([page.waitForEvent('filechooser'), end.click()]);
@@ -5556,6 +5583,12 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 11 gens'
 	);
+	const model = sheet.getByRole('combobox', { name: 'Motion model', exact: true });
+	if (!(await model.isVisible()))
+		await sheet.locator('summary').filter({ hasText: 'Advanced' }).click();
+	await expect(
+		sheet.getByRole('group', { name: 'Start and end frames East', exact: true })
+	).toBeVisible();
 	await sheet.getByRole('button', { name: /^Replace Walk views/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
