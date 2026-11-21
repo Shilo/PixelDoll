@@ -3,6 +3,7 @@
 		"title": "角色库",
 		"shortcut": "角色库备份",
 		"scope": "备份已保存的角色及其美术素材。不包含偏好设置、草稿、任务和 API 密钥。",
+		"privacy": "备份可能包含美术素材和已保存的提示词。请仅与你信任的人分享。",
 		"backup": "备份角色库",
 		"includeArchived": "包含已归档的数据",
 		"restoreFromBackup": "从备份恢复",
@@ -25,7 +26,6 @@
 		"changed": "角色库已有变动。请在恢复前确认更新后的数量。",
 		"restoredName": "{name}（恢复的副本）",
 		"incomplete": "部分美术素材缺失或无效。未恢复任何内容。",
-		"archiveInvalid": "无法安全保留已归档的数据。",
 		"backupOmissions": "备份已下载，但缺少部分角色或图像。"
 	},
 	"settings": {
@@ -43,6 +43,7 @@
 	"developer": {
 		"title": "开发者",
 		"mode": "开发者模式",
+		"description": "显示用于检查 API 调用、复制 ID 和在隔离标签页中打开备份的工具。",
 		"notSaved": "浏览器未能保存更改。更改仅在当前标签页生效。",
 		"pages": "开发者页面（M1 至 M5）",
 		"rigs": "开发者绑定结构",
@@ -586,9 +587,7 @@
 		"connectPixelLab2": "连接 PixelLab…",
 		"characterSelection": "角色选择",
 		"wardrobeSettings": "衣橱显示",
-		"ownItemsOnly": "仅自己的装备",
-		"workspace": "工作区…",
-		"workspaceActions": "工作区操作"
+		"ownItemsOnly": "仅自己的装备"
 	},
 	"wardrobe": {
 		"moveItemTo": "移至槽位",
@@ -1181,6 +1180,13 @@
 			"nameLength": "请输入 1–60 个字符的角色名称。"
 		}
 	},
+	"incompatible": {
+		"error": {
+			"unsupported": "较早版本保存的数据中有一项无法原样保留在下载文件中，因此未下载任何内容。",
+			"tooLarge": "较早版本保存的数据过大，无法放入一个 ZIP 文件，因此未下载任何内容。",
+			"invalid": "此文件中由较早版本保存的数据已损坏或不受支持。"
+		}
+	},
 	"workspace": {
 		"activityTitle": "工作区活动",
 		"activityIntro": "随工作区一起保存，PixelDoll 版本为 {build}。ZIP 中的任务不会重新启动。",
@@ -1194,13 +1200,6 @@
 		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
 		"errorLineHttp": " · HTTP {status}",
 		"errorLineCode": " · 代码 {code}",
-		"exportTitle": "导出我的工作区",
-		"intro": "下载一个 ZIP，包含所有已保存的角色、装备、动作、套装和工作区设置。",
-		"privacy": "文件包含图像和已保存的提示词，但不包含你的 PixelLab 密钥或未完成的草稿。请仅与你信任的人分享。",
-		"includeErrors": "包含最近错误",
-		"includeErrorsHint": "包含你的 PixelLab 等级、近期请求结果和缩短后的错误信息。过滤可能遗漏链接或凭据，请在分享前检查导出的内容。",
-		"exportedOmissions": "工作区已导出，但有省略内容。请打开副本并在“活动”中查看详情。",
-		"exported": "工作区已导出。",
 		"error": {
 			"tooLarge": "此工作区超出 ZIP 大小或图像限制。请改用单独的角色 ZIP。",
 			"containsKey": "已保存的字段包含已连接或已记住的 PixelLab 密钥。导出前请将其从工作区中移除。",
@@ -1225,13 +1224,13 @@
 	},
 	"openWorkspace": {
 		"privacy": "打开副本时不会连接到 PixelLab。关闭或重新加载此标签页时，对副本的任何更改都会被丢弃。",
-		"chooseZip": "选择工作区 ZIP",
+		"chooseZip": "选择备份 ZIP",
 		"opening": "正在打开…",
 		"release": "松开以打开",
-		"drop": "将工作区 ZIP 拖放到此处",
+		"drop": "将备份 ZIP 拖放到此处",
 		"orChoose": "或点击选择 ZIP",
-		"chooseOne": "请选择一个工作区 ZIP，而不是文件夹或多个文件。",
-		"tooLarge": "请选择不超过 64 MB 的工作区 ZIP。",
+		"chooseOne": "请选择一个备份 ZIP，而不是文件夹或多个文件。",
+		"tooLarge": "请选择不超过 64 MB 的备份 ZIP。",
 		"reopen": "副本无法打开。请重新加载此标签页后重试。",
 		"libraryLink": "转到我的角色库",
 		"introCommand": "请选择用{command}制作的 ZIP。你的角色库保持不变。"

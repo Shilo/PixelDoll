@@ -3,6 +3,7 @@
 		"title": "Biblioteca",
 		"shortcut": "Copias de seguridad de la biblioteca",
 		"scope": "Haz una copia de seguridad de tus personajes guardados y sus gráficos. No se incluyen las preferencias, los borradores, las tareas ni las claves de API.",
+		"privacy": "Las copias de seguridad pueden contener imágenes y prompts guardados. Compártelas solo con personas de confianza.",
 		"backup": "Hacer una copia de seguridad",
 		"includeArchived": "Incluir datos archivados",
 		"restoreFromBackup": "Restaurar desde una copia de seguridad",
@@ -25,7 +26,6 @@
 		"changed": "Tu biblioteca cambió. Revisa las cifras actualizadas antes de restaurar.",
 		"restoredName": "{name} (copia restaurada)",
 		"incomplete": "Faltan algunos gráficos o no son válidos. No se restauró nada.",
-		"archiveInvalid": "No se pudieron conservar los datos archivados de forma segura.",
 		"backupOmissions": "La copia de seguridad se descargó, pero faltan personajes o imágenes."
 	},
 	"settings": {
@@ -43,6 +43,7 @@
 	"developer": {
 		"title": "Desarrollo",
 		"mode": "Modo de desarrollador",
+		"description": "Muestra herramientas para revisar llamadas a la API, copiar ID y abrir copias de seguridad en una pestaña aislada.",
 		"notSaved": "El navegador no pudo guardar el cambio. Solo se aplica a esta pestaña.",
 		"pages": "Páginas de desarrollo (M1 a M5)",
 		"rigs": "Rigs de desarrollo",
@@ -614,9 +615,7 @@
 		"connectPixelLab2": "Conectar PixelLab…",
 		"characterSelection": "Selección de personaje",
 		"wardrobeSettings": "Visibilidad del guardarropa",
-		"ownItemsOnly": "Solo objetos propios",
-		"workspace": "Espacio de trabajo…",
-		"workspaceActions": "Acciones del espacio de trabajo"
+		"ownItemsOnly": "Solo objetos propios"
 	},
 	"wardrobe": {
 		"moveItemTo": "Mover a ranura",
@@ -1241,6 +1240,13 @@
 			"nameLength": "Escribe un nombre de personaje de 1 a 60 caracteres."
 		}
 	},
+	"incompatible": {
+		"error": {
+			"unsupported": "Los datos guardados de una versión anterior contienen un valor que no se puede conservar sin cambios en la descarga. No se descargó nada.",
+			"tooLarge": "Los datos guardados de versiones anteriores son demasiado grandes para un solo ZIP. No se descargó nada.",
+			"invalid": "Los datos de versiones anteriores guardados en este archivo están dañados o no son compatibles."
+		}
+	},
 	"workspace": {
 		"activityTitle": "Actividad del espacio de trabajo",
 		"activityIntro": "Guardado con el espacio de trabajo desde PixelDoll {build}. Las tareas del ZIP no se reinician.",
@@ -1260,13 +1266,6 @@
 		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
 		"errorLineHttp": " · HTTP {status}",
 		"errorLineCode": " · Código {code}",
-		"exportTitle": "Exportar mi espacio de trabajo",
-		"intro": "Descarga un ZIP con todos tus personajes, objetos, animaciones, atuendos y ajustes del espacio de trabajo guardados.",
-		"privacy": "El archivo incluye las imágenes y los prompts guardados, pero no tu clave de PixelLab ni los borradores sin terminar. Compártelo solo con alguien de confianza.",
-		"includeErrors": "Incluir errores recientes",
-		"includeErrorsHint": "Añade tu nivel de PixelLab, los resultados de las solicitudes recientes y mensajes de error abreviados. El filtro puede pasar por alto enlaces o credenciales. Revisa la exportación antes de compartirla.",
-		"exportedOmissions": "Espacio de trabajo exportado con omisiones. Abre la copia y revisa Actividad para ver los detalles.",
-		"exported": "Espacio de trabajo exportado.",
 		"error": {
 			"tooLarge": "Este espacio de trabajo supera el límite de tamaño del ZIP o el de las imágenes. Usa ZIP de personajes individuales.",
 			"containsKey": "Un campo guardado contiene la clave de PixelLab en uso o guardada en el dispositivo. Elimínala de ese campo antes de exportar el espacio de trabajo.",
@@ -1291,13 +1290,13 @@
 	},
 	"openWorkspace": {
 		"privacy": "La copia se abre sin conexión a PixelLab. Los cambios en la copia se descartan al cerrar o recargar esta pestaña.",
-		"chooseZip": "Elegir ZIP del espacio de trabajo",
+		"chooseZip": "Elegir ZIP de copia de seguridad",
 		"opening": "Abriendo…",
 		"release": "Suelta para abrir",
-		"drop": "Suelta aquí el ZIP de un espacio de trabajo",
+		"drop": "Suelta aquí un ZIP de copia de seguridad",
 		"orChoose": "o haz clic para elegir un ZIP",
-		"chooseOne": "Elige un solo ZIP de espacio de trabajo, no una carpeta ni varios archivos.",
-		"tooLarge": "Elige un ZIP de espacio de trabajo de hasta 64 MB.",
+		"chooseOne": "Elige un solo ZIP de copia de seguridad, no una carpeta ni varios archivos.",
+		"tooLarge": "Elige un ZIP de copia de seguridad de hasta 64 MB.",
 		"reopen": "No se pudo abrir la copia. Recarga esta pestaña para intentarlo de nuevo.",
 		"libraryLink": "Ir a mi biblioteca",
 		"introCommand": "Elige un ZIP creado con {command}. Tu biblioteca no cambia."

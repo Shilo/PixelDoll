@@ -3,6 +3,7 @@
 		"title": "Pustaka",
 		"shortcut": "Cadangan pustaka",
 		"scope": "Cadangkan karakter yang tersimpan beserta gambarnya. Preferensi, draf, tugas, dan kunci API tidak disertakan.",
+		"privacy": "Cadangan dapat berisi gambar dan prompt yang tersimpan. Bagikan hanya kepada orang yang Anda percayai.",
 		"backup": "Cadangkan pustaka",
 		"includeArchived": "Sertakan data arsip",
 		"restoreFromBackup": "Pulihkan dari cadangan",
@@ -25,7 +26,6 @@
 		"changed": "Pustaka Anda berubah. Periksa jumlah terbaru sebelum memulihkan.",
 		"restoredName": "{name} (salinan hasil pemulihan)",
 		"incomplete": "Sebagian gambar hilang atau tidak valid. Tidak ada yang dipulihkan.",
-		"archiveInvalid": "Data arsip tidak dapat disimpan dengan aman.",
 		"backupOmissions": "Cadangan telah diunduh, tetapi beberapa karakter atau gambar tidak disertakan."
 	},
 	"settings": {
@@ -43,6 +43,7 @@
 	"developer": {
 		"title": "Pengembang",
 		"mode": "Mode pengembang",
+		"description": "Tampilkan alat untuk memeriksa panggilan API, menyalin ID, dan membuka cadangan di tab terisolasi.",
 		"notSaved": "Browser tidak dapat menyimpan perubahan. Perubahan hanya berlaku di tab ini.",
 		"pages": "Halaman pengembang (M1 hingga M5)",
 		"rigs": "Rig pengembang",
@@ -588,9 +589,7 @@
 		"connectPixelLab2": "Hubungkan PixelLab…",
 		"characterSelection": "Pilihan karakter",
 		"wardrobeSettings": "Visibilitas lemari",
-		"ownItemsOnly": "Hanya item sendiri",
-		"workspace": "Ruang kerja…",
-		"workspaceActions": "Tindakan ruang kerja"
+		"ownItemsOnly": "Hanya item sendiri"
 	},
 	"wardrobe": {
 		"moveItemTo": "Pindahkan ke slot",
@@ -1189,6 +1188,13 @@
 			"nameLength": "Masukkan nama karakter sepanjang 1–60 karakter."
 		}
 	},
+	"incompatible": {
+		"error": {
+			"unsupported": "Ada nilai dalam data tersimpan dari versi sebelumnya yang tidak dapat dipertahankan tanpa perubahan dalam unduhan ini. Tidak ada yang diunduh.",
+			"tooLarge": "Data tersimpan dari versi sebelumnya terlalu besar untuk satu ZIP. Tidak ada yang diunduh.",
+			"invalid": "Data tersimpan dari versi sebelumnya dalam file ini rusak atau tidak didukung."
+		}
+	},
 	"workspace": {
 		"activityTitle": "Aktivitas ruang kerja",
 		"activityIntro": "Disimpan bersama ruang kerja dari PixelDoll {build}. Tugas dari ZIP tidak dimulai ulang.",
@@ -1206,13 +1212,6 @@
 		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
 		"errorLineHttp": " · HTTP {status}",
 		"errorLineCode": " · Kode {code}",
-		"exportTitle": "Ekspor ruang kerja saya",
-		"intro": "Unduh satu ZIP berisi semua karakter, item, animasi, setelan, dan pengaturan ruang kerja yang tersimpan.",
-		"privacy": "File ini menyertakan gambar dan prompt tersimpan, tetapi tidak menyertakan kunci PixelLab atau draf yang belum selesai. Bagikan hanya kepada orang yang Anda percayai.",
-		"includeErrors": "Sertakan kesalahan terbaru",
-		"includeErrorsHint": "Menyertakan tingkat PixelLab, hasil permintaan terbaru, dan pesan galat yang dipersingkat. Filter mungkin melewatkan tautan atau kredensial. Periksa hasil ekspor sebelum membagikannya.",
-		"exportedOmissions": "Ruang kerja diekspor tanpa sebagian data. Buka salinannya dan lihat Aktivitas untuk detail.",
-		"exported": "Ruang kerja diekspor.",
 		"error": {
 			"tooLarge": "Ruang kerja ini melebihi batas ukuran ZIP atau gambar. Gunakan ZIP per karakter sebagai gantinya.",
 			"containsKey": "Ada kolom tersimpan yang berisi kunci PixelLab yang terhubung atau diingat. Hapus kunci tersebut dari ruang kerja sebelum mengekspor.",
@@ -1237,13 +1236,13 @@
 	},
 	"openWorkspace": {
 		"privacy": "Salinan dibuka tanpa terhubung ke PixelLab. Semua perubahan pada salinan akan dibuang saat Anda menutup atau memuat ulang tab ini.",
-		"chooseZip": "Pilih ZIP ruang kerja",
+		"chooseZip": "Pilih ZIP cadangan",
 		"opening": "Membuka…",
 		"release": "Lepas untuk membuka",
-		"drop": "Letakkan ZIP ruang kerja di sini",
+		"drop": "Letakkan ZIP cadangan di sini",
 		"orChoose": "atau klik untuk memilih ZIP",
-		"chooseOne": "Pilih satu ZIP ruang kerja, bukan folder atau beberapa file.",
-		"tooLarge": "Pilih ZIP ruang kerja berukuran maksimal 64 MB.",
+		"chooseOne": "Pilih satu ZIP cadangan, bukan folder atau beberapa file.",
+		"tooLarge": "Pilih ZIP cadangan berukuran maksimal 64 MB.",
 		"reopen": "Salinan tidak dapat dibuka. Muat ulang tab ini untuk mencoba lagi.",
 		"libraryLink": "Buka pustaka saya",
 		"introCommand": "Pilih ZIP yang dibuat dengan {command}. Pustaka Anda tidak berubah."

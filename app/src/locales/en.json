@@ -3,6 +3,7 @@
 		"title": "Library",
 		"shortcut": "Library backups",
 		"scope": "Back up saved characters and their artwork. Preferences, drafts, jobs, and API keys are not included.",
+		"privacy": "Backups can contain artwork and saved prompts. Share them only with people you trust.",
 		"backup": "Back up library",
 		"includeArchived": "Include archived data",
 		"restoreFromBackup": "Restore from backup",
@@ -25,7 +26,6 @@
 		"changed": "Your library changed. Review the updated counts before restoring.",
 		"restoredName": "{name} (restored copy)",
 		"incomplete": "Some artwork is missing or invalid. Nothing was restored.",
-		"archiveInvalid": "The archived data could not be preserved safely.",
 		"backupOmissions": "Backup downloaded with some characters or artwork missing."
 	},
 	"settings": {
@@ -43,6 +43,7 @@
 	"developer": {
 		"title": "Developer",
 		"mode": "Developer mode",
+		"description": "Show tools for inspecting API calls, copying IDs, and opening backups in an isolated tab.",
 		"notSaved": "Developer mode changed for this tab only. The browser could not save it.",
 		"pages": "Developer pages (M1 to M5)",
 		"rigs": "Developer rigs",
@@ -605,9 +606,7 @@
 		"connectPixelLab2": "Connect PixelLab…",
 		"characterSelection": "Character selection",
 		"wardrobeSettings": "Wardrobe visibility",
-		"ownItemsOnly": "Own items only",
-		"workspace": "Workspace...",
-		"workspaceActions": "Workspace actions"
+		"ownItemsOnly": "Own items only"
 	},
 	"wardrobe": {
 		"moveItemTo": "Move to slot",
@@ -1258,13 +1257,6 @@
 		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
 		"errorLineHttp": " · HTTP {status}",
 		"errorLineCode": " · Code {code}",
-		"exportTitle": "Export my workspace",
-		"intro": "Download one ZIP with all your saved characters, items, moves, outfits, and workspace settings.",
-		"privacy": "The file includes artwork and saved prompts, but not your PixelLab key or unfinished drafts. Share it only with someone you trust.",
-		"includeErrors": "Include recent errors",
-		"includeErrorsHint": "Adds your PixelLab tier, recent request outcomes, and shortened error messages. Filtering may miss links or credentials, so review the export before sharing.",
-		"exportedOmissions": "Workspace exported with omissions. Open the copy and check Activity for details.",
-		"exported": "Workspace exported.",
 		"error": {
 			"tooLarge": "This workspace exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.",
 			"containsKey": "A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.",
@@ -1289,13 +1281,13 @@
 	},
 	"openWorkspace": {
 		"privacy": "The copy starts disconnected from PixelLab. Any changes to the copy are discarded when you close or reload this tab.",
-		"chooseZip": "Choose workspace ZIP",
+		"chooseZip": "Choose backup ZIP",
 		"opening": "Opening…",
 		"release": "Release to open",
-		"drop": "Drop a workspace ZIP here",
+		"drop": "Drop a backup ZIP here",
 		"orChoose": "or click to choose a ZIP",
-		"chooseOne": "Choose one workspace ZIP, not a folder or multiple files.",
-		"tooLarge": "Choose a workspace ZIP up to 64 MB.",
+		"chooseOne": "Choose one backup ZIP, not a folder or multiple files.",
+		"tooLarge": "Choose a backup ZIP up to 64 MB.",
 		"reopen": "The copy could not open. Reload this tab to try again.",
 		"libraryLink": "Go to my library",
 		"introCommand": "Choose a ZIP made with {command}. Your library stays unchanged."

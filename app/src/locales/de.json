@@ -3,6 +3,7 @@
 		"title": "Bibliothek",
 		"shortcut": "Sicherungen der Bibliothek",
 		"scope": "Sichere gespeicherte Charaktere und ihre Grafiken. Einstellungen, Entwürfe, Aufträge und API-Schlüssel sind nicht enthalten.",
+		"privacy": "Sicherungen können Grafiken und gespeicherte Prompts enthalten. Teile sie nur mit Personen, denen du vertraust.",
 		"backup": "Bibliothek sichern",
 		"includeArchived": "Archivierte Daten einschließen",
 		"restoreFromBackup": "Aus Sicherung wiederherstellen",
@@ -25,7 +26,6 @@
 		"changed": "Deine Bibliothek hat sich geändert. Prüfe vor dem Wiederherstellen die aktualisierten Zahlen.",
 		"restoredName": "{name} (wiederhergestellte Kopie)",
 		"incomplete": "Einige Grafiken fehlen oder sind ungültig. Es wurde nichts wiederhergestellt.",
-		"archiveInvalid": "Die archivierten Daten konnten nicht sicher aufbewahrt werden.",
 		"backupOmissions": "Die Sicherung wurde heruntergeladen. Einige Charaktere oder Grafiken fehlen."
 	},
 	"settings": {
@@ -43,6 +43,7 @@
 	"developer": {
 		"title": "Entwicklung",
 		"mode": "Entwicklermodus",
+		"description": "Zeige Werkzeuge zum Prüfen von API-Aufrufen, Kopieren von IDs und Öffnen von Sicherungen in einem isolierten Tab.",
 		"notSaved": "Der Browser konnte die Änderung nicht speichern. Sie gilt nur für diesen Tab.",
 		"pages": "Entwicklerseiten (M1 bis M5)",
 		"rigs": "Entwickler-Rigs",
@@ -614,9 +615,7 @@
 		"connectPixelLab2": "PixelLab verbinden…",
 		"characterSelection": "Figurenauswahl",
 		"wardrobeSettings": "Sichtbarkeit in der Garderobe",
-		"ownItemsOnly": "Nur eigene Gegenstände",
-		"workspace": "Arbeitsbereich…",
-		"workspaceActions": "Arbeitsbereich-Aktionen"
+		"ownItemsOnly": "Nur eigene Gegenstände"
 	},
 	"wardrobe": {
 		"moveItemTo": "In Slot verschieben",
@@ -1241,6 +1240,13 @@
 			"nameLength": "Gib einen Figurennamen mit 1–60 Zeichen ein."
 		}
 	},
+	"incompatible": {
+		"error": {
+			"unsupported": "Ein Wert in den gespeicherten Daten einer früheren Version kann in dieser Datei nicht unverändert erhalten bleiben. Deshalb wurde nichts heruntergeladen.",
+			"tooLarge": "Die gespeicherten Daten aus früheren Versionen sind zu groß für eine einzige ZIP-Datei. Deshalb wurde nichts heruntergeladen.",
+			"invalid": "Die gespeicherten Daten aus früheren Versionen in dieser Datei sind beschädigt oder werden nicht unterstützt."
+		}
+	},
 	"workspace": {
 		"activityTitle": "Arbeitsbereichsaktivität",
 		"activityIntro": "Mit dem Arbeitsbereich aus PixelDoll {build} gespeichert. Aufträge aus der ZIP-Datei werden nicht neu gestartet.",
@@ -1260,13 +1266,6 @@
 		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
 		"errorLineHttp": " · HTTP {status}",
 		"errorLineCode": " · Code {code}",
-		"exportTitle": "Meinen Arbeitsbereich exportieren",
-		"intro": "Lade ein ZIP mit allen gespeicherten Figuren, Gegenständen, Animationen, Outfits und Arbeitsbereichseinstellungen herunter.",
-		"privacy": "Die Datei enthält Grafiken und gespeicherte Prompts, aber weder deinen PixelLab-Schlüssel noch unfertige Entwürfe. Teile sie nur mit Personen, denen du vertraust.",
-		"includeErrors": "Kürzliche Fehler aufnehmen",
-		"includeErrorsHint": "Fügt deine PixelLab-Stufe, Ergebnisse der letzten Anfragen und gekürzte Fehlermeldungen hinzu. Der Filter kann Links oder Zugangsdaten übersehen. Prüfe den Export vor dem Teilen.",
-		"exportedOmissions": "Der Arbeitsbereich wurde mit Auslassungen exportiert. Öffne die Kopie und prüfe die Details unter „Aktivität“.",
-		"exported": "Arbeitsbereich exportiert.",
 		"error": {
 			"tooLarge": "Dieser Arbeitsbereich überschreitet das Limit für die ZIP-Größe oder die Grafiken. Verwende stattdessen einzelne Figuren-ZIPs.",
 			"containsKey": "Ein gespeichertes Feld enthält den verbundenen oder gespeicherten PixelLab-Schlüssel. Entferne ihn vor dem Export aus dem Arbeitsbereich.",
@@ -1291,13 +1290,13 @@
 	},
 	"openWorkspace": {
 		"privacy": "Die Kopie startet ohne Verbindung zu PixelLab. Alle Änderungen an der Kopie werden verworfen, wenn du diesen Tab schließt oder neu lädst.",
-		"chooseZip": "Arbeitsbereichs-ZIP auswählen",
+		"chooseZip": "Sicherungs-ZIP auswählen",
 		"opening": "Wird geöffnet…",
 		"release": "Zum Öffnen loslassen",
-		"drop": "Zieh ein Arbeitsbereichs-ZIP hierher",
+		"drop": "Zieh ein Sicherungs-ZIP hierher",
 		"orChoose": "oder klicke, um ein ZIP auszuwählen",
-		"chooseOne": "Wähle ein einzelnes Arbeitsbereichs-ZIP, keinen Ordner und keine mehreren Dateien.",
-		"tooLarge": "Wähle ein Arbeitsbereichs-ZIP bis 64 MB.",
+		"chooseOne": "Wähle ein einzelnes Sicherungs-ZIP, keinen Ordner und keine mehreren Dateien.",
+		"tooLarge": "Wähle ein Sicherungs-ZIP bis 64 MB.",
 		"reopen": "Die Kopie konnte nicht geöffnet werden. Lade diesen Tab neu, um es erneut zu versuchen.",
 		"libraryLink": "Zu meiner Bibliothek",
 		"introCommand": "Wähle ein ZIP aus „{command}“. Deine Bibliothek bleibt unverändert."

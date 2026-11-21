@@ -3,6 +3,7 @@
 		"title": "Kitaplık",
 		"shortcut": "Kitaplık yedekleri",
 		"scope": "Kayıtlı karakterleri ve görsellerini yedekleyin. Tercihler, taslaklar, işler ve API anahtarları dahil edilmez.",
+		"privacy": "Yedekler görseller ve kayıtlı istemler içerebilir. Yalnızca güvendiğiniz kişilerle paylaşın.",
 		"backup": "Kitaplığı yedekle",
 		"includeArchived": "Arşivlenmiş verileri dahil et",
 		"restoreFromBackup": "Yedekten geri yükle",
@@ -25,7 +26,6 @@
 		"changed": "Kitaplığınız değişti. Geri yüklemeden önce güncel sayıları inceleyin.",
 		"restoredName": "{name} (geri yüklenen kopya)",
 		"incomplete": "Bazı görseller eksik veya geçersiz. Hiçbir şey geri yüklenmedi.",
-		"archiveInvalid": "Arşivlenmiş veriler güvenli bir şekilde saklanamadı.",
 		"backupOmissions": "Yedek indirildi ancak bazı karakterler veya görseller eksik."
 	},
 	"settings": {
@@ -43,6 +43,7 @@
 	"developer": {
 		"title": "Geliştirici",
 		"mode": "Geliştirici modu",
+		"description": "API çağrılarını incelemek, kimlikleri kopyalamak ve yedekleri yalıtılmış bir sekmede açmak için kullanılan araçları gösterir.",
 		"notSaved": "Tarayıcı değişikliği kaydedemedi. Değişiklik yalnızca bu sekmede geçerli.",
 		"pages": "Geliştirici sayfaları (M1–M5)",
 		"rigs": "Geliştirici rig’leri",
@@ -611,9 +612,7 @@
 		"connectPixelLab2": "PixelLab hesabını bağlayın…",
 		"characterSelection": "Karakter seçimi",
 		"wardrobeSettings": "Gardırop görünürlüğü",
-		"ownItemsOnly": "Yalnızca kendi eşyaları",
-		"workspace": "Çalışma alanı…",
-		"workspaceActions": "Çalışma alanı işlemleri"
+		"ownItemsOnly": "Yalnızca kendi eşyaları"
 	},
 	"wardrobe": {
 		"moveItemTo": "Yuvaya taşı",
@@ -1235,6 +1234,13 @@
 			"nameLength": "1–60 karakter uzunluğunda bir karakter adı girin."
 		}
 	},
+	"incompatible": {
+		"error": {
+			"unsupported": "Önceki bir sürümde kaydedilen veriler, indirme sırasında olduğu gibi korunamayan bir değer içeriyor. Hiçbir şey indirilmedi.",
+			"tooLarge": "Önceki sürümlerde kaydedilen veriler tek bir ZIP dosyasına sığmayacak kadar büyük. Hiçbir şey indirilmedi.",
+			"invalid": "Bu dosyadaki önceki sürümlere ait kayıtlı veriler bozuk veya desteklenmiyor."
+		}
+	},
 	"workspace": {
 		"activityTitle": "Çalışma alanı etkinliği",
 		"activityIntro": "Çalışma alanıyla birlikte PixelDoll {build} sürümünden kaydedildi. ZIP dosyasındaki işler yeniden başlatılmaz.",
@@ -1254,13 +1260,6 @@
 		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
 		"errorLineHttp": " · HTTP {status}",
 		"errorLineCode": " · Kod {code}",
-		"exportTitle": "Çalışma alanımı dışa aktarın",
-		"intro": "Tüm kayıtlı karakterlerinizi, eşyalarınızı, animasyonlarınızı, kıyafetlerinizi ve çalışma alanı ayarlarınızı tek bir ZIP dosyasında indirin.",
-		"privacy": "Dosya görselleri ve kayıtlı istemleri içerir. PixelLab anahtarınızı veya tamamlanmamış taslakları içermez. Yalnızca güvendiğiniz kişilerle paylaşın.",
-		"includeErrors": "Yakın zamandaki hataları dahil edin",
-		"includeErrorsHint": "PixelLab seviyenizi, son isteklerin sonuçlarını ve kısaltılmış hata mesajlarını ekler. Filtre bazı bağlantıları veya kimlik bilgilerini gözden kaçırabilir. Paylaşmadan önce dışa aktarılan içeriği inceleyin.",
-		"exportedOmissions": "Çalışma alanı bazı eksiklerle dışa aktarıldı. Ayrıntılar için kopyayı açıp Etkinlik bölümüne bakın.",
-		"exported": "Çalışma alanı dışa aktarıldı.",
 		"error": {
 			"tooLarge": "Bu çalışma alanı ZIP boyutu veya görsel sınırını aşıyor. Bunun yerine karakterleri ayrı ZIP dosyaları olarak alın.",
 			"containsKey": "Kayıtlı bir alan, bağlı veya hatırlanan PixelLab anahtarını içeriyor. Dışa aktarmadan önce anahtarı çalışma alanından kaldırın.",
@@ -1285,13 +1284,13 @@
 	},
 	"openWorkspace": {
 		"privacy": "Kopya, PixelLab’a bağlı olmadan açılır. Sekmeyi kapattığınızda veya yeniden yüklediğinizde kopyada yaptığınız tüm değişiklikler atılır.",
-		"chooseZip": "Çalışma alanı ZIP dosyasını seçin",
+		"chooseZip": "Yedek ZIP dosyasını seçin",
 		"opening": "Açılıyor…",
 		"release": "Açmak için bırakın",
-		"drop": "Çalışma alanı ZIP dosyasını buraya bırakın",
+		"drop": "Yedek ZIP dosyasını buraya bırakın",
 		"orChoose": "veya ZIP seçmek için tıklayın",
-		"chooseOne": "Klasör veya birden fazla dosya yerine tek bir çalışma alanı ZIP dosyası seçin.",
-		"tooLarge": "En fazla 64 MB boyutunda bir çalışma alanı ZIP dosyası seçin.",
+		"chooseOne": "Klasör veya birden fazla dosya yerine tek bir yedek ZIP dosyası seçin.",
+		"tooLarge": "En fazla 64 MB boyutunda bir yedek ZIP dosyası seçin.",
 		"reopen": "Kopya açılamadı. Tekrar denemek için bu sekmeyi yeniden yükleyin.",
 		"libraryLink": "Kitaplığıma gidin",
 		"introCommand": "{command} komutuyla oluşturulmuş bir ZIP dosyası seçin. Kitaplığınız değişmez."

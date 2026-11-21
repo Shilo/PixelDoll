@@ -3,6 +3,7 @@
 		"title": "Bibliothèque",
 		"shortcut": "Sauvegardes de la bibliothèque",
 		"scope": "Sauvegardez vos personnages enregistrés et leurs illustrations. Les préférences, les brouillons, les tâches et les clés API ne sont pas inclus.",
+		"privacy": "Les sauvegardes peuvent contenir des images et des prompts enregistrés. Ne les partagez qu’avec des personnes de confiance.",
 		"backup": "Sauvegarder la bibliothèque",
 		"includeArchived": "Inclure les données archivées",
 		"restoreFromBackup": "Restaurer depuis une sauvegarde",
@@ -25,7 +26,6 @@
 		"changed": "Votre bibliothèque a changé. Vérifiez les nouveaux totaux avant de restaurer.",
 		"restoredName": "{name} (copie restaurée)",
 		"incomplete": "Certaines illustrations sont manquantes ou non valides. Rien n’a été restauré.",
-		"archiveInvalid": "Les données archivées n’ont pas pu être conservées en toute sécurité.",
 		"backupOmissions": "La sauvegarde a été téléchargée, mais certains personnages ou visuels manquent."
 	},
 	"settings": {
@@ -43,6 +43,7 @@
 	"developer": {
 		"title": "Développement",
 		"mode": "Mode développeur",
+		"description": "Affiche les outils pour examiner les appels API, copier des identifiants et ouvrir des sauvegardes dans un onglet isolé.",
 		"notSaved": "Le navigateur n’a pas pu enregistrer le changement. Il ne s’applique qu’à cet onglet.",
 		"pages": "Pages de développement (M1 à M5)",
 		"rigs": "Rigs de développement",
@@ -608,9 +609,7 @@
 		"connectPixelLab2": "Connecter PixelLab…",
 		"characterSelection": "Sélection du personnage",
 		"wardrobeSettings": "Visibilité dans la garde-robe",
-		"ownItemsOnly": "Ses propres objets uniquement",
-		"workspace": "Espace de travail…",
-		"workspaceActions": "Actions de l’espace de travail"
+		"ownItemsOnly": "Ses propres objets uniquement"
 	},
 	"wardrobe": {
 		"moveItemTo": "Déplacer vers un emplacement",
@@ -1235,6 +1234,13 @@
 			"nameLength": "Saisissez un nom de personnage de 1 à 60 caractères."
 		}
 	},
+	"incompatible": {
+		"error": {
+			"unsupported": "Les données enregistrées dans une version précédente contiennent une valeur que le fichier téléchargé ne peut pas conserver à l’identique. Rien n’a été téléchargé.",
+			"tooLarge": "Les données enregistrées dans des versions précédentes sont trop volumineuses pour un seul ZIP. Rien n’a été téléchargé.",
+			"invalid": "Les données de versions précédentes enregistrées dans ce fichier sont endommagées ou ne sont pas prises en charge."
+		}
+	},
 	"workspace": {
 		"activityTitle": "Activité de l’espace de travail",
 		"activityIntro": "Cette activité a été enregistrée avec l’espace de travail dans PixelDoll {build}. Les tâches du ZIP ne redémarrent pas.",
@@ -1254,13 +1260,6 @@
 		"errorLine": "{date} · {tool} · {outcome}{http}{code}",
 		"errorLineHttp": " · HTTP {status}",
 		"errorLineCode": " · Code {code}",
-		"exportTitle": "Exporter mon espace de travail",
-		"intro": "Téléchargez un seul ZIP avec tous vos personnages, objets, animations, tenues et réglages d’espace de travail enregistrés.",
-		"privacy": "Le fichier inclut les visuels et les prompts enregistrés, mais pas votre clé PixelLab ni les brouillons inachevés. Ne le partagez qu’avec une personne de confiance.",
-		"includeErrors": "Inclure les erreurs récentes",
-		"includeErrorsHint": "Ajoute votre niveau PixelLab, les résultats des requêtes récentes et des messages d’erreur abrégés. Le filtre peut laisser passer des liens ou des identifiants. Vérifiez l’export avant de le partager.",
-		"exportedOmissions": "L’espace de travail a été exporté, mais certains éléments manquent. Ouvrez la copie et consultez « Activité » pour en savoir plus.",
-		"exported": "Espace de travail exporté.",
 		"error": {
 			"tooLarge": "Cet espace de travail dépasse la taille maximale du ZIP ou la limite de visuels. Utilisez plutôt des ZIP de personnages individuels.",
 			"containsKey": "Un champ enregistré contient la clé PixelLab utilisée pour la connexion ou mémorisée sur cet appareil. Supprimez-la de l’espace de travail avant d’exporter.",
@@ -1285,13 +1284,13 @@
 	},
 	"openWorkspace": {
 		"privacy": "La copie s’ouvre sans connexion à PixelLab. Toute modification de la copie est perdue lorsque vous fermez ou rechargez cet onglet.",
-		"chooseZip": "Choisir le ZIP de l’espace de travail",
+		"chooseZip": "Choisir un ZIP de sauvegarde",
 		"opening": "Ouverture…",
 		"release": "Relâchez pour ouvrir",
-		"drop": "Déposez un ZIP d’espace de travail ici",
+		"drop": "Déposez un ZIP de sauvegarde ici",
 		"orChoose": "ou cliquez pour choisir un ZIP",
-		"chooseOne": "Choisissez un seul ZIP d’espace de travail, pas un dossier ni plusieurs fichiers.",
-		"tooLarge": "Choisissez un ZIP d’espace de travail de 64 Mo maximum.",
+		"chooseOne": "Choisissez un seul ZIP de sauvegarde, pas un dossier ni plusieurs fichiers.",
+		"tooLarge": "Choisissez un ZIP de sauvegarde de 64 Mo maximum.",
 		"reopen": "La copie n’a pas pu s’ouvrir. Rechargez cet onglet pour réessayer.",
 		"libraryLink": "Aller à ma bibliothèque",
 		"introCommand": "Choisissez un ZIP créé avec {command}. Votre bibliothèque reste inchangée."
