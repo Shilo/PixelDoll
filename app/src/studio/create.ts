@@ -1799,8 +1799,13 @@ async function inspectMeasurementRecovery(
 		const start = await moveReferenceImage(spec.animation?.references?.[d], 'start', rig.cell);
 		const startPoints =
 			start && model === 'skeleton-v3'
-				? requireMoveStartJoints(cachedJoints(jobs, await context.measurement(start), start), d)
+				? cachedJoints(jobs, await context.measurement(start), start)
 				: undefined;
+		if (start && model === 'skeleton-v3' && (!startPoints || !hasAll(startPoints)))
+			throw new RecoveryUnavailable(
+				'Cached body reuse requires completed joint checks.',
+				'create.errors.cachedBodyReuseRequires'
+			);
 		let keypoints: Keypoint[][] | undefined;
 		const authored = isAuthoredAction(spec.action);
 		if (model === 'skeleton-v3' && authored)

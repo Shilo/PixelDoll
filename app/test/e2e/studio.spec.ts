@@ -15,7 +15,7 @@ import { expect, test, type BrowserContext, type Locator, type Page } from '@pla
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
-import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT, type Manifest } from '../../src/lib/store/manifest.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import './studio-thumbnails.ts';
@@ -5642,7 +5642,14 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		for (const item of manifest.items)
 			if (item.id !== manifest.rig.baseItem && !state.moving.spec.items.includes(item.id))
 				for (const layer of item.layers) if (layer.cells?.walk) delete layer.cells.walk.east;
-		state.moving.spec = { ...state.moving.spec, animation: { model: 'pixminimax', frameCount: 8 } };
+		state.moving.spec = {
+			...state.moving.spec,
+			animation: {
+				model: 'pixminimax',
+				frameCount: 8,
+				references: { east: { end: { width: 64, height: 64, base64: 'unused-end' } } }
+			}
+		};
 		state.moving.error = new LocalizedError(
 			'Fixture QA failure',
 			'create.errors.replacementFailsQa'
@@ -5654,6 +5661,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	const review = page.getByRole('dialog', { name: 'Review Skeleton V3', exact: true });
 	await expect(review).toContainText('8 frames');
 	await expect(review).toContainText('Directions: East');
+	await expect(review).toContainText('End frame: Not available for this model');
 	await expect(review.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 8 gens'
@@ -7226,6 +7234,162 @@ test('move review gates item selection and shows live estimates without spending
 		.getByRole('button', { name: 'Cancel', exact: true })
 		.click();
 	expect(posts).toEqual([]);
+});
+
+test('reviewed move animates the chosen item and exports layered frames using offline artwork', async ({
+	page,
+	context
+}, info) => {
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	const posts: string[] = [];
+	let images: { type: string; base64: string }[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		const path = new URL(request.url()).pathname;
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					credits: { type: 'usd', usd: 0 },
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 }
+				}
+			});
+		if (request.method() === 'POST') posts.push(path);
+		if (path === '/v2/animate-with-skeleton-v3')
+			return route.fulfill({ json: { background_job_id: 'offline-helmet' } });
+		if (path.endsWith('/offline-helmet'))
+			return route.fulfill({ json: { status: 'completed', last_response: { images } } });
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'offline-move-smoke-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page, true);
+	images = await page.evaluate(async () => {
+		const load = (path: string) => import(path);
+		const { doc } = await load('/src/studio/state.svelte.ts');
+		const { loadProject } = await load('/src/lib/store/project.ts');
+		const db = await load('/src/lib/store/db.ts');
+		const { cellHash } = await load('/src/lib/rig/rig.ts');
+		const { toChroma } = await load('/src/lib/image/chroma.ts');
+		const { encodePngBytes } = await load('/src/lib/image/pngraw.ts');
+		const { bytesToBase64 } = await load('/src/lib/image/png.ts');
+		const { moveCandidateInput } = await load('/src/studio/replaceMove.ts');
+		const { rec, project } = await loadProject(doc.id);
+		const { rig, items } = rec.manifest;
+		const body = items.find((item: { id: string }) => item.id === rig.baseItem);
+		const helmet = items.find((item: { id: string }) => item.id === 'helmet_steel');
+		const cells = { ...body.layers[0].cells.walk };
+		delete cells.west;
+		const artwork = cells.east.map((hash: string, index: number) => {
+			const mannequin = toChroma(project.images.get(hash), 'green');
+			const layer = project.images.get(helmet.layers[0].cells.walk.east[index]);
+			if (layer.w !== mannequin.w || layer.h !== mannequin.h)
+				throw new Error('Fixture sizes differ');
+			for (let offset = 0; offset < layer.data.length; offset += 4)
+				if (layer.data[offset + 3])
+					mannequin.data.set(layer.data.subarray(offset, offset + 4), offset);
+			return mannequin;
+		});
+		const dressing = await cellHash(artwork[0]);
+		await db.put('blobs', dressing.slice(7), new Blob([await encodePngBytes(artwork[0])]));
+		Object.assign(helmet, { route: 'skeleton-pose', key: 'green', dressed: { east: dressing } });
+		const animation = rig.animations.find((move: { id: string }) => move.id === 'walk');
+		const basePlayback = { loop: animation.loop, moveLoop: animation.moveLoop };
+		rec.moveReviews = {
+			walk: {
+				spec: {
+					id: 'walk',
+					seed: 812,
+					replace: true,
+					reviewBeforePublish: true,
+					items: [],
+					animation: { model: 'skeleton-v3', loop: false }
+				},
+				input: moveCandidateInput(rec, 'walk'),
+				dirs: ['east'],
+				animation,
+				basePlayback,
+				cells,
+				provenance: [],
+				provenanceStart: body.provenance.length,
+				anchors: {},
+				skeletons: {},
+				checks: {},
+				warnings: []
+			}
+		};
+		await db.put('projects', doc.id, rec);
+		return Promise.all(
+			artwork.map(async (frame: unknown) => ({
+				type: 'base64',
+				base64: bytesToBase64(await encodePngBytes(frame))
+			}))
+		);
+	});
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: /Walk Review move/ }).click();
+	await page.getByRole('button', { name: 'Replace move', exact: true }).click();
+	const items = page.getByRole('dialog', { name: 'Animate items' });
+	const helmet = items.getByRole('button', { name: /Steel helmet/i });
+	await expect(helmet).toHaveAttribute('aria-pressed', 'false');
+	expect(
+		await page.evaluate(async () => {
+			const statePath = '/src/studio/state.svelte.ts';
+			const dbPath = '/src/lib/store/db.ts';
+			const { doc } = await import(statePath);
+			const { get } = await import(dbPath);
+			const rec = await get('projects', doc.id);
+			return rec.manifest.rig.animations.find((move: { id: string }) => move.id === 'walk')
+				.moveLoop;
+		})
+	).toBe(false);
+	expect(posts).toEqual([]);
+	await helmet.click();
+	await items.getByRole('button', { name: 'Animate 1 item' }).click();
+	await page
+		.getByRole('dialog', { name: 'Add a move', exact: true })
+		.getByRole('button', { name: 'Done', exact: true })
+		.click({ timeout: 30_000 });
+	expect(posts).toEqual(['/v2/animate-with-skeleton-v3']);
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	const sheet = page.getByRole('dialog', { name: 'Export', exact: true });
+	await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click();
+	const download = page.waitForEvent('download');
+	await sheet.getByRole('button', { name: /^Download ZIP/ }).click();
+	const entries = await unzip(new Uint8Array(readFileSync((await (await download).path())!)));
+	const manifestEntry = entries.get('manifest.json');
+	expect(manifestEntry).toBeDefined();
+	const manifest: Manifest = JSON.parse(new TextDecoder().decode(manifestEntry));
+	expect(manifest.rig.animations.find((move) => move.id === 'walk')).toMatchObject({
+		loop: false,
+		cells: 8
+	});
+	const exportedHelmet = manifest.items.find((item) => item.id === 'helmet_steel');
+	expect(exportedHelmet?.coverage).toEqual(
+		expect.arrayContaining(images.map((_, index) => `walk/east/${index}`))
+	);
+	const layer = exportedHelmet!.layers[0];
+	const helmetSheet = layer.sheets?.walk;
+	expect(helmetSheet).toBeDefined();
+	const spriteSheet = await decodePngBytes(entries.get(helmetSheet!)!);
+	const { w: cellWidth, h: cellHeight } = layer.cell ?? manifest.rig.cell;
+	const east = manifest.rig.directions.findIndex((direction) => direction.id === 'east');
+	for (let frame = 0; frame < 8; frame++) {
+		const hasPixels = Array.from({ length: cellHeight }, (_, row) => {
+			const offset = ((east * cellHeight + row) * spriteSheet.w + frame * cellWidth) * 4;
+			return spriteSheet.data.subarray(offset, offset + cellWidth * 4);
+		}).some((row) => row.some((value, index) => index % 4 === 3 && value > 0));
+		expect(hasPixels, `helmet east frame ${frame} has visible pixels`).toBe(true);
+	}
+	expect(errors).toEqual([]);
 });
 
 test('draft retry prices a fresh item plan rather than historical grid fallbacks and stops when pricing is unavailable', async ({

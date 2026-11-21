@@ -605,6 +605,26 @@ test('one combined review skips color work while joint checks are unfinished and
 	expect(f.enqueue).not.toHaveBeenCalled();
 });
 
+test('recovery cannot reuse a custom start without its cached joint check', async () => {
+	const f = await fixture();
+	const start = makeImg(64, 64);
+	start.data.set([120, 140, 180, 255], (32 * 64 + 32) * 4);
+	const review = await reviewMoveRecovery('rig-recover', {
+		...f.spec,
+		animation: {
+			model: 'skeleton-v3',
+			references: { east: { start: { width: 64, height: 64, base64: await b64(start) } } }
+		}
+	});
+	expect(review).toMatchObject({
+		unavailable: 'Cached body reuse requires completed joint checks.'
+	});
+	expect(review.recovery).toBeUndefined();
+	expect(review.keep).toBeUndefined();
+	expect(review.colorRepair).toBeUndefined();
+	expect(f.enqueue).not.toHaveBeenCalled();
+});
+
 test('combined review distinguishes ineligibility from real storage failures and does not cache across reviews', async () => {
 	const f = await fixture();
 	expect(await reviewMoveRecovery('rig-recover', { ...f.spec, action: undefined })).toEqual({});

@@ -1036,6 +1036,9 @@
 				{t('common.directions')}: {skeletonReview.affected.map(directionLabel).join(', ')}
 			</p>
 			{#if review.text}<p class="small">{review.text}</p>{/if}
+			{#if review.approvedDirs?.some((dir) => moving.spec?.animation?.references?.[dir]?.end)}
+				<p class="small">{t('moveSheet.endFrame')}: {t('moveSheet.endUnavailable')}</p>
+			{/if}
 			{#if review.replace}<p class="notice small">
 					{t('moveSheet.redrawHidesEquipment')}
 					{t('moveSheet.redrawOtherMoves')}
