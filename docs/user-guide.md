@@ -413,6 +413,9 @@ for why there are dedicated exports for these engines and when more would be use
 ## Good to know
 
 - **Activity** (toolbar) lists running jobs with **Stop** and **Cancel**, and your balance.
+- **Report a problem:** **More options > Help > Report a problem** opens the public GitHub issue form in a new tab.
+  A GitHub account is required to post. PixelDoll does not send app data or add anything to your clipboard or report.
+  Describe what happened and how to reproduce it, but leave out API keys and private information.
 - Failed character creation, moves and setup stay stopped after reload. Open their progress sheet to review the error;
   use the explicit retry/resume action or dismiss it. Reloading does not retry a recorded failure.
 - With PixelDoll open in two tabs, one tab runs the jobs (the other shows "Other tab" beside Activity). Keys are not passed between tabs.

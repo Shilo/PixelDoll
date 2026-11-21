@@ -516,6 +516,8 @@
 	"toolbar": {
 		"help": "ヘルプ",
 		"userGuide": "ユーザーガイド",
+		"reportProblem": "問題を報告",
+		"reportProblemNotice": "新しいタブでGitHubが開きます。報告は公開され、投稿にはGitHubアカウントが必要です。",
 		"characterView": "キャラクタービュー",
 		"mountSettings": "乗り物の設定",
 		"titleMountSettingsMounted": "乗り物の設定（騎乗中）",

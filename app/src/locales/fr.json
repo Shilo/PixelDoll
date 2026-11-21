@@ -533,6 +533,8 @@
 	"toolbar": {
 		"help": "Aide",
 		"userGuide": "Guide d’utilisation",
+		"reportProblem": "Signaler un problème",
+		"reportProblemNotice": "Ouvre GitHub dans un nouvel onglet. Les signalements sont publics et nécessitent un compte GitHub.",
 		"characterView": "Vue du personnage",
 		"mountSettings": "Réglages de la monture",
 		"titleMountSettingsMounted": "Réglages de la monture (affichée)",

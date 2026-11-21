@@ -6,6 +6,7 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	import { app } from '../lib/app.svelte.ts';
+	import { repository } from '../lib/repository.ts';
 	import { workspaceCopy, workspaceUrl } from '../lib/store/workspace-mode.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import { tick } from 'svelte';
@@ -55,6 +56,7 @@
 		FileArchive,
 		MonitorDown,
 		BookOpen,
+		Bug,
 		ExternalLink,
 		CircleHelp,
 		RefreshCw,
@@ -638,7 +640,7 @@
 				<a
 					class="row bu-action"
 					data-variant="quiet"
-					href="https://github.com/Shilo/PixelDoll/blob/main/docs/user-guide.md"
+					href={`${repository}/blob/main/docs/user-guide.md`}
 					target="_blank"
 					rel="noopener"
 					onclick={closeOptions}
@@ -647,6 +649,25 @@
 						aria-hidden="true"
 					/></a
 				>
+				<a
+					class="row bu-action"
+					data-variant="quiet"
+					href={`${repository}/issues/new?template=problem-report.yml`}
+					target="_blank"
+					rel="noreferrer"
+					aria-labelledby="problem-report-label"
+					aria-describedby="problem-report-notice"
+					onclick={closeOptions}
+				>
+					<Bug size={18} aria-hidden="true" />
+					<span class="row-name">
+						<span id="problem-report-label">{t('toolbar.reportProblem')}</span>
+						<span id="problem-report-notice" class="row-reason bu-muted"
+							>{t('toolbar.reportProblemNotice')}</span
+						>
+					</span>
+					<ExternalLink size={16} aria-hidden="true" />
+				</a>
 				{#if import.meta.env.PROD && !workspaceCopy}
 					<button class="row bu-action" data-variant="quiet" onclick={requestInstallHelp}>
 						<MonitorDown size={18} /><span class="row-name"

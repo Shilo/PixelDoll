@@ -1,0 +1,24 @@
+name: Report a problem
+description: Report a problem you encountered while using PixelDoll.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This report is public. Do not include PixelLab API keys, private links, personal information, or private project data. Review any details you choose to share before posting.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the steps that led to the problem, if you know them.
+  - type: input
+    id: environment
+    attributes:
+      label: PixelDoll version, browser, and device
+      description: You can find the PixelDoll version in Settings under About.

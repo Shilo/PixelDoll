@@ -536,6 +536,8 @@
 	"toolbar": {
 		"help": "Ayuda",
 		"userGuide": "Guía de usuario",
+		"reportProblem": "Informar de un problema",
+		"reportProblemNotice": "Abre GitHub en una pestaña nueva. Los informes son públicos y requieren una cuenta de GitHub.",
 		"characterView": "Vista del personaje",
 		"mountSettings": "Ajustes de montura",
 		"titleMountSettingsMounted": "Ajustes de montura (montado)",

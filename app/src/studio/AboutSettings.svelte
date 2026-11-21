@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
+	import { repository } from '../lib/repository.ts';
 	import { Copy, ExternalLink } from './icons.ts';
 	import { PRE_RELEASE } from './previewNotice.ts';
 	import { toast } from './state.svelte.ts';
 
-	const repository = 'https://github.com/Shilo/PixelDoll';
 	const hasCommit = /^[a-f0-9]{7,40}$/i.test(__APP_COMMIT__);
 	const commitUrl = `${repository}/commit/${__APP_COMMIT__}`;
 	const modeKey = import.meta.env.DEV

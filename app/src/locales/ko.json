@@ -516,6 +516,8 @@
 	"toolbar": {
 		"help": "도움말",
 		"userGuide": "사용자 가이드",
+		"reportProblem": "문제 신고",
+		"reportProblemNotice": "새 탭에서 GitHub가 열립니다. 신고 내용은 공개되며 게시하려면 GitHub 계정이 필요합니다.",
 		"characterView": "캐릭터 보기",
 		"mountSettings": "탈것 설정",
 		"titleMountSettingsMounted": "탈것 설정(탑승 중)",

@@ -511,6 +511,8 @@
 	"toolbar": {
 		"help": "帮助",
 		"userGuide": "用户指南",
+		"reportProblem": "报告问题",
+		"reportProblemNotice": "在新标签页中打开 GitHub。报告将公开，发布需要 GitHub 帐号。",
 		"characterView": "角色视图",
 		"mountSettings": "坐骑设置",
 		"titleMountSettingsMounted": "坐骑设置（已骑乘）",

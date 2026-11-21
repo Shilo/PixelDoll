@@ -536,6 +536,8 @@
 	"toolbar": {
 		"help": "Hilfe",
 		"userGuide": "Benutzerhandbuch",
+		"reportProblem": "Problem melden",
+		"reportProblemNotice": "Öffnet GitHub in einem neuen Tab. Meldungen sind öffentlich und erfordern ein GitHub-Konto.",
 		"characterView": "Figurenansicht",
 		"mountSettings": "Reittier-Einstellungen",
 		"titleMountSettingsMounted": "Reittier-Einstellungen (aufgesessen)",

@@ -9,6 +9,7 @@ export { default as Download } from '@lucide/svelte/icons/download';
 export { default as Upload } from '@lucide/svelte/icons/upload';
 export { default as MonitorDown } from '@lucide/svelte/icons/monitor-down';
 export { default as BookOpen } from '@lucide/svelte/icons/book-open';
+export { default as Bug } from '@lucide/svelte/icons/bug';
 export { default as CircleHelp } from '@lucide/svelte/icons/circle-question-mark';
 export { default as Archive } from '@lucide/svelte/icons/archive';
 export { default as FileArchive } from '@lucide/svelte/icons/file-archive';

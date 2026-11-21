@@ -1636,6 +1636,16 @@ test('installation help upgrades on a late native offer and preserves explicit p
 			'href',
 			'https://github.com/Shilo/PixelDoll/blob/main/docs/user-guide.md'
 		);
+		const reportProblem = helpMenu.getByRole('link', { name: 'Report a problem', exact: true });
+		await expect(reportProblem).toHaveAttribute(
+			'href',
+			'https://github.com/Shilo/PixelDoll/issues/new?template=problem-report.yml'
+		);
+		await expect(reportProblem).toHaveAttribute('target', '_blank');
+		await expect(reportProblem).toHaveAttribute('rel', 'noreferrer');
+		await expect(reportProblem).toHaveAccessibleDescription(
+			'Opens GitHub in a new tab. Reports are public and require a GitHub account.'
+		);
 		await helpMenu.getByRole('button', { name: 'Installation help...', exact: true }).click();
 		const help = page.getByRole('dialog', { name: 'Installation help', exact: true });
 		await expect(help).toContainText('A browser install prompt isn’t available in this window.');

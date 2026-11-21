@@ -533,6 +533,8 @@
 	"toolbar": {
 		"help": "Yardım",
 		"userGuide": "Kullanıcı kılavuzu",
+		"reportProblem": "Sorun bildir",
+		"reportProblemNotice": "GitHub’ı yeni bir sekmede açar. Bildirimler herkese açıktır ve GitHub hesabı gerektirir.",
 		"characterView": "Karakter görünümü",
 		"mountSettings": "Binek ayarları",
 		"titleMountSettingsMounted": "Binek ayarları (binek üzerinde)",

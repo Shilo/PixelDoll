@@ -513,6 +513,8 @@
 	"toolbar": {
 		"help": "Bantuan",
 		"userGuide": "Panduan pengguna",
+		"reportProblem": "Laporkan masalah",
+		"reportProblemNotice": "Membuka GitHub di tab baru. Laporan bersifat publik dan memerlukan akun GitHub.",
 		"characterView": "Tampilan karakter",
 		"mountSettings": "Pengaturan tunggangan",
 		"titleMountSettingsMounted": "Pengaturan tunggangan (sedang menunggang)",
