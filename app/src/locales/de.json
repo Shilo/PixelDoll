@@ -2189,8 +2189,9 @@
 	},
 	"moveSheet": {
 		"makeRoom": "Platz schaffen",
-		"frameRoom": "Diese Animation kann über den {frame}-px-Frame hinausgehen: Unter den Füßen der Figur sind {below} px frei. Schaffe zuerst kostenlos Platz oder füge die Animation trotzdem hinzu.",
+		"frameRoom": "Diese Animation kann über den {frame}-px-Frame hinausgehen: Unter den Füßen der Figur sind {below} px frei. Schaffe zuerst kostenlos Platz oder generiere die Animation trotzdem.",
 		"checkpoint": {
+			"generateAnyway": "Animation trotzdem generieren",
 			"generate": "Animation generieren",
 			"initialEstimate": "Ca. {minutes} Min. · Ohne Gegenstände",
 			"review": "Animation prüfen",
@@ -2233,8 +2234,7 @@
 			"replaceViews": "Ansichten für {move} ersetzen",
 			"queue": "{move} vormerken",
 			"move": "Animation",
-			"queueReplacement": "Ansichten für {move} zum Ersetzen einreihen",
-			"addAnyway": "{move} trotzdem hinzufügen"
+			"queueReplacement": "Ansichten für {move} zum Ersetzen einreihen"
 		},
 		"titleRepair": "Gegenstandsframes reparieren",
 		"titleReplace": "Animationsansichten ersetzen",
@@ -2667,6 +2667,7 @@
 		"saved": "Frame angepasst: {change}.",
 		"undone": "Frame-Änderung rückgängig gemacht.",
 		"errors": {
+			"reviewOpen": "Speichere oder verwirf die Animation, die auf Prüfung wartet, bevor du den Frame anpasst.",
 			"missingArtwork": "Gespeicherte Grafik dieser Figur fehlt, daher kann ihr Frame nicht geändert werden.",
 			"even": "Wähle eine Frame-Größe, die sich um eine gerade Pixelzahl ändert.",
 			"range": "Der Frame muss für diese Figur {min}–{max} px groß sein.",

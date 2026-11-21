@@ -2203,8 +2203,9 @@
 	},
 	"moveSheet": {
 		"makeRoom": "Abrir espaço",
-		"frameRoom": "Esta animação pode passar do quadro de {frame} px: o personagem tem {below} px abaixo dos pés. Abra espaço de graça primeiro ou adicione a animação mesmo assim.",
+		"frameRoom": "Esta animação pode passar do quadro de {frame} px: o personagem tem {below} px abaixo dos pés. Abra espaço de graça primeiro ou gere a animação mesmo assim.",
 		"checkpoint": {
+			"generateAnyway": "Gerar animação mesmo assim",
 			"generate": "Gerar animação",
 			"initialEstimate": "Cerca de {minutes} min · Sem itens",
 			"review": "Revisar animação",
@@ -2247,8 +2248,7 @@
 			"replaceViews": "Substituir vistas de {move}",
 			"queue": "Colocar {move} na fila",
 			"move": "animação",
-			"queueReplacement": "Enfileirar substituição de vistas de {move}",
-			"addAnyway": "Adicionar {move} mesmo assim"
+			"queueReplacement": "Enfileirar substituição de vistas de {move}"
 		},
 		"titleRepair": "Reparar quadros do item",
 		"titleReplace": "Substituir vistas da animação",
@@ -2681,6 +2681,7 @@
 		"saved": "Quadro ajustado: {change}.",
 		"undone": "Mudança no quadro desfeita.",
 		"errors": {
+			"reviewOpen": "Salve ou descarte a animação aguardando revisão antes de ajustar o quadro.",
 			"missingArtwork": "Falta arte salva deste personagem, então o quadro não pode ser alterado.",
 			"even": "Escolha um tamanho de quadro que mude em um número par de pixels.",
 			"range": "O quadro deve ter de {min} a {max} px para este personagem.",

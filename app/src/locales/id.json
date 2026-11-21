@@ -2097,8 +2097,9 @@
 	},
 	"moveSheet": {
 		"makeRoom": "Beri ruang",
-		"frameRoom": "Animasi ini bisa melewati frame {frame} px: karakter hanya punya {below} px di bawah kakinya. Beri ruang secara gratis dulu, atau tetap tambahkan animasinya.",
+		"frameRoom": "Animasi ini bisa melewati frame {frame} px: karakter hanya punya {below} px di bawah kakinya. Beri ruang secara gratis dulu, atau tetap buat animasinya.",
 		"checkpoint": {
+			"generateAnyway": "Tetap buat animasi",
 			"generate": "Buat animasi",
 			"initialEstimate": "Sekitar {minutes} mnt · Tanpa item",
 			"review": "Tinjau animasi",
@@ -2140,8 +2141,7 @@
 			"replaceViews": "Ganti tampilan {move}",
 			"queue": "Antrekan {move}",
 			"move": "animasi",
-			"queueReplacement": "Antrekan penggantian tampilan: {move}",
-			"addAnyway": "Tetap tambahkan {move}"
+			"queueReplacement": "Antrekan penggantian tampilan: {move}"
 		},
 		"titleRepair": "Perbaiki frame item",
 		"titleReplace": "Ganti tampilan animasi",
@@ -2558,6 +2558,7 @@
 		"saved": "Frame disesuaikan: {change}.",
 		"undone": "Perubahan frame dibatalkan.",
 		"errors": {
+			"reviewOpen": "Simpan atau buang animasi yang menunggu peninjauan sebelum menyesuaikan frame.",
 			"missingArtwork": "Gambar tersimpan karakter ini hilang, jadi frame-nya tidak dapat diubah.",
 			"even": "Pilih ukuran frame yang berubah sebanyak jumlah piksel genap.",
 			"range": "Frame harus {min}–{max} px untuk karakter ini.",

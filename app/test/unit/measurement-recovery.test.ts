@@ -1734,6 +1734,14 @@ test('an overflowing paid motion is reviewed from the cache with a priced lift a
 	expect(reroll.spec.reroll?.east?.motion).toBeGreaterThan(0);
 	expect(reroll.spec.reroll?.west).toBeUndefined();
 	expect(reroll.gens).toBeCloseTo(3 + 0.8 + 3 + 0.8);
+	// Every way on is body only and stops in the staged visual review: a move asked with equipment is quoted and continued
+	// without it, so items wait for their own quote and consent after Save.
+	const withItems = (await reviewMoveResults('rig-recover', { ...f.spec, items: ['base'] }))!;
+	expect(withItems.options.map((option) => option.gens)).toEqual(
+		review.options.map((option) => option.gens)
+	);
+	for (const option of [...review.options, ...withItems.options])
+		expect(option.spec).toMatchObject({ items: [], reviewBeforePublish: true });
 });
 
 test('a view whose paid request is still at PixelLab is reviewed as running, not as unbought', async () => {

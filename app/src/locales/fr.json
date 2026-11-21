@@ -2190,8 +2190,9 @@
 	},
 	"moveSheet": {
 		"makeRoom": "Faire de la place",
-		"frameRoom": "Cette animation peut dépasser le cadre de {frame} px : le personnage a {below} px sous les pieds. Faites d’abord de la place gratuitement, ou ajoutez l’animation quand même.",
+		"frameRoom": "Cette animation peut dépasser le cadre de {frame} px : le personnage a {below} px sous les pieds. Faites d’abord de la place gratuitement, ou générez l’animation quand même.",
 		"checkpoint": {
+			"generateAnyway": "Générer l’animation quand même",
 			"generate": "Générer l’animation",
 			"initialEstimate": "Environ {minutes} min · Sans objets",
 			"review": "Vérifier l’animation",
@@ -2234,8 +2235,7 @@
 			"replaceViews": "Remplacer les vues de {move}",
 			"queue": "Mettre {move} en file d’attente",
 			"move": "l’animation",
-			"queueReplacement": "Mettre en file d’attente le remplacement des vues de {move}",
-			"addAnyway": "Ajouter {move} quand même"
+			"queueReplacement": "Mettre en file d’attente le remplacement des vues de {move}"
 		},
 		"titleRepair": "Réparer les images de l’objet",
 		"titleReplace": "Remplacer les vues de l’animation",
@@ -2668,6 +2668,7 @@
 		"saved": "Cadre ajusté : {change}.",
 		"undone": "Modification du cadre annulée.",
 		"errors": {
+			"reviewOpen": "Enregistrez ou ignorez l’animation en attente de vérification avant d’ajuster le cadre.",
 			"missingArtwork": "Des illustrations enregistrées de ce personnage manquent, son cadre ne peut donc pas être modifié.",
 			"even": "Choisissez une taille de cadre qui change d’un nombre pair de pixels.",
 			"range": "Le cadre doit mesurer de {min} à {max} px pour ce personnage.",

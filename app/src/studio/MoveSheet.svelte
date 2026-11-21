@@ -272,7 +272,7 @@
 			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
 		);
 	});
-	// App-side warnings never block a request PixelLab would take: Add anyway records them as accepted with the move.
+	// App-side warnings never block a request PixelLab would take: Generate move anyway records them as accepted with the move.
 	const preflight = $derived(
 		m && store.project && id && !motionIssue
 			? movePreflightWarnings(store.project, {
@@ -739,7 +739,7 @@
 							: replacing
 								? 'moveSheet.submit.replaceViews'
 								: preflight.length
-									? 'moveSheet.submit.addAnyway'
+									? 'moveSheet.checkpoint.generateAnyway'
 									: 'moveSheet.checkpoint.generate',
 						{ move: id ? nice(id) : t('moveSheet.submit.move') }
 					)}

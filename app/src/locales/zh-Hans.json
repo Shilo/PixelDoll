@@ -2075,8 +2075,9 @@
 	},
 	"moveSheet": {
 		"makeRoom": "腾出空间",
-		"frameRoom": "此动作可能超出 {frame} px 帧：角色脚下只有 {below} px。请先免费腾出空间，或仍然添加此动作。",
+		"frameRoom": "此动作可能超出 {frame} px 帧：角色脚下只有 {below} px。请先免费腾出空间，或仍然生成此动作。",
 		"checkpoint": {
+			"generateAnyway": "仍然生成动作",
 			"generate": "生成动作",
 			"initialEstimate": "约 {minutes} 分钟 · 不含装备",
 			"review": "检查动作",
@@ -2118,8 +2119,7 @@
 			"replaceViews": "替换{move}视图",
 			"queue": "将{move}加入队列",
 			"move": "动作",
-			"queueReplacement": "将 {move} 的视图替换加入队列",
-			"addAnyway": "仍然添加{move}"
+			"queueReplacement": "将 {move} 的视图替换加入队列"
 		},
 		"titleRepair": "修复装备帧",
 		"titleReplace": "替换动作视图",
@@ -2536,6 +2536,7 @@
 		"saved": "帧已调整：{change}。",
 		"undone": "已撤销帧更改。",
 		"errors": {
+			"reviewOpen": "调整帧前，请先保存或放弃等待检查的动作。",
 			"missingArtwork": "此角色缺少已保存的图像，因此无法更改其帧。",
 			"even": "请选择变化量为偶数像素的帧尺寸。",
 			"range": "此角色的帧必须为 {min}–{max} px。",

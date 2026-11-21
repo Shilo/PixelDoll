@@ -2183,8 +2183,9 @@
 	},
 	"moveSheet": {
 		"makeRoom": "Yer aç",
-		"frameRoom": "Bu animasyon {frame} px karenin dışına taşabilir: karakterin ayaklarının altında {below} px var. Önce ücretsiz yer açın veya animasyonu yine de ekleyin.",
+		"frameRoom": "Bu animasyon {frame} px karenin dışına taşabilir: karakterin ayaklarının altında {below} px var. Önce ücretsiz yer açın veya animasyonu yine de oluşturun.",
 		"checkpoint": {
+			"generateAnyway": "Yine de animasyon oluştur",
 			"generate": "Animasyon oluştur",
 			"initialEstimate": "Yaklaşık {minutes} dk · Eşya yok",
 			"review": "Animasyonu incele",
@@ -2227,8 +2228,7 @@
 			"replaceViews": "{move} animasyonunun görünümlerini değiştirin",
 			"queue": "{move} animasyonunu kuyruğa alın",
 			"move": "animasyon",
-			"queueReplacement": "Görünüm değiştirmeyi sıraya al: {move}",
-			"addAnyway": "Yine de ekle: {move}"
+			"queueReplacement": "Görünüm değiştirmeyi sıraya al: {move}"
 		},
 		"titleRepair": "Eşya karelerini onarın",
 		"titleReplace": "Animasyon görünümlerini değiştirin",
@@ -2661,6 +2661,7 @@
 		"saved": "Kare ayarlandı: {change}.",
 		"undone": "Kare değişikliği geri alındı.",
 		"errors": {
+			"reviewOpen": "Kareyi ayarlamadan önce incelemeyi bekleyen animasyonu kaydedin veya atın.",
 			"missingArtwork": "Bu karakterin kayıtlı çizimleri eksik, bu yüzden karesi değiştirilemez.",
 			"even": "Çift sayıda piksel değişen bir kare boyutu seçin.",
 			"range": "Bu karakter için kare {min}–{max} px olmalıdır.",

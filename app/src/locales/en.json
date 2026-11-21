@@ -2174,8 +2174,9 @@
 	},
 	"moveSheet": {
 		"makeRoom": "Make room",
-		"frameRoom": "This move may step past the {frame} px frame: the character has {below} px below its feet. Make room for free first, or add the move anyway.",
+		"frameRoom": "This move may step past the {frame} px frame: the character has {below} px below its feet. Make room for free first, or generate the move anyway.",
 		"checkpoint": {
+			"generateAnyway": "Generate move anyway",
 			"generate": "Generate move",
 			"initialEstimate": "About {minutes} min · No items included",
 			"review": "Review move",
@@ -2218,8 +2219,7 @@
 			"replaceViews": "Replace {move} views",
 			"queue": "Queue {move}",
 			"move": "move",
-			"queueReplacement": "Queue replacement: {move} views",
-			"addAnyway": "Add {move} anyway"
+			"queueReplacement": "Queue replacement: {move} views"
 		},
 		"titleRepair": "Repair item frames",
 		"titleReplace": "Replace move views",
@@ -2652,6 +2652,7 @@
 		"saved": "Frame adjusted: {change}.",
 		"undone": "Frame change undone.",
 		"errors": {
+			"reviewOpen": "Save or discard the move waiting for review before adjusting the frame.",
 			"missingArtwork": "Saved artwork of this character is missing, so its frame cannot be changed.",
 			"even": "Choose a frame size that changes by an even number of pixels.",
 			"range": "Frame must be {min}–{max} px for this character.",

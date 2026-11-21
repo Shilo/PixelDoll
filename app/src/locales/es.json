@@ -2192,8 +2192,9 @@
 	},
 	"moveSheet": {
 		"makeRoom": "Hacer espacio",
-		"frameRoom": "Esta animación puede salirse del marco de {frame} px: el personaje tiene {below} px bajo los pies. Haz espacio gratis primero o añade la animación de todos modos.",
+		"frameRoom": "Esta animación puede salirse del marco de {frame} px: el personaje tiene {below} px bajo los pies. Haz espacio gratis primero o genera la animación de todos modos.",
 		"checkpoint": {
+			"generateAnyway": "Generar animación de todos modos",
 			"generate": "Generar animación",
 			"initialEstimate": "Unos {minutes} min · Sin objetos",
 			"review": "Revisar animación",
@@ -2236,8 +2237,7 @@
 			"replaceViews": "Reemplazar vistas de {move}",
 			"queue": "Poner {move} en cola",
 			"move": "animación",
-			"queueReplacement": "Poner en cola el reemplazo de las vistas de {move}",
-			"addAnyway": "Añadir {move} de todos modos"
+			"queueReplacement": "Poner en cola el reemplazo de las vistas de {move}"
 		},
 		"titleRepair": "Reparar fotogramas del objeto",
 		"titleReplace": "Reemplazar vistas de la animación",
@@ -2674,6 +2674,7 @@
 		"saved": "Marco ajustado: {change}.",
 		"undone": "Cambio del marco deshecho.",
 		"errors": {
+			"reviewOpen": "Guarda o descarta la animación pendiente de revisión antes de ajustar el marco.",
 			"missingArtwork": "Falta arte guardado de este personaje, así que no se puede cambiar su marco.",
 			"even": "Elige un tamaño de marco que cambie en un número par de píxeles.",
 			"range": "El marco debe medir entre {min} y {max} px para este personaje.",

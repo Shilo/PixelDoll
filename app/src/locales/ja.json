@@ -2104,8 +2104,9 @@
 	},
 	"moveSheet": {
 		"makeRoom": "余白を作る",
-		"frameRoom": "このモーションは {frame} px のフレームからはみ出すおそれがあります。キャラクターの足元の余白は {below} px です。先に無料で余白を作るか、このまま追加してください。",
+		"frameRoom": "このモーションは {frame} px のフレームからはみ出すおそれがあります。キャラクターの足元の余白は {below} px です。先に無料で余白を作るか、このまま生成してください。",
 		"checkpoint": {
+			"generateAnyway": "このままモーションを生成",
 			"generate": "モーションを生成",
 			"initialEstimate": "約{minutes}分・アイテムなし",
 			"review": "モーションを確認",
@@ -2147,8 +2148,7 @@
 			"replaceViews": "{move}の向き別フレームを置き換え",
 			"queue": "{move}をキューに追加",
 			"move": "モーション",
-			"queueReplacement": "「{move}」の差し替えをキューに追加",
-			"addAnyway": "このまま{move}を追加"
+			"queueReplacement": "「{move}」の差し替えをキューに追加"
 		},
 		"titleRepair": "アイテムのフレームを修復",
 		"titleReplace": "モーションの向き別フレームを置き換え",
@@ -2565,6 +2565,7 @@
 		"saved": "フレームを調整しました：{change}。",
 		"undone": "フレームの変更を元に戻しました。",
 		"errors": {
+			"reviewOpen": "フレームを調整する前に、確認待ちのモーションを保存するか破棄してください。",
 			"missingArtwork": "このキャラクターの保存済みアートが見つからないため、フレームを変更できません。",
 			"even": "偶数ピクセル分だけ変わるフレームサイズを選んでください。",
 			"range": "このキャラクターのフレームは {min}～{max} px にしてください。",

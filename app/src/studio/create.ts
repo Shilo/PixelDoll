@@ -2645,7 +2645,13 @@ export async function addMove(
 		const saved = Object.hasOwn(rec.moveReviews ?? {}, spec.id)
 			? rec.moveReviews![spec.id]
 			: undefined;
-		if (saved && saved.spec.activityScope === spec.activityScope && saved.spec.seed === spec.seed)
+		// A draft staged on another rig (a resize since) is stale: it is refused below, never resumed as is.
+		if (
+			saved &&
+			saved.spec.activityScope === spec.activityScope &&
+			saved.spec.seed === spec.seed &&
+			saved.input === moveCandidateInput(rec, spec.id)
+		)
 			return { warnings: saved.warnings, moveReview: spec.id };
 		if (saved || spec.reviewRegeneration) {
 			if (!saved || spec.reviewRegeneration?.id !== spec.id) throw changedMoveCandidate();
@@ -3021,7 +3027,7 @@ function sampleMovePoses(poses: Keypoint[][], frames: number, action?: string): 
 }
 
 /** App-side checks that warn before a body move is bought. Each returns a PreflightWarning the user can explicitly generate
- *  past (MoveSheet shows it and offers Add anyway). Requests PixelLab would refuse, missing data and saved-data corruption
+ *  past (MoveSheet shows it and offers Generate move anyway). Requests PixelLab would refuse, missing data and saved-data corruption
  *  stay hard stops instead: bodyMoveIssue, partialMoveFrameIssue, reservedMove and addMove's prerequisites. */
 export const MOVE_PREFLIGHT: ((p: Project, spec: MoveSpec) => PreflightWarning | undefined)[] = [
 	frameRoomWarning
@@ -3029,7 +3035,7 @@ export const MOVE_PREFLIGHT: ((p: Project, spec: MoveSpec) => PreflightWarning |
 export const movePreflightWarnings = (p: Project, spec: MoveSpec): PreflightWarning[] =>
 	MOVE_PREFLIGHT.flatMap((check) => check(p, spec) ?? []);
 /** A body move from standing views with less room than a move reaches (lib/rig/reframe.ts moveReach) may step past the
- *  frame and stop after paying. MoveSheet offers Make room (free, Adjust frame) or Add anyway. */
+ *  frame and stop after paying. MoveSheet offers Make room (free, Adjust frame) or Generate move anyway. */
 export function frameRoomWarning(p: Project, spec: MoveSpec): PreflightWarning | undefined {
 	if (spec.itemsOnly) return undefined;
 	const m = p.manifest,
@@ -3038,7 +3044,7 @@ export function frameRoomWarning(p: Project, spec: MoveSpec): PreflightWarning |
 	if (!room || !roomShort(room)) return undefined;
 	return new PreflightWarning(
 		'frame-room-move',
-		`This move may step past the ${frame} px frame: the character has ${room.below} px below its feet. Make room for free first, or add the move anyway.`,
+		`This move may step past the ${frame} px frame: the character has ${room.below} px below its feet. Make room for free first, or generate the move anyway.`,
 		'moveSheet.frameRoom',
 		{ frame, below: room.below }
 	);
@@ -3368,8 +3374,14 @@ export interface MovePaidReview extends PaidReview {
 	options: MovePaidOption[];
 }
 /** The next attempt of a reviewed move keeps its seed, so every completed request is reused; only consents change. */
+/** Every way on is body only and lands in the staged visual review (addBodyClip reviewBeforePublish): equipment is a
+ *  separate, freshly quoted choice after Save, never posed automatically after a recovery. */
 const resumeSpec = (spec: MoveSpec, change: Partial<MoveSpec> = {}): MoveSpec => ({
 	...spec,
+	items: [],
+	itemReview: undefined,
+	reviewedMoveItems: undefined,
+	reviewBeforePublish: true,
 	reuseItemFrames: undefined,
 	measurementRecovery: undefined,
 	bodyPaletteRepair: undefined,
@@ -3398,7 +3410,6 @@ export async function reviewMoveResults(
 	const total = (views: ReplayedView[]) => +views.reduce((sum, v) => sum + v.gens, 0).toFixed(2);
 	const views = await replay(plan.spec);
 	const records = [...new Map(views.flatMap((v) => v.records).map((r) => [r.id, r])).values()];
-	const equipment = spec.items.length ? moveEstimate(m, spec).items : 0;
 	const gated = !!spec.dirs?.length || !!spec.motionLift;
 	const failed = views.filter(
 		(v) =>
@@ -3538,14 +3549,7 @@ export async function reviewMoveResults(
 		})),
 		spent: spentGens(records),
 		recordIds: records.map((r) => r.id),
-		// Every way on finishes the whole move, so it also poses the chosen equipment after the body: the quote includes it.
-		options: equipment
-			? options.map((option) => ({
-					...option,
-					gens: +(option.gens + equipment).toFixed(2),
-					paid: true
-				}))
-			: options
+		options
 	};
 }
 

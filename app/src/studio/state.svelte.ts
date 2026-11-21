@@ -1224,8 +1224,19 @@ export function frameEditsBlocked(id: string, stoppedMove = false): LocalizedErr
 					'Keep or dismiss this character’s item drafts before adjusting the frame.',
 					'adjustFrame.errors.resolveDrafts'
 				)
-			: '')
+			: '') ||
+		(doc.id === id ? moveReviewHold(store.moveReviews) : '')
 	);
+}
+/** A staged move review was drawn on the current frame: a resize or move would change every direction under it, so it is
+ *  saved or discarded first instead of being left behind with frames that no longer fit. */
+function moveReviewHold(reviews: StoredProject['moveReviews']): LocalizedError | '' {
+	return Object.keys(reviews ?? {}).length
+		? new LocalizedError(
+				'Save or discard the move waiting for review before adjusting the frame.',
+				'adjustFrame.errors.reviewOpen'
+			)
+		: '';
 }
 const pngBlobs = async (images: Map<Sha256, Img>) => {
 	const blobs = new Map<string, Blob>();
@@ -1260,6 +1271,8 @@ export async function adjustCharacter(
 			'This character changed. Reopen Adjust frame to review the latest version.',
 			'adjustFrame.errors.changed'
 		);
+	const reviewing = moveReviewHold(rec.moveReviews);
+	if (reviewing) throw reviewing;
 	const before = rec.manifest.rig.cell.w,
 		old = new Map(project.images as Map<Sha256, Img>);
 	const { record: next, newImages } = await reframeCharacter(

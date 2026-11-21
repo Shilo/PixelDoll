@@ -6862,6 +6862,21 @@ test('move review gates item selection and shows live estimates without spending
 	await expect(review.getByRole('button', { name: 'Replace move', exact: true })).toBeEnabled();
 	await expect(review.getByRole('button', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await review.getByRole('button', { name: 'Later', exact: true }).click();
+	// A staged draft was drawn on this frame: Adjust frame waits for it instead of leaving it behind.
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const s = await import(path);
+		s.ui.frameProject = s.doc.id;
+		s.ui.sheet = 'adjustFrame';
+	});
+	const frame = page.getByRole('dialog', { name: 'Adjust frame', exact: true });
+	await expect(frame).toContainText(
+		'Save or discard the move waiting for review before adjusting the frame.'
+	);
+	await frame.getByRole('button', { name: 'Up', exact: true }).click();
+	await expect(frame.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+	await page.keyboard.press('Escape');
+	await expect(frame).toBeHidden();
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	const compass = review.getByRole('group', { name: 'Directions', exact: true });
 	const north = compass.getByRole('button', { name: 'North direction' });
