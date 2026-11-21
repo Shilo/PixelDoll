@@ -1485,7 +1485,7 @@ function offlineCreation(config: CreationCase) {
 			'All moves',
 			'Idle',
 			'Walk',
-			'All states and moves'
+			'Everything'
 		]);
 		await shareMenu.getByRole('menuitemradio', { name: 'Standing', exact: true }).click();
 		await expect(share.getByRole('switch')).toBeDisabled();
