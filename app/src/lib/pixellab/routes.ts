@@ -146,15 +146,47 @@ export interface InpaintV3 {
 	seed?: number;
 	no_background?: boolean;
 }
-export interface EditImageSheet {
-	method: 'edit_with_reference';
-	description: string;
-	edit_images: [{ image: B64Image } & Size];
-	reference_image: { image: B64Image } & Size;
+type EditImageInput = { image: B64Image } & Size;
+export type EditImagesV2 = {
+	edit_images: EditImageInput[];
 	image_size: Size;
+	seed?: number;
+	no_background?: boolean;
+} & (
+	| { method: 'edit_with_text'; description: string }
+	| { method: 'edit_with_reference'; reference_image: EditImageInput; description?: string }
+);
+export type EditImageSheet = Extract<EditImagesV2, { method: 'edit_with_reference' }> & {
+	description: string;
+	edit_images: [EditImageInput];
 	seed: number;
 	no_background: false;
+};
+export interface CreateCharacterState {
+	character_id: string;
+	edit_description: string;
+	state_name: string;
+	seed?: number;
+	no_background?: boolean;
+	use_color_palette_from_reference?: boolean;
 }
+export interface EditImagePixen {
+	image: B64Image;
+	description: string;
+	width: number;
+	height: number;
+	seed?: number;
+	no_background?: boolean;
+}
+export type EditImageProFlash = {
+	image: B64Image;
+	seed?: number;
+	no_background?: boolean;
+} & ({ method: 'text'; description: string } | { method: 'reference'; reference_image: B64Image });
+export type TransferOutfitV2 = Omit<EditAnimationV2, 'description'> & {
+	reference_image: SizedImage;
+	additional_instructions?: string;
+};
 /** edit-animation-v2 frames per call by image_size (all frames share one grid; OpenAPI): ≤64 px 16, 65–80 px 9, 81–256 px 4. */
 export const editFrameCap = (px: number) => (px <= 64 ? 16 : px <= 80 ? 9 : 4);
 export interface EditAnimationV2 {
@@ -198,6 +230,12 @@ export const routes = {
 	estimateSkeleton: (image: B64Image) => post('/estimate-skeleton', { image }),
 	editAnimationV2: (b: EditAnimationV2) => post('/edit-animation-v2', b),
 	editImageSheet: (b: EditImageSheet) => post('/edit-images-v2', b),
+	editImagesV2: (body: EditImagesV2) => post('/edit-images-v2', body),
+	createCharacterState: (body: CreateCharacterState) => post('/create-character-state', body),
+	editImagePixen: (body: EditImagePixen) => post('/edit-image-pixen', body),
+	editImageProFlash: (body: EditImageProFlash) => post('/edit-image-pro-flash', body),
+	transferOutfitV2: (body: TransferOutfitV2) => post('/transfer-outfit-v2', body),
+	proFlashCapabilities: () => get('/pro-flash/capabilities'),
 	animateWithSkeletonV3: (b: AnimateSkeletonV3) => post('/animate-with-skeleton-v3', b),
 	animateWithTextV3: (b: TextAnimation & { action: string }) => post('/animate-with-text-v3', b),
 	animatePixminimax: (
@@ -238,6 +276,13 @@ export interface Job {
 	usage?: Usage | null;
 	last_response?: JobLastResponse | null;
 }
+type InlineJobImage = {
+	type?: 'base64' | 'rgba_bytes';
+	base64: string;
+	width?: number;
+	height?: number;
+};
+
 export interface JobLastResponse {
 	status?: string;
 	code?: number;
@@ -247,7 +292,9 @@ export interface JobLastResponse {
 	estimated_wait_seconds?: number;
 	direction?: Direction;
 	character_id?: string;
-	images?: { type: 'base64' | 'rgba_bytes'; base64: string; width?: number; height?: number }[];
+	image?: InlineJobImage;
+	images?: InlineJobImage[];
+	image_url?: string;
 	storage_urls?: Record<string, string | string[] | null>; // character: {dir: url}; animation: {frames: [url]}
 	paste_x?: number;
 	paste_y?: number;
@@ -280,10 +327,9 @@ export const frameOrder = (a: { label: string }, b: { label: string }) =>
 export function jobImages(lr: JobLastResponse | null | undefined): JobImage[] {
 	if (!lr) return [];
 	const prefix = lr.direction ? `${lr.direction}/` : '';
-	const one = lr.image as { base64?: string } | undefined; // inpaint-v3: one image (S5 live)
-	if (!lr.images?.length && one?.base64) return [{ label: prefix + '0', b64: one.base64 }];
-	if (lr.images?.length)
-		return lr.images.map((im, i) =>
+	const inline = lr.images?.length ? lr.images : lr.image?.base64 ? [lr.image] : [];
+	if (inline.length)
+		return inline.map((im, i) =>
 			im.type === 'rgba_bytes'
 				? { label: prefix + i, rgba: { b64: im.base64, w: im.width ?? 0, h: im.height ?? 0 } }
 				: { label: prefix + i, b64: im.base64 }
@@ -293,6 +339,8 @@ export function jobImages(lr: JobLastResponse | null | undefined): JobImage[] {
 		if (typeof v === 'string') out.push({ label: k, url: v });
 		else if (Array.isArray(v)) v.forEach((u, i) => out.push({ label: prefix + i, url: u }));
 	}
+	if (!out.length && typeof lr.image_url === 'string' && lr.image_url)
+		out.push({ label: prefix + '0', url: lr.image_url });
 	return out;
 }
 

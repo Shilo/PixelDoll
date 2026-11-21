@@ -1445,6 +1445,25 @@ test('Clear finished waits for the stored drafts, so their records are kept', as
 		expect(keep({ id: 'paid-call', createdAt: 0 })).toBe(true);
 });
 
+test('Clear finished keeps all batches for pending State reviews, but not saved attempts', async () => {
+	mocks.all.mockResolvedValue([
+		{ id: 'rig-pending', stateGeneration: { token: 'pending', plan: { batches: [{}, {}] } } },
+		{ id: 'rig-saved' }
+	]);
+	const s = await import('../../src/studio/state.svelte.ts');
+	await s.cleanUp(0, false);
+	const [[keep]] = mocks.clear.mock.calls;
+	const record = (activityScope: string) => ({
+		id: activityScope,
+		tag: 'studio-state',
+		activityScope,
+		createdAt: 0
+	});
+	expect(keep(record('state:pending:0'))).toBe(true);
+	expect(keep(record('state:pending:1'))).toBe(true);
+	expect(keep(record('state:saved:0'))).toBe(false);
+});
+
 test('a failed read of the stored drafts is reported and a new item cannot overwrite them', async () => {
 	mocks.get.mockImplementation(async (_store, key) => {
 		if (key === 'studio-drafts') throw new Error('read failed');

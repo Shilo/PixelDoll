@@ -10,6 +10,9 @@ export interface ActivityContext {
 	relatedQueueIds?: string[];
 	relatedScopes?: string[];
 }
+
+export const stateBatchScope = (token: string, index: number) => `state:${token}:${index}`;
+
 export interface ApiCost {
 	generations: number | null;
 	usd: number | null;

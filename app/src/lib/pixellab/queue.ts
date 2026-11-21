@@ -32,6 +32,7 @@ import { planCapacity, requestedSlots } from './capacity.ts';
 import { PLAN_JOB_LIMITS, planRestriction, requestTier } from './plans.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { base64ToBytes, bytesToBase64, pngSize } from '../image/png.ts';
+import { encodePngBytes } from '../image/pngraw.ts';
 import * as db from '../store/db.ts';
 import {
 	activityRequest,
@@ -56,6 +57,7 @@ export interface Result {
 }
 export interface SubJob {
 	id: string; // background_job_id
+	characterId?: string;
 	status: string; // remote status word
 	done: boolean;
 	remoteDone?: boolean; // completed remotely, downloads may still be pending
@@ -101,6 +103,26 @@ export interface JobRec {
 	usd: number;
 	costUnknown?: true; // settled without a usage report for every job: the cost is unknown, never $0
 }
+
+const isManagedState = (record: JobRec) =>
+	record.method === 'POST' && record.endpoint === '/create-character-state';
+
+export function managedStateSubmitChildId(record: JobRec): string | undefined {
+	if (!isManagedState(record) || record.jobs.length !== 1) return undefined;
+	const submit = record.response as SubmitResponse | null | undefined;
+	const parentId = (record.params as { character_id?: unknown } | null)?.character_id;
+	const childId = submit?.character_id;
+	if (
+		!submit?.background_job_id ||
+		submit.background_job_id !== record.jobs[0].id ||
+		typeof childId !== 'string' ||
+		!/^\S+$/.test(childId) ||
+		childId === parentId
+	)
+		return undefined;
+	return childId;
+}
+
 export function queueErrorParts(record: JobRec): (Message | string)[] {
 	const raw = record.error;
 	if (!raw) return [];
@@ -1504,7 +1526,11 @@ export class Queue {
 			r.waitingForCapacity = false;
 			r.jobs = ids.map((id) => ({ id, status: 'submitted', done: false, results: [] }));
 			if (ids.length) r.state = 'running';
-			else this.finish(r); // synchronous route (estimate-skeleton, balance)
+			else if (isManagedState(r)) {
+				r.error =
+					'no clear answer from PixelLab (missing State job receipt). The job may have run and been charged (check pixellab.ai); not resent.';
+				this.finish(r, 'lost');
+			} else this.finish(r); // synchronous route (estimate-skeleton, balance)
 			if (
 				credentialRevision === this.keyRevision &&
 				key === this.key &&
@@ -1535,6 +1561,7 @@ export class Queue {
 				this.finish(r, 'lost'); // unknown cost unless the error body reported usage
 			} else if (
 				err.kind === 'retry' &&
+				r.tag !== 'studio-state' &&
 				(r.method !== 'POST' || paidRequestRejected(r.endpoint, err.status, err.body))
 			) {
 				r.state = 'queued';
@@ -1555,6 +1582,13 @@ export class Queue {
 					r.waitingForCapacity = true;
 					r.nextAt = this.capacityRetryAt;
 				} else r.nextAt = this.deps.now() + Math.max(backoff(r.attempts), err.retryAfterMs ?? 0);
+			} else if (
+				r.tag === 'studio-state' &&
+				(err.kind === 'auth' ||
+					err.kind === 'credits' ||
+					(err.kind === 'retry' && paidRequestRejected(r.endpoint, err.status, err.body)))
+			) {
+				this.finish(r, 'failed');
 			} else if (
 				err.kind === 'retry' ||
 				(!(e instanceof ApiError) &&
@@ -1646,8 +1680,15 @@ export class Queue {
 			s.usage = job.usage;
 			const ims = jobImages(lr);
 			try {
+				if (isManagedState(r)) {
+					const childId = managedStateSubmitChildId(r);
+					if (!childId) throw new Error('missing State submit receipt');
+					if (job.id !== s.id) throw new Error('State job ID does not match the submit receipt');
+					if (lr?.character_id !== undefined && lr.character_id !== childId)
+						throw new Error('State child ID does not match the submit receipt');
+					s.characterId = lr?.character_id;
+				} else if (!ims.length) throw new Error('no images');
 				// validate every inline image before anything counts as done (R6 P2-11)
-				if (!ims.length) throw new Error('no images');
 				for (const im of ims)
 					if (!im.url)
 						await this.saveResult(
@@ -1680,7 +1721,6 @@ export class Queue {
 		bytes: Uint8Array,
 		rgba?: { w: number; h: number }
 	) {
-		// ponytail: rgba_bytes results are stored raw (type octet-stream); encode to PNG when a route actually returns them.
 		const size = rgba
 			? bytes.length === rgba.w * rgba.h * 4
 				? { w: rgba.w, h: rgba.h }
@@ -1688,7 +1728,10 @@ export class Queue {
 			: pngSize(bytes);
 		if (!size || !(size.w > 0 && size.h > 0 && size.w <= MAX_PX && size.h <= MAX_PX))
 			throw new Error(`${label}: not a valid image`);
-		const sha = await this.deps.putBlob(bytes);
+		const png = rgba
+			? await encodePngBytes({ ...size, data: new Uint8ClampedArray(bytes) })
+			: bytes;
+		const sha = await this.deps.putBlob(png);
 		s.results.push({ label, sha, ...size });
 	}
 

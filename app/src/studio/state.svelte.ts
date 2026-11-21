@@ -110,6 +110,7 @@ import {
 	type SlotUse
 } from './slots.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import { stateBatchScope } from '../lib/pixellab/activity.ts';
 import {
 	activityStateMessage,
 	GENERATION_PHASES,
@@ -2896,9 +2897,15 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 		(await db.get('projects', SETUP_KEY))
 	);
 	const cutoff = Date.now() - maxAge;
+	const stateScopes = new Set(
+		(await db.all<StoredProject>('projects')).flatMap(({ stateGeneration: attempt }) =>
+			attempt ? attempt.plan.batches.map((_, index) => stateBatchScope(attempt.token, index)) : []
+		)
+	);
 	const jobs = await queue.clearFinished(
 		(r) =>
 			refs.has(r.id) ||
+			(r.tag === 'studio-state' && !!r.activityScope && stateScopes.has(r.activityScope)) ||
 			((flow || heldCreate()) && FLOW_TAGS.includes(r.tag ?? '')) ||
 			(r.finishedAt ?? r.createdAt) > cutoff
 	);

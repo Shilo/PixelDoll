@@ -400,7 +400,7 @@ async function padStandardReference(
 	return { base64: await b64(canvas), width: size, height: size };
 }
 /** Result images of a record, in frame order (labels "south/3" or "3"; character rotations are labeled by direction). */
-async function imagesOf(
+export async function imagesOf(
 	r: JobRec,
 	read?: (sha: string) => Promise<Img>
 ): Promise<{ label: string; img: Img }[]> {
@@ -910,7 +910,7 @@ export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
 		produced
 	};
 };
-const cellBlob = async (image: Img) =>
+export const cellBlob = async (image: Img) =>
 	new Blob([(await encodePngBytes(image)) as Uint8Array<ArrayBuffer>], { type: 'image/png' });
 const putCell = async (h: Sha256, im: Img) => {
 	if (!(await db.getBlob(h.slice(7)))) await db.put('blobs', h.slice(7), await cellBlob(im));

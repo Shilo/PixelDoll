@@ -2295,6 +2295,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const jobs = new Map<string, number>(),
 		posts: { path: string; body: Record<string, unknown> }[] = [],
 		errors: string[] = [];
+	let stateImages: { type: 'base64'; base64: string }[] = [];
 	page.on('pageerror', (e) => errors.push(e.message));
 	await context.route('https://api.pixellab.ai/**', async (route) => {
 		const req = route.request(),
@@ -2306,9 +2307,26 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 }
 				}
 			});
+		if (path.endsWith('/characters/managed-parity-fixture')) return route.fulfill({ status: 404 });
+		if (path.endsWith('/background-jobs/generated-state'))
+			return route.fulfill({
+				json: {
+					id: 'generated-state',
+					status: 'completed',
+					created_at: '',
+					usage: { type: 'generations', generations: 10 },
+					last_response: { images: stateImages }
+				}
+			});
 		if (req.method() === 'POST') {
 			const body = req.postDataJSON() as Record<string, unknown>;
 			posts.push({ path, body });
+			if (path.endsWith('/edit-images-v2')) {
+				stateImages = (body.edit_images as { image: { type: 'base64'; base64: string } }[]).map(
+					({ image }) => image
+				);
+				return route.fulfill({ status: 202, json: { background_job_id: 'generated-state' } });
+			}
 			if (path.endsWith('/estimate-skeleton'))
 				return route.fulfill({
 					json: { keypoints, usage: { type: 'generations', generations: 0.1 } }
@@ -2389,6 +2407,11 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'Add a state...', exact: true }).click();
 	const emptyCapture = page.getByRole('dialog', { name: 'Create State', exact: true });
+	await expect(emptyCapture.getByRole('tab', { name: 'New', exact: true })).toHaveAttribute(
+		'aria-selected',
+		'true'
+	);
+	await emptyCapture.getByRole('tab', { name: 'From Move', exact: true }).click();
 	await expect(emptyCapture).toContainText('Add a Move to create a State from one of its frames.');
 	await expect(emptyCapture.getByRole('combobox')).toHaveCount(0);
 	await emptyCapture.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -2569,6 +2592,11 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const addState = panel.getByRole('button', { name: 'Add a state...', exact: true });
 	await expect(panel.locator('.cta + details')).toBeVisible();
 	await addState.click();
+	await expect(createState.getByRole('tab', { name: 'New', exact: true })).toHaveAttribute(
+		'aria-selected',
+		'true'
+	);
+	await createState.getByRole('tab', { name: 'From Move', exact: true }).click();
 	await expect(stateSource.locator('option', { hasText: 'Standing' })).toHaveCount(0);
 	await expect(stateSource.locator('option', { hasText: 'Rest pose' })).toHaveCount(0);
 	await expect(stateSource.locator('option:checked')).toHaveText('Idle');
@@ -2625,7 +2653,175 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await expect(moveSheet.getByText('Start from · Idle', { exact: true })).toBeVisible();
 	await moveSheet.getByText('Choose a frame', { exact: true }).click();
 	await expect(frames.filter({ hasText: /^Frame 2$/ })).toHaveAttribute('aria-pressed', 'true');
+	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await equipmentMode(page, 'States');
+	await addState.click();
+	const newState = createState.getByRole('tabpanel', { name: 'New', exact: true });
+	await newState.getByRole('textbox', { name: 'State name' }).fill('Ready stance');
+	await newState
+		.getByRole('textbox', { name: 'Describe what should change' })
+		.fill('Raise both hands');
+	const statePosts = () =>
+		posts.filter(
+			({ path }) => path.endsWith('/edit-images-v2') || path.endsWith('/create-character-state')
+		);
+	await newState.getByRole('button', { name: 'Check cost', exact: true }).click();
+	const generateState = newState.getByRole('button', { name: 'Generate State', exact: true });
+	await expect(generateState).toBeVisible();
+	expect(statePosts()).toHaveLength(0);
+	await generateState.click();
+	await expect(newState.getByText('Review Ready stance before saving.')).toBeVisible();
+	expect(statePosts()).toHaveLength(1);
+	expect(statePosts()[0]?.body).toMatchObject({
+		method: 'edit_with_text',
+		description: 'Raise both hands'
+	});
+	expect((await read()).manifest.rig.animations.some(({ id }) => id === 'ready-stance')).toBe(
+		false
+	);
+	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await reloadStudio(page);
+	await equipmentMode(page, 'States');
+	await addState.click();
+	await expect(newState.getByText('Review Ready stance before saving.')).toBeVisible();
+	await newState.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
+	await expect(page.locator('.clip-trigger[data-variant="quiet"]')).toHaveAttribute(
+		'value',
+		'ready-stance'
+	);
+	expect(
+		(await read()).manifest.rig.animations.find(({ id }) => id === 'ready-stance')
+	).toMatchObject({ kind: 'state', cells: 1 });
+	expect(statePosts()).toHaveLength(1);
 	expect(errors).toEqual([]);
+});
+
+test('a managed State reloads its child without another submission', async ({
+	page,
+	context
+}, info) => {
+	const parent = 'managed-state-parent';
+	const child = 'managed-state-child';
+	const job = 'managed-state-job';
+	const posts: unknown[] = [];
+	const directions = ['south', 'east', 'north', 'west'];
+	let images: Record<string, number[]>;
+	await context.route('https://api.pixellab.ai/**', (route) => {
+		const path = new URL(route.request().url()).pathname;
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					credits: { type: 'usd', usd: 0 },
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 }
+				}
+			});
+		if (path.endsWith('/create-character-state')) {
+			posts.push(route.request().postDataJSON());
+			return route.fulfill({ status: 202, json: { background_job_id: job, character_id: child } });
+		}
+		if (path.endsWith(`/background-jobs/${job}`))
+			return route.fulfill({
+				json: {
+					id: job,
+					status: 'completed',
+					created_at: '',
+					last_response: { character_id: child },
+					usage: { type: 'generations', generations: 10 }
+				}
+			});
+		const id = path.split('/').pop()!;
+		if (id === parent || id === child)
+			return route.fulfill({
+				json: {
+					id,
+					status: 'completed',
+					size: { width: 64, height: 64 },
+					directions: directions.length,
+					rotation_urls: Object.fromEntries(
+						directions.map((direction) => [
+							direction,
+							`https://api.pixellab.ai/qa-state-rotations/${direction}`
+						])
+					)
+				}
+			});
+		if (path.startsWith('/qa-state-rotations/') && images[id])
+			return route.fulfill({
+				headers: { 'access-control-allow-origin': '*' },
+				contentType: 'image/png',
+				body: Buffer.from(images[id])
+			});
+		return route.abort();
+	});
+	await page.addInitScript(() =>
+		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key')
+	);
+	await openStudio(
+		page,
+		info.config.projects.find(({ name }) => name === 'browser-selftests')!.use.baseURL!
+	);
+	const result = await page.evaluate(
+		async ({ parent, directions }) => {
+			const statePath = '/src/studio/state.svelte.ts',
+				dbPath = '/src/lib/store/db.ts';
+			const studio = await import(statePath),
+				db = await import(dbPath);
+			const projectId = await studio.copyDemo();
+			const record: StoredProject = await db.get('projects', projectId);
+			record.character = { id: parent, looks: 'Demo test fixture' };
+			await db.put('projects', projectId, record);
+			const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
+			const cells = base.layers[0].cells!.default;
+			return {
+				projectId,
+				images: Object.fromEntries(
+					await Promise.all(
+						directions.map(async (direction) => {
+							const hash = cells[direction as keyof typeof cells]?.[0] ?? cells.east?.[0];
+							if (!hash) throw new Error(`Missing Standing fixture for ${direction}`);
+							const blob: Blob = await db.getBlob(hash.slice(7));
+							return [direction, Array.from(new Uint8Array(await blob.arrayBuffer()))];
+						})
+					)
+				)
+			};
+		},
+		{ parent, directions }
+	);
+	images = result.images;
+	await equipmentMode(page, 'States');
+	const addState = page.getByRole('button', { name: 'Add a state...', exact: true });
+	await addState.click();
+	const dialog = page.getByRole('dialog', { name: 'Create State', exact: true });
+	const panel = dialog.getByRole('tabpanel', { name: 'New', exact: true });
+	await panel.getByRole('textbox', { name: 'State name' }).fill('Potion ready');
+	await panel.getByRole('textbox', { name: 'Describe what should change' }).fill('Hold a potion');
+	await panel.getByRole('button', { name: 'Check cost', exact: true }).click();
+	const generate = panel.getByRole('button', { name: 'Generate State', exact: true });
+	await expect(generate).toBeVisible();
+	expect(posts).toHaveLength(0);
+	await generate.click();
+	const review = panel.getByText('Review Potion ready before saving.');
+	await expect(review).toBeVisible();
+	expect(posts).toEqual([
+		expect.objectContaining({ character_id: parent, edit_description: 'Hold a potion' })
+	]);
+	await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await reloadStudio(page);
+	await equipmentMode(page, 'States');
+	await addState.click();
+	await expect(review).toBeVisible();
+	await panel.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
+	const storedChild = await page.evaluate(async (projectId) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		const record: StoredProject = await db.get('projects', projectId);
+		return record.managedStates?.['potion-ready'];
+	}, result.projectId);
+	expect(storedChild).toBe(child);
+	expect(posts).toHaveLength(1);
 });
 
 test('a stopped move blocks deleting only its own character and opens from the block', async ({
