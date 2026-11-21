@@ -2095,6 +2095,11 @@
 			"route": "이 방식은 서 있기 자세에서 시작해요. 저장된 프레임을 사용하려면 다른 애니메이션 모델을 선택하세요.",
 			"stateTarget": "상태는 동작처럼 교체할 수 없어요."
 		},
+		"skeleton": {
+			"title": "Skeleton V3 검토",
+			"hint": "Skeleton V3도 선택할 수 있습니다. 품질 검사를 통과하지 못할 수도 있습니다.",
+			"back": "결과로 돌아가기"
+		},
 		"checkpoint": {
 			"generate": "동작 생성",
 			"initialEstimate": "약 {minutes}분 · 아이템 제외",
@@ -2199,9 +2204,9 @@
 		"motionModel": "모션 모델",
 		"motionModelHelp": "Skeleton v3는 몸과 장비에 같은 포즈를 사용해요. V3와 PixMiniMax는 몸을 먼저 그리고, 이후 PixelDoll이 장비에 사용할 포즈를 찾아요.",
 		"models": {
-			"skeletonV3": "기본(Skeleton V3)",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "기본(PixMiniMax)"
 		},
 		"frames": "프레임",
 		"framesHelp": "선택지는 이 모델과 캐릭터의 캔버스({canvas} px)에 맞춰 달라져요. 기본 옵션은 PixelDoll의 기본 프레임 수를 사용해요.",

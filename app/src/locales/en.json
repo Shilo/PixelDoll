@@ -2175,6 +2175,11 @@
 			"route": "This route starts from Standing. Choose a different animation model to use a saved frame.",
 			"stateTarget": "A State cannot be replaced as a Move."
 		},
+		"skeleton": {
+			"title": "Review Skeleton V3",
+			"hint": "Skeleton V3 is another option. It may still fail the quality checks.",
+			"back": "Back to results"
+		},
 		"checkpoint": {
 			"generate": "Generate move",
 			"initialEstimate": "About {minutes} min · No items included",
@@ -2283,9 +2288,9 @@
 		"motionModel": "Motion model",
 		"motionModelHelp": "Skeleton v3 uses shared poses for the body and equipment. V3 and PixMiniMax draw the body first, then PixelDoll finds poses for equipment.",
 		"models": {
-			"skeletonV3": "Default (Skeleton V3)",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "Default (PixMiniMax)"
 		},
 		"frames": "Frames",
 		"framesHelp": "Choices fit this model and the character's {canvas} px canvas. The default keeps PixelDoll's preset frame count.",

@@ -13,8 +13,10 @@
 		itemMoveOffer,
 		missingItemMoves,
 		moveMinimumTier,
-		readMoveCandidateImages
+		readMoveCandidateImages,
+		skeletonMoveReview
 	} from './create.ts';
+	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { moveCandidateHasStructuralFailure, moveCandidateInput } from './replaceMove.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import {
@@ -80,6 +82,18 @@
 	});
 	const hardFailure = !!candidate && moveCandidateHasStructuralFailure(candidate);
 	const blocked = $derived(moveReviewBlocked(projectId));
+	const skeletonOffer = $derived.by(() => {
+		const record = store.exportRecord;
+		if (
+			!candidate ||
+			record?.id !== projectId ||
+			moveCandidateInput(record, id) !== candidate.input
+		)
+			return;
+		const offer = skeletonMoveReview(record, candidate.spec, undefined, [], candidate);
+		if (offer && tierDecision(app.balance, { required: offer.tier }).kind !== 'required')
+			return offer;
+	});
 	const previewSize = $derived(ui.size === 'landscape' ? 128 : 192);
 	const changed = $derived(
 		!!acceptedInput &&
@@ -153,13 +167,14 @@
 		playing = false;
 		frame = (frame + delta + playlist.length) % playlist.length;
 	}
-	function regenerate() {
+	function regenerate(skeletonRetry?: typeof skeletonOffer) {
 		if (!candidate || blocked) return;
 		const { spec } = candidate;
 		formDrafts.move = {
 			projectId,
 			reopen: true,
 			regeneration: { id, seed: spec.seed, activityScope: spec.activityScope },
+			skeletonRetry,
 			action: spec.replace ? id : (spec.action ?? ''),
 			replace: !!spec.replace,
 			text: spec.text ?? '',
@@ -167,8 +182,10 @@
 			source:
 				spec.startFrom && !spec.startFrom.replacement
 					? { clip: spec.startFrom.clip, cell: spec.startFrom.cell }
-					: undefined,
-			animation: spec.animation
+					: skeletonRetry && !spec.startFrom && spec.replace
+						? { clip: DEFAULT_MOVE }
+						: undefined,
+			animation: skeletonRetry?.review.animation ?? spec.animation
 		};
 		ui.sheet = 'move';
 	}
@@ -255,7 +272,7 @@
 					class={['bu-action btn', { 'primary checkpoint-primary': hardFailure }]}
 					data-variant={hardFailure ? 'primary' : 'outline'}
 					disabled={busy || !!blocked}
-					onclick={regenerate}>{t('moveSheet.checkpoint.regenerate')}</button
+					onclick={() => regenerate()}>{t('moveSheet.checkpoint.regenerate')}</button
 				>
 				{#if !hardFailure}
 					<button
@@ -344,6 +361,22 @@
 							</li>{/each}
 					</ul>
 				</details>
+				{#if skeletonOffer}
+					<p>{t('moveSheet.skeleton.hint')}</p>
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						disabled={busy || !!blocked}
+						onclick={() => regenerate(skeletonOffer)}
+					>
+						{t('moveSheet.skeleton.title')}
+						<span class="cost"
+							>{t('moves.estimate', {
+								gens: formatNumber(Math.ceil(skeletonOffer.estimate.gens))
+							})}</span
+						>
+					</button>
+				{/if}
 			</div>
 		{/if}
 		<div class="checkpoint-preview">

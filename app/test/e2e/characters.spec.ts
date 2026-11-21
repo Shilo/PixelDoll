@@ -2390,6 +2390,11 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await page.getByRole('radio', { name: 'Idle', exact: true }).click();
+	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+	await move.locator('details.advanced summary').click();
+	await move
+		.getByRole('combobox', { name: 'Motion model', exact: true })
+		.selectOption('skeleton-v3');
 	await page.getByRole('button', { name: /^Generate move/ }).click();
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
@@ -2493,6 +2498,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await moveSheet.getByRole('radio', { name: 'Slash', exact: true }).click();
+	await moveSheet.locator('details.advanced summary').click();
+	await moveSheet.getByRole('combobox', { name: 'Motion model' }).selectOption('skeleton-v3');
 	await moveSheet.getByText('Start from · Standing', { exact: true }).click();
 	await moveSheet
 		.locator('.move-source-list button')

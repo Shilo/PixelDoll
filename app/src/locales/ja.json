@@ -2105,6 +2105,11 @@
 			"route": "この方法は立ちポーズから始まります。保存済みフレームを使うには、別のアニメーションモデルを選んでください。",
 			"stateTarget": "ステートをモーションとして置き換えることはできません。"
 		},
+		"skeleton": {
+			"title": "Skeleton V3 を確認",
+			"hint": "Skeleton V3 も選べます。品質チェックに通らない場合もあります。",
+			"back": "結果に戻る"
+		},
 		"checkpoint": {
 			"generate": "モーションを生成",
 			"initialEstimate": "約{minutes}分・アイテムなし",
@@ -2209,9 +2214,9 @@
 		"motionModel": "モーションのモデル",
 		"motionModelHelp": "Skeleton v3 は体と装備に同じポーズを使います。V3 と PixMiniMax は先に体を描き、その後 PixelDoll が装備用のポーズを検出します。",
 		"models": {
-			"skeletonV3": "標準（Skeleton V3）",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "標準（PixMiniMax）"
 		},
 		"frames": "フレーム",
 		"framesHelp": "選択肢はこのモデルとキャラクターのキャンバス（{canvas} px）に合わせて変わります。デフォルトでは PixelDoll のプリセットのフレーム数を使用します。",

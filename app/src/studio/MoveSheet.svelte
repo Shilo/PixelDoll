@@ -18,6 +18,7 @@
 	import { movePlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import * as db from '../lib/store/db.ts';
+	import { stableStringify } from '../lib/image/hash.ts';
 	import type { StoredProject } from '../lib/store/project.ts';
 	import type { DirectionName } from '../lib/store/manifest.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
@@ -30,7 +31,7 @@
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
-	import { resolveMoveSource, savedReplacementSource } from './moveSource.ts';
+	import { moveSourceMatches, resolveMoveSource, savedReplacementSource } from './moveSource.ts';
 	import {
 		MOVE_STEPS,
 		bodyMoveIssue,
@@ -40,6 +41,7 @@
 		isV13,
 		reservedMove,
 		reviewMoveRecovery,
+		skeletonMoveReview,
 		moveEstimate,
 		moveMinimumTier,
 		type MoveSpec,
@@ -68,6 +70,7 @@
 	} from './state.svelte.ts';
 	import { bodyQualityNote, plainReasonMessage } from './model.ts';
 	import { displayMove } from './displayMove.ts';
+	import { moveCandidateInput } from './replaceMove.ts';
 	import { affectedMoveDirections } from './replaceMove.ts';
 	import { displayDirection as directionLabel } from './displayDirection.ts';
 	import { Check, ChevronRight, CircleAlert } from './icons.ts';
@@ -85,6 +88,7 @@
 	$effect(() => {
 		const id = doc.id;
 		void moving.error;
+		void moving.done;
 		if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null));
 	});
 	const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null));
@@ -124,8 +128,8 @@
 	};
 	const reopen = draft?.reopen;
 	if (reopen) delete draft.reopen;
-	// The PixelLab models that can make a move's body frames; Skeleton v3 keeps the current flow.
-	const MODELS: MoveAnimationModel[] = ['skeleton-v3', 'pixminimax', 'v3'];
+	const DEFAULT_MODEL: MoveAnimationModel = 'pixminimax';
+	const MODELS: MoveAnimationModel[] = [DEFAULT_MODEL, 'skeleton-v3', 'v3'];
 	const advancedId = $props.id();
 	const MODEL_TEXT: Record<MoveAnimationModel, WhisperKey> = {
 		'skeleton-v3': 'moveSheet.models.skeletonV3',
@@ -136,7 +140,7 @@
 	let advancedOpen = $state(
 		!!(
 			draft?.animation &&
-			(draft.animation.model !== 'skeleton-v3' || draft.animation.frameCount !== undefined)
+			(draft.animation.model !== DEFAULT_MODEL || draft.animation.frameCount !== undefined)
 		)
 	);
 	let modelChoice = $state<MoveAnimationModel | undefined>(draft?.animation?.model);
@@ -235,25 +239,23 @@
 	const fitsKept = (option: MoveAnimationModel) =>
 		keptFrames === undefined || moveFrameCounts(option, canvas).includes(keptFrames);
 	const model = $derived.by(() => {
+		if (riding) return 'skeleton-v3';
 		if (modelChoice && fitsKept(modelChoice)) return modelChoice;
+		if (!replacing) return DEFAULT_MODEL;
 		const preferred =
 			keptFrames ??
 			(m && moveFrames(m, { action: describing ? undefined : action, frames: baseFrames }));
 		const fitsPreferred = (option: MoveAnimationModel) =>
 			preferred !== undefined && moveFrameCounts(option, canvas).includes(preferred);
-		if (startFrom && (describing || !isAuthoredAction(action)))
-			return (
-				MODELS.find(
-					(option) => option !== 'skeleton-v3' && fitsKept(option) && fitsPreferred(option)
-				) ?? 'pixminimax'
-			);
-		if (replacing) {
-			for (const dir of targetDirs) {
-				const route = savedMove?.sources?.[dir]?.route;
-				if (route && route !== 'import' && fitsPreferred(route)) return route;
-			}
+		const fitsSource = (option: MoveAnimationModel) =>
+			option !== 'skeleton-v3' || !startFrom || (!describing && isAuthoredAction(action));
+		for (const dir of targetDirs) {
+			const route = savedMove?.sources?.[dir]?.route;
+			if (route && route !== 'import' && fitsSource(route) && fitsPreferred(route)) return route;
 		}
-		return MODELS.find(fitsPreferred) ?? 'skeleton-v3';
+		return fitsSource('skeleton-v3') && fitsPreferred('skeleton-v3')
+			? 'skeleton-v3'
+			: (MODELS.find((option) => fitsSource(option) && fitsPreferred(option)) ?? DEFAULT_MODEL);
 	});
 	// Model-valid counts for this character's actual canvas; the same object prices and submits the move.
 	const frameCounts = $derived(moveFrameCounts(model, canvas));
@@ -283,7 +285,7 @@
 	const shownFrames = $derived(userFrameCount ?? defaultFrames);
 	const advancedNote = $derived(
 		[
-			model === 'skeleton-v3' ? '' : t(MODEL_TEXT[model]),
+			model === DEFAULT_MODEL ? '' : t(MODEL_TEXT[model]),
 			userFrameCount === undefined ? '' : t('moveSheet.framesValue', { count: userFrameCount })
 		]
 			.filter(Boolean)
@@ -299,6 +301,7 @@
 		startFrom
 	});
 	const regeneration = $derived(draftRegeneration?.id === id ? draftRegeneration : undefined);
+	const skeletonRetry = draft?.skeletonRetry;
 	const motionIssue = $derived.by(() => {
 		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
 		if (Object.hasOwn(store.moveReviews, id) && !regeneration)
@@ -309,12 +312,22 @@
 		if (!action && (have.has(id) || stateIds.has(id)))
 			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (explicitFrame && !startFrom) return t('moveSheet.startFrom.unavailable');
+		if (
+			skeletonRetry &&
+			(!regeneration ||
+				model !== 'skeleton-v3' ||
+				motion.action !== skeletonRetry.review.action ||
+				motion.text !== skeletonRetry.review.text ||
+				stableStringify(targetDirs) !== stableStringify(skeletonRetry.review.approvedDirs) ||
+				stableStringify(startFrom) !== stableStringify(skeletonRetry.review.startFrom))
+		)
+			return t('moveSheet.checkpoint.changed');
 		return (
 			bodyMoveIssue(m, motion) ||
 			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
 		);
 	});
-	const est = $derived(
+	const formEstimate = $derived(
 		m &&
 			id &&
 			targetDirs.length &&
@@ -351,7 +364,25 @@
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id);
 	// "Queue another move" shows the form over this character's running move; a new move then waits its turn
 	ui.moveFormOpen = !!reopen;
-	const progress = $derived(mine && !ui.moveFormOpen);
+	let reviewingSkeletonFor = $state.raw<MoveSpec | null>(null);
+	const skeletonOffer = $derived.by(() => {
+		if (!mine || !moving.spec || !m || !rec || !ok || moving.repairReview) return;
+		if (
+			moving.queued.some((entry) => entry.projectId === doc.id && entry.spec.id === moving.spec?.id)
+		)
+			return;
+		return skeletonMoveReview(
+			{ ...rec, manifest: m },
+			moving.spec,
+			moving.error,
+			moving.done ? moving.qualityDirs : []
+		);
+	});
+	const skeletonReview = $derived(
+		reviewingSkeletonFor && reviewingSkeletonFor === moving.spec ? skeletonOffer : undefined
+	);
+	const est = $derived(skeletonReview?.estimate ?? formEstimate);
+	const progress = $derived(mine && !ui.moveFormOpen && !skeletonReview);
 	const repairReview = $derived(progress ? moving.repairReview : null);
 	const busy = $derived(!!moving.spec && !moving.done);
 	const savedItemFrames = $derived(
@@ -507,7 +538,45 @@
 
 	function go() {
 		const projectId = doc.id;
-		if (!est || addAccess.error) return;
+		if (skeletonReview && moving.spec) {
+			const offer = skeletonReview;
+			const prior = moving.spec;
+			const replaceFailed = !!moving.error;
+			const confirm = async () => {
+				const current = () => doc.id === projectId && moving.spec === prior;
+				if (!current()) return;
+				const latest = await db.get<StoredProject>('projects', projectId);
+				if (!current()) return;
+				const fresh =
+					latest &&
+					!moving.queued.some(
+						(entry) => entry.projectId === projectId && entry.spec.id === prior.id
+					)
+						? skeletonMoveReview(latest, prior, moving.error, moving.done ? moving.qualityDirs : [])
+						: undefined;
+				if (
+					!fresh ||
+					stableStringify(fresh) !== stableStringify(offer) ||
+					tierBlocked(fresh.tier)
+				) {
+					toast(message('genCard.estimateFailed'), { tone: 'warning' });
+					return;
+				}
+				const spec = { ...fresh.review, seed: 1 + Math.floor(Math.random() * 1_000_000) };
+				reviewingSkeletonFor = null;
+				ui.moveFormOpen = false;
+				if (replaceFailed) void startMove(projectId, spec);
+				else void queueMoves(projectId, [spec]);
+				ui.sheet = 'move';
+			};
+			withKey(
+				() =>
+					void confirm().catch((error: unknown) => toast(errorMessage(error), { tone: 'warning' })),
+				offer.tier
+			);
+			return;
+		}
+		if (!formEstimate || addAccess.error) return;
 		const spec: MoveSpec = {
 			...motion,
 			items: [],
@@ -520,6 +589,7 @@
 		formDrafts.move = {
 			projectId,
 			regeneration,
+			skeletonRetry,
 			action,
 			replace: replaceSelected,
 			text,
@@ -531,12 +601,45 @@
 					? { model, frameCount: userFrameCount }
 					: undefined
 		};
-		withKey(() => {
+		const estimate = formEstimate;
+		const minimumTier = addTier;
+		const approvedDirs = [...targetDirs];
+		const confirm = async () => {
+			if (spec.reviewRegeneration) {
+				const latest = await db.get<StoredProject>('projects', projectId);
+				const candidate = latest?.moveReviews?.[spec.id];
+				const nextEstimate = latest && moveEstimate(latest.manifest, spec);
+				if (
+					!latest ||
+					!candidate ||
+					doc.id !== projectId ||
+					candidate.spec.seed !== spec.reviewRegeneration.seed ||
+					candidate.spec.activityScope !== spec.reviewRegeneration.activityScope ||
+					moveCandidateInput(latest, spec.id) !== candidate.input ||
+					(spec.startFrom && !moveSourceMatches(latest.manifest, spec.startFrom, approvedDirs)) ||
+					(skeletonRetry &&
+						stableStringify(
+							skeletonMoveReview(latest, candidate.spec, undefined, [], candidate)
+						) !== stableStringify(skeletonRetry)) ||
+					pendingMoves(projectId).some((entry) => entry.id === spec.id) ||
+					stableStringify(nextEstimate) !== stableStringify(estimate) ||
+					moveMinimumTier(latest.manifest, spec) !== minimumTier ||
+					tierBlocked(minimumTier)
+				) {
+					toast(message('genCard.estimateFailed'), { tone: 'warning' });
+					return;
+				}
+			}
 			formDrafts.move = undefined;
 			ui.moveFormOpen = false;
 			void queueMoves(projectId, [spec]);
 			ui.sheet = 'move';
-		}, addTier);
+		};
+		withKey(
+			() =>
+				void confirm().catch((error: unknown) => toast(errorMessage(error), { tone: 'warning' })),
+			minimumTier
+		);
 	}
 	function chooseAction(next: string) {
 		const replace = have.has(next);
@@ -646,6 +749,15 @@
 			>{t('common.hide')}</button
 		>
 	{:else if ok}
+		{@const review = skeletonReview?.review}
+		{@const requiredTier = skeletonReview?.tier ?? addTier}
+		{@const replace = review ? review.replace : replacing}
+		{@const move = review?.id ?? id}
+		{#if review}<button
+				class="bu-action btn plain"
+				data-variant="quiet"
+				onclick={() => (reviewingSkeletonFor = null)}>{t('moveSheet.skeleton.back')}</button
+			>{/if}
 		{#if est}
 			<span class="foot-note move-cost-note">
 				<span>
@@ -658,31 +770,36 @@
 			{#if est}<ApiPeek
 					scope="move-add"
 					label={t('moveSheet.addLabel')}
-					plan={movePlan(rec, {
-						...motion,
-						items: [],
-						poseStyle: 'visible-side-v1',
-						...(replacing ? { dirs: [...targetDirs] } : {})
-					})}
+					plan={movePlan(
+						rec,
+						review
+							? { ...review, seed: undefined }
+							: {
+									...motion,
+									items: [],
+									poseStyle: 'visible-side-v1',
+									...(replacing ? { dirs: [...targetDirs] } : {})
+								}
+					)}
 				/>{/if}<button
 				class="bu-action btn primary lg"
 				data-variant="primary"
 				disabled={!est ||
-					!!addAccess.error ||
+					(!review && !!addAccess.error) ||
 					(!!settingUp.spec && !settingUp.done) ||
-					tierBlocked(addTier)}
-				aria-describedby={tierBlocked(addTier) ? 'move-action-tier' : undefined}
+					tierBlocked(requiredTier)}
+				aria-describedby={tierBlocked(requiredTier) ? 'move-action-tier' : undefined}
 				onclick={go}
 				><span>
 					{t(
-						busy
-							? replacing
+						busy && !review
+							? replace
 								? 'moveSheet.submit.queueReplacement'
 								: 'moveSheet.submit.queue'
-							: replacing
+							: replace
 								? 'moveSheet.submit.replaceViews'
 								: 'moveSheet.checkpoint.generate',
-						{ move: id ? nice(id) : t('moveSheet.submit.move') }
+						{ move: move ? nice(move) : t('moveSheet.submit.move') }
 					)}
 					{#if est}<span class="cost">
 							{t('moves.estimate', {
@@ -696,17 +813,19 @@
 {/snippet}
 
 <Sheet
-	title={repairReview
-		? moving.spec?.redrawItem
-			? t('moveSheet.review.redrawTitle')
-			: t('moveSheet.review.repairTitle')
-		: progress && moving.spec?.itemMethod === 'grid'
+	title={skeletonReview
+		? t('moveSheet.skeleton.title')
+		: repairReview
 			? moving.spec?.redrawItem
-				? t('moveSheet.review.redrawProgress')
-				: t('moveSheet.titleRepair')
-			: (progress ? moving.spec?.replace : replacing)
-				? t('moveSheet.titleReplace')
-				: t('moves.add')}
+				? t('moveSheet.review.redrawTitle')
+				: t('moveSheet.review.repairTitle')
+			: progress && moving.spec?.itemMethod === 'grid'
+				? moving.spec?.redrawItem
+					? t('moveSheet.review.redrawProgress')
+					: t('moveSheet.titleRepair')
+				: (progress ? moving.spec?.replace : replacing)
+					? t('moveSheet.titleReplace')
+					: t('moves.add')}
 	cancel={progress && !moving.done ? 'common.hide' : 'common.cancel'}
 	onclose={() => (ui.sheet = null)}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
@@ -792,6 +911,28 @@
 					{t('moveSheet.review.resumesQueue')}
 				</p>{/if}
 		</section>
+	{:else if skeletonReview}
+		{@const review = skeletonReview.review}
+		<div class="form">
+			<p>
+				{nice(review.id)} · {t(MODEL_TEXT['skeleton-v3'])} · {t('moveSheet.framesValue', {
+					count: skeletonReview.estimate.frames
+				})}
+			</p>
+			<p class="small">
+				{t('common.directions')}: {skeletonReview.affected.map(directionLabel).join(', ')}
+			</p>
+			{#if review.text}<p class="small">{review.text}</p>{/if}
+			{#if review.replace}<p class="notice small">
+					{t('moveSheet.redrawHidesEquipment')}
+					{t('moveSheet.redrawOtherMoves')}
+				</p>{/if}
+			{#if tierBlocked(skeletonReview.tier)}<TierNotice
+					id="move-action-tier"
+					minimumTier={skeletonReview.tier}
+					feature={t('moveSheet.retryFeature')}
+				/>{/if}
+		</div>
 	{:else if progress}
 		<div class="form">
 			<p style="font-weight:600">
@@ -966,6 +1107,22 @@
 			{#each moving.warnings as warning (warning)}<p class="notice warn small">
 					<CircleAlert size={14} />{bodyQualityNote(warning, t)}
 				</p>{/each}
+			{#if skeletonOffer && !tierBlocked(skeletonOffer.tier)}
+				<p class="notice small">
+					<span>{t('moveSheet.skeleton.hint')}</span>
+					<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						onclick={() => (reviewingSkeletonFor = moving.spec)}
+					>
+						{t('moveSheet.skeleton.title')}
+						<span class="cost">
+							{t('moves.estimate', { gens: formatNumber(Math.ceil(skeletonOffer.estimate.gens)) })}
+						</span>
+						<SurfaceChevron />
+					</button>
+				</p>
+			{/if}
 		</div>
 	{:else if isDemo() || !ok}
 		<p class="notice small">

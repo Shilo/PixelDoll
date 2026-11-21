@@ -5,7 +5,7 @@ import {
 	openAccount,
 	noDisabledHover
 } from './immersive-helpers.ts';
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 import { CharacterApi } from '../fixtures/character-api.ts';
 import { readFile } from 'node:fs/promises';
 import { unzip } from '../../src/lib/store/zip.ts';
@@ -400,6 +400,14 @@ test.describe('creation safety', () => {
 	});
 });
 
+async function chooseSkeletonMove(sheet: Locator) {
+	const advanced = sheet.locator('details.advanced');
+	if ((await advanced.getAttribute('open')) === null) await advanced.locator('summary').click();
+	await sheet
+		.getByRole('combobox', { name: 'Motion model', exact: true })
+		.selectOption('skeleton-v3');
+}
+
 test('Add a move queues behind the running move and runs it next', async ({ page, context }) => {
 	test.setTimeout(150_000);
 	const api = new CharacterApi();
@@ -429,6 +437,7 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(page.getByRole('button', { name: /Add idle \+ walk/i })).toHaveCount(0);
 	await move.getByRole('radio', { name: 'Walk', exact: true }).click();
+	await chooseSkeletonMove(move);
 	await move.getByRole('button', { name: /^Generate move/ }).click();
 	await expect(move).not.toContainText('Queued next: Idle');
 	await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
@@ -437,6 +446,7 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	await expect(move.getByRole('button', { name: /^Queue Walk/ })).toBeDisabled();
 	await expect(move.getByRole('button', { name: 'Inspect API calls', exact: true })).toHaveCount(0);
 	await move.getByRole('radio', { name: 'Idle', exact: true }).click();
+	await chooseSkeletonMove(move);
 	await expect(move).toContainText('It waits for the move in progress, then runs by itself.');
 	await move.getByRole('button', { name: /^Queue Idle/ }).click();
 	await expect(move).toContainText('Queued next: Idle');
@@ -504,6 +514,7 @@ test('a failed required measurement stops the queued idle without paying for an 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move', exact: true });
+	await chooseSkeletonMove(move);
 	await move.getByRole('button', { name: /^Generate move/ }).click();
 	try {
 		await move.getByRole('button', { name: 'Queue another move', exact: true }).click();
@@ -1453,6 +1464,7 @@ function offlineCreation(config: CreationCase) {
 		for (const name of ['Idle', 'Walk']) {
 			await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 			await move.getByRole('radio', { name, exact: true }).click();
+			await chooseSkeletonMove(move);
 			await move.getByRole('button', { name: /^Generate move/ }).click();
 			await review
 				.getByRole('button', { name: 'Save move', exact: true })
