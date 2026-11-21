@@ -34,6 +34,7 @@ import {
 	ui
 } from './state.svelte.ts';
 import { stateContinuationBatches, stateRecoveryRecords } from './stateRecovery.ts';
+import { groundToSource } from './stateGrounding.ts';
 import {
 	localStateCost,
 	planStateGeneration,
@@ -101,6 +102,8 @@ export interface StateReview {
 	sourceVersion: string;
 	endpoint: ReadyStatePlan['endpoint'];
 	views: { direction: DirectionName; image: Img }[];
+	/** Facings moved back onto the source's ground before review. */
+	grounded: DirectionName[];
 	provenance: ReturnType<typeof provOf>[];
 	childId?: string;
 }
@@ -426,8 +429,23 @@ async function readReview(
 						)
 					).flat()
 				};
+	const grounded: DirectionName[] = [];
+	// Managed results stay exactly as PixelLab stored them; local edits are put back on the source's ground.
+	if (plan.endpoint !== '/create-character-state') {
+		const { project } = await loadProject(projectId);
+		const source = stateGenerationSource(project, attempt.source);
+		if (source?.version === attempt.sourceVersion)
+			result.views = result.views.map((view) => {
+				const original = source.views.find(({ direction }) => direction === view.direction);
+				if (!original) return view;
+				const { image, shift } = groundToSource(view.image, original.image);
+				if (shift) grounded.push(view.direction);
+				return { ...view, image };
+			});
+	}
 	return {
 		...result,
+		grounded,
 		projectId,
 		id: attempt.id,
 		source: attempt.source,

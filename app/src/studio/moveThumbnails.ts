@@ -1,5 +1,6 @@
 import type { Img } from '../lib/image/png.ts';
 import { cellImg, type Frame } from '../lib/compose/compose.ts';
+import { opaqueBox } from '../lib/rig/normalize.ts';
 import type { DirectionName, Preset, Project } from '../lib/store/manifest.ts';
 import {
 	renderPresentation,
@@ -44,7 +45,7 @@ export function moveThumbnails(assets: PresentationAvailability, items: Preset['
 	};
 }
 
-/** The base body's last frame of a clip, for picker rows: the facing when drawn, else the first drawn one. */
+/** The base body’s last frame of a clip for picker rows, in the given facing when it has art. */
 export function bodyClipThumbnail(
 	project: Project,
 	key: string,
@@ -55,11 +56,16 @@ export function bodyClipThumbnail(
 	const cells = body?.cells?.[key];
 	const cell = rig.animations.find((clip) => clip.id === key)?.frames.at(-1)?.cell;
 	if (!body || !cells || cell === undefined) return null;
-	const drawn = (id: DirectionName) => !!cells[id]?.[cell];
-	const shown = rig.directions.find(
-		({ id, mirrorOf }) => id === facing && drawn(mirrorOf ?? id)
-	)?.id;
-	const fallback = rig.directions.find(({ id, mirrorOf }) => !mirrorOf && drawn(id))?.id;
-	const direction = shown ?? fallback;
-	return direction ? (cellImg(project, body, key, direction, cell) ?? null) : null;
+	// The requested facing as the runtime resolves it (stored override first, then its mirror), else any facing with art.
+	const art = (direction: DirectionName) => {
+		const image = cellImg(project, body, key, direction, cell);
+		return image && opaqueBox(image) ? image : null;
+	};
+	const shown = art(facing);
+	if (shown) return shown;
+	for (const { id } of rig.directions) {
+		const image = id === facing ? null : art(id);
+		if (image) return image;
+	}
+	return null;
 }

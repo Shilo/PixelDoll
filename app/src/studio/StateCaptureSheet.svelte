@@ -37,6 +37,8 @@
 	import ReferenceField from './ReferenceField.svelte';
 	import Sheet from './Sheet.svelte';
 	import Sprite from './Sprite.svelte';
+	import { croppedBacking } from './experience/thumbnails.svelte.ts';
+	import type { Img } from '../lib/image/png.ts';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import PlaybackPicker from './experience/PlaybackPicker.svelte';
 	import { bodyClipThumbnail } from './moveThumbnails.ts';
@@ -122,6 +124,15 @@
 	let checkedPending = $state(false);
 	let review = $state.raw<StateReview | null>(null);
 	let reviewFacing = $state<DirectionName | null>(null);
+	let reviewHeading = $state<HTMLElement>();
+	// The generate button disappears when its review arrives: move focus to the review once per result.
+	let focusedReview = '';
+	$effect(() => {
+		const token = review?.token;
+		if (!reviewHeading || !token || token === focusedReview) return;
+		focusedReview = token;
+		reviewHeading.focus();
+	});
 	let confirmDiscard = $state(false);
 	let canContinue = $state(false);
 	let continuation = $state.raw<StateContinuationQuote | null>(null);
@@ -199,11 +210,12 @@
 	const reviewViews = $derived.by(() => {
 		const current = review;
 		if (!current || !project || !body) return [];
-		const { source } = current;
 		const generated = new Map(current.views.map(({ direction, image }) => [direction, image]));
-		const cell = project.manifest.rig.animations.find(({ id }) => id === source.clip)?.frames[
-			source.frame
-		]?.cell;
+		const sent = new Map(
+			sourceCurrent
+				? (reviewSource?.views.map(({ direction, image }) => [direction, image]) ?? [])
+				: []
+		);
 		return project.manifest.rig.directions
 			.filter(({ id, mirrorOf }) => generated.has(id) || (mirrorOf && generated.has(mirrorOf)))
 			.sort((left, right) => DIRECTIONS.indexOf(left.id) - DIRECTIONS.indexOf(right.id))
@@ -211,10 +223,7 @@
 				direction: id,
 				mirrorOf: generated.has(id) ? undefined : mirrorOf,
 				image: generated.get(id) ?? flipH(generated.get(mirrorOf!)!),
-				source:
-					sourceCurrent && cell !== undefined
-						? (cellImg(project, body, source.clip, id, cell) ?? null)
-						: null
+				source: sent.get(id) ?? (mirrorOf && sent.has(mirrorOf) ? flipH(sent.get(mirrorOf)!) : null)
 			}));
 	});
 	// Starts on the Studio facing, else the first view in compass order.
@@ -436,6 +445,10 @@
 	}
 </script>
 
+{#snippet cell(image: Img | null, box: number, label: string)}
+	<Sprite img={image} k={image ? croppedBacking(box, image, ui.dpr) : 1} checker {label} />
+{/snippet}
+
 {#snippet costLabel(cost: StateGenerationCost)}
 	{@const low = formatNumber(cost.minGenerations)}
 	{@const high = formatNumber(cost.maxGenerations)}
@@ -460,35 +473,38 @@
 >
 	{#if review}
 		<div class="state-panel" aria-busy={!!busy}>
-			<p class="muted small">{t('stateGeneration.review', { name: moveLabel(review.id) })}</p>
+			<p class="muted small review-heading" tabindex="-1" bind:this={reviewHeading}>
+				{t('stateGeneration.review', { name: moveLabel(review.id) })}
+			</p>
 			{#if view}
 				{@const facingName = displayDirection(view.direction)}
 				{@const sourceName = clipName(review.source.clip)}
 				<div class="review-preview">
-					<div class="review-stage">
+					<div class="review-pair">
 						<figure>
-							<span class="review-sprite">
-								{#if view.source}<Sprite
-										img={view.source}
-										k={1}
-										fitToBox
-										label={t('stateCapture.preview', { source: sourceName, facing: facingName })}
-									/>{:else}<span class="muted small">{t('stateGeneration.sourceMissing')}</span
-									>{/if}
+							<span class="review-stage">
+								{#if view.source}<span class="cell-frame"
+										>{@render cell(
+											view.source,
+											144,
+											t('stateCapture.preview', { source: sourceName, facing: facingName })
+										)}</span
+									>{:else}<span class="muted small">{t('stateGeneration.sourceMissing')}</span>{/if}
 							</span>
 							<figcaption>{sourceName}</figcaption>
 						</figure>
 						<figure>
-							<span class="review-sprite"
-								><Sprite
-									img={view.image}
-									k={1}
-									fitToBox
-									label={t('stateCapture.preview', {
-										source: t('stateGeneration.generated'),
-										facing: facingName
-									})}
-								/></span
+							<span class="review-stage"
+								><span class="cell-frame"
+									>{@render cell(
+										view.image,
+										144,
+										t('stateCapture.preview', {
+											source: t('stateGeneration.generated'),
+											facing: facingName
+										})
+									)}</span
+								></span
 							>
 							<figcaption>{t('stateGeneration.generated')}</figcaption>
 						</figure>
@@ -506,6 +522,11 @@
 						/>
 					{/if}
 				</div>
+			{/if}
+			{#if !sourceCurrent}
+				<p class="notice warn small" role="status">{t('stateGeneration.sourceChanged')}</p>
+			{:else if review.grounded.length}
+				<p class="faint small">{t('stateGeneration.grounded')}</p>
 			{/if}
 			{#if confirmDiscard}<p class="notice warn small" role="status">
 					{t('stateGeneration.discardWarning')}
@@ -526,15 +547,13 @@
 				{#if shown}
 					{@const facingName = displayDirection(shown.direction)}
 					{#snippet sprite()}
-						<span class="source-sprite" data-facing={shown.direction}>
-							<Sprite
-								img={shown.image}
-								k={1}
-								fitToBox
-								label={t('stateCapture.preview', { source: clipName(clip), facing: facingName })}
-							/>
+						<span class="cell-frame" data-facing={shown.direction}>
+							{@render cell(
+								shown.image,
+								208,
+								t('stateCapture.preview', { source: clipName(clip), facing: facingName })
+							)}
 						</span>
-						<span class="source-facing" aria-hidden="true">{facingName}</span>
 					{/snippet}
 					{#if canRotate}
 						<button
@@ -551,6 +570,7 @@
 					{:else}
 						<div class="source-preview">{@render sprite()}</div>
 					{/if}
+					<p class="cell-caption" aria-hidden="true">{facingName}</p>
 				{/if}
 				{#if total > 1}
 					<div class="source-nav">
@@ -609,8 +629,8 @@
 			<div class="state-panel state-edit">
 				<label class="bu-check edit-switch">
 					<span class="edit-copy">
-						<span>{t('stateCapture.editWithPixelLab')}</span>
-						<span id="{formId}-edit-hint" class="faint small">{t('stateCapture.editHint')}</span>
+						<span>{t('stateCapture.changePose')}</span>
+						<span id="{formId}-edit-hint" class="faint small">{t('stateCapture.changeHint')}</span>
 					</span>
 					<input
 						class="bu-switch"
@@ -618,7 +638,7 @@
 						role="switch"
 						bind:checked={editing}
 						disabled={!!busy}
-						aria-label={t('stateCapture.editWithPixelLab')}
+						aria-label={t('stateCapture.changePose')}
 						aria-describedby="{formId}-edit-hint"
 					/>
 				</label>
@@ -723,8 +743,12 @@
 					onclick={discard}
 					>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 				>
-				<button type="button" class="bu-btn" data-variant="primary" disabled={!!busy} onclick={save}
-					>{t('common.save')}</button
+				<button
+					type="button"
+					class="bu-btn"
+					data-variant="primary"
+					disabled={!!busy || !sourceCurrent}
+					onclick={save}>{t('common.save')}</button
 				>
 			</div>
 		{:else}
@@ -819,9 +843,9 @@
 			padding-block-start: 0;
 			border-block-start: 0;
 		}
-		:global(dialog.state-capture-sheet.center.reviewing) {
-			max-inline-size: 560px;
-		}
+	}
+	:global(dialog.state-capture-sheet.center.reviewing) {
+		max-inline-size: 560px;
 	}
 	.state-panel {
 		display: grid;
@@ -850,26 +874,25 @@
 	button.source-preview:hover {
 		border-color: var(--bu-border);
 	}
-	.source-sprite {
-		inline-size: min(100%, 208px, 30dvh);
-		aspect-ratio: 1;
+	/* Previews are the stored cell: whole-pixel scale on a checkerboard, its edges outlined. */
+	.cell-frame {
+		display: inline-grid;
+		outline: 1px solid var(--bu-rim);
 	}
-	.source-facing,
-	.source-play {
-		position: absolute;
-		inset-block-end: 0;
-		min-block-size: 44px;
-		display: grid;
-		place-items: center;
-	}
-	.source-facing {
-		inset-inline-start: 12px;
+	.cell-caption {
+		margin: -4px 0 0;
+		text-align: center;
 		font-size: 12px;
 		color: var(--bu-muted);
 	}
 	.source-play {
+		position: absolute;
+		inset-block-end: 0;
 		inset-inline-end: 0;
+		min-block-size: 44px;
 		min-inline-size: 44px;
+		display: grid;
+		place-items: center;
 	}
 	.source-nav {
 		margin-block-start: -4px;
@@ -909,54 +932,52 @@
 		display: grid;
 		gap: 12px;
 	}
-	/* Like Move review: one stage beside the direction compass, stacked when narrow. */
+	/* Like Move review: the pair beside the direction compass when the sheet has room, stacked otherwise. */
+	.state-panel:has(.review-preview) {
+		container-type: inline-size;
+	}
 	.review-preview {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		align-items: center;
-		gap: 16px;
+		grid-template-columns: minmax(0, 1fr);
+		justify-items: center;
+		gap: 8px;
 	}
-	.review-stage {
+	.review-pair {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 8px;
-		padding: 12px 8px 8px;
-		background: var(--stage);
-		border: 1px solid var(--bu-line);
-		border-radius: var(--r-ctl);
+		inline-size: 100%;
 	}
-	.review-stage figure {
+	.review-pair figure {
 		display: grid;
-		justify-items: center;
 		gap: 4px;
 		margin: 0;
 		min-inline-size: 0;
 	}
-	.review-stage figure + figure {
-		border-inline-start: 1px solid var(--bu-line);
-	}
-	.review-sprite {
+	.review-stage {
 		display: grid;
 		place-items: center;
-		inline-size: min(100%, 176px);
-		aspect-ratio: 1;
+		min-block-size: 144px;
+		padding: 8px;
 		text-align: center;
+		background: var(--stage);
+		border: 1px solid var(--bu-line);
+		border-radius: var(--r-ctl);
 	}
-	.review-stage figcaption {
-		max-inline-size: 100%;
+	.review-pair figcaption {
 		overflow-wrap: anywhere;
 		text-align: center;
 		font-size: 12px;
 		color: var(--bu-muted);
 	}
-	@media (max-width: 759px) {
+	.review-heading:focus {
+		outline: none;
+	}
+	@container (min-width: 480px) {
 		.review-preview {
-			grid-template-columns: minmax(0, 1fr);
-			justify-items: center;
-			gap: 8px;
-		}
-		.review-stage {
-			inline-size: 100%;
+			grid-template-columns: minmax(0, 1fr) auto;
+			align-items: center;
+			gap: 16px;
 		}
 	}
 	.state-footer {

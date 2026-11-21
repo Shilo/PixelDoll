@@ -2797,7 +2797,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		.click();
 	await newState.getByRole('button', { name: 'Previous frame', exact: true }).click();
 	await expect(newState.getByText('Frame 3 of 4', { exact: true })).toBeVisible();
-	await newState.getByRole('switch', { name: 'Edit with PixelLab' }).check();
+	await newState.getByRole('switch', { name: 'Change the pose' }).check();
 	await newState.getByRole('textbox', { name: 'State name' }).fill('Ready stance');
 	await newState
 		.getByRole('textbox', { name: 'Describe what should change' })
@@ -2980,7 +2980,7 @@ test('a managed State reloads its child without another submission', async ({
 	await addState.click();
 	const dialog = page.getByRole('dialog', { name: 'Create State', exact: true });
 	const panel = dialog;
-	await panel.getByRole('switch', { name: 'Edit with PixelLab' }).check();
+	await panel.getByRole('switch', { name: 'Change the pose' }).check();
 	await panel.getByRole('textbox', { name: 'State name' }).fill('Potion ready');
 	await panel.getByRole('textbox', { name: 'Describe what should change' }).fill('Hold a potion');
 	await panel.getByRole('button', { name: 'Check cost', exact: true }).click();
@@ -3113,7 +3113,7 @@ test('a State interrupted after its first batch sends only the unqueued views af
 	await addState.click();
 	const dialog = page.getByRole('dialog', { name: 'Create State', exact: true });
 	const panel = dialog;
-	await panel.getByRole('switch', { name: 'Edit with PixelLab' }).check();
+	await panel.getByRole('switch', { name: 'Change the pose' }).check();
 	await panel.getByRole('textbox', { name: 'State name' }).fill('Torch ready');
 	await panel.getByRole('textbox', { name: 'Describe what should change' }).fill('Hold a torch');
 	await panel.getByText('Advanced', { exact: true }).click();

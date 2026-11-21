@@ -184,7 +184,7 @@
 			<span class="clip-art" aria-hidden="true">
 				{#if scope}
 					<Layers2 size={18} />
-				{:else}
+				{:else if expanded}
 					{@const art = (() => {
 						const image = thumbnail(key);
 						return image && croppedThumbnail(image);
