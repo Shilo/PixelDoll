@@ -619,7 +619,7 @@
 		"slotHidden": "{label} n’est pas affiché. Il figure sous Non affichés.",
 		"slotShown": "{label} est affiché en position {position} sur {total}.",
 		"dragInRail": "Déplacement de {label}. Déposez-le entre deux emplacements dans la barre de navigation ; Échap pour annuler.",
-		"dragInList": "Déplacement de {label}. Déposez-le entre deux emplacements dans la liste ; Échap pour annuler.",
+		"dragInList": "Déplacement de {label}. Déposez-le entre deux emplacements dans la liste, ou sur Non affichés pour le masquer ; Échap pour annuler.",
 		"slotUnmoved": "{label} reste à sa place.",
 		"dragCanceled": "Déplacement annulé.",
 		"heldBy": "Occupé par {name} (à deux mains).",

@@ -597,7 +597,7 @@
 		"slotHidden": "{label}未显示。它列在“未显示”下。",
 		"slotShown": "{label}显示在第 {position} 位，共 {total} 位。",
 		"dragInRail": "正在拖动{label}。将其放在导航栏中的装备栏之间；按 Escape 取消。",
-		"dragInList": "正在拖动{label}。将其放在列表中的装备栏之间；按 Escape 取消。",
+		"dragInList": "正在拖动{label}。将其放在列表中的装备栏之间，或放到“未显示”上以隐藏；按 Escape 取消。",
 		"slotUnmoved": "{label}保持在原位。",
 		"dragCanceled": "已取消拖动。",
 		"heldBy": "被{name}占用（双手装备）。",

@@ -708,7 +708,13 @@
 		SLACK = 24,
 		/** Half the gap between sections, where the drop line sits. */
 		GAP = 8;
-	let drag = $state<{ source: DragSource; line: number | null } | null>(null);
+	/** `hides`: an empty list slot (not a rail tab, which is too easy to drop by accident) hides on Not shown. */
+	let drag = $state<{
+		source: DragSource;
+		line: number | null;
+		hides: boolean;
+		overHide: boolean;
+	} | null>(null);
 	let itemDrop = $state('');
 	const itemTargets = $derived(
 		m && drag?.source.item ? itemSlotTargets(m, drag.source.item).map(({ key }) => key) : []
@@ -738,6 +744,20 @@
 			list
 				?.querySelector<HTMLElement>(`[data-tile="${CSS.escape(id)}"]`)
 				?.focus({ preventScroll: true });
+	}
+	/** Whether the pointer is over Not shown in the list, where a dragged list slot is hidden. */
+	function overNotShown(source: DragSource) {
+		if (source.rail || source.item || source.hidden || !list) return false;
+		const box = list.getBoundingClientRect();
+		const rect = list.querySelector<HTMLElement>('.not-shown')?.getBoundingClientRect();
+		const { x, y } = pointer;
+		return (
+			!!rect &&
+			x >= rect.left &&
+			x <= rect.right &&
+			y >= Math.max(rect.top, box.top) &&
+			y <= Math.min(rect.bottom, box.bottom)
+		);
 	}
 	/** Where a drop at the pointer would land: the shown index, and the drop line's offset in the list. */
 	function dropTarget(source: DragSource): { to: number; line: number } | null {
@@ -820,7 +840,10 @@
 			if (speed) surface.scrollTop += speed;
 		}
 		if (drag.source.item) itemDrop = itemDropTarget();
-		else drag.line = dropTarget(drag.source)?.line ?? null;
+		else {
+			drag.line = dropTarget(drag.source)?.line ?? null;
+			drag.overHide = drag.hides && overNotShown(drag.source);
+		}
 		dragFrame = requestAnimationFrame(dragStep);
 	}
 	function dragOptions(source: DragSource) {
@@ -839,7 +862,16 @@
 				if (source.item) document.getElementById('item-menu')?.hidePopover();
 				// Stop a smooth scroll still bringing a slot to the top; the drag scrolls the list from here.
 				list?.scrollTo({ top: list.scrollTop, behavior: 'instant' });
-				drag = { source, line: null };
+				drag = {
+					source,
+					line: null,
+					hides:
+						!source.item &&
+						!source.rail &&
+						!source.hidden &&
+						!hideBlock(source.key, displayMessage(slotLabelMessage(m, source.key))),
+					overHide: false
+				};
 				void tick().then(() => {
 					if (drag) dragPreview?.showPopover();
 				});
@@ -858,6 +890,7 @@
 				cancelAnimationFrame(dragFrame);
 				const itemTarget = commit && source.item && drag ? itemDropTarget() : '';
 				const target = commit && drag && !source.item ? dropTarget(drag.source) : null;
+				const hideDrop = commit && !!drag && overNotShown(drag.source);
 				dragPreview?.hidePopover();
 				drag = null;
 				itemDrop = '';
@@ -865,6 +898,12 @@
 				if (source.item) {
 					if (itemTarget) void moveItemToSlot(source.item.id, itemTarget);
 					else announce = message('wardrobe.dragCanceled');
+					return;
+				}
+				if (hideDrop) {
+					const block = hideBlock(source.key, displayMessage(slotLabelMessage(m, source.key)));
+					if (block) toast(block);
+					else void hide(source.key);
 					return;
 				}
 				if (!target) {
@@ -1241,7 +1280,7 @@
 				<div class="not-shown">
 					<button
 						class="bu-action bu-section-head not-shown-toggle"
-						data-current={notShownCurrent || undefined}
+						data-current={(drag ? drag.overHide : notShownCurrent) || undefined}
 						data-variant="quiet"
 						aria-expanded={notShownOpen}
 						aria-controls="wardrobe-not-shown"

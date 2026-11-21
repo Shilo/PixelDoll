@@ -1250,13 +1250,30 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 		const last = [...element.querySelectorAll<HTMLElement>('section[data-own]')].at(-1)!;
 		element.scrollTop = last.offsetTop - 40;
 	});
-	const lastHeader = (await page.locator('[data-slot-button="off_hand"]').boundingBox())!;
-	const notShown = (await page.locator('.not-shown-toggle').boundingBox())!;
-	await page.mouse.move(lastHeader.x + 20, lastHeader.y + 20);
-	await page.mouse.down();
-	await page.mouse.move(notShown.x + 20, notShown.y + 8, { steps: 6 });
-	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	const dragToNotShown = async (key: string) => {
+		const from = (await page.locator(`[data-slot-button="${key}"]`).boundingBox())!;
+		const to = (await page.locator('.not-shown-toggle').boundingBox())!;
+		await page.mouse.move(from.x + 20, from.y + 20);
+		await page.mouse.down();
+		await page.mouse.move(to.x + 20, to.y + 8, { steps: 6 });
+		await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	};
+	// An empty slot dropped on Not shown hides, like Hide slot in its menu.
+	await dragToNotShown('off_hand');
+	await expect(page.locator('.not-shown-toggle')).toHaveAttribute('data-current', 'true');
 	await page.mouse.up();
+	await expect.poll(keys).toEqual(original.filter((key) => key !== 'off_hand'));
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	// A slot with items is refused with the menu's reason.
+	await list.evaluate((element) => {
+		element.scrollTop =
+			element.querySelector<HTMLElement>('[data-group="main_hand"]')!.offsetTop - 40;
+	});
+	await dragToNotShown('main_hand');
+	await expect(page.locator('.not-shown-toggle')).not.toHaveAttribute('data-current');
+	await page.mouse.up();
+	await expect(page.locator('.toast')).toContainText('Only empty slots can be hidden.');
 	expect(await keys()).toEqual(original);
 	await list.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }));
 	const startHead = (await head.boundingBox())!;

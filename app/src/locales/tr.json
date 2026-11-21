@@ -622,7 +622,7 @@
 		"slotHidden": "{label} gösterilmiyor. Gösterilmeyenler altında listeleniyor.",
 		"slotShown": "{label} gösteriliyor. Sıra: {position} / {total}.",
 		"dragInRail": "{label} sürükleniyor. Gezinme şeridinde yuvaların arasına bırakın; Escape iptal eder.",
-		"dragInList": "{label} sürükleniyor. Listede yuvaların arasına bırakın; Escape iptal eder.",
+		"dragInList": "{label} sürükleniyor. Listede yuvaların arasına bırakın ya da gizlemek için Gösterilmeyenler üzerine bırakın; Escape iptal eder.",
 		"slotUnmoved": "{label} yerinde kaldı.",
 		"dragCanceled": "Sürükleme iptal edildi.",
 		"heldBy": "{name} tarafından kullanılıyor (çift elli).",

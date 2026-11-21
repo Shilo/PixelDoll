@@ -602,7 +602,7 @@
 		"slotHidden": "{label}は非表示です。「非表示」の一覧にあります。",
 		"slotShown": "{label}を{total}個中{position}番目に表示しています。",
 		"dragInRail": "{label}をドラッグ中。ナビゲーションレールの装備スロットの間にドロップしてください。Escapeでキャンセルします。",
-		"dragInList": "{label}をドラッグ中。リストの装備スロットの間にドロップしてください。Escapeでキャンセルします。",
+		"dragInList": "{label}をドラッグ中。リストの装備スロットの間にドロップするか、「非表示」にドロップして非表示にします。Escapeでキャンセルします。",
 		"slotUnmoved": "{label}は元の位置のままです。",
 		"dragCanceled": "ドラッグをキャンセルしました。",
 		"heldBy": "{name}を両手で持っているため、この手は使用中です。",

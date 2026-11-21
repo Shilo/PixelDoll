@@ -616,7 +616,7 @@
 		"slotHidden": "{label} is not shown. It is listed under Not shown.",
 		"slotShown": "{label} is shown at position {position} of {total}.",
 		"dragInRail": "Dragging {label}. Drop it between slots in the navigation rail; Escape cancels.",
-		"dragInList": "Dragging {label}. Drop it between slots in the list; Escape cancels.",
+		"dragInList": "Dragging {label}. Drop it between slots in the list, or on Not shown to hide it; Escape cancels.",
 		"slotUnmoved": "{label} stays where it was.",
 		"dragCanceled": "Drag canceled.",
 		"heldBy": "Held by {name} (two-handed).",

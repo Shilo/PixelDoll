@@ -602,7 +602,7 @@
 		"slotHidden": "{label} 항목이 표시되지 않아요. 표시 안 됨 목록에 있어요.",
 		"slotShown": "{label} 항목이 {total}개 중 {position}번째에 표시돼요.",
 		"dragInRail": "{label} 항목을 드래그하는 중이에요. 탐색 레일의 슬롯 사이에 놓으세요. Escape를 누르면 취소돼요.",
-		"dragInList": "{label} 항목을 드래그하는 중이에요. 목록의 슬롯 사이에 놓으세요. Escape를 누르면 취소돼요.",
+		"dragInList": "{label} 항목을 드래그하는 중이에요. 목록의 슬롯 사이에 놓거나 표시 안 됨에 놓아 숨기세요. Escape를 누르면 취소돼요.",
 		"slotUnmoved": "{label} 항목은 원래 자리에 남아요.",
 		"dragCanceled": "드래그를 취소했어요.",
 		"heldBy": "{name} 아이템이 사용 중(양손).",

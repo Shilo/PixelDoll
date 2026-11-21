@@ -627,7 +627,7 @@
 		"slotHidden": "{label} está oculto e aparece em Ocultos.",
 		"slotShown": "{label} está visível na posição {position} de {total}.",
 		"dragInRail": "Arrastando {label}. Solte entre os espaços da barra de navegação. Pressione Esc para cancelar.",
-		"dragInList": "Arrastando {label}. Solte entre os espaços da lista. Pressione Esc para cancelar.",
+		"dragInList": "Arrastando {label}. Solte entre os espaços da lista ou em Ocultos para ocultar. Pressione Esc para cancelar.",
 		"slotUnmoved": "{label} permanece na mesma posição.",
 		"dragCanceled": "Arraste cancelado.",
 		"heldBy": "Ocupado por {name} (duas mãos).",

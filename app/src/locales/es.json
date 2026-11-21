@@ -625,7 +625,7 @@
 		"slotHidden": "{label} no se muestra. Aparece en Ocultas.",
 		"slotShown": "{label} se muestra en la posición {position} de {total}.",
 		"dragInRail": "Arrastrando {label}. Suéltala entre ranuras en la barra de navegación; Escape cancela.",
-		"dragInList": "Arrastrando {label}. Suéltala entre ranuras de la lista; Escape cancela.",
+		"dragInList": "Arrastrando {label}. Suéltala entre ranuras de la lista o en Ocultas para ocultarla; Escape cancela.",
 		"slotUnmoved": "{label} se queda donde estaba.",
 		"dragCanceled": "Arrastre cancelado.",
 		"heldBy": "Lo sostiene {name} (a dos manos).",

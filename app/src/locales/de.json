@@ -625,7 +625,7 @@
 		"slotHidden": "{label} ist jetzt ausgeblendet und steht in der Liste „Ausgeblendet“.",
 		"slotShown": "{label} wird an Position {position} von {total} angezeigt.",
 		"dragInRail": "{label} wird gezogen. Lege den Platz in der Navigationsleiste zwischen zwei Plätzen ab. Esc bricht ab.",
-		"dragInList": "{label} wird gezogen. Lege den Platz in der Liste zwischen zwei Plätzen ab. Esc bricht ab.",
+		"dragInList": "{label} wird gezogen. Lege den Platz in der Liste zwischen zwei Plätzen ab oder auf Ausgeblendet, um ihn auszublenden. Esc bricht ab.",
 		"slotUnmoved": "{label} bleibt an der bisherigen Position.",
 		"dragCanceled": "Ziehen abgebrochen.",
 		"heldBy": "Von {name} belegt (zweihändig).",

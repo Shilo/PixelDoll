@@ -599,7 +599,7 @@
 		"slotHidden": "{label} disembunyikan dan tercantum di bagian Tersembunyi.",
 		"slotShown": "{label} ditampilkan di posisi {position} dari {total}.",
 		"dragInRail": "Sedang menyeret {label}. Lepas di antara slot pada bilah navigasi; tekan Escape untuk membatalkan.",
-		"dragInList": "Sedang menyeret {label}. Lepas di antara slot dalam daftar; tekan Escape untuk membatalkan.",
+		"dragInList": "Sedang menyeret {label}. Lepas di antara slot dalam daftar, atau di Tersembunyi untuk menyembunyikannya; tekan Escape untuk membatalkan.",
 		"slotUnmoved": "{label} tetap di posisi semula.",
 		"dragCanceled": "Penyeretan dibatalkan.",
 		"heldBy": "Dipegang oleh {name} (dua tangan).",
