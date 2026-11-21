@@ -372,6 +372,61 @@ test('character actions download and delete an unopened character without select
 	).toBe(false);
 });
 
+test('character rows keep their ⋮ out of sight until hover or keyboard focus on desktop', async ({
+	page
+}) => {
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await page.goto('/');
+	const row = page.locator('.cast-library .character-entry').first();
+	const more = row.locator('.character-more');
+	await expect(row.locator('.character-row')).toBeVisible();
+	await page.mouse.move(0, 0);
+	await expect(more).toHaveCSS('opacity', '0');
+	await row.locator('.character-row').hover();
+	await expect(more).toHaveCSS('opacity', '1');
+	await page.mouse.move(0, 0);
+	await expect(more).toHaveCSS('opacity', '0');
+	// Keyboard focus reveals it, Tab reaches it, and Enter opens it.
+	await page.keyboard.press('Tab');
+	await row.locator('.character-row').focus();
+	await expect(more).toHaveCSS('opacity', '1');
+	await page.keyboard.press('Tab');
+	await expect(more).toBeFocused();
+	await expect(more).toHaveCSS('opacity', '1');
+	await page.keyboard.press('Enter');
+	await expect(more).toHaveAttribute('aria-expanded', 'true');
+	await page.keyboard.press('Escape');
+	await expect(more).toBeFocused();
+	await expect(more).toHaveCSS('opacity', '1');
+	// An open menu keeps it visible after the pointer leaves.
+	await page.mouse.move(0, 0);
+	await more.click();
+	await expect(more).toHaveAttribute('aria-expanded', 'true');
+	await page.mouse.move(0, 0);
+	await expect(more).toHaveCSS('opacity', '1');
+});
+
+test.describe('character actions on a touch screen', () => {
+	test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+	test('the ⋮ stays visible without hover', async ({ page }) => {
+		await page.addInitScript(() => {
+			localStorage.setItem('pixeldoll.agentKey', 'off');
+			localStorage.setItem('pixeldoll.welcomed', '1');
+		});
+		await page.goto('/');
+		const more = page.locator('.cast-library .character-more').first();
+		await expect(more).toBeVisible();
+		await expect(more).toHaveCSS('opacity', '1');
+		expect(
+			await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)
+		).toBe(false);
+	});
+});
+
 test('both New character entry points offer separate import sources on desktop and phone', async ({
 	page
 }) => {

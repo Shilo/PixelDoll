@@ -7287,6 +7287,13 @@ for (const kind of ['outfit', 'move'] as const) {
 					});
 		const choice = row.locator('button').first();
 		const trigger = row.getByRole('button', { name: `More actions for ${name}`, exact: true });
+		// Desktop keeps the ⋮ out of sight until the row is hovered.
+		await page.mouse.move(0, 0);
+		await expect(trigger).toHaveCSS('opacity', '0');
+		await choice.hover();
+		await expect(trigger).toHaveCSS('opacity', '1');
+		await page.mouse.move(0, 0);
+		await expect(trigger).toHaveCSS('opacity', '0');
 		const menu = page.getByRole('menu', { name: `Actions for ${name}`, exact: true });
 		if (kind === 'outfit') {
 			await expect(choice).toHaveAttribute('aria-pressed', 'true');
@@ -7549,6 +7556,13 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expect(more.locator('svg')).toHaveCount(1);
 	// A sibling control, never nested in the tile, drawn 3 px inside its top-right corner at 28 by 25 px.
 	expect(await more.evaluate((b) => !!b.closest('.item-tile'))).toBe(false);
+	// Desktop keeps the ⋮ out of sight until the tile is hovered, without moving anything.
+	await page.mouse.move(0, 0);
+	await expect(more).toHaveCSS('opacity', '0');
+	await hat.hover();
+	await expect(more).toHaveCSS('opacity', '1');
+	await page.mouse.move(0, 0);
+	await expect(more).toHaveCSS('opacity', '0');
 	await expect(more).toHaveAttribute('aria-haspopup', 'menu');
 	await expect(more).toHaveAttribute('aria-expanded', 'false');
 	const hit = (await more.boundingBox())!;
@@ -7614,6 +7628,8 @@ test('item tiles open their own menu by ⋮, right-click and Shift+F10, and Esca
 	await expect.poll(() => menuOpen(page)).toBe(false);
 	await expect(more).toBeFocused();
 	await expect(more).toHaveAttribute('aria-expanded', 'false');
+	// Focus returns to a visible trigger, never an invisible control.
+	await expect(more).toHaveCSS('opacity', '1');
 
 	// The same ⋮ toggles it closed again.
 	await more.click();
@@ -8163,6 +8179,29 @@ test('a hand item can be two-handed, takes both hands, and offers a matching ite
 	expect(posts).toEqual([]);
 });
 
+test.describe('row and tile actions on a touch screen', () => {
+	test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+	test('the ⋮ stays visible without hover', async ({ page }) => {
+		await page.addInitScript(() => {
+			localStorage.setItem('pixeldoll.agentKey', 'off');
+			localStorage.setItem('pixeldoll.welcomed', '1');
+		});
+		await openStudio(page, '/#/');
+		const tile = section(page, 'Head')
+			.getByRole('button', { name: /^More options for / })
+			.first();
+		await expect(tile).toHaveCSS('opacity', '1');
+		await equipmentMode(page, 'Outfits');
+		await expect(page.locator('.outfits .character-more').first()).toHaveCSS('opacity', '1');
+		await equipmentMode(page, 'Moves');
+		await expect(page.locator('.move-list .character-more').first()).toHaveCSS('opacity', '1');
+		expect(
+			await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches)
+		).toBe(false);
+	});
+});
+
 test('Fix frames: download, edit, review, replace, Undo and Restore for an item and the body, offline', async ({
 	page,
 	context
@@ -8225,8 +8264,12 @@ test('Fix frames: download, edit, review, replace, Undo and Restore for an item 
 	await review.getByRole('button', { name: /^Replace 1 frame/ }).click();
 	await expect(sheet).toContainText('Restore original · 1');
 	expect(await pixels('walk', 'helmet_steel')).not.toEqual(original);
-	await sheet.getByRole('button', { name: /^Replaced 1 frame of Steel helmet. Undo/ }).click();
-	await expect(sheet.getByText('Undid 1 frame.')).toBeVisible();
+	// The notice body is inert: only its Undo button reverts the import.
+	const toast = page.locator('.bu-toast-region');
+	await toast.locator('.bu-notice-content').click();
+	expect(await pixels('walk', 'helmet_steel')).not.toEqual(original);
+	await toast.getByRole('button', { name: 'Undo', exact: true }).click();
+	await expect(toast).toContainText('Undid 1 frame.');
 	expect(await pixels('walk', 'helmet_steel')).toEqual(original);
 
 	await importPng(await edit(3 * 64 + 31, 12));
