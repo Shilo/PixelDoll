@@ -8,7 +8,7 @@
 </script>
 
 <!-- Sheet's leading column: equal side columns keep the centered title independent of this button's width. -->
-<span class="settings-leading" class:with-reset={Boolean(onreset)}>
+<span class="settings-leading">
 	{#if settingsNavigation.section && !settingsNavigation.fromExport}
 		<button
 			class="settings-back bu-action btn plain link"
@@ -19,7 +19,11 @@
 			><ChevronLeft size={18} aria-hidden="true" /><span>{t('export.sheet.settings')}</span></button
 		>
 	{/if}
-	{#if onreset}<SettingsResetButton scope="all" disabled={busy} onclick={onreset} />{/if}
+	{#if onreset}
+		<span class="wide-reset"
+			><SettingsResetButton scope="all" disabled={busy} onclick={onreset} /></span
+		>
+	{/if}
 </span>
 
 <style>
@@ -32,6 +36,9 @@
 		display: none;
 	}
 	@media (max-width: 659px), (max-height: 519px) {
+		.wide-reset {
+			display: none;
+		}
 		.settings-back {
 			display: inline-flex;
 			gap: 2px;
@@ -53,9 +60,6 @@
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
-		}
-		.with-reset .settings-back span {
-			display: none;
 		}
 	}
 	@media (min-width: 600px) and ((max-width: 659px) or (max-height: 519px)) {

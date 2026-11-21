@@ -31,6 +31,7 @@
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { downloadLibraryBackup } from './downloadLibraryBackup.ts';
 	import { saveZip } from './download.svelte.ts';
+	import { fileDrop } from './fileDrop.ts';
 
 	type RestorePreview = {
 		name: string;
@@ -75,6 +76,7 @@
 	let keepArchived = $state(false);
 	const additions = $derived(preview ? preview.add + preview.copies : 0);
 	const heading = $props.id();
+	const dropHint = `${heading}-drop`;
 	const keys = () => [app.key, readSavedKey()];
 	const today = () => new Date().toISOString().slice(0, 10);
 	onMount(() => {
@@ -146,13 +148,31 @@
 		});
 	}
 
-	async function selectFile(event: Event) {
+	let dragging = $state(false);
+	const dropBlocked = () => busy || !!plan || confirmingDelete;
+	const drop = fileDrop(
+		dropBlocked,
+		(active) => (dragging = active),
+		(files) => void reviewFiles(files)
+	);
+	const dropActive = $derived(dragging && !dropBlocked());
+
+	function selectFile(event: Event) {
 		const input = event.currentTarget as HTMLInputElement;
-		const file = input.files?.[0];
+		const files = Array.from(input.files ?? []);
 		input.value = '';
-		if (!file) return;
+		if (files.length) void reviewFiles(files);
+	}
+
+	async function reviewFiles(files: File[]) {
+		if (dropBlocked()) return;
 		keepArchived = false;
 		await perform(async () => {
+			const [file] = files;
+			if (files.length !== 1 || !file) {
+				error = message('openWorkspace.chooseOne');
+				return;
+			}
 			if (file.size > MAX_ZIP_BYTES) {
 				error = message('librarySettings.tooLarge');
 				return;
@@ -196,6 +216,13 @@
 		(review ?? openPicker)?.focus();
 	}
 </script>
+
+<svelte:window
+	ondragenter={drop.enter}
+	ondragleave={drop.leave}
+	ondragover={drop.over}
+	ondrop={drop.drop}
+/>
 
 <div class="library-settings" aria-busy={busy}>
 	{#if preview}
@@ -297,6 +324,8 @@
 			<SettingsItemButton
 				data-setting="restore"
 				disabled={busy}
+				variant={dropActive ? 'primary' : 'outline'}
+				aria-describedby={dropHint}
 				bind:element={openPicker}
 				onclick={() => picker?.click()}
 			>
@@ -304,6 +333,9 @@
 				{t('librarySettings.restoreFromBackup')}
 				<SurfaceChevron />
 			</SettingsItemButton>
+			<p id={dropHint} class={['settings-description', { 'bu-muted': !dropActive }]} role="status">
+				{t(dropActive ? 'openWorkspace.release' : 'librarySettings.dropHint')}
+			</p>
 			<p class="bu-muted settings-description">{t('librarySettings.restoreHint')}</p>
 		</section>
 		{#if hasArchives}
@@ -456,5 +488,13 @@
 		justify-content: end;
 		gap: 0.5rem;
 		margin-top: 0.75rem;
+	}
+	.restore-actions .btn {
+		min-inline-size: 0;
+		max-inline-size: 100%;
+		height: auto;
+		min-height: var(--ctl-h);
+		padding-block: 8px;
+		white-space: normal;
 	}
 </style>

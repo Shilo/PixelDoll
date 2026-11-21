@@ -13,6 +13,7 @@
 		"edited": "Eine zuvor wiederhergestellte Kopie wurde bearbeitet. Bei erneuter Wiederherstellung wird eine separate Kopie hinzugefügt.",
 		"keepArchived": "Archivierte Daten für spätere Downloads behalten",
 		"restoreHint": "In deiner Bibliothek wird nichts ersetzt oder gelöscht.",
+		"dropHint": "Du kannst ein Sicherungs-ZIP überall auf dieser Seite ablegen.",
 		"restoreArchivedHint": "Archivierte Daten werden nur dann zum Download aufbewahrt, wenn du das Kästchen aktivierst.",
 		"restore": "Wiederherstellen",
 		"archivedHint": "Ältere Datensätze nur zum Download verfügbar: {count}.",
@@ -42,6 +43,7 @@
 	},
 	"settings": {
 		"reset": {
+			"allAction": "Alle Einstellungen zurücksetzen",
 			"pageAction": "Diese Seite zurücksetzen",
 			"pageTitle": "Einstellungen für „{page}“ zurücksetzen?",
 			"pageDescription": "Setzt nur die Einstellungen auf dieser Seite auf die Standardwerte zurück.",

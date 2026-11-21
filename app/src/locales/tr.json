@@ -13,6 +13,7 @@
 		"edited": "Daha önce geri yüklenen bir kopya düzenlendi. Yeniden geri yüklediğinizde ayrı bir kopya eklenir.",
 		"keepArchived": "Arşivlenmiş verileri daha sonra indirmek için sakla",
 		"restoreHint": "Kitaplığınızdaki hiçbir öğe silinmez veya başka bir öğeyle değiştirilmez.",
+		"dropHint": "Yedek ZIP dosyasını bu sayfanın herhangi bir yerine bırakın.",
 		"restoreArchivedHint": "Arşivlenmiş veriler ancak kutuyu işaretlerseniz indirmek üzere saklanır.",
 		"restore": "Geri yükle",
 		"archivedHint": "{count} eski kayıt yalnızca indirme için saklanıyor.",
@@ -42,6 +43,7 @@
 	},
 	"settings": {
 		"reset": {
+			"allAction": "Tüm ayarları sıfırla",
 			"pageAction": "Bu sayfayı sıfırla",
 			"pageTitle": "{page} ayarları sıfırlansın mı?",
 			"pageDescription": "Yalnızca bu sayfadaki tercihleri varsayılan değerlerine döndürür.",

@@ -184,6 +184,7 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 		'background-color',
 		'rgba(0, 0, 0, 0)'
 	);
+	await settings.getByRole('button', { name: 'PixelLab', exact: true }).click();
 	await expect(settings.getByText('Connected and remembered on this device.')).toBeVisible();
 	await expect(settings.getByRole('progressbar', { name: 'Generations' })).toHaveAttribute(
 		'max',
@@ -372,18 +373,23 @@ test('Settings replaces and forgets the key in place, refreshing usage without m
 		'synthetic-replacement'
 	);
 	await page.setViewportSize({ width: 390, height: 844 });
+	await expect(reset).toHaveCount(0);
+	await settings.getByRole('button', { name: 'PixelLab', exact: true }).click();
+	await expect(forget).toBeEnabled();
 	const search = settings.getByRole('searchbox', { name: 'Search settings' });
 	await search.fill('theme');
-	await expect(reset).toBeHidden();
+	await expect(forget).toHaveCount(0);
 	await search.clear();
 	await expect(confirm).toBeHidden();
-	await reset.click();
+	await forget.click();
 	await confirm.getByRole('button', { name: 'Forget key', exact: true }).click();
 	await expect(settings.getByText('Not connected', { exact: true })).toBeVisible();
 	await expect(
 		settings.getByRole('button', { name: 'Connect PixelLab...', exact: true })
 	).toBeFocused();
 	await expect(forget).toHaveCount(0);
+	await expect(reset).toHaveCount(0);
+	await page.setViewportSize({ width: 1440, height: 900 });
 	await expect(reset).toBeDisabled();
 	expect(
 		await page.evaluate(() => [

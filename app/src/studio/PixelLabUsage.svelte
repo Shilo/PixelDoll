@@ -121,7 +121,9 @@
 <style>
 	.detailed-usage {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 8px;
+		overflow-wrap: anywhere;
 	}
 	.usage-heading {
 		display: flex;
@@ -134,6 +136,7 @@
 	}
 	.usage-stat {
 		display: flex;
+		flex-wrap: wrap;
 		justify-content: space-between;
 		align-items: center;
 		gap: 8px;

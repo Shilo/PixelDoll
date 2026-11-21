@@ -13,6 +13,7 @@
 		"edited": "이전에 복원한 사본이 수정되었어요. 다시 복원하면 별도의 사본이 추가돼요.",
 		"keepArchived": "나중에 다운로드할 수 있도록 보관된 데이터 유지",
 		"restoreHint": "라이브러리에서 교체되거나 삭제되는 항목은 없어요.",
+		"dropHint": "이 페이지 어디에나 백업 ZIP을 놓을 수 있어요.",
 		"restoreArchivedHint": "체크박스를 선택한 경우에만 보관된 데이터를 다운로드용으로 남겨요.",
 		"restore": "복원",
 		"archivedHint": "이전 기록 {count}개는 다운로드용으로만 보관돼요.",
@@ -42,6 +43,7 @@
 	},
 	"settings": {
 		"reset": {
+			"allAction": "모든 설정 초기화",
 			"pageAction": "이 페이지 초기화",
 			"pageTitle": "{page} 설정을 초기화할까요?",
 			"pageDescription": "이 페이지의 설정만 기본값으로 되돌립니다.",

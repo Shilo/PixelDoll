@@ -13,6 +13,7 @@
 		"edited": "An earlier restored copy was edited. Restoring again adds a separate copy.",
 		"keepArchived": "Keep archived data for future downloads",
 		"restoreHint": "Nothing in your library will be replaced or deleted.",
+		"dropHint": "Drop a backup ZIP anywhere on this page.",
 		"restoreArchivedHint": "Archived data is only kept for download if you check the box.",
 		"restore": "Restore",
 		"archivedHint": "{count} older records are kept for download only.",
@@ -42,6 +43,7 @@
 	},
 	"settings": {
 		"reset": {
+			"allAction": "Reset all settings",
 			"pageAction": "Reset this page",
 			"pageTitle": "Reset {page} settings?",
 			"pageDescription": "Restores only the preferences on this page to their defaults.",

@@ -1,5 +1,4 @@
 import { ui } from './state.svelte.ts';
-import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import type { WhisperKey } from 'svelte-whisper';
 
 export type SettingsSection =
@@ -32,7 +31,7 @@ export const settingsNavigation = $state<{
 	exportOpen: false
 });
 
-export function openSettings(section: SettingsSection | null = workspaceCopy ? null : 'pixellab') {
+export function openSettings(section: SettingsSection | null = null) {
 	settingsNavigation.fromExport = ui.sheet === 'export';
 	settingsNavigation.section = section;
 	ui.sheet = 'settings';

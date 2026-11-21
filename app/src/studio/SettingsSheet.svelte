@@ -5,26 +5,21 @@
 	import Lazy from './Lazy.svelte';
 	import SettingsContent from './SettingsContent.svelte';
 	import SettingsHeader from './SettingsHeader.svelte';
-	import SettingsResetButton from './SettingsResetButton.svelte';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
-	import { isResettableSection, type ResetScope } from './resetSettings.ts';
+	import type { ResetScope } from './resetSettings.ts';
 	import { watchExportDefaults } from './settingsDefaults.svelte.ts';
 	import {
 		openSettingsExport,
 		settingsLabels,
 		settingsNavigation
 	} from './settingsNavigation.svelte.ts';
-	import { getKeyRevision } from '../lib/app.svelte.ts';
 
 	const loadExport = () => import('./ExportSheet.svelte');
 	let saving = $state(false);
 	let libraryBusy = $state(false);
 	let reviewingBackup = $state(false);
 	let resetScope = $state<ResetScope | null>(null);
-	let forgetRevision = $state(-1);
-	let query = $state('');
 	const busy = $derived(saving || libraryBusy || resetScope !== null);
-	const section = $derived(settingsNavigation.section);
 	const canReset = $derived(!workspaceCopy && !settingsNavigation.fromExport);
 	$effect(() => (canReset ? watchExportDefaults() : undefined));
 </script>
@@ -44,42 +39,12 @@
 	{#snippet heading()}{#if settingsNavigation.section}<span class="settings-page-title"
 				>{t(settingsLabels[settingsNavigation.section])}</span
 			>{/if}{/snippet}
-	{#snippet trailing()}
-		<div class="settings-end">
-			{#if section === 'pixellab' && !workspaceCopy && !query.trim()}
-				<div class="compact-reset">
-					<SettingsResetButton
-						scope="pixellab"
-						disabled={busy}
-						onclick={() => (forgetRevision = getKeyRevision())}
-					/>
-				</div>
-			{:else if canReset && isResettableSection(section)}
-				<div class="compact-reset">
-					<SettingsResetButton
-						scope={section}
-						disabled={busy}
-						onclick={() => (resetScope = section)}
-					/>
-				</div>
-			{/if}
-			<button
-				type="button"
-				class="bu-action btn plain link done"
-				data-variant="quiet"
-				disabled={busy}
-				onclick={() => (ui.sheet = null)}>{t('common.close')}</button
-			>
-		</div>
-	{/snippet}
 	<SettingsContent
 		{busy}
 		openExport={openSettingsExport}
 		bind:libraryBusy
 		bind:reviewingBackup
 		bind:resetScope
-		bind:forgetRevision
-		bind:query
 	>
 		{#snippet exportSettings(entry)}
 			<Lazy
@@ -94,23 +59,11 @@
 </Sheet>
 
 <style>
-	.settings-end {
-		display: flex;
-		align-items: center;
-		justify-content: end;
-		min-width: 0;
-	}
-	.compact-reset {
-		display: none;
-	}
 	.settings-page-title {
 		display: none;
 	}
 	/* Compact pages show the open section in place of "Settings"; the hidden h2 keeps the dialog's name. */
 	@media (max-width: 659px), (max-height: 519px) {
-		.compact-reset {
-			display: flex;
-		}
 		:global(.sheet-heading:has(.settings-page-title) .sheet-title) {
 			position: absolute;
 			clip-path: inset(50%);

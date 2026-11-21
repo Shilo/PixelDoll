@@ -5,8 +5,13 @@
 		children,
 		element = $bindable(),
 		class: className,
+		variant = 'outline',
 		...attributes
-	}: HTMLButtonAttributes & { children: Snippet; element?: HTMLButtonElement } = $props();
+	}: HTMLButtonAttributes & {
+		children: Snippet;
+		element?: HTMLButtonElement;
+		variant?: 'outline' | 'primary';
+	} = $props();
 </script>
 
 <button
@@ -14,7 +19,7 @@
 	bind:this={element}
 	type="button"
 	class={['bu-action settings-action', className]}
-	data-variant="outline"
+	data-variant={variant}
 >
 	{@render children()}
 </button>

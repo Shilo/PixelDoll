@@ -538,9 +538,34 @@ test('a shared custom category appears before adoption and stays after wearing a
 	await expect(sharedTiles.first()).toBeVisible();
 	await reloadStudio(page);
 	await expect(sharedTiles.first()).toBeVisible();
+	await page.setViewportSize({ width: 745, height: 600 });
 	await openGlobalVisibility(page);
 	await expect(allCharacters).not.toBeChecked();
+	const wardrobeSwitch = globalSettings.getByRole('switch', {
+		name: `Hide shared items in ${longName}'s wardrobe`,
+		exact: true
+	});
+	const wardrobeLabel = globalSettings.getByText(`In ${longName}'s wardrobe`, { exact: true });
+	for (const viewport of [
+		{ width: 745, height: 600 },
+		{ width: 390, height: 844 }
+	]) {
+		await page.setViewportSize(viewport);
+		await expect(wardrobeSwitch).toBeInViewport({ ratio: 1 });
+		await expect(wardrobeLabel).toHaveCSS('text-overflow', 'ellipsis');
+		await expect
+			.poll(() => wardrobeLabel.evaluate((label) => label.scrollWidth > label.clientWidth))
+			.toBe(true);
+		await expect
+			.poll(() =>
+				globalSettings
+					.locator('.sheet-body')
+					.evaluate((body) => body.scrollWidth - body.clientWidth)
+			)
+			.toBe(0);
+	}
 	await globalSettings.getByRole('button', { name: 'Close', exact: true }).click();
+	await page.setViewportSize(desktop);
 	await openSettings();
 	await expect(thisCharacter).toBeEnabled();
 	await expect(thisCharacter).not.toBeChecked();

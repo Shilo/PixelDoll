@@ -13,6 +13,7 @@
 		"edited": "之前恢复的副本已被编辑。再次恢复会另行添加一份副本。",
 		"keepArchived": "保留已归档的数据以便日后下载",
 		"restoreHint": "角色库中的任何内容都不会被替换或删除。",
+		"dropHint": "将备份 ZIP 拖放到此页面的任意位置。",
 		"restoreArchivedHint": "只有勾选此选项，才会保留归档数据供下载。",
 		"restore": "恢复",
 		"archivedHint": "有 {count} 条旧记录仅供下载。",
@@ -42,6 +43,7 @@
 	},
 	"settings": {
 		"reset": {
+			"allAction": "重置所有设置",
 			"pageAction": "重置此页面",
 			"pageTitle": "重置“{page}”设置？",
 			"pageDescription": "仅将此页面的偏好设置恢复为默认值。",

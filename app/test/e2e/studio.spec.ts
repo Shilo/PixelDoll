@@ -240,8 +240,9 @@ test('Settings About opens a page with build details and copies them', async ({ 
 	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
 		.baseURL!;
 	await page.goto(dev);
+	await page.setViewportSize({ width: 844, height: 390 });
 	await openSettings();
-	await settings.getByRole('button', { name: 'Settings', exact: true }).click();
+	await expect(settings.getByRole('button', { name: 'Settings', exact: true })).toHaveCount(0);
 	await about.click();
 	await expect(settings.getByText(/^Version \d+\.\d+\.\d+-dev$/)).toBeVisible();
 	await expect(settings.getByText('Development', { exact: true })).toBeVisible();
@@ -513,10 +514,17 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	page
 }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	const longPlan = 'EnterpriseWorkspace'.repeat(8);
 	await page.route('https://api.pixellab.ai/v2/balance', (route) =>
 		route.fulfill({
 			json: {
-				subscription: { type: 'generations', status: 'active', generations: 5, total: 10 },
+				subscription: {
+					type: 'generations',
+					status: 'active',
+					plan: longPlan,
+					generations: 5,
+					total: 10
+				},
 				credits: { usd: 0 }
 			}
 		})
@@ -599,6 +607,15 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 			.locator(selector)
 			.first()
 			.evaluate((element) => element.getBoundingClientRect().height);
+	const fits = async (section: string) => {
+		await expect
+			.poll(
+				() =>
+					settings.locator('.sheet-body').evaluate((body) => body.scrollWidth - body.clientWidth),
+				{ message: `${section} must fit the Settings pane` }
+			)
+			.toBe(0);
+	};
 	const scoped = [
 		['Wardrobe', 'wardrobe'],
 		['Developer', 'developer'],
@@ -607,6 +624,7 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	] as const;
 
 	// Every page keeps one header and panel heading size, whether or not it has a Reset.
+	await page.setViewportSize({ width: 660, height: 600 });
 	const sizes = new Set<string>();
 	for (const name of [
 		'PixelLab',
@@ -619,6 +637,11 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 	]) {
 		await nav.getByRole('button', { name, exact: true }).click();
 		await expect(settings.getByRole('heading', { name, exact: true, level: 3 })).toBeVisible();
+		if (name === 'PixelLab')
+			await expect(settings.getByText(longPlan, { exact: true })).toBeVisible();
+		if (name === 'Export')
+			await expect(settings.getByRole('combobox', { name: 'Default export target' })).toBeVisible();
+		await fits(name);
 		const resettable = scoped.some(([label]) => label === name);
 		await expect(pageReset).toHaveCount(resettable ? 1 : 0);
 		if (resettable) await expect(pageReset).toBeEnabled();
@@ -626,6 +649,7 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		sizes.add(`${await height('.sheet-head')}/${await height('.settings-panel-heading')}`);
 	}
 	expect([...sizes]).toHaveLength(1);
+	await page.setViewportSize({ width: 1280, height: 800 });
 
 	// Each page Reset changes only its own preferences, then stays in place but disabled.
 	let expected: Record<string, unknown> = { ...changed };
@@ -723,23 +747,79 @@ test('Settings resets restore only their scope, keep work and the PixelLab key, 
 		expect((await option.boundingBox())?.height).toBeGreaterThanOrEqual(44);
 	}
 
-	// Compact pages move page Reset into the header, which keeps one height on every page.
-	await page.setViewportSize({ width: 390, height: 844 });
+	await page.setViewportSize({ width: 320, height: 740 });
 	const back = settings.getByRole('button', { name: 'Settings', exact: true });
+	const compactPageReset = settings.getByRole('button', {
+		name: 'Reset this page...',
+		exact: true
+	});
+	const compactResetAll = settings.getByRole('button', {
+		name: 'Reset all settings...',
+		exact: true
+	});
+	const header = settings.locator('.sheet-head');
+	await expect(header.getByRole('button', { name: /Reset|Forget PixelLab key/ })).toHaveCount(0);
+	await expect(resetAll).toHaveCount(0);
 	expect((await back.boundingBox())?.width).toBeGreaterThanOrEqual(44);
 	await back.click();
-	await expect(pageReset).toHaveCount(0);
-	await expect(resetAll).toBeDisabled();
+	await expect(compactPageReset).toHaveCount(0);
+	await expect(compactResetAll).toBeDisabled();
+	await fits('Settings index');
 	const compactHeights = new Set([await height('.sheet-head')]);
-	for (const name of ['PixelLab', 'Appearance', 'Library', 'Export']) {
+	for (const name of [
+		'PixelLab',
+		'Appearance',
+		'Wardrobe',
+		'Library',
+		'Export',
+		'Developer',
+		'About'
+	]) {
 		await nav.getByRole('button', { name, exact: true }).click();
-		const resettable = name === 'Appearance' || name === 'Export';
-		await expect(pageReset).toHaveCount(resettable ? 1 : 0);
-		if (resettable) await expect(pageReset).toBeDisabled();
+		await fits(name);
+		const resettable = ['Appearance', 'Wardrobe', 'Export', 'Developer'].includes(name);
+		await expect(header.getByRole('button', { name: /Reset|Forget PixelLab key/ })).toHaveCount(0);
+		await expect(compactResetAll).toHaveCount(0);
+		await expect(compactPageReset).toHaveCount(resettable ? 1 : 0);
+		if (resettable) await expect(compactPageReset).toBeDisabled();
 		compactHeights.add(await height('.sheet-head'));
 		await back.click();
 	}
 	expect([...compactHeights]).toHaveLength(1);
+
+	await nav.getByRole('button', { name: 'Appearance', exact: true }).click();
+	await settings.getByRole('radio', { name: 'Light', exact: true }).check();
+	await page.evaluate(async () => {
+		const developerPath = '/src/studio/developerMode.svelte.ts';
+		(await import(developerPath)).setDeveloperMode(true);
+	});
+	const appearanceConfirmation = page.getByRole('alertdialog', {
+		name: 'Reset Appearance settings?'
+	});
+	await expect(compactPageReset).toBeEnabled();
+	expect((await compactPageReset.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+	await compactPageReset.click();
+	await expect(
+		appearanceConfirmation.getByRole('button', { name: 'Cancel', exact: true })
+	).toBeFocused();
+	await page.keyboard.press('Escape');
+	await expect(appearanceConfirmation).toHaveCount(0);
+	await expect(compactPageReset).toBeFocused();
+	await expect.poll(saved).toEqual({ ...allDefaults, theme: 'light', developer: '1' });
+	await compactPageReset.click();
+	await appearanceConfirmation
+		.getByRole('button', { name: 'Reset this page', exact: true })
+		.click();
+	await expect(compactPageReset).toBeDisabled();
+	await expect.poll(saved).toEqual({ ...allDefaults, developer: '1' });
+	await back.click();
+	await expect(compactResetAll).toBeEnabled();
+	expect((await compactResetAll.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+	await compactResetAll.click();
+	await confirmation.getByRole('button', { name: 'Reset settings', exact: true }).click();
+	await expect(compactResetAll).toBeDisabled();
+	await expect(settings.getByRole('searchbox', { name: 'Search settings' })).toBeFocused();
+	await expect.poll(saved).toEqual(allDefaults);
 });
 
 for (const [width, height] of [

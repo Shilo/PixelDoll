@@ -45,9 +45,7 @@
 		busy,
 		libraryBusy = $bindable(false),
 		reviewingBackup = $bindable(false),
-		resetScope = $bindable(null),
-		forgetRevision = $bindable(-1),
-		query = $bindable('')
+		resetScope = $bindable(null)
 	}: {
 		exportSettings: Snippet<[string | undefined]>;
 		openExport: () => void;
@@ -55,9 +53,9 @@
 		libraryBusy?: boolean;
 		reviewingBackup?: boolean;
 		resetScope?: ResetScope | null;
-		forgetRevision?: number;
-		query?: string;
 	} = $props();
+	let forgetRevision = $state(-1);
+	let query = $state('');
 	const themeLabel = $derived(t('settings.theme'));
 	const appearanceOptions = $derived([
 		{ value: 'dark', label: t('settings.dark') },
@@ -320,6 +318,9 @@
 						{/each}
 					{/each}
 				</nav>
+				{#if canReset && !active}
+					{@render compactReset('all')}
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -425,9 +426,19 @@
 			{:else}
 				<PixelLabSettings bind:forgetRevision />
 			{/if}
+			{#if canReset && isResettableSection(active.id)}
+				{@render compactReset(active.id)}
+			{/if}
 		{/if}
 	</section>
 </div>
+
+{#snippet compactReset(scope: ResetScope)}
+	<div class="compact-reset">
+		<hr class="bu-separator" />
+		<SettingsResetButton {scope} labeled disabled={busy} onclick={() => (resetScope = scope)} />
+	</div>
+{/snippet}
 
 {#if resetScope}
 	<ConfirmDialog
@@ -461,12 +472,19 @@
 		gap: 8px;
 		min-block-size: var(--ctl-h);
 	}
+	.compact-reset {
+		display: none;
+	}
 	@media (max-width: 659px), (max-height: 519px) {
 		.settings-panel-heading {
 			display: contents;
 		}
 		.wide-reset {
 			display: none;
+		}
+		.compact-reset {
+			display: grid;
+			gap: 4px;
 		}
 	}
 	.reset-description {
@@ -484,13 +502,24 @@
 		width: min(100%, 560px);
 		height: 100dvh;
 	}
+	:global(dialog.settings-sheet .sheet-head > .done) {
+		max-inline-size: 100%;
+		height: auto;
+		min-height: var(--ctl-h);
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
 	.settings-content,
 	.settings-index,
 	.settings-panel {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		align-content: start;
 		min-width: 0;
 		gap: 12px;
+	}
+	.settings-content {
+		overflow-wrap: anywhere;
 	}
 	.settings-index input {
 		width: 100%;
@@ -508,18 +537,18 @@
 	}
 	.settings-content :global(.row-name) {
 		white-space: normal;
-		overflow-wrap: anywhere;
 	}
 	.export-character-label {
 		display: flex;
 		flex: 1;
 		min-inline-size: 0;
-		white-space: pre;
+		white-space: pre-wrap;
 	}
 	.export-character-label bdi {
 		min-inline-size: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	nav button[aria-current='page'] {
 		font-weight: 700;

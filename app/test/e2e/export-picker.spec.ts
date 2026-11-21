@@ -139,8 +139,8 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		exportDialog.locator('.library-task').first().locator(':scope > :first-child')
 	).toHaveText('Back up library');
 	await expect(
-		exportDialog.locator('.library-task').nth(1).locator(':scope > button + p')
-	).toHaveText('Nothing in your library will be replaced or deleted.');
+		exportDialog.getByText('Nothing in your library will be replaced or deleted.', { exact: true })
+	).toBeVisible();
 	const evidence = process.env.PIXELDOLL_WORKSPACE_EVIDENCE;
 	if (evidence)
 		await exportDialog.screenshot({
@@ -176,7 +176,8 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	const waitDownload = page.waitForEvent('download');
 	await backUp.click();
 	const download = await waitDownload;
-	const backupFiles = await unzip(await readFile((await download.path())!));
+	const backupBytes = await readFile((await download.path())!);
+	const backupFiles = await unzip(backupBytes);
 	const backupText = new TextDecoder().decode(backupFiles.get('backup.json'));
 	expect(backupText).not.toMatch(/fake-workspace-test-key|diagnostic-private-body/);
 	expect(
@@ -193,7 +194,12 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		await recipientPage.getByRole('button', { name: 'More options', exact: true }).click();
 		await recipientPage.getByRole('button', { name: 'Settings...', exact: true }).click();
 		const recipientSettings = recipientPage.getByRole('dialog', { name: 'Settings' });
-		await recipientSettings.getByRole('button', { name: 'Settings', exact: true }).click();
+		await expect(
+			recipientSettings.getByRole('button', { name: 'PixelLab', exact: true })
+		).toBeVisible();
+		await expect(
+			recipientSettings.getByRole('button', { name: 'Settings', exact: true })
+		).toHaveCount(0);
 		await recipientSettings.getByRole('button', { name: 'Library', exact: true }).click();
 		const picker = recipientPage.locator('input[type=file][accept=".zip,application/zip"]');
 		const restoreButton = recipientSettings.getByRole('button', { name: 'Restore from backup' });
@@ -204,7 +210,32 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		await expect(recipientSettings).toBeVisible();
 		await expect(restoreButton).toBeFocused();
 		const review = recipientPage.getByRole('region', { name: 'Review backup' });
-		await picker.setInputFiles((await download.path())!);
+		const dropHint = 'Drop a backup ZIP anywhere on this page.';
+		const libraryHeader = recipientSettings.locator('.sheet-head');
+		await expect(restoreButton).toHaveAccessibleDescription(dropHint);
+		const transfer = await recipientPage.evaluateHandle(
+			({ bytes, name }) => {
+				const data = new DataTransfer();
+				data.items.add(new File([new Uint8Array(bytes)], name, { type: 'application/zip' }));
+				return data;
+			},
+			{ bytes: [...backupBytes], name: download.suggestedFilename() }
+		);
+		await libraryHeader.dispatchEvent('dragenter', { dataTransfer: transfer });
+		await expect(restoreButton).toHaveAttribute('data-variant', 'primary');
+		await expect(restoreButton).toHaveAccessibleDescription('Release to open');
+		await libraryHeader.dispatchEvent('dragleave', { dataTransfer: transfer });
+		await expect(restoreButton).toHaveAttribute('data-variant', 'outline');
+		await expect(restoreButton).toHaveAccessibleDescription(dropHint);
+		await transfer.evaluate((data) => data.items.add(new File([], 'extra.zip')));
+		await restoreButton.dispatchEvent('drop', { dataTransfer: transfer });
+		await expect(recipientSettings.getByRole('alert')).toHaveText(
+			'Choose one backup ZIP, not a folder or multiple files.'
+		);
+		await expect(review).toHaveCount(0);
+		await transfer.evaluate((data) => data.items.remove(1));
+		await libraryHeader.dispatchEvent('drop', { dataTransfer: transfer });
+		await transfer.dispose();
 		await expect(review).toBeFocused();
 		await expect(review.getByText('Characters to add')).toBeVisible();
 		await expect(
@@ -3579,7 +3610,6 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await noDisabledHover(page, disabledRedo);
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
-	await settings.getByRole('button', { name: 'Settings', exact: true }).click();
 	await settings.getByRole('button', { name: 'Developer', exact: true }).click();
 	await settings.getByRole('switch', { name: 'Developer mode', exact: true }).check();
 	await settings.getByRole('button', { name: 'Inspect all API calls', exact: true }).click();

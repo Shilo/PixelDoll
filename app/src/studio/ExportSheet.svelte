@@ -7,9 +7,6 @@
 	import Sheet from './Sheet.svelte';
 	import SettingsContent from './SettingsContent.svelte';
 	import SettingsHeader from './SettingsHeader.svelte';
-	import SettingsResetButton from './SettingsResetButton.svelte';
-	import { getKeyRevision } from '../lib/app.svelte.ts';
-	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import {
 		closeSettingsExport,
 		openSettings,
@@ -176,8 +173,6 @@
 	let pendingWrites = $state(0);
 	const saving = $derived(pendingWrites > 0);
 	let libraryBusy = $state(false);
-	let forgetRevision = $state(-1);
-	let query = $state('');
 	const settingsBusy = $derived(saving || libraryBusy);
 	let writeSequence = 0,
 		publishedSequence = 0;
@@ -368,7 +363,6 @@
 		};
 	});
 	async function navigate() {
-		query = '';
 		if (returningToExport) ui.sheet = 'export';
 		else openSettings('export');
 		await tick();
@@ -787,37 +781,19 @@
 			{:else}<span></span>{/if}
 		{/snippet}
 		{#snippet trailing()}
-			{#snippet closeButton()}
-				<button
-					class="bu-action btn plain link done"
-					data-variant="quiet"
-					aria-label={t(settings && !returningToExport ? 'common.close' : 'export.sheet.close')}
-					disabled={settingsBusy}
-					onclick={close}><X size={18} aria-hidden="true" /></button
-				>
-			{/snippet}
-			{#if settings && settingsNavigation.section === 'pixellab' && !workspaceCopy && !query.trim()}
-				<div class="export-settings-end">
-					<div class="compact-reset">
-						<SettingsResetButton
-							scope="pixellab"
-							disabled={settingsBusy}
-							onclick={() => (forgetRevision = getKeyRevision())}
-						/>
-					</div>
-					{@render closeButton()}
-				</div>
-			{:else}
-				{@render closeButton()}
-			{/if}
+			<button
+				class="bu-action btn plain link done"
+				data-variant="quiet"
+				aria-label={t(settings && !returningToExport ? 'common.close' : 'export.sheet.close')}
+				disabled={settingsBusy}
+				onclick={close}><X size={18} aria-hidden="true" /></button
+			>
 		{/snippet}
 		{#key settings}
 			{#if settings}
 				<SettingsContent
 					busy={settingsBusy}
 					bind:libraryBusy
-					bind:forgetRevision
-					bind:query
 					{exportSettings}
 					openExport={navigate}
 				/>
@@ -1077,25 +1053,16 @@
 {/if}
 
 <style>
-	.export-settings-end {
-		display: flex;
-		align-items: center;
-		justify-content: end;
-		min-width: 0;
-	}
-	.compact-reset {
-		display: none;
-	}
-	@media (max-width: 659px), (max-height: 519px) {
-		.compact-reset {
-			display: flex;
-		}
-	}
 	:global(dialog.export-sheet) {
 		height: min(680px, calc(100dvh - 32px));
 	}
 	:global(dialog.export-sheet .sheet-head) {
 		min-height: 44px;
+	}
+	.export-back-label {
+		min-inline-size: 0;
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	@media (max-width: 420px) {
 		.export-back-label {
@@ -1116,6 +1083,7 @@
 	}
 	.export-format {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 4px;
 	}
 	@keyframes export-back {

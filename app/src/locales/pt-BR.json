@@ -13,6 +13,7 @@
 		"edited": "Uma cópia restaurada anteriormente foi editada. Restaurar de novo adiciona uma cópia separada.",
 		"keepArchived": "Manter dados arquivados para baixar depois",
 		"restoreHint": "Nada na sua biblioteca será substituído ou excluído.",
+		"dropHint": "Solte um ZIP de backup em qualquer lugar desta página.",
 		"restoreArchivedHint": "Os dados arquivados só serão mantidos para download se você marcar a caixa.",
 		"restore": "Restaurar",
 		"archivedHint": "Registros antigos disponíveis apenas para baixar: {count}.",
@@ -42,6 +43,7 @@
 	},
 	"settings": {
 		"reset": {
+			"allAction": "Redefinir todas as configurações",
 			"pageAction": "Redefinir esta página",
 			"pageTitle": "Redefinir as configurações de “{page}”?",
 			"pageDescription": "Restaura apenas as configurações desta página aos valores padrão.",
