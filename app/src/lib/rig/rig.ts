@@ -58,7 +58,12 @@ export interface ClipSource {
 	provenance: number[]; // indexes into the base item's provenance
 }
 export interface RigAnimation {
+	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
+	/** Display name the user gave the move; absent = derived from `id`. */
+	name?: string;
+	/** Game-facing ID in exports (`play(id)`); absent = `id`. */
+	exportId?: string;
 	/** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
 	directions?: DirectionName[];
 	cells: number;
@@ -160,10 +165,21 @@ export async function baseHashOf(
 const ID = /^[a-z0-9][a-z0-9_-]*$/;
 export const validAnimationId = (id: string): boolean => ID.test(id);
 
-/** Playback preferences do not change the artwork inputs of a pending generation or recovery. */
+/** The rig without move names and export IDs, which never change artwork or fitting. */
+export const rigContent = (rig: Rig): Rig => ({
+	...rig,
+	animations: rig.animations.map(({ name: _name, exportId: _exportId, ...animation }) => animation)
+});
+
+/** Playback preferences and move names do not change the artwork inputs of a pending generation or recovery. */
 export const rigArtworkVersion = (rig: Rig, character: unknown): string =>
 	stableStringify({
-		rig: { ...rig, animations: rig.animations.map(({ loop: _loop, ...animation }) => animation) },
+		rig: {
+			...rig,
+			animations: rig.animations.map(
+				({ loop: _loop, name: _name, exportId: _exportId, ...animation }) => animation
+			)
+		},
 		character
 	});
 

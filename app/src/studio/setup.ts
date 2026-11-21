@@ -1,7 +1,8 @@
 // Paid setup is explicit, resumable through the same queue as creation, and commits only when every measurement exists.
 import { b64, joints, latestOutcome, provOf, run, type Progress } from './create.ts';
 import { attachImportedRig, setupPlan, type SetupPlan } from '../lib/rig/setup.ts';
-import { DIRECTIONS, cellHash, retainPlaybackChoices, type Keypoint } from '../lib/rig/rig.ts';
+import { DIRECTIONS, cellHash, type Keypoint } from '../lib/rig/rig.ts';
+import { retainMoveChoices } from '../lib/store/identity.ts';
 import { skeletonInput } from '../lib/rig/estimate.ts';
 import { png, routes } from '../lib/pixellab/routes.ts';
 import { PLAN_JOB_LIMITS } from '../lib/pixellab/plans.ts';
@@ -182,7 +183,7 @@ export async function setupCharacter(
 				'The character changed during setup. Its current work has been kept.',
 				'setup.errors.characterChanged'
 			);
-		retainPlaybackChoices(result.manifest.rig, current.manifest.rig);
+		retainMoveChoices(result.manifest.rig, current.manifest.rig);
 		current.manifest.rig = result.manifest.rig;
 		current.manifest.items.find((i) => i.id === current.manifest.rig.baseItem)!.provenance =
 			result.manifest.items.find((i) => i.id === result.manifest.rig.baseItem)!.provenance;

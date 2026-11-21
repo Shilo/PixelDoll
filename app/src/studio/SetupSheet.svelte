@@ -35,7 +35,7 @@
 	const camera = $derived(
 		m?.rig.view && getLocale() !== 'en' ? cameraMessage(m.rig.view) : undefined
 	);
-	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
+	const moveRefs = $derived(m?.rig.animations ?? []);
 	let rec = $state.raw<StoredProject | null>(null),
 		plan = $state.raw<SetupPlan | null>(null);
 	const draft = formDrafts.setup?.projectId === doc.id ? formDrafts.setup : undefined;
@@ -174,7 +174,7 @@
 					disabled={plan?.fixedRest}
 					><option value="">{t('setup.chooseAutomatically')}</option
 					>{#each m.rig.animations as a (a.id)}<option value={a.id}
-							>{displayMove(a.id, moveIds)}</option
+							>{displayMove(a.id, moveRefs)}</option
 						>{/each}</select
 				><span class="faint small"
 					>{plan?.fixedRest ? t('setup.fixedRest') : t('setup.chooseRest')}</span

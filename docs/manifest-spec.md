@@ -32,8 +32,15 @@ Animation `loop` records playback in exported files. Studio Export applies the u
   be reserved Windows path names. Existing implicit IDs remain usable until explicitly edited; newly created items get a
   portable default. Item Export IDs must be unique within the character, including the body. Choose different
   character Export IDs for distinct characters that share a game project. `name` is a label, not a game key or a prompt.
+- **Moves** (`rig.animations[]`) may carry a display `name` and an `exportId` with the same rules, unique among the
+  character's moves. The Default move always exports as `default`, and no other move can take it. A new move whose ID
+  another move already exports as gets the first free `_2`, `_3`… Export ID. Play-once export settings follow move
+  Export IDs. **Outfits** have no separate Export ID: renaming one changes `presets[].id` (never `current`), since
+  nothing else stores it.
 - The editable `project.json` preserves internal IDs and Export IDs separately. In `manifest.json`, game-facing item IDs
-  replace internal IDs consistently in equipment, presets, material owners and generated layer paths. Runtime callers use
+  replace internal IDs consistently in equipment, presets, material owners and generated layer paths, and move Export
+  IDs replace internal move IDs in every move-keyed field (frames, sheets, keypoints, depth exceptions, coverage and
+  records). PixelLab provenance such as `source.template_animation_id` keeps the PixelLab name. Runtime callers use
   those exported IDs directly. Changing an Export ID can require updating existing game references; changing a display
   name does not. PixelLab character, request and job identifiers are unaffected.
 - Editable imports preserve the character Export ID, with a warning when another saved character uses it. Phaser isolates

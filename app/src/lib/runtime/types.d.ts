@@ -325,7 +325,12 @@ export interface ClipSource {
 }
 
 export interface RigAnimation {
+	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
+	/** Display name the user gave the move; absent = derived from `id`. */
+	name?: string;
+	/** Game-facing ID in exports (`play(id)`); absent = `id`. */
+	exportId?: string;
 	/** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
 	directions?: DirectionName[];
 	cells: number;

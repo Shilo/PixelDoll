@@ -5,7 +5,7 @@ import { cutAt, layerFrame } from '../compose/compose.ts';
 import { decodePng, makeImg, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { flipH } from '../rig/mirror.ts';
-import { cellHash, cellKey } from '../rig/rig.ts';
+import { cellHash, cellKey, rigContent } from '../rig/rig.ts';
 import { variantOf, variantRampOf } from '../dress/dress.ts';
 import { putItem, slotLadder } from '../items/items.ts';
 import { retargetLayerDepth } from '../items/slots.ts';
@@ -581,7 +581,7 @@ async function blobsOf(item: Item, made: (hash: Sha256) => Img | undefined) {
 }
 const body = (m: Manifest) => {
 	const item = m.items.find((entry) => entry.id === m.rig.baseItem);
-	return stableStringify({ rig: m.rig, body: item && itemContent(item) });
+	return stableStringify({ rig: rigContent(m.rig), body: item && itemContent(item) });
 };
 
 /** Cells an exact copy lacks here that its source item now covers on an identical body (moves the source gained after the

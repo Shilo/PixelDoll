@@ -5,7 +5,7 @@ import { lazy } from '../lib/lazy.ts';
 import { readExportSettings } from '../lib/store/export-settings.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import type { Manifest, Project } from '../lib/store/manifest.ts';
-import { itemExportId } from '../lib/store/identity.ts';
+import { itemExportId, moveExportId } from '../lib/store/identity.ts';
 import { retainMoveMetadata } from '../lib/rig/moves.ts';
 import { moveLabel } from './model.ts';
 import { doc, store, readCharacterForExport, toast } from './state.svelte.ts';
@@ -46,7 +46,8 @@ export async function downloadFrames(itemId: string, anim: string) {
 			lazy(() => import('../lib/image/pngraw.ts')),
 			lazy(() => import('../lib/store/zip.ts'))
 		]);
-		const stem = `${characterZipId(m)}-${item.id === m.rig.baseItem ? 'body' : itemExportId(item)}-${fileSlug(anim)}`;
+		const move = m.rig.animations.find((entry) => entry.id === anim);
+		const stem = `${characterZipId(m)}-${item.id === m.rig.baseItem ? 'body' : itemExportId(item)}-${fileSlug(move ? moveExportId(move) : anim)}`;
 		const files = await Promise.all(
 			frameSheets(p, itemId, anim).map(async ({ layerId, image }) => ({
 				name: `${stem}${layerSuffix(item, layerId)}.png`,
@@ -180,10 +181,9 @@ export function downloadOutfitZip(outfitId: string) {
 
 export function downloadMoveZip(moveId: string) {
 	const projectId = doc.id;
-	const label = moveLabel(
-		moveId,
-		store.project?.manifest.rig.animations.map((move) => move.id)
-	);
+	const moves = store.project?.manifest.rig.animations ?? [];
+	const label = moveLabel(moveId, moves);
+	const move = moves.find((entry) => entry.id === moveId);
 	return download(`move:${projectId}/${moveId}`, label, async () => {
 		const { project, look, record } = await source(projectId);
 		const { moveProject } = await lazy(() => import('../lib/export/build.ts'));
@@ -193,7 +193,7 @@ export function downloadMoveZip(moveId: string) {
 				look,
 				record
 			})),
-			name: `${characterZipId(project.manifest)}-${fileSlug(moveId)}`
+			name: `${characterZipId(project.manifest)}-${fileSlug(move ? moveExportId(move) : moveId)}`
 		};
 	});
 }

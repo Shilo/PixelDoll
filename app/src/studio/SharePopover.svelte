@@ -48,7 +48,7 @@
 	let feedback = $state<(() => string) | null>(null);
 	let viewportWidth = $state(innerWidth);
 	let viewportHeight = $state(innerHeight);
-	const moveIds = $derived(store.project?.manifest.rig.animations.map((a) => a.id) ?? []);
+	const moveRefs = $derived(store.project?.manifest.rig.animations ?? []);
 	let serial = 0;
 	let rememberedId = '';
 	const availability = $derived.by(() => {
@@ -118,7 +118,7 @@
 			.map(({ move, direction }) =>
 				english
 					? `${move.replaceAll('-', ' ')} ${directionLabel(direction)}`
-					: `${displayMove(move, moveIds)} ${displayDirection(direction)}`
+					: `${displayMove(move, moveRefs)} ${displayDirection(direction)}`
 			);
 		const more = missing.length - 3;
 		return t(more > 0 ? 'share.omittedMore' : 'share.omitted', {
@@ -323,7 +323,7 @@
 					onchange={() => (index = 0)}
 				>
 					{#each store.project?.manifest.rig.animations ?? [] as animation (animation.id)}<option
-							value={animation.id}>{displayMove(animation.id, moveIds)}</option
+							value={animation.id}>{displayMove(animation.id, moveRefs)}</option
 						>{/each}
 					<option value={ALL_MOVES}>{t('share.allMoves')}</option>
 				</select>

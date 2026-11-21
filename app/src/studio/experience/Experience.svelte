@@ -76,7 +76,7 @@
 	let viewportWidth = $state(1280),
 		viewportHeight = $state(720);
 	const m = $derived(store.project?.manifest);
-	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
+	const moveRefs = $derived(m?.rig.animations ?? []);
 	const selectedMove = $derived(m?.rig.animations.find((animation) => animation.id === ui.anim));
 	// A shown mount has its own gait, so Play/Pause stays useful even over a single-frame move.
 	const canPlay = $derived(
@@ -774,11 +774,11 @@
 						><span class="sr">{t('common.move')}</span><select
 							class="bu-select"
 							data-variant="quiet"
-							title={displayMove(ui.anim, moveIds)}
+							title={displayMove(ui.anim, moveRefs)}
 							bind:value={ui.anim}
 							onchange={() => (ui.frame = 0)}
 							>{#each m.rig.animations as a}<option value={a.id}
-									>{displayMove(a.id, moveIds)}</option
+									>{displayMove(a.id, moveRefs)}</option
 								>{/each}</select
 						></label
 					>
@@ -843,7 +843,7 @@
 							<div class="menu-surface bu-popover-surface bu-floating">
 								<p class="menu-sec">
 									{t('experience.missingFramesForMove', {
-										move: displayMove(missing.clip, moveIds),
+										move: displayMove(missing.clip, moveRefs),
 										direction: displayDirection(missing.direction)
 									})}
 								</p>
