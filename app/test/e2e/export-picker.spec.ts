@@ -180,7 +180,7 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		await recipientContext.route('https://*.pixellab.ai/**', (route) => route.abort());
 		await recipientContext.addInitScript(() => localStorage.setItem('pixeldoll.agentKey', 'off'));
 		const recipientPage = await recipientContext.newPage();
-		await openStudio(recipientPage, dev);
+		await recipientPage.goto(dev);
 		await recipientPage.getByRole('button', { name: 'Have a backup? Restore it' }).click();
 		const picker = recipientPage.locator('input[type=file][accept=".zip,application/zip"]');
 		const review = recipientPage.getByRole('region', { name: 'Review backup' });
