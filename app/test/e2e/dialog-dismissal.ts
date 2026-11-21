@@ -184,10 +184,19 @@ test('intentional dialog dismissal respects nested API popovers and bare dialog 
 	const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 	const input = dialog.getByRole('textbox', { name: 'API key', exact: true });
 	await input.fill('unsaved nested dialog regression');
-	const outside = (await backdrop(dialog))!;
+	const outside = await dialog.evaluate((element) => ({
+		x: 1,
+		y: element.getBoundingClientRect().top + element.clientHeight / 2
+	}));
 	await dialog.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
 	const peek = dialog.locator('[popover]:popover-open');
 	await expect(peek).toHaveAttribute('data-positioned', '');
+	expect(
+		await dialog.evaluate(
+			(element, { x, y }) => document.elementFromPoint(x, y) === element,
+			outside
+		)
+	).toBe(true);
 	await mouseDrag(page, await center(peek.locator('.peek-head')), outside);
 	await expect(dialog).toBeVisible();
 	await expect(input).toHaveValue('unsaved nested dialog regression');

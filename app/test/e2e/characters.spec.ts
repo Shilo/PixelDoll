@@ -2132,6 +2132,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck();
 	await page.getByRole('button', { name: 'Import character', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Library hero');
+	await expect(page.locator('.world-loading')).toBeHidden();
 	await page.locator('.project-btn').click();
 	await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click();
 	// Queue state is persisted by the real application, and deletion must refuse in-flight paid work.
@@ -2145,7 +2146,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 				t.objectStore('projects').put(
 					{
 						id: 'studio-create:rig-fixture',
-						spec: { name: 'Pending fixture', projectId: 'rig-fixture' },
+						spec: { name: 'Pending fixture', projectId: 'rig-fixture', directions: [] },
 						status: 'running',
 						requestText: 5
 					},

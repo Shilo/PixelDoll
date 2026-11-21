@@ -159,7 +159,8 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		const other = await db.get('projects', otherId);
 		const garment = other.manifest.items.find((entry: { id: string }) => entry.id === item);
 		const missing = garment.dressed.south;
-		garment.dressed.south = original.dressed.south;
+		if (original.dressed) garment.dressed = original.dressed;
+		else delete garment.dressed;
 		other.manifest.name = 'Workspace Beta';
 		await db.put('projects', otherId, other);
 		return missing as string;
@@ -200,8 +201,8 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 			const dbPath = '/src/lib/store/db.ts';
 			const db = await import(dbPath);
 			const saved = await db.get('projects', otherId);
-			saved.manifest.items.find((entry: { id: string }) => entry.id === item).dressed.south =
-				missingDressed;
+			const garment = saved.manifest.items.find((entry: { id: string }) => entry.id === item);
+			garment.dressed = { ...garment.dressed, south: missingDressed };
 			await db.put('projects', otherId, saved);
 		},
 		{ ...sample, missingDressed }
@@ -224,8 +225,8 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 					move: ui.anim,
 					direction: ui.dir,
 					frame: ui.frame,
-					screen: 'characters',
-					mode: 'preview',
+					screen: 'studio',
+					mode: 'topdown',
 					tab: ui.tab,
 					theme: ui.theme
 				},
