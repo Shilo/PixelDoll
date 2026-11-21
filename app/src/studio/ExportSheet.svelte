@@ -164,6 +164,8 @@
 	);
 	let pendingWrites = $state(0);
 	const saving = $derived(pendingWrites > 0);
+	let libraryBusy = $state(false);
+	const settingsBusy = $derived(saving || libraryBusy);
 	let writeSequence = 0,
 		publishedSequence = 0;
 	let refreshAgain = false,
@@ -729,10 +731,10 @@
 		className="export-sheet"
 		onclose={() => (ui.sheet = null)}
 		cancel="common.close"
-		cancelDisabled={saving}
+		cancelDisabled={settingsBusy}
 		footer={settings ? undefined : exportFooter}
 	>
-		{#snippet heading()}{#if settings}<SettingsHeader busy={saving} />{/if}{/snippet}
+		{#snippet heading()}{#if settings}<SettingsHeader busy={settingsBusy} />{/if}{/snippet}
 		{#snippet leading()}
 			{#if !settings || returningToExport}
 				<button
@@ -740,7 +742,7 @@
 					data-variant="quiet"
 					bind:this={navigation}
 					aria-label={t(settings ? 'export.sheet.back' : 'export.sheet.settings')}
-					disabled={saving}
+					disabled={settingsBusy}
 					onclick={navigate}
 				>
 					{#if settings}<ChevronLeft size={16} aria-hidden="true" /><span class="export-back-label"
@@ -756,13 +758,13 @@
 				class="bu-action btn plain link done"
 				data-variant="quiet"
 				aria-label={t(settings && !returningToExport ? 'common.close' : 'export.sheet.close')}
-				disabled={saving}
+				disabled={settingsBusy}
 				onclick={() => (ui.sheet = null)}><X size={18} aria-hidden="true" /></button
 			>
 		{/snippet}
 		{#key settings}
 			{#if settings}
-				<SettingsContent busy={saving} {exportSettings} />
+				<SettingsContent busy={settingsBusy} bind:libraryBusy {exportSettings} />
 			{:else}
 				<div class="export-page" bind:this={content}>
 					{@render preferencesStatus()}

@@ -157,14 +157,17 @@ export const readCharacters = (hashes: readonly string[]) => characterBatch(hash
  *  and stored ones are kept as they are. */
 export const addCharacters = (
 	hashes: readonly string[],
-	add: (snapshot: CharacterSnapshot) => { records: Map<string, unknown>; blobs: Map<string, Blob> }
-) => characterBatch(hashes, add);
+	add: (snapshot: CharacterSnapshot) => { records: Map<string, unknown>; blobs: Map<string, Blob> },
+	opaque: ReadonlyMap<string, unknown> = new Map()
+) => characterBatch(hashes, add, opaque);
 
 async function characterBatch(
 	hashes: readonly string[],
-	add?: Parameters<typeof addCharacters>[1]
+	add?: Parameters<typeof addCharacters>[1],
+	opaque: ReadonlyMap<string, unknown> = new Map()
 ): Promise<CharacterSnapshot> {
 	if (copy) {
+		if (opaque.size) throw new Error('Cannot retain archives in a backup copy.');
 		const records = new Map(
 			[...copy.projects]
 				.filter(([key]) => key.startsWith('rig-'))
@@ -188,11 +191,12 @@ async function characterBatch(
 			range = IDBKeyRange.bound('rig-', 'rig.', false, true),
 			values = projects.getAll(range),
 			keys = projects.getAllKeys(range),
-			counts = hashes.map((hash) => [hash, images.count(hash)] as const);
+			counts = hashes.map((hash) => [hash, images.count(hash)] as const),
+			archives = [...opaque].map(([id, record]) => ({ id, record, found: projects.count(id) }));
 		const snapshot: CharacterSnapshot = { records: new Map(), stored: new Set() };
 		let error: unknown;
 		// Requests in one transaction complete in order: the last one finds all the others done.
-		(counts.at(-1)?.[1] ?? keys).onsuccess = () => {
+		(archives.at(-1)?.found ?? counts.at(-1)?.[1] ?? keys).onsuccess = () => {
 			try {
 				keys.result.forEach((key, index) =>
 					snapshot.records.set(String(key), values.result[index])
@@ -203,6 +207,7 @@ async function characterBatch(
 				for (const [hash, blob] of out.blobs)
 					if (!snapshot.stored.has(hash)) images.add(blob, hash);
 				for (const [id, record] of out.records) projects.add(record, id);
+				for (const { id, record, found } of archives) if (!found.result) projects.add(record, id);
 			} catch (failure) {
 				error = failure;
 				t.abort();

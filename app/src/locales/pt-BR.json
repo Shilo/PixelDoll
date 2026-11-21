@@ -26,7 +26,7 @@
 		"restoredName": "{name} (cópia restaurada)",
 		"incomplete": "Algumas artes estão ausentes ou são inválidas. Nada foi restaurado.",
 		"archiveInvalid": "Não foi possível preservar os dados arquivados com segurança.",
-		"archiveIncluded": "Registros antigos que você pode manter para baixar depois: {count}."
+		"backupOmissions": "O backup foi baixado, mas alguns personagens ou imagens estão ausentes."
 	},
 	"settings": {
 		"wardrobe": "Itens compartilhados do guarda-roupa",
@@ -2463,7 +2463,8 @@
 		"referenceHint": "Mostre apenas o item."
 	},
 	"workspaceCopy": {
-		"title": "Abrir cópia do espaço de trabalho",
+		"developerRequired": "Ative o modo de desenvolvedor nos ajustes para abrir um backup como cópia.",
+		"title": "Abrir backup como cópia",
 		"tabOnlyKey": "Esta conexão vale apenas nesta aba e não é salva.",
 		"useSavedKey": "Usar chave salva"
 	},

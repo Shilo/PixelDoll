@@ -4,11 +4,12 @@
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
-	import { Download, Info, KeyRound, Moon, Settings2, Shirt, Sun } from './icons.ts';
+	import { Archive, Download, Info, KeyRound, Moon, Settings2, Shirt, Sun } from './icons.ts';
 	import LanguagePicker from './LanguagePicker.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
 	import AboutSettings from './AboutSettings.svelte';
 	import PixelLabSettings from './PixelLabSettings.svelte';
+	import LibrarySettings from './LibrarySettings.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import {
 		settingsLabels,
@@ -17,8 +18,15 @@
 	} from './settingsNavigation.svelte.ts';
 	import { setTheme, toggleTheme, ui } from './state.svelte.ts';
 
-	let { exportSettings, busy }: { exportSettings: Snippet<[string | undefined]>; busy: boolean } =
-		$props();
+	let {
+		exportSettings,
+		busy,
+		libraryBusy = $bindable(false)
+	}: {
+		exportSettings: Snippet<[string | undefined]>;
+		busy: boolean;
+		libraryBusy?: boolean;
+	} = $props();
 	const themeLabel = $derived(t('settings.theme'));
 	const appearanceGroup = $props.id();
 	const appearanceOptions = $derived([
@@ -93,6 +101,19 @@
 			]
 		},
 		{
+			id: 'library',
+			label: settingsLabels.library,
+			icon: Archive,
+			entries: [
+				{ id: 'backup', label: 'librarySettings.backup' },
+				{
+					id: 'restore',
+					label: 'librarySettings.restoreFromBackup',
+					terms: ['librarySettings.emptyRestore']
+				}
+			]
+		},
+		{
 			id: 'about',
 			label: settingsLabels.about,
 			icon: Info,
@@ -111,7 +132,9 @@
 		icon: typeof Settings2;
 		entries: { id: string; label: WhisperKey; terms?: WhisperKey[]; names?: readonly string[] }[];
 	}[];
-	const available = sections.filter((section) => !workspaceCopy || section.id !== 'pixellab');
+	const available = sections.filter(
+		(section) => !workspaceCopy || (section.id !== 'pixellab' && section.id !== 'library')
+	);
 	const wide = new MediaQuery('(min-width: 660px) and (min-height: 520px)');
 	const active = $derived(
 		available.find(
@@ -280,6 +303,8 @@
 				</div>
 			{:else if active.id === 'export'}
 				{@render exportSettings(targetEntry)}
+			{:else if active.id === 'library'}
+				<LibrarySettings bind:busy={libraryBusy} />
 			{:else if active.id === 'about'}
 				<AboutSettings />
 			{:else}

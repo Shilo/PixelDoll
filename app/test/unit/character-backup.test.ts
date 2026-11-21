@@ -22,7 +22,7 @@ const saved = vi.hoisted(() => ({
 	/** A failure inside the transaction, such as a full disk. */
 	failure: undefined as Error | undefined
 }));
-vi.mock('../../src/lib/store/db.ts', () => {
+vi.mock(import('../../src/lib/store/db.ts'), async (original) => {
 	const snapshot = (hashes: readonly string[]) => ({
 		records: new Map(
 			[...saved.projects]
@@ -32,6 +32,7 @@ vi.mock('../../src/lib/store/db.ts', () => {
 		stored: new Set(hashes.filter((hash) => saved.blobs.has(hash)))
 	});
 	return {
+		...(await original()),
 		askPersist() {},
 		readCharacters: async (hashes: readonly string[]) => snapshot(hashes),
 		async addCharacters(
@@ -39,7 +40,8 @@ vi.mock('../../src/lib/store/db.ts', () => {
 			add: (seen: ReturnType<typeof snapshot>) => {
 				records: Map<string, unknown>;
 				blobs: Map<string, Blob>;
-			}
+			},
+			opaque: ReadonlyMap<string, unknown> = new Map()
 		) {
 			saved.meanwhile?.();
 			saved.meanwhile = undefined;
@@ -50,6 +52,8 @@ vi.mock('../../src/lib/store/db.ts', () => {
 			if (saved.failure) throw saved.failure;
 			for (const [hash, blob] of out.blobs) if (!saved.blobs.has(hash)) saved.blobs.set(hash, blob);
 			for (const [id, record] of out.records) saved.projects.set(id, structuredClone(record));
+			for (const [id, record] of opaque)
+				if (!saved.projects.has(id)) saved.projects.set(id, structuredClone(record));
 			return seen;
 		},
 		async readWorkspaceSnapshot(

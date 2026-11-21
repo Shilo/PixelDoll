@@ -26,7 +26,7 @@
 		"restoredName": "{name} (restored copy)",
 		"incomplete": "Some artwork is missing or invalid. Nothing was restored.",
 		"archiveInvalid": "The archived data could not be preserved safely.",
-		"archiveIncluded": "{count} older records can be kept for future downloads."
+		"backupOmissions": "Backup downloaded with some characters or artwork missing."
 	},
 	"settings": {
 		"wardrobe": "Shared wardrobe items",
@@ -2441,7 +2441,8 @@
 		"referenceHint": "Show the item by itself."
 	},
 	"workspaceCopy": {
-		"title": "Open workspace copy",
+		"developerRequired": "Enable Developer mode in Settings to open a backup as a copy.",
+		"title": "Open backup as a copy",
 		"tabOnlyKey": "This connection is only for this tab and is not saved.",
 		"useSavedKey": "Use saved key"
 	},

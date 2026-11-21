@@ -26,7 +26,7 @@
 		"restoredName": "{name} (wiederhergestellte Kopie)",
 		"incomplete": "Einige Grafiken fehlen oder sind ungültig. Es wurde nichts wiederhergestellt.",
 		"archiveInvalid": "Die archivierten Daten konnten nicht sicher aufbewahrt werden.",
-		"archiveIncluded": "Ältere Datensätze, die du für spätere Downloads behalten kannst: {count}."
+		"backupOmissions": "Die Sicherung wurde heruntergeladen. Einige Charaktere oder Grafiken fehlen."
 	},
 	"settings": {
 		"wardrobe": "Geteilte Garderobenobjekte",
@@ -2449,7 +2449,8 @@
 		"referenceHint": "Zeige nur den Gegenstand."
 	},
 	"workspaceCopy": {
-		"title": "Arbeitsbereichskopie öffnen",
+		"developerRequired": "Aktiviere den Entwicklermodus in den Einstellungen, um eine Sicherung als Kopie zu öffnen.",
+		"title": "Sicherung als Kopie öffnen",
 		"tabOnlyKey": "Diese Verbindung gilt nur für diesen Tab und wird nicht gespeichert.",
 		"useSavedKey": "Gespeicherten Schlüssel verwenden"
 	},

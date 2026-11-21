@@ -26,7 +26,7 @@
 		"restoredName": "{name}（恢复的副本）",
 		"incomplete": "部分美术素材缺失或无效。未恢复任何内容。",
 		"archiveInvalid": "无法安全保留已归档的数据。",
-		"archiveIncluded": "有 {count} 条旧记录可保留，供日后下载。"
+		"backupOmissions": "备份已下载，但缺少部分角色或图像。"
 	},
 	"settings": {
 		"wardrobe": "共享衣橱装备",
@@ -2325,7 +2325,8 @@
 		"referenceHint": "只展示装备本身。"
 	},
 	"workspaceCopy": {
-		"title": "打开工作区副本",
+		"developerRequired": "请在设置中启用开发者模式，以副本形式打开备份。",
+		"title": "以副本形式打开备份",
 		"tabOnlyKey": "连接仅在此标签页中有效，不会保存。",
 		"useSavedKey": "使用已保存的密钥"
 	},

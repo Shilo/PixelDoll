@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { t } from 'svelte-whisper';
 	import { installWorkspaceCopy } from '../lib/store/db.ts';
-	import { readWorkspace } from '../lib/store/workspace.ts';
+	import { readBackupCopy } from '../lib/store/backup.ts';
 	import { MAX_ZIP_BYTES } from '../lib/store/zip.ts';
 	import { setWorkspaceInfo, workspaceUrl } from '../lib/store/workspace-mode.ts';
 	import { LocalizedError, message, type Message } from '../lib/message.ts';
@@ -39,7 +39,7 @@
 		try {
 			if (file.size > MAX_ZIP_BYTES)
 				throw new LocalizedError('Choose a workspace ZIP up to 64 MB.', 'openWorkspace.tooLarge');
-			const { projects, blobs, ...info } = await readWorkspace(
+			const { projects, blobs, ...info } = await readBackupCopy(
 				new Uint8Array(await file.arrayBuffer())
 			);
 			installWorkspaceCopy(projects, blobs);
@@ -58,7 +58,7 @@
 <main class="studio-app picker" aria-busy={busy}>
 	<section class="bu-surface" aria-labelledby="workspace-title">
 		<h1 id="workspace-title">{t('workspaceCopy.title')}</h1>
-		{#snippet command()}<strong>{t('workspace.exportTitle')}</strong>{/snippet}
+		{#snippet command()}<strong>{t('librarySettings.backup')}</strong>{/snippet}
 		<p><RichMessage key="openWorkspace.introCommand" slots={{ command }} /></p>
 		<p>{t('openWorkspace.privacy')}</p>
 		<input

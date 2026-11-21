@@ -7,7 +7,7 @@
 	import { displayMessage } from '../lib/i18n.ts';
 	import { app } from '../lib/app.svelte.ts';
 	import { repository } from '../lib/repository.ts';
-	import { workspaceCopy, workspaceUrl } from '../lib/store/workspace-mode.ts';
+	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { popoverFocus } from './experience/focus.ts';
 	import { tick } from 'svelte';
 	import { experience, characters, setMode, type WorldMode } from './experience/state.svelte.ts';
@@ -53,7 +53,6 @@
 		ChevronLeft,
 		ChevronRight,
 		Download,
-		FileArchive,
 		MonitorDown,
 		BookOpen,
 		Bug,
@@ -551,47 +550,18 @@
 			>
 			<hr />
 		{:else}
-			<!-- Workspace: export or open a copy independently of the active character. -->
-			<button class="row bu-action" data-variant="quiet" popovertarget="workspace-options">
+			<button
+				class="row bu-action"
+				data-variant="quiet"
+				onclick={() => {
+					closeOptions();
+					openSettings('library');
+				}}
+			>
 				<Archive size={18} />
-				<span class="row-name">{openerLabel(t('toolbar.workspace'))}</span>
-
+				<span class="row-name">{openerLabel(t('librarySettings.shortcut'))}</span>
 				<SurfaceChevron /></button
 			>
-			<div
-				id="workspace-options"
-				class="menu bu-popover-anchor"
-				data-placement="bottom-end"
-				popover
-				role="group"
-				aria-label={t('toolbar.workspaceActions')}
-				ontoggle={(event) => popoverFocus(event)}
-			>
-				<PopoverArrow />
-				<div class="menu-surface bu-popover-surface bu-floating">
-					<button
-						class="row bu-action"
-						data-variant="quiet"
-						onclick={() => {
-							closeOptions();
-							ui.sheet = 'workspaceExport';
-						}}
-						><Download size={18} /><span class="row-name"
-							>{openerLabel(t('workspace.exportTitle'))}</span
-						><SurfaceChevron /></button
-					>
-					<a
-						class="row bu-action"
-						data-variant="quiet"
-						href={workspaceUrl(true)}
-						target="_blank"
-						rel="noopener"
-						onclick={closeOptions}
-						><FileArchive size={18} /><span class="row-name">{t('workspaceCopy.title')}</span
-						><ExternalLink size={16} aria-hidden="true" /></a
-					>
-				</div>
-			</div>
 			<hr />
 		{/if}
 		<!-- App actions: installation, updates, and help. -->

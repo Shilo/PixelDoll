@@ -137,7 +137,10 @@ type FrameSize = { w: number; h: number };
 type Omitted = NonNullable<WorkspaceIndex['omitted']>;
 
 /** Every artwork reference of a character, with the frame size it must have when the reference fixes one. */
-export function* artworkRefs(manifest: Manifest): Generator<[unknown, FrameSize | undefined]> {
+export function* artworkRefs(
+	manifest: Manifest,
+	history = false
+): Generator<[unknown, FrameSize | undefined]> {
 	for (const pose of Object.values(manifest.rig.rest ?? {})) yield [pose?.image, manifest.rig.cell];
 	for (const item of manifest.items) {
 		for (const hash of Object.values(item.dressed ?? {})) yield [hash, undefined];
@@ -146,6 +149,22 @@ export function* artworkRefs(manifest: Manifest): Generator<[unknown, FrameSize 
 			for (const dirs of Object.values(layer.cells ?? {}))
 				for (const cells of Object.values(dirs ?? {}))
 					for (const hash of cells ?? []) yield [hash, frame];
+		}
+		if (history) {
+			for (const edit of item.frameEdits ?? [])
+				for (const frame of edit.frames) {
+					if (frame.rest) yield [frame.rest, manifest.rig.cell];
+					for (const layer of frame.layers) {
+						if (layer.before) yield [layer.before, undefined];
+						if (layer.after) yield [layer.after, undefined];
+					}
+				}
+			for (const repair of item.paletteRepairs ?? [])
+				for (const frame of repair.frames)
+					for (const layer of frame.layers) {
+						yield [layer.before, undefined];
+						yield [layer.after, undefined];
+					}
 		}
 	}
 }
@@ -186,7 +205,7 @@ function checkDemoDress(value: unknown) {
 		throw new Error('Saved demo outfit data is invalid.');
 }
 
-function recoverRecords(projects: Map<string, unknown>, omitted: Omitted) {
+function recoverRecords(projects: Map<string, unknown>, omitted: Omitted, history: boolean) {
 	const found = new Map<string, FrameSize | undefined>();
 	for (const [key, value] of projects) {
 		const local = new Map<string, FrameSize | undefined>();
@@ -212,7 +231,7 @@ function recoverRecords(projects: Map<string, unknown>, omitted: Omitted) {
 			if (!selects(key, value) || id !== key || !supportedFormat(manifest?.format))
 				throw new Error('Unsupported character record.');
 			manifestShape(manifest);
-			for (const [hash, frame] of artworkRefs(manifest)) add(hash, frame);
+			for (const [hash, frame] of artworkRefs(manifest, history)) add(hash, frame);
 			for (const [hash, frame] of local) found.set(hash, frame);
 		} catch {
 			projects.delete(key);
@@ -347,14 +366,16 @@ export async function packArchive(
 		missing: string[];
 		omitted?: Omitted;
 		jobs: unknown[];
-	}) => [name: string, index: object]
+	}) => [name: string, index: object],
+	attachments: readonly { name: string; data: Uint8Array }[] = [],
+	history = false
 ) {
 	const omitted = { characters: 0, demoOutfit: false, exportSettings: false };
 	let references = new Map<string, FrameSize | undefined>();
 	const snapshot = await readWorkspaceSnapshot(
 		select,
 		(projects) => {
-			references = recoverRecords(projects, omitted);
+			references = recoverRecords(projects, omitted, history);
 			return references;
 		},
 		includeJobs
@@ -399,9 +420,14 @@ export async function packArchive(
 	)
 		throw errors.containsKey();
 	const data = new TextEncoder().encode(json);
-	if (missing.length > MAX_ZIP_ENTRIES || data.length + artworkBytes > MAX_ZIP_BYTES)
+	if (
+		missing.length > MAX_ZIP_ENTRIES ||
+		artwork.length + attachments.length + 1 > MAX_ZIP_ENTRIES ||
+		data.length + artworkBytes + attachments.reduce((sum, entry) => sum + entry.data.length, 0) >
+			MAX_ZIP_BYTES
+	)
 		throw errors.tooLarge();
-	const packed = await zip([{ name, data }, ...artwork]);
+	const packed = await zip([{ name, data }, ...artwork, ...attachments]);
 	if (packed.length > MAX_ZIP_BYTES) throw errors.tooLarge();
 	return { bytes: packed, hasOmissions: !!omissions || !!missing.length, records: projects.size };
 }
@@ -471,7 +497,8 @@ export async function readArchiveFiles(
 	listed: unknown,
 	omitted: Omitted,
 	allowed: (key: string) => boolean,
-	errors: ArchiveErrors
+	errors: ArchiveErrors,
+	history = false
 ) {
 	if (
 		!Array.isArray(rows) ||
@@ -493,7 +520,7 @@ export async function readArchiveFiles(
 		projects.set(row[0], row[1]);
 	}
 	const previousOmissions = omitted.characters;
-	const references = recoverRecords(projects, omitted);
+	const references = recoverRecords(projects, omitted, history);
 	const skippedCharacter = omitted.characters > previousOmissions;
 	const absent = new Set<unknown>(listed);
 	if (

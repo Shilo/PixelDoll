@@ -382,8 +382,7 @@
 		/>
 	{:else if ui.sheet === 'settings'}<Lazy load={parts.settings} />{/if}
 	{#if ui.sheet === 'activity'}<Lazy load={parts.activity} />{/if}
-	{#if ui.sheet === 'workspaceReport' && workspaceCopy}<Lazy load={parts.workspace} report />{/if}
-	{#if ui.sheet === 'workspaceExport' && !workspaceCopy}<Lazy load={parts.workspace} />{/if}
+	{#if ui.sheet === 'workspaceReport' && workspaceCopy}<Lazy load={parts.workspace} />{/if}
 	{#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
 	{#if ui.sheet === 'directions'}<DirectionsSheet id={ui.directionProject} />{/if}

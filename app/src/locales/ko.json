@@ -26,7 +26,7 @@
 		"restoredName": "{name} (복원한 사본)",
 		"incomplete": "일부 이미지가 없거나 유효하지 않아요. 복원된 항목은 없어요.",
 		"archiveInvalid": "보관된 데이터를 안전하게 유지하지 못했어요.",
-		"archiveIncluded": "이전 기록 {count}개를 나중에 다운로드할 수 있도록 보관할 수 있어요."
+		"backupOmissions": "백업을 다운로드했습니다. 일부 캐릭터나 이미지가 누락되었습니다."
 	},
 	"settings": {
 		"wardrobe": "공유 아이템",
@@ -2344,7 +2344,8 @@
 		"referenceHint": "아이템만 보이는 이미지를 사용하세요."
 	},
 	"workspaceCopy": {
-		"title": "워크스페이스 사본 열기",
+		"developerRequired": "백업을 복사본으로 열려면 설정에서 개발자 모드를 켜세요.",
+		"title": "백업을 복사본으로 열기",
 		"tabOnlyKey": "이 연결은 이 탭에서만 유지되며 저장되지 않습니다.",
 		"useSavedKey": "저장된 키 사용"
 	},

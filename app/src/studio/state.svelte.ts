@@ -222,7 +222,6 @@ export type SheetId =
 	| 'delete'
 	| 'details'
 	| 'setup'
-	| 'workspaceExport'
 	| 'settings'
 	| 'workspaceReport'
 	| 'slots'
@@ -305,6 +304,10 @@ export function initUi() {
 	identityChannel = channel;
 	if (channel)
 		channel.onmessage = ({ data }) => {
+			if (data?.libraryRestored === true) {
+				void refreshProjects();
+				return;
+			}
 			if (
 				!data ||
 				typeof data.projectId !== 'string' ||
@@ -933,6 +936,11 @@ export async function prepareWorkspaceExport() {
 			'The latest changes could not be saved. Save them before exporting.',
 			'state.theLatestChangesCouldNotBeSaved'
 		);
+}
+
+export async function refreshRestoredLibrary() {
+	identityChannel?.postMessage({ libraryRestored: true });
+	await refreshProjects();
 }
 /** The slot definitions the open character's view continues from (its open or last save): a save writes only the slot
  *  changes made since, so a stale tab's routine save never undoes another tab's category changes. */

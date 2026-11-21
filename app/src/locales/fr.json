@@ -26,7 +26,7 @@
 		"restoredName": "{name} (copie restaurée)",
 		"incomplete": "Certaines illustrations sont manquantes ou non valides. Rien n’a été restauré.",
 		"archiveInvalid": "Les données archivées n’ont pas pu être conservées en toute sécurité.",
-		"archiveIncluded": "Anciens enregistrements à conserver si vous souhaitez les télécharger plus tard : {count}."
+		"backupOmissions": "La sauvegarde a été téléchargée, mais certains personnages ou visuels manquent."
 	},
 	"settings": {
 		"wardrobe": "Objets partagés de la garde-robe",
@@ -2450,7 +2450,8 @@
 		"referenceHint": "Montrez l’objet seul."
 	},
 	"workspaceCopy": {
-		"title": "Ouvrir une copie de l’espace de travail",
+		"developerRequired": "Activez le mode développeur dans les paramètres pour ouvrir une sauvegarde en tant que copie.",
+		"title": "Ouvrir une copie de la sauvegarde",
 		"tabOnlyKey": "Cette connexion est limitée à cet onglet et n’est pas enregistrée.",
 		"useSavedKey": "Utiliser la clé enregistrée"
 	},

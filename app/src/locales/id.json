@@ -26,7 +26,7 @@
 		"restoredName": "{name} (salinan hasil pemulihan)",
 		"incomplete": "Sebagian gambar hilang atau tidak valid. Tidak ada yang dipulihkan.",
 		"archiveInvalid": "Data arsip tidak dapat disimpan dengan aman.",
-		"archiveIncluded": "{count} catatan lama bisa disimpan untuk diunduh nanti."
+		"backupOmissions": "Cadangan telah diunduh, tetapi beberapa karakter atau gambar tidak disertakan."
 	},
 	"settings": {
 		"wardrobe": "Item lemari bersama",
@@ -2347,7 +2347,8 @@
 		"referenceHint": "Tampilkan item saja."
 	},
 	"workspaceCopy": {
-		"title": "Buka salinan ruang kerja",
+		"developerRequired": "Aktifkan mode pengembang di Pengaturan untuk membuka cadangan sebagai salinan.",
+		"title": "Buka cadangan sebagai salinan",
 		"tabOnlyKey": "Koneksi ini hanya berlaku di tab ini dan tidak disimpan.",
 		"useSavedKey": "Gunakan kunci tersimpan"
 	},

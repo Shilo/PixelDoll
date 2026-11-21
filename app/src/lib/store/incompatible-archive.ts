@@ -182,6 +182,13 @@ export async function unpackIncompatible(
 ): Promise<IncompatibleData> {
 	if (options?.userOptIn !== true)
 		throw new Error('Saved data from earlier versions is restored only when the user chooses it.');
+	return inspectIncompatible(bytes, keys);
+}
+
+export async function inspectIncompatible(
+	bytes: Uint8Array,
+	keys: readonly string[]
+): Promise<IncompatibleData> {
 	const files = await unzip(bytes);
 	const json = files.get(indexPath);
 	if (!json) throw invalid();
@@ -254,6 +261,7 @@ export async function unpackIncompatible(
 		const hash = blobPath.exec(path)?.[1];
 		if (path !== indexPath && (!hash || !blobs.has(hash))) throw invalid();
 	}
+	if (listed.size !== references.size) throw invalid();
 	return {
 		records,
 		blobs,

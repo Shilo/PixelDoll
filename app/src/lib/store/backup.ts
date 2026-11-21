@@ -3,6 +3,11 @@
 import { sha256, stableStringify } from '../image/hash.ts';
 import { LocalizedError } from '../message.ts';
 import * as db from './db.ts';
+import {
+	inspectIncompatible,
+	packIncompatible,
+	storedIncompatibleCounts
+} from './incompatible-archive.ts';
 import { supportedFormat } from './manifest.ts';
 import type { RestoredFrom, StoredProject } from './project.ts';
 import {
@@ -13,13 +18,62 @@ import {
 	readArchiveFiles,
 	readWorkspaceFiles,
 	studioCharacter,
-	type ArchiveErrors
+	type ArchiveErrors,
+	type WorkspaceArchive
 } from './workspace.ts';
-import { unzip } from './zip.ts';
+import { MAX_ZIP_BYTES, MAX_ZIP_ENTRIES, unzip, zip } from './zip.ts';
 
 export const BACKUP_FORMAT = 'pixeldoll-backup/1';
 const indexPath = 'backup.json';
 const maxRecords = 500;
+const retainedPrefix = 'library-archive:';
+const archivePath = /^archives\/([a-f0-9]{64})\.zip$/;
+
+interface ArchivePack {
+	id: string;
+	data: Uint8Array;
+	count: number;
+}
+
+async function retainedPacks() {
+	const { projects } = await db.readWorkspaceSnapshot(
+		(key) => key.startsWith(retainedPrefix),
+		() => new Map(),
+		false
+	);
+	return [...projects.values()] as ArchivePack[];
+}
+
+export async function libraryArchiveCount() {
+	const [local, retained] = await Promise.all([storedIncompatibleCounts(), retainedPacks()]);
+	return local.total + retained.reduce((count, pack) => count + pack.count, 0);
+}
+
+async function archiveEntries(keys: readonly string[]) {
+	const retained = await retainedPacks();
+	const local = await packIncompatible(keys);
+	const entries = new Map<string, Uint8Array>();
+	if (local) entries.set(await sha256(local.bytes), local.bytes);
+	for (const pack of retained) {
+		await inspectIncompatible(pack.data, keys);
+		entries.set(pack.id.slice(retainedPrefix.length), pack.data);
+	}
+	return [...entries].map(([digest, data]) => ({ name: `archives/${digest}.zip`, data }));
+}
+
+export async function downloadArchivedBackup(keys: readonly string[]) {
+	const entries = await archiveEntries(keys);
+	if (!entries.length) return;
+	if (entries.length === 1) return entries[0].data;
+	if (
+		entries.length > MAX_ZIP_ENTRIES ||
+		entries.reduce((n, entry) => n + entry.data.length, 0) > MAX_ZIP_BYTES
+	)
+		throw backupErrors.tooLarge();
+	const bytes = await zip(entries);
+	if (bytes.length > MAX_ZIP_BYTES) throw backupErrors.tooLarge();
+	return bytes;
+}
 
 interface BackupIndex {
 	format: typeof BACKUP_FORMAT;
@@ -53,7 +107,7 @@ const backupErrors: ArchiveErrors = {
 /** Every saved Studio character with its artwork, read in one snapshot. Preferences, the demo outfit, export settings,
  *  drafts, jobs, credentials and diagnostics stay out. `keys`: the connected and remembered PixelLab keys, refused if any
  *  saved field holds one. hasOmissions: a character or some artwork failed verification and was left out. */
-export async function exportBackup(keys: readonly string[]) {
+export async function exportBackup(keys: readonly string[], includeArchived = false) {
 	const { bytes, hasOmissions, records } = await packArchive(
 		studioCharacter,
 		false,
@@ -68,7 +122,9 @@ export async function exportBackup(keys: readonly string[]) {
 				missing,
 				...(omitted && { omitted: omitted.characters })
 			} satisfies BackupIndex
-		]
+		],
+		includeArchived ? await archiveEntries(keys) : undefined,
+		true
 	);
 	return { bytes, hasOmissions, characters: records };
 }
@@ -83,11 +139,22 @@ export interface RestoreSource {
 	blobs: Map<string, Blob>;
 	/** Characters the file left out or that failed validation here. */
 	unreadable: number;
+	archives?: ArchivePack[];
+	missing?: string[];
 }
 
 /** A bounded backup or workspace ZIP, validated. Throws a LocalizedError when the file as a whole cannot be read. */
-export async function readRestoreSource(bytes: Uint8Array): Promise<RestoreSource> {
-	const files = await unzip(bytes);
+export async function readRestoreSource(
+	bytes: Uint8Array,
+	keys: readonly string[] = []
+): Promise<RestoreSource> {
+	return readRestoreFiles(await unzip(bytes), keys);
+}
+
+async function readRestoreFiles(
+	files: Map<string, Uint8Array>,
+	keys: readonly string[]
+): Promise<RestoreSource> {
 	const json = files.get(indexPath);
 	if (!json && files.has('workspace.json')) {
 		const workspace = await readWorkspaceFiles(files);
@@ -122,21 +189,59 @@ export async function readRestoreSource(bytes: Uint8Array): Promise<RestoreSourc
 	)
 		throw invalid();
 	const counts = { characters: omitted, demoOutfit: false, exportSettings: false };
-	const { projects, blobs } = await readArchiveFiles(
+	const archives: ArchivePack[] = [];
+	for (const [path, data] of files) {
+		const digest = archivePath.exec(path)?.[1];
+		if (!digest) continue;
+		if ((await sha256(data)) !== digest) throw invalid();
+		const { counts } = await inspectIncompatible(data, keys);
+		archives.push({ id: `${retainedPrefix}${digest}`, data, count: counts.total });
+		files.delete(path);
+	}
+	const { projects, blobs, missing } = await readArchiveFiles(
 		files,
 		indexPath,
 		index.characters,
 		index.missing,
 		counts,
 		(key) => key.startsWith('rig-'),
-		backupErrors
+		backupErrors,
+		true
 	);
 	return {
 		kind: 'backup',
 		build: index.build,
 		characters: projects as Map<string, StoredProject>,
 		blobs,
-		unreadable: counts.characters
+		missing,
+		unreadable: counts.characters,
+		...(archives.length && { archives })
+	};
+}
+
+export async function readBackupCopy(bytes: Uint8Array): Promise<WorkspaceArchive> {
+	const files = await unzip(bytes);
+	if (!files.has(indexPath)) return readWorkspaceFiles(files);
+	const source = await readRestoreFiles(files, []);
+	return {
+		build: source.build,
+		projects: source.characters,
+		blobs: source.blobs,
+		missing: source.missing ?? [],
+		...(source.unreadable && {
+			omitted: { characters: source.unreadable, demoOutfit: false, exportSettings: false }
+		}),
+		view: {
+			project: source.characters.keys().next().value ?? '',
+			item: '',
+			move: '',
+			direction: 'south',
+			frame: 0,
+			screen: 'characters',
+			mode: 'preview',
+			tab: 'wardrobe',
+			theme: 'dark'
+		}
 	};
 }
 
@@ -153,7 +258,7 @@ function canonical(record: StoredProject & { dress?: unknown }) {
 		origin: _origin,
 		...content
 	} = record;
-	return stableStringify(content);
+	return stableStringify({ ...content, manifest: { ...content.manifest, name: undefined } });
 }
 
 /** Equal for two characters with the same content, whatever their IDs. */
@@ -162,12 +267,14 @@ export const characterFingerprint = async (record: StoredProject) =>
 
 /** Every input of a plan's decision about a saved record; synchronous, so a restore checks it inside its transaction. */
 const stateKey = (record: unknown) =>
-	stableStringify({ ...(record as object), savedAt: undefined, dress: undefined });
+	supportedFormat((record as Partial<StoredProject> | undefined)?.manifest?.format)
+		? stableStringify({ ...(record as object), savedAt: undefined, dress: undefined })
+		: 'unsupported';
 
 const hexHash = /^(?:sha256:)?([a-f0-9]{64})$/;
-const refsOf = (record: StoredProject) => [
+const refsOf = (record: StoredProject, history: boolean) => [
 	...new Set(
-		[...artworkRefs(record.manifest)].flatMap(([hash]) => {
+		[...artworkRefs(record.manifest, history)].flatMap(([hash]) => {
 			const hex = typeof hash === 'string' && hexHash.exec(hash)?.[1];
 			return hex ? [hex] : [];
 		})
@@ -215,7 +322,7 @@ export async function planRestore(source: RestoreSource): Promise<RestorePlan> {
 			id,
 			record,
 			fingerprint: await characterFingerprint(record),
-			refs: refsOf(record)
+			refs: refsOf(record, source.kind === 'backup')
 		}))
 	);
 	const borrowed = [
@@ -286,47 +393,62 @@ export interface RestoreResult {
 /** Add a plan's add and copy entries and the artwork they need in one transaction: all of them or, on any failure such as a
  *  full disk, none. Nothing saved is overwritten or removed. Refuses a plan with blockers, and throws RestoreChangedError when
  *  saved characters changed since the plan. */
-export async function restoreCharacters(plan: RestorePlan): Promise<RestoreResult> {
+export async function restoreCharacters(
+	plan: RestorePlan,
+	options?: { keepArchived: boolean; keys: readonly string[]; copyName: (name: string) => string }
+): Promise<RestoreResult> {
 	if (plan.blockers.length) throw new Error('A restore plan with blockers cannot be written.');
 	const { source, basis } = plan;
 	const writes = plan.entries.filter(({ action }) => action === 'add' || action === 'copy');
-	if (!writes.length) return { added: [] };
+	const opaque = new Map<string, ArchivePack>();
+	if (options?.keepArchived)
+		for (const pack of source.archives ?? []) {
+			await inspectIncompatible(pack.data, options.keys);
+			opaque.set(pack.id, pack);
+		}
+	if (!writes.length && !opaque.size) return { added: [] };
 	const hashes = [...new Set(writes.flatMap(({ id }) => basis.refs.get(id)!))];
 	const at = new Date().toISOString();
 	const stale = new Error('The saved characters changed since the restore plan.');
 	const added: RestoreResult['added'] = [];
 	try {
-		await db.addCharacters(hashes, ({ records, stored }) => {
-			if (
-				records.size !== basis.records.size ||
-				[...records].some(([id, record]) => basis.records.get(id) !== stateKey(record)) ||
-				hashes.some((hash) => !source.blobs.has(hash) && !stored.has(hash))
-			)
-				throw stale;
-			const out = { records: new Map<string, unknown>(), blobs: new Map<string, Blob>() };
-			for (const { id: from, fingerprint, action } of writes) {
-				let id = from;
-				if (action === 'copy')
-					do id = `rig-${crypto.randomUUID()}`;
-					while (records.has(id) || out.records.has(id));
-				const record = structuredClone(source.characters.get(from)!);
-				delete record.creationSpec;
-				delete record.moveRecovery;
-				out.records.set(id, {
-					...record,
-					id,
-					savedAt: at,
-					origin: 'studio',
-					restoredFrom: { id: from, fingerprint, at, build: source.build }
-				} satisfies StoredProject);
-				added.push({ from, id });
-			}
-			for (const hash of hashes) {
-				const blob = source.blobs.get(hash);
-				if (blob && !stored.has(hash)) out.blobs.set(hash, blob);
-			}
-			return out;
-		});
+		await db.addCharacters(
+			hashes,
+			({ records, stored }) => {
+				if (
+					records.size !== basis.records.size ||
+					[...records].some(([id, record]) => basis.records.get(id) !== stateKey(record)) ||
+					hashes.some((hash) => !source.blobs.has(hash) && !stored.has(hash))
+				)
+					throw stale;
+				const out = { records: new Map<string, unknown>(), blobs: new Map<string, Blob>() };
+				for (const { id: from, fingerprint, action } of writes) {
+					let id = from;
+					if (action === 'copy')
+						do id = `rig-${crypto.randomUUID()}`;
+						while (records.has(id) || out.records.has(id));
+					const record = structuredClone(source.characters.get(from)!);
+					if (action === 'copy' && options)
+						record.manifest.name = options.copyName(record.manifest.name);
+					delete record.creationSpec;
+					delete record.moveRecovery;
+					out.records.set(id, {
+						...record,
+						id,
+						savedAt: at,
+						origin: 'studio',
+						restoredFrom: { id: from, fingerprint, at, build: source.build }
+					} satisfies StoredProject);
+					added.push({ from, id });
+				}
+				for (const hash of hashes) {
+					const blob = source.blobs.get(hash);
+					if (blob && !stored.has(hash)) out.blobs.set(hash, blob);
+				}
+				return out;
+			},
+			opaque
+		);
 	} catch (error) {
 		if (error === stale) throw new RestoreChangedError(await planRestore(source));
 		throw error;

@@ -8,6 +8,8 @@
 
 	const loadExport = () => import('./ExportSheet.svelte');
 	let saving = $state(false);
+	let libraryBusy = $state(false);
+	const busy = $derived(saving || libraryBusy);
 </script>
 
 <Sheet
@@ -15,11 +17,11 @@
 	className="settings-sheet"
 	wide
 	cancel="common.close"
-	cancelDisabled={saving}
+	cancelDisabled={busy}
 	onclose={() => (ui.sheet = null)}
 >
-	{#snippet heading()}<SettingsHeader busy={saving} />{/snippet}
-	<SettingsContent busy={saving}>
+	{#snippet heading()}<SettingsHeader {busy} />{/snippet}
+	<SettingsContent {busy} bind:libraryBusy>
 		{#snippet exportSettings(entry)}
 			<Lazy
 				load={loadExport}

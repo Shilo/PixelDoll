@@ -26,7 +26,7 @@
 		"restoredName": "{name} (copia restaurada)",
 		"incomplete": "Faltan algunos gráficos o no son válidos. No se restauró nada.",
 		"archiveInvalid": "No se pudieron conservar los datos archivados de forma segura.",
-		"archiveIncluded": "Registros antiguos que puedes conservar para futuras descargas: {count}."
+		"backupOmissions": "La copia de seguridad se descargó, pero faltan personajes o imágenes."
 	},
 	"settings": {
 		"wardrobe": "Objetos compartidos del armario",
@@ -2452,7 +2452,8 @@
 		"referenceHint": "Muestra solo el objeto."
 	},
 	"workspaceCopy": {
-		"title": "Abrir copia del espacio de trabajo",
+		"developerRequired": "Activa el modo de desarrollador en Ajustes para abrir una copia de seguridad como copia.",
+		"title": "Abrir respaldo como copia",
 		"tabOnlyKey": "Esta conexión solo se usa en esta pestaña y no se guarda.",
 		"useSavedKey": "Usar clave guardada"
 	},

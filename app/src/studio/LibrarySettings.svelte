@@ -1,0 +1,291 @@
+<script lang="ts">
+	import { onMount, tick } from 'svelte';
+	import { formatNumber, t } from 'svelte-whisper';
+	import { Archive, Download, Upload } from './icons.ts';
+	import { displayMessage, errorMessage } from '../lib/i18n.ts';
+	import { message, type Message } from '../lib/message.ts';
+	import { app } from '../lib/app.svelte.ts';
+	import { readSavedKey } from '../lib/shared-auth.ts';
+	import { MAX_ZIP_BYTES } from '../lib/store/zip.ts';
+	import {
+		downloadArchivedBackup,
+		exportBackup,
+		libraryArchiveCount,
+		planRestore,
+		readRestoreSource,
+		restoreCharacters,
+		RestoreChangedError,
+		type RestorePlan
+	} from '../lib/store/backup.ts';
+	import { prepareWorkspaceExport, refreshRestoredLibrary } from './state.svelte.ts';
+	import { saveZip } from './download.svelte.ts';
+
+	type RestorePreview = {
+		name: string;
+		add: number;
+		copies: number;
+		skip: number;
+		edited: number;
+		archived: number;
+		warning?: Message;
+	};
+
+	let { busy = $bindable(false) }: { busy?: boolean } = $props();
+	let plan = $state.raw<RestorePlan>();
+	let archivedCount = $state(0);
+	let filename = $state('');
+	let error = $state<Message | string>();
+	let status = $state<Message>();
+	const preview: RestorePreview | undefined = $derived(
+		plan && {
+			name: filename,
+			add: plan.entries.filter((entry) => entry.action === 'add').length,
+			copies: plan.entries.filter((entry) => entry.action === 'copy').length,
+			skip: plan.entries.filter((entry) => entry.action === 'skip').length,
+			edited: plan.warnings.filter((warning) => warning.code === 'editedRestore').length,
+			archived: plan.source.archives?.reduce((count, pack) => count + pack.count, 0) ?? 0,
+			warning: plan.source.unreadable
+				? message('workspace.skippedCharacters', { count: plan.source.unreadable })
+				: undefined
+		}
+	);
+	let picker = $state<HTMLInputElement>();
+	let openPicker = $state<HTMLButtonElement>();
+	let review = $state<HTMLElement>();
+	let includeArchived = $state(false);
+	let keepArchived = $state(false);
+	const additions = $derived(preview ? preview.add + preview.copies : 0);
+	const heading = $props.id();
+	const keys = () => [app.key, readSavedKey()];
+	const today = () => new Date().toISOString().slice(0, 10);
+	onMount(() => {
+		void libraryArchiveCount().then((count) => (archivedCount = count), (cause) => (error = errorMessage(cause)));
+	});
+
+	async function perform(action: () => Promise<void>) {
+		if (busy) return;
+		busy = true;
+		error = undefined;
+		status = undefined;
+		try {
+			await action();
+		} catch (cause) {
+			error = errorMessage(cause);
+		} finally {
+			busy = false;
+		}
+	}
+
+	function backup() {
+		return perform(async () => {
+			await prepareWorkspaceExport();
+			const result = await exportBackup(keys(), includeArchived);
+			saveZip(result.bytes, `pixeldoll-${today()}.backup.zip`);
+			status = message(result.hasOmissions ? 'librarySettings.backupOmissions' : 'librarySettings.downloaded');
+		});
+	}
+
+	function downloadArchive() {
+		return perform(async () => {
+			const bytes = await downloadArchivedBackup(keys());
+			if (bytes) saveZip(bytes, `pixeldoll-${today()}.archived.zip`);
+		});
+	}
+
+	async function selectFile(event: Event) {
+		const input = event.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = '';
+		if (!file) return;
+		keepArchived = false;
+		await perform(async () => {
+			if (file.size > MAX_ZIP_BYTES) {
+				error = message('librarySettings.tooLarge');
+				return;
+			}
+			filename = file.name;
+			plan = await planRestore(await readRestoreSource(new Uint8Array(await file.arrayBuffer()), keys()));
+		});
+		await tick();
+		(review ?? openPicker)?.focus();
+	}
+
+	async function leaveReview(save: boolean) {
+		const reviewed = plan;
+		if (save && reviewed && !reviewed.blockers.length) {
+			await perform(async () => {
+				try {
+					const result = await restoreCharacters(reviewed, {
+						keepArchived,
+						keys: keys(),
+						copyName: (name) => t('librarySettings.restoredName', { name })
+					});
+					plan = undefined;
+					status = result.added.length
+						? message('librarySettings.restored', { count: result.added.length })
+						: message('librarySettings.archivedSaved');
+					if (keepArchived) archivedCount = await libraryArchiveCount();
+					await refreshRestoredLibrary();
+				} catch (cause) {
+					if (!(cause instanceof RestoreChangedError)) throw cause;
+					plan = cause.plan;
+					error = message('librarySettings.changed');
+				}
+			});
+		} else if (!save && !busy) {
+			plan = undefined;
+			error = undefined;
+		}
+		await tick();
+		(review ?? openPicker)?.focus();
+	}
+</script>
+
+<div class="library-settings" aria-busy={busy}>
+	{#if preview}
+		<section aria-labelledby={heading} data-setting="restore" tabindex="-1" bind:this={review}>
+			<h4 id={heading}>{t('librarySettings.review')}</h4>
+			<p class="bu-muted filename">{preview.name}</p>
+			<dl class="restore-counts">
+				<div>
+					<dt>{t('librarySettings.add')}</dt>
+					<dd>{formatNumber(preview.add)}</dd>
+				</div>
+				<div>
+					<dt>{t('librarySettings.copies')}</dt>
+					<dd>{formatNumber(preview.copies)}</dd>
+				</div>
+				<div>
+					<dt>{t('librarySettings.skip')}</dt>
+					<dd>{formatNumber(preview.skip)}</dd>
+				</div>
+				{#if preview.archived}
+					<div>
+						<dt>{t('librarySettings.archived')}</dt>
+						<dd>{formatNumber(preview.archived)}</dd>
+					</div>
+				{/if}
+			</dl>
+			{#if preview.edited}<p class="bu-muted">{t('librarySettings.edited')}</p>{/if}
+			{#if preview.warning}<p class="notice warn">{displayMessage(preview.warning)}</p>{/if}
+			{#if plan?.blockers.length}<p class="notice warn" role="alert">{t('librarySettings.incomplete')}</p>{/if}
+			{#if preview.archived}
+				<label class="check">
+					<input type="checkbox" bind:checked={keepArchived} disabled={busy} />
+					{t('librarySettings.keepArchived')}
+				</label>
+			{/if}
+			<p class="bu-muted">{t('librarySettings.restoreHint')}</p>
+			<div class="restore-actions">
+				<button
+					type="button"
+					class="btn bu-action"
+					data-variant="quiet"
+					disabled={busy}
+					onclick={() => leaveReview(false)}
+				>
+					{t('common.cancel')}
+				</button>
+				<button
+					type="button"
+					class="btn primary bu-action"
+					data-variant="primary"
+					disabled={busy || !!plan?.blockers.length || (!additions && !(preview.archived && keepArchived))}
+					onclick={() => leaveReview(true)}
+					>{t(additions ? 'librarySettings.restore' : 'common.save')}</button
+				>
+			</div>
+		</section>
+	{:else}
+		<p class="bu-muted">{t('librarySettings.scope')}</p>
+		{#if archivedCount > 0}
+			<label class="check">
+				<input type="checkbox" bind:checked={includeArchived} disabled={busy} />
+				{t('librarySettings.includeArchived')}
+			</label>
+		{/if}
+		<button
+			type="button"
+			class="row bu-action"
+			data-variant="quiet"
+			data-setting="backup"
+			disabled={busy}
+			onclick={backup}
+		>
+			<Download size={18} aria-hidden="true" />
+			<span class="row-name">{t('librarySettings.backup')}</span>
+		</button>
+		<input
+			type="file"
+			accept=".zip,application/zip"
+			bind:this={picker}
+			onchange={selectFile}
+			hidden
+		/>
+		<button
+			type="button"
+			class="row bu-action"
+			data-variant="quiet"
+			data-setting="restore"
+			disabled={busy}
+			bind:this={openPicker}
+			onclick={() => picker?.click()}
+		>
+			<Upload size={18} aria-hidden="true" />
+			<span class="row-name">{t('librarySettings.restoreFromBackup')}</span>
+		</button>
+		{#if archivedCount > 0}
+			<hr class="bu-separator" />
+			<h4>{t('librarySettings.archived')}</h4>
+			<p class="bu-muted">{t('librarySettings.archivedHint', { count: archivedCount })}</p>
+			<button
+				type="button"
+				class="row bu-action"
+				data-variant="quiet"
+				disabled={busy}
+				onclick={downloadArchive}
+			>
+				<Archive size={18} aria-hidden="true" />
+				<span class="row-name">{t('librarySettings.downloadArchived')}</span>
+			</button>
+		{/if}
+	{/if}
+	{#if busy}<p class="bu-muted" role="status">{t('common.preparing')}</p>{/if}
+	{#if error}<p class="notice warn" role="alert">{displayMessage(error)}</p>{/if}
+	{#if status}<p role="status">{displayMessage(status)}</p>{/if}
+</div>
+
+<style>
+	.library-settings p {
+		margin: 0.5rem 0;
+	}
+	.library-settings h4 {
+		margin: 0.75rem 0 0.25rem;
+	}
+	.library-settings .row {
+		width: 100%;
+	}
+	.filename {
+		overflow-wrap: anywhere;
+	}
+	.restore-counts {
+		margin: 0.75rem 0;
+	}
+	.restore-counts div {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+	.restore-counts dd {
+		margin: 0;
+		font-variant-numeric: tabular-nums;
+	}
+	.restore-actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: end;
+		gap: 0.5rem;
+		margin-top: 0.75rem;
+	}
+</style>

@@ -26,7 +26,7 @@
 		"restoredName": "{name} (geri yüklenen kopya)",
 		"incomplete": "Bazı görseller eksik veya geçersiz. Hiçbir şey geri yüklenmedi.",
 		"archiveInvalid": "Arşivlenmiş veriler güvenli bir şekilde saklanamadı.",
-		"archiveIncluded": "{count} eski kayıt daha sonra indirmek için saklanabilir."
+		"backupOmissions": "Yedek indirildi ancak bazı karakterler veya görseller eksik."
 	},
 	"settings": {
 		"wardrobe": "Paylaşılan gardırop eşyaları",
@@ -2443,7 +2443,8 @@
 		"referenceHint": "Yalnızca eşyayı gösterin."
 	},
 	"workspaceCopy": {
-		"title": "Çalışma alanı kopyasını açın",
+		"developerRequired": "Bir yedeği kopya olarak açmak için ayarlarda geliştirici modunu etkinleştir.",
+		"title": "Yedeği kopya olarak aç",
 		"tabOnlyKey": "Bu bağlantı yalnızca bu sekme için geçerlidir ve kaydedilmez.",
 		"useSavedKey": "Kayıtlı anahtarı kullan"
 	},
