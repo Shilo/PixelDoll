@@ -49,6 +49,33 @@ describe('State grounding', () => {
 		expect(groundingShift(kneel, source)).toBe(0);
 	});
 
+	it('decides from the body, never from a detached prop that moved', () => {
+		// Feet already aligned; only a detached staff below and beside them came back 9 px higher.
+		const before = figure(38);
+		paint(before, 24, 40, 26, 52);
+		const after = figure(38);
+		paint(after, 24, 31, 26, 43);
+		expect(groundingShift(after, before)).toBe(0);
+	});
+
+	it('abstains when two heights fit the soles about equally well', () => {
+		// A second, detached pair of feet 4 rows lower leaves no single clear answer.
+		const doubled = figure(29);
+		paint(doubled, 10, 32, 14, 33);
+		paint(doubled, 17, 32, 21, 33);
+		expect(groundingShift(doubled, source)).toBe(0);
+	});
+
+	it('abstains when the feet were redrawn instead of moved', () => {
+		// The same height change, but the generated feet are narrower and stepped: no sole match.
+		const redrawn = figure(29);
+		for (let y = 28; y <= 29; y++)
+			for (let x = 10; x <= 21; x++) redrawn.data[(y * W + x) * 4 + 3] = 0;
+		paint(redrawn, 13, 28, 14, 28);
+		paint(redrawn, 17, 29, 18, 29);
+		expect(groundingShift(redrawn, source)).toBe(0);
+	});
+
 	it('ignores isolated specks when finding the feet', () => {
 		const specked = figure(29);
 		specked.data.set([255, 255, 255, 255], (39 * W + 2) * 4);

@@ -32,6 +32,46 @@ function solid(image: Img): Mask {
 	};
 }
 
+/** The largest 8-connected solid shape: the character's body, never a detached prop or speck. */
+function body(image: Img, isSolid: Mask): Mask {
+	const label = new Int32Array(image.w * image.h);
+	let biggest = 0;
+	let biggestSize = 0;
+	let next = 0;
+	for (let start = 0; start < label.length; start++) {
+		const sx = start % image.w;
+		const sy = (start - sx) / image.w;
+		if (label[start] || !isSolid(sx, sy)) continue;
+		const id = ++next;
+		const stack = [start];
+		label[start] = id;
+		let size = 0;
+		while (stack.length) {
+			const at = stack.pop()!;
+			size++;
+			const x = at % image.w;
+			const y = (at - x) / image.w;
+			for (let dy = -1; dy <= 1; dy++)
+				for (let dx = -1; dx <= 1; dx++) {
+					const nx = x + dx;
+					const ny = y + dy;
+					if (nx < 0 || ny < 0 || nx >= image.w || ny >= image.h) continue;
+					const index = ny * image.w + nx;
+					if (!label[index] && isSolid(nx, ny)) {
+						label[index] = id;
+						stack.push(index);
+					}
+				}
+		}
+		if (size > biggestSize) {
+			biggestSize = size;
+			biggest = id;
+		}
+	}
+	return (x, y) =>
+		x >= 0 && y >= 0 && x < image.w && y < image.h && label[y * image.w + x] === biggest;
+}
+
 function points(mask: Mask, w: number, top: number, bottom: number) {
 	const out: [number, number][] = [];
 	for (let y = Math.max(0, top); y <= bottom; y++)
@@ -57,8 +97,10 @@ function overlap(from: readonly [number, number][], to: Mask, dy: number) {
  */
 export function groundingShift(generated: Img, source: Img): number {
 	if (generated.w !== source.w || generated.h !== source.h) return 0;
-	const was = solid(source);
 	const now = solid(generated);
+	// Feet are measured on the body itself, so a detached prop (sword, shadow) can never decide the move.
+	const was = body(source, solid(source));
+	const nowBody = body(generated, now);
 	const w = source.w;
 	let sole = -1;
 	for (let y = source.h - 1; y >= 0 && sole < 0; y--)
@@ -71,7 +113,7 @@ export function groundingShift(generated: Img, source: Img): number {
 		longest = Math.max(longest, run);
 	}
 	if (longest < MIN_RUN) return 0;
-	const feet = points(was, w, sole - FOOT_ROWS - 1, sole);
+	const feet = points(was, w, sole - FOOT_ROWS + 1, sole);
 	const legs = points(was, w, sole - FOOT_ROWS - LEG_ROWS + 1, sole - FOOT_ROWS);
 	// Bottom edges pin the height: straight legs match at many heights, but soles only at one.
 	const soles = feet.filter(([x, y]) => !was(x, y + 1));
@@ -81,7 +123,7 @@ export function groundingShift(generated: Img, source: Img): number {
 	let runnerUp = -1;
 	for (let dy = -range; dy <= range; dy++) {
 		let hits = 0;
-		for (const [x, y] of soles) if (now(x, y + dy) && !now(x, y + dy + 1)) hits++;
+		for (const [x, y] of soles) if (nowBody(x, y + dy) && !nowBody(x, y + dy + 1)) hits++;
 		const score = hits / soles.length;
 		if (score > bestScore) {
 			runnerUp = bestScore;
@@ -94,15 +136,15 @@ export function groundingShift(generated: Img, source: Img): number {
 		!best ||
 		bestScore < SOLES ||
 		bestScore - runnerUp < MARGIN ||
-		overlap(feet, now, best) < SHAPE ||
-		overlap(legs, now, best) < SHAPE
+		overlap(feet, nowBody, best) < SHAPE ||
+		overlap(legs, nowBody, best) < SHAPE
 	)
 		return 0;
 	const shift = -best;
+	// Any art, body or not, left below the source's feet after the move means the match is not the whole story.
 	let below = 0;
-	for (const [, y] of points(now, w, sole - shift + 1, generated.h - 1))
-		if (y > sole - shift) below++;
-	if (below > MAX_UNMATCHED_BELOW) return 0;
+	for (let y = Math.max(0, sole - shift + 1); y < generated.h; y++)
+		for (let x = 0; x < w; x++) if (now(x, y) && ++below > MAX_UNMATCHED_BELOW) return 0;
 	const box = opaqueBox(generated);
 	if (!box || box.y0 + shift < 0 || box.y1 + shift >= generated.h) return 0;
 	return shift;
