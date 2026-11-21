@@ -2415,8 +2415,19 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 			const body = req.postDataJSON() as Record<string, unknown>;
 			posts.push({ path, body });
 			if (path.endsWith('/edit-images-v2')) {
-				stateImages = (body.edit_images as { image: { type: 'base64'; base64: string } }[]).map(
-					({ image }) => image
+				// Like PixelLab's measured drift: the edited character comes back 3 px higher in its cell.
+				stateImages = await Promise.all(
+					(body.edit_images as { image: { type: 'base64'; base64: string } }[]).map(
+						async ({ image }) => {
+							const source = await decodePngBytes(Buffer.from(image.base64, 'base64'));
+							const raised = makeImg(source.w, source.h);
+							raised.data.set(source.data.subarray(3 * source.w * 4));
+							return {
+								type: 'base64' as const,
+								base64: Buffer.from(await encodePngBytes(raised)).toString('base64')
+							};
+						}
+					)
 				);
 				return route.fulfill({ status: 202, json: { background_job_id: 'generated-state' } });
 			}
@@ -2826,6 +2837,10 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await equipmentMode(page, 'States');
 	await addState.click();
 	await expect(newState.getByText('Review Ready stance before saving.')).toBeVisible();
+	// Grounding is offered on by default; turned off, Save keeps the returned placement.
+	const ground = newState.getByRole('switch', { name: 'Keep on the ground' });
+	await expect(ground).toBeChecked();
+	await ground.uncheck();
 	await newState.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
 	await expect(page.locator('.clip-trigger[data-variant="quiet"]')).toHaveAttribute(
@@ -2835,6 +2850,42 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	expect(
 		(await read()).manifest.rig.animations.find(({ id }) => id === 'ready-stance')
 	).toMatchObject({ kind: 'state', cells: 1 });
+	// The built app has no module paths to import, so read the stored PNG bytes straight from IndexedDB.
+	const saved = await read();
+	const savedCells = saved.manifest.items.find(({ id }) => id === saved.manifest.rig.baseItem)!
+		.layers[0].cells!;
+	const sourceCell = saved.manifest.rig.animations.find(({ id }) => id === 'idle')!.frames[2].cell;
+	const pngs = await page.evaluate(
+		(keys) =>
+			Promise.all(
+				keys.map(
+					(key) =>
+						new Promise<number[]>((resolve, reject) => {
+							const r = indexedDB.open('pixeldoll');
+							r.onerror = () => reject(r.error);
+							r.onsuccess = () => {
+								const q = r.result.transaction('blobs').objectStore('blobs').get(key);
+								q.onsuccess = async () => {
+									r.result.close();
+									resolve(Array.from(new Uint8Array(await (q.result as Blob).arrayBuffer())));
+								};
+							};
+						})
+				)
+			),
+		[savedCells.idle.south![sourceCell]!, savedCells['ready-stance'].south![0]!].map((hash) =>
+			hash.slice(7)
+		)
+	);
+	const bottoms = await Promise.all(
+		pngs.map(async (bytes) => {
+			const image = await decodePngBytes(Uint8Array.from(bytes));
+			for (let y = image.h - 1; y >= 0; y--)
+				for (let x = 0; x < image.w; x++) if (image.data[(y * image.w + x) * 4 + 3]) return y;
+			return -1;
+		})
+	);
+	expect(bottoms[1]).toBe(bottoms[0] - 3);
 	expect(statePosts()).toHaveLength(1);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
