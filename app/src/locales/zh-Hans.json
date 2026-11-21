@@ -2520,7 +2520,8 @@
 		"generated": "生成结果",
 		"sourceMissing": "来源不可用",
 		"sourceChanged": "生成后来源已更改，因此无法保存此结果。请放弃后重试。",
-		"grounded": "已移到来源的地面线以保持一致。"
+		"keepGrounded": "保持在地面上",
+		"groundedHint": "部分视图返回的位置比来源更高或更低。跳跃等离地姿势请关闭此项。"
 	},
 	"stateJointFit": {
 		"busy": "正在测量关节。请在测量完成后重试。",
@@ -2535,7 +2536,7 @@
 		"title": "创建状态",
 		"source": "来源",
 		"preview": "{source}，朝向：{facing}",
-		"changePose": "更改姿势",
+		"changePose": "编辑此姿势",
 		"changeHint": "描述要更改的内容。会消耗点数。",
 		"name": "状态名称",
 		"noEquipment": "不会复制装备。",

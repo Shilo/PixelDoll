@@ -2650,7 +2650,8 @@
 		"generated": "Generado",
 		"sourceMissing": "Origen no disponible",
 		"sourceChanged": "El origen cambió después de generar, así que este resultado no se puede guardar. Descártalo e inténtalo de nuevo.",
-		"grounded": "Se movió a la línea de suelo del origen para que coincida."
+		"keepGrounded": "Mantener en el suelo",
+		"groundedHint": "Algunas vistas volvieron más arriba o más abajo que el origen. Desactívalo para saltos y otras poses en el aire."
 	},
 	"stateJointFit": {
 		"busy": "Ya se están midiendo las articulaciones. Vuelve a intentarlo cuando termine.",
@@ -2665,7 +2666,7 @@
 		"title": "Crear estado",
 		"source": "Origen",
 		"preview": "{source}, dirección {facing}",
-		"changePose": "Cambiar la pose",
+		"changePose": "Editar esta pose",
 		"changeHint": "Describe qué cambiar. Usa créditos.",
 		"name": "Nombre del estado",
 		"noEquipment": "No se copia el equipo.",

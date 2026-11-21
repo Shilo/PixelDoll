@@ -2642,7 +2642,8 @@
 		"generated": "Generiert",
 		"sourceMissing": "Quelle nicht verfügbar",
 		"sourceChanged": "Die Quelle hat sich nach dem Generieren geändert, daher kann dieses Ergebnis nicht gespeichert werden. Verwirf es und versuche es erneut.",
-		"grounded": "Auf die Bodenlinie der Quelle verschoben, damit es passt."
+		"keepGrounded": "Auf dem Boden halten",
+		"groundedHint": "Einige Ansichten kamen höher oder tiefer als die Quelle zurück. Schalte das für Sprünge und andere Posen in der Luft aus."
 	},
 	"stateJointFit": {
 		"busy": "Die Gelenke werden bereits bestimmt. Versuche es danach erneut.",
@@ -2657,7 +2658,7 @@
 		"title": "Zustand erstellen",
 		"source": "Quelle",
 		"preview": "{source}, Blickrichtung {facing}",
-		"changePose": "Pose ändern",
+		"changePose": "Diese Pose bearbeiten",
 		"changeHint": "Beschreibe, was sich ändern soll. Verbraucht Guthaben.",
 		"name": "Zustandsname",
 		"noEquipment": "Ausrüstung bleibt zurück.",

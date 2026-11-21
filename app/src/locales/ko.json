@@ -2539,7 +2539,8 @@
 		"generated": "생성 결과",
 		"sourceMissing": "원본을 표시할 수 없어요",
 		"sourceChanged": "생성 후 원본이 바뀌어서 이 결과를 저장할 수 없어요. 버리고 다시 시도하세요.",
-		"grounded": "원본의 바닥선에 맞춰 옮겼어요."
+		"keepGrounded": "바닥에 맞추기",
+		"groundedHint": "일부 보기가 원본보다 높거나 낮게 돌아왔어요. 점프처럼 바닥에서 떨어지는 포즈라면 끄세요."
 	},
 	"stateJointFit": {
 		"busy": "관절을 이미 측정 중입니다. 완료되면 다시 시도하세요.",
@@ -2554,7 +2555,7 @@
 		"title": "상태 만들기",
 		"source": "원본",
 		"preview": "{source}, 방향: {facing}",
-		"changePose": "포즈 바꾸기",
+		"changePose": "이 포즈 편집",
 		"changeHint": "바꿀 내용을 설명하세요. 크레딧을 사용해요.",
 		"name": "상태 이름",
 		"noEquipment": "장비는 복사되지 않습니다.",

@@ -2627,7 +2627,8 @@
 		"generated": "Generated",
 		"sourceMissing": "Source unavailable",
 		"sourceChanged": "The source changed after generating, so this result can’t be saved. Discard it and try again.",
-		"grounded": "Moved onto the source’s ground line to match."
+		"keepGrounded": "Keep on the ground",
+		"groundedHint": "Some views came back higher or lower than the source. Turn this off for jumps and other poses off the ground."
 	},
 	"stateJointFit": {
 		"busy": "Joint fitting is already in progress. Try again when it finishes.",
@@ -2642,7 +2643,7 @@
 		"title": "Create State",
 		"source": "Source",
 		"preview": "{source}, facing {facing}",
-		"changePose": "Change the pose",
+		"changePose": "Edit this pose",
 		"changeHint": "Describe what to change. Uses credits.",
 		"name": "State name",
 		"noEquipment": "Equipment isn’t copied.",

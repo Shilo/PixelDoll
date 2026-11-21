@@ -102,8 +102,8 @@ export interface StateReview {
 	sourceVersion: string;
 	endpoint: ReadyStatePlan['endpoint'];
 	views: { direction: DirectionName; image: Img }[];
-	/** Facings moved back onto the source's ground before review. */
-	grounded: DirectionName[];
+	/** As returned, for facings that came back off the source's ground and were moved onto it in `views`. */
+	ungrounded: Partial<Record<DirectionName, Img>>;
 	provenance: ReturnType<typeof provOf>[];
 	childId?: string;
 }
@@ -429,8 +429,8 @@ async function readReview(
 						)
 					).flat()
 				};
-	const grounded: DirectionName[] = [];
-	// Managed results stay exactly as PixelLab stored them; local edits are put back on the source's ground.
+	const ungrounded: StateReview['ungrounded'] = {};
+	// Managed results stay exactly as PixelLab stored them; local edits are offered back on the source's ground.
 	if (plan.endpoint !== '/create-character-state') {
 		const { project } = await loadProject(projectId);
 		const source = stateGenerationSource(project, attempt.source);
@@ -439,13 +439,13 @@ async function readReview(
 				const original = source.views.find(({ direction }) => direction === view.direction);
 				if (!original) return view;
 				const { image, shift } = groundToSource(view.image, original.image);
-				if (shift) grounded.push(view.direction);
+				if (shift) ungrounded[view.direction] = view.image;
 				return { ...view, image };
 			});
 	}
 	return {
 		...result,
-		grounded,
+		ungrounded,
 		projectId,
 		id: attempt.id,
 		source: attempt.source,

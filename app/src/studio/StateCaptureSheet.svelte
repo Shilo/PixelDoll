@@ -124,6 +124,19 @@
 	let checkedPending = $state(false);
 	let review = $state.raw<StateReview | null>(null);
 	let reviewFacing = $state<DirectionName | null>(null);
+	let keepGrounded = $state(true);
+	// Grounded views by default; the user can keep PixelLab's placement, e.g. for a jump.
+	const reviewed = $derived.by(() => {
+		const current = review;
+		if (!current || keepGrounded) return current;
+		return {
+			...current,
+			views: current.views.map((view) => ({
+				...view,
+				image: current.ungrounded[view.direction] ?? view.image
+			}))
+		};
+	});
 	let reviewHeading = $state<HTMLElement>();
 	// The generate button disappears when its review arrives: move focus to the review once per result.
 	let focusedReview = '';
@@ -208,7 +221,7 @@
 	const sourceCurrent = $derived(!!review && reviewSource?.version === review.sourceVersion);
 	// Every facing the saved State will have: generated views plus the rig's mirrors of them.
 	const reviewViews = $derived.by(() => {
-		const current = review;
+		const current = reviewed;
 		if (!current || !project || !body) return [];
 		const generated = new Map(current.views.map(({ direction, image }) => [direction, image]));
 		const sent = new Map(
@@ -393,6 +406,7 @@
 			}
 			checkedPending = true;
 			reviewFacing = null;
+			keepGrounded = true;
 		});
 	}
 
@@ -416,12 +430,13 @@
 			canContinue = false;
 			checkedPending = true;
 			reviewFacing = null;
+			keepGrounded = true;
 		});
 	}
 
 	function save() {
-		if (!review) return;
-		const pending = review;
+		if (!reviewed) return;
+		const pending = reviewed;
 		void run('stateCapture.saving', async () => {
 			await saveState(pending);
 			if (ui.sheet === 'stateCapture') ui.sheet = null;
@@ -440,13 +455,20 @@
 			continuation = null;
 			review = null;
 			reviewFacing = null;
+			keepGrounded = true;
 			checkedPending = true;
 		});
 	}
 </script>
 
 {#snippet cell(image: Img | null, box: number, label: string)}
-	<Sprite img={image} k={image ? croppedBacking(box, image, ui.dpr) : 1} checker {label} />
+	<Sprite
+		img={image}
+		k={image ? croppedBacking(box, image, ui.dpr) : 1}
+		limit={box}
+		checker
+		{label}
+	/>
 {/snippet}
 
 {#snippet costLabel(cost: StateGenerationCost)}
@@ -473,9 +495,9 @@
 >
 	{#if review}
 		<div class="state-panel" aria-busy={!!busy}>
-			<p class="muted small review-heading" tabindex="-1" bind:this={reviewHeading}>
+			<h3 class="muted small review-heading" tabindex="-1" bind:this={reviewHeading}>
 				{t('stateGeneration.review', { name: moveLabel(review.id) })}
-			</p>
+			</h3>
 			{#if view}
 				{@const facingName = displayDirection(view.direction)}
 				{@const sourceName = clipName(review.source.clip)}
@@ -525,8 +547,24 @@
 			{/if}
 			{#if !sourceCurrent}
 				<p class="notice warn small" role="status">{t('stateGeneration.sourceChanged')}</p>
-			{:else if review.grounded.length}
-				<p class="faint small">{t('stateGeneration.grounded')}</p>
+			{:else if Object.keys(review.ungrounded).length}
+				<label class="bu-check review-ground">
+					<span class="edit-copy">
+						<span>{t('stateGeneration.keepGrounded')}</span>
+						<span id="{formId}-ground-hint" class="faint small"
+							>{t('stateGeneration.groundedHint')}</span
+						>
+					</span>
+					<input
+						class="bu-switch"
+						type="checkbox"
+						role="switch"
+						bind:checked={keepGrounded}
+						disabled={!!busy}
+						aria-label={t('stateGeneration.keepGrounded')}
+						aria-describedby="{formId}-ground-hint"
+					/>
+				</label>
 			{/if}
 			{#if confirmDiscard}<p class="notice warn small" role="status">
 					{t('stateGeneration.discardWarning')}
@@ -560,6 +598,7 @@
 							class="source-preview"
 							type="button"
 							aria-label={t(rotating ? 'common.pause' : 'common.play')}
+							aria-describedby="{formId}-facing"
 							onclick={() => (rotating = !rotating)}
 						>
 							{@render sprite()}
@@ -570,7 +609,7 @@
 					{:else}
 						<div class="source-preview">{@render sprite()}</div>
 					{/if}
-					<p class="cell-caption" aria-hidden="true">{facingName}</p>
+					<p class="cell-caption" id="{formId}-facing">{facingName}</p>
 				{/if}
 				{#if total > 1}
 					<div class="source-nav">
@@ -877,7 +916,12 @@
 	/* Previews are the stored cell: whole-pixel scale on a checkerboard, its edges outlined. */
 	.cell-frame {
 		display: inline-grid;
+		max-inline-size: 100%;
 		outline: 1px solid var(--bu-rim);
+	}
+	.cell-frame :global(canvas) {
+		max-inline-size: 100%;
+		block-size: auto !important;
 	}
 	.cell-caption {
 		margin: -4px 0 0;
@@ -970,7 +1014,11 @@
 		font-size: 12px;
 		color: var(--bu-muted);
 	}
-	.review-heading:focus {
+	.review-heading {
+		margin: 0;
+		font-weight: 400;
+	}
+	.review-heading:focus:not(:focus-visible) {
 		outline: none;
 	}
 	@container (min-width: 480px) {

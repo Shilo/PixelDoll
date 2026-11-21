@@ -2643,7 +2643,8 @@
 		"generated": "Généré",
 		"sourceMissing": "Source indisponible",
 		"sourceChanged": "La source a changé après la génération : ce résultat ne peut pas être enregistré. Abandonnez-le et réessayez.",
-		"grounded": "Placé sur la ligne de sol de la source pour correspondre."
+		"keepGrounded": "Garder au sol",
+		"groundedHint": "Certaines vues sont revenues plus haut ou plus bas que la source. Désactivez ceci pour les sauts et les autres poses en l’air."
 	},
 	"stateJointFit": {
 		"busy": "La mesure des articulations est déjà en cours. Réessayez ensuite.",
@@ -2658,7 +2659,7 @@
 		"title": "Créer un état",
 		"source": "Source",
 		"preview": "{source}, direction {facing}",
-		"changePose": "Changer la pose",
+		"changePose": "Modifier cette pose",
 		"changeHint": "Décrivez ce qu’il faut changer. Utilise des crédits.",
 		"name": "Nom de l’état",
 		"noEquipment": "Équipement non copié.",

@@ -2636,7 +2636,8 @@
 		"generated": "Oluşturulan",
 		"sourceMissing": "Kaynak kullanılamıyor",
 		"sourceChanged": "Oluşturmadan sonra kaynak değişti, bu yüzden bu sonuç kaydedilemez. Atıp yeniden deneyin.",
-		"grounded": "Eşleşmesi için kaynağın zemin çizgisine taşındı."
+		"keepGrounded": "Yerde tut",
+		"groundedHint": "Bazı görünümler kaynaktan daha yüksek veya alçak geldi. Zıplama gibi yerden kopan pozlar için bunu kapatın."
 	},
 	"stateJointFit": {
 		"busy": "Eklem ölçümü zaten sürüyor. Tamamlandığında tekrar deneyin.",
@@ -2651,7 +2652,7 @@
 		"title": "Durum oluştur",
 		"source": "Kaynak",
 		"preview": "{source}, yön: {facing}",
-		"changePose": "Pozu değiştir",
+		"changePose": "Bu pozu düzenle",
 		"changeHint": "Neyin değişeceğini tarif edin. Kredi kullanır.",
 		"name": "Durum adı",
 		"noEquipment": "Ekipman kopyalanmaz.",

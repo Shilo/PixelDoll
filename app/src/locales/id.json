@@ -2542,7 +2542,8 @@
 		"generated": "Hasil generasi",
 		"sourceMissing": "Sumber tidak tersedia",
 		"sourceChanged": "Sumber berubah setelah pembuatan, jadi hasil ini tidak dapat disimpan. Buang lalu coba lagi.",
-		"grounded": "Dipindahkan ke garis dasar sumber agar sesuai."
+		"keepGrounded": "Tetap di tanah",
+		"groundedHint": "Beberapa tampilan kembali lebih tinggi atau lebih rendah dari sumber. Matikan ini untuk lompatan dan pose lain yang tidak menapak."
 	},
 	"stateJointFit": {
 		"busy": "Pengukuran sendi sedang berlangsung. Coba lagi setelah selesai.",
@@ -2557,7 +2558,7 @@
 		"title": "Buat status",
 		"source": "Sumber",
 		"preview": "{source}, arah {facing}",
-		"changePose": "Ubah pose",
+		"changePose": "Edit pose ini",
 		"changeHint": "Jelaskan apa yang ingin diubah. Menggunakan kredit.",
 		"name": "Nama status",
 		"noEquipment": "Perlengkapan tidak disalin.",
