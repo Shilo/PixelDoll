@@ -2187,12 +2187,37 @@
 		}
 	},
 	"moveSheet": {
-		"sharedCopiesCoverage": "As cópias compartilhadas ainda podem ser usadas nas vistas em que têm quadros.",
+		"checkpoint": {
+			"generate": "Gerar animação",
+			"initialEstimate": "Cerca de {minutes} min · Sem itens",
+			"review": "Revisar animação",
+			"ready": "Você já pode revisar {move}.",
+			"reviewNote": "Revise {move} antes de gastar com itens.",
+			"replaceNote": "Substituir {move} remove os quadros de itens ajustados nas direções alteradas.",
+			"regenerate": "Gerar novamente…",
+			"save": "Salvar animação",
+			"replace": "Substituir animação",
+			"discardDraft": "Descartar rascunho",
+			"titleItems": "Animar itens",
+			"chooseFor": "Escolha os itens que você quer animar em {move}.",
+			"total": "Cerca de {gens} gerações a mais",
+			"selected": "Selecionado",
+			"animateCount": {
+				"one": "Animar {n} item",
+				"other": "Animar {n} itens"
+			},
+			"unavailable": "Indisponível",
+			"findings": "Notas de qualidade",
+			"hardFailure": "Gere esta animação novamente antes de salvá-la.",
+			"beforeItems": "Revise a animação antes de animar itens.",
+			"changed": "O personagem ou a animação mudou. Abra a revisão novamente.",
+			"missingFrames": "Os quadros revisados não estão mais disponíveis.",
+			"tier": "Seu plano do PixelLab não oferece suporte a alguns dos itens selecionados."
+		},
 		"thatCharacter": "esse personagem",
 		"recoveryCheckFailed": "Não foi possível verificar os quadros em cache: {error}",
 		"retryLabel": "Gerar animação novamente",
 		"newSetup": "Nova animação…",
-		"estimateWithItems": "Estimativa: {gens} gerações com equipamento",
 		"useSaved": "Usar quadros salvos",
 		"retryChecks": "Repetir verificações de articulações",
 		"reuseCached": "Reaproveitar quadros em cache",
@@ -2200,11 +2225,8 @@
 		"keepFrames": "Manter quadros",
 		"keepWorking": "Você pode continuar trabalhando.",
 		"queueAnother": "Colocar outra animação na fila",
-		"footEstimate": "Cerca de {minutes} min · {body} gerações para o corpo",
-		"footEstimateItems": "Cerca de {minutes} min · {body} gerações para o corpo + {items} gerações se o equipamento for animado",
 		"addLabel": "Adicionar ou substituir animação",
 		"submit": {
-			"add": "Adicionar {move}",
 			"replaceViews": "Substituir vistas de {move}",
 			"queue": "Colocar {move} na fila",
 			"move": "animação",
@@ -2256,14 +2278,12 @@
 		"alreadyQueued": "{move} já está na fila.",
 		"waitsForCurrent": "A animação espera a que está em andamento terminar e depois começa sozinha.",
 		"addFeature": "Animações para itens equipados",
-		"animateItems": "Animar estes itens também",
 		"pipeline": {
 			"described": "Movimento com pixminimax (sem armas, objetos ou efeitos) → articulações → skeleton-v3 direto na vista de repouso",
 			"walk": "Caminhada com skeleton-v3 → articulações → skeleton-v3 direto na vista de repouso",
 			"authored": "Pontos-chave criados a partir da pose de repouso → skeleton-v3 direto",
 			"grid": "{frames} quadros × {dirs} direções",
-			"gridMirrored": "{frames} quadros × {dirs} direções ({mirrored} espelhadas)",
-			"cost": "corpo ≈ {body} gerações, itens {items} gerações · as observações da revisão do corpo não disparam redesenhos."
+			"gridMirrored": "{frames} quadros × {dirs} direções ({mirrored} espelhadas)"
 		},
 		"changedDuringEdit": "Esta animação mudou durante a edição. Selecione-a novamente para continuar.",
 		"duplicateOption": "{move} já está na lista de animações. Comece a descrição com outras palavras.",
@@ -2297,9 +2317,6 @@
 		"redrawHidesEquipment": "Substituir essas vistas oculta o equipamento até que novos quadros sejam criados.",
 		"redrawMirrors": "As vistas espelhadas também mudam: {directions}.",
 		"redrawOtherMoves": "As outras animações não mudam.",
-		"equipmentWaitsForBody": "Se as verificações do corpo interromperem a animação, não serão enviados pedidos para gerar quadros do equipamento.",
-		"uncheckedItemsHidden": "Os itens não marcados ficam ocultos até serem animados.",
-		"fittedEquipmentOnly": "Aqui só é possível animar o equipamento ajustado a todas as vistas selecionadas.",
 		"review": {
 			"redrawTitle": "Revisar redesenho do item",
 			"repairTitle": "Revisar reparo do item",

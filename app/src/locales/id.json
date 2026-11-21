@@ -2081,12 +2081,36 @@
 		}
 	},
 	"moveSheet": {
-		"sharedCopiesCoverage": "Salinan bersama tetap bisa dipakai pada tampilan yang memiliki bingkai.",
+		"checkpoint": {
+			"generate": "Buat animasi",
+			"initialEstimate": "Sekitar {minutes} mnt · Tanpa item",
+			"review": "Tinjau animasi",
+			"ready": "{move} siap ditinjau.",
+			"reviewNote": "Tinjau {move} sebelum mengeluarkan biaya untuk item.",
+			"replaceNote": "Mengganti {move} akan menghapus frame item yang sudah disesuaikan pada arah yang berubah.",
+			"regenerate": "Buat ulang…",
+			"save": "Simpan animasi",
+			"replace": "Ganti animasi",
+			"discardDraft": "Buang draf",
+			"titleItems": "Animasikan item",
+			"chooseFor": "Pilih item yang ingin dianimasikan untuk {move}.",
+			"total": "Perkiraan {gens} generasi tambahan",
+			"selected": "Dipilih",
+			"animateCount": {
+				"other": "Animasikan {n} item"
+			},
+			"unavailable": "Tidak tersedia",
+			"findings": "Catatan kualitas",
+			"hardFailure": "Buat ulang animasi ini sebelum menyimpannya.",
+			"beforeItems": "Tinjau animasi sebelum menganimasikan item.",
+			"changed": "Karakter atau animasi berubah. Buka kembali tinjauan sebelum melanjutkan.",
+			"missingFrames": "Frame yang telah ditinjau tidak lagi tersedia.",
+			"tier": "Paket PixelLab Anda tidak mendukung beberapa item yang dipilih."
+		},
 		"thatCharacter": "karakter tersebut",
 		"recoveryCheckFailed": "Tidak dapat memeriksa frame di cache: {error}",
 		"retryLabel": "Buat ulang animasi",
 		"newSetup": "Animasi baru…",
-		"estimateWithItems": "Perkiraan {gens} generasi dengan perlengkapan",
 		"useSaved": "Gunakan frame tersimpan",
 		"retryChecks": "Ulangi pemeriksaan sendi",
 		"reuseCached": "Pakai ulang frame di cache",
@@ -2094,11 +2118,8 @@
 		"keepFrames": "Simpan frame",
 		"keepWorking": "Anda bisa terus bekerja.",
 		"queueAnother": "Antrekan animasi lain",
-		"footEstimate": "Sekitar {minutes} menit · tubuh {body} generasi",
-		"footEstimateItems": "Sekitar {minutes} menit · tubuh {body} generasi + {items} generasi jika perlengkapan ikut dibuat",
 		"addLabel": "Tambah atau ganti animasi",
 		"submit": {
-			"add": "Tambah {move}",
 			"replaceViews": "Ganti tampilan {move}",
 			"queue": "Antrekan {move}",
 			"move": "animasi",
@@ -2128,8 +2149,12 @@
 			"items": "Pose perlengkapan pilihan dibuat setelah tubuh lulus pemeriksaan · perkiraan {gens} generasi tambahan, dengan kemungkinan percobaan ulang dan tagihan dalam dolar."
 		},
 		"color": {
-			"pixels": { "other": "{count} piksel dengan warna mirip" },
-			"frames": { "other": "{count} frame {directions} di cache" },
+			"pixels": {
+				"other": "{count} piksel dengan warna mirip"
+			},
+			"frames": {
+				"other": "{count} frame {directions} di cache"
+			},
 			"match": "Cocokkan {pixels} dengan palet pose berdiri di seluruh {frames}. Bentuk tubuh tetap sama, dan warna lainnya tidak berubah.",
 			"recheck": "Periksa ulang {count} frame yang berubah · perkiraan {gens} generasi atau {usd}.",
 			"items": "Pose perlengkapan pilihan dibuat setelah tubuh lulus pemeriksaan · perkiraan {gens} generasi tambahan.",
@@ -2143,14 +2168,12 @@
 		"alreadyQueued": "{move} sudah ada dalam antrean.",
 		"waitsForCurrent": "Animasi ini menunggu animasi yang sedang diproses, lalu berjalan otomatis.",
 		"addFeature": "Animasi untuk item yang dikenakan",
-		"animateItems": "Animasikan juga item ini",
 		"pipeline": {
 			"described": "Gerakan pixminimax (tanpa senjata, properti, atau efek) → sendi → skeleton-v3 langsung pada tampilan pose awal",
 			"walk": "Gerakan berjalan skeleton-v3 → sendi → skeleton-v3 langsung pada tampilan pose awal",
 			"authored": "Titik sendi dibuat dari pose awal → skeleton-v3 langsung",
 			"grid": "{frames} frame × {dirs} arah",
-			"gridMirrored": "{frames} frame × {dirs} arah ({mirrored} dicerminkan)",
-			"cost": "tubuh ≈ {body} generasi, item {items} generasi · catatan tinjauan tubuh tidak memicu penggambaran ulang."
+			"gridMirrored": "{frames} frame × {dirs} arah ({mirrored} dicerminkan)"
 		},
 		"changedDuringEdit": "Animasi ini berubah saat Anda mengeditnya. Pilih kembali untuk melanjutkan.",
 		"duplicateOption": "{move} sudah ada di pilihan animasi. Awali deskripsi dengan kata-kata lain.",
@@ -2181,9 +2204,6 @@
 		"redrawHidesEquipment": "Mengganti tampilan ini akan menyembunyikan perlengkapan sampai frame baru dibuat.",
 		"redrawMirrors": "Tampilan cermin juga berubah: {directions}.",
 		"redrawOtherMoves": "Animasi lain tidak berubah.",
-		"equipmentWaitsForBody": "Jika pemeriksaan tubuh menghentikan animasi, permintaan untuk membuat frame perlengkapan tidak dikirim.",
-		"uncheckedItemsHidden": "Item yang tidak dicentang tetap tersembunyi sampai dianimasikan.",
-		"fittedEquipmentOnly": "Hanya perlengkapan yang sudah disesuaikan dengan semua tampilan terpilih yang dapat dianimasikan di sini.",
 		"review": {
 			"redrawTitle": "Tinjau penggambaran ulang item",
 			"repairTitle": "Tinjau perbaikan item",

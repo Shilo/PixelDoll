@@ -2,7 +2,7 @@
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	// Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
-	// re-rendered through raw skeleton-v3), plus one pose call per worn item x direction so the items follow the new clip.
+	// re-rendered through raw skeleton-v3).
 	import Sheet from './Sheet.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import Help from './Help.svelte';
@@ -24,8 +24,7 @@
 	import {
 		INVALID_ITEM_GRID,
 		ITEM_MOVE_SAVE_CONFLICT,
-		SAVED_FRAMES_UNAVAILABLE,
-		posable
+		SAVED_FRAMES_UNAVAILABLE
 	} from '../lib/items/run.ts';
 	import { AUTHORED } from '../lib/rig/poses.ts';
 	import {
@@ -50,7 +49,6 @@
 		store,
 		isDemo,
 		moving,
-		shared,
 		settingUp,
 		startMove,
 		queueMoves,
@@ -76,10 +74,8 @@
 	import { errorText, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
-	import { sharedItemsHidden } from './wardrobeVisibility.svelte.ts';
 
 	const m = $derived(store.project?.manifest);
-	const hasSharedOffers = $derived(!sharedItemsHidden(doc.id) && shared.items.length > 0);
 	let rec = $state.raw<StoredProject | null>(null);
 	// Re-read after a failure: a move saves its body and finished item views before failing, and Try again is priced from them.
 	$effect(() => {
@@ -97,6 +93,8 @@
 		].filter((a) => !reservedMove(a))
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
+	const reopen = draft?.reopen;
+	if (reopen) delete draft.reopen;
 	// The PixelLab models that can make a move's body frames; Skeleton v3 keeps the current flow.
 	const MODELS: MoveAnimationModel[] = ['skeleton-v3', 'pixminimax', 'v3'];
 	const advancedId = $props.id();
@@ -125,10 +123,23 @@
 			.slice(0, 24);
 	const replacing = $derived(replaceSelected && have.has(action));
 	const savedMove = $derived(m?.rig.animations.find((a) => a.id === action));
+	const draftRegeneration = $derived.by(() => {
+		const reference = draft?.regeneration;
+		if (!reference || !Object.hasOwn(store.moveReviews, reference.id)) return;
+		const { spec } = store.moveReviews[reference.id];
+		if (spec.seed === reference.seed && spec.activityScope === reference.activityScope)
+			return reference;
+	});
 	// Ids allow only a-z, 0-9, - and _ (rig.ts): a description in another script gets the first free "move-N".
 	const freeMoveId = () => {
+		if (draftRegeneration && text.trim() === draft?.text?.trim()) return draftRegeneration.id;
 		let n = 1;
-		while (have.has(`move-${n}`) || pendingIds.includes(`move-${n}`)) n++;
+		while (
+			have.has(`move-${n}`) ||
+			pendingIds.includes(`move-${n}`) ||
+			Object.hasOwn(store.moveReviews, `move-${n}`)
+		)
+			n++;
 		return `move-${n}`;
 	};
 	const id = $derived(
@@ -165,12 +176,6 @@
 				}))
 	);
 	const describing = $derived(!action || describingReplacement);
-	const items = $derived(m && targetDirs.length ? posable(m, targetDirs) : []);
-	const unavailable = $derived(
-		(m?.items ?? []).filter(
-			(item) => item.slot !== 'body' && !items.some((eligible) => eligible.id === item.id)
-		)
-	);
 	const canvas = $derived(m?.rig.cell.w ?? 0);
 	// Ride is a static authored pose on Skeleton v3 (create.ts moveAnimationModel), so it has no model or frame choice.
 	const riding = $derived(!describing && action === 'ride');
@@ -239,8 +244,11 @@
 		replace: replacing,
 		animation: animationOptions
 	});
+	const regeneration = $derived(draftRegeneration?.id === id ? draftRegeneration : undefined);
 	const motionIssue = $derived.by(() => {
 		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
+		if (Object.hasOwn(store.moveReviews, id) && !regeneration)
+			return t('moveSheet.checkpoint.ready', { move: nice(id) });
 		if (!action && id && options.includes(id))
 			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (!m || !id) return '';
@@ -249,11 +257,9 @@
 			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
 		);
 	});
-	let included = $state<string[]>(draft?.items ?? []);
-	const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id));
 	const est = $derived(
 		m && id && targetDirs.length && !reservedMove(id) && !motionIssue && !pendingIds.includes(id)
-			? moveEstimate(m, { ...motion, items: chosen, dirs: targetDirs })
+			? moveEstimate(m, { ...motion, items: [], dirs: targetDirs })
 			: null
 	);
 	const dirs = $derived(targetDirs.length);
@@ -271,7 +277,7 @@
 			m && id && targetDirs.length && !motionIssue
 				? {
 						...motion,
-						items: chosen,
+						items: [],
 						poseStyle: 'visible-side-v1',
 						seed: 0,
 						...(replacing ? { dirs: [...targetDirs] } : {})
@@ -282,8 +288,8 @@
 	const addTier = $derived(addAccess.tier);
 	const mine = $derived(!!moving.spec && moving.projectId === doc.id);
 	// "Queue another move" shows the form over this character's running move; a new move then waits its turn
-	let adding = $state(false);
-	const progress = $derived(mine && !adding);
+	ui.moveFormOpen = !!reopen;
+	const progress = $derived(mine && !ui.moveFormOpen);
 	const repairReview = $derived(progress ? moving.repairReview : null);
 	const busy = $derived(!!moving.spec && !moving.done);
 	const savedItemFrames = $derived(
@@ -440,19 +446,21 @@
 	function go() {
 		const projectId = doc.id;
 		if (!est || addAccess.error) return;
-		const spec = {
+		const spec: MoveSpec = {
 			...motion,
-			items: chosen,
+			items: [],
+			reviewBeforePublish: true,
+			reviewRegeneration: regeneration,
 			poseStyle: 'visible-side-v1' as const,
 			seed: 1 + Math.floor(Math.random() * 1_000_000),
 			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] })
 		};
 		formDrafts.move = {
 			projectId,
+			regeneration,
 			action,
 			replace: replaceSelected,
 			text,
-			items: $state.snapshot(included),
 			dirs: [...selectedDirs],
 			poseStyle: 'visible-side-v1',
 			animation:
@@ -462,7 +470,7 @@
 		};
 		withKey(() => {
 			formDrafts.move = undefined;
-			adding = false;
+			ui.moveFormOpen = false;
 			void queueMoves(projectId, [spec]);
 			ui.sheet = 'move';
 		}, addTier);
@@ -568,7 +576,7 @@
 		<!-- new seed re-rolls body + item poses (R6 P2-7) -->
 	{:else if progress}
 		<span class="foot-note">{t('moveSheet.keepWorking')}</span>
-		<button class="bu-action btn" data-variant="outline" onclick={() => (adding = true)}
+		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = true)}
 			>{t('moveSheet.queueAnother')}</button
 		>
 		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}
@@ -578,16 +586,7 @@
 		{#if est}
 			<span class="foot-note move-cost-note">
 				<span>
-					{est.items
-						? t('moveSheet.footEstimateItems', {
-								minutes: formatNumber(est.minutes),
-								body: formatNumber(Math.ceil(est.body)),
-								items: formatNumber(est.items)
-							})
-						: t('moveSheet.footEstimate', {
-								minutes: formatNumber(est.minutes),
-								body: formatNumber(Math.ceil(est.body))
-							})}
+					{t('moveSheet.checkpoint.initialEstimate', { minutes: formatNumber(est.minutes) })}
 				</span>
 				<span>{t('moveSheet.costNotice')}</span>
 			</span>
@@ -598,7 +597,7 @@
 					label={t('moveSheet.addLabel')}
 					plan={movePlan(rec, {
 						...motion,
-						items: chosen,
+						items: [],
 						poseStyle: 'visible-side-v1',
 						...(replacing ? { dirs: [...targetDirs] } : {})
 					})}
@@ -619,11 +618,11 @@
 								: 'moveSheet.submit.queue'
 							: replacing
 								? 'moveSheet.submit.replaceViews'
-								: 'moveSheet.submit.add',
+								: 'moveSheet.checkpoint.generate',
 						{ move: id ? nice(id) : t('moveSheet.submit.move') }
 					)}
 					{#if est}<span class="cost">
-							{t(est.items ? 'moveSheet.estimateWithItems' : 'moves.estimate', {
+							{t('moves.estimate', {
 								gens: formatNumber(Math.ceil(est.gens))
 							})}
 						</span>{/if}</span
@@ -661,8 +660,8 @@
 				>{t('moveSheet.open', { character: holder })}</button
 			>
 		</p>{/if}
-	{#if mine && adding && moving.repairReview}
-		<button class="bu-action btn" data-variant="outline" onclick={() => (adding = false)}
+	{#if mine && ui.moveFormOpen && moving.repairReview}
+		<button class="bu-action btn" data-variant="outline" onclick={() => (ui.moveFormOpen = false)}
 			>{moving.spec?.redrawItem
 				? t('moveSheet.review.redrawTitle')
 				: t('moveSheet.review.repairTitle')}</button
@@ -1076,40 +1075,6 @@
 				feature={t('moveSheet.addFeature')}
 				recommendation={GENERATION_RECOMMENDATION.reason}
 			/>
-			{#if items.length}
-				<div class="field">
-					<span class="label">{t('moveSheet.animateItems')}</span>
-					{#each items as it (it.id)}
-						<label class="check"
-							><input
-								type="checkbox"
-								checked={included.includes(it.id)}
-								onchange={(e) =>
-									(included = e.currentTarget.checked
-										? [...included, it.id]
-										: included.filter((x) => x !== it.id))}
-							/>{it.name}
-							{#if m && est}<span class="faint small"
-									>{t('generationDetails.gens', {
-										value: formatNumber(
-											moveEstimate(m, { ...motion, items: [it.id], dirs: targetDirs }).items
-										)
-									})}</span
-								>{/if}</label
-						>
-					{/each}
-					<p class="faint small">
-						{t('moveSheet.equipmentWaitsForBody')}
-						{#if !replacing}{t('moveSheet.uncheckedItemsHidden')}{/if}
-					</p>
-				</div>
-			{/if}
-			{#if (unavailable.length || hasSharedOffers) && targetDirs.length}
-				<p class="faint small">
-					{t('moveSheet.fittedEquipmentOnly')}
-					{#if hasSharedOffers}{t('moveSheet.sharedCopiesCoverage')}{/if}
-				</p>
-			{/if}
 			{#if est}<details class="disclosure">
 					<summary><ChevronRight size={14} />{t('common.details')}</summary>
 					<div>
@@ -1127,7 +1092,7 @@
 											mirrored: affectedMirrors
 										})
 									: t('moveSheet.pipeline.grid', { frames: est.frames, dirs }),
-								t('moveSheet.pipeline.cost', { body: decimal(est.body), items: est.items })
+								t('moves.estimate', { gens: decimal(est.body) })
 							].join(' · ')}
 						</p>
 					</div>
