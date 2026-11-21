@@ -85,6 +85,8 @@ export interface Rig {
 	baseItem: string;
 	baseHash: Sha256;
 	pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 12)
+	/** Export world unit (pixels per unit) kept when Frame size changed the cell; default: the cell width. */
+	pixelsPerUnit?: number;
 	rest?: Partial<Record<DirectionName, RestView>>; // original standing views, including unused views retained for account reconnection
 	anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
@@ -108,6 +110,9 @@ export function matchesStanding(
 		(image === rest || (source?.motion === 'imported-rest' && source.reference === rest))
 	);
 }
+/** Pixels per world unit for engine exports: the cell width, or the width a resized character had (Frame size). */
+export const exportUnit = (rig: Pick<Rig, 'cell' | 'pixelsPerUnit'>) =>
+	rig.pixelsPerUnit ?? rig.cell.w;
 export const cellKey = (anim: string, dir: DirectionName, cell: number) => `${anim}/${dir}/${cell}`;
 export const defaultMs = (anim: string) => (anim.includes('idle') ? 150 : 100);
 export const playlist = (cells: number, ms: number) =>
@@ -173,6 +178,11 @@ export function validateRig(rig: Rig, hashes?: Record<string, Sha256>): string[]
 	const { x, y } = rig.pivot;
 	if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x > w || y < 0 || y > h)
 		e.push(`pivot ${x},${y} outside 0..${w}`);
+	if (
+		rig.pixelsPerUnit !== undefined &&
+		!(Number.isFinite(rig.pixelsPerUnit) && rig.pixelsPerUnit > 0)
+	)
+		e.push(`pixelsPerUnit ${rig.pixelsPerUnit}: must be a positive number`);
 	const ids = rig.directions.map((d) => d.id);
 	if (!rig.directions.length) e.push('no directions');
 	if (new Set(ids).size !== ids.length) e.push('duplicate direction');

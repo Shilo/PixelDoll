@@ -98,6 +98,7 @@ export interface Rig {
   baseItem: string; // id of the item in slot "body"
   baseHash: Sha256; // hash over all base cell hashes (anim, dir, cell order)
   pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: {x: 8, y: 12}, 4 px floor)
+  pixelsPerUnit?: number; // export world unit kept by Frame size (the cell width before the first resize); absent = cell width
   anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
 export interface RigDirection {
@@ -305,7 +306,7 @@ export interface ExportInfo {
   engines: (
     "generic" | "godot" | "unity" | "phaser" | "gdevelop" | "aseprite"
   )[]; // RPG Maker zips ship no manifest.json
-  pixelsPerUnit: number; // Unity; default = rig.cell.w
+  pixelsPerUnit: number; // Unity; default = rig.pixelsPerUnit ?? rig.cell.w
   baked?: string[]; // preset ids with baked composites
   bakedCell?: { w: number; h: number }; // v1.3.1: cell of every baked sheet = union of all exported layers around the pivot
   bakedPivot?: { x: number; y: number }; //   (64 rig + 96 sword -> 96x96, pivot rig.pivot + 16); = rig cell/pivot without oversize
@@ -334,7 +335,7 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
   node origin.
 - **Mirrored directions** flip the whole layer cell, so an oversize cell must be centered on the rig cell
   (`2 · (rig.pivot.x − layer.pivot.x) + layer.cell.w = rig.cell.w`; inv. 10).
-- **World scale** stays the base's: Unity PPU = `export.pixelsPerUnit` (default `rig.cell.w`) for every layer, never the
+- **World scale** stays the base's: Unity PPU = `export.pixelsPerUnit` (default `rig.pixelsPerUnit ?? rig.cell.w`) for every layer, never the
   layer's width, or a 96 sword renders at 2/3 scale.
 - `Slot` defaults (held 96, back 96 optional, others 64) are an item-pipeline choice; the manifest only stores the layer's.
   Since B9 the item pipeline gives every `skeleton-pose` held item (`main_hand`, `off_hand`) `cell {96, 96}` and

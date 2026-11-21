@@ -353,6 +353,8 @@ export interface Rig {
 	baseItem: string;
 	baseHash: Sha256;
 	pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 12)
+	/** Export world unit (pixels per unit) kept when Frame size changed the cell; default: the cell width. */
+	pixelsPerUnit?: number;
 	rest?: Partial<Record<DirectionName, RestView>>; // original standing views, including unused views retained for account reconnection
 	anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
