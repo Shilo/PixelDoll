@@ -870,7 +870,8 @@
 			"format": "내보내기 형식",
 			"versionMenu": "RPG Maker 버전",
 			"version": "버전",
-			"versionLabel": "RPG Maker 버전: {version}"
+			"versionLabel": "RPG Maker 버전: {version}",
+			"walkMove": "걷기 동작"
 		},
 		"group": { "engines": "엔진 및 프레임워크", "assets": "에셋" },
 		"target": {
@@ -1009,7 +1010,10 @@
 				"other": "RPG Maker: 걷기 동작에 {directions} 방향 뷰가 없어서 그 행은 제자리에 서 있어요."
 			},
 			"rpgSteps": "RPG Maker: 걷기 발걸음을 감지하지 못해서 첫 걷기 프레임을 발걸음으로 사용해요. 시트를 확인해 주세요.",
-			"rpgBelowFeet": "RPG Maker: {sheet} 시트는 발 아래에 {count}px 여백이 있어서 맵에서 {count}px 더 높게 서 있어요."
+			"rpgBelowFeet": "RPG Maker: {sheet} 시트는 발 아래에 {count}px 여백이 있어서 맵에서 {count}px 더 높게 서 있어요.",
+			"rpgOmittedMoves": {
+				"other": "RPG Maker: {moves}은(는) 포함되지 않아요. 걷기 시트에는 서 있기와 걷기 프레임만 들어가요."
+			}
 		}
 	},
 	"import": {
@@ -2341,6 +2345,11 @@
 	},
 	"moveNames": { "default": "서 있기", "idle": "대기", "walk": "걷기" },
 	"stateGeneration": {
+		"continueIntro": "아직 전송하지 않은 방향의 이미지를 생성할 수 있습니다. 완료된 이미지는 유지됩니다.",
+		"continueAccount": "이 상태를 계속하려면 원래 PixelLab 키로 다시 연결하세요.",
+		"continueViews": "유지할 방향: {kept}. 생성할 방향: {remaining}.",
+		"checkRemainingCost": "남은 비용 확인",
+		"generateRemaining": "나머지 방향 생성",
 		"confirmDiscard": "삭제 확인",
 		"discardWarning": "삭제해도 생성 횟수가 환불되거나 PixelLab의 상태가 삭제되지는 않아요. 다시 시작하면 모든 방향에 비용이 다시 들 수 있어요.",
 		"localOnly": "이 상태는 PixelDoll에만 저장돼요.",

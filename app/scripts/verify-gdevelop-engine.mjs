@@ -58,7 +58,29 @@ const png = (im) => {
 const m = gdFixture();
 const other = gdFixture();
 other.rig.baseHash = 'sha256:' + '2'.repeat(64);
-const firstFiles = gdevelopFiles(m, gdSheets()),
+const stateId = 'ready-stance';
+const stateSheet = 'state.png';
+m.rig.animations.push({
+	id: stateId,
+	kind: 'state',
+	cells: 1,
+	directions: ['south'],
+	loop: false,
+	frames: [{ cell: 0, ms: 150 }]
+});
+const sheets = gdSheets();
+const bodyLayer = m.items[0].layers[0];
+bodyLayer.sheets[stateId] = stateSheet;
+bodyLayer.sourceSheets[stateId] = stateSheet;
+for (const item of m.items.slice(1)) item.layers[0].sheets[stateId] = item.layers[0].sheets.walk;
+const statePixels = new Uint8ClampedArray(2 * 4 * 4);
+statePixels.set([0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 255, 255, 0, 255, 255]);
+sheets.set(stateSheet, {
+	w: 2,
+	h: 4,
+	data: statePixels
+});
+const firstFiles = gdevelopFiles(m, sheets),
 	otherFiles = gdevelopFiles(other, gdSheets());
 for (const f of [...firstFiles, ...otherFiles]) {
 	const file = path.join(output, f.name);
@@ -173,7 +195,7 @@ try {
 		return scene && Object.keys(scene).some((k) => k.startsWith('PixelDoll_PD_'));
 	});
 	const result = await page.evaluate(
-		({ bodyName, hairName, hatName, tuckedName, primaryKey, otherKey }) => {
+		({ bodyName, hairName, hatName, tuckedName, primaryKey, otherKey, stateId }) => {
 			const game = window.__nativeGDGame,
 				scene = game.getSceneStack().getCurrentScene();
 			const key = primaryKey;
@@ -221,6 +243,25 @@ try {
 				bodyZ: d.nodes.get(bodyName).getZOrder()
 			};
 			const nextMarker = [...extract().slice(-4)];
+			d.play(stateId, 'south');
+			const stateStart = { id: d.anim.id, cell: d.cell, marker: [...extract().slice(-4)] };
+			d.update(149);
+			d.play(stateId, 'south');
+			const stateContinues = d.elapsed === 149;
+			d.update(1);
+			const stateHeld =
+				d.cell === 0 && d.anim.loop === false && extract().slice(-4).join() === '255,0,255,255';
+			d.play(stateId, 'south');
+			const stateReplays = d.elapsed === 0;
+			let stateRejectsMissingFacing = false;
+			try {
+				d.play(stateId, 'east');
+			} catch {
+				stateRejectsMissingFacing = d.anim.id === stateId && d.dir === 'south';
+			}
+			d.play('walk', 'south');
+			const walkRestarts =
+				d.elapsed === 0 && d.cell === 1 && extract().slice(-4).join() === '0,200,0,255';
 			const second = library.create(400, 240);
 			second.applyPreset('red');
 			const independent = {
@@ -261,6 +302,12 @@ try {
 				nextMarker,
 				stopped,
 				repeatedPlay,
+				stateStart,
+				stateContinues,
+				stateHeld,
+				stateReplays,
+				stateRejectsMissingFacing,
+				walkRestarts,
 				replay,
 				restart,
 				hatHidden,
@@ -276,7 +323,8 @@ try {
 			hatName: gdObjectName('hat', 'main', gdCharacterKey(m)),
 			tuckedName: gdObjectName('hair~hat', 'main', gdCharacterKey(m)),
 			primaryKey: 'PixelDoll_PD_' + gdCharacterKey(m),
-			otherKey: 'PixelDoll_PD_' + gdCharacterKey(other)
+			otherKey: 'PixelDoll_PD_' + gdCharacterKey(other),
+			stateId
 		}
 	);
 	assert.deepEqual(result.initial, { cell: 1, base: [0, 0, 255, 255], hair: [0, 255, 255, 255] });
@@ -293,6 +341,14 @@ try {
 	assert.deepEqual(result.origins, { body: [319, 238], hat: [318, 237] });
 	assert.equal(result.stopped, 1);
 	assert.ok(result.repeatedPlay && result.replay && result.restart);
+	assert.deepEqual(result.stateStart, { id: stateId, cell: 0, marker: [255, 0, 255, 255] });
+	assert.ok(
+		result.stateContinues &&
+			result.stateHeld &&
+			result.stateReplays &&
+			result.stateRejectsMissingFacing &&
+			result.walkRestarts
+	);
 	assert.ok(
 		result.hatHidden &&
 			result.hiddenHair &&
@@ -316,7 +372,7 @@ try {
 		)
 	);
 	console.log(
-		'Actual shipped GDevelop runtime passed timing, origin resources, tuck, z, palettes, independent dolls, stop, unequip and destroy checks.'
+		'Actual shipped GDevelop runtime passed timing, State playback, origin resources, tuck, z, palettes, independent dolls, stop, unequip and destroy checks.'
 	);
 } finally {
 	await browser.close();

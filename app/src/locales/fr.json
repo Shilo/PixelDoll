@@ -895,7 +895,8 @@
 			"format": "Format d’export",
 			"versionMenu": "Version de RPG Maker",
 			"version": "Version",
-			"versionLabel": "Version de RPG Maker : {version}"
+			"versionLabel": "Version de RPG Maker : {version}",
+			"walkMove": "Animation de marche"
 		},
 		"group": { "engines": "Moteurs et frameworks", "assets": "Ressources" },
 		"target": {
@@ -1044,7 +1045,11 @@
 				"other": "RPG Maker : la marche n’a pas de vues pour {directions}. Le personnage reste donc immobile sur ces lignes."
 			},
 			"rpgSteps": "RPG Maker : les pas de la marche n’ont pas pu être détectés, la première image de marche sert donc de pas. Vérifiez la feuille.",
-			"rpgBelowFeet": "RPG Maker : la feuille {sheet} contient une marge de {count} px sous les pieds. Le personnage apparaît donc {count} px plus haut sur la carte."
+			"rpgBelowFeet": "RPG Maker : la feuille {sheet} contient une marge de {count} px sous les pieds. Le personnage apparaît donc {count} px plus haut sur la carte.",
+			"rpgOmittedMoves": {
+				"one": "RPG Maker : {moves} n’est pas exportée. Les feuilles de marche ne contiennent que des images debout et de marche.",
+				"other": "RPG Maker : {moves} ne sont pas exportées. Les feuilles de marche ne contiennent que des images debout et de marche."
+			}
 		}
 	},
 	"import": {
@@ -2444,6 +2449,11 @@
 	},
 	"moveNames": { "default": "Debout", "idle": "Attente", "walk": "Marche" },
 	"stateGeneration": {
+		"continueIntro": "Vous pouvez terminer les vues qui n’ont jamais été envoyées. Les vues terminées seront conservées.",
+		"continueAccount": "Reconnectez-vous avec la clé PixelLab initiale pour reprendre cet état.",
+		"continueViews": "Vues conservées : {kept}. Vues à générer : {remaining}.",
+		"checkRemainingCost": "Vérifier le coût restant",
+		"generateRemaining": "Générer les vues restantes",
 		"confirmDiscard": "Confirmer l’abandon",
 		"discardWarning": "Abandonner ne rembourse pas les générations et ne supprime pas l’état de PixelLab. Recommencer peut facturer à nouveau toutes les directions.",
 		"localOnly": "Cet état sera enregistré uniquement dans PixelDoll.",

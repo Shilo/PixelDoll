@@ -3624,9 +3624,13 @@ test('export picker has accessible categories, local icons and a native GDevelop
 		expect(sheets.length).toBeGreaterThan(0);
 		expect(sheets.every((entry) => name.test(entry))).toBe(true);
 		expect(top.filter((entry) => !entry.endsWith('.png')).sort()).toEqual([
+			'Export notes.txt',
 			'README.txt',
 			'project.json'
 		]);
+		expect(new TextDecoder().decode(rpgEntries.get('Export notes.txt')!)).toContain(
+			'RPG Maker: cross-punch is left out'
+		);
 		const image = await decodePngBytes(rpgEntries.get(sheets[0])!);
 		expect([image.w % cols, image.h % 4]).toEqual([0, 0]);
 		rpgSheets[engine] = { w: image.w / cols, h: image.h / 4 };
@@ -3668,6 +3672,53 @@ test('export picker has accessible categories, local icons and a native GDevelop
 	await page.getByRole('button', { name: 'Close export' }).click();
 	expect(errors).toEqual([]);
 	expect(apiRequests).toEqual([]);
+});
+
+test('RPG Maker walk choice updates the downloaded omissions note', async ({ page }, info) => {
+	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
+		.baseURL!;
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+	});
+	await page.route('https://*.pixellab.ai/**', (route) => route.abort());
+	await openStudio(page, dev);
+	await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts',
+			createPath = '/src/studio/create.ts',
+			rigPath = '/src/lib/rig/rig.ts';
+		const state = (await import(statePath)) as typeof import('../../src/studio/state.svelte.ts'),
+			{ saveCopy } = await import(createPath),
+			{ baseHashOf, storedCellHashes } = await import(rigPath);
+		const source = state.store.project!,
+			manifest = structuredClone(source.manifest),
+			{ rig } = manifest,
+			body = manifest.items.find((item) => item.id === rig.baseItem)!;
+		const walk = rig.animations.find((move) => move.id === 'walk')!;
+		rig.animations.push({ ...walk, id: 'walk-sneak' });
+		body.layers[0].cells!['walk-sneak'] = structuredClone(body.layers[0].cells!.walk);
+		const oldBase = rig.baseHash;
+		rig.baseHash = await baseHashOf(rig, storedCellHashes(rig, body.layers[0].cells));
+		for (const item of manifest.items) if (item.baseHash === oldBase) item.baseHash = rig.baseHash;
+		const id = await saveCopy({ manifest, images: source.images }, 'RPG Maker walk picker');
+		await state.refreshProjects();
+		await state.openProject(id);
+	});
+	await page.getByRole('button', { name: 'Export', exact: true }).first().click();
+	const dialog = page.getByRole('dialog');
+	await dialog.getByRole('radio', { name: 'RPG Maker', exact: true }).check();
+	const walk = dialog.getByRole('combobox', { name: 'Walk move' });
+	await expect(walk).toHaveValue('walk');
+	await walk.selectOption('walk-sneak');
+	await expect(walk).toHaveValue('walk-sneak');
+	const [download] = await Promise.all([
+		page.waitForEvent('download'),
+		dialog.getByRole('button', { name: /Download ZIP/ }).click()
+	]);
+	const entries = await unzip(new Uint8Array(await readFile((await download.path())!)));
+	const notes = new TextDecoder().decode(entries.get('Export notes.txt')!);
+	expect(notes).toContain('RPG Maker: walk, cross-punch are left out');
+	expect(notes).not.toContain('walk-sneak');
 });
 
 test('a sheet whose code fails to load closes, says so in French and can be tried again', async ({

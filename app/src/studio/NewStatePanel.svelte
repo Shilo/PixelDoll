@@ -26,15 +26,19 @@
 	import Sprite from './Sprite.svelte';
 	import { doc, store, ui, withKey } from './state.svelte.ts';
 	import {
+		continueState,
 		discardState,
+		hasStateContinuation,
 		pendingState,
 		prepareState,
+		quoteStateContinuation,
 		saveState,
 		startState,
 		type PreparedState,
+		type StateContinuationQuote,
 		type StateReview
 	} from './stateGeneration.ts';
-	import type { StateGenerationModel } from './stateGenerationPlan.ts';
+	import type { StateGenerationCost, StateGenerationModel } from './stateGenerationPlan.ts';
 	import { stateGenerationSource } from './stateGenerationSource.ts';
 
 	let { onclose, onbusy }: { onclose: () => void; onbusy: (busy: boolean) => void } = $props();
@@ -60,6 +64,8 @@
 	let review = $state.raw<StateReview | null>(null);
 	let reviewIndex = $state(0);
 	let confirmDiscard = $state(false);
+	let canContinue = $state(false);
+	let continuation = $state.raw<StateContinuationQuote | null>(null);
 	let quoted = $state.raw<{ prepared: PreparedState; draft: Draft; version: string } | null>(null);
 	const project = $derived(doc.id === projectId ? store.project : null);
 	const source = $derived(project && stateGenerationSource(project, DEFAULT_MOVE));
@@ -100,9 +106,10 @@
 	);
 	const discardable = $derived(
 		!checkedPending &&
-			typeof failure !== 'string' &&
-			(failure.key === 'stateGeneration.unfinished' ||
-				failure.key === 'stateGeneration.invalidResult')
+			(canContinue ||
+				(typeof failure !== 'string' &&
+					(failure.key === 'stateGeneration.unfinished' ||
+						failure.key === 'stateGeneration.invalidResult')))
 	);
 
 	async function run(action: NonNullable<typeof busy>, work: () => Promise<void>) {
@@ -122,9 +129,16 @@
 
 	function checkPending() {
 		confirmDiscard = false;
+		continuation = null;
 		return run('common.loading', async () => {
-			review = await pendingState(projectId);
-			checkedPending = true;
+			canContinue = false;
+			try {
+				review = await pendingState(projectId);
+				checkedPending = true;
+			} catch (cause) {
+				canContinue = await hasStateContinuation(projectId).catch(() => false);
+				if (!canContinue) throw cause;
+			}
 		});
 	}
 	onMount(() => {
@@ -164,7 +178,35 @@
 		quoted = null;
 		checkedPending = false;
 		void run('stateGeneration.generating', async () => {
-			review = await startState(prepared);
+			try {
+				review = await startState(prepared);
+			} catch (cause) {
+				canContinue = await hasStateContinuation(projectId).catch(() => false);
+				throw cause;
+			}
+			checkedPending = true;
+			reviewIndex = 0;
+		});
+	}
+
+	function checkContinuationCost() {
+		void run('stateGeneration.quoting', async () => {
+			continuation = await quoteStateContinuation(projectId);
+		});
+	}
+
+	function generateRemaining() {
+		const approved = continuation;
+		if (!approved) return;
+		continuation = null;
+		void run('stateGeneration.generating', async () => {
+			try {
+				review = await continueState(approved);
+			} catch (cause) {
+				canContinue = await hasStateContinuation(projectId).catch(() => false);
+				throw cause;
+			}
+			canContinue = false;
 			checkedPending = true;
 			reviewIndex = 0;
 		});
@@ -187,12 +229,22 @@
 		void run('common.loading', async () => {
 			await discardState(projectId);
 			confirmDiscard = false;
+			canContinue = false;
+			continuation = null;
 			review = null;
 			reviewIndex = 0;
 			checkedPending = true;
 		});
 	}
 </script>
+
+{#snippet costLabel(cost: StateGenerationCost)}
+	{@const low = formatNumber(cost.minGenerations)}
+	{@const high = formatNumber(cost.maxGenerations)}
+	{cost.kind === 'fixed'
+		? t('stateGeneration.fixedCost', { generations: high })
+		: t('moves.estimate', { gens: low === high ? high : `${low}–${high}` })}
+{/snippet}
 
 {#if review}
 	<div class="state-panel" aria-busy={!!busy}>
@@ -290,16 +342,9 @@
 			</label>
 		</details>
 		{#if quote}
-			{@const cost = quote.plan.cost}
-			{@const low = formatNumber(cost.minGenerations)}
-			{@const high = formatNumber(cost.maxGenerations)}
 			<div class="notice small" role="status">
 				<div>
-					<strong
-						>{cost.kind === 'fixed'
-							? t('stateGeneration.fixedCost', { generations: high })
-							: t('moves.estimate', { gens: low === high ? high : `${low}–${high}` })}</strong
-					>
+					<strong>{@render costLabel(quote.plan.cost)}</strong>
 					{#if quote.plan.endpoint === '/create-character-state'}
 						<p>{t('stateGeneration.managed', { parent: quote.parentName || standing })}</p>
 					{:else if model === 'pro' && reference}
@@ -339,7 +384,22 @@
 			{/if}
 		</div>
 	</form>
-{:else if !busy && failure}
+{:else if !busy && (failure || canContinue)}
+	{#if canContinue}
+		<p>{t('stateGeneration.continueIntro')}</p>
+		{#if continuation}
+			{@const { keptViews, remainingViews, cost } = continuation}
+			<div class="notice small" role="status">
+				<p>
+					{t('stateGeneration.continueViews', {
+						kept: formatNumber(keptViews),
+						remaining: formatNumber(remainingViews)
+					})}
+				</p>
+				<strong>{@render costLabel(cost)}</strong>
+			</div>
+		{/if}
+	{/if}
 	{#if confirmDiscard}<p class="notice warn small" role="status">
 			{t('stateGeneration.discardWarning')}
 		</p>{/if}
@@ -349,9 +409,22 @@
 				>{t(confirmDiscard ? 'stateGeneration.confirmDiscard' : 'common.discard')}</button
 			>
 		{/if}
-		<button type="button" class="bu-action btn" data-variant="outline" onclick={checkPending}
-			>{t('common.tryAgain')}</button
-		>
+		{#if continuation}
+			<button type="button" class="bu-action btn" data-variant="primary" onclick={generateRemaining}
+				>{t('stateGeneration.generateRemaining')}</button
+			>
+		{:else if canContinue}
+			<button
+				type="button"
+				class="bu-action btn"
+				data-variant="primary"
+				onclick={checkContinuationCost}>{t('stateGeneration.checkRemainingCost')}</button
+			>
+		{:else}
+			<button type="button" class="bu-action btn" data-variant="outline" onclick={checkPending}
+				>{t('common.tryAgain')}</button
+			>
+		{/if}
 	</div>
 {/if}
 

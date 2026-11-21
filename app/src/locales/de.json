@@ -901,7 +901,8 @@
 			"format": "Exportformat",
 			"versionMenu": "RPG Maker-Version",
 			"version": "Version",
-			"versionLabel": "RPG Maker-Version: {version}"
+			"versionLabel": "RPG Maker-Version: {version}",
+			"walkMove": "Gehanimation"
 		},
 		"group": { "engines": "Engines und Frameworks", "assets": "Assets" },
 		"target": {
@@ -1050,7 +1051,11 @@
 				"other": "RPG Maker: Der Gehanimation fehlen die Ansichten für {directions}. Die Figur steht in diesen Zeilen still."
 			},
 			"rpgSteps": "RPG Maker: Die Gehschritte konnten nicht erkannt werden. Stattdessen wird der erste Gehframe als Schritt verwendet. Prüfe das Spritesheet.",
-			"rpgBelowFeet": "RPG Maker: {sheet} hat {count} px unter den Füßen. Deshalb steht die Figur auf der Karte {count} px höher."
+			"rpgBelowFeet": "RPG Maker: {sheet} hat {count} px unter den Füßen. Deshalb steht die Figur auf der Karte {count} px höher.",
+			"rpgOmittedMoves": {
+				"one": "RPG Maker: {moves} wird nicht exportiert. Gehsheets enthalten nur Steh- und Gehframes.",
+				"other": "RPG Maker: {moves} werden nicht exportiert. Gehsheets enthalten nur Steh- und Gehframes."
+			}
 		}
 	},
 	"import": {
@@ -2443,6 +2448,11 @@
 	},
 	"moveNames": { "default": "Standpose", "idle": "Idle", "walk": "Gehen" },
 	"stateGeneration": {
+		"continueIntro": "Du kannst die noch nicht gesendeten Ansichten fertigstellen. Fertige Ansichten bleiben erhalten.",
+		"continueAccount": "Verbinde dich erneut mit dem ursprünglichen PixelLab-Schlüssel, um diesen Zustand fortzusetzen.",
+		"continueViews": "Behaltene Ansichten: {kept}. Zu erzeugende Ansichten: {remaining}.",
+		"checkRemainingCost": "Restkosten prüfen",
+		"generateRemaining": "Übrige Ansichten erzeugen",
 		"confirmDiscard": "Verwerfen bestätigen",
 		"discardWarning": "Beim Verwerfen werden keine Generierungen erstattet und kein Zustand aus PixelLab gelöscht. Beim Neustart können erneut Kosten für alle Richtungen anfallen.",
 		"localOnly": "Dieser Zustand wird nur in PixelDoll gespeichert.",

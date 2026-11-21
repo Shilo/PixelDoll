@@ -2876,6 +2876,173 @@ test('a managed State reloads its child without another submission', async ({
 	expect(pageErrors).toEqual([]);
 });
 
+test('a State interrupted after its first batch sends only the unqueued views after a new quote', async ({
+	page,
+	context
+}, info) => {
+	type Image = { type: 'base64'; base64: string };
+	const posts: { path: string; image: Image }[] = [];
+	const results = new Map<string, Image>();
+	const pageErrors: string[] = [];
+	const markerOffset = (32 * 64 + 32) * 4;
+	const markerOf = (index: number) => [233, 17 + index * 40, 151, 255];
+	let releaseFirst = false;
+	let firstPolled!: () => void;
+	const polled = new Promise<void>((resolve) => (firstPolled = resolve));
+	page.on('pageerror', (error) => pageErrors.push(error.message));
+	page.on('dialog', (dialog) => dialog.accept());
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		const path = new URL(request.url()).pathname;
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					credits: { type: 'usd', usd: 0 },
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 }
+				}
+			});
+		if (path.endsWith('/pro-flash/capabilities'))
+			return route.fulfill({
+				json: {
+					operations: { edit: { edit_methods: ['text'], sizes: [{ width: 64, height: 64 }] } }
+				}
+			});
+		if (path.endsWith('/pro-flash/cost')) return route.fulfill({ json: { total: 3 } });
+		if (request.method() === 'POST') {
+			const body = request.postDataJSON() as { image: Image };
+			const index = posts.length;
+			posts.push({ path, image: body.image });
+			if (!path.endsWith('/edit-image-pro-flash')) return route.abort();
+			const image = await decodePngBytes(Buffer.from(body.image.base64, 'base64'));
+			image.data.set(markerOf(index), markerOffset);
+			const base64 = Buffer.from(await encodePngBytes(image)).toString('base64');
+			results.set(`flash-job-${index}`, { type: 'base64', base64 });
+			return route.fulfill({ status: 202, json: { background_job_id: `flash-job-${index}` } });
+		}
+		const job = path.split('/background-jobs/')[1];
+		const result = job && results.get(job);
+		if (result) {
+			if (job === 'flash-job-0' && !releaseFirst) {
+				firstPolled();
+				return route.fulfill({ json: { id: job, status: 'processing', created_at: '' } });
+			}
+			return route.fulfill({
+				json: {
+					id: job,
+					status: 'completed',
+					created_at: '',
+					usage: { type: 'generations', generations: 3 },
+					last_response: { images: [result] }
+				}
+			});
+		}
+		return route.abort();
+	});
+	await page.addInitScript(() =>
+		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key')
+	);
+	await openStudio(
+		page,
+		info.config.projects.find(({ name }) => name === 'browser-selftests')!.use.baseURL!
+	);
+	const projectId = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		return (await import(statePath)).copyDemo();
+	});
+	const stored = () =>
+		page.evaluate(async (projectId) => {
+			const dbPath = '/src/lib/store/db.ts';
+			const db = await import(dbPath);
+			const record: StoredProject = await db.get('projects', projectId);
+			const jobs: { activityScope?: string; state: string }[] = await db.all('jobs');
+			const token = record.stateGeneration?.token;
+			return {
+				attempt: record.stateGeneration,
+				jobs: jobs.filter(
+					({ activityScope }) => token && activityScope?.startsWith(`state:${token}:`)
+				)
+			};
+		}, projectId);
+	const flashPosts = () => posts.filter(({ path }) => path.endsWith('/edit-image-pro-flash'));
+	await equipmentMode(page, 'States');
+	const addState = page.getByRole('button', { name: 'Add a state...', exact: true });
+	await addState.click();
+	const dialog = page.getByRole('dialog', { name: 'Create State', exact: true });
+	const panel = dialog.getByRole('tabpanel', { name: 'New', exact: true });
+	await panel.getByRole('textbox', { name: 'State name' }).fill('Torch ready');
+	await panel.getByRole('textbox', { name: 'Describe what should change' }).fill('Hold a torch');
+	await panel.getByText('Advanced', { exact: true }).click();
+	await panel.getByRole('combobox', { name: 'Model', exact: true }).selectOption('pro-flash');
+	await panel.getByRole('button', { name: 'Check cost', exact: true }).click();
+	await panel.getByRole('button', { name: 'Generate State', exact: true }).click();
+	await polled;
+	expect(flashPosts()).toHaveLength(1);
+	const interrupted = await stored();
+	const batches = interrupted.attempt!.plan.batches.length;
+	expect(batches).toBeGreaterThan(1);
+	expect(interrupted.attempt!.continuation?.unqueued).toEqual(
+		Array.from({ length: batches - 1 }, (_, index) => index + 1)
+	);
+	// The tab closes while batch 0 runs: later batches stay durably unqueued, batch 0 resumes polling.
+	await reloadStudio(page);
+	releaseFirst = true;
+	await expect
+		.poll(async () => (await stored()).jobs.map(({ state }) => state), { timeout: 30_000 })
+		.toEqual(['done']);
+	await equipmentMode(page, 'States');
+	await addState.click();
+	await dialog.getByRole('button', { name: 'Check remaining cost', exact: true }).click();
+	await expect(
+		dialog.getByText(`Views kept: 1. Views to generate: ${batches - 1}.`, { exact: true })
+	).toBeVisible();
+	expect(flashPosts()).toHaveLength(1);
+	await dialog.getByRole('button', { name: 'Generate remaining views', exact: true }).click();
+	await expect(panel.getByText('Review Torch ready before saving.')).toBeVisible();
+	expect(flashPosts()).toHaveLength(batches);
+	expect(new Set(flashPosts().map(({ image }) => image.base64)).size).toBe(batches);
+	await panel.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
+	const saved = await page.evaluate(async (projectId) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		const record: StoredProject = await db.get('projects', projectId);
+		const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
+		return {
+			attempt: record.stateGeneration,
+			views: await Promise.all(
+				Object.values(base.layers[0].cells!['torch-ready']).map(async (hashes) => {
+					const blob: Blob = await db.getBlob(hashes![0]!.slice(7));
+					return Array.from(new Uint8Array(await blob.arrayBuffer()));
+				})
+			)
+		};
+	}, projectId);
+	expect(saved.attempt).toBeUndefined();
+	expect(saved.views).toHaveLength(batches);
+	const sent = await Promise.all(
+		flashPosts().map(async ({ image }) => decodePngBytes(Buffer.from(image.base64, 'base64')))
+	);
+	const matched = await Promise.all(
+		saved.views.map(async (bytes) => {
+			const view = await decodePngBytes(Uint8Array.from(bytes));
+			const marker = Array.from(view.data.slice(markerOffset, markerOffset + 4));
+			const index = sent.findIndex((input) =>
+				input.data.every(
+					(value, offset) =>
+						(offset >= markerOffset && offset < markerOffset + 4) || value === view.data[offset]
+				)
+			);
+			expect(marker).toEqual(markerOf(index));
+			return index;
+		})
+	);
+	expect([...matched].sort((a, b) => a - b)).toEqual(
+		Array.from({ length: batches }, (_, index) => index)
+	);
+	expect(posts).toEqual(flashPosts());
+	expect(pageErrors).toEqual([]);
+});
+
 test('a stopped move blocks deleting only its own character and opens from the block', async ({
 	page,
 	context

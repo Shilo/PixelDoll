@@ -1,13 +1,13 @@
 import { app, getKeyRevision, refreshBalance } from '../lib/app.svelte.ts';
-import { stableStringify } from '../lib/image/hash.ts';
-import { decodePng, type Img } from '../lib/image/png.ts';
+import { sha256, stableStringify } from '../lib/image/hash.ts';
+import { base64ToBytes, bytesToBase64, decodePng, type Img } from '../lib/image/png.ts';
 import type { ImageReference } from '../lib/image/reference.ts';
 import { LocalizedError, message, type Message } from '../lib/message.ts';
 import { stateBatchScope } from '../lib/pixellab/activity.ts';
 import { api, API_BASE, ApiError } from '../lib/pixellab/client.ts';
 import { planRestriction, localizedPlanRestriction } from '../lib/pixellab/plans.ts';
 import { live, managedStateSubmitChildId, queue, type JobRec } from '../lib/pixellab/queue.ts';
-import { routes, type Size } from '../lib/pixellab/routes.ts';
+import { routes, type Req, type Size } from '../lib/pixellab/routes.ts';
 import { opaqueBox } from '../lib/rig/normalize.ts';
 import {
 	DEFAULT_MOVE,
@@ -18,11 +18,14 @@ import {
 } from '../lib/rig/rig.ts';
 import * as db from '../lib/store/db.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
+import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import { cellBlob, imagesOf, provOf, run } from './create.ts';
 import { stateCaptureNameIssue } from './moveActions.svelte.ts';
-import { doc, flushSave, openProject, toast, ui } from './state.svelte.ts';
-import { stateRecoveryRecords } from './stateRecovery.ts';
+import { sameClipName, withClipWriteLock } from './clipName.ts';
+import { doc, flushSave, openProject, pendingBodyMoveName, toast, ui } from './state.svelte.ts';
+import { stateContinuationBatches, stateRecoveryRecords } from './stateRecovery.ts';
 import {
+	localStateCost,
 	planStateGeneration,
 	type StateGenerationCost,
 	type StateGenerationModel
@@ -44,6 +47,25 @@ export interface StateAttempt {
 	id: string;
 	sourceVersion: string;
 	plan: ReadyStatePlan & { cost: StateGenerationCost };
+	continuation?: {
+		model: StateGenerationModel;
+		description: string;
+		seed: number;
+		credential: string;
+		unqueued: number[];
+		parentId?: string;
+		reference?: { hash: string; width: number; height: number };
+	};
+}
+
+export interface StateContinuationQuote {
+	projectId: string;
+	token: string;
+	keyRevision: number;
+	missing: number[];
+	keptViews: number;
+	remainingViews: number;
+	cost: StateGenerationCost;
 }
 
 export interface PreparedState {
@@ -87,12 +109,14 @@ const unfinished = () =>
 		'unfinished'
 	);
 
+const stateLockName = (projectId: string) => `pixeldoll-state:${projectId}`;
+
 function withStateLock<T>(projectId: string, work: () => Promise<T>): Promise<T> {
 	if (!navigator.locks)
 		return Promise.reject(
 			error('This browser cannot lock paid State attempts.', 'locksUnavailable')
 		);
-	return navigator.locks.request(`pixeldoll-state:${projectId}`, { ifAvailable: true }, (lock) => {
+	return navigator.locks.request(stateLockName(projectId), { ifAvailable: true }, (lock) => {
 		if (!lock) throw unfinished();
 		return work();
 	});
@@ -210,6 +234,17 @@ export async function prepareState(
 	model: StateGenerationModel,
 	reference?: ImageReference
 ): Promise<PreparedState> {
+	return prepareStatePlan(projectId, id, description, model, reference);
+}
+
+async function prepareStatePlan(
+	projectId: string,
+	id: string,
+	description: string,
+	model: StateGenerationModel,
+	reference?: ImageReference,
+	continuationToken?: string
+): Promise<PreparedState> {
 	assertSelected(projectId);
 	if (!app.key) throw error('Connect to PixelLab to check the route and price.', 'connect');
 	const keyRevision = getKeyRevision();
@@ -225,9 +260,13 @@ export async function prepareState(
 	await flushSave();
 	const { rec, project } = await loadProject(projectId);
 	const issue = stateCaptureNameIssue(rec.manifest, id);
-	if (issue || Object.hasOwn(rec.moveReviews ?? {}, id))
+	if (
+		issue ||
+		Object.keys(rec.moveReviews ?? {}).some((moveId) => sameClipName(moveId, id)) ||
+		(!continuationToken && (await pendingBodyMoveName(projectId, id)))
+	)
 		throw new LocalizedError('That State name is unavailable.', issue ?? 'stateCapture.takenName');
-	if (rec.stateGeneration) throw unfinished();
+	if (rec.stateGeneration?.token !== continuationToken) throw unfinished();
 	const source = stateGenerationSource(project, DEFAULT_MOVE);
 	if (!source) throw missing();
 	let managedParent;
@@ -373,7 +412,9 @@ async function readReview(
 }
 
 export function startState(prepared: PreparedState): Promise<StateReview> {
-	return withStateLock(prepared.projectId, () => generateState(prepared));
+	return withStateLock(prepared.projectId, () =>
+		withClipWriteLock(prepared.projectId, prepared.id, () => generateState(prepared))
+	);
 }
 
 async function generateState(prepared: PreparedState): Promise<StateReview> {
@@ -396,9 +437,26 @@ async function generateState(prepared: PreparedState): Promise<StateReview> {
 	};
 	const seed = crypto.getRandomValues(new Uint32Array(1))[0] & 0x7fffffff;
 	const requests = await stateRequests(fresh.plan, source, id, description, seed, reference);
+	const blobs = new Map<string, Blob>();
+	if (requests.length > 1) {
+		const savedReference = reference ? base64ToBytes(reference.base64) : undefined;
+		const hash = savedReference && (await sha256(savedReference));
+		if (hash && savedReference)
+			blobs.set(hash, new Blob([Uint8Array.from(savedReference)], { type: 'image/png' }));
+		attempt.continuation = {
+			model,
+			description,
+			seed,
+			credential: await continuationCredential(attempt.token),
+			unqueued: requests.map((_, index) => index),
+			parentId: rec.character?.id,
+			reference:
+				hash && reference ? { hash, width: reference.width, height: reference.height } : undefined
+		};
+	}
 	assertSelected(projectId);
 	if (getKeyRevision() !== prepared.keyRevision) throw changed();
-	await db.update<StoredProject>('projects', projectId, (current) => {
+	await db.updateCharacter<StoredProject>(projectId, blobs, (current) => {
 		if (
 			!current ||
 			current.stateGeneration ||
@@ -409,25 +467,177 @@ async function generateState(prepared: PreparedState): Promise<StateReview> {
 			throw changed();
 		return { ...current, stateGeneration: attempt };
 	});
+	return submitStateBatches(projectId, rec, attempt, prepared.keyRevision, requests);
+}
+
+async function continuationCredential(token: string) {
+	if (!app.key || app.keyRejected) throw originalAccount();
+	return sha256(`${token}:${app.key}`);
+}
+
+const originalAccount = () =>
+	error('Reconnect the original PixelLab key to continue this State.', 'continueAccount');
+
+export async function hasStateContinuation(projectId: string) {
+	if (workspaceCopy || !navigator.locks) return false;
+	return navigator.locks.request(stateLockName(projectId), { ifAvailable: true }, async (lock) => {
+		if (!lock) return false;
+		const attempt = (await db.get<StoredProject>('projects', projectId))?.stateGeneration;
+		return !!(attempt && stateContinuationBatches(attempt, await db.all<JobRec>('jobs')));
+	});
+}
+
+function withoutCost({ cost: _cost, ...plan }: StateAttempt['plan']) {
+	return stableStringify(plan);
+}
+
+async function prepareContinuation(projectId: string) {
+	if (workspaceCopy) throw unfinished();
+	assertSelected(projectId);
+	const { rec, project } = await loadProject(projectId);
+	const attempt = rec.stateGeneration;
+	const saved = attempt?.continuation;
+	if (!attempt || !saved || attempt.plan.endpoint === '/create-character-state') throw unfinished();
+	const keyRevision = getKeyRevision();
+	if ((await continuationCredential(attempt.token)) !== saved.credential) throw originalAccount();
+	const source = stateGenerationSource(project, DEFAULT_MOVE);
+	if (source?.version !== attempt.sourceVersion || rec.character?.id !== saved.parentId)
+		throw changed();
+	const batches = stateContinuationBatches(attempt, await db.all<JobRec>('jobs'));
+	if (!batches) throw unfinished();
+	if (batches.records.length) {
+		const keptPlan = {
+			...attempt.plan,
+			batches: batches.records.map(({ index }) => attempt.plan.batches[index])
+		};
+		await readReview(
+			projectId,
+			{ ...attempt, plan: keptPlan },
+			batches.records.map(({ record }) => record)
+		);
+	}
+	let reference: ImageReference | undefined;
+	if (saved.reference) {
+		const blob = await db.getBlob(saved.reference.hash);
+		if (!blob) throw invalidResult();
+		const bytes = new Uint8Array(await blob.arrayBuffer());
+		if ((await sha256(bytes)) !== saved.reference.hash) throw invalidResult();
+		reference = {
+			width: saved.reference.width,
+			height: saved.reference.height,
+			base64: bytesToBase64(bytes)
+		};
+	}
+	const fresh = await prepareStatePlan(
+		projectId,
+		attempt.id,
+		saved.description,
+		saved.model,
+		reference,
+		attempt.token
+	);
+	if (
+		fresh.sourceVersion !== source.version ||
+		withoutCost(fresh.plan) !== withoutCost(attempt.plan)
+	)
+		throw changed();
+	const remainingPlan = {
+		...attempt.plan,
+		batches: batches.missing.map((index) => attempt.plan.batches[index])
+	};
+	const cost =
+		localStateCost(attempt.plan.endpoint, remainingPlan.cellSize, remainingPlan.batches) ??
+		(await flashCost(remainingPlan));
+	assertSelected(projectId);
+	if (getKeyRevision() !== keyRevision) throw changed();
+	const quote: StateContinuationQuote = {
+		projectId,
+		token: attempt.token,
+		keyRevision,
+		missing: batches.missing,
+		keptViews: batches.records.reduce(
+			(count, { index }) => count + attempt.plan.batches[index].facingIds.length,
+			0
+		),
+		remainingViews: remainingPlan.batches.reduce(
+			(count, batch) => count + batch.facingIds.length,
+			0
+		),
+		cost
+	};
+	return { quote, rec, source, reference, attempt, saved };
+}
+
+export function quoteStateContinuation(projectId: string) {
+	return withStateLock(projectId, async () => (await prepareContinuation(projectId)).quote);
+}
+
+export function continueState(approved: StateContinuationQuote): Promise<StateReview> {
+	return withStateLock(approved.projectId, async () => {
+		const { projectId } = approved;
+		const { quote, rec, source, reference, attempt, saved } = await prepareContinuation(projectId);
+		if (stableStringify(approved) !== stableStringify(quote)) throw changed();
+		const requests = await stateRequests(
+			attempt.plan,
+			source,
+			attempt.id,
+			saved.description,
+			saved.seed,
+			reference
+		);
+		return submitStateBatches(projectId, rec, attempt, quote.keyRevision, requests, quote.missing);
+	});
+}
+
+async function submitStateBatches(
+	projectId: string,
+	rec: StoredProject,
+	attempt: StateAttempt,
+	keyRevision: number,
+	requests: Req[],
+	remaining?: number[]
+) {
 	const controller = new AbortController();
 	const stop = queue.subscribe(() => {
-		if (getKeyRevision() !== prepared.keyRevision) controller.abort(changed());
+		if (getKeyRevision() !== keyRevision) controller.abort(changed());
 	});
 	try {
-		const records: JobRec[] = [];
+		const submitted: JobRec[] = [];
 		for (const [index, request] of requests.entries()) {
-			const current = await db.get<StoredProject>('projects', projectId);
+			if (remaining && !remaining.includes(index)) continue;
+			if (remaining) {
+				const pending = (await db.get<StoredProject>('projects', projectId))?.stateGeneration;
+				const ledger = pending && stateContinuationBatches(pending, await db.all<JobRec>('jobs'));
+				if (!ledger?.missing.includes(index)) throw changed();
+			}
+			const checked = (current: StoredProject | undefined) => {
+				controller.signal.throwIfAborted();
+				assertSelected(projectId);
+				if (
+					getKeyRevision() !== keyRevision ||
+					current?.stateGeneration?.token !== attempt.token ||
+					stableStringify(current.manifest) !== stableStringify(rec.manifest) ||
+					current.character?.id !== rec.character?.id ||
+					Object.hasOwn(current.moveReviews ?? {}, attempt.id)
+				)
+					throw changed();
+				return current;
+			};
+			if (attempt.continuation) {
+				await db.update<StoredProject>('projects', projectId, (stored) => {
+					const current = checked(stored);
+					const continuation = current.stateGeneration?.continuation;
+					if (!continuation?.unqueued.includes(index)) throw changed();
+					continuation.unqueued = continuation.unqueued.filter((batch) => batch !== index);
+					return current;
+				});
+			} else checked(await db.get<StoredProject>('projects', projectId));
 			assertSelected(projectId);
-			if (
-				getKeyRevision() !== prepared.keyRevision ||
-				current?.stateGeneration?.token !== attempt.token ||
-				stableStringify(current.manifest) !== stableStringify(rec.manifest)
-			)
-				throw changed();
-			records.push(
+			if (getKeyRevision() !== keyRevision) throw changed();
+			submitted.push(
 				await run(
 					request,
-					id,
+					attempt.id,
 					'studio-state',
 					false,
 					true,
@@ -436,6 +646,10 @@ async function generateState(prepared: PreparedState): Promise<StateReview> {
 				)
 			);
 		}
+		const records = remaining
+			? stateRecoveryRecords(attempt, await db.all<JobRec>('jobs'))
+			: submitted;
+		if (!records) throw unfinished();
 		return await readReview(projectId, attempt, records);
 	} finally {
 		stop();

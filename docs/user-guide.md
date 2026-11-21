@@ -27,14 +27,14 @@ Open **More options → Connect PixelLab**, or the account entry in the characte
 
 A gen is one PixelLab generation from your account's monthly allowance. Creation and item actions show an estimated price beside or inside their button. Enhance uses about 0.05 gens per request. Typical prices:
 
-| Action                                                                     | About                                                                                                           |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Create a character (its **Standing** State)                                 | about 2–5 gens                                                                                                  |
-| **Idle** or **Walk**, default **Top-down 8** (5 drawn views)                 | about 17 gens for Idle or 38 for Walk, without items                                                             |
-| Make an item                                                               | standing views only, about 10 gens for frames up to 80 px; larger or padded held items can require more batches |
-| Add a move                                                                 | depends on the move, views and selected items; shown before spending                                            |
-| Try again on an item                                                       | shown on the button                                                                                             |
-| Dress up, recolor, outfits, export                                         | free                                                                                                            |
+| Action                                                       | About                                                                                                           |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Create a character (its **Standing** State)                  | about 2–5 gens                                                                                                  |
+| **Idle** or **Walk**, default **Top-down 8** (5 drawn views) | about 17 gens for Idle or 38 for Walk, without items                                                            |
+| Make an item                                                 | standing views only, about 10 gens for frames up to 80 px; larger or padded held items can require more batches |
+| Add a move                                                   | depends on the move, views and selected items; shown before spending                                            |
+| Try again on an item                                         | shown on the button                                                                                             |
+| Dress up, recolor, outfits, export                           | free                                                                                                            |
 
 The price is an estimate. Empty body output or a wrong frame count may retry once. Body pose estimates, silhouette movement, color differences and border contact are review notes and do not trigger paid redraws. Equipment fitting keeps its separate automatic checks and retry budget.
 PixelLab may bill some calls in dollars. Automatic quality retries and fallbacks cost extra; queue and generation time vary.
@@ -328,6 +328,8 @@ For a newly generated State with no joint measurements, select it under **Start 
 
 In **States**, choose **Add a state...**. **New** edits your Standing artwork with PixelLab. Name the State, describe the change, and optionally attach a reference. **Advanced** offers the model options: Default (Pro), Pro Flash, and V3 (Pixen). Pro Flash uses a reference instead of written instructions when one is attached. Pixen does not take a reference. **Check cost** shows the estimate for the planned requests before **Generate State** spends anything. Default (Pro) creates a State in your PixelLab account when it can verify the exact managed source and you aren't providing a reference. Otherwise it plans a local edit. Review the generated views before saving; equipment and joint measurements aren't copied. If a request stops, check Activity before trying again. Discarding does not refund generations or delete a State from PixelLab. PixelDoll doesn't switch to another paid route after submitting.
 
+If a local edit finishes some batches before the rest enter the queue, reopen **New** and choose **Check remaining cost** when offered. Use the original PixelLab key. **Generate remaining views** keeps the completed views and sends only views that haven't been queued. PixelDoll won't offer this option when it can't verify which requests were sent.
+
 Choose **From Move** to save a frame without spending credits. A Move's **More actions → Create State from...** opens the same tab with that Move selected. The preview rotates through the available facings of the last saved playback frame. Use the arrows to change frames without restarting the rotation, or click the preview to pause or resume. Single-frame Moves show a still preview. Changing the source resets the suggested State name. Name the State and save it. Studio switches to **States** and previews the new pose. Equipment isn't copied or borrowed from Standing. Deleting a State removes its own frames and fits, not finished Moves that used it. Generic runtime exports include both States and Moves; engine formats limited to specific animations may omit additional States.
 
 **Generate move** buys only the character's motion. In **Review move**, play or step through the new frames and check
@@ -413,8 +415,8 @@ These integrations keep the layers synchronized and expose equipment and outfit 
 RPG Maker has no equipment layers, so it gets one finished walking sheet per outfit (current look and saved outfits), at your
 character's own size: the standing view and the walk steps picked from your walk move. Choose **RPG Maker**; it uses **Standard**
 (one file works in MZ, MV, VX Ace and VX). For RPG Maker XP or Pokémon Essentials, open the version button on the card and
-choose **XP**. Copy the PNG files into your project's characters folder; the zip's README names it. It needs front, side and back views; diagonal views, idle and action
-moves are left out because these formats have no place for them. RPG Maker 2000/2003 need 24 × 32 cells, which would mean
+choose **XP**. If more than one walk is available, use **Walk move** to choose the steps for this export. **Export notes** lists the Moves and States that don't contribute any frames to the sheet.
+Copy the PNG files into your project's characters folder; the zip's README names it. It needs front, side and back views and does not include diagonal views. RPG Maker 2000/2003 need 24 × 32 cells, which would mean
 scaling, so they are not supported.
 
 The selected format's description stays visible; hover a card for more detail. Arrow keys move between native radio choices.

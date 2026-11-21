@@ -10,14 +10,19 @@ type RecoveryAttempt = {
 	};
 };
 
-export function stateRecoveryRecords(attempt: RecoveryAttempt, ledger: readonly JobRec[]) {
+function stateRecoveryBatches(attempt: RecoveryAttempt, ledger: readonly JobRec[]) {
 	const { endpoint, batches } = attempt.plan;
 	const managed = endpoint === '/create-character-state';
 	if (!batches.length || (managed && (!attempt.plan.parentId || batches.length !== 1))) return null;
-	const records: JobRec[] = [];
+	const records: { index: number; record: JobRec }[] = [];
+	const missing: number[] = [];
 	for (const [index] of batches.entries()) {
 		const scope = stateBatchScope(attempt.token, index);
 		const matches = ledger.filter((entry) => entry.activityScope === scope);
+		if (!matches.length && !managed) {
+			missing.push(index);
+			continue;
+		}
 		if (matches.length !== 1) return null;
 		const [record] = matches;
 		if (record.tag !== 'studio-state' || record.method !== 'POST' || record.endpoint !== endpoint)
@@ -34,7 +39,24 @@ export function stateRecoveryRecords(attempt: RecoveryAttempt, ledger: readonly 
 			!(managed && record.state === 'lost' && record.jobs[0]?.status === 'lost')
 		)
 			return null;
-		records.push(record);
+		records.push({ index, record });
 	}
-	return records;
+	return { records, missing };
+}
+
+export function stateRecoveryRecords(attempt: RecoveryAttempt, ledger: readonly JobRec[]) {
+	const batches = stateRecoveryBatches(attempt, ledger);
+	return batches && !batches.missing.length ? batches.records.map(({ record }) => record) : null;
+}
+
+export function stateContinuationBatches(
+	attempt: RecoveryAttempt & { continuation?: { unqueued: readonly number[] } },
+	ledger: readonly JobRec[]
+) {
+	const unqueued = attempt.continuation?.unqueued;
+	if (attempt.plan.batches.length < 2 || !Array.isArray(unqueued)) return null;
+	const batches = stateRecoveryBatches(attempt, ledger);
+	return batches?.missing.length && batches.missing.every((index) => unqueued.includes(index))
+		? batches
+		: null;
 }

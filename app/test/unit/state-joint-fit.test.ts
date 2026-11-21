@@ -7,7 +7,7 @@ import { CURRENT_FORMAT, type Project } from '../../src/lib/store/manifest.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import { resolveMoveSource } from '../../src/studio/moveSource.ts';
-import { measureJoints, measurementInput } from '../../src/studio/create.ts';
+import { measureJoints, measurementInput, missingItemMoves } from '../../src/studio/create.ts';
 import { loadProject } from '../../src/lib/store/project.ts';
 import { queue } from '../../src/lib/pixellab/queue.ts';
 import * as db from '../../src/lib/store/db.ts';
@@ -223,6 +223,46 @@ test('applying a reviewed fit makes the State a Move source without touching gea
 		south: { image: views[0].hash, keypoints: views[0].keypoints },
 		east: { image: views[1].hash, keypoints: views[1].keypoints }
 	});
+});
+
+test('a generated State is offered for missing gear fit only after its joints are saved', async () => {
+	const project = await fixture();
+	const { manifest } = project;
+	const standing = manifest.items[0].layers[0].cells!.default;
+	manifest.slots.push({ id: 'cape', class: 'worn', z: 20 });
+	manifest.items.push({
+		...structuredClone(manifest.items[0]),
+		id: 'cape',
+		name: 'cape',
+		slot: 'cape',
+		route: 'skeleton-pose',
+		key: 'green',
+		dressed: { south: standing.south![0]!, east: standing.east![0]! },
+		layers: [{ id: 'main', role: 'fg', z: 20, cells: { default: standing } }]
+	});
+	expect(missingItemMoves(manifest, 'cape', 9)).toEqual([]);
+
+	const target = (await stateJointFitTarget(project, 'glow'))!;
+	const { manifest: fitted } = applyStateJointFit(manifest, undefined, {
+		stateId: 'glow',
+		views: target.views.map(({ direction, hash }) => ({
+			direction,
+			hash,
+			keypoints: pose(),
+			qa: {} as never
+		})),
+		provenance: target.views.map(() => ({
+			endpoint: '/estimate-skeleton',
+			params: {},
+			seed: 0,
+			requestHash: `sha256:${'c'.repeat(64)}` as Sha256,
+			createdAt: new Date(0).toISOString(),
+			produced: []
+		}))
+	});
+	expect(missingItemMoves(fitted, 'cape', 9)).toEqual([
+		{ id: 'glow', frames: 1, items: ['cape'], dirs: ['south', 'east'], itemsOnly: true, seed: 9 }
+	]);
 });
 
 describe('State joint fit service', () => {

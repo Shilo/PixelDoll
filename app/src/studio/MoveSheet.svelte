@@ -32,6 +32,7 @@
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
 	import { moveSourceMatches, resolveMoveSource, savedReplacementSource } from './moveSource.ts';
+	import { clipNameId, sameClipName } from './clipName.ts';
 	import {
 		isGeneratedState,
 		measureStateJoints,
@@ -156,12 +157,6 @@
 	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
 	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? '');
-	const slug = (s: string) =>
-		s
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, '-')
-			.replace(/^-+|-+$/g, '')
-			.slice(0, 24);
 	const replacing = $derived(replaceSelected && have.has(action));
 	const savedMove = $derived(m?.rig.animations.find((a) => a.id === action));
 	const draftRegeneration = $derived.by(() => {
@@ -187,7 +182,8 @@
 	const id = $derived(
 		action ||
 			(text.trim() &&
-				(slug(text.trim().split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) || freeMoveId()))
+				(clipNameId(text.trim().split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')).slice(0, 24) ||
+					freeMoveId()))
 	);
 	const availableDirs = $derived(
 		m?.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id) ?? []
@@ -379,7 +375,12 @@
 		if (!action && id && options.includes(id))
 			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (!m || !id) return '';
-		if (!action && (have.has(id) || stateIds.has(id)))
+		if (
+			(!action && have.has(id)) ||
+			(!have.has(id) &&
+				([...stateIds].some((stateId) => sameClipName(stateId, id)) ||
+					(rec?.stateGeneration && sameClipName(rec.stateGeneration.id, id))))
+		)
 			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (explicitFrame && !startFrom) return t('moveSheet.startFrom.unavailable');
 		if (

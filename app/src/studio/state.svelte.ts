@@ -52,6 +52,7 @@ import {
 	type StoredProject
 } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
+import { sameClipName } from './clipName.ts';
 import { defaultCharacterExportId, editIdentity } from '../lib/store/identity.ts';
 import type {
 	CellKey,
@@ -3472,6 +3473,16 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 			: []),
 		...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec)
 	].filter((s) => !itemId || s.items.includes(itemId));
+
+export async function pendingBodyMoveName(projectId: string, id: string) {
+	const matches = (spec: MoveSpec) => !spec.itemsOnly && sameClipName(spec.id, id);
+	if (pendingMoves(projectId).some(matches)) return true;
+	const saved = await db.get<QueuedMove & { queued?: QueuedMove[] }>('projects', MOVE_KEY);
+	return [saved, ...(saved?.queued ?? [])].some(
+		(move) => move?.projectId === projectId && !!move.spec && matches(move.spec)
+	);
+}
+
 export async function startMove(projectId: string, spec: MoveSpec) {
 	if (hmrReloading) return;
 	if (relocating) await saving;

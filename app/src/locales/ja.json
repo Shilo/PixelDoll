@@ -870,7 +870,8 @@
 			"format": "エクスポート形式",
 			"versionMenu": "RPG Makerのバージョン",
 			"version": "バージョン",
-			"versionLabel": "RPG Makerのバージョン：{version}"
+			"versionLabel": "RPG Makerのバージョン：{version}",
+			"walkMove": "歩きのモーション"
 		},
 		"group": { "engines": "エンジンとフレームワーク", "assets": "アセット" },
 		"target": {
@@ -1009,7 +1010,10 @@
 				"other": "RPG Maker：歩きのモーションに{directions}向きの画像がないため、該当する行は静止画になります。"
 			},
 			"rpgSteps": "RPG Maker：歩きのステップを検出できなかったため、歩きの最初のフレームをステップとして使用しています。シートを確認してください。",
-			"rpgBelowFeet": "RPG Maker：{sheet}には足元の下に{count} pxの余白があるため、マップ上で{count} px高い位置に表示されます。"
+			"rpgBelowFeet": "RPG Maker：{sheet}には足元の下に{count} pxの余白があるため、マップ上で{count} px高い位置に表示されます。",
+			"rpgOmittedMoves": {
+				"other": "RPG Maker：{moves}は含まれません。歩行シートには立ちと歩きのフレームのみが入ります。"
+			}
 		}
 	},
 	"import": {
@@ -2351,6 +2355,11 @@
 	},
 	"moveNames": { "default": "立ちポーズ", "idle": "待機", "walk": "歩き" },
 	"stateGeneration": {
+		"continueIntro": "まだ送信していない向きの画像を生成できます。完了した画像は保持されます。",
+		"continueAccount": "このステートを続けるには、元の PixelLab キーで再接続してください。",
+		"continueViews": "保持する向き: {kept}。生成する向き: {remaining}。",
+		"checkRemainingCost": "残りの費用を確認",
+		"generateRemaining": "残りの向きを生成",
 		"confirmDiscard": "破棄を確定",
 		"discardWarning": "破棄しても生成回数は払い戻されず、PixelLab のステートは削除されません。やり直すと全方向に再び料金がかかる場合があります。",
 		"localOnly": "このステートは PixelDoll にのみ保存されます。",

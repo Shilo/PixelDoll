@@ -319,6 +319,84 @@ test('walk moves are found by word, such as walk-cycle', async () => {
 	expect(reds(vxOf(p), 3, 0)).toEqual([11, 200, 13]);
 });
 
+test('a walk-like State name cannot replace the animated RPG Maker gait', async () => {
+	const p = await project();
+	const rig = p.manifest.rig;
+	const cells = p.manifest.items[0].layers[0].cells as Record<string, Record<string, string[]>>;
+	cells['walk-ready'] = { south: [cells.walk.south[0]] };
+	rig.animations.splice(1, 0, {
+		...rig.animations[0],
+		id: 'walk-ready',
+		kind: 'state',
+		loop: false
+	});
+	expect(run(p).warnings).toEqual([
+		'RPG Maker: walk-ready is left out; walking sheets hold only standing and walking frames.'
+	]);
+	expect(reds(vxOf(p), 3, 0)).toEqual([11, 200, 13]);
+});
+
+test('both layouts skip a diagonal-only walk and name it in the omissions note', async () => {
+	const p = await project({ dirs: ['south', 'east', 'north', 'south-east'] });
+	const rig = p.manifest.rig;
+	const walk = rig.animations.find((animation) => animation.id === 'walk')!;
+	const cells = p.manifest.items[0].layers[0].cells as Record<string, Record<string, string[]>>;
+	rig.animations.unshift({ ...walk, id: 'walk-diagonal', directions: ['south-east'] });
+	cells['walk-diagonal'] = { 'south-east': cells.walk['south-east'] };
+	const vx = run(p, 'vx');
+	const xp = run(p, 'xp');
+	const omission =
+		'RPG Maker: walk-diagonal is left out; walking sheets hold only standing and walking frames.';
+	expect(reds(sheet(vx.files, '$Hero_Knight.png'), 3, 0)).toEqual([11, 200, 13]);
+	expect(reds(sheet(xp.files, 'Hero_Knight.png'), 4, 0)).toEqual([200, 11, 12, 13]);
+	expect(vx.warnings).toEqual([omission]);
+	expect(xp.warnings).toEqual([omission]);
+});
+
+test('the sheets step through the chosen walk, default to the first, and name every move they leave out', async () => {
+	const p = await project(),
+		rig = p.manifest.rig,
+		walk = rig.animations.find((a) => a.id === 'walk')!,
+		cells = p.manifest.items.find((i) => i.id === 'body')!.layers[0].cells as Record<
+			string,
+			Record<string, string[]>
+		>;
+	// a second walk whose frames read 50 + n, and an idle that no sheet shows
+	rig.animations.push({ ...walk, id: 'sneak-walk' }, { ...rig.animations[0], id: 'idle' });
+	cells.idle = cells.default;
+	cells['sneak-walk'] = {};
+	for (const [dir, hashes] of Object.entries(cells.walk))
+		cells['sneak-walk'][dir] = await Promise.all(
+			hashes.map(async (hash) => {
+				const im = structuredClone(p.images.get(hash)!);
+				for (let i = 0; i < im.data.length; i += 4) if (im.data[i] >= 10) im.data[i] += 40;
+				const recolored = await cellHash(im);
+				p.images.set(recolored, im);
+				return recolored;
+			})
+		);
+	const vx = (walkId?: string) => {
+		const r = rpgMakerFiles(p, p.manifest, 'vx', walkId);
+		return { row: reds(sheet(r.files, '$Hero_Knight.png'), 3, 0), r };
+	};
+	const first = vx();
+	expect(first.row).toEqual([11, 200, 13]);
+	expect(first.r.warnings).toEqual([
+		'RPG Maker: sneak-walk, idle are left out; walking sheets hold only standing and walking frames.'
+	]);
+	expect(first.r.warningMessages.get(first.r.warnings[0])).toEqual({
+		key: 'export.warnings.rpgOmittedMoves',
+		vars: { count: 2, moves: [{ move: 'sneak-walk' }, { move: 'idle' }] }
+	});
+	const chosen = vx('sneak-walk');
+	expect(chosen.row).toEqual([51, 200, 53]);
+	expect(chosen.r.warnings).toEqual([
+		'RPG Maker: walk, idle are left out; walking sheets hold only standing and walking frames.'
+	]);
+	// a move that is not an eligible walk cannot be chosen
+	expect(vx('idle').row).toEqual([11, 200, 13]);
+});
+
 test('refuses characters without front, side and back views', async () => {
 	const partial = await project({ dirs: ['south', 'north'] });
 	expect(() => run(partial)).toThrow(/^RPG Maker: .*no west, east view/);

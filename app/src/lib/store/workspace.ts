@@ -161,9 +161,11 @@ function recoverRecords(
 				checkDemoDress(value);
 				continue;
 			}
-			const { id, manifest } = value as StoredProject;
+			const record = value as StoredProject;
+			const { id, manifest } = record;
 			if (!selects(key, value) || id !== key || !supportedFormat(manifest?.format))
 				throw new Error('Unsupported character record.');
+			delete record.stateGeneration;
 			manifestShape(manifest);
 			for (const pose of Object.values(manifest.rig.rest ?? {}))
 				add(pose?.image, manifest.rig.cell);

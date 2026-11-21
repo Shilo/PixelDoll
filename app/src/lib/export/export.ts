@@ -29,6 +29,8 @@ export interface ExportOptions {
 	pixelsPerUnit?: number;
 	exportedAt?: string;
 	projectData?: ImportedCharacter['extra'];
+	/** The walk move RPG Maker sheets take their steps from; the first eligible one when unset or not eligible. */
+	rpgWalk?: string;
 }
 export interface ExportResult {
 	entries: ZipEntry[];
@@ -200,7 +202,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 	}
 	if (rpg) {
 		try {
-			const r = rpgMakerFiles(p, m, rpg);
+			const r = rpgMakerFiles(p, m, rpg, o.rpgWalk);
 			files.push(...r.files);
 			warnings.push(...r.warnings);
 			for (const [text, display] of r.warningMessages) warningMessages.set(text, display);

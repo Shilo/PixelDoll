@@ -129,6 +129,28 @@ async function fixture(combinedCuts = false) {
 		p.manifest.slots.push({ id: 'back', class: 'worn', z: 90 });
 		p.manifest.items.push({ ...item('cape', 'back', hash, 90), materials: [], baseCut: cuts(14) });
 		Object.assign(p.manifest.presets[0].items, { hair: null, main_hand: null, back: 'cape' });
+		const pose = makeImg(4, 4);
+		pose.data.set(body.data);
+		pose.data.set([0, 255, 0, 255], 12 * 4);
+		const poseHash = await cellHash(pose);
+		p.images.set(poseHash, pose);
+		p.manifest.rig.animations[0].loop = true;
+		p.manifest.rig.animations.push({
+			id: 'ready-stance',
+			kind: 'state',
+			cells: 1,
+			loop: false,
+			frames: [{ cell: 0, ms: 150 }]
+		});
+		for (const entry of p.manifest.items) {
+			const cells = entry.layers[0].cells!;
+			cells['ready-stance'] = Object.fromEntries(
+				Object.entries(cells.walk).map(([dir, frames]) => [
+					dir,
+					[entry.id === 'base' ? poseHash : frames[0]]
+				])
+			);
+		}
 	}
 	const project = await withTuckVariants(p),
 		m = exportManifest(project, { engines: ['aseprite'], baked: true }).manifest;
@@ -231,7 +253,8 @@ test.skipIf(!existsSync(native))(
 		const file = resolve(folder, 'regression.aseprite'),
 			png = resolve(folder, 'native.png'),
 			json = resolve(folder, 'native.json');
-		writeFileSync(file, await asepriteFile(m, sheets));
+		const bytes = await asepriteFile(m, sheets);
+		writeFileSync(file, bytes);
 		const run = spawnSync(
 			native,
 			[
@@ -260,31 +283,65 @@ test.skipIf(!existsSync(native))(
 				slices: { name: string; keys: { pivot: { x: number; y: number } }[] }[];
 			};
 		};
-		expect(metadata.frames.map((f) => f.duration)).toEqual([125, 50, 75, 125, 50, 75, 125, 50, 75]);
+		expect(metadata.frames.map((f) => f.duration)).toEqual([
+			125, 50, 75, 125, 50, 75, 125, 50, 75, 150, 150, 150
+		]);
 		expect(metadata.meta.frameTags.map((t) => t.name)).toEqual([
 			'walk_south',
 			'walk_east',
-			'walk_west'
+			'walk_west',
+			'ready-stance_south',
+			'ready-stance_east',
+			'ready-stance_west'
 		]);
-		expect(metadata.meta.slices[0].keys[0].pivot).toEqual({ x: 3, y: 5 });
+		const { tags } = await readAseprite(bytes);
+		expect(tags.slice(0, 3).map((tag) => tag.repeat)).toEqual([0, 0, 0]);
+		expect(tags.slice(-3)).toEqual(
+			['south', 'east', 'west'].map((dir, index) => ({
+				name: `ready-stance_${dir}`,
+				from: index + 9,
+				to: index + 9,
+				repeat: 1
+			}))
+		);
+		const pivot = metadata.meta.slices[0].keys[0].pivot;
+		expect(pivot).toEqual({ x: 3, y: 5 });
 		const colored = recolor(project, m.presets[0].variants),
 			bf = bakedFrame(m);
+		const markerAt = (frame: number, x: number) => {
+			const offset = ((pivot.y - 1) * sheet.w + frame * bf.w + x) * 4;
+			return Array.from(sheet.data.subarray(offset, offset + 4));
+		};
+		const marker = [0, 255, 0, 255];
+		const left = pivot.x - 2;
+		expect(markerAt(0, left)).not.toEqual(marker);
+		expect(markerAt(9, left)).toEqual(marker);
+		expect(markerAt(10, left)).toEqual(marker);
+		expect(markerAt(11, left + 3)).toEqual(marker);
 		let frame = 0;
-		for (const dir of m.rig.directions)
-			for (const entry of m.rig.animations[0].frames) {
-				const expected = composeCell(colored, m.presets[0].items, 'walk', dir.id, entry.cell, bf),
-					actual = makeImg(bf.w, bf.h);
-				for (let y = 0; y < bf.h; y++)
-					actual.data.set(
-						sheet.data.subarray(
-							(y * sheet.w + frame * bf.w) * 4,
-							(y * sheet.w + (frame + 1) * bf.w) * 4
+		for (const clip of m.rig.animations)
+			for (const dir of m.rig.directions)
+				for (const entry of clip.frames) {
+					const expected = composeCell(
+							colored,
+							m.presets[0].items,
+							clip.id,
+							dir.id,
+							entry.cell,
+							bf
 						),
-						y * bf.w * 4
-					);
-				expect(actual.data, `${dir.id} cell ${entry.cell}`).toEqual(expected.data);
-				frame++;
-			}
+						actual = makeImg(bf.w, bf.h);
+					for (let y = 0; y < bf.h; y++)
+						actual.data.set(
+							sheet.data.subarray(
+								(y * sheet.w + frame * bf.w) * 4,
+								(y * sheet.w + (frame + 1) * bf.w) * 4
+							),
+							y * bf.w * 4
+						);
+					expect(actual.data, `${clip.id} ${dir.id} cell ${entry.cell}`).toEqual(expected.data);
+					frame++;
+				}
 	},
 	60000
 );

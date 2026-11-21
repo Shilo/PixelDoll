@@ -58,6 +58,7 @@ async function requestedExport(
 		look: Look;
 		settings: ExportSettings;
 		projectData?: ImportedCharacter['extra'];
+		rpgWalk?: string;
 	}
 ): Promise<ExportResult & { zip: Uint8Array | null }> {
 	const current: Preset = {
@@ -181,7 +182,8 @@ async function requestedExport(
 		{
 			engines: [o.engine],
 			baked: o.baked,
-			projectData: o.projectData
+			projectData: o.projectData,
+			rpgWalk: o.rpgWalk
 		},
 		[...warnings],
 		warningMessages

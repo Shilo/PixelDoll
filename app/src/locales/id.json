@@ -865,7 +865,8 @@
 			"format": "Format ekspor",
 			"versionMenu": "Versi RPG Maker",
 			"version": "Versi",
-			"versionLabel": "Versi RPG Maker: {version}"
+			"versionLabel": "Versi RPG Maker: {version}",
+			"walkMove": "Animasi berjalan"
 		},
 		"group": { "engines": "Engine dan framework", "assets": "Aset" },
 		"target": {
@@ -1004,7 +1005,10 @@
 				"other": "RPG Maker: animasi berjalan tidak memiliki tampilan {directions}, jadi baris tersebut hanya menampilkan pose diam."
 			},
 			"rpgSteps": "RPG Maker: langkah kaki tidak dapat dideteksi, jadi frame berjalan pertama digunakan sebagai langkah. Periksa sprite sheet.",
-			"rpgBelowFeet": "RPG Maker: ada {count} px di bawah kaki pada {sheet}, jadi posisi karakter di peta naik {count} px."
+			"rpgBelowFeet": "RPG Maker: ada {count} px di bawah kaki pada {sheet}, jadi posisi karakter di peta naik {count} px.",
+			"rpgOmittedMoves": {
+				"other": "RPG Maker: {moves} tidak disertakan; sprite sheet berjalan hanya berisi frame berdiri dan berjalan."
+			}
 		}
 	},
 	"import": {
@@ -2344,6 +2348,11 @@
 	},
 	"moveNames": { "default": "Berdiri", "idle": "Diam", "walk": "Berjalan" },
 	"stateGeneration": {
+		"continueIntro": "Anda dapat menyelesaikan tampilan yang belum pernah dikirim. Tampilan yang sudah selesai akan disimpan.",
+		"continueAccount": "Hubungkan kembali dengan kunci PixelLab awal untuk melanjutkan status ini.",
+		"continueViews": "Tampilan yang disimpan: {kept}. Tampilan yang akan dibuat: {remaining}.",
+		"checkRemainingCost": "Periksa sisa biaya",
+		"generateRemaining": "Buat tampilan yang tersisa",
 		"confirmDiscard": "Konfirmasi pembuangan",
 		"discardWarning": "Membuang tidak mengembalikan biaya generasi atau menghapus status dari PixelLab. Memulai lagi dapat mengenakan biaya untuk semua arah.",
 		"localOnly": "Status ini hanya akan disimpan di PixelDoll.",

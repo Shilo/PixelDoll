@@ -10,6 +10,8 @@ import * as db from '../lib/store/db.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import { LocalizedError, message } from '../lib/message.ts';
 import { moveLabel } from './model.ts';
+import { sameClipName, withClipWriteLock } from './clipName.ts';
+export { clipNameId as stateCaptureId } from './clipName.ts';
 import {
 	deletionBlocked,
 	directionEditsBlocked,
@@ -19,6 +21,7 @@ import {
 	gens,
 	flushSave,
 	openProject,
+	pendingBodyMoveName,
 	toast
 } from './state.svelte.ts';
 
@@ -50,26 +53,29 @@ export function stateCaptureMoves(manifest: Manifest | undefined) {
 	);
 }
 
-export function stateCaptureId(name: string) {
-	return name
-		.normalize('NFKD')
-		.replace(/\p{M}/gu, '')
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '');
-}
-
 export function stateCaptureNameIssue(manifest: Manifest, id: string) {
 	if (!id) return 'stateCapture.invalidName';
 	if (
 		[DEFAULT_MOVE, 'standing', 'walk', 'idle', ...AUTHORED].includes(id) ||
-		manifest.rig.animations.some((clip) => stateCaptureId(clip.id) === id)
+		manifest.rig.animations.some((clip) => sameClipName(clip.id, id))
 	)
 		return 'stateCapture.takenName';
 	return undefined;
 }
 
-export async function captureState(
+export function captureState(
+	projectId: string,
+	moveId: string,
+	position: number,
+	id: string,
+	sourceVersion: string
+) {
+	return withClipWriteLock(projectId, id, () =>
+		captureStateUnlocked(projectId, moveId, position, id, sourceVersion)
+	);
+}
+
+async function captureStateUnlocked(
 	projectId: string,
 	moveId: string,
 	position: number,
@@ -112,7 +118,12 @@ export async function captureState(
 	if (!frame || !body.cells || !drawn.length) throw unavailable();
 	const { cell } = frame;
 	const nameIssue = stateCaptureNameIssue(manifest, id);
-	if (nameIssue || Object.hasOwn(snapshot.moveReviews ?? {}, id))
+	if (
+		nameIssue ||
+		(snapshot.stateGeneration && sameClipName(snapshot.stateGeneration.id, id)) ||
+		Object.keys(snapshot.moveReviews ?? {}).some((moveId) => sameClipName(moveId, id)) ||
+		(await pendingBodyMoveName(projectId, id))
+	)
 		throw new LocalizedError(
 			'Choose a different State name.',
 			nameIssue ?? 'stateCapture.takenName'

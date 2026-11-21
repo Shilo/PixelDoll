@@ -1,9 +1,10 @@
 import { expect, test } from 'vitest';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
-import { stateRecoveryRecords } from '../../src/studio/stateRecovery.ts';
+import { stateContinuationBatches, stateRecoveryRecords } from '../../src/studio/stateRecovery.ts';
 
 const local = {
 	token: 'attempt',
+	continuation: { unqueued: [0] },
 	plan: { endpoint: '/edit-animation-v2', batches: [0, 1] }
 } as const;
 const managed = {
@@ -40,7 +41,25 @@ test('recovers a complete durable set in planned order', () => {
 	expect(stateRecoveryRecords(local, [job(0)])).toBeNull();
 });
 
+test('continuation requires both an unqueued batch and the absence of a durable record', () => {
+	const kept = job(1);
+	expect(stateContinuationBatches(local, [kept])).toEqual({
+		records: [{ index: 1, record: kept }],
+		missing: [0]
+	});
+	expect(stateContinuationBatches(local, [])).toBeNull();
+	expect(stateContinuationBatches({ ...local, continuation: { unqueued: [0, 1] } }, [])).toEqual({
+		records: [],
+		missing: [0, 1]
+	});
+	expect(stateContinuationBatches(local, [kept, kept])).toBeNull();
+	expect(stateContinuationBatches(local, [job(0), kept])).toBeNull();
+	expect(stateContinuationBatches(managed, [])).toBeNull();
+});
+
 test.each<Partial<JobRec>>([
+	{ state: 'queued' },
+	{ state: 'submitting' },
 	{ state: 'running' },
 	{ state: 'lost' },
 	{ state: 'canceled' },
@@ -49,6 +68,7 @@ test.each<Partial<JobRec>>([
 	{ endpoint: '/transfer-outfit-v2' }
 ])('never exposes an incomplete or mismatched batch for review: %o', (patch) => {
 	expect(stateRecoveryRecords(local, [job(0), job(1, patch)])).toBeNull();
+	expect(stateContinuationBatches(local, [job(1, patch)])).toBeNull();
 });
 
 test('recovers an expired managed poll only with a matching durable receipt', () => {

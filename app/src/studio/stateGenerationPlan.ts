@@ -141,6 +141,30 @@ function estimate(jobs: number, min: number, max = min): StateGenerationCost {
 	return { kind: 'estimate', minGenerations: min * jobs, maxGenerations: max * jobs };
 }
 
+export function localStateCost(
+	endpoint: LocalStateRoute['endpoint'],
+	cellSize: Readonly<Size>,
+	batches: readonly StateGenerationBatch[]
+): StateGenerationCost | undefined {
+	const count = batches.length;
+	switch (endpoint) {
+		case '/edit-image-pro-flash':
+			return undefined;
+		case '/edit-image-pixen':
+			return { kind: 'fixed', minGenerations: count, maxGenerations: count };
+		case '/edit-images-v2': {
+			const maxGenerations = batches.reduce((sum, batch) => {
+				const extent = longest(batch.transport === 'sheet' ? batch.canvas : cellSize);
+				return sum + (extent <= 256 ? 10 : extent <= 336 ? 15 : 25);
+			}, 0);
+			return { kind: 'estimate', minGenerations: 10 * count, maxGenerations };
+		}
+		case '/edit-animation-v2':
+		case '/transfer-outfit-v2':
+			return estimate(count, editGens({ w: cellSize.width, h: cellSize.height }));
+	}
+}
+
 export function planStateGeneration(input: StateGenerationInput): StateGenerationPlan {
 	const { cellSize, facingIds, referenceSize, managedParent, flashNativeShapes } = input;
 	if (!validSize(cellSize)) return reject('invalid-cell-size');
@@ -155,7 +179,7 @@ export function planStateGeneration(input: StateGenerationInput): StateGeneratio
 	const ready = (
 		route: LocalStateRoute,
 		batches: readonly StateGenerationBatch[],
-		cost?: StateGenerationCost
+		cost = localStateCost(route.endpoint, cellSize, batches)
 	): StateGenerationPlan => ({
 		kind: 'ready',
 		...route,
@@ -183,11 +207,7 @@ export function planStateGeneration(input: StateGenerationInput): StateGeneratio
 				? { transport: 'cells' as const, facingIds: group }
 				: sheetBatch(group, layout);
 		});
-		return ready({ endpoint: '/edit-image-pixen', method: 'text' }, batches, {
-			kind: 'fixed',
-			minGenerations: batches.length,
-			maxGenerations: batches.length
-		});
+		return ready({ endpoint: '/edit-image-pixen', method: 'text' }, batches);
 	}
 
 	if (input.model === 'pro-flash') {
@@ -247,17 +267,8 @@ export function planStateGeneration(input: StateGenerationInput): StateGeneratio
 	if (referenceSize && longest(referenceSize) > 512) return reject('reference-too-large');
 	const nativePro = shortest(cellSize) >= 32 && side <= 512;
 	const cap = side <= 128 ? editFrameCap(side) - Number(reference) : 1;
-	const images = (batches: readonly StateGenerationBatch[]) => {
-		const maxGenerations = batches.reduce((sum, batch) => {
-			const extent = longest(batch.transport === 'sheet' ? batch.canvas : cellSize);
-			return sum + (extent <= 256 ? 10 : extent <= 336 ? 15 : 25);
-		}, 0);
-		return ready({ endpoint: '/edit-images-v2', method }, batches, {
-			kind: 'estimate',
-			minGenerations: 10 * batches.length,
-			maxGenerations
-		});
-	};
+	const images = (batches: readonly StateGenerationBatch[]) =>
+		ready({ endpoint: '/edit-images-v2', method }, batches);
 	if (nativePro && facingIds.length <= cap) return images(cells(cap));
 	if (nativePro && side >= 81) {
 		const layout = compactSheet(cellSize, facingIds.length, (native) =>
@@ -273,10 +284,8 @@ export function planStateGeneration(input: StateGenerationInput): StateGeneratio
 				: undefined;
 	if (animationRoute && side <= 256 && (side >= 129 || !nativePro)) {
 		const batches = cells(editFrameCap(side) - Number(reference));
-		if (batches.every((batch) => batch.facingIds.length >= EDIT_MIN_FRAMES)) {
-			const generations = editGens({ w: cellSize.width, h: cellSize.height });
-			return ready(animationRoute, batches, estimate(batches.length, generations));
-		}
+		if (batches.every((batch) => batch.facingIds.length >= EDIT_MIN_FRAMES))
+			return ready(animationRoute, batches);
 	}
 	return nativePro ? images(cells(cap)) : reject('unsupported-cell-size');
 }

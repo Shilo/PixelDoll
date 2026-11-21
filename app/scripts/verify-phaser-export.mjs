@@ -206,7 +206,7 @@ async function adversarialArchive(source) {
 	manifest.slots[1].clips = ['hair'];
 	manifest.slots.push(
 		{ id: 'hair', class: 'worn', z: 15 },
-		{ id: 'chest', class: 'worn', z: 25, clips: ['body'] },
+		{ id: 'chest', profile: 'torso_outer', class: 'worn', z: 25, clips: ['body'] },
 		{
 			id: 'back',
 			class: 'worn',
@@ -326,8 +326,61 @@ async function adversarialArchive(source) {
 		zip: result.zip
 	};
 }
+// Separate archive so the basic fixture's clips and negative controls stay unchanged.
+async function stateArchive(source) {
+	const manifest = structuredClone(source.manifest),
+		images = new Map(source.images);
+	manifest.name = 'Ready stance State';
+	manifest.rig.animations.push({
+		id: 'ready-stance',
+		kind: 'state',
+		cells: 1,
+		loop: false,
+		frames: [{ cell: 0, ms: 150 }]
+	});
+	// The State's 4x4 magenta blocks (body center, hat marker) appear in no Move cell.
+	for (const item of manifest.items) {
+		const layer = item.layers[0],
+			original = images.get(layer.cells.walk.south[0]),
+			image = { ...original, data: original.data.slice() },
+			[cx, cy] = item.slot === 'head' ? [48, 4] : [32, 32];
+		for (let y = cy - 2; y < cy + 2; y++)
+			for (let x = cx - 2; x < cx + 2; x++)
+				image.data.set([255, 0, 255, 255], (y * image.w + x) * 4);
+		const hash = await cellHash(image);
+		images.set(hash, image);
+		layer.cells['ready-stance'] = { south: [hash] };
+	}
+	const body = manifest.items.find((item) => item.slot === 'body').layers[0].cells;
+	manifest.rig.baseHash = await baseHashOf(
+		manifest.rig,
+		Object.fromEntries(
+			manifest.rig.animations.flatMap((a) =>
+				body[a.id].south.map((hash, i) => [`${a.id}/south/${i}`, hash])
+			)
+		)
+	);
+	for (const item of manifest.items) item.baseHash = manifest.rig.baseHash;
+	const copy = structuredClone(manifest);
+	applyExportSettings(copy, {
+		engine: 'phaser',
+		dressedCharacterSheets: true,
+		playOnce: ['jump', 'ready-stance']
+	});
+	const result = await exportZip(
+		{ manifest: copy, images },
+		{ engines: ['phaser'], baked: true, exportedAt: '2026-11-21T00:00:00.000Z' }
+	);
+	assert.deepEqual(result.errors, []);
+	await writeFile(join(vendor, 'state-fixture.pixeldoll.zip'), result.zip);
+	return { label: 'ready-stance-state', fixture: false, state: true, zip: result.zip };
+}
 const basic = await fixtureArchive();
-const archives = [basic, await adversarialArchive(basic.project)];
+const archives = [
+	basic,
+	await adversarialArchive(basic.project),
+	await stateArchive(basic.project)
+];
 for (const file of values.zip ?? [])
 	archives.push({
 		label: basename(file),
@@ -369,7 +422,9 @@ try {
 						]
 					: archive.adversarial
 						? ['none', 'no-covers', 'no-hides', 'no-palette', 'wrong-direction']
-						: ['none']) {
+						: archive.state
+							? ['none', 'restart-every-play', 'state-loop']
+							: ['none']) {
 					const page = await browser.newPage(),
 						errors = [],
 						label = `${bundle.version} ${renderer} ${archive.label} ${control}`;
@@ -401,6 +456,9 @@ try {
 						} else if (control === 'no-repeat') {
 							assert(runtime.includes('repeat: a.loop ? -1 : 0'));
 							runtime = runtime.replace('repeat: a.loop ? -1 : 0', 'repeat: 0');
+						} else if (control === 'state-loop') {
+							assert(runtime.includes('repeat: a.loop ? -1 : 0'));
+							runtime = runtime.replace('repeat: a.loop ? -1 : 0', 'repeat: -1');
 						} else if (control === 'no-layer-update') {
 							assert(runtime.includes("'animationupdate', "));
 							runtime = runtime.replace("'animationupdate', ", '');
@@ -446,7 +504,7 @@ try {
 						let data, failure;
 						try {
 							data = await page.evaluate(
-								async ({ renderer, fixture, control, bakedPaths }) => {
+								async ({ renderer, fixture, control, bakedPaths, stateMove }) => {
 									const api = await import('/hero/phaser/PaperdollContainer.js');
 									return new Promise((resolve, reject) => {
 										const timeout = setTimeout(
@@ -489,6 +547,97 @@ try {
 																.getContext('2d')
 																.getImageData(0, 0, 1, 1).data
 														];
+														// Runs before the generic clip loop so its negative controls reach these State checks.
+														if (stateMove) {
+															const dir = 'south',
+																state = m.rig.animations.find((move) => move.id === stateMove),
+																cell = stateMove + '_' + dir + '_0';
+															check(
+																api
+																	.playbackClips(m.rig.animations)
+																	.find((clip) => clip.id === stateMove)?.kind === 'state' &&
+																	state.frames.length === 1 &&
+																	!state.loop &&
+																	m.rig.animations.find((move) => move.id === 'walk').loop,
+																'state: export must keep a non-default one-cell non-looping State beside a looping Move'
+															);
+															let completes = 0;
+															const completed = () => completes++,
+																advance = (ms) => {
+																	for (let t = 0; t < ms; t++) doll.body.anims.update(t, 1);
+																},
+																shows = (frame, index) =>
+																	doll.body.anims.currentFrame.index === index &&
+																	doll.body.anims.currentFrame.textureFrame === frame &&
+																	doll.nodes
+																		.filter((n) => n.sprite.visible)
+																		.every((n) => n.sprite.frame.name === frame),
+																// Body center and hat marker; magenta exists only in the State cells.
+																marked = async () =>
+																	[await pixel(128, 100), await pixel(128, 56)].map(
+																		(color) => color.slice(0, 3).join() === '255,0,255'
+																	);
+															doll.body.on('animationcomplete', completed);
+															doll.play('walk', dir, true);
+															advance(100);
+															check(
+																shows('walk_south_1', 2) && (await marked()).every((on) => !on),
+																'state: Move must advance without State artwork'
+															);
+															doll.play(stateMove, dir);
+															check(
+																shows(cell, 1) &&
+																	doll.body.anims.isPlaying &&
+																	doll.body.anims.currentAnim.key ===
+																		api.animKey(m, stateMove, dir),
+																'state: explicit selection during a Move must start the State'
+															);
+															check(
+																(await marked()).every(Boolean),
+																'state: State must render its distinct body and hat artwork'
+															);
+															advance(state.frames[0].ms - 1);
+															check(
+																completes === 0 && doll.body.anims.isPlaying && shows(cell, 1),
+																'state: State completed before its authored duration'
+															);
+															advance(51);
+															check(
+																completes === 1 &&
+																	!doll.body.anims.isPlaying &&
+																	shows(cell, 1) &&
+																	(await marked()).every(Boolean),
+																'state: completed State must hold its one cell and artwork'
+															);
+															doll.play(stateMove, dir);
+															check(
+																doll.body.anims.isPlaying && shows(cell, 1),
+																'state: selecting a completed State must replay it'
+															);
+															doll.play('walk', dir);
+															check(
+																shows('walk_south_0', 1) && doll.body.anims.isPlaying,
+																'state: selecting a Move after a State must start the Move'
+															);
+															check(
+																(await marked()).every((on) => !on),
+																'state: Move after a State must drop State artwork'
+															);
+															advance(100);
+															doll.play('walk', dir);
+															check(
+																shows('walk_south_1', 2),
+																'state: repeated Move selection after a State must resume its progress'
+															);
+															doll.play('walk', dir, true);
+															check(
+																shows('walk_south_0', 1) && doll.body.anims.isPlaying,
+																'state: explicit Move restart after a State must start over'
+															);
+															doll.body.off('animationcomplete', completed);
+															// Leave a different clip active so the generic loop starts each clip fresh.
+															doll.play(stateMove, dir, true);
+														}
 														for (const move of m.rig.animations) {
 															const dir = (move.directions ?? m.rig.directions.map((d) => d.id))[0];
 															if (!dir) continue;
@@ -820,23 +969,31 @@ try {
 										});
 									});
 								},
-								{ renderer, fixture: archive.fixture, control, bakedPaths: archive.bakedPaths }
+								{
+									renderer,
+									fixture: archive.fixture,
+									control,
+									bakedPaths: archive.bakedPaths,
+									stateMove: archive.state ? 'ready-stance' : null
+								}
 							);
 						} catch (error) {
 							failure = error;
 						}
 						if (control !== 'none') {
-							const expectedFailure = [
-								'wrong-pivot',
-								'no-covers',
-								'no-hides',
-								'no-palette',
-								'wrong-direction'
-							].includes(control)
-								? 'pixels:'
-								: control === 'no-layer-update'
-									? 'synchronization:'
-									: 'clock:';
+							const expectedFailure = archive.state
+								? 'state:'
+								: [
+											'wrong-pivot',
+											'no-covers',
+											'no-hides',
+											'no-palette',
+											'wrong-direction'
+									  ].includes(control)
+									? 'pixels:'
+									: control === 'no-layer-update'
+										? 'synchronization:'
+										: 'clock:';
 							assert(
 								failure && failure.message.includes(expectedFailure),
 								`Negative control was not caught by ${expectedFailure}: ${failure?.message ?? 'passed'}`

@@ -29,12 +29,24 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   synchronous endpoint returned no job IDs to query); do not infer their charges from
   the shared balance or resend them. Fitting records both generations and USD, including rejected attempts and explicit
   retries. See the [shared-equipment ledger](testing/shared-equipment-2026-10-22.md).
+- **Interrupted State generation can require discarding the attempt.** Finished views can be kept and the remaining
+  views quoted again only when Studio can prove those batches were never queued. If work stops after a batch is reserved
+  but before its queue record is written, Studio will not resend it. Review Activity before deciding whether to discard
+  the attempt and approve a new generation.
+  Editable workspace ZIPs preserve saved art, not pending State attempts or their job receipts.
+- **Canceling a managed State does not guarantee a refund.** In a trial-account check, PixelLab reported cancellation
+  and $0 job usage, but the child later completed and the balance fell by 10 generations. Do not retry uncertain jobs
+  or use that cancellation receipt as proof of no charge.
 - **API drift.** Template list, prices and Pro/Pro Flash behavior change; the OpenAPI snapshot in `research/pixellab/`
   is from 2026-10-20. The [November 2 contract capture](research/pixellab/2026-11-02-managed-custom-v3-contract.json)
   supersedes its managed custom `/characters/animations` description; see the folder's [contract note](research/pixellab/README.md).
 
 ## Generation and quality
 
+- **Generated States and their equipment still need visual review.** A successful joint fit does not guarantee that
+  props persist in a Move made from a State or that equipment stays aligned and free of stray pixels across facings.
+  Review the State and Move separately before relying on them. See the
+  [live alignment results](research/2026-11-18-pixeldoll-states/live-routing-matrix.md#production-studio-managed-state-to-saved-move).
 - **V3 and PixMiniMax moves keep their body artwork.** Equipment uses poses found on those frames, so a successful
   body generation can still leave an equipment layer that needs review. Native body frames do not get the Shirt and
   Shorts region color marks; existing exact dye matches still apply, but some areas can recolor differently or not at all.
@@ -194,6 +206,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## Exports
 
+- **GDevelop State playback was verified only in the exported web game**, not in the desktop editor UI or a desktop build.
 - **Aseprite repeat metadata.** Play animation once exports tag repeat `1`; looping exports repeat `0`, which loops in the editor. Aseprite interprets `0` as unspecified for its own later export, so users must choose repetition there when exporting again. See [Aseprite tag repeats](https://www.aseprite.org/api/tag#tagrepeats).
 
 ## Imports

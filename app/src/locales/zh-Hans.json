@@ -857,7 +857,8 @@
 			"format": "导出格式",
 			"versionMenu": "RPG Maker 版本",
 			"version": "版本",
-			"versionLabel": "RPG Maker 版本：{version}"
+			"versionLabel": "RPG Maker 版本：{version}",
+			"walkMove": "行走动作"
 		},
 		"group": { "engines": "引擎与框架", "assets": "资源" },
 		"target": {
@@ -996,7 +997,10 @@
 				"other": "RPG Maker：行走缺少{directions}视图，因此这些行会静止。"
 			},
 			"rpgSteps": "RPG Maker：无法检测行走步幅，因此使用行走的第一帧作为步幅。请检查图集。",
-			"rpgBelowFeet": "RPG Maker：{sheet}在脚下有 {count} px 的空白，因此在地图上会站高 {count} px。"
+			"rpgBelowFeet": "RPG Maker：{sheet}在脚下有 {count} px 的空白，因此在地图上会站高 {count} px。",
+			"rpgOmittedMoves": {
+				"other": "RPG Maker：未包含{moves}；行走图集只包含站立和行走帧。"
+			}
 		}
 	},
 	"import": {
@@ -2322,6 +2326,11 @@
 	},
 	"moveNames": { "default": "站立", "idle": "待机", "walk": "行走" },
 	"stateGeneration": {
+		"continueIntro": "你可以完成从未提交的视角。已完成的视角将保留。",
+		"continueAccount": "请使用原来的 PixelLab 密钥重新连接，以继续生成此状态。",
+		"continueViews": "保留的视角：{kept}。待生成的视角：{remaining}。",
+		"checkRemainingCost": "查看剩余费用",
+		"generateRemaining": "生成剩余视角",
 		"confirmDiscard": "确认舍弃",
 		"discardWarning": "舍弃不会退还生成次数，也不会从 PixelLab 删除状态。重新开始可能会再次收取所有方向的费用。",
 		"localOnly": "此状态只会保存到 PixelDoll。",

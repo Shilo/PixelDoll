@@ -14,6 +14,7 @@ import {
 import { moveFrameCounts } from '../../src/studio/moveAnimationOptions.ts';
 import { resolveMoveSource } from '../../src/studio/moveSource.ts';
 import { movePlan } from '../../src/studio/apiPlans.ts';
+import { withClipWriteLock } from '../../src/studio/clipName.ts';
 import { queue, requestIdentity, type JobRec } from '../../src/lib/pixellab/queue.ts';
 import { png, routes } from '../../src/lib/pixellab/routes.ts';
 import * as db from '../../src/lib/store/db.ts';
@@ -356,6 +357,56 @@ test('a native quality failure offers a priced body draft retry without buying e
 	const saved = f.saved();
 	expect(saved.manifest).toEqual(f.original.manifest);
 	expect(saved.moveReviews?.idle?.spec).toMatchObject({ items: [], reviewBeforePublish: true });
+});
+
+test('a new Move cannot take the normalized name of a State or a pending State', async () => {
+	const f = await fixture();
+	const rec = f.saved();
+	const spec = { id: 'cafe-cast', text: 'Café cast', action: undefined, replace: false };
+	rec.stateGeneration = { id: 'cafe_cast' } as NonNullable<typeof rec.stateGeneration>;
+	const taken = { translation: { key: 'stateCapture.takenName' } };
+	await expect(f.run(spec)).rejects.toMatchObject(taken);
+	delete rec.stateGeneration;
+	rec.manifest.rig.animations.push({
+		id: 'cafe_cast',
+		kind: 'state',
+		cells: 1,
+		loop: false,
+		frames: [{ cell: 0, ms: 100 }]
+	});
+	await expect(f.run(spec)).rejects.toMatchObject(taken);
+	expect(f.enqueue).not.toHaveBeenCalled();
+});
+
+test('a Move cannot submit while an equivalent clip name is locked', async () => {
+	const f = await fixture();
+	const held = new Set<string>();
+	const request = async (
+		name: string,
+		options: { ifAvailable: boolean },
+		work: (lock: { name: string } | null) => Promise<unknown>
+	) => {
+		expect(options.ifAvailable).toBe(true);
+		if (held.has(name)) return work(null);
+		held.add(name);
+		try {
+			return await work({ name });
+		} finally {
+			held.delete(name);
+		}
+	};
+	vi.stubGlobal('navigator', { locks: { request } });
+	try {
+		await withClipWriteLock('rig-target', 'Café_cast', async () => {
+			await expect(f.run({ id: 'cafe-cast', replace: false })).rejects.toMatchObject({
+				translation: { key: 'directionsSheet.waitForGeneration' }
+			});
+			await expect(withClipWriteLock('rig-target', 'other', async () => true)).resolves.toBe(true);
+		});
+		expect(f.enqueue).not.toHaveBeenCalled();
+	} finally {
+		vi.unstubAllGlobals();
+	}
 });
 
 test('an authored Skeleton move from a fitted generated State poses the State art and joints', async () => {

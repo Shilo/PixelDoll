@@ -898,7 +898,8 @@
 			"format": "Dışa aktarım biçimi",
 			"versionMenu": "RPG Maker sürümü",
 			"version": "Sürüm",
-			"versionLabel": "RPG Maker sürümü: {version}"
+			"versionLabel": "RPG Maker sürümü: {version}",
+			"walkMove": "Yürüme animasyonu"
 		},
 		"group": { "engines": "Motorlar ve çerçeveler", "assets": "Varlıklar" },
 		"target": {
@@ -1044,7 +1045,11 @@
 				"other": "RPG Maker: Yürüme animasyonunda şu yönler yok: {directions}. Bu satırlar hareketsiz kalır."
 			},
 			"rpgSteps": "RPG Maker: Yürüme adımları algılanamadığı için ilk yürüme karesi adım olarak kullanılıyor. Sayfayı kontrol edin.",
-			"rpgBelowFeet": "RPG Maker: {sheet} sayfasında ayağın altında {count} px var. Bu yüzden karakter haritada {count} px daha yukarıda durur."
+			"rpgBelowFeet": "RPG Maker: {sheet} sayfasında ayağın altında {count} px var. Bu yüzden karakter haritada {count} px daha yukarıda durur.",
+			"rpgOmittedMoves": {
+				"one": "RPG Maker: {moves} dışarıda bırakıldı. Yürüme sayfaları yalnızca durma ve yürüme karelerini içerir.",
+				"other": "RPG Maker: {moves} dışarıda bırakıldı. Yürüme sayfaları yalnızca durma ve yürüme karelerini içerir."
+			}
 		}
 	},
 	"import": {
@@ -2437,6 +2442,11 @@
 	},
 	"moveNames": { "default": "Ayakta", "idle": "Bekleme", "walk": "Yürüme" },
 	"stateGeneration": {
+		"continueIntro": "Hiç gönderilmemiş görünümleri tamamlayabilirsiniz. Tamamlanan görünümler korunur.",
+		"continueAccount": "Bu duruma devam etmek için ilk PixelLab anahtarınızla yeniden bağlanın.",
+		"continueViews": "Korunan görünümler: {kept}. Oluşturulacak görünümler: {remaining}.",
+		"checkRemainingCost": "Kalan maliyeti kontrol et",
+		"generateRemaining": "Kalan görünümleri oluştur",
 		"confirmDiscard": "Atmayı onayla",
 		"discardWarning": "Atmak üretim haklarını iade etmez veya durumu PixelLab’den silmez. Yeniden başlamak tüm yönler için tekrar ücretlendirebilir.",
 		"localOnly": "Bu durum yalnızca PixelDoll’da kaydedilecek.",

@@ -901,7 +901,8 @@
 			"format": "Formato de exportación",
 			"versionMenu": "Versión de RPG Maker",
 			"version": "Versión",
-			"versionLabel": "Versión de RPG Maker: {version}"
+			"versionLabel": "Versión de RPG Maker: {version}",
+			"walkMove": "Animación de caminar"
 		},
 		"group": { "engines": "Motores y frameworks", "assets": "Recursos" },
 		"target": {
@@ -1050,7 +1051,11 @@
 				"other": "RPG Maker: Caminar no tiene vistas {directions}, así que esas filas quedan quietas."
 			},
 			"rpgSteps": "RPG Maker: no se pudieron detectar los pasos de Caminar, así que se usa el primer fotograma de Caminar como paso. Revisa la hoja.",
-			"rpgBelowFeet": "RPG Maker: {sheet} tiene {count} px por debajo de los pies, así que aparece {count} px más arriba en el mapa."
+			"rpgBelowFeet": "RPG Maker: {sheet} tiene {count} px por debajo de los pies, así que aparece {count} px más arriba en el mapa.",
+			"rpgOmittedMoves": {
+				"one": "RPG Maker: {moves} queda fuera; las hojas de caminar solo incluyen fotogramas de pie y de caminar.",
+				"other": "RPG Maker: {moves} quedan fuera; las hojas de caminar solo incluyen fotogramas de pie y de caminar."
+			}
 		}
 	},
 	"import": {
@@ -2450,6 +2455,11 @@
 		"walk": "Caminar"
 	},
 	"stateGeneration": {
+		"continueIntro": "Puedes terminar las vistas que no se enviaron. Se conservarán las vistas completadas.",
+		"continueAccount": "Vuelve a conectar con la clave original de PixelLab para continuar este estado.",
+		"continueViews": "Vistas conservadas: {kept}. Vistas por generar: {remaining}.",
+		"checkRemainingCost": "Consultar costo restante",
+		"generateRemaining": "Generar vistas restantes",
 		"confirmDiscard": "Confirmar descarte",
 		"discardWarning": "Descartar no reembolsa las generaciones ni elimina el estado de PixelLab. Empezar de nuevo puede volver a cobrar todas las direcciones.",
 		"localOnly": "Este estado solo se guardará en PixelDoll.",

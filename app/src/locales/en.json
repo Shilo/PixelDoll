@@ -892,7 +892,8 @@
 			"format": "Export format",
 			"versionMenu": "RPG Maker version",
 			"version": "Version",
-			"versionLabel": "RPG Maker version: {version}"
+			"versionLabel": "RPG Maker version: {version}",
+			"walkMove": "Walk move"
 		},
 		"group": { "engines": "Engines and frameworks", "assets": "Assets" },
 		"target": {
@@ -1041,7 +1042,11 @@
 				"other": "RPG Maker: the walk has no {directions} views, so those rows stand still."
 			},
 			"rpgSteps": "RPG Maker: the walk steps could not be detected, so the first walk frame is used as a step. Check the sheet.",
-			"rpgBelowFeet": "RPG Maker: {sheet} has {count} px below the feet, so it stands {count} px higher on the map."
+			"rpgBelowFeet": "RPG Maker: {sheet} has {count} px below the feet, so it stands {count} px higher on the map.",
+			"rpgOmittedMoves": {
+				"one": "RPG Maker: {moves} is left out; walking sheets hold only standing and walking frames.",
+				"other": "RPG Maker: {moves} are left out; walking sheets hold only standing and walking frames."
+			}
 		}
 	},
 	"import": {
@@ -2428,6 +2433,11 @@
 	},
 	"moveNames": { "default": "Standing", "idle": "Idle", "walk": "Walk" },
 	"stateGeneration": {
+		"continueIntro": "You can finish the views that were never sent. Completed views will be kept.",
+		"continueAccount": "Reconnect with the original PixelLab key to continue this State.",
+		"continueViews": "Views kept: {kept}. Views to generate: {remaining}.",
+		"checkRemainingCost": "Check remaining cost",
+		"generateRemaining": "Generate remaining views",
 		"confirmDiscard": "Confirm discard",
 		"discardWarning": "Discarding does not refund generations or delete a State from PixelLab. Starting over may charge for every direction again.",
 		"localOnly": "This State will be saved in PixelDoll only.",

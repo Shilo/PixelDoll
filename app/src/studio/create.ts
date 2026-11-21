@@ -30,6 +30,7 @@ import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
+import { sameClipName, withClipWriteLock } from './clipName.ts';
 import { defaultCharacterExportId, itemContent } from '../lib/store/identity.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { normalize, opaqueBox } from '../lib/rig/normalize.ts';
@@ -2487,7 +2488,17 @@ export function itemMoveOffer(
  * Freeze a pose-first or text-rendered body move, then
  * the chosen items posed onto it. Resumable: a body clip already saved is kept, items that already have it are skipped.
  */
-export async function addMove(
+export function addMove(
+	projectId: string,
+	spec: MoveSpec,
+	onProgress?: (p: Progress) => void,
+	onReviewed?: () => Promise<void>
+) {
+	const work = () => addMoveUnlocked(projectId, spec, onProgress, onReviewed);
+	return spec.itemsOnly ? work() : withClipWriteLock(projectId, spec.id, work);
+}
+
+async function addMoveUnlocked(
 	projectId: string,
 	spec: MoveSpec,
 	onProgress: (p: Progress) => void = () => {},
@@ -2516,6 +2527,15 @@ export async function addMove(
 			'create.errors.keepingReviewedBodyFrames'
 		);
 	const { rec } = await loadProject(projectId);
+	if (
+		!spec.itemsOnly &&
+		!rec.manifest.rig.animations.some((clip) => clip.kind !== 'state' && clip.id === spec.id) &&
+		((rec.stateGeneration && sameClipName(rec.stateGeneration.id, spec.id)) ||
+			rec.manifest.rig.animations.some(
+				(clip) => clip.kind === 'state' && sameClipName(clip.id, spec.id)
+			))
+	)
+		throw new LocalizedError('That State name is unavailable.', 'stateCapture.takenName');
 	if (spec.reviewBeforePublish) {
 		if (spec.items.length || spec.itemsOnly || spec.itemMethod)
 			throw new LocalizedError(
