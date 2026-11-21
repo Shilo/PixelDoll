@@ -251,8 +251,7 @@
 	/>
 	{#if hint || !exactFrame}
 		<small class="faint" id={helpId}
-			>{hint}{#if !exactFrame}
-				{limits}{/if}</small
+			>{exactFrame ? hint : hint ? `${hint} ${limits}` : limits}</small
 		>
 	{/if}
 	{#if error || issue}<small role="alert">{displayNestedMessage(error || issue)}</small>{/if}
