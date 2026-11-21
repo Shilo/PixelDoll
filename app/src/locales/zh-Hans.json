@@ -801,7 +801,9 @@
 		"anotherRigSetupIsStillRunningSo": "另一个绑定设置仍在运行，因此此设置未开始。你的选择已保留。",
 		"characterReadyForSkeletonPosedItemsAnd": "角色已可用于骨架姿态装备和新动作",
 		"couldNotCheckCopiedFrames": "无法检查已复制装备的帧：{reason}",
-		"couldNotReadSharedItems": "无法读取其他角色的装备：{reason}"
+		"couldNotReadSharedItems": "无法读取其他角色的装备：{reason}",
+		"finishedFramesChanged": "已完成的帧有变化。请重新查看装备。未保存任何内容。",
+		"rerollPriceChanged": "重新生成的价格有变化。请重新查看。未请求任何内容。"
 	},
 	"history": {
 		"wear": "穿戴{name}",
@@ -1212,7 +1214,8 @@
 		"failedRetry": "无法下载{label}。请重试。",
 		"recoveryStarted": "完整导出不可用。源 PNG 下载已开始。",
 		"startedNotes": "下载已开始。请查看 ZIP 中的导出说明。",
-		"started": "导出下载已开始。"
+		"started": "导出下载已开始。",
+		"paidStarted": "已开始下载付费结果。"
 	},
 	"studioModel": {
 		"itemQualityReview": "{name}：装备质量检查需要复核。未启动付费重试。",
@@ -1671,7 +1674,11 @@
 			"magenta": "洋红色",
 			"blue": "亮蓝色",
 			"azure": "亮天蓝色"
-		}
+		},
+		"rerollFailed": "重新生成失败的调用",
+		"rerollFailedDetail": "只重新购买失败的调用及依赖它们的内容。其他已完成的调用会重复使用。",
+		"keepFinished": "保留已完成的动作",
+		"keepFinishedDetail": "保存所有帧都已完成的动作。其余动作仍列为缺少帧，之后可以再制作。"
 	},
 	"generationDetails": {
 		"copiedFrom": "已为{name}付费一次；此处免费复制",
@@ -1774,7 +1781,8 @@
 			"noCharacterId": "PixelLab 未返回受管角色 ID。现有图像保持不变。",
 			"referenceChanged": "设置期间站立参考已更改。",
 			"characterChanged": "设置期间角色已更改。其当前工作已保留。"
-		}
+		},
+		"newRegistration": "重新登记"
 	},
 	"create": {
 		"errors": {
@@ -1820,7 +1828,7 @@
 			"resultMissingStorage": "结果{label}在存储中缺失",
 			"pixellabReturnedIncompleteInvalid": "{direction}：PixelLab 返回了不完整或无效的站立关节。未从这些关节开始动画；现有结果已保留。",
 			"pixellabReturnedWrongNumber": "{move} {direction}：PixelLab 返回的帧数不正确。未启动付费重试。请求另一次尝试前请查看“活动”。",
-			"animationExceedsPxFrame": "{move} {direction}：动画超出 {w} px 帧。再次创建前请增大“帧尺寸”或减小“身体尺寸”。",
+			"animationExceedsPxFrame": "{move} {direction}：身体帧超出 {w} px 帧。已保留以供查看；未保存任何内容。",
 			"pixellabReturnedEmptyFrames": "{move} {direction}：PixelLab 返回了空帧。未启动付费重试。请求另一次尝试前请查看“活动”。",
 			"validJointsWereFound": "{move} {direction}：并非每一帧都找到了有效关节。生成的图像保留在“活动”中；设置已停止，未重绘它们。",
 			"matchBodyColorsOnly": "{direction}：请在所有原始关节检查完成后才匹配身体颜色。",
@@ -1830,7 +1838,7 @@
 			"jointsFoundEveryFrame": "{label}：并非每一帧都找到关节",
 			"pixellabDroppedDirectionBusy": "{label}：PixelLab 丢弃了该朝向（繁忙）。请重试。",
 			"pixellabReturnedMotionFrames": "{label}：请求 {expected} 个运动帧，PixelLab 返回了 {returned} 个。未为此视图请求关节检查或身体渲染。",
-			"motionExceedsPxFrame": "{label}：运动超出 {size} px 帧。再次创建前请增大“帧尺寸”或减小“身体尺寸”。",
+			"motionExceedsPxFrame": "{label}：运动超出 {size} px 帧。其帧已保留以供查看；未保存任何内容。",
 			"pixellabReturnedEmptyMotion": "{label}：PixelLab 返回了空运动帧",
 			"pixellabReturnedView": "PixelLab 未返回{direction}视图",
 			"viewDoesFitPx": "{direction}视图无法放入 {cell} px 帧。再次创建前请增大“帧尺寸”或减小“身体尺寸”。",
@@ -1875,7 +1883,9 @@
 			"chooseRepairTarget": "修复前，请选择一件装备和现有动作中的一个朝向。未发送生成请求。",
 			"moveAnimationFramesBlocked": "此模型和画布尺寸不支持 {frames} 帧。未发出生成请求。",
 			"describeMoveBlocked": "生成前请先描述此动作。 未发出生成请求。",
-			"chooseExistingMoveRepairing": "修复装备前，请先选择一个现有动作。"
+			"chooseExistingMoveRepairing": "修复装备前，请先选择一个现有动作。",
+			"liftedJointsOutside": "{label}：抬高后的运动仍有关节在 {size} px 帧之外。未请求身体渲染。",
+			"reviewChoiceInvalid": "此选择已与动作不符。请重新查看。未发送任何请求。"
 		},
 		"steps": {
 			"draw": "正在绘制你的角色",
@@ -1899,7 +1909,8 @@
 				"frameRange": "帧尺寸必须为 {min}–256 个整像素。",
 				"seed": "种子必须是非负的安全整数。",
 				"promptRequired": "请输入角色提示词。",
-				"promptLength": "完整提示词必须不超过 2,000 个字符。"
+				"promptLength": "完整提示词必须不超过 2,000 个字符。",
+				"frameRoom": "{frame} px 帧在 {body} px 身体周围留出的空间少于 {min} px。角色的部分内容可能放不下。"
 			}
 		},
 		"form": {
@@ -2054,7 +2065,8 @@
 			"estimated": "预计 {gens}",
 			"keepWorking": "继续工作",
 			"costTitle": "每个朝向的站立视图；之后可添加待机、行走和其他动作。缺少站立关节可能会略微增加费用",
-			"create": "创建角色"
+			"create": "创建角色",
+			"createAnyway": "仍然创建"
 		}
 	},
 	"moveSheet": {
@@ -2079,7 +2091,8 @@
 			"replaceViews": "替换{move}视图",
 			"queue": "将{move}加入队列",
 			"move": "动作",
-			"queueReplacement": "将 {move} 的视图替换加入队列"
+			"queueReplacement": "将 {move} 的视图替换加入队列",
+			"addAnyway": "仍然添加{move}"
 		},
 		"titleRepair": "修复装备帧",
 		"titleReplace": "替换动作视图",
@@ -2190,7 +2203,9 @@
 			"currentFrame": "当前第 {number} 帧",
 			"redrawnFrame": "重绘后的第 {number} 帧",
 			"repairedFrame": "修复后的第 {number} 帧"
-		}
+		},
+		"rerollBatch": "重新生成此批次",
+		"rerollBatchDetail": "之前的批次保持不变。估算包括此批次以及之后尚未购买的批次。"
 	},
 	"itemRoute": {
 		"errors": {
@@ -2432,5 +2447,35 @@
 			"importFailed": "无法读取这些帧。请重试。",
 			"saveFailed": "无法保存这些帧。未做任何更改。请重试。"
 		}
+	},
+	"paidReview": {
+		"title": "付费结果",
+		"spent": "已支付：{gens} gens。这些结果会保留并重复使用。",
+		"free": "免费",
+		"download": "下载付费结果",
+		"frame": "{view}，第 {number} 帧",
+		"state": {
+			"ready": "就绪",
+			"pending": "尚未购买",
+			"failed": "已停止"
+		}
+	},
+	"moveReview": {
+		"resume": "使用付费结果继续",
+		"lift": "抬高以适配并继续",
+		"liftAndReroll": "抬高以适配，并重新生成{views}",
+		"liftDetail": "{views}：为让运动放进帧内，{total} 个运动帧中有 {frames} 个的脚最多抬高 {px} px。",
+		"liftDetailReview": "{views}：为让运动放进帧内，{total} 个运动帧中有 {frames} 个的脚最多抬高 {px} px。这超过了 {limit} px 的脚部检查，因此在替换当前帧之前，你会先查看身体帧。",
+		"liftDetailWarned": "{views}：为让运动放进帧内，{total} 个运动帧中有 {frames} 个的脚最多抬高 {px} px。这超过了 {limit} px 的脚部检查，因此动作会带着脚部警告保存。",
+		"reroll": "重新生成{views}",
+		"rerollDetail": "重新生成只为这些朝向购买一次新的尝试。其他朝向保留其付费结果。",
+		"pending": "仍需购买：约 {gens} gens。",
+		"liftable": "可抬高以适配：{total} 帧中有 {frames} 帧的脚最多抬高 {px} px。",
+		"notLiftable": "抬高也放不下：运动在侧边或顶部被裁切。"
+	},
+	"createReview": {
+		"resume": "使用付费结果继续",
+		"register": "重新登记已绘制的朝向",
+		"registerDetail": "保留已付费的绘制，并为相同朝向购买一次新的登记。"
 	}
 }

@@ -839,7 +839,9 @@
 		"anotherRigSetupIsStillRunningSo": "Une autre configuration du rig est encore en cours, celle-ci n’a donc pas démarré. Vos choix sont conservés.",
 		"characterReadyForSkeletonPosedItemsAnd": "Personnage prêt à recevoir de l’équipement animé avec son squelette et de nouvelles animations",
 		"couldNotCheckCopiedFrames": "Impossible de vérifier les images des items copiés : {reason}",
-		"couldNotReadSharedItems": "Impossible de lire les objets de vos autres personnages : {reason}"
+		"couldNotReadSharedItems": "Impossible de lire les objets de vos autres personnages : {reason}",
+		"finishedFramesChanged": "Les images terminées ont changé. Vérifiez à nouveau l’objet. Rien n’a été enregistré.",
+		"rerollPriceChanged": "Le prix de la relance a changé. Vérifiez-le à nouveau. Rien n’a été demandé."
 	},
 	"history": {
 		"wear": "Porter {name}",
@@ -1276,7 +1278,8 @@
 		"failedRetry": "Impossible de télécharger {label}. Réessayez.",
 		"recoveryStarted": "Export complet indisponible. Téléchargement des PNG sources lancé.",
 		"startedNotes": "Téléchargement lancé. Consultez les notes d’export dans le ZIP.",
-		"started": "Téléchargement de l’export lancé."
+		"started": "Téléchargement de l’export lancé.",
+		"paidStarted": "Le téléchargement des résultats payés a commencé."
 	},
 	"studioModel": {
 		"itemQualityReview": "{name} : vérifiez les résultats des contrôles qualité de l’objet. Aucune nouvelle tentative payante n’a été lancée.",
@@ -1770,7 +1773,11 @@
 			"magenta": "magenta",
 			"blue": "bleu vif",
 			"azure": "bleu azur vif"
-		}
+		},
+		"rerollFailed": "Relancer les appels échoués",
+		"rerollFailedDetail": "Seuls les appels échoués et ce qui en dépend sont rachetés. Tous les autres appels terminés sont réutilisés.",
+		"keepFinished": "Garder les animations terminées",
+		"keepFinishedDetail": "Enregistre les animations dont toutes les images sont terminées. Les autres restent listées comme images manquantes, à créer plus tard."
 	},
 	"generationDetails": {
 		"copiedFrom": "payé une fois pour {name} ; copié ici gratuitement",
@@ -1879,7 +1886,8 @@
 			"noCharacterId": "PixelLab n’a pas renvoyé d’ID de personnage géré. Les visuels existants sont inchangés.",
 			"referenceChanged": "Une référence debout a changé pendant la configuration.",
 			"characterChanged": "Le personnage a changé pendant la configuration. Son travail actuel a été conservé."
-		}
+		},
+		"newRegistration": "Réenregistrer"
 	},
 	"create": {
 		"errors": {
@@ -1925,7 +1933,7 @@
 			"resultMissingStorage": "résultat {label} absent du stockage",
 			"pixellabReturnedIncompleteInvalid": "{direction} : PixelLab a renvoyé des articulations debout incomplètes ou invalides. L’animation n’a pas été lancée à partir de ces articulations ; les résultats existants sont conservés.",
 			"pixellabReturnedWrongNumber": "{move} {direction} : PixelLab a renvoyé un nombre d’images incorrect. Aucune nouvelle tentative payante n’a été lancée. Consultez Activité avant de demander une autre tentative.",
-			"animationExceedsPxFrame": "{move} {direction} : l’animation dépasse le cadre de {w} px. Augmentez la taille du cadre ou réduisez celle du corps avant de relancer la création.",
+			"animationExceedsPxFrame": "{move} {direction} : les images du corps ne tiennent pas dans le cadre de {w} px. Elles ont été conservées pour vérification ; rien n’a été enregistré.",
 			"pixellabReturnedEmptyFrames": "{move} {direction} : PixelLab a renvoyé des images vides. Aucune nouvelle tentative payante n’a été lancée. Consultez Activité avant de demander une autre tentative.",
 			"validJointsWereFound": "{move} {direction} : certaines images n’ont pas d’articulations valides. Les images générées sont conservées dans « Activité » ; la configuration s’est arrêtée sans les redessiner.",
 			"matchBodyColorsOnly": "{direction} : harmonisez les couleurs du corps uniquement une fois tous les contrôles d’articulations d’origine terminés.",
@@ -1935,7 +1943,7 @@
 			"jointsFoundEveryFrame": "{label} : articulations introuvables sur certaines images",
 			"pixellabDroppedDirectionBusy": "{label} : PixelLab était occupé et n’a pas traité cette direction. Réessayez.",
 			"pixellabReturnedMotionFrames": "{label} : PixelLab a renvoyé {returned} images de mouvement pour {expected} demandées. Aucun contrôle d’articulations ni rendu du corps n’a été demandé pour cette vue.",
-			"motionExceedsPxFrame": "{label} : le mouvement dépasse le cadre de {size} px. Augmentez la taille du cadre ou réduisez celle du corps avant de relancer la création.",
+			"motionExceedsPxFrame": "{label} : le mouvement ne tient pas dans le cadre de {size} px. Ses images ont été conservées pour vérification ; rien n’a été enregistré.",
 			"pixellabReturnedEmptyMotion": "{label} : PixelLab a renvoyé une image de mouvement vide",
 			"pixellabReturnedView": "PixelLab n’a renvoyé aucune vue {direction}",
 			"viewDoesFitPx": "La vue {direction} ne tient pas dans le cadre de {cell} px. Augmentez la taille du cadre ou réduisez celle du corps avant de relancer la création.",
@@ -1980,7 +1988,9 @@
 			"chooseRepairTarget": "Avant de réparer, choisissez un objet et une direction d’une animation existante. Aucune génération n’a été demandée.",
 			"moveAnimationFramesBlocked": "Ce modèle et cette taille de canevas ne prennent pas en charge {frames} images. Aucune génération n’a été demandée.",
 			"describeMoveBlocked": "Décrivez cette animation avant de la générer. Aucune génération n’a été demandée.",
-			"chooseExistingMoveRepairing": "Choisissez une animation existante avant de réparer son équipement."
+			"chooseExistingMoveRepairing": "Choisissez une animation existante avant de réparer son équipement.",
+			"liftedJointsOutside": "{label} : le mouvement relevé a encore des articulations hors du cadre de {size} px. Aucun rendu du corps n’a été demandé.",
+			"reviewChoiceInvalid": "Ce choix ne correspond plus à l’animation. Vérifiez-le à nouveau. Aucune requête n’a été envoyée."
 		},
 		"steps": {
 			"draw": "Dessin de votre personnage",
@@ -2004,7 +2014,8 @@
 				"frameRange": "Le cadre doit être compris entre {min} et 256 pixels entiers.",
 				"seed": "La seed doit être un entier positif ou nul, dans la plage des entiers représentables sans perte de précision.",
 				"promptRequired": "Saisissez un prompt de personnage.",
-				"promptLength": "Le prompt complet doit faire 2 000 caractères au maximum."
+				"promptLength": "Le prompt complet doit faire 2 000 caractères au maximum.",
+				"frameRoom": "Un cadre de {frame} px laisse moins de place que {min} px autour d’un corps de {body} px. Certaines parties du personnage risquent de ne pas tenir."
 			}
 		},
 		"form": {
@@ -2169,7 +2180,8 @@
 			"estimated": "Estimation : {gens}",
 			"keepWorking": "Continuer à travailler",
 			"costTitle": "Inclut les vues debout dans toutes les directions. Ajoutez ensuite l’attente, la marche et d’autres animations. Trouver une articulation manquante dans une vue debout peut coûter un peu plus.",
-			"create": "Créer le personnage"
+			"create": "Créer le personnage",
+			"createAnyway": "Créer quand même"
 		}
 	},
 	"moveSheet": {
@@ -2194,7 +2206,8 @@
 			"replaceViews": "Remplacer les vues de {move}",
 			"queue": "Mettre {move} en file d’attente",
 			"move": "l’animation",
-			"queueReplacement": "Mettre en file d’attente le remplacement des vues de {move}"
+			"queueReplacement": "Mettre en file d’attente le remplacement des vues de {move}",
+			"addAnyway": "Ajouter {move} quand même"
 		},
 		"titleRepair": "Réparer les images de l’objet",
 		"titleReplace": "Remplacer les vues de l’animation",
@@ -2315,7 +2328,9 @@
 			"currentFrame": "Image actuelle {number}",
 			"redrawnFrame": "Image redessinée {number}",
 			"repairedFrame": "Image réparée {number}"
-		}
+		},
+		"rerollBatch": "Relancer ce lot",
+		"rerollBatchDetail": "Les lots précédents restent tels quels. L’estimation couvre ce lot et les suivants, qui n’ont pas encore été achetés."
 	},
 	"itemRoute": {
 		"errors": {
@@ -2567,5 +2582,35 @@
 			"importFailed": "Impossible de lire ces images. Réessayez.",
 			"saveFailed": "Impossible d’enregistrer ces images. Rien n’a été modifié. Réessayez."
 		}
+	},
+	"paidReview": {
+		"title": "Résultats payés",
+		"spent": "Déjà payé : {gens} gens. Ces résultats sont conservés et réutilisés.",
+		"free": "Gratuit",
+		"download": "Télécharger les résultats payés",
+		"frame": "{view}, image {number}",
+		"state": {
+			"ready": "Prêt",
+			"pending": "Pas encore acheté",
+			"failed": "Arrêté"
+		}
+	},
+	"moveReview": {
+		"resume": "Continuer avec les résultats payés",
+		"lift": "Continuer, relevé pour tenir",
+		"liftAndReroll": "Relever pour tenir, relancer {views}",
+		"liftDetail": "{views} : les pieds montent jusqu’à {px} px dans {frames} images de mouvement sur {total} pour que le mouvement tienne dans le cadre.",
+		"liftDetailReview": "{views} : les pieds montent jusqu’à {px} px dans {frames} images de mouvement sur {total} pour que le mouvement tienne dans le cadre. C’est au-delà du contrôle des pieds de {limit} px, vous vérifierez donc les images du corps avant qu’elles remplacent les actuelles.",
+		"liftDetailWarned": "{views} : les pieds montent jusqu’à {px} px dans {frames} images de mouvement sur {total} pour que le mouvement tienne dans le cadre. C’est au-delà du contrôle des pieds de {limit} px, l’animation est donc enregistrée avec un avertissement sur les pieds.",
+		"reroll": "Relancer {views}",
+		"rerollDetail": "Une relance n’achète une nouvelle tentative que pour ces directions. Toutes les autres gardent leurs résultats payés.",
+		"pending": "Reste à acheter : environ {gens} gens.",
+		"liftable": "Peut être relevé pour tenir : les pieds montent jusqu’à {px} px dans {frames} images sur {total}.",
+		"notLiftable": "Relever ne suffit pas : le mouvement est coupé sur un côté ou en haut."
+	},
+	"createReview": {
+		"resume": "Continuer avec les résultats payés",
+		"register": "Réenregistrer les vues dessinées",
+		"registerDetail": "Conserve le dessin payé et achète un nouvel enregistrement des mêmes vues."
 	}
 }

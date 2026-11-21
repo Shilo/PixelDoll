@@ -198,6 +198,31 @@ export function downloadMoveZip(moveId: string) {
 	});
 }
 
+/** The raw results of paid requests a flow could not finish with, as PixelLab returned them, with their sanitized requests. */
+export async function downloadPaidResults(recordIds: readonly string[], label: string) {
+	const key = `paid:${recordIds.join(',')}`;
+	if (pending.has(key) || !recordIds.length) return;
+	pending.add(key);
+	toast(message('download.preparing', { label }), { pending: true });
+	try {
+		const [{ paidResultsZip }, { zip }, { queue }, db] = await Promise.all([
+			lazy(() => import('../lib/pixellab/paid-results.ts')),
+			lazy(() => import('../lib/store/zip.ts')),
+			lazy(() => import('../lib/pixellab/queue.ts')),
+			lazy(() => import('../lib/store/db.ts'))
+		]);
+		const records = queue.snapshot().jobs.filter((r) => recordIds.includes(r.id));
+		const entries = await paidResultsZip(records, (sha) => db.getBlob(sha));
+		saveZip(await zip(entries), `${fileSlug(label)}-paid-results.zip`);
+		toast(message('download.paidStarted'));
+	} catch (e) {
+		console.error('download paid results', e);
+		toast(message('download.failedRetry', { label }), { tone: 'danger' });
+	} finally {
+		pending.delete(key);
+	}
+}
+
 export const fileSlug = (name: string) =>
 	name
 		.replace(/\s*\(demo\)/, '')

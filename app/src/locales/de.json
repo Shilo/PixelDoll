@@ -845,7 +845,9 @@
 		"anotherRigSetupIsStillRunningSo": "Ein anderes Rig wird noch eingerichtet. Diese Einrichtung wurde deshalb nicht gestartet. Deine Auswahl bleibt erhalten.",
 		"characterReadyForSkeletonPosedItemsAnd": "Die Figur ist bereit für per Skelett animierte Gegenstände und neue Animationen",
 		"couldNotCheckCopiedFrames": "Die Frames kopierter Gegenstände konnten nicht geprüft werden: {reason}",
-		"couldNotReadSharedItems": "Gegenstände deiner anderen Figuren konnten nicht gelesen werden: {reason}"
+		"couldNotReadSharedItems": "Gegenstände deiner anderen Figuren konnten nicht gelesen werden: {reason}",
+		"finishedFramesChanged": "Die fertigen Frames haben sich geändert. Prüfe den Gegenstand erneut. Nichts wurde gespeichert.",
+		"rerollPriceChanged": "Der Preis für das Neu-Würfeln hat sich geändert. Prüfe ihn erneut. Es wurde nichts angefordert."
 	},
 	"history": {
 		"wear": "{name} anlegen",
@@ -1282,7 +1284,8 @@
 		"failedRetry": "{label} konnte nicht heruntergeladen werden. Versuch es noch einmal.",
 		"recoveryStarted": "Der vollständige Export ist nicht verfügbar. Der Download der Quell-PNGs wurde gestartet.",
 		"startedNotes": "Download gestartet. Die Exporthinweise findest du im ZIP.",
-		"started": "Download des Exports gestartet."
+		"started": "Download des Exports gestartet.",
+		"paidStarted": "Download der bezahlten Ergebnisse gestartet."
 	},
 	"studioModel": {
 		"itemQualityReview": "{name}: Prüfe die Ergebnisse der Qualitätskontrolle für diesen Gegenstand. Es wurde kein kostenpflichtiger Neuversuch gestartet.",
@@ -1772,7 +1775,11 @@
 			"magenta": "Magenta",
 			"blue": "leuchtendes Blau",
 			"azure": "leuchtendes Azurblau"
-		}
+		},
+		"rerollFailed": "Fehlgeschlagene Aufrufe neu würfeln",
+		"rerollFailedDetail": "Nur die fehlgeschlagenen Aufrufe und was von ihnen abhängt werden neu gekauft. Alle anderen fertigen Aufrufe werden wiederverwendet.",
+		"keepFinished": "Fertige Animationen behalten",
+		"keepFinishedDetail": "Speichert die Animationen, deren Frames alle fertig sind. Die anderen bleiben als fehlende Frames aufgeführt, die du später erstellen kannst."
 	},
 	"generationDetails": {
 		"copiedFrom": "einmal für {name} bezahlt, hierher kostenlos kopiert",
@@ -1881,7 +1888,8 @@
 			"noCharacterId": "PixelLab hat keine verwaltete Figuren-ID zurückgegeben. Vorhandene Grafiken bleiben unverändert.",
 			"referenceChanged": "Eine Standreferenz hat sich während der Einrichtung geändert.",
 			"characterChanged": "Die Figur hat sich während der Einrichtung geändert. Der aktuelle Stand der Figur bleibt erhalten."
-		}
+		},
+		"newRegistration": "Neu registrieren"
 	},
 	"create": {
 		"errors": {
@@ -1927,7 +1935,7 @@
 			"resultMissingStorage": "Ergebnis {label} fehlt im Speicher",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab hat unvollständige oder ungültige Gelenkpunkte für die Standpose zurückgegeben. Mit diesen Gelenken wurde keine Animation gestartet. Vorhandene Ergebnisse bleiben erhalten.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab hat die falsche Anzahl an Frames zurückgegeben. Es wurde kein kostenpflichtiger Neuversuch gestartet. Prüfe „Aktivität“, bevor du einen weiteren Versuch anforderst.",
-			"animationExceedsPxFrame": "{move} {direction}: Die Animation passt nicht in den {w} px großen Frame. Vergrößere den Frame oder verkleinere den Grundkörper, bevor du erneut generierst.",
+			"animationExceedsPxFrame": "{move} {direction}: Die Körper-Frames passen nicht in den {w} px großen Frame. Sie wurden zur Prüfung behalten; nichts wurde gespeichert.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab hat leere Frames zurückgegeben. Es wurde kein kostenpflichtiger Neuversuch gestartet. Prüfe „Aktivität“, bevor du einen weiteren Versuch anforderst.",
 			"validJointsWereFound": "{move} {direction}: Es wurden nicht in jedem Frame gültige Gelenke gefunden. Die generierten Bilder bleiben unter „Aktivität“ erhalten. Die Einrichtung wurde beendet, ohne sie neu zu zeichnen.",
 			"matchBodyColorsOnly": "{direction}: Gleiche die Grundkörperfarben erst ab, wenn alle ursprünglichen Gelenkprüfungen abgeschlossen sind.",
@@ -1937,7 +1945,7 @@
 			"jointsFoundEveryFrame": "{label}: Nicht in jedem Frame wurden Gelenke gefunden",
 			"pixellabDroppedDirectionBusy": "{label}: PixelLab hat die Blickrichtung wegen Auslastung ausgelassen. Versuch es noch einmal.",
 			"pixellabReturnedMotionFrames": "{label}: PixelLab hat für {expected} angeforderte Bewegungsframes nur {returned} zurückgegeben. Für diese Ansicht wurden weder Gelenkprüfungen noch ein Rendering des Grundkörpers angefordert.",
-			"motionExceedsPxFrame": "{label}: Die Bewegung passt nicht in den {size} px großen Frame. Vergrößere den Frame oder verkleinere den Grundkörper, bevor du erneut generierst.",
+			"motionExceedsPxFrame": "{label}: Die Bewegung passt nicht in den {size} px großen Frame. Ihre Frames wurden zur Prüfung behalten; nichts wurde gespeichert.",
 			"pixellabReturnedEmptyMotion": "{label}: PixelLab hat einen leeren Bewegungsframe zurückgegeben",
 			"pixellabReturnedView": "PixelLab hat keine Ansicht für {direction} zurückgegeben",
 			"viewDoesFitPx": "Die Ansicht für {direction} passt nicht in den {cell} px großen Frame. Vergrößere den Frame oder verkleinere den Grundkörper, bevor du erneut generierst.",
@@ -1982,7 +1990,9 @@
 			"chooseRepairTarget": "Wähle vor der Reparatur einen Gegenstand und eine Blickrichtung einer vorhandenen Animation. Es wurde keine Generierung angefordert.",
 			"moveAnimationFramesBlocked": "Das Modell und die Leinwandgröße unterstützen keine {frames} Frames. Es wurde keine Generierung angefordert.",
 			"describeMoveBlocked": "Beschreibe diese Animation, bevor du sie generierst. Es wurde keine Generierung angefordert.",
-			"chooseExistingMoveRepairing": "Wähle eine vorhandene Animation, bevor du ihre Ausrüstung reparierst."
+			"chooseExistingMoveRepairing": "Wähle eine vorhandene Animation, bevor du ihre Ausrüstung reparierst.",
+			"liftedJointsOutside": "{label}: Die angehobene Bewegung hat noch Gelenke außerhalb des {size} px großen Frames. Es wurde kein Körper-Rendering angefordert.",
+			"reviewChoiceInvalid": "Diese Auswahl passt nicht mehr zur Animation. Prüfe sie erneut. Es wurde keine Anfrage gesendet."
 		},
 		"steps": {
 			"draw": "Deine Figur wird gezeichnet",
@@ -2006,7 +2016,8 @@
 				"frameRange": "Die Frame-Größe muss {min}–256 ganze Pixel betragen.",
 				"seed": "Der Seed muss eine sicher darstellbare, nicht negative Ganzzahl sein.",
 				"promptRequired": "Gib einen Prompt für die Figur ein.",
-				"promptLength": "Der vollständige Prompt darf höchstens 2.000 Zeichen lang sein."
+				"promptLength": "Der vollständige Prompt darf höchstens 2.000 Zeichen lang sein.",
+				"frameRoom": "Ein {frame} px großer Frame lässt weniger Platz als {min} px um einen {body} px großen Körper. Teile der Figur passen eventuell nicht hinein."
 			}
 		},
 		"form": {
@@ -2168,7 +2179,8 @@
 			"estimated": "Geschätzt: {gens}",
 			"keepWorking": "Weiterarbeiten",
 			"costTitle": "Enthält die Standansichten in allen Blickrichtungen. Idle, Gehen und weitere Animationen fügst du danach hinzu. Ein fehlendes Gelenk in der Standpose kann etwas mehr kosten",
-			"create": "Figur erstellen"
+			"create": "Figur erstellen",
+			"createAnyway": "Trotzdem erstellen"
 		}
 	},
 	"moveSheet": {
@@ -2193,7 +2205,8 @@
 			"replaceViews": "Ansichten für {move} ersetzen",
 			"queue": "{move} vormerken",
 			"move": "Animation",
-			"queueReplacement": "Ansichten für {move} zum Ersetzen einreihen"
+			"queueReplacement": "Ansichten für {move} zum Ersetzen einreihen",
+			"addAnyway": "{move} trotzdem hinzufügen"
 		},
 		"titleRepair": "Gegenstandsframes reparieren",
 		"titleReplace": "Animationsansichten ersetzen",
@@ -2314,7 +2327,9 @@
 			"currentFrame": "Aktueller Frame {number}",
 			"redrawnFrame": "Neu gezeichneter Frame {number}",
 			"repairedFrame": "Reparierter Frame {number}"
-		}
+		},
+		"rerollBatch": "Diesen Stapel neu würfeln",
+		"rerollBatchDetail": "Die früheren Stapel bleiben unverändert. Die Schätzung umfasst diesen Stapel und die folgenden, die noch nicht gekauft wurden."
 	},
 	"itemRoute": {
 		"errors": {
@@ -2566,5 +2581,35 @@
 			"importFailed": "Diese Frames konnten nicht gelesen werden. Versuche es erneut.",
 			"saveFailed": "Diese Frames konnten nicht gespeichert werden. Es wurde nichts geändert. Versuche es erneut."
 		}
+	},
+	"paidReview": {
+		"title": "Bezahlte Ergebnisse",
+		"spent": "Bereits bezahlt: {gens} Gens. Diese Ergebnisse bleiben erhalten und werden wiederverwendet.",
+		"free": "Kostenlos",
+		"download": "Bezahlte Ergebnisse herunterladen",
+		"frame": "{view} Frame {number}",
+		"state": {
+			"ready": "Fertig",
+			"pending": "Noch nicht gekauft",
+			"failed": "Angehalten"
+		}
+	},
+	"moveReview": {
+		"resume": "Mit bezahlten Ergebnissen fortfahren",
+		"lift": "Fortfahren, angehoben",
+		"liftAndReroll": "Anheben, {views} neu würfeln",
+		"liftDetail": "{views}: Die Füße heben sich um bis zu {px} px in {frames} von {total} Bewegungs-Frames, damit die Bewegung in den Frame passt.",
+		"liftDetailReview": "{views}: Die Füße heben sich um bis zu {px} px in {frames} von {total} Bewegungs-Frames, damit die Bewegung in den Frame passt. Das liegt über der Fußprüfung von {limit} px, daher prüfst du die Körper-Frames, bevor sie die aktuellen ersetzen.",
+		"liftDetailWarned": "{views}: Die Füße heben sich um bis zu {px} px in {frames} von {total} Bewegungs-Frames, damit die Bewegung in den Frame passt. Das liegt über der Fußprüfung von {limit} px, daher wird die Animation mit einem Fuß-Hinweis gespeichert.",
+		"reroll": "{views} neu würfeln",
+		"rerollDetail": "Neu würfeln kauft nur für diese Blickrichtungen einen neuen Versuch. Alle anderen behalten ihre bezahlten Ergebnisse.",
+		"pending": "Noch zu kaufen: etwa {gens} Gens.",
+		"liftable": "Kann angehoben werden: Die Füße heben sich um bis zu {px} px in {frames} von {total} Frames.",
+		"notLiftable": "Anheben reicht nicht: Die Bewegung ist seitlich oder oben abgeschnitten."
+	},
+	"createReview": {
+		"resume": "Mit bezahlten Ergebnissen fortfahren",
+		"register": "Gezeichnete Ansichten neu registrieren",
+		"registerDetail": "Behält die bezahlte Zeichnung und kauft eine neue Registrierung derselben Ansichten."
 	}
 }

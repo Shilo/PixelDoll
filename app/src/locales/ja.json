@@ -814,7 +814,9 @@
 		"anotherRigSetupIsStillRunningSo": "別のリグのセットアップを実行中のため、このセットアップは開始されませんでした。選択した内容は残っています。",
 		"characterReadyForSkeletonPosedItemsAnd": "キャラクターの準備ができました。スケルトンでポーズを付けるアイテムと新しいモーションを使えます",
 		"couldNotCheckCopiedFrames": "コピーしたアイテムのフレームを確認できませんでした：{reason}",
-		"couldNotReadSharedItems": "他のキャラクターのアイテムを読み込めませんでした：{reason}"
+		"couldNotReadSharedItems": "他のキャラクターのアイテムを読み込めませんでした：{reason}",
+		"finishedFramesChanged": "完成したフレームが変わりました。アイテムをもう一度確認してください。何も保存されていません。",
+		"rerollPriceChanged": "再生成の価格が変わりました。もう一度確認してください。何もリクエストしていません。"
 	},
 	"history": {
 		"wear": "{name}を装備",
@@ -1231,7 +1233,8 @@
 		"failedRetry": "{label}をダウンロードできませんでした。もう一度お試しください。",
 		"recoveryStarted": "完全なエクスポートはできません。元のPNGのダウンロードを開始しました。",
 		"startedNotes": "ダウンロードを開始しました。ZIP内のエクスポートの注意事項を確認してください。",
-		"started": "エクスポートのダウンロードを開始しました。"
+		"started": "エクスポートのダウンロードを開始しました。",
+		"paidStarted": "支払い済みの結果のダウンロードを開始しました。"
 	},
 	"studioModel": {
 		"itemQualityReview": "{name}：アイテムの品質チェック結果を確認してください。有料の再試行は開始していません。",
@@ -1696,7 +1699,11 @@
 			"magenta": "マゼンタ",
 			"blue": "明るい青",
 			"azure": "鮮やかな空色"
-		}
+		},
+		"rerollFailed": "失敗した呼び出しを再生成",
+		"rerollFailedDetail": "失敗した呼び出しと、それに依存するものだけを再購入します。ほかの完了した呼び出しは再利用します。",
+		"keepFinished": "完成したモーションを保持",
+		"keepFinishedDetail": "すべてのフレームが完成したモーションを保存します。ほかは不足フレームとして残り、あとで作成できます。"
 	},
 	"generationDetails": {
 		"copiedFrom": "{name}用に作成したときに一度だけ費用がかかり、ここへのコピーは無料です",
@@ -1799,7 +1806,8 @@
 			"noCharacterId": "PixelLabから管理用のキャラクターIDが返されませんでした。既存のアートワークは変わりません。",
 			"referenceChanged": "セットアップ中に立ちの参照画像が変更されました。",
 			"characterChanged": "セットアップ中にキャラクターが変更されました。現在の作業は残しています。"
-		}
+		},
+		"newRegistration": "もう一度登録"
 	},
 	"create": {
 		"errors": {
@@ -1845,7 +1853,7 @@
 			"resultMissingStorage": "結果{label}がストレージにありません",
 			"pixellabReturnedIncompleteInvalid": "{direction}：PixelLabが返した立ちポーズの関節データが不完全か無効です。この関節データによるアニメーション生成は開始していません。既存の結果は残しています。",
 			"pixellabReturnedWrongNumber": "{move} {direction}：PixelLabから返されたフレーム数が正しくありません。有料の再試行は開始していません。もう一度リクエストする前にアクティビティを確認してください。",
-			"animationExceedsPxFrame": "{move} {direction}：アニメーションが{w} pxのフレームをはみ出しています。もう一度作成する前に、フレームを大きくするか体のサイズを小さくしてください。",
+			"animationExceedsPxFrame": "{move} {direction}：体のフレームが{w} pxのフレームに収まりません。確認用に保持されています。何も保存されていません。",
 			"pixellabReturnedEmptyFrames": "{move} {direction}：PixelLabから空のフレームが返されました。有料の再試行は開始していません。もう一度リクエストする前にアクティビティを確認してください。",
 			"validJointsWereFound": "{move}の{direction}向き：有効な関節が見つからなかったフレームがあります。生成した画像はアクティビティに残っています。セットアップは、画像を描き直さずに停止しました。",
 			"matchBodyColorsOnly": "{direction}：体の色を合わせるのは、元の関節チェックがすべて完了してからにしてください。",
@@ -1855,7 +1863,7 @@
 			"jointsFoundEveryFrame": "{label}：関節が見つからなかったフレームがあります",
 			"pixellabDroppedDirectionBusy": "{label}：PixelLabの混雑により、この向きの処理は完了しませんでした。もう一度お試しください。",
 			"pixellabReturnedMotionFrames": "{label}：{expected}フレームをリクエストしましたが、PixelLabから返されたモーションのフレームは{returned}フレームでした。このビューでは関節チェックも体の描画もリクエストしていません。",
-			"motionExceedsPxFrame": "{label}：モーションが{size} pxのフレームをはみ出しています。もう一度作成する前に、フレームを大きくするか体のサイズを小さくしてください。",
+			"motionExceedsPxFrame": "{label}：モーションが{size} pxのフレームに収まりません。フレームは確認用に保持されています。何も保存されていません。",
 			"pixellabReturnedEmptyMotion": "{label}：PixelLabから空のモーションのフレームが返されました",
 			"pixellabReturnedView": "PixelLabから{direction}のビューが返されませんでした",
 			"viewDoesFitPx": "{direction}のビューが{cell} pxのフレームに収まりません。もう一度作成する前に、フレームを大きくするか体のサイズを小さくしてください。",
@@ -1900,7 +1908,9 @@
 			"chooseRepairTarget": "修復する前に、既存のモーションからアイテムと向きを1つずつ選んでください。生成はリクエストされていません。",
 			"moveAnimationFramesBlocked": "このモデルとキャンバスサイズでは{frames}フレームに対応していません。生成リクエストは送信されていません。",
 			"describeMoveBlocked": "生成する前に、このモーションを説明してください。 生成リクエストは送信されていません。",
-			"chooseExistingMoveRepairing": "装備を修復する前に、既存のモーションを選んでください。"
+			"chooseExistingMoveRepairing": "装備を修復する前に、既存のモーションを選んでください。",
+			"liftedJointsOutside": "{label}：持ち上げたモーションに、まだ{size} pxのフレーム外の関節があります。体の描画はリクエストしていません。",
+			"reviewChoiceInvalid": "この選択はもうモーションと一致しません。もう一度確認してください。リクエストは送信していません。"
 		},
 		"steps": {
 			"draw": "キャラクターを描画中",
@@ -1924,7 +1934,8 @@
 				"frameRange": "フレームは{min}～256の整数ピクセルにしてください。",
 				"seed": "シードには安全な範囲の0以上の整数を指定してください。",
 				"promptRequired": "キャラクターのプロンプトを入力してください。",
-				"promptLength": "プロンプト全体は2,000文字以内にしてください。"
+				"promptLength": "プロンプト全体は2,000文字以内にしてください。",
+				"frameRoom": "{frame} pxのフレームでは、{body} pxの体の周りの余白が{min} pxより少なくなります。キャラクターの一部が収まらない可能性があります。"
 			}
 		},
 		"form": {
@@ -2083,7 +2094,8 @@
 			"estimated": "見積もり：{gens}",
 			"keepWorking": "作業を続ける",
 			"costTitle": "全方向の立ちポーズを作成します。待機、歩き、その他のモーションはあとで追加できます。立ちポーズの関節が不足している場合は、費用が少し増えることがあります",
-			"create": "キャラクターを作成"
+			"create": "キャラクターを作成",
+			"createAnyway": "このまま作成"
 		}
 	},
 	"moveSheet": {
@@ -2108,7 +2120,8 @@
 			"replaceViews": "{move}の向き別フレームを置き換え",
 			"queue": "{move}をキューに追加",
 			"move": "モーション",
-			"queueReplacement": "「{move}」の差し替えをキューに追加"
+			"queueReplacement": "「{move}」の差し替えをキューに追加",
+			"addAnyway": "このまま{move}を追加"
 		},
 		"titleRepair": "アイテムのフレームを修復",
 		"titleReplace": "モーションの向き別フレームを置き換え",
@@ -2221,7 +2234,9 @@
 			"currentFrame": "現在のフレーム {number}",
 			"redrawnFrame": "描き直したフレーム {number}",
 			"repairedFrame": "修復したフレーム {number}"
-		}
+		},
+		"rerollBatch": "このバッチを再生成",
+		"rerollBatchDetail": "前のバッチはそのままです。見積もりには、このバッチとまだ購入していない後続のバッチが含まれます。"
 	},
 	"itemRoute": {
 		"errors": {
@@ -2463,5 +2478,35 @@
 			"importFailed": "これらのフレームを読み込めませんでした。もう一度お試しください。",
 			"saveFailed": "これらのフレームを保存できませんでした。何も変更されていません。もう一度お試しください。"
 		}
+	},
+	"paidReview": {
+		"title": "支払い済みの結果",
+		"spent": "支払い済み：{gens} gen。これらの結果は保持され、再利用されます。",
+		"free": "無料",
+		"download": "支払い済みの結果をダウンロード",
+		"frame": "{view}、フレーム{number}",
+		"state": {
+			"ready": "完了",
+			"pending": "未購入",
+			"failed": "停止"
+		}
+	},
+	"moveReview": {
+		"resume": "支払い済みの結果で続ける",
+		"lift": "持ち上げて収めて続ける",
+		"liftAndReroll": "持ち上げて収め、{views}を再生成",
+		"liftDetail": "{views}：モーションをフレームに収めるため、{total}枚中{frames}枚のモーションフレームで足が最大{px} px上がります。",
+		"liftDetailReview": "{views}：モーションをフレームに収めるため、{total}枚中{frames}枚のモーションフレームで足が最大{px} px上がります。{limit} pxの足チェックを超えるため、現在のフレームを置き換える前に体のフレームを確認します。",
+		"liftDetailWarned": "{views}：モーションをフレームに収めるため、{total}枚中{frames}枚のモーションフレームで足が最大{px} px上がります。{limit} pxの足チェックを超えるため、モーションは足の警告付きで保存されます。",
+		"reroll": "{views}を再生成",
+		"rerollDetail": "再生成では、その向きだけ新しい試行を購入します。ほかの向きは支払い済みの結果をそのまま使います。",
+		"pending": "未購入：約{gens} gen。",
+		"liftable": "持ち上げて収められます：{total}枚中{frames}枚で足が最大{px} px上がります。",
+		"notLiftable": "持ち上げても収まりません：モーションが横か上で切れています。"
+	},
+	"createReview": {
+		"resume": "支払い済みの結果で続ける",
+		"register": "描いた向きをもう一度登録",
+		"registerDetail": "支払い済みの描画はそのままで、同じ向きの登録を新しく1回購入します。"
 	}
 }

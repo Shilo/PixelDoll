@@ -836,7 +836,9 @@
 		"anotherRigSetupIsStillRunningSo": "Another rig setup is still running, so this one did not start. Your choices are kept.",
 		"characterReadyForSkeletonPosedItemsAnd": "Character ready for skeleton-posed items and new moves",
 		"couldNotCheckCopiedFrames": "Could not check frames for copied items: {reason}",
-		"couldNotReadSharedItems": "Could not read items from your other characters: {reason}"
+		"couldNotReadSharedItems": "Could not read items from your other characters: {reason}",
+		"finishedFramesChanged": "The finished frames changed. Review the item again. Nothing was saved.",
+		"rerollPriceChanged": "The re-roll price changed. Review it again. Nothing was requested."
 	},
 	"history": {
 		"wear": "Wear {name}",
@@ -1273,7 +1275,8 @@
 		"failedRetry": "Could not download {label}. Try again.",
 		"recoveryStarted": "Full export unavailable. Source PNG download started.",
 		"startedNotes": "Download started. See Export notes in the ZIP.",
-		"started": "Export download started."
+		"started": "Export download started.",
+		"paidStarted": "Paid results download started."
 	},
 	"studioModel": {
 		"itemQualityReview": "{name}: item quality checks need review. No paid retry was started.",
@@ -1760,7 +1763,11 @@
 			"magenta": "magenta",
 			"blue": "bright blue",
 			"azure": "bright azure blue"
-		}
+		},
+		"rerollFailed": "Re-roll failed calls",
+		"rerollFailedDetail": "Only the calls that failed are bought again, with whatever depends on them. Every other finished call is reused.",
+		"keepFinished": "Keep finished moves",
+		"keepFinishedDetail": "Saves the moves whose frames all finished. The others stay listed as missing frames, which you can make later."
 	},
 	"generationDetails": {
 		"copiedFrom": "paid once for {name}; copied here for free",
@@ -1866,7 +1873,8 @@
 			"noCharacterId": "PixelLab did not return a managed character ID. Existing artwork is unchanged.",
 			"referenceChanged": "A standing reference changed during setup.",
 			"characterChanged": "The character changed during setup. Its current work has been kept."
-		}
+		},
+		"newRegistration": "Register again"
 	},
 	"create": {
 		"errors": {
@@ -1912,7 +1920,7 @@
 			"resultMissingStorage": "result {label} missing in storage",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab returned incomplete or invalid standing joints. Animation was not started from these joints; existing results are kept.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.",
-			"animationExceedsPxFrame": "{move} {direction}: animation exceeds the {w} px frame. Increase Frame or reduce Body size before creating again.",
+			"animationExceedsPxFrame": "{move} {direction}: the body frames do not fit the {w} px frame. They were kept for review; nothing was saved.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab returned empty frames. No paid retry was started. Review Activity before requesting another attempt.",
 			"validJointsWereFound": "{move} {direction}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.",
 			"matchBodyColorsOnly": "{direction}: match body colors only after all original joint checks have completed.",
@@ -1922,7 +1930,7 @@
 			"jointsFoundEveryFrame": "{label}: joints not found on every frame",
 			"pixellabDroppedDirectionBusy": "{label}: PixelLab dropped the direction (busy). Try again.",
 			"pixellabReturnedMotionFrames": "{label}: PixelLab returned {returned} motion frames for {expected} requested. No joint checks or body render were requested for this view.",
-			"motionExceedsPxFrame": "{label}: motion exceeds the {size} px frame. Increase Frame or reduce Body size before creating again.",
+			"motionExceedsPxFrame": "{label}: the motion does not fit the {size} px frame. Its frames were kept for review; nothing was saved.",
 			"pixellabReturnedEmptyMotion": "{label}: PixelLab returned an empty motion frame",
 			"pixellabReturnedView": "PixelLab returned no {direction} view",
 			"viewDoesFitPx": "The {direction} view does not fit the {cell} px frame. Increase Frame or reduce Body size before creating again.",
@@ -1967,7 +1975,9 @@
 			"chooseRepairTarget": "Choose one item and one facing of an existing move before repairing. No generation was requested.",
 			"moveAnimationFramesBlocked": "This model and canvas don’t support {frames} frames. No generation was requested.",
 			"describeMoveBlocked": "Describe this move before generating it. No generation was requested.",
-			"chooseExistingMoveRepairing": "Choose an existing move before repairing its equipment."
+			"chooseExistingMoveRepairing": "Choose an existing move before repairing its equipment.",
+			"liftedJointsOutside": "{label}: the lifted motion still has joints outside the {size} px frame. No body render was requested.",
+			"reviewChoiceInvalid": "This review choice no longer matches the move. Review it again. No request was made."
 		},
 		"steps": {
 			"draw": "Drawing your character",
@@ -1991,7 +2001,8 @@
 				"frameRange": "Frame must be {min}–256 whole pixels.",
 				"seed": "Seed must be a safe, non-negative whole number.",
 				"promptRequired": "Enter a character prompt.",
-				"promptLength": "The complete prompt must be 2,000 characters or fewer."
+				"promptLength": "The complete prompt must be 2,000 characters or fewer.",
+				"frameRoom": "A {frame} px frame leaves less room than {min} px around a {body} px body. Parts of the character may not fit."
 			}
 		},
 		"form": {
@@ -2153,7 +2164,8 @@
 			"estimated": "Estimated {gens}",
 			"keepWorking": "Keep working",
 			"costTitle": "The standing views in every direction; add idle, walk and other moves afterward. A missing standing joint may cost a little more",
-			"create": "Create character"
+			"create": "Create character",
+			"createAnyway": "Create anyway"
 		}
 	},
 	"moveSheet": {
@@ -2178,7 +2190,8 @@
 			"replaceViews": "Replace {move} views",
 			"queue": "Queue {move}",
 			"move": "move",
-			"queueReplacement": "Queue replacement: {move} views"
+			"queueReplacement": "Queue replacement: {move} views",
+			"addAnyway": "Add {move} anyway"
 		},
 		"titleRepair": "Repair item frames",
 		"titleReplace": "Replace move views",
@@ -2299,7 +2312,9 @@
 			"currentFrame": "Current frame {number}",
 			"redrawnFrame": "Redrawn frame {number}",
 			"repairedFrame": "Repaired frame {number}"
-		}
+		},
+		"rerollBatch": "Re-roll this batch",
+		"rerollBatchDetail": "The earlier batches stay as they are. The estimate covers this batch and the ones after it, which were not bought yet."
 	},
 	"itemRoute": {
 		"errors": {
@@ -2551,5 +2566,35 @@
 			"importFailed": "Could not read these frames. Try again.",
 			"saveFailed": "Could not save these frames. Nothing was changed. Try again."
 		}
+	},
+	"paidReview": {
+		"title": "Paid results",
+		"spent": "Already paid: {gens} gens. These results are kept and reused.",
+		"free": "Free",
+		"download": "Download paid results",
+		"frame": "{view} frame {number}",
+		"state": {
+			"ready": "Ready",
+			"pending": "Not bought yet",
+			"failed": "Stopped"
+		}
+	},
+	"moveReview": {
+		"resume": "Continue with paid results",
+		"lift": "Continue, lifted to fit",
+		"liftAndReroll": "Lift to fit, re-roll {views}",
+		"liftDetail": "{views}: feet rise up to {px} px in {frames} of {total} motion frames so the motion fits the frame.",
+		"liftDetailReview": "{views}: feet rise up to {px} px in {frames} of {total} motion frames so the motion fits the frame. This is above the {limit} px feet check, so you review the body frames before they replace the current ones.",
+		"liftDetailWarned": "{views}: feet rise up to {px} px in {frames} of {total} motion frames so the motion fits the frame. This is above the {limit} px feet check, so the move is saved with a feet warning.",
+		"reroll": "Re-roll {views}",
+		"rerollDetail": "A re-roll buys a new attempt only for those views. Every other view keeps its paid results.",
+		"pending": "Still to buy: about {gens} gens.",
+		"liftable": "Can be lifted to fit: feet rise up to {px} px in {frames} of {total} frames.",
+		"notLiftable": "Lifting cannot fit this motion: it is cut at a side or at the top."
+	},
+	"createReview": {
+		"resume": "Continue with paid results",
+		"register": "Register the drawn views again",
+		"registerDetail": "Keeps the paid drawing and buys one new registration of the same views."
 	}
 }
