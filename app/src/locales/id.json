@@ -1216,6 +1216,16 @@
 			"invalidDiagnostics": "Data kesalahan terbaru di ruang kerja ini tidak valid."
 		}
 	},
+	"backup": {
+		"error": {
+			"notBackup": "Pilih cadangan PixelDoll atau ZIP ruang kerja, bukan ZIP karakter.",
+			"unsupportedVersion": "Versi file cadangan ini tidak didukung.",
+			"invalid": "Cadangan ini rusak atau tidak valid.",
+			"tooLarge": "Cadangan ini melebihi batas ukuran ZIP atau gambar. Gunakan ZIP karakter satu per satu.",
+			"containsKey": "Karakter tersimpan berisi kunci PixelLab yang terhubung atau diingat. Hapus kunci itu sebelum membuat cadangan.",
+			"changed": "Karakter tersimpan Anda berubah. Tinjau pratinjau pemulihan yang diperbarui."
+		}
+	},
 	"openWorkspace": {
 		"privacy": "Salinan dibuka tanpa terhubung ke PixelLab. Semua perubahan pada salinan akan dibuang saat Anda menutup atau memuat ulang tab ini.",
 		"chooseZip": "Pilih ZIP ruang kerja",

@@ -1270,6 +1270,16 @@
 			"invalidDiagnostics": "Este espacio de trabajo tiene errores recientes no válidos."
 		}
 	},
+	"backup": {
+		"error": {
+			"notBackup": "Elige una copia de seguridad de PixelDoll o un ZIP de espacio de trabajo, no un ZIP de personaje.",
+			"unsupportedVersion": "Esta versión del archivo de copia de seguridad no es compatible.",
+			"invalid": "Esta copia de seguridad está dañada o no es válida.",
+			"tooLarge": "Esta copia de seguridad supera el límite de tamaño del ZIP o el de las imágenes. Usa ZIP de personajes individuales.",
+			"containsKey": "Un personaje guardado contiene la clave de PixelLab conectada o recordada. Elimínala antes de hacer la copia de seguridad.",
+			"changed": "Tus personajes guardados cambiaron. Revisa la vista previa actualizada de la restauración."
+		}
+	},
 	"openWorkspace": {
 		"privacy": "La copia se abre sin conexión a PixelLab. Los cambios en la copia se descartan al cerrar o recargar esta pestaña.",
 		"chooseZip": "Elegir ZIP del espacio de trabajo",

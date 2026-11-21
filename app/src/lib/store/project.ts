@@ -24,10 +24,20 @@ export interface StoredProject {
 	skeletons?: Record<string, Skeleton>; // cell key -> keypoints (mirrored cells flipped)
 	rigQa?: unknown;
 	character?: { id: string; looks: string };
+	/** Set by a restore: the backup's character ID and content fingerprint, so restoring that backup again can tell an
+	 *  untouched copy (skipped) from one edited since (explained before another copy is added). */
+	restoredFrom?: RestoredFrom;
 	origin: 'studio' | 'dev'; // T2: who made it; the Studio's character menu lists only 'studio' rigs (dev rigs: dev pages)
 }
 
-// Earlier preview formats are never upgraded or opened; their records stay stored as they are (incompatible.ts).
+export interface RestoredFrom {
+	id: string;
+	fingerprint: string;
+	/** When it was restored, and the build that made the file. */
+	at: string;
+	build: string;
+}
+
 export const OUTDATED =
 	'This character was saved by an earlier preview version and is no longer supported.';
 

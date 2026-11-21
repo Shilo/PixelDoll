@@ -1204,6 +1204,16 @@
 			"invalidDiagnostics": "此工作区的最近错误无效。"
 		}
 	},
+	"backup": {
+		"error": {
+			"notBackup": "请选择 PixelDoll 备份或工作区 ZIP，而不是角色 ZIP。",
+			"unsupportedVersion": "不支持此版本的备份文件。",
+			"invalid": "此备份已损坏或无效。",
+			"tooLarge": "此备份超出 ZIP 大小或图像限制。请改用单独的角色 ZIP。",
+			"containsKey": "某个已保存的角色包含已连接或已记住的 PixelLab 密钥。请在备份前将其删除。",
+			"changed": "你已保存的角色已更改。请查看更新后的恢复预览。"
+		}
+	},
 	"openWorkspace": {
 		"privacy": "打开副本时不会连接到 PixelLab。关闭或重新加载此标签页时，对副本的任何更改都会被丢弃。",
 		"chooseZip": "选择工作区 ZIP",

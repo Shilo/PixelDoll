@@ -1270,6 +1270,16 @@
 			"invalidDiagnostics": "Dieser Arbeitsbereich enthält ungültige Daten zu kürzlichen Fehlern."
 		}
 	},
+	"backup": {
+		"error": {
+			"notBackup": "Wähle eine PixelDoll-Sicherung oder ein Arbeitsbereich-ZIP, kein Figuren-ZIP.",
+			"unsupportedVersion": "Diese Version der Sicherungsdatei wird nicht unterstützt.",
+			"invalid": "Diese Sicherung ist beschädigt oder ungültig.",
+			"tooLarge": "Diese Sicherung überschreitet das Limit für die ZIP-Größe oder die Grafiken. Verwende stattdessen einzelne Figuren-ZIPs.",
+			"containsKey": "Eine gespeicherte Figur enthält den verbundenen oder gespeicherten PixelLab-Schlüssel. Entferne ihn vor dem Sichern.",
+			"changed": "Deine gespeicherten Figuren haben sich geändert. Prüfe die aktualisierte Vorschau der Wiederherstellung."
+		}
+	},
 	"openWorkspace": {
 		"privacy": "Die Kopie startet ohne Verbindung zu PixelLab. Alle Änderungen an der Kopie werden verworfen, wenn du diesen Tab schließt oder neu lädst.",
 		"chooseZip": "Arbeitsbereichs-ZIP auswählen",

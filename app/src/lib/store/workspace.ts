@@ -7,7 +7,7 @@ import { cellHash, DIRECTIONS, type DirectionName } from '../rig/rig.ts';
 import { readWorkspaceSnapshot } from './db.ts';
 import { checkedSettings, EXPORT_SETTINGS_KEY } from './export-settings.ts';
 import { manifestShape } from './import.ts';
-import { supportedFormat } from './manifest.ts';
+import { supportedFormat, type Manifest } from './manifest.ts';
 import type { StoredProject } from './project.ts';
 import { MAX_ZIP_BYTES, MAX_ZIP_ENTRIES, unzip, zip } from './zip.ts';
 import { LocalizedError } from '../message.ts';
@@ -39,13 +39,48 @@ const maxReports = 50;
 const maxMessage = 200;
 const maxRecords = 500;
 const maxPixels = 64 * 1024 * 1024;
-const tooLarge =
-	'This workspace exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.';
-class WorkspaceLimitError extends LocalizedError {
-	constructor() {
-		super(tooLarge, 'workspace.error.tooLarge');
-	}
+/** Thrown past the artwork budget: each archive reports it in its own words. */
+class ArtworkLimitError extends Error {}
+
+/** The errors an archive format reports in its own words, so the shared reading and packing below serve each format. */
+export interface ArchiveErrors {
+	invalidIndex: () => LocalizedError;
+	duplicateRecord: () => LocalizedError;
+	missingFiles: () => LocalizedError;
+	unexpectedFile: () => LocalizedError;
+	tooLarge: () => LocalizedError;
+	containsKey: () => LocalizedError;
 }
+
+const workspaceErrors: ArchiveErrors = {
+	invalidIndex: () =>
+		new LocalizedError('This workspace index is invalid.', 'workspace.error.invalidIndex'),
+	duplicateRecord: () =>
+		new LocalizedError(
+			'This workspace contains an unsupported or duplicate saved record.',
+			'workspace.error.duplicateRecord'
+		),
+	missingFiles: () =>
+		new LocalizedError(
+			'This workspace has an invalid list of missing files.',
+			'workspace.error.missingFiles'
+		),
+	unexpectedFile: () =>
+		new LocalizedError(
+			'This workspace contains an unexpected file.',
+			'workspace.error.unexpectedFile'
+		),
+	tooLarge: () =>
+		new LocalizedError(
+			'This workspace exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.',
+			'workspace.error.tooLarge'
+		),
+	containsKey: () =>
+		new LocalizedError(
+			'A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.',
+			'workspace.error.containsKey'
+		)
+};
 
 export interface WorkspaceView {
 	project: string;
@@ -92,13 +127,28 @@ const object = (value: unknown): Record<string, unknown> | undefined =>
 		? (value as Record<string, unknown>)
 		: undefined;
 
-const selects = (key: string, value: unknown) => {
-	if (key === demoDress || key === EXPORT_SETTINGS_KEY) return true;
-	const record = value as Partial<StoredProject> | undefined;
-	return key.startsWith('rig-') && record?.origin === 'studio';
-};
+/** A saved Studio character (developer rigs stay out of every archive). */
+export const studioCharacter = (key: string, value: unknown) =>
+	key.startsWith('rig-') && (value as Partial<StoredProject> | undefined)?.origin === 'studio';
+const selects = (key: string, value: unknown) =>
+	key === demoDress || key === EXPORT_SETTINGS_KEY || studioCharacter(key, value);
 
 type FrameSize = { w: number; h: number };
+type Omitted = NonNullable<WorkspaceIndex['omitted']>;
+
+/** Every artwork reference of a character, with the frame size it must have when the reference fixes one. */
+export function* artworkRefs(manifest: Manifest): Generator<[unknown, FrameSize | undefined]> {
+	for (const pose of Object.values(manifest.rig.rest ?? {})) yield [pose?.image, manifest.rig.cell];
+	for (const item of manifest.items) {
+		for (const hash of Object.values(item.dressed ?? {})) yield [hash, undefined];
+		for (const layer of item.layers) {
+			const frame = layerFrame(manifest.rig, layer);
+			for (const dirs of Object.values(layer.cells ?? {}))
+				for (const cells of Object.values(dirs ?? {}))
+					for (const hash of cells ?? []) yield [hash, frame];
+		}
+	}
+}
 
 function checkDemoDress(value: unknown) {
 	const dress = object(value);
@@ -136,10 +186,7 @@ function checkDemoDress(value: unknown) {
 		throw new Error('Saved demo outfit data is invalid.');
 }
 
-function recoverRecords(
-	projects: Map<string, unknown>,
-	omitted: NonNullable<WorkspaceIndex['omitted']>
-) {
+function recoverRecords(projects: Map<string, unknown>, omitted: Omitted) {
 	const found = new Map<string, FrameSize | undefined>();
 	for (const [key, value] of projects) {
 		const local = new Map<string, FrameSize | undefined>();
@@ -165,17 +212,7 @@ function recoverRecords(
 			if (!selects(key, value) || id !== key || !supportedFormat(manifest?.format))
 				throw new Error('Unsupported character record.');
 			manifestShape(manifest);
-			for (const pose of Object.values(manifest.rig.rest ?? {}))
-				add(pose?.image, manifest.rig.cell);
-			for (const item of manifest.items) {
-				for (const hash of Object.values(item.dressed ?? {})) add(hash);
-				for (const layer of item.layers) {
-					const frame = layerFrame(manifest.rig, layer);
-					for (const dirs of Object.values(layer.cells ?? {}))
-						for (const cells of Object.values(dirs ?? {}))
-							for (const hash of cells ?? []) add(hash, frame);
-				}
-			}
+			for (const [hash, frame] of artworkRefs(manifest)) add(hash, frame);
 			for (const [hash, frame] of local) found.set(hash, frame);
 		} catch {
 			projects.delete(key);
@@ -270,18 +307,60 @@ export async function exportWorkspace(
 	diagnostics: { tier: number | null; calls: readonly ApiCall[] } | undefined,
 	keys: readonly string[]
 ) {
+	const { bytes, hasOmissions } = await packArchive(
+		selects,
+		!!diagnostics,
+		keys,
+		workspaceErrors,
+		({ projects, missing, omitted, jobs }) => [
+			indexPath,
+			{
+				format,
+				build: archiveBuild(),
+				view,
+				projects: [...projects],
+				missing,
+				...(omitted && { omitted }),
+				...(diagnostics && {
+					diagnostics: {
+						tier: diagnostics.tier,
+						errors: recentWorkspaceErrors(jobs, diagnostics.calls)
+					}
+				})
+			} satisfies WorkspaceIndex
+		]
+	);
+	return { bytes, hasOmissions };
+}
+
+export const archiveBuild = () => `${__APP_VERSION__} (${__APP_COMMIT__})`;
+
+/** Read the selected records and their artwork in one snapshot, verify both, and pack them with the index `write` names and
+ *  makes. Records and artwork that fail verification are left out and reported, and the packed index never holds a key. */
+export async function packArchive(
+	select: (key: string, value: unknown) => boolean,
+	includeJobs: boolean,
+	keys: readonly string[],
+	errors: ArchiveErrors,
+	write: (contents: {
+		projects: Map<string, unknown>;
+		missing: string[];
+		omitted?: Omitted;
+		jobs: unknown[];
+	}) => [name: string, index: object]
+) {
 	const omitted = { characters: 0, demoOutfit: false, exportSettings: false };
 	let references = new Map<string, FrameSize | undefined>();
 	const snapshot = await readWorkspaceSnapshot(
-		selects,
+		select,
 		(projects) => {
 			references = recoverRecords(projects, omitted);
 			return references;
 		},
-		!!diagnostics
+		includeJobs
 	);
 	const { blobs, projects } = snapshot;
-	if (projects.size > maxRecords) throw new LocalizedError(tooLarge, 'workspace.error.tooLarge');
+	if (projects.size > maxRecords) throw errors.tooLarge();
 	for (const value of projects.values()) {
 		const record = value as Partial<StoredProject>;
 		delete record.creationSpec;
@@ -291,60 +370,53 @@ export async function exportWorkspace(
 	let pixels = 0,
 		artworkBytes = 0;
 	for (const [hash, blob] of blobs) {
-		if (blob.size > MAX_ZIP_BYTES) throw new WorkspaceLimitError();
+		if (blob.size > MAX_ZIP_BYTES) throw errors.tooLarge();
 		const bytes = new Uint8Array(await blob.arrayBuffer());
-		const verified = await recoverArtwork(bytes, hash, maxPixels - pixels, references.get(hash));
+		const verified = await recoverArtwork(
+			bytes,
+			hash,
+			maxPixels - pixels,
+			references.get(hash),
+			errors
+		);
 		if (verified === undefined) blobs.delete(hash);
 		else {
 			pixels += verified;
 			artworkBytes += bytes.length;
 			if (artworkBytes > MAX_ZIP_BYTES || artwork.length + 2 > MAX_ZIP_ENTRIES)
-				throw new WorkspaceLimitError();
+				throw errors.tooLarge();
 			artwork.push({ name: `blobs/${hash}`, data: bytes });
 		}
 	}
-	const index: WorkspaceIndex = {
-		format,
-		build: `${__APP_VERSION__} (${__APP_COMMIT__})`,
-		view,
-		projects: [...projects],
-		missing: [...references.keys()].filter((hash) => !blobs.has(hash)),
-		...(Object.values(omitted).some(Boolean) && { omitted }),
-		...(diagnostics && {
-			diagnostics: {
-				tier: diagnostics.tier,
-				errors: recentWorkspaceErrors(snapshot.jobs, diagnostics.calls)
-			}
-		})
-	};
+	const missing = [...references.keys()].filter((hash) => !blobs.has(hash));
+	const omissions = Object.values(omitted).some(Boolean) ? omitted : undefined;
+	const [name, index] = write({ projects, missing, omitted: omissions, jobs: snapshot.jobs });
 	const json = JSON.stringify(index);
 	if (
 		keys.some(
 			(key) => key && (json.includes(key) || json.includes(JSON.stringify(key).slice(1, -1)))
 		)
 	)
-		throw new LocalizedError(
-			'A saved field contains the connected or remembered PixelLab key. Remove it from the workspace before exporting.',
-			'workspace.error.containsKey'
-		);
+		throw errors.containsKey();
 	const data = new TextEncoder().encode(json);
-	if (index.missing.length > MAX_ZIP_ENTRIES || data.length + artworkBytes > MAX_ZIP_BYTES)
-		throw new LocalizedError(tooLarge, 'workspace.error.tooLarge');
-	const packed = await zip([{ name: indexPath, data }, ...artwork]);
-	if (packed.length > MAX_ZIP_BYTES) throw new LocalizedError(tooLarge, 'workspace.error.tooLarge');
-	return { bytes: packed, hasOmissions: !!index.omitted || !!index.missing.length };
+	if (missing.length > MAX_ZIP_ENTRIES || data.length + artworkBytes > MAX_ZIP_BYTES)
+		throw errors.tooLarge();
+	const packed = await zip([{ name, data }, ...artwork]);
+	if (packed.length > MAX_ZIP_BYTES) throw errors.tooLarge();
+	return { bytes: packed, hasOmissions: !!omissions || !!missing.length, records: projects.size };
 }
 
 async function recoverArtwork(
 	data: Uint8Array,
 	hash: string,
 	remaining: number,
-	frame?: FrameSize
+	frame: FrameSize | undefined,
+	errors: ArchiveErrors
 ) {
 	try {
 		return await verifyArtwork(data, hash, remaining, frame);
 	} catch (error) {
-		if (error instanceof WorkspaceLimitError) throw error;
+		if (error instanceof ArtworkLimitError) throw errors.tooLarge();
 		return undefined;
 	}
 }
@@ -361,7 +433,7 @@ async function verifyArtwork(
 	if (frame && (size.w !== frame.w || size.h !== frame.h))
 		throw new Error('Workspace artwork does not match its saved frame dimensions.');
 	const pixels = size.w * size.h;
-	if (pixels > remaining) throw new WorkspaceLimitError();
+	if (pixels > remaining) throw new ArtworkLimitError();
 	let actual: string;
 	try {
 		actual = await cellHash(await decodePngBytes(data));
@@ -373,17 +445,10 @@ async function verifyArtwork(
 	return pixels;
 }
 
-export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive> {
-	const files = await unzip(bytes);
-	const json = files.get(indexPath);
-	if (!json)
-		throw new LocalizedError(
-			'Choose a ZIP made with Export my workspace, not a character ZIP.',
-			'workspace.error.notWorkspace'
-		);
-	let index: WorkspaceIndex | null;
+/** An archive index, refusing prototype keys. */
+export function parseIndex(json: Uint8Array, errors: ArchiveErrors): unknown {
 	try {
-		index = JSON.parse(
+		return JSON.parse(
 			new TextDecoder('utf-8', { fatal: true }).decode(json),
 			(key, value: unknown) => {
 				if (key === '__proto__') throw new Error('Unsafe property');
@@ -391,19 +456,102 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 			}
 		);
 	} catch (cause) {
-		const error = new LocalizedError(
-			'This workspace index is invalid.',
-			'workspace.error.invalidIndex'
-		);
+		const error = errors.invalidIndex();
 		error.cause = cause;
 		throw error;
 	}
+}
+
+/** The records of an index's `rows` (only `allowed` keys) and their verified artwork from `files`. Records that fail validation
+ *  are left out and counted in `omitted`; artwork that fails verification is reported missing along with what `listed` names. */
+export async function readArchiveFiles(
+	files: Map<string, Uint8Array>,
+	indexName: string,
+	rows: unknown,
+	listed: unknown,
+	omitted: Omitted,
+	allowed: (key: string) => boolean,
+	errors: ArchiveErrors
+) {
+	if (
+		!Array.isArray(rows) ||
+		rows.length > maxRecords ||
+		!Array.isArray(listed) ||
+		listed.length > MAX_ZIP_ENTRIES
+	)
+		throw errors.invalidIndex();
+	const projects = new Map<string, unknown>();
+	for (const row of rows) {
+		if (
+			!Array.isArray(row) ||
+			row.length !== 2 ||
+			typeof row[0] !== 'string' ||
+			!allowed(row[0]) ||
+			projects.has(row[0])
+		)
+			throw errors.duplicateRecord();
+		projects.set(row[0], row[1]);
+	}
+	const previousOmissions = omitted.characters;
+	const references = recoverRecords(projects, omitted);
+	const skippedCharacter = omitted.characters > previousOmissions;
+	const absent = new Set<unknown>(listed);
+	if (
+		absent.size !== listed.length ||
+		listed.some(
+			(hash) =>
+				typeof hash !== 'string' ||
+				!/^[a-f0-9]{64}$/.test(hash) ||
+				(!skippedCharacter && !references.has(hash))
+		)
+	)
+		throw errors.missingFiles();
+	const blobs = new Map<string, Blob>();
+	let pixels = 0;
+	for (const [path, data] of files) {
+		if (path === indexName) continue;
+		const hash = /^blobs\/([a-f0-9]{64})$/.exec(path)?.[1];
+		if (!hash || (!skippedCharacter && !references.has(hash)) || absent.has(hash))
+			throw errors.unexpectedFile();
+		if (!references.has(hash)) continue;
+		const verified = await recoverArtwork(
+			data,
+			hash,
+			maxPixels - pixels,
+			references.get(hash),
+			errors
+		);
+		if (verified !== undefined) {
+			pixels += verified;
+			blobs.set(hash, new Blob([data as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+		}
+	}
+	return {
+		projects,
+		blobs,
+		missing: [...references.keys()].filter((hash) => !blobs.has(hash))
+	};
+}
+
+export const readWorkspace = async (bytes: Uint8Array): Promise<WorkspaceArchive> =>
+	readWorkspaceFiles(await unzip(bytes));
+
+export async function readWorkspaceFiles(
+	files: Map<string, Uint8Array>
+): Promise<WorkspaceArchive> {
+	const json = files.get(indexPath);
+	if (!json)
+		throw new LocalizedError(
+			'Choose a ZIP made with Export my workspace, not a character ZIP.',
+			'workspace.error.notWorkspace'
+		);
+	const index = parseIndex(json, workspaceErrors) as WorkspaceIndex | null;
 	if (index?.format !== format)
 		throw new LocalizedError(
 			'This workspace file version is not supported.',
 			'workspace.error.unsupportedVersion'
 		);
-	const { build, view, missing, diagnostics } = index;
+	const { build, view, diagnostics } = index;
 	if (
 		typeof build !== 'string' ||
 		build.length > 100 ||
@@ -417,67 +565,23 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 		!tabs.includes(view.tab) ||
 		!['studio', 'characters'].includes(view.screen) ||
 		!['dark', 'light'].includes(view.theme) ||
-		!Array.isArray(index.projects) ||
-		index.projects.length > maxRecords ||
-		!Array.isArray(missing) ||
-		missing.length > MAX_ZIP_ENTRIES ||
 		(index.omitted !== undefined &&
 			(!index.omitted ||
 				integer(index.omitted.characters, 0, maxRecords) === undefined ||
 				typeof index.omitted.demoOutfit !== 'boolean' ||
 				typeof index.omitted.exportSettings !== 'boolean'))
 	)
-		throw new LocalizedError('This workspace index is invalid.', 'workspace.error.invalidIndex');
-	const projects = new Map<string, unknown>();
-	for (const row of index.projects) {
-		if (
-			!Array.isArray(row) ||
-			row.length !== 2 ||
-			typeof row[0] !== 'string' ||
-			(row[0] !== demoDress && row[0] !== EXPORT_SETTINGS_KEY && !row[0].startsWith('rig-')) ||
-			projects.has(row[0])
-		)
-			throw new LocalizedError(
-				'This workspace contains an unsupported or duplicate saved record.',
-				'workspace.error.duplicateRecord'
-			);
-		projects.set(...row);
-	}
+		throw workspaceErrors.invalidIndex();
 	const omitted = { characters: 0, demoOutfit: false, exportSettings: false, ...index.omitted };
-	const previousOmissions = omitted.characters;
-	const references = recoverRecords(projects, omitted);
-	const skippedCharacter = omitted.characters > previousOmissions;
-	const absent = new Set(missing);
-	if (
-		absent.size !== missing.length ||
-		missing.some(
-			(hash) =>
-				typeof hash !== 'string' ||
-				!/^[a-f0-9]{64}$/.test(hash) ||
-				(!skippedCharacter && !references.has(hash))
-		)
-	)
-		throw new LocalizedError(
-			'This workspace has an invalid list of missing files.',
-			'workspace.error.missingFiles'
-		);
-	const blobs = new Map<string, Blob>();
-	let pixels = 0;
-	for (const [path, data] of files) {
-		if (path === indexPath) continue;
-		const hash = /^blobs\/([a-f0-9]{64})$/.exec(path)?.[1];
-		if (!hash || (!skippedCharacter && !references.has(hash)) || absent.has(hash))
-			throw new LocalizedError(
-				'This workspace contains an unexpected file.',
-				'workspace.error.unexpectedFile'
-			);
-		if (!references.has(hash)) continue;
-		const verified = await recoverArtwork(data, hash, maxPixels - pixels, references.get(hash));
-		if (verified !== undefined) {
-			pixels += verified;
-			blobs.set(hash, new Blob([data as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
-		}
-	}
+	const { projects, blobs, missing } = await readArchiveFiles(
+		files,
+		indexPath,
+		index.projects,
+		index.missing,
+		omitted,
+		(key) => key === demoDress || key === EXPORT_SETTINGS_KEY || key.startsWith('rig-'),
+		workspaceErrors
+	);
 	if (
 		diagnostics &&
 		(!Array.isArray(diagnostics.errors) ||
@@ -505,7 +609,7 @@ export async function readWorkspace(bytes: Uint8Array): Promise<WorkspaceArchive
 		diagnostics,
 		projects,
 		blobs,
-		missing: [...references.keys()].filter((hash) => !blobs.has(hash)),
+		missing,
 		omitted: Object.values(omitted).some(Boolean) ? omitted : undefined
 	};
 }

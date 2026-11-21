@@ -1264,6 +1264,16 @@
 			"invalidDiagnostics": "Bu çalışma alanında geçersiz yakın tarihli hata kayıtları var."
 		}
 	},
+	"backup": {
+		"error": {
+			"notBackup": "Karakter ZIP dosyası yerine bir PixelDoll yedeği veya çalışma alanı ZIP dosyası seçin.",
+			"unsupportedVersion": "Bu yedek dosyası sürümü desteklenmiyor.",
+			"invalid": "Bu yedek hasarlı veya geçersiz.",
+			"tooLarge": "Bu yedek ZIP boyutu veya görsel sınırını aşıyor. Bunun yerine karakterleri ayrı ZIP dosyaları olarak alın.",
+			"containsKey": "Kayıtlı bir karakter, bağlı veya hatırlanan PixelLab anahtarını içeriyor. Yedeklemeden önce anahtarı kaldırın.",
+			"changed": "Kayıtlı karakterleriniz değişti. Güncellenen geri yükleme önizlemesini inceleyin."
+		}
+	},
 	"openWorkspace": {
 		"privacy": "Kopya, PixelLab’a bağlı olmadan açılır. Sekmeyi kapattığınızda veya yeniden yüklediğinizde kopyada yaptığınız tüm değişiklikler atılır.",
 		"chooseZip": "Çalışma alanı ZIP dosyasını seçin",

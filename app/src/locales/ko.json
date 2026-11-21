@@ -1219,6 +1219,16 @@
 			"invalidDiagnostics": "이 워크스페이스의 최근 오류가 잘못됐어요."
 		}
 	},
+	"backup": {
+		"error": {
+			"notBackup": "캐릭터 ZIP이 아닌 PixelDoll 백업 또는 워크스페이스 ZIP을 선택하세요.",
+			"unsupportedVersion": "지원하지 않는 백업 파일 버전이에요.",
+			"invalid": "이 백업은 손상되었거나 올바르지 않아요.",
+			"tooLarge": "이 백업은 ZIP 크기 또는 아트워크 한도를 넘어요. 대신 캐릭터별 ZIP을 사용하세요.",
+			"containsKey": "저장된 캐릭터에 연결되었거나 기억된 PixelLab 키가 들어 있어요. 백업하기 전에 키를 삭제하세요.",
+			"changed": "저장된 캐릭터가 바뀌었어요. 업데이트된 복원 미리 보기를 확인하세요."
+		}
+	},
 	"openWorkspace": {
 		"privacy": "사본을 열면 PixelLab에 연결되지 않은 상태예요. 사본의 변경 사항은 이 탭을 닫거나 다시 불러오면 버려져요.",
 		"chooseZip": "워크스페이스 ZIP 선택",

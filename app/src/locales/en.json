@@ -1268,6 +1268,16 @@
 			"invalidDiagnostics": "This workspace has invalid recent errors."
 		}
 	},
+	"backup": {
+		"error": {
+			"notBackup": "Choose a PixelDoll backup or workspace ZIP, not a character ZIP.",
+			"unsupportedVersion": "This backup file version is not supported.",
+			"invalid": "This backup is damaged or invalid.",
+			"tooLarge": "This backup exceeds the ZIP size or artwork limit. Use individual character ZIPs instead.",
+			"containsKey": "A saved character contains the connected or remembered PixelLab key. Remove it before backing up.",
+			"changed": "Your saved characters changed. Review the updated restore preview."
+		}
+	},
 	"openWorkspace": {
 		"privacy": "The copy starts disconnected from PixelLab. Any changes to the copy are discarded when you close or reload this tab.",
 		"chooseZip": "Choose workspace ZIP",

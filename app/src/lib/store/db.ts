@@ -141,6 +141,80 @@ export async function putCharacter(
 	});
 }
 
+export interface CharacterSnapshot {
+	/** Every saved character record (keys starting with "rig-"), developer rigs included. */
+	records: Map<string, unknown>;
+	/** Which of the asked hashes have a stored blob. */
+	stored: Set<string>;
+}
+
+/** One consistent read of every saved character and of which `hashes` are stored. */
+export const readCharacters = (hashes: readonly string[]) => characterBatch(hashes);
+
+/** Read as readCharacters does, then add what `add` returns in the same transaction: a restore decides against exactly what it
+ *  writes beside. Nothing is overwritten (an existing record or blob key aborts), `add` may throw to abort, and any failure,
+ *  such as a full disk, leaves the whole batch unwritten. `add` must be synchronous; blobs it returns must be among `hashes`,
+ *  and stored ones are kept as they are. */
+export const addCharacters = (
+	hashes: readonly string[],
+	add: (snapshot: CharacterSnapshot) => { records: Map<string, unknown>; blobs: Map<string, Blob> }
+) => characterBatch(hashes, add);
+
+async function characterBatch(
+	hashes: readonly string[],
+	add?: Parameters<typeof addCharacters>[1]
+): Promise<CharacterSnapshot> {
+	if (copy) {
+		const records = new Map(
+			[...copy.projects]
+				.filter(([key]) => key.startsWith('rig-'))
+				.map(([key, value]) => [key, structuredClone(value)])
+		);
+		const snapshot = { records, stored: new Set(hashes.filter((hash) => copy!.blobs.has(hash))) };
+		if (add) {
+			const out = add(snapshot);
+			for (const id of out.records.keys())
+				if (copy.projects.has(id)) throw new DOMException('Key already exists.', 'ConstraintError');
+			for (const [hash, blob] of out.blobs) if (!copy.blobs.has(hash)) copy.blobs.set(hash, blob);
+			for (const [id, record] of out.records) copy.projects.set(id, structuredClone(record));
+		}
+		return snapshot;
+	}
+	const db = await open();
+	return new Promise((resolve, reject) => {
+		const t = db.transaction(['projects', 'blobs'], add ? 'readwrite' : 'readonly'),
+			projects = t.objectStore('projects'),
+			images = t.objectStore('blobs'),
+			range = IDBKeyRange.bound('rig-', 'rig.', false, true),
+			values = projects.getAll(range),
+			keys = projects.getAllKeys(range),
+			counts = hashes.map((hash) => [hash, images.count(hash)] as const);
+		const snapshot: CharacterSnapshot = { records: new Map(), stored: new Set() };
+		let error: unknown;
+		// Requests in one transaction complete in order: the last one finds all the others done.
+		(counts.at(-1)?.[1] ?? keys).onsuccess = () => {
+			try {
+				keys.result.forEach((key, index) =>
+					snapshot.records.set(String(key), values.result[index])
+				);
+				for (const [hash, count] of counts) if (count.result) snapshot.stored.add(hash);
+				if (!add) return;
+				const out = add(snapshot);
+				for (const [hash, blob] of out.blobs)
+					if (!snapshot.stored.has(hash)) images.add(blob, hash);
+				for (const [id, record] of out.records) projects.add(record, id);
+			} catch (failure) {
+				error = failure;
+				t.abort();
+			}
+		};
+		t.oncomplete = () => resolve(snapshot);
+		// A refused add reports on its request before the transaction aborts.
+		t.onerror = (event) => (error ??= (event.target as IDBRequest).error);
+		t.onabort = () => reject(error ?? t.error);
+	});
+}
+
 /** Publish a completed rig without a gap between new image blobs and their project references. `stored`: blobs the record
  *  references that are already stored; they are checked in the same transaction, so a concurrent cleanup cannot sweep them
  *  between the check and the write. */
@@ -525,6 +599,36 @@ export async function selfTest() {
 		);
 	} finally {
 		await Promise.all(candidates.map((candidate) => del('jobs', candidate.id)));
+	}
+	const taken = `rig-selftest-${Math.random()}`,
+		added = `rig-selftest-${Math.random()}`,
+		image = `selftest-${Math.random()}`;
+	try {
+		await put('projects', taken, { n: 1 });
+		const batch = (ids: string[]) =>
+			addCharacters([image], () => ({
+				records: new Map(ids.map((id) => [id, { id }])),
+				blobs: new Map([[image, new Blob([new Uint8Array([1])])]])
+			}));
+		const refused = await batch([added, taken]).then(
+			() => undefined,
+			(error: DOMException) => error
+		);
+		console.assert(
+			refused?.name === 'ConstraintError' &&
+				!(await get('projects', added)) &&
+				!(await get('blobs', image)) &&
+				(await get<{ n: number }>('projects', taken))?.n === 1,
+			'db addCharacters never overwrites and rolls the whole batch back'
+		);
+		await batch([added]);
+		const seen = await readCharacters([image]);
+		console.assert(
+			seen.stored.has(image) && seen.records.has(added) && seen.records.has(taken),
+			'db addCharacters writes records and blobs together'
+		);
+	} finally {
+		await Promise.all([del('projects', taken), del('projects', added), del('blobs', image)]);
 	}
 	await del('projects', k); // gcBlobs is not run here: it sweeps the whole origin's store (probe in B13 report)
 }
