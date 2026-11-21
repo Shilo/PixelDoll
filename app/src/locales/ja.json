@@ -40,6 +40,17 @@
 		"noResults": "検索に一致する設定がありません。",
 		"all": "すべての設定"
 	},
+	"developer": {
+		"title": "開発者",
+		"mode": "開発者モード",
+		"notSaved": "変更をブラウザーに保存できませんでした。このタブにのみ適用されます。",
+		"pages": "開発者向けページ（M1～M5）",
+		"rigs": "開発者向けリグ",
+		"target": "API 呼び出しの対象",
+		"copyId": "ID をコピー",
+		"idCopied": "ID をコピーしました",
+		"idCopyFailed": "ID をコピーできませんでした。"
+	},
 	"common": {
 		"loadFailed": "PixelDoll の一部を読み込めませんでした。ページを再読み込みして、もう一度お試しください。",
 		"advanced": "詳細設定",
@@ -382,8 +393,6 @@
 		"redrawItem": "アイテムを描き直す",
 		"repairFeature": "アイテムの修復",
 		"redrawFeature": "アイテムの描き直し",
-		"inspectRepair": "アイテム修復のAPI呼び出しを確認",
-		"inspectRedraw": "アイテム描き直しのAPI呼び出しを確認",
 		"repairHelp": "デザインが気に入っている場合に最適です。変更はアイテムの範囲内に限られます。",
 		"redrawHelp": "形や持ち方が変わる場合があります。残すかどうかは自分で選べます。",
 		"repairRequests": {

@@ -21,7 +21,6 @@
 	import PopoverArrow from './PopoverArrow.svelte';
 	import MenuDisclosure from './MenuDisclosure.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
-	import ApiPeek from './ApiPeek.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
 	import PixelLabUsage from './PixelLabUsage.svelte';
@@ -51,7 +50,6 @@
 		CircleAlert,
 		ChevronDown,
 		ChevronLeft,
-		ChevronRight,
 		Download,
 		MonitorDown,
 		BookOpen,
@@ -131,7 +129,6 @@
 			copyFeedback = 'failed';
 		}
 	}
-	const devRigs = $derived(import.meta.env.DEV ? store.projects.filter((p) => p.dev) : []);
 	const active = $derived($queue.counts.running + $queue.counts.pending);
 	const busy = $derived(
 		active > 0 ||
@@ -533,7 +530,6 @@
 			>{#if $queue.role === 'follower'}<span class="small">{t('toolbar.otherTab')}</span
 				>{/if}<SurfaceChevron /></button
 		>
-		<ApiPeek scope="all" all menu />
 		<hr />
 		{#if workspaceCopy}
 			<button
@@ -762,28 +758,6 @@
 				characters();
 			}}><House size={16} /><span class="row-name">{t('toolbar.characterSelection')}</span></button
 		>
-		{#if import.meta.env.DEV}<a
-				class="row"
-				role="menuitem"
-				aria-label="Developer pages"
-				href="#/dev"
-				onclick={close}
-				style="text-decoration:none"
-				><Ellipsis size={16} /><span class="row-name">Developer pages (M1–M5)</span></a
-			>{/if}
-		<!-- T2: rigs frozen on the M2 dev pages stay out of the main list; reachable here for developers only -->
-		{#if import.meta.env.DEV && devRigs.length}
-			<details class="dev-rigs">
-				<summary class="row"
-					><ChevronRight size={16} /><span class="row-name">Developer rigs</span><span
-						class="faint small num">{devRigs.length}</span
-					></summary
-				>
-				<div class="bu-choice-group project-choices">
-					{#each devRigs as p (p.id)}{@render proj(p)}{/each}
-				</div>
-			</details>
-		{/if}
 	</div>
 </div>
 

@@ -4,13 +4,11 @@
 	import Help from './Help.svelte';
 	import ReferenceField from './ReferenceField.svelte';
 	import SizePreview from './SizePreview.svelte';
-	import ApiPeek from './ApiPeek.svelte';
 	import DirectionCompass from './DirectionCompass.svelte';
 	import DirectionPresets from './DirectionPresets.svelte';
 	import { app } from '../lib/app.svelte.ts';
 	import { ApiError } from '../lib/pixellab/client.ts';
-	import { enhanceCharacter } from './enhanceCharacter.ts';
-	import { routes } from '../lib/pixellab/routes.ts';
+	import { characterEnhanceInput, enhanceCharacter } from './enhanceCharacter.ts';
 	import { Copy, Check, ChevronRight, WandSparkles, Undo2 } from './icons.ts';
 	import { displayDirectionShort } from './displayDirection.ts';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
@@ -33,7 +31,6 @@
 		presetOf,
 		readPrompt,
 		setPreset,
-		styleOf,
 		toggleDirection,
 		toggleMirror,
 		TRAITS,
@@ -53,14 +50,15 @@
 		draft: d = $bindable(),
 		busy = $bindable(false),
 		referenceLoading = $bindable(false),
-		onconnect
+		onconnect,
+		enhanceScope
 	}: {
 		draft: CharacterDraft;
 		busy?: boolean;
 		referenceLoading?: boolean;
+		enhanceScope: string;
 		onconnect: (target: 'details' | 'prompt') => void;
 	} = $props();
-	const scope = `enhance:${crypto.randomUUID()}`;
 	// Trait, preset, model and style values are prompt and draft data; only their displayed names are translated.
 	const TRAIT_TEXT: Record<Trait, { label: WhisperKey; help: WhisperKey }> = {
 		kind: { label: 'create.form.traits.kind.label', help: 'create.form.traits.kind.help' },
@@ -180,16 +178,7 @@
 	const editorHelpText = $derived(
 		d.tab === 'appearance' ? t('create.form.appearanceHelp') : t('create.form.promptHelp')
 	);
-	// Enhance with the chosen V3 style hints, so the text it writes fits the drawing they guide.
-	const enhanceInput = () => ({
-		description: d.prompt,
-		image_size: { width: d.body || 0, height: d.body || 0 },
-		view: d.view,
-		...(({ outline, detail }) => ({
-			...(outline ? { outline } : {}),
-			...(detail ? { detail } : {})
-		}))(styleOf(d))
-	});
+	const enhanceInput = () => characterEnhanceInput(d);
 	const canEnhance = (target: 'details' | 'prompt') =>
 		!busy &&
 		!referenceLoading &&
@@ -253,7 +242,12 @@
 		busy = true;
 		message = '';
 		try {
-			const enhanced = await enhanceCharacter(app.key, input, abort.signal, scope);
+			const enhanced = await enhanceCharacter(
+				app.key,
+				input,
+				abort.signal,
+				`${enhanceScope}:${target}`
+			);
 			if (!alive) return;
 			if (d.prompt !== before || d.body !== input.image_size.width || d.view !== input.view) {
 				message = notice('create.form.settingsChanged');
@@ -356,23 +350,7 @@
 						: t('create.form.promptHelpTitle')}
 					text={editorHelpText}
 				/>
-				<ApiPeek
-					scope={d.tab === 'appearance' ? 'character-details-enhance' : 'character-prompt-enhance'}
-					label={d.tab === 'appearance'
-						? t('create.form.enhanceDetails')
-						: t('create.form.enhancePrompt')}
-					plan={[
-						{
-							...routes.enhanceCharacterV3Prompt(enhanceInput()),
-							label:
-								d.tab === 'appearance'
-									? 'Enhance character details'
-									: 'Enhance exact character prompt',
-							generations: 0.05
-						}
-					]}
-					activityScope={scope}
-				/>
+
 				<button
 					class="bu-action btn icon copy"
 					data-variant="outline"
@@ -999,7 +977,6 @@
 	@media (max-width: 599px), (max-height: 499px), (pointer: coarse) {
 		@container (max-width:400px) {
 			.editor-toolbar :global(.help-title.icon-only),
-			.editor-toolbar :global(.api-peek-trigger),
 			.editor-toolbar .copy {
 				width: 32px;
 				min-width: 32px;

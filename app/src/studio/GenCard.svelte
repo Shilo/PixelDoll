@@ -1,6 +1,7 @@
 <script lang="ts">
 	// A generating item: progress from the ledger and its landed frames, then an optional review (round 10: a clean draft saves
 	// itself; Keep it / Try again / Discard stay available for the rest). Wear shows the draft on the character meanwhile.
+	import Sheet from './Sheet.svelte';
 	import { bakedFrame, composeCell } from '../lib/compose/compose.ts';
 	import { live, queue } from '../lib/pixellab/queue.ts';
 	import {
@@ -155,260 +156,275 @@
 	const usd = usdText;
 </script>
 
-<div class="gen">
-	<header class="insp-head">
-		<div class="api-action">
-			<h2 class="insp-title">{g.input.name}</h2>
-			<ApiPeek
-				scope={`item-generation-${g.draft.spec.id}`}
-				label={t('genCard.generateLabel', { name: g.input.name })}
-				plan={draftPlan(g.draft)}
-				queueIds={draftQueueIds(g.draft)}
-			/>
-		</div>
-		<p class="insp-sub">
-			<span>{displayMessage(slotLabelMessage(store.project?.manifest, g.input.slot))}</span>
-			{#if g.phase === 'review'}
-				{#if clean}<span class="badge clean"
-						><CircleCheck size={12} />{t('studioModel.health.clean')}</span
-					>{:else}<span class="badge look"
-						><TriangleAlert size={12} />{t('studioModel.health.look')}</span
-					>{/if}
-			{:else if g.phase === 'failed'}<span class="badge look"
-					><CircleAlert size={12} />{g.canceled
-						? t('generation.status.canceled')
-						: t('generation.status.failed')}</span
-				>
-			{:else}<span class="badge accent">{t('activity.generating')}</span>{/if}
-		</p>
-	</header>
-
-	{#if g.draft.rigId === doc.id && g.phase !== 'failed'}
-		<button class="bu-action btn" data-variant="outline" onclick={() => wearDraft(g.draft.spec.id)}
-			>{worn ? t('common.takeOff') : t('common.wear')}</button
-		>
-	{/if}
-
-	{#if prev && anim}
-		<label class="field"
-			><span class="label small">{t('genCard.previewMove')}</span><select
-				class="bu-input input"
-				value={anim.id}
-				onchange={(e) => {
-					ui.anim = e.currentTarget.value;
-					ui.frame = 0;
-				}}
-				>{#each anims as a (a.id)}<option value={a.id}>{displayMove(a.id, moveIds)}</option
-					>{/each}</select
-			></label
-		>
-		<div class="review-grid" aria-label={t('genCard.previewGrid')}>
-			{#each dirs as d (d.id)}
-				<figure>
-					<Sprite
-						img={composeCell(
-							prev,
-							outfit,
-							anim.id,
-							d.id,
-							anim.frames[ui.frame % anim.frames.length].cell,
-							frame
-						)}
-						{k}
-						w={frame?.w}
-						h={frame?.h}
-						checker
-						label={t('genCard.facing', {
-							name: g.input.name,
-							direction: displayDirectionInSentence(d.id)
-						})}
-					/>
-					<span class="dir-caption"
-						>{#if loadingDirs.has(d.mirrorOf ?? d.id)}<LoaderCircle
-								size={12}
-								class="spin"
-								aria-label={t('genCard.loading')}
-							/>{/if}{displayDirection(d.id)}</span
+<Sheet title={t('studio.titleItemReview')} cancel="common.done" onclose={() => (ui.sheet = null)}>
+	{#snippet developer()}
+		<ApiPeek
+			targets={[
+				{
+					scope: `item-generation-${g.draft.spec.id}`,
+					label: t('genCard.generateLabel', { name: g.input.name }),
+					plan: draftPlan(g.draft),
+					queueIds: draftQueueIds(g.draft)
+				},
+				...(g.phase !== 'running'
+					? [
+							{
+								scope: `item-retry-${g.draft.spec.id}`,
+								label: t('genCard.retryLabel', { name: g.input.name }),
+								plan: retryPlan
+							}
+						]
+					: [])
+			]}
+			copyId={g.draft.spec.id}
+		/>
+	{/snippet}
+	<div class="gen">
+		<header class="insp-head">
+			<div class="api-action">
+				<h2 class="insp-title">{g.input.name}</h2>
+			</div>
+			<p class="insp-sub">
+				<span>{displayMessage(slotLabelMessage(store.project?.manifest, g.input.slot))}</span>
+				{#if g.phase === 'review'}
+					{#if clean}<span class="badge clean"
+							><CircleCheck size={12} />{t('studioModel.health.clean')}</span
+						>{:else}<span class="badge look"
+							><TriangleAlert size={12} />{t('studioModel.health.look')}</span
+						>{/if}
+				{:else if g.phase === 'failed'}<span class="badge look"
+						><CircleAlert size={12} />{g.canceled
+							? t('generation.status.canceled')
+							: t('generation.status.failed')}</span
 					>
-				</figure>
-			{/each}
-		</div>
-	{/if}
-
-	{#if g.phase === 'review'}
-		{#if !res?.qa}
-			<p class="muted small">{t('genCard.checking')}</p>
-		{:else if reasons.length || warns.length}
-			<ul class="reasons small">
-				{#each [...new Set([...reasons, ...warns])] as r (r)}<li>
-						<TriangleAlert size={12} />{r}
-					</li>{/each}
-			</ul>
-		{:else if clean}
-			<p class="muted small">{t('generation.outcome.passed')}</p>
-		{:else}
-			<p class="muted small">{t('genCard.someChecks')}</p>
-		{/if}
-		{#if !clean}<p class="notice warn small">
-				{t('genCard.noRetryStarted')}
-			</p>{/if}
-		<div class="actions">
-			<button
-				class="bu-action btn primary"
-				data-variant="primary"
-				onclick={accept}
-				disabled={busy || !res?.qa || hasStructuralFailure(res) || incomplete}
-				>{t('genCard.keep')}</button
-			>
-			<span class="api-action"
-				><ApiPeek
-					scope={`item-retry-${g.draft.spec.id}`}
-					label={t('genCard.retryLabel', { name: g.input.name })}
-					plan={retryPlan}
-				/><button
-					class="bu-action btn"
-					data-variant="outline"
-					onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
-					disabled={busy || retryGens === null || retryBlocked}
-					aria-describedby={retryBlocked ? tierNoticeId : undefined}
-					>{t('common.tryAgain')}
-					<span class="cost"
-						>{t('moves.estimate', {
-							gens: retryGens === null ? '–' : formatNumber(retryGens)
-						})}</span
-					></button
-				></span
-			>
-			<button
-				class="bu-action btn plain danger"
-				data-variant="quiet"
-				onclick={() => discardGen(g)}
-				disabled={busy}>{t('common.discard')}</button
-			>
-		</div>
-		{#if incomplete}<p class="notice warn small">
-				{t('genCard.incomplete')}
-			</p>{/if}
-	{:else if g.phase === 'failed'}
-		<p class="notice bad small">
-			<CircleAlert size={14} />{g.canceled
-				? t('genCard.canceledDetail')
-				: policy
-					? t('genCard.declined')
-					: providerFailed
-						? error
-							? t('genCard.providerFailedError', { error })
-							: t('genCard.providerFailed')
-						: error
-							? t('genCard.notMadeError', { error })
-							: t('genCard.notMade')}
-		</p>
-		{#if providerFailed && !g.canceled}
-			<p class="faint small">
-				{spentUnknown || unsettledCost
-					? t('genCard.costUnreported')
-					: spent || spentUsd
-						? t('genCard.costReported', {
-								cost: [spent ? gens(spent) : '', spentUsd ? usd(spentUsd) : '']
-									.filter(Boolean)
-									.join(' + ')
-							})
-						: t('genCard.noCharge')}
-				{t('genCard.newPaidAttempt')}
+				{:else}<span class="badge accent">{t('activity.generating')}</span>{/if}
 			</p>
+		</header>
+
+		{#if g.draft.rigId === doc.id && g.phase !== 'failed'}
+			<button
+				class="bu-action btn"
+				data-variant="outline"
+				onclick={() => wearDraft(g.draft.spec.id)}
+				>{worn ? t('common.takeOff') : t('common.wear')}</button
+			>
 		{/if}
-		<div class="actions">
-			<span class="api-action"
-				><ApiPeek
-					scope={`item-retry-${g.draft.spec.id}`}
-					label={t('genCard.retryLabel', { name: g.input.name })}
-					plan={retryPlan}
-				/><button
+
+		{#if prev && anim}
+			<label class="field"
+				><span class="label small">{t('genCard.previewMove')}</span><select
+					class="bu-input input"
+					value={anim.id}
+					onchange={(e) => {
+						ui.anim = e.currentTarget.value;
+						ui.frame = 0;
+					}}
+					>{#each anims as a (a.id)}<option value={a.id}>{displayMove(a.id, moveIds)}</option
+						>{/each}</select
+				></label
+			>
+			<div class="review-grid" aria-label={t('genCard.previewGrid')}>
+				{#each dirs as d (d.id)}
+					<figure>
+						<Sprite
+							img={composeCell(
+								prev,
+								outfit,
+								anim.id,
+								d.id,
+								anim.frames[ui.frame % anim.frames.length].cell,
+								frame
+							)}
+							{k}
+							w={frame?.w}
+							h={frame?.h}
+							checker
+							label={t('genCard.facing', {
+								name: g.input.name,
+								direction: displayDirectionInSentence(d.id)
+							})}
+						/>
+						<span class="dir-caption"
+							>{#if loadingDirs.has(d.mirrorOf ?? d.id)}<LoaderCircle
+									size={12}
+									class="spin"
+									aria-label={t('genCard.loading')}
+								/>{/if}{displayDirection(d.id)}</span
+						>
+					</figure>
+				{/each}
+			</div>
+		{/if}
+
+		{#if g.phase === 'review'}
+			{#if !res?.qa}
+				<p class="muted small">{t('genCard.checking')}</p>
+			{:else if reasons.length || warns.length}
+				<ul class="reasons small">
+					{#each [...new Set([...reasons, ...warns])] as r (r)}<li>
+							<TriangleAlert size={12} />{r}
+						</li>{/each}
+				</ul>
+			{:else if clean}
+				<p class="muted small">{t('generation.outcome.passed')}</p>
+			{:else}
+				<p class="muted small">{t('genCard.someChecks')}</p>
+			{/if}
+			{#if !clean}<p class="notice warn small">
+					{t('genCard.noRetryStarted')}
+				</p>{/if}
+			<div class="actions">
+				<button
 					class="bu-action btn primary"
 					data-variant="primary"
-					onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
-					disabled={busy || retryGens === null || retryBlocked}
-					aria-describedby={retryBlocked ? tierNoticeId : undefined}
-					>{t('common.tryAgain')}
-					<span class="cost"
-						>{t('moves.estimate', {
-							gens: retryGens === null ? '–' : formatNumber(retryGens)
-						})}</span
-					></button
-				></span
-			>
-			<button class="bu-action btn plain danger" data-variant="quiet" onclick={() => discardGen(g)}
-				>{t('common.discard')}</button
-			>
-		</div>
-	{/if}
-
-	{#if g.phase !== 'running'}<TierNotice
-			id={tierNoticeId}
-			minimumTier={retryTier}
-			feature={t('genCard.retryFeature')}
-		/>{/if}
-	{#if g.phase !== 'running' && retryEstimateError}<p class="notice bad small">
-			<CircleAlert size={14} />{t('genCard.estimateFailed')}
-		</p>{/if}
-	{#if g.phase !== 'running'}<p class="faint small">
-			{t('genCard.retryNote')}
-		</p>{/if}
-	<details class="disclosure">
-		<summary><ChevronRight size={14} />{t('common.details')}</summary>
-		<div>
-			<dl class="kv">
-				<dt>{t('common.prompt')}</dt>
-				<dd>{g.draft.spec.prompt}</dd>
-				<dt>{t('itemPane.slot')}</dt>
-				<dd>
-					{t('genCard.slotKey', { slot: g.draft.spec.slot, key: displayKey(g.draft.spec.key) })}
-				</dd>
-				<dt>{t('experience.tabMoves')}</dt>
-				<dd>{g.draft.spec.anims.join(', ')} × {g.draft.spec.dirs.join(', ')}</dd>
-				<dt>{t('genCard.calls')}</dt>
-				<dd>
-					{g.draft.calls
-						.map((c, i) =>
-							c.rerolls
-								? t('genCard.callRerolls', {
-										index: formatNumber(i + 1),
-										cells: formatNumber(c.cells.length),
-										rerolls: formatNumber(c.rerolls)
-									})
-								: t('genCard.call', {
-										index: formatNumber(i + 1),
-										cells: formatNumber(c.cells.length)
-									})
-						)
-						.join(' · ')}
-				</dd>
-				<dt>{t('genCard.spent')}</dt>
-				<dd>
-					{[
-						gens(spent),
-						spentUsd ? usd(spentUsd) : '',
-						spentUnknown ? t('apiPeek.unknownCount', { count: formatNumber(spentUnknown) }) : ''
-					]
-						.filter(Boolean)
-						.join(' + ')}
-				</dd>
-				{#if res?.qa?.qa.rawKeyReviewFrames}<dt>{t('itemPane.rawBodyDifferences')}</dt>
-					<dd>
-						{t('genCard.rawDifferencesDetail', {
-							count: formatNumber(res.qa.qa.rawKeyReviewFrames)
-						})}
-					</dd>{/if}
-				{#if error}<dt>{t('genCard.error')}</dt>
-					<dd>{error}</dd>{/if}
-			</dl>
-			{#if g.draft.log.length}<p class="faint small">
-					{g.draft.log
-						.map((line) =>
-							displayMessage(generationLogMessage(g, $queue.jobs, line, outcomeFormatters))
-						)
-						.join(' · ')}
+					onclick={accept}
+					disabled={busy || !res?.qa || hasStructuralFailure(res) || incomplete}
+					>{t('genCard.keep')}</button
+				>
+				<span class="api-action"
+					><button
+						class="bu-action btn"
+						data-variant="outline"
+						onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
+						disabled={busy || retryGens === null || retryBlocked}
+						aria-describedby={retryBlocked ? tierNoticeId : undefined}
+						>{t('common.tryAgain')}
+						<span class="cost"
+							>{t('moves.estimate', {
+								gens: retryGens === null ? '–' : formatNumber(retryGens)
+							})}</span
+						></button
+					></span
+				>
+				<button
+					class="bu-action btn plain danger"
+					data-variant="quiet"
+					onclick={() => discardGen(g)}
+					disabled={busy}>{t('common.discard')}</button
+				>
+			</div>
+			{#if incomplete}<p class="notice warn small">
+					{t('genCard.incomplete')}
 				</p>{/if}
-		</div>
-	</details>
-</div>
+		{:else if g.phase === 'failed'}
+			<p class="notice bad small">
+				<CircleAlert size={14} />{g.canceled
+					? t('genCard.canceledDetail')
+					: policy
+						? t('genCard.declined')
+						: providerFailed
+							? error
+								? t('genCard.providerFailedError', { error })
+								: t('genCard.providerFailed')
+							: error
+								? t('genCard.notMadeError', { error })
+								: t('genCard.notMade')}
+			</p>
+			{#if providerFailed && !g.canceled}
+				<p class="faint small">
+					{spentUnknown || unsettledCost
+						? t('genCard.costUnreported')
+						: spent || spentUsd
+							? t('genCard.costReported', {
+									cost: [spent ? gens(spent) : '', spentUsd ? usd(spentUsd) : '']
+										.filter(Boolean)
+										.join(' + ')
+								})
+							: t('genCard.noCharge')}
+					{t('genCard.newPaidAttempt')}
+				</p>
+			{/if}
+			<div class="actions">
+				<span class="api-action"
+					><button
+						class="bu-action btn primary"
+						data-variant="primary"
+						onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
+						disabled={busy || retryGens === null || retryBlocked}
+						aria-describedby={retryBlocked ? tierNoticeId : undefined}
+						>{t('common.tryAgain')}
+						<span class="cost"
+							>{t('moves.estimate', {
+								gens: retryGens === null ? '–' : formatNumber(retryGens)
+							})}</span
+						></button
+					></span
+				>
+				<button
+					class="bu-action btn plain danger"
+					data-variant="quiet"
+					onclick={() => discardGen(g)}>{t('common.discard')}</button
+				>
+			</div>
+		{/if}
+
+		{#if g.phase !== 'running'}<TierNotice
+				id={tierNoticeId}
+				minimumTier={retryTier}
+				feature={t('genCard.retryFeature')}
+			/>{/if}
+		{#if g.phase !== 'running' && retryEstimateError}<p class="notice bad small">
+				<CircleAlert size={14} />{t('genCard.estimateFailed')}
+			</p>{/if}
+		{#if g.phase !== 'running'}<p class="faint small">
+				{t('genCard.retryNote')}
+			</p>{/if}
+		<details class="disclosure">
+			<summary><ChevronRight size={14} />{t('common.details')}</summary>
+			<div>
+				<dl class="kv">
+					<dt>{t('common.prompt')}</dt>
+					<dd>{g.draft.spec.prompt}</dd>
+					<dt>{t('itemPane.slot')}</dt>
+					<dd>
+						{t('genCard.slotKey', { slot: g.draft.spec.slot, key: displayKey(g.draft.spec.key) })}
+					</dd>
+					<dt>{t('experience.tabMoves')}</dt>
+					<dd>{g.draft.spec.anims.join(', ')} × {g.draft.spec.dirs.join(', ')}</dd>
+					<dt>{t('genCard.calls')}</dt>
+					<dd>
+						{g.draft.calls
+							.map((c, i) =>
+								c.rerolls
+									? t('genCard.callRerolls', {
+											index: formatNumber(i + 1),
+											cells: formatNumber(c.cells.length),
+											rerolls: formatNumber(c.rerolls)
+										})
+									: t('genCard.call', {
+											index: formatNumber(i + 1),
+											cells: formatNumber(c.cells.length)
+										})
+							)
+							.join(' · ')}
+					</dd>
+					<dt>{t('genCard.spent')}</dt>
+					<dd>
+						{[
+							gens(spent),
+							spentUsd ? usd(spentUsd) : '',
+							spentUnknown ? t('apiPeek.unknownCount', { count: formatNumber(spentUnknown) }) : ''
+						]
+							.filter(Boolean)
+							.join(' + ')}
+					</dd>
+					{#if res?.qa?.qa.rawKeyReviewFrames}<dt>{t('itemPane.rawBodyDifferences')}</dt>
+						<dd>
+							{t('genCard.rawDifferencesDetail', {
+								count: formatNumber(res.qa.qa.rawKeyReviewFrames)
+							})}
+						</dd>{/if}
+					{#if error}<dt>{t('genCard.error')}</dt>
+						<dd>{error}</dd>{/if}
+				</dl>
+				{#if g.draft.log.length}<p class="faint small">
+						{g.draft.log
+							.map((line) =>
+								displayMessage(generationLogMessage(g, $queue.jobs, line, outcomeFormatters))
+							)
+							.join(' · ')}
+					</p>{/if}
+			</div>
+		</details>
+	</div>
+</Sheet>

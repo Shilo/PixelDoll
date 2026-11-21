@@ -40,6 +40,17 @@
 		"noResults": "没有符合搜索条件的设置。",
 		"all": "所有设置"
 	},
+	"developer": {
+		"title": "开发者",
+		"mode": "开发者模式",
+		"notSaved": "浏览器未能保存更改。更改仅在当前标签页生效。",
+		"pages": "开发者页面（M1 至 M5）",
+		"rigs": "开发者绑定结构",
+		"target": "API 调用范围",
+		"copyId": "复制 ID",
+		"idCopied": "已复制 ID",
+		"idCopyFailed": "无法复制 ID。"
+	},
 	"common": {
 		"loadFailed": "无法加载 PixelDoll 的部分内容。请重新加载页面后重试。",
 		"advanced": "高级",
@@ -377,8 +388,6 @@
 		"redrawItem": "重绘装备",
 		"repairFeature": "修复装备",
 		"redrawFeature": "重绘装备",
-		"inspectRepair": "检查修复装备的 API 调用",
-		"inspectRedraw": "检查重绘装备的 API 调用",
 		"repairHelp": "适合在你喜欢当前设计时使用。只修改装备所在区域。",
 		"redrawHelp": "可能改变形状或握持方式。是否保留由你决定。",
 		"repairRequests": {

@@ -394,14 +394,53 @@
 			? 'import-sheet import-browse'
 			: 'import-sheet'}
 >
-	{#if source === 'pixellab'}<div class="api-action">
-			<ApiPeek
-				scope="library-open"
-				label={t('import.browseLibrary')}
-				plan={libraryPlan()}
-				activityScope={listScope(0)}
-			/>
-		</div>{/if}
+	{#snippet developer()}
+		{#if source === 'pixellab'}<ApiPeek
+				targets={[
+					{
+						scope: 'library-open',
+						label: t('import.browseLibrary'),
+						plan: libraryPlan(),
+						activityScope: listScope(0)
+					},
+					...(app.key && !app.keyRejected
+						? [
+								{
+									scope: 'library-refresh',
+									label: t('import.refreshLibrary'),
+									plan: libraryPlan(offset),
+									activityScope: listScope(offset)
+								},
+								...characters.map((ch) => ({
+									scope: `library-character-${ch.id}`,
+									label: t('import.previewNamed', { name: ch.name || t('import.character') }),
+									plan: characterZipPlan(ch.id),
+									activityScope: zipScope(ch.id)
+								})),
+								{
+									scope: 'library-previous',
+									label: t('import.previousCharacterPage'),
+									plan: libraryPlan(Math.max(0, offset - 20)),
+									activityScope: listScope(Math.max(0, offset - 20))
+								},
+								{
+									scope: 'library-next',
+									label: t('import.nextCharacterPage'),
+									plan: libraryPlan(offset + 20),
+									activityScope: listScope(offset + 20)
+								},
+								{
+									scope: 'library-preview',
+									label: t('import.previewZip'),
+									plan: characterZipPlan(id),
+									activityScope: zipScope(id)
+								}
+							]
+						: [])
+				]}
+			/>{/if}
+	{/snippet}
+
 	{#if states.length > 1}
 		<div class="field">
 			<label class="label" for="import-standing-state">{t('import.standingState')}</label>
@@ -500,12 +539,7 @@
 			{:else}
 				<div class="library-head">
 					<span class="label">{t('import.libraryTitle')}</span><span class="api-action"
-						><ApiPeek
-							scope="library-refresh"
-							label={t('import.refreshLibrary')}
-							plan={libraryPlan(offset)}
-							activityScope={listScope(offset)}
-						/><button
+						><button
 							class="bu-action btn plain small"
 							data-variant="quiet"
 							disabled={busy || loading}
@@ -523,12 +557,7 @@
 						</p>{/if}
 					{#each characters as ch (ch.id)}
 						<div class="api-action library-entry">
-							<ApiPeek
-								scope={`library-character-${ch.id}`}
-								label={t('import.previewNamed', { name: ch.name || t('import.character') })}
-								plan={characterZipPlan(ch.id)}
-								activityScope={zipScope(ch.id)}
-							/><button
+							<button
 								class="library-character"
 								disabled={busy || loading}
 								onclick={() => fromPixelLab(ch.id)}
@@ -553,12 +582,7 @@
 				</div>
 				<div class="library-head">
 					<span class="api-action"
-						><ApiPeek
-							scope="library-previous"
-							label={t('import.previousCharacterPage')}
-							plan={libraryPlan(Math.max(0, offset - 20))}
-							activityScope={listScope(Math.max(0, offset - 20))}
-						/><button
+						><button
 							class="bu-action btn icon page-button"
 							data-variant="outline"
 							aria-label={t('import.previousPage')}
@@ -578,12 +602,7 @@
 									? t('common.unavailable')
 									: t('import.libraryEmptyRange')}</span
 					><span class="api-action"
-						><ApiPeek
-							scope="library-next"
-							label={t('import.nextCharacterPage')}
-							plan={libraryPlan(offset + 20)}
-							activityScope={listScope(offset + 20)}
-						/><button
+						><button
 							class="bu-action btn icon page-button"
 							data-variant="outline"
 							aria-label={t('import.nextPage')}
@@ -611,12 +630,7 @@
 						disabled={busy}
 					/>
 					<span class="api-action"
-						><ApiPeek
-							scope="library-preview"
-							label={t('import.previewZip')}
-							plan={characterZipPlan(id)}
-							activityScope={zipScope(id)}
-						/><button
+						><button
 							class="bu-action btn"
 							data-variant="outline"
 							type="submit"

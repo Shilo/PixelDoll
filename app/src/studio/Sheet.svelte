@@ -5,6 +5,7 @@
 	import { WORLDS } from './experience/config.ts';
 	import { ui } from './state.svelte.ts';
 	import Toast from './Toast.svelte';
+	import { developerModeEnabled } from './developerMode.svelte.ts';
 	import { backdropDismiss } from './backdropDismiss.ts';
 	import { t, type WhisperKey } from 'svelte-whisper';
 	let {
@@ -12,6 +13,7 @@
 		children,
 		footer,
 		heading,
+		developer,
 		leading,
 		trailing,
 		onclose,
@@ -24,6 +26,7 @@
 		children: Snippet;
 		footer?: Snippet;
 		heading?: Snippet;
+		developer?: Snippet;
 		leading?: Snippet;
 		trailing?: Snippet;
 		onclose: () => void;
@@ -94,6 +97,7 @@
 		<div class="sheet-heading">
 			<h2 id="sheet-title" class="sheet-title">{title}</h2>
 			{#if heading}{@render heading()}{/if}
+			{#if developerModeEnabled()}{@render developer?.()}{/if}
 		</div>
 		{#if trailing}{@render trailing()}{:else if cancelTrailing}<button
 				class="bu-action btn plain link done"

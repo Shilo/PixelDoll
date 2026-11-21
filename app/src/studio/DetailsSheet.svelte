@@ -2,6 +2,7 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	// Character ⋮ > Details: how the character was made and what it has cost, read from its saved provenance.
 	import Sheet from './Sheet.svelte';
+	import ApiPeek from './ApiPeek.svelte';
 	import GenerationDetails from './GenerationDetails.svelte';
 	import { ui, doc, store } from './state.svelte.ts';
 	import * as db from '../lib/store/db.ts';
@@ -57,6 +58,10 @@
 	cancel="common.done"
 	onclose={() => (ui.sheet = null)}
 >
+	{#snippet developer()}
+		<ApiPeek copyId={m && !id.startsWith('fixture:') ? id : undefined} />
+	{/snippet}
+
 	{#if error}<p class="notice bad small" role="alert">{displayMessage(error)}</p>
 	{:else if m && base}<GenerationDetails {m} it={base} {extra} />
 	{:else if m}<p class="faint small">{t('detailsSheet.noGenerationDetailsWereSavedForThis')}</p>

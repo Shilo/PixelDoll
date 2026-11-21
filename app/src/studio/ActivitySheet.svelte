@@ -149,6 +149,47 @@
 	cancel={ui.waitingForTab ? 'activity.cancelRequest' : 'common.done'}
 	onclose={() => (ui.sheet = null)}
 >
+	{#snippet developer()}
+		<ApiPeek
+			targets={[
+				...(app.key
+					? [
+							{
+								scope: 'balance-refresh',
+								label: t('activity.refreshBalance'),
+								plan: balancePlan(),
+								activityScope: balanceScope
+							}
+						]
+					: []),
+				...($queue.paused && $queue.paused !== 'auth' && queued.length
+					? [{ scope: 'queue-resume', label: t('activity.resumeWaiting'), plan: queuedPlan(jobs) }]
+					: []),
+				...running.flatMap((r) => [
+					{
+						scope: `job-running-${r.id}`,
+						label: `${nice(r)} · ${r.id}`,
+						plan: [],
+						queueIds: [r.id],
+						copyId: r.id
+					},
+					{
+						scope: `job-stop-${r.id}`,
+						label: t('activity.stopLabel', { job: `${nice(r)} · ${r.id}` }),
+						plan: cancelPlan(r)
+					}
+				]),
+				...done.map((r) => ({
+					scope: `job-result-${r.id}`,
+					label: `${nice(r)} · ${r.id}`,
+					plan: [],
+					queueIds: [r.id],
+					copyId: r.id
+				}))
+			]}
+		/>
+	{/snippet}
+
 	<div class="act-list">
 		{#if flowsPending}
 			<section class="act-group" aria-label={t('activity.pendingWork')}>
@@ -219,12 +260,7 @@
 		<PixelLabUsage>
 			{#snippet actions()}
 				{#if app.key}<span class="api-action"
-						><ApiPeek
-							scope="balance-refresh"
-							label={t('activity.refreshBalance')}
-							plan={balancePlan()}
-							activityScope={balanceScope}
-						/><button
+						><button
 							class="bu-action btn icon plain"
 							data-variant="quiet"
 							aria-label={t('activity.refreshBalance')}
@@ -267,11 +303,7 @@
 						? t('activity.pausedOffline')
 						: t('activity.pausedCredits')}
 				{#if $queue.paused !== 'offline'}<span class="api-action"
-						>{#if $queue.paused !== 'auth'}<ApiPeek
-								scope="queue-resume"
-								label={t('activity.resumeWaiting')}
-								plan={queuedPlan(jobs)}
-							/>{/if}<button
+						><button
 							class="bu-action btn sm"
 							data-variant="outline"
 							onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}
@@ -300,14 +332,7 @@
 						<li>
 							<span class="bu-ring ring" class:spin={waiting} style:--p={pct(r)} aria-hidden="true"
 							></span><span class="act-main"
-								><span class="api-action"
-									><b>{nice(r)}</b><ApiPeek
-										scope={`job-running-${r.id}`}
-										label={nice(r)}
-										plan={[]}
-										queueIds={[r.id]}
-									/></span
-								><span class="muted small"
+								><span class="api-action"><b>{nice(r)}</b></span><span class="muted small"
 									>{[
 										waiting
 											? t('activity.waitingForPixelLab')
@@ -324,11 +349,7 @@
 							>
 							<span class="act-meta num"
 								>{r.submittedAt ? mins(now - r.submittedAt) : ''}<br /><span class="api-action"
-									><ApiPeek
-										scope={`job-stop-${r.id}`}
-										label={t('activity.stopLabel', { job: nice(r) })}
-										plan={cancelPlan(r)}
-									/><button
+									><button
 										class="bu-action btn link small"
 										data-variant="quiet"
 										disabled={r.state === 'submitting'}
@@ -404,14 +425,7 @@
 										</span>{/if}
 								{/if}
 							</span>
-							<span class="act-meta num muted"
-								>{cost(r)}<ApiPeek
-									scope={`job-result-${r.id}`}
-									label={nice(r)}
-									plan={[]}
-									queueIds={[r.id]}
-								/></span
-							>
+							<span class="act-meta num muted">{cost(r)}</span>
 						</li>
 					{/each}
 				</ul>

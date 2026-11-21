@@ -172,16 +172,32 @@
 		if (!closeSettingsAccount()) ui.sheet = null;
 	}}
 >
+	{#snippet developer()}
+		<ApiPeek
+			targets={showForm
+				? [
+						{
+							scope: 'account-connect',
+							label: t('connectSheet.titleConnectPixelLab'),
+							plan: balancePlan(),
+							activityScope
+						}
+					]
+				: [
+						{
+							scope: 'account-balance-refresh',
+							label: t('activity.refreshBalance'),
+							plan: balancePlan(),
+							activityScope
+						}
+					]}
+		/>
+	{/snippet}
+
 	{#if !showForm}
 		<PixelLabUsage label={t('usage.generations')}>
 			{#snippet actions()}
 				<span class="api-action">
-					<ApiPeek
-						scope="account-balance-refresh"
-						label={t('activity.refreshBalance')}
-						plan={balancePlan()}
-						{activityScope}
-					/>
 					<button
 						type="button"
 						class="bu-action btn icon plain"
@@ -322,12 +338,7 @@
 							onclick={cancelReplace}>{t('connectSheet.keepKey')}</button
 						>{/if}
 					<span class="api-action"
-						><ApiPeek
-							scope="account-connect"
-							label={t('connectSheet.titleConnectPixelLab')}
-							plan={balancePlan()}
-							{activityScope}
-						/><button
+						><button
 							class="bu-action btn primary"
 							data-variant="primary"
 							type="submit"

@@ -5,7 +5,6 @@
 	import LanguagePicker from './LanguagePicker.svelte';
 	import RichMessage from './RichMessage.svelte';
 	import Sprite from './Sprite.svelte';
-	import ApiPeek from './ApiPeek.svelte';
 	import { composeCell } from '../lib/compose/compose.ts';
 	import { ui, doc, view, DEMO, openProject, dismissWelcome, toggleTheme } from './state.svelte.ts';
 	import { Moon, Sun, Sparkles, Download } from './icons.ts';
@@ -65,7 +64,7 @@
 			>PixelDoll</span
 		>
 		<span class="api-action"
-			><ApiPeek scope="all" all /><LanguagePicker compact /><button
+			><LanguagePicker compact /><button
 				class="bu-action btn icon plain"
 				data-variant="quiet"
 				aria-label={ui.theme === 'dark'

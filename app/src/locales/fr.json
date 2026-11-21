@@ -40,6 +40,17 @@
 		"noResults": "Aucun paramètre ne correspond à votre recherche.",
 		"all": "Tous les paramètres"
 	},
+	"developer": {
+		"title": "Développement",
+		"mode": "Mode développeur",
+		"notSaved": "Le navigateur n’a pas pu enregistrer le changement. Il ne s’applique qu’à cet onglet.",
+		"pages": "Pages de développement (M1 à M5)",
+		"rigs": "Rigs de développement",
+		"target": "Appels API pour",
+		"copyId": "Copier l’identifiant",
+		"idCopied": "Identifiant copié",
+		"idCopyFailed": "Impossible de copier l’identifiant."
+	},
 	"common": {
 		"loadFailed": "Impossible de charger une partie de PixelDoll. Rechargez la page pour réessayer.",
 		"advanced": "Avancé",
@@ -391,8 +402,6 @@
 		"redrawItem": "Redessiner l’objet",
 		"repairFeature": "Réparation de l’objet",
 		"redrawFeature": "Redessin de l’objet",
-		"inspectRepair": "Inspecter les appels API pour réparer l’objet",
-		"inspectRedraw": "Inspecter les appels API pour redessiner l’objet",
 		"repairHelp": "Idéal si le design vous plaît. Limite les modifications à la zone de l’objet.",
 		"redrawHelp": "La forme ou la prise en main peuvent changer. Vous choisissez de conserver le résultat ou non.",
 		"repairRequests": {

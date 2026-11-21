@@ -40,6 +40,17 @@
 		"noResults": "Tidak ada pengaturan yang cocok dengan pencarian Anda.",
 		"all": "Semua pengaturan"
 	},
+	"developer": {
+		"title": "Pengembang",
+		"mode": "Mode pengembang",
+		"notSaved": "Browser tidak dapat menyimpan perubahan. Perubahan hanya berlaku di tab ini.",
+		"pages": "Halaman pengembang (M1 hingga M5)",
+		"rigs": "Rig pengembang",
+		"target": "Panggilan API untuk",
+		"copyId": "Salin ID",
+		"idCopied": "ID disalin",
+		"idCopyFailed": "ID tidak dapat disalin."
+	},
 	"common": {
 		"loadFailed": "Sebagian PixelDoll tidak dapat dimuat. Muat ulang halaman untuk mencoba lagi.",
 		"advanced": "Lanjutan",
@@ -379,8 +390,6 @@
 		"redrawItem": "Gambar ulang item",
 		"repairFeature": "Perbaikan item",
 		"redrawFeature": "Penggambaran ulang item",
-		"inspectRepair": "Periksa panggilan API untuk perbaikan item",
-		"inspectRedraw": "Periksa panggilan API untuk penggambaran ulang item",
 		"repairHelp": "Paling cocok jika Anda menyukai desainnya. Perubahan dibatasi pada area item.",
 		"redrawHelp": "Bentuk atau cara genggam bisa berubah. Anda yang memilih apakah akan menyimpannya.",
 		"repairRequests": {

@@ -40,6 +40,17 @@
 		"noResults": "검색과 일치하는 설정이 없어요.",
 		"all": "모든 설정"
 	},
+	"developer": {
+		"title": "개발자",
+		"mode": "개발자 모드",
+		"notSaved": "브라우저가 변경 사항을 저장하지 못했어요. 이 탭에만 적용돼요.",
+		"pages": "개발자 페이지(M1~M5)",
+		"rigs": "개발자용 리그",
+		"target": "API 호출 대상",
+		"copyId": "ID 복사",
+		"idCopied": "ID를 복사했어요",
+		"idCopyFailed": "ID를 복사하지 못했어요."
+	},
 	"common": {
 		"loadFailed": "PixelDoll의 일부를 불러오지 못했어요. 페이지를 새로고침하고 다시 시도하세요.",
 		"advanced": "고급",
@@ -382,8 +393,6 @@
 		"redrawItem": "아이템 다시 그리기",
 		"repairFeature": "아이템 복구",
 		"redrawFeature": "아이템 다시 그리기",
-		"inspectRepair": "아이템 복구 API 호출 검사",
-		"inspectRedraw": "아이템 다시 그리기 API 호출 검사",
 		"repairHelp": "디자인이 마음에 들 때 가장 좋아요. 아이템 영역만 바뀌어요.",
 		"redrawHelp": "모양이나 쥐는 방식이 바뀔 수 있어요. 유지할지는 직접 선택해요.",
 		"repairRequests": {

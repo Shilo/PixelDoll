@@ -7,6 +7,8 @@
 	import { GENERATION_RECOMMENDATION } from '../lib/pixellab/plans.ts';
 	import { customize } from './experience/state.svelte.ts';
 	import { default as ApiPeek } from './ApiPeek.svelte';
+	import { routes } from '../lib/pixellab/routes.ts';
+	import { characterEnhanceInput } from './enhanceCharacter.ts';
 	import { createPlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import Sprite from './Sprite.svelte';
@@ -50,6 +52,22 @@
 	let referenceLoading = $state(false);
 	const frameSize = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame);
 	const errors = $derived(draftErrors(d));
+	const enhanceScope = `enhance:${crypto.randomUUID()}`;
+	const enhanceTargets = $derived(
+		(['details', 'prompt'] as const).map((target) => ({
+			scope: `character-${target}-enhance`,
+			label: t(target === 'details' ? 'create.form.enhanceDetails' : 'create.form.enhancePrompt'),
+			activityScope: `${enhanceScope}:${target}`,
+			plan: [
+				{
+					...routes.enhanceCharacterV3Prompt(characterEnhanceInput(d)),
+					label:
+						target === 'details' ? 'Enhance character details' : 'Enhance exact character prompt',
+					generations: 0.05
+				}
+			]
+		}))
+	);
 	const reference = $derived(d.reference);
 	const formSpec = $derived<CreateSpec>({
 		description: d.prompt,
@@ -147,6 +165,46 @@
 	className="character-sheet"
 	wide
 >
+	{#snippet developer()}
+		<ApiPeek
+			targets={creating?.projectId
+				? [
+						{
+							scope: 'character-create-result',
+							label: t('create.sheet.resultLabel'),
+							plan: creating.spec ? createPlan(creating.spec) : [],
+							activityScope: creating.spec?.activityScope
+						}
+					]
+				: creating
+					? [
+							{
+								scope: 'character-create-progress',
+								label: t('create.sheet.progressLabel'),
+								plan: creating.spec ? createPlan(creating.spec) : [],
+								activityScope: creating.spec?.activityScope
+							},
+							...(creating.error
+								? [
+										{
+											scope: 'character-create-retry',
+											label: t('create.sheet.retryLabel'),
+											plan: creating.spec ? createPlan(creating.spec, true) : []
+										}
+									]
+								: [])
+						]
+					: [
+							{
+								scope: 'character-create',
+								label: t('create.sheet.create'),
+								plan: createPlan(formSpec, !d.seed)
+							},
+							...enhanceTargets
+						]}
+		/>
+	{/snippet}
+
 	{#snippet heading()}{#if !creating}<label class="character-name-field"
 				><span>{t('common.name')}</span><input
 					class="bu-input input character-name"
@@ -185,12 +243,6 @@
 	{/snippet}
 	{#if creating?.projectId}
 		<div class="create-review">
-			<ApiPeek
-				scope="character-create-result"
-				label={t('create.sheet.resultLabel')}
-				plan={creating.spec ? createPlan(creating.spec) : []}
-				activityScope={creating.spec?.activityScope}
-			/>
 			<h3 style="font-size:var(--fs-title)">
 				{t('create.sheet.ready', { name: creating.spec?.name ?? '' })}
 			</h3>
@@ -230,12 +282,6 @@
 		<div class="form">
 			<div class="api-action">
 				<p style="font-weight:600">{creating.spec?.name}</p>
-				<ApiPeek
-					scope="character-create-progress"
-					label={t('create.sheet.progressLabel')}
-					plan={creating.spec ? createPlan(creating.spec) : []}
-					activityScope={creating.spec?.activityScope}
-				/>
 			</div>
 			{#if !creating.error}<ol class="steps-list">
 					{#each CREATE_STEPS as s, i (s.id)}
@@ -292,6 +338,7 @@
 			bind:busy={enhancing}
 			bind:referenceLoading
 			onconnect={connectEnhance}
+			{enhanceScope}
 		/>
 	{/if}
 
@@ -309,11 +356,7 @@
 				onclick={() => creating && discardCreate(creating.id)}>{t('common.discard')}</button
 			>
 			<span class="api-action"
-				><ApiPeek
-					scope="character-create-retry"
-					label={t('create.sheet.retryLabel')}
-					plan={creating.spec ? createPlan(creating.spec, true) : []}
-				/><button
+				><button
 					class="bu-action btn primary"
 					data-variant="primary"
 					disabled={creating.running}
@@ -337,11 +380,7 @@
 		{:else}
 			<span class="foot-note creator-cost" title={t('create.sheet.costTitle')}>~{gensRange}</span>
 			<span class="api-action"
-				><ApiPeek
-					scope="character-create"
-					label={t('create.sheet.create')}
-					plan={createPlan(formSpec, !d.seed)}
-				/><button
+				><button
 					class="bu-action btn primary lg"
 					data-variant="primary"
 					disabled={!!errors.length || enhancing || referenceLoading}

@@ -4,7 +4,8 @@
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
-	import { Archive, Download, Info, KeyRound, Moon, Settings2, Shirt, Sun } from './icons.ts';
+	import { Archive, CodeXml, Download, Info, KeyRound, Moon, Settings2, Shirt, Sun } from './icons.ts';
+	import DeveloperSettings from './DeveloperSettings.svelte';
 	import LanguagePicker from './LanguagePicker.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
 	import AboutSettings from './AboutSettings.svelte';
@@ -112,6 +113,12 @@
 					terms: ['librarySettings.emptyRestore']
 				}
 			]
+		},
+		{
+			id: 'developer',
+			label: settingsLabels.developer,
+			icon: CodeXml,
+			entries: [{ id: 'developer-mode', label: 'developer.mode' }]
 		},
 		{
 			id: 'about',
@@ -305,6 +312,8 @@
 				{@render exportSettings(targetEntry)}
 			{:else if active.id === 'library'}
 				<LibrarySettings bind:busy={libraryBusy} />
+			{:else if active.id === 'developer'}
+				<DeveloperSettings />
 			{:else if active.id === 'about'}
 				<AboutSettings />
 			{:else}

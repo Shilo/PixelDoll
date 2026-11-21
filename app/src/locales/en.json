@@ -40,6 +40,17 @@
 		"noResults": "No settings match your search.",
 		"all": "All settings"
 	},
+	"developer": {
+		"title": "Developer",
+		"mode": "Developer mode",
+		"notSaved": "Developer mode changed for this tab only. The browser could not save it.",
+		"pages": "Developer pages (M1 to M5)",
+		"rigs": "Developer rigs",
+		"target": "API call scope",
+		"copyId": "Copy ID",
+		"idCopied": "ID copied",
+		"idCopyFailed": "Could not copy the ID."
+	},
 	"common": {
 		"loadFailed": "Part of PixelDoll could not load. Reload to try again.",
 		"advanced": "Advanced",
@@ -391,8 +402,6 @@
 		"redrawItem": "Redraw item",
 		"repairFeature": "Repair item",
 		"redrawFeature": "Redraw item",
-		"inspectRepair": "Inspect API calls for repair item",
-		"inspectRedraw": "Inspect API calls for redraw item",
 		"repairHelp": "Best when you like the design. Limits changes to the item area.",
 		"redrawHelp": "May change the shape or grip. You choose whether to keep it.",
 		"repairRequests": {

@@ -40,6 +40,17 @@
 		"noResults": "Aramanızla eşleşen ayar bulunamadı.",
 		"all": "Tüm ayarlar"
 	},
+	"developer": {
+		"title": "Geliştirici",
+		"mode": "Geliştirici modu",
+		"notSaved": "Tarayıcı değişikliği kaydedemedi. Değişiklik yalnızca bu sekmede geçerli.",
+		"pages": "Geliştirici sayfaları (M1–M5)",
+		"rigs": "Geliştirici rig’leri",
+		"target": "API çağrılarının kapsamı",
+		"copyId": "Kimliği kopyala",
+		"idCopied": "Kimlik kopyalandı",
+		"idCopyFailed": "Kimlik kopyalanamadı."
+	},
 	"common": {
 		"loadFailed": "PixelDoll'un bir bölümü yüklenemedi. Yeniden denemek için sayfayı yenileyin.",
 		"advanced": "Gelişmiş",
@@ -391,8 +402,6 @@
 		"redrawItem": "Eşyayı yeniden çizin",
 		"repairFeature": "Eşya onarımı",
 		"redrawFeature": "Eşyayı yeniden çizme",
-		"inspectRepair": "Eşya onarımı için API çağrılarını inceleyin",
-		"inspectRedraw": "Eşyayı yeniden çizmek için API çağrılarını inceleyin",
 		"repairHelp": "Tasarımı beğendiyseniz en iyi seçenektir. Değişiklikleri eşyanın alanıyla sınırlar.",
 		"redrawHelp": "Şekil veya tutuş değişebilir. Saklayıp saklamayacağınıza siz karar verirsiniz.",
 		"repairRequests": {

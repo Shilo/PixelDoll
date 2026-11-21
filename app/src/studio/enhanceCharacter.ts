@@ -1,9 +1,21 @@
+import { styleOf, type CharacterDraft } from './characterConfig.ts';
 import { api } from '../lib/pixellab/client.ts';
 import {
 	routes,
 	type EnhanceCharacterV3Prompt,
 	type EnhancedCharacterV3Prompt
 } from '../lib/pixellab/routes.ts';
+
+export function characterEnhanceInput(draft: CharacterDraft): EnhanceCharacterV3Prompt {
+	const { outline, detail } = styleOf(draft);
+	return {
+		description: draft.prompt,
+		image_size: { width: draft.body || 0, height: draft.body || 0 },
+		view: draft.view,
+		...(outline ? { outline } : {}),
+		...(detail ? { detail } : {})
+	};
+}
 
 /** Foreground, single submission. Never retry an ambiguous paid result. */
 export async function enhanceCharacter(

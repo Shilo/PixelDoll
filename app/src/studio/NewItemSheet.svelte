@@ -215,11 +215,7 @@
 		>{plan ? t('newItem.footNote', { minutes: formatNumber(plan.minutes) }) : ''}</span
 	>
 	<span class="api-action"
-		><ApiPeek
-			scope="item-make"
-			label={t('newItem.makeLabel')}
-			plan={itemPlan(m && rec ? ({ rec: { ...rec, manifest: m } } as RigCtx) : null, input)}
-		/><button
+		><button
 			class="bu-action btn primary lg"
 			data-variant="primary"
 			disabled={!canMake}
@@ -237,6 +233,18 @@
 	onclose={() => (ui.sheet = null)}
 	footer={isDemo() ? undefined : foot}
 >
+	{#snippet developer()}
+		<ApiPeek
+			targets={[
+				{
+					scope: 'item-make',
+					label: t('newItem.makeLabel'),
+					plan: itemPlan(m && rec ? ({ rec: { ...rec, manifest: m } } as RigCtx) : null, input)
+				}
+			]}
+		/>
+	{/snippet}
+
 	{#if isDemo()}
 		<div class="notice small">
 			<Sparkles size={16} />

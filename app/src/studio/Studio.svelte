@@ -7,12 +7,11 @@
 	import './experience/layout.css';
 	import { rememberActivation } from './experience/focus.ts';
 	import { backFromSettings, settingsNavigation } from './settingsNavigation.svelte.ts';
+	import { localDeveloperToolsEnabled } from './developerMode.svelte.ts';
 	import Experience from './experience/Experience.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
-	import Stage from './Stage.svelte';
-	import Sheet from './Sheet.svelte';
 	import Lazy from './Lazy.svelte';
 	import RenameSheet from './RenameSheet.svelte';
 	import DeleteSheet from './DeleteSheet.svelte';
@@ -115,8 +114,9 @@
 		void (async () => {
 			const listed = await refreshProjects();
 			const initial = lastProject();
+			const initialProject = store.projects.find((project) => project.id === initial);
 			await openProject(
-				workspaceCopy && !store.projects.some((project) => project.id === initial)
+				(workspaceCopy && !initialProject) || (initialProject?.dev && !localDeveloperToolsEnabled())
 					? 'fixture:s2'
 					: initial
 			);
@@ -366,14 +366,7 @@
 		</div>{/if}
 	{#if !ui.sheet}<Toast />{/if}
 
-	{#if ui.sheet === 'inspect'}<Sheet
-			title={t('studio.titleInspectCharacter')}
-			cancel="common.done"
-			className="inspection-sheet"
-			wide
-			onclose={() => (ui.sheet = null)}
-			><div class="inspection-stage"><Stage /><Lazy load={parts.notes} sheet={false} /></div></Sheet
-		>{/if}
+	{#if ui.sheet === 'inspect'}<Lazy load={parts.notes} />{/if}
 	{#if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}
 	{#if ui.sheet === 'create'}<Lazy load={parts.create} />{/if}
 	{#if ui.sheet === 'newitem'}<Lazy load={parts.newitem} />{/if}
@@ -396,16 +389,10 @@
 	{#if ui.sheet === 'slots'}<Lazy load={parts.slots} />{/if}
 	{#if ui.sheet === 'frames' && store.project}<Lazy load={parts.frames} />{/if}
 	{#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
-		<Sheet title={t('studio.titleItem')} cancel="common.done" onclose={() => (ui.sheet = null)}
-			><Lazy load={parts.item} id={ui.selected} /></Sheet
-		>
+		<Lazy load={parts.item} id={ui.selected} />
 	{/if}
 	{#if ui.sheet === 'gen' && genOf(ui.selected)}
-		<Sheet
-			title={t('studio.titleItemReview')}
-			cancel="common.done"
-			onclose={() => (ui.sheet = null)}><Lazy load={parts.gen} g={genOf(ui.selected)!} /></Sheet
-		>
+		<Lazy load={parts.gen} g={genOf(ui.selected)!} />
 	{/if}
 </div>
 

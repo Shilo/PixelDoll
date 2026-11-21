@@ -103,14 +103,42 @@
 	cancel={active ? 'common.hide' : 'sheet.later'}
 	onclose={() => (ui.sheet = null)}
 >
+	{#snippet developer()}
+		<ApiPeek
+			targets={mine && settingUp.spec
+				? [
+						{
+							scope: 'character-setup-progress',
+							label: t('setup.currentRigSetup'),
+							plan: setupPeekPlan(plan, settingUp.spec.looks),
+							activityScope: settingUp.spec.activityScope
+						},
+						...(settingUp.error && !settingUp.done
+							? [
+									{
+										scope: 'character-setup-resume',
+										label: t('setup.resumeRigSetup'),
+										plan: setupPeekPlan(plan, settingUp.spec?.looks ?? looks),
+										activityScope: settingUp.spec?.activityScope
+									}
+								]
+							: [])
+					]
+				: active
+					? []
+					: [
+							{
+								scope: 'character-setup',
+								label: t('setup.setUpRig'),
+								plan: setupPeekPlan(plan, looks)
+							}
+						]}
+		/>
+	{/snippet}
+
 	{#if mine && settingUp.spec}
 		<div class="api-action">
-			<span class="small muted">{t('setup.rigSetup')}</span><ApiPeek
-				scope="character-setup-progress"
-				label={t('setup.currentRigSetup')}
-				plan={setupPeekPlan(plan, settingUp.spec.looks)}
-				activityScope={settingUp.spec.activityScope}
-			/>
+			<span class="small muted">{t('setup.rigSetup')}</span>
 		</div>
 		{#if settingUp.done}<p class="notice ok">
 				<Check size={16} />{t('setup.ready')}
@@ -200,13 +228,10 @@
 					ui.sheet = null;
 				}}>{t('create.sheet.startDressing')}</button
 			>
-		{:else if mine && settingUp.error}<ApiPeek
-				scope="character-setup-resume"
-				label={t('setup.resumeRigSetup')}
-				plan={setupPeekPlan(plan, settingUp.spec?.looks ?? looks)}
-				activityScope={settingUp.spec?.activityScope}
-			/><button class="bu-action btn plain" data-variant="quiet" onclick={dismissSetup}
-				>{t('setup.dismiss')}</button
+		{:else if mine && settingUp.error}<button
+				class="bu-action btn plain"
+				data-variant="quiet"
+				onclick={dismissSetup}>{t('setup.dismiss')}</button
 			><span class="api-action"
 				><button
 					class="bu-action btn primary"
@@ -222,11 +247,7 @@
 				onclick={() => (ui.sheet = null)}>{t('common.hide')}</button
 			>
 		{:else}<span class="foot-note">{t('setup.pixelsUnchanged')}</span><span class="api-action"
-				><ApiPeek
-					scope="character-setup"
-					label={t('setup.setUpRig')}
-					plan={setupPeekPlan(plan, looks)}
-				/><button
+				><button
 					class="bu-action btn primary"
 					data-variant="primary"
 					disabled={!plan || !looks.trim() || busyElsewhere}

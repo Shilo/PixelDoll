@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Sheet from './Sheet.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { formatNumber, getLocale, t } from 'svelte-whisper';
@@ -328,524 +329,553 @@
 	}
 </script>
 
-{#if m && it && view.project}
-	<div class="insp-body">
-		<header class="insp-head">
-			<h2 class="insp-title">{it.name}</h2>
-			<p class="insp-sub">
-				<span>{slotName(it.slot)}</span>
-				{#if health !== 'demo' || isDemo()}<span class="badge {health}"
-						>{#if health === 'clean'}<CircleCheck
-								size={12}
-							/>{:else if health === 'unfitted'}<Puzzle
-								size={12}
-							/>{:else if health !== 'demo'}<TriangleAlert size={12} />{/if}{displayMessage(
-							HEALTH_LABEL[health]
-						)}</span
-					>{/if}
-				{#if hiddenNow}<span class="badge">{t('itemPane.hiddenByAnotherItem')}</span>{/if}
-			</p>
-		</header>
-
-		{#if anim}
-			<div
-				class="dir-strip"
-				style:--preview-width="{Math.max(60, ((strip[0]?.w ?? 0) * k) / ui.dpr)}px"
-				aria-label={t('itemPane.nameInEveryDirection', { name: it.name })}
-			>
-				{#each m.rig.directions as d, i (d.id)}
-					{#if strip[i] && made.includes(d.id)}<figure>
-							<Sprite
-								img={strip[i]}
-								{k}
-								w={strip[i].w}
-								h={strip[i].h}
-								limit={72}
-								label={t('itemPane.labelNameFacingId', { name: it.name, id: directionName(d.id) })}
-							/>{displayDirectionShort(d.id)}
-						</figure>{/if}
-				{/each}
-			</div>
-		{/if}
-
-		<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
-		<!-- An unfitted copy keeps its source's pixels, so the source's accepted design findings still describe them. -->
-		{#if designReasons.length && !it.refit}
-			<div class="field">
-				<span class="sec-title">{t('itemPane.acceptedAppearanceWarnings')}</span>
-				<ul class="reasons small">
-					{#each designReasons as reason (reason)}<li>
-							<TriangleAlert size={12} />{reason}
-						</li>{/each}
-				</ul>
-			</div>
-		{/if}
-		{#if (health === 'look' || health === 'unfitted' || health === 'accepted') && reasons.length}
-			<ul class="reasons small">
-				{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}
-			</ul>
-		{/if}
-		{#if notes.length}
-			<div class="field">
-				<p class="small" id="refit-{it.id}">
-					{t('itemPane.refitIntro', {
-						from: it.copiedFrom?.name ?? t('studioModel.anotherCharacter')
-					})}
+<Sheet title={t('studio.titleItem')} cancel="common.done" onclose={() => (ui.sheet = null)}>
+	{#snippet developer()}
+		<ApiPeek
+			targets={[
+				...(it && !(freeFrames && it.copiedFrom && !isDemo()) && missingMoves.length
+					? [
+							{
+								scope: 'item-missing-move',
+								label: t('itemPane.labelMakeNameForMissingName', { name: it.name, missingName }),
+								plan:
+									m && missingOffer?.specs[0]
+										? movePlan({ manifest: m }, missingOffer.specs[0])
+										: []
+							}
+						]
+					: []),
+				...(!isDemo() && repairSpec
+					? [
+							{
+								scope: 'item-repair',
+								label: t('itemPane.repairItem'),
+								plan:
+									repairOffer?.specs[0] && m ? movePlan({ manifest: m }, repairOffer.specs[0]) : []
+							},
+							{
+								scope: 'item-redraw',
+								label: t('itemPane.redrawItem'),
+								plan:
+									redrawOffer?.specs[0] && m ? movePlan({ manifest: m }, redrawOffer.specs[0]) : []
+							}
+						]
+					: [])
+			]}
+			copyId={it?.id}
+		/>
+	{/snippet}
+	{#if m && it && view.project}
+		<div class="insp-body">
+			<header class="insp-head">
+				<h2 class="insp-title">{it.name}</h2>
+				<p class="insp-sub">
+					<span>{slotName(it.slot)}</span>
+					{#if health !== 'demo' || isDemo()}<span class="badge {health}"
+							>{#if health === 'clean'}<CircleCheck
+									size={12}
+								/>{:else if health === 'unfitted'}<Puzzle
+									size={12}
+								/>{:else if health !== 'demo'}<TriangleAlert size={12} />{/if}{displayMessage(
+								HEALTH_LABEL[health]
+							)}</span
+						>{/if}
+					{#if hiddenNow}<span class="badge">{t('itemPane.hiddenByAnotherItem')}</span>{/if}
 				</p>
-				<ul class="refit-notes" aria-labelledby="refit-{it.id}">
-					{#each notes as note (note.text)}<li>
-							<button
-								class="bu-action btn sm plain"
-								data-variant="quiet"
-								title={t('itemPane.titleShowThisFrame')}
-								onclick={() => {
-									showFrame(note.anim, note.dir, note.frame);
-									// The details sheet covers the stage: close it to show the frame.
-									if (ui.sheet === 'item') ui.sheet = null;
-								}}><TriangleAlert size={12} />{note.text}</button
-							>
-						</li>{/each}
-				</ul>
-			</div>
-		{/if}
-		{#if !isDemo() && repairBusy && (repairSpec || colorPlan || it.qa?.status === 'warn' || it.qa?.status === 'fail')}
-			<p class="notice small" role="status">
-				{t('itemPane.pendingWorkBusy')}
-				<button
-					class="bu-action btn sm plain"
-					data-variant="quiet"
-					onclick={() => void openPendingWork({ flows: true })}
-					>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
-				>
-			</p>
-		{/if}
-		{#if it.unfitted}<p class="notice warn small">
-				<Puzzle size={14} />{unfitText(
-					m,
-					it.copiedFrom?.name ?? t('studioModel.anotherCharacter'),
-					it.unfitted,
-					t
-				)}{#if !isDemo()}{' '}{t('itemPane.remakeToFit', { name: m.name })}{/if}
-			</p>{/if}
-		<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
-		{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}
-			<div class="field">
-				<p class="notice warn small">
-					{t('itemPane.checksFoundIssuesNoPaidRetryWas')}
-				</p>
-				<button
-					class="bu-action btn"
-					data-variant="outline"
-					disabled={acceptingIssues || repairBusy}
-					onclick={acceptIssues}>{t('itemPane.acceptAsIs')}</button
-				>
-				<p class="faint small">
-					{t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits')}
-				</p>
-				{#if acceptanceError}<p class="notice bad small" role="alert">
-						{displayMessage(acceptanceError)}
-					</p>{/if}
-			</div>
-		{:else if health === 'accepted'}
-			<p class="muted small">{t('itemPane.youAcceptedThisArtworkWithItsRecorded')}</p>
-		{/if}
-		{#if moveGaps.length}<p class="notice warn small">
-				<TriangleAlert size={14} />{t('itemPane.moveGaps', {
-					move: moveName,
-					directions:
-						getLocale() === 'en' ? moveGaps.join(', ') : formatList(moveGaps.map(directionName))
-				})}{#if remakeOnly && !isDemo() && !freeFrames}
-					{t('itemPane.remakeAllMoves', { name: m.name })}{/if}
-			</p>{/if}
-		{#if restorable.length}
-			<div class="field">
-				<button
-					class="bu-action btn"
-					data-variant="primary"
-					disabled={!!shared.adding}
-					onclick={() => restoreFromDesign(it.id)}
-					>{t('itemPane.restoreStanding', { count: restorable.length })}
-					<span class="cost">{t('common.free')}</span></button
-				>
-				<p class="faint small">
-					{t('itemPane.restoreStandingHint', {
-						count: restorable.length,
-						directions: formatList(restorable.map(directionName))
-					})}
-				</p>
-			</div>
-		{/if}
-		{#if freeFrames && it.copiedFrom && !isDemo()}
-			<!-- An exact copy whose source item gained frames for this body since: copied over for free, not made again. -->
-			<div class="field">
-				<button
-					class="bu-action btn"
-					data-variant="outline"
-					disabled={!!shared.adding}
-					onclick={() => copyFromSource(it.id)}
-					>{t('itemPane.copyFrom', { name: it.copiedFrom.name })}
-					<span class="cost">{t('common.free')}</span></button
-				>
-				<p class="faint small">
-					{t('itemPane.copyFrames', {
-						from: it.copiedFrom.name,
-						name: m.name,
-						count: freeFrames,
-						n: number(freeFrames)
-					})}
-				</p>
-			</div>
-		{:else if missingMoves.length}
-			<div class="field">
-				{#if missingMoves.length > 1}<label class="field"
-						><span class="label small">{t('itemPane.generateItemForMove')}</span><select
-							class="bu-input input"
-							value={missingMove?.id}
-							onchange={(e) => (chosenMove = e.currentTarget.value)}
-							>{#each missingMoves as move (move.id)}<option value={move.id}
-									>{displayMove(move.id, moveIds)}</option
-								>{/each}</select
-						></label
-					>{/if}
-				<span class="api-action"
-					><ApiPeek
-						scope="item-missing-move"
-						label={t('itemPane.labelMakeNameForMissingName', { name: it.name, missingName })}
-						plan={m && missingOffer?.specs[0]
-							? movePlan({ manifest: m }, missingOffer.specs[0])
-							: []}
-					/><button
-						class="bu-action btn"
-						data-variant="outline"
-						disabled={missingOffer?.gens == null || tierBlocked(missingTier)}
-						aria-describedby={tierBlocked(missingTier) ? 'item-missing-tier' : undefined}
-						onclick={makeMissing}
-						>{t('itemPane.makeFor', { move: missingName })}
-						<span class="cost"
-							>{missingOffer?.gens == null
-								? t('common.unavailable')
-								: t('moves.estimate', { gens: number(Math.ceil(missingOffer.gens)) })}</span
-						></button
-					></span
-				>
-				{#if missingOffer?.error}<p class="notice warn small" role="status">
-						{displayMessage(missingOffer.error)}
-					</p>{/if}
-				{#if missingTier}<TierNotice
-						id="item-missing-tier"
-						minimumTier={missingTier}
-						feature={t('itemPane.makingMoreMoves')}
-					/>{/if}
-				<p class="faint small">
-					{t('itemPane.generatesOnlyThisItemSMissingViews')}
-				</p>
-			</div>
-		{/if}
-		{#if health === 'stale'}<p class="notice warn small">
-				<TriangleAlert size={14} />{t('itemPane.madeForAnotherBodyItMayNot')}
-			</p>{/if}
+			</header>
 
-		{#if !isDemo() && repairSpec}
-			<div class="field">
-				<p class="faint small">
-					{t(
-						m?.rig.directions.some((direction) => direction.mirrorOf === sourceDir)
-							? 'itemPane.updateNoteMirrors'
-							: 'itemPane.updateNote',
-						{
-							move: moveName,
-							direction:
-								getLocale() === 'en' ? sourceDir.replaceAll('-', ' ') : directionName(sourceDir)
-						}
-					)}
-				</p>
-				{#each [{ id: 'repair', label: t('itemPane.repairItem'), trigger: t('itemPane.inspectRepair'), feature: t('itemPane.repairFeature'), offer: repairOffer, help: t('itemPane.repairHelp') }, { id: 'redraw', label: t('itemPane.redrawItem'), trigger: t('itemPane.inspectRedraw'), feature: t('itemPane.redrawFeature'), offer: redrawOffer, help: t('itemPane.redrawHelp') }] as choice (choice.id)}
-					{@const tier = offerTier(choice.offer)}
-					{@const spec = choice.offer?.specs[0]}
-					{@const plan = m && spec ? movePlan({ manifest: m }, spec) : []}
-					{@const requests = plan.filter((call) => call.method === 'POST').length}
-					<span class="api-action">
-						<ApiPeek
-							scope={`item-${choice.id}`}
-							label={choice.label}
-							triggerLabel={choice.trigger}
-							{plan}
-						/>
-						<button
-							class="bu-action btn"
-							data-variant={choice.id === 'repair' && repairLeads ? 'primary' : 'outline'}
-							disabled={repairBusy || choice.offer?.gens == null || tierBlocked(tier)}
-							aria-describedby={tierBlocked(tier)
-								? `item-${choice.id}-tier`
-								: `item-${choice.id}-help item-repair-billing`}
-							onclick={() => repairFrames(choice.offer, tier)}
-							>{choice.label}
-							<span class="cost"
-								>{choice.offer?.gens == null
-									? t('common.unavailable')
-									: t('moves.estimate', { gens: number(Math.ceil(choice.offer.gens)) })}</span
-							></button
-						>
-					</span>
-					<p class="faint small" id={`item-${choice.id}-help`}>
-						{choice.help}{#if requests > 1}
-							{t(choice.id === 'repair' ? 'itemPane.repairRequests' : 'itemPane.redrawRequests', {
-								count: requests,
-								n: number(requests)
-							})}{/if}
-						{#if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens < repairOffer.gens}
-							{@const saved = Math.ceil(repairOffer.gens) - Math.ceil(redrawOffer.gens)}
-							{t('itemPane.redrawSaves', { count: saved, n: number(saved) })}
-						{:else if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens > repairOffer.gens}
-							{@const extra = Math.ceil(redrawOffer.gens) - Math.ceil(repairOffer.gens)}
-							{t('itemPane.redrawCostsMore', { count: extra, n: number(extra) })}
-						{/if}
-					</p>
-					{#if choice.offer?.error}<p class="notice warn small" role="status">
-							{displayMessage(choice.offer.error)}
-						</p>{/if}
-					{#if tier}<TierNotice
-							id={`item-${choice.id}-tier`}
-							minimumTier={tier}
-							feature={choice.feature}
-						/>{/if}
-				{/each}
-				<p class="faint small" id="item-repair-billing">{t('itemPane.billingNote')}</p>
-			</div>
-		{/if}
-
-		{#if !isDemo() && colorPlan}
-			<div class="field">
-				<button
-					class="bu-action btn"
-					data-variant="outline"
-					disabled={colorBusy || repairBusy}
-					onclick={matchColors}
-					>{colorBusy ? t('itemPane.matchingColors') : t('itemPane.matchItemColors')}
-					<span class="cost">{t('common.free')}</span></button
+			{#if anim}
+				<div
+					class="dir-strip"
+					style:--preview-width="{Math.max(60, ((strip[0]?.w ?? 0) * k) / ui.dpr)}px"
+					aria-label={t('itemPane.nameInEveryDirection', { name: it.name })}
 				>
-				<p class="faint small">
-					{t('itemPane.colorMatchNote', {
-						pixels: t('itemPane.pixels', {
-							count: colorPlan.changedPixels,
-							n: number(colorPlan.changedPixels)
-						}),
-						move: moveName,
-						count: colorPlan.changedFrames.length,
-						n: number(colorPlan.changedFrames.length),
-						direction:
-							getLocale() === 'en' ? sourceDir.replaceAll('-', ' ') : directionName(sourceDir)
-					})}
-					{#if sourceDir !== ui.dir}{t('itemPane.itsMirroredViewsUpdateToo')}{/if}
-					{t('itemPane.colorMatchFixed')}
-					{#if colorPlan.unmatchedPixels}{t('itemPane.colorMatchUnmatched', {
-							count: colorPlan.unmatchedPixels,
-							n: number(colorPlan.unmatchedPixels)
-						})}{/if}
-					{t('itemPane.colorMatchFree')}
-				</p>
-			</div>
-		{/if}
-		{#if colorError}<p class="notice bad small">
-				<TriangleAlert size={14} />{displayMessage(colorError)}
-			</p>{/if}
-		{#if colorDone}<p class="notice small">
-				{t('itemPane.colorsMatched', {
-					pixels: t('itemPane.pixels', { count: colorDone.pixels, n: number(colorDone.pixels) }),
-					frames: t('itemPane.frames', { count: colorDone.frames, n: number(colorDone.frames) })
-				})}
-			</p>{/if}
-
-		<div class="actions">
-			<button
-				class="bu-action btn {on ? '' : 'primary'}"
-				data-variant="outline"
-				onclick={() => wear(it.id)}>{on ? t('common.takeOff') : t('common.wear')}</button
-			>
-			{#if !isDemo() && it.prompt}
-				<!-- A fitted copy is remade for this body like any shared item that does not fit it, named from its description. -->
-				<button
-					class="bu-action btn"
-					data-variant="outline"
-					onclick={() =>
-						openNewItem(it.slot, {
-							slot: it.slot,
-							prompt: it.prompt,
-							route: it.route
-						})}
-					><RefreshCw size={14} />{openerLabel(
-						remakeOnly ? t('itemMenu.makeOneForName', { name: m.name }) : t('common.tryAgain')
-					)}<SurfaceChevron /></button
-				>
-			{/if}
-			{#if !isDemo()}
-				<button
-					class="bu-action btn plain danger"
-					data-variant="quiet"
-					onclick={() => (confirmRemove = true)}
-					><Trash size={14} />{openerLabel(t('itemMenu.labelDeleteItem'))}<SurfaceChevron /></button
-				>
-			{/if}
-		</div>
-
-		<div class="item-links">
-			{#if recolorable}
-				<!-- Colors live in the Colors tab; this opens it on the item's own section. -->
-				<button class="bu-action btn plain recolor-link" data-variant="quiet" onclick={recolor}
-					><Palette size={14} />{t('itemPane.recolor')}</button
-				>
-			{/if}
-			<button class="bu-action btn plain" data-variant="quiet" onclick={() => openFrames(it.id)}
-				><Grid2x2 size={14} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
-			>
-		</div>
-
-		<div class="field">
-			<span class="sec-title">{t('itemPane.layerOrder')}</span>
-			<div class="actions">
-				<button
-					class="bu-action btn sm"
-					data-variant="outline"
-					onclick={() => moveLayer(it.id, 1, onlyDir)}
-					title={t('itemPane.titleDrawInFrontOfTheNext')}
-					><ArrowUp size={14} />{t('itemPane.forward')}</button
-				>
-				<button
-					class="bu-action btn sm"
-					data-variant="outline"
-					onclick={() => moveLayer(it.id, -1, onlyDir)}
-					title={t('itemPane.titleDrawBehindThePreviousLayer')}
-					><ArrowDown size={14} />{t('itemPane.backward')}</button
-				>
-				{#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(ladder)}<button
-						class="bu-action btn sm plain"
-						data-variant="quiet"
-						onclick={() => resetLayer(it.id, ladder)}>{t('itemPane.reset')}</button
-					>{/if}
-			</div>
-			<label class="check small"
-				><input type="checkbox" bind:checked={onlyDir} />{t('itemPane.onlyFacing', {
-					direction: getLocale() === 'en' ? ui.dir.replaceAll('-', ' ') : directionName(ui.dir)
-				})}</label
-			>
-		</div>
-
-		{#if others.length}
-			<div class="field">
-				<span class="sec-title" id="hide-{it.id}">{t('itemPane.whenWornHide')}</span>
-				<div class="chips" role="group" aria-labelledby="hide-{it.id}">
-					{#each others as s (s.id)}
-						{@const on = hides.includes(s.id)}
-						<button class="chip" aria-pressed={on} onclick={() => toggleHide(it.id, s.id)}
-							>{#if on}<Check size={12} strokeWidth={2.5} />{/if}{slotName(s.id)}</button
-						>
+					{#each m.rig.directions as d, i (d.id)}
+						{#if strip[i] && made.includes(d.id)}<figure>
+								<Sprite
+									img={strip[i]}
+									{k}
+									w={strip[i].w}
+									h={strip[i].h}
+									limit={72}
+									label={t('itemPane.labelNameFacingId', {
+										name: it.name,
+										id: directionName(d.id)
+									})}
+								/>{displayDirectionShort(d.id)}
+							</figure>{/if}
 					{/each}
 				</div>
-				<p class="faint small">
-					{t('itemPane.hideWhenWorn', { name: it.name })}
-					{#if tucks.length}{' '}{t('itemPane.tuckNote', {
-							slots: formatList(tucks.map(slotName))
-						})}{/if}
+			{/if}
+
+			<!-- A re-fit names its source's design findings among its fit notes, on this body's frames. -->
+			<!-- An unfitted copy keeps its source's pixels, so the source's accepted design findings still describe them. -->
+			{#if designReasons.length && !it.refit}
+				<div class="field">
+					<span class="sec-title">{t('itemPane.acceptedAppearanceWarnings')}</span>
+					<ul class="reasons small">
+						{#each designReasons as reason (reason)}<li>
+								<TriangleAlert size={12} />{reason}
+							</li>{/each}
+					</ul>
+				</div>
+			{/if}
+			{#if (health === 'look' || health === 'unfitted' || health === 'accepted') && reasons.length}
+				<ul class="reasons small">
+					{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}
+				</ul>
+			{/if}
+			{#if notes.length}
+				<div class="field">
+					<p class="small" id="refit-{it.id}">
+						{t('itemPane.refitIntro', {
+							from: it.copiedFrom?.name ?? t('studioModel.anotherCharacter')
+						})}
+					</p>
+					<ul class="refit-notes" aria-labelledby="refit-{it.id}">
+						{#each notes as note (note.text)}<li>
+								<button
+									class="bu-action btn sm plain"
+									data-variant="quiet"
+									title={t('itemPane.titleShowThisFrame')}
+									onclick={() => {
+										showFrame(note.anim, note.dir, note.frame);
+										// The details sheet covers the stage: close it to show the frame.
+										if (ui.sheet === 'item') ui.sheet = null;
+									}}><TriangleAlert size={12} />{note.text}</button
+								>
+							</li>{/each}
+					</ul>
+				</div>
+			{/if}
+			{#if !isDemo() && repairBusy && (repairSpec || colorPlan || it.qa?.status === 'warn' || it.qa?.status === 'fail')}
+				<p class="notice small" role="status">
+					{t('itemPane.pendingWorkBusy')}
+					<button
+						class="bu-action btn sm plain"
+						data-variant="quiet"
+						onclick={() => void openPendingWork({ flows: true })}
+						>{openerLabel(t('deleteSheet.viewPendingWork'))}<SurfaceChevron /></button
+					>
 				</p>
+			{/if}
+			{#if it.unfitted}<p class="notice warn small">
+					<Puzzle size={14} />{unfitText(
+						m,
+						it.copiedFrom?.name ?? t('studioModel.anotherCharacter'),
+						it.unfitted,
+						t
+					)}{#if !isDemo()}{' '}{t('itemPane.remakeToFit', { name: m.name })}{/if}
+				</p>{/if}
+			<!-- A re-fit's issues are its fit, which only a new item for this body fixes: nothing to accept. -->
+			{#if !isDemo() && !it.refit && !it.unfitted && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}
+				<div class="field">
+					<p class="notice warn small">
+						{t('itemPane.checksFoundIssuesNoPaidRetryWas')}
+					</p>
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						disabled={acceptingIssues || repairBusy}
+						onclick={acceptIssues}>{t('itemPane.acceptAsIs')}</button
+					>
+					<p class="faint small">
+						{t('itemPane.acceptsTheCurrentArtworkWithoutSpendingCredits')}
+					</p>
+					{#if acceptanceError}<p class="notice bad small" role="alert">
+							{displayMessage(acceptanceError)}
+						</p>{/if}
+				</div>
+			{:else if health === 'accepted'}
+				<p class="muted small">{t('itemPane.youAcceptedThisArtworkWithItsRecorded')}</p>
+			{/if}
+			{#if moveGaps.length}<p class="notice warn small">
+					<TriangleAlert size={14} />{t('itemPane.moveGaps', {
+						move: moveName,
+						directions:
+							getLocale() === 'en' ? moveGaps.join(', ') : formatList(moveGaps.map(directionName))
+					})}{#if remakeOnly && !isDemo() && !freeFrames}
+						{t('itemPane.remakeAllMoves', { name: m.name })}{/if}
+				</p>{/if}
+			{#if restorable.length}
+				<div class="field">
+					<button
+						class="bu-action btn"
+						data-variant="primary"
+						disabled={!!shared.adding}
+						onclick={() => restoreFromDesign(it.id)}
+						>{t('itemPane.restoreStanding', { count: restorable.length })}
+						<span class="cost">{t('common.free')}</span></button
+					>
+					<p class="faint small">
+						{t('itemPane.restoreStandingHint', {
+							count: restorable.length,
+							directions: formatList(restorable.map(directionName))
+						})}
+					</p>
+				</div>
+			{/if}
+			{#if freeFrames && it.copiedFrom && !isDemo()}
+				<!-- An exact copy whose source item gained frames for this body since: copied over for free, not made again. -->
+				<div class="field">
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						disabled={!!shared.adding}
+						onclick={() => copyFromSource(it.id)}
+						>{t('itemPane.copyFrom', { name: it.copiedFrom.name })}
+						<span class="cost">{t('common.free')}</span></button
+					>
+					<p class="faint small">
+						{t('itemPane.copyFrames', {
+							from: it.copiedFrom.name,
+							name: m.name,
+							count: freeFrames,
+							n: number(freeFrames)
+						})}
+					</p>
+				</div>
+			{:else if missingMoves.length}
+				<div class="field">
+					{#if missingMoves.length > 1}<label class="field"
+							><span class="label small">{t('itemPane.generateItemForMove')}</span><select
+								class="bu-input input"
+								value={missingMove?.id}
+								onchange={(e) => (chosenMove = e.currentTarget.value)}
+								>{#each missingMoves as move (move.id)}<option value={move.id}
+										>{displayMove(move.id, moveIds)}</option
+									>{/each}</select
+							></label
+						>{/if}
+					<span class="api-action"
+						><button
+							class="bu-action btn"
+							data-variant="outline"
+							disabled={missingOffer?.gens == null || tierBlocked(missingTier)}
+							aria-describedby={tierBlocked(missingTier) ? 'item-missing-tier' : undefined}
+							onclick={makeMissing}
+							>{t('itemPane.makeFor', { move: missingName })}
+							<span class="cost"
+								>{missingOffer?.gens == null
+									? t('common.unavailable')
+									: t('moves.estimate', { gens: number(Math.ceil(missingOffer.gens)) })}</span
+							></button
+						></span
+					>
+					{#if missingOffer?.error}<p class="notice warn small" role="status">
+							{displayMessage(missingOffer.error)}
+						</p>{/if}
+					{#if missingTier}<TierNotice
+							id="item-missing-tier"
+							minimumTier={missingTier}
+							feature={t('itemPane.makingMoreMoves')}
+						/>{/if}
+					<p class="faint small">
+						{t('itemPane.generatesOnlyThisItemSMissingViews')}
+					</p>
+				</div>
+			{/if}
+			{#if health === 'stale'}<p class="notice warn small">
+					<TriangleAlert size={14} />{t('itemPane.madeForAnotherBodyItMayNot')}
+				</p>{/if}
+
+			{#if !isDemo() && repairSpec}
+				<div class="field">
+					<p class="faint small">
+						{t(
+							m?.rig.directions.some((direction) => direction.mirrorOf === sourceDir)
+								? 'itemPane.updateNoteMirrors'
+								: 'itemPane.updateNote',
+							{
+								move: moveName,
+								direction:
+									getLocale() === 'en' ? sourceDir.replaceAll('-', ' ') : directionName(sourceDir)
+							}
+						)}
+					</p>
+					{#each [{ id: 'repair', label: t('itemPane.repairItem'), feature: t('itemPane.repairFeature'), offer: repairOffer, help: t('itemPane.repairHelp') }, { id: 'redraw', label: t('itemPane.redrawItem'), feature: t('itemPane.redrawFeature'), offer: redrawOffer, help: t('itemPane.redrawHelp') }] as choice (choice.id)}
+						{@const tier = offerTier(choice.offer)}
+						{@const spec = choice.offer?.specs[0]}
+						{@const plan = m && spec ? movePlan({ manifest: m }, spec) : []}
+						{@const requests = plan.filter((call) => call.method === 'POST').length}
+						<span class="api-action">
+							<button
+								class="bu-action btn"
+								data-variant={choice.id === 'repair' && repairLeads ? 'primary' : 'outline'}
+								disabled={repairBusy || choice.offer?.gens == null || tierBlocked(tier)}
+								aria-describedby={tierBlocked(tier)
+									? `item-${choice.id}-tier`
+									: `item-${choice.id}-help item-repair-billing`}
+								onclick={() => repairFrames(choice.offer, tier)}
+								>{choice.label}
+								<span class="cost"
+									>{choice.offer?.gens == null
+										? t('common.unavailable')
+										: t('moves.estimate', { gens: number(Math.ceil(choice.offer.gens)) })}</span
+								></button
+							>
+						</span>
+						<p class="faint small" id={`item-${choice.id}-help`}>
+							{choice.help}{#if requests > 1}
+								{t(choice.id === 'repair' ? 'itemPane.repairRequests' : 'itemPane.redrawRequests', {
+									count: requests,
+									n: number(requests)
+								})}{/if}
+							{#if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens < repairOffer.gens}
+								{@const saved = Math.ceil(repairOffer.gens) - Math.ceil(redrawOffer.gens)}
+								{t('itemPane.redrawSaves', { count: saved, n: number(saved) })}
+							{:else if choice.id === 'redraw' && redrawOffer?.gens != null && repairOffer?.gens != null && redrawOffer.gens > repairOffer.gens}
+								{@const extra = Math.ceil(redrawOffer.gens) - Math.ceil(repairOffer.gens)}
+								{t('itemPane.redrawCostsMore', { count: extra, n: number(extra) })}
+							{/if}
+						</p>
+						{#if choice.offer?.error}<p class="notice warn small" role="status">
+								{displayMessage(choice.offer.error)}
+							</p>{/if}
+						{#if tier}<TierNotice
+								id={`item-${choice.id}-tier`}
+								minimumTier={tier}
+								feature={choice.feature}
+							/>{/if}
+					{/each}
+					<p class="faint small" id="item-repair-billing">{t('itemPane.billingNote')}</p>
+				</div>
+			{/if}
+
+			{#if !isDemo() && colorPlan}
+				<div class="field">
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						disabled={colorBusy || repairBusy}
+						onclick={matchColors}
+						>{colorBusy ? t('itemPane.matchingColors') : t('itemPane.matchItemColors')}
+						<span class="cost">{t('common.free')}</span></button
+					>
+					<p class="faint small">
+						{t('itemPane.colorMatchNote', {
+							pixels: t('itemPane.pixels', {
+								count: colorPlan.changedPixels,
+								n: number(colorPlan.changedPixels)
+							}),
+							move: moveName,
+							count: colorPlan.changedFrames.length,
+							n: number(colorPlan.changedFrames.length),
+							direction:
+								getLocale() === 'en' ? sourceDir.replaceAll('-', ' ') : directionName(sourceDir)
+						})}
+						{#if sourceDir !== ui.dir}{t('itemPane.itsMirroredViewsUpdateToo')}{/if}
+						{t('itemPane.colorMatchFixed')}
+						{#if colorPlan.unmatchedPixels}{t('itemPane.colorMatchUnmatched', {
+								count: colorPlan.unmatchedPixels,
+								n: number(colorPlan.unmatchedPixels)
+							})}{/if}
+						{t('itemPane.colorMatchFree')}
+					</p>
+				</div>
+			{/if}
+			{#if colorError}<p class="notice bad small">
+					<TriangleAlert size={14} />{displayMessage(colorError)}
+				</p>{/if}
+			{#if colorDone}<p class="notice small">
+					{t('itemPane.colorsMatched', {
+						pixels: t('itemPane.pixels', { count: colorDone.pixels, n: number(colorDone.pixels) }),
+						frames: t('itemPane.frames', { count: colorDone.frames, n: number(colorDone.frames) })
+					})}
+				</p>{/if}
+
+			<div class="actions">
+				<button
+					class="bu-action btn {on ? '' : 'primary'}"
+					data-variant="outline"
+					onclick={() => wear(it.id)}>{on ? t('common.takeOff') : t('common.wear')}</button
+				>
+				{#if !isDemo() && it.prompt}
+					<!-- A fitted copy is remade for this body like any shared item that does not fit it, named from its description. -->
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						onclick={() =>
+							openNewItem(it.slot, {
+								slot: it.slot,
+								prompt: it.prompt,
+								route: it.route
+							})}
+						><RefreshCw size={14} />{openerLabel(
+							remakeOnly ? t('itemMenu.makeOneForName', { name: m.name }) : t('common.tryAgain')
+						)}<SurfaceChevron /></button
+					>
+				{/if}
+				{#if !isDemo()}
+					<button
+						class="bu-action btn plain danger"
+						data-variant="quiet"
+						onclick={() => (confirmRemove = true)}
+						><Trash size={14} />{openerLabel(t('itemMenu.labelDeleteItem'))}<SurfaceChevron
+						/></button
+					>
+				{/if}
 			</div>
-		{/if}
 
-		<details class="disclosure">
-			<summary><ChevronRight size={14} />{t('itemPane.howItWasMade')}</summary>
-			<div><GenerationDetails {m} {it} /></div>
-		</details>
+			<div class="item-links">
+				{#if recolorable}
+					<!-- Colors live in the Colors tab; this opens it on the item's own section. -->
+					<button class="bu-action btn plain recolor-link" data-variant="quiet" onclick={recolor}
+						><Palette size={14} />{t('itemPane.recolor')}</button
+					>
+				{/if}
+				<button class="bu-action btn plain" data-variant="quiet" onclick={() => openFrames(it.id)}
+					><Grid2x2 size={14} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
+				>
+			</div>
 
-		<details class="disclosure">
-			<summary><ChevronRight size={14} />{t('common.details')}</summary>
-			<div>
-				<dl class="kv">
-					<dt>{t('itemPane.iD')}</dt>
-					<dd class="mono">{it.id}</dd>
-					<dt>{t('itemPane.slot')}</dt>
-					<dd>{it.slot} · {it.layers.map((l) => `${l.id} z${l.z}`).join(', ')}</dd>
-					{#if it.route}<dt>{t('itemPane.route')}</dt>
-						<dd>
-							{it.route}{it.key
-								? ` · ${t('itemPane.chromaKey', { color: displayKey(it.key) })}`
-								: ''}
-						</dd>{/if}
-					{#if it.qa}
-						<dt>{t('itemPane.qA')}</dt>
-						<dd>{t(`itemPane.qaStatus.${it.qa.status}`)}</dd>
-						{#if it.qa.rawKeyReviewFrames}<dt>{t('itemPane.rawBodyDifferences')}</dt>
+			<div class="field">
+				<span class="sec-title">{t('itemPane.layerOrder')}</span>
+				<div class="actions">
+					<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						onclick={() => moveLayer(it.id, 1, onlyDir)}
+						title={t('itemPane.titleDrawInFrontOfTheNext')}
+						><ArrowUp size={14} />{t('itemPane.forward')}</button
+					>
+					<button
+						class="bu-action btn sm"
+						data-variant="outline"
+						onclick={() => moveLayer(it.id, -1, onlyDir)}
+						title={t('itemPane.titleDrawBehindThePreviousLayer')}
+						><ArrowDown size={14} />{t('itemPane.backward')}</button
+					>
+					{#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(ladder)}<button
+							class="bu-action btn sm plain"
+							data-variant="quiet"
+							onclick={() => resetLayer(it.id, ladder)}>{t('itemPane.reset')}</button
+						>{/if}
+				</div>
+				<label class="check small"
+					><input type="checkbox" bind:checked={onlyDir} />{t('itemPane.onlyFacing', {
+						direction: getLocale() === 'en' ? ui.dir.replaceAll('-', ' ') : directionName(ui.dir)
+					})}</label
+				>
+			</div>
+
+			{#if others.length}
+				<div class="field">
+					<span class="sec-title" id="hide-{it.id}">{t('itemPane.whenWornHide')}</span>
+					<div class="chips" role="group" aria-labelledby="hide-{it.id}">
+						{#each others as s (s.id)}
+							{@const on = hides.includes(s.id)}
+							<button class="chip" aria-pressed={on} onclick={() => toggleHide(it.id, s.id)}
+								>{#if on}<Check size={12} strokeWidth={2.5} />{/if}{slotName(s.id)}</button
+							>
+						{/each}
+					</div>
+					<p class="faint small">
+						{t('itemPane.hideWhenWorn', { name: it.name })}
+						{#if tucks.length}{' '}{t('itemPane.tuckNote', {
+								slots: formatList(tucks.map(slotName))
+							})}{/if}
+					</p>
+				</div>
+			{/if}
+
+			<details class="disclosure">
+				<summary><ChevronRight size={14} />{t('itemPane.howItWasMade')}</summary>
+				<div><GenerationDetails {m} {it} /></div>
+			</details>
+
+			<details class="disclosure">
+				<summary><ChevronRight size={14} />{t('common.details')}</summary>
+				<div>
+					<dl class="kv">
+						<dt>{t('itemPane.iD')}</dt>
+						<dd class="mono">{it.id}</dd>
+						<dt>{t('itemPane.slot')}</dt>
+						<dd>{it.slot} · {it.layers.map((l) => `${l.id} z${l.z}`).join(', ')}</dd>
+						{#if it.route}<dt>{t('itemPane.route')}</dt>
 							<dd>
-								{t('itemPane.rawKeyReviewFramesFramesHaveNewBodyColoredPixels', {
-									rawKeyReviewFrames: number(it.qa.rawKeyReviewFrames)
-								})}
+								{it.route}{it.key
+									? ` · ${t('itemPane.chromaKey', { color: displayKey(it.key) })}`
+									: ''}
 							</dd>{/if}
-						{#if it.qa.inherited}<dt>{t('itemPane.partialChecks')}</dt>
-							<dd>
-								{it.qa.inherited.summary
-									? t('itemPane.copiedChecksCoverWholeMovesTotalsMay')
-									: t('itemPane.someMovesHaveNotBeenChecked')}
-							</dd>{/if}
-						{#if it.qa.unmeasured}
-							<dt>{t('itemPane.measurements')}</dt>
-							<dd>
-								{t('itemPane.reusedCellsWereNotMeasuredByPixelLab')}
-							</dd>
-						{:else}
-							<dt>{t('itemPane.keyKept')}</dt>
-							<dd>
-								{t('itemPane.minimum', {
-									value: number(it.qa.minKeyKept),
-									threshold: number(0.97)
-								})}
-							</dd>
-							<dt>{t('itemPane.keyOutside')}</dt>
-							<dd>
-								{t('itemPane.maximum', {
-									value: number(it.qa.maxKeyOutside),
-									threshold: number(0.02)
-								})}
-							</dd>
-							<dt>{t('itemPane.area')}</dt>
-							<dd>
-								{t('itemPane.areaStats', {
-									ratio: number(it.qa.minAreaRatio),
-									cv: number(it.qa.maxAreaCV)
-								})}
-							</dd>
-							<dt>{t('itemPane.paletteDrift')}</dt>
-							<dd>
-								{t('itemPane.maximum', {
-									value: number(it.qa.maxPaletteDist),
-									threshold: number(15)
-								})}
-							</dd>
-							<dt>{t('itemPane.edgePx')}</dt>
-							<dd>{number(it.qa.clipPx)}</dd>
-							{#if it.qa.handedness}<dt>{t('itemPane.hands')}</dt>
-								<dd>{t(`itemPane.handedness.${it.qa.handedness}`)}</dd>{/if}
+						{#if it.qa}
+							<dt>{t('itemPane.qA')}</dt>
+							<dd>{t(`itemPane.qaStatus.${it.qa.status}`)}</dd>
+							{#if it.qa.rawKeyReviewFrames}<dt>{t('itemPane.rawBodyDifferences')}</dt>
+								<dd>
+									{t('itemPane.rawKeyReviewFramesFramesHaveNewBodyColoredPixels', {
+										rawKeyReviewFrames: number(it.qa.rawKeyReviewFrames)
+									})}
+								</dd>{/if}
+							{#if it.qa.inherited}<dt>{t('itemPane.partialChecks')}</dt>
+								<dd>
+									{it.qa.inherited.summary
+										? t('itemPane.copiedChecksCoverWholeMovesTotalsMay')
+										: t('itemPane.someMovesHaveNotBeenChecked')}
+								</dd>{/if}
+							{#if it.qa.unmeasured}
+								<dt>{t('itemPane.measurements')}</dt>
+								<dd>
+									{t('itemPane.reusedCellsWereNotMeasuredByPixelLab')}
+								</dd>
+							{:else}
+								<dt>{t('itemPane.keyKept')}</dt>
+								<dd>
+									{t('itemPane.minimum', {
+										value: number(it.qa.minKeyKept),
+										threshold: number(0.97)
+									})}
+								</dd>
+								<dt>{t('itemPane.keyOutside')}</dt>
+								<dd>
+									{t('itemPane.maximum', {
+										value: number(it.qa.maxKeyOutside),
+										threshold: number(0.02)
+									})}
+								</dd>
+								<dt>{t('itemPane.area')}</dt>
+								<dd>
+									{t('itemPane.areaStats', {
+										ratio: number(it.qa.minAreaRatio),
+										cv: number(it.qa.maxAreaCV)
+									})}
+								</dd>
+								<dt>{t('itemPane.paletteDrift')}</dt>
+								<dd>
+									{t('itemPane.maximum', {
+										value: number(it.qa.maxPaletteDist),
+										threshold: number(15)
+									})}
+								</dd>
+								<dt>{t('itemPane.edgePx')}</dt>
+								<dd>{number(it.qa.clipPx)}</dd>
+								{#if it.qa.handedness}<dt>{t('itemPane.hands')}</dt>
+									<dd>{t(`itemPane.handedness.${it.qa.handedness}`)}</dd>{/if}
+							{/if}
+							<dt>{t('itemPane.reRolls')}</dt>
+							<dd>{number(it.qa.rerolls)}</dd>
 						{/if}
-						<dt>{t('itemPane.reRolls')}</dt>
-						<dd>{number(it.qa.rerolls)}</dd>
-					{/if}
-					{#if gaps.length}<dt>{t('itemPane.missingFrames')}</dt>
-						<dd>{gaps.join(', ')}</dd>{/if}
-				</dl>
-			</div>
-		</details>
-	</div>
-{/if}
-{#if confirmRemove && it}
-	{@const target = it}
-	<ConfirmDialog
-		title={t('common.deleteNamed', { name: target.name })}
-		action={t('common.delete')}
-		oncancel={() => (confirmRemove = false)}
-		onconfirm={() => {
-			const id = target.id;
-			confirmRemove = false;
-			void removeItem(id);
-		}}><p>{t('common.cannotUndo')}</p></ConfirmDialog
-	>
-{/if}
+						{#if gaps.length}<dt>{t('itemPane.missingFrames')}</dt>
+							<dd>{gaps.join(', ')}</dd>{/if}
+					</dl>
+				</div>
+			</details>
+		</div>
+	{/if}
+	{#if confirmRemove && it}
+		{@const target = it}
+		<ConfirmDialog
+			title={t('common.deleteNamed', { name: target.name })}
+			action={t('common.delete')}
+			oncancel={() => (confirmRemove = false)}
+			onconfirm={() => {
+				const id = target.id;
+				confirmRemove = false;
+				void removeItem(id);
+			}}><p>{t('common.cannotUndo')}</p></ConfirmDialog
+		>
+	{/if}
+</Sheet>
 
 <style>
 	.item-links {

@@ -1,3 +1,16 @@
+<script module lang="ts">
+	import type { PeekCall } from './apiPlans.ts';
+
+	export interface DeveloperTarget {
+		scope: string;
+		label: string;
+		plan?: PeekCall[];
+		queueIds?: string[];
+		activityScope?: string;
+		copyId?: string;
+	}
+</script>
+
 <script lang="ts">
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
@@ -11,7 +24,7 @@
 		sanitizeActivityValue,
 		type ApiCall
 	} from '../lib/pixellab/activity.ts';
-	import { planDisplay, type PeekCall, type PlanDisplayContext } from './apiPlans.ts';
+	import { planDisplay, type PlanDisplayContext } from './apiPlans.ts';
 	import { usdText } from './displayCost.ts';
 	import { displayDirection } from './displayDirection.ts';
 	import RequestFields from './RequestFields.svelte';
@@ -22,29 +35,32 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage } from '../lib/i18n.ts';
 	import { message, type Message } from '../lib/message.ts';
+	import { developerModeEnabled } from './developerMode.svelte.ts';
 
 	let {
-		scope,
-		plan = [],
-		label = '',
-		triggerLabel,
-		queueIds = [],
-		activityScope,
+		targets = [],
+		copyId,
 		all = false,
 		menu = false
 	}: {
-		scope: string;
-		plan?: PeekCall[];
-		label?: string;
-		triggerLabel?: string;
-		queueIds?: string[];
-		activityScope?: string;
+		targets?: DeveloperTarget[];
+		copyId?: string;
 		all?: boolean;
 		menu?: boolean; // menu: a labeled row inside an options menu
 	} = $props();
 	const id = $props.id();
-	let panel: HTMLDivElement;
-	let opener: HTMLButtonElement;
+	let selected = $state('');
+	const target = $derived(targets.find(({ scope }) => scope === selected) ?? targets[0]);
+	const scope = $derived(target?.scope ?? (all ? 'all' : 'id'));
+	const plan = $derived(target?.plan ?? []);
+	const label = $derived(target?.label ?? '');
+	const queueIds = $derived(target?.queueIds ?? []);
+	const activityScope = $derived(target?.activityScope);
+	const identifier = $derived(target?.copyId ?? copyId);
+	const hasCalls = $derived(all || !!target);
+	const title = $derived(hasCalls ? t('apiPeek.title') : t('developer.title'));
+	let panel = $state<HTMLDivElement>();
+	let opener = $state<HTMLButtonElement>();
 	let open = $state(false);
 	let backgrounds = $state(false);
 	let copyStatus = $state<Message | string>('');
@@ -109,12 +125,10 @@
 		const el = e.currentTarget;
 		open = e.newState === 'open';
 		if (open) {
-			copyStatus = '';
-			copiedAll = false;
-			manualCopy = undefined;
-			inspectionError = false;
+			selected = '';
+			resetFeedback();
 			await tick();
-			if (!el.isConnected) return;
+			if (!el.isConnected || !opener) return;
 			el.dataset.placement = opener.getBoundingClientRect().top < 100 ? 'bottom-end' : 'top-end';
 			popoverFocus({ currentTarget: el, newState: e.newState }, false);
 			el.querySelector<HTMLButtonElement>('[data-peek-close]')?.focus();
@@ -123,14 +137,14 @@
 		}
 	}
 	$effect(() => {
-		if (!open || all) return;
+		if (!developerModeEnabled() || !open || all || (!activityScope && !queueIds.length)) return;
 		void $queue.jobs;
 		void queue.inspectActivity(queueIds, activityScope).catch(() => {
 			inspectionError = true;
 		});
 	});
 	function close() {
-		panel.hidePopover();
+		panel?.hidePopover();
 	}
 	function keydown(e: KeyboardEvent) {
 		// Keep Studio playback, direction and undo shortcuts outside this inspector.
@@ -143,9 +157,32 @@
 		}
 	}
 	function isCurrentCopy(attempt: number) {
-		return attempt === copyAttempt && panel?.isConnected && panel.matches(':popover-open');
+		return (
+			developerModeEnabled() &&
+			attempt === copyAttempt &&
+			panel?.isConnected &&
+			panel.matches(':popover-open')
+		);
+	}
+	function resetFeedback() {
+		copyAttempt++;
+		copyStatus = '';
+		copiedAll = false;
+		manualCopy = undefined;
+		inspectionError = false;
+	}
+	async function copyIdentifier() {
+		if (!developerModeEnabled() || !identifier) return;
+		const attempt = ++copyAttempt;
+		try {
+			await navigator.clipboard.writeText(identifier);
+			if (isCurrentCopy(attempt)) copyStatus = message('developer.idCopied');
+		} catch {
+			if (isCurrentCopy(attempt)) copyStatus = message('developer.idCopyFailed');
+		}
 	}
 	async function copy() {
+		if (!developerModeEnabled()) return;
 		const attempt = ++copyAttempt;
 		const count = calls.length;
 		const text = recorded
@@ -192,6 +229,7 @@
 		endpoint: string,
 		status: Message
 	) {
+		if (!developerModeEnabled()) return;
 		const button = event.currentTarget;
 		const active = document.activeElement;
 		const attempt = ++copyAttempt;
@@ -237,220 +275,263 @@
 	</p>
 {/snippet}
 
-<button
-	bind:this={opener}
-	type="button"
-	class={menu ? 'row bu-action api-peek-trigger' : 'bu-action btn icon plain api-peek-trigger'}
-	data-variant="quiet"
-	aria-label={triggerLabel ?? (all ? t('apiPeek.inspectAll') : t('apiPeek.inspect'))}
-	title={t('apiPeek.triggerTitle')}
-	aria-expanded={open}
-	aria-controls={id}
-	popovertarget={id}
-	><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name"
-			>{openerLabel(t('apiPeek.title'))}</span
-		><SurfaceChevron />{/if}</button
->
-<div
-	bind:this={panel}
-	{id}
-	popover="auto"
-	class="api-peek bu-popover-anchor"
-	role="dialog"
-	aria-label={t('apiPeek.title')}
-	tabindex="-1"
-	onbeforetoggle={(event) => {
-		if (event.newState === 'closed') copyAttempt++;
-	}}
-	ontoggle={toggled}
-	onkeydown={keydown}
->
-	<PopoverArrow />
-	<div class="api-peek-surface bu-popover-surface bu-floating">
-		{#if open}
-			<header class="peek-head">
-				<div class="peek-heading">
-					<strong>{t('apiPeek.title')}</strong><span
-						class="peek-sub"
-						class:copy-feedback={copyStatus}
-						role="status"
-						>{(copyStatus ? displayMessage(copyStatus) : '') ||
-							(inspectionError ? t('apiPeek.inspectionError') : '') ||
-							label ||
-							(all ? t('apiPeek.recent') : t('apiPeek.thisAction'))}</span
-					>
-					{#if inspectionError && copyStatus}<span class="peek-sub"
-							>{t('apiPeek.inspectionError')}</span
-						>{/if}
-				</div>
-				<button
-					type="button"
-					class="bu-action btn icon plain"
-					data-variant="quiet"
-					aria-label={t('apiPeek.copyAll')}
-					title={t('apiPeek.copyAllTitle')}
-					disabled={!calls.length}
-					onclick={copy}
-					>{#if copiedAll}<Check size={16} />{:else}<Copy size={16} />{/if}</button
-				>
-				<button
-					type="button"
-					class="bu-action btn icon plain"
-					data-variant="quiet"
-					aria-label={backgrounds ? t('apiPeek.hideBackground') : t('apiPeek.showBackground')}
-					title={backgrounds
-						? t('apiPeek.hideBackground')
-						: hidden
-							? t('apiPeek.showBackgroundCount', { count: hidden })
-							: t('apiPeek.showBackground')}
-					aria-pressed={backgrounds}
-					onclick={() => (backgrounds = !backgrounds)}
-					>{#if backgrounds}<ListMinus size={17} />{:else}<ListPlus size={17} />{/if}</button
-				>
-				<button
-					type="button"
-					class="bu-action btn icon plain"
-					data-variant="quiet"
-					data-peek-close
-					aria-label={t('apiPeek.close')}
-					title={t('common.close')}
-					onclick={close}><X size={17} /></button
-				>
-			</header>
-			<div class="peek-list">
-				{#each visible as c, i ('id' in c ? c.id : `${scope}:${i}:${c.path}`)}
-					{@const key = 'id' in c ? c.id : `${scope}:${i}:${c.path}`}
-					{@const endpoint = 'endpoint' in c ? c.endpoint : safePlannedPath(c.path)}
-					{@const copiedStatus = c.label
-						? message('apiPeek.endpointCopiedLabel', {
-								method: c.method,
-								label: labelText(c)
-							})
-						: message('apiPeek.endpointCopiedCall', {
-								method: c.method,
-								number: formatNumber(i + 1)
-							})}
-					{@const copyLabel = c.label
-						? t('apiPeek.copyEndpointLabelContext', {
-								method: c.method,
-								endpoint,
-								label: c.label
-							})
-						: t('apiPeek.copyEndpointLabel', { method: c.method, endpoint })}
-					<details class="peek-call">
-						<summary
-							><ChevronRight size={13} /><span class="call-name"
-								><span class="call-route"
-									><span class="call-method">{c.method}</span><span>{endpoint}</span></span
-								>{#if c.label}<span class="call-context">{labelText(c)}</span>{/if}</span
-							><span class="call-price">{price(c)}</span></summary
+{#if developerModeEnabled() && (hasCalls || identifier)}
+	<button
+		bind:this={opener}
+		type="button"
+		class={menu ? 'row bu-action api-peek-trigger' : 'bu-action btn icon plain api-peek-trigger'}
+		data-variant="quiet"
+		aria-label={all ? t('apiPeek.inspectAll') : hasCalls ? t('apiPeek.inspect') : title}
+		title={hasCalls ? t('apiPeek.triggerTitle') : title}
+		aria-expanded={open}
+		aria-controls={id}
+		popovertarget={id}
+		><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name"
+				>{openerLabel(t('apiPeek.title'))}</span
+			><SurfaceChevron />{/if}</button
+	>
+	<div
+		bind:this={panel}
+		{id}
+		popover="auto"
+		class="api-peek bu-popover-anchor"
+		role="dialog"
+		aria-label={title}
+		tabindex="-1"
+		onbeforetoggle={(event) => {
+			if (event.newState === 'open' && !developerModeEnabled()) event.preventDefault();
+			if (event.newState === 'closed') copyAttempt++;
+		}}
+		ontoggle={toggled}
+		onkeydown={keydown}
+	>
+		<PopoverArrow />
+		<div class="api-peek-surface bu-popover-surface bu-floating">
+			{#if open}
+				<header class="peek-head">
+					<div class="peek-heading">
+						<strong>{title}</strong><span
+							class="peek-sub"
+							class:copy-feedback={copyStatus}
+							role="status"
+							>{(copyStatus ? displayMessage(copyStatus) : '') ||
+								(inspectionError ? t('apiPeek.inspectionError') : '') ||
+								label ||
+								(all ? t('apiPeek.recent') : hasCalls ? t('apiPeek.thisAction') : '')}</span
 						>
-						<div class="peek-request">
-							<div class="request-endpoint">
-								<code>{endpoint}</code>
-								<button
-									type="button"
-									class="bu-action btn icon plain"
-									data-variant="quiet"
-									aria-label={copyLabel}
-									title={t('apiPeek.copyEndpointTitle')}
-									onclick={(event) => copyEndpoint(event, key, endpoint, copiedStatus)}
-									><Copy size={14} /></button
+						{#if inspectionError && copyStatus}<span class="peek-sub"
+								>{t('apiPeek.inspectionError')}</span
+							>{/if}
+					</div>
+					{#if hasCalls}<button
+							type="button"
+							class="bu-action btn icon plain"
+							data-variant="quiet"
+							aria-label={t('apiPeek.copyAll')}
+							title={t('apiPeek.copyAllTitle')}
+							disabled={!calls.length}
+							onclick={copy}
+							>{#if copiedAll}<Check size={16} />{:else}<Copy size={16} />{/if}</button
+						>
+						<button
+							type="button"
+							class="bu-action btn icon plain"
+							data-variant="quiet"
+							aria-label={backgrounds ? t('apiPeek.hideBackground') : t('apiPeek.showBackground')}
+							title={backgrounds
+								? t('apiPeek.hideBackground')
+								: hidden
+									? t('apiPeek.showBackgroundCount', { count: hidden })
+									: t('apiPeek.showBackground')}
+							aria-pressed={backgrounds}
+							onclick={() => (backgrounds = !backgrounds)}
+							>{#if backgrounds}<ListMinus size={17} />{:else}<ListPlus size={17} />{/if}</button
+						>{/if}
+					<button
+						type="button"
+						class="bu-action btn icon plain"
+						data-variant="quiet"
+						data-peek-close
+						aria-label={t('apiPeek.close')}
+						title={t('common.close')}
+						onclick={close}><X size={17} /></button
+					>
+				</header>
+				{#if targets.length > 1 || identifier}
+					<div class="peek-controls">
+						{#if targets.length > 1}<select
+								class="bu-input input"
+								aria-label={t('developer.target')}
+								value={scope}
+								onchange={(event) => {
+									selected = event.currentTarget.value;
+									resetFeedback();
+								}}
+							>
+								{#each targets as choice (choice.scope)}<option value={choice.scope}
+										>{choice.label}</option
+									>{/each}
+							</select>{/if}
+						{#if identifier}<button
+								type="button"
+								class="bu-action btn small"
+								data-variant="quiet"
+								onclick={copyIdentifier}>{t('developer.copyId')}</button
+							>{/if}
+					</div>
+				{/if}
+				{#if hasCalls}
+					<div class="peek-list">
+						{#each visible as c, i ('id' in c ? c.id : `${scope}:${i}:${c.path}`)}
+							{@const key = 'id' in c ? c.id : `${scope}:${i}:${c.path}`}
+							{@const endpoint = 'endpoint' in c ? c.endpoint : safePlannedPath(c.path)}
+							{@const copiedStatus = c.label
+								? message('apiPeek.endpointCopiedLabel', {
+										method: c.method,
+										label: labelText(c)
+									})
+								: message('apiPeek.endpointCopiedCall', {
+										method: c.method,
+										number: formatNumber(i + 1)
+									})}
+							{@const copyLabel = c.label
+								? t('apiPeek.copyEndpointLabelContext', {
+										method: c.method,
+										endpoint,
+										label: c.label
+									})
+								: t('apiPeek.copyEndpointLabel', { method: c.method, endpoint })}
+							<details class="peek-call">
+								<summary
+									><ChevronRight size={13} /><span class="call-name"
+										><span class="call-route"
+											><span class="call-method">{c.method}</span><span>{endpoint}</span></span
+										>{#if c.label}<span class="call-context">{labelText(c)}</span>{/if}</span
+									><span class="call-price">{price(c)}</span></summary
 								>
-							</div>
-							{#if manualCopy === key}<input
-									class="bu-input input manual-endpoint"
-									aria-label={t('apiPeek.manualCopyLabel')}
-									value={endpoint}
-									readonly
-								/>{/if}
-							{#if 'state' in c}<p class="request-status">
-									{[
-										c.restored
-											? t('apiPeek.state.saved')
-											: c.state === 'pending'
-												? t('apiPeek.state.sending')
-												: c.state === 'failed'
-													? t('generation.status.failed')
-													: t('apiPeek.state.sent'),
-										c.status ? t('apiPeek.state.http', { status: c.status }) : '',
-										c.background ? t('apiPeek.state.background') : '',
-										c.costSource === 'unknown' && !c.usagePending
-											? t('apiPeek.state.costUnknown')
-											: ''
+								<div class="peek-request">
+									<div class="request-endpoint">
+										<code>{endpoint}</code>
+										<button
+											type="button"
+											class="bu-action btn icon plain"
+											data-variant="quiet"
+											aria-label={copyLabel}
+											title={t('apiPeek.copyEndpointTitle')}
+											onclick={(event) => copyEndpoint(event, key, endpoint, copiedStatus)}
+											><Copy size={14} /></button
+										>
+									</div>
+									{#if manualCopy === key}<input
+											class="bu-input input manual-endpoint"
+											aria-label={t('apiPeek.manualCopyLabel')}
+											value={endpoint}
+											readonly
+										/>{/if}
+									{#if 'state' in c}<p class="request-status">
+											{[
+												c.restored
+													? t('apiPeek.state.saved')
+													: c.state === 'pending'
+														? t('apiPeek.state.sending')
+														: c.state === 'failed'
+															? t('generation.status.failed')
+															: t('apiPeek.state.sent'),
+												c.status ? t('apiPeek.state.http', { status: c.status }) : '',
+												c.background ? t('apiPeek.state.background') : '',
+												c.costSource === 'unknown' && !c.usagePending
+													? t('apiPeek.state.costUnknown')
+													: ''
+											]
+												.filter(Boolean)
+												.join(' · ')}
+										</p>{:else}<p class="request-status">
+											{c.background
+												? t('apiPeek.state.plannedBackground')
+												: t('apiPeek.state.planned')}
+										</p>{/if}
+									{#if 'job' in c && c.job}{@render jobStatus(c.job)}{/if}
+									{#if 'failedJobs' in c}
+										{#each c.failedJobs ?? [] as job (job.id)}
+											{@render jobStatus(job, job.id)}
+										{/each}
+									{/if}
+									{#if 'bodyUnavailable' in c && c.bodyUnavailable}<p class="request-status">
+											{t('apiPeek.bodyUnavailable')}
+										</p>{/if}
+									{#if c.body !== undefined && c.body !== null}<RequestFields
+											value={'cost' in c ? c.body : sanitizeActivityValue(c.body)}
+										/>{:else}<p class="request-status">
+											{c.method === 'POST' ? t('apiPeek.fieldsLater') : t('apiPeek.noBody')}
+										</p>{/if}
+									{#if 'note' in c && c.note}<p class="request-status">{noteText(c)}</p>{/if}
+								</div>
+							</details>
+						{/each}
+						{#if !visible.length}<p class="peek-empty">
+								{hidden
+									? t('apiPeek.emptyForeground')
+									: all
+										? t('apiPeek.emptyAll')
+										: t('apiPeek.emptyAction')}
+							</p>{/if}
+					</div>
+					{#if recorded && ($activityRetention.droppedBackground || $activityRetention.droppedForeground)}<p
+							class="peek-retention"
+						>
+							{all && $activityRetention.droppedForeground
+								? t('apiPeek.retentionTotal')
+								: t('apiPeek.retention')}
+						</p>{/if}
+					<footer class="peek-total">
+						<span
+							>{recorded ? t('apiPeek.total') : t('apiPeek.estimatedTotal')}<span
+								class="total-caption"
+								>{!backgrounds && hidden
+									? t('apiPeek.callsHidden', { count: calls.length, hidden })
+									: t('apiPeek.calls', { count: calls.length })}</span
+							></span
+						><strong
+							>{#if recorded}{#if totals.generations || totals.usd || !totals.unknown}{[
+										gens(totals.generations),
+										totals.usd ? usd(totals.usd) : ''
 									]
 										.filter(Boolean)
-										.join(' · ')}
-								</p>{:else}<p class="request-status">
-									{c.background ? t('apiPeek.state.plannedBackground') : t('apiPeek.state.planned')}
-								</p>{/if}
-							{#if 'job' in c && c.job}{@render jobStatus(c.job)}{/if}
-							{#if 'failedJobs' in c}
-								{#each c.failedJobs ?? [] as job (job.id)}
-									{@render jobStatus(job, job.id)}
-								{/each}
-							{/if}
-							{#if 'bodyUnavailable' in c && c.bodyUnavailable}<p class="request-status">
-									{t('apiPeek.bodyUnavailable')}
-								</p>{/if}
-							{#if c.body !== undefined && c.body !== null}<RequestFields
-									value={'cost' in c ? c.body : sanitizeActivityValue(c.body)}
-								/>{:else}<p class="request-status">
-									{c.method === 'POST' ? t('apiPeek.fieldsLater') : t('apiPeek.noBody')}
-								</p>{/if}
-							{#if 'note' in c && c.note}<p class="request-status">{noteText(c)}</p>{/if}
-						</div>
-					</details>
-				{/each}
-				{#if !visible.length}<p class="peek-empty">
-						{hidden
-							? t('apiPeek.emptyForeground')
-							: all
-								? t('apiPeek.emptyAll')
-								: t('apiPeek.emptyAction')}
-					</p>{/if}
-			</div>
-			{#if recorded && ($activityRetention.droppedBackground || $activityRetention.droppedForeground)}<p
-					class="peek-retention"
-				>
-					{all && $activityRetention.droppedForeground
-						? t('apiPeek.retentionTotal')
-						: t('apiPeek.retention')}
-				</p>{/if}
-			<footer class="peek-total">
-				<span
-					>{recorded ? t('apiPeek.total') : t('apiPeek.estimatedTotal')}<span class="total-caption"
-						>{!backgrounds && hidden
-							? t('apiPeek.callsHidden', { count: calls.length, hidden })
-							: t('apiPeek.calls', { count: calls.length })}</span
-					></span
-				><strong
-					>{#if recorded}{#if totals.generations || totals.usd || !totals.unknown}{[
-								gens(totals.generations),
-								totals.usd ? usd(totals.usd) : ''
-							]
-								.filter(Boolean)
-								.join(' + ')}{:else}{totals.pending
-								? t('apiPeek.pending')
-								: t('apiPeek.unknown')}{/if}{#if totals.unknown || totals.pending}<span
-								class="total-caption"
-								>{[
-									unknownFinished > 0 ? t('apiPeek.unknownCount', { count: unknownFinished }) : '',
-									totals.pending ? t('apiPeek.pendingCount', { count: totals.pending }) : ''
-								]
-									.filter(Boolean)
-									.join(' · ')}</span
-							>{/if}{:else}{t('apiPeek.estimate', {
-							cost: gens(knownEstimate)
-						})}{#if unknownEstimate}<span class="total-caption">{t('apiPeek.variable')}</span
-							>{/if}{/if}</strong
-				>
-			</footer>
-		{/if}
+										.join(' + ')}{:else}{totals.pending
+										? t('apiPeek.pending')
+										: t('apiPeek.unknown')}{/if}{#if totals.unknown || totals.pending}<span
+										class="total-caption"
+										>{[
+											unknownFinished > 0
+												? t('apiPeek.unknownCount', { count: unknownFinished })
+												: '',
+											totals.pending ? t('apiPeek.pendingCount', { count: totals.pending }) : ''
+										]
+											.filter(Boolean)
+											.join(' · ')}</span
+									>{/if}{:else}{t('apiPeek.estimate', {
+									cost: gens(knownEstimate)
+								})}{#if unknownEstimate}<span class="total-caption">{t('apiPeek.variable')}</span
+									>{/if}{/if}</strong
+						>
+					</footer>
+				{/if}
+			{/if}
+		</div>
 	</div>
-</div>
+{/if}
 
 <style>
+	.peek-controls {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		padding: 8px 12px;
+	}
+	.peek-controls select {
+		min-width: 0;
+		max-width: 100%;
+	}
 	.api-peek-trigger {
 		vertical-align: middle;
 		flex: none;

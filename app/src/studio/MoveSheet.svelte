@@ -519,7 +519,7 @@
 			>{keep ? t('common.discard') : t('common.startOver')}</button
 		>
 		<span class="api-action"
-			><ApiPeek scope="move-retry" label={t('moveSheet.retryLabel')} plan={retryPlan} /><button
+			><button
 				class="bu-action btn"
 				data-variant="outline"
 				disabled={!!retryAccess.error || tierBlocked(retryTier)}
@@ -598,16 +598,7 @@
 			</span>
 		{/if}
 		<span class="api-action move-action">
-			{#if est}<ApiPeek
-					scope="move-add"
-					label={t('moveSheet.addLabel')}
-					plan={movePlan(rec, {
-						...motion,
-						items: chosen,
-						poseStyle: 'visible-side-v1',
-						...(replacing ? { dirs: [...targetDirs] } : {})
-					})}
-				/>{/if}<button
+			<button
 				class="bu-action btn primary lg"
 				data-variant="primary"
 				disabled={!est ||
@@ -654,6 +645,39 @@
 	onclose={() => (ui.sheet = null)}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
 >
+	{#snippet developer()}
+		<ApiPeek
+			targets={isDemo()
+				? []
+				: progress
+					? [
+							{
+								scope: 'move-progress',
+								label: t('moveSheet.progressLabel'),
+								plan: moving.spec && !recoveryAccess.error ? movePlan(rec, moving.spec) : [],
+								activityScope: moving.spec?.activityScope
+							},
+							...(moving.error && !moving.done
+								? [{ scope: 'move-retry', label: t('moveSheet.retryLabel'), plan: retryPlan }]
+								: [])
+						]
+					: ok && est
+						? [
+								{
+									scope: 'move-add',
+									label: t('moveSheet.addLabel'),
+									plan: movePlan(rec, {
+										...motion,
+										items: chosen,
+										poseStyle: 'visible-side-v1',
+										...(replacing ? { dirs: [...targetDirs] } : {})
+									})
+								}
+							]
+						: []}
+		/>
+	{/snippet}
+
 	{#if holder}<p class="notice small">
 			<CircleAlert size={14} /><span
 				>{moving.repairReview
@@ -740,12 +764,7 @@
 			<p style="font-weight:600">
 				{nice(moving.spec!.id)}{moving.spec?.dirs
 					? ` · ${moving.spec.dirs.map(directionLabel).join(', ')}`
-					: ''}<ApiPeek
-					scope="move-progress"
-					label={t('moveSheet.progressLabel')}
-					plan={moving.spec && !recoveryAccess.error ? movePlan(rec, moving.spec) : []}
-					activityScope={moving.spec?.activityScope}
-				/>
+					: ''}
 			</p>
 			{#if moving.spec?.itemMethod === 'grid'}<p class="muted small">
 					{moving.spec.redrawItem

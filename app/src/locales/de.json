@@ -40,6 +40,17 @@
 		"noResults": "Keine passenden Einstellungen gefunden.",
 		"all": "Alle Einstellungen"
 	},
+	"developer": {
+		"title": "Entwicklung",
+		"mode": "Entwicklermodus",
+		"notSaved": "Der Browser konnte die Änderung nicht speichern. Sie gilt nur für diesen Tab.",
+		"pages": "Entwicklerseiten (M1 bis M5)",
+		"rigs": "Entwickler-Rigs",
+		"target": "API-Aufrufe für",
+		"copyId": "ID kopieren",
+		"idCopied": "ID kopiert",
+		"idCopyFailed": "Die ID konnte nicht kopiert werden."
+	},
 	"common": {
 		"loadFailed": "Ein Teil von PixelDoll konnte nicht geladen werden. Lade die Seite neu und versuche es erneut.",
 		"advanced": "Erweitert",
@@ -394,8 +405,6 @@
 		"redrawItem": "Gegenstand neu zeichnen",
 		"repairFeature": "die Gegenstandsreparatur",
 		"redrawFeature": "das Neuzeichnen des Gegenstands",
-		"inspectRepair": "API-Aufrufe für die Gegenstandsreparatur prüfen",
-		"inspectRedraw": "API-Aufrufe für das Neuzeichnen des Gegenstands prüfen",
 		"repairHelp": "Ideal, wenn dir das Design gefällt. Änderungen bleiben auf den Bereich des Gegenstands beschränkt.",
 		"redrawHelp": "Form oder Griff können sich ändern. Du entscheidest, ob du das Ergebnis behältst.",
 		"repairRequests": {
