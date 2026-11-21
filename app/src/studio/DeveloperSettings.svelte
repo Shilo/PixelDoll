@@ -68,7 +68,14 @@
 				]}
 			/>
 		</div>
-		<p class="bu-muted bu-small">{t('developer.previewHint')}</p>
+		<p class="bu-muted bu-small">
+			{t('developer.previewHint', {
+				activity: t('activity.title'),
+				copyId: t('developer.copyId'),
+				all: t('apiPeek.inspectAll'),
+				backup: t('workspaceCopy.title')
+			})}
+		</p>
 	</div>
 </figure>
 

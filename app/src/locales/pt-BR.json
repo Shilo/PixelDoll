@@ -48,7 +48,7 @@
 		"rigs": "Rigs de desenvolvimento",
 		"target": "Chamadas de API para",
 		"copyId": "Copiar ID",
-		"previewHint": "Com o modo de desenvolvedor ativado, este botão aparece ao lado dos títulos das janelas. Experimente com dados de exemplo; nada é enviado.",
+		"previewHint": "Com o modo de desenvolvedor ativado, este botão fica ao lado de títulos de janelas como {activity}, com “{copyId}” quando disponível. O modo também adiciona “{all}” e “{backup}” a esta página. Experimente o exemplo; nada é enviado.",
 		"idCopied": "ID copiado",
 		"idCopyFailed": "Não foi possível copiar o ID."
 	},

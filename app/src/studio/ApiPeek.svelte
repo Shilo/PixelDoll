@@ -48,7 +48,7 @@
 		copyId?: string;
 		all?: boolean;
 		menu?: boolean; // menu: a labeled row inside an options menu
-		/** Works while Developer mode is off, for the Settings example; pass only example targets. */
+		/** A sample for Settings: works while Developer mode is off and never reads the live log or queue. */
 		preview?: boolean;
 	} = $props();
 	const enabled = () => preview || developerModeEnabled();
@@ -72,17 +72,19 @@
 	let manualCopy = $state<string>();
 	let copyAttempt = 0;
 	let inspectionError = $state(false);
+	// A preview shows only its planned sample calls, whatever scopes or queue IDs its targets carry.
 	const actual = $derived(
 		$apiActivity.filter(
 			(c) =>
-				all ||
-				(activityScope &&
-					(c.activityScope === activityScope || c.relatedScopes?.includes(activityScope))) ||
-				(c.queueId && queueIds.includes(c.queueId)) ||
-				c.relatedQueueIds?.some((id) => queueIds.includes(id))
+				!preview &&
+				(all ||
+					(activityScope &&
+						(c.activityScope === activityScope || c.relatedScopes?.includes(activityScope))) ||
+					(c.queueId && queueIds.includes(c.queueId)) ||
+					c.relatedQueueIds?.some((id) => queueIds.includes(id)))
 		)
 	);
-	const recorded = $derived(actual.length > 0 || all);
+	const recorded = $derived(actual.length > 0 || (all && !preview));
 	const calls = $derived(recorded ? actual : plan);
 	const visible = $derived(calls.filter((c) => backgrounds || !c.background));
 	const hidden = $derived(calls.length - calls.filter((c) => !c.background).length);
@@ -141,7 +143,8 @@
 		}
 	}
 	$effect(() => {
-		if (!enabled() || !open || all || (!activityScope && !queueIds.length)) return;
+		if (preview || !developerModeEnabled() || !open || all || (!activityScope && !queueIds.length))
+			return;
 		let current = true;
 		void $queue.jobs;
 		void queue.inspectActivity(queueIds, activityScope).catch(() => {
