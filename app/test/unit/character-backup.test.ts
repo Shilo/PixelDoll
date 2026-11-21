@@ -2,6 +2,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import {
+	downloadArchivedBackup,
 	exportBackup,
 	planRestore,
 	readRestoreSource,
@@ -148,12 +149,18 @@ test('a restore copies a character whose ID holds different content, and explain
 
 	const plan = await planRestore(source);
 	expect(plan.entries).toMatchObject([{ id: 'rig-a', action: 'copy' }]);
-	const [{ id: copy }] = (await restoreCharacters(plan)).added;
+	const [{ id: copy }] = (
+		await restoreCharacters(plan, {
+			keepArchived: false,
+			keys: [],
+			copyName: (name) => `${name} (Restored)`
+		})
+	).added;
 	expect(copy).toMatch(/^rig-[0-9a-f-]{36}$/);
 	expect(saved.projects.get('rig-a')).toEqual(before);
 	expect(restored(copy)).toMatchObject({
 		id: copy,
-		manifest: { name: 'Fixture' },
+		manifest: { name: 'Fixture (Restored)' },
 		restoredFrom: { id: 'rig-a', fingerprint: plan.entries[0].fingerprint }
 	});
 
@@ -179,6 +186,29 @@ test('a restore copies a character whose ID holds different content, and explain
 		third
 	]);
 	expect(restored(third).restoredFrom?.id).toBe('rig-a');
+});
+
+test('archive downloads can be retained and re-exported byte for byte', async () => {
+	saved.projects.set('rig-old', {
+		...character,
+		id: 'rig-old',
+		manifest: { ...character.manifest, format: 'pixeldoll/2' }
+	});
+	const download = await downloadArchivedBackup([]);
+	expect(download).toBeDefined();
+	const source = await readRestoreSource(download!);
+	expect(source.characters.size).toBe(0);
+	expect(source.archives).toHaveLength(1);
+	const { data } = source.archives![0];
+	expect(data.buffer.byteLength).toBe(data.byteLength);
+	saved.projects.delete('rig-old');
+	const plan = await planRestore(source);
+	const options = { keepArchived: true, keys: [], copyName: (name: string) => name };
+	await restoreCharacters(plan, options);
+	await restoreCharacters(plan, options);
+	expect(saved.projects.has('rig-old')).toBe(false);
+	const reexport = await readRestoreSource((await exportBackup([], true)).bytes);
+	expect(reexport.archives).toEqual(source.archives);
 });
 
 test('identical characters under different IDs are separate characters', async () => {

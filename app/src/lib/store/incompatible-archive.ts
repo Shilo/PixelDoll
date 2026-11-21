@@ -140,6 +140,7 @@ export async function packIncompatible(
 		checkLossless(value, key);
 	}
 	const references = blobReferences(projects.values());
+	if (references.size > MAX_ZIP_ENTRIES) throw tooLarge();
 	const files: { name: string; data: Uint8Array }[] = [];
 	const types: [string, string][] = [];
 	let bytes = 0;

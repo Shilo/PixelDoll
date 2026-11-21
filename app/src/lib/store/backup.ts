@@ -41,8 +41,26 @@ async function retainedPacks() {
 		() => new Map(),
 		false
 	);
-	return [...projects.values()] as ArchivePack[];
+	return [...projects].map(([id, value]) => {
+		const pack = value as Partial<ArchivePack> | null;
+		if (
+			!pack ||
+			pack.id !== id ||
+			!(pack.data instanceof Uint8Array) ||
+			!Number.isSafeInteger(pack.count) ||
+			!pack.count ||
+			pack.count < 0
+		)
+			throw invalidArchive();
+		return { id, data: pack.data, count: pack.count };
+	});
 }
+
+const invalidArchive = () =>
+	new LocalizedError(
+		'The archived data could not be preserved safely.',
+		'incompatible.error.invalid'
+	);
 
 export async function libraryArchiveCount() {
 	const [local, retained] = await Promise.all([storedIncompatibleCounts(), retainedPacks()]);
@@ -55,8 +73,10 @@ async function archiveEntries(keys: readonly string[]) {
 	const entries = new Map<string, Uint8Array>();
 	if (local) entries.set(await sha256(local.bytes), local.bytes);
 	for (const pack of retained) {
+		const digest = pack.id.slice(retainedPrefix.length);
+		if ((await sha256(pack.data)) !== digest) throw invalidArchive();
 		await inspectIncompatible(pack.data, keys);
-		entries.set(pack.id.slice(retainedPrefix.length), pack.data);
+		entries.set(digest, pack.data);
 	}
 	return [...entries].map(([digest, data]) => ({ name: `archives/${digest}.zip`, data }));
 }
@@ -64,13 +84,20 @@ async function archiveEntries(keys: readonly string[]) {
 export async function downloadArchivedBackup(keys: readonly string[]) {
 	const entries = await archiveEntries(keys);
 	if (!entries.length) return;
-	if (entries.length === 1) return entries[0].data;
+	const index = new TextEncoder().encode(
+		JSON.stringify({
+			format: BACKUP_FORMAT,
+			build: archiveBuild(),
+			characters: [],
+			missing: []
+		} satisfies BackupIndex)
+	);
 	if (
-		entries.length > MAX_ZIP_ENTRIES ||
-		entries.reduce((n, entry) => n + entry.data.length, 0) > MAX_ZIP_BYTES
+		entries.length + 1 > MAX_ZIP_ENTRIES ||
+		entries.reduce((n, entry) => n + entry.data.length, index.length) > MAX_ZIP_BYTES
 	)
 		throw backupErrors.tooLarge();
-	const bytes = await zip(entries);
+	const bytes = await zip([{ name: indexPath, data: index }, ...entries]);
 	if (bytes.length > MAX_ZIP_BYTES) throw backupErrors.tooLarge();
 	return bytes;
 }
@@ -195,7 +222,7 @@ async function readRestoreFiles(
 		if (!digest) continue;
 		if ((await sha256(data)) !== digest) throw invalid();
 		const { counts } = await inspectIncompatible(data, keys);
-		archives.push({ id: `${retainedPrefix}${digest}`, data, count: counts.total });
+		archives.push({ id: `${retainedPrefix}${digest}`, data: data.slice(), count: counts.total });
 		files.delete(path);
 	}
 	const { projects, blobs, missing } = await readArchiveFiles(
@@ -258,7 +285,7 @@ function canonical(record: StoredProject & { dress?: unknown }) {
 		origin: _origin,
 		...content
 	} = record;
-	return stableStringify({ ...content, manifest: { ...content.manifest, name: undefined } });
+	return stableStringify(content);
 }
 
 /** Equal for two characters with the same content, whatever their IDs. */
@@ -354,7 +381,13 @@ export async function planRestore(source: RestoreSource): Promise<RestorePlan> {
 		const lineage = [...local].filter(
 			([localId, { restoredFrom }]) => localId === id || restoredFrom?.id === id
 		);
-		const match = lineage.find(([, saved]) => saved.fingerprint === fingerprint)?.[0];
+		const match = lineage.find(
+			([, saved]) =>
+				saved.fingerprint === fingerprint ||
+				(saved.restoredFrom?.fingerprint === fingerprint &&
+					saved.fingerprint !== undefined &&
+					saved.fingerprint === saved.restoredFrom.copyFingerprint)
+		)?.[0];
 		if (match) {
 			plan.entries.push({ ...entry, action: 'skip', match });
 			continue;
@@ -407,6 +440,18 @@ export async function restoreCharacters(
 			opaque.set(pack.id, pack);
 		}
 	if (!writes.length && !opaque.size) return { added: [] };
+	const renamedCopies = new Map<string, { name: string; copyFingerprint: string }>();
+	if (options)
+		for (const { id, action } of writes) {
+			if (action !== 'copy') continue;
+			const record = source.characters.get(id)!;
+			const name = options.copyName(record.manifest.name);
+			const copyFingerprint = await characterFingerprint({
+				...record,
+				manifest: { ...record.manifest, name }
+			});
+			renamedCopies.set(id, { name, copyFingerprint });
+		}
 	const hashes = [...new Set(writes.flatMap(({ id }) => basis.refs.get(id)!))];
 	const at = new Date().toISOString();
 	const stale = new Error('The saved characters changed since the restore plan.');
@@ -428,8 +473,8 @@ export async function restoreCharacters(
 						do id = `rig-${crypto.randomUUID()}`;
 						while (records.has(id) || out.records.has(id));
 					const record = structuredClone(source.characters.get(from)!);
-					if (action === 'copy' && options)
-						record.manifest.name = options.copyName(record.manifest.name);
+					const renamed = renamedCopies.get(from);
+					if (renamed) record.manifest.name = renamed.name;
 					delete record.creationSpec;
 					delete record.moveRecovery;
 					out.records.set(id, {
@@ -437,7 +482,13 @@ export async function restoreCharacters(
 						id,
 						savedAt: at,
 						origin: 'studio',
-						restoredFrom: { id: from, fingerprint, at, build: source.build }
+						restoredFrom: {
+							id: from,
+							fingerprint,
+							at,
+							build: source.build,
+							...(renamed && { copyFingerprint: renamed.copyFingerprint })
+						}
 					} satisfies StoredProject);
 					added.push({ from, id });
 				}

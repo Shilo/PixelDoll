@@ -33,6 +33,7 @@ export interface StoredProject {
 export interface RestoredFrom {
 	id: string;
 	fingerprint: string;
+	copyFingerprint?: string;
 	/** When it was restored, and the build that made the file. */
 	at: string;
 	build: string;
