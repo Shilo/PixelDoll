@@ -2733,10 +2733,16 @@ test('a managed State reloads its child without another submission', async ({
 	const child = 'managed-state-child';
 	const job = 'managed-state-job';
 	const posts: unknown[] = [];
+	const postPaths: string[] = [];
+	const pageErrors: string[] = [];
 	const directions = ['south', 'east', 'north', 'west'];
 	let images: Record<string, number[]>;
-	await context.route('https://api.pixellab.ai/**', (route) => {
+	const marker = [17, 231, 93, 255];
+	const markerOffset = (32 * 64 + 32) * 4;
+	page.on('pageerror', (error) => pageErrors.push(error.message));
+	await context.route('https://api.pixellab.ai/**', async (route) => {
 		const path = new URL(route.request().url()).pathname;
+		if (route.request().method() === 'POST') postPaths.push(path);
 		if (path.endsWith('/balance'))
 			return route.fulfill({
 				json: {
@@ -2769,17 +2775,25 @@ test('a managed State reloads its child without another submission', async ({
 					rotation_urls: Object.fromEntries(
 						directions.map((direction) => [
 							direction,
-							`https://api.pixellab.ai/qa-state-rotations/${direction}`
+							`https://api.pixellab.ai/qa-state-rotations/${id}/${direction}`
 						])
 					)
 				}
 			});
-		if (path.startsWith('/qa-state-rotations/') && images[id])
+		if (path.startsWith('/qa-state-rotations/') && images[id]) {
+			let bytes = Uint8Array.from(images[id]);
+			if (path.startsWith(`/qa-state-rotations/${child}/`)) {
+				const image = await decodePngBytes(bytes);
+				expect(Array.from(image.data.slice(markerOffset, markerOffset + 4))).not.toEqual(marker);
+				image.data.set(marker, markerOffset);
+				bytes = Uint8Array.from(await encodePngBytes(image));
+			}
 			return route.fulfill({
 				headers: { 'access-control-allow-origin': '*' },
 				contentType: 'image/png',
-				body: Buffer.from(images[id])
+				body: Buffer.from(bytes)
 			});
+		}
 		return route.abort();
 	});
 	await page.addInitScript(() =>
@@ -2835,6 +2849,7 @@ test('a managed State reloads its child without another submission', async ({
 	expect(posts).toEqual([
 		expect.objectContaining({ character_id: parent, edit_description: 'Hold a potion' })
 	]);
+	const postsBeforeReload = postPaths.slice();
 	await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await reloadStudio(page);
 	await equipmentMode(page, 'States');
@@ -2842,14 +2857,23 @@ test('a managed State reloads its child without another submission', async ({
 	await expect(review).toBeVisible();
 	await panel.getByRole('button', { name: 'Save', exact: true }).click();
 	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
-	const storedChild = await page.evaluate(async (projectId) => {
+	const stored = await page.evaluate(async (projectId) => {
 		const dbPath = '/src/lib/store/db.ts';
 		const db = await import(dbPath);
 		const record: StoredProject = await db.get('projects', projectId);
-		return record.managedStates?.['potion-ready'];
+		const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
+		const hash = base.layers[0].cells!['potion-ready'].south![0]!;
+		const blob: Blob = await db.getBlob(hash.slice(7));
+		return {
+			child: record.managedStates?.['potion-ready'],
+			image: Array.from(new Uint8Array(await blob.arrayBuffer()))
+		};
 	}, result.projectId);
-	expect(storedChild).toBe(child);
-	expect(posts).toHaveLength(1);
+	const image = await decodePngBytes(Uint8Array.from(stored.image));
+	expect(stored.child).toBe(child);
+	expect(Array.from(image.data.slice(markerOffset, markerOffset + 4))).toEqual(marker);
+	expect(postPaths).toEqual(postsBeforeReload);
+	expect(pageErrors).toEqual([]);
 });
 
 test('a stopped move blocks deleting only its own character and opens from the block', async ({
