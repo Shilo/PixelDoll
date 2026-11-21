@@ -137,13 +137,25 @@ export function itemPaletteMatcher(item: Pick<Item, 'id' | 'materials'>, materia
 	};
 }
 
+const record = (v: unknown): v is Record<string, unknown> =>
+	!!v && typeof v === 'object' && !Array.isArray(v);
+const safeId = (v: unknown) =>
+	typeof v === 'string' && v.length <= 200 && /^[a-z0-9][a-z0-9_-]*$/.test(v);
+const hash = (v: unknown) => typeof v === 'string' && /^sha256:[0-9a-f]{64}$/.test(v);
+const DIRECTION_IDS = [
+	'south',
+	'south-east',
+	'east',
+	'north-east',
+	'north',
+	'north-west',
+	'west',
+	'south-west'
+];
+const LAYER_IDS = ['main', 'fg', 'bg'];
+
 // History can outlive a removed move/material; validate its bounded shape rather than live references.
 export function validPaletteRepairs(value: unknown): boolean {
-	const record = (v: unknown): v is Record<string, unknown> =>
-		!!v && typeof v === 'object' && !Array.isArray(v);
-	const safeId = (v: unknown) =>
-		typeof v === 'string' && v.length <= 200 && /^[a-z0-9][a-z0-9_-]*$/.test(v);
-	const hash = (v: unknown) => typeof v === 'string' && /^sha256:[0-9a-f]{64}$/.test(v);
 	if (!Array.isArray(value) || value.length > 1000) return false;
 	return value.every((repair: unknown) => {
 		if (
@@ -151,16 +163,7 @@ export function validPaletteRepairs(value: unknown): boolean {
 			repair.version !== 'neutral-owned-v1' ||
 			!safeId(repair.materialId) ||
 			!safeId(repair.anim) ||
-			![
-				'south',
-				'south-east',
-				'east',
-				'north-east',
-				'north',
-				'north-west',
-				'west',
-				'south-west'
-			].includes(repair.dir as string) ||
+			!DIRECTION_IDS.includes(repair.dir as string) ||
 			!Array.isArray(repair.frames) ||
 			!repair.frames.length ||
 			repair.frames.length > 1000
@@ -186,7 +189,7 @@ export function validPaletteRepairs(value: unknown): boolean {
 			return frame.layers.every((layer: unknown) => {
 				if (
 					!record(layer) ||
-					!['main', 'fg', 'bg'].includes(layer.id as string) ||
+					!LAYER_IDS.includes(layer.id as string) ||
 					layers.has(layer.id as string) ||
 					!hash(layer.before) ||
 					!hash(layer.after) ||
@@ -196,6 +199,73 @@ export function validPaletteRepairs(value: unknown): boolean {
 				layers.add(layer.id as string);
 				return true;
 			});
+		});
+	});
+}
+
+/** Fix frames history (Item.frameEdits): bounded shape only, like palette repairs; `null` is an empty frame. */
+export function validFrameEdits(value: unknown): boolean {
+	const cell = (v: unknown) => v === null || hash(v);
+	const cut = (v: unknown) =>
+		v === null ||
+		(Array.isArray(v) &&
+			v.length <= 512 * 512 &&
+			v.every((i: unknown) => Number.isSafeInteger(i) && (i as number) >= 0));
+	if (!Array.isArray(value) || value.length > 1000) return false;
+	const ids = new Set<string>();
+	return value.every((edit: unknown) => {
+		if (
+			!record(edit) ||
+			edit.version !== 'frames-v1' ||
+			typeof edit.id !== 'string' ||
+			!edit.id ||
+			edit.id.length > 100 ||
+			ids.has(edit.id) ||
+			typeof edit.anim !== 'string' ||
+			!/^[a-z0-9][a-z0-9_-]*$/.test(edit.anim) ||
+			!Array.isArray(edit.frames) ||
+			!edit.frames.length ||
+			edit.frames.length > 4096
+		)
+			return false;
+		ids.add(edit.id);
+		const frames = new Set<string>();
+		return edit.frames.every((frame: unknown) => {
+			if (
+				!record(frame) ||
+				!DIRECTION_IDS.includes(frame.dir as string) ||
+				!Number.isSafeInteger(frame.cell) ||
+				(frame.cell as number) < 0 ||
+				frames.has(`${frame.dir}/${frame.cell}`) ||
+				!Array.isArray(frame.layers) ||
+				!frame.layers.length ||
+				frame.layers.length > 3 ||
+				!record(frame.cut) ||
+				!cut(frame.cut.before) ||
+				!cut(frame.cut.after) ||
+				(frame.added !== undefined && frame.added !== true) ||
+				(frame.rest !== undefined && !hash(frame.rest)) ||
+				(frame.newRows !== undefined &&
+					(!Array.isArray(frame.newRows) ||
+						frame.newRows.some((id: unknown) => !LAYER_IDS.includes(id as string))))
+			)
+				return false;
+			frames.add(`${frame.dir}/${frame.cell}`);
+			const layers = new Set<string>();
+			return (
+				frame.layers.every((layer: unknown) => {
+					if (
+						!record(layer) ||
+						!LAYER_IDS.includes(layer.id as string) ||
+						layers.has(layer.id as string) ||
+						!cell(layer.before) ||
+						!cell(layer.after)
+					)
+						return false;
+					layers.add(layer.id as string);
+					return true;
+				}) && frame.layers.some((layer: Record<string, unknown>) => layer.before !== layer.after)
+			);
 		});
 	});
 }

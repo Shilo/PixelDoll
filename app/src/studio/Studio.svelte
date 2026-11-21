@@ -74,6 +74,7 @@
 		gen: () => import('./GenCard.svelte'),
 		details: () => import('./DetailsSheet.svelte'),
 		slots: () => import('./SlotsSheet.svelte'),
+		frames: () => import('./FramesSheet.svelte'),
 		workspace: () => import('./WorkspaceSheet.svelte')
 	};
 
@@ -394,6 +395,7 @@
 	{#if ui.sheet === 'details'}<Lazy load={parts.details} />{/if}
 	{#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
 	{#if ui.sheet === 'slots'}<Lazy load={parts.slots} />{/if}
+	{#if ui.sheet === 'frames' && store.project}<Lazy load={parts.frames} />{/if}
 	{#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
 		<Sheet title={t('studio.titleItem')} cancel="common.done" onclose={() => (ui.sheet = null)}
 			><Lazy load={parts.item} id={ui.selected} /></Sheet

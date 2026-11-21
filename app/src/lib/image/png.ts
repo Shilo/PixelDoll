@@ -17,7 +17,15 @@ export const makeImg = (w: number, h: number): Img => ({
 // minutes in a throttled/hidden tab (seen in M3). Other PNG flavors fall back to the canvas.
 export async function decodePng(src: Blob | Uint8Array): Promise<Img> {
 	const bytes = src instanceof Blob ? new Uint8Array(await src.arrayBuffer()) : src;
-	if (bytes[24] === 8 && (bytes[25] === 6 || bytes[25] === 2) && !bytes[28])
+	const size = pngSize(bytes);
+	if (
+		bytes[24] === 8 &&
+		(bytes[25] === 6 || bytes[25] === 2) &&
+		!bytes[28] &&
+		size &&
+		size.w <= 4096 &&
+		size.h <= 4096
+	)
 		return decodePngBytes(bytes);
 	const blob = new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/png' });
 	const bmp = await createImageBitmap(blob, {

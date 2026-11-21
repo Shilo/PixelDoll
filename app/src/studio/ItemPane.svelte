@@ -65,7 +65,8 @@
 		shared,
 		copyFromSource,
 		restoreFromDesign,
-		openPendingWork
+		openPendingWork,
+		openFrames
 	} from './state.svelte.ts';
 	import {
 		ArrowUp,
@@ -73,6 +74,7 @@
 		Check,
 		ChevronRight,
 		CircleCheck,
+		Grid2x2,
 		Palette,
 		RefreshCw,
 		Trash,
@@ -686,12 +688,17 @@
 			{/if}
 		</div>
 
-		{#if recolorable}
-			<!-- Colors live in the Colors tab; this opens it on the item's own section. -->
-			<button class="bu-action btn plain recolor-link" data-variant="quiet" onclick={recolor}
-				><Palette size={14} />{t('itemPane.recolor')}</button
+		<div class="item-links">
+			{#if recolorable}
+				<!-- Colors live in the Colors tab; this opens it on the item's own section. -->
+				<button class="bu-action btn plain recolor-link" data-variant="quiet" onclick={recolor}
+					><Palette size={14} />{t('itemPane.recolor')}</button
+				>
+			{/if}
+			<button class="bu-action btn plain" data-variant="quiet" onclick={() => openFrames(it.id)}
+				><Grid2x2 size={14} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
 			>
-		{/if}
+		</div>
 
 		<div class="field">
 			<span class="sec-title">{t('itemPane.layerOrder')}</span>
@@ -839,3 +846,12 @@
 		}}><p>{t('common.cannotUndo')}</p></ConfirmDialog
 	>
 {/if}
+
+<style>
+	.item-links {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 4px 12px;
+	}
+</style>

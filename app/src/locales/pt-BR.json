@@ -786,6 +786,7 @@
 		"finishBeforeCharacterRemoval": "Conclua ou descarte as gerações pendentes antes de excluir um personagem.",
 		"finishBeforeMoveRemoval": "Conclua ou descarte as gerações pendentes antes de excluir uma animação.",
 		"finishBeforeDirectionRemoval": "Conclua ou descarte as gerações pendentes antes de alterar as direções.",
+		"finishBeforeFixFrames": "Aguarde a geração em andamento terminar antes de corrigir quadros.",
 		"couldNotRemoveCharactersSavedByAn": "Não foi possível remover os personagens salvos por uma versão preliminar anterior: {reason}",
 		"couldNotReadYourSavedCharactersReason": "Não foi possível ler seus personagens salvos: {reason}",
 		"couldNotOpenThatCharacterError": "Não foi possível abrir esse personagem: {error}",
@@ -1313,7 +1314,8 @@
 			"look": "Precisa de revisão",
 			"unfitted": "Sem ajuste",
 			"stale": "Feito para outro corpo",
-			"demo": "Demo"
+			"demo": "Demo",
+			"edited": "Editado por você"
 		},
 		"coverage": {
 			"oneMove": "Faltam alguns quadros de {move}",
@@ -2499,5 +2501,99 @@
 		"unreadable": "Não foi possível abrir esta imagem. Escolha outro arquivo.",
 		"noArtworkResized": "Nenhuma arte visível resta após o redimensionamento. Escolha outra imagem.",
 		"noArtwork": "Esta imagem não tem arte visível. Escolha outro arquivo."
+	},
+	"fixFrames": {
+		"open": "Corrigir quadros",
+		"title": "Corrigir quadros",
+		"reviewTitle": "Revisar quadros",
+		"target": "Quadros de",
+		"body": "Corpo base",
+		"move": "Animação",
+		"gridLabel": "Quadros de {name} em {move}",
+		"frameLabel": "{dir}, quadro {n}",
+		"editedByYou": "Editado por você",
+		"mirrors": "Espelho de {of}",
+		"hint": "Baixe o PNG, edite-o em qualquer editor de pixels, como Aseprite, Pixelorama ou Piskel, e depois importe-o. Mantenha o tamanho e a grade de {w}×{h}: as linhas são direções e as colunas são quadros. As cores são as originais, então Mudar cores continua funcionando.",
+		"hintLayers": "Baixe o ZIP: ele tem um PNG por camada. Edite-os em qualquer editor de pixels, como Aseprite, Pixelorama ou Piskel, mantenha os nomes, o tamanho e a grade de {w}×{h} e depois importe o ZIP ou os PNGs. As cores são as originais, então Mudar cores continua funcionando.",
+		"downloadPng": "Baixar PNG",
+		"downloadZip": "Baixar ZIP",
+		"import": "Importar PNG editado",
+		"importFiles": "Importar arquivos editados",
+		"demoNote": "Esta é a demonstração incluída. Edite uma cópia para substituir os quadros dela.",
+		"restoring": "Restaurando…",
+		"beforeFrame": "Antes, {dir} {n}",
+		"afterFrame": "Depois, {dir} {n}",
+		"playing": "{move}, reproduzindo",
+		"changedFrame": "{dir}, quadro {n}, alterado",
+		"editedFrame": "{dir}, quadro {n}, editado por você",
+		"reading": "Lendo…",
+		"release": "Solte para importar",
+		"changedCount": {
+			"one": "{n} quadro alterado",
+			"other": "{n} quadros alterados"
+		},
+		"nothingChanged": "Nenhum quadro foi alterado. Edite o PNG baixado, salve-o e importe-o de novo.",
+		"replace": {
+			"one": "Substituir {n} quadro",
+			"other": "Substituir {n} quadros"
+		},
+		"restore": {
+			"one": "Restaurar original · {n}",
+			"other": "Restaurar originais · {n}"
+		},
+		"restoreTitle": {
+			"one": "Restaurar {n} quadro original?",
+			"other": "Restaurar {n} quadros originais?"
+		},
+		"restoreAction": "Restaurar",
+		"restoreBody": "Cada quadro de {name} que você substituiu volta a ser como era antes das suas edições.",
+		"replaced": {
+			"one": "{count} quadro de {name} substituído.",
+			"other": "{count} quadros de {name} substituídos."
+		},
+		"undo": "Desfazer",
+		"undone": {
+			"one": "{count} quadro desfeito.",
+			"other": "{count} quadros desfeitos."
+		},
+		"restored": {
+			"one": "{count} quadro original restaurado.",
+			"other": "{count} quadros originais restaurados."
+		},
+		"notes": {
+			"softAlpha": {
+				"one": "{n} pixel semitransparente ficará totalmente opaco ou totalmente transparente.",
+				"other": "{n} pixels semitransparentes ficarão totalmente opacos ou totalmente transparentes."
+			},
+			"newColors": {
+				"one": "{n} cor nova não mudará com Mudar cores.",
+				"other": "{n} cores novas não mudarão com Mudar cores."
+			},
+			"mirrored": "{dir} é espelho de {of}, então as edições nessa direção não foram usadas. Edite {of} ou desative o espelhamento em Direções para editar {dir} separadamente.",
+			"noBodyRow": "Esta animação não tem quadros do corpo base em {dir}, então as edições ali não foram usadas.",
+			"missingLayer": "Nenhum arquivo termina em -{layer}.png, então essa camada fica como está.",
+			"ignored": {
+				"one": "{n} outro arquivo foi ignorado.",
+				"other": "{n} outros arquivos foram ignorados."
+			},
+			"fitted": "Os itens ajustados a estes quadros do corpo base continuam vestidos: {names}. Confira-os nos quadros alterados.",
+			"emptiedBody": "Um quadro vazio do corpo base é ignorado quando novos itens são criados para ele."
+		},
+		"errors": {
+			"size": "Este PNG tem {got} px, mas estes quadros precisam de {want} px. Mantenha o tamanho e a grade originais.",
+			"duplicateLayer": "Mais de um arquivo termina em -{layer}.png. Escolha um arquivo por camada.",
+			"noLayerMatch": "Nenhum PNG corresponde a estes quadros. Use os arquivos baixados, mantendo os nomes que terminam em -fg ou -bg.",
+			"noPng": "Nenhum PNG encontrado. Escolha o PNG que você baixou e editou.",
+			"notEditable": "Copie este personagem antes de corrigir os quadros dele.",
+			"targetGone": "Este item ou esta animação não existe mais.",
+			"changed": "Estes quadros mudaram desde a sua revisão. Importe o arquivo de novo.",
+			"originalsMissing": "Os quadros originais não estão salvos nesta cópia do personagem.",
+			"originalsUnusable": "Os quadros originais desta cópia do personagem não podem ser usados, então nada foi alterado.",
+			"nothingToRevert": "Estes quadros foram alterados de novo depois disso, então não há nada para desfazer aqui.",
+			"badPng": "Não foi possível ler este arquivo como PNG. Salve-o de novo como PNG e importe-o.",
+			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de substituir quadros do corpo base.",
+			"importFailed": "Não foi possível ler estes quadros. Tente de novo.",
+			"saveFailed": "Não foi possível salvar estes quadros. Nada foi alterado. Tente de novo."
+		}
 	}
 }

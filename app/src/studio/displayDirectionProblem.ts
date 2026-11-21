@@ -6,7 +6,7 @@ import { DIRECTIONS, type DirectionName } from '../lib/rig/rig.ts';
 import { displayDirection } from './displayDirection.ts';
 import { displayMove } from './displayMove.ts';
 
-function formatList(names: readonly string[]): string {
+export function formatList(names: readonly string[]): string {
 	return new Intl.ListFormat(getLocale() || 'en', { type: 'unit', style: 'short' }).format(names);
 }
 

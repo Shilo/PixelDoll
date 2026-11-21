@@ -1,8 +1,8 @@
 // IndexedDB "pixeldoll": projects (manifest JSON), blobs (sha256-keyed Blobs), jobs (queue ledger).
 import { sha256, stableStringify } from '../image/hash.ts';
+import { LocalizedError } from '../message.ts';
 import type { StoredProject } from './project.ts';
 import { workspaceCopy } from './workspace-mode.ts';
-import { LocalizedError } from '../message.ts';
 
 export type StoreName = 'projects' | 'blobs' | 'jobs';
 export const CREATE_DRAFT_PREFIX = 'studio-create:';
@@ -203,7 +203,7 @@ export function withoutCharacters(r: any, ids: Set<string>): Record<string, unkn
 
 async function editIdleCharacter(
 	id: string,
-	action: 'delete' | 'change directions for',
+	action: 'delete' | 'change directions for' | 'replace body frames of',
 	edit: (
 		projects: { delete(key: string): void; put(value: unknown, key: string): void },
 		records: any[]
@@ -264,10 +264,15 @@ async function editIdleCharacter(
 								'Finish or dismiss pending generation work before deleting a character.',
 								'state.finishBeforeCharacterRemoval'
 							)
-						: new LocalizedError(
-								'Finish or dismiss pending generation work before changing directions.',
-								'state.finishBeforeDirectionRemoval'
-							);
+						: action === 'replace body frames of'
+							? new LocalizedError(
+									'Wait for the current generation work to finish before fixing frames.',
+									'state.finishBeforeFixFrames'
+								)
+							: new LocalizedError(
+									'Finish or dismiss pending generation work before changing directions.',
+									'state.finishBeforeDirectionRemoval'
+								);
 				edit(projects, records.result);
 				for (const [hash, blob] of blobs ?? []) t.objectStore('blobs').put(blob, hash);
 			} catch (failure) {
@@ -291,23 +296,36 @@ export async function deleteCharacter(id: string): Promise<void> {
 	});
 }
 
-export async function saveCharacterDirections(
+/** Replace a whole character record while no generation work could write it back, refusing if it changed since `original`. */
+export async function saveIdleCharacter(
 	original: StoredProject,
 	next: StoredProject,
-	blobs: Map<string, Blob>
+	blobs: Map<string, Blob>,
+	action: 'change directions for' | 'replace body frames of'
 ): Promise<void> {
 	const { id } = original;
 	const version = stableStringify(original);
+	const frames = action === 'replace body frames of';
 	await editIdleCharacter(
 		id,
-		'change directions for',
+		action,
 		(projects, records) => {
 			if (records.some((record) => withoutCharacters(record, new Set([id]))))
-				throw new Error('Keep or dismiss this character’s item drafts before changing directions.');
+				throw frames
+					? new LocalizedError(
+							'Keep or dismiss this character’s item drafts before replacing body frames.',
+							'fixFrames.errors.resolveDrafts'
+						)
+					: new Error('Keep or dismiss this character’s item drafts before changing directions.');
 			if (stableStringify(records.find((record) => record?.id === id)) !== version)
-				throw new Error(
-					'This character changed. Close and reopen Directions to review the latest version.'
-				);
+				throw frames
+					? new LocalizedError(
+							'These frames changed since your review. Import the file again.',
+							'fixFrames.errors.changed'
+						)
+					: new Error(
+							'This character changed. Close and reopen Directions to review the latest version.'
+						);
 			projects.put(next, id);
 		},
 		blobs

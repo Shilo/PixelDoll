@@ -751,6 +751,7 @@
 		"finishBeforeCharacterRemoval": "Selesaikan atau singkirkan proses generasi yang tertunda sebelum menghapus karakter.",
 		"finishBeforeMoveRemoval": "Selesaikan atau singkirkan proses generasi yang tertunda sebelum menghapus animasi.",
 		"finishBeforeDirectionRemoval": "Selesaikan atau singkirkan proses generasi yang tertunda sebelum mengubah arah.",
+		"finishBeforeFixFrames": "Tunggu hingga proses generasi yang sedang berjalan selesai sebelum memperbaiki frame.",
 		"couldNotRemoveCharactersSavedByAn": "Karakter yang disimpan oleh versi pratinjau sebelumnya tidak dapat dihapus: {reason}",
 		"couldNotReadYourSavedCharactersReason": "Karakter tersimpan Anda tidak dapat dibaca: {reason}",
 		"couldNotOpenThatCharacterError": "Karakter tersebut tidak dapat dibuka: {error}",
@@ -1249,7 +1250,8 @@
 			"look": "Perlu ditinjau",
 			"unfitted": "Belum disesuaikan",
 			"stale": "Dibuat untuk tubuh lain",
-			"demo": "Demo"
+			"demo": "Demo",
+			"edited": "Diedit oleh Anda"
 		},
 		"coverage": {
 			"oneMove": "Sebagian frame {move} belum ada",
@@ -2383,5 +2385,89 @@
 		"unreadable": "Gambar ini tidak dapat dibuka. Pilih file lain.",
 		"noArtworkResized": "Tidak ada bagian gambar yang terlihat setelah diubah ukurannya. Pilih gambar lain.",
 		"noArtwork": "Gambar ini tidak memiliki bagian yang terlihat. Pilih file lain."
+	},
+	"fixFrames": {
+		"open": "Perbaiki frame",
+		"title": "Perbaiki frame",
+		"reviewTitle": "Tinjau frame",
+		"target": "Frame milik",
+		"body": "Tubuh dasar",
+		"move": "Animasi",
+		"gridLabel": "Frame {name} di {move}",
+		"frameLabel": "{dir}, frame {n}",
+		"editedByYou": "Diedit oleh Anda",
+		"mirrors": "Cerminan {of}",
+		"hint": "Unduh PNG, edit di editor piksel apa pun seperti Aseprite, Pixelorama, atau Piskel, lalu impor. Pertahankan ukurannya dan grid {w}×{h}: baris adalah arah, kolom adalah frame. Warnanya adalah warna asli, jadi Warnai ulang tetap berfungsi.",
+		"hintLayers": "Unduh ZIP: isinya satu PNG per lapisan. Edit di editor piksel apa pun seperti Aseprite, Pixelorama, atau Piskel, pertahankan nama, ukuran, dan grid {w}×{h}, lalu impor ZIP atau PNG tersebut. Warnanya adalah warna asli, jadi Warnai ulang tetap berfungsi.",
+		"downloadPng": "Unduh PNG",
+		"downloadZip": "Unduh ZIP",
+		"import": "Impor PNG yang diedit",
+		"importFiles": "Impor file yang diedit",
+		"demoNote": "Ini adalah demo bawaan. Edit salinannya untuk mengganti frame-nya.",
+		"restoring": "Memulihkan…",
+		"beforeFrame": "Sebelum, {dir} {n}",
+		"afterFrame": "Sesudah, {dir} {n}",
+		"playing": "{move}, sedang diputar",
+		"changedFrame": "{dir}, frame {n}, berubah",
+		"editedFrame": "{dir}, frame {n}, diedit oleh Anda",
+		"reading": "Membaca…",
+		"release": "Lepaskan untuk mengimpor",
+		"changedCount": {
+			"other": "{n} frame berubah"
+		},
+		"nothingChanged": "Tidak ada frame yang berubah. Edit PNG yang diunduh, simpan, lalu impor lagi.",
+		"replace": {
+			"other": "Ganti {n} frame"
+		},
+		"restore": {
+			"other": "Pulihkan asli · {n}"
+		},
+		"restoreTitle": {
+			"other": "Pulihkan {n} frame asli?"
+		},
+		"restoreAction": "Pulihkan",
+		"restoreBody": "Setiap frame {name} yang Anda ganti akan kembali seperti sebelum Anda edit.",
+		"replaced": {
+			"other": "{count} frame {name} diganti."
+		},
+		"undo": "Urungkan",
+		"undone": {
+			"other": "{count} frame diurungkan."
+		},
+		"restored": {
+			"other": "{count} frame asli dipulihkan."
+		},
+		"notes": {
+			"softAlpha": {
+				"other": "{n} piksel semi-transparan akan dibuat sepenuhnya solid atau sepenuhnya transparan."
+			},
+			"newColors": {
+				"other": "{n} warna baru tidak akan berubah dengan Warnai ulang."
+			},
+			"mirrored": "{dir} adalah cerminan {of}, jadi editannya tidak dipakai. Edit {of}, atau matikan pencerminan di Arah untuk mengedit {dir} secara terpisah.",
+			"noBodyRow": "Animasi ini tidak punya frame tubuh dasar untuk {dir}, jadi editan di sana tidak dipakai.",
+			"missingLayer": "Tidak ada file yang berakhiran -{layer}.png, jadi lapisan itu tetap seperti semula.",
+			"ignored": {
+				"other": "{n} file lain diabaikan."
+			},
+			"fitted": "Item yang disesuaikan dengan frame tubuh dasar ini tetap dikenakan: {names}. Periksa item tersebut di frame yang berubah.",
+			"emptiedBody": "Frame tubuh dasar yang kosong dilewati saat item baru dibuat untuknya."
+		},
+		"errors": {
+			"size": "PNG ini berukuran {got} px, tetapi frame ini memerlukan {want} px. Pertahankan ukuran dan grid aslinya.",
+			"duplicateLayer": "Lebih dari satu file berakhiran -{layer}.png. Pilih satu file per lapisan.",
+			"noLayerMatch": "Tidak ada PNG yang cocok dengan frame ini. Gunakan file yang diunduh dan pertahankan nama yang berakhiran -fg atau -bg.",
+			"noPng": "PNG tidak ditemukan. Pilih PNG yang Anda unduh dan edit.",
+			"notEditable": "Salin karakter ini sebelum memperbaiki frame-nya.",
+			"targetGone": "Item atau animasi ini sudah tidak ada.",
+			"changed": "Frame ini berubah sejak Anda meninjaunya. Impor file lagi.",
+			"originalsMissing": "Frame asli tidak tersimpan di salinan karakter ini.",
+			"originalsUnusable": "Frame asli di salinan karakter ini tidak dapat digunakan, jadi tidak ada yang diubah.",
+			"nothingToRevert": "Frame ini sudah diubah lagi sejak itu, jadi tidak ada yang bisa diurungkan di sini.",
+			"badPng": "File ini tidak dapat dibaca sebagai PNG. Simpan lagi sebagai PNG, lalu impor.",
+			"resolveDrafts": "Simpan atau buang draf item karakter ini sebelum mengganti frame tubuh dasar.",
+			"importFailed": "Tidak dapat membaca frame ini. Coba lagi.",
+			"saveFailed": "Tidak dapat menyimpan frame ini. Tidak ada yang diubah. Coba lagi."
+		}
 	}
 }
