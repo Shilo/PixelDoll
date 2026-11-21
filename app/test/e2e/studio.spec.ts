@@ -512,6 +512,56 @@ test('Library deletes local work only after confirmation and offers a backup fir
 	expect(await saved()).toEqual({ ...original, character: false });
 });
 
+test('Settings saves creation choices across reload and resets them by scope', async ({ page }) => {
+	await page.setViewportSize({ width: 1280, height: 800 });
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	const nav = settings.getByRole('navigation', { name: 'Settings', exact: true });
+	const openSettings = async () => {
+		await page.getByRole('button', { name: 'More options', exact: true }).click();
+		await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	};
+	const choices = [
+		['Characters', 'character-model', 'pro', 'v3'],
+		['Moves', 'move-model', 'v3', 'skeleton-v3'],
+		['States', 'state-model', 'pixen', 'pro'],
+		['Items', 'item-method', 'anchor', 'auto']
+	] as const;
+	const select = async (section: string, field: string) => {
+		await nav.getByRole('button', { name: section, exact: true }).click();
+		return settings.locator(`[data-setting="${field}"]`).getByRole('combobox');
+	};
+	await openStudio(page, '/#/');
+	await openSettings();
+	for (const [section, field, value, initial] of choices) {
+		const control = await select(section, field);
+		await expect(control).toHaveValue(initial);
+		await control.selectOption(value);
+	}
+	await page.reload();
+	await openSettings();
+	for (const [section, field, value] of choices)
+		await expect(await select(section, field)).toHaveValue(value);
+	await settings.getByRole('button', { name: 'Reset this page', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Reset Items settings?' })
+		.getByRole('button', { name: 'Reset this page', exact: true })
+		.click();
+	await expect(settings.getByRole('combobox', { name: 'Animation method' })).toHaveValue('auto');
+	await expect(await select('Characters', 'character-model')).toHaveValue('pro');
+	const body = settings.getByRole('spinbutton', { name: 'Body size' });
+	await body.fill('66');
+	await body.press('Tab');
+	await expect(settings.getByRole('alert')).toContainText('4 px steps');
+	await settings.getByRole('button', { name: 'Reset settings', exact: true }).click();
+	await page
+		.getByRole('alertdialog', { name: 'Reset all settings?' })
+		.getByRole('button', { name: 'Reset settings', exact: true })
+		.click();
+	await expect(settings.getByRole('alert').filter({ hasText: '4 px steps' })).toHaveCount(0);
+	for (const [section, field, , initial] of choices)
+		await expect(await select(section, field)).toHaveValue(initial);
+});
+
 test('Settings resets restore only their scope, keep work and the PixelLab key, and disable at defaults', async ({
 	page
 }, info) => {

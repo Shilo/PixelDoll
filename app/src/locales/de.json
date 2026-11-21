@@ -41,6 +41,19 @@
 			"sealed": "Die lokale Arbeit wurde gelöscht. Lade PixelDoll neu, um fortzufahren."
 		}
 	},
+	"creationSettings": {
+		"items": "Ausrüstung",
+		"autoSize": "Automatisch ({size} px)",
+		"custom": "Benutzerdefiniert",
+		"description": "In diesem Browser gespeichert. Die Erstellungsdialoge verwenden diese Werte noch nicht.",
+		"defaults": "Standardwerte für die Erstellung",
+		"readFailed": "Gespeicherte Einstellungen konnten nicht gelesen werden. Setze diese Seite zurück.",
+		"storageUnavailable": "Der Browserspeicher ist nicht verfügbar. Diese Einstellungen können nicht gespeichert werden.",
+		"saveFailed": "Die Auswahl konnte nicht gespeichert werden. Versuche es erneut.",
+		"incompatible": "Wähle für die Frames Auto oder eine Anzahl, die dieses Modell unterstützt.",
+		"framesHelp": "Die verfügbaren Frame-Anzahlen hängen von der Leinwandgröße der Figur ab.",
+		"methodHelp": "Ausrüstung verwendet eine Methode statt eines eigenen Modells."
+	},
 	"settings": {
 		"reset": {
 			"allAction": "Alle Einstellungen zurücksetzen",

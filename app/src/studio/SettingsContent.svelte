@@ -6,18 +6,24 @@
 	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 	import { getKeyRevision } from '../lib/app.svelte.ts';
 	import { isResettableSection, resetSettings, type ResetScope } from './resetSettings.ts';
-	import { settingsAtDefaults } from './settingsDefaults.svelte.ts';
+	import { settingsAtDefaults, watchCreationSettings } from './settingsDefaults.svelte.ts';
+	import { isCreationSection } from './creationSettings.ts';
+	import CreationSettings from './CreationSettings.svelte';
 	import {
 		Archive,
+		Clapperboard,
 		CodeXml,
 		Download,
 		Info,
 		KeyRound,
+		Layers2,
 		Moon,
+		PersonStanding,
 		Settings2,
 		Shirt,
 		Sun,
-		SunMoon
+		SunMoon,
+		UserRound
 	} from './icons.ts';
 	import DeveloperSettings from './DeveloperSettings.svelte';
 	import SettingsItemSegmented from './SettingsItemSegmented.svelte';
@@ -115,6 +121,67 @@
 			]
 		},
 		{
+			id: 'characters',
+			label: settingsLabels.characters,
+			icon: UserRound,
+			entries: [
+				{
+					id: 'character-model',
+					label: 'create.form.model',
+					names: ['V3', 'Pro', 'Pro Flash', 'Standard']
+				},
+				{
+					id: 'base-clothing',
+					label: 'create.form.baseClothing',
+					terms: ['create.form.underwear', 'create.form.nothingWorn']
+				},
+				{ id: 'body-size', label: 'create.form.bodySize' },
+				{ id: 'frame-size', label: 'create.form.frameSize' },
+				{ id: 'direction-presets', label: 'create.form.directionPresets' }
+			]
+		},
+		{
+			id: 'moves',
+			label: settingsLabels.moves,
+			icon: Clapperboard,
+			entries: [
+				{
+					id: 'move-model',
+					label: 'moveSheet.motionModel',
+					names: ['V3', 'PixMiniMax', 'Skeleton V3']
+				},
+				{ id: 'move-frames', label: 'moveSheet.frames' }
+			]
+		},
+		{
+			id: 'states',
+			label: settingsLabels.states,
+			icon: PersonStanding,
+			entries: [
+				{
+					id: 'state-model',
+					label: 'create.form.model',
+					names: ['Pro', 'Pro Flash', 'V3', 'Pixen']
+				}
+			]
+		},
+		{
+			id: 'items',
+			label: settingsLabels.items,
+			icon: Layers2,
+			entries: [
+				{
+					id: 'item-method',
+					label: 'newItem.method',
+					terms: [
+						'create.form.auto',
+						'generationDetails.method.skeletonPose',
+						'generationDetails.method.frameEditing'
+					]
+				}
+			]
+		},
+		{
 			id: 'export',
 			label: settingsLabels.export,
 			icon: Download,
@@ -168,11 +235,14 @@
 		entries: { id: string; label: WhisperKey; terms?: WhisperKey[]; names?: readonly string[] }[];
 	}[];
 	const available = sections.filter(
-		(section) => !workspaceCopy || !['pixellab', 'library', 'developer'].includes(section.id)
+		(section) =>
+			!workspaceCopy ||
+			(!isCreationSection(section.id) && !['pixellab', 'library', 'developer'].includes(section.id))
 	);
 	const groups: SettingsSection[][] = [
 		['pixellab'],
 		['general', 'wardrobe'],
+		['characters', 'moves', 'states', 'items'],
 		['export', 'library'],
 		['developer', 'about']
 	];
@@ -193,12 +263,14 @@
 	let panel: HTMLElement;
 	let search: HTMLInputElement;
 	onMount(() => {
+		const stopWatching = watchCreationSettings();
 		const entry = takeSettingsReturnFocus();
 		void tick().then(() => {
 			if (!search.isConnected) return;
 			if (entry) panel.querySelector<HTMLElement>(`[data-setting="${entry}"] button`)?.focus();
 			else if (matchMedia('(pointer: fine)').matches) search.focus({ preventScroll: true });
 		});
+		return stopWatching;
 	});
 	let previousSection: SettingsSection | null = null;
 	$effect(() => {
@@ -406,6 +478,8 @@
 				<div data-setting="visibility" tabindex="-1">
 					<WardrobeVisibility settings />
 				</div>
+			{:else if isCreationSection(active.id)}
+				{#key active.id}<CreationSettings section={active.id} />{/key}
 			{:else if active.id === 'export'}
 				{#if store.project?.manifest}
 					{@const name = characterName()}

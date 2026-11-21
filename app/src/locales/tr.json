@@ -41,6 +41,19 @@
 			"sealed": "Yerel çalışma silindi. Devam etmek için PixelDoll'u yeniden yükleyin."
 		}
 	},
+	"creationSettings": {
+		"items": "Eşyalar",
+		"autoSize": "Otomatik ({size} px)",
+		"custom": "Özel",
+		"description": "Bu tarayıcıda kaydedilir. Oluşturma pencereleri henüz bu değerleri kullanmaz.",
+		"defaults": "Oluşturma varsayılanları",
+		"readFailed": "Kayıtlı seçimler okunamadı. Düzeltmek için bu sayfayı sıfırlayın.",
+		"storageUnavailable": "Tarayıcı depolaması kullanılamıyor. Bu seçimler kaydedilemez.",
+		"saveFailed": "Bu seçim kaydedilemedi. Tekrar deneyin.",
+		"incompatible": "Kare sayısını Otomatik olarak ayarlayın veya bu modelin desteklediği bir sayı seçin.",
+		"framesHelp": "Kullanılabilir kare sayıları karakterin tuval boyutuna bağlıdır.",
+		"methodHelp": "Eşyalar ayrı bir model yerine bir yöntem kullanır."
+	},
 	"settings": {
 		"reset": {
 			"allAction": "Tüm ayarları sıfırla",

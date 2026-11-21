@@ -41,6 +41,19 @@
 			"sealed": "Pekerjaan lokal telah dihapus. Muat ulang PixelDoll untuk melanjutkan."
 		}
 	},
+	"creationSettings": {
+		"items": "Item",
+		"autoSize": "Otomatis ({size} px)",
+		"custom": "Kustom",
+		"description": "Disimpan di browser ini. Dialog pembuatan belum menggunakan nilai ini.",
+		"defaults": "Default pembuatan",
+		"readFailed": "Pilihan tersimpan tidak dapat dibaca. Setel ulang halaman ini untuk memperbaikinya.",
+		"storageUnavailable": "Penyimpanan browser tidak tersedia. Pilihan ini tidak dapat disimpan.",
+		"saveFailed": "Pilihan ini tidak dapat disimpan. Coba lagi.",
+		"incompatible": "Pilih Otomatis atau jumlah bingkai yang didukung model ini.",
+		"framesHelp": "Jumlah bingkai yang tersedia bergantung pada ukuran kanvas karakter.",
+		"methodHelp": "Item menggunakan metode, bukan model terpisah."
+	},
 	"settings": {
 		"reset": {
 			"allAction": "Atur ulang semua pengaturan",

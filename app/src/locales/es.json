@@ -41,6 +41,19 @@
 			"sealed": "Se eliminó el trabajo local. Recarga PixelDoll para continuar."
 		}
 	},
+	"creationSettings": {
+		"items": "Objetos",
+		"autoSize": "Automático ({size} px)",
+		"custom": "Personalizado",
+		"description": "Se guarda en este navegador. Los diálogos de creación aún no usan estos valores.",
+		"defaults": "Valores de creación",
+		"readFailed": "No se pudieron leer las opciones guardadas. Restablece esta página para repararlas.",
+		"storageUnavailable": "El almacenamiento del navegador no está disponible. No se pueden guardar estas opciones.",
+		"saveFailed": "No se pudo guardar esta opción. Inténtalo de nuevo.",
+		"incompatible": "Elige Auto o una cantidad de fotogramas compatible con este modelo.",
+		"framesHelp": "Las cantidades de fotogramas disponibles dependen del tamaño del lienzo del personaje.",
+		"methodHelp": "Los objetos usan un método, no un modelo independiente."
+	},
 	"settings": {
 		"reset": {
 			"allAction": "Restablecer todos los ajustes",

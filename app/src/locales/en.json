@@ -41,6 +41,19 @@
 			"sealed": "Local work was deleted. Reload PixelDoll to continue."
 		}
 	},
+	"creationSettings": {
+		"items": "Items",
+		"autoSize": "Automatic ({size} px)",
+		"custom": "Custom",
+		"description": "Saved in this browser. Creation dialogs do not use these values yet.",
+		"defaults": "Creation defaults",
+		"readFailed": "Could not read the saved choices. Reset this page to repair them.",
+		"storageUnavailable": "Browser storage is unavailable. These choices cannot be saved.",
+		"saveFailed": "Could not save this choice. Try again.",
+		"incompatible": "Set Frames to Auto or choose a count supported by this model.",
+		"framesHelp": "Available frame counts depend on the character canvas size.",
+		"methodHelp": "Items use a method rather than a separate model."
+	},
 	"settings": {
 		"reset": {
 			"allAction": "Reset all settings",
