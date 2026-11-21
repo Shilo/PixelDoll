@@ -2483,6 +2483,14 @@
 		"review": "Revisa {name} antes de guardar.",
 		"generated": "Generado"
 	},
+	"stateJointFit": {
+		"busy": "Ya se están midiendo las articulaciones. Vuelve a intentarlo cuando termine.",
+		"edited": "Una edición de fotograma impide usar este estado como origen de un movimiento.",
+		"quote": "Consultar el costo de medir las articulaciones",
+		"measure": "Medir articulaciones",
+		"review": "Antes de guardar, comprueba que las articulaciones marcadas coincidan en cada vista.",
+		"save": "Guardar articulaciones"
+	},
 	"stateCapture": {
 		"add": "Crear estado a partir de…",
 		"noMoves": "Agrega una animación para crear un estado a partir de uno de sus fotogramas.",

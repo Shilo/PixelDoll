@@ -13,7 +13,7 @@
 		type MoveAnimationModel,
 		type MoveAnimationOptions
 	} from './moveAnimationOptions.ts';
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { movePlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
@@ -32,6 +32,14 @@
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
 	import { moveSourceMatches, resolveMoveSource, savedReplacementSource } from './moveSource.ts';
+	import {
+		isGeneratedState,
+		measureStateJoints,
+		quoteStateJointFit,
+		saveStateJointFit,
+		type StateJointFitQuote,
+		type StateJointFitReview
+	} from './stateJointFit.ts';
 	import {
 		MOVE_STEPS,
 		bodyMoveIssue,
@@ -199,6 +207,68 @@
 				? savedReplacementSource(m, action, targetDirs)
 				: undefined
 	);
+	let fitBusy = $state(false);
+	let fitQuote = $state.raw<StateJointFitQuote | null>(null);
+	let fitReview = $state.raw<StateJointFitReview | null>(null);
+	let fitError = $state<Message | string | null>(null);
+	const fitLifetime = new AbortController();
+	onDestroy(() => fitLifetime.abort());
+	const offersFit = $derived(!startFrom && isGeneratedState(sourceClip));
+
+	function selectSource(clip: string) {
+		sourceId = clip;
+		sourceCell = undefined;
+		fitQuote = null;
+		fitReview = null;
+		fitError = null;
+	}
+
+	async function fitAction(work: () => Promise<void>) {
+		if (fitBusy) return;
+		fitBusy = true;
+		fitError = null;
+		try {
+			await work();
+		} catch (error) {
+			fitError = errorMessage(error);
+		} finally {
+			fitBusy = false;
+		}
+	}
+
+	function checkFitCost() {
+		const projectId = doc.id;
+		const stateId = sourceId;
+		if (!stateId || fitBusy) return;
+		if (!app.key || app.keyRejected) {
+			rememberMoveForm(projectId);
+			withKey(() => {
+				if (doc.id === projectId) ui.sheet = 'move';
+			});
+			return;
+		}
+		void fitAction(async () => {
+			fitQuote = await quoteStateJointFit(projectId, stateId);
+		});
+	}
+
+	function measureFit() {
+		const quote = fitQuote;
+		if (!quote || fitBusy) return;
+		fitQuote = null;
+		void fitAction(async () => {
+			fitReview = await measureStateJoints(quote, fitLifetime.signal);
+		});
+	}
+
+	function saveFit() {
+		const review = fitReview;
+		if (!review || review.blocked || fitBusy) return;
+		fitReview = null;
+		void fitAction(async () => {
+			await saveStateJointFit(review);
+		});
+	}
 	const affectedMirrors = $derived(
 		m
 			? affectedMoveDirections(m.rig, targetDirs)
@@ -536,7 +606,26 @@
 		}, recoveryTier);
 	}
 
+	function rememberMoveForm(projectId: string) {
+		formDrafts.move = {
+			projectId,
+			regeneration,
+			skeletonRetry,
+			action,
+			replace: replaceSelected,
+			text,
+			dirs: [...selectedDirs],
+			poseStyle: 'visible-side-v1',
+			source: sourceSelection,
+			animation:
+				!riding && (modelChoice !== undefined || userFrameCount !== undefined)
+					? { model, frameCount: userFrameCount }
+					: undefined
+		};
+	}
+
 	function go() {
+		if (fitBusy) return;
 		const projectId = doc.id;
 		if (skeletonReview && moving.spec) {
 			const offer = skeletonReview;
@@ -586,21 +675,7 @@
 			seed: 1 + Math.floor(Math.random() * 1_000_000),
 			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] })
 		};
-		formDrafts.move = {
-			projectId,
-			regeneration,
-			skeletonRetry,
-			action,
-			replace: replaceSelected,
-			text,
-			dirs: [...selectedDirs],
-			poseStyle: 'visible-side-v1',
-			source: sourceSelection,
-			animation:
-				!riding && (modelChoice !== undefined || userFrameCount !== undefined)
-					? { model, frameCount: userFrameCount }
-					: undefined
-		};
+		rememberMoveForm(projectId);
 		const estimate = formEstimate;
 		const minimumTier = addTier;
 		const approvedDirs = [...targetDirs];
@@ -784,7 +859,8 @@
 				/>{/if}<button
 				class="bu-action btn primary lg"
 				data-variant="primary"
-				disabled={!est ||
+				disabled={fitBusy ||
+					!est ||
 					(!review && !!addAccess.error) ||
 					(!!settingUp.spec && !settingUp.done) ||
 					tierBlocked(requiredTier)}
@@ -1224,10 +1300,8 @@
 											class="bu-action"
 											data-variant="outline"
 											aria-pressed={!startFrom?.replacement && (sourceId ?? DEFAULT_MOVE) === key}
-											onclick={() => {
-												sourceId = key;
-												sourceCell = undefined;
-											}}
+											disabled={fitBusy}
+											onclick={() => selectSource(key)}
 										>
 											<Sprite
 												img={sourceThumbnail(key, lastPlaybackCell(clip) ?? 0)}
@@ -1244,10 +1318,8 @@
 									class="bu-action"
 									data-variant="outline"
 									aria-pressed={sourceId === DEFAULT_MOVE}
-									onclick={() => {
-										sourceId = DEFAULT_MOVE;
-										sourceCell = undefined;
-									}}>{nice(DEFAULT_MOVE)}</button
+									disabled={fitBusy}
+									onclick={() => selectSource(DEFAULT_MOVE)}>{nice(DEFAULT_MOVE)}</button
 								>
 							{/if}
 							{#if sourceFrames.length > 1}
@@ -1274,6 +1346,84 @@
 								</details>
 							{/if}
 						</div>
+						{#if offersFit}
+							<div class="fit-panel" aria-busy={fitBusy}>
+								{#if fitReview}
+									<p class="small" role="status">{t('stateJointFit.review')}</p>
+									<div class="fit-views">
+										{#each fitReview.views as view (view.direction)}
+											{@const label = directionLabel(view.direction)}
+											<div>
+												<div class="fit-overlay">
+													<Sprite
+														img={store.project?.images.get(view.hash) ?? null}
+														k={2}
+														limit={112}
+														{label}
+													/>
+													<svg viewBox="0 0 100 100" aria-hidden="true" preserveAspectRatio="none">
+														{#each view.keypoints as point (point.label)}
+															<circle
+																cx={point.x * 100}
+																cy={point.y * 100}
+																r="1.7"
+																fill="currentColor"
+															/>
+														{/each}
+													</svg>
+												</div>
+												<div class="small">{label}</div>
+												{#each [...view.qa.fails, ...(view.qa.warnings ?? [])] as finding, index (index)}
+													<p class="small">{displayMessage(plainReasonMessage(finding))}</p>
+												{/each}
+											</div>
+										{/each}
+									</div>
+									<button
+										class="bu-action"
+										data-variant="primary"
+										disabled={fitBusy || fitReview.blocked}
+										onclick={saveFit}
+									>
+										{t('stateJointFit.save')}
+									</button>
+									<button
+										class="bu-action"
+										data-variant="outline"
+										onclick={() => (fitReview = null)}
+									>
+										{t('moveSheet.skeleton.back')}
+									</button>
+								{:else if fitQuote}
+									<button class="bu-action" data-variant="primary" onclick={measureFit}>
+										{t('stateJointFit.measure')}
+										<span class="cost"
+											>{fitQuote.generations
+												? t('moves.estimate', { gens: formatNumber(fitQuote.generations) })
+												: t('stateCapture.noCredits')}</span
+										>
+									</button>
+								{:else}
+									<button
+										class="bu-action"
+										data-variant="outline"
+										disabled={fitBusy}
+										onclick={checkFitCost}
+									>
+										{t(
+											fitBusy
+												? 'activity.waitingForPixelLab'
+												: app.key && !app.keyRejected
+													? 'stateJointFit.quote'
+													: 'connectSheet.titleConnectPixelLab'
+										)}
+									</button>
+								{/if}
+								{#if fitError}<p class="notice small" role="alert">
+										{displayNestedMessage(fitError)}
+									</p>{/if}
+							</div>
+						{/if}
 					</details>
 				{/if}
 				<details class="disclosure advanced" bind:open={advancedOpen}>
@@ -1484,6 +1634,26 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 4px;
+	}
+	.fit-panel {
+		display: grid;
+		gap: 8px;
+	}
+	.fit-views {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(112px, 100%), 1fr));
+		gap: 12px;
+	}
+	.fit-overlay {
+		display: inline-grid;
+		position: relative;
+	}
+	.fit-overlay svg {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
 	}
 	.frames-field {
 		row-gap: 0;

@@ -2470,6 +2470,14 @@
 		"review": "Kaydetmeden önce {name} durumunu inceleyin.",
 		"generated": "Oluşturulan"
 	},
+	"stateJointFit": {
+		"busy": "Eklem ölçümü zaten sürüyor. Tamamlandığında tekrar deneyin.",
+		"edited": "Bir kare düzenlemesi bu durumun hareket kaynağı olarak kullanılmasını engelliyor.",
+		"quote": "Eklem ölçümünün maliyetini kontrol et",
+		"measure": "Eklemleri ölç",
+		"review": "Kaydetmeden önce işaretli eklemlerin her görünümde doğru yerde olduğunu kontrol et.",
+		"save": "Eklemleri kaydet"
+	},
 	"stateCapture": {
 		"add": "Kareden durum oluştur…",
 		"noMoves": "Karelerinden biriyle durum oluşturmak için bir animasyon ekleyin.",

@@ -2377,6 +2377,14 @@
 		"review": "Tinjau {name} sebelum menyimpan.",
 		"generated": "Hasil generasi"
 	},
+	"stateJointFit": {
+		"busy": "Pengukuran sendi sedang berlangsung. Coba lagi setelah selesai.",
+		"edited": "Perubahan bingkai mencegah keadaan ini digunakan sebagai sumber gerakan.",
+		"quote": "Periksa biaya pengukuran sendi",
+		"measure": "Ukur sendi",
+		"review": "Sebelum menyimpan, periksa posisi sendi yang ditandai di setiap tampilan.",
+		"save": "Simpan sendi"
+	},
 	"stateCapture": {
 		"add": "Buat status dari…",
 		"noMoves": "Tambahkan animasi untuk membuat status dari salah satu frame-nya.",

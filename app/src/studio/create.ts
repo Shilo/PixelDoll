@@ -174,8 +174,9 @@ export interface CreateSpec {
 	activityScope?: string;
 	projectId?: string;
 }
-const CELL = 64,
-	EST = 0.1;
+const CELL = 64;
+/** Generations per uncached estimate-skeleton joint check. */
+export const EST = 0.1;
 // Read-only receipt lookup includes previously completed render attempts. New renders submit once.
 export const CLIP_ATTEMPTS = 2;
 
@@ -328,7 +329,8 @@ export async function run(
 	cache = false,
 	resumeSafe = req.method === 'POST',
 	signal?: AbortSignal,
-	activityScope?: string
+	activityScope?: string,
+	approval?: { attempt: number; quotedEstimate: { reuseOnly: boolean; changed: () => never } }
 ): Promise<JobRec> {
 	signal?.throwIfAborted();
 	const recovery = signal ? measurementRecoveries.get(signal) : undefined;
@@ -360,12 +362,13 @@ export async function run(
 		signal,
 		activityScope,
 		minimumTier: signal ? (generationMinimumTiers.get(signal) ?? 0) : 0,
-		attempt: signal ? generationAttempts.get(signal) : undefined,
+		attempt: approval?.attempt ?? (signal ? generationAttempts.get(signal) : undefined),
+		quotedEstimate: approval?.quotedEstimate,
 		...(recovery && req.path === '/estimate-skeleton' ? { estimateRetry: recovery.intent } : {})
 	});
 	// Queue cancellation is consumer-aware: a failed flow cannot cancel deduplicated work another flow still needs.
 	signal?.throwIfAborted();
-	const r = live(rec) ? await queue.settled(rec.id) : rec;
+	const r = live(rec) ? await queue.settled(rec.id, approval ? signal : undefined) : rec;
 	signal?.throwIfAborted();
 	if (r.state !== 'done')
 		throw new LocalizedError(
@@ -466,6 +469,33 @@ export function managedRestKeypoints(
 	}
 	return out;
 }
+/** One estimate-skeleton check with its record for provenance; keypoints are undefined when the response is invalid. */
+export async function measureJoints(
+	im: Img,
+	resumeSafe = true,
+	signal?: AbortSignal,
+	activityScope?: string,
+	approval?: Parameters<typeof run>[7]
+): Promise<{ keypoints: Keypoint[] | undefined; record: JobRec }> {
+	const input = skeletonInput(im);
+	const record = await run(
+		routes.estimateSkeleton(png(await b64(input.image))),
+		'Finding joints',
+		'm2-skel',
+		true,
+		resumeSafe,
+		signal,
+		activityScope,
+		approval
+	);
+	const points = checkedKeypoints(
+		(record.response as { keypoints?: unknown } | undefined)?.keypoints
+	);
+	return {
+		keypoints: points ? checkedKeypoints(unpadSkeleton(points, input, im)) : undefined,
+		record
+	};
+}
 /** estimate-skeleton (deterministic, 0.1 gen, cached by request) -> API keypoints in LABELS order; undefined on failure. */
 export async function joints(
 	im: Img,
@@ -474,22 +504,8 @@ export async function joints(
 	activityScope?: string
 ): Promise<Keypoint[] | undefined> {
 	try {
-		const measure = async () => {
-			const input = skeletonInput(im);
-			const r = await run(
-				routes.estimateSkeleton(png(await b64(input.image))),
-				'Finding joints',
-				'm2-skel',
-				true,
-				resumeSafe,
-				signal,
-				activityScope
-			);
-			const points = checkedKeypoints(
-				(r.response as { keypoints?: unknown } | undefined)?.keypoints
-			);
-			return points ? checkedKeypoints(unpadSkeleton(points, input, im)) : undefined;
-		};
+		const measure = async () =>
+			(await measureJoints(im, resumeSafe, signal, activityScope)).keypoints;
 		const recovery = signal ? measurementRecoveries.get(signal) : undefined;
 		if (!recovery) return await measure();
 		const before = recovery.tail;
@@ -698,7 +714,7 @@ function cachedJoints(
 		record && checkedKeypoints((record.response as { keypoints?: unknown })?.keypoints);
 	return points ? checkedKeypoints(unpadSkeleton(points, input, frame)) : undefined;
 }
-async function measurementInput(frame: Img) {
+export async function measurementInput(frame: Img) {
 	const input = skeletonInput(frame);
 	return {
 		input,

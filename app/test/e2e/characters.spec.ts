@@ -2694,6 +2694,31 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		(await read()).manifest.rig.animations.find(({ id }) => id === 'ready-stance')
 	).toMatchObject({ kind: 'state', cells: 1 });
 	expect(statePosts()).toHaveLength(1);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
+	await moveSheet.getByRole('radio', { name: 'Cast', exact: true }).click();
+	await moveSheet.getByText('Start from · Standing', { exact: true }).click();
+	await moveSheet
+		.locator('.move-source-list button')
+		.filter({ hasText: /^Ready stance$/ })
+		.click();
+	const jointPosts = () => posts.filter(({ path }) => path.endsWith('/estimate-skeleton')).length;
+	const beforeJointFit = jointPosts();
+	await moveSheet.getByRole('button', { name: 'Connect PixelLab', exact: true }).click();
+	await connect.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key');
+	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+	await expect(moveSheet.getByText('Start from · Ready stance', { exact: true })).toBeVisible();
+	await moveSheet.getByRole('button', { name: 'Check joint fitting cost' }).click();
+	expect(jointPosts()).toBe(beforeJointFit);
+	await moveSheet.getByRole('button', { name: /^Measure joints/ }).click();
+	const saveJoints = moveSheet.getByRole('button', { name: 'Save joints', exact: true });
+	await expect(saveJoints).toBeEnabled();
+	const savedSource = async () =>
+		(await read()).manifest.rig.animations.find(({ id }) => id === 'ready-stance')?.sources;
+	expect(await savedSource()).toBeUndefined();
+	await saveJoints.click();
+	await expect.poll(async () => (await savedSource())?.south?.measured?.[0]?.length).toBe(18);
+	await expect(moveSheet.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
 	expect(errors).toEqual([]);
 });
 

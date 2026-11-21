@@ -2476,6 +2476,14 @@
 		"review": "Prüfe {name} vor dem Speichern.",
 		"generated": "Generiert"
 	},
+	"stateJointFit": {
+		"busy": "Die Gelenke werden bereits bestimmt. Versuche es danach erneut.",
+		"edited": "Eine Bildbearbeitung verhindert, dass dieser Zustand als Quelle für eine Bewegung dient.",
+		"quote": "Kosten der Gelenkmessung prüfen",
+		"measure": "Gelenke messen",
+		"review": "Prüfe vor dem Speichern, ob die markierten Gelenke in jeder Ansicht richtig sitzen.",
+		"save": "Gelenke speichern"
+	},
 	"stateCapture": {
 		"add": "Zustand erstellen aus …",
 		"noMoves": "Füge eine Animation hinzu, um aus einem ihrer Frames einen Zustand zu erstellen.",

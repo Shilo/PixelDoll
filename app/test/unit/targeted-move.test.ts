@@ -226,6 +226,7 @@ async function fixture(
 	});
 	return {
 		saved: () => saved,
+		images,
 		original,
 		enqueue,
 		put,
@@ -355,6 +356,61 @@ test('a native quality failure offers a priced body draft retry without buying e
 	const saved = f.saved();
 	expect(saved.manifest).toEqual(f.original.manifest);
 	expect(saved.moveReviews?.idle?.spec).toMatchObject({ items: [], reviewBeforePublish: true });
+});
+
+test('an authored Skeleton move from a fitted generated State poses the State art and joints', async () => {
+	const f = await fixture();
+	const rec = f.saved(),
+		rig = rec.manifest.rig,
+		dirs = rig.directions.map(({ id }) => id),
+		standing = rig.rest!.south!;
+	const art = makeImg(64, 64);
+	for (let y = 10; y < 60; y++)
+		for (let x = 28; x < 42; x++) art.data.set([180, 140, 120, 255], (y * 64 + x) * 4);
+	const hash = await cellHash(art),
+		joints = standing.keypoints.map((point) => ({ ...point, x: point.x + 0.05 }));
+	expect(hash).not.toBe(standing.image);
+	f.images.set(hash, art);
+	rig.animations.push({
+		id: 'ready',
+		kind: 'state',
+		cells: 1,
+		loop: false,
+		frames: [{ cell: 0, ms: 100 }],
+		source: { endpoint: '/edit-images-v2' },
+		sources: Object.fromEntries(
+			dirs.map((d) => [
+				d,
+				{
+					route: 'import' as const,
+					reference: hash,
+					referenceKeypoints: joints,
+					keypoints: [joints],
+					measured: [joints],
+					motion: 'estimated:generated-state',
+					provenance: []
+				}
+			])
+		)
+	});
+	rec.manifest.items[0].layers[0].cells!.ready = Object.fromEntries(dirs.map((d) => [d, [hash]]));
+	const startFrom = resolveMoveSource(rec.manifest, { clip: 'ready', cell: 0 }, dirs)!;
+	expect(startFrom).toBeDefined();
+	await f.run({
+		id: 'cast',
+		action: 'cast',
+		replace: false,
+		dirs: undefined,
+		approvedDirs: dirs,
+		startFrom
+	});
+	const first = png(await b64(art));
+	const bodies = f.enqueue.mock.calls.flatMap(([request]) =>
+		request.path === '/animate-with-skeleton-v3' ? [request.body as Record<string, unknown>] : []
+	);
+	expect(bodies).toHaveLength(dirs.length);
+	for (const body of bodies)
+		expect(body).toMatchObject({ first_frame: first, first_frame_keypoints: joints });
 });
 
 test('Skeleton retry keeps the exact authored start and omits stale or incompatible starts', async () => {
