@@ -2004,6 +2004,8 @@ export async function moveItemToSlot(
 		if (typeof reason !== 'string' && reason.key === 'wardrobe.itemMoveBusy')
 			toast(reason, {
 				tone: 'warning',
+				// The notice's action is how the person resolves the block, so it never expires on its own.
+				duration: 0,
 				action: () => openPendingWork({ projectId, slots: [item.slot, targetId] })
 			});
 		else toast(message('state.couldNotSaveReason', { reason }), { tone: 'danger' });
