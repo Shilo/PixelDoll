@@ -2658,7 +2658,7 @@
 		"sourceMissing": "Origem indisponível",
 		"sourceChanged": "A origem mudou depois da geração, então este resultado não pode ser salvo. Descarte e tente de novo.",
 		"keepGrounded": "Alinhar à origem",
-		"groundedHint": "Algumas vistas voltaram mais altas ou mais baixas que a origem, então os pés foram movidos para combinar. Desative para mantê-las como geradas."
+		"groundedHint": "Pés movidos para combinar com a origem. Desative para desfazer."
 	},
 	"stateJointFit": {
 		"busy": "A medição das articulações já está em andamento. Tente novamente quando terminar.",

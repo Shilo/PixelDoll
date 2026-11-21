@@ -2629,7 +2629,7 @@
 		"sourceMissing": "Source unavailable",
 		"sourceChanged": "The source changed after generating, so this result can’t be saved. Discard it and try again.",
 		"keepGrounded": "Align to source",
-		"groundedHint": "Some views came back higher or lower than the source, so their feet were moved to match. Turn off to keep them as generated."
+		"groundedHint": "Feet moved to match the source. Turn off to undo."
 	},
 	"stateJointFit": {
 		"busy": "Joint fitting is already in progress. Try again when it finishes.",

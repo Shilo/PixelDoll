@@ -2432,9 +2432,15 @@
 	}
 	.enhance {
 		gap: 4px;
-		min-block-size: 32px;
+		height: 30px;
 		padding-inline: 8px;
 		font-size: var(--fs-sm);
+	}
+	/* Still an easy tap on touch screens, without growing to a full control height. */
+	@media (pointer: coarse) {
+		.enhance {
+			height: 34px;
+		}
 	}
 	.frame-recovery-action {
 		align-self: flex-start;

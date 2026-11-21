@@ -2544,7 +2544,7 @@
 		"sourceMissing": "Sumber tidak tersedia",
 		"sourceChanged": "Sumber berubah setelah pembuatan, jadi hasil ini tidak dapat disimpan. Buang lalu coba lagi.",
 		"keepGrounded": "Sejajarkan dengan sumber",
-		"groundedHint": "Beberapa tampilan kembali lebih tinggi atau lebih rendah dari sumber, jadi kakinya dipindahkan agar sesuai. Matikan untuk mempertahankan hasil aslinya."
+		"groundedHint": "Kaki dipindahkan agar sesuai sumber. Matikan untuk membatalkan."
 	},
 	"stateJointFit": {
 		"busy": "Pengukuran sendi sedang berlangsung. Coba lagi setelah selesai.",

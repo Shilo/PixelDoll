@@ -2644,7 +2644,7 @@
 		"sourceMissing": "Quelle nicht verfügbar",
 		"sourceChanged": "Die Quelle hat sich nach dem Generieren geändert, daher kann dieses Ergebnis nicht gespeichert werden. Verwirf es und versuche es erneut.",
 		"keepGrounded": "An Quelle ausrichten",
-		"groundedHint": "Einige Ansichten kamen höher oder tiefer als die Quelle zurück, daher wurden ihre Füße passend verschoben. Schalte das aus, um sie wie generiert zu behalten."
+		"groundedHint": "Füße an die Quelle angepasst. Zum Rückgängigmachen ausschalten."
 	},
 	"stateJointFit": {
 		"busy": "Die Gelenke werden bereits bestimmt. Versuche es danach erneut.",

@@ -2645,7 +2645,7 @@
 		"sourceMissing": "Source indisponible",
 		"sourceChanged": "La source a changé après la génération : ce résultat ne peut pas être enregistré. Abandonnez-le et réessayez.",
 		"keepGrounded": "Aligner sur la source",
-		"groundedHint": "Certaines vues sont revenues plus haut ou plus bas que la source : leurs pieds ont été déplacés pour correspondre. Désactivez ceci pour les garder telles que générées."
+		"groundedHint": "Pieds déplacés pour correspondre à la source. Désactivez pour annuler."
 	},
 	"stateJointFit": {
 		"busy": "La mesure des articulations est déjà en cours. Réessayez ensuite.",

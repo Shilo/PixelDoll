@@ -323,6 +323,7 @@
 	title={t(itemsStep ? 'moveSheet.checkpoint.titleItems' : 'moveSheet.checkpoint.review')}
 	cancel={itemsStep ? 'common.done' : 'sheet.later'}
 	cancelDisabled={busy}
+	className={itemsStep ? '' : 'move-review'}
 	onclose={() => (ui.sheet = null)}
 	footer={candidate ? foot : undefined}
 >
@@ -373,7 +374,7 @@
 		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
 	{:else if candidate}
 		{#if candidate.warnings.length}
-			<div class="notice warn small">
+			<div class="notice warn small quality-notice">
 				<details class="disclosure" open={hardFailure}>
 					<summary id="move-quality-notes"
 						><ChevronRight size={14} />{t('moveSheet.checkpoint.findings')}</summary
@@ -478,11 +479,25 @@
 </Sheet>
 
 <style>
-	/* Like the start-pose preview: the square stored cell fills the stage height, letterboxed on the stage color. */
+	/* Notes, the Skeleton V3 hint and its button stack so the narrow review keeps them readable. */
+	.quality-notice {
+		display: grid;
+		justify-items: start;
+		gap: 8px;
+	}
+	.quality-notice p {
+		margin: 0;
+	}
+	/* The stage is exactly the square stored cell, so the review has no letterbox bars. */
+	:global(dialog.sheet.center.move-review) {
+		width: min(480px, calc(100vw - 32px));
+	}
 	.checkpoint-stage {
 		display: grid;
 		place-items: center;
-		block-size: 208px;
+		justify-self: center;
+		inline-size: 240px;
+		aspect-ratio: 1;
 		overflow: hidden;
 		background: var(--stage);
 		border: 1px solid var(--bu-line);
@@ -490,13 +505,13 @@
 	}
 	.checkpoint-cell {
 		display: grid;
+		inline-size: 100%;
 		block-size: 100%;
-		max-inline-size: 100%;
-		aspect-ratio: 1;
 	}
 	.checkpoint-preview {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-columns: auto auto;
+		justify-content: center;
 		align-items: center;
 		gap: 16px;
 	}
@@ -590,12 +605,12 @@
 			width: 100%;
 		}
 		.checkpoint-stage {
-			block-size: min(280px, 36dvh);
+			inline-size: min(100%, 280px, 36dvh);
 		}
 	}
 	@media (orientation: landscape) and (max-height: 499px) {
 		.checkpoint-stage {
-			block-size: 144px;
+			inline-size: 144px;
 		}
 	}
 	@media (max-width: 680px) and (orientation: landscape) and (max-height: 499px) {

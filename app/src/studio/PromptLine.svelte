@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The prompt behind a result under review, kept to one quiet line with a copy button.
+	// The prompt behind a result under review: one code line that scrolls sideways when long, and copies whole.
 	import { t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
 	import { Check, Copy } from './icons.ts';
@@ -22,7 +22,15 @@
 </script>
 
 <div class="prompt-line">
-	<p class="small prompt-text" class:expanded title={text}>{text}</p>
+	<!-- A long prompt scrolls sideways, so keyboard users need to reach the scroller. -->
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<code
+		class="small prompt-text"
+		class:expanded
+		role="region"
+		aria-label={t('common.prompt')}
+		tabindex="0">{text}</code
+	>
 	<button
 		class="bu-action btn icon"
 		data-variant="quiet"
@@ -48,12 +56,12 @@
 		border-radius: var(--r-ctl);
 	}
 	.prompt-text {
-		margin: 0;
+		padding-block: 10px;
 		font-family: var(--font-mono);
 		color: var(--bu-text);
-		overflow: hidden;
-		text-overflow: ellipsis;
+		overflow-x: auto;
 		white-space: nowrap;
+		scrollbar-width: thin;
 	}
 	.prompt-text.expanded {
 		white-space: normal;
