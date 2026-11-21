@@ -15,4 +15,12 @@ The managed preflight did not match three other normally generated samples: each
 
 During the outfit transfer check, a dev reload interrupted the harness after its first batch. The first receipt was recovered, and only the previously unsent second batch was submitted manually. This does not qualify Studio's partial-attempt recovery.
 
-These are request, receipt, geometry, and decode checks. They do not qualify the production account, every size and facing combination, reference-edit quality, new State joint fitting, equipment alignment, or native playback. No pixel-fit or silhouette guarantee follows from a successful request.
+These are request, receipt, geometry, and decode checks. They do not qualify the production account, every size and facing combination, reference-edit quality, equipment alignment, or native playback. No pixel-fit or silhouette guarantee follows from a successful request.
+
+## On-demand joint fitting
+
+Joint fitting belongs in Create Move, where the user actually needs the State as an animation source. It is a separate quote, not an automatic charge for every generated State. The user reviews joint placement before saving, and saving does not fit equipment.
+
+On the same local API, an isolated copy of a 64 px Pixen State was fitted after preparing its Standing references. Four `/estimate-skeleton` calls returned 18 joints per view, passed structural review, and billed 0.4 generations for the State checks. Reopening the quote before saving cost zero and produced no additional request attempts. The saved pose resolved as a Move source in all four directions. This did not generate a Move or test gear or export playback.
+
+The follow-up eight-frame Cast check stopped before animation because the isolated fixture had no registered character rig. PixelDoll still responded on port 5199, but the local PixelLab API on port 8000 stopped accepting connections during rig setup. The setup ledger had nine canceled checks, three lost checks, and no provider job receipts. No lost request was resent. State-to-Move generation, gear, and playback remain unverified.
