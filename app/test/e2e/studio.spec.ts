@@ -5390,10 +5390,24 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(model).toHaveValue('pixminimax');
 	await model.selectOption('skeleton-v3');
 	await expect(sheet.getByRole('button', { name: 'End frame', exact: true })).toBeDisabled();
-	await sheet.getByRole('button', { name: 'Start frame', exact: true }).click();
+	const start = sheet.getByRole('button', { name: 'Start frame', exact: true });
+	await start.click();
 	const startWarning = page.getByRole('alertdialog', { name: 'Use a custom start frame?' });
 	await expect(startWarning).toBeVisible();
 	await startWarning.getByRole('button', { name: 'Keep default' }).click();
+	const transfer = await page.evaluateHandle(
+		(bytes) => {
+			const data = new DataTransfer();
+			data.items.add(new File([new Uint8Array(bytes)], 'start.png', { type: 'image/png' }));
+			return data;
+		},
+		Array.from(readFileSync('dev-fixtures/s4rig/walk_east_0.png'))
+	);
+	await start.dispatchEvent('drop', { dataTransfer: transfer });
+	await expect(startWarning).toBeVisible();
+	await expect(start).not.toContainText('start.png');
+	await startWarning.getByRole('button', { name: 'Continue', exact: true }).click();
+	await expect(start).toContainText('start.png');
 	const custom = sheet.getByRole('textbox', { name: 'Describe a new move', exact: true });
 	await expect(custom).toHaveValue('');
 	await custom.fill('jumping in place');
@@ -5412,8 +5426,8 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(end).toContainText('Same as start');
 	await add.getByRole('button', { name: 'Remove end frame', exact: true }).click();
 	await expect(end).toContainText('No end frame');
-	const endPicker = end.locator('../..').locator('input[type=file]');
-	await endPicker.setInputFiles('dev-fixtures/s4rig/walk_east_1.png');
+	const [endPicker] = await Promise.all([page.waitForEvent('filechooser'), end.click()]);
+	await endPicker.setFiles('dev-fixtures/s4rig/walk_east_1.png');
 	await expect(end).toContainText('walk_east_1.png');
 	await loop.click();
 	const reset = page.getByRole('alertdialog', { name: 'Change Loop and reset end frames?' });
