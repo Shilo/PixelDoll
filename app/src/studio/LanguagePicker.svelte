@@ -6,6 +6,7 @@
 	import { popoverFocus } from './experience/focus.ts';
 	import { Check, ChevronDown, Languages } from './icons.ts';
 	import PopoverArrow from './PopoverArrow.svelte';
+	import SettingsItemButton from './SettingsItemButton.svelte';
 
 	const nameOf = (id: string) => (id === 'id' ? 'Bahasa Indonesia' : localeName(id));
 	const alphabetical = new Intl.Collator('en');
@@ -35,27 +36,32 @@
 </script>
 
 {#if choices.length > 1}
-	<button
-		type="button"
-		class={[
-			compact ? 'bu-action btn icon plain' : 'row bu-action',
-			{ 'settings-action': settings }
-		]}
-		data-variant={settings ? 'outline' : 'quiet'}
-		aria-label={t('language.label')}
-		title={compact ? t('language.label') : undefined}
-		aria-describedby={compact ? undefined : valueId}
-		aria-controls={menuId}
-		aria-expanded={expanded}
-		popovertarget={menuId}
-	>
+	{@const trigger = {
+		'aria-label': t('language.label'),
+		title: compact ? t('language.label') : undefined,
+		'aria-describedby': compact ? undefined : valueId,
+		'aria-controls': menuId,
+		'aria-expanded': expanded,
+		popovertarget: menuId
+	}}
+	{#snippet triggerContents()}
 		<Languages size={18} aria-hidden="true" />
 		{#if !compact}
 			<span class="row-name">{openerLabel(t('language.label'))}</span>
 			<span id={valueId} class="faint small" lang={activeLanguage}>{nameOf(activeLanguage)}</span>
 			{#if settings}<ChevronDown size={16} aria-hidden="true" />{:else}<SurfaceChevron />{/if}
 		{/if}
-	</button>
+	{/snippet}
+	{#if settings}
+		<SettingsItemButton {...trigger}>{@render triggerContents()}</SettingsItemButton>
+	{:else}
+		<button
+			{...trigger}
+			type="button"
+			class={compact ? 'bu-action btn icon plain' : 'row bu-action'}
+			data-variant="quiet">{@render triggerContents()}</button
+		>
+	{/if}
 	<div
 		id={menuId}
 		class="menu bu-popover-anchor"

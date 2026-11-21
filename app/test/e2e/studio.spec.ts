@@ -239,6 +239,7 @@ test('Settings About opens a page with build details and copies them', async ({ 
 		.baseURL!;
 	await page.goto(dev);
 	await openSettings();
+	await settings.getByRole('button', { name: 'Settings', exact: true }).click();
 	await about.click();
 	await expect(settings.getByText(/^Version \d+\.\d+\.\d+-dev$/)).toBeVisible();
 	await expect(settings.getByText('Development', { exact: true })).toBeVisible();
@@ -356,7 +357,7 @@ test('the startup preview notice expires after eight seconds', async ({ page }, 
 	await expect(preview).toHaveCount(0);
 });
 
-test('the startup pre-release notice opens the existing export picker', async ({ page }, info) => {
+test('the startup pre-release notice downloads a library backup', async ({ page }, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 	let releaseFixture!: () => void;
 	const fixtureHeld = new Promise<void>((resolve) => {
@@ -368,20 +369,99 @@ test('the startup pre-release notice opens the existing export picker', async ({
 	});
 	await page.goto(dev);
 	const notice = page.getByRole('status').filter({ hasText: /Pre-release · v/ });
-	const exportButton = notice.getByRole('button', { name: 'Export sprites', exact: true });
+	const backupButton = notice.getByRole('button', { name: 'Back up library', exact: true });
 	let loadingHeight: number;
 	try {
-		await expect(exportButton).toBeVisible();
-		await expect(exportButton).toBeDisabled();
+		await expect(backupButton).toBeVisible();
+		await expect(backupButton).toBeDisabled();
 		loadingHeight = await notice.evaluate((element) => element.clientHeight);
 	} finally {
 		releaseFixture();
 	}
-	await expect(exportButton).toBeEnabled();
+	await expect(backupButton).toBeEnabled();
 	expect(await notice.evaluate((element) => element.clientHeight)).toBe(loadingHeight);
-	await exportButton.click();
-	await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toBeVisible();
+	const downloading = page.waitForEvent('download');
+	await backupButton.click();
+	const download = await downloading;
+	expect(download.suggestedFilename()).toMatch(/\.backup\.zip$/);
+	const files = await unzip(new Uint8Array(readFileSync((await download.path())!)));
+	expect(JSON.parse(new TextDecoder().decode(files.get('backup.json'))).format).toBe(
+		'pixeldoll-backup/1'
+	);
 	await expect(notice).toHaveCount(0);
+});
+
+test('Settings reset restores global preferences without removing work or the PixelLab key', async ({
+	page
+}, info) => {
+	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
+	await page.route('https://api.pixellab.ai/v2/balance', (route) =>
+		route.fulfill({
+			json: {
+				subscription: { type: 'generations', status: 'active', generations: 5, total: 10 },
+				credits: { usd: 0 }
+			}
+		})
+	);
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.theme', 'light');
+		localStorage.setItem('pixeldoll.locale', 'en');
+		localStorage.setItem('pixeldoll.developerMode', '1');
+		localStorage.setItem('pixeldoll.wardrobe.hideShared', '1');
+		localStorage.setItem('pixellabApiKey', 'synthetic-settings-reset');
+	});
+	await openStudio(page, dev);
+	const character = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		const exportPath = '/src/lib/store/export-settings.ts';
+		const state = await import(statePath);
+		await state.copyDemo();
+		await (await import(exportPath)).saveExportSetting({ engine: 'unity' });
+		return state.doc.id as string;
+	});
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await settings.getByRole('button', { name: 'Settings', exact: true }).click();
+	const reset = settings.getByRole('button', { name: 'Reset settings', exact: true });
+	await reset.click();
+	const confirmation = page.getByRole('alertdialog', { name: 'Reset all settings?' });
+	const cancel = confirmation.getByRole('button', { name: 'Cancel', exact: true });
+	await expect(cancel).toBeFocused();
+	await cancel.click();
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+	await reset.click();
+	await confirmation.getByRole('button', { name: 'Reset settings', exact: true }).click();
+	await expect(settings.getByRole('status')).toHaveText('Settings reset.');
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+	const saved = await page.evaluate(async (id) => {
+		const exportPath = '/src/lib/store/export-settings.ts';
+		const dbPath = '/src/lib/store/db.ts';
+		return {
+			keptKey: localStorage.getItem('pixellabApiKey') === 'synthetic-settings-reset',
+			keptCharacter: Boolean(await (await import(dbPath)).get('projects', id)),
+			developer: localStorage.getItem('pixeldoll.developerMode'),
+			wardrobe: localStorage.getItem('pixeldoll.wardrobe.hideShared'),
+			language: localStorage.getItem('pixeldoll.locale'),
+			exports: await (await import(exportPath)).readExportSettings()
+		};
+	}, character);
+	expect(saved).toEqual({
+		keptKey: true,
+		keptCharacter: true,
+		developer: null,
+		wardrobe: null,
+		language: null,
+		exports: { engine: 'godot', dressedCharacterSheets: true, playOnce: [] }
+	});
+	await settings.getByRole('button', { name: 'Appearance', exact: true }).click();
+	const segmented = await settings.getByRole('radiogroup', { name: 'Theme' }).boundingBox();
+	const language = await settings
+		.getByRole('button', { name: 'Language', exact: true })
+		.boundingBox();
+	expect(segmented?.height).toBe(language?.height);
 });
 
 for (const [width, height] of [
@@ -651,7 +731,7 @@ async function expectDirectionGrid(page: Page, directions: (string | null)[], co
 }
 
 // The production build strips the __queue/__studio hooks and developer rigs, so the dev server checks them directly.
-test('dev server: offline pauses the queue, back online resumes it, and developer rigs stay collapsed', async ({
+test('dev server: offline pauses the queue, back online resumes it, and Settings hides local test tools', async ({
 	page,
 	context
 }, info) => {
@@ -706,8 +786,10 @@ test('dev server: offline pauses the queue, back online resumes it, and develope
 	const settings = page.getByRole('dialog', { name: 'Settings' });
 	await expect(settings.getByText('E2E dev rig', { exact: true })).toHaveCount(0);
 	await settings.getByRole('switch', { name: 'Developer mode' }).check();
-	await expect(settings.getByText('Developer rigs', { exact: true })).toBeVisible();
-	await expect(settings.getByRole('button', { name: 'E2E dev rig', exact: true })).toBeVisible();
+	await expect(settings.getByRole('button', { name: 'Local test tools', exact: true })).toHaveCount(
+		0
+	);
+	await expect(settings.getByRole('button', { name: 'E2E dev rig', exact: true })).toHaveCount(0);
 });
 
 // The demo tests run the production preview without a key. Each is independent so a slow machine costs one short test,
@@ -6940,9 +7022,7 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
 	const retryPeek = page.getByRole('dialog', { name: 'API calls', exact: true });
-	await retryPeek
-		.getByRole('combobox', { name: 'API call scope', exact: true })
-		.selectOption({ index: 1 });
+	await retryPeek.locator('.scope-toggle').nth(1).click();
 	await expect(retryPeek.getByText('Dress standing views', { exact: false })).toBeVisible();
 	await expect(retryPeek.getByText('Dress frozen frames', { exact: false })).toHaveCount(0);
 	await retryPeek.getByRole('button', { name: 'Close API calls', exact: true }).click();

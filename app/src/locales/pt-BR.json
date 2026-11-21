@@ -28,6 +28,13 @@
 		"backupOmissions": "O backup foi baixado, mas alguns personagens ou imagens estão ausentes."
 	},
 	"settings": {
+		"reset": {
+			"action": "Redefinir configurações",
+			"title": "Redefinir todas as configurações?",
+			"description": "Restaura os padrões de tema, idioma, guarda-roupa global, exportação e opções de desenvolvedor. Seus trabalhos, backups e sua chave do PixelLab permanecem neste dispositivo.",
+			"done": "Configurações redefinidas.",
+			"failed": "Não foi possível salvar estes padrões: {sections}."
+		},
 		"wardrobe": "Itens compartilhados do guarda-roupa",
 		"connection": "PixelLab",
 		"about": "Sobre",
@@ -44,15 +51,10 @@
 		"mode": "Modo de desenvolvedor",
 		"description": "Mostra ferramentas para inspecionar chamadas de API, copiar IDs e abrir backups em uma aba isolada.",
 		"notSaved": "O navegador não conseguiu salvar a alteração. Ela vale apenas para esta aba.",
-		"pages": "Páginas de desenvolvimento (M1 a M5)",
-		"rigs": "Rigs de desenvolvimento",
 		"target": "Chamadas de API para",
 		"copyId": "Copiar ID",
-		"practice": "Experimente",
-		"stepFind": "Encontre Chamadas de API ao lado do título de uma janela",
-		"stepChoose": "Escolha a tarefa de exemplo",
-		"stepCopy": "Selecione “{copyId}”",
-		"practiceNote": "Apenas dados de exemplo. Nada é enviado.",
+		"copyIdValue": "Copiar ID {id}",
+		"preview": "Prévia",
 		"idCopied": "ID copiado",
 		"idCopyFailed": "Não foi possível copiar o ID."
 	},
@@ -565,8 +567,7 @@
 		"workspaceCopyTabTitle": "Cópia do espaço de trabalho · PixelDoll",
 		"previewTitle": "Versão preliminar · v{version}",
 		"previewRisk": "Personagens salvos podem parar de funcionar após atualizações.",
-		"previewBackupDescription": "Exporte para guardar uma cópia dos seus sprites.",
-		"exportSprites": "Exportar sprites",
+		"previewBackupDescription": "Faça um backup da biblioteca para guardar uma cópia dos seus personagens e artes.",
 		"youReOfflineEditAndExportLocally": "Você está offline. Edite e exporte neste dispositivo.",
 		"titleInspectCharacter": "Inspecionar personagem",
 		"titleWorkspaceCopy": "Cópia do espaço de trabalho",

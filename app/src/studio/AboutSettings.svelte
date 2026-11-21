@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SettingsItemButton from './SettingsItemButton.svelte';
 	import { t } from 'svelte-whisper';
 	import { message } from '../lib/message.ts';
 	import { repository } from '../lib/repository.ts';
@@ -38,22 +39,16 @@
 		{#if mode}<span class="bu-muted">{mode}</span>{/if}
 	</div>
 	<div class="about-actions">
-		<button
-			class="bu-action settings-action"
-			data-variant="outline"
-			type="button"
+		<SettingsItemButton
 			aria-describedby={externalHint}
 			onclick={() => window.open(repository, '_blank', 'noopener,noreferrer')}
 		>
 			<Github size={18} />
 			<span class="row-name">{t('versionRow.openSource')}</span>
 			<ExternalLink size={16} aria-hidden="true" />
-		</button>
+		</SettingsItemButton>
 		{#if hasCommit}
-			<button
-				class="bu-action settings-action"
-				data-variant="outline"
-				type="button"
+			<SettingsItemButton
 				aria-describedby={externalHint}
 				onclick={() => window.open(commitUrl, '_blank', 'noopener,noreferrer')}
 			>
@@ -61,17 +56,12 @@
 				<span class="row-name">{t('versionRow.viewCommit')}</span>
 				<span class="bu-muted bu-number">{__APP_COMMIT__.slice(0, 7)}</span>
 				<ExternalLink size={16} aria-hidden="true" />
-			</button>
+			</SettingsItemButton>
 		{/if}
 		<span id={externalHint} hidden>{t('noticeLink.opensInANewTab')}</span>
-		<button
-			class="bu-action settings-action"
-			data-variant="outline"
-			type="button"
-			onclick={copyDetails}
-		>
+		<SettingsItemButton onclick={copyDetails}>
 			<Copy size={18} aria-hidden="true" />{t('versionRow.copyDetails')}
-		</button>
+		</SettingsItemButton>
 	</div>
 </div>
 

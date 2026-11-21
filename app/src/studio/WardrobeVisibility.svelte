@@ -4,6 +4,7 @@
 	import { LayoutTemplate, Lock, UserRound, UsersRound } from './icons.ts';
 	import { characterName, doc, isDemo, refreshShared, store, toast } from './state.svelte.ts';
 	import RichMessage from './RichMessage.svelte';
+	import SettingsItemToggle from './SettingsItemToggle.svelte';
 	import {
 		demoItemsShown,
 		setDemoItemsShown,
@@ -32,6 +33,33 @@
 	}
 </script>
 
+{#snippet allContent()}
+	<UsersRound size={18} aria-hidden="true" />
+	{#snippet emphasis()}<strong>{t('sharedVisibility.allEmphasis')}</strong>{/snippet}
+	<span class="row-name"><RichMessage key="sharedVisibility.all" slots={{ all: emphasis }} /></span>
+{/snippet}
+{#snippet demoContent()}
+	<LayoutTemplate size={18} aria-hidden="true" />
+	{#snippet emphasis()}<strong>{t('sharedVisibility.demoEmphasis')}</strong>{/snippet}
+	<span class="row-name"
+		><RichMessage key="sharedVisibility.demo" slots={{ demo: emphasis }} /></span
+	>
+	{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
+{/snippet}
+{#snippet wardrobeToggle(
+	contents: import('svelte').Snippet,
+	attributes: import('svelte/elements').HTMLInputAttributes
+)}
+	{#if scope === 'global'}
+		<SettingsItemToggle {...attributes}>{@render contents()}</SettingsItemToggle>
+	{:else}
+		<label class="row bu-check">
+			{@render contents()}
+			<input {...attributes} class="bu-switch" type="checkbox" role="switch" />
+		</label>
+	{/if}
+{/snippet}
+
 <div role="group" aria-labelledby={headingId}>
 	{#if scope === 'global'}
 		<h4 class="settings-label" id={headingId}>{t('sharedVisibility.heading')}</h4>
@@ -41,20 +69,14 @@
 	{#if hideAll && scope !== 'global'}<span id={lockReasonId} hidden
 			>{t('sharedVisibility.allOn')}</span
 		>{/if}
-	{#if scope !== 'character'}<label class="row bu-check">
-			<UsersRound size={18} aria-hidden="true" />
-			{#snippet all()}<strong>{t('sharedVisibility.allEmphasis')}</strong>{/snippet}
-			<span class="row-name"><RichMessage key="sharedVisibility.all" slots={{ all }} /></span>
-			<input
-				class="bu-switch"
-				type="checkbox"
-				role="switch"
-				aria-label={t('sharedVisibility.hideAll')}
-				checked={hideAll}
-				defaultChecked={hideAll}
-				onchange={(event) => reportSave(setSharedItemsHiddenForAll(event.currentTarget.checked))}
-			/>
-		</label>{/if}
+	{#if scope !== 'character'}
+		{@render wardrobeToggle(allContent, {
+			'aria-label': t('sharedVisibility.hideAll'),
+			checked: hideAll,
+			defaultChecked: hideAll,
+			onchange: (event) => reportSave(setSharedItemsHiddenForAll(event.currentTarget.checked))
+		})}
+	{/if}
 	{#if scope !== 'global'}<label class="row bu-check">
 			<UserRound size={18} aria-hidden="true" />
 			{#snippet character()}<strong>{name}</strong>{/snippet}
@@ -75,26 +97,19 @@
 					reportSave(setSharedItemsHiddenForCharacter(doc.id, event.currentTarget.checked))}
 			/>
 		</label>{/if}
-	{#if scope !== 'character'}<label class="row bu-check">
-			<LayoutTemplate size={18} aria-hidden="true" />
-			{#snippet demo()}<strong>{t('sharedVisibility.demoEmphasis')}</strong>{/snippet}
-			<span class="row-name"><RichMessage key="sharedVisibility.demo" slots={{ demo }} /></span>
-			{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
-			<input
-				class="bu-switch"
-				type="checkbox"
-				role="switch"
-				aria-label={t('sharedVisibility.hideDemo')}
-				aria-describedby={hideAll ? lockReasonId : undefined}
-				checked={hideDemo}
-				defaultChecked={hideDemo}
-				disabled={hideAll}
-				onchange={(event) => {
-					reportSave(setDemoItemsShown(!event.currentTarget.checked));
-					if (store.project && !isDemo()) void refreshShared();
-				}}
-			/>
-		</label>{/if}
+	{#if scope !== 'character'}
+		{@render wardrobeToggle(demoContent, {
+			'aria-label': t('sharedVisibility.hideDemo'),
+			'aria-describedby': hideAll ? lockReasonId : undefined,
+			checked: hideDemo,
+			defaultChecked: hideDemo,
+			disabled: hideAll,
+			onchange: (event) => {
+				reportSave(setDemoItemsShown(!event.currentTarget.checked));
+				if (store.project && !isDemo()) void refreshShared();
+			}
+		})}
+	{/if}
 	{#if hideAll && scope === 'global'}
 		<p class="bu-muted settings-description" id={lockReasonId}>{t('sharedVisibility.allOn')}</p>
 	{:else if hideAll && onManage}

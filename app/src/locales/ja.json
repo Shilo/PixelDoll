@@ -28,6 +28,13 @@
 		"backupOmissions": "バックアップをダウンロードしました。一部のキャラクターや画像が含まれていません。"
 	},
 	"settings": {
+		"reset": {
+			"action": "設定をリセット",
+			"title": "すべての設定をリセットしますか？",
+			"description": "テーマ、言語、全体のワードローブ、エクスポート、開発者の設定を既定値に戻します。作品、バックアップ、PixelLab キーはこの端末に残ります。",
+			"done": "設定をリセットしました。",
+			"failed": "次の既定値を保存できませんでした：{sections}。"
+		},
 		"wardrobe": "共有アイテム",
 		"connection": "PixelLab",
 		"about": "アプリについて",
@@ -44,15 +51,10 @@
 		"mode": "開発者モード",
 		"description": "API呼び出しを確認したり、IDをコピーしたり、分離されたタブでバックアップを開いたりするツールを表示します。",
 		"notSaved": "変更をブラウザーに保存できませんでした。このタブにのみ適用されます。",
-		"pages": "開発者向けページ（M1～M5）",
-		"rigs": "開発者向けリグ",
 		"target": "API 呼び出しの対象",
 		"copyId": "ID をコピー",
-		"practice": "試してみる",
-		"stepFind": "シートのタイトルの横にある「API呼び出し」を見つけます",
-		"stepChoose": "サンプルジョブを選びます",
-		"stepCopy": "「{copyId}」を選びます",
-		"practiceNote": "サンプルデータのみです。何も送信されません。",
+		"copyIdValue": "ID {id} をコピー",
+		"preview": "プレビュー",
 		"idCopied": "ID をコピーしました",
 		"idCopyFailed": "ID をコピーできませんでした。"
 	},
@@ -548,8 +550,7 @@
 		"workspaceCopyTabTitle": "ワークスペースのコピー・PixelDoll",
 		"previewTitle": "プレリリース版・v{version}",
 		"previewRisk": "保存したキャラクターは、アップデート後に動作しなくなる場合があります。",
-		"previewBackupDescription": "エクスポートしてスプライトのコピーを残しておきましょう。",
-		"exportSprites": "スプライトをエクスポート",
+		"previewBackupDescription": "ライブラリをバックアップして、キャラクターとイラストのコピーを保存しましょう。",
 		"youReOfflineEditAndExportLocally": "オフラインです。ローカルで編集とエクスポートができます。",
 		"titleInspectCharacter": "キャラクターを確認",
 		"titleWorkspaceCopy": "ワークスペースのコピー",

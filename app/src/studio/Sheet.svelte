@@ -64,6 +64,7 @@
 	});
 	// HIG: Done/Close confirm and sit trailing; Cancel/Hide sit leading
 	const cancelTrailing = $derived(cancel === 'common.done' || cancel === 'common.close');
+	const showDeveloper = $derived(!!developer && developerModeEnabled());
 	const kind = $derived(
 		ui.size === 'compact' ? 'bottom' : ui.size === 'landscape' ? 'side' : 'center'
 	);
@@ -87,7 +88,7 @@
 	}}
 >
 	{#if kind === 'bottom'}<div class="grabber" aria-hidden="true"></div>{/if}
-	<header class="sheet-head">
+	<header class="sheet-head" class:has-developer={showDeveloper}>
 		{#if leading}{@render leading()}{:else if cancelTrailing}<span></span>{:else}<button
 				class="bu-action btn plain link"
 				data-variant="quiet"
@@ -97,14 +98,25 @@
 		<div class="sheet-heading">
 			<h2 id="sheet-title" class="sheet-title">{title}</h2>
 			{#if heading}{@render heading()}{/if}
-			{#if developerModeEnabled()}{@render developer?.()}{/if}
 		</div>
-		{#if trailing}{@render trailing()}{:else if cancelTrailing}<button
-				class="bu-action btn plain link done"
-				data-variant="quiet"
-				disabled={cancelDisabled}
-				onclick={onclose}>{t(cancel)}</button
-			>{:else}<span></span>{/if}
+		{#snippet endAction()}
+			{#if trailing}{@render trailing()}{:else if cancelTrailing}<button
+					class="bu-action btn plain link done"
+					data-variant="quiet"
+					disabled={cancelDisabled}
+					onclick={onclose}>{t(cancel)}</button
+				>{/if}
+		{/snippet}
+		{#if showDeveloper}
+			<div class="sheet-trailing">
+				{@render developer?.()}
+				{@render endAction()}
+			</div>
+		{:else if trailing || cancelTrailing}
+			{@render endAction()}
+		{:else}
+			<span></span>
+		{/if}
 	</header>
 	<div class="sheet-body">{@render children()}</div>
 	{#if footer}<footer class="sheet-foot">{@render footer()}</footer>{/if}
@@ -112,8 +124,15 @@
 </dialog>
 
 <style>
-	.sheet-head {
+	.sheet-head:not(.has-developer) {
 		grid-template-columns: minmax(52px, 1fr) minmax(0, auto) minmax(52px, 1fr);
+	}
+	.sheet-trailing {
+		display: flex;
+		align-items: center;
+		justify-content: end;
+		gap: 4px;
+		min-inline-size: 0;
 	}
 	.sheet-title {
 		min-width: 0;

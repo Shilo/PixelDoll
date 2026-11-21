@@ -28,6 +28,13 @@
 		"backupOmissions": "Cadangan telah diunduh, tetapi beberapa karakter atau gambar tidak disertakan."
 	},
 	"settings": {
+		"reset": {
+			"action": "Atur ulang pengaturan",
+			"title": "Atur ulang semua pengaturan?",
+			"description": "Mengembalikan tema, bahasa, lemari pakaian global, ekspor, dan opsi pengembang ke nilai bawaan. Karya, cadangan, dan kunci PixelLab Anda tetap ada di perangkat ini.",
+			"done": "Pengaturan diatur ulang.",
+			"failed": "Tidak dapat menyimpan nilai bawaan ini: {sections}."
+		},
 		"wardrobe": "Item lemari bersama",
 		"connection": "PixelLab",
 		"about": "Tentang",
@@ -44,15 +51,10 @@
 		"mode": "Mode pengembang",
 		"description": "Tampilkan alat untuk memeriksa panggilan API, menyalin ID, dan membuka cadangan di tab terisolasi.",
 		"notSaved": "Browser tidak dapat menyimpan perubahan. Perubahan hanya berlaku di tab ini.",
-		"pages": "Halaman pengembang (M1 hingga M5)",
-		"rigs": "Rig pengembang",
 		"target": "Panggilan API untuk",
 		"copyId": "Salin ID",
-		"practice": "Coba",
-		"stepFind": "Temukan Panggilan API di samping judul panel",
-		"stepChoose": "Pilih tugas contoh",
-		"stepCopy": "Pilih “{copyId}”",
-		"practiceNote": "Hanya data contoh. Tidak ada yang dikirim.",
+		"copyIdValue": "Salin ID {id}",
+		"preview": "Pratinjau",
 		"idCopied": "ID disalin",
 		"idCopyFailed": "ID tidak dapat disalin."
 	},
@@ -545,8 +547,7 @@
 		"workspaceCopyTabTitle": "Salinan ruang kerja · PixelDoll",
 		"previewTitle": "Prarilis · v{version}",
 		"previewRisk": "Karakter tersimpan mungkin tidak bisa digunakan setelah pembaruan.",
-		"previewBackupDescription": "Ekspor untuk menyimpan salinan sprite Anda.",
-		"exportSprites": "Ekspor sprite",
+		"previewBackupDescription": "Cadangkan pustaka untuk menyimpan salinan karakter dan karya Anda.",
 		"youReOfflineEditAndExportLocally": "Anda sedang offline. Edit dan ekspor secara lokal.",
 		"titleInspectCharacter": "Periksa karakter",
 		"titleWorkspaceCopy": "Salinan ruang kerja",

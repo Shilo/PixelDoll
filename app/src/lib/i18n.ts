@@ -54,17 +54,19 @@ export function setupI18n(): Promise<void> {
 export async function selectLanguage(override?: string): Promise<boolean> {
 	const id = override ?? detectedLanguage();
 	if (!(await setLocale(id))) return false;
+	let saved = true;
 	if (!workspaceCopy) {
 		try {
 			if (override) localStorage.setItem(localeKey, override);
 			else localStorage.removeItem(localeKey);
 		} catch (error) {
 			console.warn('PixelDoll could not save the language preference:', error);
+			saved = false;
 		}
 		if (import.meta.env.PROD) setOfflineLocale(id, true);
 	}
 	preference.set(override);
-	return true;
+	return saved;
 }
 
 export function displayMessage(value: Message | string): string {

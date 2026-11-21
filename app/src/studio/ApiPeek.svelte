@@ -28,6 +28,7 @@
 	import { displayDirection } from './displayDirection.ts';
 	import RequestFields from './RequestFields.svelte';
 	import PopoverArrow from './PopoverArrow.svelte';
+	import SettingsItemButton from './SettingsItemButton.svelte';
 	import { popoverFocus } from './experience/focus.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { CodeXml, Copy, Check, ListPlus, ListMinus, X, ChevronRight } from './icons.ts';
@@ -49,23 +50,38 @@
 		menu?: boolean; // menu: a labeled row inside an options menu
 		/**
 		 * A sample for Settings: docked inline and open, works while Developer mode is off, never reads
-		 * the live log or queue, and numbers the trigger, scope picker and Copy ID for its practice steps.
+		 * the live log or queue, and numbers the trigger, a scope's disclosure and its Copy ID for its
+		 * practice steps.
 		 */
 		preview?: boolean;
 	} = $props();
 	const enabled = () => preview || developerModeEnabled();
 	const id = $props.id();
+	// Several scopes form a single-open accordion: only the open one renders, inspects and totals calls.
+	const scoped = $derived(targets.length > 1);
 	let selected = $state('');
-	const target = $derived(targets.find(({ scope }) => scope === selected) ?? targets[0]);
+	let collapsed = $state(false);
+	const target = $derived(
+		collapsed ? undefined : (targets.find(({ scope }) => scope === selected) ?? targets[0])
+	);
 	const scope = $derived(target?.scope ?? (all ? 'all' : 'id'));
 	const plan = $derived(target?.plan ?? []);
-	const label = $derived(target?.label ?? '');
 	const queueIds = $derived(target?.queueIds ?? []);
 	const activityScope = $derived(target?.activityScope);
-	const identifier = $derived(target?.copyId ?? copyId);
-	const offersId = $derived(!!identifier || (preview && targets.some((choice) => choice.copyId)));
-	const hasCalls = $derived(all || !!target);
+	// A scope's own ID sits on its row; a shared ID (or a single scope's) gets one row above the calls.
+	const sharedId = $derived(scoped ? copyId : (target?.copyId ?? copyId));
+	const hasCalls = $derived(all || targets.length > 0);
 	const title = $derived(hasCalls ? t('apiPeek.title') : t('developer.title'));
+	const subtitle = $derived(
+		all
+			? t('apiPeek.recent')
+			: scoped
+				? ''
+				: target?.label || (hasCalls ? t('apiPeek.thisAction') : '')
+	);
+	const practiceScope = $derived(
+		preview ? (targets.find((choice) => choice.copyId) ?? targets[1])?.scope : undefined
+	);
 	let panel = $state<HTMLDivElement>();
 	let opener = $state<HTMLButtonElement>();
 	// The docked sample starts open; a component never switches between docked and floating.
@@ -73,6 +89,7 @@
 	let backgrounds = $state(false);
 	let copyStatus = $state<Message | string>('');
 	let copiedAll = $state(false);
+	let copiedId = $state<string>();
 	let manualCopy = $state<string>();
 	let copyAttempt = 0;
 	let inspectionError = $state(false);
@@ -137,6 +154,7 @@
 		open = e.newState === 'open';
 		if (open) {
 			selected = '';
+			collapsed = false;
 			resetFeedback();
 			await tick();
 			if (!el.isConnected || !opener) return;
@@ -180,8 +198,17 @@
 		open = !open;
 		if (open) {
 			selected = '';
+			collapsed = false;
 			resetFeedback();
 		} else copyAttempt++;
+	}
+	function toggleScope(choice: string) {
+		if (target?.scope === choice) collapsed = true;
+		else {
+			selected = choice;
+			collapsed = false;
+		}
+		resetFeedback();
 	}
 	function close() {
 		if (!preview) return panel?.hidePopover();
@@ -210,16 +237,20 @@
 		copyAttempt++;
 		copyStatus = '';
 		copiedAll = false;
+		copiedId = undefined;
 		manualCopy = undefined;
 		inspectionError = false;
 	}
-	async function copyIdentifier() {
-		if (!enabled() || !identifier) return;
+	async function copyIdentifier(value: string) {
+		if (!enabled()) return;
 		resetFeedback();
 		const attempt = ++copyAttempt;
 		try {
-			await navigator.clipboard.writeText(identifier);
-			if (isCurrentCopy(attempt)) copyStatus = message('developer.idCopied');
+			await navigator.clipboard.writeText(value);
+			if (isCurrentCopy(attempt)) {
+				copyStatus = message('developer.idCopied');
+				copiedId = value;
+			}
 		} catch {
 			if (isCurrentCopy(attempt)) copyStatus = message('developer.idCopyFailed');
 		}
@@ -227,6 +258,7 @@
 	async function copy() {
 		if (!enabled()) return;
 		const attempt = ++copyAttempt;
+		copiedId = undefined;
 		const count = calls.length;
 		const text = recorded
 			? exportActivityJson(actual)
@@ -277,6 +309,7 @@
 		const active = document.activeElement;
 		const attempt = ++copyAttempt;
 		copyStatus = '';
+		copiedId = undefined;
 		manualCopy = undefined;
 		let copied: boolean;
 		try {
@@ -318,25 +351,45 @@
 	</p>
 {/snippet}
 
-{#if enabled() && (hasCalls || identifier)}
+{#snippet copyIdButton(value: string, step?: string)}
 	<button
-		bind:this={opener}
 		type="button"
-		class={menu
-			? 'row bu-action settings-action api-peek-trigger'
-			: 'bu-action btn icon plain api-peek-trigger'}
-		data-variant={menu ? 'outline' : 'quiet'}
-		data-step={preview ? '1' : undefined}
-		aria-label={all ? t('apiPeek.inspectAll') : hasCalls ? t('apiPeek.inspect') : title}
-		title={hasCalls ? t('apiPeek.triggerTitle') : title}
-		aria-expanded={open}
-		aria-controls={id}
-		popovertarget={preview ? undefined : id}
-		onclick={preview ? toggleDocked : undefined}
-		><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name"
-				>{openerLabel(t(all ? 'apiPeek.inspectAll' : 'apiPeek.title'))}</span
-			>{/if}</button
+		class="bu-action btn icon plain"
+		data-variant="quiet"
+		data-step={step}
+		aria-label={t('developer.copyIdValue', { id: value })}
+		title={t('developer.copyId')}
+		onclick={() => copyIdentifier(value)}
+		>{#if copiedId === value}<Check size={14} />{:else}<Copy size={14} />{/if}</button
 	>
+{/snippet}
+
+{#if enabled() && (hasCalls || copyId)}
+	{@const trigger = {
+		'aria-label': all ? t('apiPeek.inspectAll') : hasCalls ? t('apiPeek.inspect') : title,
+		title: hasCalls ? t('apiPeek.triggerTitle') : title,
+		'aria-expanded': open,
+		'aria-controls': id,
+		popovertarget: preview ? undefined : id
+	}}
+	{#if menu}
+		<SettingsItemButton {...trigger} bind:element={opener} class="api-peek-trigger">
+			<CodeXml size={18} aria-hidden="true" />
+			<span class="row-name">{openerLabel(t(all ? 'apiPeek.inspectAll' : 'apiPeek.title'))}</span>
+		</SettingsItemButton>
+	{:else}
+		<button
+			{...trigger}
+			bind:this={opener}
+			type="button"
+			class="bu-action btn icon plain api-peek-trigger"
+			data-variant="quiet"
+			data-step={preview ? '1' : undefined}
+			onclick={preview ? toggleDocked : undefined}
+		>
+			<CodeXml size={17} aria-hidden="true" />
+		</button>
+	{/if}
 	<div
 		bind:this={panel}
 		{id}
@@ -364,8 +417,7 @@
 							role="status"
 							>{(copyStatus ? displayMessage(copyStatus) : '') ||
 								(inspectionError ? t('apiPeek.inspectionError') : '') ||
-								label ||
-								(all ? t('apiPeek.recent') : hasCalls ? t('apiPeek.thisAction') : '')}</span
+								subtitle}</span
 						>
 						{#if inspectionError && copyStatus}<span class="peek-sub"
 								>{t('apiPeek.inspectionError')}</span
@@ -405,35 +457,11 @@
 						onclick={close}><X size={17} /></button
 					>
 				</header>
-				{#if targets.length > 1 || offersId}
-					<div class="peek-controls">
-						{#if targets.length > 1}<span class="peek-scope" data-step={preview ? '2' : undefined}
-								><select
-									class="bu-input input"
-									aria-label={t('developer.target')}
-									value={scope}
-									onchange={(event) => {
-										selected = event.currentTarget.value;
-										resetFeedback();
-									}}
-								>
-									{#each targets as choice (choice.scope)}<option value={choice.scope}
-											>{choice.label}</option
-										>{/each}
-								</select></span
-							>{/if}
-						{#if offersId}<button
-								type="button"
-								class="bu-action btn small"
-								data-variant="outline"
-								data-step={preview ? '3' : undefined}
-								disabled={!identifier}
-								onclick={copyIdentifier}>{t('developer.copyId')}</button
-							>{/if}
-					</div>
-				{/if}
+				{#if sharedId}<div class="peek-id">
+						<code>{sharedId}</code>{@render copyIdButton(sharedId)}
+					</div>{/if}
 				{#if hasCalls}
-					<div class="peek-list">
+					{#snippet callList()}
 						{#each visible as c, i ('id' in c ? c.id : `${scope}:${i}:${c.path}`)}
 							{@const key = 'id' in c ? c.id : `${scope}:${i}:${c.path}`}
 							{@const endpoint = 'endpoint' in c ? c.endpoint : safePlannedPath(c.path)}
@@ -527,6 +555,43 @@
 										? t('apiPeek.emptyAll')
 										: t('apiPeek.emptyAction')}
 							</p>{/if}
+					{/snippet}
+					<div class="peek-list">
+						{#if scoped}
+							<div role="group" aria-label={t('developer.target')}>
+								{#each targets as choice, i (choice.scope)}
+									{@const expanded = choice.scope === target?.scope}
+									{@const step = choice.scope === practiceScope}
+									<section class="peek-scope">
+										<div class="scope-head">
+											<button
+												type="button"
+												class="scope-toggle"
+												id="{id}-scope-{i}"
+												aria-expanded={expanded}
+												aria-controls={expanded ? `${id}-calls` : undefined}
+												onclick={() => toggleScope(choice.scope)}
+												><span class="scope-chevron" data-step={step ? '2' : undefined}
+													><ChevronRight size={14} aria-hidden="true" /></span
+												><span class="scope-label">{choice.label}</span></button
+											>
+											{#if choice.copyId}{@render copyIdButton(
+													choice.copyId,
+													step ? '3' : undefined
+												)}{/if}
+										</div>
+										{#if expanded}<div
+												class="scope-calls"
+												id="{id}-calls"
+												role="group"
+												aria-labelledby="{id}-scope-{i}"
+											>
+												{@render callList()}
+											</div>{/if}
+									</section>
+								{/each}
+							</div>
+						{:else}{@render callList()}{/if}
 					</div>
 					{#if recorded && ($activityRetention.droppedBackground || $activityRetention.droppedForeground)}<p
 							class="peek-retention"
@@ -535,38 +600,38 @@
 								? t('apiPeek.retentionTotal')
 								: t('apiPeek.retention')}
 						</p>{/if}
-					<footer class="peek-total">
-						<span
-							>{recorded ? t('apiPeek.total') : t('apiPeek.estimatedTotal')}<span
-								class="total-caption"
-								>{!backgrounds && hidden
-									? t('apiPeek.callsHidden', { count: calls.length, hidden })
-									: t('apiPeek.calls', { count: calls.length })}</span
-							></span
-						><strong
-							>{#if recorded}{#if totals.generations || totals.usd || !totals.unknown}{[
-										gens(totals.generations),
-										totals.usd ? usd(totals.usd) : ''
-									]
-										.filter(Boolean)
-										.join(' + ')}{:else}{totals.pending
-										? t('apiPeek.pending')
-										: t('apiPeek.unknown')}{/if}{#if totals.unknown || totals.pending}<span
-										class="total-caption"
-										>{[
-											unknownFinished > 0
-												? t('apiPeek.unknownCount', { count: unknownFinished })
-												: '',
-											totals.pending ? t('apiPeek.pendingCount', { count: totals.pending }) : ''
+					{#if target || !scoped}<footer class="peek-total">
+							<span
+								>{recorded ? t('apiPeek.total') : t('apiPeek.estimatedTotal')}<span
+									class="total-caption"
+									>{!backgrounds && hidden
+										? t('apiPeek.callsHidden', { count: calls.length, hidden })
+										: t('apiPeek.calls', { count: calls.length })}</span
+								></span
+							><strong
+								>{#if recorded}{#if totals.generations || totals.usd || !totals.unknown}{[
+											gens(totals.generations),
+											totals.usd ? usd(totals.usd) : ''
 										]
 											.filter(Boolean)
-											.join(' · ')}</span
-									>{/if}{:else}{t('apiPeek.estimate', {
-									cost: gens(knownEstimate)
-								})}{#if unknownEstimate}<span class="total-caption">{t('apiPeek.variable')}</span
-									>{/if}{/if}</strong
-						>
-					</footer>
+											.join(' + ')}{:else}{totals.pending
+											? t('apiPeek.pending')
+											: t('apiPeek.unknown')}{/if}{#if totals.unknown || totals.pending}<span
+											class="total-caption"
+											>{[
+												unknownFinished > 0
+													? t('apiPeek.unknownCount', { count: unknownFinished })
+													: '',
+												totals.pending ? t('apiPeek.pendingCount', { count: totals.pending }) : ''
+											]
+												.filter(Boolean)
+												.join(' · ')}</span
+										>{/if}{:else}{t('apiPeek.estimate', {
+										cost: gens(knownEstimate)
+									})}{#if unknownEstimate}<span class="total-caption">{t('apiPeek.variable')}</span
+										>{/if}{/if}</strong
+							>
+						</footer>{/if}
 				{/if}
 			{/if}
 		</div>
@@ -574,22 +639,73 @@
 {/if}
 
 <style>
-	.peek-controls {
+	.peek-id {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		padding: 8px 12px;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 6px 4px 14px;
+		border-bottom: 1px solid var(--line);
+		flex: none;
+	}
+	.peek-id code {
+		flex: 1;
+		min-width: 0;
+		overflow-wrap: anywhere;
 	}
 	.peek-scope {
+		border-bottom: 1px solid var(--line);
+	}
+	.peek-scope:last-child {
+		border-bottom: 0;
+	}
+	.scope-head {
 		display: flex;
-		min-width: 0;
-		max-width: 100%;
+		align-items: center;
+		/* Leaves room for the sample's corner marker inside the scrolling list. */
+		padding-inline-end: 8px;
 	}
-	.peek-controls select {
-		min-width: 0;
-		max-width: 100%;
+	.scope-head:hover {
+		background: var(--bg-hover);
 	}
-	.docked {
+	.scope-toggle {
+		flex: 1;
+		min-width: 0;
+		min-height: 40px;
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		padding: 8px 6px 8px 12px;
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		font-weight: 600;
+		text-align: start;
+		cursor: pointer;
+	}
+	.scope-chevron {
+		display: flex;
+		flex: none;
+		color: var(--text-3);
+	}
+	[aria-expanded='true'] > .scope-chevron > :global(svg) {
+		transform: rotate(90deg);
+	}
+	.scope-label {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+	/* Calls in an open scope sit one step in, so the scope rows stay the outline. */
+	.scope-calls {
+		border-top: 1px solid var(--line);
+	}
+	.scope-calls .peek-call > summary {
+		padding-inline-start: 24px;
+	}
+	.scope-calls .peek-request {
+		padding-inline-start: 44px;
+	}
+	.api-peek.docked {
 		position: relative;
 		inline-size: auto;
 	}
@@ -780,9 +896,14 @@
 	}
 	@media (max-width: 599px), (max-height: 499px) {
 		.peek-head .btn,
+		.peek-id .btn,
+		.scope-head .btn,
 		.request-endpoint .btn {
 			min-height: 44px;
 			min-width: 44px;
+		}
+		.scope-toggle {
+			min-height: 48px;
 		}
 		.peek-list {
 			max-height: none;
@@ -792,6 +913,9 @@
 		}
 		.peek-request {
 			padding-left: 22px;
+		}
+		.scope-calls .peek-request {
+			padding-inline-start: 34px;
 		}
 	}
 </style>

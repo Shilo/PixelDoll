@@ -28,6 +28,13 @@
 		"backupOmissions": "Yedek indirildi ancak bazı karakterler veya görseller eksik."
 	},
 	"settings": {
+		"reset": {
+			"action": "Ayarları sıfırla",
+			"title": "Tüm ayarlar sıfırlansın mı?",
+			"description": "Tema, dil, genel gardırop, dışa aktarma ve geliştirici tercihlerini varsayılana döndürür. Çalışmalarınız, yedekleriniz ve PixelLab anahtarınız bu cihazda kalır.",
+			"done": "Ayarlar sıfırlandı.",
+			"failed": "Şu varsayılanlar kaydedilemedi: {sections}."
+		},
 		"wardrobe": "Paylaşılan gardırop eşyaları",
 		"connection": "PixelLab",
 		"about": "Hakkında",
@@ -44,15 +51,10 @@
 		"mode": "Geliştirici modu",
 		"description": "API çağrılarını incelemek, kimlikleri kopyalamak ve yedekleri yalıtılmış bir sekmede açmak için kullanılan araçları gösterir.",
 		"notSaved": "Tarayıcı değişikliği kaydedemedi. Değişiklik yalnızca bu sekmede geçerli.",
-		"pages": "Geliştirici sayfaları (M1–M5)",
-		"rigs": "Geliştirici rig’leri",
 		"target": "API çağrılarının kapsamı",
 		"copyId": "Kimliği kopyala",
-		"practice": "Deneyin",
-		"stepFind": "Sayfa başlığının yanındaki API çağrılarını bulun",
-		"stepChoose": "Örnek işi seçin",
-		"stepCopy": "“{copyId}” seçeneğini seçin",
-		"practiceNote": "Yalnızca örnek veri. Hiçbir şey gönderilmez.",
+		"copyIdValue": "{id} kimliğini kopyala",
+		"preview": "Önizleme",
 		"idCopied": "Kimlik kopyalandı",
 		"idCopyFailed": "Kimlik kopyalanamadı."
 	},
@@ -565,8 +567,7 @@
 		"workspaceCopyTabTitle": "Çalışma alanı kopyası · PixelDoll",
 		"previewTitle": "Ön sürüm · v{version}",
 		"previewRisk": "Kayıtlı karakterler güncellemelerden sonra çalışmayabilir.",
-		"previewBackupDescription": "Sprite'larınızın bir kopyasını saklamak için dışa aktarın.",
-		"exportSprites": "Sprite'ları dışa aktarın",
+		"previewBackupDescription": "Karakterlerinizin ve çizimlerinizin bir kopyasını saklamak için kitaplığınızı yedekleyin.",
 		"youReOfflineEditAndExportLocally": "Çevrimdışısınız. Yerel olarak düzenleyebilir ve dışa aktarabilirsiniz.",
 		"titleInspectCharacter": "Karakteri inceleyin",
 		"titleWorkspaceCopy": "Çalışma alanı kopyası",

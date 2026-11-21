@@ -28,6 +28,13 @@
 		"backupOmissions": "Die Sicherung wurde heruntergeladen. Einige Charaktere oder Grafiken fehlen."
 	},
 	"settings": {
+		"reset": {
+			"action": "Einstellungen zurücksetzen",
+			"title": "Alle Einstellungen zurücksetzen?",
+			"description": "Setzt Design, Sprache, globale Garderobe, Export und Entwickleroptionen zurück. Deine Arbeit, Sicherungen und dein PixelLab-Schlüssel bleiben auf diesem Gerät.",
+			"done": "Einstellungen zurückgesetzt.",
+			"failed": "Diese Standardwerte konnten nicht gespeichert werden: {sections}."
+		},
 		"wardrobe": "Geteilte Garderobenobjekte",
 		"connection": "PixelLab",
 		"about": "Über PixelDoll",
@@ -44,15 +51,10 @@
 		"mode": "Entwicklermodus",
 		"description": "Zeige Werkzeuge zum Prüfen von API-Aufrufen, Kopieren von IDs und Öffnen von Sicherungen in einem isolierten Tab.",
 		"notSaved": "Der Browser konnte die Änderung nicht speichern. Sie gilt nur für diesen Tab.",
-		"pages": "Entwicklerseiten (M1 bis M5)",
-		"rigs": "Entwickler-Rigs",
 		"target": "API-Aufrufe für",
 		"copyId": "ID kopieren",
-		"practice": "Ausprobieren",
-		"stepFind": "Finde API-Aufrufe neben einem Fenstertitel",
-		"stepChoose": "Wähle den Beispielauftrag",
-		"stepCopy": "Wähle „{copyId}“",
-		"practiceNote": "Nur Beispieldaten. Es wird nichts gesendet.",
+		"copyIdValue": "ID {id} kopieren",
+		"preview": "Vorschau",
 		"idCopied": "ID kopiert",
 		"idCopyFailed": "Die ID konnte nicht kopiert werden."
 	},
@@ -568,8 +570,7 @@
 		"workspaceCopyTabTitle": "Arbeitsbereichskopie · PixelDoll",
 		"previewTitle": "Vorabversion · v{version}",
 		"previewRisk": "Gespeicherte Figuren funktionieren nach Updates möglicherweise nicht mehr.",
-		"previewBackupDescription": "Exportiere deine Sprites, um eine Kopie zu behalten.",
-		"exportSprites": "Sprites exportieren",
+		"previewBackupDescription": "Sichere deine Bibliothek, um eine Kopie deiner Figuren und Grafiken zu behalten.",
 		"youReOfflineEditAndExportLocally": "Du bist offline. Bearbeiten und Exportieren geht weiterhin lokal.",
 		"titleInspectCharacter": "Figur prüfen",
 		"titleWorkspaceCopy": "Arbeitsbereichskopie",

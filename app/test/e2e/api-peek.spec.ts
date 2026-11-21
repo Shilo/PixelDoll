@@ -42,23 +42,41 @@ test('Developer mode defaults to off, persists, and closes an open inspector whe
 	const preview = settings.locator('.developer-preview');
 	await expect(mode).not.toBeChecked();
 	await expect(history).toHaveCount(0);
-	// The practice sample is docked open, with Copy ID in place before a job is chosen.
+	await expect(preview.getByText('Preview', { exact: true })).toBeVisible();
+	// The practice sample is docked open as a single-open scope list; the job row numbers its disclosure and Copy ID.
 	const sample = preview.getByRole('group', { name: 'API calls', exact: true });
-	const copyId = sample.getByRole('button', { name: 'Copy ID', exact: true });
-	await expect(copyId).toBeDisabled();
-	await sample.getByRole('combobox', { name: 'API call scope' }).selectOption('example-job');
+	const balance = sample.getByRole('button', { name: 'Refresh balance', exact: true });
+	const job = sample.locator('.scope-toggle').filter({ hasText: 'job-example-0001' });
+	const copyId = sample.getByRole('button', { name: 'Copy ID job-example-0001', exact: true });
+	await expect(balance).toHaveAttribute('aria-expanded', 'true');
+	await expect(job).toHaveAttribute('aria-expanded', 'false');
+	await expect(job.locator('[data-step="2"]')).toHaveCount(1);
+	await expect(copyId).toHaveAttribute('data-step', '3');
+	await expect(sample.locator('[data-step]')).toHaveCount(2);
+	await job.click();
+	await expect(job).toHaveAttribute('aria-expanded', 'true');
+	await expect(balance).toHaveAttribute('aria-expanded', 'false');
+	await expect(sample.locator('.peek-call')).toHaveCount(1);
+	await expect(sample.locator('.peek-call')).toContainText('/background-jobs/job-example-0001');
+	await sample.getByRole('button', { name: 'Show background calls', exact: true }).click();
+	await expect(sample.locator('.peek-call').filter({ hasText: '/balance' })).toBeVisible();
+	await sample.getByRole('button', { name: 'Hide background calls', exact: true }).click();
+	await expect(sample.locator('.peek-call')).toHaveCount(1);
 	await copyId.click();
+	await expect(sample.getByRole('status')).toHaveText('ID copied');
 	await expect
 		.poll(() => page.evaluate(() => sessionStorage.getItem('api-peek-copy')))
 		.toBe('job-example-0001');
+	await job.click();
+	await expect(job).toHaveAttribute('aria-expanded', 'false');
+	await expect(sample.locator('.peek-call')).toHaveCount(0);
+	await expect(sample.getByRole('button', { name: 'Copy all calls', exact: true })).toBeDisabled();
 	const sampleTrigger = preview.getByRole('button', { name: 'Inspect API calls', exact: true });
 	await sampleTrigger.click();
 	await expect(sample).toBeHidden();
 	await expect(sampleTrigger).toHaveAttribute('aria-expanded', 'false');
 	await sampleTrigger.click();
-	await expect(sample.getByRole('combobox', { name: 'API call scope' })).toHaveValue(
-		'example-balance'
-	);
+	await expect(balance).toHaveAttribute('aria-expanded', 'true');
 	await expect(peek(page)).toHaveCount(0);
 	await expect(mode).not.toBeChecked();
 	await mode.check();
@@ -91,7 +109,7 @@ async function newCharacter(page: Page) {
 
 async function expectSingleHeaderPeek(page: Page) {
 	const sheet = page.locator('dialog[open]');
-	const inspect = sheet.locator('.sheet-head .api-peek-trigger');
+	const inspect = sheet.locator('.sheet-trailing > .api-peek-trigger:first-child');
 	await expect(sheet.locator('.api-peek-trigger')).toHaveCount(1);
 	await expect(inspect).toHaveAttribute('title', 'PixelLab API calls');
 	await expect(inspect.locator('svg')).toHaveCount(1);
@@ -203,9 +221,7 @@ test('request preview follows the current character draft and copying never subm
 	await updated.locator(':scope > summary').click();
 	await expect(updated).toContainText('a patient elf with silver hair');
 	await expect(updated).not.toContainText('a cheerful dwarf with freckles');
-	await peek(page)
-		.getByRole('combobox', { name: 'API call scope', exact: true })
-		.selectOption({ label: 'Enhance details' });
+	await peek(page).getByRole('button', { name: 'Enhance details', exact: true }).click();
 	await expect(peek(page).locator('.peek-call')).toHaveCount(1);
 	await expect(peek(page).locator('.peek-call')).toContainText('/enhance-character-v3-prompt');
 	expect(requests).toEqual([]);
@@ -744,9 +760,10 @@ test('mirrored saved requests show their payload and updated charge without send
 		.locator('.sheet-head')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
-	const scope = peek(page).getByRole('combobox', { name: 'API call scope', exact: true });
-	if (await scope.count()) await scope.selectOption('job-result-mirrored-request');
-	await peek(page).getByRole('button', { name: 'Copy ID', exact: true }).click();
+	const scope = peek(page).locator('.scope-toggle').filter({ hasText: 'mirrored-request' });
+	if ((await scope.count()) && (await scope.getAttribute('aria-expanded')) === 'false')
+		await scope.click();
+	await peek(page).getByRole('button', { name: 'Copy ID mirrored-request', exact: true }).click();
 	await expect(peek(page).getByRole('status')).toHaveText('ID copied');
 	expect(await page.evaluate(() => sessionStorage.getItem('api-peek-copy'))).toBe(
 		'mirrored-request'
@@ -959,8 +976,8 @@ for (const sameUrl of [false, true])
 			.getByRole('button', { name: 'Inspect API calls', exact: true })
 			.click();
 		await peek(page)
-			.getByRole('combobox', { name: 'API call scope', exact: true })
-			.selectOption('library-refresh');
+			.getByRole('button', { name: 'Refresh character library', exact: true })
+			.click();
 		await peek(page).getByRole('button', { name: 'Show background calls', exact: true }).click();
 		await expect(
 			peek(page).locator('.peek-call > summary').filter({ hasText: 'preview-' })

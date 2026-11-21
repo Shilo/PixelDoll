@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { message } from '../lib/message.ts';
+	import { errorMessage } from '../lib/i18n.ts';
 	import { t } from 'svelte-whisper';
 	import './studio.css';
 	import './share.css';
@@ -205,6 +206,7 @@
 	$effect(() => {
 		const sheet = ui.sheet;
 		if (sheetBefore === 'activity' && sheet !== 'activity') cancelWaitingForTab();
+		if (sheet !== 'activity') settingsNavigation.activityOpen = false;
 		sheetBefore = sheet;
 	});
 	const onpop = () => {
@@ -333,21 +335,31 @@
 	// B15: offline (browser says so, or PixelLab got no answer and the queue paused): a small banner, never a blocker
 	let online = $state(navigator.onLine);
 	const offline = $derived(!online || $queue.paused === 'offline');
+	let backingUp = $state(false);
+	async function backupFromNotice() {
+		if (backingUp) return;
+		backingUp = true;
+		try {
+			const { downloadLibraryBackup } = await import('./downloadLibraryBackup.ts');
+			toast(await downloadLibraryBackup());
+		} catch (error) {
+			toast(errorMessage(error), { tone: 'danger' });
+		} finally {
+			backingUp = false;
+		}
+	}
 </script>
 
 {#snippet previewNoticeDetails()}
 	<div><strong class="preview-risk">{t('studio.previewRisk')}</strong></div>
 	{t('studio.previewBackupDescription')}
 	<button
-		class="bu-action btn sm preview-export"
+		type="button"
+		class="bu-action btn sm preview-backup"
 		data-variant="outline"
-		aria-label={t('studio.exportSprites')}
-		aria-haspopup="dialog"
-		disabled={!store.project}
-		onclick={() => {
-			dismissToast();
-			ui.sheet = 'export';
-		}}>{t('toolbar.export')}</button
+		disabled={!store.project || backingUp}
+		onclick={backupFromNotice}
+		>{t(backingUp ? 'common.preparing' : 'librarySettings.backup')}</button
 	>
 {/snippet}
 
@@ -401,7 +413,7 @@
 		font-weight: 600;
 		text-wrap: pretty;
 	}
-	.preview-export {
+	.preview-backup {
 		display: block;
 		margin-top: 6px;
 	}

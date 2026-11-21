@@ -28,6 +28,13 @@
 		"backupOmissions": "백업을 다운로드했습니다. 일부 캐릭터나 이미지가 누락되었습니다."
 	},
 	"settings": {
+		"reset": {
+			"action": "설정 초기화",
+			"title": "모든 설정을 초기화할까요?",
+			"description": "테마, 언어, 전체 옷장, 내보내기 및 개발자 설정을 기본값으로 되돌립니다. 작업물, 백업 및 PixelLab 키는 이 기기에 남습니다.",
+			"done": "설정을 초기화했습니다.",
+			"failed": "다음 기본값을 저장하지 못했습니다: {sections}."
+		},
 		"wardrobe": "공유 아이템",
 		"connection": "PixelLab",
 		"about": "앱 정보",
@@ -44,15 +51,10 @@
 		"mode": "개발자 모드",
 		"description": "API 호출 확인, ID 복사, 격리된 탭에서 백업 열기에 필요한 도구를 표시해요.",
 		"notSaved": "브라우저가 변경 사항을 저장하지 못했어요. 이 탭에만 적용돼요.",
-		"pages": "개발자 페이지(M1~M5)",
-		"rigs": "개발자용 리그",
 		"target": "API 호출 대상",
 		"copyId": "ID 복사",
-		"practice": "사용해 보기",
-		"stepFind": "시트 제목 옆에서 ‘API 호출’을 찾으세요",
-		"stepChoose": "예시 작업을 선택하세요",
-		"stepCopy": "‘{copyId}’를 선택하세요",
-		"practiceNote": "예시 데이터만 사용해요. 아무것도 전송되지 않아요.",
+		"copyIdValue": "ID {id} 복사",
+		"preview": "미리보기",
 		"idCopied": "ID를 복사했어요",
 		"idCopyFailed": "ID를 복사하지 못했어요."
 	},
@@ -548,8 +550,7 @@
 		"workspaceCopyTabTitle": "워크스페이스 사본 · PixelDoll",
 		"previewTitle": "출시 전 · v{version}",
 		"previewRisk": "저장된 캐릭터가 업데이트 후 작동하지 않을 수 있어요.",
-		"previewBackupDescription": "스프라이트 사본을 보관하려면 내보내세요.",
-		"exportSprites": "스프라이트 내보내기",
+		"previewBackupDescription": "라이브러리를 백업해 캐릭터와 아트워크의 사본을 보관하세요.",
 		"youReOfflineEditAndExportLocally": "오프라인 상태예요. 로컬에서 편집하고 내보낼 수 있어요.",
 		"titleInspectCharacter": "캐릭터 검사",
 		"titleWorkspaceCopy": "워크스페이스 사본",

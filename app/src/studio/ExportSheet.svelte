@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SettingsItemButton from './SettingsItemButton.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { assetUrl } from '../lib/assets.ts';
@@ -634,12 +635,15 @@
 		<p class="bu-muted settings-description">
 			{t('export.settings.resetHint')}
 		</p>
-		<button
-			class={inSettings ? 'bu-action settings-action' : 'bu-action btn'}
-			data-variant={inSettings ? 'outline' : undefined}
-			onclick={resetSettings}
-			disabled={saving || refreshing}>{t('export.settings.reset')}</button
-		>
+		{#if inSettings}
+			<SettingsItemButton onclick={resetSettings} disabled={saving || refreshing}
+				>{t('export.settings.reset')}</SettingsItemButton
+			>
+		{:else}
+			<button class="bu-action btn" onclick={resetSettings} disabled={saving || refreshing}
+				>{t('export.settings.reset')}</button
+			>
+		{/if}
 	{/if}
 	{#if !ready && refreshing}<p class="bu-muted settings-description" role="status">
 			{t('export.settings.loading')}

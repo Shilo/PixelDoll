@@ -1,4 +1,5 @@
 <script lang="ts">
+	import SettingsItemButton from './SettingsItemButton.svelte';
 	import { t } from 'svelte-whisper';
 	import { app, refreshBalance } from '../lib/app.svelte.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
@@ -7,10 +8,14 @@
 	import { openerLabel } from './openerLabel.ts';
 	import PixelLabUsage from './PixelLabUsage.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
-	import { openSettingsAccount } from './settingsNavigation.svelte.ts';
-	import { ui } from './state.svelte.ts';
+	import { openSettingsAccount, openSettingsActivity } from './settingsNavigation.svelte.ts';
 
-	const recentJobs = $derived($queue.jobs.slice(-12).reverse());
+	const recentJobs = $derived(
+		$queue.jobs
+			.filter((job) => typeof job.id === 'string' && typeof job.label === 'string')
+			.slice(-12)
+			.reverse()
+	);
 	const activityHeading = $props.id();
 	const connected = $derived(Boolean(app.key && !app.keyRejected));
 	const connectionAction = $derived(
@@ -46,44 +51,28 @@
 					: 'usage.notConnected'
 		)}
 	</p>
-	<button
-		class="bu-action settings-action"
-		data-variant="outline"
-		type="button"
-		onclick={openSettingsAccount}
-	>
+	<SettingsItemButton onclick={openSettingsAccount}>
 		<KeyRound size={18} aria-hidden="true" />
 		<span class="row-name">{openerLabel(connectionAction)}</span>
 		<SurfaceChevron />
-	</button>
+	</SettingsItemButton>
 </div>
 {#if connected}
 	<hr class="bu-separator" />
 	<PixelLabUsage detailed />
-	<button
-		class="bu-action settings-action"
-		data-variant="outline"
-		type="button"
-		aria-disabled={refreshing}
-		onclick={refresh}
-	>
+	<SettingsItemButton aria-disabled={refreshing} onclick={refresh}>
 		<RefreshCw size={18} aria-hidden="true" />
 		{t(refreshing ? 'usage.refreshing' : 'activity.refreshBalance')}
-	</button>
+	</SettingsItemButton>
 	{#if app.balanceError}<p class="notice bad small" role="status">{t('usage.loadFailed')}</p>{/if}
 {/if}
 <hr class="bu-separator" />
 <div class="settings-activity" data-setting="recent-activity">
-	<button
-		class="bu-action settings-action"
-		data-variant="outline"
-		type="button"
-		onclick={() => (ui.sheet = 'activity')}
-	>
+	<SettingsItemButton onclick={openSettingsActivity}>
 		<Activity size={18} aria-hidden="true" />
 		<span class="row-name">{openerLabel(t('activity.title'))}</span>
 		<SurfaceChevron />
-	</button>
+	</SettingsItemButton>
 	<h4 id={activityHeading} class="settings-label">{t('activity.recentSettings')}</h4>
 	<div
 		class="recent-jobs"

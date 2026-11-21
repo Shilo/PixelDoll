@@ -1229,15 +1229,27 @@ dialog.sheet.side::backdrop {
 	padding: 8px 12px;
 	border-bottom: 1px solid var(--line);
 }
+.sheet-head.has-developer {
+	--sheet-side-min: 52px;
+	grid-template-columns: minmax(var(--sheet-side-min), 1fr) minmax(0, auto) minmax(
+			var(--sheet-side-min),
+			1fr
+		);
+}
+.sheet-head.has-developer:has(.sheet-trailing > .done) {
+	--sheet-side-min: 96px;
+}
 .sheet-head > .btn {
 	justify-self: start;
 }
 /* Text buttons in a sheet header (Done, Cancel) keep their compact label; an invisible box gives them a full 44 px
    target without growing the header. */
-.sheet-head > .btn.link {
+.sheet-head > .btn.link,
+.sheet-head > .sheet-trailing > .btn.link {
 	position: relative;
 }
-.sheet-head > .btn.link::after {
+.sheet-head > .btn.link::after,
+.sheet-head > .sheet-trailing > .btn.link::after {
 	content: '';
 	position: absolute;
 	top: 50%;
@@ -1772,7 +1784,8 @@ dialog.sheet.bottom .foot-note {
 }
 
 /* ---------- B10 (T1 UX fixes) ---------- */
-.sheet-head > .btn.done {
+.sheet-head > .btn.done,
+.sheet-head > .sheet-trailing > .btn.done {
 	justify-self: end;
 	font-weight: 600;
 }

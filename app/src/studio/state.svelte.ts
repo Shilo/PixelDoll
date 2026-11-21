@@ -191,12 +191,13 @@ const lsSet = (k: string, v: string | null) => {
 		if (workspaceCopy) {
 			if (v == null) copyPreferences.delete(k);
 			else copyPreferences.set(k, v);
-			return;
+			return true;
 		}
 		if (v == null) localStorage.removeItem(k);
 		else localStorage.setItem(k, v);
+		return true;
 	} catch {
-		/* ignore */
+		return false;
 	}
 };
 export const DEMO = 'fixture:s2';
@@ -370,8 +371,9 @@ export function applyTheme() {
 }
 export function setTheme(theme: typeof ui.theme) {
 	ui.theme = theme;
-	lsSet(K.theme, ui.theme);
+	const saved = lsSet(K.theme, ui.theme);
 	applyTheme();
+	return saved;
 }
 export function toggleTheme() {
 	setTheme(ui.theme === 'dark' ? 'light' : 'dark');

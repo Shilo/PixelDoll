@@ -10,7 +10,8 @@
 	const loadExport = () => import('./ExportSheet.svelte');
 	let saving = $state(false);
 	let libraryBusy = $state(false);
-	const busy = $derived(saving || libraryBusy);
+	let resetOpen = $state(false);
+	const busy = $derived(saving || libraryBusy || resetOpen);
 </script>
 
 <Sheet
@@ -25,7 +26,7 @@
 	{#snippet heading()}{#if settingsNavigation.section}<span class="settings-page-title"
 				>{t(settingsLabels[settingsNavigation.section])}</span
 			>{/if}{/snippet}
-	<SettingsContent {busy} bind:libraryBusy>
+	<SettingsContent {busy} bind:libraryBusy bind:resetOpen>
 		{#snippet exportSettings(entry)}
 			<Lazy
 				load={loadExport}

@@ -166,45 +166,43 @@
 	wide
 >
 	{#snippet developer()}
-		<div class="creator-developer">
-			<ApiPeek
-				targets={creating?.projectId
+		<ApiPeek
+			targets={creating?.projectId
+				? [
+						{
+							scope: 'character-create-result',
+							label: t('create.sheet.resultLabel'),
+							plan: creating.spec ? createPlan(creating.spec) : [],
+							activityScope: creating.spec?.activityScope
+						}
+					]
+				: creating
 					? [
 							{
-								scope: 'character-create-result',
-								label: t('create.sheet.resultLabel'),
+								scope: 'character-create-progress',
+								label: t('create.sheet.progressLabel'),
 								plan: creating.spec ? createPlan(creating.spec) : [],
 								activityScope: creating.spec?.activityScope
-							}
+							},
+							...(creating.error
+								? [
+										{
+											scope: 'character-create-retry',
+											label: t('create.sheet.retryLabel'),
+											plan: creating.spec ? createPlan(creating.spec, true) : []
+										}
+									]
+								: [])
 						]
-					: creating
-						? [
-								{
-									scope: 'character-create-progress',
-									label: t('create.sheet.progressLabel'),
-									plan: creating.spec ? createPlan(creating.spec) : [],
-									activityScope: creating.spec?.activityScope
-								},
-								...(creating.error
-									? [
-											{
-												scope: 'character-create-retry',
-												label: t('create.sheet.retryLabel'),
-												plan: creating.spec ? createPlan(creating.spec, true) : []
-											}
-										]
-									: [])
-							]
-						: [
-								{
-									scope: 'character-create',
-									label: t('create.sheet.create'),
-									plan: createPlan(formSpec, !d.seed)
-								},
-								...enhanceTargets
-							]}
-			/>
-		</div>
+					: [
+							{
+								scope: 'character-create',
+								label: t('create.sheet.create'),
+								plan: createPlan(formSpec, !d.seed)
+							},
+							...enhanceTargets
+						]}
+		/>
 	{/snippet}
 
 	{#snippet heading()}{#if !creating}<label class="character-name-field"
@@ -394,29 +392,37 @@
 </Sheet>
 
 <style>
-	.creator-developer {
+	:global(.studio-app .character-sheet) :global(.sheet-trailing) {
 		position: absolute;
-		left: 96px;
+		right: 40px;
 		top: 28px;
 		min-height: 50px;
-		display: flex;
-		align-items: center;
+	}
+	:global(.studio-app .character-sheet .sheet-head.has-developer > .btn) {
+		left: 40px;
+		right: auto;
 	}
 	:global(.studio-app .character-sheet) .btn.creation-wardrobe {
 		left: 40px;
 		right: auto;
 	}
+	:global(.studio-app .character-sheet .sheet-trailing) .btn.creation-wardrobe {
+		position: static;
+	}
 	@media (max-width: 760px) and (min-height: 541px), (max-height: 540px) and (min-width: 600px) {
-		.creator-developer {
-			left: 76px;
+		:global(.studio-app .character-sheet) :global(.sheet-trailing) {
+			right: 20px;
 			top: 8px;
+		}
+		:global(.studio-app .character-sheet .sheet-head.has-developer > .btn) {
+			left: 20px;
 		}
 		:global(.studio-app .character-sheet) .btn.creation-wardrobe {
 			left: 20px;
 		}
 	}
 	@media (max-width: 760px) and (min-height: 541px) {
-		.creator-developer {
+		:global(.studio-app .character-sheet) :global(.sheet-trailing) {
 			top: 12px;
 		}
 	}

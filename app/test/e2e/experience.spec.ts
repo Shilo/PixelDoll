@@ -130,6 +130,10 @@ for (const theme of ['dark', 'light'] as const)
 			if (theme === 'light') {
 				await page.getByRole('button', { name: 'More options', exact: true }).click();
 				await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+				const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+				await expect(settings).toBeVisible();
+				const home = settings.getByRole('button', { name: 'Settings', exact: true });
+				if (await home.isVisible()) await home.click();
 				await page.getByRole('button', { name: 'Appearance', exact: true }).click();
 				await page.getByRole('radio', { name: 'Light', exact: true }).check();
 				await page

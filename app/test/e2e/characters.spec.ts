@@ -2123,8 +2123,9 @@ test('PixelLab library connection, pagination and direct import use only free re
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
 	await page
-		.getByRole('combobox', { name: 'API call scope', exact: true })
-		.selectOption({ label: 'Preview Page two hero' });
+		.locator('.api-peek:popover-open')
+		.getByRole('button', { name: 'Preview Page two hero', exact: true })
+		.click();
 	await expect(page.locator('.peek-call')).toContainText(`/characters/${ID}/zip`);
 	await page.keyboard.press('Escape');
 	await page.getByRole('button', { name: /Page two hero/ }).click();

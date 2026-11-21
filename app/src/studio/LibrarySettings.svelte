@@ -1,4 +1,7 @@
 <script lang="ts">
+	import SettingsBackupCopy from './SettingsBackupCopy.svelte';
+	import SettingsItemButton from './SettingsItemButton.svelte';
+	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import { Archive, Download, Lock, TriangleAlert, Upload } from './icons.ts';
@@ -9,7 +12,6 @@
 	import { MAX_ZIP_BYTES } from '../lib/store/zip.ts';
 	import {
 		downloadArchivedBackup,
-		exportBackup,
 		listArchiveDownloads,
 		planRestore,
 		readRestoreSource,
@@ -17,7 +19,8 @@
 		RestoreChangedError,
 		type RestorePlan
 	} from '../lib/store/backup.ts';
-	import { prepareWorkspaceExport, refreshRestoredLibrary } from './state.svelte.ts';
+	import { refreshRestoredLibrary } from './state.svelte.ts';
+	import { downloadLibraryBackup } from './downloadLibraryBackup.ts';
 	import { saveZip } from './download.svelte.ts';
 
 	type RestorePreview = {
@@ -89,12 +92,7 @@
 
 	function backup() {
 		return perform(async () => {
-			await prepareWorkspaceExport();
-			const result = await exportBackup(keys(), includeArchived);
-			saveZip(result.bytes, `pixeldoll-${today()}.backup.zip`);
-			status = message(
-				result.hasOmissions ? 'librarySettings.backupOmissions' : 'librarySettings.downloaded'
-			);
+			status = await downloadLibraryBackup(includeArchived);
 		});
 	}
 
@@ -233,17 +231,10 @@
 		</section>
 	{:else}
 		<section class="library-task">
-			<button
-				type="button"
-				class="bu-action settings-action"
-				data-variant="outline"
-				data-setting="backup"
-				disabled={busy}
-				onclick={backup}
-			>
+			<SettingsItemButton data-setting="backup" disabled={busy} onclick={backup}>
 				<Download size={18} aria-hidden="true" />
 				{t('librarySettings.backup')}
-			</button>
+			</SettingsItemButton>
 			<div class="backup-notes">
 				<p class="bu-muted settings-description">{t('librarySettings.scope')}</p>
 				<p class="bu-muted settings-description privacy">
@@ -270,18 +261,16 @@
 				}}
 				hidden
 			/>
-			<button
-				type="button"
-				class="bu-action settings-action"
-				data-variant="outline"
+			<SettingsItemButton
 				data-setting="restore"
 				disabled={busy}
-				bind:this={openPicker}
+				bind:element={openPicker}
 				onclick={() => picker?.click()}
 			>
 				<Upload size={18} aria-hidden="true" />
 				{t('librarySettings.restoreFromBackup')}
-			</button>
+				<SurfaceChevron />
+			</SettingsItemButton>
 			<p class="bu-muted settings-description">{t('librarySettings.restoreHint')}</p>
 		</section>
 		{#if hasArchives}
@@ -295,21 +284,16 @@
 				{/if}
 				{#each [...(archives.localCount ? [undefined] : []), ...archives.retainedIds] as id, index (id)}
 					{@const number = id ? index + (archives.localCount ? 0 : 1) : undefined}
-					<button
-						type="button"
-						class="bu-action settings-action"
-						data-variant="outline"
-						disabled={busy}
-						onclick={() => downloadArchive(id, number)}
-					>
+					<SettingsItemButton disabled={busy} onclick={() => downloadArchive(id, number)}>
 						<Archive size={18} aria-hidden="true" />
 						{t('librarySettings.downloadArchived')}{#if number}
 							({formatNumber(number)}){/if}
-					</button>
+					</SettingsItemButton>
 				{/each}
 			</section>
 		{/if}
 	{/if}
+	{#if !preview}<SettingsBackupCopy separated />{/if}
 	{#if busy}<p class="bu-muted settings-description" role="status">{t('common.preparing')}</p>{/if}
 	{#if error}<p class="notice bad small" role="alert">
 			<TriangleAlert size={14} aria-hidden="true" />{displayMessage(error)}

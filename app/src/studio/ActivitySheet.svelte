@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SurfaceChevron from './SurfaceChevron.svelte';
+	import { closeSettingsActivity } from './settingsNavigation.svelte.ts';
 	import { openerLabel } from './openerLabel.ts';
 	import Sheet from './Sheet.svelte';
 	import PixelLabUsage from './PixelLabUsage.svelte';
@@ -134,7 +135,9 @@
 <Sheet
 	title={t('activity.title')}
 	cancel={ui.waitingForTab ? 'activity.cancelRequest' : 'common.done'}
-	onclose={() => (ui.sheet = null)}
+	onclose={() => {
+		if (!closeSettingsActivity()) ui.sheet = null;
+	}}
 >
 	{#snippet developer()}
 		<ApiPeek

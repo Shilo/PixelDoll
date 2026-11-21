@@ -28,6 +28,13 @@
 		"backupOmissions": "Backup downloaded with some characters or artwork missing."
 	},
 	"settings": {
+		"reset": {
+			"action": "Reset settings",
+			"title": "Reset all settings?",
+			"description": "Restores the default theme, language, global wardrobe, export and developer preferences. Your work, backups and PixelLab key stay on this device.",
+			"done": "Settings reset.",
+			"failed": "Could not save these defaults: {sections}."
+		},
 		"wardrobe": "Shared wardrobe items",
 		"connection": "PixelLab",
 		"about": "About",
@@ -44,15 +51,10 @@
 		"mode": "Developer mode",
 		"description": "Show tools for inspecting API calls, copying IDs, and opening backups in an isolated tab.",
 		"notSaved": "Developer mode changed for this tab only. The browser could not save it.",
-		"pages": "Developer pages (M1 to M5)",
-		"rigs": "Developer rigs",
 		"target": "API call scope",
 		"copyId": "Copy ID",
-		"practice": "Try it",
-		"stepFind": "Find API calls beside a sheet title",
-		"stepChoose": "Choose the sample job",
-		"stepCopy": "Select “{copyId}”",
-		"practiceNote": "Sample data only. Nothing is sent.",
+		"copyIdValue": "Copy ID {id}",
+		"preview": "Preview",
 		"idCopied": "ID copied",
 		"idCopyFailed": "Could not copy the ID."
 	},
@@ -562,8 +564,7 @@
 		"workspaceCopyTabTitle": "Workspace copy · PixelDoll",
 		"previewTitle": "Pre-release · v{version}",
 		"previewRisk": "Saved characters may stop working after updates.",
-		"previewBackupDescription": "Export to keep a copy of your sprites.",
-		"exportSprites": "Export sprites",
+		"previewBackupDescription": "Back up your library to keep a copy of your characters and artwork.",
 		"youReOfflineEditAndExportLocally": "You’re offline. Edit and export locally.",
 		"titleInspectCharacter": "Inspect character",
 		"titleWorkspaceCopy": "Workspace copy",

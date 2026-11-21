@@ -28,6 +28,13 @@
 		"backupOmissions": "La copia de seguridad se descargó, pero faltan personajes o imágenes."
 	},
 	"settings": {
+		"reset": {
+			"action": "Restablecer ajustes",
+			"title": "¿Restablecer todos los ajustes?",
+			"description": "Restaura los valores predeterminados del tema, el idioma, el vestuario general, la exportación y las opciones de desarrollo. Tu trabajo, tus copias y tu clave de PixelLab permanecen en este dispositivo.",
+			"done": "Ajustes restablecidos.",
+			"failed": "No se pudieron guardar estos valores predeterminados: {sections}."
+		},
 		"wardrobe": "Objetos compartidos del armario",
 		"connection": "PixelLab",
 		"about": "Acerca de",
@@ -44,15 +51,10 @@
 		"mode": "Modo de desarrollador",
 		"description": "Muestra herramientas para revisar llamadas a la API, copiar ID y abrir copias de seguridad en una pestaña aislada.",
 		"notSaved": "El navegador no pudo guardar el cambio. Solo se aplica a esta pestaña.",
-		"pages": "Páginas de desarrollo (M1 a M5)",
-		"rigs": "Rigs de desarrollo",
 		"target": "Llamadas a la API para",
 		"copyId": "Copiar ID",
-		"practice": "Pruébalo",
-		"stepFind": "Busca Llamadas a la API junto al título de una hoja",
-		"stepChoose": "Elige el trabajo de ejemplo",
-		"stepCopy": "Selecciona “{copyId}”",
-		"practiceNote": "Solo datos de ejemplo. No se envía nada.",
+		"copyIdValue": "Copiar ID {id}",
+		"preview": "Vista previa",
 		"idCopied": "ID copiado",
 		"idCopyFailed": "No se pudo copiar el ID."
 	},
@@ -568,8 +570,7 @@
 		"workspaceCopyTabTitle": "Copia del espacio de trabajo · PixelDoll",
 		"previewTitle": "Versión preliminar · v{version}",
 		"previewRisk": "Los personajes guardados pueden dejar de funcionar tras las actualizaciones.",
-		"previewBackupDescription": "Exporta para conservar una copia de tus sprites.",
-		"exportSprites": "Exportar sprites",
+		"previewBackupDescription": "Haz una copia de seguridad de tu biblioteca para conservar tus personajes e ilustraciones.",
 		"youReOfflineEditAndExportLocally": "No tienes conexión. Edita y exporta en local.",
 		"titleInspectCharacter": "Inspeccionar personaje",
 		"titleWorkspaceCopy": "Copia del espacio de trabajo",

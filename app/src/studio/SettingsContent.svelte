@@ -3,22 +3,25 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import { getLocale, t, type WhisperKey } from 'svelte-whisper';
 	import { exportFormatNames } from './exportFormatNames.ts';
-	import { workspaceCopy, workspaceUrl } from '../lib/store/workspace-mode.ts';
+	import { workspaceCopy } from '../lib/store/workspace-mode.ts';
+	import { resetSettings } from './resetSettings.ts';
 	import {
 		Archive,
 		CodeXml,
 		Download,
-		ExternalLink,
 		Info,
 		KeyRound,
 		Moon,
+		RotateCcw,
 		Settings2,
 		Shirt,
 		Sun,
 		SunMoon
 	} from './icons.ts';
-	import { developerModeEnabled } from './developerMode.svelte.ts';
 	import DeveloperSettings from './DeveloperSettings.svelte';
+	import SettingsItemSegmented from './SettingsItemSegmented.svelte';
+	import SettingsItemButton from './SettingsItemButton.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 	import LanguagePicker from './LanguagePicker.svelte';
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
 	import AboutSettings from './AboutSettings.svelte';
@@ -35,18 +38,18 @@
 	let {
 		exportSettings,
 		busy,
-		libraryBusy = $bindable(false)
+		libraryBusy = $bindable(false),
+		resetOpen = $bindable(false)
 	}: {
 		exportSettings: Snippet<[string | undefined]>;
 		busy: boolean;
 		libraryBusy?: boolean;
+		resetOpen?: boolean;
 	} = $props();
 	const themeLabel = $derived(t('settings.theme'));
-	const appearanceGroup = $props.id();
-	const copyOpenerDescription = `${appearanceGroup}-copy-new-tab`;
 	const appearanceOptions = $derived([
-		{ value: 'dark', label: t('settings.dark'), icon: Moon },
-		{ value: 'light', label: t('settings.light'), icon: Sun }
+		{ value: 'dark', label: t('settings.dark') },
+		{ value: 'light', label: t('settings.light') }
 	] as const);
 	const sections = [
 		{
@@ -165,11 +168,15 @@
 	const wide = new MediaQuery('(min-width: 660px) and (min-height: 520px)');
 	const active = $derived(
 		available.find(
-			(section) => section.id === (settingsNavigation.section ?? (wide.current ? 'general' : null))
+			(section) =>
+				section.id === (settingsNavigation.section ?? (wide.current ? available[0]?.id : null))
 		)
 	);
 	let query = $state('');
 	let reviewingBackup = $state(false);
+	let resetting = $state(false);
+	let resetFailures = $state<WhisperKey[]>([]);
+	let resetComplete = $state(false);
 	let targetEntry = $state<string>();
 	let panel: HTMLElement;
 	let search: HTMLInputElement;
@@ -228,6 +235,18 @@
 			panel.querySelector<HTMLElement>('h3');
 		target?.focus();
 	}
+
+	async function confirmReset() {
+		if (resetting) return;
+		resetting = true;
+		try {
+			resetFailures = await resetSettings();
+			resetComplete = resetFailures.length === 0;
+			if (resetComplete) resetOpen = false;
+		} finally {
+			resetting = false;
+		}
+	}
 </script>
 
 <div
@@ -271,6 +290,23 @@
 						{/each}
 					{/each}
 				</nav>
+				{#if !workspaceCopy && !settingsNavigation.fromExport}
+					<hr class="bu-separator" />
+					<SettingsItemButton
+						disabled={busy || reviewingBackup}
+						onclick={() => {
+							resetFailures = [];
+							resetComplete = false;
+							resetOpen = true;
+						}}
+					>
+						<RotateCcw size={18} aria-hidden="true" />
+						{t('settings.reset.action')}
+					</SettingsItemButton>
+					{#if resetComplete}<p class="settings-description" role="status">
+							{t('settings.reset.done')}
+						</p>{/if}
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -310,29 +346,21 @@
 				>
 			{/if}
 			{#if active.id === 'general'}
-				<div class="appearance-row" data-setting="theme">
-					<span class="appearance-label"><SunMoon size={18} aria-hidden="true" /> {themeLabel}</span
-					>
-					<div class="bu-segmented" role="radiogroup" aria-label={themeLabel}>
-						{#each appearanceOptions as { value, label, icon: Icon } (value)}
-							<label class="bu-segment">
-								<input
-									type="radio"
-									name={appearanceGroup}
-									{value}
-									checked={ui.theme === value}
-									onchange={() => setTheme(value)}
-								/>
-								<!-- Wrapped so Bronze's check-mark slot (a direct svg child) leaves the theme icon visible. -->
-								<span class="bu-segment-face"
-									><span class="appearance-icon"><Icon size={16} aria-hidden="true" /></span><span
-										>{label}</span
-									></span
-								>
-							</label>
-						{/each}
-					</div>
-				</div>
+				<SettingsItemSegmented
+					label={themeLabel}
+					setting="theme"
+					options={appearanceOptions}
+					value={ui.theme}
+					onselect={setTheme}
+				>
+					{#snippet icon()}<SunMoon size={18} aria-hidden="true" />{/snippet}
+					{#snippet optionIcon(value)}
+						{#if value === 'dark'}<Moon size={16} aria-hidden="true" />{:else}<Sun
+								size={16}
+								aria-hidden="true"
+							/>{/if}
+					{/snippet}
+				</SettingsItemSegmented>
 				<div data-setting="language" tabindex="-1"><LanguagePicker settings /></div>
 			{:else if active.id === 'wardrobe'}
 				<div data-setting="visibility" tabindex="-1">
@@ -343,27 +371,7 @@
 			{:else if active.id === 'library'}
 				<LibrarySettings bind:busy={libraryBusy} bind:reviewing={reviewingBackup} />
 			{:else if active.id === 'developer'}
-				<DeveloperSettings>
-					{#snippet tools()}
-						{#if !workspaceCopy}
-							<button
-								class="bu-action settings-action"
-								data-variant="outline"
-								type="button"
-								aria-describedby={copyOpenerDescription}
-								onclick={() => {
-									if (developerModeEnabled())
-										window.open(workspaceUrl(true), '_blank', 'noopener,noreferrer');
-								}}
-							>
-								<Archive size={18} aria-hidden="true" />
-								<span class="row-name">{t('workspaceCopy.title')}</span>
-								<ExternalLink size={16} aria-hidden="true" />
-							</button>
-							<span id={copyOpenerDescription} hidden>{t('noticeLink.opensInANewTab')}</span>
-						{/if}
-					{/snippet}
-				</DeveloperSettings>
+				<DeveloperSettings />
 			{:else if active.id === 'about'}
 				<AboutSettings />
 			{:else}
@@ -372,6 +380,22 @@
 		{/if}
 	</section>
 </div>
+
+{#if resetOpen}
+	<ConfirmDialog
+		title={t('settings.reset.title')}
+		action={t('settings.reset.action')}
+		busyAction={t('common.preparing')}
+		busy={resetting}
+		problem={resetFailures.length
+			? t('settings.reset.failed', { sections: resetFailures.map((key) => t(key)).join(', ') })
+			: ''}
+		oncancel={() => (resetOpen = false)}
+		onconfirm={confirmReset}
+	>
+		<p>{t('settings.reset.description')}</p>
+	</ConfirmDialog>
+{/if}
 
 <style>
 	:global(dialog.settings-sheet.center) {
@@ -402,33 +426,6 @@
 		font-size: 1.125rem;
 		font-weight: 600;
 	}
-	.appearance-row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0 10px;
-	}
-	.appearance-label {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		min-height: 44px;
-	}
-	.appearance-label :global(svg) {
-		flex: none;
-	}
-	.appearance-row .bu-segmented {
-		flex: 1 1 11rem;
-		max-inline-size: 15rem;
-	}
-	.appearance-row .bu-segment-face {
-		min-height: 44px;
-		gap: 6px;
-	}
-	.appearance-icon {
-		display: flex;
-	}
 	.settings-content :global(.row) {
 		width: 100%;
 		text-align: start;
@@ -444,7 +441,7 @@
 	nav button :global(svg) {
 		flex: none;
 	}
-	.settings-panel :global(.row:not([data-variant='field']):not(.settings-action)) {
+	.settings-panel :global(.row:not([data-variant='field'])) {
 		padding-inline: 0;
 	}
 	/* PixelLab: the recent-activity list takes whatever height the page leaves. */
@@ -455,22 +452,6 @@
 	.fills-activity .settings-panel {
 		display: flex;
 		flex-direction: column;
-	}
-	.settings-panel :global(.settings-action) {
-		display: flex;
-		align-items: center;
-		justify-content: flex-start;
-		gap: 10px;
-		inline-size: 100%;
-		height: auto;
-		min-height: 44px;
-		padding: 8px 12px;
-		white-space: normal;
-		overflow-wrap: anywhere;
-		text-align: start;
-	}
-	.settings-panel :global(.settings-action svg) {
-		flex: none;
 	}
 	.search-result small {
 		display: block;

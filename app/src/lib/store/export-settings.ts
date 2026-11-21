@@ -91,6 +91,11 @@ export async function readExportSettings(): Promise<ExportSettings> {
 	return saved === undefined ? defaultExportSettings() : checkedSettings(saved);
 }
 
+export async function resetExportSettings(): Promise<void> {
+	await db.update('projects', EXPORT_SETTINGS_KEY, defaultExportSettings);
+	notifySettingsChanged();
+}
+
 /** Explicit recovery changes only invalid preferences, preserving a repair another tab has already committed. */
 export async function resetInvalidExportSettings(): Promise<ExportSettings> {
 	const committed = await db.update<ExportSettings>('projects', EXPORT_SETTINGS_KEY, (current) => {

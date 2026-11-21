@@ -1,4 +1,5 @@
 import { ui } from './state.svelte.ts';
+import { workspaceCopy } from '../lib/store/workspace-mode.ts';
 import type { WhisperKey } from 'svelte-whisper';
 
 export type SettingsSection =
@@ -18,16 +19,17 @@ export const settingsNavigation = $state<{
 	section: SettingsSection | null;
 	fromExport: boolean;
 	accountOpen: boolean;
-}>({ section: null, fromExport: false, accountOpen: false });
+	activityOpen: boolean;
+}>({ section: null, fromExport: false, accountOpen: false, activityOpen: false });
 
-export function openSettings(section: SettingsSection | null = null) {
+export function openSettings(section: SettingsSection | null = workspaceCopy ? null : 'pixellab') {
 	settingsNavigation.fromExport = ui.sheet === 'export';
 	settingsNavigation.section = section;
 	ui.sheet = 'settings';
 }
 
 export function backFromSettings(): boolean {
-	if (closeSettingsAccount()) return true;
+	if (closeSettingsAccount() || closeSettingsActivity()) return true;
 	if (ui.sheet !== 'settings') return false;
 	if (settingsNavigation.fromExport) ui.sheet = 'export';
 	else if (settingsNavigation.section) settingsNavigation.section = null;
@@ -43,6 +45,18 @@ export function openSettingsAccount() {
 export function closeSettingsAccount(): boolean {
 	if (ui.sheet !== 'connect' || !settingsNavigation.accountOpen) return false;
 	settingsNavigation.accountOpen = false;
+	ui.sheet = 'settings';
+	return true;
+}
+
+export function openSettingsActivity() {
+	settingsNavigation.activityOpen = true;
+	ui.sheet = 'activity';
+}
+
+export function closeSettingsActivity(): boolean {
+	if (ui.sheet !== 'activity' || !settingsNavigation.activityOpen) return false;
+	settingsNavigation.activityOpen = false;
 	ui.sheet = 'settings';
 	return true;
 }

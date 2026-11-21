@@ -132,6 +132,7 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	const exportDialog = page.getByRole('dialog', { name: 'Settings' });
 	await exportDialog.getByRole('button', { name: 'Library', exact: true }).click();
+	await expect(exportDialog.getByRole('button', { name: 'Open backup as a copy' })).toBeHidden();
 	const backUp = exportDialog.getByRole('button', { name: 'Back up library' });
 	await expect(backUp).toBeVisible();
 	await expect(
@@ -192,6 +193,7 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		await recipientPage.getByRole('button', { name: 'More options', exact: true }).click();
 		await recipientPage.getByRole('button', { name: 'Settings...', exact: true }).click();
 		const recipientSettings = recipientPage.getByRole('dialog', { name: 'Settings' });
+		await recipientSettings.getByRole('button', { name: 'Settings', exact: true }).click();
 		await recipientSettings.getByRole('button', { name: 'Library', exact: true }).click();
 		const picker = recipientPage.locator('input[type=file][accept=".zip,application/zip"]');
 		const restoreButton = recipientSettings.getByRole('button', { name: 'Restore from backup' });
@@ -300,8 +302,12 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	await exportDialog.getByRole('button', { name: 'Developer', exact: true }).click();
 	await expect(exportDialog.getByRole('button', { name: 'Open backup as a copy' })).toBeHidden();
 	await exportDialog.getByRole('switch', { name: 'Developer mode' }).check();
+	await expect(exportDialog.getByRole('button', { name: 'Open backup as a copy' })).toBeVisible();
+	await exportDialog.getByRole('button', { name: 'Library', exact: true }).click();
+	const openBackupCopy = exportDialog.getByRole('button', { name: 'Open backup as a copy' });
+	await expect(openBackupCopy.locator('xpath=preceding-sibling::*[1]')).toHaveClass('bu-separator');
 	const waitCopy = page.waitForEvent('popup');
-	await exportDialog.getByRole('button', { name: 'Open backup as a copy' }).click();
+	await openBackupCopy.click();
 	const copy = await waitCopy;
 	await exportDialog.getByRole('button', { name: 'Close', exact: true }).click();
 	const picker = copy.getByLabel('Choose backup ZIP');
@@ -3549,10 +3555,13 @@ test('Share popover follows the selected move, direction and Animate switch on d
 	await noDisabledHover(page, disabledRedo);
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+	await settings.getByRole('button', { name: 'Settings', exact: true }).click();
 	await settings.getByRole('button', { name: 'Developer', exact: true }).click();
 	await settings.getByRole('switch', { name: 'Developer mode', exact: true }).check();
 	await settings.getByRole('button', { name: 'Inspect all API calls', exact: true }).click();
-	const disabledCopy = page.getByRole('button', { name: 'Copy all calls' });
+	const disabledCopy = page
+		.getByRole('dialog', { name: 'API calls', exact: true })
+		.getByRole('button', { name: 'Copy all calls' });
 	await expect(disabledCopy).toBeDisabled();
 	await noDisabledHover(page, disabledCopy);
 	expect(errors).toEqual([]);

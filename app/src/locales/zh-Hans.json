@@ -28,6 +28,13 @@
 		"backupOmissions": "备份已下载，但缺少部分角色或图像。"
 	},
 	"settings": {
+		"reset": {
+			"action": "重置设置",
+			"title": "重置所有设置？",
+			"description": "将主题、语言、全局衣柜、导出和开发者偏好恢复为默认值。你的作品、备份和 PixelLab 密钥仍保留在此设备上。",
+			"done": "设置已重置。",
+			"failed": "无法保存这些默认设置：{sections}。"
+		},
 		"wardrobe": "共享衣橱装备",
 		"connection": "PixelLab",
 		"about": "关于",
@@ -44,15 +51,10 @@
 		"mode": "开发者模式",
 		"description": "显示用于检查 API 调用、复制 ID 和在隔离标签页中打开备份的工具。",
 		"notSaved": "浏览器未能保存更改。更改仅在当前标签页生效。",
-		"pages": "开发者页面（M1 至 M5）",
-		"rigs": "开发者绑定结构",
 		"target": "API 调用范围",
 		"copyId": "复制 ID",
-		"practice": "试一试",
-		"stepFind": "在面板标题旁找到“API 调用”",
-		"stepChoose": "选择示例任务",
-		"stepCopy": "选择“{copyId}”",
-		"practiceNote": "仅为示例数据，不会发送任何内容。",
+		"copyIdValue": "复制 ID {id}",
+		"preview": "预览",
 		"idCopied": "已复制 ID",
 		"idCopyFailed": "无法复制 ID。"
 	},
@@ -543,8 +545,7 @@
 		"workspaceCopyTabTitle": "工作区副本 · PixelDoll",
 		"previewTitle": "预发布版 · v{version}",
 		"previewRisk": "已保存的角色可能在更新后无法使用。",
-		"previewBackupDescription": "导出以保留精灵图的副本。",
-		"exportSprites": "导出精灵图",
+		"previewBackupDescription": "备份你的资料库，以保留角色和美术素材的副本。",
 		"youReOfflineEditAndExportLocally": "你处于离线状态。可在本地编辑和导出。",
 		"titleInspectCharacter": "检查角色",
 		"titleWorkspaceCopy": "工作区副本",

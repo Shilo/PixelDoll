@@ -28,6 +28,13 @@
 		"backupOmissions": "La sauvegarde a été téléchargée, mais certains personnages ou visuels manquent."
 	},
 	"settings": {
+		"reset": {
+			"action": "Réinitialiser les paramètres",
+			"title": "Réinitialiser tous les paramètres ?",
+			"description": "Rétablit les réglages par défaut du thème, de la langue, de la garde-robe globale, de l’exportation et des outils de développement. Votre travail, vos sauvegardes et votre clé PixelLab restent sur cet appareil.",
+			"done": "Paramètres réinitialisés.",
+			"failed": "Impossible d’enregistrer ces réglages par défaut : {sections}."
+		},
 		"wardrobe": "Objets partagés de la garde-robe",
 		"connection": "PixelLab",
 		"about": "À propos",
@@ -44,15 +51,10 @@
 		"mode": "Mode développeur",
 		"description": "Affiche les outils pour examiner les appels API, copier des identifiants et ouvrir des sauvegardes dans un onglet isolé.",
 		"notSaved": "Le navigateur n’a pas pu enregistrer le changement. Il ne s’applique qu’à cet onglet.",
-		"pages": "Pages de développement (M1 à M5)",
-		"rigs": "Rigs de développement",
 		"target": "Appels API pour",
 		"copyId": "Copier l’identifiant",
-		"practice": "Essayer",
-		"stepFind": "Repérez Appels API à côté d’un titre de panneau",
-		"stepChoose": "Choisissez la tâche d’exemple",
-		"stepCopy": "Sélectionnez « {copyId} »",
-		"practiceNote": "Données d’exemple uniquement. Rien n’est envoyé.",
+		"copyIdValue": "Copier l’identifiant {id}",
+		"preview": "Aperçu",
 		"idCopied": "Identifiant copié",
 		"idCopyFailed": "Impossible de copier l’identifiant."
 	},
@@ -565,8 +567,7 @@
 		"workspaceCopyTabTitle": "Copie de l’espace de travail · PixelDoll",
 		"previewTitle": "Préversion · v{version}",
 		"previewRisk": "Les personnages enregistrés peuvent cesser de fonctionner après une mise à jour.",
-		"previewBackupDescription": "Exportez pour garder une copie de vos sprites.",
-		"exportSprites": "Exporter les sprites",
+		"previewBackupDescription": "Sauvegardez votre bibliothèque pour conserver une copie de vos personnages et illustrations.",
 		"youReOfflineEditAndExportLocally": "Vous êtes hors ligne. Modifiez et exportez en local.",
 		"titleInspectCharacter": "Inspecter le personnage",
 		"titleWorkspaceCopy": "Copie de l’espace de travail",

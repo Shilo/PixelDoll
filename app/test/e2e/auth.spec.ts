@@ -130,7 +130,6 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
-	await settings.getByRole('button', { name: 'PixelLab', exact: true }).click();
 	await expect(settings.locator('.settings-content')).toHaveCSS(
 		'background-color',
 		'rgba(0, 0, 0, 0)'
@@ -143,6 +142,14 @@ test('More keeps the original PixelLab usage meter and opens the local sheet', a
 	await expect(settings.getByText('Remaining: 0', { exact: true })).toBeVisible();
 	await expect(settings.getByText('$3.06', { exact: true })).toBeVisible();
 	await expect(settings.getByLabel('API key', { exact: true })).toHaveCount(0);
+	const settingsActivity = settings.getByRole('button', { name: 'Activity...', exact: true });
+	await settingsActivity.click();
+	const activitySheet = page.getByRole('dialog', { name: 'Activity', exact: true });
+	await activitySheet.getByRole('button', { name: 'Done', exact: true }).click();
+	await expect(settingsActivity).toBeVisible();
+	await settingsActivity.click();
+	await page.goBack();
+	await expect(settingsActivity).toBeVisible();
 });
 
 test('PixelLab usage recovers from errors, replaces a key, reconnects, and forgets locally', async ({
