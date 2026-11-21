@@ -142,6 +142,7 @@ import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
 import { DEFAULT_MOVE, type Sha256 } from '../lib/rig/rig.ts';
 import {
+	canvasLift,
 	frameChangeText,
 	frameFacts,
 	makeRoom,
@@ -667,6 +668,42 @@ export function showFrame(anim: string, dir: DirectionName, cell: number): void 
 	);
 }
 
+/** A saved character's listed identity and cached summary, for the first load and for a save that reloads it. */
+function savedProjectRef(p: StoredProject): ProjectRef {
+	return {
+		id: p.id,
+		name: p.manifest.name,
+		exportId: p.manifest.exportId ?? defaultCharacterExportId(p.id),
+		demo: false,
+		dev: p.origin === 'dev',
+		savedAt: p.savedAt,
+		// A developer rig (never shown as a character) may lack the items and slots a dress state reads.
+		look:
+			p.origin === 'dev'
+				? p.savedAt
+				: `${p.savedAt} ${stableStringify(dressOf(p.manifest, (p as { dress?: { current?: Outfit } }).dress?.current))}`,
+		// A developer rig frozen on the M2 pages need not carry a full rig; it has no card facts.
+		facts: p.manifest.rig?.cell ? characterFacts(p.manifest) : undefined
+	};
+}
+/** Keep one listed character in step with its saved record after a save reloaded it: its name, facts, saved time and
+ *  thumbnail look, without reading the whole list again. */
+function syncProjectRef(p: StoredProject) {
+	if (!store.projects.some((entry) => entry.id === p.id)) return;
+	const ref = savedProjectRef(p);
+	store.projects = store.projects.map((entry) => (entry.id === p.id ? ref : entry));
+}
+/** A save finished for a character this tab may not be showing: read its record and keep its listed summary in step, since
+ *  only opening it reloads the record. The summary is not work the save depends on, so a read failure is logged, never
+ *  reported as a failed save. */
+async function syncStoredProject(id: string) {
+	const record = await db.get<StoredProject>('projects', id).catch((error: unknown) => {
+		console.error('saved character summary', error);
+		return undefined;
+	});
+	if (record?.manifest) syncProjectRef(record);
+}
+
 /** False when the saved characters could not be read (already reported). */
 export async function refreshProjects(): Promise<boolean> {
 	const listed = await listProjects().catch((e: unknown) => {
@@ -689,21 +726,7 @@ export async function refreshProjects(): Promise<boolean> {
 			savedAt: '',
 			look: stableStringify(demoDress ?? null)
 		},
-		...own.map((p) => ({
-			id: p.id,
-			name: p.manifest.name,
-			exportId: p.manifest.exportId ?? defaultCharacterExportId(p.id),
-			demo: false,
-			dev: p.origin === 'dev',
-			savedAt: p.savedAt,
-			// A developer rig (never shown as a character) may lack the items and slots a dress state reads.
-			look:
-				p.origin === 'dev'
-					? p.savedAt
-					: `${p.savedAt} ${stableStringify(dressOf(p.manifest, (p as { dress?: { current?: Outfit } }).dress?.current))}`,
-			// A developer rig frozen on the M2 pages need not carry a full rig; it has no card facts.
-			facts: p.manifest.rig?.cell ? characterFacts(p.manifest) : undefined
-		}))
+		...own.map(savedProjectRef)
 	];
 	// Items of a character created, renamed or deleted here or in another tab.
 	void refreshShared();
@@ -808,6 +831,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		store.project = r.project;
 		store.moveReviews = r.record?.moveReviews ?? {};
 		store.exportRecord = r.record;
+		if (r.record) syncProjectRef(r.record);
 		// Another acceptance can supersede its reload. Retire worn drafts only when their saved items are published.
 		let acceptedWear = false;
 		for (const g of [...gens]) {
@@ -2048,6 +2072,8 @@ export async function moveItemToSlot(
 		if (typeof reason !== 'string' && reason.key === 'wardrobe.itemMoveBusy')
 			toast(reason, {
 				tone: 'warning',
+				// The notice's action is how the person resolves the block, so it never expires on its own.
+				duration: 0,
 				action: () => openPendingWork({ projectId, slots: [item.slot, targetId] })
 			});
 		else toast(message('state.couldNotSaveReason', { reason }), { tone: 'danger' });
@@ -2909,6 +2935,7 @@ export async function acceptItemIssues(projectId: string, itemId: string, review
 	if (follower()) return;
 	await (await itemRun()).acceptItemReview(projectId, itemId, reviewed);
 	if (viewing(projectId)) await openProject(projectId, { quiet: true });
+	else await syncStoredProject(projectId);
 	toast(message('state.nameAcceptedAsIs', { name: reviewed.name }));
 }
 async function openItemReview(projectId: string, itemId: string, anim?: string) {
@@ -3043,7 +3070,7 @@ export async function acceptGen(g: Gen, auto = false, finished = false): Promise
 				doc.id,
 				auto ? { quiet: true, ...(worn ? { wear: item.id } : {}) } : { wear: item.id }
 			);
-		}
+		} else if (!viewing(g.draft.rigId)) void syncStoredProject(g.draft.rigId);
 		if (doc.id !== g.draft.rigId) {
 			drop(g);
 			void refreshShared(); // the new item is offered to the character in view
@@ -3560,8 +3587,15 @@ export function reviewFailedCreate(id: string) {
 const canDriveCreate = () => !hmrReloading && queue.role !== 'follower';
 export async function startCreate(input: CreateSpec, present = false, attemptId?: string) {
 	if (!canDriveCreate()) return;
+	// A new creation fixes its placement now (absent when 0, like other defaults); a resumed one keeps the lift its
+	// registration was sent with.
+	const lift = input.projectId || !input.frame ? input.lift : canvasLift(input.size, input.frame);
 	const spec = withActivityScope(
-		{ ...input, projectId: input.projectId ?? `rig-${crypto.randomUUID()}` },
+		{
+			...input,
+			lift: lift || undefined,
+			projectId: input.projectId ?? `rig-${crypto.randomUUID()}`
+		},
 		'create'
 	);
 	const id = attemptId ?? spec.projectId;
@@ -3764,7 +3798,10 @@ export async function saveReviewedMove(
 	if (blocked) throw new LocalizedError('Move review is blocked by other work.', blocked);
 	moveReviewPublishing = true;
 	try {
-		return await (await createFlow()).resolveMoveCandidate(projectId, candidate, accept);
+		const input = await (await createFlow()).resolveMoveCandidate(projectId, candidate, accept);
+		// Accepting a reviewed move saves the character even when another one is open here.
+		if (accept && !viewing(projectId)) await syncStoredProject(projectId);
+		return input;
 	} finally {
 		moveReviewPublishing = false;
 	}
@@ -3920,7 +3957,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			if (viewing(projectId)) {
 				await openProject(projectId, { quiet: true });
 				if (!current()) return;
-			}
+			} else await syncStoredProject(projectId);
 			const names = spec.items
 				.map((id) => store.project?.manifest.items.find((i) => i.id === id)?.name)
 				.filter(Boolean)
@@ -3945,7 +3982,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 					ui.frame = 0;
 					ui.playing = true;
 				}
-			}
+			} else await syncStoredProject(projectId);
 			toast(message('state.moveNameAdded', { moveName }));
 		}
 		const reviewItem = result.reviewItems?.[0];
@@ -4227,6 +4264,7 @@ export async function resolveRepairReview(useRepair: boolean) {
 		moving.repairApplied = false;
 		moving.done = true;
 		if (useRepair && viewing(projectId)) await openProject(projectId, { quiet: true });
+		else if (useRepair) await syncStoredProject(projectId);
 		toast(useRepair ? message('repairReview.saved') : message('repairReview.kept'));
 	} catch (error) {
 		moving.error = error instanceof LocalizedError ? error : errorText(error);
@@ -4315,6 +4353,7 @@ export async function startSetup(spec: SetupSpec) {
 		await db.del('projects', SETUP_KEY);
 		if (!current()) return;
 		if (viewing(spec.projectId)) await openProject(spec.projectId);
+		else await syncStoredProject(spec.projectId);
 		toast(message('state.characterReadyForSkeletonPosedItemsAnd'));
 	} catch (e) {
 		if (current()) {

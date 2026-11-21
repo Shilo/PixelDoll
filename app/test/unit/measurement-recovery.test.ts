@@ -606,6 +606,46 @@ test('one combined review skips color work while joint checks are unfinished and
 	expect(f.enqueue).not.toHaveBeenCalled();
 });
 
+test('recovery cannot reuse a custom start without its cached joint check', async () => {
+	const f = await fixture();
+	const start = makeImg(64, 64);
+	start.data.set([120, 140, 180, 255], (32 * 64 + 32) * 4);
+	const review = await reviewMoveRecovery('rig-recover', {
+		...f.spec,
+		animation: {
+			model: 'skeleton-v3',
+			references: { east: { start: { width: 64, height: 64, base64: await b64(start) } } }
+		}
+	});
+	expect(review).toMatchObject({
+		unavailable: 'Cached body reuse requires completed joint checks.'
+	});
+	expect(review.recovery).toBeUndefined();
+	expect(review.keep).toBeUndefined();
+	expect(review.colorRepair).toBeUndefined();
+	expect(f.enqueue).not.toHaveBeenCalled();
+});
+
+test('paid move continuation prices an unbought custom start without losing loop or frame count', async () => {
+	const f = await fixture();
+	const start = makeImg(64, 64);
+	start.data.set([120, 140, 180, 255], (32 * 64 + 32) * 4);
+	const animation = { model: 'skeleton-v3', frameCount: 6, loop: true } as const;
+	const spec = { ...f.spec, animation };
+	const baseline = (await reviewMoveResults('rig-recover', spec))!;
+	const withStart = {
+		...animation,
+		references: { east: { start: { width: 64, height: 64, base64: await b64(start) } } }
+	};
+	const review = (await reviewMoveResults('rig-recover', { ...spec, animation: withStart }))!;
+	expect(review.options[0].gens).toBeCloseTo(baseline.options[0].gens + 0.1);
+	expect(review.options[0]).toMatchObject({
+		id: 'resume',
+		spec: { animation: withStart, items: [] }
+	});
+	expect(f.enqueue).not.toHaveBeenCalled();
+});
+
 test('combined review distinguishes ineligibility from real storage failures and does not cache across reviews', async () => {
 	const f = await fixture();
 	expect(await reviewMoveRecovery('rig-recover', { ...f.spec, action: undefined })).toEqual({});
@@ -1742,6 +1782,25 @@ test('an overflowing paid motion is reviewed from the cache with a priced lift a
 	);
 	for (const option of [...review.options, ...withItems.options])
 		expect(option.spec).toMatchObject({ items: [], reviewBeforePublish: true });
+	const animation = { model: 'skeleton-v3', frameCount: 12, loop: true } as const;
+	const longer = (await reviewMoveResults('rig-recover', {
+		...f.spec,
+		animation,
+		dirs: undefined
+	}))!;
+	expect(longer.options).toEqual(
+		expect.arrayContaining([
+			expect.objectContaining({
+				id: 'lift',
+				spec: expect.objectContaining({
+					animation,
+					motionLift: { east: Array(8).fill(2) }
+				})
+			}),
+			expect.objectContaining({ id: 'enlarge-frame', change: { size: 64, dy: -2 } })
+		])
+	);
+	expect(f.posts()).toBe(posts);
 });
 
 test('a view whose paid request is still at PixelLab is reviewed as running, not as unbought', async () => {

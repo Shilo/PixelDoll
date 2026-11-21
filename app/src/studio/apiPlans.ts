@@ -1,6 +1,6 @@
 import { specSlot } from '../lib/items/slots.ts';
 // Offline explanations only. These never encode images, submit work or invent dependent payloads.
-import { routes, type Req } from '../lib/pixellab/routes.ts';
+import { png, routes, type Req } from '../lib/pixellab/routes.ts';
 import {
 	type CreateSpec,
 	type MoveSpec,
@@ -403,13 +403,28 @@ export function movePlan(
 			return [];
 		const authored = isAuthoredAction(spec.action);
 		for (const direction of generatedDirections) {
+			const customStart = spec.animation?.references?.[direction]?.start;
+			if (model === 'skeleton-v3' && customStart)
+				calls.push(
+					shown(
+						{
+							method: 'POST',
+							path: '/estimate-skeleton',
+							label: `Start frame · ${direction}`,
+							generations: 0.1,
+							body: { image: png('[uploaded start frame]') }
+						},
+						({ t, displayDirection }) =>
+							t('apiPeek.plan.startFrame', { direction: displayDirection(direction) })
+					)
+				);
 			if (model !== 'skeleton-v3' || !authored) {
 				const native = model !== 'skeleton-v3';
 				calls.push(
 					shown(
 						{
 							...(native
-								? nativeMoveRequest(rec, spec, direction, model, '[standing artwork]')
+								? nativeMoveRequest(rec, spec, direction, model, '[standing artwork]', true)
 								: moveMotionRequest(rec, spec, direction)),
 							label: `Create motion · ${direction}`,
 							generations: native

@@ -11,7 +11,7 @@ import type { Item, Manifest } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
 import { rehash } from './directions.ts';
 import { HEADROOM_MIN } from './freeze.ts';
-import { opaqueBox, type Box } from './normalize.ts';
+import { FLOOR, opaqueBox, type Box } from './normalize.ts';
 import {
 	cellHash,
 	rigArtworkVersion,
@@ -97,6 +97,11 @@ export function roomFrame(size: number, room: FrameRoom, max = MAX_FRAME): numbe
 	if (FRAME_COST_STEPS.some((step) => smallest <= step && frame > step)) frame = smallest;
 	return Math.min(frame, capped(size, max));
 }
+/** Rows to raise a new character's `char` px canvas above normalize's FLOOR in a `cell` frame, so a body filling the canvas
+ *  leaves roomNeed below: the floor alone is too little for a large body's walk (2026-11-21, 8 sampled managed walks of 76 to
+ *  100 px tall characters stepped 5 to 6 px below the standing feet). Only rows spare beyond the headroom above are used. */
+export const canvasLift = (char: number, cell: number) =>
+	Math.max(0, Math.min(roomNeed(char).below - FLOOR, cell - char - FLOOR - HEADROOM_MIN));
 /** Whether a move is likely to reach past this frame: the reach, without guard rows or headroom. */
 export function roomShort(room: FrameRoom): boolean {
 	const reach = moveReach(room.height);

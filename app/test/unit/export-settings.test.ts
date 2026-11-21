@@ -239,6 +239,28 @@ test('exact canonical name rules cover existing and future characters without to
 	expect(second.rig.animations[0].loop).toBe(true);
 });
 
+test('explicit move choices take priority over global defaults for renamed export IDs', async () => {
+	const { manifest } = await fixture();
+	manifest.rig.animations = [
+		{
+			id: 'jump',
+			exportId: 'hop',
+			cells: 1,
+			frames: playlist(1, 200),
+			loop: false,
+			moveLoop: true
+		},
+		{ id: 'slash', cells: 1, frames: playlist(1, 200), loop: true, moveLoop: false },
+		{ id: 'kick', exportId: 'lunge', cells: 1, frames: playlist(1, 200), loop: true }
+	];
+	applyExportSettings(manifest, {
+		engine: 'godot',
+		dressedCharacterSheets: true,
+		playOnce: ['hop', 'lunge']
+	});
+	expect(manifest.rig.animations.map(({ loop }) => loop)).toEqual([true, false, false]);
+});
+
 test('canonical rig names reject case-only duplicates and native imports do not seed global preferences', async () => {
 	const project = await fixture(),
 		database = storedSettings({

@@ -2451,6 +2451,14 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
 	await expect(review).not.toBeVisible();
+	// The list row follows the saved move without a reload: the summary is not a stale copy from before the save.
+	await page.getByRole('button', { name: 'Characters', exact: true }).click();
+	await expect(
+		page
+			.locator('.cast-library .character-row')
+			.filter({ hasText: 'Rig parity fixture' })
+			.locator('.character-counts')
+	).toHaveText('4 directions · 2 moves · 0 items');
 	const after = await read(),
 		idle = after.manifest.rig.animations.find((a) => a.id === 'idle')!;
 	expect(after.manifest.items[0].layers[0].cells!.default).toEqual(

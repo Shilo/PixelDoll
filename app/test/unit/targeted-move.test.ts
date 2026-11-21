@@ -24,6 +24,51 @@ import { cellHash, type Keypoint, type DirectionName } from '../../src/lib/rig/r
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 afterEach(() => vi.restoreAllMocks());
+
+test('native motion uses only the selected direction’s start and end frames', async () => {
+	const { original } = await fixture();
+	const start = { width: 64, height: 64, base64: 'start' };
+	const end = { ...start, base64: 'end' };
+	for (const model of ['v3', 'pixminimax'] as const) {
+		const spec = {
+			id: 'idle',
+			action: 'idle',
+			frames: 8,
+			items: [],
+			animation: { model, loop: true, references: { east: { start, end } } }
+		};
+		expect(nativeMoveRequest(original, spec, 'east', model, 'standing').body).toMatchObject({
+			first_frame: png('start'),
+			last_frame: png('end')
+		});
+		expect(nativeMoveRequest(original, spec, 'south', model, 'standing').body).toMatchObject({
+			first_frame: png('standing'),
+			last_frame: png('standing')
+		});
+		expect(
+			nativeMoveRequest(original, { ...spec, action: 'walk' }, 'south', model, 'standing').body
+		).not.toHaveProperty('last_frame');
+		expect(
+			nativeMoveRequest(
+				original,
+				{ ...spec, animation: { ...spec.animation, loop: false } },
+				'south',
+				model,
+				'standing'
+			).body
+		).not.toHaveProperty('last_frame');
+		expect(
+			nativeMoveRequest(
+				original,
+				{ ...spec, animation: { ...spec.animation, references: { east: { start, end: null } } } },
+				'east',
+				model,
+				'standing'
+			).body
+		).not.toHaveProperty('last_frame');
+	}
+});
+
 async function fixture(
 	fail = false,
 	nativeReply?: 'redrawn' | 'exact' | 'none' | 'bad-palette',
@@ -212,9 +257,14 @@ async function fixture(
 		}
 		if (req.path === '/estimate-skeleton')
 			return {
+				id: 'joints',
 				state: 'done',
+				endpoint: req.path,
+				params: req.body,
+				requestHash: 'joint-check',
+				createdAt: 0,
 				response: {
-					keypoints: requested[0].map((p) => ({
+					keypoints: (requested[0] ?? points).map((p) => ({
 						...p,
 						x: p.x + (fail && p.label.includes('ARM') ? 0.3 : 0)
 					}))
@@ -243,6 +293,34 @@ async function fixture(
 			})
 	};
 }
+
+test('skeleton Loop checks a custom start first without repeating the start pose at the end', async () => {
+	const fixtureState = await fixture();
+	const { project } = await projects.loadProject('rig-target');
+	const start = structuredClone(project.images.get(project.manifest.rig.rest!.east!.image)!);
+	start.data[(10 * 64 + 25) * 4] = 170;
+	const base64 = await b64(start);
+	await fixtureState.run({
+		animation: {
+			model: 'skeleton-v3',
+			loop: true,
+			references: { east: { start: { width: 64, height: 64, base64 } } }
+		}
+	});
+	const [check, render] = fixtureState.enqueue.mock.calls.map(([request]) => request);
+	expect(check.path).toBe('/estimate-skeleton');
+	expect(render.path).toBe('/animate-with-skeleton-v3');
+	expect(render.body).toMatchObject({ first_frame: png(base64) });
+	expect(render.body).not.toHaveProperty('last_frame');
+	const poses = (render.body as { keypoints: Keypoint[][] }).keypoints;
+	expect(poses.at(-1)).not.toEqual(poses[0]);
+	const saved = fixtureState.saved().manifest;
+	expect(saved.rig.animations[0].moveLoop).toBe(true);
+	expect(saved.items[0].provenance.map((record) => record.endpoint)).toEqual([
+		'/estimate-skeleton',
+		'/animate-with-skeleton-v3'
+	]);
+});
 test('targeted replacement preserves every unselected body/item/pose row and clears only stale target diagnostics', async () => {
 	const f = await fixture();
 	await f.run();
@@ -342,6 +420,28 @@ test('a native quality failure offers a priced body draft retry without buying e
 		affected: ['east']
 	});
 	expect(offer?.estimate.gens).toBeGreaterThan(0);
+	const start = { width: 64, height: 64, base64: 'start' };
+	const end = { ...start, base64: 'end' };
+	const withFrames = skeletonMoveReview(
+		f.saved(),
+		{
+			...spec,
+			animation: {
+				...spec.animation,
+				loop: false,
+				references: { east: { start, end }, south: { start } }
+			}
+		},
+		result,
+		[]
+	);
+	expect(withFrames?.review.animation).toEqual({
+		model: 'skeleton-v3',
+		frameCount: 4,
+		loop: false,
+		references: { east: { start } }
+	});
+	expect(withFrames!.estimate.gens - offer!.estimate.gens).toBeCloseTo(0.1);
 	expect(
 		skeletonMoveReview(f.saved(), spec, new Error('Standing reference is missing'), [])
 	).toBeUndefined();

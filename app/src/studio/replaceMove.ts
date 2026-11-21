@@ -8,11 +8,14 @@ import type { RigAnimation } from '../lib/rig/rig.ts';
 import type { ClipQa } from '../lib/rig/clips.ts';
 import type { MoveSpec } from './create.ts';
 
+type MovePlayback = Pick<RigAnimation, 'loop' | 'moveLoop'>;
+
 export interface MoveCandidate {
 	spec: MoveSpec;
 	input: string;
 	dirs: DirectionName[];
 	animation: RigAnimation;
+	basePlayback?: MovePlayback;
 	cells: NonNullable<Layer['cells']>[string];
 	provenance: Provenance[];
 	provenanceStart: number;
@@ -20,6 +23,23 @@ export interface MoveCandidate {
 	skeletons: Record<string, Skeleton>;
 	checks: Record<string, ClipQa>;
 	warnings: string[];
+}
+
+export function applyMoveLoop(
+	animation: RigAnimation,
+	requested: boolean | undefined,
+	baseline: MovePlayback | undefined,
+	current: MovePlayback | undefined
+): void {
+	if (requested !== undefined && !movePlaybackChanged(baseline, current))
+		animation.loop = animation.moveLoop = requested;
+}
+
+export function movePlaybackChanged(
+	baseline: MovePlayback | undefined,
+	current: MovePlayback | undefined
+): boolean {
+	return current?.loop !== baseline?.loop || current?.moveLoop !== baseline?.moveLoop;
 }
 
 export function moveCandidateHasStructuralFailure(candidate: MoveCandidate): boolean {

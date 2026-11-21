@@ -15,7 +15,7 @@ import { expect, test, type BrowserContext, type Locator, type Page } from '@pla
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { unzip, zip } from '../../src/lib/store/zip.ts';
-import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import { CURRENT_FORMAT, type Manifest } from '../../src/lib/store/manifest.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import './studio-thumbnails.ts';
@@ -3365,7 +3365,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	const advanced = move.locator('details.advanced');
 	await advanced.locator('summary').click();
 	const model = advanced.getByRole('combobox', { name: 'Motion model' });
-	const slider = advanced.getByRole('slider', { name: 'Frames' });
+	const slider = move.getByRole('slider', { name: 'Frames' });
 	await expect(model).toHaveValue('pixminimax');
 	await expect(model.getByRole('option')).toHaveText(['Default (PixMiniMax)', 'Skeleton V3', 'V3']);
 	await model.selectOption('skeleton-v3');
@@ -3382,7 +3382,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await slider.press('Home');
 	await slider.press('ArrowRight');
 	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
-	await advanced.getByRole('button', { name: 'Default (8 frames)', exact: true }).click();
+	await move.getByRole('button', { name: 'Default (8 frames)', exact: true }).click();
 	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await model.selectOption('skeleton-v3');
 	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
@@ -5899,6 +5899,10 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(replace).toBeEnabled();
 	const advanced = sheet.locator('summary').filter({ hasText: 'Advanced' });
 	await expect(advanced).toContainText('V3');
+	await expect(sheet.getByText('Kept: 8 frames', { exact: true })).toBeVisible();
+	await expect(
+		sheet.getByRole('combobox', { name: 'Motion model', exact: true })
+	).not.toBeVisible();
 	await advanced.click();
 	await expect(sheet.getByRole('slider', { name: 'Frames', exact: true })).toHaveCount(0);
 	await expect(sheet.getByText('Kept: 8 frames', { exact: true })).toBeVisible();
@@ -5913,12 +5917,94 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await east.click();
 	await expect(model).toHaveValue('pixminimax');
 	await model.selectOption('skeleton-v3');
+	await expect(sheet.getByRole('button', { name: 'End frame', exact: true })).toBeDisabled();
+	const start = sheet.getByRole('button', { name: 'Start frame', exact: true });
+	await start.click();
+	const startWarning = page.getByRole('alertdialog', { name: 'Use a custom start frame?' });
+	await expect(startWarning).toBeVisible();
+	await startWarning.getByRole('button', { name: 'Keep default' }).click();
+	const transfer = await page.evaluateHandle(
+		(bytes) => {
+			const data = new DataTransfer();
+			data.items.add(new File([new Uint8Array(bytes)], 'start.png', { type: 'image/png' }));
+			return data;
+		},
+		Array.from(readFileSync('dev-fixtures/s4rig/walk_east_0.png'))
+	);
+	await start.dispatchEvent('drop', { dataTransfer: transfer });
+	await expect(startWarning).toBeVisible();
+	await expect(start).not.toContainText('start.png');
+	await startWarning.getByRole('button', { name: 'Continue', exact: true }).click();
+	await expect(start).toContainText('start.png');
 	const custom = sheet.getByRole('textbox', { name: 'Describe a new move', exact: true });
 	await expect(custom).toHaveValue('');
 	await custom.fill('jumping in place');
 	const add = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(add.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
 	await expect(add.getByText('Directions to redraw')).toHaveCount(0);
+	const loop = add.getByRole('switch', { name: 'Loop', exact: true });
+	await expect(loop).not.toBeChecked();
+	await expect(add.getByRole('slider', { name: 'Frames', exact: true })).toBeVisible();
+	const addAdvanced = add.locator('summary').filter({ hasText: 'Advanced' });
+	const addModel = add.getByRole('combobox', { name: 'Motion model', exact: true });
+	if (!(await addModel.isVisible())) await addAdvanced.click();
+	await addModel.selectOption('v3');
+	const frameTabs = add.getByRole('tablist', { name: 'Start and end frames', exact: true });
+	const directionTabs = frameTabs.getByRole('tab');
+	const firstDirection = directionTabs.first();
+	const lastDirection = directionTabs.last();
+	await firstDirection.click();
+	await loop.check();
+	const end = add.getByRole('button', { name: 'End frame', exact: true });
+	await expect(end).toContainText('Same as start');
+	const originalViewport = page.viewportSize()!;
+	await page.setViewportSize({ width: 320, height: 700 });
+	const frameHelp = add.getByRole('button', { name: 'Start and end frames', exact: true });
+	await frameHelp.click();
+	const frameTooltip = page.getByRole('tooltip').filter({ hasText: 'guide the opening pose' });
+	await expect(frameTooltip).toBeVisible();
+	await expect(frameTooltip).toContainText('make a loop smoother');
+	await frameHelp.press('Escape');
+	await expect(frameTooltip).toBeHidden();
+	await expect(add).toBeVisible();
+	await expect(frameTabs).toHaveCount(1);
+	await expect(directionTabs).toHaveCount(4);
+	for (const name of ['South', 'East', 'North', 'West']) {
+		await expect(frameTabs.getByRole('tab', { name, exact: true })).toHaveCount(1);
+	}
+	const frameCopy = end.locator('.reference-copy');
+	await expect(frameCopy).toBeVisible();
+	await expect
+		.poll(() =>
+			end.evaluate((tile) => {
+				const box = tile.getBoundingClientRect();
+				const copy = tile.querySelector('.reference-copy')!.getBoundingClientRect();
+				return copy.top >= box.top && copy.bottom <= box.bottom;
+			})
+		)
+		.toBe(true);
+	await page.setViewportSize(originalViewport);
+	await add.getByRole('button', { name: 'Remove end frame', exact: true }).click();
+	await expect(end).toContainText('No end frame');
+	const [endPicker] = await Promise.all([page.waitForEvent('filechooser'), end.click()]);
+	await endPicker.setFiles('dev-fixtures/s4rig/walk_east_1.png');
+	await expect(end).toContainText('walk_east_1.png');
+	await firstDirection.press('End');
+	await expect(lastDirection).toBeFocused();
+	await expect(lastDirection).toHaveAttribute('aria-selected', 'true');
+	await expect(end).toContainText('Same as start');
+	await lastDirection.press('Home');
+	await expect(firstDirection).toBeFocused();
+	await expect(end).toContainText('walk_east_1.png');
+	await loop.click();
+	const reset = page.getByRole('alertdialog', { name: 'Change Loop and reset end frames?' });
+	await reset.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(loop).toBeChecked();
+	await expect(end).toContainText('walk_east_1.png');
+	await loop.click();
+	await reset.getByRole('button', { name: 'Change Loop', exact: true }).click();
+	await expect(loop).not.toBeChecked();
+	await expect(end).toContainText('No end frame');
 });
 
 async function oversizedItemFixture(page: Page, itemId: string) {
@@ -6022,6 +6108,12 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 8 gens'
 	);
+	const model = sheet.getByRole('combobox', { name: 'Motion model', exact: true });
+	if (!(await model.isVisible()))
+		await sheet.locator('summary').filter({ hasText: 'Advanced' }).click();
+	await expect(
+		sheet.getByRole('group', { name: 'Start and end frames East', exact: true })
+	).toBeVisible();
 	await sheet.getByRole('button', { name: /^Replace Walk views/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
@@ -6069,7 +6161,14 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		for (const item of manifest.items)
 			if (item.id !== manifest.rig.baseItem && !state.moving.spec.items.includes(item.id))
 				for (const layer of item.layers) if (layer.cells?.walk) delete layer.cells.walk.east;
-		state.moving.spec = { ...state.moving.spec, animation: { model: 'pixminimax', frameCount: 8 } };
+		state.moving.spec = {
+			...state.moving.spec,
+			animation: {
+				model: 'pixminimax',
+				frameCount: 8,
+				references: { east: { end: { width: 64, height: 64, base64: 'unused-end' } } }
+			}
+		};
 		state.moving.error = new LocalizedError(
 			'Fixture QA failure',
 			'create.errors.replacementFailsQa'
@@ -6081,6 +6180,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	const review = page.getByRole('dialog', { name: 'Review Skeleton V3', exact: true });
 	await expect(review).toContainText('8 frames');
 	await expect(review).toContainText('Directions: East');
+	await expect(review).toContainText('End frame: Not available for this model');
 	await expect(review.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await expect(review.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 8 gens'
@@ -7461,6 +7561,8 @@ test('move review gates item selection and shows live estimates without spending
 			const rec = await db.get('projects', s.doc.id);
 			const rig = rec.manifest.rig;
 			const base = rec.manifest.items.find((item: { id: string }) => item.id === rig.baseItem);
+			const animation = rig.animations.find((move: { id: string }) => move.id === 'walk');
+			animation.frames[0].ms = 137;
 			const cells = { ...base.layers[0].cells.walk };
 			delete cells.west;
 			rec.moveReviews = {
@@ -7472,11 +7574,12 @@ test('move review gates item selection and shows live estimates without spending
 						replace: true,
 						reviewBeforePublish: true,
 						items: [],
-						animation: { model: 'pixminimax', frameCount: 8 }
+						animation: { model: 'pixminimax', frameCount: 8, loop: false }
 					},
 					input: moveCandidateInput(rec, 'walk'),
 					dirs: ['east'],
-					animation: rig.animations.find((move: { id: string }) => move.id === 'walk'),
+					animation: structuredClone(animation),
+					basePlayback: { loop: animation.loop, moveLoop: animation.moveLoop },
 					cells,
 					provenance: [],
 					provenanceStart: base.provenance.length,
@@ -7489,8 +7592,21 @@ test('move review gates item selection and shows live estimates without spending
 					itemsBlocked: true
 				}
 			};
+			if (seed === 76) animation.loop = animation.moveLoop = true;
 			await db.put('projects', s.doc.id, rec);
 		}, seed);
+	const savedPlayback = () =>
+		page.evaluate(async () => {
+			const statePath = '/src/studio/state.svelte.ts';
+			const dbPath = '/src/lib/store/db.ts';
+			const { doc } = await import(statePath);
+			const { get } = await import(dbPath);
+			const rec = await get('projects', doc.id);
+			const { loop, moveLoop, frames } = rec.manifest.rig.animations.find(
+				(move: { id: string }) => move.id === 'walk'
+			);
+			return { loop, moveLoop, firstMs: frames[0].ms };
+		});
 	await seedReview(75);
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
@@ -7501,6 +7617,7 @@ test('move review gates item selection and shows live estimates without spending
 	await review.getByRole('button', { name: /^Review Skeleton V3.*Est\./ }).click();
 	const retry = page.getByRole('dialog', { name: 'Replace move views', exact: true });
 	await expect(retry.getByRole('combobox', { name: 'Motion model' })).toHaveValue('skeleton-v3');
+	await expect(retry.getByRole('switch', { name: 'Loop', exact: true })).not.toBeChecked();
 	await expect(retry.getByRole('button', { name: /^Replace Walk views/ })).toContainText(
 		'Est. 8 gens'
 	);
@@ -7588,6 +7705,7 @@ test('move review gates item selection and shows live estimates without spending
 	const animate = picker.getByRole('button', { name: /^Animate (items|1 item)$/ });
 	await expect(item).toHaveAttribute('aria-pressed', 'false');
 	await expect(picker).toContainText('Est. 0 more gens');
+	expect(await savedPlayback()).toEqual({ loop: false, moveLoop: false, firstMs: 137 });
 	await expect(animate).toBeDisabled();
 	const price = Number((await item.innerText()).match(/(\d+) gens/)?.[1]);
 	expect(price).toBeGreaterThan(0);
@@ -7632,6 +7750,8 @@ test('move review gates item selection and shows live estimates without spending
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	await replace.click();
+	await expect(picker).toBeVisible();
+	expect(await savedPlayback()).toEqual({ loop: true, moveLoop: true, firstMs: 137 });
 	await item.click();
 	await animate.click();
 	await page
@@ -7645,6 +7765,7 @@ test('move review gates item selection and shows live estimates without spending
 	await walkReview.click();
 	await review.getByRole('button', { name: 'Regenerate…', exact: true }).click();
 	const replacement = page.getByRole('dialog', { name: 'Replace move views', exact: true });
+	await expect(replacement.getByRole('switch', { name: 'Loop', exact: true })).not.toBeChecked();
 	await replacement.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await walkReview.click();
 	await review.getByRole('button', { name: 'Discard draft', exact: true }).click();
@@ -7660,6 +7781,162 @@ test('move review gates item selection and shows live estimates without spending
 		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	expect(posts).toEqual([]);
+});
+
+test('reviewed move animates the chosen item and exports layered frames using offline artwork', async ({
+	page,
+	context
+}, info) => {
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	const posts: string[] = [];
+	let images: { type: string; base64: string }[] = [];
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		const path = new URL(request.url()).pathname;
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					credits: { type: 'usd', usd: 0 },
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 }
+				}
+			});
+		if (request.method() === 'POST') posts.push(path);
+		if (path === '/v2/animate-with-skeleton-v3')
+			return route.fulfill({ json: { background_job_id: 'offline-helmet' } });
+		if (path.endsWith('/offline-helmet'))
+			return route.fulfill({ json: { status: 'completed', last_response: { images } } });
+		return route.abort();
+	});
+	await page.addInitScript(() => {
+		localStorage.setItem('pixeldoll.agentKey', 'off');
+		localStorage.setItem('pixeldoll.welcomed', '1');
+		localStorage.setItem('pixellabApiKey', 'offline-move-smoke-key');
+	});
+	await openStudio(
+		page,
+		info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!
+	);
+	await targetedRepairFixture(page, true);
+	images = await page.evaluate(async () => {
+		const load = (path: string) => import(path);
+		const { doc } = await load('/src/studio/state.svelte.ts');
+		const { loadProject } = await load('/src/lib/store/project.ts');
+		const db = await load('/src/lib/store/db.ts');
+		const { cellHash } = await load('/src/lib/rig/rig.ts');
+		const { toChroma } = await load('/src/lib/image/chroma.ts');
+		const { encodePngBytes } = await load('/src/lib/image/pngraw.ts');
+		const { bytesToBase64 } = await load('/src/lib/image/png.ts');
+		const { moveCandidateInput } = await load('/src/studio/replaceMove.ts');
+		const { rec, project } = await loadProject(doc.id);
+		const { rig, items } = rec.manifest;
+		const body = items.find((item: { id: string }) => item.id === rig.baseItem);
+		const helmet = items.find((item: { id: string }) => item.id === 'helmet_steel');
+		const cells = { ...body.layers[0].cells.walk };
+		delete cells.west;
+		const artwork = cells.east.map((hash: string, index: number) => {
+			const mannequin = toChroma(project.images.get(hash), 'green');
+			const layer = project.images.get(helmet.layers[0].cells.walk.east[index]);
+			if (layer.w !== mannequin.w || layer.h !== mannequin.h)
+				throw new Error('Fixture sizes differ');
+			for (let offset = 0; offset < layer.data.length; offset += 4)
+				if (layer.data[offset + 3])
+					mannequin.data.set(layer.data.subarray(offset, offset + 4), offset);
+			return mannequin;
+		});
+		const dressing = await cellHash(artwork[0]);
+		await db.put('blobs', dressing.slice(7), new Blob([await encodePngBytes(artwork[0])]));
+		Object.assign(helmet, { route: 'skeleton-pose', key: 'green', dressed: { east: dressing } });
+		const animation = rig.animations.find((move: { id: string }) => move.id === 'walk');
+		const basePlayback = { loop: animation.loop, moveLoop: animation.moveLoop };
+		rec.moveReviews = {
+			walk: {
+				spec: {
+					id: 'walk',
+					seed: 812,
+					replace: true,
+					reviewBeforePublish: true,
+					items: [],
+					animation: { model: 'skeleton-v3', loop: false }
+				},
+				input: moveCandidateInput(rec, 'walk'),
+				dirs: ['east'],
+				animation,
+				basePlayback,
+				cells,
+				provenance: [],
+				provenanceStart: body.provenance.length,
+				anchors: {},
+				skeletons: {},
+				checks: {},
+				warnings: []
+			}
+		};
+		await db.put('projects', doc.id, rec);
+		return Promise.all(
+			artwork.map(async (frame: unknown) => ({
+				type: 'base64',
+				base64: bytesToBase64(await encodePngBytes(frame))
+			}))
+		);
+	});
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: /Walk Review move/ }).click();
+	await page.getByRole('button', { name: 'Replace move', exact: true }).click();
+	const items = page.getByRole('dialog', { name: 'Animate items' });
+	const helmet = items.getByRole('button', { name: /Steel helmet/i });
+	await expect(helmet).toHaveAttribute('aria-pressed', 'false');
+	expect(
+		await page.evaluate(async () => {
+			const statePath = '/src/studio/state.svelte.ts';
+			const dbPath = '/src/lib/store/db.ts';
+			const { doc } = await import(statePath);
+			const { get } = await import(dbPath);
+			const rec = await get('projects', doc.id);
+			return rec.manifest.rig.animations.find((move: { id: string }) => move.id === 'walk')
+				.moveLoop;
+		})
+	).toBe(false);
+	expect(posts).toEqual([]);
+	await helmet.click();
+	await items.getByRole('button', { name: 'Animate 1 item' }).click();
+	await page
+		.getByRole('dialog', { name: 'Add a move', exact: true })
+		.getByRole('button', { name: 'Done', exact: true })
+		.click({ timeout: 30_000 });
+	expect(posts).toEqual(['/v2/animate-with-skeleton-v3']);
+	await page.getByRole('button', { name: 'Export', exact: true }).click();
+	const sheet = page.getByRole('dialog', { name: 'Export', exact: true });
+	await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click();
+	const download = page.waitForEvent('download');
+	await sheet.getByRole('button', { name: /^Download ZIP/ }).click();
+	const entries = await unzip(new Uint8Array(readFileSync((await (await download).path())!)));
+	const manifestEntry = entries.get('manifest.json');
+	expect(manifestEntry).toBeDefined();
+	const manifest: Manifest = JSON.parse(new TextDecoder().decode(manifestEntry));
+	expect(manifest.rig.animations.find((move) => move.id === 'walk')).toMatchObject({
+		loop: false,
+		cells: 8
+	});
+	const exportedHelmet = manifest.items.find((item) => item.id === 'helmet_steel');
+	expect(exportedHelmet?.coverage).toEqual(
+		expect.arrayContaining(images.map((_, index) => `walk/east/${index}`))
+	);
+	const layer = exportedHelmet!.layers[0];
+	const helmetSheet = layer.sheets?.walk;
+	expect(helmetSheet).toBeDefined();
+	const spriteSheet = await decodePngBytes(entries.get(helmetSheet!)!);
+	const { w: cellWidth, h: cellHeight } = layer.cell ?? manifest.rig.cell;
+	const east = manifest.rig.directions.findIndex((direction) => direction.id === 'east');
+	for (let frame = 0; frame < 8; frame++) {
+		const hasPixels = Array.from({ length: cellHeight }, (_, row) => {
+			const offset = ((east * cellHeight + row) * spriteSheet.w + frame * cellWidth) * 4;
+			return spriteSheet.data.subarray(offset, offset + cellWidth * 4);
+		}).some((row) => row.some((value, index) => index % 4 === 3 && value > 0));
+		expect(hasPixels, `helmet east frame ${frame} has visible pixels`).toBe(true);
+	}
+	expect(errors).toEqual([]);
 });
 
 test('draft retry prices a fresh item plan rather than historical grid fallbacks and stops when pricing is unavailable', async ({
