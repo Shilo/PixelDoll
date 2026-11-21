@@ -98,7 +98,6 @@
 		if (offer && tierDecision(app.balance, { required: offer.tier }).kind !== 'required')
 			return offer;
 	});
-	const previewSize = $derived(ui.size === 'landscape' ? 128 : 192);
 	const changed = $derived(
 		!!acceptedInput &&
 			(!store.exportRecord ||
@@ -405,12 +404,15 @@
 		<div class="checkpoint-preview">
 			<div class="checkpoint-motion">
 				<div class="checkpoint-stage" aria-busy={!images && !error}>
-					{#if currentImage && facing}<Sprite
-							img={currentImage}
-							k={croppedBacking(previewSize, currentImage, ui.dpr)}
-							limit={previewSize}
-							label={t('moves.preview', { move: name }) + ', ' + displayDirection(facing)}
-						/>
+					{#if currentImage && facing}<span class="checkpoint-cell"
+							><Sprite
+								img={currentImage}
+								k={croppedBacking(280, currentImage, ui.dpr)}
+								fitToBox
+								checker
+								label={t('moves.preview', { move: name }) + ', ' + displayDirection(facing)}
+							/></span
+						>
 					{:else if !error}<span class="muted small">{t('stage.loading')}</span>{/if}
 				</div>
 				{#if images && playlist.length > 1}
@@ -471,13 +473,21 @@
 </Sheet>
 
 <style>
+	/* Like the start-pose preview: the square stored cell fills the stage height, letterboxed on the stage color. */
 	.checkpoint-stage {
 		display: grid;
 		place-items: center;
-		min-height: 208px;
-		padding-block: 8px;
+		block-size: 208px;
+		overflow: hidden;
 		background: var(--stage);
+		border: 1px solid var(--bu-line);
 		border-radius: var(--r-ctl);
+	}
+	.checkpoint-cell {
+		display: grid;
+		block-size: 100%;
+		max-inline-size: 100%;
+		aspect-ratio: 1;
 	}
 	.checkpoint-preview {
 		display: grid;
@@ -575,12 +585,12 @@
 			width: 100%;
 		}
 		.checkpoint-stage {
-			min-height: 192px;
+			block-size: min(280px, 36dvh);
 		}
 	}
 	@media (orientation: landscape) and (max-height: 499px) {
 		.checkpoint-stage {
-			min-height: 144px;
+			block-size: 144px;
 		}
 	}
 	@media (max-width: 680px) and (orientation: landscape) and (max-height: 499px) {
