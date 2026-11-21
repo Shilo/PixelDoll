@@ -816,7 +816,6 @@
 		"finishBeforeMoveRemoval": "Termina o descarta la generación pendiente antes de eliminar una animación.",
 		"finishBeforeDirectionRemoval": "Termina o descarta la generación pendiente antes de cambiar las direcciones.",
 		"finishBeforeFixFrames": "Espera a que termine la generación en curso antes de corregir fotogramas.",
-		"couldNotRemoveCharactersSavedByAn": "No se pudieron quitar los personajes guardados por una versión preliminar anterior: {reason}",
 		"couldNotReadYourSavedCharactersReason": "No se pudieron leer tus personajes guardados: {reason}",
 		"couldNotOpenThatCharacterError": "No se pudo abrir ese personaje: {error}",
 		"valueStaysItHasItemsOrItems": "{value} se conserva: tiene objetos o se están creando objetos.",

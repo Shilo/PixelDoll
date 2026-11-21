@@ -807,7 +807,6 @@
 		"finishBeforeMoveRemoval": "Finish or dismiss pending generation work before deleting a move.",
 		"finishBeforeDirectionRemoval": "Finish or dismiss pending generation work before changing directions.",
 		"finishBeforeFixFrames": "Wait for the current generation work to finish before fixing frames.",
-		"couldNotRemoveCharactersSavedByAn": "Could not remove characters saved by an earlier preview version: {reason}",
 		"couldNotReadYourSavedCharactersReason": "Could not read your saved characters: {reason}",
 		"couldNotOpenThatCharacterError": "Could not open that character: {error}",
 		"valueStaysItHasItemsOrItems": "{value} stays: it has items or items being made.",
@@ -1222,6 +1221,13 @@
 			"cutPixels": "{path} would lose {cut} visible pixels in a {frame} px cell. Import a smaller character; artwork is never rescaled.",
 			"emptyFrame": "{path} is an empty frame.",
 			"nameLength": "Enter a character name of 1–60 characters."
+		}
+	},
+	"incompatible": {
+		"error": {
+			"unsupported": "Saved data from an earlier version holds a value this download cannot keep exactly, so nothing was downloaded.",
+			"tooLarge": "Saved data from earlier versions is too large for one ZIP, so nothing was downloaded.",
+			"invalid": "The saved data from earlier versions in this file is damaged or unsupported."
 		}
 	},
 	"workspace": {

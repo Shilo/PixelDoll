@@ -816,7 +816,6 @@
 		"finishBeforeMoveRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du eine Animation löschst.",
 		"finishBeforeDirectionRemoval": "Schließe offene Generierungen ab oder verwirf sie, bevor du die Blickrichtungen änderst.",
 		"finishBeforeFixFrames": "Warte, bis die laufenden Generierungen abgeschlossen sind, bevor du Frames korrigierst.",
-		"couldNotRemoveCharactersSavedByAn": "Figuren aus einer früheren Vorabversion konnten nicht entfernt werden: {reason}",
 		"couldNotReadYourSavedCharactersReason": "Deine gespeicherten Figuren konnten nicht gelesen werden: {reason}",
 		"couldNotOpenThatCharacterError": "Diese Figur konnte nicht geöffnet werden: {error}",
 		"valueStaysItHasItemsOrItems": "{value} bleibt bestehen: Der Platz enthält Gegenstände oder es werden gerade welche dafür erstellt.",

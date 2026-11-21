@@ -788,7 +788,6 @@
 		"finishBeforeMoveRemoval": "モーションを削除する前に、保留中の生成を完了するか破棄してください。",
 		"finishBeforeDirectionRemoval": "向きを変更する前に、保留中の生成を完了するか破棄してください。",
 		"finishBeforeFixFrames": "フレームを修正する前に、実行中の生成が終わるまでお待ちください。",
-		"couldNotRemoveCharactersSavedByAn": "以前のプレビュー版で保存したキャラクターを削除できませんでした：{reason}",
 		"couldNotReadYourSavedCharactersReason": "保存したキャラクターを読み込めませんでした：{reason}",
 		"couldNotOpenThatCharacterError": "そのキャラクターを開けませんでした：{error}",
 		"valueStaysItHasItemsOrItems": "{value}は残ります。アイテムがあるか、アイテムを作成中です。",

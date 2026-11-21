@@ -818,7 +818,6 @@
 		"finishBeforeMoveRemoval": "Conclua ou descarte as gerações pendentes antes de excluir uma animação.",
 		"finishBeforeDirectionRemoval": "Conclua ou descarte as gerações pendentes antes de alterar as direções.",
 		"finishBeforeFixFrames": "Aguarde a geração em andamento terminar antes de corrigir quadros.",
-		"couldNotRemoveCharactersSavedByAn": "Não foi possível remover os personagens salvos por uma versão preliminar anterior: {reason}",
 		"couldNotReadYourSavedCharactersReason": "Não foi possível ler seus personagens salvos: {reason}",
 		"couldNotOpenThatCharacterError": "Não foi possível abrir esse personagem: {error}",
 		"valueStaysItHasItemsOrItems": "{value} será mantido: tem itens prontos ou em geração.",

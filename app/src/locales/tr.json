@@ -813,7 +813,6 @@
 		"finishBeforeMoveRemoval": "Animasyonu silmeden önce bekleyen üretimleri tamamlayın veya kapatın.",
 		"finishBeforeDirectionRemoval": "Yönleri değiştirmeden önce bekleyen üretimleri tamamlayın veya kapatın.",
 		"finishBeforeFixFrames": "Kareleri düzeltmeden önce süren üretimlerin bitmesini bekleyin.",
-		"couldNotRemoveCharactersSavedByAn": "Önceki bir ön sürümde kaydedilmiş karakterler kaldırılamadı: {reason}",
 		"couldNotReadYourSavedCharactersReason": "Kayıtlı karakterleriniz okunamadı: {reason}",
 		"couldNotOpenThatCharacterError": "Karakter açılamadı: {error}",
 		"valueStaysItHasItemsOrItems": "{value} korunuyor: İçinde eşya veya üretilmekte olan eşya var.",

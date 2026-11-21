@@ -788,7 +788,6 @@
 		"finishBeforeMoveRemoval": "동작을 삭제하기 전에 대기 중인 생성 작업을 끝내거나 버려 주세요.",
 		"finishBeforeDirectionRemoval": "방향을 바꾸기 전에 대기 중인 생성 작업을 끝내거나 버려 주세요.",
 		"finishBeforeFixFrames": "프레임을 수정하기 전에 진행 중인 생성 작업이 끝날 때까지 기다려 주세요.",
-		"couldNotRemoveCharactersSavedByAn": "이전 미리보기 버전에서 저장한 캐릭터를 제거하지 못했어요: {reason}",
 		"couldNotReadYourSavedCharactersReason": "저장된 캐릭터를 읽지 못했어요: {reason}",
 		"couldNotOpenThatCharacterError": "해당 캐릭터를 열지 못했어요: {error}",
 		"valueStaysItHasItemsOrItems": "{value} 항목은 유지돼요: 아이템이나 만들고 있는 아이템이 있어요.",

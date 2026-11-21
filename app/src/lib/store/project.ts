@@ -6,7 +6,7 @@ import { copyMissingArtwork } from './workspace-mode.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import * as db from './db.ts';
 import type { Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.ts';
-import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
+import { supportedFormat } from './manifest.ts';
 import { putItem } from '../items/items.ts';
 import { defaultCharacterExportId, newItemExportId } from './identity.ts';
 
@@ -27,41 +27,9 @@ export interface StoredProject {
 	origin: 'studio' | 'dev'; // T2: who made it; the Studio's character menu lists only 'studio' rigs (dev rigs: dev pages)
 }
 
+// Earlier preview formats are never upgraded or opened; their records stay stored as they are (incompatible.ts).
 export const OUTDATED =
 	'This character was saved by an earlier preview version and is no longer supported.';
-
-/** Earlier preview formats are never upgraded: delete their characters, demo outfits, retired shared-design and fit records
- * and an unfinished character creation saved before explicit direction plans (its paid pipeline is never re-keyed). */
-export async function deleteOutdated(): Promise<number> {
-	const formatOf = (r: OutdatedCandidate) =>
-		r.kind === 'equipment-design' || r.kind === 'equipment-fit-draft'
-			? undefined
-			: r.kind === 'dress' || r.manifest
-				? (r.format ?? r.manifest?.format)
-				: r.id === 'studio-create' ||
-					  (r.id.startsWith(db.CREATE_DRAFT_PREFIX) && !Array.isArray(r.spec?.directions))
-					? undefined
-					: CURRENT_FORMAT;
-	const outdated = (await db.all<OutdatedCandidate>('projects')).filter(
-		(r) => typeof r?.id === 'string' && formatOf(r) !== CURRENT_FORMAT
-	);
-	for (const r of outdated) await db.del('projects', r.id);
-	// Drafts of a removed character would only fail to reopen it: they go with it, as when a character is deleted.
-	const gone = new Set(outdated.map((r) => r.id));
-	if (gone.size)
-		for (const r of await db.all<{ id: string }>('projects')) {
-			const change = db.withoutCharacters(r, gone);
-			if (change) await db.put('projects', r.id, change);
-		}
-	return outdated.length;
-}
-interface OutdatedCandidate {
-	id: string;
-	kind?: string;
-	format?: string;
-	manifest?: { format?: string };
-	spec?: { directions?: unknown };
-}
 
 export const listProjects = async () =>
 	(await db.all<StoredProject>('projects')).filter(

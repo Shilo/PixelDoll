@@ -1,16 +1,19 @@
-import { afterEach, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { openSource } from '../../src/lib/dress/project.ts';
 import { splitBase } from '../../src/lib/dress/regions.ts';
 import * as rig from '../../src/lib/rig/rig.ts';
 import { rememberDecoded } from '../../src/lib/store/project.ts';
-import {
-	deleteOutdated,
-	loadProject,
-	OUTDATED,
-	type StoredProject
-} from '../../src/lib/store/project.ts';
+import { loadProject, OUTDATED, type StoredProject } from '../../src/lib/store/project.ts';
 import * as db from '../../src/lib/store/db.ts';
+import {
+	blobReferences,
+	incompatibleCounts,
+	incompatibleKind,
+	type IncompatibleKind
+} from '../../src/lib/store/incompatible.ts';
+import { packIncompatible, unpackIncompatible } from '../../src/lib/store/incompatible-archive.ts';
+import { zip } from '../../src/lib/store/zip.ts';
 import * as png from '../../src/lib/image/png.ts';
 import type { Sha256 } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
@@ -351,65 +354,176 @@ test('a character saved in an earlier format is rejected before any cell read', 
 	expect(f.getBlob).not.toHaveBeenCalled();
 });
 
-test('records in an earlier format and retired shared-design records are deleted, current records and other state stay', async () => {
-	const old = 'pixeldoll/2',
-		records = [
-			{ id: 'rig-old', manifest: { format: old } },
-			{ id: 'rig-new', manifest: { format: CURRENT_FORMAT } },
-			{ id: 'equipment-design:old', kind: 'equipment-design', source: { format: old } },
+test('records an earlier version saved are classified by kind; current records and other state are not', () => {
+	const old = 'pixeldoll/2';
+	const expected: [Record<string, unknown>, IncompatibleKind | undefined][] = [
+		[{ id: 'rig-old', manifest: { format: old } }, 'characters'],
+		[{ id: 'rig-new', manifest: { format: CURRENT_FORMAT } }, undefined],
+		[{ id: 'equipment-design:old', kind: 'equipment-design', source: { format: old } }, 'retired'],
+		[
 			{ id: 'equipment-design:new', kind: 'equipment-design', source: { format: CURRENT_FORMAT } },
-			{
-				id: 'fit-old',
-				kind: 'equipment-fit-draft',
-				plan: { design: { source: { format: old } } }
-			},
-			{ id: 'dress-fixture:s2', kind: 'dress' },
-			{ id: 'dress-fixture:new', kind: 'dress', format: CURRENT_FORMAT },
-			{ id: 'studio-drafts', gens: [] }
-		];
-	vi.spyOn(db, 'all').mockResolvedValue(records);
-	const del = vi.spyOn(db, 'del').mockResolvedValue(undefined);
-	expect(await deleteOutdated()).toBe(5);
-	expect(del.mock.calls.map(([, id]) => id)).toEqual([
-		'rig-old',
-		'equipment-design:old',
-		'equipment-design:new',
-		'fit-old',
-		'dress-fixture:s2'
-	]);
-});
-
-test('an unfinished creation saved before direction plans is removed; a current one stays', async () => {
-	vi.spyOn(db, 'all').mockResolvedValue([{ id: 'studio-create', spec: { name: 'Old', size: 48 } }]);
-	const del = vi.spyOn(db, 'del').mockResolvedValue(undefined);
-	expect(await deleteOutdated()).toBe(1);
-	expect(del.mock.calls.map(([, id]) => id)).toEqual(['studio-create']);
-	del.mockClear();
-	vi.spyOn(db, 'all').mockResolvedValue([
-		{ id: 'studio-create:rig-new', spec: { name: 'New', size: 48, directions: [{ id: 'south' }] } }
-	]);
-	expect(await deleteOutdated()).toBe(0);
-	expect(del).not.toHaveBeenCalled();
-});
-
-test('removing an outdated character also removes its drafts, as deleting it would', async () => {
-	const drafts = {
-		id: 'studio-drafts',
-		gens: [{ draft: { rigId: 'rig-old' } }, { draft: { rigId: 'rig-current' } }]
-	};
-	const records = [
-		{ id: 'rig-old', manifest: { format: 'pixeldoll/2' } },
-		{ id: 'rig-current', manifest: { format: CURRENT_FORMAT } },
-		drafts,
-		{ id: 'm3-drafts', drafts: [{ rigId: 'rig-old' }] }
+			'retired'
+		],
+		[{ id: 'equipment-fit:old', kind: 'equipment-fit-draft' }, 'retired'],
+		[{ id: 'dress-fixture:s2', kind: 'dress' }, 'outfits'],
+		[{ id: 'dress-fixture:new', kind: 'dress', format: CURRENT_FORMAT }, undefined],
+		[{ id: 'studio-create', spec: { name: 'Old', size: 48 } }, 'creations'],
+		[{ id: 'studio-create:rig-old', spec: { name: 'Old', size: 48 } }, 'creations'],
+		[
+			{ id: 'studio-create:rig-new', spec: { name: 'New', directions: [{ id: 'south' }] } },
+			undefined
+		],
+		[{ id: 'studio-drafts', gens: [{ draft: { rigId: 'rig-old' } }] }, undefined],
+		[{ id: 'm3-drafts', drafts: [{ rigId: 'rig-old' }] }, undefined]
 	];
-	vi.spyOn(db, 'all').mockResolvedValue(records);
-	const del = vi.spyOn(db, 'del').mockResolvedValue(undefined);
-	const put = vi.spyOn(db, 'put').mockResolvedValue(undefined);
-	expect(await deleteOutdated()).toBe(1);
-	expect(del.mock.calls.map(([, id]) => id)).toEqual(['rig-old']);
-	expect(put.mock.calls).toEqual([
-		['projects', 'studio-drafts', { ...drafts, gens: [drafts.gens[1]] }],
-		['projects', 'm3-drafts', { id: 'm3-drafts', drafts: [] }]
+	for (const [record, kind] of expected)
+		expect([record.id, incompatibleKind(record)]).toEqual([record.id, kind]);
+	expect(incompatibleCounts(expected.map(([record]) => record))).toEqual({
+		characters: 1,
+		outfits: 1,
+		creations: 2,
+		retired: 3,
+		total: 7
+	});
+	for (const value of [null, 'rig-old', { manifest: { format: old } }])
+		expect(incompatibleKind(value)).toBeUndefined();
+});
+
+test('blob collection keeps the artwork an incompatible record mentions, however deeply', () => {
+	const cell = 'a'.repeat(64),
+		rest = 'b'.repeat(64);
+	const refs = blobReferences([
+		{
+			id: 'rig-old',
+			manifest: { format: 'pixeldoll/2', rig: { rest: { south: { image: `sha256:${rest}` } } } },
+			items: [{ layers: [{ cells: { idle: { south: [cell, null] } } }] }]
+		}
 	]);
+	expect([...refs].sort()).toEqual([cell, rest]);
+});
+
+describe('saved data from earlier versions', () => {
+	const cell = 'c'.repeat(64),
+		gone = 'd'.repeat(64);
+	const character = {
+		id: 'rig-old',
+		origin: 'studio',
+		savedAt: '2026-01-01',
+		manifest: { format: 'pixeldoll/2', name: 'Old', items: [{ cells: [`sha256:${cell}`, gone] }] }
+	};
+	const creation = { id: 'studio-create:rig-x', spec: { name: 'X', size: 48, empty: '' } };
+	const snapshot = (projects: [string, unknown][], blobs: [string, Blob][] = []) =>
+		vi.spyOn(db, 'readWorkspaceSnapshot').mockImplementation(async (select, references) => {
+			const kept = new Map(projects.filter(([key, value]) => select(key, value)));
+			const wanted = references(kept);
+			return {
+				projects: kept,
+				blobs: new Map(blobs.filter(([hash]) => wanted.has(hash))),
+				jobs: []
+			};
+		});
+	const build = () => {
+		vi.stubGlobal('__APP_VERSION__', 'test');
+		vi.stubGlobal('__APP_COMMIT__', 'abc');
+	};
+
+	test('pack only incompatible records and their artwork, and read them back exactly on opt-in', async () => {
+		build();
+		const bytes = new Uint8Array([137, 80, 78, 71, 0, 255]);
+		snapshot(
+			[
+				['rig-old', character],
+				['studio-create:rig-x', creation],
+				['rig-new', { id: 'rig-new', manifest: { format: CURRENT_FORMAT } }],
+				['studio-drafts', { id: 'studio-drafts', gens: [] }]
+			],
+			[
+				[cell, new Blob([bytes], { type: 'image/png' })],
+				['e'.repeat(64), new Blob([new Uint8Array([1])])]
+			]
+		);
+		const packed = (await packIncompatible([]))!;
+		expect(packed.counts).toMatchObject({ characters: 1, creations: 1, total: 2 });
+		expect(packed.missing).toBe(1);
+		await expect(unpackIncompatible(packed.bytes, {} as { userOptIn: true }, [])).rejects.toThrow(
+			'only when the user chooses it'
+		);
+		const back = await unpackIncompatible(packed.bytes, { userOptIn: true }, []);
+		expect([...back.records]).toEqual([
+			['rig-old', character],
+			['studio-create:rig-x', creation]
+		]);
+		expect([...back.blobs.keys()]).toEqual([cell]);
+		expect(back.blobs.get(cell)!.type).toBe('image/png');
+		expect(new Uint8Array(await back.blobs.get(cell)!.arrayBuffer())).toEqual(bytes);
+		expect(back.missing).toEqual([gone]);
+		expect(back.counts).toEqual(packed.counts);
+	});
+
+	test('nothing stored packs nothing', async () => {
+		snapshot([['rig-new', { id: 'rig-new', manifest: { format: CURRENT_FORMAT } }]]);
+		expect(await packIncompatible([])).toBeUndefined();
+	});
+
+	test('a value JSON cannot keep exactly, or a record off its kind keys, fails the whole pack', async () => {
+		build();
+		const unsupported = { translation: { key: 'incompatible.error.unsupported' } };
+		const holes: unknown[] = [1];
+		holes[2] = 3;
+		const cyclic: Record<string, unknown> = { ...character };
+		cyclic.self = cyclic;
+		for (const value of [
+			{ ...character, gone: undefined },
+			{ ...character, when: new Date(0) },
+			{ ...character, n: Number.NaN },
+			{ ...character, z: -0 },
+			{ ...character, holes },
+			{ ...character, image: new Uint8Array(1) },
+			{ ...character, id: 'studio-move' },
+			cyclic
+		]) {
+			snapshot([[value.id as string, value]]);
+			await expect(packIncompatible([])).rejects.toMatchObject(unsupported);
+		}
+	});
+
+	test('a pack holding the PixelLab key is refused', async () => {
+		build();
+		const key = '9f8e7d6c-5b4a-4321-8fed-0fedcba98765';
+		snapshot([['rig-old', { ...character, note: key }]]);
+		await expect(packIncompatible([key])).rejects.toMatchObject({
+			translation: { key: 'workspace.error.containsKey' }
+		});
+	});
+
+	test('a restore accepts only incompatible records under their own keys and the artwork they mention', async () => {
+		const index = (records: [string, unknown][], blobs: [string, string][] = []) => ({
+			name: 'incompatible.json',
+			data: new TextEncoder().encode(
+				JSON.stringify({
+					format: 'pixeldoll-incompatible/1',
+					build: 't',
+					records,
+					blobs,
+					missing: []
+				})
+			)
+		});
+		const stray = 'f'.repeat(64);
+		const live = { id: 'studio-move', spec: { name: 'walk' }, status: 'running' };
+		for (const entries of [
+			[index([['studio-move', live]])],
+			[index([['studio-move', { ...character, id: 'studio-move' }]])],
+			[index([['rig-other', character]])],
+			[index([['rig-new', { id: 'rig-new', manifest: { format: CURRENT_FORMAT } }]])],
+			[
+				index([['rig-old', character]], [[stray, 'image/png']]),
+				{ name: `blobs/${stray}`, data: new Uint8Array(1) }
+			],
+			[index([['rig-old', character]]), { name: 'jobs/1', data: new Uint8Array(1) }]
+		])
+			await expect(
+				unpackIncompatible(await zip(entries), { userOptIn: true }, [])
+			).rejects.toMatchObject({ translation: { key: 'incompatible.error.invalid' } });
+	});
 });

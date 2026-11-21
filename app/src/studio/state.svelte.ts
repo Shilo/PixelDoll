@@ -45,13 +45,13 @@ import {
 import {
 	deleteItem,
 	deleteItems,
-	deleteOutdated,
 	listProjects,
 	loadProject,
 	type DressedRecord,
 	type StoredProject
 } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
+import { incompatibleKind } from '../lib/store/incompatible.ts';
 import { defaultCharacterExportId, editIdentity } from '../lib/store/identity.ts';
 import type {
 	CellKey,
@@ -612,17 +612,6 @@ export function showFrame(anim: string, dir: DirectionName, cell: number): void 
 
 /** False when the saved characters could not be read (already reported). */
 export async function refreshProjects(): Promise<boolean> {
-	const removed = await deleteOutdated().catch((e: unknown) => {
-		console.error('outdated', e);
-		toast(message('state.couldNotRemoveCharactersSavedByAn', { reason: errorMessage(e) }), {
-			tone: 'danger'
-		});
-		return 0;
-	});
-	if (removed)
-		toast(
-			`Removed ${removed} saved ${removed === 1 ? 'item' : 'items'} made by an earlier preview version.`
-		);
 	const listed = await listProjects().catch((e: unknown) => {
 			console.error('projects', e);
 			toast(message('state.couldNotReadYourSavedCharactersReason', { reason: errorMessage(e) }), {
@@ -3209,7 +3198,10 @@ export const creates = $state<CreateAttempt[]>([]);
 const createDraftKey = (id: string) => `${db.CREATE_DRAFT_PREFIX}${id}`;
 async function readCreateDrafts() {
 	return (await db.all<FlowDraft<CreateSpec> & { id: string }>('projects')).filter(
-		(record) => !!record?.spec?.projectId && record.id?.startsWith(db.CREATE_DRAFT_PREFIX)
+		(record) =>
+			!!record?.spec?.projectId &&
+			record.id?.startsWith(db.CREATE_DRAFT_PREFIX) &&
+			!incompatibleKind(record) // saved before direction plans: kept as stored, never resumed
 	);
 }
 function removeCreate(run: CreateAttempt) {

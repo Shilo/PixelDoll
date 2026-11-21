@@ -41,7 +41,7 @@ export function reconcileItemSlots(
 	for (const [to, id] of displaced) items[to] ??= id;
 }
 export interface DressState {
-	/** Snapshots from another format are ignored and removed (store/project.ts deleteOutdated). */
+	/** Snapshots from another format are ignored and kept as stored (store/incompatible.ts). */
 	format: typeof CURRENT_FORMAT;
 	materials: Material[];
 	presets: Preset[];

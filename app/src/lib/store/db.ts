@@ -2,10 +2,11 @@
 import { sha256, stableStringify } from '../image/hash.ts';
 import { LocalizedError } from '../message.ts';
 import type { StoredProject } from './project.ts';
+import { blobReferences, CREATE_DRAFT_PREFIX, incompatibleKind } from './incompatible.ts';
 import { workspaceCopy } from './workspace-mode.ts';
 
+export { CREATE_DRAFT_PREFIX };
 export type StoreName = 'projects' | 'blobs' | 'jobs';
-export const CREATE_DRAFT_PREFIX = 'studio-create:';
 // Bump when PixelLab request inputs change. Work saved with different inputs no longer matches its ledger records and would
 // resend paid calls, so it waits for review instead of resuming by itself.
 export const REQUEST_TEXT = 5; // 5: repair grids pack into the cheapest layout (2026-11-07)
@@ -248,11 +249,13 @@ async function editIdleCharacter(
 				r.projectId === id ||
 				r.spec?.projectId === id ||
 				!!r.queued?.some((queued) => queued.projectId === id);
+			// Records an earlier version saved never run, so they hold nothing.
 			const work = records.result.some(
 				(r) =>
-					((r?.id?.startsWith(CREATE_DRAFT_PREFIX) ||
-						r?.id === 'studio-move' ||
-						r?.id === 'studio-setup') &&
+					(!incompatibleKind(r) &&
+						(r?.id?.startsWith(CREATE_DRAFT_PREFIX) ||
+							r?.id === 'studio-move' ||
+							r?.id === 'studio-setup') &&
 						holds(r)) ||
 					(r?.id === 'studio-drafts' &&
 						r.gens?.some((g: { phase: string }) => g.phase === 'running'))
@@ -421,9 +424,9 @@ export async function claimJob<T extends { id: string }>(
 	});
 }
 /** Mark-and-sweep in one transaction over all stores: a blob survives when any project/draft/job record mentions its hash
- * (as "<hex>" or "sha256:<hex>"). Returns the number of blobs deleted.
- * ponytail: conservative deep string scan (a requestHash can keep a blob alive; harmless). Callers run it only while this tab
- * is idle, because writers put cell blobs one transaction before the record that references them. */
+ * (blobReferences), including records an earlier version saved, which stay until the user removes them. Returns the number
+ * of blobs deleted. Callers run it only while this tab is idle, because writers put cell blobs one transaction before the
+ * record that references them. */
 export async function gcBlobs(): Promise<number> {
 	if (copy) return 0;
 	const db = await open();
@@ -432,18 +435,10 @@ export async function gcBlobs(): Promise<number> {
 		const p = t.objectStore('projects').getAll(),
 			j = t.objectStore('jobs').getAll(),
 			b = t.objectStore('blobs').getAllKeys();
-		const refs = new Set<string>();
-		const scan = (v: unknown): void => {
-			if (typeof v === 'string') {
-				const m = /^(?:sha256:)?([0-9a-f]{64})$/.exec(v);
-				if (m) refs.add(m[1]);
-			} else if (v && typeof v === 'object' && !(v instanceof Blob))
-				for (const x of Object.values(v)) scan(x);
-		};
 		let n = 0;
 		b.onsuccess = () => {
 			// requests in one transaction complete in order: p and j are done
-			for (const r of [...p.result, ...j.result]) scan(r);
+			const refs = blobReferences([...p.result, ...j.result]);
 			for (const k of b.result)
 				if (!refs.has(String(k))) {
 					t.objectStore('blobs').delete(k);

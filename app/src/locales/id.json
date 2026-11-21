@@ -783,7 +783,6 @@
 		"finishBeforeMoveRemoval": "Selesaikan atau singkirkan proses generasi yang tertunda sebelum menghapus animasi.",
 		"finishBeforeDirectionRemoval": "Selesaikan atau singkirkan proses generasi yang tertunda sebelum mengubah arah.",
 		"finishBeforeFixFrames": "Tunggu hingga proses generasi yang sedang berjalan selesai sebelum memperbaiki frame.",
-		"couldNotRemoveCharactersSavedByAn": "Karakter yang disimpan oleh versi pratinjau sebelumnya tidak dapat dihapus: {reason}",
 		"couldNotReadYourSavedCharactersReason": "Karakter tersimpan Anda tidak dapat dibaca: {reason}",
 		"couldNotOpenThatCharacterError": "Karakter tersebut tidak dapat dibuka: {error}",
 		"valueStaysItHasItemsOrItems": "{value} dipertahankan karena berisi item atau ada item yang sedang dibuat.",

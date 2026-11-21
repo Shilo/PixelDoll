@@ -1922,31 +1922,40 @@ describe('move queue', () => {
 		directions: [{ id: 'south' as const }]
 	};
 
-	test('a create saved before explicit direction plans is removed at startup before resume', async () => {
+	test('records an earlier version saved stay exactly as stored at startup and never resume', async () => {
 		const records = storage();
 		const { REQUEST_TEXT } = await import('../../src/studio/state.svelte.ts');
-		records.set('studio-create', {
-			id: 'studio-create',
-			spec: {
-				description: 'Old body',
-				name: 'Old',
-				seed: 1,
-				size: 48,
-				dirs: 4,
-				projectId: 'rig-old'
-			},
-			status: 'running',
-			requestText: REQUEST_TEXT
-		});
+		const old = {
+			description: 'Old body',
+			name: 'Old',
+			seed: 1,
+			size: 48,
+			dirs: 4,
+			projectId: 'rig-old'
+		};
+		// Each would have been deleted (or, for the drafts, pruned) by the startup cleanup this replaces.
+		const saved = [
+			{ id: 'studio-create', spec: old, status: 'running', requestText: REQUEST_TEXT },
+			{ id: 'studio-create:rig-old', spec: old, status: 'running', requestText: REQUEST_TEXT },
+			{ id: 'rig-old', origin: 'studio', savedAt: '', manifest: { format: 'pixeldoll/2' } },
+			{ id: 'dress-fixture:s2', kind: 'dress', format: 'pixeldoll/2' },
+			{ id: 'equipment-fit:old', kind: 'equipment-fit-draft' },
+			{ id: 'm3-drafts', drafts: [{ rigId: 'rig-old' }] }
+		];
+		for (const record of saved) records.set(record.id, structuredClone(record));
 		mocks.all.mockImplementation(async () => [...records.values()].map((r) => structuredClone(r)));
 		vi.resetModules();
 		const s = await import('../../src/studio/state.svelte.ts');
 		await s.refreshProjects(); // Studio.svelte runs this before resumeCreate
 		await s.resumeCreate();
+		await s.cleanUp(0, false);
 		expect(mocks.create).not.toHaveBeenCalled();
-		expect(records.has('studio-create')).toBe(false);
 		expect(s.creates).toHaveLength(0);
-		expect(s.ui.toast).toBe('Removed 1 saved item made by an earlier preview version.');
+		expect(s.store.projects.map((p) => p.id)).not.toContain('rig-old');
+		expect(mocks.del).not.toHaveBeenCalled();
+		const keys = saved.map((r) => r.id);
+		expect(mocks.put.mock.calls.filter(([, id]) => keys.includes(id))).toEqual([]);
+		for (const record of saved) expect(records.get(record.id)).toEqual(record);
 	});
 
 	test('a waiting Create starts independently after takeover restores the closed tab create', async () => {

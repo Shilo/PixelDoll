@@ -810,7 +810,6 @@
 		"finishBeforeMoveRemoval": "Terminez ou abandonnez la génération en attente avant de supprimer une animation.",
 		"finishBeforeDirectionRemoval": "Terminez ou abandonnez la génération en attente avant de changer les directions.",
 		"finishBeforeFixFrames": "Attendez la fin de la génération en cours avant de corriger les images.",
-		"couldNotRemoveCharactersSavedByAn": "Impossible de supprimer les personnages enregistrés par une ancienne préversion : {reason}",
 		"couldNotReadYourSavedCharactersReason": "Impossible de lire vos personnages enregistrés : {reason}",
 		"couldNotOpenThatCharacterError": "Impossible d’ouvrir ce personnage : {error}",
 		"valueStaysItHasItemsOrItems": "{value} est conservé : il contient des objets ou des objets en cours de création.",

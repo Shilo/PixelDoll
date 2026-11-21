@@ -779,7 +779,6 @@
 		"finishBeforeMoveRemoval": "删除动作前，请完成或放弃待处理的生成任务。",
 		"finishBeforeDirectionRemoval": "更改朝向之前，请完成或放弃待处理的生成任务。",
 		"finishBeforeFixFrames": "修正帧之前，请等待当前生成任务完成。",
-		"couldNotRemoveCharactersSavedByAn": "无法移除由早期预览版本保存的角色：{reason}",
 		"couldNotReadYourSavedCharactersReason": "无法读取已保存的角色：{reason}",
 		"couldNotOpenThatCharacterError": "无法打开该角色：{error}",
 		"valueStaysItHasItemsOrItems": "{value}将保留：它有装备或有正在制作的装备。",
