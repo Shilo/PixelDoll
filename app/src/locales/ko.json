@@ -2550,7 +2550,7 @@
 		"add": "프레임에서 상태 만들기…",
 		"title": "상태 만들기",
 		"source": "원본",
-		"views": "원본 보기: {source}",
+		"preview": "{source}, 방향: {facing}",
 		"editWithPixelLab": "PixelLab으로 편집",
 		"editHint": "바꿀 내용을 설명하면 PixelLab이 이 포즈를 다시 그려요. 크레딧을 사용해요.",
 		"name": "상태 이름",

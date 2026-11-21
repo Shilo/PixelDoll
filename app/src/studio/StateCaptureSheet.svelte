@@ -21,10 +21,10 @@
 	import type { PickedReference } from '../lib/image/reference.ts';
 	import { errorMessage, LocalizedError, type Message } from '../lib/message.ts';
 	import { DEFAULT_MOVE, DIRECTIONS, type DirectionName } from '../lib/rig/rig.ts';
-	import { cropAll, moveLabel } from './model.ts';
+	import { moveLabel } from './model.ts';
 	import { displayDirection } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
-	import { ChevronLeft, ChevronRight } from './icons.ts';
+	import { ChevronLeft, ChevronRight, Pause, Play } from './icons.ts';
 	import {
 		captureState,
 		stateCaptureId,
@@ -129,15 +129,35 @@
 	const changed = $derived(
 		stale || doc.id !== projectId || (!!pinned && capture?.version !== pinned)
 	);
-	const facing = (drawn: readonly DirectionName[]) =>
+	const studioFacing = (drawn: readonly DirectionName[]) =>
 		drawn.includes(ui.dir) ? ui.dir : (drawn[0] ?? ui.dir);
+	// Every facing the State will have, mirrored ones included, in compass order for the turntable.
 	const previews = $derived.by(() => {
-		if (!views) return [];
-		const ordered = [...views.views].sort(
-			(left, right) => DIRECTIONS.indexOf(left.direction) - DIRECTIONS.indexOf(right.direction)
-		);
-		const images = cropAll(ordered.map(({ image }) => image));
-		return ordered.map(({ direction }, index) => ({ direction, image: images[index] }));
+		const cell = capture?.move.frames[frame]?.cell;
+		if (!views || !project || !body || cell === undefined) return [];
+		const drawn = new Set(views.views.map(({ direction }) => direction));
+		return project.manifest.rig.directions
+			.filter(({ id, mirrorOf }) => drawn.has(mirrorOf ?? id))
+			.sort((left, right) => DIRECTIONS.indexOf(left.id) - DIRECTIONS.indexOf(right.id))
+			.map(({ id }) => ({ direction: id, image: cellImg(project, body, clip, id, cell) ?? null }));
+	});
+	let facing = $state<DirectionName | null>(null);
+	let rotating = $state(!matchMedia('(prefers-reduced-motion: reduce)').matches);
+	const canRotate = $derived(previews.length > 1);
+	// Starts on the Studio's facing; stepping frames keeps the facing the user is looking at.
+	const shown = $derived(
+		previews.find(({ direction }) => direction === facing) ??
+			previews.find(({ direction }) => direction === ui.dir) ??
+			previews[0]
+	);
+	$effect(() => {
+		const count = previews.length;
+		if (!rotating || count < 2) return;
+		const timer = window.setInterval(() => {
+			const at = previews.findIndex(({ direction }) => direction === shown?.direction);
+			facing = previews[(at + 1) % count].direction;
+		}, 700);
+		return () => window.clearInterval(timer);
 	});
 	function clipThumbnail(id: string, position = lastFrame(id)) {
 		const cells = body?.cells?.[id];
@@ -146,7 +166,7 @@
 		const drawn = (manifest?.rig.directions ?? [])
 			.filter(({ id: direction, mirrorOf }) => !mirrorOf && cells[direction]?.[cell])
 			.map(({ id: direction }) => direction);
-		return cellImg(project, body, id, facing(drawn), cell) ?? null;
+		return cellImg(project, body, id, studioFacing(drawn), cell) ?? null;
 	}
 	const triggerImage = $derived(clipThumbnail(clip, frame));
 
@@ -459,46 +479,57 @@
 				disabled={!!busy}
 				onselect={chooseClip}
 			/>
-			<div class="source-frame">
-				{#if previews.length}
-					<div
-						class="source-views"
-						role="group"
-						aria-label={t('stateCapture.views', { source: clipName(clip) })}
+			{#if shown}
+				{@const facingName = displayDirection(shown.direction)}
+				{#snippet sprite()}
+					<span class="source-sprite" data-facing={shown.direction}>
+						<Sprite
+							img={shown.image}
+							k={1}
+							fitToBox
+							label={t('stateCapture.preview', { source: clipName(clip), facing: facingName })}
+						/>
+					</span>
+					<span class="source-facing" aria-hidden="true">{facingName}</span>
+				{/snippet}
+				{#if canRotate}
+					<button
+						class="source-preview"
+						type="button"
+						aria-label={t(rotating ? 'common.pause' : 'common.play')}
+						onclick={() => (rotating = !rotating)}
 					>
-						{#each previews as { direction, image } (direction)}
-							{@const label = displayDirection(direction)}
-							<figure>
-								<span class="source-sprite"><Sprite img={image} k={1} fitToBox {label} /></span>
-								<figcaption>{label}</figcaption>
-							</figure>
-						{/each}
-					</div>
+						{@render sprite()}
+						<span class="source-play" aria-hidden="true">
+							{#if rotating}<Pause size={18} />{:else}<Play size={18} />{/if}
+						</span>
+					</button>
+				{:else}
+					<div class="source-preview">{@render sprite()}</div>
 				{/if}
-				{#if total > 1}
-					<div class="source-nav">
-						<button
-							class="bu-action"
-							data-variant="quiet"
-							type="button"
-							aria-label={t('stage.previousFrame')}
-							disabled={!!busy || frame === 0}
-							onclick={() => step(-1)}><ChevronLeft size={20} /></button
-						>
-						<strong aria-live="polite"
-							>{t('stage.framePosition', { frame: frame + 1, total })}</strong
-						>
-						<button
-							class="bu-action"
-							data-variant="quiet"
-							type="button"
-							aria-label={t('stage.nextFrame')}
-							disabled={!!busy || frame >= total - 1}
-							onclick={() => step(1)}><ChevronRight size={20} /></button
-						>
-					</div>
-				{/if}
-			</div>
+			{/if}
+			{#if total > 1}
+				<div class="source-nav">
+					<button
+						class="bu-action"
+						data-variant="quiet"
+						type="button"
+						aria-label={t('stage.previousFrame')}
+						disabled={!!busy || frame === 0}
+						onclick={() => step(-1)}><ChevronLeft size={20} /></button
+					>
+					<strong aria-live="polite">{t('stage.framePosition', { frame: frame + 1, total })}</strong
+					>
+					<button
+						class="bu-action"
+						data-variant="quiet"
+						type="button"
+						aria-label={t('stage.nextFrame')}
+						disabled={!!busy || frame >= total - 1}
+						onclick={() => step(1)}><ChevronRight size={20} /></button
+					>
+				</div>
+			{/if}
 			{#if changed}
 				<div class="notice warn small source-changed" role="status">
 					<p>{t('stateCapture.concurrentEdit')}</p>
@@ -726,39 +757,48 @@
 	.state-footer p {
 		margin: 0;
 	}
-	.source-frame {
+	/* The whole stage is the play/pause target; the frame stepper sits outside it. */
+	.source-preview {
+		position: relative;
 		display: grid;
-		gap: 4px;
-		padding: 8px;
+		place-items: center;
+		inline-size: 100%;
+		padding: 8px 44px;
+		color: inherit;
+		font: inherit;
 		background: var(--stage);
 		border: 1px solid var(--bu-line);
 		border-radius: var(--r-ctl);
 	}
-	.source-views {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
-		gap: 4px;
+	button.source-preview {
+		cursor: pointer;
 	}
-	.source-views figure {
-		display: grid;
-		justify-items: center;
-		gap: 2px;
-		margin: 0;
-		min-inline-size: 0;
+	button.source-preview:hover {
+		border-color: var(--bu-border);
 	}
-	.source-views figcaption {
-		max-inline-size: 100%;
-		overflow-wrap: anywhere;
-		text-align: center;
+	.source-sprite {
+		inline-size: min(100%, 208px, 30dvh);
+		aspect-ratio: 1;
+	}
+	.source-facing,
+	.source-play {
+		position: absolute;
+		inset-block-end: 0;
+		min-block-size: 44px;
+		display: grid;
+		place-items: center;
+	}
+	.source-facing {
+		inset-inline-start: 12px;
 		font-size: 12px;
 		color: var(--bu-muted);
 	}
-	.source-sprite {
-		inline-size: 100%;
-		max-inline-size: 96px;
-		aspect-ratio: 1;
+	.source-play {
+		inset-inline-end: 0;
+		min-inline-size: 44px;
 	}
 	.source-nav {
+		margin-block-start: -4px;
 		display: grid;
 		grid-template-columns: 44px minmax(0, 1fr) 44px;
 		align-items: center;

@@ -2647,7 +2647,7 @@
 		"add": "Kareden durum oluştur…",
 		"title": "Durum oluştur",
 		"source": "Kaynak",
-		"views": "Görünümler: {source}",
+		"preview": "{source}, yön: {facing}",
 		"editWithPixelLab": "PixelLab ile düzenle",
 		"editHint": "Bir değişiklik tarif edin, PixelLab bu pozu yeniden çizsin. Kredi kullanır.",
 		"name": "Durum adı",

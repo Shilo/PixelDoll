@@ -2653,7 +2653,7 @@
 		"add": "Zustand erstellen aus …",
 		"title": "Zustand erstellen",
 		"source": "Quelle",
-		"views": "Ansichten von {source}",
+		"preview": "{source}, Blickrichtung {facing}",
 		"editWithPixelLab": "Mit PixelLab bearbeiten",
 		"editHint": "Beschreibe eine Änderung, und PixelLab zeichnet diese Pose neu. Verbraucht Guthaben.",
 		"name": "Zustandsname",

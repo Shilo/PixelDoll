@@ -2667,7 +2667,7 @@
 		"add": "Criar estado a partir de…",
 		"title": "Criar estado",
 		"source": "Origem",
-		"views": "Vistas de {source}",
+		"preview": "{source}, direção {facing}",
 		"editWithPixelLab": "Editar com o PixelLab",
 		"editHint": "Descreva uma mudança e o PixelLab redesenha esta pose. Usa créditos.",
 		"name": "Nome do estado",

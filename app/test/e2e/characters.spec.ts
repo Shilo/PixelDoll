@@ -1002,7 +1002,9 @@ test('device import includes sibling moves and preserves explicit selections whe
 	await expect(
 		capture.getByRole('button', { name: 'Source: Right punch', exact: true })
 	).toBeVisible();
-	await expect(capture.getByRole('group', { name: 'Right punch views' })).toBeVisible();
+	// One facing: a still preview with no play control.
+	await expect(capture.getByRole('img', { name: /^Right punch, facing / })).toBeVisible();
+	await expect(capture.getByRole('button', { name: /^(Pause|Play)$/ })).toHaveCount(0);
 });
 
 test('character directions can be mirrored and unlinked on import and after saving', async ({
@@ -2649,11 +2651,22 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	).toBeVisible();
 	await expect(createState.getByLabel('State name', { exact: true })).toHaveValue('Idle pose');
 	await expect(nextFrame).toBeDisabled();
-	const views = createState.getByRole('group', { name: 'Idle views', exact: true });
-	await expect(views.locator('figcaption')).toHaveText(['South', 'East', 'North', 'West']);
 	await expect(createState.getByText('Frame 4 of 4', { exact: true })).toBeVisible();
+	// The whole preview turns through every facing and is one play/pause target.
+	const previewFacing = createState.locator('[data-facing]');
+	const pause = createState.getByRole('button', { name: 'Pause', exact: true });
+	await expect(pause).toHaveCSS('cursor', 'pointer');
+	const firstFacing = await previewFacing.getAttribute('data-facing');
+	await expect(previewFacing).not.toHaveAttribute('data-facing', firstFacing!);
+	await pause.click();
+	const play = createState.getByRole('button', { name: 'Play', exact: true });
+	await expect(play).toBeVisible();
+	const pausedFacing = await previewFacing.getAttribute('data-facing');
 	await createState.getByRole('button', { name: 'Previous frame', exact: true }).click();
 	await expect(createState.getByText('Frame 3 of 4', { exact: true })).toBeVisible();
+	await expect(previewFacing).toHaveAttribute('data-facing', pausedFacing!);
+	await play.press('Space');
+	await expect(previewFacing).not.toHaveAttribute('data-facing', pausedFacing!);
 	await expect(nextFrame).toBeEnabled();
 	await expect(createState.getByText('No credits used.', { exact: true })).toBeVisible();
 	const createButton = createState.getByRole('button', { name: 'Create State', exact: true });

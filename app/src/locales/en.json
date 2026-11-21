@@ -2638,7 +2638,7 @@
 		"add": "Create State from…",
 		"title": "Create State",
 		"source": "Source",
-		"views": "{source} views",
+		"preview": "{source}, facing {facing}",
 		"editWithPixelLab": "Edit with PixelLab",
 		"editHint": "Describe a change and PixelLab redraws this pose. Uses credits.",
 		"name": "State name",

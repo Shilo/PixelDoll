@@ -2553,7 +2553,7 @@
 		"add": "Buat status dari…",
 		"title": "Buat status",
 		"source": "Sumber",
-		"views": "Tampilan {source}",
+		"preview": "{source}, arah {facing}",
 		"editWithPixelLab": "Edit dengan PixelLab",
 		"editHint": "Jelaskan perubahan, lalu PixelLab menggambar ulang pose ini. Menggunakan kredit.",
 		"name": "Nama status",

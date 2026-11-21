@@ -2531,7 +2531,7 @@
 		"add": "从帧创建状态…",
 		"title": "创建状态",
 		"source": "来源",
-		"views": "{source}的视图",
+		"preview": "{source}，朝向：{facing}",
 		"editWithPixelLab": "用 PixelLab 编辑",
 		"editHint": "描述要修改的内容，PixelLab 会重绘这个姿势。会消耗点数。",
 		"name": "状态名称",

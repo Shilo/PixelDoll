@@ -2560,7 +2560,7 @@
 		"add": "フレームからステートを作成…",
 		"title": "ステートを作成",
 		"source": "元",
-		"views": "{source}のビュー",
+		"preview": "{source}（向き：{facing}）",
 		"editWithPixelLab": "PixelLabで編集",
 		"editHint": "変更内容を説明すると、PixelLabがこのポーズを描き直します。クレジットを使います。",
 		"name": "ステート名",
