@@ -2294,9 +2294,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await page.getByRole('radio', { name: 'Idle', exact: true }).click();
 	await page.getByRole('button', { name: /^Generate move/ }).click();
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
-	await review
-		.getByRole('button', { name: 'Keep move without items', exact: true })
-		.click({ timeout: 45_000 });
+	await review.getByRole('button', { name: 'Save move', exact: true }).click({ timeout: 45_000 });
 	await expect(review).not.toBeVisible();
 	const after = await read(),
 		idle = after.manifest.rig.animations.find((a) => a.id === 'idle')!;

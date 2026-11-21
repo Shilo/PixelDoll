@@ -318,9 +318,10 @@ on edited frames, so the item shows **Edited by you**. This runs locally and mak
 Open the **Moves** tab → **Add a move**. Type a motion such as "jumping in place" or pick a preset such as **Idle**, **Walk**,
 or **Slash** below the field. Typing deselects the preset; picking a preset clears the description.
 **Generate move** buys only the character's motion. In **Review move**, play or step through the new frames and check
-each direction. If it looks right, keep it without items or choose which items to animate. Nothing starts selected.
-Each item shows its own price, and the total updates as you select items. PixelDoll only requests those frames after
-you click **Animate selected**. Items you leave out stay hidden in that move until you make them. A worn item without
+each direction. Choose **Save move** or **Replace move** when it looks right. If any items can be animated, the optional
+item picker opens with nothing selected. Each item has its own estimate, and the total updates as you select items.
+Click **Animate** with the selected count to request those frames, or **Done** to finish without spending more.
+Items you leave out stay hidden in that move until you make them. A worn item without
 frames for the current move shows a note on the stage with **Make it** and its price.
 
 **Queue another move** lets you set up the next move while one is running. Moves run one at a time. Completed reviews

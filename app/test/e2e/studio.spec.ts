@@ -6771,6 +6771,7 @@ test('move review gates item selection and shows live estimates without spending
 	page,
 	context
 }, info) => {
+	await page.emulateMedia({ reducedMotion: 'reduce' });
 	const posts: string[] = [];
 	await context.route('https://*.pixellab.ai/**', (route) => {
 		if (route.request().method() === 'POST') posts.push(route.request().url());
@@ -6784,7 +6785,7 @@ test('move review gates item selection and shows live estimates without spending
 		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
-	const fixture = await targetedRepairFixture(page);
+	const fixture = await targetedRepairFixture(page, true);
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts';
 		(await import(path)).ui.sheet = 'move';
@@ -6792,39 +6793,81 @@ test('move review gates item selection and shows live estimates without spending
 	const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(sheet.getByRole('checkbox')).toHaveCount(0);
 	await expect(sheet.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
-	await page.evaluate(async () => {
-		const statePath = '/src/studio/state.svelte.ts';
-		const dbPath = '/src/lib/store/db.ts';
-		const replacePath = '/src/studio/replaceMove.ts';
-		const s = await import(statePath);
-		const db = await import(dbPath);
-		const { moveCandidateInput } = await import(replacePath);
-		const rec = await db.get('projects', s.doc.id);
-		const rig = rec.manifest.rig;
-		const base = rec.manifest.items.find((item: { id: string }) => item.id === rig.baseItem);
-		rec.moveReviews = {
-			walk: {
-				spec: { id: 'walk', seed: 75, replace: true, reviewBeforePublish: true, items: [] },
-				input: moveCandidateInput(rec, 'walk'),
-				dirs: ['east'],
-				animation: rig.animations.find((move: { id: string }) => move.id === 'walk'),
-				cells: base.layers[0].cells.walk,
-				provenance: [],
-				provenanceStart: base.provenance.length,
-				anchors: {},
-				skeletons: {},
-				checks: {},
-				warnings: [],
-				itemsBlocked: false
-			}
-		};
-		await db.put('projects', s.doc.id, rec);
-	});
+	const seedReview = (seed: number) =>
+		page.evaluate(async (seed) => {
+			const statePath = '/src/studio/state.svelte.ts';
+			const dbPath = '/src/lib/store/db.ts';
+			const replacePath = '/src/studio/replaceMove.ts';
+			const s = await import(statePath);
+			const db = await import(dbPath);
+			const { moveCandidateInput } = await import(replacePath);
+			const rec = await db.get('projects', s.doc.id);
+			const rig = rec.manifest.rig;
+			const base = rec.manifest.items.find((item: { id: string }) => item.id === rig.baseItem);
+			const cells = { ...base.layers[0].cells.walk };
+			delete cells.west;
+			rec.moveReviews = {
+				walk: {
+					spec: { id: 'walk', seed, replace: true, reviewBeforePublish: true, items: [] },
+					input: moveCandidateInput(rec, 'walk'),
+					dirs: ['east', 'south'],
+					animation: rig.animations.find((move: { id: string }) => move.id === 'walk'),
+					cells,
+					provenance: [],
+					provenanceStart: base.provenance.length,
+					anchors: {},
+					skeletons: {},
+					checks: {},
+					warnings: [],
+					itemsBlocked: false
+				}
+			};
+			await db.put('projects', s.doc.id, rec);
+		}, seed);
+	await seedReview(75);
 	await reloadStudio(page);
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	const review = page.getByRole('dialog', { name: 'Review move', exact: true });
 	await expect(review.getByRole('button', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
+	await review.getByRole('button', { name: 'Later', exact: true }).click();
+	await page.getByRole('button', { name: /Walk Review move/ }).click();
+	const compass = review.getByRole('group', { name: 'Directions', exact: true });
+	const east = compass.getByRole('button', { name: 'East direction' });
+	const south = compass.getByRole('button', { name: 'South direction' });
+	const west = compass.getByRole('button', { name: /West direction.*Mirrors East/ });
+	await south.click();
+	await east.click();
+	await expect(south).toHaveAttribute('aria-pressed', 'false');
+	await expect(east).toHaveAttribute('aria-pressed', 'true');
+	const pixels = (direction: string) =>
+		review
+			.getByRole('img', { name: `Walk preview, ${direction}`, exact: true })
+			.locator('canvas')
+			.evaluate((canvas: HTMLCanvasElement) => ({
+				width: canvas.width,
+				data: Array.from(
+					canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data
+				)
+			}));
+	const original = await pixels('East');
+	await west.click();
+	await expect(west).toHaveAttribute('aria-pressed', 'true');
+	const mirrored = await pixels('West');
+	expect(mirrored.width).toBe(original.width);
+	expect(mirrored.data).not.toEqual(original.data);
+	expect(
+		mirrored.data.every((value, index) => {
+			const row = Math.floor(index / (mirrored.width * 4));
+			const column = Math.floor(index / 4) % mirrored.width;
+			return (
+				value ===
+				original.data[(row * mirrored.width + mirrored.width - 1 - column) * 4 + (index % 4)]
+			);
+		})
+	).toBe(true);
+	await review.getByRole('button', { name: 'Next frame', exact: true }).click();
+	await expect(review.getByText(/^Frame 2 of /)).toBeVisible();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts';
 		const s = await import(path);
@@ -6832,15 +6875,17 @@ test('move review gates item selection and shows live estimates without spending
 			{ projectId: s.doc.id, spec: { id: 'idle', frames: 4, items: [], seed: 1 } }
 		];
 	});
-	await expect(review.getByRole('button', { name: 'Choose items', exact: true })).toBeDisabled();
+	const replace = review.getByRole('button', { name: 'Replace move', exact: true });
+	await expect(replace).toBeDisabled();
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts';
 		(await import(path)).moving.queued = [];
 	});
-	await review.getByRole('button', { name: 'Choose items', exact: true }).click();
+	await page.setViewportSize({ width: 320, height: 720 });
+	await replace.click();
 	const picker = page.getByRole('dialog', { name: 'Animate items', exact: true });
 	const item = picker.getByRole('button', { name: new RegExp(fixture.itemName) });
-	const animate = picker.getByRole('button', { name: 'Animate selected', exact: true });
+	const animate = picker.getByRole('button', { name: /^Animate (items|1 item)$/ });
 	await expect(item).toHaveAttribute('aria-pressed', 'false');
 	await expect(picker).toContainText('Est. 0 more gens');
 	await expect(animate).toBeDisabled();
@@ -6849,9 +6894,20 @@ test('move review gates item selection and shows live estimates without spending
 	await expect(item.locator('canvas')).toBeVisible();
 	await item.press('Space');
 	await expect(item).toHaveAttribute('aria-pressed', 'true');
+	await expect(animate).toHaveAccessibleName('Animate 1 item');
 	await expect(picker).toContainText(`Est. ${price} more gens`);
 	await item.click();
 	await expect(animate).toBeDisabled();
+	await item.click();
+	await picker.getByRole('button', { name: 'Done', exact: true }).click();
+	await expect(picker).not.toBeVisible();
+	await expect(page.getByRole('button', { name: /Walk Review move/ })).toHaveCount(0);
+	expect(posts).toEqual([]);
+	await seedReview(76);
+	await reloadStudio(page);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: /Walk Review move/ }).click();
+	await replace.click();
 	await item.click();
 	await animate.click();
 	await page

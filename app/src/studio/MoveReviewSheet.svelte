@@ -2,9 +2,10 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import Sheet from './Sheet.svelte';
+	import DirectionCompass from './DirectionCompass.svelte';
 	import Sprite from './Sprite.svelte';
 	import { ChevronLeft, ChevronRight, Pause, Play, Shirt } from './icons.ts';
-	import { displayDirection, displayDirectionShort } from './displayDirection.ts';
+	import { displayDirection } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
 	import { bodyQualityNote, thumbCell } from './model.ts';
 	import { croppedBacking, croppedThumbnail } from './experience/thumbnails.svelte.ts';
@@ -30,6 +31,7 @@
 	import { app } from '../lib/app.svelte.ts';
 	import { tierDecision } from '../lib/pixellab/plans.ts';
 	import { displayError } from '../lib/i18n.ts';
+	import { flipH } from '../lib/rig/mirror.ts';
 	import type { Img } from '../lib/image/png.ts';
 	import type { DirectionName } from '../lib/rig/rig.ts';
 
@@ -47,11 +49,17 @@
 		if (!manifest || !candidate) return [];
 		const affected = affectedMoveDirections(manifest.rig, candidate.dirs);
 		return manifest.rig.directions.filter(
-			({ id }) => affected.includes(id) && candidate.cells[id]?.some(Boolean)
+			({ id, mirrorOf }) =>
+				affected.includes(id) &&
+				(candidate.cells[id]?.some(Boolean) ||
+					(mirrorOf && candidate.cells[mirrorOf]?.some(Boolean)))
 		);
 	});
 	let direction = $state<DirectionName | null>(null);
 	const facing = $derived(direction ?? directions[0]?.id);
+	const mirrors = $derived(
+		Object.fromEntries(directions.flatMap(({ id, mirrorOf }) => (mirrorOf ? [[id, mirrorOf]] : [])))
+	);
 	const playlist = candidate?.animation.frames ?? [];
 	let frame = $state(0);
 	let playing = $state(!matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -62,22 +70,26 @@
 	let error = $state('');
 	let selected = $state<string[]>([]);
 	let itemList = $state<HTMLDivElement>();
-	const currentImage = $derived(
-		facing && playlist[frame]
-			? (images?.get(candidate?.cells[facing]?.[playlist[frame].cell] ?? '') ?? null)
-			: null
-	);
+	const currentImage = $derived.by(() => {
+		const cell = playlist[frame]?.cell;
+		if (!facing || cell == null || !images || !candidate) return null;
+		const stored = images.get(candidate.cells[facing]?.[cell] ?? '');
+		if (stored) return stored;
+		const source = mirrors[facing];
+		const original = source && images.get(candidate.cells[source]?.[cell] ?? '');
+		return original ? flipH(original) : null;
+	});
 	const hardFailure = !!candidate?.itemsBlocked;
 	const blocked = $derived(moveReviewBlocked(projectId));
-	const hasItems = $derived(!!manifest?.items.some((item) => item.id !== manifest.rig.baseItem));
+	const previewSize = $derived(ui.size === 'landscape' ? 128 : 192);
 	const changed = $derived(
-		itemsStep &&
+		!!acceptedInput &&
 			(!store.exportRecord ||
 				store.exportRecord.id !== projectId ||
 				moveCandidateInput(store.exportRecord, id) !== acceptedInput)
 	);
 	const equipment = $derived.by(() => {
-		if (!itemsStep || !project || !candidate || changed) return [];
+		if (!acceptedInput || !project || !candidate || changed) return [];
 		return project.manifest.items
 			.filter((item) => item.id !== project.manifest.rig.baseItem)
 			.map((item) => {
@@ -157,7 +169,7 @@
 		};
 		ui.sheet = 'move';
 	}
-	async function decide(accept: boolean, choose = false) {
+	async function decide(accept: boolean) {
 		if (busy || blocked || !candidate || !project || (accept && (!images || hardFailure))) return;
 		busy = true;
 		error = '';
@@ -175,16 +187,17 @@
 			if (!current()) return;
 			ui.anim = id;
 			ui.frame = 0;
-			if (choose) {
-				acceptedInput = input;
-				itemsStep = true;
-				await tick();
-				itemList?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
-			} else ui.sheet = null;
+			acceptedInput = input;
+			if (changed || equipment.some(({ offer }) => offer?.specs.length)) itemsStep = true;
+			else ui.sheet = null;
 		} catch (cause) {
 			error = displayError(cause);
 		} finally {
 			busy = false;
+		}
+		if (itemsStep) {
+			await tick();
+			itemList?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
 		}
 	}
 	function animate() {
@@ -200,47 +213,70 @@
 </script>
 
 {#snippet foot()}
-	{#if itemsStep}
-		<div class="checkpoint-total" aria-live="polite" aria-atomic="true">
-			<b>{t('moveSheet.checkpoint.total', { gens: formatNumber(total) })}</b>
-			<span class="muted small"
-				>{t('moveSheet.checkpoint.count', { count: formatNumber(chosen.length) })}</span
-			>
-		</div>
-		<button
-			class="bu-action btn primary checkpoint-animate"
-			data-variant="primary"
-			disabled={busy || !specs.length || !!access.error}
-			onclick={animate}
-		>
-			{t('moveSheet.checkpoint.animate')}
-		</button>
-	{:else if candidate && !hardFailure}
-		<div class="checkpoint-actions">
-			<button
-				class="bu-action btn"
-				data-variant={hasItems ? 'outline' : 'primary'}
-				disabled={busy || !!blocked || !images}
-				onclick={() => void decide(true)}>{t('moveSheet.checkpoint.keep')}</button
-			>
-			{#if hasItems}
-				<button
-					class="bu-action btn primary"
-					data-variant="primary"
-					disabled={busy || !!blocked || !images}
-					onclick={() => void decide(true, true)}>{t('moveSheet.checkpoint.choose')}</button
+	<div class="checkpoint-footer">
+		{#if itemsStep}
+			<p class="muted small checkpoint-note" id="move-item-cost">{t('moveSheet.costNotice')}</p>
+			<div class="checkpoint-actions checkpoint-item-actions">
+				<b class="checkpoint-total" aria-live="polite" aria-atomic="true"
+					>{t('moveSheet.checkpoint.total', { gens: formatNumber(total) })}</b
 				>
+				<button
+					class="bu-action btn primary checkpoint-primary"
+					data-variant="primary"
+					disabled={busy || !specs.length || !!access.error}
+					aria-describedby="move-item-cost"
+					onclick={animate}
+				>
+					{chosen.length
+						? t('moveSheet.checkpoint.animateCount', {
+								count: chosen.length,
+								n: formatNumber(chosen.length)
+							})
+						: t('moveSheet.checkpoint.titleItems')}
+				</button>
+			</div>
+		{:else if candidate}
+			{#if candidate.spec.replace && !hardFailure}
+				<p class="muted small checkpoint-note" id="move-replace-note">
+					{t('moveSheet.checkpoint.replaceNote', { move: name })}
+				</p>
 			{/if}
-		</div>
-	{/if}
+			<div class="checkpoint-actions">
+				<button
+					class="bu-action btn checkpoint-discard"
+					data-variant="quiet"
+					disabled={busy || !!blocked}
+					onclick={() => void decide(false)}>{t('moveSheet.checkpoint.discardDraft')}</button
+				>
+				<button
+					class={['bu-action btn', { 'primary checkpoint-primary': hardFailure }]}
+					data-variant={hardFailure ? 'primary' : 'outline'}
+					disabled={busy || !!blocked}
+					onclick={regenerate}>{t('moveSheet.checkpoint.regenerate')}</button
+				>
+				{#if !hardFailure}
+					<button
+						class="bu-action btn primary checkpoint-primary"
+						data-variant="primary"
+						disabled={busy || !!blocked || !images}
+						aria-describedby={candidate.spec.replace ? 'move-replace-note' : undefined}
+						onclick={() => void decide(true)}
+						>{t(
+							candidate.spec.replace ? 'moveSheet.checkpoint.replace' : 'moveSheet.checkpoint.save'
+						)}</button
+					>
+				{/if}
+			</div>
+		{/if}
+	</div>
 {/snippet}
 
 <Sheet
 	title={t(itemsStep ? 'moveSheet.checkpoint.titleItems' : 'moveSheet.checkpoint.review')}
-	cancel="common.close"
+	cancel={itemsStep ? 'common.done' : 'sheet.later'}
 	cancelDisabled={busy}
 	onclose={() => (ui.sheet = null)}
-	footer={itemsStep || (candidate && !hardFailure) ? foot : undefined}
+	footer={candidate ? foot : undefined}
 >
 	{#if error}<p class="notice bad small" role="alert">{error}</p>{/if}
 	{#if changed}
@@ -287,70 +323,68 @@
 			{/each}
 		</div>
 		{#if access.error}<p class="notice warn small" role="status">{access.error}</p>{/if}
-		<p class="muted small checkpoint-note">{t('moveSheet.costNotice')}</p>
 	{:else if candidate}
-		<div class="checkpoint-stage" aria-busy={!images && !error}>
-			{#if currentImage && facing}<Sprite
-					img={currentImage}
-					k={croppedBacking(192, currentImage, ui.dpr)}
-					limit={192}
-					label={t('moves.preview', { move: name }) + ', ' + displayDirection(facing)}
+		<div class="checkpoint-preview">
+			<div class="checkpoint-motion">
+				<div class="checkpoint-stage" aria-busy={!images && !error}>
+					{#if currentImage && facing}<Sprite
+							img={currentImage}
+							k={croppedBacking(previewSize, currentImage, ui.dpr)}
+							limit={previewSize}
+							label={t('moves.preview', { move: name }) + ', ' + displayDirection(facing)}
+						/>
+					{:else if !error}<span class="muted small">{t('stage.loading')}</span>{/if}
+				</div>
+				{#if images && playlist.length > 1}
+					<div class="checkpoint-group" role="group" aria-label={t('stage.previewControls')}>
+						<button
+							class="bu-action btn icon plain"
+							data-variant="quiet"
+							aria-label={t(playing ? 'common.pause' : 'common.play')}
+							title={t(playing ? 'common.pause' : 'common.play')}
+							onclick={() => (playing = !playing)}
+							>{#if playing}<Pause size={16} />{:else}<Play size={16} />{/if}</button
+						>
+						<button
+							class="bu-action btn icon plain"
+							data-variant="quiet"
+							aria-label={t('stage.previousFrame')}
+							title={t('stage.previousFrame')}
+							onclick={() => step(-1)}><ChevronLeft size={16} /></button
+						>
+						<span class="small muted checkpoint-frame"
+							>{t('stage.framePosition', {
+								frame: formatNumber(frame + 1),
+								total: formatNumber(playlist.length)
+							})}</span
+						>
+						<button
+							class="bu-action btn icon plain"
+							data-variant="quiet"
+							aria-label={t('stage.nextFrame')}
+							title={t('stage.nextFrame')}
+							onclick={() => step(1)}><ChevronRight size={16} /></button
+						>
+					</div>
+				{/if}
+			</div>
+			{#if directions.length}
+				<DirectionCompass
+					label={t('common.directions')}
+					available={directions.map(({ id }) => id)}
+					selected={facing ? [facing] : []}
+					{mirrors}
+					compact
+					preview
+					ontoggle={(option) => (direction = option)}
 				/>
-			{:else if !error}<span class="muted small">{t('stage.loading')}</span>{/if}
+			{/if}
 		</div>
-		<div class="checkpoint-controls">
-			<div class="checkpoint-group" role="group" aria-label={t('stage.previewControls')}>
-				<button
-					class="bu-action btn"
-					data-variant="quiet"
-					disabled={!images || playlist.length < 2}
-					aria-label={t(playing ? 'common.pause' : 'common.play')}
-					onclick={() => (playing = !playing)}
-					>{#if playing}<Pause size={17} />{:else}<Play size={17} />{/if}</button
-				>
-				<button
-					class="bu-action btn"
-					data-variant="quiet"
-					disabled={!images || playlist.length < 2}
-					aria-label={t('stage.previousFrame')}
-					onclick={() => step(-1)}><ChevronLeft size={17} /></button
-				>
-				<span class="small muted checkpoint-frame"
-					>{t('stage.framePosition', {
-						frame: formatNumber(frame + 1),
-						total: formatNumber(playlist.length)
-					})}</span
-				>
-				<button
-					class="bu-action btn"
-					data-variant="quiet"
-					disabled={!images || playlist.length < 2}
-					aria-label={t('stage.nextFrame')}
-					onclick={() => step(1)}><ChevronRight size={17} /></button
-				>
-			</div>
-			<div
-				class="checkpoint-group checkpoint-directions"
-				role="group"
-				aria-label={t('common.directions')}
-			>
-				{#each directions as option (option.id)}<button
-						class="bu-action btn"
-						data-variant="outline"
-						aria-pressed={facing === option.id}
-						aria-label={displayDirection(option.id)}
-						onclick={() => (direction = option.id)}>{displayDirectionShort(option.id)}</button
-					>{/each}
-			</div>
-		</div>
-		<p class="checkpoint-note muted small">
-			{t(
-				candidate.spec.replace
-					? 'moveSheet.checkpoint.replaceNote'
-					: 'moveSheet.checkpoint.reviewNote',
-				{ move: name }
-			)}
-		</p>
+		{#if !candidate.spec.replace && !hardFailure}
+			<p class="checkpoint-note muted small">
+				{t('moveSheet.checkpoint.reviewNote', { move: name })}
+			</p>
+		{/if}
 		{#if candidate.warnings.length}
 			<details class="disclosure" open={hardFailure}>
 				<summary><ChevronRight size={14} />{t('moveSheet.checkpoint.findings')}</summary>
@@ -363,24 +397,6 @@
 		{/if}
 		{#if hardFailure}<p class="notice warn small">{t('moveSheet.checkpoint.hardFailure')}</p>{/if}
 		{#if blocked && !busy}<p class="notice small" role="status">{t(blocked)}</p>{/if}
-		<div class="checkpoint-actions checkpoint-alternatives">
-			<button
-				class="bu-action btn"
-				data-variant={hardFailure ? 'outline' : 'quiet'}
-				disabled={busy || !!blocked}
-				onclick={regenerate}
-			>
-				{t('moveSheet.checkpoint.regenerate')}
-			</button>
-			<button
-				class="bu-action btn"
-				data-variant="quiet"
-				disabled={busy || !!blocked}
-				onclick={() => void decide(false)}
-			>
-				{t(candidate.spec.replace ? 'moveSheet.checkpoint.keepCurrent' : 'common.discard')}
-			</button>
-		</div>
 	{:else}
 		<p class="notice small">{t('moveSheet.checkpoint.changed')}</p>
 	{/if}
@@ -391,30 +407,27 @@
 		display: grid;
 		place-items: center;
 		min-height: 208px;
+		padding-block: 8px;
 		background: var(--stage);
 		border-radius: var(--r-ctl);
 	}
-	.checkpoint-controls {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		flex-wrap: wrap;
-		gap: 6px 12px;
-		margin-top: 8px;
+	.checkpoint-preview {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 16px;
 	}
 	.checkpoint-group {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 		gap: 2px;
+		margin-top: 4px;
 	}
-	.checkpoint-controls button {
+	.checkpoint-group button {
 		min-width: 44px;
 		min-height: 44px;
 		padding-inline: 6px;
-	}
-	.checkpoint-directions {
-		flex-wrap: wrap;
-		gap: 4px;
 	}
 	.checkpoint-frame,
 	.checkpoint-price,
@@ -423,6 +436,14 @@
 	}
 	.checkpoint-note {
 		margin-block: 10px;
+	}
+	.checkpoint-footer {
+		display: grid;
+		gap: 8px;
+		width: 100%;
+	}
+	.checkpoint-footer .checkpoint-note {
+		margin: 0;
 	}
 	.checkpoint-items {
 		display: grid;
@@ -450,22 +471,70 @@
 	}
 	.checkpoint-price {
 		text-align: end;
-	}
-	.checkpoint-total {
-		display: grid;
-		margin-inline-end: auto;
-	}
-	:global(dialog.sheet.bottom) .checkpoint-animate {
-		order: -1;
+		max-inline-size: 9ch;
+		overflow-wrap: anywhere;
 	}
 	.checkpoint-actions {
 		display: flex;
+		align-items: center;
 		justify-content: flex-end;
 		flex-wrap: wrap;
 		gap: 6px;
 		width: 100%;
 	}
-	.checkpoint-alternatives {
-		justify-content: flex-start;
+	.checkpoint-item-actions {
+		justify-content: space-between;
+	}
+	.checkpoint-discard {
+		margin-inline-end: auto;
+	}
+	.checkpoint-actions button {
+		min-block-size: 44px;
+		max-inline-size: 100%;
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+	:global(dialog.sheet.bottom) .checkpoint-actions .btn.checkpoint-primary {
+		width: auto;
+	}
+	@media (max-width: 599px) and (orientation: portrait) {
+		.checkpoint-preview {
+			grid-template-columns: minmax(0, 1fr);
+			justify-items: center;
+			gap: 8px;
+		}
+		.checkpoint-motion {
+			width: 100%;
+		}
+		.checkpoint-stage {
+			min-height: 192px;
+		}
+	}
+	@media (orientation: landscape) and (max-height: 499px) {
+		.checkpoint-stage {
+			min-height: 144px;
+		}
+	}
+	@media (max-width: 680px) and (orientation: landscape) and (max-height: 499px) {
+		.checkpoint-preview {
+			column-gap: 8px;
+			row-gap: 4px;
+		}
+		.checkpoint-motion {
+			display: contents;
+		}
+		.checkpoint-group {
+			grid-column: 1 / -1;
+			grid-row: 2;
+			margin-top: 0;
+		}
+		.checkpoint-actions button {
+			padding-inline: 8px;
+		}
+	}
+	@media (max-width: 365px) {
+		.checkpoint-actions:not(.checkpoint-item-actions) .checkpoint-primary {
+			flex-basis: 100%;
+		}
 	}
 </style>

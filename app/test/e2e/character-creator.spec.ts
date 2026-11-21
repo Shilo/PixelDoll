@@ -448,9 +448,9 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	).toBeVisible({
 		timeout: 120_000
 	});
-	await review.getByRole('button', { name: 'Keep move without items', exact: true }).click();
+	await review.getByRole('button', { name: 'Save move', exact: true }).click();
 	await page.getByRole('button', { name: /Idle Review move/ }).click();
-	await review.getByRole('button', { name: 'Keep move without items', exact: true }).click();
+	await review.getByRole('button', { name: 'Save move', exact: true }).click();
 	await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Walk', 'Idle']);
 });
 
@@ -1446,7 +1446,7 @@ function offlineCreation(config: CreationCase) {
 			await move.getByRole('radio', { name, exact: true }).click();
 			await move.getByRole('button', { name: /^Generate move/ }).click();
 			await review
-				.getByRole('button', { name: 'Keep move without items', exact: true })
+				.getByRole('button', { name: 'Save move', exact: true })
 				.click({ timeout: 120_000 });
 		}
 		await expect(page.locator('.move-list .move-row')).toHaveCount(3, { timeout: 150_000 });
