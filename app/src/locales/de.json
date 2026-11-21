@@ -2639,7 +2639,8 @@
 		"generate": "Zustand generieren",
 		"generating": "Zustand wird generiert…",
 		"review": "Prüfe {name} vor dem Speichern.",
-		"generated": "Generiert"
+		"generated": "Generiert",
+		"sourceMissing": "Quelle nicht verfügbar"
 	},
 	"stateJointFit": {
 		"busy": "Die Gelenke werden bereits bestimmt. Versuche es danach erneut.",

@@ -17,6 +17,8 @@
 	import { formatNumber, t } from 'svelte-whisper';
 	import { app, getKeyRevision } from '../lib/app.svelte.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
+	import { flipH } from '../lib/rig/mirror.ts';
+	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { displayNestedMessage } from '../lib/i18n.ts';
 	import type { PickedReference } from '../lib/image/reference.ts';
 	import { errorMessage, LocalizedError, type Message } from '../lib/message.ts';
@@ -35,7 +37,9 @@
 	import ReferenceField from './ReferenceField.svelte';
 	import Sheet from './Sheet.svelte';
 	import Sprite from './Sprite.svelte';
-	import StateSourcePicker from './StateSourcePicker.svelte';
+	import DirectionCompass from './DirectionCompass.svelte';
+	import PlaybackPicker from './experience/PlaybackPicker.svelte';
+	import { bodyClipThumbnail } from './moveThumbnails.ts';
 	import { doc, openProject, store, ui, withKey } from './state.svelte.ts';
 	import {
 		continueState,
@@ -63,6 +67,7 @@
 	const manifest = $derived(project?.manifest);
 	const clipIds = $derived(manifest?.rig.animations.map(({ id }) => id) ?? []);
 	const clips = $derived(stateSourceClips(manifest));
+	const pickerClips = $derived(playbackClips(clips));
 	const body = $derived(manifest?.items.find(({ id }) => id === manifest.rig.baseItem)?.layers[0]);
 	const clipName = (id: string) => displayMove(id, clipIds);
 	const lastFrame = (id: string) =>
@@ -116,7 +121,7 @@
 	let failure = $state<Message | string>('');
 	let checkedPending = $state(false);
 	let review = $state.raw<StateReview | null>(null);
-	let reviewIndex = $state(0);
+	let reviewFacing = $state<DirectionName | null>(null);
 	let confirmDiscard = $state(false);
 	let canContinue = $state(false);
 	let continuation = $state.raw<StateContinuationQuote | null>(null);
@@ -129,8 +134,6 @@
 	const changed = $derived(
 		stale || doc.id !== projectId || (!!pinned && capture?.version !== pinned)
 	);
-	const studioFacing = (drawn: readonly DirectionName[]) =>
-		drawn.includes(ui.dir) ? ui.dir : (drawn[0] ?? ui.dir);
 	// Every facing the State will have, mirrored ones included, in compass order for the turntable.
 	const previews = $derived.by(() => {
 		const cell = capture?.move.frames[frame]?.cell;
@@ -159,16 +162,6 @@
 		}, 700);
 		return () => window.clearInterval(timer);
 	});
-	function clipThumbnail(id: string, position = lastFrame(id)) {
-		const cells = body?.cells?.[id];
-		const cell = manifest?.rig.animations.find((entry) => entry.id === id)?.frames[position]?.cell;
-		if (!project || !body || !cells || cell === undefined) return null;
-		const drawn = (manifest?.rig.directions ?? [])
-			.filter(({ id: direction, mirrorOf }) => !mirrorOf && cells[direction]?.[cell])
-			.map(({ id: direction }) => direction);
-		return cellImg(project, body, id, studioFacing(drawn), cell) ?? null;
-	}
-	const triggerImage = $derived(clipThumbnail(clip, frame));
 
 	const id = $derived(stateCaptureId(name));
 	const nameIssue = $derived(
@@ -200,12 +193,40 @@
 	const formReady = $derived(
 		checkedPending && sourceReady && !nameIssue && (!editing || editReady)
 	);
-	const view = $derived(review?.views[reviewIndex]);
 	const reviewSource = $derived(review && project && stateGenerationSource(project, review.source));
-	const sourceView = $derived(
-		reviewSource?.version === review?.sourceVersion
-			? reviewSource?.views.find(({ direction }) => direction === view?.direction)
-			: undefined
+	const sourceCurrent = $derived(!!review && reviewSource?.version === review.sourceVersion);
+	// Every facing the saved State will have: generated views plus the rig's mirrors of them.
+	const reviewViews = $derived.by(() => {
+		const current = review;
+		if (!current || !project || !body) return [];
+		const { source } = current;
+		const generated = new Map(current.views.map(({ direction, image }) => [direction, image]));
+		const cell = project.manifest.rig.animations.find(({ id }) => id === source.clip)?.frames[
+			source.frame
+		]?.cell;
+		return project.manifest.rig.directions
+			.filter(({ id, mirrorOf }) => generated.has(id) || (mirrorOf && generated.has(mirrorOf)))
+			.sort((left, right) => DIRECTIONS.indexOf(left.id) - DIRECTIONS.indexOf(right.id))
+			.map(({ id, mirrorOf }) => ({
+				direction: id,
+				mirrorOf: generated.has(id) ? undefined : mirrorOf,
+				image: generated.get(id) ?? flipH(generated.get(mirrorOf!)!),
+				source:
+					sourceCurrent && cell !== undefined
+						? (cellImg(project, body, source.clip, id, cell) ?? null)
+						: null
+			}));
+	});
+	// Starts on the Studio facing, else the first view in compass order.
+	const view = $derived(
+		reviewViews.find(({ direction }) => direction === reviewFacing) ??
+			reviewViews.find(({ direction }) => direction === ui.dir) ??
+			reviewViews[0]
+	);
+	const reviewMirrors = $derived(
+		Object.fromEntries(
+			reviewViews.flatMap(({ direction, mirrorOf }) => (mirrorOf ? [[direction, mirrorOf]] : []))
+		)
 	);
 	const discardable = $derived(
 		!checkedPending &&
@@ -362,7 +383,7 @@
 				throw cause;
 			}
 			checkedPending = true;
-			reviewIndex = 0;
+			reviewFacing = null;
 		});
 	}
 
@@ -385,7 +406,7 @@
 			}
 			canContinue = false;
 			checkedPending = true;
-			reviewIndex = 0;
+			reviewFacing = null;
 		});
 	}
 
@@ -409,7 +430,7 @@
 			canContinue = false;
 			continuation = null;
 			review = null;
-			reviewIndex = 0;
+			reviewFacing = null;
 			checkedPending = true;
 		});
 	}
@@ -425,43 +446,65 @@
 
 <Sheet
 	title={t('stateCapture.title')}
-	className="state-capture-sheet"
+	className={['state-capture-sheet', review ? 'reviewing' : checkedPending && editing && 'split']
+		.filter(Boolean)
+		.join(' ')}
+	wide={!review && checkedPending && editing}
 	cancelDisabled={!!busy}
 	onclose={() => (ui.sheet = null)}
-	footer={review || checkedPending ? footer : recoveryFooter}
+	footer={review || checkedPending
+		? footer
+		: !busy && (failure || canContinue)
+			? recoveryFooter
+			: undefined}
 >
 	{#if review}
 		<div class="state-panel" aria-busy={!!busy}>
-			<p>{t('stateGeneration.review', { name: moveLabel(review.id) })}</p>
+			<p class="muted small">{t('stateGeneration.review', { name: moveLabel(review.id) })}</p>
 			{#if view}
-				{#if review.views.length > 1}
-					<label class="field">
-						<span class="label">{t('common.direction')}</span>
-						<select class="bu-input input" bind:value={reviewIndex} disabled={!!busy}>
-							{#each review.views as { direction }, index (direction)}
-								<option value={index}>{displayDirection(direction)}</option>
-							{/each}
-						</select>
-					</label>
-				{/if}
-				<div class="state-compare">
-					{#if sourceView}
-						{@const sourceName = clipName(review.source.clip)}
+				{@const facingName = displayDirection(view.direction)}
+				{@const sourceName = clipName(review.source.clip)}
+				<div class="review-preview">
+					<div class="review-stage">
 						<figure>
-							<Sprite img={sourceView.image} k={3} limit={128} checker label={sourceName} />
+							<span class="review-sprite">
+								{#if view.source}<Sprite
+										img={view.source}
+										k={1}
+										fitToBox
+										label={t('stateCapture.preview', { source: sourceName, facing: facingName })}
+									/>{:else}<span class="muted small">{t('stateGeneration.sourceMissing')}</span
+									>{/if}
+							</span>
 							<figcaption>{sourceName}</figcaption>
 						</figure>
-					{/if}
-					<figure>
-						<Sprite
-							img={view.image}
-							k={3}
-							limit={128}
-							checker
-							label={displayDirection(view.direction)}
+						<figure>
+							<span class="review-sprite"
+								><Sprite
+									img={view.image}
+									k={1}
+									fitToBox
+									label={t('stateCapture.preview', {
+										source: t('stateGeneration.generated'),
+										facing: facingName
+									})}
+								/></span
+							>
+							<figcaption>{t('stateGeneration.generated')}</figcaption>
+						</figure>
+					</div>
+					{#if reviewViews.length > 1}
+						<DirectionCompass
+							label={t('common.directions')}
+							available={reviewViews.map(({ direction }) => direction)}
+							selected={[view.direction]}
+							mirrors={reviewMirrors}
+							compact
+							preview
+							disabled={!!busy}
+							ontoggle={(option) => (reviewFacing = option)}
 						/>
-						<figcaption>{t('stateGeneration.generated')}</figcaption>
-					</figure>
+					{/if}
 				</div>
 			{/if}
 			{#if confirmDiscard}<p class="notice warn small" role="status">
@@ -469,171 +512,176 @@
 				</p>{/if}
 		</div>
 	{:else if checkedPending}
-		<form id={formId} class="state-panel" onsubmit={submit} aria-busy={!!busy}>
-			<StateSourcePicker
-				{clips}
-				selected={clip}
-				label={clipName}
-				thumbnail={(entry) => clipThumbnail(entry)}
-				{triggerImage}
-				disabled={!!busy}
-				onselect={chooseClip}
-			/>
-			{#if shown}
-				{@const facingName = displayDirection(shown.direction)}
-				{#snippet sprite()}
-					<span class="source-sprite" data-facing={shown.direction}>
-						<Sprite
-							img={shown.image}
-							k={1}
-							fitToBox
-							label={t('stateCapture.preview', { source: clipName(clip), facing: facingName })}
-						/>
-					</span>
-					<span class="source-facing" aria-hidden="true">{facingName}</span>
-				{/snippet}
-				{#if canRotate}
-					<button
-						class="source-preview"
-						type="button"
-						aria-label={t(rotating ? 'common.pause' : 'common.play')}
-						onclick={() => (rotating = !rotating)}
-					>
-						{@render sprite()}
-						<span class="source-play" aria-hidden="true">
-							{#if rotating}<Pause size={18} />{:else}<Play size={18} />{/if}
+		<form id={formId} class="state-form" onsubmit={submit} aria-busy={!!busy}>
+			<div class="state-panel state-main">
+				<PlaybackPicker
+					clips={pickerClips}
+					moveRefs={clipIds}
+					selected={clip}
+					field={t('stateCapture.source')}
+					disabled={!!busy}
+					thumbnail={(key) => project && bodyClipThumbnail(project, key, ui.dir)}
+					onselect={chooseClip}
+				/>
+				{#if shown}
+					{@const facingName = displayDirection(shown.direction)}
+					{#snippet sprite()}
+						<span class="source-sprite" data-facing={shown.direction}>
+							<Sprite
+								img={shown.image}
+								k={1}
+								fitToBox
+								label={t('stateCapture.preview', { source: clipName(clip), facing: facingName })}
+							/>
 						</span>
-					</button>
-				{:else}
-					<div class="source-preview">{@render sprite()}</div>
+						<span class="source-facing" aria-hidden="true">{facingName}</span>
+					{/snippet}
+					{#if canRotate}
+						<button
+							class="source-preview"
+							type="button"
+							aria-label={t(rotating ? 'common.pause' : 'common.play')}
+							onclick={() => (rotating = !rotating)}
+						>
+							{@render sprite()}
+							<span class="source-play" aria-hidden="true">
+								{#if rotating}<Pause size={18} />{:else}<Play size={18} />{/if}
+							</span>
+						</button>
+					{:else}
+						<div class="source-preview">{@render sprite()}</div>
+					{/if}
 				{/if}
-			{/if}
-			{#if total > 1}
-				<div class="source-nav">
-					<button
-						class="bu-action"
-						data-variant="quiet"
-						type="button"
-						aria-label={t('stage.previousFrame')}
-						disabled={!!busy || frame === 0}
-						onclick={() => step(-1)}><ChevronLeft size={20} /></button
-					>
-					<strong aria-live="polite">{t('stage.framePosition', { frame: frame + 1, total })}</strong
-					>
-					<button
-						class="bu-action"
-						data-variant="quiet"
-						type="button"
-						aria-label={t('stage.nextFrame')}
-						disabled={!!busy || frame >= total - 1}
-						onclick={() => step(1)}><ChevronRight size={20} /></button
-					>
-				</div>
-			{/if}
-			{#if changed}
-				<div class="notice warn small source-changed" role="status">
-					<p>{t('stateCapture.concurrentEdit')}</p>
-					<button class="bu-btn" data-variant="outline" type="button" onclick={reloadSource}
-						>{t('stateCapture.reload')}</button
-					>
-				</div>
-			{:else if !views}
-				<p class="notice warn small" role="status">{t('stateCapture.unavailable')}</p>
-			{/if}
-			<label class="field">
-				<span class="label">{t('stateCapture.name')}</span>
-				<input
-					class="bu-input input"
-					type="text"
-					bind:value={name}
-					disabled={!!busy}
-					maxlength="64"
-					aria-invalid={!!nameIssue}
-					oninput={() => {
-						named = true;
-						failure = '';
-					}}
-				/>
-			</label>
-			{#if nameIssue}
-				<p class="notice warn small" role="status">{t(nameIssue)}</p>
-			{:else if name.trim() !== moveLabel(id)}
-				<p class="muted small">{t('stateCapture.savedAs', { name: moveLabel(id) })}</p>
-			{/if}
-			<label class="bu-check edit-switch">
-				<span class="edit-copy">
-					<span>{t('stateCapture.editWithPixelLab')}</span>
-					<span id="{formId}-edit-hint" class="faint small">{t('stateCapture.editHint')}</span>
-				</span>
-				<input
-					class="bu-switch"
-					type="checkbox"
-					role="switch"
-					bind:checked={editing}
-					disabled={!!busy}
-					aria-label={t('stateCapture.editWithPixelLab')}
-					aria-describedby="{formId}-edit-hint"
-				/>
-			</label>
-			{#if editing}
-				<div class="edit-fields">
-					{#if !flashReference}
-						<label class="field">
-							<span class="label">{t('stateGeneration.description')}</span>
-							<textarea class="bu-input input" bind:value={description} rows={3} disabled={!!busy}
-							></textarea>
-						</label>
-					{/if}
-					<ReferenceField
-						bind:value={reference}
-						bind:loading={referenceLoading}
-						max={referenceMax}
-						hint={t(
-							model === 'pixen'
-								? 'stateGeneration.pixenReference'
-								: model === 'pro-flash'
-									? 'stateGeneration.flashReference'
-									: 'stateGeneration.reference'
-						)}
-						disabled={!!busy || model === 'pixen'}
+				{#if total > 1}
+					<div class="source-nav">
+						<button
+							class="bu-action"
+							data-variant="quiet"
+							type="button"
+							aria-label={t('stage.previousFrame')}
+							disabled={!!busy || frame === 0}
+							onclick={() => step(-1)}><ChevronLeft size={20} /></button
+						>
+						<strong aria-live="polite"
+							>{t('stage.framePosition', { frame: frame + 1, total })}</strong
+						>
+						<button
+							class="bu-action"
+							data-variant="quiet"
+							type="button"
+							aria-label={t('stage.nextFrame')}
+							disabled={!!busy || frame >= total - 1}
+							onclick={() => step(1)}><ChevronRight size={20} /></button
+						>
+					</div>
+				{/if}
+				{#if changed}
+					<div class="notice warn small source-changed" role="status">
+						<p>{t('stateCapture.concurrentEdit')}</p>
+						<button class="bu-btn" data-variant="outline" type="button" onclick={reloadSource}
+							>{t('stateCapture.reload')}</button
+						>
+					</div>
+				{:else if !views}
+					<p class="notice warn small" role="status">{t('stateCapture.unavailable')}</p>
+				{/if}
+				<label class="field">
+					<span class="label">{t('stateCapture.name')}</span>
+					<input
+						class="bu-input input"
+						type="text"
+						bind:value={name}
+						disabled={!!busy}
+						maxlength="64"
+						aria-invalid={!!nameIssue}
+						oninput={() => {
+							named = true;
+							failure = '';
+						}}
 					/>
-					<details class="disclosure" bind:open={advancedOpen}>
-						<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
-						<label class="field">
-							<span class="label">{t('create.form.model')}</span>
-							<select
-								class="bu-input input"
-								bind:value={model}
-								disabled={!!busy || referenceLoading}
-							>
-								<option value="pro">{t('stateGeneration.defaultModel')}</option>
-								<option value="pro-flash">{t('create.form.models.proFlash.label')}</option>
-								<option value="pixen">V3 (Pixen)</option>
-							</select>
-						</label>
-					</details>
-					{#if quote}
-						{@const managed = quote.plan.endpoint === '/create-character-state'}
-						<div class="notice small" role="status">
-							<div>
-								{#if managed}
-									<p>
-										{t('stateGeneration.managed', { parent: quote.parentName || clipName(clip) })}
-									</p>
-								{:else}
-									<p>{t('stateGeneration.localOnly')}</p>
-								{/if}
-								{#if quote.plan.endpoint === '/transfer-outfit-v2'}<p>
-										{t('stateGeneration.transfer')}
-									</p>{/if}
-								{#if quote.plan.warnings.includes('sheet-quality-unverified')}<p>
-										{t('stateGeneration.sheetWarning')}
-									</p>{/if}
+				</label>
+				{#if nameIssue}
+					<p class="notice warn small" role="status">{t(nameIssue)}</p>
+				{:else if name.trim() !== moveLabel(id)}
+					<p class="muted small">{t('stateCapture.savedAs', { name: moveLabel(id) })}</p>
+				{/if}
+			</div>
+			<div class="state-panel state-edit">
+				<label class="bu-check edit-switch">
+					<span class="edit-copy">
+						<span>{t('stateCapture.editWithPixelLab')}</span>
+						<span id="{formId}-edit-hint" class="faint small">{t('stateCapture.editHint')}</span>
+					</span>
+					<input
+						class="bu-switch"
+						type="checkbox"
+						role="switch"
+						bind:checked={editing}
+						disabled={!!busy}
+						aria-label={t('stateCapture.editWithPixelLab')}
+						aria-describedby="{formId}-edit-hint"
+					/>
+				</label>
+				{#if editing}
+					<div class="edit-fields">
+						{#if !flashReference}
+							<label class="field">
+								<span class="label">{t('stateGeneration.description')}</span>
+								<textarea class="bu-input input" bind:value={description} rows={3} disabled={!!busy}
+								></textarea>
+							</label>
+						{/if}
+						<ReferenceField
+							bind:value={reference}
+							bind:loading={referenceLoading}
+							max={referenceMax}
+							hint={t(
+								model === 'pixen'
+									? 'stateGeneration.pixenReference'
+									: model === 'pro-flash'
+										? 'stateGeneration.flashReference'
+										: 'stateGeneration.reference'
+							)}
+							disabled={!!busy || model === 'pixen'}
+						/>
+						<details class="disclosure" bind:open={advancedOpen}>
+							<summary><ChevronRight size={14} />{t('common.advanced')}</summary>
+							<label class="field">
+								<span class="label">{t('create.form.model')}</span>
+								<select
+									class="bu-input input"
+									bind:value={model}
+									disabled={!!busy || referenceLoading}
+								>
+									<option value="pro">{t('stateGeneration.defaultModel')}</option>
+									<option value="pro-flash">{t('create.form.models.proFlash.label')}</option>
+									<option value="pixen">V3 (Pixen)</option>
+								</select>
+							</label>
+						</details>
+						{#if quote}
+							{@const managed = quote.plan.endpoint === '/create-character-state'}
+							<div class="notice small" role="status">
+								<div>
+									{#if managed}
+										<p>
+											{t('stateGeneration.managed', { parent: quote.parentName || clipName(clip) })}
+										</p>
+									{:else}
+										<p>{t('stateGeneration.localOnly')}</p>
+									{/if}
+									{#if quote.plan.endpoint === '/transfer-outfit-v2'}<p>
+											{t('stateGeneration.transfer')}
+										</p>{/if}
+									{#if quote.plan.warnings.includes('sheet-quality-unverified')}<p>
+											{t('stateGeneration.sheetWarning')}
+										</p>{/if}
+								</div>
 							</div>
-						</div>
-					{/if}
-				</div>
-			{/if}
+						{/if}
+					</div>
+				{/if}
+			</div>
 		</form>
 	{:else if !busy && (failure || canContinue)}
 		<div class="state-panel">
@@ -749,6 +797,32 @@
 	:global(dialog.state-capture-sheet:is(.center, .side)) {
 		max-inline-size: 360px;
 	}
+	.state-form {
+		display: grid;
+		gap: 12px;
+	}
+	/* Editing on a centered sheet with room: source on the left, PixelLab options on the right. */
+	@media (min-width: 760px) {
+		:global(dialog.state-capture-sheet.center.split) {
+			max-inline-size: 720px;
+		}
+		:global(dialog.center.split) .state-form {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			align-items: start;
+			gap: 24px;
+		}
+		:global(dialog.center.split) .state-edit {
+			padding-inline-start: 24px;
+			border-inline-start: 1px solid var(--bu-line);
+		}
+		:global(dialog.center.split) .edit-switch {
+			padding-block-start: 0;
+			border-block-start: 0;
+		}
+		:global(dialog.state-capture-sheet.center.reviewing) {
+			max-inline-size: 560px;
+		}
+	}
 	.state-panel {
 		display: grid;
 		gap: 12px;
@@ -835,17 +909,55 @@
 		display: grid;
 		gap: 12px;
 	}
-	.state-compare {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-		gap: 12px;
+	/* Like Move review: one stage beside the direction compass, stacked when narrow. */
+	.review-preview {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 16px;
 	}
-	.state-compare figure {
+	.review-stage {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+		padding: 12px 8px 8px;
+		background: var(--stage);
+		border: 1px solid var(--bu-line);
+		border-radius: var(--r-ctl);
+	}
+	.review-stage figure {
 		display: grid;
 		justify-items: center;
 		gap: 4px;
 		margin: 0;
+		min-inline-size: 0;
+	}
+	.review-stage figure + figure {
+		border-inline-start: 1px solid var(--bu-line);
+	}
+	.review-sprite {
+		display: grid;
+		place-items: center;
+		inline-size: min(100%, 176px);
+		aspect-ratio: 1;
+		text-align: center;
+	}
+	.review-stage figcaption {
+		max-inline-size: 100%;
+		overflow-wrap: anywhere;
+		text-align: center;
+		font-size: 12px;
+		color: var(--bu-muted);
+	}
+	@media (max-width: 759px) {
+		.review-preview {
+			grid-template-columns: minmax(0, 1fr);
+			justify-items: center;
+			gap: 8px;
+		}
+		.review-stage {
+			inline-size: 100%;
+		}
 	}
 	.state-footer {
 		flex: 1;

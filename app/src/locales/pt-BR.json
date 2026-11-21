@@ -2653,7 +2653,8 @@
 		"generate": "Gerar estado",
 		"generating": "Gerando estado…",
 		"review": "Confira {name} antes de salvar.",
-		"generated": "Gerado"
+		"generated": "Gerado",
+		"sourceMissing": "Origem indisponível"
 	},
 	"stateJointFit": {
 		"busy": "A medição das articulações já está em andamento. Tente novamente quando terminar.",

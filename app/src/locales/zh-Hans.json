@@ -2517,7 +2517,8 @@
 		"generate": "生成状态",
 		"generating": "正在生成状态…",
 		"review": "保存前请检查 {name}。",
-		"generated": "生成结果"
+		"generated": "生成结果",
+		"sourceMissing": "来源不可用"
 	},
 	"stateJointFit": {
 		"busy": "正在测量关节。请在测量完成后重试。",

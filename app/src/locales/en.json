@@ -2624,7 +2624,8 @@
 		"generate": "Generate State",
 		"generating": "Generating State…",
 		"review": "Review {name} before saving.",
-		"generated": "Generated"
+		"generated": "Generated",
+		"sourceMissing": "Source unavailable"
 	},
 	"stateJointFit": {
 		"busy": "Joint fitting is already in progress. Try again when it finishes.",

@@ -2633,7 +2633,8 @@
 		"generate": "Durum oluştur",
 		"generating": "Durum oluşturuluyor…",
 		"review": "Kaydetmeden önce {name} durumunu inceleyin.",
-		"generated": "Oluşturulan"
+		"generated": "Oluşturulan",
+		"sourceMissing": "Kaynak kullanılamıyor"
 	},
 	"stateJointFit": {
 		"busy": "Eklem ölçümü zaten sürüyor. Tamamlandığında tekrar deneyin.",

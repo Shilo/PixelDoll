@@ -734,7 +734,11 @@ test('one test-mount toggle follows facing and movement across Preview, Top-down
 	const inactiveMountColor = await toggle.evaluate((element) => getComputedStyle(element).color);
 	const move = playbackPicker(page);
 	await selectPlaybackClip(page, 'cross-punch');
-	const moves = await (await openPlaybackPicker(page)).getByRole('menuitemradio').count();
+	const picker = await openPlaybackPicker(page);
+	const moves = await picker.getByRole('menuitemradio').count();
+	// Every row shows its clip's body art; the trigger itself stays text only.
+	await expect(picker.locator('.clip-art canvas')).toHaveCount(moves);
+	await expect(move.locator('canvas')).toHaveCount(0);
 	await page.keyboard.press('Escape');
 	await expect(toggle).toHaveAccessibleName('Mount settings');
 	await expect(toggle).toHaveAttribute('aria-expanded', 'false');

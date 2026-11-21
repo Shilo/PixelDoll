@@ -2640,7 +2640,8 @@
 		"generate": "Générer l’état",
 		"generating": "Génération de l’état…",
 		"review": "Vérifiez {name} avant d’enregistrer.",
-		"generated": "Généré"
+		"generated": "Généré",
+		"sourceMissing": "Source indisponible"
 	},
 	"stateJointFit": {
 		"busy": "La mesure des articulations est déjà en cours. Réessayez ensuite.",

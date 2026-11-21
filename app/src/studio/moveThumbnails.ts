@@ -1,6 +1,6 @@
 import type { Img } from '../lib/image/png.ts';
-import type { Frame } from '../lib/compose/compose.ts';
-import type { DirectionName, Preset } from '../lib/store/manifest.ts';
+import { cellImg, type Frame } from '../lib/compose/compose.ts';
+import type { DirectionName, Preset, Project } from '../lib/store/manifest.ts';
 import {
 	renderPresentation,
 	resolvePreview,
@@ -42,4 +42,24 @@ export function moveThumbnails(assets: PresentationAvailability, items: Preset['
 		bytes += image.data.byteLength;
 		return image;
 	};
+}
+
+/** The base body's last frame of a clip, for picker rows: the facing when drawn, else the first drawn one. */
+export function bodyClipThumbnail(
+	project: Project,
+	key: string,
+	facing: DirectionName
+): Img | null {
+	const { rig } = project.manifest;
+	const body = project.manifest.items.find((item) => item.id === rig.baseItem)?.layers[0];
+	const cells = body?.cells?.[key];
+	const cell = rig.animations.find((clip) => clip.id === key)?.frames.at(-1)?.cell;
+	if (!body || !cells || cell === undefined) return null;
+	const drawn = (id: DirectionName) => !!cells[id]?.[cell];
+	const shown = rig.directions.find(
+		({ id, mirrorOf }) => id === facing && drawn(mirrorOf ?? id)
+	)?.id;
+	const fallback = rig.directions.find(({ id, mirrorOf }) => !mirrorOf && drawn(id))?.id;
+	const direction = shown ?? fallback;
+	return direction ? (cellImg(project, body, key, direction, cell) ?? null) : null;
 }

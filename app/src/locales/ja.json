@@ -2546,7 +2546,8 @@
 		"generate": "ステートを生成",
 		"generating": "ステートを生成中…",
 		"review": "保存前に {name} を確認してください。",
-		"generated": "生成結果"
+		"generated": "生成結果",
+		"sourceMissing": "元を表示できません"
 	},
 	"stateJointFit": {
 		"busy": "関節を計測中です。完了してからもう一度お試しください。",

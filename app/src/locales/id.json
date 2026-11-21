@@ -2539,7 +2539,8 @@
 		"generate": "Hasilkan keadaan",
 		"generating": "Menghasilkan keadaan…",
 		"review": "Tinjau {name} sebelum menyimpan.",
-		"generated": "Hasil generasi"
+		"generated": "Hasil generasi",
+		"sourceMissing": "Sumber tidak tersedia"
 	},
 	"stateJointFit": {
 		"busy": "Pengukuran sendi sedang berlangsung. Coba lagi setelah selesai.",

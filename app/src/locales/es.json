@@ -2647,7 +2647,8 @@
 		"generate": "Generar estado",
 		"generating": "Generando estado…",
 		"review": "Revisa {name} antes de guardar.",
-		"generated": "Generado"
+		"generated": "Generado",
+		"sourceMissing": "Origen no disponible"
 	},
 	"stateJointFit": {
 		"busy": "Ya se están midiendo las articulaciones. Vuelve a intentarlo cuando termine.",
