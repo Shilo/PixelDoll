@@ -1,5 +1,6 @@
 <script lang="ts">
 	import SettingsItemButton from './SettingsItemButton.svelte';
+	import { CURRENT_OUTFIT_ID } from '../lib/store/identity.ts';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { assetUrl } from '../lib/assets.ts';
@@ -218,7 +219,7 @@
 	let busy = $state(false);
 	let attempt = $state(0);
 	const m = $derived(store.project?.manifest);
-	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
+	const moveRefs = $derived(m?.rig.animations ?? []);
 	const baked = $derived(preferences?.dressedCharacterSheets ?? true);
 	const catalog = $derived.by(() => {
 		if (!preferences || !ready) return { names: [], warningMessages: [] };
@@ -243,7 +244,7 @@
 				? t('export.playback.all')
 				: once.map(animationLabel).join(', ')
 	);
-	const outfits = $derived(m?.presets.filter((p) => p.id !== 'current') ?? []);
+	const outfits = $derived(m?.presets.filter((p) => p.id !== CURRENT_OUTFIT_ID) ?? []);
 	// RPG Maker sheets are always dressed composites, whatever the setting says
 	const rpg = $derived(engine === 'rpgmaker' || engine === 'rpgmakerxp');
 	const outfitSummary = $derived(
@@ -283,7 +284,7 @@
 				slotLabelMessage(m, (value as Extract<NoteTerm, { slot: unknown }>).slot)
 			);
 		if ('move' in value)
-			return displayMove((value as Extract<NoteTerm, { move: unknown }>).move, moveIds);
+			return displayMove((value as Extract<NoteTerm, { move: unknown }>).move, moveRefs);
 		if ('key' in value) return displayNote(value as Message);
 		return value;
 	}
@@ -935,17 +936,15 @@
 					{/if}
 					{#if m && result?.kind === 'requested'}
 						{#if rpg}<p class="muted">
-								{m.presets.filter((x) => x.id !== 'current').length
+								{outfits.length
 									? t('export.summary.rpgOutfits', {
-											count: m.presets.filter((x) => x.id !== 'current').length
+											count: outfits.length
 										})
 									: t('export.summary.rpgCurrent')}
 							</p>{:else}
 							<p class="muted">
 								{t(
-									m.presets.filter((x) => x.id !== 'current').length
-										? 'export.summary.sheetsOutfits'
-										: 'export.summary.sheetsCurrent',
+									outfits.length ? 'export.summary.sheetsOutfits' : 'export.summary.sheetsCurrent',
 									{
 										directions: t('export.count.directions', {
 											count: m.rig.directions.length
@@ -953,7 +952,7 @@
 										moves: t('export.count.moves', { count: m.rig.animations.length }),
 										items: t('export.count.items', { count: items.length }),
 										outfits: t('export.count.outfits', {
-											count: m.presets.filter((x) => x.id !== 'current').length
+											count: outfits.length
 										})
 									}
 								)}

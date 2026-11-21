@@ -58,7 +58,12 @@ export interface ClipSource {
 	provenance: number[]; // indexes into the base item's provenance
 }
 export interface RigAnimation {
+	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
+	/** Display name the user gave the move; absent = derived from `id`. */
+	name?: string;
+	/** Game-facing ID in exports (`play(id)`); absent = `id`. */
+	exportId?: string;
 	/** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
 	directions?: DirectionName[];
 	cells: number;
@@ -85,6 +90,12 @@ export interface Rig {
 	baseItem: string;
 	baseHash: Sha256;
 	pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 12)
+	/** Export world unit (pixels per unit) kept when Frame size changed the cell; default: the cell width. */
+	pixelsPerUnit?: number;
+	/** Rows each direction's standing art sits below the view PixelLab registered for it (Adjust frame moved the character
+	 *  since): managed motion frames, drawn from the registered views, are placed this much lower. Absent = 0; reset by a new
+	 *  registration. */
+	artOffset?: Partial<Record<DirectionName, number>>;
 	rest?: Partial<Record<DirectionName, RestView>>; // original standing views, including unused views retained for account reconnection
 	anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
@@ -108,6 +119,9 @@ export function matchesStanding(
 		(image === rest || (source?.motion === 'imported-rest' && source.reference === rest))
 	);
 }
+/** Pixels per world unit for engine exports: the cell width, or the width a resized character had (Frame size). */
+export const exportUnit = (rig: Pick<Rig, 'cell' | 'pixelsPerUnit'>) =>
+	rig.pixelsPerUnit ?? rig.cell.w;
 export const cellKey = (anim: string, dir: DirectionName, cell: number) => `${anim}/${dir}/${cell}`;
 export const defaultMs = (anim: string) => (anim.includes('idle') ? 150 : 100);
 export const playlist = (cells: number, ms: number) =>
@@ -151,10 +165,21 @@ export async function baseHashOf(
 const ID = /^[a-z0-9][a-z0-9_-]*$/;
 export const validAnimationId = (id: string): boolean => ID.test(id);
 
-/** Playback preferences do not change the artwork inputs of a pending generation or recovery. */
+/** The rig without move names and export IDs, which never change artwork or fitting. */
+export const rigContent = (rig: Rig): Rig => ({
+	...rig,
+	animations: rig.animations.map(({ name: _name, exportId: _exportId, ...animation }) => animation)
+});
+
+/** Playback preferences and move names do not change the artwork inputs of a pending generation or recovery. */
 export const rigArtworkVersion = (rig: Rig, character: unknown): string =>
 	stableStringify({
-		rig: { ...rig, animations: rig.animations.map(({ loop: _loop, ...animation }) => animation) },
+		rig: {
+			...rig,
+			animations: rig.animations.map(
+				({ loop: _loop, name: _name, exportId: _exportId, ...animation }) => animation
+			)
+		},
 		character
 	});
 
@@ -173,6 +198,14 @@ export function validateRig(rig: Rig, hashes?: Record<string, Sha256>): string[]
 	const { x, y } = rig.pivot;
 	if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x > w || y < 0 || y > h)
 		e.push(`pivot ${x},${y} outside 0..${w}`);
+	if (
+		rig.pixelsPerUnit !== undefined &&
+		!(Number.isFinite(rig.pixelsPerUnit) && rig.pixelsPerUnit > 0)
+	)
+		e.push(`pixelsPerUnit ${rig.pixelsPerUnit}: must be a positive number`);
+	for (const [dir, rows] of Object.entries(rig.artOffset ?? {}))
+		if (!DIRECTIONS.includes(dir as DirectionName) || !Number.isInteger(rows))
+			e.push(`artOffset ${dir} ${rows}: must be whole rows of a known direction`);
 	const ids = rig.directions.map((d) => d.id);
 	if (!rig.directions.length) e.push('no directions');
 	if (new Set(ids).size !== ids.length) e.push('duplicate direction');

@@ -208,6 +208,7 @@
 		"notAnOfficialApp": "非官方应用。"
 	},
 	"characterActions": {
+		"adjustFrame": "调整帧…",
 		"directions": "朝向…",
 		"demoDeleteLocked": "演示角色无法删除",
 		"labelDeleteCharacter": "删除角色…"
@@ -484,14 +485,21 @@
 		"couldNotRename": "无法重命名：{reason}",
 		"titleRenameCharacter": "重命名角色",
 		"titleRenameItem": "重命名装备",
+		"titleRenameOutfit": "重命名套装",
+		"titleRenameMove": "重命名动作",
 		"displayName": "显示名称",
 		"exportId": "导出 ID",
 		"exportIdHelp": "用于导出文件和游戏代码。更改后，请更新仍使用旧 ID 的游戏。",
 		"invalidExportId": "请以小写英文字母或数字开头，只使用小写英文字母、数字、连字符或下划线。不能使用保留名称。",
 		"duplicateExportId": "其他装备已使用此导出 ID。",
+		"duplicateOutfitExportId": "其他套装已使用此导出 ID。",
+		"duplicateMoveExportId": "其他动作已使用此导出 ID。",
+		"defaultMoveExportId": "游戏从 Default 动作开始，因此它的导出 ID 始终为 default。",
 		"characterIdConflict": "此工作区中的另一个角色正在使用此导出 ID。若要在同一游戏中使用两个角色，请为它们设置不同的 ID。",
 		"invalidName": "请输入 1 到 60 个字符的名称。",
-		"itemMissing": "此装备已不存在。"
+		"itemMissing": "此装备已不存在。",
+		"outfitMissing": "此套装已不存在。",
+		"moveMissing": "此动作已不存在。"
 	},
 	"savedActions": {
 		"labelDeleteMove": "删除动作…",
@@ -676,7 +684,7 @@
 		"slotHidden": "{label}未显示。它列在“未显示”下。",
 		"slotShown": "{label}显示在第 {position} 位，共 {total} 位。",
 		"dragInRail": "正在拖动{label}。将其放在导航栏中的装备栏之间；按 Escape 取消。",
-		"dragInList": "正在拖动{label}。将其放在列表中的装备栏之间；按 Escape 取消。",
+		"dragInList": "正在拖动{label}。将其放在列表中的装备栏之间，或放到“未显示”上以隐藏；按 Escape 取消。",
 		"slotUnmoved": "{label}保持在原位。",
 		"dragCanceled": "已取消拖动。",
 		"heldBy": "被{name}占用（双手装备）。",
@@ -787,6 +795,7 @@
 		"couldNotEnterFullScreenTryAgain": "无法进入全屏。请重试或使用浏览器的全屏控制。"
 	},
 	"state": {
+		"finishBeforeFrameChange": "调整帧前，请完成或放弃待处理的生成任务。",
 		"couldNotCheckNamedFrames": "无法检查 {names} 的帧：{reason}",
 		"couldNotCheckSeveralFrames": "无法检查 {names} 的帧。",
 		"copyMissingOneMove": "{move} 缺少部分帧，物品会在这些帧中隐藏。",
@@ -886,7 +895,9 @@
 		"anotherRigSetupIsStillRunningSo": "另一个绑定设置仍在运行，因此此设置未开始。你的选择已保留。",
 		"characterReadyForSkeletonPosedItemsAnd": "角色已可用于骨架姿态装备和新动作",
 		"couldNotCheckCopiedFrames": "无法检查已复制装备的帧：{reason}",
-		"couldNotReadSharedItems": "无法读取其他角色的装备：{reason}"
+		"couldNotReadSharedItems": "无法读取其他角色的装备：{reason}",
+		"finishedFramesChanged": "已完成的帧有变化。请重新查看装备。未保存任何内容。",
+		"rerollPriceChanged": "重新生成的价格有变化。请重新查看。未请求任何内容。"
 	},
 	"history": {
 		"wear": "穿戴{name}",
@@ -897,6 +908,7 @@
 		"randomItem": "随机{name}装备",
 		"saveOutfit": "保存套装",
 		"deleteOutfit": "删除套装",
+		"renameOutfit": "重命名套装",
 		"show": "显示{name}",
 		"hide": "隐藏{name}",
 		"oneHanded": "单手",
@@ -1150,6 +1162,7 @@
 		"imported": "已导入{name}",
 		"untitledState": "未命名状态",
 		"warning": {
+			"noRoom": "由于此角色的图像像素过多，未添加动作空间。导入后可使用“调整帧”添加。",
 			"fixedBase": "导入的图像是固定基础身体：现有衣服和头发无法移除。设置其姿势绑定结构，以使用骨架姿态装备并添加新动作。",
 			"frameCounts": "“{move}”各朝向的帧数不同。其朝向已作为独立动作导入，以保留每个原始帧和朝向长度。",
 			"semiAlpha": "部分透明的边缘已转换为像素画透明。"
@@ -1308,7 +1321,8 @@
 		"failedRetry": "无法下载{label}。请重试。",
 		"recoveryStarted": "完整导出不可用。源 PNG 下载已开始。",
 		"startedNotes": "下载已开始。请查看 ZIP 中的导出说明。",
-		"started": "导出下载已开始。"
+		"started": "导出下载已开始。",
+		"paidStarted": "已开始下载付费结果。"
 	},
 	"studioModel": {
 		"itemQualityReview": "{name}：装备质量检查需要复核。未启动付费重试。",
@@ -1771,7 +1785,11 @@
 			"magenta": "洋红色",
 			"blue": "亮蓝色",
 			"azure": "亮天蓝色"
-		}
+		},
+		"rerollFailed": "重新生成失败的调用",
+		"rerollFailedDetail": "只重新购买失败的调用及依赖它们的内容。其他已完成的调用会重复使用。",
+		"keepFinished": "保留已完成的动作",
+		"keepFinishedDetail": "保存所有帧都已完成的动作。其余动作仍列为缺少帧，之后可以再制作。"
 	},
 	"generationDetails": {
 		"copiedFrom": "已为{name}付费一次；此处免费复制",
@@ -1874,7 +1892,8 @@
 			"noCharacterId": "PixelLab 未返回受管角色 ID。现有图像保持不变。",
 			"referenceChanged": "设置期间站立参考已更改。",
 			"characterChanged": "设置期间角色已更改。其当前工作已保留。"
-		}
+		},
+		"newRegistration": "重新登记"
 	},
 	"create": {
 		"errors": {
@@ -1920,7 +1939,7 @@
 			"resultMissingStorage": "结果{label}在存储中缺失",
 			"pixellabReturnedIncompleteInvalid": "{direction}：PixelLab 返回了不完整或无效的站立关节。未从这些关节开始动画；现有结果已保留。",
 			"pixellabReturnedWrongNumber": "{move} {direction}：PixelLab 返回的帧数不正确。未启动付费重试。请求另一次尝试前请查看“活动”。",
-			"animationExceedsPxFrame": "{move} {direction}：动画超出 {w} px 帧。再次创建前请增大“帧尺寸”或减小“身体尺寸”。",
+			"animationExceedsPxFrame": "{move} {direction}：身体帧超出 {w} px 帧。已保留以供查看；未保存任何内容。",
 			"pixellabReturnedEmptyFrames": "{move} {direction}：PixelLab 返回了空帧。未启动付费重试。请求另一次尝试前请查看“活动”。",
 			"validJointsWereFound": "{move} {direction}：并非每一帧都找到了有效关节。生成的图像保留在“活动”中；设置已停止，未重绘它们。",
 			"matchBodyColorsOnly": "{direction}：请在所有原始关节检查完成后才匹配身体颜色。",
@@ -1930,7 +1949,7 @@
 			"jointsFoundEveryFrame": "{label}：并非每一帧都找到关节",
 			"pixellabDroppedDirectionBusy": "{label}：PixelLab 丢弃了该朝向（繁忙）。请重试。",
 			"pixellabReturnedMotionFrames": "{label}：请求 {expected} 个运动帧，PixelLab 返回了 {returned} 个。未为此视图请求关节检查或身体渲染。",
-			"motionExceedsPxFrame": "{label}：运动超出 {size} px 帧。再次创建前请增大“帧尺寸”或减小“身体尺寸”。",
+			"motionExceedsPxFrame": "{label}：运动超出 {size} px 帧。其帧已保留以供查看；未保存任何内容。",
 			"pixellabReturnedEmptyMotion": "{label}：PixelLab 返回了空运动帧",
 			"pixellabReturnedView": "PixelLab 未返回{direction}视图",
 			"viewDoesFitPx": "{direction}视图无法放入 {cell} px 帧。再次创建前请增大“帧尺寸”或减小“身体尺寸”。",
@@ -1975,7 +1994,9 @@
 			"chooseRepairTarget": "修复前，请选择一件装备和现有动作中的一个朝向。未发送生成请求。",
 			"moveAnimationFramesBlocked": "此模型和画布尺寸不支持 {frames} 帧。未发出生成请求。",
 			"describeMoveBlocked": "生成前请先描述此动作。 未发出生成请求。",
-			"chooseExistingMoveRepairing": "修复装备前，请先选择一个现有动作。"
+			"chooseExistingMoveRepairing": "修复装备前，请先选择一个现有动作。",
+			"liftedJointsOutside": "{label}：抬高后的运动仍有关节在 {size} px 帧之外。未请求身体渲染。",
+			"reviewChoiceInvalid": "此选择已与动作不符。请重新查看。未发送任何请求。"
 		},
 		"steps": {
 			"draw": "正在绘制你的角色",
@@ -1999,7 +2020,8 @@
 				"frameRange": "帧尺寸必须为 {min}–256 个整像素。",
 				"seed": "种子必须是非负的安全整数。",
 				"promptRequired": "请输入角色提示词。",
-				"promptLength": "完整提示词必须不超过 2,000 个字符。"
+				"promptLength": "完整提示词必须不超过 2,000 个字符。",
+				"frameRoom": "{frame} px 帧在 {body} px 身体周围留出的空间少于 {min} px。角色的部分内容可能放不下。"
 			}
 		},
 		"form": {
@@ -2155,16 +2177,20 @@
 			"estimated": "预计 {gens}",
 			"keepWorking": "继续工作",
 			"costTitle": "每个朝向的站立视图；之后可添加待机、行走和其他动作。缺少站立关节可能会略微增加费用",
-			"create": "创建角色"
+			"create": "创建角色",
+			"createAnyway": "仍然创建"
 		}
 	},
 	"moveSheet": {
+		"makeRoom": "腾出空间",
+		"frameRoom": "此动作可能超出 {frame} px 帧：角色脚下只有 {below} px。请先免费腾出空间，或仍然生成此动作。",
 		"skeleton": {
 			"title": "查看 Skeleton V3 方案",
 			"hint": "也可以选择 Skeleton V3，但仍可能无法通过质量检查。",
 			"back": "返回结果"
 		},
 		"checkpoint": {
+			"generateAnyway": "仍然生成动作",
 			"generate": "生成动作",
 			"initialEstimate": "约 {minutes} 分钟 · 不含装备",
 			"review": "检查动作",
@@ -2315,7 +2341,9 @@
 			"currentFrame": "当前第 {number} 帧",
 			"redrawnFrame": "重绘后的第 {number} 帧",
 			"repairedFrame": "修复后的第 {number} 帧"
-		}
+		},
+		"rerollBatch": "重新生成此批次",
+		"rerollBatchDetail": "之前的批次保持不变。估算包括此批次以及之后尚未购买的批次。"
 	},
 	"itemRoute": {
 		"errors": {
@@ -2558,6 +2586,84 @@
 			"resolveDrafts": "替换基础身体帧之前，请保留或丢弃此角色的装备草稿。",
 			"importFailed": "无法读取这些帧。请重试。",
 			"saveFailed": "无法保存这些帧。未做任何更改。请重试。"
+		}
+	},
+	"paidReview": {
+		"title": "付费结果",
+		"spent": "已支付：{gens} gens。这些结果会保留并重复使用。",
+		"free": "免费",
+		"download": "下载付费结果",
+		"frame": "{view}，第 {number} 帧",
+		"waiting": "部分付费请求仍在 PixelLab 处理中。完成后即可使用这些选项。",
+		"state": {
+			"ready": "就绪",
+			"pending": "尚未购买",
+			"failed": "已停止",
+			"running": "仍在 PixelLab 处理中"
+		}
+	},
+	"moveReview": {
+		"makeRoomDetail": "{change}，免费。复用已付费的动作；只购买在更改后的帧上的步骤。",
+		"makeRoomDetailRedraw": "{change}，免费。此模型基于站立帧绘制，因此会在更改后的帧上重新绘制动作。",
+		"makeRoom": "腾出空间并继续",
+		"resume": "使用付费结果继续",
+		"lift": "抬高以适配并继续",
+		"liftAndReroll": "抬高以适配，并重新生成{views}",
+		"liftDetail": "{views}：为让运动放进帧内，{total} 个运动帧中有 {frames} 个的脚最多抬高 {px} px。",
+		"liftDetailReview": "{views}：为让运动放进帧内，{total} 个运动帧中有 {frames} 个的脚最多抬高 {px} px。这超过了 {limit} px 的脚部检查，因此在替换当前帧之前，你会先查看身体帧。",
+		"liftDetailWarned": "{views}：为让运动放进帧内，{total} 个运动帧中有 {frames} 个的脚最多抬高 {px} px。这超过了 {limit} px 的脚部检查，因此动作会带着脚部警告保存。",
+		"reroll": "重新生成{views}",
+		"rerollDetail": "重新生成只为这些朝向购买一次新的尝试。其他朝向保留其付费结果。",
+		"pending": "仍需购买：约 {gens} gens。",
+		"liftable": "可抬高以适配：{total} 帧中有 {frames} 帧的脚最多抬高 {px} px。",
+		"notLiftable": "抬高也放不下：运动在侧边或顶部被裁切。"
+	},
+	"createReview": {
+		"resume": "使用付费结果继续",
+		"register": "重新登记已绘制的朝向",
+		"registerDetail": "保留已付费的绘制，并为相同朝向购买一次新的登记。"
+	},
+	"adjustFrame": {
+		"title": "调整帧",
+		"intro": "在帧内上下移动角色，或更改帧尺寸。每件装备、每个动作和每一帧都会随之移动。此操作免费，不会重绘任何内容。",
+		"previewLabel": "帧中的角色",
+		"preview": "{size} px 帧中的{direction}视图",
+		"keys": "预览获得焦点时，按上下方向键可将角色移动 1 px（按住 Shift 为 4 px）。",
+		"direction": "朝向",
+		"position": "位置",
+		"up": "上移",
+		"down": "下移",
+		"movedUp": "已上移 {px} px",
+		"movedDown": "已下移 {px} px",
+		"notMoved": "未移动",
+		"size": "帧尺寸",
+		"smaller": "缩小帧",
+		"larger": "扩大帧",
+		"sizeReadout": "{size} × {size} px",
+		"makeRoom": "腾出空间",
+		"makeRoomHelp": "仅将角色移动到足以留出行走空间的程度；只有移动不够时才扩大帧。",
+		"madeRoom": "已腾出空间。请检查预览后保存。",
+		"roomy": "此角色已有足够的动作空间。",
+		"short": "动作可能超出此帧。“腾出空间”可免费解决。",
+		"above96": "超过 96 px 时，手持装备和修复网格的费用更高。",
+		"above170": "超过 170 px 时，每件装备每次穿戴调用花费 25 gens。",
+		"consequences": "只有帧尺寸和位置都相同的角色之间才能精确复制装备。导出会保持相同的游戏内比例和原点；请重新导出以使用此更改。",
+		"loading": "正在加载帧…",
+		"saved": "帧已调整：{change}。",
+		"undone": "已撤销帧更改。",
+		"errors": {
+			"reviewOpen": "调整帧前，请先保存或放弃等待检查的动作。",
+			"missingArtwork": "此角色缺少已保存的图像，因此无法更改其帧。",
+			"even": "请选择变化量为偶数像素的帧尺寸。",
+			"range": "此角色的帧必须为 {min}–{max} px。",
+			"clipTop": "这会裁掉角色或其装备顶部的 {px} px。",
+			"clipBottom": "这会裁掉角色或其装备底部的 {px} px。",
+			"clipSides": "这会裁掉角色或其装备两侧的 {px} px。",
+			"unchanged": "请先更改帧尺寸或位置。",
+			"limit": "即使是 {size} px 的帧，也无法为此角色留出动作空间。",
+			"resolveDrafts": "调整帧前，请保留或放弃此角色的装备草稿。",
+			"changed": "此角色已更改。请重新打开“调整帧”查看最新版本。",
+			"undoFailed": "无法撤销帧更改。"
 		}
 	}
 }

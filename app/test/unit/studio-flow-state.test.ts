@@ -368,6 +368,27 @@ test('discarding a failed creation cannot race a retry for the same draft', asyn
 	expect(s.createPresentation.id).toBe('');
 });
 
+test('a paid step failure keeps its review across a reload', async () => {
+	// A misaligned repair batch is re-rolled alone; after a reload only the full retry would remain, re-buying good batches.
+	const { PaidStepError } = await import('../../src/lib/pixellab/paid-results.ts');
+	const step = { step: 'grid-batch:4', failure: 'misaligned' as const, gens: 2.5 };
+	mocks.move.mockRejectedValueOnce(
+		new PaidStepError('Batch misaligned', 'itemRoute.errors.repairBatchMisaligned', undefined, step)
+	);
+	const first = await import('../../src/studio/state.svelte.ts');
+	await first.startMove('project', { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 });
+	const stored = mocks.put.mock.calls.findLast(
+		([, , record]) => (record as { status?: string }).status === 'failed'
+	)![2];
+	vi.resetModules();
+	const paid = await import('../../src/lib/pixellab/paid-results.ts');
+	const s = await import('../../src/studio/state.svelte.ts');
+	mocks.get.mockImplementation(async (_store, id) => (id === 'studio-move' ? stored : undefined));
+	await s.resumeMove();
+	expect(s.moving.error).toBeInstanceOf(paid.PaidStepError);
+	expect((s.moving.error as InstanceType<typeof paid.PaidStepError>).paid).toEqual(step);
+});
+
 test.each(['failed', 'running'] as const)(
 	'clears %s rig setup work for a missing character without reopening or restarting it',
 	async (status) => {

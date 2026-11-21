@@ -3,6 +3,7 @@ import { equipmentFixture } from './equipment-fixture.ts';
 import {
 	animateAnchoredItem,
 	ITEM_MOVE_SAVE_CONFLICT,
+	PartialMoveError,
 	type RigCtx
 } from '../../src/lib/items/run.ts';
 import { planAnchoredMove } from '../../src/lib/items/items.ts';
@@ -246,6 +247,24 @@ test('recovery can publish the remaining view with its original paid seed', asyn
 	const saved = vi.mocked(saveItem).mock.calls.at(-1)![1];
 	expect(saved.provenance).toHaveLength(1);
 	expect(saved.provenance[0].requestHash).toBe(`sha256:${ledger.records[1].requestHash}`);
+});
+
+test('a failed view keeps the finished views it paid for, so only the missing one is bought again', async () => {
+	const ctx = await fixture(3),
+		item = ctx.rec.manifest.items[1];
+	ctx.rec.manifest.items[0].layers[0].cells!.custom_18!.west = [
+		...ctx.rec.manifest.items[0].layers[0].cells!.custom_18!.east!
+	];
+	ledger.failAt = 1;
+	const error = await animateAnchoredItem(ctx, item, 'custom_18', ['east', 'west'], 71).catch(
+		(e: unknown) => e
+	);
+	expect(error).toBeInstanceOf(PartialMoveError);
+	expect((error as PartialMoveError).savedDirs).toEqual(['east']);
+	const saved = vi.mocked(saveItem).mock.calls.at(-1)![1];
+	expect(saved.layers[0].cells!.custom_18!.east).toHaveLength(3);
+	expect(saved.layers[0].cells!.custom_18!.west).toBeUndefined();
+	expect(saved.provenance).toHaveLength(1);
 });
 
 test('saved transparent generated views retain explicit coverage and are never offered for purchase again', async () => {

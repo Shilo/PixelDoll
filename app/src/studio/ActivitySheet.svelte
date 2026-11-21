@@ -85,6 +85,9 @@
 		if (setup && (!projectId || doc.id !== projectId)) unopenedSetup = setup;
 		else if (!projectId || doc.id === projectId) ui.sheet = sheet;
 	}
+	// Only the open character's moves are loaded; another character's move shows its default label.
+	const moveName = (projectId: string, id: string) =>
+		displayMove(id, projectId === doc.id ? store.project?.manifest.rig.animations : undefined);
 	const errorText = (r: JobRec) => displayMessage(queueErrorMessage(r, displayMessage) ?? '');
 	const money = usdText;
 	const gensText = (n: number) =>
@@ -197,7 +200,7 @@
 							? t('activity.redrawFrames')
 							: movingPending.itemsOnly
 								? t('activity.repairFrames')
-								: displayMove(movingPending.id)}
+								: moveName(moving.projectId, movingPending.id)}
 						{@render workRow(
 							`${task} · ${characterName(moving.projectId)}`,
 							moving.repairReview
@@ -220,7 +223,7 @@
 					{/if}
 					{#each moving.queued as work (work)}
 						{@render workRow(
-							`${displayMove(work.spec.id)} · ${characterName(work.projectId)}`,
+							`${moveName(work.projectId, work.spec.id)} · ${characterName(work.projectId)}`,
 							t('activity.waiting')
 						)}
 					{/each}

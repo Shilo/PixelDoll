@@ -13,6 +13,7 @@ import {
 	type Sha256
 } from '../rig/rig.ts';
 import { normalize, opaqueBox, pivotOf } from '../rig/normalize.ts';
+import { roomFrame, standingRoom } from '../rig/reframe.ts';
 import type { Manifest, Project } from './manifest.ts';
 import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
 import type { StoredProject } from './project.ts';
@@ -772,15 +773,39 @@ async function pixelLab(
 		});
 		// A common canvas preserves the source origin across padded frames. Small exports retain the existing floor margin.
 		const char = Math.min(
-				256,
-				dimensions.reduce((max, size) => Math.max(max, size), 0)
-			),
-			frame = Math.max(64, char);
-		if (paths.length * frame * frame > 64 * 1024 * 1024)
+			256,
+			dimensions.reduce((max, size) => Math.max(max, size), 0)
+		);
+		const fits = (size: number) => paths.length * size * size <= 64 * 1024 * 1024;
+		let frame = Math.max(64, char);
+		if (!fits(frame))
 			throw new LocalizedError(
 				'This character contains too many image pixels, including repeated frame references. Select fewer states or export fewer moves.',
 				'import.error.tooManyPixelsStates'
 			);
+		const decoded = new Map<string, Promise<Img>>(),
+			decode = (path: string) => {
+				let work = decoded.get(path);
+				if (!work) decoded.set(path, (work = image(required(files, path))));
+				return work;
+			};
+		// PixelLab draws standing feet about 1 px above its canvas edge and a walk steps lower, so the frame adds room for moves
+		// (lib/rig/reframe.ts roomFrame), centered as PixelLab centers its own larger animation canvases.
+		const room = standingRoom(
+				await Promise.all(
+					rotations.map(async (r) => normalize(await decode(r.path), char, char, 128, char).img)
+				),
+				char
+			),
+			roomy = room ? roomFrame(char, room) : char,
+			centered = roomy > frame && fits(roomy);
+		if (centered) frame = roomy;
+		else if (roomy > frame) {
+			warnings.push(
+				'Room for moves was not added because this character has too many image pixels. Use Frame size after importing to add it.'
+			);
+			warningKeys.push(message('import.warning.noRoom'));
+		}
 		const images = new Map<string, Img>(),
 			importedPaths = new Map<string, Sha256>(),
 			cells: NonNullable<Manifest['items'][number]['layers'][number]['cells']> = {};
@@ -788,8 +813,9 @@ async function pixelLab(
 		const put = async (path: string) => {
 			const cached = importedPaths.get(path);
 			if (cached) return cached;
-			const im = await image(required(files, path)),
-				n = normalize(im, frame, frame, 128, char);
+			const im = await decode(path),
+				n = normalize(im, frame, frame, 128, centered ? frame : char);
+			decoded.delete(path); // importedPaths keeps the result; the source need not stay in memory
 			if (n.cutPx)
 				throw new LocalizedError(
 					`${path} would lose ${n.cutPx} visible pixels in a ${frame} px cell. Import a smaller character; artwork is never rescaled.`,

@@ -79,6 +79,7 @@
 		details: () => import('./DetailsSheet.svelte'),
 		slots: () => import('./SlotsSheet.svelte'),
 		frames: () => import('./FramesSheet.svelte'),
+		adjustFrame: () => import('./AdjustFrameSheet.svelte'),
 		workspace: () => import('./WorkspaceSheet.svelte')
 	};
 
@@ -385,6 +386,7 @@
 	{#if ui.sheet === 'moveReview'}{#key ui.moveReview}<Lazy load={parts.moveReview} />{/key}{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
 	{#if ui.sheet === 'directions'}<DirectionsSheet id={ui.directionProject} />{/if}
+	{#if ui.sheet === 'adjustFrame'}<Lazy load={parts.adjustFrame} id={ui.frameProject} />{/if}
 	{#if ui.sheet === 'importZip' || ui.sheet === 'importPixelLab'}{#key ui.sheet}<Lazy
 				load={parts[ui.sheet]}
 				source={ui.sheet === 'importZip' ? 'device' : 'pixellab'}

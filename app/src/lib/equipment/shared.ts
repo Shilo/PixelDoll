@@ -7,6 +7,7 @@ import { listProjects } from '../store/project.ts';
 import type { Item, Manifest, Preset, Project, Sha256, UnfitNote } from '../store/manifest.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { bodyOf } from './compatibility.ts';
+import { rigContent } from '../rig/rig.ts';
 import { itemKey, sharedFit, unfittedPlan, type SharedChoice, type SharedFit } from './copy.ts';
 
 export interface SharedItem {
@@ -128,7 +129,11 @@ export async function listShared(
 		};
 	const shape = target
 			? await sha256(
-					stableStringify({ rig: target.rig, body: bodyOf(target), slots: target.slots })
+					stableStringify({
+						rig: rigContent(target.rig),
+						body: bodyOf(target),
+						slots: target.slots
+					})
 				)
 			: '',
 		known = fits,

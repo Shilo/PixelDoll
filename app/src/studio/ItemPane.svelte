@@ -98,7 +98,7 @@
 		const direction = m?.rig.directions.find((entry) => entry.id === id);
 		return direction ? displayDirectionInSentence(direction.id) : id;
 	};
-	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
+	const moveRefs = $derived(m?.rig.animations ?? []);
 	const it = $derived(m?.items.find((i) => i.id === id));
 	// The order Reset restores: a built-in's ladder, or a custom category's chosen drawing position (slots.ts setDrawsAbove).
 	const ladder = $derived.by(() => {
@@ -145,7 +145,7 @@
 	const moveGaps = $derived(
 		gaps.filter((g) => g.startsWith(`${ui.anim}/`)).map((g) => g.split('/')[1])
 	);
-	const moveName = $derived(displayMove(ui.anim, moveIds));
+	const moveName = $derived(displayMove(ui.anim, moveRefs));
 	const sourceDir = $derived(m?.rig.directions.find((d) => d.id === ui.dir)?.mirrorOf ?? ui.dir);
 	const repairSpec = $derived(
 		it &&
@@ -206,7 +206,7 @@
 	);
 	const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove]) : null);
 	const missingTier = $derived(offerTier(missingOffer));
-	const missingName = $derived(missingMove ? displayMove(missingMove.id, moveIds) : '');
+	const missingName = $derived(missingMove ? displayMove(missingMove.id, moveRefs) : '');
 	function makeMissing() {
 		if (!missingOffer?.specs.length) return;
 		const projectId = doc.id,
@@ -543,7 +543,7 @@
 								value={missingMove?.id}
 								onchange={(e) => (chosenMove = e.currentTarget.value)}
 								>{#each missingMoves as move (move.id)}<option value={move.id}
-										>{displayMove(move.id, moveIds)}</option
+										>{displayMove(move.id, moveRefs)}</option
 									>{/each}</select
 							></label
 						>{/if}

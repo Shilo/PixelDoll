@@ -29,14 +29,14 @@
 	import { movePlan } from './apiPlans.ts';
 
 	const m = $derived(store.project?.manifest);
-	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
+	const moveRefs = $derived(m?.rig.animations ?? []);
 	const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim));
 	const views = $derived(m && anim ? (ui.all ? moveDirs(m, anim.id) : [ui.dir]) : []);
 	const missing = $derived.by(() => {
 		if (!m || !anim) return [];
 		return [...new Set(views.flatMap((d) => missingAt(m, doc.items, anim.id, d)))];
 	});
-	const move = $derived(anim ? displayMove(anim.id, moveIds) : '');
+	const move = $derived(anim ? displayMove(anim.id, moveRefs) : '');
 	const names = $derived(
 		new Intl.ListFormat(getLocale(), { type: 'conjunction' }).format(
 			missing.map((item) => item.name)

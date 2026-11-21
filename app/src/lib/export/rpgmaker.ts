@@ -201,7 +201,8 @@ export const walkMove = (rig: { animations: RigAnimation[] }) =>
 export function rpgMakerFiles(
 	p: Project,
 	m: Manifest,
-	layout: RpgLayout
+	layout: RpgLayout,
+	walkId: string | null = walkMove(p.manifest.rig)?.id ?? null
 ): { files: OutFile[]; warnings: string[]; warningMessages: Map<string, Message> } {
 	const src = p.manifest,
 		{ rig } = src,
@@ -223,7 +224,7 @@ export function rpgMakerFiles(
 		warningMessages.set(text, display);
 	};
 	const standing = rig.animations.find((a) => a.id === DEFAULT_MOVE);
-	const walk = walkMove(rig);
+	const walk = rig.animations.find((a) => a.id === walkId);
 	if (!walk)
 		note(
 			'RPG Maker: no walk move, so the sheets stand still. Add a walk move to animate them.',

@@ -124,6 +124,33 @@ Use one frozen 64×64 humanoid with east and south views, one already-fitted hea
 
 Budget envelope: at 64 px and eight frames the app estimates 1 generation for a native body draw plus 0.8 for joint checks; an authored Skeleton V3 Slash estimates 3.8 for body and checks, and Skeleton V3 Walk estimates 7.6 including the motion source. Two ordinary eight-frame gear poses add about 6 per clip before any special item plan. Estimated pilot total is **109.2 generations**, assuming two ordinary poses for every clip. Request a **120-generation approval ceiling**, only if the exact fixture plans fit it; stop before any possibly over-budget submission. Report receipts separately from estimates, including charges for failed jobs. No automatic retries, redress, repair, or paid fallback. If the actual request plan adds such a step, stop and record that arm as unqualified under the first-pass protocol. Body failures stay in the denominator even if gear was never requested. If usage remains uncertain, suspend rather than submit again.
 
+### Matched live Slash coat comparison
+
+Both arms used the same registered 64×64 character and qualified standing coat, with eight frames per view, east and south, and seed 7. PixMiniMax used a tuned empty-hand Slash prompt; Skeleton V3 used authored Slash poses. Both arms used Skeleton V3 to pose the coat and returned all 16 coat frames per arm.
+
+| Body route | Coat QA east / south | Minimum backing-color retention east / south | Body and coat cost |
+| --- | --- | --- | ---: |
+| PixMiniMax | Fail / Fail | 94.4% / 84.3% | 9.6 generations |
+| Skeleton V3 | Pass / Pass | 97.2% / 98.5% | 13.6 generations |
+
+Backing-color retention measures how much of the expected keyed body survives the item render; it is not a direct measure of coat coverage or layering. PixMiniMax east also flagged three disconnected body pixels. Skeleton V3 east flagged a 2.7 px body arm-pose difference. All 40 comparison requests settled with 23.2 reported generations and no retries or unknown receipts for this block. The browser rendered in-memory filmstrips; no independent visual rating is claimed. One matched fixture supports keeping the optional retry, not a general conclusion about coats.
+
+Standing setup was separate: 12.25 generations for the character, registration and first sword, then 20 for the shared coat and a revised sword, totaling 32.25. The first sword failed east standing QA with a left-hand detection and stray pixels. The revised sword passed south, but east still had an ambiguous grip. Neither sword entered the matched animation comparison. The proposed two-route sword-and-garment block was estimated at 35.2 generations before setup or fallbacks; it was not run. See the [equipment fit follow-up](pixminimax-equipment-fit-followup.md).
+
+### Offline follow-up: dye coverage and prompt sensitivity
+
+Replayed the archived RGB frames through production `splitBase`, `deriveMaterials` and `recolor` in memory, applying different colors to Shirt and Shorts. Each route contributed 72 measured move frames. Mixed cases also used 72 Skeleton V3 frames to seed dye colors but scored only the named native route. The denominator is nontransparent pixels classified as garment grays by production, not hand-labeled clothing.
+
+| Body route | Extra Skeleton V3 frames seed colors | Garment-gray pixels changed | Lowest frame coverage |
+| --- | --- | --- | ---: |
+| Skeleton V3 | No | 12,550 / 12,550 (100%) | 100% |
+| PixMiniMax | No | 2,344 / 11,243 (20.8%) | 7.2% |
+| PixMiniMax | Yes | 7,499 / 11,243 (66.7%) | 38.6% |
+| Text V3 | No | 2,424 / 11,331 (21.4%) | 11.5% |
+| Text V3 | Yes | 7,489 / 11,331 (66.1%) | 44.6% |
+
+Source artwork and alpha were unchanged. These unmatched archive results show a limitation for dyeing base clothing, not a failure rate for all characters or a test of swappable equipment dyes. Skeleton V3 covering its own encoded ramps does not prove correct garment classification. In the earlier S4 PixMiniMax Slash prompt comparison, both prompts produced eight distinct frames in each of east, south and north. The original prompt produced an unwanted sword and a south facing change; the revised unarmed prompt produced no props. That shows prompt sensitivity, not the cause of the later repeated-frame result or equipment parity. Raw loop seams did not test interpolation and are not evidence about item fit.
+
 ## Stage 2: replication and stress testing, separately budgeted
 
 1. **Matched quality matrix:** Three character proportions across at least two supported canvas sizes, Walk (loop), Slash (held-side accuracy), Hurt or Death (one-shot), and one described action (prompt fidelity). Use four actual rendered directions, not mirrors, and two predeclared seeds. At eight frames this makes 96 matched cases and 288 body clips before equipment. Stage in blocks, audit after each, and stop for reproducible systemic defects. Include a material/recolor-sensitive character. Fit identical head and hand items per case; add torso gear in a predefined subset to check layered coverage and dye behavior. A single pilot or one body is not enough to promote a default.

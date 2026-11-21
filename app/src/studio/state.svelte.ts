@@ -11,6 +11,8 @@ import {
 	type Message
 } from '../lib/message.ts';
 import { SvelteSet } from 'svelte/reactivity';
+import type { WhisperKey, WhisperVars } from 'svelte-whisper';
+import { PaidStepError, type PaidStep } from '../lib/pixellab/paid-results.ts';
 import {
 	applyDress,
 	dressOf,
@@ -47,12 +49,19 @@ import {
 	deleteItems,
 	listProjects,
 	loadProject,
+	readStoredImage,
 	type DressedRecord,
 	type StoredProject
 } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import { incompatibleKind } from '../lib/store/incompatible.ts';
-import { defaultCharacterExportId, editIdentity } from '../lib/store/identity.ts';
+import {
+	CURRENT_OUTFIT_ID,
+	defaultCharacterExportId,
+	editIdentity,
+	editMoveIdentity,
+	editOutfitIdentity
+} from '../lib/store/identity.ts';
 import type {
 	CellKey,
 	DirectionName,
@@ -131,7 +140,15 @@ import { lazy, LoadError } from '../lib/lazy.ts';
 import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
-import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
+import { DEFAULT_MOVE, type Sha256 } from '../lib/rig/rig.ts';
+import {
+	frameChangeText,
+	frameFacts,
+	makeRoom,
+	reframeCharacter,
+	type FrameChange
+} from '../lib/rig/reframe.ts';
+import { encodePngBytes } from '../lib/image/pngraw.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
@@ -151,17 +168,21 @@ const itemRun = () =>
 				acceptItemReview,
 				applyRepairReview,
 				evaluateItem,
+				finishedPart,
 				isClean,
 				matchItemColors,
 				repairAlreadyApplied,
+				rerollFailed,
 				restoreStandingViews
 			}) => ({
 				acceptItemReview,
 				applyRepairReview,
 				evaluateItem,
+				finishedPart,
 				isClean,
 				matchItemColors,
 				repairAlreadyApplied,
+				rerollFailed,
 				restoreStandingViews
 			})
 		)
@@ -239,7 +260,8 @@ export type SheetId =
 	| 'settings'
 	| 'workspaceReport'
 	| 'slots'
-	| 'frames';
+	| 'frames'
+	| 'adjustFrame';
 const sizeNow = (): Size => {
 	const w = innerWidth,
 		h = innerHeight;
@@ -278,11 +300,12 @@ export const ui = $state({
 		}
 		panel = next;
 	},
-	renameTarget: null as { projectId: string; itemId?: string } | null,
+	renameTarget: null as ({ projectId: string } & RenameOf) | null,
 	slotTarget: null as string | null,
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
 	directionProject: '',
+	frameProject: '', // the character the Adjust frame sheet is for
 	details: '', // the character the Details sheet is for
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		group: string;
@@ -330,17 +353,19 @@ export function initUi() {
 			if (
 				!data ||
 				typeof data.projectId !== 'string' ||
-				(data.itemId !== undefined && typeof data.itemId !== 'string')
+				(data.itemId !== undefined && typeof data.itemId !== 'string') ||
+				(data.moveId !== undefined && typeof data.moveId !== 'string')
 			)
 				return;
-			const { projectId, itemId } = data;
+			const { projectId, itemId, moveId } = data;
 			if (opening === projectId) openingIdentityRevision++;
 			const request = openRequest;
 			if (doc.id === projectId)
 				void db
 					.get<StoredProject>('projects', projectId)
 					.then((record) => {
-						if (record?.manifest) applySavedIdentity(projectId, itemId, request, record.manifest);
+						if (record?.manifest)
+							applySavedIdentity(projectId, { itemId, moveId }, request, record.manifest);
 					})
 					.catch((error: unknown) => console.error('refresh identity', error));
 			void refreshProjects();
@@ -1095,7 +1120,9 @@ const WORK_BLOCKS = new Set([
 	'state.finishBeforeDirectionRemoval',
 	'directionsSheet.waitForGeneration',
 	'directionsSheet.resolveDrafts',
-	'moveRemoval.resolveDrafts'
+	'moveRemoval.resolveDrafts',
+	'state.finishBeforeFrameChange',
+	'adjustFrame.errors.resolveDrafts'
 ]);
 export const blockedByWork = (reason: LocalizedError | '') =>
 	!!reason && WORK_BLOCKS.has(reason.translation.key);
@@ -1109,7 +1136,9 @@ let characterJobsPending = $state(false),
 
 /** Running work can write to any character, so it holds them all. Stopped work waits for the user and holds only its own
  *  character: a failed move or setup must not lock every other character until it is found and dismissed. */
-function workHolds(id: string) {
+/** `stoppedMove`: Frame size chosen from this character's stopped move review, which waits for the resize and continues on
+ *  it; any other held or queued work still holds. */
+function workHolds(id: string, stoppedMove = false) {
 	return (
 		characterJobsPending ||
 		moveReviewPublishing ||
@@ -1122,7 +1151,7 @@ function workHolds(id: string) {
 			(moveRunning ||
 				moving.resolvingRepair ||
 				(!moving.error && !moving.repairReview) ||
-				moving.projectId === id)) ||
+				(moving.projectId === id && !(stoppedMove && !moving.repairReview)))) ||
 		moving.queued.some((queued) => queued.projectId === id) ||
 		(moving.queued.length > 0 && !heldMove()) ||
 		(heldSetup() && (!settingUp.error || settingUp.spec?.projectId === id))
@@ -1130,8 +1159,10 @@ function workHolds(id: string) {
 }
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
 function characterEditBlocked(
-	action: 'delete' | 'delete move' | 'change directions for' | 'fix frames of',
-	id: string
+	action:
+		'delete' | 'delete move' | 'change directions for' | 'fix frames of' | 'change the frame of',
+	id: string,
+	stoppedMove = false
 ): LocalizedError | '' {
 	if (doc.loading || opening)
 		return new LocalizedError(
@@ -1148,7 +1179,7 @@ function characterEditBlocked(
 					'Manage characters in the other PixelDoll tab, or close it first.',
 					'state.manageCharactersInOtherTab'
 				);
-	if (workHolds(id))
+	if (workHolds(id, stoppedMove))
 		return action === 'delete'
 			? DELETE_GENERATION_BLOCK
 			: action === 'delete move'
@@ -1161,10 +1192,15 @@ function characterEditBlocked(
 							'Wait for the current generation work to finish before fixing frames.',
 							'state.finishBeforeFixFrames'
 						)
-					: new LocalizedError(
-							'Finish or dismiss pending generation work before changing directions.',
-							'state.finishBeforeDirectionRemoval'
-						);
+					: action === 'change the frame of'
+						? new LocalizedError(
+								'Finish or dismiss pending generation work before adjusting the frame.',
+								'state.finishBeforeFrameChange'
+							)
+						: new LocalizedError(
+								'Finish or dismiss pending generation work before changing directions.',
+								'state.finishBeforeDirectionRemoval'
+							);
 	return '';
 }
 
@@ -1195,6 +1231,130 @@ export function directionEditsBlocked(id: string): LocalizedError | '' {
 				)
 			: '')
 	);
+}
+/** Why Frame size cannot change this character now, or ''. A stopped move of this character may wait for it (`stoppedMove`). */
+export function frameEditsBlocked(id: string, stoppedMove = false): LocalizedError | '' {
+	if (!id.startsWith('rig-'))
+		return new LocalizedError('Only saved characters can be edited.', 'directionsSheet.savedOnly');
+	return (
+		characterEditBlocked('change the frame of', id, stoppedMove) ||
+		(!generationSettled()
+			? new LocalizedError(
+					'Wait for the current generation work to finish.',
+					'directionsSheet.waitForGeneration'
+				)
+			: '') ||
+		(gens.some((gen) => gen.draft.rigId === id && !gen.draft.acceptedAt)
+			? new LocalizedError(
+					'Keep or dismiss this character’s item drafts before adjusting the frame.',
+					'adjustFrame.errors.resolveDrafts'
+				)
+			: '') ||
+		(doc.id === id ? moveReviewHold(store.moveReviews) : '')
+	);
+}
+/** A staged move review was drawn on the current frame: a resize or move would change every direction under it, so it is
+ *  saved or discarded first instead of being left behind with frames that no longer fit. */
+function moveReviewHold(reviews: StoredProject['moveReviews']): LocalizedError | '' {
+	return Object.keys(reviews ?? {}).length
+		? new LocalizedError(
+				'Save or discard the move waiting for review before adjusting the frame.',
+				'adjustFrame.errors.reviewOpen'
+			)
+		: '';
+}
+const pngBlobs = async (images: Map<Sha256, Img>) => {
+	const blobs = new Map<string, Blob>();
+	for (const [hash, image] of images)
+		blobs.set(
+			hash.slice(7),
+			new Blob([(await encodePngBytes(image)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
+		);
+	return blobs;
+};
+/** Adjust frame: move the whole character up or down and change its frame (free and lossless), with an Undo notice that
+ *  restores the record as it was. `stoppedMove`: chosen from this character's stopped move review, which continues on the
+ *  result. */
+export async function adjustCharacter(
+	id: string,
+	change: FrameChange,
+	{
+		stoppedMove = false,
+		quiet = false,
+		expect
+	}: { stoppedMove?: boolean; quiet?: boolean; expect?: StoredProject } = {}
+): Promise<void> {
+	const blocked = () => {
+		const reason = frameEditsBlocked(id, stoppedMove);
+		if (reason) throw reason;
+	};
+	blocked();
+	await flushSave();
+	const { rec, project } = await loadProject(id);
+	if (expect && stableStringify(expect) !== stableStringify(rec))
+		throw new LocalizedError(
+			'This character changed. Reopen Adjust frame to review the latest version.',
+			'adjustFrame.errors.changed'
+		);
+	const reviewing = moveReviewHold(rec.moveReviews);
+	if (reviewing) throw reviewing;
+	const before = rec.manifest.rig.cell.w,
+		old = new Map(project.images as Map<Sha256, Img>);
+	const { record: next, newImages } = await reframeCharacter(
+		rec,
+		project.images,
+		change,
+		async (hash) => {
+			const image = await readStoredImage(hash);
+			old.set(hash, image);
+			return image;
+		}
+	);
+	const blobs = await pngBlobs(newImages);
+	blocked();
+	await db.saveIdleCharacter(rec, next, blobs, 'change the frame of', stoppedMove);
+	await refreshCharacterDirections(id);
+	if (quiet) return;
+	toast(
+		[
+			message('adjustFrame.saved', { change: frameChangeText(before, change) }),
+			message('common.undo')
+		],
+		{ tone: 'success', duration: 10000, action: () => void undoAdjust(id, next, rec, old) }
+	);
+}
+/** Make room for moves (lib/rig/reframe.ts makeRoom) and save it like Adjust frame; says why when nothing can or need change. */
+export async function makeRoomFor(id: string): Promise<void> {
+	await flushSave();
+	const { rec, project } = await loadProject(id);
+	const plan = makeRoom(await frameFacts(rec, project.images, readStoredImage));
+	if (plan.limit)
+		throw new LocalizedError(
+			`Even a ${plan.size} px frame cannot give this character room for moves.`,
+			'adjustFrame.errors.limit',
+			{ size: plan.size }
+		);
+	if (plan.size === rec.manifest.rig.cell.w && !plan.dy)
+		throw new LocalizedError('This character already has room for moves.', 'adjustFrame.roomy');
+	await adjustCharacter(id, plan);
+}
+/** Put back the record a change replaced, if nothing changed it since; its images are stored again in case cleanup ran. */
+async function undoAdjust(
+	id: string,
+	changed: StoredProject,
+	original: StoredProject,
+	images: Map<Sha256, Img>
+) {
+	try {
+		const blocked = frameEditsBlocked(id);
+		if (blocked) throw blocked;
+		await flushSave();
+		await db.saveIdleCharacter(changed, original, await pngBlobs(images), 'change the frame of');
+		await refreshCharacterDirections(id);
+		toast(message('adjustFrame.undone'), { tone: 'success' });
+	} catch (error) {
+		toast(errorTranslation(error) ?? message('adjustFrame.errors.undoFailed'), { tone: 'danger' });
+	}
 }
 function generationSettled() {
 	return !afterConnect && activeGenerationSettled();
@@ -1576,7 +1736,8 @@ export function savePreset(name: string) {
 			.replace(/[^a-z0-9]+/g, '-')
 			.replace(/^-|-$/g, '') || 'outfit';
 	let id = base;
-	for (let n = 2; id === 'current' || m.presets.some((p) => p.id === id); n++) id = `${base}-${n}`;
+	for (let n = 2; id === CURRENT_OUTFIT_ID || m.presets.some((p) => p.id === id); n++)
+		id = `${base}-${n}`;
 	commit(message('history.saveOutfit'), () => {
 		const pr: Preset = {
 			id,
@@ -2078,7 +2239,7 @@ async function addEntry(entry: SharedItem, openedDemoCopy = false) {
 			const manifest = store.project.manifest;
 			const gaps = missingMoves(manifest, item);
 			if (gaps.length) {
-				const ids = manifest.rig.animations.map(({ id }) => id);
+				const ids = manifest.rig.animations;
 				notices.push(
 					gaps.length === 1
 						? message('state.copyMissingOneMove', { move: displayMove(gaps[0], ids) })
@@ -2246,19 +2407,24 @@ export async function copyDemo(): Promise<string> {
 	return id;
 }
 
-export function openRename(projectId: string, itemId?: string) {
-	if (projectId.startsWith('fixture:')) return;
-	ui.renameTarget = { projectId, itemId };
+/** What a Rename sheet names: the character itself, or one of its items, outfits or moves. */
+export type RenameOf = { itemId?: string; outfitId?: string; moveId?: string };
+
+/** Saved characters only, except outfits: a demo's outfits are part of its saved dress-up state. */
+export function openRename(projectId: string, of: RenameOf = {}) {
+	if (projectId.startsWith('fixture:') && !of.outfitId) return;
+	ui.renameTarget = { projectId, ...of };
 	ui.sheet = 'rename';
 }
 
 export async function renameProject(name: string) {
-	if (!isDemo()) await saveIdentity(doc.id, undefined, name);
+	if (!isDemo()) await saveIdentity(doc.id, {}, name);
 }
 
+/** Character, item and move names live in the saved record, outside Undo, like the records' other identity. */
 export async function saveIdentity(
 	projectId: string,
-	itemId: string | undefined,
+	of: Pick<RenameOf, 'itemId' | 'moveId'>,
 	name: string | undefined,
 	exportId?: string
 ) {
@@ -2270,23 +2436,49 @@ export async function saveIdentity(
 				'This saved character is no longer available.',
 				'directionsSheet.characterUnavailable'
 			);
-		editIdentity(rec.manifest, projectId, itemId, name, exportId);
+		if (of.moveId) editMoveIdentity(rec.manifest, of.moveId, name, exportId);
+		else editIdentity(rec.manifest, projectId, of.itemId, name, exportId);
 		return rec;
 	});
 	if (opening === projectId) openingIdentityRevision++;
-	applySavedIdentity(projectId, itemId, request, updated.manifest!);
-	identityChannel?.postMessage({ projectId, itemId });
+	applySavedIdentity(projectId, of, request, updated.manifest!);
+	identityChannel?.postMessage({ projectId, ...of });
 	await refreshProjects();
+}
+
+/** Outfits are dress-up state: renaming one is a step Undo reverses, like saving or deleting it. */
+export function renameOutfit(outfitId: string, name: string | undefined, exportId?: string) {
+	const m = store.project!.manifest;
+	const presets = $state.snapshot(m.presets);
+	editOutfitIdentity(presets, outfitId, name, exportId);
+	commit(message('history.renameOutfit'), () => {
+		m.presets = presets;
+	});
 }
 
 function applySavedIdentity(
 	projectId: string,
-	itemId: string | undefined,
+	{ itemId, moveId }: Pick<RenameOf, 'itemId' | 'moveId'>,
 	request: number,
 	manifest: Manifest
 ) {
 	if (doc.id === projectId && openRequest === request && store.project) {
 		const current = store.project.manifest;
+		if (moveId) {
+			const from = manifest.rig.animations.find((move) => move.id === moveId);
+			if (from && current.rig.animations.some((move) => move.id === moveId)) {
+				// New objects: lists keyed by move only redraw a move that is not the same object.
+				current.rig = {
+					...current.rig,
+					// The saved move itself: paid-request consent compares the rig's JSON, key order included.
+					animations: current.rig.animations.map((move) =>
+						move.id === moveId ? structuredClone(from) : move
+					)
+				};
+				bump();
+			}
+			return;
+		}
 		const from = itemId ? manifest.items.find((item) => item.id === itemId) : manifest;
 		const to = itemId ? current.items.find((item) => item.id === itemId) : current;
 		if (from && to) {
@@ -2817,14 +3009,31 @@ const drop = (g: Gen) => {
 };
 /** Keep it (or `auto`: a clean draft saving itself). Keep it wears the item; a saved draft keeps the slot it was worn in (same id)
  *  and reloads the open character in place. True when saved. */
-export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
+export async function acceptGen(g: Gen, auto = false, finished = false): Promise<boolean> {
 	const id = g.draft.spec.id;
 	// A background auto-save never pops Activity open in a follower tab; the draft stays ready to review there.
 	if ((auto ? queue.role === 'follower' : follower()) || settling.has(id)) return false;
 	settling.add(id);
 	try {
 		const ctx = await loadProject(g.draft.rigId);
-		const item = await (await itemFlow()).accept(g.draft, ctx, store.results[id] ?? undefined);
+		// `finished`: keep only the moves that completed (re-evaluated from their records); the rest stay missing coverage.
+		const part =
+			finished && store.results[id]
+				? (await itemRun()).finishedPart(
+						$state.snapshot(g.draft) as Draft,
+						ctx.rec.manifest.rig,
+						store.results[id]!
+					)
+				: undefined;
+		if (finished && !part)
+			throw new LocalizedError(
+				'The finished frames changed. Review the item again. Nothing was saved.',
+				'state.finishedFramesChanged'
+			);
+		const item = await (
+			await itemFlow()
+		).accept(part ?? g.draft, ctx, part ? undefined : (store.results[id] ?? undefined));
+		if (part) g.draft.acceptedAt = part.acceptedAt;
 		const worn = doc.drafts[item.slot] === id;
 		await saveGens();
 		// a draft saving itself never cancels the open of another character the user just started
@@ -2930,6 +3139,30 @@ export function retryGen(
 			),
 		minimumTier
 	); // closing Connect keeps the draft
+}
+
+/** Re-roll only the failed calls of a stopped draft at the reviewed price; every other completed call is reused. */
+export function rerollGen(g: Gen, calls: number[], reviewedGens: number, minimumTier: number) {
+	withKey(() => {
+		void (async () => {
+			const id = g.draft.spec.id;
+			if (follower() || settling.has(id) || runningGens.has(id) || !gens.includes(g)) return;
+			const { rec } = await loadProject(g.draft.rigId);
+			const next = (await itemRun()).rerollFailed(
+				$state.snapshot(g.draft) as Draft,
+				calls,
+				rec.manifest.rig
+			);
+			if (next.gens !== reviewedGens) {
+				toast(message('state.rerollPriceChanged'), { tone: 'warning' });
+				return;
+			}
+			Object.assign(g, { draft: next.draft, phase: 'running', status: '', error: undefined });
+			g.canceled = false;
+			await saveGens();
+			void runGen(g);
+		})().catch((error: unknown) => toast(errorMessage(error), { tone: 'danger' }));
+	}, minimumTier);
 }
 
 const WEEK = 7 * 86_400_000;
@@ -3198,11 +3431,15 @@ interface FlowDraft<S> {
 	spec: S;
 	status?: 'running' | 'failed' | 'review';
 	error?: string;
+	/** The failure was a PaidStepError: its review (such as a single repair batch re-roll) survives a reload. */
+	paid?: { key: WhisperKey; vars?: WhisperVars; step: PaidStep };
 	progress?: Progress | null;
 	requestText?: number;
 }
 function restoredFlowError(record: FlowDraft<{ activityScope?: string }>, fallback: string) {
 	const raw = record.error || fallback;
+	if (record.paid && record.error)
+		return new PaidStepError(raw, record.paid.key, record.paid.vars, record.paid.step);
 	if (raw === STOPPED) return new LocalizedError(raw, 'generation.outcome.stopped');
 	if (raw === SETUP_STOPPED) return new LocalizedError(raw, 'generation.outcome.setupStopped');
 	if (raw === REPAIR_REVIEW_RECOVERY) return new LocalizedError(raw, 'repairReview.recover');
@@ -3239,7 +3476,21 @@ async function persistFlowFailure(
 	const shown = error instanceof LocalizedError ? error : text;
 	if (error instanceof LoadError) return shown;
 	try {
-		await write({ id: key, ...record, status: 'failed', error: text });
+		await write({
+			id: key,
+			...record,
+			status: 'failed',
+			error: text,
+			...(error instanceof PaidStepError
+				? {
+						paid: {
+							key: error.translation.key,
+							vars: error.translation.vars,
+							step: error.paid
+						}
+					}
+				: {})
+		});
 	} catch {
 		return new LocalizedError(
 			`${text} Could not save this failure on this device. Dismiss this operation before reloading.`,

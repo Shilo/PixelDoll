@@ -40,7 +40,7 @@
 		culledOffsets?: number[];
 		floorHorizon: number;
 		floorFocal: number;
-		select: (id: string, activate: boolean) => void;
+		select: (id: string, activate: boolean, side?: number) => void;
 	} = $props();
 	let width = $state(0),
 		height = $state(0);
@@ -220,7 +220,7 @@
 	function clicked(event: MouseEvent, actor: Actor) {
 		const activate = event.detail && pressed?.id === actor.p.id ? pressed.activate : !actor.offset;
 		pressed = null;
-		select(actor.p.id, activate);
+		select(actor.p.id, activate, actor.offset);
 	}
 </script>
 

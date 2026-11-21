@@ -172,6 +172,30 @@ test('the Studio checkpoint stages move frames without publishing or requesting 
 	expect(state.requests).toHaveLength(count);
 });
 
+test('a move staged before Adjust frame changed the rig is neither resumed nor saved as is', async () => {
+	const projectId = 'rig-quality';
+	const spec = {
+		id: 'jump',
+		action: 'idle',
+		frames: 4,
+		items: [],
+		seed: 7,
+		reviewBeforePublish: true as const
+	};
+	await addMove(projectId, spec);
+	const record = state.projects.get(projectId)!,
+		candidate = record.moveReviews!.jump;
+	// Adjust frame refuses while a draft waits; were the rig moved anyway, the draft's frames no longer fit it.
+	record.manifest.rig.artOffset = { south: -2 };
+	const count = state.requests.length;
+	await expect(addMove(projectId, spec)).rejects.toThrow('changed');
+	await expect(resolveMoveCandidate(projectId, candidate, true)).rejects.toThrow('changed');
+	expect(
+		state.projects.get(projectId)!.manifest.rig.animations.map((move) => move.id)
+	).not.toContain('jump');
+	expect(state.requests).toHaveLength(count);
+});
+
 test.each(['save', 'discard', 'structural failure'] as const)(
 	'a replacement with visual warnings: %s',
 	async (decision) => {

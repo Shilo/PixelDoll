@@ -16,11 +16,11 @@ import { godotFiles } from './godot.ts';
 import { phaserFiles } from './phaser.ts';
 import { unityFiles } from './unity.ts';
 import { gdevelopFiles } from './gdevelop.ts';
-import { rpgMakerFiles } from './rpgmaker.ts';
+import { rpgMakerFiles, walkMove } from './rpgmaker.ts';
 import { checkArchivePixels, projectEntries, type ImportedCharacter } from '../store/import.ts';
 import { reservedPathSegment } from './paths.ts';
 import { errorTranslation, message, type Message } from '../message.ts';
-import { checkExportIdentity } from '../store/identity.ts';
+import { checkExportIdentity, moveExportId } from '../store/identity.ts';
 import { projectExportIdentity } from './identity.ts';
 
 export interface ExportOptions {
@@ -200,7 +200,9 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 	}
 	if (rpg) {
 		try {
-			const r = rpgMakerFiles(p, m, rpg);
+			// The walk is the move generated as one, whatever the game calls it.
+			const walk = walkMove(src.manifest.rig);
+			const r = rpgMakerFiles(p, m, rpg, walk ? moveExportId(walk) : null);
 			files.push(...r.files);
 			warnings.push(...r.warnings);
 			for (const [text, display] of r.warningMessages) warningMessages.set(text, display);

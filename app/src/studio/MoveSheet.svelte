@@ -7,6 +7,7 @@
 	import DirectionCompass from './DirectionCompass.svelte';
 	import Help from './Help.svelte';
 	import Sprite from './Sprite.svelte';
+	import PaidReview from './PaidReview.svelte';
 	import {
 		defaultMoveFrameCount,
 		moveFrameCounts,
@@ -28,6 +29,11 @@
 		SAVED_FRAMES_UNAVAILABLE
 	} from '../lib/items/run.ts';
 	import { AUTHORED } from '../lib/rig/poses.ts';
+	import { REPAIR_BATCH_MISALIGNED } from '../lib/items/items.ts';
+	import {
+		PaidStepError,
+		type PaidReview as PaidReviewData
+	} from '../lib/pixellab/paid-results.ts';
 	import {
 		MOVE_STEPS,
 		bodyMoveIssue,
@@ -37,9 +43,13 @@
 		isV13,
 		reservedMove,
 		reviewMoveRecovery,
+		reviewMoveResults,
+		movePreflightWarnings,
 		skeletonMoveReview,
 		moveEstimate,
 		moveMinimumTier,
+		type MovePaidOption,
+		type MovePaidReview,
 		type MoveSpec,
 		type BodyPaletteRepairPlan,
 		type KeepBodyPlan,
@@ -59,6 +69,9 @@
 		retryMoveMeasurements,
 		resolveRepairReview,
 		dismissMove,
+		frameEditsBlocked,
+		adjustCharacter,
+		makeRoomFor,
 		toast,
 		openProject,
 		pendingMoves,
@@ -74,16 +87,18 @@
 	import { GENERATION_RECOMMENDATION, tierDecision } from '../lib/pixellab/plans.ts';
 	import TierNotice from './TierNotice.svelte';
 	import { displayError, displayMessage, errorMessage } from '../lib/i18n.ts';
-	import { errorText, message, type Message } from '../lib/message.ts';
+	import { errorText, LocalizedError, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { formatNumber, t, type WhisperKey } from 'svelte-whisper';
 
 	const m = $derived(store.project?.manifest);
 	let rec = $state.raw<StoredProject | null>(null);
-	// Re-read after a failure: a move saves its body and finished item views before failing, and Try again is priced from them.
+	// Re-read after a failure (a move saves its body and finished item views before failing, and Try again is priced from
+	// them) and after Frame size replaced the character.
 	$effect(() => {
 		const id = doc.id;
 		void moving.error;
+		void store.project;
 		void moving.done;
 		if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null));
 	});
@@ -263,6 +278,17 @@
 			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
 		);
 	});
+	// App-side warnings never block a request PixelLab would take: Generate move anyway records them as accepted with the move.
+	const preflight = $derived(
+		m && store.project && id && !motionIssue
+			? movePreflightWarnings(store.project, {
+					...motion,
+					items: [],
+					seed: 0,
+					...(replacing ? { dirs: [...targetDirs] } : {})
+				})
+			: []
+	);
 	const formEstimate = $derived(
 		m && id && targetDirs.length && !reservedMove(id) && !motionIssue && !pendingIds.includes(id)
 			? moveEstimate(m, { ...motion, items: [], dirs: targetDirs })
@@ -323,6 +349,8 @@
 			(moving.spec.itemMethod === 'grid'
 				? !!moving.spec.itemReview &&
 					!errorText(moving.error).startsWith(INVALID_ITEM_GRID) &&
+					// A misaligned batch replays as misaligned: only a re-roll of that batch can change it.
+					!errorText(moving.error).startsWith(REPAIR_BATCH_MISALIGNED) &&
 					!errorText(moving.error).startsWith(SAVED_FRAMES_UNAVAILABLE) &&
 					$queue.jobs.some(
 						(job) =>
@@ -368,7 +396,7 @@
 		)
 	);
 	const stepIx = $derived(steps.findIndex((step) => step.id === moving.progress?.step));
-	const nice = (s: string) => displayMove(s, options);
+	const nice = (s: string) => displayMove(s, [...(m?.rig.animations ?? []), ...options]);
 	const decimal = (n: number) =>
 		formatNumber(n, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 	const usd = (n: number) =>
@@ -385,6 +413,13 @@
 	let colorRepair = $state<BodyPaletteRepairPlan | null>(null);
 	// Frames are decoded images: keep them raw rather than deeply proxied.
 	let keep = $state.raw<KeepBodyPlan | null>(null);
+	let paid = $state.raw<MovePaidReview | null>(null);
+	const errorInReview = $derived(
+		!!moving.error &&
+			!!paid?.views.some((view) =>
+				view.notes.some((note) => displayNestedMessage(note) === displayError(moving.error))
+			)
+	);
 	const hasFrameRecovery = $derived(
 		!!(savedItemFrames && !recoveryAccess.error) || !!(recovery || colorRepair || keep)
 	);
@@ -402,18 +437,20 @@
 		recovery = null;
 		colorRepair = null;
 		keep = null;
+		paid = null;
 		recoveryError = '';
 		recoveryUnavailable = [];
 		recoveryChecking = false;
 		if (mine && error && spec && !moving.done && spec.itemMethod !== 'grid') {
 			recoveryChecking = true;
-			void reviewMoveRecovery(projectId, spec)
-				.then((review) => {
+			void Promise.all([reviewMoveRecovery(projectId, spec), reviewMoveResults(projectId, spec)])
+				.then(([review, results]) => {
 					if (!current) return;
 					recovery = review.recovery ?? null;
 					colorRepair = review.colorRepair ?? null;
 					keep = review.keep ?? null;
 					recoveryUnavailable = review.unavailableMessages ?? [];
+					paid = results ?? null;
 				})
 				.catch((error: unknown) => {
 					if (current)
@@ -440,6 +477,100 @@
 				recoveryError = errorMessage(e);
 			});
 		}, recoveryTier);
+	}
+
+	// A new seed while a reviewed request is still at PixelLab would buy that view again before its result is known.
+	const paidRunning = $derived(!!paid?.views.some((view) => view.state === 'running'));
+	// An item repair stopped by a misaligned batch: its earlier batches are kept; only that batch is re-rolled.
+	const batchReview = $derived.by((): (PaidReviewData & { start: string }) | null => {
+		const error = moving.error,
+			spec = moving.spec;
+		if (!mine || !spec || !(error instanceof PaidStepError)) return null;
+		const step = error.paid.step;
+		if (!step.startsWith('grid-batch:')) return null;
+		const records = $queue.jobs.filter(
+			(job) => job.activityScope === spec.activityScope && job.state === 'done'
+		);
+		return {
+			start: step.slice('grid-batch:'.length),
+			views: [],
+			spent: +records.reduce((sum, job) => sum + job.gens, 0).toFixed(2),
+			recordIds: records.map((job) => job.id),
+			options: [
+				{
+					id: 'reroll-batch',
+					label: message('moveSheet.rerollBatch'),
+					detail: message('moveSheet.rerollBatchDetail'),
+					gens: error.paid.gens ?? 0,
+					paid: true,
+					primary: true
+				}
+			]
+		};
+	});
+	function rerollBatch() {
+		if (!moving.spec || !batchReview) return;
+		const projectId = moving.projectId,
+			spec = $state.snapshot(moving.spec),
+			start = batchReview.start;
+		withKey(() => {
+			void startMove(projectId, {
+				...spec,
+				reuseItemFrames: undefined,
+				gridReroll: {
+					...spec.gridReroll,
+					[start]: (spec.gridReroll?.[start] ?? 0) + 1 + Math.floor(Math.random() * 1_000_000)
+				}
+			});
+			ui.sheet = 'move';
+		}, recoveryTier);
+	}
+	/** A reviewed way on keeps the move's seed, so completed requests are reused; only a paid one needs the key. Make room
+	 *  adjusts the frame first (free; this stopped move waits for it) and then continues the same move. */
+	function choosePaid(option: MovePaidOption) {
+		const projectId = moving.projectId,
+			spec = $state.snapshot(option.spec),
+			change = option.change && { ...option.change },
+			reviewed = option.reviewed && $state.snapshot(option.reviewed);
+		const go = () => {
+			ui.sheet = 'move';
+			void (async () => {
+				if (change) {
+					try {
+						await adjustCharacter(projectId, change, {
+							stoppedMove: true,
+							quiet: true,
+							expect: reviewed
+						});
+					} catch (error) {
+						// Changed since this review (another tab): the planned change and its price no longer apply.
+						recoveryError =
+							error instanceof LocalizedError &&
+							error.translation.key === 'adjustFrame.errors.changed'
+								? message('moveSheet.checkpoint.changed')
+								: errorMessage(error);
+						return;
+					}
+				}
+				await startMove(projectId, spec);
+			})();
+		};
+		if (option.paid) withKey(go, retryTier);
+		else go();
+	}
+	// Make room from the room warning: free; the form keeps every choice and its warnings are checked again.
+	let enlarging = $state(false);
+	let enlargeError = $state('');
+	async function room() {
+		enlarging = true;
+		enlargeError = '';
+		try {
+			await makeRoomFor(doc.id);
+		} catch (error) {
+			enlargeError = displayError(error);
+		} finally {
+			enlarging = false;
+		}
 	}
 
 	// Free and local: no key is needed because a kept body makes no PixelLab request.
@@ -515,7 +646,8 @@
 			reviewRegeneration: regeneration,
 			poseStyle: 'visible-side-v1' as const,
 			seed: 1 + Math.floor(Math.random() * 1_000_000),
-			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] })
+			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] }),
+			...(preflight.length ? { acceptedWarnings: preflight.map((warning) => warning.id) } : {})
 		};
 		formDrafts.move = {
 			projectId,
@@ -641,7 +773,7 @@
 						class="bu-action btn"
 						class:primary={!hasFrameRecovery}
 						data-variant={hasFrameRecovery ? 'outline' : 'primary'}
-						disabled={!!retryAccess.error || tierBlocked(retryTier)}
+						disabled={!!retryAccess.error || tierBlocked(retryTier) || paidRunning}
 						aria-describedby={tierBlocked(retryTier) ? 'move-retry-tier' : undefined}
 						onclick={() =>
 							moving.spec &&
@@ -651,6 +783,7 @@
 									reuseItemFrames: undefined,
 									measurementRecovery: undefined,
 									bodyPaletteRepair: undefined,
+									attempt: undefined,
 									seed: 1 + Math.floor(Math.random() * 1_000_000)
 								});
 								ui.sheet = 'move';
@@ -707,7 +840,9 @@
 								: 'moveSheet.submit.queue'
 							: replace
 								? 'moveSheet.submit.replaceViews'
-								: 'moveSheet.checkpoint.generate',
+								: !review && preflight.length
+									? 'moveSheet.checkpoint.generateAnyway'
+									: 'moveSheet.checkpoint.generate',
 						{ move: move ? nice(move) : t('moveSheet.submit.move') }
 					)}
 					{#if est}<span class="cost">
@@ -909,9 +1044,11 @@
 					</li>
 				{/each}
 			</ol>
-			{#if moving.error}<p class="notice bad small">
+			<!-- The paid review names each stopped view's reason under its frames; the summary shows only a reason it does not. -->
+			{#if moving.error && !errorInReview}<p class="notice bad small">
 					<CircleAlert size={14} />{displayError(moving.error)}
-				</p>
+				</p>{/if}
+			{#if moving.error}
 				{#if retryAccess.error || recoveryAccess.error}<p class="notice warn small" role="status">
 						{retryAccess.error || recoveryAccess.error}
 					</p>{/if}
@@ -936,6 +1073,18 @@
 			{#if recoveryChecking}<p class="muted small" role="status">
 					{t('moveSheet.checkingCached')}
 				</p>{/if}
+			{#if batchReview && moving.spec}<PaidReview
+					review={batchReview}
+					name={nice(moving.spec.id)}
+					blocked={!!recoveryAccess.error || tierBlocked(recoveryTier)}
+					onchoose={rerollBatch}
+				/>{/if}
+			{#if paid && moving.spec && (paid.options.length || paid.views.some((view) => view.state !== 'ready'))}<PaidReview
+					review={paid}
+					name={nice(moving.spec.id)}
+					blocked={!!retryAccess.error || tierBlocked(retryTier)}
+					onchoose={choosePaid}
+				/>{/if}
 			{#if recoveryUnavailable.length}<p class="notice small">
 					{recoveryUnavailable.map(displayNestedMessage).join(' ')}
 				</p>{/if}
@@ -1225,7 +1374,20 @@
 					<CircleAlert size={14} />{displayError(reservedMove(id))}
 				</p>{:else if motionIssue}<p class="notice warn small">
 					<CircleAlert size={14} />{displayError(motionIssue)}
-				</p>{:else if pendingIds.includes(id)}<p class="notice small">
+				</p>{:else if preflight.length}{#each preflight as warning (warning.id)}<p
+						class="notice warn small"
+					>
+						<CircleAlert size={14} />{displayError(warning)}
+					</p>
+					{#if warning.id === 'frame-room-move'}
+						<button
+							class="bu-action btn"
+							data-variant="outline"
+							disabled={enlarging || !!frameEditsBlocked(doc.id)}
+							onclick={() => void room()}>{t('moveSheet.makeRoom')}</button
+						>
+						{#if enlargeError}<p class="notice bad small" role="alert">{enlargeError}</p>{/if}
+					{/if}{/each}{:else if pendingIds.includes(id)}<p class="notice small">
 					<CircleAlert size={14} />{t('moveSheet.alreadyQueued', { move: nice(id) })}
 				</p>{:else if busy}<p class="faint small">
 					{t('moveSheet.waitsForCurrent')}

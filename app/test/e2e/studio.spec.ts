@@ -1720,13 +1720,30 @@ test('studio demo: slot header dragging and not-shown restoration are tolerant a
 		const last = [...element.querySelectorAll<HTMLElement>('section[data-own]')].at(-1)!;
 		element.scrollTop = last.offsetTop - 40;
 	});
-	const lastHeader = (await page.locator('[data-slot-button="off_hand"]').boundingBox())!;
-	const notShown = (await page.locator('.not-shown-toggle').boundingBox())!;
-	await page.mouse.move(lastHeader.x + 20, lastHeader.y + 20);
-	await page.mouse.down();
-	await page.mouse.move(notShown.x + 20, notShown.y + 8, { steps: 6 });
-	await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	const dragToNotShown = async (key: string) => {
+		const from = (await page.locator(`[data-slot-button="${key}"]`).boundingBox())!;
+		const to = (await page.locator('.not-shown-toggle').boundingBox())!;
+		await page.mouse.move(from.x + 20, from.y + 20);
+		await page.mouse.down();
+		await page.mouse.move(to.x + 20, to.y + 8, { steps: 6 });
+		await expect(page.locator('.slot-drop-line')).toHaveCount(0);
+	};
+	// An empty slot dropped on Not shown hides, like Hide slot in its menu.
+	await dragToNotShown('off_hand');
+	await expect(page.locator('.not-shown-toggle')).toHaveAttribute('data-current', 'true');
 	await page.mouse.up();
+	await expect.poll(keys).toEqual(original.filter((key) => key !== 'off_hand'));
+	await page.locator('.header-undo').click();
+	await expect.poll(keys).toEqual(original);
+	// A slot with items is refused with the menu's reason.
+	await list.evaluate((element) => {
+		element.scrollTop =
+			element.querySelector<HTMLElement>('[data-group="main_hand"]')!.offsetTop - 40;
+	});
+	await dragToNotShown('main_hand');
+	await expect(page.locator('.not-shown-toggle')).not.toHaveAttribute('data-current');
+	await page.mouse.up();
+	await expect(page.locator('.toast')).toContainText('Only empty slots can be hidden.');
 	expect(await keys()).toEqual(original);
 	await list.evaluate((element) => element.scrollTo({ top: 0, behavior: 'instant' }));
 	const startHead = (await head.boundingBox())!;
@@ -3370,6 +3387,12 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await model.selectOption('skeleton-v3');
 	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).toHaveCount(0);
+	// The s2 body stands on its frame's last row: the move warns and offers free room first, keeping every choice.
+	await expect(move).toContainText('This move may step past the 64 px frame');
+	await move.getByRole('button', { name: 'Make room', exact: true }).click();
+	await expect(page.locator('.toast')).toContainText('Frame adjusted');
+	await expect(move).not.toContainText('This move may step past');
+	await expect(description).toHaveValue('jumping in place');
 	await expect(move.getByRole('button', { name: /^Generate move/ })).toContainText(
 		/Est\. \d+ gens/
 	);
@@ -7486,6 +7509,21 @@ test('move review gates item selection and shows live estimates without spending
 	await expect(review.getByRole('button', { name: 'Replace move', exact: true })).toBeEnabled();
 	await expect(review.getByRole('button', { name: new RegExp(fixture.itemName) })).toHaveCount(0);
 	await review.getByRole('button', { name: 'Later', exact: true }).click();
+	// A staged draft was drawn on this frame: Adjust frame waits for it instead of leaving it behind.
+	await page.evaluate(async () => {
+		const path = '/src/studio/state.svelte.ts';
+		const s = await import(path);
+		s.ui.frameProject = s.doc.id;
+		s.ui.sheet = 'adjustFrame';
+	});
+	const frame = page.getByRole('dialog', { name: 'Adjust frame', exact: true });
+	await expect(frame).toContainText(
+		'Save or discard the move waiting for review before adjusting the frame.'
+	);
+	await frame.getByRole('button', { name: 'Up', exact: true }).click();
+	await expect(frame.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+	await page.keyboard.press('Escape');
+	await expect(frame).toBeHidden();
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	const compass = review.getByRole('group', { name: 'Directions', exact: true });
 	const north = compass.getByRole('button', { name: 'North direction' });
@@ -7991,12 +8029,8 @@ for (const kind of ['outfit', 'move'] as const) {
 		await expect(menu).toBeVisible();
 		await expect(trigger).toHaveAttribute('aria-expanded', 'true');
 		await expect(menu.locator('hr')).toHaveCount(1);
-		// The first action takes focus: moves start with Fix frames, outfits with Download ZIP.
-		await expect(
-			kind === 'outfit'
-				? menu.getByRole('menuitem', { name: 'Download ZIP', exact: true })
-				: menu.getByRole('menuitem', { name: /^Fix frames/ })
-		).toBeFocused();
+		// The first action takes focus: Rename, as in character and item menus.
+		await expect(menu.getByRole('menuitem', { name: 'Rename...', exact: true })).toBeFocused();
 		await page.keyboard.press('Escape');
 		await expect(trigger).toBeFocused();
 		await choice.click({ button: 'right' });

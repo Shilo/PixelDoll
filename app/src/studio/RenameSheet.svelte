@@ -5,23 +5,50 @@
 	import { message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
 	import { ChevronRight } from './icons.ts';
+	import { displayMove } from './displayMove.ts';
+	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import {
+		CURRENT_OUTFIT_ID,
 		defaultCharacterExportId,
 		itemExportId,
 		itemExportIdTaken,
 		MAX_EXPORT_ID_LENGTH,
+		moveExportId,
+		moveExportIdTaken,
+		outfitExportIdTaken,
 		validExportId
 	} from '../lib/store/identity.ts';
-	import { ui, doc, store, saveIdentity } from './state.svelte.ts';
+	import { ui, doc, store, saveIdentity, renameOutfit } from './state.svelte.ts';
 	const target = ui.renameTarget ?? { projectId: doc.id };
-	const item =
-		target.itemId && store.project?.manifest.items.find((entry) => entry.id === target.itemId);
+	const m = store.project?.manifest;
+	const item = target.itemId && m?.items.find((entry) => entry.id === target.itemId);
+	const outfit = target.outfitId && m?.presets.find((entry) => entry.id === target.outfitId);
+	const move = target.moveId && m?.rig.animations.find((entry) => entry.id === target.moveId);
 	const character = store.projects.find((entry) => entry.id === target.projectId);
-	const missingItem = !!target.itemId && !item;
-	const originalName = (item ? item.name : character?.name) ?? '';
+	const missing = target.itemId
+		? !item && t('renameSheet.itemMissing')
+		: target.outfitId
+			? !outfit && t('renameSheet.outfitMissing')
+			: target.moveId
+				? !move && t('renameSheet.moveMissing')
+				: false;
+	const originalName =
+		(item
+			? item.name
+			: outfit
+				? outfit.name
+				: move
+					? (move.name ?? displayMove(move.id))
+					: character?.name) ?? '';
 	const originalId = item
 		? itemExportId(item)
-		: (character?.exportId ?? defaultCharacterExportId(target.projectId));
+		: outfit
+			? outfit.id
+			: move
+				? moveExportId(move)
+				: (character?.exportId ?? defaultCharacterExportId(target.projectId));
+	// Engines and RPG Maker sheets start from the standing move's fixed ID.
+	const idLocked = !!move && move.id === DEFAULT_MOVE;
 	let name = $state(originalName);
 	let exportId = $state(originalId);
 	let busy = $state(false),
@@ -30,21 +57,27 @@
 	const idChanged = $derived(exportId !== originalId);
 	const characterConflict = $derived(
 		!target.itemId &&
+			!target.outfitId &&
+			!target.moveId &&
 			store.projects.some((entry) => entry.id !== target.projectId && entry.exportId === exportId)
 	);
 	const idError = $derived(
 		!idChanged
 			? ''
-			: !validExportId(exportId)
+			: !validExportId(exportId) ||
+				  (outfit && exportId === CURRENT_OUTFIT_ID) ||
+				  (move && exportId === DEFAULT_MOVE)
 				? t('renameSheet.invalidExportId')
-				: target.itemId &&
-					  store.project &&
-					  itemExportIdTaken(store.project.manifest.items, target.itemId, exportId)
+				: item && m && itemExportIdTaken(m.items, item.id, exportId)
 					? t('renameSheet.duplicateExportId')
-					: ''
+					: outfit && m && outfitExportIdTaken(m.presets, outfit.id, exportId)
+						? t('renameSheet.duplicateOutfitExportId')
+						: move && m && moveExportIdTaken(m.rig.animations, move.id, exportId)
+							? t('renameSheet.duplicateMoveExportId')
+							: ''
 	);
 	const canSave = $derived(
-		!missingItem && !busy && !!name.trim() && !idError && (nameChanged || idChanged)
+		!missing && !busy && !!name.trim() && !idError && (nameChanged || idChanged)
 	);
 	function close() {
 		ui.renameTarget = null;
@@ -54,13 +87,17 @@
 		if (!canSave) return;
 		busy = true;
 		error = null;
+		const newName = nameChanged ? name.trim() : undefined,
+			newId = idChanged ? exportId : undefined;
 		try {
-			await saveIdentity(
-				target.projectId,
-				target.itemId,
-				nameChanged ? name.trim() : undefined,
-				idChanged ? exportId : undefined
-			);
+			if (outfit) renameOutfit(outfit.id, newName, newId);
+			else
+				await saveIdentity(
+					target.projectId,
+					{ itemId: target.itemId, moveId: target.moveId },
+					newName,
+					newId
+				);
 			if (ui.sheet === 'rename' && ui.renameTarget === target) close();
 		} catch (e) {
 			error = message('renameSheet.couldNotRename', { reason: errorMessage(e) });
@@ -71,12 +108,18 @@
 </script>
 
 <Sheet
-	title={target.itemId ? t('renameSheet.titleRenameItem') : t('renameSheet.titleRenameCharacter')}
+	title={target.itemId
+		? t('renameSheet.titleRenameItem')
+		: target.outfitId
+			? t('renameSheet.titleRenameOutfit')
+			: target.moveId
+				? t('renameSheet.titleRenameMove')
+				: t('renameSheet.titleRenameCharacter')}
 	cancelDisabled={busy}
 	onclose={close}
 >
-	{#if missingItem}
-		<p class="notice bad small" role="alert">{t('renameSheet.itemMissing')}</p>
+	{#if missing}
+		<p class="notice bad small" role="alert">{missing}</p>
 	{:else}
 		<form
 			class="form"
@@ -106,6 +149,7 @@
 					bind:value={exportId}
 					maxlength={MAX_EXPORT_ID_LENGTH}
 					disabled={busy}
+					readonly={idLocked}
 					autocapitalize="off"
 					autocomplete="off"
 					spellcheck={false}
@@ -114,7 +158,8 @@
 					aria-describedby="rename-export-id-help"
 				/>
 				<p id="rename-export-id-help" class="small" aria-live="polite">
-					{idError || t('renameSheet.exportIdHelp')}
+					{idError ||
+						(idLocked ? t('renameSheet.defaultMoveExportId') : t('renameSheet.exportIdHelp'))}
 				</p>
 				{#if characterConflict}<p class="notice small" role="status">
 						{t('renameSheet.characterIdConflict')}

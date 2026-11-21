@@ -208,6 +208,7 @@
 		"notAnOfficialApp": "No es una app oficial."
 	},
 	"characterActions": {
+		"adjustFrame": "Ajustar marco…",
 		"directions": "Direcciones…",
 		"demoDeleteLocked": "El personaje de la demo no se puede eliminar",
 		"labelDeleteCharacter": "Eliminar personaje…"
@@ -505,14 +506,21 @@
 		"couldNotRename": "No se pudo cambiar el nombre: {reason}",
 		"titleRenameCharacter": "Cambiar nombre del personaje",
 		"titleRenameItem": "Cambiar nombre del objeto",
+		"titleRenameOutfit": "Cambiar nombre del atuendo",
+		"titleRenameMove": "Cambiar nombre de la animación",
 		"displayName": "Nombre visible",
 		"exportId": "ID de exportación",
 		"exportIdHelp": "Se usa en los archivos de exportación y en el código del juego. Si lo cambias, actualiza los juegos que usen el ID anterior.",
 		"invalidExportId": "Empieza con una letra minúscula o un número. Usa solo minúsculas, números, guiones o guiones bajos. No se permiten nombres reservados.",
 		"duplicateExportId": "Otro objeto usa este ID de exportación.",
+		"duplicateOutfitExportId": "Otro atuendo usa este ID de exportación.",
+		"duplicateMoveExportId": "Otra animación usa este ID de exportación.",
+		"defaultMoveExportId": "Los juegos empiezan con la animación Predeterminada, así que su ID de exportación siempre es default.",
 		"characterIdConflict": "Otro personaje de este espacio usa este ID de exportación. Usa ID distintos para incluir ambos en el mismo juego.",
 		"invalidName": "Introduce un nombre de 1 a 60 caracteres.",
-		"itemMissing": "Este objeto ya no existe."
+		"itemMissing": "Este objeto ya no existe.",
+		"outfitMissing": "Este atuendo ya no existe.",
+		"moveMissing": "Esta animación ya no existe."
 	},
 	"savedActions": {
 		"labelDeleteMove": "Eliminar animación…",
@@ -704,7 +712,7 @@
 		"slotHidden": "{label} no se muestra. Aparece en Ocultas.",
 		"slotShown": "{label} se muestra en la posición {position} de {total}.",
 		"dragInRail": "Arrastrando {label}. Suéltala entre ranuras en la barra de navegación; Escape cancela.",
-		"dragInList": "Arrastrando {label}. Suéltala entre ranuras de la lista; Escape cancela.",
+		"dragInList": "Arrastrando {label}. Suéltala entre ranuras de la lista o en Ocultas para ocultarla; Escape cancela.",
 		"slotUnmoved": "{label} se queda donde estaba.",
 		"dragCanceled": "Arrastre cancelado.",
 		"heldBy": "Lo sostiene {name} (a dos manos).",
@@ -823,6 +831,7 @@
 		"couldNotEnterFullScreenTryAgain": "No se pudo activar la pantalla completa. Inténtalo de nuevo o usa el control de pantalla completa de tu navegador."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Termina o descarta el trabajo de generación pendiente antes de ajustar el marco.",
 		"couldNotCheckNamedFrames": "No se pudieron comprobar los fotogramas de {names}: {reason}",
 		"couldNotCheckSeveralFrames": "No se pudieron comprobar los fotogramas de {names}.",
 		"copyMissingOneMove": "Faltan fotogramas en {move}; el objeto se oculta ahí.",
@@ -930,7 +939,9 @@
 		"anotherRigSetupIsStillRunningSo": "Todavía hay otra configuración de rig en curso, así que esta no empezó. Se conservan tus elecciones.",
 		"characterReadyForSkeletonPosedItemsAnd": "Personaje listo para objetos posados con esqueleto y animaciones nuevas",
 		"couldNotCheckCopiedFrames": "No se pudieron comprobar los fotogramas de los objetos copiados: {reason}",
-		"couldNotReadSharedItems": "No se pudieron leer los objetos de tus otros personajes: {reason}"
+		"couldNotReadSharedItems": "No se pudieron leer los objetos de tus otros personajes: {reason}",
+		"finishedFramesChanged": "Los fotogramas terminados cambiaron. Revisa el objeto de nuevo. No se guardó nada.",
+		"rerollPriceChanged": "El precio de volver a generar cambió. Revísalo de nuevo. No se pidió nada."
 	},
 	"history": {
 		"wear": "Poner {name}",
@@ -941,6 +952,7 @@
 		"randomItem": "Objeto aleatorio de {name}",
 		"saveOutfit": "Guardar atuendo",
 		"deleteOutfit": "Eliminar atuendo",
+		"renameOutfit": "Cambiar nombre del atuendo",
 		"show": "Mostrar {name}",
 		"hide": "Ocultar {name}",
 		"oneHanded": "A una mano",
@@ -1210,6 +1222,7 @@
 		"imported": "Se importó {name}",
 		"untitledState": "Estado sin título",
 		"warning": {
+			"noRoom": "No se añadió espacio para animaciones porque este personaje tiene demasiados píxeles de imagen. Usa Ajustar marco después de importar para añadirlo.",
 			"fixedBase": "Las imágenes importadas forman la base fija: no puedes quitar la ropa ni el pelo que ya aparecen. Configura el rig para añadir animaciones y adaptar el equipamiento a las poses del esqueleto.",
 			"frameCounts": "“{move}” tiene distinta cantidad de fotogramas según la dirección. Sus direcciones se importaron como animaciones separadas para conservar todos los fotogramas originales y la duración de cada dirección.",
 			"semiAlpha": "Los bordes semitransparentes se convirtieron a transparencia de pixel art."
@@ -1378,7 +1391,8 @@
 		"failedRetry": "No se pudo descargar {label}. Inténtalo de nuevo.",
 		"recoveryStarted": "La exportación completa no está disponible. Comenzó la descarga de los PNG de origen.",
 		"startedNotes": "Comenzó la descarga. Consulta las notas de exportación en el ZIP.",
-		"started": "Comenzó la descarga de la exportación."
+		"started": "Comenzó la descarga de la exportación.",
+		"paidStarted": "Se inició la descarga de los resultados pagados."
 	},
 	"studioModel": {
 		"itemQualityReview": "{name}: hay que revisar los controles de calidad del objeto. No se inició ningún reintento de pago.",
@@ -1872,7 +1886,11 @@
 			"magenta": "magenta",
 			"blue": "azul brillante",
 			"azure": "azul celeste brillante"
-		}
+		},
+		"rerollFailed": "Volver a generar las llamadas fallidas",
+		"rerollFailedDetail": "Solo se vuelven a comprar las llamadas que fallaron y lo que depende de ellas. Las demás llamadas terminadas se reutilizan.",
+		"keepFinished": "Conservar las animaciones terminadas",
+		"keepFinishedDetail": "Guarda las animaciones con todos sus fotogramas terminados. Las demás quedan como fotogramas faltantes, que puedes crear más tarde."
 	},
 	"generationDetails": {
 		"copiedFrom": "pagado una vez para {name}; copiado aquí gratis",
@@ -1981,7 +1999,8 @@
 			"noCharacterId": "PixelLab no devolvió un ID de personaje gestionado. El arte existente no cambia.",
 			"referenceChanged": "Una referencia de pie cambió durante la configuración.",
 			"characterChanged": "El personaje cambió durante la configuración. Se conservó su trabajo actual."
-		}
+		},
+		"newRegistration": "Registrar de nuevo"
 	},
 	"create": {
 		"errors": {
@@ -2027,7 +2046,7 @@
 			"resultMissingStorage": "falta el resultado {label} en el almacenamiento",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab devolvió articulaciones de pie incompletas o no válidas. No se inició la animación a partir de ellas; se conservan los resultados existentes.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab devolvió una cantidad incorrecta de fotogramas. No se inició ningún reintento de pago. Revisa Actividad antes de pedir otro intento.",
-			"animationExceedsPxFrame": "{move} {direction}: la animación supera el marco de {w} px. Aumenta el Marco o reduce el Tamaño del cuerpo antes de volver a crear.",
+			"animationExceedsPxFrame": "{move} {direction}: los fotogramas del cuerpo no caben en el marco de {w} px. Se guardaron para revisarlos; no se guardó nada en el personaje.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab devolvió fotogramas vacíos. No se inició ningún reintento de pago. Revisa Actividad antes de pedir otro intento.",
 			"validJointsWereFound": "{move} {direction}: no se encontraron articulaciones válidas en todos los fotogramas. Las imágenes generadas se conservan en Actividad; la configuración se detuvo sin volver a dibujarlas.",
 			"matchBodyColorsOnly": "{direction}: iguala los colores del cuerpo solo cuando hayan terminado todas las comprobaciones de articulaciones originales.",
@@ -2037,7 +2056,7 @@
 			"jointsFoundEveryFrame": "{label}: no se encontraron articulaciones en todos los fotogramas",
 			"pixellabDroppedDirectionBusy": "{label}: PixelLab descartó la dirección (ocupado). Inténtalo de nuevo.",
 			"pixellabReturnedMotionFrames": "{label}: PixelLab devolvió {returned} fotogramas de movimiento de {expected} solicitados. No se pidieron comprobaciones de articulaciones ni renderizado del cuerpo para esta vista.",
-			"motionExceedsPxFrame": "{label}: el movimiento supera el marco de {size} px. Aumenta el Marco o reduce el Tamaño del cuerpo antes de volver a crear.",
+			"motionExceedsPxFrame": "{label}: el movimiento no cabe en el marco de {size} px. Sus fotogramas se guardaron para revisarlos; no se guardó nada en el personaje.",
 			"pixellabReturnedEmptyMotion": "{label}: PixelLab devolvió un fotograma de movimiento vacío",
 			"pixellabReturnedView": "PixelLab no devolvió ninguna vista {direction}",
 			"viewDoesFitPx": "La vista {direction} no cabe en el marco de {cell} px. Aumenta el Marco o reduce el Tamaño del cuerpo antes de volver a crear.",
@@ -2082,7 +2101,9 @@
 			"chooseRepairTarget": "Para reparar, elige un objeto y una dirección de una animación existente. No se solicitó ninguna generación.",
 			"moveAnimationFramesBlocked": "Este modelo y tamaño de lienzo no admiten {frames} fotogramas. No se solicitó ninguna generación.",
 			"describeMoveBlocked": "Describe esta animación antes de generarla. No se solicitó ninguna generación.",
-			"chooseExistingMoveRepairing": "Elige una animación existente antes de reparar su equipamiento."
+			"chooseExistingMoveRepairing": "Elige una animación existente antes de reparar su equipamiento.",
+			"liftedJointsOutside": "{label}: el movimiento elevado todavía tiene articulaciones fuera del marco de {size} px. No se pidió ningún renderizado del cuerpo.",
+			"reviewChoiceInvalid": "Esta opción ya no coincide con la animación. Revísala de nuevo. No se hizo ninguna solicitud."
 		},
 		"steps": {
 			"draw": "Dibujando tu personaje",
@@ -2106,7 +2127,8 @@
 				"frameRange": "El marco debe ser de {min} a 256 píxeles enteros.",
 				"seed": "La semilla debe ser un número entero seguro y no negativo.",
 				"promptRequired": "Escribe un prompt para el personaje.",
-				"promptLength": "El prompt completo debe tener 2000 caracteres o menos."
+				"promptLength": "El prompt completo debe tener 2000 caracteres o menos.",
+				"frameRoom": "Un marco de {frame} px deja menos espacio que {min} px alrededor de un cuerpo de {body} px. Puede que partes del personaje no quepan."
 			}
 		},
 		"form": {
@@ -2272,16 +2294,20 @@
 			"estimated": "Aprox. {gens}",
 			"keepWorking": "Seguir trabajando",
 			"costTitle": "Incluye la pose de pie en todas las direcciones. Agrega Reposo, Caminar y otras animaciones después. Si falta una articulación en la pose de pie, el costo puede subir un poco.",
-			"create": "Crear personaje"
+			"create": "Crear personaje",
+			"createAnyway": "Crear de todos modos"
 		}
 	},
 	"moveSheet": {
+		"makeRoom": "Hacer espacio",
+		"frameRoom": "Esta animación puede salirse del marco de {frame} px: el personaje tiene {below} px bajo los pies. Haz espacio gratis primero o genera la animación de todos modos.",
 		"skeleton": {
 			"title": "Revisar Skeleton V3",
 			"hint": "Skeleton V3 es otra opción. Los controles de calidad aún pueden fallar.",
 			"back": "Volver a los resultados"
 		},
 		"checkpoint": {
+			"generateAnyway": "Generar animación de todos modos",
 			"generate": "Generar animación",
 			"initialEstimate": "Unos {minutes} min · Sin objetos",
 			"review": "Revisar animación",
@@ -2439,7 +2465,9 @@
 			"currentFrame": "Fotograma actual {number}",
 			"redrawnFrame": "Fotograma redibujado {number}",
 			"repairedFrame": "Fotograma reparado {number}"
-		}
+		},
+		"rerollBatch": "Volver a generar este lote",
+		"rerollBatchDetail": "Los lotes anteriores se quedan como están. La estimación incluye este lote y los siguientes, que aún no se compraron."
 	},
 	"itemRoute": {
 		"errors": {
@@ -2696,6 +2724,84 @@
 			"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de reemplazar fotogramas del cuerpo base.",
 			"importFailed": "No se pudieron leer estos fotogramas. Inténtalo de nuevo.",
 			"saveFailed": "No se pudieron guardar estos fotogramas. No se cambió nada. Inténtalo de nuevo."
+		}
+	},
+	"paidReview": {
+		"title": "Resultados pagados",
+		"spent": "Ya pagado: {gens} gens. Estos resultados se conservan y se reutilizan.",
+		"free": "Gratis",
+		"download": "Descargar resultados pagados",
+		"frame": "{view}, fotograma {number}",
+		"waiting": "Algunas solicitudes pagadas siguen en curso en PixelLab. Estas opciones se activan cuando terminen.",
+		"state": {
+			"ready": "Listo",
+			"pending": "Aún no comprado",
+			"failed": "Detenido",
+			"running": "Aún en curso en PixelLab"
+		}
+	},
+	"moveReview": {
+		"makeRoomDetail": "{change}, gratis. Se reutiliza el movimiento pagado; solo se compran los pasos en el marco cambiado.",
+		"makeRoomDetailRedraw": "{change}, gratis. Este modelo dibuja a partir del marco de pie, así que el movimiento se vuelve a dibujar en el marco cambiado.",
+		"makeRoom": "Hacer espacio y continuar",
+		"resume": "Continuar con los resultados pagados",
+		"lift": "Continuar, elevado para que quepa",
+		"liftAndReroll": "Elevar para que quepa y volver a generar {views}",
+		"liftDetail": "{views}: los pies suben hasta {px} px en {frames} de {total} fotogramas de movimiento para que el movimiento quepa en el marco.",
+		"liftDetailReview": "{views}: los pies suben hasta {px} px en {frames} de {total} fotogramas de movimiento para que el movimiento quepa en el marco. Supera la comprobación de pies de {limit} px, así que revisarás los fotogramas del cuerpo antes de que reemplacen a los actuales.",
+		"liftDetailWarned": "{views}: los pies suben hasta {px} px en {frames} de {total} fotogramas de movimiento para que el movimiento quepa en el marco. Supera la comprobación de pies de {limit} px, así que la animación se guarda con un aviso sobre los pies.",
+		"reroll": "Volver a generar {views}",
+		"rerollDetail": "Volver a generar compra un intento nuevo solo para esas direcciones. Las demás conservan sus resultados pagados.",
+		"pending": "Por comprar: unos {gens} gens.",
+		"liftable": "Se puede elevar para que quepa: los pies suben hasta {px} px en {frames} de {total} fotogramas.",
+		"notLiftable": "Elevarlo no basta: el movimiento está cortado por un lado o por arriba."
+	},
+	"createReview": {
+		"resume": "Continuar con los resultados pagados",
+		"register": "Registrar de nuevo las vistas dibujadas",
+		"registerDetail": "Conserva el dibujo pagado y compra un registro nuevo de las mismas vistas."
+	},
+	"adjustFrame": {
+		"title": "Ajustar marco",
+		"intro": "Mueve al personaje hacia arriba o hacia abajo en su marco, o cambia el tamaño del marco. Cada objeto, animación y fotograma se mueve con él. Es gratis y no redibuja nada.",
+		"previewLabel": "Personaje en su marco",
+		"preview": "Vista {direction} en un marco de {size} px",
+		"keys": "Con la vista previa enfocada, las flechas arriba y abajo mueven al personaje 1 px (con Mayús, 4 px).",
+		"direction": "Vista",
+		"position": "Posición",
+		"up": "Arriba",
+		"down": "Abajo",
+		"movedUp": "Subido {px} px",
+		"movedDown": "Bajado {px} px",
+		"notMoved": "Sin mover",
+		"size": "Tamaño del marco",
+		"smaller": "Marco más pequeño",
+		"larger": "Marco más grande",
+		"sizeReadout": "{size} × {size} px",
+		"makeRoom": "Hacer espacio",
+		"makeRoomHelp": "Mueve al personaje lo justo para dejar espacio para caminar, y amplía el marco solo cuando moverlo no basta.",
+		"madeRoom": "Espacio hecho. Revisa la vista previa y guarda.",
+		"roomy": "Este personaje ya tiene espacio para las animaciones.",
+		"short": "Las animaciones pueden salirse de este marco. Hacer espacio lo arregla gratis.",
+		"above96": "Por encima de 96 px, los objetos sostenidos y las cuadrículas de reparación cuestan más.",
+		"above170": "Por encima de 170 px, cada objeto cuesta 25 gens por llamada de vestido.",
+		"consequences": "Los objetos solo se copian exactamente entre personajes con el mismo tamaño y posición de marco. Las exportaciones mantienen la misma escala y origen en el juego; vuelve a exportar para usar el cambio.",
+		"loading": "Cargando el marco…",
+		"saved": "Marco ajustado: {change}.",
+		"undone": "Cambio del marco deshecho.",
+		"errors": {
+			"reviewOpen": "Guarda o descarta la animación pendiente de revisión antes de ajustar el marco.",
+			"missingArtwork": "Falta arte guardado de este personaje, así que no se puede cambiar su marco.",
+			"even": "Elige un tamaño de marco que cambie en un número par de píxeles.",
+			"range": "El marco debe medir entre {min} y {max} px para este personaje.",
+			"clipTop": "Esto corta {px} px de la parte superior del personaje o sus objetos.",
+			"clipBottom": "Esto corta {px} px de la parte inferior del personaje o sus objetos.",
+			"clipSides": "Esto corta {px} px de los lados del personaje o sus objetos.",
+			"unchanged": "Cambia primero el tamaño o la posición del marco.",
+			"limit": "Ni siquiera un marco de {size} px puede dar espacio a este personaje para las animaciones.",
+			"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de ajustar el marco.",
+			"changed": "Este personaje cambió. Vuelve a abrir Ajustar marco para revisar la versión más reciente.",
+			"undoFailed": "No se pudo deshacer el cambio del marco."
 		}
 	}
 }

@@ -208,6 +208,7 @@
 		"notAnOfficialApp": "Not an official app."
 	},
 	"characterActions": {
+		"adjustFrame": "Adjust frame…",
 		"directions": "Directions…",
 		"demoDeleteLocked": "Demo character can't be deleted",
 		"labelDeleteCharacter": "Delete character…"
@@ -502,14 +503,21 @@
 		"couldNotRename": "Could not rename: {reason}",
 		"titleRenameCharacter": "Rename character",
 		"titleRenameItem": "Rename item",
+		"titleRenameOutfit": "Rename outfit",
+		"titleRenameMove": "Rename move",
 		"displayName": "Display name",
 		"exportId": "Export ID",
 		"exportIdHelp": "Used in export files and game code. If you change it, update any games that use the old ID.",
 		"invalidExportId": "Start with a lowercase letter or number. Use only lowercase letters, numbers, hyphens, or underscores. Reserved names are not allowed.",
 		"duplicateExportId": "Another item uses this export ID.",
+		"duplicateOutfitExportId": "Another outfit uses this export ID.",
+		"duplicateMoveExportId": "Another move uses this export ID.",
+		"defaultMoveExportId": "Games start from the Default move, so its export ID is always default.",
 		"characterIdConflict": "Another character in this workspace uses this Export ID. Use different IDs to put both in the same game.",
 		"invalidName": "Enter a name of 1 to 60 characters.",
-		"itemMissing": "This item no longer exists."
+		"itemMissing": "This item no longer exists.",
+		"outfitMissing": "This outfit no longer exists.",
+		"moveMissing": "This move no longer exists."
 	},
 	"savedActions": {
 		"labelDeleteMove": "Delete move…",
@@ -695,7 +703,7 @@
 		"slotHidden": "{label} is not shown. It is listed under Not shown.",
 		"slotShown": "{label} is shown at position {position} of {total}.",
 		"dragInRail": "Dragging {label}. Drop it between slots in the navigation rail; Escape cancels.",
-		"dragInList": "Dragging {label}. Drop it between slots in the list; Escape cancels.",
+		"dragInList": "Dragging {label}. Drop it between slots in the list, or on Not shown to hide it; Escape cancels.",
 		"slotUnmoved": "{label} stays where it was.",
 		"dragCanceled": "Drag canceled.",
 		"heldBy": "Held by {name} (two-handed).",
@@ -814,6 +822,7 @@
 		"couldNotEnterFullScreenTryAgain": "Could not enter full screen. Try again or use your browser’s full screen control."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Finish or dismiss pending generation work before adjusting the frame.",
 		"couldNotCheckNamedFrames": "Could not check frames for {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Could not check frames for {names}.",
 		"copyMissingOneMove": "Missing some {move} frames; it hides there.",
@@ -921,7 +930,9 @@
 		"anotherRigSetupIsStillRunningSo": "Another rig setup is still running, so this one did not start. Your choices are kept.",
 		"characterReadyForSkeletonPosedItemsAnd": "Character ready for skeleton-posed items and new moves",
 		"couldNotCheckCopiedFrames": "Could not check frames for copied items: {reason}",
-		"couldNotReadSharedItems": "Could not read items from your other characters: {reason}"
+		"couldNotReadSharedItems": "Could not read items from your other characters: {reason}",
+		"finishedFramesChanged": "The finished frames changed. Review the item again. Nothing was saved.",
+		"rerollPriceChanged": "The re-roll price changed. Review it again. Nothing was requested."
 	},
 	"history": {
 		"wear": "Wear {name}",
@@ -932,6 +943,7 @@
 		"randomItem": "Random {name} item",
 		"saveOutfit": "Save outfit",
 		"deleteOutfit": "Delete outfit",
+		"renameOutfit": "Rename outfit",
 		"show": "Show {name}",
 		"hide": "Hide {name}",
 		"oneHanded": "One-handed",
@@ -1201,6 +1213,7 @@
 		"imported": "Imported {name}",
 		"untitledState": "Untitled state",
 		"warning": {
+			"noRoom": "Room for moves was not added because this character has too many image pixels. Use Adjust frame after importing to add it.",
 			"fixedBase": "Imported artwork is the fixed base: existing clothes and hair cannot be removed. Set up its pose rig to use skeleton-posed equipment and add new moves.",
 			"frameCounts": "“{move}” has different frame counts by direction. Its directions were imported as separate moves to keep every original frame and direction length.",
 			"semiAlpha": "Partially transparent edges were converted to pixel-art transparency."
@@ -1369,7 +1382,8 @@
 		"failedRetry": "Could not download {label}. Try again.",
 		"recoveryStarted": "Full export unavailable. Source PNG download started.",
 		"startedNotes": "Download started. See Export notes in the ZIP.",
-		"started": "Export download started."
+		"started": "Export download started.",
+		"paidStarted": "Paid results download started."
 	},
 	"studioModel": {
 		"itemQualityReview": "{name}: item quality checks need review. No paid retry was started.",
@@ -1860,7 +1874,11 @@
 			"magenta": "magenta",
 			"blue": "bright blue",
 			"azure": "bright azure blue"
-		}
+		},
+		"rerollFailed": "Re-roll failed calls",
+		"rerollFailedDetail": "Only the calls that failed are bought again, with whatever depends on them. Every other finished call is reused.",
+		"keepFinished": "Keep finished moves",
+		"keepFinishedDetail": "Saves the moves whose frames all finished. The others stay listed as missing frames, which you can make later."
 	},
 	"generationDetails": {
 		"copiedFrom": "paid once for {name}; copied here for free",
@@ -1966,7 +1984,8 @@
 			"noCharacterId": "PixelLab did not return a managed character ID. Existing artwork is unchanged.",
 			"referenceChanged": "A standing reference changed during setup.",
 			"characterChanged": "The character changed during setup. Its current work has been kept."
-		}
+		},
+		"newRegistration": "Register again"
 	},
 	"create": {
 		"errors": {
@@ -2012,7 +2031,7 @@
 			"resultMissingStorage": "result {label} missing in storage",
 			"pixellabReturnedIncompleteInvalid": "{direction}: PixelLab returned incomplete or invalid standing joints. Animation was not started from these joints; existing results are kept.",
 			"pixellabReturnedWrongNumber": "{move} {direction}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.",
-			"animationExceedsPxFrame": "{move} {direction}: animation exceeds the {w} px frame. Increase Frame or reduce Body size before creating again.",
+			"animationExceedsPxFrame": "{move} {direction}: the body frames do not fit the {w} px frame. They were kept for review; nothing was saved.",
 			"pixellabReturnedEmptyFrames": "{move} {direction}: PixelLab returned empty frames. No paid retry was started. Review Activity before requesting another attempt.",
 			"validJointsWereFound": "{move} {direction}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.",
 			"matchBodyColorsOnly": "{direction}: match body colors only after all original joint checks have completed.",
@@ -2022,7 +2041,7 @@
 			"jointsFoundEveryFrame": "{label}: joints not found on every frame",
 			"pixellabDroppedDirectionBusy": "{label}: PixelLab dropped the direction (busy). Try again.",
 			"pixellabReturnedMotionFrames": "{label}: PixelLab returned {returned} motion frames for {expected} requested. No joint checks or body render were requested for this view.",
-			"motionExceedsPxFrame": "{label}: motion exceeds the {size} px frame. Increase Frame or reduce Body size before creating again.",
+			"motionExceedsPxFrame": "{label}: the motion does not fit the {size} px frame. Its frames were kept for review; nothing was saved.",
 			"pixellabReturnedEmptyMotion": "{label}: PixelLab returned an empty motion frame",
 			"pixellabReturnedView": "PixelLab returned no {direction} view",
 			"viewDoesFitPx": "The {direction} view does not fit the {cell} px frame. Increase Frame or reduce Body size before creating again.",
@@ -2067,7 +2086,9 @@
 			"chooseRepairTarget": "Choose one item and one facing of an existing move before repairing. No generation was requested.",
 			"moveAnimationFramesBlocked": "This model and canvas don’t support {frames} frames. No generation was requested.",
 			"describeMoveBlocked": "Describe this move before generating it. No generation was requested.",
-			"chooseExistingMoveRepairing": "Choose an existing move before repairing its equipment."
+			"chooseExistingMoveRepairing": "Choose an existing move before repairing its equipment.",
+			"liftedJointsOutside": "{label}: the lifted motion still has joints outside the {size} px frame. No body render was requested.",
+			"reviewChoiceInvalid": "This review choice no longer matches the move. Review it again. No request was made."
 		},
 		"steps": {
 			"draw": "Drawing your character",
@@ -2091,7 +2112,8 @@
 				"frameRange": "Frame must be {min}–256 whole pixels.",
 				"seed": "Seed must be a safe, non-negative whole number.",
 				"promptRequired": "Enter a character prompt.",
-				"promptLength": "The complete prompt must be 2,000 characters or fewer."
+				"promptLength": "The complete prompt must be 2,000 characters or fewer.",
+				"frameRoom": "A {frame} px frame leaves less room than {min} px around a {body} px body. Parts of the character may not fit."
 			}
 		},
 		"form": {
@@ -2254,16 +2276,20 @@
 			"estimated": "Estimated {gens}",
 			"keepWorking": "Keep working",
 			"costTitle": "The standing views in every direction; add idle, walk and other moves afterward. A missing standing joint may cost a little more",
-			"create": "Create character"
+			"create": "Create character",
+			"createAnyway": "Create anyway"
 		}
 	},
 	"moveSheet": {
+		"makeRoom": "Make room",
+		"frameRoom": "This move may step past the {frame} px frame: the character has {below} px below its feet. Make room for free first, or generate the move anyway.",
 		"skeleton": {
 			"title": "Review Skeleton V3",
 			"hint": "Skeleton V3 is another option. It may still fail the quality checks.",
 			"back": "Back to results"
 		},
 		"checkpoint": {
+			"generateAnyway": "Generate move anyway",
 			"generate": "Generate move",
 			"initialEstimate": "About {minutes} min · No items included",
 			"review": "Review move",
@@ -2421,7 +2447,9 @@
 			"currentFrame": "Current frame {number}",
 			"redrawnFrame": "Redrawn frame {number}",
 			"repairedFrame": "Repaired frame {number}"
-		}
+		},
+		"rerollBatch": "Re-roll this batch",
+		"rerollBatchDetail": "The earlier batches stay as they are. The estimate covers this batch and the ones after it, which were not bought yet."
 	},
 	"itemRoute": {
 		"errors": {
@@ -2674,6 +2702,84 @@
 			"resolveDrafts": "Keep or dismiss this character’s item drafts before replacing body frames.",
 			"importFailed": "Could not read these frames. Try again.",
 			"saveFailed": "Could not save these frames. Nothing was changed. Try again."
+		}
+	},
+	"paidReview": {
+		"title": "Paid results",
+		"spent": "Already paid: {gens} gens. These results are kept and reused.",
+		"free": "Free",
+		"download": "Download paid results",
+		"frame": "{view} frame {number}",
+		"waiting": "Some paid requests are still running at PixelLab. These choices unlock when they finish.",
+		"state": {
+			"ready": "Ready",
+			"pending": "Not bought yet",
+			"failed": "Stopped",
+			"running": "Still running at PixelLab"
+		}
+	},
+	"moveReview": {
+		"makeRoomDetail": "{change}, for free. The paid motion is reused; only the steps on the changed frame are bought.",
+		"makeRoomDetailRedraw": "{change}, for free. This model draws from the standing frame, so the move is drawn again on the changed frame.",
+		"makeRoom": "Make room and continue",
+		"resume": "Continue with paid results",
+		"lift": "Continue, lifted to fit",
+		"liftAndReroll": "Lift to fit, re-roll {views}",
+		"liftDetail": "{views}: feet rise up to {px} px in {frames} of {total} motion frames so the motion fits the frame.",
+		"liftDetailReview": "{views}: feet rise up to {px} px in {frames} of {total} motion frames so the motion fits the frame. This is above the {limit} px feet check, so you review the body frames before they replace the current ones.",
+		"liftDetailWarned": "{views}: feet rise up to {px} px in {frames} of {total} motion frames so the motion fits the frame. This is above the {limit} px feet check, so the move is saved with a feet warning.",
+		"reroll": "Re-roll {views}",
+		"rerollDetail": "A re-roll buys a new attempt only for those views. Every other view keeps its paid results.",
+		"pending": "Still to buy: about {gens} gens.",
+		"liftable": "Can be lifted to fit: feet rise up to {px} px in {frames} of {total} frames.",
+		"notLiftable": "Lifting cannot fit this motion: it is cut at a side or at the top."
+	},
+	"createReview": {
+		"resume": "Continue with paid results",
+		"register": "Register the drawn views again",
+		"registerDetail": "Keeps the paid drawing and buys one new registration of the same views."
+	},
+	"adjustFrame": {
+		"title": "Adjust frame",
+		"intro": "Move the character up or down in its frame, or change the frame size. Every item, move and frame moves along. It is free and redraws nothing.",
+		"previewLabel": "Character in its frame",
+		"preview": "{direction} view in a {size} px frame",
+		"keys": "With the preview focused, the Up and Down arrow keys move the character 1 px (with Shift, 4 px).",
+		"direction": "View",
+		"position": "Position",
+		"up": "Up",
+		"down": "Down",
+		"movedUp": "Moved up {px} px",
+		"movedDown": "Moved down {px} px",
+		"notMoved": "Not moved",
+		"size": "Frame size",
+		"smaller": "Smaller frame",
+		"larger": "Larger frame",
+		"sizeReadout": "{size} × {size} px",
+		"makeRoom": "Make room",
+		"makeRoomHelp": "Moves the character just enough to leave room for walking, and enlarges the frame only when moving is not enough.",
+		"madeRoom": "Room made. Check the preview, then save.",
+		"roomy": "This character already has room for moves.",
+		"short": "Moves may step past this frame. Make room can fix that for free.",
+		"above96": "Above 96 px, held items and repair grids cost more.",
+		"above170": "Above 170 px, every item costs 25 gens per dress call.",
+		"consequences": "Items copy exactly only between characters with the same frame size and position. Exports keep the same in-game scale and origin; export again to use the change.",
+		"loading": "Loading the frame…",
+		"saved": "Frame adjusted: {change}.",
+		"undone": "Frame change undone.",
+		"errors": {
+			"reviewOpen": "Save or discard the move waiting for review before adjusting the frame.",
+			"missingArtwork": "Saved artwork of this character is missing, so its frame cannot be changed.",
+			"even": "Choose a frame size that changes by an even number of pixels.",
+			"range": "Frame must be {min}–{max} px for this character.",
+			"clipTop": "This cuts {px} px off the top of the character or its items.",
+			"clipBottom": "This cuts {px} px off the bottom of the character or its items.",
+			"clipSides": "This cuts {px} px off the sides of the character or its items.",
+			"unchanged": "Change the frame size or position first.",
+			"limit": "Even a {size} px frame cannot give this character room for moves.",
+			"resolveDrafts": "Keep or dismiss this character’s item drafts before adjusting the frame.",
+			"changed": "This character changed. Reopen Adjust frame to review the latest version.",
+			"undoFailed": "The frame change could not be undone."
 		}
 	}
 }

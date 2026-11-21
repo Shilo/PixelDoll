@@ -1,5 +1,6 @@
 // What the Export sheet and the ⋮ menus' Download ZIP export: a character with its current look and saved outfits, or
 // a single item on the base body. Pure; the Studio supplies the project, look and settings.
+import { CURRENT_OUTFIT_ID } from '../store/identity.ts';
 import { exportZip, type ExportResult, type NoteTerm } from './export.ts';
 import { errorTranslation, message, type Message } from '../message.ts';
 import { storeVariants, variantOf } from '../dress/dress.ts';
@@ -61,14 +62,14 @@ async function requestedExport(
 	}
 ): Promise<ExportResult & { zip: Uint8Array | null }> {
 	const current: Preset = {
-		id: o.look.id ?? 'current',
+		id: o.look.id ?? CURRENT_OUTFIT_ID,
 		name: o.look.name ?? 'Current look',
 		items: o.look.items,
 		variants: o.look.variants
 	};
 	const presets: Preset[] = [
 		current,
-		...p.manifest.presets.filter((x) => x.id !== 'current' && x.id !== current.id)
+		...p.manifest.presets.filter((x) => x.id !== CURRENT_OUTFIT_ID && x.id !== current.id)
 	];
 	const manifest = structuredClone({ ...p.manifest, presets }) as Manifest;
 	const warnings = new Set<string>(),

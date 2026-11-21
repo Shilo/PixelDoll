@@ -441,17 +441,18 @@ export function padImg(im: Img, p: number): Img {
 	over(o, im, p, p);
 	return o;
 }
-/** API keypoints (0–1 of the rig cell) -> the same body points on the padded canvas. */
+/** API keypoints (0–1 of the rig cell) -> the same body points on the padded canvas, `dy` px lower (Adjust frame). */
 export const padKeypoints = (
 	k: Keypoint[],
 	cell: { w: number; h: number },
-	p: number
+	p: number,
+	dy = 0
 ): Keypoint[] =>
-	p
+	p || dy
 		? k.map((q) => ({
 				...q,
 				x: +((q.x * cell.w + p) / (cell.w + 2 * p)).toFixed(4),
-				y: +((q.y * cell.h + p) / (cell.h + 2 * p)).toFixed(4)
+				y: +((q.y * cell.h + p + dy) / (cell.h + 2 * p)).toFixed(4)
 			}))
 		: k;
 /** One clause for any held object in either hand: weapon words assume the object. With "nothing in the left hand" a book and
