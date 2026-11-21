@@ -69,7 +69,7 @@ for (const [width, height, touch] of [
 					name: 'Connect PixelLab',
 					open: () => openAccount(page),
 					field: 'API key',
-					close: 'Cancel'
+					close: 'Not now'
 				},
 				{
 					name: 'Import from device',

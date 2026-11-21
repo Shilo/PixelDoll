@@ -1357,36 +1357,6 @@ dialog.sheet.bottom .sheet-foot .recovery-options .btn.primary {
 	width: auto;
 }
 
-.connect-hero {
-	display: flex;
-	gap: 14px;
-	align-items: flex-start;
-}
-.key-badge {
-	flex: none;
-	width: 44px;
-	height: 44px;
-	border-radius: 12px;
-	display: grid;
-	place-items: center;
-	background: var(--accent-soft);
-	color: var(--accent-text);
-}
-.facts {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	color: var(--text-2);
-}
-.facts li {
-	display: flex;
-	gap: 8px;
-	align-items: flex-start;
-}
-.facts li svg {
-	margin-top: 2px;
-	color: var(--text-3);
-}
 .dots {
 	display: flex;
 	flex-wrap: wrap;
@@ -1866,7 +1836,7 @@ dialog.sheet.bottom .sheet-foot .recovery-options .btn.primary {
 		align-items: center;
 		gap: 4px;
 		min-height: 44px;
-	} /* T2: Connect "Get a key" was 18 px */
+	}
 }
 /* small stages (phones, the landscape stage column): the preview bar must fit 375 px, and 320 px without the all-directions toggle */
 .stage-wrap {

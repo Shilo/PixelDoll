@@ -935,7 +935,7 @@ test('canceling the connection discards the pending enhancement instead of charg
 	await sheet.getByRole('button', { name: 'Enhance', exact: true }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await openAccount(page);
 	await connect(page);

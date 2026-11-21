@@ -124,10 +124,15 @@ test.describe('first Studio render in French', () => {
 		await page.getByRole('button', { name: `${connectLabel}...`, exact: true }).click();
 		const connect = page.getByRole('dialog', { name: connectLabel, exact: true });
 		await expect(
-			connect.getByPlaceholder(french.connectSheet.placeholderPasteYourKey)
+			connect.getByPlaceholder(
+				french.connectSheet.placeholderPasteYourKey.replace(
+					'{example}',
+					'pixl_0123456789abcdef0123456789abcdef'
+				)
+			)
 		).toBeVisible();
 		await expect(
-			connect.getByRole('button', { name: french.common.cancel, exact: true })
+			connect.getByRole('button', { name: french.connectSheet.notNow, exact: true })
 		).toBeVisible();
 	});
 });

@@ -175,6 +175,9 @@ test('Free/Trial is a valid connection, and equipment shows Tier 1 required with
 	await prompt.fill('A red wizard hat');
 	await page.getByRole('button', { name: /^Make / }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+	await expect(connect.getByRole('link', { name: /^PixelLab Tier 1 required/ })).toBeVisible();
+	await expect(connect.getByText('The free trial does not cover this action.')).toBeVisible();
+	await expect(connect.getByRole('link', { name: 'Start free trial' })).toBeVisible();
 	await connect.getByLabel('API key', { exact: true }).fill('offline-fixture-not-a-key');
 	await connect.getByRole('checkbox', { name: 'Remember on this device' }).check();
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();

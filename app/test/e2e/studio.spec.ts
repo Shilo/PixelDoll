@@ -2310,7 +2310,7 @@ test('New item submits with Ctrl+Enter or Cmd+Enter without replacing plain Retu
 	for (const shortcut of ['Control+Enter', 'Meta+Enter']) {
 		await prompt.press(shortcut);
 		await expect(connect).toBeVisible();
-		await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 		await newItem(page, 'Head');
 		await expect(prompt).toHaveValue('a leather hat\n');
 		await expect(attachment).toContainText(filename);
@@ -2374,7 +2374,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
 	await item.getByRole('button', { name: /^Make/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await newItem(page, 'Head');
 	await expect(item.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue(
@@ -2816,7 +2816,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await setup.getByRole('button', { name: /^Set up ·/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.locator('.project-btn').click();
@@ -2891,7 +2891,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await move.getByRole('button', { name: /^Generate move/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await expect(page.getByRole('dialog')).toHaveCount(0);
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
@@ -3486,7 +3486,7 @@ test('Create in a second tab takes the jobs from the idle first tab at once and 
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await expect(page.locator('#experience-options')).toContainText('Other tab');
 	await page.keyboard.press('Escape');
-	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 	create = await openCreate();
 	await expect(create.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue(
 		'a cheerful copper clockwork scout'
@@ -5508,7 +5508,7 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 	await sheet.getByRole('button', { name: /^Replace Walk views/ }).click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab' })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await expect(east).toHaveAttribute('aria-pressed', 'true');
@@ -6426,7 +6426,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	await sheet.getByRole('button', { name: 'Retry joint checks', exact: true }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await expect(connect).toBeVisible();
-	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
@@ -6710,7 +6710,7 @@ test('bounded body color correction discloses changed checks and equipment cost 
 	await expect(sheet).toContainText('Existing body views are kept if a check still fails');
 	await action.click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
-	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await connect.getByRole('button', { name: 'Not now', exact: true }).click();
 	await page.evaluate(async () => {
 		const p = '/src/studio/state.svelte.ts',
 			s = await import(p);
@@ -7089,7 +7089,7 @@ test('move review gates item selection and shows live estimates without spending
 	await animate.click();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	await seedReview(77);
 	await reloadStudio(page);
@@ -7110,7 +7110,7 @@ test('move review gates item selection and shows live estimates without spending
 	expect(staleRegeneration).toBeNull();
 	await page
 		.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
-		.getByRole('button', { name: 'Cancel', exact: true })
+		.getByRole('button', { name: 'Not now', exact: true })
 		.click();
 	expect(posts).toEqual([]);
 });

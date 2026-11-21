@@ -22,7 +22,7 @@ to PixelLab in a new tab through the reusable `NoticeLink.svelte` presentation w
 keyboard-focus feedback, an external-link indicator and a 44px minimum touch target. The wrapper also supports warning
 tone and title/body content for plan notices without nested controls.
 Connect relies on its form gap rather than extra notice padding; More has no extra bottom padding. In Connect it appears immediately
-above the Get a key / Connect action row; in More it follows source and version. The same wording stays on one line in the
+above the Get a Secret key / Connect action row; in More it follows source and version. The same wording stays on one line in the
 README, website metadata and GitHub description. No notice is overlaid on the character scene, and onboarding remains a
 separate task.
 
