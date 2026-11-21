@@ -6810,7 +6810,7 @@ test('move review gates item selection and shows live estimates without spending
 				walk: {
 					spec: { id: 'walk', seed, replace: true, reviewBeforePublish: true, items: [] },
 					input: moveCandidateInput(rec, 'walk'),
-					dirs: ['east', 'south'],
+					dirs: ['east'],
 					animation: rig.animations.find((move: { id: string }) => move.id === 'walk'),
 					cells,
 					provenance: [],
@@ -6840,6 +6840,7 @@ test('move review gates item selection and shows live estimates without spending
 	const east = compass.getByRole('button', { name: 'East direction' });
 	const south = compass.getByRole('button', { name: 'South direction' });
 	const west = compass.getByRole('button', { name: /West direction.*Mirrors East/ });
+	await expect(east).toHaveAttribute('aria-pressed', 'true');
 	await south.click();
 	await east.click();
 	await expect(south).toHaveAttribute('aria-pressed', 'false');

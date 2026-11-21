@@ -216,8 +216,10 @@ test.each(['save', 'discard', 'structural failure'] as const)(
 			expect(saved.rigQa).toMatchObject({ warnings: expect.arrayContaining(candidate.warnings) });
 		} else {
 			if (decision === 'structural failure') {
+				const reviewed = structuredClone(candidate);
 				candidate.checks['jump/south'].fails.push('missing or invalid frame joints');
-				await expect(resolveMoveCandidate(projectId, candidate, true)).rejects.toThrow(
+				state.projects.set(projectId, staged);
+				await expect(resolveMoveCandidate(projectId, reviewed, true)).rejects.toThrow(
 					'needs fixes'
 				);
 			} else await resolveMoveCandidate(projectId, candidate, false);

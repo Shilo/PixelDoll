@@ -53,7 +53,9 @@
 		);
 	});
 	let direction = $state<DirectionName | null>(null);
-	const facing = $derived(direction ?? directions[0]?.id);
+	const facing = $derived(
+		direction ?? directions.find(({ id }) => candidate?.dirs.includes(id))?.id ?? directions[0]?.id
+	);
 	const mirrors = $derived(
 		Object.fromEntries(directions.flatMap(({ id, mirrorOf }) => (mirrorOf ? [[id, mirrorOf]] : [])))
 	);
