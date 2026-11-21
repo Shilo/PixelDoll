@@ -2331,7 +2331,6 @@
 		"startFrom": {
 			"savedSource": "Quadro inicial original",
 			"label": "Começar a partir de",
-			"chooseFrame": "Escolher um quadro",
 			"frame": "Quadro {number}",
 			"unavailable": "Este quadro precisa de uma imagem do corpo e de articulações medidas para cada direção selecionada.",
 			"changed": "O quadro inicial selecionado mudou. Escolha a origem novamente. Nenhuma geração foi solicitada.",
@@ -2647,7 +2646,6 @@
 		"pixenReference": "O Pixen não usa imagens de referência. Troque de modelo para usar sua imagem.",
 		"fixedCost": "Custo: {generations} gerações",
 		"managed": "O PixelLab cria um estado a partir de {parent} na sua conta.",
-		"referenceRoute": "Com uma referência, o Pro edita as imagens em pé em vez de criar um estado na sua conta do PixelLab.",
 		"transfer": "Usa a aparência da imagem de referência, não só o estilo.",
 		"sheetWarning": "Várias vistas são editadas em uma única folha. Confira cada vista antes de salvar.",
 		"checkCost": "Consultar custo",

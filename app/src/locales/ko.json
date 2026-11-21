@@ -2221,7 +2221,6 @@
 		"startFrom": {
 			"savedSource": "원래 시작 프레임",
 			"label": "시작 기준",
-			"chooseFrame": "프레임 선택",
 			"frame": "프레임 {number}",
 			"unavailable": "이 프레임을 사용하려면 선택한 모든 방향의 몸체 이미지와 측정된 관절 위치가 필요해요.",
 			"changed": "선택한 시작 프레임이 변경됐어요. 시작할 프레임을 다시 선택하세요. 생성은 요청되지 않았어요.",
@@ -2530,7 +2529,6 @@
 		"pixenReference": "Pixen은 참고 이미지를 사용하지 않아요. 이미지를 사용하려면 모델을 바꿔 주세요.",
 		"fixedCost": "비용: {generations}회 생성",
 		"managed": "PixelLab 계정에서 {parent} 기반의 상태를 만들어요.",
-		"referenceRoute": "참고 이미지를 사용하면 Pro는 PixelLab 계정에 상태를 만드는 대신 서 있는 이미지를 편집해요.",
 		"transfer": "참조 이미지의 스타일뿐 아니라 모습까지 가져와요.",
 		"sheetWarning": "여러 방향을 한 시트에서 편집해요. 저장하기 전에 각 방향을 확인해 주세요.",
 		"checkCost": "비용 확인",

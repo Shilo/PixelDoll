@@ -7,6 +7,9 @@
 	import DirectionCompass from './DirectionCompass.svelte';
 	import Help from './Help.svelte';
 	import Sprite from './Sprite.svelte';
+	import SourcePreview from './SourcePreview.svelte';
+	import PlaybackPicker from './experience/PlaybackPicker.svelte';
+	import { bodyClipThumbnail } from './moveThumbnails.ts';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import ReferenceField from './ReferenceField.svelte';
 	import type { PickedReference } from '../lib/image/reference.ts';
@@ -38,7 +41,7 @@
 		SAVED_FRAMES_UNAVAILABLE
 	} from '../lib/items/run.ts';
 	import { AUTHORED } from '../lib/rig/poses.ts';
-	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
+	import { DEFAULT_MOVE, DIRECTIONS } from '../lib/rig/rig.ts';
 	import { cellImg } from '../lib/compose/compose.ts';
 	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
 	import { moveSourceMatches, resolveMoveSource, savedReplacementSource } from './moveSource.ts';
@@ -161,11 +164,23 @@
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
 	let sourceId = $state<string | undefined>(draft?.source?.clip);
 	let sourceCell = $state<number | undefined>(draft?.source?.cell);
-	let sourceOpen = $state(!!draft?.source);
 	const sourceClip = $derived(
 		sourceClips.find(({ key }) => key === (sourceId ?? DEFAULT_MOVE))?.clip
 	);
 	const sourceFrames = $derived([...new Set(sourceClip?.frames.map(({ cell }) => cell) ?? [])]);
+	const startCell = $derived(sourceCell ?? (sourceClip && lastPlaybackCell(sourceClip)));
+	// Every facing the start frame has, mirrored ones included, for the shared turning preview.
+	const startPreviews = $derived.by(() => {
+		const project = store.project;
+		const clip = sourceId ?? DEFAULT_MOVE;
+		if (!project || startCell === undefined) return [];
+		return project.manifest.rig.directions
+			.map(({ id }) => ({ direction: id, image: sourceThumbnail(clip, startCell, id) }))
+			.filter(({ image }) => image && opaqueBox(image))
+			.sort(
+				(left, right) => DIRECTIONS.indexOf(left.direction) - DIRECTIONS.indexOf(right.direction)
+			);
+	});
 	const sourceThumbnail = (clip: string, cell: number, direction: DirectionName = ui.dir) => {
 		const project = store.project;
 		const base = project?.manifest.items.find((item) => item.id === project.manifest.rig.baseItem);
@@ -1808,543 +1823,515 @@
 				>{openerLabel(t('setup.title'))}<SurfaceChevron /></button
 			>{/if}
 	{:else}
-		<div class="form" class:redraw-form={replacing}>
-			<div class="field">
-				<label class="label" for="move-description"
-					>{replacing ? t('moveSheet.describeReplacement') : t('moveSheet.describeMotion')}</label
-				>
-				<textarea
-					id="move-description"
-					class="bu-input input"
-					value={text}
-					oninput={(event) => inputMotion(event.currentTarget.value)}
-					placeholder={t('moveSheet.describePlaceholder')}
-					aria-describedby="move-description-hint"
-					maxlength="900"
-					rows="3"></textarea>
-				<p class="faint small" id="move-description-hint">
-					{t('moveSheet.motionOnly')}
-				</p>
-				<button
-					type="button"
-					class="bu-action"
-					data-variant="quiet"
-					disabled={enhancing ||
-						(!canUndoEnhance &&
-							(!app.key ||
-								app.keyRejected ||
-								!standingImage ||
-								!text.trim() ||
-								text.trim().length > 500))}
-					onclick={() => void enhanceMove()}
-				>
-					{#if canUndoEnhance}<Undo2 size={13} />{t('common.undo')}
-					{:else}<WandSparkles size={13} />{t(
-							enhancing ? 'create.form.enhancing' : 'create.form.enhance'
-						)}{#if !enhancing}<span class="cost"
-								>{t('moves.estimate', { gens: formatNumber(0.05) })}</span
-							>{/if}{/if}
-				</button>
-				{#if action}
+		<div class="form move-form" class:redraw-form={replacing}>
+			<div class="move-start">
+				<PlaybackPicker
+					clips={sourceClips}
+					moveRefs={m?.rig.animations ?? []}
+					selected={sourceId ?? DEFAULT_MOVE}
+					field={t('moveSheet.startFrom.label')}
+					disabled={fitBusy}
+					thumbnail={(key) => store.project && bodyClipThumbnail(store.project, key, ui.dir)}
+					onselect={selectSource}
+				/>
+				{#if startFrom?.replacement}
+					<p class="faint small">{t('moveSheet.startFrom.savedSource')}</p>
+				{:else}
+					<SourcePreview
+						previews={startPreviews}
+						source={nice(sourceId ?? DEFAULT_MOVE)}
+						frame={Math.max(0, sourceFrames.indexOf(startCell ?? -1))}
+						frames={sourceFrames.length}
+						disabled={fitBusy}
+						onstep={(delta) => {
+							const at = Math.max(0, sourceFrames.indexOf(startCell ?? -1));
+							sourceCell = sourceFrames[Math.max(0, Math.min(sourceFrames.length - 1, at + delta))];
+						}}
+					/>
+				{/if}
+				{#if offersFit}
+					<div class="fit-panel" aria-busy={fitBusy}>
+						{#if fitReview}
+							<p class="small" role="status">{t('stateJointFit.review')}</p>
+							<div class="fit-views">
+								{#each fitReview.views as view (view.direction)}
+									{@const label = directionLabel(view.direction)}
+									<div>
+										<div class="fit-overlay">
+											<Sprite
+												img={store.project?.images.get(view.hash) ?? null}
+												k={2}
+												limit={112}
+												{label}
+											/>
+											<svg viewBox="0 0 100 100" aria-hidden="true" preserveAspectRatio="none">
+												{#each view.keypoints as point (point.label)}
+													<circle
+														cx={point.x * 100}
+														cy={point.y * 100}
+														r="1.7"
+														fill="currentColor"
+													/>
+												{/each}
+											</svg>
+										</div>
+										<div class="small">{label}</div>
+										{#each [...view.qa.fails, ...(view.qa.warnings ?? [])] as finding, index (index)}
+											<p class="small">{displayMessage(plainReasonMessage(finding))}</p>
+										{/each}
+									</div>
+								{/each}
+							</div>
+							<button
+								class="bu-action"
+								data-variant="primary"
+								disabled={fitBusy || fitReview.blocked}
+								onclick={saveFit}
+							>
+								{t('stateJointFit.save')}
+							</button>
+							<button class="bu-action" data-variant="outline" onclick={() => (fitReview = null)}>
+								{t('moveSheet.skeleton.back')}
+							</button>
+						{:else if fitQuote}
+							<button class="bu-action" data-variant="primary" onclick={measureFit}>
+								{t('stateJointFit.measure')}
+								<span class="cost"
+									>{fitQuote.generations
+										? t('moves.estimate', { gens: formatNumber(fitQuote.generations) })
+										: t('stateCapture.noCredits')}</span
+								>
+							</button>
+						{:else}
+							<button
+								class="bu-action"
+								data-variant="outline"
+								disabled={fitBusy}
+								onclick={checkFitCost}
+							>
+								{t(
+									fitBusy
+										? 'activity.waitingForPixelLab'
+										: app.key && !app.keyRejected
+											? 'stateJointFit.quote'
+											: 'connectSheet.titleConnectPixelLab'
+								)}
+							</button>
+						{/if}
+						{#if fitError}<p class="notice small" role="alert">
+								{displayNestedMessage(fitError)}
+							</p>{/if}
+					</div>
+				{/if}
+			</div>
+			<div class="move-edit">
+				<div class="field">
+					<label class="label" for="move-description"
+						>{replacing ? t('moveSheet.describeReplacement') : t('moveSheet.describeMotion')}</label
+					>
+					<textarea
+						id="move-description"
+						class="bu-input input"
+						value={text}
+						oninput={(event) => inputMotion(event.currentTarget.value)}
+						placeholder={t('moveSheet.describePlaceholder')}
+						aria-describedby="move-description-hint"
+						maxlength="900"
+						rows="3"></textarea>
+					<p class="faint small" id="move-description-hint">
+						{t('moveSheet.motionOnly')}
+					</p>
 					<button
 						type="button"
 						class="bu-action"
 						data-variant="quiet"
-						onclick={() => chooseAction('')}>{t('moveSheet.describeNew')}</button
+						disabled={enhancing ||
+							(!canUndoEnhance &&
+								(!app.key ||
+									app.keyRejected ||
+									!standingImage ||
+									!text.trim() ||
+									text.trim().length > 500))}
+						onclick={() => void enhanceMove()}
 					>
-				{/if}
-			</div>
-			<div class="field">
-				<span class="label" id="act">{t('moveSheet.orChoose')}</span>
-				<div class="chips" role="radiogroup" aria-labelledby="act">
-					{#each options as a (a)}
+						{#if canUndoEnhance}<Undo2 size={13} />{t('common.undo')}
+						{:else}<WandSparkles size={13} />{t(
+								enhancing ? 'create.form.enhancing' : 'create.form.enhance'
+							)}{#if !enhancing}<span class="cost"
+									>{t('moves.estimate', { gens: formatNumber(0.05) })}</span
+								>{/if}{/if}
+					</button>
+					{#if action}
 						<button
-							class="chip"
-							role="radio"
-							aria-checked={action === a}
-							tabindex={(options.includes(action) ? action : options[0]) === a ? 0 : -1}
-							onclick={() => chooseAction(a)}
-							>{#if have.has(a)}<Check size={12} />{/if}{have.has(a)
-								? t('moveSheet.added', { move: nice(a) })
-								: nice(a)}</button
+							type="button"
+							class="bu-action"
+							data-variant="quiet"
+							onclick={() => chooseAction('')}>{t('moveSheet.describeNew')}</button
 						>
-					{/each}
+					{/if}
 				</div>
-			</div>
-			{#if replacing}
 				<div class="field">
-					<span class="label">{t('moveSheet.redrawDirections')}</span>
-					<div class="redraw-directions">
-						<DirectionCompass
-							label={t('moveSheet.redrawDirections')}
-							describedBy="move-redraw-warning"
-							available={availableDirs}
-							selected={targetDirs}
-							compact
-							ontoggle={(dir) =>
-								(selectedDirs = selectedDirs.includes(dir)
-									? selectedDirs.filter((selected) => selected !== dir)
-									: [...selectedDirs, dir])}
-						/>
-						<p class="notice warn small" id="move-redraw-warning">
-							{t('moveSheet.redrawHidesEquipment')}
-							{#if affectedMirrors}{t('moveSheet.redrawMirrors', {
-									directions: affectedMirrors
-								})}{/if}
-							{t('moveSheet.redrawOtherMoves')}
-						</p>
-					</div>
-				</div>
-			{/if}
-			{#if sourceClips.some(({ key }) => key !== DEFAULT_MOVE)}
-				<details class="disclosure" bind:open={sourceOpen}>
-					<summary
-						><ChevronRight size={14} />{t('moveSheet.startFrom.label')} · {startFrom?.replacement
-							? t('moveSheet.startFrom.savedSource')
-							: nice(sourceId ?? DEFAULT_MOVE)}</summary
-					>
-					<div class="move-source-list">
-						{#each ['state', 'move'] as kind (kind)}
-							{#if sourceClips.some((entry) => entry.kind === kind)}
-								<p class="label">
-									{t(kind === 'state' ? 'experience.tabStates' : 'experience.tabMoves')}
-								</p>
-								{#each sourceClips.filter((entry) => entry.kind === kind) as { key, clip } (key)}
-									<button
-										class="bu-action"
-										data-variant="outline"
-										aria-pressed={!startFrom?.replacement && (sourceId ?? DEFAULT_MOVE) === key}
-										disabled={fitBusy}
-										onclick={() => selectSource(key)}
-									>
-										<Sprite
-											img={sourceThumbnail(key, lastPlaybackCell(clip) ?? 0)}
-											k={1}
-											limit={32}
-											label={nice(key)}
-										/>{nice(key)}
-									</button>
-								{/each}
-							{/if}
+					<span class="label" id="act">{t('moveSheet.orChoose')}</span>
+					<div class="chips" role="radiogroup" aria-labelledby="act">
+						{#each options as a (a)}
+							<button
+								class="chip"
+								role="radio"
+								aria-checked={action === a}
+								tabindex={(options.includes(action) ? action : options[0]) === a ? 0 : -1}
+								onclick={() => chooseAction(a)}
+								>{#if have.has(a)}<Check size={12} />{/if}{have.has(a)
+									? t('moveSheet.added', { move: nice(a) })
+									: nice(a)}</button
+							>
 						{/each}
-						{#if !sourceClips.some(({ key }) => key === DEFAULT_MOVE)}
-							<button
-								class="bu-action"
-								data-variant="outline"
-								aria-pressed={sourceId === DEFAULT_MOVE}
-								disabled={fitBusy}
-								onclick={() => selectSource(DEFAULT_MOVE)}>{nice(DEFAULT_MOVE)}</button
-							>
-						{/if}
-						{#if sourceFrames.length > 1}
-							<details class="disclosure">
-								<summary><ChevronRight size={14} />{t('moveSheet.startFrom.chooseFrame')}</summary>
-								{#each sourceFrames as cell (cell)}
-									{@const label = t('moveSheet.startFrom.frame', { number: cell + 1 })}
-									<button
-										class="bu-action"
-										data-variant="outline"
-										aria-pressed={(sourceCell ?? (sourceClip && lastPlaybackCell(sourceClip))) ===
-											cell}
-										onclick={() => (sourceCell = cell)}
-									>
-										<Sprite
-											img={sourceThumbnail(sourceId ?? DEFAULT_MOVE, cell)}
-											k={1}
-											limit={32}
-											{label}
-										/>{label}
-									</button>
-								{/each}
-							</details>
-						{/if}
 					</div>
-					{#if offersFit}
-						<div class="fit-panel" aria-busy={fitBusy}>
-							{#if fitReview}
-								<p class="small" role="status">{t('stateJointFit.review')}</p>
-								<div class="fit-views">
-									{#each fitReview.views as view (view.direction)}
-										{@const label = directionLabel(view.direction)}
-										<div>
-											<div class="fit-overlay">
-												<Sprite
-													img={store.project?.images.get(view.hash) ?? null}
-													k={2}
-													limit={112}
-													{label}
-												/>
-												<svg viewBox="0 0 100 100" aria-hidden="true" preserveAspectRatio="none">
-													{#each view.keypoints as point (point.label)}
-														<circle
-															cx={point.x * 100}
-															cy={point.y * 100}
-															r="1.7"
-															fill="currentColor"
-														/>
-													{/each}
-												</svg>
-											</div>
-											<div class="small">{label}</div>
-											{#each [...view.qa.fails, ...(view.qa.warnings ?? [])] as finding, index (index)}
-												<p class="small">{displayMessage(plainReasonMessage(finding))}</p>
-											{/each}
-										</div>
-									{/each}
-								</div>
-								<button
-									class="bu-action"
-									data-variant="primary"
-									disabled={fitBusy || fitReview.blocked}
-									onclick={saveFit}
-								>
-									{t('stateJointFit.save')}
-								</button>
-								<button class="bu-action" data-variant="outline" onclick={() => (fitReview = null)}>
-									{t('moveSheet.skeleton.back')}
-								</button>
-							{:else if fitQuote}
-								<button class="bu-action" data-variant="primary" onclick={measureFit}>
-									{t('stateJointFit.measure')}
-									<span class="cost"
-										>{fitQuote.generations
-											? t('moves.estimate', { gens: formatNumber(fitQuote.generations) })
-											: t('stateCapture.noCredits')}</span
-									>
-								</button>
-							{:else}
-								<button
-									class="bu-action"
-									data-variant="outline"
-									disabled={fitBusy}
-									onclick={checkFitCost}
-								>
-									{t(
-										fitBusy
-											? 'activity.waitingForPixelLab'
-											: app.key && !app.keyRejected
-												? 'stateJointFit.quote'
-												: 'connectSheet.titleConnectPixelLab'
-									)}
-								</button>
-							{/if}
-							{#if fitError}<p class="notice small" role="alert">
-									{displayNestedMessage(fitError)}
-								</p>{/if}
-						</div>
-					{/if}
-				</details>
-			{/if}
-			<label class="bu-check loop-setting">
-				<span class="loop-copy">
-					<span>{t('moveSheet.loop')}</span>
-					<span id={`${advancedId}-loop-hint`} class="faint small">{t('moveSheet.loopHint')}</span>
-				</span>
-				<input
-					class="bu-switch"
-					type="checkbox"
-					role="switch"
-					checked={looping}
-					aria-label={t('moveSheet.loop')}
-					aria-describedby={`${advancedId}-loop-hint`}
-					onchange={(event) => {
-						const enabled = event.currentTarget.checked;
-						event.currentTarget.checked = looping;
-						void changeLoop(enabled);
-					}}
-				/>
-			</label>
-			<div class="frame-settings">
-				<div class="advanced-field frames-field">
-					<div class="advanced-label">
-						{#if keptFrames === undefined && frameCounts.length}
-							<label for={`${advancedId}-frames`}>{t('moveSheet.frames')}</label>
-						{:else}
-							<span>{t('moveSheet.frames')}</span>
-						{/if}
-						<Help
-							iconOnly
-							title={t('moveSheet.frames')}
-							text={t('moveSheet.framesHelp', { canvas: formatNumber(canvas) })}
-						/>
-						{#if keptFrames === undefined && frameCounts.length}
-							<button
-								type="button"
-								class="bu-action btn plain frame-default"
-								data-variant="quiet"
-								aria-disabled={userFrameCount === undefined}
-								onclick={() => (frameChoice = undefined)}
-								>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
-							>
-						{/if}
-					</div>
-					{#if keptFrames !== undefined}
-						<span class="faint">{t('moveSheet.framesKept', { count: keptFrames })}</span>
-					{:else if frameCounts.length}
-						<div class="frame-controls">
-							<input
-								id={`${advancedId}-frames`}
-								type="range"
-								aria-valuetext={t('moveSheet.framesValue', { count: shownFrames })}
-								min={0}
-								max={frameCounts.length - 1}
-								value={frameCounts.indexOf(shownFrames)}
-								oninput={(e) => (frameChoice = frameCounts[e.currentTarget.valueAsNumber])}
-							/>
-							<span class="frame-value">{t('moveSheet.framesValue', { count: shownFrames })}</span>
-						</div>
-					{/if}
 				</div>
-				<details class="disclosure advanced" bind:open={advancedOpen}>
-					<summary
-						><ChevronRight size={14} />{t('common.advanced')}{#if advancedNote}<span
-								class="faint advanced-note">{advancedNote}</span
-							>{/if}</summary
-					>
-					<div>
-						<div class="advanced-field">
-							<div class="advanced-label">
-								<label for={`${advancedId}-model`}>{t('moveSheet.motionModel')}</label>
-								<Help
-									iconOnly
-									title={t('moveSheet.motionModel')}
-									text={t('moveSheet.motionModelHelp')}
-								/>
-							</div>
-							<select
-								id={`${advancedId}-model`}
-								class="bu-input input"
-								value={model}
-								onchange={(event) => chooseModel(event.currentTarget.value as MoveAnimationModel)}
-							>
-								{#each MODELS as option (option)}<option
-										value={option}
-										disabled={option !== model && !fitsKept(option)}>{t(MODEL_TEXT[option])}</option
-									>{/each}
-							</select>
+				{#if replacing}
+					<div class="field">
+						<span class="label">{t('moveSheet.redrawDirections')}</span>
+						<div class="redraw-directions">
+							<DirectionCompass
+								label={t('moveSheet.redrawDirections')}
+								describedBy="move-redraw-warning"
+								available={availableDirs}
+								selected={targetDirs}
+								compact
+								ontoggle={(dir) =>
+									(selectedDirs = selectedDirs.includes(dir)
+										? selectedDirs.filter((selected) => selected !== dir)
+										: [...selectedDirs, dir])}
+							/>
+							<p class="notice warn small" id="move-redraw-warning">
+								{t('moveSheet.redrawHidesEquipment')}
+								{#if affectedMirrors}{t('moveSheet.redrawMirrors', {
+										directions: affectedMirrors
+									})}{/if}
+								{t('moveSheet.redrawOtherMoves')}
+							</p>
 						</div>
-						{#if frameDirection && m}
-							{@const direction = frameDirection}
-							{@const size = { width: m.rig.cell.w, height: m.rig.cell.h }}
-							{@const startName = startFrom
-								? startFrom.replacement
-									? t('moveSheet.startFrom.savedSource')
-									: nice(startFrom.clip)
-								: t('moveSheet.standingFrame')}
-							{@const autoEnd = frameReference?.end === undefined && automaticMoveEnd(looping)}
-							<div class="reference-heading">
+					</div>
+				{/if}
+				<label class="bu-check loop-setting">
+					<span class="loop-copy">
+						<span>{t('moveSheet.loop')}</span>
+						<span id={`${advancedId}-loop-hint`} class="faint small">{t('moveSheet.loopHint')}</span
+						>
+					</span>
+					<input
+						class="bu-switch"
+						type="checkbox"
+						role="switch"
+						checked={looping}
+						aria-label={t('moveSheet.loop')}
+						aria-describedby={`${advancedId}-loop-hint`}
+						onchange={(event) => {
+							const enabled = event.currentTarget.checked;
+							event.currentTarget.checked = looping;
+							void changeLoop(enabled);
+						}}
+					/>
+				</label>
+				<div class="frame-settings">
+					<div class="advanced-field frames-field">
+						<div class="advanced-label">
+							{#if keptFrames === undefined && frameCounts.length}
+								<label for={`${advancedId}-frames`}>{t('moveSheet.frames')}</label>
+							{:else}
+								<span>{t('moveSheet.frames')}</span>
+							{/if}
+							<Help
+								iconOnly
+								title={t('moveSheet.frames')}
+								text={t('moveSheet.framesHelp', { canvas: formatNumber(canvas) })}
+							/>
+							{#if keptFrames === undefined && frameCounts.length}
+								<button
+									type="button"
+									class="bu-action btn plain frame-default"
+									data-variant="quiet"
+									aria-disabled={userFrameCount === undefined}
+									onclick={() => (frameChoice = undefined)}
+									>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
+								>
+							{/if}
+						</div>
+						{#if keptFrames !== undefined}
+							<span class="faint">{t('moveSheet.framesKept', { count: keptFrames })}</span>
+						{:else if frameCounts.length}
+							<div class="frame-controls">
+								<input
+									id={`${advancedId}-frames`}
+									type="range"
+									aria-valuetext={t('moveSheet.framesValue', { count: shownFrames })}
+									min={0}
+									max={frameCounts.length - 1}
+									value={frameCounts.indexOf(shownFrames)}
+									oninput={(e) => (frameChoice = frameCounts[e.currentTarget.valueAsNumber])}
+								/>
+								<span class="frame-value">{t('moveSheet.framesValue', { count: shownFrames })}</span
+								>
+							</div>
+						{/if}
+					</div>
+					<details class="disclosure advanced" bind:open={advancedOpen}>
+						<summary
+							><ChevronRight size={14} />{t('common.advanced')}{#if advancedNote}<span
+									class="faint advanced-note">{advancedNote}</span
+								>{/if}</summary
+						>
+						<div>
+							<div class="advanced-field">
 								<div class="advanced-label">
-									<span id={`${advancedId}-reference-title`}
-										>{t('moveSheet.referenceDirection')}</span
-									>
+									<label for={`${advancedId}-model`}>{t('moveSheet.motionModel')}</label>
 									<Help
 										iconOnly
-										title={t('moveSheet.referenceDirection')}
-										text={t('moveSheet.referenceHelp')}
+										title={t('moveSheet.motionModel')}
+										text={t('moveSheet.motionModelHelp')}
 									/>
 								</div>
-								{#if targetDirs.length === 1 || !showFullFrameDirections}
-									<span class="faint" id={`${advancedId}-reference-direction`}
-										>{directionLabel(direction)}</span
-									>
-								{/if}
-							</div>
-							{#if targetDirs.length > 1}
-								<div
-									class="frame-tabs"
-									class:many-directions={targetDirs.length > 5}
-									role="tablist"
-									aria-labelledby={`${advancedId}-reference-title`}
+								<select
+									id={`${advancedId}-model`}
+									class="bu-input input"
+									value={model}
+									onchange={(event) => chooseModel(event.currentTarget.value as MoveAnimationModel)}
 								>
-									{#snippet directionArrow(option: DirectionName)}
-										<ArrowUp size={14} style="transform:rotate({ANGLES[option]}deg)" />
-									{/snippet}
-									{#each targetDirs as option (option)}
-										{@const name = directionLabel(option)}
-										{@const edited = !!(
-											frameReferences[option]?.start || frameReferences[option]?.end
-										)}
-										<button
-											type="button"
-											id={`${advancedId}-frame-${option}`}
-											class="bu-action"
-											data-variant="tab"
-											role="tab"
-											aria-selected={direction === option}
-											aria-controls={`${advancedId}-frame-panel`}
-											aria-disabled={startLoading || endLoading}
-											aria-label={edited
-												? t('moveSheet.referenceEdited', { direction: name })
-												: name}
-											tabindex={direction === option ? 0 : -1}
-											onclick={() => {
-												if (!startLoading && !endLoading) referenceDirection = option;
-											}}
-											onkeydown={(event) => navigateFrameTabs(event, option)}
+									{#each MODELS as option (option)}<option
+											value={option}
+											disabled={option !== model && !fitsKept(option)}
+											>{t(MODEL_TEXT[option])}</option
+										>{/each}
+								</select>
+							</div>
+							{#if frameDirection && m}
+								{@const direction = frameDirection}
+								{@const size = { width: m.rig.cell.w, height: m.rig.cell.h }}
+								{@const startName = startFrom
+									? startFrom.replacement
+										? t('moveSheet.startFrom.savedSource')
+										: nice(startFrom.clip)
+									: t('moveSheet.standingFrame')}
+								{@const autoEnd = frameReference?.end === undefined && automaticMoveEnd(looping)}
+								<div class="reference-heading">
+									<div class="advanced-label">
+										<span id={`${advancedId}-reference-title`}
+											>{t('moveSheet.referenceDirection')}</span
 										>
-											<span class="bu-separator frame-tab-rule" aria-hidden="true"></span>
-											<span
-												class="frame-tab-content"
-												bind:clientWidth={frameTabWidths[option]}
-												aria-hidden="true"
+										<Help
+											iconOnly
+											title={t('moveSheet.referenceDirection')}
+											text={t('moveSheet.referenceHelp')}
+										/>
+									</div>
+									{#if targetDirs.length === 1 || !showFullFrameDirections}
+										<span class="faint" id={`${advancedId}-reference-direction`}
+											>{directionLabel(direction)}</span
+										>
+									{/if}
+								</div>
+								{#if targetDirs.length > 1}
+									<div
+										class="frame-tabs"
+										class:many-directions={targetDirs.length > 5}
+										role="tablist"
+										aria-labelledby={`${advancedId}-reference-title`}
+									>
+										{#snippet directionArrow(option: DirectionName)}
+											<ArrowUp size={14} style="transform:rotate({ANGLES[option]}deg)" />
+										{/snippet}
+										{#each targetDirs as option (option)}
+											{@const name = directionLabel(option)}
+											{@const edited = !!(
+												frameReferences[option]?.start || frameReferences[option]?.end
+											)}
+											<button
+												type="button"
+												id={`${advancedId}-frame-${option}`}
+												class="bu-action"
+												data-variant="tab"
+												role="tab"
+												aria-selected={direction === option}
+												aria-controls={`${advancedId}-frame-panel`}
+												aria-disabled={startLoading || endLoading}
+												aria-label={edited
+													? t('moveSheet.referenceEdited', { direction: name })
+													: name}
+												tabindex={direction === option ? 0 : -1}
+												onclick={() => {
+													if (!startLoading && !endLoading) referenceDirection = option;
+												}}
+												onkeydown={(event) => navigateFrameTabs(event, option)}
 											>
-												{@render directionArrow(option)}
-												<span>{showFullFrameDirections ? name : displayDirectionShort(option)}</span
-												>
-											</span>
-											<span class="frame-tab-measure" aria-hidden="true">
-												<span class="frame-tab-content" bind:offsetWidth={frameLabelWidths[option]}>
-													{@render directionArrow(option)}
-													<span class="bu-tab-text" data-text={name}>{name}</span>
-												</span>
-											</span>
-											{#if edited}<Circle
-													class="bu-tile-check"
-													size={6}
-													fill="currentColor"
-													strokeWidth={0}
+												<span class="bu-separator frame-tab-rule" aria-hidden="true"></span>
+												<span
+													class="frame-tab-content"
+													bind:clientWidth={frameTabWidths[option]}
 													aria-hidden="true"
-												/>{/if}
-										</button>
-									{/each}
+												>
+													{@render directionArrow(option)}
+													<span
+														>{showFullFrameDirections ? name : displayDirectionShort(option)}</span
+													>
+												</span>
+												<span class="frame-tab-measure" aria-hidden="true">
+													<span
+														class="frame-tab-content"
+														bind:offsetWidth={frameLabelWidths[option]}
+													>
+														{@render directionArrow(option)}
+														<span class="bu-tab-text" data-text={name}>{name}</span>
+													</span>
+												</span>
+												{#if edited}<Circle
+														class="bu-tile-check"
+														size={6}
+														fill="currentColor"
+														strokeWidth={0}
+														aria-hidden="true"
+													/>{/if}
+											</button>
+										{/each}
+									</div>
+								{/if}
+								<div
+									id={`${advancedId}-frame-panel`}
+									class="frame-panel"
+									role={targetDirs.length > 1 ? 'tabpanel' : 'group'}
+									aria-labelledby={targetDirs.length > 1
+										? `${advancedId}-frame-${direction}`
+										: `${advancedId}-reference-title ${advancedId}-reference-direction`}
+								>
+									{#key `${action}/${direction}/${model}`}
+										<div class="frame-references">
+											{#snippet standing()}<Sprite
+													img={standingImage}
+													k={1}
+													limit={36}
+													label={startName}
+												/>{/snippet}
+											{#snippet matching()}
+												{#if frameReference?.start}<img
+														class="matching-preview"
+														src={`data:image/png;base64,${frameReference.start.base64}`}
+														alt=""
+													/>{:else}{@render standing()}{/if}
+											{/snippet}
+											<ReferenceField
+												exactFrame
+												sideBySide
+												max={size}
+												label={t('moveSheet.startFrame')}
+												hint=""
+												caption={startName}
+												thumbnail={standing}
+												beforePick={pickStart}
+												picker={startPicker}
+												bind:loading={startLoading}
+												bind:value={
+													() => frameReference?.start,
+													(value) => changeFrame(direction, 'start', value)
+												}
+											/>
+											<ReferenceField
+												exactFrame
+												sideBySide
+												max={size}
+												label={t('moveSheet.endFrame')}
+												hint=""
+												caption={t(
+													model === 'skeleton-v3'
+														? 'moveSheet.endUnavailable'
+														: autoEnd
+															? 'moveSheet.sameAsStart'
+															: 'moveSheet.noEndFrame'
+												)}
+												thumbnail={model !== 'skeleton-v3' && autoEnd ? matching : undefined}
+												picker={endPicker}
+												disabled={model === 'skeleton-v3'}
+												bind:loading={endLoading}
+												removeLabel={t('moveSheet.removeEndFrame')}
+												bind:value={
+													() =>
+														model === 'skeleton-v3'
+															? undefined
+															: (frameReference?.end ?? undefined),
+													(value) => changeFrame(direction, 'end', value)
+												}
+												onremove={() => changeFrame(direction, 'end', null)}
+											/>
+											{#snippet startPicker(device: () => void, close: () => void)}
+												{@render framePicker(direction, 'start', device, close)}
+											{/snippet}
+											{#snippet endPicker(device: () => void, close: () => void)}
+												{@render framePicker(direction, 'end', device, close)}
+											{/snippet}
+										</div>
+									{/key}
+									<small class="faint">{t('moveSheet.referenceSize', size)}</small>
 								</div>
 							{/if}
-							<div
-								id={`${advancedId}-frame-panel`}
-								class="frame-panel"
-								role={targetDirs.length > 1 ? 'tabpanel' : 'group'}
-								aria-labelledby={targetDirs.length > 1
-									? `${advancedId}-frame-${direction}`
-									: `${advancedId}-reference-title ${advancedId}-reference-direction`}
-							>
-								{#key `${action}/${direction}/${model}`}
-									<div class="frame-references">
-										{#snippet standing()}<Sprite
-												img={standingImage}
-												k={1}
-												limit={36}
-												label={startName}
-											/>{/snippet}
-										{#snippet matching()}
-											{#if frameReference?.start}<img
-													class="matching-preview"
-													src={`data:image/png;base64,${frameReference.start.base64}`}
-													alt=""
-												/>{:else}{@render standing()}{/if}
-										{/snippet}
-										<ReferenceField
-											exactFrame
-											sideBySide
-											max={size}
-											label={t('moveSheet.startFrame')}
-											hint=""
-											caption={startName}
-											thumbnail={standing}
-											beforePick={pickStart}
-											picker={startPicker}
-											bind:loading={startLoading}
-											bind:value={
-												() => frameReference?.start,
-												(value) => changeFrame(direction, 'start', value)
-											}
-										/>
-										<ReferenceField
-											exactFrame
-											sideBySide
-											max={size}
-											label={t('moveSheet.endFrame')}
-											hint=""
-											caption={t(
-												model === 'skeleton-v3'
-													? 'moveSheet.endUnavailable'
-													: autoEnd
-														? 'moveSheet.sameAsStart'
-														: 'moveSheet.noEndFrame'
-											)}
-											thumbnail={model !== 'skeleton-v3' && autoEnd ? matching : undefined}
-											picker={endPicker}
-											disabled={model === 'skeleton-v3'}
-											bind:loading={endLoading}
-											removeLabel={t('moveSheet.removeEndFrame')}
-											bind:value={
-												() =>
-													model === 'skeleton-v3' ? undefined : (frameReference?.end ?? undefined),
-												(value) => changeFrame(direction, 'end', value)
-											}
-											onremove={() => changeFrame(direction, 'end', null)}
-										/>
-										{#snippet startPicker(device: () => void, close: () => void)}
-											{@render framePicker(direction, 'start', device, close)}
-										{/snippet}
-										{#snippet endPicker(device: () => void, close: () => void)}
-											{@render framePicker(direction, 'end', device, close)}
-										{/snippet}
-									</div>
-								{/key}
-								<small class="faint">{t('moveSheet.referenceSize', size)}</small>
-							</div>
-						{/if}
-					</div>
-				</details>
-			</div>
-			{#if motionAccess?.error}
-				<p class="notice warn small"><CircleAlert size={14} />{motionAccess.error}</p>
-				<button class="bu-action" type="button" data-variant="quiet" onclick={() => motionProbe++}
-					>{t('common.tryAgain')}</button
-				>
-			{/if}
-			{#if reservedMove(id, replacing)}<p class="notice warn small">
-					<CircleAlert size={14} />{displayError(reservedMove(id, replacing))}
-				</p>{:else if motionIssue}<p class="notice warn small">
-					<CircleAlert size={14} />{displayError(motionIssue)}
-				</p>{:else if preflight.length}{#each preflight as warning (warning.id)}<p
-						class="notice warn small"
+						</div>
+					</details>
+				</div>
+				{#if motionAccess?.error}
+					<p class="notice warn small"><CircleAlert size={14} />{motionAccess.error}</p>
+					<button class="bu-action" type="button" data-variant="quiet" onclick={() => motionProbe++}
+						>{t('common.tryAgain')}</button
 					>
-						<CircleAlert size={14} />{displayError(warning)}
-					</p>
-					{#if warning.id === 'frame-room-move'}
-						<button
-							class="bu-action btn"
-							data-variant="outline"
-							disabled={enlarging || !!frameEditsBlocked(doc.id)}
-							onclick={() => void room()}>{t('moveSheet.makeRoom')}</button
+				{/if}
+				{#if reservedMove(id, replacing)}<p class="notice warn small">
+						<CircleAlert size={14} />{displayError(reservedMove(id, replacing))}
+					</p>{:else if motionIssue}<p class="notice warn small">
+						<CircleAlert size={14} />{displayError(motionIssue)}
+					</p>{:else if preflight.length}{#each preflight as warning (warning.id)}<p
+							class="notice warn small"
 						>
-						{#if enlargeError}<p class="notice bad small" role="alert">{enlargeError}</p>{/if}
-					{/if}{/each}{:else if pendingIds.includes(id)}<p class="notice small">
-					<CircleAlert size={14} />{t('moveSheet.alreadyQueued', { move: nice(id) })}
-				</p>{:else if busy}<p class="faint small">
-					{t('moveSheet.waitsForCurrent')}
-				</p>{/if}
-			{#if addAccess.error}<p class="notice warn small" role="status">{addAccess.error}</p>{/if}
-			<TierNotice
-				id="move-action-tier"
-				minimumTier={addTier}
-				recommendedTier={GENERATION_RECOMMENDATION.tier}
-				feature={t('moveSheet.addFeature')}
-				recommendation={GENERATION_RECOMMENDATION.reason}
-			/>
-			{#if est}<details class="disclosure">
-					<summary><ChevronRight size={14} />{t('common.details')}</summary>
-					<div>
-						<p class="faint small">
-							{[
-								motion.text
-									? t('moveSheet.pipeline.described')
-									: action === 'walk'
-										? t('moveSheet.pipeline.walk')
-										: t('moveSheet.pipeline.authored'),
-								affectedMirrors
-									? t('moveSheet.pipeline.gridMirrored', {
-											frames: est.frames,
-											dirs,
-											mirrored: affectedMirrors
-										})
-									: t('moveSheet.pipeline.grid', { frames: est.frames, dirs }),
-								t('moves.estimate', { gens: decimal(est.body) })
-							].join(' · ')}
+							<CircleAlert size={14} />{displayError(warning)}
 						</p>
-					</div>
-				</details>{/if}
+						{#if warning.id === 'frame-room-move'}
+							<button
+								class="bu-action btn"
+								data-variant="outline"
+								disabled={enlarging || !!frameEditsBlocked(doc.id)}
+								onclick={() => void room()}>{t('moveSheet.makeRoom')}</button
+							>
+							{#if enlargeError}<p class="notice bad small" role="alert">{enlargeError}</p>{/if}
+						{/if}{/each}{:else if pendingIds.includes(id)}<p class="notice small">
+						<CircleAlert size={14} />{t('moveSheet.alreadyQueued', { move: nice(id) })}
+					</p>{:else if busy}<p class="faint small">
+						{t('moveSheet.waitsForCurrent')}
+					</p>{/if}
+				{#if addAccess.error}<p class="notice warn small" role="status">{addAccess.error}</p>{/if}
+				<TierNotice
+					id="move-action-tier"
+					minimumTier={addTier}
+					recommendedTier={GENERATION_RECOMMENDATION.tier}
+					feature={t('moveSheet.addFeature')}
+					recommendation={GENERATION_RECOMMENDATION.reason}
+				/>
+				{#if est}<details class="disclosure">
+						<summary><ChevronRight size={14} />{t('common.details')}</summary>
+						<div>
+							<p class="faint small">
+								{[
+									motion.text
+										? t('moveSheet.pipeline.described')
+										: action === 'walk'
+											? t('moveSheet.pipeline.walk')
+											: t('moveSheet.pipeline.authored'),
+									affectedMirrors
+										? t('moveSheet.pipeline.gridMirrored', {
+												frames: est.frames,
+												dirs,
+												mirrored: affectedMirrors
+											})
+										: t('moveSheet.pipeline.grid', { frames: est.frames, dirs }),
+									t('moves.estimate', { gens: decimal(est.body) })
+								].join(' · ')}
+							</p>
+						</div>
+					</details>{/if}
+			</div>
 		</div>
 	{/if}
 </Sheet>
@@ -2370,12 +2357,28 @@
 {/if}
 
 <style>
-	.move-source-list .bu-action {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		margin: 0 0.25rem 0.25rem 0;
-		min-height: 44px;
+	/* Start pose on the left and the move's settings on the right when the centered sheet has room; stacked otherwise. */
+	.move-start,
+	.move-edit {
+		display: grid;
+		gap: 12px;
+		align-content: start;
+		min-inline-size: 0;
+	}
+	@media (min-width: 900px) {
+		:global(dialog.sheet.center:has(.move-form)) {
+			width: min(760px, calc(100vw - 32px));
+		}
+		:global(dialog.sheet.center) .move-form {
+			display: grid;
+			grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+			align-items: start;
+			column-gap: 24px;
+		}
+		:global(dialog.sheet.center) .move-edit {
+			padding-inline-start: 24px;
+			border-inline-start: 1px solid var(--bu-line);
+		}
 	}
 	.frame-recovery-action {
 		align-self: flex-start;

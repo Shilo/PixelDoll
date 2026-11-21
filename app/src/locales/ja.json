@@ -2231,7 +2231,6 @@
 		"startFrom": {
 			"savedSource": "元の開始フレーム",
 			"label": "開始位置",
-			"chooseFrame": "フレームを選択",
 			"frame": "フレーム{number}",
 			"unavailable": "このフレームを使うには、選択したすべての向きに素体画像と計測済みの関節位置が必要です。",
 			"changed": "選択した開始フレームが変更されました。開始元を選び直してください。生成はリクエストされていません。",
@@ -2540,7 +2539,6 @@
 		"pixenReference": "Pixen は参照画像を使用しません。画像を使うにはモデルを切り替えてください。",
 		"fixedCost": "費用：{generations} ジェネレーション",
 		"managed": "PixelLab はアカウント内で {parent} をもとにステートを作成します。",
-		"referenceRoute": "参照画像を使うと、Pro は PixelLab アカウント内にステートを作らず、立ち姿の画像を編集します。",
 		"transfer": "参照画像のスタイルだけでなく、見た目も取り入れます。",
 		"sheetWarning": "複数の向きを1枚のシートで編集します。保存前に各向きを確認してください。",
 		"checkCost": "費用を確認",

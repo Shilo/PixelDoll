@@ -2202,7 +2202,6 @@
 		"startFrom": {
 			"savedSource": "原始起始帧",
 			"label": "起始姿势",
-			"chooseFrame": "选择帧",
 			"frame": "第 {number} 帧",
 			"unavailable": "要使用此帧，每个选中的朝向都需要有身体图像和已测量的关节位置。",
 			"changed": "选中的起始帧已更改。请重新选择来源。未发送生成请求。",
@@ -2511,7 +2510,6 @@
 		"pixenReference": "Pixen 不使用参考图。若要使用这张图片，请切换模型。",
 		"fixedCost": "费用：{generations} 次生成",
 		"managed": "PixelLab 会在你的账户中基于 {parent} 创建一个状态。",
-		"referenceRoute": "添加参考图后，Pro 会编辑站立图，而不是在 PixelLab 账户中创建状态。",
 		"transfer": "采用参考图的外观，而不只是风格。",
 		"sheetWarning": "多个朝向会在同一张图中编辑。保存前请检查每个朝向。",
 		"checkCost": "查看费用",

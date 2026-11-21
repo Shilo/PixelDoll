@@ -2318,7 +2318,6 @@
 		"startFrom": {
 			"savedSource": "Image de départ d'origine",
 			"label": "Point de départ",
-			"chooseFrame": "Choisir une image",
 			"frame": "Image {number}",
 			"unavailable": "Cette image nécessite un visuel du corps et des articulations mesurées pour chaque direction sélectionnée.",
 			"changed": "L’image de départ sélectionnée a changé. Choisissez à nouveau la source. Aucune génération n’a été demandée.",
@@ -2634,7 +2633,6 @@
 		"pixenReference": "Pixen n’utilise pas d’images de référence. Changez de modèle pour utiliser votre image.",
 		"fixedCost": "Coût : {generations} générations",
 		"managed": "PixelLab crée un état à partir de {parent} dans votre compte.",
-		"referenceRoute": "Avec une référence, Pro modifie les images de la pose debout au lieu de créer un état dans votre compte PixelLab.",
 		"transfer": "Reprend l’apparence de l’image de référence, pas seulement son style.",
 		"sheetWarning": "Plusieurs vues sont modifiées sur une seule planche. Vérifiez chaque vue avant d’enregistrer.",
 		"checkCost": "Vérifier le coût",

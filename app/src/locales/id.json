@@ -2224,7 +2224,6 @@
 		"startFrom": {
 			"savedSource": "Bingkai awal asli",
 			"label": "Mulai dari",
-			"chooseFrame": "Pilih frame",
 			"frame": "Frame {number}",
 			"unavailable": "Frame ini memerlukan gambar tubuh dan sendi yang sudah diukur untuk setiap arah yang dipilih.",
 			"changed": "Frame awal yang dipilih telah berubah. Pilih ulang sumbernya. Tidak ada permintaan generasi yang dikirim.",
@@ -2533,7 +2532,6 @@
 		"pixenReference": "Pixen tidak menggunakan gambar acuan. Ganti model untuk menggunakan gambar Anda.",
 		"fixedCost": "Biaya: {generations} generasi",
 		"managed": "PixelLab membuat keadaan dari {parent} di akun Anda.",
-		"referenceRoute": "Dengan gambar acuan, Pro mengedit gambar berdiri alih-alih membuat keadaan di akun PixelLab Anda.",
 		"transfer": "Memakai tampilan gambar referensi, bukan hanya gayanya.",
 		"sheetWarning": "Beberapa tampilan diedit dalam satu lembar. Periksa setiap tampilan sebelum menyimpan.",
 		"checkCost": "Periksa biaya",

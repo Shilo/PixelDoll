@@ -2317,7 +2317,6 @@
 		"startFrom": {
 			"savedSource": "Ursprünglicher Startframe",
 			"label": "Ausgangspunkt",
-			"chooseFrame": "Frame auswählen",
 			"frame": "Frame {number}",
 			"unavailable": "Für diesen Frame werden Körperbilder und vermessene Gelenke für jede ausgewählte Blickrichtung benötigt.",
 			"changed": "Der ausgewählte Startframe hat sich geändert. Wähle die Quelle erneut aus. Es wurde keine Generierung angefordert.",
@@ -2633,7 +2632,6 @@
 		"pixenReference": "Pixen nutzt keine Referenzbilder. Wechsle das Modell, um dein Bild zu verwenden.",
 		"fixedCost": "Kosten: {generations} Generationen",
 		"managed": "PixelLab erstellt aus {parent} einen Zustand in deinem Konto.",
-		"referenceRoute": "Mit einer Referenz bearbeitet Pro die Standbilder, statt einen Zustand in deinem PixelLab-Konto anzulegen.",
 		"transfer": "Übernimmt das Aussehen des Referenzbilds, nicht nur seinen Stil.",
 		"sheetWarning": "Mehrere Ansichten werden auf einem Blatt bearbeitet. Prüfe jede Ansicht vor dem Speichern.",
 		"checkCost": "Kosten prüfen",

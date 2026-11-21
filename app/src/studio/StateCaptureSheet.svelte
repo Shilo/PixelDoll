@@ -26,7 +26,7 @@
 	import { moveLabel } from './model.ts';
 	import { displayDirection } from './displayDirection.ts';
 	import { displayMove } from './displayMove.ts';
-	import { ChevronLeft, ChevronRight, Pause, Play } from './icons.ts';
+	import { ChevronRight } from './icons.ts';
 	import {
 		captureState,
 		stateCaptureId,
@@ -36,6 +36,7 @@
 	} from './moveActions.svelte.ts';
 	import ReferenceField from './ReferenceField.svelte';
 	import Sheet from './Sheet.svelte';
+	import SourcePreview from './SourcePreview.svelte';
 	import Sprite from './Sprite.svelte';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
 	import type { Img } from '../lib/image/png.ts';
@@ -168,25 +169,6 @@
 			.sort((left, right) => DIRECTIONS.indexOf(left.id) - DIRECTIONS.indexOf(right.id))
 			.map(({ id }) => ({ direction: id, image: cellImg(project, body, clip, id, cell) ?? null }));
 	});
-	let facing = $state<DirectionName | null>(null);
-	let rotating = $state(!matchMedia('(prefers-reduced-motion: reduce)').matches);
-	const canRotate = $derived(previews.length > 1);
-	// Starts on the Studio's facing; stepping frames keeps the facing the user is looking at.
-	const shown = $derived(
-		previews.find(({ direction }) => direction === facing) ??
-			previews.find(({ direction }) => direction === ui.dir) ??
-			previews[0]
-	);
-	$effect(() => {
-		const count = previews.length;
-		if (!rotating || count < 2) return;
-		const timer = window.setInterval(() => {
-			const at = previews.findIndex(({ direction }) => direction === shown?.direction);
-			facing = previews[(at + 1) % count].direction;
-		}, 700);
-		return () => window.clearInterval(timer);
-	});
-
 	const id = $derived(stateCaptureId(name));
 	const nameIssue = $derived(
 		project &&
@@ -576,58 +558,14 @@
 					thumbnail={(key) => project && bodyClipThumbnail(project, key, ui.dir)}
 					onselect={chooseClip}
 				/>
-				{#if shown}
-					{@const facingName = displayDirection(shown.direction)}
-					{#snippet sprite()}
-						<span class="cell-frame" data-facing={shown.direction}>
-							{@render cell(
-								shown.image,
-								208,
-								t('stateCapture.preview', { source: clipName(clip), facing: facingName })
-							)}
-						</span>
-					{/snippet}
-					{#if canRotate}
-						<button
-							class="source-preview"
-							type="button"
-							aria-label={t(rotating ? 'common.pause' : 'common.play')}
-							aria-describedby="{formId}-facing"
-							onclick={() => (rotating = !rotating)}
-						>
-							{@render sprite()}
-							<span class="source-play" aria-hidden="true">
-								{#if rotating}<Pause size={18} />{:else}<Play size={18} />{/if}
-							</span>
-						</button>
-					{:else}
-						<div class="source-preview">{@render sprite()}</div>
-					{/if}
-					<p class="cell-caption" id="{formId}-facing">{facingName}</p>
-				{/if}
-				{#if total > 1}
-					<div class="source-nav">
-						<button
-							class="bu-action"
-							data-variant="quiet"
-							type="button"
-							aria-label={t('stage.previousFrame')}
-							disabled={!!busy || frame === 0}
-							onclick={() => step(-1)}><ChevronLeft size={20} /></button
-						>
-						<strong aria-live="polite"
-							>{t('stage.framePosition', { frame: frame + 1, total })}</strong
-						>
-						<button
-							class="bu-action"
-							data-variant="quiet"
-							type="button"
-							aria-label={t('stage.nextFrame')}
-							disabled={!!busy || frame >= total - 1}
-							onclick={() => step(1)}><ChevronRight size={20} /></button
-						>
-					</div>
-				{/if}
+				<SourcePreview
+					{previews}
+					source={clipName(clip)}
+					{frame}
+					frames={total}
+					disabled={!!busy}
+					onstep={step}
+				/>
 				{#if changed}
 					<div class="notice warn small source-changed" role="status">
 						<p>{t('stateCapture.concurrentEdit')}</p>
@@ -889,65 +827,6 @@
 		margin: 0;
 	}
 	/* The whole stage is the play/pause target; the frame stepper sits outside it. */
-	/* The stored cell fills the preview: the box edge is the cell edge. */
-	.source-preview {
-		position: relative;
-		display: grid;
-		justify-self: center;
-		inline-size: min(100%, 280px, 36dvh);
-		aspect-ratio: 1;
-		padding: 0;
-		overflow: hidden;
-		color: inherit;
-		font: inherit;
-		background: var(--stage);
-		border: 1px solid var(--bu-line);
-		border-radius: var(--r-ctl);
-	}
-	button.source-preview {
-		cursor: pointer;
-	}
-	button.source-preview:hover {
-		border-color: var(--bu-border);
-	}
-	.cell-frame {
-		display: grid;
-		inline-size: 100%;
-		block-size: 100%;
-	}
-	.cell-caption {
-		margin: -4px 0 0;
-		text-align: center;
-		font-size: 12px;
-		color: var(--bu-muted);
-	}
-	.source-play {
-		position: absolute;
-		inset-block-end: 0;
-		inset-inline-end: 0;
-		min-block-size: 44px;
-		min-inline-size: 44px;
-		display: grid;
-		place-items: center;
-	}
-	.source-nav {
-		margin-block-start: -4px;
-		display: grid;
-		grid-template-columns: 44px minmax(0, 1fr) 44px;
-		align-items: center;
-		justify-self: center;
-		inline-size: min(100%, 248px);
-		gap: 8px;
-		text-align: center;
-	}
-	.source-nav button {
-		min-block-size: 44px;
-		display: grid;
-		place-items: center;
-	}
-	.source-nav strong {
-		font-variant-numeric: tabular-nums;
-	}
 	.source-changed {
 		display: grid;
 		gap: 8px;

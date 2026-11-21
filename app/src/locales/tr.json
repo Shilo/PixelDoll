@@ -2311,7 +2311,6 @@
 		"startFrom": {
 			"savedSource": "Orijinal başlangıç karesi",
 			"label": "Başlangıç noktası",
-			"chooseFrame": "Kare seçin",
 			"frame": "Kare {number}",
 			"unavailable": "Bu kare için seçilen her yönde gövde görseli ve ölçülmüş eklem konumları gerekir.",
 			"changed": "Seçilen başlangıç karesi değişti. Kaynağı yeniden seçin. Üretim isteği gönderilmedi.",
@@ -2627,7 +2626,6 @@
 		"pixenReference": "Pixen referans görseli kullanmaz. Görselinizi kullanmak için modeli değiştirin.",
 		"fixedCost": "Maliyet: {generations} üretim",
 		"managed": "PixelLab hesabınızda {parent} kaynaklı bir durum oluşturur.",
-		"referenceRoute": "Referans görselle Pro, PixelLab hesabınızda bir durum oluşturmak yerine ayakta duruş görsellerini düzenler.",
 		"transfer": "Referans görselin yalnızca stilini değil, görünüşünü de alır.",
 		"sheetWarning": "Birden çok görünüm tek sayfada düzenlenir. Kaydetmeden önce her görünümü kontrol edin.",
 		"checkCost": "Maliyeti kontrol et",

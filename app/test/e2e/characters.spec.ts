@@ -2751,16 +2751,23 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	).toBeVisible();
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	const moveSheet = page.getByRole('dialog', { name: 'Add a move' });
-	await moveSheet.getByText('Start from · Standing', { exact: true }).click();
-	await moveSheet
-		.locator('.move-source-list button')
-		.filter({ hasText: /^Idle$/ })
-		.click();
-	await moveSheet.getByText('Choose a frame', { exact: true }).click();
-	const frames = moveSheet.locator('.move-source-list button');
-	await expect(frames.filter({ hasText: /^Frame 4$/ })).toHaveAttribute('aria-pressed', 'true');
-	await frames.filter({ hasText: /^Frame 2$/ }).click();
-	await expect(frames.filter({ hasText: /^Frame 2$/ })).toHaveAttribute('aria-pressed', 'true');
+	// Add a move picks its start pose with the same Source picker and turning preview as Create State.
+	const startFrom = (name: string) =>
+		moveSheet.getByRole('button', { name: `Start from: ${name}`, exact: true });
+	const pickStart = async (name: string) => {
+		await moveSheet.getByRole('button', { name: /^Start from: / }).click();
+		await page
+			.getByRole('menu', { name: 'Start from' })
+			.getByRole('menuitemradio', { name, exact: true })
+			.click();
+	};
+	const previousStartFrame = moveSheet.getByRole('button', { name: 'Previous frame', exact: true });
+	await expect(startFrom('Standing')).toBeVisible();
+	await pickStart('Idle');
+	await expect(moveSheet.getByText('Frame 4 of 4', { exact: true })).toBeVisible();
+	await previousStartFrame.click();
+	await previousStartFrame.click();
+	await expect(moveSheet.getByText('Frame 2 of 4', { exact: true })).toBeVisible();
 	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'States');
 	await page.getByRole('button', { name: 'More actions for Rest pose', exact: true }).click();
@@ -2775,13 +2782,10 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await moveSheet.getByRole('radio', { name: 'Slash', exact: true }).click();
 	await moveSheet.locator('details.advanced summary').click();
 	await moveSheet.getByRole('combobox', { name: 'Motion model' }).selectOption('skeleton-v3');
-	await moveSheet.getByText('Start from · Standing', { exact: true }).click();
-	await moveSheet
-		.locator('.move-source-list button')
-		.filter({ hasText: /^Idle$/ })
-		.click();
-	await moveSheet.getByText('Choose a frame', { exact: true }).click();
-	await frames.filter({ hasText: /^Frame 2$/ }).click();
+	await pickStart('Idle');
+	await previousStartFrame.click();
+	await previousStartFrame.click();
+	await expect(moveSheet.getByText('Frame 2 of 4', { exact: true })).toBeVisible();
 	await moveSheet.getByRole('button', { name: /^Generate move/ }).click();
 	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
 	await connect
@@ -2793,9 +2797,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	expect(pending.manifest.rig.animations.some(({ id }) => id === 'slash')).toBe(false);
 	expect(pending.moveReviews?.slash?.spec.startFrom).toMatchObject({ clip: 'idle', cell: 1 });
 	await review.getByRole('button', { name: /^Regenerate/ }).click();
-	await expect(moveSheet.getByText('Start from · Idle', { exact: true })).toBeVisible();
-	await moveSheet.getByText('Choose a frame', { exact: true }).click();
-	await expect(frames.filter({ hasText: /^Frame 2$/ })).toHaveAttribute('aria-pressed', 'true');
+	await expect(startFrom('Idle')).toBeVisible();
+	await expect(moveSheet.getByText('Frame 2 of 4', { exact: true })).toBeVisible();
 	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'States');
 	await addState.click();
@@ -2890,11 +2893,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
 	await moveSheet.getByRole('radio', { name: 'Cast', exact: true }).click();
-	await moveSheet.getByText('Start from · Standing', { exact: true }).click();
-	await moveSheet
-		.locator('.move-source-list button')
-		.filter({ hasText: /^Ready stance$/ })
-		.click();
+	await pickStart('Ready stance');
 	const jointPosts = () => posts.filter(({ path }) => path.endsWith('/estimate-skeleton')).length;
 	const beforeJointFit = jointPosts();
 	await moveSheet.getByRole('button', { name: 'Connect PixelLab', exact: true }).click();
@@ -2902,7 +2901,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		.getByLabel('Paste your Secret API key', { exact: true })
 		.fill('test-only-not-a-real-key');
 	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
-	await expect(moveSheet.getByText('Start from · Ready stance', { exact: true })).toBeVisible();
+	await expect(startFrom('Ready stance')).toBeVisible();
 	await moveSheet.getByRole('button', { name: 'Check joint fitting cost' }).click();
 	expect(jointPosts()).toBe(beforeJointFit);
 	await moveSheet.getByRole('button', { name: /^Measure joints/ }).click();
