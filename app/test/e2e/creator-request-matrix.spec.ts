@@ -99,7 +99,7 @@ async function setup(page: Page) {
 		expect(body).not.toHaveProperty('direction_images');
 		expect(body).not.toHaveProperty('n_directions'); // V3's from-scratch default is eight, independent of kept views.
 		expect(unexpected).toEqual([]);
-		await sheet.getByRole('button', { name: 'Back to character setup', exact: true }).click();
+		await sheet.getByRole('button', { name: 'Edit setup…', exact: true }).click();
 		await expect(sheet.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible();
 		return body;
 	}

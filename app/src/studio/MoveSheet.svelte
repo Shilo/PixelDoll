@@ -355,6 +355,9 @@
 	let colorRepair = $state<BodyPaletteRepairPlan | null>(null);
 	// Frames are decoded images: keep them raw rather than deeply proxied.
 	let keep = $state.raw<KeepBodyPlan | null>(null);
+	const hasFrameRecovery = $derived(
+		!!(savedItemFrames && !recoveryAccess.error) || !!(recovery || colorRepair || keep)
+	);
 	const keepK = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1 : 1.5))));
 	const recoveryItemGens = $derived(
 		recovery && m && moving.spec ? moveEstimate(m, moving.spec).items : 0
@@ -524,69 +527,45 @@
 					: t('moveSheet.review.useRepaired')}</button
 		>
 	{:else if progress && moving.error}
-		<div class="recovery-exits">
+		<div class="recovery-actions">
 			<button class="bu-action btn plain" data-variant="quiet" onclick={() => leaveFailedMove(true)}
-				>{t('common.cancelAttempt')}</button
+				>{t('common.cancel')}</button
 			>
-			{#if !moving.spec?.itemsOnly && ok}
-				<button class="bu-action btn" data-variant="outline" onclick={() => leaveFailedMove(false)}
-					>{t('moveSheet.newSetup')}</button
+			<div class="recovery-options">
+				{#if !moving.spec?.itemsOnly && ok}
+					<button
+						class="bu-action btn"
+						data-variant="outline"
+						onclick={() => leaveFailedMove(false)}>{t('moveSheet.newSetup')}</button
+					>
+				{/if}
+				<span class="api-action"
+					><ApiPeek scope="move-retry" label={t('moveSheet.retryLabel')} plan={retryPlan} /><button
+						class="bu-action btn"
+						class:primary={!hasFrameRecovery}
+						data-variant={hasFrameRecovery ? 'outline' : 'primary'}
+						disabled={!!retryAccess.error || tierBlocked(retryTier)}
+						aria-describedby={tierBlocked(retryTier) ? 'move-retry-tier' : undefined}
+						onclick={() =>
+							moving.spec &&
+							withKey(() => {
+								void startMove(moving.projectId, {
+									...$state.snapshot(moving.spec!),
+									reuseItemFrames: undefined,
+									measurementRecovery: undefined,
+									bodyPaletteRepair: undefined,
+									seed: 1 + Math.floor(Math.random() * 1_000_000)
+								});
+								ui.sheet = 'move';
+							}, retryTier)}
+						>{t('common.generateAgain')}{#if retryGens}
+							<span class="cost">{t('moves.estimate', { gens: formatNumber(retryGens) })}</span
+							>{/if}</button
+					></span
 				>
-			{/if}
+			</div>
 		</div>
-		<span class="api-action"
-			><ApiPeek scope="move-retry" label={t('moveSheet.retryLabel')} plan={retryPlan} /><button
-				class="bu-action btn"
-				data-variant="outline"
-				disabled={!!retryAccess.error || tierBlocked(retryTier)}
-				aria-describedby={tierBlocked(retryTier) ? 'move-retry-tier' : undefined}
-				onclick={() =>
-					moving.spec &&
-					withKey(() => {
-						void startMove(moving.projectId, {
-							...$state.snapshot(moving.spec!),
-							reuseItemFrames: undefined,
-							measurementRecovery: undefined,
-							bodyPaletteRepair: undefined,
-							seed: 1 + Math.floor(Math.random() * 1_000_000)
-						});
-						ui.sheet = 'move';
-					}, retryTier)}
-				>{recovery || colorRepair || keep || moving.spec?.itemsOnly
-					? t('moveSheet.newFrames')
-					: t('moveSheet.retryLabel')}{#if retryGens}
-					<span class="cost">{t('moves.estimate', { gens: formatNumber(retryGens) })}</span
-					>{/if}</button
-			></span
-		>
-		{#if savedItemFrames && !recoveryAccess.error}<button
-				class="bu-action btn primary"
-				data-variant="primary"
-				onclick={() =>
-					moving.spec &&
-					void startMove(moving.projectId, {
-						...$state.snapshot(moving.spec),
-						reuseItemFrames: true
-					})}>{t('moveSheet.useSaved')}</button
-			>{/if}
-		{#if recovery}<button
-				class="bu-action btn primary"
-				data-variant="primary"
-				disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
-				aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
-				onclick={retryChecks}
-				>{recovery.checks ? t('moveSheet.retryChecks') : t('moveSheet.reuseCached')}</button
-			>{/if}
-		{#if colorRepair}<button
-				class="bu-action btn primary"
-				data-variant="primary"
-				disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
-				aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
-				onclick={matchColors}>{t('moveSheet.matchColors')}</button
-			>{/if}
-		{#if keep}<button class="bu-action btn primary" data-variant="primary" onclick={keepBody}
-				>{t('moveSheet.keepFrames')}</button
-			>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
+		<!-- new seed re-rolls body + item poses (R6 P2-7) -->
 	{:else if progress}
 		<span class="foot-note">{t('moveSheet.keepWorking')}</span>
 		<button class="bu-action btn" data-variant="outline" onclick={() => (adding = true)}
@@ -667,7 +646,6 @@
 				? t('moveSheet.titleReplace')
 				: t('moves.add')}
 	cancel={progress && !moving.done ? 'common.hide' : 'common.cancel'}
-	className={progress && moving.error && !repairReview ? 'move-recovery-sheet' : ''}
 	onclose={() => (ui.sheet = null)}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
 >
@@ -798,7 +776,17 @@
 					/>{/if}{/if}
 			{#if savedItemFrames}<p class="muted small">
 					{t('moveSheet.savedFramesNote')}
-				</p>{/if}
+				</p>
+				{#if moving.error && !moving.done && !recoveryAccess.error}<button
+						class="bu-action btn primary frame-recovery-action"
+						data-variant="primary"
+						onclick={() =>
+							moving.spec &&
+							void startMove(moving.projectId, {
+								...$state.snapshot(moving.spec),
+								reuseItemFrames: true
+							})}>{t('moveSheet.useSaved')}</button
+					>{/if}{/if}
 			{#if recoveryChecking}<p class="muted small" role="status">
 					{t('moveSheet.checkingCached')}
 				</p>{/if}
@@ -841,6 +829,11 @@
 								</p>{/each}
 						</div>
 					{/each}
+					{#if moving.error && !moving.done}<button
+							class="bu-action btn primary frame-recovery-action"
+							data-variant="primary"
+							onclick={keepBody}>{t('moveSheet.keepFrames')}</button
+						>{/if}
 				</section>
 			{/if}
 			{#if recovery}
@@ -863,6 +856,14 @@
 						.filter(Boolean)
 						.join(' ')}
 				</p>
+				{#if moving.error && !moving.done}<button
+						class="bu-action btn primary frame-recovery-action"
+						data-variant="primary"
+						disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
+						aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
+						onclick={retryChecks}
+						>{recovery.checks ? t('moveSheet.retryChecks') : t('moveSheet.reuseCached')}</button
+					>{/if}
 			{/if}
 			{#if colorRepair}
 				<p class="notice warn small">
@@ -889,6 +890,13 @@
 						.filter(Boolean)
 						.join(' ')}
 				</p>
+				{#if moving.error && !moving.done}<button
+						class="bu-action btn primary frame-recovery-action"
+						data-variant="primary"
+						disabled={!!recoveryAccess.error || tierBlocked(recoveryTier)}
+						aria-describedby={tierBlocked(recoveryTier) ? 'move-retry-tier' : undefined}
+						onclick={matchColors}>{t('moveSheet.matchColors')}</button
+					>{/if}
 			{/if}
 			{#if recoveryError}<p class="notice bad small">
 					<CircleAlert size={14} />{displayNestedMessage(recoveryError)}
@@ -1129,16 +1137,9 @@
 </Sheet>
 
 <style>
-	:global(.move-recovery-sheet:not(.bottom) .sheet-foot) {
-		flex-wrap: wrap;
-	}
-	.recovery-exits {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
-	:global(.move-recovery-sheet.bottom) .recovery-exits > button {
-		flex: 1 1 auto;
+	.frame-recovery-action {
+		align-self: flex-start;
+		justify-self: start;
 	}
 	.redraw-form {
 		gap: 12px;

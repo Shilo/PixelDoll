@@ -3379,7 +3379,7 @@ test('a click waiting on a busy first tab continues as soon as that tab is idle,
 		.click();
 	await page
 		.getByRole('dialog', { name: 'New character', exact: true })
-		.getByRole('button', { name: 'Cancel attempt', exact: true })
+		.getByRole('button', { name: 'Cancel', exact: true })
 		.click();
 	await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeHidden();
 	await expect(second.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toBeVisible({
@@ -3788,9 +3788,7 @@ test('interrupted character specifications retain their own estimates', async ({
 	});
 	const create = page.getByRole('dialog', { name: 'New character', exact: true });
 	// Creation is priced by the draw (body size) plus a standing-joint fallback per direction; it makes no animation.
-	await expect(create.getByRole('button', { name: /^Create character again/ })).toContainText(
-		'2–5 gens'
-	);
+	await expect(create.getByRole('button', { name: /^Generate again/ })).toContainText('2–5 gens');
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts';
 		const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
@@ -3807,21 +3805,17 @@ test('interrupted character specifications retain their own estimates', async ({
 			] as const
 		).map((id) => ({ id }));
 	});
-	await expect(create.getByRole('button', { name: /^Create character again/ })).toContainText(
-		'2–5 gens'
-	);
+	await expect(create.getByRole('button', { name: /^Generate again/ })).toContainText('2–5 gens');
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts';
 		const s = (await import(path)) as typeof import('../../src/studio/state.svelte.ts');
 		s.creates[0].spec.size = 128; // the stored run, not the 64 px form draft, sets the price
 	});
-	await expect(create.getByRole('button', { name: /^Create character again/ })).toContainText(
-		'3–5 gens'
-	);
+	await expect(create.getByRole('button', { name: /^Generate again/ })).toContainText('3–5 gens');
 	expect(calls).toEqual([]);
 });
 
-test('character Try again preserves the direction plan and allocates a fresh publication identity', async ({
+test('character retry preserves the direction plan and allocates a fresh publication identity', async ({
 	page,
 	context
 }, info) => {
@@ -3884,7 +3878,7 @@ test('character Try again preserves the direction plan and allocates a fresh pub
 	try {
 		await page
 			.getByRole('dialog', { name: 'New character', exact: true })
-			.getByRole('button', { name: /^Create character again/ })
+			.getByRole('button', { name: /^Generate again/ })
 			.click();
 		const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
 		await connect.getByLabel('API key', { exact: true }).fill('synthetic-retry-test-key');
@@ -4512,7 +4506,7 @@ test('an accepted item failure shows the reported charge and saved job without a
 		)
 	).toBeVisible();
 	await page.keyboard.press('Escape');
-	await review.getByRole('button', { name: 'Cancel attempt', exact: true }).click();
+	await review.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(page.getByRole('dialog', { name: 'Item review', exact: true })).toBeHidden();
 	expect(posts).toEqual(['/v2/edit-animation-v2']);
 });
@@ -4860,11 +4854,23 @@ test('moves waiting behind another character’s failed move point to it', async
 	await sheet.getByRole('button', { name: 'Open Failed mover', exact: true }).click();
 	await expect(page.locator('.project-btn')).toContainText('Failed mover');
 	// A paid retry discloses its estimate on the button itself, not only when saved frames exist.
-	await expect(
-		sheet.getByRole('button', { name: /^Generate move again · Est\. [1-9]\d* gens$/ })
-	).toBeVisible();
-	await expect(sheet.getByRole('button', { name: 'Cancel attempt', exact: true })).toBeVisible();
-	await sheet.getByRole('button', { name: 'Set up a new move', exact: true }).click();
+	const cancel = sheet.getByRole('button', { name: 'Cancel', exact: true });
+	const startNew = sheet.getByRole('button', { name: 'New move…', exact: true });
+	const retry = sheet.getByRole('button', { name: /^Generate again · Est\. [1-9]\d* gens$/ });
+	for (const viewport of [page.viewportSize()!, { width: 320, height: 568 }]) {
+		await page.setViewportSize(viewport);
+		await expect(retry).toBeVisible();
+		const cancelBox = (await cancel.boundingBox())!;
+		const startNewBox = (await startNew.boundingBox())!;
+		const retryBox = (await retry.boundingBox())!;
+		const center = (box: { y: number; height: number }) => box.y + box.height / 2;
+		expect(cancelBox.x + cancelBox.width).toBeLessThanOrEqual(startNewBox.x);
+		expect(startNewBox.x + startNewBox.width).toBeLessThanOrEqual(retryBox.x);
+		expect(retryBox.x + retryBox.width).toBeLessThanOrEqual(viewport.width);
+		expect(Math.abs(center(cancelBox) - center(startNewBox))).toBeLessThan(1);
+		expect(Math.abs(center(cancelBox) - center(retryBox))).toBeLessThan(1);
+	}
+	await startNew.click();
 	await expect(sheet.getByRole('textbox', { name: 'Describe the motion' })).toBeVisible();
 	await expect(sheet.getByText('Cast stopped')).toHaveCount(0);
 	await expect(page.getByRole('dialog', { name: 'Connect PixelLab' })).toHaveCount(0);
@@ -5221,7 +5227,7 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Walk Failed: tap for details' }).click();
 	const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
-	await expect(sheet.getByRole('button', { name: /^Generate new frames/ })).toContainText(
+	await expect(sheet.getByRole('button', { name: /^Generate again/ })).toContainText(
 		'Est. 10 gens'
 	);
 	await sheet.getByRole('button', { name: 'Use saved frames', exact: true }).click();
@@ -5644,7 +5650,7 @@ test('partial missing gear and explicit item repair stay on the current move and
 	expect(poseScope).toMatchObject({ id: 'walk', dirs: ['west'], items: [fixture.itemId] });
 	expect(poseScope.replace).toBeUndefined();
 	expect(poseScope.itemMethod).toBeUndefined();
-	await sheet.getByRole('button', { name: 'Cancel attempt', exact: true }).click();
+	await sheet.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(sheet).toBeHidden();
 	await selectedItemDetails(page);
 	const repair = page.getByRole('button', { name: /^Repair item/ });
@@ -6404,7 +6410,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 	await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toHaveCount(
 		0
 	);
-	await expect(sheet.getByRole('button', { name: 'Cancel attempt', exact: true })).toBeVisible();
+	await expect(sheet.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
 	await expect(sheet).toContainText(
 		'Keep saves them as they are, body only, with no PixelLab request.'
 	);
@@ -6648,7 +6654,7 @@ test('bounded body color correction discloses changed checks and equipment cost 
 	).toBe(true);
 	expect(consent.bodyPaletteRepair.id).toMatch(/^[a-f0-9-]{36}$/);
 	expect(consent.measurementRecovery).toBeUndefined();
-	await sheet.getByRole('button', { name: /^Generate move again · Est\. [1-9]\d* gens$/ }).click();
+	await sheet.getByRole('button', { name: /^Generate again · Est\. [1-9]\d* gens$/ }).click();
 	await expect
 		.poll(() =>
 			page.evaluate(async () => {
@@ -6912,7 +6918,7 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 	await expect(retry).toBeEnabled();
 	await expect(retry).toHaveText(`Generate again Est. ${expected} gens`);
 	await panel
-		.locator('.actions .api-action')
+		.locator('.recovery-options')
 		.getByRole('button', { name: 'Inspect API calls', exact: true })
 		.click();
 	const retryPeek = page.getByRole('dialog', { name: 'API calls', exact: true });
