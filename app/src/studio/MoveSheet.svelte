@@ -10,6 +10,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import ReferenceField from './ReferenceField.svelte';
 	import type { PickedReference } from '../lib/image/reference.ts';
+	import { base64ToBytes, decodePng } from '../lib/image/png.ts';
 	import {
 		automaticMoveEnd,
 		defaultMoveFrameCount,
@@ -133,6 +134,7 @@
 	let startLoading = $state(false);
 	let endLoading = $state(false);
 	let confirm = $state.raw<{ kind: 'start' | 'loop'; accept: () => void }>();
+	let loopChange = 0;
 	let customStartAcknowledged = false;
 	const slug = (s: string) =>
 		s
@@ -291,7 +293,7 @@
 			targetDirs.some(
 				(direction) =>
 					frameReferences[direction]?.start ||
-					(model !== 'skeleton-v3' && frameReferences[direction]?.end !== undefined)
+					(model !== 'skeleton-v3' && frameReferences[direction]?.end)
 			)
 				? t('moveSheet.customFrames')
 				: ''
@@ -505,6 +507,14 @@
 	function go() {
 		const projectId = doc.id;
 		if (!est || addAccess.error) return;
+		if (
+			model === 'skeleton-v3' &&
+			!customStartAcknowledged &&
+			targetDirs.some((direction) => frameReferences[direction]?.start)
+		) {
+			pickStart(go);
+			return;
+		}
 		const spec = {
 			...motion,
 			items: chosen,
@@ -543,6 +553,7 @@
 		frameChoice = undefined;
 		loopChoice = undefined;
 		frameReferences = {};
+		customStartAcknowledged = false;
 		referenceDirection = undefined;
 		const clips = (rec?.rigQa as { clips?: Record<string, { fails?: unknown[] }> } | undefined)
 			?.clips;
@@ -564,19 +575,57 @@
 		value?: PickedReference | null
 	) {
 		const next = { ...frameReferences[direction], [kind]: value };
-		if (next.start || next.end !== undefined) frameReferences[direction] = next;
-		else delete frameReferences[direction];
+		const references = { ...frameReferences };
+		if (next.start || next.end !== undefined) references[direction] = next;
+		else delete references[direction];
+		frameReferences = references;
 	}
-	function changeLoop(enabled: boolean) {
+	async function changeLoop(enabled: boolean) {
+		const change = ++loopChange;
+		if (model === 'skeleton-v3' || riding) {
+			loopChoice = enabled;
+			return;
+		}
+		const draftFrames = frameReferences;
+		const draftModel = model;
+		const directions = targetDirs;
+		const isCurrent = () =>
+			change === loopChange &&
+			draftFrames === frameReferences &&
+			draftModel === model &&
+			directions === targetDirs;
 		const reset = () => {
-			for (const direction of targetDirs) changeFrame(direction, 'end');
+			if (!isCurrent()) return;
+			for (const direction of directions) changeFrame(direction, 'end');
 			loopChoice = enabled;
 		};
-		const replacesEnd = targetDirs.some((direction) => {
-			const frames = frameReferences[direction];
-			return !!frames?.end && frames.end.base64 !== frames.start?.base64;
-		});
-		if (replacesEnd) confirm = { kind: 'loop', accept: reset };
+		const changed = await Promise.all(
+			directions.map(async (direction) => {
+				const frames = draftFrames[direction];
+				if (!frames?.end || frames.end.base64 === frames.start?.base64) return false;
+				try {
+					const end = await decodePng(base64ToBytes(frames.end.base64));
+					const hash = m?.rig.rest?.[direction]?.image;
+					const start = frames.start
+						? await decodePng(base64ToBytes(frames.start.base64))
+						: hash && store.project?.images.get(hash);
+					return (
+						!start ||
+						start.w !== end.w ||
+						start.h !== end.h ||
+						end.data.some(
+							(byte, index) =>
+								byte !== start.data[index] &&
+								(index % 4 === 3 || end.data[index - (index % 4) + 3] !== 0)
+						)
+					);
+				} catch {
+					return true;
+				}
+			})
+		);
+		if (!isCurrent()) return;
+		if (changed.some(Boolean)) confirm = { kind: 'loop', accept: reset };
 		else reset();
 	}
 	function pickStart(accept: () => void) {
@@ -1081,11 +1130,12 @@
 					<input
 						type="checkbox"
 						checked={looping}
+						aria-label={t('moveSheet.loop')}
 						aria-describedby={`${advancedId}-loop-hint`}
 						onchange={(event) => {
 							const enabled = event.currentTarget.checked;
 							event.currentTarget.checked = looping;
-							changeLoop(enabled);
+							void changeLoop(enabled);
 						}}
 					/>
 					{t('moveSheet.loop')}
@@ -1181,7 +1231,7 @@
 										>{/each}
 								</select>
 							</div>
-							{#key `${direction}/${model}`}
+							{#key `${action}/${direction}/${model}`}
 								<div class="frame-references">
 									{#snippet standing()}<Sprite
 											img={standingImage}
@@ -1224,6 +1274,7 @@
 										thumbnail={model !== 'skeleton-v3' && autoEnd ? matching : undefined}
 										disabled={model === 'skeleton-v3'}
 										bind:loading={endLoading}
+										removeLabel={t('moveSheet.removeEndFrame')}
 										bind:value={
 											() =>
 												model === 'skeleton-v3' ? undefined : (frameReference?.end ?? undefined),

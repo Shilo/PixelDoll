@@ -131,7 +131,6 @@ import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, hasCompleteCells } from '../lib/dress/dress.ts';
 import { saveSplit } from '../lib/dress/project.ts';
 import {
-	automaticMoveEnd,
 	defaultMoveFrameCount,
 	gaitTemplate,
 	moveFrameCounts,
@@ -459,7 +458,8 @@ export async function joints(
 	im: Img,
 	resumeSafe = true,
 	signal?: AbortSignal,
-	activityScope?: string
+	activityScope?: string,
+	onRecord?: (record: JobRec) => void
 ): Promise<Keypoint[] | undefined> {
 	try {
 		const measure = async () => {
@@ -476,6 +476,7 @@ export async function joints(
 			const points = checkedKeypoints(
 				(r.response as { keypoints?: unknown } | undefined)?.keypoints
 			);
+			onRecord?.(r);
 			return points ? checkedKeypoints(unpadSkeleton(points, input, im)) : undefined;
 		};
 		const recovery = signal ? measurementRecoveries.get(signal) : undefined;
@@ -1833,7 +1834,6 @@ async function inspectMeasurementRecovery(
 		if (keypoints)
 			keypoints = movePoseEndpoints(
 				sampleMovePoses(keypoints, framesRequested, spec.action, spec.animation?.loop),
-				spec,
 				startPoints
 			);
 		for (
@@ -2749,19 +2749,8 @@ async function moveReferenceImage(
 	return image;
 }
 
-function movePoseEndpoints(
-	poses: Keypoint[][],
-	spec: MoveRequestSpec,
-	start?: Keypoint[]
-): Keypoint[][] {
-	if (!start && !automaticMoveEnd(spec.action, spec.animation?.loop)) return poses;
-	return poses.map((pose, index) =>
-		index === 0 && start
-			? start
-			: index === poses.length - 1 && automaticMoveEnd(spec.action, spec.animation?.loop)
-				? (start ?? poses[0])
-				: pose
-	);
+function movePoseEndpoints(poses: Keypoint[][], start?: Keypoint[]): Keypoint[][] {
+	return start ? [start, ...poses.slice(1)] : poses;
 }
 
 function requireMoveStartJoints(
@@ -2856,7 +2845,32 @@ async function addBodyClip(
 	const tick = () =>
 		onProgress({ step: 'animate', done: Math.min(total, ++done), total, recIds: [] });
 	onProgress({ step: 'animate', done: 0, total, recIds: [] });
-	const extra: JobRec[][] = [];
+	const extra = dirs.map((): JobRec[] => []);
+	const minimumTier = moveMinimumTier(m, spec);
+	const recoveryState = recovery && {
+		intent: spec.measurementRecovery ?? { id: spec.bodyPaletteRepair!.id, recordIds: [] },
+		rawHashes: new Set(recovery.rawHashes),
+		checkHashes: new Set(recovery.checkHashes),
+		tail: Promise.resolve()
+	};
+	const startPoses =
+		model === 'skeleton-v3' && starts.size
+			? await parallelGeneration(
+					dirs.map((direction, index) => async (signal) => {
+						const image = starts.get(direction);
+						if (!image) return undefined;
+						const points = await joints(image, true, signal, spec.activityScope, (record) =>
+							extra[index].push(record)
+						);
+						signal.throwIfAborted();
+						tick();
+						return { image, keypoints: requireMoveStartJoints(points, direction) };
+					}),
+					spec.seed,
+					recoveryState,
+					minimumTier
+				)
+			: [];
 	const clips = await parallelGeneration(
 		dirs.map((d, k) => async (signal) => {
 			const checkedTick = () => {
@@ -2890,14 +2904,7 @@ async function addBodyClip(
 				});
 				return { d, keypoints: out.measured as Keypoint[][], out };
 			}
-			const start = startImage && {
-				image: startImage,
-				keypoints: requireMoveStartJoints(
-					await joints(startImage, true, signal, spec.activityScope),
-					d
-				)
-			};
-			if (start) checkedTick();
+			const start = startPoses[k];
 			let keypoints: Keypoint[][];
 			if (authored)
 				keypoints = authoredPoses(
@@ -2920,11 +2927,10 @@ async function addBodyClip(
 					restImg
 				);
 				keypoints = result.keypoints;
-				extra[k] = [result.record];
+				extra[k].push(result.record);
 			}
 			keypoints = movePoseEndpoints(
 				sampleMovePoses(keypoints, n, spec.action, spec.animation?.loop),
-				spec,
 				start?.keypoints
 			);
 			return {
@@ -2951,13 +2957,8 @@ async function addBodyClip(
 			};
 		}),
 		spec.seed,
-		recovery && {
-			intent: spec.measurementRecovery ?? { id: spec.bodyPaletteRepair!.id, recordIds: [] },
-			rawHashes: new Set(recovery.rawHashes),
-			checkHashes: new Set(recovery.checkHashes),
-			tail: Promise.resolve()
-		},
-		moveMinimumTier(m, spec)
+		recoveryState,
+		minimumTier
 	);
 
 	onProgress({ step: 'save', done: 0, total: 1, recIds: [] });
@@ -3040,9 +3041,9 @@ async function addBodyClip(
 					? `${model}:${spec.text?.trim() || spec.action || spec.id}`
 					: spec.action === 'walk'
 						? 'managed-skeleton-v3:walking-8-frames'
-						: spec.action
+						: authored
 							? `authored:${spec.action}`
-							: `pixminimax:${spec.text}`,
+							: `pixminimax:${spec.text?.trim() || spec.action || spec.id}`,
 			measured: c.out.measured.map((x) => x ?? []),
 			...(c.out.processing ? { processing: c.out.processing } : {}),
 			provenance: idx

@@ -26,6 +26,7 @@
 		caption,
 		thumbnail,
 		beforePick,
+		removeLabel,
 		onremove
 	}: {
 		value?: PickedReference;
@@ -41,6 +42,7 @@
 		caption?: string;
 		thumbnail?: Snippet;
 		beforePick?: (accept: () => void) => void;
+		removeLabel?: string;
 		onremove?: () => void;
 	} = $props();
 	const id = $props.id();
@@ -148,7 +150,7 @@
 					: value
 						? t('referenceField.chooseDifferent')
 						: t('referenceField.addImage')}
-			aria-describedby={value ? `${fileId} ${helpId}` : helpId}
+			aria-describedby={value || exactFrame ? `${fileId} ${helpId}` : helpId}
 			aria-disabled={disabled || loading}
 			onclick={() => {
 				pick(() => {
@@ -195,7 +197,7 @@
 						>
 					</small>
 				{:else}
-					<span
+					<span id={fileId}
 						>{loading
 							? t('referenceField.opening')
 							: (caption ?? t('referenceField.addImage'))}</span
@@ -206,16 +208,16 @@
 				{/if}
 			</span>
 		</button>
-		{#if value}
+		{#if value || (thumbnail && onremove)}
 			<button
 				type="button"
 				class="bu-action remove"
 				data-variant="outline"
-				aria-label={t('referenceField.remove')}
+				aria-label={removeLabel ?? t('referenceField.remove')}
 				disabled={disabled || loading}
 				onclick={() => {
-					value = undefined;
-					onremove?.();
+					if (onremove) onremove();
+					else value = undefined;
 					error = '';
 					announcement = message('referenceField.removed');
 					drop.focus();

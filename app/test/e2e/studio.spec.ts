@@ -2858,7 +2858,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	const advanced = move.locator('details.advanced');
 	await advanced.locator('summary').click();
 	const model = advanced.getByRole('combobox', { name: 'Motion model' });
-	const slider = advanced.getByRole('slider', { name: 'Frames' });
+	const slider = move.getByRole('slider', { name: 'Frames' });
 	await expect(model).toHaveValue('skeleton-v3');
 	await expect(model.getByRole('option')).toHaveText(['Default (Skeleton V3)', 'PixMiniMax', 'V3']);
 	await slider.press('Home');
@@ -2874,7 +2874,7 @@ test('setup and move drafts survive canceled connection and stay scoped to their
 	await slider.press('Home');
 	await slider.press('ArrowRight');
 	await expect(slider).toHaveAttribute('aria-valuetext', '6 frames');
-	await advanced.getByRole('button', { name: 'Default (8 frames)', exact: true }).click();
+	await move.getByRole('button', { name: 'Default (8 frames)', exact: true }).click();
 	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
 	await model.selectOption('skeleton-v3');
 	await expect(slider).toHaveAttribute('aria-valuetext', '8 frames');
@@ -5400,6 +5400,30 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	const add = page.getByRole('dialog', { name: 'Add a move', exact: true });
 	await expect(add.getByRole('button', { name: /^Add Jumping in/ })).toBeEnabled();
 	await expect(add.getByText('Directions to redraw')).toHaveCount(0);
+	const loop = add.getByRole('checkbox', { name: 'Loop', exact: true });
+	await expect(loop).not.toBeChecked();
+	await expect(add.getByRole('slider', { name: 'Frames', exact: true })).toBeVisible();
+	const addAdvanced = add.locator('summary').filter({ hasText: 'Advanced' });
+	const addModel = add.getByRole('combobox', { name: 'Motion model', exact: true });
+	if (!(await addModel.isVisible())) await addAdvanced.click();
+	await addModel.selectOption('v3');
+	await loop.check();
+	const end = add.getByRole('button', { name: 'End frame', exact: true });
+	await expect(end).toContainText('Same as start');
+	await add.getByRole('button', { name: 'Remove end frame', exact: true }).click();
+	await expect(end).toContainText('No end frame');
+	const endPicker = end.locator('../..').locator('input[type=file]');
+	await endPicker.setInputFiles('dev-fixtures/s4rig/walk_east_1.png');
+	await expect(end).toContainText('walk_east_1.png');
+	await loop.click();
+	const reset = page.getByRole('alertdialog', { name: 'Change Loop and reset end frames?' });
+	await reset.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(loop).toBeChecked();
+	await expect(end).toContainText('walk_east_1.png');
+	await loop.click();
+	await reset.getByRole('button', { name: 'Change Loop', exact: true }).click();
+	await expect(loop).not.toBeChecked();
+	await expect(end).toContainText('No end frame');
 });
 
 async function oversizedItemFixture(page: Page, itemId: string) {

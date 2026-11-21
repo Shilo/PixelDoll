@@ -2176,8 +2176,9 @@ test('distinct imported IDs with identical pretty names remain distinguishable g
 			oldIds = m.rig.animations.map((a: { id: string }) => a.id);
 		const ids = ['jump-loop', 'jump--loop'],
 			hashes: Record<string, string> = {};
-		m.rig.animations.forEach((a: { id: string }, i: number) => {
+		m.rig.animations.forEach((a: { id: string; moveLoop?: boolean }, i: number) => {
 			a.id = ids[i];
+			if (i === 1) a.moveLoop = true;
 		});
 		for (const layer of m.items[0].layers) {
 			const cells = layer.cells;
@@ -2198,9 +2199,10 @@ test('distinct imported IDs with identical pretty names remain distinguishable g
 	const once = dialog.getByRole('checkbox', { name: 'Jump loop (jump-loop)', exact: true });
 	await once.check();
 	await expect(once).toBeEnabled();
-	await expect(
-		dialog.getByRole('checkbox', { name: 'Jump loop (jump--loop)', exact: true })
-	).not.toBeChecked();
+	const other = dialog.getByRole('checkbox', { name: /Jump loop \(jump--loop\)/ });
+	await expect(other).not.toBeChecked();
+	await other.check();
+	await expect(other).toBeEnabled();
 	await dialog.getByRole('button', { name: 'Back', exact: true }).click();
 	await expect(dialog.locator('.export-summary dd').first()).toHaveText('Jump loop (jump-loop)');
 	expect(
@@ -2208,7 +2210,7 @@ test('distinct imported IDs with identical pretty names remain distinguishable g
 			const path = '/src/lib/store/export-settings.ts';
 			return (await import(path)).readExportSettings();
 		})
-	).toMatchObject({ playOnce: ['jump-loop'] });
+	).toMatchObject({ playOnce: ['jump--loop', 'jump-loop'] });
 });
 
 test('Export navigation and settings fit phones, landscape and both themes, including a character without saved outfits', async ({

@@ -41,7 +41,7 @@ export interface RestView {
 /** How one clip-direction was made. Stored, never regenerated (PixelLab is not bit-repeatable). */
 export interface ClipSource {
 	route: 'skeleton-v3' | 'pixminimax' | 'v3' | 'import';
-	reference: Sha256; // first_frame sent (rig.rest[dir].image)
+	reference: Sha256; // standing alignment reference (also the first_frame unless a custom start is supplied)
 	keypoints?: Keypoint[][]; // [cell][18]: the sequence sent to raw skeleton-v3; items are posed with exactly this
 	motion?: string; // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "pixminimax:<text>"
 	measured?: Keypoint[][]; // [cell][18]: re-estimated on the frozen frames (QA, anchors)
@@ -165,7 +165,7 @@ export const rigArtworkVersion = (rig: Rig, character: unknown): string =>
 		character
 	});
 
-/** Preserve archived playback metadata through artwork/pose publication; new moves default to Loop. */
+/** Preserve archived playback metadata through artwork/pose publication. */
 export function retainPlaybackChoices(next: Rig, current: Rig): void {
 	for (const animation of next.animations) {
 		const saved = current.animations.find((a) => a.id === animation.id);
@@ -198,6 +198,8 @@ export function validateRig(rig: Rig, hashes?: Record<string, Sha256>): string[]
 		if (!ID.test(a.id)) e.push(`animation id "${a.id}" must match ${ID}`);
 		if (!Number.isInteger(a.cells) || !(a.cells >= 1)) e.push(`${a.id}: no cells`);
 		if (typeof a.loop !== 'boolean') e.push(`${a.id}: loop must be true or false`);
+		if (a.moveLoop !== undefined && typeof a.moveLoop !== 'boolean')
+			e.push(`${a.id}: moveLoop must be true or false`);
 		if (!a.frames.length) e.push(`${a.id}: empty playlist`);
 		for (const f of a.frames)
 			if (

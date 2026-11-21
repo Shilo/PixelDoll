@@ -43,7 +43,10 @@ export async function readReference(
 			'reference.tooLarge',
 			{ mb: REFERENCE_MAX_MB }
 		);
-	const bitmap = await createImageBitmap(file).catch(() => {
+	const bitmap = await createImageBitmap(
+		file,
+		exactFrame ? { colorSpaceConversion: 'none', premultiplyAlpha: 'none' } : undefined
+	).catch(() => {
 		throw new LocalizedError(
 			'This image could not be opened. Choose a different file.',
 			'reference.unreadable'
@@ -82,7 +85,7 @@ export async function readReference(
 						'This image has no visible artwork. Choose a different file.',
 						'reference.noArtwork'
 					);
-		const png = await canvas.convertToBlob({ type: 'image/png' });
+		const png = exactFrame ? file : await canvas.convertToBlob({ type: 'image/png' });
 		return {
 			...image,
 			previewBox: `${box.x0} ${box.y0} ${box.x1 - box.x0 + 1} ${box.y1 - box.y0 + 1}`,

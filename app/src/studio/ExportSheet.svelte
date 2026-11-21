@@ -194,12 +194,21 @@
 	});
 	const names = $derived(catalog.names);
 	const once = $derived(preferences?.playOnce ?? []);
+	const moveChoices = $derived(
+		new Map(m?.rig.animations.map((animation) => [animation.id, animation.moveLoop] as const))
+	);
+	const playsOnce = (name: string) => {
+		const choice = moveChoices.get(name);
+		return choice === undefined ? once.includes(name) : !choice;
+	};
+	const currentNames = $derived([...moveChoices.keys()]);
+	const currentOnce = $derived(currentNames.filter(playsOnce));
 	const playbackSummary = $derived(
-		!once.length
+		!currentOnce.length
 			? t('common.none')
-			: once.length === names.length
+			: currentOnce.length === currentNames.length
 				? t('export.playback.all')
-				: once.map(animationLabel).join(', ')
+				: currentOnce.map(animationLabel).join(', ')
 	);
 	const outfits = $derived(m?.presets.filter((p) => p.id !== 'current') ?? []);
 	// RPG Maker sheets are always dressed composites, whatever the setting says
@@ -654,12 +663,17 @@
 					</p>
 					<div class="export-moves">
 						{#each names as name (name)}
+							{@const choice = moveChoices.get(name)}
 							<label
 								class="bu-action bu-check export-move"
 								data-variant="field"
 								aria-disabled={saving}
 							>
-								<span>{animationLabel(name)}</span><input
+								<span
+									>{animationLabel(name)}{#if choice !== undefined}
+										<small class="muted">{t('export.settings.playbackSetInMove')}</small>
+									{/if}</span
+								><input
 									type="checkbox"
 									checked={once.includes(name)}
 									disabled={saving || !ready}

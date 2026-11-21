@@ -17,7 +17,7 @@ Projects use `pixeldoll/3`, and the app reads no other version: data saved by ea
 
 An item copied from another character is an ordinary item with its own IDs and materials; its cells reference the same content-addressed images, so deleting the source does not affect it. An `Item.design` field written by earlier previews is ignored.
 
-Animation `loop` records playback in exported files. Studio Export applies the user's global, persistent Play animation once choices to a cloned manifest, matching exact lowercase animation IDs. Unselected names loop; names never imply playback automatically. Imported playback metadata does not change global preferences. App previews, live views and sharing always loop. Format, dressed sheets and selected animation names are stored separately in IndexedDB under `studio-export-settings`, owned by `lib/store/export-settings.ts`; they are not per-character settings. Dressed sheets are optional extra PNGs; separate layers and outfit definitions remain included either way.
+Animation `loop` records playback in exported files. Studio Export honors `moveLoop` when the Add a move sheet saved a Loop setting: Idle, Walk and Run default to looping, and other new moves default to playing once. For other clips, Export applies the global Play animation once defaults, matching exact lowercase animation IDs. Imported metadata does not change global preferences. App previews, live views and sharing always loop. Format, dressed sheets and selected animation names are stored separately in IndexedDB under `studio-export-settings`, owned by `lib/store/export-settings.ts`. Dressed sheets are optional extra PNGs; separate layers and outfit definitions remain included either way.
 
 ---
 
@@ -113,14 +113,15 @@ export interface RestView {
 export interface Clip {
   id: string; // "idle", "walk", "slash", "hurt"
   cells: number; // stored poses per direction = sheet columns
-  loop: boolean; // serialized playback metadata; global Export settings replace it on export copies
+  loop: boolean; // serialized playback metadata resolved at export
+  moveLoop?: boolean; // per-move export choice; otherwise use global defaults
   frames: { cell: number; ms: number }[]; // playlist; cells may repeat (holds, ping-pong)
   sources: Partial<Record<DirectionName, ClipSource>>; // generated directions only (mirrors derive)
 }
 /** How one clip-direction was made. Stored, never regenerated (PixelLab is not bit-repeatable). */
 export interface ClipSource {
   route: "skeleton-v3" | "pixminimax" | "v3" | "import";
-  reference: Sha256; // first_frame sent (normally rig.rest[dir].image)
+  reference: Sha256; // standing alignment reference, also first_frame unless a custom start was supplied
   keypoints?: Keypoint[][]; // [cell][18]: requested sequence, or measured sequence on frozen imported art
   motion?: string; // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "estimated"
   measured?: Keypoint[][]; // [cell][18]: re-estimated on the frozen frames (anchors, QA)

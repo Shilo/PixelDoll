@@ -4,7 +4,8 @@ import { moveLabel } from './model.ts';
 const labels: Readonly<Record<string, WhisperKey>> = {
 	default: 'moveNames.default',
 	idle: 'moveNames.idle',
-	walk: 'moveNames.walk'
+	walk: 'moveNames.walk',
+	run: 'moveNames.run'
 };
 
 export function displayMove(id: string, ids: readonly string[] = []): string {
