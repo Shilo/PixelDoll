@@ -136,7 +136,13 @@ import {
 	type MoveAnimationOptions
 } from './moveAnimationOptions.ts';
 import { cellImg } from '../lib/compose/compose.ts';
-import { errorMessage, errorText, LocalizedError, message, type Message } from '../lib/message.ts';
+import {
+	errorMessage,
+	errorTranslation,
+	LocalizedError,
+	message,
+	type Message
+} from '../lib/message.ts';
 import { localizedPlanRestriction } from '../lib/pixellab/plans.ts';
 import { activityStateMessage } from './generationStatus.ts';
 import type { WhisperKey } from 'svelte-whisper';
@@ -2126,10 +2132,12 @@ export function skeletonMoveReview(
 	if (!isV13(rec) || reservedMove(spec.id) || spec.itemMethod === 'grid') return;
 	const manifest = rec.manifest;
 	const saved = manifest.rig.animations.find((clip) => clip.id === spec.id);
+	const qualityError = spec.replace ? replacementBodyQa() : newMoveBodyQa();
 	const bodyRejected =
 		!spec.itemsOnly &&
 		moveAnimationModel(spec) !== 'skeleton-v3' &&
-		errorText(error) === (spec.replace ? replacementBodyQa() : newMoveBodyQa()).message;
+		(errorTranslation(error)?.key === qualityError.translation.key ||
+			error === qualityError.message);
 	if (error && !bodyRejected) return;
 	try {
 		const dirs = bodyRejected

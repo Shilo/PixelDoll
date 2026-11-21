@@ -18,6 +18,7 @@
 	import { movePlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
 	import * as db from '../lib/store/db.ts';
+	import { stableStringify } from '../lib/image/hash.ts';
 	import type { StoredProject } from '../lib/store/project.ts';
 	import type { DirectionName } from '../lib/store/manifest.ts';
 	import { queue } from '../lib/pixellab/queue.ts';
@@ -62,6 +63,7 @@
 		dismissMove,
 		openProject,
 		pendingMoves,
+		toast,
 		withKey
 	} from './state.svelte.ts';
 	import { bodyQualityNote, plainReasonMessage } from './model.ts';
@@ -459,14 +461,37 @@
 			const offer = skeletonReview;
 			const prior = moving.spec;
 			const replaceFailed = !!moving.error;
-			withKey(() => {
-				if (doc.id !== projectId || moving.spec !== prior || skeletonReview !== offer) return;
-				const spec = { ...offer.review, seed: 1 + Math.floor(Math.random() * 1_000_000) };
+			const confirm = async () => {
+				const current = () => doc.id === projectId && moving.spec === prior;
+				if (!current()) return;
+				const latest = await db.get<StoredProject>('projects', projectId);
+				if (!current()) return;
+				const fresh =
+					latest &&
+					!moving.queued.some(
+						(entry) => entry.projectId === projectId && entry.spec.id === prior.id
+					)
+						? skeletonMoveReview(latest, prior, moving.error, moving.done ? moving.qualityDirs : [])
+						: undefined;
+				if (
+					!fresh ||
+					stableStringify(fresh) !== stableStringify(offer) ||
+					tierBlocked(fresh.tier)
+				) {
+					toast(message('genCard.estimateFailed'), { tone: 'warning' });
+					return;
+				}
+				const spec = { ...fresh.review, seed: 1 + Math.floor(Math.random() * 1_000_000) };
 				reviewingSkeletonFor = null;
 				if (replaceFailed) void startMove(projectId, spec);
 				else void queueMoves(projectId, [spec]);
 				ui.sheet = 'move';
-			}, offer.tier);
+			};
+			withKey(
+				() =>
+					void confirm().catch((error: unknown) => toast(errorMessage(error), { tone: 'warning' })),
+				offer.tier
+			);
 			return;
 		}
 		if (!formEstimate || addAccess.error) return;
@@ -614,9 +639,6 @@
 			>{t('common.hide')}</button
 		>
 	{:else if ok}
-		{#if est}
-			<span class="foot-note move-cost-note">
-				<span>
 		{@const review = skeletonReview?.review}
 		{@const requiredTier = skeletonReview?.tier ?? addTier}
 		{@const replace = review ? review.replace : replacing}
@@ -626,6 +648,9 @@
 				data-variant="quiet"
 				onclick={() => (reviewingSkeletonFor = null)}>{t('moveSheet.skeleton.back')}</button
 			>{/if}
+		{#if est}
+			<span class="foot-note move-cost-note">
+				<span>
 					{est.items
 						? t('moveSheet.footEstimateItems', {
 								minutes: formatNumber(est.minutes),
@@ -785,9 +810,6 @@
 					{t('moveSheet.review.resumesQueue')}
 				</p>{/if}
 		</section>
-	{:else if progress}
-		<div class="form">
-			<p style="font-weight:600">
 	{:else if skeletonReview}
 		{@const review = skeletonReview.review}
 		<div class="form">
@@ -819,6 +841,9 @@
 					feature={t('moveSheet.retryFeature')}
 				/>{/if}
 		</div>
+	{:else if progress}
+		<div class="form">
+			<p style="font-weight:600">
 				{nice(moving.spec!.id)}{moving.spec?.dirs
 					? ` · ${moving.spec.dirs.map(directionLabel).join(', ')}`
 					: ''}<ApiPeek
@@ -965,9 +990,6 @@
 			{#each moving.warnings as warning (warning)}<p class="notice warn small">
 					<CircleAlert size={14} />{bodyQualityNote(warning, t)}
 				</p>{/each}
-		</div>
-	{:else if isDemo() || !ok}
-		<p class="notice small">
 			{#if skeletonOffer && !tierBlocked(skeletonOffer.tier)}
 				<p class="notice small">
 					<span>{t('moveSheet.skeleton.hint')}</span>
@@ -984,6 +1006,9 @@
 					</button>
 				</p>
 			{/if}
+		</div>
+	{:else if isDemo() || !ok}
+		<p class="notice small">
 			<CircleAlert size={14} />{isDemo() ? t('moveSheet.demo') : t('moveSheet.needsSetup')}
 		</p>
 		{#if !isDemo()}<button

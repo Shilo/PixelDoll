@@ -5530,27 +5530,22 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
 		items: [fixture.itemId],
 		poseStyle: 'visible-side-v1'
 	});
-	expect(posts).toEqual([]);
-	expect(errors).toEqual([]);
-});
-
-test('targeted move replacement names mirrored effects without offering a separate redraw', async ({
-	page
-}, info) => {
-	await openStudio(
-		page,
 	const suggestion = sheet.getByRole('button', { name: /^Review Skeleton V3/ });
 	await expect(suggestion).toHaveCount(0);
 	const before = await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			state = await import(path);
+		const messagePath = '/src/lib/message.ts';
+		const { LocalizedError } = await import(messagePath);
 		const manifest = state.store.project.manifest;
 		for (const item of manifest.items)
 			if (item.id !== manifest.rig.baseItem && !state.moving.spec.items.includes(item.id))
 				for (const layer of item.layers) if (layer.cells?.walk) delete layer.cells.walk.east;
 		state.moving.spec = { ...state.moving.spec, animation: { model: 'pixminimax', frameCount: 8 } };
-		state.moving.error =
-			'The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.';
+		state.moving.error = new LocalizedError(
+			'Fixture QA failure',
+			'create.errors.replacementFailsQa'
+		);
 		return JSON.stringify(manifest);
 	});
 	await expect(suggestion).toContainText('Est. 11 gens');
@@ -5573,6 +5568,32 @@ test('targeted move replacement names mirrored effects without offering a separa
 		};
 	});
 	expect(after).toEqual({ manifest: before, model: 'pixminimax' });
+	await page.evaluate(async (manifest) => {
+		const state = await import('/src/studio/state.svelte.ts' as string);
+		const db = await import('/src/lib/store/db.ts' as string);
+		const { app } = await import('/src/lib/app.svelte.ts' as string);
+		const record = await db.get('projects', state.doc.id);
+		record.manifest = JSON.parse(manifest);
+		await db.put('projects', state.doc.id, record);
+		app.keyRejected = true;
+	}, before);
+	await suggestion.click();
+	await review.getByRole('button', { name: /^Replace Walk views/ }).click();
+	await connect.getByLabel('API key', { exact: true }).fill('synthetic-reconnected-repair-key');
+	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+	await expect(sheet).toContainText('Offline repair persistence stopped before paid work');
+	const confirmed = await page.evaluate(async () => {
+		const state = await import('/src/studio/state.svelte.ts' as string);
+		return state.moving.spec;
+	});
+	expect(confirmed).toMatchObject({
+		id: 'walk',
+		replace: true,
+		dirs: ['east'],
+		items: [fixture.itemId],
+		animation: { model: 'skeleton-v3', frameCount: 8 },
+		seed: expect.any(Number)
+	});
 	await page.evaluate(async () => {
 		const path = '/src/studio/state.svelte.ts',
 			state = await import(path);
@@ -5610,6 +5631,15 @@ test('targeted move replacement names mirrored effects without offering a separa
 		state.moving.qualityDirs = ['east'];
 	});
 	await expect(completed.getByRole('button', { name: /^Review Skeleton V3/ })).toHaveCount(0);
+	expect(posts).toEqual([]);
+	expect(errors).toEqual([]);
+});
+
+test('targeted move replacement names mirrored effects without offering a separate redraw', async ({
+	page
+}, info) => {
+	await openStudio(
+		page,
 		info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
 	);
 	await targetedRepairFixture(page, true);
