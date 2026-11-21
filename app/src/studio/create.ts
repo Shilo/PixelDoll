@@ -49,7 +49,7 @@ import {
 	standingViews,
 	type FrameChange
 } from '../lib/rig/reframe.ts';
-import { defaultCharacterExportId, itemContent } from '../lib/store/identity.ts';
+import { defaultCharacterExportId, itemContent, retainMoveChoices } from '../lib/store/identity.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { liftToFit, normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { flipH } from '../lib/rig/mirror.ts';
@@ -64,7 +64,6 @@ import {
 	storedCellHashes,
 	defaultMs,
 	playlist,
-	retainPlaybackChoices,
 	rigArtworkVersion,
 	validateRig,
 	type ClipSource,
@@ -3973,7 +3972,7 @@ async function addBodyClip(
 		const cb = cur.manifest.items.find((i) => i.id === frig.baseItem)!;
 		if (old) invalidateMoveItems(cur.manifest, spec.id, dirs);
 		// Export choices can change while artwork is being generated. The current record owns those choices.
-		retainPlaybackChoices(frig, cur.manifest.rig);
+		retainMoveChoices(frig, cur.manifest.rig);
 		cur.manifest.rig = frig;
 		cb.provenance = baseIt.provenance;
 		cb.layers[0].cells = layer.cells;
@@ -4113,7 +4112,7 @@ export async function resolveMoveCandidate(
 			if (currentBase.provenance.length !== provenanceStart) throw changedMoveCandidate();
 			clearMovePoseData(manifest.rig, (current.skeletons ??= {}), id, candidate.dirs);
 			if (candidate.spec.replace) invalidateMoveItems(manifest, id, candidate.dirs);
-			retainPlaybackChoices(rig, manifest.rig);
+			retainMoveChoices(rig, manifest.rig);
 			manifest.rig = rig;
 			Object.assign(currentBase, {
 				provenance: base.provenance,

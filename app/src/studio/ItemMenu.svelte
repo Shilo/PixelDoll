@@ -381,7 +381,7 @@
 							class="row bu-action"
 							data-variant="quiet"
 							role="menuitem"
-							onclick={() => act(() => openRename(doc.id, it.id))}
+							onclick={() => act(() => openRename(doc.id, { itemId: it.id }))}
 						>
 							<Pencil size={16} aria-hidden="true" />{openerLabel(
 								t('toolbar.rename')

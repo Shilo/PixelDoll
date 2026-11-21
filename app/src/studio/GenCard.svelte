@@ -72,7 +72,6 @@
 	const anims = $derived(
 		prev?.manifest.rig.animations.filter((a) => g.draft.spec.anims.includes(a.id)) ?? []
 	);
-	const moveIds = $derived(anims.map((a) => a.id));
 	const anim = $derived(anims.find((a) => a.id === ui.anim) ?? anims[0]);
 	const dirs = $derived(
 		prev && anim
@@ -271,7 +270,7 @@
 					ui.anim = e.currentTarget.value;
 					ui.frame = 0;
 				}}
-				>{#each anims as a (a.id)}<option value={a.id}>{displayMove(a.id, moveIds)}</option
+				>{#each anims as a (a.id)}<option value={a.id}>{displayMove(a.id, anims)}</option
 					>{/each}</select
 			></label
 		>

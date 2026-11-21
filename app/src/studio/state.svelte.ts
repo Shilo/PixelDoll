@@ -55,7 +55,13 @@ import {
 	type StoredProject
 } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
-import { defaultCharacterExportId, editIdentity } from '../lib/store/identity.ts';
+import {
+	CURRENT_OUTFIT_ID,
+	defaultCharacterExportId,
+	editIdentity,
+	editMoveIdentity,
+	editOutfitIdentity
+} from '../lib/store/identity.ts';
 import type {
 	CellKey,
 	DirectionName,
@@ -293,7 +299,7 @@ export const ui = $state({
 		}
 		panel = next;
 	},
-	renameTarget: null as { projectId: string; itemId?: string } | null,
+	renameTarget: null as ({ projectId: string } & RenameOf) | null,
 	slotTarget: null as string | null,
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
@@ -342,17 +348,19 @@ export function initUi() {
 			if (
 				!data ||
 				typeof data.projectId !== 'string' ||
-				(data.itemId !== undefined && typeof data.itemId !== 'string')
+				(data.itemId !== undefined && typeof data.itemId !== 'string') ||
+				(data.moveId !== undefined && typeof data.moveId !== 'string')
 			)
 				return;
-			const { projectId, itemId } = data;
+			const { projectId, itemId, moveId } = data;
 			if (opening === projectId) openingIdentityRevision++;
 			const request = openRequest;
 			if (doc.id === projectId)
 				void db
 					.get<StoredProject>('projects', projectId)
 					.then((record) => {
-						if (record?.manifest) applySavedIdentity(projectId, itemId, request, record.manifest);
+						if (record?.manifest)
+							applySavedIdentity(projectId, { itemId, moveId }, request, record.manifest);
 					})
 					.catch((error: unknown) => console.error('refresh identity', error));
 			void refreshProjects();
@@ -1703,7 +1711,8 @@ export function savePreset(name: string) {
 			.replace(/[^a-z0-9]+/g, '-')
 			.replace(/^-|-$/g, '') || 'outfit';
 	let id = base;
-	for (let n = 2; id === 'current' || m.presets.some((p) => p.id === id); n++) id = `${base}-${n}`;
+	for (let n = 2; id === CURRENT_OUTFIT_ID || m.presets.some((p) => p.id === id); n++)
+		id = `${base}-${n}`;
 	commit(message('history.saveOutfit'), () => {
 		const pr: Preset = {
 			id,
@@ -2207,7 +2216,7 @@ async function addEntry(entry: SharedItem, openedDemoCopy = false) {
 			const manifest = store.project.manifest;
 			const gaps = missingMoves(manifest, item);
 			if (gaps.length) {
-				const ids = manifest.rig.animations.map(({ id }) => id);
+				const ids = manifest.rig.animations;
 				notices.push(
 					gaps.length === 1
 						? message('state.copyMissingOneMove', { move: displayMove(gaps[0], ids) })
@@ -2375,19 +2384,24 @@ export async function copyDemo(): Promise<string> {
 	return id;
 }
 
-export function openRename(projectId: string, itemId?: string) {
-	if (projectId.startsWith('fixture:')) return;
-	ui.renameTarget = { projectId, itemId };
+/** What a Rename sheet names: the character itself, or one of its items, outfits or moves. */
+export type RenameOf = { itemId?: string; outfitId?: string; moveId?: string };
+
+/** Saved characters only, except outfits: a demo's outfits are part of its saved dress-up state. */
+export function openRename(projectId: string, of: RenameOf = {}) {
+	if (projectId.startsWith('fixture:') && !of.outfitId) return;
+	ui.renameTarget = { projectId, ...of };
 	ui.sheet = 'rename';
 }
 
 export async function renameProject(name: string) {
-	if (!isDemo()) await saveIdentity(doc.id, undefined, name);
+	if (!isDemo()) await saveIdentity(doc.id, {}, name);
 }
 
+/** Character, item and move names live in the saved record, outside Undo, like the records' other identity. */
 export async function saveIdentity(
 	projectId: string,
-	itemId: string | undefined,
+	of: Pick<RenameOf, 'itemId' | 'moveId'>,
 	name: string | undefined,
 	exportId?: string
 ) {
@@ -2399,23 +2413,49 @@ export async function saveIdentity(
 				'This saved character is no longer available.',
 				'directionsSheet.characterUnavailable'
 			);
-		editIdentity(rec.manifest, projectId, itemId, name, exportId);
+		if (of.moveId) editMoveIdentity(rec.manifest, of.moveId, name, exportId);
+		else editIdentity(rec.manifest, projectId, of.itemId, name, exportId);
 		return rec;
 	});
 	if (opening === projectId) openingIdentityRevision++;
-	applySavedIdentity(projectId, itemId, request, updated.manifest!);
-	identityChannel?.postMessage({ projectId, itemId });
+	applySavedIdentity(projectId, of, request, updated.manifest!);
+	identityChannel?.postMessage({ projectId, ...of });
 	await refreshProjects();
+}
+
+/** Outfits are dress-up state: renaming one is a step Undo reverses, like saving or deleting it. */
+export function renameOutfit(outfitId: string, name: string | undefined, exportId?: string) {
+	const m = store.project!.manifest;
+	const presets = $state.snapshot(m.presets);
+	editOutfitIdentity(presets, outfitId, name, exportId);
+	commit(message('history.renameOutfit'), () => {
+		m.presets = presets;
+	});
 }
 
 function applySavedIdentity(
 	projectId: string,
-	itemId: string | undefined,
+	{ itemId, moveId }: Pick<RenameOf, 'itemId' | 'moveId'>,
 	request: number,
 	manifest: Manifest
 ) {
 	if (doc.id === projectId && openRequest === request && store.project) {
 		const current = store.project.manifest;
+		if (moveId) {
+			const from = manifest.rig.animations.find((move) => move.id === moveId);
+			if (from && current.rig.animations.some((move) => move.id === moveId)) {
+				// New objects: lists keyed by move only redraw a move that is not the same object.
+				current.rig = {
+					...current.rig,
+					// The saved move itself: paid-request consent compares the rig's JSON, key order included.
+					animations: current.rig.animations.map((move) =>
+						move.id === moveId ? structuredClone(from) : move
+					)
+				};
+				bump();
+			}
+			return;
+		}
 		const from = itemId ? manifest.items.find((item) => item.id === itemId) : manifest;
 		const to = itemId ? current.items.find((item) => item.id === itemId) : current;
 		if (from && to) {

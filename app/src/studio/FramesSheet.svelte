@@ -40,7 +40,7 @@
 	const item = $derived(m?.items.find((i) => i.id === frames.item));
 	const isBody = $derived(!!item && item.id === base?.id);
 	const name = $derived(isBody ? t('fixFrames.body') : (item?.name ?? ''));
-	const moveIds = $derived(m?.rig.animations.map((a) => a.id) ?? []);
+	const moveRefs = $derived(m?.rig.animations ?? []);
 	const move = $derived(m?.rig.animations.find((a) => a.id === frames.anim));
 	const demo = $derived(isDemo());
 	const blocked = $derived(framesBlocked());
@@ -258,8 +258,8 @@
 						disabled={busy}
 						onchange={(e) => pickMove(e.currentTarget.value)}
 					>
-						{#each moveIds as id (id)}
-							<option value={id}>{displayMove(id, moveIds)}</option>
+						{#each moveRefs as { id } (id)}
+							<option value={id}>{displayMove(id, moveRefs)}</option>
 						{/each}
 					</select>
 				</div>
@@ -284,7 +284,7 @@
 			<div
 				class="grid"
 				style:--cols={move.cells}
-				aria-label={t('fixFrames.gridLabel', { name, move: displayMove(move.id, moveIds) })}
+				aria-label={t('fixFrames.gridLabel', { name, move: displayMove(move.id, moveRefs) })}
 				role="group"
 			>
 				<span></span>
@@ -361,10 +361,10 @@
 								k={bigK}
 								limit={150}
 								checker
-								label={t('fixFrames.playing', { move: displayMove(move.id, moveIds) })}
+								label={t('fixFrames.playing', { move: displayMove(move.id, moveRefs) })}
 							/>
 							<figcaption>
-								{t('fixFrames.playing', { move: displayMove(move.id, moveIds) })}
+								{t('fixFrames.playing', { move: displayMove(move.id, moveRefs) })}
 							</figcaption>
 						</figure>
 					</div>

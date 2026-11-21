@@ -2770,21 +2770,60 @@ test('rename display names and export IDs without changing saved keys or calling
 	await page.getByRole('button', { name: `More options for ${target.name}`, exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
 	await rename('Rename item', 'Travel cap', 'travel_cap');
+	await equipmentMode(page, 'Outfits');
+	await page.getByRole('button', { name: 'More actions for Adventurer', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
+	await rename('Rename outfit', 'Knight', 'knight_set');
+	await expect(page.locator('.outfits')).toContainText('Knight');
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'More actions for Default', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
+	const standing = page.getByRole('dialog', { name: 'Rename move', exact: true });
+	await standing.locator('summary').click();
+	// Games start from the standing move, so its export ID stays fixed.
+	await expect(standing.getByRole('textbox', { name: 'Export ID' })).toHaveAttribute('readonly');
+	await standing.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
+	await rename('Rename move', 'Stroll', 'stroll');
+	await expect(page.locator('.move-list')).toContainText('Stroll');
+	// Paid item requests confirm against the saved rig's JSON: a rename must leave both identical.
+	expect(
+		await page.evaluate(async (projectId) => {
+			const dbPath = '/src/lib/store/db.ts',
+				statePath = '/src/studio/state.svelte.ts',
+				db = await import(dbPath),
+				studio = await import(statePath);
+			const { manifest } = await db.get('projects', projectId);
+			return JSON.stringify(studio.store.project.manifest.rig) === JSON.stringify(manifest.rig);
+		}, target.projectId)
+	).toBe(true);
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('旅人');
+	await equipmentMode(page, 'Moves');
+	await expect(page.locator('.move-list')).toContainText('Stroll');
 	const saved = await page.evaluate(async ({ projectId, id }) => {
 		const path = '/src/lib/store/db.ts',
-			db = await import(path);
+			db = await import(path),
+			statePath = '/src/studio/state.svelte.ts',
+			studio = await import(statePath);
 		const { manifest } = await db.get('projects', projectId);
 		return {
 			alias: manifest.exportId,
-			item: manifest.items.find((entry: { id: string }) => entry.id === id)
+			item: manifest.items.find((entry: { id: string }) => entry.id === id),
+			move: manifest.rig.animations.find((entry: { id: string }) => entry.id === 'walk'),
+			outfits: studio.store.project.manifest.presets.map((outfit: { id: string; name: string }) => [
+				outfit.id,
+				outfit.name
+			])
 		};
 	}, target);
 	expect(saved).toMatchObject({
 		alias: 'travel_hero',
-		item: { id: target.id, name: 'Travel cap', exportId: 'travel_cap', prompt: target.prompt }
+		item: { id: target.id, name: 'Travel cap', exportId: 'travel_cap', prompt: target.prompt },
+		move: { id: 'walk', name: 'Stroll', exportId: 'stroll' }
 	});
+	expect(saved.outfits).toContainEqual(['knight_set', 'Knight']);
 	expect(requests).toBe(0);
 });
 

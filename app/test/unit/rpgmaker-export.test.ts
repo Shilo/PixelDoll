@@ -319,6 +319,19 @@ test('walk moves are found by word, such as walk-cycle', async () => {
 	expect(reds(vxOf(p), 3, 0)).toEqual([11, 200, 13]);
 });
 
+test('a walk exported under another ID still drives the steps', async () => {
+	const p = await project({ size: 32 });
+	const plain = await exportFiles(p, { engines: ['rpgmaker'], baked: true });
+	p.manifest.rig.animations.find((move) => move.id === 'walk')!.exportId = 'stroll';
+	const renamed = await exportFiles(p, { engines: ['rpgmaker'], baked: true });
+	expect(renamed.warnings).toEqual(plain.warnings);
+	const sheets = (r: typeof plain) =>
+		r.entries.filter((e) => e.name.endsWith('.png') && !e.name.startsWith('cells/'));
+	expect(sheets(renamed).map((e) => [e.name, [...e.data]])).toEqual(
+		sheets(plain).map((e) => [e.name, [...e.data]])
+	);
+});
+
 test('refuses characters without front, side and back views', async () => {
 	const partial = await project({ dirs: ['south', 'north'] });
 	expect(() => run(partial)).toThrow(/^RPG Maker: .*no west, east view/);

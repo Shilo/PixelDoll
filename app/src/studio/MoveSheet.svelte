@@ -396,7 +396,7 @@
 		)
 	);
 	const stepIx = $derived(steps.findIndex((step) => step.id === moving.progress?.step));
-	const nice = (s: string) => displayMove(s, options);
+	const nice = (s: string) => displayMove(s, [...(m?.rig.animations ?? []), ...options]);
 	const decimal = (n: number) =>
 		formatNumber(n, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 	const usd = (n: number) =>
