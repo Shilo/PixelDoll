@@ -328,6 +328,7 @@
 	{/if}
 	{#if !preview}<SettingsBackupCopy separated />{/if}
 	{#if !preview && !workspaceCopy}
+		<hr class="bu-separator" />
 		<details class="bu-details notice bad danger-zone" data-setting="delete-work">
 			<summary>{t('librarySettings.deleteWork.section')}</summary>
 			<div class="library-task">

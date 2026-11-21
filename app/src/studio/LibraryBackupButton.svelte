@@ -5,11 +5,13 @@
 
 	let {
 		settings = false,
+		menu = false,
 		disabled = false,
 		pending = $bindable(false),
 		onbackup
 	}: {
 		settings?: boolean;
+		menu?: boolean;
 		disabled?: boolean;
 		pending?: boolean;
 		onbackup: () => Promise<void>;
@@ -31,7 +33,7 @@
 			size={18}
 			aria-hidden="true"
 		/>{/if}
-	{t('librarySettings.backup')}
+	<span class:row-name={menu}>{t('librarySettings.backup')}</span>
 {/snippet}
 
 {#if settings}
@@ -46,8 +48,8 @@
 {:else}
 	<button
 		type="button"
-		class="bu-action btn sm compact-backup"
-		data-variant="outline"
+		class={menu ? 'row bu-action' : 'bu-action btn sm compact-backup'}
+		data-variant={menu ? 'quiet' : 'outline'}
 		disabled={disabled || pending}
 		aria-busy={pending}
 		onclick={startBackup}

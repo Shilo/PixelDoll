@@ -23,6 +23,8 @@
 	import WardrobeVisibility from './WardrobeVisibility.svelte';
 	import FullscreenButton from './FullscreenButton.svelte';
 	import AffiliationNotice from './AffiliationNotice.svelte';
+	import LibraryBackupButton from './LibraryBackupButton.svelte';
+	import { downloadLibraryBackupWithFeedback } from './downloadLibraryBackup.ts';
 	import PixelLabUsage from './PixelLabUsage.svelte';
 	import { queue } from '../lib/pixellab/queue.ts';
 	import { pwa, installApp, requestUpdate, requestInstallHelp } from '../lib/pwa.ts';
@@ -518,6 +520,9 @@
 				/>
 			</MenuDisclosure>{/if}
 		<hr />
+		{#if !workspaceCopy}
+			<LibraryBackupButton menu onbackup={downloadLibraryBackupWithFeedback} />
+		{/if}
 		<button
 			class="row bu-action"
 			data-variant="quiet"

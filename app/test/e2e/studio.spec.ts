@@ -359,7 +359,9 @@ test('the startup preview notice expires after eight seconds', async ({ page }, 
 	await expect(preview).toHaveCount(0);
 });
 
-test('the startup pre-release notice downloads a library backup', async ({ page }, info) => {
+test('the startup notice and More menu download a library backup with archives', async ({
+	page
+}, info) => {
 	const dev = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!;
 	let releaseFixture!: () => void;
 	const fixtureHeld = new Promise<void>((resolve) => {
@@ -406,6 +408,13 @@ test('the startup pre-release notice downloads a library backup', async ({ page 
 	expect(archive).toMatch(/^archives\/[a-f0-9]{64}\.zip$/);
 	await expect(notice).toHaveCount(0);
 	await expect(page.getByText('Backup is ready to download.', { exact: true })).toHaveCount(0);
+	await page.getByRole('button', { name: 'More options', exact: true }).click();
+	const menu = page.locator('#experience-options');
+	const menuBackup = menu.getByRole('button', { name: 'Back up library', exact: true });
+	await expect(menuBackup.locator('+ button')).toHaveAccessibleName('Activity...');
+	const [menuDownload] = await Promise.all([page.waitForEvent('download'), menuBackup.click()]);
+	const menuFiles = await unzip(new Uint8Array(readFileSync((await menuDownload.path())!)));
+	expect(menuFiles.has(archive!)).toBe(true);
 });
 
 test('Library deletes local work only after confirmation and offers a backup first', async ({
@@ -452,6 +461,9 @@ test('Library deletes local work only after confirmation and offers a backup fir
 	const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
 	await settings.getByRole('button', { name: 'Library', exact: true }).click();
 	const danger = settings.locator('details[data-setting="delete-work"]');
+	await expect(
+		settings.locator('hr.bu-separator + details[data-setting="delete-work"]')
+	).toBeVisible();
 	const remove = danger.getByRole('button', { name: 'Delete local work...', exact: true });
 	await expect(remove).toBeHidden();
 	await danger.locator('summary').click();

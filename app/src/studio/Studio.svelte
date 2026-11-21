@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { message } from '../lib/message.ts';
-	import { errorMessage } from '../lib/i18n.ts';
 	import { t } from 'svelte-whisper';
 	import './studio.css';
 	import './share.css';
@@ -58,7 +57,7 @@
 	import { PRE_RELEASE, PREVIEW_NOTICE } from './previewNotice.ts';
 	import Toast from './Toast.svelte';
 	import LibraryBackupButton from './LibraryBackupButton.svelte';
-	import { downloadLibraryBackup } from './downloadLibraryBackup.ts';
+	import { downloadLibraryBackupWithFeedback } from './downloadLibraryBackup.ts';
 	import PwaRuntime from './PwaRuntime.svelte';
 
 	// On-demand parts, out of the startup bundle.
@@ -118,7 +117,7 @@
 		}
 		const off = initUi();
 		if (PRE_RELEASE && !workspaceCopy)
-			toast(previewNoticeDetails, { ...PREVIEW_NOTICE, action: backupFromNotice });
+			toast(previewNoticeDetails, { ...PREVIEW_NOTICE, action: downloadLibraryBackupWithFeedback });
 		void (async () => {
 			const listed = await refreshProjects();
 			const initial = lastProject();
@@ -343,14 +342,6 @@
 	let online = $state(navigator.onLine);
 	const offline = $derived(!online || $queue.paused === 'offline');
 	let backingUp = $state(false);
-	async function backupFromNotice() {
-		try {
-			if (await downloadLibraryBackup())
-				toast(message('librarySettings.backupOmissions'), { tone: 'warning' });
-		} catch (error) {
-			toast(errorMessage(error), { tone: 'danger' });
-		}
-	}
 </script>
 
 {#snippet previewNoticeDetails()}
