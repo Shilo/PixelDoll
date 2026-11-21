@@ -1156,7 +1156,7 @@
 	},
 	"workspace": {
 		"activityTitle": "워크스페이스 활동",
-		"activityIntro": "PixelDoll {build} 버전에서 워크스페이스와 함께 저장됐어요. PixelLab은 꺼져 있고 아무것도 다시 시작되지 않아요.",
+		"activityIntro": "PixelDoll {build} 버전에서 워크스페이스와 함께 저장됐어요. ZIP에 포함된 작업은 다시 시작되지 않아요.",
 		"missing": {
 			"other": "아트워크 파일 {count}개가 없거나 읽을 수 없었어요."
 		},
@@ -1189,7 +1189,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "여기서는 PixelLab이 꺼져 있어요. 사본의 변경 사항은 이 탭을 닫거나 다시 불러오면 버려져요.",
+		"privacy": "사본을 열면 PixelLab에 연결되지 않은 상태예요. 사본의 변경 사항은 이 탭을 닫거나 다시 불러오면 버려져요.",
 		"chooseZip": "워크스페이스 ZIP 선택",
 		"opening": "여는 중…",
 		"release": "열려면 놓으세요",
@@ -2303,7 +2303,8 @@
 	},
 	"workspaceCopy": {
 		"title": "워크스페이스 사본 열기",
-		"generationOff": "워크스페이스 사본에서는 PixelLab이 꺼져 있어요."
+		"tabOnlyKey": "이 연결은 이 탭에서만 유지되며 저장되지 않습니다.",
+		"useSavedKey": "저장된 키 사용"
 	},
 	"moveNames": { "default": "Default", "idle": "대기", "walk": "걷기" },
 	"moveRemoval": {

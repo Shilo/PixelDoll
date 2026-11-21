@@ -39,7 +39,7 @@ async function captureWorkspaceStore(page: Page, projectKeys: string[], artworkK
 	);
 }
 
-test('workspace ZIP round-trips saved records and artwork without touching the library or PixelLab', async ({
+test('workspace ZIP isolates the library and PixelLab connection', async ({
 	page,
 	context
 }, info) => {
@@ -313,6 +313,110 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 			}, sample)
 		)
 		.toEqual({ opened: true, gap: true, other: 'Workspace Beta', hasKey: false, jobs: 0 });
+	const readSettings = () =>
+		page.evaluate(() => ({
+			theme: localStorage.getItem('pixeldoll.theme'),
+			wardrobe: localStorage.getItem('pixeldoll.wardrobe.hideShared')
+		}));
+	const originalSettings = await readSettings();
+	await copy.getByRole('button', { name: 'More options', exact: true }).click();
+	await copy.getByRole('button', { name: 'Settings...', exact: true }).click();
+	const copySettings = copy.getByRole('dialog', { name: 'Settings', exact: true });
+	await expect(copySettings.getByRole('button', { name: 'PixelLab', exact: true })).toHaveCount(0);
+	await copySettings.getByRole('button', { name: 'Appearance', exact: true }).click();
+	await copySettings.getByRole('button', { name: 'Theme', exact: true }).click();
+	await expect(copy.locator('html')).toHaveAttribute('data-theme', 'dark');
+	await copySettings.getByRole('radio', { name: 'Light', exact: true }).check();
+	await copySettings.getByRole('button', { name: 'Wardrobe', exact: true }).click();
+	const sharedVisibility = copySettings.getByRole('switch', {
+		name: 'Hide shared items in all wardrobes'
+	});
+	await sharedVisibility.check();
+	await expect(sharedVisibility).toBeChecked();
+	expect(await readSettings()).toEqual(originalSettings);
+	await sharedVisibility.uncheck();
+	await copySettings.getByRole('button', { name: 'Close', exact: true }).click();
+	expect(await readSettings()).toEqual(originalSettings);
+	expect(requests).toEqual([]);
+	const copyKey = 'synthetic-workspace-tab-key';
+	const savedKey = 'fake-workspace-test-key-no-network';
+	let expectedCopyKey = copyKey;
+	const copyRequests: string[] = [];
+	let releaseEstimate!: () => void;
+	const estimate = new Promise<void>((resolve) => (releaseEstimate = resolve));
+	const balance = {
+		subscription: { type: 'generations', status: 'active', generations: 42, total: 100 },
+		credits: { usd: 0 }
+	};
+	await copy.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		const path = new URL(request.url()).pathname;
+		expect(request.headers().authorization === `Bearer ${expectedCopyKey}`).toBe(true);
+		copyRequests.push(`${request.method()} ${path}`);
+		if (path === '/v2/balance') return route.fulfill({ json: balance });
+		await estimate;
+		return route.fulfill({ status: 400, json: { detail: 'Synthetic estimate failure' } });
+	});
+	await copy.getByRole('button', { name: 'More options', exact: true }).click();
+	await copy.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	const connect = copy.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+	const useSavedKey = connect.getByRole('button', { name: 'Use saved key', exact: true });
+	await expect(useSavedKey).toBeVisible();
+	await expect(connect.getByLabel('API key', { exact: true })).toBeEmpty();
+	expect(copyRequests).toEqual([]);
+	await expect(connect.getByRole('checkbox', { name: 'Remember on this device' })).toHaveCount(0);
+	await connect.getByLabel('API key', { exact: true }).fill(copyKey);
+	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+	await expect(connect).toBeHidden();
+	await expect(
+		copy.getByRole('status').filter({ hasText: 'Workspace copy · PixelLab off' })
+	).toBeHidden();
+	expect(copyRequests).toEqual(['GET /v2/balance']);
+	const job = await copy.evaluate(async () => {
+		const queuePath = '/src/lib/pixellab/queue.ts';
+		const { queue } = await import(queuePath);
+		return (await queue.enqueue({ method: 'POST', path: '/estimate-skeleton', body: {} })).id;
+	});
+	const blocksUnload = (tab: Page) =>
+		tab.evaluate(() => !window.dispatchEvent(new Event('beforeunload', { cancelable: true })));
+	try {
+		await expect
+			.poll(() => copyRequests.filter((request) => request.startsWith('POST ')))
+			.toEqual(['POST /v2/estimate-skeleton']);
+		await expect.poll(() => blocksUnload(copy)).toBe(true);
+	} finally {
+		releaseEstimate();
+	}
+	await expect.poll(() => blocksUnload(copy)).toBe(false);
+	for (const [tab, present] of [
+		[copy, true],
+		[page, false]
+	] as const) {
+		expect(
+			await tab.evaluate(async (id) => {
+				const dbPath = '/src/lib/store/db.ts';
+				const db = await import(dbPath);
+				return !!(await db.get('jobs', id));
+			}, job)
+		).toBe(present);
+	}
+	await page.route('https://api.pixellab.ai/v2/balance', (route) =>
+		route.fulfill({ json: balance })
+	);
+	const forgetMarker = await page.evaluate(async () => {
+		const appPath = '/src/lib/app.svelte.ts';
+		const { setKey } = await import(appPath);
+		await setKey('fake-workspace-test-key-no-network', true);
+		return localStorage.getItem('pixellabAuthForget');
+	});
+	await copy.getByRole('button', { name: 'More options', exact: true }).click();
+	await copy.getByRole('button', { name: /^PixelLab usage/ }).click();
+	await copy.getByRole('button', { name: 'Forget key', exact: true }).click();
+	await expect(connect.getByLabel('API key', { exact: true })).toBeEmpty();
+	await expect(
+		copy.getByRole('status').filter({ hasText: 'Workspace copy · PixelLab off' })
+	).toBeVisible();
+	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await expect(
 		await copy.evaluate(async (id) => {
 			const statePath = '/src/studio/state.svelte.ts';
@@ -328,11 +432,14 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 	}, sample.id);
 	const original = await page.evaluate(async (id) => {
 		const dbPath = '/src/lib/store/db.ts';
+		const appPath = '/src/lib/app.svelte.ts';
 		const db = await import(dbPath);
 		return {
 			name: (await db.get('projects', id))?.manifest.name,
 			job: (await db.get('jobs', 'workspace-evidence'))?.state,
 			keyKept: localStorage.getItem('pixellabApiKey') === 'fake-workspace-test-key-no-network',
+			forgetMarker: localStorage.getItem('pixellabAuthForget'),
+			connected: !!(await import(appPath)).app.key,
 			theme: localStorage.getItem('pixeldoll.theme'),
 			lastProject: localStorage.getItem('pixeldoll.studio.project')
 		};
@@ -341,10 +448,41 @@ test('workspace ZIP round-trips saved records and artwork without touching the l
 		name: 'Recipient existing character',
 		job: 'lost',
 		keyKept: true,
+		forgetMarker,
+		connected: true,
 		theme: 'dark',
 		lastProject: 'rig-recipient-only'
 	});
 	expect(await captureWorkspaceStore(page, recipientKeys, artworkKeys)).toEqual(recipient);
+	await copy.getByRole('button', { name: 'More options', exact: true }).click();
+	await copy.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	expectedCopyKey = savedKey;
+	const requestsBeforeSavedKey = copyRequests.length;
+	await useSavedKey.click();
+	await expect(connect).toBeHidden();
+	expect(copyRequests.slice(requestsBeforeSavedKey)).toEqual(['GET /v2/balance']);
+	expect(
+		await copy.evaluate(async (expectedKey) => {
+			const appPath = '/src/lib/app.svelte.ts';
+			return {
+				remembered: (await import(appPath)).app.remembered,
+				keyKept: localStorage.getItem('pixellabApiKey') === expectedKey,
+				forgetMarker: localStorage.getItem('pixellabAuthForget')
+			};
+		}, savedKey)
+	).toEqual({ remembered: false, keyKept: true, forgetMarker });
+	await page.evaluate(async () => {
+		const appPath = '/src/lib/app.svelte.ts';
+		(await import(appPath)).forgetKey();
+	});
+	await expect(
+		copy.getByRole('status').filter({ hasText: 'Workspace copy · PixelLab off' })
+	).toBeVisible();
+	await copy.getByRole('button', { name: 'More options', exact: true }).click();
+	await copy.getByRole('button', { name: 'Connect PixelLab...', exact: true }).click();
+	await expect(connect.getByLabel('API key', { exact: true })).toBeVisible();
+	await expect(useSavedKey).toHaveCount(0);
+	await connect.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await copy.reload();
 	await expect(copy.getByRole('heading', { name: 'Open workspace copy' })).toBeVisible();
 	await copy.goto(new URL('/?workspace-copy=', page.url()).href);

@@ -410,29 +410,28 @@
 >
 	<PopoverArrow />
 	<div class="menu-surface bu-popover-surface bu-floating">
-		{#if !workspaceCopy}<button
-				class="row bu-action"
-				data-variant="quiet"
-				aria-haspopup="dialog"
-				onclick={() => {
-					closeOptions();
-					ui.sheet = 'connect';
-				}}
-			>
-				{#if app.key && !app.keyRejected}
-					<PixelLabUsage compact />
-				{:else}
-					<KeyRound size={18} />
-					<span class="row-name"
-						>{openerLabel(
-							t(app.keyRejected ? 'connectSheet.reconnect' : 'connectSheet.titleConnectPixelLab')
-						)}</span
-					>
-					<SurfaceChevron />
-				{/if}
-			</button>
-			<hr />
-		{/if}
+		<button
+			class="row bu-action"
+			data-variant="quiet"
+			aria-haspopup="dialog"
+			onclick={() => {
+				closeOptions();
+				ui.sheet = 'connect';
+			}}
+		>
+			{#if app.key && !app.keyRejected}
+				<PixelLabUsage compact />
+			{:else}
+				<KeyRound size={18} />
+				<span class="row-name"
+					>{openerLabel(
+						t(app.keyRejected ? 'connectSheet.reconnect' : 'connectSheet.titleConnectPixelLab')
+					)}</span
+				>
+				<SurfaceChevron />
+			{/if}
+		</button>
+		<hr />
 		<!-- Character actions: demo editing and actions moved from the toolbar on smaller screens. -->
 		{#if experience.screen === 'studio'}<DemoCopyRow id={doc.id} close={closeOptions} />{/if}
 		{#if experience.screen === 'studio'}<button
@@ -535,7 +534,21 @@
 		>
 		<ApiPeek scope="all" all menu />
 		<hr />
-		{#if !workspaceCopy}
+		{#if workspaceCopy}
+			<button
+				class="row bu-action"
+				data-variant="quiet"
+				aria-haspopup="dialog"
+				onclick={() => {
+					closeOptions();
+					ui.sheet = 'workspaceReport';
+				}}
+				><Archive size={18} /><span class="row-name"
+					>{openerLabel(t('workspace.activityTitle'))}</span
+				><SurfaceChevron /></button
+			>
+			<hr />
+		{:else}
 			<!-- Workspace: export or open a copy independently of the active character. -->
 			<button class="row bu-action" data-variant="quiet" popovertarget="workspace-options">
 				<Archive size={18} />

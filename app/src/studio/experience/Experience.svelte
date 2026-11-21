@@ -63,6 +63,7 @@
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
 	import { workspaceCopy } from '../../lib/store/workspace-mode.ts';
+	import { app } from '../../lib/app.svelte.ts';
 	let search = $state('');
 	let castDirection = $state(1);
 	let selection = $state<HTMLDivElement>();
@@ -551,7 +552,11 @@
 	<div class="scene-reading" aria-hidden="true"></div>
 	<Toolbar />
 	{#if workspaceCopy}<div class="workspace-banner bu-floating" role="status">
-			{t('experience.workspaceCopyPixelLabOff')}
+			{t(
+				app.key && !app.keyRejected
+					? 'studio.titleWorkspaceCopy'
+					: 'experience.workspaceCopyPixelLabOff'
+			)}
 		</div>{/if}
 	{#if experience.screen === 'characters'}
 		<!-- Keyboard focus on this game region scopes selection shortcuts. -->

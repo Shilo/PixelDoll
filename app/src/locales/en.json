@@ -1194,7 +1194,7 @@
 	},
 	"workspace": {
 		"activityTitle": "Workspace activity",
-		"activityIntro": "Saved with the workspace from PixelDoll {build}. PixelLab is off and nothing will restart.",
+		"activityIntro": "Saved with the workspace from PixelDoll {build}. Jobs from the ZIP do not restart.",
 		"missing": {
 			"one": "{count} artwork file was missing or unreadable.",
 			"other": "{count} artwork files were missing or unreadable."
@@ -1231,7 +1231,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "PixelLab is off here. Any changes to the copy are discarded when you close or reload this tab.",
+		"privacy": "The copy starts disconnected from PixelLab. Any changes to the copy are discarded when you close or reload this tab.",
 		"chooseZip": "Choose workspace ZIP",
 		"opening": "Opening…",
 		"release": "Release to open",
@@ -2393,7 +2393,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Open workspace copy",
-		"generationOff": "PixelLab is off in workspace copies."
+		"tabOnlyKey": "This connection is only for this tab and is not saved.",
+		"useSavedKey": "Use saved key"
 	},
 	"moveNames": { "default": "Default", "idle": "Idle", "walk": "Walk" },
 	"moveRemoval": {

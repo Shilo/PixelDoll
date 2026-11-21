@@ -1,6 +1,6 @@
 # Animation model default audit
 
-Status: one matched live body-only Slash comparison is complete. The equipment comparison, repeatability and default-promotion audit remain incomplete. The earlier interrupted Skeleton V3 receipt is still unknown. No new artwork was retained.
+Status: matched live Slash (body only) and matched live Walk (body and fitted cap) are complete. Keep Skeleton V3 as the default and PixMiniMax as the leading optional alternative. Held-item parity, repeatability and default-promotion criteria remain unverified. The earlier interrupted Skeleton V3 receipt is still unknown. No new artwork is retained in this report or the repository.
 
 Decision: could PixMiniMax replace Skeleton V3 as the Add a move default without trading expressive motion for lower equipment accuracy, character consistency, or reliability? Text V3 is the third arm, not a presumed fallback. The equipment renderer stays Skeleton V3 in every arm. Ride is out of scope and stays on its pose-driven path.
 
@@ -31,7 +31,19 @@ Rescored 216 raw frames using the color comparison in `paletteFit`: count pixels
 
 PixMiniMax east Slash clears the clip gate at 97.35% but falls to 90.84% on its worst frame. East Walk still misses at 96.11%. Palette fit measures color retention, not motion quality, exact dye compatibility, or equipment alignment. These historical inputs are unmatched and do not establish parity.
 
-## Stage 1: paid pilot, approved and pending preflight
+### Archived motion continuity screen
+
+Decoded the same 216 archived frames to RGBA in memory, ignoring RGB at fully transparent pixels. Every clip had eight distinct frames. Across the seven adjacent transitions in each clip, a stationary silhouette means no change to the binary alpha mask at a threshold of 128. This is not the same as a frozen frame: color or interior details can still change. Exclude the loop seam from this screen to avoid imposing a loop on Death.
+
+| Route | Walk clips with a stationary transition | Death clips with a stationary transition | Slash clips with a stationary transition |
+| --- | ---: | ---: | ---: |
+| Skeleton V3 | 0/3 | 0/3 | 0/3 |
+| PixMiniMax | 0/3 | 2/3 (east, south) | 2/3 (east, north) |
+| Text V3 | 0/3 | 0/3 | 0/3 |
+
+PixMiniMax's median adjacent silhouette change on Walk was 157 / 86 / 78 pixels for east / south / north, versus 157 / 77 / 69 for Skeleton V3 and 115 / 86 / 72 for Text V3. This challenges any conclusion that PixMiniMax is inherently static based on the live Slash alone. A stationary transition can be a deliberate hold, especially at the end of a one-shot. Conversely, high silhouette change can be jitter, camera drift, unintended props, or a different pose. The archive lacks matched inputs and blind ratings, so these are diagnostics, not a route ranking.
+
+## Stage 1: approved paid pilot and follow-up
 
 The bundled 64×64 demo has finished headwear and sword layers but no stored rest rig, managed Walk source, or per-direction dressed references. Before spending, qualify a disposable rig-ready fixture, verify the exact production plans, and confirm transient review and per-request spend controls without retaining artwork. No paid fixture preparation or unmatched substitute was run.
 
@@ -69,6 +81,43 @@ Reported charges for this round: 2 generations for the initial body fixture, 10 
 
 Keep Skeleton V3 as default. This is one action, one view, one character and one seed, without a qualified gear reference or independent visual review. The matched Walk, east Slash, and equipped comparisons remain open.
 
+### Matched live Walk follow-up
+
+Opened a fresh, disposable browser session with an in-memory database. Created one 64×64 humanoid fixture (48 px body, seed 19017, two independent views) and reused its standing art and joints. Initial preflight tried to add a new move for east only. Production correctly refused because a new move needs all independently drawn directions; the attempts made no generation requests. Each actual Walk arm used both south and east, eight frames, seed 7 and the production Add a move path, restoring the same frozen standing project between arms. This is a new Walk block, not a resend of the interrupted Slash request.
+
+The native motion intent was `walking, unarmed, no weapon, no props, no other people, no effects`. Text V3 appended the requested facing. PixMiniMax received the facing and view as separate fields, with `standing upright with empty hands` as its initial pose. Its production subject caption combined the creation description with canonical base-body styling, including some conflicting appearance cues. Keep this in mind when interpreting the result as a comparison of the routes as shipped, not a controlled comparison of provider internals. Skeleton V3 used managed `walking-8-frames` motion, then the normal Skeleton V3 body render. The two-view body plans estimated 3.6 generations each for PixMiniMax and Text V3 and 15.2 for Skeleton V3. Fixture drawing reported 2 generations; the completed registration has no reported charge and is not counted as free.
+
+| Route and view | Returned / kept / distinct | Palette fit | Bottom displacement | Border pixels | Median adjacent silhouette change |
+| --- | --- | ---: | ---: | ---: | ---: |
+| PixMiniMax east | 9 / 8 / 8 | 99.16% | 0 px | 0 | 79 px |
+| PixMiniMax south | 9 / 8 / 8 | 100.00% | 3 px | 0 | 64 px |
+| Text V3 east | 9 / 8 / 8 | 96.00% | 1 px | 0 | 129 px |
+| Text V3 south | 9 / 8 / 8 | 99.20% | 1 px | 0 | 107 px |
+| Skeleton V3 east | 8 / 8 / 8 | 96.30% | 1 px | 0 | 177 px |
+| Skeleton V3 south | 8 / 8 / 8 | 100.00% | 1 px | 0 | 66 px |
+
+PixMiniMax published both views, completed 16 joint measurements and reported one QA warning. The audit readout initially looked up saved blobs with the wrong key format after publication. Recovered the metrics from the already-paid results in memory using the production normalization and palette comparison, without any regeneration. The 3 px bottom displacement exceeds the normal 1 px warning threshold; it is not a direct foot-sliding measurement. The body and joint receipts total 3.6 generations. Walk did not reproduce the repeated frames from the matched south Slash, so that earlier result is not grounds for calling PixMiniMax generally static.
+
+Text V3 also published both views and completed 16 joint measurements for 3.6 generations. East was below the 97% palette threshold. South had a facing warning on frames 7 and 8, where estimated shoulder width fell to 46% of standing. That is a review flag, not independent confirmation that the body turned. The published new-move path reports QA warnings without automatically replacing, trimming, or repairing the artwork.
+
+Skeleton V3 published both views and measured all 16 body frames. Estimated arm-joint difference from the input poses was 0.59 px east and 0.33 px south. Native models have no supplied pose, so those numbers are not a cross-model accuracy ranking. Skeleton V3 also crossed the palette warning threshold on east; its south view had no warnings. Receipts matched the 15.2-generation estimate: 6 for the motion source, 6 for body renders and 3.2 for measurements. This block makes PixMiniMax the cheaper Walk body route with better palette retention on east, at the cost of more south floor displacement. None of these measures establishes a blind motion win.
+
+Measured ankle motion relative to the midpoint of the hips. East horizontal ankle excursion (right/left) was 10.11/9.39 px for PixMiniMax, 14.93/14.12 px for Text V3, and 15.10/16.42 px for Skeleton V3. At the loop seam, mean two-ankle movement was 4.11 / 10.68 / 5.42 px east and 3.32 / 3.10 / 0.52 px south, in that same route order. The median interior movement was 2.22 / 3.18 / 4.65 px east and 1.13 / 1.64 / 1.16 px south. The clearest seam outliers here are Text V3 east and PixMiniMax south. These are estimator-based motion cues, not annotations of actual ankle placement, cadence, contact, or perceived animation quality.
+
+For the equipment check, a simple black cap passed both standing views (seed 27183, 10 generations). The short sword (seed 27184, 10 generations) passed south but received an ambiguous-grip warning on east and was not used for a two-view fitted comparison. It was not rerolled. To restore PixMiniMax's original production clip record for fitting the shared cap, replayed exactly 18 completed requests in memory by request hash with network fallback disabled. It reproduced the saved body QA, including the 3 px south warning, without another POST.
+
+The same two standing cap references were posed by Skeleton V3 for every Walk arm at seed 7. All six calls returned eight frames and billed 3 generations each. Published coverage is not a pass: Text V3's south cap remained in review despite all eight cells being present. The lowest key-retention score there was on frame 6. Anchor drift is the maximum change in the cap centroid relative to the measured head anchor and the matching standing offset. It checks whether the saved layer follows the measured head, not whether the head estimate or the cap is correct by independent visual annotation.
+
+| Body route | Cap QA east / south | Minimum key retention east / south | Maximum anchor drift east / south | Reported body + cap cost (both views) |
+| --- | --- | --- | --- | ---: |
+| PixMiniMax | Pass / Pass | 99.1% / 100.0% | 1.39 / 0.00 px | 9.6 gens |
+| Text V3 | Pass / Fail | 97.5% / 96.7% | 1.46 / 1.23 px | 9.6 gens |
+| Skeleton V3 | Pass / Pass | 100.0% / 99.6% | 1.39 / 0.15 px | 21.2 gens |
+
+The fitted costs exclude standing-item creation and character registration. This follow-up reported **62.4 generations**: 2 for character drawing, 22.4 for Walk bodies and checks, 20 for standing cap and sword, and 18 for cap fitting. The fixture's completed registration had no usage receipt. Combined with prior rounds, reported spend is at least **86.4 generations**, plus unreported charges. No in-flight jobs remained when this block ended. The browser rendered six in-memory filmstrip rows, but the T3 preview could not produce a screenshot frame. No image was written to disk and no visual-preference or independent landmark score is claimed.
+
+**Decision:** PixMiniMax is a viable optional Walk route on this fixture: cap QA and measured head tracking were comparable to the Skeleton V3 baseline, and body-plus-cap cost was 9.6 versus 21.2 generations. The larger south loop seam and the prior Slash repeats argue against a universal default switch. Text V3 had both a body-facing warning and a cap failure on south. Keep it as an advanced option, preserve the equipment gates, and inspect Text V3's repeated headwear failures before broadening its use. The next discriminating comparison is unarmed Slash on the Walk fixture configuration, across all three routes at eight frames and seed 7, with a clean shared standing cap and held reference. With no qualifying held reference, report the cap comparison separately and do not infer grip parity.
+
 Use one frozen 64×64 humanoid with east and south views, one already-fitted head item and one already-fitted hand item. Test Walk and unarmed Slash at eight frames, one predeclared seed, all three body routes: 4 matched cases, **12 body clips and up to 24 fitted gear clips**. Do not redress items between arms. Use the same action intent and direction; document the actual pose source for Skeleton V3 and exact text for both native arms. A shared seed is a blocking label, not a guarantee of matched random draws across models. Randomize arm order within each case. Run the actual production body normalization, measurement, item pose, extraction and QA; in-memory observation must not change whether production would save a result.
 
 Budget envelope: at 64 px and eight frames the app estimates 1 generation for a native body draw plus 0.8 for joint checks; an authored Skeleton V3 Slash estimates 3.8 for body and checks, and Skeleton V3 Walk estimates 7.6 including the motion source. Two ordinary eight-frame gear poses add about 6 per clip before any special item plan. Estimated pilot total is **109.2 generations**, assuming two ordinary poses for every clip. Request a **120-generation approval ceiling**, only if the exact fixture plans fit it; stop before any possibly over-budget submission. Report receipts separately from estimates, including charges for failed jobs. No automatic retries, redress, repair, or paid fallback. If the actual request plan adds such a step, stop and record that arm as unqualified under the first-pass protocol. Body failures stay in the denominator even if gear was never requested. If usage remains uncertain, suspend rather than submit again.
@@ -89,5 +138,7 @@ Budget envelope: at 64 px and eight frames the app estimates 1 generation for a 
 | Operations | Requested/returned/kept frames, first-pass failure and fallback eligibility, elapsed time, charged generations and USD where reported, and cost per fully accepted body-plus-gear case. Record exact route, app revision, canvas, action intent, route-specific cue, seed, and reviewer scores. |
 
 Promotion requires all of the following on replication: zero observed critical wrong-facing, wrong-hand, invented-prop, clipped-body, or gear-loss defects for the candidate; no reproducible regressions in recolor or export; PixMiniMax's paired first-pass fitted success no worse than Skeleton V3 by more than five percentage points using a one-sided 95% bound that accounts for clustering by character and action; at least two-thirds PixMiniMax wins among non-tied blind motion comparisons, with ties and reviewer agreement reported; and no higher cost per accepted fitted case. Report paired counts, interval and results by action, direction, body and canvas. With too few independent blocks or an inconclusive interval, keep Skeleton V3 and extend the matrix rather than declaring parity. Apply the same gates to Text V3; report which actions it does well rather than hiding a failure in the pooled result. Keep manual Skeleton V3 available even if the default changes.
+
+Treat the Stage 2 grid as a defect screen, not as a guarantee of statistical power. Directions, frame counts and seeds on the same body/action do not count as independent trials. Even in a simplified zero-discordance binomial check, 12 independent character/action blocks give a one-sided 95% upper bound of 22.1% for a candidate-only failure. That simplified check needs 59 independent blocks to get below 5% with no candidate-only failures. Shared characters or actions and nonzero discordance require a paired, clustered analysis and may require more cases. If the pilot passes, set the replication sample size from the paired pilot data before buying a larger run. If the pilot finds a reproducible critical failure, diagnose and rerun only a deliberately scoped qualification block instead of expanding the whole grid.
 
 Persist only aggregate and per-case numeric or categorical records, prompt text and reproducibility metadata without account or job identifiers. Do not commit, export, or retain generated artwork, screenshots, base64, raw provider responses, or credentials. For paid measurement use a disposable in-memory review surface; do not write fixture output to the workspace or sync browser storage. Review both raters' scores while the temporary session is open. Without transient image access or both raters, report the affected metric as unverified.

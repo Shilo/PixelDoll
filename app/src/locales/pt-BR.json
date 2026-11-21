@@ -1211,7 +1211,7 @@
 	},
 	"workspace": {
 		"activityTitle": "Atividade do espaço de trabalho",
-		"activityIntro": "Salvo com o espaço de trabalho do PixelDoll {build}. O PixelLab está desativado e nada será retomado.",
+		"activityIntro": "Salvo com o espaço de trabalho do PixelDoll {build}. As tarefas do ZIP não são retomadas.",
 		"missing": {
 			"one": "{count} arquivo de arte estava ausente ou ilegível.",
 			"other": "{count} arquivos de arte estavam ausentes ou ilegíveis."
@@ -1248,7 +1248,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "O PixelLab está desativado aqui. As alterações nesta cópia são descartadas quando você fecha ou recarrega esta aba.",
+		"privacy": "A cópia abre sem conexão com o PixelLab. As alterações nesta cópia são descartadas quando você fecha ou recarrega esta aba.",
 		"chooseZip": "Escolher ZIP do espaço de trabalho",
 		"opening": "Abrindo…",
 		"release": "Solte para abrir",
@@ -2422,7 +2422,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Abrir cópia do espaço de trabalho",
-		"generationOff": "O PixelLab está desativado em cópias do espaço de trabalho."
+		"tabOnlyKey": "Esta conexão vale apenas nesta aba e não é salva.",
+		"useSavedKey": "Usar chave salva"
 	},
 	"moveNames": { "default": "Padrão", "idle": "Repouso", "walk": "Caminhada" },
 	"moveRemoval": {

@@ -1203,7 +1203,7 @@
 	},
 	"workspace": {
 		"activityTitle": "Actividad del espacio de trabajo",
-		"activityIntro": "Guardado con el espacio de trabajo desde PixelDoll {build}. PixelLab está desactivado y nada se reiniciará.",
+		"activityIntro": "Guardado con el espacio de trabajo desde PixelDoll {build}. Las tareas del ZIP no se reinician.",
 		"missing": {
 			"one": "Faltaba {count} archivo de imagen o no se pudo leer.",
 			"other": "Faltaban {count} archivos de imagen o no se pudieron leer."
@@ -1240,7 +1240,7 @@
 		}
 	},
 	"openWorkspace": {
-		"privacy": "Aquí PixelLab está desactivado. Los cambios en la copia se descartan al cerrar o recargar esta pestaña.",
+		"privacy": "La copia se abre sin conexión a PixelLab. Los cambios en la copia se descartan al cerrar o recargar esta pestaña.",
 		"chooseZip": "Elegir ZIP del espacio de trabajo",
 		"opening": "Abriendo…",
 		"release": "Suelta para abrir",
@@ -2411,7 +2411,8 @@
 	},
 	"workspaceCopy": {
 		"title": "Abrir copia del espacio de trabajo",
-		"generationOff": "PixelLab está desactivado en las copias del espacio de trabajo."
+		"tabOnlyKey": "Esta conexión solo se usa en esta pestaña y no se guarda.",
+		"useSavedKey": "Usar clave guardada"
 	},
 	"moveNames": {
 		"default": "Predeterminada",
