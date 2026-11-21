@@ -2320,9 +2320,10 @@
 	"stateCapture": {
 		"add": "从帧创建状态…",
 		"title": "创建状态",
-		"source": "来自 {move}",
+		"source": "从 {move} 中选择一帧",
 		"name": "状态名称",
-		"noEquipment": "不会复制装备，也不会消耗点数。",
+		"noEquipment": "不会复制装备。",
+		"noCredits": "不会消耗点数。",
 		"invalidName": "请输入包含拉丁字母或数字的名称。",
 		"takenName": "此名称已被使用或保留，请选择其他名称。",
 		"savedAs": "另存为 {name}",

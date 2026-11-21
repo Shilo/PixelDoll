@@ -2426,9 +2426,10 @@
 	"stateCapture": {
 		"add": "Create State from…",
 		"title": "Create State",
-		"source": "From {move}",
+		"source": "Choose a frame from {move}",
 		"name": "State name",
-		"noEquipment": "Equipment isn’t copied. No credits used.",
+		"noEquipment": "Equipment isn’t copied.",
+		"noCredits": "No credits used.",
 		"invalidName": "Enter a name with a Latin letter or number.",
 		"takenName": "This name is taken or reserved. Choose another.",
 		"savedAs": "Saved as {name}",

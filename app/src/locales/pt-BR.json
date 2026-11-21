@@ -2455,9 +2455,10 @@
 	"stateCapture": {
 		"add": "Criar estado a partir de…",
 		"title": "Criar estado",
-		"source": "De {move}",
+		"source": "Escolha um quadro de {move}",
 		"name": "Nome do estado",
-		"noEquipment": "O equipamento não é copiado. Nenhum crédito usado.",
+		"noEquipment": "Equipamento não copiado.",
+		"noCredits": "Nenhum crédito usado.",
 		"invalidName": "Digite um nome com uma letra latina ou um número.",
 		"takenName": "Este nome está em uso ou é reservado. Escolha outro.",
 		"savedAs": "Salvo como {name}",

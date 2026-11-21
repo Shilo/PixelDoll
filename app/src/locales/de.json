@@ -2441,9 +2441,10 @@
 	"stateCapture": {
 		"add": "Zustand erstellen aus …",
 		"title": "Zustand erstellen",
-		"source": "Aus {move}",
+		"source": "Wähle einen Frame aus {move}",
 		"name": "Zustandsname",
-		"noEquipment": "Ausrüstung wird nicht kopiert. Keine Credits.",
+		"noEquipment": "Ausrüstung bleibt zurück.",
+		"noCredits": "Keine Credits.",
 		"invalidName": "Gib einen Namen mit einem lateinischen Buchstaben oder einer Zahl ein.",
 		"takenName": "Dieser Name ist vergeben oder reserviert. Wähle einen anderen.",
 		"savedAs": "Gespeichert als {name}",

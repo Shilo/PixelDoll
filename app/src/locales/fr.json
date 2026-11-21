@@ -2442,9 +2442,10 @@
 	"stateCapture": {
 		"add": "Créer un état à partir de…",
 		"title": "Créer un état",
-		"source": "Depuis {move}",
+		"source": "Choisissez une image de {move}",
 		"name": "Nom de l’état",
-		"noEquipment": "L’équipement n’est pas copié. Aucun crédit utilisé.",
+		"noEquipment": "Équipement non copié.",
+		"noCredits": "Aucun crédit utilisé.",
 		"invalidName": "Saisissez un nom contenant une lettre latine ou un chiffre.",
 		"takenName": "Ce nom est pris ou réservé. Choisissez-en un autre.",
 		"savedAs": "Enregistré sous {name}",

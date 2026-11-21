@@ -50,6 +50,10 @@
 	const project = $derived(store.project);
 	const source = $derived(project && stateCaptureSource(project.manifest, moveId));
 	const changed = $derived(stale || doc.id !== projectId || source?.version !== initial?.version);
+	const sourcePlaceholder = '\uFFFC';
+	const [beforeMove, afterMove] = $derived(
+		t('stateCapture.source', { move: sourcePlaceholder }).split(sourcePlaceholder)
+	);
 	const total = $derived(source?.move.frames.length ?? 0);
 	const cell = $derived(source?.move.frames[index]?.cell);
 	const id = $derived(stateCaptureId(name));
@@ -111,10 +115,15 @@
 	}
 </script>
 
-<Sheet title={t('stateCapture.title')} cancelDisabled={busy} onclose={() => (ui.sheet = null)}>
+<Sheet
+	title={t('stateCapture.title')}
+	className="state-capture-sheet"
+	cancelDisabled={busy}
+	onclose={() => (ui.sheet = null)}
+>
 	<form id={formId} class="capture-form" onsubmit={save}>
 		<span class="sr" role="status">{busy ? t('stateCapture.saving') : ''}</span>
-		<p class="muted small capture-source">{t('stateCapture.source', { move: moveName })}</p>
+		<p class="muted small capture-source">{beforeMove}<strong>{moveName}</strong>{afterMove}</p>
 		{#if !changed && total}
 			<div class="capture-nav">
 				<button
@@ -188,7 +197,10 @@
 	</form>
 	{#snippet footer()}
 		<div class="capture-footer">
-			<p class="muted small">{t('stateCapture.noEquipment')}</p>
+			<p class="muted small">
+				<span>{t('stateCapture.noEquipment')}</span>
+				<span>{t('stateCapture.noCredits')}</span>
+			</p>
 			<button
 				class="bu-btn"
 				data-variant="primary"
@@ -202,6 +214,9 @@
 </Sheet>
 
 <style>
+	:global(dialog.state-capture-sheet:is(.center, .side)) {
+		max-inline-size: 344px;
+	}
 	.capture-form {
 		display: grid;
 		gap: 12px;
@@ -235,13 +250,13 @@
 		position: relative;
 		display: grid;
 		place-items: center;
-		padding: 8px 44px;
+		padding: 8px 24px;
 		background: var(--stage);
 		border: 1px solid var(--bu-line);
 		border-radius: var(--r-ctl);
 	}
 	.capture-sprite {
-		inline-size: min(100%, 208px);
+		inline-size: min(100%, 208px, 32dvh);
 		aspect-ratio: 1;
 	}
 	.capture-rotation {
@@ -255,10 +270,14 @@
 	}
 	.capture-footer {
 		flex: 1;
-		display: flex;
+		min-inline-size: 0;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
-		justify-content: space-between;
-		flex-wrap: wrap;
-		gap: 8px 12px;
+		gap: 8px;
+	}
+	.capture-footer span {
+		display: block;
+		overflow-wrap: anywhere;
 	}
 </style>
