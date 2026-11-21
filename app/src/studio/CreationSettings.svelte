@@ -46,7 +46,7 @@
 	const moveNames = { pixminimax: 'PixMiniMax', 'skeleton-v3': 'Skeleton V3', v3: 'V3' };
 	const stateNames = { pro: 'Pro', 'pro-flash': 'Pro Flash', pixen: 'V3 (Pixen)' };
 	const methodNames = {
-		auto: 'create.form.auto',
+		auto: 'creationSettings.automatic',
 		skel: 'generationDetails.method.skeletonPose',
 		anchor: 'generationDetails.method.frameEditing'
 	} as const;
@@ -215,7 +215,6 @@
 			</select>
 		{/snippet}
 		{@render field('character-model', 'create.form.model', model)}
-		{@render field('base-clothing', 'create.form.baseClothing', clothing)}
 		{@render field('body-size', 'create.form.bodySize', body)}
 		{@render field('frame-size', 'create.form.frameSize', frame)}
 		{#if character.frame !== 'auto'}{@render field(
@@ -223,7 +222,8 @@
 				'generationDetails.settings.frame',
 				frameSize
 			)}{/if}
-		{@render field('direction-presets', 'create.form.directionPresets', directions)}
+		{@render field('direction-presets', 'common.direction', directions)}
+		{@render field('base-clothing', 'create.form.baseClothing', clothing)}
 	{:else if section === 'moves'}
 		{#snippet model(inputId: string)}
 			<select
@@ -255,14 +255,18 @@
 						move.frames
 					)}
 			>
-				<option value="auto">{t('create.form.auto')}</option>
+				<option value="auto">{t('creationSettings.automatic')}</option>
 				{#each moveFrames as option (option)}<option value={option}>{formatNumber(option)}</option
 					>{/each}
 			</select>
 		{/snippet}
 		{@render field('move-model', 'moveSheet.motionModel', model)}
 		{@render field('move-frames', 'moveSheet.frames', frames)}
-		{#if move.model === 'v3'}<p class="bu-muted note">{t('creationSettings.framesHelp')}</p>{/if}
+		{#if move.frames === 'auto'}
+			<p class="bu-muted note">{t('creationSettings.automaticFramesHelp')}</p>
+		{:else if move.model === 'v3'}
+			<p class="bu-muted note">{t('creationSettings.framesHelp')}</p>
+		{/if}
 	{:else if section === 'states'}
 		{#snippet model(inputId: string)}
 			<select
@@ -302,7 +306,14 @@
 			</select>
 		{/snippet}
 		{@render field('item-method', 'newItem.method', method)}
-		<p class="bu-muted note">{t('creationSettings.methodHelp')}</p>
+		{#if item.method === 'auto'}
+			<p class="bu-muted note">
+				{t('creationSettings.methodHelp', {
+					pose: t(methodNames.skel),
+					edit: t(methodNames.anchor)
+				})}
+			</p>
+		{/if}
 	{/if}
 </fieldset>
 {#if error && valid && errorRevision === creationSettingsRevision()}<p class="note" role="alert">

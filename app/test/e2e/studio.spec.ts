@@ -521,10 +521,10 @@ test('Settings saves creation choices across reload and resets them by scope', a
 		await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	};
 	const choices = [
-		['Characters', 'character-model', 'pro', 'v3'],
-		['Moves', 'move-model', 'v3', 'skeleton-v3'],
-		['States', 'state-model', 'pixen', 'pro'],
-		['Items', 'item-method', 'anchor', 'auto']
+		['Character', 'character-model', 'pro', 'v3'],
+		['Move', 'move-model', 'v3', 'skeleton-v3'],
+		['State', 'state-model', 'pixen', 'pro'],
+		['Item', 'item-method', 'anchor', 'auto']
 	] as const;
 	const select = async (section: string, field: string) => {
 		await nav.getByRole('button', { name: section, exact: true }).click();
@@ -532,6 +532,26 @@ test('Settings saves creation choices across reload and resets them by scope', a
 	};
 	await openStudio(page, '/#/');
 	await openSettings();
+	await select('Character', 'character-model');
+	await expect(settings.locator('[data-setting] > label')).toHaveText([
+		'Model',
+		'Body size',
+		'Frame size',
+		'Direction',
+		'Base clothing'
+	]);
+	await select('Move', 'move-model');
+	await expect(
+		settings.getByRole('combobox', { name: 'Frames', exact: true }).locator('option:checked')
+	).toHaveText('Automatic');
+	await expect(
+		settings.getByText(/Walking and custom moves usually start at 8 frames/)
+	).toBeVisible();
+	const itemMethod = await select('Item', 'item-method');
+	await expect(itemMethod.locator('option:checked')).toHaveText('Automatic');
+	await expect(
+		settings.getByText('Uses Skeleton posing when supported. Otherwise, uses Frame editing.')
+	).toBeVisible();
 	for (const [section, field, value, initial] of choices) {
 		const control = await select(section, field);
 		await expect(control).toHaveValue(initial);
@@ -543,11 +563,11 @@ test('Settings saves creation choices across reload and resets them by scope', a
 		await expect(await select(section, field)).toHaveValue(value);
 	await settings.getByRole('button', { name: 'Reset this page', exact: true }).click();
 	await page
-		.getByRole('alertdialog', { name: 'Reset Items settings?' })
+		.getByRole('alertdialog', { name: 'Reset Item settings?' })
 		.getByRole('button', { name: 'Reset this page', exact: true })
 		.click();
 	await expect(settings.getByRole('combobox', { name: 'Animation method' })).toHaveValue('auto');
-	await expect(await select('Characters', 'character-model')).toHaveValue('pro');
+	await expect(await select('Character', 'character-model')).toHaveValue('pro');
 	const body = settings.getByRole('spinbutton', { name: 'Body size' });
 	await body.fill('66');
 	await body.press('Tab');

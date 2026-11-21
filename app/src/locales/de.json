@@ -42,7 +42,12 @@
 		}
 	},
 	"creationSettings": {
-		"items": "Ausrüstung",
+		"character": "Figur",
+		"move": "Bewegung",
+		"state": "Zustand",
+		"item": "Gegenstand",
+		"automatic": "Automatisch",
+		"automaticFramesHelp": "Gehen und eigene Bewegungen beginnen normalerweise mit 8 Frames. Vorlagen und ersetzte Bewegungen können eine andere Anzahl verwenden.",
 		"autoSize": "Automatisch ({size} px)",
 		"custom": "Benutzerdefiniert",
 		"description": "In diesem Browser gespeichert. Die Erstellungsdialoge verwenden diese Werte noch nicht.",
@@ -50,9 +55,9 @@
 		"readFailed": "Gespeicherte Einstellungen konnten nicht gelesen werden. Setze diese Seite zurück.",
 		"storageUnavailable": "Der Browserspeicher ist nicht verfügbar. Diese Einstellungen können nicht gespeichert werden.",
 		"saveFailed": "Die Auswahl konnte nicht gespeichert werden. Versuche es erneut.",
-		"incompatible": "Wähle für die Frames Auto oder eine Anzahl, die dieses Modell unterstützt.",
+		"incompatible": "Wähle für die Frames Automatisch oder eine Anzahl, die das neue Modell unterstützt.",
 		"framesHelp": "Die verfügbaren Frame-Anzahlen hängen von der Leinwandgröße der Figur ab.",
-		"methodHelp": "Ausrüstung verwendet eine Methode statt eines eigenen Modells."
+		"methodHelp": "Verwendet {pose}, wenn unterstützt. Andernfalls wird {edit} verwendet."
 	},
 	"settings": {
 		"reset": {

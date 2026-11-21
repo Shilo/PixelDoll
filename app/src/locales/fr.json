@@ -42,7 +42,12 @@
 		}
 	},
 	"creationSettings": {
-		"items": "Objets",
+		"character": "Personnage",
+		"move": "Mouvement",
+		"state": "État",
+		"item": "Objet",
+		"automatic": "Automatique",
+		"automaticFramesHelp": "La marche et les mouvements personnalisés commencent généralement avec 8 images. Les modèles et les remplacements peuvent en utiliser un autre nombre.",
 		"autoSize": "Automatique ({size} px)",
 		"custom": "Personnalisé",
 		"description": "Enregistré dans ce navigateur. Les fenêtres de création n’utilisent pas encore ces valeurs.",
@@ -50,9 +55,9 @@
 		"readFailed": "Impossible de lire les choix enregistrés. Réinitialisez cette page pour les réparer.",
 		"storageUnavailable": "Le stockage du navigateur est indisponible. Ces choix ne peuvent pas être enregistrés.",
 		"saveFailed": "Impossible d’enregistrer ce choix. Réessayez.",
-		"incompatible": "Choisissez Auto ou un nombre d’images compatible avec ce modèle.",
+		"incompatible": "Choisissez Automatique ou un nombre d’images compatible avec le nouveau modèle.",
 		"framesHelp": "Le nombre d’images disponible dépend de la taille du canevas du personnage.",
-		"methodHelp": "Les objets utilisent une méthode, pas un modèle distinct."
+		"methodHelp": "Utilise {pose} si possible. Sinon, utilise {edit}."
 	},
 	"settings": {
 		"reset": {

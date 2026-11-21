@@ -130,14 +130,18 @@
 					label: 'create.form.model',
 					names: ['V3', 'Pro', 'Pro Flash', 'Standard']
 				},
+				{ id: 'body-size', label: 'create.form.bodySize' },
+				{ id: 'frame-size', label: 'create.form.frameSize' },
+				{
+					id: 'direction-presets',
+					label: 'common.direction',
+					terms: ['create.form.directionPresets']
+				},
 				{
 					id: 'base-clothing',
 					label: 'create.form.baseClothing',
 					terms: ['create.form.underwear', 'create.form.nothingWorn']
-				},
-				{ id: 'body-size', label: 'create.form.bodySize' },
-				{ id: 'frame-size', label: 'create.form.frameSize' },
-				{ id: 'direction-presets', label: 'create.form.directionPresets' }
+				}
 			]
 		},
 		{
@@ -150,7 +154,7 @@
 					label: 'moveSheet.motionModel',
 					names: ['V3', 'PixMiniMax', 'Skeleton V3']
 				},
-				{ id: 'move-frames', label: 'moveSheet.frames' }
+				{ id: 'move-frames', label: 'moveSheet.frames', terms: ['creationSettings.automatic'] }
 			]
 		},
 		{
@@ -174,7 +178,7 @@
 					id: 'item-method',
 					label: 'newItem.method',
 					terms: [
-						'create.form.auto',
+						'creationSettings.automatic',
 						'generationDetails.method.skeletonPose',
 						'generationDetails.method.frameEditing'
 					]

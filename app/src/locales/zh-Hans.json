@@ -42,7 +42,12 @@
 		}
 	},
 	"creationSettings": {
-		"items": "物品",
+		"character": "角色",
+		"move": "动作",
+		"state": "状态",
+		"item": "物品",
+		"automatic": "自动",
+		"automaticFramesHelp": "行走和自定义动作通常从 8 帧开始。模板和替换动作可能使用不同的帧数。",
 		"autoSize": "自动（{size} 像素）",
 		"custom": "自定义",
 		"description": "保存在此浏览器中。创建对话框暂不使用这些值。",
@@ -50,9 +55,9 @@
 		"readFailed": "无法读取已保存的选项。请重置此页面以修复。",
 		"storageUnavailable": "浏览器存储不可用，无法保存这些选项。",
 		"saveFailed": "无法保存此选项。请重试。",
-		"incompatible": "请将帧数设为自动，或选择此模型支持的帧数。",
+		"incompatible": "请将帧数设为自动，或选择新模型支持的帧数。",
 		"framesHelp": "可用帧数取决于角色的画布大小。",
-		"methodHelp": "物品使用生成方法，而不是单独的模型。"
+		"methodHelp": "支持时使用「{pose}」，否则使用「{edit}」。"
 	},
 	"settings": {
 		"reset": {
