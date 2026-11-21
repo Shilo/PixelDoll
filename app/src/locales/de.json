@@ -515,7 +515,7 @@
 		"duplicateExportId": "Ein anderer Gegenstand verwendet diese Export-ID.",
 		"duplicateOutfitExportId": "Ein anderes Outfit verwendet diese Export-ID.",
 		"duplicateMoveExportId": "Eine andere Animation verwendet diese Export-ID.",
-		"defaultMoveExportId": "Spiele starten mit der Standpose, daher ist ihre Export-ID immer default.",
+		"defaultMoveExportId": "Spiele starten mit der Standpose, daher ist ihre Export-ID immer standing.",
 		"characterIdConflict": "Eine andere Figur in diesem Arbeitsbereich nutzt diese Export-ID. Verwende unterschiedliche IDs, um beide im selben Spiel zu nutzen.",
 		"invalidName": "Gib einen Namen mit 1 bis 60 Zeichen ein.",
 		"itemMissing": "Diesen Gegenstand gibt es nicht mehr.",
@@ -523,6 +523,8 @@
 		"moveMissing": "Diese Animation gibt es nicht mehr."
 	},
 	"savedActions": {
+		"labelDeleteState": "Zustand löschen",
+		"removeState": "Dadurch werden der Zustand und die dafür angepassten Gegenstandsframes von diesem Charakter entfernt. Fertige Animationen behalten ihre Frames und alle gespeicherten Ausgangsbilder. Das lässt sich nicht rückgängig machen.",
 		"labelDeleteMove": "Animation löschen…",
 		"labelDeleteOutfit": "Outfit löschen",
 		"thisRemovesTheMoveFromTheBody": "Dadurch wird die Animation vom Grundkörper und von allen Gegenständen entfernt. Das lässt sich nicht rückgängig machen."
@@ -752,6 +754,7 @@
 		"tabWardrobe": "Garderobe",
 		"tabColors": "Farben",
 		"tabOutfits": "Outfits",
+		"tabStates": "Zustände",
 		"tabMoves": "Animationen",
 		"facing": "Blickrichtung: {direction}",
 		"nextDirection": "Blickrichtung: {direction}. Nächste Blickrichtung",
@@ -998,7 +1001,8 @@
 			"defaultTargetHint": "Beim Öffnen des Exports vorausgewählt. Du kannst ein anderes Ziel wählen.",
 			"versionMenu": "RPG Maker-Version",
 			"version": "Version",
-			"versionLabel": "RPG Maker-Version: {version}"
+			"versionLabel": "RPG Maker-Version: {version}",
+			"walkMove": "Gehanimation"
 		},
 		"group": { "engines": "Engines und Frameworks", "assets": "Assets" },
 		"target": {
@@ -1147,10 +1151,17 @@
 				"other": "RPG Maker: Der Gehanimation fehlen die Ansichten für {directions}. Die Figur steht in diesen Zeilen still."
 			},
 			"rpgSteps": "RPG Maker: Die Gehschritte konnten nicht erkannt werden. Stattdessen wird der erste Gehframe als Schritt verwendet. Prüfe das Spritesheet.",
-			"rpgBelowFeet": "RPG Maker: {sheet} hat {count} px unter den Füßen. Deshalb steht die Figur auf der Karte {count} px höher."
+			"rpgBelowFeet": "RPG Maker: {sheet} hat {count} px unter den Füßen. Deshalb steht die Figur auf der Karte {count} px höher.",
+			"rpgOmittedMoves": {
+				"one": "RPG Maker: {moves} wird nicht exportiert. Gehsheets enthalten nur Steh- und Gehframes.",
+				"other": "RPG Maker: {moves} werden nicht exportiert. Gehsheets enthalten nur Steh- und Gehframes."
+			}
 		}
 	},
 	"import": {
+		"posesTitle": "Auch als Zustände importieren",
+		"posesHint": "Wähle Posen desselben Körpers ohne fest eingezeichnete Ausrüstung. Importiere ein anderes Aussehen als separaten Charakter. Die Animationen wählst du weiter unten aus.",
+		"poseMismatch": "Dieser Zustand hat andere Bildabmessungen, Blickrichtungen oder Kameraeinstellungen. Importiere ihn als separaten Charakter.",
 		"titleDevice": "Vom Gerät importieren",
 		"titlePixelLab": "Aus PixelLab importieren",
 		"browseLibrary": "PixelLab-Figuren durchsuchen",
@@ -1184,6 +1195,7 @@
 		"untitledCharacter": "Unbenannte Figur",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "one": "{count} Zustand", "other": "{count} Zustände" },
 			"separateItems": {
 				"one": "{count} separater Gegenstand",
 				"other": "{count} separate Gegenstände"
@@ -1202,7 +1214,7 @@
 		"preview": "Vorschau",
 		"previewArtwork": "Vorschau für den Figurenimport",
 		"stalePreview": "Die letzte Vorschau wird angezeigt. Aktualisiere deine Auswahl, um fortzufahren.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "Vorschau wird aktualisiert…",
 		"characterName": "Figurenname",
 		"directionsHint": "Wähle mit den Pfeilen, welche Ansichten du behältst. Die Spiegelschaltfläche spiegelt die gegenüberliegende Ansicht. Schalte sie vor dem Import aus, um die Originalgrafiken zu behalten. Gibt es keine, bleiben die gespiegelten Frames als eigenständige Ansicht erhalten.",
@@ -1355,6 +1367,9 @@
 		"preview": "Vorschau der ausgewählten Grafik",
 		"artwork": "Ausgewählte Grafik",
 		"allMoves": "Alle Animationen",
+		"clips": "Zustände und Animationen",
+		"allStates": "Alle Zustände",
+		"allClips": "Alles",
 		"size": "Größe",
 		"sizeOption": "{size}-fache Größe",
 		"animated": "Animiert",
@@ -1731,7 +1746,7 @@
 			"motionFrame": "{move} {direction} · Bewegungsframe {frame}",
 			"measureMotionNote": "Sendet den generierten Bewegungsframe als image (Base64-PNG), falls er noch nicht vermessen wurde.",
 			"renderBody": "{move} {direction} · Grundkörper rendern",
-			"renderBodyNote": "Nur bekannte Felder. Fügt first_frame und first_frame_keypoints aus der Standpose sowie Gelenkpunkte aus dieser Quelle hinzu: {source}. Es wird genau ein Renderauftrag gesendet. Bei leerer oder fehlerhafter Ausgabe stoppt der Vorgang zur Prüfung, ohne weiteren kostenpflichtigen Versuch.",
+			"renderBodyNote": "Nur bekannte Felder. Fügt first_frame und first_frame_keypoints sowie Gelenkpunkte aus dieser Quelle hinzu: {source}. Es wird genau ein Renderauftrag gesendet. Bei leerer oder fehlerhafter Ausgabe stoppt der Vorgang zur Prüfung, ohne weiteren kostenpflichtigen Versuch.",
 			"locallyAuthored": "lokal erstellt",
 			"generatedMotion": "generierte Bewegung",
 			"checkFrame": "{move} {direction} · Frame {frame} prüfen",
@@ -1953,6 +1968,7 @@
 		"adding": "Wird hinzugefügt… {done}/{total}",
 		"waitingForFailed": "Wartet auf die fehlgeschlagene Animation",
 		"add": "Animation hinzufügen",
+		"addState": "Zustand hinzufügen",
 		"estimate": "Ca. {gens} Generierungen",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, Drehpunkt {x},{y}",
@@ -2085,7 +2101,7 @@
 			"styleUnsupported": "Kontur und Detailgrad gelten nicht für {model}.",
 			"invalidOutline": "Ungültige Kontur.",
 			"invalidDetail": "Ungültiger Detailgrad.",
-			"reservedMove": "Default ist die Standpose. Wähle einen anderen Namen für die Animation.",
+			"reservedMove": "Standpose ist die Standpose. Wähle einen anderen Namen für die Animation.",
 			"recoveryNeedsAuthored": "Zum Wiederherstellen der Gelenkprüfung sind die ursprünglichen Einstellungen der manuell erstellten Grundkörperreparatur nötig.",
 			"recoveryAlreadySaved": "Diese Animation wurde seit diesem Versuch gespeichert. Es gibt nichts mehr wiederherzustellen.",
 			"keepNeedsChecks": "Um diese Animation zu behalten, müssen für jeden Frame abgeschlossene Gelenkprüfungen im Zwischenspeicher vorliegen.",
@@ -2298,6 +2314,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "Ursprünglicher Startframe",
+			"label": "Ausgangspunkt",
+			"chooseFrame": "Frame auswählen",
+			"frame": "Frame {number}",
+			"unavailable": "Für diesen Frame werden Körperbilder und vermessene Gelenke für jede ausgewählte Blickrichtung benötigt.",
+			"changed": "Der ausgewählte Startframe hat sich geändert. Wähle die Quelle erneut aus. Es wurde keine Generierung angefordert.",
+			"route": "Dieses Verfahren startet mit der Standpose. Wähle ein anderes Animationsmodell, um einen gespeicherten Frame zu verwenden.",
+			"stateTarget": "Ein Zustand kann nicht als Animation ersetzt werden."
+		},
 		"loop": "Schleife",
 		"loopHint": "In Exporten standardmäßig wiederholen.",
 		"referenceDirection": "Start- und End-Frames",
@@ -2576,6 +2602,70 @@
 		"useSavedKey": "Gespeicherten Schlüssel verwenden"
 	},
 	"moveNames": { "default": "Standpose", "idle": "Idle", "walk": "Gehen", "run": "Laufen" },
+	"stateGeneration": {
+		"continueIntro": "Du kannst die noch nicht gesendeten Ansichten fertigstellen. Fertige Ansichten bleiben erhalten.",
+		"continueAccount": "Verbinde dich erneut mit dem ursprünglichen PixelLab-Schlüssel, um diesen Zustand fortzusetzen.",
+		"continueViews": "Behaltene Ansichten: {kept}. Zu erzeugende Ansichten: {remaining}.",
+		"checkRemainingCost": "Restkosten prüfen",
+		"generateRemaining": "Übrige Ansichten erzeugen",
+		"confirmDiscard": "Verwerfen bestätigen",
+		"discardWarning": "Beim Verwerfen werden keine Generierungen erstattet und kein Zustand aus PixelLab gelöscht. Beim Neustart können erneut Kosten für alle Richtungen anfallen.",
+		"localOnly": "Dieser Zustand wird nur in PixelDoll gespeichert.",
+		"locksUnavailable": "Verwende einen aktuellen Browser, um Zustände sicher zu generieren.",
+		"defaultModel": "Standard (Pro)",
+		"flashReference": "Pro Flash nutzt ein Referenzbild anstelle einer Textanweisung.",
+		"changed": "Quelle oder Kostenschätzung haben sich geändert. Prüfe vor dem Generieren erneut die Kosten.",
+		"sourceUnavailable": "Für jede gezeichnete Blickrichtung muss eine Standansicht gespeichert sein.",
+		"invalidResult": "PixelLab hat nicht alle erwarteten Ansichten in der vorgesehenen Größe geliefert.",
+		"unfinished": "Die Ergebnisse sind unvollständig oder nicht verfügbar. Prüfe die Aktivitäten. Keine Anfrage wurde erneut gesendet.",
+		"quoteUnavailable": "PixelLab hat keine brauchbare Kostenschätzung für Pro Flash geliefert.",
+		"connect": "PixelLab konnte das Konto nicht bestätigen. Prüfe die Verbindung und versuche es erneut.",
+		"invalidInput": "Prüfe den Namen des Zustands und die Änderungsanweisungen.",
+		"flashSizesUnavailable": "PixelLab hat die Bearbeitungsgrößen für Pro Flash nicht bestätigt.",
+		"unsupported": "Dieses Modell kann die Bildfläche mit der gewählten Referenz nicht bearbeiten. Wähle ein anderes Modell oder Bild.",
+		"saved": "Zustand gespeichert",
+		"source": "Quelle: {source}",
+		"noSource": "Für einen neuen Zustand braucht die Figur vollständige Standansichten.",
+		"description": "Beschreibe, was sich ändern soll",
+		"reference": "Füge ein Bild als Vorlage für die Änderung hinzu.",
+		"pixenReference": "Pixen nutzt keine Referenzbilder. Wechsle das Modell, um dein Bild zu verwenden.",
+		"fixedCost": "Kosten: {generations} Generationen",
+		"managed": "PixelLab erstellt aus {parent} einen Zustand in deinem Konto.",
+		"referenceRoute": "Mit einer Referenz bearbeitet Pro die Standbilder, statt einen Zustand in deinem PixelLab-Konto anzulegen.",
+		"transfer": "Diese Methode überträgt das Aussehen der Referenz auf die Figur, nicht nur ihren Stil.",
+		"sheetWarning": "Mehrere Ansichten werden auf einem Blatt bearbeitet. Prüfe jede Ansicht vor dem Speichern.",
+		"checkCost": "Kosten prüfen",
+		"quoting": "Kosten werden geprüft…",
+		"generate": "Zustand generieren",
+		"generating": "Zustand wird generiert…",
+		"review": "Prüfe {name} vor dem Speichern.",
+		"generated": "Generiert"
+	},
+	"stateJointFit": {
+		"busy": "Die Gelenke werden bereits bestimmt. Versuche es danach erneut.",
+		"edited": "Eine Bildbearbeitung verhindert, dass dieser Zustand als Quelle für eine Bewegung dient.",
+		"quote": "Kosten der Gelenkmessung prüfen",
+		"measure": "Gelenke messen",
+		"review": "Prüfe vor dem Speichern, ob die markierten Gelenke in jeder Ansicht richtig sitzen.",
+		"save": "Gelenke speichern"
+	},
+	"stateCapture": {
+		"add": "Zustand erstellen aus …",
+		"noMoves": "Füge eine Animation hinzu, um aus einem ihrer Frames einen Zustand zu erstellen.",
+		"title": "Zustand erstellen",
+		"fromMove": "Aus Animation",
+		"name": "Zustandsname",
+		"noEquipment": "Ausrüstung bleibt zurück.",
+		"noCredits": "Keine Credits.",
+		"invalidName": "Gib einen Namen mit einem lateinischen Buchstaben oder einer Zahl ein.",
+		"takenName": "Dieser Name ist vergeben oder reserviert. Wähle einen anderen.",
+		"savedAs": "Gespeichert als {name}",
+		"saving": "Zustand wird gespeichert…",
+		"saved": "Zustand gespeichert",
+		"blocked": "Warte, bis der Charakter geladen ist, und schließe offene Arbeiten ab, bevor du einen Zustand speicherst.",
+		"unavailable": "Für dieses Bild fehlen gespeicherte Ansichten der Bewegung.",
+		"concurrentEdit": "Die Quelle wurde geändert. Schließe und öffne das Fenster erneut, um ein Bild aus der aktualisierten Bewegung zu wählen."
+	},
 	"moveRemoval": {
 		"unavailable": "Diese Animation ist nicht mehr verfügbar.",
 		"keepStanding": "Behalte die Standansichten, die zum Erstellen und Erweitern von Gegenständen dienen.",
@@ -2810,6 +2900,7 @@
 		"undone": "Frame-Änderung rückgängig gemacht.",
 		"errors": {
 			"reviewOpen": "Speichere oder verwirf die Animation, die auf Prüfung wartet, bevor du den Frame anpasst.",
+			"statePending": "Speichere oder verwirf den ausstehenden Zustand, bevor du den Frame anpasst.",
 			"missingArtwork": "Gespeicherte Grafik dieser Figur fehlt, daher kann ihr Frame nicht geändert werden.",
 			"even": "Wähle eine Frame-Größe, die sich um eine gerade Pixelzahl ändert.",
 			"range": "Der Frame muss für diese Figur {min}–{max} px groß sein.",

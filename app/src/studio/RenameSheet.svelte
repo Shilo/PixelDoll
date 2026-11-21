@@ -15,7 +15,9 @@
 		MAX_EXPORT_ID_LENGTH,
 		moveExportId,
 		moveExportIdTaken,
+		clearsStandingAlias,
 		outfitExportIdTaken,
+		reservedMoveExportId,
 		validExportId
 	} from '../lib/store/identity.ts';
 	import { ui, doc, store, saveIdentity, renameOutfit } from './state.svelte.ts';
@@ -45,7 +47,7 @@
 		: outfit
 			? outfit.id
 			: move
-				? moveExportId(move)
+				? moveExportId(move, m?.rig.animations)
 				: (character?.exportId ?? defaultCharacterExportId(target.projectId));
 	// Engines and RPG Maker sheets start from the standing move's fixed ID.
 	const idLocked = !!move && move.id === DEFAULT_MOVE;
@@ -64,17 +66,23 @@
 	const idError = $derived(
 		!idChanged
 			? ''
-			: !validExportId(exportId) ||
-				  (outfit && exportId === CURRENT_OUTFIT_ID) ||
-				  (move && exportId === DEFAULT_MOVE)
-				? t('renameSheet.invalidExportId')
-				: item && m && itemExportIdTaken(m.items, item.id, exportId)
-					? t('renameSheet.duplicateExportId')
-					: outfit && m && outfitExportIdTaken(m.presets, outfit.id, exportId)
-						? t('renameSheet.duplicateOutfitExportId')
-						: move && m && moveExportIdTaken(m.rig.animations, move.id, exportId)
-							? t('renameSheet.duplicateMoveExportId')
-							: ''
+			: move &&
+				  exportId === 'standing' &&
+				  !clearsStandingAlias(m?.rig.animations ?? [], move.id, exportId)
+				? t('renameSheet.defaultMoveExportId')
+				: !validExportId(exportId) ||
+					  (outfit && exportId === CURRENT_OUTFIT_ID) ||
+					  (move &&
+							reservedMoveExportId(exportId) &&
+							!clearsStandingAlias(m?.rig.animations ?? [], move.id, exportId))
+					? t('renameSheet.invalidExportId')
+					: item && m && itemExportIdTaken(m.items, item.id, exportId)
+						? t('renameSheet.duplicateExportId')
+						: outfit && m && outfitExportIdTaken(m.presets, outfit.id, exportId)
+							? t('renameSheet.duplicateOutfitExportId')
+							: move && m && moveExportIdTaken(m.rig.animations, move.id, exportId)
+								? t('renameSheet.duplicateMoveExportId')
+								: ''
 	);
 	const canSave = $derived(
 		!missing && !busy && !!name.trim() && !idError && (nameChanged || idChanged)

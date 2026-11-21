@@ -41,6 +41,8 @@ This replaces earlier local rules inferred from published extension-tool documen
 
 Tier 0 requests remain subject to quotas, balance, concurrency, daily trial limits and temporary restrictions during high demand. These are separate from subscription-tier access. A completed Free animation is not evidence that its output is suitable for paper-doll equipment.
 
+The State routes `/create-character-state`, `/edit-image-pro-flash` and `/edit-image-pixen` were not covered by the provider access audit. Check the connected account's available capabilities where documented; do not infer entitlement or quote equivalence from the model family. `/edit-images-v2` keeps PixelDoll's Tier 1 requirement. For State edits, quote the concrete endpoint and all batches before submitting; an accepted or uncertain attempt never triggers a fallback request.
+
 ## Workflow preflight and notices
 
 `requestTier` combines endpoint rules, actual inpaint dimensions and the workflow's declared minimum. Activity tags never grant or restrict access. `workflowTier` takes the maximum across mandatory requests. Item planning uses its actual grid layout; move repair layouts and item-creation layouts are deliberately different. Preflight must use the same geometry as submission, including padding and protected reference cells.

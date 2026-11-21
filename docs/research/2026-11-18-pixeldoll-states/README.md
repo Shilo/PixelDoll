@@ -55,6 +55,55 @@ Removing a pose is a local transaction. A still-running operation must either ke
 
 Editable full-character and move-only ZIPs should carry authoring revisions needed by included moves, including retired ones. An existing PNG entry alone is insufficient because the loader, archive reader and subset builders each choose which hashes to keep. Keep operational queue receipts local so an imported ZIP cannot resume paid work. Missing or altered source art can disable regeneration while preserving valid published frames. Prove both orders of the cross-tab race between registering new work and removing its source. Rebind only items tied to the previous base hash and preserve their unaffected coverage.
 
+## Image-conditioned State qualification (November 21, 2026)
+
+The States tab offers free capture from a saved Move and a separate, quoted generation flow from Standing. The public OpenAPI and the repository model policy distinguish these routes:
+
+| Route | Inputs and scope |
+| --- | --- |
+| `edit-animation-v2` | Allowed. Takes local directional frames and a text edit, with no dedicated reference-image field. An extra anchor frame is a separate experiment, not a documented reference parameter. |
+| `transfer-outfit-v2` | Allowed for reference-image dressing. Takes a reference image, target frames, and optional instructions. Its intended output is appearance transfer, not a new pose or proof of gear alignment. |
+| `create-character-state` | Takes a managed parent ID and text edit, not local frames or a second reference image. It creates a new provider resource. Allowed for quoted, reviewed State creation. |
+| `edit-images-v2` | Supports source images and a style reference. Allowed for quoted, reviewed State creation and explicit, reviewed item redraws. |
+| `edit-image-pro-flash` | Takes one image and either text or a reference. Check the account's native edit shapes before quoting; the reference has to fit. |
+| `edit-image-pixen` | Takes one image and text, not a reference. Source sides must be at most 256 px and both source and output sides must align to multiples of four. |
+| `create-character-v3` | Supports reference-based character creation. Use a separate character when the silhouette changes substantially; existing outfits and fits do not transfer automatically. |
+
+### Live request and recovery smoke tests
+
+The configured localhost PixelLab API accepted one submission each for local Pro text and local Pro reference editing
+(four 64 px images and 10 generations per request), Pro Flash with a reference (four 64 px views in one 128 px sheet,
+6 generations), Pixen text (the same sheet layout, 1 generation), and managed State creation (eight 64 px views,
+10 generations). All five reached review and saved to States, for a total of 37 generations. Local Pro review recovered
+after a reload without another submission. The managed trial used a local
+test fixture with exact copies of the provider's Standing pixels and saved the returned child ID. A normal ZIP import
+with changed edge pixels correctly quoted a local Pro edit instead, despite having a character ID.
+
+These checks qualify receipts and image shapes for the tested configuration, not output quality, gear alignment,
+production account eligibility, or larger live layouts. The provider's managed pricing bands are documented in its
+[MCP guide](https://api.pixellab.ai/mcp/docs); without canvas enlargement, the whole State costs 10, 15, or 25 generations,
+based on padded artwork size. The UI quotes an estimate or range, not the price for a different Pro endpoint.
+
+An unreadable parent rotation makes the managed route ineligible at quote time, just like a pixel mismatch. The UI
+quotes the local route instead. If eligibility changes after quoting, require a fresh quote rather than switching routes
+or spending again. Download errors for a paid child still block publication and leave the attempt recoverable.
+
+### Earlier artwork trial
+
+One paid qualification used the existing Studio queue to send the bundled Adventurer's last saved Walk playback cell (`7`) for three independently drawn facings. West was not sent because it mirrors East. The request used `edit-animation-v2`, 64 × 64 pixels, `no_background: true`, seed `4173`, and a text prompt to change only the hair to dark purple while preserving geometry and clothing. It settled on one attempt, returned three 64 × 64 PNGs, and reported **10 generations**. Nothing was published as a State. No reference-image or managed endpoint call was made.
+
+| Facing | Silhouette IoU (alpha ≥ 128) | Opaque pixels added / removed | RGB differences in overlapping opaque pixels |
+| --- | ---: | ---: | ---: |
+| South | 0.9825 | 10 / 1 | 617 / 617 |
+| East | 0.8976 | 24 / 18 | 366 / 368 |
+| North | 0.9547 | 23 / 4 | 566 / 569 |
+
+The top edge moved up one pixel in all three results. A follow-up on the cached results tested every whole-pixel translation within ±2 pixels in each axis. Zero translation gave the best silhouette overlap for every view. Aligning the top edge by shifting down one pixel clipped 4, 7, and 4 opaque pixels at the bottom of the respective views and lowered overlap. Raw RGB differences can include minor color variation, so they do not identify which parts of the character changed. The silhouette differences do show that unchanged placement and fit cannot be assumed, even though the canvas stayed fixed. One sample does not disqualify every image-edit configuration.
+
+Keep generated artwork out of the saved rig until a multi-facing review can show the input and output together. Freeze source pixels, directions, geometry and cost before submission; keep paid results recoverable without sending the request again. Show uncovered equipment rather than borrowing another State's fit, and qualify a fresh fit on the generated State before promising gear compatibility. Require measured joints before a generated State can source a Move. Use exact palette recoloring for palette-only changes and swappable equipment for outfit changes. Route major character transformations to a separate character unless a new, explicitly independent State scope is designed and tested.
+
+For New State, default to Pro with managed routing when the connected account owns the exact remote source and no reference is attached. A reference selects a reference-capable local Pro route before quoting. `transfer-outfit-v2` is an appearance transfer, not a generic style match; explain the different behavior before offering it. Keep Pro Flash and V3 (Pixen) explicit, and show why an unavailable size or reference cannot be used rather than falling back across model families. A model-family label does not imply equal billing or identical output. Do not enlarge, resize or re-center the State canvas in the first version.
+
 ## Release order and verification
 
 1. **Local import, preview and removal.** Test grouped ZIPs with compatible and incompatible siblings, duplicate names, missing and mirrored facings, and changed artwork. Preserve standing art, pivot, existing gear pixels and move cells. Recompute the base hash and rebind matching items atomically as existing Add a move does. Verify no-key local use, editable full and subset ZIP round-trips, delete races, export startup selection and included-engine compatibility before exposing the first pose clips.

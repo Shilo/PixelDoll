@@ -8,9 +8,11 @@
 	import { errorTranslation } from '../lib/message.ts';
 	import { displayMove } from './displayMove.ts';
 	import { popoverFocus } from './experience/focus.ts';
+	import PlaybackPicker from './experience/PlaybackPicker.svelte';
+	import { playbackClips } from '../lib/runtime/timeline.js';
+	import { ALL_CLIPS, ALL_MOVES, ALL_STATES, includesShareClip } from './shareClips.ts';
 	import {
 		ALL_DIRECTIONS,
-		ALL_MOVES,
 		SHARE_SCALES,
 		buildShareMedia,
 		buildSharePresentation,
@@ -26,7 +28,6 @@
 		Copy,
 		Download,
 		LoaderCircle,
-		PersonStanding,
 		Scaling,
 		Share2,
 		ChevronDown
@@ -48,6 +49,7 @@
 	let feedback = $state<(() => string) | null>(null);
 	let viewportWidth = $state(innerWidth);
 	let viewportHeight = $state(innerHeight);
+	const clips = $derived(playbackClips(store.project?.manifest.rig.animations ?? []));
 	const moveRefs = $derived(store.project?.manifest.rig.animations ?? []);
 	let serial = 0;
 	let rememberedId = '';
@@ -160,7 +162,15 @@
 	$effect(() => {
 		const media = planned.media;
 		const size = scale;
-		const filename = `${name}-${move === ALL_MOVES ? 'all-moves' : move}-${direction === ALL_DIRECTIONS ? 'all-directions' : direction}`;
+		const scope =
+			move === ALL_CLIPS
+				? 'all-states-and-moves'
+				: move === ALL_STATES
+					? 'all-states'
+					: move === ALL_MOVES
+						? 'all-moves'
+						: move;
+		const filename = `${name}-${scope}-${direction === ALL_DIRECTIONS ? 'all-directions' : direction}`;
 		file = null;
 		png = null;
 		feedback = null;
@@ -206,21 +216,23 @@
 	function reconcileSelection() {
 		const manifest = store.project?.manifest;
 		if (!manifest || !doc.id || doc.loading) return;
-		const moves = manifest.rig.animations.map((animation) => animation.id);
 		const directions: string[] = manifest.rig.directions.map((entry) => entry.id);
-		const currentMove = moves.includes(ui.anim) ? ui.anim : (moves[0] ?? '');
+		const standing =
+			clips.find(({ id, kind }) => id === 'standing' && kind === 'state')?.key ??
+			clips[0]?.key ??
+			'';
 		const currentDirection = directions.includes(ui.dir) ? ui.dir : (directions[0] ?? 'south');
 		if (rememberedId !== doc.id) {
 			rememberedId = doc.id;
-			move = currentMove;
+			move = standing;
 			direction = currentDirection;
 			wantedAnimate = true;
 			scale = 1;
 			index = 0;
 			return;
 		}
-		if (move !== ALL_MOVES && !moves.includes(move)) {
-			move = currentMove;
+		if (!clips.some(({ key, kind }) => includesShareClip(move, key, kind))) {
+			move = standing;
 			index = 0;
 		}
 		if (direction !== ALL_DIRECTIONS && !directions.includes(direction)) {
@@ -235,7 +247,7 @@
 			reconcileSelection();
 			index = 0;
 			requestAnimationFrame(() => {
-				if (open) popover.querySelector<HTMLSelectElement>('select')?.focus();
+				if (open) popover.querySelector<HTMLButtonElement>('.clip-trigger')?.focus();
 			});
 		}
 	}
@@ -314,21 +326,16 @@
 				/>{/if}
 		</div>
 		<div class="share-controls">
-			<label class="share-picker">
-				<PersonStanding size={16} aria-hidden="true" />
-				<select
-					class="bu-select"
-					aria-label={t('common.move')}
-					bind:value={move}
-					onchange={() => (index = 0)}
-				>
-					{#each store.project?.manifest.rig.animations ?? [] as animation (animation.id)}<option
-							value={animation.id}>{displayMove(animation.id, moveRefs)}</option
-						>{/each}
-					<option value={ALL_MOVES}>{t('share.allMoves')}</option>
-				</select>
-				<ChevronDown size={14} aria-hidden="true" />
-			</label>
+			<PlaybackPicker
+				{clips}
+				{moveRefs}
+				selected={move}
+				bulk
+				onselect={(clip) => {
+					move = clip;
+					index = 0;
+				}}
+			/>
 			<label class="share-picker">
 				<Compass size={16} aria-hidden="true" />
 				<select

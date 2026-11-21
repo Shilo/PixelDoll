@@ -5,7 +5,8 @@ import {
 	equipmentGroup,
 	newItem,
 	selectedItemDetails,
-	pickItem
+	pickItem,
+	openPlaybackPicker
 } from './immersive-helpers.ts';
 import './setup-concurrency.ts';
 import { test, expect } from '@playwright/test';
@@ -280,7 +281,7 @@ test('unselected demo shows its facts after reload', async ({ page }, info) => {
 	await expect(rows.filter({ hasText: 'Adventurer' })).toHaveAttribute('aria-pressed', 'true');
 	await expect(rows.locator('.character-counts')).toHaveText([
 		'4 directions · 2 moves · 6 items',
-		'4 directions · 3 moves · 6 items'
+		'4 directions · 1 state · 2 moves · 6 items'
 	]);
 	await page.locator('.customize-action').click();
 	await expect(page.locator('.name-text')).toHaveText('Adventurer (Demo)');
@@ -930,22 +931,31 @@ test('device import includes sibling moves and preserves explicit selections whe
 		mimeType: 'application/zip',
 		buffer: Buffer.from(bytes)
 	});
-	await expect(dialog.locator('.import-preview')).toContainText('3 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	const moves = dialog.getByRole('group', { name: 'Moves to import', exact: true }),
 		base = moves.getByRole('checkbox', { name: /^Base appearance/ }),
 		punch = moves.getByRole('checkbox', { name: /^Punch appearance/ });
+	const states = dialog.getByRole('group', { name: 'Also import as States', exact: true });
+	const punchState = states.getByRole('checkbox', { name: 'Punch appearance', exact: true });
+	await expect(punchState).toBeChecked();
+	await expect(
+		states.getByRole('checkbox', { name: 'Still appearance', exact: true })
+	).toBeChecked();
+	await expect(dialog.locator('.import-preview')).toContainText('3 states · 2 moves');
+	await punchState.uncheck();
+	await expect(dialog.locator('.import-preview')).toContainText('2 states · 2 moves');
 	await expect(moves).toContainText('Moves keep the appearance of their source state.');
 	await expect(base).toBeChecked();
 	await expect(base).toBeEnabled();
 	await expect(punch).toBeChecked();
 	await dialog.getByLabel('Character name', { exact: true }).fill('Keep my character name');
 	await punch.uncheck();
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await expect(dialog.getByLabel('Character name', { exact: true })).toHaveValue(
 		'Keep my character name'
 	);
 	await punch.check();
-	await expect(dialog.locator('.import-preview')).toContainText('3 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	await dialog
 		.getByRole('combobox', { name: 'Standing pose state', exact: true })
 		.selectOption('punch-state');
@@ -956,25 +966,43 @@ test('device import includes sibling moves and preserves explicit selections whe
 		'Keep my character name'
 	);
 	await base.uncheck();
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await dialog
 		.getByRole('combobox', { name: 'Standing pose state', exact: true })
 		.selectOption('still-state');
+	await expect(punchState).not.toBeChecked();
+	await expect(
+		states.getByRole('checkbox', { name: 'Base appearance', exact: true })
+	).toBeChecked();
 	await expect(base).not.toBeChecked();
 	await expect(punch).toBeChecked();
 	await expect(punch).toBeEnabled();
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await dialog
 		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
-	await expect(
-		page.getByRole('combobox', { name: 'Move', exact: true }).locator('option')
-	).toHaveText(['Default', 'Right punch']);
+	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
+		'Standing',
+		'Base appearance',
+		'Right punch'
+	]);
+	await page.keyboard.press('Escape');
 	await reloadStudio(page);
-	await expect(
-		page.getByRole('combobox', { name: 'Move', exact: true }).locator('option')
-	).toHaveText(['Default', 'Right punch']);
+	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
+		'Standing',
+		'Base appearance',
+		'Right punch'
+	]);
+	await page.keyboard.press('Escape');
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'More actions for Right punch', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
+	const capture = page.getByRole('dialog', { name: 'Create State', exact: true });
+	await expect(capture.getByRole('combobox', { name: 'Start from' })).toHaveValue('right_punch');
+	await expect(capture.getByRole('img', { name: 'Right punch preview' })).toBeVisible();
+	await expect(capture.locator('.capture-preview')).toHaveCSS('cursor', 'auto');
+	await expect(capture.getByRole('button', { name: /^(Pause|Play)$/ })).toHaveCount(0);
 });
 
 test('character directions can be mirrored and unlinked on import and after saving', async ({
@@ -1235,7 +1263,7 @@ test('browser Back respects an atomic import and closes sheets after it finishes
 		mimeType: 'application/zip',
 		buffer: Buffer.from(bytes)
 	});
-	await expect(dialog.locator('.import-preview')).toContainText('3 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	await dialog
 		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
@@ -1298,7 +1326,7 @@ test('standing state updates retain the preview, optional moves, edited names an
 		mimeType: 'application/zip',
 		buffer: Buffer.from(bytes)
 	});
-	await expect(dialog.locator('.import-preview')).toContainText('3 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
 	await name.fill(''); // An intentionally cleared name must not be overwritten during updates.
 	await page.evaluate(() => {
 		const control = window as unknown as {
@@ -1353,15 +1381,20 @@ test('standing state updates retain the preview, optional moves, edited names an
 		.getByRole('checkbox')
 		.all())
 		await checkbox.uncheck();
-	await expect(dialog.locator('.import-preview')).toContainText('1 move');
+	for (const checkbox of await dialog
+		.getByRole('group', { name: 'Also import as States' })
+		.getByRole('checkbox')
+		.all())
+		await checkbox.uncheck();
+	await expect(dialog.locator('.import-preview')).toContainText('0 moves');
 	await name.fill('Static rotations only');
 	await dialog
 		.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true })
 		.uncheck();
 	await dialog.getByRole('button', { name: 'Import character', exact: true }).click();
-	await expect(
-		page.getByRole('combobox', { name: 'Move', exact: true }).locator('option')
-	).toHaveText(['Default']);
+	await expect((await openPlaybackPicker(page)).getByRole('menuitemradio')).toHaveText([
+		'Standing'
+	]);
 });
 
 test('failed standing state updates retain the old preview but block saving until recovery', async ({
@@ -1382,8 +1415,11 @@ test('failed standing state updates retain the old preview but block saving unti
 		buffer: Buffer.from(bytes)
 	});
 	await expect(dialog.getByRole('alert')).toBeVisible();
-	await dialog.getByRole('checkbox', { name: /^Punch appearance/ }).uncheck();
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await dialog
+		.getByRole('group', { name: 'Moves to import' })
+		.getByRole('checkbox', { name: /^Punch appearance/ })
+		.uncheck();
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await dialog.getByLabel('Character name', { exact: true }).fill('Preserved through failure');
 	const bounds = await dialog.boundingBox();
 	const state = dialog.getByRole('combobox', { name: 'Standing pose state', exact: true });
@@ -1419,14 +1455,14 @@ test('a single-state import can exclude its own animation and retain static Defa
 		mimeType: 'application/zip',
 		buffer: Buffer.from(await multiStateImportZip(false, false, true))
 	});
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await expect(
 		dialog.getByRole('combobox', { name: 'Standing pose state', exact: true })
 	).toHaveCount(0);
 	const move = dialog.getByRole('group', { name: 'Moves to import' }).getByRole('checkbox');
 	await expect(move).toBeEnabled();
 	await move.uncheck();
-	await expect(dialog.locator('.import-preview')).toContainText('1 move');
+	await expect(dialog.locator('.import-preview')).toContainText('0 moves');
 	await expect(dialog.getByRole('img', { name: 'Character import preview' })).toBeVisible();
 	await expect(move).not.toBeChecked();
 	await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled();
@@ -1450,12 +1486,21 @@ test('an incompatible sibling move can be unchecked after the initial import err
 		buffer: Buffer.from(bytes)
 	});
 	await expect(dialog.getByRole('alert')).toContainText('Uncheck that state to continue');
+	const incompatible = dialog
+		.getByRole('group', { name: 'Also import as States' })
+		.getByRole('checkbox', { name: 'Punch appearance', exact: true });
+	await expect(incompatible).not.toBeChecked();
+	await expect(incompatible).toBeDisabled();
+	await expect(incompatible).toHaveAccessibleDescription(/Import it as a separate character/);
 	await expect(
 		dialog.getByRole('button', { name: 'Import character', exact: true })
 	).toBeDisabled();
-	await dialog.getByRole('checkbox', { name: /^Punch appearance/ }).uncheck();
+	await dialog
+		.getByRole('group', { name: 'Moves to import' })
+		.getByRole('checkbox', { name: /^Punch appearance/ })
+		.uncheck();
 	await expect(dialog.getByRole('alert')).toHaveCount(0);
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled();
 });
 
@@ -1487,12 +1532,12 @@ test('unreadable sibling move metadata stays visible and can be excluded from th
 	await expect(unreadable).toBeChecked();
 	await unreadable.uncheck();
 	await expect(dialog.getByRole('alert')).toHaveCount(0);
-	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
 	await expect(unreadable).not.toBeChecked();
 	await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled();
 });
 
-test('PixelLab link import initially selects only the requested state and offers sibling moves', async ({
+test('PixelLab link import initially selects all compatible states and sibling moves', async ({
 	page,
 	context
 }) => {
@@ -1513,10 +1558,17 @@ test('PixelLab link import initially selects only the requested state and offers
 	await dialog.getByLabel('Direct import (connection optional)', { exact: true }).fill(ID);
 	await dialog.getByRole('button', { name: 'Preview character', exact: true }).click();
 	await expect(dialog.locator('.import-preview')).toContainText('2 moves');
-	const punch = dialog.getByRole('checkbox', { name: /^Punch appearance/ });
-	await expect(punch).not.toBeChecked();
-	await punch.check();
-	await expect(dialog.locator('.import-preview')).toContainText('3 moves');
+	const punch = dialog
+		.getByRole('group', { name: 'Moves to import' })
+		.getByRole('checkbox', { name: /^Punch appearance/ });
+	const punchState = dialog
+		.getByRole('group', { name: 'Also import as States' })
+		.getByRole('checkbox', { name: 'Punch appearance', exact: true });
+	await expect(punch).toBeChecked();
+	await expect(punchState).toBeChecked();
+	await punch.uncheck();
+	await expect(dialog.locator('.import-preview')).toContainText('1 move');
+	await expect(punchState).toBeChecked();
 	expect(requests).toEqual(['GET']);
 });
 
@@ -1573,13 +1625,13 @@ test('a canceled library error cannot affect a newly opened device ZIP preview',
 			mimeType: 'application/zip',
 			buffer: Buffer.from(bytes)
 		});
-		await expect(page.locator('.import-preview')).toContainText('3 moves');
+		await expect(page.locator('.import-preview')).toContainText('2 moves');
 	} finally {
 		release();
 	}
 	const device = page.getByRole('dialog', { name: 'Import from device', exact: true });
 	await expect(device.getByRole('alert')).toHaveCount(0);
-	await expect(device.locator('.import-preview')).toContainText('3 moves');
+	await expect(device.locator('.import-preview')).toContainText('2 moves');
 	await device.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await page.locator('.project-btn').click();
 	await page
@@ -2300,7 +2352,7 @@ test('PixelLab library connection, pagination and direct import use only free re
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(page.getByRole('alert')).toContainText('pending generation work');
 	expect(calls.every((c) => c.startsWith('GET '))).toBe(true);
-	expect(calls).toContain(`GET /v2/characters/${ID}/zip?states=${ID}`);
+	expect(calls).toContain(`GET /v2/characters/${ID}/zip`);
 });
 
 test('imported artwork gets the shared rig, weapon plan and new-move pipeline', async ({
@@ -2334,6 +2386,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	const jobs = new Map<string, number>(),
 		posts: { path: string; body: Record<string, unknown> }[] = [],
 		errors: string[] = [];
+	let stateImages: { type: 'base64'; base64: string }[] = [];
 	page.on('pageerror', (e) => errors.push(e.message));
 	await context.route('https://api.pixellab.ai/**', async (route) => {
 		const req = route.request(),
@@ -2345,9 +2398,26 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 }
 				}
 			});
+		if (path.endsWith('/characters/managed-parity-fixture')) return route.fulfill({ status: 404 });
+		if (path.endsWith('/background-jobs/generated-state'))
+			return route.fulfill({
+				json: {
+					id: 'generated-state',
+					status: 'completed',
+					created_at: '',
+					usage: { type: 'generations', generations: 10 },
+					last_response: { images: stateImages }
+				}
+			});
 		if (req.method() === 'POST') {
 			const body = req.postDataJSON() as Record<string, unknown>;
 			posts.push({ path, body });
+			if (path.endsWith('/edit-images-v2')) {
+				stateImages = (body.edit_images as { image: { type: 'base64'; base64: string } }[]).map(
+					({ image }) => image
+				);
+				return route.fulfill({ status: 202, json: { background_job_id: 'generated-state' } });
+			}
 			if (path.endsWith('/estimate-skeleton'))
 				return route.fulfill({
 					json: { keypoints, usage: { type: 'generations', generations: 0.1 } }
@@ -2427,6 +2497,17 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 		id: 'managed-parity-fixture',
 		looks: 'red hair, blue coat and boots'
 	});
+	await equipmentMode(page, 'States');
+	await page.getByRole('button', { name: 'Add a state...', exact: true }).click();
+	const emptyCapture = page.getByRole('dialog', { name: 'Create State', exact: true });
+	await expect(emptyCapture.getByRole('tab', { name: 'New', exact: true })).toHaveAttribute(
+		'aria-selected',
+		'true'
+	);
+	await emptyCapture.getByRole('tab', { name: 'From Move', exact: true }).click();
+	await expect(emptyCapture).toContainText('Add a Move to create a State from one of its frames.');
+	await expect(emptyCapture.getByRole('combobox')).toHaveCount(0);
+	await emptyCapture.getByRole('button', { name: 'Cancel', exact: true }).click();
 	expect(before.manifest.rig.rest?.west?.keypoints).toHaveLength(18);
 	expect(
 		(before.rigQa as { clips: Record<string, { adherence: number | null }> }).clips['default/south']
@@ -2458,7 +2539,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 			.locator('.cast-library .character-row')
 			.filter({ hasText: 'Rig parity fixture' })
 			.locator('.character-counts')
-	).toHaveText('4 directions · 2 moves · 0 items');
+	).toHaveText('4 directions · 1 state · 1 move · 0 items');
 	const after = await read(),
 		idle = after.manifest.rig.animations.find((a) => a.id === 'idle')!;
 	expect(after.manifest.items[0].layers[0].cells!.default).toEqual(
@@ -2493,7 +2574,580 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	).toBe(true);
 	await reloadStudio(page);
 	await expect(page.locator('.project-btn')).toContainText('Rig parity fixture');
+	const posted = posts.length;
+	await equipmentMode(page, 'States');
+	await expect(page.getByRole('combobox', { name: 'Source move' })).toHaveCount(0);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
+	await page.evaluate(() => {
+		const original = crypto.subtle.digest;
+		let release!: () => void;
+		const pending = new Promise<void>((resolve) => (release = resolve));
+		crypto.subtle.digest = async function (...args: Parameters<SubtleCrypto['digest']>) {
+			await pending;
+			return original.apply(this, args);
+		};
+		(window as unknown as { releaseCapture: () => void }).releaseCapture = () => {
+			crypto.subtle.digest = original;
+			release();
+		};
+	});
+	const createState = page.getByRole('dialog', { name: 'Create State', exact: true });
+	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
+	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(createState).not.toBeVisible();
+	await expect(
+		page.getByRole('button', { name: 'More actions for Idle', exact: true })
+	).toBeFocused();
+	expect((await read()).manifest).toEqual(after.manifest);
+	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
+	await expect(createState).toBeVisible();
+	idle.frames[0].ms += 1;
+	await page.evaluate(
+		(record) =>
+			new Promise<void>((resolve, reject) => {
+				const request = indexedDB.open('pixeldoll');
+				request.onerror = () => reject(request.error);
+				request.onsuccess = () => {
+					const database = request.result;
+					const transaction = database.transaction('projects', 'readwrite');
+					transaction.objectStore('projects').put(record, record.id);
+					transaction.onabort = () => {
+						database.close();
+						reject(transaction.error);
+					};
+					transaction.oncomplete = () => {
+						database.close();
+						resolve();
+					};
+				};
+			}),
+		after
+	);
+	await createState.getByRole('button', { name: 'Create State', exact: true }).click();
+	await expect(createState.getByText('The source changed.', { exact: false })).toBeVisible();
+	await expect(
+		createState.getByRole('button', { name: 'Create State', exact: true })
+	).toBeDisabled();
+	expect((await read()).manifest).toEqual(after.manifest);
+	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await page.getByRole('button', { name: 'More actions for Idle', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Create State from...', exact: true }).click();
+	const nextFrame = createState.getByRole('button', { name: 'Next frame', exact: true });
+	const stateSource = createState.getByRole('combobox', { name: 'Start from', exact: true });
+	await expect(stateSource).toHaveValue('idle');
+	await expect(createState.getByLabel('State name', { exact: true })).toHaveValue('Idle pose');
+	await expect(nextFrame).toBeDisabled();
+	const preview = createState.getByRole('img', { name: 'Idle preview', exact: true });
+	await expect(preview).toBeVisible();
+	await expect(createState.getByRole('img')).toHaveCount(1);
+	await expect(createState.getByText('Frame 4 of 4', { exact: true })).toBeVisible();
+	const previewFacing = createState.locator('[data-facing]');
+	await expect(previewFacing).not.toHaveAttribute('data-facing', 'south');
+	await expect(createState.getByRole('button', { name: 'Pause', exact: true })).toHaveCSS(
+		'cursor',
+		'pointer'
+	);
+	await preview.click();
+	await expect(createState.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+	const pausedFacing = await previewFacing.getAttribute('data-facing');
+	await createState.getByRole('button', { name: 'Previous frame', exact: true }).click();
+	await expect(createState.getByText('Frame 3 of 4', { exact: true })).toBeVisible();
+	await expect(previewFacing).toHaveAttribute('data-facing', pausedFacing!);
+	await createState.getByRole('button', { name: 'Play', exact: true }).press('Space');
+	await expect(previewFacing).not.toHaveAttribute('data-facing', pausedFacing!);
+	await expect(nextFrame).toBeEnabled();
+	const createButton = createState.getByRole('button', { name: 'Create State', exact: true });
+	await createState.getByLabel('State name', { exact: true }).fill('Standing');
+	await expect(createButton).toBeDisabled();
+	await createState.getByLabel('State name', { exact: true }).fill('Rest pose');
+	try {
+		await createButton.click();
+		await expect(createState.getByRole('button', { name: 'Saving state…' })).toBeDisabled();
+		await page.keyboard.press('Escape');
+		await expect(createState).toBeVisible();
+	} finally {
+		await page.evaluate(() =>
+			(window as unknown as { releaseCapture: () => void }).releaseCapture()
+		);
+	}
+	await expect(page.getByText('Captured state', { exact: true })).toBeVisible();
+	await expect(
+		page.getByRole('tablist', { name: 'Customization panels', exact: true }).getByRole('tab', {
+			name: 'States',
+			exact: true
+		})
+	).toHaveAttribute('aria-selected', 'true');
+	await expect(page.locator('.clip-trigger[data-variant="quiet"]')).toHaveAttribute(
+		'value',
+		'rest-pose'
+	);
+	const captured = await read();
+	const body = captured.manifest.items.find(({ id }) => id === captured.manifest.rig.baseItem)!;
+	const cells = body.layers[0].cells!;
+	const chosenCell = idle.frames.at(-2)!.cell;
+	expect(chosenCell).not.toBe(idle.frames.at(-1)!.cell);
+	expect(captured.manifest.rig.animations.find(({ id }) => id === 'rest-pose')).toMatchObject({
+		kind: 'state',
+		cells: 1
+	});
+	for (const direction of ['south', 'east', 'north', 'west'] as const)
+		expect(cells['rest-pose'][direction]).toEqual([cells.idle[direction]![chosenCell]]);
+	const panel = page.getByRole('tabpanel', { name: 'States', exact: true });
+	const addState = panel.getByRole('button', { name: 'Add a state...', exact: true });
+	await expect(panel.locator('.cta + details')).toBeVisible();
+	await addState.click();
+	await expect(createState.getByRole('tab', { name: 'New', exact: true })).toHaveAttribute(
+		'aria-selected',
+		'true'
+	);
+	await createState.getByRole('tab', { name: 'From Move', exact: true }).click();
+	await expect(stateSource.locator('option', { hasText: 'Standing' })).toHaveCount(0);
+	await expect(stateSource.locator('option', { hasText: 'Rest pose' })).toHaveCount(0);
+	await expect(stateSource.locator('option:checked')).toHaveText('Idle');
+	await expect(createState.getByRole('img', { name: 'Idle preview', exact: true })).toBeVisible();
+	await expect(createState.getByText('Frame 4 of 4', { exact: true })).toBeVisible();
+	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await expect(addState).toBeFocused();
+	await equipmentMode(page, 'Moves');
+	await expect(
+		page.getByRole('tabpanel', { name: 'Moves', exact: true }).locator('.cta + details')
+	).toBeVisible();
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
+	const moveSheet = page.getByRole('dialog', { name: 'Add a move' });
+	await moveSheet.getByText('Start from · Standing', { exact: true }).click();
+	await moveSheet
+		.locator('.move-source-list button')
+		.filter({ hasText: /^Idle$/ })
+		.click();
+	await moveSheet.getByText('Choose a frame', { exact: true }).click();
+	const frames = moveSheet.locator('.move-source-list button');
+	await expect(frames.filter({ hasText: /^Frame 4$/ })).toHaveAttribute('aria-pressed', 'true');
+	await frames.filter({ hasText: /^Frame 2$/ }).click();
+	await expect(frames.filter({ hasText: /^Frame 2$/ })).toHaveAttribute('aria-pressed', 'true');
+	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await equipmentMode(page, 'States');
+	await page.getByRole('button', { name: 'More actions for Rest pose', exact: true }).click();
+	await page.getByRole('menuitem', { name: /^Delete State/ }).click();
+	await page.getByRole('alertdialog').getByRole('button', { name: 'Delete', exact: true }).click();
+	await expect(page.getByText('Removed Rest pose', { exact: true })).toBeVisible();
+	const remaining = await read();
+	expect(remaining.manifest.rig.animations).toEqual(after.manifest.rig.animations);
+	expect(posts).toHaveLength(posted);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
+	await moveSheet.getByRole('radio', { name: 'Slash', exact: true }).click();
+	await moveSheet.locator('details.advanced summary').click();
+	await moveSheet.getByRole('combobox', { name: 'Motion model' }).selectOption('skeleton-v3');
+	await moveSheet.getByText('Start from · Standing', { exact: true }).click();
+	await moveSheet
+		.locator('.move-source-list button')
+		.filter({ hasText: /^Idle$/ })
+		.click();
+	await moveSheet.getByText('Choose a frame', { exact: true }).click();
+	await frames.filter({ hasText: /^Frame 2$/ }).click();
+	await moveSheet.getByRole('button', { name: /^Generate move/ }).click();
+	const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('test-only-not-a-real-key');
+	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+	await expect(review).toBeVisible({ timeout: 45_000 });
+	const pending = await read();
+	expect(pending.manifest.rig.animations.some(({ id }) => id === 'slash')).toBe(false);
+	expect(pending.moveReviews?.slash?.spec.startFrom).toMatchObject({ clip: 'idle', cell: 1 });
+	await review.getByRole('button', { name: /^Regenerate/ }).click();
+	await expect(moveSheet.getByText('Start from · Idle', { exact: true })).toBeVisible();
+	await moveSheet.getByText('Choose a frame', { exact: true }).click();
+	await expect(frames.filter({ hasText: /^Frame 2$/ })).toHaveAttribute('aria-pressed', 'true');
+	await moveSheet.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await equipmentMode(page, 'States');
+	await addState.click();
+	const newState = createState.getByRole('tabpanel', { name: 'New', exact: true });
+	await newState.getByRole('textbox', { name: 'State name' }).fill('Ready stance');
+	await newState
+		.getByRole('textbox', { name: 'Describe what should change' })
+		.fill('Raise both hands');
+	const statePosts = () =>
+		posts.filter(
+			({ path }) => path.endsWith('/edit-images-v2') || path.endsWith('/create-character-state')
+		);
+	await newState.getByRole('button', { name: 'Check cost', exact: true }).click();
+	const generateState = newState.getByRole('button', { name: 'Generate State', exact: true });
+	await expect(generateState).toBeVisible();
+	expect(statePosts()).toHaveLength(0);
+	await generateState.click();
+	await expect(newState.getByText('Review Ready stance before saving.')).toBeVisible();
+	expect(statePosts()).toHaveLength(1);
+	expect(statePosts()[0]?.body).toMatchObject({
+		method: 'edit_with_text',
+		description: 'Raise both hands'
+	});
+	expect((await read()).manifest.rig.animations.some(({ id }) => id === 'ready-stance')).toBe(
+		false
+	);
+	await createState.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await reloadStudio(page);
+	await equipmentMode(page, 'States');
+	await addState.click();
+	await expect(newState.getByText('Review Ready stance before saving.')).toBeVisible();
+	await newState.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
+	await expect(page.locator('.clip-trigger[data-variant="quiet"]')).toHaveAttribute(
+		'value',
+		'ready-stance'
+	);
+	expect(
+		(await read()).manifest.rig.animations.find(({ id }) => id === 'ready-stance')
+	).toMatchObject({ kind: 'state', cells: 1 });
+	expect(statePosts()).toHaveLength(1);
+	await equipmentMode(page, 'Moves');
+	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();
+	await moveSheet.getByRole('radio', { name: 'Cast', exact: true }).click();
+	await moveSheet.getByText('Start from · Standing', { exact: true }).click();
+	await moveSheet
+		.locator('.move-source-list button')
+		.filter({ hasText: /^Ready stance$/ })
+		.click();
+	const jointPosts = () => posts.filter(({ path }) => path.endsWith('/estimate-skeleton')).length;
+	const beforeJointFit = jointPosts();
+	await moveSheet.getByRole('button', { name: 'Connect PixelLab', exact: true }).click();
+	await connect
+		.getByLabel('Paste your Secret API key', { exact: true })
+		.fill('test-only-not-a-real-key');
+	await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+	await expect(moveSheet.getByText('Start from · Ready stance', { exact: true })).toBeVisible();
+	await moveSheet.getByRole('button', { name: 'Check joint fitting cost' }).click();
+	expect(jointPosts()).toBe(beforeJointFit);
+	await moveSheet.getByRole('button', { name: /^Measure joints/ }).click();
+	const saveJoints = moveSheet.getByRole('button', { name: 'Save joints', exact: true });
+	await expect(saveJoints).toBeEnabled();
+	const savedSource = async () =>
+		(await read()).manifest.rig.animations.find(({ id }) => id === 'ready-stance')?.sources;
+	expect(await savedSource()).toBeUndefined();
+	await saveJoints.click();
+	await expect.poll(async () => (await savedSource())?.south?.measured?.[0]?.length).toBe(18);
+	await expect(moveSheet.getByRole('button', { name: /^Generate move/ })).toBeEnabled();
 	expect(errors).toEqual([]);
+});
+
+test('a managed State reloads its child without another submission', async ({
+	page,
+	context
+}, info) => {
+	const parent = 'managed-state-parent';
+	const child = 'managed-state-child';
+	const job = 'managed-state-job';
+	const posts: unknown[] = [];
+	const postPaths: string[] = [];
+	const pageErrors: string[] = [];
+	const directions = ['south', 'east', 'north', 'west'];
+	let images: Record<string, number[]>;
+	const marker = [17, 231, 93, 255];
+	const markerOffset = (32 * 64 + 32) * 4;
+	page.on('pageerror', (error) => pageErrors.push(error.message));
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const path = new URL(route.request().url()).pathname;
+		if (route.request().method() === 'POST') postPaths.push(path);
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					credits: { type: 'usd', usd: 0 },
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 }
+				}
+			});
+		if (path.endsWith('/create-character-state')) {
+			posts.push(route.request().postDataJSON());
+			return route.fulfill({ status: 202, json: { background_job_id: job, character_id: child } });
+		}
+		if (path.endsWith(`/background-jobs/${job}`))
+			return route.fulfill({
+				json: {
+					id: job,
+					status: 'completed',
+					created_at: '',
+					last_response: { character_id: child },
+					usage: { type: 'generations', generations: 10 }
+				}
+			});
+		const id = path.split('/').pop()!;
+		if (id === parent || id === child)
+			return route.fulfill({
+				json: {
+					id,
+					status: 'completed',
+					size: { width: 64, height: 64 },
+					directions: directions.length,
+					rotation_urls: Object.fromEntries(
+						directions.map((direction) => [
+							direction,
+							`https://api.pixellab.ai/qa-state-rotations/${id}/${direction}`
+						])
+					)
+				}
+			});
+		if (path.startsWith('/qa-state-rotations/') && images[id]) {
+			let bytes = Uint8Array.from(images[id]);
+			if (path.startsWith(`/qa-state-rotations/${child}/`)) {
+				const image = await decodePngBytes(bytes);
+				expect(Array.from(image.data.slice(markerOffset, markerOffset + 4))).not.toEqual(marker);
+				image.data.set(marker, markerOffset);
+				bytes = Uint8Array.from(await encodePngBytes(image));
+			}
+			return route.fulfill({
+				headers: { 'access-control-allow-origin': '*' },
+				contentType: 'image/png',
+				body: Buffer.from(bytes)
+			});
+		}
+		return route.abort();
+	});
+	await page.addInitScript(() =>
+		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key')
+	);
+	await openStudio(
+		page,
+		info.config.projects.find(({ name }) => name === 'browser-selftests')!.use.baseURL!
+	);
+	const result = await page.evaluate(
+		async ({ parent, directions }) => {
+			const statePath = '/src/studio/state.svelte.ts',
+				dbPath = '/src/lib/store/db.ts';
+			const studio = await import(statePath),
+				db = await import(dbPath);
+			const projectId = await studio.copyDemo();
+			const record: StoredProject = await db.get('projects', projectId);
+			record.character = { id: parent, looks: 'Demo test fixture' };
+			await db.put('projects', projectId, record);
+			const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
+			const cells = base.layers[0].cells!.default;
+			return {
+				projectId,
+				images: Object.fromEntries(
+					await Promise.all(
+						directions.map(async (direction) => {
+							const hash = cells[direction as keyof typeof cells]?.[0] ?? cells.east?.[0];
+							if (!hash) throw new Error(`Missing Standing fixture for ${direction}`);
+							const blob: Blob = await db.getBlob(hash.slice(7));
+							return [direction, Array.from(new Uint8Array(await blob.arrayBuffer()))];
+						})
+					)
+				)
+			};
+		},
+		{ parent, directions }
+	);
+	images = result.images;
+	await equipmentMode(page, 'States');
+	const addState = page.getByRole('button', { name: 'Add a state...', exact: true });
+	await addState.click();
+	const dialog = page.getByRole('dialog', { name: 'Create State', exact: true });
+	const panel = dialog.getByRole('tabpanel', { name: 'New', exact: true });
+	await panel.getByRole('textbox', { name: 'State name' }).fill('Potion ready');
+	await panel.getByRole('textbox', { name: 'Describe what should change' }).fill('Hold a potion');
+	await panel.getByRole('button', { name: 'Check cost', exact: true }).click();
+	const generate = panel.getByRole('button', { name: 'Generate State', exact: true });
+	await expect(generate).toBeVisible();
+	expect(posts).toHaveLength(0);
+	await generate.click();
+	const review = panel.getByText('Review Potion ready before saving.');
+	await expect(review).toBeVisible();
+	expect(posts).toEqual([
+		expect.objectContaining({ character_id: parent, edit_description: 'Hold a potion' })
+	]);
+	const postsBeforeReload = postPaths.slice();
+	await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await reloadStudio(page);
+	await equipmentMode(page, 'States');
+	await addState.click();
+	await expect(review).toBeVisible();
+	await panel.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
+	const stored = await page.evaluate(async (projectId) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		const record: StoredProject = await db.get('projects', projectId);
+		const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
+		const hash = base.layers[0].cells!['potion-ready'].south![0]!;
+		const blob: Blob = await db.getBlob(hash.slice(7));
+		return {
+			child: record.managedStates?.['potion-ready'],
+			image: Array.from(new Uint8Array(await blob.arrayBuffer()))
+		};
+	}, result.projectId);
+	const image = await decodePngBytes(Uint8Array.from(stored.image));
+	expect(stored.child).toBe(child);
+	expect(Array.from(image.data.slice(markerOffset, markerOffset + 4))).toEqual(marker);
+	expect(postPaths).toEqual(postsBeforeReload);
+	expect(pageErrors).toEqual([]);
+});
+
+test('a State interrupted after its first batch sends only the unqueued views after a new quote', async ({
+	page,
+	context
+}, info) => {
+	type Image = { type: 'base64'; base64: string };
+	const posts: { path: string; image: Image }[] = [];
+	const results = new Map<string, Image>();
+	const pageErrors: string[] = [];
+	const markerOffset = (32 * 64 + 32) * 4;
+	const markerOf = (index: number) => [233, 17 + index * 40, 151, 255];
+	let releaseFirst = false;
+	let firstPolled!: () => void;
+	const polled = new Promise<void>((resolve) => (firstPolled = resolve));
+	page.on('pageerror', (error) => pageErrors.push(error.message));
+	page.on('dialog', (dialog) => dialog.accept());
+	await context.route('https://api.pixellab.ai/**', async (route) => {
+		const request = route.request();
+		const path = new URL(request.url()).pathname;
+		if (path.endsWith('/balance'))
+			return route.fulfill({
+				json: {
+					credits: { type: 'usd', usd: 0 },
+					subscription: { type: 'generations', status: 'active', generations: 100, total: 100 }
+				}
+			});
+		if (path.endsWith('/pro-flash/capabilities'))
+			return route.fulfill({
+				json: {
+					operations: { edit: { edit_methods: ['text'], sizes: [{ width: 64, height: 64 }] } }
+				}
+			});
+		if (path.endsWith('/pro-flash/cost')) return route.fulfill({ json: { total: 3 } });
+		if (request.method() === 'POST') {
+			const body = request.postDataJSON() as { image: Image };
+			const index = posts.length;
+			posts.push({ path, image: body.image });
+			if (!path.endsWith('/edit-image-pro-flash')) return route.abort();
+			const image = await decodePngBytes(Buffer.from(body.image.base64, 'base64'));
+			image.data.set(markerOf(index), markerOffset);
+			const base64 = Buffer.from(await encodePngBytes(image)).toString('base64');
+			results.set(`flash-job-${index}`, { type: 'base64', base64 });
+			return route.fulfill({ status: 202, json: { background_job_id: `flash-job-${index}` } });
+		}
+		const job = path.split('/background-jobs/')[1];
+		const result = job && results.get(job);
+		if (result) {
+			if (job === 'flash-job-0' && !releaseFirst) {
+				firstPolled();
+				return route.fulfill({ json: { id: job, status: 'processing', created_at: '' } });
+			}
+			return route.fulfill({
+				json: {
+					id: job,
+					status: 'completed',
+					created_at: '',
+					usage: { type: 'generations', generations: 3 },
+					last_response: { images: [result] }
+				}
+			});
+		}
+		return route.abort();
+	});
+	await page.addInitScript(() =>
+		localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key')
+	);
+	await openStudio(
+		page,
+		info.config.projects.find(({ name }) => name === 'browser-selftests')!.use.baseURL!
+	);
+	const projectId = await page.evaluate(async () => {
+		const statePath = '/src/studio/state.svelte.ts';
+		return (await import(statePath)).copyDemo();
+	});
+	const stored = () =>
+		page.evaluate(async (projectId) => {
+			const dbPath = '/src/lib/store/db.ts';
+			const db = await import(dbPath);
+			const record: StoredProject = await db.get('projects', projectId);
+			const jobs: { activityScope?: string; state: string }[] = await db.all('jobs');
+			const token = record.stateGeneration?.token;
+			return {
+				attempt: record.stateGeneration,
+				jobs: jobs.filter(
+					({ activityScope }) => token && activityScope?.startsWith(`state:${token}:`)
+				)
+			};
+		}, projectId);
+	const flashPosts = () => posts.filter(({ path }) => path.endsWith('/edit-image-pro-flash'));
+	await equipmentMode(page, 'States');
+	const addState = page.getByRole('button', { name: 'Add a state...', exact: true });
+	await addState.click();
+	const dialog = page.getByRole('dialog', { name: 'Create State', exact: true });
+	const panel = dialog.getByRole('tabpanel', { name: 'New', exact: true });
+	await panel.getByRole('textbox', { name: 'State name' }).fill('Torch ready');
+	await panel.getByRole('textbox', { name: 'Describe what should change' }).fill('Hold a torch');
+	await panel.getByText('Advanced', { exact: true }).click();
+	await panel.getByRole('combobox', { name: 'Model', exact: true }).selectOption('pro-flash');
+	await panel.getByRole('button', { name: 'Check cost', exact: true }).click();
+	await panel.getByRole('button', { name: 'Generate State', exact: true }).click();
+	await polled;
+	expect(flashPosts()).toHaveLength(1);
+	const interrupted = await stored();
+	const batches = interrupted.attempt!.plan.batches.length;
+	expect(batches).toBeGreaterThan(1);
+	expect(interrupted.attempt!.continuation?.unqueued).toEqual(
+		Array.from({ length: batches - 1 }, (_, index) => index + 1)
+	);
+	// The tab closes while batch 0 runs: later batches stay durably unqueued, batch 0 resumes polling.
+	await reloadStudio(page);
+	releaseFirst = true;
+	await expect
+		.poll(async () => (await stored()).jobs.map(({ state }) => state), { timeout: 30_000 })
+		.toEqual(['done']);
+	await equipmentMode(page, 'States');
+	await addState.click();
+	await dialog.getByRole('button', { name: 'Check remaining cost', exact: true }).click();
+	await expect(
+		dialog.getByText(`Views kept: 1. Views to generate: ${batches - 1}.`, { exact: true })
+	).toBeVisible();
+	expect(flashPosts()).toHaveLength(1);
+	await dialog.getByRole('button', { name: 'Generate remaining views', exact: true }).click();
+	await expect(panel.getByText('Review Torch ready before saving.')).toBeVisible();
+	expect(flashPosts()).toHaveLength(batches);
+	expect(new Set(flashPosts().map(({ image }) => image.base64)).size).toBe(batches);
+	await panel.getByRole('button', { name: 'Save', exact: true }).click();
+	await expect(page.getByText('State saved', { exact: true })).toBeVisible();
+	const saved = await page.evaluate(async (projectId) => {
+		const dbPath = '/src/lib/store/db.ts';
+		const db = await import(dbPath);
+		const record: StoredProject = await db.get('projects', projectId);
+		const base = record.manifest.items.find(({ id }) => id === record.manifest.rig.baseItem)!;
+		return {
+			attempt: record.stateGeneration,
+			views: await Promise.all(
+				Object.values(base.layers[0].cells!['torch-ready']).map(async (hashes) => {
+					const blob: Blob = await db.getBlob(hashes![0]!.slice(7));
+					return Array.from(new Uint8Array(await blob.arrayBuffer()));
+				})
+			)
+		};
+	}, projectId);
+	expect(saved.attempt).toBeUndefined();
+	expect(saved.views).toHaveLength(batches);
+	const sent = await Promise.all(
+		flashPosts().map(async ({ image }) => decodePngBytes(Buffer.from(image.base64, 'base64')))
+	);
+	const matched = await Promise.all(
+		saved.views.map(async (bytes) => {
+			const view = await decodePngBytes(Uint8Array.from(bytes));
+			const marker = Array.from(view.data.slice(markerOffset, markerOffset + 4));
+			const index = sent.findIndex((input) =>
+				input.data.every(
+					(value, offset) =>
+						(offset >= markerOffset && offset < markerOffset + 4) || value === view.data[offset]
+				)
+			);
+			expect(marker).toEqual(markerOf(index));
+			return index;
+		})
+	);
+	expect([...matched].sort((a, b) => a - b)).toEqual(
+		Array.from({ length: batches }, (_, index) => index)
+	);
+	expect(posts).toEqual(flashPosts());
+	expect(pageErrors).toEqual([]);
 });
 
 test('a stopped move blocks deleting only its own character and opens from the block', async ({
@@ -2784,14 +3438,15 @@ test('rename display names and export IDs without changing saved keys or calling
 	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
 	await rename('Rename outfit', 'Knight', 'knight_set');
 	await expect(page.locator('.outfits')).toContainText('Knight');
-	await equipmentMode(page, 'Moves');
-	await page.getByRole('button', { name: 'More actions for Default', exact: true }).click();
+	await equipmentMode(page, 'States');
+	await page.getByRole('button', { name: 'More actions for Standing', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
 	const standing = page.getByRole('dialog', { name: 'Rename move', exact: true });
 	await standing.locator('summary').click();
 	// Games start from the standing move, so its export ID stays fixed.
 	await expect(standing.getByRole('textbox', { name: 'Export ID' })).toHaveAttribute('readonly');
 	await standing.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'More actions for Walk', exact: true }).click();
 	await page.getByRole('menuitem', { name: 'Rename...', exact: true }).click();
 	await rename('Rename move', 'Stroll', 'stroll');

@@ -512,7 +512,7 @@
 		"duplicateExportId": "Outro item usa este ID de exportação.",
 		"duplicateOutfitExportId": "Outro traje usa este ID de exportação.",
 		"duplicateMoveExportId": "Outra animação usa este ID de exportação.",
-		"defaultMoveExportId": "Os jogos começam pela animação Padrão, então o ID de exportação dela é sempre default.",
+		"defaultMoveExportId": "Os jogos começam pela pose Em pé, então o ID de exportação dela é sempre standing.",
 		"characterIdConflict": "Outro personagem neste espaço usa este ID de exportação. Use IDs diferentes para colocar os dois no mesmo jogo.",
 		"invalidName": "Insira um nome de 1 a 60 caracteres.",
 		"itemMissing": "Este item não existe mais.",
@@ -520,6 +520,8 @@
 		"moveMissing": "Esta animação não existe mais."
 	},
 	"savedActions": {
+		"labelDeleteState": "Excluir estado",
+		"removeState": "Isso remove deste personagem o estado e os quadros dos itens ajustados a ele. As animações concluídas mantêm seus quadros e as imagens de origem salvas. Essa ação não pode ser desfeita.",
 		"labelDeleteMove": "Excluir animação…",
 		"labelDeleteOutfit": "Excluir traje",
 		"thisRemovesTheMoveFromTheBody": "Isso remove a animação do corpo e de todos os itens. Não é possível desfazer essa ação."
@@ -754,6 +756,7 @@
 		"tabWardrobe": "Guarda-roupa",
 		"tabColors": "Cores",
 		"tabOutfits": "Trajes",
+		"tabStates": "Estados",
 		"tabMoves": "Animações",
 		"facing": "Direção: {direction}",
 		"nextDirection": "Direção atual: {direction}. Ir para a próxima direção",
@@ -1000,7 +1003,8 @@
 			"defaultTargetHint": "Selecionado ao abrir Exportar. Você pode escolher outro destino.",
 			"versionMenu": "Versão do RPG Maker",
 			"version": "Versão",
-			"versionLabel": "Versão do RPG Maker: {version}"
+			"versionLabel": "Versão do RPG Maker: {version}",
+			"walkMove": "Animação de caminhada"
 		},
 		"group": { "engines": "Engines e frameworks", "assets": "Recursos" },
 		"target": {
@@ -1154,10 +1158,17 @@
 				"other": "RPG Maker: a caminhada não tem as vistas {directions}, então essas linhas ficam paradas."
 			},
 			"rpgSteps": "RPG Maker: não foi possível detectar os passos da caminhada. O primeiro quadro da caminhada foi usado como passo. Confira a folha.",
-			"rpgBelowFeet": "RPG Maker: {sheet} tem {count} px abaixo dos pés, então fica {count} px mais alto no mapa."
+			"rpgBelowFeet": "RPG Maker: {sheet} tem {count} px abaixo dos pés, então fica {count} px mais alto no mapa.",
+			"rpgOmittedMoves": {
+				"one": "RPG Maker: {moves} fica de fora; as folhas de caminhada têm só quadros parados e de caminhada.",
+				"other": "RPG Maker: {moves} ficam de fora; as folhas de caminhada têm só quadros parados e de caminhada."
+			}
 		}
 	},
 	"import": {
+		"posesTitle": "Importar também como estados",
+		"posesHint": "Escolha poses do mesmo corpo sem equipamento incorporado à imagem. Importe uma aparência diferente como um personagem separado. Selecione as animações abaixo.",
+		"poseMismatch": "Este estado tem dimensões de imagem, direções ou configurações de câmera diferentes. Importe-o como um personagem separado.",
 		"titleDevice": "Importar do dispositivo",
 		"titlePixelLab": "Importar do PixelLab",
 		"browseLibrary": "Explorar personagens do PixelLab",
@@ -1191,6 +1202,7 @@
 		"untitledCharacter": "Personagem sem nome",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "one": "{count} estado", "other": "{count} estados" },
 			"separateItems": {
 				"0": "{count} itens separados",
 				"one": "{count} item separado",
@@ -1210,7 +1222,7 @@
 		"preview": "Prévia",
 		"previewArtwork": "Prévia da importação do personagem",
 		"stalePreview": "Mostrando a última prévia. Atualize suas seleções para continuar.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "Atualizando prévia…",
 		"characterName": "Nome do personagem",
 		"directionsHint": "Use as setas para manter ou pular vistas. O botão de espelhar inverte a vista oposta. Desative-o antes de importar para manter a arte original. Se não houver arte original, os quadros invertidos ficam como uma vista independente.",
@@ -1282,7 +1294,7 @@
 			"stateMetadata": "As animações de “{state}” têm metadados de tamanho ou câmera inválidos: {detail} Desmarque as animações desse estado para continuar.",
 			"stateMismatch": "As animações de “{state}” usam outro tamanho de personagem ou outra vista de câmera. Desmarque esse estado para continuar.",
 			"missingStandingView": "A animação {move}/{direction} não tem uma vista correspondente da pose em pé no estado selecionado.",
-			"tooManyMoves": "Este personagem tem animações demais. Selecione menos estados ou exporte menos animações (até 99, além de Padrão).",
+			"tooManyMoves": "Este personagem tem animações demais. Selecione menos estados ou exporte menos animações (até 99, além de Em pé).",
 			"orphanFile": "Este ZIP contém um arquivo de animação sem um layout de estados claro: {path}. Exporte um novo ZIP do personagem com quadros individuais.",
 			"rotationPathName": "Caminho de imagem de rotação incompatível: {path}. Exporte um ZIP de personagem com PNGs nomeados por direção.",
 			"animationPath": "Caminho de quadro de animação incompatível: {path}. Exporte um ZIP de personagem com quadros individuais numerados.",
@@ -1363,6 +1375,9 @@
 		"preview": "Prévia da arte selecionada",
 		"artwork": "Arte selecionada",
 		"allMoves": "Todas as animações",
+		"clips": "Estados e animações",
+		"allStates": "Todos os estados",
+		"allClips": "Tudo",
 		"size": "Tamanho",
 		"sizeOption": "{size}× o tamanho",
 		"animated": "Animado",
@@ -1744,7 +1759,7 @@
 			"motionFrame": "{move} {direction} · quadro {frame} do movimento",
 			"measureMotionNote": "Envia o quadro de movimento gerado no campo image (PNG em base64), a menos que já tenha sido medido.",
 			"renderBody": "{move} {direction} · renderizar corpo",
-			"renderBodyNote": "Apenas campos conhecidos. Adiciona first_frame e first_frame_keypoints da pose em pé e os pontos-chave de {source}. Envia uma única renderização. Um resultado vazio ou inválido interrompe a operação para revisão, sem outra tentativa paga.",
+			"renderBodyNote": "Apenas campos conhecidos. Adiciona first_frame e first_frame_keypoints e os pontos-chave de {source}. Envia uma única renderização. Um resultado vazio ou inválido interrompe a operação para revisão, sem outra tentativa paga.",
 			"locallyAuthored": "criação local",
 			"generatedMotion": "movimento gerado",
 			"checkFrame": "{move} {direction} · verificar quadro {frame}",
@@ -1967,6 +1982,7 @@
 		"adding": "Adicionando… {done}/{total}",
 		"waitingForFailed": "Aguardando a animação que falhou",
 		"add": "Adicionar animação",
+		"addState": "Adicionar estado",
 		"estimate": "Estimativa: {gens} gerações",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivô {x},{y}",
@@ -2099,7 +2115,7 @@
 			"styleUnsupported": "Contorno e detalhamento não se aplicam ao modelo {model}.",
 			"invalidOutline": "Contorno inválido.",
 			"invalidDetail": "Detalhamento inválido.",
-			"reservedMove": "O nome Default é reservado para a pose em pé (Padrão). Dê outro nome à animação.",
+			"reservedMove": "O nome Em pé é reservado para a pose em pé (Em pé). Dê outro nome à animação.",
 			"recoveryNeedsAuthored": "A recuperação das verificações de articulações precisa das configurações originais de correção do corpo usadas na criação.",
 			"recoveryAlreadySaved": "Esta animação foi salva depois daquela tentativa. Não resta nada para recuperar.",
 			"keepNeedsChecks": "Para manter esta animação, as verificações de articulações em cache precisam estar concluídas para todos os quadros.",
@@ -2312,6 +2328,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "Quadro inicial original",
+			"label": "Começar a partir de",
+			"chooseFrame": "Escolher um quadro",
+			"frame": "Quadro {number}",
+			"unavailable": "Este quadro precisa de uma imagem do corpo e de articulações medidas para cada direção selecionada.",
+			"changed": "O quadro inicial selecionado mudou. Escolha a origem novamente. Nenhuma geração foi solicitada.",
+			"route": "Este método começa na pose em pé. Escolha outro modelo de animação para usar um quadro salvo.",
+			"stateTarget": "Não é possível substituir um estado como se fosse uma animação."
+		},
 		"loop": "Repetir",
 		"loopHint": "Repetida por padrão nas exportações.",
 		"referenceDirection": "Quadros inicial e final",
@@ -2589,7 +2615,71 @@
 		"tabOnlyKey": "Esta conexão vale apenas nesta aba e não é salva.",
 		"useSavedKey": "Usar chave salva"
 	},
-	"moveNames": { "default": "Padrão", "idle": "Repouso", "walk": "Caminhada", "run": "Corrida" },
+	"moveNames": { "default": "Em pé", "idle": "Repouso", "walk": "Caminhada", "run": "Corrida" },
+	"stateGeneration": {
+		"continueIntro": "Você pode concluir as vistas que nunca foram enviadas. As vistas concluídas serão mantidas.",
+		"continueAccount": "Reconecte-se com a chave original do PixelLab para continuar este estado.",
+		"continueViews": "Vistas mantidas: {kept}. Vistas a gerar: {remaining}.",
+		"checkRemainingCost": "Verificar custo restante",
+		"generateRemaining": "Gerar vistas restantes",
+		"confirmDiscard": "Confirmar descarte",
+		"discardWarning": "Descartar não reembolsa gerações nem exclui o estado do PixelLab. Recomeçar pode cobrar todas as direções novamente.",
+		"localOnly": "Este estado será salvo somente no PixelDoll.",
+		"locksUnavailable": "Use um navegador atualizado para gerar estados com segurança.",
+		"defaultModel": "Padrão (Pro)",
+		"flashReference": "O Pro Flash usa uma imagem de referência em vez de instruções escritas.",
+		"changed": "A origem ou a estimativa mudou. Consulte o custo novamente antes de gerar.",
+		"sourceUnavailable": "É preciso ter uma vista em pé salva para cada direção desenhada.",
+		"invalidResult": "O PixelLab não retornou todas as vistas esperadas no tamanho previsto.",
+		"unfinished": "Esta tentativa tem resultados incompletos ou indisponíveis. Confira a Atividade. Nenhuma solicitação foi reenviada.",
+		"quoteUnavailable": "O PixelLab não forneceu uma estimativa válida para o Pro Flash.",
+		"connect": "O PixelLab não conseguiu confirmar a conta. Verifique a conexão e tente novamente.",
+		"invalidInput": "Confira o nome do estado e as instruções de edição.",
+		"flashSizesUnavailable": "O PixelLab não confirmou os tamanhos de edição do Pro Flash.",
+		"unsupported": "Este modelo não pode editar esta tela com a referência selecionada. Escolha outro modelo ou outra referência.",
+		"saved": "Estado salvo",
+		"source": "Origem: {source}",
+		"noSource": "O personagem precisa de todas as vistas em pé para gerar um estado.",
+		"description": "Descreva o que deve mudar",
+		"reference": "Adicione uma imagem para orientar a mudança.",
+		"pixenReference": "O Pixen não usa imagens de referência. Troque de modelo para usar sua imagem.",
+		"fixedCost": "Custo: {generations} gerações",
+		"managed": "O PixelLab cria um estado a partir de {parent} na sua conta.",
+		"referenceRoute": "Com uma referência, o Pro edita as imagens em pé em vez de criar um estado na sua conta do PixelLab.",
+		"transfer": "Essa opção transfere a aparência da referência para o personagem, não só o estilo.",
+		"sheetWarning": "Várias vistas são editadas em uma única folha. Confira cada vista antes de salvar.",
+		"checkCost": "Consultar custo",
+		"quoting": "Consultando custo…",
+		"generate": "Gerar estado",
+		"generating": "Gerando estado…",
+		"review": "Confira {name} antes de salvar.",
+		"generated": "Gerado"
+	},
+	"stateJointFit": {
+		"busy": "A medição das articulações já está em andamento. Tente novamente quando terminar.",
+		"edited": "Uma edição de quadro impede que este estado seja usado como origem de um movimento.",
+		"quote": "Verificar o custo da medição das articulações",
+		"measure": "Medir articulações",
+		"review": "Antes de salvar, confira se as articulações marcadas estão alinhadas em cada vista.",
+		"save": "Salvar articulações"
+	},
+	"stateCapture": {
+		"add": "Criar estado a partir de…",
+		"noMoves": "Adicione uma animação para criar um estado a partir de um de seus quadros.",
+		"title": "Criar estado",
+		"fromMove": "De animação",
+		"name": "Nome do estado",
+		"noEquipment": "Equipamento não copiado.",
+		"noCredits": "Nenhum crédito usado.",
+		"invalidName": "Digite um nome com uma letra latina ou um número.",
+		"takenName": "Este nome está em uso ou é reservado. Escolha outro.",
+		"savedAs": "Salvo como {name}",
+		"saving": "Salvando estado…",
+		"saved": "Estado capturado",
+		"blocked": "Aguarde o carregamento do personagem e resolva as tarefas pendentes antes de capturar um estado.",
+		"unavailable": "Faltam vistas salvas do movimento neste quadro.",
+		"concurrentEdit": "A origem mudou. Feche e abra novamente para escolher um quadro do movimento atualizado."
+	},
 	"moveRemoval": {
 		"unavailable": "Esta animação não está mais disponível.",
 		"keepStanding": "Mantenha as vistas da pose em pé usadas para criar itens e estendê-los a outras animações.",
@@ -2824,6 +2914,7 @@
 		"undone": "Mudança no quadro desfeita.",
 		"errors": {
 			"reviewOpen": "Salve ou descarte a animação aguardando revisão antes de ajustar o quadro.",
+			"statePending": "Salve ou descarte o estado pendente antes de ajustar o quadro.",
 			"missingArtwork": "Falta arte salva deste personagem, então o quadro não pode ser alterado.",
 			"even": "Escolha um tamanho de quadro que mude em um número par de pixels.",
 			"range": "O quadro deve ter de {min} a {max} px para este personagem.",

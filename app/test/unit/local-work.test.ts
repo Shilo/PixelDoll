@@ -97,3 +97,18 @@ test('refuses while a Studio call may have been charged without a result', () =>
 		})
 	);
 });
+
+test('refuses while a completed paid State attempt still awaits review', () => {
+	expect(() =>
+		selectLocalWork(
+			library(
+				[['state-job', { id: 'state-job', state: 'done', tag: 'studio-state' }]],
+				[['rig-a', { ...character('rig-a'), stateGeneration: { token: 'state-attempt' } }]]
+			)
+		)
+	).toThrow(
+		expect.objectContaining({
+			translation: expect.objectContaining({ key: 'librarySettings.deleteWork.generating' })
+		})
+	);
+});

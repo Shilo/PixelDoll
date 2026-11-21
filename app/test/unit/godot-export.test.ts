@@ -170,6 +170,27 @@ test.skipIf(!process.env.GODOT_BIN)(
 		project.images.set(emptyHash, empty);
 		for (const dirs of Object.values(project.manifest.items[0].layers[0].cells!))
 			dirs!.south = [bodyHash, bodyHash];
+		// Non-default one-cell State whose pixels no Move cell has: (5, 5) marks it on the body and hair layers.
+		const marked = async (image: typeof body) => {
+			const copy = { ...image, data: image.data.slice() };
+			copy.data.set([0, 200, 0, 255], (5 * 64 + 5) * 4);
+			const markedHash = await cellHash(copy);
+			project.images.set(markedHash, copy);
+			return markedHash;
+		};
+		const stateBodyHash = await marked(cutBody),
+			stateLayerHash = await marked(body);
+		project.manifest.rig.animations.push({
+			id: 'ready-stance',
+			kind: 'state',
+			cells: 1,
+			loop: false,
+			frames: [{ cell: 0, ms: 150 }]
+		});
+		for (const item of project.manifest.items)
+			item.layers[0].cells!['ready-stance'] = {
+				south: [item.slot === 'body' ? stateBodyHash : stateLayerHash]
+			};
 		for (const [id, slot, pixel] of [
 			['hat', 'head', 12 * 64 + 20],
 			['cape', 'back', 16 * 64 + 44]
@@ -189,13 +210,16 @@ test.skipIf(!process.env.GODOT_BIN)(
 						cells: Object.fromEntries(
 							project.manifest.rig.animations.map((anim) => [
 								anim.id,
-								{ south: [emptyHash, emptyHash] }
+								{ south: Array.from({ length: anim.cells }, () => emptyHash) }
 							])
 						)
 					}
 				],
 				baseCut: Object.fromEntries(
-					project.manifest.rig.animations.map((anim) => [anim.id, { south: [[pixel], [pixel]] }])
+					project.manifest.rig.animations.map((anim) => [
+						anim.id,
+						{ south: Array.from({ length: anim.cells }, () => [pixel]) }
+					])
 				)
 			});
 			project.manifest.presets[0].items[slot] = id;
@@ -323,6 +347,9 @@ func check(ok: bool, message: String) -> void:
 func color(doll: Node, slot: String) -> Color:
 	var node: AnimatedSprite2D = doll.get_node(slot + "_fg")
 	return node.sprite_frames.get_frame_texture(node.animation, node.frame).get_image().get_pixel(32, 21)
+func state_marked(doll: Node, slot: String, x: int) -> bool:
+	var node: AnimatedSprite2D = doll.get_node(slot + "_fg")
+	return node.sprite_frames.get_frame_texture(node.animation, node.frame).get_image().get_pixel(x, 5) == Color8(0, 200, 0)
 func _initialize() -> void:
 	run.call_deferred()
 func run() -> void:
@@ -415,6 +442,21 @@ func run() -> void:
 			it.erase("hides")
 	doll._refresh()
 	check(doll.get_node("back_fg").visible and doll.get_node("head_fg").visible, "Both show again without hides")
+	doll.play_anim("walk-fast", "south", true)
+	for tick in 9:
+		await process_frame
+	check(doll.body.frame > 0 and not state_marked(doll, "body", 5), "The Move animates without State pixels")
+	check(doll.play_anim("ready-stance", "south"), "Explicit State selection uses its public ID")
+	check(doll.anim == "ready-stance" and doll.body.animation == "ready-stance_south" and doll.get_node("hair_fg").animation == "ready-stance_south", "State selection drives every layer")
+	check(doll.body.frame == 0 and state_marked(doll, "body", 5) and state_marked(doll, "hair", 5), "Selecting a State during a Move shows the State cell")
+	for tick in 20:
+		await process_frame
+	check(doll.body.sprite_frames.get_frame_count("ready-stance_south") == 1 and not doll.body.is_playing() and doll.body.frame == 0, "Non-looping State completes on its one cell")
+	check(state_marked(doll, "body", 5) and state_marked(doll, "hair", 5), "Completed State holds its cell on every layer")
+	doll.play_anim("ready-stance", "west")
+	check(doll.body.frame == 0 and state_marked(doll, "body", 58) and state_marked(doll, "hair", 58), "Mirrored State shows the mirrored State cell")
+	doll.play_anim("walk-fast", "south")
+	check(doll.body.animation == "walk-fast_south" and doll.body.frame == 0 and doll.body.is_playing() and not state_marked(doll, "body", 5), "Selecting a Move after a State starts the Move")
 	doll.play_anim("once", "south", true)
 	for tick in 20:
 		await process_frame

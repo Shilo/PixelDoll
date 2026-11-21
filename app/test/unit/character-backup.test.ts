@@ -1,6 +1,6 @@
 import { beforeEach, expect, test, vi } from 'vitest';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
-import { cellHash } from '../../src/lib/rig/rig.ts';
+import { cellHash, type Sha256 } from '../../src/lib/rig/rig.ts';
 import {
 	downloadArchivedBackup,
 	exportBackup,
@@ -120,12 +120,27 @@ const backup = async () => (await exportBackup(['secret-key'])).bytes;
 const restored = (id: string) => saved.projects.get(id) as StoredProject;
 
 test('a backup holds only saved Studio characters and restores them with their artwork', async () => {
+	const reference = [...artwork.keys()].at(-1)!;
+	character.manifest.rig.animations[0].sources = {
+		south: {
+			route: 'import',
+			reference: `sha256:${reference}` as Sha256,
+			referenceKeypoints: [],
+			provenance: []
+		}
+	};
+	const stateGeneration = { token: 'pending-state' };
+	saved.projects.set('rig-a', { ...character, stateGeneration });
 	const file = await exportBackup([]);
 	expect(file).toMatchObject({ characters: 1, hasOmissions: false });
 	const source = await readRestoreSource(file.bytes);
 	expect(source).toMatchObject({ kind: 'backup', build: 'test (abc)', unreadable: 0 });
 	expect([...source.characters.keys()]).toEqual(['rig-a']);
 	expect(source.characters.get('rig-a')!.creationSpec).toBeUndefined();
+	expect(source.characters.get('rig-a')!.stateGeneration).toBeUndefined();
+	expect(source.blobs.has(reference)).toBe(true);
+	expect(restored('rig-a')).toMatchObject({ stateGeneration });
+	expect((await planRestore(source)).entries).toMatchObject([{ action: 'skip', match: 'rig-a' }]);
 
 	saved.projects = new Map([['rig-dev', { id: 'rig-dev', origin: 'dev' }]]);
 	saved.blobs = new Map();

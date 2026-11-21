@@ -38,6 +38,7 @@ import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 import { loadProject, readStoredImage, type StoredProject } from '../lib/store/project.ts';
+import { sameClipName, withClipWriteLock } from './clipName.ts';
 import {
 	frameChangeText,
 	frameFacts,
@@ -128,6 +129,13 @@ import {
 } from '../lib/store/manifest.ts';
 import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
 import {
+	moveSourceFitsGeometry,
+	moveSourceMatches,
+	resolveMoveSource,
+	savedReplacementSource,
+	type MoveSource
+} from './moveSource.ts';
+import {
 	affectedMoveDirections,
 	applyMoveLoop,
 	movePlaybackChanged,
@@ -201,8 +209,9 @@ export interface CreateSpec {
 	 *  of one body and frame size share a placement, and a resumed draft keeps the registration request it may have paid for. */
 	lift?: number;
 }
-const CELL = 64,
-	EST = 0.1;
+const CELL = 64;
+/** Generations per uncached estimate-skeleton joint check. */
+export const EST = 0.1;
 // Read-only receipt lookup includes previously completed render attempts. New renders submit once.
 export const CLIP_ATTEMPTS = 2;
 
@@ -414,7 +423,8 @@ export async function run(
 	cache = false,
 	resumeSafe = req.method === 'POST',
 	signal?: AbortSignal,
-	activityScope?: string
+	activityScope?: string,
+	approval?: { attempt: number; quotedEstimate: { reuseOnly: boolean; changed: () => never } }
 ): Promise<JobRec> {
 	signal?.throwIfAborted();
 	const dry = signal && dryRuns.get(signal);
@@ -448,12 +458,13 @@ export async function run(
 		signal,
 		activityScope,
 		minimumTier: signal ? (generationMinimumTiers.get(signal) ?? 0) : 0,
-		attempt: signal ? generationAttempts.get(signal) : undefined,
+		attempt: approval?.attempt ?? (signal ? generationAttempts.get(signal) : undefined),
+		quotedEstimate: approval?.quotedEstimate,
 		...(recovery && req.path === '/estimate-skeleton' ? { estimateRetry: recovery.intent } : {})
 	});
 	// Queue cancellation is consumer-aware: a failed flow cannot cancel deduplicated work another flow still needs.
 	signal?.throwIfAborted();
-	const r = live(rec) ? await queue.settled(rec.id) : rec;
+	const r = live(rec) ? await queue.settled(rec.id, approval ? signal : undefined) : rec;
 	signal?.throwIfAborted();
 	if (r.state !== 'done')
 		throw new LocalizedError(
@@ -488,7 +499,7 @@ async function padStandardReference(
 	return { base64: await b64(canvas), width: size, height: size };
 }
 /** Result images of a record, in frame order (labels "south/3" or "3"; character rotations are labeled by direction). */
-async function imagesOf(
+export async function imagesOf(
 	r: JobRec,
 	read?: (sha: string) => Promise<Img>
 ): Promise<{ label: string; img: Img }[]> {
@@ -554,6 +565,33 @@ export function managedRestKeypoints(
 	}
 	return out;
 }
+/** One estimate-skeleton check with its record for provenance; keypoints are undefined when the response is invalid. */
+export async function measureJoints(
+	im: Img,
+	resumeSafe = true,
+	signal?: AbortSignal,
+	activityScope?: string,
+	approval?: Parameters<typeof run>[7]
+): Promise<{ keypoints: Keypoint[] | undefined; record: JobRec }> {
+	const input = skeletonInput(im);
+	const record = await run(
+		routes.estimateSkeleton(png(await b64(input.image))),
+		'Finding joints',
+		'm2-skel',
+		true,
+		resumeSafe,
+		signal,
+		activityScope,
+		approval
+	);
+	const points = checkedKeypoints(
+		(record.response as { keypoints?: unknown } | undefined)?.keypoints
+	);
+	return {
+		keypoints: points ? checkedKeypoints(unpadSkeleton(points, input, im)) : undefined,
+		record
+	};
+}
 /** estimate-skeleton (deterministic, 0.1 gen, cached by request) -> API keypoints in LABELS order; undefined on failure. */
 export async function joints(
 	im: Img,
@@ -564,21 +602,9 @@ export async function joints(
 ): Promise<Keypoint[] | undefined> {
 	try {
 		const measure = async () => {
-			const input = skeletonInput(im);
-			const r = await run(
-				routes.estimateSkeleton(png(await b64(input.image))),
-				'Finding joints',
-				'm2-skel',
-				true,
-				resumeSafe,
-				signal,
-				activityScope
-			);
-			const points = checkedKeypoints(
-				(r.response as { keypoints?: unknown } | undefined)?.keypoints
-			);
-			onRecord?.(r);
-			return points ? checkedKeypoints(unpadSkeleton(points, input, im)) : undefined;
+			const { keypoints, record } = await measureJoints(im, resumeSafe, signal, activityScope);
+			onRecord?.(record);
+			return keypoints;
 		};
 		const recovery = signal ? measurementRecoveries.get(signal) : undefined;
 		if (!recovery) return await measure();
@@ -825,7 +851,7 @@ function cachedJoints(
 		record && checkedKeypoints((record.response as { keypoints?: unknown })?.keypoints);
 	return points ? checkedKeypoints(unpadSkeleton(points, input, frame)) : undefined;
 }
-async function measurementInput(frame: Img) {
+export async function measurementInput(frame: Img) {
 	const input = skeletonInput(frame);
 	return {
 		input,
@@ -1076,7 +1102,7 @@ export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
 		produced
 	};
 };
-const cellBlob = async (image: Img) =>
+export const cellBlob = async (image: Img) =>
 	new Blob([(await encodePngBytes(image)) as Uint8Array<ArrayBuffer>], { type: 'image/png' });
 const putCell = async (h: Sha256, im: Img) => {
 	if (!(await db.getBlob(h.slice(7)))) await db.put('blobs', h.slice(7), await cellBlob(im));
@@ -1529,6 +1555,7 @@ export async function createCharacter(
 /** itemsOnly: the caller poses items onto a move the body already has (Make it, item frame repair); finishing changes no move. */
 export interface MoveSpec {
 	id: string;
+	startFrom?: MoveSource;
 	action?: string;
 	text?: string;
 	frames: number;
@@ -1668,10 +1695,10 @@ export const MOVE_STEPS = [
 ];
 export const isV13 = rigReady;
 /** Why a move can't take this id: Default is every character's standing views, never generated or replaced. */
-export const reservedMove = (id: string) =>
-	id === DEFAULT_MOVE
+export const reservedMove = (id: string, existingMove = false) =>
+	id === DEFAULT_MOVE || (id === 'standing' && !existingMove)
 		? new LocalizedError(
-				'Default is the standing pose. Name the move something else.',
+				'Standing is a reserved State. Name the move something else.',
 				'create.errors.reservedMove'
 			)
 		: undefined;
@@ -2060,7 +2087,7 @@ async function inspectMeasurementRecovery(
 		changedFrames: 0
 	};
 	for (const d of moveDirections(rec.manifest, spec.dirs)) {
-		const rest = rig.rest?.[d];
+		const rest = moveReferenceView(rec.manifest, spec, d);
 		if (!rest || !hasAll(rest.keypoints))
 			throw new LocalizedError(
 				`${d}: original standing artwork or joints are missing.`,
@@ -2410,9 +2437,18 @@ export function partialMoveFrameIssue(
 }
 export function bodyMoveIssue(
 	m: Manifest,
-	s: MoveFrameSpec & Pick<MoveSpec, 'text'>,
+	s: MoveFrameSpec & Pick<MoveSpec, 'text' | 'startFrom'>,
 	blocked = false
 ): LocalizedError | undefined {
+	if (
+		s.startFrom &&
+		(s.action === 'ride' ||
+			(moveAnimationModel(s) === 'skeleton-v3' && !isAuthoredAction(s.action)))
+	)
+		return new LocalizedError(
+			'This route starts from Standing. Choose a different animation model to use a saved frame.',
+			'moveSheet.startFrom.route'
+		);
 	if (s.action === 'ride') return undefined;
 	const frames = moveFrames(m, s);
 	const model = moveAnimationModel(s);
@@ -2474,6 +2510,8 @@ export function skeletonMoveReview(
 		Object.values(candidate.checks).some((qa) => failsBodyGate(qa, true));
 	if (candidate ? !draftWarning : Object.hasOwn(rec.moveReviews ?? {}, spec.id)) return;
 	try {
+		const input = moveCandidateInput(rec, spec.id);
+		if (candidate && candidate.input !== input) return;
 		const dirs = draftWarning
 			? candidate.dirs
 			: bodyRejected
@@ -2502,6 +2540,19 @@ export function skeletonMoveReview(
 		const preferred = candidate?.animation.cells ?? saved?.cells ?? moveFrames(manifest, spec);
 		const frameCount = defaultMoveFrameCount('skeleton-v3', manifest.rig.cell.w, preferred);
 		const affected = affectedMoveDirections(manifest.rig, dirs);
+		const startFrom =
+			bodyRejected || draftWarning
+				? spec.startFrom
+				: savedReplacementSource(manifest, spec.id, dirs);
+		if (
+			startFrom &&
+			(!moveSourceMatches(manifest, startFrom, dirs) ||
+				dirs.some((dir) => {
+					const view = startFrom.views[dir];
+					return !view?.image || !hasAll(view.keypoints);
+				}))
+		)
+			return;
 		const loop =
 			candidate && movePlaybackChanged(candidate.basePlayback, saved)
 				? (saved?.moveLoop ?? saved?.loop)
@@ -2523,6 +2574,7 @@ export function skeletonMoveReview(
 				loop,
 				...(Object.keys(references).length ? { references } : {})
 			},
+			startFrom,
 			items: [],
 			reviewBeforePublish: true,
 			poseStyle: 'visible-side-v1',
@@ -2538,7 +2590,7 @@ export function skeletonMoveReview(
 		const estimate = moveEstimate(manifest, review);
 		const tier = moveMinimumTier(manifest, review);
 		if (Number.isFinite(estimate.gens) && estimate.gens > 0)
-			return { review, estimate, tier, affected };
+			return { review, estimate, tier, affected, input };
 	} catch {
 		return undefined;
 	}
@@ -2785,7 +2837,17 @@ export function itemMoveOffer(
  * Freeze a pose-first or text-rendered body move, then
  * the chosen items posed onto it. Resumable: a body clip already saved is kept, items that already have it are skipped.
  */
-export async function addMove(
+export function addMove(
+	projectId: string,
+	spec: MoveSpec,
+	onProgress?: (p: Progress) => void,
+	onReviewed?: () => Promise<void>
+) {
+	const work = () => addMoveUnlocked(projectId, spec, onProgress, onReviewed);
+	return spec.itemsOnly ? work() : withClipWriteLock(projectId, spec.id, work);
+}
+
+async function addMoveUnlocked(
 	projectId: string,
 	spec: MoveSpec,
 	onProgress: (p: Progress) => void = () => {},
@@ -2815,6 +2877,15 @@ export async function addMove(
 		);
 	const { rec, project: loaded } = await loadProject(projectId);
 	checkedReviewChoices(rec.manifest, spec);
+	if (
+		!spec.itemsOnly &&
+		!rec.manifest.rig.animations.some((clip) => clip.kind !== 'state' && clip.id === spec.id) &&
+		((rec.stateGeneration && sameClipName(rec.stateGeneration.id, spec.id)) ||
+			rec.manifest.rig.animations.some(
+				(clip) => clip.kind === 'state' && sameClipName(clip.id, spec.id)
+			))
+	)
+		throw new LocalizedError('That State name is unavailable.', 'stateCapture.takenName');
 	if (spec.reviewBeforePublish) {
 		if (spec.items.length || spec.itemsOnly || spec.itemMethod)
 			throw new LocalizedError(
@@ -2917,8 +2988,13 @@ export async function addMove(
 			'Choose one item and one facing of an existing move before repairing. No generation was requested.',
 			'create.errors.chooseRepairTarget'
 		);
-	const reserved = reservedMove(spec.id);
+	const reserved = reservedMove(spec.id, !!existing && existing.kind !== 'state');
 	if (reserved && (spec.replace || !existing)) throw reserved;
+	if (existing?.kind === 'state' && spec.replace)
+		throw new LocalizedError(
+			'A State cannot be replaced as a Move.',
+			'moveSheet.startFrom.stateTarget'
+		);
 	if (!existing && dirs.length !== genDirs(rec.manifest).length)
 		throw new LocalizedError(
 			'A new move needs every independently drawn direction.',
@@ -3211,7 +3287,13 @@ export function nativeMoveRequest(
 				...body,
 				description: `${motion.slice(0, 900)}${guard}`,
 				subject_description: rec.character?.looks.trim().slice(0, 300) || 'the character',
-				...(!reference?.start ? { initial_pose: 'standing upright with empty hands' } : {}),
+				...(!reference?.start
+					? {
+							initial_pose: spec.startFrom
+								? 'the pose in the supplied frame'
+								: 'standing upright with empty hands'
+						}
+					: {}),
 				view: rec.manifest.rig.view ?? 'low top-down',
 				direction: dir
 			});
@@ -3316,6 +3398,10 @@ export function frameRoomWarning(p: Project, spec: MoveSpec): PreflightWarning |
 	);
 }
 
+/** The view a body move starts from: the chosen saved frame, else the standing view. */
+const moveReferenceView = (m: Manifest, spec: Pick<MoveSpec, 'startFrom'>, d: DirectionName) =>
+	spec.startFrom ? spec.startFrom.views[d] : m.rig.rest?.[d];
+
 interface BodyClipPlan {
 	rec: StoredProject;
 	project: Project;
@@ -3359,8 +3445,9 @@ async function bodyClip(
 	const { rec, project, spec, model, authored, n } = plan,
 		m = rec.manifest,
 		rig = m.rig;
-	const restKps = rig.rest![d]!.keypoints,
-		restImg = project.images.get(rig.rest![d]!.image)!;
+	const reference = moveReferenceView(m, spec, d)!;
+	const restKps = reference.keypoints,
+		restImg = project.images.get(reference.image)!;
 	if (model !== 'skeleton-v3') {
 		const out = await renderClip({
 			anim: spec.id,
@@ -3628,12 +3715,27 @@ async function makeRoomOption(
 		freeOf(boxes, size)
 	);
 	if (change.limit || (change.size === size && !change.dy)) return undefined;
+	if (
+		change.size !== size &&
+		dirs.some((dir) => {
+			const reference = spec.animation?.references?.[dir];
+			return reference?.start || (plan.model !== 'skeleton-v3' && reference?.end);
+		})
+	)
+		return undefined;
 	const { record, newImages } = await reframeCharacter(
 		rec,
 		project.images,
 		change,
 		readStoredImage
 	);
+	if (spec.startFrom) {
+		const source = spec.startFrom.replacement
+			? savedReplacementSource(record.manifest, spec.startFrom.clip, dirs)
+			: resolveMoveSource(record.manifest, spec.startFrom, dirs);
+		if (!source) return undefined;
+		spec.startFrom = source;
+	}
 	if (bodyMoveIssue(record.manifest, spec)) return undefined;
 	const next = bodyClipPlan(
 		record,
@@ -3892,6 +3994,15 @@ async function addBodyClip(
 		name = m.name;
 	const plan = bodyClipPlan(rec, project, spec),
 		{ model, authored } = plan;
+	if (
+		spec.startFrom &&
+		(!moveSourceFitsGeometry(m, spec.startFrom) ||
+			(!recovery && !moveSourceMatches(m, spec.startFrom, dirs)))
+	)
+		throw new LocalizedError(
+			'The selected starting frame changed. Choose the source again. No generation was requested.',
+			'moveSheet.startFrom.changed'
+		);
 	const starts = new Map<DirectionName, Img>();
 	if (spec.action !== 'ride')
 		for (const direction of dirs) {
@@ -3900,15 +4011,20 @@ async function addBodyClip(
 			if (start) starts.set(direction, start);
 			if (model !== 'skeleton-v3') await moveReferenceImage(reference, 'end', rig.cell);
 		}
-	if (model !== 'skeleton-v3')
+	if (spec.startFrom || model !== 'skeleton-v3')
 		for (const direction of dirs) {
-			const rest = rig.rest?.[direction];
+			const rest = moveReferenceView(m, spec, direction);
 			const image = rest && project.images.get(rest.image);
 			if (!rest || !hasAll(rest.keypoints) || image?.w !== rig.cell.w || image.h !== rig.cell.h)
 				throw new LocalizedError(
 					`${direction}: original standing artwork or joints are missing.`,
 					'create.errors.originalStandingArtworkJoints',
 					{ direction }
+				);
+			if (spec.startFrom && (await cellHash(image)) !== rest.image)
+				throw new LocalizedError(
+					'The selected starting frame changed. Choose the source again. No generation was requested.',
+					'moveSheet.startFrom.changed'
 				);
 		}
 	const total =
@@ -4040,7 +4156,8 @@ async function addBodyClip(
 		);
 		const src: ClipSource = {
 			route: model,
-			reference: frig.rest![c.d]!.image,
+			reference: moveReferenceView(fm, spec, c.d)!.image,
+			...(spec.startFrom ? { referenceKeypoints: spec.startFrom.views[c.d]!.keypoints } : {}),
 			keypoints: c.keypoints,
 			motion:
 				model !== 'skeleton-v3'
@@ -4172,7 +4289,10 @@ async function addBodyClip(
 	// transaction, so an item accepted or an outfit autosaved meanwhile survives.
 	await db.update<StoredProject>('projects', projectId, (cur) => {
 		if (!cur) throw new Error(`project ${projectId} vanished`);
-		if (moveRigVersion(cur) !== version)
+		if (
+			moveRigVersion(cur) !== version ||
+			(!recovery && spec.startFrom && !moveSourceMatches(cur.manifest, spec.startFrom, dirs))
+		)
 			throw new LocalizedError(
 				'This character changed in another tab before the move could be saved. Reopen it before trying again.',
 				'create.errors.characterChangedAnotherTab2'

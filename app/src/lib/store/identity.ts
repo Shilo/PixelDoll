@@ -1,6 +1,7 @@
 import { reservedPathSegment } from '../export/paths.ts';
 import { LocalizedError } from '../message.ts';
 import { DEFAULT_MOVE, retainPlaybackChoices, type Rig, type RigAnimation } from '../rig/rig.ts';
+import { playbackClips } from '../runtime/timeline.js';
 import type { Item, Manifest, Preset } from './manifest.ts';
 
 export const MAX_EXPORT_ID_LENGTH = 40;
@@ -27,15 +28,22 @@ export function itemExportIdTaken(items: readonly Item[], itemId: string, export
 }
 
 /** Moves keep their internal `id` (frames, jobs, drafts and recovery use it); games see this one. */
-export const moveExportId = (move: Pick<RigAnimation, 'id' | 'exportId'>) =>
-	move.exportId ?? move.id;
+type MoveIdentity = Pick<RigAnimation, 'id' | 'kind' | 'exportId'>;
+export const moveExportId = (move: MoveIdentity, clips: readonly MoveIdentity[] = [move]) =>
+	playbackClips(clips).find(({ key }) => key === move.id)?.id ?? move.id;
+
+export const reservedMoveExportId = (id: string) => id === DEFAULT_MOVE || id === 'standing';
+
+export function clearsStandingAlias(moves: readonly MoveIdentity[], moveId: string, id: string) {
+	return id === 'standing' && moveId === id && !moves.some((move) => move.id === DEFAULT_MOVE);
+}
 
 export function moveExportIdTaken(
 	moves: readonly RigAnimation[],
 	moveId: string,
 	exportId: string
 ) {
-	return moves.some((move) => move.id !== moveId && moveExportId(move) === exportId);
+	return playbackClips(moves).some(({ key, id }) => key !== moveId && id === exportId);
 }
 
 export const outfitExportIdTaken = (
@@ -55,10 +63,9 @@ export function checkExportIdentity(manifest: Manifest) {
 		aliases.add(id);
 	}
 	const moves = new Set<string>();
-	for (const move of manifest.rig.animations) {
+	for (const { clip: move, id } of playbackClips(manifest.rig.animations)) {
 		if (move.name !== undefined) checkName(move.name);
 		if (move.exportId !== undefined) checkMoveExportId(move.id, move.exportId);
-		const id = moveExportId(move);
 		if (moves.has(id)) throw duplicateMoveExportId();
 		moves.add(id);
 	}
@@ -69,15 +76,15 @@ function checkId(id: string) {
 		throw new LocalizedError('Invalid export ID.', 'renameSheet.invalidExportId');
 }
 
-/** The standing move is always `default` in exports: engines and RPG Maker sheets start from it. */
+/** Standing has a fixed ID for game playback. */
 function checkMoveExportId(moveId: string, exportId: string) {
 	if (moveId === DEFAULT_MOVE)
 		throw new LocalizedError(
-			'The Default move always uses the export ID default.',
+			'The Standing move always uses the export ID standing.',
 			'renameSheet.defaultMoveExportId'
 		);
 	checkId(exportId);
-	if (exportId === DEFAULT_MOVE)
+	if (reservedMoveExportId(exportId))
 		throw new LocalizedError('Invalid export ID.', 'renameSheet.invalidExportId');
 }
 
@@ -123,11 +130,17 @@ export function retainMoveChoices(next: Rig, current: Rig): void {
 			if (saved?.[key] === undefined) delete move[key];
 			else move[key] = saved[key];
 	}
-	for (const move of added)
-		if (moveExportIdTaken(next.animations, move.id, move.id))
-			move.exportId = suffixedExportId(move.id, (id) =>
-				moveExportIdTaken(next.animations, move.id, id)
-			);
+	for (const move of added) assignNewClipExportId(move, next.animations);
+}
+
+export function assignNewClipExportId(clip: RigAnimation, clips: readonly RigAnimation[]): void {
+	if (clip.id === DEFAULT_MOVE) return;
+	const candidates = clips.includes(clip) ? clips : [...clips, clip];
+	const occupied = new Set(
+		playbackClips(clips.filter((entry) => entry !== clip)).map(({ id }) => id)
+	);
+	if (occupied.has(moveExportId(clip, candidates)))
+		clip.exportId = suffixedExportId(clip.id, (id) => occupied.has(id));
 }
 
 export function itemContent({ name: _name, exportId: _exportId, ...content }: Item) {
@@ -166,7 +179,8 @@ export function editMoveIdentity(
 	const move = manifest.rig.animations.find((entry) => entry.id === moveId);
 	if (!move) throw new LocalizedError('The move no longer exists.', 'renameSheet.moveMissing');
 	if (exportId !== undefined) {
-		checkMoveExportId(moveId, exportId);
+		if (!clearsStandingAlias(manifest.rig.animations, moveId, exportId))
+			checkMoveExportId(moveId, exportId);
 		if (moveExportIdTaken(manifest.rig.animations, moveId, exportId)) throw duplicateMoveExportId();
 		if (exportId === moveId) delete move.exportId;
 		else move.exportId = exportId;

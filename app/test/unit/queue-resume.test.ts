@@ -424,9 +424,12 @@ test('cancellation during a deduplicated tier save observes both consumers befor
 	const waiting = new Promise<void>((resolve) => {
 		entered = resolve;
 	});
+	const records = new Map<string, JobRec>();
 	const queue = new Queue({
 		locks: null,
-		put: async () => {
+		get: async (id) => records.get(id),
+		put: async (id, record) => {
+			records.set(id, structuredClone(record));
 			if (hold) {
 				hold = false;
 				entered();
@@ -599,6 +602,7 @@ test('automatic shared cancellation remembers every failed attempt across reload
 	await original.enqueue(request, { signal: b.signal, attempt: 2 });
 	a.abort();
 	b.abort();
+	await original.cancelAbortedScope(shared.id);
 	expect(records.get(shared.id)?.autoCanceledAttempts?.sort()).toEqual([1, 2]);
 	const recovered = new Queue(deps);
 	await recovered.load();

@@ -1535,6 +1535,25 @@ test('Clear finished waits for the stored drafts, so their records are kept', as
 		expect(keep({ id: 'paid-call', createdAt: 0 })).toBe(true);
 });
 
+test('Clear finished keeps all batches for pending State reviews, but not saved attempts', async () => {
+	mocks.all.mockResolvedValue([
+		{ id: 'rig-pending', stateGeneration: { token: 'pending', plan: { batches: [{}, {}] } } },
+		{ id: 'rig-saved' }
+	]);
+	const s = await import('../../src/studio/state.svelte.ts');
+	await s.cleanUp(0, false);
+	const [[keep]] = mocks.clear.mock.calls;
+	const record = (activityScope: string) => ({
+		id: activityScope,
+		tag: 'studio-state',
+		activityScope,
+		createdAt: 0
+	});
+	expect(keep(record('state:pending:0'))).toBe(true);
+	expect(keep(record('state:pending:1'))).toBe(true);
+	expect(keep(record('state:saved:0'))).toBe(false);
+});
+
 test('a failed read of the stored drafts is reported and a new item cannot overwrite them', async () => {
 	mocks.get.mockImplementation(async (_store, key) => {
 		if (key === 'studio-drafts') throw new Error('read failed');
@@ -1669,19 +1688,32 @@ describe('move queue', () => {
 		s.startupResumed();
 		await expect(s.prepareForUpdate()).resolves.toBeUndefined();
 
-		const read = pending<unknown>(),
+		const reading = pending<void>(),
+			read = pending<unknown>(),
 			write = pending<void>();
 		const saved = structuredClone(records.get(id));
-		mocks.get.mockReturnValueOnce(read.promise);
+		mocks.get.mockImplementationOnce(() => {
+			reading.resolve();
+			return read.promise;
+		});
 		mocks.put.mockReturnValueOnce(write.promise);
 		const update = s.prepareForUpdate();
-		await vi.waitFor(() => expect(mocks.get).toHaveBeenCalledTimes(3));
+		await reading.promise;
 		const adding = s.queueMoves('project', [{ ...walk, id: 'run' }]);
 		read.resolve(saved);
 		await expect(update).rejects.toThrow('could not confirm');
 		write.resolve();
 		await adding;
 		expect(mocks.move).not.toHaveBeenCalled();
+	});
+
+	test('Adjust frame cannot invalidate a saved State generation attempt', async () => {
+		const s = await import('../../src/studio/state.svelte.ts');
+		s.doc.loading = false;
+		mocks.load.mockResolvedValueOnce({ rec: { stateGeneration: { token: 'paid-state' } } });
+		await expect(s.adjustCharacter('rig-project', { size: 96, dy: 0 })).rejects.toMatchObject({
+			translation: { key: 'adjustFrame.errors.statePending' }
+		});
 	});
 
 	test('a move queued while the last one finishes is started, not left waiting', async () => {

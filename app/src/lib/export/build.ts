@@ -1,13 +1,14 @@
 // What the Export sheet and the ⋮ menus' Download ZIP export: a character with its current look and saved outfits, or
 // a single item on the base body. Pure; the Studio supplies the project, look and settings.
 import { CURRENT_OUTFIT_ID } from '../store/identity.ts';
+import { playbackClips } from '../runtime/timeline.js';
 import { exportZip, type ExportResult, type NoteTerm } from './export.ts';
 import { errorTranslation, message, type Message } from '../message.ts';
 import { storeVariants, variantOf } from '../dress/dress.ts';
 import { itemHashes } from '../equipment/copy.ts';
 import { SLOTS } from '../items/slots.ts';
 import { retainMoves } from '../rig/moves.ts';
-import { cellHash, DEFAULT_MOVE } from '../rig/rig.ts';
+import { cellHash, DEFAULT_MOVE, pinnedArtwork } from '../rig/rig.ts';
 import { validEquipment } from '../runtime/paperdoll.js';
 import { leaveEmptyFrames, recoverArtwork } from './recovery.ts';
 import { applyExportSettings, type ExportSettings } from '../store/export-settings.ts';
@@ -30,7 +31,15 @@ export async function moveProject(project: Project, moveId: string): Promise<Pro
 		if (item.standing) ids.add(item.standing);
 		if (item.route === 'ea2-anchor' && item.anchorCell) ids.add(item.anchorCell.split('/')[0]);
 	}
-	return { ...project, manifest: await retainMoves(project.manifest, ids) };
+	const manifest = await retainMoves(project.manifest, ids);
+	const scoped = new Map(
+		playbackClips(manifest.rig.animations).map(({ key, clip, id }) => [key, { clip, id }])
+	);
+	for (const { key, id } of playbackClips(project.manifest.rig.animations)) {
+		const entry = scoped.get(key);
+		if (entry && entry.id !== id) entry.clip.exportId = id;
+	}
+	return { ...project, manifest };
 }
 
 export function outfitProject(
@@ -59,6 +68,7 @@ async function requestedExport(
 		look: Look;
 		settings: ExportSettings;
 		projectData?: ImportedCharacter['extra'];
+		rpgWalk?: string;
 	}
 ): Promise<ExportResult & { zip: Uint8Array | null }> {
 	const current: Preset = {
@@ -182,7 +192,8 @@ async function requestedExport(
 		{
 			engines: [o.engine],
 			baked: o.baked,
-			projectData: o.projectData
+			projectData: o.projectData,
+			rpgWalk: o.rpgWalk
 		},
 		[...warnings],
 		warningMessages
@@ -305,6 +316,7 @@ function lookProject(
 	}
 	const hashes = new Set<string>(items.flatMap(itemHashes));
 	for (const view of Object.values(m.rig.rest ?? {})) if (view?.image) hashes.add(view.image);
+	for (const hash of pinnedArtwork(m.rig)) hashes.add(hash);
 	return {
 		project: {
 			manifest: { ...m, items, materials, presets: [] },

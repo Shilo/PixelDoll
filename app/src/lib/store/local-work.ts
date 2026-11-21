@@ -5,6 +5,7 @@ import { ITEM_TRIAL_TAG, MOTION_LAB_TAG } from '../pixellab/queue.ts';
 import { LocalizedError } from '../message.ts';
 import { deleteStoredWork, generationWork, runningFlow, type StoredWork } from './db.ts';
 import { CREATE_DRAFT_PREFIX, incompatibleKind } from './incompatible.ts';
+import type { StoredProject } from './project.ts';
 
 const WORK_KEYS = new Set(['studio-drafts', 'm3-drafts', 'studio-move', 'studio-setup']);
 /** Characters, the demo's and other saved outfits, item drafts, unfinished creations, moves and setup. */
@@ -21,7 +22,13 @@ const studioJob = (job: { tag?: unknown }) =>
  *  they are downloadable data, not work. Blobs are swept by what is left (deleteStoredWork). */
 export function selectLocalWork({ projects, jobs }: StoredWork) {
 	const ledger = [...jobs.values()] as { tag?: unknown; state?: unknown }[];
-	if (generationWork([...projects.values()], ledger, runningFlow))
+	const pendingState = [...projects].some(
+		([key, value]) =>
+			key.startsWith('rig-') &&
+			!incompatibleKind(value) &&
+			(value as Partial<StoredProject> | undefined)?.stateGeneration
+	);
+	if (pendingState || generationWork([...projects.values()], ledger, runningFlow))
 		throw new LocalizedError(
 			'Finish or dismiss pending generation work before deleting local work. Nothing was deleted.',
 			'librarySettings.deleteWork.generating'

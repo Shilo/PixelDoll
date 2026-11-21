@@ -15,6 +15,7 @@ import { GATES, isAction, ITEM_GRID_REGISTRATION_NOTICE, SLOTS } from '../lib/it
 import { coverageGaps, missingFrames } from '../lib/dress/dress.ts';
 import { DIRECTIONS, type Rig, type RigAnimation } from '../lib/rig/rig.ts';
 import { moveExportId } from '../lib/store/identity.ts';
+import { clipKind } from '../lib/runtime/timeline.js';
 import { editedCount } from '../lib/frames/history.ts';
 import { message, type Message } from '../lib/message.ts';
 import type { Translate, WhisperKey, WhisperVars } from 'svelte-whisper';
@@ -69,16 +70,20 @@ export function setupWarningNote(
 
 /** A character's shape at a glance: "64 px · 4 directions · 2 moves · 6 items". */
 export const pixelSize = ({ w, h }: { w: number; h: number }) => `${w}×${h} px`;
-export const characterFacts = (m: Manifest): { frame: string; counts: Message[] } => ({
-	frame: pixelSize(m.rig.cell),
-	counts: [
-		message('export.count.directions', { count: m.rig.directions.length }),
-		message('export.count.moves', { count: m.rig.animations.length }),
-		message('export.count.items', {
-			count: m.items.filter((item) => item.id !== m.rig.baseItem).length
-		})
-	]
-});
+export function characterFacts(m: Manifest): { frame: string; counts: Message[] } {
+	const states = m.rig.animations.filter((clip) => clipKind(clip) === 'state').length;
+	return {
+		frame: pixelSize(m.rig.cell),
+		counts: [
+			message('export.count.directions', { count: m.rig.directions.length }),
+			...(states ? [message('import.count.states', { count: states })] : []),
+			message('export.count.moves', { count: m.rig.animations.length - states }),
+			message('export.count.items', {
+				count: m.items.filter((item) => item.id !== m.rig.baseItem).length
+			})
+		]
+	};
+}
 /** One item alone in canonical draw order in one cell; mirrored directions flip their source. Oversize layers (v1.3.1,
  * e.g. 96 px held items) line up by pivot on the union of the item's layer frames. */
 export function itemCell(
@@ -233,7 +238,7 @@ export function moveLabel(id: string, moves: readonly MoveRef[] = []): string {
 	const label = labelOf(self);
 	// Valid export IDs contain only lowercase letters, digits, underscores and hyphens, never parentheses.
 	return refs.some((other) => other.id !== id && labelOf(other) === label)
-		? `${label} (${moveExportId(self)})`
+		? `${label} (${moveExportId(self, refs)})`
 		: label;
 }
 /** The noun of the description's first phrase: "a sturdy young dwarf with a friendly face" -> "Dwarf". */

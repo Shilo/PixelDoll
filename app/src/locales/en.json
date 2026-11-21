@@ -512,7 +512,7 @@
 		"duplicateExportId": "Another item uses this export ID.",
 		"duplicateOutfitExportId": "Another outfit uses this export ID.",
 		"duplicateMoveExportId": "Another move uses this export ID.",
-		"defaultMoveExportId": "Games start from the Default move, so its export ID is always default.",
+		"defaultMoveExportId": "Games start from the Standing move, so its export ID is always standing.",
 		"characterIdConflict": "Another character in this workspace uses this Export ID. Use different IDs to put both in the same game.",
 		"invalidName": "Enter a name of 1 to 60 characters.",
 		"itemMissing": "This item no longer exists.",
@@ -520,6 +520,8 @@
 		"moveMissing": "This move no longer exists."
 	},
 	"savedActions": {
+		"labelDeleteState": "Delete State",
+		"removeState": "This removes the State and its fitted item frames from this character. Finished Moves keep their frames and any saved source artwork. This cannot be undone.",
 		"labelDeleteMove": "Delete move…",
 		"labelDeleteOutfit": "Delete outfit",
 		"thisRemovesTheMoveFromTheBody": "This removes the move from the body and every item. This can't be undone."
@@ -743,6 +745,7 @@
 		"tabWardrobe": "Wardrobe",
 		"tabColors": "Colors",
 		"tabOutfits": "Outfits",
+		"tabStates": "States",
 		"tabMoves": "Moves",
 		"facing": "Facing: {direction}",
 		"nextDirection": "Facing {direction}. Next direction",
@@ -989,7 +992,8 @@
 			"defaultTargetHint": "Preselected when you open Export. You can still choose another target.",
 			"versionMenu": "RPG Maker version",
 			"version": "Version",
-			"versionLabel": "RPG Maker version: {version}"
+			"versionLabel": "RPG Maker version: {version}",
+			"walkMove": "Walk move"
 		},
 		"group": { "engines": "Engines and frameworks", "assets": "Assets" },
 		"target": {
@@ -1138,10 +1142,17 @@
 				"other": "RPG Maker: the walk has no {directions} views, so those rows stand still."
 			},
 			"rpgSteps": "RPG Maker: the walk steps could not be detected, so the first walk frame is used as a step. Check the sheet.",
-			"rpgBelowFeet": "RPG Maker: {sheet} has {count} px below the feet, so it stands {count} px higher on the map."
+			"rpgBelowFeet": "RPG Maker: {sheet} has {count} px below the feet, so it stands {count} px higher on the map.",
+			"rpgOmittedMoves": {
+				"one": "RPG Maker: {moves} is left out; walking sheets hold only standing and walking frames.",
+				"other": "RPG Maker: {moves} are left out; walking sheets hold only standing and walking frames."
+			}
 		}
 	},
 	"import": {
+		"posesTitle": "Also import as States",
+		"posesHint": "Choose poses of the same body with no baked-in gear. Import a different look as a separate character. Moves are selected below.",
+		"poseMismatch": "This state has different artwork dimensions, facings, or camera settings. Import it as a separate character.",
 		"titleDevice": "Import from device",
 		"titlePixelLab": "Import from PixelLab",
 		"browseLibrary": "Browse PixelLab characters",
@@ -1175,6 +1186,7 @@
 		"untitledCharacter": "Untitled character",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "one": "{count} state", "other": "{count} states" },
 			"separateItems": {
 				"one": "{count} separate item",
 				"other": "{count} separate items"
@@ -1193,7 +1205,7 @@
 		"preview": "Preview",
 		"previewArtwork": "Character import preview",
 		"stalePreview": "Showing the last preview. Update your selections to continue.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "Updating preview…",
 		"characterName": "Character name",
 		"directionsHint": "Use the arrows to keep or skip views. A mirror button flips the opposite view. Turn it off before importing to keep the original artwork, or keep the flipped frames as an independent view when there’s no original.",
@@ -1265,7 +1277,7 @@
 			"stateMetadata": "Moves from “{state}” have invalid size or camera metadata: {detail} Uncheck that state’s moves to continue.",
 			"stateMismatch": "Moves from “{state}” use a different character size or camera view. Uncheck that state to continue.",
 			"missingStandingView": "The {move}/{direction} animation has no matching standing view in the selected state.",
-			"tooManyMoves": "This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).",
+			"tooManyMoves": "This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Standing).",
 			"orphanFile": "This ZIP contains an animation file without an unambiguous state layout: {path}. Export a new character ZIP with individual frames.",
 			"rotationPathName": "Unsupported rotation image path: {path}. Export a character ZIP with named direction PNGs.",
 			"animationPath": "Unsupported animation frame path: {path}. Export a character ZIP with individual numbered frames.",
@@ -1346,6 +1358,9 @@
 		"preview": "Selected artwork preview",
 		"artwork": "Selected artwork",
 		"allMoves": "All moves",
+		"clips": "States and moves",
+		"allStates": "All states",
+		"allClips": "Everything",
 		"size": "Size",
 		"sizeOption": "{size}x size",
 		"animated": "Animated",
@@ -1719,7 +1734,7 @@
 			"motionFrame": "{move} {direction} · motion frame {frame}",
 			"measureMotionNote": "Sends the generated motion frame as image (base64 PNG), unless already measured.",
 			"renderBody": "{move} {direction} · render body",
-			"renderBodyNote": "Known fields only. Adds standing first_frame, first_frame_keypoints and {source} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.",
+			"renderBodyNote": "Known fields only. Adds first_frame, first_frame_keypoints and {source} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.",
 			"locallyAuthored": "locally authored",
 			"generatedMotion": "generated motion",
 			"checkFrame": "{move} {direction} · check frame {frame}",
@@ -1938,6 +1953,7 @@
 		"adding": "Adding… {done}/{total}",
 		"waitingForFailed": "Waiting for the failed move",
 		"add": "Add a move",
+		"addState": "Add a state",
 		"estimate": "Est. {gens} gens",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, pivot {x},{y}",
@@ -2070,7 +2086,7 @@
 			"styleUnsupported": "Outline and detail do not apply to {model}.",
 			"invalidOutline": "Invalid outline.",
 			"invalidDetail": "Invalid detail.",
-			"reservedMove": "Default is the standing pose. Name the move something else.",
+			"reservedMove": "Standing is reserved for the standing state. Name the move something else.",
 			"recoveryNeedsAuthored": "Joint-check recovery needs the original authored body-repair settings.",
 			"recoveryAlreadySaved": "This move was saved since that attempt. Nothing is left to recover.",
 			"keepNeedsChecks": "Keeping this move requires completed cached joint checks for every frame.",
@@ -2283,6 +2299,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "Original starting frame",
+			"label": "Start from",
+			"chooseFrame": "Choose a frame",
+			"frame": "Frame {number}",
+			"unavailable": "This frame needs body artwork and measured joints for every selected facing.",
+			"changed": "The selected starting frame changed. Choose the source again. No generation was requested.",
+			"route": "This route starts from Standing. Choose a different animation model to use a saved frame.",
+			"stateTarget": "A State cannot be replaced as a Move."
+		},
 		"loop": "Loop",
 		"loopHint": "Repeat by default in exports.",
 		"referenceDirection": "Start and end frames",
@@ -2560,7 +2586,71 @@
 		"tabOnlyKey": "This connection is only for this tab and is not saved.",
 		"useSavedKey": "Use saved key"
 	},
-	"moveNames": { "default": "Default", "idle": "Idle", "walk": "Walk", "run": "Run" },
+	"moveNames": { "default": "Standing", "idle": "Idle", "walk": "Walk", "run": "Run" },
+	"stateGeneration": {
+		"continueIntro": "You can finish the views that were never sent. Completed views will be kept.",
+		"continueAccount": "Reconnect with the original PixelLab key to continue this State.",
+		"continueViews": "Views kept: {kept}. Views to generate: {remaining}.",
+		"checkRemainingCost": "Check remaining cost",
+		"generateRemaining": "Generate remaining views",
+		"confirmDiscard": "Confirm discard",
+		"discardWarning": "Discarding does not refund generations or delete a State from PixelLab. Starting over may charge for every direction again.",
+		"localOnly": "This State will be saved in PixelDoll only.",
+		"locksUnavailable": "Use a current browser to safely generate States.",
+		"defaultModel": "Default (Pro)",
+		"flashReference": "Pro Flash uses a reference image instead of written instructions.",
+		"changed": "The source or quote changed. Check the cost again before generating.",
+		"sourceUnavailable": "Standing needs saved artwork in every drawn direction.",
+		"invalidResult": "PixelLab did not return all expected views at the planned size.",
+		"unfinished": "This attempt has unfinished or unavailable results. Check Activity. No request was resent.",
+		"quoteUnavailable": "PixelLab did not provide a usable Pro Flash quote.",
+		"connect": "PixelLab could not confirm the account. Check your connection and try again.",
+		"invalidInput": "Check the State name and edit instructions.",
+		"flashSizesUnavailable": "PixelLab did not confirm Pro Flash edit sizes.",
+		"unsupported": "This model cannot edit this canvas with the selected reference. Choose another model or reference.",
+		"saved": "State saved",
+		"source": "Source: {source}",
+		"noSource": "Complete Standing views are required to generate a State.",
+		"description": "Describe what should change",
+		"reference": "Add an image to guide the change.",
+		"pixenReference": "Pixen does not use reference images. Switch models to use your image.",
+		"fixedCost": "Cost: {generations} generations",
+		"managed": "PixelLab creates a State from {parent} in your account.",
+		"referenceRoute": "With a reference, Pro edits the Standing images instead of creating a State in your PixelLab account.",
+		"transfer": "This route transfers the appearance in the reference to the character, not just the style.",
+		"sheetWarning": "Several views are edited on one sheet. Check each view before saving.",
+		"checkCost": "Check cost",
+		"quoting": "Checking cost…",
+		"generate": "Generate State",
+		"generating": "Generating State…",
+		"review": "Review {name} before saving.",
+		"generated": "Generated"
+	},
+	"stateJointFit": {
+		"busy": "Joint fitting is already in progress. Try again when it finishes.",
+		"edited": "This State has a frame edit that prevents using it as a Move source.",
+		"quote": "Check joint fitting cost",
+		"measure": "Measure joints",
+		"review": "Check that the marked joints line up with each view before saving.",
+		"save": "Save joints"
+	},
+	"stateCapture": {
+		"add": "Create State from…",
+		"noMoves": "Add a Move to create a State from one of its frames.",
+		"title": "Create State",
+		"fromMove": "From Move",
+		"name": "State name",
+		"noEquipment": "Equipment isn’t copied.",
+		"noCredits": "No credits used.",
+		"invalidName": "Enter a name with a Latin letter or number.",
+		"takenName": "This name is taken or reserved. Choose another.",
+		"savedAs": "Saved as {name}",
+		"saving": "Saving state…",
+		"saved": "Captured state",
+		"blocked": "Wait for the character to load and resolve pending work before capturing a state.",
+		"unavailable": "This frame does not have all saved views for this Move.",
+		"concurrentEdit": "The source changed. Close and reopen to choose a frame from the updated Move."
+	},
 	"moveRemoval": {
 		"unavailable": "This move is no longer available.",
 		"keepStanding": "Keep the standing views used to create and extend items.",
@@ -2795,6 +2885,7 @@
 		"undone": "Frame change undone.",
 		"errors": {
 			"reviewOpen": "Save or discard the move waiting for review before adjusting the frame.",
+			"statePending": "Save or discard the pending State before adjusting the frame.",
 			"missingArtwork": "Saved artwork of this character is missing, so its frame cannot be changed.",
 			"even": "Choose a frame size that changes by an even number of pixels.",
 			"range": "Frame must be {min}–{max} px for this character.",

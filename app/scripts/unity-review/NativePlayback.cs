@@ -94,6 +94,41 @@ namespace PixelDollNativeReview
             }
             if (label == "LayeredTiming") VerifyEquipmentAndPalette(label, prefab, doll, clock, data);
             UnityEngine.Object.DestroyImmediate(instance);
+            if (label == "LayeredTiming") VerifyState(label, prefab, data);
+        }
+
+        /// The fixture's one-cell State has a magenta center block that no Move cell has; the hat layer is read because it is not recolored.
+        static void VerifyState(string label, GameObject prefab, Data data)
+        {
+            var state = data.animations.FirstOrDefault(move => move.id == "ready-stance");
+            Check(state != null && state.cells == 1 && state.frames.Length == 1 && !state.loop, label + ": non-default State exports as one non-looping cell");
+            if (state == null) return;
+            var instance = UnityEngine.Object.Instantiate(prefab);
+            var doll = instance.GetComponents<MonoBehaviour>().First(component => component.GetType().FullName == "PixelDoll." + data.exportId + ".Paperdoll");
+            var animator = instance.GetComponent<Animator>(); animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+            var clock = (SpriteRenderer)Field(doll, "clock");
+            var head = (SpriteRenderer)Field(((IEnumerable)Field(doll, "nodes")).Cast<object>().First(node => (string)Field(node, "slot") == "head"), "renderer");
+            Action<float> step = seconds => { animator.Update(seconds); Invoke(doll, "Sync"); };
+            Func<string, bool> shows = frame => clock.sprite != null && clock.sprite.name == frame && head.enabled && head.sprite != null && head.sprite.name == frame;
+            Func<bool> marked = () =>
+            {
+                var sprite = head.sprite;
+                var pixel = (Color32)sprite.texture.GetPixel((int)(sprite.rect.x + sprite.rect.width / 2), (int)(sprite.rect.y + sprite.rect.height / 2) - 1);
+                return pixel.r == 255 && pixel.g == 0 && pixel.b == 255 && pixel.a == 255;
+            };
+            Func<AnimatorStateInfo> info = () => animator.GetCurrentAnimatorStateInfo(0);
+            Invoke(doll, "Play", "walk", "south", true); step(0); step(.1f);
+            Check(shows("walk_south_1") && !marked(), label + ": Move animates without State pixels", head.sprite ? head.sprite.name : "null");
+            Check((bool)Invoke(doll, "Play", "ready-stance", "south"), label + ": explicit State selection succeeds");
+            step(0);
+            Check(shows("ready-stance_south_0") && marked() && info().IsName("ready-stance_south") && info().normalizedTime < .01f, label + ": selecting a State during a Move shows the State cell from its start", "normalizedTime=" + info().normalizedTime);
+            step(.5f);
+            Check(shows("ready-stance_south_0") && marked() && info().normalizedTime >= 1f && !info().loop, label + ": completed non-looping State holds its one cell", "normalizedTime=" + info().normalizedTime);
+            Invoke(doll, "Play", "walk", "south"); step(0);
+            Check(shows("walk_south_0") && !marked() && info().IsName("walk_south") && info().normalizedTime < .01f, label + ": selecting a Move after a State starts the Move", "normalizedTime=" + info().normalizedTime);
+            step(.1f);
+            Check(shows("walk_south_1") && !marked(), label + ": Move animates after a State");
+            UnityEngine.Object.DestroyImmediate(instance);
         }
 
         static void VerifyEquipmentAndPalette(string label, GameObject prefab, object doll, SpriteRenderer clock, Data data)

@@ -101,7 +101,7 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
 - D8 (2026-10-21, user): Allowed models only — characters `create-character-v3` (Pro Flash alternative); animations
   `v3`, `pixminimax`, `skeleton-v3`; skeleton `estimate-skeleton` + v3. Pro is for editing only (`edit-animation-v2`,
   `inpaint-v3`, …), never for creating from scratch. Banned: `template`/`pro` animation modes, `create-character-pro`,
-  4/8-direction standard routes, legacy `animate-with-skeleton`, `edit-images-v2` for automatic layers. Amended by D28 and D29.
+  4/8-direction standard routes, legacy `animate-with-skeleton`, `edit-images-v2` for automatic layers. Amended by D28–D30.
 - D9 (2026-10-21, user): UI look A only (no pixel fonts/icons), dark by default with a persisted light switch, Lucide
   icons, system font. Theming + "Paper" theme deferred.
 - D10 (2026-10-21): Shirt/shorts regions are kept color-disjoint by a 1/255 blue-channel parity nudge (invisible); upgrade
@@ -184,6 +184,10 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   generations than several masked repair grids. It remains excluded from automatic generation and fallback: the model
   can move or redraw parts of the sheet. Use the frozen body and local stencils, and keep current equipment until the
   user compares and accepts the replacement. Masked **Repair item** remains the recommended option.
+- D30 (2026-11-21, user): allow `create-character-state`, `edit-images-v2`, `edit-image-pro-flash` and
+  `edit-image-pixen` for explicit, quoted, reviewed State creation. Preserve D29 for equipment. Prefer a verified
+  managed parent for the default text edit; local Pro uses `edit-images-v2`, or a compatible batch route chosen before
+  submission. Never silently drop a reference, switch an explicit model, or resend an accepted or uncertain paid job.
 
 ## Progressive equipment generation (2026-11-03)
 

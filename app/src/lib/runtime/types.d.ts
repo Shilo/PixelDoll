@@ -307,7 +307,9 @@ export interface RestView {
 
 export interface ClipSource {
 	route: 'skeleton-v3' | 'pixminimax' | 'v3' | 'import';
-	reference: Sha256; // standing alignment reference (also the first_frame unless a custom start is supplied)
+	reference: Sha256;
+	referenceKeypoints?: Keypoint[];
+
 	keypoints?: Keypoint[][]; // [cell][18]: the sequence sent to raw skeleton-v3; items are posed with exactly this
 	motion?: string; // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "pixminimax:<text>"
 	measured?: Keypoint[][]; // [cell][18]: re-estimated on the frozen frames (QA, anchors)
@@ -327,6 +329,7 @@ export interface ClipSource {
 export interface RigAnimation {
 	/** Internal key of every frame, job and draft of the move; never changes. Exports use `exportId` when set. */
 	id: string;
+	kind?: 'state' | 'move';
 	/** Display name the user gave the move; absent = derived from `id`. */
 	name?: string;
 	/** Game-facing ID in exports (`play(id)`); absent = `id`. */

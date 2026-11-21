@@ -465,11 +465,14 @@ test('Add a move queues behind the running move and runs it next', async ({ page
 	});
 	await expect(draft).toHaveValue('jump softly');
 	await move.getByRole('button', { name: 'Cancel', exact: true }).click();
+	await equipmentMode(page, 'States');
+	await expect(page.getByRole('button', { name: /Idle Review move/ })).toHaveCount(0);
+	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: /Walk Review move/ }).click();
 	await review.getByRole('button', { name: 'Save move', exact: true }).click();
 	await page.getByRole('button', { name: /Idle Review move/ }).click();
 	await review.getByRole('button', { name: 'Save move', exact: true }).click();
-	await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Walk', 'Idle']);
+	await expect(page.locator('.move-list .move-row b')).toHaveText(['Walk', 'Idle']);
 });
 
 test('a failed required measurement stops the queued idle without paying for an art reroll', async ({
@@ -1469,19 +1472,34 @@ function offlineCreation(config: CreationCase) {
 				.getByRole('button', { name: 'Save move', exact: true })
 				.click({ timeout: 120_000 });
 		}
-		await expect(page.locator('.move-list .move-row')).toHaveCount(3, { timeout: 150_000 });
-		await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Idle', 'Walk']);
-		// Share lists Default once, as a move: its one standing frame is a PNG; Walk animates again.
+		await expect(page.locator('.move-list .move-row b')).toHaveText(['Idle', 'Walk'], {
+			timeout: 150_000
+		});
 		await page.getByRole('button', { name: 'Share character' }).click();
 		const share = page.getByRole('dialog', { name: 'Share character preview' }),
-			shareMove = share.getByRole('combobox', { name: 'Move' });
-		await expect(shareMove.locator('option')).toHaveText(['Default', 'Idle', 'Walk', 'All moves']);
-		await shareMove.selectOption('default');
+			shareMove = share.getByRole('button', { name: /^States and moves:/ });
+		await expect(shareMove).toHaveAttribute('value', 'default');
+		await shareMove.click();
+		const shareMenu = share.getByRole('menu', { name: 'States and moves', exact: true });
+		await expect(shareMenu.getByRole('menuitemradio')).toHaveText([
+			'All states',
+			'Standing',
+			'All moves',
+			'Idle',
+			'Walk',
+			'Everything'
+		]);
+		await shareMenu.getByRole('menuitemradio', { name: 'Standing', exact: true }).click();
 		await expect(share.getByRole('switch')).toBeDisabled();
 		await expect(share.getByRole('switch')).not.toBeChecked();
 		await noDisabledHover(page, share.locator('.share-animate'));
 		await expect(share.getByRole('button', { name: 'Download PNG' })).toBeEnabled();
-		await shareMove.selectOption('walk');
+		await shareMove.click();
+		await shareMenu.getByRole('menuitemradio', { name: 'All states', exact: true }).click();
+		await expect(shareMove).toHaveAttribute('value', '__all_states__');
+		await expect(share.getByRole('button', { name: 'Download PNG' })).toBeEnabled();
+		await shareMove.click();
+		await shareMenu.getByRole('menuitemradio', { name: 'Walk', exact: true }).click();
 		await expect(share.getByRole('switch')).toBeEnabled();
 		await expect(share.getByRole('switch')).toBeChecked();
 		await page.keyboard.press('Escape');
@@ -1517,6 +1535,7 @@ function offlineCreation(config: CreationCase) {
 		const zipBytes = await readFile((await (await downloaded).path())!);
 		const entries = await unzip(new Uint8Array(zipBytes));
 		const manifest = JSON.parse(new TextDecoder().decode(entries.get('manifest.json'))) as Manifest;
+		expect(manifest.rig.animations[0]).toMatchObject({ id: 'standing', kind: 'state' });
 		expect(manifest.rig.cell).toEqual({ w: config.frame, h: config.frame });
 		expect(manifest.rig.directions).toHaveLength(config.rows);
 		expect(Object.keys(manifest.rig.rest!)).toHaveLength(8);

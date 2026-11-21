@@ -206,6 +206,7 @@ function storedFree(record: FrameRecord, all: ReadonlyMap<Sha256, Img>): FrameFr
 	for (const rest of Object.values(rig.rest ?? {})) kp(rest?.keypoints);
 	for (const a of rig.animations)
 		for (const s of Object.values(a.sources ?? {})) {
+			kp(s?.referenceKeypoints);
 			s?.keypoints?.forEach(kp);
 			s?.measured?.forEach(kp);
 		}
@@ -464,6 +465,7 @@ export async function reframeCharacter<R extends FrameRecord>(
 		for (const s of Object.values(a.sources ?? {}))
 			if (s) {
 				if (s.reference) s.reference = await move(s.reference); // a reference is optional in hand-made records
+				if (s.referenceKeypoints) s.referenceKeypoints = keypoints(s.referenceKeypoints);
 				if (s.keypoints) s.keypoints = s.keypoints.map(keypoints);
 				if (s.measured) s.measured = s.measured.map(keypoints);
 			}

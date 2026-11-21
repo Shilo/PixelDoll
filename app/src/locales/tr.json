@@ -512,7 +512,7 @@
 		"duplicateExportId": "Başka bir eşya bu dışa aktarma kimliğini kullanıyor.",
 		"duplicateOutfitExportId": "Başka bir kıyafet bu dışa aktarma kimliğini kullanıyor.",
 		"duplicateMoveExportId": "Başka bir animasyon bu dışa aktarma kimliğini kullanıyor.",
-		"defaultMoveExportId": "Oyunlar Varsayılan animasyonla başlar, bu yüzden dışa aktarma kimliği her zaman default olur.",
+		"defaultMoveExportId": "Oyunlar Ayakta pozuyla başlar, bu yüzden dışa aktarma kimliği her zaman standing olur.",
 		"characterIdConflict": "Bu çalışma alanındaki başka bir karakter bu dışa aktarma kimliğini kullanıyor. İkisini aynı oyuna eklemek için farklı kimlikler kullanın.",
 		"invalidName": "1 ile 60 karakter arasında bir ad girin.",
 		"itemMissing": "Bu eşya artık mevcut değil.",
@@ -520,6 +520,8 @@
 		"moveMissing": "Bu animasyon artık mevcut değil."
 	},
 	"savedActions": {
+		"labelDeleteState": "Durumu sil",
+		"removeState": "Bu işlem, durumu ve bu duruma uyarlanmış eşya karelerini karakterden kaldırır. Tamamlanmış animasyonların kareleri ve kayıtlı kaynak görselleri korunur. Bu işlem geri alınamaz.",
 		"labelDeleteMove": "Animasyonu silin…",
 		"labelDeleteOutfit": "Kıyafeti silin",
 		"thisRemovesTheMoveFromTheBody": "Animasyon gövdeden ve tüm eşyalardan kaldırılır. Bu işlem geri alınamaz."
@@ -749,6 +751,7 @@
 		"tabWardrobe": "Gardırop",
 		"tabColors": "Renkler",
 		"tabOutfits": "Kıyafetler",
+		"tabStates": "Durumlar",
 		"tabMoves": "Animasyonlar",
 		"facing": "Yön: {direction}",
 		"nextDirection": "Yön: {direction}. Sonraki yöne geçin",
@@ -995,7 +998,8 @@
 			"defaultTargetHint": "Dışa aktarma açıldığında seçili gelir. Başka bir hedef seçebilirsiniz.",
 			"versionMenu": "RPG Maker sürümü",
 			"version": "Sürüm",
-			"versionLabel": "RPG Maker sürümü: {version}"
+			"versionLabel": "RPG Maker sürümü: {version}",
+			"walkMove": "Yürüme animasyonu"
 		},
 		"group": { "engines": "Motorlar ve çerçeveler", "assets": "Varlıklar" },
 		"target": {
@@ -1141,10 +1145,17 @@
 				"other": "RPG Maker: Yürüme animasyonunda şu yönler yok: {directions}. Bu satırlar hareketsiz kalır."
 			},
 			"rpgSteps": "RPG Maker: Yürüme adımları algılanamadığı için ilk yürüme karesi adım olarak kullanılıyor. Sayfayı kontrol edin.",
-			"rpgBelowFeet": "RPG Maker: {sheet} sayfasında ayağın altında {count} px var. Bu yüzden karakter haritada {count} px daha yukarıda durur."
+			"rpgBelowFeet": "RPG Maker: {sheet} sayfasında ayağın altında {count} px var. Bu yüzden karakter haritada {count} px daha yukarıda durur.",
+			"rpgOmittedMoves": {
+				"one": "RPG Maker: {moves} dışarıda bırakıldı. Yürüme sayfaları yalnızca durma ve yürüme karelerini içerir.",
+				"other": "RPG Maker: {moves} dışarıda bırakıldı. Yürüme sayfaları yalnızca durma ve yürüme karelerini içerir."
+			}
 		}
 	},
 	"import": {
+		"posesTitle": "Durum olarak da içe aktar",
+		"posesHint": "Aynı gövdenin, görsele işlenmiş ekipman içermeyen pozlarını seçin. Farklı bir görünümü ayrı bir karakter olarak içe aktarın. Animasyonları aşağıdan seçin.",
+		"poseMismatch": "Bu durumun görsel boyutları, bakış yönleri veya kamera ayarları farklı. Ayrı bir karakter olarak içe aktarın.",
 		"titleDevice": "Cihazdan içe aktarın",
 		"titlePixelLab": "PixelLab üzerinden içe aktarın",
 		"browseLibrary": "PixelLab karakterlerine göz atın",
@@ -1178,6 +1189,7 @@
 		"untitledCharacter": "Adsız karakter",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "one": "{count} durum", "other": "{count} durum" },
 			"separateItems": {
 				"one": "{count} ayrı eşya",
 				"other": "{count} ayrı eşya"
@@ -1196,7 +1208,7 @@
 		"preview": "Önizleme",
 		"previewArtwork": "Karakter içe aktarım önizlemesi",
 		"stalePreview": "Son önizleme gösteriliyor. Devam etmek için seçimlerinizi güncelleyin.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "Önizleme güncelleniyor…",
 		"characterName": "Karakter adı",
 		"directionsHint": "Görünümleri tutmak veya atlamak için okları kullanın. Aynalama düğmesi karşı görünümü çevirir. Özgün görselleri tutmak için aynalamayı içe aktarmadan önce kapatın. Özgün görsel yoksa çevrilmiş kareler bağımsız bir görünüm olarak kalır.",
@@ -1268,7 +1280,7 @@
 			"stateMetadata": "“{state}” durumundaki animasyonların boyut veya kamera meta verileri geçersiz: {detail} Devam etmek için o durumun animasyonlarının işaretini kaldırın.",
 			"stateMismatch": "“{state}” durumundaki animasyonlar farklı karakter boyutu veya kamera açısı kullanıyor. Devam etmek için o durumun işaretini kaldırın.",
 			"missingStandingView": "Seçilen durumda {move}/{direction} animasyonuna karşılık gelen ayakta duruş görünümü yok.",
-			"tooManyMoves": "Bu karakterde çok fazla animasyon var. Daha az durum seçin veya daha az animasyon dışa aktarın (Varsayılan dışında en fazla 99).",
+			"tooManyMoves": "Bu karakterde çok fazla animasyon var. Daha az durum seçin veya daha az animasyon dışa aktarın (Ayakta dışında en fazla 99).",
 			"orphanFile": "Bu ZIP içinde durum düzeni belirsiz bir animasyon dosyası var: {path}. Her karenin ayrı dosya olduğu yeni bir karakter ZIP dosyası dışa aktarın.",
 			"rotationPathName": "Desteklenmeyen yön görseli yolu: {path}. Yön adlarını taşıyan PNG dosyalarının yer aldığı bir karakter ZIP dosyası dışa aktarın.",
 			"animationPath": "Desteklenmeyen animasyon karesi yolu: {path}. Her karenin ayrı ve numaralı olduğu bir karakter ZIP dosyası dışa aktarın.",
@@ -1349,6 +1361,9 @@
 		"preview": "Seçili görselin önizlemesi",
 		"artwork": "Seçili görsel",
 		"allMoves": "Tüm animasyonlar",
+		"clips": "Durumlar ve animasyonlar",
+		"allStates": "Tüm durumlar",
+		"allClips": "Tümü",
 		"size": "Boyut",
 		"sizeOption": "{size}x boyut",
 		"animated": "Hareketli",
@@ -1725,7 +1740,7 @@
 			"motionFrame": "{move} {direction} · Hareket karesi {frame}",
 			"measureMotionNote": "Daha önce ölçülmediyse üretilen hareket karesini image (base64 PNG) olarak gönderir.",
 			"renderBody": "{move} {direction} · Gövdeyi çizin",
-			"renderBodyNote": "Yalnızca bilinen alanlar. Ayakta duruş first_frame ve first_frame_keypoints değerlerini, ayrıca {source} anahtar noktalarını ekler. Tek çizim isteği gönderilir. Çıktı boş veya hatalı biçimdeyse ücretli yeni deneme yapılmadan inceleme için durulur.",
+			"renderBodyNote": "Yalnızca bilinen alanlar. first_frame ve first_frame_keypoints değerlerini, ayrıca {source} anahtar noktalarını ekler. Tek çizim isteği gönderilir. Çıktı boş veya hatalı biçimdeyse ücretli yeni deneme yapılmadan inceleme için durulur.",
 			"locallyAuthored": "yerelde oluşturulan",
 			"generatedMotion": "üretilen hareketin",
 			"checkFrame": "{move} {direction} · {frame} numaralı kareyi kontrol edin",
@@ -1947,6 +1962,7 @@
 		"adding": "Ekleniyor… {done}/{total}",
 		"waitingForFailed": "Başarısız animasyon bekleniyor",
 		"add": "Animasyon ekleyin",
+		"addState": "Durum ekleyin",
 		"estimate": "Tahmini {gens} üretim hakkı",
 		"bodySize": "{w}×{h} piksel",
 		"frameSize": "{w}×{h} piksel, pivot noktası {x},{y}",
@@ -2079,7 +2095,7 @@
 			"styleUnsupported": "{model} için dış çizgi ve ayrıntı ayarları geçerli değil.",
 			"invalidOutline": "Geçersiz dış çizgi.",
 			"invalidDetail": "Geçersiz ayrıntı düzeyi.",
-			"reservedMove": "Default adı ayakta duruş pozuna ayrılmıştır. Animasyona başka bir ad verin.",
+			"reservedMove": "Ayakta adı ayakta duruş pozuna ayrılmıştır. Animasyona başka bir ad verin.",
 			"recoveryNeedsAuthored": "Eklem kontrolünü kurtarmak için özgün gövde onarımı ayarları gerekir.",
 			"recoveryAlreadySaved": "Bu animasyon o denemeden sonra kaydedildi. Kurtarılacak işlem kalmadı.",
 			"keepNeedsChecks": "Bu animasyonu saklamak için tüm karelerin önbellekte tamamlanmış eklem kontrolleri olmalı.",
@@ -2292,6 +2308,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "Orijinal başlangıç karesi",
+			"label": "Başlangıç noktası",
+			"chooseFrame": "Kare seçin",
+			"frame": "Kare {number}",
+			"unavailable": "Bu kare için seçilen her yönde gövde görseli ve ölçülmüş eklem konumları gerekir.",
+			"changed": "Seçilen başlangıç karesi değişti. Kaynağı yeniden seçin. Üretim isteği gönderilmedi.",
+			"route": "Bu yöntem ayakta duruşla başlar. Kayıtlı bir kareyi kullanmak için başka bir animasyon modeli seçin.",
+			"stateTarget": "Bir durum, animasyon gibi değiştirilemez."
+		},
 		"loop": "Döngü",
 		"loopHint": "Dışa aktarımlarda varsayılan olarak tekrarlanır.",
 		"referenceDirection": "Başlangıç ve bitiş kareleri",
@@ -2569,7 +2595,71 @@
 		"tabOnlyKey": "Bu bağlantı yalnızca bu sekme için geçerlidir ve kaydedilmez.",
 		"useSavedKey": "Kayıtlı anahtarı kullan"
 	},
-	"moveNames": { "default": "Varsayılan", "idle": "Bekleme", "walk": "Yürüme", "run": "Koşma" },
+	"moveNames": { "default": "Ayakta", "idle": "Bekleme", "walk": "Yürüme", "run": "Koşma" },
+	"stateGeneration": {
+		"continueIntro": "Hiç gönderilmemiş görünümleri tamamlayabilirsiniz. Tamamlanan görünümler korunur.",
+		"continueAccount": "Bu duruma devam etmek için ilk PixelLab anahtarınızla yeniden bağlanın.",
+		"continueViews": "Korunan görünümler: {kept}. Oluşturulacak görünümler: {remaining}.",
+		"checkRemainingCost": "Kalan maliyeti kontrol et",
+		"generateRemaining": "Kalan görünümleri oluştur",
+		"confirmDiscard": "Atmayı onayla",
+		"discardWarning": "Atmak üretim haklarını iade etmez veya durumu PixelLab’den silmez. Yeniden başlamak tüm yönler için tekrar ücretlendirebilir.",
+		"localOnly": "Bu durum yalnızca PixelDoll’da kaydedilecek.",
+		"locksUnavailable": "Durumları güvenle oluşturmak için güncel bir tarayıcı kullanın.",
+		"defaultModel": "Varsayılan (Pro)",
+		"flashReference": "Pro Flash yazılı talimatlar yerine referans görseli kullanır.",
+		"changed": "Kaynak veya fiyat teklifi değişti. Oluşturmadan önce maliyeti tekrar kontrol edin.",
+		"sourceUnavailable": "Çizilen her yön için kayıtlı bir ayakta duruş görseli gerekir.",
+		"invalidResult": "PixelLab beklenen tüm görünümleri planlanan boyutta döndürmedi.",
+		"unfinished": "Bu denemenin sonuçları eksik veya kullanılamıyor. Etkinliği kontrol edin. İstek yeniden gönderilmedi.",
+		"quoteUnavailable": "PixelLab, Pro Flash için kullanılabilir bir fiyat teklifi vermedi.",
+		"connect": "PixelLab hesabı doğrulayamadı. Bağlantınızı kontrol edip tekrar deneyin.",
+		"invalidInput": "Durum adını ve düzenleme talimatlarını kontrol edin.",
+		"flashSizesUnavailable": "PixelLab, Pro Flash düzenleme boyutlarını doğrulamadı.",
+		"unsupported": "Bu model, seçilen referansla bu tuvali düzenleyemez. Başka bir model veya referans seçin.",
+		"saved": "Durum kaydedildi",
+		"source": "Kaynak: {source}",
+		"noSource": "Durum oluşturmak için karakterin tüm ayakta duruş görünümleri gerekir.",
+		"description": "Neyin değişmesini istediğinizi açıklayın",
+		"reference": "Değişikliğe yön verecek bir görsel ekleyin.",
+		"pixenReference": "Pixen referans görseli kullanmaz. Görselinizi kullanmak için modeli değiştirin.",
+		"fixedCost": "Maliyet: {generations} üretim",
+		"managed": "PixelLab hesabınızda {parent} kaynaklı bir durum oluşturur.",
+		"referenceRoute": "Referans görselle Pro, PixelLab hesabınızda bir durum oluşturmak yerine ayakta duruş görsellerini düzenler.",
+		"transfer": "Bu yöntem referanstaki görünümü karaktere aktarır, yalnızca stili eşleştirmez.",
+		"sheetWarning": "Birden çok görünüm tek sayfada düzenlenir. Kaydetmeden önce her görünümü kontrol edin.",
+		"checkCost": "Maliyeti kontrol et",
+		"quoting": "Maliyet kontrol ediliyor…",
+		"generate": "Durum oluştur",
+		"generating": "Durum oluşturuluyor…",
+		"review": "Kaydetmeden önce {name} durumunu inceleyin.",
+		"generated": "Oluşturulan"
+	},
+	"stateJointFit": {
+		"busy": "Eklem ölçümü zaten sürüyor. Tamamlandığında tekrar deneyin.",
+		"edited": "Bir kare düzenlemesi bu durumun hareket kaynağı olarak kullanılmasını engelliyor.",
+		"quote": "Eklem ölçümünün maliyetini kontrol et",
+		"measure": "Eklemleri ölç",
+		"review": "Kaydetmeden önce işaretli eklemlerin her görünümde doğru yerde olduğunu kontrol et.",
+		"save": "Eklemleri kaydet"
+	},
+	"stateCapture": {
+		"add": "Kareden durum oluştur…",
+		"noMoves": "Karelerinden biriyle durum oluşturmak için bir animasyon ekleyin.",
+		"title": "Durum oluştur",
+		"fromMove": "Animasyondan",
+		"name": "Durum adı",
+		"noEquipment": "Ekipman kopyalanmaz.",
+		"noCredits": "Kredi kullanılmaz.",
+		"invalidName": "Latin harfi veya rakam içeren bir ad girin.",
+		"takenName": "Bu ad kullanılıyor veya ayrılmış. Başka bir ad seçin.",
+		"savedAs": "{name} olarak kaydedilir",
+		"saving": "Durum kaydediliyor…",
+		"saved": "Durum kaydedildi",
+		"blocked": "Durumu kaydetmeden önce karakterin yüklenmesini bekleyin ve bekleyen işleri sonuçlandırın.",
+		"unavailable": "Bu karede hareketin kaydedilmiş görünümlerinin tümü yok.",
+		"concurrentEdit": "Kaynak değişti. Güncellenen hareketten bir kare seçmek için pencereyi kapatıp yeniden açın."
+	},
 	"moveRemoval": {
 		"unavailable": "Bu animasyon artık kullanılamıyor.",
 		"keepStanding": "Eşya üretmek ve eşyaları yeni animasyonlara uyarlamak için kullanılan ayakta duruş görünümlerini koruyun.",
@@ -2804,6 +2894,7 @@
 		"undone": "Kare değişikliği geri alındı.",
 		"errors": {
 			"reviewOpen": "Kareyi ayarlamadan önce incelemeyi bekleyen animasyonu kaydedin veya atın.",
+			"statePending": "Kareyi ayarlamadan önce bekleyen durumu kaydedin veya atın.",
 			"missingArtwork": "Bu karakterin kayıtlı çizimleri eksik, bu yüzden karesi değiştirilemez.",
 			"even": "Çift sayıda piksel değişen bir kare boyutu seçin.",
 			"range": "Bu karakter için kare {min}–{max} px olmalıdır.",

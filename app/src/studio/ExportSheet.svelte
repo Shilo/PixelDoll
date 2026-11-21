@@ -1,6 +1,7 @@
 <script lang="ts">
 	import SettingsItemButton from './SettingsItemButton.svelte';
-	import { CURRENT_OUTFIT_ID, moveExportId } from '../lib/store/identity.ts';
+	import { CURRENT_OUTFIT_ID } from '../lib/store/identity.ts';
+	import { playbackClips } from '../lib/runtime/timeline.js';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
 	import { assetUrl } from '../lib/assets.ts';
@@ -18,7 +19,7 @@
 	import { exportFormatNames } from './exportFormatNames.ts';
 	import { buildExport } from '../lib/export/build.ts';
 	import { characterZipId, editableData, saveZip } from './download.svelte.ts';
-	import { ROWS as RPG_ROWS, walkMove } from '../lib/export/rpgmaker.ts';
+	import { ROWS as RPG_ROWS, walkMoves } from '../lib/export/rpgmaker.ts';
 	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import { stableStringify } from '../lib/image/hash.ts';
 	import { coverageGaps, missingFrames, moveDirs } from '../lib/dress/dress.ts';
@@ -239,7 +240,7 @@
 	const once = $derived(preferences?.playOnce ?? []);
 	const moveChoices = $derived(
 		new Map(
-			m?.rig.animations.map((animation) => [moveExportId(animation), animation.moveLoop] as const)
+			playbackClips(m?.rig.animations ?? []).map(({ id, clip }) => [id, clip.moveLoop] as const)
 		)
 	);
 	const playsOnce = (name: string) => {
@@ -257,6 +258,10 @@
 	const outfits = $derived(m?.presets.filter((p) => p.id !== CURRENT_OUTFIT_ID) ?? []);
 	// RPG Maker sheets are always dressed composites, whatever the setting says
 	const rpg = $derived(engine === 'rpgmaker' || engine === 'rpgmakerxp');
+	// The walk an RPG Maker sheet steps through, chosen for this export only; the first eligible walk until one is picked
+	let walkChoice = $state<string>();
+	const walks = $derived(rpg && m ? walkMoves(m) : []);
+	const rpgWalk = $derived((walks.find((move) => move.id === walkChoice) ?? walks[0])?.id);
 	const outfitSummary = $derived(
 		!baked && !rpg
 			? t('export.outfits.none')
@@ -456,7 +461,7 @@
 	const gaps = $derived.by(() => {
 		if (!m) return [];
 		const out: Message[] = [],
-			walk = rpg ? walkMove(m.rig)?.id : undefined;
+			walk = rpgWalk;
 		const facing = (key: string) => {
 			const [move, direction] = key.split('/') as [string, DirectionName];
 			return message('export.notes.rigIssue', { move: { move }, direction: { direction } });
@@ -510,6 +515,7 @@
 		void attempt;
 		const e = engine,
 			b = baked,
+			w = rpgWalk,
 			p = store.project;
 		const rec = store.exportRecord,
 			exportPreferences = preferences;
@@ -544,7 +550,8 @@
 					baked: b,
 					look,
 					settings: exportPreferences!,
-					projectData: editableData(rec)
+					projectData: editableData(rec),
+					rpgWalk: w
 				})),
 				rigIssues
 			};
@@ -934,6 +941,16 @@
 								slots={{ name: engineName }}
 							/>
 						</p>{/if}
+					{#if walks.length > 1}<label class="field"
+							><span class="label small">{t('export.settings.walkMove')}</span><select
+								class="bu-input input"
+								value={rpgWalk}
+								disabled={!ready}
+								onchange={(e) => (walkChoice = e.currentTarget.value)}
+								>{#each walks as a (a.id)}<option value={a.id}>{displayMove(a.id, moveRefs)}</option
+									>{/each}</select
+							></label
+						>{/if}
 					{#if ready && !pendingExport && (result?.kind === 'recovery' || result?.kind === 'failed')}
 						<p
 							class="notice {result.kind === 'recovery' ? 'warn' : 'bad'} small"

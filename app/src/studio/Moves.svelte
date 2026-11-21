@@ -19,6 +19,7 @@
 	import { ChevronRight, Plus } from './icons.ts';
 	import { displayMove } from './displayMove.ts';
 	import { displayError } from '../lib/i18n.ts';
+	import { STATE_CAPTURE_MODE } from '../lib/rig/setup.ts';
 	import { characterBodySize } from './experience/bounds.ts';
 	import { buildPresentation } from './experience/presentation.ts';
 	import { croppedBacking } from './experience/thumbnails.svelte.ts';
@@ -26,8 +27,12 @@
 	import { downloadMoveZip } from './download.svelte.ts';
 	import { moveDeletionBlocked, removeMove } from './moveActions.svelte.ts';
 	import { displayDirectionInSentence } from './displayDirection.ts';
+	import { playbackClips } from '../lib/runtime/timeline.js';
 	import { t } from 'svelte-whisper';
+	let { kind, onaddstate }: { kind: 'state' | 'move'; onaddstate?: () => void } = $props();
 	const m = $derived(store.project?.manifest);
+	const playback = $derived(playbackClips(m?.rig.animations ?? []));
+	const clips = $derived(playback.filter((entry) => entry.kind === kind));
 	const bodySize = $derived(store.project && characterBodySize(store.project));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const nice = (id: string) => displayMove(id, moveRefs);
@@ -43,7 +48,7 @@
 <div class="colors">
 	{#if m && view.project && thumbnails}
 		<div class="move-list">
-			{#each Object.values(store.moveReviews) as candidate (candidate.spec.id)}
+			{#each kind === 'move' ? Object.values(store.moveReviews) : [] as candidate (candidate.spec.id)}
 				<button
 					class="move-row bu-action"
 					data-variant="tile"
@@ -57,7 +62,7 @@
 					<ChevronRight size={16} />
 				</button>
 			{/each}
-			{#each m.rig.animations as a (a.id)}
+			{#each clips as { clip: a } (a.id)}
 				{@const image = thumbnails(a.id, ui.dir, ui.frame)}
 				{@const base = m.items.find((i) => i.id === m.rig.baseItem)}
 				{@const dirs = m.rig.directions.filter(
@@ -70,7 +75,7 @@
 				{@const lock = moveDeletionBlocked(a.id)}
 				<SavedActions
 					name={nice(a.id)}
-					kind="move"
+					{kind}
 					locked={displayError(lock)}
 					onlocked={blockedByWork(lock)
 						? () =>
@@ -82,6 +87,12 @@
 					onrename={isDemo() ? undefined : () => openRename(doc.id, { moveId: a.id })}
 					ondownload={() => downloadMoveZip(a.id)}
 					onfixframes={() => openFrames('', a.id)}
+					oncapture={kind === 'move' && !isDemo()
+						? () => {
+								ui.stateCaptureMove = a.id;
+								ui.sheet = 'stateCapture';
+							}
+						: undefined}
 					ondelete={() => removeMove(a.id)}
 				>
 					<button
@@ -115,7 +126,55 @@
 					</button>
 				</SavedActions>
 			{/each}
+			{#if kind === 'move'}
+				{#if mine && moving.spec}
+					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
+						><span
+							class="bu-ring ring"
+							class:spin={!moving.error && !moving.repairReview}
+							aria-hidden="true"
+						></span><span class="move-text"
+							><b>{nice(moving.spec.id)}</b><span class="muted small"
+								>{moving.repairReview
+									? moving.spec?.redrawItem
+										? t('moveSheet.review.redrawTitle')
+										: t('moveSheet.review.repairTitle')
+									: moving.error
+										? t('moves.failed')
+										: t('moves.adding', {
+												done: moving.progress?.done ?? 0,
+												total: moving.progress?.total ?? '?'
+											})}</span
+							></span
+						></button
+					>
+				{/if}
+				{#each queued as q, i (i)}
+					<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
+						><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
+							><b>{nice(q.spec.id)}</b><span class="muted small"
+								>{moving.repairReview
+									? t('moves.waitingForRepairReview')
+									: moving.error
+										? t('moves.waitingForFailed')
+										: t('generation.status.queued')}</span
+							></span
+						></button
+					>
+				{/each}
+			{/if}
 		</div>
+		{#if kind === 'move' && !isDemo()}<button
+				class="bu-action add-row cta"
+				data-variant="outline"
+				onclick={() => (ui.sheet = 'move')}
+				><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
+			>{:else if kind === 'state' && onaddstate}<button
+				class="bu-action add-row cta"
+				data-variant="outline"
+				onclick={onaddstate}
+				><Plus size={16} />{openerLabel(t('moves.addState'))}<SurfaceChevron /></button
+			>{/if}
 		<details class="disclosure">
 			<summary><ChevronRight size={14} />{t('common.details')}</summary>
 			<div>
@@ -133,15 +192,19 @@
 							y: m.rig.pivot.y
 						})}
 					</dd>
-					{#each m.rig.animations as a (a.id)}
+					{#each clips as { clip: a } (a.id)}
 						{@const src = Object.values(a.sources ?? {})[0]}
+						{@const sourceDetails =
+							a.source?.mode === STATE_CAPTURE_MODE
+								? ''
+								: src
+									? ` · ${src.route}, ${src.motion}`
+									: a.source?.mode
+										? ` · ${a.source.mode}`
+										: ''}
 						<dt>{nice(a.id)}</dt>
 						<dd>
-							{a.frames.map((f) => `${f.cell}:${f.ms}ms`).join(' ')}{src
-								? ` · ${src.route}, ${src.motion}`
-								: a.source?.mode
-									? ` · ${a.source.mode}`
-									: ''}
+							{a.frames.map((f) => `${f.cell}:${f.ms}ms`).join(' ')}{sourceDetails}
 						</dd>
 					{/each}
 					<dt>{t('common.directions')}</dt>
@@ -160,46 +223,12 @@
 				</dl>
 			</div>
 		</details>
-		{#if mine && moving.spec}
-			<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-				><span
-					class="bu-ring ring"
-					class:spin={!moving.error && !moving.repairReview}
-					aria-hidden="true"
-				></span><span class="move-text"
-					><b>{nice(moving.spec.id)}</b><span class="muted small"
-						>{moving.repairReview
-							? moving.spec?.redrawItem
-								? t('moveSheet.review.redrawTitle')
-								: t('moveSheet.review.repairTitle')
-							: moving.error
-								? t('moves.failed')
-								: t('moves.adding', {
-										done: moving.progress?.done ?? 0,
-										total: moving.progress?.total ?? '?'
-									})}</span
-					></span
-				></button
-			>
-		{/if}
-		{#each queued as q, i (i)}
-			<button class="move-row bu-action" data-variant="tile" onclick={() => (ui.sheet = 'move')}
-				><span class="bu-ring ring" aria-hidden="true"></span><span class="move-text"
-					><b>{nice(q.spec.id)}</b><span class="muted small"
-						>{moving.repairReview
-							? t('moves.waitingForRepairReview')
-							: moving.error
-								? t('moves.waitingForFailed')
-								: t('generation.status.queued')}</span
-					></span
-				></button
-			>
-		{/each}
-		{#if !isDemo()}<button
-				class="bu-action add-row"
-				data-variant="outline"
-				onclick={() => (ui.sheet = 'move')}
-				><Plus size={16} />{openerLabel(t('moves.add'))}<SurfaceChevron /></button
-			>{/if}
 	{/if}
 </div>
+
+<style>
+	/* The list gap already separates the CTA from the rows above it. */
+	.cta {
+		margin-top: 0;
+	}
+</style>

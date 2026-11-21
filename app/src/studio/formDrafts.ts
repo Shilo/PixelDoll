@@ -18,10 +18,12 @@ export const formDrafts: {
 		projectId: string;
 		reopen?: true;
 		regeneration?: { id: string; seed: number; activityScope?: string };
+		skeletonRetry?: NonNullable<ReturnType<typeof import('./create.ts').skeletonMoveReview>>;
 		action: string;
 		replace: boolean;
 		text: string;
 		dirs?: import('../lib/store/manifest.ts').DirectionName[];
+		source?: import('./moveSource.ts').MoveSourceSelection;
 		poseStyle?: 'visible-side-v1';
 		animation?: import('./moveAnimationOptions.ts').MoveAnimationOptions;
 		frameReferences?: import('./moveAnimationOptions.ts').MoveFrameReferences<

@@ -14,5 +14,12 @@ export function displayMove(id: string, moves: readonly MoveRef[] = []): string 
 	const named = moves.some(
 		(move) => typeof move !== 'string' && move.id === id && move.name !== undefined
 	);
+	if (
+		!named &&
+		id === 'standing' &&
+		moves.some((move) => (typeof move === 'string' ? move : move.id) === 'default') &&
+		label === moveLabel(id)
+	)
+		return `${label} (${id})`;
 	return !named && Object.hasOwn(labels, id) && label === moveLabel(id) ? t(labels[id]) : label;
 }

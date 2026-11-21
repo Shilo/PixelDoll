@@ -33,9 +33,11 @@ Animation `loop` records playback in exported files. Studio Export honors `moveL
   portable default. Item Export IDs must be unique within the character, including the body. Choose different
   character Export IDs for distinct characters that share a game project. `name` is a label, not a game key or a prompt.
 - **Moves** (`rig.animations[]`) may carry a display `name` and an `exportId` with the same rules, unique among the
-  character's moves. The Default move always exports as `default`, and no other move can take it. A new move whose ID
-  another move already exports as gets the first free `_2`, `_3`… Export ID. Play-once export settings follow move
-  Export IDs. **Outfits** have no separate Export ID: renaming one changes `presets[].id` (never `current`), since
+  character's moves. Standing (internal ID `default`) always exports as `standing`; no explicit move Export ID can
+  be `standing` or `default`. A saved move whose internal ID is literally `standing` and that has no explicit Export ID
+  exports as the first free `standing-move`, `standing-move_2`… instead, skipping explicit Export IDs already in use. A new move
+  whose ID another move already exports as gets the first free `_2`, `_3`… Export ID. Internal IDs never change.
+  Play-once export settings follow move Export IDs. **Outfits** have no separate Export ID: renaming one changes `presets[].id` (never `current`), since
   nothing else stores it.
 - The editable `project.json` preserves internal IDs and Export IDs separately. In `manifest.json`, game-facing item IDs
   replace internal IDs consistently in equipment, presets, material owners and generated layer paths, and move Export
@@ -120,7 +122,8 @@ export interface RestView {
   keypoints: Keypoint[]; // 18 joints (managed skeletons["2d_references"][dir] or estimate-skeleton)
 }
 export interface Clip {
-  id: string; // "idle", "walk", "slash", "hurt"
+  id: string; // "default" in Studio, "standing" after export; "idle", "walk", "slash"
+  kind?: "state" | "move"; // runtime exports declare the role; a State has one saved cell per facing
   cells: number; // stored poses per direction = sheet columns
   loop: boolean; // serialized playback metadata resolved at export
   moveLoop?: boolean; // per-move export choice; otherwise use global defaults
@@ -130,7 +133,8 @@ export interface Clip {
 /** How one clip-direction was made. Stored, never regenerated (PixelLab is not bit-repeatable). */
 export interface ClipSource {
   route: "skeleton-v3" | "pixminimax" | "v3" | "import";
-  reference: Sha256; // standing alignment reference, also first_frame unless a custom start was supplied
+  reference: Sha256; // alignment reference and first_frame unless a custom start was supplied (normally rig.rest[dir].image)
+  referenceKeypoints?: Keypoint[]; // pins the exact non-Standing source; its PNG travels in editable ZIPs
   keypoints?: Keypoint[][]; // [cell][18]: requested sequence, or measured sequence on frozen imported art
   motion?: string; // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "estimated"
   measured?: Keypoint[][]; // [cell][18]: re-estimated on the frozen frames (anchors, QA)
@@ -1018,7 +1022,7 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   frame's, exactly for standing frames and within 1 px for walk frames (pixel-art feet vary that much). Other exports keep
   frames as generated.
 - Columns: MZ/MV/VX play 1, 2, 1, 0, so they are [stride A, standing, stride B]; XP plays 0, 1, 2, 3, so [standing, stride A,
-  passing, stride B]. Standing is the `default` move's frame; without one (or where it lacks the view), the walk's other feet-together frame (three
+  passing, stride B]. Standing uses the built-in State's frame; without one (or where it lacks the view), the walk's other feet-together frame (three
   quarters of a cycle after stride A); for a view the walk lacks, frame 0 of a move that has the view. Stride A, best evidence
   first: (1) the view's own keypoints (`measured`, else requested): the playlist entry whose left-ankle lead along the facing
   (east +x, west −x, south +y, north −y) most exceeds the lead half a cycle later; views sharing a `managed-` motion with the

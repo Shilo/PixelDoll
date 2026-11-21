@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { loadFixture } from '../../src/lib/compose/fixture.ts';
 import { cellImg, composeCell } from '../../src/lib/compose/compose.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
+import { moveProject } from '../../src/lib/export/build.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { normalize } from '../../src/lib/rig/normalize.ts';
 import { roomFrame, standingRoom } from '../../src/lib/rig/reframe.ts';
@@ -460,6 +461,39 @@ test('PixelLab imports explicitly chosen sibling animations without inventing mo
 	]);
 	expect(second.project.manifest.rig.animations.some((a) => a.id === 'walking-copy')).toBe(false);
 	await expect(readCharacterZip(bytes, id, ['missing'])).rejects.toThrow('selected move states');
+});
+
+test('PixelLab sibling States do not occupy Move preset IDs', async () => {
+	const entries = await pixelLabFiles();
+	const metadata = JSON.parse(new TextDecoder().decode(entries[0].data));
+	metadata.states[1].character.name = 'Idle';
+	metadata.states[1].frames = { rotations: metadata.states[0].frames.rotations, animations: {} };
+	entries[0].data = enc.encode(JSON.stringify(metadata));
+	const imported = await readCharacterZip(await zip(entries), id, [id], ['second']);
+	expect(imported.project.manifest.rig.animations.map(({ id, kind }) => [id, kind])).toEqual([
+		['default', undefined],
+		['walking', undefined],
+		['state-idle', 'state']
+	]);
+});
+
+test('PixelLab default State selection does not blame siblings for missing Standing artwork', async () => {
+	const entries = await pixelLabFiles();
+	const metadata = JSON.parse(new TextDecoder().decode(entries[0].data));
+	metadata.states[1].frames.rotations = { ...metadata.states[0].frames.rotations };
+	metadata.states[0].frames.rotations.south = 'Missing-standing.png';
+	entries[0].data = enc.encode(JSON.stringify(metadata));
+	const bytes = await zip(entries);
+	const failure = await readCharacterZip(bytes, id, 'all', { exclude: [] }).catch(
+		(error: unknown) => error
+	);
+	expect(failure).toBeInstanceOf(CharacterImportError);
+	expect((failure as CharacterImportError).message).toBe('Missing file: Missing-standing.png');
+	const sibling = (failure as CharacterImportError).states.find((state) => state.id === 'second');
+	expect(sibling).toBeDefined();
+	expect(sibling?.poseCompatible).toBeUndefined();
+	const recovered = await readCharacterZip(bytes, 'second', 'all', { exclude: [] });
+	expect(recovered.states?.find((state) => state.id === id)?.poseCompatible).toBe(false);
 });
 
 test('PixelLab standing rotations and chosen animation states are independent, including Default alone', async () => {
@@ -1400,6 +1434,35 @@ test('current PixelDoll ZIPs support one enclosing folder containing both manife
 	expect((await readCharacterZip(await zip(wrapped))).project.manifest).toEqual(project.manifest);
 });
 
+test('editable character and move ZIPs retain pinned artwork after the source State is gone', async () => {
+	const project = await loadFixture(
+		async (path) =>
+			new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url)))
+	);
+	const { rig } = project.manifest;
+	const move = rig.animations.find(({ id }) => id === 'walk')!;
+	const artwork = makeImg(rig.cell.w, rig.cell.h);
+	artwork.data.set([223, 105, 34, 255], (artwork.w + 1) * 4);
+	const reference = await cellHash(artwork);
+	const referenceKeypoints = LABELS.map((label) => ({ label, x: 0.25, y: 0.5 }));
+	project.images.set(reference, artwork);
+	(move.sources ??= {}).south = {
+		route: 'skeleton-v3',
+		reference,
+		referenceKeypoints,
+		provenance: []
+	};
+	for (const source of [project, await moveProject(project, move.id)]) {
+		const out = await exportFiles(source, { engines: ['generic'], baked: false });
+		expect(out.errors).toEqual([]);
+		const restored = (await readCharacterZip(await zip(out.entries))).project;
+		expectPixels(restored.images.get(reference), artwork);
+		expect(
+			restored.manifest.rig.animations.find(({ id }) => id === move.id)?.sources?.south
+		).toMatchObject({ reference, referenceKeypoints });
+	}
+});
+
 test('editable projects preserve slot metadata while the runtime manifest keeps only its label', async () => {
 	const p = await loadFixture(
 		async (path) =>
@@ -1484,7 +1547,7 @@ test('library import uses GET only and never sends a key to the public ZIP', asy
 		expect(fetch.mock.calls[0][0]).toContain('/characters?limit=20&offset=20');
 		expect(fetch.mock.calls[0][1].method).toBe('GET');
 		expect(await downloadCharacter(id)).toEqual(new Uint8Array([1, 2, 3]));
-		expect(fetch.mock.calls[1][0]).toContain(`/zip?states=${id}`);
+		expect(fetch.mock.calls[1][0]).toBe(`https://api.pixellab.ai/v2/characters/${id}/zip`);
 		expect(fetch.mock.calls[1][1].headers).toBeUndefined();
 		expect(fetch.mock.calls[1][1].credentials).toBe('omit');
 		expect(fetch.mock.calls[1][1].cache).toBe('no-store');

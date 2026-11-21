@@ -16,6 +16,7 @@
 	import Sprite from '../Sprite.svelte';
 	import { CREATE_STEPS } from '../characterConfig.ts';
 	import CastCarousel from './CastCarousel.svelte';
+	import PlaybackPicker from './PlaybackPicker.svelte';
 	import ZoomControls from './ZoomControls.svelte';
 	import { modifiedWheel, sceneZoom } from './sceneZoom.ts';
 	import { sceneArtFits, sceneCamera, zoomCeiling } from './zoom.ts';
@@ -59,6 +60,7 @@
 		displayDirectionShort
 	} from '../displayDirection.ts';
 	import { displayMove } from '../displayMove.ts';
+	import { playbackClips } from '../../lib/runtime/timeline.js';
 	import { pixelSize } from '../model.ts';
 	import { popoverFocus } from './focus.ts';
 	import type { DirectionName, Item } from '../../lib/store/manifest.ts';
@@ -76,6 +78,7 @@
 	let viewportWidth = $state(1280),
 		viewportHeight = $state(720);
 	const m = $derived(store.project?.manifest);
+	const clips = $derived(playbackClips(m?.rig.animations ?? []));
 	const moveRefs = $derived(m?.rig.animations ?? []);
 	const selectedMove = $derived(m?.rig.animations.find((animation) => animation.id === ui.anim));
 	// A shown mount has its own gait, so Play/Pause stays useful even over a single-frame move.
@@ -121,6 +124,7 @@
 		['wardrobe', 'experience.tabWardrobe'],
 		['colors', 'experience.tabColors'],
 		['outfits', 'experience.tabOutfits'],
+		['states', 'experience.tabStates'],
 		['moves', 'experience.tabMoves']
 	] as const;
 	const g = $derived(layout(viewportWidth, viewportHeight, experience.screen, previewHeight));
@@ -484,7 +488,8 @@
 		ui.sheet = 'item';
 	}
 	$effect(() => {
-		if (experience.mode !== 'preview' && ui.tab === 'moves') ui.tab = 'wardrobe';
+		if (experience.mode !== 'preview' && (ui.tab === 'moves' || ui.tab === 'states'))
+			ui.tab = 'wardrobe';
 	});
 	$effect(() => {
 		const screen = experience.screen;
@@ -772,18 +777,16 @@
 							>{#if ui.playing}<Pause size={18} />{:else}<Play size={18} />{/if}</button
 						>
 					{/if}
-					<label class="playback-move"
-						><span class="sr">{t('common.move')}</span><select
-							class="bu-select"
-							data-variant="quiet"
-							title={displayMove(ui.anim, moveRefs)}
-							bind:value={ui.anim}
-							onchange={() => (ui.frame = 0)}
-							>{#each m.rig.animations as a}<option value={a.id}
-									>{displayMove(a.id, moveRefs)}</option
-								>{/each}</select
-						></label
-					>
+					<PlaybackPicker
+						{clips}
+						{moveRefs}
+						selected={ui.anim}
+						compact={g.compactPlayback}
+						onselect={(clip) => {
+							ui.anim = clip;
+							ui.frame = 0;
+						}}
+					/>
 					{#if experience.presentation !== 'animation'}<span class="small muted playback-still"
 							>{experience.presentation === 'unavailable'
 								? t('common.unavailable')
@@ -872,7 +875,7 @@
 				<!-- Moves stays in place in the live views, aria-disabled: there movement picks idle or walk. It stays in the Tab
 				     order so keyboard and screen reader users reach its reason (arrows step past it, Studio.svelte). -->
 				{#each tabs as [id, label]}{@const off =
-						id === 'moves' && experience.mode !== 'preview'}<button
+						(id === 'moves' || id === 'states') && experience.mode !== 'preview'}<button
 						class="bu-action"
 						data-variant="tab"
 						role="tab"

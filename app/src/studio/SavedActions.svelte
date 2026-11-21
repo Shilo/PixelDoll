@@ -8,7 +8,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import SurfaceChevron from './SurfaceChevron.svelte';
 	import { openerLabel } from './openerLabel.ts';
-	import { Download, Grid2x2, Pencil } from './icons.ts';
+	import { Download, Grid2x2, Pencil, Plus } from './icons.ts';
 	import { toast } from './state.svelte.ts';
 	let {
 		name,
@@ -18,11 +18,12 @@
 		onrename,
 		ondownload,
 		onfixframes,
+		oncapture,
 		ondelete,
 		children
 	}: {
 		name: string;
-		kind: 'outfit' | 'move';
+		kind: 'outfit' | 'move' | 'state';
 		locked?: string;
 		/** Opens what causes the lock, when it can be shown. */
 		onlocked?: () => void;
@@ -30,6 +31,7 @@
 		onrename?: () => void;
 		ondownload: () => Promise<void>;
 		onfixframes?: () => void;
+		oncapture?: () => void;
 		ondelete: () => void | Promise<void>;
 		children: Snippet;
 	} = $props();
@@ -75,6 +77,16 @@
 				}}><Grid2x2 size={16} />{openerLabel(t('fixFrames.open'))}<SurfaceChevron /></button
 			>
 		{/if}
+		{#if oncapture}
+			<button
+				class="row"
+				role="menuitem"
+				onclick={() => {
+					close();
+					oncapture();
+				}}><Plus size={16} />{openerLabel(t('stateCapture.add'))}<SurfaceChevron /></button
+			>
+		{/if}
 		<button
 			class="row"
 			role="menuitem"
@@ -85,14 +97,16 @@
 		>
 		<hr class="bu-separator" />
 		<DeleteRow
-			opens={kind === 'move'}
+			opens={kind !== 'outfit'}
 			label={kind === 'move'
 				? t('savedActions.labelDeleteMove')
-				: t('savedActions.labelDeleteOutfit')}
+				: kind === 'state'
+					? t('savedActions.labelDeleteState')
+					: t('savedActions.labelDeleteOutfit')}
 			{locked}
 			onclick={() => {
 				close();
-				if (kind === 'move') deleting = true;
+				if (kind !== 'outfit') deleting = true;
 				else void remove();
 			}}
 		/>
@@ -121,7 +135,11 @@
 		}}
 		onconfirm={remove}
 	>
-		<p>{t('savedActions.thisRemovesTheMoveFromTheBody')}</p>
+		<p>
+			{t(
+				kind === 'state' ? 'savedActions.removeState' : 'savedActions.thisRemovesTheMoveFromTheBody'
+			)}
+		</p>
 		{#if locked}<p>{locked}</p>{/if}
 	</ConfirmDialog>
 {/if}

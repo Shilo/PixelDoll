@@ -102,6 +102,7 @@ async function character(): Promise<{
 		south: {
 			route: 'skeleton-v3',
 			reference: m.rig.rest.south!.image,
+			referenceKeypoints: [{ label: 'NOSE', x: 0.375, y: 0.625 }],
 			keypoints: [[{ label: 'NOSE', x: 0.5, y: 0.3 }]],
 			measured: [[{ label: 'NOSE', x: 0.25, y: 0.75 }]],
 			provenance: []
@@ -165,6 +166,11 @@ test('Frame size pads every layer, move, direction and frame by the same centere
 		x: 0.5,
 		y: +((16 + p) / 112).toFixed(4)
 	});
+	const source = m.rig.animations[0].sources!.south!;
+	expect(source.reference).toBe(m.rig.rest!.south!.image);
+	expect(source.referenceKeypoints).toEqual([
+		{ label: 'NOSE', x: +((24 + p) / 112).toFixed(4), y: +((40 + p) / 112).toFixed(4) }
+	]);
 	expect(m.rig.anchors!.head!.walk!.south).toEqual([[32 + p, 10 + p]]);
 	expect(record.skeletons!['walk/south/0'].NOSE).toMatchObject({ x: 32.5 + p, y: 16 + p });
 	expect(m.items.every((i) => i.baseHash === m.rig.baseHash)).toBe(true);

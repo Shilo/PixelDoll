@@ -3,7 +3,7 @@ import { pngSize } from '../image/png.ts';
 import { decodePngBytes } from '../image/pngraw.ts';
 import type { ApiCall } from '../pixellab/activity.ts';
 import { ITEM_TRIAL_TAG, MOTION_LAB_TAG } from '../pixellab/queue.ts';
-import { cellHash, DIRECTIONS, type DirectionName } from '../rig/rig.ts';
+import { cellHash, DIRECTIONS, pinnedArtwork, type DirectionName } from '../rig/rig.ts';
 import { readWorkspaceSnapshot } from './db.ts';
 import { checkedSettings, EXPORT_SETTINGS_KEY } from './export-settings.ts';
 import { manifestShape } from './import.ts';
@@ -17,7 +17,7 @@ const indexPath = 'workspace.json';
 const demoDress = 'dress-fixture:s2';
 const hashPattern = /^(?:sha256:)?([a-f0-9]{64})$/;
 const modes = ['preview', 'topdown', 'side'] as const;
-const tabs = ['wardrobe', 'colors', 'outfits', 'moves'] as const;
+const tabs = ['wardrobe', 'colors', 'outfits', 'states', 'moves'] as const;
 const outcomes = ['failed', 'lost', 'running', 'queued', 'submitting'] as const;
 const tools = [
 	'create-character-v3',
@@ -142,6 +142,7 @@ export function* artworkRefs(
 	history = false
 ): Generator<[unknown, FrameSize | undefined]> {
 	for (const pose of Object.values(manifest.rig.rest ?? {})) yield [pose?.image, manifest.rig.cell];
+	for (const hash of pinnedArtwork(manifest.rig)) yield [hash, manifest.rig.cell];
 	for (const item of manifest.items) {
 		for (const hash of Object.values(item.dressed ?? {})) yield [hash, undefined];
 		for (const layer of item.layers) {
@@ -227,9 +228,11 @@ function recoverRecords(projects: Map<string, unknown>, omitted: Omitted, histor
 				checkDemoDress(value);
 				continue;
 			}
-			const { id, manifest } = value as StoredProject;
+			const record = value as StoredProject;
+			const { id, manifest } = record;
 			if (!selects(key, value) || id !== key || !supportedFormat(manifest?.format))
 				throw new Error('Unsupported character record.');
+			delete record.stateGeneration;
 			manifestShape(manifest);
 			for (const [hash, frame] of artworkRefs(manifest, history)) add(hash, frame);
 			for (const [hash, frame] of local) found.set(hash, frame);

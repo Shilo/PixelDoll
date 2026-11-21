@@ -1,5 +1,13 @@
 import { expect, test } from 'vitest';
-import { Queue, queueErrorParts, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts';
+import { bytesToBase64 } from '../../src/lib/image/png.ts';
+import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
+import {
+	Queue,
+	managedStateSubmitChildId,
+	queueErrorParts,
+	type Deps,
+	type JobRec
+} from '../../src/lib/pixellab/queue.ts';
 
 // A paid job that completes with a storage URL; the free GET /balance probe always answers.
 function fixture(deps: Partial<Deps>) {
@@ -73,6 +81,45 @@ test('a storage download that keeps throwing TypeError while online gives up ins
 	expect(probes()).toBeGreaterThan(0); // each TypeError still paused the queue until a probe got through
 });
 
+test.each(['image_url', 'rgba_bytes'])('stores %s State edit results as PNGs', async (format) => {
+	const image = { w: 1, h: 1, data: new Uint8ClampedArray([123, 45, 67, 255]) };
+	const url = 'https://example.test/result.png';
+	let storedImage: Uint8Array | undefined;
+	const { q, store, run } = fixture({
+		api: async <T>(_key: string, method: string, endpoint: string): Promise<T> => {
+			if (endpoint === '/balance') return {} as T;
+			if (method === 'POST') return { background_job_id: 'j' } as T;
+			return {
+				id: 'j',
+				status: 'completed',
+				last_response:
+					format === 'image_url'
+						? { image_url: url }
+						: {
+								image: {
+									type: 'rgba_bytes',
+									base64: bytesToBase64(new Uint8Array(image.data)),
+									width: 1,
+									height: 1
+								}
+							}
+			} as T;
+		},
+		fetchBytes: async (target) => {
+			expect(target).toBe(url);
+			return encodePngBytes(image);
+		},
+		putBlob: async (bytes) => {
+			storedImage = bytes;
+			return 'output';
+		}
+	});
+	const record = await q.enqueue({ method: 'POST', path: '/edit-image-pro-flash', body: {} });
+	await run(12);
+	expect(store.get(record.id)?.state).toBe('done');
+	expect(await decodePngBytes(storedImage!)).toEqual(image);
+});
+
 test('a download that fails while the browser is offline does not count as a try', async () => {
 	let online = true,
 		fetches = 0;
@@ -91,6 +138,50 @@ test('a download that fails while the browser is offline does not count as a try
 	expect(store.get(r.id)?.jobs[0].tries).toBeUndefined();
 	expect(store.get(r.id)?.state).toBe('running');
 });
+
+test.each([
+	['submit receipt only', '/create-character-state', 'child', 'job', 'job', undefined, 'done'],
+	['matching receipts', '/create-character-state', 'child', 'job', 'job', 'child', 'done'],
+	['wrong poll child', '/create-character-state', 'child', 'job', 'job', 'other', 'failed'],
+	['wrong poll job', '/create-character-state', 'child', 'job', 'other', 'child', 'failed'],
+	['poll receipt only', '/create-character-state', undefined, 'job', 'job', 'child', 'failed'],
+	['parent as child', '/create-character-state', 'parent', 'job', 'job', 'parent', 'failed'],
+	['no submit job', '/create-character-state', 'child', undefined, 'job', 'child', 'lost'],
+	['other route', '/x', 'child', 'job', 'job', 'child', 'failed']
+] as const)(
+	'handles metadata-only completion: %s',
+	async (_title, path, submitChild, submitJob, pollJob, pollChild, expected) => {
+		let posts = 0;
+		const { q, store, run } = fixture({
+			api: async <T>(_key: string, method: string, endpoint: string): Promise<T> => {
+				if (endpoint === '/balance') return {} as T;
+				if (method === 'POST') {
+					posts++;
+					return { background_job_id: submitJob, character_id: submitChild } as T;
+				}
+				return {
+					id: pollJob,
+					status: 'completed',
+					last_response: { character_id: pollChild },
+					usage: { type: 'generations', generations: 1 }
+				} as T;
+			}
+		});
+		const record = await q.enqueue({ method: 'POST', path, body: { character_id: 'parent' } });
+		await run(1);
+		await q.load();
+		await run(5);
+		const stored = store.get(record.id)!;
+		expect(posts).toBe(1);
+		expect(stored.state).toBe(expected);
+		expect(stored.jobs[0]?.characterId).toBe(expected === 'done' ? pollChild : undefined);
+		if (expected === 'done') {
+			expect(managedStateSubmitChildId(stored)).toBe('child');
+			expect(stored.jobs[0].results).toEqual([]);
+			expect(stored.gens).toBe(1);
+		}
+	}
+);
 
 test('Clear finished reports a failed delete and keeps the record listed', async () => {
 	const { q, store } = fixture({

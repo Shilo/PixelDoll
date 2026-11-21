@@ -20,6 +20,7 @@ const readCatalog = (id: string): Catalog =>
 const placeholders = (text: string) => new Set(text.match(/\{[^{}]+\}/g) ?? []);
 const pluralsWithoutDisplayedCount = new Set([
 	'export.warnings.rpgWalkViews',
+	'export.warnings.rpgOmittedMoves',
 	'export.error.rpgMissingViews',
 	'itemPane.restoreStanding',
 	'itemPane.restoreStandingHint'

@@ -20,7 +20,8 @@ import { rpgMakerFiles, walkMove } from './rpgmaker.ts';
 import { checkArchivePixels, projectEntries, type ImportedCharacter } from '../store/import.ts';
 import { reservedPathSegment } from './paths.ts';
 import { errorTranslation, message, type Message } from '../message.ts';
-import { checkExportIdentity, moveExportId } from '../store/identity.ts';
+import { checkExportIdentity } from '../store/identity.ts';
+import { playbackClips } from '../runtime/timeline.js';
 import { projectExportIdentity } from './identity.ts';
 
 export interface ExportOptions {
@@ -29,6 +30,8 @@ export interface ExportOptions {
 	pixelsPerUnit?: number;
 	exportedAt?: string;
 	projectData?: ImportedCharacter['extra'];
+	/** The walk move RPG Maker sheets take their steps from; the first eligible one when unset or not eligible. */
+	rpgWalk?: string;
 }
 export interface ExportResult {
 	entries: ZipEntry[];
@@ -200,9 +203,12 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
 	}
 	if (rpg) {
 		try {
-			// The walk is the move generated as one, whatever the game calls it.
-			const walk = walkMove(src.manifest.rig);
-			const r = rpgMakerFiles(p, m, rpg, walk ? moveExportId(walk) : null);
+			const walk = walkMove(src.manifest, o.rpgWalk);
+			const clips = playbackClips(src.manifest.rig.animations);
+			const r = rpgMakerFiles(p, m, rpg, {
+				publicWalkId: clips.find(({ key }) => key === walk?.id)?.id ?? null,
+				sourceKeys: new Map(clips.map(({ id, key }) => [id, key]))
+			});
 			files.push(...r.files);
 			warnings.push(...r.warnings);
 			for (const [text, display] of r.warningMessages) warningMessages.set(text, display);

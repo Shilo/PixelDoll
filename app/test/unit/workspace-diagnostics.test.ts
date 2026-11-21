@@ -1,6 +1,17 @@
-import { expect, test } from 'vitest';
-import { readWorkspace, recentWorkspaceErrors } from '../../src/lib/store/workspace.ts';
-import { zip } from '../../src/lib/store/zip.ts';
+import { expect, test, vi } from 'vitest';
+import { readWorkspaceSnapshot } from '../../src/lib/store/db.ts';
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
+import {
+	exportWorkspace,
+	readWorkspace,
+	recentWorkspaceErrors
+} from '../../src/lib/store/workspace.ts';
+import { unzip, zip } from '../../src/lib/store/zip.ts';
+
+vi.mock(import('../../src/lib/store/db.ts'), async (original) => ({
+	...(await original()),
+	readWorkspaceSnapshot: vi.fn()
+}));
 
 const said = (error: string) =>
 	recentWorkspaceErrors([{ state: 'failed', endpoint: '/inpaint-v3', finishedAt: 1, error }], [])[0]
@@ -59,7 +70,19 @@ test('recent errors keep what the failed request said, without links or likely c
 	}
 });
 
-const archive = (message: unknown) =>
+const view = {
+	project: '',
+	item: '',
+	move: '',
+	direction: 'south',
+	frame: 0,
+	screen: 'characters',
+	mode: 'preview',
+	tab: 'wardrobe',
+	theme: 'dark'
+} as const;
+
+const archive = (message: unknown, projects: [string, unknown][] = []) =>
 	zip([
 		{
 			name: 'workspace.json',
@@ -67,18 +90,8 @@ const archive = (message: unknown) =>
 				JSON.stringify({
 					format: 'pixeldoll-workspace/1',
 					build: 'test',
-					view: {
-						project: '',
-						item: '',
-						move: '',
-						direction: 'south',
-						frame: 0,
-						screen: 'characters',
-						mode: 'preview',
-						tab: 'wardrobe',
-						theme: 'dark'
-					},
-					projects: [],
+					view,
+					projects,
 					missing: [],
 					diagnostics: {
 						tier: 1,
@@ -95,4 +108,41 @@ test('a workspace opens with error text, and refuses text that is not text or to
 	expect((await readWorkspace(await archive(undefined))).diagnostics?.errors).toHaveLength(1);
 	for (const bad of [7, 'x'.repeat(201)])
 		await expect(readWorkspace(await archive(bad))).rejects.toThrow('invalid recent errors');
+});
+
+test('workspace exports and imports keep saved States but not their local paid attempts', async () => {
+	const id = 'rig-states';
+	const record = {
+		id,
+		origin: 'studio',
+		manifest: {
+			format: CURRENT_FORMAT,
+			name: 'Ranger',
+			rig: { directions: [], animations: [{ id: 'ready', kind: 'state', cells: 1, frames: [0] }] },
+			items: [],
+			slots: [],
+			materials: [],
+			presets: []
+		},
+		stateGeneration: { token: 'attempt', continuation: { credential: 'local-key-digest' } }
+	};
+	const imported = await readWorkspace(await archive(undefined, [[id, record]]));
+	expect(imported.projects.get(id)).toMatchObject({ manifest: record.manifest });
+	expect(imported.projects.get(id)).not.toHaveProperty('stateGeneration');
+
+	vi.mocked(readWorkspaceSnapshot).mockImplementationOnce(async (_select, references) => {
+		const projects = new Map([[id, structuredClone(record)]]);
+		references(projects);
+		return { projects, blobs: new Map(), jobs: [], retainedIds: [] };
+	});
+	vi.stubGlobal('__APP_VERSION__', 'test');
+	vi.stubGlobal('__APP_COMMIT__', 'test');
+	try {
+		const { bytes } = await exportWorkspace(view, undefined, ['local-key-digest']);
+		const index = JSON.parse(new TextDecoder().decode((await unzip(bytes)).get('workspace.json')));
+		expect(index.projects).toMatchObject([[id, { manifest: record.manifest }]]);
+		expect(index.projects[0][1]).not.toHaveProperty('stateGeneration');
+	} finally {
+		vi.unstubAllGlobals();
+	}
 });

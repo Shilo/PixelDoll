@@ -189,20 +189,29 @@ const safeName = (s: string) =>
 
 export type RpgLayout = 'vx' | 'xp';
 
-/** The move RPG Maker sheets take their steps from: the first whose id has a walk word. */
-export const walkMove = (rig: { animations: RigAnimation[] }) =>
-	rig.animations.find(
-		(a) => a.id !== DEFAULT_MOVE && moveWords(a.id).some((w) => WALK_WORDS.includes(w))
+/** Moves RPG Maker sheets can take their steps from: animated moves (not States) whose id has a walk word, in move order. */
+export const walkMoves = (m: Manifest) =>
+	m.rig.animations.filter(
+		(a) =>
+			a.kind !== 'state' &&
+			a.id !== DEFAULT_MOVE &&
+			moveWords(a.id).some((w) => WALK_WORDS.includes(w)) &&
+			moveDirs(m, a.id).some((direction) => ROWS.includes(direction))
 	);
+/** The move RPG Maker sheets take their steps from: `id` when it is eligible, else the first eligible move. */
+export const walkMove = (m: Manifest, id?: string) => {
+	const all = walkMoves(m);
+	return all.find((a) => a.id === id) ?? all[0];
+};
 
 /** One sheet per outfit in `layout`, at the zip root, plus a README; or an Error whose message starts with "RPG Maker: ".
- *  Moves, views and keypoints come from the source project (the exported manifest drops cells); outfits, colors and the
- *  baked frame from the exported manifest `m`. */
+ *  Steps come from the walk move `walkId` (see `walkMove`). Moves, views and keypoints come from the source project (the
+ *  exported manifest drops cells); outfits, colors and the baked frame from the exported manifest `m`. */
 export function rpgMakerFiles(
 	p: Project,
 	m: Manifest,
 	layout: RpgLayout,
-	walkId: string | null = walkMove(p.manifest.rig)?.id ?? null
+	walkId?: string | { publicWalkId: string | null; sourceKeys: ReadonlyMap<string, string> }
 ): { files: OutFile[]; warnings: string[]; warningMessages: Map<string, Message> } {
 	const src = p.manifest,
 		{ rig } = src,
@@ -223,8 +232,13 @@ export function rpgMakerFiles(
 		warnings.push(text);
 		warningMessages.set(text, display);
 	};
-	const standing = rig.animations.find((a) => a.id === DEFAULT_MOVE);
-	const walk = rig.animations.find((a) => a.id === walkId);
+	const standing = rig.animations.find(
+		(a) => a.id === DEFAULT_MOVE || (a.id === 'standing' && a.kind === 'state')
+	);
+	const walk =
+		typeof walkId === 'object'
+			? rig.animations.find((a) => a.id === walkId.publicWalkId && a.kind !== 'state')
+			: walkMove(src, walkId);
 	if (!walk)
 		note(
 			'RPG Maker: no walk move, so the sheets stand still. Add a walk move to animate them.',
@@ -260,6 +274,22 @@ export function rpgMakerFiles(
 			return [dir, { stand: s, strideA: at(g.strideA), passing, strideB: at(g.strideB) }] as const;
 		})
 	);
+	// every other move (idle, actions, States, other walks) has no place in a walking sheet: name them, so none goes missing unseen
+	const shown = new Set(
+		[...picks.values()].flatMap((k) =>
+			(layout === 'vx' ? [k.stand, k.strideA, k.strideB] : Object.values(k)).map((c) => c.anim)
+		)
+	);
+	const omitted = rig.animations.filter((a) => !shown.has(a.id)).map((a) => a.id);
+	const sourceKeys = typeof walkId === 'object' ? walkId.sourceKeys : undefined;
+	if (omitted.length)
+		note(
+			`RPG Maker: ${omitted.join(', ')} ${omitted.length === 1 ? 'is' : 'are'} left out; walking sheets hold only standing and walking frames.`,
+			message('export.warnings.rpgOmittedMoves', {
+				count: omitted.length,
+				moves: omitted.map((move): NoteTerm => ({ move: sourceKeys?.get(move) ?? move }))
+			})
+		);
 	const stillRows = walk ? ROWS.filter((d) => !walkDirs.has(d)) : [];
 	if (stillRows.length)
 		note(

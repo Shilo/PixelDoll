@@ -9,7 +9,7 @@ The app opens to **Characters**, including the bundled demo and characters saved
 
 In customization, **Preview** provides animation playback and facing controls. **Top-down** and **Side-scroller** provide continuous movement with a following camera. Focus the world and use WASD/arrows, or drag the world on touch screens. Equipment and outfits remain available in every view. **Inspect** opens the precise frame/direction viewer. Use its previous/next arrows or comma/period keys to pause and step one frame; the counter shows your position. Click the character name to switch characters or manage imports and setup.
 
-Desktop customization controls sit together on the right. On phones, expand or collapse the bottom equipment area. **Wardrobe**, **Colors**, **Outfits** and **Moves** reuse the same saved character; Moves is available in Preview. **More** lists additional equipment categories. **More options → Light mode / Dark mode** changes the environment and UI, never the character's source colors.
+Desktop customization controls sit together on the right. On phones, expand or collapse the bottom equipment area. **Wardrobe**, **Colors**, **Outfits**, **States** and **Moves** reuse the same saved character. Pick a State or Move from the same footer menu in Preview. **More** lists additional equipment categories. **More options → Light mode / Dark mode** changes the environment and UI, never the character's source colors.
 
 ## Connect your PixelLab key
 
@@ -26,14 +26,14 @@ Open **More options → Connect PixelLab**, or the account entry in the characte
 
 A gen is one PixelLab generation from your account's monthly allowance. Creation and item actions show an estimated price beside or inside their button. Enhance uses about 0.05 gens per request. Typical prices:
 
-| Action                                                                     | About                                                                                                           |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Create a character (its standing **Default** pose)                         | about 2–5 gens                                                                                                  |
-| **Idle** or **Walk**, default **Top-down 8** (5 drawn views)                 | about 17 gens for Idle or 38 for Walk, without items                                                             |
-| Make an item                                                               | standing views only, about 10 gens for frames up to 80 px; larger or padded held items can require more batches |
-| Add a move                                                                 | depends on the move, views and selected items; shown before spending                                            |
-| Try again on an item                                                       | shown on the button                                                                                             |
-| Dress up, recolor, outfits, export                                         | free                                                                                                            |
+| Action                                                       | About                                                                                                           |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Create a character (its **Standing** State)                  | about 2–5 gens                                                                                                  |
+| **Idle** or **Walk**, default **Top-down 8** (5 drawn views) | about 17 gens for Idle or 38 for Walk, without items                                                            |
+| Make an item                                                 | standing views only, about 10 gens for frames up to 80 px; larger or padded held items can require more batches |
+| Add a move                                                   | depends on the move, views and selected items; shown before spending                                            |
+| Try again on an item                                         | shown on the button                                                                                             |
+| Dress up, recolor, outfits, export                           | free                                                                                                            |
 
 The price is an estimate. Empty body output or a wrong frame count may retry once. Body pose estimates, silhouette movement, color differences and border contact are review notes and do not trigger paid redraws. Equipment fitting keeps its separate automatic checks and retry budget.
 PixelLab may bill some calls in dollars. Automatic quality retries and fallbacks cost extra; queue and generation time vary.
@@ -83,7 +83,7 @@ Character menu → **New character…**
    sized for the Frame. Pro draws from a sketch or design. Pro Flash uses the artwork as a style guide sized for the
    chosen Body. Uploads over the shown pixel dimensions are downscaled proportionally with a notice. Keep a text prompt
    in all three models.
-7. Press **Create character**. It draws your character standing in the selected directions, its **Default** pose, in a
+7. Press **Create character**. It draws your character standing in the selected directions, its **Standing** State, in a
    few minutes. Idle, walk and other moves come afterward.
 
 Hover a title on desktop, or tap it on mobile, for help. **Enhance** uses the V3 prompt endpoint with the current body size
@@ -100,10 +100,12 @@ with nothing worn instead. These are generation instructions, not a guarantee of
 Keep this tab open while PixelLab responds; you can keep dressing existing characters. After reopening, PixelDoll can resume requests with a
 known job ID and reuse saved results. If a submitted request has an unknown outcome, generation stops for review in
 **Activity**; it is never automatically sent again. **Try again** starts a new paid attempt and may incur additional charges.
-When creation is done, press **Start dressing up** to dress the Default pose or open **Moves → Add a move** and pick
+When creation is done, press **Start dressing up** to dress Standing or open **Moves → Add a move** and pick
 **Idle**, **Walk**, or another move. Each move shows its own estimate before you queue it.
-**Default** is the character's standing pose: one still frame per direction, listed first in Moves and Share and
-exported like any move. "Default" can't be used as the name of another move.
+**Standing** is the character's protected State: one still frame per facing and the default source for new Moves.
+It appears in **States**, in the footer picker and in Share. Share starts on **Standing** when available. Its
+picker also lets you share an individual State or Move, **All states**, **All moves**, or **Everything**.
+Runtime exports identify Standing as `standing`.
 
 ## Use items from your other characters
 
@@ -179,7 +181,9 @@ Supported ZIP layouts:
 | Current PixelDoll export      | Editable `project.json` and original `cells/` images, alongside any engine files. This is PixelDoll's documented open format.           |
 | Older PixelDoll engine export | PixelDoll `manifest.json` and its referenced spritesheets. An arbitrary game-engine ZIP without that manifest is not supported.         |
 
-These layouts may sit inside enclosing folders. Several candidate enclosing character folders are refused rather than guessed. For PixelLab's multiple states within one metadata file, choose the **Standing pose**. Local ZIPs initially include moves from every animated state; **Moves to import** lets you exclude versions you do not want. Moves keep their source state's appearance, including any clothes or hair. States containing only standing artwork add no invented animations. PixelLab link/library imports initially include only the requested state's moves, with the same optional state choices when the archive contains more.
+These layouts may sit inside enclosing folders. Several candidate enclosing character folders are refused rather than guessed. For a PixelLab character with multiple states, choose the **Standing pose**. Device ZIPs and PixelLab link or library imports select all available Moves and compatible States by default. Uncheck anything you don't want. Moves keep their source state's appearance, including any clothes or hair. States containing only standing artwork add no invented animations.
+
+**Also import as States** controls which compatible sibling artwork comes in as stills, independently of its Moves. Review the artwork before importing: baked-in equipment stays on the body and cannot be swapped like a PixelDoll item.
 
 Arbitrary PNG folders, unrelated JSON formats, standalone spritesheets and custom frame naming without compatible metadata are not supported. They would need an explicit frame-layout mapper so directions, pivots and animation order cannot be guessed incorrectly.
 
@@ -316,6 +320,17 @@ on edited frames, so the item shows **Edited by you**. This runs locally and mak
 
 Open the **Moves** tab → **Add a move**. Type a motion such as "jumping in place" or pick a preset such as **Idle**, **Walk**,
 or **Slash** below the field. Typing deselects the preset; picking a preset clears the description.
+
+**Start from** normally uses Standing. Pick a State to use its still, or a Move to use its last saved playback frame in each drawn facing. Open **Choose a frame** to pick a different frame by thumbnail. The selected frame must have artwork and measured joints in every requested facing. It is a generation reference, not a guarantee that the first generated frame will be pixel-identical. A redraw keeps its saved starting frame unless you select another source.
+
+For a newly generated State with no joint measurements, select it under **Start from** in Create Move. Choose **Check joint fitting cost**, then **Measure joints** if you want to proceed. Check the marks on each view before choosing **Save joints**. This is a separate charge from generating the Move. Saving joints doesn't change the State's artwork or fit equipment.
+
+In **States**, choose **Add a state...**. **New** edits your Standing artwork with PixelLab. Name the State, describe the change, and optionally attach a reference. **Advanced** offers the model options: Default (Pro), Pro Flash, and V3 (Pixen). Pro Flash uses a reference instead of written instructions when one is attached. Pixen does not take a reference. **Check cost** shows the estimate for the planned requests before **Generate State** spends anything. Default (Pro) creates a State in your PixelLab account when it can verify the exact managed source and you aren't providing a reference. Otherwise it plans a local edit. Review the generated views before saving; equipment and joint measurements aren't copied. If a request stops, check Activity before trying again. Discarding does not refund generations or delete a State from PixelLab. PixelDoll doesn't switch to another paid route after submitting.
+
+If a local edit finishes some batches before the rest enter the queue, reopen **New** and choose **Check remaining cost** when offered. Use the original PixelLab key. **Generate remaining views** keeps the completed views and sends only views that haven't been queued. PixelDoll won't offer this option when it can't verify which requests were sent.
+
+Choose **From Move** to save a frame without spending credits. A Move's **More actions → Create State from...** opens the same tab with that Move selected. The preview rotates through the available facings of the last saved playback frame. Use the arrows to change frames without restarting the rotation, or click the preview to pause or resume. Single-frame Moves show a still preview. Changing the source resets the suggested State name. Name the State and save it. Studio switches to **States** and previews the new pose. Equipment isn't copied or borrowed from Standing. Deleting a State removes its own frames and fits, not finished Moves that used it. Generic runtime exports include both States and Moves; engine formats limited to specific animations may omit additional States.
+
 **Generate move** buys only the character's motion. In **Review move**, play or step through the new frames and check
 each direction. Choose **Save move** or **Replace move** when it looks right. If any items can be animated, the optional
 item picker opens with nothing selected. Each item has its own estimate, and the total updates as you select items.
@@ -406,8 +421,8 @@ These integrations keep the layers synchronized and expose equipment and outfit 
 RPG Maker has no equipment layers, so it gets one finished walking sheet per outfit (current look and saved outfits), at your
 character's own size: the standing view and the walk steps picked from your walk move. Choose **RPG Maker**; it uses **Standard**
 (one file works in MZ, MV, VX Ace and VX). For RPG Maker XP or Pokémon Essentials, open the version button on the card and
-choose **XP**. Copy the PNG files into your project's characters folder; the zip's README names it. It needs front, side and back views; diagonal views, idle and action
-moves are left out because these formats have no place for them. RPG Maker 2000/2003 need 24 × 32 cells, which would mean
+choose **XP**. If more than one walk is available, use **Walk move** to choose the steps for this export. **Export notes** lists the Moves and States that don't contribute any frames to the sheet.
+Copy the PNG files into your project's characters folder; the zip's README names it. It needs front, side and back views and does not include diagonal views. RPG Maker 2000/2003 need 24 × 32 cells, which would mean
 scaling, so they are not supported.
 
 The selected format's description stays visible; hover a card for more detail. Arrow keys move between native radio choices.

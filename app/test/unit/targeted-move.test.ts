@@ -12,7 +12,9 @@ import {
 	skeletonMoveReview
 } from '../../src/studio/create.ts';
 import { moveFrameCounts } from '../../src/studio/moveAnimationOptions.ts';
+import { resolveMoveSource } from '../../src/studio/moveSource.ts';
 import { movePlan } from '../../src/studio/apiPlans.ts';
+import { withClipWriteLock } from '../../src/studio/clipName.ts';
 import { queue, requestIdentity, type JobRec } from '../../src/lib/pixellab/queue.ts';
 import { png, routes } from '../../src/lib/pixellab/routes.ts';
 import * as db from '../../src/lib/store/db.ts';
@@ -275,6 +277,7 @@ async function fixture(
 	});
 	return {
 		saved: () => saved,
+		images,
 		original,
 		enqueue,
 		put,
@@ -454,6 +457,149 @@ test('a native quality failure offers a priced body draft retry without buying e
 	const saved = f.saved();
 	expect(saved.manifest).toEqual(f.original.manifest);
 	expect(saved.moveReviews?.idle?.spec).toMatchObject({ items: [], reviewBeforePublish: true });
+});
+
+test('a new Move cannot take the normalized name of a State or a pending State', async () => {
+	const f = await fixture();
+	const rec = f.saved();
+	const spec = { id: 'cafe-cast', text: 'Café cast', action: undefined, replace: false };
+	rec.stateGeneration = { id: 'cafe_cast' } as NonNullable<typeof rec.stateGeneration>;
+	const taken = { translation: { key: 'stateCapture.takenName' } };
+	await expect(f.run(spec)).rejects.toMatchObject(taken);
+	delete rec.stateGeneration;
+	rec.manifest.rig.animations.push({
+		id: 'cafe_cast',
+		kind: 'state',
+		cells: 1,
+		loop: false,
+		frames: [{ cell: 0, ms: 100 }]
+	});
+	await expect(f.run(spec)).rejects.toMatchObject(taken);
+	expect(f.enqueue).not.toHaveBeenCalled();
+});
+
+test('a Move cannot submit while an equivalent clip name is locked', async () => {
+	const f = await fixture();
+	const held = new Set<string>();
+	const request = async (
+		name: string,
+		options: { ifAvailable: boolean },
+		work: (lock: { name: string } | null) => Promise<unknown>
+	) => {
+		expect(options.ifAvailable).toBe(true);
+		if (held.has(name)) return work(null);
+		held.add(name);
+		try {
+			return await work({ name });
+		} finally {
+			held.delete(name);
+		}
+	};
+	vi.stubGlobal('navigator', { locks: { request } });
+	try {
+		await withClipWriteLock('rig-target', 'Café_cast', async () => {
+			await expect(f.run({ id: 'cafe-cast', replace: false })).rejects.toMatchObject({
+				translation: { key: 'directionsSheet.waitForGeneration' }
+			});
+			await expect(withClipWriteLock('rig-target', 'other', async () => true)).resolves.toBe(true);
+		});
+		expect(f.enqueue).not.toHaveBeenCalled();
+	} finally {
+		vi.unstubAllGlobals();
+	}
+});
+
+test('an authored Skeleton move from a fitted generated State poses the State art and joints', async () => {
+	const f = await fixture();
+	const rec = f.saved(),
+		rig = rec.manifest.rig,
+		dirs = rig.directions.map(({ id }) => id),
+		standing = rig.rest!.south!;
+	const art = makeImg(64, 64);
+	for (let y = 10; y < 60; y++)
+		for (let x = 28; x < 42; x++) art.data.set([180, 140, 120, 255], (y * 64 + x) * 4);
+	const hash = await cellHash(art),
+		joints = standing.keypoints.map((point) => ({ ...point, x: point.x + 0.05 }));
+	expect(hash).not.toBe(standing.image);
+	f.images.set(hash, art);
+	rig.animations.push({
+		id: 'ready',
+		kind: 'state',
+		cells: 1,
+		loop: false,
+		frames: [{ cell: 0, ms: 100 }],
+		source: { endpoint: '/edit-images-v2' },
+		sources: Object.fromEntries(
+			dirs.map((d) => [
+				d,
+				{
+					route: 'import' as const,
+					reference: hash,
+					referenceKeypoints: joints,
+					keypoints: [joints],
+					measured: [joints],
+					motion: 'estimated:generated-state',
+					provenance: []
+				}
+			])
+		)
+	});
+	rec.manifest.items[0].layers[0].cells!.ready = Object.fromEntries(dirs.map((d) => [d, [hash]]));
+	const startFrom = resolveMoveSource(rec.manifest, { clip: 'ready', cell: 0 }, dirs)!;
+	expect(startFrom).toBeDefined();
+	await f.run({
+		id: 'cast',
+		action: 'cast',
+		replace: false,
+		dirs: undefined,
+		approvedDirs: dirs,
+		startFrom
+	});
+	const first = png(await b64(art));
+	const bodies = f.enqueue.mock.calls.flatMap(([request]) =>
+		request.path === '/animate-with-skeleton-v3' ? [request.body as Record<string, unknown>] : []
+	);
+	expect(bodies).toHaveLength(dirs.length);
+	for (const body of bodies)
+		expect(body).toMatchObject({ first_frame: first, first_frame_keypoints: joints });
+});
+
+test('Skeleton retry keeps the exact authored start and omits stale or incompatible starts', async () => {
+	const f = await fixture(false, 'bad-palette');
+	const spec = {
+		id: 'idle',
+		action: 'idle',
+		frames: 4,
+		items: [],
+		seed: 23,
+		replace: true,
+		dirs: ['south', 'east'] as DirectionName[],
+		animation: { model: 'pixminimax' as const, frameCount: 4 },
+		startFrom: resolveMoveSource(f.original.manifest, { clip: 'idle', cell: 3 }, ['south', 'east'])!
+	};
+	const result = await f.run(spec).catch((error: unknown) => error);
+	expect(result).toBeInstanceOf(Error);
+	const offer = skeletonMoveReview(f.saved(), spec, result, []);
+	expect(offer?.review.startFrom).toEqual(spec.startFrom);
+	expect(offer?.review.approvedDirs).toEqual(spec.dirs);
+	expect(
+		skeletonMoveReview(f.saved(), { ...spec, action: undefined, text: 'Hold still' }, result, [])
+	).toBeUndefined();
+	const changed = structuredClone(f.saved());
+	const east = changed.manifest.rig.animations[0].sources!.east!;
+	east.measured![3] = east.measured![3].map((joint) => ({ ...joint, x: joint.x + 0.01 }));
+	expect(skeletonMoveReview(changed, spec, result, [])).toBeUndefined();
+	const missing = structuredClone(f.saved());
+	delete missing.manifest.items[0].layers[0].cells!.idle.east;
+	expect(skeletonMoveReview(missing, spec, result, [])).toBeUndefined();
+	const resized = structuredClone(f.saved());
+	resized.manifest.rig.pivot.x++;
+	expect(skeletonMoveReview(resized, spec, result, [])).toBeUndefined();
+	await expect(f.run({ ...offer!.review, seed: 24 })).resolves.toMatchObject({
+		moveReview: 'idle'
+	});
+	expect(f.saved().manifest).toEqual(f.original.manifest);
+	expect(f.saved().moveReviews?.idle?.spec.startFrom).toEqual(spec.startFrom);
 });
 
 test('native PixMiniMax discards a redrawn leading frame and plans all 40 equipment poses in order', async () => {

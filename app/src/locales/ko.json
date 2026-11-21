@@ -499,7 +499,7 @@
 		"duplicateExportId": "다른 아이템이 이 내보내기 ID를 사용하고 있어요.",
 		"duplicateOutfitExportId": "다른 코디가 이 내보내기 ID를 사용하고 있어요.",
 		"duplicateMoveExportId": "다른 동작이 이 내보내기 ID를 사용하고 있어요.",
-		"defaultMoveExportId": "게임은 Default 동작에서 시작하므로 이 동작의 내보내기 ID는 항상 default예요.",
+		"defaultMoveExportId": "게임은 서 있기 동작에서 시작하므로 이 동작의 내보내기 ID는 항상 standing이에요.",
 		"characterIdConflict": "이 작업 공간의 다른 캐릭터가 이 내보내기 ID를 사용 중입니다. 같은 게임에서 둘 다 쓰려면 다른 ID를 사용하세요.",
 		"invalidName": "이름을 1~60자로 입력하세요.",
 		"itemMissing": "이 아이템은 더 이상 없어요.",
@@ -507,6 +507,8 @@
 		"moveMissing": "이 동작은 더 이상 없어요."
 	},
 	"savedActions": {
+		"labelDeleteState": "상태 삭제",
+		"removeState": "이 캐릭터에서 해당 상태와 그에 맞춘 아이템 프레임을 삭제해요. 완료된 동작의 프레임과 저장된 원본 이미지는 유지돼요. 이 작업은 되돌릴 수 없어요.",
 		"labelDeleteMove": "동작 삭제…",
 		"labelDeleteOutfit": "코디 삭제",
 		"thisRemovesTheMoveFromTheBody": "몸체와 모든 아이템에서 이 동작이 제거돼요. 되돌릴 수 없어요."
@@ -729,6 +731,7 @@
 		"tabWardrobe": "옷장",
 		"tabColors": "색상",
 		"tabOutfits": "코디",
+		"tabStates": "상태",
 		"tabMoves": "동작",
 		"facing": "방향: {direction}",
 		"nextDirection": "{direction} 방향. 다음 방향",
@@ -967,7 +970,8 @@
 			"defaultTargetHint": "내보내기를 열면 미리 선택됩니다. 다른 대상을 선택할 수도 있습니다.",
 			"versionMenu": "RPG Maker 버전",
 			"version": "버전",
-			"versionLabel": "RPG Maker 버전: {version}"
+			"versionLabel": "RPG Maker 버전: {version}",
+			"walkMove": "걷기 동작"
 		},
 		"group": { "engines": "엔진 및 프레임워크", "assets": "에셋" },
 		"target": {
@@ -1106,10 +1110,16 @@
 				"other": "RPG Maker: 걷기 동작에 {directions} 방향 뷰가 없어서 그 행은 제자리에 서 있어요."
 			},
 			"rpgSteps": "RPG Maker: 걷기 발걸음을 감지하지 못해서 첫 걷기 프레임을 발걸음으로 사용해요. 시트를 확인해 주세요.",
-			"rpgBelowFeet": "RPG Maker: {sheet} 시트는 발 아래에 {count}px 여백이 있어서 맵에서 {count}px 더 높게 서 있어요."
+			"rpgBelowFeet": "RPG Maker: {sheet} 시트는 발 아래에 {count}px 여백이 있어서 맵에서 {count}px 더 높게 서 있어요.",
+			"rpgOmittedMoves": {
+				"other": "RPG Maker: {moves}은(는) 포함되지 않아요. 걷기 시트에는 서 있기와 걷기 프레임만 들어가요."
+			}
 		}
 	},
 	"import": {
+		"posesTitle": "상태로도 가져오기",
+		"posesHint": "장비가 함께 그려져 있지 않은 같은 몸체의 자세를 선택하세요. 외형이 다르면 별도의 캐릭터로 가져오세요. 동작은 아래에서 선택할 수 있어요.",
+		"poseMismatch": "이 상태는 이미지 크기, 방향 또는 카메라 설정이 달라요. 별도의 캐릭터로 가져오세요.",
 		"titleDevice": "기기에서 가져오기",
 		"titlePixelLab": "PixelLab에서 가져오기",
 		"browseLibrary": "PixelLab 캐릭터 둘러보기",
@@ -1140,6 +1150,7 @@
 		"untitledCharacter": "제목 없는 캐릭터",
 		"libraryCounts": "{directions} · {moves}",
 		"count": {
+			"states": { "other": "상태 {count}개" },
 			"separateItems": { "other": "별도 아이템 {count}개" }
 		},
 		"previousCharacterPage": "이전 캐릭터 페이지",
@@ -1155,7 +1166,7 @@
 		"preview": "미리보기",
 		"previewArtwork": "캐릭터 가져오기 미리보기",
 		"stalePreview": "마지막 미리보기를 표시하고 있어요. 계속하려면 선택을 업데이트하세요.",
-		"previewSummary": "{directions} · {moves} · {items}",
+		"previewSummary": "{directions} · {states} · {moves} · {items}",
 		"updatingPreview": "미리보기 업데이트 중…",
 		"characterName": "캐릭터 이름",
 		"directionsHint": "화살표로 뷰를 유지하거나 건너뛰세요. 대칭 버튼은 반대쪽 뷰를 뒤집어요. 가져오기 전에 끄면 원본이 유지돼요. 원본이 없으면 뒤집힌 프레임이 독립 뷰로 남아요.",
@@ -1227,7 +1238,7 @@
 			"stateMetadata": "“{state}” 상태의 동작에 잘못된 크기나 카메라 메타데이터가 있어요: {detail} 계속하려면 해당 상태의 동작 선택을 해제하세요.",
 			"stateMismatch": "“{state}” 상태의 동작이 다른 캐릭터 크기나 카메라 뷰를 사용해요. 계속하려면 해당 상태 선택을 해제하세요.",
 			"missingStandingView": "{move}/{direction} 애니메이션에 선택한 상태에서 일치하는 서 있는 뷰가 없어요.",
-			"tooManyMoves": "이 캐릭터에 동작이 너무 많아요. 상태 수를 줄이거나 애니메이션 수를 줄여 내보내세요(Default 외 최대 99개).",
+			"tooManyMoves": "이 캐릭터에 동작이 너무 많아요. 상태 수를 줄이거나 애니메이션 수를 줄여 내보내세요(서 있기 외 최대 99개).",
 			"orphanFile": "이 ZIP에 상태 레이아웃을 명확히 알 수 없는 애니메이션 파일이 있어요: {path}. 개별 프레임이 담긴 새 캐릭터 ZIP을 내보내세요.",
 			"rotationPathName": "지원하지 않는 회전 이미지 경로예요: {path}. 방향 이름이 붙은 PNG가 담긴 캐릭터 ZIP을 내보내세요.",
 			"animationPath": "지원하지 않는 애니메이션 프레임 경로예요: {path}. 번호가 붙은 개별 프레임이 담긴 캐릭터 ZIP을 내보내세요.",
@@ -1304,6 +1315,9 @@
 		"preview": "선택한 아트워크 미리보기",
 		"artwork": "선택한 아트워크",
 		"allMoves": "모든 동작",
+		"clips": "상태 및 동작",
+		"allStates": "모든 상태",
+		"allClips": "모두",
 		"size": "크기",
 		"sizeOption": "{size}배 크기",
 		"animated": "애니메이션",
@@ -1654,7 +1668,7 @@
 			"motionFrame": "{move} {direction} · 모션 프레임 {frame}",
 			"measureMotionNote": "생성된 모션 프레임을 이미지(base64 PNG)로 전송해요. 이미 측정된 경우는 제외해요.",
 			"renderBody": "{move} {direction} · 몸체 렌더링",
-			"renderBodyNote": "알려진 필드만. 서 있는 first_frame, first_frame_keypoints, {source} 키포인트를 추가해요. 렌더링은 한 번 전송돼요. 비었거나 잘못된 출력이면 추가 유료 시도 없이 검토로 멈춰요.",
+			"renderBodyNote": "알려진 필드만. first_frame, first_frame_keypoints, {source} 키포인트를 추가해요. 렌더링은 한 번 전송돼요. 비었거나 잘못된 출력이면 추가 유료 시도 없이 검토로 멈춰요.",
 			"locallyAuthored": "로컬 제작",
 			"generatedMotion": "생성된 모션",
 			"checkFrame": "{move} {direction} · 프레임 {frame} 확인",
@@ -1861,6 +1875,7 @@
 		"adding": "추가 중… {done}/{total}",
 		"waitingForFailed": "실패한 동작 기다리는 중",
 		"add": "동작 추가",
+		"addState": "상태 추가",
 		"estimate": "예상 생성 {gens}회",
 		"bodySize": "{w}×{h} px",
 		"frameSize": "{w}×{h} px, 피벗 {x},{y}",
@@ -1993,7 +2008,7 @@
 			"styleUnsupported": "외곽선과 디테일은 {model} 모델에 적용되지 않아요.",
 			"invalidOutline": "잘못된 외곽선이에요.",
 			"invalidDetail": "잘못된 디테일이에요.",
-			"reservedMove": "Default는 서 있는 자세예요. 동작 이름을 다르게 지정하세요.",
+			"reservedMove": "서 있기는 서 있는 자세예요. 동작 이름을 다르게 지정하세요.",
 			"recoveryNeedsAuthored": "관절 검사 복구에는 원래 제작한 몸체 복구 설정이 필요해요.",
 			"recoveryAlreadySaved": "그 시도 이후 이 동작이 저장됐어요. 복구할 것이 남아 있지 않아요.",
 			"keepNeedsChecks": "이 동작을 유지하려면 모든 프레임의 완료된 캐시 관절 검사가 필요해요.",
@@ -2203,6 +2218,16 @@
 		}
 	},
 	"moveSheet": {
+		"startFrom": {
+			"savedSource": "원래 시작 프레임",
+			"label": "시작 기준",
+			"chooseFrame": "프레임 선택",
+			"frame": "프레임 {number}",
+			"unavailable": "이 프레임을 사용하려면 선택한 모든 방향의 몸체 이미지와 측정된 관절 위치가 필요해요.",
+			"changed": "선택한 시작 프레임이 변경됐어요. 시작할 프레임을 다시 선택하세요. 생성은 요청되지 않았어요.",
+			"route": "이 방식은 서 있기 자세에서 시작해요. 저장된 프레임을 사용하려면 다른 애니메이션 모델을 선택하세요.",
+			"stateTarget": "상태는 동작처럼 교체할 수 없어요."
+		},
 		"loop": "반복",
 		"loopHint": "내보내기에서 기본으로 반복해요.",
 		"referenceDirection": "시작 및 종료 프레임",
@@ -2473,7 +2498,71 @@
 		"tabOnlyKey": "이 연결은 이 탭에서만 유지되며 저장되지 않습니다.",
 		"useSavedKey": "저장된 키 사용"
 	},
-	"moveNames": { "default": "Default", "idle": "대기", "walk": "걷기", "run": "달리기" },
+	"moveNames": { "default": "서 있기", "idle": "대기", "walk": "걷기", "run": "달리기" },
+	"stateGeneration": {
+		"continueIntro": "아직 전송하지 않은 방향의 이미지를 생성할 수 있습니다. 완료된 이미지는 유지됩니다.",
+		"continueAccount": "이 상태를 계속하려면 원래 PixelLab 키로 다시 연결하세요.",
+		"continueViews": "유지할 방향: {kept}. 생성할 방향: {remaining}.",
+		"checkRemainingCost": "남은 비용 확인",
+		"generateRemaining": "나머지 방향 생성",
+		"confirmDiscard": "삭제 확인",
+		"discardWarning": "삭제해도 생성 횟수가 환불되거나 PixelLab의 상태가 삭제되지는 않아요. 다시 시작하면 모든 방향에 비용이 다시 들 수 있어요.",
+		"localOnly": "이 상태는 PixelDoll에만 저장돼요.",
+		"locksUnavailable": "상태를 안전하게 생성하려면 최신 브라우저를 사용해 주세요.",
+		"defaultModel": "기본값 (Pro)",
+		"flashReference": "Pro Flash는 텍스트 지시 대신 참고 이미지를 사용해요.",
+		"changed": "원본이나 견적이 바뀌었어요. 생성하기 전에 비용을 다시 확인해 주세요.",
+		"sourceUnavailable": "직접 그린 모든 방향에 저장된 서 있는 모습이 필요해요.",
+		"invalidResult": "PixelLab이 예정된 크기로 모든 방향의 이미지를 반환하지 않았어요.",
+		"unfinished": "완료되지 않았거나 사용할 수 없는 결과가 있어요. 활동을 확인해 주세요. 요청을 다시 보내지 않았어요.",
+		"quoteUnavailable": "PixelLab에서 유효한 Pro Flash 견적을 받지 못했어요.",
+		"connect": "PixelLab이 계정을 확인하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
+		"invalidInput": "상태 이름과 편집 지시를 확인해 주세요.",
+		"flashSizesUnavailable": "PixelLab에서 Pro Flash 편집 크기를 확인하지 못했어요.",
+		"unsupported": "이 모델은 선택한 참고 이미지로 이 캔버스를 편집할 수 없어요. 다른 모델이나 참고 이미지를 선택해 주세요.",
+		"saved": "상태를 저장했어요",
+		"source": "원본: {source}",
+		"noSource": "상태를 생성하려면 모든 방향에 서 있는 모습이 필요해요.",
+		"description": "바꾸고 싶은 내용을 설명해 주세요",
+		"reference": "변경에 참고할 이미지를 추가해 주세요.",
+		"pixenReference": "Pixen은 참고 이미지를 사용하지 않아요. 이미지를 사용하려면 모델을 바꿔 주세요.",
+		"fixedCost": "비용: {generations}회 생성",
+		"managed": "PixelLab 계정에서 {parent} 기반의 상태를 만들어요.",
+		"referenceRoute": "참고 이미지를 사용하면 Pro는 PixelLab 계정에 상태를 만드는 대신 서 있는 이미지를 편집해요.",
+		"transfer": "이 방식은 참고 이미지의 외형을 캐릭터에 옮겨요. 스타일만 맞추는 것이 아니에요.",
+		"sheetWarning": "여러 방향을 한 시트에서 편집해요. 저장하기 전에 각 방향을 확인해 주세요.",
+		"checkCost": "비용 확인",
+		"quoting": "비용 확인 중…",
+		"generate": "상태 생성",
+		"generating": "상태 생성 중…",
+		"review": "저장하기 전에 {name} 상태를 확인해 주세요.",
+		"generated": "생성 결과"
+	},
+	"stateJointFit": {
+		"busy": "관절을 이미 측정 중입니다. 완료되면 다시 시도하세요.",
+		"edited": "프레임이 편집되어 이 상태를 동작의 원본으로 사용할 수 없습니다.",
+		"quote": "관절 측정 비용 확인",
+		"measure": "관절 측정",
+		"review": "저장하기 전에 각 방향에 표시된 관절의 위치를 확인하세요.",
+		"save": "관절 저장"
+	},
+	"stateCapture": {
+		"add": "프레임에서 상태 만들기…",
+		"noMoves": "동작을 추가하면 해당 프레임에서 상태를 만들 수 있어요.",
+		"title": "상태 만들기",
+		"fromMove": "동작에서",
+		"name": "상태 이름",
+		"noEquipment": "장비는 복사되지 않습니다.",
+		"noCredits": "크레딧은 사용되지 않습니다.",
+		"invalidName": "라틴 문자나 숫자가 포함된 이름을 입력하세요.",
+		"takenName": "이미 사용 중이거나 예약된 이름입니다. 다른 이름을 선택하세요.",
+		"savedAs": "{name}(으)로 저장",
+		"saving": "상태 저장 중…",
+		"saved": "상태를 저장했어요",
+		"blocked": "캐릭터가 로드되고 대기 중인 작업을 해결한 뒤 상태를 저장하세요.",
+		"unavailable": "이 프레임에는 동작의 저장된 방향이 모두 포함되어 있지 않습니다.",
+		"concurrentEdit": "원본 동작이 변경되었습니다. 창을 닫았다가 다시 열고 업데이트된 동작에서 프레임을 선택하세요."
+	},
 	"moveRemoval": {
 		"unavailable": "이 동작은 더 이상 사용할 수 없어요.",
 		"keepStanding": "아이템을 만들고 확장하는 데 쓰는 서 있는 뷰를 유지하세요.",
@@ -2698,6 +2787,7 @@
 		"undone": "프레임 변경을 되돌렸어요.",
 		"errors": {
 			"reviewOpen": "프레임을 조정하기 전에 검토를 기다리는 동작을 저장하거나 버리세요.",
+			"statePending": "프레임을 조정하기 전에 대기 중인 상태를 저장하거나 버리세요.",
 			"missingArtwork": "이 캐릭터의 저장된 이미지가 없어 프레임을 바꿀 수 없어요.",
 			"even": "짝수 픽셀만큼 바뀌는 프레임 크기를 고르세요.",
 			"range": "이 캐릭터의 프레임은 {min}~{max} px여야 해요.",

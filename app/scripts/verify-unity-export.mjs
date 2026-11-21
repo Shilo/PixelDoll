@@ -65,6 +65,22 @@ async function fixtureArchive() {
 		}
 	}
 	cells.hat_small = cells.hair;
+	// Non-default one-cell State whose 4x4 magenta center block no Move cell has; NativePlayback reads it on the hat.
+	const stateCells = {};
+	for (const [id, size] of [
+		['base', 64],
+		['hair', 64],
+		['hat', 96]
+	]) {
+		const image = { ...images.get(cells[id][0]), data: images.get(cells[id][0]).data.slice() };
+		for (let y = size / 2 - 2; y < size / 2 + 2; y++)
+			for (let x = size / 2 - 2; x < size / 2 + 2; x++)
+				image.data.set([255, 0, 255, 255], (y * size + x) * 4);
+		const hash = await cellHash(image);
+		images.set(hash, image);
+		stateCells[id] = [hash];
+	}
+	stateCells.hat_small = stateCells.hair;
 	const timelines = [
 		['walk', [80, 180, 100]],
 		['jump', [80, 180, 100]],
@@ -79,6 +95,14 @@ async function fixtureArchive() {
 		loop: id === 'jump',
 		frames: durations.map((ms, index) => ({ cell: index % 2, ms }))
 	}));
+	animations.push({
+		id: 'ready-stance',
+		kind: 'state',
+		cells: 1,
+		loop: false,
+		frames: [{ cell: 0, ms: 150 }]
+	});
+	const cellsOf = (move, id) => (move.kind === 'state' ? stateCells : cells)[id];
 	const rig = {
 		cell: { w: 64, h: 64 },
 		pivot: { x: 32, y: 60 },
@@ -91,7 +115,7 @@ async function fixtureArchive() {
 		rig,
 		Object.fromEntries(
 			animations.flatMap((move) =>
-				cells.base.map((hash, index) => [`${move.id}/south/${index}`, hash])
+				cellsOf(move, 'base').map((hash, index) => [`${move.id}/south/${index}`, hash])
 			)
 		)
 	);
@@ -139,7 +163,9 @@ async function fixtureArchive() {
 					role: 'fg',
 					z,
 					...(id === 'hat' ? { cell: { w: 96, h: 96 }, pivot: { x: 48, y: 76 } } : {}),
-					cells: Object.fromEntries(animations.map((move) => [move.id, { south: cells[id] }]))
+					cells: Object.fromEntries(
+						animations.map((move) => [move.id, { south: cellsOf(move, id) }])
+					)
 				}
 			]
 		})),
@@ -165,7 +191,7 @@ async function fixtureArchive() {
 	applyExportSettings(copy, {
 		engine: 'unity',
 		dressedCharacterSheets: false,
-		playOnce: ['jump', 'single', 'ticktail', 'prime']
+		playOnce: ['jump', 'ready-stance', 'single', 'ticktail', 'prime']
 	});
 	const result = await exportZip(
 		{ manifest: copy, images },
@@ -174,7 +200,7 @@ async function fixtureArchive() {
 	assert.deepEqual(result.errors, []);
 	assert.deepEqual(
 		manifest.rig.animations.map((a) => a.loop),
-		[false, true, false, false, false, false]
+		[false, true, false, false, false, false, false]
 	);
 	return result.zip;
 }

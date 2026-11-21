@@ -47,7 +47,7 @@ export async function downloadFrames(itemId: string, anim: string) {
 			lazy(() => import('../lib/store/zip.ts'))
 		]);
 		const move = m.rig.animations.find((entry) => entry.id === anim);
-		const stem = `${characterZipId(m)}-${item.id === m.rig.baseItem ? 'body' : itemExportId(item)}-${fileSlug(move ? moveExportId(move) : anim)}`;
+		const stem = `${characterZipId(m)}-${item.id === m.rig.baseItem ? 'body' : itemExportId(item)}-${fileSlug(move ? moveExportId(move, m.rig.animations) : anim)}`;
 		const files = await Promise.all(
 			frameSheets(p, itemId, anim).map(async ({ layerId, image }) => ({
 				name: `${stem}${layerSuffix(item, layerId)}.png`,
@@ -193,7 +193,7 @@ export function downloadMoveZip(moveId: string) {
 				look,
 				record
 			})),
-			name: `${characterZipId(project.manifest)}-${fileSlug(move ? moveExportId(move) : moveId)}`
+			name: `${characterZipId(project.manifest)}-${fileSlug(move ? moveExportId(move, moves) : moveId)}`
 		};
 	});
 }

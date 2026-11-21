@@ -114,6 +114,11 @@ The compositor does not recolor implicitly: use the returned `recolor` view as t
 For exported sheets and native Phaser sprites, use the existing `loadPaperdoll` / `Paperdoll` API.
 The public `paletteMap` returns active RGB swaps only; colors without a selected ramp are omitted.
 
+Use `playbackClips(manifest.rig.animations)` to enumerate States and Moves. A State has one
+playback cell and uses the same sampler and renderer as a Move. Runtime manifests and sheet paths
+use the public `standing` ID. An editable `project.json` retains its stored keys: use each entry's
+`key` to compose that editable project or its `id` to identify the corresponding runtime clip.
+
 `sampleTimeline` clamps negative/nonfinite elapsed input to the start, loops by default and holds the
 last authored cell when looping is false. Empty, nonfinite or nonpositive-duration timelines throw.
 The core assumes a validated manifest, just as the existing compositor did. Application-specific

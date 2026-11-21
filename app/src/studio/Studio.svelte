@@ -70,6 +70,7 @@
 		activity: () => import('./ActivitySheet.svelte'),
 		move: () => import('./MoveSheet.svelte'),
 		moveReview: () => import('./MoveReviewSheet.svelte'),
+		stateCapture: () => import('./StateCaptureSheet.svelte'),
 		importZip: () => import('./ImportSheet.svelte'),
 		importPixelLab: () => import('./ImportSheet.svelte'),
 		setup: () => import('./SetupSheet.svelte'),
@@ -384,6 +385,7 @@
 	{#if ui.sheet === 'workspaceReport' && workspaceCopy}<Lazy load={parts.workspace} />{/if}
 	{#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
 	{#if ui.sheet === 'moveReview'}{#key ui.moveReview}<Lazy load={parts.moveReview} />{/key}{/if}
+	{#if ui.sheet === 'stateCapture'}<Lazy load={parts.stateCapture} />{/if}
 	{#if ui.sheet === 'rename'}<RenameSheet />{/if}
 	{#if ui.sheet === 'directions'}<DirectionsSheet id={ui.directionProject} />{/if}
 	{#if ui.sheet === 'adjustFrame'}<Lazy load={parts.adjustFrame} id={ui.frameProject} />{/if}

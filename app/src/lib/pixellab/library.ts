@@ -64,7 +64,7 @@ export async function downloadCharacter(
 ): Promise<Uint8Array> {
 	const safe = characterId(id);
 	const timeout = AbortSignal.timeout(120_000);
-	const url = `${API_BASE}/characters/${safe}/zip?states=${safe}`;
+	const url = `${API_BASE}/characters/${safe}/zip`;
 	const activityId = beginActivityCall(
 		'GET',
 		url,

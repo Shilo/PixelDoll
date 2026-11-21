@@ -2147,7 +2147,7 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
 	await page.getByRole('button', { name: 'Inspect', exact: true }).click();
 	const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true });
 	const move = inspect.getByRole('combobox', { name: 'Move', exact: true });
-	await expect(move.locator('option')).toHaveText(['Default', 'Idle', 'Walk', 'Slash']);
+	await expect(move.locator('option')).toHaveText(['Standing', 'Idle', 'Walk', 'Slash']);
 	const pause = inspect.getByRole('button', { name: 'Pause', exact: true });
 	if (await pause.isVisible()) await pause.click();
 	await expect(inspect.getByRole('button', { name: 'Play', exact: true })).toBeVisible();

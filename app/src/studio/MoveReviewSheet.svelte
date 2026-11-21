@@ -14,9 +14,9 @@
 		missingItemMoves,
 		moveMinimumTier,
 		readMoveCandidateImages,
-		skeletonMoveReview,
-		type MoveSpec
+		skeletonMoveReview
 	} from './create.ts';
+	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
 	import {
 		moveCandidateHasStructuralFailure,
 		moveCandidateInput,
@@ -170,9 +170,10 @@
 		playing = false;
 		frame = (frame + delta + playlist.length) % playlist.length;
 	}
-	function regenerate(animation?: MoveSpec['animation']) {
+	function regenerate(skeletonRetry?: typeof skeletonOffer) {
 		if (!candidate || blocked) return;
 		const { spec } = candidate;
+		const animation = skeletonRetry?.review.animation;
 		const saved = manifest?.rig.animations.find((move) => move.id === id);
 		const picked = (reference: ImageReference, kind: 'startFrame' | 'endFrame') => ({
 			...reference,
@@ -183,10 +184,17 @@
 			projectId,
 			reopen: true,
 			regeneration: { id, seed: spec.seed, activityScope: spec.activityScope },
+			skeletonRetry,
 			action: spec.replace ? id : (spec.action ?? ''),
 			replace: !!spec.replace,
 			text: spec.text ?? '',
 			dirs: candidate.dirs,
+			source:
+				spec.startFrom && !spec.startFrom.replacement
+					? { clip: spec.startFrom.clip, cell: spec.startFrom.cell }
+					: skeletonRetry && !spec.startFrom && spec.replace
+						? { clip: DEFAULT_MOVE }
+						: undefined,
 			animation: animation ?? spec.animation,
 			loop: movePlaybackChanged(candidate.basePlayback, saved)
 				? (saved?.moveLoop ?? saved?.loop)
@@ -378,7 +386,7 @@
 						class="bu-action btn"
 						data-variant="outline"
 						disabled={busy || !!blocked}
-						onclick={() => regenerate(skeletonOffer?.review.animation)}
+						onclick={() => regenerate(skeletonOffer)}
 					>
 						{t('moveSheet.skeleton.title')}
 						<span class="cost"

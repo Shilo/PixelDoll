@@ -2,15 +2,23 @@ import { expect, test } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { loadFixture } from '../../src/lib/compose/fixture.ts';
 import { exportFiles, type ExportOptions } from '../../src/lib/export/export.ts';
+import { moveProject } from '../../src/lib/export/build.ts';
+import { projectExportIdentity } from '../../src/lib/export/identity.ts';
 import { applyExportSettings, defaultExportSettings } from '../../src/lib/store/export-settings.ts';
 import {
 	checkExportIdentity,
+	assignNewClipExportId,
 	editMoveIdentity,
 	editOutfitIdentity,
 	moveExportId,
 	retainMoveChoices
 } from '../../src/lib/store/identity.ts';
-import { DEFAULT_MOVE, playlist, rigArtworkVersion } from '../../src/lib/rig/rig.ts';
+import {
+	DEFAULT_MOVE,
+	playlist,
+	rigArtworkVersion,
+	type RigAnimation
+} from '../../src/lib/rig/rig.ts';
 import { moveLabel } from '../../src/studio/model.ts';
 import type { Manifest, Project } from '../../src/lib/store/manifest.ts';
 
@@ -82,7 +90,8 @@ test('move and outfit identity edits keep export IDs valid, unique and reserved'
 		/Another move/
 	);
 	expect(() => editMoveIdentity(manifest, 'walk', undefined, DEFAULT_MOVE)).toThrow(/Invalid/);
-	expect(() => editMoveIdentity(manifest, DEFAULT_MOVE, undefined, 'stand')).toThrow(/default/);
+	expect(() => editMoveIdentity(manifest, 'walk', undefined, 'standing')).toThrow(/Invalid/);
+	expect(() => editMoveIdentity(manifest, DEFAULT_MOVE, undefined, 'stand')).toThrow(/standing/);
 	for (const invalid of ['Walk', 'con', '_walk', 'a'.repeat(41)])
 		expect(() => editMoveIdentity(manifest, 'walk', undefined, invalid)).toThrow(/Invalid/);
 	expect(() => editMoveIdentity(manifest, 'walk', ' ', undefined)).toThrow(/1–60/);
@@ -99,7 +108,9 @@ test('move and outfit identity edits keep export IDs valid, unique and reserved'
 	editMoveIdentity(manifest, 'cross-punch', undefined, 'cross-punch');
 	expect(manifest.rig.animations[2].exportId).toBeUndefined();
 	editMoveIdentity(manifest, 'cross-punch', undefined, 'walk');
-	expect(manifest.rig.animations.map(moveExportId)).toEqual([DEFAULT_MOVE, 'stroll', 'walk']);
+	expect(
+		manifest.rig.animations.map((move) => moveExportId(move, manifest.rig.animations))
+	).toEqual(['standing', 'stroll', 'walk']);
 	expect(() => checkExportIdentity(manifest)).not.toThrow();
 	// Imported or tampered records are checked the same way before an export or import uses them.
 	for (const broken of [
@@ -123,6 +134,100 @@ test('move and outfit identity edits keep export IDs valid, unique and reserved'
 	expect(() => editOutfitIdentity(outfits, 'gone', 'Gone')).toThrow(/no longer exists/);
 	editOutfitIdentity(outfits, 'adventurer', ' Knight ', 'knight_set');
 	expect(outfits[0]).toMatchObject({ id: 'knight_set', name: 'Knight' });
+});
+
+test('Standing and a literal standing clip keep separate sheets and use public playback IDs', async () => {
+	const source = await fixture();
+	const { manifest } = source;
+	const [walk] = manifest.rig.animations;
+	const literal: RigAnimation = {
+		id: 'standing',
+		kind: 'move',
+		cells: 1,
+		loop: true,
+		frames: playlist(1, 120)
+	};
+	manifest.rig.animations.unshift(literal);
+	editMoveIdentity(manifest, literal.id, undefined, 'stance');
+	editMoveIdentity(manifest, literal.id, undefined, 'standing');
+	expect(literal.exportId).toBeUndefined();
+	manifest.rig.animations.unshift({
+		id: DEFAULT_MOVE,
+		kind: 'state',
+		cells: 1,
+		loop: true,
+		frames: playlist(1, 100)
+	});
+	const competingClip: RigAnimation = {
+		id: 'standing-move',
+		cells: 1,
+		loop: false,
+		frames: playlist(1, 150)
+	};
+	assignNewClipExportId(competingClip, manifest.rig.animations);
+	expect(competingClip.exportId).toBe('standing-move_2');
+	expect(moveExportId(literal, [...manifest.rig.animations, competingClip])).toBe('standing-move');
+	walk.exportId = 'standing-move';
+	walk.moveLoop = true;
+	const layer = manifest.items[0].layers[0];
+	layer.sheets = { default: 'state.png', standing: 'legacy.png', [walk.id]: 'aliased.png' };
+	layer.sourceSheets = {
+		default: 'state-src.png',
+		standing: 'legacy-src.png',
+		[walk.id]: 'alias-src.png'
+	};
+	applyExportSettings(manifest, {
+		...defaultExportSettings(),
+		playOnce: ['standing', 'standing-move', 'standing-move_2']
+	});
+	expect(() => checkExportIdentity(manifest)).not.toThrow();
+	const exported = projectExportIdentity(source).manifest;
+	expect(
+		exported.rig.animations
+			.slice(0, 3)
+			.map(({ id, kind, loop, frames }) => [id, kind, loop, frames[0].ms])
+	).toEqual([
+		['standing', 'state', false, 100],
+		['standing-move_2', 'move', false, 120],
+		['standing-move', 'move', true, walk.frames[0].ms]
+	]);
+	expect(exported.items[0].layers[0].sheets).toEqual({
+		standing: 'state.png',
+		'standing-move_2': 'legacy.png',
+		'standing-move': 'aliased.png'
+	});
+	expect(exported.items[0].layers[0].sourceSheets).toEqual({
+		standing: 'state-src.png',
+		'standing-move_2': 'legacy-src.png',
+		'standing-move': 'alias-src.png'
+	});
+	expect(manifest.rig.animations.slice(0, 3).map(({ id }) => id)).toEqual([
+		DEFAULT_MOVE,
+		'standing',
+		walk.id
+	]);
+	expect(layer.sheets.default).toBe('state.png');
+	const scoped = await moveProject(source, 'standing');
+	expect(() => checkExportIdentity(scoped.manifest)).not.toThrow();
+	applyExportSettings(scoped.manifest, {
+		...defaultExportSettings(),
+		playOnce: ['standing-move_2']
+	});
+	expect(projectExportIdentity(scoped).manifest.rig.animations).toMatchObject([
+		{ id: 'standing', loop: true },
+		{ id: 'standing-move_2', loop: false }
+	]);
+	const newState: RigAnimation = {
+		id: 'standing-move',
+		kind: 'state',
+		cells: 1,
+		loop: false,
+		frames: playlist(1, 150)
+	};
+	assignNewClipExportId(newState, manifest.rig.animations);
+	manifest.rig.animations.push(newState);
+	expect(newState).toMatchObject({ id: 'standing-move', exportId: 'standing-move_3', loop: false });
+	expect(() => checkExportIdentity(manifest)).not.toThrow();
 });
 
 test('renamed outfits reach exports under their new IDs', async () => {

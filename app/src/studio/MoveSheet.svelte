@@ -22,7 +22,7 @@
 		type MoveAnimationOptions,
 		type MoveFrameReferences
 	} from './moveAnimationOptions.ts';
-	import { untrack } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
 	import { movePlan } from './apiPlans.ts';
 	import { formDrafts } from './formDrafts.ts';
@@ -37,6 +37,19 @@
 		SAVED_FRAMES_UNAVAILABLE
 	} from '../lib/items/run.ts';
 	import { AUTHORED } from '../lib/rig/poses.ts';
+	import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
+	import { cellImg } from '../lib/compose/compose.ts';
+	import { lastPlaybackCell, playbackClips } from '../lib/runtime/timeline.js';
+	import { moveSourceMatches, resolveMoveSource, savedReplacementSource } from './moveSource.ts';
+	import { clipNameId, sameClipName } from './clipName.ts';
+	import {
+		isGeneratedState,
+		measureStateJoints,
+		quoteStateJointFit,
+		saveStateJointFit,
+		type StateJointFitQuote,
+		type StateJointFitReview
+	} from './stateJointFit.ts';
 	import { REPAIR_BATCH_MISALIGNED } from '../lib/items/items.ts';
 	import {
 		PaidStepError,
@@ -111,7 +124,11 @@
 		if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null));
 	});
 	const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null));
-	const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []));
+	const sourceClips = $derived(playbackClips(m?.rig.animations ?? []));
+	const have = $derived(new Set(sourceClips.filter((a) => a.kind === 'move').map((a) => a.key)));
+	const stateIds = $derived(
+		new Set(sourceClips.filter((a) => a.kind === 'state').map((a) => a.key))
+	);
 	const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id));
 	// Default is the standing views themselves: nothing to generate or replace.
 	const options = $derived(
@@ -121,11 +138,27 @@
 				'walk',
 				'run',
 				...AUTHORED,
-				...(m?.rig.animations.map((a) => a.id) ?? [])
+				...sourceClips.filter((a) => a.kind === 'move').map((a) => a.key)
 			])
-		].filter((a) => !reservedMove(a))
+		].filter((a) => !stateIds.has(a) && !reservedMove(a, have.has(a)))
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
+	let sourceId = $state<string | undefined>(draft?.source?.clip);
+	let sourceCell = $state<number | undefined>(draft?.source?.cell);
+	let sourceOpen = $state(!!draft?.source);
+	const sourceClip = $derived(
+		sourceClips.find(({ key }) => key === (sourceId ?? DEFAULT_MOVE))?.clip
+	);
+	const sourceFrames = $derived([...new Set(sourceClip?.frames.map(({ cell }) => cell) ?? [])]);
+	const sourceThumbnail = (clip: string, cell: number) => {
+		const project = store.project;
+		const base = project?.manifest.items.find((item) => item.id === project.manifest.rig.baseItem);
+		if (!project || !base?.layers[0]) return null;
+		const facing =
+			project.manifest.rig.directions.find(({ id }) => id === ui.dir) ??
+			project.manifest.rig.directions[0];
+		return facing ? (cellImg(project, base.layers[0], clip, facing.id, cell) ?? null) : null;
+	};
 	const reopen = draft?.reopen;
 	if (reopen) delete draft.reopen;
 	const DEFAULT_MODEL: MoveAnimationModel = 'pixminimax';
@@ -156,12 +189,6 @@
 	let confirm = $state.raw<{ kind: 'start' | 'loop'; accept: () => void }>();
 	let loopChange = 0;
 	let customStartAcknowledged = false;
-	const slug = (s: string) =>
-		s
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, '-')
-			.replace(/^-+|-+$/g, '')
-			.slice(0, 24);
 	const replacing = $derived(replaceSelected && have.has(action));
 	const savedMove = $derived(m?.rig.animations.find((a) => a.id === action));
 	const looping = $derived(
@@ -182,6 +209,7 @@
 		let n = 1;
 		while (
 			have.has(`move-${n}`) ||
+			stateIds.has(`move-${n}`) ||
 			pendingIds.includes(`move-${n}`) ||
 			Object.hasOwn(store.moveReviews, `move-${n}`)
 		)
@@ -191,7 +219,8 @@
 	const id = $derived(
 		action ||
 			(text.trim() &&
-				(slug(text.trim().split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) || freeMoveId()))
+				(clipNameId(text.trim().split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')).slice(0, 24) ||
+					freeMoveId()))
 	);
 	const availableDirs = $derived(
 		m?.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id) ?? []
@@ -200,6 +229,79 @@
 	const targetDirs = $derived(
 		replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs
 	);
+	const sourceSelection = $derived(
+		sourceId === undefined ? undefined : { clip: sourceId, cell: sourceCell }
+	);
+	const explicitFrame = $derived(sourceSelection && sourceId !== DEFAULT_MOVE);
+	const startFrom = $derived(
+		m && explicitFrame && sourceSelection
+			? resolveMoveSource(m, sourceSelection, targetDirs)
+			: m && !sourceSelection && replacing && action !== 'ride'
+				? savedReplacementSource(m, action, targetDirs)
+				: undefined
+	);
+	let fitBusy = $state(false);
+	let fitQuote = $state.raw<StateJointFitQuote | null>(null);
+	let fitReview = $state.raw<StateJointFitReview | null>(null);
+	let fitError = $state<Message | string | null>(null);
+	const fitLifetime = new AbortController();
+	onDestroy(() => fitLifetime.abort());
+	const offersFit = $derived(!startFrom && isGeneratedState(sourceClip));
+
+	function selectSource(clip: string) {
+		sourceId = clip;
+		sourceCell = undefined;
+		fitQuote = null;
+		fitReview = null;
+		fitError = null;
+	}
+
+	async function fitAction(work: () => Promise<void>) {
+		if (fitBusy) return;
+		fitBusy = true;
+		fitError = null;
+		try {
+			await work();
+		} catch (error) {
+			fitError = errorMessage(error);
+		} finally {
+			fitBusy = false;
+		}
+	}
+
+	function checkFitCost() {
+		const projectId = doc.id;
+		const stateId = sourceId;
+		if (!stateId || fitBusy) return;
+		if (!app.key || app.keyRejected) {
+			rememberMoveForm(projectId);
+			withKey(() => {
+				if (doc.id === projectId) ui.sheet = 'move';
+			});
+			return;
+		}
+		void fitAction(async () => {
+			fitQuote = await quoteStateJointFit(projectId, stateId);
+		});
+	}
+
+	function measureFit() {
+		const quote = fitQuote;
+		if (!quote || fitBusy) return;
+		fitQuote = null;
+		void fitAction(async () => {
+			fitReview = await measureStateJoints(quote, fitLifetime.signal);
+		});
+	}
+
+	function saveFit() {
+		const review = fitReview;
+		if (!review || review.blocked || fitBusy) return;
+		fitReview = null;
+		void fitAction(async () => {
+			await saveStateJointFit(review);
+		});
+	}
 	const showFullFrameDirections = $derived(
 		targetDirs.every((dir) => (frameLabelWidths[dir] ?? Infinity) <= (frameTabWidths[dir] ?? 0))
 	);
@@ -209,8 +311,11 @@
 			: targetDirs[0]
 	);
 	const frameReference = $derived(frameDirection ? frameReferences[frameDirection] : undefined);
+	// What a move starts from when no Start frame is uploaded: the chosen saved frame, else standing.
+	const sourceStart = (direction: DirectionName) =>
+		(startFrom?.views[direction] ?? m?.rig.rest?.[direction])?.image;
 	const standingImage = $derived.by(() => {
-		const hash = frameDirection && m?.rig.rest?.[frameDirection]?.image;
+		const hash = frameDirection && sourceStart(frameDirection);
 		return hash ? (store.project?.images.get(hash) ?? null) : null;
 	});
 	const affectedMirrors = $derived(
@@ -238,6 +343,12 @@
 	const canvas = $derived(m?.rig.cell.w ?? 0);
 	// Ride is a static authored pose on Skeleton v3 (create.ts moveAnimationModel), so it has no model or frame choice.
 	const riding = $derived(!describing && action === 'ride');
+	$effect(() => {
+		if (riding) {
+			sourceId = undefined;
+			sourceCell = undefined;
+		}
+	});
 	// The frame count the core falls back to: a replaced clip's cells, otherwise PixelDoll's 8-frame preset.
 	const baseFrames = $derived(replacing ? (savedMove?.cells ?? 8) : 8);
 	// A partial replacement must keep the saved clip's cell count so redrawn views line up with the kept ones.
@@ -255,13 +366,15 @@
 			(m && moveFrames(m, { action: describing ? undefined : action, frames: baseFrames }));
 		const fitsPreferred = (option: MoveAnimationModel) =>
 			preferred !== undefined && moveFrameCounts(option, canvas).includes(preferred);
+		const fitsSource = (option: MoveAnimationModel) =>
+			option !== 'skeleton-v3' || !startFrom || (!describing && isAuthoredAction(action));
 		for (const dir of targetDirs) {
 			const route = savedMove?.sources?.[dir]?.route;
-			if (route && route !== 'import' && fitsPreferred(route)) return route;
+			if (route && route !== 'import' && fitsSource(route) && fitsPreferred(route)) return route;
 		}
-		return fitsPreferred('skeleton-v3')
+		return fitsSource('skeleton-v3') && fitsPreferred('skeleton-v3')
 			? 'skeleton-v3'
-			: (MODELS.find(fitsPreferred) ?? 'skeleton-v3');
+			: (MODELS.find((option) => fitsSource(option) && fitsPreferred(option)) ?? DEFAULT_MODEL);
 	});
 	// Model-valid counts for this character's actual canvas; the same object prices and submits the move.
 	const frameCounts = $derived(moveFrameCounts(model, canvas));
@@ -339,9 +452,11 @@
 		text: describing ? text.trim() || undefined : undefined,
 		frames: baseFrames,
 		replace: replacing,
-		animation: animationOptions
+		animation: animationOptions,
+		startFrom
 	});
 	const regeneration = $derived(draftRegeneration?.id === id ? draftRegeneration : undefined);
+	const skeletonRetry = draft?.skeletonRetry;
 	const motionIssue = $derived.by(() => {
 		if (action && replaceSelected !== have.has(action)) return t('moveSheet.changedDuringEdit');
 		if (Object.hasOwn(store.moveReviews, id) && !regeneration)
@@ -349,6 +464,24 @@
 		if (!action && id && options.includes(id))
 			return t('moveSheet.duplicateOption', { move: nice(id) });
 		if (!m || !id) return '';
+		if (
+			(!action && have.has(id)) ||
+			(!have.has(id) &&
+				([...stateIds].some((stateId) => sameClipName(stateId, id)) ||
+					(rec?.stateGeneration && sameClipName(rec.stateGeneration.id, id))))
+		)
+			return t('moveSheet.duplicateOption', { move: nice(id) });
+		if (explicitFrame && !startFrom) return t('moveSheet.startFrom.unavailable');
+		if (
+			skeletonRetry &&
+			(!regeneration ||
+				model !== 'skeleton-v3' ||
+				motion.action !== skeletonRetry.review.action ||
+				motion.text !== skeletonRetry.review.text ||
+				stableStringify(targetDirs) !== stableStringify(skeletonRetry.review.approvedDirs) ||
+				stableStringify(startFrom) !== stableStringify(skeletonRetry.review.startFrom))
+		)
+			return t('moveSheet.checkpoint.changed');
 		return (
 			bodyMoveIssue(m, motion) ||
 			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
@@ -366,7 +499,12 @@
 			: []
 	);
 	const formEstimate = $derived(
-		m && id && targetDirs.length && !reservedMove(id) && !motionIssue && !pendingIds.includes(id)
+		m &&
+			id &&
+			targetDirs.length &&
+			!reservedMove(id, replacing) &&
+			!motionIssue &&
+			!pendingIds.includes(id)
 			? moveEstimate(m, { ...motion, items: [], dirs: targetDirs })
 			: null
 	);
@@ -472,7 +610,8 @@
 		)
 	);
 	const stepIx = $derived(steps.findIndex((step) => step.id === moving.progress?.step));
-	const nice = (s: string) => displayMove(s, [...(m?.rig.animations ?? []), ...options]);
+	const nice = (s: string) =>
+		displayMove(s, [...(m?.rig.animations ?? []), ...options, ...stateIds]);
 	const decimal = (n: number) =>
 		formatNumber(n, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 	const usd = (n: number) =>
@@ -674,7 +813,28 @@
 		}, recoveryTier);
 	}
 
+	function rememberMoveForm(projectId: string) {
+		formDrafts.move = {
+			projectId,
+			regeneration,
+			skeletonRetry,
+			action,
+			replace: replaceSelected,
+			text,
+			dirs: [...selectedDirs],
+			poseStyle: 'visible-side-v1',
+			source: sourceSelection,
+			frameReferences: $state.snapshot(frameReferences),
+			loop: loopChoice,
+			animation:
+				!riding && (modelChoice !== undefined || userFrameCount !== undefined)
+					? { model, frameCount: userFrameCount }
+					: undefined
+		};
+	}
+
 	function go() {
+		if (fitBusy) return;
 		const projectId = doc.id;
 		if (skeletonReview && moving.spec) {
 			const offer = skeletonReview;
@@ -740,23 +900,10 @@
 			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] }),
 			...(preflight.length ? { acceptedWarnings: preflight.map((warning) => warning.id) } : {})
 		};
-		formDrafts.move = {
-			projectId,
-			regeneration,
-			action,
-			replace: replaceSelected,
-			text,
-			dirs: [...selectedDirs],
-			poseStyle: 'visible-side-v1',
-			frameReferences: $state.snapshot(frameReferences),
-			loop: loopChoice,
-			animation:
-				!riding && (modelChoice !== undefined || userFrameCount !== undefined)
-					? { model, frameCount: userFrameCount }
-					: undefined
-		};
+		rememberMoveForm(projectId);
 		const estimate = formEstimate;
 		const minimumTier = addTier;
+		const approvedDirs = [...targetDirs];
 		const confirm = async () => {
 			if (spec.reviewRegeneration) {
 				const latest = await db.get<StoredProject>('projects', projectId);
@@ -769,6 +916,11 @@
 					candidate.spec.seed !== spec.reviewRegeneration.seed ||
 					candidate.spec.activityScope !== spec.reviewRegeneration.activityScope ||
 					moveCandidateInput(latest, spec.id) !== candidate.input ||
+					(spec.startFrom && !moveSourceMatches(latest.manifest, spec.startFrom, approvedDirs)) ||
+					(skeletonRetry &&
+						stableStringify(
+							skeletonMoveReview(latest, candidate.spec, undefined, [], candidate)
+						) !== stableStringify(skeletonRetry)) ||
 					pendingMoves(projectId).some((entry) => entry.id === spec.id) ||
 					stableStringify(nextEstimate) !== stableStringify(estimate) ||
 					moveMinimumTier(latest.manifest, spec) !== minimumTier ||
@@ -869,7 +1021,7 @@
 				if (!frames?.end || frames.end.base64 === frames.start?.base64) return false;
 				try {
 					const end = await decodePng(base64ToBytes(frames.end.base64));
-					const hash = m?.rig.rest?.[direction]?.image;
+					const hash = sourceStart(direction);
 					const start = frames.start
 						? await decodePng(base64ToBytes(frames.start.base64))
 						: hash && store.project?.images.get(hash);
@@ -1014,7 +1166,8 @@
 			<button
 				class="bu-action btn primary lg"
 				data-variant="primary"
-				disabled={!est ||
+				disabled={fitBusy ||
+					!est ||
 					startLoading ||
 					endLoading ||
 					(!review && !!addAccess.error) ||
@@ -1491,6 +1644,150 @@
 					/>
 				</label>{/if}
 			{#if !riding}
+				{#if sourceClips.some(({ key }) => key !== DEFAULT_MOVE)}
+					<details class="disclosure" bind:open={sourceOpen}>
+						<summary
+							><ChevronRight size={14} />{t('moveSheet.startFrom.label')} · {startFrom?.replacement
+								? t('moveSheet.startFrom.savedSource')
+								: nice(sourceId ?? DEFAULT_MOVE)}</summary
+						>
+						<div class="move-source-list">
+							{#each ['state', 'move'] as kind (kind)}
+								{#if sourceClips.some((entry) => entry.kind === kind)}
+									<p class="label">
+										{t(kind === 'state' ? 'experience.tabStates' : 'experience.tabMoves')}
+									</p>
+									{#each sourceClips.filter((entry) => entry.kind === kind) as { key, clip } (key)}
+										<button
+											class="bu-action"
+											data-variant="outline"
+											aria-pressed={!startFrom?.replacement && (sourceId ?? DEFAULT_MOVE) === key}
+											disabled={fitBusy}
+											onclick={() => selectSource(key)}
+										>
+											<Sprite
+												img={sourceThumbnail(key, lastPlaybackCell(clip) ?? 0)}
+												k={1}
+												limit={32}
+												label={nice(key)}
+											/>{nice(key)}
+										</button>
+									{/each}
+								{/if}
+							{/each}
+							{#if !sourceClips.some(({ key }) => key === DEFAULT_MOVE)}
+								<button
+									class="bu-action"
+									data-variant="outline"
+									aria-pressed={sourceId === DEFAULT_MOVE}
+									disabled={fitBusy}
+									onclick={() => selectSource(DEFAULT_MOVE)}>{nice(DEFAULT_MOVE)}</button
+								>
+							{/if}
+							{#if sourceFrames.length > 1}
+								<details class="disclosure">
+									<summary><ChevronRight size={14} />{t('moveSheet.startFrom.chooseFrame')}</summary
+									>
+									{#each sourceFrames as cell (cell)}
+										{@const label = t('moveSheet.startFrom.frame', { number: cell + 1 })}
+										<button
+											class="bu-action"
+											data-variant="outline"
+											aria-pressed={(sourceCell ?? (sourceClip && lastPlaybackCell(sourceClip))) ===
+												cell}
+											onclick={() => (sourceCell = cell)}
+										>
+											<Sprite
+												img={sourceThumbnail(sourceId ?? DEFAULT_MOVE, cell)}
+												k={1}
+												limit={32}
+												{label}
+											/>{label}
+										</button>
+									{/each}
+								</details>
+							{/if}
+						</div>
+						{#if offersFit}
+							<div class="fit-panel" aria-busy={fitBusy}>
+								{#if fitReview}
+									<p class="small" role="status">{t('stateJointFit.review')}</p>
+									<div class="fit-views">
+										{#each fitReview.views as view (view.direction)}
+											{@const label = directionLabel(view.direction)}
+											<div>
+												<div class="fit-overlay">
+													<Sprite
+														img={store.project?.images.get(view.hash) ?? null}
+														k={2}
+														limit={112}
+														{label}
+													/>
+													<svg viewBox="0 0 100 100" aria-hidden="true" preserveAspectRatio="none">
+														{#each view.keypoints as point (point.label)}
+															<circle
+																cx={point.x * 100}
+																cy={point.y * 100}
+																r="1.7"
+																fill="currentColor"
+															/>
+														{/each}
+													</svg>
+												</div>
+												<div class="small">{label}</div>
+												{#each [...view.qa.fails, ...(view.qa.warnings ?? [])] as finding, index (index)}
+													<p class="small">{displayMessage(plainReasonMessage(finding))}</p>
+												{/each}
+											</div>
+										{/each}
+									</div>
+									<button
+										class="bu-action"
+										data-variant="primary"
+										disabled={fitBusy || fitReview.blocked}
+										onclick={saveFit}
+									>
+										{t('stateJointFit.save')}
+									</button>
+									<button
+										class="bu-action"
+										data-variant="outline"
+										onclick={() => (fitReview = null)}
+									>
+										{t('moveSheet.skeleton.back')}
+									</button>
+								{:else if fitQuote}
+									<button class="bu-action" data-variant="primary" onclick={measureFit}>
+										{t('stateJointFit.measure')}
+										<span class="cost"
+											>{fitQuote.generations
+												? t('moves.estimate', { gens: formatNumber(fitQuote.generations) })
+												: t('stateCapture.noCredits')}</span
+										>
+									</button>
+								{:else}
+									<button
+										class="bu-action"
+										data-variant="outline"
+										disabled={fitBusy}
+										onclick={checkFitCost}
+									>
+										{t(
+											fitBusy
+												? 'activity.waitingForPixelLab'
+												: app.key && !app.keyRejected
+													? 'stateJointFit.quote'
+													: 'connectSheet.titleConnectPixelLab'
+										)}
+									</button>
+								{/if}
+								{#if fitError}<p class="notice small" role="alert">
+										{displayNestedMessage(fitError)}
+									</p>{/if}
+							</div>
+						{/if}
+					</details>
+				{/if}
 				<label class="bu-check loop-setting">
 					<span class="loop-copy">
 						<span>{t('moveSheet.loop')}</span>
@@ -1585,6 +1882,11 @@
 							{#if frameDirection && m}
 								{@const direction = frameDirection}
 								{@const size = { width: m.rig.cell.w, height: m.rig.cell.h }}
+								{@const startName = startFrom
+									? startFrom.replacement
+										? t('moveSheet.startFrom.savedSource')
+										: nice(startFrom.clip)
+									: t('moveSheet.standingFrame')}
 								{@const autoEnd =
 									frameReference?.end === undefined && automaticMoveEnd(action, looping)}
 								<div class="reference-heading">
@@ -1682,7 +1984,7 @@
 													img={standingImage}
 													k={1}
 													limit={36}
-													label={t('moveSheet.standingFrame')}
+													label={startName}
 												/>{/snippet}
 											{#snippet matching()}
 												{#if frameReference?.start}<img
@@ -1697,7 +1999,7 @@
 												max={size}
 												label={t('moveSheet.startFrame')}
 												hint=""
-												caption={t('moveSheet.standingFrame')}
+												caption={startName}
 												thumbnail={standing}
 												beforePick={pickStart}
 												bind:loading={startLoading}
@@ -1741,8 +2043,8 @@
 					</details>
 				</div>
 			{/if}
-			{#if reservedMove(id)}<p class="notice warn small">
-					<CircleAlert size={14} />{displayError(reservedMove(id))}
+			{#if reservedMove(id, replacing)}<p class="notice warn small">
+					<CircleAlert size={14} />{displayError(reservedMove(id, replacing))}
 				</p>{:else if motionIssue}<p class="notice warn small">
 					<CircleAlert size={14} />{displayError(motionIssue)}
 				</p>{:else if preflight.length}{#each preflight as warning (warning.id)}<p
@@ -1818,6 +2120,13 @@
 {/if}
 
 <style>
+	.move-source-list .bu-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		margin: 0 0.25rem 0.25rem 0;
+		min-height: 44px;
+	}
 	.frame-recovery-action {
 		align-self: flex-start;
 		justify-self: start;
@@ -1912,6 +2221,26 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 4px;
+	}
+	.fit-panel {
+		display: grid;
+		gap: 8px;
+	}
+	.fit-views {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(112px, 100%), 1fr));
+		gap: 12px;
+	}
+	.fit-overlay {
+		display: inline-grid;
+		position: relative;
+	}
+	.fit-overlay svg {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
 	}
 	.frames-field {
 		row-gap: 0;

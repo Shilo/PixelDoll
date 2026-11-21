@@ -122,3 +122,10 @@
 		{/if}
 	</section>
 {/if}
+
+<style>
+	.add-row {
+		justify-content: flex-start;
+		text-align: start;
+	}
+</style>

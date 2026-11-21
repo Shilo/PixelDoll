@@ -32,6 +32,7 @@ import { planCapacity, requestedSlots } from './capacity.ts';
 import { PLAN_JOB_LIMITS, planRestriction, requestTier } from './plans.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { base64ToBytes, bytesToBase64, pngSize } from '../image/png.ts';
+import { encodePngBytes } from '../image/pngraw.ts';
 import * as db from '../store/db.ts';
 import {
 	activityRequest,
@@ -56,6 +57,7 @@ export interface Result {
 }
 export interface SubJob {
 	id: string; // background_job_id
+	characterId?: string;
 	status: string; // remote status word
 	done: boolean;
 	remoteDone?: boolean; // completed remotely, downloads may still be pending
@@ -101,6 +103,26 @@ export interface JobRec {
 	usd: number;
 	costUnknown?: true; // settled without a usage report for every job: the cost is unknown, never $0
 }
+
+const isManagedState = (record: JobRec) =>
+	record.method === 'POST' && record.endpoint === '/create-character-state';
+
+export function managedStateSubmitChildId(record: JobRec): string | undefined {
+	if (!isManagedState(record) || record.jobs.length !== 1) return undefined;
+	const submit = record.response as SubmitResponse | null | undefined;
+	const parentId = (record.params as { character_id?: unknown } | null)?.character_id;
+	const childId = submit?.character_id;
+	if (
+		!submit?.background_job_id ||
+		submit.background_job_id !== record.jobs[0].id ||
+		typeof childId !== 'string' ||
+		!/^\S+$/.test(childId) ||
+		childId === parentId
+	)
+		return undefined;
+	return childId;
+}
+
 export function queueErrorParts(record: JobRec): (Message | string)[] {
 	const raw = record.error;
 	if (!raw) return [];
@@ -191,6 +213,12 @@ export interface Deps {
 		chooseExisting: (records: JobRec[]) => JobRec | undefined
 	) => Promise<JobRec>;
 	get: (key: string) => Promise<JobRec | undefined>;
+	/** Atomic read-modify-write of one record: `next` sees the stored record and returns the record to write, or undefined to
+	 * leave it untouched. Resolves with the record stored afterward. `next` must be synchronous. */
+	transition: (
+		key: string,
+		next: (stored: JobRec | undefined) => JobRec | undefined
+	) => Promise<JobRec | undefined>;
 	del: (key: string) => Promise<unknown>;
 	all: () => Promise<JobRec[]>;
 	putBlob: (bytes: Uint8Array) => Promise<string>;
@@ -304,6 +332,21 @@ export function retryableEstimate(r: JobRec): boolean {
 	);
 }
 
+export function canReopenQueuedCancellation(record: JobRec, attempt?: number): boolean {
+	return (
+		record.state === 'canceled' &&
+		record.requestStarted !== true &&
+		record.submittedAt == null &&
+		!record.jobs.length &&
+		attempt !== undefined &&
+		Number.isSafeInteger(attempt) &&
+		!!record.autoCanceledAttempts?.length &&
+		!record.autoCanceledAttempts.includes(attempt)
+	);
+}
+
+const queuedWithoutJobs = (record: JobRec) => record.state === 'queued' && !record.jobs.length;
+
 /** setInterval that keeps ticking in background tabs (worker-driven); plain setInterval where Worker is missing (node). */
 let ticker: Worker | null | undefined;
 const ticks = new Map<number, () => void>();
@@ -383,6 +426,21 @@ export class Queue {
 			put: (k, r) => db.put('jobs', k, r),
 			claimEstimate: (r, choose) => db.claimJob(r, choose),
 			get: (k) => db.get<JobRec>('jobs', k),
+			transition: async (k, next) => {
+				let stored: JobRec | undefined;
+				const unchanged = new Error('unchanged');
+				try {
+					return await db.update<JobRec>('jobs', k, (current) => {
+						stored = current;
+						const out = next(current);
+						if (!out) throw unchanged; // aborts the transaction without writing
+						return out;
+					});
+				} catch (e) {
+					if (e === unchanged) return stored;
+					throw e;
+				}
+			},
 			del: (k) => db.del('jobs', k),
 			all: () => db.all<JobRec>('jobs'),
 			putBlob: (b) => db.putBlob(b),
@@ -409,6 +467,19 @@ export class Queue {
 			online: () => globalThis.navigator?.onLine ?? true,
 			...deps
 		};
+		if (!deps.transition && (deps.put || deps.get)) {
+			// An injected store without its own transaction (self-tests, unit fakes): read then write the same store.
+			const { put: write } = this.deps;
+			this.deps.transition = async (k, next) => {
+				const stored = deps.get
+						? await deps.get(k)
+						: (await deps.all?.())?.find((record) => record.id === k),
+					out = next(stored);
+				if (!out) return stored;
+				await write(k, out);
+				return out;
+			};
+		}
 		const { all, get } = this.deps;
 		const owns = (r: JobRec) => this.ownsRecord(r);
 		this.deps.all = async () => (await all()).filter(owns);
@@ -473,18 +544,41 @@ export class Queue {
 		this.emit();
 		this.requestLeadership();
 	}
+	/** Write `r` only while the stored record still passes `allowed` (or is absent); a loser gets the stored record instead. */
+	private async saveIf(r: JobRec, allowed: (stored: JobRec) => boolean): Promise<JobRec | null> {
+		const record = structuredClone(r);
+		let blocked: JobRec | null = null;
+		await this.deps.transition(r.id, (stored) => {
+			if (!stored || !this.ownsRecord(stored) || allowed(stored)) return record;
+			blocked = stored;
+			return undefined;
+		});
+		if (blocked) return blocked;
+		this.chan?.postMessage({ rec: r.id } satisfies Msg);
+		this.emit();
+		this.requestLeadership();
+		return null;
+	}
 	/** Resolves with the record once it is finished (done, failed, canceled or lost). */
-	settled(id: string): Promise<JobRec> {
-		return new Promise((res) => {
+	settled(id: string, signal?: AbortSignal): Promise<JobRec> {
+		return new Promise((res, reject) => {
+			signal?.throwIfAborted();
 			let done = false;
+			const abort = () => {
+				done = true;
+				un();
+				reject(signal?.reason);
+			};
 			const un = this.subscribe((s) => {
 				const r = s.jobs.find((j) => j.id === id);
 				if (!done && r && !live(r)) {
 					done = true;
+					signal?.removeEventListener('abort', abort);
 					res(r);
 					queueMicrotask(() => un());
 				}
 			});
+			if (!done) signal?.addEventListener('abort', abort, { once: true });
 		});
 	}
 
@@ -666,7 +760,7 @@ export class Queue {
 			return true;
 		}
 		if (mine.state === 'queued' && r.state === 'canceled' && !this.busy.has(r.id)) {
-			Object.assign(mine, { state: r.state, finishedAt: r.finishedAt });
+			this.recs.set(r.id, r);
 			return true;
 		}
 		return r.state === 'queued' && this.strengthenPlan(mine, r);
@@ -681,8 +775,18 @@ export class Queue {
 		)
 			return false;
 		mine.minimumTier = minimum;
-		void this.save(mine).catch((e) => console.error('queue', e));
+		void this.persistTier(mine.id, minimum).catch((e) => console.error('queue', e));
 		return true;
+	}
+	private async persistTier(id: string, minimumTier: number) {
+		let changed = false;
+		await this.deps.transition(id, (stored) => {
+			if (!stored || stored.state !== 'queued' || minimumTier <= (stored.minimumTier ?? 0))
+				return undefined;
+			changed = true;
+			return { ...stored, minimumTier };
+		});
+		if (changed) this.chan?.postMessage({ rec: id } satisfies Msg);
 	}
 	/** Submitted jobs only poll: a record that already has a remote job is never sent again. */
 	private pollSubmitted(r: JobRec): boolean {
@@ -942,6 +1046,7 @@ export class Queue {
 			resumeSafe?: boolean;
 			signal?: AbortSignal;
 			attempt?: number;
+			quotedEstimate?: { reuseOnly: boolean; changed: () => never };
 			estimateRetry?: EstimateRetryIntent;
 		} = {}
 	): Promise<JobRec> {
@@ -952,6 +1057,8 @@ export class Queue {
 				throw new Error('Queue disconnected. Reload PixelDoll before starting more work.');
 		};
 		assertConnected();
+		if (meta.quotedEstimate && (req.method !== 'POST' || req.path !== '/estimate-skeleton'))
+			throw new Error('Quoted joint checks can only estimate a skeleton.');
 		if (!this.ownsRecord({ tag: meta.tag }))
 			throw new Error(
 				'This request belongs to a different queue. Open its own workflow before submitting.'
@@ -983,12 +1090,13 @@ export class Queue {
 			}
 			if (active.state === 'queued' && (meta.minimumTier ?? 0) > (active.minimumTier ?? 0)) {
 				active.minimumTier = meta.minimumTier;
-				await this.save(active);
+				await this.persistTier(active.id, meta.minimumTier!);
 			}
 			return active;
 		}
 		const done = matches.find((r) => r.state === 'done');
 		if (done && (seeded || meta.cache || resumeSafe)) return done;
+		if (meta.quotedEstimate?.reuseOnly) meta.quotedEstimate.changed();
 		let retryOf: string | undefined;
 		if (meta.estimateRetry) {
 			// Deterministic record identity also prevents two follower tabs from creating two retries for one consent.
@@ -1002,15 +1110,7 @@ export class Queue {
 			}
 		}
 		if (resumeSafe && !retryOf) {
-			const terminal = matches.find(
-				(r) =>
-					!(
-						r.state === 'canceled' &&
-						Number.isSafeInteger(meta.attempt) &&
-						r.autoCanceledAttempts?.length &&
-						!r.autoCanceledAttempts.includes(meta.attempt!)
-					)
-			);
+			const terminal = matches.find((r) => !canReopenQueuedCancellation(r, meta.attempt));
 			if (terminal) return terminal;
 		}
 		const now = this.deps.now();
@@ -1039,7 +1139,7 @@ export class Queue {
 			gens: 0,
 			usd: 0
 		};
-		if (meta.estimateRetry) {
+		if (meta.estimateRetry || meta.quotedEstimate) {
 			// The transaction re-reads all matching rows: a stale follower cannot overwrite a progressed retry or pay twice.
 			let inserted = false;
 			const claimed = await this.deps.claimEstimate(rec, (records) => {
@@ -1051,6 +1151,12 @@ export class Queue {
 					.sort((a, b) => b.createdAt - a.createdAt);
 				const useful = current.find(live) ?? current.find((r) => r.state === 'done');
 				if (useful) return useful;
+				if (meta.quotedEstimate) {
+					if (current.some((record) => !canReopenQueuedCancellation(record, meta.attempt)))
+						meta.quotedEstimate.changed();
+					inserted = true;
+					return undefined;
+				}
 				const previous = records.find((r) => r.id === rec.id);
 				if (previous) {
 					if (previous.requestHash !== requestHash || previous.endpoint !== '/estimate-skeleton')
@@ -1136,7 +1242,7 @@ export class Queue {
 	}
 	async cancelAbortedScope(id: string) {
 		const record = this.recs.get(id);
-		if (record?.state === 'canceled') await this.save(record);
+		if (record?.state === 'canceled') await this.saveIf(record, queuedWithoutJobs);
 		else if (this.flowAborted(id) && record?.state === 'queued') await this.cancel(id, true);
 	}
 	private cancellationAttempts(id: string): number[] | undefined {
@@ -1322,7 +1428,16 @@ export class Queue {
 		r.state = 'submitting';
 		r.attempts++;
 		r.requestStarted = false;
-		await this.save(r); // persisted before the request leaves
+		// persisted before the request leaves, and only from a still-queued record without jobs: another tab's durable
+		// queued-only cancel (or receipt) wins over this submission, and this submission makes later queued-only cancels no-ops
+		const stored = await this.saveIf(r, queuedWithoutJobs);
+		if (stored) {
+			this.recs.set(r.id, stored);
+			if (this.pollSubmitted(stored)) await this.save(stored);
+			if (!live(stored)) this.submitScopes.delete(r.id);
+			this.emit();
+			return;
+		}
 		try {
 			const body = await mapDeep(r.params, (o) => {
 				// inside the try: a missing input fails the record, never sticks it in `submitting`
@@ -1411,7 +1526,11 @@ export class Queue {
 			r.waitingForCapacity = false;
 			r.jobs = ids.map((id) => ({ id, status: 'submitted', done: false, results: [] }));
 			if (ids.length) r.state = 'running';
-			else this.finish(r); // synchronous route (estimate-skeleton, balance)
+			else if (isManagedState(r)) {
+				r.error =
+					'no clear answer from PixelLab (missing State job receipt). The job may have run and been charged (check pixellab.ai); not resent.';
+				this.finish(r, 'lost');
+			} else this.finish(r); // synchronous route (estimate-skeleton, balance)
 			if (
 				credentialRevision === this.keyRevision &&
 				key === this.key &&
@@ -1442,6 +1561,7 @@ export class Queue {
 				this.finish(r, 'lost'); // unknown cost unless the error body reported usage
 			} else if (
 				err.kind === 'retry' &&
+				r.tag !== 'studio-state' &&
 				(r.method !== 'POST' || paidRequestRejected(r.endpoint, err.status, err.body))
 			) {
 				r.state = 'queued';
@@ -1462,6 +1582,13 @@ export class Queue {
 					r.waitingForCapacity = true;
 					r.nextAt = this.capacityRetryAt;
 				} else r.nextAt = this.deps.now() + Math.max(backoff(r.attempts), err.retryAfterMs ?? 0);
+			} else if (
+				r.tag === 'studio-state' &&
+				(err.kind === 'auth' ||
+					err.kind === 'credits' ||
+					(err.kind === 'retry' && paidRequestRejected(r.endpoint, err.status, err.body)))
+			) {
+				this.finish(r, 'failed');
 			} else if (
 				err.kind === 'retry' ||
 				(!(e instanceof ApiError) &&
@@ -1553,8 +1680,15 @@ export class Queue {
 			s.usage = job.usage;
 			const ims = jobImages(lr);
 			try {
+				if (isManagedState(r)) {
+					const childId = managedStateSubmitChildId(r);
+					if (!childId) throw new Error('missing State submit receipt');
+					if (job.id !== s.id) throw new Error('State job ID does not match the submit receipt');
+					if (lr?.character_id !== undefined && lr.character_id !== childId)
+						throw new Error('State child ID does not match the submit receipt');
+					s.characterId = lr?.character_id;
+				} else if (!ims.length) throw new Error('no images');
 				// validate every inline image before anything counts as done (R6 P2-11)
-				if (!ims.length) throw new Error('no images');
 				for (const im of ims)
 					if (!im.url)
 						await this.saveResult(
@@ -1587,7 +1721,6 @@ export class Queue {
 		bytes: Uint8Array,
 		rgba?: { w: number; h: number }
 	) {
-		// ponytail: rgba_bytes results are stored raw (type octet-stream); encode to PNG when a route actually returns them.
 		const size = rgba
 			? bytes.length === rgba.w * rgba.h * 4
 				? { w: rgba.w, h: rgba.h }
@@ -1595,7 +1728,10 @@ export class Queue {
 			: pngSize(bytes);
 		if (!size || !(size.w > 0 && size.h > 0 && size.w <= MAX_PX && size.h <= MAX_PX))
 			throw new Error(`${label}: not a valid image`);
-		const sha = await this.deps.putBlob(bytes);
+		const png = rgba
+			? await encodePngBytes({ ...size, data: new Uint8ClampedArray(bytes) })
+			: bytes;
+		const sha = await this.deps.putBlob(png);
 		s.results.push({ label, sha, ...size });
 	}
 
@@ -1703,9 +1839,18 @@ export class Queue {
 			return;
 		}
 		if (r.state === 'queued') {
-			this.submitScopes.delete(r.id);
 			r.state = 'canceled';
 			r.finishedAt = this.deps.now();
+			// another tab may already have persisted `submitting` or a job receipt: never overwrite it with a stale cancel
+			const stored = await this.saveIf(r, queuedWithoutJobs);
+			if (stored) {
+				this.recs.set(id, stored);
+				this.emit();
+				if (!queuedOnly && stored.state === 'running') await this.cancel(id);
+				return;
+			}
+			this.submitScopes.delete(r.id);
+			return;
 		} else if (r.state === 'running') {
 			for (const s of r.jobs.filter((s) => !s.done && !s.remoteDone)) {
 				try {

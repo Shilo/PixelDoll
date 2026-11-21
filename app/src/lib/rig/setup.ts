@@ -2,6 +2,7 @@
 import { cellImg } from '../compose/compose.ts';
 import {
 	DIRECTIONS,
+	DEFAULT_MOVE,
 	cellHash,
 	cellKey,
 	matchesStanding,
@@ -30,6 +31,8 @@ export interface SetupPlan {
 	gens: number;
 	warnings: string[];
 }
+export const STATE_CAPTURE_MODE = 'state-capture';
+
 export function rigReady(rec?: Pick<StoredProject, 'manifest' | 'character'> | null): boolean {
 	const r = rec?.manifest.rig;
 	if (!r || !rec?.character?.id || !rec.character.looks?.trim()) return false;
@@ -37,14 +40,15 @@ export function rigReady(rec?: Pick<StoredProject, 'manifest' | 'character'> | n
 	return (
 		!!base &&
 		r.directions.every((d) => d.mirrorOf || hasAll(r.rest?.[d.id]?.keypoints)) &&
-		r.animations.every((a) =>
-			r.directions.every((d) => {
+		r.animations.every((a) => {
+			if (a.kind === 'state' && a.id !== DEFAULT_MOVE) return true;
+			return r.directions.every((d) => {
 				if (d.mirrorOf || !base.cells?.[a.id]?.[d.id]?.some(Boolean)) return true;
 				if (matchesStanding(r, a, d.id, base.cells?.[a.id]?.[d.id]?.[0])) return true;
 				const poses = a.sources?.[d.id]?.keypoints;
 				return poses?.length === a.cells && poses.every(hasAll);
-			})
-		)
+			});
+		})
 	);
 }
 

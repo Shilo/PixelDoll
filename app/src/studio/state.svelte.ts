@@ -55,6 +55,7 @@ import {
 } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import { incompatibleKind } from '../lib/store/incompatible.ts';
+import { sameClipName } from './clipName.ts';
 import {
 	CURRENT_OUTFIT_ID,
 	defaultCharacterExportId,
@@ -119,6 +120,7 @@ import {
 	type SlotUse
 } from './slots.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import { stateBatchScope } from '../lib/pixellab/activity.ts';
 import {
 	activityStateMessage,
 	GENERATION_PHASES,
@@ -251,6 +253,7 @@ export type SheetId =
 	| 'gen'
 	| 'move'
 	| 'moveReview'
+	| 'stateCapture'
 	| 'rename'
 	| 'directions'
 	| 'importZip'
@@ -279,12 +282,13 @@ export const ui = $state({
 	dpr: devicePixelRatio || 1,
 	theme: (lsGet(K.theme) === 'light' ? 'light' : 'dark') as 'light' | 'dark',
 	welcome: !lsGet(K.welcomed),
-	tab: 'wardrobe' as 'wardrobe' | 'colors' | 'outfits' | 'moves', // phone
+	tab: 'wardrobe' as 'wardrobe' | 'colors' | 'outfits' | 'states' | 'moves', // phone
 	colorsFocus: '', // item id whose Colors section the Colors tab scrolls to once (Recolor in item details)
 	group: 'head', // a Wardrobe category: its slot key
 	wardrobeOpenRevision: 0,
 	selected: '', // item id, or "gen:<draft id>"
 	moveReview: '',
+	stateCaptureMove: '',
 	moveFormOpen: false,
 	get sheet(): SheetId {
 		return panel;
@@ -696,7 +700,7 @@ function syncProjectRef(p: StoredProject) {
 /** A save finished for a character this tab may not be showing: read its record and keep its listed summary in step, since
  *  only opening it reloads the record. The summary is not work the save depends on, so a read failure is logged, never
  *  reported as a failed save. */
-async function syncStoredProject(id: string) {
+export async function syncStoredProject(id: string) {
 	const record = await db.get<StoredProject>('projects', id).catch((error: unknown) => {
 		console.error('saved character summary', error);
 		return undefined;
@@ -1322,6 +1326,11 @@ export async function adjustCharacter(
 		);
 	const reviewing = moveReviewHold(rec.moveReviews);
 	if (reviewing) throw reviewing;
+	if (rec.stateGeneration)
+		throw new LocalizedError(
+			'Save or discard the pending State before adjusting the frame.',
+			'adjustFrame.errors.statePending'
+		);
 	const before = rec.manifest.rig.cell.w,
 		old = new Map(project.images as Map<Sha256, Img>);
 	const { record: next, newImages } = await reframeCharacter(
@@ -3214,9 +3223,15 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 		(await db.get('projects', SETUP_KEY))
 	);
 	const cutoff = Date.now() - maxAge;
+	const stateScopes = new Set(
+		(await db.all<StoredProject>('projects')).flatMap(({ stateGeneration: attempt }) =>
+			attempt ? attempt.plan.batches.map((_, index) => stateBatchScope(attempt.token, index)) : []
+		)
+	);
 	const jobs = await queue.clearFinished(
 		(r) =>
 			refs.has(r.id) ||
+			(r.tag === 'studio-state' && !!r.activityScope && stateScopes.has(r.activityScope)) ||
 			((flow || heldCreate()) && FLOW_TAGS.includes(r.tag ?? '')) ||
 			(r.finishedAt ?? r.createdAt) > cutoff
 	);
@@ -3814,6 +3829,16 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
 			: []),
 		...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec)
 	].filter((s) => !itemId || s.items.includes(itemId));
+
+export async function pendingBodyMoveName(projectId: string, id: string) {
+	const matches = (spec: MoveSpec) => !spec.itemsOnly && sameClipName(spec.id, id);
+	if (pendingMoves(projectId).some(matches)) return true;
+	const saved = await db.get<QueuedMove & { queued?: QueuedMove[] }>('projects', MOVE_KEY);
+	return [saved, ...(saved?.queued ?? [])].some(
+		(move) => move?.projectId === projectId && !!move.spec && matches(move.spec)
+	);
+}
+
 export async function startMove(projectId: string, spec: MoveSpec) {
 	if (hmrReloading) return;
 	if (relocating) await saving;
