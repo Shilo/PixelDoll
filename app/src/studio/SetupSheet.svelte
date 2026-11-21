@@ -100,7 +100,7 @@
 
 <Sheet
 	title={t('setup.title')}
-	cancel={active ? 'common.hide' : 'sheet.later'}
+	cancel={active || (mine && settingUp.error) ? 'common.hide' : 'sheet.later'}
 	onclose={() => (ui.sheet = null)}
 >
 	{#if mine && settingUp.spec}
@@ -205,8 +205,12 @@
 				label={t('setup.resumeRigSetup')}
 				plan={setupPeekPlan(plan, settingUp.spec?.looks ?? looks)}
 				activityScope={settingUp.spec?.activityScope}
-			/><button class="bu-action btn plain" data-variant="quiet" onclick={dismissSetup}
-				>{t('setup.dismiss')}</button
+			/><button
+				class="bu-action btn plain"
+				data-variant="quiet"
+				onclick={async () => {
+					if ((await dismissSetup()) && ui.sheet === 'setup') ui.sheet = null;
+				}}>{t('common.cancelAttempt')}</button
 			><span class="api-action"
 				><button
 					class="bu-action btn primary"

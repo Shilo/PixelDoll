@@ -2385,9 +2385,8 @@ test('a stopped move blocks deleting only its own character and opens from the b
 	await deletion.getByRole('button', { name: 'View pending work' }).click();
 	const move = page.getByRole('dialog', { name: 'Add a move' });
 	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeVisible();
-	await move.getByRole('button', { name: 'Start over' }).click();
-	await expect(move.getByText('Offline fixture: walk did not finish.')).toBeHidden();
-	await page.keyboard.press('Escape');
+	await move.getByRole('button', { name: 'Cancel attempt', exact: true }).click();
+	await expect(move).toBeHidden();
 	await remove();
 	await deletion.getByRole('button', { name: 'Delete', exact: true }).click();
 	await expect(deletion).toBeHidden();

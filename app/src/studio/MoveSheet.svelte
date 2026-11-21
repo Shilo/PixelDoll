@@ -59,6 +59,7 @@
 		retryMoveMeasurements,
 		resolveRepairReview,
 		dismissMove,
+		toast,
 		openProject,
 		pendingMoves,
 		withKey
@@ -324,7 +325,7 @@
 		Math.ceil(retryPlan.reduce((sum, call) => sum + (call.generations ?? 0), 0))
 	);
 	const ownQueued = $derived(moving.queued.filter((q) => q.projectId === moving.projectId));
-	// another character's failed move holds every new move; only its own sheet can try it again or start over
+	// Another character's failed move holds every new move until its attempt is resolved.
 	const holder = $derived(
 		!mine && moving.spec && (moving.error || moving.repairReview)
 			? (store.projects.find((p) => p.id === moving.projectId)?.name ??
@@ -484,6 +485,14 @@
 		chooseAction('');
 		text = value;
 	}
+	function leaveFailedMove(close: boolean) {
+		void dismissMove().catch((error) =>
+			toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), {
+				tone: 'danger'
+			})
+		);
+		if (close && !moving.spec) ui.sheet = null;
+	}
 </script>
 
 {#snippet foot()}
@@ -515,9 +524,16 @@
 					: t('moveSheet.review.useRepaired')}</button
 		>
 	{:else if progress && moving.error}
-		<button class="bu-action btn plain" data-variant="quiet" onclick={dismissMove}
-			>{keep ? t('common.discard') : t('common.startOver')}</button
-		>
+		<div class="recovery-exits">
+			<button class="bu-action btn plain" data-variant="quiet" onclick={() => leaveFailedMove(true)}
+				>{t('common.cancelAttempt')}</button
+			>
+			{#if !moving.spec?.itemsOnly && ok}
+				<button class="bu-action btn" data-variant="outline" onclick={() => leaveFailedMove(false)}
+					>{t('moveSheet.newSetup')}</button
+				>
+			{/if}
+		</div>
 		<span class="api-action"
 			><ApiPeek scope="move-retry" label={t('moveSheet.retryLabel')} plan={retryPlan} /><button
 				class="bu-action btn"
@@ -536,9 +552,9 @@
 						});
 						ui.sheet = 'move';
 					}, retryTier)}
-				>{recovery || colorRepair || keep || savedItemFrames || moving.spec?.reuseItemFrames
+				>{recovery || colorRepair || keep || moving.spec?.itemsOnly
 					? t('moveSheet.newFrames')
-					: t('common.tryAgain')}{#if retryGens}
+					: t('moveSheet.retryLabel')}{#if retryGens}
 					<span class="cost">{t('moves.estimate', { gens: formatNumber(retryGens) })}</span
 					>{/if}</button
 			></span
@@ -651,6 +667,7 @@
 				? t('moveSheet.titleReplace')
 				: t('moves.add')}
 	cancel={progress && !moving.done ? 'common.hide' : 'common.cancel'}
+	className={progress && moving.error && !repairReview ? 'move-recovery-sheet' : ''}
 	onclose={() => (ui.sheet = null)}
 	footer={isDemo() || (!ok && !progress) ? undefined : foot}
 >
@@ -789,14 +806,9 @@
 					{recoveryUnavailable.map(displayNestedMessage).join(' ')}
 				</p>{/if}
 			{#if ownQueued.length}<p class="muted small">
-					{t(
-						moving.error
-							? keep
-								? 'moveSheet.queuedNextKeep'
-								: 'moveSheet.queuedNextRetry'
-							: 'moveSheet.queuedNext',
-						{ moves: ownQueued.map((q) => nice(q.spec.id)).join(', ') }
-					)}
+					{t(moving.error ? 'moveSheet.queuedNextRetry' : 'moveSheet.queuedNext', {
+						moves: ownQueued.map((q) => nice(q.spec.id)).join(', ')
+					})}
 				</p>{/if}
 			{#if keep && moving.spec}
 				<section class="keep-review" aria-label={t('moveSheet.keepReview')}>
@@ -1117,6 +1129,17 @@
 </Sheet>
 
 <style>
+	:global(.move-recovery-sheet:not(.bottom) .sheet-foot) {
+		flex-wrap: wrap;
+	}
+	.recovery-exits {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	:global(.move-recovery-sheet.bottom) .recovery-exits > button {
+		flex: 1 1 auto;
+	}
 	.redraw-form {
 		gap: 12px;
 	}

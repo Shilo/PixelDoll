@@ -271,7 +271,7 @@
 					onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
 					disabled={busy || retryGens === null || retryBlocked}
 					aria-describedby={retryBlocked ? tierNoticeId : undefined}
-					>{t('common.tryAgain')}
+					>{t('genCard.generateAgain')}
 					<span class="cost"
 						>{t('moves.estimate', {
 							gens: retryGens === null ? '–' : formatNumber(retryGens)
@@ -329,7 +329,7 @@
 					onclick={() => retryGens !== null && retryGen(g, retryGens, res?.retryKey, retryTier)}
 					disabled={busy || retryGens === null || retryBlocked}
 					aria-describedby={retryBlocked ? tierNoticeId : undefined}
-					>{t('common.tryAgain')}
+					>{t('genCard.generateAgain')}
 					<span class="cost"
 						>{t('moves.estimate', {
 							gens: retryGens === null ? '–' : formatNumber(retryGens)
@@ -338,7 +338,7 @@
 				></span
 			>
 			<button class="bu-action btn plain danger" data-variant="quiet" onclick={() => discardGen(g)}
-				>{t('common.discard')}</button
+				>{t(g.canceled ? 'common.discard' : 'common.cancelAttempt')}</button
 			>
 		</div>
 	{/if}

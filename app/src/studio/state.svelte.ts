@@ -3338,13 +3338,15 @@ export async function resumeCreate() {
 }
 export async function discardCreate(id: string) {
 	const run = creates.find((attempt) => attempt.id === id);
-	if (!canDriveCreate() || !run || !run.error || run.running) return;
+	if (!canDriveCreate() || !run || !run.error || run.running) return false;
 	run.running = true;
 	try {
 		await db.del('projects', createDraftKey(id));
 		removeCreate(run);
+		return true;
 	} catch (error) {
 		toast(message('state.couldNotSaveReason', { reason: errorMessage(error) }), { tone: 'danger' });
+		return false;
 	} finally {
 		run.running = false;
 	}
@@ -3592,7 +3594,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 			if (current()) moving.error = error;
 			// queued moves now run unattended: a failure that holds them says so wherever the user is
 			if (current() && ui.sheet !== 'move')
-				toast(message('state.moveNameFailedOpenMovesToTryAgain', { moveName }), {
+				toast(message('state.moveFailedOpen', { moveName }), {
 					tone: 'danger',
 					duration: 8000,
 					action: () => openFlow('move', projectId)

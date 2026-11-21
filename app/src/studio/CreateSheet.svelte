@@ -142,7 +142,7 @@
 
 <Sheet
 	title={t('create.sheet.title')}
-	cancel={running ? 'common.hide' : creating?.projectId ? 'common.close' : 'common.cancel'}
+	cancel={creating?.projectId ? 'common.close' : creating ? 'common.hide' : 'common.cancel'}
 	onclose={() => (ui.sheet = null)}
 	className="character-sheet"
 	wide
@@ -306,7 +306,21 @@
 				class="bu-action btn plain"
 				data-variant="quiet"
 				disabled={creating.running}
-				onclick={() => creating && discardCreate(creating.id)}>{t('common.discard')}</button
+				onclick={async () => {
+					if (
+						creating &&
+						(await discardCreate(creating.id)) &&
+						ui.sheet === 'create' &&
+						!createPresentation.id
+					)
+						ui.sheet = null;
+				}}>{t('common.cancelAttempt')}</button
+			>
+			<button
+				class="bu-action btn"
+				data-variant="outline"
+				disabled={creating.running}
+				onclick={() => creating && discardCreate(creating.id)}>{t('create.sheet.editSetup')}</button
 			>
 			<span class="api-action"
 				><ApiPeek
@@ -326,7 +340,9 @@
 							seed: freshSeed()
 						};
 						withKey(() => void startCreate(spec, true, id));
-					}}>{t('common.tryAgain')} <span class="cost">{gensRange}</span></button
+					}}
+					>{t('create.sheet.retryLabel')}
+					<span class="cost">{t('create.sheet.estimated', { gens: gensRange })}</span></button
 				></span
 			><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
 		{:else if running}

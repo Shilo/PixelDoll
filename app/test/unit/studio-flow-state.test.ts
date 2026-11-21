@@ -466,7 +466,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 		// a failed move holds the queue while its sheet is closed, so it says so
 		if (kind === 'move')
 			expect(first.ui).toMatchObject({
-				toast: message('state.moveNameFailedOpenMovesToTryAgain', { moveName: 'Cast' }),
+				toast: message('state.moveFailedOpen', { moveName: 'Cast' }),
 				toastTone: 'danger'
 			});
 		mocks[kind].mockClear();
