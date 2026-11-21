@@ -2107,6 +2107,11 @@
 		"changeLoopTitle": "Ubah Ulangi dan atur ulang frame akhir?",
 		"changeLoopWarning": "Ini mengganti frame akhir khusus animasi ini dengan pengaturan otomatis.",
 		"changeLoopAccept": "Ubah Ulangi",
+		"skeleton": {
+			"title": "Tinjau Skeleton V3",
+			"hint": "Skeleton V3 adalah opsi lain. Pemeriksaan kualitas masih bisa gagal.",
+			"back": "Kembali ke hasil"
+		},
 		"checkpoint": {
 			"generate": "Buat animasi",
 			"initialEstimate": "Sekitar {minutes} mnt · Tanpa item",
@@ -2211,9 +2216,9 @@
 		"motionModel": "Model gerakan",
 		"motionModelHelp": "Skeleton v3 memakai pose yang sama untuk tubuh dan perlengkapan. V3 dan PixMiniMax menggambar tubuh terlebih dahulu, lalu PixelDoll mendeteksi pose untuk perlengkapan.",
 		"models": {
-			"skeletonV3": "Bawaan (Skeleton V3)",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "Bawaan (PixMiniMax)"
 		},
 		"frames": "Frame",
 		"framesHelp": "Pilihannya sesuai dengan model ini dan kanvas karakter ({canvas} px). Opsi default memakai jumlah frame bawaan PixelDoll.",

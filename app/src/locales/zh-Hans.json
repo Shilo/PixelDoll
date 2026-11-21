@@ -2085,6 +2085,11 @@
 		"changeLoopTitle": "更改循环并重置结束帧？",
 		"changeLoopWarning": "这会用自动设置替换此动作的自定义结束帧。",
 		"changeLoopAccept": "更改循环",
+		"skeleton": {
+			"title": "查看 Skeleton V3 方案",
+			"hint": "也可以选择 Skeleton V3，但仍可能无法通过质量检查。",
+			"back": "返回结果"
+		},
 		"checkpoint": {
 			"generate": "生成动作",
 			"initialEstimate": "约 {minutes} 分钟 · 不含装备",
@@ -2189,9 +2194,9 @@
 		"motionModel": "运动模型",
 		"motionModelHelp": "Skeleton v3 为身体和装备使用相同的姿势。V3 和 PixMiniMax 会先绘制身体，再由 PixelDoll 检测装备所用的姿势。",
 		"models": {
-			"skeletonV3": "默认（Skeleton V3）",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "默认（PixMiniMax）"
 		},
 		"frames": "帧",
 		"framesHelp": "选项会随此模型和角色的画布（{canvas} px）变化。默认选项使用 PixelDoll 预设的帧数。",

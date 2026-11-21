@@ -2193,6 +2193,11 @@
 		"changeLoopTitle": "Döngü değiştirilsin ve bitiş kareleri sıfırlansın mı?",
 		"changeLoopWarning": "Bu, bu animasyonun özel bitiş karelerini otomatik ayarlarla değiştirir.",
 		"changeLoopAccept": "Döngüyü değiştir",
+		"skeleton": {
+			"title": "Skeleton V3 seçeneğini incele",
+			"hint": "Skeleton V3 başka bir seçenektir. Kalite kontrolleri yine başarısız olabilir.",
+			"back": "Sonuçlara dön"
+		},
 		"checkpoint": {
 			"generate": "Animasyon oluştur",
 			"initialEstimate": "Yaklaşık {minutes} dk · Eşya yok",
@@ -2301,9 +2306,9 @@
 		"motionModel": "Hareket modeli",
 		"motionModelHelp": "Skeleton v3, gövde ve ekipman için aynı pozları kullanır. V3 ve PixMiniMax önce gövdeyi çizer, ardından PixelDoll ekipman için pozları belirler.",
 		"models": {
-			"skeletonV3": "Varsayılan (Skeleton V3)",
+			"skeletonV3": "Skeleton V3",
 			"v3": "V3",
-			"pixminimax": "PixMiniMax"
+			"pixminimax": "Varsayılan (PixMiniMax)"
 		},
 		"frames": "Kareler",
 		"framesHelp": "Seçenekler bu modele ve karakterin tuvaline ({canvas} px) uyar. Varsayılan seçenek PixelDoll'un hazır kare sayısını korur.",

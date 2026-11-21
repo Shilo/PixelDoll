@@ -31,12 +31,15 @@ export function applyMoveLoop(
 	baseline: MovePlayback | undefined,
 	current: MovePlayback | undefined
 ): void {
-	if (
-		requested !== undefined &&
-		current?.loop === baseline?.loop &&
-		current?.moveLoop === baseline?.moveLoop
-	)
+	if (requested !== undefined && !movePlaybackChanged(baseline, current))
 		animation.loop = animation.moveLoop = requested;
+}
+
+export function movePlaybackChanged(
+	baseline: MovePlayback | undefined,
+	current: MovePlayback | undefined
+): boolean {
+	return current?.loop !== baseline?.loop || current?.moveLoop !== baseline?.moveLoop;
 }
 
 export function moveCandidateHasStructuralFailure(candidate: MoveCandidate): boolean {
