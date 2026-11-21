@@ -14,6 +14,7 @@
 	import { balancePlan } from './apiPlans.ts';
 	const localTools = import.meta.env.DEV ? () => import('./LocalDeveloperTools.svelte') : undefined;
 	const description = $props.id();
+	const exampleJob = 'job-example-0001';
 
 	let {
 		tools
@@ -52,7 +53,6 @@
 {/if}
 <figure class="developer-preview">
 	<figcaption class="settings-label">{t('import.preview')}</figcaption>
-	<!-- A sheet header in miniature: the same ApiPeek button, on a free example plan, where users meet it. -->
 	<div class="example-sheet">
 		<div class="example-head">
 			<strong>{t('activity.title')}</strong>
@@ -60,10 +60,21 @@
 				preview
 				targets={[
 					{
-						scope: 'example',
+						scope: 'example-balance',
 						label: t('activity.refreshBalance'),
-						plan: balancePlan(),
-						copyId: 'job-example-0001'
+						plan: balancePlan()
+					},
+					{
+						scope: 'example-job',
+						label: `${t('activity.ledger.job')} · ${exampleJob}`,
+						plan: [
+							{
+								method: 'GET',
+								path: `/background-jobs/${exampleJob}`,
+								label: t('apiPeek.plan.checkProgress')
+							}
+						],
+						copyId: exampleJob
 					}
 				]}
 			/>

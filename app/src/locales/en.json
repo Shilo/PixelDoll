@@ -48,7 +48,7 @@
 		"rigs": "Developer rigs",
 		"target": "API call scope",
 		"copyId": "Copy ID",
-		"previewHint": "With Developer mode on, this button sits beside sheet titles such as {activity}, with “{copyId}” where available. The mode also adds “{all}” and “{backup}” to this page. Try the example; nothing is sent.",
+		"previewHint": "With Developer mode on, this button sits beside sheet titles such as {activity}. Open it and select the sample job to try “{copyId}”. The mode also adds “{all}” and “{backup}” to this page. Try the example; nothing is sent.",
 		"idCopied": "ID copied",
 		"idCopyFailed": "Could not copy the ID."
 	},

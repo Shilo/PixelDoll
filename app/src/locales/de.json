@@ -48,7 +48,7 @@
 		"rigs": "Entwickler-Rigs",
 		"target": "API-Aufrufe für",
 		"copyId": "ID kopieren",
-		"previewHint": "Im Entwicklermodus steht diese Schaltfläche neben Fenstertiteln wie {activity}, mit „{copyId}“, wo verfügbar. Der Modus fügt dieser Seite außerdem „{all}“ und „{backup}“ hinzu. Probiere das Beispiel aus; es wird nichts gesendet.",
+		"previewHint": "Im Entwicklermodus steht diese Schaltfläche neben Fenstertiteln wie {activity}. Öffne sie und wähle den Beispielauftrag, um „{copyId}“ auszuprobieren. Der Modus fügt dieser Seite außerdem „{all}“ und „{backup}“ hinzu. Probiere das Beispiel aus; es wird nichts gesendet.",
 		"idCopied": "ID kopiert",
 		"idCopyFailed": "Die ID konnte nicht kopiert werden."
 	},

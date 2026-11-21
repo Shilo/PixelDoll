@@ -39,10 +39,26 @@ test('Developer mode defaults to off, persists, and closes an open inspector whe
 	const settings = await developerSettings(page);
 	const mode = settings.getByRole('switch', { name: 'Developer mode', exact: true });
 	const history = settings.getByRole('button', { name: 'Inspect all API calls', exact: true });
+	const preview = settings.locator('.developer-preview');
 	await expect(mode).not.toBeChecked();
 	await expect(history).toHaveCount(0);
+	await preview.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
+	await expect(peek(page)).toBeVisible();
+	await expect(peek(page).getByRole('button', { name: 'Copy ID', exact: true })).toHaveCount(0);
+	await peek(page).getByRole('combobox', { name: 'API call scope' }).selectOption('example-job');
+	await peek(page).getByRole('button', { name: 'Copy ID', exact: true }).click();
+	await expect
+		.poll(() => page.evaluate(() => sessionStorage.getItem('api-peek-copy')))
+		.toBe('job-example-0001');
+	await page.keyboard.press('Escape');
+	await expect(peek(page)).toHaveCount(0);
+	await expect(mode).not.toBeChecked();
 	await mode.check();
 	await expect(history).toBeVisible();
+	await expect(preview).toBeVisible();
+	await preview.getByRole('button', { name: 'Inspect API calls', exact: true }).click();
+	await expect(peek(page).getByRole('combobox', { name: 'API call scope' })).toBeVisible();
+	await page.keyboard.press('Escape');
 	await page.reload();
 	await developerSettings(page);
 	await expect(mode).toBeChecked();

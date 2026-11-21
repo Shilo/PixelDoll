@@ -74,15 +74,16 @@
 	let inspectionError = $state(false);
 	// A preview shows only its planned sample calls, whatever scopes or queue IDs its targets carry.
 	const actual = $derived(
-		$apiActivity.filter(
-			(c) =>
-				!preview &&
-				(all ||
-					(activityScope &&
-						(c.activityScope === activityScope || c.relatedScopes?.includes(activityScope))) ||
-					(c.queueId && queueIds.includes(c.queueId)) ||
-					c.relatedQueueIds?.some((id) => queueIds.includes(id)))
-		)
+		preview
+			? []
+			: $apiActivity.filter(
+					(c) =>
+						all ||
+						(activityScope &&
+							(c.activityScope === activityScope || c.relatedScopes?.includes(activityScope))) ||
+						(c.queueId && queueIds.includes(c.queueId)) ||
+						c.relatedQueueIds?.some((id) => queueIds.includes(id))
+				)
 	);
 	const recorded = $derived(actual.length > 0 || (all && !preview));
 	const calls = $derived(recorded ? actual : plan);
@@ -384,7 +385,7 @@
 						{#if identifier}<button
 								type="button"
 								class="bu-action btn small"
-								data-variant="quiet"
+								data-variant="outline"
 								onclick={copyIdentifier}>{t('developer.copyId')}</button
 							>{/if}
 					</div>
