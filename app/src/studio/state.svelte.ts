@@ -650,6 +650,32 @@ export function showFrame(anim: string, dir: DirectionName, cell: number): void 
 	);
 }
 
+/** A saved character's listed identity and cached summary, for the first load and for a save that reloads it. */
+function savedProjectRef(p: StoredProject): ProjectRef {
+	return {
+		id: p.id,
+		name: p.manifest.name,
+		exportId: p.manifest.exportId ?? defaultCharacterExportId(p.id),
+		demo: false,
+		dev: p.origin === 'dev',
+		savedAt: p.savedAt,
+		// A developer rig (never shown as a character) may lack the items and slots a dress state reads.
+		look:
+			p.origin === 'dev'
+				? p.savedAt
+				: `${p.savedAt} ${stableStringify(dressOf(p.manifest, (p as { dress?: { current?: Outfit } }).dress?.current))}`,
+		// A developer rig frozen on the M2 pages need not carry a full rig; it has no card facts.
+		facts: p.manifest.rig?.cell ? characterFacts(p.manifest) : undefined
+	};
+}
+/** Keep one listed character in step with its saved record after a save reloaded it: its name, facts, saved time and
+ *  thumbnail look, without reading the whole list again. */
+function syncProjectRef(p: StoredProject) {
+	if (!store.projects.some((entry) => entry.id === p.id)) return;
+	const ref = savedProjectRef(p);
+	store.projects = store.projects.map((entry) => (entry.id === p.id ? ref : entry));
+}
+
 /** False when the saved characters could not be read (already reported). */
 export async function refreshProjects(): Promise<boolean> {
 	const removed = await deleteOutdated().catch((e: unknown) => {
@@ -683,21 +709,7 @@ export async function refreshProjects(): Promise<boolean> {
 			savedAt: '',
 			look: stableStringify(demoDress ?? null)
 		},
-		...own.map((p) => ({
-			id: p.id,
-			name: p.manifest.name,
-			exportId: p.manifest.exportId ?? defaultCharacterExportId(p.id),
-			demo: false,
-			dev: p.origin === 'dev',
-			savedAt: p.savedAt,
-			// A developer rig (never shown as a character) may lack the items and slots a dress state reads.
-			look:
-				p.origin === 'dev'
-					? p.savedAt
-					: `${p.savedAt} ${stableStringify(dressOf(p.manifest, (p as { dress?: { current?: Outfit } }).dress?.current))}`,
-			// A developer rig frozen on the M2 pages need not carry a full rig; it has no card facts.
-			facts: p.manifest.rig?.cell ? characterFacts(p.manifest) : undefined
-		}))
+		...own.map(savedProjectRef)
 	];
 	// Items of a character created, renamed or deleted here or in another tab.
 	void refreshShared();
@@ -802,6 +814,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
 		store.project = r.project;
 		store.moveReviews = r.record?.moveReviews ?? {};
 		store.exportRecord = r.record;
+		if (r.record) syncProjectRef(r.record);
 		// Another acceptance can supersede its reload. Retire worn drafts only when their saved items are published.
 		let acceptedWear = false;
 		for (const g of [...gens]) {
