@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "Resmî bir uygulama değildir."
 	},
 	"characterActions": {
+		"frameSize": "Kare boyutu…",
 		"directions": "Yönler…",
 		"demoDeleteLocked": "Demo karakteri silinemez",
 		"labelDeleteCharacter": "Karakteri silin…"
@@ -734,6 +735,7 @@
 		"couldNotEnterFullScreenTryAgain": "Tam ekrana geçilemedi. Tekrar deneyin veya tarayıcınızın tam ekran kontrolünü kullanın."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Kare boyutunu değiştirmeden önce bekleyen üretim işini bitirin veya kapatın.",
 		"couldNotCheckNamedFrames": "{names} için kareler denetlenemedi: {reason}",
 		"couldNotCheckSeveralFrames": "{names} için kareler denetlenemedi.",
 		"copyMissingOneMove": "{move} hareketinde eksik kareler var; eşya orada görünmez.",
@@ -1119,6 +1121,7 @@
 		"imported": "{name} içe aktarıldı",
 		"untitledState": "Adsız durum",
 		"warning": {
+			"noRoom": "Bu karakterde çok fazla görüntü pikseli olduğu için animasyon alanı eklenmedi. Eklemek için içe aktardıktan sonra Kare boyutunu kullanın.",
 			"fixedBase": "İçe aktarılan görsel sabit temel gövdedir: Mevcut giysiler ve saç kaldırılamaz. İskelete göre pozlanan ekipmanları kullanmak ve yeni animasyonlar eklemek için poz rig'ini kurun.",
 			"frameCounts": "“{move}” animasyonunda yönlere göre kare sayısı değişiyor. Özgün karelerin tümünü ve her yönün uzunluğunu korumak için yönler ayrı animasyonlar olarak içe aktarıldı.",
 			"semiAlpha": "Kısmen şeffaf kenarlar piksel sanatına uygun şeffaflığa dönüştürüldü."
@@ -2178,6 +2181,8 @@
 		}
 	},
 	"moveSheet": {
+		"enlargeFrame": "{size} px’e büyütün",
+		"frameRoom": "Bu animasyon {frame} px karenin dışına taşabilir: karakterin ayaklarının altında {below} px var. Önce kareyi ücretsiz olarak {size} px’e büyütün veya animasyonu yine de ekleyin.",
 		"sharedCopiesCoverage": "Paylaşılan kopyalar, kareleri olan görünümlerde kullanılabilir.",
 		"thatCharacter": "söz konusu karakter",
 		"recoveryCheckFailed": "Önbellekteki kareler kontrol edilemedi: {error}",
@@ -2589,6 +2594,8 @@
 		}
 	},
 	"moveReview": {
+		"enlargeDetail": "Karakterin tamamının çevresine ücretsiz boş alan ekler ({from} px’ten {size} px’e) ve ödenmiş hareketi yeniden kullanır; yalnızca büyük karedeki adımlar satın alınır.",
+		"enlarge": "Kareyi {size} px’e büyütün ve devam edin",
 		"resume": "Ücretli sonuçlarla devam et",
 		"lift": "Sığması için yükseltip devam et",
 		"liftAndReroll": "Sığması için yükselt, yeniden oluştur: {views}",
@@ -2605,5 +2612,28 @@
 		"resume": "Ücretli sonuçlarla devam et",
 		"register": "Çizilen görünümleri yeniden kaydet",
 		"registerDetail": "Ücretli çizimi korur ve aynı görünümler için yeni bir kayıt satın alır."
+	},
+	"frameSheet": {
+		"title": "Kare boyutu",
+		"size": "Kare boyutu",
+		"intro": "{name} çevresine boş alan ekleyin veya kaldırın. Ücretsizdir ve hiçbir şey yeniden çizilmez: her eşya, animasyon ve kare yerinde kalır.",
+		"preview": "{size} px karede ayakta görünüm",
+		"useRecommended": "{size} px kullanın",
+		"range": "Şu an {current} px. 2’şer adımla {min}–{max} px seçin.",
+		"roomShort": "Animasyonlar bu karenin dışına taşabilir. {size} px, ayakların altına ve yanlara yer açar.",
+		"above96": "96 px’in üzerinde, elde tutulan eşyalar ve onarım ızgaraları daha pahalıdır.",
+		"above170": "170 px’in üzerinde her eşya, giydirme çağrısı başına 25 gens tutar.",
+		"consequences": "Eşyalar yalnızca kare boyutu aynı olan karakterler arasında birebir kopyalanır. Dışa aktarımlar oyun içi ölçeği korur; yeni kareyi kullanmak için yeniden dışa aktarın.",
+		"loading": "Kare yükleniyor…",
+		"saved": "Kare {before} px’ten {size} px’e değiştirildi.",
+		"undone": "Kare yeniden {size} px yapıldı.",
+		"errors": {
+			"missingArtwork": "Bu karakterin kayıtlı çizimleri eksik, bu yüzden karesi değiştirilemez.",
+			"even": "Çift sayıda piksel değişen farklı bir kare boyutu seçin.",
+			"range": "Bu karakter için kare {min}–{max} px olmalıdır.",
+			"resolveDrafts": "Kare boyutunu değiştirmeden önce bu karakterin eşya taslaklarını saklayın veya kapatın.",
+			"changed": "Bu karakter değişti. En son sürümü incelemek için Kare boyutunu yeniden açın.",
+			"saveFailed": "Kare geri alınamadı."
+		}
 	}
 }

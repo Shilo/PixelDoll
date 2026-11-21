@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "Este não é um app oficial."
 	},
 	"characterActions": {
+		"frameSize": "Tamanho do quadro…",
 		"directions": "Direções…",
 		"demoDeleteLocked": "Não é possível excluir o personagem da demo",
 		"labelDeleteCharacter": "Excluir personagem…"
@@ -739,6 +740,7 @@
 		"couldNotEnterFullScreenTryAgain": "Não foi possível entrar em tela cheia. Tente novamente ou use o controle de tela cheia do navegador."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Conclua ou descarte o trabalho de geração pendente antes de mudar o tamanho do quadro.",
 		"couldNotCheckNamedFrames": "Não foi possível verificar os quadros de {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Não foi possível verificar os quadros de {names}.",
 		"copyMissingOneMove": "Faltam quadros em {move}; o item fica oculto nela.",
@@ -1133,6 +1135,7 @@
 		"imported": "{name} foi importado",
 		"untitledState": "Estado sem nome",
 		"warning": {
+			"noRoom": "Não foi adicionado espaço para animações porque este personagem tem pixels de imagem demais. Use Tamanho do quadro depois de importar para adicioná-lo.",
 			"fixedBase": "A arte importada vira a base fixa: as roupas e os cabelos existentes não podem ser removidos. Configure o rig de poses para usar equipamentos animados pelo esqueleto e adicionar novas animações.",
 			"frameCounts": "“{move}” tem quantidades diferentes de quadros em cada direção. As direções foram importadas como animações separadas para preservar todos os quadros originais e a duração de cada direção.",
 			"semiAlpha": "As bordas parcialmente transparentes foram convertidas para transparência de pixel art."
@@ -2198,6 +2201,8 @@
 		}
 	},
 	"moveSheet": {
+		"enlargeFrame": "Ampliar para {size} px",
+		"frameRoom": "Esta animação pode passar do quadro de {frame} px: o personagem tem {below} px abaixo dos pés. Amplie o quadro para {size} px de graça primeiro ou adicione a animação mesmo assim.",
 		"sharedCopiesCoverage": "As cópias compartilhadas ainda podem ser usadas nas vistas em que têm quadros.",
 		"thatCharacter": "esse personagem",
 		"recoveryCheckFailed": "Não foi possível verificar os quadros em cache: {error}",
@@ -2609,6 +2614,8 @@
 		}
 	},
 	"moveReview": {
+		"enlargeDetail": "Adiciona espaço vazio grátis ao redor de todo o personagem (de {from} px para {size} px) e reutiliza o movimento pago; só as etapas no quadro maior são compradas.",
+		"enlarge": "Ampliar o quadro para {size} px e continuar",
 		"resume": "Continuar com os resultados pagos",
 		"lift": "Continuar, elevado para caber",
 		"liftAndReroll": "Elevar para caber e gerar {views} de novo",
@@ -2625,5 +2632,28 @@
 		"resume": "Continuar com os resultados pagos",
 		"register": "Registrar as vistas desenhadas de novo",
 		"registerDetail": "Mantém o desenho pago e compra um novo registro das mesmas vistas."
+	},
+	"frameSheet": {
+		"title": "Tamanho do quadro",
+		"size": "Tamanho do quadro",
+		"intro": "Adicione ou remova espaço vazio ao redor de {name}. É grátis e nada é redesenhado: cada item, animação e quadro mantém seu lugar.",
+		"preview": "Vista em pé em um quadro de {size} px",
+		"useRecommended": "Usar {size} px",
+		"range": "Agora {current} px. Escolha de {min} a {max} px, de 2 em 2.",
+		"roomShort": "As animações podem passar deste quadro. {size} px adiciona espaço abaixo dos pés e nas laterais.",
+		"above96": "Acima de 96 px, itens segurados e grades de reparo custam mais.",
+		"above170": "Acima de 170 px, cada item custa 25 gens por chamada de vestir.",
+		"consequences": "Itens só são copiados exatamente entre personagens com o mesmo tamanho de quadro. As exportações mantêm a mesma escala no jogo; exporte de novo para usar o novo quadro.",
+		"loading": "Carregando o quadro…",
+		"saved": "Quadro alterado de {before} px para {size} px.",
+		"undone": "Quadro voltou para {size} px.",
+		"errors": {
+			"missingArtwork": "Falta arte salva deste personagem, então o quadro não pode ser alterado.",
+			"even": "Escolha outro tamanho de quadro que mude em um número par de pixels.",
+			"range": "O quadro deve ter de {min} a {max} px para este personagem.",
+			"resolveDrafts": "Mantenha ou descarte os rascunhos de itens deste personagem antes de mudar o tamanho do quadro.",
+			"changed": "Este personagem mudou. Abra Tamanho do quadro de novo para revisar a versão mais recente.",
+			"saveFailed": "Não foi possível voltar o quadro."
+		}
 	}
 }

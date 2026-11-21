@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "Keine offizielle App."
 	},
 	"characterActions": {
+		"frameSize": "Frame-Größe…",
 		"directions": "Blickrichtungen…",
 		"demoDeleteLocked": "Die Demo-Figur kann nicht gelöscht werden",
 		"labelDeleteCharacter": "Figur löschen…"
@@ -737,6 +738,7 @@
 		"couldNotEnterFullScreenTryAgain": "Das Vollbild konnte nicht geöffnet werden. Versuch es noch einmal oder verwende die Vollbildsteuerung deines Browsers."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Schließe ausstehende Generierungen ab oder verwirf sie, bevor du die Frame-Größe änderst.",
 		"couldNotCheckNamedFrames": "Bilder für {names} konnten nicht geprüft werden: {reason}",
 		"couldNotCheckSeveralFrames": "Bilder für {names} konnten nicht geprüft werden.",
 		"copyMissingOneMove": "Für {move} fehlen Bilder; der Gegenstand bleibt dort unsichtbar.",
@@ -1125,6 +1127,7 @@
 		"imported": "{name} importiert",
 		"untitledState": "Unbenannter Zustand",
 		"warning": {
+			"noRoom": "Platz für Animationen wurde nicht hinzugefügt, weil diese Figur zu viele Bildpixel hat. Nutze nach dem Import Frame-Größe, um ihn hinzuzufügen.",
 			"fixedBase": "Importierte Grafiken bilden den festen Grundkörper: Vorhandene Kleidung und Haare können nicht entfernt werden. Richte das Posen-Rig ein, um Ausrüstung per Skelett zu animieren und neue Animationen hinzuzufügen.",
 			"frameCounts": "„{move}“ hat je nach Blickrichtung unterschiedlich viele Frames. Die Blickrichtungen wurden als separate Animationen importiert, damit alle Originalframes und die jeweilige Länge erhalten bleiben.",
 			"semiAlpha": "Teiltransparente Kanten wurden in harte Pixelgrafik-Transparenz umgewandelt."
@@ -2184,6 +2187,8 @@
 		}
 	},
 	"moveSheet": {
+		"enlargeFrame": "Auf {size} px vergrößern",
+		"frameRoom": "Diese Animation kann über den {frame}-px-Frame hinausgehen: Unter den Füßen der Figur sind {below} px frei. Vergrößere den Frame zuerst kostenlos auf {size} px oder füge die Animation trotzdem hinzu.",
 		"sharedCopiesCoverage": "Geteilte Kopien können weiterhin in Ansichten getragen werden, für die sie Bilder haben.",
 		"thatCharacter": "diese Figur",
 		"recoveryCheckFailed": "Zwischengespeicherte Frames konnten nicht geprüft werden: {error}",
@@ -2595,6 +2600,8 @@
 		}
 	},
 	"moveReview": {
+		"enlargeDetail": "Fügt kostenlos leeren Raum um die ganze Figur hinzu ({from} px auf {size} px) und nutzt die bezahlte Bewegung erneut; nur die Schritte im größeren Frame werden gekauft.",
+		"enlarge": "Frame auf {size} px vergrößern und fortfahren",
 		"resume": "Mit bezahlten Ergebnissen fortfahren",
 		"lift": "Fortfahren, angehoben",
 		"liftAndReroll": "Anheben, {views} neu würfeln",
@@ -2611,5 +2618,28 @@
 		"resume": "Mit bezahlten Ergebnissen fortfahren",
 		"register": "Gezeichnete Ansichten neu registrieren",
 		"registerDetail": "Behält die bezahlte Zeichnung und kauft eine neue Registrierung derselben Ansichten."
+	},
+	"frameSheet": {
+		"title": "Frame-Größe",
+		"size": "Frame-Größe",
+		"intro": "Füge rund um {name} leeren Raum hinzu oder entferne ihn. Das ist kostenlos und zeichnet nichts neu: Jeder Gegenstand, jede Animation und jeder Frame bleibt an seinem Platz.",
+		"preview": "Standansicht in einem {size}-px-Frame",
+		"useRecommended": "{size} px verwenden",
+		"range": "Jetzt {current} px. Wähle {min}–{max} px in Zweierschritten.",
+		"roomShort": "Animationen können über diesen Frame hinausgehen. {size} px schafft Platz unter den Füßen und an den Seiten.",
+		"above96": "Über 96 px kosten gehaltene Gegenstände und Reparaturraster mehr.",
+		"above170": "Über 170 px kostet jeder Gegenstand 25 Gens pro Anzieh-Aufruf.",
+		"consequences": "Gegenstände werden nur zwischen Figuren mit gleicher Frame-Größe exakt kopiert. Exporte behalten den gleichen Maßstab im Spiel; exportiere erneut, um den neuen Frame zu verwenden.",
+		"loading": "Frame wird geladen…",
+		"saved": "Frame von {before} px auf {size} px geändert.",
+		"undone": "Frame zurück auf {size} px geändert.",
+		"errors": {
+			"missingArtwork": "Gespeicherte Grafik dieser Figur fehlt, daher kann ihr Frame nicht geändert werden.",
+			"even": "Wähle eine andere Frame-Größe, die sich um eine gerade Pixelzahl ändert.",
+			"range": "Der Frame muss für diese Figur {min}–{max} px groß sein.",
+			"resolveDrafts": "Behalte oder verwirf die Gegenstandsentwürfe dieser Figur, bevor du die Frame-Größe änderst.",
+			"changed": "Diese Figur hat sich geändert. Öffne Frame-Größe erneut, um die neueste Version zu prüfen.",
+			"saveFailed": "Der Frame konnte nicht zurückgeändert werden."
+		}
 	}
 }

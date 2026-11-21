@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "Application non officielle."
 	},
 	"characterActions": {
+		"frameSize": "Taille du cadre…",
 		"directions": "Directions…",
 		"demoDeleteLocked": "Le personnage de la démo ne peut pas être supprimé",
 		"labelDeleteCharacter": "Supprimer le personnage…"
@@ -731,6 +732,7 @@
 		"couldNotEnterFullScreenTryAgain": "Impossible de passer en plein écran. Réessayez ou utilisez la commande plein écran de votre navigateur."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Terminez ou ignorez la génération en attente avant de changer la taille du cadre.",
 		"couldNotCheckNamedFrames": "Impossible de vérifier les images de {names} : {reason}",
 		"couldNotCheckSeveralFrames": "Impossible de vérifier les images de {names}.",
 		"copyMissingOneMove": "Des images manquent pour {move} ; l’objet y reste masqué.",
@@ -1119,6 +1121,7 @@
 		"imported": "{name} importé",
 		"untitledState": "État sans titre",
 		"warning": {
+			"noRoom": "L’espace pour les animations n’a pas été ajouté, car ce personnage a trop de pixels d’image. Utilisez Taille du cadre après l’import pour l’ajouter.",
 			"fixedBase": "Le visuel importé devient le corps de base figé : il est impossible de retirer les vêtements et les cheveux déjà dessinés. Configurez le rig de pose pour animer l’équipement avec le squelette et ajouter de nouvelles animations.",
 			"frameCounts": "« {move} » a un nombre d’images différent selon la direction. Ses directions ont été importées comme animations distinctes pour conserver chaque image et la durée d’origine de chaque direction.",
 			"semiAlpha": "Les pixels partiellement transparents en bordure ont été convertis en pixels opaques ou transparents, comme en pixel art."
@@ -2185,6 +2188,8 @@
 		}
 	},
 	"moveSheet": {
+		"enlargeFrame": "Agrandir à {size} px",
+		"frameRoom": "Cette animation peut dépasser le cadre de {frame} px : le personnage a {below} px sous les pieds. Agrandissez d’abord gratuitement le cadre à {size} px, ou ajoutez l’animation quand même.",
 		"sharedCopiesCoverage": "Les copies partagées peuvent toujours être portées dans les vues où elles ont des images.",
 		"thatCharacter": "ce personnage",
 		"recoveryCheckFailed": "Impossible de vérifier les images en cache : {error}",
@@ -2596,6 +2601,8 @@
 		}
 	},
 	"moveReview": {
+		"enlargeDetail": "Ajoute gratuitement de l’espace vide autour de tout le personnage (de {from} px à {size} px) et réutilise le mouvement payé ; seules les étapes sur le cadre plus grand sont achetées.",
+		"enlarge": "Agrandir le cadre à {size} px et continuer",
 		"resume": "Continuer avec les résultats payés",
 		"lift": "Continuer, relevé pour tenir",
 		"liftAndReroll": "Relever pour tenir, relancer {views}",
@@ -2612,5 +2619,28 @@
 		"resume": "Continuer avec les résultats payés",
 		"register": "Réenregistrer les vues dessinées",
 		"registerDetail": "Conserve le dessin payé et achète un nouvel enregistrement des mêmes vues."
+	},
+	"frameSheet": {
+		"title": "Taille du cadre",
+		"size": "Taille du cadre",
+		"intro": "Ajoutez ou retirez de l’espace vide autour de {name}. C’est gratuit et rien n’est redessiné : chaque objet, animation et image garde sa place.",
+		"preview": "Vue debout dans un cadre de {size} px",
+		"useRecommended": "Utiliser {size} px",
+		"range": "Actuellement {current} px. Choisissez de {min} à {max} px par pas de 2.",
+		"roomShort": "Les animations peuvent dépasser ce cadre. {size} px ajoute de l’espace sous les pieds et sur les côtés.",
+		"above96": "Au-delà de 96 px, les objets tenus et les grilles de réparation coûtent plus cher.",
+		"above170": "Au-delà de 170 px, chaque objet coûte 25 gens par appel d’habillage.",
+		"consequences": "Les objets ne se copient à l’identique qu’entre personnages de même taille de cadre. Les exports gardent la même échelle en jeu ; exportez à nouveau pour utiliser le nouveau cadre.",
+		"loading": "Chargement du cadre…",
+		"saved": "Cadre modifié de {before} px à {size} px.",
+		"undone": "Cadre revenu à {size} px.",
+		"errors": {
+			"missingArtwork": "Des illustrations enregistrées de ce personnage manquent, son cadre ne peut donc pas être modifié.",
+			"even": "Choisissez une autre taille de cadre qui change d’un nombre pair de pixels.",
+			"range": "Le cadre doit mesurer de {min} à {max} px pour ce personnage.",
+			"resolveDrafts": "Conservez ou ignorez les brouillons d’objets de ce personnage avant de changer la taille du cadre.",
+			"changed": "Ce personnage a changé. Rouvrez Taille du cadre pour vérifier la dernière version.",
+			"saveFailed": "Impossible de rétablir le cadre."
+		}
 	}
 }

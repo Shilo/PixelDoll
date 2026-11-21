@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "No es una app oficial."
 	},
 	"characterActions": {
+		"frameSize": "Tamaño del marco…",
 		"directions": "Direcciones…",
 		"demoDeleteLocked": "El personaje de la demo no se puede eliminar",
 		"labelDeleteCharacter": "Eliminar personaje…"
@@ -737,6 +738,7 @@
 		"couldNotEnterFullScreenTryAgain": "No se pudo activar la pantalla completa. Inténtalo de nuevo o usa el control de pantalla completa de tu navegador."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Termina o descarta el trabajo de generación pendiente antes de cambiar el tamaño del marco.",
 		"couldNotCheckNamedFrames": "No se pudieron comprobar los fotogramas de {names}: {reason}",
 		"couldNotCheckSeveralFrames": "No se pudieron comprobar los fotogramas de {names}.",
 		"copyMissingOneMove": "Faltan fotogramas en {move}; el objeto se oculta ahí.",
@@ -1125,6 +1127,7 @@
 		"imported": "Se importó {name}",
 		"untitledState": "Estado sin título",
 		"warning": {
+			"noRoom": "No se añadió espacio para animaciones porque este personaje tiene demasiados píxeles de imagen. Usa Tamaño del marco después de importar para añadirlo.",
 			"fixedBase": "Las imágenes importadas forman la base fija: no puedes quitar la ropa ni el pelo que ya aparecen. Configura el rig para añadir animaciones y adaptar el equipamiento a las poses del esqueleto.",
 			"frameCounts": "“{move}” tiene distinta cantidad de fotogramas según la dirección. Sus direcciones se importaron como animaciones separadas para conservar todos los fotogramas originales y la duración de cada dirección.",
 			"semiAlpha": "Los bordes semitransparentes se convirtieron a transparencia de pixel art."
@@ -2187,6 +2190,8 @@
 		}
 	},
 	"moveSheet": {
+		"enlargeFrame": "Ampliar a {size} px",
+		"frameRoom": "Esta animación puede salirse del marco de {frame} px: el personaje tiene {below} px bajo los pies. Amplía primero el marco a {size} px gratis o añade la animación de todos modos.",
 		"sharedCopiesCoverage": "Las copias compartidas se pueden usar en las vistas en las que tienen fotogramas.",
 		"thatCharacter": "ese personaje",
 		"recoveryCheckFailed": "No se pudieron comprobar los fotogramas en caché: {error}",
@@ -2602,6 +2607,8 @@
 		}
 	},
 	"moveReview": {
+		"enlargeDetail": "Añade espacio vacío gratis alrededor de todo el personaje (de {from} px a {size} px) y reutiliza el movimiento pagado; solo se compran los pasos en el marco más grande.",
+		"enlarge": "Ampliar el marco a {size} px y continuar",
 		"resume": "Continuar con los resultados pagados",
 		"lift": "Continuar, elevado para que quepa",
 		"liftAndReroll": "Elevar para que quepa y volver a generar {views}",
@@ -2618,5 +2625,28 @@
 		"resume": "Continuar con los resultados pagados",
 		"register": "Registrar de nuevo las vistas dibujadas",
 		"registerDetail": "Conserva el dibujo pagado y compra un registro nuevo de las mismas vistas."
+	},
+	"frameSheet": {
+		"title": "Tamaño del marco",
+		"size": "Tamaño del marco",
+		"intro": "Añade o quita espacio vacío alrededor de {name}. Es gratis y no redibuja nada: cada objeto, animación y fotograma conserva su lugar.",
+		"preview": "Vista de pie en un marco de {size} px",
+		"useRecommended": "Usar {size} px",
+		"range": "Ahora {current} px. Elige entre {min} y {max} px en pasos de 2.",
+		"roomShort": "Las animaciones pueden salirse de este marco. {size} px añade espacio bajo los pies y a los lados.",
+		"above96": "Por encima de 96 px, los objetos sostenidos y las cuadrículas de reparación cuestan más.",
+		"above170": "Por encima de 170 px, cada objeto cuesta 25 gens por llamada de vestido.",
+		"consequences": "Los objetos solo se copian exactamente entre personajes con el mismo tamaño de marco. Las exportaciones mantienen la misma escala en el juego; vuelve a exportar para usar el nuevo marco.",
+		"loading": "Cargando el marco…",
+		"saved": "Marco cambiado de {before} px a {size} px.",
+		"undone": "Marco devuelto a {size} px.",
+		"errors": {
+			"missingArtwork": "Falta arte guardado de este personaje, así que no se puede cambiar su marco.",
+			"even": "Elige otro tamaño de marco que cambie en un número par de píxeles.",
+			"range": "El marco debe medir entre {min} y {max} px para este personaje.",
+			"resolveDrafts": "Conserva o descarta los borradores de objetos de este personaje antes de cambiar el tamaño del marco.",
+			"changed": "Este personaje cambió. Vuelve a abrir Tamaño del marco para revisar la versión más reciente.",
+			"saveFailed": "No se pudo devolver el marco."
+		}
 	}
 }

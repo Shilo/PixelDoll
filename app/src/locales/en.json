@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "Not an official app."
 	},
 	"characterActions": {
+		"frameSize": "Frame size…",
 		"directions": "Directions…",
 		"demoDeleteLocked": "Demo character can't be deleted",
 		"labelDeleteCharacter": "Delete character…"
@@ -728,6 +729,7 @@
 		"couldNotEnterFullScreenTryAgain": "Could not enter full screen. Try again or use your browser’s full screen control."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Finish or dismiss pending generation work before changing the frame size.",
 		"couldNotCheckNamedFrames": "Could not check frames for {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Could not check frames for {names}.",
 		"copyMissingOneMove": "Missing some {move} frames; it hides there.",
@@ -1116,6 +1118,7 @@
 		"imported": "Imported {name}",
 		"untitledState": "Untitled state",
 		"warning": {
+			"noRoom": "Room for moves was not added because this character has too many image pixels. Use Frame size after importing to add it.",
 			"fixedBase": "Imported artwork is the fixed base: existing clothes and hair cannot be removed. Set up its pose rig to use skeleton-posed equipment and add new moves.",
 			"frameCounts": "“{move}” has different frame counts by direction. Its directions were imported as separate moves to keep every original frame and direction length.",
 			"semiAlpha": "Partially transparent edges were converted to pixel-art transparency."
@@ -2169,6 +2172,8 @@
 		}
 	},
 	"moveSheet": {
+		"enlargeFrame": "Enlarge to {size} px",
+		"frameRoom": "This move may step past the {frame} px frame: the character has {below} px below its feet. Enlarge the frame to {size} px for free first, or add the move anyway.",
 		"sharedCopiesCoverage": "Shared copies can still be worn in views where they have frames.",
 		"thatCharacter": "that character",
 		"recoveryCheckFailed": "Could not check cached frames: {error}",
@@ -2580,6 +2585,8 @@
 		}
 	},
 	"moveReview": {
+		"enlargeDetail": "Adds free empty space around the whole character ({from} px to {size} px) and reuses the paid motion; only the steps on the larger frame are bought.",
+		"enlarge": "Enlarge the frame to {size} px and continue",
 		"resume": "Continue with paid results",
 		"lift": "Continue, lifted to fit",
 		"liftAndReroll": "Lift to fit, re-roll {views}",
@@ -2596,5 +2603,28 @@
 		"resume": "Continue with paid results",
 		"register": "Register the drawn views again",
 		"registerDetail": "Keeps the paid drawing and buys one new registration of the same views."
+	},
+	"frameSheet": {
+		"title": "Frame size",
+		"size": "Frame size",
+		"intro": "Add or remove empty space around {name}. This is free and redraws nothing: every item, move and frame keeps its place.",
+		"preview": "Standing view in a {size} px frame",
+		"useRecommended": "Use {size} px",
+		"range": "Now {current} px. Choose {min}–{max} px in steps of 2.",
+		"roomShort": "Moves may step past this frame. {size} px adds room below the feet and at the sides.",
+		"above96": "Above 96 px, held items and repair grids cost more.",
+		"above170": "Above 170 px, every item costs 25 gens per dress call.",
+		"consequences": "Items copy exactly only between characters with the same frame size. Exports keep the same in-game scale; export again to use the new frame.",
+		"loading": "Loading the frame…",
+		"saved": "Frame changed from {before} px to {size} px.",
+		"undone": "Frame changed back to {size} px.",
+		"errors": {
+			"missingArtwork": "Saved artwork of this character is missing, so its frame cannot be changed.",
+			"even": "Choose a different frame size that changes by an even number of pixels.",
+			"range": "Frame must be {min}–{max} px for this character.",
+			"resolveDrafts": "Keep or dismiss this character’s item drafts before changing the frame size.",
+			"changed": "This character changed. Reopen Frame size to review the latest version.",
+			"saveFailed": "The frame could not be changed back."
+		}
 	}
 }

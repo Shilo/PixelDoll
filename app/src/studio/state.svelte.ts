@@ -48,6 +48,7 @@ import {
 	deleteOutdated,
 	listProjects,
 	loadProject,
+	readStoredImage,
 	type DressedRecord,
 	type StoredProject
 } from '../lib/store/project.ts';
@@ -130,7 +131,9 @@ import { lazy, LoadError } from '../lib/lazy.ts';
 import type { FramesFile, PreparedFrames } from '../lib/frames/save.ts';
 import type { Img } from '../lib/image/png.ts';
 import { stableStringify } from '../lib/image/hash.ts';
-import { DEFAULT_MOVE } from '../lib/rig/rig.ts';
+import { DEFAULT_MOVE, type Sha256 } from '../lib/rig/rig.ts';
+import { reframeCharacter } from '../lib/rig/reframe.ts';
+import { encodePngBytes } from '../lib/image/pngraw.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
@@ -229,7 +232,8 @@ export type SheetId =
 	| 'workspaceExport'
 	| 'workspaceReport'
 	| 'slots'
-	| 'frames';
+	| 'frames'
+	| 'frameSize';
 const sizeNow = (): Size => {
 	const w = innerWidth,
 		h = innerHeight;
@@ -269,6 +273,7 @@ export const ui = $state({
 	sheetBusy: false,
 	deleting: '', // the character the Delete sheet is for
 	directionProject: '',
+	frameProject: '', // the character the Frame size sheet is for
 	details: '', // the character the Details sheet is for
 	newItem: { group: 'head', slot: '', prompt: '', name: '' } as {
 		group: string;
@@ -1068,7 +1073,9 @@ const WORK_BLOCKS = new Set([
 	'state.finishBeforeDirectionRemoval',
 	'directionsSheet.waitForGeneration',
 	'directionsSheet.resolveDrafts',
-	'moveRemoval.resolveDrafts'
+	'moveRemoval.resolveDrafts',
+	'state.finishBeforeFrameChange',
+	'frameSheet.errors.resolveDrafts'
 ]);
 export const blockedByWork = (reason: LocalizedError | '') =>
 	!!reason && WORK_BLOCKS.has(reason.translation.key);
@@ -1082,7 +1089,9 @@ let characterJobsPending = $state(false),
 
 /** Running work can write to any character, so it holds them all. Stopped work waits for the user and holds only its own
  *  character: a failed move or setup must not lock every other character until it is found and dismissed. */
-function workHolds(id: string) {
+/** `stoppedMove`: Frame size chosen from this character's stopped move review, which waits for the resize and continues on
+ *  it; any other held or queued work still holds. */
+function workHolds(id: string, stoppedMove = false) {
 	return (
 		characterJobsPending ||
 		gens.some((g) => g.phase === 'running') ||
@@ -1094,7 +1103,7 @@ function workHolds(id: string) {
 			(moveRunning ||
 				moving.resolvingRepair ||
 				(!moving.error && !moving.repairReview) ||
-				moving.projectId === id)) ||
+				(moving.projectId === id && !(stoppedMove && !moving.repairReview)))) ||
 		moving.queued.some((queued) => queued.projectId === id) ||
 		(moving.queued.length > 0 && !heldMove()) ||
 		(heldSetup() && (!settingUp.error || settingUp.spec?.projectId === id))
@@ -1102,8 +1111,10 @@ function workHolds(id: string) {
 }
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
 function characterEditBlocked(
-	action: 'delete' | 'delete move' | 'change directions for' | 'fix frames of',
-	id: string
+	action:
+		'delete' | 'delete move' | 'change directions for' | 'fix frames of' | 'change the frame of',
+	id: string,
+	stoppedMove = false
 ): LocalizedError | '' {
 	if (doc.loading || opening)
 		return new LocalizedError(
@@ -1120,7 +1131,7 @@ function characterEditBlocked(
 					'Manage characters in the other PixelDoll tab, or close it first.',
 					'state.manageCharactersInOtherTab'
 				);
-	if (workHolds(id))
+	if (workHolds(id, stoppedMove))
 		return action === 'delete'
 			? DELETE_GENERATION_BLOCK
 			: action === 'delete move'
@@ -1133,10 +1144,15 @@ function characterEditBlocked(
 							'Wait for the current generation work to finish before fixing frames.',
 							'state.finishBeforeFixFrames'
 						)
-					: new LocalizedError(
-							'Finish or dismiss pending generation work before changing directions.',
-							'state.finishBeforeDirectionRemoval'
-						);
+					: action === 'change the frame of'
+						? new LocalizedError(
+								'Finish or dismiss pending generation work before changing the frame size.',
+								'state.finishBeforeFrameChange'
+							)
+						: new LocalizedError(
+								'Finish or dismiss pending generation work before changing directions.',
+								'state.finishBeforeDirectionRemoval'
+							);
 	return '';
 }
 
@@ -1167,6 +1183,92 @@ export function directionEditsBlocked(id: string): LocalizedError | '' {
 				)
 			: '')
 	);
+}
+/** Why Frame size cannot change this character now, or ''. A stopped move of this character may wait for it (`stoppedMove`). */
+export function frameEditsBlocked(id: string, stoppedMove = false): LocalizedError | '' {
+	if (!id.startsWith('rig-'))
+		return new LocalizedError('Only saved characters can be edited.', 'directionsSheet.savedOnly');
+	return (
+		characterEditBlocked('change the frame of', id, stoppedMove) ||
+		(!generationSettled()
+			? new LocalizedError(
+					'Wait for the current generation work to finish.',
+					'directionsSheet.waitForGeneration'
+				)
+			: '') ||
+		(gens.some((gen) => gen.draft.rigId === id && !gen.draft.acceptedAt)
+			? new LocalizedError(
+					'Keep or dismiss this character’s item drafts before changing the frame size.',
+					'frameSheet.errors.resolveDrafts'
+				)
+			: '')
+	);
+}
+const pngBlobs = async (images: Map<Sha256, Img>) => {
+	const blobs = new Map<string, Blob>();
+	for (const [hash, image] of images)
+		blobs.set(
+			hash.slice(7),
+			new Blob([(await encodePngBytes(image)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
+		);
+	return blobs;
+};
+/** Frame size: re-center the whole character on a `size` px frame (free and lossless), with an Undo toast that restores
+ *  the record as it was. `stoppedMove`: chosen from this character's stopped move review, which continues on the result. */
+export async function resizeCharacter(
+	id: string,
+	size: number,
+	{ stoppedMove = false, quiet = false } = {}
+): Promise<void> {
+	const blocked = () => {
+		const reason = frameEditsBlocked(id, stoppedMove);
+		if (reason) throw reason;
+	};
+	blocked();
+	await flushSave();
+	const { rec, project } = await loadProject(id);
+	const before = rec.manifest.rig.cell.w,
+		old = new Map(project.images as Map<Sha256, Img>);
+	const { record: next, newImages } = await reframeCharacter(
+		rec,
+		project.images,
+		size,
+		async (hash) => {
+			const image = await readStoredImage(hash);
+			old.set(hash, image);
+			return image;
+		}
+	);
+	const blobs = await pngBlobs(newImages);
+	blocked();
+	await db.saveIdleCharacter(rec, next, blobs, 'change the frame of', stoppedMove);
+	await refreshCharacterDirections(id);
+	if (quiet) return;
+	toast([message('frameSheet.saved', { size, before }), message('common.undo')], {
+		tone: 'success',
+		duration: 10000,
+		action: () => void undoResize(id, next, rec, old)
+	});
+}
+/** Put back the record a resize replaced, if nothing changed it since; its images are stored again in case cleanup ran. */
+async function undoResize(
+	id: string,
+	resized: StoredProject,
+	original: StoredProject,
+	images: Map<Sha256, Img>
+) {
+	try {
+		const blocked = frameEditsBlocked(id);
+		if (blocked) throw blocked;
+		await flushSave();
+		await db.saveIdleCharacter(resized, original, await pngBlobs(images), 'change the frame of');
+		await refreshCharacterDirections(id);
+		toast(message('frameSheet.undone', { size: original.manifest.rig.cell.w }), {
+			tone: 'success'
+		});
+	} catch (error) {
+		toast(errorTranslation(error) ?? message('frameSheet.errors.saveFailed'), { tone: 'danger' });
+	}
 }
 function generationSettled() {
 	return !afterConnect && activeGenerationSettled();

@@ -1008,6 +1008,7 @@ test('character directions can be mirrored and unlinked on import and after savi
 			'Details...',
 			'Rename...',
 			'Directions...',
+			'Frame size...',
 			'Download ZIP',
 			'Delete character...'
 		]);
@@ -1079,6 +1080,43 @@ test('character directions can be mirrored and unlinked on import and after savi
 		kept.getByRole('button', { name: 'South east direction', exact: true })
 	).toHaveAttribute('aria-pressed', 'false');
 	await expect(west).toHaveAttribute('aria-pressed', 'true');
+	await page.keyboard.press('Escape');
+	await expect(settings).toBeHidden();
+	// Frame size: free room around the mirrored character, saved across a reload and undone from its notice.
+	const openFrame = async () => {
+		await page.locator('.project-btn').click();
+		await page
+			.getByRole('button', { name: 'More actions for Direction test hero', exact: true })
+			.click();
+		await page
+			.getByRole('menu', { name: 'Actions for Direction test hero', exact: true })
+			.getByRole('menuitem', { name: 'Frame size...', exact: true })
+			.click();
+		return page.getByRole('dialog', { name: 'Frame size', exact: true });
+	};
+	let frame = await openFrame();
+	const size = frame.getByRole('spinbutton', { name: 'Frame size', exact: true });
+	await expect(size).toHaveValue('64');
+	const save = frame.getByRole('button', { name: 'Save', exact: true });
+	await expect(save).toBeDisabled();
+	await size.fill('81');
+	await expect(save).toBeDisabled();
+	await size.fill('80');
+	await expect(frame).toContainText('Items copy exactly only between characters');
+	await save.click();
+	await expect(frame).toBeHidden();
+	const notice = page.locator('.toast');
+	await expect(notice).toContainText('Frame changed from 64 px to 80 px.');
+	await reloadStudio(page);
+	frame = await openFrame();
+	await expect(size).toHaveValue('80');
+	await size.fill('64');
+	await save.click();
+	await expect(frame).toBeHidden();
+	await notice.getByRole('button', { name: /Frame changed from 80 px to 64 px/ }).click();
+	await expect(notice).toContainText('Frame changed back to 80 px.');
+	frame = await openFrame();
+	await expect(size).toHaveValue('80');
 });
 
 test('browser Back respects an atomic import and closes sheets after it finishes', async ({
@@ -2287,7 +2325,9 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 	await newItem(page, 'Main hand');
 	await page.getByRole('radio', { name: 'Main hand', exact: true }).click();
 	await page.getByRole('dialog').getByText('Advanced', { exact: true }).click();
-	await expect(page.getByRole('dialog')).toContainText('96 px canvas');
+	// The import added room for moves (feet 4 px above a 64 px canvas edge: 64 -> 80), so held items pad to 112 px.
+	expect(before.manifest.rig.cell).toEqual({ w: 80, h: 80 });
+	await expect(page.getByRole('dialog')).toContainText('112 px canvas');
 	await page.getByRole('button', { name: 'Cancel', exact: true }).click();
 	await equipmentMode(page, 'Moves');
 	await page.getByRole('button', { name: 'Add a move...', exact: true }).click();

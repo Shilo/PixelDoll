@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "非官方应用。"
 	},
 	"characterActions": {
+		"frameSize": "帧尺寸…",
 		"directions": "朝向…",
 		"demoDeleteLocked": "演示角色无法删除",
 		"labelDeleteCharacter": "删除角色…"
@@ -701,6 +702,7 @@
 		"couldNotEnterFullScreenTryAgain": "无法进入全屏。请重试或使用浏览器的全屏控制。"
 	},
 	"state": {
+		"finishBeforeFrameChange": "更改帧尺寸前，请完成或放弃待处理的生成任务。",
 		"couldNotCheckNamedFrames": "无法检查 {names} 的帧：{reason}",
 		"couldNotCheckSeveralFrames": "无法检查 {names} 的帧。",
 		"copyMissingOneMove": "{move} 缺少部分帧，物品会在这些帧中隐藏。",
@@ -1065,6 +1067,7 @@
 		"imported": "已导入{name}",
 		"untitledState": "未命名状态",
 		"warning": {
+			"noRoom": "由于此角色的图像像素过多，未添加动作空间。导入后可使用“帧尺寸”添加。",
 			"fixedBase": "导入的图像是固定基础身体：现有衣服和头发无法移除。设置其姿势绑定结构，以使用骨架姿态装备并添加新动作。",
 			"frameCounts": "“{move}”各朝向的帧数不同。其朝向已作为独立动作导入，以保留每个原始帧和朝向长度。",
 			"semiAlpha": "部分透明的边缘已转换为像素画透明。"
@@ -2070,6 +2073,8 @@
 		}
 	},
 	"moveSheet": {
+		"enlargeFrame": "扩大到 {size} px",
+		"frameRoom": "此动作可能超出 {frame} px 帧：角色脚下只有 {below} px。请先免费将帧扩大到 {size} px，或仍然添加此动作。",
 		"sharedCopiesCoverage": "共享物品的副本仍可在有帧的朝向中穿戴。",
 		"thatCharacter": "该角色",
 		"recoveryCheckFailed": "无法检查缓存帧：{error}",
@@ -2461,6 +2466,8 @@
 		}
 	},
 	"moveReview": {
+		"enlargeDetail": "免费在整个角色周围增加空白（{from} px 到 {size} px），并复用已付费的动作；只购买在更大帧上的步骤。",
+		"enlarge": "将帧扩大到 {size} px 并继续",
 		"resume": "使用付费结果继续",
 		"lift": "抬高以适配并继续",
 		"liftAndReroll": "抬高以适配，并重新生成{views}",
@@ -2477,5 +2484,28 @@
 		"resume": "使用付费结果继续",
 		"register": "重新登记已绘制的朝向",
 		"registerDetail": "保留已付费的绘制，并为相同朝向购买一次新的登记。"
+	},
+	"frameSheet": {
+		"title": "帧尺寸",
+		"size": "帧尺寸",
+		"intro": "在 {name} 周围增加或减少空白区域。此操作免费且不会重绘任何内容：每件装备、每个动作和每一帧都保持原位。",
+		"preview": "{size} px 帧中的站立视图",
+		"useRecommended": "使用 {size} px",
+		"range": "当前为 {current} px。可选择 {min}–{max} px，步长为 2。",
+		"roomShort": "动作可能超出此帧。{size} px 会在脚下和两侧增加空间。",
+		"above96": "超过 96 px 时，手持装备和修复网格的费用更高。",
+		"above170": "超过 170 px 时，每件装备每次穿戴调用花费 25 gens。",
+		"consequences": "只有帧尺寸相同的角色之间才能精确复制装备。导出会保持相同的游戏内比例；请重新导出以使用新帧。",
+		"loading": "正在加载帧…",
+		"saved": "帧已从 {before} px 改为 {size} px。",
+		"undone": "帧已改回 {size} px。",
+		"errors": {
+			"missingArtwork": "此角色缺少已保存的图像，因此无法更改其帧。",
+			"even": "请选择一个不同的帧尺寸，变化量须为偶数像素。",
+			"range": "此角色的帧必须为 {min}–{max} px。",
+			"resolveDrafts": "更改帧尺寸前，请保留或放弃此角色的装备草稿。",
+			"changed": "此角色已更改。请重新打开“帧尺寸”查看最新版本。",
+			"saveFailed": "无法将帧改回。"
+		}
 	}
 }

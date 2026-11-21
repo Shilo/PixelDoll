@@ -128,6 +128,7 @@
 		"notAnOfficialApp": "Bukan aplikasi resmi."
 	},
 	"characterActions": {
+		"frameSize": "Ukuran frame…",
 		"directions": "Arah…",
 		"demoDeleteLocked": "Karakter demo tidak dapat dihapus",
 		"labelDeleteCharacter": "Hapus karakter…"
@@ -705,6 +706,7 @@
 		"couldNotEnterFullScreenTryAgain": "Tidak dapat masuk ke layar penuh. Coba lagi atau gunakan kontrol layar penuh di browser Anda."
 	},
 	"state": {
+		"finishBeforeFrameChange": "Selesaikan atau tutup pekerjaan pembuatan yang tertunda sebelum mengubah ukuran frame.",
 		"couldNotCheckNamedFrames": "Tidak dapat memeriksa bingkai {names}: {reason}",
 		"couldNotCheckSeveralFrames": "Tidak dapat memeriksa bingkai untuk {names}.",
 		"copyMissingOneMove": "Beberapa bingkai {move} hilang; item tidak terlihat dalam gerakan itu.",
@@ -1073,6 +1075,7 @@
 		"imported": "{name} diimpor",
 		"untitledState": "Varian tanpa nama",
 		"warning": {
+			"noRoom": "Ruang untuk animasi tidak ditambahkan karena karakter ini memiliki terlalu banyak piksel gambar. Gunakan Ukuran frame setelah mengimpor untuk menambahkannya.",
 			"fixedBase": "Gambar yang diimpor menjadi dasar tetap: pakaian dan rambut yang sudah ada tidak dapat dihapus. Siapkan rig pose untuk memakai perlengkapan yang mengikuti pose kerangka dan menambahkan animasi baru.",
 			"frameCounts": "Jumlah frame “{move}” berbeda di setiap arah. Setiap arah diimpor sebagai animasi terpisah agar semua frame asli dan durasi tiap arah tetap utuh.",
 			"semiAlpha": "Tepi yang transparan sebagian diubah menjadi transparansi khas pixel art."
@@ -2092,6 +2095,8 @@
 		}
 	},
 	"moveSheet": {
+		"enlargeFrame": "Perbesar ke {size} px",
+		"frameRoom": "Animasi ini bisa melewati frame {frame} px: karakter hanya punya {below} px di bawah kakinya. Perbesar frame ke {size} px secara gratis dulu, atau tetap tambahkan animasinya.",
 		"sharedCopiesCoverage": "Salinan bersama tetap bisa dipakai pada tampilan yang memiliki bingkai.",
 		"thatCharacter": "karakter tersebut",
 		"recoveryCheckFailed": "Tidak dapat memeriksa frame di cache: {error}",
@@ -2483,6 +2488,8 @@
 		}
 	},
 	"moveReview": {
+		"enlargeDetail": "Menambah ruang kosong gratis di sekitar seluruh karakter ({from} px menjadi {size} px) dan memakai ulang gerakan yang sudah dibayar; hanya langkah pada frame yang lebih besar yang dibeli.",
+		"enlarge": "Perbesar frame ke {size} px dan lanjutkan",
 		"resume": "Lanjutkan dengan hasil berbayar",
 		"lift": "Lanjutkan, dinaikkan agar muat",
 		"liftAndReroll": "Naikkan agar muat, buat ulang {views}",
@@ -2499,5 +2506,28 @@
 		"resume": "Lanjutkan dengan hasil berbayar",
 		"register": "Daftarkan ulang tampilan yang digambar",
 		"registerDetail": "Mempertahankan gambar berbayar dan membeli satu pendaftaran baru untuk tampilan yang sama."
+	},
+	"frameSheet": {
+		"title": "Ukuran frame",
+		"size": "Ukuran frame",
+		"intro": "Tambah atau kurangi ruang kosong di sekitar {name}. Gratis dan tidak ada yang digambar ulang: setiap item, animasi, dan frame tetap di tempatnya.",
+		"preview": "Tampilan berdiri dalam frame {size} px",
+		"useRecommended": "Gunakan {size} px",
+		"range": "Sekarang {current} px. Pilih {min}–{max} px dengan kelipatan 2.",
+		"roomShort": "Animasi bisa melewati frame ini. {size} px menambah ruang di bawah kaki dan di samping.",
+		"above96": "Di atas 96 px, item yang dipegang dan grid perbaikan lebih mahal.",
+		"above170": "Di atas 170 px, setiap item memakan 25 gens per panggilan pemakaian.",
+		"consequences": "Item hanya tersalin persis antar karakter dengan ukuran frame yang sama. Ekspor tetap memakai skala dalam game yang sama; ekspor lagi untuk memakai frame baru.",
+		"loading": "Memuat frame…",
+		"saved": "Frame diubah dari {before} px menjadi {size} px.",
+		"undone": "Frame dikembalikan ke {size} px.",
+		"errors": {
+			"missingArtwork": "Gambar tersimpan karakter ini hilang, jadi frame-nya tidak dapat diubah.",
+			"even": "Pilih ukuran frame lain yang berubah sebanyak jumlah piksel genap.",
+			"range": "Frame harus {min}–{max} px untuk karakter ini.",
+			"resolveDrafts": "Simpan atau tutup draf item karakter ini sebelum mengubah ukuran frame.",
+			"changed": "Karakter ini berubah. Buka lagi Ukuran frame untuk meninjau versi terbaru.",
+			"saveFailed": "Frame tidak dapat dikembalikan."
+		}
 	}
 }

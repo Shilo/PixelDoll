@@ -201,14 +201,20 @@ export function withoutCharacters(r: any, ids: Set<string>): Record<string, unkn
 	return kept.length === r[list].length ? undefined : { ...r, [list]: kept };
 }
 
+type IdleAction =
+	'delete' | 'change directions for' | 'replace body frames of' | 'change the frame of';
+
 async function editIdleCharacter(
 	id: string,
-	action: 'delete' | 'change directions for' | 'replace body frames of',
+	action: IdleAction,
 	edit: (
 		projects: { delete(key: string): void; put(value: unknown, key: string): void },
 		records: any[]
 	) => void,
-	blobs?: Map<string, Blob>
+	blobs?: Map<string, Blob>,
+	/** Frame size from a stopped move's review: that failed move of this character waits for the resize and continues on
+	 *  it, so it does not hold the edit. Any other stopped or running work still does. */
+	stoppedMove = false
 ): Promise<void> {
 	if (!id.startsWith('rig-')) throw new Error(`You can only ${action} a saved character.`);
 	if (copy) {
@@ -248,12 +254,19 @@ async function editIdleCharacter(
 				r.projectId === id ||
 				r.spec?.projectId === id ||
 				!!r.queued?.some((queued) => queued.projectId === id);
+			const waits = (r: { id?: string; status?: string; projectId?: string; queued?: unknown[] }) =>
+				stoppedMove &&
+				r.id === 'studio-move' &&
+				r.status === 'failed' &&
+				r.projectId === id &&
+				!r.queued?.length;
 			const work = records.result.some(
 				(r) =>
 					((r?.id?.startsWith(CREATE_DRAFT_PREFIX) ||
 						r?.id === 'studio-move' ||
 						r?.id === 'studio-setup') &&
-						holds(r)) ||
+						holds(r) &&
+						!waits(r)) ||
 					(r?.id === 'studio-drafts' &&
 						r.gens?.some((g: { phase: string }) => g.phase === 'running'))
 			);
@@ -269,10 +282,15 @@ async function editIdleCharacter(
 									'Wait for the current generation work to finish before fixing frames.',
 									'state.finishBeforeFixFrames'
 								)
-							: new LocalizedError(
-									'Finish or dismiss pending generation work before changing directions.',
-									'state.finishBeforeDirectionRemoval'
-								);
+							: action === 'change the frame of'
+								? new LocalizedError(
+										'Finish or dismiss pending generation work before changing the frame size.',
+										'state.finishBeforeFrameChange'
+									)
+								: new LocalizedError(
+										'Finish or dismiss pending generation work before changing directions.',
+										'state.finishBeforeDirectionRemoval'
+									);
 				edit(projects, records.result);
 				for (const [hash, blob] of blobs ?? []) t.objectStore('blobs').put(blob, hash);
 			} catch (failure) {
@@ -301,11 +319,13 @@ export async function saveIdleCharacter(
 	original: StoredProject,
 	next: StoredProject,
 	blobs: Map<string, Blob>,
-	action: 'change directions for' | 'replace body frames of'
+	action: Exclude<IdleAction, 'delete'>,
+	stoppedMove = false
 ): Promise<void> {
 	const { id } = original;
 	const version = stableStringify(original);
-	const frames = action === 'replace body frames of';
+	const frames = action === 'replace body frames of',
+		frame = action === 'change the frame of';
 	await editIdleCharacter(
 		id,
 		action,
@@ -316,19 +336,30 @@ export async function saveIdleCharacter(
 							'Keep or dismiss this character’s item drafts before replacing body frames.',
 							'fixFrames.errors.resolveDrafts'
 						)
-					: new Error('Keep or dismiss this character’s item drafts before changing directions.');
+					: frame
+						? new LocalizedError(
+								'Keep or dismiss this character’s item drafts before changing the frame size.',
+								'frameSheet.errors.resolveDrafts'
+							)
+						: new Error('Keep or dismiss this character’s item drafts before changing directions.');
 			if (stableStringify(records.find((record) => record?.id === id)) !== version)
 				throw frames
 					? new LocalizedError(
 							'These frames changed since your review. Import the file again.',
 							'fixFrames.errors.changed'
 						)
-					: new Error(
-							'This character changed. Close and reopen Directions to review the latest version.'
-						);
+					: frame
+						? new LocalizedError(
+								'This character changed. Reopen Frame size to review the latest version.',
+								'frameSheet.errors.changed'
+							)
+						: new Error(
+								'This character changed. Close and reopen Directions to review the latest version.'
+							);
 			projects.put(next, id);
 		},
-		blobs
+		blobs,
+		stoppedMove
 	);
 }
 
