@@ -439,7 +439,7 @@
 		display: none;
 	}
 	@media (max-width: 659px), (max-height: 519px) {
-		.settings-heading {
+		.settings-heading:not(:focus-visible) {
 			position: absolute;
 			inline-size: 1px;
 			block-size: 1px;

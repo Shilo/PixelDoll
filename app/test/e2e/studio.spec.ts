@@ -205,6 +205,9 @@ test('Settings About opens a page with build details and copies them', async ({ 
 	await expect(source).toBeInViewport();
 	await settings.getByRole('button', { name: 'Settings', exact: true }).click();
 	await expect(about).toBeVisible();
+	await about.press('Enter');
+	await expect(heading).toBeFocused();
+	await expect(heading).toHaveCSS('clip-path', 'none');
 	const dev = info.config.projects.find((project) => project.name === 'browser-selftests')!.use
 		.baseURL!;
 	await page.goto(dev);
