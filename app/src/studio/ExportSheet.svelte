@@ -201,14 +201,13 @@
 		const choice = moveChoices.get(name);
 		return choice === undefined ? once.includes(name) : !choice;
 	};
-	const currentNames = $derived([...moveChoices.keys()]);
-	const currentOnce = $derived(currentNames.filter(playsOnce));
+	const catalogOnce = $derived(names.filter(playsOnce));
 	const playbackSummary = $derived(
-		!currentOnce.length
+		!catalogOnce.length
 			? t('common.none')
-			: currentOnce.length === currentNames.length
+			: catalogOnce.length === names.length
 				? t('export.playback.all')
-				: currentOnce.map(animationLabel).join(', ')
+				: catalogOnce.map(animationLabel).join(', ')
 	);
 	const outfits = $derived(m?.presets.filter((p) => p.id !== 'current') ?? []);
 	// RPG Maker sheets are always dressed composites, whatever the setting says
