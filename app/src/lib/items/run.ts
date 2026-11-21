@@ -86,7 +86,7 @@ import {
 	g2Fails,
 	automaticRepairError,
 	localizedAutomaticRepairError,
-	repairBatchMisalignedError,
+	REPAIR_BATCH_MISALIGNED,
 	grayShare,
 	smudgedViews,
 	sharedDesignColors,
@@ -124,6 +124,7 @@ import {
 	type QaResult
 } from './items.ts';
 import { LocalizedError } from '../message.ts';
+import { PaidStepError } from '../pixellab/paid-results.ts';
 import { localizedPlanRestriction } from '../pixellab/plans.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
@@ -741,6 +742,63 @@ export function rerollCall(d: Draft, k: number, why: string) {
 						)
 					: [];
 	for (const l of stale) drop(l);
+}
+/** Calls of a stopped draft whose paid output cannot be used: the request ended without results, or it returned missing or
+ *  malformed frames (G1). Every other completed call stays reusable from its record. */
+export function failedCalls(d: Draft, res: Pick<ItemResult, 'g1'> | null): number[] {
+	return d.calls.flatMap((c, k) => {
+		const r = recOf(c.recId);
+		return (terminal(r) && r!.state !== 'done') || structuralReason(res?.g1.get(k) ?? '')
+			? [k]
+			: [];
+	});
+}
+/** New seeds for exactly these calls (and what depends on them, see rerollCall), priced by every call still to buy: the
+ *  completed calls that keep their records are free. */
+export function rerollFailed(d: Draft, ks: number[], rig: Rig): { draft: Draft; gens: number } {
+	const draft = structuredClone(d),
+		pad = padOf(specSlot(draft.spec), draft.spec.method, rig.cell);
+	for (const k of ks) rerollCall(draft, k, 'player re-roll of a failed call');
+	const unbought = draft.calls
+		.filter((c) => !c.recId)
+		.map((c) => ({ kind: c.kind ?? ('edit' as const), cells: c.cells }));
+	return {
+		draft,
+		gens: planGens(unbought, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad })
+	};
+}
+/** The finished part of an incomplete draft as its own draft: only moves whose every frame landed from a call that completed
+ *  without structural failure. Undefined unless the standing views are complete (an item without them could not be worn or
+ *  extended) and something was left out. Missing moves stay listed as missing coverage, to make later at their own price. */
+export function finishedPart(d: Draft, rig: Rig, r: ItemResult): Draft | undefined {
+	const covered = new Set(r.cells.map((c) => c.key)),
+		broken = new Set(failedCalls(d, r).flatMap((k) => d.calls[k].cells)),
+		unfinished = new Set(d.calls.flatMap((c) => (recOf(c.recId)?.state === 'done' ? [] : c.cells)));
+	const complete = d.spec.anims.filter((anim) => {
+		const clip = rig.animations.find((a) => a.id === anim);
+		return (
+			!!clip &&
+			(d.spec.clipDirs?.[anim] ?? d.spec.dirs).every((dir) =>
+				Array.from({ length: clip.cells }, (_, i) => `${anim}/${dir}/${i}`).every(
+					(key) => covered.has(key) && !broken.has(key) && !unfinished.has(key)
+				)
+			)
+		);
+	});
+	const standing = d.spec.standing ?? d.spec.anims[0];
+	if (!complete.includes(standing) || complete.length === d.spec.anims.length) return undefined;
+	const inside = (cell: string) => complete.includes(cell.split('/')[0]);
+	return {
+		...structuredClone(d),
+		spec: {
+			...structuredClone(d.spec),
+			anims: complete,
+			...(d.spec.clipDirs
+				? { clipDirs: Object.fromEntries(complete.map((a) => [a, d.spec.clipDirs![a]])) }
+				: {})
+		},
+		calls: structuredClone(d.calls.filter((c) => c.cells.some(inside)))
+	};
 }
 export const failsOf = (res: ItemResult, k: number) => [
 	...(res.g1.has(k) ? [res.g1.get(k)!] : []),
@@ -1642,14 +1700,39 @@ export async function animateAnchoredItem(
 			return [dir, counts.size <= 256 ? [...counts.keys()] : []];
 		})
 	);
-	const result = options.savedOnly
+	const whole = options.savedOnly
 		? await evaluateItem(draft, ctx, standingPalettes)
 		: await runItem(draft, ctx, { standingPalettes });
-	if (!result?.qa || hasStructuralFailure(result) || incompleteCoverage(draft, rig, result)) {
-		const detail =
-			draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.';
+	// Views that finished are paid for: publish them even when another view failed, so a retry buys only the missing ones.
+	const failedDirs = new Set<DirectionName>();
+	if (whole)
+		for (const k of failedCalls(draft, whole))
+			failedDirs.add(draft.calls[k].reference!.cell.split('/')[1] as DirectionName);
+	for (const dir of dirs)
+		if (
+			!whole?.qa ||
+			draft.calls.some(
+				(c) => c.reference!.cell.split('/')[1] === dir && recOf(c.recId)?.state !== 'done'
+			)
+		)
+			failedDirs.add(dir);
+	const doneDirs = dirs.filter((dir) => !failedDirs.has(dir));
+	const detail =
+		draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.';
+	if (!doneDirs.length) throw localizedAutomaticRepairError(detail) ?? new Error(detail);
+	const finished: Draft = {
+		...draft,
+		spec: { ...draft.spec, dirs: doneDirs },
+		calls: draft.calls.filter((c) =>
+			doneDirs.includes(c.reference!.cell.split('/')[1] as DirectionName)
+		)
+	};
+	const result =
+		doneDirs.length === dirs.length ? whole : await evaluateItem(finished, ctx, standingPalettes);
+	if (!result?.qa || hasStructuralFailure(result) || incompleteCoverage(finished, rig, result))
 		throw localizedAutomaticRepairError(detail) ?? new Error(detail);
-	}
+	dirs = doneDirs;
+	const missed = [...failedDirs];
 	let materials = ctx.rec.manifest.materials.filter(
 		(m) => m.owner === item.id && item.materials.includes(m.id)
 	);
@@ -1688,12 +1771,13 @@ export async function animateAnchoredItem(
 		anim,
 		dirs,
 		cells,
-		draftProvenance(draft),
+		draftProvenance(finished),
 		result.qa,
 		0,
 		needsMaterials ? materials : undefined
 	);
 	dirs.forEach(onCall);
+	if (missed.length) throw new PartialMoveError(detail, dirs);
 }
 /** Gens for posing `n` items onto a clip of `cells` frames in `dirs` directions. */
 export const poseGens = (n: number, cells: number, dirs: number) => n * dirs * poseGensFor(cells);
@@ -2426,7 +2510,9 @@ export async function regridClip(
 	preferTierOne = false,
 	activityScope?: string,
 	savedOnly = false,
-	redraw = false
+	redraw = false,
+	/** Seed salts by batch start, from a review that re-rolls only a misaligned batch; other batches reuse their records. */
+	batchSalt?: Readonly<Record<string, number>>
 ): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[]; review?: RepairReview }> {
 	const { rig } = ctx.rec.manifest,
 		slot = requireSlot(ctx.rec.manifest, item.slot),
@@ -2448,7 +2534,7 @@ export async function regridClip(
 				{ length: batch.count },
 				(_, index) => `${anim}/${dir}/${batch.start + index}`
 			);
-			const batchSeed = seedN + batch.start;
+			const batchSeed = seedN + batch.start + (batchSalt?.[batch.start] ?? 0);
 			const maskRequest = await gridRepairRequest(
 				ctx,
 				item,
@@ -2536,7 +2622,17 @@ export async function regridClip(
 		if ('blocked' in result)
 			throw localizedPlanRestriction(result.blocked) ?? new Error(result.blocked);
 		if (index < requests.length - 1 && result.cells.some((cell) => cell.shifted))
-			throw repairBatchMisalignedError();
+			throw new PaidStepError(
+				REPAIR_BATCH_MISALIGNED,
+				'itemRoute.errors.repairBatchMisaligned',
+				undefined,
+				{
+					step: `grid-batch:${request.start}`,
+					failure: 'misaligned',
+					// this batch again plus the later batches it stopped before buying
+					gens: requests.slice(index).reduce((sum, batch) => sum + batch.gens, 0)
+				}
+			);
 		cells.push(...result.cells);
 		provenance.push(result.prov);
 		if (result.registrationIssue) registrationFindings.push(result.registrationIssue);

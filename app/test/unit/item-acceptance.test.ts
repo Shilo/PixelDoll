@@ -7,7 +7,10 @@ import { createSlot } from '../../src/lib/items/slots.ts';
 import {
 	acceptItem,
 	evaluateItem,
+	failedCalls,
+	finishedPart,
 	gensOf,
+	rerollFailed,
 	hasStructuralFailure,
 	usdOf,
 	type Draft,
@@ -123,6 +126,39 @@ function record(id: string, gens: number, usd: number): JobRec {
 		usd
 	};
 }
+
+test('a failed pose call re-rolls alone at its own price, and the finished standing design can be kept without it', () => {
+	const { draft, result } = fixture();
+	const walking: Rig = {
+		...rig,
+		animations: [
+			...rig.animations,
+			{ id: 'walk', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }
+		]
+	};
+	draft.spec = { ...draft.spec, anims: ['idle', 'walk'], standing: 'idle' };
+	draft.calls.push({
+		kind: 'pose',
+		cells: ['walk/south/0'],
+		seed: 2,
+		recId: 'walk',
+		old: [],
+		rerolls: 0
+	});
+	ledger.records.push({ ...record('walk', 3, 0), state: 'failed' });
+	expect(failedCalls(draft, result)).toEqual([1]);
+	const next = rerollFailed(draft, [1], walking);
+	expect(next.gens).toBe(2);
+	expect(next.draft.calls[0]).toMatchObject({ recId: 'current', seed: 1 });
+	expect(next.draft.calls[1].recId).toBeUndefined();
+	expect(next.draft.calls[1].seed).not.toBe(2);
+	expect(draft.calls[1].recId).toBe('walk');
+	const finished = finishedPart(draft, walking, result)!;
+	expect(finished.spec.anims).toEqual(['idle']);
+	expect(finished.calls.map((call) => call.recId)).toEqual(['current']);
+	draft.spec.standing = 'walk';
+	expect(finishedPart(draft, walking, result)).toBeUndefined();
+});
 
 test.each([
 	'G1 1 outputs for 2 requested frames',

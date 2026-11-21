@@ -150,17 +150,21 @@ const itemRun = () =>
 				acceptItemReview,
 				applyRepairReview,
 				evaluateItem,
+				finishedPart,
 				isClean,
 				matchItemColors,
 				repairAlreadyApplied,
+				rerollFailed,
 				restoreStandingViews
 			}) => ({
 				acceptItemReview,
 				applyRepairReview,
 				evaluateItem,
+				finishedPart,
 				isClean,
 				matchItemColors,
 				repairAlreadyApplied,
+				rerollFailed,
 				restoreStandingViews
 			})
 		)
@@ -2744,14 +2748,31 @@ const drop = (g: Gen) => {
 };
 /** Keep it (or `auto`: a clean draft saving itself). Keep it wears the item; a saved draft keeps the slot it was worn in (same id)
  *  and reloads the open character in place. True when saved. */
-export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
+export async function acceptGen(g: Gen, auto = false, finished = false): Promise<boolean> {
 	const id = g.draft.spec.id;
 	// A background auto-save never pops Activity open in a follower tab; the draft stays ready to review there.
 	if ((auto ? queue.role === 'follower' : follower()) || settling.has(id)) return false;
 	settling.add(id);
 	try {
 		const ctx = await loadProject(g.draft.rigId);
-		const item = await (await itemFlow()).accept(g.draft, ctx, store.results[id] ?? undefined);
+		// `finished`: keep only the moves that completed (re-evaluated from their records); the rest stay missing coverage.
+		const part =
+			finished && store.results[id]
+				? (await itemRun()).finishedPart(
+						$state.snapshot(g.draft) as Draft,
+						ctx.rec.manifest.rig,
+						store.results[id]!
+					)
+				: undefined;
+		if (finished && !part)
+			throw new LocalizedError(
+				'The finished frames changed. Review the item again. Nothing was saved.',
+				'state.finishedFramesChanged'
+			);
+		const item = await (
+			await itemFlow()
+		).accept(part ?? g.draft, ctx, part ? undefined : (store.results[id] ?? undefined));
+		if (part) g.draft.acceptedAt = part.acceptedAt;
 		const worn = doc.drafts[item.slot] === id;
 		await saveGens();
 		// a draft saving itself never cancels the open of another character the user just started
@@ -2857,6 +2878,30 @@ export function retryGen(
 			),
 		minimumTier
 	); // closing Connect keeps the draft
+}
+
+/** Re-roll only the failed calls of a stopped draft at the reviewed price; every other completed call is reused. */
+export function rerollGen(g: Gen, calls: number[], reviewedGens: number, minimumTier: number) {
+	withKey(() => {
+		void (async () => {
+			const id = g.draft.spec.id;
+			if (follower() || settling.has(id) || runningGens.has(id) || !gens.includes(g)) return;
+			const { rec } = await loadProject(g.draft.rigId);
+			const next = (await itemRun()).rerollFailed(
+				$state.snapshot(g.draft) as Draft,
+				calls,
+				rec.manifest.rig
+			);
+			if (next.gens !== reviewedGens) {
+				toast(message('state.rerollPriceChanged'), { tone: 'warning' });
+				return;
+			}
+			Object.assign(g, { draft: next.draft, phase: 'running', status: '', error: undefined });
+			g.canceled = false;
+			await saveGens();
+			void runGen(g);
+		})().catch((error: unknown) => toast(errorMessage(error), { tone: 'danger' }));
+	}, minimumTier);
 }
 
 const WEEK = 7 * 86_400_000;
