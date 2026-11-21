@@ -22,7 +22,7 @@
 </script>
 
 <div class="prompt-line">
-	<p class="faint small prompt-text" class:expanded title={text}>{text}</p>
+	<p class="small prompt-text" class:expanded title={text}>{text}</p>
 	<button
 		class="bu-action btn icon"
 		data-variant="quiet"
@@ -35,15 +35,22 @@
 </div>
 
 <style>
+	/* Set like a code block so it reads as the exact text that was sent, not as UI copy. */
 	.prompt-line {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
 		gap: 4px;
 		min-inline-size: 0;
+		padding-inline-start: 10px;
+		background: var(--stage);
+		border: 1px solid var(--bu-line);
+		border-radius: var(--r-ctl);
 	}
 	.prompt-text {
 		margin: 0;
+		font-family: var(--font-mono);
+		color: var(--bu-text);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
