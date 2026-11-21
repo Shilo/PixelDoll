@@ -6,7 +6,7 @@
 		type ReferenceSize
 	} from '../lib/image/reference.ts';
 	import Upload from '@lucide/svelte/icons/upload';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, type Snippet } from 'svelte';
 	import { t } from 'svelte-whisper';
 	import { errorMessage, message, type Message } from '../lib/message.ts';
 	import { displayNestedMessage } from './nestedMessage.ts';
@@ -21,7 +21,12 @@
 		label,
 		hint,
 		issue = '',
-		disabled = false
+		disabled = false,
+		exactFrame = false,
+		caption,
+		thumbnail,
+		beforePick,
+		onremove
 	}: {
 		value?: PickedReference;
 		loading?: boolean;
@@ -32,6 +37,11 @@
 		hint: string;
 		issue?: string;
 		disabled?: boolean;
+		exactFrame?: boolean;
+		caption?: string;
+		thumbnail?: Snippet;
+		beforePick?: (accept: () => void) => void;
+		onremove?: () => void;
 	} = $props();
 	const id = $props.id();
 	const helpId = `${id}-help`;
@@ -70,12 +80,17 @@
 		event.dataTransfer.dropEffect = 'none';
 		dragging = false;
 	}
-	async function choose(files: FileList | undefined | null) {
+	function pick(accept: () => void) {
+		if (disabled || loading) return;
+		if (beforePick) beforePick(accept);
+		else accept();
+	}
+	async function choose(files: ArrayLike<File> | undefined | null) {
 		if (!files?.length || loading || disabled) return;
 		error = '';
 		announcement = '';
 		if (files.length !== 1) {
-			value = undefined;
+			if (!exactFrame) value = undefined;
 			error = message('referenceField.error', {
 				reason: message('referenceField.oneAtATime')
 			});
@@ -89,7 +104,7 @@
 				const limitChanged = () => limit.width !== max.width || limit.height !== max.height;
 				let prepared: PickedReference;
 				try {
-					prepared = await readReference(file, limit, inspectColors);
+					prepared = await readReference(file, limit, inspectColors, exactFrame);
 				} catch (failure) {
 					if (active && !disabled && limitChanged()) continue;
 					throw failure;
@@ -102,7 +117,7 @@
 			}
 		} catch (failure) {
 			if (!active || disabled) return;
-			value = undefined;
+			if (!exactFrame) value = undefined;
 			error = message('referenceField.error', {
 				reason:
 					failure instanceof Error ? errorMessage(failure) : message('referenceField.unreadable')
@@ -117,7 +132,8 @@
 
 <div class={['reference', { 'side-by-side': sideBySide, attached: !!value }]}>
 	<span class="label reference-label"
-		>{label ?? t('referenceField.label')} <span class="faint">{t('common.optional')}</span></span
+		>{label ?? t('referenceField.label')}{#if !exactFrame}
+			<span class="faint">{t('common.optional')}</span>{/if}</span
 	>
 	<div class="reference-row">
 		<button
@@ -125,15 +141,19 @@
 			class={['drop', empty ? 'bu-tile bu-focus' : 'bu-action']}
 			bind:this={drop}
 			data-variant={empty ? 'empty' : dragging ? 'primary' : 'outline'}
-			aria-label={loading
-				? t('referenceField.openingLabel')
-				: value
-					? t('referenceField.chooseDifferent')
-					: t('referenceField.addImage')}
+			aria-label={exactFrame && label
+				? label
+				: loading
+					? t('referenceField.openingLabel')
+					: value
+						? t('referenceField.chooseDifferent')
+						: t('referenceField.addImage')}
 			aria-describedby={value ? `${fileId} ${helpId}` : helpId}
 			aria-disabled={disabled || loading}
 			onclick={() => {
-				if (!disabled && !loading) input.click();
+				pick(() => {
+					if (active) input.click();
+				});
 			}}
 			ondragover={(event) => {
 				if (!event.dataTransfer?.types.includes('Files')) return;
@@ -146,7 +166,11 @@
 				if (!event.dataTransfer?.types.includes('Files')) return;
 				event.preventDefault();
 				dragging = false;
-				void choose(event.dataTransfer?.files);
+				const files = Array.from(event.dataTransfer.files);
+				if (files.length)
+					pick(() => {
+						if (active) void choose(files);
+					});
 			}}
 		>
 			{#if value}
@@ -157,7 +181,9 @@
 						height={value.height}
 					/>
 				</svg>
-			{:else}
+			{:else if thumbnail}
+				{@render thumbnail()}
+			{:else if !disabled}
 				<Upload size={22} />
 			{/if}
 			<span class="reference-copy">
@@ -169,8 +195,12 @@
 						>
 					</small>
 				{:else}
-					<span>{loading ? t('referenceField.opening') : t('referenceField.addImage')}</span>
-					{#if !loading}<small class="faint" aria-hidden="true"
+					<span
+						>{loading
+							? t('referenceField.opening')
+							: (caption ?? t('referenceField.addImage'))}</span
+					>
+					{#if !loading && !disabled}<small class="faint" aria-hidden="true"
 							>{t('referenceField.dropHint')}</small
 						>{/if}
 				{/if}
@@ -185,6 +215,7 @@
 				disabled={disabled || loading}
 				onclick={() => {
 					value = undefined;
+					onremove?.();
 					error = '';
 					announcement = message('referenceField.removed');
 					drop.focus();
@@ -194,7 +225,7 @@
 	</div>
 	<input
 		type="file"
-		accept="image/png,image/jpeg,image/webp"
+		accept={exactFrame ? 'image/png' : 'image/png,image/jpeg,image/webp'}
 		hidden
 		bind:this={input}
 		oncancel={(event) => event.stopPropagation()}
@@ -203,7 +234,10 @@
 			input.value = '';
 		}}
 	/>
-	<small class="faint" id={helpId}>{hint} {limits}</small>
+	<small class="faint" id={helpId}
+		>{hint}{#if !exactFrame}
+			{limits}{/if}</small
+	>
 	{#if error || issue}<small role="alert">{displayNestedMessage(error || issue)}</small>{/if}
 	{#if resizeNotice}<small>{displayNestedMessage(resizeNotice)}</small>{/if}
 	<span class="reference-announcement" role="status"

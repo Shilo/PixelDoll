@@ -1,6 +1,38 @@
+import type { ImageReference } from '../lib/image/reference.ts';
+import type { DirectionName } from '../lib/store/manifest.ts';
+
 export type MoveAnimationModel = 'skeleton-v3' | 'v3' | 'pixminimax';
 
-export type MoveAnimationOptions = { model: MoveAnimationModel; frameCount?: number };
+export type MoveFrameReferences<Image = ImageReference> = Partial<
+	Record<DirectionName, { start?: Image; end?: Image | null }>
+>;
+
+export type MoveAnimationOptions = {
+	model: MoveAnimationModel;
+	frameCount?: number;
+	loop?: boolean;
+	references?: MoveFrameReferences;
+};
+
+export const gaitTemplate = (action?: string) => action === 'walk' || action === 'run';
+export const templateLoops = (action?: string) => action === 'idle' || gaitTemplate(action);
+
+export function automaticMoveEnd(action: string | undefined, loop: boolean | undefined): boolean {
+	return !!loop && !gaitTemplate(action);
+}
+
+export function moveReferenceEnd<Image>(
+	references: { end?: Image | null } | undefined,
+	action: string | undefined,
+	loop: boolean | undefined,
+	start: Image
+): Image | undefined {
+	return references?.end === undefined
+		? automaticMoveEnd(action, loop)
+			? start
+			: undefined
+		: (references.end ?? undefined);
+}
 
 export function moveFrameCounts(model: MoveAnimationModel, canvasSize: number): number[] {
 	if (!Number.isInteger(canvasSize) || canvasSize < 1 || canvasSize > 256) return [];

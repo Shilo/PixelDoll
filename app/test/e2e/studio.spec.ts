@@ -5371,6 +5371,10 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await expect(replace).toBeEnabled();
 	const advanced = sheet.locator('summary').filter({ hasText: 'Advanced' });
 	await expect(advanced).toContainText('V3');
+	await expect(sheet.getByText('Kept: 8 frames', { exact: true })).toBeVisible();
+	await expect(
+		sheet.getByRole('combobox', { name: 'Motion model', exact: true })
+	).not.toBeVisible();
 	await advanced.click();
 	await expect(sheet.getByRole('slider', { name: 'Frames', exact: true })).toHaveCount(0);
 	await expect(sheet.getByText('Kept: 8 frames', { exact: true })).toBeVisible();
@@ -5385,6 +5389,11 @@ test('a custom move replacement keeps its name and reviews eligible equipment an
 	await east.click();
 	await expect(model).toHaveValue('pixminimax');
 	await model.selectOption('skeleton-v3');
+	await expect(sheet.getByRole('button', { name: 'End frame', exact: true })).toBeDisabled();
+	await sheet.getByRole('button', { name: 'Start frame', exact: true }).click();
+	const startWarning = page.getByRole('alertdialog', { name: 'Use a custom start frame?' });
+	await expect(startWarning).toBeVisible();
+	await startWarning.getByRole('button', { name: 'Keep default' }).click();
 	const custom = sheet.getByRole('textbox', { name: 'Describe a new move', exact: true });
 	await expect(custom).toHaveValue('');
 	await custom.fill('jumping in place');

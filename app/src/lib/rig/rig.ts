@@ -62,8 +62,10 @@ export interface RigAnimation {
 	/** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
 	directions?: DirectionName[];
 	cells: number;
-	/** Serialized playback metadata. Global Export preferences replace it on export copies; app previews and sharing always loop. */
+	/** Serialized playback metadata; app previews and sharing always loop. */
 	loop: boolean;
+	/** Explicit Add a move choice; omitted when global Export preferences supply the default. */
+	moveLoop?: boolean;
 	frames: { cell: number; ms: number }[];
 	source?: {
 		endpoint: string;
@@ -154,14 +156,22 @@ export const validAnimationId = (id: string): boolean => ID.test(id);
 /** Playback preferences do not change the artwork inputs of a pending generation or recovery. */
 export const rigArtworkVersion = (rig: Rig, character: unknown): string =>
 	stableStringify({
-		rig: { ...rig, animations: rig.animations.map(({ loop: _loop, ...animation }) => animation) },
+		rig: {
+			...rig,
+			animations: rig.animations.map(
+				({ loop: _loop, moveLoop: _moveLoop, ...animation }) => animation
+			)
+		},
 		character
 	});
 
 /** Preserve archived playback metadata through artwork/pose publication; new moves default to Loop. */
 export function retainPlaybackChoices(next: Rig, current: Rig): void {
-	for (const animation of next.animations)
-		animation.loop = current.animations.find((a) => a.id === animation.id)?.loop ?? true;
+	for (const animation of next.animations) {
+		const saved = current.animations.find((a) => a.id === animation.id);
+		if (saved?.moveLoop !== undefined) animation.moveLoop = saved.moveLoop;
+		animation.loop = animation.moveLoop ?? saved?.loop ?? true;
+	}
 }
 
 /** Invariants of a frozen rig. Returns human-readable errors (empty = valid). */

@@ -131,8 +131,11 @@ import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, hasCompleteCells } from '../lib/dress/dress.ts';
 import { saveSplit } from '../lib/dress/project.ts';
 import {
+	automaticMoveEnd,
 	defaultMoveFrameCount,
+	gaitTemplate,
 	moveFrameCounts,
+	moveReferenceEnd,
 	type MoveAnimationOptions
 } from './moveAnimationOptions.ts';
 import { cellImg } from '../lib/compose/compose.ts';
@@ -511,6 +514,8 @@ interface ClipJob {
 	anim: string;
 	dir: Direction;
 	rest: Img;
+	start?: { image: Img; keypoints: Keypoint[] };
+	nativeStart?: Img;
 	restKps: Keypoint[];
 	keypoints: Keypoint[][];
 	looks: string;
@@ -546,8 +551,8 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 	const r = await run(
 		j.native?.request ??
 			rawClip({
-				first: await b64(j.rest),
-				rest: j.restKps,
+				first: await b64(j.start?.image ?? j.rest),
+				rest: j.start?.keypoints ?? j.restKps,
 				keypoints: j.keypoints,
 				description: j.looks,
 				action: j.action,
@@ -572,7 +577,15 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 		);
 	const nativeFrames =
 		j.native &&
-		normalizeNativeMoveFrames(r, outs, j.anim, j.dir, j.native.frames, j.rest, j.native.model);
+		normalizeNativeMoveFrames(
+			r,
+			outs,
+			j.anim,
+			j.dir,
+			j.native.frames,
+			j.nativeStart ?? j.rest,
+			j.native.model
+		);
 	const normalized = nativeFrames
 		? []
 		: outs.map((o) => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
@@ -1771,6 +1784,11 @@ async function inspectMeasurementRecovery(
 				{ direction: d }
 			);
 		const restImg = await context.read(rest.image.slice(7));
+		const start = await moveReferenceImage(spec.animation?.references?.[d], 'start', rig.cell);
+		const startPoints =
+			start && model === 'skeleton-v3'
+				? requireMoveStartJoints(cachedJoints(jobs, await context.measurement(start), start), d)
+				: undefined;
 		let keypoints: Keypoint[][] | undefined;
 		const authored = isAuthoredAction(spec.action);
 		if (model === 'skeleton-v3' && authored)
@@ -1812,19 +1830,24 @@ async function inspectMeasurementRecovery(
 			keypoints = measured as Keypoint[][];
 			rawHashes.push(hash);
 		}
-		if (keypoints) keypoints = sampleMovePoses(keypoints, framesRequested, spec.action);
+		if (keypoints)
+			keypoints = movePoseEndpoints(
+				sampleMovePoses(keypoints, framesRequested, spec.action, spec.animation?.loop),
+				spec,
+				startPoints
+			);
 		for (
 			let attempt = 0;
 			attempt < (spec.bodyPaletteRepair || model !== 'skeleton-v3' ? 1 : CLIP_ATTEMPTS);
 			attempt++
 		) {
-			const first = await context.encode(restImg);
+			const first = await context.encode(model === 'skeleton-v3' ? (start ?? restImg) : restImg);
 			const req =
 				model !== 'skeleton-v3'
 					? nativeMoveRequest(rec, spec, d, model, first)
 					: rawClip({
 							first,
-							rest: rest.keypoints,
+							rest: startPoints ?? rest.keypoints,
 							keypoints: keypoints!,
 							description: rec.character!.looks,
 							action: bodyAction(spec),
@@ -1856,7 +1879,15 @@ async function inspectMeasurementRecovery(
 			rawHashes.push(rawHash);
 			const nativeFrames =
 				model !== 'skeleton-v3' &&
-				normalizeNativeMoveFrames(raw, outputs, spec.id, d, framesRequested, restImg, model);
+				normalizeNativeMoveFrames(
+					raw,
+					outputs,
+					spec.id,
+					d,
+					framesRequested,
+					start ?? restImg,
+					model
+				);
 			const normalized = nativeFrames ? [] : outputs.map((out) => context.normalize(out.img));
 			if (normalized.some((n) => n.cutPx || !opaqueBox(n.img)))
 				throw new LocalizedError(
@@ -2099,7 +2130,7 @@ export function bodyMoveIssue(
 			blocked ? 'create.errors.moveAnimationFramesBlocked' : 'create.errors.moveAnimationFrames',
 			{ frames }
 		);
-	return s.action === 'walk' || isAuthoredAction(s.action) || s.text?.trim()
+	return gaitTemplate(s.action) || isAuthoredAction(s.action) || s.text?.trim()
 		? undefined
 		: new LocalizedError(
 				`Describe this move before generating it.${suffix}`,
@@ -2133,13 +2164,18 @@ export function moveEstimate(
 			(s.itemsOnly || s.itemMethod === 'grid') && !s.replace
 				? 0
 				: dirs *
-					(n * EST +
-						(model !== 'skeleton-v3'
-							? nativeMoveGens(model, m.rig.cell, n)
-							: poseCallGens(n) +
-								(isAuthoredAction(s.action)
-									? 0
-									: moveMotionGens(m, s) + moveMotionFrames(m, s) * EST)));
+						(n * EST +
+							(model !== 'skeleton-v3'
+								? nativeMoveGens(model, m.rig.cell, n)
+								: poseCallGens(n) +
+									(isAuthoredAction(s.action)
+										? 0
+										: moveMotionGens(m, s) + moveMotionFrames(m, s) * EST))) +
+					(model === 'skeleton-v3'
+						? moveDirections(m, s.dirs).filter(
+								(direction) => s.animation?.references?.[direction]?.start
+							).length * EST
+						: 0);
 	const items =
 		s.itemMethod === 'grid'
 			? s.items.reduce((sum, id) => {
@@ -2627,7 +2663,7 @@ export function moveMotionRequest(
 			: {
 					character_id: rec.character?.id ?? '',
 					mode: 'pixminimax',
-					action_description: `${spec.text?.trim().slice(0, 900)}, unarmed, no weapon, no props, no other people, no effects`,
+					action_description: `${moveMotionText(spec)}, unarmed, no weapon, no props, no other people, no effects`,
 					frame_count: moveMotionFrames(rec.manifest, spec),
 					keep_first_frame: false,
 					animation_name: spec.id,
@@ -2642,12 +2678,28 @@ export function nativeMoveRequest(
 	spec: MoveRequestSpec,
 	dir: Direction,
 	model: 'v3' | 'pixminimax',
-	first: string
+	first: string,
+	preview = false
 ): Req {
-	const motion = spec.text?.trim() || actionOf(spec.action ?? spec.id);
+	const motion = moveMotionText(spec);
+	const reference = spec.animation?.references?.[dir];
+	const start = reference?.start
+		? preview
+			? '[uploaded start frame]'
+			: reference.start.base64
+		: first;
+	const end = moveReferenceEnd(
+		reference?.end === undefined
+			? undefined
+			: { end: reference.end && (preview ? '[uploaded end frame]' : reference.end.base64) },
+		spec.action,
+		spec.animation?.loop,
+		start
+	);
 	const guard = ', unarmed, no weapon, no props, no other people, no effects';
 	const body = {
-		first_frame: png(first),
+		first_frame: png(start),
+		...(end ? { last_frame: png(end) } : {}),
 		frame_count: moveFrames(rec.manifest, spec),
 		...(spec.seed === undefined ? {} : { seed: spec.seed }),
 		no_background: true as const,
@@ -2662,20 +2714,82 @@ export function nativeMoveRequest(
 				...body,
 				description: `${motion.slice(0, 900)}${guard}`,
 				subject_description: rec.character?.looks.trim().slice(0, 300) || 'the character',
-				initial_pose: 'standing upright with empty hands',
+				...(!reference?.start ? { initial_pose: 'standing upright with empty hands' } : {}),
 				view: rec.manifest.rig.view ?? 'low top-down',
 				direction: dir
 			});
 }
 
-function sampleMovePoses(poses: Keypoint[][], frames: number, action?: string): Keypoint[][] {
+function moveMotionText(spec: MoveRequestSpec): string {
+	const motion = spec.text?.trim() || actionOf(spec.action ?? spec.id);
+	return gaitTemplate(spec.action) && spec.animation?.loop
+		? `${motion.slice(0, 830)}, continuous even strides, no stopping or settling into a standing pose`
+		: motion.slice(0, 900);
+}
+
+async function moveReferenceImage(
+	reference: NonNullable<MoveAnimationOptions['references']>[DirectionName],
+	kind: 'start' | 'end',
+	cell: Manifest['rig']['cell']
+): Promise<Img | undefined> {
+	const input = reference?.[kind];
+	if (!input) return;
+	const image = await decodePng(base64ToBytes(input.base64));
+	if (
+		image.w !== cell.w ||
+		image.h !== cell.h ||
+		!opaqueBox(image) ||
+		!image.data.some((alpha, index) => index % 4 === 3 && alpha === 0)
+	)
+		throw new LocalizedError(
+			'Use a frame of the correct size with a transparent background.',
+			'moveSheet.referenceInvalid',
+			{ width: cell.w, height: cell.h }
+		);
+	return image;
+}
+
+function movePoseEndpoints(
+	poses: Keypoint[][],
+	spec: MoveRequestSpec,
+	start?: Keypoint[]
+): Keypoint[][] {
+	if (!start && !automaticMoveEnd(spec.action, spec.animation?.loop)) return poses;
+	return poses.map((pose, index) =>
+		index === 0 && start
+			? start
+			: index === poses.length - 1 && automaticMoveEnd(spec.action, spec.animation?.loop)
+				? (start ?? poses[0])
+				: pose
+	);
+}
+
+function requireMoveStartJoints(
+	points: Keypoint[] | undefined,
+	direction: DirectionName
+): Keypoint[] {
+	if (!points || !hasAll(points))
+		throw new LocalizedError(
+			'No usable pose was found in the start frame.',
+			'moveSheet.referencePoseInvalid',
+			{ direction }
+		);
+	return points;
+}
+
+function sampleMovePoses(
+	poses: Keypoint[][],
+	frames: number,
+	action?: string,
+	loop?: boolean
+): Keypoint[][] {
 	if (poses.length === frames) return poses;
+	const open = action === 'death' || loop === false;
 	return Array.from({ length: frames }, (_, index) => {
-		if (action === 'death' && index === frames - 1) return poses[poses.length - 1];
-		const phase =
-				action === 'death'
-					? (index * (poses.length - 1)) / (frames - 1)
-					: (index * poses.length) / frames,
+		if (open && index === frames - 1) return poses[poses.length - 1];
+		const phase = open
+				? (index * (poses.length - 1)) / (frames - 1)
+				: (index * poses.length) / frames,
 			before = Math.floor(phase),
 			mix = phase - before;
 		const after = new Map(poses[(before + 1) % poses.length].map((point) => [point.label, point]));
@@ -2713,6 +2827,14 @@ async function addBodyClip(
 		n = moveFrames(m, spec),
 		name = m.name;
 	const model = moveAnimationModel(spec);
+	const starts = new Map<DirectionName, Img>();
+	if (spec.action !== 'ride')
+		for (const direction of dirs) {
+			const reference = spec.animation?.references?.[direction];
+			const start = await moveReferenceImage(reference, 'start', rig.cell);
+			if (start) starts.set(direction, start);
+			if (model !== 'skeleton-v3') await moveReferenceImage(reference, 'end', rig.cell);
+		}
 	if (model !== 'skeleton-v3')
 		for (const direction of dirs) {
 			const rest = rig.rest?.[direction];
@@ -2728,7 +2850,8 @@ async function addBodyClip(
 		model === 'skeleton-v3' && isAuthoredAction(spec.action) ? spec.action : undefined;
 	const total =
 		dirs.length *
-		(1 + n + (authored || model !== 'skeleton-v3' ? 0 : 1 + moveMotionFrames(m, spec)));
+			(1 + n + (authored || model !== 'skeleton-v3' ? 0 : 1 + moveMotionFrames(m, spec))) +
+		(model === 'skeleton-v3' ? starts.size : 0);
 	let done = 0;
 	const tick = () =>
 		onProgress({ step: 'animate', done: Math.min(total, ++done), total, recIds: [] });
@@ -2742,11 +2865,13 @@ async function addBodyClip(
 			};
 			const restKps = rig.rest![d]!.keypoints,
 				restImg = project.images.get(rig.rest![d]!.image)!;
+			const startImage = starts.get(d);
 			if (model !== 'skeleton-v3') {
 				const out = await renderClip({
 					anim: spec.id,
 					dir: d,
 					rest: restImg,
+					nativeStart: startImage,
 					restKps,
 					keypoints: [],
 					looks: rec.character!.looks,
@@ -2765,6 +2890,14 @@ async function addBodyClip(
 				});
 				return { d, keypoints: out.measured as Keypoint[][], out };
 			}
+			const start = startImage && {
+				image: startImage,
+				keypoints: requireMoveStartJoints(
+					await joints(startImage, true, signal, spec.activityScope),
+					d
+				)
+			};
+			if (start) checkedTick();
 			let keypoints: Keypoint[][];
 			if (authored)
 				keypoints = authoredPoses(
@@ -2789,7 +2922,11 @@ async function addBodyClip(
 				keypoints = result.keypoints;
 				extra[k] = [result.record];
 			}
-			keypoints = sampleMovePoses(keypoints, n, spec.action);
+			keypoints = movePoseEndpoints(
+				sampleMovePoses(keypoints, n, spec.action, spec.animation?.loop),
+				spec,
+				start?.keypoints
+			);
 			return {
 				d,
 				keypoints,
@@ -2797,6 +2934,7 @@ async function addBodyClip(
 					anim: spec.id,
 					dir: d,
 					rest: restImg,
+					start,
 					restKps,
 					keypoints,
 					authored: !!authored,
@@ -2997,6 +3135,7 @@ async function addBodyClip(
 		if (old) invalidateMoveItems(cur.manifest, spec.id, dirs);
 		// Export choices can change while artwork is being generated. The current record owns those choices.
 		retainPlaybackChoices(frig, cur.manifest.rig);
+		if (spec.animation?.loop !== undefined) anim.loop = anim.moveLoop = spec.animation.loop;
 		cur.manifest.rig = frig;
 		cb.provenance = baseIt.provenance;
 		cb.layers[0].cells = layer.cells;

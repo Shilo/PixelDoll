@@ -30,8 +30,11 @@ export function referenceSizeError(image: ImageReference, max: number): string {
 export async function readReference(
 	file: File,
 	max: ReferenceSize,
-	inspectColors: boolean
+	inspectColors: boolean,
+	exactFrame = false
 ): Promise<PickedReference> {
+	if (exactFrame && file.type !== 'image/png')
+		throw new LocalizedError('Choose a PNG image.', 'moveSheet.referencePng');
 	if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type))
 		throw new LocalizedError('Choose a PNG, JPEG, or WebP image.', 'reference.unsupported');
 	if (file.size > REFERENCE_MAX_MB * 1024 * 1024)
@@ -47,6 +50,14 @@ export async function readReference(
 		);
 	});
 	try {
+		const invalidFrame = () =>
+			new LocalizedError(
+				'Use a frame of the correct size with a transparent background.',
+				'moveSheet.referenceInvalid',
+				{ width: max.width, height: max.height }
+			);
+		if (exactFrame && (bitmap.width !== max.width || bitmap.height !== max.height))
+			throw invalidFrame();
 		const scale = Math.min(1, max.width / bitmap.width, max.height / bitmap.height);
 		const image = {
 			width: Math.max(1, Math.round(bitmap.width * scale)),
@@ -59,6 +70,8 @@ export async function readReference(
 		const { data } = context.getImageData(0, 0, image.width, image.height);
 		const pixels = { w: image.width, h: image.height, data };
 		const box = opaqueBox(pixels);
+		if (exactFrame && (!box || !data.some((alpha, index) => index % 4 === 3 && alpha === 0)))
+			throw invalidFrame();
 		if (!box || !data.some((value, index) => index % 4 === 3 && value >= 128))
 			throw scale < 1
 				? new LocalizedError(

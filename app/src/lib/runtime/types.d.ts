@@ -329,8 +329,10 @@ export interface RigAnimation {
 	/** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
 	directions?: DirectionName[];
 	cells: number;
-	/** Serialized playback metadata. Global Export preferences replace it on export copies; app previews and sharing always loop. */
+	/** Serialized playback metadata; app previews and sharing always loop. */
 	loop: boolean;
+	/** Explicit Add a move choice; omitted when global Export preferences supply the default. */
+	moveLoop?: boolean;
 	frames: { cell: number; ms: number }[];
 	source?: {
 		endpoint: string;

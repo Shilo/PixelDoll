@@ -7,11 +7,18 @@
 	import DirectionCompass from './DirectionCompass.svelte';
 	import Help from './Help.svelte';
 	import Sprite from './Sprite.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
+	import ReferenceField from './ReferenceField.svelte';
+	import type { PickedReference } from '../lib/image/reference.ts';
 	import {
+		automaticMoveEnd,
 		defaultMoveFrameCount,
+		gaitTemplate,
 		moveFrameCounts,
+		templateLoops,
 		type MoveAnimationModel,
-		type MoveAnimationOptions
+		type MoveAnimationOptions,
+		type MoveFrameReferences
 	} from './moveAnimationOptions.ts';
 	import { untrack } from 'svelte';
 	import { default as ApiPeek } from './ApiPeek.svelte';
@@ -92,7 +99,13 @@
 	// Default is the standing views themselves: nothing to generate or replace.
 	const options = $derived(
 		[
-			...new Set(['idle', 'walk', ...AUTHORED, ...(m?.rig.animations.map((a) => a.id) ?? [])])
+			...new Set([
+				'idle',
+				'walk',
+				'run',
+				...AUTHORED,
+				...(m?.rig.animations.map((a) => a.id) ?? [])
+			])
 		].filter((a) => !reservedMove(a))
 	);
 	const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined;
@@ -106,16 +119,21 @@
 	};
 	// Advanced starts open when a restored draft already changed something there, so no choice is hidden.
 	let advancedOpen = $state(
-		!!(
-			draft?.animation &&
-			(draft.animation.model !== 'skeleton-v3' || draft.animation.frameCount !== undefined)
-		)
+		!!(draft?.frameReferences && Object.keys(draft.frameReferences).length) ||
+			(draft?.animation?.model !== undefined && draft.animation.model !== 'skeleton-v3')
 	);
 	let modelChoice = $state<MoveAnimationModel | undefined>(draft?.animation?.model);
 	let frameChoice = $state<number | undefined>(draft?.animation?.frameCount);
 	let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '');
 	let replaceSelected = $state(draft?.replace ?? false);
 	let text = $state(draft?.text ?? '');
+	let loopChoice = $state<boolean | undefined>(draft?.loop);
+	let frameReferences = $state<MoveFrameReferences<PickedReference>>(draft?.frameReferences ?? {});
+	let referenceDirection = $state<DirectionName>();
+	let startLoading = $state(false);
+	let endLoading = $state(false);
+	let confirm = $state.raw<{ kind: 'start' | 'loop'; accept: () => void }>();
+	let customStartAcknowledged = false;
 	const slug = (s: string) =>
 		s
 			.toLowerCase()
@@ -124,6 +142,11 @@
 			.slice(0, 24);
 	const replacing = $derived(replaceSelected && have.has(action));
 	const savedMove = $derived(m?.rig.animations.find((a) => a.id === action));
+	const looping = $derived(
+		loopChoice ??
+			(replacing ? (savedMove?.moveLoop ?? savedMove?.loop) : undefined) ??
+			templateLoops(action)
+	);
 	// Ids allow only a-z, 0-9, - and _ (rig.ts): a description in another script gets the first free "move-N".
 	const freeMoveId = () => {
 		let n = 1;
@@ -142,6 +165,16 @@
 	const targetDirs = $derived(
 		replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs
 	);
+	const frameDirection = $derived(
+		referenceDirection && targetDirs.includes(referenceDirection)
+			? referenceDirection
+			: targetDirs[0]
+	);
+	const frameReference = $derived(frameDirection ? frameReferences[frameDirection] : undefined);
+	const standingImage = $derived.by(() => {
+		const hash = frameDirection && m?.rig.rest?.[frameDirection]?.image;
+		return hash ? (store.project?.images.get(hash) ?? null) : null;
+	});
 	const affectedMirrors = $derived(
 		m
 			? affectedMoveDirections(m.rig, targetDirs)
@@ -152,7 +185,7 @@
 	);
 	const describingReplacement = $derived(
 		replacing &&
-			((action !== 'walk' && !isAuthoredAction(action)) ||
+			((!gaitTemplate(action) && !isAuthoredAction(action)) ||
 				targetDirs.some((dir) => {
 					const source = savedMove?.sources?.[dir];
 					if (source?.route === 'skeleton-v3') return !!source.motion?.startsWith('pixminimax:');
@@ -209,7 +242,37 @@
 	const animationOptions = $derived<MoveAnimationOptions | undefined>(
 		riding
 			? undefined
-			: { model, ...(chosenFrameCount === undefined ? {} : { frameCount: chosenFrameCount }) }
+			: {
+					model,
+					loop: looping,
+					...(chosenFrameCount === undefined ? {} : { frameCount: chosenFrameCount }),
+					...(Object.keys(frameReferences).length
+						? {
+								references: Object.fromEntries(
+									targetDirs.flatMap((direction) => {
+										const value = frameReferences[direction];
+										if (!value) return [];
+										const compact = (reference: PickedReference) => ({
+											width: reference.width,
+											height: reference.height,
+											base64: reference.base64
+										});
+										return [
+											[
+												direction,
+												{
+													...(value.start ? { start: compact(value.start) } : {}),
+													...(model !== 'skeleton-v3' && value.end !== undefined
+														? { end: value.end ? compact(value.end) : null }
+														: {})
+												}
+											]
+										];
+									})
+								)
+							}
+						: {})
+				}
 	);
 	// What the core resolves with no explicit count, so the Default label matches the price and the request.
 	const defaultFrames = $derived(
@@ -225,7 +288,13 @@
 	const advancedNote = $derived(
 		[
 			model === 'skeleton-v3' ? '' : t(MODEL_TEXT[model]),
-			userFrameCount === undefined ? '' : t('moveSheet.framesValue', { count: userFrameCount })
+			targetDirs.some(
+				(direction) =>
+					frameReferences[direction]?.start ||
+					(model !== 'skeleton-v3' && frameReferences[direction]?.end !== undefined)
+			)
+				? t('moveSheet.customFrames')
+				: ''
 		]
 			.filter(Boolean)
 			.join(' · ')
@@ -451,6 +520,8 @@
 			items: $state.snapshot(included),
 			dirs: [...selectedDirs],
 			poseStyle: 'visible-side-v1',
+			frameReferences: $state.snapshot(frameReferences),
+			loop: loopChoice,
 			animation:
 				!riding && (modelChoice !== undefined || userFrameCount !== undefined)
 					? { model, frameCount: userFrameCount }
@@ -470,6 +541,9 @@
 		replaceSelected = replace;
 		text = '';
 		frameChoice = undefined;
+		loopChoice = undefined;
+		frameReferences = {};
+		referenceDirection = undefined;
 		const clips = (rec?.rigQa as { clips?: Record<string, { fails?: unknown[] }> } | undefined)
 			?.clips;
 		const flagged = availableDirs.filter((d) => clips?.[`${next}/${d}`]?.fails?.length);
@@ -483,6 +557,40 @@
 	function describeMove(value: string) {
 		chooseAction('');
 		text = value;
+	}
+	function changeFrame(
+		direction: DirectionName,
+		kind: 'start' | 'end',
+		value?: PickedReference | null
+	) {
+		const next = { ...frameReferences[direction], [kind]: value };
+		if (next.start || next.end !== undefined) frameReferences[direction] = next;
+		else delete frameReferences[direction];
+	}
+	function changeLoop(enabled: boolean) {
+		const reset = () => {
+			for (const direction of targetDirs) changeFrame(direction, 'end');
+			loopChoice = enabled;
+		};
+		const replacesEnd = targetDirs.some((direction) => {
+			const frames = frameReferences[direction];
+			return !!frames?.end && frames.end.base64 !== frames.start?.base64;
+		});
+		if (replacesEnd) confirm = { kind: 'loop', accept: reset };
+		else reset();
+	}
+	function pickStart(accept: () => void) {
+		if (model !== 'skeleton-v3' || customStartAcknowledged) {
+			accept();
+			return;
+		}
+		confirm = {
+			kind: 'start',
+			accept: () => {
+				customStartAcknowledged = true;
+				accept();
+			}
+		};
 	}
 </script>
 
@@ -611,6 +719,8 @@
 				class="bu-action btn primary lg"
 				data-variant="primary"
 				disabled={!est ||
+					startLoading ||
+					endLoading ||
 					!!addAccess.error ||
 					(!!settingUp.spec && !settingUp.done) ||
 					tierBlocked(addTier)}
@@ -967,6 +1077,60 @@
 					/>
 				</label>{/if}
 			{#if !riding}
+				<label class="check">
+					<input
+						type="checkbox"
+						checked={looping}
+						aria-describedby={`${advancedId}-loop-hint`}
+						onchange={(event) => {
+							const enabled = event.currentTarget.checked;
+							event.currentTarget.checked = looping;
+							changeLoop(enabled);
+						}}
+					/>
+					{t('moveSheet.loop')}
+					<span id={`${advancedId}-loop-hint`} class="faint small">{t('moveSheet.loopHint')}</span>
+				</label>
+				<div class="advanced-field frames-field">
+					<div class="advanced-label">
+						{#if keptFrames === undefined && frameCounts.length}
+							<label for={`${advancedId}-frames`}>{t('moveSheet.frames')}</label>
+						{:else}
+							<span>{t('moveSheet.frames')}</span>
+						{/if}
+						<Help
+							iconOnly
+							title={t('moveSheet.frames')}
+							text={t('moveSheet.framesHelp', { canvas: formatNumber(canvas) })}
+						/>
+						{#if keptFrames === undefined && frameCounts.length}
+							<button
+								type="button"
+								class="bu-action btn plain frame-default"
+								data-variant="quiet"
+								aria-disabled={userFrameCount === undefined}
+								onclick={() => (frameChoice = undefined)}
+								>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
+							>
+						{/if}
+					</div>
+					{#if keptFrames !== undefined}
+						<span class="faint">{t('moveSheet.framesKept', { count: keptFrames })}</span>
+					{:else if frameCounts.length}
+						<div class="frame-controls">
+							<input
+								id={`${advancedId}-frames`}
+								type="range"
+								aria-valuetext={t('moveSheet.framesValue', { count: shownFrames })}
+								min={0}
+								max={frameCounts.length - 1}
+								value={frameCounts.indexOf(shownFrames)}
+								oninput={(e) => (frameChoice = frameCounts[e.currentTarget.valueAsNumber])}
+							/>
+							<span class="frame-value">{t('moveSheet.framesValue', { count: shownFrames })}</span>
+						</div>
+					{/if}
+				</div>
 				<details class="disclosure advanced" bind:open={advancedOpen}>
 					<summary
 						><ChevronRight size={14} />{t('common.advanced')}{#if advancedNote}<span
@@ -987,55 +1151,90 @@
 								id={`${advancedId}-model`}
 								class="bu-input input"
 								value={model}
-								onchange={(e) => chooseModel(e.currentTarget.value as MoveAnimationModel)}
-								>{#each MODELS as option (option)}<option
+								onchange={(event) => chooseModel(event.currentTarget.value as MoveAnimationModel)}
+							>
+								{#each MODELS as option (option)}<option
 										value={option}
 										disabled={option !== model && !fitsKept(option)}>{t(MODEL_TEXT[option])}</option
-									>{/each}</select
-							>
+									>{/each}
+							</select>
 						</div>
-						<div class="advanced-field frames-field">
-							<div class="advanced-label">
-								{#if keptFrames === undefined && frameCounts.length}
-									<label for={`${advancedId}-frames`}>{t('moveSheet.frames')}</label>
-								{:else}
-									<span>{t('moveSheet.frames')}</span>
-								{/if}
-								<Help
-									iconOnly
-									title={t('moveSheet.frames')}
-									text={t('moveSheet.framesHelp', { canvas: formatNumber(canvas) })}
-								/>
-								{#if keptFrames === undefined && frameCounts.length}
-									<button
-										type="button"
-										class="bu-action btn plain frame-default"
-										data-variant="quiet"
-										aria-disabled={userFrameCount === undefined}
-										onclick={() => (frameChoice = undefined)}
-										>{t('moveSheet.framesDefault', { count: defaultFrames })}</button
-									>
-								{/if}
+						{#if frameDirection && m}
+							{@const direction = frameDirection}
+							{@const size = { width: m.rig.cell.w, height: m.rig.cell.h }}
+							{@const autoEnd =
+								frameReference?.end === undefined && automaticMoveEnd(action, looping)}
+							<div class="advanced-field">
+								<label for={`${advancedId}-direction`}>{t('moveSheet.referenceDirection')}</label>
+								<select
+									id={`${advancedId}-direction`}
+									class="bu-input input"
+									value={direction}
+									disabled={startLoading || endLoading}
+									onchange={(event) =>
+										(referenceDirection = event.currentTarget.value as DirectionName)}
+								>
+									{#each targetDirs as option (option)}<option value={option}
+											>{frameReferences[option]?.start || frameReferences[option]?.end
+												? t('moveSheet.referenceEdited', { direction: directionLabel(option) })
+												: directionLabel(option)}</option
+										>{/each}
+								</select>
 							</div>
-							{#if keptFrames !== undefined}
-								<span class="faint">{t('moveSheet.framesKept', { count: keptFrames })}</span>
-							{:else if frameCounts.length}
-								<div class="frame-controls">
-									<input
-										id={`${advancedId}-frames`}
-										type="range"
-										aria-valuetext={t('moveSheet.framesValue', { count: shownFrames })}
-										min={0}
-										max={frameCounts.length - 1}
-										value={frameCounts.indexOf(shownFrames)}
-										oninput={(e) => (frameChoice = frameCounts[e.currentTarget.valueAsNumber])}
+							{#key `${direction}/${model}`}
+								<div class="frame-references">
+									{#snippet standing()}<Sprite
+											img={standingImage}
+											k={1}
+											limit={36}
+											label={t('moveSheet.standingFrame')}
+										/>{/snippet}
+									{#snippet matching()}
+										{#if frameReference?.start}<img
+												class="matching-preview"
+												src={`data:image/png;base64,${frameReference.start.base64}`}
+												alt=""
+											/>{:else}{@render standing()}{/if}
+									{/snippet}
+									<ReferenceField
+										exactFrame
+										sideBySide
+										max={size}
+										label={t('moveSheet.startFrame')}
+										hint=""
+										caption={t('moveSheet.standingFrame')}
+										thumbnail={standing}
+										beforePick={pickStart}
+										bind:loading={startLoading}
+										bind:value={
+											() => frameReference?.start, (value) => changeFrame(direction, 'start', value)
+										}
 									/>
-									<span class="frame-value"
-										>{t('moveSheet.framesValue', { count: shownFrames })}</span
-									>
+									<ReferenceField
+										exactFrame
+										sideBySide
+										max={size}
+										label={t('moveSheet.endFrame')}
+										hint={model === 'skeleton-v3' ? t('moveSheet.endUnavailable') : ''}
+										caption={t(
+											model !== 'skeleton-v3' && autoEnd
+												? 'moveSheet.sameAsStart'
+												: 'moveSheet.noEndFrame'
+										)}
+										thumbnail={model !== 'skeleton-v3' && autoEnd ? matching : undefined}
+										disabled={model === 'skeleton-v3'}
+										bind:loading={endLoading}
+										bind:value={
+											() =>
+												model === 'skeleton-v3' ? undefined : (frameReference?.end ?? undefined),
+											(value) => changeFrame(direction, 'end', value)
+										}
+										onremove={() => changeFrame(direction, 'end', null)}
+									/>
 								</div>
-							{/if}
-						</div>
+							{/key}
+							<small class="faint">{t('moveSheet.referenceSize', size)}</small>
+						{/if}
 					</div>
 				</details>
 			{/if}
@@ -1115,6 +1314,26 @@
 		</div>
 	{/if}
 </Sheet>
+
+{#if confirm}
+	<ConfirmDialog
+		title={t(confirm.kind === 'start' ? 'moveSheet.customStartTitle' : 'moveSheet.changeLoopTitle')}
+		action={t(
+			confirm.kind === 'start' ? 'moveSheet.customStartContinue' : 'moveSheet.changeLoopAccept'
+		)}
+		cancel={t(confirm.kind === 'start' ? 'moveSheet.customStartKeep' : 'common.cancel')}
+		oncancel={() => (confirm = undefined)}
+		onconfirm={() => {
+			const accept = confirm?.accept;
+			confirm = undefined;
+			accept?.();
+		}}
+	>
+		<p>
+			{t(confirm.kind === 'start' ? 'moveSheet.customStartWarning' : 'moveSheet.changeLoopWarning')}
+		</p>
+	</ConfirmDialog>
+{/if}
 
 <style>
 	.redraw-form {
@@ -1201,6 +1420,17 @@
 	}
 	.frames-field {
 		row-gap: 0;
+	}
+	.frame-references {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+	}
+	.matching-preview {
+		width: 36px;
+		height: 36px;
+		object-fit: contain;
+		image-rendering: pixelated;
 	}
 	.frame-controls {
 		display: grid;

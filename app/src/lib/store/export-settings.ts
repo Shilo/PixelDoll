@@ -137,7 +137,7 @@ export async function saveExportSetting(change: ExportSettingChange): Promise<Ex
 export function applyExportSettings(manifest: Manifest, settings: ExportSettings): void {
 	const names = new Set(checkedSettings(settings).playOnce);
 	for (const animation of manifest.rig.animations)
-		animation.loop = !names.has(animationName(animation.id));
+		animation.loop = animation.moveLoop ?? !names.has(animationName(animation.id));
 }
 
 /** Remembered names remain available after deleting or renaming the last character that used them. */

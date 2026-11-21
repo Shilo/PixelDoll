@@ -23,6 +23,50 @@ import { cellHash, type Keypoint, type DirectionName } from '../../src/lib/rig/r
 import type { Manifest } from '../../src/lib/store/manifest.ts';
 import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts';
 afterEach(() => vi.restoreAllMocks());
+
+test('native motion uses only the selected direction’s start and end frames', async () => {
+	const { original } = await fixture();
+	const start = { width: 64, height: 64, base64: 'start' };
+	const end = { ...start, base64: 'end' };
+	for (const model of ['v3', 'pixminimax'] as const) {
+		const spec = {
+			id: 'idle',
+			action: 'idle',
+			frames: 8,
+			items: [],
+			animation: { model, loop: true, references: { east: { start, end } } }
+		};
+		expect(nativeMoveRequest(original, spec, 'east', model, 'standing').body).toMatchObject({
+			first_frame: png('start'),
+			last_frame: png('end')
+		});
+		expect(nativeMoveRequest(original, spec, 'south', model, 'standing').body).toMatchObject({
+			first_frame: png('standing'),
+			last_frame: png('standing')
+		});
+		expect(
+			nativeMoveRequest(original, { ...spec, action: 'walk' }, 'south', model, 'standing').body
+		).not.toHaveProperty('last_frame');
+		expect(
+			nativeMoveRequest(
+				original,
+				{ ...spec, animation: { ...spec.animation, loop: false } },
+				'south',
+				model,
+				'standing'
+			).body
+		).not.toHaveProperty('last_frame');
+		expect(
+			nativeMoveRequest(
+				original,
+				{ ...spec, animation: { ...spec.animation, references: { east: { start, end: null } } } },
+				'east',
+				model,
+				'standing'
+			).body
+		).not.toHaveProperty('last_frame');
+	}
+});
 async function fixture(fail = false, nativeReply?: 'redrawn' | 'exact' | 'none', withHat = false) {
 	const dirs: DirectionName[] = ['south', 'east', 'north', 'west'],
 		im = makeImg(64, 64);
