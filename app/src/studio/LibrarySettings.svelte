@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Notice } from '@shilo/bronze-ui/svelte';
 	import { onMount, tick } from 'svelte';
 	import { formatNumber, t } from 'svelte-whisper';
 	import { Archive, Download, Upload } from './icons.ts';
@@ -217,8 +218,8 @@
 			</div>
 		</section>
 	{:else}
-		<p class="bu-muted">{t('librarySettings.scope')}</p>
-		<p class="bu-muted">{t('librarySettings.privacy')}</p>
+		<p class="bu-muted settings-description">{t('librarySettings.scope')}</p>
+		<Notice>{t('librarySettings.privacy')}</Notice>
 		{#if hasArchives}
 			<label class="check">
 				<input type="checkbox" bind:checked={includeArchived} disabled={busy} />
@@ -241,6 +242,10 @@
 			accept=".zip,application/zip"
 			bind:this={picker}
 			onchange={selectFile}
+			oncancel={(event) => {
+				event.stopPropagation();
+				openPicker?.focus();
+			}}
 			hidden
 		/>
 		<button

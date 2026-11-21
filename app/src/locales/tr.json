@@ -1,9 +1,8 @@
 {
 	"librarySettings": {
 		"title": "Kitaplık",
-		"shortcut": "Kitaplık yedekleri",
 		"scope": "Kayıtlı karakterleri ve görsellerini yedekleyin. Tercihler, taslaklar ve işler dahil edilmez.",
-		"privacy": "Normal yedekler görseller ve kayıtlı istemler içerebilir. Arşivlenmiş veriler burada inceleyemeyeceğiniz özel bilgiler içerebilir. Bu verileri yalnızca kendi kayıtlarınız için dahil edin.",
+		"privacy": "Yedekler görseller ve istemler içerebilir. Arşivlenmiş verileri paylaşmayın.",
 		"backup": "Kitaplığı yedekle",
 		"includeArchived": "Arşivlenmiş verileri dahil et",
 		"restoreFromBackup": "Yedekten geri yükle",
@@ -18,7 +17,6 @@
 		"restore": "Geri yükle",
 		"archivedHint": "{count} eski kayıt yalnızca indirme için saklanıyor.",
 		"downloadArchived": "Arşivlenmiş verileri indir",
-		"emptyRestore": "Yedeğiniz var mı? Geri yükleyin",
 		"tooLarge": "En fazla 64 MB boyutunda bir ZIP yedek dosyası seçin.",
 		"downloaded": "Yedek indirilmeye hazır.",
 		"restored": "{count} karakter eklendi.",

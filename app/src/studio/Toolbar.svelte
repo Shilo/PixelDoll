@@ -518,7 +518,6 @@
 				/>
 			</MenuDisclosure>{/if}
 		<hr />
-		<!-- Diagnostics: inspect generation activity and API requests. -->
 		<button
 			class="row bu-action"
 			data-variant="quiet"
@@ -530,7 +529,6 @@
 			>{#if $queue.role === 'follower'}<span class="small">{t('toolbar.otherTab')}</span
 				>{/if}<SurfaceChevron /></button
 		>
-		<hr />
 		{#if workspaceCopy}
 			<button
 				class="row bu-action"
@@ -544,21 +542,6 @@
 					>{openerLabel(t('workspace.activityTitle'))}</span
 				><SurfaceChevron /></button
 			>
-			<hr />
-		{:else}
-			<button
-				class="row bu-action"
-				data-variant="quiet"
-				onclick={() => {
-					closeOptions();
-					openSettings('library');
-				}}
-			>
-				<Archive size={18} />
-				<span class="row-name">{openerLabel(t('librarySettings.shortcut'))}</span>
-				<SurfaceChevron /></button
-			>
-			<hr />
 		{/if}
 		<!-- App actions: installation, updates, and help. -->
 		{#if import.meta.env.PROD && !$pwa.installed && ($pwa.installable || $pwa.installing)}

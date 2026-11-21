@@ -36,31 +36,21 @@
 		<span class="bu-muted">{version}</span>
 		{#if mode}<span class="bu-muted">{mode}</span>{/if}
 	</div>
-	<a
-		class="row bu-action"
-		data-variant="quiet"
-		href={repository}
-		target="_blank"
-		rel="noreferrer"
-		aria-label={`${t('versionRow.openSource')}: ${repository}`}
-	>
-		<span class="row-name">{repository}</span><ExternalLink size={16} aria-hidden="true" />
-	</a>
-	{#if hasCommit}
-		<a
-			class="row bu-action"
-			data-variant="quiet"
-			href={commitUrl}
-			target="_blank"
-			rel="noreferrer"
-			aria-label={`${t('versionRow.viewCommit')}: ${__APP_COMMIT__}`}
-		>
-			<span class="row-name bu-number">{__APP_COMMIT__}</span><ExternalLink
-				size={16}
-				aria-hidden="true"
-			/>
-		</a>
-	{/if}
+	<ul class="about-links">
+		<li>
+			<a href={repository} target="_blank" rel="noreferrer"
+				>{t('versionRow.openSource')} <ExternalLink size={14} aria-hidden="true" /></a
+			>
+		</li>
+		{#if hasCommit}
+			<li>
+				<a href={commitUrl} target="_blank" rel="noreferrer"
+					>{t('versionRow.viewCommit')} <span class="bu-number">{__APP_COMMIT__.slice(0, 7)}</span>
+					<ExternalLink size={14} aria-hidden="true" /></a
+				>
+			</li>
+		{/if}
+	</ul>
 	<button class="row bu-action" data-variant="quiet" type="button" onclick={copyDetails}>
 		<Copy size={16} aria-hidden="true" /><span class="row-name">{t('versionRow.copyDetails')}</span>
 	</button>
@@ -72,7 +62,14 @@
 		gap: 4px;
 		margin-block-end: 8px;
 	}
-	.about-details :is(a, button) :global(svg) {
-		flex: none;
+	.about-links {
+		display: grid;
+		gap: 8px;
+		list-style: none;
+		padding: 0;
+		margin-block: 0 12px;
+	}
+	.about-links :global(svg) {
+		vertical-align: middle;
 	}
 </style>

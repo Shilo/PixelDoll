@@ -655,8 +655,8 @@
 			tabindex="-1"
 			aria-describedby="export-playback-description"
 		>
-			<legend class="label">{PLAY_ONCE}</legend>
-			<p class="muted small" id="export-playback-description">
+			<legend class="settings-label">{PLAY_ONCE}</legend>
+			<p class="bu-muted settings-description" id="export-playback-description">
 				{t('export.settings.playOnceHint')}
 			</p>
 			<div class="export-moves">
@@ -689,15 +689,15 @@
 							dressedCharacterSheets: e.currentTarget.checked
 						})}
 				/>
-				<span>{DRESSED_SHEETS}</span>
+				<span class="settings-label">{DRESSED_SHEETS}</span>
 			</label>
-			<p class="muted small" id="export-dressed-description">
+			<p class="bu-muted settings-description" id="export-dressed-description">
 				{t('export.settings.dressedHint')}
 			</p>
 		</div>
 		<hr class="bu-separator export-divider" />
 		<label class="export-dressed" data-setting="format" tabindex="-1">
-			<span class="label">{t('export.settings.defaultTarget')}</span>
+			<span class="settings-label">{t('export.settings.defaultTarget')}</span>
 			<select
 				class="bu-input input"
 				value={engine}
@@ -716,7 +716,7 @@
 					{/if}
 				{/each}
 			</select>
-			<span class="muted small" id="default-export-target-hint"
+			<span class="bu-muted settings-description" id="default-export-target-hint"
 				>{t('export.settings.defaultTargetHint')}</span
 			>
 		</label>

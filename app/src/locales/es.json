@@ -1,9 +1,8 @@
 {
 	"librarySettings": {
 		"title": "Biblioteca",
-		"shortcut": "Copias de seguridad de la biblioteca",
 		"scope": "Haz una copia de seguridad de tus personajes guardados y sus gráficos. No se incluyen las preferencias, los borradores ni las tareas.",
-		"privacy": "Las copias de seguridad normales pueden contener imágenes y prompts guardados. Los datos archivados pueden contener información privada que no puedes revisar aquí. Inclúyelos solo para uso personal.",
+		"privacy": "Las copias pueden contener imágenes e indicaciones. No compartas los datos archivados.",
 		"backup": "Hacer una copia de seguridad",
 		"includeArchived": "Incluir datos archivados",
 		"restoreFromBackup": "Restaurar desde una copia de seguridad",
@@ -18,7 +17,6 @@
 		"restore": "Restaurar",
 		"archivedHint": "Registros antiguos disponibles solo para descargar: {count}.",
 		"downloadArchived": "Descargar datos archivados",
-		"emptyRestore": "¿Tienes una copia de seguridad? Restáurala",
 		"tooLarge": "Elige un ZIP de copia de seguridad de hasta 64 MB.",
 		"downloaded": "La copia de seguridad está lista para descargar.",
 		"restored": "Personajes añadidos: {count}.",

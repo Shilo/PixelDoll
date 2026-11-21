@@ -1329,7 +1329,11 @@ test('a production workspace copy offers the user guide without install actions'
 	try {
 		await page.goto(server.url);
 		await page.getByRole('button', { name: 'More options', exact: true }).click();
-		await page.getByRole('button', { name: 'Library backups...', exact: true }).click();
+		await page.getByRole('button', { name: 'Settings...', exact: true }).click();
+		await page
+			.getByRole('dialog', { name: 'Settings' })
+			.getByRole('button', { name: 'Library', exact: true })
+			.click();
 		const [archive] = await Promise.all([
 			page.waitForEvent('download'),
 			page.getByRole('button', { name: 'Back up library', exact: true }).click()

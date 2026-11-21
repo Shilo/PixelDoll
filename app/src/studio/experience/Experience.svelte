@@ -1,6 +1,5 @@
 <script lang="ts">
 	import SurfaceChevron from '../SurfaceChevron.svelte';
-	import { openSettings } from '../settingsNavigation.svelte.ts';
 	import { openerLabel } from '../openerLabel.ts';
 	import { formatNumber, t } from 'svelte-whisper';
 	import { displayMessage } from '../../lib/i18n.ts';
@@ -734,14 +733,6 @@
 							{t('experience.noMatchingCharacters')}
 						</p>{/if}{/each}
 				<NewCharacterButton row />
-				{#if !workspaceCopy && !store.projects.some((project) => !project.dev && !project.demo)}
-					<button
-						type="button"
-						class="btn link bu-action"
-						data-variant="quiet"
-						onclick={() => openSettings('library')}>{t('librarySettings.emptyRestore')}</button
-					>
-				{/if}
 			</div>
 			<button
 				class="bu-action customize-action"

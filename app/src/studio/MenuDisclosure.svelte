@@ -49,11 +49,4 @@
 </button>
 <div id={panelId} role="group" aria-label={label} hidden={!open}>
 	{@render children()}
-	<hr class="divider" aria-hidden="true" />
 </div>
-
-<style>
-	.divider {
-		margin-inline: 12px;
-	}
-</style>

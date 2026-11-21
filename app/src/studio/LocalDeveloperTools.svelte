@@ -13,7 +13,14 @@
 </script>
 
 {#if localDeveloperToolsEnabled()}
-	<a class="row bu-action" data-variant="quiet" href="#/dev">{t('developer.pages')}</a>
+	<button
+		type="button"
+		class="row bu-action"
+		data-variant="quiet"
+		onclick={() => {
+			if (localDeveloperToolsEnabled()) location.hash = '/dev';
+		}}><span class="row-name">{t('developer.pages')}</span></button
+	>
 	{#if rigs.length}
 		<p class="menu-sec" data-local-developer-rigs>{t('developer.rigs')}</p>
 		{#each rigs as project (project.id)}

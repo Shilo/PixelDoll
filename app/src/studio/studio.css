@@ -326,6 +326,17 @@ html[data-app='studio'] body {
 	flex-direction: column;
 	gap: 6px;
 }
+.settings-label {
+	font-size: 0.9375rem;
+	font-weight: 600;
+	line-height: 1.4;
+	margin: 0;
+}
+.settings-description {
+	font-size: 0.875rem;
+	line-height: 1.45;
+	margin-block: 0;
+}
 .label {
 	color: var(--text-2);
 	font-weight: 500;

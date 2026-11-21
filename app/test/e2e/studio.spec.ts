@@ -184,9 +184,10 @@ test('Settings About opens a page with build details and copies them', async ({ 
 	await expect(settings.getByText('Pre-release', { exact: true })).toBeVisible();
 	const version = await settings.getByText(/^Version \d+\.\d+\.\d+$/).innerText();
 	const repository = 'https://github.com/Shilo/PixelDoll';
-	const source = settings.getByRole('link', { name: /^Open source code:/ });
-	const commit = settings.getByRole('link', { name: /^View commit: [a-f0-9]{7,40}$/i });
-	const hash = await commit.innerText();
+	const source = settings.getByRole('link', { name: 'Open source code' });
+	const commit = settings.getByRole('link', { name: /^View commit [a-f0-9]{7}$/i });
+	const hash = (await commit.getAttribute('href'))?.split('/').at(-1);
+	expect(hash).toMatch(/^[a-f0-9]{7,40}$/i);
 	await expect(source).toHaveAttribute('href', repository);
 	await expect(commit).toHaveAttribute('href', `${repository}/commit/${hash}`);
 	await expect(source.locator('svg.lucide-external-link')).toBeVisible();
@@ -1526,10 +1527,9 @@ test('studio demo: dressing, undo, recolor, outfits, keyboard views and theme su
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
 	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	await page.getByRole('button', { name: 'Appearance', exact: true }).click();
-	const theme = page.getByRole('button', { name: 'Theme', exact: true });
-	await theme.click();
+	await page.getByRole('radio', { name: 'Light', exact: true }).check();
 	await expect(page.getByRole('radio', { name: 'Light', exact: true })).toBeChecked();
-	await theme.press('Space');
+	await page.getByRole('radio', { name: 'Light', exact: true }).press('ArrowLeft');
 	await expect(page.getByRole('radio', { name: 'Dark', exact: true })).toBeChecked();
 	await page.getByRole('radio', { name: 'Light', exact: true }).check();
 	await page

@@ -1,9 +1,8 @@
 {
 	"librarySettings": {
 		"title": "Pustaka",
-		"shortcut": "Cadangan pustaka",
 		"scope": "Cadangkan karakter yang tersimpan beserta gambarnya. Preferensi, draf, dan tugas tidak disertakan.",
-		"privacy": "Cadangan biasa dapat berisi gambar dan prompt yang tersimpan. Data arsip mungkin berisi informasi pribadi yang tidak dapat Anda tinjau di sini. Sertakan hanya untuk catatan pribadi Anda.",
+		"privacy": "Cadangan bisa berisi gambar dan prompt. Jangan bagikan data arsip.",
 		"backup": "Cadangkan pustaka",
 		"includeArchived": "Sertakan data arsip",
 		"restoreFromBackup": "Pulihkan dari cadangan",
@@ -18,7 +17,6 @@
 		"restore": "Pulihkan",
 		"archivedHint": "{count} catatan lama disimpan hanya untuk diunduh.",
 		"downloadArchived": "Unduh data arsip",
-		"emptyRestore": "Punya cadangan? Pulihkan sekarang",
 		"tooLarge": "Pilih file ZIP cadangan berukuran maksimal 64 MB.",
 		"downloaded": "Cadangan siap diunduh.",
 		"restored": "{count} karakter ditambahkan.",

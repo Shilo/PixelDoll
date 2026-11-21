@@ -1,9 +1,8 @@
 {
 	"librarySettings": {
 		"title": "Library",
-		"shortcut": "Library backups",
 		"scope": "Back up saved characters and their artwork. Preferences, drafts, and jobs are not included.",
-		"privacy": "Regular backups can contain artwork and saved prompts. Archived data may contain private information you can’t review here. Include it only for your own records.",
+		"privacy": "Backups can contain artwork and prompts. Keep archived data private.",
 		"backup": "Back up library",
 		"includeArchived": "Include archived data",
 		"restoreFromBackup": "Restore from backup",
@@ -18,7 +17,6 @@
 		"restore": "Restore",
 		"archivedHint": "{count} older records are kept for download only.",
 		"downloadArchived": "Download archived data",
-		"emptyRestore": "Have a backup? Restore it",
 		"tooLarge": "Choose a backup ZIP no larger than 64 MB.",
 		"downloaded": "Backup is ready to download.",
 		"restored": "Added {count} characters.",

@@ -29,7 +29,7 @@
 		settingsNavigation,
 		type SettingsSection
 	} from './settingsNavigation.svelte.ts';
-	import { setTheme, toggleTheme, ui } from './state.svelte.ts';
+	import { setTheme, ui } from './state.svelte.ts';
 
 	let {
 		exportSettings,
@@ -62,7 +62,8 @@
 						'connectSheet.aPIKey',
 						'connectSheet.forgetKey'
 					]
-				}
+				},
+				{ id: 'recent-activity', label: 'activity.title' }
 			]
 		},
 		{
@@ -119,11 +120,7 @@
 			icon: Archive,
 			entries: [
 				{ id: 'backup', label: 'librarySettings.backup' },
-				{
-					id: 'restore',
-					label: 'librarySettings.restoreFromBackup',
-					terms: ['librarySettings.emptyRestore']
-				}
+				{ id: 'restore', label: 'librarySettings.restoreFromBackup' }
 			]
 		},
 		{
@@ -154,6 +151,15 @@
 	const available = sections.filter(
 		(section) => !workspaceCopy || !['pixellab', 'library', 'developer'].includes(section.id)
 	);
+	const groups: SettingsSection[][] = [
+		['pixellab'],
+		['general', 'wardrobe'],
+		['export', 'library'],
+		['developer', 'about']
+	];
+	const navigation = groups
+		.map((group) => available.filter(({ id }) => group.includes(id)))
+		.filter((group) => group.length);
 	const wide = new MediaQuery('(min-width: 660px) and (min-height: 520px)');
 	const active = $derived(
 		available.find(
@@ -187,7 +193,9 @@
 			section.entries.flatMap((entry) => {
 				const text = normalize(
 					[
-						...[section.label, entry.label, ...(entry.terms ?? [])].map((key) => t(key)),
+						...[section.label, entry.label, ...('terms' in entry ? (entry.terms ?? []) : [])].map(
+							(key) => t(key)
+						),
 						...('names' in entry ? (entry.names ?? []) : [])
 					].join(' '),
 					locale
@@ -234,20 +242,22 @@
 		{#if !query.trim()}
 			<div class="settings-links">
 				<nav aria-label={t('export.sheet.settings')}>
-					{#each available as section (section.id)}
-						<button
-							class="row bu-action"
-							data-variant="quiet"
-							data-active={active?.id === section.id}
-							aria-current={active?.id === section.id ? 'page' : undefined}
-							disabled={busy}
-							onclick={() => show(section.id)}
-						>
-							<section.icon size={18} aria-hidden="true" />
-							<span class="row-name">{t(section.label)}</span>
-							<SurfaceChevron />
-						</button>
-						{#if section.id === 'pixellab'}<hr class="bu-separator" />{/if}
+					{#each navigation as group, index (group)}
+						{#if index}<hr class="bu-separator" />{/if}
+						{#each group as section (section.id)}
+							<button
+								class="row bu-action"
+								data-variant="quiet"
+								data-active={active?.id === section.id}
+								aria-current={active?.id === section.id ? 'page' : undefined}
+								disabled={busy}
+								onclick={() => show(section.id)}
+							>
+								<section.icon size={18} aria-hidden="true" />
+								<span class="row-name">{t(section.label)}</span>
+								<SurfaceChevron />
+							</button>
+						{/each}
 					{/each}
 				</nav>
 			</div>
@@ -290,15 +300,10 @@
 			{/if}
 			{#if active.id === 'general'}
 				<div class="row appearance-row" data-setting="theme">
-					<button
-						class="row-name bu-action bu-focus theme-toggle"
-						type="button"
-						data-variant="quiet"
-						onclick={toggleTheme}>{themeLabel}</button
-					>
-					<div class="bu-segmented" role="radiogroup" aria-label={themeLabel}>
+					<span class="row-name settings-label">{themeLabel}</span>
+					<div class="appearance-options" role="radiogroup" aria-label={themeLabel}>
 						{#each appearanceOptions as { value, label, icon: Icon } (value)}
-							<label class="bu-segment">
+							<label class="appearance-option">
 								<input
 									type="radio"
 									name={appearanceGroup}
@@ -306,12 +311,8 @@
 									checked={ui.theme === value}
 									onchange={() => setTheme(value)}
 								/>
-								<span class="bu-segment-face">
-									<span class="appearance-option">
-										<span class="appearance-icon"><Icon size={14} aria-hidden="true" /></span>
-										<span>{label}</span>
-									</span>
-								</span>
+								<Icon size={14} aria-hidden="true" />
+								<span>{label}</span>
 							</label>
 						{/each}
 					</div>
@@ -329,20 +330,19 @@
 				<DeveloperSettings>
 					{#snippet tools()}
 						{#if !workspaceCopy}
-							<a
+							<button
 								class="row bu-action"
 								data-variant="quiet"
-								href={workspaceUrl(true)}
-								target="_blank"
-								rel="noreferrer"
-								onclick={(event) => {
-									if (!developerModeEnabled()) event.preventDefault();
+								type="button"
+								onclick={() => {
+									if (developerModeEnabled())
+										window.open(workspaceUrl(true), '_blank', 'noopener,noreferrer');
 								}}
 							>
 								<Archive size={18} aria-hidden="true" />
 								<span class="row-name">{t('workspaceCopy.title')}</span>
 								<ExternalLink size={16} aria-hidden="true" />
-							</a>
+							</button>
 						{/if}
 					{/snippet}
 				</DeveloperSettings>
@@ -381,35 +381,23 @@
 	}
 	.settings-heading {
 		margin: 0;
+		font-size: 1.125rem;
+		font-weight: 600;
 	}
 	.appearance-row {
-		position: relative;
+		flex-wrap: wrap;
 	}
-	.theme-toggle {
-		min-height: 44px;
-		text-align: start;
-		cursor: pointer;
-	}
-	.theme-toggle::after {
-		position: absolute;
-		inset: 0;
-		content: '';
-	}
-	.appearance-row .bu-segmented {
-		position: relative;
-	}
-	.appearance-row .bu-segment-face {
-		min-height: 44px;
+	.appearance-options {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0 16px;
 	}
 	.appearance-option {
 		display: flex;
 		align-items: center;
-		justify-content: center;
+		min-block-size: 44px;
 		gap: 4px;
-	}
-	.appearance-icon {
-		display: flex;
-		flex: none;
+		cursor: pointer;
 	}
 	.settings-content :global(.row) {
 		width: 100%;

@@ -1,9 +1,8 @@
 {
 	"librarySettings": {
 		"title": "Biblioteca",
-		"shortcut": "Backups da biblioteca",
 		"scope": "Faça backup dos personagens salvos e de suas artes. Preferências, rascunhos e tarefas não são incluídos.",
-		"privacy": "Backups comuns podem conter imagens e prompts salvos. Os dados arquivados podem conter informações privadas que você não pode conferir aqui. Inclua esses dados só para uso pessoal.",
+		"privacy": "Backups podem conter artes e prompts. Não compartilhe dados arquivados.",
 		"backup": "Fazer backup da biblioteca",
 		"includeArchived": "Incluir dados arquivados",
 		"restoreFromBackup": "Restaurar de um backup",
@@ -18,7 +17,6 @@
 		"restore": "Restaurar",
 		"archivedHint": "Registros antigos disponíveis apenas para baixar: {count}.",
 		"downloadArchived": "Baixar dados arquivados",
-		"emptyRestore": "Tem um backup? Restaure-o",
 		"tooLarge": "Escolha um arquivo ZIP de backup de até 64 MB.",
 		"downloaded": "O backup está pronto para baixar.",
 		"restored": "Personagens adicionados: {count}.",

@@ -1,9 +1,8 @@
 {
 	"librarySettings": {
 		"title": "Bibliothèque",
-		"shortcut": "Sauvegardes de la bibliothèque",
 		"scope": "Sauvegardez vos personnages enregistrés et leurs illustrations. Les préférences, les brouillons et les tâches ne sont pas inclus.",
-		"privacy": "Les sauvegardes ordinaires peuvent contenir des images et des prompts enregistrés. Les données archivées peuvent contenir des informations privées que vous ne pouvez pas consulter ici. Ne les incluez que pour vos propres dossiers.",
+		"privacy": "Les sauvegardes peuvent contenir des images et des instructions. Gardez les données archivées privées.",
 		"backup": "Sauvegarder la bibliothèque",
 		"includeArchived": "Inclure les données archivées",
 		"restoreFromBackup": "Restaurer depuis une sauvegarde",
@@ -18,7 +17,6 @@
 		"restore": "Restaurer",
 		"archivedHint": "Anciens enregistrements conservés uniquement pour le téléchargement : {count}.",
 		"downloadArchived": "Télécharger les données archivées",
-		"emptyRestore": "Vous avez une sauvegarde ? Restaurez-la",
 		"tooLarge": "Choisissez un fichier ZIP de sauvegarde de 64 Mo au maximum.",
 		"downloaded": "La sauvegarde est prête à être téléchargée.",
 		"restored": "Personnages ajoutés : {count}.",

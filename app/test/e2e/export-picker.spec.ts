@@ -128,9 +128,10 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		return { id, otherId: other.id, item: item.id, uniqueHash: uniqueHash.slice(7) };
 	});
 	await page.getByRole('button', { name: 'More options', exact: true }).click();
-	await expect(page.getByRole('link', { name: 'Open backup as a copy' })).toBeHidden();
-	await page.getByRole('button', { name: 'Library backups...', exact: true }).click();
+	await expect(page.getByRole('button', { name: 'Open backup as a copy' })).toBeHidden();
+	await page.getByRole('button', { name: 'Settings...', exact: true }).click();
 	const exportDialog = page.getByRole('dialog', { name: 'Settings' });
+	await exportDialog.getByRole('button', { name: 'Library', exact: true }).click();
 	const backUp = exportDialog.getByRole('button', { name: 'Back up library' });
 	await expect(backUp).toBeVisible();
 	const evidence = process.env.PIXELDOLL_WORKSPACE_EVIDENCE;
@@ -182,8 +183,18 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		await recipientContext.addInitScript(() => localStorage.setItem('pixeldoll.agentKey', 'off'));
 		const recipientPage = await recipientContext.newPage();
 		await recipientPage.goto(dev);
-		await recipientPage.getByRole('button', { name: 'Have a backup? Restore it' }).click();
+		await recipientPage.getByRole('button', { name: 'More options', exact: true }).click();
+		await recipientPage.getByRole('button', { name: 'Settings...', exact: true }).click();
+		const recipientSettings = recipientPage.getByRole('dialog', { name: 'Settings' });
+		await recipientSettings.getByRole('button', { name: 'Library', exact: true }).click();
 		const picker = recipientPage.locator('input[type=file][accept=".zip,application/zip"]');
+		const restoreButton = recipientSettings.getByRole('button', { name: 'Restore from backup' });
+		const chooser = recipientPage.waitForEvent('filechooser');
+		await restoreButton.click();
+		await chooser;
+		await picker.dispatchEvent('cancel', { bubbles: true });
+		await expect(recipientSettings).toBeVisible();
+		await expect(restoreButton).toBeFocused();
 		const review = recipientPage.getByRole('region', { name: 'Review backup' });
 		await picker.setInputFiles((await download.path())!);
 		await expect(review).toBeFocused();
@@ -278,10 +289,10 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 		expect.objectContaining({ tool: 'edit-animation-v2', outcome: 'lost' })
 	);
 	await exportDialog.getByRole('button', { name: 'Developer', exact: true }).click();
-	await expect(exportDialog.getByRole('link', { name: 'Open backup as a copy' })).toBeHidden();
+	await expect(exportDialog.getByRole('button', { name: 'Open backup as a copy' })).toBeHidden();
 	await exportDialog.getByRole('switch', { name: 'Developer mode' }).check();
 	const waitCopy = page.waitForEvent('popup');
-	await exportDialog.getByRole('link', { name: 'Open backup as a copy' }).click();
+	await exportDialog.getByRole('button', { name: 'Open backup as a copy' }).click();
 	const copy = await waitCopy;
 	await exportDialog.getByRole('button', { name: 'Close', exact: true }).click();
 	const picker = copy.getByLabel('Choose backup ZIP');
@@ -389,7 +400,7 @@ test('workspace ZIP isolates the library and PixelLab connection', async ({
 	const copySettings = copy.getByRole('dialog', { name: 'Settings', exact: true });
 	await expect(copySettings.getByRole('button', { name: 'PixelLab', exact: true })).toHaveCount(0);
 	await copySettings.getByRole('button', { name: 'Appearance', exact: true }).click();
-	await copySettings.getByRole('button', { name: 'Theme', exact: true }).click();
+	await copySettings.getByRole('radio', { name: 'Dark', exact: true }).check();
 	await expect(copy.locator('html')).toHaveAttribute('data-theme', 'dark');
 	await copySettings.getByRole('radio', { name: 'Light', exact: true }).check();
 	await copySettings.getByRole('button', { name: 'Wardrobe', exact: true }).click();

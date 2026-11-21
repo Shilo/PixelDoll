@@ -33,9 +33,11 @@
 </script>
 
 <div role="group" aria-labelledby={headingId}>
-	<p class="menu-sec" class:settings-label={scope === 'global'} id={headingId}>
-		{t('sharedVisibility.heading')}
-	</p>
+	{#if scope === 'global'}
+		<h4 class="settings-label" id={headingId}>{t('sharedVisibility.heading')}</h4>
+	{:else}
+		<p class="menu-sec" id={headingId}>{t('sharedVisibility.heading')}</p>
+	{/if}
 	{#if hideAll}<span id={lockReasonId} hidden>{t('sharedVisibility.allOn')}</span>{/if}
 	{#if scope !== 'character'}<label class="row bu-check">
 			<UsersRound size={18} aria-hidden="true" />
@@ -54,7 +56,7 @@
 	{#if scope !== 'global'}<label class="row bu-check">
 			<UserRound size={18} aria-hidden="true" />
 			{#snippet character()}<strong>{name}</strong>{/snippet}
-			<span class="row-name"
+			<span class="row-name character-wardrobe-label"
 				><RichMessage key="sharedVisibility.current" slots={{ name: character }} /></span
 			>
 			{#if hideAll}<Lock size={14} class="faint" aria-hidden="true" />{/if}
@@ -100,9 +102,9 @@
 </div>
 
 <style>
-	.settings-label {
-		padding-inline: 0;
-		margin: 0;
+	.character-wardrobe-label {
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 	.row-name strong {
 		font-weight: 600;

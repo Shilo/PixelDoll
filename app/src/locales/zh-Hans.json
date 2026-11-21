@@ -1,9 +1,8 @@
 {
 	"librarySettings": {
 		"title": "角色库",
-		"shortcut": "角色库备份",
 		"scope": "备份已保存的角色及其美术素材。不包含偏好设置、草稿和任务。",
-		"privacy": "常规备份可能包含美术素材和已保存的提示词。归档数据可能含有无法在此查看的私密信息。请仅在备份供自己留存时包含这些数据。",
+		"privacy": "备份可能包含美术素材和提示词。请勿分享归档数据。",
 		"backup": "备份角色库",
 		"includeArchived": "包含已归档的数据",
 		"restoreFromBackup": "从备份恢复",
@@ -18,7 +17,6 @@
 		"restore": "恢复",
 		"archivedHint": "有 {count} 条旧记录仅供下载。",
 		"downloadArchived": "下载已归档的数据",
-		"emptyRestore": "有备份？从备份恢复",
 		"tooLarge": "请选择不超过 64 MB 的 ZIP 备份文件。",
 		"downloaded": "备份已可下载。",
 		"restored": "已添加 {count} 个角色。",
