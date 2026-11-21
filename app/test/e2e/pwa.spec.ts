@@ -963,6 +963,7 @@ test('a stalled outfit save releases the update dialog and leaves the old Studio
 					this.transaction.addEventListener('complete', () => {
 						document.documentElement.dataset.stalledSave = 'yes';
 					});
+					this.transaction.oncomplete = null;
 					Object.defineProperty(this.transaction, 'oncomplete', { set: () => {} });
 				}
 				return key === undefined ? original.call(this, value) : original.call(this, value, key);
