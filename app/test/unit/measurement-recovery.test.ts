@@ -7,6 +7,7 @@ import {
 	measurementRecoveryPlan,
 	parallelGeneration,
 	reviewMoveRecovery,
+	reviewMoveResults,
 	run,
 	type MoveSpec
 } from '../../src/studio/create.ts';
@@ -1691,4 +1692,43 @@ test('known insufficient bounded color correction refuses new paid measurements 
 	expect(f.posts()).toBe(before);
 	expect(f.enqueue.mock.calls).toHaveLength(enqueues);
 	expect(f.update).not.toHaveBeenCalled();
+});
+
+test('an overflowing paid motion is reviewed from the cache with a priced lift and per-view re-roll, never a request', async () => {
+	const f = await fixture(false, 'walk');
+	await f.finishOriginalChecks();
+	// PixelLab's managed canvas is larger than the cell: the stepping foot falls 2 rows below a 64 px frame.
+	const tall = makeImg(72, 72);
+	for (let y = 14; y < 70; y++)
+		for (let x = 30; x < 42; x++) tall.data.set([180, 140, 120, 255], (y * 72 + x) * 4);
+	const bytes = await encodePngBytes(tall);
+	for (const result of f.records.get('motion-east')!.jobs[0].results)
+		f.blobs.set(result.sha, new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+	await expect(addMove('rig-recover', f.spec)).rejects.toThrow('does not fit the 64 px frame');
+	const calls = f.enqueue.mock.calls.length,
+		posts = f.posts();
+	const review = (await reviewMoveResults('rig-recover', f.spec))!;
+	expect(f.enqueue.mock.calls).toHaveLength(calls);
+	expect(f.posts()).toBe(posts);
+	expect(review.views.map((view) => view.state)).toEqual(['failed', 'ready']);
+	expect(review.views[0].frames).toHaveLength(8);
+	expect(review.recordIds).toContain('motion-east');
+	expect(review.options.map((option) => option.id)).toEqual(['lift', 'reroll']);
+	const [lift, reroll] = review.options;
+	expect(lift.spec).toMatchObject({ seed: f.spec.seed, motionLift: { east: Array(8).fill(2) } });
+	// Lifted frames are new joint checks; the body render and its checks follow. West is reused as is.
+	expect(lift.gens).toBeCloseTo(0.8 + 3 + 0.8);
+	expect(lift.detail?.key).toBe('moveReview.liftDetailReview');
+	expect(reroll.spec.reroll?.east?.motion).toBeGreaterThan(0);
+	expect(reroll.spec.reroll?.west).toBeUndefined();
+	expect(reroll.gens).toBeCloseTo(3 + 0.8 + 3 + 0.8);
+});
+
+test('a body move stopped after every view was bought resumes free with the same seed', async () => {
+	const f = await fixture(false, 'walk');
+	await f.finishOriginalChecks();
+	const review = (await reviewMoveResults('rig-recover', f.spec))!;
+	expect(review.views.map((view) => view.state)).toEqual(['ready', 'ready']);
+	expect(review.options).toMatchObject([{ id: 'resume', gens: 0, paid: false }]);
+	expect(review.options[0].spec.seed).toBe(f.spec.seed);
 });

@@ -7,6 +7,7 @@
 	import DirectionCompass from './DirectionCompass.svelte';
 	import Help from './Help.svelte';
 	import Sprite from './Sprite.svelte';
+	import PaidReview from './PaidReview.svelte';
 	import {
 		defaultMoveFrameCount,
 		moveFrameCounts,
@@ -28,6 +29,11 @@
 		posable
 	} from '../lib/items/run.ts';
 	import { AUTHORED } from '../lib/rig/poses.ts';
+	import { REPAIR_BATCH_MISALIGNED } from '../lib/items/items.ts';
+	import {
+		PaidStepError,
+		type PaidReview as PaidReviewData
+	} from '../lib/pixellab/paid-results.ts';
 	import {
 		MOVE_STEPS,
 		bodyMoveIssue,
@@ -37,8 +43,12 @@
 		isV13,
 		reservedMove,
 		reviewMoveRecovery,
+		reviewMoveResults,
+		movePreflightWarnings,
 		moveEstimate,
 		moveMinimumTier,
+		type MovePaidOption,
+		type MovePaidReview,
 		type MoveSpec,
 		type BodyPaletteRepairPlan,
 		type KeepBodyPlan,
@@ -248,6 +258,17 @@
 			(replacing && targetDirs.length ? partialMoveFrameIssue(m, motion, targetDirs.length) : '')
 		);
 	});
+	// App-side warnings never block a request PixelLab would take: Add anyway records them as accepted with the move.
+	const preflight = $derived(
+		m && id && !motionIssue
+			? movePreflightWarnings(m, {
+					...motion,
+					items: [],
+					seed: 0,
+					...(replacing ? { dirs: [...targetDirs] } : {})
+				})
+			: []
+	);
 	let included = $state<string[]>(draft?.items ?? []);
 	const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id));
 	const est = $derived(
@@ -292,6 +313,8 @@
 			(moving.spec.itemMethod === 'grid'
 				? !!moving.spec.itemReview &&
 					!errorText(moving.error).startsWith(INVALID_ITEM_GRID) &&
+					// A misaligned batch replays as misaligned: only a re-roll of that batch can change it.
+					!errorText(moving.error).startsWith(REPAIR_BATCH_MISALIGNED) &&
 					!errorText(moving.error).startsWith(SAVED_FRAMES_UNAVAILABLE) &&
 					$queue.jobs.some(
 						(job) =>
@@ -354,6 +377,7 @@
 	let colorRepair = $state<BodyPaletteRepairPlan | null>(null);
 	// Frames are decoded images: keep them raw rather than deeply proxied.
 	let keep = $state.raw<KeepBodyPlan | null>(null);
+	let paid = $state.raw<MovePaidReview | null>(null);
 	const keepK = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1 : 1.5))));
 	const recoveryItemGens = $derived(
 		recovery && m && moving.spec ? moveEstimate(m, moving.spec).items : 0
@@ -368,18 +392,20 @@
 		recovery = null;
 		colorRepair = null;
 		keep = null;
+		paid = null;
 		recoveryError = '';
 		recoveryUnavailable = [];
 		recoveryChecking = false;
 		if (mine && error && spec && !moving.done && spec.itemMethod !== 'grid') {
 			recoveryChecking = true;
-			void reviewMoveRecovery(projectId, spec)
-				.then((review) => {
+			void Promise.all([reviewMoveRecovery(projectId, spec), reviewMoveResults(projectId, spec)])
+				.then(([review, results]) => {
 					if (!current) return;
 					recovery = review.recovery ?? null;
 					colorRepair = review.colorRepair ?? null;
 					keep = review.keep ?? null;
 					recoveryUnavailable = review.unavailableMessages ?? [];
+					paid = results ?? null;
 				})
 				.catch((error: unknown) => {
 					if (current)
@@ -406,6 +432,62 @@
 				recoveryError = errorMessage(e);
 			});
 		}, recoveryTier);
+	}
+
+	// An item repair stopped by a misaligned batch: its earlier batches are kept; only that batch is re-rolled.
+	const batchReview = $derived.by((): (PaidReviewData & { start: string }) | null => {
+		const error = moving.error,
+			spec = moving.spec;
+		if (!mine || !spec || !(error instanceof PaidStepError)) return null;
+		const step = error.paid.step;
+		if (!step.startsWith('grid-batch:')) return null;
+		const records = $queue.jobs.filter(
+			(job) => job.activityScope === spec.activityScope && job.state === 'done'
+		);
+		return {
+			start: step.slice('grid-batch:'.length),
+			views: [],
+			spent: +records.reduce((sum, job) => sum + job.gens, 0).toFixed(2),
+			recordIds: records.map((job) => job.id),
+			options: [
+				{
+					id: 'reroll-batch',
+					label: message('moveSheet.rerollBatch'),
+					detail: message('moveSheet.rerollBatchDetail'),
+					gens: error.paid.gens ?? 0,
+					paid: true,
+					primary: true
+				}
+			]
+		};
+	});
+	function rerollBatch() {
+		if (!moving.spec || !batchReview) return;
+		const projectId = moving.projectId,
+			spec = $state.snapshot(moving.spec),
+			start = batchReview.start;
+		withKey(() => {
+			void startMove(projectId, {
+				...spec,
+				reuseItemFrames: undefined,
+				gridReroll: {
+					...spec.gridReroll,
+					[start]: (spec.gridReroll?.[start] ?? 0) + 1 + Math.floor(Math.random() * 1_000_000)
+				}
+			});
+			ui.sheet = 'move';
+		}, recoveryTier);
+	}
+	/** A reviewed way on keeps the move's seed, so completed requests are reused; only a paid one needs the key. */
+	function choosePaid(option: MovePaidOption) {
+		const projectId = moving.projectId,
+			spec = $state.snapshot(option.spec);
+		const go = () => {
+			void startMove(projectId, spec);
+			ui.sheet = 'move';
+		};
+		if (option.paid) withKey(go, retryTier);
+		else go();
 	}
 
 	// Free and local: no key is needed because a kept body makes no PixelLab request.
@@ -441,7 +523,8 @@
 			items: chosen,
 			poseStyle: 'visible-side-v1' as const,
 			seed: 1 + Math.floor(Math.random() * 1_000_000),
-			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] })
+			...(replacing ? { dirs: [...targetDirs] } : { approvedDirs: [...targetDirs] }),
+			...(preflight.length ? { acceptedWarnings: preflight.map((warning) => warning.id) } : {})
 		};
 		formDrafts.move = {
 			projectId,
@@ -624,7 +707,9 @@
 								: 'moveSheet.submit.queue'
 							: replacing
 								? 'moveSheet.submit.replaceViews'
-								: 'moveSheet.submit.add',
+								: preflight.length
+									? 'moveSheet.submit.addAnyway'
+									: 'moveSheet.submit.add',
 						{ move: id ? nice(id) : t('moveSheet.submit.move') }
 					)}
 					{#if est}<span class="cost">
@@ -785,6 +870,18 @@
 			{#if recoveryChecking}<p class="muted small" role="status">
 					{t('moveSheet.checkingCached')}
 				</p>{/if}
+			{#if batchReview && moving.spec}<PaidReview
+					review={batchReview}
+					name={nice(moving.spec.id)}
+					blocked={!!recoveryAccess.error || tierBlocked(recoveryTier)}
+					onchoose={rerollBatch}
+				/>{/if}
+			{#if paid && moving.spec && (paid.options.length || paid.views.some((view) => view.state !== 'ready'))}<PaidReview
+					review={paid}
+					name={nice(moving.spec.id)}
+					blocked={!!retryAccess.error || tierBlocked(retryTier)}
+					onchoose={choosePaid}
+				/>{/if}
 			{#if recoveryUnavailable.length}<p class="notice small">
 					{recoveryUnavailable.map(displayNestedMessage).join(' ')}
 				</p>{/if}
@@ -1043,7 +1140,11 @@
 					<CircleAlert size={14} />{displayError(reservedMove(id))}
 				</p>{:else if motionIssue}<p class="notice warn small">
 					<CircleAlert size={14} />{displayError(motionIssue)}
-				</p>{:else if pendingIds.includes(id)}<p class="notice small">
+				</p>{:else if preflight.length}{#each preflight as warning (warning.id)}<p
+						class="notice warn small"
+					>
+						<CircleAlert size={14} />{displayError(warning)}
+					</p>{/each}{:else if pendingIds.includes(id)}<p class="notice small">
 					<CircleAlert size={14} />{t('moveSheet.alreadyQueued', { move: nice(id) })}
 				</p>{:else if busy}<p class="faint small">
 					{t('moveSheet.waitsForCurrent')}

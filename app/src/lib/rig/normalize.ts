@@ -26,10 +26,12 @@ export function normalize(
 	w: number,
 	h: number,
 	thr = 128,
-	char = Math.min(src.w, w)
+	char = Math.min(src.w, w),
+	/** Rows to raise the source by, only with explicit consent to a motion lifted to fit (liftToFit). */
+	lift = 0
 ): Normalized {
 	const ox = Math.floor((w - src.w) / 2),
-		oy = Math.max(0, h - char - FLOOR) + Math.floor((char - src.h) / 2);
+		oy = Math.max(0, h - char - FLOOR) + Math.floor((char - src.h) / 2) - lift;
 	const out = makeImg(w, h);
 	let cutPx = 0,
 		semiAlpha = 0;
@@ -47,6 +49,31 @@ export function normalize(
 			out.data.set(src.data.subarray(i, i + 4), (dy * w + dx) * 4);
 		}
 	return { img: binaryAlpha(out, thr), offset: [ox, oy], cutPx, semiAlpha };
+}
+
+/** The fewest rows `normalize` must raise a source by so no opaque pixel falls outside the cell: 0 when it fits, null when
+ *  raising cannot fit it (pixels cut at a side or the top, or taller than the cell). */
+export function liftToFit(
+	src: Img,
+	w: number,
+	h: number,
+	thr = 128,
+	char = Math.min(src.w, w)
+): number | null {
+	const { offset } = normalize(src, w, h, thr, char);
+	let top = Infinity,
+		bottom = -Infinity;
+	for (let y = 0; y < src.h; y++)
+		for (let x = 0; x < src.w; x++) {
+			if (src.data[(y * src.w + x) * 4 + 3] < thr) continue;
+			const dx = x + offset[0];
+			if (dx < 0 || dx >= w) return null;
+			top = Math.min(top, y + offset[1]);
+			bottom = Math.max(bottom, y + offset[1]);
+		}
+	if (bottom < h) return top >= 0 ? 0 : null;
+	const lift = bottom - (h - 1);
+	return top - lift >= 0 ? lift : null;
 }
 
 export function opaqueBox(im: Img): Box | null {
